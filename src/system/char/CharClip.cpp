@@ -645,8 +645,30 @@ void CharClip::MakeMRU() {
     }
 }
 
-void CharClip::LockAndDelete(CharClip **, int remaining, int) {
+void CharClip::LockAndDelete(CharClip** list, int count, int remaining) {
     MILO_ASSERT(remaining >= 0, 0x43A);
+    if (count < remaining) {
+        remaining = count;
+    }
+    CharClip** end = &list[count];
+    int i = 0;
+    while (count > i) {
+        CharClip* clip = list[i];
+        if (clip->mPlayFlags & 0x10000U) {
+            remaining--;
+            list[i] = list[--count];
+            i--;
+            *--end = clip;
+        }
+        i++;
+    }
+    while (remaining > 0) {
+        list[--count]->mPlayFlags |= 0x10000;
+        remaining--;
+    }
+    while (count > 0) {
+        delete list[--count]; 
+    }
 }
 
 void CharClip::PreSave(BinStream &) { MILO_WARN("You can only save a CharClip from PC"); }
