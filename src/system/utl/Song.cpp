@@ -47,8 +47,9 @@ BEGIN_LOADS(Song)
         mSongName = sSongName;
         Load();
     }
-    bs >> gSongLoadBool;
-    if (gSongLoadBool)
+    static bool sDirty;
+    bs >> sDirty;
+    if (sDirty)
         unk7c = true;
 END_LOADS
 
