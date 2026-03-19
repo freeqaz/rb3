@@ -72,7 +72,7 @@ void Scoring::ComputeStarThresholds(bool debug) const {
 
     float fb8[10];
     for (int i = 0; i < 10; i++)
-        fb8[i] = 0;
+        fb8[i] = 0.0f;
 
     bool b1 = true;
     int i7 = 0;
@@ -85,7 +85,7 @@ void Scoring::ComputeStarThresholds(bool debug) const {
         }
     }
 
-    float f16 = i7 == 0 ? 1 : newNumInstMults->Float(i7);
+    float f16 = i7 == 0 ? 1.0f : newNumInstMults->Float(i7);
 
     if (debug) {
         MILO_LOG("                    base    bonus\n");
@@ -354,7 +354,8 @@ void Scoring::GetSoloAward(int i, Symbol s, int &iref, Symbol &sref) {
 DataArray *Scoring::GetSoloBlock(Symbol s) const {
     DataArray *soloarr = mConfig->FindArray("solo");
     DataArray *blockarr = soloarr->FindArray(s, false);
-    return blockarr ? blockarr : soloarr->FindArray("default");
+    if (!blockarr) blockarr = soloarr->FindArray("default");
+    return blockarr;
 }
 
 float Scoring::GetSoloGemReward(Symbol s) {

@@ -233,7 +233,7 @@ BOOL TDStretch::isQuickSeekEnabled() const
 // Seeks for the optimal overlap-mixing position.
 int TDStretch::seekBestOverlapPosition(const SAMPLETYPE *refPos)
 {
-    if (channels == 2)
+    if (channels == 2u)
     {
         // stereo sound
         if (bQuickseek)

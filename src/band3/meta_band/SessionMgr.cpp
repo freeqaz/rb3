@@ -11,6 +11,7 @@
 #include "meta_band/CharSync.h"
 #include "meta_band/CriticalUserListener.h"
 #include "meta_band/Matchmaker.h"
+#include "meta_band/BandUI.h"
 #include "meta_band/ProfileMgr.h"
 #include "net/NetSession.h"
 #include "net/Synchronize.h"
@@ -361,7 +362,7 @@ void SessionMgr::ClearWaitingUsers() { mWaitingUsers.clear(); }
 DataNode SessionMgr::OnMsg(const JoinResultMsg &msg) {
     if (!msg->Int(2)) {
         ClearLeader();
-        // TheBandUI setting
+        TheBandUI.SetInviteAccepted(false);
         mSession->SetInvitesAllowed(mInvitesAllowed);
     }
     return 1;

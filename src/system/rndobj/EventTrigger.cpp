@@ -420,9 +420,8 @@ BEGIN_LOADS(EventTrigger)
         bool oldMode = LOADMGR_EDITMODE;
         TheLoadMgr.SetEditMode(true);
         while (count-- != 0) {
-            curTrig->LoadOldEvent(
-                bs, objPtr, count != 0 || curTrig != this ? str.c_str() : nullptr, Dir()
-            );
+            bool b = (count != 0 || curTrig != this);
+            curTrig->LoadOldEvent(bs, objPtr, b ? str.c_str() : nullptr, Dir());
             if (count != 0) {
                 curTrig = new EventTrigger();
                 triggers.push_back(curTrig);

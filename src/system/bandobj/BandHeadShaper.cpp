@@ -98,7 +98,7 @@ int GetNum(const char *cc, int i1, ObjectDir *dir, int i2) {
 }
 
 ObjectDir *BandHeadShaper::GetViseme(Symbol s, bool b) {
-    return gVisemes[b + (s != female)];
+    return gVisemes[b + 2 * (s != female)];
 }
 
 ObjectDir *FindSubdir(ObjectDir *dir, const char *cc) {

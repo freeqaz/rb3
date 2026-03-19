@@ -201,7 +201,7 @@ void AccomplishmentPlayerConditional::InitializeTrackerDesc(TrackerDesc &desc) c
     InqConditionProgress(pProfile, condition, i34, i38);
     Symbol key = condition.mCondition;
     if (key == best_streak) {
-        desc.mType = kTrackerType_Streak;
+        desc.mType = kTrackerType_StreakCount;
         desc.unk18.push_back(i38);
     } else if (key == most_overdrive_time) {
         desc.mUser = 0;

@@ -683,8 +683,8 @@ void RndMesh::PostLoad(BinStream &bs) {
                 }
             } else {
                 if (TransConstraint() == RndTransformable::kParentWorld) {
-                    ObjPtr<RndTransformable> &bone = mBones[0].mBone;
-                    bone = TransParent();
+                    RndTransformable *tp = TransParent();
+                    mBones[0].mBone = tp;
                 } else {
                     mBones[0].mBone = this;
                 }

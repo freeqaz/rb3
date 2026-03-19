@@ -182,8 +182,8 @@ void MsgSource::Export(DataArray *da, bool b) {
                 }
             }
             da->Node(1) = node;
-            // if some condition, then erase
-            mEventSinks.erase(it);
+            if (it->sinks.empty())
+                mEventSinks.erase(it);
             break;
         }
     }

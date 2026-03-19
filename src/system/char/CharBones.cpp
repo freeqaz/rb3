@@ -23,7 +23,7 @@ CharBones::CharBones() : mCompression(kCompressNone), mStart(0), mTotalSize(0) {
 CharBones::Type CharBones::TypeOf(Symbol s) {
     for (const char *p = s.Str(); *p != 0; p++) {
         if (*p == '.') {
-            switch (p[1]) {
+            switch (*++p) {
             case 'p':
                 return TYPE_POS;
             case 's':

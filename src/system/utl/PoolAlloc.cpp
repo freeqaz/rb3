@@ -3,25 +3,30 @@
 #include "os/CritSec.h"
 
 extern CriticalSection *gMemLock;
-extern ChunkAllocator *gChunkAlloc;
+extern ChunkAllocator *gChunkAlloc[2];
 
 FixedSizeAlloc::FixedSizeAlloc(int mAllocSizeWords, ChunkAllocator *alloc, int j)
-    : mAllocSizeWords(mAllocSizeWords), mNumAllocs(0), mMaxAllocs(0), mNumChunks(0),
-      mFreeList(0), mNodesPerChunk(j), mAlloc(alloc) {
+    : mAllocSizeWords(mAllocSizeWords), mFreeList(0), mMaxAllocs(0), mNumChunks(0),
+      mNumAllocs(0), mNodesPerChunk(j), mAlloc(alloc) {
     MILO_ASSERT(mAllocSizeWords != 0, 0xDD);
 }
 
 void *FixedSizeAlloc::Alloc() {
     if (!mFreeList)
         Refill();
-    int oldNumAllocs = mNumAllocs++;
-    if (mMaxAllocs < oldNumAllocs) {
-        mMaxAllocs = oldNumAllocs;
+    int *ret = mFreeList;
+    int numAllocs = mNumAllocs + 1;
+    int *next = (int *)*ret;
+    mNumAllocs = numAllocs;
+    mFreeList = next;
+    if (numAllocs > mMaxAllocs) {
+        mMaxAllocs = numAllocs;
     }
+    return ret;
 }
 
 void FixedSizeAlloc::Free(void *v) {
-    v = mFreeList;
+    *(int **)v = mFreeList;
     mFreeList = (int *)v;
     MILO_ASSERT(mNumAllocs > 0, 0x102);
     mNumAllocs--;
@@ -43,6 +48,6 @@ void _PoolFree(int size, PoolType pool, void *addr) {
     } else if (addr) {
         CritSecTracker cst(gMemLock);
         MILO_ASSERT(gChunkAlloc[pool], 0x22F);
-        gChunkAlloc[pool].Free(addr, size);
+        gChunkAlloc[pool]->Free(addr, size);
     }
 }

@@ -107,29 +107,29 @@ void WorldDir::RestoreDeltas(float *f) {
 
 void WorldDir::Poll() {
     START_AUTO_TIMER("world_poll");
-    if (TheWorld && TheWorld != this)
+    if (TheWorld && TheWorld != this) {
         RndDir::Poll();
-    else {
-        SetTheWorld(this);
-        float deltas[4];
-        AccumulateDeltas(deltas);
-        bool b = true;
-        if (!mFirstPoll && !(TheRnd->ProcCmds() & kProcessPost))
-            b = false;
-        mFirstPoll = false;
-        if (b) {
-            ExtendDeltas();
-            HandleType(select_camera_msg);
-            if (mPollCamera)
-                mCameraManager.PrePoll();
-            mPresetManager.Poll();
-            RndDir::Poll();
-            if (mPollCamera)
-                mCameraManager.Poll();
-            RestoreDeltas(deltas);
-        }
-        SetTheWorld(nullptr);
+        return;
     }
+    SetTheWorld(this);
+    float deltas[4];
+    AccumulateDeltas(deltas);
+    bool b = true;
+    if (!mFirstPoll && !(TheRnd->ProcCmds() & kProcessPost))
+        b = false;
+    mFirstPoll = false;
+    if (b) {
+        ExtendDeltas();
+        HandleType(select_camera_msg);
+        if (mPollCamera)
+            mCameraManager.PrePoll();
+        mPresetManager.Poll();
+        RndDir::Poll();
+        if (mPollCamera)
+            mCameraManager.Poll();
+        RestoreDeltas(deltas);
+    }
+    SetTheWorld(nullptr);
 }
 
 SAVE_OBJ(WorldDir, 0xFC);

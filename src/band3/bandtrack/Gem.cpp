@@ -58,9 +58,11 @@ void Gem::Poll(float f1, float f2, float f3, float f4, float f5) {
     if (CompareBounds()) {
         float fvar1 = mStart;
         if (f4 > fvar1) {
-            float fvar2 = mEnd - fvar1;
-            if (f4 < fvar2)
+            float fvar2;
+            if (f4 < mEnd)
                 fvar2 = f4 - fvar1;
+            else
+                fvar2 = mEnd - fvar1;
             float fvar3 = mTailStart;
             ApplyDuration(
                 mGemManager->mTrackDir->SecondsToY(fvar3),

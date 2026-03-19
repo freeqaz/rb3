@@ -55,7 +55,8 @@ Band::Band(bool bbb, int i2, BandUser *user, BeatMaster *bm)
         BandUser *pUser = *it;
         MILO_ASSERT(pUser, 0x57);
         bool b1 = false;
-        if (perf && !perf->PartPlaysInSong(pUser->GetTrackSym())) {
+        bool b2 = perf && !perf->PartPlaysInSong(pUser->GetTrackSym());
+        if (b2) {
             b1 = true;
         }
         if (!b1 && (!bbb || pUser == user)) {

@@ -244,22 +244,25 @@ inline float Distance(const Vector3 &v1, const Vector3 &v2) {
 
     // clang-format off
     asm {
-        // load x (also loads y, but we can ignore that)
-        psq_l single1, Vector3.x(_v1), 0, 0
-        psq_l single2, Vector3.x(_v2), 0, 0
-
-        // load y and z into half register
+        // load y and z into half register first
         psq_l paired1, Vector3.y(_v1), 0, 0
         psq_l paired2, Vector3.y(_v2), 0, 0
-
-        // (x1 - x2), (y1 - y2 (ignored))
-        ps_sub x_sub, single1, single2
 
             // (y1 - y2), (z1 - z2)
         ps_sub yz_sub, paired1, paired2
 
+        // load x (also loads y, but we can ignore that)
+        psq_l single1, Vector3.x(_v1), 0, 0
+        psq_l single2, Vector3.x(_v2), 0, 0
+
+            // i guess make 0 out of a constant we already have loaded?
+        fsubs zero, half, half
+
             // update register to hold (y1 - y2)^2, (z1 - z2)^2
         ps_mul yz_sub, yz_sub, yz_sub
+
+        // (x1 - x2), (y1 - y2 (ignored))
+        ps_sub x_sub, single1, single2
 
             // (x^2 + y^2), (x^2 + y^2 (ignored))
         ps_madd total, x_sub, x_sub, yz_sub
@@ -267,8 +270,6 @@ inline float Distance(const Vector3 &v1, const Vector3 &v2) {
             // (x^2 + y^2 + z^2), (z^2 (ignored))
         ps_sum0 total, total, yz_sub, yz_sub
 
-            // i guess make 0 out of a constant we already have loaded?
-        fsubs zero, half, half
             // compare unordered, no negatives; if zero, return 0
         fcmpu zero, total
         beq _done

@@ -106,6 +106,8 @@ namespace {
 
 }
 
+const float kAnalogRestPos = 0.0f;
+
 JoypadData::JoypadData()
     : mButtons(0), mUser(0), mConnected(false), mVibrateEnabled(true), unk66(false),
       unk67(false), unk68(false), mHasAnalogSticks(false), mTranslateSticks(false),
@@ -358,6 +360,26 @@ void JoypadKeepAlive(int pad, bool alive) {
         gPadsToKeepAliveNext &= ~(1 << pad);
     }
     gKeepAliveCountdown = 0;
+}
+
+extern "C" void TranslateSticksToButs(JoypadData &data, unsigned int &mask) {
+    float pos = kAnalogRestPos;
+    float dist = data.mDistFromRest;
+    float negThreshold = pos - dist;
+    int btn_index = 0;
+    for (int i = 0; i < kNumAnalogSticks; i++) {
+        if (data.mSticks[i][0] - pos > dist) {
+            mask |= 1 << (btn_index + kPad_LStickRight);
+        } else if (data.mSticks[i][0] < negThreshold) {
+            mask |= 1 << (btn_index + kPad_LStickLeft);
+        }
+        if (data.mSticks[i][1] - pos > dist) {
+            mask |= 1 << (btn_index + kPad_LStickDown);
+        } else if (data.mSticks[i][1] < negThreshold) {
+            mask |= 1 << (btn_index + kPad_LStickUp);
+        }
+        btn_index += 4;
+    }
 }
 
 inline void JoypadSendMsg(const Message &msg) {

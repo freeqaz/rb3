@@ -16,6 +16,7 @@ namespace {
 DECOMP_FORCEACTIVE(LessonMgr, __FILE__, "mTrainerToCategoriesMap.empty()")
 
 LessonMgr::LessonMgr() {
+    MILO_ASSERT(mTrainerToCategoriesMap.empty(), 0x1A);
     MILO_ASSERT(mCategoryToLessonsMap.empty(), 0x1C);
     MILO_ASSERT(mLessonsMap.empty(), 0x1D);
     DataArray *pTrainerConfig = SystemConfig("trainer");

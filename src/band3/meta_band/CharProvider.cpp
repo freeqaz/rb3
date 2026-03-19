@@ -204,9 +204,11 @@ bool CharProvider::IsIndexPrefab(int idx) {
 
 int CharProvider::GetDefaultCharIndex() const {
     int index = 0;
-    for (int i = 0; i < NumData(); i++, index++) {
-        if (!mCharacters[i].unk10)
+    for (int i = 0; i < NumData(); i++) {
+        if (mCharacters[i].unk10) {
+            index = i;
             break;
+        }
     }
     return index;
 }

@@ -175,8 +175,6 @@ bool AccomplishmentProgress::IsAccomplished(Symbol s) const {
     return mAccomplishments.find(s) != mAccomplishments.end();
 }
 
-bool AccomplishmentProgress::HasNewAwards() const { return !mNewAwards.empty(); }
-
 Symbol AccomplishmentProgress::GetFirstNewAward() const {
     MILO_ASSERT(HasNewAwards(), 0x158);
     return mNewAwards.front().first;
@@ -207,10 +205,6 @@ void AccomplishmentProgress::AddNewRewardVignette(Symbol s) {
 
 bool AccomplishmentProgress::IsUploadDirty() const {
     return mUploadDirty || !unk64.empty();
-}
-
-bool AccomplishmentProgress::HasNewRewardVignettes() const {
-    return !mNewRewardVignettes.empty();
 }
 
 Symbol AccomplishmentProgress::GetFirstNewRewardVignette() const {

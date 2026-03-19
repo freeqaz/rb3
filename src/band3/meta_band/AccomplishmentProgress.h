@@ -49,11 +49,11 @@ public:
     void ClearStepTrackingMap();
     void SetCurrentValue(Symbol, int);
     int GetNumCompleted() const;
-    bool HasNewAwards() const;
+    bool HasNewAwards() const { return !mNewAwards.empty(); }
     Symbol GetFirstNewAwardReason() const;
     Symbol GetFirstNewAward() const;
     void ClearFirstNewAward();
-    bool HasNewRewardVignettes() const;
+    bool HasNewRewardVignettes() const { return !mNewRewardVignettes.empty(); }
     Symbol GetFirstNewRewardVignette() const;
     void ClearFirstNewRewardVignette();
     bool HasNewRewardVignetteFestival() const;

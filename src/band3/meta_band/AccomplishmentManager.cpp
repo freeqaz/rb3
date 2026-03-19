@@ -70,7 +70,7 @@ bool SongDifficultyCmp::operator()(Symbol s1, Symbol s2) const {
     float rank1 = pDataLHS->Rank(mInst);
     float rank2 = pDataRHS->Rank(mInst);
     if (rank1 == rank2)
-        return true; // fix this line
+        return id1 > id2;
     else
         return rank1 < rank2;
 }
@@ -276,26 +276,26 @@ AccomplishmentManager::FactoryCreateAccomplishment(DataArray *arr, int idx) {
     case kAccomplishmentTypeSongListConditional:
         ret = new AccomplishmentSongListConditional(arr, idx);
         break;
-    case kAccomplishmentTypeSongFilterConditional:
-        ret = new AccomplishmentSongFilterConditional(arr, idx);
-        break;
     case kAccomplishmentTypeLessonSongListConditional:
         ret = new AccomplishmentLessonSongListConditional(arr, idx);
         break;
     case kAccomplishmentTypeLessonDiscSongConditional:
         ret = new AccomplishmentLessonDiscSongConditional(arr, idx);
         break;
-    case kAccomplishmentTypePlayerConditional:
-        ret = new AccomplishmentPlayerConditional(arr, idx);
-        break;
-    case kAccomplishmentTypeTourConditional:
-        ret = new AccomplishmentTourConditional(arr, idx);
+    case kAccomplishmentTypeSongFilterConditional:
+        ret = new AccomplishmentSongFilterConditional(arr, idx);
         break;
     case kAccomplishmentTypeTrainerListConditional:
         ret = new AccomplishmentTrainerListConditional(arr, idx);
         break;
     case kAccomplishmentTypeTrainerCategoryConditional:
         ret = new AccomplishmentTrainerCategoryConditional(arr, idx);
+        break;
+    case kAccomplishmentTypePlayerConditional:
+        ret = new AccomplishmentPlayerConditional(arr, idx);
+        break;
+    case kAccomplishmentTypeTourConditional:
+        ret = new AccomplishmentTourConditional(arr, idx);
         break;
     case kAccomplishmentTypeOneShot:
         ret = new AccomplishmentOneShot(arr, idx);
@@ -624,9 +624,27 @@ int AccomplishmentManager::GetMetaScoreValue(Symbol s) {
 
 int AccomplishmentManager::GetScaledFanValue(int i_iPointValue) {
     MILO_ASSERT(!m_vFanScalingData.empty(), 0x355);
-    int fansize = m_vFanScalingData.size();
-    for (int i = 0; i < m_vFanScalingData.size(); i++) {
+    unsigned fansize = m_vFanScalingData.size();
+    int i = fansize - 1;
+    for (int j = 0; j < fansize; j++) {
+        if (i_iPointValue < m_vFanScalingData[j].first) {
+            i = j;
+            break;
+        }
     }
+    if (i == 0)
+        return m_vFanScalingData[i].second;
+    int iLastPointValue = m_vFanScalingData[i - 1].first;
+    int iNextPointValue = m_vFanScalingData[i].first;
+    std::pair<int, int> *pCur = &m_vFanScalingData[i];
+    std::pair<int, int> *pPrev = &m_vFanScalingData[i - 1];
+    MILO_ASSERT(iNextPointValue > iLastPointValue, 0x374);
+    MILO_ASSERT(i_iPointValue >= iLastPointValue, 0x375);
+    int iLastFanValue = pPrev->second;
+    int iNextFanValue = pCur->second;
+    MILO_ASSERT(iNextFanValue > iLastFanValue, 0x378);
+    float t = (float)(i_iPointValue - iLastPointValue) / (float)(iNextPointValue - iLastPointValue);
+    return iLastFanValue + (int)(t * (float)(iNextFanValue - iLastFanValue));
 }
 
 DECOMP_FORCEACTIVE(

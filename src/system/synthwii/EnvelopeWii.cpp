@@ -11,9 +11,7 @@ EnvelopeWii::EnvelopeWii() {
 float EnvelopeWii::GetValueAtOffset(float timeOffset) {
     MILO_ASSERT(!(timeOffset < 0.0f), 0x44);
 
-    if (0 <= mTimer.mRunning) {
-        mTimer.Split();
-    }
+    mTimer.Split();
 
     float elapsedTimeMs = timeOffset + mTimer.CyclesToMs(mTimer.mCycles);
 
@@ -35,9 +33,7 @@ float EnvelopeWii::GetValueAtOffset(float timeOffset) {
 
 bool EnvelopeWii::IsDone() {
     if (mInRelease != false) {
-        if (0 < mTimer.mRunning) {
-            mTimer.Split();
-        }
+        mTimer.Split();
         float elapsedTimeMs = mTimer.CyclesToMs(mTimer.mCycles);
         if (elapsedTimeMs > mReleaseDuration) {
             return true;
@@ -47,9 +43,7 @@ bool EnvelopeWii::IsDone() {
 }
 
 void EnvelopeWii::Pause() {
-    if (0 <= mTimer.mRunning) {
-        mTimer.Pause();
-    }
+    mTimer.Pause();
     mIsPaused = true;
 }
 

@@ -99,7 +99,7 @@ MetaPanel::MetaPanel()
       mMetaMusicMgr(new MetaMusicManager(SystemConfig("synth", "metamusic"))),
       mHAQMgr(new HAQManager()), unk58(0), mMusic(0), mSongPreview(TheSongMgr), unkd4(0) {
     mSongPreview.SetName("song_preview", ObjectDir::Main());
-    // MusicLibrary::Init(this + 0x60);
+    MusicLibrary::Init(mSongPreview);
     mRecentIndices.reserve(3);
     for (int i = 0; i < 3; i++)
         mRecentIndices.push_back(-1);

@@ -430,7 +430,7 @@ void PatchDir::LoadRemote(BinStream &bs) {
     gRev = 5;
     char buf[2];
     IntPacker packer(buf, 2);
-    int read;
+    unsigned short read;
     if (gRev < 3) {
         bs.Read(buf, 1);
         read = 1;
@@ -501,7 +501,7 @@ bool PatchDir::UsesSticker(const PatchSticker *sticker) const {
     return false;
 }
 
-bool PatchDir::IsLoadingStickers() const { return mStickersLoading.size() > 0; }
+bool PatchDir::IsLoadingStickers() const { return (int)mStickersLoading.size() > 0; }
 int PatchDir::NumLoadingStickers() const { return mStickersLoading.size(); }
 PatchLayer &PatchDir::Layer(int idx) { return mLayers[idx]; }
 
@@ -545,7 +545,7 @@ void PatchDir::UnloadStickerTex(PatchSticker *sticker) {
 BEGIN_HANDLERS(PatchDir)
     HANDLE_EXPR(has_layers, HasLayers())
     HANDLE_ACTION(clear, Clear())
-    HANDLE_EXPR(is_loading_stickers, !mStickersLoading.empty())
+    HANDLE_EXPR(is_loading_stickers, (int)mStickersLoading.size() > 0)
     HANDLE_EXPR(get_tex, mTex)
     HANDLE_SUPERCLASS(RndDir)
     HANDLE_CHECK(0x544)

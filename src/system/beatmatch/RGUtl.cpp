@@ -412,8 +412,8 @@ const char *RGFretNumberToString(int i) { return MakeString("%c", i + 0x41); }
 
 const char *RGGetNoteName(unsigned char note, int a) {
     MILO_ASSERT(note < sizeof(gNoteNames), 0x34E);
-    bool isFlat;
-    if (a - 1 <= 9 && ((1 << (a - 1)) & 0x295) != 0)
+    bool isFlat = false;
+    if ((unsigned)(a - 1) <= 9u && ((1 << (a - 1)) & 0x295) != 0)
         isFlat = 1;
     if (isFlat)
         return gNoteFlatNames[note];

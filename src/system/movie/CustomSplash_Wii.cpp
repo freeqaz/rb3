@@ -102,7 +102,7 @@ void CustomSplash::InitSplasher() {
 
 void CustomSplash::DrawSplasher(unsigned char alpha) {
     if (mPalette) {
-        u16 w = TheRnd->Width(), h = TheRnd->Height();
+        short w = TheRnd->Width(), h = TheRnd->Height();
         GXClearVtxDesc();
         GXSetVtxAttrFmt(GX_VTXFMT3, GX_VA_POS, GX_POS_XY, GX_S16, 0);
         GXSetVtxAttrFmt(GX_VTXFMT3, GX_VA_TEX0, GX_CLR_RGBA, GX_RGBA4, 0);

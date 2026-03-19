@@ -188,21 +188,13 @@ extern bool gHostLogging;
 bool UsingHolmes(int flags) {
     if (gHolmesStream == NULL)
         return false;
-    else {
-        if (!UsingCD())
-            return true;
-        else {
-            if (gHostConfig == false || (flags & 2) == 0) {
-                if (gHostLogging == false || (flags & 4) == 0) {
-                    return false;
-                } else {
-                    return true;
-                }
-            } else {
-                return true;
-            }
-        }
-    }
+    if (!UsingCD())
+        return true;
+    if (gHostConfig && (flags & 2))
+        return true;
+    if (gHostLogging && (flags & 4))
+        return true;
+    return false;
 }
 
 void HolmesClientPollKeyboard() {

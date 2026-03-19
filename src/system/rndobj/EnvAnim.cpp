@@ -10,7 +10,7 @@ RndEnvAnim::RndEnvAnim() : mEnviron(this, 0), mKeysOwner(this, this) {}
 
 void RndEnvAnim::Replace(Hmx::Object *from, Hmx::Object *to) {
     Hmx::Object::Replace(from, to);
-    if (mKeysOwner.Ptr() == from) {
+    if (mKeysOwner == from) {
         if (!to)
             mKeysOwner = this;
         else

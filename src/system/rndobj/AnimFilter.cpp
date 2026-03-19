@@ -123,7 +123,9 @@ float RndAnimFilter::StartFrame() {
         if (denom == 0.0f)
             denom = 1.0f;
 
-        return (mStart - FrameOffset()) / denom;
+        float offset = FrameOffset();
+        float start = mStart;
+        return (start - offset) / denom;
     }
 }
 
@@ -135,7 +137,9 @@ float RndAnimFilter::EndFrame() {
         if (denom == 0.0f)
             denom = 1.0f;
 
-        float ret = (mEnd - FrameOffset()) / denom;
+        float offset = FrameOffset();
+        float end = mEnd;
+        float ret = (end - offset) / denom;
         if (mType == kShuttle) {
             ret *= 2.0f;
         }

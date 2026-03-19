@@ -142,7 +142,7 @@ void PerfectSectionTracker::HandleEnterExtent(float f, int i, bool b) {
                 if (!b) {
                     int iac = 0;
                     int ib0 = 0;
-                    int i5 = unk104.GetSectionEndTick(i);
+                    int i5 = unk104.GetSectionStartTick(i);
                     unk104.GetGemStatsInRange(pPlayer, i5, MsToTick(f), iac, ib0);
                     it->second.unk0 = pPlayer->mStats.mMissCount;
                     it->second.unk4 = pPlayer->mStats.mHitCount - iac;

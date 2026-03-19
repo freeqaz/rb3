@@ -117,8 +117,10 @@ inline void Automator::FinishRecord() {
 inline const char *Automator::ToggleAuto() {
     mCurScript = 0;
     if (mScreenScripts) {
-        mScreenScripts->Release();
-        mScreenScripts = 0;
+        if (mScreenScripts) {
+            mScreenScripts->Release();
+            mScreenScripts = 0;
+        }
     } else {
         Loader *ldr = TheLoadMgr.AddLoader(FilePath(mAutoPath.c_str()), kLoadFront);
         DataLoader *dl = dynamic_cast<DataLoader *>(ldr);
@@ -151,7 +153,7 @@ inline void Automator::StartAuto(UIScreen *screen) {
 
 DataNode Automator::OnMsg(const UITransitionCompleteMsg &msg) {
     if (mScreenScripts && !mRecord)
-        StartAuto(msg.GetOldScreen());
+        StartAuto(msg.GetNewScreen());
     return DataNode(kDataUnhandled, 0);
 }
 

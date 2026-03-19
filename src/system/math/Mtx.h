@@ -87,6 +87,7 @@ namespace Hmx {
             return *this;
         }
         Vector3 &operator[](int i) { return *(&x + i); }
+        const Vector3 &operator[](int i) const { return *(&x + i); }
 
         bool operator==(const Matrix3 &mtx) const {
             return x == mtx.x && y == mtx.y && z == mtx.z;
@@ -123,6 +124,9 @@ namespace Hmx {
         bool operator!=(const Quat &q) const {
             return x != q.x || y != q.y || z != q.z || w != q.w;
         }
+        float operator*(const Quat &q) const { return x * q.x + y * q.y + z * q.z + w * q.w; }
+        const float &operator[](int i) const { return *(&x + i); }
+        float &operator[](int i) { return *(&x + i); }
 
         float x;
         float y;
@@ -258,6 +262,8 @@ public:
     void Set(const Transform &);
     void Set(const TransformNoScale &);
     void SetRot(const Hmx::Matrix3 &);
+    void SetRot(const Hmx::Quat &);
+    void GetRot(Hmx::Quat &) const;
     void Reset();
     void ToTransform(Transform &) const;
     TransformNoScale &operator=(const TransformNoScale &t) { Set(t); }
@@ -273,7 +279,14 @@ public:
     Plane() {}
     Plane(const Vector3 &v1, const Vector3 &v2) { Set(v1, v2); }
 
-    void Set(const Vector3 &, const Vector3 &);
+    void Set(const Vector3 &pt, const Vector3 &normal) {
+        a = normal.x;
+        b = normal.y;
+        c = normal.z;
+        float dot = a * pt.x + b * pt.y + c * pt.z;
+        d = -dot;
+    }
+    void Set(float _a, float _b, float _c, float _d) { a = _a; b = _b; c = _c; d = _d; }
     float Dot(const Vector3 &vec) const { return a * vec.x + b * vec.y + c * vec.z + d; }
     Vector3 On() const;
 
@@ -324,7 +337,14 @@ inline void Negate(const Hmx::Quat &q, Hmx::Quat &qres) {
 
 void ScaleAddEq(Hmx::Quat &, const Hmx::Quat &, float);
 void Normalize(const Hmx::Quat &, Hmx::Quat &);
-void Multiply(const Hmx::Quat &, const Hmx::Quat &, Hmx::Quat &);
+inline void Multiply(const Hmx::Quat &q1, const Hmx::Quat &q2, Hmx::Quat &qres) {
+    qres.Set(
+        -(q1.z * q2.y - (q1.y * q2.z + q1.w * q2.x + q1.x * q2.w)),
+        -(q1.x * q2.z - (q1.z * q2.x + q1.w * q2.y + q1.y * q2.w)),
+        -(q1.y * q2.x - (q1.x * q2.y + q1.w * q2.z + q1.z * q2.w)),
+        -(q1.z * q2.z - -(q1.y * q2.y - (q1.w * q2.w - q1.x * q2.x)))
+    );
+}
 void FastInterp(const Hmx::Quat &, const Hmx::Quat &, float, Hmx::Quat &);
 void Invert(const Hmx::Matrix3 &, Hmx::Matrix3 &);
 void FastInvert(const Hmx::Matrix3 &, Hmx::Matrix3 &);
@@ -334,9 +354,49 @@ void Multiply(const Transform &, const Transform &, Transform &);
 void Multiply(const Transform &, const Vector3 &, Vector3 &);
 void Multiply(const Vector3 &, const Hmx::Quat &, Vector3 &);
 void Multiply(const Vector3 &, const Transform &, Vector3 &);
+inline void Multiply(const Vector3 &v, const Transform &t, Vector3 &out) {
+#ifdef MATCHING
+    register __vec2x32float__ i1, i2, m1, m2, o1, o2;
+    register const Vector3 *_v = &v;
+    register Vector3 *_out = &out;
+    register const Hmx::Matrix3 *_m = &t.m;
+    register const Vector3 *_tv = &t.v;
+    typedef Hmx::Matrix3 Matrix3;
+    ASM_BLOCK(
+        psq_l o1, Vector3.x(_tv), 0, 0
+        psq_l i2, Vector3.y(_v), 0, 0
+        psq_l m1, Matrix3.z.x(_m), 0, 0
+        psq_l o2, Vector3.z(_tv), 1, 0
+        psq_l m2, Matrix3.z.z(_m), 1, 0
+        ps_madds1 o1, m1, i2, o1
+        ps_madds1 o2, m2, i2, o2
+        psq_l m1, Matrix3.y.x(_m), 0, 0
+        psq_l m2, Matrix3.y.z(_m), 1, 0
+        ps_madds0 o1, m1, i2, o1
+        ps_madds0 o2, m2, i2, o2
+        psq_l i1, Vector3.x(_v), 0, 0
+        psq_l m1, Matrix3.x.x(_m), 0, 0
+        psq_l m2, Matrix3.x.z(_m), 1, 0
+        ps_madds0 o1, m1, i1, o1
+        ps_madds0 o2, m2, i1, o2
+        psq_st o1, Vector3.x(_out), 0, 0
+        psq_st o2, Vector3.z(_out), 1, 0
+    )
+#else
+    out.Set(
+        t.m.x.x * v.x + t.m.y.x * v.y + t.m.z.x * v.z + t.v.x,
+        t.m.x.y * v.x + t.m.y.y * v.y + t.m.z.y * v.z + t.v.y,
+        t.m.x.z * v.x + t.m.y.z * v.y + t.m.z.z * v.z + t.v.z
+    );
+#endif
+}
+inline void MultiplyTranspose(const Vector3 &v, const Transform &t, Vector3 &out) {
+    Subtract(v, t.v, out);
+    out.Set(Dot(out, t.m.x), Dot(out, t.m.y), Dot(out, t.m.z));
+}
 void Multiply(const Plane &, const Transform &, Plane &);
 void Multiply(const Hmx::Matrix3 &, const Hmx::Matrix3 &, Hmx::Matrix3 &);
-void IdentityInterp(const Hmx::Quat &, float, const Hmx::Quat &);
+void IdentityInterp(const Hmx::Quat &, float, Hmx::Quat &);
 void Multiply(const Transform &, const Hmx::Matrix3 &, Transform &);
 
 inline void Multiply(const Frustum &fin, const Transform &tf, Frustum &fout) {

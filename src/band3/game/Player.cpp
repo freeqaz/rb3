@@ -279,6 +279,8 @@ void Player::BroadcastScore() {
 
 void Player::EnterCoda() {
     if (!mIsInCoda) {
+        if (!TheGame->CodaEnabled())
+            return;
         if (mEnabledState == kPlayerDisabled || mEnabledState == kPlayerBeingSaved
             || mEnabledState == kPlayerDroppingIn) {
             mEnableMs = PollMs();
@@ -441,7 +443,7 @@ int Player::GetMultiplier(bool b, int &i1, int &i2, int &i3) const {
             i1ret = 1;
         i1 = i1ret;
         i2 = mBand->EnergyMultiplier();
-        i3 = mDeployingBandEnergy + 1;
+        i3 = (mDeployingBandEnergy != 0) + 1;
         i2 /= i3;
         return i1 * i2 * i3;
     } else {
@@ -523,8 +525,8 @@ int Player::GetIndividualMultiplier() const {
     if (GetMultiplierActive()) {
         int streak = mStats.GetCurrentStreak();
         int mult = TheScoring->GetStreakMult(streak, mBehavior->mStreakType);
-
-        return mult;
+        int maxMult = mBehavior->mMaxMultiplier;
+        return std::min(maxMult, mult);
     } else
         return 1;
 }
@@ -644,7 +646,7 @@ void Player::CheckCrowdFailure() {
         if (!mCrowd->CantFailYet() && mUser->GetDifficulty() != kDifficultyEasy
             && !mUser->IsNullUser()) {
             if (!MetaPerformer::Current()->IsNoFailActive() && !mQuarantined
-                && !mBand->MainPerformer()->mGameOver) {
+                && mBand->MainPerformer()->mGameOver) {
                 SetEnabledState(kPlayerDisabled, mUser, false);
             }
         }

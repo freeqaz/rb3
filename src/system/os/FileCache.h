@@ -49,7 +49,7 @@ public:
     }
     void Release() { mRefCount--; }
     int Size() const { return mSize; }
-    bool Fail() const { return !mSize && !mBuf; }
+    bool Fail() const { return mSize == 0 && !mBuf; }
     const char *Buf() const { return mBuf; }
     bool ReadDone(bool bbb) {
         if (!bbb)

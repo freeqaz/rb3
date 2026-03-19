@@ -13,7 +13,7 @@ void RndLightAnim::SetKeysOwner(RndLightAnim *o) {
 
 void RndLightAnim::Replace(Hmx::Object *from, Hmx::Object *to) {
     Hmx::Object::Replace(from, to);
-    if (mKeysOwner.Ptr() == from) {
+    if (mKeysOwner == from) {
         if (!to)
             mKeysOwner = this;
         else
