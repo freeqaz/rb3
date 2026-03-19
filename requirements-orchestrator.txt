@@ -1,0 +1,7 @@
+# RB3 Decomp Orchestrator dependencies
+# Install: pip install -r requirements-orchestrator.txt
+
+# MCP server protocol
+mcp>=1.0.0
+
+# Already in stdlib: json, sqlite3, asyncio, subprocess, pathlib, argparse
