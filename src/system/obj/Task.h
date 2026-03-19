@@ -191,7 +191,7 @@ public:
     float DeltaSeconds() const;
     float DeltaBeat() const;
     float DeltaUISeconds() const;
-    float Beat() const;
+    float Beat() const { return mTimelines[kTaskBeats].GetTime(); }
     float Seconds(TimeReference) const;
     float TutorialSeconds() const;
     float DeltaTime(TaskUnits) const;

@@ -97,9 +97,9 @@ RndEnviron *FindEnviron(RndDrawable *d) {
     if (owner) {
         RndEnviron *env = owner->GetEnv();
         if (env) {
-            return FindEnviron(owner);
-        } else
             return env;
+        } else
+            return FindEnviron(owner);
     } else {
         RndDir *rdir = dynamic_cast<RndDir *>(d->Dir());
         if (rdir) {

@@ -535,6 +535,7 @@ const char *DataVarName(const DataNode *);
 class DataArrayPtr {
 public:
     DataArrayPtr() { mData = new DataArray(0); }
+    DataArrayPtr(const DataArrayPtr &ptr) : mData(ptr.mData) { mData->AddRef(); }
 
     DataArrayPtr(const DataNode &node) {
         mData = new DataArray(1);

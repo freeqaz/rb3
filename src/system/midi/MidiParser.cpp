@@ -118,7 +118,7 @@ void MidiParser::SetTypeDef(DataArray *arr) {
             mLyricParser = arr->FindArray("lyric", false);
             mIdleParser = arr->FindArray("idle", false);
             MILO_ASSERT_FMT(
-                mGemParser || mNoteParser || mTextParser || mLyricParser || mIdleParser,
+                mGemParser || mNoteParser || mTextParser || mLyricParser,
                 "%s has no parser",
                 Name()
             );

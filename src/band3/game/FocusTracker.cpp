@@ -412,7 +412,7 @@ void StreakFocusTracker::CheckCondition(float f1, bool b1, bool &bref1, bool &br
 
 void StreakFocusTracker::HandleFocusSwitch(float f) {
     Player *pPlayer = mSource->GetPlayer(mFocusPlayer);
-    unke4 = pPlayer->mStats.GetCurrentStreak();
+    unke4 = pPlayer->mStats.GetCurrentStreak() > 0;
     unkd8 = pPlayer->mStats.mHitCount;
     unkdc = pPlayer->mStats.mMissCount;
     unkd0 = unke8[mFocusPlayer];

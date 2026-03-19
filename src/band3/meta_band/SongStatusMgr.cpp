@@ -994,7 +994,8 @@ void SongStatusMgr::UploadDirtyScores() {}
 DataNode SongStatusMgr::OnMsg(const RockCentralOpCompleteMsg &msg) {
     int arg2 = msg->Int(2);
     bool fail = sFakeLeaderboardUploadFailure;
-    bool upload = !fail && arg2;
+    bool upload = arg2;
+    if (fail) upload = false;
     MILO_ASSERT(mUpdatingStatus, 0x85B);
     mUpdatingStatus->SetDirty(mUpdatingScoreType, mUpdatingDifficulty, !upload);
     mUpdatingStatus = 0;

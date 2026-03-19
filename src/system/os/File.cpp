@@ -273,7 +273,7 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
         }
     }
     FileNormalizePath(buffer);
-    char curC3Ptr = *c;
+    int curC3IsSlash = (*c == '/');
     char *dirs[32];
     const char **endDir = (const char **)&dirs[0];
     for (char *p = (char *)strtok(c, "/"); p != nullptr; p = strtok(nullptr, "/")) {
@@ -288,13 +288,13 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
     }
     MILO_ASSERT(endDir - dirs <= 32, 0x37D);
     if (endDir == dirs) {
-        if (curC3Ptr == '/') {
+        if (curC3IsSlash) {
             *c++ = '/';
         } else
             *c++ = '.';
     } else {
         for (const char **dir = (const char **)&dirs[0]; dir != endDir; dir++) {
-            if (dir != dirs || curC3Ptr == '/') {
+            if (dir != dirs || curC3IsSlash) {
                 *c++ = '/';
             }
             for (char *p = (char *)*dir; *p != '\0'; p++) {
@@ -528,6 +528,81 @@ bool FileMatch(const char *param1, const char *param2) {
         param1++;
     }
     return (*param2 - *param1) == 0;
+}
+
+static void RecursePatternInternal(
+    const char *pattern,
+    void (*cb)(const char *, const char *),
+    bool recurse,
+    bool recurse_dirs
+) {
+    MILO_ASSERT(pattern && pattern[0], 0x59e);
+    String pttn(pattern);
+
+    unsigned int slashPos = pttn.find_first_of("/", 0);
+    unsigned int backslashPos = pttn.find_first_of("\\", 0);
+
+    int splitPos;
+    if (slashPos == String::npos) {
+        splitPos = (int)pttn.length() - 1;
+    } else {
+        splitPos = (int)slashPos;
+    }
+    if (backslashPos != String::npos && backslashPos < (unsigned int)splitPos) {
+        splitPos = (int)backslashPos;
+    }
+
+    if (recurse && slashPos == String::npos) {
+        int pttnLen = (int)pttn.length() - 1;
+        int forwardPos = splitPos;
+        while (forwardPos < pttnLen && pttn[forwardPos] != '/' && pttn[forwardPos] != '\\') {
+            forwardPos++;
+        }
+        if (forwardPos == pttnLen) {
+            recurse = false;
+        } else {
+            String subPattern = pttn.substr((unsigned int)forwardPos, (unsigned int)(pttnLen + 1) - forwardPos);
+            pttn = pttn.substr(0, (unsigned int)forwardPos);
+
+            DirRecursePattern(pttn.c_str(), DirListCB, false);
+            std::vector<String> dirs(gDirList);
+            if (gDirList.begin() != gDirList.end()) {
+                gDirList.erase(gDirList.begin(), gDirList.end());
+            }
+
+            const char *dirBase = FileGetPath(pttn.c_str(), 0);
+            pttn = dirBase;
+
+            unsigned int numDirs = dirs.size();
+            for (unsigned int i = 0; i < numDirs; i++) {
+                const char *combined = MakeString(
+                    "%s%s%s", pttn, dirs[i], subPattern
+                );
+                RecursePatternInternal(combined, cb, recurse, recurse_dirs);
+            }
+            return;
+        }
+    }
+
+    int pos = splitPos;
+    while (pos > 0 && pttn[pos] != '/' && pttn[pos] != '\\') {
+        pos--;
+    }
+    String dirStr;
+    if (pos <= 0) {
+        dirStr = ".";
+    } else {
+        dirStr = pttn.substr(0, (unsigned int)pos);
+    }
+    FileEnumerate(dirStr.c_str(), cb, recurse, pttn.c_str(), recurse_dirs);
+}
+
+void FileRecursePattern(const char *path, void (*cb)(const char *, const char *), bool recurse) {
+    RecursePatternInternal(path, cb, recurse, false);
+}
+
+void DirRecursePattern(const char *path, void (*cb)(const char *, const char *), bool recurse) {
+    RecursePatternInternal(path, cb, recurse, true);
 }
 
 void FileDiscSpinUp() { TheBlockMgr.SpinUp(); }

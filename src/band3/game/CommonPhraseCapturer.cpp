@@ -153,6 +153,6 @@ void CommonPhraseCapturer::AllTracksCompletedPhrase(int n) {
 
 void CommonPhraseCapturer::ExtendPhraseStates(int n) {
     if (mPhraseStates.size() <= n) {
-        mPhraseStates.resize(n);
+        mPhraseStates.resize(n + 1);
     }
 }

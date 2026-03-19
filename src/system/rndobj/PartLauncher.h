@@ -20,7 +20,7 @@ public:
     void LaunchParticles();
     void SetBit(unsigned int, bool);
     void CopyPropsFromPart();
-    bool CheckPartBit(int bit) { return mPartOverride->mask >> bit; }
+    bool CheckPartBit(int bit) { return mPartOverride->mask >> bit & 1; }
 
     DECLARE_REVS;
     NEW_OVERLOAD;

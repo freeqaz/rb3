@@ -18,8 +18,7 @@ VibratoDetector::~VibratoDetector() {
 
 int VibratoDetector::Analyze(float f1) {
     int vibratoLength = 0;
-    //double v5, v7;
-    if (f1 == 0.0) {
+    if (f1 == 0.0f) {
         ++mSample;
         return 0;
     }
@@ -28,9 +27,12 @@ int VibratoDetector::Analyze(float f1) {
         mY0 = (0.300000001f * f1) + (1.0f - 0.300000001f) * mY0;
         if(mY1 > mY0 && mY1 > mY2 || (mY1 < mY0) && mY1 < mY2) {
             mBuffer[mBufIdx % 5] = mSample;
-            mPitches[mBufIdx++ % 5] = mY1;
-            if(Detect()) {
-                 // missing something here
+            mPitches[mBufIdx % 5] = mY1;
+            mBufIdx++;
+            int result = Detect();
+            if (result) {
+                int elapsed = mSample - mLastDetect;
+                vibratoLength = (elapsed < result) ? elapsed : result;
                 mLastDetect = mSample;
             }
         }

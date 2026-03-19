@@ -124,7 +124,7 @@ int TrainerPanel::GetSectionLoopStart(int idx) const {
     int start = mSections[idx].mStartTick;
     if (ShouldStartEarly()) {
         int bpm = TheSongDB->GetBeatsPerMeasure(start);
-        start = start + bpm * -0x1e0;
+        start = start - bpm * 0x1e0;
         start = start & ~(start >> 0x1F);
     }
     return start;
@@ -266,9 +266,9 @@ BEGIN_HANDLERS(TrainerPanel)
     HANDLE_ACTION(restart_section, RestartSection())
     HANDLE_EXPR(get_curr_section, mCurrSection)
     HANDLE_ACTION(set_curr_section, SetCurrSection(_msg->Int(2)))
-    HANDLE_ACTION(inc_section, SetCurrSection((mCurrSection + 1) % (int)mSections.size()))
+    HANDLE_ACTION(inc_section, StartSection((mCurrSection + 1) % (int)mSections.size()))
     HANDLE_EXPR(get_num_sections, (int)mSections.size())
-    HANDLE_EXPR(challenge_success, mSections[mCurrSection].mChallenge->Success())
+    HANDLE_EXPR(challenge_success, !mSections[mCurrSection].mChallenge || mSections[mCurrSection].mChallenge->Success())
     HANDLE_EXPR(get_section_name, mSections[_msg->Int(2)].mName)
     HANDLE_EXPR(get_challenge_restriction, GetChallengeRestriction(_msg->Int(2)))
     HANDLE_EXPR(has_challenge, HasChallenge(_msg->Int(2)))

@@ -273,6 +273,7 @@ void BandDirector::UpdatePostProcOverlay(
     RndOverlay *o = RndOverlay::Find("postproc", true);
     if (o->Showing()) {
         TextStream *ts = TheDebug.mReflect;
+        TheDebug.mReflect = o;
         if (p1 && !p2) {
             MILO_LOG("Post Proc %s is not blended\n", p1->Name());
         } else {
@@ -400,10 +401,11 @@ void BandDirector::FindNextShot() {
             );
 #ifdef MILO_DEBUG
             if (!mNextShot) {
+                const char *pathName = dir->mPathName;
                 MILO_LOG(
                     "NOTIFY could not find BandCamShot %s in %s at %s, ignoring\n",
                     mShotCategory,
-                    dir->mPathName,
+                    pathName,
                     TheTaskMgr.GetMBT()
                 );
             }
@@ -546,21 +548,9 @@ bool BandDirector::ReadyForMidiParsers() {
         msg[1] = NULL_OBJ;
         OnFileLoaded(msg);
     }
-    bool ret = false;
-    bool b2 = false;
-    if (mPropAnim) {
-        bool b1 = true;
-        if (!mVenue.Dir()) {
-            if (mVenue.Name() == "none") {
-            } else
-                b1 = false;
-        }
-        if (b1)
-            b2 = true;
-    }
-    if (b2 && TheBandWardrobe->AllCharsLoaded())
-        ret = true;
-    return ret;
+    if (mPropAnim && (mVenue.Dir() || mVenue.Name() == "none"))
+        return TheBandWardrobe->AllCharsLoaded();
+    return false;
 }
 
 void BandDirector::SendMessage(Symbol s1, Symbol s2) {
@@ -671,9 +661,9 @@ void BandDirector::HarvestDircuts() {
                 if (playmode == coop_bg)
                     mask = 0x100000;
                 else if (playmode == coop_bk)
-                    mask = 0x400000;
-                else
                     mask = 0x200000;
+                else
+                    mask = 0x400000;
             }
             WorldDir *wdir = mVenue.Dir();
             FOREACH (it, wdir->mCameraManager.mCameraShotCategories) {
@@ -1540,7 +1530,11 @@ DataNode BandDirector::OnLightPresetKeyframeInterp(DataArray *da) {
 DataNode BandDirector::OnForcePreset(DataArray *da) {
     if (LightPresetMgr()) {
         const DataNode &eval = da->Evaluate(2);
-        float f3 = da->Size() > 3 ? da->Float(3) : 0;
+        float f3;
+        if (da->Size() > 3)
+            f3 = da->Float(3);
+        else
+            f3 = 0.0f;
         LightPreset *lp;
         if (eval.Type() == kDataSymbol || eval.Type() == kDataString) {
             lp = mCurWorld->Find<LightPreset>(eval.Str(), false);

@@ -27,6 +27,9 @@ float GetXAngle(const Hmx::Matrix3 &);
 float GetYAngle(const Hmx::Matrix3 &);
 float GetZAngle(const Hmx::Matrix3 &);
 void MakeEuler(const Hmx::Quat&, Vector3&);
+void MakeVertical(Hmx::Matrix3 &);
+void MultiplyStoreTransposed(const Transform &, const Transform &, float (&)[3][4]);
+void MultiplyStoreTransposed(const Transform &, const Transform &, const Transform &, float (&)[3][4]);
 
 TextStream &operator<<(TextStream &ts, const Hmx::Quat &v);
 TextStream &operator<<(TextStream &ts, const Vector3 &v);

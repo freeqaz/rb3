@@ -3,11 +3,7 @@
 #include <algorithm>
 
 MeasureMap::MeasureMap() : mTimeSigChanges() {
-    TimeSigChange tsc;
-    tsc.mMeasure = 0;
-    tsc.mNum = 4;
-    tsc.mDenom = 4;
-    tsc.mTick = 0;
+    TimeSigChange tsc = {0, 4, 4, 0};
     mTimeSigChanges.push_back(tsc);
 }
 
@@ -36,10 +32,13 @@ void MeasureMap::TickToMeasureBeatTick(
     if (change != mTimeSigChanges.begin())
         change--;
     int div = (change->mNum * 1920) / change->mDenom;
-    oMeasure = (change->mMeasure - change->mTick) / div;
-    int mod = (tick - change->mTick) % div;
-    oBeat = mod / 480;
-    oTick = mod % 480;
+    int tickOff = tick - change->mTick;
+    int q = tickOff / div;
+    int mod = tickOff - q * div;
+    oMeasure = change->mMeasure + q;
+    int beatQ = mod / 480;
+    oBeat = beatQ;
+    oTick = mod - beatQ * 480;
     oBeatsPerMeasure = div / 480;
 }
 
@@ -60,14 +59,15 @@ bool MeasureMap::AddTimeSignature(int measure, int num, int denom, bool fail) {
         mTimeSigChanges.push_back(sig);
     } else {
         TimeSigChange &sig = mTimeSigChanges.back();
-        if (measure - sig.mMeasure <= 0) {
+        int measureDiff = measure - sig.mMeasure;
+        if (measureDiff <= 0) {
             if (fail)
                 MILO_FAIL("Multiple time signatures at measure %d", measure);
             else
                 return false;
         }
         TimeSigChange add;
-        add.mTick = sig.mTick + (sig.mNum * (measure - sig.mMeasure) * 1920) / sig.mDenom;
+        add.mTick = sig.mTick + (sig.mNum * measureDiff * 1920) / sig.mDenom;
         add.mMeasure = measure;
         add.mNum = num;
         add.mDenom = denom;

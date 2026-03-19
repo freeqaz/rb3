@@ -94,15 +94,17 @@ void CharBoneDir::StuffBones(CharBones &bones, int i) {
 
 // matches in retail
 void CharBoneDir::StuffBones(CharBones &bones, Symbol sym) {
+    DataArray *resource = nullptr;
+    CharBoneDir *dir = nullptr;
     DataArray *found = sCharClipTypes->FindArray(sym, false);
     if (!found)
         MILO_WARN("CharClip has no type %s", sym);
     else {
-        DataArray *resource = found->FindArray("resource", false);
+        resource = found->FindArray("resource", false);
         if (!resource)
             MILO_WARN("CharClip %s has no (resource ...) field", sym);
         else {
-            CharBoneDir *dir = FindResource(resource->Str(1));
+            dir = FindResource(resource->Str(1));
             if (!dir)
                 MILO_WARN("CharClip %s has no resource", sym);
             else {
@@ -141,7 +143,7 @@ void CharBoneDir::ListBones(std::list<CharBones::Bone> &bones, int mask, bool b)
             bones.push_back(CharBones::Bone("bone_facing_delta.rotz", 1.0f));
         }
     }
-    for (ObjDirItr<CharBone> it(this, true); it != 0; ++it) {
+    for (ObjDirItr<CharBone> it(this, false); it != 0; ++it) {
         it->StuffBones(bones, mask);
     }
 }

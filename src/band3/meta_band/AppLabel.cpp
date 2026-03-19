@@ -260,11 +260,11 @@ void AppLabel::SetSongCount(int ct) {
     Symbol s = song_select_songs;
     if (ct == 1)
         s = song_select_song;
-    DataNode word(s);
     DataNode count(LocalizeSeparatedInt(ct));
+    DataNode word(s);
     DataArray *da = new DataArray(2);
-    da->Node(0) = count;
-    da->Node(1) = word;
+    da->Node(0) = word;
+    da->Node(1) = count;
     SetTokenFmt(da);
     da->Release();
 }

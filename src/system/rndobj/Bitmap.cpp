@@ -423,9 +423,9 @@ unsigned char RndBitmap::PixelIndex(int i1, int i2) const {
     if (mBpp == 8) {
         ret = *(pixels + offset);
     } else if (bb) {
-        ret = *(pixels + offset) & 0xF;
+        ret = (*(pixels + offset) >> 4) & 0xF;
     } else {
-        ret = *(pixels + offset) >> 4;
+        ret = *(pixels + offset) & 0xF;
     }
     return ret;
 }
@@ -439,7 +439,8 @@ void RndBitmap::SetPixelIndex(int i1, int i2, unsigned char uc) {
     } else if (bb) {
         *(pixels + offset) = uc << 4 | *(pixels + offset) & 0xF;
     } else {
-        *(pixels + offset) = *(pixels + offset) & 0xF0 | uc;
+        unsigned char cur = *(pixels + offset) & 0xF0;
+        *(pixels + offset) = cur | uc;
     }
 }
 

@@ -84,8 +84,7 @@ float RndFont::CharAdvance(unsigned short c) const {
     if (IsMonospace())
         return 1.0f;
     else {
-        CharInfo &info = mTextureOwner->mCharInfoMap[c];
-        return info.unkc;
+        return mTextureOwner->mCharInfoMap[c].unkc;
     }
 }
 

@@ -154,30 +154,23 @@ int UIListState::ScrollMaxDisplay() const {
 int UIListState::CurrentScroll() const { return ScrollToTarget(mTargetShowing); }
 
 bool UIListState::ShouldHoldDisplayInPlace(int i2) const {
-    bool b2 = true;
-    bool b1 = false;
-    if (mTargetShowing > mFirstShowing && i2 == 0)
-        b1 = true;
-    if (!b1) {
-        b1 = false;
-        if (mTargetShowing < mFirstShowing && i2 == -1)
-            b1 = true;
-        if (!b1)
-            b2 = false;
-    }
-    if (b2) {
-        bool ret = false;
-        if (SnappedDataForDisplay(i2) >= 0) {
-            int numdisp = NumDisplay();
-            if (i2 + 1 != numdisp && Display2Data(numdisp) != -1) {
-                if (!Provider()->IsSnappableAtData(Display2Data(i2 + 1))) {
-                    ret = true;
-                }
+    bool shouldCheck = (mTargetShowing > mFirstShowing && i2 == 0)
+        || (mTargetShowing < mFirstShowing && i2 == -1);
+    if (!shouldCheck)
+        return false;
+    bool ret = false;
+    bool b = false;
+    if (SnappedDataForDisplay(i2) >= 0) {
+        if (i2 + 1 != mNumDisplay && Display2Data(i2 + 1) != -1) {
+            b = true;
+        }
+        if (b) {
+            if (!Provider()->IsSnappableAtData(Display2Data(i2 + 1))) {
+                ret = true;
             }
         }
-        return ret;
-    } else
-        return false;
+    }
+    return ret;
 }
 
 int UIListState::SnappedDataForDisplay(int i2) const {
@@ -229,9 +222,7 @@ void UIListState::SetMinDisplay(int min) {
 void UIListState::SetMaxDisplay(int max) {
     MILO_ASSERT(max >= -1, 0x150);
     if (LOADMGR_EDITMODE) {
-        if (-1 <= max) {
-            max = Min(mNumDisplay - 1, max);
-        }
+        ClampEq<int>(max, -1, mNumDisplay - 1);
     }
     mMaxDisplay = max;
 }

@@ -50,6 +50,7 @@ namespace Hmx {
         }
         bool operator!=(const Color &c) const { return !(*this == c); }
 
+        float &operator[](int i) { return *(&red + i); }
         void Set(float f) { red = green = blue = alpha = f; } // may go unused
         void Reset() { red = green = blue = alpha = 1.0f; }
 

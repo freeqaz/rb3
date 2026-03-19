@@ -121,7 +121,7 @@ version_num = VERSIONS.index(config.version)
 # Apply arguments
 config.build_dir = args.build_dir
 config.dtk_path = args.dtk
-config.objdiff_path = args.objdiff
+config.objdiff_path = args.objdiff or Path("..") / "objdiff" / "target" / "release" / "objdiff-cli"
 config.binutils_path = args.binutils
 config.compilers_path = args.compilers
 config.generate_map = args.map
@@ -138,7 +138,7 @@ if not config.non_matching:
 config.binutils_tag = "2.42-1"
 config.compilers_tag = "20240706"
 config.dtk_tag = "v1.3.0"
-config.objdiff_tag = "v2.7.1"
+config.objdiff_tag = "v4.0.0"
 config.sjiswrap_tag = "v1.2.0"
 config.wibo_tag = "0.6.16"
 

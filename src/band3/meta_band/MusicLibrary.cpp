@@ -712,8 +712,8 @@ void MusicLibrary::ReSort(Symbol s) {
     for (int i = 0; i < 9; i++) {
         if (s == TheSongSortMgr->GetSort((SongSortType)i)->GetName()) {
             theType = (SongSortType)i;
-        } else
             break;
+        }
     }
     if (theType == kNumSongSortTypes) {
         MILO_WARN(
@@ -892,17 +892,17 @@ RndMat *MusicLibrary::Mat(int, int idx, UIListMesh *slot) const {
         SongRecord *record = ossn->GetSongRecord();
         if (slot->Matches("bg")) {
             if (record->Data()->IsUGC()) {
-                if (idx & 1U) {
+                if (idx % 2) {
                     return mUgcMatOdd;
                 } else
                     return mUgcMatEven;
             } else if (record->Data()->IsDownload()) {
-                if (idx & 1U) {
+                if (idx % 2) {
                     return mDlcMatOdd;
                 } else
                     return mDlcMatEven;
             } else {
-                if (idx & 1U) {
+                if (idx % 2) {
                     return mDiscMatOdd;
                 } else
                     return mDiscMatEven;
@@ -917,7 +917,7 @@ RndMat *MusicLibrary::Mat(int, int idx, UIListMesh *slot) const {
         break;
     case kNodeSetlist:
         if (slot->Matches("bg")) {
-            if (idx & 1U) {
+            if (idx % 2) {
                 return mSetlistMatOdd;
             } else
                 return mSetlistMatEven;

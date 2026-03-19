@@ -25,6 +25,10 @@ public:
     BSPFace() {}
     ~BSPFace() {}
     void Set(const Vector3 &, const Vector3 &, const Vector3 &);
+    void Update();
+    void OnSide(const Plane &, bool &, bool &);
+
+    bool operator<(const BSPFace &b) const { return area > b.area; }
 
     Hmx::Polygon p;
     Transform t;

@@ -299,8 +299,8 @@ void TaskMgr::SetDeltaTime(TaskUnits u, float delta) {
 
 void TaskMgr::SetTimeAndDelta(TaskUnits u, float time, float delta) {
     TaskTimeline &timeline = mTimelines[u];
-    timeline.mTime = time;
     timeline.mLastTime = time - delta;
+    timeline.mTime = time;
 }
 
 void TaskMgr::SetSecondsAndBeat(float f1, float f2, bool b) {
@@ -330,7 +330,6 @@ float TaskMgr::Seconds(TimeReference ref) const {
 }
 
 float TaskMgr::DeltaSeconds() const { return mTimelines[kTaskSeconds].DeltaTime(); }
-float TaskMgr::Beat() const { return mTimelines[kTaskBeats].GetTime(); }
 float TaskMgr::DeltaBeat() const { return mTimelines[kTaskBeats].DeltaTime(); }
 float TaskMgr::TutorialSeconds() const {
     return mTimelines[kTaskTutorialSeconds].GetTime();
@@ -393,9 +392,10 @@ DataNode TaskMgr::OnTimeTilNext(DataArray *arr) {
     float f2 = arr->Float(2);
     float f3 = arr->Float(3);
     float beat = Beat();
-    float floored = floor(beat / f2);
-    float f1 = f3 * (1.0f - (beat / f2 - floored));
-    if (f3 >= f2 - f1) {
+    float ratio = beat / f2;
+    float floored = floor(ratio);
+    float f1 = f3 * (1.0f - (ratio - floored));
+    if (f2 - f1 <= f3) {
         return 0.0f;
     } else
         return f1;

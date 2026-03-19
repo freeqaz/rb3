@@ -195,7 +195,7 @@ DataNode RndCam::OnSetFrustum(const DataArray *da) {
     if (!da->FindData(far_plane, farPlane, false))
         farPlane = mFarPlane;
     if (da->FindData(y_fov, yFov, false))
-        temp = yFov * DEG2RAD;
+        temp = DEG2RAD * yFov;
     else
         temp = mYFov;
     yFov = temp;

@@ -109,8 +109,8 @@ CharClip::Transitions::Resize(int i, const CharClip::NodeVector *old) {
         }
     }
     NodeVector *v = mNodeStart;
-    mNodeEnd = v + i;
-    return v + n;
+    mNodeEnd = (NodeVector *)((char *)v + i);
+    return (NodeVector *)((char *)v + n);
 }
 
 void CharClip::Transitions::AddNode(CharClip *clip, const CharGraphNode &node) {
@@ -641,7 +641,7 @@ void CharClip::MakeMRU() {
         MILO_WARN("%s refs %d groups", PathName(this), sMaxGroups);
     }
     while (groupIdx > 0) {
-        groups[groupIdx--]->MakeMRU(this);
+        groups[--groupIdx]->MakeMRU(this);
     }
 }
 

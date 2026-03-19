@@ -9,8 +9,9 @@ bool RndOverlay::sTopAligned = true;
 std::list<RndOverlay *> RndOverlay::sOverlays;
 
 void RndOverlay::Init() {
+    DataArray *overlaysArr;
     DataArray *cfg = SystemConfig("rnd");
-    DataArray *overlaysArr = cfg->FindArray("overlays");
+    overlaysArr = cfg->FindArray("overlays");
     for (int i = 1; i < overlaysArr->Size(); i++) {
         sOverlays.push_back(new RndOverlay(overlaysArr->Array(i)));
     }

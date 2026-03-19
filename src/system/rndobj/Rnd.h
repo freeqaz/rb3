@@ -169,7 +169,6 @@ public:
     DataNode OnScaleObject(const DataArray *);
     DataNode OnReflect(const DataArray *);
     DataNode OnToggleHeap(const DataArray *);
-    DataNode OnTestDrawGroups(const DataArray *);
     Aspect GetAspect() const { return mAspect; }
     int Width() const { return mWidth; }
     int Height() const { return mHeight; }

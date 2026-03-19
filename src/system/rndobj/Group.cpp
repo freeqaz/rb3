@@ -159,11 +159,13 @@ void RndGroup::UpdateLODState() {
 }
 
 void RndGroup::SortDraws() {
-    FOREACH (it, mDraws) {
+    for (std::vector<RndDrawable *>::iterator it = mDraws.begin(); it != mDraws.end();
+         ++it) {
         mObjects.remove(*it);
     }
     std::sort(mDraws.begin(), mDraws.end(), ::SortDraws);
-    FOREACH (it, mDraws) {
+    for (std::vector<RndDrawable *>::iterator it = mDraws.begin(); it != mDraws.end();
+         ++it) {
         mObjects.push_back(*it);
     }
     mAnims.clear();

@@ -5,6 +5,7 @@
 enum {
     kNumJoypads = 4,
     kNumPressureButtons = 8,
+    kNumAnalogSticks = 2,
 };
 
 enum JoypadAction {
@@ -312,6 +313,7 @@ bool JoypadVibrate(int);
 unsigned int JoypadPollForButton(int);
 void JoypadPoll();
 void JoypadKeepAlive(int, bool);
+extern "C" void TranslateSticksToButs(JoypadData &, unsigned int &);
 
 bool UserHasController(LocalUser *);
 bool UserHasGHDrums(LocalUser *);

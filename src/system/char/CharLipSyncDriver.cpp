@@ -24,11 +24,12 @@ CharLipSyncDriver::~CharLipSyncDriver() { RELEASE(mSongPlayer); }
 
 void CharLipSyncDriver::Highlight() {
 #ifdef MILO_DEBUG
-    if (gCharHighlightY == -1.0f) {
+    float highlightY = gCharHighlightY;
+    if (-1.0f == highlightY) {
         CharDeferHighlight(this);
     } else {
         Hmx::Color white(1, 1, 1);
-        Vector2 v2(5.0f, gCharHighlightY);
+        Vector2 v2(5.0f, highlightY);
         float y =
             TheRnd->DrawString(MakeString("%s:", PathName(this)), v2, white, true).y;
         v2.y += y;

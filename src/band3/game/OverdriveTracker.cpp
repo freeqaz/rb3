@@ -72,6 +72,7 @@ void OverdriveTracker::FirstFrame_(float) {
 
 void OverdriveTracker::Poll_(float ms) {
     MILO_ASSERT(TheGame, 0x81);
+    if (!TheGame->InRollback()) {
     if (mSource->IsFinished()) {
         float f98 = unk98;
         if (f98 > 0) {
@@ -138,6 +139,7 @@ void OverdriveTracker::Poll_(float ms) {
         }
         UpdateTimeRemainingDisplay();
         unkb0 = t5;
+    }
     }
 }
 

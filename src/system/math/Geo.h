@@ -56,13 +56,7 @@ public:
     // fn_802D7468
     void GrowToContain(const Vector3 &vec, bool b);
 
-    // fn_802D757C
-    bool Clamp(Vector3 &vec) {
-        bool clamp_z = ClampEq(vec.z, mMin.z, mMax.z);
-        bool clamp_x = ClampEq(vec.x, mMin.x, mMax.x);
-        bool clamp_y = ClampEq(vec.y, mMin.y, mMax.y);
-        return clamp_x | clamp_y | clamp_z;
-    }
+    bool Clamp(Vector3 &vec);
 
     Vector3 mMin;
     Vector3 mMax;
@@ -86,11 +80,17 @@ bool Intersect(const Transform &, const Hmx::Polygon &, const class BSPNode *);
 bool Intersect(const Segment &, const class BSPNode *, float &, Plane &);
 bool Intersect(const Segment &, const Triangle &, bool, float &);
 void Multiply(const Box &, float, Box &);
+void Multiply(const Plane &, const Transform &, Plane &);
+void Normalize(const Plane &, Plane &);
+void Intersect(const Transform &, const Plane &, Hmx::Ray &);
 void MultiplyEq(BSPNode *, const Transform &);
 
 inline void CalcBoxCenter(Vector3 &center, const Box &box) {
     Add(box.mMin, box.mMax, center);
     Scale(center, 0.5f, center);
 }
+
+void Clip(const Hmx::Polygon &, const Hmx::Ray &, Hmx::Polygon &);
+void Normalize(const Plane &, Plane &);
 
 #endif

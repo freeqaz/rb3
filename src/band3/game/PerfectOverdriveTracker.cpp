@@ -82,9 +82,9 @@ void PerfectOverdriveTracker::LocalEndStreak(const TrackerPlayerID &pid, float f
     unk88 += f;
     GetPlayerDisplay(pid).LoseFocus(true);
     Player *player = mSource->GetPlayer(pid);
-    Symbol sym = player->GetTrackType() == kTrackVocals
-        ? perfect_overdrive_tracker_vocal_progress
-        : perfect_overdrive_tracker_gem_progress;
+    Symbol sym = perfect_overdrive_tracker_gem_progress;
+    if (player->GetTrackType() == kTrackVocals)
+        sym = perfect_overdrive_tracker_vocal_progress;
     const char *fontchar = GetFontCharFromTrackType(player->GetTrackType(), 0);
     mBroadcastDisplay.ShowBriefBandMessage(DataArrayPtr(sym, i, fontchar));
 }

@@ -38,7 +38,7 @@ DataNode SetKeyGlow(DataArray *arr) {
 GemManager::GemManager(const TrackConfig &cfg, TrackDir *dir)
     : mTrackDir(dir), mTrackConfig(cfg), mTemplate(cfg),
       mConfig(SystemConfig("track_graphics")), mGemData(0), mGemsEnabledStart(0),
-      mBegin(0), mEnd(0), unkb8(0), mNowBar(0), mBonusGems(0), mInCoda(0), unkc4(0),
+      mBegin(0), mEnd(0), unkb8(TheGame->mDrumFillsMod), mNowBar(0), mBonusGems(0), mInCoda(0), unkc4(0),
       unkc8(dir->SecondsToY(dir->TopSeconds())),
       unkcc(dir->SecondsToY(dir->BottomSeconds())), mTailsGrp(0), unkfc(0), unk100(0),
       unk104(0), mEnabledSlots(0), unk10c(0), mNextArpeggioPhrase(0), unk12c(0),

@@ -100,6 +100,7 @@ void FileEnumerate(
     const char *, void (*)(const char *, const char *), bool, const char *, bool
 );
 void FileRecursePattern(const char *, void (*)(char const *, char const *), bool);
+void DirRecursePattern(const char *, void (*)(char const *, char const *), bool);
 
 void operator>>(BinStream *, FileStat &);
 }

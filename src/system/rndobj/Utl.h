@@ -61,5 +61,6 @@ void RndSplasherResume();
 DataNode GetNormalMapTextures(ObjectDir *);
 DataNode GetRenderTextures(ObjectDir *);
 DataNode GetRenderTexturesNoZ(ObjectDir *);
+DataNode OnTestDrawGroups(DataArray *);
 
 #endif // RNDOBJ_UTL_H

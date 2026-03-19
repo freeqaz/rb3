@@ -147,7 +147,7 @@ void MicInputArrow::Update() {
 }
 
 BEGIN_HANDLERS(MicInputArrow)
-    HANDLE_ACTION(set_mic_mgr, SetMicMgr(_msg->Obj<MicManagerInterface>(0)))
+    HANDLE_ACTION(set_mic_mgr, SetMicMgr(_msg->Obj<MicManagerInterface>(2)))
     HANDLE_ACTION(set_mic_connected, SetMicConnected(_msg->Int(2), _msg->Int(3)))
     HANDLE_ACTION(set_mic_extended, SetMicExtended(_msg->Int(2)))
     HANDLE_ACTION(set_mic_preview, SetMicPreview(_msg->Int(2)))

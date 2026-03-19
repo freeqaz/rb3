@@ -623,6 +623,10 @@ void Game::SetGameOver(bool over) {
 }
 
 DataNode Game::OnMsg(const GameEndedMsg &msg) {
+    OvershellPanel *panel = TheBandUI.GetOvershell();
+    if (panel->InSong()) {
+        panel->SetActiveStatus(kOvershellInactive);
+    }
     ClearState();
     TheSynth->RequirePushToTalk(false, -1);
     if (msg.GetResult() == 0) {

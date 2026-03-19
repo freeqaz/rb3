@@ -24,10 +24,10 @@ public:
     virtual void *RawAlloc(int);
 
     int mAllocSizeWords;
-    int mNumAllocs;
+    int *mFreeList;
     int mMaxAllocs;
     int mNumChunks;
-    int *mFreeList;
+    int mNumAllocs;
     int mNodesPerChunk;
     ChunkAllocator *mAlloc;
 

@@ -521,7 +521,7 @@ void RndConsole::ExecuteLine() {
     if (mBuffer.size() > mMaxBuffer) {
         mBuffer.pop_back();
     }
-    mBufPtr = mBuffer.begin();
+    mBufPtr = mBuffer.end();
     MILO_LOG("> %s\n", line_txt);
     n40 = DataNode(DataReadString(line_txt.c_str()), kDataArray);
     n40.Array()->Release();

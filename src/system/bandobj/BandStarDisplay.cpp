@@ -1,6 +1,8 @@
 #include "bandobj/BandStarDisplay.h"
+#include "os/Debug.h"
 #include "obj/ObjVersion.h"
 #include "utl/Symbols.h"
+#include <math.h>
 
 INIT_REVS(BandStarDisplay);
 
@@ -13,11 +15,53 @@ BandStarDisplay::~BandStarDisplay() {}
 
 void BandStarDisplay::SetNumStars(float f, bool b) {
     SetupStars();
-    if (f > 0) {
-        float min = Min<float>(f, mStars.size() + 1);
-        if (min < mNumStars)
-            ResetStars();
-        // more...
+    if (f < 0.0f)
+        return;
+    int size = (int)mStars.size();
+    f = Min<float>(f, (float)(size + 1));
+    if (f < mNumStars)
+        ResetStars();
+    if (f != mNumStars) {
+        int i = (int)mNumStars;
+        int newStar = (int)f;
+        double intPart;
+        float fracPart = (float)modf(f, &intPart);
+        bool animated = false;
+        while (newStar > i && i < size) {
+            mStarSweepAnims[i]->SetFrame(1.0f, 1.0f);
+            mStarFullTriggers[i]->Trigger();
+            i++;
+            if (i < size) {
+                mStars[i]->SetShowing(true);
+            }
+            animated = true;
+        }
+        if (newStar == size + 1) {
+            for (int j = 0; j < size; j++) {
+                mStarGoldTriggers[j]->Trigger();
+            }
+        }
+        if (animated) {
+            mStarOffsetAnim->Animate(
+                0.0f, false, 0.0f, RndAnimatable::k30_fps_ui,
+                mStarOffsetAnim->mFrame, 10.0f * (float)newStar, 0.0f, 1.0f, dest
+            );
+            if (b) {
+                if (mStarType == tour)
+                    mEarnSpadeSfx->Play(0.0f, 0.0f, 0.0f);
+                else
+                    mEarnStarSfx->Play(0.0f, 0.0f, 0.0f);
+            }
+        }
+        if (mStarType == tour && newStar < size) {
+            EventTrigger *et =
+                mStars[newStar]->Find<EventTrigger>("pulse_success.trig", true);
+            et->Trigger();
+        }
+        if (i < size) {
+            mStarSweepAnims[i]->SetFrame(Min<float>(fracPart, 0.95f), 1.0f);
+        }
+        mNumStars = f;
     }
 }
 
@@ -72,11 +116,13 @@ void BandStarDisplay::SetStarType(Symbol s, bool b) {
         frame = 0;
     else if (s == tour)
         frame = 1;
-    if (frame != -1.0f) {
-        mStarType = s;
-        for (int i = 0; i < mStars.size(); i++) {
-            mStars[i]->Find<RndAnimatable>("config.anim", true)->SetFrame(frame, 1.0f);
-        }
+    if (frame == -1.0f) {
+        TheDebug.Notify(MakeString("Invalid star type %s, defaulting to normal\n", s.Str()));
+        return;
+    }
+    mStarType = s;
+    for (int i = 0; i < mStars.size(); i++) {
+        mStars[i]->Find<RndAnimatable>("config.anim", true)->SetFrame(frame, 1.0f);
     }
 }
 

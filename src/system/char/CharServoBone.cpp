@@ -167,13 +167,14 @@ void CharServoBone::DoRegulate(
     Transform &myxfm = mMe->DirtyLocalXfm();
     ClipPredict pred(driver->GetClip(), myxfm.v, GetZAngle(myxfm.m));
     pred.Predict(driver->mBeat, driver->mBeat + f3);
-    pred.mPos = pred.mLastPos;
-
-    float ang = pred.Angle();
+    Vector3 pos(pred.mPos);
+    float ang = pred.mAng;
     float deltaBeat = TheTaskMgr.DeltaBeat() / f4;
-    waypoint->ShapeDelta(pred.mPos, pred.mLastPos);
-    ScaleAddEq(myxfm.v, pred.mPos, deltaBeat);
-    RotateAboutZ(myxfm.m, waypoint->ShapeDelta(ang) * deltaBeat, myxfm.m);
+    Vector3 shapedDelta;
+    waypoint->ShapeDelta(pos, shapedDelta);
+    ScaleAddEq(myxfm.v, shapedDelta, deltaBeat);
+    float shapeDelta = waypoint->ShapeDelta(ang);
+    RotateAboutZ(myxfm.m, shapeDelta * deltaBeat, myxfm.m);
 }
 
 void CharServoBone::PollDeps(

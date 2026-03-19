@@ -103,12 +103,12 @@ int BandPerformer::CodaScore() const {
 }
 
 void BandPerformer::ForceScore(int i1) {
-    bool b1 = false;
+    int b1 = 0;
     std::vector<Player *> &players = mBand->GetActivePlayers();
     FOREACH (it, players) {
         if (!(*it)->GetQuarantined()) {
-            (*it)->ForceScore(i1 & ~-b1);
-            b1 = true;
+            (*it)->ForceScore(b1 ? 0 : i1);
+            b1 = 1;
         }
     }
 }

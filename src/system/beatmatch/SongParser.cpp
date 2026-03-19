@@ -1814,9 +1814,8 @@ bool SongParser::ShouldReadTrack(Symbol s) {
             return !isparttrackname && s != "BEAT";
         case kReadingParts:
             if (isparttrackname)
-                return false;
-            else
                 return PartNumThatMatchesTrackName(s.mStr) != -1;
+            return false;
         case kDoneReading:
             MILO_FAIL("SongParser::ShouldReadTrack in wrong state");
             return false;
@@ -1924,7 +1923,10 @@ bool SongParser::HandleRGLooseStrumStart(
 
 bool SongParser::HandleRGRootNote(unsigned char uc) {
     if ((uc + 0xFC & 0xFF) <= 0xBU) {
-        mRGRootNote = (uc % 12) + 12;
+        int r = uc % 12;
+        mRGRootNote = r;
+        if (r < 0)
+            mRGRootNote = r + 12;
         return true;
     }
     return false;

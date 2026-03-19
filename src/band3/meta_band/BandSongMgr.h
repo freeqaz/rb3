@@ -6,9 +6,9 @@
 #include "meta_band/LicenseMgr.h"
 
 enum SongID {
-    kSongID_Invalid = 0,
-    kSongID_Any = 1,
-    kSongID_Random = 2
+    kSongID_Invalid = -2,
+    kSongID_Any = -1,
+    kSongID_Random = 0
 };
 
 class BandSongMgr : public SongMgr {

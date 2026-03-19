@@ -739,8 +739,8 @@ DataNode UIList::OnMsg(const ButtonDownMsg &msg) {
         int scrollDir = ScrollDirection(msg, cntType, o == 0, gridspan);
         if (scrollDir != 0) {
             if (gridspan == 1 || (scrollDir != 1 && scrollDir != -1)
-                || ((scrollDir == 1 && (mListState.SelectedDisplay() + 1) % gridspan)
-                    || (scrollDir == -1 && mListState.SelectedDisplay() % gridspan))) {
+                || (scrollDir == 1 && (mListState.SelectedDisplay() + 1) % gridspan)
+                || (scrollDir == -1 && mListState.SelectedDisplay() % gridspan)) {
                 int oldSelData = SelectedData();
                 Scroll(scrollDir);
                 if (oldSelData == SelectedData() && !IsScrolling() && !mSelectToScroll) {
@@ -792,7 +792,7 @@ DataNode UIList::OnMsg(const ButtonDownMsg &msg) {
                 mListState.PageScroll(pageDir);
                 return 1;
             }
-        } else if (pageDir == 0) {
+        } else {
             if (CatchNavAction(msg.GetAction()))
                 return 1;
         }

@@ -25,6 +25,7 @@ public:
     }
 
     void GrowToContain(const Sphere &);
+    void GrowToContain(const Vector3 &, float);
 
     Vector3 center;
     float radius;

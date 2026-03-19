@@ -15,6 +15,7 @@
 #include "rndobj/Graph.h"
 #include "rndobj/Trans.h"
 #include "utl/Symbols.h"
+#include <cmath>
 
 bool CharEyes::sDisableEyeDart;
 bool CharEyes::sDisableEyeJitter;

@@ -166,8 +166,8 @@ void Performer::WinGame(int i) {
 void Performer::ForceStars(int i) { mScore = GetScoreForStars(i); }
 
 bool Performer::LoseGame() {
-    if (mGameOver || !TheGameConfig->CanEndGame() || !TheGame->mIsPaused)
-        return false; // TODO: fix the variable pulled from TheGame
+    if (mGameOver || !TheGameConfig->CanEndGame() || !TheGame->mProperties.mCanLose)
+        return false;
     else {
         mCrowd->SetActive(false);
         TheGame->SetGameOver(false);
