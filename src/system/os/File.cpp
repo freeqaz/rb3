@@ -255,12 +255,12 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
     char *c = buffer;
     if (*file == '/' || *file == '\\' || *file == '\0') {
         if (*fileDrive != '\0') {
-            sprintf(buffer, "%s:%s", buffer, file);
+            sprintf(buffer, "%s:%s", fileDrive, file);
             c = buffer + strlen(fileDrive) + 1;
         } else {
             const char *rootDrive = FileGetDrive(root);
             if (*rootDrive != '\0') {
-                sprintf(buffer, "%s:%s", buffer, file);
+                sprintf(buffer, "%s:%s", rootDrive, file);
                 c = buffer + strlen(rootDrive) + 1;
             } else
                 strcpy(buffer, file);

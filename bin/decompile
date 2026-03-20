@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""
+Decompile a function from the RB3 original binary using m2c.
+
+Usage:
+  bin/decompile RecordTrillStats__9GemPlayerFv
+  bin/decompile -u game/GemPlayer RecordTrillStats__9GemPlayerFv
+  bin/decompile -u game/GemPlayer RecordTrillStats__9GemPlayerFv -c src/band3/game/GemPlayer.cpp
+"""
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).parent.parent
+M2C = ROOT.parent / "m2c" / "m2c.py"
+ASM_DIR = ROOT / "build/SZBE69_B8/asm"
+
+
+def find_asm_file(function: str, unit: str | None) -> Path:
+    if unit:
+        # Normalize: strip leading 'main/' prefix from db-style unit names
+        unit = unit.removeprefix("main/")
+        candidate = ASM_DIR / (unit + ".s")
+        if candidate.exists():
+            return candidate
+        # Try stripping a source-subdir prefix that may have been omitted
+        for prefix in ("band3/", "system/", "network/", "lib/", "sdk/"):
+            candidate = ASM_DIR / prefix / (unit + ".s")
+            if candidate.exists():
+                return candidate
+        print(f"error: asm file not found for unit '{unit}'", file=sys.stderr)
+        print(f"  tried: {ASM_DIR / (unit + '.s')}", file=sys.stderr)
+        sys.exit(1)
+
+    # Search all asm files for the function
+    needle = f".fn {function},"
+    for asm_file in sorted(ASM_DIR.rglob("*.s")):
+        if needle in asm_file.read_text():
+            return asm_file
+
+    print(f"error: function '{function}' not found in any asm file", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Decompile a function from the RB3 binary using m2c."
+    )
+    parser.add_argument("function", help="Mangled function name (e.g. RecordTrillStats__9GemPlayerFv)")
+    parser.add_argument("-u", "--unit", help="Unit path (e.g. game/GemPlayer or main/band3/game/GemPlayer)")
+    parser.add_argument("-c", "--context", help="C/C++ context file for type info")
+    parser.add_argument("--passes", type=int, default=4, help="m2c translation passes (default: 4)")
+    args = parser.parse_args()
+
+    if not M2C.exists():
+        print(f"error: m2c not found at {M2C}", file=sys.stderr)
+        sys.exit(1)
+
+    asm_file = find_asm_file(args.function, args.unit)
+    print(f"# asm: {asm_file.relative_to(ROOT)}", file=sys.stderr)
+
+    cmd = [
+        sys.executable, str(M2C),
+        "--target", "ppc",
+        "-f", args.function,
+        "--passes", str(args.passes),
+    ]
+    if args.context:
+        cmd += ["--context", args.context]
+    cmd.append(str(asm_file))
+
+    subprocess.run(cmd)
+
+
+if __name__ == "__main__":
+    main()

@@ -111,11 +111,48 @@ Categories:
 - Do not include `Co-Authored-By` lines in commit messages
 - Use worktrees for isolated experiments
 
-## Ghidra Integration
+## Decompilation Tools
 
+### Ghidra
 Ghidra MCP runs on `http://127.0.0.1:8001/mcp` (port 8001, separate from DC3's port 8000).
 - Language: PowerPC:BE:32:default (Gekko/Broadway)
 - Service script: `tools/ghidra/pyghidra-service.sh`
+- Start: `./tools/ghidra/pyghidra-service.sh start`
+- Uses the debug ELF with full DWARF symbols — decompilation is symbol-rich
+- **Not** wired into `.mcp.json`; call via Python or `bin/analyze-function`
+
+### m2c
+- Located at `../m2c/m2c.py` (i.e. `/home/free/code/milohax/m2c/m2c.py`)
+- Target flag: `--target ppc` (alias for `ppc-mwcc-c++`)
+- Input: asm files in `build/SZBE69_B8/asm/` (dtk format, `.fn SYMBOL, global`)
+
+### Analysis Scripts
+```bash
+# Combined: objdiff match% + Ghidra pseudo-C + m2c decompilation
+bin/analyze-function SYMBOL
+bin/analyze-function -u UNIT SYMBOL          # unit e.g. game/GemPlayer
+bin/analyze-function --no-ghidra SYMBOL      # skip Ghidra (faster)
+
+# m2c only
+bin/decompile SYMBOL
+bin/decompile -u UNIT SYMBOL
+bin/decompile -u UNIT SYMBOL -c SRC_FILE     # with C++ context for types
+```
+
+### DC3→RB3 Porting Workflow
+Use `scripts/dc3_compare.py` to find shared-engine functions DC3 has at 100% that RB3 is still missing:
+```bash
+# Unit summary: which files have the most DC3-ported potential
+python3 scripts/dc3_compare.py --units --filter system/
+
+# Function list for a specific area, sorted by RB3 match% (lowest first)
+python3 scripts/dc3_compare.py --filter system/char/ --sort rb3
+
+# Find very low % functions (< 50% in RB3)
+python3 scripts/dc3_compare.py --filter system/ --max-rb3 50 --sort rb3
+```
+DC3 source is at `/home/free/code/milohax/dc3-decomp/src/system/`.
+When porting: check `bin/analyze-function` first to understand what the original does, then adapt the DC3 source (different class names, member names, includes) to RB3.
 
 ## Reference Resources
 
