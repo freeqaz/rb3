@@ -61,6 +61,8 @@ class MCPClient:
 
             if isinstance(binaries, dict) and "binaries" in binaries:
                 binary_list = binaries["binaries"]
+            elif isinstance(binaries, dict) and "programs" in binaries:
+                binary_list = binaries["programs"]
             elif isinstance(binaries, list):
                 binary_list = binaries
             else:

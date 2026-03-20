@@ -148,9 +148,8 @@ ogg_uint32_t *_make_words(long *l,long n,long sparsecount){
    that's portable and totally safe against roundoff, but I haven't
    thought of it.  Therefore, we opt on the side of caution */
 long _book_maptype1_quantvals(const static_codebook *b){
-  long entries=b->entries;
   long dim=b->dim;
-  long vals=floor(pow((float)entries,1.f/dim));
+  long vals=floor(pow((float)b->entries,1.f/dim));
 
   /* the above *should* be reliable, but we'll not assume that FP is
      ever reliable when bitstream sync is at stake; verify via integer
@@ -165,10 +164,10 @@ long _book_maptype1_quantvals(const static_codebook *b){
       acc*=vals;
       acc1*=vals+1;
     }
-    if(acc<=entries && acc1>entries){
+    if(acc<=b->entries && acc1>b->entries){
       return(vals);
     }else{
-      if(acc>entries){
+      if(acc>b->entries){
 	vals--;
       }else{
 	vals++;

@@ -240,11 +240,10 @@ DataArray *Scoring::GetCrowdConfig(Difficulty diff, BandUser *user) const {
 int Scoring::GetBandNumStars(int i) const {
     int stars = GetBandNumStarsFloat(i);
     if (stars < 0)
-        return 0;
+        stars = 0;
     else if (stars > 6)
-        return 6;
-    else
-        return stars;
+        stars = 6;
+    return stars;
 }
 
 DECOMP_FORCEACTIVE(Scoring, "symbols")
