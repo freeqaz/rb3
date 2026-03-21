@@ -25,10 +25,10 @@ DataArraySongInfo::DataArraySongInfo(
         mHopoThreshold = member_arr->Int(1);
     }
     if (FIND_WITH_BACKUP(mute_volume)) {
-        mMuteVolume = member_arr->Float(1);
+        mMuteVolume = (float)member_arr->Float(1);
     }
     if (FIND_WITH_BACKUP(mute_volume_vocals)) {
-        mVocalMuteVolume = member_arr->Float(1);
+        mVocalMuteVolume = (float)member_arr->Float(1);
     }
     if (FIND_WITH_BACKUP(pans)) {
         DataArray *pan_arr = member_arr->Array(1);

@@ -282,8 +282,8 @@ int MidiParser::ParseAll(
     mGems = mGemParser ? gems : nullptr;
     mVocalEvents = mTextParser || mLyricParser ? &text : nullptr;
     while (true) {
-        int startTick = INT_MAX;
         int which = -1;
+        int startTick = INT_MAX;
         int loc48, loc4c, loc50;
         if (mVocalEvents) {
             if (mVocalIndex < mVocalEvents->size()
@@ -634,11 +634,13 @@ DataNode MidiParser::OnSecOffsetAll(DataArray *arr) {
     return 0;
 }
 
+#pragma push
+#pragma fp_contract off
 DataNode MidiParser::OnSecOffset(DataArray *arr) {
     float f2 = arr->Float(2);
-    float f3 = arr->Float(3) * 1000.0f;
-    return MsToBeat(f3 + BeatToMs(f2));
+    return MsToBeat(arr->Float(3) * 1000.0f + BeatToMs(f2));
 }
+#pragma pop
 
 DataNode MidiParser::OnNextVal(DataArray *arr) {
     int idx = GetIndex();
