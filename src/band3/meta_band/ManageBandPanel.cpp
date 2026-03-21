@@ -14,6 +14,7 @@
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/StandInProvider.h"
 #include "meta_band/UIEventMgr.h"
+#include "meta/WiiProfileMgr.h"
 #include "obj/Data.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
@@ -97,7 +98,9 @@ void ManageBandPanel::Enter() {
 
 void ManageBandPanel::CheckForKickoutCondition() {
     if (mProfile) {
-        mProfile->GetPadNum();
+        int padNum = mProfile->GetPadNum();
+        if (!TheWiiProfileMgr.IsPadAGuest(padNum))
+            return;
     }
     static Message init("init", 0);
     init[0] = 0;

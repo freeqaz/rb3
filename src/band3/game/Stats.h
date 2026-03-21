@@ -8,7 +8,7 @@ public:
     struct PartPercentageSorter {
         bool
         operator()(const std::pair<int, float> &p1, const std::pair<int, float> &p2) {
-            return p1.second < p2.second ? true : false;
+            return p1.second > p2.second ? true : false;
         }
     };
 

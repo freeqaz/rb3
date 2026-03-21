@@ -182,7 +182,7 @@ MetaPerformer *MetaPerformer::Current() { return sMetaPerformer; }
 
 MetaPerformerImpl *MetaPerformer::CurrentImpl() const {
     MetaPerformerImpl *ret;
-    return TheTour && TheGameMode->InMode(tour) && (ret = TheTour->GetPerformer(), ret)
+    return TheTour && TheGameMode->InMode(tour) && (ret = TheTour->m_pTourPerformer, ret)
         ? ret
         : mQpPerformer;
 }

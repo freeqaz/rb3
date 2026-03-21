@@ -66,8 +66,8 @@ void UsbMidiGuitar::Poll() {
                 || ty == kJoypadPs3RealGuitar22Fret || ty == kJoypadWiiRealGuitar22Fret) {
                 proData = &JoypadGetPadData(i)->mProGuitarData;
                 unsigned int uVar9 = 0;
+                int curVel, curFret;
                 for (int j = 5; j >= 0; j--) {
-                    int curFret, curVel;
                     switch (j) {
                     case 5:
                         curFret = proData->mString5Fret;

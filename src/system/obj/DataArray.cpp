@@ -655,6 +655,7 @@ void DataArray::Load(BinStream &bs) {
     bs >> mLine;
     bs >> mDeprecated;
 
+    DataArray *array = nullptr;
     for (int i = 0; i < size;) {
         DataNode &node = mNodes[i];
         bs >> node;
@@ -667,7 +668,7 @@ void DataArray::Load(BinStream &bs) {
             }
         }
 
-        DataArray *array = nullptr;
+        array = nullptr;
         if (node.Type() == kDataSymbol
             && (array = DataGetMacro(STR_TO_SYM(node.mValue.symbol))) != 0) {
             size += array->Size() - 1;
@@ -748,8 +749,8 @@ void DataArray::Load(BinStream &bs) {
             if (node.Type() == kDataInclude) {
                 size += macro->Size() - 1;
                 MemDoTempAllocations(true, false), Resize(size);
-                for (int j = 0; j < array->Size(); j++) {
-                    mNodes[i++] = array->Node(j);
+                for (int j = 0; j < macro->Size(); j++) {
+                    mNodes[i++] = macro->Node(j);
                 }
             } else {
                 if (macro->Size() == 0) {

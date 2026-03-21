@@ -435,8 +435,8 @@ void VocalTrackDir::SetConfiguration(Hmx::Object *o, HarmonyShowingState state) 
 }
 
 void VocalTrackDir::UpdateConfiguration() {
-    bool widescreen = TheRnd->GetAspect() == Rnd::kWidescreen;
     bool b8 = false;
+    bool widescreen = TheRnd->GetAspect() == Rnd::kWidescreen;
     if (BandTrack::mParent && BandTrack::mParent->HasNetPlayer())
         b8 = true;
     b8 |= mSimulatedNet;

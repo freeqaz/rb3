@@ -108,7 +108,6 @@ MCResult BufStreamNAND::HandleResultNAND(s32 nandResult) {
         result = kMCFileExists;
         break;
     case NAND_RESULT_INVALID:
-    case NAND_RESULT_OPENFD:
         result = kMCNoPermission;
         break;
     case NAND_RESULT_MAXBLOCKS:

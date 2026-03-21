@@ -4,6 +4,7 @@
 #include "tour/TourPerformer.h"
 
 class TourPerformerRemote : public TourPerformerImpl {
+public:
     TourPerformerRemote(BandUserMgr &);
     virtual ~TourPerformerRemote();
     virtual void SyncLoad(BinStream &, uint);

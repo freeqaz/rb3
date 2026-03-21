@@ -4,12 +4,14 @@
 
 INIT_REVS(ChordShapeGenerator);
 
+static Transform sDefaultTransform;
+
 ChordShapeGenerator::ChordShapeGenerator()
     : mFingerSrcMesh(this, 0), mChordSrcMesh(this, 0), mBaseXSection(this, 0),
       mContourXSection(this, 0), mBaseHeight(this, 0), mNumSlots(6), mString0(this, 0),
       mString1(this, 0), mString2(this, 0), mString3(this, 0), mString4(this, 0),
       mString5(this, 0), unkc4(0), unkc8(-1.0f), unkcc(1.0f), unkd0(0.2f) {
-    mFretHeights.resize(6);
+    mFretHeights.resize(7);
     for (int i = 0; i < 7; i++)
         mFretHeights[i] = 1.0f;
     mGradeDistances.resize(6);
@@ -97,8 +99,7 @@ const Transform &ChordShapeGenerator::SlotXfm(int idx) const {
         return mString5->WorldXfm();
     default:
         MILO_WARN("string index %d out of range", idx);
-        static Transform t;
-        return t;
+        return sDefaultTransform;
     }
 }
 

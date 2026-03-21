@@ -62,15 +62,15 @@ void NextSongPanel::Exit() {
 }
 
 bool NextSongPanel::Exiting() const {
-    bool ret = true;
+    bool ret = false;
     if (!UIPanel::Exiting()) {
         float mintimeprop = Property("min_time", true)->Float();
         float uisecs = TheTaskMgr.UISeconds();
-        if (mintimeprop > uisecs - mEnterTime)
-            ret = true;
-        else
-            ret = false;
+        if (!(uisecs - mEnterTime < mintimeprop))
+            goto done;
     }
+    ret = true;
+done:
     return ret;
 }
 

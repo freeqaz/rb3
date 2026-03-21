@@ -114,8 +114,8 @@ void BandSongMgr::ContentDone() {
     for (int i = 0; i < 9U; i++) {
         SongRanking ranking;
         ranking.mInstrument = instSyms[i];
-        std::vector<int> curSongs = songs;
         std::vector<int> i80;
+        std::vector<int> curSongs = songs;
         std::sort(
             curSongs.begin(), curSongs.end(), SongRankCmp(this, ranking.mInstrument)
         );
@@ -158,7 +158,7 @@ void BandSongMgr::ContentDone() {
     }
     unk124 = false;
     SyncSharedSongs();
-    if (&TheRockCentral) {
+    if (TheRockCentral.IsOnline()) {
         std::vector<BandProfile *> profiles = TheProfileMgr.GetSignedInProfiles();
         std::vector<int> songs2;
         GetRankedSongs(songs2, false, true);
@@ -718,8 +718,9 @@ void BandSongMgr::AllowCacheWrite(bool b) {
 }
 
 void BandSongMgr::CheatToggleMaxSongCount() {
+    int max;
     DataArray *cfg = SystemConfig(song_mgr);
-    int max = cfg->FindInt(max_song_count);
+    max = cfg->FindInt(max_song_count);
     int max_debug = cfg->FindInt(max_song_count_debug);
     if (mMaxSongCount == max)
         max = max_debug;

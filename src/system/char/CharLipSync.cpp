@@ -185,9 +185,17 @@ BEGIN_COPYS(CharLipSync)
 END_COPYS
 
 BEGIN_PROPSYNCS(CharLipSync)
-    SYNC_PROP_STATIC(frames, mFrames)
+    {
+        static Symbol _s("frames");
+        if (sym == _s && (_op & kPropGet))
+            return PropSync(mFrames, _val, _prop, _i + 1, _op);
+    }
     SYNC_PROP_SET(duration, Duration(), )
-    SYNC_PROP_MODIFY_STATIC(visemes, mVisemes, )
+    {
+        static Symbol _s("visemes");
+        if (sym == _s && (_op & (kPropGet | kPropSize)))
+            return PropSync(mVisemes, _val, _prop, _i + 1, _op);
+    }
     SYNC_PROP(prop_anim, mPropAnim)
 END_PROPSYNCS
 

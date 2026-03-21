@@ -64,8 +64,8 @@ static DataNode OnFileRelativePath(DataArray *da) {
 
 static DataNode OnWithFileRoot(DataArray *da) {
     FilePathTracker fpt(da->Str(1));
-    int thresh = da->Size() - 1;
     int i;
+    int thresh = da->Size() - 1;
     for (i = 2; i < thresh; i++) {
         da->Command(i)->Execute();
     }
@@ -252,7 +252,7 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
     if (*fileDrive != '\0') {
         file += strlen(fileDrive) + 1;
     }
-    char *c = buffer;
+    char *c;
     if (*file == '/' || *file == '\\' || *file == '\0') {
         if (*fileDrive != '\0') {
             sprintf(buffer, "%s:%s", fileDrive, file);
@@ -262,20 +262,24 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
             if (*rootDrive != '\0') {
                 sprintf(buffer, "%s:%s", rootDrive, file);
                 c = buffer + strlen(rootDrive) + 1;
-            } else
+            } else {
                 strcpy(buffer, file);
+                c = buffer;
+            }
         }
     } else {
         sprintf(buffer, "%s/%s", root, file);
         const char *rootDrive = FileGetDrive(root);
         if (*rootDrive != '\0') {
             c = buffer + strlen(rootDrive) + 1;
+        } else {
+            c = buffer;
         }
     }
     FileNormalizePath(buffer);
     int curC3IsSlash = (*c == '/');
-    char *dirs[32];
-    const char **endDir = (const char **)&dirs[0];
+    const char *dirs[32];
+    const char **endDir = &dirs[0];
     for (char *p = (char *)strtok(c, "/"); p != nullptr; p = strtok(nullptr, "/")) {
         if (*p != '.')
             *endDir++ = p;
@@ -293,7 +297,7 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
         } else
             *c++ = '.';
     } else {
-        for (const char **dir = (const char **)&dirs[0]; dir != endDir; dir++) {
+        for (const char **dir = &dirs[0]; dir != endDir; dir++) {
             if (dir != dirs || curC3IsSlash) {
                 *c++ = '/';
             }

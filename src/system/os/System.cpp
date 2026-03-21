@@ -237,8 +237,8 @@ void StripEditorData() {
 
 void InitSystem(const char *path) {
     if (!gPreconfigOverride && path != NULL) {
-        Archive *archive = TheArchive;
         bool usingCD = gUsingCD != 0;
+        Archive *archive = TheArchive;
 
         if (gHostConfig) {
             SetUsingCD(false);

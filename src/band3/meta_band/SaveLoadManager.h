@@ -21,7 +21,7 @@ public:
     Symbol GetDialogOpt2();
     Symbol GetDialogOpt3();
     int GetDialogFocusOption();
-    bool IsInititalLoadDone();
+    bool IsInitialLoadDone() const;
     bool IsIdle();
     void Activate();
     void PrintoutSaveSizeInfo();

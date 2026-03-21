@@ -527,8 +527,8 @@ void Player::CompleteCommonPhrase(bool b1, bool b2) {
 int Player::GetIndividualMultiplier() const {
     if (GetMultiplierActive()) {
         int streak = mStats.GetCurrentStreak();
-        int mult = TheScoring->GetStreakMult(streak, mBehavior->mStreakType);
         int maxMult = mBehavior->mMaxMultiplier;
+        int mult = TheScoring->GetStreakMult(streak, mBehavior->mStreakType);
         return std::min(maxMult, mult);
     } else
         return 1;

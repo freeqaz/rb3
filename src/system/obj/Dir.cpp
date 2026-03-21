@@ -646,7 +646,7 @@ ObjectDir::Entry *ObjectDir::FindEntry(const char *name, bool add) {
             Entry newEntry;
             newEntry.name = SymbolCacheLookup(name);
             if (!newEntry.name) {
-                mStringTable.Add(newEntry.name);
+                newEntry.name = mStringTable.Add(name);
             }
             entry = mHashTable.Insert(newEntry);
         }

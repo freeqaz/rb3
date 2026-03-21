@@ -30,10 +30,11 @@ void CommonPhraseCapturer::Reset() {
 
 void CommonPhraseCapturer::HandlePhraseNote(GemPlayer *p, int i2, int i3, bool b4) {
     if (i3 != -1) {
+        int tracks;
         int phraseID = TheSongDB->GetPhraseID(i2, i3);
         if (phraseID != -1) {
             ExtendPhraseStates(phraseID);
-            int tracks = TheSongDB->GetCommonPhraseTracks(phraseID);
+            tracks = TheSongDB->GetCommonPhraseTracks(phraseID);
             tracks &= ~mDisabledTracks;
             bool unison = TheSongDB->IsUnisonPhrase(phraseID);
             if (phraseID != TheSongDB->GetPhraseID(i2, i3 + 1) && unison) {
@@ -152,7 +153,11 @@ void CommonPhraseCapturer::AllTracksCompletedPhrase(int n) {
 }
 
 void CommonPhraseCapturer::ExtendPhraseStates(int n) {
-    if (mPhraseStates.size() <= n) {
-        mPhraseStates.resize(n + 1);
+    if (mPhraseStates.size() <= (unsigned)n) {
+        PhraseState defState;
+        defState.unk0 = 0;
+        defState.unk4 = 0;
+        defState.unk8 = 0;
+        mPhraseStates.resize(n + 1, defState);
     }
 }

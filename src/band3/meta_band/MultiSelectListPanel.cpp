@@ -32,7 +32,8 @@ void MultiSelectListPanel::Unload() {
 }
 
 void MultiSelectListPanel::ResetSelectRect(int i1) {
-    float fset = mSpacing * (float)i1 * mHeightMultiplier;
+    float fset = mSpacing * (float)i1;
+    fset *= mHeightMultiplier;
     fset = mSelectionMesh->Verts(0).pos.z - fset;
     mSelectionMesh->Verts(1).pos.z = fset;
     mSelectionMesh->Verts(3).pos.z = fset;

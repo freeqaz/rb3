@@ -57,7 +57,7 @@ namespace std {
 
         size_type grow_by(size_type n) {
             size_type capacity = m_Capacity.first();
-            if (-capacity - 1 < n) {
+            if (n > -capacity - 1) {
                 throw std::length_error("vector length error");
             }
 

@@ -265,9 +265,9 @@ int UTF16toUTF8(char *c, const unsigned short *us) {
 
 void ASCIItoWideVector(std::vector<unsigned short> &vec, const char *cc) {
     vec.clear();
-    for (int i = 0; i < strlen(cc); cc++, i++) {
+    for (int i = 0; i < strlen(cc); i++) {
         String str;
-        EncodeUTF8(str, (unsigned char)*cc);
+        EncodeUTF8(str, (unsigned char)cc[i]);
         unsigned short us;
         DecodeUTF8(us, str.c_str());
         vec.push_back(us);

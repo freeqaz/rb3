@@ -2,6 +2,7 @@
 #include "obj/Object.h"
 #include "rndobj/Trans.h"
 #include "math/Mtx.h"
+#include "math/Utl.h"
 #include "math/Vec.h"
 #include "math/Geo.h"
 #include "obj/ObjPtr_p.h"
@@ -47,10 +48,17 @@ public:
     void SetZRange(float f1, float f2) { mZRange.Set(f1, f2); }
     const Transform &LocalProjectXfm() const { return mLocalProjectXfm; }
     float CalcScreenHeight(const Sphere &s) {
-        float r = s.GetRadius();
+        float r = mLocalProjectXfm.m.z.y * s.GetRadius();
         float dist = CalcDistTo(s.center);
+        if (dist != 0) {
+            return std::fabs(r / dist) * mScreenRect.h;
+        } else {
+            return kHugeFloat;
+        }
     }
-    float CalcDistTo(const Vector3 &);
+    float CalcDistTo(const Vector3 &v) {
+        return Dot(v, WorldXfm().m.y) + mInvWorldXfm.v.y;
+    }
 
     bool CompareSphereToWorld(const Sphere &s) const { return s > mWorldFrustum; }
 

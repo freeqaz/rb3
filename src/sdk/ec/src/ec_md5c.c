@@ -140,7 +140,6 @@ void HASH_FINAL(unsigned char *md, HASH_CTX *c) {
 
 static void MD5Transform(MD5_CTX *c, const void *data_) {
     const unsigned char *cdata = data_;
-    const HASH_LONG *data = data_;
     register unsigned MD32_REG_T A, B, C, D, l;
     MD5_LONG XX[MD5_LBLOCK];
 
@@ -150,52 +149,25 @@ static void MD5Transform(MD5_CTX *c, const void *data_) {
     D = c->D;
 
     for (int i = 0; i < sizeof(XX) / sizeof(*XX); i++) {
-        HOST_c2l(cdata, XX[i]);
+        HOST_c2l(cdata, l);
+        XX[i] = l;
     }
 
     /* Round 0 */
     R0(A, B, C, D, XX[0], 7, 0xd76aa478L);
-    HOST_c2l(data, l);
-    XX[2] = l;
     R0(D, A, B, C, XX[1], 12, 0xe8c7b756L);
-    HOST_c2l(data, l);
-    XX[3] = l;
     R0(C, D, A, B, XX[2], 17, 0x242070dbL);
-    HOST_c2l(data, l);
-    XX[4] = l;
     R0(B, C, D, A, XX[3], 22, 0xc1bdceeeL);
-    HOST_c2l(data, l);
-    XX[5] = l;
     R0(A, B, C, D, XX[4], 7, 0xf57c0fafL);
-    HOST_c2l(data, l);
-    XX[6] = l;
     R0(D, A, B, C, XX[5], 12, 0x4787c62aL);
-    HOST_c2l(data, l);
-    XX[7] = l;
     R0(C, D, A, B, XX[6], 17, 0xa8304613L);
-    HOST_c2l(data, l);
-    XX[8] = l;
     R0(B, C, D, A, XX[7], 22, 0xfd469501L);
-    HOST_c2l(data, l);
-    XX[9] = l;
     R0(A, B, C, D, XX[8], 7, 0x698098d8L);
-    HOST_c2l(data, l);
-    XX[10] = l;
     R0(D, A, B, C, XX[9], 12, 0x8b44f7afL);
-    HOST_c2l(data, l);
-    XX[11] = l;
     R0(C, D, A, B, XX[10], 17, 0xffff5bb1L);
-    HOST_c2l(data, l);
-    XX[12] = l;
     R0(B, C, D, A, XX[11], 22, 0x895cd7beL);
-    HOST_c2l(data, l);
-    XX[13] = l;
     R0(A, B, C, D, XX[12], 7, 0x6b901122L);
-    HOST_c2l(data, l);
-    XX[14] = l;
     R0(D, A, B, C, XX[13], 12, 0xfd987193L);
-    HOST_c2l(data, l);
-    XX[15] = l;
     R0(C, D, A, B, XX[14], 17, 0xa679438eL);
     R0(B, C, D, A, XX[15], 22, 0x49b40821L);
     /* Round 1 */

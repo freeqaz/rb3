@@ -281,7 +281,7 @@ bool Campaign::IsLastCampaignLevel(Symbol level) const {
     int iNumLevels = m_vCampaignLevels.size();
     for (int i = 0; i < iNumLevels; i++) {
         if (level == m_vCampaignLevels[i]) {
-            return i == iNumLevels - 1;
+            return i >= iNumLevels - 1;
         }
     }
     MILO_ASSERT(false, 0x1E7);

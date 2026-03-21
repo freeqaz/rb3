@@ -115,8 +115,8 @@ public:
     float mRequiredAccuracy; // 0xd0
     int unkd4;
     int unkd8;
-    int unkdc;
     int unke0;
+    int unkdc;
     float unke4;
     bool unke8;
     TrackerSectionManager mSectionManager; // 0xec

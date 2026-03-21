@@ -182,7 +182,7 @@ void TDStretch::overlapMono(SAMPLETYPE *pOutput, const SAMPLETYPE *pInput) const
     for (i = 0; i < overlapLength ; i ++)
     {
         itemp = overlapLength - i;
-        pOutput[i] = (pInput[i] * i + pMidBuffer[i] * itemp ) / overlapLength;    // >> overlapDividerBits;
+        pOutput[i] = (pInput[i] * i + pMidBuffer[i] * itemp ) / (uint)overlapLength;    // >> overlapDividerBits;
     }
 }
 
@@ -718,7 +718,7 @@ void TDStretch::overlapStereo(short *output, const short *input) const
 {
     int i;
     short temp;
-    uint cnt2;
+    int cnt2;
 
     for (i = 0; i < (int)overlapLength ; i ++)
     {

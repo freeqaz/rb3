@@ -225,4 +225,9 @@ public:
 #define MILO_LOG_ONCE(...) (void)(__VA_ARGS__)
 #endif
 
+// Include after MILO_ASSERT is defined so Sigmoid can use it.
+// This also restores the implicit dependency many files had on math/Utl.h
+// via the old chain: Debug.h -> Data.h -> Color.h -> Utl.h
+#include "math/Utl.h"
+
 #endif

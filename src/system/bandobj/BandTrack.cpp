@@ -1,4 +1,5 @@
 #include "bandobj/BandTrack.h"
+#include "bandobj/EndingBonus.h"
 #include "bandobj/TrackPanelDirBase.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
@@ -188,11 +189,10 @@ int BandTrack::GetPlayerDifficulty() const {
 }
 
 void BandTrack::PeakState(bool enabled, bool b2) {
-    if (enabled != unk1a) {
-        if ((enabled != false) && (mStreakMeter != nullptr)) {
-            mStreakMeter->SetPeakState();
-        }
-    }
+    if (enabled == unk1a)
+        return;
+    if (enabled && mStreakMeter)
+        mStreakMeter->SetPeakState();
     unk1a = enabled;
 }
 
@@ -211,11 +211,10 @@ void BandTrack::PlayerSaved() {
 }
 
 void BandTrack::SuperStreak(bool enabled, bool b2) {
-    if (enabled != unk19) {
-        if ((enabled != false) && (mStreakMeter != nullptr)) {
-            mStreakMeter->SetPeakState();
-        }
-    }
+    if (enabled == unk19)
+        return;
+    if (enabled && mStreakMeter)
+        mStreakMeter->SetPeakState();
     unk19 = enabled;
 }
 
@@ -256,7 +255,7 @@ void BandTrack::SetupCrowdMeter() {
     if (meter && !meter->Disabled() && mTrackIdx > -1) {
         CrowdMeterIcon *micon = meter->PlayerIcon(mTrackIdx);
         micon->SetIcon(icon);
-        micon->unk240 = dynamic_cast<TrackPanelDirBase *>(ThisDir());
+        micon->unk240 = dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir());
     }
     if (mUnisonIcon)
         mUnisonIcon->SetIcon(icon);
@@ -379,10 +378,14 @@ void BandTrack::SpotlightFail(bool guilty) {
 }
 
 void BandTrack::SpotlightPhraseSuccess() {
-    if (dynamic_cast<TrackPanelDirBase *>(ThisDir())) {
-        if (dynamic_cast<TrackPanelDirBase *>(ThisDir())->GetEndingBonus()) {
+    if (dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())) {
+        if (dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())->GetEndingBonus()) {
+            int trackIdx = mTrackIdx;
+            dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())->GetEndingBonus()->PlayerSuccess(trackIdx);
         }
     }
+    if (mUnisonIcon)
+        mUnisonIcon->Succeed();
 }
 
 void BandTrack::FillReset() {

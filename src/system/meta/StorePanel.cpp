@@ -92,7 +92,7 @@ bool StorePanel::IsMetadataLoaded() {
         ExitError(TheStoreMetadata.LoadError());
         return false;
     } else
-        return 1;
+        return (TheStoreMetadata.mFlags >> 3) & 1;
 }
 
 void StorePanel::Enter() {

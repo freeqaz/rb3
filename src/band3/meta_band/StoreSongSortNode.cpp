@@ -6,7 +6,7 @@
 #include "utl/Symbols2.h"
 
 StoreSongSortNode::StoreSongSortNode(SongSortCmp *cmp, StoreOffer* off) : SongSortNode(cmp) {
-    
+    unk38 = off;
     unk34 = off->ShortName();
 }
 

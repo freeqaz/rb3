@@ -467,10 +467,10 @@ Stats::MultiplierInfo::MultiplierInfo()
       mPoints(0) {}
 
 bool operator>(const Stats::MultiplierInfo &info1, const Stats::MultiplierInfo &info2) {
-    if (info1.mPoints == info2.mPoints) {
-        return info1.mDurationMs < info2.mDurationMs;
+    if (info2.mPoints == info1.mPoints) {
+        return info2.mDurationMs > info1.mDurationMs;
     } else
-        return info1.mPoints < info2.mPoints;
+        return info2.mPoints > info1.mPoints;
 }
 
 Stats::SectionInfo::SectionInfo() : unk4(-1.0f), unk8(0) {}

@@ -108,7 +108,8 @@ void CharBoneDir::StuffBones(CharBones &bones, Symbol sym) {
             if (!dir)
                 MILO_WARN("CharClip %s has no resource", sym);
             else {
-                dir->StuffBones(bones, DataGetMacro(resource->Str(2))->Int(0));
+                DataArray *macro = DataGetMacro(resource->Str(2));
+                dir->StuffBones(bones, macro->Int(0));
             }
         }
     }
@@ -158,8 +159,9 @@ void CharBoneDir::MergeCharacter(const FilePath &fp) {
         for (ObjDirItr<RndTransformable> it(dir, false); it != 0; ++it) {
             if (dir != (Hmx::Object *)it) {
                 if (CharUtlIsAnimatable(it)) {
-                    if (strncmp(it->Name(), "bone_", 5) == 0
-                        || strncmp(it->Name(), "exo_", 4) == 0) {
+                    const char *itName = it->Name();
+                    if (strncmp(itName, "bone_", 5) == 0
+                        || strncmp(itName, "exo_", 4) == 0) {
                         tlist.push_back(it);
                     }
                 }
@@ -192,12 +194,13 @@ void CharBoneDir::MergeCharacter(const FilePath &fp) {
         while (!tlist60.empty()) {
             RndTransformable *parent = tlist60.back()->TransParent();
             if (parent) {
-                if (strncmp(parent->Name(), "bone_", 5) != 0) {
-                    if (strncmp(parent->Name(), "exo_", 4) != 0)
+                const char *parentName = parent->Name();
+                if (strncmp(parentName, "bone_", 5) != 0) {
+                    if (strncmp(parentName, "exo_", 4) != 0)
                         goto pop;
                 }
                 if (parent->Dir() != this) {
-                    parent->SetName(parent->Name(), this);
+                    parent->SetName(parentName, this);
                     parent->SetTransParent(nullptr, false);
                 }
             }

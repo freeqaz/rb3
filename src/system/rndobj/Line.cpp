@@ -26,7 +26,7 @@ void RndLine::DrawShowing() {
     if (mPoints.size() >= 2) {
         if (mLineUpdate) {
             RndCam *cam = RndCam::sCurrent;
-            UpdateLine(cam->WorldXfm(), RndCam::sCurrent->NearPlane());
+            UpdateLine(cam->WorldXfm(), cam->NearPlane());
             mMesh->SetWorldXfm(cam->WorldXfm());
         }
         mMesh->DrawShowing();

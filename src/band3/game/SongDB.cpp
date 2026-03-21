@@ -239,9 +239,8 @@ void SongDB::DisableCodaGems() {
             GameGemList *gems = mSongData->GetGemList(i);
             std::vector<FillExtent> &extents = mSongData->GetDrumFillInfo(i)->mFills;
             if (!extents.empty() && extents.back().start >= mCodaStartTick) {
-                int i7 = extents.back().start;
                 int i2 = extents.back().end;
-                int markerIdx = gems->ClosestMarkerIdxAtOrAfterTick(i7);
+                int markerIdx = gems->ClosestMarkerIdxAtOrAfterTick(extents.back().start);
                 if (markerIdx != -1) {
                     for (; markerIdx < gems->NumGems()
                          && gems->GetGem(markerIdx).GetTick() <= i2;

@@ -473,7 +473,8 @@ void TrackWatcherImpl::CheckForAutoplay(float ms) {
 
 void TrackWatcherImpl::CheckForGemsSeen(float ms) {
     int numGems = mGemList->NumGems();
-    while ((mLastGemSeen != numGems - 1)) {
+    int limit = numGems - 1;
+    while ((mLastGemSeen != limit)) {
         int next = mLastGemSeen + 1;
         if (mGemList->TimeAt(next) < ms) {
             mLastGemSeen = next;
