@@ -327,8 +327,9 @@ BEGIN_COPYS(Spotlight)
 END_COPYS
 
 void Spotlight::ListDrawChildren(std::list<RndDrawable *> &draws) {
-    if (mLightCanMesh)
-        draws.push_back(mLightCanMesh);
+    RndMesh *lightCanMesh = mLightCanMesh;
+    if (lightCanMesh)
+        draws.push_back(lightCanMesh);
     FOREACH (it, mAdditionalObjects) {
         draws.push_back(*it);
     }
