@@ -424,8 +424,8 @@ bool ParseNode() {
 
         // Parse in reverse, up until the `x` of `0x`
         int base = 1;
-        // TODO: yytext needs to be loaded twice here, but is being optimized to one load
-        for (char *c = yytext + strlen(yytext) - 1; *c != 'x'; --c, base <<= 4) {
+        int len = strlen(yytext);
+        for (char *c = yytext + len - 1; *c != 'x'; --c, base <<= 4) {
             if (*c >= 'a') {
                 i += (*c - 'a' + 10) * base;
 #ifdef NON_MATCHING
