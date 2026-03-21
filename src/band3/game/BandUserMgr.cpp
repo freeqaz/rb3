@@ -254,10 +254,129 @@ int BandUserMgr::GetBandUsers(std::vector<BandUser *> *users, int mask) const {
     return ret;
 }
 
-int BandUserMgr::GetLocalBandUsers(std::vector<LocalBandUser *> *users, int mask) const {}
+int BandUserMgr::GetLocalBandUsers(std::vector<LocalBandUser *> *users, int mask) const {
+    bool inSession = false;
+    int mBit2 = mask & 0x4;
+    int mBit3 = mask & 0x8;
+    int mBit6 = mask & 0x40;
+    int mBit7 = mask & 0x80;
+    int mBit11 = mask & 0x800;
+    int mBit12 = mask & 0x1000;
+    int mBit8 = mask & 0x100;
+    int mBit4 = mask & 0x10;
+    int mBit5 = mask & 0x20;
+    int mBit9 = mask & 0x200;
+    int mBit10 = mask & 0x400;
+    int mBit13 = mask & 0x2000;
+    int mBit14 = mask & 0x4000;
+    int count = 0;
+    FOREACH(it, mLocalUsers) {
+        LocalBandUser *user = *it;
+        MILO_ASSERT(user, 0x183);
+
+        bool isParticipating = user->IsParticipating();
+
+        if (mSessionMgr) {
+            inSession = mSessionMgr->HasUser(user);
+        } else {
+            inSession = false;
+        }
+
+        bool isSignedIn = false;
+        if (mBit11) {
+            isSignedIn = ThePlatformMgr.IsUserSignedIn(user);
+        }
+
+        bool hasPrivilege = true;
+        if (mBit12) {
+            hasPrivilege = ThePlatformMgr.UserHasOnlinePrivilege(user) & 1;
+        }
+
+        bool canSaveData = false;
+        if (mBit4 || mBit5) {
+            canSaveData = user->CanSaveData();
+        }
+
+        bool isConnected = user->IsJoypadConnected();
+        ControllerType ctType = user->ConnectedControllerType();
+
+        bool rej2 = mBit2 && isParticipating;
+        if (rej2) continue;
+        bool rej3 = mBit3 && !isParticipating;
+        if (rej3) continue;
+        bool rej4 = mBit4 && canSaveData;
+        if (rej4) continue;
+        bool rej5 = mBit5 && !canSaveData;
+        if (rej5) continue;
+        bool rej6 = mBit6 && isConnected;
+        if (rej6) continue;
+        bool rej7 = mBit7 && !isConnected;
+        if (rej7) continue;
+        bool rej8 = mBit8 && ctType == kControllerGuitar;
+        if (rej8) continue;
+        bool rej9 = mBit9 && ctType == kControllerVocals;
+        if (rej9) continue;
+        bool rej10 = mBit10 && ctType == kControllerDrum;
+        if (rej10) continue;
+        bool rej11 = mBit11 && !isSignedIn;
+        if (rej11) continue;
+        bool rej12 = mBit12 && !hasPrivilege;
+        if (rej12) continue;
+        bool rej13 = mBit13 && inSession;
+        if (rej13) continue;
+        bool rej14 = mBit14 && !inSession;
+        if (rej14) continue;
+
+        if (users) {
+            users->push_back(user);
+        }
+        count++;
+    }
+    return count;
+}
 
 int BandUserMgr::GetRemoteBandUsers(std::vector<RemoteBandUser *> *users, int mask) const {
+    bool inSession = false;
+    int mBit2 = mask & 0x4;
+    int mBit3 = mask & 0x8;
+    int notBit5 = !(mask & 0x20);
+    int notBit7 = !(mask & 0x80);
+    int notBit11 = !(mask & 0x800);
+    int notBit12 = !(mask & 0x1000);
+    int mBit13 = mask & 0x2000;
+    int mBit14 = mask & 0x4000;
+    int count = 0;
+    FOREACH(it, mRemoteUsers) {
+        RemoteBandUser *user = *it;
+        MILO_ASSERT(user, 0x1c1);
 
+        bool isParticipating = user->IsParticipating();
+
+        if (mSessionMgr) {
+            inSession = mSessionMgr->HasUser(user);
+        } else {
+            inSession = false;
+        }
+
+        bool rej2 = mBit2 && isParticipating;
+        if (rej2) continue;
+        bool rej3 = mBit3 && !isParticipating;
+        if (rej3) continue;
+        if (!notBit5) continue;
+        if (!notBit7) continue;
+        if (!notBit11) continue;
+        if (!notBit12) continue;
+        bool rej13 = mBit13 && inSession;
+        if (rej13) continue;
+        bool rej14 = mBit14 && !inSession;
+        if (rej14) continue;
+
+        if (users) {
+            users->push_back(user);
+        }
+        count++;
+    }
+    return count;
 }
 
 int BandUserMgr::GetParticipatingBandUsers(std::vector<BandUser *> &users) const {

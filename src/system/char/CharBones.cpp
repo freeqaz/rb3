@@ -84,6 +84,31 @@ void CharBones::ReallocateInternal() {}
 
 void CharBones::SetWeights(float f) { SetWeights(f, mBones); }
 
+void CharBones::AddBoneInternal(const Bone &bone) {
+    Type type = TypeOf(bone.name);
+    int end = mCounts[type + 1];
+    int start = mCounts[type];
+    int pos = start;
+    if (start < end) {
+        const char *name = bone.name.Str();
+        do {
+            const char *existing = mBones[pos].name.Str();
+            if (existing == name)
+                return;
+            if (strcmp(existing, name) >= 0)
+                break;
+            pos++;
+        } while (pos < end);
+    }
+    mBones.insert(mBones.begin() + pos, bone);
+    int size = TypeSize(type);
+    for (int i = type + 1; i < NUM_TYPES; i++) {
+        mCounts[i]++;
+        mOffsets[i] += size;
+    }
+    mTotalSize = (mOffsets[TYPE_END] + 0xFU) & 0xFFFFFFF0;
+}
+
 void CharBones::AddBones(const std::vector<Bone> &vec) {
     for (std::vector<Bone>::const_iterator it = vec.begin(); it != vec.end(); ++it) {
         AddBoneInternal(*it);
@@ -136,11 +161,9 @@ int CharBones::FindOffset(Symbol s) const {
     int size = TypeSize(ty);
     int count = mCounts[ty];
     int offset = mOffsets[ty];
-    for (int i = 0; i < nextcount - count; i++) {
-        if (mBones[count << 3].name == s)
+    for (int i = count; i < nextcount; i++, offset += size) {
+        if (mBones[i].name == s)
             return offset;
-        else
-            offset += size;
     }
     return -1;
 }
@@ -157,6 +180,1003 @@ void *CharBones::FindPtr(Symbol s) const {
         return 0;
     else
         return (void *)&mStart[offset];
+}
+
+void CharBones::ScaleDown(CharBones &dst, float f) const {
+    const Bone *src = mBones.begin();
+    if (src == mBones.end())
+        return;
+
+    if (f == 0.0f) {
+        if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+            Bone *db_begin = dst.mBones.begin();
+            Vector3 *data = (Vector3 *)dst.mStart;
+            Bone *db = db_begin + dst.mCounts[TYPE_POS];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_QUAT];
+            const Bone *src_end = src + mCounts[TYPE_QUAT];
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    data++;
+                }
+                src++;
+                data->z = 0.0f;
+                data->y = 0.0f;
+                data->x = 0.0f;
+                db->weight = 0.0f;
+                if (src >= src_end)
+                    goto zero_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                data++;
+            }
+        }
+    zero_quat:
+        if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
+            Bone *db_begin = dst.mBones.begin();
+            Hmx::Quat *qdata = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
+            Bone *db = db_begin + dst.mCounts[TYPE_QUAT];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_ROTX];
+            const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    qdata++;
+                }
+                src++;
+                qdata->x = 0.0f;
+                qdata->y = 0.0f;
+                qdata->z = 0.0f;
+                qdata->w = 0.0f;
+                db->weight = 0.0f;
+                if (src >= src_end)
+                    goto zero_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                qdata++;
+            }
+        }
+    zero_rot:
+        if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
+            Bone *db_begin = dst.mBones.begin();
+            float *fdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
+            Bone *db = db_begin + dst.mCounts[TYPE_ROTX];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_END];
+            const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    fdata++;
+                }
+                src++;
+                *fdata = 0.0f;
+                db->weight = 0.0f;
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                fdata++;
+            }
+        }
+    } else {
+        if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+            Bone *db_begin = dst.mBones.begin();
+            Vector3 *data = (Vector3 *)dst.mStart;
+            Bone *db = db_begin + dst.mCounts[TYPE_POS];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_QUAT];
+            const Bone *src_end = src + mCounts[TYPE_QUAT];
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    data++;
+                }
+                src++;
+                data->x *= f;
+                data->y *= f;
+                data->z *= f;
+                if (src >= src_end)
+                    goto scale_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                data++;
+            }
+        }
+    scale_quat:
+        if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
+            Bone *db_begin = dst.mBones.begin();
+            Hmx::Quat *qdata = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
+            Bone *db = db_begin + dst.mCounts[TYPE_QUAT];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_ROTX];
+            const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    qdata++;
+                }
+                src++;
+                qdata->x *= f;
+                qdata->y *= f;
+                qdata->z *= f;
+                qdata->w *= f;
+                if (src >= src_end)
+                    goto scale_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                qdata++;
+            }
+        }
+    scale_rot:
+        if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
+            Bone *db_begin = dst.mBones.begin();
+            float *fdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
+            Bone *db = db_begin + dst.mCounts[TYPE_ROTX];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_END];
+            const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    fdata++;
+                }
+                src++;
+                *fdata *= f;
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                fdata++;
+            }
+        }
+    }
+    return;
+
+complain:
+    TestDstComplain(src->name);
+}
+
+void CharBones::ScaleAdd(CharBones &dst, float f) const {
+    const Bone *src = mBones.begin();
+    if (src == mBones.end())
+        return;
+
+    if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+        Vector3 *ddata = (Vector3 *)dst.mStart;
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
+        const Bone *src_end = src + mCounts[TYPE_QUAT];
+        if (mCompression >= kCompressVects) {
+            short *sdata = (short *)mStart;
+            while (true) {
+                short sz = sdata[2];
+                short sy = sdata[1];
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    ddata++;
+                }
+                ddata->x += (float)sdata[0] * 0.039674062f * f;
+                ddata->z += (float)sz * 0.039674062f * f;
+                ddata->y += (float)sy * 0.039674062f * f;
+                db->weight += src->weight * f;
+                src++;
+                if (src >= src_end)
+                    goto add_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                ddata++;
+                sdata += 3;
+            }
+        } else {
+            Vector3 *sdata = (Vector3 *)mStart;
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    ddata++;
+                }
+                ddata->x += sdata->x * f;
+                ddata->y += sdata->y * f;
+                ddata->z += sdata->z * f;
+                db->weight += src->weight * f;
+                src++;
+                if (src >= src_end)
+                    goto add_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                ddata++;
+                sdata++;
+            }
+        }
+    }
+add_quat:
+    if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
+        float abs_f = fabs(f);
+        if (mCompression >= kCompressQuats) {
+            char *sdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
+            float scale = abs_f * 0.0078740157f;
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                float dy = dquat->y;
+                float dx = dquat->x;
+                float dz = dquat->z;
+                float dw = dquat->w;
+                float sy = (float)sdata[1] * scale;
+                float sx = (float)sdata[0] * scale;
+                float sz = (float)sdata[2] * scale;
+                float sw = (float)sdata[3] * (f * 0.0078740157f);
+                if (dw * sw + dz * sz + dx * sx + dy * sy < 0.0f) {
+                    dquat->y = dy - sy;
+                    dquat->z = dz - sz;
+                    dquat->x = dx - sx;
+                    dquat->w = dw - sw;
+                } else {
+                    dquat->y = dy + sy;
+                    dquat->z = dz + sz;
+                    dquat->x = dx + sx;
+                    dquat->w = dw + sw;
+                }
+                db->weight += src->weight * f;
+                src++;
+                if (src >= src_end)
+                    goto add_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                sdata += 4;
+            }
+        } else if (mCompression != kCompressNone) {
+            short *sdata = (short *)(mStart + mOffsets[TYPE_QUAT]);
+            float scale = abs_f * 3.051851e-05f;
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                float dz = dquat->z;
+                float dy = dquat->y;
+                float dw = dquat->w;
+                float dx = dquat->x;
+                float sx = (float)sdata[0] * scale;
+                float sz = (float)sdata[2] * scale;
+                float sy = (float)sdata[1] * scale;
+                float sw = (float)sdata[3] * (f * 3.051851e-05f);
+                if (dx * sx + dy * sy + dz * sz + dw * sw < 0.0f) {
+                    dquat->z = dz - sz;
+                    dquat->x = dx - sx;
+                    dquat->y = dy - sy;
+                    dquat->w = dw - sw;
+                } else {
+                    dquat->z = sz + dz;
+                    dquat->x = dx + sx;
+                    dquat->y = sy + dy;
+                    dquat->w = sw + dw;
+                }
+                db->weight += src->weight * f;
+                src++;
+                if (src >= src_end)
+                    goto add_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                sdata += 4;
+            }
+        } else {
+            Hmx::Quat *squat = (Hmx::Quat *)(mStart + mOffsets[TYPE_QUAT]);
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                float sy = squat->y * abs_f;
+                float dy = dquat->y;
+                float sx = squat->x * abs_f;
+                float dx = dquat->x;
+                float sz = squat->z * abs_f;
+                float dz = dquat->z;
+                float sw = squat->w * f;
+                float dw = dquat->w;
+                if (sx * dx + sy * dy + sz * dz + sw * dw < 0.0f) {
+                    dquat->y = dy - sy;
+                    dquat->z = dz - sz;
+                    dquat->x = dx - sx;
+                    dquat->w = dw - sw;
+                } else {
+                    dquat->y = sy + dy;
+                    dquat->z = sz + dz;
+                    dquat->x = sx + dx;
+                    dquat->w = sw + dw;
+                }
+                db->weight += src->weight * f;
+                src++;
+                if (src >= src_end)
+                    goto add_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                squat++;
+            }
+        }
+    }
+add_rot:
+    if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
+        float *dfdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
+        float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
+        if (mCompression != kCompressNone) {
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dfdata++;
+                }
+                *dfdata += (float)*(short *)sfdata * (f * 0.0006103515625f);
+                db->weight += src->weight * f;
+                src++;
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dfdata++;
+                sfdata = (float *)((char *)sfdata + 2);
+            }
+        } else {
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dfdata++;
+                }
+                *dfdata += *sfdata * f;
+                db->weight += src->weight * f;
+                src++;
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dfdata++;
+                sfdata++;
+            }
+        }
+    }
+    return;
+
+complain:
+    TestDstComplain(src->name);
+}
+
+void CharBones::Blend(CharBones &bones) const {
+    MILO_ASSERT(!mCompression && !bones.mCompression, 0x311);
+    if (mBones.empty())
+        return;
+    const Bone *src = mBones.begin();
+
+    if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+        Vector3 *sdata = (Vector3 *)mStart;
+        Vector3 *ddata = (Vector3 *)bones.mStart;
+        Bone *db = bones.mBones.begin() + bones.mCounts[TYPE_POS];
+        Bone *db_end = bones.mBones.begin() + bones.mCounts[TYPE_QUAT];
+        const Bone *src_end = src + mCounts[TYPE_QUAT];
+        while (true) {
+            while (db->name != src->name) {
+                db++;
+                if (db >= db_end) {
+                    TestDstComplain(src->name);
+                    return;
+                }
+                ddata++;
+            }
+            float wt = 1.0f - src->weight;
+            ddata->x *= wt;
+            ddata->y *= wt;
+            ddata->z *= wt;
+            ddata->x += sdata->x;
+            ddata->y += sdata->y;
+            ddata->z += sdata->z;
+            src++;
+            if (src >= src_end)
+                goto blend_quat;
+            db++;
+            if (db >= db_end) {
+                TestDstComplain(src->name);
+                return;
+            }
+            ddata++;
+            sdata++;
+        }
+    }
+blend_quat:
+    if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
+        Bone *db = bones.mBones.begin() + bones.mCounts[TYPE_QUAT];
+        Bone *db_end = bones.mBones.begin() + bones.mCounts[TYPE_ROTX];
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+        Hmx::Quat *dquat = (Hmx::Quat *)(bones.mStart + bones.mOffsets[TYPE_QUAT]);
+        Hmx::Quat *squat = (Hmx::Quat *)(mStart + mOffsets[TYPE_QUAT]);
+        while (true) {
+            while (db->name != src->name) {
+                db++;
+                if (db >= db_end) {
+                    TestDstComplain(src->name);
+                    return;
+                }
+                dquat++;
+            }
+            float wt = 1.0f - src->weight;
+            dquat->w *= wt;
+            dquat->x *= wt;
+            dquat->y *= wt;
+            dquat->z *= wt;
+            float abs_wt = fabsf(src->weight);
+            float sy = squat->y * abs_wt;
+            float sx = squat->x * abs_wt;
+            float sz = squat->z * abs_wt;
+            float sw = src->weight * squat->w;
+            if (((dquat->x * sx + (dquat->y * sy + (dquat->w * sw + dquat->z * sz))))
+                < 0.0f) {
+                dquat->x -= sx;
+                dquat->y -= sy;
+                dquat->z -= sz;
+                dquat->w -= sw;
+            } else {
+                dquat->x += sx;
+                dquat->y += sy;
+                dquat->z += sz;
+                dquat->w += sw;
+            }
+            src++;
+            if (src >= src_end)
+                goto blend_rot;
+            db++;
+            if (db >= db_end) {
+                TestDstComplain(src->name);
+                return;
+            }
+            dquat++;
+            squat++;
+        }
+    }
+blend_rot:
+    if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
+        Bone *db = bones.mBones.begin() + bones.mCounts[TYPE_ROTX];
+        Bone *db_end = bones.mBones.begin() + bones.mCounts[TYPE_END];
+        float *dfdata = (float *)(bones.mStart + bones.mOffsets[TYPE_ROTX]);
+        float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
+        while (true) {
+            while (db->name != src->name) {
+                db++;
+                if (db >= db_end) {
+                    TestDstComplain(src->name);
+                    return;
+                }
+                dfdata++;
+            }
+            *dfdata *= (1.0f - src->weight);
+            float wt = src->weight;
+            *dfdata += wt * *sfdata;
+            src++;
+            if (src >= src_end)
+                return;
+            db++;
+            if (db >= db_end) {
+                TestDstComplain(src->name);
+                return;
+            }
+            dfdata++;
+            sfdata++;
+        }
+    }
+}
+
+void CharBones::RotateBy(CharBones &dst) const {
+    const Bone *src = mBones.begin();
+    if (src == mBones.end())
+        return;
+
+    if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Vector3 *ddata = (Vector3 *)dst.mStart;
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
+        const Bone *src_end = src + mCounts[TYPE_QUAT];
+        if (db != nullptr && mCompression >= kCompressVects) {
+            short *sdata = (short *)mStart;
+            while (true) {
+                short sz = sdata[2];
+                short sy = sdata[1];
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    ddata++;
+                }
+                src++;
+                ddata->x += (float)sdata[0] * 0.039674062f;
+                ddata->y += (float)sy * 0.039674062f;
+                ddata->z += (float)sz * 0.039674062f;
+                if (src_end == src)
+                    goto rotate_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                ddata++;
+                sdata += 3;
+            }
+        } else {
+            Vector3 *sdata = (Vector3 *)mStart;
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    ddata++;
+                }
+                src++;
+                ddata->x += sdata->x;
+                ddata->y += sdata->y;
+                ddata->z += sdata->z;
+                if (src >= src_end)
+                    goto rotate_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                ddata++;
+                sdata++;
+            }
+        }
+    }
+rotate_quat:
+    if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
+        int src_quat_off = mOffsets[TYPE_QUAT];
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+        if (mCompression >= kCompressQuats) {
+            char *sqdata = (char *)(src_quat_off + mStart);
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                Hmx::Quat sq;
+                ((ByteQuat *)sqdata)->ToQuat(sq);
+                float dw = dquat->w;
+                float dx = dquat->x;
+                src++;
+                float dz = dquat->z;
+                float dy = dquat->y;
+                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
+                dquat->z = -(dx * sq.y - ((dy * sq.x + (dz * sq.w + dw * sq.z))));
+                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
+                dquat->x = -(dy * sq.z - (dw * sq.x + dz * sq.y + dx * sq.w));
+                if (src >= src_end)
+                    goto rotate_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                sqdata += 4;
+            }
+        } else if (mCompression != kCompressNone) {
+            char *sqdata = (char *)(src_quat_off + mStart);
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                Hmx::Quat sq;
+                ((ShortQuat *)sqdata)->ToQuat(sq);
+                float dw = dquat->w;
+                float dx = dquat->x;
+                src++;
+                float dz = dquat->z;
+                float dy = dquat->y;
+                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
+                dquat->z = -(dx * sq.y - (dy * sq.x + dz * sq.w + dw * sq.z));
+                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
+                dquat->x = -(dy * sq.z - (dw * sq.x + dz * sq.y + dx * sq.w));
+                if (src >= src_end)
+                    goto rotate_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                sqdata += 8;
+            }
+        } else {
+            Hmx::Quat *squat = (Hmx::Quat *)(src_quat_off + mStart);
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                float sy = squat->y;
+                src++;
+                float sz = squat->z;
+                float dw = dquat->w;
+                float sx = squat->x;
+                float dx = dquat->x;
+                float sw = squat->w;
+                float dz = dquat->z;
+                float dy = dquat->y;
+                dquat->y = -(sx * dz - (dy * sw + dx * sz + sy * dw));
+                dquat->z = (sy * dx - (dy * sx + sw * dz + dw * sz));
+                dquat->z = -dquat->z;
+                dquat->w = -(dz * sz - -(dy * sy - (dw * sw - sx * dx)));
+                dquat->x = -(dy * sz - (sy * dz + sx * dw + dx * sw));
+                if (src >= src_end)
+                    goto rotate_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                squat++;
+            }
+        }
+    }
+rotate_rot:
+    if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        float *dfdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
+        float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
+        if (mCompression != kCompressNone) {
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dfdata++;
+                }
+                src++;
+                *dfdata += (float)(long long)*(short *)sfdata * 0.00061035156f;
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dfdata++;
+                sfdata = (float *)((char *)sfdata + 2);
+            }
+        } else {
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dfdata++;
+                }
+                src++;
+                *dfdata += *sfdata;
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dfdata++;
+                sfdata++;
+            }
+        }
+    }
+    return;
+
+complain:
+    TestDstComplain(src->name);
+}
+
+void CharBones::RotateTo(CharBones &dst, float f) const {
+    const Bone *src = mBones.begin();
+    if (src >= mBones.end())
+        return;
+
+    if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+        const Bone *src_end = src + mCounts[TYPE_QUAT];
+        Vector3 *ddata = (Vector3 *)dst.mStart;
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
+        if (db != nullptr && mCompression >= kCompressVects) {
+            short *sdata = (short *)mStart;
+            while (true) {
+                short sz = sdata[2];
+                short sy = sdata[1];
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    ddata++;
+                }
+                src++;
+                ddata->x += (float)sdata[0] * 0.039674062f * f;
+                ddata->y += (float)sy * 0.039674062f * f;
+                ddata->z += (float)sz * 0.039674062f * f;
+                if (src >= src_end)
+                    goto rotateto_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                ddata++;
+                sdata += 3;
+            }
+        } else {
+            Vector3 *sdata = (Vector3 *)mStart;
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    ddata++;
+                }
+                src++;
+                ddata->x += sdata->x * f;
+                ddata->y += sdata->y * f;
+                ddata->z += sdata->z * f;
+                if (src >= src_end)
+                    goto rotateto_quat;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                ddata++;
+                sdata++;
+            }
+        }
+    }
+rotateto_quat:
+    if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
+        int src_quat_off = mOffsets[TYPE_QUAT];
+        float abs_f = fabs(f);
+        if (mCompression >= kCompressQuats) {
+            char *sqdata = (char *)(src_quat_off + mStart);
+            float scale = abs_f * 0.0078740157f;
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                Hmx::Quat sq;
+                ((ByteQuat *)sqdata)->ToQuat(sq);
+                float dw = dquat->w;
+                float dx = dquat->x;
+                src++;
+                float dz = dquat->z;
+                float dy = dquat->y;
+                float sw = sq.w * f;
+                float sx = sq.x * scale;
+                float sy = sq.y * scale;
+                float sz = sq.z * scale;
+                if (sx * dx + sy * dy + sz * dz + sw * dw < 0.0f) {
+                    dquat->w = -(-(dy * sy - (dw * sw - dx * sx)) - dz * sz);
+                    dquat->z = -(dx * sy - ((dy * sx + (dz * sw + dw * sz))));
+                    dquat->y = -(dz * sx - (dw * sy + dy * sw + dx * sz));
+                    dquat->x = -(dy * sz - (dw * sx + dz * sy + dx * sw));
+                } else {
+                    dquat->w = -(-(dy * sy - (dw * sw - dx * sx)) - dz * sz);
+                    dquat->z = -(dx * sy - ((dy * sx + (dz * sw + dw * sz))));
+                    dquat->y = -(dz * sx - (dw * sy + dy * sw + dx * sz));
+                    dquat->x = -(dy * sz - (dw * sx + dz * sy + dx * sw));
+                }
+                if (src >= src_end)
+                    goto rotateto_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                sqdata += 4;
+            }
+        } else if (mCompression != kCompressNone) {
+            char *sqdata = (char *)(src_quat_off + mStart);
+            float scale = abs_f * 3.051851e-05f;
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                Hmx::Quat sq;
+                ((ShortQuat *)sqdata)->ToQuat(sq);
+                float dw = dquat->w;
+                float dx = dquat->x;
+                src++;
+                float dz = dquat->z;
+                float dy = dquat->y;
+                float sw = sq.w * f;
+                float sx = sq.x * scale;
+                float sy = sq.y * scale;
+                float sz = sq.z * scale;
+                if (sx * dx + sy * dy + sz * dz + sw * dw < 0.0f) {
+                    dquat->w = -(-(dy * sy - (dw * sw - dx * sx)) - dz * sz);
+                    dquat->z = -(dx * sy - (dy * sx + dz * sw + dw * sz));
+                    dquat->y = -(dz * sx - (dw * sy + dy * sw + dx * sz));
+                    dquat->x = -(dy * sz - (dw * sx + dz * sy + dx * sw));
+                } else {
+                    dquat->w = -(-(dy * sy - (dw * sw - dx * sx)) - dz * sz);
+                    dquat->z = -(dx * sy - (dy * sx + dz * sw + dw * sz));
+                    dquat->y = -(dz * sx - (dw * sy + dy * sw + dx * sz));
+                    dquat->x = -(dy * sz - (dw * sx + dz * sy + dx * sw));
+                }
+                if (src >= src_end)
+                    goto rotateto_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                sqdata += 8;
+            }
+        } else {
+            Hmx::Quat *squat = (Hmx::Quat *)(src_quat_off + mStart);
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dquat++;
+                }
+                float sy = squat->y;
+                src++;
+                float sz = squat->z;
+                float dw = dquat->w;
+                float sx = squat->x;
+                float dx = dquat->x;
+                float sw = squat->w;
+                float dz = dquat->z;
+                float dy = dquat->y;
+                float scaled_sw = sw * f;
+                float abs_sx = sx * abs_f;
+                float abs_sy = sy * abs_f;
+                float abs_sz = sz * abs_f;
+                if (abs_sx * dx + abs_sy * dy + abs_sz * dz + scaled_sw * dw < 0.0f) {
+                    dquat->y =
+                        -(abs_sx * dz - (dy * scaled_sw + dx * abs_sz + abs_sy * dw));
+                    dquat->z =
+                        (abs_sy * dx - (dy * abs_sx + scaled_sw * dz + dw * abs_sz));
+                    dquat->z = -dquat->z;
+                    dquat->w = -(dz * abs_sz
+                                 - -(dy * abs_sy - (dw * scaled_sw - abs_sx * dx)));
+                    dquat->x =
+                        -(dy * abs_sz - (abs_sy * dz + abs_sx * dw + dx * scaled_sw));
+                } else {
+                    dquat->y =
+                        -(abs_sx * dz - (dy * scaled_sw + dx * abs_sz + abs_sy * dw));
+                    dquat->z =
+                        (abs_sy * dx - (dy * abs_sx + scaled_sw * dz + dw * abs_sz));
+                    dquat->z = -dquat->z;
+                    dquat->w = -(dz * abs_sz
+                                 - -(dy * abs_sy - (dw * scaled_sw - abs_sx * dx)));
+                    dquat->x =
+                        -(dy * abs_sz - (abs_sy * dz + abs_sx * dw + dx * scaled_sw));
+                }
+                if (src >= src_end)
+                    goto rotateto_rot;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dquat++;
+                squat++;
+            }
+        }
+    }
+rotateto_rot:
+    if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
+        float *dfdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
+        float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
+        if (mCompression != kCompressNone) {
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dfdata++;
+                }
+                src++;
+                *dfdata += (float)*(short *)sfdata * (f * 0.0006103515625f);
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dfdata++;
+                sfdata = (float *)((char *)sfdata + 2);
+            }
+        } else {
+            while (true) {
+                while (db->name != src->name) {
+                    db++;
+                    if (db >= db_end)
+                        goto complain;
+                    dfdata++;
+                }
+                src++;
+                *dfdata += *sfdata * f;
+                if (src >= src_end)
+                    return;
+                db++;
+                if (db >= db_end)
+                    goto complain;
+                dfdata++;
+                sfdata++;
+            }
+        }
+    }
+    return;
+
+complain:
+    TestDstComplain(src->name);
+}
+
+void CharBones::ScaleAddIdentity() {
+    Hmx::Quat *qend = (Hmx::Quat *)(mStart + mOffsets[TYPE_ROTX]);
+    Bone *bone = mBones.begin() + mCounts[TYPE_QUAT];
+    Hmx::Quat *qstart = (Hmx::Quat *)(mStart + mOffsets[TYPE_QUAT]);
+    while (qstart != qend) {
+        float identity = 1.0f - bone->weight;
+        float w = qstart->w;
+        if (w < 0.0f) {
+            w -= identity;
+        } else {
+            w += identity;
+        }
+        qstart->w = w;
+        qstart++;
+        bone++;
+    }
 }
 
 void CharBones::RecomputeSizes() {
@@ -186,7 +1206,7 @@ const char *CharBones::StringVal(Symbol s) {
             Vector3 vshort((short *)ptr);
             return MakeString("%g %g %g", vshort.x, vshort.y, vshort.z);
         } else {
-            Vector3 *vptr = (Vector3 *)vptr;
+            Vector3 *vptr = (Vector3 *)ptr;
             return MakeString("%g %g %g", vptr->x, vptr->y, vptr->z);
         }
     } else if (t == 2) {

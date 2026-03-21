@@ -50,8 +50,8 @@ Gem &Gem::operator=(const Gem &g) {
 
 bool Gem::OnScreen(float ms) {
     float bottomSeconds = mGemManager->mTrackDir->BottomSeconds();
-
-    return (ms / 1000.0f) + bottomSeconds > mEnd;
+    float computed = (ms / 1000.0f) + bottomSeconds;
+    return mEnd > computed;
 }
 
 void Gem::Poll(float f1, float f2, float f3, float f4, float f5) {
@@ -119,10 +119,7 @@ void Gem::AddRep(
 #pragma push
 #pragma force_active on
 inline bool Gem::UseRGChordStyle() const {
-    bool r = false;
-    if (mGameGem.IsRealGuitarChord() || unk_0x67_1 || mGameGem.IsMuted())
-        r = true;
-    return r;
+    return mGameGem.IsRealGuitarChord() || unk_0x67_1 || mGameGem.IsMuted();
 }
 #pragma pop
 

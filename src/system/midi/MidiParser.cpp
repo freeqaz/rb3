@@ -39,8 +39,12 @@ void MidiParser::ClearManagedParsers() {
                 parsers.push_back(curParser);
         }
     }
-    FOREACH (it, parsers) {
-        delete *it;
+    {
+        AUTO(end, parsers.end());
+        AUTO(it, parsers.begin());
+        for (; it != end; ++it) {
+            delete *it;
+        }
     }
 }
 
@@ -198,11 +202,13 @@ void MidiParser::ParseNote(int startTick, int endTick, unsigned char data1) {
         if (mNotes.size() == 0)
             mNotes.reserve(20000);
         int idx;
+        Note *notesBegin;
         for (idx = mNotes.size() - 1; idx >= 0; idx--) {
             if (startTick >= mNotes[idx].startTick)
                 break;
         }
-        mNotes.insert(mNotes.begin() + (idx + 1), Note(startTick, endTick, data1));
+        notesBegin = mNotes.begin();
+        mNotes.insert(notesBegin + (idx + 1), Note(startTick, endTick, data1));
     }
 }
 

@@ -57,10 +57,11 @@ next:
     if (mBlendFrac == 1) {
         if (mClip->Range() > 0) {
             float f7 = RandomFloat(0, mClip->Range());
+            float beatOff = mBeat + f7;
             float f10 = mClip->EndBeat() + mClip->StartBeat();
             f10 /= 2.0f;
             float f8 = mClip->StartBeat();
-            mBeat = ModRange(f8, f10, mBeat + f7);
+            mBeat = ModRange(f8, f10, beatOff);
         }
     }
     mWeight = 0;

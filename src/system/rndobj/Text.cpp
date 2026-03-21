@@ -843,11 +843,11 @@ void RndText::CreateLines(RndFont *font) {
     float f2 = mStyle.zOffset;
     for (int i = 0; i < mLines.size(); i++) {
         Line &curLine = mLines[i];
+        unsigned short i14 = 0;
         RndMesh::Vert *vert = vertIt;
         float f3 = curLine.unk28.v.z;
         float f90 = curLine.unk28.v.x;
         const char *cc13 = curLine.unk18;
-        unsigned short i14 = 0;
         while (cc13 != curLine.unk1c) {
             unsigned short us98;
             unsigned int ui = DecodeUTF8(us98, cc13);

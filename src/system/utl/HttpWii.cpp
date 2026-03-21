@@ -21,7 +21,7 @@ void *CommerceEcFree(void *ptr) {
 const char *HttpWii::GetNHTTPErrorString(NHTTPError err) {
     if (err == NHTTP_ERROR_SYSTEM) {
         return "NHTTP_ERROR_SYSTEM";
-    } else if (err < NHTTP_NUM_ERRORS) {
+    } else if ((unsigned)err < NHTTP_NUM_ERRORS) {
         static const char *table[NHTTP_NUM_ERRORS] = { "NHTTP_ERROR_NONE",
                                                        "NHTTP_ERROR_ALLOC",
                                                        "NHTTP_ERROR_TOOMANYREQ",
@@ -59,7 +59,7 @@ void HttpWii::Start() {
 
 void HttpWii::CleanupCallback() { TheHttpWii.mStatus = 0; }
 
-BOOL gWaitingOnCancelToComplete;
+bool gWaitingOnCancelToComplete;
 
 void HttpWii::Stop() {
     if (mStatus == 1) {

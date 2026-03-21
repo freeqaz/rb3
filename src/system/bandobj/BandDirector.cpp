@@ -548,9 +548,10 @@ bool BandDirector::ReadyForMidiParsers() {
         msg[1] = NULL_OBJ;
         OnFileLoaded(msg);
     }
+    bool result = false;
     if (mPropAnim && (mVenue.Dir() || mVenue.Name() == "none"))
-        return TheBandWardrobe->AllCharsLoaded();
-    return false;
+        result = TheBandWardrobe->AllCharsLoaded();
+    return result;
 }
 
 void BandDirector::SendMessage(Symbol s1, Symbol s2) {
@@ -1275,7 +1276,7 @@ DataNode BandDirector::OnMidiAddPreset(DataArray *da) {
             if (s1 == gNullStr)
                 s1 = s54;
             Symbol s5c = ConcatCatAdj(s1, s2);
-            if (at >= 0 && skeys->at(at).frame == frame) {
+            if (at >= 0 && frame == skeys->at(at).frame) {
                 skeys->at(at).value = s5c;
             } else
                 skeys->Add(s5c, frame, false);

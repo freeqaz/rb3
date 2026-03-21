@@ -940,28 +940,16 @@ void GemPlayer::AddCodaPoints() {
 
 void GemPlayer::LocalSetEnabledState(EnabledState state, int i2, BandUser *user, bool b4) {
     Player::LocalSetEnabledState(state, i2, user, b4);
-    switch (state) {
-    case kPlayerEnabled:
-        mMatcher->Enable(true);
-        mCommonPhraseCapturer->Enabled(this, mTrackNum, i2, true);
-        InputReceived();
-        SetAutoOn(false);
-        break;
-    case kPlayerDisabled:
-        break;
-    default:
-        return;
+    if (state - 3 > 1U) {
+        if (state == kPlayerEnabled) {
+            mMatcher->Enable(true);
+            mCommonPhraseCapturer->Enabled(this, mTrackNum, i2, true);
+            InputReceived();
+            SetAutoOn(false);
+        }
+        if (state != kPlayerDisabled)
+            return;
     }
-    // if (state - 3 > 1U) {
-    //     if (state == kPlayerEnabled) {
-    //         mBeatMatcher->Enable(true);
-    //         mCommonPhraseCapturer->Enabled(this, mTrackNum, i2, true);
-    //         InputReceived();
-    //         SetAutoOn(false);
-    //     }
-    //     if (state != kPlayerDisabled)
-    //         return;
-    // }
     if (TheGamePanel->GetState() != UIPanel::kUnloaded) {
         mMatcher->Enable(false);
         mCommonPhraseCapturer->Enabled(this, mTrackNum, i2, false);
@@ -1131,7 +1119,7 @@ void GemPlayer::RecordTrillStats() {
         if (i28 == 0)
             i3++;
         else if (i24 > 0) {
-            mStats.IncrementTrillsHit(i28 == i24);
+            mStats.IncrementTrillsHit(i24 == i28);
         }
     }
     mStats.SetTrillCount(num - i3);
@@ -1187,10 +1175,11 @@ float GemPlayer::OnGetPercentHitGemsPractice(int i1, float f2, float f3) const {
     for (int i = 0; i < gems.size(); i++) {
         if (gems[i].PlayableBy(i1)) {
             float f11 = gems[i].GetMs();
-            float f10 = f11;
-            if (!gems[i].IgnoreDuration()) {
+            float f10;
+            if (gems[i].IgnoreDuration())
+                f10 = f11;
+            else
                 f10 = f11 + gems[i].DurationMs();
-            }
             if (f11 >= f2 && f10 < f3) {
                 i9++;
                 if (mGemStatus->GetHit(i)) {
@@ -1386,7 +1375,7 @@ void GemPlayer::ResetController(bool b1) {
         DataArray *cfg = SystemConfig("beatmatcher", "controller", controller);
         BandUser *user = TheBandUserMgr->GetBandUser(GetUserGuid(), true);
         mController = NewController(
-            user, cfg, mMatcher, b1, alt, mMatcher->GetTrackType(mMatcher->CurrentTrack())
+            user, cfg, mMatcher, b1, leftyOptions, mMatcher->GetTrackType(mMatcher->CurrentTrack())
         );
         if (GetUser()->IsLocal()) {
             if (GetUser()->GetLocalBandUser()->GetPadNum() == 0) {

@@ -65,6 +65,10 @@ public:
     virtual void SetTranspose(float);
     virtual void Poll() {}
 
+    NEW_POOL_OVERLOAD(GroupSeqInst);
+    DELETE_POOL_OVERLOAD(GroupSeqInst);
+
+protected:
     ObjVector<ObjPtr<SeqInst> > mSeqs; // 0x34
 };
 

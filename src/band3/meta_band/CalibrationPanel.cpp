@@ -102,7 +102,7 @@ void CalibrationPanel::UpdateAnimation() {
             f10 = std::fmod(mCycleTimeMs / 2.0f + f10, f1);
             RndGroup *hwgrp = mDir->Find<RndGroup>("cal_hardware.grp", true);
             if (f10 > mCycleTimeMs / 2.0) {
-                hwgrp->SetShowing(unk88);
+                hwgrp->SetShowing(unk88 > 0);
                 if (unk88 < 0)
                     unk88 = 0;
                 unk88--;

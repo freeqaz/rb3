@@ -118,8 +118,7 @@ void SongSortMgr::BuildSetlistList() {
 
 void SongSortMgr::BuildSortTree(SongSortType ty) {
     if (ty == kSetlistSortByLocation) {
-        SetlistSortByLocation *sort =
-            dynamic_cast<SetlistSortByLocation *>(mSorts[kSetlistSortByLocation]);
+        SetlistSort *sort = dynamic_cast<SetlistSort *>(mSorts[ty]);
         MILO_ASSERT(sort, 0xF8);
         sort->BuildSetlistTree(mSetlists);
     } else {
@@ -131,8 +130,7 @@ void SongSortMgr::BuildSortTree(SongSortType ty) {
 
 void SongSortMgr::BuildSortList(SongSortType ty) {
     if (ty == kSetlistSortByLocation) {
-        SetlistSortByLocation *sort =
-            dynamic_cast<SetlistSortByLocation *>(mSorts[kSetlistSortByLocation]);
+        SetlistSort *sort = dynamic_cast<SetlistSort *>(mSorts[ty]);
         MILO_ASSERT(sort, 0x108);
         sort->BuildSetlistList();
     } else {

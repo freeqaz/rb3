@@ -316,7 +316,7 @@ void StreakFocusTracker::TranslateRelativeTargets() {
         MILO_ASSERT(pPlayer, 0x29A);
         int count;
         if (pPlayer->GetTrackType() == kTrackVocals) {
-            count = 0; // accesses songdb
+            count = TheSongDB->GetVocalNoteList(0)->mPhrases.size();
         } else {
             count = TrackerUtils::CountGemsInSong(
                 pPlayer->GetTrackNum(), pPlayer->GetTrackType()
@@ -381,7 +381,7 @@ void StreakFocusTracker::CheckCondition(float f1, bool b1, bool &bref1, bool &br
     Player *pPlayer = mSource->GetPlayer(mFocusPlayer);
     int hitcount = pPlayer->mStats.mHitCount;
     int curstreak = pPlayer->mStats.GetCurrentStreak();
-    if (curstreak >= 1 && !unke4) {
+    if (curstreak != 0 && !unke4) {
         unkd8 = hitcount - 1;
         unke4 = true;
     } else if (curstreak == 0) {

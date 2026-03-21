@@ -110,12 +110,19 @@ void CharProvider::Text(int, int data, UIListLabel *slot, UILabel *label) const 
     AppLabel *pLabel = dynamic_cast<AppLabel *>(label);
     MILO_ASSERT(pLabel, 0xC1);
     if (slot->Matches("name")) {
-        if (entry.mType < 3)
+        switch (entry.mType) {
+        case kCharacterEntryNone:
+        case kCharacterEntryNew:
+        case kCharacterEntryPrefab:
             pLabel->SetTextToken(entry.unk8);
-        else if (entry.mType == kCharacterEntryCustom)
+            break;
+        case kCharacterEntryCustom:
             pLabel->SetFromCharacter(entry.unk4);
-        else
+            break;
+        default:
             pLabel->SetTextToken(gNullStr);
+            break;
+        }
     } else {
         if (slot->Matches("header_name") && entry.mType == 4) {
             if (entry.unk8 == char_header) {

@@ -422,7 +422,8 @@ bool OvershellPanel::ShouldPause() const {
         if (!pSlot->GetState()->IsReadyToPlay())
             return true;
     }
-    return b1 || !b6;
+    if (!b1) return !b6;
+    return true;
 }
 
 void OvershellPanel::SetAutohide(bool b1) {

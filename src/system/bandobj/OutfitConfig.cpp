@@ -53,8 +53,8 @@ void OutfitConfig::MatSwap::SwapResource() {
         for (std::vector<ObjRef *>::reverse_iterator rit = refs.rbegin();
              rit != refs.rend();
              ++rit) {
-            ObjRef *cur = *rit;
             bool replace = false;
+            ObjRef *cur = *rit;
             if (cur->RefOwner()) {
                 if (cur->RefOwner()->ClassName() == mn)
                     replace = true;
@@ -76,8 +76,8 @@ void OutfitConfig::MatSwap::UnSwapResource() {
         for (std::vector<ObjRef *>::reverse_iterator rit = refs.rbegin();
              rit != refs.rend();
              ++rit) {
-            ObjRef *cur = *rit;
             bool replace = false;
+            ObjRef *cur = *rit;
             if (cur->RefOwner()) {
                 if (cur->RefOwner()->ClassName() == mn)
                     replace = true;

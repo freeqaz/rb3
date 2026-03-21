@@ -105,10 +105,10 @@ void BinStream::Write(const void *void_data, int bytes) {
     if (Fail()) {
         MILO_LOG_ONCE("Stream error: Can't write to %s\n", Name());
     } else {
-        const unsigned char *data = (u8 *)void_data;
         if (!mCrypto) {
             WriteImpl(void_data, bytes);
         } else {
+            const unsigned char *data = (u8 *)void_data;
             u8 crypt[512];
             while (bytes > 0) {
                 int x = Min(512, bytes);

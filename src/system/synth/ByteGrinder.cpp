@@ -159,8 +159,8 @@ DataNode op2(DataArray *msg) {
 
 DataNode op3(DataArray *msg) {
     unsigned long operand = msg->Int(1);
-    unsigned long w = msg->Int(2);
     bool b = (operand == 0);
+    unsigned long w = msg->Int(2);
     unsigned long ret = u8(w) | ((w << 8) & 0xFF00);
     ret >>= b;
     return DataNode(u8(ret));

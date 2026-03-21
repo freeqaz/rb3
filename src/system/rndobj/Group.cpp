@@ -169,8 +169,10 @@ void RndGroup::SortDraws() {
         mObjects.push_back(*it);
     }
     mAnims.clear();
-    FOREACH (it, mObjects) {
-        RndAnimatable *anim = dynamic_cast<RndAnimatable *>(*it);
+    RndAnimatable *anim = nullptr;
+    for (ObjPtrList<Hmx::Object>::iterator it = mObjects.begin(); it != mObjects.end();
+         ++it) {
+        anim = dynamic_cast<RndAnimatable *>(*it);
         if (anim)
             mAnims.push_back(anim);
     }

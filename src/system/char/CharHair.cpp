@@ -82,6 +82,134 @@ void CharHair::SetCloth(bool b) {
     }
 }
 
+#ifdef __MWERKS__
+inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
+    float row2[3], row1[3], row0[3];
+    asm { cmplw r4, r5 }
+    asm volatile {
+        beq alias_path
+
+        psq_l f4, 0x4(r3), 0, 0
+        psq_l f3, 0x18(r4), 0, 0
+        psq_l f2, 0x20(r4), 1, 0
+        ps_muls1 f1, f3, f4
+        psq_l f3, 0xc(r4), 0, 0
+        ps_muls1 f0, f2, f4
+        psq_l f2, 0x14(r4), 1, 0
+        psq_l f5, 0x0(r3), 0, 0
+        ps_madds0 f1, f3, f4, f1
+        ps_madds0 f0, f2, f4, f0
+        psq_l f3, 0x0(r4), 0, 0
+        psq_l f2, 0x8(r4), 1, 0
+        ps_madds0 f1, f3, f5, f1
+        psq_l f4, 0x10(r3), 0, 0
+        ps_madds0 f0, f2, f5, f0
+        psq_st f1, 0x0(r5), 0, 0
+        psq_l f5, 0xc(r3), 0, 0
+        psq_st f0, 0x8(r5), 1, 0
+
+        psq_l f6, 0x1c(r3), 0, 0
+        psq_l f3, 0x18(r4), 0, 0
+        psq_l f2, 0x20(r4), 1, 0
+        ps_muls1 f1, f3, f4
+        psq_l f3, 0xc(r4), 0, 0
+        ps_muls1 f0, f2, f4
+        psq_l f2, 0x14(r4), 1, 0
+        psq_l f7, 0x18(r3), 0, 0
+        ps_madds0 f1, f3, f4, f1
+        ps_madds0 f0, f2, f4, f0
+        psq_l f3, 0x0(r4), 0, 0
+        psq_l f2, 0x8(r4), 1, 0
+        ps_madds0 f1, f3, f5, f1
+        ps_madds0 f0, f2, f5, f0
+        psq_st f1, 0xc(r5), 0, 0
+        psq_st f0, 0x14(r5), 1, 0
+
+        psq_l f3, 0x18(r4), 0, 0
+        psq_l f2, 0x20(r4), 1, 0
+        ps_muls1 f1, f3, f6
+        psq_l f3, 0xc(r4), 0, 0
+        ps_muls1 f0, f2, f6
+        psq_l f2, 0x14(r4), 1, 0
+        ps_madds0 f1, f3, f6, f1
+        psq_l f3, 0x0(r4), 0, 0
+        ps_madds0 f0, f2, f6, f0
+        psq_l f2, 0x8(r4), 1, 0
+        ps_madds0 f1, f3, f7, f1
+        ps_madds0 f0, f2, f7, f0
+        psq_st f1, 0x18(r5), 0, 0
+        psq_st f0, 0x20(r5), 1, 0
+        b mult_end
+
+    alias_path:
+        psq_l f4, 0x4(r3), 0, 0
+        la r6, row2
+        psq_l f3, 0x18(r4), 0, 0
+        la r7, row1
+        psq_l f2, 0x20(r4), 1, 0
+        la r8, row0
+        ps_muls1 f1, f3, f4
+        psq_l f3, 0xc(r4), 0, 0
+        ps_muls1 f0, f2, f4
+        psq_l f2, 0x14(r4), 1, 0
+        psq_l f9, 0x10(r3), 0, 0
+        psq_l f8, 0x18(r4), 0, 0
+        psq_l f7, 0x20(r4), 1, 0
+        ps_madds0 f1, f3, f4, f1
+        ps_muls1 f6, f8, f9
+        psq_l f12, 0x1c(r3), 0, 0
+        ps_mr f8, f3
+        psq_l f3, 0x18(r4), 0, 0
+        ps_muls1 f5, f7, f9
+        ps_muls1 f11, f3, f12
+        ps_mr f7, f2
+        psq_l f3, 0x0(r4), 0, 0
+        ps_madds0 f0, f2, f4, f0
+        psq_l f2, 0x20(r4), 1, 0
+        psq_l f4, 0x0(r3), 0, 0
+        ps_muls1 f10, f2, f12
+        psq_l f2, 0x8(r4), 1, 0
+        ps_madds0 f1, f3, f4, f1
+        ps_madds0 f6, f8, f9, f6
+        ps_madds0 f0, f2, f4, f0
+        psq_l f4, 0x18(r3), 0, 0
+        ps_madds0 f5, f7, f9, f5
+        psq_l f9, 0xc(r3), 0, 0
+        ps_madds0 f11, f8, f12, f11
+        ps_madds0 f10, f7, f12, f10
+        psq_st f1, 0x0(r6), 0, 0
+        ps_madds0 f6, f3, f9, f6
+        ps_madds0 f5, f2, f9, f5
+        ps_madds0 f11, f3, f4, f11
+        lfs f8, row2[0]
+        ps_madds0 f10, f2, f4, f10
+        psq_st f6, 0x0(r7), 0, 0
+        lfs f7, row2[1]
+        psq_st f11, 0x0(r8), 0, 0
+        lfs f4, row1[1]
+        psq_st f5, 0x8(r7), 1, 0
+        lfs f5, row1[0]
+        psq_st f0, 0x8(r6), 1, 0
+        lfs f3, row1[2]
+        psq_st f10, 0x8(r8), 1, 0
+        lfs f6, row2[2]
+        lfs f2, row0[0]
+        lfs f1, row0[1]
+        lfs f0, row0[2]
+        stfs f8, 0x0(r5)
+        stfs f7, 0x4(r5)
+        stfs f6, 0x8(r5)
+        stfs f5, 0xc(r5)
+        stfs f4, 0x10(r5)
+        stfs f3, 0x14(r5)
+        stfs f2, 0x18(r5)
+        stfs f1, 0x1c(r5)
+        stfs f0, 0x20(r5)
+    mult_end:
+    }
+}
+#endif
+
 // matches in retail
 void CharHair::Strand::SetAngle(float angle) {
     mAngle = angle;

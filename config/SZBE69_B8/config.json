@@ -41,7 +41,9 @@
                 "-Cpp_exceptions off",
 
                 "-d MILO_DEBUG",
-                "-d HX_WII"
+                "-d HX_WII",
+                "-d MATCHING",
+                "-d VERSION_SZBE69_B8"
             ]
         },
         "main": {

@@ -181,9 +181,8 @@ void SessionMgr::UpdateLeader() {
     LocalBandUser *newleader = nullptr;
     std::vector<LocalUser *> localusers;
     GetLocalUserListImpl(localusers);
-    if (!localusers.empty()) {
+    if (!localusers.empty())
         newleader = BandUserMgr::GetLocalBandUser(localusers.front());
-    }
     SetLeaderUser(newleader);
 }
 

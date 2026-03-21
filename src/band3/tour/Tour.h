@@ -1,8 +1,11 @@
 #pragma once
 #include "TourDesc.h"
+class UILabel;
 #include "TourWeightManager.h"
 #include "game/BandUser.h"
 #include "meta_band/BandProfile.h"
+#include "meta_band/MusicLibrary.h"
+#include "meta_band/ProfileMessages.h"
 #include "obj/Data.h"
 #include "obj/Object.h"
 #include "tour/TourProgress.h"
@@ -49,6 +52,7 @@ public:
     BandProfile *GetProfile() const;
     LocalBandUser *GetUser() const;
     void ClearPerformer();
+    void InitializeTour();
     void UseUsersProgress();
     void ResetTourData(BandProfile *);
     bool IsUnderway(BandProfile *) const;
@@ -72,12 +76,31 @@ public:
     bool HasBronzeMedal(Symbol) const;
     bool HasSilverMedal(Symbol) const;
     bool HasGoldMedal(Symbol) const;
+    DataNode OnMsg(const RemoteLeaderLeftMsg &);
+    DataNode OnMsg(const PrimaryProfileChangedMsg &);
     void LaunchQuestFilter(
         int, Symbol, Symbol, Symbol, TourSetlistType, Symbol, Symbol, Symbol
     );
     String GetCurrentFilterName() const;
+    String GetFilterName(Symbol) const;
+    void ClearCurrentQuest();
+    bool ShouldShowPostSelDiffScreen() const;
+    void CheatReloadTourData();
+    int GetMode();
+    Symbol CombinePartSymbols(Symbol, Symbol);
+    String GetBronzeGoalIcon();
+    String GetSilverGoalIcon();
+    String GetGoldGoalIcon();
+    void SetupSongsForFixedSetlist(Symbol);
+    void UpdateFinishedMedalLabel(UILabel *);
+    void UpdateNextMedalLabel(UILabel *);
 
-    TourPerformerImpl *GetPerformer() const { return m_pTourPerformer; }
+    bool HasPerformer() const;
+    TourPerformerImpl *GetPerformer() const;
+    SongSortMgr::SongFilter CreateArtistFilter(const char *);
+    void ChooseRandomSongsForQuestFilter(int, Symbol, Symbol, bool);
+    void InitializeMusicLibraryTaskForArtist(MusicLibrary::MusicLibraryTask &, int, const char *, Symbol);
+    void CreateAndSubmitMusicLibraryTask(int, Symbol, Symbol, Symbol, Symbol, bool);
 
     const SongMgr &mSongMgr; // 0x1c
     BandUserMgr &mBandUserMgr; // 0x20

@@ -1479,9 +1479,9 @@ DataNode MusicLibrary::OnMsg(const UserLoginMsg &) {
 }
 
 void MusicLibrary::RebuildProfileData() {
-    bool b1 = false;
-    bool b2 = false;
     std::map<Symbol, SongRecord> &theSongs = TheSongSortMgr->mSongs;
+    bool b2 = false;
+    bool b1 = false;
     FOREACH (it, theSongs) {
         if (it->second.UpdatePerformanceData())
             b1 = true;
@@ -1499,8 +1499,8 @@ void MusicLibrary::RebuildProfileData() {
 }
 
 void MusicLibrary::RebuildUserConfigData() {
-    bool b1 = false;
     std::map<Symbol, SongRecord> &theSongs = TheSongSortMgr->mSongs;
+    bool b1 = false;
     FOREACH (it, theSongs) {
         if (it->second.UpdateScoreType())
             b1 = true;

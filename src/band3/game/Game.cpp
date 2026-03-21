@@ -136,8 +136,8 @@ Game::Game()
     TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type());
     TheSessionMgr->AddSink(this, RemoteUserLeftMsg::Type());
     TheSessionMgr->AddSink(this, RemoteLeaderLeftMsg::Type());
-    TheBandUI.AddSink(this, "required_song_options_chosen");
-    TheBandUI.AddSink(this, NewOvershellLocalUserMsg::Type());
+    TheBandUI.mOvershell->AddSink(this, "required_song_options_chosen");
+    TheBandUI.mOvershell->AddSink(this, NewOvershellLocalUserMsg::Type());
     TheBandUI.AddSink(this, UIScreenChangeMsg::Type());
 
     SetBackgroundVolume(TheProfileMgr.GetBackgroundVolumeDb());
@@ -175,7 +175,7 @@ Game::~Game() {
 
     TheSynth->RequirePushToTalk(false, -1);
     TheBandUI.RemoveSink(this, UIScreenChangeMsg::Type());
-    TheBandUI.RemoveSink(this, "required_song_options_chosen");
+    TheBandUI.mOvershell->RemoveSink(this, "required_song_options_chosen");
     TheNetSession->RemoveSink(this, GameEndedMsg::Type());
     TheSessionMgr->RemoveSink(this, LocalUserLeftMsg::Type());
     TheSessionMgr->RemoveSink(this, RemoteUserLeftMsg::Type());
