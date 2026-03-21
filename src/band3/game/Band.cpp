@@ -54,12 +54,8 @@ Band::Band(bool bbb, int i2, BandUser *user, BeatMaster *bm)
     FOREACH (it, users) {
         BandUser *pUser = *it;
         MILO_ASSERT(pUser, 0x57);
-        bool b1 = false;
         bool b2 = perf && !perf->PartPlaysInSong(pUser->GetTrackSym());
-        if (b2) {
-            b1 = true;
-        }
-        if (!b1 && (!bbb || pUser == user)) {
+        if (!b2 && (!bbb || pUser == user)) {
             AddPlayer(bm, pUser);
         }
     }
@@ -323,9 +319,11 @@ bool Band::IsEndOfCoda(int i1) {
 bool Band::EveryoneFinishedCoda() {
     if (unk44 == 2)
         return false;
+    bool b;
+    Player *p;
     for (int i = 0; i < mActivePlayers.size(); i++) {
-        Player *p = mActivePlayers[i];
-        bool b = false;
+        p = mActivePlayers[i];
+        b = false;
         if (p->AutoplaysCoda() || p->mHasFinishedCoda || p->mQuarantined) {
             b = true;
         }

@@ -66,12 +66,13 @@ void BandSongMgr::Init() {
 }
 
 bool BandSongMgr::CreateSongCacheID(CacheID **id) {
+    bool ret;
     *id = nullptr;
     DataArray *cfg = SystemConfig("net", "cache");
     const char *filename = cfg->FindStr("file_name");
     const char *bannername = cfg->FindStr("banner_name");
     const char *bannerdesc = cfg->FindStr("banner_desc");
-    bool ret = TheCacheMgr->CreateCacheID(
+    ret = TheCacheMgr->CreateCacheID(
         filename, bannername, nullptr, bannerdesc, nullptr, 0x400, id
     );
     MILO_ASSERT(ret, 0x8C);
@@ -313,7 +314,8 @@ const char *BandSongMgr::SongFilePath(Symbol s1, const char *cc, bool b3) const 
         if (data) {
             if (data->IsOnDisc() || data->HasAlternatePath())
                 return path;
-        } else if (streq(cc, ".milo")) {
+        }
+        if (streq(cc, ".milo")) {
             DirLoader::SetCacheMode(true);
             path = DirLoader::CachedPath(path, false);
             DirLoader::SetCacheMode(false);
@@ -475,7 +477,10 @@ bool BandSongMgr::IsSongUnplayable(int songID, BandUserMgr &mgr, bool bvar3) con
 }
 
 int BandSongMgr::GetCurSongCount() const { return unk140 + mCachedSongMetadata.size(); }
-bool BandSongMgr::CanAddSong() const { return GetCurSongCount() + 1 < mMaxSongCount; }
+bool BandSongMgr::CanAddSong() const {
+    int maxSongCount = mMaxSongCount;
+    return GetCurSongCount() + 1 < maxSongCount;
+}
 int BandSongMgr::GetMaxSongCount() const { return mMaxSongCount; }
 
 void BandSongMgr::AddSongData(DataArray *a, DataLoader *dl, ContentLocT lt) {
@@ -681,9 +686,9 @@ int BandSongMgr::NumRankedSongs(TrackType ty, bool b2, Symbol s3) const {
         BandSongMetadata *data = (BandSongMetadata *)Data(*it);
         MILO_ASSERT(data, 0x5F3);
         if (b2) {
-            if (data->HasVocalHarmony()) {
-                goto checkSym;
-            }
+            if (!data->HasVocalHarmony())
+                continue;
+            goto checkSym;
         } else {
             if (ty != kNumTrackTypes) {
                 Symbol trackSym = TrackTypeToSym(ty);
