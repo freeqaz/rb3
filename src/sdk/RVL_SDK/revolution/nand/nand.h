@@ -149,6 +149,7 @@ s32 NANDCheck(u32, u32, u32 *);
 s32 NANDWrite(NANDFileInfo *, const void *, u32);
 s32 NANDWriteAsync(NANDFileInfo *, const void *, u32, NANDCallback, NANDCommandBlock *);
 
+s32 NANDSeek(NANDFileInfo *, s32, s32);
 s32 NANDSeekAsync(NANDFileInfo *, s32, s32, NANDCallback, NANDCommandBlock *);
 
 BOOL nandIsInitialized(void);

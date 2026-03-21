@@ -3,11 +3,12 @@
 #include "utl/BinStream.h"
 #include <cmath>
 
-void TransformNoScale::ToTransform(Transform &tf) const {
+Transform &TransformNoScale::ToTransform(Transform &tf) const {
     Hmx::Quat tmpq;
     q.ToQuat(tmpq);
     MakeRotMatrix(tmpq, tf.m);
     tf.v = v;
+    return tf;
 }
 
 void TransformNoScale::Set(const Transform &tf) {
@@ -29,17 +30,17 @@ void TransformNoScale::SetRot(const Hmx::Matrix3 &m) {
     Hmx::Quat quat;
     quat.Set(m);
 
-    float nux = 32767.0f * quat.x + 0.5f;
-    q.x = floorf(nux > 32767.0f ? 32767.0f : (nux < -32767.0f ? -32767.0f : nux));
+    float nu = 32767.0f * quat.x + 0.5f;
+    q.x = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 
-    float nuy = 32767.0f * quat.y + 0.5f;
-    q.y = floorf(nuy > 32767.0f ? 32767.0f : (nuy < -32767.0f ? -32767.0f : nuy));
+    nu = 32767.0f * quat.y + 0.5f;
+    q.y = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 
-    float nuz = 32767.0f * quat.z + 0.5f;
-    q.z = floorf(nuz > 32767.0f ? 32767.0f : (nuz < -32767.0f ? -32767.0f : nuz));
+    nu = 32767.0f * quat.z + 0.5f;
+    q.z = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 
-    float nuw = 32767.0f * quat.w + 0.5f;
-    q.w = floorf(nuw > 32767.0f ? 32767.0f : (nuw < -32767.0f ? -32767.0f : nuw));
+    nu = 32767.0f * quat.w + 0.5f;
+    q.w = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 }
 
 void TransformNoScale::GetRot(Hmx::Quat &qout) const {
@@ -51,17 +52,17 @@ void TransformNoScale::GetRot(Hmx::Quat &qout) const {
 }
 
 void TransformNoScale::SetRot(const Hmx::Quat &quat) {
-    float nux = 32767.0f * quat.x + 0.5f;
-    q.x = floorf(nux > 32767.0f ? 32767.0f : (nux < -32767.0f ? -32767.0f : nux));
+    float nu = 32767.0f * quat.x + 0.5f;
+    q.x = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 
-    float nuy = 32767.0f * quat.y + 0.5f;
-    q.y = floorf(nuy > 32767.0f ? 32767.0f : (nuy < -32767.0f ? -32767.0f : nuy));
+    nu = 32767.0f * quat.y + 0.5f;
+    q.y = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 
-    float nuz = 32767.0f * quat.z + 0.5f;
-    q.z = floorf(nuz > 32767.0f ? 32767.0f : (nuz < -32767.0f ? -32767.0f : nuz));
+    nu = 32767.0f * quat.z + 0.5f;
+    q.z = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 
-    float nuw = 32767.0f * quat.w + 0.5f;
-    q.w = floorf(nuw > 32767.0f ? 32767.0f : (nuw < -32767.0f ? -32767.0f : nuw));
+    nu = 32767.0f * quat.w + 0.5f;
+    q.w = floorf(nu > 32767.0f ? 32767.0f : (nu < -32767.0f ? -32767.0f : nu));
 }
 
 void TransformNoScale::Reset() {
@@ -299,10 +300,10 @@ void Interp(const Hmx::Quat &q1, const Hmx::Quat &q2, float r, Hmx::Quat &qres) 
             qres.z = -((q1.z + q2.z) * r - q1.z);
             qres.w = -((q1.w + q2.w) * r - q1.w);
         } else {
-            qres.x = r * (q2.x - q1.x) + q1.x;
-            qres.y = r * (q2.y - q1.y) + q1.y;
-            qres.z = r * (q2.z - q1.z) + q1.z;
-            qres.w = r * (q2.w - q1.w) + q1.w;
+            qres.x = -((q1.x - q2.x) * r - q1.x);
+            qres.y = -((q1.y - q2.y) * r - q1.y);
+            qres.z = -((q1.z - q2.z) * r - q1.z);
+            qres.w = -((q1.w - q2.w) * r - q1.w);
         }
         Normalize(qres, qres);
     }
@@ -488,6 +489,7 @@ TextStream &operator<<(TextStream &ts, const Transform &t) {
     return ts;
 }
 
+#ifndef __MWERKS__
 void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
     out.Set(
         a.x.x * b.x.x + a.x.y * b.y.x + a.x.z * b.z.x,
@@ -501,6 +503,7 @@ void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
         a.z.x * b.x.z + a.z.y * b.y.z + a.z.z * b.z.z
     );
 }
+#endif
 
 void Multiply(const Transform &a, const Transform &b, Transform &res) {
 #ifdef __MWERKS__

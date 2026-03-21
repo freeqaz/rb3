@@ -17,6 +17,7 @@ public:
     bool Fail();
     EofType Eof();
     void ReadImpl(void*, int);
+    void WriteImpl(const void*, int);
     int LoadBufferFromNAND();
     void Clear();
     int Open();
@@ -32,16 +33,16 @@ public:
     void SeekImpl(int, BinStream::SeekType);
 
     char *mBuffer; // 0x68
+    bool mFail; // 0x6C
     int mTell; // 0x70
     int mSize; // 0x74
     int mRunningTell; // 0x78
-    MCResult mResult; // 0xC4
-    NANDFileInfo *mFileInfo; // 0xC8
-    bool mFail; // 0x6C
     int mChunkSize; // 0x7C
-    StreamChecksum *mChecksum; // 0x154
-    int mBytesChecksummed; // 0x158
-    bool unk80; // 0x80;
+    bool unk80; // 0x80
     bool mFileOpen; // 0x81
     char mFilePath[64]; // 0x82
+    MCResult mResult; // 0xC4
+    NANDFileInfo mFileInfo; // 0xC8
+    StreamChecksum *mChecksum; // 0x154
+    int mBytesChecksummed; // 0x158
 };
