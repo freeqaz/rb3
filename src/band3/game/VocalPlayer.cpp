@@ -956,8 +956,9 @@ float VocalPlayer::GetPracticeHitPercentage(int p, int i2, int i3) {
     mVocalParts.front()->mVocalNoteList->GetPracticePhrases(phrases, i2, i3);
     if (p == -1) {
         float f7 = 0;
+        VocalPart *cur = 0;
         for (int i = 0; i < (int)mVocalParts.size(); i++) {
-            VocalPart *cur = mVocalParts[i];
+            cur = mVocalParts[i];
             if (cur->ScoringEnabled()) {
                 float pct = cur->GetPartHitPercentage(phrases, i2, i3);
                 if (pct > f7)
