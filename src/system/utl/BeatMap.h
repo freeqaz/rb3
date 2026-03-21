@@ -20,9 +20,9 @@ private:
     std::vector<BeatInfo> mInfos; // 0x0
 
     float Interpolate(int tick, int idx) const {
-        int k1 = mInfos[idx].mTick;
         const BeatInfo &r30 = mInfos[idx];
         const BeatInfo &r31 = mInfos[idx + 1];
+        int k1 = r30.mTick;
 
         return idx
             + static_cast<float>(tick - k1) / static_cast<float>(r31.mTick - r30.mTick);

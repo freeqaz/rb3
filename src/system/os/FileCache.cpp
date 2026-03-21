@@ -88,7 +88,7 @@ int FileCacheFile::Seek(int i1, int i2) {
     return mPos;
 }
 
-bool FileCacheFile::Eof() { return mParent->Size() <= mPos; }
+bool FileCacheFile::Eof() { return mPos >= mParent->Size(); }
 
 int FileCacheFile::Tell() { return mPos; }
 

@@ -31,7 +31,7 @@ bool BufStreamNAND::Fail() {
 }
 
 EofType BufStreamNAND::Eof() {
-    return (EofType)(mSize == mTell);
+    return (EofType)(mTell == mSize);
 }
 
 void BufStreamNAND::Clear() {
@@ -204,9 +204,7 @@ int BufStreamNAND::PadToEnd() {
 }
 
 void BufStreamNAND::DeleteChecksum() {
-    if(mChecksum) {
-        delete(mChecksum);
-    }
+    delete mChecksum;
     mChecksum = 0;
 }
 
