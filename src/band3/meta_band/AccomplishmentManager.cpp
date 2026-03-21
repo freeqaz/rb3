@@ -518,9 +518,9 @@ void AccomplishmentManager::ConfigureAccomplishmentGroupToCategoriesData() {
         std::list<Symbol> *symlist = GetCategoryListForGroup(group);
         if (!symlist) {
             symlist = new std::list<Symbol>();
-            m_mapGroupToCategories[name] = symlist;
+            m_mapGroupToCategories[group] = symlist;
         }
-        symlist->push_back(group);
+        symlist->push_back(name);
     }
 }
 
