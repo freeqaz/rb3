@@ -347,39 +347,23 @@ public:
         }
     }
 
-    // TODO: finish filling this out
     int ReverseKeyLessEq(const float &fref) const {
-        if (empty() || fref < front().value)
+        if (empty() || fref < front().value) {
             return -1;
-        else {
+        } else {
+            int i1 = 0;
+            int i2 = size();
+            while (i2 > i1 + 1) {
+                int newCnt = (i1 + i2) >> 1;
+                if (fref < (*this)[newCnt].value)
+                    i2 = newCnt;
+                if (!(fref < (*this)[newCnt].value))
+                    i1 = newCnt;
+            }
+            while (i1 + 1 < size() && (*this)[i1 + 1].value == (*this)[i1].value)
+                i1++;
+            return i1;
         }
-        //           iVar1 = stlpmtx_std::vector<>::empty();
-        //   if ((iVar1 != 0) || (*param_1 < **this)) {
-        //     iVar1 = -1;
-        //   }
-        //   else {
-        //     iVar2 = stlpmtx_std::vector<>::size(this);
-        //     iVar1 = 0;
-        //     while (iVar1 + 1 < iVar2) {
-        //       iVar6 = iVar1 + iVar2 >> 1;
-        //       pfVar4 = DataArray::Node(this,iVar6);
-        //       if (*param_1 < *pfVar4) {
-        //         iVar2 = iVar6;
-        //       }
-        //       if (*pfVar4 <= *param_1) {
-        //         iVar1 = iVar6;
-        //       }
-        //     }
-        //     for (; uVar3 = stlpmtx_std::vector<>::size(this), iVar1 + 1U < uVar3; iVar1
-        //     = iVar1 + 1) {
-        //       pfVar4 = DataArray::Node(this,iVar1);
-        //       pfVar5 = DataArray::Node(this,iVar1 + 1);
-        //       if (*pfVar5 != *pfVar4) {
-        //         return iVar1;
-        //       }
-        //     }
-        //   }
-        //   return iVar1;
     }
 
     void KeysLessEq(float f, int &iref1, int &iref2) const {

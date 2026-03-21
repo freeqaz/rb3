@@ -1,6 +1,7 @@
 #ifndef MATH_RAND_H
 #define MATH_RAND_H
 
+#include "math/Utl.h"
 #include "utl/MemMgr.h"
 
 class Rand {

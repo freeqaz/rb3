@@ -2,6 +2,7 @@
 #define MATH_VEC_H
 #include "os/Debug.h"
 #include "math/Trig.h"
+#include "math/Utl.h"
 #include "utl/BinStream.h"
 #include "utl/TextStream.h"
 

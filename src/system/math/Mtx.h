@@ -265,7 +265,7 @@ public:
     void SetRot(const Hmx::Quat &);
     void GetRot(Hmx::Quat &) const;
     void Reset();
-    void ToTransform(Transform &) const;
+    Transform &ToTransform(Transform &) const;
     TransformNoScale &operator=(const TransformNoScale &t) { Set(t); }
 
     ShortQuat q; // 0x0/2/4/6
@@ -505,9 +505,9 @@ inline void Invert(const Transform &tfin, Transform &tfout) {
 inline void FastInvert(const Transform &tfin, Transform &tfout) {
 #ifdef VERSION_SZBE69_B8 // DEBUG
     Vector3 vtmp(tfin.v.x, tfin.v.y, tfin.v.z);
-    vtmp.x = -vtmp.x;
     vtmp.z = -vtmp.z;
     vtmp.y = -vtmp.y;
+    vtmp.x = -vtmp.x;
 #else // RETAIL
     Vector3 vtmp;
     Negate(tfin.v, vtmp);
