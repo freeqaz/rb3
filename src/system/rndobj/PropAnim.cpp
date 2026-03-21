@@ -184,6 +184,7 @@ void RndPropAnim::AdvanceFrame(float frame) {
 
 // fn_80632790
 void RndPropAnim::SetFrame(float frame, float blend) {
+    float savedBlend = blend;
     if (!mInSetFrame) {
         mInSetFrame = true;
         AdvanceFrame(frame);
@@ -203,7 +204,7 @@ void RndPropAnim::SetFrame(float frame, float blend) {
                     }
                 }
             }
-            (*it)->SetFrame(theframe, blend);
+            (*it)->SetFrame(theframe, savedBlend);
         }
         mLastFrame = theframe;
         mInSetFrame = false;

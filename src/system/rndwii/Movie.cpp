@@ -31,7 +31,8 @@ void WiiMovie::SetFrame(float frame, float blend) {
 
 void WiiMovie::Update() {
     WiiTex *tex = (WiiTex *)(RndTex *)mTex;
-    memcpy(tex->GetMovieLoadingFramePtr(), unk_0x54, mVideoData.FrameSize());
+    int frameSize = mVideoData.FrameSize();
+    memcpy(tex->GetMovieLoadingFramePtr(), unk_0x54, frameSize);
     tex->MovieSwapFrames();
 }
 
