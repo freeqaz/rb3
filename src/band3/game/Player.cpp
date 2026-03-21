@@ -218,7 +218,7 @@ void Player::PollEnabledState(float f) {
             MetaPerformer::Current();
             if (GetCrowdMeterActive()) {
                 mCrowd->SetDisplayValue(
-                    mParams->mCrowdLossPerMs * (TheGame->NumActivePlayers() - 1)
+                    -(mParams->mCrowdLossPerMs * (TheGame->NumActivePlayers() - 1))
                     * (f - unk25c)
                 );
             }
@@ -384,11 +384,14 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
 
 bool Player::Saveable() const {
     bool ret = false;
+    bool result = false;
     if (mEnabledState == kPlayerDisabled && mTimesFailed < 3 && !unk298)
         ret = true;
-    if (ret)
+    if (ret) {
         MetaPerformer::Current();
-    return ret;
+        result = true;
+    }
+    return result;
 }
 
 void Player::Save(BandUser *user, bool b) { SetEnabledState(kPlayerBeingSaved, user, b); }
@@ -646,8 +649,9 @@ void Player::CheckCrowdFailure() {
         if (!mCrowd->CantFailYet() && mUser->GetDifficulty() != kDifficultyEasy
             && !mUser->IsNullUser()) {
             if (!MetaPerformer::Current()->IsNoFailActive() && !mQuarantined
-                && mBand->MainPerformer()->mGameOver) {
+                && !mBand->MainPerformer()->mGameOver) {
                 SetEnabledState(kPlayerDisabled, mUser, false);
+                return;
             }
         }
         mCrowd->SetDisplayValue(0);
@@ -725,9 +729,9 @@ DataNode Player::OnSendNetGameplayMsg(DataArray *arr) {
     int opcode = arr->Int(2);
     int packet = arr->Int(3) != 0;
 
-    int arg3 = 0;
-    int arg2 = 0;
     int arg1 = 0;
+    int arg2 = 0;
+    int arg3 = 0;
 
     if (arr->Size() > 4)
         arg1 = arr->Int(4);
@@ -746,9 +750,9 @@ DataNode Player::OnSendNetGameplayMsgToPlayer(DataArray *arr) {
     int opcode = arr->Int(3);
     int packet = arr->Int(4) != 0;
 
-    int arg3 = 0;
-    int arg2 = 0;
     int arg1 = 0;
+    int arg2 = 0;
+    int arg3 = 0;
 
     if (arr->Size() > 5)
         arg1 = arr->Int(5);
