@@ -54,12 +54,10 @@ BEGIN_LOADS(Song)
 END_LOADS
 
 float Song::GetBeat() {
-    float ret;
     if (!GetTempoMap())
         return 0;
-    else
-        ret = GetBeatMap()->Beat(GetTempoMap()->TimeToTick(GetFrame() * 1000.0f));
-    return ret;
+    TempoMap *tm = GetTempoMap();
+    return GetBeatMap()->Beat(tm->TimeToTick(GetFrame() * 1000.0f));
 }
 
 MBT Song::GetMBTFromFrame(float f, int *i) {
@@ -134,9 +132,8 @@ void Song::Load() {
 }
 
 void Song::LoadSong() {
-    CreateSong(
-        mSongName, TheFakeSongMgr->GetSongConfig(mSongName), &mHxSongData, &mHxMaster
-    );
+    DataArray *cfg = TheFakeSongMgr->GetSongConfig(mSongName);
+    CreateSong(mSongName, cfg, &mHxSongData, &mHxMaster);
     MILO_ASSERT_FMT(mHxSongData && mHxMaster, "Could not create song");
     RndPollable *poll = dynamic_cast<RndPollable *>(MainDir());
     if (poll)
@@ -148,7 +145,7 @@ void Song::LoadSong() {
     } else {
         if (unk5c.x > mSongEndFrame)
             SetLoopStart(mSongEndFrame);
-        if (unk5c.y > mSongEndFrame)
+        if (mSongEndFrame < unk5c.y)
             SetLoopEnd(mSongEndFrame);
     }
     JumpTo(0);
@@ -205,8 +202,7 @@ void Song::OnText(int i, const char *cc, unsigned char uc) {
         if (strneq(cc, "[section ", 9)) {
             String str(cc);
             str = str.substr(9, str.length() - 10);
-            Symbol s(str.c_str());
-            AddSection(s, GetBeatMap()->Beat(i));
+            AddSection(Symbol(str.c_str()), GetBeatMap()->Beat(i));
         }
     }
 }
