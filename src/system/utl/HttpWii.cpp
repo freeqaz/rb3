@@ -91,7 +91,7 @@ int HttpWii::CancelAsync(int task) {
     if (mHandles[task] == NULL) {
         r = false;
     } else {
-        r = (bool)NHTTPCancelConnection(mHandles[task]);
+        r = (NHTTPCancelConnection(mHandles[task]) == 0);
     }
     return r;
 }

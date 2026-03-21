@@ -192,7 +192,7 @@ void UsbWii::SetLED(int num, int led) {
 }
 
 void UsbWii::SetInactive(int num) {
-    if (num >= 4)
+    if ((unsigned int)num >= 4)
         return;
     sDevices[num].flags = (sDevices[num].flags & ~kUsbFlagActive) | kUsbFlagInactive;
 }
