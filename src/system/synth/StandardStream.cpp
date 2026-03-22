@@ -1,7 +1,9 @@
 #include "math/Decibels.h"
 #include "synth/StandardStream.h"
 #include "synth/Synth.h"
+#include "os/Debug.h"
 #include <functional>
+#include <math.h>
 #include "utl/Symbols.h"
 
 StandardStream::ChannelParams::ChannelParams()
@@ -413,7 +415,46 @@ void StandardStream::EnableReads(bool b) {
         mRdr->EnableReads(b);
 }
 
-void StandardStream::UpdateTime() { MILO_WARN("timer error is large: %f\n"); }
+float StandardStream::GetRawTime() {
+    float bytes = mChannels[0]->GetBytesPlayed() / 2;
+    return (bytes / (float)mSampleRate) * 1000.0f + mStartMs;
+}
+
+float StandardStream::GetTime() {
+    if (mChannels.empty() || mSampleRate == 0)
+        return mStartMs;
+    return mLastStreamTime;
+}
+
+void StandardStream::UpdateTime() {
+    if (mChannels.empty() || mSampleRate == 0) {
+        mLastStreamTime = mStartMs;
+        return;
+    }
+    float rawTime = GetRawTime();
+    float n1 = (float)floor(rawTime / 5.3333335f + 0.5f);
+    float quantized0 = n1 * 5.3333335f;
+    float rawMinusQuantized = rawTime - quantized0;
+    float quantized =
+        (float)floor((rawTime - rawMinusQuantized) / 5.3333335f + 0.5f) * 5.3333335f;
+    float timerMs = mTimer.Ms();
+    float adjusted = timerMs - rawMinusQuantized;
+    float adjustedQuantized = (float)floor(adjusted / 5.3333335f);
+    if (quantized != adjustedQuantized * 5.3333335f) {
+        float drift = quantized - adjusted;
+        if (drift < 0.0f) {
+            drift += 5.3333335f;
+        }
+        if (fabsf(drift) < 5.3333335f) {
+            drift *= 0.1f;
+        }
+        mTimer.Reset(mTimer.Ms() + drift);
+        if (fabsf(drift) > 50.0f && sReportLargeTimerErrors) {
+            MILO_LOG("timer error is large: %f\n", drift);
+        }
+    }
+    mLastStreamTime = mTimer.Ms();
+}
 
 float StandardStream::GetJumpBackTotalTime() { return mAccumulatedLoopbacks; }
 

@@ -896,12 +896,12 @@ float ProfileMgr::GetExcessVideoLagNeutral(int pad, bool b) const {
 
 FORCE_LOCAL_INLINE
 float ProfileMgr::GetExcessAudioLag() const {
-    return -(mPlatformAudioLatency + GetSongToTaskMgrMsRaw() + GetSyncOffsetRaw());
+    return -(GetSongToTaskMgrMsRaw() + mPlatformAudioLatency + GetSyncOffsetRaw());
 }
 END_FORCE_LOCAL_INLINE
 
 void ProfileMgr::SetExcessAudioLag(float lag) {
-    SetSongToTaskMgrMsRaw(-(lag + mPlatformAudioLatency + GetSyncOffsetRaw()));
+    SetSongToTaskMgrMsRaw(-(lag + GetSyncOffsetRaw() + mPlatformAudioLatency));
 }
 
 FORCE_LOCAL_INLINE
@@ -949,10 +949,9 @@ int ProfileMgr::GetMicVol(int i1) const {
 
 void ProfileMgr::UpdateMicLevels(int i1) {
     int micID = TheSynth->GetMicClientMapper()->GetMicIDForClientID(MicClientID(i1, -1));
-    if (micID != -1) {
-        Mic *mic = TheSynth->GetMic(micID);
-        if (mic && mic->IsConnected()) {
-            int vol = GetMicVol(i1);
+    Mic *mic;
+    if (micID != -1 && (mic = TheSynth->GetMic(micID)) && mic->IsConnected()) {
+        int vol = GetMicVol(i1);
             float f38 = 0;
             float f3c = 0;
             float f40 = 1;
@@ -991,7 +990,6 @@ void ProfileMgr::UpdateMicLevels(int i1) {
                 }
             }
 #endif
-        }
     }
 }
 

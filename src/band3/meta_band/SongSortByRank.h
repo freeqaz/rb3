@@ -41,6 +41,6 @@ public:
     void RequestSongRankingInfo();
     void CancelSongRankingRequest();
 
-    std::map<int, bool> mRankings; // 0x3c
+    std::map<int, std::pair<int, bool> > mRankings; // 0x3c
     DataResultList mDataResults; // 0x54
 };

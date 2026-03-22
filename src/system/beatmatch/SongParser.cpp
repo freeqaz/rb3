@@ -1532,9 +1532,10 @@ bool SongParser::CheckForceHopoMarker(int tick, int pitch, bool b) {
     if (mTrackType == kTrackRealKeys)
         return false;
     int note = pitch / 12 - 5;
+    int mod = pitch % 12;
     if (note >= 0 && note < mNumDifficulties) {
-        if (pitch % 12 == 5) {
-            DifficultyInfo &info = mDifficultyInfos[pitch];
+        if (mod == 5) {
+            DifficultyInfo &info = mDifficultyInfos[note];
             if (b) {
                 info.mForceHopoOnStart = tick;
                 info.mForceHopoOnEnd = NULL_TICK;
@@ -1542,8 +1543,8 @@ bool SongParser::CheckForceHopoMarker(int tick, int pitch, bool b) {
                 info.mForceHopoOnEnd = tick;
             return true;
         }
-        if (pitch % 12 == 6) {
-            DifficultyInfo &info = mDifficultyInfos[pitch];
+        if (mod == 6) {
+            DifficultyInfo &info = mDifficultyInfos[note];
             if (b) {
                 info.mForceHopoOffStart = tick;
                 info.mForceHopoOffEnd = NULL_TICK;

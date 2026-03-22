@@ -178,9 +178,10 @@ void ManageBandPanel::UpdateCharacterFromStandInList(int i) {
         MILO_ASSERT(pCharacter, 0x157);
         BandCharDesc *pStandInDesc = pCharacter->GetBandCharDesc();
         MILO_ASSERT(pStandInDesc, 0x159);
+        BandCharDesc *pPreviewDesc;
         ClosetMgr *pClosetMgr = ClosetMgr::GetClosetMgr();
         MILO_ASSERT(pClosetMgr, 0x15C);
-        BandCharDesc *pPreviewDesc = pClosetMgr->unk3c;
+        pPreviewDesc = pClosetMgr->unk3c;
         MILO_ASSERT(pPreviewDesc, 0x15E);
         pPreviewDesc->CopyCharDesc(pStandInDesc);
         pClosetMgr->PreviewCharacter(false, true);
@@ -192,13 +193,14 @@ void ManageBandPanel::UpdateCharacterFromCharList(int i) {
     if (mCharProvider->IsIndexNone(i)) {
         HideCharacter();
     } else {
+        BandCharDesc *pPreviewDesc;
         CharData *pCharacter = mCharProvider->GetCharData(i);
         MILO_ASSERT(pCharacter, 0x170);
         BandCharDesc *pStandInDesc = pCharacter->GetBandCharDesc();
         MILO_ASSERT(pStandInDesc, 0x172);
         ClosetMgr *pClosetMgr = ClosetMgr::GetClosetMgr();
         MILO_ASSERT(pClosetMgr, 0x175);
-        BandCharDesc *pPreviewDesc = pClosetMgr->unk3c;
+        pPreviewDesc = pClosetMgr->unk3c;
         MILO_ASSERT(pPreviewDesc, 0x177);
         pPreviewDesc->CopyCharDesc(pStandInDesc);
         pClosetMgr->PreviewCharacter(false, true);

@@ -426,10 +426,9 @@ void GemTrack::DrawBeatLines(int i1, int i2) {
 void GemTrack::Poll(float f) {}
 
 void GemTrack::RedrawTrackElements(float f) {
-    DrawTrackElements(
-        MsToTick(mTrackDir->BottomSeconds() * 1000.0f + f),
-        MsToTick(mTrackDir->TopSeconds() * 1000.0f + f)
-    );
+    int top_tick = MsToTick(mTrackDir->TopSeconds() * 1000.0f + f);
+    int bottom_tick = MsToTick(mTrackDir->BottomSeconds() * 1000.0f + f);
+    DrawTrackElements(bottom_tick, top_tick);
 }
 
 void GemTrack::SetDir(RndDir *rdir) {

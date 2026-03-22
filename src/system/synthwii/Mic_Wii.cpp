@@ -9,7 +9,7 @@ int MicWii::GetClipping() const { return 0; }
 
 float MicWii::GetGain() const { return mGain; }
 
-int MicWii::GetSampleRate() const { return 1; }
+int MicWii::GetSampleRate() const { return 11025; }
 
 float MicWii::GetVolume() const { return mVolume; }
 

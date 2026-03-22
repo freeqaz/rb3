@@ -92,7 +92,7 @@ void Synth::Init() {
     DataArray *cfg = SystemConfig("synth");
     mMuted = cfg->FindInt("mute");
     TheLoadMgr.RegisterFactory("wav", WavFactory);
-    mNullMics.resize(GetNumMics());
+    mNullMics.resize(mNumMics);
     for (int i = 0; i < mNullMics.size(); i++) {
         mNullMics[i] = new MicNull();
     }

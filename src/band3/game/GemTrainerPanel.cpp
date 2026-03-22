@@ -196,8 +196,8 @@ void GemTrainerPanel::HandleLooping() {
             if (mAddBeatMask) {
                 AddBeatMask(mWriteTick + GetLoopTicks(GetCurrSection()));
             }
-            unkc9 = false;
             mAddBeatMask = !mAddBeatMask;
+            unkc9 = false;
             unkcc = -1;
             int start = GetSectionLoopStart(GetCurrSection());
             float ticktosec = TickToSeconds(start);
@@ -318,11 +318,11 @@ void GemTrainerPanel::CopyGems(int tick) {
         mGemPlayer->FinishAllHeldNotes(ms);
         Difficulty diff = mLocalUser->GetDifficulty();
         TrainerSection &sect = GetSection(GetCurrSection());
-        GameGemList *gemList = mGameGemLists[diff];
+        GameGemList **gemListPtr = &mGameGemLists[diff];
         int i5 = GetLoopTicks(GetCurrSection());
         int i1 = mWriteTick - i5;
         int startTick = sect.GetStartTick();
-        gemList->SetGems(startTick, i1, mWriteTick, mPattern, 4);
+        (*gemListPtr)->SetGems(startTick, i1, mWriteTick, mPattern, 4);
         mGemManager->ClearAllGems();
         mGemManager->ClearMissedPhrases();
         mTrack->GetTrackDir()->ClearAllGemWidgets();
@@ -352,7 +352,7 @@ void GemTrainerPanel::CopyGems(int tick) {
                 mGemPlayer->GetGemStatus()->Set0x2(i);
             }
             mGemPlayer->GetGemStatus()->Set0x40(i);
-            mGameGemLists[diff]->GetGem(i).SetPlayed(true);
+            (*gemListPtr)->GetGem(i).SetPlayed(true);
         }
         mGemManager->SetupGems(0);
         mWriteTick += GetLoopTicks(GetCurrSection());

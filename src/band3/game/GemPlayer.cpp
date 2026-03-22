@@ -816,8 +816,9 @@ void GemPlayer::SetPaused(bool b1) {
         mController->Disable(true);
     } else if (mEnabledState == kPlayerEnabled) {
         ResetController(false);
-        mController->unk25 = true;
-        mController->Disable(true);
+        BeatMatchController *ctrl = mController;
+        ctrl->unk25 = true;
+        ctrl->Disable(true);
         unk388 = true;
     } else
         ResetController(true);
@@ -941,14 +942,16 @@ void GemPlayer::AddCodaPoints() {
 void GemPlayer::LocalSetEnabledState(EnabledState state, int i2, BandUser *user, bool b4) {
     Player::LocalSetEnabledState(state, i2, user, b4);
     if (state - 3 > 1U) {
-        if (state == kPlayerEnabled) {
+        if (state != kPlayerEnabled) {
+            if (state != kPlayerDisabled)
+                return;
+        } else {
             mMatcher->Enable(true);
             mCommonPhraseCapturer->Enabled(this, mTrackNum, i2, true);
             InputReceived();
             SetAutoOn(false);
-        }
-        if (state != kPlayerDisabled)
             return;
+        }
     }
     if (TheGamePanel->GetState() != UIPanel::kUnloaded) {
         mMatcher->Enable(false);
@@ -1430,7 +1433,7 @@ void GemPlayer::FillInProgress(int i1, int slot) {
         HandleType(msg);
     } else {
         int tick = mSongPos.GetTotalTick();
-        SetFilling(i1, tick);
+        SetFilling(i1 > 0, tick);
     }
 }
 

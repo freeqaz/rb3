@@ -131,16 +131,15 @@ void RndPostProc::DoPost() {
 // fn_80624BB4
 void RndPostProc::UpdateColorModulation() {
     if (mFlickerTimeBounds.x > 0 && mFlickerTimeBounds.y > 0 && mFlickerModBounds.y > 0) {
-        if (mFlickerSeconds.x >= mFlickerSeconds.y) {
-            float unk108diff = mFlickerSeconds.x - mFlickerSeconds.y;
-            mFlickerSeconds.x = unk108diff;
-            float maxed = Max(unk108diff, 0.0f);
-            mFlickerSeconds.x = maxed;
+        float fy = mFlickerSeconds.y;
+        if (mFlickerSeconds.x >= fy) {
+            float diff = mFlickerSeconds.x - fy;
+            mFlickerSeconds.x = diff;
+            mFlickerSeconds.x = Max(mFlickerSeconds.x, 0.0f);
             mColorModulation =
                 1.0f - RandomFloat(mFlickerModBounds.x, mFlickerModBounds.y);
             mFlickerSeconds.y = RandomFloat(mFlickerTimeBounds.x, mFlickerTimeBounds.y);
-            float maxed2 = Max(mFlickerSeconds.x, mFlickerSeconds.y);
-            mFlickerSeconds.y = maxed2;
+            mFlickerSeconds.y = Max(mFlickerSeconds.x, mFlickerSeconds.y);
         }
         mFlickerSeconds.x += mDeltaSecs;
     } else

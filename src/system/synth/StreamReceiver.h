@@ -46,7 +46,7 @@ public:
     bool Ready();
     void WriteData(const void *, int);
     void ClearAtEndData();
-    int GetBytesPlayed();
+    unsigned long long GetBytesPlayed();
 
     static StreamReceiver *New(int, int, bool, int);
     static StreamReceiverFactoryFunc *sFactory;

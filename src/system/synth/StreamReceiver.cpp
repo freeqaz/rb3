@@ -100,7 +100,98 @@ void StreamReceiver::Stop() {
     }
 }
 
-void StreamReceiver::Poll() {}
+void StreamReceiver::Poll() {
+    if (mState == kPlaying || mState == kStopped) {
+        int playCursor = GetPlayCursor();
+        int activeBuf = playCursor / 0xC000;
+        mLastPlayCursor = playCursor;
+        if (activeBuf < 0 || activeBuf > mNumBuffers) {
+            playCursor = GetPlayCursor();
+            mLastPlayCursor = playCursor;
+            activeBuf = playCursor / 0xC000;
+            if (activeBuf < 0 || activeBuf > mNumBuffers) {
+                Stop();
+                Play();
+                goto block_17;
+            }
+        }
+        if (!mSlipEnabled && activeBuf != mSendTarget) {
+            mWantToSend = true;
+        }
+        int diff = activeBuf - mSendTarget;
+        if (diff == mNumBuffers / 2 || diff == -mNumBuffers / 2) {
+            mWantToSend = true;
+        }
+    } else if (mState == kInit) {
+        mWantToSend = true;
+    } else if (mState != kReady) {
+        MILO_FAIL("bad state logic.\n");
+    }
+block_17:
+    if (mWantToSend && mState != kInit && mRingFreeSpace != 0) {
+        mStarving = true;
+    }
+    if (mWantToSend && mRingWrittenSpace >= 0xC000 && !mSending) {
+        if (mRingReadPos + 0xC000 <= mRingSize) {
+            StartSendImpl(mBuffer + mRingReadPos, 0xC000, mSendTarget);
+        } else {
+            int firstChunk = mRingSize - mRingReadPos;
+            StartSendImpl(mBuffer + mRingReadPos, mBuffer, firstChunk, 0xC000 - firstChunk, mSendTarget);
+        }
+        mBuffersSent++;
+        if (mBuffersSent >= 100000) {
+            mBuffersSent -= mNumBuffers;
+        }
+        int sendTarget = mSendTarget + 1;
+        mWantToSend = false;
+        mSending = true;
+        mSendTarget = sendTarget;
+        if (sendTarget == mNumBuffers) {
+            mSendTarget = 0;
+        }
+    } else if (mWantToSend && mRingFreeSpace == 0 && !mSending) {
+        if (mRingWrittenSpace > 0) {
+            if (mRingReadPos + 0xC000 <= mRingSize) {
+                StartSendImpl(mBuffer + mRingReadPos, 0xC000, mSendTarget);
+            } else {
+                int firstChunk = mRingSize - mRingReadPos;
+                StartSendImpl(mBuffer + mRingReadPos, mBuffer, firstChunk, 0xC000 - firstChunk, mSendTarget);
+            }
+        } else {
+            StartSendImpl(mBuffer, 0xC000, mSendTarget);
+        }
+        mBuffersSent++;
+        if (mBuffersSent >= 100000) {
+            mBuffersSent -= mNumBuffers;
+        }
+        int sendTarget2 = mSendTarget + 1;
+        mWantToSend = false;
+        mSending = true;
+        mSendTarget = sendTarget2;
+        if (sendTarget2 == mNumBuffers) {
+            mSendTarget = 0;
+        }
+    }
+    if (mSending && SendDoneImpl()) {
+        mSending = false;
+        mStarving = false;
+        if (mSendTarget == 0 && mState == kInit) {
+            mState = kReady;
+            mWantToSend = false;
+        }
+        mRingWrittenSpace -= 0xC000;
+        mRingFreeSpace += 0xC000;
+        mRingReadPos += 0xC000;
+        if (mRingReadPos >= mRingSize) {
+            mRingReadPos -= mRingSize;
+        }
+        if (mEndData) {
+            ClearAtEndData();
+            mRingFreeSpace = 0;
+            mDoneBufferCounter++;
+        }
+    }
+}
 
 void StreamReceiver::EndData() {
     if (!mEndData) {
@@ -112,4 +203,15 @@ void StreamReceiver::EndData() {
     }
 }
 
-int StreamReceiver::GetBytesPlayed() {}
+unsigned long long StreamReceiver::GetBytesPlayed() {
+    if (mState == kInit)
+        return 0;
+    unsigned long long buffersSent = (unsigned long long)mBuffersSent;
+    unsigned long long numBuffers = (unsigned long long)mNumBuffers;
+    unsigned long long bufferOffset = buffersSent * 0xC000;
+    unsigned long long totalPlayed =
+        (unsigned long long)mLastPlayCursor + (buffersSent / numBuffers) * numBuffers * 0xC000;
+    for (; bufferOffset <= totalPlayed; totalPlayed -= numBuffers * 0xC000)
+        ;
+    return totalPlayed;
+}

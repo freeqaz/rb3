@@ -18,6 +18,7 @@
 #include "rndobj/HiResScreen.h"
 #include "rndobj/Rnd.h"
 #include "rndwii/Mat.h"
+#include "rndwii/PostProc.h"
 #include "rndwii/Tex.h"
 #include "types.h"
 #include "utl/MemMgr.h"
@@ -137,6 +138,7 @@ void WiiRnd::WiiPreInit() {
     Rnd::PreInit();
     WiiTex::Register();
     WiiMat::PreInit();
+    WiiPostProc::PreInit();
 }
 
 bool WiiRnd::GetProgressiveScan() { return mProgScan; }

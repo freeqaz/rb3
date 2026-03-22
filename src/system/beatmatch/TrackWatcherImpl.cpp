@@ -613,7 +613,7 @@ void TrackWatcherImpl::EndAllSustainedNotes() {
 
 void TrackWatcherImpl::MaybeAutoplayFutureCymbal(int gemID) {
     GameGem &gem = mGemList->GetGem(gemID);
-    float gemMs = gem.mMs + mCymbalAutoplayMs;
+    float gemMs = mCymbalAutoplayMs + gem.mMs;
     int i3 = gem.GetSlot();
     while (++gemID < mGemList->NumGems()) {
         GameGem &curGem = mGemList->GetGem(gemID);
@@ -665,7 +665,7 @@ bool TrackWatcherImpl::IsFillCompletion(float ms, int tick, int &solo_end_tick) 
         int loopTick = mSongData->GetTempoMap()->GetLoopTick(tick, i38);
         if (mSongData->GetFillInfo(mTrack)->FillExtentAtOrBefore(loopTick, extent)) {
             float time = mSongData->GetTempoMap()->TickToTime(extent.end + i38);
-            if (InSlopWindow(time, ms)) {
+            if (std::fabs(ms + mSyncOffset - time) <= mSlop) {
                 solo_end_tick = mSongData->GetTempoMap()->TimeToTick(time);
                 return true;
             }

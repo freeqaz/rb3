@@ -69,7 +69,7 @@ public:
 
 struct MaxSort {
     bool operator()(EventEntry *e1, EventEntry *e2) const {
-        return e1->MaxMs() < e2->MaxMs() ? true : false;
+        return e1->MaxMs() > e2->MaxMs() ? true : false;
     }
 };
 

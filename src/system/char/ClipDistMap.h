@@ -2,6 +2,7 @@
 #include "char/CharBonesMeshes.h"
 #include "char/CharClip.h"
 #include "char/CharDriver.h"
+#include "math/Color.h"
 #include "rndobj/Trans.h"
 #include <vector>
 
@@ -19,7 +20,7 @@ class ClipDistMap {
 public:
     class Array2d {
     public:
-        Array2d() : mWidth(0), mHeight(0), mData(0) {}
+        Array2d() {}
         void Resize(int, int);
         int CalcWidth();
         int CalcHeight();
@@ -34,9 +35,9 @@ public:
 
     class Node {
     public:
-        float unk0;
-        float unk4;
-        float unk8;
+        float curBeat;
+        float nextBeat;
+        float err;
     };
 
     ClipDistMap(CharClip *, CharClip *, float, float, int, const DataArray *);
@@ -44,9 +45,14 @@ public:
     void FindNodes(float, float, float);
     void SetNodes(Node *, Node *);
     void Draw(float, float, CharDriver *);
+    void DrawDot(float, float, float, float, const Hmx::Color &);
+    bool ClipBeat(CharClip *, CharDriver *, bool);
     float BeatA(int);
     float BeatB(int);
-    bool BeatAligned(int, int);
+    inline bool BeatAligned(int, int);
+    bool LocalMin(int, int);
+    bool FindBestNode(float, float, float, Node &);
+    void FindBestNodeRecurse(float, float, float, float, float);
     void
     GenerateDistEntry(CharBonesMeshes &, DistEntry &, float, CharClip *, const std::vector<RndTransformable *> &);
     CharClip *ClipA() const { return mClipA; }
@@ -68,10 +74,14 @@ public:
     int mNumSamples; // 0x34
     Array2d mDists; // 0x38
     std::vector<Node> mNodes; // 0x44
+
+protected:
+    int CalcWidth();
+    int CalcHeight();
 };
 
 struct DistMapNodeSort {
     bool operator()(const ClipDistMap::Node &n1, const ClipDistMap::Node &n2) const {
-        return n1.unk0 < n2.unk0 ? true : false;
+        return n1.curBeat < n2.curBeat ? true : false;
     }
 };

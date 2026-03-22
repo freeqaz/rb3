@@ -236,7 +236,7 @@ void Player::PollEnabledState(float f) {
 }
 
 void Player::PollTalking(int i) {
-    if (i == i % 5 && unk290) {
+    if (i % 5 == 0 && unk290) {
         BandTrack *track = GetBandTrack();
         if (track)
             track->SetNetTalking(false);
@@ -383,8 +383,8 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
 }
 
 bool Player::Saveable() const {
-    bool ret = false;
     bool result = false;
+    bool ret = false;
     if (mEnabledState == kPlayerDisabled && mTimesFailed < 3 && !unk298)
         ret = true;
     if (ret) {
@@ -646,15 +646,13 @@ bool Player::ShouldDrainEnergy() const { return true; }
 
 void Player::CheckCrowdFailure() {
     if (mCrowd->IsBelowLoseLevel() && mEnabledState == kPlayerEnabled) {
-        if (!mCrowd->CantFailYet() && mUser->GetDifficulty() != kDifficultyEasy
-            && !mUser->IsNullUser()) {
-            if (!MetaPerformer::Current()->IsNoFailActive() && !mQuarantined
-                && !mBand->MainPerformer()->mGameOver) {
-                SetEnabledState(kPlayerDisabled, mUser, false);
-                return;
-            }
+        if (mCrowd->CantFailYet() || mUser->GetDifficulty() == kDifficultyEasy
+            || mUser->IsNullUser() || MetaPerformer::Current()->IsNoFailActive()
+            || mQuarantined || mBand->MainPerformer()->mGameOver) {
+            mCrowd->SetDisplayValue(0);
+            return;
         }
-        mCrowd->SetDisplayValue(0);
+        SetEnabledState(kPlayerDisabled, mUser, false);
     }
 }
 
@@ -719,7 +717,7 @@ void Player::DeterminePerformanceAwards() {
     for (int i = 1; i < cfg->Size(); i++) {
         DataArray *arr = cfg->Array(i);
         if (arr->Int(1)) {
-            mStats.AccessPerformanceAwards().push_back(arr->Sym(0));
+            mStats.mPerformanceAwards.push_back(arr->Sym(0));
         }
     }
     playerNode = n30;

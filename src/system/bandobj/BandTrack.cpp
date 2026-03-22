@@ -355,8 +355,9 @@ BandCrowdMeter *BandTrack::GetCrowdMeter() {
 void BandTrack::SetSuppressSoloDisplay(bool b) { mSoloDisplay = b; }
 
 void BandTrack::SoloHide() {
-    if (mPlayerFeedback != 0) {
-        RndPropAnim *hideSoloAnim = ThisDir()->Find<RndPropAnim>("hide_solo.anim", true);
+    if (mPlayerFeedback) {
+        RndPropAnim *hideSoloAnim =
+            mPlayerFeedback->Find<RndPropAnim>("hide_solo.anim", true);
         float endFrame = hideSoloAnim->EndFrame();
         hideSoloAnim->SetFrame(endFrame, 1.0f);
     }

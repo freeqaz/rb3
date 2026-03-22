@@ -30,11 +30,8 @@ namespace Hmx {
 
         // copy ctor uses asm magic
         Color(const Color &color) {
-            typedef struct {
-                __vec2x32float__ a, b;
-            } Color_psq;
-
-            *(Color_psq *)this = *(Color_psq *)&color;
+            *(__vec2x32float__ *)&red = *(__vec2x32float__ *)&color.red;
+            *(__vec2x32float__ *)&blue = *(__vec2x32float__ *)&color.blue;
         }
 
         void Set(float f1, float f2, float f3, float f4) {

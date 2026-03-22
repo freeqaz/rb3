@@ -169,10 +169,9 @@ void RndGroup::SortDraws() {
         mObjects.push_back(*it);
     }
     mAnims.clear();
-    RndAnimatable *anim = nullptr;
     for (ObjPtrList<Hmx::Object>::iterator it = mObjects.begin(); it != mObjects.end();
          ++it) {
-        anim = dynamic_cast<RndAnimatable *>(*it);
+        RndAnimatable *anim = dynamic_cast<RndAnimatable *>(*it);
         if (anim)
             mAnims.push_back(anim);
     }
@@ -316,7 +315,7 @@ float RndGroup::GetDistanceToPlane(const Plane &p, Vector3 &v) {
         bool first = true;
         FOREACH (it, mDraws) {
             Vector3 locvec;
-            float dist = (*it)->GetDistanceToPlane(p, v);
+            float dist = (*it)->GetDistanceToPlane(p, locvec);
             if (first || (std::fabs(dist) < std::fabs(ret))) {
                 first = false;
                 ret = dist;

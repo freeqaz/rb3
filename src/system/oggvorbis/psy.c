@@ -772,8 +772,9 @@ void _vp_noisemask(vorbis_look_psy *p,
 		   float *logmdct, 
 		   float *logmask){
 
-  int i,n=p->n;
+  int n=p->n;
   float *work=alloca(n*sizeof(*work));
+  int i;
 
   bark_noise_hybridmp(n,p->bark,logmdct,logmask,
 		      140.,-1);
@@ -808,7 +809,7 @@ void _vp_noisemask(vorbis_look_psy *p,
 #endif
 
   for(i=0;i<n;i++){
-    int dB=logmask[i]+.5;
+    int dB=(int)(logmask[i]+.5);
     if(dB>=NOISE_COMPAND_LEVELS)dB=NOISE_COMPAND_LEVELS-1;
     if(dB<0)dB=0;
     logmask[i]= work[i]+p->vi->noisecompand[dB];
@@ -852,7 +853,10 @@ void _vp_offset_and_mix(vorbis_look_psy *p,
   for(i=0;i<n;i++){
     float val= noise[i]+p->noiseoffset[offset_select][i];
     if(val>p->vi->noisemaxsupp)val=p->vi->noisemaxsupp;
-    logmask[i]=max(val,tone[i]+toneatt);
+    {
+      float t = tone[i]+toneatt;
+      logmask[i] = val > t ? val : t;
+    }
   }
 }
 

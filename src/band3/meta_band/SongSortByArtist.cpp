@@ -132,7 +132,7 @@ void SongSortByArtist::ConfirmSubheaders(HeaderSortNode *node) {
                 FOREACH (curIt, curChildren) {
                     sortNodes.push_back(*curIt);
                 }
-                it = curChildren.erase(it);
+                it = children.erase(it);
                 delete cur;
             } else
                 ++it;

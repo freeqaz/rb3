@@ -537,29 +537,50 @@ void ParallelGroupSeqInst::Poll() {
 }
 
 RandomGroupSeqInst::RandomGroupSeqInst(RandomGroupSeq *seq)
-    : GroupSeqInst(seq, true), mIt(mSeqs.end()) {
-    mNumSeqs = seq->GetNumSimul();
+    : GroupSeqInst(seq, false), mIt(mSeqs.end()) {
+    int numSeqs = seq->GetNumSimul();
+    mNumSeqs = numSeqs;
     int childrenSize = seq->Children().size();
-    if (childrenSize < mNumSeqs)
-        mNumSeqs = childrenSize;
-    if (mNumSeqs == 1) {
+    if (childrenSize < numSeqs)
+        numSeqs = childrenSize;
+    if (numSeqs == 1) {
         int next = seq->NextIndex();
+        int target = next % childrenSize;
         seq->PickNextIndex();
         int n = 0;
         for (ObjPtrList<Sequence>::iterator it = seq->Children().begin();
              it != seq->Children().end();
              ++it) {
-            if (n == next % childrenSize) {
+            if (n == target) {
                 SeqInst *si = (*it)->MakeInst();
-                if (si)
-                    mSeqs.push_back(ObjPtr<SeqInst, ObjectDir>(si, 0));
+                if (si) {
+                    mSeqs.push_back();
+                    mSeqs.back() = si;
+                }
                 break;
             }
             n++;
         }
         mIt = mSeqs.begin();
     } else {
-        if (mNumSeqs != 0) {
+        int seqsLeft = numSeqs;
+        int childrenLeft = childrenSize;
+        ObjPtrList<Sequence>::iterator it = seq->Children().begin();
+        while (it != seq->Children().end()) {
+            if (seqsLeft == childrenLeft ||
+                RandomFloat() <= (float)seqsLeft / (float)childrenLeft) {
+                SeqInst *si = (*it)->MakeInst();
+                if (si) {
+                    mSeqs.push_back();
+                    mSeqs.back() = si;
+                }
+                seqsLeft--;
+            }
+            ++it;
+            childrenLeft--;
+            if (seqsLeft != 0)
+                continue;
+            break;
         }
         mIt = mSeqs.begin();
     }
@@ -591,9 +612,76 @@ void RandomGroupSeqInst::Poll() {
 }
 
 RandomIntervalGroupSeqInst::RandomIntervalGroupSeqInst(RandomIntervalGroupSeq *seq)
-    : GroupSeqInst(seq, true) {}
+    : GroupSeqInst(seq, false), unk4c(seq->Children().size()) {
+    unk54 = false;
+    unk40 = seq->mMaxSimultaneous;
+    unk44 = seq->mAvgIntervalSecs;
+    unk48 = seq->mIntervalSpread;
+    int i = 0;
+    while (i < (int)seq->Children().size()) {
+        unk4c[i] = -1.0f;
+        i++;
+    }
+}
 
 RandomIntervalGroupSeqInst::~RandomIntervalGroupSeqInst() {}
+
+void RandomIntervalGroupSeqInst::ComputeNextTime(int idx) {
+    if (idx < unk4c.size()) {
+        unk4c[idx] = TheTaskMgr.Seconds(TaskMgr::kRealTime) + RandomVal(unk44, unk48);
+    }
+}
+
+void RandomIntervalGroupSeqInst::StartImpl() {
+    for (int i = 0; i < unk4c.size(); i++) {
+        ComputeNextTime(i);
+    }
+    unk54 = true;
+}
+
+void RandomIntervalGroupSeqInst::Stop() {
+    for (ObjVector<ObjPtr<SeqInst> >::iterator it = mSeqs.begin(); it != mSeqs.end();
+         it++) {
+        if (*it) {
+            (*it)->Stop();
+        }
+    }
+    unk54 = false;
+}
+
+bool RandomIntervalGroupSeqInst::IsRunning() { return unk54; }
+
+void RandomIntervalGroupSeqInst::Poll() {
+    ObjVector<ObjPtr<SeqInst> >::iterator it = mSeqs.begin();
+    while (it != mSeqs.end()) {
+        if (*it == NULL || !(*it)->IsRunning()) {
+            it = mSeqs.erase(it);
+        } else {
+            it++;
+        }
+    }
+    double currentTime = (double)TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    for (unsigned int i = 0; i < unk4c.size(); i++) {
+        if ((double)unk4c[i] <= currentTime) {
+            if (mSeqs.size() < (unsigned int)unk40) {
+                ObjPtrList<Sequence> &children = ((GroupSeq *)mOwner)->Children();
+                int idx = 0;
+                for (ObjPtrList<Sequence>::iterator childIt = children.begin();
+                     childIt != children.end(); ++childIt) {
+                    if (idx == (int)i) {
+                        SeqInst *inst = (*childIt)->MakeInst();
+                        mSeqs.push_back();
+                        mSeqs.back() = inst;
+                        inst->Start();
+                        break;
+                    }
+                    idx++;
+                }
+            }
+            ComputeNextTime(i);
+        }
+    }
+}
 
 void Sequence::Init() {
     SfxSeq::Init();

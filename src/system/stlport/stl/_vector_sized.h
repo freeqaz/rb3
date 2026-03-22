@@ -105,14 +105,14 @@ protected:
   void _M_throw_length_error() const;
   void _M_throw_out_of_range() const;
 
-  _Tp* _M_start() { return _M_ptr._M_data; }
-  const _Tp* _M_start() const { return _M_ptr._M_data; }
+  inline _Tp* _M_start() { return _M_ptr._M_data; }
+  inline const _Tp* _M_start() const { return _M_ptr._M_data; }
 
-  _Tp* _M_finish() { return _M_ptr._M_data + _M_finish_idx; }
-  const _Tp* _M_finish() const { return _M_ptr._M_data + _M_finish_idx; }
+  inline _Tp* _M_finish() { return _M_ptr._M_data + _M_finish_idx; }
+  inline const _Tp* _M_finish() const { return _M_ptr._M_data + _M_finish_idx; }
 
-  _Tp* _M_end_of_storage() { return _M_ptr._M_data + _M_data_size; }
-  const _Tp* _M_end_of_storage() const { return _M_ptr._M_data + _M_data_size; }
+  inline _Tp* _M_end_of_storage() { return _M_ptr._M_data + _M_data_size; }
+  inline const _Tp* _M_end_of_storage() const { return _M_ptr._M_data + _M_data_size; }
 
   // _M_inc_finish_idx in retail doesn't match with size_t as the parameter,
   // but symbols in bank 8 indicate it uses size_t

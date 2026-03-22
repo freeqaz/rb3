@@ -117,7 +117,7 @@ bool CharInterest::IsWithinViewCone(const Vector3 &v1, const Vector3 &v2) {
 }
 
 bool CharInterest::IsMatchingFilterFlags(int mask) {
-    return mCategoryFlags & mask && mCategoryFlags != 0;
+    return (mCategoryFlags & mask) == mCategoryFlags && mCategoryFlags != 0;
 }
 
 // retail scratch: https://decomp.me/scratch/JpD0G

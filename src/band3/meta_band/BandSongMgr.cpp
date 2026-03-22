@@ -537,7 +537,8 @@ bool BandSongMgr::IsDemo(int) const { return false; }
 bool BandSongMgr::IsRestricted(int songID) const {
     BandSongMetadata *data = (BandSongMetadata *)Data(songID);
     int rating = data->Rating();
-    if (!AllowedToAccessContent(rating)) {
+    bool notAllowed = !AllowedToAccessContent(rating);
+    if (notAllowed) {
         MILO_WARN(
             "Song %d has rating %d, which should mean it is restricted", songID, rating
         );

@@ -97,7 +97,7 @@ public:
     bool unkc;
     int mSingerIndex; // 0x10
     bool unk14;
-    int unk18; // 0x18 - ptr to something
+    char *unk18; // 0x18
     int unk1c;
     int mIsSinging; // 0x20
     float mDetune; // 0x24

@@ -33,6 +33,7 @@ public:
     static DataNode OnWaypointNearest(DataArray *);
     static DataNode OnWaypointLast(DataArray *);
     static Waypoint *Find(int);
+    static Waypoint *FindNearest(const Vector3 &, int);
     static std::list<Waypoint *> *sWaypoints;
 
     static void Init();

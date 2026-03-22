@@ -177,7 +177,7 @@ public:
     }
 
     int Key(unsigned short us0, unsigned short us2) {
-        return (us0 & 0xFFFF) | ((us2 << 0x10) & 0xFFFF0000);
+        return us0 | (us2 << 0x10);
     }
 
     int TableIndex(unsigned short us0, unsigned short us2) { return (us0 ^ us2) & 0x1F; }

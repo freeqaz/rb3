@@ -618,7 +618,8 @@ int CalibrationPanel::GetAverageTestTime() {
 int CalibrationPanel::GetTestRep() const {
     float cyclems = mCycleTimeMs;
     float audioms = GetAudioTimeMs();
-    return (int)((cyclems / 2.0f + audioms) / cyclems) - unk7c;
+    int result = (int)((cyclems / 2.0f + audioms) / cyclems);
+    return result - unk7c;
 }
 
 float CalibrationPanel::GetSampleSpread() const {

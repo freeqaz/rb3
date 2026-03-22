@@ -75,12 +75,9 @@ void DisplayList::Begin(
 }
 
 void DisplayList::Start(_GXPrimitive pr, _GXVtxFmt f, unsigned short us) {
-    u8 *b = (u8 *)sCurr;
-    u32 *w = (u32 *)sCurr;
-    u16 *h = (u16 *)sCurr;
-    *b = (pr | f);
+    *(u8 *)sCurr = (pr | f);
     sCurr = (void *)((u8 *)sCurr + 1);
-    *h = us;
+    *(u16 *)sCurr = us;
     sCurr = (void *)((u8 *)sCurr + 2);
 }
 

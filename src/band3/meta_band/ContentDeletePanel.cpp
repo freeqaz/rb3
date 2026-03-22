@@ -40,8 +40,7 @@ DataNode ContentDeletePanel::OnMsg(const UITransitionCompleteMsg &msg) {
             mContentNames[1] = name;
             TheContentMgr->DeleteContent(mContentNames[1].c_str());
             if (!mDeleteFailed) {
-                Symbol s = mContentNames[1].c_str();
-                TheSongMgr.mUpgradeMgr->ClearFromCache(s);
+                TheSongMgr.mUpgradeMgr->ClearFromCache(Symbol(mContentNames[1].c_str()));
             }
         }
     }

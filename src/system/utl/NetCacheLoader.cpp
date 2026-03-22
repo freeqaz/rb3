@@ -43,13 +43,13 @@ void NetCacheLoader::Poll() {
         return;
     }
     case kS_0x2: {
-        mNetLoader->V_Unk0xC();
+        mNetLoader->PollLoading();
         if (mNetLoader->IsLoaded()) {
             WriteToCache();
             SetState(kS_Loaded);
             return;
         }
-        if (mNetLoader->V_Unk0x10()) {
+        if (mNetLoader->HasFailed()) {
             if (mNetLoader->unk_0x20 == 1) {
                 MILO_LOG(
                     "Failed to find file on server: %s\n", mNetLoader->GetRemotePath()

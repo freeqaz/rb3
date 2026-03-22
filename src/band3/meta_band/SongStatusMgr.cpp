@@ -503,13 +503,13 @@ bool SongStatusMgr::UpdateSong(int songID, const PerformerStatsInfo &stats, bool
     ScoreType ty = stats.mScoreType;
     Difficulty diff = stats.mDifficulty;
     SongStatus *status = CreateOrAccessSongStatus(songID);
-    bool updated = status->UpdateScore(ty, diff, stats.mScore);
-    if (updated) {
+    bool scoreUpdated = status->UpdateScore(ty, diff, stats.mScore);
+    if (scoreUpdated) {
         UpdateCachedTotalDiscScore(ty);
         UpdateCachedTotalScore(ty);
     }
-    updated |= UpdateSongStats(ty, diff, stats, status);
-    if (ty == kScoreBand && updated) {
+    bool updated = (scoreUpdated != 0) | UpdateSongStats(ty, diff, stats, status);
+    if (ty == kScoreBand && scoreUpdated) {
         status->SetInstrumentMask(stats.mInstrumentMask);
     }
     DateTime dt;
@@ -534,7 +534,7 @@ bool SongStatusMgr::UpdateSong(int songID, const PerformerStatsInfo &stats, bool
             TheRockCentral.CancelOutstandingCalls(this);
             mUpdatingStatus = 0;
         }
-        status->SetDirty(kScoreDrum, diff, !b && updated);
+        status->SetDirty(kScoreDrum, diff, !b && updatestats);
         updated |= updatestats;
     }
     return updated;

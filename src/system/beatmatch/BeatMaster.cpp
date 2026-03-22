@@ -153,8 +153,8 @@ void BeatMaster::ResetAudio() {
 }
 
 void BeatMaster::CheckBeat() {
-    int curTotalBeat = mSongPos.GetTotalBeat();
-    int lastTotalBeat = mLastSongPos.GetTotalBeat();
+    int curTotalBeat = (int)mSongPos.mTotalBeat;
+    int lastTotalBeat = (int)mLastSongPos.mTotalBeat;
     if (lastTotalBeat != curTotalBeat) {
         static DataNode &beat = DataVariable("beat");
         beat = curTotalBeat;

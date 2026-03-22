@@ -181,15 +181,16 @@ void PracticePanel::Poll() {
                     GetSectionBounds(f80, f84);
                     if (vp) {
                         TheGame->AdjustForVocalPhrases(f80, f84);
-                    } else {
+                    }
+                    if (!vp) {
                         GemPlayer *gp = dynamic_cast<GemPlayer *>(players[0]);
                         if (gp) {
                             BeatMatchController *cnt = gp->GetController();
                             Symbol cntSym = TheGameConfig->GetController(gp->GetUser());
-                            bool b1 = false;
+                            bool needsReset = true;
                             if (cntSym == keys && cntSym == gp->GetControllerType())
-                                b1 = true;
-                            if (!b1) {
+                                needsReset = false;
+                            if (needsReset) {
                                 gp->ResetController(cnt->IsDisabled());
                             }
                         }

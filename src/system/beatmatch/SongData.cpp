@@ -419,20 +419,20 @@ void SongData::ComputeVocalRangeData() {
         s.unk4 = it->second;
         mRangeSections.push_back(s);
     }
+    int u10start = 0;
     int i9 = 0;
-    int u10 = 0;
     if (mPlayerTrackConfigList->UseVocalHarmony()) {
         i9 = mVocalNoteLists.size() - 1;
-        u10 = 1;
+        u10start = 1;
     }
 
     for (int i = 0; i < mRangeSections.size(); i++) {
         RangeSection &curSect = mRangeSections[i];
         int i2 = -1;
         if (i + 1 < mRangeSections.size()) {
-            i2 = mRangeSections[i].unk0;
+            i2 = mRangeSections[i + 1].unk0;
         }
-        for (; u10 <= i9; u10++) {
+        for (int u10 = u10start; u10 <= i9; u10++) {
             mVocalNoteLists[u10]->UpdatePitchRangeTickDelimited(
                 curSect.unk0, i2, curSect.unk8, curSect.unkc
             );
@@ -670,7 +670,7 @@ void SongData::OnEndOfTrack(int i, bool b) {
 }
 
 void SongData::AddMultiGem(int iii, const MultiGemInfo &info) {
-    mLastGemTime = Max(info.ms, info.duration_ms);
+    mLastGemTime = Max(mLastGemTime, info.ms + info.duration_ms);
     int curTrack = info.track;
     if (curTrack >= 100) {
         mFakeTracks[curTrack - 100]->mGems->AddMultiGem(0, info);
@@ -725,8 +725,8 @@ void SongData::AddPhrase(
         diff = 0;
         i1 = 3;
     }
-    for (; diff <= i1; diff++) {
-        mPhraseDBs[i3]->AddPhrase(ty, diff, ms, ticks, dur_ms, dur_ticks);
+    for (int d = diff; d <= i1; d++) {
+        mPhraseDBs[i3]->AddPhrase(ty, d, ms, ticks, dur_ms, dur_ticks);
     }
 }
 
@@ -999,7 +999,8 @@ SongPos SongData::CalcSongPos(float f) {
     int itick = tick;
     int m, b, t, x;
     mMeasureMap->TickToMeasureBeatTick(itick, m, b, t, x);
-    return SongPos(tick, mBeatMap->Beat(itick), m, b, t);
+    float beat = mBeatMap->Beat(itick);
+    return SongPos(tick, beat, m, b, t);
 }
 
 Symbol SongData::TrackName(int track) const { return mTrackInfos[track]->mName; }
@@ -1074,7 +1075,7 @@ AudioTrackNum SongData::GetAudioTrackNum(int track) const {
 }
 
 bool SongData::GetGem(int gemId, int &startTick, int &endTick, int &slots) {
-    if (mGems && mGems->NumGems() > gemId) {
+    if (mGems && gemId < mGems->NumGems()) {
         GameGem &curGem = mGems->GetGem(gemId);
         startTick = curGem.GetTick();
         endTick = startTick + curGem.GetDurationTicks();
