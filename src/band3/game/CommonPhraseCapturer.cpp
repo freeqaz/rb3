@@ -1,6 +1,7 @@
 #include "game/CommonPhraseCapturer.h"
 #include "Player.h"
 #include "bandtrack/TrackPanel.h"
+#include "beatmatch/GameGem.h"
 #include "game/Game.h"
 #include "game/GemPlayer.h"
 #include "game/SongDB.h"
@@ -128,6 +129,33 @@ void CommonPhraseCapturer::Enabled(Player *p, int i2, int i3, bool b4) {
     }
 }
 
+bool CommonPhraseCapturer::HasPlayedWholePhrase(GemPlayer *p, int phraseID, int trackNum, int gemIdx) {
+    if ((1 << trackNum) & mPhraseStates[phraseID].unk8)
+        return false;
+    const std::vector<GameGem> &gems = TheSongDB->GetGems(trackNum);
+    while ((unsigned)(gemIdx + 1) < gems.size()
+           && TheSongDB->GetPhraseID(trackNum, gemIdx + 1) == phraseID) {
+        gemIdx++;
+    }
+    for (; gemIdx >= 0; gemIdx--) {
+        if (TheSongDB->GetPhraseID(trackNum, gemIdx) != phraseID)
+            return true;
+        if (gems[gemIdx].PlayableBy(p->GetSlot()) && !p->HasDealtWithGem(gemIdx))
+            return false;
+    }
+    return true;
+}
+
+void CommonPhraseCapturer::HitLastGem(Player *p, int i2, int i3) {
+    if (p->IsLocal()) {
+        LocalHitLastGem(p, i2, i3);
+        static Message msg("send_hit_last_unison_gem", 0, 0);
+        msg[0] = i2;
+        msg[1] = i3;
+        p->HandleType(msg);
+    }
+}
+
 void CommonPhraseCapturer::Fail(Player *p, int i2, int i3) {
     if (p->IsLocal()) {
         LocalFail(p, i2, i3);
@@ -136,6 +164,12 @@ void CommonPhraseCapturer::Fail(Player *p, int i2, int i3) {
         msg[1] = i3;
         p->HandleType(msg);
     }
+}
+
+void CommonPhraseCapturer::OneTrackCompletedPhrase(int phraseID, int trackNum) {
+    Player *player = TheGame->GetPlayerFromTrack(trackNum, true);
+    player->CompleteCommonPhrase(false, false);
+    player->UnisonHit();
 }
 
 void CommonPhraseCapturer::AllTracksCompletedPhrase(int n) {
@@ -150,6 +184,11 @@ void CommonPhraseCapturer::AllTracksCompletedPhrase(int n) {
     GetTrackPanelDir()->UnisonSucceed();
     ExtendPhraseStates(n);
     mPhraseStates[n].unk0 = 1;
+}
+
+bool CommonPhraseCapturer::IsMultiplayerPhrase(int phraseID) {
+    int tracks = TheSongDB->GetCommonPhraseTracks(phraseID) | mPhraseStates[phraseID].unk8;
+    return (tracks & (tracks - 1)) != 0;
 }
 
 void CommonPhraseCapturer::ExtendPhraseStates(int n) {

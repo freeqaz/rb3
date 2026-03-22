@@ -42,17 +42,18 @@ void OverdriveTimeTracker::Poll_(float f) {
             }
         }
         if (o2) {
-            if (unk64 == -1.0f) {
+            float cur_unk64 = unk64;
+            if (-1.0f == cur_unk64) {
                 unk64 = f;
             } else {
-                unk5c = f - unk64;
+                unk5c = f - cur_unk64;
                 if (unk60 < unk5c) {
                     unk60 = unk5c;
                 }
             }
             UpdateTimeRemainingDisplay();
         } else if (unk64 != -1.0f) {
-            unk58 += unk5c;
+            unk58 = unk58 + unk5c;
             if (unk60 < unk5c) {
                 unk60 = unk5c;
             }

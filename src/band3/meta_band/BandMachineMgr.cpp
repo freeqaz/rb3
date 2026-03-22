@@ -378,9 +378,10 @@ int BandMachineMgr::GetLeaderPrimaryMetaScore() const {
 }
 
 void BandMachineMgr::RefreshPrimaryProfileInfo() {
+    LocalBandMachine *pLocalMachine;
     BandProfile *profile = TheProfileMgr.GetPrimaryProfile();
     if (profile) {
-        LocalBandMachine *pLocalMachine = mLocalMachine;
+        pLocalMachine = mLocalMachine;
         MILO_ASSERT(pLocalMachine, 0x203);
         pLocalMachine->SetPrimaryProfileName(profile->GetName());
         if (profile->IsBandNameProfanityChecked()) {

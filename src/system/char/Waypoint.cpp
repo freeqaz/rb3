@@ -33,6 +33,46 @@ Waypoint *Waypoint::Find(int flags2) {
 
 DataNode Waypoint::OnWaypointFind(DataArray *da) { return Waypoint::Find(da->Int(1)); }
 
+DataNode Waypoint::OnWaypointNearest(DataArray *da) {
+    return FindNearest(da->Obj<RndTransformable>(1)->WorldXfm().v, da->Int(2));
+}
+
+Waypoint *Waypoint::FindNearest(const Vector3 &pos, int flags) {
+    Waypoint *best = nullptr;
+    float bestDist = 1e30;
+    for (std::list<Waypoint *>::iterator it = sWaypoints->begin(); it != sWaypoints->end();
+         ++it) {
+        if ((*it)->mFlags & flags) {
+            const Vector3 &wpPos = (*it)->WorldXfm().v;
+            float dy = pos.y - wpPos.y;
+            float dx = pos.x - wpPos.x;
+            float dz = pos.z - wpPos.z;
+            float dist = dy * dy + dx * dx + dz * dz;
+            bool closer;
+            if (dist < bestDist) {
+                bestDist = dist;
+                closer = true;
+            } else {
+                closer = false;
+            }
+            if (closer) best = *it;
+        }
+    }
+    return best;
+}
+
+DataNode Waypoint::OnWaypointLast(DataArray *da) {
+    Waypoint *wp = da->Obj<Waypoint>(1);
+    for (std::list<Waypoint *>::iterator it = sWaypoints->begin(); it != sWaypoints->end();
+         ++it) {
+        if (*it == wp) {
+            sWaypoints->splice(sWaypoints->end(), *sWaypoints, it);
+            break;
+        }
+    }
+    return DataNode(0);
+}
+
 Waypoint::Waypoint()
     : mFlags(0), mRadius(12.0f), mYRadius(0), mAngRadius(0), pad(0), mStrictAngDelta(0),
       mStrictRadiusDelta(0), mConnections(this) {

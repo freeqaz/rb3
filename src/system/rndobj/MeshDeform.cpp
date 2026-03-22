@@ -13,9 +13,9 @@ RndMeshDeform::VertArray::~VertArray() { _MemFree(mData); }
 void RndMeshDeform::VertArray::Clear() { SetSize(0); }
 
 int RndMeshDeform::VertArray::NumVerts() {
-    u8 *buf = (u8 *)mData;
     void *end = (void *)((int)mData + mSize);
     int i = 0;
+    u8 *buf = (u8 *)mData;
     for (; buf < end;) {
         i++;
         buf = (*buf << 1) + buf;

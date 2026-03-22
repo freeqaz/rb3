@@ -34,8 +34,7 @@ void CharMeshHide::HideDraws(int x) {
     for (int i = 0; i < mHides.size(); i++) {
         Hide &theHide = mHides[i];
         if (theHide.mDraw) {
-            bool b = !(x & theHide.mFlags);
-            theHide.mDraw->SetShowing(theHide.mShow != b);
+            theHide.mDraw->SetShowing(theHide.mShow ^ !(x & theHide.mFlags));
         }
     }
 }

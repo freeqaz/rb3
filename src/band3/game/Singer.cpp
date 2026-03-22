@@ -55,7 +55,7 @@ Singer::Singer(VocalPlayer *vp, int n)
 Singer::~Singer() {
     RELEASE(mTalkyMatcher);
     RELEASE(mVibrato);
-    // RELEASE(unk18);
+    RELEASE(unk18);
 }
 
 void Singer::PostLoad() {

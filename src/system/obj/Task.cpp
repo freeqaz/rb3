@@ -341,7 +341,6 @@ float TaskMgr::DeltaTutorialSeconds() const {
 void TaskMgr::Poll() {
     START_AUTO_TIMER("anim");
     mTime.Split();
-    TaskTimeline::TaskInfo *info;
     if (mAutoSecondsBeats) {
         float secs = mTime.Ms() / 1000.0f;
         mTimelines[kTaskSeconds].SetTime(secs, false);

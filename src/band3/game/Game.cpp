@@ -515,7 +515,8 @@ void Game::Rollback(float f1, float toMs) {
 bool Game::HandleRollbackAnimation() {}
 
 void Game::CheckRollbackEnd(float f1) {
-    if (unkdc != -1.0f && f1 >= unkdc) {
+    float rollbackEnd = unkdc;
+    if (rollbackEnd != -1.0f && f1 >= rollbackEnd) {
         EnableWorldPolling(true);
         unkdc = -1.0f;
     }

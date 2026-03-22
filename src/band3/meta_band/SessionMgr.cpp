@@ -178,11 +178,9 @@ void SessionMgr::SendMsgToAll(NetMessage &msg, PacketType ty) {
 void SessionMgr::UpdateLeader() {
     if (mUserLeader && HasUser(mUserLeader))
         return;
-    LocalBandUser *newleader = nullptr;
     std::vector<LocalUser *> localusers;
     GetLocalUserListImpl(localusers);
-    if (!localusers.empty())
-        newleader = BandUserMgr::GetLocalBandUser(localusers.front());
+    LocalBandUser *newleader = localusers.empty() ? nullptr : BandUserMgr::GetLocalBandUser(localusers.front());
     SetLeaderUser(newleader);
 }
 

@@ -13,8 +13,8 @@ int MeasureMap::MeasureBeatTickToTick(int measure, int beat, int tick) const {
     );
     if (change != mTimeSigChanges.begin())
         change--;
-    return ((measure - change->mMeasure) * change->mNum * 1920) / change->mDenom
-        + change->mTick + beat * 480 + tick;
+    int meas_diff = measure - change->mMeasure;
+    return (meas_diff * change->mNum * 1920) / change->mDenom + change->mTick + beat * 480 + tick;
 }
 
 void MeasureMap::TickToMeasureBeatTick(int tick, int &oMeasure, int &oBeat, int &oTick)

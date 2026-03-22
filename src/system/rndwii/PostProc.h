@@ -7,6 +7,7 @@ public:
     WiiPostProc();
     virtual ~WiiPostProc();
 
+    static void PreInit();
     void PrepareFinalTEV();
     void ClearFinalTEV();
     void DrawKaleidoscope();

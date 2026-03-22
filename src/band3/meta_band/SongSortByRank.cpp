@@ -57,16 +57,15 @@ void SongSortByRank::MakeReady() {
 
 void SongSortByRank::CancelMakeReady() {
     CancelSongRankingRequest();
-    if(!mRankings.empty())
-        mRankings.clear();
+    mRankings.clear();
     mDataResults.Clear();
 }
 
 void SongSortByRank::RequestSongRankingInfo() {
     Profile *prof = TheProfileMgr.GetPrimaryProfile();
     if(prof) {
-        stlpmtx_std::vector<int> something;
         ScoreType sType = TheMusicLibrary->ActiveScoreType();
+        stlpmtx_std::vector<int> something;
         TheSongMgr.GetRankedSongs(something, true, true);
         TheRockCentral.GetMultipleRankingsForPlayer(prof, sType, something, mDataResults, this);
     }

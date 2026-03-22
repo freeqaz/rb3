@@ -784,8 +784,10 @@ Symbol AccomplishmentPanel::GetSelectedDetailsEntry() {
 }
 
 Symbol AccomplishmentPanel::GetAccomplishmentName() {
-    if (IsSecret())
-        return acc_secret;
+    if (IsSecret()) {
+        Symbol name = acc_secret;
+        return name;
+    }
     else
         return SelectedAccomplishment();
 }

@@ -45,14 +45,15 @@ void CharLipSync::Generator::Finish() {
     for (int i = 0; i < bools.size(); i++)
         bools[i] = false;
 
+    std::vector<unsigned char VECTOR_SIZE_LARGE> &data = mLipSync->mData;
     int idx = 0;
     for (int i = 0; i < mLipSync->mFrames; i++) {
-        int count = mLipSync->mData[idx++];
+        int count = data[idx++];
         MILO_ASSERT(count <= mLipSync->mVisemes.size(), 0x57);
         for (int j = 0; j < count; j++) {
-            int viseme = mLipSync->mData[idx++];
+            int viseme = data[idx++];
             MILO_ASSERT(viseme < mLipSync->mVisemes.size(), 0x5B);
-            if (mLipSync->mData[idx] != 0) {
+            if (data[idx++] != 0) {
                 bools[viseme] = true;
             }
         }

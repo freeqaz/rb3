@@ -275,7 +275,7 @@ void TrackPanel::HandleAddUser(BandUser *user) {
 
     for (int i = 0; i < mTracks.size(); i++) {
         if (mTracks[i]->mSlotIdx > userslot) {
-            mTracks.insert(mTracks.begin() + i, newtrack);
+            mTracks.insert(mTracks.begin() + i, 1, newtrack);
             pushed = true;
             break;
         }

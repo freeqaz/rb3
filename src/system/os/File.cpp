@@ -87,10 +87,10 @@ static DataNode OnSynchProc(DataArray *da) {
 static DataNode OnToggleFakeFileErrors(DataArray *da) { return 0; }
 
 void OnFrameRateRecurseCB(const char *cc1, const char *cc2) {
-    MILO_ASSERT(gFrameRateArray, 0x148);
     String str(cc2);
     const char *keepStr =
         MakeString("_keep_%s.dta", PlatformSymbol(TheLoadMgr.GetPlatform()));
+    MILO_ASSERT(gFrameRateArray, 0x148);
     int theStrLen = strlen(str.c_str());
     int keepLen = strlen(keepStr);
     str = str.substr(0, theStrLen - keepLen);

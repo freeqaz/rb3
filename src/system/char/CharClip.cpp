@@ -413,10 +413,12 @@ void CharClip::FacingSet::ScaleAddSample(
 }
 
 float CharClip::LengthSeconds() const {
-    if (NumFrames() < 2)
+    int numSamples = mFull.mNumSamples;
+    int framesSize = (int)mFull.mFrames.size();
+    if (Max<int>(Max<int>(1, numSamples), framesSize) < 2)
         return 0;
     else
-        return (NumFrames() - 1) / mFramesPerSec;
+        return (Max<int>(Max<int>(1, numSamples), framesSize) - 1) / mFramesPerSec;
 }
 
 float CharClip::FrameToBeat(float frame) const {
@@ -453,6 +455,8 @@ int CharClip::BeatToSample(float f, float *fp) const {
     float f1 = 0;
     if (mBeatTrack.back().frame != 0) {
         f1 = frame / mBeatTrack.back().frame;
+    } else {
+        f1 = 0;
     }
     *fp = f1;
     return mFull.FracToSample(fp);
@@ -678,6 +682,8 @@ void CharClip::PostSave(BinStream &) {}
 void CharClip::Transitions::Load(BinStream &bs) {
     Clear();
     static ObjectDir *sdir;
+    int y;
+    int x;
     if (gOldRev < 8) {
         int num;
         bs >> num;
@@ -727,7 +733,6 @@ void CharClip::Transitions::Load(BinStream &bs) {
                 int count;
                 bs >> count;
                 for (int j = 0; j < count; j++) {
-                    int x, y;
                     bs >> x;
                     bs >> y;
                 }

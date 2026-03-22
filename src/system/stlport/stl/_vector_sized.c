@@ -78,7 +78,7 @@ void _VECTOR_IMPL<_Tp, _Size, _Alloc>::_M_insert_overflow_aux(pointer __pos, con
   pointer __new_start = this->_M_ptr.allocate(__len);
   pointer __new_finish = __new_start;
   _STLP_TRY {
-    __new_finish = __uninitialized_move(this->_M_start(), __pos, __new_start, _TrivialUCpy(), _Movable());
+    __new_finish = __uninitialized_move(this->_M_ptr._M_data, __pos, __new_start, _TrivialUCpy(), _Movable());
     // handle insertion
     if (__fill_len == 1) {
       _Copy_Construct(__new_finish, __x);
@@ -101,7 +101,7 @@ void _VECTOR_IMPL<_Tp, _Size, _Alloc>::_M_insert_overflow(pointer __pos, const _
   size_type __len = __old_size + (max)(__old_size, __fill_len);
 
   pointer __new_start = this->_M_ptr.allocate(__len);
-  pointer __new_finish = (pointer)__copy_trivial(this->_M_start(), __pos, __new_start);
+  pointer __new_finish = (pointer)__copy_trivial(this->_M_ptr._M_data, __pos, __new_start);
   // handle insertion
   __new_finish = __fill_n(__new_finish, __fill_len, __x);
   if (!__atend)

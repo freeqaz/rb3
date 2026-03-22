@@ -87,7 +87,8 @@ void Campaign::ConfigureCampaignLevelData(DataArray *arr) {
         MILO_ASSERT(pCampaignLevel, 0x70);
 
         Symbol levelname = pCampaignLevel->GetName();
-        if (GetCampaignLevel(levelname)) {
+        bool levelExists = GetCampaignLevel(levelname);
+        if (levelExists) {
             MILO_WARN("%s campaign level already exists, skipping", levelname);
             delete pCampaignLevel;
         } else {

@@ -154,10 +154,10 @@ void GameConfig::AssignTrack(BandUser *u) {
 }
 
 void GameConfig::AssignTracks() {
-    bool b11 = false;
     mPlayerTrackConfigList->Reset();
     std::vector<BandUser *> users;
     TheBandUserMgr->GetParticipatingBandUsersInSession(users);
+    bool b11 = false;
     for (int i = 0; i < users.size(); i++) {
         BandUser *u = users[i];
         mPlayerTrackConfigList->AddPlaceholderConfig(
@@ -175,19 +175,21 @@ void GameConfig::AssignTracks() {
         bool b1 = TheGame->mProperties.mAllowAutoVocals;
         MetaPerformer *pPerformer = MetaPerformer::Current();
         MILO_ASSERT(pPerformer, 0x13A);
-        bool bigbool = autoVox && b1 && pPerformer->PartPlaysInSong("vocals");
+        bool bigbool = autoVox & b1 & pPerformer->PartPlaysInSong("vocals");
         mPlayerTrackConfigList->SetAutoVocals(bigbool);
         if (bigbool) {
             NullLocalBandUser *user = TheBandUserMgr->GetNullUser();
-            MetaPerformer *pPerformer = MetaPerformer::Current();
-            MILO_ASSERT(pPerformer, 0x145);
-            mPlayerTrackConfigList->SetUseVocalHarmony(pPerformer->SongAllowsVocalHarmony(
-            ));
-            user->SetTrackType(kTrackVocals);
-            user->SetDifficulty(kDifficultyMedium);
-            mPlayerTrackConfigList->AddConfig(
-                user->GetUserGuid(), user->GetTrackType(), user->GetDifficulty(), -1, false
-            );
+            if (user) {
+                MetaPerformer *pPerformer = MetaPerformer::Current();
+                MILO_ASSERT(pPerformer, 0x145);
+                mPlayerTrackConfigList->SetUseVocalHarmony(pPerformer->SongAllowsVocalHarmony(
+                ));
+                user->SetTrackType(kTrackVocals);
+                user->SetDifficulty(kDifficultyMedium);
+                mPlayerTrackConfigList->AddConfig(
+                    user->GetUserGuid(), user->GetTrackType(), user->GetDifficulty(), -1, false
+                );
+            }
         }
     }
 }

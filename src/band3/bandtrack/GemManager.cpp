@@ -645,11 +645,10 @@ bool GemManager::OnMissPhrase(int i1) {
                 mMissedPhrases.push_back(Extent(i2, ext18.unk4));
             } else if (i2 != back.unk0)
                 return ret;
-            UpdateGemStates();
         } else {
             mMissedPhrases.push_back(Extent(i2, ext18.unk4));
-            UpdateGemStates();
         }
+        UpdateGemStates();
     }
     return ret;
 }

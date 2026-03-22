@@ -890,14 +890,13 @@ int RndText::NumCharsInBytes(
     const String &str, const RndText::Style &style, float &fref, int i4
 ) {
     int len = strlen(str.c_str());
-    str.c_str();
     int i5 = 0;
     float f8 = 0;
     int s4 = 0;
     while (s4 < len) {
         unsigned short us;
         int decoded = DecodeUTF8(us, str.c_str() + s4);
-        if (i4 > -1 && i4 < s4 + decoded)
+        if (i4 > -1 && s4 + decoded > i4)
             break;
         RndFont *support = SupportChar(us, mFont);
         if ((us == 0x20 || us == 9 || us == 10) && len > 0) {
@@ -909,6 +908,7 @@ int RndText::NumCharsInBytes(
             i5 = 0;
             f8 = 0;
         }
+        s4 += decoded;
     }
     fref += f8;
     return s4 - i5;

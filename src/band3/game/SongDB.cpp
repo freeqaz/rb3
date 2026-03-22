@@ -219,8 +219,8 @@ int SongDB::GetNumOverdrivePhrases(int i) const {
 }
 
 int SongDB::GetNumUnisonPhrases(int x) const {
-    int num = 0;
     PhraseAnalyzer *pa = mSongData->GetPhraseAnalyzer();
+    int num = 0;
     int phraseCount = pa->NumPhrases();
     int tracks = TheGame->GetScoringTracks();
     int mask = 1 << x;

@@ -6,10 +6,8 @@
 #include "utl/MemMgr.h"
 
 struct CatData {
-    CatData() : priority(0), unk4(0) {}
-    CatData(const CatData &c) : priority(c.priority), unk4(c.unk4) {}
     int priority; // 0x0
-    int unk4; // 0x4
+    bool unk4; // 0x4
 };
 
 class FileMergerOrganizerLoader : public Loader {

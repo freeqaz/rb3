@@ -407,8 +407,7 @@ BEGIN_LOADS(EventTrigger)
         mHideDelays.clear();
         FOREACH (it, drawList) {
             mHideDelays.push_back();
-            HideDelay &hd = mHideDelays.back();
-            hd.mHide = *it;
+            mHideDelays.back().mHide = *it;
         }
     } else {
         ObjPtr<Hmx::Object> objPtr(this);
@@ -664,8 +663,7 @@ DataNode EventTrigger::OnTrigger(DataArray *) {
 
 // matches in retail
 DataNode EventTrigger::OnProxyCalls(DataArray *) {
-    DataNode &var = DataVariable("milo_prop_path");
-    DataArray *miloArr = var.Array();
+    DataArray *miloArr = DataVariable("milo_prop_path").Array();
     DataNode node2 = miloArr->Node(2);
     miloArr->Node(2) = Symbol("proxy");
     Hmx::Object *propDir = Property(miloArr, true)->Obj<ObjectDir>();

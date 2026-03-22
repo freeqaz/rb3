@@ -159,9 +159,9 @@ DataNode op2(DataArray *msg) {
 
 DataNode op3(DataArray *msg) {
     unsigned long operand = msg->Int(1);
-    bool b = (operand == 0);
     unsigned long w = msg->Int(2);
-    unsigned long ret = u8(w) | ((w << 8) & 0xFF00);
+    unsigned long b = !operand;
+    unsigned long ret = (u8(w) << 8) | u8(w);
     ret >>= b;
     return DataNode(u8(ret));
 }
@@ -169,8 +169,8 @@ DataNode op3(DataArray *msg) {
 DataNode op4(DataArray *msg) {
     u32 operand = msg->Int(1);
     u32 w = msg->Int(2);
-    u32 b = (operand == 0);
     u32 a = (u8(w) == 0);
+    u32 b = (operand == 0);
     u32 ret = (a << 8) | a;
     ret >>= b;
     return u8(ret);
@@ -217,28 +217,23 @@ DataNode op9(DataArray *msg) {
 DataNode op10(DataArray *msg) {
     u32 operand = msg->Int(1);
     u32 w = msg->Int(2);
-    u32 bw = u8(w);
-    u32 ret = bw | (bw << 8);
+    u32 ret = (u8(w) << 8) | u8(w);
     ret >>= !operand;
-    ret ^= operand;
-    return DataNode(kDataInt, (int)(ret & 0xFF));
+    return DataNode(kDataInt, (int)(u8(ret ^ operand)));
 }
 
 DataNode op11(DataArray *msg) {
-    u32 operand = msg->Int(1);
-    u32 w = msg->Int(2);
-    u32 bw = u8(w);
-    u32 ret = bw | (bw << 8);
+    unsigned long operand = msg->Int(1);
+    unsigned long w = msg->Int(2);
+    unsigned long ret = (u8(w) << 8) | u8(w);
     ret >>= u8(operand & 7);
-    ret ^= operand;
-    return DataNode(kDataInt, (int)(ret & 0xFF));
+    return DataNode(kDataInt, (int)(u8(ret ^ operand)));
 }
 
 DataNode op12(DataArray *msg) {
-    u32 operand = msg->Int(1);
-    u32 w = msg->Int(2);
-    u32 bw = u8(w);
-    u32 ret = bw | (bw << 8);
+    unsigned long operand = msg->Int(1);
+    unsigned long w = msg->Int(2);
+    unsigned long ret = (u8(w) << 8) | u8(w);
     ret >>= u8(operand & 7);
     return DataNode(kDataInt, u8(ret + operand));
 }
@@ -246,9 +241,9 @@ DataNode op12(DataArray *msg) {
 DataNode op13(DataArray *msg) {
     u32 operand = msg->Int(1);
     u32 w = msg->Int(2);
-    u32 bw = u8(w);
-    u32 ret = bw | (bw << 8);
-    ret >>= !operand;
+    u32 notOp = !operand;
+    u32 ret = ((w & 0xFF) << 8) | (w & 0xFF);
+    ret >>= notOp;
     return DataNode(kDataInt, u8(ret + operand));
 }
 

@@ -103,8 +103,11 @@ ExcitementLevel CrowdRating::GetExcitement() const {
 
 void CrowdRating::CalculateValue() {
     if (mActive) {
-        float val = mRawValue >= kMax ? 1.0f : (mRawValue - kMin) / (kMax - kMin);
-        if (CantFailYet() && val < kWarningLevel) {
+        float maxVal = kMax;
+        float rawValue = mRawValue;
+        float val = rawValue >= maxVal ? 1.0f : (rawValue - kMin) / (maxVal - kMin);
+        bool reject = CantFailYet() && val < kWarningLevel;
+        if (reject) {
             val = kWarningLevel;
         }
         SetValue(val);
@@ -126,7 +129,8 @@ void CrowdRating::SetDisplayValue(float val) {
 }
 
 float CrowdRating::GetDisplayValue() const {
-    return (mValue - mLoseLevel) / (1.0f - mLoseLevel);
+    float loseLevel = mLoseLevel;
+    return (mValue - loseLevel) / (1.0f - loseLevel);
 }
 
 FORCE_LOCAL_INLINE

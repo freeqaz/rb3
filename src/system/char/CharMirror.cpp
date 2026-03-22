@@ -66,16 +66,16 @@ void CharMirror::SyncBones() {
     mBones.ClearBones();
     if (!mServo || !mMirrorServo || !TypeDef())
         return;
-    else {
-        std::list<CharBones::Bone> bones;
-        DataArray *mapArr = TypeDef()->FindArray("mappings");
-        for (int i = 1; i < mapArr->Size(); i++) {
-            bones.push_back(CharBones::Bone(mapArr->Array(i)->Sym(0), 1));
-        }
-        mBones.AddBones(bones);
-        int numBones = mBones.mBones.size();
-        mOps.resize(numBones);
-        for (int i = 0; i < mOps.size(); i++) {
+    std::list<CharBones::Bone> bones;
+    DataArray *mapArr = TypeDef()->FindArray("mappings");
+    for (int i = 1; i < mapArr->Size(); i++) {
+        bones.push_back(CharBones::Bone(mapArr->Array(i)->Sym(0), 1));
+    }
+    mBones.AddBones(bones);
+    mOps.resize(mBones.mBones.size());
+    int i = 0;
+    if (mOps.size()) {
+        for (; i < mOps.size(); i++) {
             Symbol boneName = mBones.mBones[i].name;
             DataArray *boneArr = mapArr->FindArray(boneName);
             mOps[i].ptr = mMirrorServo->FindPtr(boneArr->Sym(1));

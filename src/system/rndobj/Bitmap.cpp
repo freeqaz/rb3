@@ -561,10 +561,10 @@ void RndBitmap::SetPreMultipliedAlpha() {
 }
 
 void RndBitmap::SelfMip() {
-    int pixelBytes = PixelBytes();
     int rowOffset = mRowBytes / 2;
+    int pixelBytes = PixelBytes();
     mWidth /= 2;
-    int dim = Min<unsigned short>(Width(), Height());
+    int dim = Min<unsigned short>(Height(), Width());
 
     int i3 = 0;
     int i4 = 0;

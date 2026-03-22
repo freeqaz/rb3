@@ -61,7 +61,8 @@ void CharPosConstraint::Load(BinStream &bs) {
     if (gRev > 1) {
         bs >> mBox;
     } else {
-        mBox.Set(Vector3(1.0f, 1.0f, 0.0f), Vector3(-1.0f, -1.0f, 1000.0f));
+        mBox.mMin.Set(1.0f, 1.0f, 0.0f);
+        mBox.mMax.Set(-1.0f, -1.0f, 1000.0f);
         // mBox.mMin.Set(1.0f, 1.0f, 0.0f);
         // mBox.mMax.Set(-1.0f, -1.0f, 1000.0f);
     }

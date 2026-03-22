@@ -14,7 +14,7 @@ public:
             WaitingMachine(BandMachine *m) : mMachine(m), mResponded(0) {}
 
             BandMachine *mMachine; // 0x0
-            int mResponded; // 0x4
+            bool mResponded; // 0x4
         };
 
         WaitList() {}
