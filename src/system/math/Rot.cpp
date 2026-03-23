@@ -3,6 +3,8 @@
 #include "utl/BinStream.h"
 #include <cmath>
 
+DECOMP_FORCEACTIVE(Rot, "Rot.cpp", "false")
+
 Transform &TransformNoScale::ToTransform(Transform &tf) const {
     Hmx::Quat tmpq;
     q.ToQuat(tmpq);
@@ -343,13 +345,15 @@ void MakeRotMatrix(const Vector3 &v, Hmx::Matrix3 &mtx, bool lookup) {
     }
 
     mtx.y.z = xsin;
+    float ycos_zcos = ycos * zcos;
+    float ysin_zsin = ysin * zsin;
     mtx.y.y = xcos * zcos;
-    mtx.x.x = -(xsin * ysin * zsin - ycos * zcos);
+    mtx.x.x = ycos_zcos - xsin * ysin_zsin;
     mtx.z.z = xcos * ycos;
     mtx.x.y = xsin * ysin * zcos + ycos * zsin;
-    mtx.x.z = -(xcos * ysin);
-    mtx.y.x = -(xcos * zsin);
-    mtx.z.y = -(ycos * zcos * xsin + ysin * zsin);
+    mtx.x.z = -ysin * xcos;
+    mtx.y.x = -xcos * zsin;
+    mtx.z.y = ysin_zsin - ycos_zcos * xsin;
     mtx.z.x = ycos * zsin * xsin + ysin * zcos;
 }
 

@@ -1194,8 +1194,9 @@ void ExtractPstCatAdjs(DataArray *arr, Symbol &s1, Symbol &s2) {
 }
 
 void ExtractCatAdj(Symbol s, Symbol &s1, Symbol &s2) {
+    const char *sStr = s.mStr;
     char buf[256];
-    StrNCopy(buf, s.mStr, 255);
+    StrNCopy(buf, sStr, 255);
     char *strplus = strstr(buf, "+");
     if (strplus) {
         *strplus = 0;

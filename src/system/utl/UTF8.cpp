@@ -84,14 +84,15 @@ void ASCIItoUTF8(char *out, int len, const char *in) {
     MILO_ASSERT(len > 0, 0x77);
     memset(out, 0, len);
     String str;
+    const char *cs;
     char *p = out;
     for (int i = 0; (char)in[i] != '\0'; i++) {
         int utf8 = EncodeUTF8(str, (unsigned char)in[i]);
         if ((p - out) + utf8 >= (unsigned int)len) {
             return;
         }
-        for (int j = 0; j < str.length(); j++) {
-            *p++ = str.c_str()[j];
+        for (int j = 0; j < strlen(cs = str.c_str()); j++) {
+            *p++ = cs[j];
         }
     }
 }

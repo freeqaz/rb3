@@ -277,9 +277,9 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
         }
     }
     FileNormalizePath(buffer);
-    int curC3IsSlash = (*c == '/');
     const char *dirs[32];
     const char **endDir = &dirs[0];
+    bool curC3IsSlash = (*c == '/');
     for (char *p = (char *)strtok(c, "/"); p != nullptr; p = strtok(nullptr, "/")) {
         if (*p != '.')
             *endDir++ = p;
@@ -331,12 +331,12 @@ const char *FileRelativePath(const char *root, const char *filepath) {
     }
     static char relative[256];
     if (!list220.empty() && !list218.empty()) {
-        if (strcmp(list220.back(), list218.back()) != 0)
+        if (strcmp(list220.front(), list218.front()) != 0)
             return filepath;
         while (list218.size() != 0 && list220.size() != 0
-               && strcmp(list220.back(), list218.back()) == 0) {
-            list218.pop_back();
-            list220.pop_back();
+               && strcmp(list220.front(), list218.front()) == 0) {
+            list218.pop_front();
+            list220.pop_front();
         }
         char *p = relative;
         while (list218.size() != 0) {
@@ -345,16 +345,16 @@ const char *FileRelativePath(const char *root, const char *filepath) {
             }
             *p++ = '.';
             *p++ = '.';
-            list218.pop_back();
+            list218.pop_front();
         }
         while (list220.size() != 0) {
             if (p != relative) {
                 *p++ = '/';
             }
-            for (const char *pp = list220.back(); *pp != nullptr; pp++) {
+            for (const char *pp = list220.front(); *pp != nullptr; pp++) {
                 *p++ = *pp;
             }
-            list220.pop_back();
+            list220.pop_front();
         }
         MILO_ASSERT(p - relative < sizeof(relative), 0x3ED);
         if (p == relative) {

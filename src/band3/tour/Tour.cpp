@@ -463,15 +463,19 @@ DataNode Tour::OnMsg(const PrimaryProfileChangedMsg& msg) {
     if (!TheGameMode->InMode(tour)) {
         return 1;
     }
-    bool shouldSignOut = false;
+    int isPostScreen = 0;
     UIScreen *pScreen = TheUI.CurrentScreen();
-    if (pScreen && streq(pScreen->Name(), tour_customize_post_screen.Str())) {
+    if (pScreen) {
+        isPostScreen = streq(pScreen->Name(), tour_customize_post_screen.Str());
+    }
+    bool shouldSignOut = false;
+    if (isPostScreen) {
         if (!profile) {
             shouldSignOut = true;
         }
     } else {
         TourProgress *pProgress = TheTour->m_pTourProgress;
-        if (!profile || !pProgress || !profile->OwnsTourProgress(pProgress)) {
+        if (!profile || (pProgress && !profile->OwnsTourProgress(pProgress))) {
             shouldSignOut = true;
         }
     }

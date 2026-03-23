@@ -239,6 +239,7 @@ void AppLabel::SetArtistName(const char *name, bool cover) {
     else {
         DataArrayPtr ptr;
         SetTokenFmt(cover_artist_fmt, ptr, name);
+        ptr->Release();
     }
 }
 

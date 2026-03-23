@@ -136,7 +136,7 @@ void MainHubPanel::Exit() {
     if (matchmaker->IsFinding()) {
         matchmaker->CancelFind();
     }
-    if (mHubOverride == kMainHubOverride_ChooseBand && TheSessionMgr->IsLocal()) {
+    if (mHubOverride == kMainHubOverride_Waiting && TheSessionMgr->IsLocal()) {
         SetMainHubOverride(kMainHubOverride_None);
     }
     UIPanel::Exit();
@@ -305,7 +305,7 @@ DataNode MainHubPanel::OnMsg(const SessionDisconnectedMsg &msg) {
         }
         HandleType(cancel_find_override_msg);
     }
-    if (mHubOverride == kMainHubOverride_ChooseBand) {
+    if (mHubOverride == kMainHubOverride_Waiting) {
         MILO_ASSERT(!mWaitingStateLock->InLock(), 0x1F2);
         static Message cancel("cancel_waiting_override");
         HandleType(cancel);

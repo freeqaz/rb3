@@ -109,10 +109,11 @@ void TrackPanelDir::AssignTracks() {
         mVocalTrack->SetSimulatedNet(mVocalsNet);
     }
     for (int i = 0; i < 4; i++) {
-        if (i < 2)
-            mInstruments[i] = (TrackInstrument)mGemInst[i];
+        TrackInstrument gemInst = (TrackInstrument)mGemInst[i];
+        if (i >= 2)
+            mInstruments[i + 1] = gemInst;
         else
-            mInstruments[i + 1] = (TrackInstrument)mGemInst[i];
+            mInstruments[i] = gemInst;
         mGemTracks[i]->SetSimulatedNet(mGemNet[i]);
     }
     mVocalTrack->SetUsed(false);

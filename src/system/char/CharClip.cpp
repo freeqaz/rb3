@@ -451,9 +451,10 @@ float CharClip::AverageBeatsPerSecond() const {
 
 int CharClip::BeatToSample(float f, float *fp) const {
     float frame = BeatToFrame(f);
+    const Key<float> &lastKey = mBeatTrack.back();
     float f1 = 0;
-    if (mBeatTrack.back().frame != 0) {
-        f1 = frame / mBeatTrack.back().frame;
+    if (lastKey.frame != 0) {
+        f1 = frame / lastKey.frame;
     } else {
         f1 = 0;
     }

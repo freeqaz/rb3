@@ -277,9 +277,9 @@ String InlineHelp::GetIconStringFromAction(int idx) {
     const DataArray *t = TypeDef();
     MILO_ASSERT(t, 0x1C4);
     DataArray *actionArr = t->FindArray(action_chars);
-    for (std::vector<Symbol>::iterator it = mIconTypes.begin(); it != mIconTypes.end();
-         ++it) {
-        const char *str = actionArr->FindArray(*it)->Str(idx + 1);
+    for (std::vector<Symbol>::iterator it = mIconTypes.begin(); it != mIconTypes.end(); ++it) {
+        DataArray *itArr = actionArr->FindArray(*it);
+        const char *str = itArr->Str(idx + 1);
         char c = *str;
         if (ret.find(c) == String::npos)
             ret += c;

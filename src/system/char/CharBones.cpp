@@ -465,14 +465,14 @@ add_quat:
                 float sz = (float)sdata[2] * scale;
                 float sw = (float)sdata[3] * (f * 0.0078740157f);
                 if (dw * sw + dz * sz + dx * sx + dy * sy < 0.0f) {
+                    dquat->x = dx - sx;
                     dquat->y = dy - sy;
                     dquat->z = dz - sz;
-                    dquat->x = dx - sx;
                     dquat->w = dw - sw;
                 } else {
+                    dquat->x = dx + sx;
                     dquat->y = dy + sy;
                     dquat->z = dz + sz;
-                    dquat->x = dx + sx;
                     dquat->w = dw + sw;
                 }
                 db->weight += src->weight * f;
@@ -508,15 +508,15 @@ add_quat:
                 float sy = (float)sdata[1] * scale;
                 float sw = (float)sdata[3] * (f * 3.051851e-05f);
                 if (dx * sx + dy * sy + dz * sz + dw * sw < 0.0f) {
-                    dquat->z = dz - sz;
                     dquat->x = dx - sx;
                     dquat->y = dy - sy;
+                    dquat->z = dz - sz;
                     dquat->w = dw - sw;
                 } else {
-                    dquat->z = sz + dz;
                     dquat->x = dx + sx;
-                    dquat->y = sy + dy;
-                    dquat->w = sw + dw;
+                    dquat->y = dy + sy;
+                    dquat->z = dz + sz;
+                    dquat->w = dw + sw;
                 }
                 db->weight += src->weight * f;
                 src++;
@@ -550,14 +550,14 @@ add_quat:
                 float sw = squat->w * f;
                 float dw = dquat->w;
                 if (sx * dx + sy * dy + sz * dz + sw * dw < 0.0f) {
+                    dquat->x = dx - sx;
                     dquat->y = dy - sy;
                     dquat->z = dz - sz;
-                    dquat->x = dx - sx;
                     dquat->w = dw - sw;
                 } else {
+                    dquat->x = sx + dx;
                     dquat->y = sy + dy;
                     dquat->z = sz + dz;
-                    dquat->x = sx + dx;
                     dquat->w = sw + dw;
                 }
                 db->weight += src->weight * f;
@@ -843,10 +843,10 @@ rotate_quat:
                 src++;
                 float dz = dquat->z;
                 float dy = dquat->y;
-                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
-                dquat->z = -(dx * sq.y - ((dy * sq.x + (dz * sq.w + dw * sq.z))));
-                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
                 dquat->x = -(dy * sq.z - (dw * sq.x + dz * sq.y + dx * sq.w));
+                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
+                dquat->z = -(dx * sq.y - ((dy * sq.x + (dz * sq.w + dw * sq.z))));
+                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -875,10 +875,10 @@ rotate_quat:
                 src++;
                 float dz = dquat->z;
                 float dy = dquat->y;
-                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
-                dquat->z = -(dx * sq.y - (dy * sq.x + dz * sq.w + dw * sq.z));
-                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
                 dquat->x = -(dy * sq.z - (dw * sq.x + dz * sq.y + dx * sq.w));
+                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
+                dquat->z = -(dx * sq.y - (dy * sq.x + dz * sq.w + dw * sq.z));
+                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -909,11 +909,10 @@ rotate_quat:
                 float sw = squat->w;
                 float dz = dquat->z;
                 float dy = dquat->y;
-                dquat->y = -(sx * dz - (dy * sw + dx * sz + sy * dw));
-                dquat->z = (sy * dx - (dy * sx + sw * dz + dw * sz));
-                dquat->z = -dquat->z;
-                dquat->w = -(dz * sz - -(dy * sy - (dw * sw - sx * dx)));
                 dquat->x = -(dy * sz - (sy * dz + sx * dw + dx * sw));
+                dquat->y = -(sx * dz - (dy * sw + dx * sz + sy * dw));
+                dquat->z = -(sy * dx - (dy * sx + sw * dz + dw * sz));
+                dquat->w = -(dz * sz - -(dy * sy - (dw * sw - sx * dx)));
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -1078,10 +1077,10 @@ rotateto_quat:
                 float dz = dquat->z;
                 float dw = dquat->w;
                 float dy = dquat->y;
-                dquat->w = -(dz * sq.z - -(dy * sy - (dw * sq.w - dx * sx)));
-                dquat->z = -(dy * sx - (dw * sq.z + dz * sq.w + dx * sy));
-                dquat->y = -(dx * sq.z - ((dz * sx + (dy * sq.w + dw * sy))));
                 dquat->x = -(dz * sy - (dw * sx + dy * sq.z + dx * sq.w));
+                dquat->y = -(dx * sq.z - ((dz * sx + (dy * sq.w + dw * sy))));
+                dquat->z = -(dy * sx - (dw * sq.z + dz * sq.w + dx * sy));
+                dquat->w = -(dz * sq.z - -(dy * sy - (dw * sq.w - dx * sx)));
                 if (src == src_end)
                     goto rotateto_rot;
                 db++;
@@ -1118,10 +1117,10 @@ rotateto_quat:
                 float dz = dquat->z;
                 float dw = dquat->w;
                 float dy = dquat->y;
-                dquat->w = -(dz * sq.z - -(dy * sy - (dx * sx - sq.w * dw)));
-                dquat->z = -(dy * sx - (sq.z * dw + dz * sq.w + dx * sy));
-                dquat->y = -(dx * sq.z - (sy * dw + dy * sq.w + dz * sx));
                 dquat->x = -(dz * sy - (dw * sx + dy * sq.z + dx * sq.w));
+                dquat->y = -(dx * sq.z - (sy * dw + dy * sq.w + dz * sx));
+                dquat->z = -(dy * sx - (sq.z * dw + dz * sq.w + dx * sy));
+                dquat->w = -(dz * sq.z - -(dy * sy - (dx * sx - sq.w * dw)));
                 if (src == src_end)
                     goto rotateto_rot;
                 db++;
@@ -1157,10 +1156,10 @@ rotateto_quat:
                 float dz = dquat->z;
                 float dw = dquat->w;
                 float dy = dquat->y;
+                dquat->x = -(sy * dz - (sw * dx + sz * dy + sx * dw));
+                dquat->y = -(sz * dx - (sw * dy + sx * dz + sy * dw));
                 dquat->z = -(sx * dy - (sw * dz + sy * dx + sz * dw));
                 dquat->w = -(sz * dz - -(sy * dy - (sw * dw - sx * dx)));
-                dquat->y = -(sz * dx - (sw * dy + sx * dz + sy * dw));
-                dquat->x = -(sy * dz - (sw * dx + sz * dy + sx * dw));
                 if (src == src_end)
                     goto rotateto_rot;
                 db++;
@@ -1237,10 +1236,11 @@ void CharBones::ScaleAddIdentity() {
         float w = qstart->w;
         if (w < 0.0f) {
             w -= identity;
+            qstart->w = w;
         } else {
             w += identity;
+            qstart->w = w;
         }
-        qstart->w = w;
         qstart++;
         bone++;
     }

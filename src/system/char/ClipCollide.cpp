@@ -171,9 +171,8 @@ bool ClipCollide::ValidClip(CharClip *clip) {
 
 void ClipCollide::TestChars() {
     if (mChar) {
-        const DataArray *td = TypeDef();
-        if (td) {
-            DataArray *charsArr = td->FindArray("chars", false);
+        if (TypeDef()) {
+            DataArray *charsArr = TypeDef()->FindArray("chars", false);
             if (charsArr) {
                 DataArray *arr = charsArr->Array(1);
                 for (int i = 0; i < arr->Size(); i++) {

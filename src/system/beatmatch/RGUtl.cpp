@@ -2,6 +2,7 @@
 #include "os/Debug.h"
 #include <string.h>
 #include <stdio.h>
+#include "decomp.h"
 
 const char *gNoteNames[] = { "C",  "C#", "D",  "D#", "E",  "F",
                              "F#", "G",  "G#", "A",  "A#", "B" };
@@ -267,6 +268,8 @@ void HandleNoSeventhMinor(char *buf, int bufLen, const GameGem &gem, int i4, int
     }
 }
 
+DECOMP_FORCEACTIVE(RGUtl, "+-5", "b5", "9", "b9", "b13")
+
 void RGGetFretLabelInfo(const GameGem &gem, int &i1, int &i2, bool b) {
     RGState state;
     RGGameGemToRGState(gem, state, b);
@@ -413,7 +416,8 @@ const char *RGFretNumberToString(int i) { return MakeString("%c", i + 0x41); }
 const char *RGGetNoteName(unsigned char note, int a) {
     MILO_ASSERT(note < sizeof(gNoteNames), 0x34E);
     bool isFlat = false;
-    if ((unsigned)(a - 1) <= 9u && ((1 << (a - 1)) & 0x295) != 0)
+    int am1 = a - 1;
+    if ((unsigned)am1 <= 9u && ((1 << am1) & 0x295) != 0)
         isFlat = 1;
     if (isFlat)
         return gNoteFlatNames[note];

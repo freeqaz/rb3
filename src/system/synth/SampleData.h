@@ -2,6 +2,7 @@
 #include "utl/Str.h"
 #include "utl/BinStream.h"
 #include "utl/FilePath.h"
+#include "utl/VectorSizeDefs.h"
 #include <vector>
 
 struct SampleMarker {
@@ -52,5 +53,5 @@ public:
     int mSizeBytes; // 0x8
     Format mFormat; // 0xc
     void *mData; // 0x10
-    std::vector<SampleMarker> mMarkers; // 0x14
+    std::vector<SampleMarker VECTOR_SIZE_SMALL> mMarkers; // 0x14
 };

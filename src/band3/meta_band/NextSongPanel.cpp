@@ -297,11 +297,11 @@ int NextSongPanel::CountOrCreateExpandedDetails(int slot, DataArrayPtr &ptr, boo
     Player *player = user->GetPlayer(); // fn_800D2D8C
     MILO_ASSERT(player, 0x205);
     const Stats &stats = player->mStats;
+    int count = 0; // this is what will ultimately be returned
     int playerTrackType = player->GetTrackType(); // fn_800E3728
     MetaPerformer *performer = MetaPerformer::Current();
     MILO_ASSERT(performer, 0x20A);
     ScoreType ty = performer->GetScoreTypeForUser(user); // fn_8022618C
-    int count = 0; // this is what will ultimately be returned
 
     if (b)
         count++;

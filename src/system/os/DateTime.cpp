@@ -24,8 +24,18 @@ void GetDateAndTime(DateTime &dt) {
 }
 
 DateTime::DateTime(unsigned int code) {
-    mYear = (code / 0x1FA4000) + 100;
-    mMonth = (code % 0x1FA4000) / 0x2A3000;
+    unsigned int a = code / 0x1FA4000;
+    unsigned int b = code - a * 0x1FA4000;
+    mMonth = b / 0x2A3000;
+    mYear = a + 100;
+    b = b - mMonth * 0x2A3000;
+    mDay = b / 0x15180;
+    b = b - mDay * 0x15180;
+    mHour = b / 0xE10;
+    b = b - mHour * 0xE10;
+    mMin = b / 0x3C;
+    b -= mMin * 0x3C;
+    mSec = b;
 }
 
 // void __thiscall DateTime::DateTime(DateTime *this,uint param_1)
@@ -64,9 +74,8 @@ DateTime::DateTime(
 }
 
 unsigned int DateTime::ToCode() const {
-    return ((unsigned int)mDay * 0x15180) + ((unsigned int)mMonth * 0x2A3000)
-        + (mYear - 100) * 0x1FA4000 + ((unsigned int)mHour * 0xE10)
-        + ((unsigned int)mMin * 0x3C) + (unsigned int)mSec;
+    return (mDay * 0x15180) + (mMonth * 0x2A3000) + (mYear - 100) * 0x1FA4000
+        + (mHour * 0xE10) + (mMin * 0x3C) + mSec;
 }
 
 // uint __thiscall DateTime::ToCode(DateTime *this)

@@ -202,9 +202,9 @@ void BinkFileSetInfo(
     unsigned int unk4
 ) {
     int bufSize = iBufferSize & 0xFFFF8000;
-    bink->BufSize = bufSize;
     BINKFILE *bf = (BINKFILE *)bink->iodata;
     bf->pBuffer = (unsigned char *)pBuffer;
+    bink->BufSize = bufSize;
     bf->pBufPos = (unsigned char *)pBuffer;
     bf->pBufBack = (unsigned char *)pBuffer;
     bf->pBufEnd = (unsigned char *)pBuffer + bufSize;

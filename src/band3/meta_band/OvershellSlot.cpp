@@ -217,7 +217,7 @@ OvershellSlotState *OvershellSlot::GenerateCurrentState() {
 }
 
 void OvershellSlot::RemoveUser() {
-    BandUser *pUser = GetUser();
+    BandUser * const pUser = GetUser();
     MILO_ASSERT(pUser, 0x1E5);
     LocalBandUser *pLocUser = pUser->GetLocalBandUser();
     MILO_ASSERT(pLocUser, 0x1E7);
@@ -256,20 +256,21 @@ void OvershellSlot::ShowState(OvershellSlotStateID id) {
             JoypadType j1 = kJoypadNone;
             ControllerType cty = pUser->GetControllerType();
             Symbol capsmodesym = overshell_reconnect_controller;
+            Symbol defaultcapsmode = capsmodesym;
             switch (GetWiiJoypadDisconnectType(padnum, &j0, &j1)) {
             case 1:
+                if (j0 < kJoypadWiiCore || j0 > kJoypadWiiClassic) {
+                    capsmodesym = defaultcapsmode;
+                }
                 break;
             case 2:
                 if (cty == 2)
                     capsmodesym = wii_error_remote_extension_x;
-                // break;
-            default:
-                if (capsmodesym == overshell_reconnect_controller) {
-                    lbl->SetCapsMode(RndText::kForceUpper);
-                } else {
-                    lbl->SetCapsMode(RndText::kCapsModeNone);
-                }
-                break;
+            }
+            if (capsmodesym == overshell_reconnect_controller) {
+                lbl->SetCapsMode(RndText::kForceUpper);
+            } else {
+                lbl->SetCapsMode(RndText::kCapsModeNone);
             }
             if (capsmodesym == overshell_reconnect_controller) {
                 lbl->SetTextToken(capsmodesym);
@@ -368,19 +369,19 @@ void OvershellSlot::SelectPartImpl(TrackType track, bool harmony, bool proDrums)
     if (perf) {
         b3 = true;
         if (!perf->SetHasMissingPart(TrackTypeToSym(track))) {
-            b1 = false;
+            bool bMissingVocalHarmony = false;
             if (harmony && perf->SetHasMissingVocalHarmony())
-                b1 = true;
-            if (!b1)
+                bMissingVocalHarmony = true;
+            if (!bMissingVocalHarmony)
                 b3 = false;
         }
         b1 = true;
         if (perf->PartPlaysInSet(TrackTypeToSym(track))) {
-            b2 = false;
+            bool bSetlistHarmony = false;
             if (harmony && !perf->SetlistHasVocalHarmony()) {
-                b2 = true;
+                bSetlistHarmony = true;
             }
-            if (!b2)
+            if (!bSetlistHarmony)
                 b1 = false;
         }
         ScoreType s5 = TrackTypeToScoreType(track, harmony, proDrums);

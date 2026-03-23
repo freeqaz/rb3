@@ -86,7 +86,7 @@ public:
     int unk24; // 0x24
     int unk28; // 0x28 - next CNTSD action?
     ContentLocT mLocation; // 0x2c - location
-    u8 unk30; // 0x30 - times a handle has been opened
+    char unk30; // 0x30 - times a handle has been opened
     char unk31; // 0x31
     bool unk32; // 0x32
 

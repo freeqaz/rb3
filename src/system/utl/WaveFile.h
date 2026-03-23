@@ -1,6 +1,7 @@
 #ifndef UTL_WAVEFILE_H
 #define UTL_WAVEFILE_H
 #include "utl/Chunks.h"
+#include "utl/VectorSizeDefs.h"
 #include "synth/SampleData.h"
 #include <vector>
 
@@ -36,7 +37,7 @@ public:
     unsigned short mBlockAlign; // 0xc
     unsigned short mBitsPerSample; // 0xe
     int mNumSamples; // 0x10
-    std::vector<WaveFileMarker> mMarkers;
+    std::vector<WaveFileMarker VECTOR_SIZE_SMALL> mMarkers;
     IListChunk mRiffList; // 0x1c
 };
 

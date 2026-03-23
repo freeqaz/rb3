@@ -403,13 +403,14 @@ void BandCamShot::ResetNextShot() {
 
 void BandCamShot::SetPreFrame(float f1, float f2) {
     unk16a = true;
+    float dur = Duration();
     if (ShouldSetNextShot(f1)) {
         if (mCurShot != this)
-            mCurShot->ResetNextShot();
+            ResetNextShot();
     } else {
-        float sub = f1 - Duration();
+        float sub = f1 - dur;
         while (sub < unk15c && mShotIter != mNextShots.begin()) {
-            ++mShotIter;
+            mShotIter.mNode = mShotIter.mNode->prev;
             unk160 = (*mShotIter)->GetTotalDuration();
             unk15c -= unk160;
             mCurShot = *mShotIter;

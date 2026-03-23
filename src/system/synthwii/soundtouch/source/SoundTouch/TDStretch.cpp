@@ -188,6 +188,15 @@ void TDStretch::overlapMono(SAMPLETYPE *pOutput, const SAMPLETYPE *pInput) const
 
 
 
+// Clears the sample buffers
+void TDStretch::clear()
+{
+    outputBuffer.clear();
+    inputBuffer.clear();
+    clearMidBuffer();
+}
+
+
 void TDStretch::clearMidBuffer()
 {
     if (bMidBufferDirty)
@@ -200,15 +209,6 @@ void TDStretch::clearMidBuffer()
 
 void TDStretch::clearInput()
 {
-    inputBuffer.clear();
-    clearMidBuffer();
-}
-
-
-// Clears the sample buffers
-void TDStretch::clear()
-{
-    outputBuffer.clear();
     inputBuffer.clear();
     clearMidBuffer();
 }

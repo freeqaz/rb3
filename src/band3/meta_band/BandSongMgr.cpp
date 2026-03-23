@@ -311,14 +311,12 @@ const char *BandSongMgr::SongFilePath(Symbol s1, const char *cc, bool b3) const 
         }
     }
     if (!UsingCD()) {
-        if (data) {
-            if (data->IsOnDisc() || data->HasAlternatePath())
-                return path;
-        }
-        if (streq(cc, ".milo")) {
-            DirLoader::SetCacheMode(true);
-            path = DirLoader::CachedPath(path, false);
-            DirLoader::SetCacheMode(false);
+        if (!data || (!data->IsOnDisc() && !data->HasAlternatePath())) {
+            if (streq(cc, ".milo")) {
+                DirLoader::SetCacheMode(true);
+                path = DirLoader::CachedPath(path, false);
+                DirLoader::SetCacheMode(false);
+            }
         }
     }
     return path;

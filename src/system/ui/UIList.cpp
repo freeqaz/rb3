@@ -443,9 +443,9 @@ void UIList::DrawShowing() {
 }
 
 float UIList::GetDistanceToPlane(const Plane &p, Vector3 &v) {
+    Box box;
     float ret = 0;
     bool first = true;
-    Box box;
     CalcBoundingBox(box);
     Vector3 boxVecs[8] = { Vector3(box.mMin.x, box.mMin.y, box.mMin.z),
                            Vector3(box.mMax.x, box.mMin.y, box.mMin.z),

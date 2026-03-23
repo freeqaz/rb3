@@ -214,8 +214,8 @@ DataNode BandMatchmaker::OnSearchFinished() {
             static MatchmakerChangedMsg msg;
             Export(msg, true);
         } else {
-            float randF = RandomFloat(0, mSearchingInterval);
-            unk6c = mSearchingInterval + randF + mTime.Ms();
+            float partialSum = mSearchingInterval + RandomFloat(0, mSearchingInterval);
+            unk6c = partialSum + mTime.Ms();
             if (unk32)
                 TheNetSession->mSettings->SetPublic(true);
         }
