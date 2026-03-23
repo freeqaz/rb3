@@ -156,7 +156,7 @@ void EndingBonus::SetScore(int score) {
     mScoreLabel->SetInt(score, false);
 }
 
-void EndingBonus::SetupEnding(bool b) { SetIconOrder(-1, b); }
+void EndingBonus::SetupEnding(bool b) { SetIconOrder(0xFFFF, b); }
 
 void EndingBonus::SetupUnison(int i) { SetIconOrder(i, false); }
 

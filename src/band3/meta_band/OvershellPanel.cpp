@@ -852,8 +852,9 @@ void OvershellPanel::SetPartRestriction(TrackType t) { mPartRestriction = t; }
 void OvershellPanel::SetMinimumDifficulty(Difficulty d) { mMinimumDifficulty = d; }
 
 void OvershellPanel::ClearTrackTypesFromUsers() {
+    BandUser *user;
     for (int i = 0; i < (int)mSlots.size(); i++) {
-        BandUser *user = mSlots[i]->GetUser();
+        user = mSlots[i]->GetUser();
         if (user && user->IsLocal()) {
             user->SetTrackType(kNumTrackTypes);
         }

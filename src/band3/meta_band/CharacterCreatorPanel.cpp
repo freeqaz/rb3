@@ -74,25 +74,27 @@ void CharacterCreatorPanel::Load() {
     mClosetMgr = ClosetMgr::GetClosetMgr();
     LocalBandUser *closetUser = mClosetMgr->mUser;
     BandProfile *profile = TheProfileMgr.GetProfileForUser(closetUser);
-    if (profile && closetUser && mClosetMgr && profile == mClosetMgr->unk28) {
-        CreateNewCharacter();
-        AddGridThumbnails(male);
-        AddGridThumbnails(female);
-        SetGender(male);
-        MILO_ASSERT(!mOutfitProvider, 0xA7);
-        mOutfitProvider = new OutfitProvider();
-        MILO_ASSERT(!mFaceTypeProvider, 0xAA);
-        mFaceTypeProvider = new FaceTypeProvider();
-        MILO_ASSERT(!mFaceHairProvider, 0xAD);
-        mFaceHairProvider = new FaceHairProvider();
-        MILO_ASSERT(!mFaceOptionsProvider, 0xB0);
-        mFaceOptionsProvider = new FaceOptionsProvider(mTexs);
-        MILO_ASSERT(!mFaceOptionsGridProvider, 0xB3);
-        mFaceOptionsGridProvider = new UIGridProvider(mFaceOptionsProvider, 3);
-        MILO_ASSERT(!mEyebrowsProvider, 0xB6);
-        mEyebrowsProvider = new EyebrowsProvider(mTexs);
-        MILO_ASSERT(!mEyebrowsGridProvider, 0xB9);
-        mEyebrowsGridProvider = new UIGridProvider(mEyebrowsProvider, 3);
+    if (profile && closetUser && mClosetMgr) {
+        if (profile == mClosetMgr->unk28) {
+            CreateNewCharacter();
+            AddGridThumbnails(male);
+            AddGridThumbnails(female);
+            SetGender(male);
+            MILO_ASSERT(!mOutfitProvider, 0xA7);
+            mOutfitProvider = new OutfitProvider();
+            MILO_ASSERT(!mFaceTypeProvider, 0xAA);
+            mFaceTypeProvider = new FaceTypeProvider();
+            MILO_ASSERT(!mFaceHairProvider, 0xAD);
+            mFaceHairProvider = new FaceHairProvider();
+            MILO_ASSERT(!mFaceOptionsProvider, 0xB0);
+            mFaceOptionsProvider = new FaceOptionsProvider(mTexs);
+            MILO_ASSERT(!mFaceOptionsGridProvider, 0xB3);
+            mFaceOptionsGridProvider = new UIGridProvider(mFaceOptionsProvider, 3);
+            MILO_ASSERT(!mEyebrowsProvider, 0xB6);
+            mEyebrowsProvider = new EyebrowsProvider(mTexs);
+            MILO_ASSERT(!mEyebrowsGridProvider, 0xB9);
+            mEyebrowsGridProvider = new UIGridProvider(mEyebrowsProvider, 3);
+        }
     }
 }
 

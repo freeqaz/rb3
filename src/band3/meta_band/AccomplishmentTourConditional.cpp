@@ -43,7 +43,7 @@ void AccomplishmentTourConditional::Configure(DataArray *i_pConfig) {
             MILO_ASSERT(pConditionEntryArray, 0x4B);
             AccomplishmentTourCondition cond;
             cond.mTourDesc = "";
-            cond.mCondition = pConditionEntryArray->Node(i).Sym();
+            cond.mCondition = pConditionEntryArray->Node(0).Sym();
             if (pConditionEntryArray->Size() < 2) {
                 MILO_WARN("Condition does not have a value associated with it!");
             } else {
@@ -81,7 +81,7 @@ bool AccomplishmentTourConditional::InqBestProgressValues(
         int iGoal = 0;
         InqConditionProgress(profile, *it, i64, iGoal);
         MILO_ASSERT(iGoal > 0, 0x8D);
-        int div = ((float)i64 / (float)iGoal);
+        float div = (float)i64 / (float)iGoal;
         if (div > f1) {
             i1 = i64;
             i2 = iGoal;
@@ -149,7 +149,7 @@ bool AccomplishmentTourConditional::IsConditionMet(
     int i4 = 0;
     int i8 = 0;
     InqConditionProgress(profile, cond, i4, i8);
-    return i8 <= i4;
+    return i4 >= i8;
 }
 
 bool AccomplishmentTourConditional::CanBeLaunched() const { return true; }

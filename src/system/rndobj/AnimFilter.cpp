@@ -106,9 +106,9 @@ void RndAnimFilter::SetFrame(float frame, float blend) {
             frame = Clamp(start, end, frame);
         } else if (ty == 2) {
             int iref;
-            float limit = Limit(start, end, frame, iref);
+            frame = Limit(start, end, frame, iref);
             if (iref & 1) {
-                frame = mEnd - limit - mStart;
+                frame = mEnd - (frame - mStart);
             }
         }
         mAnim->SetFrame(frame, blend);

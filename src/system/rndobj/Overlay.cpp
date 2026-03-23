@@ -84,11 +84,11 @@ void RndOverlay::SetLines(int lines) {
 void RndOverlay::SetTimeout(float seconds) { mTimeout = seconds * 1000.0f + SystemMs(); }
 
 String &RndOverlay::CurrentLine() {
-    if (mLine == mLines.begin()) {
+    if (mLine == mLines.end()) {
         String newstr;
         mLines.pop_front();
         mLines.push_back(newstr);
-        mLine = PrevItr(mLines.begin());
+        mLine = PrevItr(mLines.end());
         mLine->reserve(0x7F);
     }
     return *mLine;
@@ -140,11 +140,11 @@ float RndOverlay::Draw(float topY) {
 
 void RndOverlay::Print(const char *cc) {
     for (const char *p = cc; *p != '\0'; p++) {
-        if (mLine == mLines.begin()) {
+        if (mLine == mLines.end()) {
             String str;
             mLines.pop_front();
             mLines.push_back(str);
-            mLine = PrevItr(mLines.begin());
+            mLine = PrevItr(mLines.end());
             mLine->reserve(0x7F);
         }
         if (*p == '\n') {

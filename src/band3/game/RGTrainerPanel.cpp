@@ -10,6 +10,7 @@
 #include "game/Game.h"
 #include "game/GameMode.h"
 #include "game/GemTrainerPanel.h"
+#include "game/RealGuitarGemPlayer.h"
 #include "game/ProTrainerPanel.h"
 #include "game/TrainerPanel.h"
 #include "meta_band/AppLabel.h"
@@ -285,7 +286,7 @@ void RGTrainerPanel::FretButtonDown(int i) {
     if (mGemPlayer) {
         mMatcher.FretDown(i, TheTaskMgr.UISeconds() * 1000.0f);
         if (TheGame->IsPaused() || TheGame->InRollback()) {
-            // RealGuitarGemPlayer::SetRGState(const RGState&)
+            ((RealGuitarGemPlayer *)mGemPlayer)->SetRGState(*mMatcher.GetState());
         }
     }
 }

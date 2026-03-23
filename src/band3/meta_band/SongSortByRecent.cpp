@@ -105,8 +105,10 @@ ShortcutNode *SongSortByRecent::NewShortcutNode(SongSortNode *node) const {
     MemDoTempAllocations m(true, false);
     RecentCmp *other = (RecentCmp *)node->Cmp();
     RecentCmp::RecentType ty = other->mType;
+    bool tyIs8 = ty == 8;
+    bool tyIs0 = ty == 0;
     Symbol origin = other->RecentTypeToOrigin(ty);
-    RecentCmp *cmp = new RecentCmp(ty == 0, nullptr, origin, ty == 8);
+    RecentCmp *cmp = new RecentCmp(tyIs0, nullptr, origin, tyIs8);
 
     Symbol token;
     switch (ty) {
@@ -132,8 +134,10 @@ HeaderSortNode *SongSortByRecent::NewHeaderNode(SongSortNode *node) const {
     MemDoTempAllocations m(true, false);
     RecentCmp *other = (RecentCmp *)node->Cmp();
     RecentCmp::RecentType ty = other->mType;
+    bool tyIs8 = ty == 8;
+    bool tyIs0 = ty == 0;
     Symbol origin = other->RecentTypeToOrigin(ty);
-    RecentCmp *cmp = new RecentCmp(ty == 0, nullptr, origin, ty == 8);
+    RecentCmp *cmp = new RecentCmp(tyIs0, nullptr, origin, tyIs8);
 
     Symbol token;
     switch (ty) {

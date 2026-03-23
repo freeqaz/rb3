@@ -6,6 +6,12 @@
 #include "math/Rand.h"
 #include "math/Rot.h"
 #include "utl/Symbols.h"
+#include <cmath>
+
+float LimitAng(float ang) {
+    float r = fmod(ang + PI, 2.0f * PI);
+    return r < 0 ? r + PI : r - PI;
+}
 
 INIT_REVS(Waypoint)
 
@@ -82,7 +88,18 @@ Waypoint::Waypoint()
         sWaypoints->push_front(this);
 }
 
-Waypoint::~Waypoint() {}
+Waypoint::~Waypoint() {
+    if (sWaypoints) {
+        for (std::list<Waypoint *>::iterator it = sWaypoints->begin();
+             it != sWaypoints->end();
+             ++it) {
+            if (*it == this) {
+                sWaypoints->erase(it);
+                break;
+            }
+        }
+    }
+}
 
 void Waypoint::Highlight() {}
 
@@ -111,11 +128,11 @@ void Waypoint::ShapeDelta(const Vector3 &v, Vector3 &vout) {
 float Waypoint::ShapeDelta(float f) { return ShapeDeltaAng(mAngRadius, f); }
 
 void Waypoint::ShapeDeltaBox(const Vector3 &v1, float f1, float f2, Vector3 &res) {
-    Transform &world = WorldXfm();
+    const Transform &world = WorldXfm();
     if (f2 > 0.0f) {
         Subtract(v1, WorldXfm().v, res);
         float dotx = Dot(res, world.m.x);
-        float doty = Dot(res, world.m.y);
+        float doty = Dot(world.m.y, res);
         float clamped1 = Clamp(-f1, f1, dotx);
         float clamped2 = Clamp(-f2, f2, doty);
         Scale(world.m.x, clamped1 - dotx, res);
@@ -132,7 +149,9 @@ void Waypoint::ShapeDeltaBox(const Vector3 &v1, float f1, float f2, Vector3 &res
 }
 
 float Waypoint::ShapeDeltaAng(float f1, float f2) {
-    float limited = LimitAng(GetZAngle(WorldXfm().m) - f2);
+    float ang = GetZAngle(WorldXfm().m) - f2;
+    float r = (float)fmod(ang + PI, 2.0f * PI);
+    float limited = r < 0 ? r + PI : r - PI;
     float clamped = Clamp(-f1, f1, limited);
     return limited - clamped;
 }

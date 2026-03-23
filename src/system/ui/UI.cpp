@@ -488,12 +488,9 @@ void UIManager::CancelTransition() {
 void UIManager::GotoScreenImpl(UIScreen *scr, bool b1, bool b2) {
     if (b1 || mTransitionState != kTransitionNone || mCurrentScreen != scr) {
         if (mTransitionState == kTransitionTo || mTransitionState == kTransitionPop) {
-            if (mTransitionScreen != scr)
-                goto do_cancel;
-            else
+            if (mTransitionScreen == scr)
                 return;
         }
-        do_cancel:
         CancelTransition();
 #ifdef MILO_DEBUG
         if (scr) {

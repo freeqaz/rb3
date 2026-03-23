@@ -79,8 +79,8 @@ public:
     ObjPtr<EventTrigger, ObjectDir> mResetTrig; // 0x22c
     ObjPtr<EventTrigger, ObjectDir> mHideMultiplierTrig; // 0x238
     int unk244; // 0x244
-    ObjPtr<EventTrigger, ObjectDir> mFlashTrig; // 0x248
-    ObjPtr<EventTrigger, ObjectDir> mFlashSparksTrig; // 0x254
+    ObjPtr<EventTrigger, ObjectDir> mFlashSparksTrig; // 0x248
+    ObjPtr<EventTrigger, ObjectDir> mFlashTrig; // 0x254
     bool unk260; // 0x260
     ObjPtr<RndGroup, ObjectDir> mPartBarsGroup; // 0x264
     bool unk270[3]; // 0x270
