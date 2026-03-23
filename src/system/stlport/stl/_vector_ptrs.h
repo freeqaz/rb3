@@ -195,6 +195,9 @@ public:
   reference back()              { return *(end() - 1); }
   const_reference back() const  { return *(end() - 1); }
 
+  pointer data()             { return this->_M_start; }
+  const_pointer data() const { return this->_M_start; }
+
   reference at(size_type __n) { _M_range_check(__n); return (*this)[__n]; }
   const_reference at(size_type __n) const { _M_range_check(__n); return (*this)[__n]; }
 

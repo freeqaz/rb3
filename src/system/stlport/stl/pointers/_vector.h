@@ -64,6 +64,9 @@ public:
   reference back()              { return _M_impl.back(); }
   const_reference back() const  { return _M_impl.back(); }
 
+  pointer data()             { return _M_impl.data(); }
+  const_pointer data() const { return _M_impl.data(); }
+
   reference at(size_type __n)             { return _M_impl.at(__n); }
   const_reference at(size_type __n) const { return _M_impl.at(__n); }
 
