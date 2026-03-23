@@ -82,8 +82,7 @@ float RndAnimFilter::Scale() {
 void RndAnimFilter::SetFrame(float frame, float blend) {
     RndAnimatable::SetFrame(frame, blend);
     if (mAnim) {
-        float offset = FrameOffset();
-        frame = frame * Scale() + offset;
+        frame = frame * Scale() + FrameOffset();
         if (mSnap) {
             frame = mSnap * (int)(frame / mSnap + 0.5f);
         }
@@ -91,13 +90,15 @@ void RndAnimFilter::SetFrame(float frame, float blend) {
             mJitterFrame = frame;
             frame += RandomFloat(-mJitter, mJitter);
         }
+        float ms = mStart;
+        float me = mEnd;
         float start, end;
-        if (mEnd >= mStart) {
-            start = mStart;
-            end = mEnd;
+        if (me >= ms) {
+            start = ms;
+            end = me;
         } else {
-            start = mEnd;
-            end = mStart;
+            start = me;
+            end = ms;
         }
         Type ty = mType;
         if (ty == 1) {
@@ -108,7 +109,7 @@ void RndAnimFilter::SetFrame(float frame, float blend) {
             int iref;
             frame = Limit(start, end, frame, iref);
             if (iref & 1) {
-                frame = mEnd - (frame - mStart);
+                frame = me - (frame - ms);
             }
         }
         mAnim->SetFrame(frame, blend);
@@ -123,8 +124,8 @@ float RndAnimFilter::StartFrame() {
         if (denom == 0.0f)
             denom = 1.0f;
 
-        float offset = FrameOffset();
         float start = mStart;
+        float offset = FrameOffset();
         return (start - offset) / denom;
     }
 }
