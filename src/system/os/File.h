@@ -93,7 +93,7 @@ int FileWrite(int iFd, void *iBuff, unsigned int iLen);
 int FileMkDir();
 
 void FileDiscSpinUp();
-void FileNormalizePath(const char *);
+void FileNormalizePath(char *);
 
 bool FileMatch(const char *, const char *);
 void FileEnumerate(

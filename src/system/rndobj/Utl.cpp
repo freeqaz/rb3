@@ -1107,13 +1107,13 @@ void TestTextureSize(class ObjectDir *dir, int iType, int i3, int i4, int i5, in
 // fn_80659E6C
 void TestTexturePaths(class ObjectDir *dir) {
     class String str(FileRoot());
-    FileNormalizePath(str.c_str());
+    FileNormalizePath((char *)str.c_str());
     for (ObjDirItr<RndTex> it(dir, true); it != 0; ++it) {
         FilePath fp(it->mFilepath);
         if (fp.empty())
             continue;
         class String relative(FileRelativePath(FileRoot(), fp.c_str()));
-        FileNormalizePath(str.c_str());
+        FileNormalizePath((char *)str.c_str());
         const char *normalized = relative.c_str();
         if (strstr(relative.c_str(), "..") == relative.c_str()) {
             if (strstr(relative.c_str(), "../../system/run") != normalized) {

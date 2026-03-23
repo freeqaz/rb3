@@ -1312,9 +1312,8 @@ void GemPlayer::OnRemoteFill(bool) {}
 
 void GemPlayer::OnRemoteCodaHit(int i1, int i2) {
     mCodaPoints = i1;
-    int tick = GetSongPos().GetTotalTick();
     MasterAudio *audio = mBeatMaster->GetAudio();
-    audio->FillSwing(mTrackNum, 0, i2, tick, true);
+    audio->FillSwing(mTrackNum, 0, i2, GetSongPos().GetTotalTick(), true);
 }
 
 void GemPlayer::OnRemoteWhammy(float f1) {
@@ -1457,10 +1456,11 @@ void GemPlayer::Penalize(float f1, int i2, float f3) {
         FinalizeStats();
         UpdateCrowdMeter(f3, i2);
         unk3c0++;
+        int gemId = i2;
         if (i2 != -1
             && TheSongDB->GetGem(mTrackNum, i2).GetMs() - (f1 + mSyncOffset) > 200.0f)
-            i2 = i2 - 1;
-        HandleCommonPhraseNote(0, i2);
+            gemId = i2 - 1;
+        HandleCommonPhraseNote(0, gemId);
         FinishAllHeldNotes(f1);
         SendPenalize();
         unk1fe = true;
