@@ -423,13 +423,14 @@ inline void ScaleAddEq(Transform &tf1, const Transform &tf2, float f) {
 }
 
 inline float AngleBetween(const Hmx::Quat &q1, const Hmx::Quat &q2) {
-    Hmx::Quat q18;
-    Negate(q1, q18);
-    Multiply(q2, q18, q18);
-    if (q18.w > 1.0f)
+    float nx = -q1.x;
+    float ny = -q1.y;
+    float nz = -q1.z;
+    float dot = -(nz * q2.z - -(ny * q2.y - (q1.w * q2.w - nx * q2.x)));
+    if (dot > 1.0f)
         return 0;
     else
-        return acosf(q18.w) * 2.0f;
+        return (float)acos(dot) * 2.0f;
 }
 
 inline void Transpose(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {

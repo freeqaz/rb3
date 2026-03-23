@@ -16,25 +16,29 @@ int CAM_REV = 12;
 Transform sFlipYZ(Hmx::Matrix3(1, 0, 0, 0, 0, 1, 0, 1, 0), Vector3(0, 0, 0));
 
 float RndCam::WorldToScreen(const Vector3 &w, Vector2 &s) const {
-    Vector3 v18;
-    Multiply(w, mWorldProjectXfm, v18);
-    if (v18.z) {
-        float scale = 1.0f / v18.z;
-        s.x = v18.x * scale;
-        s.y = v18.y * scale;
+    Vector3 projectedVec;
+    Multiply(w, mWorldProjectXfm, projectedVec);
+    if (projectedVec.z) {
+        float scale = 1.0f / projectedVec.z;
+        s.x = projectedVec.x * scale;
+        s.y = projectedVec.y * scale;
     } else {
-        s.x = v18.x;
-        s.y = v18.y;
+        s.x = projectedVec.x;
+        s.y = projectedVec.y;
     }
-    s.x += 1;
-    s.y += 1;
-    ScreenToWorld(s, s *= 0.5f, (Vector3 &)s);
-    return v18.z;
+    s.x = (s.x + 1.0f) / 2.0f;
+    s.y = (s.y + 1.0f) / 2.0f;
+    s.Set(s.x * mScreenRect.w + mScreenRect.x, s.y * mScreenRect.h + mScreenRect.y);
+    return projectedVec.z;
 }
 
 void RndCam::ScreenToWorld(const Vector2 &v2, float f, Vector3 &vout) const {
-    Vector2 &v2out = (Vector2 &)vout;
-    v2out.Set(v2.x * mScreenRect.w + mScreenRect.x, v2.y * mScreenRect.h + mScreenRect.y);
+    float sy = (v2.y - mScreenRect.y) / mScreenRect.h;
+    vout.z = f;
+    float sx = (v2.x - mScreenRect.x) / mScreenRect.w;
+    vout.y = (sy * 2.0f - 1.0f) * f;
+    vout.x = (sx * 2.0f - 1.0f) * f;
+    Multiply(vout, mInvWorldProjectXfm, vout);
 }
 
 void RndCam::Select() {

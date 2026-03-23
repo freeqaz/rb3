@@ -363,11 +363,12 @@ void Rnd::Terminate() {
 
 void Rnd::RemovePointTest(RndFlare *flare) {
     if (!TheHiResScreen.IsActive()) {
-        FOREACH (it, mPointTests) {
+        for (std::list<PointTest>::iterator it = mPointTests.begin();
+             it != mPointTests.end();) {
             if (it->unk_0xC == flare) {
-                mPointTests.erase(it);
-                return;
-            }
+                it = mPointTests.erase(it);
+            } else
+                ++it;
         }
     }
 }
