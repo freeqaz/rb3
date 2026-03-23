@@ -85,7 +85,7 @@ void HeldNote::ReleaseSlot(int slot) {
     unsigned int mask = 1 << slot;
     if (unk_0x1c & mask) {
         unk_0x1c &= ~mask;
-        unsigned int bits = GameGem::CountBitsInSlotType(mask);
+        int bits = GameGem::CountBitsInSlotType(unk_0x1c);
         int tailPts = TheScoring->GetTailPoints(mTrackType, mGem->GetDurationTicks());
         unk_0x10 = tailPts * bits;
         unk_0x20 = false;

@@ -626,9 +626,10 @@ void Player::SetEnergy(float f) {
     if (IsLocal() && unk2b0) {
         float old = mBandEnergy;
         SetEnergyAutomatically(f);
-        float newf = mBandEnergy;
+        bool energyIncreased = mBandEnergy > old;
         float poll = PollMs();
-        if (old < newf || poll - unk2a4 >= 100.0f || mBandEnergy == 0) {
+        float pollDelta = poll - unk2a4;
+        if (energyIncreased || pollDelta >= 100.0f || mBandEnergy == 0) {
             Handle(send_update_energy_msg, true);
             unk2a4 = poll;
         }
@@ -682,6 +683,9 @@ void Player::UnisonHit() {
 void Player::SetFinishedCoda() {
     MILO_ASSERT(!mHasBlownCoda, 0x5A8);
     mHasFinishedCoda = true;
+    if (TheGame->InTrainer()) {
+        Export(finished_coda_msg, true);
+    }
 }
 
 void Player::ChangeDifficulty(Difficulty diff) {

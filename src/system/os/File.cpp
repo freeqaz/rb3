@@ -225,8 +225,8 @@ void FileQualifiedFilename(String &str, const char *cc) {
     str = buf;
 }
 
-void FileNormalizePath(const char *cc) {
-    for (char *ptr = (char *)cc; *ptr != '\0'; ptr++) {
+void FileNormalizePath(char *ptr) {
+    for (; *ptr != '\0'; ptr++) {
         if (*ptr == '\\')
             *ptr = '/';
         else
