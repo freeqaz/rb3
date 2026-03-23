@@ -519,7 +519,6 @@ bool UserHas22FretGuitar(LocalUser *user) {
         bool ret = true;
         bool b1 = false;
         JoypadType jType = gJoypadData[padnum].mType;
-        unsigned int u4 = jType - 31;
         // if jType >= 31 && jType <= 43 - the span of the realguitar22fret enums
         // kJoypadXboxRealGuitar22Fret = 31 = 0x1F = 00011111
         // kJoypadPs3RealGuitar22Fret = 37, = 0x25 = 00100101
@@ -527,14 +526,15 @@ bool UserHas22FretGuitar(LocalUser *user) {
         // 0x1041U = 0001000001000001
         // if your joypad type is a 22 fret guitar, one of the 1's will be in the
         // resulting AND operation
+        unsigned int u4 = jType - 31;
         if (u4 <= 12 && ((1 << u4) & 0x1041U))
             b1 = true;
         if (!b1) {
             b1 = false;
             if (DataVariable("auto_22_fret").Int(0)) {
-                u4 = jType - 30;
                 bool b2 = false;
-                if (u4 <= 12 && ((1 << u4) & 0x1041U))
+                unsigned int u4b = jType - 30;
+                if (u4b <= 12 && ((1 << u4b) & 0x1041U))
                     b2 = true;
                 if (b2)
                     b1 = true;

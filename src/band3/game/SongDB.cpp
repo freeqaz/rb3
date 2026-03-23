@@ -208,7 +208,10 @@ bool SongDB::GetCommonPhraseExtent(int i1, int i2, Extent &ext) {
     }
 }
 
-bool SongDB::IsInPhrase(BeatmatchPhraseType ty, int i2, int i3) const {}
+bool SongDB::IsInPhrase(BeatmatchPhraseType ty, int i2, int i3) const {
+    const std::vector<unsigned char> &states = mTrackData[i2].GetGemStates(ty);
+    return states.size() > (unsigned)i3 && (states[i3] & 2);
+}
 
 bool SongDB::IsUnisonPhrase(int i) const {
     return mSongData->GetPhraseAnalyzer()->IsUnisonPhrase(i);

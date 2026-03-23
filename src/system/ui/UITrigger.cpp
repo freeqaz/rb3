@@ -64,7 +64,8 @@ void UITrigger::Trigger() {
         if (curAnim.mAnim) {
             float f4;
             if (curAnim.mEnable) {
-                if (!(curAnim.mPeriod * 30.0f)) {
+                f4 = curAnim.mPeriod * 30.0f;
+                if (!f4) {
                     f4 = curAnim.mScale;
                     if (!f4)
                         f4 = 1.0f;
@@ -73,16 +74,20 @@ void UITrigger::Trigger() {
             } else {
                 f4 = std::fabs(curAnim.mAnim->StartFrame() - curAnim.mAnim->EndFrame());
             }
-            MaxEq(mEndTime, (curAnim.mDelay * 30.0f + f4) / 30.0f);
+            f4 += curAnim.mDelay * 30.0f;
+            MaxEq(mEndTime, f4 / 30.0f);
         }
     }
-    if (mBlockTransition && mEndTime > 5.0f) {
-        MILO_WARN(
-            "%s (%s) is blocking and really long! (%f seconds)",
-            Name(),
-            PathName(Dir()),
-            mEndTime
-        );
+    if (mBlockTransition) {
+        float endTime = mEndTime;
+        if (endTime > 5.0f) {
+            MILO_WARN(
+                "%s (%s) is blocking and really long! (%f seconds)",
+                Name(),
+                PathName(Dir()),
+                endTime
+            );
+        }
     }
     mEndTime += TheTaskMgr.UISeconds();
     unkfc = false;

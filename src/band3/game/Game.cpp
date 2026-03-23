@@ -175,7 +175,7 @@ Game::~Game() {
 
     TheSynth->RequirePushToTalk(false, -1);
     TheBandUI.RemoveSink(this, UIScreenChangeMsg::Type());
-    TheBandUI.mOvershell->RemoveSink(this, "required_song_options_chosen");
+    TheBandUI.GetOvershell()->RemoveSink(this, "required_song_options_chosen");
     TheNetSession->RemoveSink(this, GameEndedMsg::Type());
     TheSessionMgr->RemoveSink(this, LocalUserLeftMsg::Type());
     TheSessionMgr->RemoveSink(this, RemoteUserLeftMsg::Type());

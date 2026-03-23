@@ -561,9 +561,9 @@ void CharacterCreatorPanel::CheckCharacterAssets() {
                         "piercings", "feet",     "hands",  "legs",     "rings",
                         "torso",     "wrist",    "guitar", "bass",     "drum",
                         "mic",       "keyboard" };
-    const ProfileAssets &assets = pProfile->mProfileAssets;
     BandCharDesc::Outfit &outfit = mPreviewDesc->mOutfit;
     BandCharDesc::InstrumentOutfit &ioutfit = mPreviewDesc->mInstruments;
+    const ProfileAssets &assets = pProfile->mProfileAssets;
     for (int i = 0; i < 17; i++) {
         Symbol curSym = syms[i];
         BandCharDesc::OutfitPiece *curPiece;

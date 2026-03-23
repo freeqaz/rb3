@@ -240,9 +240,10 @@ void CharClipSet::LoadCharacter() {
     delete mPreviewChar;
     ObjectDir *dummy = dynamic_cast<RndDir *>(DirLoader::LoadObjects(mCharFilePath, 0, 0));
     mPreviewChar = dynamic_cast<RndDir *>(dummy);
-    Character *theChar = dynamic_cast<Character *>(dummy);
-    if (mPreviewChar && !theChar) {
-        for (ObjDirItr<Character> it(mPreviewChar, true); it != nullptr; ++it) {
+    Character *theChar = dynamic_cast<Character *>(static_cast<ObjectDir *>(dummy));
+    RndDir *pc = mPreviewChar;
+    if (pc && !theChar) {
+        for (ObjDirItr<Character> it(pc, true); it != nullptr; ++it) {
             mPreviewChar = it;
             break;
         }

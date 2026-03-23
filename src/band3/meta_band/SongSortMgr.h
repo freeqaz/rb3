@@ -87,7 +87,7 @@ public:
 
         void RemoveFilter(FilterType type, Symbol s) {
             MILO_ASSERT_RANGE(type, 0, kNumFilterTypes, 0x62);
-            filters[type].erase(s);
+            filters[type].erase(filters[type].find(s));
         }
 
         const std::set<Symbol> &GetFilterSet(FilterType type) const {

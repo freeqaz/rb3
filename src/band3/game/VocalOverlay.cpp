@@ -51,8 +51,8 @@ void VocalOverlay::AppendAssignedPart(
     const Singer *iSinger, const std::vector<VocalPart *> &parts
 ) {
     MILO_ASSERT(iSinger, 0x73);
-    int i4 = iSinger->GetFrameAssignedPart();
     int i5 = iSinger->GetSingerIndex();
+    int i4 = iSinger->GetFrameAssignedPart();
     if (i4 != -1) {
         mSingerStrings[i5] += MakeString(" $%d ", i4 + 1);
         const VocalScoreCache &cache = iSinger->AccessScoreCache(parts[i4]->PartIndex());

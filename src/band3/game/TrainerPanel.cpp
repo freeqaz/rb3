@@ -252,7 +252,16 @@ bool TrainerPanel::ShouldStartEarly() const {
         return mSections[mCurrSection].mStartEarly;
 }
 
-int TrainerPanel::GetSectionLoopEnd(int) const {}
+int TrainerPanel::GetSectionLoopEnd(int idx) const {
+    const TrainerSection &sect = mSections[idx];
+    int end = sect.mEndTick;
+    int measure = TheSongDB->GetBeatsPerMeasure(end - 0x1e0) * 0x1e0;
+    int remainder = (end - sect.mStartTick) % measure;
+    int result = end + (measure - remainder);
+    if (remainder == 0)
+        result = end;
+    return result;
+}
 
 void TrainerPanel::UpdateProgressMeter() { MILO_ASSERT(false, 0x207); }
 

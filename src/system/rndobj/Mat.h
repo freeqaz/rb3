@@ -210,6 +210,10 @@ public:
         mColor.Set(col.red, col.green, col.blue);
         mDirty |= 1;
     }
+    void SetColor(float r, float g, float b) {
+        mColor.Set(r, g, b);
+        mDirty |= 1;
+    }
     void SetUseEnv(bool use_env) {
         mUseEnviron = use_env;
         mDirty |= 2;

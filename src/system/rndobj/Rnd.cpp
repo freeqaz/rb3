@@ -517,10 +517,10 @@ void Rnd::CreateDefaults() {
     RELEASE(mDefaultMat);
     RELEASE(mOverlayMat);
     RELEASE(mOverdrawMat);
-    mWorldCamCopy = ObjectDir::sMainDir->New<RndCam>("[world cam copy]");
-    mDefaultCam = ObjectDir::sMainDir->New<RndCam>("[default cam]");
-    mDefaultEnv = ObjectDir::sMainDir->New<RndEnviron>("[default env]");
-    mDefaultLit = ObjectDir::sMainDir->New<RndLight>("[default lit]");
+    mWorldCamCopy = ObjectDir::Main()->New<RndCam>("[world cam copy]");
+    mDefaultCam = ObjectDir::Main()->New<RndCam>("[default cam]");
+    mDefaultEnv = ObjectDir::Main()->New<RndEnviron>("[default env]");
+    mDefaultLit = ObjectDir::Main()->New<RndLight>("[default lit]");
     mDefaultLit->SetTransParent(mDefaultCam, false);
     mDefaultLit->SetLightType(RndLight::kDirectional);
     mDefaultEnv->AddLight(mDefaultLit);
@@ -537,9 +537,8 @@ void Rnd::CreateDefaults() {
     mOverdrawMat = Hmx::Object::New<RndMat>();
     mOverdrawMat->SetUseEnv(false);
     mOverdrawMat->SetBlend(RndMat::kBlendSrcAlpha);
-    Hmx::Color col(1, 0, 0, 0.2f);
-    mOverdrawMat->SetColor(col);
-    mOverdrawMat->SetAlpha(col.alpha);
+    mOverdrawMat->SetColor(1.0f, 0.0f, 0.0f);
+    mOverdrawMat->SetAlpha(0.2f);
     for (uint i = 0; i < kDefaultTex_Max; i++) {
         RELEASE(mDefaultTex[i]);
         mDefaultTex[i] = CreateDefaultTexture((DefaultTextureType)i);
