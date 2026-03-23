@@ -2,13 +2,41 @@
 #include "math/Rand.h"
 #include "obj/ObjMacros.h"
 #include "utl/Symbols.h"
+#include <cmath>
 
 INIT_REVS(RndWind)
 float sWindField[0x401] = { 0 }, sWhiteField[0x400] = { 0 };
 Rand *sRand;
 Vector3 sOffset(0.0f, 0.3384f, 0.66843998f);
 
-void SetWind(int, int, float, float, float) {}
+void SetWind(int start, int end, float startVal, float endVal, float amplitude) {
+    sWindField[start] = startVal;
+    if (end - start >= 2) {
+        int mid = (start + end) / 2;
+        float midVal = amplitude * sRand->Gaussian() + (startVal + endVal) * 0.5f;
+        float newAmp = amplitude / sqrtf(2.0f);
+        SetWind(start, mid, startVal, midVal, newAmp);
+        SetWind(mid, end, midVal, endVal, newAmp);
+    }
+}
+
+float RndWind::GetWind(float x) {
+    float f = fmod(x, 1.0f);
+    if (f < 0.0f)
+        f += 1.0f;
+    float fscaled = f * 1024.0f;
+    int i = (int)fscaled;
+    return sWindField[i] + (sWindField[i + 1] - sWindField[i]) * (fscaled - (float)i);
+}
+
+void RndWind::SelfGetWind(const Vector3 &pos, float time, Vector3 &result) {
+    result.x = GetWind(mTimeRate.x * time + mSpaceRate.x * pos.x + sOffset.x) * mRandom.x
+        + mPrevailing.x;
+    result.y = GetWind(mTimeRate.y * time + mSpaceRate.y * pos.y + sOffset.y) * mRandom.y
+        + mPrevailing.y;
+    result.z = GetWind(mTimeRate.z * time + mSpaceRate.z * pos.z + sOffset.z) * mRandom.z
+        + mPrevailing.z;
+}
 
 void RndWind::Init() {
     Register();
@@ -51,9 +79,10 @@ void RndWind::SetDefaults() {
 
 void RndWind::SyncLoops() {
     float f1 = (mTimeLoop == 0.0f) ? 0.0f : 1.0f / mTimeLoop;
+    float spaceLoop = mSpaceLoop;
     mTimeRate.Set(f1, f1 * 0.773437f, f1 * 1.38484f);
-    f1 = (mSpaceLoop == 0.0f) ? 0.0f : 1.0f / mSpaceLoop;
-    mSpaceRate.Set(f1, f1 * 0.773437f, f1 * 1.38484f);
+    float f2 = (spaceLoop == 0.0f) ? 0.0f : 1.0f / spaceLoop;
+    mSpaceRate.Set(f2, f2 * 0.773437f, f2 * 1.38484f);
 }
 
 SAVE_OBJ(RndWind, 0x96)

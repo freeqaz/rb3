@@ -316,7 +316,10 @@ void Game::Reset() {
     mRealtime = false;
     mTimeOffset = 0;
     mPauseTime = 0;
-    mSongPos = SongPos();
+    mSongPos.mTotalBeat = mSongPos.mTotalTick = 0;
+    mSongPos.mMeasure = 0;
+    mSongPos.mBeat = 0;
+    mSongPos.mTick = 0;
     mResult = kRestart;
     unk124 = 0;
     mTime.Restart();
@@ -361,7 +364,7 @@ Symbol Game::GetSectionAtMs(float ms) const { MILO_WARN("No practice sections!")
 
 void Game::RemovePlayer(Player *p) {
     mAllActivePlayers.erase(
-        std::find(mAllActivePlayers.begin(), mAllActivePlayers.end(), p),
+        std::remove(mAllActivePlayers.begin(), mAllActivePlayers.end(), p),
         mAllActivePlayers.end()
     );
 }

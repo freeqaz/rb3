@@ -31,25 +31,28 @@ const char *FlagString(int flags) {
                                "FinaleFestival",
                                "FemaleGenreSplit",
                                "MaleGenreSplit" };
+    const char **ptr;
     char *str = (char *)MakeString(
         "                                                                         "
     );
-    const char **ptr = flagstrs;
+    ptr = flagstrs;
     char *strptr = str;
     int i5 = 0;
-    while (true) {
-        int i1 = 1 << (i5 & 0x3F);
-        if (i1 > 0x8000)
-            break;
-        if (flags & i1) {
-            if (strptr != str) {
-                strcpy(strptr, *ptr);
-                strptr += strlen(*ptr);
-            }
+    int i1;
+    goto loop_check;
+loop_body:
+    if (flags & i1) {
+        if (strptr != str) {
+            *strptr++ = '|';
         }
-        ptr++;
-        i5++;
+        strcpy(strptr, *ptr);
+        strptr += strlen(*ptr);
     }
+    ptr++;
+    i5++;
+loop_check:
+    i1 = 1 << i5;
+    if (i1 <= 0x8000) goto loop_body;
     *strptr = 0;
     return str;
 }

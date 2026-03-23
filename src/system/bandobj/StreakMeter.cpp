@@ -302,12 +302,13 @@ void StreakMeter::SyncVoxPhraseTriggers() {
 
 void StreakMeter::ShowPhraseFeedback(int i, bool b) {
     SyncVoxPhraseTriggers();
-    if (i - 4U <= 2) {
-        if (!b)
-            mFlashSparksTrig->Trigger();
-    } else if (i - 2U <= 1) {
-        if (!b)
-            mFlashTrig->Trigger();
+    if (i - 4U > 2) {
+        if (i - 2U <= 1) {
+            if (!b)
+                mFlashTrig->Trigger();
+        }
+    } else if (!b) {
+        mFlashSparksTrig->Trigger();
     }
     SetWipe(0);
     if (unk260 && unk2c8 > 1) {

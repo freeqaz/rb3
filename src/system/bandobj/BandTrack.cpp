@@ -267,7 +267,7 @@ void BandTrack::SyncInstrument() {
         mTrackInstrument = kInstGuitar;
     } else if (instrument == bass) {
         mTrackInstrument = kInstBass;
-    } else if (instrument == drums) {
+    } else if (instrument == drum) {
         mTrackInstrument = kInstDrum;
     } else if (instrument == vocals) {
         mTrackInstrument = kInstVocals;

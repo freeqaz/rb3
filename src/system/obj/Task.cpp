@@ -329,6 +329,7 @@ float TaskMgr::Seconds(TimeReference ref) const {
     return time;
 }
 
+float TaskMgr::Beat() const { return mTimelines[kTaskBeats].GetTime(); }
 float TaskMgr::DeltaSeconds() const { return mTimelines[kTaskSeconds].DeltaTime(); }
 float TaskMgr::DeltaBeat() const { return mTimelines[kTaskBeats].DeltaTime(); }
 float TaskMgr::TutorialSeconds() const {

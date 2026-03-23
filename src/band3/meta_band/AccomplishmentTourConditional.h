@@ -4,10 +4,10 @@
 #include "tour/TourGameRules.h"
 
 struct AccomplishmentTourCondition {
-    AccomplishmentTourCondition() {}
+    AccomplishmentTourCondition() : mGameType((TourGameType)0), mValue(0) {}
     Symbol mCondition;
-    int mValue;
     TourGameType mGameType;
+    int mValue;
     Symbol mTourDesc;
 };
 

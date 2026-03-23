@@ -1,5 +1,6 @@
 #include "char/CharLipSync.h"
 #include "decomp.h"
+#include "math/Utl.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
 #include "obj/ObjMacros.h"
@@ -7,6 +8,7 @@
 #include "os/Debug.h"
 #include "rndobj/PropAnim.h"
 #include "rndobj/PropKeys.h"
+#include "utl/Loader.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols4.h"
 
@@ -27,10 +29,21 @@ void CharLipSync::Generator::Init(CharLipSync *sync) {
     mLipSync->mFrames = 0;
 }
 
-void CharLipSync::Generator::AddWeight(int i, float f) { Clamp<float>(0, 255, f); }
+void CharLipSync::Generator::AddWeight(int visemeIdx, float weight) {
+    float scaled = weight * 255.0f;
+    float clamped = Clamp(0.0f, 255.0f, scaled + 0.5f);
+    unsigned char val = clamped;
+    if (mWeights[visemeIdx].unk0 != val || mWeights[visemeIdx].unk1 != val) {
+        unsigned char idx = (unsigned char)visemeIdx;
+        mLipSync->mData.push_back(idx);
+        mLipSync->mData.push_back(val);
+        mWeights[visemeIdx].unk0 = mWeights[visemeIdx].unk1;
+        mWeights[visemeIdx].unk1 = val;
+    }
+}
 
 void CharLipSync::Generator::NextFrame() {
-    int count = mLipSync->mData.size() - mLastCount;
+    int count = (mLipSync->mData.size() - mLastCount - 1) / 2;
     MILO_ASSERT(count >= 0 && count < 256, 0x40);
     mLipSync->mData[mLastCount] = count;
     mLastCount = mLipSync->mData.size();
@@ -69,14 +82,24 @@ void CharLipSync::Generator::Finish() {
 }
 
 void CharLipSync::Generator::RemoveViseme(int visemeIdx) {
-    mLipSync->mVisemes.erase(mLipSync->mVisemes.begin() + visemeIdx);
+    CharLipSync *lipSync = mLipSync;
+    lipSync->mVisemes.erase(lipSync->mVisemes.begin() + visemeIdx);
 
-    int idx = 0;
-    for (int i = 0; i < mLipSync->mFrames; i++) {
-        int count = mLipSync->mData[idx++];
-        for (int j = 0; j < count; j++) {
-            MILO_WARN("data[cur] < mLipSync->mVisemes.size()");
+    int cur = 0;
+    int i = 0;
+    lipSync = mLipSync;
+    while (i < mLipSync->mFrames) {
+        int j = 0;
+        int count = lipSync->mData[cur++];
+        while (j < count) {
+            if (lipSync->mData[cur] >= visemeIdx) {
+                lipSync->mData[cur]--;
+                MILO_ASSERT(lipSync->mData[cur] < mLipSync->mVisemes.size(), 0x83);
+            }
+            cur += 2;
+            j++;
         }
+        i++;
     }
 }
 
@@ -124,7 +147,69 @@ void CharLipSync::PlayBack::Reset() {
     }
 }
 
-void CharLipSync::PlayBack::Poll(float f) {}
+void CharLipSync::PlayBack::Poll(float time) {
+    RndPropAnim *propAnim = mPropAnim;
+    if (propAnim) {
+        float frame = 30.0f * time;
+        if (TheLoadMgr.mEditMode) {
+            propAnim->SetFrame(frame, 1.0f);
+        }
+        RndPropAnim *pa = mPropAnim;
+        int i = 0;
+        for (std::vector<PropKeys *>::iterator it = pa->mPropKeys.begin();
+             it != pa->mPropKeys.end(); ++it) {
+            (*it)->FloatAt(frame, mWeights[i].unk14);
+            i++;
+        }
+        return;
+    }
+    CharLipSync *lipSync = mLipSync;
+    int frames = lipSync->mFrames;
+    if (frames >= 2) {
+        float frame = 30.0f * time;
+        int frameIdx = (int)(float)ceil(frame);
+        float frac = frame - (float)(frameIdx - 1);
+        if (frameIdx < 1) {
+            frameIdx = 1;
+            frac = 0.0f;
+        } else if (frameIdx >= frames) {
+            frameIdx = frames - 1;
+            frac = 0.9999999f;
+        }
+        if (frameIdx < mFrame) {
+            Reset();
+        }
+        if (mFrame < frameIdx) {
+            float conv = 1.0f / 255.0f;
+            do {
+                mOldIndex = mIndex++;
+                int count = lipSync->mData[mOldIndex];
+                if (count != 0) {
+                    for (int i = count; i != 0; i--) {
+                        int idx = lipSync->mData[mIndex++];
+                        Weight &w = mWeights[idx];
+                        w.unkc = w.unk10;
+                        int val = lipSync->mData[mIndex++];
+                        w.unk10 = (float)val * conv;
+                        w.unk14 = Interp(w.unkc, w.unk10, frac);
+                    }
+                }
+                mFrame++;
+            } while (mFrame < frameIdx);
+        } else if (mFrame >= 0 && mFrame == frameIdx) {
+            int idx = mOldIndex + 1;
+            int count = lipSync->mData[mOldIndex];
+            if (count != 0) {
+                for (int i = count; i != 0; i--) {
+                    int wIdx = lipSync->mData[idx];
+                    idx += 2;
+                    Weight &w = mWeights[wIdx];
+                    w.unk14 = Interp(w.unkc, w.unk10, frac);
+                }
+            }
+        }
+    }
+}
 
 CharLipSync::CharLipSync() : mPropAnim(this), mFrames(0) {}
 

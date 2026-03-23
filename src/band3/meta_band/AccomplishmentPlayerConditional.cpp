@@ -65,7 +65,7 @@ bool AccomplishmentPlayerConditional::InqBestProgressValues(
         int iGoal = 0;
         InqConditionProgress(profile, *it, i64, iGoal);
         MILO_ASSERT(iGoal > 0, 0x67);
-        int div = (float)i64 / (float)iGoal;
+        float div = (float)i64 / (float)iGoal;
         if (div > f1) {
             i1 = i64;
             i2 = iGoal;

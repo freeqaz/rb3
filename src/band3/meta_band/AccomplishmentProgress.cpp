@@ -1,4 +1,6 @@
 #include "meta_band/AccomplishmentProgress.h"
+#include "meta_band/BandMachineMgr.h"
+#include "meta_band/SessionMgr.h"
 #include "Accomplishment.h"
 #include "Campaign.h"
 #include "game/BandUser.h"
@@ -207,16 +209,26 @@ bool AccomplishmentProgress::IsUploadDirty() const {
     return mUploadDirty || !unk64.empty();
 }
 
+bool AccomplishmentProgress::HasNewRewardVignettes() const {
+    return !mNewRewardVignettes.empty();
+}
+
+#pragma push
+#pragma dont_inline on
 Symbol AccomplishmentProgress::GetFirstNewRewardVignette() const {
     MILO_ASSERT(HasNewRewardVignettes(), 0x18C);
     return mNewRewardVignettes.front();
 }
+#pragma pop
 
+#pragma push
+#pragma dont_inline on
 void AccomplishmentProgress::ClearFirstNewRewardVignette() {
     MILO_ASSERT(HasNewRewardVignettes(), 0x194);
     mNewRewardVignettes.pop_front();
     mParentProfile->MakeDirty();
 }
+#pragma pop
 
 bool AccomplishmentProgress::HasNewRewardVignetteFestival() const { return !unk645; }
 
@@ -310,8 +322,7 @@ int AccomplishmentProgress::SaveSize(int i) {
     int size = GamerAwardStatus::SaveSize(i);
     size *= 0x32;
     size += i3;
-    size += 0x2BD;
-    REPORT_SIZE("AccomplishmentProgress", size);
+    REPORT_SIZE("AccomplishmentProgress", size + 0x2BD);
 }
 
 void AccomplishmentProgress::LoadFixed(FixedSizeSaveableStream &stream, int rev) {
@@ -425,7 +436,12 @@ int AccomplishmentProgress::GetNumCompletedInGroup(Symbol group) const {
     return num;
 }
 
-void AccomplishmentProgress::SetMetaScore(int score) { mMetaScore = score; }
+void AccomplishmentProgress::SetMetaScore(int score) {
+    mMetaScore = score;
+    BandMachineMgr *pMachineMgr = TheSessionMgr->GetMachineMgr();
+    MILO_ASSERT(pMachineMgr, 0x40F);
+    pMachineMgr->RefreshPrimaryProfileInfo();
+}
 
 int AccomplishmentProgress::GetMetaScore() const { return mMetaScore; }
 

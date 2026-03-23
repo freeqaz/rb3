@@ -14,6 +14,8 @@ public:
     CharClipDriver *Exit(bool);
     void ExecuteEvent(Symbol);
     void SetBeatOffset(float, TaskUnits, Symbol);
+    float AlignToBeat(float);
+    void PlayEvents(float);
     void ScaleAdd(CharBones &, float);
     void RotateTo(CharBones &, float);
     CharClipDriver *DeleteClip(Hmx::Object *);

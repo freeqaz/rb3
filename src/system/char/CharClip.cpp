@@ -329,8 +329,7 @@ void CharClip::ListBones(std::list<CharBones::Bone> &bones) {
 
 int CharClip::AllocSize() {
     int size = mTransitions.BytesInMemory();
-    size += mFull.AllocateSize() + mOne.AllocateSize();
-    size += 0x138;
+    size += mFull.AllocateSize() + mOne.AllocateSize() + 0x138;
     return size;
 }
 

@@ -506,9 +506,10 @@ void BandCamShot::Store() {
 }
 
 void BandCamShot::View() {
+    bool b;
     FOREACH (it, mTargets) {
         RndTransformable *t;
-        bool b = false;
+        b = false;
         Target &cur = *it;
         if (!(*it).mTarget.Null()) {
             t = GetTargetCache(cur.mTarget)->unk4;
@@ -530,10 +531,11 @@ void BandCamShot::ViewFreeze() {
     TheTaskMgr.SetSecondsAndBeat(
         TheTaskMgr.Seconds(TaskMgr::kRealTime), TheTaskMgr.Beat(), false
     );
+    bool b;
     FOREACH (it, mTargets) {
-        Character *charObj;
-        bool b = false;
         Target &cur = *it;
+        b = false;
+        Character *charObj;
         if (!(*it).mTarget.Null()) {
             charObj = dynamic_cast<Character *>(GetTargetCache(cur.mTarget)->unk4);
             if (charObj)

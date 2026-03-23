@@ -177,7 +177,7 @@ float BandPerformer::WeightedCrowdLevel() const {
         BandUser *user = players[i]->GetUser();
         MILO_ASSERT(user, 0xEF);
         if (!players[i]->GetQuarantined() && !user->IsNullUser()) {
-            u12 |= players[i]->GetEnabledState() != 0;
+            u12 |= players[i]->GetEnabledState() != kPlayerDisabled;
             crowdratings.push_back(players[i]->GetCrowdRating());
         }
     }
