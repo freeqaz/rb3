@@ -284,8 +284,8 @@ CharGraphNode *CharClip::FindLastNode(CharClip *clip, float beat) const {
 }
 
 CharGraphNode *CharClip::FindNode(CharClip *clip, float f1, int iii, float f2) const {
-    CharGraphNode *n = nullptr;
     int blendMode = iii & 0xF;
+    CharGraphNode *n = nullptr;
     switch (blendMode) {
     case kPlayNoDefault:
         break;
