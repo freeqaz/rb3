@@ -214,7 +214,8 @@ SAVE_OBJ(RndLine, 535)
 void RndLine::SetUpdate(bool b1) {
     mLineUpdate = b1;
     if (!mLineUpdate) {
-        Transform xfm(WorldXfm());
+        Transform xfm;
+        xfm = WorldXfm();
         static Vector3 offset(0, -1, 0);
         Multiply(offset, xfm, xfm.v);
         UpdateLine(xfm, 0);

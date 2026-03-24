@@ -8,7 +8,20 @@
 #define DEG2RAD 0.01745329238474369049f
 
 void Multiply(const Vector3 &, const Transform &, Vector3 &);
-void Multiply(const Transform &, const Vector3 &, Vector3 &);
+inline void Multiply(const Transform &t, const Vector3 &v, Vector3 &out) {
+    float dy = v.y - t.v.y;
+    float dx = v.x - t.v.x;
+    float sz = t.m.z.y * dy;
+    float sy = t.m.y.y * dy;
+    float sx = t.m.x.y * dy;
+    sz += t.m.z.x * dx;
+    sy += t.m.y.x * dx;
+    sx += t.m.x.x * dx;
+    float dz = v.z - t.v.z;
+    out.z = t.m.z.z * dz + sz;
+    out.y = t.m.y.z * dz + sy;
+    out.x = t.m.x.z * dz + sx;
+}
 void Multiply(const Plane &, const Transform &, Plane &);
 void MakeRotMatrix(const Vector3 &, Hmx::Matrix3 &, bool);
 void MakeScale(const Hmx::Matrix3 &, Vector3 &);

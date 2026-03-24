@@ -300,8 +300,9 @@ void _vp_psy_init(vorbis_look_psy *p,vorbis_info_psy *vi,
   for(i=0;i<n;i++){
     float bark=toBARK(rate/(2*n)*i); 
 
-    for(;lo+vi->noisewindowlomin<i && 
-	  toBARK(rate/(2*n)*lo)<(bark-vi->noisewindowlo);lo++);
+    long lomin=lo+vi->noisewindowlomin;
+    for(;lomin<i &&
+	  toBARK(rate/(2*n)*lo)<(bark-vi->noisewindowlo);lomin++,lo++);
     
     for(;hi<=n && (hi<i+vi->noisewindowhimin ||
 	  toBARK(rate/(2*n)*hi)<(bark+vi->noisewindowhi));hi++);

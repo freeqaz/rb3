@@ -139,9 +139,9 @@ inline void SwapData(const void *v1, void *v2, int num_bytes) {
         break;
     }
     case 4: {
-        unsigned int *i1 = (unsigned int *)v1;
+        int *i1 = (int *)v1;
         int *i2 = (int *)v2;
-        *i2 = EndianSwap(*i1);
+        *i2 = EndianSwap((unsigned int)*i1);
         break;
     }
     case 8: {
@@ -163,34 +163,11 @@ void BinStream::ReadEndian(void *data, int bytes) {
     }
 }
 
-// // fn_80343114
-// void SwapData(const void *v1, void *v2, int num_bytes) {
-//     switch (num_bytes) {
-//     case 2:
-//         unsigned short *s1 = (unsigned short *)v1;
-//         short *s2 = (short *)v2;
-//         *s2 = SwapDataHalfWord(*s1);
-//         break;
-//     case 4:
-//         int *i1 = (int *)v1;
-//         int *i2 = (int *)v2;
-//         *i2 = SwapDataWord(*i1);
-//         break;
-//     case 8:
-//         long long *l1 = (long long *)v1;
-//         long long *l2 = (long long *)v2;
-//         *l2 = SwapDataDoubleWord(*l1);
-//         break;
-//     default:
-//         break;
-//     }
-// }
-
 void BinStream::WriteEndian(const void *void_data, int bytes) {
-    char buf[16];
+    char sp8;
     if (mLittleEndian) {
-        SwapData((void *)void_data, buf, bytes);
-        Write(buf, bytes);
+        SwapData((void *)void_data, &sp8, bytes);
+        Write(&sp8, bytes);
     } else
         Write(void_data, bytes);
 }

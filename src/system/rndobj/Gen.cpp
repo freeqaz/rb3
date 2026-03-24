@@ -214,10 +214,11 @@ void RndGenerator::SetFrame(float frame, float blend) {
         mCurParticle = mParticleSys ? mParticleSys->ActiveParticles() : nullptr;
         for (std::list<Instance>::iterator it = mInstances.begin();
              it != mInstances.end();) {
-            float f1 = frame - it->unk0;
+            float instFrame = it->unk0;
+            float f1 = frame - instFrame;
             if (f1 > (float)i6 * (mPathEndFrame - mPathStartFrame) || (f1 < 0)) {
                 if (f1 < 0)
-                    mNextFrameGen = it->unk0;
+                    mNextFrameGen = instFrame;
                 it = mInstances.erase(it);
                 if (mCurParticle) {
                     mCurParticle = mParticleSys->FreeParticle(mCurParticle);

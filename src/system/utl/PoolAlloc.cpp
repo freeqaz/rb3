@@ -32,6 +32,21 @@ void FixedSizeAlloc::Free(void *v) {
     mNumAllocs--;
 }
 
+void FixedSizeAlloc::Refill() {
+    MILO_ASSERT(mFreeList == 0, 0x10a);
+    int allocSize = mAllocSizeWords * mNodesPerChunk;
+    mFreeList = (int *)RawAlloc(allocSize * 4);
+    mNumChunks++;
+    int *cur = mFreeList;
+    int *end = mFreeList + (allocSize - mAllocSizeWords);
+    while (cur < end) {
+        int *next = cur + mAllocSizeWords;
+        *cur = (int)next;
+        cur = next;
+    }
+    *cur = 0;
+}
+
 #define MAX_FIXED_ALLOCS 0x40
 
 void *ChunkAllocator::Alloc(int i) {}

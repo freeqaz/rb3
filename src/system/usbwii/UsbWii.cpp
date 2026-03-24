@@ -159,7 +159,20 @@ inline bool UsbWii::IsDeviceActive(int num) {
     return true;
 }
 
-bool UsbWii::IsActive(int num) const { return IsDeviceActive(num); }
+bool UsbWii::IsActive(int num) const {
+    bool deviceValid = false;
+    bool stateValid = false;
+    if ((unsigned int)num < 4 && sDevices[num].type != kUsbNone) {
+        deviceValid = true;
+    }
+    if (deviceValid && (int)sDevices[num].state > 2) {
+        stateValid = true;
+    }
+    if (stateValid && (sDevices[num].flags & kUsbFlagActive) == 0) {
+        return false;
+    }
+    return stateValid;
+}
 
 void UsbWii::UsbOpenCloseCallback(long result, unsigned long unk) {
     sUSBOpenCloseResult = result;
@@ -184,7 +197,15 @@ bool UsbWii::OpenLib() {
 }
 
 void UsbWii::SetLED(int num, int led) {
-    if (!IsDeviceActive(num)) {
+    bool deviceValid = false;
+    bool stateValid = false;
+    if ((unsigned int)num < 4 && sDevices[num].type != kUsbNone) {
+        deviceValid = true;
+    }
+    if (deviceValid && (int)sDevices[num].state > 2) {
+        stateValid = true;
+    }
+    if (!stateValid) {
         return;
     }
     sDevices[num].flags |= kUsbFlagHasLED;

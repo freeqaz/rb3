@@ -1165,8 +1165,12 @@ void CamShotFrame::GetCurrentTargetPosition(Vector3 &v) const {
             Add(v, cur->WorldXfm().v, v);
         }
     }
-    if (count > 0)
-        v *= (1.0f / (float)count);
+    if (count > 0) {
+        float recip = 1.0f / (float)count;
+        v.x *= recip;
+        v.y *= recip;
+        v.z *= recip;
+    }
 }
 
 bool CamShotFrame::HasTargets() const {

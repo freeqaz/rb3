@@ -56,6 +56,9 @@ public:
     bool unk_0x2BC;
     int mFramesBuffered; // 0x2C0
 
+    void PrepareRenderAlley();
+    void RestoreRenderAlley();
+
     static bool mUseLockedCache, mShowParticle, mShowAssetName;
     static void ToggleAssetName() { mShowAssetName = !mShowAssetName; }
     static void ToggleShowParticle() { mShowParticle = !mShowParticle; }

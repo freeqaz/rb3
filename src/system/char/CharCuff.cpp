@@ -245,7 +245,8 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
         float faceAxisX = xfm.m.z.x;
         for (int fi = 0; fi <= faceCount; fi++) {
             int pass = 0;
-            u16 *faceVerts = &faces[fi].v1;
+            RndMesh::Face *facep = &faces[fi];
+            u16 *faceVerts = &facep->v1;
             for (int vi = 0; vi < 3; vi++) {
                 RndMesh::Vert &v0 = verts[faceVerts[vi]];
                 int bm32 = (1 << v0.boneIndices[3]) | (1 << v0.boneIndices[2]);
@@ -264,7 +265,7 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
                     cb->SyncMesh(mesh, 0xBF);
                     called = 1;
                 }
-                faces[fi] = faces[faceCount];
+                *facep = faces[faceCount];
                 faceCount--;
                 fi--;
             }

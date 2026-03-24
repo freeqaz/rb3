@@ -134,35 +134,26 @@ void RndColorXfm::AdjustBrightness() {
 }
 
 void RndColorXfm::AdjustLevels() {
-    Vector3 v50(
-        mLevelInHi.red - mLevelInLo.red,
-        mLevelInHi.green - mLevelInLo.green,
-        mLevelInHi.blue - mLevelInLo.blue
-    );
-    float f1 = 0;
-    if (v50.z != 0) {
-        f1 = (mLevelOutHi.blue - mLevelOutLo.blue) / (mLevelInHi.blue - mLevelInLo.blue);
-    }
-    float f2 = 0;
-    if (v50.y != 0) {
-        f2 = (mLevelOutHi.green - mLevelOutLo.green)
-            / (mLevelInHi.green - mLevelInLo.green);
-    }
-    float f3 = 0;
-    if (v50.x != 0) {
-        f3 = (mLevelOutHi.red - mLevelOutLo.red) / (mLevelInHi.red - mLevelInLo.red);
-    }
-    Vector3 v5c(f3, f2, f1);
-    Vector3 v68(
-        v5c.x * -mLevelInLo.red + mLevelOutLo.red,
-        v5c.y * -mLevelInLo.green + mLevelOutLo.green,
-        v5c.z * -mLevelInLo.blue + mLevelOutLo.blue
-    );
+    float diffBlue = mLevelInHi.blue - mLevelInLo.blue;
+    float diffGreen = mLevelInHi.green - mLevelInLo.green;
+    float diffRed = mLevelInHi.red - mLevelInLo.red;
+    float f1 = diffBlue != 0
+        ? (mLevelOutHi.blue - mLevelOutLo.blue) / diffBlue
+        : 0;
+    float f2 = diffGreen != 0
+        ? (mLevelOutHi.green - mLevelOutLo.green) / diffGreen
+        : 0;
+    float f3 = diffRed != 0
+        ? (mLevelOutHi.red - mLevelOutLo.red) / diffRed
+        : 0;
+    float v68z = -(mLevelInLo.blue * f1 - mLevelOutLo.blue);
+    float v68y = -(mLevelInLo.green * f2 - mLevelOutLo.green);
+    float v68x = -(mLevelInLo.red * f3 - mLevelOutLo.red);
     Transform tf40;
-    tf40.m.x.Set(v5c.x, 0, 0);
-    tf40.m.y.Set(0, v5c.y, 0);
-    tf40.m.z.Set(0, 0, v5c.z);
-    tf40.v = v68;
+    tf40.m.x.Set(f3, 0, 0);
+    tf40.m.y.Set(0, f2, 0);
+    tf40.m.z.Set(0, 0, f1);
+    tf40.v.Set(v68x, v68y, v68z);
     Multiply(mColorXfm, tf40, mColorXfm);
 }
 

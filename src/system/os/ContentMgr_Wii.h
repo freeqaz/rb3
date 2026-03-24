@@ -7,7 +7,24 @@
 bool CntSdRsoInit(struct RSOObjectHeader *);
 void CntSdRsoTerminate();
 
-// RootContent : Content
+class RootContent : public Content {
+public:
+    RootContent(const char *str) : mRoot(str) {}
+    virtual ~RootContent() {}
+    virtual const char *Root() { return mRoot.c_str(); }
+    virtual int OnMemcard() { return false; }
+    virtual ContentLocT Location() { return kLocationRoot; }
+    virtual int LicenseBits() { return 0; }
+    virtual bool HasValidLicenseBits() { return true; }
+    virtual Content::State GetState() { return kAlwaysMounted; }
+    virtual void Poll() {}
+    virtual void Mount() {}
+    virtual void Unmount() {}
+    virtual Symbol FileName();
+    virtual Symbol DisplayName() { return Symbol(mRoot.c_str()); }
+
+    String mRoot; // 0x4
+};
 
 enum CNTSDThreadStatus {
     CNTSD_THREAD_NOT_INITIALIZED = 0,

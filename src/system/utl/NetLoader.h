@@ -51,6 +51,17 @@ public:
     float mNetSimEndTime; // 0x28
 };
 
+class NetLoaderWii : public NetLoader {
+public:
+    NetLoaderWii(const String &);
+    virtual ~NetLoaderWii();
+    virtual void PollLoading();
+    virtual bool HasFailed();
+    virtual bool IsSafeToDelete() const;
+
+    char unk[0x2c]; // platform-specific Wii network members
+};
+
 // called DataNetLoader but not a subclass of NetLoader/Stub, wtf lol
 class DataNetLoader {
 public:

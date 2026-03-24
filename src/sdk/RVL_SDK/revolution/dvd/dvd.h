@@ -115,6 +115,8 @@ void DVDInit(void);
 BOOL DVDOpen(char* fileName, DVDFileInfo* fileInfo);
 BOOL DVDClose(DVDFileInfo* f);
 BOOL DVDInquiryAsync(DVDCommandBlock*, DVDDriveInfo*, DVDCBCallback);
+s32 DVDGetCommandBlockStatus(DVDCommandBlock*);
+s32 DVDGetDriveStatus(void);
 u32 __DVDGetCoverStatus(void);
 void __DVDPrepareReset(void);
 BOOL __DVDTestAlarm(const OSAlarm*);

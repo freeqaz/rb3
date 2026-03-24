@@ -1,4 +1,5 @@
 #include "NetLoader.h"
+#include "utl/NetCacheMgr.h"
 #include <obj/Task.h>
 
 NetLoader::NetLoader(const String &pStrRemotePath) {
@@ -53,6 +54,14 @@ void NetLoader::AttachBuffer(char *pBuf) {
 void NetLoader::SetSize(int pSize) { mSize = pSize; }
 
 void NetLoader::PostDownload() { mIsLoaded = mBuffer != 0; }
+
+NetLoader *NetLoader::Create(const String &str) {
+    if (TheNetCacheMgr->IsServerLocal()) {
+        return new NetLoaderStub(str);
+    } else {
+        return new NetLoaderWii(str);
+    }
+}
 
 NetLoaderStub::~NetLoaderStub() {}
 

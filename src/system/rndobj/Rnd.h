@@ -35,7 +35,6 @@ public:
     struct CompressTexDesc {
         CompressTexDesc(RndTex *tex, int a, CompressTextureCallback *cb)
             : mTex(nullptr, tex), mAlpha(a), mCallback(cb) {}
-        ~CompressTexDesc();
         ObjPtr<RndTex> mTex; // 0x0: vtable(4) + mOwner(4) + mPtr(4) = 12 bytes
         int mAlpha; // 0xc
         CompressTextureCallback *mCallback; // 0x10

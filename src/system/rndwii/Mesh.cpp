@@ -9,6 +9,7 @@
 #include "revolution/os/OSCache.h"
 #include "rndwii/Rnd.h"
 #include "utl/MemMgr.h"
+#include "utl/Std.h"
 #include <cstddef>
 #include <cstring>
 
@@ -288,6 +289,6 @@ void WiiMesh::DrawReflection(bool b) {
 
 void WiiMesh::RemoveVertData() {
     mVerts.resize(0, true);
-
+    ClearAndShrink(mFaces);
     ReleaseBuffers();
 }

@@ -4,6 +4,7 @@
 #include "math/Geo.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
+#include "obj/Utl.h"
 #include "os/File.h"
 #include "os/Joypad.h"
 #include "os/Keyboard.h"
@@ -724,6 +725,9 @@ void Rnd::CompressTextureCancel(CompressTextureCallback *cb) {
     }
 }
 
+Hmx::Object *sTexture;
+bool sCompressDone;
+
 static DataArray *sTimerScript;
 static int sTimerScriptInited;
 
@@ -854,26 +858,96 @@ float Rnd::DrawTimers(float f) {
     return f;
 }
 
+#pragma push
+#pragma auto_inline on
 void Rnd::DrawPreClear() {
-    if (unkf4) {
-        ((void (*)())unkf4)();
+    if (unkf8) {
+        unkf8();
+    }
+    if (sCompressDone) {
+        MILO_ASSERT(sTexture, 0x46A);
+        CompressTexDesc *desc = unk154.front();
+        RndTex *tex = desc->mTex;
+        if (tex) {
+            ReplaceObject(tex, sTexture, false, false, false);
+            sTexture = tex;
+        }
+        std::list<CompressTexDesc *>::iterator it = unk154.begin();
+        unk154.erase(it);
+        if (desc) {
+            CompressTextureCallback *cb = desc->mCallback;
+            if (cb) {
+                cb->TextureCompressed((int)desc);
+            }
+            delete desc;
+        }
+        if (sTexture) {
+            delete (RndTex *)sTexture;
+        }
+        sTexture = nullptr;
+        sCompressDone = false;
+    }
+    if (!sTexture) {
+        std::list<CompressTexDesc *>::iterator it_end = unk154.end();
+        std::list<CompressTexDesc *>::iterator it_begin = unk154.begin();
+        if (it_end != it_begin) {
+            std::list<CompressTexDesc *>::iterator it = it_begin;
+            do {
+                CompressTexDesc *desc = *it;
+                if (!desc->mTex || !desc->mCallback) {
+                    it = unk154.erase(it);
+                    if (desc) {
+                        CompressTextureCallback *cb = desc->mCallback;
+                        if (cb) {
+                            cb->TextureCompressed((int)desc);
+                        }
+                        delete desc;
+                    }
+                } else {
+                    ++it;
+                }
+            } while (it_end != it);
+            it_begin = unk154.begin();
+            unsigned int count = 0;
+            if (it_begin != it_end) {
+                std::list<CompressTexDesc *>::iterator it2 = it_begin;
+                do {
+                    count++;
+                    ++it2;
+                } while (it2 != it_end);
+                if (count > 0) {
+                    CompressTexDesc *first = unk154.front();
+                    sTexture = first->mTex;
+                    RndTex *newTex;
+                    {
+                        MemDoTempAllocations m(true, false);
+                        newTex = Hmx::Object::New<RndTex>();
+                    }
+                    ReplaceObject(sTexture, newTex, false, false, false);
+                }
+            }
+        }
     }
     ObjPtrList<RndDrawable> *drawList;
-    drawList = unk131 ? &mDraws : &unk110;
-    if (drawList->size() > 0) {
-        unk130 = true;
+    drawList = unk130 ? &unk110 : &mDraws;
+    if (drawList->size() != 0) {
+        unkf0 = true;
         RndCam *prevCam = RndCam::Current();
         for (ObjPtrList<RndDrawable>::iterator it = drawList->begin();
              it != drawList->end();
              ++it) {
-            (*it)->DrawPreClear();
+            RndDrawable *draw = *it;
+            if (draw) {
+                draw->DrawPreClear();
+            }
         }
         if ((prevCam != nullptr) && (prevCam != RndCam::Current())) {
             prevCam->Select();
         }
-        unk130 = false;
+        unkf0 = false;
     }
 }
+#pragma pop
 
 #pragma push
 #pragma dont_inline on

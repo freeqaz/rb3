@@ -8,6 +8,8 @@
 #include "revolution/mem/mem_allocator.h"
 #include <revolution/CNT.h>
 
+Symbol RootContent::FileName() { return Symbol(mRoot.c_str()); }
+
 MEMAllocator gCNTAllocator;
 bool gCNTThreadInUse;
 

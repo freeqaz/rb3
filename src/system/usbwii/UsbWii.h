@@ -81,6 +81,7 @@ public:
 
     bool OpenLib();
     bool CloseLib();
+    void Poll();
     int GetJoypadType(int num) const;
     bool IsActive(int num) const;
     void SetInactive(int num);

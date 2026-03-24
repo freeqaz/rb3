@@ -348,7 +348,20 @@ inline void Multiply(const Hmx::Quat &q1, const Hmx::Quat &q2, Hmx::Quat &qres) 
 void FastInterp(const Hmx::Quat &, const Hmx::Quat &, float, Hmx::Quat &);
 void Invert(const Hmx::Matrix3 &, Hmx::Matrix3 &);
 void FastInvert(const Hmx::Matrix3 &, Hmx::Matrix3 &);
-void Multiply(const Hmx::Matrix3 &, const Vector3 &, Vector3 &);
+inline void Multiply(const Hmx::Matrix3 &m, const Vector3 &v, Vector3 &out) {
+    float vy = v.y;
+    float accz = m.z.y * vy;
+    float accy = m.y.y * vy;
+    float accx = m.x.y * vy;
+    float vz = v.z;
+    accz += m.z.z * vz;
+    accy += m.y.z * vz;
+    accx += m.x.z * vz;
+    float vx = v.x;
+    out.z = m.z.x * vx + accz;
+    out.y = m.y.x * vx + accy;
+    out.x = m.x.x * vx + accx;
+}
 void Multiply(const Vector3 &, const Hmx::Matrix3 &, Vector3 &);
 void Multiply(const Transform &, const Transform &, Transform &);
 void Multiply(const Transform &, const Vector3 &, Vector3 &);
@@ -360,13 +373,12 @@ inline void Multiply(const Vector3 &v, const Transform &t, Vector3 &out) {
     register const Vector3 *_v = &v;
     register Vector3 *_out = &out;
     register const Hmx::Matrix3 *_m = &t.m;
-    register const Vector3 *_tv = &t.v;
     typedef Hmx::Matrix3 Matrix3;
     ASM_BLOCK(
-        psq_l o1, Vector3.x(_tv), 0, 0
+        psq_l o1, 0x24(_m), 0, 0
         psq_l i2, Vector3.y(_v), 0, 0
         psq_l m1, Matrix3.z.x(_m), 0, 0
-        psq_l o2, Vector3.z(_tv), 1, 0
+        psq_l o2, 0x2c(_m), 1, 0
         psq_l m2, Matrix3.z.z(_m), 1, 0
         ps_madds1 o1, m1, i2, o1
         ps_madds1 o2, m2, i2, o2

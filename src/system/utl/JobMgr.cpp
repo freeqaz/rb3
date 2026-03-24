@@ -6,6 +6,22 @@ namespace {
 
 Job::Job() { mID = gJobIDCounter++; }
 
+void JobMgr::Poll() {
+    if (!mJobQueue.empty()) {
+        if (mJobQueue.front()->IsFinished()) {
+            Job *job = mJobQueue.front();
+            mJobQueue.pop_front();
+            mPreventStart = true;
+            job->OnCompletion(mCallback);
+            delete job;
+            mPreventStart = false;
+            if (!mJobQueue.empty()) {
+                mJobQueue.front()->Start();
+            }
+        }
+    }
+}
+
 JobMgr::JobMgr(Hmx::Object *o) : mCallback(o), mJobQueue(), mPreventStart(0) {}
 
 JobMgr::~JobMgr() { CancelAllJobs(); }

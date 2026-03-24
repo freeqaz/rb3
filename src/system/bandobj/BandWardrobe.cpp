@@ -901,12 +901,12 @@ int NodeCmp(const void *a, const void *b) {
     DataNode *nb = (DataNode *)b;
     const char *stra = na->Str();
     const char *strb = nb->Str();
-    const char *strstra = strstr(stra, ".tp");
-    const char *strstrb = strstr(strb, ".tp");
-    if ((strstra != 0) == (strstrb != 0)) {
+    bool hasA = strstr(stra, ".tp") != 0;
+    bool hasB = strstr(strb, ".tp") != 0;
+    if (hasA == hasB) {
         return stricmp(stra, strb);
     } else
-        return strstra != 0 ? -1 : 1;
+        return hasA ? -1 : 1;
 }
 
 DataNode BandWardrobe::OnSortTargets(DataArray *da) {

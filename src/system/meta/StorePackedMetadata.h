@@ -165,3 +165,4 @@ public:
 };
 
 extern StoreMetadataManager TheStoreMetadata;
+extern const char *gStoreMetadataManagerLoadStepName[12];

@@ -1331,12 +1331,17 @@ float RndText::GetDistanceToPlane(const Plane &p, Vector3 &v) {
         return 0;
     else {
         float ret = 0;
+        bool first = true;
         FOREACH (it, mMeshMap) {
             RndMesh *mesh = it->second.mesh;
             if (mesh) {
                 Vector3 vec;
-                ret = mesh->GetDistanceToPlane(p, vec);
-                v = vec;
+                float dist = mesh->GetDistanceToPlane(p, vec);
+                if (first || std::fabs(dist) < std::fabs(ret)) {
+                    first = false;
+                    v = vec;
+                    ret = dist;
+                }
             }
         }
         return ret;

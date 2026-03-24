@@ -809,9 +809,12 @@ void FloatKeys::SetToCurrentVal(int i) {
 void ColorKeys::SetToCurrentVal(int i) {
     int packed = mTarget->Property(mProp, true)->Int();
     Key<Hmx::Color> &cur = (*this)[i];
-    cur.value.red = (packed & 255) / 255.0f;
-    cur.value.green = ((packed >> 0x10) & 255) / 255.0f;
-    cur.value.blue = ((packed >> 8) & 255) / 255.0f;
+    int r = packed & 255;
+    int g = (packed >> 8) & 255;
+    int b = (packed >> 0x10) & 255;
+    cur.value.red = r / 255.0f;
+    cur.value.green = g / 255.0f;
+    cur.value.blue = b / 255.0f;
     cur.value.alpha = 1.0f;
 }
 

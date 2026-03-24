@@ -31,6 +31,7 @@ int GetVarLength(String &str) {
 
 // tabling this for now, see: https://decomp.me/scratch/Ry4am
 void AddParams(String &s1, String &s2, String s3) {
+    int outerlen = 0;
     switch (s1[0]) {
     case 'Q': { // 0x51
         s1 = s1.substr(1, strlen(s1.c_str()));
@@ -38,13 +39,12 @@ void AddParams(String &s1, String &s2, String s3) {
         s1 = s1.substr(1, strlen(s1.c_str()));
 
         for (int i = 0; i < len; i++) {
-            int outerlen;
             if (IsAsciiNum(s1[1])) {
                 if (IsAsciiNum(s1[2])) {
                     outerlen = atoi(s1.substr(0, 3).c_str());
                     s1 = s1.substr(3, strlen(s1.c_str()));
                 } else {
-                    if (1 < strlen(s1.c_str())) {
+                    if (strlen(s1.c_str()) >= 2) {
                         outerlen = atoi(s1.substr(0, 2).c_str());
                         s1 = s1.substr(2, strlen(s1.c_str()));
                     }
@@ -64,35 +64,28 @@ void AddParams(String &s1, String &s2, String s3) {
                     comma_substr.erase(findcomma, 1);
                     findcomma = comma_substr.find(",");
                 }
-                unsigned int ltPos2 = comma_substr.find("<");
-                s2 = s2 + comma_substr.substr(0, ltPos2 + 1);
-                comma_substr = comma_substr.substr(ltPos2 + 1, strlen(comma_substr.c_str()));
+                s2 = s2 + comma_substr.substr(0, comma_substr.find("<") + 1);
+                unsigned int commaLen = strlen(comma_substr.c_str());
+                comma_substr = comma_substr.substr(comma_substr.find("<") + 1, commaLen);
                 while (HasMoreParams(String(comma_substr))) {
                     AddParams(comma_substr, s2, String(""));
                 }
-                const char *s2str2 = s2.c_str();
-                unsigned int s2len2 = strlen(s2str2);
-                int doStrip2 = 0;
-                if (s2.substr(s2len2 - 2, strlen(s2str2)) == ", ") {
-                    doStrip2 = 1;
-                }
-                if (doStrip2) {
+                if (s2.substr(strlen(s2.c_str()) - 2, strlen(s2.c_str())) == ", ") {
                     s2 = s2.substr(0, strlen(s2.c_str()) - 2);
                 }
                 s2 = s2 + comma_substr + s3;
             } else {
-                unsigned int s1len = strlen(s1.c_str());
-                if (outerlen <= s1len) {
-                    s2 = s2 + "::" + s1.substr(0, s1len);
-                    s1 = s1.substr(outerlen, s1len);
+                if (strlen(s1.c_str()) >= outerlen) {
+                    s2 = s2 + s1.substr(0, outerlen) + "::";
+                    s1 = s1.substr(outerlen, strlen(s1.c_str()));
                 }
             }
         }
 
-        if (s2.substr(strlen(s2.c_str() - 2), strlen(s2.c_str())) == "::") {
+        if (s2.substr(strlen(s2.c_str()) - 2, strlen(s2.c_str())) == "::") {
             s2 = s2.substr(0, strlen(s2.c_str()) - 2);
         }
-        s2 = s2 + s2;
+        s2 = s2 + ", ";
 
         break;
     }
@@ -115,34 +108,34 @@ void AddParams(String &s1, String &s2, String s3) {
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
     case 'v': // 0x76
-        if (s3.c_str() != 0) {
-            s2 = s2 + "void" + s3 + ",";
+        if (strlen(s3.c_str()) != 0) {
+            s2 = s2 + "void" + s3 + ", ";
         }
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
     case 'i': // 0x69
-        s2 = s2 + "int" + s3 + ",";
+        s2 = s2 + "int" + s3 + ", ";
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
     case 'c': // 0x63
-        s2 = s2 + "char" + s3 + ",";
+        s2 = s2 + "char" + s3 + ", ";
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
     case 'b': // 0x62
-        s2 = s2 + "bool" + s3 + ",";
+        s2 = s2 + "bool" + s3 + ", ";
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
     case 'f': // 0x66
-        s2 = s2 + "float" + s3 + ",";
+        s2 = s2 + "float" + s3 + ", ";
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
 
     case 'l': // 0x6C
-        s2 = s2 + "long" + s3 + ",";
+        s2 = s2 + "long" + s3 + ", ";
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
     case 's': // 0x73
-        s2 = s2 + "short" + s3 + ",";
+        s2 = s2 + "short" + s3 + ", ";
         s1 = s1.substr(1, strlen(s1.c_str()));
         break;
 
@@ -150,7 +143,9 @@ void AddParams(String &s1, String &s2, String s3) {
         break;
     default:
         if (IsAsciiNum(s1[0])) {
-            s2 = s2 + "," + s2 + s1.substr(0, GetVarLength(s1));
+            unsigned int varLen = GetVarLength(s1);
+            s2 = s2 + s1.substr(0, varLen) + s3 + ", ";
+            s1 = s1.substr(varLen, strlen(s1.c_str()));
         } else {
             TheDebug << MakeString(" PI NMB DEBUG: UNEXPECTED CHARACTER '%c'\n", s1[0]);
             s1 = s1.substr(1, strlen(s1.c_str()));

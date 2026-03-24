@@ -113,15 +113,17 @@ int HDCache::HdrSize() {
     int numArkfiles = TheArchive->mNumArkfiles;
     for (int i = 0; i < numArkfiles; i++) {
         if (TheArchive->GetArkfileCachePriority(i) >= 0) {
-            blockStateSize += ((TheArchive->GetArkfileNumBlocks(i) + 0x1F) / 32 + 1) * 4;
+            int numBlocks = TheArchive->GetArkfileNumBlocks(i) + 0x1F;
+            blockStateSize += 4;
+            blockStateSize += (numBlocks / 32) * 4;
         }
     }
-    int ret = blockStateSize + 0x100;
-    int remainder = ret % 4096;
+    blockStateSize += 0x100;
+    int remainder = blockStateSize % 4096;
     if (remainder != 0) {
-        ret = ret - remainder + 0x1000;
+        blockStateSize += 0x1000 - remainder;
     }
-    return ret;
+    return blockStateSize;
 }
 
 FileStream *HDCache::OpenHeader() {

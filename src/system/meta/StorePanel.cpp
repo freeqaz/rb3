@@ -77,7 +77,7 @@ void StorePanel::PollForLoading() {
             ExitError((StoreError)100);
         } else
             mSessionStatus = kSessionCreating;
-    } else if (TheNetCacheMgr->unk_0x20)
+    } else if (TheNetCacheMgr->GetHasFailed())
         HandleNetCacheMgrFailure();
 }
 

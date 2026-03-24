@@ -5,6 +5,7 @@ StoreMetadataManager TheStoreMetadata;
 std::vector<int> StoreMetadataManager::mSetlistOffers;
 bool gDebugMakeAllSongsAvailable;
 bool gDebugDontRelyOnCommerceServer;
+const char *gStoreMetadataManagerLoadStepName[12];
 
 bool StoreLoadPackedFile(const char *, bool, int, bool, bool, char **, char **, char **, int *) {
 

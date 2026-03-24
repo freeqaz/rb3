@@ -2,11 +2,15 @@
 #include "obj/Data.h"
 #include "obj/Object.h"
 #include "obj/Dir.h"
+#include "os/FileCache.h"
 #include "utl/Symbols.h"
 #include "utl/Cache.h"
 #include "utl/NetLoader.h"
 #include "utl/NetCacheLoader.h"
+#include "utl/Str.h"
 #include <list>
+
+class NetCacheLoader;
 
 enum NetCacheMgrFailType {
     kNCMFT_Unknown,
@@ -34,6 +38,24 @@ enum LoadState {
     kLS_Resync
 };
 
+struct NetLoaderRef {
+    void Poll();
+    bool NeedsToDownload();
+    bool IsDownloading();
+    bool IsLoadedOrFailed();
+    bool IsSafeToDelete();
+    void DeleteLoader();
+    void AddRef();
+    void ReleaseRef();
+    bool IsValid() const;
+    NetLoaderRef &operator=(const NetLoaderRef &);
+
+    String mName; // 0x0
+    int mRefCount; // 0xc
+    NetLoader *mNetLoader; // 0x10
+    NetCacheLoader *mCacheLoader; // 0x14
+};
+
 class NetCacheMgr : public Hmx::Object {
 public:
     struct ServerData {
@@ -43,6 +65,11 @@ public:
         unsigned short port; // 0xc
         const char *root; // 0x10
         bool verifySSL; // 0x14
+    };
+
+    enum RefType {
+        kRT_CacheLoader = 0,
+        kRT_NetLoader = 1,
     };
 
     enum CacheSize {
@@ -58,31 +85,48 @@ public:
     virtual void UnloadInit();
     virtual bool IsDoneUnloading() const;
 
-    int GetServerRoot() const;
-    int GetPort() const;
+    unsigned short GetPort() const;
+    const char *GetServerRoot() const;
+    bool IsServerLocal() const;
     NetCacheMgrFailType GetFailType() const;
     void SetState(NetCacheMgrState);
     void Unload();
     bool IsLocalFile(const char *) const;
     void OnInit(DataArray *);
-    void CheatNextServer();
+    Symbol CheatNextServer();
     void DebugClearCache();
     void DeleteNetCacheLoader(NetCacheLoader *);
+    void DeleteNetLoader(NetLoader *);
     void Load(CacheSize);
     bool IsUnloaded() const;
     bool IsReady() const;
     NetCacheLoader *AddNetCacheLoader(const char *, NetLoaderPos);
+    NetLoader *AddNetLoader(const char *, NetLoaderPos);
+
+    bool GetHasFailed() const { return mHasFailed; }
+
+private:
+    void EnterLoadState();
+    bool IsUnloadStateDone() const;
+    void EnterUnloadState();
+    NetCacheMgr::ServerData const &Server() const;
+
+protected:
+    void SetFail(NetCacheMgrFailType);
+    void PollLoaders();
+    NetLoaderRef *AddLoaderRef(const char *, RefType, NetLoaderPos);
 
     NetCacheMgrState mState; // 0x1c
-    bool unk_0x20; // 0x20
+    bool mHasFailed; // 0x20
     NetCacheMgrFailType mFailType; // 0x24
     String mStrXLSPFilter; // 0x28
     int mServiceId; // 0x34
     std::list<ServerData> mServers; // 0x38
     Symbol mServerType; // 0x40
     unsigned int mLoadCacheSize; // 0x44
-    Cache *mCache; // 0x48
-    std::list<int> mNetLoaderRefs; // 0x4C
+    FileCache *mCache; // 0x48
+    std::list<NetLoaderRef> mNetLoaderRefs; // 0x4c
+    int mLoadCount; // 0x54
 };
 
 extern NetCacheMgr *TheNetCacheMgr;

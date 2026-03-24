@@ -410,15 +410,24 @@ void UtilDrawAxes(const Transform &tf, float f, const Hmx::Color &c) {
     Vector3 vec38;
     Hmx::Color c48;
     ScaleAdd(tf.v, tf.m.x, f, vec38);
-    Interp(c, Hmx::Color(1, 0, 0), 0.8f, c48);
+    c48.alpha = Interp(c.alpha, 1.0f, 0.8f);
+    c48.red = Interp(c.red, 1.0f, 0.8f);
+    c48.blue = Interp(c.blue, 0.0f, 0.8f);
+    c48.green = Interp(c.green, 0.0f, 0.8f);
     TheRnd->DrawLine(tf.v, vec38, c48, false);
 
     ScaleAdd(tf.v, tf.m.y, f, vec38);
-    Interp(c, Hmx::Color(0, 1, 0), 0.8f, c48);
+    c48.alpha = Interp(c.alpha, 1.0f, 0.8f);
+    c48.green = Interp(c.green, 1.0f, 0.8f);
+    c48.blue = Interp(c.blue, 0.0f, 0.8f);
+    c48.red = Interp(c.red, 0.0f, 0.8f);
     TheRnd->DrawLine(tf.v, vec38, c48, false);
 
     ScaleAdd(tf.v, tf.m.z, f, vec38);
-    Interp(c, Hmx::Color(0, 0, 1), 0.8f, c48);
+    c48.alpha = Interp(c.alpha, 1.0f, 0.8f);
+    c48.blue = Interp(c.blue, 1.0f, 0.8f);
+    c48.green = Interp(c.green, 0.0f, 0.8f);
+    c48.red = Interp(c.red, 0.0f, 0.8f);
     TheRnd->DrawLine(tf.v, vec38, c48, false);
 }
 
@@ -851,16 +860,19 @@ void ScrambleXfms(RndMultiMesh *mm) {
         q.Set(vec, scrambler);
         MakeRotMatrix(q, *mat);
     }
-    // NOTE: keep mat declared before scrambler above
 }
 
 void DistributeXfms(RndMultiMesh *mm, int i, float f) {
+    float zero = 0.0f;
     int idx = 0;
     for (std::list<RndMultiMesh::Instance>::iterator it = mm->mInstances.begin();
          it != mm->mInstances.end();
          ++it) {
-        Vector3 v5c((float)(idx % i) * f, (float)(idx / i) * f, 0);
-        Add(it->mXfm.v, v5c, it->mXfm.v);
+        float delta_y = (float)(idx / i) * f;
+        float delta_x = (float)(idx % i) * f;
+        it->mXfm.v.z += zero;
+        it->mXfm.v.x += delta_x;
+        it->mXfm.v.y += delta_y;
         ++idx;
     }
 }

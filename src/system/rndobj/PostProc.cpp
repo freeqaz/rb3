@@ -535,32 +535,37 @@ ProcessCmd ProcCounter::ProcCommands() {
     if ((this->mProcAndLock != false) && (this->mCount == 0)) {
         return kProcessNone;
     }
-    if (this->mEvenOddDisabled == false) {
-        count = this->mCount;
-        retCmd = 0;
-        if (count == -1) {
-            this->mCount = -1;
-            retCmd = 7;
-        } else if (count == 0) {
-            retCmd = 1;
-        } else if (count == 1) {
-            retCmd = 6;
-            if (this->mTriFrameRendering != false) {
-                retCmd = 4;
-            }
-        } else if (count == 2) {
-            retCmd = 2;
-        }
-        count = this->mCount + 1;
-        this->mCount = count;
-        int compare_value = (mTriFrameRendering != 0) ? 2 : 1;
-
-        if (count > compare_value) {
-            this->mCount = 0;
-        }
-        return (ProcessCmd)retCmd;
+    if (this->mEvenOddDisabled != false) {
+        return kProcessAll;
     }
-    return kProcessAll;
+    count = this->mCount;
+    retCmd = 0;
+    switch (count) {
+    case -1:
+        this->mCount = -1;
+        retCmd = 7;
+        break;
+    case 0:
+        retCmd = 1;
+        break;
+    case 1:
+        retCmd = 6;
+        if (this->mTriFrameRendering != false) {
+            retCmd = 4;
+        }
+        break;
+    case 2:
+        retCmd = 2;
+        break;
+    }
+    count = this->mCount + 1;
+    this->mCount = count;
+    int compare_value = (mTriFrameRendering != 0) ? 2 : 1;
+
+    if (count > compare_value) {
+        this->mCount = 0;
+    }
+    return (ProcessCmd)retCmd;
 }
 
 DOFOverrideParams::DOFOverrideParams()
