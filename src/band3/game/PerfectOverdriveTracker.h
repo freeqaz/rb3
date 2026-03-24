@@ -9,7 +9,7 @@ class PerfectOverdriveTracker : public Tracker {
 public:
     class PlayerContribData {
     public:
-        int unk0;
+        float unk0;
         int unk4;
         int unk8;
     };

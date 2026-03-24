@@ -11,6 +11,7 @@
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/MainHubMessageProvider.h"
 #include "meta_band/MainHubPanel.h"
+#include "meta_band/MusicLibrary.h"
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/SavedSetlist.h"
@@ -393,19 +394,47 @@ void AppLabel::SetSetlistOwner(const SetlistRecord *setlist) {
     SetDisplayText(setlist->GetOwner(), true);
 }
 
-void AppLabel::SetEditSetlistName(const UIPanel *) {}
-void AppLabel::SetEditSetlistDesc(const UIPanel *) {}
+void AppLabel::SetEditSetlistName(const UIPanel *panel) {
+    SetDisplayText(panel->Property(setlist_name, true)->Str(nullptr), true);
+}
+void AppLabel::SetEditSetlistDesc(const UIPanel *panel) {
+    SetDisplayText(panel->Property(setlist_desc, true)->Str(nullptr), true);
+}
 
-void AppLabel::SetOfferName(const StoreOffer *) {}
-void AppLabel::SetOfferCost(const StoreOffer *) {}
-void AppLabel::SetOfferArtist(const StoreOffer *) {}
-void AppLabel::SetOfferAlbum(const StoreOffer *) {}
-void AppLabel::SetOfferDescription(const StoreOffer *) {}
+void AppLabel::SetOfferName(const StoreOffer *offer) {
+    SetDisplayText(offer->OfferName(), true);
+}
+void AppLabel::SetOfferCost(const StoreOffer *offer) {
+    SetDisplayText(offer->CostStr(), true);
+}
+void AppLabel::SetOfferArtist(const StoreOffer *offer) {
+    if (offer->HasArtist()) {
+        bool isCover = offer->IsCover();
+        SetArtistName(offer->Artist(), isCover);
+    } else {
+        SetDisplayText(gNullStr, true);
+    }
+}
+void AppLabel::SetOfferAlbum(const StoreOffer *offer) {
+    bool hasAlbum = offer->OfferType() != pack && offer->AlbumName() != nullptr;
+    if (hasAlbum) {
+        SetDisplayText(offer->AlbumName(), true);
+    } else {
+        SetDisplayText(gNullStr, true);
+    }
+}
+void AppLabel::SetOfferDescription(const StoreOffer *offer) {
+    SetDisplayText(offer->Description(), true);
+}
 
 void AppLabel::SetStoreCrumbText() {}
-void AppLabel::SetMusicLibraryStatus() {}
+void AppLabel::SetMusicLibraryStatus() {
+    SetDisplayText(TheMusicLibrary->GetStatusText(), true);
+}
 
-void AppLabel::SetRecommendation(const StoreInfoPanel *) {}
+void AppLabel::SetRecommendation(const StoreInfoPanel *panel) {
+    SetDisplayText(panel->CurrentRecommendation()->unk0.c_str(), true);
+}
 
 void AppLabel::SetLinkingCode(const char *cc) {
     String s(cc);
@@ -416,9 +445,55 @@ void AppLabel::SetLinkingCode(const char *cc) {
     SetDisplayText(cc, 1);
 }
 
-void AppLabel::SetBattleTimeLeft(int) {}
+void AppLabel::SetBattleTimeLeft(int seconds) {
+    int minutes = seconds / 60;
+    int hours = minutes / 60;
+    int days = hours / 24;
+    int weeks = days / 7;
+    const char *text;
+    if (seconds <= 0) {
+        text = Localize(battle_time_left_none, nullptr);
+    } else if (seconds < 60) {
+        if (seconds == 1)
+            text = Localize(battle_time_left_second, nullptr);
+        else
+            text = MakeString(Localize(battle_time_left_seconds, nullptr), seconds);
+    } else if (minutes < 60) {
+        if (minutes == 1)
+            text = Localize(battle_time_left_minute, nullptr);
+        else
+            text = MakeString(Localize(battle_time_left_minutes, nullptr), minutes);
+    } else if (hours < 24) {
+        if (hours == 1)
+            text = Localize(battle_time_left_hour, nullptr);
+        else
+            text = MakeString(Localize(battle_time_left_hours, nullptr), hours);
+    } else if (days < 14) {
+        if (days == 1)
+            text = Localize(battle_time_left_day, nullptr);
+        else
+            text = MakeString(Localize(battle_time_left_days, nullptr), days);
+    } else if (weeks == 1) {
+        text = Localize(battle_time_left_week, nullptr);
+    } else {
+        text = MakeString(Localize(battle_time_left_weeks, nullptr), weeks);
+    }
+    SetDisplayText(text, true);
+}
 
-void AppLabel::SetBattleInstrument(ScoreType) {}
+void AppLabel::SetBattleInstrument(ScoreType ty) {
+    const char *result = gNullStr;
+    if ((unsigned)ty <= 0xA) {
+        Symbol nameSym = ScoreTypeToSym(ty);
+        Symbol fmtSym = battle_instrument_fmt;
+        const char *name = Localize(nameSym, nullptr);
+        const char *fontChar = GetFontCharFromScoreType(ty, 0);
+        result = MakeString(Localize(fmtSym, nullptr), fontChar, name);
+    } else {
+        MILO_FAIL("Bad ScoreType in AppLabel::SetBattleInstrumentString!");
+    }
+    SetDisplayText(result, true);
+}
 
 void AppLabel::SetBattleInstrument(const SetlistRecord *slr) {
     SavedSetlist *setlist = slr->GetSetlist();

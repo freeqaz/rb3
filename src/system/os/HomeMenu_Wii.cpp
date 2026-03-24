@@ -2,6 +2,7 @@
 #include "os/File.h"
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
+#include "rndobj/Rnd.h"
 
 DECOMP_FORCEACTIVE(HomeMenu_Wii, "_unresolved func.\n")
 
@@ -81,9 +82,20 @@ void HomeMenu::ActivateSDIcon(bool act) {
 }
 
 void HomeMenu::SetHomeMenuActive(bool act) {
-    if (act && !mBanIconActive) {
+    bool doActivate = act && !mBanIconActive;
+    if (doActivate) {
+        int aspect = TheRnd->mAspect;
+        unk_0x44 = aspect;
+        if (aspect != Rnd::kRegular) {
+            TheRnd->SetAspect(Rnd::kRegular);
+        }
         mHomeMenuActive = true;
         Begin();
+    }
+    if (!doActivate || unk_0x38 != 0) {
+        TheRnd->SetAspect((Rnd::Aspect)unk_0x44);
+        mHomeMenuActive = false;
+        End();
     }
 }
 

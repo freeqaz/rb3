@@ -16,6 +16,7 @@
 #include "game/GameConfig.h"
 #include "game/GameMode.h"
 #include "game/GamePanel.h"
+#include "game/SyncGameStartPanel.h"
 #include "game/GemPlayer.h"
 #include "game/NetGameMsgs.h"
 #include "game/Player.h"
@@ -27,6 +28,7 @@
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/BandUI.h"
 #include "meta_band/MetaPerformer.h"
+#include "meta_band/MusicLibrary.h"
 #include "meta_band/ModifierMgr.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/SessionMgr.h"
@@ -82,6 +84,24 @@ NetMessage *TourHideShowFiltersMsg::NewNetMessage() {
 NetMessage *SongResultsScrollMsg::NewNetMessage() { return new SongResultsScrollMsg(); }
 NetMessage *SetUpMicsMsg::NewNetMessage() { return new SetUpMicsMsg(); }
 
+class MusicLibraryTaskMsg : public NetMessage {
+public:
+    MusicLibraryTaskMsg() {}
+    virtual ~MusicLibraryTaskMsg() {}
+    virtual void Save(BinStream &) const;
+    virtual void Load(BinStream &);
+    virtual void Dispatch();
+    NETMSG_BYTECODE(MusicLibraryTaskMsg);
+    NETMSG_NAME(MusicLibraryTaskMsg);
+    NETMSG_NEWNETMSG(MusicLibraryTaskMsg);
+    MusicLibrary::MusicLibraryTask mTask; // 0x4
+};
+
+NetMessage *MusicLibraryTaskMsg::NewNetMessage() { return new MusicLibraryTaskMsg(); }
+
+Hmx::Object *GamePanel::NewObject() { return new GamePanel(); }
+Hmx::Object *SyncGameStartPanel::NewObject() { return new SyncGameStartPanel(); }
+
 void GameInit() {
     FadePanel::Init();
     // GamePanel::Init();
@@ -99,7 +119,7 @@ void GameInit() {
     AccomplishmentMsg::Register();
     AccomplishmentEarnedMsg::Register();
     SetPartyShuffleModeMsg::Register();
-    // MusicLibraryTaskMsg::Register();
+    MusicLibraryTaskMsg::Register();
     SetUpMicsMsg::Register();
     TourHideShowFiltersMsg::Register();
     SongResultsScrollMsg::Register();
@@ -515,7 +535,19 @@ void Game::Rollback(float f1, float toMs) {
     }
 }
 
-bool Game::HandleRollbackAnimation() {}
+bool Game::HandleRollbackAnimation() {
+    if (unk11c < 0.0f)
+        return true;
+    if (unk11c <= mInterpolator.mX1) {
+        float evalResult = mInterpolator.Eval(unk11c);
+        TheTaskMgr.SetSeconds(evalResult, false);
+        mLastPollMs = 1000.0f * evalResult;
+        unk11c += 1.0f;
+        return false;
+    }
+    unk11c = -1.0f;
+    return true;
+}
 
 void Game::CheckRollbackEnd(float f1) {
     float rollbackEnd = unkdc;
@@ -726,7 +758,116 @@ void Game::AddUser(BandUser *user) {
     mBand->AddUserDynamically(user);
 }
 
-const char *Game::DebugCycleAutoplay() { MILO_WARN("statePrev != stateCur"); }
+static const unsigned char gPlayerStates[16][4] = {
+    {0, 0, 0, 0},
+    {1, 1, 1, 1},
+    {1, 1, 1, 0},
+    {1, 1, 0, 1},
+    {1, 0, 1, 1},
+    {0, 1, 1, 1},
+    {1, 1, 0, 0},
+    {1, 0, 1, 0},
+    {1, 0, 0, 1},
+    {0, 1, 1, 0},
+    {0, 1, 0, 1},
+    {0, 0, 1, 1},
+    {1, 0, 0, 0},
+    {0, 1, 0, 0},
+    {0, 0, 1, 0},
+    {0, 0, 0, 1},
+};
+
+static const char *gStrPlayerStates[16] = {
+    "off",
+    "(1, 2, 3, 4) all",
+    "(1, 2, 3) left guitar, drums, vocals",
+    "(1, 2, 4) left guitar, drums, right guitar",
+    "(1, 3, 4) left guitar, vocals, right guitar",
+    "(2, 3, 4) drums, vocals, right guitar",
+    "(1, 2) left guitar and drums",
+    "(1, 3) left guitar and vocals",
+    "(1, 4) left guitar and right guitar",
+    "(2, 3) drums and vocals",
+    "(2, 4) drums and right guitar",
+    "(3, 4) vocals and right guitar",
+    "(1) left guitar",
+    "(2) drums",
+    "(3) vocals",
+    "(4) right guitar",
+};
+
+const char *Game::DebugCycleAutoplay() {
+    // Phase 1: find the current state index (the entry in gPlayerStates that
+    // matches the current per-slot autoplay settings).
+    bool anyAutoplay;
+    int statePrev = 0;
+    bool mismatch;
+    do {
+        mismatch = false;
+        const unsigned char *stateRow = gPlayerStates[statePrev];
+        for (int slot = 0; slot < 4; slot++) {
+            BandUser *user = TheBandUserMgr->GetUserFromSlot(slot);
+            if (user && user->IsLocal() && user->mPlayer) {
+                if (stateRow[slot] != user->mPlayer->IsAutoplay()) {
+                    mismatch = true;
+                } else {
+                    continue;
+                }
+            } else if (stateRow[slot] != 0) {
+                mismatch = true;
+            } else {
+                continue;
+            }
+            break;
+        }
+        if (mismatch) {
+            statePrev = (statePrev + 1) & 0xF;
+        }
+    } while (mismatch);
+
+    // Phase 2: advance to the next applicable state.  A state is applicable
+    // when every slot that it wants to autoplay has a valid local player.
+    int stateCur = statePrev;
+    do {
+        int nextIdx = (stateCur + 1) & 0xF;
+        mismatch = false;
+        const unsigned char *stateRow = gPlayerStates[nextIdx];
+        stateCur = nextIdx;
+        for (int slot = 0; slot < 4; slot++) {
+            if (stateRow[slot] != 0) {
+                BandUser *user = TheBandUserMgr->GetUserFromSlot(slot);
+                if (!user || !user->IsLocal() || !user->mPlayer) {
+                    MILO_ASSERT(statePrev != stateCur, 0x8e7);
+                    mismatch = true;
+                    break;
+                }
+            }
+        }
+    } while (mismatch);
+
+    // Phase 3: apply the new state and compute whether any player is on autoplay.
+    anyAutoplay = false;
+    const unsigned char *stateRow = gPlayerStates[stateCur];
+    for (int slot = 0; slot < 4; slot++) {
+        BandUser *user = TheBandUserMgr->GetUserFromSlot(slot);
+        if (user && user->mPlayer) {
+            if (user->IsLocal()) {
+                int val = stateRow[slot];
+                user->mPlayer->SetAutoplay(val);
+                anyAutoplay = (bool)(anyAutoplay | val);
+            }
+        }
+    }
+
+    // Also apply to the null user's player if present.
+    NullLocalBandUser *nullUser = TheBandUserMgr->GetNullUser();
+    if (nullUser && nullUser->mPlayer) {
+        nullUser->mPlayer->SetAutoplay(anyAutoplay);
+    }
+
+    return gStrPlayerStates[stateCur];
+}
+
 const char *Game::DebugCycleAutoplayAccuracy() {
     MILO_WARN("%0.1f%%");
     MILO_WARN("NA");

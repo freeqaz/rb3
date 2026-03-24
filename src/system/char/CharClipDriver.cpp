@@ -231,16 +231,18 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
 
     float advance;
     if (mPlayMultipleClips) {
-        advance = deltaBeat;
         if (useRealTime) {
             advance = deltaSeconds;
+        } else {
+            advance = deltaBeat;
         }
     } else if (mNext) {
         advance = mNext->mAdvanceBeat;
     } else {
-        advance = deltaBeat;
         if (useRealTime) {
             advance = deltaSeconds;
+        } else {
+            advance = deltaBeat;
         }
     }
 
@@ -254,17 +256,12 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
     } else {
         float oldBeat = mBeat;
         if (!useUserTime) {
-            if (flags & 0x80) {
-                mDBeat = 0.0f;
-                mPlayFlags = flags & ~0x80;
-            } else {
-                if (useRealTime) {
-                    deltaBeat = mClip->DeltaSecondsToDeltaBeat(deltaSeconds, mBeat);
-                }
-                mDBeat = mTimeScale * deltaBeat;
+            if (useRealTime) {
+                deltaBeat = mClip->DeltaSecondsToDeltaBeat(deltaSeconds, mBeat);
             }
+            mDBeat = mTimeScale * deltaBeat;
         }
-        mBeat = mDBeat + mBeat;
+        mBeat += mDBeat;
         float align = AlignToBeat(beat);
         mBeat += align;
         mAdvanceBeat = mDBeat + align;
@@ -289,13 +286,9 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
             } else {
                 mBlendFrac = 1.0f;
             }
-            float clamped;
-            if (mBlendFrac >= 1.0f) {
-                clamped = 1.0f;
-            } else {
-                clamped = mBlendFrac;
+            if (1.0f < mBlendFrac) {
+                mBlendFrac = 1.0f;
             }
-            mBlendFrac = clamped;
         }
     }
 
@@ -343,7 +336,7 @@ float CharClipDriver::Evaluate(float beat, float deltaBeat, float deltaSeconds) 
             }
             float align = AlignToBeat(beat);
             mBeat += align;
-            mNextEvent = (int)mClip->mBeatEvents.size();
+            mNextEvent = mClip->NumBeatEvents();
         }
     }
     float sigmoid = Sigmoid(mBlendFrac);

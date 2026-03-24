@@ -130,3 +130,4 @@ public:
 extern WiiContentMgr TheWiiContentMgr;
 extern const char *gCurContentName;
 extern MEMAllocator gCNTAllocator;
+extern bool gCNTThreadInUse;

@@ -1,28 +1,56 @@
 #include "System.h"
 
+#include "math/Geo.h"
+#include "math/Trig.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
 #include "obj/DataFunc.h"
 #include "obj/DataUtl.h"
+#include "obj/Dir.h"
+#include "obj/Task.h"
+#include "os/AppChild.h"
 #include "os/Archive.h"
+#include "os/ContentMgr.h"
 #include "os/Debug.h"
 #include "os/File.h"
+#include "os/FileCache.h"
 #include "os/HolmesClient.h"
+#include "os/Joypad.h"
+#include "os/JoypadClient.h"
+#include "os/Keyboard.h"
+#include "os/Memcard_Wii.h"
+#include "os/NetworkSocket.h"
+#include "os/CommerceMgr_Wii.h"
 #include "os/PlatformMgr.h"
+#include "os/ThreadCall.h"
 #include "os/Timer.h"
+#include "os/VirtualKeyboard.h"
+#include "utl/CacheMgr.h"
+#include "utl/GlitchFinder.h"
+#include "utl/Locale.h"
 #include "utl/Loader.h"
+#include "utl/NetCacheMgr.h"
 #include "utl/Option.h"
+#include "utl/Spew.h"
+#include "utl/Str.h"
 #include "utl/Symbols.h"
 
+#include <cstring>
+#include <cstdio>
 #include <vector>
 
-// includes for SystemTerminate
-#include "math/Trig.h"
-#include "os/AppChild.h"
-#include "os/Keyboard.h"
-#include "os/VirtualKeyboard.h"
-#include "utl/Locale.h"
-#include "utl/Spew.h"
+void CheatsInit();
+void CheatsTerminate();
+void GeoInit();
+DataNode ResetHWM(DataArray *);
+DataNode CycleMemConsistencyCheck(DataArray *);
+bool InitWiiRSO();
+u32 HolmesClientSysExec(const char *);
+void HolmesClientStackTrace(const char *, unsigned int *, int, String &);
+void GetMapFileName(String &);
+
+extern bool (*ParseStack)(const char *, unsigned int *, int, char *);
+
 
 const char *gNullStr = "";
 
@@ -348,4 +376,150 @@ bool IsSupportedLanguage(Symbol s, bool b) {
             return true;
     }
     return false;
+}
+
+int SystemExec(const char *args) {
+    if (gUsingCD)
+        return -1;
+    else
+        return HolmesClientSysExec(args);
+}
+
+void SetSystemLanguage(Symbol lang, bool cheats) {
+    if (!IsSupportedLanguage(lang, cheats)) {
+        static Symbol system("system");
+        static Symbol default_sym("default");
+
+        DataArray *arr = gSystemConfig->FindArray(system, true)->FindArray(language, true)->FindArray(default_sym, false);
+        if (arr != 0) {
+            Symbol arrLang = arr->Node(1).Sym(arr);
+            if (IsSupportedLanguage(arrLang, cheats)) {
+                lang = arrLang;
+            } else {
+                MILO_WARN(
+                    "Both %s and the default language (%s) are not supported!\n",
+                    lang,
+                    arrLang
+                );
+                return;
+            }
+        } else {
+            MILO_WARN(
+                "Language %s is not supported, and there is no default language found!\n",
+                lang
+            );
+            return;
+        }
+    }
+
+    if (lang != gSystemLanguage) {
+        TheLocale.Terminate();
+        gSystemLanguage = lang;
+        TheLocale.Init();
+    } else {
+        gSystemLanguage = lang;
+    }
+}
+
+void AppendStackTrace(char *buf) {
+    unsigned int trace[50];
+    memset(trace, 0, 200);
+    CaptureStackTrace(50, trace);
+    unsigned int *traceBase = trace;
+    int idx = 0;
+    unsigned int *tracePtr = traceBase;
+    while (idx < 50 && *tracePtr) {
+        tracePtr++;
+        idx++;
+    }
+    String mapName;
+    GetMapFileName(mapName);
+    strcat(buf, "Stack Trace: \r\n");
+    bool parse;
+    if (gUsingCD || FileIsLocal(mapName.c_str())) {
+        if (TheArchive && TheArchive->mIsPatched) {
+            parse = false;
+        } else {
+            parse = ParseStack(mapName.c_str(), traceBase, idx, buf);
+        }
+    } else {
+        String holmesStr;
+        HolmesClientStackTrace(mapName.c_str(), traceBase, idx, holmesStr);
+        strcat(buf, holmesStr.c_str());
+        parse = !holmesStr.empty();
+    }
+    if (!parse) {
+        strcat(buf, " (map file unavailable)");
+        for (int i = 0; i < idx; i++) {
+            strcat(buf, "\n   ");
+            sprintf(buf + strlen(buf), "%08x", traceBase[i]);
+        }
+    }
+    strcat(buf, "\r\n");
+}
+
+void AppendThreadStackTrace(char *buf, unsigned int *stack) {
+    strcat(buf, "\n\n-- Thread failure, no stack yet --");
+    unsigned int *stackPtr = stack;
+    int idx = 0;
+    while (idx < 50 && *stackPtr) {
+        stackPtr++;
+        idx++;
+    }
+    strcat(buf, " (map file unavailable)");
+    for (int i = 0; i < idx; i++) {
+        strcat(buf, "\n   ");
+        sprintf(buf + strlen(buf), "%08x", stack[i]);
+    }
+}
+
+void SystemPoll(bool b1) {
+    Timer::ClearSlowFrame();
+    SystemMs();
+    TheDebug.Poll();
+    TheMC.Poll();
+    JoypadPoll();
+    JoypadClientPoll();
+    KeyboardPoll();
+    ThreadCallPoll();
+    FileCache::PollAll();
+    TheLoadMgr.Poll();
+    TheCacheMgr->Poll();
+    TheNetCacheMgr->Poll();
+    if (TheAppChild) TheAppChild->Poll();
+    if (b1) TheTaskMgr.Poll();
+    if (!gUsingCD) HolmesClientPoll();
+    ThePlatformMgr.Poll();
+    TheVirtualKeyboard.Poll();
+    TheContentMgr->PollRefresh();
+    ThePlatformMgr.WiiPoll();
+}
+
+void SystemInit(const char *config) {
+    gSystemTimer.Start();
+    if (!InitWiiRSO()) MILO_FAIL("_unresolved func.\n");
+    if (gUsingCD && !gHostConfig && !gHostLogging) WiiNetworkSocket::Init();
+    Symbol::Init();
+    InitSystem(config);
+    gSystemTitles = SystemConfig("system", "titles");
+    ObjectDir::Init();
+    TrigTableInit();
+    ThreadCallInit();
+    GeoInit();
+    TrigInit();
+    SpewInit();
+    TheLocale.Terminate();
+    TheLocale.Init();
+    TheMC.Init();
+    FileCache::Init();
+    CacheMgrInit();
+    NetCacheMgrInit();
+    ThePlatformMgr.Init();
+    TheWiiCommerceMgr.Init();
+    TheVirtualKeyboard.Init();
+    TheContentMgr->Init();
+    GlitchFinder::Init();
+    CheatsInit();
+    DataRegisterFunc("reset_hwm", ResetHWM);
+    DataRegisterFunc("cycle_mem_consistency_check", CycleMemConsistencyCheck);
 }

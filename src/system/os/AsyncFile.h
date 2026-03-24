@@ -42,7 +42,7 @@ public:
 
     int mMode;
     bool mFail;
-    char unk9;
+    bool unk9;
     String mFilename;
     unsigned int mTell;
     int mOffset;

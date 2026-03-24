@@ -3,11 +3,14 @@
 #include "game/BandUserMgr.h"
 #include "game/Player.h"
 #include "meta_band/AccomplishmentManager.h"
+#include "meta_band/BandUI.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
+#include "meta_band/MusicLibrary.h"
 #include "os/PlatformMgr.h"
+#include "utl/Messages.h"
 #include "utl/Symbols.h"
 
 PlayerGameplayMsg::PlayerGameplayMsg(
@@ -84,7 +87,9 @@ void ResumeNoScoreGameMsg::Dispatch() {
 }
 
 PlayerStatsMsg::PlayerStatsMsg(User *user, int score, const Stats &stats)
-    : mUserGuid(user->mUserGuid), mScore(score), mStats(stats) {}
+    : mUserGuid(user->mUserGuid), mScore(score), mStats() {
+    mStats = stats;
+}
 
 void PlayerStatsMsg::Save(BinStream &bs) const {
     bs << mUserGuid;
@@ -182,6 +187,7 @@ void TourMostStarsMsg::Load(BinStream &bs) {
 
 void TourMostStarsMsg::Dispatch() {
     TheAccomplishmentMgr->UpdateMostStarsForAllParticipants(unk4, unk8);
+    DataNode result = TheBandUI.Handle(client_update_goal_info_msg, false);
 }
 
 TourPlayedMsg::TourPlayedMsg(Symbol symbol) : mTourPlayed(symbol) {}
@@ -232,7 +238,8 @@ void SetPartyShuffleModeMsg::Save(BinStream &) const {}
 void SetPartyShuffleModeMsg::Load(BinStream &) {}
 
 void SetPartyShuffleModeMsg::Dispatch() {
-    // requires musiclibrary
+    if (TheMusicLibrary)
+        TheMusicLibrary->ClientSetPartyShuffleMode();
 }
 
 TourHideShowFiltersMsg::TourHideShowFiltersMsg(bool show) : mShowMode(show) {}

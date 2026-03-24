@@ -195,6 +195,11 @@ inline float Limit(float f1, float f2, float f3, int &i) {
 
 inline float Sigmoid(float t) {
     MILO_ASSERT(t >= 0 && t <= 1, 0x1DB);
-    float ret = 3.0f * t * t - 2.0f * t * t * t;
+    float b = 2.0f * t;
+    float a = 3.0f * t;
+    b *= t;
+    a *= t;
+    b = t * b;
+    float ret = a - b;
     return Clamp<float>(0, 1, ret);
 }

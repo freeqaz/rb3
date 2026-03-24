@@ -4,6 +4,16 @@
 
 char gMakeTitleIdString[5];
 
+const char *WiiCommerceMgr::mOpName[15] = {
+    "connect", "list_title_contents", "list_content_sets_price", "download_contents",
+    "download_title", "list_content_sets_purchase", "purchase_data_title", "cancel",
+    "list_content_sets_offers", "get_title_info", "download_title_and_contents",
+    nullptr, nullptr, nullptr, nullptr
+};
+
+int gLastErrorReturnValue;
+char gLastErrorDesc[0x80];
+
 bool gAllowNeedSyncReturn = true;
 
 char *gCommerceFilterName_OfferType = "offer_type";

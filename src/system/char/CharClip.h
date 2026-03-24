@@ -190,6 +190,7 @@ public:
     float EndBeat() const { return mBeatTrack.back().value; }
     /** "Length in beats" */
     float LengthBeats() const { return EndBeat() - StartBeat(); }
+    int NumBeatEvents() { return mBeatEvents.size(); }
     /** "Number of original samples taken, pre-keyframe compression" */
     int NumFrames() const {
         return Max<int>(Max<int>(1, mFull.mNumSamples), mFull.mFrames.size());

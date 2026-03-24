@@ -446,7 +446,43 @@ void GemPlayer::PlayMissSound(int i1) {
     }
 }
 
-void GemPlayer::FilteredWhammyBar(float val) { MILO_ASSERT_RANGE_EQ(val, -1, 0, 0x4EE); }
+void GemPlayer::FilteredWhammyBar(float val) {
+    if (!IsLocal())
+        return;
+    if (!TheGame->mProperties.mEnableWhammy)
+        return;
+    MILO_ASSERT_RANGE_EQ(val, -1, 0, 0x4EE);
+    HeldNote *note = FindFirstActiveHeldNote();
+    if (note != nullptr && mWhammyOverdriveEnabled) {
+        int phraseID = TheSongDB->GetPhraseID(mTrackNum, note->unk_0x4);
+        if (phraseID != -1
+            && !mCommonPhraseCapturer->DidTrackFail(phraseID, mTrackNum)) {
+            float ms = PollMs();
+            float denominator = ms - unk35c;
+            float numerator = val - unk358;
+            bool movingFast = false;
+            if (std::fabs(numerator / denominator) > mWhammySpeedThreshold) {
+                movingFast = true;
+                mLastTimeWhammyVelWasHigh = PollMs();
+            }
+            bool active = movingFast
+                || ((PollMs() - mLastTimeWhammyVelWasHigh) < mWhammySpeedTimeout);
+            active &= TheGame->mProperties.mEnableWhammy;
+            if (active && !unk348) {
+                Handle(whammy_start_msg, false);
+            } else if (!active && unk348) {
+                Handle(whammy_end_msg, false);
+            }
+            unk348 = active;
+        }
+    } else if (unk348) {
+        unk348 = false;
+        Handle(whammy_end_msg, false);
+    }
+    SendWhammyBar(val);
+    unk358 = val;
+    unk35c = PollMs();
+}
 
 void GemPlayer::SwingAtHopo(int, float, int) {
     HandleType(swingAtHopo_msg);

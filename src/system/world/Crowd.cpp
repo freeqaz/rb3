@@ -5,6 +5,7 @@
 #include "math/Color.h"
 #include "math/Mtx.h"
 #include "math/Rand.h"
+#include "math/Utl.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
 #include "obj/ObjMacros.h"
@@ -13,10 +14,12 @@
 #include "os/Timer.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Draw.h"
+#include "rndobj/Env.h"
 #include "rndobj/Mesh.h"
 #include "rndobj/MultiMesh.h"
 #include "rndobj/Poll.h"
 #include "rndobj/Trans.h"
+#include "rndwii/Mat.h"
 #include "rndwii/Mesh.h"
 #include "rndwii/Rnd.h"
 #include "stl/_pair.h"
@@ -309,10 +312,153 @@ void WorldCrowd::Draw3DChars() {}
 
 void WorldCrowd::DrawShowing() {
     START_AUTO_TIMER("crowd_draw");
+    if (!mPlacementMesh) return;
+    Draw3DChars();
+    if (TheRnd->DrawMode() == kDrawOcclusion) return;
     MILO_ASSERT(!gImpostorMat->NextPass(), 0x34A);
-    MILO_NOTIFY_ONCE(
-        "%s: Rendering 2D crowd character texture without an environment, set the environ property on the WorldCrowd object."
-    );
+    std::vector<Hmx::Rect> rects;
+    rects.reserve(12);
+    FOREACH (charIt, mCharacters) {
+        Character *curChar = charIt->mDef.mChar;
+        RndMultiMesh *mmesh = charIt->mMMesh;
+        if (curChar && mmesh && !mShow3DOnly && TheRnd->DrawMode() != kDrawOcclusion) {
+            int numInstances = 0;
+            for (std::list<RndMultiMesh::Instance>::iterator instIt = mmesh->mInstances.begin();
+                 instIt != mmesh->mInstances.end(); ++instIt) {
+                numInstances++;
+            }
+            if (numInstances == 0) continue;
+            {
+                SetMatAndCameraLod();
+                RndCam *curCam = RndCam::Current();
+                Transform camXfmCopy;
+                camXfmCopy.m = curCam->WorldXfm().m;
+
+                float halfHeight = charIt->mDef.mHeight * 0.5f;
+
+                const Transform &curCamXfm = curCam->WorldXfm();
+                const Transform &placementXfm = mPlacementMesh->WorldXfm();
+                camXfmCopy.v.y = curCamXfm.v.y - placementXfm.v.y;
+                camXfmCopy.v.x = curCamXfm.v.x - placementXfm.v.x;
+                camXfmCopy.v.z = curCamXfm.v.z - placementXfm.v.z - halfHeight;
+                float dist = Length(camXfmCopy.v);
+                float minDist = curCam->NearPlane() + halfHeight;
+                if (dist < minDist) dist = minDist;
+                Vector3 delta(0.0f, -dist, 0.0f);
+                Multiply(delta, camXfmCopy.m, camXfmCopy.v);
+                camXfmCopy.v.z += halfHeight;
+                gImpostorCamera->SetLocalXfm(camXfmCopy);
+                float yFov = (float)std::atan((double)(halfHeight / dist)) * 2.0f;
+                float nearP = curCam->NearPlane();
+                gImpostorCamera->SetFrustum(
+                    nearP, curCam->FarPlane(), yFov, 1.0f
+                );
+
+                Transform charXfm;
+                if (mRotate == kCrowdRotateNone) {
+                    const Transform &meshXfm = mPlacementMesh->WorldXfm();
+                    charXfm.m = meshXfm.m;
+                } else {
+                    const Transform &meshXfm2 = mPlacementMesh->WorldXfm();
+                    charXfm.m.z.x = meshXfm2.m.z.x;
+                    charXfm.m.z.y = meshXfm2.m.z.y;
+                    charXfm.m.z.z = meshXfm2.m.z.z;
+
+                    if (mRotate == kCrowdRotateFace) {
+                        const Transform &camWXfm = curCam->WorldXfm();
+                        float cyx = camWXfm.m.y.x;
+                        float xT7 = charXfm.m.z.y * cyx;
+                        float xT6 = charXfm.m.z.z * cyx;
+                        float cyy = camWXfm.m.y.y;
+                        float xT0 = charXfm.m.z.z * cyy;
+                        float xT2 = charXfm.m.z.x * cyy;
+                        float xT1 = charXfm.m.z.x * camWXfm.m.y.z;
+                        charXfm.m.x.x = charXfm.m.z.y * camWXfm.m.y.z - xT0;
+                        charXfm.m.x.y = xT6 - xT1;
+                        charXfm.m.x.z = xT2 - xT7;
+                    } else {
+                        const Transform &camWXfm = curCam->WorldXfm();
+                        float czx_b = charXfm.m.z.x;
+                        float xT7 = camWXfm.m.y.y * czx_b;
+                        float xT6 = camWXfm.m.y.z * czx_b;
+                        float cyx_b = camWXfm.m.y.x;
+                        float xT0 = camWXfm.m.y.z * charXfm.m.z.y;
+                        float xT2 = cyx_b * charXfm.m.z.y;
+                        float xT1 = cyx_b * charXfm.m.z.z;
+                        charXfm.m.x.x = camWXfm.m.y.y * charXfm.m.z.z - xT0;
+                        charXfm.m.x.y = xT6 - xT1;
+                        charXfm.m.x.z = xT2 - xT7;
+                    }
+
+                    Normalize(charXfm.m.x, charXfm.m.x);
+
+                    float cxx = charXfm.m.x.x;
+                    float yT7 = charXfm.m.z.y * cxx;
+                    float yT6 = charXfm.m.z.z * cxx;
+                    float cxy = charXfm.m.x.y;
+                    float czx = charXfm.m.z.x;
+                    float yT0 = charXfm.m.z.z * cxy;
+                    float yT2 = czx * cxy;
+                    float yT1 = czx * charXfm.m.x.z;
+                    charXfm.m.y.x = charXfm.m.z.y * charXfm.m.x.z - yT0;
+                    charXfm.m.y.y = yT6 - yT1;
+                    charXfm.m.y.z = yT2 - yT7;
+                }
+                charXfm.v.x = 0;
+                charXfm.v.y = 0;
+                charXfm.v.z = 0;
+                curChar->SetWorldXfm(charXfm);
+
+                rects.erase(rects.begin(), rects.end());
+
+                TheWiiRnd.PrepareRenderAlley();
+                if (TheRnd->DrawMode() == kDrawNormal) {
+                    if (!mEnviron) {
+                        MILO_NOTIFY_ONCE(
+                            "%s: Rendering 2D crowd character texture without an environment, set the environ property on the WorldCrowd object.",
+                            PathName(this)
+                        );
+                    }
+                    RndEnviron *env = mEnviron;
+                    bool savedApprox = true;
+                    if (env) {
+                        savedApprox = env->UsesApproxGlobal();
+                        env->SetUseApproxGlobal(false);
+                    }
+                    {
+                        const Transform &charWorldXfm = curChar->WorldXfm();
+                        RndEnvironTracker tracker(mEnviron, &charWorldXfm.v);
+                        gImpostorCamera->Select();
+                        WiiMat::SetOverrideAlphaWrite(true);
+                        curChar->SetShowing(true);
+                        curChar->DrawShowing();
+                        WiiMat::SetOverrideAlphaWrite(false);
+                        if (mEnviron) {
+                            env->SetUseApproxGlobal(savedApprox);
+                        }
+                        curCam->Select();
+                    }
+                }
+                TheWiiRnd.RestoreRenderAlley();
+
+                {
+                    RndEnviron *curEnv = RndEnviron::sCurrent;
+                    bool savedApprox = true;
+                    if (curEnv) {
+                        savedApprox = curEnv->UsesApproxGlobal();
+                        curEnv->SetUseApproxGlobal(false);
+                    }
+                    {
+                        RndEnvironTracker tracker(curEnv, nullptr);
+                        mmesh->DrawShowing();
+                        if (curEnv) {
+                            curEnv->SetUseApproxGlobal(savedApprox);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 RndMesh *WorldCrowd::BuildBillboard(Character *c, float f) {
@@ -346,7 +492,52 @@ RndMesh *WorldCrowd::BuildBillboard(Character *c, float f) {
 
 void WorldCrowd::SetLod(int lod) { mLod = Clamp(0, 2, lod); }
 
-void WorldCrowd::SetFullness(float, float) { START_AUTO_TIMER("crowd_set"); }
+void WorldCrowd::SetFullness(float flatFullness, float charFullness) {
+    START_AUTO_TIMER("crowd_set");
+    mFlatFullness = flatFullness;
+    mCharFullness = charFullness;
+    FOREACH (it, mCharacters) {
+        RndMultiMesh *multiMesh = it->mMMesh;
+        if (multiMesh) {
+            std::list<RndMultiMesh::Instance> &instances = multiMesh->mInstances;
+            int instanceCount = (int)instances.size();
+            std::list<RndMultiMesh::Instance> &backup = it->mBackup;
+            int backupCount = (int)backup.size();
+            int targetInstances = (int)((float)(instanceCount + backupCount) * mFlatFullness);
+            if (instanceCount < targetInstances) {
+                int toMove = targetInstances - instanceCount;
+                std::list<RndMultiMesh::Instance>::iterator backIt = backup.begin();
+                for (int i = 0; i < toMove; i++) {
+                    ++backIt;
+                }
+                instances.splice(instances.end(), backup, backup.begin(), backIt);
+            } else if (targetInstances < instanceCount) {
+                int toRemove = instanceCount - targetInstances;
+                std::list<RndMultiMesh::Instance>::iterator instIt = instances.begin();
+                for (int i = 0; i < toRemove; i++) {
+                    ++instIt;
+                }
+                backup.splice(backup.end(), instances, instances.begin(), instIt);
+                multiMesh->InvalidateProxies();
+            }
+            unsigned short totalChars3D = it->m3DCharsCreated.size();
+            int targetChars3D = (int)(charFullness * (float)totalChars3D);
+            if (targetChars3D >= (int)totalChars3D) {
+                targetChars3D = (int)totalChars3D;
+            }
+            unsigned short currentChars3D = it->m3DChars.size();
+            if ((int)currentChars3D < targetChars3D) {
+                for (int i = (int)currentChars3D; i < targetChars3D; i++) {
+                    it->m3DChars.push_back(it->m3DCharsCreated[i]);
+                }
+            } else if (targetChars3D < (int)currentChars3D) {
+                for (int i = (int)currentChars3D; i > targetChars3D; i--) {
+                    it->m3DChars.pop_back();
+                }
+            }
+        }
+    }
+}
 
 SAVE_OBJ(WorldCrowd, 0x4BF)
 

@@ -1,10 +1,17 @@
 #include "os/AsyncFile.h"
 #include "os/Debug.h"
 #include <string.h>
+#include "os/Endian.h"
 #include "os/File.h"
 #include "utl/Loader.h"
+#include "utl/MemMgr.h"
 #include "os/System.h"
 #include "os/Archive.h"
+
+template <>
+void EndianSwapEq(int &i) {
+    EndianSwapEq((unsigned int &)i);
+}
 
 static int gBufferSize = 0x20000;
 
@@ -228,3 +235,55 @@ bool AsyncFile::Eof() { return mTell == mSize; }
 bool AsyncFile::Fail() { return mFail; }
 int AsyncFile::Size() { return mSize; }
 int AsyncFile::UncompressedSize() { return mUCSize; }
+
+void AsyncFile::Init() {
+    if (!(mMode & 0x40000)) {
+        mBuffer = (char *)_MemAllocTemp(gBufferSize, 0x20);
+    }
+    MILO_ASSERT((mMode & (FILE_OPEN_READ | FILE_OPEN_WRITE)) != (FILE_OPEN_READ | FILE_OPEN_WRITE), 0xC4);
+    if (!unk9) {
+        if (mMode & FILE_OPEN_WRITE) {
+            bool curCD = UsingCD();
+            SetUsingCD(false);
+            FileQualifiedFilename(mFilename, mFilename.c_str());
+            SetUsingCD(curCD);
+        } else {
+            FileQualifiedFilename(mFilename, mFilename.c_str());
+        }
+    }
+    _OpenAsync();
+    while (!_OpenDone())
+        ;
+    if (!mFail) {
+        if (strcmp(FileGetExt(mFilename.c_str()), "z") == 0 && (mMode & FILE_OPEN_READ)
+            && mSize >= 4) {
+            mTell = mSize - 4;
+            _SeekToTell();
+            _ReadAsync(&mUCSize, 4);
+            while (!_ReadDone())
+                ;
+            mTell = 0;
+            _SeekToTell();
+            EndianSwapEq(mUCSize);
+            mSize -= 4;
+            goto next;
+        }
+    }
+    mUCSize = 0;
+next:
+    if (mMode & FILE_OPEN_READ && mBuffer) {
+        mOffset = gBufferSize;
+        FillBuffer();
+    }
+    if (mMode & 0x100) {
+        Seek(0, 2);
+    }
+}
+
+void AsyncFile::Terminate() {
+    if (mMode & FILE_OPEN_WRITE) {
+        Flush();
+    }
+    _Close();
+    _MemFree(mBuffer);
+}

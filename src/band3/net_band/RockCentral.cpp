@@ -687,7 +687,7 @@ void RockCentral::UpdateFriendList(
         for (int i = 0; i < friends.size(); i++) {
             String str;
             str = friends[i]->mName.c_str();
-            unsigned long long key = friends[i]->mFriendKey;
+            unsigned long long key = (unsigned int)friends[i]->mFriendKey;
             char buf[8];
             char buf2[0x18];
             ADD_BUFFER_PAIR(buf, str, "name%03d", i);

@@ -42,6 +42,11 @@ void HiResScreen::BmpCache::DeleteCache() {
     }
 }
 
+void HiResScreen::BmpCache::GetLoadedRange(uint &ui1, uint &ui2) const {
+    ui1 = mCurrLoadedIndex * mRowsPerCacheLine;
+    ui2 = ui1 + mRowsPerCacheLine - 1;
+}
+
 void HiResScreen::BmpCache::FlushCache() {
     MILO_ASSERT(mCurrLoadedIndex < mTotalNumCacheLines, 0x9C);
     if (mDirtyEnd > mDirtyStart) {
@@ -74,7 +79,7 @@ void HiResScreen::BmpCache::LoadCache(unsigned int y) {
     File *cacheFile = NewFile(mFileNames[newIndex].c_str(), 2);
     if (cacheFile == 0) {
         memset(mBuffer, 0, mByteSize);
-        cacheFile = NewFile(mFileNames[newIndex].c_str(), 0x101);
+        cacheFile = NewFile(mFileNames[newIndex].c_str(), 0x204);
         MILO_ASSERT(cacheFile, 0x80);
         mDirtyStart = 0;
         mDirtyEnd = mByteSize;
@@ -84,9 +89,7 @@ void HiResScreen::BmpCache::LoadCache(unsigned int y) {
         mDirtyStart = 0;
         mDirtyEnd = 0;
     }
-    if (cacheFile != 0) {
-        delete cacheFile;
-    }
+    delete cacheFile;
     mCurrLoadedIndex = newIndex;
 }
 
@@ -250,12 +253,9 @@ void HiResScreen::Finish() {
     File *existFile = 0;
     FileStream *fs = 0;
     do {
-        fileNum++;
-        filename = MakeString("%s_%d.bmp", mFileBase, fileNum);
-        if (existFile) {
-            delete existFile;
-        }
-        existFile = NewFile(filename.c_str(), 1);
+        filename = MakeString("%s_%d.bmp", mFileBase, ++fileNum);
+        delete existFile;
+        existFile = NewFile(filename.c_str(), 4);
     } while (existFile);
     mCache->FlushCache();
     fs = new FileStream(filename.c_str(), FileStream::kWrite, true);
@@ -268,12 +268,10 @@ void HiResScreen::Finish() {
         mCache->LoadCache(i * mCache->mRowsPerCacheLine);
         fs->Write(mCache->mBuffer, mCache->mByteSize);
     }
-    if (fs) {
-        delete fs;
-    }
-    FileMkDir();
+    delete fs;
+    FileMkDir("lo_res");
     filename = MakeString("lo_res/%s_%d.bmp", mFileBase, fileNum);
-    File *loResFile = NewFile(filename.c_str(), 0x101);
+    File *loResFile = NewFile(filename.c_str(), 0x204);
     if (loResFile != 0) {
         delete loResFile;
         RndBitmap loResBm;

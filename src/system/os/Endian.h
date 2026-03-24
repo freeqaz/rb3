@@ -17,7 +17,7 @@ inline void EndianSwapEq(unsigned short &s) {
 
 template <>
 inline void EndianSwapEq(short &s) {
-    s = (s << 8 | s >> 8);
+    s = ((unsigned short)s << 8 | (unsigned short)s >> 8);
 }
 
 inline unsigned short EndianSwap(unsigned short s) {

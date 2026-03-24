@@ -410,11 +410,11 @@ void SongData::PostLoadVocals() {
 
 void SongData::ComputeVocalRangeData() {
     mRangeSections.clear();
-    mRangeSections.push_back(RangeSection(0, 0));
+    RangeSection s(0, 0);
+    mRangeSections.push_back(s);
     for (std::map<int, float>::iterator it = mRangeShifts.begin();
          it != mRangeShifts.end();
          ++it) {
-        RangeSection s;
         s.unk0 = it->first;
         s.unk4 = it->second;
         mRangeSections.push_back(s);
@@ -509,10 +509,64 @@ void SongData::RestoreGems(int i1, int i2, int diff) {
     }
 }
 
-void SongData::TrimOverlappingGems(int, int, int diff) {
-    MILO_WARN("Empty track found for SongData::TrimOverlappingGems!");
-    MILO_WARN("shortestDurationTick >= 0");
-    MILO_WARN("shortestDurationMs >= 0.0f");
+void SongData::TrimOverlappingGems(int i1, int i2, int diff) {
+    GameGemList *backup_gems = mBackupTracks[i2]->mGems->GetDiffGemList(diff);
+    GameGemList *gems = mGemDBs[i1]->GetDiffGemList(diff);
+    std::vector<GameGem> &glist = gems->mGems;
+    std::vector<GameGem> &blist = backup_gems->mGems;
+
+    glist.clear();
+    glist.reserve(blist.size());
+
+    if (blist.size() == 0) {
+        MILO_WARN("Empty track found for SongData::TrimOverlappingGems!");
+        return;
+    }
+
+    std::vector<GameGem>::iterator cur = blist.begin();
+    while (cur != blist.end()) {
+        std::vector<GameGem>::iterator next = cur + 1;
+        int shortestDurationTick = cur->mDurationTicks;
+        float shortestDurationMs = (float)cur->mDurationMs;
+
+        // Group overlapping/close gems (within 10 ticks)
+        while (next != blist.end() && abs(cur->mTick - next->mTick) < 10) {
+            int nextDurTick = next->mDurationTicks;
+            if (nextDurTick < shortestDurationTick)
+                shortestDurationTick = nextDurTick;
+            float nextDurMs = (float)next->mDurationMs;
+            if (nextDurMs < shortestDurationMs)
+                shortestDurationMs = nextDurMs;
+            ++next;
+        }
+
+        // Clip to avoid overlap with next group
+        if (next != blist.end()) {
+            int nextTick = next->mTick;
+            if (shortestDurationTick + cur->mTick > nextTick) {
+                shortestDurationTick = nextTick - cur->mTick;
+                shortestDurationMs = next->mMs - cur->mMs;
+            }
+        }
+
+        if (shortestDurationTick < 0) return;
+        if (shortestDurationMs < 0.0f) return;
+        MILO_ASSERT(shortestDurationTick >= 0, 0x360);
+        MILO_ASSERT(shortestDurationMs >= 0.0f, 0x361);
+
+        // Build merged gem
+        GameGem merged = *cur;
+        merged.mDurationTicks = shortestDurationTick;
+        merged.mDurationMs = (unsigned short)shortestDurationMs;
+
+        // OR together all mSlots from the group
+        for (std::vector<GameGem>::iterator it = cur + 1; it != next; ++it) {
+            merged.mSlots |= it->mSlots;
+        }
+
+        glist.push_back(merged);
+        cur = next;
+    }
 }
 
 void SongData::ValidateVocalSPPhrases() {
@@ -971,7 +1025,22 @@ void SongData::RecalculateGemTimes(int track) {
 
 void SongData::EnableGems(int i1, float f1, float f2) {
     std::vector<GameGem> &gems = GetGemList(i1)->mGems;
-    for (int i = 0; i < gems.size(); i++) {
+    for (unsigned int i = 0; i < gems.size(); i++) {
+        GameGem &gem = gems[i];
+        bool match = false;
+        if (gem.mMs >= f1) {
+            float endTime;
+            if (!gem.mIgnoreDuration)
+                endTime = gem.mMs + (float)(unsigned short)gem.mDurationMs;
+            else
+                endTime = gem.mMs;
+            if (endTime <= f2) {
+                match = true;
+            }
+        }
+        if (!match) {
+            gem.unk18 = 0x80;
+        }
     }
 }
 

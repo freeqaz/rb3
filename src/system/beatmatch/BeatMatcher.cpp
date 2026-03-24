@@ -359,7 +359,13 @@ float BeatMatcher::GetCapStrip() const {
         return 0;
 }
 
-int BeatMatcher::GetMaxSlots() const {}
+int BeatMatcher::GetMaxSlots() const {
+    int type = mTrackTypes[mCurTrack];
+    if (type == kTrackRealKeys)
+        return 25;
+    int d = type - kTrackRealGuitar;
+    return (int)((unsigned)((3 | ~d) - ((unsigned)(3 - d) >> 1)) >> 31) + 5;
+}
 
 TrackType BeatMatcher::GetTrackType(int idx) const { return mTrackTypes[idx]; }
 bool BeatMatcher::IsAutoplay() { return mAutoplay; }

@@ -24,6 +24,7 @@ public:
     GamePanel();
     OBJ_CLASSNAME(GamePanel);
     OBJ_SET_TYPE(GamePanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~GamePanel();
     virtual void Enter();

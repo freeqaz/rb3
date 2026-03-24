@@ -8,8 +8,72 @@ DeJitter::DeJitter() {
     unk_0x0.resize(32);
 }
 
-float DeJitter::Apply(float, float &) {
+float DeJitter::Apply(float ms, float &delta) {
+    float filteredValue = 1e30f;
+    float sample = ms;
+
+    if (sTimeScale != 1.0f) {
+        if (unk_0x18 != 1e30f) {
+            delta = ms - unk_0x18;
+        } else {
+            delta = 0.0f;
+        }
+        unk_0x18 = ms;
+        delta *= sTimeScale;
+        unk_0x14 += delta;
+        return unk_0x14;
+    }
+
     static DataNode &dejitter_disable = DataVariable("dejitter_disable");
+
+    if (!dejitter_disable.Int()) {
+        if (unk_0xC > 8) {
+            int prevPos = (unk_0x8 - 1) & 0x1F;
+            int historyPos = (prevPos - unk_0xC) & 0x1F;
+            float f0 = (unk_0x0[prevPos] - unk_0x0[historyPos]) / (float)unk_0xC;
+            if (unk_0x10 == 0.0f) {
+                unk_0x10 = f0;
+            }
+            float f3 = unk_0x10;
+            float f4 = unk_0x14;
+            filteredValue = ms + 16.0f;
+            f0 = (f0 - f3) * 0.1f + f3;
+            unk_0x10 = f0;
+            float f1 = f4 + f0;
+            if (f1 > filteredValue) {
+                // clamp high: filteredValue stays as ms + 16.0f
+            } else {
+                filteredValue = ms - 16.0f;
+                if (f1 < filteredValue) {
+                    // clamp low: filteredValue stays as ms - 16.0f
+                } else {
+                    filteredValue = f1;
+                }
+            }
+            if (filteredValue < f4) {
+                filteredValue = f4;
+            }
+        }
+    }
+
+    unk_0x0[unk_0x8] = sample;
+    if (filteredValue != 1e30f) {
+        sample = filteredValue;
+    }
+    unk_0x8 = (unk_0x8 + 1) & 0x1F;
+
+    if (unk_0xC == -2) {
+        delta = 16.666f;
+    } else {
+        delta = sample - unk_0x14;
+    }
+
+    if (unk_0xC < 30) {
+        unk_0xC = unk_0xC + 1;
+    }
+
+    unk_0x14 = sample;
+    return sample;
 }
 
 void DeJitter::Reset() {

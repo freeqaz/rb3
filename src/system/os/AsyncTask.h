@@ -17,4 +17,5 @@ public:
     bool FillData();
     int GetBlockNum() const { return mBlockNum; }
     const char *GetStr() const { return mStr; }
+    ArkFile *GetOwner() const { return mOwner; }
 };

@@ -1,11 +1,13 @@
 #pragma once
 #include "utl/Str.h"
 
-// as of bank 5
 class Friend {
 public:
+    void SetName(String name) { mName = name; }
+    void SetGame(String game) { mGame = game; }
+
     String mName; // 0x0
     bool mOnline; // 0xc
     String mGame; // 0x10
-    unsigned long long mFriendKey; // 0x1c
+    int mFriendKey; // 0x1c
 };

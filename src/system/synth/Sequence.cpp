@@ -407,8 +407,8 @@ void SeqInst::SetVolume(float f) {
 }
 
 WaitSeqInst::WaitSeqInst(WaitSeq *seq) : SeqInst(seq), mEndTime(-1.0f) {
-    float rand = RandomVal(seq->mAvgWaitSecs, seq->mWaitSpread);
-    mWaitMs = rand * 1000.0f;
+    double rand = RandomVal(seq->mAvgWaitSecs, seq->mWaitSpread);
+    mWaitMs = (float)rand * 1000.0f;
 }
 
 void WaitSeqInst::StartImpl() {
@@ -695,3 +695,34 @@ void Sequence::Init() {
 SfxSeq::SfxSeq() {}
 
 SAVE_OBJ(SfxSeq, 0x511)
+
+void SfxSeq::Load(BinStream &bs) {
+    int rev;
+    bs >> rev;
+    if (rev > 4)
+        MILO_WARN("Can't load new SfxSeq");
+    else if (rev <= 3) {
+        if (rev <= 2) {
+            Hmx::Object::Load(bs);
+        } else {
+            Sequence::Load(bs);
+        }
+        ObjPtrList<Sequence> &children = mChildren;
+        children.clear();
+        ObjPtr<Sequence, ObjectDir> seq(this);
+        bs >> seq;
+        if (seq) {
+            children.push_back(seq);
+        }
+        if (rev == 2) {
+            bs >> mAvgVol;
+            bs >> mVolSpread;
+            bs >> mAvgTranspose;
+            bs >> mTransposeSpread;
+            bs >> mAvgPan;
+            bs >> mPanSpread;
+        }
+    } else {
+        SerialGroupSeq::Load(bs);
+    }
+}

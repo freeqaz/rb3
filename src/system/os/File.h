@@ -90,7 +90,7 @@ int FileOpen(const char *iFilename, int iMode);
 int FileClose(int iFd);
 int FileDelete(const char *);
 int FileWrite(int iFd, void *iBuff, unsigned int iLen);
-int FileMkDir();
+int FileMkDir(const char * = 0);
 
 void FileDiscSpinUp();
 void FileNormalizePath(char *);

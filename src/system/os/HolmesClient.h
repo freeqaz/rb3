@@ -13,6 +13,7 @@
 #include "os/NetworkSocket.h"
 #include "types.h"
 #include "obj/Msg.h"
+#include "utl/Cache.h"
 
 #define DEFAULT_PORT 4544
 
@@ -109,6 +110,7 @@ FileStat *HolmesClientGetStat(const char *, FileStat &);
 
 bool UsingHolmes(int);
 bool PendingRead(File *);
+CacheResourceResult HolmesClientCacheResource(const char *, const char *);
 
 char *HolmesFileShare();
 void HolmesSetFileShare(const char *, const char *);

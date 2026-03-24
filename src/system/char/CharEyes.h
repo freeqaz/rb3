@@ -73,6 +73,7 @@ public:
     void AddInterestObject(CharInterest *);
     /** "force a procedural blink for testing" */
     void ForceBlink();
+    void ProceduralBlinkUpdate();
     void SetEnableBlinks(bool, bool);
     bool SetFocusInterest(CharInterest *, int);
     bool EyesOnTarget(float);

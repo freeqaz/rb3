@@ -1,5 +1,6 @@
 #include "bandobj/ChordShapeGenerator.h"
 #include "beatmatch/RGUtl.h"
+#include "os/Timer.h"
 #include "utl/Symbols.h"
 
 INIT_REVS(ChordShapeGenerator);
@@ -170,7 +171,11 @@ void ChordShapeGenerator::DumpChordGenData() {
 RndMesh *ChordShapeGenerator::BuildChordMesh(unsigned int ui, int i) {
     RGUnpackChordShapeID(ui, mStringFrets, &unk64);
     shapesGenerated++;
-    BuildChordMesh();
+    TIMER_GET_CYCLES(startCycles);
+    RndMesh *ret = BuildChordMesh();
+    TIMER_GET_CYCLES(endCycles);
+    cycles += endCycles - startCycles;
+    return ret;
 }
 
 RndMesh *ChordShapeGenerator::MakeInvertedMesh(const RndMesh *mesh) {

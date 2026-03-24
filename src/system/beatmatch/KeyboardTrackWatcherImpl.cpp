@@ -108,7 +108,31 @@ int KeyboardTrackWatcherImpl::ClosestUnplayedGem(float ms, int slot) {
 }
 
 int KeyboardTrackWatcherImpl::RelevantGem(int first_gem_id, int last_gem_id, int slot) {
-    MILO_WARN("closest_gem != -1");
+    int current = first_gem_id;
+    int count = 0;
+    for (; current <= last_gem_id; current++) {
+        GameGem &gem = mGemList->GetGem(current);
+        int gemSlot = gem.GetSlot();
+        if (slot == gemSlot)
+            return current;
+        if (!gem.GetPlayed())
+            count++;
+    }
+    bool noCount = !count;
+    int closest_gem = -1;
+    int minDist = 999;
+    for (int i = first_gem_id; i <= last_gem_id; i++) {
+        GameGem &gem = mGemList->GetGem(i);
+        if (noCount || !gem.GetPlayed()) {
+            int dist = abs(slot - gem.GetSlot());
+            if (dist < minDist) {
+                minDist = dist;
+                closest_gem = i;
+            }
+        }
+    }
+    MILO_ASSERT(closest_gem != -1, 0xFD);
+    return closest_gem;
 }
 
 void KeyboardTrackWatcherImpl::CheckForChordTimeout(float ms) {

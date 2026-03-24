@@ -10,7 +10,6 @@ class Vector2 {
 public:
     Vector2() {}
     Vector2(float xx, float yy) : x(xx), y(yy) {}
-    Vector2(const Vector2 &vec) : x(vec.x), y(vec.y) {}
 
     void Set(float xx, float yy) {
         x = xx;
@@ -466,40 +465,37 @@ inline void Cross(const Vector3 &v1, const Vector3 &v2, Vector3 &dst) {
 
 inline void Normalize(register const Vector3 &v, register Vector3 &vout) {
     if (v.x != 0 || v.y != 0 || v.z != 0) {
-        register float half = 0.5;
-        register float three = 3;
         register __vec2x32float__ x;
         register __vec2x32float__ z;
-        register __vec2x32float__ z2;
-        register __vec2x32float__ x2;
-        register __vec2x32float__ inv_sq;
-        register __vec2x32float__ inv;
-        register __vec2x32float__ inv_half;
         register __vec2x32float__ total;
+        register float z2;
+        register __vec2x32float__ x2;
+        register float half = 0.5;
+        register float three = 3;
 
         ASM_BLOCK(
             psq_l x, Vector3.x(v), 0, 0
             psq_l z, Vector3.z(v), 1, 0
             ps_mul x2, x, x
-            ps_madd z2, z, z, x2
-            ps_sum0 total, z2, z, x2
+            ps_madd total, z, z, x2
+            ps_sum0 total, total, z, x2
                 // get 1/distance
             frsqrte x2, total
 
                 // square the inverse, so 1/distance^2
-            fmuls inv_sq, x2, x2
+            fmuls z2, x2, x2
 
-                // turn half into 1/2d
-            fmuls half, x2, half
+                // multiply est by 0.5, keeping half unchanged
+            fmuls x2, x2, half
 
                 // multiply the distance^2 by 1/d^2, and then multiply by 3?
                 // my best guess is this would return 3?
-            fnmsubs inv_sq, inv_sq, total, three
+            fnmsubs z2, z2, total, three
 
                 // beyond this point, I'm not really sure what we're doing,
                 // as a best guess, it would be a newton iteration?
 
-            fmuls x2, inv_sq, half
+            fmuls x2, z2, x2
 
             ps_muls0 x, x, x2
             ps_muls0 z, z, x2

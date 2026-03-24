@@ -881,6 +881,13 @@ CamShotFrame::CamShotFrame(Hmx::Object *o, const CamShotFrame &frame)
     mMaxAngularOffset[1] = frame.mMaxAngularOffset[1];
 }
 
+Vector2 CamShotFrame::MaxAngularOffset() const {
+    float x = (float)(signed char)mMaxAngularOffset[0] * 0.012319971f;
+    float y = (float)(signed char)mMaxAngularOffset[1] * 0.012319971f;
+    Vector2 result(x, y);
+    return result;
+}
+
 void CamShotFrame::Load(BinStream &bs) {
     bs >> mDuration;
     bs >> mBlend;

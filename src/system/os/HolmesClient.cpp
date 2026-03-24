@@ -9,10 +9,15 @@
 #include "os/NetworkSocket.h"
 #include "os/System.h"
 #include "types.h"
+#include "os/Timer.h"
 #include "utl/BinStream.h"
 #include "utl/TextFileStream.h"
 #include <cstring>
 #include <list>
+
+extern Timer gAsyncFileWiiOpenTimer;
+extern Timer gPollFrontLoaderTimer;
+extern Timer gMemAllocTimer;
 
 #define NETBIOS_NAME_MAX 64
 
@@ -35,10 +40,10 @@ namespace {
 
     int gRealMaxBufferSize;
     HolmesProfileData gProfile[20];
+    std::list<ReadRequest *> gRequests;
     CriticalSection gCrit;
     NetStream *gHolmesStream;
     MemStream *gStreamBuffer;
-    std::list<ReadRequest *> gRequests;
 
     char gMachineName[NETBIOS_NAME_MAX] = { 0 };
     char gShareName[NETBIOS_NAME_MAX] = { 0 };
@@ -311,16 +316,39 @@ bool HolmesClientInitOpcode(bool r3) {
 static DataNode DumpHolmesLog(DataArray *) {
     TextFileStream *tfs = new TextFileStream("holmes.csv", true);
     if (!tfs->mFile.Fail()) {
-        u32 read = gHolmesStream->mBytesRead;
-        u32 written = gHolmesStream->mBytesWritten;
+        int read = gHolmesStream->mBytesRead;
+        int written = gHolmesStream->mBytesWritten;
         {
             String hostname = NetworkSocket::GetHostName();
             tfs->Print(hostname.c_str());
             *tfs << ", ";
         }
         *tfs << read << ", ";
-        *tfs << written << ", ";
+        *tfs << written << "\n\n";
+        *tfs << "AsyncFileWiiOpen,";
+        *tfs << gAsyncFileWiiOpenTimer.SplitMs() << "\n";
+        *tfs << "PollFrontLoader,";
+        *tfs << gPollFrontLoaderTimer.SplitMs() << "\n";
+        *tfs << "MemAlloc,";
+        *tfs << gMemAllocTimer.SplitMs() << "\n";
+        *tfs << "name,";
+        *tfs << "count,";
+        *tfs << "wait,";
+        *tfs << "work\n";
+        for (int i = 0; i < 20; i++) {
+            *tfs << Holmes::ProtocolDebugString((u8)i);
+            int count = gProfile[i].count;
+            float wait = gProfile[i].wait.SplitMs();
+            float work = gProfile[i].work.SplitMs() - wait;
+            *tfs << ", ";
+            *tfs << count << ", ";
+            *tfs << wait << ", ";
+            *tfs << work << "\n";
+        }
+        tfs->mFile.Flush();
     }
+    delete tfs;
+    return DataNode(0);
 }
 
 void HolmesClientInit() { DataRegisterFunc("", DumpHolmesLog); }

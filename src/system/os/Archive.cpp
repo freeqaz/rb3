@@ -1,10 +1,37 @@
 #include "Archive.h"
+#include "os/BlockMgr.h"
+#include "os/ContentMgr.h"
 #include "os/Debug.h"
+#include "os/System.h"
+#include "utl/BinStream.h"
 #include "utl/FileStream.h"
+#include "utl/Loader.h"
+#include "utl/MemMgr.h"
+#include "utl/Option.h"
 #include "math/Sort.h"
+#include "zlib/zlib.h"
 
+Archive *TheArchive;
 bool gDebugArkOrder = false;
 int kArkBlockSize = 0x10000;
+
+int HashCRC(const char *str) {
+    if (!str || !*str)
+        return 0;
+    static signed char sInit;
+    static const uLongf *pTbl;
+    unsigned int crc = 0xFFFFFFFF;
+    if (!sInit) {
+        pTbl = get_crc_table();
+        sInit = true;
+    }
+    const char *p = str;
+    while (*p) {
+        crc = (crc >> 8) ^ pTbl[(crc ^ *p) & 0xff];
+        p++;
+    }
+    return crc ^ 0xFFFFFFFF;
+}
 
 ArkHash::ArkHash() : mHeap(0), mHeapEnd(0), mFree(0), mTable(0), mTableSize(0) {}
 
@@ -18,6 +45,36 @@ int ArkHash::GetHashValue(const char *c) const {
             hashIdx = 0;
     }
     return -1;
+}
+
+int ArkHash::Read(BinStream &bs, int len) {
+    _MemFree(mHeap);
+    _MemFree(mTable);
+
+    int heapSize;
+    bs >> heapSize;
+    int allocSize = heapSize + len;
+    char *heap = (char *)_MemAlloc(allocSize, 0);
+    bs.Read(heap, heapSize);
+    bs >> mTableSize;
+    mHeap = heap;
+    mHeapEnd = heap + allocSize;
+    mFree = heap + heapSize;
+    memset(mFree, 0, mHeapEnd - mFree);
+
+    mTable = (char **)_MemAlloc(mTableSize * sizeof(char *), 0);
+    char **p = mTable;
+    char **pEnd = mTable + mTableSize;
+    while (p != pEnd) {
+        int offset;
+        bs >> offset;
+        if (offset != 0) {
+            *p = heap + offset;
+        } else {
+            *p = nullptr;
+        }
+        p++;
+    }
 }
 
 Archive::Archive(const char *c, int i) : mBasename(c), mMode(kRead), mIsPatched(false) {
@@ -107,4 +164,23 @@ void Archive::GetGuid(HxGuid &g) const { g = mGuid; }
 const char *Archive::GetArkfileName(int filenum) const {
     MILO_ASSERT(filenum < mArkfileNames.size(), 1227);
     return mArkfileNames[filenum].c_str();
+}
+
+void ArchiveInit() {
+    if (UsingCD() || OptionBool("force_ark", false)) {
+        Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+        const char *hdrName;
+        if (UsingCD()) {
+            String titlePath(TheContentMgr->TitleContentPath());
+            if (!titlePath.empty()) {
+                hdrName = MakeString("%s/gen/patch_%s", titlePath.c_str(), plat);
+            }
+        } else {
+            hdrName = MakeString("gen/patch_%s", plat);
+        }
+        TheArchive = new Archive(MakeString("gen/main_%s", plat), 0);
+        TheArchive->SetArchivePermission(1, &preinitArk);
+    }
+    gDebugArkOrder = OptionBool("debug_arkorder", false);
+    TheBlockMgr.Init();
 }

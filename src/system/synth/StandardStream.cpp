@@ -206,11 +206,7 @@ int StandardStream::ConsumeData(void **v, int i1, int i2) {
 bool StandardStream::Fail() { return mRdr && mRdr->Fail(); }
 
 bool StandardStream::IsReady() const {
-    if (mState - 2 <= 3U) {
-        if ((1 << mState) & 0xB)
-            return true;
-    }
-    return false;
+    return mState == kReady || mState == kPlaying || mState == kStopped;
 }
 
 bool StandardStream::IsFinished() const { return mState == kFinished; }
@@ -510,8 +506,8 @@ int StandardStream::MsToSamp(float ms) {
 
 float StandardStream::SampToMs(int samps) {
     MILO_ASSERT(mSampleRate, 0x412);
-    float rate = mSampleRate;
-    return (float)samps / (rate * 1000.0f);
+    float ms = (float)samps / (float)mSampleRate;
+    return ms * 1000.0f;
 }
 
 void StandardStream::UpdateVolumes() {

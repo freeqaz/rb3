@@ -13,6 +13,7 @@
 #include "os/ContentMgr.h"
 #include "os/Debug.h"
 #include "os/JoypadMsgs.h"
+#include "ui/UIList.h"
 #include "ui/UIPanel.h"
 #include "utl/Messages2.h"
 #include "utl/Symbols.h"
@@ -121,4 +122,23 @@ BEGIN_HANDLERS(SongSelectPanel)
             (Leaderboard::Mode)_msg->Int(5)
         )
     )
+    HANDLE_ACTION(set_to_starting_lb_ix, {
+        MILO_ASSERT(mLeaderboard, 0xB6);
+        _msg->Obj<UIList>(2)->SetSelected(mLeaderboard->GetStartingRow(), -1);
+    })
+    HANDLE_ACTION(set_leaderboard_mode, {
+        MILO_ASSERT(mLeaderboard, 0xB8);
+        mLeaderboard->SetMode((Leaderboard::Mode)_msg->Int(2), true);
+    })
+    HANDLE_ACTION_IF(
+        select_lb_row, mLeaderboard,
+        mLeaderboard->OnSelectRow(_msg->Int(2), _msg->Obj<BandUser>(3))
+    )
+    HANDLE_ACTION(restart_leaderboard_timer, RestartLeaderboardTimer())
+    HANDLE_ACTION(cancel_leaderboard_timer, CancelLeaderboardTimer())
+    HANDLE_EXPR(scroll_lb_up, mLeaderboard && mLeaderboard->EnumerateLowerRankRange())
+    HANDLE_EXPR(scroll_lb_down, mLeaderboard && mLeaderboard->EnumerateHigherRankRange())
+    HANDLE_MESSAGE(ButtonDownMsg)
+    HANDLE_SUPERCLASS(HeldButtonPanel)
+    HANDLE_CHECK(0xC5)
 END_HANDLERS

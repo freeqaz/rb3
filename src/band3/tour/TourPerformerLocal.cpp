@@ -1,15 +1,18 @@
 #include "tour/TourPerformerLocal.h"
 #include "game/BandUserMgr.h"
+#include "math/Rand.h"
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/ModifierMgr.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
+#include "tour/Quest.h"
 #include "tour/QuestManager.h"
 #include "tour/Tour.h"
 #include "tour/TourPerformer.h"
 #include "tour/TourProgress.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
+#include <vector>
 
 TourPerformerLocal::TourPerformerLocal(BandUserMgr &mgr) : TourPerformerImpl(mgr) {}
 
@@ -88,9 +91,36 @@ void TourPerformerLocal::CompleteQuest() {
     MakeDirty();
 }
 
-void TourPerformerLocal::ChooseRandomQuestForGroupAndTier(Symbol, int) {
+Symbol TourPerformerLocal::ChooseRandomQuestForGroupAndTier(Symbol group, int tier) {
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 166);
+    std::vector<Symbol> availableQuests;
+    float totalWeight = 0.0f;
+    for (std::map<Symbol, Quest *>::iterator it = TheQuestMgr.mMapQuests.begin();
+         it != TheQuestMgr.mMapQuests.end();
+         ++it) {
+        if (TheQuestMgr.IsQuestAvailable(*pProgress, it->first, group, tier)) {
+            Quest *pQuest = TheQuestMgr.GetQuest(it->first);
+            MILO_ASSERT(pQuest, 183);
+            totalWeight += pQuest->GetWeight();
+            availableQuests.push_back(it->first);
+        }
+    }
+    float roll = RandomFloat(0.0f, totalWeight);
+    float cumWeight = 0.0f;
+    for (std::vector<Symbol>::iterator it = availableQuests.begin();
+         it != availableQuests.end();
+         ++it) {
+        Symbol chosen = *it;
+        Quest *pQuest = TheQuestMgr.GetQuest(*it);
+        MILO_ASSERT(pQuest, 204);
+        cumWeight += pQuest->GetWeight();
+        if (roll < cumWeight) {
+            return chosen;
+        }
+    }
+    MILO_ASSERT(false, 216);
+    return Symbol("");
 }
 
 void TourPerformerLocal::

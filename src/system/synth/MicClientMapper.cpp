@@ -6,7 +6,9 @@ MicClientID sNullMicClientID(-1, -1);
 
 MicClientMapper::MicClientMapper() : mMicManager(0), mNumPlayers(2) {
     for (int i = 0; i < 4; i++) {
-        // push back MicMappingData
+        MicMappingData data;
+        data.unk0 = i;
+        mMappingData.push_back(data);
     }
     for (int i = 0; i < mNumPlayers; i++) {
         PlayerMappingData data;

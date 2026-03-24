@@ -1,14 +1,15 @@
 #include "beatmatch/GameGemList.h"
 #include <algorithm>
 
+bool GameGemTickCmp(const GameGem &gem, int tick);
+
 GameGemList::GameGemList(int thresh) : mHopoThreshold(thresh) {}
 
 void GameGemList::Clear() { mGems.clear(); }
 
 void GameGemList::CopyFrom(const GameGemList *gList) {
     mGems.clear();
-    // mGems.reserve(gList->mGems.size()); // causes an error
-    // mGems.insert(mGems.begin(), gList->mGems.begin(), gList->mGems.end())
+    mGems.insert(mGems.begin(), gList->mGems.begin(), gList->mGems.end());
 }
 
 bool GameGemList::AddMultiGem(const MultiGemInfo &info) {
@@ -21,8 +22,35 @@ bool GameGemList::AddRGGem(const RGGemInfo &info) {
 
 int GameGemList::ClosestMarkerIdx(float f) const {
     float theFloat = f;
-    // GameGem* theGem = std::lower_bound(mGems.begin(), mGems.end(), theFloat,
-    // GameGemCmp, 0);
+    const GameGem *theGem = std::lower_bound(mGems.begin(), mGems.end(), theFloat, GameGemCmp);
+    if (theGem == mGems.begin())
+        return 0;
+    if (theGem == mGems.end())
+        return mGems.size() - 1;
+    MILO_ASSERT(theFloat <= theGem->mMs, 0x83);
+    MILO_ASSERT(theFloat >= (theGem - 1)->mMs, 0x84);
+    if (fabsf(theFloat - (theGem - 1)->mMs) < fabsf(theFloat - theGem->mMs))
+        theGem--;
+    return theGem - mGems.begin();
+}
+
+int GameGemList::ClosestMarkerIdxAtOrAfter(float f) const {
+    const GameGem *theGem = std::lower_bound(mGems.begin(), mGems.end(), f, GameGemCmp);
+    if (theGem == mGems.begin())
+        return 0;
+    if (theGem == mGems.end())
+        return -1;
+    return theGem - mGems.begin();
+}
+
+int GameGemList::ClosestMarkerIdxAtOrAfterTick(int tick) const {
+    const GameGem *theGem =
+        std::lower_bound(mGems.begin(), mGems.end(), tick, GameGemTickCmp);
+    if (theGem == mGems.begin())
+        return 0;
+    if (theGem == mGems.end())
+        return -1;
+    return theGem - mGems.begin();
 }
 
 bool GameGemCmp(const GameGem &gem, float ms) { return gem.mMs < ms; }

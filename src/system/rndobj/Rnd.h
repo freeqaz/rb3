@@ -32,6 +32,15 @@ public:
         virtual void TextureCompressed(int) = 0;
     };
 
+    struct CompressTexDesc {
+        CompressTexDesc(RndTex *tex, int a, CompressTextureCallback *cb)
+            : mTex(nullptr, tex), mAlpha(a), mCallback(cb) {}
+        ~CompressTexDesc();
+        ObjPtr<RndTex> mTex; // 0x0: vtable(4) + mOwner(4) + mPtr(4) = 12 bytes
+        int mAlpha; // 0xc
+        CompressTextureCallback *mCallback; // 0x10
+    };
+
     struct PointTest {
         int unk_0x0, unk_0x4, unk_0x8;
         RndFlare *unk_0xC;
@@ -76,7 +85,7 @@ public:
     virtual void EndDrawing();
     virtual void MakeDrawTarget() {}
     virtual void SetSync(int i) { mSync = i; }
-    virtual int GetFrameID() const;
+    virtual int GetFrameID() const { return mFrameID; }
     virtual int GetCurrentFrameTex(bool) { return 0; } // fix return type
     virtual void ReleaseOwnership() {}
     virtual void AcquireOwnership() {}
@@ -84,6 +93,7 @@ public:
     virtual void SetGSTiming(bool enabled) { mGsTiming = enabled; }
     virtual void CaptureNextGpuFrame() {}
     virtual void RemovePointTest(RndFlare *);
+    virtual void TestPoint(const Vector3 &, RndFlare *);
     virtual bool HasDeviceReset() const { return 0; }
     virtual void SetAspect(Aspect a) { mAspect = a; }
     virtual float YRatio();
@@ -221,8 +231,8 @@ public:
     bool unkee; // 0xee
     bool unkef; // 0xef
     bool unkf0; // 0xf0
-    int unkf4; // 0xf4 - funcptr
-    int unkf8; // 0xf8
+    void (*unkf4)(); // 0xf4 - funcptr
+    void (*unkf8)(); // 0xf8 - funcptr (DrawPreClear callback)
     std::list<PointTest> mPointTests; // 0xfc
     std::list<PostProcessor *> mPostProcessors; // 0x104
     PostProcessor *mPostProcOverride; // 0x10c
@@ -233,7 +243,7 @@ public:
     ProcCounter mProcCounter; // 0x134
     ProcessCmd mProcCmds; // 0x14c
     ProcessCmd mLastProcCmds; // 0x150
-    std::list<CompressTextureCallback *> unk154; // 0x154
+    std::list<CompressTexDesc *> unk154; // 0x154
     int mForceCharLod; // 0x15c
 };
 

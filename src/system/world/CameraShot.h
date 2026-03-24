@@ -36,11 +36,7 @@ public:
     void Interp(const CamShotFrame &, float, float, RndCam *);
     bool SameTargets(const CamShotFrame &) const;
     void BuildTransform(RndCam *, Transform &, bool) const;
-    const Vector2 &MaxAngularOffset() const {
-        return Vector2(
-            mMaxAngularOffset[0] * 0.012319971f, mMaxAngularOffset[1] * 0.012319971f
-        );
-    }
+    Vector2 MaxAngularOffset() const;
 
     float BlurDepth() const { return mBlurDepth * 0.0039215689f; }
     float MaxBlur() const { return mMaxBlur * 0.0039215689f; }

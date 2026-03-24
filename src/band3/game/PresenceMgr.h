@@ -18,7 +18,7 @@ public:
 
     DataArray *unk1c;
     DataArray *unk20;
-    int unk24;
+    DataArray *unk24;
     Symbol unk28;
     std::vector<Symbol> unk2c;
     int unk34;

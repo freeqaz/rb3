@@ -509,9 +509,9 @@ void BandCamShot::Store() {
 void BandCamShot::View() {
     bool b;
     FOREACH (it, mTargets) {
+        Target &cur = *it;
         RndTransformable *t;
         b = false;
-        Target &cur = *it;
         if (!(*it).mTarget.Null()) {
             t = GetTargetCache(cur.mTarget)->unk4;
             if (t)
@@ -554,9 +554,9 @@ void BandCamShot::FreezeChar(Character *c, bool b) { c->mFrozen = b; }
 void BandCamShot::Freeze() {
     bool b;
     FOREACH (it, mTargets) {
+        Target &cur = *it;
         Character *charObj;
         b = false;
-        Target &cur = *it;
         if (!(*it).mTarget.Null()) {
             charObj = dynamic_cast<Character *>(GetTargetCache(cur.mTarget)->unk4);
             if (charObj)

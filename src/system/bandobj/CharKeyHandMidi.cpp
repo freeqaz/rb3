@@ -2,7 +2,16 @@
 #include "utl/Symbols.h"
 
 CharKeyHandMidi::CharKeyHandMidi()
-    : mIKObject(this, 0), mFirstSpot(this, 0), mSecondSpot(this, 0), unk7c(this, 0) {}
+    : mIKObject(this, 0), mFirstSpot(this, 0), mSecondSpot(this, 0),
+      unk64(0), unk68(5), unk74(5), unk78(true), unk7c(this, 0), unk88(0.0f), mIsRightHand(true) {
+    unk6c.resize(5);
+    for (int i = 0; i < 5; i++) {
+        unk6c[i] = 0;
+    }
+    unk4c.resize(26);
+    unk54.resize(26);
+    Enter();
+}
 
 CharKeyHandMidi::~CharKeyHandMidi() {}
 

@@ -336,11 +336,6 @@ void Spotlight::ListDrawChildren(std::list<RndDrawable *> &draws) {
 }
 
 RndDrawable *Spotlight::CollideShowing(const Segment &s, float &f, Plane &pl) {
-    Hmx::Matrix3 m50;
-    m50.Identity();
-    Hmx::Matrix3 m74(
-        Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, -1.0f, 0.0f)
-    );
     if (mLightCanMesh) {
         mLightCanMesh->SetWorldXfm(mLightCanXfm);
         bool oldshowing = mLightCanMesh->Showing();
@@ -354,11 +349,6 @@ RndDrawable *Spotlight::CollideShowing(const Segment &s, float &f, Plane &pl) {
 }
 
 int Spotlight::CollidePlane(const Plane &pl) {
-    Hmx::Matrix3 m40;
-    m40.Identity();
-    Hmx::Matrix3 m64(
-        Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), Vector3(0.0f, -1.0f, 0.0f)
-    );
     if (mLightCanMesh) {
         mLightCanMesh->SetWorldXfm(mLightCanXfm);
         bool oldshowing = mLightCanMesh->Showing();
@@ -566,7 +556,9 @@ void Spotlight::UpdateTransforms() {
 
 void Spotlight::CheckFloorSpotTransform() {
     if (DoFloorSpot()) {
-        if (GetFloorSpotTarget()->WorldXfm().v.z != unk22c) {
+        float vz = GetFloorSpotTarget()->WorldXfm().v.z;
+        float uz = unk22c;
+        if (vz != uz) {
             UpdateFloorSpotTransform(WorldXfm());
         }
     }

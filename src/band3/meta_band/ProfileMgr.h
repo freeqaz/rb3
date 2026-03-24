@@ -153,6 +153,7 @@ public:
     void HandleProfileLoadComplete();
     void HandleProfileSaveComplete();
     void FakeProfileFill();
+    void SetUploadFriendsToken(int);
 
     bool GetBassBoost() const { return mBassBoost; }
     bool GetDolby() const { return mDolby; }

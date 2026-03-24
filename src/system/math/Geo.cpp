@@ -114,18 +114,33 @@ void Intersect(const Hmx::Ray &r1, const Hmx::Ray &r2, Vector2 &out) {
 }
 
 void Intersect(const Transform &trans, const Plane &plane, Hmx::Ray &ray) {
-    Vector3 on = plane.On();
-    Vector3 point;
-    MultiplyTranspose(on, trans, point);
-    float dotX = trans.m.x.x * plane.a + trans.m.x.y * plane.b + trans.m.x.z * plane.c;
-    float dotY = trans.m.y.x * plane.a + trans.m.y.y * plane.b + trans.m.y.z * plane.c;
-    float dotZ = trans.m.z.x * plane.a + trans.m.z.y * plane.b + trans.m.z.z * plane.c;
+    float pa = plane.a;
+    float pd = plane.d;
+    float pb = plane.b;
+    float pc = plane.c;
+    float mzy = trans.m.z.y;
+    float scalar = -pd / (pa * pa + pb * pb + pc * pc);
+    float onX = pa * scalar;
+    float onY = pb * scalar;
+    float onZ = pc * scalar;
+    float tvy = trans.v.y;
+    float tvx = trans.v.x;
+    float tvz = trans.v.z;
+    float tmpX = onX - tvx;
+    float tmpY = onY - tvy;
+    float tmpZ = onZ - tvz;
+    float dotY = trans.m.y.x * pa + trans.m.y.y * pb + trans.m.y.z * pc;
+    float dotX = trans.m.x.x * pa + trans.m.x.y * pb + trans.m.x.z * pc;
+    float dotZ = trans.m.z.x * pa + mzy * pb + trans.m.z.z * pc;
+    float pointY = trans.m.y.x * tmpX + trans.m.y.y * tmpY + trans.m.y.z * tmpZ;
+    float pointX = trans.m.x.x * tmpX + trans.m.x.y * tmpY + trans.m.x.z * tmpZ;
+    float pointZ = trans.m.z.x * tmpX + mzy * tmpY + trans.m.z.z * tmpZ;
     ray.dir.Set(dotX, dotY);
     if (fabsf(dotX) > fabsf(dotY)) {
-        ray.base.Set(point.y, point.x + (dotZ / dotX) * point.z);
+        ray.base.Set(pointY, (dotZ * pointZ) / dotX + pointX);
     }
     else {
-        ray.base.Set(point.y + (dotZ / dotY) * point.z, point.x);
+        ray.base.Set((dotZ * pointZ) / dotY + pointY, pointX);
     }
 }
 
@@ -134,45 +149,42 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
     float segDirY = seg.end.y - seg.start.y;
     float segDirZ = seg.end.z - seg.start.z;
 
-    const Vector3 &triFrameZ = tri.frame.z;
-    float segDirDot = triFrameZ.x * segDirX + triFrameZ.y * segDirY + triFrameZ.z * segDirZ;
+    float segDirDot = tri.frame.z.x * segDirX + tri.frame.z.y * segDirY + tri.frame.z.z * segDirZ;
 
-    if (fabs(segDirDot) < 0.0001f || (b && segDirDot > 0.0f)) {
+    if (fabsf(segDirDot) < 0.0001f || (b && segDirDot > 0.0f)) {
         return false;
     }
 
-    float vec3AX = seg.start.x - tri.origin.x;
-    float vec3AY = seg.start.y - tri.origin.y;
-    float vec3AZ = seg.start.z - tri.origin.z;
-
-    float tempDot = triFrameZ.x * vec3AX + triFrameZ.y * vec3AY + triFrameZ.z * vec3AZ;
-    float t = -(tempDot / segDirDot);
+    float tempDot = tri.frame.z.x * (seg.start.x - tri.origin.x)
+                  + tri.frame.z.y * (seg.start.y - tri.origin.y)
+                  + tri.frame.z.z * (seg.start.z - tri.origin.z);
+    float t = -tempDot / segDirDot;
     out = t;
 
     if (t < 0.0f || t > 1.0f) {
         return false;
     }
 
-    float vec3BX = (seg.start.x + segDirX * t) - tri.origin.x;
-    float vec3BY = (seg.start.y + segDirY * t) - tri.origin.y;
-    float vec3BZ = (seg.start.z + segDirZ * t) - tri.origin.z;
+    float mulX = segDirX * t;
+    float mulY = segDirY * t;
+    float mulZ = segDirZ * t;
+    float vec3BX = seg.start.x + mulX - tri.origin.x;
+    float vec3BY = seg.start.y + mulY - tri.origin.y;
+    float vec3BZ = seg.start.z + mulZ - tri.origin.z;
 
-    const Vector3 &triFrameX = tri.frame.x;
-    const Vector3 &triFrameY = tri.frame.y;
+    float dotX3B = tri.frame.x.x * vec3BX + tri.frame.x.y * vec3BY + tri.frame.x.z * vec3BZ;
+    float dotY3B = tri.frame.y.x * vec3BX + tri.frame.y.y * vec3BY + tri.frame.y.z * vec3BZ;
+    float dotXX = tri.frame.x.x * tri.frame.x.x + tri.frame.x.y * tri.frame.x.y + tri.frame.x.z * tri.frame.x.z;
+    float dotYY = tri.frame.y.x * tri.frame.y.x + tri.frame.y.y * tri.frame.y.y + tri.frame.y.z * tri.frame.y.z;
+    float dotXY = tri.frame.x.x * tri.frame.y.x + tri.frame.x.y * tri.frame.y.y + tri.frame.x.z * tri.frame.y.z;
 
-    float dotXX = triFrameX.x * triFrameX.x + triFrameX.y * triFrameX.y + triFrameX.z * triFrameX.z;
-    float dotYY = triFrameY.x * triFrameY.x + triFrameY.y * triFrameY.y + triFrameY.z * triFrameY.z;
-    float dotXY = triFrameX.x * triFrameY.x + triFrameX.y * triFrameY.y + triFrameX.z * triFrameY.z;
-    float dotX3B = triFrameX.x * vec3BX + triFrameX.y * vec3BY + triFrameX.z * vec3BZ;
-    float dotY3B = triFrameY.x * vec3BX + triFrameY.y * vec3BY + triFrameY.z * vec3BZ;
-
-    float inv = 1.0f / (dotXY * dotXY - dotYY * dotXX);
-    float k = (dotY3B * dotXY - dotX3B * dotYY) * inv;
-    if (k < 0.0f || k > 1.0f) {
+    float denom = dotXY * dotXY - dotYY * dotXX;
+    float k = (dotY3B * dotXY - dotX3B * dotYY) / denom;
+    if (k < 0.0 || k > 1.0) {
         return false;
     }
-    float j = (dotX3B * dotXY - dotY3B * dotXX) * inv;
-    if (j < 0.0f || k + j > 1.0f) {
+    float j = (dotX3B * dotXY - dotY3B * dotXX) / denom;
+    if (j < 0.0 || k + j > 1.0) {
         return false;
     }
     return true;

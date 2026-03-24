@@ -5,6 +5,11 @@
 
 class UIListStateCallback;
 
+struct ScrollState {
+    int mFirstShowing;
+    int mSelectedDisplay;
+};
+
 class UIListState { // 0x48
 public:
     UIListState(class UIListProvider *, UIListStateCallback *);
@@ -40,6 +45,8 @@ public:
     void SetSelectedSimulateScroll(int);
     void SetProvider(UIListProvider *, RndDir *);
     void Scroll(int, bool);
+    bool BuildScroll(int, int, int, ScrollState &) const;
+    int State2Data(const ScrollState &) const;
     int SnappedDataForDisplay(int) const;
     void Poll(float);
     int SelectedNoWrap() const;

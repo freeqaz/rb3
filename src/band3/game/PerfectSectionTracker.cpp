@@ -1,5 +1,6 @@
 #include "game/PerfectSectionTracker.h"
 #include "beatmatch/TrackType.h"
+#include "game/Game.h"
 #include "game/TrackerSource.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
@@ -61,7 +62,65 @@ void PerfectSectionTracker::FirstFrame_(float) {
     }
 }
 
-void PerfectSectionTracker::Poll_(float) {}
+void PerfectSectionTracker::Poll_(float f) {
+    if (mTargets.front() != 0.0f) {
+        if (mSource->IsFinished()) {
+            if (!unke4) {
+                if (unkc0) {
+                    HandleExitExtent(f, unkc4, false);
+                }
+                unke4 = true;
+            }
+            CheckForCompletedSections();
+            return;
+        }
+        if (TheGame->unkdc == -1.0f) {
+            if (unkc4 >= unk104.GetSectionCount()) {
+                return;
+            }
+            int tick = (int)MsToTick(f);
+            bool inSection = unk104.TickInSection(tick, unkc4);
+            bool wasInSection = unk104.TickInSection(unkc8, unkc4);
+            bool enteredExtent = !wasInSection && inSection;
+            bool exitedExtent = wasInSection && !inSection;
+            MILO_ASSERT(!(enteredExtent && exitedExtent), 0xAC);
+            bool skipSection = false;
+            if (exitedExtent) {
+                int nextSection = unkc4 + 1;
+                if (nextSection < unk104.GetSectionCount()
+                    && unk104.TickInSection(tick, nextSection)) {
+                    skipSection = true;
+                }
+            }
+            ReachedAnyTarget();
+            if (-1.0f == unkb4) {
+                unkb4 = 0.0f;
+            }
+            float bc = unkbc;
+            if (bc > 0.0f && f >= bc) {
+                HandleEnterExtent(f, unkc4, true);
+                unkbc = 0.0f;
+                unkc0 = true;
+            } else if (enteredExtent) {
+                HandleEnterExtent(f, unkc4, false);
+                unkc0 = true;
+            } else if (exitedExtent) {
+                HandleExitExtent(f, unkc4, skipSection);
+                unkc0 = (bool)skipSection;
+                if (skipSection) {
+                    unkbc = f;
+                }
+            } else if (inSection && 0.0f == bc) {
+                HandleInExtent(f, unkc4);
+            }
+            if (exitedExtent) {
+                unkc4++;
+            }
+            CheckForCompletedSections();
+            unkc8 = tick;
+        }
+    }
+}
 
 void PerfectSectionTracker::RemoteSectionComplete(
     Player *p, int iExtentIndex, int flags, int i

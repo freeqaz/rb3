@@ -548,9 +548,9 @@ bool BandDirector::ReadyForMidiParsers() {
         msg[1] = NULL_OBJ;
         OnFileLoaded(msg);
     }
-    if (mPropAnim && (mVenue.Dir() || mVenue.Name() == "none"))
-        return TheBandWardrobe->AllCharsLoaded();
-    return false;
+    bool cond = mPropAnim && (mVenue.Dir() || mVenue.Name() == "none");
+    if (cond) cond = TheBandWardrobe->AllCharsLoaded();
+    return cond;
 }
 
 void BandDirector::SendMessage(Symbol s1, Symbol s2) {

@@ -13,6 +13,7 @@ public:
     SyncGameStartPanel();
     OBJ_CLASSNAME(SyncGameStartPanel);
     OBJ_SET_TYPE(SyncGameStartPanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~SyncGameStartPanel();
     virtual void Load();

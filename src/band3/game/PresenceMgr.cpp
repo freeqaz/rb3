@@ -93,7 +93,7 @@ Symbol PresenceMgr::GetPresenceMode() {
                     } else if (s54 == gamemode) {
                         bool inMode = false;
                         int jSize = jArr->Size();
-                        for (int k = 1; k < jSize; j++) {
+                        for (int k = 1; k < jSize; k++) {
                             if (TheGameMode->InMode(jArr->Sym(k))) {
                                 inMode = true;
                                 break;
@@ -110,6 +110,8 @@ Symbol PresenceMgr::GetPresenceMode() {
                 }
                 if (b2)
                     return s50;
+                if (unk39)
+                    break;
             }
         }
         return gNullStr;
@@ -124,10 +126,60 @@ int PresenceMgr::GetPresenceContextFromMode(Symbol s, bool b) {
     }
 }
 
-int PresenceMgr::GetPlayModeContextFromUser(const LocalBandUser *, bool) {
-    Symbol("force_use_cymbals");
-    Symbol("force_dont_use_cymbals");
-    MILO_WARN("default");
+int PresenceMgr::GetPlayModeContextFromUser(const LocalBandUser *pUser, bool bLearn) {
+    if (!unk1c)
+        return -1;
+    if (unk39)
+        return unk3c;
+    bool is_pro = false;
+    Symbol trackSym;
+    TrackType tt = pUser->GetTrackType();
+    switch (tt) {
+    case kTrackDrum: {
+        trackSym = drums;
+        is_pro = (pUser->GetPreferredScoreType() == kScoreRealDrum);
+        Symbol forceCym("force_use_cymbals");
+        if (TheGameMode->Property(forceCym, true)->Int(nullptr) != 0) {
+            is_pro = true;
+        } else {
+            Symbol forceNoCym("force_dont_use_cymbals");
+            if (TheGameMode->Property(forceNoCym, true)->Int(nullptr) != 0) {
+                is_pro = false;
+            }
+        }
+        break;
+    }
+    case kTrackGuitar:
+    case kTrackRealGuitar:
+    case kTrackRealGuitar22Fret:
+        trackSym = guitar;
+        is_pro = (tt == kTrackRealGuitar || tt == kTrackRealGuitar22Fret);
+        break;
+    case kTrackBass:
+    case kTrackRealBass:
+    case kTrackRealBass22Fret:
+        trackSym = bass;
+        is_pro = (tt == kTrackRealBass || tt == kTrackRealBass22Fret);
+        break;
+    case kTrackVocals:
+        trackSym = vocals;
+        is_pro = false;
+        break;
+    case kTrackKeys:
+    case kTrackRealKeys:
+        trackSym = keys;
+        is_pro = (tt == kTrackRealKeys);
+        break;
+    default:
+        break;
+    }
+    if (trackSym.Null()) {
+        static Symbol symDefault("default");
+        return unk24->FindArray(symDefault, true)->Int(1);
+    }
+    DataArray *trackArr = unk24->FindArray(trackSym, true);
+    Symbol modeSym = is_pro ? (bLearn ? learn_pro : play_pro) : (bLearn ? learn : play);
+    return trackArr->FindArray(modeSym, true)->Int(1);
 }
 
 DataNode PresenceMgr::OnPresenceChange(DataArray *a) {

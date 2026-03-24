@@ -1,5 +1,6 @@
 #include "os/Joypad.h"
 #include "os/Debug.h"
+#include "os/JoypadMsgs.h"
 #include "os/User.h"
 #include "utl/Symbols.h"
 #include "math/Utl.h"
@@ -307,29 +308,102 @@ unsigned int JoypadPollForButton(int pad) {
     }
 }
 
+inline void JoypadSendMsg(const Message &msg) {
+    if (gExportMsgs) {
+        gJoypadMsgSource->Handle(msg, false);
+    }
+}
+
 void SendButtonMessages(int pad, unsigned int btns) {
     JoypadData *theData = &gJoypadData[pad];
-    LocalUser *theUser = gJoypadData[pad].mUser;
+    LocalUser *theUser = theData->mUser;
+    unsigned int newPressed;
+    unsigned int newReleased;
     bool b1 = false;
-    gJoypadData[pad].SetButtons(btns);
-    if (gJoypadData[pad].mIsDrum) {
-        if (gJoypadData[pad].mGreenCymbalMask
-            == (gJoypadData[pad].mGreenCymbalMask & btns)) {
-            gJoypadData[pad].mHasGreenCymbal = true;
+    {
+        unsigned int changed = theData->mButtons ^ btns;
+        newPressed = changed & btns;
+        theData->mNewPressed = newPressed;
+        newReleased = changed & ~btns;
+        theData->mNewReleased = theData->mButtons & changed;
+        theData->mButtons = btns;
+    }
+    if (theData->mIsDrum) {
+        if (theData->mGreenCymbalMask == (theData->mGreenCymbalMask & btns)) {
+            theData->mHasGreenCymbal = true;
         }
-        if (gJoypadData[pad].mYellowCymbalMask
-            == (gJoypadData[pad].mYellowCymbalMask & btns)) {
-            gJoypadData[pad].mHasYellowCymbal = true;
+        if (theData->mYellowCymbalMask == (theData->mYellowCymbalMask & btns)) {
+            theData->mHasYellowCymbal = true;
         }
-        if (gJoypadData[pad].mBlueCymbalMask
-            == (gJoypadData[pad].mBlueCymbalMask & btns)) {
-            gJoypadData[pad].mHasBlueCymbal = true;
+        if (theData->mBlueCymbalMask == (theData->mBlueCymbalMask & btns)) {
+            theData->mHasBlueCymbal = true;
         }
-        if (gJoypadData[pad].mSecondaryPedalMask & btns) {
-            gJoypadData[pad].mSecondaryPedalMask = true;
+        if (theData->mSecondaryPedalMask & btns) {
+            theData->mHasSecondaryPedal = true;
         }
-        if (gJoypadData[pad].mCymbalMask == (gJoypadData[pad].mCymbalMask & btns)) {
+        if (theData->mCymbalMask == (theData->mCymbalMask & btns)) {
             b1 = true;
+        }
+    }
+
+    // Velocity-sorted list of newly-pressed buttons that have non-zero buckets
+    // Each entry: {button index, velocity bucket}
+    struct VelEntry { int btn; int bucket; };
+    VelEntry velList[4];
+    velList[0].btn = kPad_NumButtons; velList[0].bucket = 0;
+    velList[1].btn = kPad_NumButtons; velList[1].bucket = 0;
+    velList[2].btn = kPad_NumButtons; velList[2].bucket = 0;
+    velList[3].btn = kPad_NumButtons; velList[3].bucket = 0;
+
+    for (int i = 0; i < kPad_NumButtons; i++) {
+        unsigned int bit = 1 << i;
+        if (newReleased & bit) {
+            // Button up
+            if ((b1 == false) || (i != kPad_DUp && i != kPad_DDown)) {
+                Symbol sym = theData->mControllerType;
+                ButtonUpMsg msg(theUser, (JoypadButton)i, ButtonToAction((JoypadButton)i, sym), pad);
+                JoypadSendMsg(msg);
+            }
+        } else if (newPressed & bit) {
+            // Button down
+            if ((b1 == false) || (i != kPad_DUp && i != kPad_DDown)) {
+                int velBucket = ButtonToVelocityBucket(theData, (JoypadButton)i);
+                if (velBucket == 0) {
+                    Symbol sym = theData->mControllerType;
+                    ButtonDownMsg msg(theUser, (JoypadButton)i, ButtonToAction((JoypadButton)i, sym), pad);
+                    JoypadSendMsg(msg);
+                } else {
+                    // Insert into sorted velocity list (highest bucket = highest priority)
+                    int insertPos = 0;
+                    for (int j = 0; j < 4; j++) {
+                        if (velBucket > velList[j].bucket) {
+                            // Shift entries down to make room
+                            if (insertPos < 3) {
+                                for (int k = 3; k > insertPos; k--) {
+                                    velList[k] = velList[k - 1];
+                                }
+                            }
+                            velList[insertPos].btn = i;
+                            velList[insertPos].bucket = velBucket;
+                            break;
+                        } else {
+                            insertPos++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Send button down messages for velocity-bucketed buttons (highest first)
+    for (int i = 0; i < 4; i++) {
+        if (velList[i].bucket != 0) {
+            int btn = velList[i].btn;
+            Symbol sym = theData->mControllerType;
+            ButtonDownMsg msg(theUser, (JoypadButton)btn, ButtonToAction((JoypadButton)btn, sym), pad);
+            JoypadSendMsg(msg);
+        } else {
+            break;
         }
     }
 }
@@ -379,12 +453,6 @@ extern "C" void TranslateSticksToButs(JoypadData &data, unsigned int &mask) {
             mask |= 1 << (btn_index + kPad_LStickUp);
         }
         btn_index += 4;
-    }
-}
-
-inline void JoypadSendMsg(const Message &msg) {
-    if (gExportMsgs) {
-        gJoypadMsgSource->Handle(msg, false);
     }
 }
 

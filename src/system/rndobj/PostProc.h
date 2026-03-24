@@ -82,6 +82,8 @@ public:
     bool DoRefraction() const;
     bool DoVignette() const;
     bool HallOfTime() const;
+    bool DoMotionBlur() const;
+    bool ColorXfmEnabled() const;
     void UpdateTimeDelta();
     void UpdateColorModulation();
     void UpdateBlendPrevious();
@@ -96,6 +98,7 @@ public:
     static RndPostProc *Current();
     static DOFOverrideParams sDOFOverride;
     static DOFOverrideParams &DOFOverrides() { return sDOFOverride; }
+    static float sMotionBlurBlendAmount;
 
     NEW_OVERLOAD
     DELETE_OVERLOAD

@@ -14,10 +14,7 @@ public:
         virtual ~BmpCache();
 
         void DeleteCache();
-        void GetLoadedRange(uint &ui1, uint &ui2) const {
-            ui1 = mCurrLoadedIndex * mRowsPerCacheLine;
-            ui2 = ui1 + mRowsPerCacheLine - 1;
-        }
+        void GetLoadedRange(uint &ui1, uint &ui2) const;
         void LoadCache(uint);
         void FlushCache();
         void GetPixelColor(int, int, unsigned char &, unsigned char &, unsigned char &, unsigned char &) const;

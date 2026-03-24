@@ -36,14 +36,14 @@ float ComputeSpotBlend(int i, float f) {
 }
 
 LightPreset::KeyframeCmd SymToPstKeyframe(Symbol s) {
+    LightPreset::KeyframeCmd cmd = LightPreset::kPresetKeyframeNum;
     if (s == next)
-        return LightPreset::kPresetKeyframeNext;
+        cmd = LightPreset::kPresetKeyframeNext;
     else if (s == prev)
-        return LightPreset::kPresetKeyframePrev;
+        cmd = LightPreset::kPresetKeyframePrev;
     else if (s == first)
-        return LightPreset::kPresetKeyframeFirst;
-    else
-        return LightPreset::kPresetKeyframeNum;
+        cmd = LightPreset::kPresetKeyframeFirst;
+    return cmd;
 }
 
 LightPreset::LightPreset()

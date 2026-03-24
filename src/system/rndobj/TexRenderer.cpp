@@ -59,7 +59,15 @@ void RndTexRenderer::DrawShowing() {
         DrawToTexture();
 }
 
-float ComputeAngle(const Vector3 &, const Vector3 &, const Vector3 &);
+float ComputeAngle(const Vector3 &center, const Vector3 &b, const Vector3 &c) {
+    Vector3 v1, v2;
+    Subtract(b, center, v1);
+    Subtract(c, center, v2);
+    Normalize(v1, v1);
+    Normalize(v2, v2);
+    float dot = Dot(v1, v2);
+    return std::acos(Clamp(-1.0f, 1.0f, dot));
+}
 
 #pragma push
 #pragma dont_inline on

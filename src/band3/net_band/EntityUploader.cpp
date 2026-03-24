@@ -2,6 +2,7 @@
 #include "meta_band/BandProfile.h"
 #include "meta_band/SavedSetlist.h"
 #include "net_band/DataResults.h"
+#include "net_band/RockCentral.h"
 #include "net_band/RockCentralMsgs.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
@@ -425,8 +426,43 @@ DataNode EntityUploader::OnRockCentralOpComplete(DataArray *arr) {
     return 0;
 }
 
-int EntityUploader::BeginRockCentralOps(int) {
-    MILO_WARN("Unknown entity upload op %d\n");
+int EntityUploader::BeginRockCentralOps(int maxOps) {
+    int numStarted = 0;
+    for (int i = 0; i < mNumUploadOps; i++) {
+        EntityData *op = mUploadOps[i];
+        if (op->mRetCode == 0) {
+            int opType = op->mOpType;
+            int opID = op->mOpID;
+            if (opType == 1) {
+                TheRockCentral.VerifyBandName(op->mString, op->mDataResultList, this, opID, maxOps);
+                numStarted++;
+            } else if (opType == 0) {
+                TheRockCentral.VerifyCharName(op->mString, op->mDataResultList, this, opID, maxOps);
+                numStarted++;
+            } else if (opType == 2) {
+                TourCharLocal *c = static_cast<TourCharLocal *>(op->mSavableObject);
+                TheRockCentral.UpdateChar(c, op->mDataResultList, this, opID, maxOps);
+                numStarted++;
+            } else if (opType == 3) {
+                TheRockCentral.UpdateBand(
+                    static_cast<TourBand *>(op->mSavableObject),
+                    op->mDataResultList,
+                    this,
+                    opID,
+                    maxOps
+                );
+                numStarted++;
+            } else if (opType == 4) {
+                LocalSavedSetlist *s = static_cast<LocalSavedSetlist *>(op->mSavableObject);
+                TheRockCentral.UpdateSetlist(s, op->mDataResultList, this, opID, maxOps);
+                TheRockCentral.UpdateSetlistArt(s, s->unk68, s, 0x7D1);
+                numStarted++;
+            } else {
+                MILO_WARN("EntityUploader: Unknown call type %d\n", opType);
+            }
+        }
+    }
+    return numStarted;
 }
 
 void EntityUploader::RecordSubmissionTime() { GetDateAndTime(mSubmittedTime); }

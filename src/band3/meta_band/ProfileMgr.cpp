@@ -800,6 +800,14 @@ void ProfileMgr::SetUsingWiiFriends(int i1) {
 
 bool ProfileMgr::GetUsingWiiFriends() { return mUsingWiiFriends; }
 
+void ProfileMgr::SetUploadFriendsToken(int i) {
+    if (i == unk5b8)
+        return;
+    unk5b8 = i;
+    mGlobalOptionsDirty = true;
+    TheSaveLoadMgr->AutoSave();
+}
+
 bool ProfileMgr::GetSecondPedalHiHat() const { return mSecondPedalHiHat; }
 
 void ProfileMgr::SetSecondPedalHiHat(bool b) {

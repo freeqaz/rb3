@@ -4,6 +4,8 @@
 #include "obj/Object.h"
 #include "obj/ObjPtr_p.h"
 #include "obj/ObjVector.h"
+#include "math/Mtx.h"
+#include "rndobj/Trans.h"
 #include "utl/MemMgr.h"
 
 class RndMesh;
@@ -32,7 +34,13 @@ public:
     // size 0x6c
     class BoneDesc {
     public:
-        u8 pad[0x6c];
+        BoneDesc(Hmx::Object *owner) : mBone(owner) {
+            unk14.Reset();
+            unk54.Reset();
+        }
+        ObjPtr<RndTransformable, ObjectDir> mBone; // 0x0
+        Transform unk14; // 0x14
+        Transform unk54; // 0x54
     };
 
     RndMeshDeform();

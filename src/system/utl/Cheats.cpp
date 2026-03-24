@@ -275,6 +275,75 @@ void CheatsManager::AppendLog(char *c) {
     }
 }
 
+bool CheatsManager::OnMsg(const ButtonDownMsg &msg) {
+    User *user = msg.GetUser();
+    if (!user)
+        return 1;
+    LocalUser *localUser = user->GetLocalUser();
+
+    int padNum = localUser->GetPadNum();
+    JoypadData *padData = JoypadGetPadData(padNum);
+    unsigned int buttons = padData->mButtons;
+
+    bool leftShift = (buttons & (1 << kPad_L1)) && (buttons & (1 << kPad_L2));
+    bool rightShift = (buttons & (1 << kPad_R1)) && (buttons & (1 << kPad_R2));
+
+    JoypadButton button = msg.GetButton();
+
+    if ((JoypadGetPadData(localUser->GetPadNum())->mType == kJoypadWiiCore ||
+         JoypadGetPadData(localUser->GetPadNum())->mType == kJoypadWiiFS ||
+         JoypadGetPadData(localUser->GetPadNum())->mType == kJoypadWiiClassic) &&
+        button == kPad_Select) {
+        button = kPad_L1;
+    }
+
+    if (leftShift || rightShift) {
+        std::vector<QuickJoyCheat *> &srcCheats = mJoyCheatPtrsMode[leftShift ? 0 : 1];
+        std::vector<QuickJoyCheat *> cheats(srcCheats);
+        for (QuickJoyCheat **it = cheats.begin(); it != cheats.end(); ++it) {
+            if (button == (*it)->unk0) {
+                CallCheatScript(true, (*it)->unk4, localUser, true);
+            }
+        }
+    }
+
+    mLastButtonTime.Stop();
+    if (mLastButtonTime.Ms() > 2000.0f) {
+        for (std::vector<LongJoyCheat>::iterator it = mLongJoyCheats.begin();
+             it != mLongJoyCheats.end(); ++it) {
+            it->unk8 = 0;
+        }
+    }
+
+    mLastButtonTime.Restart();
+
+    padNum = localUser->GetPadNum();
+    if (JoypadIsShiftButton(padNum, button))
+        return 1;
+
+    for (std::vector<LongJoyCheat>::iterator it = mLongJoyCheats.begin();
+         it != mLongJoyCheats.end(); ++it) {
+        if (it->unk8 < 0 || (unsigned)it->unk8 > it->unk0.size()) {
+            it->unk8 = 0;
+        }
+        if (button == it->unk0[it->unk8]) {
+            it->unk8++;
+            if ((unsigned)it->unk8 >= it->unk0.size()) {
+                CallCheatScript(false, it->unkc, localUser, true);
+                for (std::vector<LongJoyCheat>::iterator jt = mLongJoyCheats.begin();
+                     jt != mLongJoyCheats.end(); ++jt) {
+                    jt->unk8 = 0;
+                }
+                return 1;
+            }
+        } else {
+            it->unk8 = 0;
+        }
+    }
+
+    return 1;
+}
+
 void SetCheatMode(Symbol mode) {}
 
 Symbol GetCheatMode() { return gCheatsManager->mSymMode; }

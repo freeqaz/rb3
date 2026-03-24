@@ -150,13 +150,134 @@ void CharCuff::Deform(SyncMeshCB *cb, FileMerger *fm) {
     }
 }
 
-void CharCuff::DeformMesh(RndMesh *mesh, int, SyncMeshCB *) {
-    MILO_ASSERT(mesh->NumBones(), 0xF5);
-    Vector4_16_01 v;
-    v.GetW();
-    v.GetX();
-    v.GetY();
-    v.GetZ();
+void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
+    float ecc_inv_sq = 1.0f / (mEccentricity * mEccentricity);
+    int called = 0;
+    MILO_ASSERT(mesh->mGeomOwner, 0xAB);
+    RndMesh *geomOwner = mesh->mGeomOwner;
+    Transform xfm;
+    if (TransParent() && TransParent()->Name() != Dir()->Name()) {
+        MILO_ASSERT(mesh->NumBones(), 0xF5);
+        if (!mesh->NumBones()) return;
+        Transform sp50;
+        FastInvert(mesh->BoneTransAt(0)->WorldXfm(), sp50);
+        Multiply(WorldXfm(), sp50, sp50);
+        FastInvert(mesh->BoneOffsetAt(0), xfm);
+        Multiply(sp50, xfm, xfm);
+    } else {
+        xfm = mLocalXfm;
+    }
+    float axisY = xfm.m.z.y;
+    float axisZ = xfm.m.z.z;
+    float planeDist = axisZ * xfm.v.z + (xfm.m.z.x * xfm.v.x + axisY * xfm.v.y);
+    float planef = (float)(-planeDist);
+
+    RndMesh::VertVector &verts = geomOwner->mVerts;
+    int numVerts = verts.size();
+    for (int i = 0; i < numVerts; i++) {
+        RndMesh::Vert &vert = verts[i];
+        const Vector4_16_01 &bw = vert.boneWeights;
+        int m0 = (bw.GetW() > 0.0f) ? (1 << vert.boneIndices[0]) : 0;
+        int m1 = (bw.GetX() > 0.0f) ? (1 << vert.boneIndices[1]) : 0;
+        int m01 = m0 | m1;
+        int m2 = (bw.GetY() > 0.0f) ? (1 << vert.boneIndices[2]) : 0;
+        int m012 = m01 | m2;
+        int m3 = (bw.GetZ() > 0.0f) ? (1 << vert.boneIndices[3]) : 0;
+        if (!((m012 | m3) & boneMask))
+            continue;
+        float axisX = xfm.m.z.x;
+        float axisCoord = planef + ((axisZ * vert.pos.z) + ((axisX * vert.pos.x) + (axisY * vert.pos.y)));
+        if (axisCoord < mShape[2].offset) {
+        float projY = axisY * axisCoord + xfm.v.y;
+        float projX = xfm.m.z.x * axisCoord + xfm.v.x;
+        float dy = vert.pos.y - projY;
+        float projZ = axisZ * axisCoord + xfm.v.z;
+        float dx = vert.pos.x - projX;
+        float dz = vert.pos.z - projZ;
+        float f6 = (dz * xfm.m.x.z) + ((dx * xfm.m.x.x) + (dy * xfm.m.x.y));
+        float f3 = (dz * xfm.m.y.z) + ((dx * xfm.m.y.x) + (dy * xfm.m.y.y));
+        float f6sq = f6 * f6;
+        float f3sq = f3 * f3;
+        float distSq = (dx * dx + dy * dy + dz * dz) * ((f3sq * ecc_inv_sq + f6sq) / (f6sq + f3sq));
+        if (axisCoord < mShape[0].offset) {
+            if (!mOpenEnd) {
+                if (called == 0) {
+                    cb->SyncMesh(mesh, 0xBF);
+                    called = 1;
+                }
+                float t = mShape[0].offset;
+                vert.pos.x = xfm.m.z.x * t + xfm.v.x;
+                vert.pos.y = xfm.m.z.y * t + xfm.v.y;
+                vert.pos.z = xfm.m.z.z * t + xfm.v.z;
+                float scale = mShape[0].radius / std::sqrt(distSq);
+                vert.pos.x += dx * scale;
+                vert.pos.y += dy * scale;
+                vert.pos.z += dz * scale;
+            }
+        } else {
+            float var_f19;
+            if (axisCoord < mShape[1].offset) {
+                float t = (axisCoord - mShape[1].offset) / (mShape[0].offset - mShape[1].offset);
+                var_f19 = (t * (mShape[0].radius - mShape[2].radius)) + mShape[2].radius;
+            } else {
+                float t = (axisCoord - mShape[2].offset) / (mShape[1].offset - mShape[2].offset);
+                var_f19 = (t * (mShape[1].radius - mShape[2].radius)) + mShape[2].radius;
+            }
+            if (var_f19 * var_f19 < distSq) {
+                if (called == 0) {
+                    called = 1;
+                    cb->SyncMesh(mesh, 0xBF);
+                }
+                float scale = var_f19 / std::sqrt(distSq);
+                vert.pos.x = dx * scale + projX;
+                vert.pos.y = dy * scale + projY;
+                vert.pos.z = dz * scale + projZ;
+            }
+        }
+        } // end if (axisCoord < mShape[2].offset)
+    }
+    if (!mOpenEnd) {
+        MILO_ASSERT(mesh->mGeomOwner, 0xAB);
+        RndMesh *go = mesh->mGeomOwner;
+        const float kTolerance = 0.01f;
+        std::vector<RndMesh::Face> &faces = go->mFaces;
+        int faceCount = faces.size() - 1;
+        float faceAxisX = xfm.m.z.x;
+        for (int fi = 0; fi <= faceCount; fi++) {
+            int pass = 0;
+            u16 *faceVerts = &faces[fi].v1;
+            for (int vi = 0; vi < 3; vi++) {
+                RndMesh::Vert &v0 = verts[faceVerts[vi]];
+                int bm32 = (1 << v0.boneIndices[3]) | (1 << v0.boneIndices[2]);
+                int bm01 = (1 << v0.boneIndices[0]) | (1 << v0.boneIndices[1]);
+                int bm = bm32 | bm01;
+                if (!(bm & boneMask)) break;
+                float ac2 = axisY * v0.pos.y;
+                ac2 = faceAxisX * v0.pos.x + ac2;
+                ac2 = axisZ * v0.pos.z + ac2;
+                ac2 = planef + ac2;
+                if (ac2 > kTolerance + mShape[0].offset) break;
+                pass++;
+            }
+            if (pass == 3) {
+                if (called == 0) {
+                    cb->SyncMesh(mesh, 0xBF);
+                    called = 1;
+                }
+                faces[fi] = faces[faceCount];
+                faceCount--;
+                fi--;
+            }
+        }
+        // resize faces
+        RndMesh::Face zero;
+        zero.v1 = 0; zero.v2 = 0; zero.v3 = 0;
+        int newSize = faceCount + 1;
+        if ((unsigned)newSize < faces.size()) {
+            faces.erase(faces.begin() + newSize, faces.end());
+        }
+        faces.insert(faces.end(), newSize - (int)faces.size(), zero);
+    }
 }
 
 SAVE_OBJ(CharCuff, 0x1A2)

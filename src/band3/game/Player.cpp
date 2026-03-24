@@ -615,8 +615,8 @@ void Player::PopupHelp(Symbol s, bool b) {
 
 void Player::AddEnergy(float f) {
     TheGame->OnPlayerAddEnergy(this, f);
-    float set = Min(1.0f, mBandEnergy + f);
-    SetEnergy(set);
+    float energy = mBandEnergy + f;
+    SetEnergy(energy < 1.0f ? energy : 1.0f);
 }
 
 Symbol Player::GetStreakType() const { return mBehavior->mStreakType; }

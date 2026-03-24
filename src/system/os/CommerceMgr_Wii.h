@@ -31,6 +31,8 @@ public:
 
     static unsigned long long MakeDataTitleId(const char *);
 
+    static const char *mOpName[15];
+
     long mCommerceAsyncOpId; // 1c
     LastCommerceOperation mCommerceAsyncName; // 20
     int unk24; // 24
@@ -42,8 +44,13 @@ public:
     unsigned long mAttributesNum; // 88
     unsigned long mTitleIdsNum; // 8c
     unsigned long long *mTitleIds; // 90
+    int unk94[21]; // 94 - padding to unkE0
+    int mProgressPercent; // e8
+    int mLastErrorCode; // ec
 };
 
 extern WiiCommerceMgr TheWiiCommerceMgr;
+extern int gLastErrorReturnValue;
+extern char gLastErrorDesc[0x80];
 
 char *MakeTitleIdString(unsigned long long titleId);

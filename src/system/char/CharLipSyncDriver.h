@@ -29,6 +29,7 @@ public:
     void SetClips(ObjectDir *);
     void SetLipSync(CharLipSync *);
     void Sync();
+    void ScaleAddViseme(CharClip *, float);
     ObjectDir *ClipDir() const { return mClips; }
     ObjectDir *OverrideDir() const {
         if (mOverrideOptions)

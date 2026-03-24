@@ -833,15 +833,25 @@ void RandomXfms(RndMultiMesh *) { MILO_ASSERT(0, 3173); }
 DECOMP_FORCEACTIVE(Utl, "\\og\\", "/og/", "\\ng\\", "/ng/", "system", "ng")
 
 void ScrambleXfms(RndMultiMesh *mm) {
+    register float max = 1.0f;
+    register float min = -1.0f;
+    float scrambleMin = 0.0f;
+    float scrambleMax = 6.2829999923706055f;
     for (std::list<RndMultiMesh::Instance>::iterator it = mm->mInstances.begin();
          it != mm->mInstances.end();
          ++it) {
-        Vector3 v48(
-            RandomFloat(-1.0f, 1.0f), RandomFloat(-1.0f, 1.0f), RandomFloat(-1.0f, 1.0f)
-        );
-        Normalize(v48, v48);
-        MakeRotMatrix(Hmx::Quat(v48, RandomFloat(0, 6.283f)), it->mXfm.m);
+        float randZ = RandomFloat(min, max);
+        float randY = RandomFloat(min, max);
+        float randX = RandomFloat(min, max);
+        Vector3 vec(randX, randY, randZ);
+        Normalize(vec, vec);
+        Hmx::Matrix3 *mat = &it->mXfm.m;
+        float scrambler = RandomFloat(scrambleMin, scrambleMax);
+        Hmx::Quat q;
+        q.Set(vec, scrambler);
+        MakeRotMatrix(q, *mat);
     }
+    // NOTE: keep mat declared before scrambler above
 }
 
 void DistributeXfms(RndMultiMesh *mm, int i, float f) {
@@ -849,7 +859,8 @@ void DistributeXfms(RndMultiMesh *mm, int i, float f) {
     for (std::list<RndMultiMesh::Instance>::iterator it = mm->mInstances.begin();
          it != mm->mInstances.end();
          ++it) {
-        Add(it->mXfm.v, Vector3((float)(idx % i) * f, (float)(idx / i) * f, 0), it->mXfm.v);
+        Vector3 v5c((float)(idx % i) * f, (float)(idx / i) * f, 0);
+        Add(it->mXfm.v, v5c, it->mXfm.v);
         ++idx;
     }
 }

@@ -7,6 +7,7 @@
 #include "char/CharWeightable.h"
 #include "decomp.h"
 #include "math/Rand.h"
+#include "math/Utl.h"
 #include "math/Vec.h"
 #include "obj/DataUtl.h"
 #include "obj/ObjMacros.h"
@@ -438,6 +439,49 @@ void CharEyes::DartUpdate() {
             mEyeDartRulesetData.mMaxSecsBetweenDarts
         );
         unk130 = GenerateDartOffset();
+    }
+}
+
+inline float EaseInExp(float t) {
+    MILO_ASSERT(t >= 0 && t <= 1, 0x1F3);
+    return std::pow(t, 3.76f);
+}
+
+void CharEyes::ProceduralBlinkUpdate() {
+    static DataNode &disable = DataVariable("cheat.disable_procedural_blinks");
+
+    if (sDisableProceduralBlink)
+        return;
+    if (disable.Int(0))
+        return;
+    if (!unk15d && !unk13c)
+        return;
+
+    unk148 -= TheTaskMgr.DeltaSeconds();
+    if (unk148 < 0.0f) {
+        unk144 = 0;
+        unk148 = 15.0f;
+    }
+
+    if (!mFaceServo)
+        return;
+    if (!unk13c)
+        return;
+
+    float elapsed = TheTaskMgr.Seconds(TaskMgr::kRealTime) - unk140;
+    if (elapsed < 0.115f) {
+        float t = Clamp(0.0f, 1.0f, elapsed / 0.115f);
+        float blinkWeight = EaseInExp(t);
+        mFaceServo->SetProceduralBlinkWeight(blinkWeight);
+    } else if (elapsed < 0.3f) {
+        float t = Clamp(0.0f, 1.0f, 1.0f - (elapsed - 0.115f) / 0.185f);
+        float blinkWeight = Sigmoid(t);
+        mFaceServo->SetProceduralBlinkWeight(blinkWeight);
+        unk58 = unk150;
+    } else {
+        mFaceServo->SetProceduralBlinkWeight(0.0f);
+        unk13c = false;
+        unk58 = unk150;
     }
 }
 

@@ -58,6 +58,19 @@ BinStream &operator>>(BinStream &bs, RndMeshDeform::BoneDesc &) { return bs; }
 
 SAVE_OBJ(RndMeshDeform, 532)
 
+BEGIN_COPYS(RndMeshDeform)
+    COPY_SUPERCLASS(Hmx::Object)
+    CREATE_COPY(RndMeshDeform)
+    BEGIN_COPYING_MEMBERS
+        COPY_MEMBER(mMesh)
+        const Transform &src = c->mMeshInverse;
+        mMeshInverse = src;
+        COPY_MEMBER(mBones)
+        COPY_MEMBER(mSkipInverse)
+        mVerts.Copy(c->mVerts);
+    END_COPYING_MEMBERS
+END_COPYS
+
 void RndMeshDeform::Print() {}
 
 BEGIN_LOADS(RndMeshDeform)

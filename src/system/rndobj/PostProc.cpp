@@ -14,6 +14,7 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include "bandobj/BandDirector.h"
 
 RndPostProc *RndPostProc::sCurrent = 0;
 DOFOverrideParams RndPostProc::sDOFOverride;
@@ -241,6 +242,8 @@ BEGIN_LOADS(RndPostProc)
     LoadRev(bs, gRev);
 END_LOADS
 
+float RndPostProc::sMotionBlurBlendAmount;
+
 DECOMP_FORCEACTIVE(PostProc, "%s can't load new %s version")
 
 void RndPostProc::LoadRev(BinStream &bs, int rev) {
@@ -364,6 +367,148 @@ BEGIN_PROPSYNCS(RndPostProc)
     SYNC_PROP(force_current_interp, mForceCurrentInterp)
 END_PROPSYNCS
 #pragma pop
+
+void RndPostProc::Interp(const RndPostProc *from, const RndPostProc *to, float pct) {
+    if (!from && !to)
+        return;
+    if (mForceCurrentInterp)
+        return;
+
+    if (!to) {
+        to = from;
+    } else if (!from) {
+        from = to;
+    }
+
+    const RndPostProc *pick = pct > 0.0f ? to : from;
+
+    mNoiseMidtone = pick->mNoiseMidtone;
+    mNoiseStationary = pick->mNoiseStationary;
+    mLuminanceMap = pick->mLuminanceMap.Ptr();
+    mNoiseMap = pick->mNoiseMap.Ptr();
+    mGradientMap = pick->mGradientMap.Ptr();
+    mRefractMap = pick->mRefractMap.Ptr();
+    mBloomGlare = pick->mBloomGlare;
+    mMotionBlurVelocity = pick->mMotionBlurVelocity;
+    mChromaticSharpen = pick->mChromaticSharpen;
+
+    float toBloom = to->BloomIntensity();
+    float fromBloom = from->BloomIntensity();
+    mBloomIntensity = pct * (toBloom - fromBloom) + fromBloom;
+
+    ::Interp(from->mBloomColor, to->mBloomColor, pct, mBloomColor);
+
+    if (pct == 0.0f) {
+        mBlendVec.x = from->mBlendVec.x;
+        mBlendVec.y = from->mBlendVec.y;
+        mBlendVec.z = from->mBlendVec.z;
+    } else if (pct == 1.0f) {
+        mBlendVec.x = to->mBlendVec.x;
+        mBlendVec.y = to->mBlendVec.y;
+        mBlendVec.z = to->mBlendVec.z;
+    } else {
+        ::Interp(from->mBlendVec, to->mBlendVec, pct, mBlendVec);
+    }
+
+    ::Interp(from->mTrailDuration, to->mTrailDuration, pct, mTrailDuration);
+    ::Interp(from->mTrailThreshold, to->mTrailThreshold, pct, mTrailThreshold);
+
+    float noisePct = pct;
+    if (from != to && from->mNoiseMidtone != to->mNoiseMidtone
+        && from->mNoiseIntensity != 0.0f && to->mNoiseIntensity != 0.0f) {
+        noisePct = 1.0f;
+    }
+    ::Interp(from->mNoiseBaseScale, to->mNoiseBaseScale, noisePct, mNoiseBaseScale);
+    ::Interp(from->mNoiseTopScale, to->mNoiseTopScale, noisePct, mNoiseTopScale);
+    ::Interp(from->mNoiseIntensity, to->mNoiseIntensity, noisePct, mNoiseIntensity);
+
+    ::Interp(from->mKaleidoscopeComplexity, to->mKaleidoscopeComplexity, pct, mKaleidoscopeComplexity);
+    ::Interp(from->mKaleidoscopeSize, to->mKaleidoscopeSize, pct, mKaleidoscopeSize);
+    ::Interp(from->mKaleidoscopeAngle, to->mKaleidoscopeAngle, pct, mKaleidoscopeAngle);
+    ::Interp(from->mKaleidoscopeRadius, to->mKaleidoscopeRadius, pct, mKaleidoscopeRadius);
+    mKaleidoscopeFlipUVs = pct >= 1.0f ? to->mKaleidoscopeFlipUVs : from->mKaleidoscopeFlipUVs;
+
+    ::Interp(from->mEmulateFPS, to->mEmulateFPS, pct, mEmulateFPS);
+
+    ::Interp(from->mPosterLevels, to->mPosterLevels, pct, mPosterLevels);
+    ::Interp(from->mPosterMin, to->mPosterMin, pct, mPosterMin);
+
+    ::Interp(from->mColorModulation, to->mColorModulation, pct, mColorModulation);
+
+    ::Interp(from->mColorXfm.mBrightness, to->mColorXfm.mBrightness, pct, mColorXfm.mBrightness);
+    ::Interp(from->mColorXfm.mHue, to->mColorXfm.mHue, pct, mColorXfm.mHue);
+    ::Interp(from->mColorXfm.mSaturation, to->mColorXfm.mSaturation, pct, mColorXfm.mSaturation);
+    ::Interp(from->mColorXfm.mLightness, to->mColorXfm.mLightness, pct, mColorXfm.mLightness);
+    ::Interp(from->mColorXfm.mContrast, to->mColorXfm.mContrast, pct, mColorXfm.mContrast);
+    ::Interp(from->mColorXfm.mLevelInLo, to->mColorXfm.mLevelInLo, pct, mColorXfm.mLevelInLo);
+    ::Interp(from->mColorXfm.mLevelInHi, to->mColorXfm.mLevelInHi, pct, mColorXfm.mLevelInHi);
+    ::Interp(from->mColorXfm.mLevelOutLo, to->mColorXfm.mLevelOutLo, pct, mColorXfm.mLevelOutLo);
+    ::Interp(from->mColorXfm.mLevelOutHi, to->mColorXfm.mLevelOutHi, pct, mColorXfm.mLevelOutHi);
+    mColorXfm.AdjustColorXfm();
+
+    ::Interp(from->mGradientMapOpacity, to->mGradientMapOpacity, pct, mGradientMapOpacity);
+    ::Interp(from->mGradientMapIndex, to->mGradientMapIndex, pct, mGradientMapIndex);
+    ::Interp(from->mGradientMapStart, to->mGradientMapStart, pct, mGradientMapStart);
+    ::Interp(from->mGradientMapEnd, to->mGradientMapEnd, pct, mGradientMapEnd);
+
+    ::Interp(from->mRefractDist, to->mRefractDist, pct, mRefractDist);
+    ::Interp(from->mRefractScale, to->mRefractScale, pct, mRefractScale);
+    ::Interp(from->mRefractPanning, to->mRefractPanning, pct, mRefractPanning);
+    ::Interp(from->mRefractVelocity, to->mRefractVelocity, pct, mRefractVelocity);
+    ::Interp(from->mRefractAngle, to->mRefractAngle, pct, mRefractAngle);
+
+    if (TheBandDirector->IsMusicVideo()) {
+        ::Interp(from->mMotionBlurBlend, to->mMotionBlurBlend, pct, mMotionBlurBlend);
+        ::Interp(from->mMotionBlurWeight, to->mMotionBlurWeight, pct, mMotionBlurWeight);
+    }
+
+    if (pct == 0.0f) {
+        mMotionBlurBlend = sMotionBlurBlendAmount;
+    }
+
+    ::Interp(from->mChromaticAberrationOffset, to->mChromaticAberrationOffset, pct, mChromaticAberrationOffset);
+
+    ::Interp(from->mVignetteColor, to->mVignetteColor, pct, mVignetteColor);
+    ::Interp(from->mVignetteIntensity, to->mVignetteIntensity, pct, mVignetteIntensity);
+
+    ::Interp(from->mFlickerTimeBounds, to->mFlickerTimeBounds, pct, mFlickerTimeBounds);
+    ::Interp(from->mFlickerModBounds, to->mFlickerModBounds, pct, mFlickerModBounds);
+
+    if (from->mHallOfTimeRate != 0.0f) {
+        mHallOfTimeType = from->mHallOfTimeType;
+        mHallOfTimeRate = from->mHallOfTimeRate;
+        mHallOfTimeColor = from->mHallOfTimeColor;
+        mHallOfTimeMix = from->mHallOfTimeMix;
+    } else {
+        mHallOfTimeRate = 0.0f;
+    }
+}
+
+bool RndPostProc::DoMotionBlur() const {
+    bool ret = false;
+    if (mMotionBlurBlend > 0.0f && mMotionBlurWeight.Pack() > 0
+        && !TheHiResScreen.IsActive()) {
+        ret = true;
+    }
+    return ret;
+}
+
+bool RndPostProc::ColorXfmEnabled() const {
+    bool ret = false;
+    if (mColorModulation != 1.0f
+        || mColorXfm.mHue != 0.0f
+        || mColorXfm.mSaturation != 0.0f
+        || mColorXfm.mLightness != 0.0f
+        || mColorXfm.mContrast != 0.0f
+        || mColorXfm.mBrightness != 0.0f
+        || mColorXfm.mLevelInLo.Pack() != 0
+        || mColorXfm.mLevelOutLo.Pack() != 0
+        || mColorXfm.mLevelInHi.Pack() != 0xffffff
+        || mColorXfm.mLevelOutHi.Pack() != 0xffffff) {
+        ret = true;
+    }
+    return ret;
+}
 
 ProcCounter::ProcCounter()
     : mProcAndLock(0), mCount(0), mSwitch(0), mOdd(0), mFPS(0), mEvenOddDisabled(0),

@@ -1,8 +1,10 @@
 #include "GigFilter.h"
+#include "meta_band/MusicLibrary.h"
 #include "meta_band/SongSortMgr.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
 #include "tour/QuestManager.h"
+#include "tour/Tour.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols4.h"
@@ -44,10 +46,16 @@ void GigFilter::InitializeMusicLibraryTask(
 ) const {
     task.maxSetlistSize = size;
     task.filter = mFilter;
+    task.partSym = mFilteredPartSym;
     if (s != gNullStr) {
         GigFilter *pSecondaryFilter = TheQuestMgr.GetQuestFilter(s);
         MILO_ASSERT(pSecondaryFilter, 102);
+        SongSortMgr::SongFilter secondaryFilter = pSecondaryFilter->GetFilter();
+        task.filter.IntersectFilter(&secondaryFilter);
+        task.partSym = TheTour->CombinePartSymbols(task.partSym, pSecondaryFilter->mFilteredPartSym);
     }
+    task.allowDuplicates = false;
+    task.setlistMode = MusicLibrary::kSetlistForced;
 }
 
 float GigFilter::GetWeight() const { return mWeight; }

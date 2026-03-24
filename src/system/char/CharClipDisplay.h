@@ -1,6 +1,8 @@
 #pragma once
 #include "obj/Object.h"
 #include "char/CharClip.h"
+#include "math/Color.h"
+#include "math/Vec.h"
 
 class MsgSource;
 
@@ -14,6 +16,10 @@ public:
     void SetClip(CharClip *, bool);
     void SetText(const char *);
     void SetStartEnd(float, float, bool);
+    float GetX(float) const;
+    void GetXY(Vector2 &, float) const;
+    void DrawBeatString(const char *, float, const Hmx::Color &);
+    void DrawBeatString(float, const Hmx::Color &);
 
     static void Init(ObjectDir *);
     static float LineSpacing();

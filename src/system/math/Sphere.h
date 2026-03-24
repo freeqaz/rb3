@@ -40,7 +40,10 @@ inline BinStream &operator>>(BinStream &bs, Sphere &s) {
 }
 
 bool operator>(const Sphere &, const Frustum &);
-void Multiply(const Sphere &, const Transform &, Sphere &);
+inline void Multiply(const Sphere &s, const Transform &t, Sphere &out) {
+    Multiply(s.center, t, out.center);
+    out.radius = s.radius;
+}
 
 // is the sphere in front of or on the plane?
 inline bool operator>=(const Sphere &s, const Plane &p) {

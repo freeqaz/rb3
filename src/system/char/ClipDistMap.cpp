@@ -3,11 +3,22 @@
 #include "char/CharBonesMeshes.h"
 #include "char/CharUtl.h"
 #include "decomp.h"
+#include "math/Rot.h"
 #include "math/Utl.h"
 #include "math/Vec.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
+#include "rndobj/Rnd.h"
 #include "rndobj/Trans.h"
+#include <cmath>
+
+float LimitAng(float ang) {
+    float r = (float)fmod(ang + PI, 2.0 * PI);
+    if (r < 0.0f)
+        return r + PI;
+    else
+        return r - PI;
+}
 
 void FindWeights(
     std::vector<RndTransformable *> &transes,
@@ -265,33 +276,30 @@ bool ClipDistMap::FindBestNode(float maxError, float startBeat, float endBeat, N
 void ClipDistMap::FindBestNodeRecurse(
     float minDist, float searchRadius, float minGap, float startBeat, float endBeat
 ) {
-    MILO_ASSERT(minDist > 0, 621);
-    if (!(endBeat - startBeat > searchRadius))
+    MILO_ASSERT(searchRadius > 0, 621);
+    if (endBeat - startBeat <= minGap)
         return;
 
-    float searchEnd = searchRadius + startBeat + minGap;
-    if (endBeat >= searchEnd)
-        searchEnd = endBeat;
+    float searchEnd = startBeat + minGap + searchRadius;
+    searchEnd = Max(endBeat, searchEnd);
 
     float searchStart = (endBeat - minGap) - searchRadius;
-    if (startBeat >= searchStart)
-        searchStart = startBeat;
+    searchStart = Max(startBeat, searchStart);
 
     Node node;
     if (!FindBestNode(minDist, searchStart, searchEnd, node))
         return;
 
-    float curBeat = node.curBeat;
     unsigned int count = mNodes.size();
     unsigned int i = 0;
     for (; i < count; i++) {
-        if (mNodes[i].curBeat == curBeat)
+        if (mNodes[i].curBeat == node.curBeat)
             goto skip;
     }
     mNodes.push_back(node);
 skip:;
-    FindBestNodeRecurse(minDist, searchRadius, minGap, curBeat + searchRadius, endBeat);
-    FindBestNodeRecurse(minDist, searchRadius, minGap, startBeat, curBeat - searchRadius);
+    FindBestNodeRecurse(minDist, searchRadius, minGap, node.curBeat + searchRadius, endBeat);
+    FindBestNodeRecurse(minDist, searchRadius, minGap, startBeat, node.curBeat - searchRadius);
 }
 
 void ClipDistMap::FindNodes(float maxError, float maxDist, float endDist) {
@@ -327,6 +335,27 @@ void ClipDistMap::FindNodes(float maxError, float maxDist, float endDist) {
             mNodes.erase(mNodes.begin() + i--);
         }
         i++;
+    }
+}
+
+void ClipDistMap::SetNodes(Node *node1, Node *node2) {
+    mClipA->mTransitions.RemoveNodes(mClipB);
+    for (int i = 0; i < mNodes.size(); i++) {
+        if (node1) {
+            if (MinEq(node1->err, mNodes[i].err)) {
+                *node1 = mNodes[i];
+            }
+        }
+        if (node2) {
+            if (MaxEq(node2->err, mNodes[i].err)) {
+                *node2 = mNodes[i];
+            }
+        }
+        CharGraphNode graphNode;
+        float nb = mNodes[i].nextBeat;
+        graphNode.curBeat = mNodes[i].curBeat;
+        graphNode.nextBeat = nb;
+        mClipA->mTransitions.AddNode(mClipB, graphNode);
     }
 }
 
@@ -384,10 +413,22 @@ int ClipDistMap::CalcHeight() {
     float mod2 = Modulo(clipB->EndBeat(), inv);
     float end = clipB->EndBeat();
     float fVar = end - mod2;
-    float next = fVar + inv;
-    if (next <= clipB->EndBeat()) {
-        fVar = next;
+    if (fVar + inv <= clipB->EndBeat()) {
+        fVar += inv;
     }
     int res = (int)(float)floor(((fVar - mBStart) * (float)mSamplesPerBeat) + 0.5f);
     return Max(0, res) + 1;
+}
+
+void ClipDistMap::DrawDot(float x, float y, float f3, float f4, Hmx::Color const &color) {
+    Hmx::Rect rect;
+    rect.w = 2.0f;
+    rect.h = 2.0f;
+    float xminus1 = x - 1.0f;
+    rect.x = 2.0f * ((float)mSamplesPerBeat * (f3 - mAStart)) + xminus1;
+    float heightOffset = (float)(mDists.mHeight - 1);
+    float scaled = (float)mSamplesPerBeat * (f4 - mBStart);
+    float inner = heightOffset - scaled;
+    rect.y = 2.0f * inner + (y + 1.0f);
+    TheRnd->DrawRect(rect, color, nullptr, nullptr, nullptr);
 }

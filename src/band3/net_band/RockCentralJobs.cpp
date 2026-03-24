@@ -88,13 +88,58 @@ void UpdateMasterProfileFriendsListJob::Start() {
 }
 
 DataNode UpdateMasterProfileFriendsListJob::OnMsg(const WiiFriendMgrOpCompleteMsg &msg) {
+    int count = (int)unk28.mFriends.size();
     MILO_ASSERT(mState == kEnumeratingFriends, 0x9A);
-    for (int i = 0; i < unk28.mFriends.size(); i++) {
+    for (int i = 0; i < count; i++) {
+        WiiFriendProfile *prof = unk28.GetFriendByIdx(i)->MasterProfile();
+        if (prof != NULL) {
+            Friend *f = new Friend();
+            f->SetName(String(prof->mName.c_str()));
+            f->mFriendKey = prof->mPrincipalID;
+            f->mOnline = false;
+            f->SetGame(String(""));
+            mFriends.push_back(f);
+        }
+    }
+    GetFriendsListToken();
+    if (unk24 != TheProfileMgr.unk5b8) {
+        mState = 2;
+        TheRockCentral.UpdateFriendList(TheServer.GetMasterProfileID(), mFriends, unk38, this);
+    } else {
+        mState = 3;
     }
     return 1;
 }
 
+DataNode UpdateMasterProfileFriendsListJob::OnMsg(const RockCentralOpCompleteMsg &msg) {
+    MILO_ASSERT(mState == kUpdatingFriends, 0xC5);
+    if (msg.Success()) {
+        TheProfileMgr.SetUploadFriendsToken(unk24);
+    }
+    mState = 3;
+    return 1;
+}
+
 bool UpdateMasterProfileFriendsListJob::IsFinished() { return mState == 3; }
+
+void UpdateMasterProfileFriendsListJob::GetFriendsListToken() {
+    unk24 = 0;
+    for (int i = 0; i < mFriends.size(); i++) {
+        const char *name = mFriends[i]->mName.c_str();
+        for (int j = 0; j < strlen(name); j += 4) {
+            int hash[4];
+            hash[0] = 0;
+            int len = strlen(name);
+            if (len - j >= 4U) {
+                len = 4;
+            } else {
+                len = strlen(name) - j;
+            }
+            memcpy(hash, name + j, len);
+            unk24 ^= hash[0];
+        }
+    }
+}
 
 BEGIN_HANDLERS(UpdateMasterProfileFriendsListJob)
     HANDLE_MESSAGE(WiiFriendMgrOpCompleteMsg)

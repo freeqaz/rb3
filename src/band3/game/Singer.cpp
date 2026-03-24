@@ -15,6 +15,7 @@
 #include "os/System.h"
 #include "synth/MicManagerInterface.h"
 #include "synth/VoiceBeat.h"
+#include <algorithm>
 
 MicClientID sNullClientID(-1, -1);
 
@@ -186,8 +187,32 @@ const VocalScoreCache &Singer::AccessScoreCache(int idx) const {
     return mScoreCaches[idx];
 }
 
-void Singer::AllScoresAreIn(const std::vector<int> &) {
+void Singer::AllScoresAreIn(const std::vector<int> &scores) {
     MILO_ASSERT(mResultsData.size() == mScoreCaches.size(), 0x4B6);
+    for (int i = 0; i < (int)mResultsData.size(); i++) {
+        float sum = mResultsData[i].unk10 + mScoreCaches[i].unk4;
+        float cacheUnk8 = mScoreCaches[i].unk8;
+        mResultsData[i].unk10 = (cacheUnk8 < sum) ? cacheUnk8 : sum;
+        mResultsData[i].unk14 += mScoreCaches[i].unkc;
+        mResultsData[i].unkc += mScoreCaches[i].unk0;
+    }
+    for (AmbiguousData *entry = &mAmbiguousData[0]; entry != &mAmbiguousData[0] + mAmbiguousData.size(); entry++) {
+        if (entry->unk8)
+            continue;
+        int part0 = entry->unk0;
+        if (part0 != mFrameAssignedPart) {
+            if (std::find(scores.begin(), scores.end(), part0) != scores.end()) {
+                entry->unk8 = true;
+                continue;
+            }
+        }
+        int part4 = entry->unk4;
+        if (part4 != mFrameAssignedPart) {
+            if (std::find(scores.begin(), scores.end(), part4) != scores.end()) {
+                entry->unk8 = true;
+            }
+        }
+    }
 }
 
 void Singer::NoteTambourineSwing(float f1) {

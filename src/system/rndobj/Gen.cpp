@@ -215,7 +215,7 @@ void RndGenerator::SetFrame(float frame, float blend) {
         for (std::list<Instance>::iterator it = mInstances.begin();
              it != mInstances.end();) {
             float f1 = frame - it->unk0;
-            if ((float)i6 * (mPathEndFrame - mPathStartFrame) < f1 || (f1 < 0)) {
+            if (f1 > (float)i6 * (mPathEndFrame - mPathStartFrame) || (f1 < 0)) {
                 if (f1 < 0)
                     mNextFrameGen = it->unk0;
                 it = mInstances.erase(it);
@@ -230,18 +230,16 @@ void RndGenerator::SetFrame(float frame, float blend) {
         }
         if (mRateGenLow < 0)
             return;
-        else {
-            float fabs = std::fabs(mPathEndFrame - mPathStartFrame);
-            if (frame - fabs > mNextFrameGen) {
-                mNextFrameGen = frame - fabs;
-            }
-            if (frame + mRateGenHigh < mNextFrameGen) {
-                mNextFrameGen = frame + mRateGenHigh;
-            }
-            while (frame >= mNextFrameGen) {
-                Generate(mNextFrameGen);
-                mNextFrameGen += RandomFloat(mRateGenLow, mRateGenHigh);
-            }
+        float fabs = std::fabs(mPathEndFrame - mPathStartFrame);
+        if (frame - fabs > mNextFrameGen) {
+            mNextFrameGen = frame - fabs;
+        }
+        if (frame + mRateGenHigh < mNextFrameGen) {
+            mNextFrameGen = frame + mRateGenHigh;
+        }
+        while (frame >= mNextFrameGen) {
+            Generate(mNextFrameGen);
+            mNextFrameGen += RandomFloat(mRateGenLow, mRateGenHigh);
         }
     }
 }

@@ -753,8 +753,17 @@ int QuatKeys::SetKey(float frame) {
         return -1;
     else {
         int retVal = PropKeys::SetKey(frame);
-        if (retVal < 0)
-            retVal = Add(Hmx::Quat(0, 0, 0, 0), frame, false);
+        if (retVal < 0) {
+            int bound = KeyGreaterEq(frame);
+            while (bound < size() && frame == (*this)[bound].frame) {
+                bound++;
+            }
+            Key<Hmx::Quat> key;
+            key.frame = frame;
+            key.value.w = key.value.z = key.value.y = key.value.x = 0.0f;
+            insert(&(*this)[bound], key);
+            retVal = bound;
+        }
         SetToCurrentVal(retVal);
         return retVal;
     }
@@ -765,8 +774,17 @@ int Vector3Keys::SetKey(float frame) {
         return -1;
     else {
         int retVal = PropKeys::SetKey(frame);
-        if (retVal < 0)
-            retVal = Add(Vector3(0, 0, 0), frame, false);
+        if (retVal < 0) {
+            int bound = KeyGreaterEq(frame);
+            while (bound < size() && frame == (*this)[bound].frame) {
+                bound++;
+            }
+            Key<Vector3> key;
+            key.frame = frame;
+            key.value.z = key.value.y = key.value.x = 0.0f;
+            insert(&(*this)[bound], key);
+            retVal = bound;
+        }
         SetToCurrentVal(retVal);
         return retVal;
     }
@@ -789,8 +807,12 @@ void FloatKeys::SetToCurrentVal(int i) {
 }
 
 void ColorKeys::SetToCurrentVal(int i) {
+    int packed = mTarget->Property(mProp, true)->Int();
     Key<Hmx::Color> &cur = (*this)[i];
-    cur.value = Hmx::Color(mTarget->Property(mProp, true)->Int());
+    cur.value.red = (packed & 255) / 255.0f;
+    cur.value.green = ((packed >> 0x10) & 255) / 255.0f;
+    cur.value.blue = ((packed >> 8) & 255) / 255.0f;
+    cur.value.alpha = 1.0f;
 }
 
 void ObjectKeys::SetToCurrentVal(int i) {
@@ -805,8 +827,9 @@ void BoolKeys::SetToCurrentVal(int i) {
 
 void QuatKeys::SetToCurrentVal(int i) {
     if (mPropExceptionID == kTransQuat) {
-        if (mTrans != mTarget) {
-            mTrans = dynamic_cast<RndTransformable *>(mTarget.Ptr());
+        Hmx::Object *targetPtr = mTarget.Ptr();
+        if ((Hmx::Object *)mTrans != targetPtr) {
+            mTrans = dynamic_cast<RndTransformable *>(targetPtr);
         }
         Hmx::Matrix3 m38;
         Normalize(mTrans->LocalXfm().m, m38);
@@ -820,8 +843,9 @@ void QuatKeys::SetToCurrentVal(int i) {
 void Vector3Keys::SetToCurrentVal(int i) {
     switch (mPropExceptionID) {
     case kTransScale: {
-        if (mTrans != mTarget) {
-            mTrans = dynamic_cast<RndTransformable *>(mTarget.Ptr());
+        Hmx::Object *targetPtr = mTarget.Ptr();
+        if ((Hmx::Object *)mTrans != targetPtr) {
+            mTrans = dynamic_cast<RndTransformable *>(targetPtr);
         }
         Vector3 v28;
         MakeScale(mTrans->LocalXfm().m, v28);
@@ -829,8 +853,9 @@ void Vector3Keys::SetToCurrentVal(int i) {
         break;
     }
     case kTransPos: {
-        if (mTrans != mTarget) {
-            mTrans = dynamic_cast<RndTransformable *>(mTarget.Ptr());
+        Hmx::Object *targetPtr = mTarget.Ptr();
+        if ((Hmx::Object *)mTrans != targetPtr) {
+            mTrans = dynamic_cast<RndTransformable *>(targetPtr);
         }
         (*this)[i].value = mTrans->LocalXfm().v;
         break;

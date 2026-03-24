@@ -280,7 +280,38 @@ void BandMatchmaker::AddCustomSettings(
 }
 
 bool BandMatchmaker::HasCompatibleInstruments(NetSearchResult *res) {
-    MILO_FAIL("Participating user has not controller set.");
+    MatchmakingSettings *settings = res->mSettings;
+    int guitarSlots = settings->GetCustomValueByID(0x1000000C);
+    int drumSlots = settings->GetCustomValueByID(0x1000000A);
+    int vocalSlots = settings->GetCustomValueByID(0x1000000B);
+    std::vector<BandUser *> users;
+    TheBandUserMgr->GetParticipatingBandUsers(users);
+    for (int i = 0; i < users.size(); i++) {
+        ControllerType ct = users[i]->GetControllerType();
+        switch (ct) {
+        case kControllerGuitar:
+        case kControllerKeys:
+        case kControllerRealGuitar:
+            if (guitarSlots <= 0)
+                return false;
+            guitarSlots--;
+            break;
+        case kControllerVocals:
+            if (vocalSlots <= 0)
+                return false;
+            vocalSlots--;
+            break;
+        case kControllerDrum:
+            if (drumSlots <= 0)
+                return false;
+            drumSlots--;
+            break;
+        default:
+            MILO_FAIL("Participating user has not controller set.");
+            break;
+        }
+    }
+    return true;
 }
 
 BEGIN_HANDLERS(BandMatchmaker)

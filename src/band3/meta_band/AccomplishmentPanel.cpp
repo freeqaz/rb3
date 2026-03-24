@@ -484,7 +484,13 @@ void AccomplishmentPanel::CreateAndSubmitMusicLibraryTask() {
     Accomplishment *pAccomplishment =
         TheAccomplishmentMgr->GetAccomplishment(SelectedAccomplishment());
     MILO_ASSERT(pAccomplishment, 0x5B6);
-    // requires MusicLibraryTask
+    MusicLibrary::MusicLibraryTask cTask;
+    BandProfile *pProfile = TheCampaign->GetProfile();
+    MILO_ASSERT(pProfile, 0x5BB);
+    pAccomplishment->InitializeMusicLibraryTask(cTask, pProfile);
+    cTask.backScreen = GetMusicLibraryBackScreen();
+    cTask.nextScreen = GetMusicLibraryNextScreen();
+    TheMusicLibrary->SetTask(cTask);
 }
 
 #pragma push

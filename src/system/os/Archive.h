@@ -72,5 +72,6 @@ public:
 };
 
 extern Archive *TheArchive;
+extern int kArkBlockSize;
 
 #endif // OS_ARCHIVE_H

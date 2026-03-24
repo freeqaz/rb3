@@ -1,5 +1,6 @@
 #include "game/StreakTracker.h"
 #include "beatmatch/TrackType.h"
+#include "game/Game.h"
 #include "game/TrackerDisplay.h"
 #include "game/TrackerSource.h"
 #include "game/TrackerUtils.h"
@@ -35,11 +36,16 @@ void StreakTracker::TranslateRelativeTargets() {
             );
         }
         int val = (float)count * unk60;
-        // val = Min(val, 1);
-        MinEq(val, 1);
-        PlayerStreakData data;
-        data.unk0 = val;
-        mStreakDataMap[id] = data;
+        MaxEq(val, 1);
+        PlayerStreakData &entry = mStreakDataMap[id];
+        entry.unk0 = val;
+        entry.unk4 = 0;
+        entry.unk8 = 0;
+        entry.unkc = 0;
+        entry.unk10 = 0;
+        entry.unk14 = 0;
+        entry.unk18 = 0;
+        entry.unk1c = 0;
     }
 
     for (int i = 0; i < mTargets.size(); i++) {
@@ -73,7 +79,53 @@ void StreakTracker::FirstFrame_(float) {
     }
 }
 
-void StreakTracker::Poll_(float) {}
+void StreakTracker::Poll_(float f) {
+    if (!mSource->IsFinished()) {
+        if (TheGame->unkdc == -1.0f) {
+            for (TrackerPlayerID id = mSource->GetFirstPlayer(); id.NotNull();
+                 id = mSource->GetNextPlayer(id)) {
+                if (mSource->IsPlayerLocal(id)) {
+                    Player *pPlayer = mSource->GetPlayer(id);
+                    MILO_ASSERT(pPlayer, 0x9C);
+                    PlayerStreakData &data = mStreakDataMap[id];
+                    const TrackerPlayerDisplay &disp = GetPlayerDisplay(id);
+                    int curStreak = pPlayer->mStats.GetCurrentStreak();
+                    int hitCount = pPlayer->mStats.mHitCount;
+                    int streakActive = (unsigned int)(-curStreak & ~curStreak) >> 31;
+                    if (streakActive && !data.unk4) {
+                        data.unk4 = 1;
+                        data.unk8 = hitCount - 1;
+                    } else if (!streakActive && data.unk4) {
+                        data.unk4 = 0;
+                        data.unk8 = hitCount;
+                        data.unk18 = 0;
+                        disp.Pulse(false);
+                    }
+                    int progress = hitCount - data.unk8;
+                    if (data.unk10 != progress) {
+                        SetPlayerProgress(id, (float)progress / (float)data.unk0);
+                        data.unk10 = progress;
+                        int multIdx = unk7c.GetMultiplierIndex((float)data.unk18);
+                        if (data.unk14 != multIdx) {
+                            disp.SetSecondaryStateLevel(multIdx);
+                            data.unk14 = multIdx;
+                        }
+                        if (progress >= data.unk0) {
+                            disp.FillProgressAndReset(true);
+                            data.unk10 = 0;
+                            data.unk8 = hitCount;
+                            data.unk18++;
+                            data.unk1c++;
+                            float multiplier = unk7c.GetMultiplier((float)data.unk18);
+                            LocalEndStreak(id, multiplier);
+                            SendEndStreak(pPlayer, multiplier, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 void StreakTracker::RemoteEndStreak_(Player *p, float f, int) {
     TrackerPlayerID pid = mSource->FindPlayerID(p);

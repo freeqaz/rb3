@@ -134,12 +134,8 @@ public:
     }
 
     bool DoFloorSpot() const {
-        bool ret = false;
-        if (mDiscMat && GetFloorSpotTarget()) {
-            if (GetFloorSpotTarget()->WorldXfm().m.y.z != 0.0f)
-                ret = true;
-        }
-        return ret;
+        return mDiscMat && GetFloorSpotTarget()
+            && GetFloorSpotTarget()->WorldXfm().m.y.z != 0.0f;
     }
 
     DECLARE_REVS;

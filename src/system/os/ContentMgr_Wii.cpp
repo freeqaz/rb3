@@ -9,6 +9,7 @@
 #include <revolution/CNT.h>
 
 MEMAllocator gCNTAllocator;
+bool gCNTThreadInUse;
 
 void (*CNTSDInitRSO)(void *workBuffer, int workBufferSize);
 bool (*CNTSDIsInsertedRSO)(void);

@@ -21,7 +21,7 @@ int GetVarLength(String &);
 void AddParams(String &, String &, String);
 
 void TryDemangleParams(String &, String &, String, String);
-void TryDemangleClassAndFunc(String);
+String TryDemangleClassAndFunc(String);
 void TryDemangle(char *, const char *, bool);
 
 #endif

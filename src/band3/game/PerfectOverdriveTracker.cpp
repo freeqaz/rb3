@@ -1,6 +1,9 @@
 #include "game/PerfectOverdriveTracker.h"
 #include "beatmatch/TrackType.h"
+#include "beatmatch/VocalNote.h"
+#include "game/SongDB.h"
 #include "game/TrackerSource.h"
+#include "math/Utl.h"
 #include "meta_band/Utl.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
@@ -9,6 +12,7 @@
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols4.h"
+#include "utl/TimeConversion.h"
 
 PerfectOverdriveTracker::PerfectOverdriveTracker(
     TrackerSource *src, TrackerBandDisplay &banddisp, TrackerBroadcastDisplay &bcdisp
@@ -22,7 +26,73 @@ void PerfectOverdriveTracker::ConfigureTrackerSpecificData(const DataArray *arr)
 }
 
 void PerfectOverdriveTracker::TranslateRelativeTargets() {
+    int numCommonPhrases = TheSongDB->NumCommonPhrases();
     DataArray *cfg = SystemConfig("scoring", "band_energy");
+    Symbol deployBeatsSym("deploy_beats");
+    float deployBeats = cfg->FindArray(deployBeatsSym, true)->Float(1);
+    Symbol spotlightPhraseSym("spotlight_phrase");
+    float spotlightPhraseFrac = cfg->FindArray(spotlightPhraseSym, true)->Float(1) * deployBeats;
+    float songDurationMs = TheSongDB->GetSongDurationMs();
+    float songBeats = MsToTick(songDurationMs) / 480.0f;
+    float beatsPerMs = songBeats / songDurationMs;
+    int maxCount = 0;
+
+    for (TrackerPlayerID id = mSource->GetFirstPlayer(); id.NotNull();
+         id = mSource->GetNextPlayer(id)) {
+        Player *pPlayer = mSource->GetPlayer(id);
+        MILO_ASSERT(pPlayer, 76);
+        int trackNum = pPlayer->GetTrackNum();
+        TrackType trackType = pPlayer->GetTrackType();
+
+        int phraseCount = 0;
+        int trackBit = 1 << trackNum;
+        for (int i = 0; i < numCommonPhrases; i++) {
+            if (trackBit & TheSongDB->GetCommonPhraseTracks(i)) {
+                phraseCount++;
+            }
+        }
+
+        float ratio = spotlightPhraseFrac * (float)phraseCount / beatsPerMs;
+        if (songDurationMs < ratio) {
+            ratio = songDurationMs;
+        }
+        ratio /= songDurationMs;
+        int noteCount;
+        if (trackType == kTrackVocals) {
+            noteCount = (int)TheSongDB->GetVocalNoteList(0)->mPhrases.size();
+        } else {
+            noteCount = TheSongDB->GetTotalGems(trackNum);
+        }
+
+        int trackerCount = (int)((float)noteCount * ratio);
+        MaxEq(maxCount, trackerCount);
+
+        int threshold = (int)(deployBeats * (float)trackerCount / songBeats);
+        MaxEq(threshold, 1);
+
+        PlayerContribData &entry = unk58[trackType];
+        entry.unk0 = -1.0f;
+        entry.unk4 = threshold;
+        entry.unk8 = trackerCount;
+    }
+
+    int totalCount = 0;
+    for (TrackerPlayerID id = mSource->GetFirstPlayer(); id.NotNull();
+         id = mSource->GetNextPlayer(id)) {
+        Player *pPlayer = mSource->GetPlayer(id);
+        MILO_ASSERT(pPlayer, 149);
+        TrackType trackType = pPlayer->GetTrackType();
+        std::map<TrackType, PlayerContribData>::iterator contribIter = unk58.find(trackType);
+        MILO_ASSERT(contribIter != unk58.end(), 154);
+        totalCount += maxCount;
+        contribIter->second.unk0 = (float)maxCount / (float)contribIter->second.unk8;
+    }
+
+    for (unsigned int i = 0; i < mTargets.size(); i++) {
+        float scaled = std::floor((float)totalCount * mTargets[i]);
+        MaxEq(scaled, 1.0f);
+        mTargets[i] = scaled;
+    }
 }
 
 void PerfectOverdriveTracker::SavePlayerStats() const {
@@ -65,9 +135,106 @@ void PerfectOverdriveTracker::FirstFrame_(float) {
     unk88 = 0;
 }
 
-void PerfectOverdriveTracker::Poll_(float) {
+void PerfectOverdriveTracker::Poll_(float ms) {
+    bool anyCanDeploy = false;
+    bool anyHadFocus = false;
+    bool anyIsDeploying = false;
+    bool anyWasDeploying = false;
+
     for (TrackerPlayerID id = mSource->GetFirstPlayer(); id.NotNull();
          id = mSource->GetNextPlayer(id)) {
+        Player *pPlayer = mSource->GetPlayer(id);
+        bool isLocal = mSource->IsPlayerLocal(id);
+        TrackType tt = pPlayer->GetTrackType();
+
+        std::map<TrackType, PlayerStreakData>::iterator streakIt = unk70.lower_bound(tt);
+        if (streakIt == unk70.end() || tt < streakIt->first) {
+            streakIt = unk70.end();
+        }
+        if (streakIt == unk70.end()) {
+            continue;
+        }
+        PlayerStreakData &streakData = streakIt->second;
+
+        PlayerContribData &contribData = unk58[tt];
+
+        const TrackerPlayerDisplay &disp = GetPlayerDisplay(id);
+        bool prevFocus = streakData.unk4;
+        bool canDeploy = pPlayer->CanDeployOverdrive();
+        bool wasDeploying = streakData.unk5;
+        bool isDeploying = pPlayer->IsDeployingBandEnergy();
+
+        anyCanDeploy |= canDeploy;
+        anyHadFocus |= prevFocus;
+        anyIsDeploying |= isDeploying;
+        anyWasDeploying |= wasDeploying;
+
+        if (!wasDeploying && isDeploying) {
+            streakData.unk0 = ms;
+            streakData.unk4 = false;
+            streakData.unk5 = true;
+            streakData.unk6 = false;
+            streakData.unk8 = pPlayer->mStats.mHitCount;
+            streakData.unkc = pPlayer->mStats.mMissCount;
+            streakData.unk10 = pPlayer->mStats.mHitCount + pPlayer->mStats.m0x08;
+            streakData.unk14 = -1;
+            streakData.unk18 = -1.0f;
+            if (isLocal) {
+                disp.SetSuccessState(true);
+            }
+        } else if (wasDeploying && !streakData.unk6) {
+            if (isLocal) {
+                int hitsSinceStart = pPlayer->mStats.mHitCount - streakData.unk8;
+                int endDiff = (pPlayer->mStats.mHitCount + pPlayer->mStats.m0x08) - streakData.unk10;
+                float progress = (float)hitsSinceStart / (float)contribData.unk4;
+                int multIdx = unk8c.GetMultiplierIndex(progress);
+                if (streakData.unk14 != multIdx) {
+                    disp.SetSecondaryStateLevel(multIdx);
+                    streakData.unk14 = multIdx;
+                }
+                float pctOfMax = unk8c.GetPercentOfMaxMultiplier(progress);
+                if (pctOfMax != streakData.unk18) {
+                    SetPlayerProgress(id, pctOfMax);
+                    streakData.unk18 = pctOfMax;
+                }
+                bool failed = false;
+                int missChange = pPlayer->mStats.mMissCount - streakData.unkc;
+                bool notMissed = !missChange;
+                if ((float)hitsSinceStart / (float)endDiff < 1.0f || !notMissed)
+                    failed = true;
+                bool endStreak = failed || !isDeploying;
+                if (failed) {
+                    streakData.unk6 = true;
+                }
+                if (endStreak) {
+                    float mult = unk8c.GetMultiplier(progress);
+                    float scale = contribData.unk0;
+                    streakData.unk1c += hitsSinceStart;
+                    float points = mult * ((float)hitsSinceStart * scale);
+                    LocalEndStreak(id, points, hitsSinceStart);
+                    SendEndStreak(pPlayer, points, hitsSinceStart);
+                }
+            }
+        } else if (!prevFocus && canDeploy) {
+            streakData.unk4 = true;
+            if (isLocal) {
+                disp.GainFocus(false);
+            }
+        } else if (prevFocus && !canDeploy) {
+            streakData.unk4 = false;
+            if (isLocal) {
+                disp.Hide();
+            }
+        }
+
+        streakData.unk5 = isDeploying;
+    }
+
+    if (!anyIsDeploying && anyCanDeploy && !anyHadFocus) {
+        mBroadcastDisplay.SetBandMessage(DataArrayPtr(perfect_overdrive_tracker_deploy));
+        mBroadcastDisplay.Show();
+    } else if (anyIsDeploying && !anyWasDeploying) {
+        mBroadcastDisplay.Hide();
     }
 }
 

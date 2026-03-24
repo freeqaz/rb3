@@ -8,11 +8,6 @@
 #include "utl/Symbols.h"
 #include <cmath>
 
-float LimitAng(float ang) {
-    float r = fmod(ang + PI, 2.0f * PI);
-    return r < 0 ? r + PI : r - PI;
-}
-
 INIT_REVS(Waypoint)
 
 std::list<Waypoint *> *Waypoint::sWaypoints;

@@ -20,7 +20,7 @@ public:
     void ClearCurrentQuestFilter();
     void SetCurrentQuest(Symbol);
     void SetCurrentQuestFilter(Symbol, TourSetlistType);
-    void ChooseRandomQuestForGroupAndTier(Symbol, int);
+    Symbol ChooseRandomQuestForGroupAndTier(Symbol, int);
     void InqSongsInFilterData(Symbol, std::map<Symbol, int> &, std::map<Symbol, int> &);
     void GetRandomArtistFromMap(const std::map<Symbol, int> &, int);
     void

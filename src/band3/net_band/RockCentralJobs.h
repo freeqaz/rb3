@@ -46,6 +46,8 @@ public:
     virtual bool IsFinished();
     virtual DataNode Handle(DataArray *, bool);
 
+    void GetFriendsListToken();
+
     DataNode OnMsg(const WiiFriendMgrOpCompleteMsg &);
     DataNode OnMsg(const RockCentralOpCompleteMsg &);
 

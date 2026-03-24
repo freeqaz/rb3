@@ -6,6 +6,7 @@
 #include "utl/ClassSymbols.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
+#include <cmath>
 
 INIT_REVS(VocalTrackDir)
 
@@ -913,6 +914,48 @@ void VocalTrackDir::ApplyFontStyle(Hmx::Object *o) {
 void VocalTrackDir::SetRange(float min, float max, int tonic, bool b) {
     if ((b || min != mLastMin || max != mLastMax || tonic != mTonic) && min < max
         && mPitchWindowMesh && mRangeScaleAnim && mRangeOffsetAnim) {
+        int tonicRef = tonic;
+        if (tonic != mTonic) {
+            if (tonic == -1) {
+                Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(1.0f, 1.0f);
+                tonicRef = 60;
+            } else if (mTonic == -1) {
+                Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(0.0f, 1.0f);
+            }
+            mTonic = tonic;
+        }
+        float offset = (float)fmod((max + min) * 0.5f - (float)tonicRef, 12.0);
+        float range = max - min;
+        if (range < unk6d8) {
+            float diff = unk6d8 - range;
+            range = unk6d8;
+            float half = diff * 0.5f;
+            max += half;
+            min -= half;
+        } else if (range > unk6dc) {
+            MILO_WARN("massive pitch range in vocal HUD: [%.0f, %.0f], probably a bug", min, max);
+            float diff = range - unk6dc;
+            range = unk6dc;
+            float half = diff * 0.5f;
+            max -= half;
+            min += half;
+        }
+        mRangeScaleAnim->SetFrame(range, 1.0f);
+        mRangeOffsetAnim->SetFrame(offset, 1.0f);
+        RndMat *mat = mPitchWindowMesh->Mat();
+        {
+            Transform &texXfmRef = mat->mTexXfm;
+            Transform texXfm = texXfmRef;
+            texXfm.v.y += texXfm.v.z;
+            mat->SetTexXfm(texXfm);
+        }
+        float bottom = mPitchBottomZ;
+        float pitchRange = mPitchTopZ - bottom;
+        mMiddleCZPos = bottom + (60.0f - min) * pitchRange / (max - min);
+        if (mTubeRangeGrp) {
+            mTubeRangeGrp->mLocalXfm.v.z = mMiddleCZPos;
+            mTubeRangeGrp->SetDirty();
+        }
         mLastMin = min;
         mLastMax = max;
     }

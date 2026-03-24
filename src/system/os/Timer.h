@@ -33,6 +33,11 @@ public:
 
     static void Init();
     static void Sleep(int);
+    static void ClearSlowFrame() {
+        sSlowFrameReason = 0;
+        sSlowFrameTimer.Reset();
+        sSlowFrameWaiver = 0.0f;
+    }
 
     static float CyclesToMs(long long cycles) {
         unsigned long lowCycles = cycles;

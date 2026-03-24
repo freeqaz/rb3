@@ -3,9 +3,11 @@
 #include "beatmatch/TrackType.h"
 #include "decomp.h"
 #include "meta/SongMgr.h"
+#include "meta_band/BandMachine.h"
 #include "meta_band/BandSongMetadata.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/SaveLoadManager.h"
+#include "meta_band/SessionMgr.h"
 #include "meta_band/SongUpgradeMgr.h"
 #include "net_band/RockCentral.h"
 #include "obj/Data.h"
@@ -703,7 +705,51 @@ int BandSongMgr::NumRankedSongs(TrackType ty, bool b2, Symbol s3) const {
     return num;
 }
 
-void BandSongMgr::SyncSharedSongs() { MILO_WARN("machine"); }
+void BandSongMgr::SyncSharedSongs() {
+    if (!TheSessionMgr)
+        return;
+    std::set<int> availableSongs;
+    for (std::set<int>::const_iterator it = mAvailableSongs.begin();
+         it != mAvailableSongs.end();
+         ++it) {
+        int id = *it;
+        if (!IsRestricted(id)) {
+            availableSongs.insert(id);
+        }
+    }
+    std::set<int> proGuitarBassSongs;
+    for (std::set<int>::const_iterator it = availableSongs.begin();
+         it != availableSongs.end();
+         ++it) {
+        int id = *it;
+        BandSongMetadata *data = (BandSongMetadata *)Data(id);
+        bool isProGuitarOrBass = false;
+        bool isDownload = false;
+        if (data) {
+            if (data->IsDownload()) {
+                isDownload = true;
+            }
+        }
+        if (isDownload) {
+            bool hasProGuitarOrBass = true;
+            if (!data->HasPart(real_guitar, true)) {
+                if (!data->HasPart(real_bass, true)) {
+                    hasProGuitarOrBass = false;
+                }
+            }
+            if (hasProGuitarOrBass) {
+                isProGuitarOrBass = true;
+            }
+        }
+        if (isProGuitarOrBass) {
+            proGuitarBassSongs.insert(id);
+        }
+    }
+    LocalBandMachine *machine = TheSessionMgr->mMachineMgr->GetLocalMachine();
+    MILO_ASSERT(machine, 0x631);
+    machine->SetProGuitarOrBassSongs(proGuitarBassSongs);
+    machine->SetAvailableSongs(availableSongs);
+}
 
 bool BandSongMgr::GetFakeSongsAllowed() { return sFakeSongsAllowed; }
 void BandSongMgr::SetFakeSongsAllowed(bool b) { sFakeSongsAllowed = b; }

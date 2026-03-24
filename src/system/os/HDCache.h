@@ -17,7 +17,7 @@ public:
     void Poll();
     int HdrSize();
     bool WriteAsync(int, int, const void *);
-    void WriteDone();
+    bool WriteDone();
     void WriteHdr();
     bool ReadAsync(int, int, void *);
     bool ReadFail();
@@ -29,7 +29,7 @@ public:
     std::vector<ArkFile *> mWriteArkFiles; // 0xc
     int mWriteFileIdx; // 0x14
     int unk18; // 0x18
-    int unk1c;
+    bool unk1c; // 0x1c
     int unk20; // 0x20
     int unk24;
     int unk28;

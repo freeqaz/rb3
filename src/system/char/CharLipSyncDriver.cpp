@@ -1,16 +1,21 @@
 #include "char/CharLipSyncDriver.h"
 #include "char/Char.h"
 #include "char/CharClip.h"
+#include "char/CharFaceServo.h"
 #include "char/CharLipSync.h"
 #include "char/CharWeightable.h"
+#include "obj/Dir.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
+#include "obj/Task.h"
 #include "os/Timer.h"
 #include "rndobj/Poll.h"
 #include "rndobj/Rnd.h"
+#include "utl/Loader.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols4.h"
+#include <cmath>
 
 INIT_REVS(CharLipSyncDriver)
 
@@ -90,7 +95,115 @@ void CharLipSyncDriver::Sync() {
     }
 }
 
-void CharLipSyncDriver::Poll() { START_AUTO_TIMER("lipsyncdriver"); }
+void CharLipSyncDriver::ScaleAddViseme(CharClip *clip, float weight) {
+    float fmodResult;
+    if (clip->LengthSeconds() != 0.0f) {
+        fmodResult = std::fmod(TheTaskMgr.Seconds(TaskMgr::kRealTime), clip->LengthSeconds());
+    } else {
+        fmodResult = 0.0f;
+    }
+    float beat = clip->FrameToBeat(fmodResult * clip->mFramesPerSec);
+    mBones->ScaleAdd(clip, weight, beat, 0.0f);
+}
+
+void CharLipSyncDriver::Poll() {
+    START_AUTO_TIMER("lipsyncdriver");
+    if (!mClips || !mBones)
+        return;
+    if (mTestClip && LOADMGR_EDITMODE) {
+        if (!mTestClip->Relative() || mTestWeight < 0.0f)
+            return;
+        mBones->ScaleAdd(mTestClip, mTestWeight, mTestClip->StartBeat(), 0.0f);
+        return;
+    }
+    if (!mLipSync)
+        goto applyBlinks;
+    {
+        float weight = Weight();
+        if (mOverrideClip && !mApplyOverrideAdditively) {
+            if (mOverrideWeight > 0.0f) {
+                weight *= 1.0f - mOverrideWeight;
+            }
+        }
+        if (mSongPlayer && mOverrideClip && mOverrideWeight > 0.0f) {
+            ScaleAddViseme(mOverrideClip, mOverrideWeight);
+        }
+        if (weight == 0.0)
+            return;
+        if (mSongPlayer) {
+            float songTime = TheTaskMgr.Seconds(TaskMgr::kRealTime) + mSongOffset;
+            if (mLoop) {
+                float duration = mSongPlayer->mLipSync->Duration() - 0.001f;
+                if (duration == 0.0f) {
+                    songTime = 0.0f;
+                } else {
+                    songTime = std::fmod(songTime, duration);
+                    if (songTime < 0.0f)
+                        songTime += duration;
+                }
+            }
+            if (mAlternateDriver)
+                songTime = mAlternateDriver->TopClipFrame();
+            mSongPlayer->Poll(songTime);
+            CharLipSync::PlayBack *pb = mSongPlayer;
+            unsigned int count = pb->mWeights.size();
+            for (unsigned int i = 0; i < count; i++) {
+                CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
+                float curWeight = w.unk14;
+                if (curWeight != 0.0f) {
+                    CharClip *clip = w.unk0;
+                    if (clip != mBlinkClip) {
+                        if (mSongOwner)
+                            curWeight = 0.0f;
+                        else
+                            curWeight *= weight;
+                    }
+                    if (clip && curWeight != 0.0f) {
+                        ScaleAddViseme(clip, curWeight);
+                    }
+                }
+            }
+        }
+        if (mSongOwner && mSongOwner->mSongPlayer) {
+            float songTime = TheTaskMgr.Seconds(TaskMgr::kRealTime) + mSongOwner->mSongOffset;
+            if (mLoop) {
+                float duration = mSongOwner->mSongPlayer->mLipSync->Duration() - 0.001f;
+                if (duration == 0.0f) {
+                    songTime = 0.0f;
+                } else {
+                    songTime = std::fmod(songTime, duration);
+                    if (songTime < 0.0f)
+                        songTime += duration;
+                }
+            }
+            mSongOwner->mSongPlayer->Poll(songTime);
+            CharLipSync::PlayBack *pb = mSongOwner->mSongPlayer;
+            unsigned int count = pb->mWeights.size();
+            for (unsigned int i = 0; i < count; i++) {
+                CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
+                float curWeight = weight * w.unk14;
+                CharClip *clip = w.unk0;
+                if (curWeight != 0.0f && clip && clip != mSongOwner->mBlinkClip) {
+                    CharClip *remapped = dynamic_cast<CharClip *>(mClips->FindObject(clip->Name(), false));
+                    if (!remapped) {
+                        MILO_FAIL(
+                            kNotObjectMsg,
+                            clip->Name(),
+                            PathName(mClips) ? PathName(mClips) : "**no file**"
+                        );
+                    }
+                    ScaleAddViseme(remapped, curWeight);
+                }
+            }
+        }
+    }
+applyBlinks:
+    {
+        CharFaceServo *servo = dynamic_cast<CharFaceServo *>(mBones.Ptr());
+        if (servo)
+            servo->ApplyProceduralWeights();
+    }
+}
 
 void CharLipSyncDriver::PollDeps(
     std::list<Hmx::Object *> &changedBy, std::list<Hmx::Object *> &change
