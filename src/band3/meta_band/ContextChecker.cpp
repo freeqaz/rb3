@@ -228,7 +228,11 @@ namespace {
 #pragma pop
 }
 
-int CheckContext(const DataArray *a) { return gContextWeight & CheckContextAnd(a); }
+int CheckContext(const DataArray *a) {
+    gContextWeight = 10;
+    bool result = CheckContextAnd(a);
+    return gContextWeight & -(int)result;
+}
 
 void HandleContextUsed(Symbol ctx) { gUsedContexts.insert(ctx); }
 

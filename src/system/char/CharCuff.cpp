@@ -276,8 +276,9 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
         int newSize = faceCount + 1;
         if ((unsigned)newSize < faces.size()) {
             faces.erase(faces.begin() + newSize, faces.end());
+        } else {
+            faces.insert(faces.end(), newSize - (int)faces.size(), zero);
         }
-        faces.insert(faces.end(), newSize - (int)faces.size(), zero);
     }
 }
 

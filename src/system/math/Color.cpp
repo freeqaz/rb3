@@ -31,14 +31,13 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
     float third = 1.0f / 3.0f;
     float two_thirds = 2.0f / 3.0f;
     float t0 = hue + third;
-    float t2 = hue - third;
     float one = 1.0f;
     float six = 6.0f;
     for (int i = 0; i < 3; i++) {
         float t;
         if (i == 0) { t = t0; }
         else if (i == 1) { t = hue; }
-        else { t = t2; }
+        else { t = hue - third; }
         if (t < 0) { t += one; }
         else if (t > one) { t -= one; }
         if (t * six < one) { color[i] = qmp * t * six + p; }

@@ -1,20 +1,39 @@
 #include "movie/Movie.h"
+#include "os/Debug.h"
+#include "os/Timer.h"
 
-namespace MovieImpl {
-    struct Impl;
-    void CheckOpen(Impl *, bool);
-    void End(Impl *);
-    int GetFrame(const Impl *);
+class Movie::Impl {
+public:
+    Impl();
+    ~Impl();
+    static void Terminate();
+    bool Poll();
+    void Draw();
+};
+
+Movie::Movie() {
+    mImpl = new Movie::Impl();
+    MILO_ASSERT(mImpl, 0x647);
 }
 
-void Movie::CheckOpen(bool b) {
-    MovieImpl::CheckOpen((MovieImpl::Impl *)mImpl, b);
+Movie::~Movie() {
+    delete mImpl;
 }
 
-void Movie::End() {
-    MovieImpl::End((MovieImpl::Impl *)mImpl);
+void Movie::Terminate() {
+    Movie::Impl::Terminate();
 }
 
-int Movie::GetFrame() const {
-    return MovieImpl::GetFrame((MovieImpl::Impl *)mImpl);
+bool Movie::Poll() {
+    START_AUTO_TIMER("movie");
+    return mImpl->Poll();
 }
+
+void Movie::Draw() {
+    START_AUTO_TIMER("movie");
+    mImpl->Draw();
+}
+
+void Movie::End() {}
+int Movie::GetFrame() const { return 0; }
+void Movie::CheckOpen(bool) {}

@@ -605,10 +605,13 @@ void RandomGroupSeqInst::Stop() {
 bool RandomGroupSeqInst::IsRunning() { return mIt != mSeqs.end(); }
 
 void RandomGroupSeqInst::Poll() {
-    for (; mIt != mSeqs.end(); mIt++) {
-        if ((*mIt) && (*mIt)->IsRunning())
-            return;
-    }
+    goto check;
+loop:
+    mIt++;
+check:
+    if (mIt == mSeqs.end()) return;
+    if (!(*mIt)) goto loop;
+    if (!(*mIt)->IsRunning()) goto loop;
 }
 
 RandomIntervalGroupSeqInst::RandomIntervalGroupSeqInst(RandomIntervalGroupSeq *seq)

@@ -728,20 +728,16 @@ void Rnd::CompressTextureCancel(CompressTextureCallback *cb) {
 Hmx::Object *sTexture;
 bool sCompressDone;
 
-static DataArray *sTimerScript;
-static int sTimerScriptInited;
-
 float Rnd::DrawTimers(float f) {
-    if (0 == (sTimerScriptInited & 1)) {
-        sTimerScriptInited = sTimerScriptInited | 1;
+    static DataArray *timerScript;
+    if (!timerScript) {
         Symbol timerSym("timer_script");
         Symbol rndSym("rnd");
-        DataArray *rndCfg = SystemConfig(rndSym);
-        sTimerScript = rndCfg->FindArray(timerSym, false);
+        timerScript = SystemConfig(rndSym)->FindArray(timerSym, false);
     }
 
-    if (sTimerScript) {
-        sTimerScript->ExecuteScript(1, nullptr, nullptr, 1);
+    if (timerScript) {
+        timerScript->ExecuteScript(1, nullptr, nullptr, 1);
     }
 
     if (mVerboseTimers) {
@@ -788,17 +784,16 @@ float Rnd::DrawTimers(float f) {
 
         bool overBudget = budget != 0.0f && lastMs > budget;
 
-        Hmx::Color *color = &barColor;
         if (overBudget) {
             rect.w = budget * scale;
-            DrawRectScreen(rect, *color, nullptr, nullptr, nullptr);
+            DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
             rect.x += rect.w;
-            lastMs = lastMs - budget;
-            color = &budgetExcessColor;
+            rect.w = (lastMs - budget) * scale;
+            DrawRectScreen(rect, budgetExcessColor, nullptr, nullptr, nullptr);
+        } else {
+            rect.w = lastMs * scale;
+            DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
         }
-
-        rect.w = lastMs * scale;
-        DrawRectScreen(rect, *color, nullptr, nullptr, nullptr);
 
         if (it->first.mWorstMs > it->first.mLastMs) {
             rect.x += rect.w;
@@ -817,7 +812,7 @@ float Rnd::DrawTimers(float f) {
     barColor.green = 0.25f;
     barColor.blue = 0.25f;
     rect.w = 0.001f;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 50; i += 5) {
         DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
         rect.x += 0.095f;
     }
@@ -836,26 +831,23 @@ float Rnd::DrawTimers(float f) {
 
         float lastMs = it->first.mLastMs;
 
-        const char *text;
         if (lastMs >= 0.05f) {
             if (mVerboseTimers && AutoTimer::CollectingStats()) {
                 Symbol name = it->first.mName;
                 TimerStats &stats = it->second;
-                text = MakeString("%s %2.1f (%.2f, %.2f) %.2f", name, lastMs, stats.mAvgMs, stats.mStdDevMs, stats.mMaxMs);
+                DrawStringScreen(MakeString("%s %2.1f (%.2f, %.2f) %.2f", name, lastMs, stats.mAvgMs, stats.mStdDevMs, stats.mMaxMs), pos, barColor, true);
             } else {
                 Symbol name = it->first.mName;
                 float worstMs = it->first.mWorstMs;
-                text = MakeString("%s %.2f (%.2f)", name, lastMs, worstMs);
+                DrawStringScreen(MakeString("%s %.2f (%.2f)", name, lastMs, worstMs), pos, barColor, true);
             }
         } else {
-            text = it->first.mName.mStr;
+            DrawStringScreen(it->first.mName.mStr, pos, barColor, true);
         }
-
-        DrawStringScreen(text, pos, barColor, true);
         pos.y += rowSpacing;
     }
 
-    return f;
+    return pos.y;
 }
 
 #pragma push
@@ -909,22 +901,20 @@ void Rnd::DrawPreClear() {
             } while (it_end != it);
             it_begin = unk154.begin();
             unsigned int count = 0;
-            if (it_begin != it_end) {
-                std::list<CompressTexDesc *>::iterator it2 = it_begin;
-                do {
-                    count++;
-                    ++it2;
-                } while (it2 != it_end);
-                if (count > 0) {
-                    CompressTexDesc *first = unk154.front();
-                    sTexture = first->mTex;
-                    RndTex *newTex;
-                    {
-                        MemDoTempAllocations m(true, false);
-                        newTex = Hmx::Object::New<RndTex>();
-                    }
-                    ReplaceObject(sTexture, newTex, false, false, false);
+            std::list<CompressTexDesc *>::iterator it2 = it_begin;
+            while (it2 != unk154.end()) {
+                count++;
+                ++it2;
+            }
+            if (count != 0) {
+                CompressTexDesc *first = unk154.front();
+                sTexture = first->mTex;
+                RndTex *newTex;
+                {
+                    MemDoTempAllocations m(true, false);
+                    newTex = Hmx::Object::New<RndTex>();
                 }
+                ReplaceObject(sTexture, newTex, false, false, false);
             }
         }
     }

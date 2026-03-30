@@ -33,11 +33,11 @@ float RndCam::WorldToScreen(const Vector3 &w, Vector2 &s) const {
 }
 
 void RndCam::ScreenToWorld(const Vector2 &v2, float f, Vector3 &vout) const {
-    float sy = (v2.y - mScreenRect.y) / mScreenRect.h;
+    float x = (((v2.x - mScreenRect.x) / mScreenRect.w) * 2.0f - 1.0f) * f;
+    float y = (((v2.y - mScreenRect.y) / mScreenRect.h) * 2.0f - 1.0f) * f;
     vout.z = f;
-    float sx = (v2.x - mScreenRect.x) / mScreenRect.w;
-    vout.y = (sy * 2.0f - 1.0f) * f;
-    vout.x = (sx * 2.0f - 1.0f) * f;
+    vout.y = y;
+    vout.x = x;
     Multiply(vout, mInvWorldProjectXfm, vout);
 }
 
@@ -213,8 +213,15 @@ DataNode RndCam::OnSetZRange(const DataArray *da) {
 }
 
 DataNode RndCam::OnSetScreenRect(const DataArray *da) {
-    Hmx::Rect r(da->Float(2), da->Float(3), da->Float(4), da->Float(5));
-    SetScreenRect(r);
+    float h = da->Float(5);
+    float w = da->Float(4);
+    float y = da->Float(3);
+    float x = da->Float(2);
+    mScreenRect.x = x;
+    mScreenRect.y = y;
+    mScreenRect.w = w;
+    mScreenRect.h = h;
+    UpdateLocal();
     return 0;
 }
 

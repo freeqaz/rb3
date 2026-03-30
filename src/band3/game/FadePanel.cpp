@@ -44,14 +44,20 @@ void FadePanel::Poll() {
     UIPanel::Poll();
     mTimer.Split();
     if (unk_0x38 != 0) {
-        float tmp = mTimer.Ms();
-        if (tmp > mVolume) {
-            tmp = 1;
+        float ms = mTimer.Ms();
+        float ratio;
+        if (ms > mVolume) {
+            ratio = 1.0f;
         } else {
+            ratio = ms / mVolume;
         }
-        unk_0x84 = tmp;
+        unk_0x84 = ratio;
+        if (!mFadeOut) {
+            unk_0x84 = 1.0f - ratio;
+        }
+    } else {
+        unk_0x84 = mFadeOut ? 0.0f : 1.0f;
     }
-    unk_0x84 = mFadeOut ? 0 : 1;
 }
 
 void FadePanel::Draw() {

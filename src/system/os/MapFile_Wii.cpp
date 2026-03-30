@@ -55,6 +55,7 @@ void AddParams(String &s1, String &s2, String s3) {
             }
 
             unsigned int findlt = s1.substr(0, outerlen).find("<");
+            unsigned int commaLen = 0;
 
             if (findlt != String::npos) {
                 String comma_substr = s1.substr(0, outerlen);
@@ -65,7 +66,7 @@ void AddParams(String &s1, String &s2, String s3) {
                     findcomma = comma_substr.find(",");
                 }
                 s2 = s2 + comma_substr.substr(0, comma_substr.find("<") + 1);
-                unsigned int commaLen = strlen(comma_substr.c_str());
+                commaLen = strlen(comma_substr.c_str());
                 comma_substr = comma_substr.substr(comma_substr.find("<") + 1, commaLen);
                 while (HasMoreParams(String(comma_substr))) {
                     AddParams(comma_substr, s2, String(""));

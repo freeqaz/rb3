@@ -4,6 +4,8 @@
 
 class Movie {
 public:
+    class Impl;
+
     Movie();
     ~Movie();
 
@@ -24,8 +26,9 @@ public:
     void LockThread();
     void Begin(const char *, float, bool, bool, bool, bool, int, BinStream *);
 
+    static void Terminate();
     static void Validate();
     static void Init();
 
-    int mImpl; // Impl* mImpl;
+    Impl *mImpl;
 };
