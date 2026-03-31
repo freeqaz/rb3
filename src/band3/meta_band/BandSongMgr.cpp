@@ -127,8 +127,8 @@ void BandSongMgr::ContentDone() {
     for (int i = 0; i < 9U; i++) {
         SongRanking ranking;
         ranking.mInstrument = instSyms[i];
-        std::vector<int> i80;
         std::vector<int> curSongs = songs;
+        std::vector<int> i80;
         std::sort(
             curSongs.begin(), curSongs.end(), SongRankCmp(this, ranking.mInstrument)
         );
@@ -562,7 +562,8 @@ bool BandSongMgr::AllowContentToBeAdded(DataArray *a, ContentLocT lt) {
         if (!RemoveOldestCachedContent())
             break;
     }
-    int full = (count + GetCurSongCount() >= mMaxSongCount);
+    int maxCount = mMaxSongCount;
+    int full = (count + GetCurSongCount() >= maxCount);
     if (full) {
         if (!unk13c) {
             TheUIEventMgr->TriggerEvent(song_mgr_full, init_msg.mData);
@@ -719,10 +720,9 @@ void BandSongMgr::WriteCachedMetadataToStream(BinStream &bs) const {
 }
 
 bool BandSongMgr::RemoveOldestCachedContent() {
-    if (mCachedSongMetadata.empty())
+    if (mCachedSongMetadata.size() < 1)
         return false;
 
-    // Find the entry with the highest age (the oldest cached song)
     std::map<int, SongMetadata *>::iterator oldest = mCachedSongMetadata.begin();
     int maxAge = oldest->second->Age();
     for (std::map<int, SongMetadata *>::iterator it = mCachedSongMetadata.begin();
@@ -746,41 +746,33 @@ bool BandSongMgr::RemoveOldestCachedContent() {
         return false;
     }
 
-    // Find the content name: first check mContentUsedForSong, then scan mSongIDsInContent
     Symbol contentName;
     std::map<int, Symbol>::iterator contentIt = mContentUsedForSong.find(songID);
-    if (contentIt != mContentUsedForSong.end()) {
-        contentName = contentIt->second;
-    } else {
+    if (contentIt == mContentUsedForSong.end()) {
         for (std::map<Symbol, std::vector<int> >::iterator mit = mSongIDsInContent.begin();
              mit != mSongIDsInContent.end();
              ++mit) {
-            std::vector<int> &ids = mit->second;
-            for (std::vector<int>::iterator vit = ids.begin();
-                 vit != ids.end();
+            for (std::vector<int>::iterator vit = mit->second.begin();
+                 vit != mit->second.end();
                  ++vit) {
                 if (*vit == songID) {
-                    contentName = (Symbol)mit->first;
+                    contentName = mit->first;
                     break;
                 }
             }
-            if (contentName != gNullStr)
+            if (!contentName.Null())
                 break;
         }
+    } else {
+        contentName = contentIt->second;
     }
 
-    if (contentName == gNullStr) {
+    if (contentName.Null()) {
         mContentUsedForSong.erase(songID);
-        mCachedSongMetadata.erase(oldest);
+        mCachedSongMetadata.erase(songID);
     } else {
-        // Insert into mSongIDsInContent if not present (with empty vector)
-        std::map<Symbol, std::vector<int> >::iterator entry =
-            mSongIDsInContent.insert(mSongIDsInContent.end(), std::pair<const Symbol, std::vector<int> >(contentName, std::vector<int>()));
-        // Copy the songs list for this content
-        std::vector<int> songsToRemove = entry->second;
-        // Remove the content entry
+        std::vector<int> songsToRemove = mSongIDsInContent[contentName];
         ClearFromCache(contentName);
-        // Erase each song in the content pack from both maps
         for (std::vector<int>::iterator vit = songsToRemove.begin();
              vit != songsToRemove.end();
              ++vit) {

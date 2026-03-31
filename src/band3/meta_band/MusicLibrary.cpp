@@ -37,6 +37,7 @@
 #include "meta_band/SongSortMgr.h"
 #include "meta_band/SongSortNode.h"
 #include "meta_band/SongStatusMgr.h"
+#include "meta_band/ParentalControlPanel.h"
 #include "meta_band/PassiveMessenger.h"
 #include "meta_band/UIEventMgr.h"
 #include "meta_band/Utl.h"
@@ -44,6 +45,7 @@
 #include "net/Server.h"
 #include "net/Synchronize.h"
 #include "net/WiiFriendMgr.h"
+#include "meta/WiiProfileMgr.h"
 #include "net_band/RockCentral.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
@@ -70,14 +72,21 @@
 
 MusicLibrary *TheMusicLibrary;
 
+class WiiFriendsProvider {
+public:
+    bool IsPossessiveSuffixNeeded(const char *);
+    const char *GetPossessiveSuffix(const char *);
+};
+extern WiiFriendsProvider TheWiiFriendsProvider;
+
 void MusicLibrary::Init(SongPreview &prev) {
     MILO_ASSERT(!TheMusicLibrary, 0x53);
     TheMusicLibrary = new MusicLibrary(prev);
 }
 
 void MusicLibrary::TryToSetHighlight(Symbol token, SongNodeType type, bool passthrough) {
-    bool foundNode = false;
     bool matched = false;
+    bool foundNode = false;
     SortNode *node;
     if (token.mStr != gNullStr) {
         node = GetCurrentSort()->GetNode(token);
@@ -98,8 +107,8 @@ void MusicLibrary::TryToSetHighlight(Symbol token, SongNodeType type, bool passt
         SetHighlightIx(node->mStartIx, true);
         return;
     }
-    matched = false;
     foundNode = false;
+    matched = false;
     if (!SongSortMgr::IsSetlistSort(unkdc)) {
         node = GetCurrentSort()->GetNode(random_song);
         if (node != nullptr) {
@@ -113,8 +122,8 @@ void MusicLibrary::TryToSetHighlight(Symbol token, SongNodeType type, bool passt
         SetHighlightIx(node->mStartIx, true);
         return;
     }
-    matched = false;
     foundNode = false;
+    matched = false;
     if (SongSortMgr::IsSetlistSort(unkdc)) {
         node = GetCurrentSort()->GetNode(make_a_setlist);
         if (node != nullptr) {
@@ -166,7 +175,7 @@ MusicLibrary::MusicLibrary(SongPreview &prev)
       mDiscMatEven(0), mDiscMatOdd(0), mDlcMatEven(0), mDlcMatOdd(0), mStoreMatEven(0),
       mStoreMatOdd(0), mUgcMatEven(0), mUgcMatOdd(0), mSetlistMatEven(0),
       mSetlistMatOdd(0), unk12c(0), unk12d(0), mSetlistProvider(new SetlistProvider()),
-      unk13c(0), mNetSetlists(new MusicLibraryNetSetlists()), unk15c(0),
+      mCurrentSetlist(nullptr), mNetSetlists(new MusicLibraryNetSetlists()), unk15c(0),
       mSetlistScoresProvider(new SetlistScoresProvider()), mHasHeaderData(0),
       mHeaderCareerScore(0), mHeaderCareerInstrumentMask(0), mHeaderCareerStars(0),
       mHeaderPossibleStars(0) {
@@ -616,8 +625,9 @@ void MusicLibrary::SkipToNextShortcut(bool forward) {
             }
         }
     } else {
+        NodeSort *sort2 = TheSongSortMgr->GetSort(unkdc);
         int startIx = node->mStartIx;
-        if (startIx == TheSongSortMgr->GetSort(unkdc)->FirstActiveIxForShortcut(shortcutIx)) {
+        if (startIx == sort2->FirstActiveIxForShortcut(shortcutIx)) {
             shortcutIx--;
             if (numData == 0) {
                 shortcutIx = 0;
@@ -746,37 +756,62 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
                     ObjectDir::Main()->Find<UIScreen>("full_setlist_screen", true)
                 );
             }
-        } else if (songNode->GetSongRecord()->GetRestricted() && !b3) {
-            // "parental_control_panel"
+        } else {
+            if (songNode->GetSongRecord()->GetRestricted() && !b3) {
+                ParentalControlPanel *panel = ObjectDir::Main()->Find<ParentalControlPanel>("parental_control_panel", false);
+                panel->unk38 = (int)user;
+                TheUI.PushScreen(
+                    ObjectDir::Main()->Find<UIScreen>("parental_control_screen", false)
+                );
+            } else if (IsSongAllowedInSetlist(songID, b3)) {
+                if (!songNode->IsEnabled())
+                    break;
+                AppendToSetlist(songID);
+                bool wasMaking = GetMakingSetlist(false);
+                if (!wasMaking) {
+                    PlaySetlist(true);
+                } else {
+                    if (SetlistIsFull()) {
+                        TryToSetHighlight(play_setlist, kNodeFunction, false);
+                    }
+                }
+            }
         }
         break;
     case kNodeSetlist:
+        if (IsLeaderLocal()) {
+            SetlistSortNode *setlistNode = dynamic_cast<SetlistSortNode *>(node);
+            MILO_ASSERT(setlistNode, 0x48e);
+            mCurrentSetlist = setlistNode->GetSetlistRecord()->GetSetlist();
+            PlaySetlist(mCurrentSetlist);
+        } else if (!b3) {
+            TheUI.PushScreen(
+                ObjectDir::Main()->Find<UIScreen>("leader_setlist_warning_screen", false)
+            );
+        }
         break;
     default:
         break;
     }
 }
 
-bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool showScreen) {
+bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
     SongMetadata *metadata = TheSongMgr.Data(songID);
     MILO_ASSERT(metadata, 0x4a2);
     if (!metadata->IsVersionOK()) {
-        if (!showScreen)
-            return false;
-        TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_version_screen", false));
+        if (!b3)
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("setlist_content_restricted_screen", false));
         return false;
     }
     if (TheSongMgr.IsDemo(metadata->ID())) {
         if (!TheGameMode->Property(Symbol("demos_allowed"), true)->Int(nullptr)) {
-            if (!showScreen)
-                return false;
-            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_mode_screen", false));
+            if (!b3)
+                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_mode_screen", false));
             return false;
         }
         if (!TheSessionMgr->IsLocal()) {
-            if (!showScreen)
-                return false;
-            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_online_screen", false));
+            if (!b3)
+                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_online_screen", false));
             return false;
         }
     }
@@ -787,22 +822,19 @@ bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool showScreen) {
                 demoNotAllowed = true;
         }
         if (demoNotAllowed) {
-            if (!showScreen)
-                return false;
-            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_setlist_screen", false));
+            if (!b3)
+                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_setlist_screen", false));
             return false;
         }
     }
     if (TheSongMgr.IsRestricted(metadata->ID())) {
-        if (!showScreen)
-            return false;
-        TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("content_restricted_screen", false));
+        if (!b3)
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("content_restricted_screen", false));
         return false;
     }
     if (!TheSessionMgr->GetMachineMgr()->IsSongShared(songID)) {
-        if (!showScreen)
-            return false;
-        TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_selection_screen", false));
+        if (!b3)
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_selection_screen", false));
         return false;
     }
     return true;
@@ -812,14 +844,14 @@ void MusicLibrary::MakeSureSetlistIsValid() {
     int numRemoved = 0;
     for (std::vector<int>::iterator it = mSetlist.begin(); it != mSetlist.end(); ) {
         int songID = *it;
-        if (TheSongMgr.HasSong(songID) && IsSongAllowedInSetlist(songID, true)) {
-            ++it;
-        } else {
+        if (!TheSongMgr.HasSong(songID) || !IsSongAllowedInSetlist(songID, true)) {
             it = mSetlist.erase(it);
             numRemoved++;
+        } else {
+            ++it;
         }
     }
-    if (numRemoved > 0) {
+    if (numRemoved != 0) {
         PushSetlistToScreen();
         ThePassiveMessenger->TriggerSetlistSongsRemovedMsg(numRemoved);
         SetSyncDirty(-1, true);
@@ -1410,7 +1442,7 @@ END_FORCE_LOCAL_INLINE
 
 void MusicLibrary::ClearSetlist() {
     mSetlist.clear();
-    unk13c = 0;
+    mCurrentSetlist = nullptr;
     unk12c = true;
     SetSyncDirty(-1, false);
 }
@@ -1534,16 +1566,60 @@ bool MusicLibrary::FilterSetlist(WiiFriendList *friends, NetSavedSetlist *setlis
     case SavedSetlist::kSetlistInternal:
         MILO_ASSERT(0 && "Net setlist contains unusual setlist type", 0x97D);
         return true;
-    // case SavedSetlist::kSetlistHarmonix:
-    case SavedSetlist::kBattleHarmonix:
+    case SavedSetlist::kSetlistFriend:
     case SavedSetlist::kBattleFriend:
     case SavedSetlist::kBattleFriendArchived:
         if (ThePlatformMgr.IsOnlineRestricted())
             return false;
-        const char *owner = setlist->GetOwner();
-        const char *name = Localize(wii_friends_default_setlist_name, nullptr);
-        const char *desc = Localize(wii_friends_default_setlist_description, nullptr);
-        break;
+        {
+            const char *owner = setlist->GetOwner();
+            const char *name = Localize(wii_friends_default_setlist_name, nullptr);
+            const char *desc = Localize(wii_friends_default_setlist_description, nullptr);
+            int numFriends = friends->mFriends.size();
+            for (int i = 0; i < 4; i++) {
+                const char *profileName = TheWiiProfileMgr.GetNameForIndex(i);
+                if (profileName && strcmp(profileName, owner) == 0) {
+                    return true;
+                }
+            }
+            if (!TheProfileMgr.GetUsingWiiFriends()) {
+                return false;
+            }
+            for (int i = 0; i < numFriends; i++) {
+                WiiFriend *fr = friends->GetFriendByIdx(i);
+                if (fr->GetProfile(owner)) {
+                    return true;
+                }
+            }
+            const char *setlistName;
+            if (TheWiiFriendsProvider.IsPossessiveSuffixNeeded(name)) {
+                setlistName = MakeString(
+                    name,
+                    owner,
+                    TheWiiFriendsProvider.GetPossessiveSuffix(owner)
+                );
+            } else {
+                setlistName = MakeString(name, owner);
+            }
+            setlist->SetTitle(setlistName);
+            const char *setlistDesc;
+            if (TheWiiFriendsProvider.IsPossessiveSuffixNeeded(desc)) {
+                setlistDesc = MakeString(
+                    desc,
+                    owner,
+                    TheWiiFriendsProvider.GetPossessiveSuffix(owner)
+                );
+            } else {
+                setlistDesc = MakeString(desc, owner);
+            }
+            setlist->SetDescription(setlistDesc);
+            MILO_ASSERT(
+                setlist->GetArtTex() == NULL
+                    && "NetSaveSestlist has texture?  Tell Ian S.",
+                0x9CF
+            );
+            return true;
+        }
     default:
         return true;
     }
@@ -1554,10 +1630,28 @@ DECOMP_FORCEACTIVE(
     "pSetlist->GetArtTex() == NULL && \"NetSaveSestlist has texture?  Tell Ian S.\""
 )
 
+void SavedSetlist::SetTitle(const char *title) { mTitle = title; }
+void SavedSetlist::SetDescription(const char *desc) { mDescription = desc; }
+RndTex *SavedSetlist::GetArtTex() const { return nullptr; }
+
 void MusicLibrary::GetNetSetlists(std::vector<NetSavedSetlist *> &setlists) const {
     WiiFriendList friends;
     TheWiiFriendMgr.GetCachedFriends(&friends);
     setlists.clear();
+    const std::vector<NetSavedSetlist *> &friendSetlists = mNetSetlists->unk20;
+    FOREACH (it, friendSetlists) {
+        NetSavedSetlist *nsl = *it;
+        if (FilterSetlist(&friends, nsl)) {
+            setlists.push_back(nsl);
+        }
+    }
+    const std::vector<NetSavedSetlist *> &harmSetlists = mNetSetlists->unk28;
+    FOREACH (it, harmSetlists) {
+        NetSavedSetlist *nsl = *it;
+        if (FilterSetlist(&friends, nsl)) {
+            setlists.push_back(nsl);
+        }
+    }
 }
 
 void MusicLibrary::DeleteHighlightedSetlist() {
@@ -1656,7 +1750,12 @@ DataNode MusicLibrary::OnMsg(const RemoteMachineLeftMsg &) {
     return 1;
 }
 
-DataNode MusicLibrary::OnMsg(const ServerStatusChangedMsg &) {}
+DataNode MusicLibrary::OnMsg(const ServerStatusChangedMsg &msg) {
+    if (msg->Int(2) != 0 && mNetSetlists->mFailed) {
+        RefreshNetSetlists();
+    }
+    return 1;
+}
 
 DataNode MusicLibrary::OnMsg(const FriendsListChangedMsg &) {
     RefreshNetSetlists();
@@ -1705,7 +1804,58 @@ void MusicLibrary::RebuildUserConfigData() {
 }
 
 void MusicLibrary::RebuildSharedSongData() {
-    MILO_WARN("!mySharedSongChanged || aSharedSongChanged");
+    SortNode *highlightedNode = GetCurrentSort()->GetNode(mCurrentHighlightIndex);
+    OwnedSongSortNode *curNode = dynamic_cast<OwnedSongSortNode *>(highlightedNode);
+    bool wasShared = false;
+    if (curNode && curNode->GetSongRecord()->mIsShared) {
+        wasShared = true;
+    }
+    std::map<Symbol, SongRecord> &theSongs = TheSongSortMgr->mSongs;
+    bool b1 = false;
+    FOREACH (it, theSongs) {
+        if (it->second.UpdateSharedStatus())
+            b1 = true;
+    }
+    bool sharedChanged = false;
+    if (curNode && wasShared != (bool)curNode->GetSongRecord()->mIsShared) {
+        sharedChanged = true;
+    }
+    MILO_ASSERT(!sharedChanged || b1, 0xAFD);
+    if (b1) {
+        PushSonglistToScreen();
+        if (sharedChanged) {
+            PushHighlightToScreen(false);
+        }
+    }
+}
+
+void MusicLibrary::RebuildRestrictedData() {
+    TheSongMgr.SyncSharedSongs();
+    SortNode *highlightedNode = GetCurrentSort()->GetNode(mCurrentHighlightIndex);
+    OwnedSongSortNode *curNode = dynamic_cast<OwnedSongSortNode *>(highlightedNode);
+    bool wasRestricted = false;
+    if (curNode && curNode->GetSongRecord()->mRestricted) {
+        wasRestricted = true;
+    }
+    std::map<Symbol, SongRecord> &theSongs = TheSongSortMgr->mSongs;
+    bool b1 = false;
+    FOREACH (it, theSongs) {
+        if (it->second.UpdateRestricted()) {
+            b1 = true;
+            it->second.UpdateSharedStatus();
+        }
+    }
+    bool restrictedChanged = false;
+    if (curNode && wasRestricted != (bool)curNode->GetSongRecord()->mRestricted) {
+        restrictedChanged = true;
+    }
+    MILO_ASSERT(!restrictedChanged || b1, 0xB27);
+    if (b1) {
+        PushSonglistToScreen();
+        if (restrictedChanged) {
+            PushHighlightToScreen(false);
+        }
+    }
 }
 
 DECOMP_FORCEACTIVE(MusicLibrary, "!myRestrictedSongChanged || aRestrictedSongChanged")

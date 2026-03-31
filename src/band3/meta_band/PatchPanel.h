@@ -59,6 +59,9 @@ public:
     virtual int NumData() const;
     virtual void InitData(RndDir *);
 
+    void StickerLoaded();
+    void SetStickers(std::vector<PatchSticker *> *, Symbol);
+
     RndMat *mStickerMat; // 0x20
     std::vector<RndMat *> mStickerMats; // 0x24
     std::vector<PatchSticker *> *mStickers; // 0x2c

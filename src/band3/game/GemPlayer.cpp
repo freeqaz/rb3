@@ -1496,9 +1496,15 @@ void GemPlayer::ResetController(bool b1) {
 }
 
 void GemPlayer::GetPlayerState(PlayerState &state) const {
-    state = PlayerState(
-        IsInCrowdWarning(), false, unk358, 0, kPhraseNone, 0, mStats.GetCurrentStreak()
-    );
+    int streak = mStats.GetCurrentStreak();
+    float whammy = unk358;
+    state.warning = IsInCrowdWarning();
+    state.overdriveReady = false;
+    state.whammy = whammy;
+    state.whammyActive = false;
+    state.phraseState = kPhraseNone;
+    state.fillState = 0;
+    state.streak = streak;
 }
 
 void GemPlayer::UpdateCrowdMeter(float noteScore, int) {
@@ -1828,6 +1834,188 @@ void GemPlayer::LocalSoloHit(int x) {
     }
 }
 
+void GemPlayer::LocalSoloEnd(int pct, int numGems) {
+    int points = 0;
+    Symbol awardSym;
+    Symbol trackSym = mUser->GetTrackSym();
+    TheScoring->GetSoloAward(pct, trackSym, points, awardSym);
+    int total = points * numGems;
+    mStats.AddSolo(total);
+    Symbol awardSymCopy = awardSym;
+    BandTrack *track = GetBandTrack();
+    GetTrackPanelDir()->SoloEnd(track, total, awardSymCopy);
+    AddBonusPoints(total);
+    mStats.UpdateBestSolo(pct);
+    if (unk3d8) {
+        mStats.m0x41 = true;
+        if (pct == 100) {
+            mStats.mPerfectSoloWithSoloButtons = true;
+        }
+    }
+    unk315 = false;
+    unk316 = false;
+    unk3d8 = false;
+}
+
+int GemPlayer::GetSoloData(int tick, float &pct, float &solo_pct, int &numGems) {
+    pct = 0;
+    numGems = 0;
+    int startTick;
+    int endTick;
+    if (!GetPhraseExtents(kSoloPhrase, mTrackNum, tick, startTick, endTick))
+        return 0;
+    unk316 = true;
+    const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
+    int idx = gemList->ClosestMarkerIdxAtOrAfterTick(startTick);
+    int solo = 0;
+    int hit = 0;
+    if (idx != -1) {
+        const std::vector<GameGem> &gems = TheSongDB->GetGems(mTrackNum);
+        for (; (unsigned int)idx < gems.size(); idx++) {
+            if (gems[idx].GetTick() >= endTick) break;
+            if (unk316) {
+                if (!mGemStatus->GetEncountered(idx)) {
+                    unk316 = false;
+                }
+            }
+            numGems++;
+            if (!mGemStatus->GetHit(idx)) {
+                if (!mGemStatus->GetIgnored(idx))
+                    continue;
+            }
+            hit++;
+            if (mGemStatus->GetSolo(idx)) {
+                solo++;
+            }
+        }
+    }
+    if (numGems == 0) {
+        pct = 0;
+        solo_pct = 0;
+    } else {
+        pct = (100.0f * (float)hit) / (float)numGems;
+        solo_pct = (100.0f * (float)solo) / (float)numGems;
+    }
+    return 1;
+}
+
+float GemPlayer::GetCommonPhraseFraction(int tick) {
+    Extent ext;
+    TheSongDB->GetCommonPhraseExtent(mTrackNum, tick, ext);
+    int startTick = ext.unk0;
+    int endTick = ext.unk4;
+    const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
+    int idx = gemList->ClosestMarkerIdxAtOrAfterTick(startTick);
+    int total = 0;
+    int hit = 0;
+    if (idx != -1) {
+        const std::vector<GameGem> &gems = TheSongDB->GetGems(mTrackNum);
+        for (int n = (int)gems.size() - idx; (unsigned int)idx < gems.size() && n > 0 && gems[idx].GetTick() < endTick; idx++, n--) {
+            total++;
+            if (!mGemStatus->GetHit(idx)) {
+                if (!mGemStatus->GetIgnored(idx))
+                    continue;
+            }
+            hit++;
+        }
+    }
+    if (total == 0)
+        return 0;
+    return (float)hit / (float)total;
+}
+
+bool GemPlayer::IsCodaMiss(float ms) {
+    int codaStartTick = TheSongDB->GetCodaStartTick();
+    if (codaStartTick == -1)
+        return false;
+    SongData *data = TheSongDB->GetData();
+    int curTick = (int)GetSongPos().GetTotalTick();
+    FillInfo *fillInfo = data->GetDrumFillInfo(mTrackNum);
+    FillExtent curExtent(0, 0, false);
+    FillExtent codaExtent(0, 0, false);
+    bool hasCoda = fillInfo->NextFillExtents(codaStartTick, codaExtent);
+    bool hasCur = fillInfo->NextFillExtents(curTick, curExtent);
+    if (!hasCoda)
+        return true;
+    if (hasCur && curExtent.start == codaExtent.start)
+        return false;
+    if (curTick < codaExtent.end)
+        return false;
+    FillExtent checkExtent(0, 0, false);
+    return !data->GetFillInfo(mTrackNum)->FillAt(curTick - 0xF0, checkExtent, false);
+}
+
+void GemPlayer::CheckSolo(float ms) {
+    int startTick;
+    int endTick;
+    int inSolo;
+    unsigned inSoloBool;
+    float tickF;
+    if (!mQuarantined && TheGame->mProperties.mCanSolo &&
+        (tickF = MsToTick(ms),
+         startTick = 0, endTick = 0,
+         inSolo = GetPhraseExtents(kSoloPhrase, mTrackNum, (int)tickF, startTick, endTick) & TheGame->mProperties.mCanSolo,
+         inSoloBool = (unsigned)(-inSolo | inSolo) >> 31U,
+         (inSoloBool != (((unsigned)unk310 >> 31U) ^ 1U)))) {
+        if (inSoloBool) {
+            if (mEnabledState != kPlayerEnabled) {
+                unk314 = true;
+            } else if (IsLocal() && !unk315) {
+                unk404 = -1;
+                LocalSoloStart();
+                HandleType(send_solo_start_msg);
+            }
+            unk315 = true;
+            mStats.SetHasSolos(true);
+            unk310 = startTick;
+            return;
+        }
+        if (unk316) {
+            if (!unk314) {
+                SoloEnd();
+            }
+            unk314 = false;
+            unk315 = false;
+            unk310 = -1U;
+        }
+    }
+}
+
+void GemPlayer::UpdateGameCymbalLanes() {
+    if (mUser->GetTrackType() != kTrackDrum)
+        return;
+    bool discoUnflip = false;
+    bool hasGHDrums = false;
+    if (IsLocal()) {
+        LocalBandUser *lu = mUser->GetLocalBandUser();
+        if (lu && UserHasGHDrums(lu))
+            hasGHDrums = true;
+    }
+    if (hasGHDrums && !mUser->GetGameplayOptions()->GetLefty()) {
+        discoUnflip = true;
+    }
+    SongData *data = TheSongDB->GetData();
+    if (data->GetUsingRealDrums()) {
+        mGameCymbalLanes = mUser->GetCymbalConfiguration();
+        bool forceUseCymbals = TheGame->mProperties.mForceUseCymbals;
+        bool forceDontUseCymbals = TheGame->mProperties.mForceDontUseCymbals;
+        if (MetaPerformer::Current()->mRealDrumsOverride) {
+            mGameCymbalLanes = 0x1C;
+        } else if (forceUseCymbals) {
+            mGameCymbalLanes = 0x1C;
+        } else if (forceDontUseCymbals) {
+            mGameCymbalLanes = 0;
+        }
+        if (mGameCymbalLanes & 4)
+            discoUnflip = true;
+    } else {
+        mGameCymbalLanes = 0;
+        discoUnflip = false;
+    }
+    data->SetUseDiscoUnflip(discoUnflip);
+    data->SetGameCymbalLanes(mGameCymbalLanes);
+}
+
 void GemPlayer::SoloEnd() {
     if (IsLocal()) {
         if (!InRollback()) {
@@ -1948,8 +2136,12 @@ void GemPlayer::ConfigureBehavior() {
     TrackType ty = mUser->GetTrackType();
     mBehavior->SetMaxMultiplier(ty == kTrackBass || ty == kTrackRealBass ? 6 : 4);
     mBehavior->SetCanDeployOverdrive(single && c1);
-    bool b = (ty - 1 <= 7U && (1 << (ty - 1)) & 0xBBU);
-    mBehavior->SetTiltDeploysBandEnergy(b && c1);
+    bool tiltTrack = false;
+    if ((unsigned)(ty - 1) <= 7U && ((1 << (ty - 1)) & 0xBBU))
+        tiltTrack = true;
+    bool tilt = false;
+    if (tiltTrack && c1) tilt = true;
+    mBehavior->SetTiltDeploysBandEnergy(tilt);
     mBehavior->SetFillsDeployBandEnergy(ty == kTrackDrum && c1);
     mBehavior->SetRequireAllCodaLanes(ty > 9U || !((1 << ty) & 0x3E1U));
     mBehavior->SetCanFreestyleBeforeGems(false);

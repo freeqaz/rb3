@@ -25,7 +25,13 @@
 #include "game/Shuttle.h"
 #include "game/SongDB.h"
 #include "game/TrackerManager.h"
-#include "game/TrainerChallenge.h"
+#include "game/GemTrainerPanel.h"
+#include "game/PracticePanel.h"
+#include "game/ChordbookPanel.h"
+#include "game/VocalTrainerPanel.h"
+#include "game/FreestylePanel.h"
+#include "game/RGTrainerPanel.h"
+#include "game/RKTrainerPanel.h"
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/BandUI.h"
 #include "meta_band/MetaPerformer.h"
@@ -110,9 +116,9 @@ Hmx::Object *SyncGameStartPanel::NewObject() { return new SyncGameStartPanel(); 
 
 void GameInit() {
     FadePanel::Init();
-    // GamePanel::Init();
-    // SyncGameStartPanel::Init();
-    // TrackPanel::Init();
+    REGISTER_OBJ_FACTORY(GamePanel)
+    REGISTER_OBJ_FACTORY(SyncGameStartPanel)
+    REGISTER_OBJ_FACTORY(TrackPanel)
     PlayerGameplayMsg::Register();
     RestartGameMsg::Register();
     ResumeNoScoreGameMsg::Register();
@@ -129,15 +135,15 @@ void GameInit() {
     SetUpMicsMsg::Register();
     TourHideShowFiltersMsg::Register();
     SongResultsScrollMsg::Register();
-    // GemTrainerPanel::Init();
-    // GemTrainerLoopPanel::Init();
-    // RGTrainerPanel::Init();
-    // RKTrainerPanel::Init();
-    // PracticePanel::Init();
-    // ChordbookPanel::Init();
+    REGISTER_OBJ_FACTORY(GemTrainerPanel)
+    REGISTER_OBJ_FACTORY(GemTrainerLoopPanel)
+    REGISTER_OBJ_FACTORY(RGTrainerPanel)
+    REGISTER_OBJ_FACTORY(RKTrainerPanel)
+    REGISTER_OBJ_FACTORY(PracticePanel)
+    REGISTER_OBJ_FACTORY(ChordbookPanel)
     TrainerChallenge::Init();
-    // VocalTrainerPanel::Init();
-    // FreestylePanel::Init();
+    REGISTER_OBJ_FACTORY(VocalTrainerPanel)
+    REGISTER_OBJ_FACTORY(FreestylePanel)
     TheDebug.AddExitCallback(GameTerminate);
 }
 
@@ -342,7 +348,8 @@ void Game::Reset() {
     mRealtime = false;
     mTimeOffset = 0;
     mPauseTime = 0;
-    mSongPos.mTotalBeat = mSongPos.mTotalTick = 0;
+    mSongPos.mTotalTick = 0;
+    mSongPos.mTotalBeat = 0;
     mSongPos.mMeasure = 0;
     mSongPos.mBeat = 0;
     mSongPos.mTick = 0;
@@ -386,7 +393,22 @@ float Game::GetSongToTaskMgrMs() {
 
 float Game::GetSongMs() const { return mMaster->GetAudio()->GetTime(); }
 
-Symbol Game::GetSectionAtMs(float ms) const { MILO_WARN("No practice sections!"); }
+Symbol Game::GetSectionAtMs(float ms) const {
+    int tick = (int)MsToTick(ms);
+    SongDB *songDB = TheSongDB;
+    const PracticeSection *begin = songDB->mPracticeSections.begin();
+    const PracticeSection *end = begin + songDB->mPracticeSections.size();
+    for (const PracticeSection *it = begin; it != end; it++) {
+        if (tick < it->unk8) {
+            return it->unk0;
+        }
+    }
+    if (songDB->mPracticeSections.size() == 0) {
+        MILO_WARN("No practice sections!");
+        return Symbol();
+    }
+    return (end - 1)->unk0;
+}
 
 void Game::RemovePlayer(Player *p) {
     mAllActivePlayers.erase(
@@ -473,10 +495,10 @@ EndGameResult Game::GetResult(bool won) {
     if (won) {
         if (MetaPerformer::Current()->SongEndsWithEndgameSequence()) {
             return kWonFinale;
-        } else
-            return kWon;
-    } else
-        return kLost;
+        }
+        return kWon;
+    }
+    return kLost;
 }
 
 EndGameResult Game::GetResultForUser(BandUser *) {
@@ -582,8 +604,67 @@ void Game::EnableWorldPolling(bool b1) {
 
 void Game::ResetAudio() { mMaster->ResetAudio(); }
 
-void Game::Restart(bool) {
-    mDrumFillsMod = TheModifierMgr->IsModifierActive("mod_drum_fills");
+void Game::RebuildData() {
+    Player **it = &mAllActivePlayers[0];
+    for (; it != &mAllActivePlayers[0] + mAllActivePlayers.size(); it++) {
+        (*it)->RebuildPhrases();
+    }
+    mSongDB->RebuildData();
+}
+
+void Game::Restart(bool doSave) {
+    if (!mMaster->GetAudio()->Fail()) {
+        TheBandUI.mOvershell->RemoveUsersRequiringSongOptions();
+        TheGamePanel->mDeJitter.Reset();
+        TheSynth->StopAllSfx(false);
+        if (doSave) {
+            if (0.0f == mResumeTime) {
+                mMaster->Reset();
+            } else {
+                float t1 = mResumeTime - 2000.0f;
+                if (0.0f >= t1) {
+                    t1 = 0.0f;
+                }
+                float t2 = t1 - 2000.0f;
+                if (0.0f >= t2) {
+                    t2 = 0.0f;
+                }
+                mMaster->Jump(t2);
+            }
+            unk120 = true;
+            if (!mMuckWithPitch) {
+                mMaster->GetAudio()->SetMuckWithPitch(false);
+            }
+            mLastPollMs = mResumeTime;
+        }
+        EnableWorldPolling(true);
+        ReconcilePlayers();
+        RebuildData();
+        mDrumFillsMod = TheModifierMgr->IsModifierActive("mod_drum_fills");
+        for (int i = 0; i < mAllActivePlayers.size(); i++) {
+            Player *p = mAllActivePlayers[i];
+            if (p) {
+                p->SetFillLogic(GetFillLogic());
+            }
+        }
+        mBand->Restart(mResumeTime != 0.0f);
+        if (MetaPerformer::Current()->IsFirstSong()) {
+            mBand->SetAccumulatedScore(0);
+        }
+        if (mInvalidScore) {
+            Player **it = &mAllActivePlayers[0];
+            for (; it != &mAllActivePlayers[0] + mAllActivePlayers.size(); it++) {
+                (*it)->SetQuarantined(true);
+            }
+        }
+        mTrackerManager->Restart();
+        unk13c = -1;
+        unk140 = -1.0f;
+        SetMusicSpeed(1.0f);
+        unk148 = false;
+        ResetVoiceChatState();
+        MetaPerformer::Current()->LockBandOrSolo();
+    }
 }
 
 FORCE_LOCAL_INLINE
@@ -885,8 +966,20 @@ const char *Game::DebugCycleAutoplay() {
 }
 
 const char *Game::DebugCycleAutoplayAccuracy() {
-    MILO_WARN("%0.1f%%");
-    MILO_WARN("NA");
+    float accuracy = -1.0f;
+    for (int slot = 0; slot < 4; slot++) {
+        BandUser *user = TheBandUserMgr->GetUserFromSlot(slot);
+        if (user && user->mPlayer && user->IsLocal()) {
+            GemPlayer *gp = dynamic_cast<GemPlayer *>(user->mPlayer);
+            if (gp) {
+                accuracy = gp->CycleAutoplayAccuracy();
+            }
+        }
+    }
+    if (accuracy >= 0.0f) {
+        return MakeString("%0.1f%%", 100.0f * accuracy);
+    }
+    return MakeString("NA");
 }
 
 void Game::SetInvalidScore(bool score) { mInvalidScore = score; }
@@ -1287,7 +1380,7 @@ void Game::AddPlayer(BandUser *user) {
         }
     }
     PlayerTrackConfigList *cfgList = TheGameConfig->GetConfigList();
-    SongData *songData = mSongDB->GetData();
+    SongData *songData = TheSongDB->GetData();
     TheGameConfig->AssignTrack(user);
     cfgList->ProcessConfig(user->GetUserGuid());
     songData->UpdatePlayerTrackConfigList(cfgList);
@@ -1303,7 +1396,7 @@ void Game::AddPlayer(BandUser *user) {
 void Game::ReconcilePlayers() {
     std::vector<BandUser *> users;
     TheBandUserMgr->GetParticipatingBandUsersInSession(users);
-    for (int i = 0; i < (int)users.size(); i++) {
+    for (int i = 0; i < users.size(); i++) {
         BandUser *user = users[i];
         if (!user->mPlayer) {
             if (!user->IsFullyInGame()) {
@@ -1313,11 +1406,9 @@ void Game::ReconcilePlayers() {
                 AddPlayer(user);
             }
             // Remove user from pending queue if present
-            for (int j = 0; j < (int)unk154.size(); j++) {
-                if (unk154[j] == user) {
-                    unk154.erase(unk154.begin() + j);
-                    break;
-                }
+            std::vector<BandUser *>::iterator uit = std::find(unk154.begin(), unk154.end(), user);
+            if (uit != unk154.end()) {
+                unk154.erase(uit);
             }
         }
     }

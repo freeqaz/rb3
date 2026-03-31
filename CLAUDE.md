@@ -154,6 +154,21 @@ python3 scripts/dc3_compare.py --filter system/ --max-rb3 50 --sort rb3
 DC3 source is at `/home/free/code/milohax/dc3-decomp/src/system/`.
 When porting: check `bin/analyze-function` first to understand what the original does, then adapt the DC3 source (different class names, member names, includes) to RB3.
 
+## Skills (Slash Commands)
+
+Available via `/skill-name` in Claude Code:
+
+- `/analyze-function` — Combined objdiff match% + Ghidra pseudo-C + m2c decompilation for a symbol
+- `/ghidra-decompile` — Decompile a function via Ghidra MCP (rich pcode output)
+- `/compare-asm` — Side-by-side assembly comparison with mismatch diagnosis
+- `/stack-layout` — Stack frame layout comparison between target and base
+- `/progress` — Decomp progress dashboard from report.json
+- `/dc3-pair` — Find DC3 reference implementations for RB3 engine functions
+- `/refactor-staff` — Code cleanup pass with CW-specific pattern awareness
+- `/pcode-inspect` — Analyze switch statements and cast/extension operations via Ghidra pcode
+- `/struct-check` — Compare header struct layouts against Ghidra DWARF-inferred layouts
+- `/permute` — Run source permuter to find better-matching code variants
+
 ## Reference Resources
 
 - DC3 decomp (shared engine): `/home/free/code/milohax/dc3-decomp/src/system/`

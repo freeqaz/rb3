@@ -233,7 +233,7 @@ void PatchPanel::SetBaseSize(float baseX, float baseY) {
 float PatchPanel::CalcMotion(float vel, int dir) {
     float dt = TheTaskMgr.DeltaUISeconds();
     static const float kMaxDt = 1.0f / 30.0f;
-    if (dt > kMaxDt)
+    if (kMaxDt < dt)
         dt = kMaxDt;
     float deadzone = unk74;
     if (vel < deadzone && vel > -deadzone)
@@ -269,30 +269,35 @@ DataNode PatchPanel::OnMsg(const ButtonDownMsg &msg) {
         rot += 360.0f;
     int action = msg.GetAction();
     if (mMode == "move") {
-        if (action == kAction_Up) {
+        switch (action) {
+        case kAction_Up:
             mMoveY = 1;
             return 1;
-        } else if (action == kAction_Down) {
+        case kAction_Down:
             mMoveY = -1;
             return 1;
-        } else if (action == kAction_Right) {
+        case kAction_Right:
             mMoveX = 1;
             return 1;
-        } else if (action == kAction_Left) {
+        case kAction_Left:
             mMoveX = -1;
             return 1;
         }
     } else if (mMode == "rotate") {
-        if (action == kAction_Up || action == kAction_Right) {
+        switch (action) {
+        case kAction_Up:
+        case kAction_Right:
             mRot = 1;
             return 1;
-        } else if (action == kAction_Down || action == kAction_Left) {
+        case kAction_Down:
+        case kAction_Left:
             mRot = -1;
             return 1;
         }
     } else if (mMode == "scale") {
         int flipSign = layer.ScaleX() < 0.0f ? -1 : 1;
-        if (action == kAction_Up) {
+        switch (action) {
+        case kAction_Up:
             if (rot >= 315.0f || rot < 45.0f) {
                 mScaleY = 1;
             } else if (rot >= 45.0f && rot < 135.0f) {
@@ -303,7 +308,7 @@ DataNode PatchPanel::OnMsg(const ButtonDownMsg &msg) {
                 mScaleX = flipSign;
             }
             return 1;
-        } else if (action == kAction_Down) {
+        case kAction_Down:
             if (rot >= 315.0f || rot < 45.0f) {
                 mScaleY = -1;
             } else if (rot >= 45.0f && rot < 135.0f) {
@@ -314,7 +319,7 @@ DataNode PatchPanel::OnMsg(const ButtonDownMsg &msg) {
                 mScaleX = -flipSign;
             }
             return 1;
-        } else if (action == kAction_Right) {
+        case kAction_Right:
             if (rot >= 315.0f || rot < 45.0f) {
                 mScaleX = flipSign;
             } else if (rot >= 45.0f && rot < 135.0f) {
@@ -325,7 +330,7 @@ DataNode PatchPanel::OnMsg(const ButtonDownMsg &msg) {
                 mScaleY = 1;
             }
             return 1;
-        } else if (action == kAction_Left) {
+        case kAction_Left:
             if (rot >= 315.0f || rot < 45.0f) {
                 mScaleX = -flipSign;
             } else if (rot >= 45.0f && rot < 135.0f) {
@@ -338,10 +343,13 @@ DataNode PatchPanel::OnMsg(const ButtonDownMsg &msg) {
             return 1;
         }
     } else if (mMode == "warp") {
-        if (action == kAction_Up || action == kAction_Right) {
+        switch (action) {
+        case kAction_Up:
+        case kAction_Right:
             mDeform = 1;
             return 1;
-        } else if (action == kAction_Down || action == kAction_Left) {
+        case kAction_Down:
+        case kAction_Left:
             mDeform = -1;
             return 1;
         }
@@ -355,29 +363,31 @@ DataNode PatchPanel::OnMsg(const ButtonUpMsg &msg) {
         return DataNode(kDataUnhandled, 0);
     }
     int action = msg.GetAction();
-    Symbol mode = mMode;
-    if (mode == "move") {
-        if (action == kAction_Up || action == kAction_Down) {
+    if (mMode == "move") {
+        switch (action) {
+        case kAction_Up:
+        case kAction_Down:
             mMoveY = 0;
             return 1;
-        } else if (action == kAction_Right || action == kAction_Left) {
+        case kAction_Right:
+        case kAction_Left:
             mMoveX = 0;
             return 1;
         }
-    } else if (mode == "rotate") {
+    } else if (mMode == "rotate") {
         if (action == kAction_Up || action == kAction_Down || action == kAction_Right
             || action == kAction_Left) {
             mRot = 0;
             return 1;
         }
-    } else if (mode == "scale") {
+    } else if (mMode == "scale") {
         if (action == kAction_Up || action == kAction_Down || action == kAction_Right
             || action == kAction_Left) {
             mScaleX = 0;
             mScaleY = 0;
             return 1;
         }
-    } else if (mode == "warp") {
+    } else if (mMode == "warp") {
         if (action == kAction_Up || action == kAction_Down || action == kAction_Right
             || action == kAction_Left) {
             mDeform = 0;
@@ -393,22 +403,13 @@ void PatchPanel::Poll() {
     if (numLoading != 0) {
         mPatch->Poll();
         if (mPatch->NumLoadingStickers() < numLoading) {
-            MILO_ASSERT(mStickerProvider->mStickers, 0x71);
-            MILO_ASSERT(
-                mStickerProvider->mStickerMats.size() == mStickerProvider->mStickers->size(),
-                0x72
-            );
-            for (int i = 0; i < (int)mStickerProvider->mStickers->size(); i++) {
-                (*mStickerProvider->mStickers)[i]->SetIconOnMat(
-                    mStickerProvider->mStickerMats[i]
-                );
-            }
+            mStickerProvider->StickerLoaded();
             unk51 = true;
         }
     }
     if (unk51) {
         unk51 = false;
-        Handle(update_char_preview_msg, false);
+        HandleType(update_char_preview_msg);
     }
     PatchLayer &layer = mPatch->Layer(mEditLayerIdx);
     if (layer.HasSticker()) {
@@ -434,8 +435,8 @@ void PatchPanel::Poll() {
         float scaleY = layer.ScaleY();
         mScaleVelX = CalcMotion(mScaleVelX, mScaleX);
         mScaleVelY = CalcMotion(mScaleVelY, mScaleY);
-        float newScaleX = mScaleVelX * unk60 + scaleX;
-        float newScaleY = mScaleVelY * unk60 + scaleY;
+        float newScaleX = unk60 * mScaleVelX + scaleX;
+        float newScaleY = unk60 * mScaleVelY + scaleY;
         if (newScaleX < 0.0f) {
             float minS = (-1.0f * unk68) / mBaseSizeX;
             float maxS = (-1.0f * unk64) / mBaseSizeX;
@@ -482,7 +483,7 @@ void PatchPanel::SetStickerCategory(Symbol cat) {
         if (!mStickerProvider->unk30.Null()) {
             std::vector<PatchSticker *> *oldStickers =
                 mPatch->GetStickers(mStickerProvider->unk30);
-            for (int i = 0; i < (int)oldStickers->size(); i++) {
+            for (unsigned int i = 0; i < oldStickers->size(); i++) {
                 mPatch->UnloadStickerTex((*oldStickers)[i]);
             }
         }
@@ -492,46 +493,53 @@ void PatchPanel::SetStickerCategory(Symbol cat) {
                 mPatch->LoadStickerTex((*newStickers)[i], true);
             }
         }
-        std::vector<PatchSticker *> *stickers = mPatch->GetStickers(cat);
-        MILO_ASSERT(stickers, 0x3D);
-        MILO_ASSERT(mStickerProvider->mStickerMat, 0x3E);
-        mStickerProvider->mStickers = stickers;
-        DeleteAll(mStickerProvider->mStickerMats);
-        for (int i = 0; i < (int)stickers->size(); i++) {
-            PatchSticker *sticker = (*stickers)[i];
-            RndMat *mat = Hmx::Object::New<RndMat>();
-            mat->Copy(mStickerProvider->mStickerMat, kCopyDeep);
-            sticker->SetIconOnMat(mat);
-            float w = sticker->unk18;
-            float h = sticker->unk1c;
-            float scaleWH, scaleHW;
-            if (w > h) {
-                scaleWH = w / h;
-                scaleHW = 1.0f;
-            } else {
-                scaleHW = h / w;
-                scaleWH = 1.0f;
-            }
-            Transform tf;
-            tf.m.x.x = scaleHW;
-            tf.m.x.y = 0.0f;
-            tf.m.x.z = 0.0f;
-            tf.m.y.x = 0.0f;
-            tf.m.y.y = scaleWH;
-            tf.m.y.z = 0.0f;
-            tf.m.z.x = 0.0f;
-            tf.m.z.y = 0.0f;
-            tf.m.z.z = 1.0f;
-            tf.v.x = 0.0f;
-            tf.v.y = 0.0f;
-            tf.v.z = 0.0f;
-            mat->SetBlend(RndMat::kBlendAdd);
-            mat->SetTexWrap(kTexBorderBlack);
-            mat->SetTexXfm(tf);
-            mStickerProvider->mStickerMats.push_back(mat);
-        }
-        mStickerProvider->unk30 = cat;
+        mStickerProvider->SetStickers(mPatch->GetStickers(cat), cat);
     }
+}
+
+inline void StickerProvider::SetStickers(std::vector<PatchSticker *> *stickers, Symbol cat) {
+    MILO_ASSERT(stickers, 0x3D);
+    MILO_ASSERT(mStickerMat, 0x3E);
+    mStickers = stickers;
+    DeleteAll(mStickerMats);
+    float one = 1.0f;
+    float zero = 0.0f;
+    float oneone = one * one;
+    float zerone = zero * one;
+    for (PatchSticker **it = stickers->begin(); it != stickers->end(); ++it) {
+        PatchSticker *sticker = *it;
+        RndMat *mat = Hmx::Object::New<RndMat>();
+        mat->Copy(mStickerMat, kCopyDeep);
+        sticker->SetIconOnMat(mat);
+        float h = sticker->unk1c;
+        float w = sticker->unk18;
+        float scaleWH, scaleHW;
+        if (w > h) {
+            scaleWH = w / h;
+            scaleHW = one;
+        } else {
+            scaleHW = h / w;
+            scaleWH = one;
+        }
+        Transform tf;
+        tf.m.x.x = scaleHW;
+        tf.m.x.y = zero * scaleHW;
+        tf.m.x.z = zerone;
+        tf.m.y.x = zerone;
+        tf.m.y.y = scaleWH;
+        tf.m.y.z = zero * scaleWH;
+        tf.m.z.x = zerone;
+        tf.m.z.y = zerone;
+        tf.m.z.z = oneone;
+        tf.v.y = zerone;
+        tf.v.x = zerone;
+        tf.v.z = zerone;
+        mat->SetBlend(RndMat::kBlendAdd);
+        mat->SetTexWrap(kTexBorderBlack);
+        mat->SetTexXfm(tf);
+        mStickerMats.push_back(mat);
+    }
+    unk30 = cat;
 }
 
 int ConvertToLayerIndex(PatchDir *patch, int i2) {
@@ -695,4 +703,12 @@ inline RndMat *StickerProvider::Mat(int, int data, UIListMesh *slot) const {
 
 inline void StickerProvider::InitData(RndDir *dir) {
     mStickerMat = dir->Find<RndMat>("sticker.mat", true);
+}
+
+inline void StickerProvider::StickerLoaded() {
+    MILO_ASSERT(mStickers, 0x71);
+    MILO_ASSERT(mStickerMats.size() == mStickers->size(), 0x72);
+    for (unsigned int i = 0; i != mStickers->size(); i++) {
+        (*mStickers)[i]->SetIconOnMat(mStickerMats[i]);
+    }
 }

@@ -24,6 +24,7 @@
 #include "game/Band.h"
 #include "game/NetGameMsgs.h"
 #include "game/Performer.h"
+#include "game/Player.h"
 #include "net/NetSession.h"
 #include "meta/Achievements.h"
 #include "meta_band/AssetMgr.h"
@@ -1210,6 +1211,11 @@ void AccomplishmentManager::HandleSongCompletedForUser(
         if (!TheGameMode->Property("update_leaderboards", true)->Int())
             return;
     }
+    Player *pPlayer = u->mPlayer;
+    if (!pPlayer)
+        return;
+    if (pPlayer->mQuarantined)
+        return;
     if (u->unkc) {
         UpdateSongStatusFlagsForUser(s, u, diff);
         UpdateMiscellaneousSongDataForUser(s, u);
@@ -1281,7 +1287,6 @@ void AccomplishmentManager::CheckForOneShotAccomplishments(
     ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
     Difficulty userDiff = (Difficulty)u->GetDifficulty();
     AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
-    int numPlayers = pBand->NumActivePlayers();
     for (std::map<Symbol, Accomplishment *>::iterator it = mAccomplishments.begin();
          it != mAccomplishments.end();
          ++it) {
@@ -1295,6 +1300,7 @@ void AccomplishmentManager::CheckForOneShotAccomplishments(
                 AccomplishmentOneShot *pOneShotAccomplishment =
                     dynamic_cast<AccomplishmentOneShot *>(pAccomplishment);
                 MILO_ASSERT(pOneShotAccomplishment, 0x806);
+                int numPlayers = pBand->NumActivePlayers();
                 if (pOneShotAccomplishment->AreOneShotConditionsMet(
                         scoreType, userDiff, pPerformer, s, numPlayers
                     )) {
@@ -1320,8 +1326,8 @@ void AccomplishmentManager::UpdateMiscellaneousSongDataForUser(Symbol s, LocalBa
     MetaPerformer *pMeta = MetaPerformer::Current();
     MILO_ASSERT(pMeta, 0x866);
     ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
-    Band *pBand = pPerformer->mBand;
     Difficulty diff = (Difficulty)u->GetDifficulty();
+    Band *pBand = pPerformer->mBand;
     MILO_ASSERT(pBand, 0x86C);
     Performer *pBandPerformer = pBand->MainPerformer();
     MILO_ASSERT(pBandPerformer, 0x86E);
@@ -1329,7 +1335,7 @@ void AccomplishmentManager::UpdateMiscellaneousSongDataForUser(Symbol s, LocalBa
     AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
     prog.UpdateStats(scoreType, diff, codaScore, pPerformer->mStats, pPerformer, pBand);
     prog.SetTotalSongsPlayed(prog.GetTotalSongsPlayed() + 1);
-    if (TheGameMode && TheGameMode->InMode(tour)) {
+    if (TheGameMode->InMode("tour")) {
         prog.SetTourTotalSongsPlayed(prog.GetTourTotalSongsPlayed() + 1);
     }
     pProfile->MakeDirty();
@@ -1592,9 +1598,8 @@ String AccomplishmentManager::GetAwardIcon(Symbol s) const {
     if (s != "") {
         Award *pAward = GetAward(s);
         MILO_ASSERT(pAward, 0x9F0);
-        ret = MakeString(
-            "ui/accomplishments/award_art/%s_keep.png", pAward->GetIconArt().Str()
-        );
+        const char *pFmt = "ui/accomplishments/award_art/%s_keep.png";
+        ret = MakeString(pFmt, pAward->GetIconArt().Str());
     } else
         MILO_ASSERT(false, 0x9F9);
     return ret;
@@ -1610,7 +1615,7 @@ void AccomplishmentManager::ClearFirstNewAward(LocalBandUser *i_pUser) {
 bool AccomplishmentManager::HasNewRewardVignettes() const {
     if (!TheSessionMgr->GetLocalHost())
         return false;
-    if (TheGameMode && TheGameMode->InMode(tour)) {
+    if (TheGameMode->InMode("tour")) {
         TourProgress *pTourProgress = TheTour->GetTourProgress();
         if (pTourProgress && pTourProgress->IsOnTour())
             return false;
@@ -1675,10 +1680,10 @@ Symbol AccomplishmentManager::GetFirstUnfinishedAccomplishmentEntry(
     BandProfile *i_pProfile, Symbol s
 ) {
     MILO_ASSERT(i_pProfile, 0xA88);
-    MetaPerformer *pPerformer = MetaPerformer::Current();
-    MILO_ASSERT(pPerformer, 0xA8B);
+    MILO_ASSERT(MetaPerformer::Current(), 0xA8B);
     Accomplishment *pAccomplishment = TheAccomplishmentMgr->GetAccomplishment(s);
     MILO_ASSERT(pAccomplishment, 0xA8E);
+    std::vector<Symbol> vUnused;
     std::vector<Symbol> vAccomplishmentEntries;
     bool bGotSymbols =
         pAccomplishment->InqIncrementalSymbols(i_pProfile, vAccomplishmentEntries);
@@ -1692,10 +1697,11 @@ Symbol AccomplishmentManager::GetFirstUnfinishedAccomplishmentEntry(
         std::vector<Symbol>::iterator it;
         for (it = vAccomplishmentEntries.begin(); it != vAccomplishmentEntries.end();
              ++it) {
-            if (pAccomplishment->IsSymbolEntryFulfilled(i_pProfile, *it))
+            if (!pAccomplishment->IsSymbolEntryFulfilled(i_pProfile, *it)) {
+                symFirst = *it;
                 break;
+            }
         }
-        symFirst = *it;
         if (symFirst == goal_filtersong_unknown) {
             symFirst = pAccomplishment->GetFirstUnfinishedAccomplishmentEntry(i_pProfile);
         }

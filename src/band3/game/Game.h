@@ -200,6 +200,7 @@ public:
     bool HandleAudioLoad();
     void CheckSectionEnd(float);
     float PollShuttle();
+    void RebuildData();
 
     Properties mProperties; // 0x24
     SongPos mSongPos; // 0x40

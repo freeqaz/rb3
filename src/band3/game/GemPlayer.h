@@ -87,6 +87,16 @@ public:
         return mask;
     }
 
+    bool GetSolo(int idx) {
+        int mask;
+        if (idx == -1)
+            mask = 0;
+        else {
+            mask = mGems[idx] & 0x80;
+        }
+        return mask;
+    }
+
     bool GetEncountered(int idx) {
         int mask;
         if (idx == -1)
@@ -389,7 +399,10 @@ public:
     HeldNote *FindFirstActiveHeldNote();
     void AddHeadPoints(float, int, int, GemHitFlags);
     bool ToggleNoFills();
-    void GetSoloData(int, float &, float &, int &);
+    int GetSoloData(int, float &, float &, int &);
+    float GetCommonPhraseFraction(int);
+    bool IsCodaMiss(float);
+    void CheckSolo(float);
     void SoloEnd();
     void SendWhammyBar(float);
     bool AllCodaGemsHit() const;

@@ -243,7 +243,7 @@ public:
     bool unk12d;
     std::vector<int> mSetlist; // 0x130
     SetlistProvider *mSetlistProvider; // 0x138
-    int unk13c; // 0x13c
+    SavedSetlist *mCurrentSetlist; // 0x13c
     DataResultList mResults; // 0x140
     MusicLibraryNetSetlists *mNetSetlists; // 0x158
     bool unk15c;

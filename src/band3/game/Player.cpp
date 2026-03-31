@@ -64,11 +64,12 @@ inline void PlayerParams::SetVocals() {
 
 Player::Player(BandUser *user, Band *band, int tracknum, BeatMaster *bmaster)
     : Performer(user, band), mParams(new PlayerParams()), mBehavior(new PlayerBehavior()),
-      mUser(user), mRemote(0), mTrackNum(tracknum), mTrackType(kTrackNone),
+      mUser(user), mCommonPhraseCapturer(band->mCommonPhraseCapturer), mRemote(0), mTrackNum(tracknum), mTrackType(kTrackNone),
       mEnabledState(kPlayerEnabled), mTimesFailed(0), mIsInCoda(0), mBandEnergy(0),
       mDeployingBandEnergy(0), unk274(1), unk278(0), mPhraseBonus(1),
       mBeatMaster(bmaster), unk284(5000.0f), unk288(0), unk28c(0), unk290(0), unk294(0),
-      unk298(0), mDisconnectedAtStart(0), unk2a9(0), unk2ac(0), mPermanentOverdrive(0),
+      unk298(0), mDisconnectedAtStart(0), unk2a9(0), unk2ac(0),
+      unk2b0(TheGame->mProperties.mEnableOverdrive), mPermanentOverdrive(0),
       mHasFinishedCoda(0), mHasBlownCoda(0), unk2b4(0), unk2b8(0), unk2bc(0), unk2c0(-1),
       unk2c4(1) {
     if (user) {
@@ -202,7 +203,23 @@ void Player::Poll(float f, const SongPos &pos) {
     }
 }
 
-void Player::PollMultiplier() {}
+void Player::PollMultiplier() {
+    if (TheGame->mProperties.mEnableStreak) {
+        int i1 = 0, i2 = 0, i3 = 0;
+        GetMultiplier(true, i1, i2, i3);
+        int oldMult = unk274;
+        if (i1 != oldMult) {
+            if (i1 == 1) {
+                mStats.EndStreakMultiplier(GetSongMs(), oldMult);
+            }
+            unk274 = i1;
+        }
+        if (TheGame->unkdc == -1.0f) {
+            unk2b8 += i1 * i3;
+            unk2bc++;
+        }
+    }
+}
 
 void Player::PollEnabledState(float f) {
     switch (mEnabledState) {
@@ -321,7 +338,23 @@ void Player::SetEnabledState(EnabledState estate, BandUser *user, bool b) {
     }
 }
 
-EnabledState Player::GetEnabledStateAt(float) const {}
+EnabledState Player::GetEnabledStateAt(float f) const {
+    unsigned int state = (unsigned int)mEnabledState;
+    if (state - 2 <= 1) {
+        if (f >= mEnableMs)
+            return kPlayerEnabled;
+    }
+    if (mEnabledState == kPlayerDisconnected)
+        return kPlayerDisconnected;
+    int tick = (int)MsToTick(f);
+    unsigned int size = unk260.size();
+    for (unsigned int i = 0; i < size; i++) {
+        const Extent &e = unk260[i];
+        if (tick >= e.unk0 && (e.unk4 < 0 || tick < e.unk4))
+            return kPlayerDisabled;
+    }
+    return mEnabledState;
+}
 
 DECOMP_FORCEACTIVE(
     Player, __FILE__, "causer", "send_already_saved", "", "player_saved", "%s_regen.cue"
@@ -385,8 +418,8 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
 }
 
 bool Player::Saveable() const {
-    bool result = false;
     bool ret = false;
+    bool result = false;
     if (mEnabledState == kPlayerDisabled && mTimesFailed < 3 && !unk298)
         ret = true;
     if (ret) {
@@ -529,8 +562,8 @@ void Player::CompleteCommonPhrase(bool b1, bool b2) {
 int Player::GetIndividualMultiplier() const {
     if (GetMultiplierActive()) {
         int streak = mStats.GetCurrentStreak();
-        int maxMult = mBehavior->mMaxMultiplier;
         int mult = TheScoring->GetStreakMult(streak, mBehavior->mStreakType);
+        int maxMult = mBehavior->mMaxMultiplier;
         return std::min(maxMult, mult);
     } else
         return 1;
@@ -617,8 +650,7 @@ void Player::PopupHelp(Symbol s, bool b) {
 
 void Player::AddEnergy(float f) {
     TheGame->OnPlayerAddEnergy(this, f);
-    float energy = mBandEnergy + f;
-    SetEnergy(energy < 1.0f ? energy : 1.0f);
+    SetEnergy((mBandEnergy + f) < 1.0f ? (mBandEnergy + f) : 1.0f);
 }
 
 Symbol Player::GetStreakType() const { return mBehavior->mStreakType; }
@@ -691,7 +723,7 @@ void Player::UpdateEnergy(const SongPos &pos) {
 }
 
 void Player::SetEnergyAutomatically(float f) {
-    int oldCanDeploy = CanDeployOverdrive();
+    bool oldCanDeploy = CanDeployOverdrive();
     mBandEnergy = f;
     BandTrack *track = GetBandTrack();
     if (!track)
@@ -699,7 +731,7 @@ void Player::SetEnergyAutomatically(float f) {
     OverdriveMeter *meter = track->mStarPowerMeter;
     if (!meter)
         return;
-    if (mTrackType == kTrackNone) {
+    if (mTrackType == kTrackDrum) {
         if (!oldCanDeploy) {
             if (CanDeployOverdrive()) {
                 EnableDrumFills(true);
@@ -725,7 +757,7 @@ void Player::SetEnergyAutomatically(float f) {
     }
     meter->SetEnergy(f, state, TrackTypeToSym(mTrackType), pulseDelay, false);
 
-    int newCanDeploy = CanDeployOverdrive();
+    bool newCanDeploy = CanDeployOverdrive();
     if (newCanDeploy != oldCanDeploy) {
         if (mUser) {
             Track *userTrack = mUser->GetTrack();
@@ -742,11 +774,11 @@ void Player::Deploy() {
     );
     BandTrack *track = GetBandTrack();
     if (track) {
-        track->EnterCoda();
+        track->Deploy();
     }
     PopupHelp(deploy, false);
-    if (mTrackType == kTrackNone && !mIsInCoda) {
-        EnableFills(0.0f, false);
+    if (mTrackType == kTrackDrum && !mIsInCoda) {
+        EnableDrumFills(false);
     }
     int i1 = 0, i2 = 0, i3 = 0;
     unk278++;
@@ -819,35 +851,34 @@ void Player::Hit() {
 }
 
 void Player::DelayReturn(bool b) {
-    float pollMs = PollMs();
-    float ms = pollMs > 0.0f ? pollMs : 0.0f;
-    mEnableMs = ms;
+    mEnableMs = PollMs();
+    if (!(mEnableMs > 0.0f))
+        mEnableMs = 0.0f;
     if (b) {
         mEnableMs += mParams->mMsToReturnFromBrink;
     }
     if (TheGame->unkdc != -1.0f) {
-        float rollbackEnd = TheGame->unkdc;
-        if (rollbackEnd < mEnableMs) {
-            mEnableMs = rollbackEnd;
+        if (TheGame->unkdc < mEnableMs) {
+            mEnableMs = TheGame->unkdc;
         }
         EnableFills(mEnableMs, b);
     }
     int tick = (int)MsToTick(mEnableMs);
     int phraseId = TheSongDB->GetCommonPhraseID(mTrackNum, tick);
-    if (phraseId <= -1)
-        return;
-    if (mTrackType == kTrackDrum)
-        return;
-    const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
-    int gemIdx = gemList->ClosestMarkerIdxAtOrAfterTick(tick) - 1;
-    int gemTick = -1;
-    if (gemIdx >= 0) {
-        gemTick = gemList->GetGem(gemIdx).mTick;
-    }
-    Extent extent;
-    TheSongDB->GetCommonPhraseExtent(mTrackNum, phraseId, extent);
-    if (gemTick >= extent.unk0) {
-        mUser->GetTrack()->OnMissPhrase(b);
+    if (phraseId > -1 && mTrackType != kTrackVocals) {
+        const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
+        int gemIdx = gemList->ClosestMarkerIdxAtOrAfterTick(tick) - 1;
+        int gemTick;
+        if (gemIdx > -1) {
+            gemTick = gemList->GetGem(gemIdx).mTick;
+        } else {
+            gemTick = -1;
+        }
+        Extent extent;
+        TheSongDB->GetCommonPhraseExtent(mTrackNum, phraseId, extent);
+        if (gemTick >= extent.unk0) {
+            mUser->GetTrack()->OnMissPhrase(phraseId);
+        }
     }
 }
 
@@ -863,7 +894,7 @@ void Player::FinalizeStats() {
     int i1 = 0, i2 = 0, i3 = 0;
     GetMultiplier(true, i1, i2, i3);
     float songMs = GetSongMs();
-    mStats.EndStreakMultiplier(songMs, i1 * i3);
+    mStats.EndStreakMultiplier(songMs, i1);
     songMs = GetSongMs();
     mStats.StopDeployingOverdrive(songMs, i1 * i3);
     if (unk2bc > 0) {
@@ -917,7 +948,9 @@ void Player::UpdateSectionStats(float hitFraction, float percentComplete) {
         return;
     if (TheSongDB->mPracticeSections.size() == 0)
         return;
-    if (unk2c0 < 0 || (unsigned int)unk2c0 >= TheSongDB->mPracticeSections.size())
+    if (unk2c0 < 0)
+        return;
+    if ((unsigned int)unk2c0 >= TheSongDB->mPracticeSections.size())
         return;
     int sectionIdx = unk2c0;
     Symbol sectionSym = TheSongDB->mPracticeSections[sectionIdx].unk0;
