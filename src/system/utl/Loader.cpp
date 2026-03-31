@@ -14,6 +14,15 @@
 LoadMgr TheLoadMgr;
 void (*LoadMgr::sFileOpenCallback)(const char *);
 
+Timer gPollFrontLoaderTimer;
+
+struct LoaderGlitchContext {
+    String file;           // 0x0  (vtable + mCap + mStr = 12 bytes)
+    const char *name;      // 0xC
+    const char *fromState; // 0x10
+    LoaderPos toPos;       // 0x14
+};
+
 LoadMgr::LoadMgr()
     : mLoaders(), mPlatform(kPlatformWii), mEditMode(0), mCacheMode(0), mFactories(),
       mPeriod(10.0f), mLoading(), mTimer(), mAsyncUnload(0), mLoaderPos(kLoadFront) {}
@@ -179,7 +188,31 @@ void LoadMgr::Poll() {
     }
 }
 
-void LoadMgr::PollFrontLoader() { MILO_WARN("deleted"); }
+void LoadMgr::PollFrontLoader() {
+    const AutoTimer at(&gPollFrontLoaderTimer, 50.0f, NULL, NULL);
+    Loader *front = mLoading.front();
+    LoaderPos savedPos = mLoaderPos;
+    mLoaderPos = front->mPos;
+
+    LoaderGlitchContext ctx;
+    ctx.file = front->mFile.c_str();
+    ctx.toPos = front->mPos;
+    ctx.name = front->StateName();
+
+    MemPushHeap(front->mHeap);
+    if (UsingCD()) {
+        front->PollLoading();
+        if (!ListFind(mLoading, front)) {
+            ctx.fromState = "deleted";
+        } else {
+            ctx.fromState = front->StateName();
+        }
+    } else {
+        front->PollLoading();
+    }
+    MemPopHeap();
+    mLoaderPos = savedPos;
+}
 
 void LoadMgr::RegisterFactory(const char *cc, LoaderFactoryFunc *func) {
     for (std::list<std::pair<String, LoaderFactoryFunc *> >::iterator it =
