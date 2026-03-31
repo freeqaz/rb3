@@ -1,4 +1,5 @@
 #include "meta_band/AccomplishmentProgress.h"
+#include "decomp.h"
 #include "meta_band/BandMachineMgr.h"
 #include "meta_band/SessionMgr.h"
 #include "Accomplishment.h"
@@ -11,6 +12,7 @@
 #include "meta_band/AccomplishmentGroup.h"
 #include "meta_band/AccomplishmentManager.h"
 #include "meta_band/MetaPerformer.h"
+#include "meta_band/PassiveMessenger.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
@@ -176,6 +178,11 @@ bool AccomplishmentProgress::AddAccomplishment(Symbol s) {
 bool AccomplishmentProgress::IsAccomplished(Symbol s) const {
     return mAccomplishments.find(s) != mAccomplishments.end();
 }
+
+#pragma push
+#pragma dont_inline on
+DECOMP_FORCEFUNC(AccomplishmentProgress, AccomplishmentProgress, HasNewAwards())
+#pragma pop
 
 Symbol AccomplishmentProgress::GetFirstNewAward() const {
     MILO_ASSERT(HasNewAwards(), 0x158);
@@ -395,6 +402,24 @@ void AccomplishmentProgress::SetHardCoreStatusUpdatePending(bool b) {
 
 bool AccomplishmentProgress::IsHardCoreStatusUpdatePending() {
     return mHardCoreStatusUpdatePending;
+}
+
+void AccomplishmentProgress::NotifyPlayerOfCampaignLevel(Symbol s) {
+    ThePassiveMessenger->TriggerEarnedCampaignLevelMsg(
+        mParentProfile->GetAssociatedLocalBandUser(), s
+    );
+}
+
+void AccomplishmentProgress::NotifyPlayerOfCategoryComplete(Symbol s) {
+    ThePassiveMessenger->TriggerCompletedAccomplishmentCategoryMsg(
+        mParentProfile->GetAssociatedLocalBandUser(), s
+    );
+}
+
+void AccomplishmentProgress::NotifyPlayerOfGroupComplete(Symbol s) {
+    ThePassiveMessenger->TriggerCompletedAccomplishmentGroupMsg(
+        mParentProfile->GetAssociatedLocalBandUser(), s
+    );
 }
 
 void AccomplishmentProgress::SendHardCoreStatusUpdateToRockCentral() {

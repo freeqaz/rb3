@@ -100,19 +100,19 @@ void Waypoint::Highlight() {}
 
 // https://decomp.me/scratch/jaExl - retail scratch
 void Waypoint::Constrain(Transform &tf) {
-    float f1 = 0.0f;
-    float f2 = mStrictRadiusDelta;
-    if (f2 > 0.0f) {
-        if (mYRadius > 0.0f) {
-            f1 = mYRadius + f2;
-        }
-        Vector3 v18;
-        ShapeDeltaBox(tf.v, mRadius + f2, f1, v18);
-        tf.v += v18;
+    float strictRadius = mStrictRadiusDelta;
+    if (strictRadius > 0.0f) {
+        float yRadius = mYRadius;
+        float radiusDelta = mRadius + strictRadius;
+        float yR = (yRadius > 0.0f) ? yRadius + strictRadius : 0.0f;
+        Vector3 delta;
+        ShapeDeltaBox(tf.v, radiusDelta, yR, delta);
+        tf.v += delta;
     }
     if (mStrictAngDelta > 0.0f) {
-        float ang = ShapeDeltaAng(mAngRadius + mStrictAngDelta, GetZAngle(tf.m));
-        RotateAboutZ(tf.m, ang, tf.m);
+        float ang = GetZAngle(tf.m);
+        float deltaAng = ShapeDeltaAng(mAngRadius + mStrictAngDelta, ang);
+        RotateAboutZ(tf.m, deltaAng, tf.m);
     }
 }
 

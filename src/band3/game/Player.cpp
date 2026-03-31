@@ -1,5 +1,6 @@
 #include "game/Player.h"
 #include "Player.h"
+#include <algorithm>
 #include "bandobj/BandDirector.h"
 #include "bandobj/OverdriveMeter.h"
 #include "bandtrack/Track.h"
@@ -694,9 +695,7 @@ void Player::CheckCrowdFailure() {
 void Player::IgnoreUntilRollback(float) {}
 
 void Player::SubtractEnergy(float f) {
-    float newEnergy = mBandEnergy - f;
-    float zero = 0.0f;
-    SetEnergy(newEnergy > zero ? newEnergy : zero);
+    SetEnergy(std::max(0.0f, mBandEnergy - f));
 }
 
 void Player::UpdateEnergy(const SongPos &pos) {

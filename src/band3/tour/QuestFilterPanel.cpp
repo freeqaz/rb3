@@ -1,5 +1,7 @@
 #include "tour/QuestFilterPanel.h"
+#include "game/NetGameMsgs.h"
 #include "meta_band/TexLoadPanel.h"
+#include "net/NetSession.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "tour/Tour.h"
@@ -131,6 +133,13 @@ Symbol QuestFilterPanel::GetDiffSelectScreen() {
 }
 
 void QuestFilterPanel::HandleFilterSelected() {}
+
+void QuestFilterPanel::HandleLeaderToggledFilters(bool bShowMode) {
+    if (TheNetSession != NULL) {
+        TourHideShowFiltersMsg msg(bShowMode);
+        TheNetSession->SendMsgToAll(msg, kReliable);
+    }
+}
 
 Symbol QuestFilterPanel::GetGigFilter() {
     MILO_ASSERT(m_symQuest != "", 0x1D4);

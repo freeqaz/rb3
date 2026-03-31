@@ -1,11 +1,35 @@
 #include "meta_band/BandStoreOffer.h"
+#include "meta_band/BandSongMgr.h"
 #include "meta/StoreOffer.h"
 #include "meta/StorePackedMetadata.h"
 
 BandStoreOffer::BandStoreOffer(const StorePackedOfferBase *base, SongMgr *mgr, bool b)
     : StoreOffer(base, mgr, b) {
-    mPackedRbnOffer->GetPackedSong(0);
-    mPackedOffer->GetPackedSong(0);
+    mUpgradeAvailable = false;
+    String upgradeId = base->GetUpgradeId();
+    if ((signed char)upgradeId.c_str()[0]) {
+        BandSongMgr *bandSongMgr = dynamic_cast<BandSongMgr*>(mSongMgr);
+        mUpgradeAvailable = mPackedData->mNumSongs != 0;
+        int byteOff = 0;
+        int idx = 0;
+        while (idx < (int)(unsigned char)mPackedData->mNumSongs) {
+            StorePackedSong *song;
+            if (mPackedData->mIsRBN) {
+                unsigned short i = *(unsigned short*)((const char*)mPackedData + byteOff + 0x49);
+                song = TheStoreMetadata.mSongTable->mSongs + i;
+            } else {
+                unsigned short i = *(unsigned short*)((const char*)mPackedData + byteOff + 0x43);
+                song = TheStoreMetadata.mSongTable->mSongs + i;
+            }
+            int songID = song->mSongID;
+            if (bandSongMgr == NULL || bandSongMgr->GetUpgradeData(songID) == NULL) {
+                mUpgradeAvailable = false;
+                break;
+            }
+            byteOff += 2;
+            idx++;
+        }
+    }
 }
 
 bool BandStoreOffer::IsCompletelyUnavailable() const {

@@ -9,6 +9,7 @@ public:
     PracticePanel();
     OBJ_CLASSNAME(PracticePanel);
     OBJ_SET_TYPE(PracticePanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~PracticePanel();
     virtual void Enter();

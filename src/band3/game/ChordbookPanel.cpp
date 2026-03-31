@@ -257,6 +257,14 @@ void ChordbookPanel::SetFret(int string, int fret) {
     TheRGTrainerPanel->SetFret(string, fret);
 }
 
+bool ChordbookPanel::ChordComplete() const {
+    for (int i = 0; i < 6; i++) {
+        if ((mInUse & (1 << i)) && !(mCorrect & (1 << i)))
+            return false;
+    }
+    return true;
+}
+
 void ChordbookPanel::SetCorrect(int string, bool correct) {
     int mask = 1 << string;
     bool maskExists = mCorrect & mask;

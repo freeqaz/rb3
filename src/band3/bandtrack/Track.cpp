@@ -16,6 +16,7 @@
 #include "os/Debug.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
+#include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
@@ -167,7 +168,42 @@ bool Track::PlayerDisabled() const {
         return false;
 }
 
-void Track::DTSPopup(bool) const {}
+void Track::DTSPopup(bool show) const {
+    if (TheGame) {
+        std::vector<Player *> &players = TheGame->GetActivePlayers();
+        Player **it = players.begin();
+        Player **end = it + players.size();
+        for (; it != end; ++it) {
+            Player *player = *it;
+            bool showPopup = false;
+            bool noGameOver = false;
+            bool canDeploy = false;
+            if (show && player->mEnabledState == kPlayerEnabled && player->CanDeployOverdrive()) {
+                canDeploy = true;
+            }
+            if (canDeploy) {
+                Performer *mainPerf = player->mBand->MainPerformer();
+                if (!mainPerf->mGameOver) {
+                    noGameOver = true;
+                }
+            }
+            if (noGameOver) {
+                MetaPerformer::Current();
+                showPopup = true;
+            }
+            if (player->mTrackType == kTrackDrum) {
+                showPopup = showPopup & player->InFill();
+            }
+            if (player->mTrackType == kTrackVocals) {
+                showPopup = showPopup & player->InFreestyleSection();
+            }
+            GameplayOptions *opts = player->mUser->GetGameplayOptions();
+            player->PopupHelp(
+                opts->GetLefty() ? deploy_to_save_lefty : deploy_to_save, showPopup
+            );
+        }
+    }
+}
 
 bool Track::HasNetPlayer() const {
     Player *player = mTrackConfig.GetBandUser()->GetPlayer();

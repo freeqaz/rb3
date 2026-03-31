@@ -5,7 +5,7 @@ public:
     Shuttle();
     ~Shuttle();
 
-    bool IsActive() const;
+    bool IsActive() const { return mActive; }
     void SetActive(bool);
     void Poll();
 

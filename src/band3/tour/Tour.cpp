@@ -577,15 +577,15 @@ String Tour::GetGoldGoalIcon() {
     return String(pAccomplishment->GetIconArt());
 }
 
-int Tour::GetMode() {
+TourMode Tour::GetMode() {
     TourPerformerRemote *pRemote = dynamic_cast<TourPerformerRemote *>(m_pTourPerformer);
     if (pRemote) {
-        if (!TheNetSession->IsLocal()) return 3;
-        return 4;
+        if (!TheNetSession->IsLocal()) return kMetaTour_KnownRemote;
+        return kMetaTour_BrowsingRemote;
     }
     TourPerformerLocal *pLocal = dynamic_cast<TourPerformerLocal *>(m_pTourPerformer);
-    if (!pLocal) return -1;
-    return 2;
+    if (!pLocal) return kMetaTour_Nil;
+    return kMetaTour_KnownLocal;
 }
 
 void Tour::SetupSongsForFixedSetlist(Symbol sym) {

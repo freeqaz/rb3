@@ -61,7 +61,20 @@ void EditSetlistPanel::Poll() {
     }
 }
 
-bool EditSetlistPanel::Exiting() const { return UIPanel::Exiting(); }
+bool EditSetlistPanel::Exiting() const {
+    bool ret = true;
+    if (!UIPanel::Exiting()) {
+        bool allow = true;
+        unsigned int temp = (unsigned int)mEditState - 3;
+        if (temp <= 5U && ((1 << temp) & 0x31)) {
+            allow = false;
+        }
+        if (!allow) {
+            ret = false;
+        }
+    }
+    return ret;
+}
 
 void EditSetlistPanel::Unload() {
     CleanupStringVerify();

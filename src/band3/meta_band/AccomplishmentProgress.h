@@ -43,6 +43,7 @@ public:
     bool AddAccomplishment(Symbol);
     bool IsAccomplished(Symbol) const;
     void NotifyPlayerOfAccomplishment(Symbol, const char *);
+    void NotifyPlayerOfCampaignLevel(Symbol);
     void NotifyPlayerOfCategoryComplete(Symbol);
     void NotifyPlayerOfGroupComplete(Symbol);
     bool AddAward(Symbol, Symbol);

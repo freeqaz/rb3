@@ -6,6 +6,7 @@ public:
     RKTrainerPanel();
     OBJ_CLASSNAME(RKTrainerPanel);
     OBJ_SET_TYPE(RKTrainerPanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~RKTrainerPanel();
     virtual bool IsSongSectionComplete(BandProfile *, int, Difficulty, int);

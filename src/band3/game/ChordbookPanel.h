@@ -38,6 +38,7 @@ public:
     ChordbookPanel();
     OBJ_CLASSNAME(ChordbookPanel);
     OBJ_SET_TYPE(ChordbookPanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~ChordbookPanel();
     virtual void Draw();

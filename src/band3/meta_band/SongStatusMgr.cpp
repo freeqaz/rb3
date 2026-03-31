@@ -810,7 +810,26 @@ int SongStatusMgr::GetTotalBestStars(ScoreType ty, Difficulty diff, Symbol s) co
     return ret;
 }
 
-int SongStatusMgr::CalculateTotalStars(ScoreType ty) const {}
+int SongStatusMgr::CalculateTotalStars(ScoreType ty) const {
+    int total = 0;
+    for (int i = 0; i < 1000; i++) {
+        int songID = mCacheMgr.GetSongID(i);
+        if (songID && mSongMgr->HasSong(songID)) {
+            SongStatus *status = mCacheMgr.GetSongStatusPtrForIndex(i);
+            if (status) {
+                Difficulty diff = status->GetHighScoreDifficulty(ty);
+                int stars = status->GetStars(ty, diff);
+                int count = total + stars;
+                if (stars > 5)
+                    count = total + 5;
+                total = count;
+                if (count > 5000)
+                    return 5000;
+            }
+        }
+    }
+    return total;
+}
 
 int SongStatusMgr::GetPossibleStars(ScoreType ty, Symbol s) const {
     int total = GetTotalSongs(ty, s);

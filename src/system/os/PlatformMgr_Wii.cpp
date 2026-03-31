@@ -380,23 +380,37 @@ bool PlatformMgr::OnMsg(const ButtonUpMsg &msg) {
     return false;
 }
 
+#pragma push
+#pragma pool_data off
 void PlatformMgr::SetDiskError(DiskError err) {
-    if (mDiskError != kFailedChecksum && mDiskError != err) {
+    if (mDiskError == kFailedChecksum || mDiskError == err)
+        return;
+    {
         mDiskError = err;
-        if (err == kNoDiskError) {
+        switch (err) {
+        case kNoDiskError:
             mDiscErrorMgr->SetDiscError(false);
             mDiscErrorMgr->mRetryError = false;
             mDiscErrorMgr->mMovieReadError = false;
-        } else if (err == kDiskError) {
+            break;
+        case kDiskError:
             mDiscErrorMgr->SetDiscError(true);
             mDiscErrorMgr->mRetryError = true;
-        } else if (err == kWrongDisk) {
+            break;
+        case kWrongDisk:
             mDiscErrorMgr->SetDiscError(true);
             mDiscErrorMgr->mRetryError = false;
+            break;
+        default:
+            break;
         }
-        if (err != kNoDiskError) {
-            if (mNetworkPlay == false) {
+        if (mDiskError != kNoDiskError) {
+            if (mNetworkPlay) {
+                static DiskErrorMsg msg;
+                Handle(msg.mData, false);
             } else {
+                static WiiDiscErrorMsg msg;
+                Export(msg.mData, true);
             }
         }
         if (mDiskError == kFailedChecksum) {
@@ -404,7 +418,7 @@ void PlatformMgr::SetDiskError(DiskError err) {
         }
     }
 }
-
+#pragma pop
 void WiiPowerCallback() { gPowerCallback = kQuitShutdown; }
 void WiiResetCallback() { gPowerCallback = kQuitRestart; }
 

@@ -47,11 +47,14 @@ void FixedSizeAlloc::Refill() {
     *cur = 0;
 }
 
-#define MAX_FIXED_ALLOCS 0x40
+void *ChunkAllocator::Alloc(int i) {
+    int fixedSizeIndex = (i - 1) >> 2;
+    MILO_ASSERT_FMT(fixedSizeIndex < MAX_FIXED_ALLOCS, "fixedSizeIndex (%d) < MAX_FIXED_ALLOCS (%d)\n", fixedSizeIndex, MAX_FIXED_ALLOCS);
+    return mAllocs[fixedSizeIndex]->Alloc();
+}
 
-void *ChunkAllocator::Alloc(int i) {}
-
-void ChunkAllocator::Free(void *v, int fixedSizeIndex) {
+void ChunkAllocator::Free(void *v, int i) {
+    int fixedSizeIndex = (i - 1) >> 2;
     MILO_ASSERT(fixedSizeIndex < MAX_FIXED_ALLOCS, 0x16D);
     MILO_ASSERT(mAllocs[fixedSizeIndex], 0x16E);
     mAllocs[fixedSizeIndex]->Free(v);

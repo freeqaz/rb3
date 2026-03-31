@@ -21,11 +21,13 @@
 #include "net/NetSession.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
+#include "obj/DirLoader.h"
 #include "obj/Msg.h"
 #include "obj/ObjMacros.h"
 #include "obj/PropSync_p.h"
 #include "obj/Task.h"
 #include "os/Debug.h"
+#include "os/Joypad.h"
 #include "os/PlatformMgr.h"
 #include "os/System.h"
 #include "os/Timer.h"
@@ -301,13 +303,57 @@ void GamePanel::UpdateNowBar() {
 }
 
 void GamePanel::UpdateLatency() {
-    static DataNode latency_test = Symbol("latency_test");
-    static DataNode pad_button = Symbol("pad_button");
+    static DataNode &latency_test = DataVariable("latency_test");
+    static DataNode &pad_button = DataVariable("pad_button");
     if (latency_test.Int() == 0) {
-        mLatency->mShowing = false;
-        mLatency->mTimer.Restart();
-    } else {
+        mLatency->SetShowing(false);
+        return;
     }
+    int bFlash = 0;
+    int bJustPressed = 0;
+    int joyNum = latency_test.Int() - 2;
+    if (joyNum == -1) {
+        static int sFlashCnt = 0;
+        float delta = TheTaskMgr.DeltaBeat();
+        float prevFloor = std::floor((TheTaskMgr.Beat() - delta) * 2.0f);
+        if (std::floor(TheTaskMgr.Beat() * 2.0f) != prevFloor) {
+            sFlashCnt = 3;
+        }
+        if (sFlashCnt > 0) {
+            bFlash = 1;
+            sFlashCnt--;
+        }
+    } else {
+        static bool sLastBtn = false;
+        JoypadData *pad = JoypadGetPadData(joyNum);
+        if (pad != nullptr) {
+            bool pressed = (pad->mButtons & (1 << pad_button.Int())) != 0;
+            bFlash = pressed;
+            bJustPressed = pressed && !sLastBtn;
+            sLastBtn = pressed;
+        }
+    }
+    gGamePanelCallback.unk4 = bFlash;
+    if (bJustPressed) {
+        static Hmx::Object *sBeep = nullptr;
+        if (sBeep == nullptr) {
+            ObjectDir *dir;
+            {
+                FilePath path("test/latency.milo");
+                dir = DirLoader::LoadObjects(path, nullptr, nullptr);
+            }
+            sBeep = dir->Find<Hmx::Object>("beep.cue", true);
+        }
+        sBeep->Handle(play_msg, true);
+    }
+    static int sToggle = 0;
+    static float sMs[2] = {0, 0};
+    sMs[sToggle] = TheRnd->mDrawTimer.GetLastMs();
+    sToggle = 1 - sToggle;
+    mLatency->SetShowing(true);
+    mLatency->Clear();
+    *mLatency << MakeString("Joy %d Beat %.3f\nms %.2f last %.2f", joyNum, TheTaskMgr.Beat(), sMs[0], sMs[1]);
+    mLatency->SetCallback(&gGamePanelCallback);
 }
 
 void GamePanel::SetDejitteredTime(float f1) {
@@ -447,4 +493,13 @@ BEGIN_PROPSYNCS(GamePanel)
 END_PROPSYNCS
 #pragma pop
 
-float LatencyCallback::UpdateOverlay(RndOverlay *, float) {}
+float LatencyCallback::UpdateOverlay(RndOverlay *, float f) {
+    Hmx::Color color = unk4 ? Hmx::Color(1, 1, 1) : Hmx::Color(0, 0, 0);
+    TheRnd->DrawRectScreen(
+        Hmx::Rect(0, 0.875f, 0.125f, 0.125f), color, nullptr, nullptr, nullptr
+    );
+    TheRnd->DrawRectScreen(
+        Hmx::Rect(0, 0.125f, 0.125f, 0.125f), color, nullptr, nullptr, nullptr
+    );
+    return f;
+}

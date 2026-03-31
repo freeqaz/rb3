@@ -1,6 +1,7 @@
 #include "meta_band/ManageBandPanel.h"
 #include "BandProfile.h"
 #include "bandobj/BandCharDesc.h"
+#include "bandobj/PatchDir.h"
 #include "game/BandUser.h"
 #include "meta_band/AccomplishmentManager.h"
 #include "meta_band/AccomplishmentProgress.h"
@@ -9,6 +10,7 @@
 #include "meta_band/CharProvider.h"
 #include "meta_band/CharSync.h"
 #include "meta_band/ClosetMgr.h"
+#include "meta_band/MetaPanel.h"
 #include "meta_band/PrefabMgr.h"
 #include "meta_band/ProfileMessages.h"
 #include "meta_band/ProfileMgr.h"
@@ -19,9 +21,12 @@
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
+#include "tour/TourBand.h"
 #include "ui/UIPanel.h"
 #include "utl/Messages.h"
 #include "utl/Symbols.h"
+#include "utl/Symbols2.h"
+#include "utl/Symbols4.h"
 
 inline void
 VignetteViewerProvider::Text(int, int iData, UIListLabel *, UILabel *label) const {
@@ -81,7 +86,57 @@ void ManageBandPanel::RefreshAll() {
         MILO_ASSERT(pLocalUser, 0xB3);
         mCharProvider->Reload(pLocalUser);
         mStandInProvider->Reload(mProfile);
+
+        mHistoryProvider->unk20 = Property(reward_vignettes, true)->Array(NULL);
+        VignetteViewerProvider *histProv = mHistoryProvider;
+        AccomplishmentProgress &accProgress = mProfile->AccessAccomplishmentProgress();
+        std::list<Symbol> &newRewardVignettes = accProgress.mNewRewardVignettes;
+        std::set<Symbol> &accomplishedVignettes = accProgress.unkb0;
+        int numVignettes = histProv->unk20->Size();
+
+        histProv->mEntries.clear();
+        for (int i = 0; i < numVignettes; i++) {
+            DataArray *arr = histProv->unk20->Array(i);
+            Symbol vigName = arr->Sym(0);
+            Symbol accName = arr->Sym(1);
+
+            bool isAccomplished =
+                accomplishedVignettes.find(accName) != accomplishedVignettes.end();
+
+            if (!isAccomplished)
+                isAccomplished = MetaPanel::sUnlockAll;
+
+            if (isAccomplished) {
+                std::list<Symbol>::iterator it = newRewardVignettes.begin();
+                bool keepSearching;
+                do {
+                    keepSearching = false;
+                    if (it != newRewardVignettes.end() && *it != accName) {
+                        keepSearching = true;
+                    }
+                    if (keepSearching)
+                        ++it;
+                } while (keepSearching);
+                isAccomplished = it == newRewardVignettes.end();
+            }
+
+            if (isAccomplished) {
+                histProv->mEntries.push_back(vigName);
+            } else {
+                histProv->mEntries.push_back(vignetteviewer_hidden_title);
+            }
+        }
+
+        TourBand *tourBand = mProfile->GetTourBand();
+        PatchDescriptor *logo = tourBand->GetLogo();
+        if (logo && logo->patchType != 0) {
+            if (mProfile) {
+                LocalBandUser *pUser = mProfile->GetAssociatedLocalBandUser();
+                TheAccomplishmentMgr->EarnAccomplishment(pUser, acc_bandlogo);
+            }
+        }
     }
+    Handle(refresh_all_msg, true);
 }
 
 void ManageBandPanel::Enter() {

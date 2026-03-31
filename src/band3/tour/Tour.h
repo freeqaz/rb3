@@ -16,6 +16,15 @@ class UILabel;
 #include "tour/Quest.h"
 #include "tour/TourPerformer.h"
 
+enum TourMode {
+    kMetaTour_Nil = -1,
+    kMetaTour_UnknownRemote = 0,
+    kMetaTour_StartNew = 1,
+    kMetaTour_KnownLocal = 2,
+    kMetaTour_KnownRemote = 3,
+    kMetaTour_BrowsingRemote = 4,
+};
+
 class TourStatusEntry {
 public:
     TourStatusEntry() {}
@@ -86,7 +95,7 @@ public:
     void ClearCurrentQuest();
     bool ShouldShowPostSelDiffScreen() const;
     void CheatReloadTourData();
-    int GetMode();
+    TourMode GetMode();
     Symbol CombinePartSymbols(Symbol, Symbol);
     String GetBronzeGoalIcon();
     String GetSilverGoalIcon();

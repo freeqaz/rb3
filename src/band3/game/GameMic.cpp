@@ -2,6 +2,7 @@
 #include "obj/Data.h"
 #include "os/Debug.h"
 #include "synth/MicNull.h"
+#include "synth/Synth.h"
 #include "utl/MemStream.h"
 #include "utl/Wav.h"
 
@@ -49,6 +50,26 @@ GameMic::~GameMic() {
     unkc = 0;
     gIdxTaken[mFonixIdx] = false;
     delete mDetector;
+}
+
+void GameMic::SetEnablePitchDetection(bool enable) {
+    if (mDetector) {
+        mDetector->mEnablePitchDetection = enable;
+    }
+}
+
+Mic *GameMic::GetMyMic() {
+    if (mNullMic) {
+        return mNullMic;
+    }
+    return TheSynth->GetMic(mMicID);
+}
+
+int GameMic::GetDataSampleRate() {
+    if (unkc) {
+        return unkc;
+    }
+    return GetMyMic()->GetSampleRate();
 }
 
 void GameMic::SetInputFile(const char *) {}

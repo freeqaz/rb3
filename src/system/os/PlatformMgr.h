@@ -226,6 +226,7 @@ END_MESSAGE
 
 DECLARE_MESSAGE(DiskErrorMsg, "disk_error")
 // arg here is a bool
+DiskErrorMsg() : Message(Type(), DataNode(0)) {}
 END_MESSAGE
 
 DECLARE_MESSAGE(DWCProfanityResultMsg, "dwc_profanity_result_msg")
@@ -243,4 +244,5 @@ DECLARE_MESSAGE(EnumerateMessagesCompleteMsg, "enumerate_messages_complete")
 END_MESSAGE
 
 DECLARE_MESSAGE(WiiDiscErrorMsg, "wii_disc_error")
+WiiDiscErrorMsg() : Message(Type()) {}
 END_MESSAGE

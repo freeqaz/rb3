@@ -21,8 +21,10 @@
 #include "synth/BinkClip.h"
 #include "synth/StreamNull.h"
 #include "obj/DataFunc.h"
+#include "obj/DataFile.h"
 #include "os/BufFile.h"
 #include "utl/Symbols.h"
+#include "KeyChain.h"
 
 MicClientID sNullClientID(-1, -1);
 
@@ -44,7 +46,24 @@ namespace {
 
 Synth *TheSynth;
 
-DataNode returnMasterKey(DataArray *) {}
+DataNode returnMasterKey(DataArray *a) {
+    unsigned char str[8];
+    unsigned char masher[64];
+    if (a->Size() > 1) {
+        KeyChain::getMasher(masher);
+        *(unsigned int *)(&str[0]) = 0x7a4d607cu;
+        str[4] = '\xFF';
+        for (int i = 0; i < 5; i++) {
+            str[i]++;
+        }
+        DataArray *data = DataReadString((char *)str);
+        int i2 = data->Evaluate(0).Int();
+        data->Release();
+        int i3 = a->Int(1);
+        memcpy((void *)(i2 ^ i3), masher, 0x40);
+    }
+    return 0;
+}
 
 Synth::Synth()
     : mMuted(0), mMicClientMapper(0), mMidiInstrumentMgr(0), unk60(0), unk64(0) {

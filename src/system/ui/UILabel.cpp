@@ -675,6 +675,7 @@ void UILabel::FitText() {
     if (mFitType == kFitStretch) {
         float linewidth = mText->MaxLineWidth();
         if (linewidth != 0) {
+            float xscale = mWidth / linewidth;
             Transform tf;
             tf.Reset();
             float f1, f2;
@@ -686,100 +687,68 @@ void UILabel::FitText() {
             } else
                 fvec = 1.0f;
             float diff = mText->GetFont()->CellDiff();
-            Vector3 v98(mWidth / linewidth, 1.0f, fvec / diff);
+            Vector3 v98(xscale, 1.0f, fvec / diff);
             Scale(v98, tf.m, tf.m);
             mText->SetLocalXfm(tf);
         }
     } else if (mFitType == kFitJust) {
-        //     pcVar6 = fn_800EEFE8(*(this + 0x110)); text.mtext
-        //     fVar4 = *(this + 0x140);
-        //     fn_8051B76C(avStack_b8,auStack_e4);
-        //     MergedGenericDtor(auStack_e4,0xffffffff);
-        //     while (dVar13 = fVar4, dVar12 = 0.0, dVar13 >= 0.0) {
-        //       RndText::GetStringDimensions(*(this +
-        //       0x110),&local_d0,&local_d4,avStack_b8,pcVar6,fVar4); if (((*(this +
-        //       0x150) == 0.0) || (local_d0 <= *(this + 0x150))) &&
-        //          ((dVar12 = dVar13, *(this + 0x154) == 0.0 || (local_d4 <= *(this +
-        //          0x154))))) break;
-        //       fVar4 = dVar13 - 0.2000000029802322;
-        //     }
-        //     dVar13 = MergedGetF0xDC(*(this + 0x110));
-        //     if (dVar12 == dVar13) {
-        //       RndText::SetText(*(this + 0x110),pcVar6);
-        //     }
-        //     else {
-        //       RndTextUpdateDeferrer::RndTextUpdateDeferrer(aRStack_d8,*(this + 0x110));
-        //       fVar4 = *(this + 0x140);
-        //       RndText::SetSize(*(this + 0x110),dVar12);
-        //       RndText::SetAltSizeAndZOffset
-        //                 (*(this + 0x110),*(this + 0x180) * (dVar12 / fVar4),
-        //                  *(this + 0x194) * (dVar12 / fVar4));
-        //       RndTextUpdateDeferrer::~RndTextUpdateDeferrer(aRStack_d8);
-        //     }
-        //     fn_8051B3F4(avStack_b8,0xffffffff);
+        const char *text = mText->RawText();
+        float size = mTextSize;
+        std::vector<RndText::Line> lines;
+        float sp14, sp10;
+        while (true) {
+            if (size < 0.0f) { size = 0.0f; break; }
+            mText->GetStringDimensions(sp14, sp10, lines, text, size);
+            if ((mWidth == 0.0f || sp14 <= mWidth) && (mHeight == 0.0f || sp10 <= mHeight))
+                break;
+            size -= 0.2f;
+        }
+        if (size != mText->Size()) {
+            mText->DeferUpdateText();
+            float ratio = size / mTextSize;
+            mText->SetSize(size);
+            mText->SetAltSizeAndZOffset(mAltTextSize * ratio, mAltZOffset * ratio);
+            mText->ResolveUpdateText();
+        } else {
+            mText->SetText(text);
+        }
 
     } else if (mFitType == kFitEllipsis) {
         String ellipsis("...");
-        //     String::String(aSStack_a4,&DAT_80890ab9);
-        //     pcVar6 = fn_800EEFE8(*(this + 0x110));
-        //     String::String(aSStack_b0,pcVar6);
-        //     uVar7 = String::length(aSStack_b0);
-        //     fn_8051B76C(avStack_c0,auStack_e8);
-        //     MergedGenericDtor(auStack_e8,0xffffffff);
-        //     pcVar6 = MergedGet0x8(this + 0x15c);
-        //     iVar8 = String::rfind(aSStack_b0,pcVar6);
-        //     iVar9 = String::length(this + 0x15c);
-        //     if (iVar8 == uVar7 - iVar9) {
-        //       String::operator_+=(aSStack_a4,this + 0x15c);
-        //     }
-        //     iVar8 = String::length(aSStack_a4);
-        //     pcVar6 = MergedGet0x8(aSStack_b0);
-        //     RndText::GetStringDimensions
-        //               (*(this + 0x110),&local_dc,&fStack_e0,avStack_c0,pcVar6,*(this +
-        //               0x140));
-        //     if (((*(this + 0x140) > 0.0) && (*(this + 0x150) > 0.0)) &&
-        //        ((*(this + 0x150) < local_dc ||
-        //         (uVar10 = stlpmtx_std::vector<><>::size(avStack_c0), uVar10 > 1)))) {
-        //       String::insert(aSStack_b0,uVar7,aSStack_a4);
-        //       uVar7 = uVar7 + iVar8;
-        //       while (uVar7 > 1) {
-        //         uVar10 = stlpmtx_std::vector<><>::size(avStack_c0);
-        //         if ((uVar10 < 2) && (local_dc < *(this + 0x150))) {
-        //           uVar10 = (uVar7 - iVar8) - 1;
-        //           pcVar6 = String::operator_[](aSStack_b0,uVar10);
-        //           if ((*pcVar6 != ' ') &&
-        //              ((pcVar6 = String::operator_[](aSStack_b0,uVar10), *pcVar6 != '.'
-        //              &&
-        //               (pcVar6 = String::operator_[](aSStack_b0,uVar10), *pcVar6 !=
-        //               ',')))) break;
-        //         }
-        //         iVar9 = String::find_last_of(aSStack_b0,' ');
-        //         if ((iVar9 == -1) || (iVar9 * 10 < uVar7 * 9)) {
-        //           uVar7 = uVar7 - 1;
-        //           String::erase(aSStack_b0,uVar7);
-        //         }
-        //         else {
-        //           uVar7 = iVar9 + iVar8;
-        //           String::erase(aSStack_b0,uVar7);
-        //         }
-        //         for (uVar10 = 0; uVar10 < iVar8; uVar10 = uVar10 + 1) {
-        //           puVar11 = String::operator_[](aSStack_a4,uVar10);
-        //           uVar3 = *puVar11;
-        //           puVar11 = String::operator_[](aSStack_b0,uVar10 + (uVar7 - iVar8));
-        //           *puVar11 = uVar3;
-        //         }
-        //         pcVar6 = MergedGet0x8(aSStack_b0);
-        //         RndText::GetStringDimensions
-        //                   (*(this +
-        //                   0x110),&local_dc,&fStack_e0,avStack_c0,pcVar6,*(this +
-        //                   0x140));
-        //       }
-        //     }
-        //     pcVar6 = MergedGet0x8(aSStack_b0);
-        //     RndText::SetText(*(this + 0x110),pcVar6);
-        //     fn_8051B3F4(avStack_c0,0xffffffff);
-        //     String::~String(aSStack_b0);
-        //     String::~String(aSStack_a4);
+        String text(mText->RawText());
+        unsigned int textLen = text.length();
+        std::vector<RndText::Line> lines;
+        unsigned int truncPos = text.rfind(mPreserveTruncText.c_str());
+        unsigned int truncLen = mPreserveTruncText.length();
+        if (truncPos == textLen - truncLen) {
+            ellipsis += mPreserveTruncText;
+        }
+        unsigned int ellipsisLen = ellipsis.length();
+        float w, h;
+        mText->GetStringDimensions(w, h, lines, text.c_str(), mTextSize);
+        if (mTextSize > 0.0f && mWidth > 0.0f && (w > mWidth || lines.size() > 1)) {
+            text.insert(textLen, ellipsis);
+            textLen = textLen + ellipsisLen;
+            for (;;) {
+                unsigned int spacePos = text.find_last_of(' ');
+                if (spacePos == String::npos || spacePos * 10 < textLen * 9) {
+                    textLen -= 1;
+                    text.erase(textLen);
+                } else {
+                    textLen = spacePos + ellipsisLen;
+                    text.erase(textLen);
+                }
+                for (unsigned int i = 0; i < ellipsisLen; i++) {
+                    text[textLen - ellipsisLen + i] = ellipsis[i];
+                }
+                mText->GetStringDimensions(w, h, lines, text.c_str(), mTextSize);
+                if (textLen <= 1) break;
+                if (lines.size() > 1 || w >= mWidth) continue;
+                if (text[(textLen - ellipsisLen) - 1] == ' ' || text[(textLen - ellipsisLen) - 1] == '.' || text[(textLen - ellipsisLen) - 1] == ',') continue;
+                break;
+            }
+        }
+        mText->SetText(text.c_str());
     }
 }
 

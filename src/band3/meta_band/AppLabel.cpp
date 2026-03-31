@@ -218,6 +218,9 @@ void AppLabel::SetArtistName(const SortNode *sn) {
     }
 }
 
+const char *SavedSetlist::GetOwner() const { return 0; }
+bool SavedSetlist::IsBattle() const { return false; }
+
 #pragma push
 #pragma dont_inline on
 DECOMP_FORCEBLOCK(AppLabel, (), {SetlistRecord* slr; slr->GetSetlist()->SavedSetlist::GetOwner();})

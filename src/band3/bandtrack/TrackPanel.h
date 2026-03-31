@@ -32,6 +32,7 @@ public:
     TrackPanel();
     OBJ_CLASSNAME(TrackPanel);
     OBJ_SET_TYPE(TrackPanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~TrackPanel();
     virtual void Draw();

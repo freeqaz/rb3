@@ -11,6 +11,7 @@
 #include "meta_band/CharSync.h"
 #include "meta_band/CriticalUserListener.h"
 #include "meta_band/Matchmaker.h"
+#include "meta_band/SessionUsersProviders.h"
 #include "meta_band/BandUI.h"
 #include "meta_band/ProfileMgr.h"
 #include "net/NetSession.h"
@@ -27,7 +28,15 @@
 #include "utl/Symbols.h"
 #include <vector>
 
-void SessionMgr::Init() { InitJunkMsg(); }
+void SessionUsersProvidersInit();
+
+void SessionMgr::Init() {
+    SessionMgr *mgr = new SessionMgr(TheBandUserMgr, new BandMatchmaker());
+    TheSessionMgr = mgr;
+    SessionUsersProvidersInit();
+    BandMachineMgr::Init();
+    InitJunkMsg();
+}
 
 SessionMgr::SessionMgr(BandUserMgr *umgr, Matchmaker *mm)
     : Synchronizable("session_mgr"), mBandUserMgr(umgr), mMatchMaker(mm),

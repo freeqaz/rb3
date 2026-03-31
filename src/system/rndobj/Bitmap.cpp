@@ -674,14 +674,139 @@ bool RndBitmap::LoadDIB(BinStream *bs, unsigned int offbits) {
     tagBITMAPINFOHEADER infoheader;
     *bs >> infoheader;
     if (infoheader.biBitCount < 4) {
-        MILO_WARN("%s: Unsupported bit depth %d", bs->Name(), infoheader.biBitCount);
+        TheDebug.Notify(
+            MakeString("%s: Unsupported bit depth %d", bs->Name(), infoheader.biBitCount)
+        );
         return false;
     }
     if (infoheader.biCompression != 0) {
-        MILO_WARN("%s: Unsupported compression %d", bs->Name(), infoheader.biCompression);
+        TheDebug.Notify(
+            MakeString(
+                "%s: Unsupported compression %d", bs->Name(), infoheader.biCompression
+            )
+        );
         return false;
     }
-    // more...
+    int paletteBytes = 0;
+    if (infoheader.biBitCount <= 8) {
+        paletteBytes = (1 << infoheader.biBitCount) * 4;
+    }
+    int rowBytes;
+    if (infoheader.biBitCount == 4 && (infoheader.biWidth & 1)) {
+        rowBytes = ((infoheader.biWidth + 1) * infoheader.biBitCount) >> 3;
+    } else {
+        rowBytes = (infoheader.biWidth * infoheader.biBitCount) >> 3;
+    }
+    rowBytes = (rowBytes + 3) & ~3;
+    int pixelBytes = rowBytes * infoheader.biHeight;
+    void *buf = _MemAlloc(paletteBytes + pixelBytes, 0);
+    void *palette = nullptr;
+    if (paletteBytes != 0) {
+        palette = buf;
+        if ((infoheader.biClrUsed == 0) ||
+            (infoheader.biClrUsed > (unsigned int)(1 << infoheader.biBitCount))) {
+            bs->Read(buf, paletteBytes);
+        } else {
+            memset(buf, 0, paletteBytes);
+            bs->Read(buf, infoheader.biClrUsed * 4);
+        }
+    }
+    void *pixels = (void *)((char *)buf + paletteBytes);
+    bs->Seek(offbits, BinStream::kSeekBegin);
+    if (infoheader.biHeight < 0) {
+        bs->Read(pixels, pixelBytes);
+    } else {
+        for (int i = infoheader.biHeight - 1; i >= 0; i--) {
+            bs->Read((void *)((char *)pixels + i * rowBytes), rowBytes);
+        }
+    }
+    if (infoheader.biBitCount == 4) {
+        unsigned char *p = (unsigned char *)pixels;
+        unsigned char *end = p + pixelBytes;
+        for (; p != end; p++) {
+            *p = (*p << 4) | (*p >> 4);
+        }
+    }
+    if ((int)infoheader.biXPelsPerMeter != 0xB11) {
+        unsigned int palCount = (unsigned int)paletteBytes >> 2;
+        if ((paletteBytes -= 4) >= 0) {
+            unsigned int blocks = palCount >> 3;
+            if (blocks != 0) {
+                do {
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                    paletteBytes -= 4;
+                    blocks--;
+                } while (blocks != 0);
+                palCount &= 7;
+                if (palCount == 0) goto palette_done;
+            }
+            do {
+                *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                paletteBytes -= 4;
+                palCount--;
+            } while (palCount != 0);
+        }
+palette_done:
+        if (infoheader.biBitCount == 16) {
+            unsigned int pixCount = (unsigned int)pixelBytes >> 1;
+            if ((pixelBytes -= 2) >= 0) {
+                unsigned int blocks = pixCount >> 3;
+                if (blocks != 0) {
+                    do {
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                        pixelBytes -= 2;
+                        blocks--;
+                    } while (blocks != 0);
+                    pixCount &= 7;
+                    if (pixCount == 0) goto pixels_done;
+                }
+                do {
+                    *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
+                    pixelBytes -= 2;
+                    pixCount--;
+                } while (pixCount != 0);
+            }
+pixels_done:;
+        }
+    }
+    Create(
+        infoheader.biWidth,
+        infoheader.biHeight,
+        rowBytes,
+        infoheader.biBitCount,
+        0,
+        palette,
+        pixels,
+        buf
+    );
     return true;
 }
 
@@ -919,8 +1044,58 @@ void RndBitmap::SetPixelColor(
     }
 }
 
-void DecodeDxtColor(unsigned char *, int, int, bool, unsigned char &, unsigned char &, unsigned char &, unsigned char &) {
+void DecodeDxtColor(
+    unsigned char *blockData,
+    int pixelX,
+    int pixelY,
+    bool hasDxt1Alpha,
+    unsigned char &r,
+    unsigned char &g,
+    unsigned char &b,
+    unsigned char &a
+) {
+    unsigned short color0 = *(unsigned short *)blockData;
+    unsigned short color1 = *((unsigned short *)blockData + 1);
 
+    unsigned char *rowPtr = blockData + pixelY;
+    int colorIdx = ((int)rowPtr[4] >> (pixelX << 1)) & 3;
+
+    unsigned char r0 = (color0 >> 8) & 0xF8;
+    a = 0xFF;
+    unsigned char r1 = (color1 >> 8) & 0xF8;
+    unsigned char g0 = (color0 >> 3) & 0xFC;
+    unsigned char g1 = (color1 >> 3) & 0xFC;
+    unsigned char b0 = (color0 << 3) & 0xF8;
+    unsigned char b1 = (color1 << 3) & 0xF8;
+
+    if (colorIdx == 0) {
+        r = r0;
+        g = g0;
+        b = b0;
+        return;
+    }
+
+    if (colorIdx == 1) {
+        r = r1;
+        g = g1;
+        b = b1;
+        return;
+    }
+
+    if (color0 <= color1 && hasDxt1Alpha) {
+        r = ((int)r0 + (int)r1) / 2;
+        g = ((int)g0 + (int)g1) / 2;
+        b = ((int)b0 + (int)b1) / 2;
+        if (colorIdx == 3) {
+            a = 0;
+        }
+    } else {
+        int w0 = 4 - colorIdx;
+        int w1 = colorIdx - 1;
+        r = (unsigned int)((w0 * r0) + (w1 * r1)) / 3U;
+        g = (unsigned int)((w0 * g0) + (w1 * g1)) / 3U;
+        b = (unsigned int)((w0 * b0) + (w1 * b1)) / 3U;
+    }
 }
 
 void DecodeDxt3Alpha(unsigned char *uc, int i, int j, unsigned char &alpha) {

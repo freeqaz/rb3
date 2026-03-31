@@ -211,6 +211,7 @@ public:
     void SetStartSamp(int);
     void SetVolume(float);
     void SetVolume(float, bool);
+    void SyncBuffer(int, int);
 
     int mState; // 0x0 todo this is an enum, figure out the values
     struct _AXVPB *mVoice; // 0x4

@@ -9,6 +9,7 @@ public:
     VocalTrainerPanel();
     OBJ_CLASSNAME(VocalTrainerPanel);
     OBJ_SET_TYPE(VocalTrainerPanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~VocalTrainerPanel();
     virtual void Enter();

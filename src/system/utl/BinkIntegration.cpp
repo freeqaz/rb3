@@ -7,12 +7,25 @@
 #include "utl/EncryptXTEA.h"
 #include <string.h>
 
+extern "C" {
+    void BinkSetMemory(void *(*)(unsigned int), void (*)(void *));
+    void BinkSetIO(bool (*)(BINKIO *, const char *, unsigned int));
+    extern void *BinkOpenAX;
+    void BinkSetSoundSystem(void *, void *);
+    void AXSetCompressor(int);
+}
+
+struct RADARAMCALLBACKS {
+    void *(*alloc)(unsigned int);
+    void (*free)(void *);
+};
+
 void BinkInit() {
-    // BinkSetMemory(BinkAlloc, BinkFree);
-    // BinkSetIO(BinkFileOpen);
-    // RADARAMCALLBACKS aram_callbacks = {BinkAlloc, BinkFree};
-    // BinkSetSoundSystem(BinkOpenAX, aram_callbacks);
-    // AXSetCompressor(0);
+    BinkSetMemory(BinkAlloc, BinkFree);
+    BinkSetIO(BinkFileOpen);
+    RADARAMCALLBACKS aram_callbacks = {BinkAlloc, BinkFree};
+    BinkSetSoundSystem(&BinkOpenAX, &aram_callbacks);
+    AXSetCompressor(0);
 }
 
 void *BinkAlloc(unsigned int size) { _MemAlloc(size, 128); }

@@ -16,6 +16,31 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 M2C = ROOT.parent / "m2c" / "m2c.py"
 ASM_DIR = ROOT / "build/SZBE69_B8/asm"
+SRC_DIR = ROOT / "src"
+
+
+def find_context_file(asm_file: Path) -> Path | None:
+    """Try to find the C++ source file corresponding to an asm file."""
+    # asm path is like build/SZBE69_B8/asm/band3/game/GemPlayer.s
+    # source is like src/band3/game/GemPlayer.cpp
+    rel = asm_file.relative_to(ASM_DIR).with_suffix("")
+    for ext in (".cpp", ".c"):
+        candidate = SRC_DIR / (str(rel) + ext)
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def guess_class_name(function: str) -> str | None:
+    """Extract class name from a mangled symbol like Bar__6MyObjFv -> MyObj."""
+    import re
+    m = re.search(r'__(\d+)(\w+)', function)
+    if m:
+        length = int(m.group(1))
+        name = m.group(2)[:length]
+        if len(name) == length:
+            return name
+    return None
 
 
 def find_asm_file(function: str, unit: str | None) -> Path:
@@ -34,11 +59,31 @@ def find_asm_file(function: str, unit: str | None) -> Path:
         print(f"  tried: {ASM_DIR / (unit + '.s')}", file=sys.stderr)
         sys.exit(1)
 
-    # Search all asm files for the function
+    # Try to narrow search using class name from mangled symbol
+    class_name = guess_class_name(function)
+    if class_name:
+        for candidate in sorted(ASM_DIR.rglob(f"{class_name}.s")):
+            needle = f".fn {function},"
+            for line in candidate.open():
+                if needle in line:
+                    return candidate
+
+    # Search all asm files for the function using grep for speed
     needle = f".fn {function},"
+    try:
+        result = subprocess.run(
+            ["grep", "-rl", "--include=*.s", needle, str(ASM_DIR)],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return Path(result.stdout.strip().splitlines()[0])
+    except FileNotFoundError:
+        pass
+    # Fallback: Python search
     for asm_file in sorted(ASM_DIR.rglob("*.s")):
-        if needle in asm_file.read_text():
-            return asm_file
+        for line in asm_file.open():
+            if needle in line:
+                return asm_file
 
     print(f"error: function '{function}' not found in any asm file", file=sys.stderr)
     sys.exit(1)
@@ -67,11 +112,18 @@ def main():
         "-f", args.function,
         "--passes", str(args.passes),
     ]
-    if args.context:
-        cmd += ["--context", args.context]
+    context = args.context
+    if not context:
+        ctx = find_context_file(asm_file)
+        if ctx:
+            context = str(ctx)
+            print(f"# context: {ctx.relative_to(ROOT)}", file=sys.stderr)
+    if context:
+        cmd += ["--context", context]
     cmd.append(str(asm_file))
 
-    subprocess.run(cmd)
+    result = subprocess.run(cmd)
+    sys.exit(result.returncode)
 
 
 if __name__ == "__main__":

@@ -109,7 +109,15 @@ void StorePanel::Exit() {
     UIPanel::Exit();
 }
 
-bool StorePanel::Exiting() const {}
+bool StorePanel::Exiting() const {
+    if (mPurchaser && mPurchaser->IsEnumerating()) {
+        return true;
+    }
+    if (mEnum && mEnum->IsEnumerating()) {
+        return true;
+    }
+    return UIPanel::Exiting();
+}
 
 bool StorePanel::Unloading() const {
     if (GetState() != kUp && !TheNetCacheMgr->IsUnloaded()) {

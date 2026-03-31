@@ -19,6 +19,8 @@
 #include "game/GamePanel.h"
 #include "game/SyncGameStartPanel.h"
 #include "game/GemPlayer.h"
+#include "game/VocalPlayer.h"
+#include "game/RealGuitarGemPlayer.h"
 #include "game/NetGameMsgs.h"
 #include "game/Player.h"
 #include "game/Scoring.h"
@@ -113,6 +115,15 @@ NetMessage *MusicLibraryTaskMsg::NewNetMessage() { return new MusicLibraryTaskMs
 
 Hmx::Object *GamePanel::NewObject() { return new GamePanel(); }
 Hmx::Object *SyncGameStartPanel::NewObject() { return new SyncGameStartPanel(); }
+Hmx::Object *TrackPanel::NewObject() { return new TrackPanel(); }
+Hmx::Object *GemTrainerPanel::NewObject() { return new GemTrainerPanel(); }
+Hmx::Object *GemTrainerLoopPanel::NewObject() { return new GemTrainerLoopPanel(); }
+Hmx::Object *RGTrainerPanel::NewObject() { return new RGTrainerPanel(); }
+Hmx::Object *RKTrainerPanel::NewObject() { return new RKTrainerPanel(); }
+Hmx::Object *PracticePanel::NewObject() { return new PracticePanel(); }
+Hmx::Object *ChordbookPanel::NewObject() { return new ChordbookPanel(); }
+Hmx::Object *VocalTrainerPanel::NewObject() { return new VocalTrainerPanel(); }
+Hmx::Object *FreestylePanel::NewObject() { return new FreestylePanel(); }
 
 void GameInit() {
     FadePanel::Init();
@@ -711,6 +722,8 @@ void Game::AddBonusPoints(BandUser *pUser, int i2, int) {
     pUser->GetPlayer()->AddPoints(i2, 0, 0);
 }
 
+float Performer::GetTotalStars() const { return GetNumStarsFloat(); }
+
 FORCE_LOCAL_INLINE
 Performer *Game::GetMainPerformer() { return mBand->MainPerformer(); }
 END_FORCE_LOCAL_INLINE
@@ -719,6 +732,13 @@ ExcitementLevel Game::GetCrowdExcitement() { return GetMainPerformer()->GetExcit
 
 bool Game::AllowInput() const { return !mPauseTime && !mRealtime && !mNeverAllowInput; }
 void Game::SetKickAutoplay(bool autokick) { gKickAutoplay = autokick; }
+
+void Game::SetVocalPercussionBank(Player *p, ObjectDir *dir) {
+    VocalPlayer *vp = dynamic_cast<VocalPlayer *>(p);
+    if (vp) {
+        vp->mTambourineManager.SetBank(dir);
+    }
+}
 
 void Game::SetVocalPercussionBank(ObjectDir *dir) {
     FOREACH (it, mAllActivePlayers) {
@@ -831,6 +851,20 @@ DataNode Game::OnMsg(const UIScreenChangeMsg &) {
 }
 
 void Game::DropUser(BandUser *user) {
+    std::vector<BandUser *>::iterator it;
+    bool found = false;
+    for (int i = 0; i < mAllActivePlayers.size(); i++) {
+        if (mAllActivePlayers[i]->GetUser() == user) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        it = std::find(unk154.begin(), unk154.end(), user);
+        if (it != unk154.end()) {
+            unk154.erase(std::remove(unk154.begin(), unk154.end(), user), unk154.end());
+        }
+    }
     MILO_ASSERT(user, 0x7D3);
     MILO_ASSERT(mBand, 0x7D5);
     mBand->RemoveUser(user);
@@ -853,6 +887,28 @@ void Game::AddUser(BandUser *user) {
     plist->AddPlaceholderConfig(user->GetUserGuid(), user->GetSlot(), !user->IsLocal());
     MILO_ASSERT(mBand, 0x7F6);
     mBand->AddUserDynamically(user);
+}
+
+void Game::ResetVoiceChatState() {
+    TheSynth->RequirePushToTalk(false, -1);
+    std::vector<LocalBandUser *> users;
+    TheBandUserMgr->GetLocalBandUsersInSession(users);
+    LocalBandUser **it = users.begin();
+    for (; it != users.end(); it++) {
+        LocalBandUser *user = *it;
+        if (user->GetTrackType() == kTrackVocals) {
+            TheSynth->RequirePushToTalk(true, user->GetPadNum());
+        }
+    }
+}
+
+void Game::ClearState() {
+    for (int i = 0; i < mAllActivePlayers.size(); i++) {
+        Player *p = mAllActivePlayers[i];
+        if (p) {
+            p->unk2a9 = false;
+        }
+    }
 }
 
 static const unsigned char gPlayerStates[16][4] = {
@@ -892,6 +948,22 @@ static const char *gStrPlayerStates[16] = {
     "(3) vocals",
     "(4) right guitar",
 };
+
+void Game::E3CheatAutoplayAccuracy() {
+    for (int slot = 0; slot < 4; slot++) {
+        BandUser *user = TheBandUserMgr->GetUserFromSlot(slot);
+        if (user && user->mPlayer) {
+            if (user->IsLocal()) {
+                RealGuitarGemPlayer *rggp =
+                    dynamic_cast<RealGuitarGemPlayer *>(user->mPlayer);
+                if (rggp) {
+                    rggp->SetAutoplay(true);
+                    rggp->SetAutoplayAccuracy(0.95f);
+                }
+            }
+        }
+    }
+}
 
 const char *Game::DebugCycleAutoplay() {
     // Phase 1: find the current state index (the entry in gPlayerStates that

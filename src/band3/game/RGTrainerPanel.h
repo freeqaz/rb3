@@ -19,6 +19,7 @@ public:
     RGTrainerPanel();
     OBJ_CLASSNAME(RGTrainerPanel);
     OBJ_SET_TYPE(RGTrainerPanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~RGTrainerPanel();
     virtual void Enter();

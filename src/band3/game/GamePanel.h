@@ -93,9 +93,10 @@ public:
 
 class LatencyCallback : public RndOverlay::Callback {
 public:
-    LatencyCallback() {}
+    LatencyCallback() : unk4(0) {}
     virtual ~LatencyCallback() {}
     virtual float UpdateOverlay(RndOverlay *, float);
+    bool unk4;
 };
 
 extern GamePanel *TheGamePanel;

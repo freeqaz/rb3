@@ -16,6 +16,7 @@ public:
     GemTrainerPanel();
     OBJ_CLASSNAME(GemTrainerPanel);
     OBJ_SET_TYPE(GemTrainerPanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~GemTrainerPanel();
     virtual void Draw();
@@ -89,6 +90,7 @@ public:
     GemTrainerLoopPanel() {}
     OBJ_CLASSNAME(GemTrainerLoopPanel);
     OBJ_SET_TYPE(GemTrainerLoopPanel);
+    static Hmx::Object *NewObject();
     virtual ~GemTrainerLoopPanel() {}
     virtual void Poll();
 };

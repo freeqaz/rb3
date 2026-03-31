@@ -11,6 +11,7 @@ public:
     FreestylePanel();
     OBJ_CLASSNAME(FreestylePanel);
     OBJ_SET_TYPE(FreestylePanel);
+    static Hmx::Object *NewObject();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~FreestylePanel();
     virtual void Enter();

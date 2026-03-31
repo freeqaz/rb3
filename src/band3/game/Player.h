@@ -111,7 +111,7 @@ public:
     virtual void AddCodaPoints() {}
     virtual int GetCodaPoints() { return 0; }
     virtual bool InFill() const;
-    virtual void SetFillLogic(FillLogic);
+    virtual void SetFillLogic(FillLogic) {}
     virtual bool DoneWithSong() const = 0;
     virtual bool AllowWarningState() const;
     virtual bool RebuildPhrases();

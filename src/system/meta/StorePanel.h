@@ -66,7 +66,7 @@ public:
     WiiEnumeration *mEnum; // 0x6c
     bool unk70;
     bool unk71;
-    int mPurchaser; // 0x74
+    StoreEnumeration *mPurchaser; // 0x74
     Symbol mSource; // 0x78
     Symbol mBackupSource; // 0x7c
     SessionStatus mSessionStatus; // 0x80

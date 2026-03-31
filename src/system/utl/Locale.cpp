@@ -167,6 +167,20 @@ const char *Locale::Localize(Symbol s, bool b) const {
 }
 
 bool Locale::FindDataIndex(Symbol s, int &idx, bool fail) const {
+    int low = 0;
+    int high = mSize - 1;
+    const char *sStr = s.mStr;
+    while (high - low >= 0) {
+        int mid = (low + high) >> 1;
+        if ((int)sStr > (int)mSymTable[mid].mStr) {
+            low = mid + 1;
+        } else if ((int)sStr < (int)mSymTable[mid].mStr) {
+            high = mid - 1;
+        } else {
+            idx = mid;
+            return true;
+        }
+    }
     if (fail) {
         MILO_FAIL("Couldn't find '%s' in array (file %s)", s.mStr, mFile.mStr);
     }

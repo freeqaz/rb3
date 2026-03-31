@@ -20,6 +20,7 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include "obj/Task.h"
 #include "utl/TimeConversion.h"
 
 GameConfig *TheGameConfig;
@@ -336,6 +337,30 @@ void GameConfig::GetSectionBounds(int i1, float &f2, float &f3) const {
 void GameConfig::GetPracticeSections(int &i1, int &i2) const {
     i1 = mPracticeSections[0];
     i2 = mPracticeSections[1];
+}
+
+bool GameConfig::WantCoda() {
+    if (TheGame->mProperties.mHasSongSections) {
+        int startSect, endSect;
+        GetPracticeSections(startSect, endSect);
+        float startMs, endMs;
+        GetSectionBounds(endSect, startMs, endMs);
+        float diff = endMs - 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
+        if (diff <= 0.0f)
+            diff = -diff;
+        if (diff < 3000.0f)
+            return false;
+    }
+    std::vector<BandUser *> users;
+    TheBandUserMgr->GetBandUsers(&users, 8);
+    FOREACH (it, users) {
+        BandUser *pUser = *it;
+        MILO_ASSERT(pUser, 0x29B);
+        if (pUser->GetTrackType() != kTrackVocals) {
+            return true;
+        }
+    }
+    return false;
 }
 
 BEGIN_HANDLERS(GameConfig)

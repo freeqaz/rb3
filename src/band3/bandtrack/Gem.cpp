@@ -435,6 +435,7 @@ void Gem::SetType(Symbol s) {
 void Gem::UpdateTailPositions() {
     if (CompareBounds()) {
         for (int i = 0; i < mTails.size(); i++) {
+            mTails[i]->MoveSlot(mGemManager->mTrackDir->SlotAt(mTails[i]->mSlot));
         }
     }
 }

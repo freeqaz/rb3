@@ -10,8 +10,13 @@
 #include "char/CharMeshCacheMgr.h"
 #include "char/CharUtl.h"
 #include "math/Rand.h"
+#include "math/Rot.h"
+#include "obj/Task.h"
 #include "obj/Utl.h"
+#include "utl/Loader.h"
+#include "rndobj/Cam.h"
 #include "rndobj/Env.h"
+#include "rndobj/Utl.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 
@@ -312,6 +317,128 @@ void BandCharacter::Poll() {
             name = mInstrumentType == drum ? "sit" : "stand";
         SetState(name, mPlayFlags, 2, false, true);
         unk5a3 = false;
+    }
+
+    // Eye interest polling - update head/neck lookat targets
+    if (mEyes) {
+        RndTransformable *interest = mEyes->GetCurrentInterest();
+        if (interest) {
+            Transform xfm = interest->WorldXfm();
+            if (mHeadLookAt) {
+                mHeadLookAt->GetDest()->SetWorldXfm(xfm);
+            }
+            if (mNeckLookAt) {
+                mNeckLookAt->GetDest()->SetWorldXfm(xfm);
+            }
+        }
+    }
+
+    // Edit mode starvation handling - clear driver if clip near end
+    if (LOADMGR_EDITMODE && unk6d8 < 0.0f && TheTaskMgr.DeltaSeconds() > 0.0f
+        && Dir() != this) {
+        if (mDriver && mDriver->FirstPlaying()) {
+            float startBeat = mDriver->FirstPlaying()->GetClip()->StartBeat();
+            float lengthBeats = mDriver->FirstPlaying()->GetClip()->LengthBeats();
+            if (mDriver->FirstPlaying()->mBeat < -(0.1f * lengthBeats - startBeat)) {
+                mDriver->Clear();
+                if (mAddDriver) {
+                    mAddDriver->Clear();
+                }
+            }
+        }
+    }
+
+    unk6d8 = TheTaskMgr.DeltaSeconds();
+
+    if (!mFrozen) {
+        // Force vertical orientation
+        if (mForceVertical) {
+            if (!(mCache->mFlags & 1)) {
+                mCache->SetDirty_Force();
+            }
+            MakeVertical(mLocalXfm.m);
+        }
+
+        // Expression driver handling
+        if (unk454) {
+            CharClip *clip = unk454->FirstPlayingClip();
+            if (clip && (clip->PlayFlags() & 0xF0) == 0x10) {
+                mForceNextGroup = true;
+            }
+            if (unk454->Starved()) {
+                PlayMainClip(4, false);
+            }
+        }
+
+        // Save and force showing state
+        bool wasShowing = Showing();
+        SetShowing(true);
+        if (Showing()) {
+            // Update singalong weight
+            if (unk6b0) {
+                unsigned int showWeight = 0;
+                if (wasShowing && mMinLod < 1) {
+                    showWeight = 1;
+                }
+                unk6b0->SetWeight((float)showWeight);
+            }
+
+            // Sync outfit character state
+            if (mOutfitDir) {
+                mOutfitDir->SetTeleported(mTeleported);
+                mOutfitDir->mMinLod = mMinLod;
+            }
+
+            // Sync instrument character state
+            if (mInstDir) {
+                mInstDir->SetTeleported(mTeleported);
+                mInstDir->mMinLod = mMinLod;
+            }
+
+            // Poll base character
+            Character::Poll();
+
+            // Poll child characters
+            if (mOutfitDir) {
+                mOutfitDir->Poll();
+            }
+            if (mInstDir) {
+                mInstDir->Poll();
+            }
+        } else {
+            mTeleported = true;
+        }
+        SetShowing(wasShowing);
+    }
+
+    UpdateOverlay();
+    CalcBoundingSphere();
+
+    // Check current clip for vignette/mic_body status
+    unk574 = false;
+    if (mDriver) {
+        CharClip *clip = mDriver->FirstPlayingClip();
+        if (clip) {
+            if (clip->Type() == vignette) {
+                unk574 = true;
+            }
+            if (clip->Type() == mic_body) {
+                if (unk680) {
+                    unk680->SetShowing(clip->Flags() & 0x8000000);
+                }
+            }
+        }
+    }
+
+    // Update mesh visibility based on vignette state
+    if (unk68c) {
+        unk68c->SetShowing(!unk574);
+    }
+    if (unk698) {
+        unk698->SetShowing(!unk574);
+    }
+    if (unk6a4) {
+        unk6a4->SetShowing(!unk574);
     }
 }
 
@@ -663,12 +790,61 @@ RndDrawable *BandCharacter::CollideShowing(const Segment &s, float &f, Plane &pl
 void BandCharacter::DrawShowing() {
     if (!unk6bd || !IsLoading()) {
         if (DataVariable("bandcharacter.show_spheres").Int()) {
+            Sphere debugSphere(Vector3(0.0f, 0.0f, 5.0f), 45.0f);
+            Multiply(debugSphere, mSphereBase->WorldXfm(), debugSphere);
+            Hmx::Color red(1.0f, 0.0f, 0.0f, 1.0f);
+            UtilDrawSphere(debugSphere.center, debugSphere.radius, red);
+            if (mInstDir) {
+                Sphere instSphere;
+                mInstDir->MakeWorldSphere(instSphere, false);
+                Hmx::Color green(0.0f, 1.0f, 0.0f, 1.0f);
+                UtilDrawSphere(instSphere.center, instSphere.GetRadius(), green);
+            }
+            Hmx::Color blue(0.0f, 0.0f, 1.0f, 1.0f);
+            UtilDrawSphere(mBounding.center, mBounding.GetRadius(), blue);
         }
         Character::DrawShowing();
         static DataNode &n = DataVariable("bandcharacter.show_slot");
         if (n.Int()) {
             Transform &headxfm = CharUtlFindBoneTrans("bone_head", this)->WorldXfm();
-            MakeString("slot%d pos%d");
+            Vector3 headPos;
+            headPos.x = headxfm.v.x;
+            headPos.y = headxfm.v.y;
+            headPos.z = headxfm.v.z + 6.0f;
+            Vector2 screenPos;
+            float depth = RndCam::sCurrent->WorldToScreen(headPos, screenPos);
+            if (depth > 0.0f) {
+                const char *dirName = Name();
+                int charPos = dirName[strlen(dirName) - 1] - '0';
+                BandWardrobe::TargetNames *targetNames;
+                if (InVignetteOrCloset()) {
+                    targetNames = &TheBandWardrobe->mVignetteNames;
+                } else {
+                    targetNames = &TheBandWardrobe->mVenueNames;
+                }
+                Symbol nameSym(Name());
+                int slot = 0;
+                if (targetNames->names[0] != nameSym) {
+                    slot = 1;
+                    if (targetNames->names[1] != nameSym) {
+                        slot = 2;
+                        if (targetNames->names[2] != nameSym) {
+                            slot = 3;
+                            if (targetNames->names[3] != nameSym) {
+                                slot = 4;
+                            }
+                        }
+                    }
+                }
+                const char *text = MakeString("slot%d pos%d", slot, charPos);
+                screenPos.x *= (float)TheRnd->mWidth;
+                screenPos.y *= (float)TheRnd->mHeight;
+                Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+                Vector2 &end = TheRnd->DrawString(text, screenPos, white, false);
+                screenPos.x = -(0.5f * (end.x - screenPos.x) - screenPos.x);
+                Hmx::Color white2(1.0f, 1.0f, 1.0f, 1.0f);
+                TheRnd->DrawString(text, screenPos, white2, true);
+            }
         }
     }
 }

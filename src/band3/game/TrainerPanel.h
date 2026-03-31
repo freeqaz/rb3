@@ -15,6 +15,9 @@ public:
     OBJ_CLASSNAME(TrainerChallenge);
     OBJ_SET_TYPE(TrainerChallenge);
 
+    NEW_OBJ(TrainerChallenge)
+    static void Init() { REGISTER_OBJ_FACTORY(TrainerChallenge) }
+
     void Enter();
     void Exit();
     bool Success();

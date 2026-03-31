@@ -499,13 +499,13 @@ void SongData::UnflipGems(int i1, int i2, int diff) {
 
 void SongData::RestoreGems(int i1, int i2, int diff) {
     GameGemList *backup_gems = mBackupTracks[i2]->mGems->GetDiffGemList(diff);
-    GameGemList *gems = mGemDBs[i2]->GetDiffGemList(diff);
-    // gems->mGems = backup_gems->mGems;
+    GameGemList *gems = mGemDBs[i1]->GetDiffGemList(diff);
+    gems->mGems = backup_gems->mGems;
     if (mBackupTracks[i2]->mMixes) {
         TickedInfoCollection<String> &backup_mixes =
             mBackupTracks[i2]->mMixes->GetMixList(diff);
-        TickedInfoCollection<String> &mixes = mDrumMixDBs[i2]->GetMixList(diff);
-        mixes = backup_mixes;
+        TickedInfoCollection<String> &mixes = mDrumMixDBs[i1]->GetMixList(diff);
+        mixes.CopyFrom(backup_mixes);
     }
 }
 
