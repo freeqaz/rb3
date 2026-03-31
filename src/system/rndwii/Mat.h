@@ -3,6 +3,9 @@
 #include "rndobj/Mat.h"
 #include "utl/MemMgr.h"
 
+class RndEnviron;
+class RndCam;
+
 class WiiMat : public RndMat {
 public:
     WiiMat() { unk_0xAD_7 = false; }
@@ -15,6 +18,9 @@ public:
     bool Select(bool);
     void SetModelviewTexGen();
     void SetTexGen(GXTexCoordID, GXTexMtx);
+    void SetStageState(int &, int &, int &, bool, int);
+    bool SetFade(int &, int &, int &, RndEnviron *, RndCam *);
+    void SetColorXfm(int &, RndEnviron *);
 
     static void SetOverrideAlphaWrite(bool set) { sOverrideAlphaWrite = set; }
     static WiiMat *sCurrent;
@@ -26,6 +32,7 @@ public:
     static void SetAlphaCutout(bool, int);
     static void SetZBufferMode(ZMode);
     static void SetFrameBlend(Blend);
+    static void SetFog(bool, RndEnviron *, RndCam *);
     static void SetCurrentModelTransform(const Transform *);
     static void PreInit();
     static void Init();

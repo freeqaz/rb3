@@ -118,16 +118,95 @@ void CharCollide::Deform() {
     if (mMesh) {
         for (int i = 0; i < 8; i++) {
             if (unk_structs[i].unk0 >= mMesh->Verts().size()) {
-                mMesh->Verts().size();
-                PathName(mMesh);
-                PathName(this);
+                MILO_NOTIFY_ONCE(
+                    "%s: can't do vertex based deformation vert %d is greater than the mesh %s vert count %d, please recompute the deformation by re-setting the mesh property",
+                    PathName(this),
+                    unk_structs[i].unk0,
+                    PathName(mMesh),
+                    mMesh->Verts().size()
+                );
                 return;
             }
         }
-        Sphere sc8;
-        Sphere sb8;
+
+        Sphere spheres[2];
         for (int i = 0; i < numSpheres; i++) {
+            spheres[i].center.Zero();
+            CharCollideStruct *s = &unk_structs[i * 4];
+            CharCollideStruct *s2 = s;
+            for (int j = 0; j < 4; j++) {
+                int idx = s2->unk0;
+                Vector3 &pos = mMesh->Verts(idx).pos;
+                Vector3 vertPos;
+                vertPos.x = pos.x + s2->vec.x;
+                vertPos.y = pos.y + s2->vec.y;
+                vertPos.z = pos.z + s2->vec.z;
+                s2++;
+                spheres[i].center.x += vertPos.x;
+                spheres[i].center.y += vertPos.y;
+                spheres[i].center.z += vertPos.z;
+            }
+            spheres[i].center.x *= 0.25f;
+            spheres[i].center.y *= 0.25f;
+            spheres[i].center.z *= 0.25f;
+            spheres[i].radius = 0.0f;
+            for (int j = 0; j < 4; j++) {
+                float vecLen = Length(s->vec);
+                if (0.0f == vecLen) {
+                    vecLen = 0.001f;
+                }
+                float scale = (vecLen - mOrigRadius[i]) / vecLen;
+                int idx = s->unk0;
+                Vector3 &pos = mMesh->Verts(idx).pos;
+                Vector3 deformed;
+                deformed.y = s->vec.y * scale + pos.y;
+                deformed.z = s->vec.z * scale + pos.z;
+                deformed.x = s->vec.x * scale + pos.x;
+                spheres[i].radius += Distance(deformed, spheres[i].center);
+                s++;
+            }
+            spheres[i].radius *= 0.25f;
         }
+
+        Transform xfm;
+        xfm.v = spheres[0].center;
+        mCurLength[0] = 0.0f;
+        for (int i = 0; i < numSpheres; i++) {
+            mCurRadius[i] = spheres[i].radius;
+        }
+
+        if (numSpheres == 2) {
+            xfm.m.x.y = spheres[1].center.y - xfm.v.y;
+            xfm.m.x.x = spheres[1].center.x - xfm.v.x;
+            xfm.m.x.z = spheres[1].center.z - xfm.v.z;
+            mCurLength[1] = Length(xfm.m.x);
+            if (0.0f == (float)mCurLength[1]) {
+                mCurLength[1] = 0.001f;
+            }
+            float len = mCurLength[1];
+            xfm.m.x.x /= len;
+            xfm.m.x.y /= len;
+            xfm.m.x.z /= len;
+        } else {
+            Vector3 xAxis(1.0f, 0.0f, 0.0f);
+            xfm.m.x = xAxis;
+        }
+
+        const Vector3 *upPtr;
+        if (std::fabs(xfm.m.x.x) < std::fabs(xfm.m.x.y)) {
+            Vector3 upX(1.0f, 0.0f, 0.0f);
+            upPtr = &upX;
+        } else {
+            Vector3 upY(0.0f, 1.0f, 0.0f);
+            upPtr = &upY;
+        }
+
+        Cross(*upPtr, xfm.m.x, xfm.m.y);
+        Normalize(xfm.m.y, xfm.m.y);
+        Cross(xfm.m.x, xfm.m.y, xfm.m.z);
+
+        SetDirty();
+        Multiply(xfm, unk148, mLocalXfm);
     }
 }
 

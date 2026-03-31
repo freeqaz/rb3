@@ -1204,14 +1204,15 @@ void LightPreset::EnvLightEntry::Animate(
         float thisZ = mPosition.z;
         float entryZ = entry.mPosition.z;
         float thisY = mPosition.y;
+        float diffZ = entryZ - thisZ;
         float entryY = entry.mPosition.y;
         float thisX = mPosition.x;
         float entryX = entry.mPosition.x;
-        mPosition.Set(
-            f2 * (entryX - thisX) + thisX,
-            f2 * (entryY - thisY) + thisY,
-            f2 * (entryZ - thisZ) + thisZ
-        );
+        float diffY = entryY - thisY;
+        float diffX = entryX - thisX;
+        mPosition.z = f2 * diffZ + thisZ;
+        mPosition.y = f2 * diffY + thisY;
+        mPosition.x = f2 * diffX + thisX;
     }
 }
 

@@ -15,7 +15,7 @@ public:
     virtual bool Done() { return mSamplesLeft == 0; }
     virtual bool Fail() { return false; }
     virtual void Init();
-    virtual void ConsumeData(void **, int, int);
+    virtual int ConsumeData(void **, int, int);
     virtual void EndData() {}
 
     int mNumChannels; // 0x4

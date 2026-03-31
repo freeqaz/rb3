@@ -432,7 +432,46 @@ void SingerStats::Finalize() {
     std::sort(unk0.begin(), unk0.end(), PartPercentageSorter());
 }
 
-void SingerStats::SetPartPercentage(int, float) {}
+void SingerStats::SetPartPercentage(int part, float percentage) {
+    std::pair<int, float> *first = &unk0[0];
+    std::pair<int, float> *last = first + unk0.size();
+    int count = (int)(last - first) >> 2;
+    std::pair<int, float> *foundPart;
+
+    for (; count > 0; --count) {
+        if (first->first == part) { foundPart = first; goto done; }
+        ++first;
+        if (first->first == part) { foundPart = first; goto done; }
+        ++first;
+        if (first->first == part) { foundPart = first; goto done; }
+        ++first;
+        if (first->first == part) { foundPart = first; goto done; }
+        ++first;
+    }
+
+    switch (last - first) {
+    case 3:
+        if (first->first == part) { foundPart = first; goto done; }
+        ++first;
+    case 2:
+        if (first->first == part) { foundPart = first; goto done; }
+        ++first;
+    case 1:
+        if (first->first == part) { foundPart = first; goto done; }
+        ++first;
+    case 0:
+    default:
+        foundPart = last;
+    }
+
+done:
+    if (foundPart == last) {
+        unk0.push_back(std::pair<int, float>(part, percentage));
+    } else {
+        MILO_ASSERT(foundPart->first == part, 0x3B1);
+        foundPart->second = percentage;
+    }
+}
 
 const std::pair<int, float> &SingerStats::GetRankData(int part) const {
     return unk0[part];

@@ -13,12 +13,17 @@
 #include "revolution/gx/GXTev.h"
 #include "revolution/gx/GXTransform.h"
 #include "revolution/gx/GXTypes.h"
+#include "revolution/os/OSError.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Env.h"
+#include "rndobj/Stats_NG.h"
 #include "rndobj/Utl.h"
 #include "rndobj/Mat.h"
+#include "rndwii/Env.h"
 #include "rndwii/Rnd.h"
 #include "utl/Loader.h"
+
+int DbgGetFrameID();
 
 bool WiiMat::sOverrideAlphaWrite = 0;
 bool WiiMat::sCurrentZCompLoc = 1;
@@ -76,12 +81,16 @@ void WiiMat::SelectParticles() {
     }
 }
 
-bool WiiMat::Select(bool b) {
-    START_AUTO_TIMER("mat_select");
+bool WiiMat::Select(bool hasAOCalc) {
     if (this == sCurrent && !mDirty)
         return 0;
+    bool fadeResult = false;
+    TheNgStats->mMats++;
+    START_AUTO_TIMER("mat_select");
     Reset();
     RndEnviron *env = RndEnviron::sCurrent;
+    int numLightChannels = 0;
+    RndCam *cam = RndCam::sCurrent;
 #ifdef VERSION_SZBE69_B8
     if (TheLoadMgr.EditMode()) {
         GXSetCullMode(GX_CULL_NONE);
@@ -91,25 +100,123 @@ bool WiiMat::Select(bool b) {
 #else
     GXSetCullMode((GXCullMode)mCull);
 #endif
-    Hmx::Color c1 = env != nullptr ? env->AmbientColor() : Hmx::Color(0, 0, 0);
-    Hmx::Color c2 = mColor;
-    if (mBlend == 7) {
-        PreMultiplyAlpha(c2);
+    Hmx::Color ambCol = env != nullptr ? env->AmbientColor() : Hmx::Color(0, 0, 0);
+    Hmx::Color diffuseCol = mColor;
+    if (mBlend == kPreMultAlpha) {
+        PreMultiplyAlpha(diffuseCol);
     }
-    // int p1 = c1.PackAlpha();
-    // int p2 = c2.PackAlpha();
-    // GXSetChanMatColor(GX_COLOR0A0, *(GXColor *)&p1);
-    // GXSetChanMatColor(GX_COLOR1A1, *(GXColor *)&p2);
-    GXSetNumChans(1);
-    GXSetChanCtrl(
-        GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT
-    );
-    GXSetChanCtrl(
-        GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT
-    );
-
-    int lightIds;
-    MILO_ASSERT(((unsigned int)lightIds) < ((unsigned int)GX_MAX_LIGHT), 417);
+    if (mUseEnviron) {
+        diffuseCol.alpha *= RndEnviron::sCurrent->AmbientColor().alpha;
+    }
+    int matPacked = MakeU32Color(diffuseCol);
+    GXSetChanMatColor(GX_COLOR0A0, *(GXColor *)&matPacked);
+    GXSetChanMatColor(GX_COLOR1A1, *(GXColor *)&matPacked);
+    int ambPacked = MakeU32Color(ambCol);
+    GXSetChanAmbColor(GX_COLOR0A0, *(GXColor *)&ambPacked);
+    GXSetChanAmbColor(GX_COLOR1A1, *(GXColor *)&ambPacked);
+    if (!mUseEnviron && !mPreLit) {
+        numLightChannels = 1;
+        GXSetNumChans(1);
+        GXSetChanCtrl(GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+        GXSetChanCtrl(GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+    } else if (env != NULL) {
+        WiiEnviron *wiiEnv = (WiiEnviron *)env;
+        u16 lightIds = wiiEnv->unk_0x19E;
+        bool allDirectional = wiiEnv->unk_0x19C == 0;
+        if (mPreLit) {
+            numLightChannels = 2;
+            GXSetNumChans(2);
+            GXSetChanCtrl(GX_COLOR0, (GXBool)mUseEnviron, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+            GXColor zeroCol = { 0, 0, 0, 0 };
+            GXSetChanAmbColor(GX_COLOR1A1, zeroCol);
+            GXSetChanCtrl(GX_COLOR1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+            GXSetChanCtrl(GX_ALPHA0, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+            GXSetChanCtrl(GX_ALPHA1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+        } else {
+            if (gRecoveringThisFrame) {
+                lightIds = 0;
+            }
+            MILO_ASSERT(((unsigned int)lightIds) < ((unsigned int)GX_MAX_LIGHT), 0x1A1);
+            if (lightIds == 0xFF && bDoMatLightHackBS) {
+                lightIds = 0x7F;
+            }
+            if (hasAOCalc) {
+                numLightChannels = 2;
+                GXSetNumChans(2);
+                GXSetChanCtrl(GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+                if (mUseEnviron) {
+                    GXAttnFn attnFn = GX_AF_SPOT;
+                    if (allDirectional) {
+                        attnFn = GX_AF_SPEC;
+                    }
+                    GXSetChanCtrl(GX_COLOR1, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)lightIds, GX_DF_CLAMP, attnFn);
+                } else {
+                    GXSetChanCtrl(GX_COLOR1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_SPOT);
+                }
+                GXSetChanCtrl(GX_ALPHA1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+            } else {
+                numLightChannels = 1;
+                GXSetNumChans(1);
+                GXAttnFn attnFn = GX_AF_SPOT;
+                if (allDirectional) {
+                    attnFn = GX_AF_SPEC;
+                }
+                GXSetChanCtrl(GX_COLOR0, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)lightIds, GX_DF_CLAMP, attnFn);
+                GXSetChanCtrl(GX_ALPHA0, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+                GXSetChanCtrl(GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+            }
+        }
+    }
+    SetAlphaCutout(mAlphaCut, mAlphaThresh);
+    SetZBufferMode(mZMode);
+    Blend b = mBlend;
+    SetFrameBlend(b);
+    bool doFog = false;
+    if (mFog && (b > kBlendSubtract || !((1 << b) & 0x35))) {
+        doFog = true;
+    }
+    SetFog(doFog, env, cam);
+    int tex = 0;
+    int tev = 0;
+    int stage = 0;
+    SetStageState(tex, tev, stage, mIntensify, numLightChannels);
+    if (!TheRnd->DisablePP()) {
+        if (mBlend != kBlendSrc && mBlend != kBlendAdd) {
+            fadeResult = SetFade(tex, tev, stage, env, cam);
+        }
+        SetColorXfm(tev, env);
+    }
+    GXSetDstAlpha(0, 0);
+    if (sOverrideAlphaWrite) {
+        GXSetAlphaUpdate(1);
+    } else {
+        GXSetAlphaUpdate((GXBool)mAlphaWrite);
+    }
+    GXSetNumTexGens((u8)tex);
+    GXSetNumTevStages((u8)tev);
+    sCurrent = this;
+    if (fadeResult && Refs().size() > 1) {
+        mDirty = 2;
+    } else {
+        mDirty = 0;
+    }
+    if (gbDbgRequestForcedHang) {
+        static int firstFrame = -1;
+        int curFrame = DbgGetFrameID();
+        if (firstFrame < 0) {
+            firstFrame = curFrame;
+            OSReport("GPHangDebug: forcing gp hang.\n");
+        }
+        if (curFrame - firstFrame < 1) {
+            GXSetNumChans(2);
+            GXSetChanCtrl(GX_COLOR0A0, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)0xFF, GX_DF_CLAMP, GX_AF_SPEC);
+            GXSetChanCtrl(GX_COLOR1A1, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)0xFF, GX_DF_CLAMP, GX_AF_SPEC);
+        } else {
+            firstFrame = -1;
+            gbDbgRequestForcedHang = false;
+        }
+    }
+    return mNextPass;
 }
 
 void WiiMat::SetAlphaCutout(bool b, int i) {

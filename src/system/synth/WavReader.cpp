@@ -49,13 +49,52 @@ void WavReader::Poll(float) {
         Init();
     }
     if (mBufNumSamples != 0) {
-        ConsumeData(
-            (void **)(mInputBuffers + (mBufOffset * 2)),
-            mBufNumSamples,
-            mTotalSamplesConsumed
-        );
-
+        void *bufs[2] = { mInputBuffers[0] + mBufOffset, mInputBuffers[1] + mBufOffset };
+        int consumed = ConsumeData((void **)bufs, mBufNumSamples, mTotalSamplesConsumed);
+        mTotalSamplesConsumed += consumed;
+        mBufNumSamples -= consumed;
+        mBufOffset += consumed;
+        if (mBufNumSamples != 0) {
+            return;
+        }
+    }
+    if (mEnableReads) {
         while (mSamplesLeft != 0) {
+            if (mSamplesLeft < mNumChannels) {
+                mSamplesLeft = 0;
+                break;
+            }
+            int tmp = 0x1000;
+            int q = mSamplesLeft / mNumChannels;
+            if (q <= 0x1000) {
+                tmp = q;
+            }
+            mBufNumSamples = tmp;
+            mInWaveFileData->Read(mRawInputBuffer, mNumChannels * mBufNumSamples * 2);
+            mBufOffset = 0;
+            mSamplesLeft -= mBufNumSamples;
+            if (mNumChannels == 1) {
+                for (int i = 0; i < mBufNumSamples; i++) {
+                    unsigned short s = mRawInputBuffer[i];
+                    mInputBuffers[0][i] = (s << 8) | (s >> 8);
+                }
+            } else {
+                for (int i = 0; i < mBufNumSamples; i++) {
+                    unsigned short s0 = mRawInputBuffer[i * 2];
+                    mInputBuffers[0][i] = (s0 << 8) | (s0 >> 8);
+                    unsigned short s1 = mRawInputBuffer[i * 2 + 1];
+                    mInputBuffers[1][i] = (s1 << 8) | (s1 >> 8);
+                }
+            }
+            if (mBufNumSamples != 0) {
+                int consumed = ConsumeData((void **)mInputBuffers, mBufNumSamples, mTotalSamplesConsumed);
+                mTotalSamplesConsumed += consumed;
+                mBufNumSamples -= consumed;
+                mBufOffset += consumed;
+                if (mBufNumSamples != 0) {
+                    return;
+                }
+            }
         }
     }
 }
@@ -70,8 +109,8 @@ void WavReader::Init() {
     mOutStream->InitInfo(mNumChannels, mSampleRate, false, mInWaveFile->mNumSamples);
 }
 
-void WavReader::ConsumeData(void **pcm, int samples, int startSamp) {
+int WavReader::ConsumeData(void **pcm, int samples, int startSamp) {
     MILO_ASSERT(mOutStream, 0xa3);
 
-    mOutStream->ConsumeData(pcm, samples, startSamp);
+    return mOutStream->ConsumeData(pcm, samples, startSamp);
 }

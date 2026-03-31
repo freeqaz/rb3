@@ -64,6 +64,8 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include "utl/BeatMap.h"
+#include "utl/TempoMap.h"
 #include "utl/TimeConversion.h"
 #include "world/Dir.h"
 #include <cstdio>
@@ -741,10 +743,128 @@ bool GemPlayer::DoneWithSong() const {
     }
 }
 
-void GemPlayer::Poll(float, const SongPos &) {
+void GemPlayer::Poll(float ms, const SongPos &pos) {
+    if (mController->IsDisabled() && mController->unk25) {
+        mController->Disable(false);
+        mController->unk25 = false;
+    }
+    CheckFretReleases(ms);
     if (!mGameOver) {
         static DataNode &force_guitar_fx = DataVariable("force_guitar_fx");
         static DataNode &force_keys_fx = DataVariable("force_keys_fx");
+
+        int padNum = -1;
+        if (GetUser()->IsLocal()) {
+            padNum = GetUser()->GetLocalBandUser()->GetPadNum();
+        }
+        SetSyncOffset(TheProfileMgr.GetSyncOffset(padNum));
+        unk388 = false;
+        mMatcher->Poll(ms);
+
+        if (unk348 && TheGame->mProperties.mEnableOverdrive) {
+            AddEnergy(
+                (pos.mTotalTick - mSongPos.mTotalTick) * TheScoring->mOverdriveConfig.whammyRate
+                / 480.0f
+            );
+        }
+
+        if (mController->IsDisabled() && TheGame->AllowInput()
+            && mEnabledState == kPlayerEnabled && !unk1e1) {
+            mController->Disable(false);
+        }
+
+        CheckSolo(ms);
+        Player::Poll(ms, pos);
+        CheckHeldNotes(ms);
+        SetFilling(InFillNow(), (int)mMatcher->mSongPos.mTotalTick);
+        PollTrack();
+
+        int tick = (int)pos.mTotalTick;
+        float tempo = 60000.0f / TheTempoMap->GetTempoBPM(tick);
+
+        if (mGuitarFx && !TheGame->mProperties.mDisableGuitarFx) {
+            SetGuitarFx();
+
+            float beat = TheSongDB->GetData()->GetBeatMap()->Beat(tick) * 0.5f;
+            float beatPhase = beat - (float)std::floor(beat);
+
+            bool deploying = IsDeployingBandEnergy();
+            bool soloFx = false;
+            if (unk315 && !unk314) {
+                soloFx = true;
+            }
+
+            if (force_guitar_fx.Int(0) > 0) {
+                soloFx = true;
+                deploying = true;
+                mFxPos = force_guitar_fx.Int(0) - 1;
+            }
+
+            if (mFxPos != unk3a0) {
+                TheWiiFX.SetFX(unk39c, mFxPos);
+                unk3a0 = mFxPos;
+            }
+
+            if (TheGame->mProperties.mEnableWhammy) {
+                int fxBank = 4;
+                if (mFxPos >= 0) {
+                    fxBank = mFxPos;
+                }
+                bool hasHeld = HasAnyActiveHeldNotes();
+                float whammyBar = mController->GetWhammyBar();
+                mGuitarFx->Poll(
+                    fxBank, deploying, soloFx, tempo, beatPhase, whammyBar, hasHeld, unk33d
+                );
+            }
+
+            if (!TheWiiFX.IsReverb(unk39c == 0) && deploying) {
+                TheWiiFX.SetReverb(unk39c == 0, true);
+            }
+
+            if (!unk3a8 && deploying) {
+                TheWiiFX.SetReverb(unk39c == 0, true);
+                unk3a8 = true;
+            } else if (unk3a8 && !deploying) {
+                TheWiiFX.SetReverb(unk39c == 0, false);
+                unk3a8 = false;
+            }
+
+            if (mTrackType == kTrackBass) {
+                if (!unk3a4 && (deploying || soloFx)) {
+                    unk3a4 = true;
+                    mBeatMaster->GetAudio()->SetFX(mTrackNum, (FXCore)unk39c, true);
+                } else if (unk3a4 && !deploying && !soloFx) {
+                    unk3a4 = false;
+                    mBeatMaster->GetAudio()->SetFX(mTrackNum, (FXCore)unk39c, false);
+                }
+            }
+        }
+
+        if (mKeysFx && !TheGame->mProperties.mDisableKeysFx) {
+            float beat = TheSongDB->GetData()->GetBeatMap()->Beat(tick) * 0.5f;
+            float beatPhase = beat - (float)std::floor(beat);
+
+            bool deploying = IsDeployingBandEnergy();
+            bool soloFx = false;
+            if (unk315 && !unk314) {
+                soloFx = true;
+            }
+
+            if (force_keys_fx.Int(0) > 0) {
+                soloFx = true;
+                deploying = true;
+            }
+
+            if (TheGame->mProperties.mEnableCapstrip) {
+                float capstrip = mController->GetCapStrip();
+                if (!HasAnyActiveHeldNotes()) {
+                    capstrip = 0.0f;
+                }
+                mKeysFx->Poll(deploying, soloFx, tempo, beatPhase, capstrip);
+            }
+        }
+
+        mStatCollector.Poll(ms);
     }
 }
 

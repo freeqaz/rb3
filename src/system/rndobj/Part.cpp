@@ -990,7 +990,207 @@ float RndParticleSys::CheckBursts(float f1) {
     return sum;
 }
 
-void RndParticleSys::MoveParticles(float, float) { START_AUTO_TIMER("psysmove"); }
+void RndParticleSys::MoveParticles(float dt, float frameSpan) {
+    START_AUTO_TIMER("psysmove");
+
+    if (mActiveParticles == NULL || frameSpan == 0.0f)
+        return;
+
+    float dragFactor;
+    float oneOverThirty = 1.0f / 30.0f;
+    if (mDrag > 0.0f) {
+        dragFactor = std::pow(1.0f - mDrag, frameSpan * oneOverThirty);
+    } else {
+        dragFactor = 1.0f;
+    }
+
+    float rpmDragFactor;
+    if (mRotate && mRPMDrag > 0.0f) {
+        rpmDragFactor = std::pow(1.0f - mRPMDrag, frameSpan * oneOverThirty);
+    } else {
+        rpmDragFactor = 1.0f;
+    }
+
+    float forceY_dt = mForceDir.y * frameSpan;
+    bool isBubble = mBubble;
+    float forceX_dt = mForceDir.x * frameSpan;
+    float forceZ_dt = mForceDir.z * frameSpan;
+
+    float relForceRow2 =
+        mRelativeXfm.m.z.y * forceY_dt + mRelativeXfm.m.z.x * forceX_dt
+        + mRelativeXfm.m.z.z * forceZ_dt;
+    bool isRotate = mRotate;
+    float relForceRow1 =
+        mRelativeXfm.m.y.y * forceY_dt + mRelativeXfm.m.y.x * forceX_dt
+        + mRelativeXfm.m.y.z * forceZ_dt;
+    bool bounce = (mBounce != NULL);
+    bool isFancy = (mType == kFancy);
+    float relForceRow0 =
+        mRelativeXfm.m.x.y * forceY_dt + mRelativeXfm.m.x.x * forceX_dt
+        + mRelativeXfm.m.x.z * forceZ_dt;
+
+    Plane bouncePlane;
+    if (bounce) {
+        const Transform &bxf = mBounce->WorldXfm();
+        const Transform &bxf2 = mBounce->WorldXfm();
+        bouncePlane.a = bxf2.m.z.x;
+        bouncePlane.b = bxf2.m.z.y;
+        bouncePlane.c = bxf2.m.z.z;
+        float dot = bouncePlane.a * bxf.v.x + bouncePlane.c * bxf.v.z + bouncePlane.b * bxf.v.y;
+        bouncePlane.d = -dot;
+    }
+
+    RndParticle *p = mActiveParticles;
+
+    if (p != NULL) {
+        float halfPi = 1.5707963705062866f;
+        float two = 2.0f;
+        float sixFrameSpan = 6.0f * frameSpan;
+
+        do {
+            bool dead;
+            if (dt >= p->deathFrame || dt < p->birthFrame) {
+                dead = true;
+            } else {
+                dead = false;
+            }
+
+            if (dead) {
+                p = FreeParticle(p);
+            } else {
+                p->pos.x += p->vel.x * frameSpan;
+                p->pos.y += p->vel.y * frameSpan;
+                p->pos.z += p->vel.z * frameSpan;
+
+                if (bounce) {
+                    float dist = bouncePlane.b * p->pos.y
+                        + bouncePlane.a * p->pos.x
+                        + bouncePlane.c * p->pos.z + bouncePlane.d;
+                    if (dist < 0.0f) {
+                        float velDotN =
+                            p->vel.y * bouncePlane.b + p->vel.x * bouncePlane.a + p->vel.z * bouncePlane.c;
+                        if (velDotN < 0.0f) {
+                            float reflect = two * velDotN;
+                            float rx = bouncePlane.a * reflect;
+                            float ry = bouncePlane.b * reflect;
+                            float rz = bouncePlane.c * reflect;
+                            p->vel.x -= rx;
+                            p->vel.y -= ry;
+                            p->vel.z -= rz;
+                        }
+                    }
+                }
+
+                p->vel.x += relForceRow0;
+                p->vel.z += relForceRow2;
+                p->vel.y += relForceRow1;
+
+                if (isFancy) {
+                    p->vel.x *= dragFactor;
+                    p->vel.y *= dragFactor;
+                    p->vel.z *= dragFactor;
+
+                    RndFancyParticle *fp = (RndFancyParticle *)p;
+
+                    if (isBubble) {
+                        float sinVal =
+                            FastSin(fp->bubbleFreq * dt + fp->bubblePhase + halfPi);
+                        float bubbleScale = fp->bubbleFreq * sinVal * frameSpan;
+                        p->pos.x += fp->bubbleDir.x * bubbleScale;
+                        p->pos.y += fp->bubbleDir.y * bubbleScale;
+                        p->pos.z += fp->bubbleDir.z * bubbleScale;
+                    }
+
+                    if (isRotate) {
+                        p->angle += fp->RPF * frameSpan;
+                        fp->RPF *= rpmDragFactor;
+                        p->swingArm += fp->swingArmVel * frameSpan;
+                    }
+
+                    float colorScale;
+                    float cr, cg, cb, ca;
+                    if (dt < fp->midcolFrame) {
+                        float t = (dt - p->birthFrame) * p->vel.w;
+                        colorScale = (1.0f - t) * (sixFrameSpan * t);
+                        ca = fp->midcolVel.alpha * colorScale;
+                        cb = fp->midcolVel.blue * colorScale;
+                        cg = fp->midcolVel.green * colorScale;
+                        cr = fp->midcolVel.red * colorScale;
+                    } else {
+                        float t = (dt - fp->midcolFrame) * fp->bubbleDir.w;
+                        colorScale = (1.0f - t) * (sixFrameSpan * t);
+                        ca = p->colVel.alpha * colorScale;
+                        cb = p->colVel.blue * colorScale;
+                        cg = p->colVel.green * colorScale;
+                        cr = p->colVel.red * colorScale;
+                    }
+
+                    float newR = p->col.red + cr;
+                    float newG = p->col.green + cg;
+                    float newB = p->col.blue + cb;
+                    float newA = p->col.alpha + ca;
+
+                    if (newA > 1.0f) {
+                        newA = 1.0f;
+                    } else if (newA < 0.0f) {
+                        newA = 0.0f;
+                    }
+                    if (newB > 1.0f) {
+                        newB = 1.0f;
+                    } else if (newB < 0.0f) {
+                        newB = 0.0f;
+                    }
+                    if (newG > 1.0f) {
+                        newG = 1.0f;
+                    } else if (newG < 0.0f) {
+                        newG = 0.0f;
+                    }
+                    if (newR > 1.0f) {
+                        newR = 1.0f;
+                    } else if (newR < 0.0f) {
+                        newR = 0.0f;
+                    }
+
+                    p->col.red = newR;
+                    p->col.green = newG;
+                    p->col.blue = newB;
+                    p->col.alpha = newA;
+
+                    float sizeVelRate, timeSince, invDuration;
+                    if (dt < fp->growFrame) {
+                        invDuration = fp->beginGrow;
+                        timeSince = dt - p->birthFrame;
+                        sizeVelRate = fp->growVel;
+                    } else if (dt < fp->shrinkFrame) {
+                        invDuration = fp->midGrow;
+                        timeSince = dt - fp->growFrame;
+                        sizeVelRate = p->sizeVel;
+                    } else {
+                        timeSince = dt - fp->shrinkFrame;
+                        invDuration = fp->endGrow;
+                        sizeVelRate = fp->shrinkVel;
+                    }
+                    float st = timeSince * invDuration;
+                    p->size +=
+                        sizeVelRate * ((1.0f - st) * (sixFrameSpan * st));
+                } else {
+                    float t = (dt - p->birthFrame) * p->pos.w;
+                    float scale = (1.0f - t) * (sixFrameSpan * t);
+                    float dr = p->colVel.red * scale;
+                    float dg = p->colVel.green * scale;
+                    float db = p->colVel.blue * scale;
+                    float da = p->colVel.alpha * scale;
+                    p->col.red += dr;
+                    p->col.green += dg;
+                    p->col.blue += db;
+                    p->col.alpha += da;
+                    p->size += p->sizeVel * scale;
+                }
+                p = p->next;
+            }
+        } while (p != NULL);
+    }
+}
 
 RndParticleSys::~RndParticleSys() {
     if (mPreserveParticles) {

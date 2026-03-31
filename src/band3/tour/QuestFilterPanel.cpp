@@ -32,6 +32,13 @@ Symbol QuestFilterPanel::GetSelectedFilter() {
     }
 }
 
+UIComponent::State QuestFilterProvider::ComponentStateOverride(int iRow, int iCol, UIComponent::State s) const {
+    if (iCol != unk30->SelectedData()) {
+        return (UIComponent::State)2;
+    }
+    return s;
+}
+
 inline Symbol QuestFilterProvider::DataSymbol(int i_iData) const {
     MILO_ASSERT_RANGE( i_iData, 0, NumData(), 0xD0);
     return m_vQuestFilters[i_iData];

@@ -782,9 +782,66 @@ void WorldCrowd::Exit() {
     }
 }
 
-void WorldCrowd::Mats(std::list<RndMat *> &, bool) {
-    std::list<unsigned int> uints;
-    GetMeshShaderFlags(0, uints);
+void WorldCrowd::Mats(std::list<RndMat *> &mats, bool additive) {
+    if (additive) {
+        MatShaderOptions opts;
+        int shaderTypes[2] = {0xd, 0x13};
+
+        opts.pack |= 0x20;
+
+        for (unsigned int p = 0; p < 2; p++) {
+            opts.SetLast5(shaderTypes[p]);
+            for (int envIdx = 0; envIdx < 2; envIdx++) {
+                bool useEnv = (envIdx != 0);
+                for (int aoIdx = 0; aoIdx < 2; aoIdx++) {
+                    RndMat *mat = Hmx::Object::New<RndMat>();
+                    mat->Copy(gImpostorMat, Hmx::Object::kCopyDeep);
+                    mat->SetUseEnv(useEnv);
+                    opts.mTempMat = true;
+                    opts.shader_struct.mHasAOCalc = 0;
+                    opts.shader_struct.mHasAOCalc = aoIdx;
+                    mat->SetShaderOpts(opts);
+                    mats.insert(mats.end(), mat);
+                }
+            }
+        }
+
+        int i = 0;
+        std::vector<Hmx::Color> colors;
+        Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+        for (; i < 3; i++) {
+            colors.push_back(white);
+        }
+
+        for (int colorIdx = 0; colorIdx <= 3; colorIdx++) {
+            if (colorIdx == 2) continue;
+
+            for (std::list<CharData>::iterator charIt = mCharacters.begin();
+                 charIt != mCharacters.end(); ++charIt) {
+                if (charIt->mDef.mUseRandomColor) {
+                    SetMatColorFlags(charIt->mDef.mMats, (RndMat::ColorModFlags)colorIdx, &colors);
+                }
+
+                for (ObjPtrList<RndMat>::iterator matIt = charIt->mDef.mMats.begin();
+                     matIt != charIt->mDef.mMats.end(); ++matIt) {
+                    std::list<unsigned int> flags;
+                    GetMeshShaderFlags(*matIt, flags);
+                    for (std::list<unsigned int>::iterator flagIt = flags.begin();
+                         flagIt != flags.end(); ++flagIt) {
+                        unsigned int flag = *flagIt;
+                        opts.pack = 0x12;
+                        opts.SetHasBones(flag & 1);
+                        opts.SetHasAOCalc((flag >> 1) & 1);
+                        RndMat *newMat = Hmx::Object::New<RndMat>();
+                        newMat->Copy(*matIt, Hmx::Object::kCopyDeep);
+                        opts.mTempMat = true;
+                        newMat->SetShaderOpts(opts);
+                        mats.insert(mats.end(), newMat);
+                    }
+                }
+            }
+        }
+    }
 }
 
 WorldCrowd::CharData::CharData(Hmx::Object *o) : mDef(o), mMMesh(0) {}

@@ -23,6 +23,7 @@ public:
     bool ReadFail();
     bool ReadDone();
     FileStream *OpenHeader();
+    void OpenFiles(int);
 
     int **mBlockState; // 0x0
     std::vector<ArkFile *> mReadArkFiles; // 0x4

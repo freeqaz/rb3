@@ -17,6 +17,16 @@
 // this is actually a NetCacheMgrWii so change this when that is implemented
 NetCacheMgr *TheNetCacheMgr = 0;
 
+void NetCacheMgrInit() {
+    MILO_ASSERT(TheNetCacheMgr == NULL, 0x22);
+    TheNetCacheMgr = new NetCacheMgr();
+}
+
+void NetCacheMgrTerminate() {
+    delete TheNetCacheMgr;
+    TheNetCacheMgr = NULL;
+}
+
 NetCacheMgr::NetCacheMgr()
     : mState(kNCMS_Nil), mHasFailed(0), mFailType(kNCMFT_Unknown), mServiceId(0),
       mLoadCacheSize(0), mCache(0), mLoadCount(0) {
@@ -81,16 +91,13 @@ void NetCacheMgr::OnInit(DataArray *pData) {
     }
 }
 
-#pragma push
-#pragma dont_inline on
 BEGIN_HANDLERS(NetCacheMgr)
     HANDLE_ACTION(init, OnInit(_msg->Array(2)))
     HANDLE_ACTION(debug_clear_cache, DebugClearCache())
-    HANDLE_ACTION(cheat_next_server, CheatNextServer())
-    HANDLE_EXPR(server_type, mServerType);
+    HANDLE_EXPR(cheat_next_server, CheatNextServer())
+    HANDLE_EXPR(server_type, mServerType)
     HANDLE_CHECK(0x2f3)
 END_HANDLERS
-#pragma pop
 
 const NetCacheMgr::ServerData &NetCacheMgr::Server() const {
     std::list<ServerData>::const_iterator s = mServers.begin();
@@ -464,14 +471,4 @@ NetLoaderRef &NetLoaderRef::operator=(const NetLoaderRef &other) {
     mNetLoader = other.mNetLoader;
     mCacheLoader = other.mCacheLoader;
     return *this;
-}
-
-void NetCacheMgrInit() {
-    MILO_ASSERT(TheNetCacheMgr == NULL, 0x22);
-    TheNetCacheMgr = new NetCacheMgr();
-}
-
-void NetCacheMgrTerminate() {
-    delete TheNetCacheMgr;
-    TheNetCacheMgr = NULL;
 }

@@ -175,9 +175,9 @@ void Track::DTSPopup(bool show) const {
         Player **end = it + players.size();
         for (; it != end; ++it) {
             Player *player = *it;
-            bool showPopup = false;
-            bool noGameOver = false;
             bool canDeploy = false;
+            bool noGameOver = false;
+            bool showPopup = false;
             if (show && player->mEnabledState == kPlayerEnabled && player->CanDeployOverdrive()) {
                 canDeploy = true;
             }

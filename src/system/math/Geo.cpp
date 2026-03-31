@@ -97,17 +97,17 @@ void Multiply(const Plane &p, const Transform &t, Plane &out) {
 }
 
 void Intersect(const Hmx::Ray &r1, const Hmx::Ray &r2, Vector2 &out) {
-    float r1dx = r1.dir.x;
-    float r2dy = r2.dir.y;
-    float r2dx = r2.dir.x;
-    float r1dy = r1.dir.y;
     float r1bx = r1.base.x;
-    float dot = r2dx * r1dy - r1dx * r2dy;
+    float r1dx = r1.dir.x;
     float r2bx = r2.base.x;
     float r1by = r1.base.y;
+    float r2dx = r2.dir.x;
+    float r1dy = r1.dir.y;
     float r2by = r2.base.y;
-    if (dot != 0.0f) {
-        float s = ((r1bx - r2bx) * r1dy + (r2by - r1by) * r1dx) / dot;
+    float r2dy = r2.dir.y;
+    float dot = r2dx * r1dy - r1dx * r2dy;
+    if (dot) {
+        float s = (r1dy * (r1bx - r2bx) + r1dx * (r2by - r1by)) / dot;
         out.Set(s * r2dx + r2bx, s * r2dy + r2by);
     } else {
         out = r1.base;

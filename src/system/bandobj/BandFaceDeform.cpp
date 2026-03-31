@@ -33,20 +33,207 @@ int BandFaceDeform::DeltaArray::NumVerts() {
 
 DECOMP_FORCEACTIVE(BandFaceDeform, "")
 
+extern void *
+MemResizeElem(void *&, int &, void *, int, int, const char *);
+
 void BandFaceDeform::DeltaArray::AppendDeltas(
     const std::vector<Vector3> &pos, const std::vector<Vector3> &base
 ) {
     if (pos.size() != base.size()) {
-        MILO_FAIL("AppendDeltas pos has %d points, base has %d", pos.size(), base.size());
+        MILO_FAIL(
+            "AppendDeltas pos has %d points, base has %d", pos.size(), base.size()
+        );
     }
-}
 
-DECOMP_FORCEACTIVE(
-    BandFaceDeform,
-    "BandFaceDeform",
-    "   run from %d to %d waste %g \n",
-    "   is size %d total %d av runlength %g totalWaste %d md %g\n"
-)
+    static int total;
+    static int totalRuns;
+    static int totalLength;
+    static float maxDelta;
+
+    float maxClamp = 2.0f;
+    float minClamp = -2.0f;
+
+    unsigned short start = 0;
+    unsigned short end = 0;
+
+    while (end < pos.size()) {
+        // Skip leading zero-delta vertices
+        int byteOff = start * 0xC;
+        while (start < pos.size()) {
+            const Vector3 &pv = pos[start];
+            const Vector3 &bv = base[start];
+            float deltax = pv.x - bv.x;
+            float deltay = pv.y - bv.y;
+            float deltaz = pv.z - bv.z;
+
+            float dx = (float)deltax;
+            if (dx > maxClamp)
+                dx = maxClamp;
+            else if (dx < minClamp)
+                dx = minClamp;
+            signed char qx = (int)(63.5 * (double)dx + 0.5);
+
+            float dy = deltay;
+            if (dy > maxClamp)
+                dy = maxClamp;
+            else if (dy < minClamp)
+                dy = minClamp;
+            signed char qy = (int)(63.5 * (double)dy + 0.5);
+
+            float dz = deltaz;
+            if (dz > maxClamp)
+                dz = maxClamp;
+            else if (dz < minClamp)
+                dz = minClamp;
+            signed char qz = (int)(63.5 * (double)dz + 0.5);
+
+            int nonZero = 0;
+            if ((signed char)qx != 0 || (signed char)qy != 0 || (signed char)qz != 0) {
+                nonZero = 1;
+            }
+            if (nonZero == 0) {
+                start++;
+                byteOff += 0xC;
+                continue;
+            }
+            break;
+        }
+
+        // Extend run while deltas are non-zero
+        end = start + 1;
+        int byteOff2 = end * 0xC;
+        while (end < pos.size()) {
+            const Vector3 &pv = pos[end];
+            const Vector3 &bv = base[end];
+            float deltax = pv.x - bv.x;
+            float deltay = pv.y - bv.y;
+            float deltaz = pv.z - bv.z;
+
+            float dx = (float)deltax;
+            if (dx > maxClamp)
+                dx = maxClamp;
+            else if (dx < minClamp)
+                dx = minClamp;
+            signed char qx = (int)(63.5 * (double)dx + 0.5);
+
+            float dy = deltay;
+            if (dy > maxClamp)
+                dy = maxClamp;
+            else if (dy < minClamp)
+                dy = minClamp;
+            signed char qy = (int)(63.5 * (double)dy + 0.5);
+
+            float dz = deltaz;
+            if (dz > maxClamp)
+                dz = maxClamp;
+            else if (dz < minClamp)
+                dz = minClamp;
+            signed char qz = (int)(63.5 * (double)dz + 0.5);
+
+            int nonZero = 0;
+            if ((signed char)qx != 0 || (signed char)qy != 0 || (signed char)qz != 0) {
+                nonZero = 1;
+            }
+            if (nonZero != 0) {
+                end++;
+                byteOff2 += 0xC;
+                continue;
+            }
+            break;
+        }
+
+        if (start < pos.size()) {
+            unsigned short count = end - start;
+            char *rec = (char *)MemResizeElem(
+                mData, mSize, (char *)mData + mSize, 0, count * 3 + 4, "BandFaceDeform.cpp"
+            );
+
+            *(unsigned short *)(rec + 0) = start;
+            unsigned short vi = start;
+            float md = maxDelta;
+            *(unsigned short *)(rec + 2) = count;
+            int off = start * 0xC;
+            unsigned short ctr = count;
+            if ((int)start < (int)end) {
+                do {
+                    const Vector3 &pv = pos[vi];
+                    const Vector3 &bv = base[vi];
+                    int recOff = (vi - start) * 3;
+                    float deltax = pv.x - bv.x;
+                    float deltay = pv.y - bv.y;
+                    float deltaz = pv.z - bv.z;
+
+                    float dx = (float)deltax;
+                    if (dx > maxClamp)
+                        dx = maxClamp;
+                    else if (dx < minClamp)
+                        dx = minClamp;
+                    rec[recOff + 4] = (signed char)(int)(63.5 * (double)dx + 0.5);
+
+                    float dy = deltay;
+                    if (dy > maxClamp)
+                        dy = maxClamp;
+                    else if (dy < minClamp)
+                        dy = minClamp;
+                    rec[recOff + 5] = (signed char)(int)(63.5 * (double)dy + 0.5);
+
+                    float dz = deltaz;
+                    if (dz > maxClamp)
+                        dz = maxClamp;
+                    else if (dz < minClamp)
+                        dz = minClamp;
+                    rec[recOff + 6] = (signed char)(int)(63.5 * (double)dz + 0.5);
+
+                    // Track max delta per component
+                    const Vector3 &pv2 = pos[vi];
+                    const Vector3 &bv2 = base[vi];
+                    float absx = std::fabs(pv2.x - bv2.x);
+                    if (md < absx) {
+                        md = absx;
+                        maxDelta = absx;
+                    }
+                    float absy = std::fabs(pv2.y - bv2.y);
+                    if (md < absy) {
+                        md = absy;
+                        maxDelta = absy;
+                    }
+                    float absz = std::fabs(pv2.z - bv2.z);
+                    if (md < absz) {
+                        maxDelta = absz;
+                    }
+
+                    vi++;
+                    off += 0xC;
+                    ctr--;
+                } while (ctr != 0);
+            }
+
+            unsigned short recCount = *(unsigned short *)(rec + 2);
+            TheDebug << MakeString(
+                "   run from %d to %d waste %g \n",
+                (int)start,
+                (int)end,
+                4.0f / (float)(recCount * 3 + 4)
+            );
+
+            totalRuns++;
+            totalLength += count;
+        }
+
+        start = end;
+    }
+
+    int sz = mSize;
+    total += sz;
+    TheDebug << MakeString(
+        "   is size %d total %d av runlength %g totalWaste %d md %g\n",
+        sz,
+        total,
+        (float)totalLength / (float)totalRuns,
+        totalRuns * 4,
+        maxDelta
+    );
+}
 
 void BandFaceDeform::DeltaArray::SetSize(int i) {
     if (mSize != i) {

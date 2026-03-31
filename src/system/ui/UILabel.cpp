@@ -682,7 +682,8 @@ void UILabel::FitText() {
             mText->GetVerticalBounds(f1, f2);
             float fabs = std::fabs(f2 - f1);
             float fvec;
-            if (fabs > 0 && mHeight > 0) {
+            bool doDiv = fabs > 0.0f && mHeight > 0.0f;
+            if (doDiv) {
                 fvec = mHeight / fabs;
             } else
                 fvec = 1.0f;
@@ -699,8 +700,10 @@ void UILabel::FitText() {
         while (true) {
             if (size < 0.0f) { size = 0.0f; break; }
             mText->GetStringDimensions(sp14, sp10, lines, text, size);
-            if ((mWidth == 0.0f || sp14 <= mWidth) && (mHeight == 0.0f || sp10 <= mHeight))
-                break;
+            if (mWidth == 0.0f || !(sp14 > mWidth)) {
+                if (mHeight == 0.0f || !(sp10 > mHeight))
+                    break;
+            }
             size -= 0.2f;
         }
         if (size != mText->Size()) {
@@ -738,13 +741,13 @@ void UILabel::FitText() {
                     textLen = spacePos + ellipsisLen;
                     text.erase(textLen);
                 }
-                for (unsigned int i = 0; i < ellipsisLen; i++) {
-                    text[textLen - ellipsisLen + i] = ellipsis[i];
+                for (unsigned int i = 0, j = textLen - ellipsisLen; i < ellipsisLen; i++, j++) {
+                    text[j] = ellipsis[i];
                 }
                 mText->GetStringDimensions(w, h, lines, text.c_str(), mTextSize);
                 if (textLen <= 1) break;
                 if (lines.size() > 1 || w >= mWidth) continue;
-                if (text[(textLen - ellipsisLen) - 1] == ' ' || text[(textLen - ellipsisLen) - 1] == '.' || text[(textLen - ellipsisLen) - 1] == ',') continue;
+                if (text[(textLen - 1) - ellipsisLen] == ' ' || text[(textLen - 1) - ellipsisLen] == '.' || text[(textLen - 1) - ellipsisLen] == ',') continue;
                 break;
             }
         }

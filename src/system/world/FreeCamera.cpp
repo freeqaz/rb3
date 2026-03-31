@@ -1,10 +1,15 @@
 #include "world/FreeCamera.h"
 #include "obj/Data.h"
+#include "obj/Task.h"
+#include "rndobj/Cam.h"
 #include "rndobj/DOFProc.h"
 #include "rndobj/Trans.h"
 #include "math/Rot.h"
+#include "math/Trig.h"
 #include "world/Dir.h"
+#include "os/Joypad.h"
 #include "utl/Symbols.h"
+#include <math.h>
 
 FreeCamera::FreeCamera(WorldDir *dir, float f1, float f2, int i)
     : mParent(0), mFrozen(0), mPadNum(i), mRotateRate(f1), mSlewRate(f2),
@@ -30,10 +35,154 @@ void FreeCamera::SetParentDof(bool b1, bool b2, bool b3) {
 }
 
 void FreeCamera::Poll() {
-    TheDOFProc->Enabled();
-    TheDOFProc->BlurDepth();
-    TheDOFProc->MaxBlur();
-    TheDOFProc->MinBlur();
+    JoypadData *padData = JoypadGetPadData(mPadNum);
+    if (!padData)
+        return;
+
+    float dt = TheTaskMgr.DeltaUISeconds();
+    float deltaMs = dt * 1000.0f;
+    if (mFrozen) {
+        deltaMs = 0.0f;
+    }
+
+    // Apply left stick to rotation, inlining LimitAng as fmod
+    float lx = padData->mSticks[0][0];
+    float ly = padData->mSticks[0][1];
+    float rotSpeed = mRotateRate * deltaMs;
+
+    // LimitAng(mRot.z - rotSpeed * lx * |lx|)
+    // rotXDelta is kept in f30 across the first fmod call
+    float rotXDelta = rotSpeed * ly * fabsf(ly);
+    float limZ = (float)fmod(mRot.z + rotSpeed * (-lx) * fabsf(lx) + 3.14159265f, 2.0 * 3.14159265f);
+    mRot.z = (limZ < 0.0f) ? limZ + 3.14159265f : limZ - 3.14159265f;
+
+    // LimitAng(mRot.x + rotSpeed * ly * |ly|)
+    float limX = (float)fmod(mRot.x + rotXDelta + 3.14159265f, 2.0 * 3.14159265f);
+    mRot.x = (limX < 0.0f) ? limX + 3.14159265f : limX - 3.14159265f;
+
+    // Rebuild rotation matrix
+    MakeRotMatrix(mRot, mXfm.m, true);
+
+    // Compute slew speed
+    float slewSpeed = mSlewRate * deltaMs;
+    bool isL2 = padData->mButtons & (1 << kPad_L2);
+    if (isL2) {
+        slewSpeed *= 0.1f;
+    }
+
+    float rx = padData->mSticks[1][0];
+    float ry = padData->mSticks[1][1];
+    float slewX = fabsf(rx * rx) * rx * slewSpeed * 0.5f;
+    float slewY = -(fabsf(ry * ry) * ry * slewSpeed);
+
+    // Move along X axis (strafe)
+    mXfm.v.x += mXfm.m.x.x * slewX;
+    mXfm.v.y += mXfm.m.x.y * slewX;
+    mXfm.v.z += mXfm.m.x.z * slewX;
+
+    // Move along Y (forward) or Z (up) depending on L1
+    bool isL1 = padData->mButtons & (1 << kPad_L1);
+    if (isL1) {
+        // L1 pressed - move along Z axis (up/down)
+        mXfm.v.x += mXfm.m.z.x * slewY;
+        mXfm.v.y += mXfm.m.z.y * slewY;
+        mXfm.v.z += mXfm.m.z.z * slewY;
+    } else {
+        // Move along Y axis (forward/back)
+        mXfm.v.x += mXfm.m.y.x * slewY;
+        mXfm.v.y += mXfm.m.y.y * slewY;
+        mXfm.v.z += mXfm.m.y.z * slewY;
+    }
+
+    RndCam *cam = mWorld->GetCam();
+
+    // FOV adjustment with D-pad Up/Down
+    unsigned int buttons = padData->mButtons;
+    bool isDUp = buttons & (1 << kPad_DUp);
+    if (isDUp) {
+        mFov = mFov + 0.001f;
+    } else {
+        bool isDDown = buttons & (1 << kPad_DDown);
+        if (isDDown) {
+            mFov = mFov - 0.001f;
+        }
+    }
+
+    bool isX = buttons & (1 << kPad_X);
+    if (isX) {
+        // X button - roll rotation
+        bool isDLeft = buttons & (1 << kPad_DLeft);
+        if (isDLeft) {
+            mRot.y = deltaMs * 0.001f + mRot.y;
+        } else {
+            bool isDRight = buttons & (1 << kPad_DRight);
+            if (isDRight) {
+                mRot.y = -(deltaMs * 0.001f - mRot.y);
+            }
+        }
+    } else {
+        // Focal plane adjustment
+        bool isDLeft = buttons & (1 << kPad_DLeft);
+        if (isDLeft) {
+            mFocalPlane = (float)((double)mFocalPlane / pow(2.0, deltaMs * 0.001f));
+        } else {
+            bool isDRight = buttons & (1 << kPad_DRight);
+            if (isDRight) {
+                mFocalPlane = (float)((double)mFocalPlane * pow(2.0, deltaMs * 0.001f));
+            }
+        }
+    }
+
+    // Apply parent transform
+    Transform resultXfm;
+    if (mParent) {
+        if (!mUseParentRotateX || !mUseParentRotateY || !mUseParentRotateZ) {
+            Hmx::Matrix3 parentRot;
+            memcpy(&parentRot, &mParent->WorldXfm(), 0x30);
+            Vector3 parentEuler(0.0f, 0.0f, 0.0f);
+            MakeEuler(parentRot, parentEuler);
+            if (!mUseParentRotateX) {
+                parentEuler.x = mRot.x;
+            }
+            if (!mUseParentRotateY) {
+                parentEuler.y = mRot.y;
+            }
+            if (!mUseParentRotateZ) {
+                parentEuler.z = mRot.z;
+            }
+            Hmx::Matrix3 newRot;
+            MakeRotMatrix(parentEuler, newRot, false);
+            const Transform &parentWorld = mParent->WorldXfm();
+            Transform parentXfm;
+            memcpy(&parentXfm, &newRot, 0x30);
+            parentXfm.v = parentWorld.v;
+            Multiply(mXfm, parentXfm, resultXfm);
+        } else {
+            Multiply(mXfm, mParent->WorldXfm(), resultXfm);
+        }
+    } else {
+        memcpy(&resultXfm, &mXfm, 0x40);
+    }
+
+    cam->SetFrustum(cam->NearPlane(), cam->FarPlane(), mFov, 1.0f);
+
+    // If camera has a parent transform, convert to local space
+    RndTransformable *camParent = cam->TransParent();
+    if (camParent) {
+        Transform invParent;
+        Invert(camParent->WorldXfm(), invParent);
+        Multiply(resultXfm, invParent, resultXfm);
+    }
+
+    cam->SetLocalXfm(resultXfm);
+
+    // Handle DOF
+    if (TheDOFProc->Enabled()) {
+        TheDOFProc->Set(
+            cam, mFocalPlane, TheDOFProc->MinBlur(), TheDOFProc->MaxBlur(),
+            TheDOFProc->BlurDepth()
+        );
+    }
 }
 
 BEGIN_HANDLERS(FreeCamera)

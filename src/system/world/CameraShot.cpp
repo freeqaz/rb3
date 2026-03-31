@@ -28,6 +28,7 @@
 #include "obj/PropSync_p.h"
 #include "world/Dir.h"
 #include "math/Interp.h"
+#include "math/Rot.h"
 #include "math/Utl.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"

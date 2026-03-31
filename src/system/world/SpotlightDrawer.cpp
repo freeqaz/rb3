@@ -2,9 +2,12 @@
 #include "char/Character.h"
 #include "decomp.h"
 #include "math/Color.h"
+#include "math/Sphere.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
+#include "os/System.h"
 #include "rndobj/BoxMap.h"
+#include "rndobj/Cam.h"
 #include "rndobj/Draw.h"
 #include "rndobj/Env.h"
 #include "rndobj/Flare.h"
@@ -75,9 +78,92 @@ void SpotlightDrawer::SetAmbientColor(const Hmx::Color &c) {
     sEnviron->Select(nullptr);
 }
 
-void SpotlightDrawer::DrawLight(Spotlight *) {
-    RndMesh *mesh;
-    MILO_ASSERT(mesh, 0x0);
+void SpotlightDrawer::DrawLight(Spotlight *sl) {
+    if (!sl)
+        return;
+
+    Hmx::Color color = sl->mColorOwner->mColor;
+    float intensity = sl->mColorOwner->mIntensity;
+
+    float scaledR = color.red * intensity;
+    float scaledG = color.green * intensity;
+    float scaledB = color.blue * intensity;
+    float scaledA = 1.0f;
+
+    unsigned int packedColor =
+        (((int)(scaledB * 255.0f) & 0xFF) << 16)
+        | (((int)(scaledG * 255.0f) & 0xFF) << 8)
+        | ((int)(scaledR * 255.0f) & 0xFF);
+
+    bool shouldProcess = (packedColor > 5u)
+        || ((unsigned char)(packedColor >> 8) > 3u)
+        || ((unsigned char)(packedColor >> 16) > 7u);
+
+    if (shouldProcess && sl->unk286 && sl->Showing()) {
+        if (GetGfxMode() == kOldGfx && sl->GetTarget() && sl->GetCastShadow()) {
+            sShadowSpots.push_back(sl);
+        }
+
+        SpotlightEntry entry;
+        entry.unk0 = packedColor;
+        entry.unk4 = sl;
+        sLights.push_back(entry);
+
+        bool haveAdd = true;
+        if (!sHaveAdditionals && sl->mAdditionalObjects.mSize == 0) {
+            haveAdd = false;
+        }
+        sHaveAdditionals = haveAdd;
+
+        bool haveFlares = true;
+        if (!sHaveFlares) {
+            bool hasFlare = false;
+            if (sl->mFlareEnabled && sl->mFlare) {
+                hasFlare = true;
+            }
+            if (!hasFlare) {
+                haveFlares = false;
+            }
+        }
+        sHaveFlares = haveFlares;
+
+        bool haveLenses = true;
+        if (!sHaveLenses && !sl->LensMesh()) {
+            haveLenses = false;
+        }
+        sHaveLenses = haveLenses;
+
+        if ((unsigned int)sNeedBoxMap == (unsigned int)TheRnd->GetFrameID()) {
+            MILO_NOTIFY_ONCE("%s drawn after SpotlightEnder", PathName(sl));
+        }
+
+        sNeedDraw = true;
+    }
+
+    RndMesh *lightCanMesh = sl->mLightCanMesh;
+    if (lightCanMesh && !sl->mLightCanSort) {
+        bool visible = false;
+        if (lightCanMesh->Showing()) {
+            MILO_ASSERT(lightCanMesh->Showing(), 0xB9);
+            Sphere s = lightCanMesh->GetSphere();
+            if (s.GetRadius() > 0.0f) {
+                Multiply(s, sl->mLightCanXfm, s);
+                visible = !(s > RndCam::sCurrent->mWorldFrustum);
+            } else {
+                visible = true;
+            }
+        }
+        if (visible) {
+            SpotMeshEntry meshEntry;
+            meshEntry.unk0 = lightCanMesh;
+            meshEntry.unk4 = (RndMesh *)RndEnviron::sCurrent;
+            meshEntry.unk8 = sl;
+            meshEntry.unkc = 0;
+            meshEntry.unk10 = sl->mLightCanXfm;
+            sCans.push_back(meshEntry);
+            sNeedDraw = true;
+        }
+    }
 }
 
 void SpotlightDrawer::UpdateBoxMap() {
