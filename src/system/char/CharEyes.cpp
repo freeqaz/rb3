@@ -334,11 +334,10 @@ bool CharEyes::EyesOnTarget(float f) {
             Vector3 v80;
             Subtract(unk58, src->WorldXfm().v, v80);
             Vector3 v8c(src->WorldXfm().m.y);
-            Vector3 v98(v80);
-            v98.z = 0;
+            v80.z = 0;
             v8c.z = 0;
-            float dot = Dot(v8c, v98);
-            if (std::acos(Clamp<float>(-1, 1, dot / (Length(v8c) * Length(v98))))
+            float dot = Dot(v8c, v80);
+            if (std::acos(Clamp<float>(-1, 1, dot / (Length(v8c) * Length(v80))))
                     * 57.295776f
                 > f) {
                 return false;

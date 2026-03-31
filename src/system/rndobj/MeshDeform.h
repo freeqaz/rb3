@@ -38,6 +38,7 @@ public:
             unk14.Reset();
             unk54.Reset();
         }
+        void ExportWorldXfm(Transform &);
         ObjPtr<RndTransformable, ObjectDir> mBone; // 0x0
         Transform unk14; // 0x14
         Transform unk54; // 0x54
@@ -59,6 +60,7 @@ public:
     void Reskin(SyncMeshCB *, bool);
     void SetNumBones(int);
     void SetMesh(RndMesh *);
+    void SetKeepMeshData();
     RndMesh *Mesh() const { return mMesh; }
 
     NEW_OVERLOAD

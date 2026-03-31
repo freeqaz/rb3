@@ -22,6 +22,7 @@ public:
             lastZ.Zero();
             unk5c.Zero();
         }
+        // implicit copy ctor
 
         Vector3 pos; // 0x0
         Vector3 force; // 0xc
@@ -47,6 +48,7 @@ public:
     class Strand {
     public:
         Strand(Hmx::Object *);
+        Strand(const Strand &);
         ~Strand() {}
         void Load(BinStream &);
         void SetRoot(RndTransformable *);

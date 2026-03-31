@@ -1141,15 +1141,15 @@ void LightPreset::EnvironmentEntry::Load(BinStream &bs) {
 void LightPreset::EnvironmentEntry::Animate(
     const LightPreset::EnvironmentEntry &entry, float f2
 ) {
-    Hmx::Color c38 = mColor;
-    Hmx::Color c48 = entry.mColor;
-    Interp(c38, c48, f2, c38);
     if (entry.mFogEnable) {
-        c38.Unpack(mFogColor);
-        c48.Unpack(entry.mFogColor);
-        Interp(c38, c48, f2, c38);
-        Interp(mFogStart, entry.mFogStart, f2, mFogStart);
-        Interp(mFogEnd, entry.mFogEnd, f2, mFogEnd);
+        float thisStart = mFogStart;
+        float entryStart = entry.mFogStart;
+        float thisEnd = mFogEnd;
+        float entryEnd = entry.mFogEnd;
+        float diffStart = entryStart - thisStart;
+        float diffEnd = entryEnd - thisEnd;
+        mFogStart = f2 * diffStart + thisStart;
+        mFogEnd = f2 * diffEnd + thisEnd;
     } else {
         float far = RndCam::sCurrent ? RndCam::sCurrent->FarPlane() : FLT_MAX;
         Interp(mFogStart, far, f2, mFogStart);
@@ -1192,12 +1192,27 @@ void LightPreset::EnvLightEntry::Load(BinStream &bs) {
 void LightPreset::EnvLightEntry::Animate(
     const LightPreset::EnvLightEntry &entry, float f2
 ) {
-    Hmx::Color c28(mColor);
-    Hmx::Color c38(entry.mColor);
-    Interp(c28, c38, f2, c28);
-    Interp(mRange, entry.mRange, f2, mRange);
+    float thisRange = mRange;
+    float entryRange = entry.mRange;
+    mRange = f2 * (entryRange - thisRange) + thisRange;
     Interp(unk0, entry.unk0, f2, unk0);
-    Interp(mPosition, entry.mPosition, f2, mPosition);
+    if (f2 == 0.0f) {
+        mPosition = mPosition;
+    } else if (f2 == 1.0f) {
+        mPosition = entry.mPosition;
+    } else {
+        float thisZ = mPosition.z;
+        float entryZ = entry.mPosition.z;
+        float thisY = mPosition.y;
+        float entryY = entry.mPosition.y;
+        float thisX = mPosition.x;
+        float entryX = entry.mPosition.x;
+        mPosition.Set(
+            f2 * (entryX - thisX) + thisX,
+            f2 * (entryY - thisY) + thisY,
+            f2 * (entryZ - thisZ) + thisZ
+        );
+    }
 }
 
 bool LightPreset::EnvLightEntry::operator!=(const LightPreset::EnvLightEntry &e) const {

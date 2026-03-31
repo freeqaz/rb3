@@ -122,7 +122,7 @@ void CharClip::Transitions::AddNode(CharClip *clip, const CharGraphNode &node) {
         NodeVector *end = mNodeEnd;
         resized = Resize(bytes + 8, nodes);
 
-        memmove(resized->Next() + 8, resized->Next(), (int)end - (int)next);
+        memmove((char *)resized->Next() + 8, resized->Next(), (int)end - (int)next);
     } else {
         clip->AddRef(mOwner);
         resized = Resize(BytesInMemory() + 0x10, mNodeEnd);
@@ -137,8 +137,8 @@ void CharClip::Transitions::AddNode(CharClip *clip, const CharGraphNode &node) {
                 break;
         }
     }
-    for (; i < size; i++) {
-        resized->nodes[i] = resized->nodes[i - 1];
+    for (int j = size; j > i; j--) {
+        resized->nodes[j] = resized->nodes[j - 1];
     }
     resized->nodes[i] = node;
     resized->size++;

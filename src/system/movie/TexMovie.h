@@ -43,6 +43,7 @@ public:
     FilePath unk_0x38;
     Movie mMovie; // 0x44
 
+    NEW_OBJ(TexMovie)
     DELETE_OVERLOAD
     DECLARE_REVS
 };

@@ -52,7 +52,7 @@ public:
     void CheckWorkerSuspend(bool);
     void UpdateThread();
     int ShowNext();
-    void Show();
+    int Show();
     void CheckHomeMenuButton();
 
     bool Unk64() { return unk_0x64; }

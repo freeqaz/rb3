@@ -2,18 +2,22 @@
 #include "movie/TexMovie.h"
 #include "obj/Dir.h"
 #include "obj/Task.h"
+#include "os/Archive.h"
 #include "os/CritSec.h"
 #include "os/Debug.h"
 #include "os/Joypad_Wii.h"
 #include "os/OSFuncs.h"
 #include "os/System.h"
 #include "os/PlatformMgr.h"
+#include "os/Timer.h"
 #include "revolution/os/OSThread.h"
 #include "revolution/os/OSTime.h"
 #include "rndobj/Cam.h"
+#include "rndobj/EventTrigger.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/Utl.h"
 #include "utl/MemMgr.h"
+#include "utl/MakeString.h"
 #include <revolution/VI.h>
 
 bool gSplashing = false;
@@ -245,7 +249,7 @@ void Splash::Poll() {
 }
 
 bool Splash::UpdateThreadLoop() {
-    if (unk_0x18.SplitMs() > 1 && !ShowNext())
+    if (unk_0x18.SplitMs() > mSplashTime && !ShowNext())
         return true;
     Draw();
     if (mState == kTerminating) {
@@ -276,40 +280,150 @@ void Splash::WaitForState(Splash::SplashState ss) {
 
 void Splash::CheckWorkerSuspend(bool b) {
     MILO_ASSERT((gMainThreadID != CurrentThreadId()), 512);
+    if (gMainThreadID != 0) {
+        CriticalSection *cs = &unk_0x6C;
+        while (mState == s1) {
+            if (unk_0x50 != NULL) {
+                unk_0x50->mShowing = false;
+                unk_0x50->mMovie.UnlockThread();
+            }
+            if (cs)
+                cs->Enter();
+            MILO_ASSERT(mState == s1, 541);
+            mState = s2;
+            unk_0x88.Set();
+            if (cs)
+                cs->Exit();
+            WaitForState(kResuming);
+            if (cs)
+                cs->Enter();
+            MILO_ASSERT(mState == kResuming, 551);
+            mState = kResumed;
+            unk_0x88.Set();
+            if (cs)
+                cs->Exit();
+            if (unk_0x50 != NULL) {
+                unk_0x50->mShowing = true;
+                unk_0x50->mMovie.LockThread();
+            }
+            if (b) {
+                unk_0x5C = 0;
+                Draw();
+            }
+        }
+    }
 }
 
 void Splash::UpdateThread() {
+    unk_0x68 = (int)OSGetCurrentThread();
     MILO_ASSERT(!MainThread(), 571);
-    unk_0x6C.Enter();
+    {
+        CriticalSection *cs = &unk_0x6C;
+        if (cs)
+            cs->Enter();
+        MILO_ASSERT(mState == kResuming, 575);
+        mState = kResumed;
+        unk_0x88.Set();
+        if (cs)
+            cs->Exit();
+    }
+    Timer timer;
+    timer.Start();
+    Show();
+    while (true) {
+        ThePlatformMgr.SystemCheckShutdown();
+        CheckHomeMenuButton();
+        if (!UpdateThreadLoop())
+            break;
+        CheckWorkerSuspend(true);
+        OSSleepTicks(OSMillisecondsToTicks(1));
+    }
+    MILO_ASSERT(mScreens.empty(), 603);
+    while (!SetImmutableState(kWaitingForTerminating)) {
+        MILO_ASSERT(mState == s1, 617);
+        CheckWorkerSuspend(false);
+    }
+    float elapsed = timer.SplitMs();
+    if (TheArchive && Archive::DebugArkOrder()) {
+        TheDebug << MakeString("Splash Time: %f\n", elapsed);
+    }
+    WaitForState(kTerminating);
+    MILO_ASSERT(SetImmutableState(kTerminated), 634);
 }
 
 int Splash::ShowNext() {
     if (unk_0x50 != NULL) {
         unk_0x50->mShowing = false;
         unk_0x50->mMovie.SetPaused(true);
-        unk_0x50 = NULL; // ????
+        unk_0x50 = NULL;
     }
     if (mLastSplash != NULL) {
         mLastSplash->Exit();
         unk_0xF8.push_back(mLastSplash);
+        mLastSplash = NULL;
     }
     CriticalSection *cs = &unk_0xD4;
+    unk_0x4C = 0;
+    unk_0x54 = 0;
     if (cs)
         cs->Enter();
+    unsigned int count = 0;
+    for (std::list<PreparedScreenParams>::iterator it = mPreparedScreens.begin();
+         it != mPreparedScreens.end(); ++it)
+        count++;
+    if (count == 1) {
+        if (!mScreens.empty()) {
+            if (cs)
+                cs->Exit();
+            return 1;
+        } else {
+            unk_0x18.Reset();
+            if (cs)
+                cs->Exit();
+            return 0;
+        }
+    }
+    mPreparedScreens.erase(mPreparedScreens.begin());
+    if (cs)
+        cs->Exit();
+    return Show();
 }
 
-void Splash::Show() {
+int Splash::Show() {
     CriticalSection *cs = &unk_0xD4;
     if (cs)
         cs->Enter();
     MILO_ASSERT(!mPreparedScreens.empty(), 684);
-    RndDir *rd = (*mPreparedScreens.begin()).unk_0x0;
+    PreparedScreenParams params = *mPreparedScreens.begin();
     if (cs)
         cs->Exit();
-    mLastSplash = rd;
+    mLastSplash = params.unk_0x0;
     mLastSplash->Enter();
-    mLastSplash->Find<RndCam>(kSplashCam, false);
-    mLastSplash->Find<TexMovie>(kSplashMovie, false);
+    unk_0x4C = (int)mLastSplash->Find<RndCam>(kSplashCam, false);
+    TexMovie *tm = mLastSplash->Find<TexMovie>(kSplashMovie, false);
+    unk_0x50 = tm;
+    if (tm != NULL) {
+        if (unk_0x64) {
+            tm->mShowing = true;
+            tm->mMovie.SetPaused(false);
+            mSplashTime = (int)ceilf(tm->mMovie.MsPerFrame() * (float)tm->mMovie.NumFrames()) * 2;
+            if (TheRnd->mAspect != Rnd::kWidescreen)
+                TheRnd->SetAspect(Rnd::kRegular);
+        } else {
+            return ShowNext();
+        }
+    } else {
+        mSplashTime = params.unk_0x4;
+        if (TheRnd->mAspect != Rnd::kWidescreen)
+            TheRnd->SetAspect(Rnd::kLetterbox);
+    }
+    EventTrigger *trig = mLastSplash->Find<EventTrigger>("splash.trig", false);
+    unk_0x54 = (int)trig;
+    if (trig != NULL)
+        trig->Trigger();
+    unk_0x18.Restart();
+    unk_0x5C = 0;
+    return 1;
 }
 
 void Splash::Draw() {
@@ -321,35 +435,44 @@ void Splash::Draw() {
     }
     if (unk_0x50 != NULL) {
         if (MainThread()) {
-            float f = unk_0x50->mMovie.MsPerFrame() - 1;
-            if (unk_0x100.SplitMs() < f)
-                return;
+            float msPerFrame = unk_0x50->mMovie.MsPerFrame() - 1.0f;
+            if (unk_0x100.mRunning > 0) {
+                unk_0x100.Split();
+                if (unk_0x100.Ms() < msPerFrame)
+                    return;
+            }
             unk_0x100.Restart();
         }
-
         if (!unk_0x50->mMovie.Poll()) {
             mSplashTime = 0;
             return;
         }
     }
-
     TheRnd->BeginDrawing();
     if (mLastSplash != NULL) {
+        ((RndCam *)unk_0x4C)->Select();
         mLastSplash->DrawShowing();
     }
     ThePlatformMgr.mHomeMenuWii->ShowBannedIcon();
     TheRnd->EndDrawing();
     if (MainThread())
         return;
-    int x = int(unk_0x18.SplitMs()) - mSplashTime;
+    int x = mSplashTime - (int)unk_0x18.SplitMs();
     if (unk_0x50 != NULL) {
-        int z = unk_0x50->mMovie.MsPerFrame() - 10;
-        if (z >= x)
-            return;
+        int z = (int)(unk_0x50->mMovie.MsPerFrame() - 10.0f);
+        if (z < x)
+            x = z;
+        if (x < 0)
+            x = 0;
     } else {
+        if (unk_0x54 != 0)
+            x = 16;
     }
-
-    OSSleepTicks(OSMillisecondsToTicks(x)); // ?????
+    if (x > 16)
+        x = 16;
+    if (x < 1)
+        x = 1;
+    OSSleepTicks(OSMillisecondsToTicks(x));
 }
 
 void Splash::CheckHomeMenuButton() {

@@ -106,8 +106,8 @@ public:
 
     // IsLoaded__21ObjDirPtr<9ObjectDir>CFv
     bool IsLoaded() const {
-        bool b;
         bool ret = true;
+        bool b;
         if (!mDir) {
             b = false;
             if (mLoader && mLoader->IsLoaded())

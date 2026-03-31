@@ -448,10 +448,25 @@ void Rnd::BeginDrawing() {
     mDrawing = true;
     mWorldEnded = false;
     mDrawTimer.Restart();
-    // clang-format off
-    { START_AUTO_TIMER("gs"); }
-    { START_AUTO_TIMER("world"); }
-    // clang-format on
+    static Timer *gsTimer = AutoTimer::GetTimer("gs");
+    Timer *gsLocal = gsTimer;
+    float gsLastMs = gsLocal->mLastMs;
+    static Timer *worldTimer = AutoTimer::GetTimer("world");
+    Timer *savedWorld = worldTimer;
+    float worldLastMs;
+    if (savedWorld) {
+        worldLastMs = savedWorld->mLastMs;
+    }
+    std::vector<std::pair<Timer, TimerStats> > &timers = AutoTimer::sTimers;
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = timers.begin();
+         it != timers.end();
+         ++it) {
+        it->first.Reset();
+    }
+    gsLocal->SetLastMs(gsLastMs);
+    if (savedWorld) {
+        savedWorld->SetLastMs(worldLastMs);
+    }
     mLastProcCmds = mProcCmds;
     mProcCmds = mProcCounter.ProcCommands();
     mDefaultCam->Select();
@@ -468,7 +483,9 @@ void Rnd::BeginDrawing() {
 
 void Rnd::EndWorld() {
     if (!mWorldEnded) {
-        // function ptr stuff here?
+        if (unkf4) {
+            unkf4();
+        }
         DoWorldEnd();
         DoPostProcess();
         mWorldEnded = true;
@@ -1182,9 +1199,12 @@ DataNode Rnd::OnSetClearColor(const DataArray *da) {
 }
 
 DataNode Rnd::OnSetClearColorPacked(const DataArray *da) {
-    float red = (da->Int(2) & 255) / 255.0f;
-    float green = ((da->Int(2) >> 8) & 255) / 255.0f;
-    float blue = ((da->Int(2) >> 0x10) & 255) / 255.0f;
+    int val1 = da->Int(2);
+    int val2 = da->Int(2);
+    int val3 = da->Int(2);
+    float red = (val3 & 255) / 255.0f;
+    float green = ((val1 >> 8) & 255) / 255.0f;
+    float blue = ((val2 >> 0x10) & 255) / 255.0f;
     SetClearColor(Hmx::Color(red, green, blue));
     return 0;
 }

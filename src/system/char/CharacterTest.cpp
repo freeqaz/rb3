@@ -233,7 +233,39 @@ void CharacterTest::SetStartEndBeat(float f1, float f2, int bpm) {
     }
 }
 
-void CharacterTest::PlayNew() { unk64 = kHugeFloat; }
+void CharacterTest::PlayNew() {
+    unk64 = kHugeFloat;
+    if (!mClip1)
+        return;
+    CharClipDriver *drv =
+        mDriver->Play(mClip1, CharClip::kPlayNoBlend, -1.0f, kHugeFloat, 0.0f);
+    if (mClip2) {
+        unk64 = mClip2->EndBeat();
+        CharClip::NodeVector *nodes = mClip1->mTransitions.FindNodes(mClip2);
+        if (nodes) {
+            drv->mPlayFlags = drv->mPlayFlags & 0xffff0fff;
+            int idx = unk68 % nodes->size;
+            unk68 = idx;
+            if (mCycleTransition) {
+                unk68 = idx + 1;
+            } else {
+                idx = mTransition;
+            }
+            const CharGraphNode &node = nodes->nodes[idx];
+            float curBeat = node.curBeat - 4.0f;
+            MaxEq(drv->mBeat, curBeat);
+            mDriver->Play(
+                mClip2, CharClip::kPlayNow, -1.0f, node.nextBeat, node.curBeat - drv->mBeat
+            );
+            float endBeat = node.nextBeat + 4.0f;
+            MinEq(unk64, endBeat);
+        } else {
+            mDriver->Play(mClip2, CharClip::kPlayLast, -1.0f, kHugeFloat, 0.0f);
+        }
+    } else {
+        drv->mPlayFlags = drv->mPlayFlags & 0xffff0f0f | CharClip::kPlayLoop;
+    }
+}
 
 void CharacterTest::Sync() {
     unk68 = 0;

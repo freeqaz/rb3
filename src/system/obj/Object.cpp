@@ -293,19 +293,18 @@ void Hmx::Object::SaveRest(BinStream &bs) {
     bs << 0;
 }
 
-void Hmx::Object::Copy(const Hmx::Object *obj, Hmx::Object::CopyType ty) {
+void Hmx::Object::Copy(const Hmx::Object *o, Hmx::Object::CopyType ty) {
     if (ty == kCopyFromMax)
         return;
-    if (ClassName() == obj->ClassName()) {
-        SetTypeDef((DataArray *)obj->TypeDef());
-        mTypeProps.Copy(obj->mTypeProps, this);
-    } else if (obj->TypeDef() || TypeDef()) {
-        const Symbol className = obj->ClassName();
-        const Symbol selfclass = ClassName();
-        const char *objname = obj->Name();
+    if (ClassName() == o->ClassName()) {
+        SetTypeDef((DataArray *)o->TypeDef());
+        mTypeProps.Copy(o->mTypeProps, this);
+    } else if (o->TypeDef() || TypeDef()) {
+        Symbol className = o->ClassName();
+        Symbol selfclass = ClassName();
+        const char *objname = o->Name();
         const char *selfname = Name();
-        const Symbol typ = obj->Type();
-
+        Symbol typ = o->Type();
         MILO_WARN(
             "Can't copy type \"%s\" or type props of %s to %s, different classes %s and %s",
             typ,

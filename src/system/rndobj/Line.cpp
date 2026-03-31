@@ -134,14 +134,14 @@ void RndLine::SetNumPoints(int num) {
                 vmap.v->uv.Set(0, 0);
                 vmap.v++->color = ptColor;
             }
-            vmap.v->uv.Set(1, 1);
+            vmap.v->uv.Set(0.5f, 1.0f);
             vmap.v++->color = ptColor;
-            vmap.v->uv.Set(1, 0);
+            vmap.v->uv.Set(0.5f, 0.0f);
             vmap.v++->color = ptColor;
             if (vmap.t == 2) {
-                vmap.v->uv.Set(1, 1);
+                vmap.v->uv.Set(1.0f, 1.0f);
                 vmap.v++->color = ptColor;
-                vmap.v->uv.Set(1, 0);
+                vmap.v->uv.Set(1.0f, 0.0f);
                 vmap.v++->color = ptColor;
             }
         }

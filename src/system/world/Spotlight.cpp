@@ -404,23 +404,22 @@ void Spotlight::CloseSlaves() {
 }
 
 void Spotlight::UpdateSlaves() {
-    if (mSlaves.empty())
+    bool isEmpty = mSlaves.empty();
+    if (isEmpty)
         return;
-    else {
-        ObjPtrList<RndLight>::iterator it = mSlaves.begin();
-        ObjPtrList<RndLight>::iterator itEnd = mSlaves.end();
-        for (; it != itEnd; ++it) {
-            RndLight *lit = *it;
-            Transform tf40(WorldXfm());
-            if (lit->TransParent()) {
-                Transform tf70;
-                Invert(lit->TransParent()->WorldXfm(), tf70);
-                Multiply(WorldXfm(), tf70, tf40);
-            }
-            lit->SetLocalXfm(tf40);
-            lit->SetShadowOverride(&mBeam.mCutouts);
-            lit->SetShowing(Showing());
+    ObjPtrList<RndLight>::iterator it = mSlaves.begin();
+    ObjPtrList<RndLight>::iterator itEnd = mSlaves.end();
+    for (; it != itEnd; ++it) {
+        RndLight *lit = *it;
+        Transform tf40(WorldXfm());
+        if (lit->TransParent()) {
+            Transform tf70;
+            Invert(lit->TransParent()->WorldXfm(), tf70);
+            Multiply(WorldXfm(), tf70, tf40);
         }
+        lit->SetLocalXfm(tf40);
+        lit->SetShadowOverride(&mBeam.mCutouts);
+        lit->SetShowing(Showing());
     }
 }
 

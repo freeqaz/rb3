@@ -404,16 +404,18 @@ public:
     }
 
     int GreaterEq(int iii) const {
-        if (!mPatchVerts.empty() && mPatchVerts.front() < iii) {
-            if (mPatchVerts.back() < iii) {
+        if (!(!mPatchVerts.empty() && iii > mPatchVerts.front())) {
+            return 0;
+        } else {
+            if (iii > mPatchVerts.back()) {
                 return mPatchVerts.size();
             } else {
                 int u5 = 0;
                 int u2 = mPatchVerts.size() - 1;
-                if (u5 + 1 < u2) {
+                while (u2 > u5 + 1) {
                     int u4 = (u5 + u2) >> 1;
                     int curVert = mPatchVerts[u4];
-                    if (curVert < iii) {
+                    if (iii > curVert) {
                         u5 = u4;
                     }
                     if (iii <= curVert) {
@@ -422,8 +424,7 @@ public:
                 }
                 return u2;
             }
-        } else
-            return 0;
+        }
     }
 
     Vector3 mCentroid; // 0x0

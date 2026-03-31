@@ -124,12 +124,22 @@ bool CharInterest::IsMatchingFilterFlags(int mask) {
 float CharInterest::ComputeScore(
     const Vector3 &v1, const Vector3 &v2, const Vector3 &v3, float f, int i, bool b
 ) {
-    float neg99 = -0.99f;
-    bool b2 = false;
-    if (IsMatchingFilterFlags(i) || (b && mCategoryFlags == 0)) {
-        b2 = true;
+    int matching = 0;
+    int catFlags = mCategoryFlags;
+    if ((catFlags & i) == catFlags && catFlags != 0)
+        matching = 1;
+    bool passesFilter = matching != 0;
+    if (!passesFilter) {
+        bool bCheck = false;
+        if (b && catFlags == 0)
+            bCheck = true;
+        if (!bCheck) {
+            passesFilter = false;
+        } else {
+            passesFilter = true;
+        }
     }
-    if (!b2)
+    if (!passesFilter)
         return -1.0f;
     Vector3 v7c(WorldXfm().v);
     Vector3 v88;
@@ -137,25 +147,25 @@ float CharInterest::ComputeScore(
     float lensq = LengthSquared(v88);
     Normalize(v88, v88);
 
-    float dot = Dot(v1, v88);
     float f1 = 0.0f;
-    if (dot >= mMaxViewAngleCos)
+    if (Dot(v1, v88) >= mMaxViewAngleCos)
         f1 = 1.0f;
 
-    float dot2 = Dot(v3, v88);
     float f2 = 0.0f;
-    if (dot2 >= mMaxViewAngleCos)
+    if (Dot(v3, v88) >= mMaxViewAngleCos)
         f2 = 1.0f;
 
     float f7 = -(lensq * f - 1.0f);
     if (IsNaN(f7)) {
         f7 = 0.2f;
+    }
+    if (f7 < -0.0001f) {
         MILO_FAIL("error scoring interest object: bad normalize factor gave score %f", f7);
     }
 
-    float f4 = f7 + f1 + f2 + neg99;
+    float f4 = f7 + f1 + f2 + (-0.99f);
     if (f4 >= 0.0f) {
-        f4 = f4 + RandomFloat(-0.25f, 0.25);
+        f4 = f4 + RandomFloat(-0.25f, 0.25f);
     }
     f4 *= mPriority;
     return f4;

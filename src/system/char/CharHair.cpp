@@ -569,6 +569,14 @@ CharHair::Strand::Strand(Hmx::Object *o)
     mRootMat.Identity();
 }
 
+CharHair::Strand::Strand(const CharHair::Strand &rhs)
+    : mShowSpheres(rhs.mShowSpheres), mShowCollide(rhs.mShowCollide),
+      mShowPose(rhs.mShowPose), mRoot(rhs.mRoot), mAngle(rhs.mAngle),
+      mPoints(rhs.mPoints), mHookupFlags(rhs.mHookupFlags) {
+    mBaseMat = rhs.mBaseMat;
+    mRootMat = rhs.mRootMat;
+}
+
 void CharHair::Hookup() {
     if (mManagedHookup)
         return;
@@ -584,14 +592,72 @@ void CharHair::Hookup(ObjPtrList<CharCollide> &collides) {
     mCollide.clear();
     for (int i = 0; i < mStrands.size(); i++) {
         Strand &curStrand = mStrands[i];
-        if (curStrand.Root()) {
-            for (int j = 0; j < curStrand.mPoints.size(); j++) {
-                curStrand.mPoints[j].collides.clear();
+        if (!curStrand.Root())
+            continue;
+
+        ObjVector<Point> &pts = curStrand.mPoints;
+        for (int j = 0; j < pts.size(); j++) {
+            pts[j].collides.clear();
+        }
+
+        for (ObjPtrList<CharCollide>::iterator it = collides.begin();
+             it != collides.end();
+             ++it) {
+            CharCollide *col = *it;
+            bool passAll = col->mFlags == 0 && curStrand.mHookupFlags == 0;
+            if (!(curStrand.mHookupFlags & col->mFlags) && !passAll)
+                continue;
+
+            col->SyncWorldState();
+
+            Vector3 colPos(col->WorldXfm().v);
+            float colAdjust = 0.0f;
+
+            if (col->mFlags != 0) {
+                int shape = (int)col->GetShape();
+                if (shape > 0) {
+                    if (shape > 2) {
+                        if (shape <= 4) {
+                            float len0 = col->mCurLength[0];
+                            float rad0 = col->mCurRadius[0];
+                            Vector3 p1;
+                            ScaleAdd(
+                                col->WorldXfm().v,
+                                col->WorldXfm().m.x,
+                                len0 - rad0,
+                                p1
+                            );
+                            float len1 = col->mCurLength[1];
+                            float rad1 = col->mCurRadius[1];
+                            Vector3 p2;
+                            ScaleAdd(
+                                col->WorldXfm().v,
+                                col->WorldXfm().m.x,
+                                rad1 + len1,
+                                p2
+                            );
+                            Interp(p1, p2, 0.5f, colPos);
+                            colAdjust = Distance(p1, p2) * 0.5f;
+                        }
+                    } else {
+                        colAdjust = col->mCurRadius[0];
+                    }
+                }
             }
-            for (ObjPtrList<CharCollide>::iterator it = collides.begin();
-                 it != collides.end();
-                 ++it) {
-                // more...
+
+            const Transform &rootXfm = curStrand.Root()->WorldXfm();
+            float dist = Distance(colPos, rootXfm.v) - colAdjust;
+
+            for (int j = 0; j < pts.size(); j++) {
+                Point &pt = pts[j];
+                dist -= pt.length;
+                float maxRad = Max(pt.radius, pt.outerRadius);
+                if (maxRad > dist) {
+                    pt.collides.push_back(col);
+                    if (mCollide.find(col) == mCollide.end()) {
+                        mCollide.push_back(col);
+                    }
+                }
             }
         }
     }

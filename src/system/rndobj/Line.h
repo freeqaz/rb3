@@ -13,15 +13,7 @@ public:
         Point() : v(0, 0, 0), c(-1) {}
         Vector3 v; // 0x0
         Hmx::Color32 c; // 0xc
-        float unk10;
-        float unk14;
-        float unk18;
-        float unk1c;
-        float unk20;
-        float unk24;
-        float unk28;
-        float unk2c;
-        float unk30;
+        int unk[9]; // 0x10
     };
 
     class VertsMap {

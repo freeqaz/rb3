@@ -152,8 +152,8 @@ void RndFlare::SetSteps(int i1) {
     if (mStep == mSteps) {
         mStep = max;
     } else {
-        float stepsFloat = (float)mSteps;
         float maxFloat = (float)max;
+        float stepsFloat = (float)mSteps;
         mStep = (int)(maxFloat / stepsFloat) * mStep;
     }
     mSteps = max;

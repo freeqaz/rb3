@@ -1043,7 +1043,7 @@
                 "status": "Equivalent",
                 "comment": "Regswap in ComputeBestStrip__7StriperFUi"
             },
-            "system/math/Color.cpp": "NonMatching",
+            "system/math/Color.cpp": { "status": "NonMatching", "extra_cflags": [ "-fp_contract on" ] },
             "system/math/Decibels.cpp": "Matching",
             "system/math/FileChecksum.cpp": "Matching",
             "system/math/Geo.cpp": "NonMatching",

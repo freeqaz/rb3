@@ -178,12 +178,33 @@ void MakeScale(const Hmx::Matrix3 &m, Vector3 &v) {
 void MakeEulerScale(const Hmx::Matrix3 &m1, Vector3 &v2, Vector3 &v3) {
     MakeScale(m1, v3);
     Hmx::Matrix3 m38;
-    float inv_x = v3.x ? 1.0f / v3.x : 0.0f;
-    Scale(m1.x, inv_x, m38.x);
-    float inv_y = v3.y ? 1.0f / v3.y : 0.0f;
-    Scale(m1.y, inv_y, m38.y);
-    float inv_z = v3.z ? 1.0f / v3.z : 0.0f;
-    Scale(m1.z, inv_z, m38.z);
+    if (v3.x != 0.0f) {
+        float xz = m1.x.z;
+        float xy = m1.x.y;
+        float inv_x = 1.0f / v3.x;
+        float xx = m1.x.x;
+        m38.x.z = xz * inv_x;
+        m38.x.x = xx * inv_x;
+        m38.x.y = xy * inv_x;
+    }
+    if (v3.y != 0.0f) {
+        float yz = m1.y.z;
+        float yy = m1.y.y;
+        float inv_y = 1.0f / v3.y;
+        float yx = m1.y.x;
+        m38.y.z = yz * inv_y;
+        m38.y.x = yx * inv_y;
+        m38.y.y = yy * inv_y;
+    }
+    if (v3.z != 0.0f) {
+        float zz = m1.z.z;
+        float zy = m1.z.y;
+        float inv_z = 1.0f / v3.z;
+        float zx = m1.z.x;
+        m38.z.z = zz * inv_z;
+        m38.z.x = zx * inv_z;
+        m38.z.y = zy * inv_z;
+    }
     MakeEuler(m38, v2);
 }
 
@@ -364,59 +385,64 @@ void MakeRotMatrix(const Vector3 &v1, const Vector3 &v2, Hmx::Matrix3 &mtx) {
 }
 
 void MakeRotMatrix(const Hmx::Quat &q, Hmx::Matrix3 &mtx) {
-    float x2 = 2.0f * q.x;
-    float y2 = 2.0f * q.y;
-    float z2 = 2.0f * q.z;
-    float qxx = x2 * q.x;
-    float qxy = x2 * q.y;
-    float qxz = x2 * q.z;
-    float qyy = y2 * q.y;
-    float qyz = y2 * q.z;
-    float qzz = z2 * q.z;
-    float qxw = x2 * q.w;
-    float qyw = y2 * q.w;
-    float qzw = z2 * q.w;
-    mtx.x.x = (1.0f - qyy) - qzz;
-    mtx.x.y = qzw + qxy;
+    float qx = q.x;
+    float two = 2.0f;
+    float qy = q.y;
+    float qz = q.z;
+    float x2 = two * qx;
+    float y2 = two * qy;
+    float one = 1.0f;
+    float z2 = two * qz;
+    float qw = q.w;
+    float qxx = x2 * qx;
+    float qyy = y2 * qy;
+    float qzz = z2 * qz;
+    float zz = (one - qxx) - qyy;
+    float qzw = z2 * qw;
+    float yy = (one - qzz) - qxx;
+    mtx.z.z = zz;
+    float xx = (one - qyy) - qzz;
+    float qxy = x2 * qy;
+    mtx.y.y = yy;
+    float qxz = x2 * qz;
+    float qyw = y2 * qw;
+    mtx.x.x = xx;
+    mtx.x.y = qxy + qzw;
     mtx.x.z = qxz - qyw;
+    float qxw = x2 * qw;
+    float qyz = y2 * qz;
     mtx.y.x = qxy - qzw;
-    mtx.y.y = (1.0f - qzz) - qxx;
+    mtx.z.x = qxz + qyw;
     mtx.y.z = qyz + qxw;
-    mtx.z.x = qyw + qxz;
     mtx.z.y = qyz - qxw;
-    mtx.z.z = (1.0f - qxx) - qyy;
 }
 
 void RotateAboutX(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
     float fcos = Cosine(f);
     float fsin = Sine(f);
-    mout.Set(
-        min.x.x,
-        min.x.y * fcos - min.x.z * fsin,
-        min.x.y * fsin + min.x.z * fcos,
-        min.y.x,
-        min.y.y * fcos - min.y.z * fsin,
-        min.y.y * fsin + min.y.z * fcos,
-        min.z.x,
-        min.z.y * fcos - min.z.z * fsin,
-        min.z.y * fsin + min.z.z * fcos
-    );
+    mout.x.x = min.x.x;
+    mout.x.y = min.x.y * fcos - min.x.z * fsin;
+    mout.x.z = min.x.y * fsin + min.x.z * fcos;
+    mout.y.x = min.y.x;
+    mout.y.y = min.y.y * fcos - min.y.z * fsin;
+    mout.y.z = min.y.y * fsin + min.y.z * fcos;
+    mout.z.x = min.z.x;
+    mout.z.y = min.z.y * fcos - min.z.z * fsin;
+    mout.z.z = min.z.y * fsin + min.z.z * fcos;
 }
 
 void RotateAboutZ(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
     float fcos = Cosine(f);
     float fsin = Sine(f);
-    mout.Set(
-        min.x.x * fcos - min.x.y * fsin,
-        min.x.x * fsin + min.x.y * fcos,
-        min.x.z,
-        min.y.x * fcos - min.y.y * fsin,
-        min.y.x * fsin + min.y.y * fcos,
-        min.y.z,
-        min.z.x * fcos - min.z.y * fsin,
-        min.z.x * fsin + min.z.y * fcos,
-        min.z.z
-    );
+    mout.x.x = min.x.x * fcos - min.x.y * fsin;
+    mout.x.y = min.x.x * fsin + min.x.y * fcos;
+    mout.x.z = min.x.z;
+    mout.y.x = min.y.x * fcos - min.y.y * fsin;
+    mout.y.y = min.y.x * fsin + min.y.y * fcos;
+    mout.y.z = min.y.z;
+    mout.z.x = min.z.x * fcos - min.z.y * fsin;
+    mout.z.y = min.z.x * fsin + min.z.y * fcos;
+    mout.z.z = min.z.z;
 }
 
 void MakeEuler(const Hmx::Quat &q, Vector3 &v) {
@@ -446,10 +472,10 @@ void MakeRotQuat(const Vector3 &v1, const Vector3 &v2, Hmx::Quat &q) {
         q.y = cy * scale;
         q.z = cz * scale;
     } else {
-        q.x = 0;
-        q.y = 0;
-        q.z = 1;
-        q.w = 0;
+        q.x = 0.0f;
+        q.y = 0.0f;
+        q.z = 1.0f;
+        q.w = 0.0f;
     }
 }
 
@@ -886,48 +912,52 @@ void Invert(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
     float mzx = min.z.x;
     float mzz = min.z.z;
     float myx = min.y.x;
+    float f2 = mzx * myz;
     float mzy = min.z.y;
+    float f4 = myx * mzz;
     float myy = min.y.y;
+    float f0 = mzy * myz;
     float mxy = min.x.y;
+    float f1 = myy * mzz;
     float mxx = min.x.x;
+    float f8 = f4 - f2;
     float mxz = min.x.z;
-    float f8 = myx * mzz - mzx * myz;
-    float f9 = myy * mzz - mzy * myz;
+    float f9 = f1 - f0;
+    float zero = 0.0f;
     float f3 = myx * mzy;
-    float f2 = mzx * myy;
-    float f10 = f3 - f2;
-    float det = mxx * f9 - mxy * f8 + mxz * f10;
-    float mult = 0.0f;
-    if (det != 0.0f) {
+    float f2b = mzx * myy;
+    float f1b = mxy * f8;
+    float f10 = f3 - f2b;
+    float f1c = mxx * f9 - f1b;
+    float det = f1c + mxz * f10;
+    float mult = zero;
+    if (det != zero) {
         mult = 1.0f / det;
     }
-    float a4 = mzx * mxz;
-    float a3 = myx * mxz;
-    float a2 = mzx * mxy;
-    float a1 = mxy * myx;
-    float a6 = mzy * mxz;
-    float a2b = -(mxx * mzy - a2);
-    float a9 = mult * f9;
-    float a5 = myy * mxz;
-    float a7 = -(mxy * mzz - a6);
-    float a2c = mult * a2b;
-    float a6b = mxy * myz - myy * mxz;
-    float a5b = -f8;
-    float a8 = mult * a7;
-    float a7b = mult * a6b;
-    float a6c = mult * a5b;
-    float a4b = mxx * mzz - mzx * mxz;
-    float a3b = -(mxx * myz - a3);
-    float a1b = mxx * myy - mxy * myx;
-    float a5c = mult * a4b;
-    float a4c = mult * a3b;
-    float a3c = mult * f10;
-    float a0 = mult * a1b;
-    mout.Set(
-        a9, a8, a7b,
-        a6c, a5c, a4c,
-        a3c, a2c, a0
-    );
+    float c4 = mzx * mxz;
+    float c3 = myx * mxz;
+    float c2 = mzx * mxy;
+    float c1 = mxy * myx;
+    float c6 = mzy * mxz;
+    float r_zy = c2 - mxx * mzy;
+    float r00 = mult * f9;
+    mout.x.x = r00;
+    float c5 = myy * mxz;
+    float r_xy = c6 - mxy * mzz;
+    mout.z.y = mult * r_zy;
+    float r02 = mxy * myz - c5;
+    float r10 = mult * (-f8);
+    float r11 = mult * (mxx * mzz - c4);
+    float r12 = mult * (c3 - mxx * myz);
+    float r20 = mult * f10;
+    float r22 = mxx * myy - c1;
+    mout.x.y = mult * r_xy;
+    mout.x.z = mult * r02;
+    mout.y.x = r10;
+    mout.y.y = r11;
+    mout.y.z = r12;
+    mout.z.x = r20;
+    mout.z.z = mult * r22;
 }
 
 Hmx::Quat::Quat(const Vector3 &v, float f) { Set(v, f); }

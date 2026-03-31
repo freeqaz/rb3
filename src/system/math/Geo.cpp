@@ -82,13 +82,14 @@ void Multiply(const Box &box, float f, Box &out) {
 void Multiply(const Plane &p, const Transform &t, Plane &out) {
     Hmx::Matrix3 invM;
     FastInvert(t.m, invM);
-    float a = p.a;
     float b = p.b;
+    float negD = -p.d;
+    float a = p.a;
     float c = p.c;
     float nx = invM.x.x * a + invM.x.y * b + invM.x.z * c;
     float ny = invM.y.x * a + invM.y.y * b + invM.y.z * c;
     float nz = invM.z.x * a + invM.z.y * b + invM.z.z * c;
-    float scalar = -(p.d / (a * a + b * b + c * c));
+    float scalar = negD / (a * a + b * b + c * c);
     Vector3 on(a * scalar, b * scalar, c * scalar);
     Vector3 pOut;
     Multiply(on, t, pOut);
@@ -145,8 +146,8 @@ void Intersect(const Transform &trans, const Plane &plane, Hmx::Ray &ray) {
 }
 
 bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
-    float segDirX = seg.end.x - seg.start.x;
     float segDirY = seg.end.y - seg.start.y;
+    float segDirX = seg.end.x - seg.start.x;
     float segDirZ = seg.end.z - seg.start.z;
 
     float segDirDot = tri.frame.z.x * segDirX + tri.frame.z.y * segDirY + tri.frame.z.z * segDirZ;
@@ -155,9 +156,11 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
         return false;
     }
 
-    float tempDot = tri.frame.z.x * (seg.start.x - tri.origin.x)
-                  + tri.frame.z.y * (seg.start.y - tri.origin.y)
-                  + tri.frame.z.z * (seg.start.z - tri.origin.z);
+    float vec3AY = seg.start.y - tri.origin.y;
+    float vec3AX = seg.start.x - tri.origin.x;
+    float vec3AZ = seg.start.z - tri.origin.z;
+
+    float tempDot = tri.frame.z.x * vec3AX + tri.frame.z.y * vec3AY + tri.frame.z.z * vec3AZ;
     float t = -tempDot / segDirDot;
     out = t;
 
@@ -172,11 +175,11 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
     float vec3BY = seg.start.y + mulY - tri.origin.y;
     float vec3BZ = seg.start.z + mulZ - tri.origin.z;
 
-    float dotX3B = tri.frame.x.x * vec3BX + tri.frame.x.y * vec3BY + tri.frame.x.z * vec3BZ;
-    float dotY3B = tri.frame.y.x * vec3BX + tri.frame.y.y * vec3BY + tri.frame.y.z * vec3BZ;
     float dotXX = tri.frame.x.x * tri.frame.x.x + tri.frame.x.y * tri.frame.x.y + tri.frame.x.z * tri.frame.x.z;
     float dotYY = tri.frame.y.x * tri.frame.y.x + tri.frame.y.y * tri.frame.y.y + tri.frame.y.z * tri.frame.y.z;
     float dotXY = tri.frame.x.x * tri.frame.y.x + tri.frame.x.y * tri.frame.y.y + tri.frame.x.z * tri.frame.y.z;
+    float dotX3B = tri.frame.x.x * vec3BX + tri.frame.x.y * vec3BY + tri.frame.x.z * vec3BZ;
+    float dotY3B = tri.frame.y.x * vec3BX + tri.frame.y.y * vec3BY + tri.frame.y.z * vec3BZ;
 
     float denom = dotXY * dotXY - dotYY * dotXX;
     float k = (dotY3B * dotXY - dotX3B * dotYY) / denom;
@@ -832,12 +835,12 @@ void Frustum::Set(float near, float far, float fovY, float ratio) {
 }
 
 bool operator>(const Sphere &s, const Frustum &f) {
-    if (s < f.front || s < f.back || s < f.left || s < f.right || s < f.top || s < f.bottom)
-        return false;
-    return true;
+    return s < f.front || s < f.back || s < f.left || s < f.right || s < f.top || s < f.bottom;
 }
 
 void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
+    std::vector<Vector2> *newPoints = &out.mPoints;
+
     float lastDot = ray.dir.x * (poly.mPoints.back().y - ray.base.y)
                   - ray.dir.y * (poly.mPoints.back().x - ray.base.x);
     const Vector2 *lastPoint = &poly.mPoints.back();
@@ -845,23 +848,23 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
     for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
         float dot = ray.dir.x * (i->y - ray.base.y) - ray.dir.y * (i->x - ray.base.x);
 
-        if (dot < 0.0f) {
-            if (lastDot >= 0.0f) {
-                float t = lastDot / (lastDot - dot);
-                Vector2 v;
-                v.Set(lastPoint->x + t * (i->x - lastPoint->x),
-                      lastPoint->y + t * (i->y - lastPoint->y));
-                out.mPoints.push_back(v);
-            }
-        } else {
+        if (dot >= 0.0f) {
             if (lastDot < 0.0f) {
                 float t = lastDot / (lastDot - dot);
                 Vector2 v;
                 v.Set(lastPoint->x + t * (i->x - lastPoint->x),
                       lastPoint->y + t * (i->y - lastPoint->y));
-                out.mPoints.push_back(v);
+                newPoints->push_back(v);
             }
-            out.mPoints.push_back(*i);
+            newPoints->push_back(*i);
+        } else {
+            if (lastDot >= 0.0f) {
+                float t = lastDot / (lastDot - dot);
+                Vector2 v;
+                v.Set(lastPoint->x + t * (i->x - lastPoint->x),
+                      lastPoint->y + t * (i->y - lastPoint->y));
+                newPoints->push_back(v);
+            }
         }
 
         lastDot = dot;

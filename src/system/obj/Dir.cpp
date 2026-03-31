@@ -877,14 +877,14 @@ BEGIN_HANDLERS(ObjectDir)
     HANDLE_EXPR(exists, FindObject(_msg->Str(2), false) != nullptr)
     HANDLE_ACTION(sync_objects, SyncObjects())
     HANDLE_EXPR(is_proxy, IsProxy())
-    HANDLE_EXPR(proxy_dir, mLoader ? mLoader->mProxyDir : NULL_OBJ)
+    HANDLE_EXPR(proxy_dir, (Hmx::Object *)(mLoader ? mLoader->mProxyDir : (ObjectDir *)nullptr))
     HANDLE_EXPR(
         proxy_name, mLoader ? (mLoader->mProxyName ? mLoader->mProxyName : "") : ""
     )
     HANDLE_ACTION(
         add_names,
         Reserve(
-            mHashTable.mSize + _msg->Int(2) * 2, mStringTable.Size() + _msg->Int(2) * 0x14
+            mHashTable.Size() + _msg->Int(2) * 2, mStringTable.Size() + _msg->Int(2) * 0x14
         )
     )
     HANDLE_ACTION(override_proxy, SetProxyFile(FilePath(_msg->Str(2)), true))

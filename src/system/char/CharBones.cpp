@@ -372,7 +372,7 @@ void CharBones::ScaleDown(CharBones &dst, float f) const {
 }
 
 void CharBones::ScaleAdd(CharBones &dst, float f) const {
-    if (mBones.size() == 0)
+    if (!mBones.size())
         return;
     const Bone *src = mBones.begin();
 
@@ -447,6 +447,7 @@ add_quat:
         if (mCompression >= kCompressQuats) {
             char *sdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
             float scale = abs_f * 0.0078740157f;
+            float swscale = f * 0.0078740157f;
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -456,24 +457,20 @@ add_quat:
                     }
                     dquat++;
                 }
-                float dy = dquat->y;
-                float dx = dquat->x;
-                float dz = dquat->z;
-                float dw = dquat->w;
+                float sw = (float)sdata[3] * swscale;
                 float sy = (float)sdata[1] * scale;
-                float sx = (float)sdata[0] * scale;
                 float sz = (float)sdata[2] * scale;
-                float sw = (float)sdata[3] * (f * 0.0078740157f);
-                if (dw * sw + dz * sz + dx * sx + dy * sy < 0.0f) {
-                    dquat->x = dx - sx;
-                    dquat->y = dy - sy;
-                    dquat->z = dz - sz;
-                    dquat->w = dw - sw;
+                float sx = (float)sdata[0] * scale;
+                if (sw * dquat->w + sz * dquat->z + sx * dquat->x + sy * dquat->y < 0.0f) {
+                    dquat->x -= sx;
+                    dquat->y -= sy;
+                    dquat->z -= sz;
+                    dquat->w -= sw;
                 } else {
-                    dquat->x = dx + sx;
-                    dquat->y = dy + sy;
-                    dquat->z = dz + sz;
-                    dquat->w = dw + sw;
+                    dquat->x += sx;
+                    dquat->y += sy;
+                    dquat->z += sz;
+                    dquat->w += sw;
                 }
                 db->weight += src->weight * f;
                 src++;
@@ -490,6 +487,7 @@ add_quat:
         } else if (mCompression != kCompressNone) {
             short *sdata = (short *)(mStart + mOffsets[TYPE_QUAT]);
             float scale = abs_f * 3.051851e-05f;
+            float swscale = f * 3.051851e-05f;
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -499,24 +497,20 @@ add_quat:
                     }
                     dquat++;
                 }
-                float dz = dquat->z;
-                float dy = dquat->y;
-                float dw = dquat->w;
-                float dx = dquat->x;
-                float sx = (float)sdata[0] * scale;
+                float sw = (float)sdata[3] * swscale;
                 float sz = (float)sdata[2] * scale;
                 float sy = (float)sdata[1] * scale;
-                float sw = (float)sdata[3] * (f * 3.051851e-05f);
-                if (dx * sx + dy * sy + dz * sz + dw * sw < 0.0f) {
-                    dquat->x = dx - sx;
-                    dquat->y = dy - sy;
-                    dquat->z = dz - sz;
-                    dquat->w = dw - sw;
+                float sx = (float)sdata[0] * scale;
+                if (sw * dquat->w + sz * dquat->z + sx * dquat->x + sy * dquat->y < 0.0f) {
+                    dquat->x -= sx;
+                    dquat->y -= sy;
+                    dquat->z -= sz;
+                    dquat->w -= sw;
                 } else {
-                    dquat->x = dx + sx;
-                    dquat->y = dy + sy;
-                    dquat->z = dz + sz;
-                    dquat->w = dw + sw;
+                    dquat->x += sx;
+                    dquat->y += sy;
+                    dquat->z += sz;
+                    dquat->w += sw;
                 }
                 db->weight += src->weight * f;
                 src++;
@@ -541,24 +535,20 @@ add_quat:
                     }
                     dquat++;
                 }
-                float sy = squat->y * abs_f;
-                float dy = dquat->y;
                 float sx = squat->x * abs_f;
-                float dx = dquat->x;
+                float sy = squat->y * abs_f;
                 float sz = squat->z * abs_f;
-                float dz = dquat->z;
                 float sw = squat->w * f;
-                float dw = dquat->w;
-                if (sx * dx + sy * dy + sz * dz + sw * dw < 0.0f) {
-                    dquat->x = dx - sx;
-                    dquat->y = dy - sy;
-                    dquat->z = dz - sz;
-                    dquat->w = dw - sw;
+                if (sy * dquat->y + sx * dquat->x + sz * dquat->z + sw * dquat->w < 0.0f) {
+                    dquat->x -= sx;
+                    dquat->y -= sy;
+                    dquat->z -= sz;
+                    dquat->w -= sw;
                 } else {
-                    dquat->x = sx + dx;
-                    dquat->y = sy + dy;
-                    dquat->z = sz + dz;
-                    dquat->w = sw + dw;
+                    dquat->x += sx;
+                    dquat->y += sy;
+                    dquat->z += sz;
+                    dquat->w += sw;
                 }
                 db->weight += src->weight * f;
                 src++;
@@ -576,12 +566,13 @@ add_quat:
     }
 add_rot:
     if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
+        const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
         float *dfdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
-        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
-        const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
-        float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
         if (mCompression != kCompressNone) {
+            float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
+            float sf = 0.0006103515625f * f;
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -591,7 +582,7 @@ add_rot:
                     }
                     dfdata++;
                 }
-                *dfdata += (float)*(short *)sfdata * (f * 0.0006103515625f);
+                *dfdata += (float)*(short *)sfdata * sf;
                 db->weight += src->weight * f;
                 src++;
                 if (src == src_end)
@@ -605,6 +596,7 @@ add_rot:
                 sfdata = (float *)((char *)sfdata + 2);
             }
         } else {
+            float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -764,7 +756,7 @@ void CharBones::RotateBy(CharBones &dst) const {
         Vector3 *ddata = (Vector3 *)dst.mStart;
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
         const Bone *src_end = src + mCounts[TYPE_QUAT];
-        if (db != nullptr && mCompression >= kCompressVects) {
+        if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
                 short sz = sdata[2];
@@ -823,10 +815,9 @@ rotate_quat:
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
-        int src_quat_off = mOffsets[TYPE_QUAT];
         const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
         if (mCompression >= kCompressQuats) {
-            char *sqdata = (char *)(src_quat_off + mStart);
+            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -858,7 +849,7 @@ rotate_quat:
                 sqdata += 4;
             }
         } else if (mCompression != kCompressNone) {
-            char *sqdata = (char *)(src_quat_off + mStart);
+            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -890,7 +881,7 @@ rotate_quat:
                 sqdata += 8;
             }
         } else {
-            Hmx::Quat *squat = (Hmx::Quat *)(src_quat_off + mStart);
+            Hmx::Quat *squat = (Hmx::Quat *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -990,7 +981,7 @@ void CharBones::RotateTo(CharBones &dst, float f) const {
         Vector3 *ddata = (Vector3 *)dst.mStart;
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
-        if (db != nullptr && mCompression >= kCompressVects) {
+        if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
                 short sz = sdata[2];
@@ -1050,9 +1041,8 @@ rotateto_quat:
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
         Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
-        int src_quat_off = mOffsets[TYPE_QUAT];
         if (mCompression >= kCompressQuats) {
-            char *sqdata = (char *)(src_quat_off + mStart);
+            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -1092,7 +1082,7 @@ rotateto_quat:
                 sqdata += 4;
             }
         } else if (mCompression != kCompressNone) {
-            char *sqdata = (char *)(src_quat_off + mStart);
+            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -1132,7 +1122,7 @@ rotateto_quat:
                 sqdata += 8;
             }
         } else {
-            Hmx::Quat *squat = (Hmx::Quat *)(src_quat_off + mStart);
+            Hmx::Quat *squat = (Hmx::Quat *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;

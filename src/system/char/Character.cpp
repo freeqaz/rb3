@@ -217,13 +217,13 @@ void Character::Exit() {
 
 void Character::Poll() {
     START_AUTO_TIMER("char_poll");
-    if (!mFrozen) {
-        if (LOADMGR_EDITMODE)
-            mTest->Poll();
-        RndDir::Poll();
-        mTeleported = false;
-        mPollState = kCharPolled;
-    }
+    if (mFrozen)
+        return;
+    if (LOADMGR_EDITMODE)
+        mTest->Poll();
+    RndDir::Poll();
+    mTeleported = false;
+    mPollState = kCharPolled;
 }
 
 void Character::DrawLodOrShadow(int lod, Character::DrawMode mode) {

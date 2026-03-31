@@ -40,7 +40,7 @@ namespace {
             MILO_LOG(
                 "   %d particles can be allocated, %.1f KB.\n",
                 size,
-                (float)(size * 176 * 0.0009765625f)
+                (float)(0.0009765625f * (unsigned int)(size * 176))
             );
             MILO_LOG(
                 "   %d particles active, %d is the high water mark.\n",
@@ -766,11 +766,12 @@ void RndParticleSys::UpdateSphere() {
 
 bool RndParticleSys::MakeWorldSphere(Sphere &s, bool b2) {
     if (b2) {
+        float half = 0.5f;
         s.Zero();
         for (RndParticle *p = mActiveParticles; p != nullptr; p = p->next) {
             Sphere s38;
             Multiply(p->Pos3(), mRelativeXfm, s38.center);
-            s38.radius = p->size * 0.5f;
+            s38.radius = half * p->size;
             s.GrowToContain(s38);
         }
         return true;
@@ -856,9 +857,7 @@ void RndParticleSys::MakeLocToRel(Transform &tf) {
 }
 
 void RndParticleSys::CreateParticles(float f1, float f2, const Transform &tf) {
-    if (f2 <= 0 || mNumActive >= mMaxParticles)
-        return;
-    else {
+    if (f2 > 0 && mNumActive < mMaxParticles) {
         mEmitCount += f2 * RandomFloat(mEmitRate.x, mEmitRate.y);
         mEmitCount += CheckBursts(f2) + (float)mExplicitParts;
         mExplicitParts = 0;
@@ -1119,40 +1118,58 @@ END_HANDLERS
 #pragma pop
 
 DataNode RndParticleSys::OnSetStartColor(const DataArray *da) {
-    DataArray *arr1 = da->Array(2);
     DataArray *arr2 = da->Array(3);
-    SetStartColor(
-        Hmx::Color(arr1->Float(0), arr1->Float(1), arr1->Float(2), arr1->Float(3)),
-        Hmx::Color(arr2->Float(0), arr2->Float(1), arr2->Float(2), arr2->Float(3))
-    );
+    DataArray *arr1 = da->Array(2);
+    float a1a = arr1->Float(3);
+    float a1b = arr1->Float(2);
+    float a1g = arr1->Float(1);
+    float a1r = arr1->Float(0);
+    float a2a = arr2->Float(3);
+    float a2b = arr2->Float(2);
+    float a2g = arr2->Float(1);
+    float a2r = arr2->Float(0);
+    mStartColorLow.Set(a1r, a1g, a1b, a1a);
+    mStartColorHigh.Set(a2r, a2g, a2b, a2a);
     return 0;
 }
 
 DataNode RndParticleSys::OnSetStartColorInt(const DataArray *da) {
-    Hmx::Color col1(da->Int(2));
-    Hmx::Color col2(da->Int(3));
-    col1.alpha = da->Float(4);
-    col2.alpha = da->Float(5);
-    SetStartColor(col1, col2);
+    int packed1 = da->Int(2);
+    int packed2 = da->Int(3);
+    float alpha1 = da->Float(4);
+    float alpha2 = da->Float(5);
+    mStartColorLow.Unpack(packed1);
+    mStartColorLow.alpha = alpha1;
+    mStartColorHigh.Unpack(packed2);
+    mStartColorHigh.alpha = alpha2;
     return 0;
 }
 
 DataNode RndParticleSys::OnSetEndColor(const DataArray *da) {
-    DataArray *arr1 = da->Array(2);
     DataArray *arr2 = da->Array(3);
-    SetEndColor(
-        Hmx::Color(arr1->Float(0), arr1->Float(1), arr1->Float(2), arr1->Float(3)),
-        Hmx::Color(arr2->Float(0), arr2->Float(1), arr2->Float(2), arr2->Float(3))
-    );
+    DataArray *arr1 = da->Array(2);
+    float a1a = arr1->Float(3);
+    float a1b = arr1->Float(2);
+    float a1g = arr1->Float(1);
+    float a1r = arr1->Float(0);
+    float a2a = arr2->Float(3);
+    float a2b = arr2->Float(2);
+    float a2g = arr2->Float(1);
+    float a2r = arr2->Float(0);
+    mEndColorLow.Set(a1r, a1g, a1b, a1a);
+    mEndColorHigh.Set(a2r, a2g, a2b, a2a);
     return 0;
 }
 
 DataNode RndParticleSys::OnSetEndColorInt(const DataArray *da) {
-    Hmx::Color col1(da->Int(2));
-    Hmx::Color col2(da->Int(3));
-    col1.alpha = da->Float(4);
-    col2.alpha = da->Float(5);
-    SetEndColor(col1, col2);
+    int packed1 = da->Int(2);
+    int packed2 = da->Int(3);
+    float alpha1 = da->Float(4);
+    float alpha2 = da->Float(5);
+    mEndColorLow.Unpack(packed1);
+    mEndColorLow.alpha = alpha1;
+    mEndColorHigh.Unpack(packed2);
+    mEndColorHigh.alpha = alpha2;
     return 0;
 }
 
@@ -1244,10 +1261,14 @@ DataNode RndParticleSys::OnSetMat(const DataArray *da) {
 }
 
 DataNode RndParticleSys::OnSetPos(const DataArray *da) {
-    SetBoxExtent(
-        Vector3(da->Float(2), da->Float(3), da->Float(4)),
-        Vector3(da->Float(5), da->Float(6), da->Float(7))
-    );
+    float f7 = da->Float(7);
+    float f6 = da->Float(6);
+    float f5 = da->Float(5);
+    float f4 = da->Float(4);
+    float f3 = da->Float(3);
+    float f2 = da->Float(2);
+    mBoxExtent1.Set(f2, f3, f4);
+    mBoxExtent2.Set(f5, f6, f7);
     return 0;
 }
 

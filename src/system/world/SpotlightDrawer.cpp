@@ -264,7 +264,8 @@ void SpotlightDrawer::DrawShadow() {
         if (theChar) {
             Vector3 v48(theChar->WorldXfm().v);
             v48.z += 1.5f;
-            Plane p58(v48, Vector3(0, 0, 1));
+            Plane p58;
+            p58.Set(0.0f, 0.0f, 1.0f, -v48.z);
             theChar->DrawShadow(shadowSpot->WorldXfm(), p58);
         }
     }

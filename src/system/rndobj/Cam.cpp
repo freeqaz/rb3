@@ -33,11 +33,11 @@ float RndCam::WorldToScreen(const Vector3 &w, Vector2 &s) const {
 }
 
 void RndCam::ScreenToWorld(const Vector2 &v2, float f, Vector3 &vout) const {
-    float x = (((v2.x - mScreenRect.x) / mScreenRect.w) * 2.0f - 1.0f) * f;
-    float y = (((v2.y - mScreenRect.y) / mScreenRect.h) * 2.0f - 1.0f) * f;
+    float ynorm = (v2.y - mScreenRect.y) / mScreenRect.h;
+    float xnorm = (v2.x - mScreenRect.x) / mScreenRect.w;
     vout.z = f;
-    vout.y = y;
-    vout.x = x;
+    vout.y = (ynorm * 2.0f - 1.0f) * f;
+    vout.x = (xnorm * 2.0f - 1.0f) * f;
     Multiply(vout, mInvWorldProjectXfm, vout);
 }
 

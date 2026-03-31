@@ -7,19 +7,18 @@
 void SplineTangent(const Keys<Vector3, Vector3> &keys, int i, Vector3 &vout) {
     int size = keys.size();
     MILO_ASSERT(size > 1, 0x17);
+    Vector3 vtmp;
     if (size == 2) {
         Subtract(keys[1].value, keys[0].value, vout);
     } else if (i <= 0) {
         Subtract(keys[1].value, keys[0].value, vout);
         Scale(vout, 1.5f, vout);
-        Vector3 vtmp;
         Subtract(keys[2].value, keys[0].value, vtmp);
         Scale(vtmp, 0.25f, vtmp);
         Subtract(vout, vtmp, vout);
     } else if (i >= size - 1) {
         Subtract(keys[size - 1].value, keys[size - 2].value, vout);
         Scale(vout, 1.5f, vout);
-        Vector3 vtmp;
         Subtract(keys[size - 1].value, keys[size - 3].value, vtmp);
         Scale(vtmp, 0.25f, vtmp);
         Subtract(vout, vtmp, vout);
@@ -40,23 +39,15 @@ void InterpTangent(
     Vector3 &vout
 ) {
     float fsq = f * f;
-    float f6 = f * 6.0f;
-    float fsq3 = fsq * 3.0f;
-    float f4 = f * 4.0f;
-
-    float a = fsq * 6.0f - f6;
-    float b = fsq3 - f4 + 1.0f;
-    float c = f6 - fsq * 6.0f;
-    float d = fsq3 - f * 2.0f;
-
-    Scale(v1, a, vout);
-    Vector3 vtmp;
-    Scale(v2, b, vtmp);
-    Add(vout, vtmp, vout);
-    Scale(v3, c, vtmp);
-    Add(vout, vtmp, vout);
-    Scale(v4, d, vtmp);
-    Add(vout, vtmp, vout);
+    float fsq3 = 3.0f * fsq;
+    float f6 = 6.0f * f;
+    float a = 6.0f * fsq - f6;
+    float b = 1.0f + (fsq3 - 4.0f * f);
+    float c = -6.0f * fsq + f6;
+    float d = fsq3 - 2.0f * f;
+    vout.z = v1.z * a + v2.z * b + v3.z * c + v4.z * d;
+    vout.y = v1.y * a + v2.y * b + v3.y * c + v4.y * d;
+    vout.x = v1.x * a + v2.x * b + v3.x * c + v4.x * d;
 }
 
 // fn_802E36D4 - InterpVector(const Keys<Vector3, Vector3>&, const Key<Vector3>*, const
@@ -128,6 +119,16 @@ void InterpVector(
     InterpVector(keys, prev, next, ref, spline, vref, vptr);
 }
 
+#pragma fp_contract on
+static inline void NormalizeToInline(const Hmx::Quat &qin, Hmx::Quat &qout) {
+    if (qin * qout < 0) {
+        qout.x = -qout.x;
+        qout.y = -qout.y;
+        qout.z = -qout.z;
+        qout.w = -qout.w;
+    }
+}
+
 void QuatSpline(
     const Keys<Hmx::Quat, Hmx::Quat> &keys,
     const Key<Hmx::Quat> *prev,
@@ -138,5 +139,29 @@ void QuatSpline(
     MILO_ASSERT(keys.size(), 0x9B);
     if (prev == next) {
         qout = prev->value;
+    } else {
+        int idx = prev - &keys.front();
+        Hmx::Quat prevQuat = prev->value;
+        Hmx::Quat nextQuat = next->value;
+        Hmx::Quat q88 = idx == 0 ? prevQuat : keys[idx - 1].value;
+        Hmx::Quat q58 = idx + 1 == keys.size() - 1 ? nextQuat : keys[idx + 2].value;
+        NormalizeToInline(q88, prevQuat);
+        NormalizeToInline(nextQuat, prevQuat);
+        NormalizeToInline(prevQuat, q58);
+        float fsq = ref * ref;
+        float fcubed = fsq * ref;
+        int i = 0;
+        while (i < 4) {
+            float p = prevQuat[i];
+            float pp = q88[i];
+            float n = nextQuat[i];
+            float nn = q58[i];
+            qout[i] = 0.5f * (fcubed * (nn - (3.0f * n - (3.0f * p - pp)))
+                + fsq * ((4.0f * n + (2.0f * pp - 5.0f * p)) - nn)
+                + (2.0f * p + ref * (n - pp)));
+            i++;
+        }
+        Normalize(qout, qout);
     }
 }
+#pragma fp_contract off

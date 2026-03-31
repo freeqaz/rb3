@@ -92,7 +92,7 @@ public:
     virtual void SetGSTiming(bool enabled) { mGsTiming = enabled; }
     virtual void CaptureNextGpuFrame() {}
     virtual void RemovePointTest(RndFlare *);
-    virtual void TestPoint(const Vector3 &, RndFlare *);
+    void TestPoint(const Vector3 &, RndFlare *);
     virtual bool HasDeviceReset() const { return 0; }
     virtual void SetAspect(Aspect a) { mAspect = a; }
     virtual float YRatio();

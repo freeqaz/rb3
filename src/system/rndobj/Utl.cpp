@@ -174,6 +174,17 @@ bool SortPolls(const RndPollable *p1, const RndPollable *p2) {
         return strcmp(p1->Name(), p2->Name()) < 0;
 }
 
+float AngleBetween(const Hmx::Quat &q1, const Hmx::Quat &q2) {
+    float nx = -q1.x;
+    float ny = -q1.y;
+    float nz = -q1.z;
+    float dot = -(nz * q2.z - -(ny * q2.y - (q1.w * q2.w - nx * q2.x)));
+    if (dot > 1.0f)
+        return 0;
+    else
+        return acosf(dot) * 2.0f;
+}
+
 // matches in retail with the right inline settings: https://decomp.me/scratch/9OmqG
 void CalcBox(RndMesh *m, Box &b) {
     for (RndMesh::Vert *it = m->Verts().begin(); it != m->Verts().end(); ++it) {
@@ -249,12 +260,10 @@ void AttachMesh(RndMesh *main, RndMesh *attach) {
     int numverts = main->Verts().size();
     for (int i = 0; i < numattachfaces; i++) {
         RndMesh::Face &curattachface = attach->Faces(i);
-        RndMesh::Face &mainface = main->Faces(i + nummainfaces);
-        mainface.Set(
-            curattachface.v1 + numverts,
-            curattachface.v2 + numverts,
-            curattachface.v3 + numverts
-        );
+        int iv1 = curattachface.v1 + numverts;
+        int iv2 = curattachface.v2 + numverts;
+        int iv3 = curattachface.v3 + numverts;
+        main->Faces(i + nummainfaces).Set(iv1, iv2, iv3);
     }
     Transform tf50;
     FastInvert(main->WorldXfm(), tf50);

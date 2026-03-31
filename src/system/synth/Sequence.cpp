@@ -710,12 +710,11 @@ void SfxSeq::Load(BinStream &bs) {
         } else {
             Sequence::Load(bs);
         }
-        ObjPtrList<Sequence> &children = mChildren;
-        children.clear();
+        Children().clear();
         ObjPtr<Sequence, ObjectDir> seq(this);
         bs >> seq;
         if (seq) {
-            children.push_back(seq);
+            Children().push_back(seq);
         }
         if (rev == 2) {
             bs >> mAvgVol;

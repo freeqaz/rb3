@@ -434,16 +434,7 @@ inline void ScaleAddEq(Transform &tf1, const Transform &tf2, float f) {
     ScaleAddEq(tf1.v, tf2.v, f);
 }
 
-inline float AngleBetween(const Hmx::Quat &q1, const Hmx::Quat &q2) {
-    float nx = -q1.x;
-    float ny = -q1.y;
-    float nz = -q1.z;
-    float dot = -(nz * q2.z - -(ny * q2.y - (q1.w * q2.w - nx * q2.x)));
-    if (dot > 1.0f)
-        return 0;
-    else
-        return (float)acos(dot) * 2.0f;
-}
+float AngleBetween(const Hmx::Quat &q1, const Hmx::Quat &q2);
 
 inline void Transpose(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
     mout.Set(
@@ -503,10 +494,10 @@ inline void Multiply(const Vector3 &vin, const Hmx::Matrix3 &mtx, Vector3 &vout)
 
 inline void Invert(const Transform &tfin, Transform &tfout) {
 #ifdef VERSION_SZBE69_B8 // DEBUG
-    Vector3 vtmp(tfin.v.x, tfin.v.y, tfin.v.z);
-    vtmp.z = -vtmp.z;
-    vtmp.y = -vtmp.y;
-    vtmp.x = -vtmp.x;
+    Vector3 vtmp;
+    vtmp.z = -tfin.v.z;
+    vtmp.y = -tfin.v.y;
+    vtmp.x = -tfin.v.x;
 #else // RETAIL
     Vector3 vtmp;
     Negate(tfin.v, vtmp);

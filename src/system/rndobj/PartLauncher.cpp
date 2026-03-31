@@ -12,18 +12,25 @@ RndPartLauncher::RndPartLauncher()
 // fn_80621D48
 void RndPartLauncher::LaunchParticles() {
     if (mPart) {
-        Vector3 box1(mPart->mBoxExtent1);
-        Vector3 box2(mPart->mBoxExtent2);
+        float b1x = mPart->mBoxExtent1.x;
+        float b1y = mPart->mBoxExtent1.y;
+        float b1z = mPart->mBoxExtent1.z;
+        float b2x = mPart->mBoxExtent2.x;
+        float b2y = mPart->mBoxExtent2.y;
+        float b2z = mPart->mBoxExtent2.z;
         if (mTrans) {
-            Vector3 partvec(mPart->WorldXfm().v);
-            Vector3 transvec(mTrans->WorldXfm().v);
+            const Vector3 &partvec = mPart->WorldXfm().v;
+            float pvx = partvec.x;
+            float pvy = partvec.y;
+            float pvz = partvec.z;
+            const Vector3 &transvec = mTrans->WorldXfm().v;
 
-            transvec -= partvec;
-            Vector3 sumvec(box1);
-            Vector3 sumvec2(box2);
-            sumvec += transvec;
-            sumvec2 += transvec;
-            mPart->SetBoxExtent(sumvec, sumvec2);
+            float dx = transvec.x - pvx;
+            float dy = transvec.y - pvy;
+            float dz = transvec.z - pvz;
+            RndParticleSys *part = mPart;
+            part->mBoxExtent1.Set(b1x + dx, b1y + dy, b1z + dz);
+            part->mBoxExtent2.Set(b2x + dx, b2y + dy, b2z + dz);
         }
 
         mPartOverride->mesh = mMeshEmitter;
@@ -31,7 +38,9 @@ void RndPartLauncher::LaunchParticles() {
         mPartOverride->mesh = 0;
 
         if (mTrans) {
-            mPart->SetBoxExtent(box1, box2);
+            RndParticleSys *part = mPart;
+            part->mBoxExtent1.Set(b1x, b1y, b1z);
+            part->mBoxExtent2.Set(b2x, b2y, b2z);
         }
     }
 }
@@ -76,19 +85,23 @@ void RndPartLauncher::CopyPropsFromPart() {
             mPartOverride->deltaSize = Average(mPart->mDeltaSize);
         }
         if (!(mPartOverride->mask & 0x10)) {
-            Hmx::Color &col =
-                Average(col, mPart->StartColorLow(), mPart->StartColorHigh());
-            mPartOverride->startColor = col;
+            Average(
+                mPartOverride->startColor,
+                mPart->StartColorLow(),
+                mPart->StartColorHigh()
+            );
         }
         if (!(mPartOverride->mask & 0x20)) {
-            Hmx::Color &col = Average(
+            Average(
                 mPartOverride->midColor, mPart->mMidColorLow, mPart->mMidColorHigh
             );
-            mPartOverride->midColor = col;
         }
         if (!(mPartOverride->mask & 0x40)) {
-            Hmx::Color &col = Average(col, mPart->EndColorLow(), mPart->EndColorHigh());
-            mPartOverride->endColor = col;
+            Average(
+                mPartOverride->endColor,
+                mPart->EndColorLow(),
+                mPart->EndColorHigh()
+            );
         }
         if (!(mPartOverride->mask & 0x80)) {
             mPartOverride->pitch = mPart->mPitch;

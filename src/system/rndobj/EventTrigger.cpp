@@ -22,9 +22,9 @@
 
 INIT_REVS(EventTrigger)
 
-// matches in retail
 DataArray *EventTrigger::SupportedEvents() {
-    if (Type() == "endgame_action") {
+    const char *endgame = "endgame_action";
+    if (Type() == endgame) {
         return SystemConfig(
                    "objects", "EventTrigger", "types", "endgame_action", "supported_events"
         )
@@ -259,7 +259,6 @@ DECOMP_FORCEACTIVE(EventTrigger, "ObjPtr_p.h", "f.Owner()", "")
 
 SAVE_OBJ(EventTrigger, 406)
 
-// matches in retail
 void EventTrigger::LoadOldAnim(BinStream &bs, RndAnimatable *anim) {
     Anim eventAnim(this);
     bs >> (int &)eventAnim.mRate;

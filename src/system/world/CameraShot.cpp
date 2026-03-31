@@ -190,56 +190,56 @@ RndCam *CamShot::GetCam() {
 // matches on retail
 void CamShot::SetFrame(float frame, float blend) {
     START_AUTO_TIMER("camera");
-    if (!unk120p1) {
-        RndAnimatable::SetFrame(frame, blend);
-        RndCam *cam = GetCam();
-        if (cam) {
-            FOREACH (it, mAnims) {
-                (*it)->SetFrame(frame, 1.0f);
-            }
-            if (!mKeyframes.empty()) {
-                mPathFrame = -1.0f;
-                unk120p1 = true;
-                float endframe = EndFrame();
-                static CamShotFrame nullFrame(nullptr);
-                nullFrame.mCamShot = this;
-                float f48 = 1.0f;
-                CamShotFrame *frame4c = nullptr;
-                CamShotFrame *frame50 = nullptr;
-                GetKey(frame, frame4c, frame50, f48);
-                if (mDisabled != 0) {
-                    frame50->UpdateTarget();
-                    if (frame4c)
-                        frame4c->UpdateTarget();
-                    unk120p1 = false;
-                } else {
-                    if (frame50 != mLastNext) {
-                        frame50->UpdateTarget();
-                    }
-                    if (!frame4c) {
-                        nullFrame.Interp(*frame50, 1.0f, blend, cam);
-                    } else {
-                        if (frame4c != mLastPrev) {
-                            if (frame4c != mLastNext) {
-                                frame4c->UpdateTarget();
-                            }
-                            mLastPrev = frame4c;
-                        }
-                        frame4c->Interp(*frame50, f48, blend, cam);
-                    }
-                    mLastNext = frame50;
-                    if (CheckShotStarted()) {
-                        HandleType(shot_started_msg);
-                        unk120p4 = false;
-                    }
-                    if (CheckShotOver(frame)) {
-                        SetShotOver();
-                    }
-                    unk120p1 = false;
-                }
-            }
-        }
+    if (unk120p1)
+        return;
+    RndAnimatable::SetFrame(frame, blend);
+    RndCam *cam = GetCam();
+    if (!cam)
+        return;
+    FOREACH (it, mAnims) {
+        (*it)->SetFrame(frame, 1.0f);
     }
+    if (mKeyframes.empty())
+        return;
+    mPathFrame = -1.0f;
+    unk120p1 = true;
+    float endframe = EndFrame();
+    static CamShotFrame nullFrame(nullptr);
+    nullFrame.mCamShot = this;
+    float f48 = 1.0f;
+    CamShotFrame *frame4c = nullptr;
+    CamShotFrame *frame50 = nullptr;
+    GetKey(frame, frame4c, frame50, f48);
+    if (mDisabled != 0) {
+        frame50->UpdateTarget();
+        if (frame4c)
+            frame4c->UpdateTarget();
+        unk120p1 = false;
+        return;
+    }
+    if (frame50 != mLastNext) {
+        frame50->UpdateTarget();
+    }
+    if (!frame4c) {
+        nullFrame.Interp(*frame50, 1.0f, blend, cam);
+    } else {
+        if (frame4c != mLastPrev) {
+            if (frame4c != mLastNext) {
+                frame4c->UpdateTarget();
+            }
+            mLastPrev = frame4c;
+        }
+        frame4c->Interp(*frame50, f48, blend, cam);
+    }
+    mLastNext = frame50;
+    if (CheckShotStarted()) {
+        HandleType(shot_started_msg);
+        unk120p4 = false;
+    }
+    if (CheckShotOver(frame)) {
+        SetShotOver();
+    }
+    unk120p1 = false;
 }
 
 float CamShot::EndFrame() { return mDuration; }
@@ -900,11 +900,11 @@ void CamShotFrame::Load(BinStream &bs) {
     float fov;
     bs >> fov;
     SetFieldOfView(fov);
-    Transform tf40;
-    tf40.Zero();
     Transform tf70;
     bs >> tf70;
-    if (tf40 == tf70)
+    Transform zeroTf;
+    zeroTf.Zero();
+    if (zeroTf == tf70)
         mWorldOffset.Reset();
     else
         mWorldOffset.Set(tf70);
@@ -1028,7 +1028,7 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
                 fvar1 = -1.0f;
                 break;
             default:
-                MILO_WARN("Invalid mBlendEaseMode: %d\n", mBlendEaseMode);
+                MILO_WARN("Invalid mBlendEaseMode: %d", mBlendEaseMode);
                 break;
             }
         }
@@ -1079,7 +1079,7 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
             Vector3 v1c0;
             v1c0.x = (-v1e0.x * f1fc) / cam->LocalProjectXfm().m.x.x;
             v1c0.y = 0.0f;
-            v1c0.z = (v1e0.y * f1fc) / cam->LocalProjectXfm().m.z.x;
+            v1c0.z = (v1e0.y * f1fc) / cam->LocalProjectXfm().m.z.y;
 
             Multiply(v1c0, tf130, tf130.v);
         }
@@ -1201,9 +1201,9 @@ void CamShotCrowd::Load(BinStream &bs) {
     bs >> unk10;
     int num;
     bs >> num;
-    if (!mCrowd || num == mCrowd->GetModifyStamp())
-        unk10.resize(num);
-    else
+    if (mCrowd && num != mCrowd->GetModifyStamp())
+        unk10.clear();
+    if (!mCrowd && num != -1)
         unk10.clear();
 }
 
@@ -1258,6 +1258,13 @@ void CamShotCrowd::GetSelectedCrowd(
             proxy->SetMultiMesh(0, 0);
         }
     }
+}
+
+void CamShotCrowd::AddCrowdChars(
+    std::list<std::pair<RndMultiMesh *, std::list<RndMultiMesh::Instance>::iterator> >
+        &listRef
+) {
+    AddCrowdChars(&listRef);
 }
 
 void CamShotCrowd::AddCrowdChars(

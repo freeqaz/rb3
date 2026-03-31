@@ -91,19 +91,26 @@ float RndMeshAnim::EndFrame() {
     return end;
 }
 
-// scratch with current GetVertX work: https://decomp.me/scratch/CjTpq
 struct GetVertPoint {
-    static Vector3 &get(RndMesh::Vert *);
+    static Vector3 &get(RndMesh::Vert *v) { return v->pos; }
 };
 struct GetVertNormal {
     static Vector3 &get(RndMesh::Vert *v) { return v->norm; }
 };
 struct GetVertTex {
-    static Vector2 &get(RndMesh::Vert *v);
+    static Vector2 &get(RndMesh::Vert *v) { return v->uv; }
 };
 struct GetVertColor {
-    static Hmx::Color32 &get(RndMesh::Vert *);
+    static Hmx::Color32 &get(RndMesh::Vert *v) { return v->color; }
 };
+
+inline void Interp(const Hmx::Color32 &c1, const Hmx::Color32 &c2, float f, Hmx::Color32 &res) {
+    u8 newG = c1.g + (int)(f * (float)(c2.g - c1.g));
+    u8 newR = c1.r + (int)(f * (float)(c2.r - c1.r));
+    u8 newA = c1.a + (int)(f * (float)(c2.a - c1.a));
+    u8 newB = c1.b + (int)(f * (float)(c2.b - c1.b));
+    res.color = (newA << 24) | (newB << 16) | (newG << 8) | newR;
+}
 
 template <class T1, class T2>
 void InterpVertData(

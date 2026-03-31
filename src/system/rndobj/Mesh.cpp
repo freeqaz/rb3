@@ -28,8 +28,28 @@
 
 INIT_REVS(RndMesh)
 
+inline void Triangle::Set(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2) {
+    origin = v2;
+    frame.x.Set(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+    frame.y.Set(v0.x - v2.x, v0.y - v2.y, v0.z - v2.z);
+    frame.z.Set(
+        frame.x.y * frame.y.z - frame.x.z * frame.y.y,
+        frame.x.z * frame.y.x - frame.x.x * frame.y.z,
+        frame.x.x * frame.y.y - frame.x.y * frame.y.x
+    );
+}
+
 PatchVerts gPatchVerts;
 int MESH_REV_SEP_COLOR = 0x25;
+
+void PatchVerts::Add(int vertIdx, RndMesh::VertVector &verts, Vector3 &centroid) {
+    int idx = GreaterEq(vertIdx);
+    mPatchVerts.insert(mPatchVerts.begin() + idx, vertIdx);
+    mCentroid += verts[vertIdx].pos;
+    centroid = mCentroid;
+    float invCount = 1.0f / (float)(unsigned int)mPatchVerts.size();
+    centroid *= invCount;
+}
 
 DECOMP_FORCEACTIVE(
     Mesh,
@@ -94,9 +114,9 @@ RndDrawable *RndMesh::CollideShowing(const Segment &seg, float &f, Plane &pl) {
 }
 
 int RndMesh::CollidePlane(const RndMesh::Face &face, const Plane &plane) {
-    bool first = Verts(face.v1).pos <= plane;
-    bool second = Verts(face.v2).pos <= plane;
-    bool third = Verts(face.v3).pos <= plane;
+    bool first = plane.Dot(Verts(face.v1).pos) >= 0.0f;
+    bool second = plane.Dot(Verts(face.v2).pos) >= 0.0f;
+    bool third = plane.Dot(Verts(face.v3).pos) >= 0.0f;
     if (first == second && second == third) {
         int ret = -1;
         if (first)
@@ -949,10 +969,10 @@ void RndMesh::OnSync(int flags) {
         mPatches.push_back(mFaces.size());
     } else if (flags & 0x100U) {
         int u13 = 0xFFFF;
-        int i4 = 0;
         int i12 = 0;
+        int i4 = 0;
         FOREACH (it, mFaces) {
-            i12 = Max(Max<u16>(i12, it->v1, it->v2), it->v3);
+            i12 = Max(it->v3, Max<u16>(i12, it->v1, it->v2));
             u13 = Min(Min<u16>(u13, it->v1, it->v2), it->v3);
             if (!PatchOkay((i12 - u13) + 1, i4 + 1)) {
                 mPatches.push_back(i4);
@@ -974,22 +994,30 @@ void RndMesh::OnSync(int flags) {
             int u5 = 4;
             float f68 = 0;
             std::vector<Face>::iterator faceIt = mFaces.begin();
+            std::vector<Face>::iterator bestFaceIt = mFaces.begin();
             for (; faceIt != mFaces.end(); ++faceIt) {
                 int uvar16 = !gPatchVerts.HasVert(faceIt->v1)
                     + !gPatchVerts.HasVert(faceIt->v2) + !gPatchVerts.HasVert(faceIt->v3);
                 if (uvar16 < u5) {
                     Vector3 v4c;
-                    FaceCenter(this, faceIt, v4c);
-                    f68 = DistanceSquared(v4c, v40);
+                    FaceCenter(this, &*faceIt, v4c);
+                    Vector3 diff;
+                    Subtract(v4c, v40, diff);
+                    f68 = LengthSquared(diff);
                     u5 = uvar16;
+                    bestFaceIt = faceIt;
                 } else if (uvar16 == u5) {
                     Vector3 v58;
-                    FaceCenter(this, faceIt, v58);
-                    if (MinEq(f68, DistanceSquared(v58, v40))) {
+                    FaceCenter(this, &*faceIt, v58);
+                    Vector3 diff2;
+                    Subtract(v58, v40, diff2);
+                    if (MinEq(f68, LengthSquared(diff2))) {
                         u5 = uvar16;
+                        bestFaceIt = faceIt;
                     }
                 }
             }
+            faceIt = bestFaceIt;
             if (!PatchOkay(u5 + gPatchVerts.NumVerts(), i4 + 1)) {
                 gPatchVerts.Clear();
                 mPatches.push_back(i4);
@@ -1000,9 +1028,14 @@ void RndMesh::OnSync(int flags) {
                     gPatchVerts.Add((*faceIt)[i], mVerts, v40);
                 }
             }
-            mPatches.push_back(i4);
-            mFaces = faces;
+            faces.push_back(*faceIt);
+            mFaces.erase(faceIt);
+            i4++;
+            if (mFaces.empty())
+                break;
         }
+        mPatches.push_back(i4);
+        mFaces.swap(faces);
     }
 }
 
@@ -1068,7 +1101,7 @@ void RndMesh::SetNumFaces(int num) {
 
 void RndMesh::Mats(std::list<RndMat *> &mats, bool) {
     if (mMat) {
-        mMat->SetShaderOpts(GetDefaultMatShaderOpts(this, mMat));
+        mMat->mShaderOptions.pack = GetDefaultMatShaderOpts(this, mMat).pack;
         mats.push_back(mMat);
     }
 }
@@ -1135,7 +1168,9 @@ END_HANDLERS
 DataNode RndMesh::OnPointCollide(const DataArray *da) {
     BSPNode *tree = GetBSPTree();
     Vector3 v(da->Float(2), da->Float(3), da->Float(4));
-    Multiply(WorldXfm(), v, v);
+    const Transform &xfm = WorldXfm();
+    Subtract(v, xfm.v, v);
+    v.Set(Dot(xfm.m.x, v), Dot(xfm.m.y, v), Dot(xfm.m.z, v));
     return tree && Intersect(v, tree);
 }
 
@@ -1325,14 +1360,10 @@ DataNode RndMesh::OnConfigureMesh(const DataArray *da) {
         float fleft = Property(left, true)->Float();
         float fright = Property(right, true)->Float();
         float fheight = Property(height, true)->Float();
-        Vector3 v54(fleft, 0, fheight);
-        Vector3 v60(fleft, 0, 0);
-        Vector3 v6c(fright, 0, 0);
-        Vector3 v78(fright, 0, fheight);
-        mVerts[0].pos = v54;
-        mVerts[1].pos = v60;
-        mVerts[2].pos = v6c;
-        mVerts[3].pos = v78;
+        mVerts[0].pos.Set(fleft, 0, fheight);
+        mVerts[1].pos.Set(fleft, 0, 0);
+        mVerts[2].pos.Set(fright, 0, 0);
+        mVerts[3].pos.Set(fright, 0, fheight);
         Sync(0x3F);
     }
     return 0;

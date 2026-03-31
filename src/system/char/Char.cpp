@@ -53,16 +53,65 @@
 #include "char/CharClip.h"
 #include "char/CharUtl.h"
 #include "obj/DataFunc.h"
+#include "rndobj/Cam.h"
 #include "rndobj/Highlightable.h"
+#include "rndobj/Mat.h"
+#include "rndobj/Mesh.h"
+#include "rndobj/Tex.h"
 #include "world/Dir.h"
 
 float gCharHighlightY = -1;
 
 CharDebug TheCharDebug;
 
+inline void CharDebug::AddObject(Hmx::Object *o, bool once) {
+    if (o) {
+        ObjPtrList<Hmx::Object> &which = once ? mOnce : mObjects;
+        ObjPtrList<Hmx::Object>::iterator it = which.find(o);
+        if (it == which.end()) {
+            which.push_back(o);
+        } else {
+            which.erase(it);
+        }
+    }
+}
+
+inline void CharDebug::SetObjects(DataArray *msg) {
+    int i = 1;
+    bool once = false;
+    bool clear = false;
+    bool cmp = msg->Size() > 1;
+    if (cmp) {
+        cmp = msg->Type(1) == kDataSymbol;
+    }
+    if (cmp) {
+        cmp = msg->Sym(1) == "clear";
+        if (!cmp) {
+            cmp = msg->Sym(1) == "once";
+        }
+    }
+    if (cmp) {
+        i = 2;
+        clear = msg->Sym(1) == "clear";
+        once = msg->Sym(1) == "once";
+    }
+    if (clear) {
+        mObjects.clear();
+    }
+    for (; i < msg->Size(); i++) {
+        AddObject(msg->GetObj(i), once);
+    }
+    mOverlay->SetShowing(!mObjects.empty() || !mOnce.empty());
+}
+
 DataNode CharDebug::OnSetObjects(DataArray *a) {
     TheCharDebug.SetObjects(a);
     return 0;
+}
+
+inline void CharDebug::Once(Hmx::Object *obj) {
+    AddObject(obj, true);
+    mOverlay->SetShowing(!mObjects.empty() || !mOnce.empty());
 }
 
 void CharDeferHighlight(Hmx::Object *obj) { TheCharDebug.Once(obj); }
@@ -100,7 +149,6 @@ void CharInit() {
     CharIKFingers::Init();
     CharIKFoot::Init();
     CharIKHand::Init();
-    CharIKHead::Init();
     CharIKMidi::Init();
     CharIKSliderMidi::Init();
     CharIKRod::Init();
@@ -139,51 +187,81 @@ void CharTerminate() {
     CharBoneDir::Terminate();
 }
 
+inline void CharDebug::DisplayObject(Hmx::Object *obj) {
+    RndHighlightable *rh = dynamic_cast<RndHighlightable *>(obj);
+    if (rh) {
+        rh->Highlight();
+    } else {
+        RndTex *tex = dynamic_cast<RndTex *>(obj);
+        if (tex) {
+            static RndMesh *mesh;
+            static RndMat *mat;
+            if (!mesh) {
+                mesh = Hmx::Object::New<RndMesh>();
+                mat = Hmx::Object::New<RndMat>();
+                mat->mUseEnviron = false;
+                mat->mColorModFlags = RndMat::kColorModAlphaUnpackModulate;
+                mesh->Verts().resize(4, true);
+                mesh->Faces().resize(2);
+                for (int i = 0; i < 4; i++) {
+                    float v;
+                    if (i < 2) {
+                        v = 1.0f;
+                    } else {
+                        v = 0.0f;
+                    }
+                    bool isU = i == 1 || i == 2;
+                    float u;
+                    if (isU) {
+                        u = 1.0f;
+                    } else {
+                        u = 0.0f;
+                    }
+                    RndMesh::Vert &vert = mesh->Verts()[i];
+                    vert.uv.Set(v, u);
+                    vert.pos.Set(
+                        v * 20.0f + 20.0f, 0.0f * 20.0f, -u * 20.0f + 60.0f
+                    );
+                    vert.norm.Set(0.0f, -1.0f, 0.0f);
+                    vert.boneWeights.Set(0.0f, 0.0f, 0.0f, 0.0f);
+                    vert.color = Hmx::Color32(-1);
+                }
+                mesh->Faces()[0].Set(0, 1, 2);
+                mesh->Faces()[1].Set(0, 2, 3);
+                mesh->Sync(0x13F);
+                mesh->SetMat(mat);
+            }
+            mat->SetDiffuseTex(tex);
+            mesh->Highlight();
+        }
+    }
+}
+
 float CharDebug::UpdateOverlay(RndOverlay *ovl, float hilite_y) {
     gCharHighlightY = hilite_y;
-    RndCam *stack60 = 0, *stack64 = RndCam::Current();
+    RndCam *cur = RndCam::Current();
+    RndCam *worldCam = 0;
     if (TheWorld) {
-        stack60 = TheWorld->mCam;
+        worldCam = TheWorld->mCam;
     }
-    if (stack60) {
-        stack60->Select();
+    if (worldCam) {
+        worldCam->Select();
     }
     FOREACH (it, mObjects) {
-        AUTO(hilite, dynamic_cast<RndHighlightable *>(*it));
-        if (hilite) {
-            hilite->Highlight();
-            continue;
-        }
+        DisplayObject(*it);
     }
     FOREACH (it, mOnce) {
-        AUTO(hilite, dynamic_cast<RndHighlightable *>(*it));
-        if (hilite) {
-            hilite->Highlight();
-            continue;
-        }
-        AUTO(tex, dynamic_cast<RndTex *>(*it));
-        if (tex == nullptr)
-            continue;
-        static RndMesh *mesh;
-        static RndMat *mat;
-        if (mesh == nullptr) {
-            mesh = Hmx::Object::New<RndMesh>();
-            mat = Hmx::Object::New<RndMat>();
-            mat->mUseEnviron = false;
-            mat->mColorModFlags = RndMat::kColorModAlphaUnpackModulate;
-            mesh->Verts().resize(4, true);
-            if (mesh->Faces().size() > 2) {
-            }
-        }
+        DisplayObject(*it);
     }
     mOnce.clear();
     if (mObjects.empty()) {
         ovl->mShowing = false;
         ovl->mTimer.Restart();
     }
-    if (stack60)
-        stack64->Select();
-    float old_hilite = gCharHighlightY;
+    if (worldCam) {
+        cur->Select();
+    }
+    float ret = gCharHighlightY;
     gCharHighlightY = -1;
-    return old_hilite;
+    return ret;
 }
