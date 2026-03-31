@@ -210,11 +210,29 @@ void MultiplayerAnalyzer::GetCodaExtents(const UserGuid &u, int &i1, int &i2) {
 
 void MultiplayerAnalyzer::AddGems() {
     for (int i = 0; i < mNumPlayers; i++) {
-        int start = -1;
-        int end = -1;
+        int codaStart = -1;
+        int gemCount = 0;
+        int codaEnd = -1;
         const UserGuid &userGuid = mConfig->GetUserGuidByIndex(i);
         MILO_ASSERT(!userGuid.IsNull(), 0x158);
-        GetCodaExtents(userGuid, start, end);
+        GetCodaExtents(userGuid, codaStart, codaEnd);
+        Data *pData = GetData(userGuid);
+        MILO_ASSERT(pData, 0x15C);
+        for (int j = 0; j < pData->mGemScores.size(); j++) {
+            int tick = pData->mGemScores[j].unk0;
+            if (codaStart > tick || tick >= codaEnd) {
+                gemCount++;
+                int mult = (gemCount / 10) + 1;
+                int maxMult = pData->mMaxMultiplier;
+                int *pMult = (mult < maxMult) ? &mult : &pData->mMaxMultiplier;
+                int multiplier = *pMult;
+                pData->mMaxPts += pData->mGemScores[j].unk4;
+                pData->mMaxStreakPts += (float)multiplier * pData->mGemScores[j].unk4;
+            }
+        }
+    }
+    for (int i = 0; i < mDatas.size(); i++) {
+        mDatas[i].mGemScores.erase(mDatas[i].mGemScores.begin(), mDatas[i].mGemScores.end());
     }
 }
 

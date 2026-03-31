@@ -966,6 +966,47 @@ void OvershellPanel::Poll() {
     if (TheRnd->mProcCmds & kProcessPost) {
         if (unk4c8) {
             MILO_ASSERT(InOverrideFlow(kOverrideFlow_RegisterOnline), 0x794);
+            if (TheWiiFriendMgr.unk2c) {
+                unk4c8 = false;
+                WiiFriendList friends;
+                TheWiiFriendMgr.GetCachedFriends(&friends);
+                int numFriends = (int)friends.mFriends.size();
+                for (int i = 0; i < numFriends; i++) {
+                    WiiFriend *pFriend = friends.GetFriendByIdx(i);
+                    unsigned int codeLow = (unsigned int)(pFriend->mConsoleCode);
+                    unsigned int codeHigh = (unsigned int)(pFriend->mConsoleCode >> 32);
+                    u64 code = ((u64)codeHigh << 32) | codeLow;
+                    unk4c0.push_back(code);
+                }
+                EndOverrideFlow(kOverrideFlow_RegisterOnline, false);
+            } else if (TheWiiFriendMgr.unk2d) {
+                EndOverrideFlow(kOverrideFlow_RegisterOnline, false);
+                unk4c8 = false;
+            }
+        }
+        bool inSession = false;
+        if (TheNetSession != nullptr && !TheNetSession->IsLocal()) {
+            inSession = true;
+        }
+        if (TheSessionMgr != nullptr) {
+            Matchmaker *matchmaker = TheSessionMgr->GetMatchmaker();
+            if (matchmaker != nullptr && matchmaker->IsFinding()) {
+                inSession = true;
+            }
+        }
+        if (mPanelOverrideFlow == kOverrideFlow_RegisterOnline) {
+            inSession = true;
+        }
+        ThePlatformMgr.mHomeMenuWii->mForcedHomeMenu = inSession;
+        static bool bWasFinding = false;
+        bool finding = mSessionMgr->GetMatchmaker()->IsFinding();
+        if (bWasFinding != finding) {
+            UpdateAll();
+            bWasFinding = mSessionMgr->GetMatchmaker()->IsFinding();
+        }
+        UIPanel::Poll();
+        for (unsigned int slotI = 0; slotI < mSlots.size(); slotI++) {
+            mSlots[slotI]->Poll();
         }
     }
 }

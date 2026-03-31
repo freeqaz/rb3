@@ -1507,9 +1507,67 @@ void GemPlayer::GetPlayerState(PlayerState &state) const {
     state.streak = streak;
 }
 
-void GemPlayer::UpdateCrowdMeter(float noteScore, int) {
-    if (IsLocal()) {
-        MILO_ASSERT(noteScore >= 0 && noteScore <= 1, 0xC09);
+void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
+    if (IsNet())
+        return;
+    MILO_ASSERT(noteScore >= 0 && noteScore <= 1, 0xC09);
+    if (mCrowd->mActive && !mFill) {
+        float multiplier = 1.0f;
+        bool inPhrase = TheSongDB->IsInPhrase(kCommonPhrase, mTrackNum, gem_id);
+        if (mDrumSlotWeights) {
+            const GameGem &gem = TheSongDB->GetGem(mTrackNum, gem_id);
+            int slot = gem.GetSlot();
+            TickedInfoCollection<String> &submixes =
+                TheSongDB->GetData()->GetSubmixes(mTrackNum);
+            const char *mappingStr = mDrumSlotWeightMapping.mStr;
+            if (submixes.mInfos.size() != 0) {
+                int gemTick = gem.GetTick();
+                const TickedInfo<String> *it = std::upper_bound(
+                    submixes.mInfos.begin(),
+                    submixes.mInfos.end(),
+                    gemTick,
+                    TickedInfoCollection<String>::Cmp
+                );
+                if (it != submixes.mInfos.begin()) {
+                    --it;
+                }
+                mappingStr = it->mInfo.mStr;
+            }
+            Symbol sym(mappingStr);
+            DataArray *arr = mDrumSlotWeights->FindArray(sym, false);
+            float weight;
+            if (arr) {
+                DataArray *inner = arr->Node(1).Array(arr);
+                weight = inner->Node(slot).Float(inner);
+            } else {
+                weight = 1.0f;
+            }
+            multiplier *= weight;
+        }
+        if (noteScore > mCrowd->mRawValue) {
+            float reward = GetCrowdBoost();
+            bool isSoloMod = unk315 && !unk314;
+            if (isSoloMod) {
+                Symbol trackSym = mUser->GetTrackSym();
+                reward *= TheScoring->GetSoloGemReward(trackSym);
+            } else if (inPhrase) {
+                reward = reward * TheScoring->mCommonPhraseReward;
+            }
+            multiplier = reward;
+        } else {
+            bool isSoloMod = unk315 && !unk314;
+            if (isSoloMod) {
+                Symbol trackSym = mUser->GetTrackSym();
+                multiplier *= TheScoring->GetSoloGemPenalty(trackSym);
+            } else if (inPhrase) {
+                multiplier *= TheScoring->mCommonPhrasePenalty;
+            }
+        }
+        mCrowd->Update(noteScore, multiplier);
+        CheckCrowdFailure();
+    }
+    if (unk1ff) {
+        HandleType(send_update_crowd_msg);
     }
 }
 
