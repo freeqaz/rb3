@@ -44,6 +44,27 @@ ignored/
 *.ignore.*
 *.ignored.*
 
+# Analysis databases
+cache.db
+decomp.db
+
+# Analysis output files (large, per-function dumps)
+DeformMesh__*
+LeaveState__*
+SwapResource__*
+__ct__*
+function_analysis/
+
+# Ghidra project files
+ghidra_projects/
+
+# objdiff binary
+bin/objdiff-cli
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/worktrees/
+
 # rust target folders
 tools/*/target/
 .DS_Store

@@ -37,6 +37,7 @@
 #include "meta_band/SongSortMgr.h"
 #include "meta_band/SongSortNode.h"
 #include "meta_band/SongStatusMgr.h"
+#include "meta_band/PassiveMessenger.h"
 #include "meta_band/UIEventMgr.h"
 #include "meta_band/Utl.h"
 #include "net/NetSession.h"
@@ -72,6 +73,68 @@ MusicLibrary *TheMusicLibrary;
 void MusicLibrary::Init(SongPreview &prev) {
     MILO_ASSERT(!TheMusicLibrary, 0x53);
     TheMusicLibrary = new MusicLibrary(prev);
+}
+
+void MusicLibrary::TryToSetHighlight(Symbol token, SongNodeType type, bool passthrough) {
+    bool foundNode = false;
+    bool matched = false;
+    SortNode *node;
+    if (token.mStr != gNullStr) {
+        node = GetCurrentSort()->GetNode(token);
+        if (node != nullptr) {
+            foundNode = true;
+        }
+    }
+    if (foundNode) {
+        bool typeMatch = false;
+        if (type == kNodeNone || node->GetType() == type) {
+            typeMatch = true;
+        }
+        if (typeMatch) {
+            matched = true;
+        }
+    }
+    if (matched) {
+        SetHighlightIx(node->mStartIx, true);
+        return;
+    }
+    matched = false;
+    foundNode = false;
+    if (!SongSortMgr::IsSetlistSort(unkdc)) {
+        node = GetCurrentSort()->GetNode(random_song);
+        if (node != nullptr) {
+            foundNode = true;
+        }
+    }
+    if (foundNode && passthrough) {
+        matched = true;
+    }
+    if (matched) {
+        SetHighlightIx(node->mStartIx, true);
+        return;
+    }
+    matched = false;
+    foundNode = false;
+    if (SongSortMgr::IsSetlistSort(unkdc)) {
+        node = GetCurrentSort()->GetNode(make_a_setlist);
+        if (node != nullptr) {
+            foundNode = true;
+        }
+    }
+    if (foundNode && passthrough) {
+        matched = true;
+    }
+    if (matched) {
+        SetHighlightIx(node->mStartIx, true);
+        return;
+    }
+    if (passthrough) {
+        int ix = 0;
+        while (!IsIxActive(ix)) {
+            ix++;
+        }
+        SetHighlightIx(ix, true);
+    }
 }
 
 void MusicLibrary::Poll() {
@@ -453,6 +516,27 @@ void MusicLibrary::ContentDone() {
     PushFilterToScreen();
 }
 
+void MusicLibrary::SetHighlightIx(int idx, bool b) {
+    mCurrentHighlightIndex = idx;
+    SortNode *node = GetCurrentSort()->GetNode(mCurrentHighlightIndex);
+    SongNodeType ty = node->GetType();
+    if ((unsigned int)(ty - 3) > 1U) {
+        if (ty == kNodeFunction || ty == kNodeHeader) {
+            ClearSongPreview();
+            TheSessionMgr->GetMachineMgr()->GetLocalMachine()->SetCurrentSongPreview(
+                gNullStr
+            );
+        }
+    } else {
+        if (TheUI.GetTransitionState() != kTransitionTo) {
+            StartSongPreview();
+        }
+    }
+    unkd4 = node->GetToken();
+    unkd8 = node->GetType();
+    PushHighlightToScreen(b);
+}
+
 void MusicLibrary::SelectHighlightedNode(LocalBandUser *user) {
     SelectNode(GetHighlightedNode(), user, false);
 }
@@ -514,6 +598,50 @@ void MusicLibrary::PlaySetlist(SavedSetlist *setlist) {
             TheUIEventMgr->TriggerEvent("remote_not_ready", nullptr);
         }
     }
+}
+
+void MusicLibrary::SkipToNextShortcut(bool forward) {
+    NodeSort *sort = TheSongSortMgr->GetSort(unkdc);
+    SortNode *node = sort->GetNode(mCurrentHighlightIndex);
+    int shortcutIx = TheSongSortMgr->GetSort(unkdc)->GetShortcutIx(node);
+    int numData = TheSongSortMgr->GetSort(unkdc)->NumData();
+    if (forward) {
+        shortcutIx++;
+        if (numData == 0) {
+            shortcutIx = 0;
+        } else {
+            shortcutIx = shortcutIx % numData;
+            if (shortcutIx < 0) {
+                shortcutIx += numData;
+            }
+        }
+    } else {
+        int startIx = node->mStartIx;
+        if (startIx == TheSongSortMgr->GetSort(unkdc)->FirstActiveIxForShortcut(shortcutIx)) {
+            shortcutIx--;
+            if (numData == 0) {
+                shortcutIx = 0;
+            } else {
+                shortcutIx = shortcutIx % numData;
+                if (shortcutIx < 0) {
+                    shortcutIx += numData;
+                }
+            }
+        }
+    }
+    while (!TheSongSortMgr->GetSort(unkdc)->IsActive(shortcutIx)) {
+        int delta = forward ? 1 : -1;
+        shortcutIx += delta;
+        if (numData == 0) {
+            shortcutIx = 0;
+        } else {
+            shortcutIx = shortcutIx % numData;
+            if (shortcutIx < 0) {
+                shortcutIx += numData;
+            }
+        }
+    }
+    SkipToShortcut(shortcutIx);
 }
 
 void MusicLibrary::SkipToShortcut(int idx) {
@@ -629,20 +757,82 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
     }
 }
 
+bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool showScreen) {
+    SongMetadata *metadata = TheSongMgr.Data(songID);
+    MILO_ASSERT(metadata, 0x4a2);
+    if (!metadata->IsVersionOK()) {
+        if (!showScreen)
+            return false;
+        TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_version_screen", false));
+        return false;
+    }
+    if (TheSongMgr.IsDemo(metadata->ID())) {
+        if (!TheGameMode->Property(Symbol("demos_allowed"), true)->Int(nullptr)) {
+            if (!showScreen)
+                return false;
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_mode_screen", false));
+            return false;
+        }
+        if (!TheSessionMgr->IsLocal()) {
+            if (!showScreen)
+                return false;
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_online_screen", false));
+            return false;
+        }
+    }
+    if (TheSongMgr.IsDemo(metadata->ID())) {
+        bool demoNotAllowed = false;
+        if (unk12d) {
+            if (!SongSortMgr::IsSetlistSort(unkdc))
+                demoNotAllowed = true;
+        }
+        if (demoNotAllowed) {
+            if (!showScreen)
+                return false;
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_setlist_screen", false));
+            return false;
+        }
+    }
+    if (TheSongMgr.IsRestricted(metadata->ID())) {
+        if (!showScreen)
+            return false;
+        TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("content_restricted_screen", false));
+        return false;
+    }
+    if (!TheSessionMgr->GetMachineMgr()->IsSongShared(songID)) {
+        if (!showScreen)
+            return false;
+        TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_selection_screen", false));
+        return false;
+    }
+    return true;
+}
+
+void MusicLibrary::MakeSureSetlistIsValid() {
+    int numRemoved = 0;
+    for (std::vector<int>::iterator it = mSetlist.begin(); it != mSetlist.end(); ) {
+        int songID = *it;
+        if (TheSongMgr.HasSong(songID) && IsSongAllowedInSetlist(songID, true)) {
+            ++it;
+        } else {
+            it = mSetlist.erase(it);
+            numRemoved++;
+        }
+    }
+    if (numRemoved > 0) {
+        PushSetlistToScreen();
+        ThePassiveMessenger->TriggerSetlistSongsRemovedMsg(numRemoved);
+        SetSyncDirty(-1, true);
+    }
+}
+
 DECOMP_FORCEACTIVE(
     MusicLibrary,
     "parental_control_panel",
     "parental_control_screen",
     "setlistNode",
     "leader_setlist_warning_screen",
-    "data",
-    "invalid_version_screen",
-    "demos_allowed",
-    "demo_mode_screen",
-    "demo_online_screen",
-    "demo_setlist_screen",
-    "content_restricted_screen",
-    "invalid_selection_screen"
+    "data"
 )
 
 bool MusicLibrary::IsIxActive(int ix) {
@@ -1326,8 +1516,8 @@ bool MusicLibrary::AllSetlistSongsHaveScoreType(ScoreType s) {
     return true;
 }
 
-bool MusicLibrary::NetSetlistsFailed() {}
-bool MusicLibrary::NetSetlistsSucceeded() {}
+bool MusicLibrary::NetSetlistsFailed() { return mNetSetlists->mFailed; }
+bool MusicLibrary::NetSetlistsSucceeded() { return mNetSetlists->mSucceeded; }
 
 void MusicLibrary::RefreshNetSetlists() {
     if (unk15c) {

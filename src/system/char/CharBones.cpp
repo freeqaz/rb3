@@ -384,8 +384,9 @@ void CharBones::ScaleAdd(CharBones &dst, float f) const {
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
-                short sz = sdata[2];
-                short sy = sdata[1];
+                float fz = (float)sdata[2] * 0.039674062f;
+                float fy = (float)sdata[1] * 0.039674062f;
+                float fx = (float)sdata[0] * 0.039674062f;
                 while (db->name != src->name) {
                     db++;
                     if (db >= db_end) {
@@ -394,9 +395,9 @@ void CharBones::ScaleAdd(CharBones &dst, float f) const {
                     }
                     ddata++;
                 }
-                ddata->x += (float)sdata[0] * 0.039674062f * f;
-                ddata->z += (float)sz * 0.039674062f * f;
-                ddata->y += (float)sy * 0.039674062f * f;
+                ddata->x += fx * f;
+                ddata->y += fy * f;
+                ddata->z += fz * f;
                 db->weight += src->weight * f;
                 src++;
                 if (src == src_end)

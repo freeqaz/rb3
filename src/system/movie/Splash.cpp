@@ -462,17 +462,14 @@ void Splash::Draw() {
         int z = (int)(unk_0x50->mMovie.MsPerFrame() - 10.0f);
         if (z < x)
             x = z;
-        if (x < 0)
-            x = 0;
+        x &= ~(x >> 31);
     } else {
         if (unk_0x54 != 0)
             x = 16;
     }
-    if (x > 16)
-        x = 16;
-    if (x < 1)
-        x = 1;
-    OSSleepTicks(OSMillisecondsToTicks(x));
+    int sleepX = (x > 16) ? 16 : x;
+    sleepX = (sleepX < 1) ? 1 : sleepX;
+    OSSleepTicks(OSMillisecondsToTicks((s64)sleepX));
 }
 
 void Splash::CheckHomeMenuButton() {

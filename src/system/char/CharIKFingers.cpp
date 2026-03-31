@@ -18,7 +18,7 @@ CharIKFingers::CharIKFingers()
     mFingers.resize(5, FingerDesc());
     mCurHandTrans.Zero();
     mDestHandTrans.Zero();
-    mHandKeyboardOffset = Vector3(0.3f, -6.0f, 0.4f);
+    mHandKeyboardOffset.Set(0.3f, -6.0f, 0.4f);
     mtx = Hmx::Matrix3();
 }
 

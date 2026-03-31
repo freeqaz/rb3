@@ -9,6 +9,7 @@
 #include "meta_band/SaveLoadManager.h"
 #include "meta_band/SessionMgr.h"
 #include "meta_band/SongUpgradeMgr.h"
+#include "meta_band/UIEventMgr.h"
 #include "net_band/RockCentral.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
@@ -27,6 +28,7 @@
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
+#include "utl/Messages2.h"
 #include "utl/Symbols4.h"
 
 BandSongMgr gSongMgr;
@@ -35,8 +37,17 @@ BandSongMgr &TheSongMgr = gSongMgr;
 bool BandSongMgr::sFakeSongsAllowed;
 
 const char *OLD_DLC_DIR = "songs/updates/";
-const char *exclusionList[] = {
-    "danicalifornia", "blackholesun", "hierkommtalex", "rockandrollstar"
+
+struct ExclusionEntry {
+    const char *name;
+    int songID;
+};
+
+ExclusionEntry exclusionList[] = {
+    { "danicalifornia", 8 },
+    { "blackholesun", 3 },
+    { "hierkommtalex", 1005106 },
+    { "rockandrollstar", 1005109 },
 };
 
 BandSongMgr::BandSongMgr()
@@ -484,10 +495,10 @@ bool BandSongMgr::CanAddSong() const {
 int BandSongMgr::GetMaxSongCount() const { return mMaxSongCount; }
 
 void BandSongMgr::AddSongData(DataArray *a, DataLoader *dl, ContentLocT lt) {
-    const char *cc;
-    for (int i = 0; i < 32; i++) {
-    }
+    char cc[256] = ".";
     if (dl) {
+        const char *path = FileGetPath(dl->LoaderFile().c_str(), nullptr);
+        FileGetPath(path, cc);
     }
     std::vector<int> vec;
     AddSongData(a, mUncachedSongMetadata, cc, lt, vec);
@@ -529,6 +540,84 @@ void BandSongMgr::AddSongData(
             ivec.push_back(songID);
         }
     }
+}
+
+bool BandSongMgr::IsInExclusionList(const char *name, int songID) const {
+    ExclusionEntry *entry = exclusionList;
+    unsigned int i = 0;
+    do {
+        if (songID == entry->songID || strcmp(name, entry->name) == 0)
+            return true;
+        i++;
+        entry++;
+    } while (i < 4U);
+    return false;
+}
+
+bool BandSongMgr::AllowContentToBeAdded(DataArray *a, ContentLocT lt) {
+    if (lt == kLocationRoot)
+        return true;
+    int count = CountSongsInArray(a);
+    while (count + GetCurSongCount() >= mMaxSongCount) {
+        if (!RemoveOldestCachedContent())
+            break;
+    }
+    int full = (count + GetCurSongCount() >= mMaxSongCount);
+    if (full) {
+        if (!unk13c) {
+            TheUIEventMgr->TriggerEvent(song_mgr_full, init_msg.mData);
+            unk13c = true;
+        }
+    } else {
+        unk13c = false;
+    }
+    return !full;
+}
+
+int BandSongMgr::GetValidSongs(
+    const std::vector<int> &excludeList,
+    BandUserMgr &mgr,
+    std::vector<int> &outSongs,
+    float minRank,
+    float maxRank,
+    bool filterUnplayable,
+    bool allowUGC
+) const {
+    outSongs.clear();
+    std::vector<int> ranked;
+    GetRankedSongs(ranked, false, false);
+    FOREACH (it, ranked) {
+        int songID = *it;
+        BandSongMetadata *songData = (BandSongMetadata *)Data(songID);
+        if (!songData->IsVersionOK())
+            continue;
+        // Check if song is in the exclude list
+        std::vector<int>::const_iterator found =
+            std::find(excludeList.begin(), excludeList.end(), songID);
+        if (found != excludeList.end())
+            continue;
+        if (TheSessionMgr && !TheSessionMgr->GetMachineMgr()->IsSongShared(songID))
+            continue;
+        if (songData->IsUGC() && !allowUGC)
+            continue;
+        if (IsSongUnplayable(songID, mgr, filterUnplayable))
+            continue;
+        int skipMinRank = 0;
+        if (minRank != -1.0f) {
+            if (songData->Rank(band) < minRank)
+                skipMinRank = 1;
+        }
+        if (!skipMinRank) {
+            int skipMaxRank = 0;
+            if (maxRank != -1.0f) {
+                if (songData->Rank(band) > maxRank)
+                    skipMaxRank = 1;
+            }
+            if (!skipMaxRank)
+                outSongs.push_back(songID);
+        }
+    }
+    return outSongs.size();
 }
 
 int BandSongMgr::GetPosInRecentList(int) { return -1; }
@@ -585,12 +674,15 @@ void BandSongMgr::ReadCachedMetadataFromStream(BinStream &bs, int rev) {
         int i40;
         bs >> i40;
         bool remove;
+        int maxCount;
         do {
-            if (mMaxSongCount <= GetCurSongCount())
+            maxCount = mMaxSongCount;
+            if (maxCount <= GetCurSongCount())
                 break;
             remove = RemoveOldestCachedContent();
         } while (remove);
-        if (mMaxSongCount <= GetCurSongCount()) {
+        maxCount = mMaxSongCount;
+        if (maxCount <= GetCurSongCount()) {
             BandSongMetadata data(this);
             data.Load(bs);
         } else {
@@ -627,11 +719,77 @@ void BandSongMgr::WriteCachedMetadataToStream(BinStream &bs) const {
 }
 
 bool BandSongMgr::RemoveOldestCachedContent() {
-    if (mCachedSongMetadata.size() == 0)
+    if (mCachedSongMetadata.empty())
         return false;
-    else {
-        MILO_WARN("Invalid SongID for song %s\n");
+
+    // Find the entry with the highest age (the oldest cached song)
+    std::map<int, SongMetadata *>::iterator oldest = mCachedSongMetadata.begin();
+    int maxAge = oldest->second->Age();
+    for (std::map<int, SongMetadata *>::iterator it = mCachedSongMetadata.begin();
+         it != mCachedSongMetadata.end();
+         ++it) {
+        if (it->second->Age() > maxAge) {
+            maxAge = it->second->Age();
+            oldest = it;
+        }
     }
+
+    if (maxAge < 1)
+        return false;
+
+    int songID = oldest->second->ID();
+    if (songID == 0) {
+        MILO_WARN(
+            "Invalid SongID for song %s\n",
+            dynamic_cast<BandSongMetadata *>(oldest->second)->Title()
+        );
+        return false;
+    }
+
+    // Find the content name: first check mContentUsedForSong, then scan mSongIDsInContent
+    Symbol contentName;
+    std::map<int, Symbol>::iterator contentIt = mContentUsedForSong.find(songID);
+    if (contentIt != mContentUsedForSong.end()) {
+        contentName = contentIt->second;
+    } else {
+        for (std::map<Symbol, std::vector<int> >::iterator mit = mSongIDsInContent.begin();
+             mit != mSongIDsInContent.end();
+             ++mit) {
+            std::vector<int> &ids = mit->second;
+            for (std::vector<int>::iterator vit = ids.begin();
+                 vit != ids.end();
+                 ++vit) {
+                if (*vit == songID) {
+                    contentName = (Symbol)mit->first;
+                    break;
+                }
+            }
+            if (contentName != gNullStr)
+                break;
+        }
+    }
+
+    if (contentName == gNullStr) {
+        mContentUsedForSong.erase(songID);
+        mCachedSongMetadata.erase(oldest);
+    } else {
+        // Insert into mSongIDsInContent if not present (with empty vector)
+        std::map<Symbol, std::vector<int> >::iterator entry =
+            mSongIDsInContent.insert(mSongIDsInContent.end(), std::pair<const Symbol, std::vector<int> >(contentName, std::vector<int>()));
+        // Copy the songs list for this content
+        std::vector<int> songsToRemove = entry->second;
+        // Remove the content entry
+        ClearFromCache(contentName);
+        // Erase each song in the content pack from both maps
+        for (std::vector<int>::iterator vit = songsToRemove.begin();
+             vit != songsToRemove.end();
+             ++vit) {
+            mContentUsedForSong.erase(*vit);
+            mCachedSongMetadata.erase(*vit);
+        }
+    }
+
+    return true;
 }
 
 void BandSongMgr::ClearCachedContent() {

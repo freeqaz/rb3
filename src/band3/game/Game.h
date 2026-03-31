@@ -196,6 +196,11 @@ public:
     DataNode OnMsg(const class NewOvershellLocalUserMsg &);
     DataNode OnMsg(const class GameEndedMsg &);
 
+    void SetTimeOffset();
+    bool HandleAudioLoad();
+    void CheckSectionEnd(float);
+    float PollShuttle();
+
     Properties mProperties; // 0x24
     SongPos mSongPos; // 0x40
     SongDB *mSongDB; // 0x54

@@ -5,7 +5,10 @@
 #include "game/Defines.h"
 #include "net_band/RockCentralMsgs.h"
 
+class Band;
 class BandProfile;
+class Performer;
+struct Stats;
 
 class GamerAwardStatus : public FixedSizeSaveable {
 public:
@@ -30,6 +33,7 @@ public:
     virtual void LoadFixed(FixedSizeSaveableStream &, int);
 
     void Clear();
+    void UpdateStats(ScoreType, Difficulty, int, const Stats &, Performer *, Band *);
     int GetToursPlayed(Symbol) const;
     void UpdateTourPlayedForAllParticipants(Symbol);
     int GetToursGotAllStars(Symbol) const;

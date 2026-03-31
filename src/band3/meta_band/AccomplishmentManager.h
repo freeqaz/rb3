@@ -1,6 +1,8 @@
 #pragma once
 #include "BandProfile.h"
 #include "game/BandUser.h"
+class Performer;
+class SongStatusMgr;
 #include "meta_band/AccomplishmentCategory.h"
 #include "meta_band/AccomplishmentGroup.h"
 #include "meta_band/SongSortMgr.h"
@@ -124,6 +126,7 @@ public:
     void HandleSongCompletedForUser(Symbol, LocalBandUser *, Difficulty);
     void InitializeSongIncrementalDataForUserGoal(Symbol, LocalBandUser *);
     void UpdateSongStatusFlagsForUser(Symbol, LocalBandUser *, Difficulty);
+    void UpdateSongStatusFlagsForPerformer(Performer *, SongStatusMgr *, Symbol, ScoreType, Difficulty);
     void UpdateMiscellaneousSongDataForUser(Symbol, LocalBandUser *);
     void CheckForOneShotAccomplishments(Symbol, LocalBandUser *, Difficulty);
     int GetNumAccomplishments() const;

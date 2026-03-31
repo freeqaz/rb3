@@ -68,7 +68,9 @@ void RndCamAnim::SetFrame(float frame, float blend) {
             if (blend != 1.0f) {
                 Interp(mCam->YFov(), ref, blend, ref);
             }
-            mCam->SetFrustum(mCam->NearPlane(), mCam->FarPlane(), ref, 1.0f);
+            float nearPlane = mCam->NearPlane();
+            float farPlane = mCam->FarPlane();
+            mCam->SetFrustum(nearPlane, farPlane, ref, 1.0f);
         }
     }
 }

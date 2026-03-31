@@ -35,6 +35,7 @@ public:
 
 class Extent {
 public:
+    Extent() : unk0(0), unk4(0) {}
     Extent(int x, int y) : unk0(x), unk4(y) {}
     int unk0;
     int unk4;

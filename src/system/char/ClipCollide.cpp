@@ -35,11 +35,12 @@ void ClipCollide::SyncChar() {
 void ClipCollide::SyncWaypoint() {
     if (mChar && mWaypoint) {
         mChar->Enter();
-        mChar->Teleport(mWaypoint);
-        float radius = mWaypoint->mYRadius;
-        Transform xfm = mWaypoint->WorldXfm();
+        Waypoint *wp = mWaypoint;
+        mChar->Teleport(wp);
+        Transform xfm = wp->WorldXfm();
+        float radius = wp->mYRadius;
         if (radius <= 0)
-            radius = mWaypoint->mRadius;
+            radius = wp->mRadius;
         if (mPosition == front) {
             xfm.v.x += xfm.m.y.x * radius;
             xfm.v.y += xfm.m.y.y * radius;
@@ -50,12 +51,12 @@ void ClipCollide::SyncWaypoint() {
             xfm.v.y += xfm.m.y.y * radius;
             xfm.v.z += xfm.m.y.z * radius;
         } else if (mPosition == left) {
-            radius = mWaypoint->mRadius;
+            radius = wp->mRadius;
             xfm.v.x += xfm.m.x.x * radius;
             xfm.v.y += xfm.m.x.y * radius;
             xfm.v.z += xfm.m.x.z * radius;
         } else {
-            radius = -mWaypoint->mRadius;
+            radius = -wp->mRadius;
             xfm.v.x += xfm.m.x.x * radius;
             xfm.v.y += xfm.m.x.y * radius;
             xfm.v.z += xfm.m.x.z * radius;

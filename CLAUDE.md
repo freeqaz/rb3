@@ -114,12 +114,13 @@ Categories:
 ## Decompilation Tools
 
 ### Ghidra
-Ghidra MCP runs on `http://127.0.0.1:8001/mcp` (port 8001, separate from DC3's port 8000).
+Ghidra MCP runs on `http://ghidra.local:8001/mcp` (port 8001, separate from DC3's port 8000).
 - Language: PowerPC:BE:32:default (Gekko/Broadway)
 - Service script: `tools/ghidra/pyghidra-service.sh`
 - Start: `./tools/ghidra/pyghidra-service.sh start`
 - Uses the debug ELF with full DWARF symbols — decompilation is symbol-rich
 - **Not** wired into `.mcp.json`; call via Python or `bin/analyze-function`
+- Network sandbox is configured to allow `ghidra.local` — do NOT use `--no-ghidra`
 
 ### m2c
 - Located at `../m2c/m2c.py` (i.e. `/home/free/code/milohax/m2c/m2c.py`)
@@ -131,7 +132,6 @@ Ghidra MCP runs on `http://127.0.0.1:8001/mcp` (port 8001, separate from DC3's p
 # Combined: objdiff match% + Ghidra pseudo-C + m2c decompilation
 bin/analyze-function SYMBOL
 bin/analyze-function -u UNIT SYMBOL          # unit e.g. game/GemPlayer
-bin/analyze-function --no-ghidra SYMBOL      # skip Ghidra (faster)
 
 # m2c only
 bin/decompile SYMBOL

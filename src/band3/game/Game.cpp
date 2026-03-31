@@ -8,6 +8,7 @@
 #include "beatmatch/PlayerTrackConfig.h"
 #include "beatmatch/SongData.h"
 #include "beatmatch/TrackType.h"
+#include "beatmatch/VocalNote.h"
 #include "decomp.h"
 #include "game/Band.h"
 #include "game/BandUser.h"
@@ -28,6 +29,7 @@
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/BandUI.h"
 #include "meta_band/MetaPerformer.h"
+#include "meta_band/ProfileMgr.h"
 #include "meta_band/MusicLibrary.h"
 #include "meta_band/ModifierMgr.h"
 #include "meta_band/ProfileMgr.h"
@@ -49,6 +51,7 @@
 #include "synth/Synth.h"
 #include "ui/UI.h"
 #include "ui/UIPanel.h"
+#include "world/Dir.h"
 #include "ui/UIScreen.h"
 #include "utl/MBT.h"
 #include "utl/Messages.h"
@@ -57,6 +60,9 @@
 #include "utl/Symbols.h"
 #include "utl/TempoMap.h"
 #include "utl/TimeConversion.h"
+
+class TrainerPanel;
+extern TrainerPanel *TheTrainerPanel;
 
 Game *TheGame;
 bool gDebugFullQuota;
@@ -562,6 +568,16 @@ void Game::EnableWorldPolling(bool b1) {
         TheBandDirector->unke5 = b1;
     }
     UIPanel *panel = ObjectDir::sMainDir->Find<UIPanel>("world_panel", true);
+    if (panel) {
+        WorldDir *worldDir = dynamic_cast<WorldDir *>(panel->mDir);
+        if (worldDir) {
+            worldDir->mPollCamera = b1;
+        }
+    }
+    MidiParserMgr *midiParserMgr = mMaster->GetMidiParserMgr();
+    if (midiParserMgr && !mProperties.mInPracticeMode && b1) {
+        midiParserMgr->unk59 = b1;
+    }
 }
 
 void Game::ResetAudio() { mMaster->ResetAudio(); }
@@ -1023,6 +1039,374 @@ DataNode Game::OnAdjustForVocalPhrases(DataArray *a) {
 }
 
 void Game::OnStatsSynced() { mTrackerManager->OnStatsSynced(); }
+
+void Game::SetTimeOffset() {
+    mTime.Split();
+    float cyclesToMs = Timer::CyclesToMs(mTime.mCycles);
+    mTimeOffset = (1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime)) - cyclesToMs
+        - TheProfileMgr.GetSongToTaskMgrMs(kGame);
+}
+
+void Game::SetRealtime(bool realtime) {
+    bool finalRealtime = realtime;
+    if (mProperties.mInDrumTrainer) {
+        finalRealtime = true;
+    } else {
+        FOREACH (it, mAllActivePlayers) {
+            (*it)->SetRealtime(finalRealtime);
+        }
+    }
+    mRealtime = finalRealtime;
+    if (finalRealtime) {
+        SetTimeOffset();
+    }
+}
+
+void Game::SetNoFail(bool doSave) {
+    if (doSave && TheGamePanel->mGameState != kGameOver) {
+        for (int i = 0; i < mAllActivePlayers.size(); i++) {
+            Player *p = mAllActivePlayers[i];
+            if (p->mEnabledState == kPlayerDisabled) {
+                p->Save(p->GetUser(), false);
+            }
+        }
+    }
+}
+
+void Game::OvershellSetPaused(bool paused) {
+    if (TheNetSession->IsInGame()) {
+        bool canPause = false;
+        if (!mProperties.mEndWithSong
+            || mLastPollMs < TheSongDB->GetSongDurationMs() - mDisablePauseMs) {
+            canPause = true;
+        }
+        if (canPause && ThePlatformMgr.mDiskError == kNoDiskError) {
+            mOvershellWantsPause = paused;
+            UpdatePausedState(true, true);
+        }
+    }
+}
+
+void Game::UpdatePausedState(bool allowSfx, bool doRollback) {
+    bool wantPause = mGameWantsPause | mOvershellWantsPause;
+    if ((bool)wantPause != mIsPaused) {
+        if (wantPause) {
+            unk6c = ThePlatformMgr.mScreenSaver;
+            ThePlatformMgr.SetScreenSaver(true);
+        } else if (TheGamePanel) {
+            ThePlatformMgr.SetScreenSaver(unk6c);
+        }
+        if (!wantPause || allowSfx) {
+            TheSynth->PauseAllSfx(wantPause);
+        }
+        if (!wantPause) {
+            TheTaskMgr.SetAVOffset(GetSongToTaskMgrMs() / 1000.0f);
+        }
+        FOREACH (it, mAllActivePlayers) {
+            (*it)->SetPaused(wantPause);
+        }
+        if (!wantPause && mProperties.mInTrainer) {
+            GetTrackPanelDir()->UpdateTrackSpeed();
+        }
+        if (!wantPause && MetaPerformer::Current()->IsNoFailActive()) {
+            SetNoFail(true);
+        }
+        if (unk148) {
+            if (wantPause) {
+                mMaster->GetAudio()->SetPaused(true);
+            } else if (TheGamePanel->mGameState != kGameOver) {
+                if (doRollback) {
+                    float ms = (unkdc != -1.0f) ? unkdc : mLastPollMs;
+                    float rollbackTarget;
+                    if (mProperties.mInTrainer && TheTrainerPanel) {
+                        float candidate = ms - 1000.0f;
+                        rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+                        mLastPollMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
+                    } else {
+                        float candidate = ms - 2000.0f;
+                        rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+                    }
+                    Rollback(ms, rollbackTarget);
+                } else {
+                    if (mMaster->GetAudio()->IsReady()) {
+                        mMaster->GetAudio()->SetPaused(false);
+                    }
+                }
+            }
+        }
+        if (wantPause) {
+            TheTaskMgr.SetSeconds(
+                TheTaskMgr.Seconds(TaskMgr::kRealTime), false
+            );
+        } else if (mRealtime) {
+            SetTimeOffset();
+        }
+        if (wantPause) {
+            TheGamePanel->Handle(world_pause_msg, true);
+        } else {
+            TheGamePanel->Handle(world_unpause_msg, true);
+        }
+        if (!wantPause) {
+            FileDiscSpinUp();
+        }
+        mIsPaused = wantPause;
+    }
+}
+
+bool Game::HandleAudioLoad() {
+    if (!unk120)
+        return true;
+    MasterAudio *audio = mMaster->GetAudio();
+    if (audio->Fail())
+        return false;
+    if (!audio->IsReady() && !audio->IsFinished()) {
+        TheSynth->Poll();
+        return false;
+    }
+    if (unk120) {
+        TheGamePanel->mDeJitter.Reset();
+        if (mRealtime) {
+            mTime.Restart();
+            mTimeOffset = unkd8 - Timer::CyclesToMs(mTime.mCycles);
+        }
+        if (!mHasIntro && TheGamePanel->mGameState != kGameOver) {
+            unk6f = true;
+            Go();
+        }
+        unk120 = false;
+    }
+    return true;
+}
+
+void Game::CheckSectionEnd(float ms) {
+    float nextMs = unk140;
+    if (nextMs != -1.0f && ms < nextMs)
+        return;
+    int numSections = (int)TheSongDB->mPracticeSections.size();
+    if (numSections != 0) {
+        int cur = unk13c;
+        if (cur < numSections) {
+            int next = cur + 1;
+            unk13c = next;
+            if (next < numSections) {
+                const PracticeSection &sec = TheSongDB->mPracticeSections[next];
+                unk140 = TickToMs(sec.unk8);
+                FOREACH (it, mAllActivePlayers) {
+                    (*it)->HandleNewSection(sec, unk13c, numSections);
+                }
+            }
+        }
+    }
+}
+
+float Game::PollShuttle() {
+    mShuttle->Poll();
+    float shuttleMs = mShuttle->mMs;
+    SongPos pos = mSongDB->GetData()->CalcSongPos(shuttleMs);
+    mSongPos = pos;
+    TheTaskMgr.mSongPos = pos;
+    Jump(shuttleMs, false);
+    return shuttleMs;
+}
+
+bool Game::IsWaiting() {
+    MasterAudio *audio = mMaster->GetAudio();
+    if (audio->Fail())
+        return false;
+    if (audio->IsReady())
+        return false;
+    return !audio->IsFinished();
+}
+
+float Game::GetFractionCompleted() const {
+    if (mResumeTime != 0.0f) {
+        float frac = mResumeTime / TheSongDB->GetSongDurationMs();
+        return frac > 0.0f ? frac : 0.0f;
+    }
+    if (unk124 == 0.0f) {
+        return 1.0f;
+    }
+    float frac = unk124 / TheSongDB->GetSongDurationMs();
+    return frac > 0.0f ? frac : 0.0f;
+}
+
+void Game::AdjustForVocalPhrases(float &startMs, float &endMs) const {
+    VocalNoteList *phrases = TheSongDB->GetVocalNoteList(0);
+    float phraseEnd = 0.0f;
+    int i = 0;
+    int byteOff = 0;
+    for (; (unsigned)i < phrases->mPhrases.size(); i++, byteOff += sizeof(VocalPhrase)) {
+        const VocalPhrase &phrase = phrases->mPhrases[i];
+        phraseEnd = phrase.unk0 + phrase.unk4;
+        if (phraseEnd > endMs)
+            break;
+        if (phraseEnd > startMs && phrase.unk10 != phrase.unk14) {
+            for (int part = 0; part < 3; part++) {
+                VocalNoteList *noteList = TheSongDB->GetVocalNoteList(part);
+                if (noteList != nullptr) {
+                    int noteTick = noteList->HasNoteInRange(
+                        (int)MsToTick(phrase.unk0), (int)MsToTick(phraseEnd)
+                    );
+                    if (noteTick != -1) {
+                        float noteMs = TickToMs(noteTick);
+                        if (noteMs < startMs)
+                            startMs = noteMs;
+                        if (endMs < phraseEnd)
+                            endMs = phraseEnd;
+                    }
+                }
+            }
+        }
+    }
+    if ((unsigned)i >= (unsigned)(phrases->mPhrases.size() - 1) && endMs < phraseEnd) {
+        endMs = phraseEnd;
+    }
+}
+
+void Game::AddPlayer(BandUser *user) {
+    if (TheGamePanel->mGameState == kGameOver) {
+        DropUser(user);
+        unk154.push_back(user);
+        return;
+    }
+    if (mLoadState == kLoadingSong) {
+        unk154.push_back(user);
+        return;
+    }
+    Symbol trackSym = user->GetTrackSym();
+    MetaPerformer *perf = MetaPerformer::Current();
+    if (perf != nullptr) {
+        bool noPartInSong = true;
+        if (perf->HasSong() && perf->PartPlaysInSong(trackSym)) {
+            noPartInSong = false;
+        }
+        if (noPartInSong) {
+            GetTrackPanel()->DoHandleAddPlayer(user);
+            GetTrackPanel()->DoPostHandleAddPlayer(user);
+            return;
+        }
+    }
+    PlayerTrackConfigList *cfgList = TheGameConfig->GetConfigList();
+    SongData *songData = mSongDB->GetData();
+    TheGameConfig->AssignTrack(user);
+    cfgList->ProcessConfig(user->GetUserGuid());
+    songData->UpdatePlayerTrackConfigList(cfgList);
+    Player *player = mBand->AddPlayerDynamically(mMaster, user);
+    SetDrumKitBank(player, TheGamePanel->mDrumKitBank);
+    mAllActivePlayers.push_back(player);
+    player->PostDynamicAdd();
+    SetPaused(true, true, true);
+    SetPaused(false, true, true);
+    mTrackerManager->HandleAddPlayer(player);
+}
+
+void Game::ReconcilePlayers() {
+    std::vector<BandUser *> users;
+    TheBandUserMgr->GetParticipatingBandUsersInSession(users);
+    for (int i = 0; i < (int)users.size(); i++) {
+        BandUser *user = users[i];
+        if (!user->mPlayer) {
+            if (!user->IsFullyInGame()) {
+                DropUser(user);
+            } else if (!TheGameConfig->GetConfigList()->UserPresent(user->GetUserGuid())) {
+                AddUser(user);
+                AddPlayer(user);
+            }
+            // Remove user from pending queue if present
+            for (int j = 0; j < (int)unk154.size(); j++) {
+                if (unk154[j] == user) {
+                    unk154.erase(unk154.begin() + j);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void Game::Poll() {
+    if (mIsPaused) {
+        if (mRealtime && unk148) {
+            // fall through to body
+        } else {
+            return;
+        }
+    }
+    if (unk6b && unk148 && !mIsPaused && TheGamePanel->mGameState != kGameOver) {
+        float ms = (unkdc != -1.0f) ? unkdc : mLastPollMs;
+        float rollbackTarget;
+        if (mProperties.mInTrainer && TheTrainerPanel) {
+            float candidate = ms - 1000.0f;
+            rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+            mLastPollMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
+        } else {
+            float candidate = ms - 2000.0f;
+            rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+        }
+        Rollback(ms, rollbackTarget);
+    }
+    unk6b = false;
+    if (!HandleRollbackAnimation() || !HandleAudioLoad()) {
+        return;
+    }
+    if (!unk6f && !mIsPaused) {
+        unk6f = true;
+        if (!mHasIntro) {
+            Go();
+        }
+    }
+    if (mTime.mRunning > 0) {
+        mTime.Split();
+    }
+    float songMs = 0.0f;
+    bool isGameOver = (TheGamePanel->mGameState == kGameOver);
+    if (TheGamePanel->unk150) {
+        if (mRealtime) {
+            songMs = mTimeOffset
+                + Timer::CyclesToMs(mTime.mCycles);
+        } else {
+            songMs = mMaster->GetAudio()->GetTime();
+            if (mShuttle->mActive) {
+                songMs = PollShuttle();
+            }
+        }
+        float rawMs;
+        float corrected = TheGamePanel->mDeJitter.Apply(
+            songMs + GetSongToTaskMgrMs(), rawMs
+        );
+        songMs = corrected;
+        TheGamePanel->SetDejitteredTime(corrected);
+        TheTaskMgr.SetSeconds(songMs / 1000.0f, false);
+    }
+    if ((!isGameOver && !mIsPaused && !mRealtime && IsReady()) || mProperties.mInDrumTrainer) {
+        float realTimeSongMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
+        mSongPos = mSongDB->GetData()->CalcSongPos(realTimeSongMs);
+        TheTaskMgr.mSongPos = mSongPos;
+    }
+    if (songMs == 0.0f) {
+        mMaster->Poll(songMs);
+        if (!isGameOver) {
+            mBand->Poll(songMs, mSongPos);
+            mTrackerManager->Poll(songMs);
+        }
+    } else {
+        mMaster->GetMidiParserMgr()->Poll();
+    }
+    if (!isGameOver) {
+        CheckSectionEnd(songMs);
+    }
+    CheckRollbackEnd(songMs);
+    mLastPollMs = songMs;
+    if (mResumeTime == 0 && !mIsPaused) {
+        unk130 = mLastPollMs / TheSongDB->GetSongDurationMs();
+    }
+    if (!unk138) {
+        float startMs = unk134;
+        if (startMs > 0.0f && songMs > 0.0f) {
+            unk138 = true;
+            Jump(startMs, true);
+        }
+    }
+}
 
 Game::Properties::Properties()
     : mInTrainer(TheGameMode->InMode("trainer")),

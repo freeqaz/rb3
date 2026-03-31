@@ -124,6 +124,7 @@ public:
     PatchLayer &Layer(int);
     int FindEmptyLayer();
     PatchSticker *GetSticker(Symbol, int, bool);
+    std::vector<PatchSticker *> *GetStickers(Symbol);
     void LoadStickerTex(PatchSticker *, bool);
     void UnloadStickerTex(PatchSticker *);
     void SaveRemote(BinStream &);

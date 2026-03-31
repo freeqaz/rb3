@@ -21,7 +21,7 @@ except ImportError:
 
 
 # Default configuration — port 8001 for RB3 (DC3 is on 8000)
-MCP_URL = "http://127.0.0.1:8001/mcp"
+MCP_URL = "http://ghidra.local:8001/mcp"
 SESSION_CACHE_FILE = Path("/tmp/claude/ghidra_mcp_session_rb3.txt")
 DEFAULT_BINARY = None  # Resolved dynamically via list_binaries()
 

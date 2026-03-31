@@ -60,6 +60,8 @@ private:
     Symbol mTrackName; // 0x48
     Symbol mSongName; // 0x4c
     std::vector<Symbol> mTrackNames; // 0x50
+
+public:
     bool unk58; // 0x58
     bool unk59; // 0x59
 };

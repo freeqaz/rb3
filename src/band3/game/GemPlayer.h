@@ -77,6 +77,16 @@ public:
         return mask;
     }
 
+    bool Get0x40(int idx) {
+        int mask;
+        if (idx == -1)
+            mask = 0;
+        else {
+            mask = mGems[idx] & 0x40;
+        }
+        return mask;
+    }
+
     bool GetEncountered(int idx) {
         int mask;
         if (idx == -1)
@@ -125,6 +135,12 @@ public:
             mask = mGems[idx] & 0x9;
         }
         return mask;
+    }
+
+    void SetHopoed(int idx) {
+        if (idx != -1) {
+            mGems[idx] |= 0x10;
+        }
     }
 
     void SetIgnored(int idx) {

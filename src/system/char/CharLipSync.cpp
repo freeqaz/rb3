@@ -180,32 +180,27 @@ void CharLipSync::PlayBack::Poll(float time) {
             Reset();
         }
         if (mFrame < frameIdx) {
-            float conv = 1.0f / 255.0f;
-            do {
+            while (mFrame < frameIdx) {
                 mOldIndex = mIndex++;
                 int count = lipSync->mData[mOldIndex];
-                if (count != 0) {
-                    for (int i = count; i != 0; i--) {
-                        int idx = lipSync->mData[mIndex++];
-                        Weight &w = mWeights[idx];
-                        w.unkc = w.unk10;
-                        int val = lipSync->mData[mIndex++];
-                        w.unk10 = (float)val * conv;
-                        w.unk14 = Interp(w.unkc, w.unk10, frac);
-                    }
-                }
-                mFrame++;
-            } while (mFrame < frameIdx);
-        } else if (mFrame >= 0 && mFrame == frameIdx) {
-            int idx = mOldIndex + 1;
-            int count = lipSync->mData[mOldIndex];
-            if (count != 0) {
                 for (int i = count; i != 0; i--) {
-                    int wIdx = lipSync->mData[idx];
-                    idx += 2;
-                    Weight &w = mWeights[wIdx];
+                    int idx = lipSync->mData[mIndex++];
+                    Weight &w = mWeights[idx];
+                    w.unkc = w.unk10;
+                    w.unk10 = (float)lipSync->mData[mIndex++] * (1.0f / 255.0f);
                     w.unk14 = Interp(w.unkc, w.unk10, frac);
                 }
+                mFrame++;
+            }
+        } else if (mFrame >= 0 && mFrame == frameIdx) {
+            int idx = mOldIndex;
+            int count = lipSync->mData[idx++];
+            for (int i = count; i != 0; i--) {
+                int wIdx = lipSync->mData[idx];
+                idx += 2;
+                Weight &w = mWeights[wIdx];
+                float unkc = w.unkc;
+                w.unk14 = Interp(unkc, w.unk10, frac);
             }
         }
     }

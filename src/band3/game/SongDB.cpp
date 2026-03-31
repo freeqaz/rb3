@@ -7,6 +7,7 @@
 #include "beatmatch/Phrase.h"
 #include "beatmatch/PhraseAnalyzer.h"
 #include "beatmatch/PlayerTrackConfig.h"
+#include "beatmatch/TuningOffsetList.h"
 #include "beatmatch/VocalNote.h"
 #include "decomp.h"
 #include "game/Game.h"
@@ -467,6 +468,84 @@ void SongDB::SetupSoloPhrasesForTrack(int i1) {
     SetupPhrasesForTrack(i1, mTrackData[i1].mSoloPhraseExtents, mTrackData[i1].unk24);
 }
 
+int SongDB::GetSoloGemCount(int track) const {
+    int count = 0;
+    const std::vector<unsigned char> &states = mTrackData[track].GetGemStates(kSoloPhrase);
+    for (std::vector<unsigned char>::const_iterator it = states.begin(); it != states.end(); ++it) {
+        if (*it != 0)
+            count++;
+    }
+    return count;
+}
+
+int SongDB::GetSustainGemCount(int track) const {
+    int count = 0;
+    GameGemList *gemList = mSongData->GetGemList(track);
+    for (std::vector<GameGem>::iterator it = gemList->mGems.begin();
+         it != gemList->mGems.end();
+         ++it) {
+        if (!it->mIgnoreDuration)
+            count++;
+    }
+    return count;
+}
+
+void SongDB::SetupPhrasesForTrack(
+    int trackNum, std::vector<Extent> &extents, std::vector<unsigned char> &gemStates
+) {
+    if (extents.empty())
+        return;
+    GameGemList *gemList = mSongData->GetGemList(trackNum);
+    gemStates.clear();
+    gemStates.reserve(gemList->mGems.size());
+    int phraseIdx = 0;
+    for (int gemIdx = 0; gemIdx < gemList->NumGems(); gemIdx++) {
+        unsigned char state = 0;
+        if (phraseIdx < extents.size()) {
+            if (gemList->mGems[gemIdx].mTick >= extents[phraseIdx].unk0) {
+                bool setStart;
+                if (gemIdx == 0) {
+                    setStart = true;
+                } else {
+                    bool prevInPhrase = gemStates.size() > (unsigned)(gemIdx - 1)
+                        && (gemStates[gemIdx - 1] & 0x2);
+                    if (!prevInPhrase) {
+                        setStart = true;
+                    } else {
+                        bool prevEndOfPhrase = gemStates.size() > (unsigned)(gemIdx - 1)
+                            && (gemStates[gemIdx - 1] & 0x4);
+                        setStart = prevEndOfPhrase;
+                    }
+                }
+                if (setStart) {
+                    state |= 0x1;
+                }
+                state |= 0x2;
+            }
+        }
+        if (gemIdx == gemList->NumGems() - 1) {
+            state = (unsigned char)(state | 0x4);
+            phraseIdx++;
+        } else if (phraseIdx < extents.size()) {
+            if (gemList->mGems[gemIdx + 1].mTick >= extents[phraseIdx].unk4) {
+                state = (unsigned char)(state | 0x4);
+                phraseIdx++;
+            }
+        }
+        gemStates.push_back(state);
+    }
+    MILO_ASSERT(gemStates.size() == gemList->NumGems(), 0x37d);
+}
+
+const std::vector<unsigned char> &SongDB::TrackData::GetGemStates(BeatmatchPhraseType ty) const {
+    if (ty == kSoloPhrase)
+        return unk24;
+    if (ty == kCommonPhrase)
+        return unk2c;
+    MILO_FAIL("GetGemStates called with bad type %d", ty);
+    return unk24;
+}
+
 std::vector<Extent> &SongDB::GetExtents(int i1, BeatmatchPhraseType ty) {
     switch (ty) {
     case kCommonPhrase:
@@ -532,7 +611,22 @@ void SongDB::SetupPracticeSections() {
 void SongDB::SetFakeHitGemsInFill(bool b1) { mSongData->SetFakeHitGemsInFill(b1); }
 void SongDB::RecalculateGemTimes(int i1) { mSongData->RecalculateGemTimes(i1); }
 
-float SongDB::GetPitchOffsetForTick(int i1) const {}
+float SongDB::GetPitchOffsetForTick(int tick) const {
+    const TuningOffsetList *list = mSongData->mTuningOffsetList;
+    int clampedTick = tick & ~(tick >> 31);
+    const TickedInfo<float> *it = std::upper_bound(
+        list->mInfos.begin(),
+        list->mInfos.end(),
+        clampedTick,
+        TickedInfoCollection<float>::Cmp
+    );
+    if (it == list->mInfos.begin()) {
+        MILO_FAIL("No information available at tick %d, fix MIDI file", clampedTick);
+    } else {
+        --it;
+    }
+    return it->mInfo;
+}
 
 void SongDB::EnableGems(int i1, float f2, float f3) { mSongData->EnableGems(i1, f2, f3); }
 

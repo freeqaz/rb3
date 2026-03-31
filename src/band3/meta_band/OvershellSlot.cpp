@@ -1323,9 +1323,9 @@ void OvershellSlot::UpdateView() {
             mOvershellDir->HandleType(msgUpdateControllerType);
         }
     }
-    bool b4e = true;
-    int i18 = 0;
     bool b17 = false;
+    int i18 = 0;
+    bool b4e = true;
     if (!mState->ShowsExtendedMicArrows() && !mOvershell->GetUseExtendedMicArrows())
         b4e = false;
     GameMicManager *i4 = 0;
@@ -1418,7 +1418,7 @@ void OvershellSlot::UpdateView() {
             Symbol s2bc = user->GetControllerSym();
             bool b50 = mp->IsRandomSetList();
             TrackType tt = user->GetTrackType();
-            if (tt - 10U < 3) {
+            if (tt - 10U <= 2) {
                 DataNode handled = mState->HandleMsg(get_focus_track_type_msg);
                 if (handled.Type() != kDataUnhandled) {
                     tt = (TrackType)handled.Int();

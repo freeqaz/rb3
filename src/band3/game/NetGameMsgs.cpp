@@ -4,14 +4,31 @@
 #include "game/Player.h"
 #include "meta_band/AccomplishmentManager.h"
 #include "meta_band/BandUI.h"
+#include "meta_band/MusicLibrary.h"
+#include "meta_band/SetlistMergePanel.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
-#include "meta_band/MusicLibrary.h"
 #include "os/PlatformMgr.h"
 #include "utl/Messages.h"
 #include "utl/Symbols.h"
+
+class MusicLibraryTaskMsg : public NetMessage {
+public:
+    MusicLibraryTaskMsg() {}
+    MusicLibraryTaskMsg(MusicLibrary::MusicLibraryTask &);
+    virtual ~MusicLibraryTaskMsg() {}
+    virtual void Save(BinStream &) const;
+    virtual void Load(BinStream &);
+    virtual void Dispatch();
+    NETMSG_BYTECODE(MusicLibraryTaskMsg);
+    NETMSG_NAME(MusicLibraryTaskMsg);
+
+    NETMSG_NEWNETMSG(MusicLibraryTaskMsg);
+
+    MusicLibrary::MusicLibraryTask mTask; // 0x4
+};
 
 PlayerGameplayMsg::PlayerGameplayMsg(
     User *user, int opCode, int arg1, int arg2, int arg3
@@ -166,11 +183,10 @@ void SetlistSubmissionMsg::Load(BinStream &bs) {
 }
 
 void SetlistSubmissionMsg::Dispatch() {
-    // SetlistMergePanel* panel =
-    // ObjectDir::Main()->Find<SetlistMergePanel>("setlist_merge_panel", true);
-    // MILO_ASSERT(panel, 0xF9);
-    //   SetlistMergePanel::HandleSetlistSubmission(this_00,(vector<> *)(this + 4),*(int
-    //   *)(this + 0xc)) ;
+    SetlistMergePanel *panel =
+        ObjectDir::Main()->Find<SetlistMergePanel>("setlist_merge_panel", true);
+    MILO_ASSERT(panel, 0xF9);
+    panel->HandleSetlistSubmission(mSongIDs, mNumUsers);
 }
 
 TourMostStarsMsg::TourMostStarsMsg(Symbol symbol, int cap) : unk4(symbol), unk8(cap) {}
@@ -251,6 +267,7 @@ void TourHideShowFiltersMsg::Load(BinStream &binStream) { binStream >> mShowMode
 void TourHideShowFiltersMsg::Dispatch() {
     static Message msg("client_tour_hideshow_filters", 0);
     msg[0] = mShowMode;
+    DataNode result = TheBandUI.Handle(msg, false);
 }
 
 SongResultsScrollMsg::SongResultsScrollMsg(int param1, int param2)
@@ -270,6 +287,7 @@ void SongResultsScrollMsg::Dispatch() {
     static Message msg("net_songresults_scroll", 0, 0);
     msg[0] = unk_0x4;
     msg[1] = unk_0x8;
+    DataNode result = TheBandUI.Handle(msg, false);
 }
 
 void SetUpMicsMsg::Save(BinStream &bs) const {
@@ -282,4 +300,50 @@ void SetUpMicsMsg::Load(BinStream &bs) {
     bs >> mHasMic1;
     bs >> mHasMic2;
     bs >> mHasMic3;
+}
+
+void SetUpMicsMsg::Dispatch() {
+    static Message msg("setup_mics", 0, 0, 0);
+    msg[0] = mHasMic1;
+    msg[1] = mHasMic2;
+    msg[2] = mHasMic3;
+    DataNode result = TheBandUI.Handle(msg, false);
+}
+
+MusicLibraryTaskMsg::MusicLibraryTaskMsg(MusicLibrary::MusicLibraryTask &task)
+    : mTask(task) {}
+
+void MusicLibraryTaskMsg::Save(BinStream &bs) const {
+    bs << mTask.allowDuplicates;
+    bs << mTask.backScreen;
+    bs << mTask.filter;
+    bs << mTask.filterLocked;
+    bs << mTask.makingSetlistToken;
+    int maxSetlistSize = mTask.maxSetlistSize;
+    bs.WriteEndian(&maxSetlistSize, 4);
+    bs << mTask.nextScreen;
+    bs << mTask.partSym;
+    int setlistMode = mTask.setlistMode;
+    bs.WriteEndian(&setlistMode, 4);
+    bs << mTask.titleToken;
+}
+
+void MusicLibraryTaskMsg::Load(BinStream &bs) {
+    bs >> mTask.allowDuplicates;
+    bs >> mTask.backScreen;
+    bs >> mTask.filter;
+    bs >> mTask.filterLocked;
+    bs >> mTask.makingSetlistToken;
+    bs >> mTask.maxSetlistSize;
+    bs >> mTask.nextScreen;
+    bs >> mTask.partSym;
+    int setlistMode = 0;
+    bs.ReadEndian(&setlistMode, 4);
+    mTask.setlistMode = (MusicLibrary::SetlistMode)setlistMode;
+    bs >> mTask.titleToken;
+}
+
+void MusicLibraryTaskMsg::Dispatch() {
+    MILO_ASSERT(TheMusicLibrary, 0x1D2);
+    TheMusicLibrary->SetTask(mTask);
 }

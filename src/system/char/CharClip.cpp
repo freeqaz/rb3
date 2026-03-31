@@ -119,10 +119,10 @@ void CharClip::Transitions::AddNode(CharClip *clip, const CharGraphNode &node) {
     if (nodes) {
         int bytes = BytesInMemory();
         NodeVector *next = nodes->Next();
-        NodeVector *end = mNodeEnd;
+        int moveSize = (int)mNodeEnd - (int)next;
         resized = Resize(bytes + 8, nodes);
 
-        memmove((char *)resized->Next() + 8, resized->Next(), (int)end - (int)next);
+        memmove((char *)resized->Next() + 8, resized->Next(), moveSize);
     } else {
         clip->AddRef(mOwner);
         resized = Resize(BytesInMemory() + 0x10, mNodeEnd);
@@ -131,11 +131,9 @@ void CharClip::Transitions::AddNode(CharClip *clip, const CharGraphNode &node) {
     }
     int size = resized->size;
     int i = 0;
-    if (size > 0) {
-        for (; i < size; i++) {
-            if (node.curBeat < resized->nodes[i].curBeat)
-                break;
-        }
+    for (; i < size; i++) {
+        if (node.curBeat < resized->nodes[i].curBeat)
+            break;
     }
     for (int j = size; j > i; j--) {
         resized->nodes[j] = resized->nodes[j - 1];
@@ -307,10 +305,11 @@ CharGraphNode *CharClip::FindNode(CharClip *clip, float f1, int iii, float f2) c
         break;
     }
     if (!n) {
+        float halfF2 = f2 * 0.5f;
         static CharGraphNode node;
         node.curBeat = f1;
         if (blendMode == 4) {
-            MaxEq(node.curBeat, EndBeat() - f2 * 0.5f);
+            MaxEq(node.curBeat, EndBeat() - halfF2);
         }
         n = &node;
         node.nextBeat = StartBeat();
@@ -996,8 +995,9 @@ bool PropSyncArray(
         return true;
     } else {
         int idx = prop->Int(i++);
+        CharGraphNode *node = &o.nodes[idx];
         if (i < prop->Size() || op & kPropGet) {
-            return PropSync(o.nodes[idx], val, prop, i, op);
+            return PropSync(*node, val, prop, i, op);
         } else
             return false;
     }
@@ -1022,8 +1022,9 @@ bool PropSync(
         return true;
     } else {
         int idx = prop->Int(i++);
-        if (i < prop->Size() || _op & kPropSize | kPropGet) {
-            return PropSync(*o.GetNodes(idx), val, prop, i, _op);
+        CharClip::NodeVector *node = o.GetNodes(idx);
+        if (i < prop->Size() || _op & (kPropSize | kPropGet)) {
+            return PropSync(*node, val, prop, i, _op);
         } else
             return false;
     }

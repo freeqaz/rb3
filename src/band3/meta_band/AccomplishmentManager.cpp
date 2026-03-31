@@ -21,7 +21,14 @@
 #include "meta_band/AccomplishmentTourConditional.h"
 #include "meta_band/AccomplishmentTrainerCategoryConditional.h"
 #include "meta_band/AccomplishmentTrainerListConditional.h"
+#include "game/Band.h"
+#include "game/NetGameMsgs.h"
+#include "game/Performer.h"
+#include "net/NetSession.h"
+#include "meta/Achievements.h"
 #include "meta_band/AssetMgr.h"
+#include "meta_band/SessionMgr.h"
+#include "meta_band/SongStatusMgr.h"
 #include "meta_band/Award.h"
 #include "meta_band/BandSongMetadata.h"
 #include "meta_band/BandSongMgr.h"
@@ -499,9 +506,9 @@ void AccomplishmentManager::ConfigureAccomplishmentCategoryGroupingData() {
         std::set<Symbol> *symset = GetAccomplishmentSetForCategory(cat);
         if (!symset) {
             symset = new std::set<Symbol>();
-            m_mapCategoryToAccomplishmentSet[name] = symset;
+            m_mapCategoryToAccomplishmentSet[cat] = symset;
         }
-        symset->insert(cat);
+        symset->insert(name);
     }
 }
 
@@ -878,7 +885,7 @@ void AccomplishmentManager::EarnAccomplishmentForProfile(BandProfile *p, Symbol 
         MILO_ASSERT(pAccomplishment, 0x510);
         int id = pAccomplishment->GetContextID();
         if (id != -1) {
-            // TheAchievements->Submit(pProfileUser, s, id);
+            TheAchievements->Submit(pProfileUser, s, id);
         }
     }
 }
@@ -933,6 +940,20 @@ void AccomplishmentManager::UpdateMostStarsForAllParticipants(Symbol s, int i) {
     }
 }
 
+void AccomplishmentManager::UpdatePlayedTourForAllRemoteParticipants(Symbol s) {
+    if (TheNetSession) {
+        TourPlayedMsg msg(s);
+        TheNetSession->SendMsgToAll(msg, kReliable);
+    }
+}
+
+void AccomplishmentManager::UpdateMostStarsForAllRemoteParticipants(Symbol s, int i) {
+    if (TheNetSession) {
+        TourMostStarsMsg msg(s, i);
+        TheNetSession->SendMsgToAll(msg, kReliable);
+    }
+}
+
 void AccomplishmentManager::EarnAccomplishmentForAllParticipants(Symbol s) {
     if (TheBandUserMgr) {
         std::vector<LocalBandUser *> users;
@@ -947,6 +968,13 @@ void AccomplishmentManager::EarnAccomplishmentForAllParticipants(Symbol s) {
         if (IsLeaderLocal()) {
             EarnAccomplishmentForAllRemoteParticipants(s);
         }
+    }
+}
+
+void AccomplishmentManager::EarnAccomplishmentForAllRemoteParticipants(Symbol s) {
+    if (TheNetSession) {
+        AccomplishmentMsg msg(s);
+        TheNetSession->SendMsgToAll(msg, kReliable);
     }
 }
 
@@ -1194,6 +1222,176 @@ void AccomplishmentManager::HandleSongCompletedForUser(
     }
 }
 
+void AccomplishmentManager::HandleSetlistCompletedForUser(
+    Symbol s, bool b, LocalBandUser *u, Difficulty diff, int i
+) {
+    BandProfile *pProfile = TheProfileMgr.GetProfileForUser(u);
+    MILO_ASSERT(pProfile, 0x770);
+    MetaPerformer *pMeta = MetaPerformer::Current();
+    MILO_ASSERT(pMeta, 0x773);
+    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    Difficulty userDiff = (Difficulty)u->GetDifficulty();
+    if (b) {
+        EarnAccomplishmentForProfile(pProfile, acc_hmxrecommends);
+    }
+    AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
+    for (std::map<Symbol, Accomplishment *>::iterator it = mAccomplishments.begin();
+         it != mAccomplishments.end();
+         ++it) {
+        Symbol key = it->first;
+        if (!prog.IsAccomplished(key)) {
+            Accomplishment *pAccomplishment = it->second;
+            MILO_ASSERT(pAccomplishment, 0x78F);
+            if (pAccomplishment->GetType() == kAccomplishmentTypeSetlist) {
+                AccomplishmentSetlist *pSetlistAccomplishment =
+                    dynamic_cast<AccomplishmentSetlist *>(pAccomplishment);
+                MILO_ASSERT(pSetlistAccomplishment, 0x798);
+                if (pSetlistAccomplishment->mSetlist == s) {
+                    if (pSetlistAccomplishment->CheckRequirements(
+                            (ScoreType)0xA, diff, i
+                        )) {
+                        EarnAccomplishment(u, key);
+                    } else if (pSetlistAccomplishment->CheckRequirements(
+                                   scoreType, userDiff, i
+                               )) {
+                        EarnAccomplishment(u, key);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void AccomplishmentManager::CheckForOneShotAccomplishments(
+    Symbol s, LocalBandUser *u, Difficulty diff
+) {
+    BandProfile *pProfile = TheProfileMgr.GetProfileForUser(u);
+    MILO_ASSERT(pProfile, 0x7D0);
+    Performer *pPerformer = u->mPlayer;
+    if (!pPerformer) {
+        MILO_WARN("No player found while trying to update song status flags.");
+        return;
+    }
+    Band *pBand = pPerformer->mBand;
+    MILO_ASSERT(pBand, 0x7DC);
+    Performer *pBandPerformer = pBand->MainPerformer();
+    MILO_ASSERT(pBandPerformer, 0x7DF);
+    MetaPerformer *pMeta = MetaPerformer::Current();
+    MILO_ASSERT(pMeta, 0x7E2);
+    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    Difficulty userDiff = (Difficulty)u->GetDifficulty();
+    AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
+    int numPlayers = pBand->NumActivePlayers();
+    for (std::map<Symbol, Accomplishment *>::iterator it = mAccomplishments.begin();
+         it != mAccomplishments.end();
+         ++it) {
+        Symbol key = it->first;
+        if (!prog.IsAccomplished(key)) {
+            Accomplishment *pAccomplishment = it->second;
+            MILO_ASSERT(pAccomplishment, 0x7F7);
+            if (!IsAvailableToEarn(key))
+                continue;
+            if (pAccomplishment->GetType() == kAccomplishmentTypeOneShot) {
+                AccomplishmentOneShot *pOneShotAccomplishment =
+                    dynamic_cast<AccomplishmentOneShot *>(pAccomplishment);
+                MILO_ASSERT(pOneShotAccomplishment, 0x806);
+                if (pOneShotAccomplishment->AreOneShotConditionsMet(
+                        scoreType, userDiff, pPerformer, s, numPlayers
+                    )) {
+                    EarnAccomplishment(u, key);
+                } else if (pOneShotAccomplishment->AreOneShotConditionsMet(
+                               (ScoreType)0xA, diff, pBandPerformer, s, numPlayers
+                           )) {
+                    EarnAccomplishment(u, key);
+                }
+            }
+        }
+    }
+}
+
+void AccomplishmentManager::UpdateMiscellaneousSongDataForUser(Symbol s, LocalBandUser *u) {
+    BandProfile *pProfile = TheProfileMgr.GetProfileForUser(u);
+    MILO_ASSERT(pProfile, 0x85B);
+    Performer *pPerformer = u->mPlayer;
+    if (!pPerformer) {
+        MILO_WARN("No player found while trying to update song status flags.");
+        return;
+    }
+    MetaPerformer *pMeta = MetaPerformer::Current();
+    MILO_ASSERT(pMeta, 0x866);
+    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    Band *pBand = pPerformer->mBand;
+    Difficulty diff = (Difficulty)u->GetDifficulty();
+    MILO_ASSERT(pBand, 0x86C);
+    Performer *pBandPerformer = pBand->MainPerformer();
+    MILO_ASSERT(pBandPerformer, 0x86E);
+    int codaScore = pBandPerformer->CodaScore();
+    AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
+    prog.UpdateStats(scoreType, diff, codaScore, pPerformer->mStats, pPerformer, pBand);
+    prog.SetTotalSongsPlayed(prog.GetTotalSongsPlayed() + 1);
+    if (TheGameMode && TheGameMode->InMode(tour)) {
+        prog.SetTourTotalSongsPlayed(prog.GetTourTotalSongsPlayed() + 1);
+    }
+    pProfile->MakeDirty();
+}
+
+void AccomplishmentManager::UpdateSongStatusFlagsForUser(
+    Symbol s, LocalBandUser *u, Difficulty diff
+) {
+    BandProfile *pProfile = TheProfileMgr.GetProfileForUser(u);
+    MILO_ASSERT(pProfile, 0x889);
+    SongStatusMgr *pSongStatusMgr = pProfile->GetSongStatusMgr();
+    MILO_ASSERT(pSongStatusMgr, 0x88C);
+    Performer *pPerformer = u->mPlayer;
+    if (!pPerformer) {
+        MILO_WARN("No player found while trying to update song status flags.");
+        return;
+    }
+    Band *pBand = pPerformer->mBand;
+    MILO_ASSERT(pBand, 0x898);
+    Performer *pBandPerformer = pBand->MainPerformer();
+    MILO_ASSERT(pBandPerformer, 0x89B);
+    MetaPerformer *pMeta = MetaPerformer::Current();
+    MILO_ASSERT(pMeta, 0x89E);
+    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    Difficulty userDiff = (Difficulty)u->GetDifficulty();
+    UpdateSongStatusFlagsForPerformer(pPerformer, pSongStatusMgr, s, scoreType, userDiff);
+    UpdateSongStatusFlagsForPerformer(pBandPerformer, pSongStatusMgr, s, (ScoreType)0xA, diff);
+}
+
+void AccomplishmentManager::UpdateSongStatusFlagsForPerformer(
+    Performer *pPerformer,
+    SongStatusMgr *pSongStatusMgr,
+    Symbol s,
+    ScoreType scoreType,
+    Difficulty diff
+) {
+    const Stats &stats = pPerformer->mStats;
+    if (stats.GetCodaPoints() > 0) {
+        pSongStatusMgr->SetSongStatusFlag(s, kSongStatusFlag_HitBRE, scoreType, diff);
+    }
+    int rollCount = stats.GetRollCount();
+    int rollPercent = rollCount > 0 ? (stats.GetRollsHitCompletely() * 100) / rollCount : 0;
+    if (rollPercent >= 100) {
+        pSongStatusMgr->SetSongStatusFlag(
+            s, kSongStatusFlag_PerfectDrumRolls, scoreType, diff
+        );
+    }
+    if (stats.GetDoubleHarmonyHit() >= stats.GetDoubleHarmonyPhraseCount()) {
+        pSongStatusMgr->SetSongStatusFlag(
+            s, kSongStatusFlag_AllDoubleAwesomes, scoreType, diff
+        );
+    }
+    if (stats.GetTripleHarmonyHit() >= stats.GetTripleHarmonyPhraseCount()) {
+        pSongStatusMgr->SetSongStatusFlag(
+            s, kSongStatusFlag_AllTripleAwesomes, scoreType, diff
+        );
+    }
+    if (stats.mFullCombo) {
+        pSongStatusMgr->SetSongStatusFlag(s, kSongStatusFlag_FullCombo, scoreType, diff);
+    }
+}
+
 void AccomplishmentManager::InitializeSongIncrementalDataForUserGoal(
     Symbol s, LocalBandUser *i_pUser
 ) {
@@ -1409,6 +1607,20 @@ void AccomplishmentManager::ClearFirstNewAward(LocalBandUser *i_pUser) {
     pProfile->AccessAccomplishmentProgress().ClearFirstNewAward();
 }
 
+bool AccomplishmentManager::HasNewRewardVignettes() const {
+    if (!TheSessionMgr->GetLocalHost())
+        return false;
+    if (TheGameMode && TheGameMode->InMode(tour)) {
+        TourProgress *pTourProgress = TheTour->GetTourProgress();
+        if (pTourProgress && pTourProgress->IsOnTour())
+            return false;
+    }
+    BandProfile *pProfile = TheProfileMgr.GetPrimaryProfile();
+    if (pProfile && pProfile->GetAccomplishmentProgress().HasNewRewardVignettes())
+        return true;
+    return false;
+}
+
 Symbol AccomplishmentManager::GetNameForFirstNewRewardVignette() const {
     BandProfile *pProfile = TheProfileMgr.GetPrimaryProfile();
     MILO_ASSERT(pProfile, 0xA31);
@@ -1555,6 +1767,10 @@ void AccomplishmentManager::AddGoalAcquisitionInfo(Symbol s1, const char *cc, Sy
     info.unk4 = cc;
     info.unk10 = s2;
     mGoalAcquisitionInfos.push_back(info);
+    if (TheNetSession) {
+        AccomplishmentEarnedMsg msg(s1, cc, s2);
+        TheNetSession->SendMsgToAll(msg, kReliable);
+    }
 }
 
 void AccomplishmentManager::AddGoalProgressionInfo(

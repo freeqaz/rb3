@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 PORT=8001
-HOST=127.0.0.1
+HOST=ghidra.local
 PROJECT_PATH="$PROJECT_DIR/ghidra_projects/RB3/RB3"
 MILOHAX_DIR="$(cd "$PROJECT_DIR/.." && pwd)"
 PYGHIDRA_MCP="$MILOHAX_DIR/pyghidra-mcp"
@@ -158,10 +158,10 @@ cmd_stop() {
 cmd_status() {
     if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
         echo "Service running (PID: $(cat "$PIDFILE"))"
-        echo "URL: http://$HOST:$PORT/mcp"
+        echo "URL: http://ghidra.local:$PORT/mcp"
 
-        # Check if responsive
-        if curl -s "http://$HOST:$PORT/mcp" > /dev/null 2>&1; then
+        # Check if responsive (use 127.0.0.1 for reliability, ghidra.local for clients)
+        if curl -s "http://127.0.0.1:$PORT/mcp" > /dev/null 2>&1; then
             echo "Status: Ready"
         else
             echo "Status: Starting/Not responding"

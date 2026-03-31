@@ -117,6 +117,7 @@ public:
     const std::vector<VocalNote> &GetNotes() const { return mNotes; }
     std::vector<VocalPhrase> &GetPhrases() { return mPhrases; }
     std::vector<VocalPhrase> &GetLyricPhrases() { return mLyricPhrases; }
+    int HasNoteInRange(int, int) const;
 
     std::vector<VocalPhrase> mPhrases; // 0x0
     std::vector<VocalPhrase> mLyricPhrases; // 0x8

@@ -6,6 +6,9 @@
 class OverdriveMeter : public RndDir {
 public:
     enum State {
+        kFilling = 1,
+        kReady = 2,
+        kDeploying = 3,
     };
 
     OverdriveMeter();

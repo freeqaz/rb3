@@ -55,6 +55,7 @@
 #include "synth/Synth.h"
 #include "synthwii/FXWii.h"
 #include "ui/UIPanel.h"
+#include "utl/Messages2.h"
 #include "utl/Messages3.h"
 #include "utl/Messages4.h"
 #include "utl/SongInfoCopy.h"
@@ -358,6 +359,17 @@ bool GemPlayer::HandleSpecialMissScenarios(int i1, float f2) {
         return false;
 }
 
+bool GemPlayer::CanFlail(float ms) {
+    int gemTick = TheSongDB->GetGem(mTrackNum, 0).mTick;
+    if ((int)MsToTick(ms) <= gemTick - 0xF0) {
+        return true;
+    }
+    if (PastFinalNote() && !TheGame->mProperties.mInDrumTrainer) {
+        return true;
+    }
+    return false;
+}
+
 void GemPlayer::SpuriousMiss(int i1, int i2, float f3, int i4) {
     if (!CanFlail(f3) && mTrack) {
         mTrack->Miss(f3, i4, i2);
@@ -365,6 +377,23 @@ void GemPlayer::SpuriousMiss(int i1, int i2, float f3, int i4) {
 }
 
 void GemPlayer::Pass(int, float, int, bool) { MILO_WARN("pass"); }
+
+void GemPlayer::Ignore(int i1, float ms, int gem_id, const UserGuid &u) {
+    if (!mGemStatus->Get0x40(gem_id)) {
+        HandleFirstGemAfterRollback(gem_id);
+        int size = mGemStatus->GetSize();
+        if (gem_id == size - 1) {
+            unk3e1 = 1;
+        }
+        IgnoreGem(gem_id);
+        if (mBehavior->mHasSolos) {
+            HandleSoloGem(gem_id, false, ms, false);
+        }
+        if (mTrack) {
+            mTrack->Ignore(gem_id);
+        }
+    }
+}
 
 void GemPlayer::ImplicitGem(int i1, float f2, int i3, const UserGuid &u) {
     if (!mGemStatus->GetEncountered(i3)) {
@@ -446,6 +475,19 @@ void GemPlayer::PlayMissSound(int i1) {
     }
 }
 
+void GemPlayer::MercurySwitch(bool b, float f) {
+    unk33d = b;
+    if (unk388)
+        return;
+    if (!mMercurySwitchEnabled)
+        return;
+    if (!b)
+        return;
+    if (!mBehavior->mTiltDeployBand)
+        return;
+    DeployBandEnergyIfPossible(false);
+}
+
 void GemPlayer::FilteredWhammyBar(float val) {
     if (!IsLocal())
         return;
@@ -487,6 +529,28 @@ void GemPlayer::FilteredWhammyBar(float val) {
 void GemPlayer::SwingAtHopo(int, float, int) {
     HandleType(swingAtHopo_msg);
     mStats.mHopoGemCount++;
+}
+
+void GemPlayer::Hopo(int i1, float ms, int gem_id) {
+    if (!mGemStatus->Get0x40(gem_id)) {
+        Export(hopo_msg, true);
+        const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
+        const GameGem &gem = gemList->GetGem(gem_id);
+        if (gem.GetForceStrum()) {
+            mGemStatus->SetHopoed(gem_id);
+            mStats.mHopoGemsHopoed++;
+            mStats.mHopoGemCount++;
+        }
+    }
+}
+
+void GemPlayer::ReleaseGem(int i1, float ms, int gem_id, float f4) {
+    unk354 = ms;
+    HeldNote *note = FindHeldNoteFromGemID(gem_id);
+    if (note && note->HasGem()) {
+        CheckHeldNotes(ms);
+        FinishHeldNote(ms, *note);
+    }
 }
 
 void GemPlayer::FillSwing(int i1, int i2, int i3, int i4, bool b5) {

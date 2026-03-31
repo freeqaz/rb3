@@ -171,22 +171,20 @@ void RndMesh::UpdateSphere() {
 float RndMesh::GetDistanceToPlane(const Plane &p, Vector3 &v) {
     if (Verts().empty())
         return 0;
-    else {
-        Transform &world = WorldXfm();
-        Vector3 v58;
-        Multiply(Verts()[0].pos, world, v58);
-        v = v58;
-        float dot = p.Dot(v);
-        FOREACH (it, Verts()) {
-            Multiply(it->pos, world, v58);
-            float dotted = p.Dot(v58);
-            if (std::fabs(dotted) < std::fabs(dot)) {
-                dot = dotted;
-                v = v58;
-            }
+    const Transform &world = WorldXfm();
+    Vector3 v58;
+    Multiply(Verts()[0].pos, world, v58);
+    v = v58;
+    float dot = p.Dot(v);
+    FOREACH (it, Verts()) {
+        Multiply(it->pos, world, v58);
+        float dotted = p.Dot(v58);
+        if (std::fabs(dotted) < std::fabs(dot)) {
+            dot = dotted;
+            v = v58;
         }
-        return dot;
     }
+    return dot;
 }
 
 bool RndMesh::MakeWorldSphere(Sphere &s, bool b) {

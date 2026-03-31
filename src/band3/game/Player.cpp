@@ -15,6 +15,7 @@
 #include "game/BandUserMgr.h"
 #include "game/Defines.h"
 #include "game/Game.h"
+#include "game/GamePanel.h"
 #include "game/GameConfig.h"
 #include "game/NetGameMsgs.h"
 #include "game/Performer.h"
@@ -362,7 +363,7 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
         DelayReturn(true);
         mUser->GetTrack()->SetGemsEnabledByPlayer();
         break;
-    case kPlayerBeingSaved:
+    case kPlayerBeingSaved: {
         BandTrack *track = GetBandTrack();
         track->PlayerSaved();
         float savedurms = TheSongDB->GetSongDurationMs();
@@ -377,6 +378,7 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
         player_saved[1] = b;
         TheBandDirector->HandleType(player_saved);
         break;
+    }
     default:
         break;
     }
@@ -655,6 +657,271 @@ void Player::CheckCrowdFailure() {
         }
         SetEnabledState(kPlayerDisabled, mUser, false);
     }
+}
+
+void Player::IgnoreUntilRollback(float) {}
+
+void Player::SubtractEnergy(float f) {
+    float newEnergy = mBandEnergy - f;
+    float zero = 0.0f;
+    SetEnergy(newEnergy > zero ? newEnergy : zero);
+}
+
+void Player::UpdateEnergy(const SongPos &pos) {
+    if (mPermanentOverdrive && !mDeployingBandEnergy) {
+        float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+        if (secs > 0.0f) {
+            SetEnergy(1.0f);
+            EnableFills(0.0f, false);
+        }
+    }
+    if (TheGame->unkdc == -1.0f) {
+        if (unk2b0 && mDeployingBandEnergy) {
+            float curBeat = TickToBeat((int)pos.mTotalTick);
+            float prevBeat = TickToBeat((int)mSongPos.mTotalTick);
+            float delta = curBeat - prevBeat;
+            if (ShouldDrainEnergy()) {
+                SubtractEnergy(delta * mParams->mDeployBeats);
+            }
+        }
+        if (mBandEnergy == 0.0f) {
+            StopDeployingBandEnergy(false);
+        }
+    }
+}
+
+void Player::SetEnergyAutomatically(float f) {
+    int oldCanDeploy = CanDeployOverdrive();
+    mBandEnergy = f;
+    BandTrack *track = GetBandTrack();
+    if (!track)
+        return;
+    OverdriveMeter *meter = track->mStarPowerMeter;
+    if (!meter)
+        return;
+    if (mTrackType == kTrackNone) {
+        if (!oldCanDeploy) {
+            if (CanDeployOverdrive()) {
+                EnableDrumFills(true);
+            }
+        } else {
+            if (!CanDeployOverdrive()) {
+                EnableDrumFills(false);
+            }
+        }
+    }
+    OverdriveMeter::State state;
+    if (mDeployingBandEnergy) {
+        state = OverdriveMeter::kDeploying;
+    } else {
+        if (!CanDeployOverdrive())
+            state = OverdriveMeter::kFilling;
+        else
+            state = OverdriveMeter::kReady;
+    }
+    float pulseDelay = 0.0f;
+    if (state == OverdriveMeter::kReady) {
+        pulseDelay = GetTrackPanelDir()->GetPulseAnimStartDelay(true);
+    }
+    meter->SetEnergy(f, state, TrackTypeToSym(mTrackType), pulseDelay, false);
+
+    int newCanDeploy = CanDeployOverdrive();
+    if (newCanDeploy != oldCanDeploy) {
+        if (mUser) {
+            Track *userTrack = mUser->GetTrack();
+            if (userTrack) {
+                userTrack->SetCanDeploy(CanDeployOverdrive());
+            }
+        }
+    }
+}
+
+void Player::Deploy() {
+    GetTrackPanel()->PlaySequence(
+        MakeString("rp_deployed_%s.cue", TrackTypeToSym(mTrackType).Str()), 0, 0, 0
+    );
+    BandTrack *track = GetBandTrack();
+    if (track) {
+        track->EnterCoda();
+    }
+    PopupHelp(deploy, false);
+    if (mTrackType == kTrackNone && !mIsInCoda) {
+        EnableFills(0.0f, false);
+    }
+    int i1 = 0, i2 = 0, i3 = 0;
+    unk278++;
+    GetMultiplier(true, i1, i2, i3);
+    mStats.DeployOverdrive(GetSongMs(), i1 * i3);
+    if (TheGame->mProperties.mInTrainer) {
+        Handle(deploy_msg.mData, false);
+    }
+}
+
+bool Player::DeployBandEnergyIfPossible(bool b) {
+    if (!b) {
+        if (TheGame->unkdc == -1.0f) {
+            return false;
+        }
+    }
+    if (!IsLocal()) {
+        FormatString fmt("Non-local player trying to deploy locally\n");
+        TheDebug.Notify(fmt.Str());
+        return false;
+    }
+    if (!unk2b0)
+        return false;
+    bool bandOK = false;
+    if (mBand) {
+        if (mBand->GetBand()) {
+            bandOK = true;
+        }
+    }
+    bool gameOver = false;
+    if (bandOK) {
+        if (mBand->MainPerformer()->mGameOver) {
+            gameOver = true;
+        }
+    }
+    bool finished = false;
+    if (!gameOver && !unk1e1) {
+        finished = true;
+    }
+    if (mEnabledState != kPlayerEnabled || finished) {
+        return false;
+    }
+    if (mDeployingBandEnergy) {
+        if (mBand->AnyoneSaveable()) {
+            return false;
+        }
+    }
+    if (mBandEnergy < mParams->mDeployThreshold) {
+        unk2b8 = true;
+        return false;
+    }
+    unk294 = LocalDeployBandEnergy();
+    unk2b4 += unk294;
+    static Message msg("send_deploy", DataNode(Symbol("send_deploy")), DataNode(0));
+    msg[0] = unk294;
+    msg[1] = 6;
+    HandleType(msg);
+    return true;
+}
+
+void Player::Hit() {
+    char slotStr[] = "p0_hit";
+    slotStr[1] = (char)(mUser->GetSlot() + 0x30);
+    static Message hit(Symbol(slotStr), DataNode(Symbol(slotStr)));
+    TheGamePanel->HandleType(hit.mData);
+    int mult = GetIndividualMultiplier();
+    if (mult > unk274 && unk274 == 1) {
+        mStats.BeginStreakMultiplier(GetSongMs(), mult);
+    }
+}
+
+void Player::DelayReturn(bool b) {
+    float pollMs = PollMs();
+    float ms = pollMs > 0.0f ? pollMs : 0.0f;
+    mEnableMs = ms;
+    if (b) {
+        mEnableMs += mParams->mMsToReturnFromBrink;
+    }
+    if (TheGame->unkdc != -1.0f) {
+        float rollbackEnd = TheGame->unkdc;
+        if (rollbackEnd < mEnableMs) {
+            mEnableMs = rollbackEnd;
+        }
+        EnableFills(mEnableMs, b);
+    }
+    int tick = (int)MsToTick(mEnableMs);
+    int phraseId = TheSongDB->GetCommonPhraseID(mTrackNum, tick);
+    if (phraseId <= -1)
+        return;
+    if (mTrackType == kTrackDrum)
+        return;
+    const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
+    int gemIdx = gemList->ClosestMarkerIdxAtOrAfterTick(tick) - 1;
+    int gemTick = -1;
+    if (gemIdx >= 0) {
+        gemTick = gemList->GetGem(gemIdx).mTick;
+    }
+    Extent extent;
+    TheSongDB->GetCommonPhraseExtent(mTrackNum, phraseId, extent);
+    if (gemTick >= extent.unk0) {
+        mUser->GetTrack()->OnMissPhrase(b);
+    }
+}
+
+void Player::FinalizeStats() {
+    mStats.mNotesHitFraction = GetNotesHitFraction(nullptr);
+    mStats.m0x14c = mStats.GetCurrentStreak();
+    mStats.m0x150 = mStats.mPersistentStreak;
+    mStats.mEndGameScore = CodaScore();
+    mStats.mEndGameCrowdLevel = mCrowd->GetValue();
+    mStats.mEndGameOverdrive = mBandEnergy;
+    mStats.mOverdrivePhraseCount = TheSongDB->GetNumOverdrivePhrases(mTrackNum);
+    mStats.mUnisonPhraseCount = TheSongDB->GetNumUnisonPhrases(mTrackNum);
+    int i1 = 0, i2 = 0, i3 = 0;
+    GetMultiplier(true, i1, i2, i3);
+    float songMs = GetSongMs();
+    mStats.EndStreakMultiplier(songMs, i1 * i3);
+    songMs = GetSongMs();
+    mStats.StopDeployingOverdrive(songMs, i1 * i3);
+    if (unk2bc > 0) {
+        mStats.mAverageMultiplier = (float)unk2b8 / (float)unk2bc;
+    }
+    mStats.EndHitStreak();
+    mStats.EndMissStreak();
+    bool noMiss = (mStats.mMissCount == 0);
+    bool perfectFraction = (mStats.mNotesHitFraction == 1.0f);
+    bool isExpert = (mUser->GetDifficulty() == kDifficultyExpert);
+    mStats.mFullCombo = noMiss && perfectFraction && isExpert;
+    mStats.SetFinalized(true);
+}
+
+void Player::HandleNewSection(const PracticeSection &section, int sectionIdx, int totalSections) {
+    if (TheGame->unkdc != -1.0f)
+        return;
+    if (mQuarantined)
+        return;
+    unk2c0 = sectionIdx;
+    if ((unsigned short)sectionIdx == mStats.mSections.size())
+        goto after_fill;
+    {
+        Stats::SectionInfo info;
+        unsigned short curSize = mStats.mSections.size();
+        if ((unsigned long)totalSections < curSize) {
+            // resize down
+            unsigned long newSize = totalSections;
+            mStats.mSections.insert(
+                mStats.mSections.begin() + newSize,
+                curSize - newSize,
+                info
+            );
+        } else {
+            // fill insert at end
+            mStats.mSections.insert(
+                mStats.mSections.end(),
+                (unsigned long)totalSections - curSize,
+                info
+            );
+        }
+    }
+after_fill:
+    mStats.SetSectionInfo(unk2c0, section.unk0, -1.0f, 0.0f);
+}
+
+void Player::UpdateSectionStats(float hitFraction, float percentComplete) {
+    if (TheGame->unkdc != -1.0f)
+        return;
+    if (mQuarantined)
+        return;
+    if (TheSongDB->mPracticeSections.size() == 0)
+        return;
+    if (unk2c0 < 0 || (unsigned int)unk2c0 >= TheSongDB->mPracticeSections.size())
+        return;
+    int sectionIdx = unk2c0;
+    Symbol sectionSym = TheSongDB->mPracticeSections[sectionIdx].unk0;
+    mStats.SetSectionInfo(sectionIdx, sectionSym, hitFraction, percentComplete);
 }
 
 BandTrack *Player::GetBandTrack() const {
