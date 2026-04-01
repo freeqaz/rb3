@@ -104,6 +104,7 @@ Categories:
 - `-ipa file` = interprocedural analysis within a file
 - `-sdata 2 -sdata2 2` = small data area threshold (2 bytes)
 - No link-time optimization (unlike retail builds)
+- See [docs/cw-compiler-patterns.md](docs/cw-compiler-patterns.md) for detailed patterns affecting code generation (register allocation, bool materialization, pragma tricks, STL inlining, etc.)
 
 ## Git Actions
 
