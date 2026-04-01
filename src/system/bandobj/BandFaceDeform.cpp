@@ -50,21 +50,24 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
     static int totalLength;
     static float maxDelta;
 
-    float maxClamp = 2.0f;
+    int *const pTotalRuns = &totalRuns;
+    int *const pTotalLength = &totalLength;
+
     float minClamp = -2.0f;
+    float maxClamp = 2.0f;
 
-    unsigned short start = 0;
-    unsigned short end = 0;
+    int start = 0;
+    int end = 0;
 
-    while (end < pos.size()) {
+    while ((unsigned short)end < pos.size()) {
         // Skip leading zero-delta vertices
         int byteOff = start * 0xC;
-        while (start < pos.size()) {
+        while ((unsigned short)start < pos.size()) {
             const Vector3 &pv = pos[start];
             const Vector3 &bv = base[start];
             float deltax = pv.x - bv.x;
-            float deltay = pv.y - bv.y;
             float deltaz = pv.z - bv.z;
+            float deltay = pv.y - bv.y;
 
             float dx = (float)deltax;
             if (dx > maxClamp)
@@ -102,12 +105,12 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
         // Extend run while deltas are non-zero
         end = start + 1;
         int byteOff2 = end * 0xC;
-        while (end < pos.size()) {
+        while ((unsigned short)end < pos.size()) {
             const Vector3 &pv = pos[end];
             const Vector3 &bv = base[end];
             float deltax = pv.x - bv.x;
-            float deltay = pv.y - bv.y;
             float deltaz = pv.z - bv.z;
+            float deltay = pv.y - bv.y;
 
             float dx = (float)deltax;
             if (dx > maxClamp)
@@ -143,25 +146,25 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
         }
 
         if (start < pos.size()) {
-            unsigned short count = end - start;
+            int count = end - start;
             char *rec = (char *)MemResizeElem(
                 mData, mSize, (char *)mData + mSize, 0, count * 3 + 4, "BandFaceDeform.cpp"
             );
 
             *(unsigned short *)(rec + 0) = start;
-            unsigned short vi = start;
+            int vi = start;
             float md = maxDelta;
             *(unsigned short *)(rec + 2) = count;
             int off = start * 0xC;
-            unsigned short ctr = count;
             if ((int)start < (int)end) {
+                int ctr = count;
                 do {
                     const Vector3 &pv = pos[vi];
                     const Vector3 &bv = base[vi];
                     int recOff = (vi - start) * 3;
                     float deltax = pv.x - bv.x;
-                    float deltay = pv.y - bv.y;
                     float deltaz = pv.z - bv.z;
+                    float deltay = pv.y - bv.y;
 
                     float dx = (float)deltax;
                     if (dx > maxClamp)
@@ -187,25 +190,27 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
                     // Track max delta per component
                     const Vector3 &pv2 = pos[vi];
                     const Vector3 &bv2 = base[vi];
-                    float absx = std::fabs(pv2.x - bv2.x);
+                    float ddx = pv2.x - bv2.x;
+                    float ddz = pv2.z - bv2.z;
+                    float ddy = pv2.y - bv2.y;
+                    float absx = std::fabs(ddx);
                     if (md < absx) {
                         md = absx;
                         maxDelta = absx;
                     }
-                    float absy = std::fabs(pv2.y - bv2.y);
+                    float absy = std::fabs(ddy);
                     if (md < absy) {
                         md = absy;
                         maxDelta = absy;
                     }
-                    float absz = std::fabs(pv2.z - bv2.z);
+                    float absz = std::fabs(ddz);
                     if (md < absz) {
                         maxDelta = absz;
                     }
 
-                    vi++;
                     off += 0xC;
-                    ctr--;
-                } while (ctr != 0);
+                    vi++;
+                } while (--ctr);
             }
 
             unsigned short recCount = *(unsigned short *)(rec + 2);
@@ -216,8 +221,8 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
                 4.0f / (float)(recCount * 3 + 4)
             );
 
-            totalRuns++;
-            totalLength += count;
+            (*pTotalRuns)++;
+            *pTotalLength += count;
         }
 
         start = end;
@@ -229,8 +234,8 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
         "   is size %d total %d av runlength %g totalWaste %d md %g\n",
         sz,
         total,
-        (float)totalLength / (float)totalRuns,
-        totalRuns * 4,
+        (float)*pTotalLength / (float)*pTotalRuns,
+        *pTotalRuns * 4,
         maxDelta
     );
 }

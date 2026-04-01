@@ -378,7 +378,102 @@ void GemPlayer::SpuriousMiss(int i1, int i2, float f3, int i4) {
     }
 }
 
-void GemPlayer::Pass(int, float, int, bool) { MILO_WARN("pass"); }
+void GemPlayer::Pass(int track, float ms, int gem_id, bool cur_track) {
+    if (!mGemStatus->Get0x40(gem_id)) {
+        HandleFirstGemAfterRollback(gem_id);
+        if (gem_id == mGemStatus->GetSize() - 1) {
+            unk3e1 = 1;
+        }
+        if (cur_track) {
+            int gemTick = TheSongDB->GetGem(mTrackNum, gem_id).GetTick();
+            if (mIsInCoda) {
+                if (!mMatcher->InCodaFreestyle(gemTick, true) && IsLocal()) {
+                    ResetCodaPoints();
+                    mBand->DealWithCodaGem(this, gem_id, false, false);
+                }
+            }
+            if (IgnoreGemsAt(TheSongDB->GetGem(mTrackNum, gem_id).GetTick())) {
+                IgnoreGem(gem_id);
+                return;
+            }
+            if (InIgnorableFill(gemTick)) {
+                mTrack->Pass(gem_id);
+                IgnoreGem(gem_id);
+                return;
+            }
+            if (!mGemStatus->GetIgnored(gem_id)) {
+                if (mTrack) {
+                    mTrack->Pass(gem_id);
+                }
+                mGemStatus->mMisses++;
+                UpdateSectionStats();
+                const GameGem &gem = TheSongDB->GetGem(mTrackNum, gem_id);
+                mStatCollector.PassGem(ms, gem, gem_id);
+                if (gem.GetNoStrum()) {
+                    mStats.mHopoGemCount++;
+                }
+            }
+
+            GemStatus *status = mGemStatus;
+            int phraseFlags;
+            if (gem_id == -1) {
+                phraseFlags = 1;
+            } else {
+                phraseFlags = status->mGems[gem_id] & 0xE;
+            }
+
+            if (phraseFlags == 0) {
+                status->Set0x4(gem_id);
+                if (ShouldPenalizeGem(gem_id)) {
+                    Penalize(ms, gem_id, 0.0f);
+                } else {
+                    EndHitStreak();
+                    HandleCommonPhraseNote(0, gem_id);
+                }
+                BuildMissStreak(gem_id);
+                unk3bc++;
+            } else {
+                bool isPhraseStart = true;
+                if (gem_id != 0) {
+                    int prevPhrase = TheSongDB->GetPhraseID(mTrackNum, gem_id - 1);
+                    if (TheSongDB->GetPhraseID(mTrackNum, gem_id) == prevPhrase) {
+                        isPhraseStart = false;
+                    }
+                }
+                bool isPhraseEnd = true;
+                if (gem_id != TheSongDB->GetNumPhraseIDs(mTrackNum) - 1) {
+                    int nextPhrase = TheSongDB->GetPhraseID(mTrackNum, gem_id + 1);
+                    if (TheSongDB->GetPhraseID(mTrackNum, gem_id) == nextPhrase) {
+                        isPhraseEnd = false;
+                    }
+                }
+
+                if ((mGemStatus->Get0x2(gem_id) && isPhraseStart)
+                    || (isPhraseEnd && TheGame->mProperties.mAllowOverdrivePhrases)) {
+                    HandleCommonPhraseNote(0, gem_id);
+                }
+                mGemStatus->Set0x4(gem_id);
+            }
+
+            mStats.m0x08++;
+
+            bool skipPassMsg = false;
+            if (TheGame->mProperties.mInTrainer) {
+                if (mGemStatus->GetIgnored(gem_id)) {
+                    skipPassMsg = true;
+                }
+            }
+
+            if (!skipPassMsg) {
+                static Message passMsg("pass", 0);
+                passMsg[0] = gem_id;
+                Export(passMsg, false);
+            }
+
+            PassHook(track, ms, gem_id, cur_track);
+        }
+    }
+}
 
 void GemPlayer::Ignore(int i1, float ms, int gem_id, const UserGuid &u) {
     if (!mGemStatus->Get0x40(gem_id)) {
@@ -744,12 +839,14 @@ bool GemPlayer::DoneWithSong() const {
 }
 
 void GemPlayer::Poll(float ms, const SongPos &pos) {
-    if (mController->IsDisabled() && mController->unk25) {
-        mController->Disable(false);
-        mController->unk25 = false;
+    BeatMatchController *ctrl = mController;
+    if (ctrl->IsDisabled() && ctrl->unk25) {
+        ctrl->Disable(false);
+        ctrl->unk25 = false;
     }
     CheckFretReleases(ms);
     if (!mGameOver) {
+        bool hasHeld = false;
         static DataNode &force_guitar_fx = DataVariable("force_guitar_fx");
         static DataNode &force_keys_fx = DataVariable("force_keys_fx");
 
@@ -762,10 +859,8 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
         mMatcher->Poll(ms);
 
         if (unk348 && TheGame->mProperties.mEnableOverdrive) {
-            AddEnergy(
-                (pos.mTotalTick - mSongPos.mTotalTick) * TheScoring->mOverdriveConfig.whammyRate
-                / 480.0f
-            );
+            float tickDiff = pos.mTotalTick - mSongPos.mTotalTick;
+            AddEnergy(tickDiff * TheScoring->mOverdriveConfig.whammyRate / 480.0f);
         }
 
         if (mController->IsDisabled() && TheGame->AllowInput()
@@ -780,13 +875,16 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
         PollTrack();
 
         int tick = (int)pos.mTotalTick;
+        float beat;
+        float beatPhase;
         float tempo = 60000.0f / TheTempoMap->GetTempoBPM(tick);
 
         if (mGuitarFx && !TheGame->mProperties.mDisableGuitarFx) {
             SetGuitarFx();
 
-            float beat = TheSongDB->GetData()->GetBeatMap()->Beat(tick) * 0.5f;
-            float beatPhase = beat - (float)std::floor(beat);
+            beat = TheSongDB->GetData()->GetBeatMap()->Beat(tick);
+            beat *= 0.5f;
+            beatPhase = beat - (float)std::floor(beat);
 
             bool deploying = IsDeployingBandEnergy();
             bool soloFx = false;
@@ -810,7 +908,7 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
                 if (mFxPos >= 0) {
                     fxBank = mFxPos;
                 }
-                bool hasHeld = HasAnyActiveHeldNotes();
+                hasHeld = HasAnyActiveHeldNotes();
                 float whammyBar = mController->GetWhammyBar();
                 mGuitarFx->Poll(
                     fxBank, deploying, soloFx, tempo, beatPhase, whammyBar, hasHeld, unk33d
@@ -829,7 +927,7 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
                 unk3a8 = false;
             }
 
-            if (mTrackType == kTrackBass) {
+            if (mTrackType == kTrackGuitar) {
                 if (!unk3a4 && (deploying || soloFx)) {
                     unk3a4 = true;
                     mBeatMaster->GetAudio()->SetFX(mTrackNum, (FXCore)unk39c, true);
@@ -841,8 +939,9 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
         }
 
         if (mKeysFx && !TheGame->mProperties.mDisableKeysFx) {
-            float beat = TheSongDB->GetData()->GetBeatMap()->Beat(tick) * 0.5f;
-            float beatPhase = beat - (float)std::floor(beat);
+            beat = TheSongDB->GetData()->GetBeatMap()->Beat(tick);
+            beat *= 0.5f;
+            beatPhase = beat - (float)std::floor(beat);
 
             bool deploying = IsDeployingBandEnergy();
             bool soloFx = false;

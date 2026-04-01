@@ -688,8 +688,9 @@ void UILabel::FitText() {
             } else
                 fvec = 1.0f;
             float diff = mText->GetFont()->CellDiff();
-            Vector3 v98(xscale, 1.0f, fvec / diff);
-            Scale(v98, tf.m, tf.m);
+            Scale(tf.m.x, xscale, tf.m.x);
+            Scale(tf.m.y, 1.0f, tf.m.y);
+            Scale(tf.m.z, fvec / diff, tf.m.z);
             mText->SetLocalXfm(tf);
         }
     } else if (mFitType == kFitJust) {
@@ -700,39 +701,42 @@ void UILabel::FitText() {
         while (true) {
             if (size < 0.0f) { size = 0.0f; break; }
             mText->GetStringDimensions(sp14, sp10, lines, text, size);
-            if (mWidth == 0.0f || !(sp14 > mWidth)) {
-                if (mHeight == 0.0f || !(sp10 > mHeight))
-                    break;
+            if ((mWidth != 0.0f && sp14 > mWidth) || (mHeight != 0.0f && sp10 > mHeight)) {
+                size -= 0.2f;
+                continue;
             }
-            size -= 0.2f;
+            break;
         }
-        if (size != mText->Size()) {
-            mText->DeferUpdateText();
+        RndText *t = mText;
+        if (size != t->Size()) {
+            t->DeferUpdateText();
             float ratio = size / mTextSize;
             mText->SetSize(size);
             mText->SetAltSizeAndZOffset(mAltTextSize * ratio, mAltZOffset * ratio);
-            mText->ResolveUpdateText();
+            t->ResolveUpdateText();
         } else {
-            mText->SetText(text);
+            t->SetText(text);
         }
 
     } else if (mFitType == kFitEllipsis) {
         String ellipsis("...");
         String text(mText->RawText());
-        unsigned int textLen = text.length();
+        int textLen = text.length();
         std::vector<RndText::Line> lines;
         unsigned int truncPos = text.rfind(mPreserveTruncText.c_str());
         unsigned int truncLen = mPreserveTruncText.length();
         if (truncPos == textLen - truncLen) {
             ellipsis += mPreserveTruncText;
         }
-        unsigned int ellipsisLen = ellipsis.length();
+        int ellipsisLen = ellipsis.length();
         float w, h;
         mText->GetStringDimensions(w, h, lines, text.c_str(), mTextSize);
         if (mTextSize > 0.0f && mWidth > 0.0f && (w > mWidth || lines.size() > 1)) {
             text.insert(textLen, ellipsis);
             textLen = textLen + ellipsisLen;
-            for (;;) {
+            goto ell_check;
+ell_body:
+            {
                 unsigned int spacePos = text.find_last_of(' ');
                 if (spacePos == String::npos || spacePos * 10 < textLen * 9) {
                     textLen -= 1;
@@ -741,15 +745,22 @@ void UILabel::FitText() {
                     textLen = spacePos + ellipsisLen;
                     text.erase(textLen);
                 }
-                for (unsigned int i = 0, j = textLen - ellipsisLen; i < ellipsisLen; i++, j++) {
+                for (int j = textLen - ellipsisLen, i = 0; i < ellipsisLen; j++, i++) {
                     text[j] = ellipsis[i];
                 }
                 mText->GetStringDimensions(w, h, lines, text.c_str(), mTextSize);
-                if (textLen <= 1) break;
-                if (lines.size() > 1 || w >= mWidth) continue;
-                if (text[(textLen - 1) - ellipsisLen] == ' ' || text[(textLen - 1) - ellipsisLen] == '.' || text[(textLen - 1) - ellipsisLen] == ',') continue;
-                break;
             }
+ell_check:
+            if (textLen <= 1) goto ell_done;
+            if (lines.size() > 1) goto ell_body;
+            if (w >= mWidth) goto ell_body;
+            {
+                int lastCharIdx = (textLen - ellipsisLen) - 1;
+                if (text[lastCharIdx] == ' ') goto ell_body;
+                if (text[lastCharIdx] == '.') goto ell_body;
+                if (text[lastCharIdx] == ',') goto ell_body;
+            }
+ell_done:;
         }
         mText->SetText(text.c_str());
     }

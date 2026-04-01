@@ -68,22 +68,18 @@ void HDCache::Init() {
                     sha.Update(blockBuf, blockSize);
                 }
             }
-            ArkFile **readFiles = &mReadArkFiles[0];
-            ArkFile **writeFiles = &mWriteArkFiles[0];
-            if (readFiles[i] == NULL || readFiles[i]->Fail() ||
-                writeFiles[i] == NULL || writeFiles[i]->Fail()) {
-                ArkFile *rf = readFiles[i];
-                if (rf != NULL) {
-                    delete rf;
+            if (mReadArkFiles[i] == NULL || mReadArkFiles[i]->Fail() ||
+                mWriteArkFiles[i] == NULL || mWriteArkFiles[i]->Fail()) {
+                if (mReadArkFiles[i] != NULL) {
+                    delete mReadArkFiles[i];
                 }
-                readFiles[i] = NULL;
-                ArkFile *wf = writeFiles[i];
-                if (wf != NULL) {
-                    delete wf;
+                mReadArkFiles[i] = NULL;
+                if (mWriteArkFiles[i] != NULL) {
+                    delete mWriteArkFiles[i];
                 }
-                writeFiles[i] = NULL;
+                mWriteArkFiles[i] = NULL;
             }
-            if (readFiles[i] != NULL) {
+            if (mReadArkFiles[i] != NULL) {
                 int numDwords = ((TheArchive->GetArkfileNumBlocks(i) + 0x1F) / 32);
                 int *blockMem = new int[numDwords];
                 memcpy(blockMem, blockBuf, blockSize);
@@ -93,20 +89,21 @@ void HDCache::Init() {
                 mBlockState[i] = NULL;
             }
         }
-        bool hashValid = false;
+        char hash1[256];
+        char hash2[256];
         if (next) {
-            char hash1[256];
-            char hash2[256];
             memset(hash1, 0, 256);
             memset(hash2, 0, 256);
             sha.Final()->ReportHash(hash1, 0);
             header->Read(hash2, 0x100);
-            if (!header->Fail()) {
-                hashValid = memcmp(hash1, hash2, 256) == 0;
-            }
+            next = false;
+            if (!header->Fail())
+                next = memcmp(hash1, hash2, 256) == 0;
         }
-        bool skipHdcache = OptionBool("skip_hdcache", false);
-        if (!skipHdcache & hashValid) {
+        if (OptionBool("skip_hdcache", false)) {
+            next = false;
+        }
+        if (next) {
             unk64 = true;
             TheDebug << MakeString("Using the archive cache\n");
         } else {

@@ -1183,7 +1183,111 @@ bool CamShotFrame::HasTargets() const {
 }
 
 void CamShotFrame::BuildTransform(RndCam *cam, Transform &tf, bool b3) const {
+    CamShotFrame *me = const_cast<CamShotFrame *>(this);
+
+    RndTransformable *parent = mParent;
+
+    Vector3 targetPos;
+    GetCurrentTargetPosition(targetPos);
+
+    Vector2 screenPos;
+    cam->WorldToScreen(targetPos, screenPos);
+
+    screenPos.x = -((mScreenOffset.x + 1.0f) * 0.5f - screenPos.x);
+    screenPos.y = -((1.0f - mScreenOffset.y) * 0.5f - screenPos.y);
+
+    float filterDist;
+    if (mLastTargetPos.x == kHugeFloat) {
+        filterDist = 0.0f;
+    } else if (TheTaskMgr.DeltaSeconds() == 0.0f) {
+        filterDist = 1e-11f;
+    } else {
+        float dist = std::sqrt(screenPos.x * screenPos.x + screenPos.y * screenPos.y);
+        if (dist < 1.0f) {
+        } else {
+            dist = 1.0f;
+        }
+        filterDist = mCamShot->mFilter * dist;
+    }
+
+    ::Interp(mLastTargetPos, targetPos, filterDist, targetPos);
+    me->mLastTargetPos = targetPos;
+
     MILO_ASSERT(mLastTargetPos.x != kHugeFloat, 0x855);
+
+    if (mCamShot->mPath) {
+        float pathFrame = mCamShot->mPathFrame;
+        if (pathFrame < 0.0f) {
+            if (mCamShot->mDuration > 0.0f) {
+                pathFrame = mCamShot->GetFrame() / mCamShot->mDuration;
+            } else {
+                pathFrame = 0.0f;
+            }
+        }
+        RndTransAnim *path = mCamShot->mPath;
+        path->MakeTransform(pathFrame * path->EndFrame(), tf, true, 1.0f);
+        Transform tempXfm;
+        Multiply(mCamShot->mKeyframes[0].mWorldOffset.ToTransform(tempXfm), tf, tf);
+    } else {
+        mWorldOffset.ToTransform(tf);
+    }
+
+    if (parent) {
+        bool useLiveParent = false;
+        if (!mParentFirstFrame || mCamShot->unk120p4) {
+            useLiveParent = true;
+        }
+
+        if (useLiveParent) {
+            if (mCamShot->mFilter != 0.0f) {
+                const Transform &parentWorld = parent->WorldXfm();
+                Hmx::Quat parentQuat(parentWorld.m);
+                Hmx::Quat cachedQuat;
+                unk44.GetRot(cachedQuat);
+                ::Interp(cachedQuat, parentQuat, filterDist, cachedQuat);
+                me->unk44.SetRot(cachedQuat);
+                ::Interp(me->unk44.v, parentWorld.v, filterDist, me->unk44.v);
+            } else {
+                me->unk44.Set(parent->WorldXfm());
+            }
+        }
+
+        if (mUseParentNotation) {
+            Transform parentTf;
+            Multiply(tf, unk44.ToTransform(parentTf), tf);
+        } else {
+            tf.v.x += unk44.v.x;
+            tf.v.y += unk44.v.y;
+            tf.v.z += unk44.v.z;
+        }
+
+        if (mCamShot->mClampHeight > 0.0f && mTargets.size() == 1) {
+            RndTransformable *target = mTargets.front();
+            if (target) {
+                float clampZ = mCamShot->mClampHeight + target->WorldXfm().v.z;
+                if (clampZ > tf.v.z) {
+                    tf.v.z = clampZ;
+                }
+            }
+        }
+    }
+
+    if (b3) {
+        if (HasTargets()) {
+            tf.m.y.Set(
+                mLastTargetPos.x - tf.v.x,
+                mLastTargetPos.y - tf.v.y,
+                mLastTargetPos.z - tf.v.z
+            );
+            Normalize(tf.m, tf.m);
+        }
+        float length = Distance(tf.v, mLastTargetPos);
+        Vector3 screenOffsetVec;
+        screenOffsetVec.x = (-mScreenOffset.x * length) / cam->LocalProjectXfm().m.x.x;
+        screenOffsetVec.y = 0.0f;
+        screenOffsetVec.z = (mScreenOffset.y * length) / cam->LocalProjectXfm().m.z.y;
+        Multiply(screenOffsetVec, tf, tf.v);
+    }
 }
 
 DataNode CamShot::OnGetOccluded(DataArray *da) { return 0; }

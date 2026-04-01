@@ -107,6 +107,16 @@ public:
         return mask;
     }
 
+    bool Get0x2(int idx) {
+        int mask;
+        if (idx == -1)
+            mask = 0;
+        else {
+            mask = mGems[idx] & 0x2;
+        }
+        return mask;
+    }
+
     bool Get0xD(int idx) {
         int mask;
         if (idx == -1)
@@ -168,6 +178,12 @@ public:
     void Set0x2(int idx) {
         if (idx != -1) {
             mGems[idx] |= 2;
+        }
+    }
+
+    void Set0x4(int idx) {
+        if (idx != -1) {
+            mGems[idx] |= 4;
         }
     }
 

@@ -95,9 +95,10 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
         | (((int)(scaledG * 255.0f) & 0xFF) << 8)
         | ((int)(scaledR * 255.0f) & 0xFF);
 
-    bool shouldProcess = (packedColor > 5u)
-        || ((unsigned char)(packedColor >> 8) > 3u)
-        || ((unsigned char)(packedColor >> 16) > 7u);
+    unsigned char byteR = (unsigned char)packedColor;
+    unsigned char byteB = (unsigned char)(packedColor >> 16);
+    unsigned char byteG = (unsigned char)(packedColor >> 8);
+    bool shouldProcess = (byteR > 5u) || (byteG > 3u) || (byteB > 7u);
 
     if (shouldProcess && sl->unk286 && sl->Showing()) {
         if (GetGfxMode() == kOldGfx && sl->GetTarget() && sl->GetCastShadow()) {
@@ -110,17 +111,14 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
         sLights.push_back(entry);
 
         bool haveAdd = true;
-        if (!sHaveAdditionals && sl->mAdditionalObjects.mSize == 0) {
+        if (!sHaveAdditionals && sl->mAdditionalObjects.mSize <= 0) {
             haveAdd = false;
         }
         sHaveAdditionals = haveAdd;
 
         bool haveFlares = true;
         if (!sHaveFlares) {
-            bool hasFlare = false;
-            if (sl->mFlareEnabled && sl->mFlare) {
-                hasFlare = true;
-            }
+            bool hasFlare = sl->mFlareEnabled && sl->mFlare;
             if (!hasFlare) {
                 haveFlares = false;
             }
@@ -142,9 +140,11 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
 
     RndMesh *lightCanMesh = sl->mLightCanMesh;
     if (lightCanMesh && !sl->mLightCanSort) {
-        bool visible = false;
-        if (lightCanMesh->Showing()) {
-            MILO_ASSERT(lightCanMesh->Showing(), 0xB9);
+        bool visible;
+        if (!lightCanMesh->Showing()) {
+            visible = false;
+        } else {
+            MILO_ASSERT(lightCanMesh, 0xB9);
             Sphere s = lightCanMesh->GetSphere();
             if (s.GetRadius() > 0.0f) {
                 Multiply(s, sl->mLightCanXfm, s);

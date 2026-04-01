@@ -997,37 +997,40 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
         return;
 
     float dragFactor;
-    float oneOverThirty = 1.0f / 30.0f;
+    float one;
     if (mDrag > 0.0f) {
-        dragFactor = std::pow(1.0f - mDrag, frameSpan * oneOverThirty);
+        one = 1.0f;
+        dragFactor = std::pow(one - mDrag, frameSpan * (1.0f / 30.0f));
     } else {
-        dragFactor = 1.0f;
+        one = 1.0f;
+        dragFactor = one;
     }
 
     float rpmDragFactor;
-    if (mRotate && mRPMDrag > 0.0f) {
-        rpmDragFactor = std::pow(1.0f - mRPMDrag, frameSpan * oneOverThirty);
+    bool doRpmDrag = (mRotate && mRPMDrag > 0.0f);
+    if (doRpmDrag) {
+        rpmDragFactor = std::pow(one - mRPMDrag, frameSpan * (1.0f / 30.0f));
     } else {
-        rpmDragFactor = 1.0f;
+        rpmDragFactor = one;
     }
 
     float forceY_dt = mForceDir.y * frameSpan;
-    bool isBubble = mBubble;
     float forceX_dt = mForceDir.x * frameSpan;
     float forceZ_dt = mForceDir.z * frameSpan;
 
     float relForceRow2 =
-        mRelativeXfm.m.z.y * forceY_dt + mRelativeXfm.m.z.x * forceX_dt
+        mRelativeXfm.m.z.x * forceX_dt + mRelativeXfm.m.z.y * forceY_dt
         + mRelativeXfm.m.z.z * forceZ_dt;
-    bool isRotate = mRotate;
     float relForceRow1 =
-        mRelativeXfm.m.y.y * forceY_dt + mRelativeXfm.m.y.x * forceX_dt
+        mRelativeXfm.m.y.x * forceX_dt + mRelativeXfm.m.y.y * forceY_dt
         + mRelativeXfm.m.y.z * forceZ_dt;
     bool bounce = (mBounce != NULL);
+    bool isBubble = mBubble;
     bool isFancy = (mType == kFancy);
     float relForceRow0 =
-        mRelativeXfm.m.x.y * forceY_dt + mRelativeXfm.m.x.x * forceX_dt
+        mRelativeXfm.m.x.x * forceX_dt + mRelativeXfm.m.x.y * forceY_dt
         + mRelativeXfm.m.x.z * forceZ_dt;
+    bool isRotate = mRotate;
 
     Plane bouncePlane;
     if (bounce) {
@@ -1036,23 +1039,18 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
         bouncePlane.a = bxf2.m.z.x;
         bouncePlane.b = bxf2.m.z.y;
         bouncePlane.c = bxf2.m.z.z;
-        float dot = bouncePlane.a * bxf.v.x + bouncePlane.c * bxf.v.z + bouncePlane.b * bxf.v.y;
+        float dot = bouncePlane.a * bxf.v.x + bouncePlane.b * bxf.v.y + bouncePlane.c * bxf.v.z;
         bouncePlane.d = -dot;
     }
 
+    float sixFrameSpan = 6.0f * frameSpan;
     RndParticle *p = mActiveParticles;
+    float halfPi = 1.5707963705062866f;
 
-    if (p != NULL) {
-        float halfPi = 1.5707963705062866f;
-        float two = 2.0f;
-        float sixFrameSpan = 6.0f * frameSpan;
-
-        do {
-            bool dead;
+    while (p != NULL) {
+            bool dead = false;
             if (dt >= p->deathFrame || dt < p->birthFrame) {
                 dead = true;
-            } else {
-                dead = false;
             }
 
             if (dead) {
@@ -1063,27 +1061,33 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
                 p->pos.z += p->vel.z * frameSpan;
 
                 if (bounce) {
-                    float dist = bouncePlane.b * p->pos.y
-                        + bouncePlane.a * p->pos.x
+                    float dist = bouncePlane.a * p->pos.x
+                        + bouncePlane.b * p->pos.y
                         + bouncePlane.c * p->pos.z + bouncePlane.d;
                     if (dist < 0.0f) {
-                        float velDotN =
-                            p->vel.y * bouncePlane.b + p->vel.x * bouncePlane.a + p->vel.z * bouncePlane.c;
+                        float vy = p->vel.y;
+                        float vx = p->vel.x;
+                        float velDotN = vy * bouncePlane.b + vx * bouncePlane.a;
+                        float vz = p->vel.z;
+                        velDotN += bouncePlane.c * vz;
                         if (velDotN < 0.0f) {
-                            float reflect = two * velDotN;
+                            float reflect = 2.0f * velDotN;
                             float rx = bouncePlane.a * reflect;
                             float ry = bouncePlane.b * reflect;
                             float rz = bouncePlane.c * reflect;
-                            p->vel.x -= rx;
-                            p->vel.y -= ry;
-                            p->vel.z -= rz;
+                            p->vel.x = vx - rx;
+                            p->vel.y = vy - ry;
+                            p->vel.z = vz - rz;
                         }
                     }
                 }
 
-                p->vel.x += relForceRow0;
-                p->vel.z += relForceRow2;
-                p->vel.y += relForceRow1;
+                float vfx = p->vel.x;
+                float vfz = p->vel.z;
+                float vfy = p->vel.y;
+                p->vel.x = vfx + relForceRow0;
+                p->vel.z = vfz + relForceRow2;
+                p->vel.y = vfy + relForceRow1;
 
                 if (isFancy) {
                     p->vel.x *= dragFactor;
@@ -1111,14 +1115,14 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
                     float cr, cg, cb, ca;
                     if (dt < fp->midcolFrame) {
                         float t = (dt - p->birthFrame) * p->vel.w;
-                        colorScale = (1.0f - t) * (sixFrameSpan * t);
+                        colorScale = (one - t) * (sixFrameSpan * t);
                         ca = fp->midcolVel.alpha * colorScale;
                         cb = fp->midcolVel.blue * colorScale;
                         cg = fp->midcolVel.green * colorScale;
                         cr = fp->midcolVel.red * colorScale;
                     } else {
                         float t = (dt - fp->midcolFrame) * fp->bubbleDir.w;
-                        colorScale = (1.0f - t) * (sixFrameSpan * t);
+                        colorScale = (one - t) * (sixFrameSpan * t);
                         ca = p->colVel.alpha * colorScale;
                         cb = p->colVel.blue * colorScale;
                         cg = p->colVel.green * colorScale;
@@ -1130,23 +1134,23 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
                     float newB = p->col.blue + cb;
                     float newA = p->col.alpha + ca;
 
-                    if (newA > 1.0f) {
-                        newA = 1.0f;
+                    if (newA > one) {
+                        newA = one;
                     } else if (newA < 0.0f) {
                         newA = 0.0f;
                     }
-                    if (newB > 1.0f) {
-                        newB = 1.0f;
+                    if (newB > one) {
+                        newB = one;
                     } else if (newB < 0.0f) {
                         newB = 0.0f;
                     }
-                    if (newG > 1.0f) {
-                        newG = 1.0f;
+                    if (newG > one) {
+                        newG = one;
                     } else if (newG < 0.0f) {
                         newG = 0.0f;
                     }
-                    if (newR > 1.0f) {
-                        newR = 1.0f;
+                    if (newR > one) {
+                        newR = one;
                     } else if (newR < 0.0f) {
                         newR = 0.0f;
                     }
@@ -1156,39 +1160,39 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
                     p->col.blue = newB;
                     p->col.alpha = newA;
 
-                    float sizeVelRate, timeSince, invDuration;
                     if (dt < fp->growFrame) {
-                        invDuration = fp->beginGrow;
-                        timeSince = dt - p->birthFrame;
-                        sizeVelRate = fp->growVel;
+                        float st = fp->beginGrow * (dt - p->birthFrame);
+                        p->size += fp->growVel * ((one - st) * (sixFrameSpan * st));
                     } else if (dt < fp->shrinkFrame) {
-                        invDuration = fp->midGrow;
-                        timeSince = dt - fp->growFrame;
-                        sizeVelRate = p->sizeVel;
+                        float st = fp->midGrow * (dt - fp->growFrame);
+                        p->size += p->sizeVel * ((one - st) * (sixFrameSpan * st));
                     } else {
-                        timeSince = dt - fp->shrinkFrame;
-                        invDuration = fp->endGrow;
-                        sizeVelRate = fp->shrinkVel;
+                        float st = fp->endGrow * (dt - fp->shrinkFrame);
+                        p->size += fp->shrinkVel * ((one - st) * (sixFrameSpan * st));
                     }
-                    float st = timeSince * invDuration;
-                    p->size +=
-                        sizeVelRate * ((1.0f - st) * (sixFrameSpan * st));
                 } else {
+                    float dr = p->colVel.red;
+                    float dg = p->colVel.green;
+                    float newR = p->col.red;
                     float t = (dt - p->birthFrame) * p->pos.w;
-                    float scale = (1.0f - t) * (sixFrameSpan * t);
-                    float dr = p->colVel.red * scale;
-                    float dg = p->colVel.green * scale;
-                    float db = p->colVel.blue * scale;
-                    float da = p->colVel.alpha * scale;
-                    p->col.red += dr;
-                    p->col.green += dg;
-                    p->col.blue += db;
-                    p->col.alpha += da;
+                    float db = p->colVel.blue;
+                    float da = p->colVel.alpha;
+                    float newA = p->col.alpha;
+                    float scale = (one - t) * (sixFrameSpan * t);
+                    float newB = p->col.blue;
+                    float newG = p->col.green;
+                    dr *= scale;
+                    dg *= scale;
+                    db *= scale;
+                    p->col.red = newR + dr;
+                    p->col.green = newG + dg;
+                    da *= scale;
+                    p->col.blue = newB + db;
+                    p->col.alpha = newA + da;
                     p->size += p->sizeVel * scale;
                 }
                 p = p->next;
             }
-        } while (p != NULL);
     }
 }
 

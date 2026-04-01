@@ -89,8 +89,9 @@ bool WiiMat::Select(bool hasAOCalc) {
     START_AUTO_TIMER("mat_select");
     Reset();
     RndEnviron *env = RndEnviron::sCurrent;
-    int numLightChannels = 0;
     RndCam *cam = RndCam::sCurrent;
+    GXColor zeroCol = { 0, 0, 0, 0 };
+    int numLightChannels = 0;
 #ifdef VERSION_SZBE69_B8
     if (TheLoadMgr.EditMode()) {
         GXSetCullMode(GX_CULL_NONE);
@@ -117,21 +118,20 @@ bool WiiMat::Select(bool hasAOCalc) {
     if (!mUseEnviron && !mPreLit) {
         numLightChannels = 1;
         GXSetNumChans(1);
-        GXSetChanCtrl(GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
-        GXSetChanCtrl(GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+        GXSetChanCtrl(GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+        GXSetChanCtrl(GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
     } else if (env != NULL) {
         WiiEnviron *wiiEnv = (WiiEnviron *)env;
-        u16 lightIds = wiiEnv->unk_0x19E;
         bool allDirectional = wiiEnv->unk_0x19C == 0;
+        int lightIds = wiiEnv->unk_0x19E;
         if (mPreLit) {
             numLightChannels = 2;
             GXSetNumChans(2);
-            GXSetChanCtrl(GX_COLOR0, (GXBool)mUseEnviron, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
-            GXColor zeroCol = { 0, 0, 0, 0 };
+            GXSetChanCtrl(GX_COLOR0, (GXBool)mUseEnviron, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
             GXSetChanAmbColor(GX_COLOR1A1, zeroCol);
-            GXSetChanCtrl(GX_COLOR1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
-            GXSetChanCtrl(GX_ALPHA0, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
-            GXSetChanCtrl(GX_ALPHA1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+            GXSetChanCtrl(GX_COLOR1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+            GXSetChanCtrl(GX_ALPHA0, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+            GXSetChanCtrl(GX_ALPHA1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
         } else {
             if (gRecoveringThisFrame) {
                 lightIds = 0;
@@ -143,27 +143,19 @@ bool WiiMat::Select(bool hasAOCalc) {
             if (hasAOCalc) {
                 numLightChannels = 2;
                 GXSetNumChans(2);
-                GXSetChanCtrl(GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+                GXSetChanCtrl(GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
                 if (mUseEnviron) {
-                    GXAttnFn attnFn = GX_AF_SPOT;
-                    if (allDirectional) {
-                        attnFn = GX_AF_SPEC;
-                    }
-                    GXSetChanCtrl(GX_COLOR1, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)lightIds, GX_DF_CLAMP, attnFn);
+                    GXSetChanCtrl(GX_COLOR1, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)lightIds, GX_DF_CLAMP, allDirectional ? GX_AF_SPOT : GX_AF_NONE);
                 } else {
-                    GXSetChanCtrl(GX_COLOR1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_SPOT);
+                    GXSetChanCtrl(GX_COLOR1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
                 }
-                GXSetChanCtrl(GX_ALPHA1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+                GXSetChanCtrl(GX_ALPHA1, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
             } else {
                 numLightChannels = 1;
                 GXSetNumChans(1);
-                GXAttnFn attnFn = GX_AF_SPOT;
-                if (allDirectional) {
-                    attnFn = GX_AF_SPEC;
-                }
-                GXSetChanCtrl(GX_COLOR0, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)lightIds, GX_DF_CLAMP, attnFn);
-                GXSetChanCtrl(GX_ALPHA0, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
-                GXSetChanCtrl(GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_SPOT);
+                GXSetChanCtrl(GX_COLOR0, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)lightIds, GX_DF_CLAMP, allDirectional ? GX_AF_SPOT : GX_AF_NONE);
+                GXSetChanCtrl(GX_ALPHA0, 0, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+                GXSetChanCtrl(GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
             }
         }
     }
@@ -172,7 +164,7 @@ bool WiiMat::Select(bool hasAOCalc) {
     Blend b = mBlend;
     SetFrameBlend(b);
     bool doFog = false;
-    if (mFog && (b > kBlendSubtract || !((1 << b) & 0x35))) {
+    if (mFog && ((unsigned int)b > (unsigned int)kBlendSubtract || !((1 << b) & 0x35))) {
         doFog = true;
     }
     SetFog(doFog, env, cam);
@@ -209,8 +201,8 @@ bool WiiMat::Select(bool hasAOCalc) {
         }
         if (curFrame - firstFrame < 1) {
             GXSetNumChans(2);
-            GXSetChanCtrl(GX_COLOR0A0, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)0xFF, GX_DF_CLAMP, GX_AF_SPEC);
-            GXSetChanCtrl(GX_COLOR1A1, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)0xFF, GX_DF_CLAMP, GX_AF_SPEC);
+            GXSetChanCtrl(GX_COLOR0A0, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)0xFF, GX_DF_CLAMP, GX_AF_SPOT);
+            GXSetChanCtrl(GX_COLOR1A1, 1, GX_SRC_REG, GX_SRC_REG, (GXLightID)0xFF, GX_DF_CLAMP, GX_AF_SPOT);
         } else {
             firstFrame = -1;
             gbDbgRequestForcedHang = false;
