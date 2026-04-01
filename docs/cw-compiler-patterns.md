@@ -189,3 +189,48 @@ Wrapping a temporary in a nested `{ }` scope forces its destructor to run at the
 `vec.Set(x, y, z)` avoids a temporary on the stack that constructor assignment `vec = Vector3(x, y, z)` creates.
 
 **Example:** In `CharIKFingers`, `.Set(0.3f, -6.0f, 0.4f)` instead of `= Vector3(...)` fixed the stack layout.
+
+### Enum Return Type Prevents Arithmetic Bool Optimization
+When two code paths return consecutive integers (e.g., 3 and 4), CW with `-O4,p` applies `base + !!(bool)` arithmetic (`neg/or/srwi/addi`). Returning a proper enum type instead of `int` disables this optimization, generating branches instead.
+
+**Example:** In `Tour::GetMode`, changing return type from `int` to `TourMode` enum with named constants (`kMetaTour_KnownRemote=3`, `kMetaTour_BrowsingRemote=4`) generated `cmpwi/li/beq/li` branches instead of `3 + !!IsLocal()` arithmetic.
+
+### std::max with Literal First Arg Creates Anonymous Static
+`std::max(0.0f, expr)` with the literal as the first `const float&` argument causes CW to allocate an anonymous static for the literal and generate a pointer-select pattern (compare, then load via pointer to either the static or a stack spill).
+
+**Example:** In `Player::SubtractEnergy`, `SetEnergy(std::max(0.0f, mBandEnergy - f))` generated the correct stack-spill + pointer-select pattern with full stack frame, while a ternary `(x > 0 ? x : 0)` generated different codegen.
+
+### Truthiness Test vs Explicit Comparison Flips fcmpu Operand Order
+`if (floatVar)` and `if (floatVar != 0.0f)` generate `fcmpu` with different operand orderings. The truthiness form puts the variable first; the explicit comparison puts zero first.
+
+**Example:** In `Intersect(Ray)`, `if (dot)` generated `fcmpu cr0, f9, f0` while `if (dot != 0.0f)` generated `fcmpu cr0, f0, f9`.
+
+### Removing Explicit Copy Constructor Enables Register-Return ABI
+If a small struct (≤8 bytes) has a user-defined copy constructor, CW uses the hidden-pointer ABI (r3=hidden ptr, r4=this). Removing the redundant explicit copy constructor lets CW use small-struct register-return instead.
+
+**Example:** Removing `Vector2(const Vector2&)` from `Vec.h` fixed `CamShotFrame::MaxAngularOffset` and unblocked `Spotlight::NGRadii` — both needed register-return ABI for `Vector2`.
+
+### Small Constant-Bound Loops Are Fully Unrolled at -O4,p
+`for (int i = 0; i < N; i++)` where N is a small compile-time constant (≤6-8) gets fully unrolled by CW `-O4,p`, generating N copies of the loop body with no branch.
+
+**Example:** In `ChordbookPanel::ChordComplete`, `for (int i = 0; i < 6; i++)` with a bit-check body was unrolled to 6 individual `andi./beq` sequences (63 instructions total).
+
+### != vs < for Loop Comparison Changes Branch Pattern
+`i != count` generates `beq` (via `add.` setting CR0), while `i < count` generates `cmplwi/ble`. For deque/vector iteration, `!=` often matches the target better.
+
+**Example:** In `VocalTrack::HitTambourineGem`, `i != count` generated the correct empty-loop `beq` check, while `i < count` produced extra `cmplwi r0, 0x0; ble`.
+
+### (int) Cast for Signed Arithmetic Shift
+`(int)unsignedVal >> shift` generates `sraw` (sign-extending arithmetic right shift), while `unsignedVal >> shift` generates `srw` (logical zero-fill shift). Match whichever the target uses.
+
+**Example:** In `DecodeDxtColor`, `((int)rowPtr[4] >> shift)` generated `sraw` matching the target's DXT color index extraction.
+
+### STL __find 4-Wide Unrolled Search with CTR Loop
+CW's STL `__find` for random-access iterators uses a 4-wide trip count: `(int)(last - first) >> 2` with `for (; count > 0; --count)` generating `srawi.` → `mtctr` → `bdnz` (hardware CTR loop). To match, manually write the unrolled search pattern with bit-shift trip count.
+
+**Example:** In `SingerStats::SetPartPercentage`, manual 4-wide unrolled search with `goto done` on match generated the exact `mtctr`/`bdnz` pattern from CW's `__find` specialization.
+
+### Pre-Loading Member Before Loop for Register Hoisting
+Caching a member access in a local variable before a loop forces CW to hoist the load before the loop entry, matching patterns where the target pre-loads a value into a callee-saved register.
+
+**Example:** In `Locale::FindDataIndex`, `const char *sStr = s.mStr` before the `while` loop caused CW to hoist the load before entering, fixing r9/r10/r11 register swap mismatches (91% → 100%).
