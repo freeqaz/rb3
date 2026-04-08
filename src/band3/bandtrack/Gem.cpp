@@ -145,8 +145,10 @@ void Gem::AddInstance(Symbol s1, int i2) {
             s1bc = MakeString("%s_arrhythmic", s1bc.mStr);
         }
 
-        if (mGemManager->GetWidgetName(s1b8, i2, s1bc)
-            && mGemManager->GetWidgetName(s1b8, i2, s1bc)) {
+        bool found = mGemManager->GetWidgetName(s1b8, i2, s1bc);
+        if (!found)
+            found = mGemManager->GetWidgetName(s1b8, i2, s1);
+        if (found) {
             if (mGameGem.IsRealGuitar()) {
                 int i6 = mFretPos;
                 if (cfg.IsLefty())
@@ -193,9 +195,9 @@ void Gem::AddInstance(Symbol s1, int i2) {
                     v164.x = -v164.x;
                 }
                 Multiply(v164, tfc8, tfc8.v);
-                int i1 = mGemManager->GetSlotIntData(i2, is_white);
+                bool i1 = mGemManager->GetSlotIntData(i2, is_white);
                 String str170(1, mKeyFingerNumber + 'A');
-                wcc->AddTextInstance(tfc8, str170, i1 == 0);
+                wcc->AddTextInstance(tfc8, str170, !i1);
                 mWidgets.insert(wcc);
             }
         }

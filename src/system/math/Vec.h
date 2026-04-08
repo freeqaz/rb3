@@ -216,7 +216,9 @@ public:
     u16 x, y, z, w;
 };
 
-void Scale(const Vector3 &, const Vector3 &, Vector3 &);
+inline void Scale(const Vector3 &v1, const Vector3 &v2, Vector3 &dst) {
+    dst.Set(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
+}
 
 inline void Scale(const Vector3 &v1, float f, Vector3 &dst) {
     dst.Set(v1.x * f, v1.y * f, v1.z * f);
@@ -434,7 +436,9 @@ inline void Interp(const Vector3 &v1, const Vector3 &v2, float f, Vector3 &dst) 
     } else if (f == 1.0f) {
         dst = v2;
     } else {
-        dst.Set(Interp(v1.x, v2.x, f), Interp(v1.y, v2.y, f), Interp(v1.z, v2.z, f));
+        dst.z = f * (v2.z - v1.z) + v1.z;
+        dst.y = f * (v2.y - v1.y) + v1.y;
+        dst.x = f * (v2.x - v1.x) + v1.x;
     }
 }
 

@@ -78,11 +78,9 @@ float BeatMap::BeatToTick(float f1) const {
             }
         }
 
-        const BeatInfo &r30 = mInfos[i2];
-        const BeatInfo &r31 = mInfos[i2 + 1];
         int k1 = mInfos[i2].mTick;
-        return static_cast<float>(f1 - i2) * static_cast<float>(r31.mTick - r30.mTick)
-            + k1;
+        int k2 = mInfos[i2 + 1].mTick;
+        return (f1 - static_cast<float>(i2)) * static_cast<float>(k2 - k1) + k1;
     }
 }
 

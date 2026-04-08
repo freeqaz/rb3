@@ -376,9 +376,9 @@ inline void Multiply(const Vector3 &v, const Transform &t, Vector3 &out) {
     typedef Hmx::Matrix3 Matrix3;
     ASM_BLOCK(
         psq_l o1, 0x24(_m), 0, 0
+        psq_l o2, 0x2c(_m), 1, 0
         psq_l i2, Vector3.y(_v), 0, 0
         psq_l m1, Matrix3.z.x(_m), 0, 0
-        psq_l o2, 0x2c(_m), 1, 0
         psq_l m2, Matrix3.z.z(_m), 1, 0
         ps_madds1 o1, m1, i2, o1
         ps_madds1 o2, m2, i2, o2
