@@ -2,6 +2,7 @@
 #include "rndobj/MultiMesh.h"
 #include "math/Rand.h"
 #include "utl/Symbols.h"
+#include <math.h>
 
 INIT_REVS(RndPartLauncher)
 
@@ -53,8 +54,10 @@ void RndPartLauncher::Poll() {
             float random = RandomFloat(mEmitRate.x, mEmitRate.y);
             mEmitCount = delta * random * 30.0f + mEmitCount;
             if (mEmitCount >= 1.0f) {
+                double intpart;
                 int parts = mNumParts;
-                // something here with modf
+                mEmitCount = (float)modf((double)mEmitCount, &intpart);
+                mNumParts = (int)(float)intpart;
                 LaunchParticles();
                 mNumParts = parts;
             }

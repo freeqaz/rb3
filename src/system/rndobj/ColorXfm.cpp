@@ -75,18 +75,11 @@ void RndColorXfm::AdjustSaturation() {
     }
     float f2 = (1.0f - sat) * 0.5f;
     for (int i = 0; i < 3; i++) {
-        tf68.m[i][i] = sat + 1.0f;
+        tf68.m[i][i] = sat;
         tf68.m[i][ModChan(i + 1)] = f2;
         tf68.m[i][ModChan(i + 2)] = f2;
     }
     Multiply(mColorXfm, tf68, mColorXfm);
-
-    //   fVar1 = *(this + 4) / 100.0;
-    //   if (fVar1 <= 0.0) {
-    //     fVar1 = -fVar1 * -0.6666666;
-    //   }
-    //   iVar6 = 0;
-    //   fVar2 = (1.0 - (fVar1 + 1.0)) * 0.5;
 }
 
 void RndColorXfm::AdjustLightness() {
