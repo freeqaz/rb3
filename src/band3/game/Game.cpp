@@ -1285,11 +1285,11 @@ void Game::UpdatePausedState(bool allowSfx, bool doRollback) {
                     float rollbackTarget;
                     if (mProperties.mInTrainer && TheTrainerPanel) {
                         float candidate = ms - 1000.0f;
-                        rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+                        rollbackTarget = (0.0f < candidate) ? candidate : 0.0f;
                         mLastPollMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
                     } else {
                         float candidate = ms - 2000.0f;
-                        rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+                        rollbackTarget = (0.0f < candidate) ? candidate : 0.0f;
                     }
                     Rollback(ms, rollbackTarget);
                 } else {
@@ -1307,12 +1307,13 @@ void Game::UpdatePausedState(bool allowSfx, bool doRollback) {
             SetTimeOffset();
         }
         if (wantPause) {
-            TheGamePanel->Handle(world_pause_msg, true);
+            TheGamePanel->Export(world_pause_msg, true);
         } else {
-            TheGamePanel->Handle(world_unpause_msg, true);
+            TheGamePanel->Export(world_unpause_msg, true);
         }
         if (!wantPause) {
-            FileDiscSpinUp();
+            while (!FileDiscSpinUp())
+                ;
         }
         mIsPaused = wantPause;
     }

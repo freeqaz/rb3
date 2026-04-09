@@ -606,7 +606,7 @@ void DirRecursePattern(const char *path, void (*cb)(const char *, const char *),
     RecursePatternInternal(path, cb, recurse, true);
 }
 
-void FileDiscSpinUp() { TheBlockMgr.SpinUp(); }
+bool FileDiscSpinUp() { return TheBlockMgr.SpinUp(); }
 
 // the weird __rs in the debug symbols here, is for a FileStat&
 // so BinStream >> FileStat

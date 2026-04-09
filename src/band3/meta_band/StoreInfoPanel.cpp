@@ -92,13 +92,15 @@ void StoreInfoPanel::FetchRecommendations() {
         BandStoreOffer *offer = dynamic_cast<BandStoreOffer *>(mOffer.Ptr());
         MILO_ASSERT(offer, 0x9C);
         String str20;
-        if (!offer->Exists()) {
+        if (offer->Exists()) {
             str20 = offer->mPackedData->GetOfferId();
-            String path;
-            GetRecommendationIndexPath(str20.c_str(), path);
-            mLoader = new DataNetLoader(path);
-        } else
+        } else {
             PushRecommendationFailure();
+            return;
+        }
+        String path;
+        GetRecommendationIndexPath(str20.c_str(), path);
+        mLoader = new DataNetLoader(path);
     }
 }
 

@@ -633,8 +633,8 @@ void GemManager::SetBonusGems(bool gems, const PlayerState &state) {
 void GemManager::SetInCoda(bool coda) { mInCoda = coda; }
 
 bool GemManager::OnMissPhrase(int i1) {
-    bool ret = true;
     int tracknum = mTrackConfig.TrackNum();
+    bool ret = true;
     Extent ext18(0, 0);
     if (TheSongDB->GetCommonPhraseExtent(tracknum, i1, ext18)) {
         int i2 = MsToTickInt(TheTaskMgr.Seconds(TaskMgr::kRealTime) * 1000.0f);

@@ -92,7 +92,7 @@ int FileDelete(const char *);
 int FileWrite(int iFd, void *iBuff, unsigned int iLen);
 int FileMkDir(const char * = 0);
 
-void FileDiscSpinUp();
+bool FileDiscSpinUp();
 void FileNormalizePath(char *);
 
 bool FileMatch(const char *, const char *);
