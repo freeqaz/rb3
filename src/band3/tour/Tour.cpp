@@ -138,8 +138,10 @@ void Tour::ConfigureTourDescData(DataArray *arr) {
             delete pTourDesc;
         } else {
             std::map<Symbol, TourDesc *>::iterator it = m_mapTourDesc.lower_bound(name);
-            if (it == m_mapTourDesc.end() || name < it->first) {
-                m_mapTourDesc.insert(it, std::make_pair(name, pTourDesc));
+            bool canInsert = it == m_mapTourDesc.end() || name < it->first;
+            if (canInsert) {
+                it = m_mapTourDesc.insert(it, std::map<Symbol, TourDesc *>::value_type(name, (TourDesc *)0));
+                it->second = pTourDesc;
             }
         }
     }

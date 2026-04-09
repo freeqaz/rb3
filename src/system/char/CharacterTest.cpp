@@ -68,14 +68,12 @@ void CharacterTest::Draw() {
 
 void CharacterTest::Poll() {
     if (Clips() && mClip1) {
-        Hmx::Object *tmp = gClick;
         if (!gClick) {
             ObjectDir *clickdir = DirLoader::LoadObjects(
                 FilePath(MakeString("%s/char/chartest.milo", FileSystemRoot())), 0, 0
             );
             gClick = clickdir->Find<Hmx::Object>("click_hi.cue", true);
         }
-        gClick = tmp;
         float beat = TheTaskMgr.Beat();
         float deltabeat = TheTaskMgr.DeltaBeat();
         if (mMetronome) {
@@ -86,13 +84,15 @@ void CharacterTest::Poll() {
         CharClipDriver *drivs = mDriver->mFirst;
         if (!drivs)
             PlayNew();
-        else if (mClip2) {
+        else if (!mClip2) {
+            if (drivs->mClip != mClip1)
+                PlayNew();
+        } else {
             CharClip *drivclip = drivs->mClip;
             if (drivclip != mClip1 && drivclip != mClip2
-                || (drivclip == mClip2 && unk64 < drivs->mBeat))
+                || (drivclip == mClip2 && drivs->mBeat > unk64))
                 PlayNew();
-        } else if (drivs->mClip != mClip1)
-            PlayNew();
+        }
         if (mZeroTravel) {
             Transform xfm = mMe->LocalXfm();
             xfm.v.Zero();

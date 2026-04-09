@@ -1347,18 +1347,17 @@ void Game::CheckSectionEnd(float ms) {
     float nextMs = unk140;
     if (nextMs != -1.0f && ms < nextMs)
         return;
-    int numSections = (int)TheSongDB->mPracticeSections.size();
+    SongDB *songDB = TheSongDB;
+    int numSections = (int)songDB->mPracticeSections.size();
     if (numSections != 0) {
-        int cur = unk13c;
-        if (cur < numSections) {
-            int next = cur + 1;
-            unk13c = next;
-            if (next < numSections) {
-                const PracticeSection &sec = TheSongDB->mPracticeSections[next];
-                unk140 = TickToMs(sec.unk8);
-                FOREACH (it, mAllActivePlayers) {
-                    (*it)->HandleNewSection(sec, unk13c, numSections);
-                }
+        if (unk13c >= numSections)
+            return;
+        unk13c++;
+        if (unk13c < numSections) {
+            const PracticeSection &sec = songDB->mPracticeSections[unk13c];
+            unk140 = TickToMs(sec.unk8);
+            FOREACH (it, mAllActivePlayers) {
+                (*it)->HandleNewSection(sec, unk13c, numSections);
             }
         }
     }

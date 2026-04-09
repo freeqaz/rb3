@@ -436,9 +436,11 @@ inline void Interp(const Vector3 &v1, const Vector3 &v2, float f, Vector3 &dst) 
     } else if (f == 1.0f) {
         dst = v2;
     } else {
-        dst.z = f * (v2.z - v1.z) + v1.z;
-        dst.y = f * (v2.y - v1.y) + v1.y;
-        dst.x = f * (v2.x - v1.x) + v1.x;
+        dst.Set(
+            f * (v2.x - v1.x) + v1.x,
+            f * (v2.y - v1.y) + v1.y,
+            f * (v2.z - v1.z) + v1.z
+        );
     }
 }
 

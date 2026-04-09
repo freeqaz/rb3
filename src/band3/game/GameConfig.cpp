@@ -158,13 +158,13 @@ void GameConfig::AssignTracks() {
     mPlayerTrackConfigList->Reset();
     std::vector<BandUser *> users;
     TheBandUserMgr->GetParticipatingBandUsersInSession(users);
-    bool b11 = false;
     for (int i = 0; i < users.size(); i++) {
         BandUser *u = users[i];
         mPlayerTrackConfigList->AddPlaceholderConfig(
             u->GetUserGuid(), u->GetSlot(), !u->IsLocal()
         );
     }
+    bool b11 = false;
     for (int i = 0; i < users.size(); i++) {
         AssignTrack(users[i]);
         if (users[i]->GetTrackType() == kTrackVocals) {
@@ -172,8 +172,8 @@ void GameConfig::AssignTracks() {
         }
     }
     if (!b11) {
-        bool autoVox = TheModifierMgr->IsModifierActive(mod_auto_vocals);
-        bool b1 = TheGame->mProperties.mAllowAutoVocals;
+        int autoVox = TheModifierMgr->IsModifierActive(mod_auto_vocals);
+        int b1 = TheGame->mProperties.mAllowAutoVocals;
         MetaPerformer *pPerformer = MetaPerformer::Current();
         MILO_ASSERT(pPerformer, 0x13A);
         bool bigbool = autoVox & b1 & pPerformer->PartPlaysInSong("vocals");
