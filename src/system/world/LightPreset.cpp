@@ -25,13 +25,17 @@ LightPreset *gEditPreset;
 std::deque<std::pair<LightPreset::KeyframeCmd, float> > LightPreset::sManualEvents;
 
 float ComputeSpotBlend(int i, float f) {
-    int min = Min<int>(f * 5.0f, 4);
-    if (i % 5 < min)
+    int minIdx = 4;
+    int computed = (int)(f * 5.0f);
+    if (computed <= 4)
+        minIdx = computed;
+    if (i % 5 < minIdx)
         return 1.0f;
-    else if (i % 5 > min)
+    else if (i % 5 > minIdx)
         return 0.0f;
     else {
-        return Min(Max((f - i / 5.0f) * 5.0f, 0.0f), 1.0f);
+        float blend = (f - minIdx / 5.0f) * 5.0f;
+        return Min(Max(blend, 0.0f), 1.0f);
     }
 }
 
@@ -527,8 +531,8 @@ void LightPreset::GetKey(float frame, int &iref1, int &iref2, float &fref) const
         return;
     } else {
         if (mLooping) {
-            float theframe = std::fmod(frame, mCachedDuration);
-            if (frame >= mKeyframes.back().mFrame) {
+            theframe = std::fmod(frame, mCachedDuration);
+            if (theframe >= mKeyframes.back().mFrame) {
                 if (mKeyframes.back().mFadeOutTime <= 0.0f) {
                     iref1 = -1;
                     iref2 = mKeyframes.size() - 1;
@@ -548,39 +552,38 @@ void LightPreset::GetKey(float frame, int &iref1, int &iref2, float &fref) const
                 fref = 1.0f;
                 return;
             }
-        } else if (frame >= mKeyframes.back().mFrame) {
+        } else if (theframe >= mKeyframes.back().mFrame) {
             iref1 = -1;
             iref2 = mKeyframes.size() - 1;
             fref = 1.0f;
             return;
         }
-        int cap = mKeyframes.size() - 1;
-        int i;
-        for (i = 0; i + 1 < cap - 1;) {
-            i = (i + cap) >> 1;
-            const Keyframe &kf = mKeyframes[i];
-            if (theframe == kf.mFrame) {
+        int before;
+        int after = mKeyframes.size() - 1;
+        for (before = 0; after > before + 1;) {
+            int mid = (before + after) >> 1;
+            if (theframe == mKeyframes[mid].mFrame) {
                 iref1 = -1;
-                iref2 = i;
+                iref2 = mid;
                 fref = 1.0f;
                 return;
             }
-            if (theframe <= kf.mFrame) {
-                cap = i;
+            if (theframe > mKeyframes[mid].mFrame) {
+                before = mid;
+            } else {
+                after = mid;
             }
         }
-        if (mKeyframes[i].mFrame <= theframe) {
-            mKeyframes[cap];
-        }
-        float dur = mKeyframes[i].mFrame + mKeyframes[i].mDuration;
+        MILO_ASSERT(theframe >= mKeyframes[before].mFrame && theframe < mKeyframes[after].mFrame, 0x387);
+        float dur = mKeyframes[before].mFrame + mKeyframes[before].mDuration;
         if (theframe > dur) {
-            mKeyframes[i];
-            iref1 = i;
-            iref2 = cap;
-            fref = (theframe - dur) / mKeyframes[i].mFadeOutTime;
+            MILO_ASSERT(mKeyframes[before].mFadeOutTime > 0, 0x38c);
+            iref1 = before;
+            iref2 = after;
+            fref = (theframe - dur) / mKeyframes[before].mFadeOutTime;
         } else {
             iref1 = -1;
-            iref2 = i;
+            iref2 = before;
             fref = 1.0f;
         }
     }
@@ -1102,8 +1105,7 @@ void LightPreset::SpotlightEntry::CalculateDirection(Spotlight *s, Hmx::Quat &q)
 void LightPreset::SpotlightEntry::Animate(
     Spotlight *spot, const LightPreset::SpotlightEntry &entry, float f3
 ) {
-    float fout;
-    Interp(mIntensity, entry.mIntensity, f3, fout);
+    Interp(mIntensity, entry.mIntensity, f3, mIntensity);
     Hmx::Color c38;
     Hmx::Color c48;
     c38.Unpack(mColor);
