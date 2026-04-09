@@ -457,16 +457,18 @@ inline void ScaleAddEq(Vector3 &v1, const Vector3 &v2, float f) {
 }
 
 inline void Cross(const Vector3 &v1, const Vector3 &v2, Vector3 &dst) {
-    float x1, x2, y2, z1, z2, y1;
+    float y1, z2, x2, z1, y2, x1;
 
-    x2 = v2.x;
     y1 = v1.y;
-    y2 = v2.y;
-    z1 = v1.z;
-    x1 = v1.x;
     z2 = v2.z;
+    x2 = v2.x;
+    z1 = v1.z;
+    y2 = v2.y;
+    x1 = v1.x;
 
-    dst.Set(y1 * z2 - z1 * y2, z1 * x2 - x1 * z2, x1 * y2 - y1 * x2);
+    dst.x = y1 * z2 - z1 * y2;
+    dst.y = z1 * x2 - x1 * z2;
+    dst.z = x1 * y2 - y1 * x2;
 }
 
 inline void Normalize(register const Vector3 &v, register Vector3 &vout) {
@@ -530,7 +532,15 @@ inline void ScaleToMagnitude(const Vector3 &vec, float fl, Vector3 &res) {
 inline void RotateAboutZ(const Vector3 &v, float f, Vector3 &res) {
     float c = Cosine(f);
     float s = Sine(f);
-    res.Set(v.x * c - v.y * s, v.x * s + v.y * c, v.z);
+    float vy = v.y;
+    float vx = v.x;
+    float xs = vx * s;
+    float yc = vy * c;
+    float ys = vy * s;
+    float xc = vx * c;
+    res.x = xc - ys;
+    res.y = xs + yc;
+    res.z = v.z;
 }
 
 #endif

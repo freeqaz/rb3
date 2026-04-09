@@ -170,22 +170,23 @@ void RndGenerator::Generate(float frame) {
     Instance inst;
     inst.unk0 = frame;
     inst.unk4.Reset();
-    float f3 = 0;
+    float rx = 0;
+    float ry = 0;
+    float rz = 0;
     if (mPathVarMaxX > 0)
-        f3 = RandomFloat(-mPathVarMaxX, f3);
-    float f4 = 0;
+        rx = RandomFloat(-mPathVarMaxX, mPathVarMaxX);
     if (mPathVarMaxY > 0)
-        f4 = RandomFloat(-mPathVarMaxY, f4);
-    float f6 = 0;
+        ry = RandomFloat(-mPathVarMaxY, mPathVarMaxY);
     if (mPathVarMaxZ > 0)
-        f6 = RandomFloat(-mPathVarMaxZ, f6);
-    Vector3 v88(f3, f4, f6);
+        rz = RandomFloat(-mPathVarMaxZ, mPathVarMaxZ);
+    Vector3 v88(rx, ry, rz);
     MakeRotMatrix(v88, inst.unk4.m, true);
     Multiply(inst.unk4, WorldXfm(), inst.unk4);
+    float scaleHi = mScaleGenHigh;
     float f5 = mScaleGenLow;
-    if (f5 < mScaleGenHigh)
-        f5 = RandomFloat(f5, mScaleGenHigh);
-    inst.unk4.v.Set(f5, f5, f5);
+    if (f5 < scaleHi)
+        f5 = RandomFloat(f5, scaleHi);
+    inst.unk34.Set(f5, f5, f5);
     mInstances.push_back(inst);
     if (mParticleSys) {
         mCurParticle = mParticleSys->AllocParticle();

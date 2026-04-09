@@ -385,13 +385,13 @@ void UtilDrawPlane(
     const Plane &p, const Vector3 &v, const Hmx::Color &c, int i4, float f
 ) {
     Transform tf88;
-    ScaleAdd(v, *reinterpret_cast<const Vector3 *>(&p), -p.Dot(v), tf88.v); // lol wut
-    tf88.m.y = *reinterpret_cast<const Vector3 *>(&p);
+    ScaleAdd(v, *(const Vector3 *)&p, -p.Dot(v), tf88.v);
+    tf88.m.y = *(const Vector3 *)&p;
     Hmx::Matrix3 mb0;
     mb0.Identity();
-    int idx = 0;
     int minIdx = 0;
     float ref = 10000.0f;
+    int idx = 0;
     for (; idx < 3; idx++) {
         if (MinEq(ref, Dot(mb0[idx], tf88.m.y))) {
             minIdx = idx;
@@ -1201,39 +1201,36 @@ MatShaderOptions GetDefaultMatShaderOpts(const Hmx::Object *o, RndMat *mat) {
             opts.SetHasBones(mesh->NumBones() != 0);
             opts.SetHasAOCalc(mesh->HasAOCalc());
         }
-        goto ret;
-    }
-    const RndMultiMesh *multimesh = dynamic_cast<const RndMultiMesh *>(o);
-    if (multimesh) {
-        RndMesh *gotmesh = multimesh->GetMesh();
-        if (gotmesh && gotmesh->Mat()) {
-            if (gotmesh->Mat() == mat) {
-                int mask =
-                    gotmesh->TransConstraint() == RndTransformable::kFastBillboardXYZ
-                    ? 0xD
-                    : 0xC;
-                opts.SetLast5(mask);
-                opts.SetHasBones(false);
-                opts.SetHasAOCalc(gotmesh->HasAOCalc());
+    } else {
+        const RndMultiMesh *multimesh = dynamic_cast<const RndMultiMesh *>(o);
+        if (multimesh) {
+            RndMesh *gotmesh = multimesh->GetMesh();
+            if (gotmesh && gotmesh->Mat()) {
+                if (gotmesh->Mat() == mat) {
+                    int mask = 0xC;
+                    if (gotmesh->TransConstraint() == RndTransformable::kFastBillboardXYZ)
+                        mask = 0xD;
+                    opts.SetLast5(mask);
+                    opts.SetHasBones(false);
+                    opts.SetHasAOCalc(gotmesh->HasAOCalc());
+                }
+            }
+        } else {
+            const RndParticleSys *partsys = dynamic_cast<const RndParticleSys *>(o);
+            if (partsys) {
+                if (partsys->GetMat() == mat) {
+                    opts.SetLast5(0xE);
+                }
+            } else {
+                const RndFlare *flare = dynamic_cast<const RndFlare *>(o);
+                if (flare) {
+                    if (flare->GetMat() == mat) {
+                        opts.SetLast5(6);
+                    }
+                }
             }
         }
-        goto ret;
     }
-    const RndParticleSys *partsys = dynamic_cast<const RndParticleSys *>(o);
-    if (partsys) {
-        if (partsys->GetMat() == mat) {
-            opts.SetLast5(0xE);
-        }
-        goto ret;
-    }
-    const RndFlare *flare = dynamic_cast<const RndFlare *>(o);
-    if (flare) {
-        if (flare->GetMat() == mat) {
-            opts.SetLast5(6);
-        }
-        goto ret;
-    }
-ret:
     return opts;
 }
 

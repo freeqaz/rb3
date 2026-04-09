@@ -29,6 +29,7 @@ void MicClientMapper::HandleMicsChanged() {
 }
 
 int MicClientMapper::GetMicIDForClientID(const MicClientID &clientID) const {
+    int result = -1;
     if (clientID.mPlayerID == -1) {
         for (std::vector<MicMappingData>::const_iterator it = mMappingData.begin();
              it != mMappingData.end();
@@ -36,9 +37,9 @@ int MicClientMapper::GetMicIDForClientID(const MicClientID &clientID) const {
             if (it->unk0 == clientID.unk0)
                 return it->mMicID;
         }
-        return -1;
     } else
         return GetMicIDForPlayerID(clientID.mPlayerID);
+    return result;
 }
 
 int MicClientMapper::GetPlayerIDForMicID(int micID) const {

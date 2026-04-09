@@ -133,7 +133,26 @@ void CharServoBone::MoveToFacing(Transform &tf) {
     if (mFacingRot) {
         RotateAboutZ(tf.m, *mFacingRot, tf.m);
         RotateAboutZ(tf.v, *mFacingRot, tf.v);
-        Normalize(tf.m, tf.m);
+        Normalize(tf.m.y, tf.m.y);
+        {
+            float y1 = tf.m.y.y;
+            float z2 = tf.m.z.z;
+            float x2 = tf.m.z.x;
+            float z1 = tf.m.y.z;
+            float y2 = tf.m.z.y;
+            float x1 = tf.m.y.x;
+            float p5 = y1 * z2;
+            float p7 = y1 * x2;
+            float p6 = z1 * x2;
+            float p3 = z1 * y2;
+            float p8 = x1 * y2;
+            float p2 = x1 * z2;
+            tf.m.x.x = p5 - p3;
+            tf.m.x.y = p6 - p2;
+            tf.m.x.z = p8 - p7;
+        }
+        Normalize(tf.m.x, tf.m.x);
+        Cross(tf.m.x, tf.m.y, tf.m.z);
     }
     tf.v += *mFacingPos;
 }

@@ -331,7 +331,42 @@ void CharClipSet::SetFrame(float frame, float blend) {
                 if (rotZPtr) {
                     RotateAboutZ(pelvisXfm.m, *rotZPtr, pelvisXfm.m);
                     RotateAboutZ(pelvisXfm.v, *rotZPtr, pelvisXfm.v);
-                    Normalize(pelvisXfm.m, pelvisXfm.m);
+                    Normalize(pelvisXfm.m.y, pelvisXfm.m.y);
+                    {
+                        float y1 = pelvisXfm.m.y.y;
+                        float z2 = pelvisXfm.m.z.z;
+                        float x2 = pelvisXfm.m.z.x;
+                        float z1 = pelvisXfm.m.y.z;
+                        float y2 = pelvisXfm.m.z.y;
+                        float x1 = pelvisXfm.m.y.x;
+                        float p5 = y1 * z2;
+                        float p7 = y1 * x2;
+                        float p6 = z1 * x2;
+                        float p3 = z1 * y2;
+                        float p8 = x1 * y2;
+                        float p2 = x1 * z2;
+                        pelvisXfm.m.x.x = p5 - p3;
+                        pelvisXfm.m.x.y = p6 - p2;
+                        pelvisXfm.m.x.z = p8 - p7;
+                    }
+                    Normalize(pelvisXfm.m.x, pelvisXfm.m.x);
+                    {
+                        float y1 = pelvisXfm.m.x.y;
+                        float z2 = pelvisXfm.m.y.z;
+                        float x2 = pelvisXfm.m.y.x;
+                        float z1 = pelvisXfm.m.x.z;
+                        float p5 = y1 * z2;
+                        float p7 = y1 * x2;
+                        float y2 = pelvisXfm.m.y.y;
+                        float p6 = z1 * x2;
+                        float x1 = pelvisXfm.m.x.x;
+                        float p3 = z1 * y2;
+                        float p8 = x1 * y2;
+                        float p2 = x1 * z2;
+                        pelvisXfm.m.z.x = p5 - p3;
+                        pelvisXfm.m.z.y = p6 - p2;
+                        pelvisXfm.m.z.z = p8 - p7;
+                    }
                 }
                 pelvisXfm.v += *posPtr;
             }
@@ -349,7 +384,42 @@ void CharClipSet::SetFrame(float frame, float blend) {
                         if (rotZPtr) {
                             RotateAboutZ(xfm.m, *rotZPtr, xfm.m);
                             RotateAboutZ(xfm.v, *rotZPtr, xfm.v);
-                            Normalize(xfm.m, xfm.m);
+                            Normalize(xfm.m.y, xfm.m.y);
+                            {
+                                float y1 = xfm.m.y.y;
+                                float z2 = xfm.m.z.z;
+                                float x2 = xfm.m.z.x;
+                                float z1 = xfm.m.y.z;
+                                float y2 = xfm.m.z.y;
+                                float x1 = xfm.m.y.x;
+                                float p5 = y1 * z2;
+                                float p7 = y1 * x2;
+                                float p6 = z1 * x2;
+                                float p3 = z1 * y2;
+                                float p8 = x1 * y2;
+                                float p2 = x1 * z2;
+                                xfm.m.x.x = p5 - p3;
+                                xfm.m.x.y = p6 - p2;
+                                xfm.m.x.z = p8 - p7;
+                            }
+                            Normalize(xfm.m.x, xfm.m.x);
+                            {
+                                float y1 = xfm.m.x.y;
+                                float z2 = xfm.m.y.z;
+                                float x2 = xfm.m.y.x;
+                                float z1 = xfm.m.x.z;
+                                float p5 = y1 * z2;
+                                float p7 = y1 * x2;
+                                float y2 = xfm.m.y.y;
+                                float p6 = z1 * x2;
+                                float x1 = xfm.m.x.x;
+                                float p3 = z1 * y2;
+                                float p8 = x1 * y2;
+                                float p2 = x1 * z2;
+                                xfm.m.z.x = p5 - p3;
+                                xfm.m.z.y = p6 - p2;
+                                xfm.m.z.z = p8 - p7;
+                            }
                         }
                         xfm.v += *posPtr;
                     }
