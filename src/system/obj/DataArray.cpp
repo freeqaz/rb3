@@ -563,13 +563,14 @@ DataNode DataArray::Execute() {
     case kDataFunc:
         return node.mValue.func(this);
     case kDataSymbol: {
-        Hmx::Object *object = gDataDir->FindObject(node.mValue.symbol, true);
+        const char *sym = node.mValue.symbol;
+        Hmx::Object *object = gDataDir->FindObject(sym, true);
         if (object) {
             return object->Handle(this, true);
         }
 
         std::map<Symbol, DataFunc *>::iterator func =
-            gDataFuncs.find(STR_TO_SYM(node.mValue.symbol));
+            gDataFuncs.find(STR_TO_SYM(sym));
         if (func != gDataFuncs.end()) {
             // Cache the function into the array to optimize repeat calls
             node = func->second;
@@ -590,7 +591,7 @@ DataNode DataArray::Execute() {
         return node.mValue.object->Handle(this, true);
     }
     case kDataString: {
-        Hmx::Object *object = gDataDir->FindObject(node.mValue.symbol, true);
+        Hmx::Object *object = gDataDir->FindObject(node.mValue.var->mValue.symbol, true);
         if (object) {
             return object->Handle(this, true);
         }

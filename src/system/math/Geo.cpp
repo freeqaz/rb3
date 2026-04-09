@@ -247,7 +247,7 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
             t = frac;
         } else {
             if (Intersect(seg2, n->right, t2, p)) {
-                t = (1.0f - frac) * t2 + frac;
+                t = t2 * (1.0f - frac) + frac;
             } else {
                 return false;
             }
@@ -268,17 +268,21 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
             t = frac * t2;
         } else {
             if (n->left && Intersect(seg2, n->left, t2, p)) {
-                t = (1.0f - frac) * t2 + frac;
+                t = t2 * (1.0f - frac) + frac;
             } else {
                 return false;
             }
         }
     done_neg:
         if (t2 == 0.0f && t != 0.0f) {
-            p.d = -n->plane.d;
-            p.c = -n->plane.c;
-            p.b = -n->plane.b;
-            p.a = -n->plane.a;
+            float nd = n->plane.d;
+            float nc = n->plane.c;
+            float nb = n->plane.b;
+            float na = n->plane.a;
+            p.d = -nd;
+            p.c = -nc;
+            p.b = -nb;
+            p.a = -na;
         }
     }
     return true;

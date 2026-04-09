@@ -41,7 +41,7 @@ public:
     ObjPtr<RndTransformable, ObjectDir> mSecondSpot; // 0x40
     std::vector<Vector3> unk4c; // 0x4c
     std::vector<Vector3> unk54; // 0x54
-    std::vector<int> unk5c; // 0x5c
+    std::vector<Symbol> unk5c; // 0x5c
     int unk64; // 0x64
     int unk68; // 0x68
     std::vector<int> unk6c; // 0x6c

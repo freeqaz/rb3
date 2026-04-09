@@ -1373,7 +1373,8 @@ void AccomplishmentManager::UpdateSongStatusFlagsForPerformer(
     Difficulty diff
 ) {
     const Stats &stats = pPerformer->mStats;
-    if (stats.GetCodaPoints() > 0) {
+    bool hasCoda = stats.GetCodaPoints() > 0;
+    if (hasCoda) {
         pSongStatusMgr->SetSongStatusFlag(s, kSongStatusFlag_HitBRE, scoreType, diff);
     }
     int rollCount = stats.GetRollCount();

@@ -381,9 +381,18 @@ BEGIN_LOADS(RndTransformable)
     if (gRev == 6 || gRev == 7) {
         Sphere s;
         bs >> s;
+        float sx = s.center.x;
+        float sy = s.center.y;
+        float sz = s.center.z;
+        float sr = s.radius;
         RndDrawable *d = dynamic_cast<RndDrawable *>(this);
-        if (d)
+        if (d) {
+            s.center.x = sx;
+            s.center.y = sy;
+            s.center.z = sz;
+            s.radius = sr;
             d->SetSphere(s);
+        }
     }
     if (gRev > 5) {
         if (gLoadingProxyFromDisk) {
