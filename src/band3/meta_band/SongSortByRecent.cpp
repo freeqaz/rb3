@@ -105,10 +105,10 @@ ShortcutNode *SongSortByRecent::NewShortcutNode(SongSortNode *node) const {
     MemDoTempAllocations m(true, false);
     RecentCmp *other = (RecentCmp *)node->Cmp();
     RecentCmp::RecentType ty = other->mType;
+    int pos = ((-ty) | ty) >> 31;
     bool tyIs8 = ty == 8;
-    bool tyIs0 = ty == 0;
     Symbol origin = other->RecentTypeToOrigin(ty);
-    RecentCmp *cmp = new RecentCmp(tyIs0, nullptr, origin, tyIs8);
+    RecentCmp *cmp = new RecentCmp(pos, nullptr, origin, tyIs8);
 
     Symbol token;
     switch (ty) {
@@ -123,7 +123,7 @@ ShortcutNode *SongSortByRecent::NewShortcutNode(SongSortNode *node) const {
         break;
     default:
         MILO_ASSERT(origin != gNullStr, 0xB1);
-        token = gNullStr;
+        token = origin;
         break;
     }
     ShortcutNode *newNode = new ShortcutNode(cmp, token, true);
@@ -134,10 +134,10 @@ HeaderSortNode *SongSortByRecent::NewHeaderNode(SongSortNode *node) const {
     MemDoTempAllocations m(true, false);
     RecentCmp *other = (RecentCmp *)node->Cmp();
     RecentCmp::RecentType ty = other->mType;
+    int pos = ((-ty) | ty) >> 31;
     bool tyIs8 = ty == 8;
-    bool tyIs0 = ty == 0;
     Symbol origin = other->RecentTypeToOrigin(ty);
-    RecentCmp *cmp = new RecentCmp(tyIs0, nullptr, origin, tyIs8);
+    RecentCmp *cmp = new RecentCmp(pos, nullptr, origin, tyIs8);
 
     Symbol token;
     switch (ty) {
@@ -151,8 +151,8 @@ HeaderSortNode *SongSortByRecent::NewHeaderNode(SongSortNode *node) const {
         token = not_yet_acquired;
         break;
     default:
-        MILO_ASSERT(origin != gNullStr, 0xB1);
-        token = gNullStr;
+        MILO_ASSERT(origin != gNullStr, 0xD6);
+        token = origin;
         break;
     }
     HeaderSortNode *newNode = new HeaderSortNode(cmp, token, true);

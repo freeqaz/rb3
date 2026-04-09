@@ -152,7 +152,9 @@ char StarDisplay::GetEmptyStarIcon() const {
 
 // fn_8041DF40
 void StarDisplay::UpdateDisplay() {
-    bool show = !mForceMixedMode ? mTotalStars : true;
+    bool show = mTotalStars > 5;
+    if (mForceMixedMode)
+        show = true;
     mRsrcStarsMixedLabel->SetShowing(show);
     mRsrcStarsLabel->SetShowing(!show);
     if (show) {

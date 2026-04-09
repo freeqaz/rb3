@@ -316,13 +316,17 @@ void PatchLayer::LoadPacked(IntPacker &packer) {
         mStickerIdx = packer.ExtractU(6);
     mColorIdx = packer.ExtractU(6);
     if (PatchDir::gRev == 1) {
-        SetPosition(Vector3(packer.ExtractS(9), 0, packer.ExtractS(9)));
-        SetRotation((packer.ExtractU(9) * 360.0f) / 511.0f);
-        unsigned int x = packer.ExtractU(14);
-        unsigned int y = packer.ExtractU(14);
-        SetScaleX(x * (1 / 1638.3f));
-        SetScaleY(y * (1 / 1638.3f));
-        SetDeformFrame(packer.ExtractU(10) * (1 / 20.46f));
+        Vector3 pos;
+        pos.x = packer.ExtractS(9);
+        pos.z = packer.ExtractS(9);
+        pos.y = 0;
+        SetPosition(pos);
+        SetRotation((int)packer.ExtractU(9) * 360.0f * (1.0f / 512.0f));
+        int x = packer.ExtractU(14);
+        int y = packer.ExtractU(14);
+        SetScaleX(x * 0.00030517578125f);
+        SetScaleY(y * 0.00030517578125f);
+        SetDeformFrame((int)packer.ExtractU(10) * 0.048828125f);
     } else {
         mPosX = packer.ExtractS(9);
         mPosZ = packer.ExtractS(9);
