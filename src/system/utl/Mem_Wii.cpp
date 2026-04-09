@@ -25,18 +25,18 @@ void InitDefaultHeap() {
             "Init: heap initialization\n\tarena1: %p - %p (%d)\n\tarena2: %p - %p (%d)\n",
             mem1lo,
             mem1hi,
-            uint(mem1hi) - uint(mem1lo),
+            (int)((char*)mem1hi - (char*)mem1lo),
             mem2lo,
             mem2hi,
-            uint(mem2hi) - uint(mem2lo)
+            (int)((char*)mem2hi - (char*)mem2lo)
         );
         OSThread *thread = OSGetCurrentThread();
         if (thread != NULL) {
             OSReport(
                 "\tstack:  %p - %p (%d)\n",
-                thread->stackEnd,
                 thread->stackBase,
-                uint(thread->stackEnd) - uint(thread->stackBase)
+                thread->stackEnd,
+                uint(thread->stackBase) - uint(thread->stackEnd)
             );
         }
         gMEM1Heap = MEMCreateExpHeapEx(mem1lo, uint(mem1hi) - uint(mem1lo), 0);

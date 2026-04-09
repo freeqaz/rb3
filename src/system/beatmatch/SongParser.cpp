@@ -1620,7 +1620,7 @@ bool SongParser::CheckKeyboardRangeMarker(int tick, int pitch, bool b) {
 void SongParser::ParseText(int tick, const char *text) {
     if (strneq(text, "mix", 3)) {
         const char *t4 = text + 4;
-        if (text[4] - 0x30U >= 10) {
+        if ((signed char)(text[4] - 0x30) >= 10) {
             MILO_WARN(
                 "%s (%s): improperly formatted mix event '[%s' at %s",
                 mFilename,
@@ -1644,9 +1644,9 @@ void SongParser::ParseText(int tick, const char *text) {
                 if (mixArr) {
                     mSink->AddMix(mTrack, tick, consumed, buf);
                     mDrumSubmixDifficultyMask |= (1 << consumed);
-                    for (int i = 0; i < 2; i++) {
-                    }
-                    if (consumed - 0x30 > 4) { // fix
+                    int lookup[] = {2, 4, 5, 6, 3};
+                    int idx = (signed char)buf[5] - 0x30;
+                    if ((unsigned)idx > 4) {
                         MILO_WARN(
                             "%s (%s): bad mix '%s' at %s",
                             mFilename,
@@ -1656,17 +1656,19 @@ void SongParser::ParseText(int tick, const char *text) {
                         );
                         return;
                     }
-                    MILO_WARN(
-                        "%s (%s): drum mix '%s' at %s supports exactly %d %s channels; this song's configuration has %d %s channels",
-                        mFilename,
-                        mTrackName,
-                        buf,
-                        PrintTick(tick),
-                        0,
-                        "(total) drum",
-                        mNumDrumChannels,
-                        "(total) drum"
-                    );
+                    if (mNumDrumChannels != lookup[idx]) {
+                        MILO_WARN(
+                            "%s (%s): drum mix '%s' at %s supports exactly %d %s channels; this song's configuration has %d %s channels",
+                            mFilename,
+                            mTrackName,
+                            buf,
+                            PrintTick(tick),
+                            lookup[idx],
+                            "(total) drum",
+                            mNumDrumChannels,
+                            "(total) drum"
+                        );
+                    }
                     return;
                 }
             }

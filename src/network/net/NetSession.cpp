@@ -35,8 +35,17 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include "Plugins/Stream.h"
+#include "Core/PseudoSingleton.h"
 #include <vector>
 #include <algorithm>
+
+namespace Quazal {
+    class RootTransport {
+    public:
+        static unsigned int s_uiDefaultConnectionTimeout;
+    };
+}
 
 NetSession *TheNetSession;
 std::vector<LocalUser *> gLocalUsersRemovedThisFrame;
@@ -83,14 +92,28 @@ NetSession::NetSession()
       mRevertingJoinResult(0), mGameStartTime(0), mState(kIdle), mOnlineEnabled(0),
       mQNet(0) {
     SetName("session", ObjectDir::Main());
+    Symbol symCT;
+    Symbol symMS;
     DataArray *cfg = SystemConfig("net", "session");
     cfg->FindData("game_start_delay", mGameStartDelay, true);
 
-    cfg->FindInt("connection_timeout");
-    cfg->FindInt("max_connection_silence");
+    symCT = "connection_timeout";
+    DataArray *a = cfg->FindArray(symCT, true);
+    Quazal::RootTransport::s_uiDefaultConnectionTimeout = (unsigned int)a->Int(1);
+    symMS = "max_connection_silence";
+    a = cfg->FindArray(symMS, true);
+    int silenceTime = a->Int(1);
+    unsigned int ctx = Quazal::PseudoSingleton::GetCurrentContext();
+    Quazal::StreamSettings *settings;
+    if (ctx == 0) {
+        settings = &Quazal::Stream::s_oStreamSettings[1].mValueInDefaultContext;
+    } else {
+        settings = &Quazal::Stream::s_oStreamSettings[1].mValueInContextList[ctx];
+    }
+    settings->SetMaxSilenceTime((unsigned int)silenceTime);
 
     RegisterSessionMessages();
-    TheDebug.AddExitCallback(DisconnectOnFail);
+    TheDebug.AddFailCallback(DisconnectOnFail);
     MILO_ASSERT(!TheNetSession, 0x5B);
     TheNetSession = this;
 }

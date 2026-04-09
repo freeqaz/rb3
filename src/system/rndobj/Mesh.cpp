@@ -1099,7 +1099,8 @@ void RndMesh::SetNumFaces(int num) {
 
 void RndMesh::Mats(std::list<RndMat *> &mats, bool) {
     if (mMat) {
-        mMat->mShaderOptions.pack = GetDefaultMatShaderOpts(this, mMat).pack;
+        MatShaderOptions opts = GetDefaultMatShaderOpts(this, mMat);
+        mMat->SetShaderOpts(opts);
         mats.push_back(mMat);
     }
 }

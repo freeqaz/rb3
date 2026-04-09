@@ -72,6 +72,7 @@ struct bf {
 
 struct MatShaderOptions {
     MatShaderOptions();
+    MatShaderOptions(const MatShaderOptions &other) : mTempMat(other.mTempMat) { pack = other.pack; }
     union {
         struct {
             int itop : 24;

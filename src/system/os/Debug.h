@@ -38,6 +38,7 @@ public:
     void Poll();
     void SetDisabled(bool);
     void SetTry(bool);
+    void AddFailCallback(ExitCallbackFunc *func) { mFailCallbacks.push_front(func); }
     void AddExitCallback(ExitCallbackFunc *func) { mExitCallbacks.push_front(func); }
     void RemoveExitCallback(ExitCallbackFunc *);
     void StartLog(const char *, bool);
