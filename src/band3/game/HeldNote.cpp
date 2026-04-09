@@ -87,8 +87,8 @@ void HeldNote::ReleaseSlot(int slot) {
         unk_0x1c &= ~mask;
         int bits = GameGem::CountBitsInSlotType(unk_0x1c);
         int tailPts = TheScoring->GetTailPoints(mTrackType, mGem->GetDurationTicks());
+        unk_0xc *= ((float)bits / (float)(bits + 1));
         unk_0x10 = tailPts * bits;
         unk_0x20 = false;
-        unk_0xc *= ((float)bits / (float)(bits + 1));
     }
 }

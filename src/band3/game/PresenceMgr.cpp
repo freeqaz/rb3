@@ -55,10 +55,11 @@ Symbol PresenceMgr::GetPresenceMode() {
         unk39 = false;
         for (int i = 1; i < size; i++) {
             DataArray *arr = unk1c->Array(i);
-            if (arr->Size() > 0) {
+            int arrSize = arr->Size();
+            if (arrSize >= 1) {
                 Symbol s50 = arr->Sym(0);
                 bool b2 = true;
-                for (int j = 1; j < arr->Size(); j++) {
+                for (int j = 1; j < arrSize; j++) {
                     DataArray *jArr = arr->Array(j);
                     Symbol s54 = jArr->Sym(0);
                     if (s54 == in_game) {
@@ -86,6 +87,8 @@ Symbol PresenceMgr::GetPresenceMode() {
                                         }
                                     }
                                 }
+                                if (b1)
+                                    break;
                             }
                         }
                         if (!b1)
@@ -110,8 +113,6 @@ Symbol PresenceMgr::GetPresenceMode() {
                 }
                 if (b2)
                     return s50;
-                if (unk39)
-                    break;
             }
         }
         return gNullStr;

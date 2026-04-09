@@ -150,13 +150,20 @@ void PatchLayer::ClearSticker() {
 }
 
 void PatchLayer::FlipX() {
-    SetScaleX(ScaleX() * -1.0f);
-    SetRotation(Modulo(360.0f - Rotation(), 360.0f));
+    SetScaleX(-1.0f * (mScaleX * (1 / 1638.3f) - 5.0f));
+    float r = fmod(360.0f - (360.0f * mRot / 511.0f), 360.0);
+    if (r < 0.0f)
+        r += 360.0f;
+    SetRotation(r);
 }
 
 void PatchLayer::FlipY() {
-    SetScaleX(ScaleX() * -1.0f);
-    SetRotation(Modulo(360.0f - (Rotation() - 90.0f) + 90.0f, 360.0f));
+    SetScaleX(-1.0f * (mScaleX * (1 / 1638.3f) - 5.0f));
+    float rot = 360.0f * mRot / 511.0f;
+    float r = fmod(90.0f + (360.0f - (rot - 90.0f)), 360.0);
+    if (r < 0.0f)
+        r += 360.0f;
+    SetRotation(r);
 }
 
 void PatchLayer::SetScale(float x, float y) {

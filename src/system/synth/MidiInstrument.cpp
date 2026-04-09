@@ -57,10 +57,9 @@ void NoteVoiceInst::SetFineTune(float tune) {
 void NoteVoiceInst::GlideToNote(unsigned char uc, int i) {
     int num = std::max(1, i);
     if (mSample) {
-        unsigned char oldTrigNote = mTriggerNote;
         mGlideToNote = uc;
+        mGlideFromNote = mTriggerNote;
         mTriggerNote = uc;
-        mGlideFromNote = oldTrigNote;
         mGlideFrames = num;
         mGlideFramesLeft = num;
     }

@@ -36,7 +36,7 @@ float TrackerMultiplierMap::GetMultiplier(float f) const { return FindEntry(f).u
 int TrackerMultiplierMap::GetMultiplierIndex(float f) const { return FindEntry(f).unk4; }
 
 float TrackerMultiplierMap::GetPercentOfMaxMultiplier(float f) const {
-    return Max(f / unk0, 1.0f);
+    return std::max(f / unk0, 1.0f);
 }
 
 const TrackerMultiplierMap::MultiplierEntry &TrackerMultiplierMap::FindEntry(float f

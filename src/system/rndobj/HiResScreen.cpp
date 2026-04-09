@@ -423,11 +423,13 @@ Hmx::Rect HiResScreen::ScreenRect(const RndCam *cam, const Hmx::Rect &r) const {
 Hmx::Rect HiResScreen::InvScreenRect() const {
     Hmx::Rect r = ScreenRect();
     Hmx::Rect ret;
-    float invW = 1.0f / r.w;
-    ret.w = invW;
-    float negInvW = -1.0f * invW;
-    ret.h = negInvW;
-    ret.x = -(r.x * invW);
-    ret.y = negInvW * r.y;
+    float negX = -r.x;
+    float negY = -r.y;
+    float w = r.w;
+    float h = r.h;
+    ret.x = negX / w;
+    ret.w = 1.0f / w;
+    ret.y = negY / h;
+    ret.h = 1.0f / h;
     return ret;
 }

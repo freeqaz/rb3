@@ -16,7 +16,7 @@ DECOMP_FORCEACTIVE(
 );
 
 void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
-    if (sat == 0) {
+    if (sat == 0.0f) {
         color.Set(val, val, val);
         return;
     }
@@ -26,23 +26,26 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
     } else {
         q = -(sat * val - (sat + val));
     }
-    float p = val * 2.0f - q;
-    float qmp = q - p;
+    float two = 2.0f;
     float third = 1.0f / 3.0f;
-    float two_thirds = 2.0f / 3.0f;
-    float t0 = hue + third;
-    float one = 1.0f;
     float six = 6.0f;
+    float zero = 0.0f;
+    float three = 3.0f;
+    float two_thirds = 2.0f / 3.0f;
+    float p = val * two - q;
+    float t0 = hue + third;
+    float qmp = q - p;
+    float qmp_six = six * qmp;
+    float t;
     for (int i = 0; i < 3; i++) {
-        float t;
         if (i == 0) { t = t0; }
         else if (i == 1) { t = hue; }
         else { t = hue - third; }
-        if (t < 0) { t += one; }
-        else if (t > one) { t -= one; }
-        if (t * six < one) { color[i] = qmp * t * six + p; }
-        else if (t * 2.0f < one) { color[i] = q; }
-        else if (t * 3.0f < 2.0f) { t = two_thirds - t; color[i] = qmp * t * six + p; }
+        if (t < zero) { t += 1.0f; }
+        else if (t > 1.0f) { t -= 1.0f; }
+        if (t * six < 1.0f) { color[i] = t * qmp_six + p; }
+        else if (t * two < 1.0f) { color[i] = q; }
+        else if (t * three < two) { t = two_thirds - t; color[i] = qmp * t * six + p; }
         else { color[i] = p; }
     }
 }

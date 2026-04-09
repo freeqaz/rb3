@@ -227,16 +227,16 @@ FileStream *HDCache::OpenHeader() {
     if (mHdrFmt.mStr[0] == '\0') {
         return nullptr;
     } else {
-        const char *str;
+        const char *str = nullptr;
         int i = 0;
         for (; i < 2; i++) {
             str = MakeString(mHdrFmt.mStr, 0);
             if (FileExists(str, 0x10000) != 0) {
-                goto found;
+                break;
             }
         }
-        return nullptr;
-    found:
+        if (i == 2)
+            return nullptr;
         return new FileStream(str, FileStream::kReadNoArk, true);
     }
 }

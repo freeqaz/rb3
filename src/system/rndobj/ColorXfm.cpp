@@ -127,9 +127,12 @@ void RndColorXfm::AdjustBrightness() {
 }
 
 void RndColorXfm::AdjustLevels() {
-    float diffBlue = mLevelInHi.blue - mLevelInLo.blue;
-    float diffGreen = mLevelInHi.green - mLevelInLo.green;
-    float diffRed = mLevelInHi.red - mLevelInLo.red;
+    float loBlue = mLevelInLo.blue;
+    float loGreen = mLevelInLo.green;
+    float diffBlue = mLevelInHi.blue - loBlue;
+    float loRed = mLevelInLo.red;
+    float diffGreen = mLevelInHi.green - loGreen;
+    float diffRed = mLevelInHi.red - loRed;
     float f1 = diffBlue != 0
         ? (mLevelOutHi.blue - mLevelOutLo.blue) / diffBlue
         : 0;
@@ -139,9 +142,9 @@ void RndColorXfm::AdjustLevels() {
     float f3 = diffRed != 0
         ? (mLevelOutHi.red - mLevelOutLo.red) / diffRed
         : 0;
-    float v68z = -(mLevelInLo.blue * f1 - mLevelOutLo.blue);
-    float v68y = -(mLevelInLo.green * f2 - mLevelOutLo.green);
-    float v68x = -(mLevelInLo.red * f3 - mLevelOutLo.red);
+    float v68z = -loBlue * f1 + mLevelOutLo.blue;
+    float v68y = -loGreen * f2 + mLevelOutLo.green;
+    float v68x = -loRed * f3 + mLevelOutLo.red;
     Transform tf40;
     tf40.m.x.Set(f3, 0, 0);
     tf40.m.y.Set(0, f2, 0);

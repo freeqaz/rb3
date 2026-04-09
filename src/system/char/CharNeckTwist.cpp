@@ -22,7 +22,9 @@ void CharNeckTwist::Poll() {
         Vector3 v78;
         MakeRotQuatUnitX(tf58.m.x, q68);
         Multiply(tf58.m.y, q68, v78);
-        float angle = LimitAng(std::atan2(v78.z, v78.y)) * 0.5f;
+        float vz = v78.z;
+        float vy = v78.y;
+        float angle = LimitAng(std::atan2(vz, vy)) * 0.5f;
         mTwist->DirtyLocalXfm().m.RotateAboutX(angle);
     }
 }
