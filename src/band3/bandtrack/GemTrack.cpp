@@ -217,40 +217,42 @@ void GemTrack::DrawFill(FillInfo *info, int i2, int i3) {
     FillExtent ext154(0, 0, 0);
     Player *player = mTrackConfig.GetBandUser()->GetPlayer();
     int i158 = 0;
-    bool fillsEnabled;
     if (!TheGame->InTrainer()) {
         if (!info)
             return;
         if (!info->FillAt(i2, ext154, true) && !info->FillAt(i2 + i3, ext154, true))
             return;
-        fillsEnabled = player->FillsEnabled(ext154.start);
+        if (!player->FillsEnabled(ext154.start))
+            return;
     } else {
         int ivar3 = GetLoopTick(i2, i158);
         if (!info->FillAt(ivar3, ext154, true) && !info->FillAt(ivar3 + i3, ext154, true))
             return;
-        fillsEnabled = player->FillsEnabled(ext154.start + i158);
+        if (!player->FillsEnabled(ext154.start + i158))
+            return;
     }
-    if (fillsEnabled) {
+    {
         ext154.start += i158;
         ext154.end += i158;
         Transform tf88;
         int i11 = i2 + i3;
         bool isDrum = mTrackConfig.IsDrumTrack();
         bool isKeys = mTrackConfig.IsKeyboardTrack();
-        bool inCoda = TheSongDB->IsInCoda(i11);
+        bool inCoda = TheSongDB->IsInCoda(i11) != 0;
         float startSecs = TickToSeconds(ext154.start);
         float endSecs = TickToSeconds(ext154.end);
         float f15 = endSecs - startSecs;
         bool b9 = false;
         if (ext154.start < i11) {
-            if (i2 <= ext154.start || mResetFills)
+            bool cond = (i2 <= ext154.start || mResetFills);
+            if (cond)
                 b9 = true;
         }
         if (!inCoda || TheGame->mProperties.mEnableCoda) {
             bool b1 = false;
             if (!inCoda && isDrum)
                 b1 = true;
-            bool bi2 = TheGame->InTrainer();
+            bool bi2 = !TheGame->DrumFillsMod();
             if (b9) {
                 if (b1) {
                     mTrackDir->ResetDrumFill();
@@ -264,21 +266,23 @@ void GemTrack::DrawFill(FillInfo *info, int i2, int i3) {
                 } else
                     mTrackDir->ResetCoda();
 
-                if (isKeys) {
-                    tf88.Reset();
-                    tf88.v.y = mTrackDir->SecondsToY(startSecs);
-                    TrackWidget *w = mGemManager->GetWidgetByName("key_mash.wid");
-                    w->Clear();
-                    w->AddInstance(tf88, f15);
-                } else if (mUseFills && (!b1 || bi2)) {
-                    Symbol s15c(b1 ? fill : mash);
-                    for (int i = 0; i < mTrackConfig.GetMaxSlots(); i++) {
-                        Symbol s160;
-                        if (mGemManager->GetWidgetName(s160, i, s15c)) {
-                            mTrackDir->MakeWidgetXfm(i, startSecs, tf88);
-                            TrackWidget *w = mGemManager->GetWidgetByName(s160);
-                            w->Clear();
-                            w->AddInstance(tf88, f15);
+                if (mUseFills && (!b1 || !bi2)) {
+                    if (isKeys) {
+                        tf88.Reset();
+                        tf88.v.y = mTrackDir->SecondsToY(startSecs);
+                        TrackWidget *w = mGemManager->GetWidgetByName("key_mash.wid");
+                        w->Clear();
+                        w->AddInstance(tf88, f15);
+                    } else {
+                        Symbol s15c(b1 ? fill : mash);
+                        for (int i = 0; i < mTrackConfig.GetMaxSlots(); i++) {
+                            Symbol s160;
+                            if (mGemManager->GetWidgetName(s160, i, s15c)) {
+                                mTrackDir->MakeWidgetXfm(i, startSecs, tf88);
+                                TrackWidget *w = mGemManager->GetWidgetByName(s160);
+                                w->Clear();
+                                w->AddInstance(tf88, f15);
+                            }
                         }
                     }
                 } else {
@@ -304,7 +308,7 @@ void GemTrack::DrawFill(FillInfo *info, int i2, int i3) {
                 if (mGemManager->GetWidgetName(s16c, 4, s168)) {
                     TrackWidget *w = mGemManager->GetWidgetByName(s16c);
                     w->AddInstance(tf88, 0);
-                    if (!isDrum) {
+                    if (isDrum) {
                         mTrackDir->FillHit(3);
                     }
                 }

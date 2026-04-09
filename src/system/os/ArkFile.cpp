@@ -54,12 +54,13 @@ bool ArkFile::ReadAsync(void *iBuff, int iBytes) {
             bool met = last != String::npos;
             if (met) {
                 Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
-                const char *strIdx = mFilename.c_str() + last + 1;
+                const char *strIdx = (last + (mFilename.c_str() + 1));
                 met = plat == strIdx;
             }
             String someStrIdk(met ? mFilename.substr(0, last) : mFilename);
             TheArchive->HasArchivePermission(mArkfileNum);
-            if (Archive::DebugArkOrder() != 0) {
+            int debugOrder = Archive::DebugArkOrder();
+            if (debugOrder != 0) {
                 TheDebug
                     << MakeString("ArkFile%d:   '%s'\n", mArkfileNum, someStrIdk.c_str());
             }
@@ -76,13 +77,14 @@ bool ArkFile::ReadAsync(void *iBuff, int iBytes) {
         u64 byte_end = mByteStart + iBytes;
         int max = (b + c) - 1;
         bool first_loop = true;
+        u32 y;
         for (int i = c; i <= max; i++) {
             u32 x;
             if (i == a) {
                 x = byte_start % c;
             } else
                 x = 0;
-            u32 y = c;
+            y = c;
             if (i == max && iBytes != 0) {
                 u32 gjksf = byte_end % c;
                 if (gjksf != 0)

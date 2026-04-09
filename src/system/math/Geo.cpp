@@ -844,7 +844,7 @@ void Frustum::Set(float near, float far, float fovY, float ratio) {
     bottom.Set(0, sy, cy, 0);
     static const float kEpsilon = 1e-4f;
     if (!(std::fabs(cy) < kEpsilon && std::fabs(sx) < kEpsilon)) {
-        float len = std::sqrt(sx * sx + cy * cy);
+        float len = std::sqrt(cy * cy + sx * sx);
         len = 1.0f / len;
         cy = cy * len;
         sx = sx * len;

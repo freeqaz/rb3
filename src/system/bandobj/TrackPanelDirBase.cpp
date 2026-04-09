@@ -154,10 +154,10 @@ void TrackPanelDirBase::UpdateTrackSpeed() {
                 }
             }
         } else {
-            float f14 = 0;
-            float f11 = f14;
-            float f13 = f14;
-            float f15 = f14;
+            float f15 = 0;
+            float f13 = f15;
+            float f11 = f15;
+            float f14 = f15;
             for (int i = 0; i < mGemTracks.size(); i++) {
                 GemTrackDir *tdir = mGemTracks[i];
                 TrackInstrument inst = tdir->GetInstrument();
@@ -174,7 +174,12 @@ void TrackPanelDirBase::UpdateTrackSpeed() {
                 }
             }
             if (f15 > 0) {
-                float speed = f13 == 0 ? f11 / f15 : f14 / f13;
+                float speed;
+                if (f13 == 0) {
+                    speed = f11 / f15;
+                } else {
+                    speed = f14 / f13;
+                }
                 speed /= f1;
                 for (int i = 0; i < mGemTracks.size(); i++) {
                     mGemTracks[i]->SetScrollSpeed(speed);

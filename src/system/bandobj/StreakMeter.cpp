@@ -319,7 +319,7 @@ void StreakMeter::ShowPhraseFeedback(int i, bool b) {
                 mPartWipeResidualAnims[n]->SetFrame(0, 1.0f);
             } else {
                 mPartWipeResidualAnims[n]->SetFrame(
-                    mPartWipeResidualAnims[n]->GetFrame(), 1.0f
+                    mPartWipeAnims[n]->GetFrame(), 1.0f
                 );
             }
             if (unk2cc[n]) {
