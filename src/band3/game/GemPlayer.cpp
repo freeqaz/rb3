@@ -1631,8 +1631,9 @@ void GemPlayer::OnRemoteFill(bool) {}
 
 void GemPlayer::OnRemoteCodaHit(int i1, int i2) {
     mCodaPoints = i1;
-    MasterAudio *audio = mBeatMaster->GetAudio();
-    audio->FillSwing(mTrackNum, 0, i2, GetSongPos().GetTotalTick(), true);
+    BeatMaster *beatMaster = mBeatMaster;
+    BeatMatcher *matcher = mMatcher;
+    beatMaster->GetAudio()->FillSwing(mTrackNum, 0, i2, (int)matcher->mSongPos.mTotalTick, true);
 }
 
 void GemPlayer::OnRemoteWhammy(float f1) {

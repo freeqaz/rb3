@@ -890,15 +890,16 @@ void LightPreset::FillLightPresetData(RndLight *light, LightPreset::EnvLightEntr
 void LightPreset::AnimateLightFromPreset(
     RndLight *light, const LightPreset::EnvLightEntry &entry, float f3
 ) {
-    if (light->Showing()) {
+    if (light->AnimateColorFromPreset()) {
         Hmx::Color c90;
         TranslateColor(entry.mColor, c90);
         Interp(light->GetColor(), c90, f3, c90);
         light->SetColor(c90);
     }
     if (light->AnimateRangeFromPreset()) {
+        float lightRange = light->Range();
         float fa8;
-        Interp(light->Range(), entry.mRange, f3, fa8);
+        Interp(lightRange, entry.mRange, f3, fa8);
         light->SetRange(fa8);
     }
     if (light->AnimatePosFromPreset()) {

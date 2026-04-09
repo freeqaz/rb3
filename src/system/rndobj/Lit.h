@@ -45,6 +45,7 @@ public:
             || mAnimateRangeFromPreset;
     }
     bool Showing() const { return mShowing; }
+    bool AnimateColorFromPreset() const { return mAnimateColorFromPreset; }
     bool AnimatePosFromPreset() const { return mAnimatePositionFromPreset; }
     bool AnimateRangeFromPreset() const { return mAnimateRangeFromPreset; }
 

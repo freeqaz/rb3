@@ -385,12 +385,14 @@ int SystemExec(const char *args) {
         return HolmesClientSysExec(args);
 }
 
+#pragma pool_data off
 void SetSystemLanguage(Symbol lang, bool cheats) {
     if (!IsSupportedLanguage(lang, cheats)) {
         static Symbol system("system");
         static Symbol default_sym("default");
 
-        DataArray *arr = gSystemConfig->FindArray(system, true)->FindArray(language, true)->FindArray(default_sym, false);
+        DataArray *arr = gSystemConfig->FindArray(system, true)->FindArray(language, true);
+        arr = arr->FindArray(default_sym, false);
         if (arr != 0) {
             Symbol arrLang = arr->Node(1).Sym(arr);
             if (IsSupportedLanguage(arrLang, cheats)) {
@@ -420,6 +422,7 @@ void SetSystemLanguage(Symbol lang, bool cheats) {
         gSystemLanguage = lang;
     }
 }
+#pragma pool_data on
 
 void AppendStackTrace(char *buf) {
     unsigned int trace[50];

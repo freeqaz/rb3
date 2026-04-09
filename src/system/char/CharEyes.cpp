@@ -331,12 +331,13 @@ bool CharEyes::EyesOnTarget(float f) {
     for (ObjVector<EyeDesc>::iterator it = mEyes.begin(); it != mEyes.end(); ++it) {
         RndTransformable *src = it->mEye->GetSource();
         if (src) {
-            Vector3 v80;
-            Subtract(unk58, src->WorldXfm().v, v80);
+            const Transform &xfm = src->WorldXfm();
+            float diffy = unk58.y - xfm.v.y;
+            float diffx = unk58.x - xfm.v.x;
             Vector3 v8c(src->WorldXfm().m.y);
-            v80.z = 0;
             v8c.z = 0;
-            float dot = Dot(v8c, v80);
+            float dot = v8c.x * diffx + v8c.y * diffy;
+            Vector3 v80(diffx, diffy, 0);
             if (std::acos(Clamp<float>(-1, 1, dot / (Length(v8c) * Length(v80))))
                     * 57.295776f
                 > f) {
