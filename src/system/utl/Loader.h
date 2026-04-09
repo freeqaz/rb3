@@ -66,8 +66,8 @@ public:
     LoaderPos GetLoaderPos() const { return mLoaderPos; }
     float SetLoaderPeriod(float period) {
         float ret = mPeriod;
-        unk1c = period;
         mPeriod = period;
+        unk1c = period;
         return ret;
     }
 

@@ -223,7 +223,7 @@ void EndLockMsg::Dispatch() {
 }
 
 void LockStepMgr::WaitList::AddMachine(BandMachine *machine) {
-    WaitingMachine wm(machine);
+    WaitingMachine wm = {machine, false};
     mList.push_back(wm);
 }
 

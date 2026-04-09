@@ -54,10 +54,12 @@ void RndPartLauncher::Poll() {
             float random = RandomFloat(mEmitRate.x, mEmitRate.y);
             mEmitCount = delta * random * 30.0f + mEmitCount;
             if (mEmitCount >= 1.0f) {
-                double intpart;
                 int parts = mNumParts;
-                mEmitCount = (float)modf((double)mEmitCount, &intpart);
-                mNumParts = (int)(float)intpart;
+                double intpart;
+                double frac = modf((double)mEmitCount, &intpart);
+                float fIntpart = (float)intpart;
+                mNumParts = (int)fIntpart;
+                mEmitCount = (float)frac;
                 LaunchParticles();
                 mNumParts = parts;
             }

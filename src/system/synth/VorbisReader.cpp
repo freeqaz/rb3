@@ -3,6 +3,7 @@
 #include "KeyChain.h"
 #include "synth/Synth.h"
 #include "utl/BufStream.h"
+#include "os/Endian.h"
 
 namespace {
     static unsigned char gKey[256];
@@ -406,9 +407,7 @@ void VorbisReader::DoRawSeek(int byte) {
     mFile->Seek(byte + mHdrSize, 0);
     if (mCtrState) {
         MILO_ASSERT(byte%16 == 0, 0x402);
-        // this is the part where the word that makes up byte gets assigned to the word
-        // that makes up mNonce
-        // unsigned char mNonce[16]; // 0xc0
+        *(unsigned int*)mNonce = EndianSwap((unsigned int)(byte / 16));
         int ret = ctr_reinit(gCipher, mNonce, mCtrState);
         MILO_ASSERT(ret == 0, 0x405);
     }

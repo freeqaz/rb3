@@ -379,6 +379,7 @@ void UIManager::Terminate() {
     RELEASE(mAutomator);
 }
 
+#pragma pool_data off
 void UIManager::Poll() {
     UIList::CollectGarbage();
     mAutomator->Poll();
@@ -449,6 +450,8 @@ void UIManager::Poll() {
         }
     }
 }
+
+#pragma pool_data reset
 
 void UIManager::SendTransitionComplete(UIScreen *scr1, UIScreen *scr2) {
     Handle(UITransitionCompleteMsg(scr1, scr2), false);

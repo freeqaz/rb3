@@ -10,9 +10,6 @@ public:
     public:
         class WaitingMachine {
         public:
-            WaitingMachine() {}
-            WaitingMachine(BandMachine *m) : mMachine(m), mResponded(0) {}
-
             BandMachine *mMachine; // 0x0
             bool mResponded; // 0x4
         };

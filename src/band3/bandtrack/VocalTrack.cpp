@@ -505,7 +505,9 @@ Lyric *VocalTrack::GetLastLyric(std::deque<LyricPlate *> &plates) {
 
 Lyric *VocalTrack::GetLastBakedLyric(std::deque<LyricPlate *> &plates) {
     Lyric *last = nullptr;
-    FOREACH (it, plates) {
+    std::deque<LyricPlate *>::iterator it = plates.begin();
+    std::deque<LyricPlate *>::iterator end = plates.end();
+    for (; it != end; ++it) {
         if (!(*it)->Baked())
             break;
         last = (*it)->LatestLyric();
