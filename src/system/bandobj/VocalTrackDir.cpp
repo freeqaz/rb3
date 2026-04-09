@@ -819,15 +819,11 @@ void VocalTrackDir::ConfigPanels() {
     unk42c = lyrictrans ? lyrictrans->mLocalXfm.v.x : mTrackRightX;
     if (ObjectDir::sMainDir->FindObject("milo", false)) {
         if (mPitchArrow1)
-            mPitchArrow1->SetLocalPos(
-                Vector3(0, 0, mPitchTopZ * 3.0f + mPitchBottomZ * 0.25f)
-            );
+            mPitchArrow1->SetLocalPos(0, 0, 0.25f * (mPitchTopZ * 3.0f + mPitchBottomZ));
         if (mPitchArrow2)
-            mPitchArrow2->SetLocalPos(Vector3(0, 0, mPitchBottomZ + mPitchTopZ * 0.5f));
+            mPitchArrow2->SetLocalPos(0, 0, 0.5f * (mPitchBottomZ + mPitchTopZ));
         if (mPitchArrow3)
-            mPitchArrow3->SetLocalPos(
-                Vector3(0, 0, mPitchBottomZ * 3.0f + mPitchTopZ * 0.25f)
-            );
+            mPitchArrow3->SetLocalPos(0, 0, 0.25f * (mPitchBottomZ * 3.0f + mPitchTopZ));
     }
 }
 

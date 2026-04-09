@@ -426,14 +426,14 @@ void TrackWatcherImpl::CheckForAutoplay(float ms) {
             int i5 = mGemList->NumGems();
             int i4;
             while (i4 = mNextGemToAutoplay, i4 <= i5 - 1) {
-                if (mNextCheatError + ms + mSyncOffset > mGemList->TimeAt(i4)) {
+                if (ms + mSyncOffset + mNextCheatError > mGemList->TimeAt(i4)) {
                     mNextGemToAutoplay++;
                     GameGem &gem = mGemList->GetGem(i4);
                     if (!gem.GetPlayed()) {
                         unsigned int ui8 = gem.GetSlots();
-                        int i2 = mRollActiveSlots;
+                        bool slotsInRoll = (ui8 & mRollActiveSlots) == ui8;
                         bool autoPlay = ShouldAutoplayGem(ms, i4);
-                        if (mCheating || ((ui8 & i2) == ui8) || autoPlay
+                        if (mCheating || slotsInRoll || autoPlay
                             || gem.Unk10B1()) {
                             if (mEnabled && Playable(i4)) {
                                 if (mIsLocalUser && GetFillLogic() == 0) {

@@ -416,18 +416,16 @@ void PatchPanel::Poll() {
         mMoveVelX = CalcMotion(mMoveVelX, mMoveX);
         mMoveVelY = CalcMotion(mMoveVelY, mMoveY);
         Vector3 pos = layer.Position();
-        float newX = mMoveVelX * unk58 + pos.x;
-        float newZ = mMoveVelY * unk58 + pos.z;
-        if (newX < -250.0f)
-            newX = -250.0f;
-        else if (newX > 250.0f)
-            newX = 250.0f;
-        if (newZ < -200.0f)
-            newZ = -200.0f;
-        else if (newZ > 200.0f)
-            newZ = 200.0f;
-        pos.x = newX;
-        pos.z = newZ;
+        pos.x = mMoveVelX * unk58 + pos.x;
+        pos.z = mMoveVelY * unk58 + pos.z;
+        if (pos.x < -250.0f)
+            pos.x = -250.0f;
+        else if (pos.x > 250.0f)
+            pos.x = 250.0f;
+        if (pos.z < -200.0f)
+            pos.z = -200.0f;
+        else if (pos.z > 200.0f)
+            pos.z = 200.0f;
         layer.SetPosition(pos);
         mRotVel = CalcMotion(mRotVel, mRot);
         layer.SetRotation(mRotVel * unk5c + layer.Rotation());

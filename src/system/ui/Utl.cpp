@@ -1,32 +1,20 @@
 #include "ui/Utl.h"
 #include "ui/UI.h"
 
-int PageDirection(JoypadAction act) {
-    if (act == kAction_PageDown)
-        return 1;
-    if (act == kAction_PageUp)
-        return -1;
-    return 0;
-}
-
-bool IsNavAction(JoypadAction act) {
-    return act == kAction_Up || act == kAction_Right || act == kAction_Down
-        || act == kAction_Left;
-}
-
 int ScrollDirection(const ButtonDownMsg &msg, Symbol sym, bool b2, int i) {
+    bool overload;
     int action = msg.mData->Int(4);
-
-    bool overload = false;
+    overload = false;
     if (!b2) {
         int button = msg.mData->Int(3);
-        overload = TheUI.OverloadHorizontalNav((JoypadAction)action, (JoypadButton)button, sym);
-        if (overload) {
-            if (action == kAction_Up) {
-                action = kAction_Left;
-            } else if (action == kAction_Down) {
-                action = kAction_Right;
-            }
+        if (TheUI.OverloadHorizontalNav((JoypadAction)action, (JoypadButton)button, sym))
+            overload = true;
+    }
+    if (overload) {
+        if (action == kAction_Up) {
+            action = kAction_Left;
+        } else if (action == kAction_Down) {
+            action = kAction_Right;
         }
     }
 
@@ -45,4 +33,17 @@ int ScrollDirection(const ButtonDownMsg &msg, Symbol sym, bool b2, int i) {
         return 1;
     }
     return 0;
+}
+
+int PageDirection(JoypadAction act) {
+    if (act == kAction_PageDown)
+        return 1;
+    if (act == kAction_PageUp)
+        return -1;
+    return 0;
+}
+
+bool IsNavAction(JoypadAction act) {
+    return act == kAction_Up || act == kAction_Right || act == kAction_Down
+        || act == kAction_Left;
 }

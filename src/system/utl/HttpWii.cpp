@@ -73,7 +73,7 @@ int HttpWii::GetStatus() {
     if (mStatus == 2) {
         for (int i = 0; i < NUM_HTTPWII_HANDLES; i++) {
             if (mHandles[i] != NULL) {
-                unsigned long r;
+                unsigned long r = 0;
                 if (CompleteAsync(i, r) == 0)
                     return mStatus;
             }
