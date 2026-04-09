@@ -76,11 +76,12 @@ int AsyncFile::Read(void *iBuf, int iBytes) {
 }
 
 int AsyncFile::Write(const void *iBuf, int iBytes) {
+    int ret;
     WriteAsync((void *)iBuf, iBytes);
     if (mFail)
         return 0;
     else
-        while (!WriteDone(iBytes))
+        while (!WriteDone(ret))
             ;
     return iBytes;
 }

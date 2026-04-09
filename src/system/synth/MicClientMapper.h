@@ -8,6 +8,10 @@ class MicClientMapper {
 public:
     class MicMappingData {
     public:
+        MicMappingData() : unk0(0), unk4(-1), mMicID(-1), bLocked(false) {}
+        MicMappingData(const MicMappingData &d)
+            : unk0(d.unk0), unk4(d.unk4), mMicID(d.mMicID), bLocked(d.bLocked) {}
+
         int unk0;
         int unk4;
         int mMicID; // 0x8
@@ -16,6 +20,7 @@ public:
 
     class PlayerMappingData {
     public:
+        PlayerMappingData() : iActualMicID(-1), iPreferredMicID(-1) {}
         int iActualMicID; // 0x0
         int iPreferredMicID; // 0x4
     };

@@ -1,5 +1,6 @@
 #pragma once
 #include "obj/Data.h"
+#include <cmath>
 
 void TrigTableInit(); // fn_802E2E28
 void TrigTableTerminate();
@@ -16,7 +17,13 @@ inline float DegreesToRadians(float deg) { return 0.017453292f * deg; }
 
 inline float RadiansToDegrees(float rad) { return 57.295776f * rad; }
 
-float LimitAng(float);
+inline float LimitAng(float ang) {
+    float r = (float)fmod(ang + 3.1415927f, 2.0 * 3.1415927f);
+    if (r < 0.0f)
+        return r + 3.1415927f;
+    else
+        return r - 3.1415927f;
+}
 
 DataNode DataSin(DataArray *);
 DataNode DataCos(DataArray *);

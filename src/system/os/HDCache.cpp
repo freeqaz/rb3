@@ -228,12 +228,15 @@ FileStream *HDCache::OpenHeader() {
         return nullptr;
     } else {
         const char *str;
-        for (int i = 0; i < 2; ++i) {
+        int i = 0;
+        for (; i < 2; i++) {
             str = MakeString(mHdrFmt.mStr, 0);
             if (FileExists(str, 0x10000) != 0) {
-                return new FileStream(str, FileStream::kReadNoArk, true);
+                goto found;
             }
         }
         return nullptr;
+    found:
+        return new FileStream(str, FileStream::kReadNoArk, true);
     }
 }

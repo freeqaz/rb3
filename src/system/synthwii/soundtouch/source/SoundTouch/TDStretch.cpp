@@ -299,7 +299,7 @@ int TDStretch::seekBestOverlapPositionStereo(const SAMPLETYPE *refPos)
 
     // Scans for the best correlation value by testing each possible position
     // over the permitted range.
-    for (i = 0; i < seekLength; i ++)
+    for (i = 0; (unsigned int)i < (unsigned int)seekLength; i ++)
     {
         // Calculates correlation value for the mixing position corresponding
         // to 'i'
@@ -346,13 +346,13 @@ int TDStretch::seekBestOverlapPositionStereoQuick(const SAMPLETYPE *refPos)
     // In first pass the routine searhes for the highest correlation with
     // relatively coarse steps, then rescans the neighbourhood of the highest
     // correlation with better resolution and so on.
-    for (scanCount = 0;scanCount < 4; scanCount ++)
+    for (scanCount = 0;(unsigned int)scanCount < 4; scanCount ++)
     {
         j = 0;
         while (_scanOffsets[scanCount][j])
         {
             tempOffset = corrOffset + _scanOffsets[scanCount][j];
-            if (tempOffset >= seekLength) break;
+            if ((unsigned int)tempOffset >= (unsigned int)seekLength) break;
 
             // Calculates correlation value for the mixing position corresponding
             // to 'tempOffset'
@@ -397,7 +397,7 @@ int TDStretch::seekBestOverlapPositionMono(const SAMPLETYPE *refPos)
 
     // Scans for the best correlation value by testing each possible position
     // over the permitted range.
-    for (tempOffset = 0; tempOffset < seekLength; tempOffset ++)
+    for (tempOffset = 0; (unsigned int)tempOffset < (unsigned int)seekLength; tempOffset ++)
     {
         compare = refPos + tempOffset;
 
@@ -446,13 +446,13 @@ int TDStretch::seekBestOverlapPositionMonoQuick(const SAMPLETYPE *refPos)
     // In first pass the routine searhes for the highest correlation with
     // relatively coarse steps, then rescans the neighbourhood of the highest
     // correlation with better resolution and so on.
-    for (scanCount = 0;scanCount < 4; scanCount ++)
+    for (scanCount = 0;(unsigned int)scanCount < 4; scanCount ++)
     {
         j = 0;
         while (_scanOffsets[scanCount][j])
         {
             tempOffset = corrOffset + _scanOffsets[scanCount][j];
-            if (tempOffset >= seekLength) break;
+            if ((unsigned int)tempOffset >= (unsigned int)seekLength) break;
 
             // Calculates correlation value for the mixing position corresponding
             // to 'tempOffset'
@@ -687,9 +687,9 @@ void TDStretch::precalcCorrReferenceStereo()
         temp = i * (overlapLength - i);
         cnt2 = i * 2;
 
-        temp2 = (pMidBuffer[cnt2] * temp) / slopingDivider;
+        temp2 = (pMidBuffer[cnt2] * temp) / (unsigned int)slopingDivider;
         pRefMidBuffer[cnt2] = (short)(temp2);
-        temp2 = (pMidBuffer[cnt2 + 1] * temp) / slopingDivider;
+        temp2 = (pMidBuffer[cnt2 + 1] * temp) / (unsigned int)slopingDivider;
         pRefMidBuffer[cnt2 + 1] = (short)(temp2);
     }
 }
@@ -706,7 +706,7 @@ void TDStretch::precalcCorrReferenceMono()
     for (i=0 ; i < (int)overlapLength ;i ++)
     {
         temp = i * (overlapLength - i);
-        temp2 = (pMidBuffer[i] * temp) / slopingDivider;
+        temp2 = (pMidBuffer[i] * temp) / (unsigned int)slopingDivider;
         pRefMidBuffer[i] = (short)temp2;
     }
 }
@@ -724,8 +724,8 @@ void TDStretch::overlapStereo(short *output, const short *input) const
     {
         temp = (short)(overlapLength - i);
         cnt2 = 2 * i;
-        output[cnt2] = (input[cnt2] * i + pMidBuffer[cnt2] * temp )  / overlapLength;
-        output[cnt2 + 1] = (input[cnt2 + 1] * i + pMidBuffer[cnt2 + 1] * temp ) / overlapLength;
+        output[cnt2] = (input[cnt2] * i + pMidBuffer[cnt2] * temp ) / (unsigned int)overlapLength;
+        output[cnt2 + 1] = (input[cnt2 + 1] * i + pMidBuffer[cnt2 + 1] * temp ) / (unsigned int)overlapLength;
     }
 }
 

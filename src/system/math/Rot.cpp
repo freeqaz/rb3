@@ -420,15 +420,19 @@ void MakeRotMatrix(const Hmx::Quat &q, Hmx::Matrix3 &mtx) {
 void RotateAboutX(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
     float fcos = Cosine(f);
     float fsin = Sine(f);
+    float zx = min.z.x;
+    float yx = min.y.x;
     mout.x.x = min.x.x;
     mout.x.y = min.x.y * fcos - min.x.z * fsin;
     mout.x.z = min.x.y * fsin + min.x.z * fcos;
-    mout.y.x = min.y.x;
+    mout.y.x = yx;
     mout.y.y = min.y.y * fcos - min.y.z * fsin;
     mout.y.z = min.y.y * fsin + min.y.z * fcos;
-    mout.z.x = min.z.x;
-    mout.z.y = min.z.y * fcos - min.z.z * fsin;
-    mout.z.z = min.z.y * fsin + min.z.z * fcos;
+    mout.z.x = zx;
+    float zz = min.z.z;
+    float zy = min.z.y;
+    mout.z.y = zy * fcos - zz * fsin;
+    mout.z.z = zy * fsin + zz * fcos;
 }
 
 void RotateAboutZ(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {

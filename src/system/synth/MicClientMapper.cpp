@@ -11,10 +11,7 @@ MicClientMapper::MicClientMapper() : mMicManager(0), mNumPlayers(2) {
         mMappingData.push_back(data);
     }
     for (int i = 0; i < mNumPlayers; i++) {
-        PlayerMappingData data;
-        data.iActualMicID = -1;
-        data.iPreferredMicID = -1;
-        mPlayers.push_back(data);
+        mPlayers.push_back(PlayerMappingData());
     }
 }
 

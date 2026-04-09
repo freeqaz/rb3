@@ -188,9 +188,11 @@ bool Locale::FindDataIndex(Symbol s, int &idx, bool fail) const {
 }
 
 const char *Localize(Symbol token, bool *notify) {
+    bool localized;
     const char *textStr = TheLocale.Localize(token, false);
-    bool localized = textStr != 0;
+    localized = textStr != 0;
     if (!localized) {
+        textStr = token.mStr;
         Locale::sIgnoreMissingText = textStr;
         if (Locale::sVerboseNotify != 0) {
             MILO_WARN("\"%s\" needs localization", token);

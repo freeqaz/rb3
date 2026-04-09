@@ -181,8 +181,9 @@ void MetaMusic::UpdateMix() {
         MILO_ASSERT(m_CurrentFxConfig, 0x16F);
         DataArray *volsArr = m_CurrentFxConfig->FindArray(vols);
         DataArray *pansArr = m_CurrentFxConfig->FindArray(pans);
-        float f15 = SomeMinusFunc();
-        float f16 = SomePlusFunc();
+        float f15, f16;
+        f16 = (float)unk84 / 90.0f;
+        f15 = 1.0f - f16;
         int numChannels = Min(mStream->GetNumChannels(), 6);
         if (unk80 && unk84 <= 90) {
             DataArray *volsArr80 = unk80->FindArray(vols);

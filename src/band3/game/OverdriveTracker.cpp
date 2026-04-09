@@ -42,9 +42,10 @@ void OverdriveTracker::TranslateRelativeTargets() {
     float deploybeats = cfg->FindFloat("deploy_beats");
     cfg->FindFloat("spotlight_phrase");
 
+    float factor = mult * ((float)playercount * (float)(u9 / 4) * deploybeats);
     unk8c = deploybeats;
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] *= mult * ((float)playercount * (float)i8 * deploybeats);
+        mTargets[i] *= factor;
     }
 }
 

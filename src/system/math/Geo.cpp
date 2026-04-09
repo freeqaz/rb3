@@ -775,36 +775,57 @@ void Sphere::GrowToContain(const Sphere &s) {
 }
 
 void Sphere::GrowToContain(const Vector3 &v, float r) {
-    if (r == 0.0f)
+    float zero = 0.0f;
+    if (r == zero)
         return;
-    if (radius == 0.0f) {
+    if (radius == zero) {
         center = v;
         radius = r;
         return;
     }
-    float dx = v.x - center.x;
-    float dy = v.y - center.y;
-    float dz = v.z - center.z;
-    float dist = std::sqrt((dy * dy + (dz * dz + dx * dx)));
-    if (r + dist > radius) {
-        if (radius + dist < r) {
+    float vy = v.y;
+    float cy = center.y;
+    float half = 0.5f;
+    float vx = v.x;
+    float cx = center.x;
+    float dy = vy - cy;
+    float vz = v.z;
+    float cz = center.z;
+    float dx = vx - cx;
+    float dz = vz - cz;
+#ifdef __MWERKS__
+    float dist = dx * dx + dy * dy + dz * dz;
+    if (dist != (half - half)) {
+        float inv = __frsqrte(dist);
+        dist *= -((inv * inv * dist) - 3.0f) * (inv * half);
+    }
+#else
+    float dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+#endif
+    float oldRadius = radius;
+    if (r + dist > oldRadius) {
+        float totalDist = dist + oldRadius;
+        if (totalDist < r) {
             center = v;
             radius = r;
             return;
         }
-        if (dist == 0.0f)
-            return;
-        float invDist = 1.0f / dist;
-        Vector3 a, b;
-        a.x = center.x - (radius * (invDist * dx));
-        a.z = center.z - dz * invDist * radius;
-        b.x = v.x + r * (dx * invDist);
-        b.y = v.y + r * (invDist * dy);
-        a.y = center.y - radius * (invDist * dy);
-        b.z = v.z + dz * invDist * r;
-        Interp(a, b, 0.5f, center);
-        radius = (dist + r + radius) * 0.5f;
-        return;
+        if (dist != zero) {
+            float invDist = 1.0f / dist;
+            float ndz = dz * invDist;
+            float ndy = dy * invDist;
+            float ndx = dx * invDist;
+            dx = ndx;
+            dy = ndy;
+            dz = ndz;
+            float az = cz - ndz * oldRadius;
+            radius = half * (r + totalDist);
+            float ay = cy - ndy * oldRadius;
+            float ax = cx - ndx * oldRadius;
+            center.z = half * ((vz + ndz * r) - az) + az;
+            center.y = half * ((vy + ndy * r) - ay) + ay;
+            center.x = half * ((vx + ndx * r) - ax) + ax;
+        }
     }
 }
 

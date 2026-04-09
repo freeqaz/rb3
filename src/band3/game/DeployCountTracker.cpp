@@ -30,13 +30,14 @@ void DeployCountTracker::TranslateRelativeTargets() {
     for (int i = 0; i < phrasecount; i++) {
         bitcount += CountBits(TheSongDB->GetCommonPhraseTracks(i));
     }
-    float f1 = 2.0f;
+    float f2 = 2.0f;
     if (mRequireFullEnergy) {
-        f1 = 4.0f;
+        f2 = 4.0f;
     }
+    float f31 = (float)bitcount / f2;
 
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] = std::max(std::floor(((float)bitcount / f1) * mTargets[i]), 1.0f);
+        mTargets[i] = std::max(std::floor(f31 * mTargets[i]), 1.0f);
     }
 }
 

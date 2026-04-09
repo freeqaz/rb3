@@ -111,13 +111,17 @@ Block *BlockMgr::FindBlock(int i1, int i2) {
 }
 
 Block *BlockMgr::FindLRUBlock(bool b) {
+    Block *ret = 0;
     int time = Block::sCurrTimestamp;
-    Block *ret = nullptr;
     for (int i = 0; i < mBlockCache.size(); i++) {
-        if (mBlockCache[i] != mWritingBlock && mBlockCache[i] != mReadingBlock
-            && (!b || !mBlockCache[i]->mWritten && mBlockCache[i]->mTimestamp < time)) {
-            ret = mBlockCache[i];
-            time = mBlockCache[i]->mTimestamp;
+        if (mBlockCache[i] != mWritingBlock && mBlockCache[i] != mReadingBlock) {
+            if (b) {
+                if (mBlockCache[i]->mWritten) continue;
+            }
+            if (mBlockCache[i]->mTimestamp < time) {
+                ret = mBlockCache[i];
+                time = mBlockCache[i]->mTimestamp;
+            }
         }
     }
     return ret;

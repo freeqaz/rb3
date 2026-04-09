@@ -10,9 +10,9 @@ CharNeckTwist::CharNeckTwist() : mTwist(this, 0), mHead(this, 0) {}
 void CharNeckTwist::Poll() {
     if (!mHead || !mTwist || !mTwist->TransParent())
         return;
+    RndTransformable *trans;
     RndTransformable *parent = mTwist->TransParent();
     Transform tf58(mHead->mLocalXfm);
-    RndTransformable *trans;
     for (trans = mHead->TransParent(); trans && trans != parent;
          trans = trans->TransParent()) {
         Multiply(tf58, trans->mLocalXfm, tf58);
@@ -22,7 +22,8 @@ void CharNeckTwist::Poll() {
         Vector3 v78;
         MakeRotQuatUnitX(tf58.m.x, q68);
         Multiply(tf58.m.y, q68, v78);
-        mTwist->DirtyLocalXfm().m.RotateAboutX(LimitAng(std::atan2(v78.z, v78.y)) * 0.5f);
+        float angle = LimitAng(std::atan2(v78.z, v78.y)) * 0.5f;
+        mTwist->DirtyLocalXfm().m.RotateAboutX(angle);
     }
 }
 

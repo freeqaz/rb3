@@ -479,7 +479,8 @@ int FileWrite(int iFd, void *iBuff, unsigned int iLen) {
 }
 
 const char *FileLocalize(const char *iFilename, char *buffer) {
-    if (SystemLanguage().Null())
+    bool gfxOk = (GetGfxMode() == kNewGfx);
+    if (SystemLanguage().Null() && !gfxOk)
         return iFilename;
     if (!SystemLanguage().Null()) {
         for (const char *p = iFilename; *p != '\0'; p++) {
@@ -488,11 +489,7 @@ const char *FileLocalize(const char *iFilename, char *buffer) {
                 if (!buffer)
                     buffer = mybuffer;
                 strcpy(buffer, iFilename);
-                memcpy(
-                    (void *)buffer[(int)p[1 - (int)iFilename]],
-                    (const void *)SystemLanguage().mStr,
-                    3
-                );
+                memcpy(buffer + (p + 1 - iFilename), SystemLanguage().mStr, 3);
                 return buffer;
             }
         }

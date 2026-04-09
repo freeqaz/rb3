@@ -47,6 +47,9 @@ public:
     virtual bool HasFailed();
     virtual bool IsSafeToDelete() const;
 
+    static const float kNetSimKbPerSecond;
+    static const float kNetSimInitialDelay;
+
     FileLoader *mFileLoader; // 0x24
     float mNetSimEndTime; // 0x28
 };
@@ -71,7 +74,7 @@ public:
     void PollLoading();
     bool HasFailed();
 
-    NetLoaderStub *mLoader; // 0x0
+    NetLoader *mLoader; // 0x0
     DataArray *unk_0x4; // 0x4
 };
 

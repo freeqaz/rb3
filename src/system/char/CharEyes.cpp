@@ -408,6 +408,9 @@ Vector3 CharEyes::GenerateDartOffset() {
 }
 
 void CharEyes::DartUpdate() {
+    static DataNode &dartCheat = DataVariable("cheat.disable_eye_darts");
+    if (sDisableEyeDart || dartCheat.Int(nullptr) != 0)
+        return;
     unk128 -= TheTaskMgr.DeltaSeconds();
     if (unk124) {
         if (unk128 < 0) {

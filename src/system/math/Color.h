@@ -177,10 +177,14 @@ inline void Subtract(const Hmx::Color &c1, const Hmx::Color &c2, Hmx::Color &res
 
 inline void Multiply(const Hmx::Color &c1, float f, Hmx::Color &res) {
 #ifdef VERSION_SZBE69_B8
-    res.red = c1.red * f;
-    res.green = c1.green * f;
-    res.blue = c1.blue * f;
-    res.alpha = c1.alpha * f;
+    float r = c1.red;
+    float a = c1.alpha;
+    float b = c1.blue;
+    float g = c1.green;
+    res.red = r * f;
+    res.green = g * f;
+    res.blue = b * f;
+    res.alpha = a * f;
 #else
     res.Set(c1.red * f, c1.green * f, c1.blue * f, c1.alpha * f);
 #endif

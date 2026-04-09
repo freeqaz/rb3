@@ -18,37 +18,35 @@ void CharIKScale::Poll() {
     float weight = Weight();
     if (mDest && weight != 0) {
         if (mAutoWeight) {
-            float f1 = mDest->mLocalXfm.v.z;
-            float f2 = mBottomHeight;
-            if (f1 < f2)
+            float localZ = mDest->mLocalXfm.v.z;
+            if (localZ < mBottomHeight)
                 weight = 0;
-            else if (f1 > mTopHeight)
+            else if (localZ > mTopHeight)
                 weight = 1;
             else
-                weight = (f1 - f2) / (mTopHeight - f2);
+                weight = (localZ - mBottomHeight) / (mTopHeight - mBottomHeight);
         }
         if (weight != 0) {
             Transform tf48(mDest->WorldXfm());
-            tf48.v = mDest->mLocalXfm.v;
-            tf48.v.z *= Interp(1.0f, mScale, weight);
-            Vector3 v24;
+            Vector3 localPos = mDest->mLocalXfm.v;
+            localPos.z *= Interp(1.0f, mScale, weight);
             if (mDest->TransParent()) {
-                Multiply(tf48.v, mDest->TransParent()->WorldXfm(), v24);
+                Multiply(localPos, mDest->TransParent()->WorldXfm(), tf48.v);
             }
             mDest->SetWorldXfm(tf48);
             if (mSecondaryTargets.size() > 0) {
-                tf48.v.z = mDest->mLocalXfm.v.z * mScale;
+                localPos.z = mDest->mLocalXfm.v.z * mScale;
                 Vector3 v90;
-                Multiply(tf48.v, mDest->TransParent()->WorldXfm(), v90);
-                Vector3 v9c = v24;
-                v9c -= v90;
+                Multiply(localPos, mDest->TransParent()->WorldXfm(), v90);
+                Vector3 offset = tf48.v;
+                offset -= v90;
                 for (ObjPtrList<RndTransformable>::iterator it =
                          mSecondaryTargets.begin();
                      it != mSecondaryTargets.end();
                      ++it) {
                     RndTransformable *cur = *it;
                     Transform tf78(cur->WorldXfm());
-                    tf78.v -= v9c;
+                    tf78.v -= offset;
                     cur->SetWorldXfm(tf78);
                 }
             }

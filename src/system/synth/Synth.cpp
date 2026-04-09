@@ -125,14 +125,12 @@ DECOMP_FORCEACTIVE(Synth, "TheSynth != NULL", "use_null_synth")
 
 void Synth::InitSecurity() {
     char buf[256];
-    char c4 = 'A';
     buf[1] = 0;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 4; j++) {
-            buf[0] = j + c4;
+            buf[0] = j + ('A' + i * 4);
             DataRegisterFunc(buf, returnMasterKey);
         }
-        c4 += 4;
     }
     buf[0] = 'M';
     DataRegisterFunc(buf, returnMasterKey);

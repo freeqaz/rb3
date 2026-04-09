@@ -43,24 +43,23 @@ bool JobMgr::HasJob(int id) {
 }
 
 void JobMgr::CancelJob(int id) {
-    for (std::list<Job *>::iterator it = mJobQueue.begin(); it != mJobQueue.end(); ++it) {
-        if ((*it)->ID() == id) {
-            Job *curJob = *it;
-            int curID = curJob->ID();
+    std::list<Job *>::iterator it = mJobQueue.begin();
+    while (it != mJobQueue.end()) {
+        Job *job = *it;
+        if (job->ID() == id) {
+            int frontID = mJobQueue.front()->ID();
             it = mJobQueue.erase(it);
             bool oldstart = mPreventStart;
             mPreventStart = true;
-            curJob->Cancel(mCallback);
+            job->Cancel(mCallback);
             mPreventStart = oldstart;
-            if (curID == id && !oldstart) {
-                for (std::list<Job *>::iterator it2 = mJobQueue.begin(); it2 != it;
-                     ++it2) {
-                    (*it2)->Start();
-                }
+            if (frontID == id && !oldstart && it != mJobQueue.end()) {
+                (*it)->Start();
             }
-            delete curJob;
+            delete job;
             return;
         }
+        ++it;
     }
     MILO_WARN("This job is not in the queue %i", id);
 }

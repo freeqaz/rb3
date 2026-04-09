@@ -271,8 +271,9 @@ void RndGroup::CollideList(const Segment &seg, std::list<Collision> &colls) {
 }
 
 int RndGroup::CollidePlane(const Plane &p) {
+    AUTO(it, mDraws.begin());
     int ret = -1;
-    FOREACH (it, mDraws) {
+    for (; it != mDraws.end(); ++it) {
         if (it == mDraws.begin()) {
             ret = (*it)->CollidePlane(p);
         } else if (ret != (*it)->CollidePlane(p)) {

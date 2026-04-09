@@ -32,7 +32,7 @@ namespace {
                 out++;
                 len--;
             } else {
-                if ((srch - 0xC0) <= 0x1F) {
+                if ((unsigned int)(srch - 0xC0) <= 0x1F) {
                     u8 hi = *in;
                     len--;
                     u8 lo = *((const u8 *)++in);

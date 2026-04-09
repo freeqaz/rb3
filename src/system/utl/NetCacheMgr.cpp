@@ -170,6 +170,15 @@ void NetCacheMgr::EnterUnloadState() {
 }
 
 bool NetCacheMgr::IsUnloadStateDone() const {
+    for (std::list<NetLoaderRef>::const_iterator it = mNetLoaderRefs.begin();
+         it != mNetLoaderRefs.end(); ++it) {
+        const NetLoaderRef &ref = *it;
+        if (ref.mCacheLoader && ref.mCacheLoader->mState == NetCacheLoader::kS_0x2) {
+            MILO_LOG("NetCacheMgr::IsUnloadStateDone: %s still busy\n", ref.mName.c_str());
+            ref.mCacheLoader->Poll();
+            return false;
+        }
+    }
     return IsDoneUnloading() && mNetLoaderRefs.empty();
 }
 
@@ -277,16 +286,16 @@ void NetCacheMgr::DebugClearCache() {
 
 NetLoader *NetCacheMgr::AddNetLoader(const char *cc, NetLoaderPos pos) {
     NetLoaderRef *pNetLoaderRef = AddLoaderRef(cc, kRT_NetLoader, pos);
-    if (!pNetLoaderRef || !pNetLoaderRef->mNetLoader)
-        return nullptr;
-    return pNetLoaderRef->mNetLoader;
+    if (pNetLoaderRef && pNetLoaderRef->mNetLoader)
+        return pNetLoaderRef->mNetLoader;
+    return nullptr;
 }
 
 NetCacheLoader *NetCacheMgr::AddNetCacheLoader(const char *cc, NetLoaderPos pos) {
     NetLoaderRef *pNetLoaderRef = AddLoaderRef(cc, kRT_CacheLoader, pos);
-    if (!pNetLoaderRef || !pNetLoaderRef->mCacheLoader)
-        return nullptr;
-    return pNetLoaderRef->mCacheLoader;
+    if (pNetLoaderRef && pNetLoaderRef->mCacheLoader)
+        return pNetLoaderRef->mCacheLoader;
+    return nullptr;
 }
 
 

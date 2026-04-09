@@ -140,9 +140,14 @@ void RndLight::SetPackedColor(int packed, float scalar) {
 }
 
 int RndLight::PackedColor() const {
-    Hmx::Color col;
-    Multiply(GetColor(), 1.0f / Intensity(), col);
-    return col.Pack();
+    float inv = 1.0f / Intensity();
+    const Hmx::Color &c = GetColor();
+    float blue_scaled = c.blue * inv;
+    float green_scaled = c.green * inv;
+    float red_scaled = c.red * inv;
+    return (((int)(blue_scaled * 255.0f) & 0xFF) << 16)
+        | ((int)(green_scaled * 255.0f) & 0xFF) << 8
+        | ((int)(red_scaled * 255.0f) & 0xFF);
 }
 
 float RndLight::Intensity() const {

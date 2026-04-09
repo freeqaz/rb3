@@ -164,11 +164,11 @@ void RateTransposer::putSamples(const SAMPLETYPE *samples, uint nSamples)
 // Returns the number of samples returned in the "dest" buffer
 inline uint RateTransposer::transpose(SAMPLETYPE *dest, const SAMPLETYPE *src, uint nSamples)
 {
-    if (numChannels == 2) 
+    if ((uint)numChannels == 2)
     {
         return transposeStereo(dest, src, nSamples);
-    } 
-    else 
+    }
+    else
     {
         return transposeMono(dest, src, nSamples);
     }

@@ -483,8 +483,8 @@ bool Spotlight::MakeWorldSphere(Sphere &s, bool b) {
 void Spotlight::SetColorIntensity(const Hmx::Color &col, float f) {
     Hmx::Color c20(col);
     Multiply(c20, f, c20);
-    Hmx::Color c30(Color());
-    Multiply(c30, Intensity(), c30);
+    Color();
+    Intensity();
     mColorOwner->mColor = Hmx::Color32(col.Pack());
     mColorOwner->mIntensity = f;
 }

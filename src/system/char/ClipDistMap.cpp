@@ -12,14 +12,6 @@
 #include "rndobj/Trans.h"
 #include <cmath>
 
-float LimitAng(float ang) {
-    float r = (float)fmod(ang + PI, 2.0 * PI);
-    if (r < 0.0f)
-        return r + PI;
-    else
-        return r - PI;
-}
-
 void FindWeights(
     std::vector<RndTransformable *> &transes,
     std::vector<float> &floats,

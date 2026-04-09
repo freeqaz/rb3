@@ -156,8 +156,15 @@ inline float Modulo(float f1, float f2) {
     return tmp;
 }
 
-inline float ModRange(float f1, float f2, float f3) {
-    return Modulo(f3 - f1, f2 - f1) + f1;
+inline float ModRange(float start, float end, float frame) {
+    float shifted = frame - start;
+    float range = end - start;
+    if (range == 0.0f)
+        return start;
+    float tmp = std::fmod(shifted, range);
+    if (tmp < 0.0f)
+        tmp += range;
+    return tmp + start;
 }
 
 inline float Interp(float a, float b, float t) { return t * (b - a) + a; }

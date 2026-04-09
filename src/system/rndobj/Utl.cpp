@@ -890,7 +890,12 @@ void MoveXfms(RndMultiMesh *mm, const Vector3 &v) {
     for (std::list<RndMultiMesh::Instance>::iterator i = mm->mInstances.begin();
          i != mm->mInstances.end();
          ++i) {
-        Add(i->mXfm.v, v, i->mXfm.v);
+        float x = i->mXfm.v.x + v.x;
+        float z = i->mXfm.v.z;
+        float y = i->mXfm.v.y;
+        i->mXfm.v.x = x;
+        i->mXfm.v.y = y + v.y;
+        i->mXfm.v.z = z + v.z;
     }
 }
 

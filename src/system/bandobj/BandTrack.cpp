@@ -236,7 +236,7 @@ void BandTrack::SetMaxMultiplier(int mult) {
 void BandTrack::SetupPlayerIntro() {
     if (mPlayerIntro) {
         mPlayerIntro->HandleType(reset_msg);
-        if (mTrackInstrument <= 7) {
+        if ((unsigned int)mTrackInstrument <= 7) {
             static Message setIcon = Message("set_icon", DataNode("G"));
             if (mParent) {
                 setIcon[0] = DataNode(mParent->GetTrackIcon());

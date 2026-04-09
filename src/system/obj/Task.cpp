@@ -190,10 +190,13 @@ void ThreadTask::Poll(float f) {
         mExecuting = true;
         SwapVars();
         Hmx::Object *old_this = DataSetThis(mThis);
-        for (; mCurrent < mScript->Size(); mCurrent++) {
+        for (; mCurrent < mScript->Size();) {
+            int old_current = mCurrent;
             mScript->Command(mCurrent)->Execute();
             if (mWait)
                 break;
+            if (mCurrent == old_current)
+                mCurrent++;
         }
         DataSetThis(old_this);
         SwapVars();
