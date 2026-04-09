@@ -339,6 +339,7 @@ void BandList::StartFocusAnim(int i, BandList::AnimState astate) {
     float f8 = TheTaskMgr.UISeconds();
     float f9 = mFocusAnim->StartFrame();
     float f10 = mFocusAnim->EndFrame();
+    float curframe = 0;
     AnimState curastate = mAnimStates[i];
     if (astate != kOut && astate != kIn) {
         MILO_WARN("bad goal parameter to StartAnim()!\n");
@@ -353,7 +354,7 @@ void BandList::StartFocusAnim(int i, BandList::AnimState astate) {
     if (b)
         f10 = f9;
     if (curastate != kOut && curastate != kIn) {
-        float curframe = mFrames[i];
+        curframe = mFrames[i];
         float f11 = Abs(f10 - curframe);
         f8 = (f8 - (f11 / mFocusAnim->FramesPerUnit()));
         f10 = curframe;

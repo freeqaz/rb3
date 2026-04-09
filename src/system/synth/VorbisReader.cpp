@@ -351,18 +351,19 @@ bool VorbisReader::TryDecode() {
 
 bool VorbisReader::TryReadPacket(ogg_packet &pk) {
     MILO_ASSERT(mOggStream, 0x3AA);
+    int err;
     while (true) {
-        int streamErr = ogg_stream_packetout(mOggStream, &pk);
-        if (streamErr < 0) {
-            VORBIS_FAIL("PacketOut", streamErr);
+        err = ogg_stream_packetout(mOggStream, &pk);
+        if (err < 0) {
+            VORBIS_FAIL("PacketOut", err);
         }
-        if (streamErr > 0)
+        if (err > 0)
             return true;
         ogg_page page;
-        int syncErr = ogg_sync_pageout(mOggSync, &page);
-        if (syncErr > 0)
+        err = ogg_sync_pageout(mOggSync, &page);
+        if (err > 0)
             ogg_stream_pagein(mOggStream, &page);
-        else
+        if (err <= 0)
             return false;
     }
 }

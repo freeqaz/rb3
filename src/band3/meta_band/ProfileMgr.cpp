@@ -77,9 +77,10 @@ ProfileMgr::ProfileMgr()
         mMicVolumes.push_back(8);
         mForcedMicGains.push_back(kNotForcingGain);
     }
+    ProfileMgr *pThis = this;
     for (int i = 0; i < kJoypadNumTypes; i++) {
         for (int j = 0; j < kNumLagContexts; j++) {
-            mJoypadExtraLagOffsets[i][j] =
+            pThis->mJoypadExtraLagOffsets[i][j] =
                 GetJoypadExtraLagInits((JoypadType)i, (LagContext)j);
         }
     }

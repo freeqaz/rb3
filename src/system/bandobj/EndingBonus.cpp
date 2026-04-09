@@ -173,10 +173,9 @@ void EndingBonus::SetIconOrder(int num, bool b) {
     }
     for (int i = 0; i < nums.size(); i++) {
         int &curnum = nums[i];
-        mIconData[curnum].SetUsed(true);
-        mIconData[curnum].mIcon->SetLocalPos(
-            Vector3(-((nums.size() - 1) * 0.5f - i) * 1.5f, 0, 0)
-        );
+        MiniIconData &curdata = mIconData[curnum];
+        curdata.SetUsed(true);
+        curdata.mIcon->SetLocalPos(-((nums.size() - 1) * 0.5f - i) * 1.5f, 0, 0);
     }
 }
 
