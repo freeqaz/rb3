@@ -137,23 +137,24 @@ MCResult BufStreamNAND::HandleResultNAND(s32 nandResult) {
     return result;
 }
 
-void BufStreamNAND::ReadImpl(void *v1, int i1) {
-    // v5 = ui2
-    unsigned int temp;
+void BufStreamNAND::ReadImpl(void *data, int count) {
+    int bytes = count;
     if(!mFail) {
-        if((mTell + i1) > mChunkSize || !mRunningTell)
+        if((mTell + count) > mChunkSize || !mRunningTell)
             LoadBufferFromNAND();
 
-        if((mRunningTell + i1) > mSize || (mTell + i1) > mChunkSize) {
-            temp = mSize - mTell;
+        int size = mSize;
+        if((mRunningTell + bytes) > size || (mTell + bytes) > mChunkSize) {
             mFail = true;
+            bytes = size - mTell;
         }
-        // init_proc(&mBuffer[mTell], temp)
-        mRunningTell += temp;
+        memcpy(data, &mBuffer[mTell], bytes);
+        mRunningTell += bytes;
+        mTell += bytes;
         if(mChecksum) {
             if(!mFail) {
-                mChecksum->Update((unsigned char*)v1, temp);
-                mBytesChecksummed += temp;
+                mChecksum->Update((unsigned char*)data, bytes);
+                mBytesChecksummed += bytes;
             }
         }
     }

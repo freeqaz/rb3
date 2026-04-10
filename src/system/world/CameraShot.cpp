@@ -1203,17 +1203,17 @@ void CamShotFrame::BuildTransform(RndCam *cam, Transform &tf, bool b3) const {
         filterDist = 1e-11f;
     } else {
         float dist = std::sqrt(screenPos.x * screenPos.x + screenPos.y * screenPos.y);
-        if (dist < 1.0f) {
-        } else {
-            dist = 1.0f;
-        }
+        dist = dist < 1.0f ? dist : 1.0f;
         filterDist = mCamShot->mFilter * dist;
     }
 
-    ::Interp(mLastTargetPos, targetPos, filterDist, targetPos);
-    me->mLastTargetPos = targetPos;
-
-    MILO_ASSERT(mLastTargetPos.x != kHugeFloat, 0x855);
+    if (filterDist == 0.0f) {
+        me->mLastTargetPos = targetPos;
+    } else {
+        ::Interp(mLastTargetPos, targetPos, filterDist, targetPos);
+        me->mLastTargetPos = targetPos;
+        MILO_ASSERT(mLastTargetPos.x != kHugeFloat, 0x855);
+    }
 
     if (mCamShot->mPath) {
         float pathFrame = mCamShot->mPathFrame;

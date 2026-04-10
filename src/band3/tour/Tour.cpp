@@ -119,8 +119,10 @@ void Tour::ConfigureTourPropertyData(DataArray *arr) {
             delete pProperty;
         } else {
             std::map<Symbol, TourProperty *>::iterator it = m_mapTourProperties.lower_bound(name);
-            if (it == m_mapTourProperties.end() || name < it->first) {
-                m_mapTourProperties.insert(it, std::make_pair(name, pProperty));
+            bool canInsert = it == m_mapTourProperties.end() || name < it->first;
+            if (canInsert) {
+                it = m_mapTourProperties.insert(it, std::map<Symbol, TourProperty *>::value_type(name, (TourProperty *)0));
+                it->second = pProperty;
             }
         }
     }

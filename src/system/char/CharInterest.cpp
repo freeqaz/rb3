@@ -157,7 +157,7 @@ done:
         f2score = 1.0f;
 
     float f7 = -(lensq * f - 1.0f);
-    if (IsNaN(f7)) {
+    if (f7 != f7) {
         f7 = 0.2f;
     }
     if (f7 < -0.0001f) {

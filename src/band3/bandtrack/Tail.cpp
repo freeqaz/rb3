@@ -193,7 +193,7 @@ void Tail::Poll(float f1, float f2, float f3) {
                 unk4e8 = 0;
             }
 
-            if (unk4ec != unk4f0 || t3 || mSlideInfo.unk0 || unk4f4) {
+            if (unk4ec != unk4f0 || t3 || mSlideInfo.unk0 || t3 != unk4f4) {
                 UpdateVerts(f2, t3);
                 unk4f0 = unk4ec;
                 unk4f4 = t3;

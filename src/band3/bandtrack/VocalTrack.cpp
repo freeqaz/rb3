@@ -926,22 +926,23 @@ void VocalTrack::BuildStaticDeployZone(
         );
     }
     bool i6 = TheSongDB->IsInCoda(MsToTickInt(fpair.first));
-    bool i8 = i6 - 1 + !i6;
     float f1;
     RndGroup *u4;
     float f2;
     if (i1 == 0) {
         f1 = mDir->mTrackBottomZ + mDir->mPitchBottomZ;
-        u4 = i6 == i8 ? mDir->mLeadLyricScrollGroup : mDir->mLeadBREGrp;
-        f2 = mDir->mLeadLyricHeight;
+        f1 = f1 * 0.5f;
+        u4 = i6 ? mDir->mLeadBREGrp : mDir->mLeadLyricScrollGroup;
+        f2 = mDir->mLeadLyricHeight * 0.5f;
     } else {
         f1 = mDir->mTrackTopZ + mDir->mPitchTopZ;
-        u4 = i6 == i8 ? mDir->mHarmonyLyricScrollGroup : mDir->mHarmonyBREGrp;
-        f2 = mDir->mHarmLyricHeight;
+        f1 = f1 * 0.5f;
+        u4 = i6 ? mDir->mHarmonyBREGrp : mDir->mHarmonyLyricScrollGroup;
+        f2 = mDir->mHarmLyricHeight * 0.5f;
     }
-    mNoteTube->SetPointPos(0, Vector3(0, 0, f1 / 2.0f));
-    mNoteTube->SetPointPos(1, Vector3(fref - f10, 0, f1 / 2.0f));
-    mNoteTube->unk_0x30 = f2 / 2.0f;
+    mNoteTube->SetPointPos(0, Vector3(0, 0, f1));
+    mNoteTube->SetPointPos(1, Vector3(fref - f10, 0, f1));
+    mNoteTube->unk_0x30 = f2;
     mNoteTube->SetBackParent(u4);
     mNoteTube->SetXPos(f10);
     mNoteTube->CreateMeshes();

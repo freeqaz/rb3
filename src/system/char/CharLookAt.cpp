@@ -42,15 +42,17 @@ void CharLookAt::Highlight() {
 #ifdef MILO_DEBUG
     if (mSource && mDest) {
         RndGraph *graph = RndGraph::GetOneFrame();
+        RndTransformable *source = GetSource();
         graph->AddLine(
-            GetSource()->WorldXfm().v, mDest->WorldXfm().v, Hmx::Color(1, 0, 0), false
+            source->WorldXfm().v, mDest->WorldXfm().v, Hmx::Color(1, 0, 0), false
         );
-        Hmx::Matrix3 pivotMtx = mPivot->WorldXfm().m;
-        Vector3 pivotVec = mPivot->WorldXfm().v;
-        DrawBounds(Vector3(mBounds.mMin.x, mBounds.mMin.y, 0), pivotMtx, pivotVec, graph);
-        DrawBounds(Vector3(mBounds.mMax.x, mBounds.mMin.y, 0), pivotMtx, pivotVec, graph);
-        DrawBounds(Vector3(mBounds.mMin.y, mBounds.mMin.z, 0), pivotMtx, pivotVec, graph);
-        DrawBounds(Vector3(mBounds.mMin.y, mBounds.mMax.z, 0), pivotMtx, pivotVec, graph);
+        RndTransformable *parent = mPivot->TransParent();
+        Hmx::Matrix3 parentMtx(parent->WorldXfm().m);
+        const Vector3 &pivotPos = mPivot->WorldXfm().v;
+        DrawBounds(Vector3(mBounds.mMin.x, mBounds.mMin.y, 0), parentMtx, pivotPos, graph);
+        DrawBounds(Vector3(mBounds.mMax.x, mBounds.mMin.y, 0), parentMtx, pivotPos, graph);
+        DrawBounds(Vector3(0, mBounds.mMin.y, mBounds.mMin.z), parentMtx, pivotPos, graph);
+        DrawBounds(Vector3(0, mBounds.mMin.y, mBounds.mMax.z), parentMtx, pivotPos, graph);
     }
 #endif
 }

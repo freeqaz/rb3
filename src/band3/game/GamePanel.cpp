@@ -302,6 +302,8 @@ void GamePanel::UpdateNowBar() {
     );
 }
 
+#pragma push
+#pragma pool_data off
 void GamePanel::UpdateLatency() {
     static DataNode &latency_test = DataVariable("latency_test");
     static DataNode &pad_button = DataVariable("pad_button");
@@ -309,14 +311,15 @@ void GamePanel::UpdateLatency() {
         mLatency->SetShowing(false);
         return;
     }
-    int bFlash = 0;
-    int bJustPressed = 0;
+    bool bFlash = 0;
+    bool bJustPressed = 0;
     int joyNum = latency_test.Int() - 2;
     if (joyNum == -1) {
         static int sFlashCnt = 0;
         float delta = TheTaskMgr.DeltaBeat();
         float prevFloor = std::floor((TheTaskMgr.Beat() - delta) * 2.0f);
-        if (std::floor(TheTaskMgr.Beat() * 2.0f) != prevFloor) {
+        float curFloor = std::floor(TheTaskMgr.Beat() * 2.0f);
+        if (curFloor != prevFloor) {
             sFlashCnt = 3;
         }
         if (sFlashCnt > 0) {
@@ -327,7 +330,8 @@ void GamePanel::UpdateLatency() {
         static bool sLastBtn = false;
         JoypadData *pad = JoypadGetPadData(joyNum);
         if (pad != nullptr) {
-            bool pressed = (pad->mButtons & (1 << pad_button.Int())) != 0;
+            int bit = pad_button.Int();
+            bool pressed = (pad->mButtons & (1 << bit)) != 0;
             bFlash = pressed;
             bJustPressed = pressed && !sLastBtn;
             sLastBtn = pressed;
@@ -355,6 +359,7 @@ void GamePanel::UpdateLatency() {
     *mLatency << MakeString("Joy %d Beat %.3f\nms %.2f last %.2f", joyNum, TheTaskMgr.Beat(), sMs[0], sMs[1]);
     mLatency->SetCallback(&gGamePanelCallback);
 }
+#pragma pop
 
 void GamePanel::SetDejitteredTime(float f1) {
     unk6c = unk70;
@@ -363,7 +368,8 @@ void GamePanel::SetDejitteredTime(float f1) {
 }
 
 void GamePanel::UpdateDeltaTimeOverlay() {
-    *mDeltaTime << MakeString("dt: %5.1f, ddt: %5.1f\n", unk70, unk70 - unk6c);
+    float t = unk70;
+    *mDeltaTime << MakeString("dt: %5.1f, ddt: %5.1f\n", t, t - unk6c);
 }
 
 void GamePanel::FinishLoad() {

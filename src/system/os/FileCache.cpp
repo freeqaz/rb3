@@ -135,7 +135,7 @@ FileCache::FileCache(int i1, LoaderPos pos, bool b3)
 FileCache::~FileCache() {
     for (int i = 0; i < mEntries.size(); i++)
         delete mEntries[i];
-    gCaches.erase(std::find(gCaches.begin(), gCaches.end(), this), gCaches.end());
+    gCaches.erase(std::remove(gCaches.begin(), gCaches.end(), this), gCaches.end());
 }
 
 void FileCache::StartSet(int iii) {

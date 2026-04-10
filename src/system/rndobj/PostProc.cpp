@@ -233,10 +233,11 @@ BEGIN_LOADS(RndPostProc)
         int dRev;
         bs >> dRev;
         MILO_ASSERT(dRev == 3, 667);
+        float f = 0;
         bool x;
-        Sphere s;
+        Vector3 v;
         int i;
-        bs >> x >> s >> i;
+        bs >> x >> v >> f >> i;
     } else
         LOAD_SUPERCLASS(Hmx::Object)
     LoadRev(bs, gRev);

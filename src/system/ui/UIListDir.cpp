@@ -33,7 +33,6 @@ UIListDir::UIListDir()
 UIListDir::~UIListDir() { DeleteAll(unk1fc); }
 
 UIListOrientation UIListDir::Orientation() const { return mOrientation; }
-float UIListDir::ElementSpacing() const { return mElementSpacing; }
 
 // fn_805693B0
 void UIListDir::BuildDrawState(
@@ -130,15 +129,13 @@ void UIListDir::DrawWidgets(
         f1 = 0;
     BuildDrawState(drawstate, state, compstate, f1);
     bool scrolling = state.IsScrolling();
+    bool isFocused = (compstate == UIComponent::kFocused);
     for (std::vector<UIListWidget *>::iterator it = vec.begin(); it != vec.end(); ++it) {
         UIListWidget *curWidget = *it;
         UIListWidgetDrawType drawType = curWidget->WidgetDrawType();
-        if (drawType == 0 || (drawType == 3 && (bptr || compstate == 1))
-            || (drawType == 1 && compstate == 1)) {
-            DrawCommand cmd = kDrawAll;
-            if (scrolling)
-                cmd = kExcludeFirst;
-            curWidget->Draw(drawstate, state, tf, compstate, box, cmd);
+        if (drawType == 0 || (drawType == 3 && (bptr || isFocused))
+            || (drawType == 1 && isFocused)) {
+            curWidget->Draw(drawstate, state, tf, compstate, box, scrolling ? kExcludeFirst : kDrawAll);
         }
     }
     if (scrolling) {

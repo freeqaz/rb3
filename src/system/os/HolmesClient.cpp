@@ -40,7 +40,7 @@ namespace {
 
     int gRealMaxBufferSize;
     HolmesProfileData gProfile[20];
-    std::list<ReadRequest *> gRequests;
+    std::list<ReadRequest> gRequests;
     CriticalSection gCrit;
     NetStream *gHolmesStream;
     MemStream *gStreamBuffer;
@@ -91,7 +91,7 @@ namespace {
                 return false;
             }
             BeginCmd(Holmes::kReadFile, false);
-            currentRequest = gRequests.front();
+            currentRequest = &gRequests.front();
             int r =
                 gHolmesStream->ReadAsync(currentRequest->mBuffer, currentRequest->mBytes);
             gRequests.pop_back();
@@ -104,7 +104,7 @@ namespace {
 #pragma optimization_level 3
     void WaitForReads() {
         CritSecTracker cst(&gCrit);
-        for (std::list<ReadRequest *>::iterator it = gRequests.begin();
+        for (std::list<ReadRequest>::iterator it = gRequests.begin();
              it != gRequests.end();
              it++) {
             WaitForResponse(Holmes::kReadFile);
@@ -517,9 +517,9 @@ void HolmesClientTruncate(int a, int b) {
 }
 
 bool PendingRead(File *f) {
-    for (std::list<ReadRequest *>::iterator it = gRequests.begin(); it != gRequests.end();
+    for (std::list<ReadRequest>::iterator it = gRequests.begin(); it != gRequests.end();
          it++) {
-        if ((*it)->mRequestor == f)
+        if (it->mRequestor == f)
             return true;
     }
     return false;

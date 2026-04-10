@@ -32,7 +32,7 @@ public:
     virtual bool IsActive(int) const;
 
     UIListOrientation Orientation() const;
-    float ElementSpacing() const;
+    float ElementSpacing() const { return mElementSpacing; }
     UIList *SubList(int, std::vector<UIListWidget *> &);
     void CompleteScroll(const UIListState &, std::vector<UIListWidget *> &);
     void CreateElements(UIList *, std::vector<UIListWidget *> &, int);

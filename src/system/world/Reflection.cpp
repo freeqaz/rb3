@@ -57,35 +57,36 @@ void WorldReflection::DoLOD(int i) {
 
 void WorldReflection::DrawShowing() {
     START_AUTO_TIMER("world_reflect");
-    if (!unke0) {
-        unke0 = true;
-        RndCam *cur = RndCam::sCurrent;
-        unkdc->Copy(RndCam::sCurrent, kCopyDeep);
-        Transform tf48(WorldXfm());
-        Transform tf78;
-        Invert(tf48, tf78);
-        Transform tfa8;
-        tfa8.Reset();
-        tfa8.m.z.z = -mVerticalStretch;
-        Multiply(tf78, tfa8, tfa8);
-        Multiply(tfa8, tf48, tfa8);
-        Multiply(cur->WorldXfm(), tfa8, unkdc->DirtyLocalXfm());
-        unkdc->Select();
-        Mode oldMode = TheRnd->DrawMode();
-        TheRnd->SetDrawMode((Mode)7);
-        DoHide();
-        DoLOD(1);
-        FOREACH (it, mDraws) {
-            RndDrawable *cur = *it;
-            if (cur)
-                cur->Draw();
-        }
-        DoLOD(-1);
-        UnHide();
-        TheRnd->SetDrawMode(oldMode);
-        cur->Select();
-        unke0 = false;
+    if (unke0) {
+        return;
     }
+    unke0 = true;
+    RndCam *cur = RndCam::sCurrent;
+    unkdc->Copy(RndCam::sCurrent, kCopyDeep);
+    Transform tf48(WorldXfm());
+    Transform tf78;
+    Invert(tf48, tf78);
+    Transform tfa8;
+    tfa8.Reset();
+    tfa8.m.z.z = -mVerticalStretch;
+    Multiply(tf78, tfa8, tfa8);
+    Multiply(tfa8, tf48, tfa8);
+    Multiply(cur->WorldXfm(), tfa8, unkdc->DirtyLocalXfm());
+    unkdc->Select();
+    Mode oldMode = TheRnd->DrawMode();
+    TheRnd->SetDrawMode((Mode)7);
+    DoHide();
+    DoLOD(1);
+    FOREACH (it, mDraws) {
+        RndDrawable *cur = *it;
+        if (cur)
+            cur->Draw();
+    }
+    DoLOD(-1);
+    UnHide();
+    TheRnd->SetDrawMode(oldMode);
+    cur->Select();
+    unke0 = false;
 }
 
 SAVE_OBJ(WorldReflection, 0xA0)

@@ -958,7 +958,9 @@ float RndParticleSys::Burst::Emit(float f1) {
         ret = unk4 * 2.0f - ret;
     }
     ret *= unk8;
-    return ret * ret * 3.0f - ret * ret * ret * 2.0f * unk0 * f1;
+    float ret2 = ret * ret;
+    float ret3 = ret2 * ret;
+    return (ret2 * 3.0f - ret3 * 2.0f) * (unk0 * f1);
 }
 
 float RndParticleSys::CheckBursts(float f1) {

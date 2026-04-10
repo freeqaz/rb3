@@ -496,22 +496,20 @@ void SongDB::SetupPhrasesForTrack(
     if (extents.empty())
         return;
     GameGemList *gemList = mSongData->GetGemList(trackNum);
+    int phraseIdx = 0;
+    int phraseOffset = 0;
     gemStates.clear();
     gemStates.reserve(gemList->mGems.size());
-    int phraseIdx = 0;
-    for (int gemIdx = 0; gemIdx < gemList->NumGems(); gemIdx++) {
+    for (int gemIdx = 0; (unsigned)gemIdx < (unsigned)gemList->NumGems(); gemIdx++) {
+        int gemTick = gemList->mGems[gemIdx].mTick;
         unsigned char state = 0;
         if (phraseIdx < extents.size()) {
-            if (gemList->mGems[gemIdx].mTick >= extents[phraseIdx].unk0) {
-                bool setStart;
-                if (gemIdx == 0) {
-                    setStart = true;
-                } else {
+            if (gemTick >= extents[phraseIdx].unk0) {
+                bool setStart = true;
+                if (gemIdx != 0) {
                     bool prevInPhrase = gemStates.size() > (unsigned)(gemIdx - 1)
                         && (gemStates[gemIdx - 1] & 0x2);
-                    if (!prevInPhrase) {
-                        setStart = true;
-                    } else {
+                    if (prevInPhrase) {
                         bool prevEndOfPhrase = gemStates.size() > (unsigned)(gemIdx - 1)
                             && (gemStates[gemIdx - 1] & 0x4);
                         setStart = prevEndOfPhrase;
@@ -523,14 +521,11 @@ void SongDB::SetupPhrasesForTrack(
                 state |= 0x2;
             }
         }
-        if (gemIdx == gemList->NumGems() - 1) {
+        if ((unsigned)gemIdx == (unsigned)(gemList->NumGems() - 1)
+            || gemList->mGems[gemIdx + 1].mTick >= extents[phraseIdx].unk4) {
             state = (unsigned char)(state | 0x4);
+            phraseOffset += sizeof(Extent);
             phraseIdx++;
-        } else if (phraseIdx < extents.size()) {
-            if (gemList->mGems[gemIdx + 1].mTick >= extents[phraseIdx].unk4) {
-                state = (unsigned char)(state | 0x4);
-                phraseIdx++;
-            }
         }
         gemStates.push_back(state);
     }

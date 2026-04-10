@@ -95,9 +95,7 @@ void ArpeggioShape::ShowChordShape(bool show) {
 
 void ArpeggioShape::SetChordLabel(const String &str, float f, bool not_lefty) {
     mChordLabel->SetText(str.c_str());
-    Vector3 v(mChordLabel->mLocalXfm.v);
-    v.x = f;
-    mChordLabel->SetLocalPos(v);
+    mChordLabel->SetLocalPos(f, mChordLabel->mLocalXfm.v.y, mChordLabel->mLocalXfm.v.z);
     mChordLabel->SetShowing(str != "");
     if (not_lefty) {
         RndText::Alignment a = mChordLabel->GetAlignment();

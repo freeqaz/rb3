@@ -222,7 +222,7 @@ const Transform &RndEnviron::ColorXfm() const {
     static Vector3 x(1, 0, 0);
     static Vector3 y(0, 1, 0);
     static Vector3 z(0, 0, 1);
-    static Transform ident(Hmx::Matrix3(x, y, z), Vector3(0, 0, 0));
+    static Transform ident(Hmx::Matrix3(x, y, z), Vector3::sZero);
     if (mUseColorAdjust)
         return mColorXfm.mColorXfm;
     else

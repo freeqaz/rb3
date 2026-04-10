@@ -126,21 +126,21 @@ void NoteTube::LookupPitchedUVCoordinates(
     f4 = 1.0f;
     MILO_ASSERT(mPitched, 0x1A8);
     MILO_ASSERT(mGlowLevel != -1, 0x1A9);
-    int column, i2;
+    int i2, column;
     if (b) {
         MILO_ASSERT((mPart == 0) || (mPart == 1), 0x1AF);
-        i2 = 0;
         column = (mPart == 0) + 2;
+        i2 = 0;
     } else {
         column = mGlowLevel;
-        i2 = mPart + (unk_0x2C > 0) + 1;
+        i2 = mPart + (unk_0x2C != 0 ? 3 : 0) + 1;
     }
     if (i2 != -1) {
         MILO_ASSERT(column != -1, 0x1C0);
         f2 = column * 0.25f;
-        f1 = column * 0.25f + 0.25f;
+        f1 = f2 + 0.25f;
         f3 = i2 * 0.125f;
-        f4 = i2 * 0.125f + 0.125f;
+        f4 = f3 + 0.125f;
     }
 }
 

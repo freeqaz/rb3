@@ -224,63 +224,64 @@ void WorldCrowd::Set3DCharList(
     const std::vector<std::pair<int, int> > &pairVec, Hmx::Object *obj
 ) {
     START_AUTO_TIMER("crowd_set3d");
-    if (!IsForced3DCrowd()) {
-        float oldFullness = mFlatFullness;
-        Reset3DCrowd();
-        std::vector<std::pair<RndMultiMesh *, std::list<RndMultiMesh::Instance>::iterator> >
-            grosserPairs;
-        grosserPairs.reserve(pairVec.size());
-        for (int i = 0; i != pairVec.size(); i++) {
-            int cap1 = pairVec[i].first;
-#ifdef MILO_DEBUG
-            if (cap1 >= mCharacters.size()) {
-                MILO_WARN(
-                    "%s setting bad mesh %d, only has %d",
-                    PathName(obj),
-                    cap1,
-                    mCharacters.size()
-                );
-            } else {
-#endif
-                ObjList<CharData>::iterator charIt = mCharacters.begin();
-                for (int n = 0; n < cap1; ++n, ++charIt)
-                    ;
-                RndMultiMesh *curMMesh = charIt->mMMesh;
-                if (curMMesh) {
-                    int cap2 = pairVec[i].second;
-#ifdef MILO_DEBUG
-                    if (cap2 >= curMMesh->mInstances.size()) {
-                        MILO_WARN(
-                            "%s setting bad 3d char %d on mmesh %s, only has %d chars",
-                            PathName(this),
-                            cap2,
-                            curMMesh->Name(),
-                            curMMesh->mInstances.size()
-                        );
-                    } else {
-#endif
-                        std::list<RndMultiMesh::Instance>::iterator instIt =
-                            curMMesh->mInstances.begin();
-                        for (int n = 0; n < cap2; ++instIt, ++n)
-                            ;
-                        charIt->m3DChars.push_back(CharData::Char3D(instIt->mXfm, cap2));
-                        grosserPairs.push_back(std::make_pair(charIt->mMMesh, instIt));
-#ifdef MILO_DEBUG
-                    }
-#endif
-                }
-#ifdef MILO_DEBUG
-            }
-#endif
-        }
-        for (int i = 0; i != grosserPairs.size(); i++) {
-            grosserPairs[i].first->mInstances.erase(grosserPairs[i].second);
-            grosserPairs[i].first->InvalidateProxies();
-        }
-        Sort3DCharList();
-        SetFullness(oldFullness, mCharFullness);
-        AssignRandomColors();
+    if (IsForced3DCrowd()) {
+        return;
     }
+    float oldFullness = mFlatFullness;
+    Reset3DCrowd();
+    std::vector<std::pair<RndMultiMesh *, std::list<RndMultiMesh::Instance>::iterator> >
+        grosserPairs;
+    grosserPairs.reserve(pairVec.size());
+    for (int i = 0; i != pairVec.size(); i++) {
+        int cap1 = pairVec[i].first;
+#ifdef MILO_DEBUG
+        if (cap1 >= mCharacters.size()) {
+            MILO_WARN(
+                "%s setting bad mesh %d, only has %d",
+                PathName(obj),
+                cap1,
+                mCharacters.size()
+            );
+        } else {
+#endif
+            ObjList<CharData>::iterator charIt = mCharacters.begin();
+            for (int n = 0; n < cap1; ++n, ++charIt)
+                ;
+            RndMultiMesh *curMMesh = charIt->mMMesh;
+            if (curMMesh) {
+                int cap2 = pairVec[i].second;
+#ifdef MILO_DEBUG
+                if (cap2 >= curMMesh->mInstances.size()) {
+                    MILO_WARN(
+                        "%s setting bad 3d char %d on mmesh %s, only has %d chars",
+                        PathName(this),
+                        cap2,
+                        curMMesh->Name(),
+                        curMMesh->mInstances.size()
+                    );
+                } else {
+#endif
+                    std::list<RndMultiMesh::Instance>::iterator instIt =
+                        curMMesh->mInstances.begin();
+                    for (int n = 0; n < cap2; ++instIt, ++n)
+                        ;
+                    charIt->m3DChars.push_back(CharData::Char3D(instIt->mXfm, cap2));
+                    grosserPairs.push_back(std::make_pair(charIt->mMMesh, instIt));
+#ifdef MILO_DEBUG
+                }
+#endif
+            }
+#ifdef MILO_DEBUG
+        }
+#endif
+    }
+    for (int i = 0; i != grosserPairs.size(); i++) {
+        grosserPairs[i].first->mInstances.erase(grosserPairs[i].second);
+        grosserPairs[i].first->InvalidateProxies();
+    }
+    Sort3DCharList();
+    SetFullness(oldFullness, mCharFullness);
+    AssignRandomColors();
 }
 
 void SetMatColorFlags(

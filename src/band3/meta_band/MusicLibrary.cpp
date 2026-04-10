@@ -725,8 +725,8 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
                     ObjectDir::Main()->Find<UIScreen>("full_setlist_screen", true)
                 );
             }
-        } else if (CanHeadersBeSelected() && node->LocalizeToken()) {
-            bool makeSetlist = GetMakingSetlist(false);
+        } else if (CanHeadersBeSelected() && node->GetSongCount()) {
+            bool makeSetlist = !GetMakingSetlist(false);
             if (makeSetlist) {
                 SetMakingSetlist(true);
             }
@@ -758,10 +758,10 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
             }
         } else {
             if (songNode->GetSongRecord()->GetRestricted() && !b3) {
-                ParentalControlPanel *panel = ObjectDir::Main()->Find<ParentalControlPanel>("parental_control_panel", false);
+                ParentalControlPanel *panel = ObjectDir::Main()->Find<ParentalControlPanel>("parental_control_panel", true);
                 panel->unk38 = (int)user;
                 TheUI.PushScreen(
-                    ObjectDir::Main()->Find<UIScreen>("parental_control_screen", false)
+                    ObjectDir::Main()->Find<UIScreen>("parental_control_screen", true)
                 );
             } else if (IsSongAllowedInSetlist(songID, b3)) {
                 if (!songNode->IsEnabled())
@@ -786,7 +786,7 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
             PlaySetlist(mCurrentSetlist);
         } else if (!b3) {
             TheUI.PushScreen(
-                ObjectDir::Main()->Find<UIScreen>("leader_setlist_warning_screen", false)
+                ObjectDir::Main()->Find<UIScreen>("leader_setlist_warning_screen", true)
             );
         }
         break;

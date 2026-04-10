@@ -877,11 +877,9 @@ void DistributeXfms(RndMultiMesh *mm, int i, float f) {
     for (std::list<RndMultiMesh::Instance>::iterator it = mm->mInstances.begin();
          it != mm->mInstances.end();
          ++it) {
-        float delta_y = (float)(idx / i) * f;
-        float delta_x = (float)(idx % i) * f;
-        it->mXfm.v.z += zero;
-        it->mXfm.v.x += delta_x;
-        it->mXfm.v.y += delta_y;
+        float delta_y = f * (float)(idx / i);
+        float delta_x = f * (float)(idx % i);
+        it->mXfm.v.Set(it->mXfm.v.x + delta_x, it->mXfm.v.y + delta_y, it->mXfm.v.z + zero);
         ++idx;
     }
 }

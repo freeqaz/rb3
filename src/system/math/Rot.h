@@ -16,8 +16,8 @@ inline void Multiply(const Transform &t, const Vector3 &v, Vector3 &out) {
     float sx = t.m.x.y * dy;
     sz += t.m.z.x * dx;
     sy += t.m.y.x * dx;
-    sx += t.m.x.x * dx;
     float dz = v.z - t.v.z;
+    sx += t.m.x.x * dx;
     out.z = t.m.z.z * dz + sz;
     out.y = t.m.y.z * dz + sy;
     out.x = t.m.x.z * dz + sx;

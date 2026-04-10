@@ -89,14 +89,16 @@ void MultiMeshWidgetImp::PushInstance(RndMultiMesh::Instance &inst) {
 }
 
 void MultiMeshWidgetImp::DrawInstances(const ObjPtrList<RndMesh> &meshes, int i2) {
+    int count = 0;
     for (int i = 0; i < mMultiMeshes.size(); i++) {
         RndMultiMesh *mesh = mMultiMeshes[i];
         if (unk10) {
             WiiMultiMesh *wiiMesh = dynamic_cast<WiiMultiMesh *>(mesh);
             wiiMesh->unk34 = true;
-            mesh->DrawShowing();
         }
-        if (i2 >= 0 && i <= i2)
+        mesh->DrawShowing();
+        count++;
+        if (i2 >= 0 && count >= i2)
             break;
     }
 }
