@@ -650,7 +650,7 @@ void BandDirector::VenueLoaded(WorldDir *) { mDircuts.clear(); }
 
 void BandDirector::HarvestDircuts() {
     if (mPropAnim && mVenue.Dir()) {
-        mDircuts.clear();
+        mDircuts.resize(0);
         TheBandWardrobe->ClearDircuts();
         mIntroShot = nullptr;
         if (!TheBandWardrobe->DemandLoadSym()) {
@@ -684,8 +684,7 @@ void BandDirector::HarvestDircuts() {
                         if (TheBandWardrobe->PlayShot5()) {
                             val = RemapCat(val, TheBandWardrobe->GetPlayMode());
                         }
-                        float frame = keys[i].frame;
-                        AddDircut(val, frame / 30.0f);
+                        AddDircut(val, keys[i].frame / 30.0f);
                     }
                 }
             }

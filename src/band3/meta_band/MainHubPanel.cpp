@@ -160,27 +160,30 @@ void MainHubPanel::RefreshData() { PrepareProfilesAndMessages(); }
 void MainHubPanel::ReloadMessages() {
     unkb8 = false;
     UpdateMessageProvider();
+    LocalBandUser *user = nullptr;
     BandProfile *profile = TheProfileMgr.GetPrimaryProfile();
     if (profile) {
-        LocalBandUser *user = TheBandUserMgr->GetUserFromPad(profile->GetPadNum());
-        if (user) {
-            if (TheServer.GetPlayerID(profile->GetPadNum())) {
-                TrackType ty = user->GetTrackType();
-                if (ty - 10U <= 2) {
-                    ty = ControllerTypeToTrackType(
-                        user->ConnectedControllerType(), RandomInt(0, 2)
-                    );
-                }
-                ScoreType sty = TrackTypeToScoreType(
-                    ty,
-                    user->GetPreferredScoreType() == 4,
-                    user->GetPreferredScoreType() == 6
+        user = TheBandUserMgr->GetUserFromPad(profile->GetPadNum());
+    }
+    if (profile) {
+        if (!user) return;
+        if (TheServer.GetPlayerID(profile->GetPadNum())) {
+            TrackType ty = user->GetTrackType();
+            if (ty - 10U <= 2) {
+                bool randBool = RandomInt(0, 2) != 0;
+                ty = ControllerTypeToTrackType(
+                    user->ConnectedControllerType(), randBool
                 );
-                if (profile && (profile != unkbc || sty != unkc0)) {
-                    unkbc = profile;
-                    unkc0 = sty;
-                    TheRockCentral.GetTickerInfo(profile, sty, mLabelUpdateResults, this);
-                }
+            }
+            ScoreType sty = TrackTypeToScoreType(
+                ty,
+                user->GetPreferredScoreType() == 4,
+                user->GetPreferredScoreType() == 6
+            );
+            if (profile && (profile != unkbc || sty != unkc0)) {
+                unkbc = profile;
+                unkc0 = sty;
+                TheRockCentral.GetTickerInfo(profile, sty, mLabelUpdateResults, this);
             }
         }
     }

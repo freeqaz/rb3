@@ -306,18 +306,18 @@ void SpotlightDrawer::DrawMeshVec(std::vector<SpotMeshEntry> &entries) {
         RndMesh *mesh4 = it->unk4;
         mesh4->Highlight();
         std::vector<SpotMeshEntry>::iterator itEnd = entries.end();
-        for (; it != itEnd; ++it) {
-            RndMesh *mesh2 = it->unk0;
-            int i6 = mesh4 - it->unk4;
-            int i1 = i6 - 1 + (i6 == 0);
-            if (i6 != i1 || mesh != mesh2) {
+        for (++it; it != itEnd; ++it) {
+            bool envChanged = (it->unk4 != mesh4);
+            bool meshChanged = (it->unk0 != mesh);
+            if (envChanged || meshChanged) {
                 multiMesh->DrawShowing();
-                if (i6 != i1 && mesh4) {
+                if (envChanged && mesh4) {
                     mesh4 = it->unk4;
                     mesh4->Highlight();
                 }
-                if (mesh != mesh2) {
-                    multiMesh = it->unk0->CreateMultiMesh();
+                if (meshChanged) {
+                    mesh = it->unk0;
+                    multiMesh = mesh->CreateMultiMesh();
                 }
             }
             multiMesh->mInstances.push_back(RndMultiMesh::Instance(it->unk10));

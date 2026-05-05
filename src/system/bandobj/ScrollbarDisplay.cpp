@@ -124,13 +124,16 @@ void ScrollbarDisplay::UpdateScrollbarHeightAndPosition() {
     MILO_ASSERT(m_pTopBone, 0xFF);
     MILO_ASSERT(m_pBottomBone, 0x100);
     if (GetListAttached()) {
-        SetLocalPos(Vector3(mListXOffset, 0, mListYOffset));
+        SetLocalPos(mListXOffset, 0, mListYOffset);
     }
-    if (mScrollbarHeight < mMinThumbHeight)
-        mScrollbarHeight = mMinThumbHeight;
-    Vector3 v28(m_pTopBone->mLocalXfm.v);
-    v28.z -= mScrollbarHeight;
-    m_pBottomBone->SetLocalPos(v28);
+    float minH = mMinThumbHeight;
+    if (mScrollbarHeight < minH)
+        mScrollbarHeight = minH;
+    m_pBottomBone->SetLocalPos(
+        m_pTopBone->mLocalXfm.v.x,
+        m_pTopBone->mLocalXfm.v.y,
+        m_pTopBone->mLocalXfm.v.z - mScrollbarHeight
+    );
 }
 
 void ScrollbarDisplay::UpdateThumbScaleAndPosition() {

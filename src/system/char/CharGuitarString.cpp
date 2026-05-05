@@ -18,12 +18,17 @@ void CharGuitarString::Poll() {
     Transform tf50(mBend->WorldXfm());
     const Vector3 &nutvec = mNut->WorldXfm().v;
     const Vector3 &bridgevec = mBridge->WorldXfm().v;
-    Transform &tf4(mTarget->WorldXfm());
-    Vector3 tmp;
-    Subtract(tf4.v, nutvec, tmp);
-    Vector3 tmp2;
-    Subtract(bridgevec, nutvec, tmp2);
-    float clamped = Clamp(0.0f, 1.0f, Dot(tmp, tmp2) / Dot(tmp2, tmp2));
+    const Vector3 &targetvec = mTarget->WorldXfm().v;
+    float ny = nutvec.y; float by = bridgevec.y;
+    float dy = by - ny;
+    float ey = targetvec.y - ny;
+    float nx = nutvec.x; float bx = bridgevec.x;
+    float dx = bx - nx;
+    float nz = nutvec.z; float bz = bridgevec.z;
+    float dz = bz - nz;
+    float ex = targetvec.x - nx;
+    float ez = targetvec.z - nz;
+    float clamped = Clamp(0.0f, 1.0f, (ez*dz + (ex*dx + ey*dy)) / (dz*dz + (dx*dx + dy*dy)));
     if (mOpen)
         clamped = 0.0f;
     Interp(nutvec, bridgevec, clamped, tf50.v);

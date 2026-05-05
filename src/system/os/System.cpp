@@ -470,9 +470,11 @@ void AppendThreadStackTrace(char *buf, unsigned int *stack) {
         idx++;
     }
     strcat(buf, " (map file unavailable)");
-    for (int i = 0; i < idx; i++) {
+    unsigned int *ptr = stack;
+    while ((ptr - stack) < idx) {
         strcat(buf, "\n   ");
-        sprintf(buf + strlen(buf), "%08x", stack[i]);
+        sprintf(buf + strlen(buf), "%08x", *ptr);
+        ptr++;
     }
 }
 

@@ -130,10 +130,7 @@ void DataNetLoader::PollLoading() {
     if (mLoader) {
         if (mLoader->mIsLoaded) {
             int size = mLoader->mSize;
-            char *buffer = nullptr;
-            if (mLoader->mIsLoaded) {
-                buffer = mLoader->mBuffer;
-            }
+            char *buffer = mLoader->GetBuffer();
             const char *remotePath = mLoader->mStrRemotePath.c_str();
             if (streq(FileGetExt(remotePath), "dtz")) {
                 DataArray::SetFile(remotePath);
@@ -142,11 +139,14 @@ void DataNetLoader::PollLoading() {
                 BufStream bs(buffer, size, true);
                 unk_0x4 = DataReadStream(&bs);
             }
+            TheNetCacheMgr->DeleteNetLoader(mLoader);
+            mLoader = nullptr;
         } else if (!mLoader->HasFailed()) {
             return;
+        } else {
+            TheNetCacheMgr->DeleteNetLoader(mLoader);
+            mLoader = nullptr;
         }
-        TheNetCacheMgr->DeleteNetLoader(mLoader);
-        mLoader = nullptr;
     }
 }
 

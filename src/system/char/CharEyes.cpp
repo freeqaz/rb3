@@ -365,7 +365,10 @@ void CharEyes::EnforceMinimumTargetDistance(
         f4 = mMinTargetDist;
     if (vlen < f4) {
         Vector3 v38;
-        ScaleToMagnitude(v2c, f4, v38);
+        if (!(std::abs(v2c.x) < 0.0001f) || !(std::abs(v2c.y) < 0.0001f) || !(std::abs(v2c.z) < 0.0001f))
+            Scale(v2c, f4 / Length(v2c), v38);
+        else
+            v38.Set(0, 0, 0);
         Add(v1, v38, vout);
         unkc5 = true;
     }

@@ -123,8 +123,8 @@ void InterpVertData(
     MILO_ASSERT(a.size() == b.size(), 0x133);
     std::vector<T1>::const_iterator ait = a.begin();
     std::vector<T1>::const_iterator bit = b.begin();
-    std::vector<T1>::const_iterator aend = a.end();
     RndMesh::Vert *vertit = verts.begin();
+    std::vector<T1>::const_iterator aend = a.end();
     if (a.size() > verts.size()) {
         aend -= (a.size() - verts.size());
     }

@@ -121,6 +121,7 @@ void TrackPanel::Exit() {
 
 #define kTrackNumSlots 5
 
+#pragma optimization_level 2
 void TrackPanel::UpdateReservedVocalSlot() {
     MILO_ASSERT(mTrackSlots.size() == kTrackNumSlots, 0xF3);
     int u3 = -1;
@@ -134,6 +135,7 @@ void TrackPanel::UpdateReservedVocalSlot() {
     else
         mReservedVocalSlot = 4;
 }
+#pragma optimization_level reset
 
 void TrackPanel::CreateTracks() {
     if (!unk5d) {

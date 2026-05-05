@@ -89,18 +89,21 @@ void LightHue::Sync() {
     }
 }
 
-// matches in retail
 void LightHue::TranslateColor(const Hmx::Color &col, Hmx::Color &res) {
     if (!mKeys.empty()) {
         float maxcol = Max(1.0f, Max(col.red, col.green, col.blue));
         Hmx::Color col30;
         Multiply(col, 1.0f / maxcol, col30);
+        float vecx, vecy, vecz;
         float h, s, l;
-        MakeHSL(col30, h, s, l);
         Vector3 vec;
+        MakeHSL(col30, h, s, l);
         mKeys.AtFrame(h, vec);
-        float clamped = Clamp(0.0f, 1.0f, l * vec.z * 2.0f);
-        MakeColor(vec.x, s * vec.y, clamped, res);
+        vecx = vec.x;
+        vecy = vec.y;
+        vecz = vec.z;
+        float clamped = Clamp(0.0f, 1.0f, l * vecz * 2.0f);
+        MakeColor(vecx, s * vecy, clamped, res);
         Multiply(res, maxcol, res);
     } else
         res = col;
