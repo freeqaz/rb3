@@ -1129,9 +1129,7 @@ void BandCharacter::PlayGroup(
         bool b3 = false;
         unk5a3 = false;
         mForceNextGroup = false;
-        if ((b | b528) || f != 0) {
-            b3 = true;
-        }
+        b3 = (b | b528) || f != 0;
         CharClipDriver *driver = SetState(cc, mPlayFlags, i, b3, true);
         if (driver) {
             mFrozen = false;

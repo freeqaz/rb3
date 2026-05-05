@@ -512,12 +512,22 @@ void Multiply(const Vector3 &vin, const Hmx::Quat &q, Vector3 &vout) {
     float qzqw = qw * qz;
     float qxqy = qx * qy;
     float neg_qyqy = neg_qy * qy;
-    float qxqz = qx * qz;
-    float qyqw = qw * qy;
 
-    vout.y = ((qyqz - qxqw) * vinz + (qzqw + qxqy) * vinx + (neg_qxqx + neg_qzqz) * viny) * 2.0f + viny;
-    vout.x = ((qyqw + qxqz) * vinz + (neg_qyqy + neg_qzqz) * vinx + (qxqy - qzqw) * viny) * 2.0f + vinx;
-    vout.z = ((neg_qxqx + neg_qyqy) * vinz + (qxqz - qyqw) * vinx + (qyqz + qxqw) * viny) * 2.0f + vinz;
+    float sum_z_viny = qxqw + qyqz;
+    float qxqz = qx * qz;
+    float sum_x_viny = qxqy - qzqw;
+    float qyqw = qw * qy;
+    float sum_y_viny = neg_qxqx + neg_qzqz;
+    float sum_y_vinx = qzqw + qxqy;
+    float sum_x_vinx = neg_qyqy + neg_qzqz;
+    float sum_x_vinz = qyqw + qxqz;
+    float sum_y_vinz = qyqz - qxqw;
+    float sum_z_vinx = qxqz - qyqw;
+    float sum_z_vinz = neg_qxqx + neg_qyqy;
+
+    vout.y = (sum_y_vinz * vinz + sum_y_vinx * vinx + sum_y_viny * viny) * 2.0f + viny;
+    vout.x = (sum_x_vinz * vinz + sum_x_vinx * vinx + sum_x_viny * viny) * 2.0f + vinx;
+    vout.z = (sum_z_vinz * vinz + sum_z_vinx * vinx + sum_z_viny * viny) * 2.0f + vinz;
 }
 
 TextStream &operator<<(TextStream &ts, const Hmx::Quat &v) {

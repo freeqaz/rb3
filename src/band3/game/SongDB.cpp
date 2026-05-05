@@ -533,12 +533,15 @@ void SongDB::SetupPhrasesForTrack(
 }
 
 const std::vector<unsigned char> &SongDB::TrackData::GetGemStates(BeatmatchPhraseType ty) const {
-    if (ty == kSoloPhrase)
+    switch (ty) {
+    case kSoloPhrase:
         return unk24;
-    if (ty == kCommonPhrase)
+    case kCommonPhrase:
         return unk2c;
-    MILO_FAIL("GetGemStates called with bad type %d", ty);
-    return unk24;
+    default:
+        MILO_FAIL("GetGemStates called with bad type %d", ty);
+        return unk24;
+    }
 }
 
 std::vector<Extent> &SongDB::GetExtents(int i1, BeatmatchPhraseType ty) {

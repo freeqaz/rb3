@@ -123,7 +123,7 @@ int PresenceMgr::GetPresenceContextFromMode(Symbol s, bool b) {
     if (!unk1c)
         return -1;
     else {
-        return unk20->FindArray(s)->Int(b + 1);
+        return unk20->FindArray(s)->Int(b ? 2 : 1);
     }
 }
 
@@ -184,7 +184,7 @@ int PresenceMgr::GetPlayModeContextFromUser(const LocalBandUser *pUser, bool bLe
 }
 
 DataNode PresenceMgr::OnPresenceChange(DataArray *a) {
-    if (!a)
+    if (!unk1c)
         return 0;
     else {
         UpdatePresence();

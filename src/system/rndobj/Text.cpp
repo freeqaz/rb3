@@ -531,7 +531,8 @@ RndText::ParseMarkup(const char *cc, RndText::Style *style, float f3, float f4) 
             style->color = mStyle.color;
         } else {
             int colorR = 0, colorG = 0, colorB = 0;
-            int colorA = style->color.a;
+            int colorA = (int)((float)style->color.a * 255.999f);
+            ptr++;
             sscanf(ptr, "%d %d %d %d", &colorR, &colorG, &colorB, &colorA);
             style->color.Set(
                 colorR / 255.0f,
@@ -952,8 +953,8 @@ void RndText::ApplyLineText(
                 if (i7 < i6) {
                     RndFont *defining = GetDefiningFont(use6, key);
                     if (defining) {
-                        f28 += localStyle.size * defining->CharAdvance(use6)
-                            + localStyle.size * defining->Kerning(i23, use6);
+                        f28 += localStyle.size * defining->Kerning(i23, use6);
+                        f28 += localStyle.size * defining->CharAdvance(use6);
                     }
                     i7++;
                     i23 = use6;
@@ -986,7 +987,7 @@ void RndText::ApplyLineText(
                 }
                 curMesh->SetMat(curFontKey->GetMat());
             }
-            RndMesh::Vert *theVert = curMesh->Verts().begin() + line.startIdx * 0xD0;
+            RndMesh::Vert *theVert = curMesh->Verts().begin() + line.startIdx * 4;
             RndMesh::Vert *vertd8 = theVert;
             const char *curStrStr = utf8.c_str();
             while (*curStrStr != '\0') {
@@ -1038,7 +1039,7 @@ void RndText::ApplyLineText(
                     curStrStr += decoded;
                 }
             }
-            RotateLineVerts(line, theVert, vertd8);
+            RotateLineVerts(line, vertd8, theVert);
             meshInfo.syncFlags |= uvar8;
         }
         if (b7)

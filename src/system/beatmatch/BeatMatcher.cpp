@@ -364,7 +364,7 @@ int BeatMatcher::GetMaxSlots() const {
     if (type == kTrackRealKeys)
         return 25;
     int d = type - kTrackRealGuitar;
-    return (int)((unsigned)((3 | ~d) - ((unsigned)(3 - d) >> 1)) >> 31) + 5;
+    return (int)(((unsigned)(~(~3 & d)) - ((unsigned)(3 - d) >> 1)) >> 31) + 5;
 }
 
 TrackType BeatMatcher::GetTrackType(int idx) const { return mTrackTypes[idx]; }

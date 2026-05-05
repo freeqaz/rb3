@@ -154,7 +154,7 @@ bool ChordShapeGenerator::CheckParams() const {
 }
 
 int shapesGenerated;
-int cycles;
+unsigned int cycles;
 
 void ChordShapeGenerator::DumpChordGenData() {
     if (shapesGenerated > 0) {

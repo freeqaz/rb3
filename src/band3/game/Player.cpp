@@ -851,7 +851,7 @@ void Player::Hit() {
 
 void Player::DelayReturn(bool b) {
     mEnableMs = PollMs();
-    if (!(mEnableMs > 0.0f))
+    if (mEnableMs < 0.0f)
         mEnableMs = 0.0f;
     if (b) {
         mEnableMs += mParams->mMsToReturnFromBrink;

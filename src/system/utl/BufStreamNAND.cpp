@@ -11,7 +11,7 @@ BufStreamNAND::BufStreamNAND(void *v1, int i1, char* buffer, bool b1)
 }
 
 BufStreamNAND::~BufStreamNAND() {
-
+    DeleteChecksum();
 }
 
 int BufStreamNAND::Tell() {

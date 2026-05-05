@@ -42,14 +42,6 @@ inline void Triangle::Set(const Vector3 &v0, const Vector3 &v1, const Vector3 &v
 PatchVerts gPatchVerts;
 int MESH_REV_SEP_COLOR = 0x25;
 
-void PatchVerts::Add(int vertIdx, RndMesh::VertVector &verts, Vector3 &centroid) {
-    int idx = GreaterEq(vertIdx);
-    mPatchVerts.insert(mPatchVerts.begin() + idx, vertIdx);
-    mCentroid += verts[vertIdx].pos;
-    centroid = mCentroid;
-    float invCount = 1.0f / (float)(unsigned int)mPatchVerts.size();
-    centroid *= invCount;
-}
 
 DECOMP_FORCEACTIVE(
     Mesh,
@@ -967,8 +959,8 @@ void RndMesh::OnSync(int flags) {
     if (PatchOkay(mVerts.size(), mFaces.size())) {
         mPatches.push_back(mFaces.size());
     } else if (flags & 0x100U) {
-        int u13 = 0xFFFF;
-        int i12 = 0;
+        u16 u13 = 0xFFFF;
+        u16 i12 = 0;
         int i4 = 0;
         FOREACH (it, mFaces) {
             i12 = Max(it->v3, Max<u16>(i12, it->v1, it->v2));
@@ -990,10 +982,10 @@ void RndMesh::OnSync(int flags) {
         while (true) {
             if (mFaces.empty())
                 break;
-            int u5 = 4;
-            float f68 = 0;
             std::vector<Face>::iterator faceIt = mFaces.begin();
             std::vector<Face>::iterator bestFaceIt = mFaces.begin();
+            int u5 = 4;
+            float f68 = 0;
             for (; faceIt != mFaces.end(); ++faceIt) {
                 int uvar16 = !gPatchVerts.HasVert(faceIt->v1)
                     + !gPatchVerts.HasVert(faceIt->v2) + !gPatchVerts.HasVert(faceIt->v3);

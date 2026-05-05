@@ -388,7 +388,14 @@ public:
 
     int NumVerts() const { return mPatchVerts.size(); }
 
-    void Add(int, RndMesh::VertVector &, Vector3 &);
+    inline void Add(int vertIdx, RndMesh::VertVector &verts, Vector3 &centroid) {
+        int idx = GreaterEq(vertIdx);
+        mPatchVerts.insert(mPatchVerts.begin() + idx, vertIdx);
+        mCentroid += verts[vertIdx].pos;
+        centroid = mCentroid;
+        float invCount = 1.0f / (float)(unsigned int)mPatchVerts.size();
+        centroid *= invCount;
+    }
 
     void Clear() {
         mPatchVerts.clear();
