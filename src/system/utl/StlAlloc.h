@@ -69,11 +69,10 @@ namespace STLPORT {
         size_type max_size() const { return size_type(-1) / sizeof(T); }
 
         pointer allocate(const size_type count, const void *hint = nullptr) const {
-#ifdef STL_NODE_ALLOC_DEBUG
-            // A leftover from the earlier prototype versions of RB3;
-            // bank 5/6 use type info for allocation tracing purposes
-            typeid(pointer);
-#endif
+            const char *name = 0;
+            if (gStlAllocNameLookup) {
+                name = "";
+            }
             return reinterpret_cast<pointer>(
                 _MemOrPoolAllocSTL(count * sizeof(T), FastPool)
             );

@@ -25,6 +25,14 @@ void GeoInit() {
 }
 
 DECOMP_FORCEACTIVE(Geo, "points:");
+DECOMP_FORCEACTIVE(Geo,
+    "\n\tfront:", "\n\tback:", "\n\tleft:", "\n\tright:", "\n\ttop:", "\n\tbottom:",
+    "\n\tbase:", "\n\tdir:", "\n\tmin:", "\n\tmax:",
+    "(x:", " y:", " w:", " h:", " hw:", " hh:",
+    "\n\tcenter:", " radius:", "\n\tstart:", "\n\tend: ",
+    "(a:", " b:", " c:", " d:",
+    "(nodes:", " depth:", "(plane:", " front:", " back:"
+);
 
 TextStream &deadstrippedVec2Read(TextStream &ts, const std::vector<Vector2> &vec) {
     return ts << vec;
@@ -287,6 +295,8 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
     }
     return true;
 }
+
+DECOMP_FORCEACTIVE(Geo, "tMax > 0.0f && tMin < 1.0f");
 
 bool Intersect(const Transform &tf, const Hmx::Polygon &poly, const BSPNode *node) {
     if (!node)
@@ -585,49 +595,68 @@ void BSPFace::Update() {
     MILO_ASSERT(p.mPoints.size() > 2, 0x696);
 
     const Vector2 *anchor = p.mPoints.begin();
-    const Vector2 *v1 = anchor + 1;
-    const Vector2 *v2 = anchor + 2;
+    const Vector2 *prev = anchor + 1;
+    const Vector2 *curr = prev + 1;
     area = 0.0f;
-    while (v2 != p.mPoints.end()) {
-        area += (v1->y * anchor->x - v1->x * anchor->y +
-                 v2->x * anchor->y - v2->y * anchor->x +
-                 v2->y * v1->x - v2->x * v1->y) * 0.5f;
-        v1 = v2;
-        v2++;
+    while (curr != p.mPoints.end()) {
+        float cx = curr->x, py = prev->y, px = prev->x;
+        prev = curr;
+        float ay = anchor->y;
+        float pycx = py * cx;
+        float cy = curr->y;
+        curr++;
+        float ax = anchor->x;
+        area += (((ax * py - ay * px) + (px * cy - pycx)) + (cx * ay - cy * ax)) * 0.5f;
     }
 
     planes.clear();
 
+    float fa = t.m.z.x;
+    float fb = t.m.z.y;
+    float fvy = t.v.y;
+    float fvx = t.v.x;
+    float fc = t.m.z.z;
     Plane facePlane;
-    facePlane.a = t.m.z.x;
-    facePlane.b = t.m.z.y;
-    facePlane.c = t.m.z.z;
-    facePlane.d = -(t.m.z.x * t.v.x + t.m.z.y * t.v.y + t.m.z.z * t.v.z);
+    facePlane.a = fa;
+    facePlane.b = fb;
+    facePlane.c = fc;
+    float fd_bvy = fb * fvy;
+    float fvz = t.v.z;
+    float fd_avx = fa * fvx;
+    float fd_sum = fd_avx + fd_bvy;
+    float fd_cvz = fc * fvz;
+    facePlane.d = -(fd_cvz + fd_sum);
     planes.insert(planes.end(), facePlane);
 
     Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
     Multiply(prevPt, t, prevPt);
 
     for (const Vector2 *it = p.mPoints.begin(); it != p.mPoints.end(); it++) {
+        bool notXYZ = false;
+        bool notXY = false;
         Vector3 curPt(it->x, it->y, 0.0f);
         Multiply(curPt, t, curPt);
 
-        float dx = curPt.x - prevPt.x;
-        float dy = curPt.y - prevPt.y;
-        float dz = curPt.z - prevPt.z;
+        Vector3 d;
+        d.x = curPt.x - prevPt.x;
+        d.y = curPt.y - prevPt.y;
+        d.z = curPt.z - prevPt.z;
 
-        if (dx != 0.0f || dy != 0.0f || dz != 0.0f) {
+        if (d.x == 0.0f && d.y == 0.0f) notXY = true;
+        if (notXY && d.z == 0.0f) notXYZ = true;
+        if (!notXYZ) {
             Vector3 normal;
-            normal.x = t.m.z.z * dy - t.m.z.y * dz;
-            normal.y = t.m.z.x * dz - t.m.z.z * dx;
-            normal.z = t.m.z.y * dx - t.m.z.x * dy;
+            normal.z = t.m.z.y * d.x - t.m.z.x * d.y;
+            normal.x = t.m.z.z * d.y - t.m.z.y * d.z;
+            normal.y = t.m.z.x * d.z - t.m.z.z * d.x;
             Normalize(normal, normal);
 
             Plane edgePlane;
             edgePlane.a = normal.x;
             edgePlane.b = normal.y;
             edgePlane.c = normal.z;
-            edgePlane.d = -(normal.x * curPt.x + (normal.y * curPt.y + normal.z * curPt.z));
+            float ep_d = normal.x * curPt.x + (normal.y * curPt.y + normal.z * curPt.z);
+            edgePlane.d = -ep_d;
             planes.insert(planes.end(), edgePlane);
 
             prevPt = curPt;

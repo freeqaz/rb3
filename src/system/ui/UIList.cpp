@@ -470,18 +470,29 @@ RndDrawable *UIList::CollideShowing(const Segment &seg, float &fref, Plane &p) {
     std::vector<std::vector<Vector3> > vecOfVecs;
     BoundingBoxTriangles(vecOfVecs);
     Segment s(seg);
-    Vector3 vset;
     bool intersects = false;
-    fref = 1;
+    fref = 1.0f;
     for (std::vector<std::vector<Vector3> >::iterator it = vecOfVecs.begin();
          it != vecOfVecs.end();
          ++it) {
-        Triangle tri((*it)[0], (*it)[1], (*it)[2]);
+        const Vector3 *vdata = &(*it)[0];
+        Triangle tri;
+        tri.origin = vdata[0];
+        tri.frame.x.Set(vdata[1].x - vdata[0].x, vdata[1].y - vdata[0].y, vdata[1].z - vdata[0].z);
+        tri.frame.y.Set(vdata[2].x - vdata[0].x, vdata[2].y - vdata[0].y, vdata[2].z - vdata[0].z);
+        tri.frame.z.Set(
+            tri.frame.x.y * tri.frame.y.z - tri.frame.x.z * tri.frame.y.y,
+            tri.frame.x.z * tri.frame.y.x - tri.frame.x.x * tri.frame.y.z,
+            tri.frame.x.x * tri.frame.y.y - tri.frame.x.y * tri.frame.y.x
+        );
         float loc_f;
         if (Intersect(s, tri, 0, loc_f)) {
             Interp(s.start, s.end, loc_f, s.end);
             fref *= loc_f;
-            p.Set(s.end, vset);
+            p.a = tri.frame.z.x;
+            p.b = tri.frame.z.y;
+            p.c = tri.frame.z.z;
+            p.d = -(p.a * tri.origin.x + p.b * tri.origin.y + p.c * tri.origin.z);
             intersects = true;
         }
     }

@@ -498,9 +498,9 @@ void TrackWatcherImpl::CheckForPitchBend(float ms) {
         if (mPitchBendReady && mBiggestWhammy != -1.0f) {
             float f3 = (whammy - mBiggestWhammy) / (mBiggestWhammy + 1.0f);
             SendWhammy(f3);
-            float prod =
-                f3 * Clamp<float>(0, 1, (ms - mPitchBendMsHit) / mPitchBendMsToFull);
-            mParent->SetPitchBend(mTrack, (float)mPitchBendRange * prod, false);
+            float range = (float)mPitchBendRange;
+            mParent->SetPitchBend(mTrack, range *
+                (f3 * Clamp<float>(0, 1, (ms - mPitchBendMsHit) / mPitchBendMsToFull)), false);
         } else
             SendWhammy(0);
     } else {

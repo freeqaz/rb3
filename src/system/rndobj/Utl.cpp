@@ -1115,16 +1115,16 @@ void TestTextureSize(class ObjectDir *dir, int iType, int i3, int i4, int i5, in
     bool b2 = false;
     if (GetGfxMode() == 0 || rendered)
         b2 = true;
-    int ivar4 = 1;
-    if (b2)
-        ivar4 = i5;
+    int i34 = i3 * i4;
+    int ivar4 = b2 ? i5 : 1;
+    int maxProduct = i34 * ivar4;
     for (ObjDirItr<RndTex> it(dir, true); it != 0; ++it) {
         if (iType == it->GetType()) {
             int local_bpp = b2 ? it->mBpp : 1;
             if (rendered && GetGfxMode() == 1 && local_bpp == 0x10)
                 local_bpp = 0x20;
             int product = it->Width() * it->Height() * local_bpp;
-            if (product > i3 * i4 * ivar4) {
+            if (product > maxProduct) {
                 MILO_WARN(
                     "%s is too big w:%d h:%d bpp:%d",
                     PathName(it),

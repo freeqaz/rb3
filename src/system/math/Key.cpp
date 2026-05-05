@@ -122,10 +122,10 @@ void InterpVector(
 #pragma fp_contract on
 static inline void NormalizeToInline(const Hmx::Quat &qin, Hmx::Quat &qout) {
     if (qin * qout < 0) {
-        qout.x = -qout.x;
-        qout.y = -qout.y;
-        qout.z = -qout.z;
         qout.w = -qout.w;
+        qout.z = -qout.z;
+        qout.y = -qout.y;
+        qout.x = -qout.x;
     }
 }
 
@@ -141,15 +141,20 @@ void QuatSpline(
         qout = prev->value;
     } else {
         int idx = prev - &keys.front();
-        Hmx::Quat prevQuat = prev->value;
-        Hmx::Quat nextQuat = next->value;
-        Hmx::Quat q88 = idx == 0 ? prevQuat : keys[idx - 1].value;
-        Hmx::Quat q58 = idx + 1 == keys.size() - 1 ? nextQuat : keys[idx + 2].value;
-        NormalizeToInline(q88, prevQuat);
-        NormalizeToInline(nextQuat, prevQuat);
-        NormalizeToInline(prevQuat, q58);
         float fsq = ref * ref;
         float fcubed = fsq * ref;
+        int idx1 = idx + 1;
+        Hmx::Quat q58;
+        Hmx::Quat nextQuat;
+        Hmx::Quat prevQuat;
+        Hmx::Quat q88;
+        prevQuat = prev->value;
+        nextQuat = next->value;
+        q88 = idx == 0 ? prevQuat : keys[idx - 1].value;
+        q58 = idx1 == keys.size() - 1 ? nextQuat : keys[idx1 + 1].value;
+        NormalizeToInline(prevQuat, q88);
+        NormalizeToInline(prevQuat, nextQuat);
+        NormalizeToInline(prevQuat, q58);
         int i = 0;
         while (i < 4) {
             float p = prevQuat[i];
@@ -157,7 +162,7 @@ void QuatSpline(
             float n = nextQuat[i];
             float nn = q58[i];
             qout[i] = 0.5f * (fcubed * (nn - (3.0f * n - (3.0f * p - pp)))
-                + fsq * ((4.0f * n + (2.0f * pp - 5.0f * p)) - nn)
+                + fsq * ((4.0f * n + (2.0f * pp + 5.0f * p)) - nn)
                 + (2.0f * p + ref * (n - pp)));
             i++;
         }

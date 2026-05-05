@@ -45,9 +45,14 @@ inline RndMat *LayerProvider::GetMatForData(int idx) const {
     float f5 = layer.ScaleX();
     if (f5 < 0)
         f5 *= -1.0f;
-    layer.ScaleY();
-    layer.ScaleY();
+    float scaleY = layer.ScaleY();
+    bool flipScale = sticker->unk18 * f5 > sticker->unk1c * scaleY;
+    if (flipScale)
+        scaleY = layer.ScaleY();
+    if (!flipScale)
+        scaleY = layer.ScaleY();
     Hmx::Matrix3 m74;
+    Hmx::Matrix3 mTmp;
     Vector3 v80(0, layer.Rotation() * DEG2RAD, 0);
     MakeRotMatrix(v80, m74, true);
     Vector3 v8c(sticker->unk18, 1.0f, sticker->unk1c);
@@ -56,7 +61,8 @@ inline RndMat *LayerProvider::GetMatForData(int idx) const {
         Vector3 v98(-1, 1, 1);
         Scale(v98, tf50.m, tf50.m);
     }
-    Multiply(m74, tf50.m, tf50.m);
+    Multiply(m74, tf50.m, mTmp);
+    tf50.m = mTmp;
     // fn_8025786C(uVar1,1);
     curMat->SetTexWrap(kTexBorderBlack);
     curMat->SetTexXfm(tf50);

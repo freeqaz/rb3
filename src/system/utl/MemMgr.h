@@ -6,6 +6,7 @@
 #include "utl/PoolAlloc.h"
 
 extern CriticalSection *gMemLock;
+extern bool gStlAllocNameLookup;
 
 class MemDoTempAllocations {
 public:

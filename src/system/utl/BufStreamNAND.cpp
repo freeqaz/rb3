@@ -41,7 +41,8 @@ void BufStreamNAND::Clear() {
     mChunkSize = 0x40000;
     unk80 = 0;
     mResult = kMCNoError;
-    MILO_ASSERT(fmod(mSize, 4.503601775116288e15 - 4.503601774854144e15), 0x39);
+    float remainder = (float)fmod(mSize, mChunkSize);
+    MILO_ASSERT(remainder == 0.0f, 0x39);
 }
 
 int BufStreamNAND::Open() {
