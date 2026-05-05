@@ -869,7 +869,14 @@ void Frustum::Set(float near, float far, float fovY, float ratio) {
 }
 
 bool operator>(const Sphere &s, const Frustum &f) {
-    return s < f.front || s < f.back || s < f.left || s < f.right || s < f.top || s < f.bottom;
+    bool b5 = true, b6 = true, b7 = true, b8 = true, b9 = true;
+    float negRad = -s.radius;
+    if (!(f.front.Dot(s.center) < negRad) && !(f.back.Dot(s.center) < negRad)) b9 = false;
+    if (!b9 && !(f.left.Dot(s.center) < negRad)) b8 = false;
+    if (!b8 && !(f.right.Dot(s.center) < negRad)) b7 = false;
+    if (!b7 && !(f.top.Dot(s.center) < negRad)) b6 = false;
+    if (!b6 && !(f.bottom.Dot(s.center) < negRad)) b5 = false;
+    return b5;
 }
 
 void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {

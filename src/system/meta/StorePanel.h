@@ -55,7 +55,7 @@ public:
 
     std::vector<StoreOffer *> unk38;
     std::vector<StoreOffer *> unk40;
-    std::vector<int> unk48;
+    std::vector<StoreOffer *> unk48;
     bool mLoadOK; // 0x50
     bool mShowTestOffers; // 0x51
     std::list<StorePanel *> unk54; // 0x54

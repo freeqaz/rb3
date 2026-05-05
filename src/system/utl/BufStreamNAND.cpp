@@ -63,8 +63,10 @@ int BufStreamNAND::Open() {
 
 int BufStreamNAND::Close() {
     s32 file;
+    const char* funcName = __FUNCTION__;
     MCResult result;
-    SetGPHangDetectEnabled(false, __FUNCTION__);
+    SetGPHangDetectEnabled(false, funcName);
+    result = kMCNoError;
     if(mFileOpen) {
         u32 length;
         NANDGetLength(&mFileInfo, &length);
@@ -75,7 +77,7 @@ int BufStreamNAND::Close() {
         else
             mFail = true;
     }
-    SetGPHangDetectEnabled(true, __FUNCTION__);
+    SetGPHangDetectEnabled(true, funcName);
     return result;
 }
 

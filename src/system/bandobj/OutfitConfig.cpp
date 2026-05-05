@@ -155,17 +155,7 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
                 MakeString("%s_%s_diff.tex", gender, curtexname), false
             );
             if (curtex) {
-                if (!cfg)
-                    curmat->SetDiffuseTex(curtex);
-                else {
-                    // switch(i){
-                    //     case 0:
-                    //     case 1:
-                    //         break;
-                    //     case 4:
-                    //         break;
-                    //     default: break;
-                    // }
+                if (cfg) {
                     if (i < 2 || i == 4) {
                         int idx = 2;
                         if (i != 4)
@@ -183,6 +173,8 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
                     );
                     if (difftex)
                         curmat->SetDiffuseTex(difftex);
+                } else {
+                    curmat->SetDiffuseTex(curtex);
                 }
             }
         } else

@@ -129,6 +129,11 @@ protected:
     int mLoadCount; // 0x54
 };
 
+class NetCacheMgrWii : public NetCacheMgr {
+public:
+    virtual ~NetCacheMgrWii();
+};
+
 extern NetCacheMgr *TheNetCacheMgr;
 void NetCacheMgrInit();
 void NetCacheMgrTerminate();

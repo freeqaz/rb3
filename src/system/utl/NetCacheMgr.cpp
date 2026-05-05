@@ -14,13 +14,14 @@
 #include "utl/Symbol.h"
 #include "utl/Symbols4.h"
 
-// this is actually a NetCacheMgrWii so change this when that is implemented
 NetCacheMgr *TheNetCacheMgr = 0;
 
 void NetCacheMgrInit() {
     MILO_ASSERT(TheNetCacheMgr == NULL, 0x22);
-    TheNetCacheMgr = new NetCacheMgr();
+    TheNetCacheMgr = new NetCacheMgrWii();
 }
+
+NetCacheMgrWii::~NetCacheMgrWii() {}
 
 void NetCacheMgrTerminate() {
     delete TheNetCacheMgr;

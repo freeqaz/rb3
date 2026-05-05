@@ -396,7 +396,7 @@ void RndText::SetAltStyle(
     mAltStyle.color = col ? *col : mStyle.color;
     mAltStyle.zOffset = z;
     mAltStyle.italics = italics;
-    unkbp4 = b;
+    unkbp5 = b;
     UpdateText(true);
 }
 
@@ -458,7 +458,6 @@ RndText::RndText()
       mFixedLength(0), mDeferUpdate(0), unk124b4(0), unk124b4p1(0), unk128(0), unk12c(0),
       unk130(0) {
     mTextMarkup = false;
-    unkbp4 = false;
     unkbp5 = false;
     unkbp6 = false;
     unkbp7 = false;
@@ -516,10 +515,10 @@ RndText::ParseMarkup(const char *cc, RndText::Style *style, float f3, float f4) 
     if (b1)
         ptr++;
     if (strnicmp(ptr, "sup", 3) == 0) {
-        style->size = b1 ? f3 : f3 * gSuperscriptScale;
+        style->size = b1 ? f3 : gSuperscriptScale * f3;
         ptr += 3;
     } else if (strnicmp(ptr, "gtr", 3) == 0) {
-        style->size = b1 ? f3 : f3 * gGuitarScale;
+        style->size = b1 ? f3 : gGuitarScale * f3;
         style->zOffset = b1 ? f4 : gGuitarZOffset;
         ptr += 3;
     } else if (strnicmp(ptr, "it", 2) == 0) {
@@ -531,15 +530,14 @@ RndText::ParseMarkup(const char *cc, RndText::Style *style, float f3, float f4) 
         if (b1) {
             style->color = mStyle.color;
         } else {
-            int colorVals[4] = { 0, 0, 0, style->color.color * 256.0f };
-            sscanf(
-                ptr, "%d %d %d %d", colorVals[0], colorVals[1], colorVals[2], colorVals[3]
-            );
+            int colorR = 0, colorG = 0, colorB = 0;
+            int colorA = style->color.a;
+            sscanf(ptr, "%d %d %d %d", &colorR, &colorG, &colorB, &colorA);
             style->color.Set(
-                colorVals[0] / 255.0f,
-                colorVals[1] / 255.0f,
-                colorVals[2] / 255.0f,
-                colorVals[3] / 255.0f
+                colorR / 255.0f,
+                colorG / 255.0f,
+                colorB / 255.0f,
+                colorA / 255.0f
             );
         }
     } else if (strnicmp(ptr, "nobreak", 7) == 0) {
@@ -562,11 +560,11 @@ RndText::ParseMarkup(const char *cc, RndText::Style *style, float f3, float f4) 
             style->italics = mAltStyle.italics;
         }
     }
-    while (*ptr++ != '\0') {
-        if (*ptr == '>')
-            return ptr + 1;
+    for (;;) {
+        char c = *++ptr;
+        if (c == '>') return ptr + 1;
+        if (!c) return ptr;
     }
-    return ptr;
 }
 
 bool canBreak(const char *cc, int i) {

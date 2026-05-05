@@ -20,6 +20,7 @@ StorePanel::StorePanel()
 StorePanel::~StorePanel() {
     DeleteAll(unk38);
     DeleteAll(unk40);
+    DeleteAll(unk48);
     delete mAlbumTex;
 }
 

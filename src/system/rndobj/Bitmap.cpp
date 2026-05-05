@@ -724,7 +724,7 @@ bool RndBitmap::LoadDIB(BinStream *bs, unsigned int offbits) {
         unsigned char *p = (unsigned char *)pixels;
         unsigned char *end = p + pixelBytes;
         for (; p != end; p++) {
-            *p = (*p << 4) | (*p >> 4);
+            *p = ((*p & 0x0F) << 4) | ((*p & 0xF0) >> 4);
         }
     }
     if ((int)infoheader.biXPelsPerMeter != 0xB11) {
@@ -732,24 +732,19 @@ bool RndBitmap::LoadDIB(BinStream *bs, unsigned int offbits) {
         if ((paletteBytes -= 4) >= 0) {
             unsigned int blocks = palCount >> 3;
             if (blocks != 0) {
+                unsigned char *palPtr = (unsigned char *)palette + paletteBytes;
                 do {
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
-                    *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
-                    paletteBytes -= 4;
                     blocks--;
+                    paletteBytes -= 32;
+                    palPtr[3] = 0xFF;
+                    palPtr[-1] = 0xFF;
+                    palPtr[-5] = 0xFF;
+                    palPtr[-9] = 0xFF;
+                    palPtr[-13] = 0xFF;
+                    palPtr[-17] = 0xFF;
+                    palPtr[-21] = 0xFF;
+                    palPtr[-25] = 0xFF;
+                    palPtr -= 32;
                 } while (blocks != 0);
                 palCount &= 7;
                 if (palCount == 0) goto palette_done;
@@ -766,24 +761,19 @@ palette_done:
             if ((pixelBytes -= 2) >= 0) {
                 unsigned int blocks = pixCount >> 3;
                 if (blocks != 0) {
+                    unsigned char *pixPtr = (unsigned char *)pixels + pixelBytes;
                     do {
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
-                        *((unsigned char *)pixels + pixelBytes + 1) |= 0x80;
-                        pixelBytes -= 2;
                         blocks--;
+                        pixelBytes -= 16;
+                        pixPtr[1] |= 0x80;
+                        pixPtr[-1] |= 0x80;
+                        pixPtr[-3] |= 0x80;
+                        pixPtr[-5] |= 0x80;
+                        pixPtr[-7] |= 0x80;
+                        pixPtr[-9] |= 0x80;
+                        pixPtr[-11] |= 0x80;
+                        pixPtr[-13] |= 0x80;
+                        pixPtr -= 16;
                     } while (blocks != 0);
                     pixCount &= 7;
                     if (pixCount == 0) goto pixels_done;

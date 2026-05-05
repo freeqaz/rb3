@@ -395,21 +395,11 @@ void RndPostProc::Interp(const RndPostProc *from, const RndPostProc *to, float p
 
     float toBloom = to->BloomIntensity();
     float fromBloom = from->BloomIntensity();
-    mBloomIntensity = pct * (toBloom - fromBloom) + fromBloom;
+    ::Interp(fromBloom, toBloom, pct, mBloomIntensity);
 
     ::Interp(from->mBloomColor, to->mBloomColor, pct, mBloomColor);
 
-    if (pct == 0.0f) {
-        mBlendVec.x = from->mBlendVec.x;
-        mBlendVec.y = from->mBlendVec.y;
-        mBlendVec.z = from->mBlendVec.z;
-    } else if (pct == 1.0f) {
-        mBlendVec.x = to->mBlendVec.x;
-        mBlendVec.y = to->mBlendVec.y;
-        mBlendVec.z = to->mBlendVec.z;
-    } else {
-        ::Interp(from->mBlendVec, to->mBlendVec, pct, mBlendVec);
-    }
+    ::Interp(from->mBlendVec, to->mBlendVec, pct, mBlendVec);
 
     ::Interp(from->mTrailDuration, to->mTrailDuration, pct, mTrailDuration);
     ::Interp(from->mTrailThreshold, to->mTrailThreshold, pct, mTrailThreshold);

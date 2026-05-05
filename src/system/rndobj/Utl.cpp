@@ -339,7 +339,8 @@ void UtilDrawSphere(const Vector3 &v, float f, const Hmx::Color &col) {
         sSphereMesh->Mat()->SetAlpha(0.2f);
         sSphereMesh->Mat()->SetCull(false);
         sSphereMesh->SetLocalXfm(tf58);
-        sSphereMesh->SetSphere(Sphere(Vector3(0, 0, 0), f));
+        sSphereMesh->mSphere.center.Zero();
+        sSphereMesh->mSphere.radius = f;
         sSphereMesh->Draw();
     }
 }
