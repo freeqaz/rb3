@@ -150,7 +150,7 @@ void Song::LoadSong() {
     } else {
         if (unk5c.x > mSongEndFrame)
             SetLoopStart(mSongEndFrame);
-        if (unk5c.y > mSongEndFrame)
+        if (mSongEndFrame < unk5c.y)
             SetLoopEnd(mSongEndFrame);
     }
     JumpTo(0);

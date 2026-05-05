@@ -613,7 +613,7 @@ void TrackWatcherImpl::EndAllSustainedNotes() {
 
 void TrackWatcherImpl::MaybeAutoplayFutureCymbal(int gemID) {
     GameGem &gem = mGemList->GetGem(gemID);
-    float gemMs = gem.mMs + mCymbalAutoplayMs;
+    float gemMs = mCymbalAutoplayMs + gem.mMs;
     int i3 = gem.GetSlot();
     while (++gemID < mGemList->NumGems()) {
         GameGem &curGem = mGemList->GetGem(gemID);

@@ -158,6 +158,7 @@ void GameConfig::AssignTracks() {
     mPlayerTrackConfigList->Reset();
     std::vector<BandUser *> users;
     TheBandUserMgr->GetParticipatingBandUsersInSession(users);
+    bool b11 = false;
     for (int i = 0; i < users.size(); i++) {
         BandUser *u = users[i];
         mPlayerTrackConfigList->AddPlaceholderConfig(

@@ -115,6 +115,7 @@ static void floor0_map_lazy_init(vorbis_block      *vb,
     vorbis_info        *vi=vd->vi;
     codec_setup_info   *ci=vi->codec_setup;
     vorbis_info_floor0 *info=(vorbis_info_floor0 *)infoX;
+    int rate=info->rate;
     int W=vb->W;
     int rate=info->rate;
     int n=ci->blocksizes[W]/2,j;
