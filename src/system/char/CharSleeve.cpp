@@ -22,7 +22,8 @@ void CharSleeve::Poll() {
     if (mSleeve && mSleeve->TransParent()) {
         float deltasecs = TheTaskMgr.DeltaSeconds();
         float dvar12 = deltasecs * 60.0f;
-        float powed = std::pow(1.0f - mStiffness, dvar12 * dvar12);
+        float gravity_z = mGravity * (deltasecs * (dvar12 * -3.858268f));
+        float powed = 1.0f - std::pow(1.0f - mStiffness, dvar12 * dvar12);
         RndTransformable *sleeveparent = mSleeve->TransParent();
         float absed = std::fabs(mSleeve->mLocalXfm.v.z);
         bool b2 = false;
@@ -48,19 +49,19 @@ void CharSleeve::Poll() {
         if (mLastDT > 0.0f && deltasecs > 0.0f) {
             Vector3 vc0;
             Subtract(mPos, mLastPos, vc0);
-            ScaleAddEq(vb4, vc0, (mInertia * deltasecs) / mLastDT);
+            ScaleAddEq(vb4, vc0, mInertia * deltasecs / mLastDT);
         }
-        vb4.z += mGravity * deltasecs * dvar12 * -3.858268f;
+        vb4.z += gravity_z;
         Vector3 vcc;
         Subtract(vb4, sleeveparent->WorldXfm().v, vcc);
         float dotted2 = Dot(vcc, sleeveparent->WorldXfm().m.x);
-        float d4 = dvar12 * (1.0f - (1.0f - powed));
+        float d4 = (1.0f - powed) * dotted2;
         ClampEq(d4, -mRange, mRange);
-        ScaleAddEq(vcc, sleeveparent->WorldXfm().m.x, (d4 - dvar12));
+        ScaleAddEq(vcc, sleeveparent->WorldXfm().m.x, (d4 - dotted2));
         float len = Length(vcc);
-        float interped = Interp(len, absed, 1.0f - powed);
+        float interped = (absed - len) * powed + len;
         ClampEq(interped, absed - mNegLength, absed + mPosLength);
-        ScaleToMagnitude(vcc, len, vcc);
+        ScaleToMagnitude(vcc, interped, vcc);
         Add(sleeveparent->WorldXfm().v, vcc, vb4);
         Transform tf90;
         tf90.v = vb4;

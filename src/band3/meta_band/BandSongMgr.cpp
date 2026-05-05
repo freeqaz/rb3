@@ -127,8 +127,8 @@ void BandSongMgr::ContentDone() {
     for (int i = 0; i < 9U; i++) {
         SongRanking ranking;
         ranking.mInstrument = instSyms[i];
-        std::vector<int> i80;
         std::vector<int> curSongs = songs;
+        std::vector<int> i80;
         std::sort(
             curSongs.begin(), curSongs.end(), SongRankCmp(this, ranking.mInstrument)
         );

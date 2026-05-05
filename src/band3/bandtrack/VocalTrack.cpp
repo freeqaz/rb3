@@ -164,7 +164,6 @@ void VocalTrack::UpdateTubePlates(
 #endif
 }
 
-#pragma schedule once
 void VocalTrack::UpdateAllTubePlates(float f1) {
     if (!mPlayer->IsNet()) {
         for (int i = 0; i < 3; i++) {
@@ -177,7 +176,6 @@ void VocalTrack::UpdateAllTubePlates(float f1) {
     UpdateTubePlates(mLeadDeployPlates, f1, staticVox ? unk2ac : unk2a8, staticVox);
     UpdateTubePlates(mHarmonyDeployPlates, f1, staticVox ? unk2b0 : unk2a8, staticVox);
 }
-#pragma schedule twice
 
 void VocalTrack::ClearTubePlates(std::deque<TubePlate *> &plates) {
     while (!plates.empty()) {

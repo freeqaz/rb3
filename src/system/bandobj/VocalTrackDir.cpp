@@ -885,7 +885,7 @@ void VocalTrackDir::ApplyFontStyle(Hmx::Object *o) {
         if (o->Property(lead_text, true)->NotNull()) {
             mLeadText = o->Property(lead_text, true)->Obj<RndText>();
             mLeadText->SetShowing(objexists);
-            mLeadText->SetColor(c20);
+            mLeadText->SetColor(Hmx::Color32(c20));
         } else
             mLeadText = 0;
         if (o->Property(harmony_text, true)->NotNull()) {

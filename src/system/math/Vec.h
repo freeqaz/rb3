@@ -523,7 +523,7 @@ inline float operator*(const Vector3 &v1, const Vector3 &v2) {
 inline void Negate(const Vector3 &v, Vector3 &vres) { vres.Set(-v.x, -v.y, -v.z); }
 
 inline void ScaleToMagnitude(const Vector3 &vec, float fl, Vector3 &res) {
-    if (!IsFloatZero(vec.x) || !IsFloatZero(vec.y) || !IsFloatZero(vec.z)) {
+    if (!(std::fabs(vec.x) < 0.0001f) || !(std::fabs(vec.y) < 0.0001f) || !(std::fabs(vec.z) < 0.0001f)) {
         Scale(vec, fl / Length(vec), res);
     } else
         res.Set(0, 0, 0);

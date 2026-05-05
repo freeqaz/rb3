@@ -131,8 +131,8 @@ public:
     virtual bool IsBandWideCummulative() const { return false; }
     virtual bool IsPercentageStat() const { return true; }
     virtual float GetStatValue(const Stats &stats) const {
-        if (stats.mHitCount + stats.m0x08 > 0) {
-            return stats.GetUpstrumPercent();
+        if (stats.m0x08 + stats.mHitCount != 0) {
+            return (float)stats.GetUpstrumPercent();
         } else
             return -1.0f;
     }

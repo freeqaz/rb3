@@ -58,7 +58,7 @@ public:
     Symbol GetFirstNewAwardReason() const;
     Symbol GetFirstNewAward() const;
     void ClearFirstNewAward();
-    bool HasNewRewardVignettes() const;
+    bool HasNewRewardVignettes() const { return !mNewRewardVignettes.empty(); }
     Symbol GetFirstNewRewardVignette() const;
     void ClearFirstNewRewardVignette();
     bool HasNewRewardVignetteFestival() const;

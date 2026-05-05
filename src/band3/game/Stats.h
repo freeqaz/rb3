@@ -329,7 +329,7 @@ public:
     int GetUnisonPhrasesHit() const { return mUnisonPhraseCompleted; }
 
     int GetUpstrumPercent() const {
-        int count = mHitCount + m0x08;
+        int count = m0x08 + mHitCount;
         if (count > 0)
             return (mUpstrumCount * 100.0f) / (float)count;
         else

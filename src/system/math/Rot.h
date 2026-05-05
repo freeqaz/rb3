@@ -9,18 +9,30 @@
 
 void Multiply(const Vector3 &, const Transform &, Vector3 &);
 inline void Multiply(const Transform &t, const Vector3 &v, Vector3 &out) {
+    float dz = v.z - t.v.z;
     float dy = v.y - t.v.y;
     float dx = v.x - t.v.x;
-    float sz = t.m.z.y * dy;
-    float sy = t.m.y.y * dy;
-    float sx = t.m.x.y * dy;
-    sz += t.m.z.x * dx;
-    sy += t.m.y.x * dx;
-    float dz = v.z - t.v.z;
-    sx += t.m.x.x * dx;
-    out.z = t.m.z.z * dz + sz;
-    out.y = t.m.y.z * dz + sy;
-    out.x = t.m.x.z * dz + sx;
+    out.z = dz;
+    out.y = dy;
+    out.x = dx;
+    float mzy = t.m.z.y;
+    float myy = t.m.y.y;
+    float mxy = t.m.x.y;
+    float mzx = t.m.z.x;
+    float myx = t.m.y.x;
+    float mxx = t.m.x.x;
+    float mzz = t.m.z.z;
+    float myz = t.m.y.z;
+    float mxz = t.m.x.z;
+    float sz = mzy * dy;
+    float sy = myy * dy;
+    float sx = mxy * dy;
+    sz += mzx * dx;
+    sy += myx * dx;
+    sx += mxx * dx;
+    out.z = mzz * dz + sz;
+    out.y = myz * dz + sy;
+    out.x = mxz * dz + sx;
 }
 void Multiply(const Plane &, const Transform &, Plane &);
 void MakeRotMatrix(const Vector3 &, Hmx::Matrix3 &, bool);

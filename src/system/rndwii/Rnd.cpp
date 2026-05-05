@@ -149,7 +149,23 @@ void WiiRnd::DrawLine(const Vector3 &a, const Vector3 &b, const Hmx::Color &c, b
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
     GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+#ifdef MATCHING
+    register __vec2x32float__ rg_pair;
+    register __vec2x32float__ ba_pair;
+    register const Hmx::Color *_c = &c;
+    GXColor gxc;
+    register GXColor *_dst = &gxc;
+    ASM_BLOCK(
+        psq_l rg_pair, 0x0(_c), 0, 0
+        psq_l ba_pair, 0x8(_c), 0, 0
+        psq_st rg_pair, 0x0(_dst), 0, 6
+        psq_st ba_pair, 0x2(_dst), 0, 6
+    )
+    uint col = ((uint)gxc.g << 16) | ((uint)gxc.b << 8) | gxc.a;
+    col |= (uint)gxc.r << 24;
+#else
     int col = MakeU32Color(c);
+#endif
     RndGXBegin(GX_LINES, GX_VTXFMT6, 2);
     GXPosition3f32(a.x, a.y, a.z);
     GXColor1u32(col);
