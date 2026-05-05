@@ -102,7 +102,7 @@ bool WiiFriend::PromoteMasterProfile() {
     for (std::vector<WiiFriendProfile *>::iterator it = unk18.begin(); it < unk18.end();
          ++it) {
         if (strcmp((*it)->Name(), name.c_str()) == 0) {
-            mMasterProfile = *it;
+            mMasterProfile = it[0];
             unk18.erase(it);
             return true;
         }

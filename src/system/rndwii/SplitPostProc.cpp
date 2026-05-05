@@ -66,9 +66,6 @@ void WiiSplitPostProc::DoPost() {
     if (TheWiiRnd.ProcCmds() == kProcessAll) {
         mTex->unk(1);
         unk_0x9 = 1;
-#ifdef VERSION_SZBE69_B8
-        _at.mTimer->Stop();
-#endif
         return;
     } else if (TheWiiRnd.ProcCmds() == kProcessWorld) {
         WiiTex *a = (WiiTex *)TheWiiRnd.GetSharedTex((WiiRnd::SharedTexType)0, 1);

@@ -76,7 +76,8 @@ void WiiCommerceMgr::GetTitleInfo() {
 bool WiiCommerceMgr::SetParentalControlPin(String pin) {
     const char *pinStr = pin.c_str();
     int ret = EC_SetParameter("PCPW", pinStr);
-    return (ret == 0 || ret == -4075);
+    if (ret == 0 || ret == -4075) return true;
+    return false;
 }
 
 unsigned long long WiiCommerceMgr::MakeDataTitleId(const char *cc) {
