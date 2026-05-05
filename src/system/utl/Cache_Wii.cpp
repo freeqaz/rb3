@@ -39,10 +39,10 @@ const char *CacheIDWii::GetCacheSearchPath(const char *param_1) {
 }
 
 CacheWii::CacheWii(const CacheIDWii &param_1) {
-    m0x14 = String(param_1.mStrCacheName);
-    m0x20 = String(param_1.m0x10);
-    m0x2c = String(param_1.m0x1c);
-    m0x38 = param_1.m0x28;
+    m0x10.mStrCacheName = String(param_1.mStrCacheName);
+    m0x10.m0x10 = String(param_1.m0x10);
+    m0x10.m0x1c = String(param_1.m0x1c);
+    m0x10.m0x28 = param_1.m0x28;
     // m0x3c = String();
     // m0x48 = String();
     m0x54 = 0;
@@ -78,7 +78,7 @@ CacheWii::~CacheWii() {
     }
 }
 
-const char *CacheWii::GetCacheName() { return m0x14.c_str(); }
+const char *CacheWii::GetCacheName() { return m0x10.mStrCacheName.c_str(); }
 
 void CacheWii::Poll() {}
 
@@ -91,18 +91,17 @@ int CacheWii::GetFreeSpaceSync(unsigned long long *param_1) {
 }
 
 bool CacheWii::DeleteSync(const char *param_1) {
-    bool isDone = IsDone();
-    if (!isDone) {
+    if (!IsDone()) {
         mLastResult = kCache_ErrorBusy;
         return false;
     } else if (!param_1) {
         mLastResult = kCache_ErrorBadParam;
         return false;
     }
-    m0x20 = String(m0x64) + "/" + m0x2c;
-    int iVar1 = VFDeleteFile(m0x20.c_str());
+    String filePath = String(m0x64) + "/" + param_1;
+    int iVar1 = VFDeleteFile(filePath.c_str());
     if (iVar1 != 0 && iVar1 != 2) {
-        TheDebug.Notify(MakeString("Couldn't delete file %s", m0x20.c_str()));
+        TheDebug.Notify(MakeString("Couldn't delete file %s", filePath.c_str()));
     }
     mOpCur = kOpNone;
     return true;
@@ -136,7 +135,7 @@ bool CacheWii::GetFileSizeAsync(const char *param_1, unsigned int *param_2, Hmx:
         mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
-        s_mThreadStr = m0x10->GetCachePath(param_1);
+        s_mThreadStr = m0x10.GetCachePath(param_1);
         m0x54 = param_2;
         mLastResult = kCache_NoError;
         mOpCur = kOpFileSize;
@@ -147,19 +146,19 @@ bool CacheWii::GetFileSizeAsync(const char *param_1, unsigned int *param_2, Hmx:
 bool CacheWii::ReadAsync(
     const char *param_1, void *param_2, uint param_3, Hmx::Object *param_4
 ) {
-    bool isDone = IsDone();
-    if (!isDone) {
+    if (!IsDone()) {
         mLastResult = kCache_ErrorBusy;
         return false;
     } else if (param_1 == NULL || param_2 == NULL || param_3 == NULL) {
         mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
-        s_mThreadStr = m0x10->GetCachePath(param_1);
+        s_mThreadStr = m0x10.GetCachePath(param_1);
         m0x54 = param_2;
         m0x58 = param_3;
         mLastResult = kCache_NoError;
-        mOpCur = kOpFileSize;
+        mOpCur = kOpRead;
+        ThreadCall(this);
         return true;
     }
 }
@@ -175,7 +174,7 @@ bool CacheWii::DeleteAsync(const char *param_1, Hmx::Object *) {
         mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
-        s_mThreadStr = m0x10->GetCachePath(param_1);
+        s_mThreadStr = m0x10.GetCachePath(param_1);
         mLastResult = kCache_NoError;
         mOpCur = kOpDelete;
         return true;
@@ -187,9 +186,9 @@ int CacheWii::ThreadStart() {
 
     switch (mOpCur) {
     case kOpDirectory: {
-        m0x2c = m0x64;
-        m0x2c = m0x2c + "/" + m0x2c;
-        return ThreadGetDir(m0x2c);
+        m0x10.m0x1c = m0x64;
+        m0x10.m0x1c = m0x10.m0x1c + "/" + m0x10.m0x1c;
+        return ThreadGetDir(m0x10.m0x1c);
     }
     case kOpFileSize:
         return ThreadGetFileSize();
@@ -256,9 +255,9 @@ void CacheWii::ThreadDone(int param_1) {
 int CacheWii::ThreadGetDir(String) {}
 
 int CacheWii::ThreadGetFileSize() {
-    m0x20 = m0x64;
-    m0x20 = m0x20 + "/" + m0x2c;
-    int result = VFGetFileSize(m0x20.c_str());
+    m0x10.m0x10 = m0x64;
+    m0x10.m0x10 = m0x10.m0x10 + "/" + m0x10.m0x1c;
+    int result = VFGetFileSize(m0x10.m0x10.c_str());
     if (result == -1) {
         return -1;
     } else {
@@ -314,7 +313,7 @@ int CacheWii::ThreadWrite() {
 }
 
 int CacheWii::ThreadDelete() {
-    const char *file = (m0x20 + m0x38 + m0x2c + m0x64).c_str();
+    const char *file = (m0x10.m0x10 + m0x10.m0x28 + m0x10.m0x1c + m0x64).c_str();
 
     int result = VFDeleteFile(file);
     if ((result == 0) || (result == 2)) {

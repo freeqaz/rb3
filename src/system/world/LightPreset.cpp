@@ -1248,10 +1248,22 @@ void LightPreset::SpotlightDrawerEntry::Load(BinStream &bs) {
 void LightPreset::SpotlightDrawerEntry::Animate(
     const LightPreset::SpotlightDrawerEntry &e, float f
 ) {
-    Interp(mBaseIntensity, e.mBaseIntensity, f, mBaseIntensity);
-    Interp(mSmokeIntensity, e.mSmokeIntensity, f, mSmokeIntensity);
-    Interp(mLightInfluence, e.mLightInfluence, f, mLightInfluence);
-    Interp(mTotalIntensity, e.mTotalIntensity, f, mTotalIntensity);
+    float base = mBaseIntensity;
+    float eBase = e.mBaseIntensity;
+    float smoke = mSmokeIntensity;
+    float dBase = eBase - base;
+    float eSmoke = e.mSmokeIntensity;
+    float infl = mLightInfluence;
+    float dSmoke = eSmoke - smoke;
+    float eInfl = e.mLightInfluence;
+    mBaseIntensity = f * dBase + base;
+    float dInfl = eInfl - infl;
+    float total = mTotalIntensity;
+    float eTotal = e.mTotalIntensity;
+    mSmokeIntensity = f * dSmoke + smoke;
+    float dTotal = eTotal - total;
+    mLightInfluence = f * dInfl + infl;
+    mTotalIntensity = f * dTotal + total;
 }
 
 bool LightPreset::SpotlightDrawerEntry::operator!=(

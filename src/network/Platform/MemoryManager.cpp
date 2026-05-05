@@ -66,15 +66,15 @@ namespace Quazal {
 END_UNPOOL_DATA
 
 MemoryManager *MemoryManager::GetDefaultMemoryManager() {
-    if (!s_poDefaultMemoryManager) {
-        static bool s_bConstructionInProgress;
-        if (!s_bConstructionInProgress) {
-            s_bConstructionInProgress = true;
-            s_poDefaultMemoryManager =
-                new (__FILE__, 0x162) MemoryManager("Default memory manager");
-        } else
-            return nullptr;
-    }
-    return s_poDefaultMemoryManager;
+    MemoryManager *mgr = s_poDefaultMemoryManager;
+    if (mgr)
+        return mgr;
+    static bool s_bConstructionInProgress;
+    if (s_bConstructionInProgress)
+        return nullptr;
+    s_bConstructionInProgress = true;
+    mgr = new (__FILE__, 0x162) MemoryManager("Default memory manager");
+    s_poDefaultMemoryManager = mgr;
+    return mgr;
 }
 }

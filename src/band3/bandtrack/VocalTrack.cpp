@@ -497,7 +497,9 @@ LyricPlate *VocalTrack::GetNextLyricPlate(std::deque<LyricPlate *> &plates, bool
 
 Lyric *VocalTrack::GetLastLyric(std::deque<LyricPlate *> &plates) {
     Lyric *last = nullptr;
-    FOREACH (it, plates) {
+    std::deque<LyricPlate *>::iterator it = plates.begin();
+    std::deque<LyricPlate *>::iterator end = plates.end();
+    for (; it != end; ++it) {
         if ((*it)->Empty())
             break;
         last = (*it)->LatestLyric();

@@ -176,9 +176,10 @@ BEGIN_HANDLERS(WiiRnd)
 END_HANDLERS
 
 void WiiRnd::CopyBuffer() {
-    GXSetCopyFilter(unk_0x185, 0, true, 0);
+    u8 *raw = reinterpret_cast<u8 *>(this);
+    GXSetCopyFilter(raw[0x185], (u8(*)[2])(raw + 0x186), true, raw + 0x19E);
     GXCopyDisp(sCopyFB, true);
-    GXSetCopyFilter(0, 0, 0, 0);
+    GXSetCopyFilter(0, nullptr, false, nullptr);
 }
 
 void WiiRnd::SetOrthoProj() {

@@ -45,7 +45,7 @@ void WiiSplitPostProc::BeginWorld() {
     START_AUTO_TIMER("postproc");
     if (TheWiiRnd.ProcCmds() == kProcessAll) {
 #ifdef VERSION_SZBE69_B8
-        _at.mTimer->Split();
+        if (_at.mTimer) _at.mTimer->Stop();
 #endif
     } else {
         if (TheWiiRnd.ProcCmds() & 0x4) {

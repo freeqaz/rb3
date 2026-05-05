@@ -365,15 +365,12 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
         FingerDesc &finger = mFingers[num];
         if (finger.unk68) {
             Transform tf78;
-            RndTransformable *fingerFinger = finger.mFinger01;
-            Multiply(fingerFinger->mLocalXfm, mOutputTrans->WorldXfm(), tf78);
+            Multiply(finger.mFinger01->mLocalXfm, mOutputTrans->WorldXfm(), tf78);
             finger.unk78 = tf78.m.x;
             Vector3 v1cc;
-            fingerFinger = finger.mFinger02;
-            MakeEuler(fingerFinger->mLocalXfm.m, v1cc);
+            MakeEuler(finger.mFinger02->mLocalXfm.m, v1cc);
             Vector3 v1d8;
-            fingerFinger = finger.mFinger03;
-            MakeEuler(fingerFinger->mLocalXfm.m, v1d8);
+            MakeEuler(finger.mFinger03->mLocalXfm.m, v1d8);
             finger.unk58 = v1cc.z;
             finger.unk5c = v1d8.z;
             finger.unk68 = false;
@@ -398,13 +395,11 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
                 Multiply(finger.mFinger03->mLocalXfm, tfd8, tf108);
                 Multiply(finger.mFingertip->mLocalXfm, tf108, tf138);
                 Vector3 v1e4;
-                if (Distance(tf138.v, finger.unk14) < Distance(tf138.v, finger.unk8)) {
+                if (Distance(tf138.v, finger.unk8) < Distance(tf138.v, finger.unk14)) {
                     v1e4 = finger.unk8;
                 } else
                     v1e4 = finger.unk14;
 
-                Hmx::Matrix3 m190;
-                Vector3 v1f0 = tfa8.m.y;
                 Vector3 v1fc = tfa8.m.x;
                 Vector3 v208 = tfa8.m.z;
                 Vector3 v214 = tfa8.v;
@@ -435,15 +430,12 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
                 finger.unk84 = false;
             } else {
                 Transform tf1c0;
-                RndTransformable *fingerFinger = finger.mFinger01;
-                Multiply(fingerFinger->mLocalXfm, mOutputTrans->WorldXfm(), tf1c0);
+                Multiply(finger.mFinger01->mLocalXfm, mOutputTrans->WorldXfm(), tf1c0);
                 finger.unk6c = tf1c0.m.x;
                 Vector3 v24c;
-                fingerFinger = finger.mFinger02;
-                MakeEuler(fingerFinger->mLocalXfm.m, v24c);
+                MakeEuler(finger.mFinger02->mLocalXfm.m, v24c);
                 Vector3 v258;
-                fingerFinger = finger.mFinger03;
-                MakeEuler(fingerFinger->mLocalXfm.m, v258);
+                MakeEuler(finger.mFinger03->mLocalXfm.m, v258);
                 finger.unk50 = v24c.z;
                 finger.unk54 = v258.z;
                 finger.unk84 = false;

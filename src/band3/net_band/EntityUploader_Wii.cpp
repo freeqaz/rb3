@@ -271,7 +271,7 @@ void WiiEntityUploader::ProcessStringResponses() {
         for (int j = 0; j < mNumUploadOps; j++) {
             EntityData *curData = mUploadOps[j];
             if (i2 == curData->mOpID) {
-                int opType = curData->mOpType;
+                int opType = mUploadOps[j]->mOpType;
                 bool u3 = true;
                 if (i4 != 0) {
                     u3 = false;
@@ -282,13 +282,13 @@ void WiiEntityUploader::ProcessStringResponses() {
                             case 3:
                                 TourBand *band =
                                     (TourBand *)mUploadOps[j]->mSavableObject;
-                                band->ProcessRetCode(curData->mRetCode);
+                                band->ProcessRetCode(mUploadOps[j]->mRetCode);
                                 band->UploadComplete();
                                 break;
                             case 4:
                                 LocalSavedSetlist *setlist =
                                     (LocalSavedSetlist *)mUploadOps[j]->mSavableObject;
-                                setlist->ProcessRetCode(curData->mRetCode);
+                                setlist->ProcessRetCode(mUploadOps[j]->mRetCode);
                                 setlist->UploadComplete();
                                 break;
                             default:

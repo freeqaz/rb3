@@ -250,7 +250,7 @@ public:
                 if (!(frame < (*this)[(int)newCnt].frame))
                     cnt = newCnt;
             }
-            while (cnt + 1 < size() && (*this)[cnt + 1].SameFrame((*this)[cnt]))
+            while (cnt + 1 < size() && (*this)[cnt + 1].frame == (*this)[cnt].frame)
                 cnt++;
             return cnt;
         }

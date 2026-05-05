@@ -4,6 +4,7 @@
 #define UTL_CACHEWII_H
 
 #include "Cache.h"
+#include "system/os/ThreadCall.h"
 #include <vector>
 
 class CacheIDWii {
@@ -18,7 +19,7 @@ public:
     int m0x28; // 0x28
 };
 
-class CacheWii : public Cache {
+class CacheWii : public Cache, public ThreadCallback {
     CacheWii(const CacheIDWii &);
     virtual ~CacheWii();
     virtual const char *GetCacheName();
@@ -32,20 +33,15 @@ class CacheWii : public Cache {
     virtual bool ReadAsync(const char *, void *, uint, Hmx::Object *);
     virtual bool WriteAsync(const char *, void *, uint, Hmx::Object *);
     virtual bool DeleteAsync(const char *, Hmx::Object *);
-    int ThreadStart();
-    void ThreadDone(int);
+    virtual int ThreadStart();
+    virtual void ThreadDone(int);
     int ThreadGetDir(String);
     int ThreadGetFileSize();
     int ThreadRead();
     int ThreadWrite();
     int ThreadDelete();
 
-    int *m0x0c;
-    CacheIDWii *m0x10;
-    String m0x14;
-    String m0x20;
-    String m0x2c;
-    int m0x38;
+    CacheIDWii m0x10;
     String s_mThreadStr; // 0x3c
     String m0x48;
     void *m0x54;

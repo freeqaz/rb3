@@ -32,6 +32,7 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
     float zero = 0.0f;
     float three = 3.0f;
     float two_thirds = 2.0f / 3.0f;
+    float one = 1.0f;
     float p = val * two - q;
     float t0 = hue + third;
     float qmp = q - p;
@@ -41,10 +42,10 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
         if (i == 0) { t = t0; }
         else if (i == 1) { t = hue; }
         else { t = hue - third; }
-        if (t < zero) { t += 1.0f; }
-        else if (t > 1.0f) { t -= 1.0f; }
-        if (t * six < 1.0f) { color[i] = t * qmp_six + p; }
-        else if (t * two < 1.0f) { color[i] = q; }
+        if (t < zero) { t += one; }
+        else if (t > one) { t -= one; }
+        if (t * six < one) { color[i] = t * qmp_six + p; }
+        else if (t * two < one) { color[i] = q; }
         else if (t * three < two) { t = two_thirds - t; color[i] = qmp * t * six + p; }
         else { color[i] = p; }
     }
