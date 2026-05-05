@@ -404,7 +404,9 @@ void UIListState::Poll(float fArg0) {
             mCallback->CompleteScroll(*this);
             if (mFirstShowing != mTargetShowing) {
                 mStepTime = fArg0 - (fArg0 - (mStepTime + mSpeed));
-                mCallback->StartScroll(*this, ScrollToTarget(mTargetShowing) > 0 ? 1 : -1, 1);
+                mCallback->StartScroll(
+                    *this, ScrollToTarget(mTargetShowing) > 0 ? 1 : -1, 1
+                );
             } else {
                 mStepTime = -1.0f;
             }

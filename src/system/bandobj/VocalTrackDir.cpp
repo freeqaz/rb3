@@ -516,7 +516,9 @@ void VocalTrackDir::SetTambourine(bool b) {
     mTambourineSmasher->HandleType(reset_particles_msg);
 }
 
-void VocalTrackDir::Tambourine(Symbol s) { mTambourineSmasher->Handle(Message(s), true); }
+void VocalTrackDir::Tambourine(Symbol s) {
+    mTambourineSmasher->Handle(Message(Symbol(s.mStr)), true);
+}
 
 void VocalTrackDir::TambourineNote() {
     if (mPopupObject)

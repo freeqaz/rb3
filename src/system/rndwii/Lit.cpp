@@ -4,15 +4,32 @@
 #include "revolution/gx/GXLight.h"
 #include "revolution/gx/GXTypes.h"
 #include "rndwii/Rnd.h"
+#include "decomp.h"
 #include <cmath>
 
 void WiiLight::Update(GXLightID lit) {
-    Hmx::Color src_col = GetColor();
+    Hmx::Color src_col = mColorOwner->mColor;
     src_col.alpha = 0;
 
     if (!mOnlyProjection) {
+#ifdef MATCHING
+        // Inline PSQ color packing (qr6 = u8 quantize format, set by InitGQR)
+        register __vec2x32float__ rg_pair;
+        register __vec2x32float__ ba_pair;
+        register const Hmx::Color *_c = &src_col;
+        GXColor gxc;
+        register GXColor *_dst = &gxc;
+        ASM_BLOCK(
+            psq_l rg_pair, 0x0(_c), 0, 0
+            psq_l ba_pair, 0x8(_c), 0, 0
+            psq_st rg_pair, 0x0(_dst), 0, 6
+            psq_st ba_pair, 0x2(_dst), 0, 6
+        )
+        GXInitLightColor(&mLight, gxc);
+#else
         int c = MakeU32Color(src_col);
         GXInitLightColor(&mLight, *(GXColor *)&c);
+#endif
     }
 
     if (unk_0x15C && !mOnlyProjection) {

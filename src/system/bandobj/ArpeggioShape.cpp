@@ -142,15 +142,17 @@ ArpeggioShapePool::~ArpeggioShapePool() {
 }
 
 void ArpeggioShapePool::CreateArpeggioShape() {
-    mShapes.push_back(new ArpeggioShape(
-        mShapesGroup,
-        mChordShapeMesh,
-        mFretNumbersChord,
-        mChordLabel,
-        mChordShapeMat,
-        mFadeMatAnim
-    ));
+    ArpeggioShape *shape = new ArpeggioShape(
+        mShapesGroup, mChordShapeMesh, mFretNumbersChord,
+        mChordLabel, mChordShapeMat, mFadeMatAnim);
+    mShapes.push_back(shape);
     mCurrentPoolSize++;
+}
+
+void ArpeggioShapePool::ReleaseArpeggioShape(ArpeggioShape *& shape) {
+    shape->Reset();
+    mShapes.push_front(shape);
+    shape = nullptr;
 }
 
 ArpeggioShape *ArpeggioShapePool::GetArpeggioShape() {

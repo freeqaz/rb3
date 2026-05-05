@@ -165,7 +165,6 @@ void GameConfig::AssignTracks() {
             u->GetUserGuid(), u->GetSlot(), !u->IsLocal()
         );
     }
-    bool b11 = false;
     for (int i = 0; i < users.size(); i++) {
         AssignTrack(users[i]);
         if (users[i]->GetTrackType() == kTrackVocals) {

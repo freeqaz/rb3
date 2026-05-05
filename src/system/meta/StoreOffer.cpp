@@ -640,8 +640,9 @@ DataArray *StoreOffer::DescriptionData(UILabel *label) const {
 void MakeOfferSortString(char *cc, const StoreOffer *offer) {
     CalculateAlphaKey(cc, offer->Artist(), true);
     int cclen = strlen(cc);
-    cc[cclen] = ' ';
-    char *cc_offset = &cc[cclen + 1];
+    char *cc_offset = cc + cclen;
+    cc_offset[0] = ' ';
+    cc_offset++;
     *cc_offset = '\0';
     const char *cc5 = "";
     if (offer->mPackedData->OfferType() == kStoreOfferAlbum) {

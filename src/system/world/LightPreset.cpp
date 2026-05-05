@@ -427,9 +427,9 @@ void LightPreset::SetFrameEx(float frame, float blend, bool b) {
         SyncNewSpotlights();
     }
     if (!mKeyframes.empty()) {
-        Keyframe *kf7 = nullptr;
-        float f74 = 1.0f;
         Keyframe *kf5;
+        float f74 = 1.0f;
+        Keyframe *kf7 = nullptr;
         if (mManual) {
             kf5 = &mKeyframes[mManualFrame];
             while (!sManualEvents.empty() && sManualEvents.front().second <= mStartBeat) {

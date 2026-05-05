@@ -54,27 +54,28 @@ void FingerShape::Update(const RGState &state, bool b1, bool b2) {
         int i78 = -1;
         bool range = RGGetHeldFretRange(state, i74, i78);
         int num = range ? 1 - i74 : 0;
+        int j = 0;
         for (int i = 0; i < 6; i++) {
             float clamped = Clamp<int>(0, 6, num + state.GetFret(i));
-            UpdateAnim(mFretHeightAnims[i], clamped, b1);
+            UpdateAnim(mFretHeightAnims[j], clamped, b1);
             if (i == 0) {
-                UpdateAnim(mContourHeightAnims[i], clamped, b1);
-                UpdateAnim(mContourAngleAnims[i], -clamped, b1);
+                UpdateAnim(mContourHeightAnims[0], clamped, b1);
+                UpdateAnim(mContourAngleAnims[0], -clamped, b1);
             }
             if (i < 5) {
-                int idx = i + 1;
-                float clamped2 = Clamp<int>(0, 6, num + state.GetFret(idx));
+                float clamped2 = Clamp<int>(0, 6, num + state.GetFret(i + 1));
                 float minclamp = Min(clamped, clamped2);
                 float f1 = clamped - clamped2;
                 if (mLefty)
                     f1 = -f1;
-                UpdateAnim(mContourHeightAnims[idx], minclamp, b1);
-                UpdateAnim(mContourAngleAnims[idx], f1, b1);
+                UpdateAnim(mContourHeightAnims[i + 1], minclamp, b1);
+                UpdateAnim(mContourAngleAnims[i + 1], f1, b1);
             }
             if (i == 5) {
                 UpdateAnim(mContourHeightAnims[6], clamped, b1);
                 UpdateAnim(mContourAngleAnims[6], clamped, b1);
             }
+            j++;
         }
         UpdateFretNumber(state, b1);
         *mLastState = state;

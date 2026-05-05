@@ -101,7 +101,7 @@ UIListSubListElement::Draw(const Transform &tf, float f, UIColor *col, Box *box)
         mList->DrawShowing();
 }
 
-inline void UIListSubListElement::Fill(const UIListProvider &prov, int i, int j) {
+void UIListSubListElement::Fill(const UIListProvider &prov, int i, int j) {
     UIListProvider *theProvider;
     if (LOADMGR_EDITMODE)
         theProvider = mList;

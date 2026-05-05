@@ -169,7 +169,8 @@ void RndMesh::UpdateSphere() {
 }
 
 float RndMesh::GetDistanceToPlane(const Plane &p, Vector3 &v) {
-    if (Verts().empty())
+    bool isEmpty = Verts().empty();
+    if (isEmpty)
         return 0;
     const Transform &world = WorldXfm();
     Vector3 v58;

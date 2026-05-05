@@ -236,8 +236,8 @@ void WiiRnd::DrawBlackBackground() {
     c.b = c.g = c.r = 0;
     c.a = 0xff;
     GXColor c2;
-    c.b = c.g = c.r = 0;
-    c.a = 0xff;
+    c2.b = c2.g = c2.r = 0;
+    c2.a = 0xff;
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
     GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);

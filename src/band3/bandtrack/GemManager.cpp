@@ -531,8 +531,9 @@ void GemManager::Hit(float f1, int i2, int i3) {
     if (!mTrackConfig.AllowsOverlappingGems()) {
         ReleaseHitGems();
     }
-    mGems[i2].Hit();
-    mHitGems.push_back(HitGem(f1, i2, mGems[i2].Slots()));
+    Gem &gem = mGems[i2];
+    gem.Hit();
+    mHitGems.push_back(HitGem(f1, i2, gem.Slots()));
     if (mTrackConfig.IsKeyboardTrack()) {
         CheckRemoveChordBracket(i2);
     }

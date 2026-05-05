@@ -138,7 +138,44 @@ namespace {
     }
 
     void WaitForAnyResponse(Holmes::Protocol ptcl) {
-        printf(Holmes::ProtocolDebugString(ptcl));
+        if (gPendingResponse != Holmes::kInvalidOpcode)
+            return;
+        if (gHolmesStream->mSocket->CanRead())
+            return;
+        bool isMainThread = MainThread();
+        if (isMainThread) {
+            AutoSlowFrame::sDepth++;
+            Timer::sSlowFrameReason = "Holmes::WaitForAnyResponse";
+            Timer::sSlowFrameWaiver += 5.0f;
+            Timer::sSlowFrameTimer.Start();
+        }
+        gProfile[ptcl].wait.Start();
+        float initialMs = gProfile[ptcl].wait.SplitMs();
+        float warnThresh = 2000.0f;
+        float warnStep = 1000.0f;
+        while (true) {
+            if (gHolmesStream->mSocket->CanRead()) {
+                gProfile[ptcl].wait.Stop();
+                if (MainThread()) {
+                    AutoSlowFrame::sDepth--;
+                    Timer::sSlowFrameTimer.Stop();
+                }
+                return;
+            }
+            Timer::Sleep(0);
+            if (!gStackTraced) {
+                gProfile[ptcl].wait.Split();
+                float elapsed = gProfile[ptcl].wait.Ms() - initialMs;
+                if (elapsed > warnThresh) {
+                    printf(
+                        "[Holmes] %s opcode blocked for %.0f seconds\n",
+                        Holmes::ProtocolDebugString(ptcl),
+                        warnThresh / warnStep
+                    );
+                    warnThresh += warnStep;
+                }
+            }
+        }
     }
 
     void FinishResponse();
@@ -289,7 +326,7 @@ bool HolmesClientInitOpcode(bool r3) {
         }
         if (holmesVersion >= 0) {
             MILO_FAIL(
-                "Holmes version mismatch\nResync/rebuild both projects\nHolmes=%d Console=%d",
+                "Holmes version mismatch\nResync/rebuild both projects\nHolmes=%d  Console=%d",
                 holmesVersion,
                 0x18
             );

@@ -337,12 +337,11 @@ void GemTrackDir::SetPitch(float pitch) {
         MakeRotMatrix(v, mtx, true);
         mRotater->SetLocalRot(mtx);
         mStreakMeter->SetPitch(pitch + 90.0f + mStreakMeterTilt);
-        // Clamp(5.0f, 2.0f, -(pitch + 30.0f));
+        float precomp = -(pitch + 30.0f);
         RndGroup *grp = Find<RndGroup>("streak.grp", true);
-        float sined = std::sin((-pitch + 30.0f) * DEG2RAD);
-        Vector3 v58(grp->mLocalXfm.v);
-        v58.y = -mStreakMeterOffset / sined;
-        grp->SetLocalPos(v58);
+        float sined = std::sin(precomp * DEG2RAD);
+        grp->mLocalXfm.v.y = -mStreakMeterOffset / sined;
+        grp->SetDirty();
     }
 }
 

@@ -261,8 +261,7 @@ void AppendCheatsLog(char *c) {
 void CheatsManager::AppendLog(char *c) {
     if (mBuffer.size() != 0) {
         strcat(c, "\n\nCheats Used");
-        char buf[16];
-        strncpy(buf, "\n   %.30s", 10);
+        char buf[10] = "\n   %.30s";
         for (std::list<CheatLog>::iterator it = mBuffer.begin(); it != mBuffer.end();
              ++it) {
             String str;

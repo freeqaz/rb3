@@ -421,7 +421,6 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
 bool Player::Saveable() const {
     bool result = false;
     bool ret = false;
-    bool result = false;
     if (mEnabledState == kPlayerDisabled && mTimesFailed < 3 && !unk298)
         ret = true;
     if (ret) {
@@ -566,7 +565,6 @@ int Player::GetIndividualMultiplier() const {
         int streak = mStats.GetCurrentStreak();
         int maxMult = mBehavior->mMaxMultiplier;
         int mult = TheScoring->GetStreakMult(streak, mBehavior->mStreakType);
-        int maxMult = mBehavior->mMaxMultiplier;
         return std::min(maxMult, mult);
     } else
         return 1;

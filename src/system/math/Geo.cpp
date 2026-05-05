@@ -684,18 +684,16 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
 
     int candidateIdx = 0;
     float bestScore = -1.0f;
-    float zero = 0.0f;
-    float powExp = 0.6f;
     for (std::list<BSPFace>::iterator faceIt = faces.begin(); faceIt != faces.end(); ++faceIt) {
-        if (candidateIdx >= gBSPMaxCandidates) break;
         for (std::list<Plane>::iterator planeIt = faceIt->planes.begin(); planeIt != faceIt->planes.end(); ++planeIt) {
+            float frontArea = 0.0f, backArea = 0.0f;
+            int backCount = 0, spanCount = 0;
+            int frontCount = 0;
             if (totalFaces == 1) {
                 node->plane = *planeIt;
-                bestScore = zero;
+                bestScore = 0.0f;
                 break;
             }
-            int frontCount = 0, backCount = 0, spanCount = 0;
-            float frontArea = zero, backArea = zero;
             std::list<BSPFace>::iterator jt;
             for (jt = faces.begin(); jt != faces.end(); ++jt) {
                 bool front, back;
@@ -704,32 +702,39 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
                     if (fabsf(planeIt->a * jt->t.m.z.x + planeIt->b * jt->t.m.z.y + planeIt->c * jt->t.m.z.z) < gBSPDirTol)
                         break;
                 } else {
-                    if (back) {
+                    if (!back) {
+                        frontArea += jt->area;
+                        frontCount++;
+                    } else if (!front) {
                         backArea += jt->area;
                         backCount++;
-                        if (!front) continue;
+                        continue;
+                    } else {
                         spanCount++;
+                        frontCount++;
+                        backCount++;
+                        frontArea += jt->area;
+                        backArea += jt->area;
                     }
-                    frontArea += jt->area;
-                    frontCount++;
                 }
             }
             if (jt != faces.end()) {
                 candidateIdx--;
                 continue;
             }
-            float powBack = (float)pow((float)(spanCount + backCount), powExp);
-            float score = (float)pow((float)(spanCount + frontCount), powExp) * frontArea
+            float powBack = (float)pow((float)(spanCount + backCount), 0.6f);
+            float score = (float)pow((float)(spanCount + frontCount), 0.6f) * frontArea
                         + powBack * backArea;
-            if (frontCount < totalFaces && backCount < totalFaces && (bestScore < zero || score < bestScore)) {
+            if (frontCount < totalFaces && backCount < totalFaces && (bestScore < 0.0f || score < bestScore)) {
                 node->plane = *planeIt;
                 bestScore = score;
             }
         }
         candidateIdx++;
+        if (candidateIdx >= gBSPMaxCandidates) break;
     }
 
-    if (bestScore < zero) {
+    if (bestScore < 0.0f) {
         TheDebug.Notify(MakeString("Couldn't find candidate plane"));
         return false;
     }
@@ -766,11 +771,14 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
     }
 
     bool ok = MakeBSPTree(node->left, frontFaces, nextDepth);
-    if (!ok)
+    if (!ok) {
+        frontFaces.clear();
+        backFaces.clear();
         return false;
+    }
     ok = MakeBSPTree(node->right, backFaces, nextDepth);
-    backFaces.clear();
     frontFaces.clear();
+    backFaces.clear();
     return ok;
 }
 
