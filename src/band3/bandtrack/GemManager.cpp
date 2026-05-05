@@ -323,40 +323,40 @@ void GemManager::ProcessRealGuitarRun(std::vector<GameGem> &gems, int &iref) {
                 }
             }
             if (i9 > 5) {
+                i9 = 2;
                 i2 = mGems[iref].GetGameGem().GetFret(i3);
                 if (i60 - i2 < 5) {
                     i9 = 4 - (i60 - i2);
                 } else {
-                    i9 = 2;
                     if (i2 - i5c < 5) {
                         i9 = i2 - i5c;
                     }
-                    mGems[iref].SetFretPos(i9);
-                    for (int i = 1; i < gems.size(); i++) {
-                        int i1 = mGems[iref + i].GetGameGem().GetFret(i3);
-                        if (i2 < i1) {
-                            i9 = (i9 + 1) % 5;
-                            i2 = i1;
-                        } else if (i1 < i2) {
-                            i9--;
-                            i2 = i1;
-                            if (i9 < 0) {
-                                i9 = 4;
-                            }
+                }
+                mGems[iref].SetFretPos(i9);
+                for (int i = 1; i < gems.size(); i++) {
+                    int i1 = mGems[iref + i].GetGameGem().GetFret(i3);
+                    if (i1 > i2) {
+                        i9 = (i9 + 1) % 5;
+                        i2 = i1;
+                    } else if (i1 < i2) {
+                        i9--;
+                        if (i9 < 0) {
+                            i9 = 4;
                         }
-                        mGems[iref + i].SetFretPos(i9);
+                        i2 = i1;
                     }
+                    mGems[iref + i].SetFretPos(i9);
                 }
             } else {
-                if (i5c == i2) {
+                if (i5c == i60) {
                     for (int i = 0; i < gems.size(); i++) {
                         mGems[iref + i].SetFretPos(2);
                     }
                 } else {
-                    i2 -= i5c;
+                    float scale = 5.0f / (i60 - i5c);
                     for (int i = 0; i < gems.size(); i++) {
                         float gemfloat = mGems[iref + i].GetGameGem().GetFret(i3) - i5c;
-                        int i68 = (5.0f / i2) * gemfloat;
+                        int i68 = scale * gemfloat;
                         i68 = std::min(i68, 4);
                         mGems[iref + i].SetFretPos(i68);
                     }
@@ -634,8 +634,8 @@ void GemManager::SetBonusGems(bool gems, const PlayerState &state) {
 void GemManager::SetInCoda(bool coda) { mInCoda = coda; }
 
 bool GemManager::OnMissPhrase(int i1) {
-    int tracknum = mTrackConfig.TrackNum();
     bool ret = true;
+    int tracknum = mTrackConfig.TrackNum();
     Extent ext18(0, 0);
     if (TheSongDB->GetCommonPhraseExtent(tracknum, i1, ext18)) {
         int i2 = MsToTickInt(TheTaskMgr.Seconds(TaskMgr::kRealTime) * 1000.0f);
@@ -644,12 +644,14 @@ bool GemManager::OnMissPhrase(int i1) {
             ret = back.unk4 != ext18.unk4;
             if (ret) {
                 mMissedPhrases.push_back(Extent(i2, ext18.unk4));
-            } else if (i2 != back.unk0)
-                return ret;
+            }
+            if (ret || i2 == back.unk0) {
+                UpdateGemStates();
+            }
         } else {
             mMissedPhrases.push_back(Extent(i2, ext18.unk4));
+            UpdateGemStates();
         }
-        UpdateGemStates();
     }
     return ret;
 }

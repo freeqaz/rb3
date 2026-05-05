@@ -117,7 +117,7 @@ void SetlistMergePanel::SetLocalsMerging(bool b1) {
 
 int SetlistMergePanel::IntToSetlistIndex(int i, int setlistSize) {
     MILO_ASSERT_RANGE(i, 0, 100, 0xA9);
-    MILO_ASSERT_RANGE_EQ(setlistSize, 1, 100, 0xB8);
+    MILO_ASSERT_RANGE_EQ(setlistSize, 1, 100, 0xAA);
 
     int index = -1;
     for (int i3 = 0; i3 < setlistSize; i3++) {

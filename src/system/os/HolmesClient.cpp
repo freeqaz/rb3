@@ -142,30 +142,24 @@ namespace {
             return;
         if (gHolmesStream->mSocket->CanRead())
             return;
+        const char *reason = "Holmes::WaitForAnyResponse";
         bool isMainThread = MainThread();
         if (isMainThread) {
             AutoSlowFrame::sDepth++;
-            Timer::sSlowFrameReason = "Holmes::WaitForAnyResponse";
+            Timer::sSlowFrameReason = reason;
             Timer::sSlowFrameWaiver += 5.0f;
             Timer::sSlowFrameTimer.Start();
         }
-        gProfile[ptcl].wait.Start();
-        float initialMs = gProfile[ptcl].wait.SplitMs();
+        HolmesProfileData *profile = &gProfile[ptcl];
+        profile->wait.Start();
+        float initialMs = profile->wait.SplitMs();
         float warnThresh = 2000.0f;
         float warnStep = 1000.0f;
-        while (true) {
-            if (gHolmesStream->mSocket->CanRead()) {
-                gProfile[ptcl].wait.Stop();
-                if (MainThread()) {
-                    AutoSlowFrame::sDepth--;
-                    Timer::sSlowFrameTimer.Stop();
-                }
-                return;
-            }
+        while (!gHolmesStream->mSocket->CanRead()) {
             Timer::Sleep(0);
             if (!gStackTraced) {
-                gProfile[ptcl].wait.Split();
-                float elapsed = gProfile[ptcl].wait.Ms() - initialMs;
+                profile->wait.Split();
+                float elapsed = profile->wait.Ms() - initialMs;
                 if (elapsed > warnThresh) {
                     printf(
                         "[Holmes] %s opcode blocked for %.0f seconds\n",
@@ -175,6 +169,11 @@ namespace {
                     warnThresh += warnStep;
                 }
             }
+        }
+        profile->wait.Stop();
+        if (MainThread()) {
+            AutoSlowFrame::sDepth--;
+            Timer::sSlowFrameTimer.Stop();
         }
     }
 

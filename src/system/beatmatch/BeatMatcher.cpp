@@ -462,8 +462,9 @@ void BeatMatcher::SetFillsEnabled(bool b) {
         SetFillsEnabled(mTick, false);
     else {
         int i2 = mFillStartTick;
+        bool notAtMax = (i2 != INT_MAX);
         SetFillsEnabled(INT_MAX, false);
-        if (i2 != INT_MAX) {
+        if (notAtMax) {
             int tick = mSongPos.GetTotalTick();
             FillExtent ext(-1, -1, false);
             if (mSongData->GetFillInfo(mCurTrack)->FillExtentAtOrBefore(tick, ext)) {

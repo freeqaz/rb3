@@ -491,7 +491,7 @@ DataNode ChordbookPanel::OnDisplayChord(const DataArray *a) {
     int i2 = a->Int(2);
     int idx = mNumChords - 1;
     if (i2 <= idx) {
-        idx = i2 > 0;
+        idx = i2 & ~(i2 >> 31);
     }
     DisplayChord(idx);
     return idx;

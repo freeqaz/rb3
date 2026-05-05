@@ -571,8 +571,11 @@ void VocalPlayer::LocalScorePhrase(
     int i1, const std::vector<int> &i_rNewPhraseActiveParts, bool b3
 ) {
     if (mTrack) {
-        int iActivePartCount =
-            std::count(i_rNewPhraseActiveParts.begin(), i_rNewPhraseActiveParts.end(), 0);
+        int iActivePartCount = 0;
+        for (std::vector<int>::const_iterator it = i_rNewPhraseActiveParts.begin();
+             it != i_rNewPhraseActiveParts.end(); ++it) {
+            iActivePartCount += *it;
+        }
         MILO_ASSERT(( 0) <= ( iActivePartCount) && ( iActivePartCount) <= ( i_rNewPhraseActiveParts.size()), 0x855);
         VocalTrackDir *dir = mTrack->GetVocalTrackDir();
         dir->ShowPhraseFeedback(i1, -1, -1, IsDeployingBandEnergy());

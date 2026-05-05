@@ -210,8 +210,10 @@ bool TrackWatcherImpl::IsSwingInRoll(int gemID, unsigned int ui) {
     unsigned int slots = gem.GetSlots();
     if (!AreSlotsInRoll(slots, tick))
         return false;
-    else
-        return (slots == (slots & mRollActiveSlots)) && ((ui & mRollActiveSlots) == ui);
+    else {
+        bool slotsInRoll = (slots == (slots & mRollActiveSlots));
+        return ((ui & mRollActiveSlots) == ui) && slotsInRoll;
+    }
 }
 
 bool TrackWatcherImpl::AreSlotsInRoll(unsigned int slots, int tick) const {

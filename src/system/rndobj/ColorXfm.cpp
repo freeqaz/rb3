@@ -67,13 +67,13 @@ void RndColorXfm::AdjustSaturation() {
     Transform tf68;
     tf68.Reset();
     float sat = mSaturation / 100.0f;
+    float one = 1.0f;
     if (sat > 0)
-        sat += 1.0f;
+        sat = one + sat;
     else {
-        sat = -sat * -0.6666666f;
-        sat += 1.0f;
+        sat = -sat * -0.6666666f + one;
     }
-    float f2 = (1.0f - sat) * 0.5f;
+    float f2 = (one - sat) * 0.5f;
     for (int i = 0; i < 3; i++) {
         tf68.m[i][i] = sat;
         tf68.m[i][ModChan(i + 1)] = f2;
@@ -105,12 +105,13 @@ void RndColorXfm::AdjustContrast() {
     Transform tf58;
     tf58.Reset();
     float contrast = mContrast / 100.0f;
+    float one = 1.0f;
     if (contrast > 0) {
-        contrast = 1.0f / (contrast * -0.9921875f + 1.0f);
+        contrast = one / (contrast * -0.9921875f + one);
     } else {
-        contrast = -contrast * -0.992126f + 1.0f;
+        contrast = -contrast * -0.992126f + one;
     }
-    float f2 = (1.0f - contrast) * 0.5f;
+    float f2 = (one - contrast) * 0.5f;
     tf58.m[2][2] = contrast;
     tf58.m[1][1] = contrast;
     tf58.m[0][0] = contrast;

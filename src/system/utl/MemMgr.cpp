@@ -10,6 +10,7 @@ struct MemHeapStack {
 class Heap {
 public:
     void FreeBlockStats(int &, int &, int &, int &);
+    char mPad[0x34]; // padding to match sizeof(Heap) == 0x34
 };
 
 extern int gDefaultHeap;

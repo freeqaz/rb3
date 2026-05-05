@@ -684,7 +684,7 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
 
     int candidateIdx = 0;
     float bestScore = -1.0f;
-    for (std::list<BSPFace>::iterator faceIt = faces.begin(); faceIt != faces.end(); ++faceIt) {
+    for (std::list<BSPFace>::iterator faceIt = faces.begin(); faceIt != faces.end() && candidateIdx < gBSPMaxCandidates; ++faceIt, ++candidateIdx) {
         for (std::list<Plane>::iterator planeIt = faceIt->planes.begin(); planeIt != faceIt->planes.end(); ++planeIt) {
             float frontArea = 0.0f, backArea = 0.0f;
             int backCount = 0, spanCount = 0;
@@ -722,16 +722,14 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
                 candidateIdx--;
                 continue;
             }
-            float powBack = (float)pow((float)(spanCount + backCount), 0.6f);
-            float score = (float)pow((float)(spanCount + frontCount), 0.6f) * frontArea
+            float powBack = (float)pow((float)(backCount + spanCount), 0.6f);
+            float score = (float)pow((float)(frontCount + spanCount), 0.6f) * frontArea
                         + powBack * backArea;
             if (frontCount < totalFaces && backCount < totalFaces && (bestScore < 0.0f || score < bestScore)) {
                 node->plane = *planeIt;
                 bestScore = score;
             }
         }
-        candidateIdx++;
-        if (candidateIdx >= gBSPMaxCandidates) break;
     }
 
     if (bestScore < 0.0f) {
@@ -739,7 +737,7 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
         return false;
     }
 
-    std::list<BSPFace> backFaces, frontFaces;
+    std::list<BSPFace> frontFaces, backFaces;
     std::list<BSPFace>::iterator it = faces.begin();
     while (it != faces.end()) {
         std::list<BSPFace>::iterator cur = it++;
@@ -770,16 +768,19 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
         }
     }
 
-    bool ok = MakeBSPTree(node->left, frontFaces, nextDepth);
-    if (!ok) {
+    if (!MakeBSPTree(node->left, frontFaces, nextDepth)) {
         frontFaces.clear();
         backFaces.clear();
         return false;
     }
-    ok = MakeBSPTree(node->right, backFaces, nextDepth);
+    if (!MakeBSPTree(node->right, backFaces, nextDepth)) {
+        frontFaces.clear();
+        backFaces.clear();
+        return false;
+    }
     frontFaces.clear();
     backFaces.clear();
-    return ok;
+    return true;
 }
 
 void Sphere::GrowToContain(const Sphere &s) {

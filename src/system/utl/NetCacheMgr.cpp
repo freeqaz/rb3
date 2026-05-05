@@ -428,11 +428,12 @@ bool NetLoaderRef::NeedsToDownload() {
     MILO_ASSERT(valid, 0x31e);
     bool needsToDownload = true;
     if (!mNetLoader) {
-        needsToDownload = false;
+        needsToDownload = true;
         if (mCacheLoader) {
             int state = (int)mCacheLoader->mState;
-            if (state == 1 || state == 2)
-                needsToDownload = true;
+            bool stateMatch = (state == 1 || state == 2);
+            if (!stateMatch)
+                needsToDownload = false;
         }
     }
     return needsToDownload;
