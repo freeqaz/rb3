@@ -22,7 +22,7 @@ public:
     void Clear();
     int Open();
     MCResult HandleResultNAND(s32);
-    bool FinishStream();
+    MCResult FinishStream();
     int Close();
     void DeleteChecksum();
     int Pad(int);

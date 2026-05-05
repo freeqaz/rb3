@@ -234,9 +234,11 @@ void GlitchFinder::PokeEnd(unsigned int ui) {
 }
 
 void GlitchFinder::CheckDump() {
-    if (!mStop && mStartPoker) {
+    if (!mStop) {
+        if (!mStartPoker)
+            return;
         mStop = true;
-        mCurPoker->mTimeEnd = mTime.SplitMs();
+        mStartPoker->mTimeEnd = mTime.SplitMs();
         static unsigned int sStart;
         if (sStart == 0) {
             TIMER_GET_CYCLES(start_cycles);
@@ -245,22 +247,25 @@ void GlitchFinder::CheckDump() {
         bool b1 = mActive && mStartPoker->OverBudget();
         mStartPoker->PollAveragesRecurse(b1);
         if (b1) {
+            GlitchPoker::smDumpLeaves = mLeafThreshold > 0;
             GlitchPoker::smThreshold = mLeafThreshold;
-            GlitchPoker::smDumpLeaves = GlitchPoker::smThreshold > 0;
             GlitchPoker::smTotalLeafTime = 0;
             String str(0x2000, '\0');
             str << "-------- GLITCH #" << mGlitchCount << " -------- Frame "
                 << mFrameCount << " -----\n";
             GlitchPoker::smLastDumpTime = mStartPoker->mTime;
             mStartPoker->Dump(str, 0);
-            str << "Overhead: " << Timer::CyclesToMs(mOverheadCycles) << "\n";
+            str << "Overhead: ";
+            str << Timer::CyclesToMs(mOverheadCycles);
+            str << "\n";
             str << "-------- GLITCH END --------\n";
-            int strLen = str.length();
+            int strLen = strlen(str.c_str());
             if (strLen > 0x400) {
                 char buf[1024];
                 int i = 0;
                 for (; i + 0x400 < strLen; i += 0x400) {
                     strncpy(buf, str.c_str() + i, 0x400);
+                    buf[0x400] = '\0';
                     MILO_LOG(buf);
                 }
                 strncpy(buf, str.c_str() + i, strLen - i);
@@ -272,6 +277,9 @@ void GlitchFinder::CheckDump() {
         }
         if (mActive)
             mFrameCount++;
+        mPokerIndex = 0;
+        mCurPoker = 0;
+        mStartPoker = 0;
     }
 }
 

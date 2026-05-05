@@ -70,6 +70,8 @@ WiiMessenger::WiiMessenger()
     }
     g_Messages[i].unk24 = nullptr;
     unk20 = g_Messages;
+    unk70 = new Quazal::qList<unsigned int>();
+    unk74 = new Quazal::qList<unsigned int>();
 }
 
 WiiMessenger::~WiiMessenger() {}

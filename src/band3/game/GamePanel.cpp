@@ -239,9 +239,9 @@ void GamePanel::StartGame() {
 }
 
 void GamePanel::RunVocalTest() {
+    float f1 = 0;
     float durms = TheSongDB->GetSongDurationMs();
     unk150 = false;
-    float f1 = 0;
     while (f1 < durms) {
         TheTaskMgr.SetSeconds(f1 / 1000.0f, false);
         f1 += 16.0f;

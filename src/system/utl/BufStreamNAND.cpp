@@ -81,8 +81,8 @@ int BufStreamNAND::Close() {
     return result;
 }
 
-bool BufStreamNAND::FinishStream() {
-    int result = Close();
+MCResult BufStreamNAND::FinishStream() {
+    MCResult result = (MCResult)Close();
     if(result) {
         mFail = true;
     }

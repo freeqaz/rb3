@@ -50,7 +50,37 @@ void PatchSticker::FinishLoad() {
     if (buf) {
         RndBitmap other;
         other.Create((void *)buf);
+        RndBitmap *prev = 0;
+        RndBitmap *cur = &other;
+        {
+            RndBitmap *next;
+            goto mip_check;
+            do {
+                prev = cur;
+                cur = next;
+            mip_check:
+                next = cur->mMip;
+                if (!next)
+                    break;
+                int minDim = next->mWidth;
+                if (next->mHeight < minDim)
+                    minDim = next->mHeight;
+                if (minDim < 0x40)
+                    break;
+            } while (true);
+        }
+        if (prev)
+            prev->DetachMip();
+        RndBitmap *detached = cur->DetachMip();
+        unk30->SetBitmap(*cur, 0, true);
+        cur->SetMip(detached);
+        if (prev)
+            prev->SetMip(cur);
+        other.SetMip(0);
+        mTex->SetBitmap(other, 0, true);
+        other.Reset();
     }
+    bmap.Reset();
 }
 
 void PatchSticker::Unload() {

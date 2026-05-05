@@ -1,5 +1,6 @@
 #pragma once
 #include "Platform/DateTime.h"
+#include "Platform/qStd.h"
 #include "obj/Msg.h"
 #include "obj/Object.h"
 #include "utl/Str.h"
@@ -61,8 +62,8 @@ public:
     WiiMessageList *unk60;
     Hmx::Object *unk64;
     WiiMessageList unk68;
-    int unk70; // 0x70 - quazal root object - its one member is a qList<unsigned int>
-    int unk74; // 0x74 - some quazal root object - ditto
+    Quazal::qList<unsigned int> *unk70; // 0x70
+    Quazal::qList<unsigned int> *unk74; // 0x74
     int unk78; // 0x78 - ProtocolCallContext*
 };
 

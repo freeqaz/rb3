@@ -25,10 +25,8 @@ public:
                 MemDoTempAllocations temp(true, false);
                 mVerts.resize(mMesh->Verts().size());
                 for (int i = 0; i < mVerts.size(); i++) {
-                    SyncMeshCB::Vert &curVert = mVerts[i];
-                    curVert.pos = mMesh->Verts(i).pos;
-                    SyncMeshCB::Vert &curVert2 = mVerts[i];
-                    curVert2.norm = mMesh->Verts(i).norm;
+                    mVerts[i].pos = mMesh->Verts(i).pos;
+                    mVerts[i].norm = mMesh->Verts(i).norm;
                 }
             }
         }
@@ -41,8 +39,7 @@ public:
             MemDoTempAllocations temp(true, false);
             mColors.resize(mMesh->Verts().size());
             for (int i = 0; i < mVerts.size(); i++) {
-                Hmx::Color &curColor = mColors[i];
-                curColor = mMesh->Verts(i).color;
+                mColors[i] = mMesh->Verts(i).color;
             }
         }
     }

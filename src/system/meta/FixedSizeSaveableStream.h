@@ -1,5 +1,6 @@
 #pragma once
 #include "utl/BufStream.h"
+#include "os/Memcard.h"
 #include <map>
 
 class FixedSizeSaveableStream : public BufStream {
@@ -7,7 +8,7 @@ public:
     FixedSizeSaveableStream(void *, int, bool);
     virtual ~FixedSizeSaveableStream();
     virtual bool FinishWrite() { return 0; }
-    virtual bool FinishStream() { return 0; }
+    virtual MCResult FinishStream() { return kMCNoError; }
 
     bool HasSymbol(Symbol) const;
     bool HasID(int) const;

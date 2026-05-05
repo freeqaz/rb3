@@ -958,15 +958,22 @@ void LightPreset::FillSpotlightDrawerPresetData(
 void LightPreset::AnimateSpotlightDrawerFromPreset(
     SpotlightDrawer *sd, const LightPreset::SpotlightDrawerEntry &e, float f
 ) {
-    float val;
-    Interp(sd->mParams.mBaseIntensity, e.mBaseIntensity, f, val);
-    sd->mParams.mBaseIntensity = val;
-    Interp(sd->mParams.mSmokeIntensity, e.mSmokeIntensity, f, val);
-    sd->mParams.mSmokeIntensity = val;
-    Interp(sd->mParams.mLightingInfluence, e.mLightInfluence, f, val);
-    sd->mParams.mLightingInfluence = val;
-    Interp(sd->mParams.mIntensity, e.mTotalIntensity, f, val);
-    sd->mParams.mIntensity = val;
+    float base = sd->mParams.mBaseIntensity;
+    float smoke = sd->mParams.mSmokeIntensity;
+    float dBase = e.mBaseIntensity - base;
+    float infl = sd->mParams.mLightingInfluence;
+    float dSmoke = e.mSmokeIntensity - smoke;
+    float baseRes = f * dBase + base;
+    float dInfl = e.mLightInfluence - infl;
+    float total = sd->mParams.mIntensity;
+    float smokeRes = f * dSmoke + smoke;
+    float dTotal = e.mTotalIntensity - total;
+    float inflRes = f * dInfl + infl;
+    sd->mParams.mBaseIntensity = baseRes;
+    float totalRes = f * dTotal + total;
+    sd->mParams.mSmokeIntensity = smokeRes;
+    sd->mParams.mLightingInfluence = inflRes;
+    sd->mParams.mIntensity = totalRes;
 }
 
 void LightPreset::SetSpotlight(Spotlight *s, int data) {
