@@ -378,8 +378,8 @@ void CharBones::ScaleAdd(CharBones &dst, float f) const {
 
     if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
         Vector3 *ddata = (Vector3 *)dst.mStart;
-        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         const Bone *src_end = src + mCounts[TYPE_QUAT];
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
@@ -499,8 +499,8 @@ add_quat:
                     dquat++;
                 }
                 float sw = (float)sdata[3] * swscale;
-                float sz = (float)sdata[2] * scale;
                 float sy = (float)sdata[1] * scale;
+                float sz = (float)sdata[2] * scale;
                 float sx = (float)sdata[0] * scale;
                 if (sw * dquat->w + sz * dquat->z + sx * dquat->x + sy * dquat->y < 0.0f) {
                     dquat->x -= sx;

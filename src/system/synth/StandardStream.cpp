@@ -95,36 +95,19 @@ void StandardStream::PollStream() {
 }
 
 void StandardStream::InitInfo(int i1, int sampleRate, bool floatSamples, int i4) {
-    int numChannels = i1 + mVirtualChans;
     unk144 = i4;
+    unkec = (float)i4 / (float)sampleRate;
+    int numChannels = i1 + mVirtualChans;
     mInfoChannels = numChannels;
-    unkec = (float)i4 / (float)numChannels;
     if (!mGetInfoOnly) {
         if (mSampleRate == 0) {
-            mFloatSamples = floatSamples;
             mSampleRate = sampleRate;
-            int i4 = (mBufSecs * (float)sampleRate * 2.0f);
-            int i38 = (i4 + (0x18000 - i4 % 0x18000));
-            i38 /= 0xC000;
-            MILO_WARN("bufBytes % (2*kStreamBufSize) == 0");
-            // bufBytes % (2*kStreamBufSize) == 0, where kStreamBufSize = 0xC000
-
-            //   iVar1 = (int)(this->mBufSecs * (float)sampleRate * 2.0);
-            //   local_40 = (longlong)iVar1;
-            //   iVar1 = iVar1 / 0x18000 + (iVar1 >> 0x1f);
-            //   iVar1 = (iVar1 - (iVar1 >> 0x1f)) * 0x18000 + 0x18000;
-            //   iVar2 = iVar1 / 0x18000 + (iVar1 >> 0x1f);
-            //   if (iVar1 != (iVar2 - (iVar2 >> 0x1f)) * 0x18000) {
-            //     pcVar3 = ::MakeString(kAssertStr,::@stringBase0,0x142,
-            //                           s_bufBytes_%_(2*kStreamBufSize)_==_80c3131e);
-            //     Debug::Fail((Debug *)TheDebug,pcVar3);
-            //   }
-            //   iVar1 = iVar1 / 0xc000 + (iVar1 >> 0x1f);
-            //   TVar16 = (TextStream)(iVar1 - (iVar1 >> 0x1f));
-            //   Symbol::Symbol(&local_50,s_max_slip_80c31341);
-            //   SVar4.mStr = (char *)Symbol::Symbol(&SStack_4c,s_iop_80c3134a);
-            //   SVar5.mStr = (char *)Symbol::Symbol(aSStack_48,s_synth_80c312a1);
-            //   pDVar6 = (DataArray *)SystemConfig(SVar5,SVar4);
+            mFloatSamples = floatSamples;
+            const int kStreamBufSize = 0xC000;
+            int bufBytes = (mBufSecs * (float)sampleRate * 2.0f);
+            bufBytes = bufBytes + (2*kStreamBufSize - bufBytes % (2*kStreamBufSize));
+            MILO_ASSERT(bufBytes % (2*kStreamBufSize) == 0, 0x142);
+            int i38 = bufBytes / kStreamBufSize;
 
             int i3c =
                 (((mSampleRate * SystemConfig("synth", "iop")->FindInt("max_slip")) / 1000

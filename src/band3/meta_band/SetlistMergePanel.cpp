@@ -68,7 +68,7 @@ void SetlistMergePanel::HandleSetlistSubmission(
 ) {
     MILO_ASSERT(IsLeaderLocal(), 0x61);
     MILO_ASSERT(mSetlistMergeLock->InLock(), 0x62);
-    mSetlists.push_back(std::make_pair(setlist, numplayers));
+    mSetlists.push_back(std::pair<std::vector<int>, int>(setlist, numplayers));
 }
 
 UNPOOL_DATA

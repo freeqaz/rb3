@@ -297,14 +297,14 @@ int EditSetlistPanel::SymToDayCount(Symbol s) {
 int EditSetlistPanel::SymToTimeUnits(Symbol s) {
     if (s == seconds)
         return 0;
-    else if (s == minutes)
+    if (s == minutes)
         return 1;
-    else if (s == hours)
+    if (s == hours)
         return 2;
-    else if (s == weeks)
-        return 4;
-    else
-        return 3;
+    int days = 3;
+    if (s == weeks)
+        days = 4;
+    return days;
 }
 
 Symbol EditSetlistPanel::DayCountToSym(int days) {

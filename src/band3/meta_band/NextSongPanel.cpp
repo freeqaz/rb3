@@ -690,9 +690,12 @@ void NextSongPanel::SetupDetailLine(DataArray *detail, int slot, const char *cc,
     const char *intstr = MakeString(cc, mDetailCounts[sym]);
     RndTransformable *t;
     RndDrawable *d;
-    if ((sym == label || sym == left_label || sym == right_label || sym == header
-         || sym == header_continued)
-        && mDetailCounts[sym] != 1) {
+    if (!(sym == label || sym == left_label || sym == right_label || sym == header
+          || sym == header_continued)
+        || mDetailCounts[sym] == 1) {
+        t = rdir->Find<RndTransformable>(intstr, true);
+        d = rdir->Find<RndDrawable>(intstr, true);
+    } else {
         UILabel *label = rdir->Find<UILabel>(MakeString(cc, 1), true);
         UILabel *newLabel = dynamic_cast<UILabel *>(CloneObject(label, true));
         MILO_ASSERT(newLabel, 0x2E9);
@@ -700,9 +703,6 @@ void NextSongPanel::SetupDetailLine(DataArray *detail, int slot, const char *cc,
         mDetailLabels.push_back(newLabel);
         t = newLabel;
         d = newLabel;
-    } else {
-        t = rdir->Find<RndTransformable>(intstr, true);
-        d = rdir->Find<RndDrawable>(intstr, true);
     }
     Transform xfm(t->LocalXfm());
     xfm.v.z = f;

@@ -87,7 +87,7 @@ void TrackDir::SetupKeyShifting(RndDir *rnddir) {
     mRotatorCam = rnddir->Find<RndTransformable>("rotator_cam.trans", true);
     float order = 1 / rnddir->mLocalXfm.m.x.x;
     unk2d8.Reset();
-    Scale(unk2d8.m, Vector3(order, 1.0f, 1.0f), unk2d8.m);
+    Scale(Vector3(order, 1.0f, 1.0f), unk2d8.m, unk2d8.m);
     unk308.Reset();
     unk308.v = mRotatorCam->WorldXfm().v;
     unk338.Reset();

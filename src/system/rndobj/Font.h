@@ -61,7 +61,6 @@ public:
     RndTex *ValidTexture() const;
     void UpdateChars();
     void BleedTest();
-    int NonTransparentColumn(RndBitmap &, int, int, int, int);
     float CharAdvance(unsigned short, unsigned short) const;
     float CharAdvance(unsigned short) const;
     float Kerning(unsigned short, unsigned short) const;

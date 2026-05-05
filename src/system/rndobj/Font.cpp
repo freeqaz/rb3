@@ -102,8 +102,8 @@ void RndFont::SetCharInfo(RndFont::CharInfo *info, RndBitmap &bmap, const Vector
         info->unkc = 1.0f;
     } else {
         int i5 = vec2.x;
-        int i1 = vec2.y;
         int i2 = vec2.x + mCellSize.x;
+        int i1 = vec2.y;
         int i3 = vec2.y + mCellSize.y;
         float i6 = NonTransparentColumn(bmap, i5, i2, i1, i3);
         float i7 = NonTransparentColumn(bmap, i2 - 1, i5 - 1, i1, i3);

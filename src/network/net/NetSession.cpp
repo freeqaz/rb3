@@ -303,8 +303,12 @@ void NetSession::Poll() {
     bool b2 = false;
     if (mGameState == (GameState)1) {
         bool b1 = true;
-        if (mGameStartTime) {
-            b1 = false;
+        Quazal::Time *startTime = mGameStartTime;
+        if (startTime) {
+            Quazal::Time now = Quazal::SessionClock::GetTime();
+            if (now.m_ui64Value < startTime->m_ui64Value) {
+                b1 = false;
+            }
         }
         if (b1)
             b2 = true;

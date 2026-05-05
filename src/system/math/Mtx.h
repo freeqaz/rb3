@@ -451,7 +451,23 @@ inline void Transpose(const Transform &tfin, Transform &tfout) {
 
 inline void Normalize(const Hmx::Matrix3 &src, Hmx::Matrix3 &dst) {
     Normalize(src.y, dst.y);
-    Cross(dst.y, src.z, dst.x);
+    {
+        float y1 = dst.y.y;
+        float z2 = src.z.z;
+        float x2 = src.z.x;
+        float z1 = dst.y.z;
+        float y2 = src.z.y;
+        float x1 = dst.y.x;
+        float a = y1 * z2;
+        float b = y1 * x2;
+        float c = z1 * x2;
+        float d = z1 * y2;
+        float e = x1 * y2;
+        float f = x1 * z2;
+        dst.x.x = a - d;
+        dst.x.y = c - f;
+        dst.x.z = e - b;
+    }
     Normalize(dst.x, dst.x);
     Cross(dst.x, dst.y, dst.z);
 }

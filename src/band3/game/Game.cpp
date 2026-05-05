@@ -898,6 +898,7 @@ void Game::ResetVoiceChatState() {
         LocalBandUser *user = *it;
         if (user->GetTrackType() == kTrackVocals) {
             TheSynth->RequirePushToTalk(true, user->GetPadNum());
+            break;
         }
     }
 }
@@ -1369,7 +1370,7 @@ float Game::PollShuttle() {
     float shuttleMs = mShuttle->mMs;
     SongPos pos = mSongDB->GetData()->CalcSongPos(shuttleMs);
     mSongPos = pos;
-    TheTaskMgr.mSongPos = pos;
+    TheTaskMgr.mSongPos = mSongPos;
     Jump(shuttleMs, false);
     return shuttleMs;
 }

@@ -614,25 +614,25 @@ void PlatformMgr::WiiShutdown(QuitType type) {
     switch (type) {
     case kQuitRestart:
         if (TheWiiContentMgr.mCNTSDInited) {
-            TheWiiContentMgr.UnmountContents(Symbol(""));
+            TheWiiContentMgr.UnmountContents("");
         }
         OSRestart(0);
         break;
     case kQuitShutdown:
         if (TheWiiContentMgr.mCNTSDInited) {
-            TheWiiContentMgr.UnmountContents(Symbol(""));
+            TheWiiContentMgr.UnmountContents("");
         }
         OSShutdownSystem();
         break;
     case kQuitMenu:
         if (TheWiiContentMgr.mCNTSDInited) {
-            TheWiiContentMgr.UnmountContents(Symbol(""));
+            TheWiiContentMgr.UnmountContents("");
         }
         OSReturnToMenu();
         break;
     case kQuitDataManager:
         if (TheWiiContentMgr.mCNTSDInited) {
-            TheWiiContentMgr.UnmountContents(Symbol(""));
+            TheWiiContentMgr.UnmountContents("");
         }
         OSReturnToDataManager();
         break;

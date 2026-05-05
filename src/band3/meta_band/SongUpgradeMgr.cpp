@@ -302,7 +302,9 @@ void SongUpgradeMgr::AddUpgradeData(
 void SongUpgradeMgr::MarkAvailable(int i, Symbol s) {
     std::map<int, SongUpgradeData *>::iterator it = mUpgradeData.find(i);
     MILO_ASSERT(it != mUpgradeData.end(), 0x220);
-    if (mAvailableUpgrades.size() <= 1) {
+    bool canInsert = false;
+    if ((size_t)it->second->mUpgradeVersion <= 1U) canInsert = true;
+    if (canInsert) {
         mAvailableUpgrades.insert(i);
         unk4c[i] = s;
     }

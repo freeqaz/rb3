@@ -13,6 +13,27 @@
 #include <algorithm>
 #include "decomp.h"
 
+// Explicit specialization to avoid bool materialization in the comparison
+// loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne.
+namespace stlpmtx_std {
+template <>
+float* __unguarded_partition<float*, float, less<float> >(
+    float* __first, float* __last, float __pivot, less<float>) {
+    for (;;) {
+        while (*__first < __pivot)
+            ++__first;
+        --__last;
+        while (__pivot < *__last)
+            --__last;
+        if (!(__first < __last))
+            return __first;
+        iter_swap(__first, __last);
+        ++__first;
+    }
+}
+} // namespace stlpmtx_std
+
+
 extern int gMainFree;
 bool gUseSsv;
 
@@ -162,13 +183,18 @@ BudgetScreen::BudgetScreen()
     TheSongMgr.AddSongs(SystemConfig("songs"));
     TheContentMgr->UnregisterCallback(&TheSongMgr, false);
 
-    const char *logFile = OptionStr("budget_log", SystemConfig("log_file")->Str(1));
+    const char *logFile = OptionStr("budget_log", SystemConfig()->FindArray("log_file")->Str(1));
     mLog = new TextFileStream(logFile, false);
 
     // yes there's just a random list here lol
-    std::list<int>(10000);
+    {
+        std::list<int> tmp;
+        for (int i = 0; i < 10000; i++) {
+            tmp.push_front(0);
+        }
+    }
 
-    int useSsv = SystemConfig("dump_scsv")->Int(1);
+    int useSsv = SystemConfig()->FindArray("dump_scsv")->Int(1);
     StandardStream::sReportLargeTimerErrors = false;
     gUseSsv = useSsv;
 }

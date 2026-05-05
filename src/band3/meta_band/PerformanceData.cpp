@@ -89,11 +89,8 @@ int PerformanceData::SaveSize(int i) {
         savesize = 7;
     if (i >= 0x94)
         savesize++;
-    savesize += 0x31e;
-    if (FixedSizeSaveable::sPrintoutsEnabled) {
-        MILO_LOG("* %s = %i\n", "PerformanceData", savesize);
-    }
-    return savesize;
+    int total = savesize + 0x31e;
+    REPORT_SIZE("PerformanceData", total);
 }
 
 #pragma push

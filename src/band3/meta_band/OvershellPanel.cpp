@@ -495,6 +495,7 @@ void OvershellPanel::RefreshJoinableUsers() {
         else if (curUser->GetControllerType() == 4)
             i12++;
     }
+    int total = i13 + i12;
     if (mSessionMgr->IsBusy())
         return;
     if (InGame()) {
@@ -507,8 +508,8 @@ void OvershellPanel::RefreshJoinableUsers() {
     FOREACH (it, users) {
         vec50.clear();
         ControllerType ct = (*it)->ConnectedControllerType();
-        if ((ct != kControllerGuitar || i12 <= 0 || i13 + i12 < 2)
-            && (ct != kControllerRealGuitar || i13 + i12 < 2)) {
+        if ((ct != kControllerGuitar || i12 <= 0 || total < 2)
+            && (ct != kControllerRealGuitar || total < 2)) {
             for (int i = 0; i < slots.size(); i++) {
                 if (slots[i]->IsValidControllerType(ct)) {
                     vec50.push_back(slots[i]);
