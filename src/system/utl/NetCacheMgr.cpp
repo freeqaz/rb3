@@ -225,18 +225,13 @@ Symbol NetCacheMgr::CheatNextServer() {
 }
 
 void NetCacheMgr::Load(NetCacheMgr::CacheSize cs) {
-    if (mLoadCount == 0) {
-        while (mState == kNCMS_UnloadWaitForWrite) {
-            NetCacheMgr::Poll();
-        }
-    }
     mLoadCount++;
     MILO_ASSERT(mLoadCount <= 2, 0x120);
     if (mState == kNCMS_Load && !mHasFailed) {
         MILO_WARN("NetCcaheMgr::Load() called before previous load had finished.");
     }
     mLoadCacheSize = cs == (CacheSize)0 ? 0x100000 : 0x500000;
-    if (mLoadCount == 1) {
+    if (mLoadCount == 1 && mState == kNCMS_Nil) {
         SetState(kNCMS_Load);
     }
 }

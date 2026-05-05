@@ -26,6 +26,7 @@
 #include "meta_band/PrefabMgr.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/SaveLoadManager.h"
+#include "meta_band/StoreRootPanel.h"
 #include "meta_band/TrainingMgr.h"
 #include "meta_band/UIStats.h"
 #include "movie/CustomSplash_Wii.h"
@@ -75,6 +76,10 @@ const int charArk = 5;
 const int regularArks = 3;
 
 extern bool gInitComplete;
+extern int gCheckConsistencyish;
+extern Timer gTriFrameTimer;
+extern void MemCheckConsistency(const char *, int);
+static void CheckForPassivePlatformErrors();
 
 #ifdef VERSION_SZBE69
 #pragma push
@@ -348,36 +353,41 @@ void App::RunWithoutDebugging() {
     loop_timer.Restart();
     int frameticker = 0;
     while (true) {
-        {
-            OSReport("checking consistency %d...\n");
-            // MemCheckConsistency(__FILE__, 864);
+        if (gCheckConsistencyish != 0) {
+            if ((frameticker % (gCheckConsistencyish * 4 - 3)) == 0) {
+                OSReport("checking consistency %d...\n", gCheckConsistencyish);
+                MemCheckConsistency(__FILE__, 864);
+            }
         }
         frameticker++;
         SetGPHangDetectEnabled(false, __FUNCTION__);
-        TIMER_ACTION("poll", ;)
-        TIMER_ACTION("system_poll", SystemPoll(false))
-        TIMER_ACTION("inclusive_ui_poll", {
-            TheAchievements->Poll();
-            TheUIStats->Poll();
-            TheAccomplishmentMgr->Poll();
-            PrefabMgr::GetPrefabMgr()->Poll();
-            TheSaveLoadMgr->Poll();
-            TheProfileMgr.Poll();
-            TheMusicLibrary->Poll();
+        TIMER_ACTION("poll", {
+            TIMER_ACTION("system_poll", SystemPoll(false))
+            TIMER_ACTION("inclusive_ui_poll", {
+                CheckForPassivePlatformErrors();
+                TheUIStats->Poll();
+                TheAchievements->Poll();
+                TheAccomplishmentMgr->Poll();
+                PrefabMgr::GetPrefabMgr()->Poll();
+                TheSaveLoadMgr->Poll();
+                TheProfileMgr.Poll();
+                TheMusicLibrary->Poll();
+                UpdateStoreOverlay();
+            })
+            TIMER_ACTION("synth_poll", TheSynth->Poll())
+            TIMER_ACTION("net_poll", {
+                TheNet.Poll();
+                TheRockCentral.Poll();
+                TheEntityUploader.Poll();
+            })
+            TIMER_ACTION("inclusive_ui_poll", TheUI.Poll())
+            TheTaskMgr.Poll();
         })
-        TIMER_ACTION("synth_poll", TheSynth->Poll())
-        TIMER_ACTION("net_poll", {
-            TheNet.Poll();
-            TheRockCentral.Poll();
-            TheEntityUploader.Poll();
-        })
-        TIMER_ACTION("inclusive_ui_poll", TheUI.Poll())
-        TheTaskMgr.Poll();
         SetGPHangDetectEnabled(1, __FUNCTION__);
         Draw();
 
         float f = loop_timer.SplitMs();
         loop_timer.Restart();
-        PollTriFrame(0, f);
+        PollTriFrame(gTriFrameTimer.mLastMs, f);
     }
 }

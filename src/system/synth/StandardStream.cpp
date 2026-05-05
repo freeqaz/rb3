@@ -317,7 +317,7 @@ void StandardStream::SetJump(float fromMs, float toMs, const char *file) {
 void StandardStream::setJumpSamplesFromMs(float f1, float f2) {
     mJumpFromSamples = kStreamEndSamples;
     mJumpToSamples = 0;
-    if (f1 != kStreamEndMs) {
+    if (kStreamEndMs != f1) {
         mJumpFromSamples = MsToSamp(f1);
     }
     if (f2 != 0) {
@@ -330,7 +330,7 @@ void StandardStream::setJumpSamplesFromMs(float f1, float f2) {
                 "%s: JumpFromSamples (%g sec) exceeds the length of the stream (%g sec)!",
                 str,
                 f1 / 1000.0f,
-                f2 / 1000.0f
+                SampToMs(unk144) / 1000.0f
             );
         }
         if (mJumpToSamples >= unk144) {

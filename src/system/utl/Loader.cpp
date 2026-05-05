@@ -8,6 +8,7 @@
 #include "utl/MemMgr.h"
 #include "utl/Option.h"
 #include "obj/DataFunc.h"
+#include "rndwii/Rnd.h"
 
 #include "decomp.h"
 
@@ -122,11 +123,14 @@ Loader *LoadMgr::AddLoader(const FilePath &file, LoaderPos pos) {
 }
 
 void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
-    // SetGPHangDetectEnabled(false, "PollUntilLoaded"); this is a __FUNCTION__
+    const char *funcName = __FUNCTION__;
+    SetGPHangDetectEnabled(false, funcName);
     Loader *theLdr = ldr1;
+    bool ldr2IsNull = (ldr2 == 0);
     while (!theLdr->IsLoaded()) {
         unk1c = 1e+30f;
-        if (ldr2 && ldr2 == mLoading.front()) {
+        bool noFail = ldr2IsNull || ldr2 != mLoading.front();
+        if (!noFail) {
 #ifdef MILO_DEBUG
             MILO_FAIL(
                 "PollUntilLoaded circular dependency %s on %s",
@@ -142,7 +146,7 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
             mLoading.pop_front();
         }
     }
-    // SetGPHangDetectEnabled(true, "PollUntilLoaded");
+    SetGPHangDetectEnabled(true, funcName);
 }
 
 void LoadMgr::PollUntilEmpty() {}

@@ -220,7 +220,8 @@ void WiiContent::Delete() {
         }
     }
     if (mState == kUnmounted || oldState == kFailed) {
-        if (mLocation == kLocationHDD) {
+        switch (mLocation) {
+        case kLocationHDD: {
             unsigned short contentIds[1] = { mContentId };
             int ecR = EC_DeleteContents(mTitleId, contentIds, 1);
             if (ecR == 0) {
@@ -230,7 +231,9 @@ void WiiContent::Delete() {
                 mState = kFailed;
                 r = 1;
             }
-        } else if (mLocation == kLocationRemovableMem) {
+            break;
+        }
+        case kLocationRemovableMem: {
             int cntsdR = CNTSDDeleteBackupRSO(mTitleId, mContentId);
             if (cntsdR == 0) {
                 mState = kDeleted;
@@ -239,17 +242,21 @@ void WiiContent::Delete() {
                 r = ConvertCNTSDError(cntsdR);
                 mState = kFailed;
             }
+            break;
+        }
+        default:
+            break;
         }
     } else {
         mState = kFailed;
         r = 1;
     }
     if (mState == kDeleted) {
-        // some write
+        TheWiiContentMgr.mDirty = true;
     } else {
         TheWiiContentMgr.NotifyFailed(this);
     }
-    // some other write
+    TheWiiContentMgr.mLastTransferResult = r;
 }
 
 void WiiContent::PollTransfer() {

@@ -68,16 +68,46 @@ void BandHighlight::Poll() {
     else
         loc28 = 1.0f;
     ClampEq(loc28, 0.0f, 1.0f);
-    Vector3 v24;
-    Interp(unk10c, unk118, loc28, v24);
-    SetLocalPos(v24);
+    float px, py, pz;
+    if (loc28 == 0.0f) {
+        px = unk10c.x; py = unk10c.y; pz = unk10c.z;
+    } else if (loc28 == 1.0f) {
+        px = unk118.x; py = unk118.y; pz = unk118.z;
+    } else {
+        float fz = unk10c.z;
+        float fy = unk10c.y;
+        float fx = unk10c.x;
+        pz = loc28 * (unk118.z - fz) + fz;
+        py = loc28 * (unk118.y - fy) + fy;
+        px = loc28 * (unk118.x - fx) + fx;
+    }
+    mLocalXfm.v.x = px;
+    mLocalXfm.v.y = py;
+    mLocalXfm.v.z = pz;
+    SetDirty();
     if (unk148) {
         if (unk13c.x == 0) {
             UpdateTargetEdge(TransParent());
         }
         if (unk13c.x != 0) {
-            Interp(unk130, unk13c, loc28, v24);
-            unk148->SetLocalPos(v24);
+            float ex, ey, ez;
+            if (loc28 == 0.0f) {
+                ex = unk130.x; ey = unk130.y; ez = unk130.z;
+            } else if (loc28 == 1.0f) {
+                ex = unk13c.x; ey = unk13c.y; ez = unk13c.z;
+            } else {
+                float efz = unk130.z;
+                float efy = unk130.y;
+                float efx = unk130.x;
+                ez = loc28 * (unk13c.z - efz) + efz;
+                ey = loc28 * (unk13c.y - efy) + efy;
+                ex = loc28 * (unk13c.x - efx) + efx;
+            }
+            RndTransformable *edge = unk148;
+            edge->mLocalXfm.v.x = ex;
+            edge->mLocalXfm.v.y = ey;
+            edge->mLocalXfm.v.z = ez;
+            edge->SetDirty();
         }
     }
 }

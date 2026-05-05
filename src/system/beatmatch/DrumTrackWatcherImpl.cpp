@@ -63,13 +63,12 @@ bool DrumTrackWatcherImpl::Swing(int slot, bool b1, bool b2, GemHitFlags flags) 
     float timeat = mGemList->TimeAt(idx);
     float timeatplus20 = timeat + 20.0f;
     int i3 = idx;
-    for (; mGemList->NumGems() >= i3 + 1 || timeatplus20 <= mGemList->TimeAt(i3 + 1);
+    for (; i3 + 1 < mGemList->NumGems() && mGemList->TimeAt(i3 + 1) <= timeatplus20;
          i3++)
         ;
     float timeatminus20 = timeat - 20.0f;
-    for (; idx >= 0; idx--) {
-        if (mGemList->TimeAt(idx - 1) >= timeatminus20)
-            break;
+    while (idx - 1 >= 0 && mGemList->TimeAt(idx - 1) >= timeatminus20) {
+        idx--;
     }
     int relevant = RelevantGem(idx, i3, slot);
     bool inslop = InSlopWindow(mGemList->TimeAt(relevant), now);
