@@ -749,9 +749,18 @@ DataNode UIList::OnMsg(const ButtonDownMsg &msg) {
 
         int scrollDir = ScrollDirection(msg, cntType, o == 0, gridspan);
         if (scrollDir != 0) {
-            if (gridspan == 1 || (scrollDir != 1 && scrollDir != -1)
-                || (scrollDir == 1 && (mListState.SelectedDisplay() + 1) % gridspan)
-                || (scrollDir == -1 && mListState.SelectedDisplay() % gridspan)) {
+            if (gridspan != 1) {
+                switch (scrollDir) {
+                    case 1:
+                        if ((mListState.SelectedDisplay() + 1) % gridspan != 0) break;
+                        // fallthrough
+                    case -1:
+                        if (scrollDir != -1) goto skip_body;
+                        if (mListState.SelectedDisplay() % gridspan == 0) goto skip_body;
+                        break;
+                }
+            }
+            {
                 int oldSelData = SelectedData();
                 Scroll(scrollDir);
                 if (oldSelData == SelectedData() && !IsScrolling() && !mSelectToScroll) {
@@ -794,6 +803,7 @@ DataNode UIList::OnMsg(const ButtonDownMsg &msg) {
                 return 1;
             }
 
+            skip_body:
             return 1;
         }
 

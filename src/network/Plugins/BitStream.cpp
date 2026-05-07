@@ -25,11 +25,14 @@ namespace Quazal {
 
     void BitStream::AdjustLength() { mLength = mBuffer->GetContentSize() * 8; }
 
-    void BitStream::Append(const unsigned char *uc, unsigned int ui2, unsigned int ui3) {
-        for (int i = 0; i < ui3; i++) {
-            int i1 = ui2 - 1;
-            for (; i1 >= 0; i1--) {
-                AppendRaw(&uc[i1 + ui2], 8);
+    void BitStream::Append(const unsigned char *pBuffer, unsigned int uiTypeSize, unsigned int uiLength) {
+        unsigned int i = 0;
+        unsigned int base = 0;
+        for (; i < uiLength; i++, base += uiTypeSize) {
+            int j = (int)uiTypeSize - 1;
+            const unsigned char *ptr = pBuffer + base + j;
+            for (; j >= 0; j--, ptr--) {
+                AppendRaw(ptr, 8);
             }
         }
     }

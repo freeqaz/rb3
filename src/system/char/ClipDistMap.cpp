@@ -10,7 +10,38 @@
 #include "os/Debug.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/Trans.h"
+#include <algorithm>
 #include <cmath>
+
+// Explicit specialization to avoid bool materialization in the comparison
+// loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne.
+// Explicit specialization to avoid bool materialization in the comparison
+// loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne.
+namespace stlpmtx_std {
+template <>
+ClipDistMap::Node* __unguarded_partition<ClipDistMap::Node*, ClipDistMap::Node, DistMapNodeSort>(
+    ClipDistMap::Node* __first, ClipDistMap::Node* __last, ClipDistMap::Node __pivot, DistMapNodeSort) {
+    for (;;) {
+        while (__first->curBeat < __pivot.curBeat)
+            ++__first;
+        --__last;
+        while (__pivot.curBeat < __last->curBeat)
+            --__last;
+        if (!(__first < __last))
+            return __first;
+        float tmpA = __first->curBeat;
+        float tmpB = __first->nextBeat;
+        float tmpC = __first->err;
+        __first->curBeat = __last->curBeat;
+        __first->nextBeat = __last->nextBeat;
+        __first->err = __last->err;
+        ++__first;
+        __last->curBeat = tmpA;
+        __last->nextBeat = tmpB;
+        __last->err = tmpC;
+    }
+}
+} // namespace stlpmtx_std
 
 void FindWeights(
     std::vector<RndTransformable *> &transes,

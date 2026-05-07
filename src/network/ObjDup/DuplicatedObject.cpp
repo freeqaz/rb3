@@ -42,7 +42,8 @@ namespace Quazal {
     }
 
     bool DuplicatedObject::IsInDuplicationSet(DOHandle h) const {
-        return m_setDuplicationSet.m_map.find(h) != m_setDuplicationSet.m_map.end();
+        unsigned int val = h.mValue;
+        return m_setDuplicationSet.m_map.find(DOHandle(val)) != m_setDuplicationSet.m_map.end();
     }
 
     void DuplicatedObject::SetInitialState(const QEvent &) {

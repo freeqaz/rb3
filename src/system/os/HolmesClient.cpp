@@ -128,12 +128,25 @@ namespace {
             gPendingResponse = (Holmes::Protocol)res;
             MILO_ASSERT(gPendingResponse != Holmes::kInvalidOpcode, 215);
         }
-        MILO_FAIL("holmes closed");
-        MILO_FAIL(
-            "this shouldn't be happening %s %s\n",
-            Holmes::ProtocolDebugString(gPendingResponse),
-            Holmes::ProtocolDebugString(ptcl)
-        );
+        bool isAsync = gPendingResponse == ptcl;
+        if (!isAsync) {
+            const Holmes::Protocol *p = kAsyncOpcodes;
+            for (int i = 0; i < 5; i++) {
+                if (gPendingResponse == p[i] || ptcl == p[i]) {
+                    isAsync = true;
+                    break;
+                }
+            }
+            if (!gHolmesStream->Fail()) {
+                MILO_FAIL("holmes closed");
+            } else if (!isAsync) {
+                MILO_FAIL(
+                    "this shouldn't be happening %s %s\n",
+                    Holmes::ProtocolDebugString(gPendingResponse),
+                    Holmes::ProtocolDebugString(ptcl)
+                );
+            }
+        }
         return gPendingResponse == ptcl;
     }
 
