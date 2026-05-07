@@ -148,7 +148,7 @@ void PerfectOverdriveTracker::Poll_(float ms) {
         TrackType tt = pPlayer->GetTrackType();
 
         std::map<TrackType, PlayerStreakData>::iterator streakIt = unk70.lower_bound(tt);
-        if (streakIt == unk70.end() || tt < streakIt->first) {
+        if (streakIt != unk70.end() && tt < streakIt->first) {
             streakIt = unk70.end();
         }
         if (streakIt == unk70.end()) {

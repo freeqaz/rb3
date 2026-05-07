@@ -156,6 +156,9 @@ class TextInstance : public WidgetInstance {
 public:
     TextInstance(const Transform &t, const String &s, bool alt)
         : WidgetInstance(t), mText(s), mLineId(-1), mUseAltStyle(alt) {}
+    TextInstance(const TextInstance &other)
+        : WidgetInstance(other.mXfm), mText(other.mText), mLineId(-1),
+          mUseAltStyle(other.mUseAltStyle) {}
 
     String mText;
     int mLineId;

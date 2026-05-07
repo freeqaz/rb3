@@ -420,12 +420,11 @@ bool ParseNode() {
     }
 
     case kDataTokenHex: {
-        int len = strlen(yytext);
         int i = 0;
 
         // Parse in reverse, up until the `x` of `0x`
         int base = 1;
-        for (char *c = yytext + len - 1; *c != 'x'; --c, base <<= 4) {
+        for (char *c = yytext + strlen(yytext) - 1; *c != 'x'; --c, base <<= 4) {
             if (*c >= 'a') {
                 i += (*c - 'a' + 10) * base;
 #ifdef NON_MATCHING
