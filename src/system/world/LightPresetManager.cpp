@@ -57,9 +57,11 @@ void LightPresetManager::Poll() {
     float blend = mBlend;
     if (mPresetOverride) {
         float time = TheTaskMgr.Time(mPresetOverride->Units());
-        float f7 = 1.0f;
+        float f7;
         if (unk44 > 0.0f) {
             f7 = (time - unk38) / unk44;
+        } else {
+            f7 = 1.0f;
         }
         f7 = Clamp(0.0f, 1.0f, f7);
         if (unk48 == 1) {

@@ -28,19 +28,18 @@ void PassiveMessageQueue::Poll() {
             mCallback->Handle(hide_message_msg, true);
         }
     }
-    if (mTimer.Running()) {
-        if (mCallback->Handle(is_message_hiding_msg, true).Int() == 0) {
-            if (!mQueue.empty()) {
-                PassiveMessage *message = GetAndPreProcessFirstMessage();
-                MILO_ASSERT(message, 0x33);
-                HandlePassiveMessage(message);
-                mQueue.pop_front();
-                delete message;
-                mTimer.Restart();
-                mCallback->Handle(show_message_msg, true);
-            } else {
-                mCallback->Handle(clear_pics_msg, true);
-            }
+    bool running = mTimer.Running();
+    if (running && mCallback->Handle(is_message_hiding_msg, true).Int() == 0) {
+        if (!mQueue.empty()) {
+            PassiveMessage *message = GetAndPreProcessFirstMessage();
+            MILO_ASSERT(message, 0x33);
+            HandlePassiveMessage(message);
+            mQueue.pop_front();
+            delete message;
+            mTimer.Restart();
+            mCallback->Handle(show_message_msg, true);
+        } else {
+            mCallback->Handle(clear_pics_msg, true);
         }
     }
 }
@@ -246,7 +245,7 @@ void PassiveMessenger::TriggerInviteFailedMsg() {
 }
 
 DataNode PassiveMessenger::OnMsg(const RemoteUserLeftMsg &msg) {
-    TriggerRemoteUserLeftMsg(msg.GetUser()->UserName());
+    TriggerRemoteUserLeftMsg(static_cast<User *>(msg.GetUser())->UserName());
     return 1;
 }
 

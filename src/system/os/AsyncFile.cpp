@@ -255,22 +255,20 @@ void AsyncFile::Init() {
     _OpenAsync();
     while (!_OpenDone())
         ;
-    if (!mFail) {
-        if (strcmp(FileGetExt(mFilename.c_str()), "z") == 0 && (mMode & FILE_OPEN_READ)
-            && mSize >= 4) {
-            mTell = mSize - 4;
-            _SeekToTell();
-            _ReadAsync(&mUCSize, 4);
-            while (!_ReadDone())
-                ;
-            mTell = 0;
-            _SeekToTell();
-            EndianSwapEq(mUCSize);
-            mSize -= 4;
-            goto next;
-        }
+    if (mFail || strcmp(FileGetExt(mFilename.c_str()), "z") != 0 || !(mMode & FILE_OPEN_READ)
+        || mSize < 4) {
+        mUCSize = 0;
+        goto next;
     }
-    mUCSize = 0;
+    mTell = mSize - 4;
+    _SeekToTell();
+    _ReadAsync(&mUCSize, 4);
+    while (!_ReadDone())
+        ;
+    mTell = 0;
+    _SeekToTell();
+    EndianSwapEq(mUCSize);
+    mSize -= 4;
 next:
     if (mMode & FILE_OPEN_READ && mBuffer) {
         mOffset = gBufferSize;

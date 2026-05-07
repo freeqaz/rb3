@@ -47,7 +47,7 @@ public:
     unsigned int mTell;
     int mOffset;
     unsigned int mSize;
-    unsigned int mUCSize;
+    int mUCSize;
     char *mBuffer;
     char *mData;
     int mBytesLeft;
