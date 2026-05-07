@@ -15,9 +15,24 @@
 
 // Explicit specialization to avoid bool materialization in the comparison
 // loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne.
-// Explicit specialization to avoid bool materialization in the comparison
-// loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne.
+// Explicit specializations to avoid bool materialization in the comparison
+// loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne,
+// and to use float registers for the struct swap.
 namespace stlpmtx_std {
+template <>
+inline void swap<ClipDistMap::Node>(ClipDistMap::Node& __a, ClipDistMap::Node& __b) {
+    float tmpC, tmpB, tmpA;
+    tmpA = __a.curBeat;
+    tmpB = __a.nextBeat;
+    tmpC = __a.err;
+    __a.curBeat = __b.curBeat;
+    __a.nextBeat = __b.nextBeat;
+    __a.err = __b.err;
+    __b.curBeat = tmpA;
+    __b.nextBeat = tmpB;
+    __b.err = tmpC;
+}
+
 template <>
 ClipDistMap::Node* __unguarded_partition<ClipDistMap::Node*, ClipDistMap::Node, DistMapNodeSort>(
     ClipDistMap::Node* __first, ClipDistMap::Node* __last, ClipDistMap::Node __pivot, DistMapNodeSort) {
@@ -29,16 +44,8 @@ ClipDistMap::Node* __unguarded_partition<ClipDistMap::Node*, ClipDistMap::Node, 
             --__last;
         if (!(__first < __last))
             return __first;
-        float tmpA = __first->curBeat;
-        float tmpB = __first->nextBeat;
-        float tmpC = __first->err;
-        __first->curBeat = __last->curBeat;
-        __first->nextBeat = __last->nextBeat;
-        __first->err = __last->err;
+        iter_swap(__first, __last);
         ++__first;
-        __last->curBeat = tmpA;
-        __last->nextBeat = tmpB;
-        __last->err = tmpC;
     }
 }
 } // namespace stlpmtx_std

@@ -71,17 +71,17 @@ void GlitchPoker::Dump(TextStream &ts, int theInt) {
         ts << "\n";
         smLastDumpTime = mTimeEnd;
     } else {
-        //         if (((s32) smDumpLeaves__11GlitchPoker.unk0 != 0) && ((u8* )
-        //         temp_r3->unk50 != NULL)) {
         if (smDumpLeaves && mParent) {
-            if (mTimeEnd - mTime > smThreshold) {
+            float curTime = mTime;
+            if (mTimeEnd - curTime > smThreshold) {
                 if (mChildren.size() != 0) {
+                    float timediff;
                     float tmpdumptime = smLastDumpTime;
-                    smLastDumpTime = mTime;
+                    smLastDumpTime = curTime;
                     for (int i = 0; i < mChildren.size(); i++) {
                         mChildren[i]->Dump(ts, theInt + 1);
                     }
-                    float timediff = mTimeEnd - smLastDumpTime;
+                    timediff = mTimeEnd - smLastDumpTime;
                     if (timediff > smThreshold) {
                         ts << "   TIME GAP (" << timediff;
                         ts << ") at end of " << mName;
@@ -111,16 +111,16 @@ void GlitchPoker::Dump(TextStream &ts, int theInt) {
                 smLastDumpTime = mTime;
                 smNestedStartTimes.push_back(mTime);
                 for (int i = 0; i < mChildren.size(); i++) {
-                    mChildren[i]->Dump(ts, i + 1);
+                    mChildren[i]->Dump(ts, theInt + 1);
                 }
                 if (mTimeEnd > smLastDumpTime + 0.005f) {
                     PrintNestedStartTimes(ts, smLastDumpTime);
                     if (!smDumpLeaves) {
                         ts << "TIME GAP (" << mTimeEnd - smLastDumpTime << ")\n";
                     } else {
-                        float timediff = mTime - smLastDumpTime;
-                        if (timediff > smThreshold) {
-                            ts << "TIME GAP (" << timediff;
+                        float lastDump = smLastDumpTime;
+                        if (mTime - lastDump > smThreshold) {
+                            ts << "   TIME GAP (" << mTimeEnd - lastDump;
                             ts << ") at end of " << mName;
                             for (GlitchPoker *p = mParent; p != 0; p = p->mParent) {
                                 ts << " : " << p->mName;

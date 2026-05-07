@@ -60,7 +60,10 @@ public:
     virtual float GetPulseAnimStartDelay(bool) const;
     virtual GemTrackResourceManager *GetGemTrackResourceManager() const { return 0; }
 
-    bool Showing() { return Find<RndGroup>("draw_order.grp", true)->Showing(); }
+    bool Showing() {
+        const char *name = "draw_order.grp";
+        return Find<RndGroup>(name, true)->Showing();
+    }
 
     void SetShowing(bool);
     void UpdateTrackSpeed();

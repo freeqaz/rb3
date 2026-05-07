@@ -59,38 +59,53 @@ int UsbWii::UsbAttachHandler(_HIDClient *client, HIDDevice *device, unsigned lon
 int UsbWii::GetType(HIDDevice *device) {
     // Harmonix Music Systems / Mad Catz vendor ID
     if (device->vid == 0x1BAD) {
-        switch (device->pid) {
-        // MIDI Pro Adapter, Drums
-        case 0x3138:
+        unsigned short pid = device->pid;
+        if (pid == 0x3138) {
+            // MIDI Pro Adapter, Drums
             return kUsbMidiDrums;
-        // RB1 Drums
-        case 5:
-            return kUsbDrums;
-        // RB1 Guitar
-        case 4:
-            return kUsbGuitar;
-        // RB2 Guitar
-        case 0x3010:
-            return kUsbGuitarRb2;
-        // RB2 Drums
-        case 0x3110:
-            return kUsbDrumsRb2;
-        // MIDI Pro Adapter, Keyboard
-        case 0x3338:
-            return kUsbMidiKeyboardMpa;
-        // RB3 Keyboard
-        case 0x3330:
-            return kUsbMidiKeyboard;
-        // RB3 Squire / MPA in Squire mode
-        case 0x3538:
-        case 0x3530:
-            return kUsbMidiGuitarSquire;
-        // RB3 Mustang / MPA in Mustang mode
-        case 0x3438:
-        case 0x3430:
-            return kUsbMidiGuitarMustang;
         }
+        if (pid < 0x3138) {
+            if (pid >= 0x3000) {
+                if (pid >= 0x3100) {
+                    if (pid >= 0x3110) goto lbl_drums_rb2;
+                    goto lbl_drums;  // [0x3100, 0x3110)
+                }
+                if (pid >= 0x3010) goto lbl_guitar_rb2;
+                goto lbl_guitar;  // [0x3000, 0x3010)
+            } else {
+                if (pid == 5) goto lbl_drums;  // shared with [0x3100, 0x3110)
+                if (pid >= 5) goto vid_check;
+                if (pid < 4) goto vid_check;
+                // pid==4: goto lbl_guitar
+            }
+        } else {
+            // pid > 0x3138
+            if (pid == 0x3338) goto lbl_mpa;
+            if (pid > 0x3338) {
+                if (pid < 0x3530) {
+                    if (pid >= 0x3430) goto lbl_mustang;
+                    goto lbl_midi_keyboard;  // (0x3338, 0x3430)
+                } else {
+                    if (pid >= 0x3630) goto vid_check;
+                    goto lbl_squire;
+                }
+            } else {
+                // (0x3138, 0x3338)
+                if (pid >= 0x3330) goto lbl_midi_keyboard;  // [0x3330, 0x3338)
+                if (pid >= 0x3200) goto vid_check;
+                goto lbl_drums_rb2;  // (0x3138, 0x3200)
+            }
+        }
+        lbl_drums_rb2: return kUsbDrumsRb2;          // shared: [0x3110, 0x3138) and (0x3138, 0x3200)
+        lbl_drums: return kUsbDrums;                  // shared: pid==5 and [0x3100, 0x3110)
+        lbl_guitar_rb2: return kUsbGuitarRb2;         // [0x3010, 0x3100)
+        lbl_guitar: return kUsbGuitar;                // shared: pid==4 and [0x3000, 0x3010)
+        lbl_mpa: return kUsbMidiKeyboardMpa;          // pid==0x3338
+        lbl_midi_keyboard: return kUsbMidiKeyboard;  // shared: [0x3330, 0x3338) and (0x3338, 0x3430)
+        lbl_mustang: return kUsbMidiGuitarMustang;
+        lbl_squire: return kUsbMidiGuitarSquire;
     }
+vid_check:
 #ifdef MILO_DEBUG
     // only in this build does the game check for PS3 instruments
     // Sony Computer Entertainment vendor ID

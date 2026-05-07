@@ -489,37 +489,36 @@ void UIManager::CancelTransition() {
 }
 
 void UIManager::GotoScreenImpl(UIScreen *scr, bool b1, bool b2) {
-    if (((b1 || mTransitionState != kTransitionNone) || mCurrentScreen != scr)
+    if (!(((b1 || mTransitionState != kTransitionNone) || mCurrentScreen != scr)
         && ((mTransitionState != kTransitionTo && mTransitionState != kTransitionPop)
-            || mTransitionScreen != scr)) {
-        CancelTransition();
+            || mTransitionScreen != scr))) return;
+    CancelTransition();
 #ifdef MILO_DEBUG
-        if (scr) {
-            for (std::vector<UIScreen *>::iterator it = mPushedScreens.begin();
-                 it != mPushedScreens.end();
-                 ++it) {
-                if (scr->SharesPanels(*it)) {
-                    MILO_FAIL("%s shares panels with %s", scr->Name(), (*it)->Name());
-                }
+    if (scr) {
+        for (std::vector<UIScreen *>::iterator it = mPushedScreens.begin();
+             it != mPushedScreens.end();
+             ++it) {
+            if (scr->SharesPanels(*it)) {
+                MILO_FAIL("%s shares panels with %s", scr->Name(), (*it)->Name());
             }
         }
-#endif
-        mWentBack = b2;
-        UIScreenChangeMsg msg(scr, mCurrentScreen, mWentBack);
-        Handle(msg, false);
-        mTransitionState = kTransitionTo;
-        mTransitionScreen = scr;
-        if (mCurrentScreen)
-            mCurrentScreen->Exit(scr);
-        else if (scr)
-            scr->LoadPanels();
-#ifdef MILO_DEBUG
-        if (mTransitionScreen) {
-            mOverlay->CurrentLine() = gNullStr;
-            mLoadTimer.Restart();
-        }
-#endif
     }
+#endif
+    mWentBack = b2;
+    UIScreenChangeMsg msg(scr, mCurrentScreen, mWentBack);
+    Handle(msg, false);
+    mTransitionState = kTransitionTo;
+    mTransitionScreen = scr;
+    if (mCurrentScreen)
+        mCurrentScreen->Exit(scr);
+    else if (scr)
+        scr->LoadPanels();
+#ifdef MILO_DEBUG
+    if (mTransitionScreen) {
+        mOverlay->CurrentLine() = gNullStr;
+        mLoadTimer.Restart();
+    }
+#endif
 }
 
 void UIManager::GotoScreen(const char *name, bool b2, bool b3) {

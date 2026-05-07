@@ -1935,8 +1935,8 @@ void MusicLibrary::FakeWinNode(
         OwnedSongSortNode *songNode = dynamic_cast<OwnedSongSortNode *>(node);
         MILO_ASSERT(songNode, 0xBCA);
         int randScore = RandomInt(
-            i1 * users.size() * diff * 2000,
-            i1 * users.size() * (diff + kDifficultyMedium) * 2000
+            i1 * users.size() * (diff * 2000),
+            i1 * users.size() * ((diff + kDifficultyMedium) * 2000)
         );
         int randAccuracy = RandomInt(0, 0x65);
         FOREACH (it, users) {
