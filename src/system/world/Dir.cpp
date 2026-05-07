@@ -173,9 +173,10 @@ BinStream &operator>>(BinStream &bs, WorldDir::BitmapOverride &c) {
     if (gOldTexDir) {
         FilePath bitmap;
         bs >> bitmap;
-        if (!bitmap.empty()) {
-            const char *chr = strrchr(bitmap.c_str(), 0x2F);
-            chr = chr ? chr + 1 : bitmap.c_str();
+        const char *chr = bitmap.c_str();
+        if (*chr != '\0') {
+            const char *slash = strrchr(chr, 0x2F);
+            if (slash) chr = slash + 1;
             c.replacement = gOldTexDir->Find<RndTex>(chr, false);
             if (!c.replacement) {
                 MILO_WARN(

@@ -105,8 +105,8 @@ struct GetVertColor {
 };
 
 inline void Interp(const Hmx::Color32 &c1, const Hmx::Color32 &c2, float f, Hmx::Color32 &res) {
-    u8 newG = c1.g + (int)(f * (float)(c2.g - c1.g));
     u8 newR = c1.r + (int)(f * (float)(c2.r - c1.r));
+    u8 newG = c1.g + (int)(f * (float)(c2.g - c1.g));
     u8 newA = c1.a + (int)(f * (float)(c2.a - c1.a));
     u8 newB = c1.b + (int)(f * (float)(c2.b - c1.b));
     res.color = (newA << 24) | (newB << 16) | (newG << 8) | newR;

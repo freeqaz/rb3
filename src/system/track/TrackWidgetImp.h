@@ -133,9 +133,10 @@ public:
     void DoRemoveUntil(std::list<T> &insts, float f1, float f2) {
         if (!insts.empty()) {
             typename std::list<T>::iterator it = insts.begin();
+            typename std::list<T>::iterator begin = it;
             for (; it != insts.end() && f2 * it->mXfm.m.y.y + it->mXfm.v.y < f1; ++it) {
             }
-            if (it != insts.end()) {
+            if (it != begin) {
                 RemoveInstances(insts, insts.begin(), it);
             }
         }
