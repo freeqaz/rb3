@@ -116,11 +116,11 @@ int RVSessionSearcher::OnMsg(const InviteAcceptedMsg &msg) {
         MILO_WARN("Invite Lost Due to Disconnected state");
         return 0;
     } else {
-        int i6 = msg->Int(3);
+        int i6 = msg.mData->Int(3);
         RELEASE(mInviteCallback);
         mInviteCallback = new Quazal::ProtocolCallContext();
         mInviteResult = nullptr;
-        unk48 = msg->Int(2);
+        unk48 = msg.mData->Int(2);
         bool success = TheNet.GetServer()->GetMatchMakingClient()->FindByID(
             mInviteCallback, i6, &mInviteResult
         );
