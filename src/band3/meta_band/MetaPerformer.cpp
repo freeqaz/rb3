@@ -681,8 +681,9 @@ void MetaPerformer::UpdateScores(Symbol s, const BandStatsInfo &info, bool b3) {
         MILO_ASSERT(profile, 0x432);
         int padnum = profile->GetPadNum();
         Server *netServer = TheNet.GetServer();
+        bool b8 = !b3;
         MILO_ASSERT(netServer, 0x437);
-        bool b8 = netServer->GetPlayerID(padnum) != 0 && !b3;
+        if (netServer->GetPlayerID(padnum) == 0) b8 = false;
         profile->UpdateScore(songID, info.GetSoloStats(i), b8);
         profile->UpdateScore(songID, perfStats, b8);
     }

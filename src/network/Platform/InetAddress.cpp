@@ -163,19 +163,27 @@ namespace Quazal {
 
     u16 InetAddress::GetPortNumber() const { return ntohs(this->port); }
 
-    // 90% match. Remaining 10% is register allocation (curr_port held in r5 vs r3,
-    // this->address loaded into r29 vs r31) — CW schedules the b.address load too
-    // early and keeps curr_port in a non-callee register because of the |OR with
-    // the high half of the u64.
+    // 94.5% match. Remaining ~5.5% is pure CW register-allocation heuristic:
+    // curr_port stays in r3 (target) vs gets moved to r5 (base), causing a chain
+    // of differing register choices through the subfc/subfe sequence and a small
+    // schedule swap of the lr-restore vs final neg.  Permuter (varext, declreorder,
+    // declmove, asgn_swap, cmpflip, varinline, parambind, boolcast) exhausted all
+    // patterns without further improvement.
     bool InetAddress::operator<(const Quazal::InetAddress &b) const {
-        u32 check_addr = b.address;
-        u32 check_port = ntohs(b.port);
-        u32 curr_addr = this->address;
-        u32 curr_port = (u16)ntohs(this->port);
+        u32 curr_addr;
+        u32 check_port;
+        u32 curr_port;
 
-        u64 lhs = ((u64)(curr_addr ^ 0x80000000) << 32) | curr_port;
-        u64 rhs = ((u64)(check_addr ^ 0x80000000) << 32) | check_port;
-        return lhs < rhs;
+        u32 check_addr;
+
+        check_addr = b.address;
+        check_port = ntohs(b.port);
+        curr_addr = this->address;
+        curr_port = (u16)ntohs(this->port);
+
+        u64 lhs = (u64)curr_port | ((u64)(curr_addr ^ 0x80000000) << 32);
+        u64 rhs = (u64)check_port | ((u64)(check_addr ^ 0x80000000) << 32);
+        return rhs > lhs;
     }
 
     bool InetAddress::operator==(const InetAddress &b) const {

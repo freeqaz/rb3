@@ -20,25 +20,6 @@ void SetWind(int start, int end, float startVal, float endVal, float amplitude) 
     }
 }
 
-float RndWind::GetWind(float x) {
-    float f = fmod(x, 1.0f);
-    if (f < 0.0f)
-        f += 1.0f;
-    float fscaled = f * 1024.0f;
-    int i = (int)fscaled;
-    float a = sWindField[i];
-    return (fscaled - (float)i) * (sWindField[i + 1] - a) + a;
-}
-
-void RndWind::SelfGetWind(const Vector3 &pos, float time, Vector3 &result) {
-    result.x = GetWind(mTimeRate.x * time + mSpaceRate.x * pos.x + sOffset.x) * mRandom.x
-        + mPrevailing.x;
-    result.y = GetWind(mTimeRate.y * time + mSpaceRate.y * pos.y + sOffset.y) * mRandom.y
-        + mPrevailing.y;
-    result.z = GetWind(mTimeRate.z * time + mSpaceRate.z * pos.z + sOffset.z) * mRandom.z
-        + mPrevailing.z;
-}
-
 void RndWind::Init() {
     Register();
     sRand = new Rand(0x7FEF8A);
@@ -51,6 +32,16 @@ void RndWind::Init() {
     } while (i < 0x400);
     delete sRand;
     sRand = 0;
+}
+
+float RndWind::GetWind(float x) {
+    float f = fmod(x, 1.0f);
+    if (f < 0.0f)
+        f += 1.0f;
+    float fscaled = f * 1024.0f;
+    int i = (int)fscaled;
+    float a = sWindField[i];
+    return (fscaled - (float)i) * (sWindField[i + 1] - a) + a;
 }
 
 RndWind::RndWind()
@@ -76,6 +67,15 @@ void RndWind::SetDefaults() {
     mRandom.Set(17.0f, 17.0f, 0.0f);
     mTimeLoop = 100.0f;
     mSpaceLoop = 100.0f;
+}
+
+void RndWind::SelfGetWind(const Vector3 &pos, float time, Vector3 &result) {
+    result.x = mRandom.x * GetWind(time * mTimeRate.x + pos.x * mSpaceRate.x + sOffset.x)
+        + mPrevailing.x;
+    result.y = mRandom.y * GetWind(time * mTimeRate.y + pos.y * mSpaceRate.y + sOffset.y)
+        + mPrevailing.y;
+    result.z = mRandom.z * GetWind(time * mTimeRate.z + pos.z * mSpaceRate.z + sOffset.z)
+        + mPrevailing.z;
 }
 
 void RndWind::SyncLoops() {
