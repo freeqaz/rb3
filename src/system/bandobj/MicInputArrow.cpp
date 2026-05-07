@@ -56,15 +56,19 @@ void MicInputArrow::DrawShowing() {
     MILO_ASSERT(d, 0x70);
     for (int i = 0; i < mLevelAnims.size(); i++) {
         if (!mHiddenFlags[i]) {
-            if (!unk160) {
+            switch (unk160) {
+            case 0: {
                 float f;
                 if (mMicManagerInterface) {
                     f = mMicManagerInterface->GetEnergyForMic(MicClientID(i, -1));
                 } else
                     f = 0;
                 mLevelAnims[i]->SetFrame(f * mMicEnergyNormalizer, 1.0f);
-            } else if (unk160) {
+                break;
+            }
+            case 1:
                 mLevelAnims[i]->SetFrame(unk164[i], 1.0f);
+                break;
             }
         }
     }

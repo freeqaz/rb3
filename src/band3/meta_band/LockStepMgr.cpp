@@ -125,7 +125,7 @@ void LockStepMgr::OnEndLockMsg(bool b) { ReleaseLock(b); }
 DataNode LockStepMgr::OnMsg(const RemoteMachineLeftMsg &msg) {
     if (mLockMachine) {
         RemoteBandMachine *machine = msg.GetMachine();
-        if (mLockMachine->IsLocal() && mWaitList.GetWaitingMachine(machine)) {
+        if (mLockMachine->IsLocal() && (mWaitList.GetWaitingMachine(machine) ? true : false)) {
             mWaitList.RemoveMachine(machine);
             CheckAllMachinesResponded();
         } else {
