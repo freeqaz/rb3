@@ -68,6 +68,20 @@ bool FileCacheFile::ReadDone(int &iref) {
     }
 }
 
+namespace {
+template <class T>
+inline bool SeekClampEq(T &value, const T &min, const T &max) {
+    if (value < min) {
+        value = min;
+        return true;
+    } else if (value > max) {
+        value = max;
+        return true;
+    }
+    return false;
+}
+}
+
 int FileCacheFile::Seek(int i1, int i2) {
     int ret;
     switch (i2) {
@@ -83,7 +97,7 @@ int FileCacheFile::Seek(int i1, int i2) {
     default:
         return mPos;
     }
-    ClampEq(ret, 0, mParent->Size());
+    SeekClampEq(ret, 0, mParent->Size());
     mPos = ret;
     return mPos;
 }

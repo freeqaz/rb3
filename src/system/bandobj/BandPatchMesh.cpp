@@ -390,33 +390,36 @@ void BandPatchMesh::PreRender(BandCharDesc *desc, int iii) {
                     } else
                         tex = desc->GetPatchTex(patch);
                     if (tex) {
-                        if (!mesh) {
-                            if (!patch.mMeshName.empty()) {
+                        if (mesh) {
+                            if (patch.mTexture == -1) {
+                                if (mMeshes.size() == 1) {
+                                    AddMappingPatch(mMeshes[0], mesh);
+                                }
+                            } else {
+                                Transform tf60;
+                                if (FindXfm(mesh, patch.mUV, tf60)) {
+                                    Hmx::Matrix3 m88;
+                                    m88.RotateAboutZ(patch.mRotation);
+                                    Multiply(m88, tf60.m, tf60.m);
+                                    tf60.m.x *= (patch.mScale.x * 0.5f);
+                                    tf60.m.y *= (patch.mScale.y * 0.5f);
+                                    ProjectPatches(tf60, tex, false);
+                                } else {
+                                    MILO_WARN(
+                                        "Could not project %s onto %s\n",
+                                        tex->Name(),
+                                        mesh->Name()
+                                    );
+                                }
+                            }
+                        } else {
+                            if (patch.mMeshName.empty()) {
+                                ConstructQuad(tex);
+                            } else {
                                 MILO_WARN(
                                     "%s: could not find placement mesh %s",
                                     PathName(pdir),
                                     patch.mMeshName.c_str()
-                                );
-                            } else
-                                ConstructQuad(tex);
-                        } else if (patch.mTexture == -1) {
-                            if (mMeshes.size() == 1) {
-                                AddMappingPatch(mMeshes[0], mesh);
-                            }
-                        } else {
-                            Transform tf60;
-                            if (FindXfm(mesh, patch.mUV, tf60)) {
-                                Hmx::Matrix3 m88;
-                                m88.RotateAboutZ(patch.mRotation);
-                                Multiply(m88, tf60.m, tf60.m);
-                                tf60.m.x *= (patch.mScale.x * 0.5f);
-                                tf60.m.y *= (patch.mScale.y * 0.5f);
-                                ProjectPatches(tf60, tex, false);
-                            } else {
-                                MILO_WARN(
-                                    "Could not project %s onto %s\n",
-                                    tex->Name(),
-                                    mesh->Name()
                                 );
                             }
                         }

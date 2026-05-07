@@ -24,7 +24,7 @@ namespace Quazal {
 
     class BandwidthCounterMap : public RootObject {
     public:
-        class IOBandwidthCounter {
+        class IOBandwidthCounter : public RootObject {
         public:
             IOBandwidthCounter(const String &str);
 

@@ -33,6 +33,7 @@ inline void swap<ClipDistMap::Node>(ClipDistMap::Node& __a, ClipDistMap::Node& _
     __b.err = tmpC;
 }
 
+
 template <>
 ClipDistMap::Node* __unguarded_partition<ClipDistMap::Node*, ClipDistMap::Node, DistMapNodeSort>(
     ClipDistMap::Node* __first, ClipDistMap::Node* __last, ClipDistMap::Node __pivot, DistMapNodeSort) {
@@ -48,6 +49,7 @@ ClipDistMap::Node* __unguarded_partition<ClipDistMap::Node*, ClipDistMap::Node, 
         ++__first;
     }
 }
+
 } // namespace stlpmtx_std
 
 void FindWeights(

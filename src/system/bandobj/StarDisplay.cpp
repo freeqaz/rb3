@@ -172,7 +172,11 @@ void StarDisplay::UpdateDisplay() {
         mRsrcStarsLabel->SetTextToken(gNullStr);
         for (int i = 0; i < mTotalStars; i++) {
             char icon;
-            if (mStars == 6 && !HasStarIcon())
+            bool hasStarIcon;
+            if (mStars == 6 &&
+                (hasStarIcon = mIconOverride != gNullStr &&
+                     strcmp(mIconOverride.Str(), "*") != 0,
+                 !hasStarIcon))
                 icon = '=';
             else if (i < mStars)
                 icon = GetStarIcon();

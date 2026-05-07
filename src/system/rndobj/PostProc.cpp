@@ -549,9 +549,9 @@ ProcessCmd ProcCounter::ProcCommands() {
         retCmd = 2;
         break;
     }
-    count = this->mCount + 1;
-    this->mCount = count;
-    int compare_value = (mTriFrameRendering != 0) ? 2 : 1;
+    short compare_value = (mTriFrameRendering != 0) ? 2 : 1;
+    this->mCount++;
+    count = this->mCount;
 
     if (count > compare_value) {
         this->mCount = 0;

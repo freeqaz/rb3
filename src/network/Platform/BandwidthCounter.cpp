@@ -40,7 +40,7 @@ namespace Quazal {
         else {
             String str;
             str.Format("%s %d", mName.m_szContent, key);
-            IOBandwidthCounter *iobc = new IOBandwidthCounter(str);
+            IOBandwidthCounter *iobc = new (__FILE__, 0x8b) IOBandwidthCounter(str);
             mMap[key] = iobc;
             return iobc;
         }

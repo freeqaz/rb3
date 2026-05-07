@@ -225,9 +225,8 @@ void TrackPanelDir::ConfigureTracks(bool b) {
         ConfigureTrack(i);
     }
     RndCam *camcam = Find<RndCam>("Cam.cam", true);
-    camcam->SetLocalPos(Vector3(0, 0, 0));
-    Vector3 rot(0, 0, 0);
-    camcam->SetLocalRot(rot);
+    camcam->SetLocalPos(0.0f, 0.0f, 0.0f);
+    camcam->SetLocalRot(Vector3(0, 0, 0));
     const char *aspectstr =
         MakeString(TheRnd->GetAspect() == Rnd::kRegular ? "regular" : "wide");
     const char *objname = !unk24c ? MakeString("vocal_only_%s", aspectstr)

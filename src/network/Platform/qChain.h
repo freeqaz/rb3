@@ -25,11 +25,11 @@ namespace Quazal {
         iterator erase(iterator);
         iterator erase(iterator, iterator);
         void push_back(const T &item) {
-            if (mItFirst.mLink == mItEnd.mLink) {
+            if (mItFirst.mLink != mItEnd.mLink) {
                 mItFirst.mLink = item;
-                mItLast.mLink = item;
             } else {
                 mItFirst.mLink = item;
+                mItLast.mLink = item;
             }
             mNBLinks++;
         }
