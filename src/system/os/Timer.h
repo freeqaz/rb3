@@ -147,8 +147,8 @@ public:
     AutoTimer(Timer *t, float limit, AutoTimerCallback callback, void *context)
         : mTimer(t) {
         if (mTimer) {
-            mTimeLimit = limit;
             mCallback = callback;
+            mTimeLimit = limit;
             mContext = context;
             mTimer->Start();
         }

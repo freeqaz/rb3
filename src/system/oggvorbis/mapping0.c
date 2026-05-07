@@ -549,10 +549,12 @@ static int mapping0_forward(vorbis_block *vb){
       }
 
       /* encode floor, compute masking curve, sep out residue */
-      for(i=0;i<vi->channels;i++){
+      {
+        float **vbpcm = vb->pcm;
+        for(i=0;i<vi->channels;i++){
 	int submap=info->chmuxlist[i];
 	float *mdct    =gmdct[i];
-	float *res     =vb->pcm[i];
+	float *res     =vbpcm[i];
 	int   *ilogmask=ilogmaskch[i]=
 	  _vorbis_block_alloc(vb,n/2*sizeof(**gmdct));
       
@@ -590,7 +592,8 @@ static int mapping0_forward(vorbis_block *vb){
 	}
 #endif
       }
-      
+      }
+
       /* our iteration is now based on masking curve, not prequant and
 	 coupling.  Only one prequant/coupling step */
       

@@ -309,10 +309,10 @@ CharGraphNode *CharClip::FindNode(CharClip *clip, float f1, int iii, float f2) c
         static CharGraphNode node;
         node.curBeat = f1;
         if (blendMode == 4) {
-            MaxEq(node.curBeat, EndBeat() - halfF2);
+            MaxEq(node.curBeat, clip->EndBeat() - halfF2);
         }
         n = &node;
-        node.nextBeat = StartBeat();
+        node.nextBeat = clip->StartBeat();
     }
     return n;
 }
