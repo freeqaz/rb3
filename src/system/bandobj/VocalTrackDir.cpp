@@ -950,9 +950,10 @@ void VocalTrackDir::SetRange(float min, float max, int tonic, bool b) {
         float bottom = mPitchBottomZ;
         float pitchRange = mPitchTopZ - bottom;
         mMiddleCZPos = bottom + (60.0f - min) * pitchRange / (max - min);
-        if (mTubeRangeGrp) {
-            mTubeRangeGrp->mLocalXfm.v.z = mMiddleCZPos;
-            mTubeRangeGrp->SetDirty();
+        RndGroup *grp = mTubeRangeGrp;
+        if (grp) {
+            grp->mLocalXfm.v.z = mMiddleCZPos;
+            grp->SetDirty();
         }
         mLastMin = min;
         mLastMax = max;

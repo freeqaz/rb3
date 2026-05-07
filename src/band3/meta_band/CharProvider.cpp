@@ -42,7 +42,7 @@ void CharProvider::Reload(LocalBandUser *user) {
             kCharacterEntryPrefab, pPrefab->GetPrefabName(), pPrefab, 0, true
         ));
     }
-    int numchars = mCharacters.size();
+    unsigned short numchars = mCharacters.size();
     std::vector<PrefabChar *> prefabs;
 
     if (unk2d) {
@@ -51,16 +51,18 @@ void CharProvider::Reload(LocalBandUser *user) {
         PrefabMgr::GetPrefabMgr()->GetAvailablePrefabs(prefabs);
     for (int i = 0; i < prefabs.size(); i++) {
         PrefabChar *pChar = prefabs[i];
-        if (!userprofile || !unk2d) {
-            int standinidx = userprofile->GetCharacterStandinIndex(pChar);
-            if (standinidx == -1 || standinidx == unk30) {
-                mCharacters.push_back(CharacterEntry(
-                    kCharacterEntryPrefab, pChar->GetPrefabName(), pChar, 0, false
-                ));
-            }
+        int standinidx;
+        if (!userprofile || !unk2d
+            || (standinidx = userprofile->GetCharacterStandinIndex(pChar)) == -1
+            || standinidx == unk30) {
+            mCharacters.push_back(CharacterEntry(
+                kCharacterEntryPrefab, pChar->GetPrefabName(), pChar, 0, false
+            ));
         }
     }
-    std::sort(mCharacters.begin() + numchars, mCharacters.end(), CompareCharacters());
+    int endidx = mCharacters.size();
+    CompareCharacters cmp;
+    std::sort(mCharacters.begin() + numchars, mCharacters.begin() + endidx, cmp);
 }
 
 void CharProvider::AddCharactersFromProfile(BandProfile *profile) {

@@ -1,6 +1,19 @@
 #include "rndobj/PartAnim.h"
 #include "utl/Symbols.h"
 
+// Explicit specialization to control register allocation for inlined Interp
+template <>
+int Keys<Vector2, Vector2>::AtFrame(float frame, Vector2 &val) const {
+    const Key<Vector2> *prev;
+    const Key<Vector2> *next;
+    float r;
+    int ret = AtFrame(frame, prev, next, r);
+    if (prev) {
+        val.Set(Interp(prev->value.x, next->value.x, r), Interp(prev->value.y, next->value.y, r));
+    }
+    return ret;
+}
+
 int PARTANIM_REV = 3;
 
 DECOMP_FORCEACTIVE(PartAnim, __FILE__, "o", "0")

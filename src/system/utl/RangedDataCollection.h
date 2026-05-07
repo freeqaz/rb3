@@ -19,7 +19,7 @@ public:
     template <class D>
     class RangedData {
     public:
-        RangedData(int start, int end, T data)
+        RangedData(int start, int end, const T &data)
             : mStartTick(start), mEndTick(end), mData(data) {}
         static bool CompareRangeStarts(int tick, const RangedData &data) {
             return tick < data.mStartTick;
