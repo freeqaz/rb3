@@ -155,16 +155,15 @@ void GameConfig::AssignTrack(BandUser *u) {
 }
 
 void GameConfig::AssignTracks() {
+    bool b11 = false;
     mPlayerTrackConfigList->Reset();
     std::vector<BandUser *> users;
     TheBandUserMgr->GetParticipatingBandUsersInSession(users);
     for (int i = 0; i < users.size(); i++) {
-        BandUser *u = users[i];
         mPlayerTrackConfigList->AddPlaceholderConfig(
-            u->GetUserGuid(), u->GetSlot(), !u->IsLocal()
+            users[i]->GetUserGuid(), users[i]->GetSlot(), !users[i]->IsLocal()
         );
     }
-    bool b11 = false;
     for (int i = 0; i < users.size(); i++) {
         AssignTrack(users[i]);
         if (users[i]->GetTrackType() == kTrackVocals) {
@@ -172,23 +171,24 @@ void GameConfig::AssignTracks() {
         }
     }
     if (!b11) {
-        int autoVox = TheModifierMgr->IsModifierActive(mod_auto_vocals);
-        int b1 = TheGame->mProperties.mAllowAutoVocals;
+        bool first = TheModifierMgr->IsModifierActive(mod_auto_vocals)
+                   & TheGame->mProperties.mAllowAutoVocals;
         MetaPerformer *pPerformer = MetaPerformer::Current();
         MILO_ASSERT(pPerformer, 0x13A);
-        bool bigbool = autoVox & b1 & pPerformer->PartPlaysInSong("vocals");
+        bool bigbool = first & pPerformer->PartPlaysInSong("vocals");
         mPlayerTrackConfigList->SetAutoVocals(bigbool);
         if (bigbool) {
             NullLocalBandUser *user = TheBandUserMgr->GetNullUser();
             if (user) {
+                BandUser *bu = user;
                 MetaPerformer *pPerformer = MetaPerformer::Current();
                 MILO_ASSERT(pPerformer, 0x145);
                 mPlayerTrackConfigList->SetUseVocalHarmony(pPerformer->SongAllowsVocalHarmony(
                 ));
-                user->SetTrackType(kTrackVocals);
-                user->SetDifficulty(kDifficultyMedium);
+                bu->SetTrackType(kTrackVocals);
+                bu->SetDifficulty(kDifficultyMedium);
                 mPlayerTrackConfigList->AddConfig(
-                    user->GetUserGuid(), user->GetTrackType(), user->GetDifficulty(), -1, false
+                    bu->GetUserGuid(), bu->GetTrackType(), bu->GetDifficulty(), -1, false
                 );
             }
         }
