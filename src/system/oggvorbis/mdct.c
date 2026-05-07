@@ -77,16 +77,9 @@ void mdct_init(mdct_lookup *lookup,int n){
 
   /* copy trig data to hmx */
 
-  {
-    DATA_TYPE *t=T;
-    DATA_TYPE *h=hmx;
-    int n5q=n+n/4;
-    for(i=0;i<n5q;i+=2){
-      h[0]=t[1];
-      h[1]=-t[0];
-      t+=2;
-      h+=2;
-    }
+  for(i=0;i<n+n/4;i+=2){
+    hmx[i]=T[i+1];
+    hmx[i+1]=-T[i];
   }
 
   /* bitreverse lookup... */

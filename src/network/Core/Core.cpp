@@ -16,14 +16,14 @@ namespace Quazal {
         if (s_bUsesThreads && !s_bIsThreadSafe) {
             s_bIsThreadSafe = true;
         }
+        bool old = MutexPrimitive::s_bNoOp;
         if (s_bIsThreadSafe) {
-            bool old = MutexPrimitive::s_bNoOp;
             MutexPrimitive::s_bNoOp = false;
             if (old) {
                 Scheduler::s_csGlobalSystemLock.EnterImpl();
             }
         } else {
-            if (!MutexPrimitive::s_bNoOp) {
+            if (!old) {
                 Scheduler::s_csGlobalSystemLock.LeaveImpl();
             }
             MutexPrimitive::s_bNoOp = true;

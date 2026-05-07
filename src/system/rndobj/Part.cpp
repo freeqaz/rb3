@@ -906,7 +906,9 @@ void RndParticleSys::RunFastForward() {
         return;
     else {
         float f6 = 1.0f / f1;
-        float f3 = Min(f6 * (float)MaxParticles(), (mLife.x + mLife.y) * 0.5f);
+        float lhs = f6 * (float)MaxParticles();
+        float rhs = (mLife.x + mLife.y) * 0.5f;
+        float f3 = Min(lhs, rhs);
         f6 = Max(1.0f, f6);
         float f4 = CalcFrame();
         Transform tf78;

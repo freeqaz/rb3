@@ -51,12 +51,9 @@ bool ArkFile::ReadAsync(void *iBuff, int iBytes) {
 #ifdef MILO_DEBUG
         if (mReadAhead) {
             unsigned int last = mFilename.find_last_of('_');
-            bool met = last != String::npos;
-            if (met) {
-                Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
-                const char *strIdx = (last + (mFilename.c_str() + 1));
-                met = plat == strIdx;
-            }
+            bool met = last != String::npos
+                && PlatformSymbol(TheLoadMgr.GetPlatform())
+                    == mFilename.c_str() + last + 1;
             String someStrIdk(met ? mFilename.substr(0, last) : mFilename);
             TheArchive->HasArchivePermission(mArkfileNum);
             int debugOrder = Archive::DebugArkOrder();
@@ -73,12 +70,12 @@ bool ArkFile::ReadAsync(void *iBuff, int iBytes) {
 #endif
         u64 byte_start = mByteStart + mTell;
         int a = 0, b = 0, c = 0;
-        TheBlockMgr.GetAssociatedBlocks(mByteStart, iBytes, a, b, c);
-        u64 byte_end = mByteStart + iBytes;
-        int max = (b + c) - 1;
+        TheBlockMgr.GetAssociatedBlocks(byte_start, iBytes, a, b, c);
+        u64 byte_end = byte_start + iBytes;
+        int max = (a + b) - 1;
         bool first_loop = true;
         u32 y;
-        for (int i = c; i <= max; i++) {
+        for (int i = a; i <= max; i++) {
             u32 x;
             if (i == a) {
                 x = byte_start % c;
