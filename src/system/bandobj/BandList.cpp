@@ -618,8 +618,7 @@ void BandList::DrawShowing() {
                 float space = mListDir->ElementSpacing();
                 z = -(space * (float)SelectedDisplay() - z);
             }
-            Vector3 v(it->mXOffset, it->mYOffset, z);
-            obj->SetLocalPos(v);
+            obj->SetLocalPos(it->mXOffset, it->mYOffset, z);
         }
     }
 }

@@ -40,21 +40,23 @@ void CharIKHand::Poll() {
             }
         }
     } else {
+        float startlocfloats[16];
+        float *locfloats = startlocfloats;
         float sumfloat = 0.0f;
-        float *locfloats;
-        float *startlocfloats = locfloats;
         for (std::vector<IKTarget>::iterator it = mTargets.begin(); it != mTargets.end();
              it++) {
             RndTransformable *itTrans = (*it).mTarget;
             float itExtent = (*it).mExtent;
             if (itTrans) {
-                Vector3 vec(itTrans->WorldXfm().v);
-                if (itExtent <= 0.0f) {
-                    *locfloats = 144.0f / Max(0.001f, LengthSquared(vec));
-                } else if (itExtent < -vec.z) {
-                    *locfloats = 0.001f;
+                Vector3 vec(itTrans->LocalXfm().v);
+                if (itExtent > 0.0f) {
+                    if (itExtent < -vec.z) {
+                        *locfloats = 0.001f;
+                    } else {
+                        vec.z = 0.0f;
+                        *locfloats = 144.0f / Max(0.001f, LengthSquared(vec));
+                    }
                 } else {
-                    vec.z = 0.0f;
                     *locfloats = 144.0f / Max(0.001f, LengthSquared(vec));
                 }
 

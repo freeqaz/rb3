@@ -39,20 +39,29 @@ void InterpTangent(
     Vector3 &vout
 ) {
     float fsq = f * f;
-    float fsq3 = 3.0f * fsq;
-    float f6 = 6.0f * f;
-    float a = 6.0f * fsq - f6;
-    float b = 1.0f + (fsq3 - 4.0f * f);
-    float c = -6.0f * fsq + f6;
-    float d = fsq3 - 2.0f * f;
-    vout.z = v1.z * a + v2.z * b + v3.z * c + v4.z * d;
-    vout.y = v1.y * a + v2.y * b + v3.y * c + v4.y * d;
-    vout.x = v1.x * a + v2.x * b + v3.x * c + v4.x * d;
+    float f6 = f * 6.0f;
+    float fsq3 = fsq * 3.0f;
+    float f4 = f * 4.0f;
+
+    float a = fsq * 6.0f - f6;
+    float b = fsq3 - f4 + 1.0f;
+    float c = f6 - fsq * 6.0f;
+    float d = fsq3 - f * 2.0f;
+
+    Scale(v1, a, vout);
+    Vector3 vtmp;
+    Scale(v2, b, vtmp);
+    Add(vout, vtmp, vout);
+    Scale(v3, c, vtmp);
+    Add(vout, vtmp, vout);
+    Scale(v4, d, vtmp);
+    Add(vout, vtmp, vout);
 }
 
 // fn_802E36D4 - InterpVector(const Keys<Vector3, Vector3>&, const Key<Vector3>*, const
 // Key<Vector3>*, float, bool, Vector3&, Vector3*) https://decomp.me/scratch/hblrn -
 // retail
+#pragma fp_contract on
 void InterpVector(
     const Keys<Vector3, Vector3> &keys,
     const Key<Vector3> *prev,
@@ -79,14 +88,22 @@ void InterpVector(
         float fsq = ref * ref;
         float fcubed = fsq * ref;
         float fsq3 = fsq * 3.0f;
-        Scale(prev->value, (fcubed * 2.0f - fsq3) + 1.0f, vref);
+        float scale0 = fcubed * 2.0f;
+        scale0 = scale0 - fsq3;
+        scale0 = scale0 + 1.0f;
+        Scale(prev->value, scale0, vref);
         Vector3 v70;
         SplineTangent(keys, idx, v70);
         Vector3 v7c;
         Vector3 v88;
-        Scale(v70, ref + -(fsq * 2.0f - fcubed), v88);
+        float scale1 = fsq * 2.0f;
+        scale1 = fcubed - scale1;
+        scale1 = scale1 + ref;
+        Scale(v70, scale1, v88);
         Add(vref, v88, vref);
-        Scale(next->value, fcubed * -2.0f + fsq3, v88);
+        float scale2 = fcubed * -2.0f;
+        scale2 = scale2 + fsq3;
+        Scale(next->value, scale2, v88);
         Add(vref, v88, vref);
         SplineTangent(keys, idx + 1, v7c);
         Scale(v7c, fcubed - fsq, v88);
