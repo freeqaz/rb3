@@ -214,10 +214,9 @@ DataNode op9(DataArray *msg) {
 
 DataNode op10(DataArray *msg) {
     u32 operand = msg->Int(1);
-    u32 shift = !operand;
     u32 w = msg->Int(2);
     u32 ret = (u8(w) << 8) | u8(w);
-    ret >>= shift;
+    ret >>= !operand;
     return DataNode(kDataInt, (int)(u8(ret ^ operand)));
 }
 

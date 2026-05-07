@@ -14,7 +14,17 @@ DirectInstrument::DirectInstrument()
 
 DirectInstrument::~DirectInstrument() { Disable(); }
 
-bool DirectInstrument::IsLoaded() { return mDir.IsLoaded(); }
+bool DirectInstrument::IsLoaded() {
+    bool ret = true;
+    if (!mDir.mDir) {
+        bool b = false;
+        if (mDir.mLoader && mDir.mLoader->IsLoaded())
+            b = true;
+        if (!b)
+            ret = false;
+    }
+    return ret;
+}
 
 void DirectInstrument::PostLoad() { mDir.PostLoad(NULL); }
 

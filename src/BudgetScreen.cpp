@@ -17,6 +17,9 @@
 // so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
 namespace stlpmtx_std {
 template <>
+inline less<float> __less<float>(float*) { return less<float>(); }
+
+template <>
 float* __unguarded_partition<float*, float, less<float> >(
     float* __first, float* __last, float __pivot, less<float>) {
     for (;;) {

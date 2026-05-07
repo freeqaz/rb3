@@ -35,7 +35,10 @@ void TourBand::ChooseBandLogo(int i, int j) {
     SetDirty(true, 3);
 }
 
+#pragma push
+#pragma peephole off
 int TourBand::GetBandID() const { return TheServer.GetPlayerID(unk1c->GetPadNum()); }
+#pragma pop
 
 void TourBand::ProcessRetCode(int code) {
     static Message msg("init", 0, 0);

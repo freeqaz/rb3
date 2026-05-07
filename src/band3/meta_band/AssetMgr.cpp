@@ -14,6 +14,14 @@
 #include "system/utl/Symbols4.h"
 #include "system/obj/Utl.h"
 
+// Explicit inline specialization to avoid an out-of-line __less<Symbol> call
+// from std::sort, which otherwise costs an extra callee-saved register and
+// adds a redundant call before each sort helper invocation.
+namespace stlpmtx_std {
+template <>
+inline less<Symbol> __less<Symbol>(Symbol*) { return less<Symbol>(); }
+}
+
 AssetMgr::AssetMgr() {
     AddAssets();
     ConfigureAssetTypeToIconPathMap();
