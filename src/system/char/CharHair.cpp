@@ -70,9 +70,9 @@ void CharHair::Strand::SetRoot(RndTransformable *trans) {
 
 void CharHair::SetCloth(bool b) {
     for (int i = 0; i < mStrands.size(); i++) {
+        int next = i + 1;
         Strand &strand = mStrands[i];
-        int mod = Mod(i + 1, mStrands.size());
-        Strand &modidx = mStrands[mod];
+        Strand &modidx = mStrands[Mod(next, mStrands.size())];
         for (int j = 0; j < strand.mPoints.size(); j++) {
             Point &point = strand.mPoints[j];
             bool b1 = false;

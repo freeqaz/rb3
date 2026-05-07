@@ -74,8 +74,14 @@ void RndLightAnim::SetFrame(float frame, float blend) {
     RndAnimatable::SetFrame(frame, blend);
     if (mLight) {
         if (!ColorKeys().empty()) {
+            const Key<Hmx::Color> *prev;
+            const Key<Hmx::Color> *next;
+            float r;
             Hmx::Color ref;
-            ColorKeys().AtFrame(frame, ref);
+            ColorKeys().AtFrame(frame, prev, next, r);
+            if (prev) {
+                Interp(prev->value, next->value, r, ref);
+            }
             if (blend != 1.0f) {
                 Interp(mLight->GetColor(), ref, blend, ref);
             }

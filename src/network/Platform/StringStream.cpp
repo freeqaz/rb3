@@ -15,7 +15,7 @@ namespace Quazal {
 
     StringStream::~StringStream() {
         if (m_szBuffer != m_szInitialBuffer) {
-            QUAZAL_DEFAULT_FREE(&m_szBuffer - 1, _InstType9);
+            QUAZAL_DEFAULT_FREE((void *)(m_szBuffer - 4), _InstType9);
         }
     }
 

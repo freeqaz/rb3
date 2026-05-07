@@ -129,10 +129,10 @@ void BandList::AdjustTrans(Transform &tf, const UIListElementDrawState &state) {
     if (mFocusAnim) {
         Transform tf40;
         AnimState astate = mAnimStates[showing];
-        if (state.mElementState != 0 && (astate == kGoingOut || astate == kOut)) {
+        bool highlight = state.mElementState == kUIListWidgetHighlight;
+        if (highlight && (astate == kGoingOut || astate == kOut)) {
             StartFocusAnim(showing, kIn);
-        } else if (state.mElementState == kUIListWidgetActive
-                   && (astate == kGoingIn || astate == kIn)) {
+        } else if (!highlight && (astate == kGoingIn || astate == kIn)) {
             StartFocusAnim(showing, kOut);
         }
         UpdateFocusAndPulseAnims(showing, tf40);

@@ -23,8 +23,7 @@ namespace Quazal {
         : mName(s), mState((_State)1), mRefs(0), mParent(NULL) {}
 
     SystemComponent::~SystemComponent() {
-        if (mParent != 0)
-            mParent = 0;
+        SetParent(NULL);
     }
 
     void SystemComponent::SetName(const String &name) { mName = name; }
@@ -37,14 +36,6 @@ namespace Quazal {
             mState = state;
             return true;
         }
-    }
-
-    void SystemComponent::SetParent(SystemComponent *parent) {
-        if (mParent != NULL)
-            mParent = NULL;
-        if (parent == NULL)
-            return;
-        mParent = parent;
     }
 
     bool SystemComponent::ValidTransition(_State state) {
