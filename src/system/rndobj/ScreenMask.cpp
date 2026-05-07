@@ -5,6 +5,7 @@
 #include "rndobj/Cam.h"
 #include "rndobj/HiResScreen.h"
 #include "rndobj/Rnd.h"
+#include "rndobj/Tex.h"
 #include <list>
 
 int SCREENMASK_REV = 2;
@@ -54,17 +55,58 @@ void RndScreenMask::Load(BinStream &bs) {
 }
 
 void RndScreenMask::DrawShowing() {
-    MILO_NOTIFY_ONCE(
-        "%s: Overriding camera screen_rect not supported with render texture", Name()
-    );
-    if (!mUseCurrentRect && !RndCam::sCurrent->mTargetTex.mPtr) {
-        // TheRnd->PostSave();
-        TheHiResScreen.InvScreenRect();
+    if (TheRnd->DrawMode() != kDrawNormal)
+        return;
+
+    float width = (float)TheRnd->Width();
+    float height = (float)TheRnd->Height();
+    RndTex *targetTex = RndCam::sCurrent->TargetTex();
+    if ((int)targetTex) {
+        width = (float)targetTex->Width();
+        height = (float)targetTex->Height();
+    }
+
+    if (!mUseCurrentRect && (int)targetTex) {
+        int isDefaultRect = 0;
+        if (RndCam::sCurrent->mScreenRect.x == 0.0f && RndCam::sCurrent->mScreenRect.y == 0.0f &&
+            RndCam::sCurrent->mScreenRect.w == 1.0f && RndCam::sCurrent->mScreenRect.h == 1.0f) {
+            isDefaultRect = 1;
+        }
+        if (!isDefaultRect) {
+            MILO_NOTIFY_ONCE(
+                "%s: Overriding camera screen_rect not supported with render texture",
+                Name()
+            );
+        }
+    }
+
+    if (!mUseCurrentRect && !RndCam::sCurrent->TargetTex()) {
+        RndCam *cam = RndCam::sCurrent;
+        TheRnd->DefaultCam()->Select();
+        Hmx::Rect hiRes = TheHiResScreen.InvScreenRect();
+        Hmx::Rect drawRect;
+        float rhH = hiRes.h * mRect.h;
+        float rhW = hiRes.w * mRect.w;
+        float rhY = mRect.y * hiRes.h + hiRes.y;
+        float rhX = mRect.x * hiRes.w + hiRes.x;
+        drawRect.h = height * rhH;
+        drawRect.w = width * rhW;
+        drawRect.y = height * rhY;
+        drawRect.x = width * rhX;
+        TheRnd->DrawRect(drawRect, mColor, mMat, NULL, NULL);
+        cam->Select();
     } else {
-        TheHiResScreen.InvScreenRect();
-        Hmx::Color c;
-        Hmx::Rect r;
-        TheRnd->DrawRect(r, c, mMat, NULL, NULL);
+        Hmx::Rect hiRes = TheHiResScreen.InvScreenRect();
+        Hmx::Rect drawRect;
+        float rhH = hiRes.h * mRect.h;
+        float rhW = hiRes.w * mRect.w;
+        float rhY = mRect.y * hiRes.h + hiRes.y;
+        float rhX = mRect.x * hiRes.w + hiRes.x;
+        drawRect.h = height * rhH;
+        drawRect.w = width * rhW;
+        drawRect.y = height * rhY;
+        drawRect.x = width * rhX;
+        TheRnd->DrawRect(drawRect, mColor, mMat, NULL, NULL);
     }
 }
 

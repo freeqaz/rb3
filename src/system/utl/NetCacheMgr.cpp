@@ -424,13 +424,17 @@ bool NetLoaderRef::NeedsToDownload() {
     MILO_ASSERT(valid, 0x31e);
     bool needsToDownload = true;
     if (!mNetLoader) {
-        needsToDownload = true;
+        bool downloading = true;
         if (mCacheLoader) {
             int state = (int)mCacheLoader->mState;
-            bool stateMatch = (state == 1 || state == 2);
+            bool stateMatch = true;
+            if (state != 1 && state != 2)
+                stateMatch = false;
             if (!stateMatch)
-                needsToDownload = false;
+                downloading = false;
         }
+        if (!downloading)
+            needsToDownload = false;
     }
     return needsToDownload;
 }
@@ -440,9 +444,9 @@ bool NetLoaderRef::IsDownloading() {
     MILO_ASSERT(valid, 0x324);
     bool isDownloading = true;
     if (!mNetLoader) {
-        isDownloading = false;
-        if (mCacheLoader && (int)mCacheLoader->mState == 2)
-            isDownloading = true;
+        bool isState2 = mCacheLoader && (int)mCacheLoader->mState == 2;
+        if (!isState2)
+            isDownloading = false;
     }
     return isDownloading;
 }

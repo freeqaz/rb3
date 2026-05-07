@@ -131,7 +131,11 @@ void BeatMaster::Jump(float f) {
 }
 
 void BeatMaster::Reset() {
-    mLastSongPos = SongPos();
+    mLastSongPos.mTotalTick = 0.0f;
+    mLastSongPos.mTotalBeat = 0.0f;
+    mLastSongPos.mMeasure = 0;
+    mLastSongPos.mBeat = 0;
+    mLastSongPos.mTick = 0;
     for (int i = 0; i < mSubmixIdxs.size(); i++) {
         mSubmixIdxs[i] = 0;
     }

@@ -168,7 +168,7 @@ void BandPerformer::SetCrowdMeter() {
 }
 
 float BandPerformer::WeightedCrowdLevel() const {
-    int u12 = 0;
+    bool u12 = false;
     std::vector<Player *> &players = mBand->GetActivePlayers();
     int numplayers = players.size();
     std::vector<float> crowdratings;
@@ -181,7 +181,7 @@ float BandPerformer::WeightedCrowdLevel() const {
             crowdratings.push_back(players[i]->GetCrowdRating());
         }
     }
-    if (u12 == 0)
+    if (!u12)
         return 0;
     else {
         std::sort(crowdratings.begin(), crowdratings.end());

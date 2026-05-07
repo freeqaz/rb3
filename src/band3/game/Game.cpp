@@ -1285,12 +1285,10 @@ void Game::UpdatePausedState(bool allowSfx, bool doRollback) {
                     float ms = (unkdc != -1.0f) ? unkdc : mLastPollMs;
                     float rollbackTarget;
                     if (mProperties.mInTrainer && TheTrainerPanel) {
-                        float candidate = ms - 1000.0f;
-                        rollbackTarget = (0.0f < candidate) ? candidate : 0.0f;
+                        rollbackTarget = std::max(0.0f, ms - 1000.0f);
                         mLastPollMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
                     } else {
-                        float candidate = ms - 2000.0f;
-                        rollbackTarget = (0.0f < candidate) ? candidate : 0.0f;
+                        rollbackTarget = std::max(0.0f, ms - 2000.0f);
                     }
                     Rollback(ms, rollbackTarget);
                 } else {

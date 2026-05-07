@@ -473,7 +473,7 @@ bool EntityUploader::HasServerTimedOut() {
         return true;
     else {
         GetDateAndTime(dt);
-        return dt.ToCode() >= mSubmittedTime.ToCode();
+        return dt.ToCode() - mSubmittedTime.ToCode() >= 15;
     }
 }
 

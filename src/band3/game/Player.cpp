@@ -651,7 +651,7 @@ void Player::PopupHelp(Symbol s, bool b) {
 
 void Player::AddEnergy(float f) {
     TheGame->OnPlayerAddEnergy(this, f);
-    SetEnergy((mBandEnergy + f) < 1.0f ? (mBandEnergy + f) : 1.0f);
+    SetEnergy(std::min(1.0f, mBandEnergy + f));
 }
 
 Symbol Player::GetStreakType() const { return mBehavior->mStreakType; }
@@ -850,16 +850,14 @@ void Player::Hit() {
 }
 
 void Player::DelayReturn(bool b) {
-    mEnableMs = PollMs();
-    if (mEnableMs < 0.0f)
-        mEnableMs = 0.0f;
+    float pollResult = (float)PollMs();
+    mEnableMs = std::max(0.0f, pollResult);
     if (b) {
         mEnableMs += mParams->mMsToReturnFromBrink;
     }
-    if (TheGame->unkdc != -1.0f) {
-        if (TheGame->unkdc < mEnableMs) {
-            mEnableMs = TheGame->unkdc;
-        }
+    float unkdc = TheGame->unkdc;
+    if (unkdc != -1.0f) {
+        mEnableMs = std::min(unkdc, mEnableMs);
         EnableFills(mEnableMs, b);
     }
     int tick = (int)MsToTick(mEnableMs);

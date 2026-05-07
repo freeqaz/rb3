@@ -394,10 +394,9 @@ END_HANDLERS
 DataNode TaskMgr::OnTimeTilNext(DataArray *arr) {
     float f2 = arr->Float(2);
     float f3 = arr->Float(3);
-    float beat = Beat();
-    float ratio = beat / f2;
+    float ratio = mTimelines[kTaskBeats].mTime / f2;
     float floored = floor(ratio);
-    float f1 = f3 * (1.0f - (ratio - floored));
+    float f1 = f2 * (1.0f - (ratio - floored));
     if (f2 - f1 <= f3) {
         return 0.0f;
     } else

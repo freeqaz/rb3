@@ -154,8 +154,8 @@ void Intersect(const Transform &trans, const Plane &plane, Hmx::Ray &ray) {
 }
 
 bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
-    float segDirY = seg.end.y - seg.start.y;
     float segDirX = seg.end.x - seg.start.x;
+    float segDirY = seg.end.y - seg.start.y;
     float segDirZ = seg.end.z - seg.start.z;
 
     float segDirDot = tri.frame.z.x * segDirX + tri.frame.z.y * segDirY + tri.frame.z.z * segDirZ;
@@ -299,45 +299,47 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
 DECOMP_FORCEACTIVE(Geo, "tMax > 0.0f && tMin < 1.0f");
 
 bool Intersect(const Transform &tf, const Hmx::Polygon &poly, const BSPNode *node) {
-    if (!node)
-        return true;
-
     bool front = false;
     bool back = false;
     for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
         Vector3 v(i->x, i->y, 0.0f);
         Multiply(v, tf, v);
         float dot = node->plane.Dot(v);
-        if (dot >= 0.0f)
+        if (0.0f < dot)
             front = true;
         if (dot < 0.0f)
             back = true;
     }
 
-    if (front && !back) {
-        return Intersect(tf, poly, node->left);
-    }
-    if (!front && back) {
-        return Intersect(tf, poly, node->right);
-    }
-
-    Hmx::Ray r;
-    Intersect(tf, node->plane, r);
-
-    Hmx::Polygon splitPoly;
-    Clip(poly, r, splitPoly);
-    if (!splitPoly.mPoints.empty() && !Intersect(tf, splitPoly, node->left))
+    if (!back) {
+        const BSPNode *child = node->left;
+        if (child && Intersect(tf, poly, child))
+            return true;
         return false;
-
-    Hmx::Ray negRay;
-    negRay.base = r.base;
-    negRay.dir.Set(-r.dir.x, -r.dir.y);
-    Hmx::Polygon splitPoly2;
-    Clip(poly, negRay, splitPoly2);
-    if (!splitPoly2.mPoints.empty() && !Intersect(tf, splitPoly2, node->right))
+    } else if (!front) {
+        const BSPNode *child = node->right;
+        if (!child || Intersect(tf, poly, child))
+            return true;
         return false;
-
-    return true;
+    } else {
+        if (!node->right)
+            return true;
+        Hmx::Ray r;
+        Intersect(tf, node->plane, r);
+        Hmx::Polygon splitPoly;
+        if (node->left) {
+            Clip(poly, r, splitPoly);
+            bool res = Intersect(tf, splitPoly, node->left);
+            if (res) {
+                return true;
+            }
+        }
+        r.dir.y = -r.dir.y;
+        r.dir.x = -r.dir.x;
+        Clip(poly, r, splitPoly);
+        bool res = Intersect(tf, splitPoly, node->right);
+        return res;
+    }
 }
 
 bool Intersect(const Segment &seg, const Sphere &sphere) {
@@ -909,28 +911,45 @@ bool operator>(const Sphere &s, const Frustum &f) {
 }
 
 void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
-    std::vector<Vector2> *newPoints = &out.mPoints;
+    if (poly.mPoints.empty()) {
+        out.mPoints.clear();
+        return;
+    }
 
-    float lastDot = ray.dir.x * (poly.mPoints.back().y - ray.base.y)
-                  - ray.dir.y * (poly.mPoints.back().x - ray.base.x);
+    std::vector<Vector2> tempPoints;
+    std::vector<Vector2> *newPoints;
+
+    if (&out == &poly) {
+        newPoints = &tempPoints;
+    } else {
+        newPoints = &out.mPoints;
+        out.mPoints.clear();
+    }
+
+    newPoints->reserve(poly.mPoints.size() * 2);
+
     const Vector2 *lastPoint = &poly.mPoints.back();
+    const Vector2 *dirPtr = &ray.dir;
+    float yDiff = lastPoint->y - ray.base.y;
+    float lastDot = dirPtr->x * (lastPoint->x - ray.base.x)
+                  + dirPtr->y * yDiff;
 
+    Vector2 v;
     for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
-        float dot = ray.dir.x * (i->y - ray.base.y) - ray.dir.y * (i->x - ray.base.x);
+        float yDelta = i->y - ray.base.y;
+        float dot = dirPtr->x * (i->x - ray.base.x) + yDelta * dirPtr->y;
 
         if (dot >= 0.0f) {
-            if (lastDot < 0.0f) {
+            if (dot > 0.0f && lastDot < 0.0f) {
                 float t = lastDot / (lastDot - dot);
-                Vector2 v;
                 v.Set(lastPoint->x + t * (i->x - lastPoint->x),
                       lastPoint->y + t * (i->y - lastPoint->y));
                 newPoints->push_back(v);
             }
             newPoints->push_back(*i);
         } else {
-            if (lastDot >= 0.0f) {
+            if (lastDot > 0.0f) {
                 float t = lastDot / (lastDot - dot);
-                Vector2 v;
                 v.Set(lastPoint->x + t * (i->x - lastPoint->x),
                       lastPoint->y + t * (i->y - lastPoint->y));
                 newPoints->push_back(v);
@@ -939,5 +958,9 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
 
         lastDot = dot;
         lastPoint = i;
+    }
+
+    if (&out == &poly) {
+        out.mPoints = tempPoints;
     }
 }
