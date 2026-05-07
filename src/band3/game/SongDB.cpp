@@ -505,27 +505,25 @@ void SongDB::SetupPhrasesForTrack(
         unsigned char state = 0;
         if (phraseIdx < extents.size()) {
             if (gemTick >= extents[phraseIdx].unk0) {
-                bool setStart = true;
                 if (gemIdx != 0) {
                     bool prevInPhrase = gemStates.size() > (unsigned)(gemIdx - 1)
                         && (gemStates[gemIdx - 1] & 0x2);
                     if (prevInPhrase) {
                         bool prevEndOfPhrase = gemStates.size() > (unsigned)(gemIdx - 1)
                             && (gemStates[gemIdx - 1] & 0x4);
-                        setStart = prevEndOfPhrase;
+                        if (!prevEndOfPhrase) goto skip_start_bit;
                     }
                 }
-                if (setStart) {
-                    state |= 0x1;
-                }
+                state |= 0x1;
+            skip_start_bit:
                 state |= 0x2;
             }
-        }
-        if ((unsigned)gemIdx == (unsigned)(gemList->NumGems() - 1)
-            || gemList->mGems[gemIdx + 1].mTick >= extents[phraseIdx].unk4) {
-            state = (unsigned char)(state | 0x4);
-            phraseOffset += sizeof(Extent);
-            phraseIdx++;
+            if ((unsigned)gemIdx == (unsigned)(gemList->NumGems() - 1)
+                || gemList->mGems[gemIdx + 1].mTick >= extents[phraseIdx].unk4) {
+                state = (unsigned char)(state | 0x4);
+                phraseOffset += sizeof(Extent);
+                phraseIdx++;
+            }
         }
         gemStates.push_back(state);
     }

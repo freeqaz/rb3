@@ -496,15 +496,17 @@ Symbol CustomizePanel::GetCurrentMakeup(Symbol type) {
         BandCharDesc::Patch &curPatch = desc->mPatches[i];
         if (curPatch.mCategory == BandCharDesc::Patch::kPatchMakeup) {
             String meshName = curPatch.mMeshName;
-            Symbol s6;
             std::vector<String> subStrings;
+            Symbol s6;
             if (meshName.split("_", subStrings) == 4) {
                 s6 = subStrings[2].c_str();
             } else
                 MILO_WARN("Invalid makeup mesh: (%s)", meshName);
             if (s6 == type) {
                 SetCurrentMakeupIndex(i);
-                return meshName.substr(0, meshName.length() - 5).c_str();
+                String result = meshName.substr(0, meshName.length() - 5);
+                Symbol sym = result.c_str();
+                return sym;
             }
         }
     }

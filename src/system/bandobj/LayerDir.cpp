@@ -1,9 +1,26 @@
 #include "bandobj/LayerDir.h"
 #include "rndobj/Cam.h"
 #include "obj/ObjVersion.h"
+#include "decomp.h"
 #include "utl/Symbols.h"
 
 INIT_REVS(LayerDir)
+
+DECOMP_FORCEACTIVE(
+    LayerDir,
+    "colors",
+    "color",
+    "alpha",
+    ".png",
+    ".bmp",
+    "_norm.png",
+    "_spec.png",
+    "_norm.bmp",
+    "_spec.bmp",
+    "ObjPtr_p.h",
+    "f.Owner()",
+    ""
+)
 
 RndCam *LayerDir::sCam;
 LayerDir *gLayerDirOwner;

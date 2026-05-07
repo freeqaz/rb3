@@ -240,8 +240,9 @@ Loader::Loader(const FilePath &fp, LoaderPos pos) : mPos(pos), mFile(fp) {
     } else if (mPos == kLoadStayBack) {
         TheLoadMgr.mLoading.push_back(this);
     } else {
-        std::list<Loader *>::iterator it = TheLoadMgr.mLoading.begin();
-        for (; it != TheLoadMgr.mLoading.end();) {
+        std::list<Loader *>::iterator it = TheLoadMgr.mLoading.end();
+        while (it != TheLoadMgr.mLoading.begin()) {
+            --it;
             if ((*it)->GetPos() <= 1) {
                 ++it;
                 break;

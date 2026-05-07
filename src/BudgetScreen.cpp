@@ -13,8 +13,8 @@
 #include <algorithm>
 #include "decomp.h"
 
-// Explicit specialization to avoid bool materialization in the comparison
-// loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne.
+// Explicit specializations to avoid bool materialization in comparison loops,
+// so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
 namespace stlpmtx_std {
 template <>
 float* __unguarded_partition<float*, float, less<float> >(
@@ -29,6 +29,55 @@ float* __unguarded_partition<float*, float, less<float> >(
             return __first;
         iter_swap(__first, __last);
         ++__first;
+    }
+}
+
+template <>
+void __unguarded_linear_insert<float*, float, less<float> >(
+    float* __last, float __val, less<float>) {
+    float* __next = __last;
+    --__next;
+    while (__val < *__next) {
+        *__last = *__next;
+        __last = __next;
+        --__next;
+    }
+    *__last = __val;
+}
+
+template <>
+void __introsort_loop<float*, float, long, less<float> >(
+    float* __first, float* __last, float*,
+    long __depth_limit, less<float> __comp) {
+    while (__last - __first > 16) {
+        if (__depth_limit == 0) {
+            partial_sort(__first, __last, __last, __comp);
+            return;
+        }
+        ptrdiff_t __len = __last - __first;
+        float __a = *__first;
+        --__depth_limit;
+        float* __mid = __first + __len / 2;
+        float __b = *__mid;
+        float* __pivot_ptr;
+        if (__a < __b) {
+            float __c = *(__last - 1);
+            if (__b < __c)
+                __pivot_ptr = __mid;
+            else if (__a < __c)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __first;
+        } else if (__a < *(__last - 1)) {
+            __pivot_ptr = __first;
+        } else if (__b < *(__last - 1)) {
+            __pivot_ptr = __last - 1;
+        } else {
+            __pivot_ptr = __mid;
+        }
+        float* __cut = __unguarded_partition(__first, __last, *__pivot_ptr, __comp);
+        __introsort_loop(__cut, __last, (float*)0, __depth_limit, __comp);
+        __last = __cut;
     }
 }
 } // namespace stlpmtx_std

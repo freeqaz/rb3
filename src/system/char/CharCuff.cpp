@@ -101,9 +101,11 @@ void CharCuff::Deform(SyncMeshCB *cb, FileMerger *fm) {
         for (ObjDirItr<CharCuff> it(Dir(), false); it != nullptr; ++it) {
             if (it != this) {
                 if (it->mBone == mBone) {
-                    if (it->mOuterRadius > mOuterRadius)
+                    float itRadius = it->mOuterRadius;
+                    float thisRadius = mOuterRadius;
+                    if (itRadius > thisRadius)
                         return;
-                    if (mOuterRadius == it->mOuterRadius) {
+                    if (thisRadius == itRadius) {
                         if (strcmp(it->Name(), Name()) > 0)
                             return;
                     }
@@ -118,10 +120,11 @@ void CharCuff::Deform(SyncMeshCB *cb, FileMerger *fm) {
         FileMerger::Merger *merger = nullptr;
         if (fm) {
             for (int i = 0; i < fm->mMergers.size(); i++) {
-                merger = &fm->mMergers[i];
-                if (strstr(merger->mName.mStr, mCategory.mStr)
-                    && merger->mLoadedObjects.size() != 0
-                    && merger->mLoadedObjects.front()->Dir() == Dir()) {
+                FileMerger::Merger *cur = &fm->mMergers[i];
+                if (strstr(cur->mName.mStr, mCategory.mStr)
+                    && cur->mLoadedObjects.size() != 0
+                    && cur->mLoadedObjects.front()->Dir() == Dir()) {
+                    merger = cur;
                     break;
                 }
             }
