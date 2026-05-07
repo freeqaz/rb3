@@ -127,16 +127,18 @@ void MultiTempoTempoMap::SetLoopPoints(int start, int end) {
 }
 
 int MultiTempoTempoMap::GetLoopTick(int tick, int &asdf) const {
-    if (mStartLoopTick < 0.0f) {
+    float startLoopTick = mStartLoopTick;
+    if (startLoopTick < 0.0f) {
         return tick;
     }
 
-    int startTick = mStartLoopTick;
-    int endTick = mEndLoopTick;
+    float endLoopTick = mEndLoopTick;
+    int startTick = startLoopTick;
+    int endTick = endLoopTick;
 
     asdf = 0;
-    if (tick > mEndLoopTick) {
-        if (mStartLoopTick == mEndLoopTick) {
+    if (!(tick < endLoopTick)) {
+        if (startLoopTick == endLoopTick) {
             return tick;
         }
 

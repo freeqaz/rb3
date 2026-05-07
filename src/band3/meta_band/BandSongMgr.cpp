@@ -176,7 +176,7 @@ void BandSongMgr::ContentDone() {
         std::vector<int> songs2;
         GetRankedSongs(songs2, false, true);
         std::vector<int> ic8;
-        FOREACH (it, ic8) {
+        FOREACH (it, songs2) {
             int cur = *it;
             if (mUpgradeMgr->HasUpgrade(cur)) {
                 ic8.push_back(cur);

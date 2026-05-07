@@ -13,6 +13,7 @@
 #include "obj/Data.h"
 #include "obj/DataFunc.h"
 #include "os/Debug.h"
+#include "utl/Locale.h"
 #include "utl/Str.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
@@ -238,8 +239,8 @@ namespace {
 
 int CheckContext(const DataArray *a) {
     gContextWeight = 10;
-    bool result = CheckContextAnd(a);
-    return gContextWeight & -(int)result;
+    int result = (int)CheckContextAnd(a);
+    return gContextWeight & ((result | -result) >> 31);
 }
 
 void HandleContextUsed(Symbol ctx) { gUsedContexts.insert(ctx); }
@@ -308,7 +309,32 @@ int InqMatchedEntries(const DataArray *a, bool b, std::vector<WeightedEntry> &ve
     return ret;
 }
 
-const char *RandomContextSensitiveItemInternal(const DataArray *, bool, bool) {}
+const char *RandomContextSensitiveItemInternal(const DataArray *a, bool onlyUnused, bool reportFailure) {
+    std::vector<WeightedEntry> entries;
+    int totalWeight = InqMatchedEntries(a, onlyUnused, entries);
+    if (totalWeight <= 0) {
+        if (!onlyUnused && reportFailure) {
+            MILO_FAIL("No valid context-sensitive item");
+        }
+        return gNullStr;
+    }
+    int val = gContextRand.Int(0, totalWeight);
+    for (int i = 0; i < entries.size(); i++) {
+        if (val < entries[i].unk0) {
+            Symbol sym = entries[i].unk4;
+            HandleContextUsed(sym);
+            const char *str = entries[i].unk8;
+            if (str) {
+                return str;
+            }
+            return Localize(sym, nullptr);
+        }
+    }
+    if (reportFailure) {
+        MILO_FAIL("No valid context-sensitive item");
+    }
+    return gNullStr;
+}
 
 const char *RandomContextSensitiveItem(const DataArray *a, bool b) {
     const char *item = RandomContextSensitiveItemInternal(a, false, b);

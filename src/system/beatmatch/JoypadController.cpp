@@ -131,9 +131,9 @@ bool JoypadController::IsCymbal(int i) const {
             break;
         case 4:
             ret = thePadData->IsButtonInMask(mCymbalShiftButton)
-                && ((!thePadData->IsButtonInMask(kPad_DUp)
-                     && !thePadData->IsButtonInMask(kPad_DDown))
-                    || !thePadData->IsButtonInMask(mPadShiftButton));
+                && !((thePadData->IsButtonInMask(kPad_DUp)
+                      || thePadData->IsButtonInMask(kPad_DDown))
+                     && thePadData->IsButtonInMask(mPadShiftButton));
             break;
         default:
             break;
