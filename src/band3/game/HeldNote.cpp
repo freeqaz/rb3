@@ -56,16 +56,17 @@ float HeldNote::SetHoldTime(float time) {
 
 float HeldNote::GetPointFraction() {
     int headPoints = TheScoring->GetHeadPoints(mTrackType);
+    float awarded = unk_0x14;
     int pointsPlus = headPoints + unk_0x18;
     if (pointsPlus <= 0)
         return 0;
     else {
-        float fraction = (float)(headPoints + unk_0x14) / (float)(pointsPlus);
+        float fraction = ((float)headPoints + awarded) / (float)pointsPlus;
         if (fraction < 0.0f || fraction > 1.0f) {
             MILO_WARN(
                 "HeldNote::GetPointFraction: (%d + %f) / %d = %f is out of range [0,1].",
                 headPoints,
-                unk_0x14,
+                awarded,
                 pointsPlus,
                 fraction
             );

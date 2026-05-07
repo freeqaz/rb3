@@ -1,6 +1,7 @@
 #pragma once
 #include "Extensions/DemuxEventHandler.h"
 #include "Extensions/SpeexCodec.h"
+#include "Extensions/VoiceChannel.h"
 #include "game/BandUser.h"
 #include "obj/Msg.h"
 #include "os/User.h"
@@ -24,7 +25,7 @@ public:
 
     Quazal::SpeexCodec *mCodec; // 0x1c
     Quazal::DemuxEventHandler *mReceiver; // 0x20
-    int unk24;
+    Quazal::VoiceChannel *unk24;
     int unk28;
     bool unk2c;
     std::vector<User *> unk30; // 0x30

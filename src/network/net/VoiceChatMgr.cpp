@@ -49,7 +49,7 @@ VoiceChatMgr::VoiceChatMgr()
 VoiceChatMgr::~VoiceChatMgr() {
     TheNetSession->RemoveSink(this, "remote_player_left");
     delete mReceiver;
-    // delete unk24;
+    delete unk24;
     delete mCodec;
 }
 

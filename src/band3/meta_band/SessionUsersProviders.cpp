@@ -87,8 +87,9 @@ void SessionUsersProvider::RefreshUserList(
     std::vector<BandUser *> users;
     usermgr->GetBandUsersInSession(users);
     for (int i = 0; i < users.size(); i++) {
-        if ((!unk29 || users[i]->mChar != user->mChar)
-            && (!unk2a || !ThePlatformMgr.IsGuestOnlineID(mUsers[i]->mOnlineID))) {
+        BandUser *u = users[i];
+        if ((!unk29 || u->GetMachineID() != user->GetMachineID())
+            && (!unk2a || !ThePlatformMgr.IsGuestOnlineID(u->mOnlineID))) {
             mUsers.push_back(users[i]);
         }
     }

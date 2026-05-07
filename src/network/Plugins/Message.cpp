@@ -125,7 +125,7 @@ namespace Quazal {
         msg.SetLength(u1);
 
         Buffer *msgBuf = msg.mBuffer;
-        unsigned int u2 = msg.mBuffer->GetContentSize();
+        unsigned int u2 = (*(Buffer * volatile *)&msg.mBuffer)->GetContentSize();
         msg.SetLength(0);
         write2 = u2 - 4;
         msg.Append((unsigned char *)&write2, 4, 1);
