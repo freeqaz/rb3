@@ -381,10 +381,11 @@ void StreakFocusTracker::CheckCondition(float f1, bool b1, bool &bref1, bool &br
     Player *pPlayer = mSource->GetPlayer(mFocusPlayer);
     int hitcount = pPlayer->mStats.mHitCount;
     int curstreak = pPlayer->mStats.GetCurrentStreak();
-    if (curstreak != 0 && !unke4) {
+    bool haveStreak = curstreak > 0;
+    if (haveStreak && !unke4) {
         unkd8 = hitcount - 1;
         unke4 = true;
-    } else if (curstreak == 0) {
+    } else if (!haveStreak) {
         if (unke4 && mSource->IsPlayerLocal(mFocusPlayer)) {
             GetPlayerDisplay(mFocusPlayer).Pulse(false);
         }

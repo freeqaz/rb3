@@ -309,12 +309,13 @@ void WiiEntityUploader::ProcessStringResponses() {
 bool WiiEntityUploader::OnMsg(const DWCProfanityResultMsg &msg) {
     if (mState == 1 && mbCheckInProgress) {
         mbCheckInProgress = false;
-        if (msg->Int(2)) {
-            int i5;
-            for (int i = unk4c; i < unk4c + mNumStringsEnroute; i++) {
+        if (msg.Success()) {
+            int i = unk4c;
+            int j = 0;
+            while (i < unk4c + mNumStringsEnroute) {
                 int i7 = 0;
-                if (unk50[i]) {
-                    i5 = unk54->Array(i)->Int(1);
+                if (unk50[j]) {
+                    int i5 = unk54->Array(i)->Int(1);
                     switch (i5) {
                     case 1:
                         i7 = 4;
@@ -334,9 +335,11 @@ bool WiiEntityUploader::OnMsg(const DWCProfanityResultMsg &msg) {
                     }
                 }
                 unk54->Array(i)->Node(3) = i7;
+                i++;
+                j++;
             }
-            unk4c = i5;
-            if (i5 < unk44) {
+            unk4c += mNumStringsEnroute;
+            if (unk4c < unk44) {
                 CleanupCall(false);
                 RecordSubmissionTime();
                 BeginStringVerification();

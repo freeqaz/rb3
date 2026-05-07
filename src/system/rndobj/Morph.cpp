@@ -17,19 +17,21 @@ RndMorph::RndMorph()
 float RndMorph::InterpWeight(const Keys<float, float> &keys, float frame) {
     const Key<float> *prev;
     const Key<float> *next;
+    float prevVal;
     float ref;
     keys.AtFrame(frame, prev, next, ref);
     if (prev) {
         if (mSpline) {
-            float prevVal = prev->value;
-            float ret = 0;
-            if (prevVal || next->value) {
-                float f2 = prevVal * 2.0f - next->value * 2.0f;
-                ret = ref * ref * (f2 * ref + f2 * -3.0f * 0.5f) + prevVal;
-            }
-            return ret;
-        } else
-            return Interp(prev->value, next->value, ref);
+            prevVal = prev->value;
+            if (!prevVal && !next->value)
+                return 0;
+            float f2 = prevVal * 2.0f - next->value * 2.0f;
+            float t = f2 * -3.0f * 0.5f;
+            return ref * (ref * (f2 * ref + t)) + prevVal;
+        } else {
+            prevVal = prev->value;
+            return ref * (next->value - prevVal) + prevVal;
+        }
     } else
         return 0;
 }

@@ -68,7 +68,7 @@ inline void CharDebug::AddObject(Hmx::Object *o, bool once) {
     if (o) {
         ObjPtrList<Hmx::Object> &which = once ? mOnce : mObjects;
         ObjPtrList<Hmx::Object>::iterator it = which.find(o);
-        if (it == which.end()) {
+        if (!it) {
             which.push_back(o);
         } else {
             which.erase(it);
@@ -78,8 +78,8 @@ inline void CharDebug::AddObject(Hmx::Object *o, bool once) {
 
 inline void CharDebug::SetObjects(DataArray *msg) {
     int i = 1;
-    bool once = false;
     bool clear = false;
+    bool once = false;
     bool cmp = msg->Size() > 1;
     if (cmp) {
         cmp = msg->Type(1) == kDataSymbol;

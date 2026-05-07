@@ -753,12 +753,12 @@ bool RndPropAnim::ValueFromIndex(PropKeys *keys, int index, DataNode *node) {
         break;
     }
     case PropKeys::kQuat: {
-        Hmx::Quat q(keys->AsQuatKeys()[index].value);
+        const Hmx::Quat &q = keys->AsQuatKeys()[index].value;
         *node = DataArrayPtr(q.x, q.y, q.z, q.w);
         break;
     }
     case PropKeys::kVector3: {
-        Vector3 vec(keys->AsVector3Keys()[index].value);
+        const Vector3 &vec = keys->AsVector3Keys()[index].value;
         *node = DataArrayPtr(vec.x, vec.y, vec.z);
         break;
     }

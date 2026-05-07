@@ -172,7 +172,8 @@ void CharIKHand::IKElbow(RndTransformable *trans1, RndTransformable *trans2) {
     float loc210 = unk64 * (DistanceSquared(trans2->WorldXfm().v, mWorldDst) - mInv2ab);
     ClampEq(loc210, -1.0f, 1.0f);
     float sqrted = -std::sqrt(-(loc210 * loc210 - 1.0f));
-    trans1->DirtyLocalXfm().m.Set(loc210, sqrted, 0, -sqrted, loc210, 0, 0, 0, 1);
+    float negSqrted = -sqrted;
+    trans1->DirtyLocalXfm().m.Set(loc210, sqrted, 0, negSqrted, loc210, 0, 0, 0, 1);
     Vector3 v10c, v118;
     Multiply(trans2->WorldXfm(), mHand->WorldXfm().v, v118);
     Multiply(trans2->WorldXfm(), mWorldDst, v10c);
@@ -227,7 +228,7 @@ void CharIKHand::IKElbow(RndTransformable *trans1, RndTransformable *trans2) {
                 float sqrted2 = std::sqrt(sphereRadius * sphereRadius - a * a);
                 v134.Set(v17c.x, v17c.y, v17c.z);
                 float dist134and140 = Distance(v134, v140);
-                float d10 = (dist134and140 * dist134and140 + -(a * a - sqrted2 * sqrted2))
+                float d10 = (dist134and140 * dist134and140 + -(v164len * v164len - sqrted2 * sqrted2))
                     / (dist134and140 * 2.0f);
                 float sqrted3 = std::sqrt(-(d10 * d10 - sqrted2 * sqrted2));
                 float asined = std::asin(sqrted3 / v164len);
@@ -237,9 +238,12 @@ void CharIKHand::IKElbow(RndTransformable *trans1, RndTransformable *trans2) {
                 v188 -= v140;
                 Normalize(v188, v188);
                 Scale(v188, v164len, v188);
-                double half = asined / 2.0;
-                float sine = sin(half);
-                float cosine = cos(half);
+                float sine, cosine;
+                {
+                    double half = asined / 2.0;
+                    sine = sin(half);
+                    cosine = cos(half);
+                }
                 Hmx::Quat q198(v188.x, v188.y, v188.z, 0.0f);
                 Hmx::Quat q1a8(v170.x * sine, v170.y * sine, v170.z * sine, cosine);
                 Hmx::Quat q1b8;

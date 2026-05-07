@@ -1,3 +1,4 @@
+#define CHARHAIR_LOCAL_MULTIPLY
 #include "char/CharHair.h"
 #include "char/CharCollide.h"
 #include "decomp.h"

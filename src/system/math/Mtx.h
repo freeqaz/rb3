@@ -407,7 +407,7 @@ inline void MultiplyTranspose(const Vector3 &v, const Transform &t, Vector3 &out
     out.Set(Dot(out, t.m.x), Dot(out, t.m.y), Dot(out, t.m.z));
 }
 void Multiply(const Plane &, const Transform &, Plane &);
-#if 0 // moved to CharHair.cpp; keep declaration only here
+#if defined(__MWERKS__) && !defined(CHARHAIR_LOCAL_MULTIPLY)
 inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
     typedef __vec2x32float__ psq;
     register const Hmx::Matrix3 *_a = &a;
@@ -530,8 +530,9 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
     mult_end:
     }
 }
-#endif
+#elif !defined(CHARHAIR_LOCAL_MULTIPLY)
 void Multiply(const Hmx::Matrix3 &, const Hmx::Matrix3 &, Hmx::Matrix3 &);
+#endif // __MWERKS__ && !CHARHAIR_LOCAL_MULTIPLY
 void IdentityInterp(const Hmx::Quat &, float, Hmx::Quat &);
 void Multiply(const Transform &, const Hmx::Matrix3 &, Transform &);
 

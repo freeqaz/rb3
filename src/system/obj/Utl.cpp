@@ -266,12 +266,16 @@ void MergeObjectsRecurse(ObjectDir *fromDir, ObjectDir *toDir, MergeFilter &filt
             }
         }
     }
-    for (ObjectDir::Entry *entry = fromDir->mHashTable.Begin(); entry != 0;
-         entry = fromDir->mHashTable.Next(entry)) {
-        Hmx::Object *curObj = entry->obj;
-        if (curObj) {
-            Hmx::Object *foundObj = toDir->FindObject(curObj->Name(), false);
-            MergeObject(curObj, foundObj, toDir, filt);
+    ObjectDir::Entry *entry = fromDir->mHashTable.Begin();
+    if (entry != 0) {
+        KeylessHash<const char *, ObjectDir::Entry> &ht = fromDir->mHashTable;
+        while (entry != 0) {
+            Hmx::Object *curObj = entry->obj;
+            if (curObj) {
+                Hmx::Object *foundObj = toDir->FindObject(curObj->Name(), false);
+                MergeObject(curObj, foundObj, toDir, filt);
+            }
+            entry = ht.Next(entry);
         }
     }
     for (int i = 0; i < fromDir->mSubDirs.size(); i++) {
