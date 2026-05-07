@@ -163,26 +163,19 @@ namespace Quazal {
 
     u16 InetAddress::GetPortNumber() const { return ntohs(this->port); }
 
-    // Nonmatching: https://decomp.me/scratch/IYV0H
+    // 90% match. Remaining 10% is register allocation (curr_port held in r5 vs r3,
+    // this->address loaded into r29 vs r31) — CW schedules the b.address load too
+    // early and keeps curr_port in a non-callee register because of the |OR with
+    // the high half of the u64.
     bool InetAddress::operator<(const Quazal::InetAddress &b) const {
-        u32 curr_addr;
-        u32 check_port;
-        u32 check_addr;
-        u16 curr_port;
+        u32 check_addr = b.address;
+        u32 check_port = ntohs(b.port);
+        u32 curr_addr = this->address;
+        u32 curr_port = (u16)ntohs(this->port);
 
-        check_addr = b.address;
-        check_port = ntohs(b.port);
-        curr_addr = this->address;
-        curr_port = ((u16)ntohs(this->port));
-
-        return (
-            (curr_addr ^ 0x80000000)
-            < ((u32)(curr_port < check_port) + (check_addr ^ 0x80000000))
-        );
-        // return -((curr_addr ^ 0x80000000) < (check_addr ^ 0x80000000))
-        //     + (u32)(curr_port < check_port);
-        //  (curr_addr ^ 0x80000000) < (u32)(curr_port < check_port) + (check_addr ^
-        //  0x80000000)
+        u64 lhs = ((u64)(curr_addr ^ 0x80000000) << 32) | curr_port;
+        u64 rhs = ((u64)(check_addr ^ 0x80000000) << 32) | check_port;
+        return lhs < rhs;
     }
 
     bool InetAddress::operator==(const InetAddress &b) const {

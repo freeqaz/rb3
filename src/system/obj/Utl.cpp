@@ -10,6 +10,9 @@
 #include <algorithm>
 
 int gCopyMax;
+long long gOldSkoolResults[0x4000];
+long long gWGPResults[0x4000];
+long long gNoWGPResults[0x4000];
 std::list<String> sFilePaths;
 std::list<Symbol> sFiles;
 FileCallbackFunc *sCBack;

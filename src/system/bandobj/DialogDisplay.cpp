@@ -43,9 +43,11 @@ float DialogDisplay::GetLabelHeight() {
 
 void DialogDisplay::Poll() {
     if (mTopBone && mBottomBone && mDialogLabel) {
-        Vector3 pos = mTopBone->LocalXfm().v;
-        pos.z -= GetLabelHeight();
-        mBottomBone->SetLocalPos(pos);
+        float x = mTopBone->LocalXfm().v.x;
+        float y = mTopBone->LocalXfm().v.y;
+        float z = mTopBone->LocalXfm().v.z;
+        z -= GetLabelHeight();
+        mBottomBone->SetLocalPos(x, y, z);
     }
 }
 

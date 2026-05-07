@@ -135,7 +135,13 @@ void RndLight::Replace(Hmx::Object *from, Hmx::Object *to) {
 void RndLight::SetPackedColor(int packed, float scalar) {
     Hmx::Color col;
     col.Unpack(packed);
-    Multiply(col, scalar, col);
+    float a = col.alpha * scalar;
+    col.red *= scalar;
+    float b = col.blue * scalar;
+    float g = col.green * scalar;
+    col.blue = b;
+    col.green = g;
+    col.alpha = a;
     SetColor(col);
 }
 

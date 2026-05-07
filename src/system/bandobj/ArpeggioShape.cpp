@@ -145,7 +145,7 @@ void ArpeggioShapePool::CreateArpeggioShape() {
     ArpeggioShape *shape = new ArpeggioShape(
         mShapesGroup, mChordShapeMesh, mFretNumbersChord,
         mChordLabel, mChordShapeMat, mFadeMatAnim);
-    mShapes.push_back(shape);
+    mShapes.push_front(shape);
     mCurrentPoolSize++;
 }
 
