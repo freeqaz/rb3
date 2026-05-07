@@ -147,7 +147,7 @@ DataNode FreestylePanel::OnMsg(const JoypadConnectionMsg &msg) {
     BandUser *u = GetFreestyleUser();
     if (u && msg.GetUser()) {
         if (msg.GetUser()->GetLocalUser() == u->GetLocalUser()) {
-            if (msg->Int(3)) {
+            if ((bool)msg->Int(3) == true) {
                 CreateController();
             }
         }

@@ -26,7 +26,8 @@ float RndWind::GetWind(float x) {
         f += 1.0f;
     float fscaled = f * 1024.0f;
     int i = (int)fscaled;
-    return sWindField[i] + (fscaled - (float)i) * (sWindField[i + 1] - sWindField[i]);
+    float a = sWindField[i];
+    return (fscaled - (float)i) * (sWindField[i + 1] - a) + a;
 }
 
 void RndWind::SelfGetWind(const Vector3 &pos, float time, Vector3 &result) {

@@ -21,6 +21,18 @@ namespace Quazal {
 
     StreamSettings::~StreamSettings() {}
 
+    void StreamSettings::SetKey(const String &str) {
+        char *copy;
+        str.CreateCopy(&copy);
+        unsigned char hash = 0;
+        for (char *p = copy; *p != 0; p++) {
+            hash = (unsigned char)(hash + *p);
+        }
+        String::ReleaseCopy(copy);
+        unk0 = hash;
+    }
+
+
     unsigned int StreamSettings::GetWindowSize() const { return mWindowSize; }
     unsigned int StreamSettings::GetMaxRetransmission() const {
         return mMaxRetransmission;
