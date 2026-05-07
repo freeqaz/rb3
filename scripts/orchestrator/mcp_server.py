@@ -121,11 +121,13 @@ def _demangle_itanium_to_qualified(symbol: str) -> str | None:
 class DecompMCPServer:
     """MCP Server providing decomp orchestration tools for RB3."""
 
-    def __init__(self, db_path: str, record_attempts: bool = True):
+    def __init__(self, db_path: str, record_attempts: bool = True, dc3_path: str | None = None):
         self.db_path = db_path
         self.record_attempts = record_attempts
         # Determine project root from script location
         self.project_root = Path(__file__).resolve().parent.parent.parent
+        # DC3 source path for lookup_dc3 (shared Milo engine reference)
+        self.dc3_path = dc3_path or os.path.expanduser("~/code/milohax/dc3-decomp/src")
         self.server = Server("rb3-decomp")
         self._setup_tools()
 
@@ -302,6 +304,20 @@ class DecompMCPServer:
                         "required": ["patch_queue_id", "status"],
                     },
                 ),
+                Tool(
+                    name="lookup_dc3",
+                    description="Search DC3 decomp source for a method or class name (shared Milo engine reference). Use to find a working implementation of a function RB3 hasn't decompiled yet. Accepts a method name, qualified name, or RB3 MWCC mangled symbol — extraction is automatic.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "symbol": {
+                                "type": "string",
+                                "description": "Method name (e.g. 'Poll'), qualified name (e.g. 'CharServoBone::Poll'), or RB3 mangled symbol (e.g. 'Poll__13CharServoBoneFv'). Mangled MWCC symbols are auto-extracted to their method name.",
+                            },
+                        },
+                        "required": ["symbol"],
+                    },
+                ),
             ]
 
         @self.server.call_tool()
@@ -318,6 +334,8 @@ class DecompMCPServer:
                 return await self._run_diff_inspect(arguments)
             elif name == "mark_patch_result":
                 return await self._mark_patch_result(arguments)
+            elif name == "lookup_dc3":
+                return await self._lookup_dc3(arguments)
             else:
                 return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
@@ -1007,6 +1025,64 @@ Read in chunks of 200 lines.
 
         return [TextContent(type="text", text=f"Patch {queue_id} marked as {status}. Reason: {reason or 'N/A'}")]
 
+    async def _lookup_dc3(self, args: dict) -> list[TextContent]:
+        """Search DC3 source for a method/class name (shared Milo engine reference)."""
+        symbol = args.get("symbol", "")
+        if not symbol:
+            return [TextContent(type="text", text="No symbol provided.")]
+
+        # Extract a searchable name from MWCC mangling or qualified C++ name.
+        # MWCC examples (RB3): 'Poll__13CharServoBoneFv', '__dt__6MyObjFv',
+        # '__ct__6MyObjFv'. Qualified: 'CharServoBone::Poll'. Plain: 'Poll'.
+        search_term = symbol
+        if "::" in symbol:
+            search_term = symbol.split("::")[-1]
+        elif "__" in symbol:
+            before, _, rest = symbol.partition("__")
+            if before:
+                # Regular MWCC: 'Method__<class><args>' -> 'Method'
+                search_term = before
+            else:
+                # Leading-underscore form: '__dt__6MyObjFv' / '__ct__6MyObjFv'.
+                # Pull the class name out of the <length><name> encoding so
+                # the grep finds the class definition.
+                m = re.match(r"^[a-zA-Z]+__(\d+)([A-Za-z_][\w]*)", rest)
+                if m:
+                    n = int(m.group(1))
+                    search_term = m.group(2)[:n] or symbol
+
+        dc3_path = Path(self.dc3_path)
+        if not dc3_path.exists():
+            return [TextContent(
+                type="text",
+                text=f"DC3 source path not found: {dc3_path}\n"
+                     f"Pass --dc3 <path> to mcp_server, or set the source dir under "
+                     f"~/code/milohax/dc3-decomp/src.",
+            )]
+
+        try:
+            result = subprocess.run(
+                ["grep", "-rn", "--include=*.cpp", "--include=*.h",
+                 search_term, str(dc3_path)],
+                capture_output=True, text=True, timeout=30,
+            )
+        except subprocess.TimeoutExpired:
+            return [TextContent(type="text", text="DC3 search timed out.")]
+        except Exception as e:
+            return [TextContent(type="text", text=f"DC3 search error: {e}")]
+
+        stdout = result.stdout.strip()
+        if not stdout:
+            return [TextContent(type="text", text=f"No matches found in DC3 for: {search_term}")]
+
+        all_lines = stdout.split("\n")
+        shown = all_lines[:20]
+        output = f"DC3 matches for '{search_term}' ({len(shown)} of {len(all_lines)} shown):\n\n"
+        output += "\n".join(shown)
+        if len(all_lines) > 20:
+            output += "\n\n... and more matches"
+        return [TextContent(type="text", text=output)]
+
     async def run(self):
         """Run the MCP server."""
         async with stdio_server() as (read_stream, write_stream):
@@ -1021,11 +1097,17 @@ def main():
         action="store_true",
         help="Don't record attempts in report_result",
     )
+    parser.add_argument(
+        "--dc3",
+        default=None,
+        help="DC3 source path for lookup_dc3 (default: ~/code/milohax/dc3-decomp/src)",
+    )
     args = parser.parse_args()
 
     server = DecompMCPServer(
         db_path=args.db,
         record_attempts=not args.no_record_attempts,
+        dc3_path=args.dc3,
     )
     asyncio.run(server.run())
 
