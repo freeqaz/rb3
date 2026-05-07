@@ -61,8 +61,7 @@ void UGCPurchasePanel::Poll() {
                 mPurchaseState = 6;
                 unk4c = mPurchaser->Poll();
                 if (unk4c) {
-                    Symbol sym = TheSongMgr.ContentName(mSong, true);
-                    TheSongMgr.ClearFromCache(sym);
+                    TheSongMgr.ClearFromCache(TheSongMgr.ContentName(mSong, true));
                 }
             } else {
                 mPurchaseState = 5;

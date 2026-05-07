@@ -266,9 +266,11 @@ void PrefabMgr::PollPortraits() {
 }
 
 void PrefabMgr::UnloadPortraits(OvershellSlot *slot) {
-    std::vector<OvershellSlot *>::iterator it;
-    for (it = unk6c.begin(); it != unk6c.end() && *it != slot; ++it)
-        ;
+    std::vector<OvershellSlot *>::iterator it = unk6c.begin();
+    while (it != unk6c.end()) {
+        if (*it == slot) break;
+        ++it;
+    }
     if (it == unk6c.end()) {
         MILO_WARN(
             "ignored request from slot %d to unload portraits.\n", slot->GetSlotNum()

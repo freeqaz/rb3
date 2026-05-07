@@ -203,33 +203,35 @@ void VocalTrainerPanel::CopyPhrasesImp(
 void VocalTrainerPanel::CopyTubes(int i1) {
     TrainerSection &sect = GetSection(GetCurrSection());
     for (int part = 0; part < 3; part++) {
-        VocalNoteList *cur = unka8[part];
-        cur->mNotes.clear();
-        cur->mPhrases.clear();
-        cur->mLyricPhrases.clear();
-        int ic4 = 0;
-        int ic8 = 0;
-        MILO_ASSERT(mPatternPhrases[part].size(), 0x137);
-        VocalPhrase phrase;
-        ic4 = mPatternPhrases[part][0].unk8;
-        phrase.unk4 = mPatternPhrases[part][0].unk0;
-        cur->mPhrases.push_back(phrase);
-        std::vector<VocalNote> &notes = mPatternNotes[part];
-        for (int j = -1; j < 2; j++) {
-            int ivar1 = unk9c - sect.GetStartTick();
-            ivar1 += j * GetSectionTicks(GetCurrSection());
-            for (int k = 0; k < notes.size(); k++) {
-                VocalNote note = notes[k];
-                int ticksum = ivar1 + note.GetTick();
-                note.SetNoteTime(TickToMs(ticksum), ticksum);
-                unka8[part]->AddNote(note);
-            }
-            int ivar5 = (j + 1) * notes.size();
-            CopyPhrasesImp(mPatternPhrases[part], cur->mPhrases, ivar5, ivar1, ic4);
-            if (part < 2) {
-                CopyPhrasesImp(
-                    mPatternLyricPhrases[part], cur->mLyricPhrases, ivar5, ivar1, ic8
-                );
+        if (unkb4[part]) {
+            VocalNoteList *cur = unka8[part];
+            std::vector<VocalPhrase> &lyricPhrases = cur->mLyricPhrases;
+            cur->mNotes.clear();
+            cur->mPhrases.clear();
+            lyricPhrases.clear();
+            int ic4 = 0;
+            int ic8 = 0;
+            MILO_ASSERT(mPatternPhrases[part].size(), 0x137);
+            VocalPhrase phrase;
+            phrase.unkc = ic4 = mPatternPhrases[part][0].unk8;
+            phrase.unk4 = mPatternPhrases[part][0].unk0;
+            cur->mPhrases.push_back(phrase);
+            for (int j = -1; j < 2; j++) {
+                int ivar1 = unk9c - sect.GetStartTick();
+                ivar1 += j * GetSectionTicks(GetCurrSection());
+                for (int k = 0; k < mPatternNotes[part].size(); k++) {
+                    VocalNote note = mPatternNotes[part][k];
+                    int ticksum = ivar1 + note.GetTick();
+                    note.SetNoteTime(TickToMs(ticksum), ticksum);
+                    unka8[part]->AddNote(note);
+                }
+                int ivar5 = (j + 1) * mPatternNotes[part].size();
+                CopyPhrasesImp(mPatternPhrases[part], cur->mPhrases, ivar5, ivar1, ic4);
+                if (part < 2) {
+                    CopyPhrasesImp(
+                        mPatternLyricPhrases[part], lyricPhrases, ivar5, ivar1, ic8
+                    );
+                }
             }
         }
     }

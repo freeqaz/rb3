@@ -304,8 +304,27 @@ DataNode RndMultiMesh::OnGetScale(const DataArray *da) {
 }
 
 DataNode RndMultiMesh::OnSetScale(const DataArray *da) {
-    Hmx::Matrix3 &mtx = NextItr(mInstances.begin(), da->Int(2))->mXfm.m;
-    Normalize(mtx, mtx);
+    Hmx::Matrix3 &mtx = Instances(da->Int(2)).mXfm.m;
+    Normalize(mtx.y, mtx.y);
+    {
+        float y1 = mtx.y.y;
+        float z2 = mtx.z.z;
+        float y2 = mtx.z.y;
+        float z1 = mtx.y.z;
+        float x1 = mtx.y.x;
+        float x2 = mtx.z.x;
+        float d = z1 * y2;
+        float a = y1 * z2;
+        float f = x1 * z2;
+        float c = z1 * x2;
+        float b = y1 * x2;
+        float e = x1 * y2;
+        mtx.x.x = a - d;
+        mtx.x.y = c - f;
+        mtx.x.z = e - b;
+    }
+    Normalize(mtx.x, mtx.x);
+    Cross(mtx.x, mtx.y, mtx.z);
     Scale(Vector3(da->Float(3), da->Float(4), da->Float(5)), mtx, mtx);
     return 0;
 }

@@ -984,24 +984,24 @@ void RndBitmap::Blt(
         }
         if (mPalette && bm.Palette()) {
             unsigned char colorBuffer[256];
-            int i = bm.NumPaletteColors() - 1;
-            unsigned char *idx = colorBuffer + i;
-            for (; i >= 0; i--, idx--) {
+            for (int i = bm.NumPaletteColors() - 1; i >= 0; i--) {
                 unsigned char r, g, b, a;
                 bm.PaletteColor(i, r, g, b, a);
-                *idx = NearestColor(r, g, b, a);
+                colorBuffer[i] = NearestColor(r, g, b, a);
             }
-            for (int h = height, dy = dY, sy = sY; h > 0; h--, dy++, sy++) {
-                for (int w = width, sx = sX, dx = dX; w > 0; w--, sx++, dx++) {
-                    SetPixelIndex(dx, dy, colorBuffer[bm.PixelIndex(sx, sy)]);
+            int origDX = dX, origSX = sX, origWidth = width;
+            for (; height > 0; height--, dY++, sY++) {
+                for (dX = origDX, sX = origSX, width = origWidth; width > 0; width--, dX++, sX++) {
+                    SetPixelIndex(dX, dY, colorBuffer[bm.PixelIndex(sX, sY)]);
                 }
             }
         } else {
-            for (int h = height, dy = dY, sy = sY; h > 0; h--, dy++, sy++) {
-                for (int w = width, sx = sX, dx = dX; w > 0; w--, sx++, dx++) {
+            int origDX = dX, origSX = sX, origWidth = width;
+            for (; height > 0; height--, dY++, sY++) {
+                for (dX = origDX, sX = origSX, width = origWidth; width > 0; width--, dX++, sX++) {
                     unsigned char r, g, b, a;
-                    bm.PixelColor(sx, sy, r, g, b, a);
-                    SetPixelColor(dx, dy, r, g, b, a);
+                    bm.PixelColor(sX, sY, r, g, b, a);
+                    SetPixelColor(dX, dY, r, g, b, a);
                 }
             }
         }

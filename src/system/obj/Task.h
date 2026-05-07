@@ -156,10 +156,11 @@ public:
             if (mPollingTask) {
                 mAddedTasks.push_back(info);
             } else {
+                float t = info.unkc;
                 for (std::list<TaskInfo>::iterator it = mTasks.begin();
                      it != mTasks.end();
                      ++it) {
-                    if (info.unkc < (*it).unkc) {
+                    if (t < (*it).unkc) {
                         mTasks.insert(it, info);
                         return;
                     }
