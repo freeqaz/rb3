@@ -2,6 +2,7 @@
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
 #include "game/Defines.h"
+#include "meta_band/BandUI.h"
 #include "meta_band/ModifierMgr.h"
 #include "meta_band/NetSync.h"
 #include "meta_band/SessionMgr.h"
@@ -73,21 +74,26 @@ bool InputMgr::IsActiveAndConnected(ControllerType ct) const {
 }
 
 void InputMgr::CheckTriggerAutoVocalsConfirm() {
-    if (!TheModifierMgr->IsModifierActive(mod_auto_vocals) && mAutoVocalsConfirmAllowed
-        && !unk2d) {
-        int i1 = 0;
-        MILO_ASSERT(mBandUserMgr, 0x82);
-        std::vector<LocalBandUser *> users;
-        mBandUserMgr->GetLocalUsersWithAnyController(users);
-        for (int i = 0; i < users.size(); i++) {
-            ControllerType ty = users[i]->ConnectedControllerType();
-            if (ty - 3U <= 1 || ty == 1)
-                i1++;
-        }
-        if (i1 >= 3) {
-            unk2d = true;
-            TheUIEventMgr->TriggerEvent(auto_vocals_confirm, 0);
-        }
+    if (TheModifierMgr->IsModifierActive(mod_auto_vocals))
+        return;
+    if (!mAutoVocalsConfirmAllowed)
+        return;
+    if (!TheBandUI.GetOvershell()->IsAutoVocalsAllowed())
+        return;
+    if (unk2d)
+        return;
+    int i1 = 0;
+    MILO_ASSERT(mBandUserMgr, 0x82);
+    std::vector<LocalBandUser *> users;
+    mBandUserMgr->GetLocalUsersWithAnyController(users);
+    for (int i = 0; i < users.size(); i++) {
+        ControllerType ty = users[i]->ConnectedControllerType();
+        if (ty - 3U <= 1 || ty == 1)
+            i1++;
+    }
+    if (i1 >= 3) {
+        unk2d = true;
+        TheUIEventMgr->TriggerEvent(auto_vocals_confirm, 0);
     }
 }
 
