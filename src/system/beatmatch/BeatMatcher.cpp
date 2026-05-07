@@ -338,7 +338,8 @@ void BeatMatcher::PlayDrum(int i1, bool b2, float f3) {
 
 void BeatMatcher::SetDrumKitBank(ObjectDir *bank) {
     MILO_ASSERT(bank, 0x208);
-    mDrumPlayer->mDrumKitBank = bank;
+    DrumPlayer *p = mDrumPlayer;
+    p->mDrumKitBank = bank;
 }
 
 DECOMP_FORCEACTIVE(BeatMatcher, "seq_list")

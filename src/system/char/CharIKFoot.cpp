@@ -33,20 +33,19 @@ void CharIKFoot::DoFSM(Transform &tf) {
     bool b2 = false;
     unka8.z = tf.v.z;
     float vecat = mData->mLocalXfm.v[mDataIndex];
-    float f10;
-    if (vecat >= 1.0f) {
-        if (vecat > 0.0f) {
-            if (unk94 == 1)
-                f10 = 0.6f;
-            else
-                f10 = 0.5f;
-        }
-        if (f10 > tf.v.z)
+    if (vecat >= 1.0f) goto setb2;
+    if (vecat > 0.0f) {
+        float tfvz = tf.v.z;
+        float f10 = (unk94 == 1) ? 0.6f : 0.5f;
+        if (tfvz < f10) {
+        setb2:
             b2 = true;
-    } else
-        b2 = true;
+        }
+    }
     if (unk94 == 0) {
-        tf.v = mFinger->WorldXfm().v;
+        const Vector3 &fv = mFinger->WorldXfm().v;
+        tf.v.x = fv.x;
+        tf.v.y = fv.y;
         if (b2) {
             unka8 = tf.v;
             unk94 = 1;

@@ -191,7 +191,7 @@ void TrackDir::DrawShowing() {
                 i6->Select();
                 i7 = cur;
             } else {
-                MILO_ASSERT(TheLoadMgr.EditMode(), 0x109);
+                MILO_ASSERT(TheLoadMgr.EditMode(), 0x104);
                 i6 = RndCam::sCurrent;
             }
             PreDraw();
@@ -199,14 +199,13 @@ void TrackDir::DrawShowing() {
                 Transform tf50(i6->WorldXfm());
                 float mult = mYPerSecond * TheTaskMgr.Seconds(TaskMgr::kRealTime);
                 Transform tf80(tf50);
-                tf50.m.x.z += mult;
+                tf80.v.y += mult;
                 bool b2 = (mKeyShiftStationaryBack->Showing() && mRotatorCam);
                 Transform tfb0;
                 Transform tfe0;
                 if (b2) {
                     Transform tf110;
-                    Vector3 vec;
-                    vec.Zero();
+                    tf110.v.Zero();
                     tf110.m = mRotatorCam->WorldXfm().m;
                     tfb0 = tf50;
                     Multiply(tfb0, unk2d8, tfb0);
@@ -214,7 +213,7 @@ void TrackDir::DrawShowing() {
                     Multiply(tfb0, tf110, tfb0);
                     Multiply(tfb0, unk308, tfb0);
                     tfe0 = tfb0;
-                    tfb0.m.x.z += mult;
+                    tfe0.v.y += mult;
                 }
                 mStationaryBack->DrawShowing();
                 if (b2) {
@@ -242,13 +241,13 @@ void TrackDir::DrawShowing() {
                 {
                     RndEnvironTracker tracker2(mTrackGems, &v148);
                     if (!b2) {
-                        i6->SetWorldXfm(tfe0);
-                        i6->Select();
-                        mKeyShiftMovingFront->DrawShowing();
-                    } else {
                         i6->SetWorldXfm(tf80);
                         i6->Select();
                         mMovingFront->DrawShowing();
+                    } else {
+                        i6->SetWorldXfm(tfe0);
+                        i6->Select();
+                        mKeyShiftMovingFront->DrawShowing();
                     }
                 }
                 if (b2) {

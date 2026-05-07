@@ -1,7 +1,14 @@
 #include "bandobj/ScrollbarDisplay.h"
 #include "ui/UI.h"
-#include "ui/UIListDir.h"
 #include "utl/Symbols.h"
+
+// Minimal forward-decl of UIListDir to keep ElementSpacing() out-of-line.
+// Including ui/UIListDir.h would expose the inline body, which CW would inline,
+// breaking the match (target uses a real bl call).
+class UIListDir {
+public:
+    float ElementSpacing() const;
+};
 
 INIT_REVS(ScrollbarDisplay);
 
@@ -104,7 +111,7 @@ void ScrollbarDisplay::UpdateSavedListInfo() {
 float ScrollbarDisplay::GetListHeight() const {
     MILO_ASSERT(m_pList, 0xDF);
     float f = 0;
-    UIListDir *dir = m_pList->GetUIListDir();
+    const UIListDir *dir = m_pList->GetUIListDir();
     if (dir)
         f = dir->ElementSpacing();
     return f * m_pList->NumDisplay();

@@ -91,7 +91,8 @@ void PhraseAnalyzer::Analyze() {
 void PhraseAnalyzer::Verify() const {
     int trackTypes = mSongData->GetTrackTypes();
     for (int i = 0; i < mPhrases.size(); i++) {
-        int mask = mPhrases[i].unk4;
+        const PhraseData &phrase = mPhrases[i];
+        int mask = phrase.unk4;
         for (int j = 0; j < 5U; j++) {
             int i10 = mask & sEquivalentTrackTypes[j];
             if (i10) {
@@ -111,18 +112,16 @@ void PhraseAnalyzer::Verify() const {
                     for (int bit = 0; i3 != 0; bit++) {
                         i10 = 1 << bit;
                         if (i3 & i10) {
-                            str54 += TrackTypeToSym((TrackType)bit);
-                            str54 += " ";
+                            str60 += TrackTypeToSym((TrackType)bit);
+                            str60 += " ";
                             i3 -= i10;
                         }
                     }
+                    int tick = mRawPhrases[phrase.unk0].start_tick;
                     MILO_WARN(
                         "%s: %s Overdrive phrase for %sbut not %s",
                         mSongData->SongFullPath(),
-                        TickFormat(
-                            mRawPhrases[mPhrases[i].unk0].start_tick,
-                            *mSongData->GetMeasureMap()
-                        ),
+                        TickFormat(tick, *mSongData->GetMeasureMap()),
                         str54.c_str(),
                         str60.c_str()
                     );

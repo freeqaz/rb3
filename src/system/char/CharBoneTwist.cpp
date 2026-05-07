@@ -28,7 +28,26 @@ void CharBoneTwist::Poll() {
 
     Interp(tf48.m.y, v7c, Weight(), tf48.m.y);
     Normalize(tf48.m.y, tf48.m.y);
-    Cross(tf48.m.x, tf48.m.y, tf48.m.z);
+    // Inlined Cross(tf48.m.x, tf48.m.y, tf48.m.z) — must compute all six
+    // products before any subtractions to prevent the compiler from emitting
+    // fused fmsubs in place of the separate fmuls/fsubs the target uses.
+    {
+        float y1 = tf48.m.x.y;
+        float z2 = tf48.m.y.z;
+        float x2 = tf48.m.y.x;
+        float z1 = tf48.m.x.z;
+        float p_yz = y1 * z2;
+        float p_yx = y1 * x2;
+        float y2 = tf48.m.y.y;
+        float p_zx = z1 * x2;
+        float x1 = tf48.m.x.x;
+        float p_zy = z1 * y2;
+        float p_xy = x1 * y2;
+        float p_xz = x1 * z2;
+        tf48.m.z.x = p_yz - p_zy;
+        tf48.m.z.y = p_zx - p_xz;
+        tf48.m.z.z = p_xy - p_yx;
+    }
     Normalize(tf48.m.z, tf48.m.z);
     Scale(tf48.m.z, Length(tf48.m.x), tf48.m.z);
     mBone->SetWorldXfm(tf48);
