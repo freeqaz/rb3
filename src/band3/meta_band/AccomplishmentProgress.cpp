@@ -216,8 +216,12 @@ bool AccomplishmentProgress::IsUploadDirty() const {
     return mUploadDirty || !unk64.empty();
 }
 
+bool AccomplishmentProgress::HasNewRewardVignettes() const {
+    return !mNewRewardVignettes.empty();
+}
+
 Symbol AccomplishmentProgress::GetFirstNewRewardVignette() const {
-    MILO_ASSERT(HasNewRewardVignettes(), 0x18C);
+    MILO_ASSERT(!mNewRewardVignettes.empty(), 0x18C);
     return mNewRewardVignettes.front();
 }
 

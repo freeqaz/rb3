@@ -7,7 +7,7 @@ void __prep_buffer(FILE* file) {
 }
 
 int __flush_buffer(FILE* file, size_t* length) {
-    int y, x = file->buffer - file->buffer_ptr;
+    int y, x = file->buffer_ptr - file->buffer;
     if (x) {
         file->buffer_len = x;
         y = file->write_proc(file->handle, file->buffer, (size_t*)&file->buffer_len, file->ref_con);
@@ -16,8 +16,7 @@ int __flush_buffer(FILE* file, size_t* length) {
             file->position += file->buffer_len;
         }
     }
-    file->buffer_len = file->buffer_size - (file->position & file->buffer_alignment);
-    file->buffer_pos = file->position;
+    __prep_buffer(file);
     return 0;
 }
 

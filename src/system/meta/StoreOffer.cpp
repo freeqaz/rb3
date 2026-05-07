@@ -353,10 +353,7 @@ const char *StoreOffer::Description() const {
     StoreOfferType ty = mPackedData->OfferType();
     String str;
     int numSongs = mPackedData->mNumSongs;
-    if (ty == kStoreOfferAlbum) {
-        str = ALBUM_INCLUDES;
-        str += " ";
-    } else {
+    if (ty != kStoreOfferAlbum) {
         if (ty != kStoreOfferPack) {
             return MakeString(
                 "%s%s%s %s %s. %s",
@@ -397,6 +394,9 @@ const char *StoreOffer::Description() const {
             str += SONG_CREDITS;
             return MakeString("%s", str.c_str());
         }
+    } else {
+        str = ALBUM_INCLUDES;
+        str += " ";
     }
 
     int i = 0;

@@ -1816,9 +1816,9 @@ bool SongParser::ShouldReadTrack(Symbol s) {
         case kReadingNonParts:
             return !isparttrackname && s != "BEAT";
         case kReadingParts:
-            if (isparttrackname)
-                return PartNumThatMatchesTrackName(s.mStr) != -1;
-            return false;
+            if (isparttrackname == false)
+                return false;
+            return PartNumThatMatchesTrackName(s.mStr) != -1;
         case kDoneReading:
             MILO_FAIL("SongParser::ShouldReadTrack in wrong state");
             return false;
