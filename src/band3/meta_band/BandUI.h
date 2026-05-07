@@ -58,6 +58,7 @@ public:
     void WriteToVignetteOverlay(const char *);
     void InitPanels();
     void TriggerDisbandEvent(DisbandError);
+    UIFlowType GetCurrentFlowType() const;
     UIScreen *GetJoinEntryPointForFlowType(UIFlowType) const;
     void TriggerOnFinishedJoin(UIFlowType);
     void WipeOnNextTransition(bool);

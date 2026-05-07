@@ -238,7 +238,39 @@ void BandUI::GetCurrentScreenState(std::vector<UIScreen *> &screens) {
         screens.push_back(cur);
 }
 
-DECOMP_FORCEACTIVE(BandUI, "qp_coop")
+UIFlowType BandUI::GetCurrentFlowType() const {
+    NetUIState uiState = TheNetSync->GetUIState();
+    switch (uiState) {
+    case (NetUIState)17:
+        return (UIFlowType)4;
+    case (NetUIState)18:
+        return (UIFlowType)5;
+    case kNetUI_MainMenu:
+    case kNetUI_WaitingChooseSong:
+    case kNetUI_WaitingChooseSetlist:
+    case kNetUI_WaitingQpFindPlayers:
+    case kNetUI_WaitingTour:
+    case kNetUI_WaitingTourFindPlayers:
+    case kNetUI_Customize:
+    case kNetUI_MusicLibrary:
+    case kNetUI_InGame:
+    case kNetUI_MetaLoadingPreSave:
+    case kNetUI_MetaLoadingPostSave:
+        return kUIFlowType_Main;
+    case kNetUI_FindPlayers:
+        return kUIFlowType_MusicLibrary;
+    case kNetUI_MusicStore:
+        return kUIFlowType_InGame;
+    case kNetUI_Campaign:
+        if (TheGameMode->InMode("qp_coop"))
+            return (UIFlowType)4;
+        return kUIFlowType_Main;
+    case (NetUIState)22:
+        return (UIFlowType)6;
+    default:
+        return kUIFlowType_None;
+    }
+}
 
 UIScreen *BandUI::GetJoinEntryPointForFlowType(UIFlowType ft) const {
     DataArray *flowDef = TypeDef()->FindArray("ui_flows")->FindArray(ft);

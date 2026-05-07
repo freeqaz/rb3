@@ -60,18 +60,18 @@ float HeldNote::GetPointFraction() {
     if (pointsPlus <= 0)
         return 0;
     else {
-        float f1 = (float)(headPoints + unk_0x14) / (float)(pointsPlus);
-        if (f1 < 0.0f || f1 > 1.0f) {
+        float fraction = (float)(headPoints + unk_0x14) / (float)(pointsPlus);
+        if (fraction < 0.0f || fraction > 1.0f) {
             MILO_WARN(
-                "HeldNote::GetPointFraction: (%d + %f) / %d = %f is out of range [0, 1]",
+                "HeldNote::GetPointFraction: (%d + %f) / %d = %f is out of range [0,1].",
                 headPoints,
                 unk_0x14,
                 pointsPlus,
-                f1
+                fraction
             );
-            f1 = 1.0f;
+            fraction = 1.0f;
         }
-        return f1;
+        return fraction;
     }
 }
 

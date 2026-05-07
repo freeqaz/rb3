@@ -256,7 +256,7 @@ bool InputMgr::IsValidButtonForShell(JoypadButton btn, LocalBandUser *user) {
         if (overrideType != kControllerNone)
             return true;
         else
-            return userType > kControllerGuitar;
+            return (unsigned int)userType > 1;
     default:
         return false;
     }

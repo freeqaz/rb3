@@ -555,9 +555,10 @@ void BandCharDesc::SetSkinColor(int i) {
 }
 
 Symbol BandCharDesc::NameToDrumVenue(const char *name) {
-    for (const char **ptr = sDrumVenueMappings; *ptr != 0; ptr += 2) {
-        if (strstr(name, *ptr)) {
-            return Symbol(*ptr);
+    int i = 0;
+    for (int offset = 0; *sDrumVenueMappings[offset / 4] != 0; offset += 8, i++) {
+        if (strstr(name, sDrumVenueMappings[offset / 4])) {
+            return Symbol(sDrumVenueMappings[2 * i + 1]);
         }
     }
     return Symbol(sDrumVenueMappings[0]);

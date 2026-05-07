@@ -86,7 +86,7 @@ Symbol StatMemberTracker::GetSingularContributionSymbol() const {
 void UnisonStatMemberTracker::TranslateRelativeTargets() {
     for (int i = 0; i < mTargets.size(); i++) {
         // mTargets[i];
-        mTargets[i] = Clamp(0.0f, 1.0f, std::ceil(0.0f));
+        mTargets[i] = Clamp<float>(0.0f, 1.0f, std::ceil(0.0));
     }
 }
 

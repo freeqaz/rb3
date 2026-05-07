@@ -21,12 +21,12 @@ BandFaceDeform::DeltaArray::~DeltaArray() { _MemFree(mData); }
 void BandFaceDeform::DeltaArray::Clear() { SetSize(0); }
 
 int BandFaceDeform::DeltaArray::NumVerts() {
+    void *p = begin();
     int num = 0;
     void *itend = end();
-    for (void *p = begin(); p < itend; p) {
-        Delta *d = (Delta *)p;
-        num += d->num;
-        p = d->next();
+    while (p < itend) {
+        num += ((Delta *)p)->num;
+        p = ((Delta *)p)->next();
     }
     return num;
 }

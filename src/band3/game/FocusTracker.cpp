@@ -506,10 +506,10 @@ void AccuracyFocusTracker::ConfigureTrackerSpecificData(const DataArray *arr) {
 }
 
 void AccuracyFocusTracker::TranslateRelativeTargets() {
-    int sections = mSectionManager.CountNonEmptySections(mSource, false);
-    float f31 = (float)sections;
+    float f31 = (float)mSectionManager.CountNonEmptySections(mSource, false);
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] = std::floor(f31 * mTargets[i]);
+        float &ref = mTargets[i];
+        ref = std::floor(f31 * ref);
     }
 }
 
