@@ -87,7 +87,7 @@ Symbol LessonProvider::DataSymbol(int idx) const { return GetLessonEntry(idx).un
 int LessonProvider::NumData() const { return mLessonEntries.size(); }
 
 void LessonProvider::Update(Symbol s) {
-    mLessonEntries.clear();
+    mLessonEntries.erase(mLessonEntries.begin(), mLessonEntries.end());
     LessonMgr *pLessonMgr = LessonMgr::GetLessonMgr();
     MILO_ASSERT(pLessonMgr, 0xB1);
     mCategories = pLessonMgr->GetCategoriesFromTrainer(s);

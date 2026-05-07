@@ -78,11 +78,10 @@ void BandRetargetVignette::EnterDir() const {
         );
     }
 
-    for (ObjDirItr<BandIKEffector> it(Dir(), true); it != 0; ++it) {
-        if (strncmp("player", it->Name(), 6) != 0) {
-            const_cast<BandRetargetVignette *>(this)->mEffectors.push_back(
-                String(it->Name())
-            );
+    for (ObjDirItr<BandIKEffector> it(Dir(), true); it; ++it) {
+        const char *itName = it->Name();
+        if (strncmp("player", itName, 6) != 0) {
+            const_cast<BandRetargetVignette *>(this)->mEffectors.push_back(String(itName));
         }
     }
 }

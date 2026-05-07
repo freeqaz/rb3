@@ -52,7 +52,6 @@ inline RndMat *LayerProvider::GetMatForData(int idx) const {
     if (!flipScale)
         scaleY = layer.ScaleY();
     Hmx::Matrix3 m74;
-    Hmx::Matrix3 mTmp;
     Vector3 v80(0, layer.Rotation() * DEG2RAD, 0);
     MakeRotMatrix(v80, m74, true);
     Vector3 v8c(sticker->unk18, 1.0f, sticker->unk1c);
@@ -61,12 +60,10 @@ inline RndMat *LayerProvider::GetMatForData(int idx) const {
         Vector3 v98(-1, 1, 1);
         Scale(v98, tf50.m, tf50.m);
     }
-    Multiply(m74, tf50.m, mTmp);
-    tf50.m = mTmp;
-    // fn_8025786C(uVar1,1);
+    Multiply(m74, tf50.m, tf50.m);
     curMat->SetTexWrap(kTexBorderBlack);
     curMat->SetTexXfm(tf50);
-    // fn_802577EC(uVar1,1);
+    curMat->unk_0xAD_7 = true;
     return curMat;
 }
 
@@ -236,6 +233,8 @@ void PatchPanel::SetBaseSize(float baseX, float baseY) {
     mBaseSizeY = baseY;
 }
 
+#pragma push
+#pragma merge_float_consts off
 float PatchPanel::CalcMotion(float vel, int dir) {
     float dt = TheTaskMgr.DeltaUISeconds();
     static const float kMaxDt = 1.0f / 30.0f;
@@ -247,7 +246,7 @@ float PatchPanel::CalcMotion(float vel, int dir) {
     if ((vel < 0.0f && dir > 0) || (vel > 0.0f && dir < 0))
         vel = 0.0f;
     if (dir != 0) {
-        if (vel != 0.0f) {
+        if (vel) {
             vel = vel * (unk70 * dt + 1.0f);
         } else {
             int sign = dir > 0 ? 1 : -1;
@@ -257,12 +256,14 @@ float PatchPanel::CalcMotion(float vel, int dir) {
         vel = vel * -(unk6c * dt - 1.0f);
     }
     float maxVel = unk78;
-    if (vel < -maxVel)
-        vel = -maxVel;
+    float negMaxVel = -maxVel;
+    if (vel < negMaxVel)
+        vel = negMaxVel;
     else if (vel > maxVel)
         vel = maxVel;
     return vel;
 }
+#pragma pop
 
 
 DataNode PatchPanel::OnMsg(const ButtonDownMsg &msg) {

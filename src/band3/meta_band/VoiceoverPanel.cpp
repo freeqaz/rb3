@@ -128,7 +128,7 @@ void VoiceoverPanel::SetVoiceoverSymbol(Symbol s) {
         SetVoiceoverFile("", s40);
         return;
     } else {
-        MILO_FAIL("Voiceover Symbol not found: %s", s.Str());
+        MILO_FAIL("Voiceover Symbol not found: %s", s);
     }
 }
 

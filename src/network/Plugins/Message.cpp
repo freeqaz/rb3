@@ -117,19 +117,19 @@ namespace Quazal {
     }
 
     Message &Message::AppendMessage(Message &msg) {
+        unsigned int write2;
         unsigned int u1 = msg.mBuffer->GetContentSize();
         msg.SetLength(0);
-        unsigned int write2;
         unsigned int write1 = u1 - 4;
         msg.Append((unsigned char *)&write1, 4, 1);
         msg.SetLength(u1);
 
         Buffer *msgBuf = msg.mBuffer;
-        u1 = msg.mBuffer->GetContentSize();
+        unsigned int u2 = msg.mBuffer->GetContentSize();
         msg.SetLength(0);
-        write2 = u1 - 4;
+        write2 = u2 - 4;
         msg.Append((unsigned char *)&write2, 4, 1);
-        msg.SetLength(u1);
+        msg.SetLength(u2);
 
         Buffer *msgBuf0 = msg.mBuffer;
         AppendRaw(msgBuf0->GetContentPtr(), msgBuf->GetContentSize());

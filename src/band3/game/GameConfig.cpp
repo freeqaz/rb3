@@ -346,8 +346,7 @@ bool GameConfig::WantCoda() {
         float startMs, endMs;
         GetSectionBounds(endSect, startMs, endMs);
         float diff = endMs - 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
-        if (diff <= 0.0f)
-            diff = -diff;
+        diff = (diff > 0.0f) ? diff : -diff;
         if (diff < 3000.0f)
             return false;
     }
