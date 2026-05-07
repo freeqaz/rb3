@@ -3,11 +3,9 @@
 
 INIT_REVS(CharPosConstraint)
 
-CharPosConstraint::CharPosConstraint()
-    : mSrc(this), mTargets(this),
-      mBox(Vector3(1.0f, 1.0f, 1.0f), Vector3(-1.0f, -1.0f, -1.0f)) {
-    // mBox.mMin.Set(1.0f, 1.0f, 1.0f);
-    // mBox.mMax.Set(-1.0f, -1.0f, -1.0f);
+CharPosConstraint::CharPosConstraint() : mSrc(this), mTargets(this) {
+    mBox.mMin.Set(1.0f, 1.0f, 1.0f);
+    mBox.mMax.Set(-1.0f, -1.0f, -1.0f);
 }
 
 CharPosConstraint::~CharPosConstraint() {}
@@ -22,16 +20,19 @@ void CharPosConstraint::Poll() {
             RndTransformable *curTrans = *it;
             Transform tf48(curTrans->WorldXfm());
             if (mBox.mMin.x <= mBox.mMax.x) {
-                float tmp = Clamp(mBox.mMin.x, mBox.mMax.x, tf48.v.x - srcTrans.v.x);
-                tf48.v.x = tmp + srcTrans.v.x;
+                float sx = srcTrans.v.x;
+                float tmp = Clamp(mBox.mMin.x, mBox.mMax.x, tf48.v.x - sx);
+                tf48.v.x = tmp + sx;
             }
             if (mBox.mMin.y <= mBox.mMax.y) {
-                float tmp = Clamp(mBox.mMin.y, mBox.mMax.y, tf48.v.y - srcTrans.v.y);
-                tf48.v.y = tmp + srcTrans.v.y;
+                float sy = srcTrans.v.y;
+                float tmp = Clamp(mBox.mMin.y, mBox.mMax.y, tf48.v.y - sy);
+                tf48.v.y = tmp + sy;
             }
             if (mBox.mMin.z <= mBox.mMax.z) {
-                float tmp = Clamp(mBox.mMin.z, mBox.mMax.z, tf48.v.z - srcTrans.v.z);
-                tf48.v.z = tmp + srcTrans.v.z;
+                float sz = srcTrans.v.z;
+                float tmp = Clamp(mBox.mMin.z, mBox.mMax.z, tf48.v.z - sz);
+                tf48.v.z = tmp + sz;
             }
             curTrans->SetWorldXfm(tf48);
         }

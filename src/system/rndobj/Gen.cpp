@@ -187,7 +187,7 @@ void RndGenerator::Generate(float frame) {
     if (f5 < scaleHi)
         f5 = RandomFloat(f5, scaleHi);
     inst.unk34.Set(f5, f5, f5);
-    mInstances.push_back(inst);
+    mInstances.push_front(inst);
     if (mParticleSys) {
         mCurParticle = mParticleSys->AllocParticle();
         mParticleSys->InitParticle(mCurParticle, NULL);

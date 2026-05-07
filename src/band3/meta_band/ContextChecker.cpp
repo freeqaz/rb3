@@ -267,11 +267,11 @@ bool IsSongSpecificEntry(const DataArray *a) {
     return false;
 }
 
-std::vector<Symbol> GetSongSpecificEntriesForCategory(Symbol, bool) {
-    return std::vector<Symbol>();
+std::vector<const char *> GetSongSpecificEntriesForCategory(Symbol, bool) {
+    return std::vector<const char *>();
 }
 
-std::vector<Symbol> GetSongSpecificEntries(const DataArray *a) {
+std::vector<const char *> GetSongSpecificEntries(const DataArray *a) {
     for (int i = 1; i < a->Size(); i++) {
         DataArray *thisEntry = a->Array(i);
         if (thisEntry->Sym(0) == song_specific) {
@@ -280,7 +280,7 @@ std::vector<Symbol> GetSongSpecificEntries(const DataArray *a) {
             return GetSongSpecificEntriesForCategory(cat, thisEntry->Sym(2) == last_song);
         }
     }
-    std::vector<Symbol> empty;
+    std::vector<const char *> empty;
     return empty;
 }
 
@@ -291,14 +291,14 @@ int InqMatchedEntries(const DataArray *a, bool b, std::vector<WeightedEntry> &ve
         int ctx = CheckContext(curArr);
         if (ctx > 0) {
             if (IsSongSpecificEntry(curArr)) {
-                std::vector<Symbol> entries = GetSongSpecificEntries(curArr);
+                std::vector<const char *> entries = GetSongSpecificEntries(curArr);
                 if (!entries.empty()) {
                     float f1 = (float)ctx / (float)entries.size();
                     if (f1 < 1.0f)
                         f1 = 1.0f;
                     int i1 = f1;
                     FOREACH (it, entries) {
-                        PotentiallyCreateAndAddEntry(gNullStr, it->mStr, i1, b, vec, ret);
+                        PotentiallyCreateAndAddEntry(gNullStr, *it, i1, b, vec, ret);
                     }
                 }
             } else {
