@@ -2413,11 +2413,9 @@ void GemPlayer::ConfigureBehavior() {
     TrackType ty = mUser->GetTrackType();
     mBehavior->SetMaxMultiplier(ty == kTrackBass || ty == kTrackRealBass ? 6 : 4);
     mBehavior->SetCanDeployOverdrive(single && c1);
-    bool tiltTrack = false;
-    if ((unsigned)(ty - 1) <= 7U && ((1 << (ty - 1)) & 0xBBU))
-        tiltTrack = true;
     bool tilt = false;
-    if (tiltTrack && c1) tilt = true;
+    if ((unsigned)(ty - 1) <= 7U && ((1 << (ty - 1)) & 0xBBU) && c1)
+        tilt = true;
     mBehavior->SetTiltDeploysBandEnergy(tilt);
     mBehavior->SetFillsDeployBandEnergy(ty == kTrackDrum && c1);
     mBehavior->SetRequireAllCodaLanes(ty > 9U || !((1 << ty) & 0x3E1U));

@@ -75,19 +75,19 @@ void TokenRedemptionPanel::Poll() {
         break;
     case 7:
         MILO_ASSERT(mPurchaser, 0xA8);
-        mPurchaser->Poll();
+        mPurchaser->Run();
         if (!mPurchaser->IsEnumerating()) {
-            if (!mPurchaser->IsSuccess()) {
+            if (mPurchaser->IsSuccess()) {
+                bool result = mPurchaser->Poll();
+                mRedemptionState = 0;
+                static Message checkout_msg("checkout_finished", 0);
+                checkout_msg[0] = result;
+                HandleType(checkout_msg);
+            } else {
                 mRedemptionState = 0;
                 static Message token_msg("token_redemption_msg", gNullStr);
                 token_msg[0] = token_redemption_error;
                 HandleType(token_msg);
-            } else {
-                mPurchaser->Poll();
-                mRedemptionState = 0;
-                static Message checkout_msg("checkout_finished", 0);
-                checkout_msg[0] = mPurchaser->IsSuccess();
-                HandleType(checkout_msg);
             }
             MILO_ASSERT(mRedemptionState != kPurchasing, 0xCB);
             RELEASE(mPurchaser);

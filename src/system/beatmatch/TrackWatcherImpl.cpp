@@ -521,14 +521,13 @@ void TrackWatcherImpl::CheckForCodaLanes(int tick) {
 int TrackWatcherImpl::SustainedGemToKill(int slot) {
     GemInProgress *gem = GetGemInProgressWithSlot(slot);
     if (gem) {
-        int i4 = gem->mGemID;
-        int i1 = 0;
-        GameGem &activeGem = mGemList->GetGem(i4);
-        unsigned int slots = activeGem.GetSlots();
-        for (int i = 8, j = 7; i != 0; i--, j--) {
+        int gemID = gem->mGemID;
+        int count = 0;
+        unsigned int slots = mGemList->GetGem(gemID).GetSlots();
+        for (int j = 7; j >= 0; j--) {
             if (slots & (1 << j)) {
-                if (j < slot || ++i1 >= 2)
-                    return i4;
+                if (j < slot || ++count >= 2)
+                    return gemID;
             }
         }
     }

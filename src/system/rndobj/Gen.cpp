@@ -239,8 +239,9 @@ void RndGenerator::SetFrame(float frame, float blend) {
         if (frame + mRateGenHigh < mNextFrameGen) {
             mNextFrameGen = frame + mRateGenHigh;
         }
-        while (frame >= mNextFrameGen) {
-            Generate(mNextFrameGen);
+        float nfg;
+        while (frame >= (nfg = mNextFrameGen)) {
+            Generate(nfg);
             mNextFrameGen += RandomFloat(mRateGenLow, mRateGenHigh);
         }
     }

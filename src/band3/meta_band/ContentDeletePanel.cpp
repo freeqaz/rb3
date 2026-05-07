@@ -53,15 +53,15 @@ void ContentDeletePanel::Poll() {
     UIPanel::Poll();
     if (!unk3c && !TheUI.InTransition()) {
         bool handle = mDeleteFailed;
-        if (!handle) {
+        if (!mDeleteFailed) {
             handle = TheContentMgr->IsDeleteDone(mContentNames[0].c_str());
             if (!mContentNames[1].empty()) {
-                bool old = handle;
-                handle = false;
-                if (old) {
+                bool result = false;
+                if (handle) {
                     if (TheContentMgr->IsDeleteDone(mContentNames[1].c_str()))
-                        handle = true;
+                        result = true;
                 }
+                handle = result;
             }
         }
         if (handle) {

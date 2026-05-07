@@ -120,8 +120,9 @@ void DirLoader::PrintLoaded(const char *text) {
         Loader *cur = *it;
         if (cur && cur->IsLoaded()) {
             const char *text2 = cur->mFile.c_str();
+            const char *fallback = "unknown_dir";
             if (*text2 == '\0')
-                text2 = "unknown_dir";
+                text2 = fallback;
             cout->Print(MakeString("%s\n", text2));
         }
     }

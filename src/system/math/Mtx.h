@@ -353,14 +353,14 @@ inline void Multiply(const Hmx::Matrix3 &m, const Vector3 &v, Vector3 &out) {
     float accz = m.z.y * vy;
     float accy = m.y.y * vy;
     float accx = m.x.y * vy;
-    float vz = v.z;
-    accz += m.z.z * vz;
-    accy += m.y.z * vz;
-    accx += m.x.z * vz;
     float vx = v.x;
-    out.z = m.z.x * vx + accz;
-    out.y = m.y.x * vx + accy;
-    out.x = m.x.x * vx + accx;
+    accz += m.z.x * vx;
+    accy += m.y.x * vx;
+    accx += m.x.x * vx;
+    float vz = v.z;
+    out.z = m.z.z * vz + accz;
+    out.y = m.y.z * vz + accy;
+    out.x = m.x.z * vz + accx;
 }
 void Multiply(const Vector3 &, const Hmx::Matrix3 &, Vector3 &);
 void Multiply(const Transform &, const Transform &, Transform &);

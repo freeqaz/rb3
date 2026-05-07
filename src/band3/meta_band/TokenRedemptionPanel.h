@@ -41,5 +41,5 @@ public:
     std::vector<String> mListData; // 0x64
     int mSelectedOfferIndex; // 0x6c
     StoreEnumeration *mEnumeration; // 0x70
-    StoreEnumeration *mPurchaser; // 0x74 - StorePurchaser*?
+    StorePurchaser *mPurchaser; // 0x74
 };
