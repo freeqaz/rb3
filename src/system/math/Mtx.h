@@ -407,6 +407,130 @@ inline void MultiplyTranspose(const Vector3 &v, const Transform &t, Vector3 &out
     out.Set(Dot(out, t.m.x), Dot(out, t.m.y), Dot(out, t.m.z));
 }
 void Multiply(const Plane &, const Transform &, Plane &);
+#if 0 // moved to CharHair.cpp; keep declaration only here
+inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
+    typedef __vec2x32float__ psq;
+    register const Hmx::Matrix3 *_a = &a;
+    register const Hmx::Matrix3 *_b = &b;
+    register Hmx::Matrix3 *_out = &out;
+    float row0[3], row1[3], row2[3];
+    register float *_row0 = row0;
+    register float *_row1 = row1;
+    register float *_row2 = row2;
+    register psq _f0, _f1, _f2, _f3, _f4, _f5, _f6, _f7, _f8, _f9, _f10, _f11, _f12;
+    asm { cmplw cr1, _b, _out }
+    asm volatile {
+        beq cr1, alias_path
+        // non-alias path
+        psq_l  _f4, 0x4(_a),  0, 0
+        psq_l  _f3, 0x18(_b), 0, 0
+        psq_l  _f2, 0x20(_b), 1, 0
+        ps_muls1 _f1, _f3, _f4
+        psq_l  _f3, 0xc(_b),  0, 0
+        ps_muls1 _f0, _f2, _f4
+        psq_l  _f2, 0x14(_b), 1, 0
+        psq_l  _f9, 0x10(_a), 0, 0
+        psq_l  _f8, 0x18(_b), 0, 0
+        psq_l  _f7, 0x20(_b), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f4, 0x0(_a),  0, 0
+        ps_muls1 _f6, _f8, _f9
+        psq_l  _f3, 0x0(_b),  0, 0
+        ps_muls1 _f5, _f7, _f9
+        ps_madds0 _f1, _f3, _f4, _f1
+        psq_l  _f2, 0x8(_b),  1, 0
+        psq_l  _f8, 0xc(_b),  0, 0
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f7, 0x14(_b), 1, 0
+        ps_madds0 _f6, _f8, _f9, _f6
+        psq_l  _f2, 0xc(_a),  0, 0
+        ps_madds0 _f5, _f7, _f9, _f5
+        psq_l  _f4, 0x1c(_a), 0, 0
+        psq_l  _f7, 0x1c(_b), 0, 0
+        psq_l  _f3, 0x18(_b), 0, 0
+        ps_madds0 _f6, _f1, _f2, _f6
+        ps_madds0 _f5, _f0, _f2, _f5
+        psq_l  _f8, 0x20(_b), 1, 0
+        ps_muls1 _f3, _f3, _f7
+        psq_l  _f9, 0x18(_a), 0, 0
+        ps_muls1 _f2, _f8, _f7
+        psq_st _f1, 0x0(_out), 0, 0
+        ps_madds0 _f6, _f3, _f9, _f6
+        ps_madds0 _f5, _f2, _f9, _f5
+        psq_st _f0, 0x8(_out), 1, 0
+        ps_madds0 _f3, _f1, _f4, _f3
+        psq_st _f6, 0xc(_out), 0, 0
+        ps_madds0 _f2, _f0, _f4, _f2
+        psq_st _f5, 0x14(_out), 1, 0
+        psq_st _f3, 0x18(_out), 0, 0
+        psq_st _f2, 0x20(_out), 1, 0
+        b mult_end
+    alias_path:
+        psq_l  _f4, 0x4(_a),  0, 0
+        psq_l  _f3, 0x18(_out), 0, 0
+        psq_l  _f2, 0x20(_out), 1, 0
+        ps_muls1 _f1, _f3, _f4
+        psq_l  _f3, 0xc(_out), 0, 0
+        ps_muls1 _f0, _f2, _f4
+        psq_l  _f2, 0x14(_out), 1, 0
+        psq_l  _f9, 0x10(_a),  0, 0
+        psq_l  _f8, 0x18(_out), 0, 0
+        psq_l  _f7, 0x20(_out), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_muls1 _f6, _f8, _f9
+        psq_l  _f12, 0x1c(_a), 0, 0
+        ps_mr  _f8, _f3
+        psq_l  _f3, 0x18(_out), 0, 0
+        ps_muls1 _f5, _f7, _f9
+        ps_muls1 _f11, _f3, _f12
+        ps_mr  _f7, _f2
+        psq_l  _f3, 0x0(_out), 0, 0
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f2, 0x20(_out), 1, 0
+        psq_l  _f4, 0x0(_a),  0, 0
+        ps_muls1 _f10, _f2, _f12
+        psq_l  _f2, 0x8(_out), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_madds0 _f6, _f8, _f9, _f6
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f4, 0x18(_a), 0, 0
+        ps_madds0 _f5, _f7, _f9, _f5
+        psq_l  _f9, 0xc(_a),  0, 0
+        ps_madds0 _f11, _f8, _f12, _f11
+        ps_madds0 _f10, _f7, _f12, _f10
+        psq_st _f1, 0x0(_row0), 0, 0
+        ps_madds0 _f6, _f3, _f9, _f6
+        ps_madds0 _f5, _f2, _f9, _f5
+        ps_madds0 _f11, _f3, _f4, _f11
+        lfs    _f8, 0x0(_row0)
+        ps_madds0 _f10, _f2, _f4, _f10
+        psq_st _f6, 0x0(_row1), 0, 0
+        lfs    _f7, 0x4(_row0)
+        psq_st _f11, 0x0(_row2), 0, 0
+        lfs    _f4, 0x4(_row1)
+        psq_st _f5, 0x8(_row1), 1, 0
+        lfs    _f5, 0x0(_row1)
+        psq_st _f0, 0x8(_row0), 1, 0
+        lfs    _f3, 0x8(_row1)
+        psq_st _f10, 0x8(_row2), 1, 0
+        lfs    _f6, 0x8(_row0)
+        lfs    _f2, 0x0(_row2)
+        lfs    _f1, 0x4(_row2)
+        lfs    _f0, 0x8(_row2)
+        stfs   _f8, 0x0(_out)
+        stfs   _f7, 0x4(_out)
+        stfs   _f6, 0x8(_out)
+        stfs   _f5, 0xc(_out)
+        stfs   _f4, 0x10(_out)
+        stfs   _f3, 0x14(_out)
+        stfs   _f2, 0x18(_out)
+        stfs   _f1, 0x1c(_out)
+        stfs   _f0, 0x20(_out)
+    mult_end:
+    }
+}
+#endif
 void Multiply(const Hmx::Matrix3 &, const Hmx::Matrix3 &, Hmx::Matrix3 &);
 void IdentityInterp(const Hmx::Quat &, float, Hmx::Quat &);
 void Multiply(const Transform &, const Hmx::Matrix3 &, Transform &);

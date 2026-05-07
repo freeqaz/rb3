@@ -169,10 +169,8 @@ DataNode op3(DataArray *msg) {
 DataNode op4(DataArray *msg) {
     u32 operand = msg->Int(1);
     u32 w = msg->Int(2);
-    u32 a = (u8(w) == 0);
-    u32 b = (operand == 0);
-    u32 ret = (a << 8) | a;
-    ret >>= b;
+    u32 ret = ((u8(w) == 0) << 8) | (u8(w) == 0);
+    ret >>= (operand == 0);
     return u8(ret);
 }
 

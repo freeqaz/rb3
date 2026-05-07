@@ -46,7 +46,7 @@ inline RndMat *LayerProvider::GetMatForData(int idx) const {
     if (f5 < 0)
         f5 *= -1.0f;
     float scaleY = layer.ScaleY();
-    bool flipScale = sticker->unk18 * f5 > sticker->unk1c * scaleY;
+    bool flipScale = sticker->unk1c * scaleY > sticker->unk18 * f5;
     if (flipScale)
         scaleY = layer.ScaleY();
     if (!flipScale)
@@ -61,6 +61,8 @@ inline RndMat *LayerProvider::GetMatForData(int idx) const {
         Scale(v98, tf50.m, tf50.m);
     }
     Multiply(m74, tf50.m, tf50.m);
+    curMat->mTexGen = kTexGenXfm;
+    curMat->mDirty |= 2;
     curMat->SetTexWrap(kTexBorderBlack);
     curMat->SetTexXfm(tf50);
     curMat->unk_0xAD_7 = true;

@@ -76,7 +76,7 @@ void MicInputArrow::SetMicMgr(MicManagerInterface *m) { mMicManagerInterface = m
 
 void MicInputArrow::SetMicConnected(bool connected, int arrowNum) {
     MILO_ASSERT_RANGE(arrowNum, 0, mConnectedFlags.size(), 0x94);
-    if (connected != mConnectedFlags[arrowNum]) {
+    if ((char)connected != mConnectedFlags[arrowNum]) {
         mConnectedFlags[arrowNum] = connected;
         if (connected)
             mConnectedTrigs[arrowNum]->Trigger();

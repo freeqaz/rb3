@@ -159,26 +159,27 @@ void CharBoneDir::MergeCharacter(const FilePath &fp) {
         for (ObjDirItr<RndTransformable> it(dir, false); it != 0; ++it) {
             if (dir != (Hmx::Object *)it) {
                 if (CharUtlIsAnimatable(it)) {
-                    const char *itName = it->Name();
+                    RndTransformable *itPtr = it;
+                    const char *itName = itPtr->Name();
                     if (strncmp(itName, "bone_", 5) == 0
                         || strncmp(itName, "exo_", 4) == 0) {
-                        tlist.push_back(it);
+                        tlist.push_back(itPtr);
                     }
                 }
             }
         }
         std::list<RndTransformable *> tlist60;
         while (!tlist.empty()) {
-            RndTransformable *backTrans = tlist.back();
-            RndTransformable *charTrans = CharUtlFindBoneTrans(backTrans->Name(), this);
+            RndTransformable *frontTrans = tlist.front();
+            RndTransformable *charTrans = CharUtlFindBoneTrans(frontTrans->Name(), this);
             if (!charTrans) {
-                backTrans->SetName(backTrans->Name(), this);
-                charTrans = backTrans;
+                frontTrans->SetName(frontTrans->Name(), this);
+                charTrans = frontTrans;
             } else {
-                charTrans->Copy(backTrans, Hmx::Object::kCopyDeep);
-                const std::vector<ObjRef *> &refs = backTrans->Refs();
+                charTrans->Copy(frontTrans, Hmx::Object::kCopyDeep);
+                const std::vector<ObjRef *> &refs = frontTrans->Refs();
                 while (!refs.empty()) {
-                    refs.back()->Replace(backTrans, charTrans);
+                    refs.back()->Replace(frontTrans, charTrans);
                 }
             }
             tlist60.push_back(charTrans);
@@ -188,24 +189,25 @@ void CharBoneDir::MergeCharacter(const FilePath &fp) {
             if (!bone)
                 bone = New<CharBone>(buf);
             bone->SetTrans(charTrans);
-            tlist.pop_back();
+            tlist.pop_front();
         }
 
         while (!tlist60.empty()) {
-            RndTransformable *parent = tlist60.back()->TransParent();
+            RndTransformable *parent = tlist60.front()->TransParent();
             if (parent) {
-                const char *parentName = parent->Name();
+                Hmx::Object &parentObj = *parent;
+                const char *parentName = parentObj.Name();
                 if (strncmp(parentName, "bone_", 5) != 0) {
                     if (strncmp(parentName, "exo_", 4) != 0)
                         goto pop;
                 }
-                if (parent->Dir() != this) {
-                    parent->SetName(parentName, this);
+                if (parentObj.Dir() != this) {
+                    parentObj.SetName(parentName, this);
                     parent->SetTransParent(nullptr, false);
                 }
             }
         pop:
-            tlist60.pop_back();
+            tlist60.pop_front();
         }
 
         delete dir;

@@ -183,15 +183,15 @@ float RndMesh::GetDistanceToPlane(const Plane &p, Vector3 &v) {
 bool RndMesh::MakeWorldSphere(Sphere &s, bool b) {
     if (b) {
         Box box;
-        CalcBox(this, box);
+        Vector3 v50;
+        Vector3 v5c;
         Vector3 v68;
+        CalcBox(this, box);
         CalcBoxCenter(v68, box);
         s.Set(v68, 0);
         const Transform &worldXfm = WorldXfm();
         FOREACH (it, Verts()) {
-            Vector3 v50;
             Multiply(it->pos, worldXfm, v50);
-            Vector3 v5c;
             Subtract(v50, s.center, v5c);
             s.radius = Max(s.GetRadius(), Dot(v5c, v5c));
         }
