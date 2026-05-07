@@ -99,10 +99,12 @@ void WiiFriend::SetMasterProfileStatus(const char *cc) {
 
 bool WiiFriend::PromoteMasterProfile() {
     String name = WiiFriendMgr::GetMasterProfileName(ConsoleCode());
+    WiiFriendProfile *profile;
     for (std::vector<WiiFriendProfile *>::iterator it = unk18.begin(); it < unk18.end();
          ++it) {
-        if (strcmp((*it)->Name(), name.c_str()) == 0) {
-            mMasterProfile = it[0];
+        profile = *it;
+        if (strcmp(profile->Name(), name.c_str()) == 0) {
+            mMasterProfile = profile;
             unk18.erase(it);
             return true;
         }

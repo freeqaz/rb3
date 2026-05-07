@@ -7,8 +7,18 @@ bool gDebugMakeAllSongsAvailable;
 bool gDebugDontRelyOnCommerceServer;
 const char *gStoreMetadataManagerLoadStepName[12];
 
-bool StoreLoadPackedFile(const char *, bool, int, bool, bool, char **, char **, char **, int *) {
-
+bool StoreLoadPackedFile(
+    const char *filename, bool b1, int size, bool b2, bool b3, char **buf1, char **buf2, char **buf3, int *num
+) {
+    MILO_LOG("Store: file %s is missing\n", filename);
+    MILO_LOG("Store: file %s is over budget (%d > %d)\n", filename, 0, size);
+    MILO_LOG("Store: Failed to allocated %d byte buffer for store file %s.\n", size, filename);
+    MILO_LOG("Store: Failed to allocated %d byte buffer for decompressing store file %s.\n", size, filename);
+    MILO_LOG("sizeof(StoreVersionHeader) == %d\n", 0);
+    MILO_LOG("%d strings, but based on the data size, there can only be %d.\n", 0, 0);
+    MILO_LOG("There are %d null terminators, should have %d.\n", 0, 0);
+    MILO_LOG("String %d does not match up\n", 0);
+    return false;
 }
 
 bool StoreStringTable::Load(const char *cc) {

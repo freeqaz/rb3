@@ -465,7 +465,9 @@ float StoreOffer::PartRank(Symbol part) const {
 
 Symbol StoreOffer::Genre() const {
     if (mPackedData->OfferType() != kStoreOfferPack) {
-        return gGenreStrs[Clamp(0, 29, mPackedData->Genre())];
+        int genre = mPackedData->Genre();
+        int clamped = genre > 29 ? 29 : (genre < 0 ? 0 : genre);
+        return gGenreStrs[clamped];
     } else
         return gNullStr;
 }

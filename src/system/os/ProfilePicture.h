@@ -14,7 +14,7 @@ public:
         kComplete
     };
     ProfilePicture(int, Hmx::Object *);
-    ~ProfilePicture() {}
+    ~ProfilePicture() { mState = kIdle; }
 
     void FetchUserData();
     bool ReceiveUserData();

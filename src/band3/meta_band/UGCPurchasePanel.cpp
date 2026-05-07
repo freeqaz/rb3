@@ -55,7 +55,21 @@ void UGCPurchasePanel::Poll() {
         break;
     case 4:
         MILO_ASSERT(mPurchaser, 0x71);
-        // more stuff happens here
+        mPurchaser->Run();
+        if (!mPurchaser->IsEnumerating()) {
+            if (mPurchaser->IsSuccess()) {
+                mPurchaseState = 6;
+                unk4c = mPurchaser->Poll();
+                if (unk4c) {
+                    Symbol sym = TheSongMgr.ContentName(mSong, true);
+                    TheSongMgr.ClearFromCache(sym);
+                }
+            } else {
+                mPurchaseState = 5;
+            }
+            RELEASE(mPurchaser);
+            mPurchaser = 0;
+        }
         break;
     case 5:
         mPurchaseState = 0;

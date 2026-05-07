@@ -56,3 +56,15 @@ public:
     bool mLoading;
     StoreEnumeration::State mState;
 };
+
+// Purchaser interface for EC-backed purchases (ECPurchaseTitle/ECTicketedPurchase).
+// Has same vtable prefix as StoreEnumeration but Poll returns bool and adds Run().
+class StorePurchaser {
+public:
+    virtual ~StorePurchaser() {}
+    virtual void Start() = 0;
+    virtual bool IsEnumerating() const = 0;
+    virtual bool IsSuccess() const = 0;
+    virtual bool Poll() = 0;
+    virtual void Run() = 0;
+};

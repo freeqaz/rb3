@@ -28,7 +28,7 @@ public:
     LocalBandUser *mUser; // 0x3c
     Symbol mSong; // 0x40
     const char *mOfferID; // 0x44
-    StoreEnumeration *mPurchaser; // 0x48
+    StorePurchaser *mPurchaser; // 0x48
     bool unk4c; // 0x4c
     DataResultList mResultList; // 0x50
 };

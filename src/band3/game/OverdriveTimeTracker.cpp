@@ -2,6 +2,7 @@
 #include "game/Game.h"
 #include "game/TrackerDisplay.h"
 #include "game/TrackerSource.h"
+#include "math/Utl.h"
 #include "os/Debug.h"
 #include "ui/UILabel.h"
 #include "utl/Locale.h"
@@ -54,9 +55,7 @@ void OverdriveTimeTracker::Poll_(float f) {
             UpdateTimeRemainingDisplay();
         } else if (unk64 != -1.0f) {
             unk58 = unk58 + unk5c;
-            if (unk60 < unk5c) {
-                unk60 = unk5c;
-            }
+            MaxEq(unk60, unk5c);
             unk5c = 0;
             unk64 = -1.0f;
         }
