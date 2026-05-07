@@ -154,7 +154,11 @@ void ClipPredict::Predict(float f1, float f2) {
     mClip->EvaluateChannel(&mLastAng, mAngChannel, f2);
     float norm = LimitAng(mAng - locf);
     Subtract(mLastPos, v34, v34);
-    RotateAboutZ(v34, norm, v34);
+    float c = Cosine(norm);
+    float s = Sine(norm);
+    float ny = v34.x * s + v34.y * c;
+    v34.x = v34.x * c - v34.y * s;
+    v34.y = ny;
     mPos += v34;
     float norm1 = LimitAng(mLastAng - locf);
     mAng = LimitAng(mAng + norm1);

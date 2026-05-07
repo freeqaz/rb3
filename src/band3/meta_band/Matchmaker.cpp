@@ -260,7 +260,7 @@ void BandMatchmaker::StartSearch(bool b) {
     int ty = mMode->GetNextQueryType();
     bool prop = TheGameMode->Property(ranked, true)->Int();
     SearchSettings settings(0, prop, ty);
-    AddCustomSettings(&settings, (CustomSettingsType)(unk31 ? 2 : 1));
+    AddCustomSettings(&settings, unk31 ? kGeneralSearch : (CustomSettingsType)1);
     TheNet.GetSearcher()->StartSearching(TheNetSession->GetLocalHost(), settings);
 }
 

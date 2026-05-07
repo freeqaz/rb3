@@ -10,7 +10,7 @@ namespace Quazal {
 
     BandwidthCounter::BandwidthCounter(const String &str)
         : unk0(0), unk4(0), mName(str), mMin(-1), mMax(0), mTotal(0), mOccurences(0) {
-        ScopedCS scs(s_cs);
+        volatile ScopedCS scs(s_cs);
         s_lstBWCounters.push_back(this);
     }
 

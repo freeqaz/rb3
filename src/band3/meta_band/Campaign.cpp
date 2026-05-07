@@ -131,7 +131,8 @@ void Campaign::ConfigureCampaignKeyData(DataArray *arr) {
         CampaignKey *pCampaignKey = new CampaignKey(arr->Array(i));
         MILO_ASSERT(pCampaignKey, 0xA7);
         Symbol name = pCampaignKey->GetName();
-        if (GetCampaignKey(name)) {
+        bool keyExists = GetCampaignKey(name);
+        if (keyExists) {
             MILO_WARN("%s campaign key already exists, skipping", name);
         } else {
             m_mapCampaignKeys[name] = pCampaignKey;
@@ -140,7 +141,7 @@ void Campaign::ConfigureCampaignKeyData(DataArray *arr) {
     if ((int)m_mapCampaignKeys.size() > 20) {
         MILO_WARN(
             "There are too many campaign keys! Key count = %i, Max = %i",
-            m_mapCampaignKeys.size(),
+            (int)m_mapCampaignKeys.size(),
             20
         );
     }

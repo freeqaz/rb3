@@ -31,21 +31,20 @@ void OverdriveTracker::TranslateRelativeTargets() {
         i8 += CountBits(TheSongDB->GetCommonPhraseTracks(i));
     }
     int playercount = mSource->GetPlayerCount();
-    int u9;
     if (playercount == 0) {
-        u9 = 0;
+        i8 = 0;
     } else {
-        u9 = i8 / playercount;
+        i8 = i8 / playercount;
     }
     float mult = unk70.GetMultiplier(playercount);
     DataArray *cfg = SystemConfig("scoring", "band_energy");
     float deploybeats = cfg->FindFloat("deploy_beats");
     cfg->FindFloat("spotlight_phrase");
 
-    float factor = mult * ((float)playercount * (float)(u9 / 4) * deploybeats);
+    float factor = mult * ((float)playercount * ((float)(i8 / 4) * deploybeats));
     unk8c = deploybeats;
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] *= factor;
+        mTargets[i] = factor * mTargets[i];
     }
 }
 

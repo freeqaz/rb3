@@ -20,6 +20,13 @@
 #include <algorithm>
 #include <vector>
 
+namespace stlpmtx_std {
+template <>
+inline Symbol *__rotate<Symbol *>(Symbol *first, Symbol *middle, Symbol *last) {
+    return __rotate_aux(first, middle, last, (long *)0, (Symbol *)0);
+}
+}
+
 GoalCmp::GoalCmp(const AccomplishmentManager *mgr) : m_pAccomplishmentMgr(mgr) {}
 
 bool GoalCmp::operator()(Symbol lhs, Symbol rhs) const {

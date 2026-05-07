@@ -35,6 +35,8 @@ public:
 
     class Node {
     public:
+        Node() {}
+        Node(const Node& o) { curBeat = o.curBeat; nextBeat = o.nextBeat; err = o.err; }
         float curBeat;
         float nextBeat;
         float err;
