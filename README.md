@@ -15,7 +15,14 @@ same author, same methodology, shared Milo engine codebase.
 Status
 ------
 
-- **Code matched:** ~55.8% (29,878 / 41,254 functions, ~72.4% by count)
+Headline numbers track *cross-platform code* — the engine, game, and
+third-party libraries that would actually need to run in a native port.
+The Wii SDK (`main/sdk/`) and Wii-specific singletons are excluded
+because they get replaced or stubbed in a desktop port anyway.
+
+- **Cross-platform fuzzy match:** ~79% (~61% byte-exact, ~78% of
+  functions matched, ~10.3 MiB of code in scope)
+- **Overall (with Wii SDK included):** ~73% fuzzy, ~56% byte-exact
 - **Build:** `ninja` produces a matching `main.dol` for everything
   decompiled so far; the rest is filled in from the original binary
 - **Native port:** not started; tracked under
@@ -36,9 +43,14 @@ Two-project series (same author, same toolchain):
 | Platform         | Xbox 360 (PowerPC Xenon)         | Wii (PowerPC Gekko/Broadway) |
 | Compiler         | MSVC for Xbox 360 (ICF, debug)   | MetroWorks CodeWarrior 4.3   |
 | Symbols          | None — Ghidra inferred           | Full DWARF in debug ELF      |
-| Code matched     | ~41%                             | ~56%                         |
+| Cross-platform fuzzy match¹ | **~93%**              | **~79%**                     |
 | Native port      | Linux WebGPU + WASM (working)    | Not started                  |
 | Ghidra MCP port  | 8000                             | 8001                         |
+
+¹ Excludes platform SDK (Xbox 360 XDK in DC3, Wii RVL_SDK / MSL / DWC /
+NW4R in RB3) and platform-specific singletons. These get replaced or
+stubbed in a native port and don't reflect work-toward-playable
+progress.
 
 DC3 was step one — the AI decomp methodology was built and proven there
 on the harder target (no DWARF, ICF, link-time pragmas). RB3 is step
