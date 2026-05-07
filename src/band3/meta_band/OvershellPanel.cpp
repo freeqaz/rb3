@@ -596,10 +596,11 @@ bool OvershellPanel::IsAutoVocalsAllowed() const {
 END_FORCE_LOCAL_INLINE
 
 void OvershellPanel::EnableAutoVocals() {
-    bool b2 = true;
-    if (IsAutoVocalsAllowed()) {
-        if (!(TheModifierMgr && TheModifierMgr->IsModifierActive(mod_auto_vocals)))
-            b2 = false;
+    bool b2;
+    if (!IsAutoVocalsAllowed() || (TheModifierMgr && TheModifierMgr->IsModifierActive(mod_auto_vocals))) {
+        b2 = true;
+    } else {
+        b2 = false;
     }
     if (b2) {
         UpdateAll();

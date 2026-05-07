@@ -305,8 +305,7 @@ void NetSession::Poll() {
         bool b1 = true;
         Quazal::Time *startTime = mGameStartTime;
         if (startTime) {
-            Quazal::Time now = Quazal::SessionClock::GetTime();
-            if (now.m_ui64Value < startTime->m_ui64Value) {
+            if (Quazal::SessionClock::GetTime().m_ui64Value < startTime->m_ui64Value) {
                 b1 = false;
             }
         }
@@ -317,9 +316,9 @@ void NetSession::Poll() {
         EnterInGameState();
     if (mQNet) {
         if (mQNet->HasHostLeft()) {
-            if (!(mState >= 3 && mState <= 6)) {
+            if (!IsJoining()) {
                 Disconnect();
-            } else if (mState == 5) {
+            } else if (mState == kRequestingJoin) {
                 static JoinResponseMsg response(kCannotConnect, 0);
                 OnMsg(response);
             }
