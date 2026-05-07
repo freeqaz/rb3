@@ -605,45 +605,34 @@ void CharHair::Hookup(ObjPtrList<CharCollide> &collides) {
              it != collides.end();
              ++it) {
             CharCollide *col = *it;
-            bool passAll = col->mFlags == 0 && curStrand.mHookupFlags == 0;
-            if (!(curStrand.mHookupFlags & col->mFlags) && !passAll)
+            if (!(curStrand.mHookupFlags & col->mFlags))
                 continue;
 
             col->SyncWorldState();
 
             Vector3 colPos(col->WorldXfm().v);
-            float colAdjust = 0.0f;
 
-            if (col->mFlags != 0) {
-                int shape = (int)col->GetShape();
-                if (shape > 0) {
-                    if (shape > 2) {
-                        if (shape <= 4) {
-                            float len0 = col->mCurLength[0];
-                            float rad0 = col->mCurRadius[0];
-                            Vector3 p1;
-                            ScaleAdd(
-                                col->WorldXfm().v,
-                                col->WorldXfm().m.x,
-                                len0 - rad0,
-                                p1
-                            );
-                            float len1 = col->mCurLength[1];
-                            float rad1 = col->mCurRadius[1];
-                            Vector3 p2;
-                            ScaleAdd(
-                                col->WorldXfm().v,
-                                col->WorldXfm().m.x,
-                                rad1 + len1,
-                                p2
-                            );
-                            Interp(p1, p2, 0.5f, colPos);
-                            colAdjust = Distance(p1, p2) * 0.5f;
-                        }
-                    } else {
-                        colAdjust = col->mCurRadius[0];
-                    }
-                }
+            int shape = (int)col->GetShape();
+            float colAdjust = col->mCurRadius[0];
+            if (shape >= 3) {
+                Vector3 p1;
+                ScaleAdd(
+                    col->WorldXfm().v,
+                    col->WorldXfm().m.x,
+                    col->mCurLength[0] - col->mCurRadius[0],
+                    p1
+                );
+                Vector3 p2;
+                ScaleAdd(
+                    col->WorldXfm().v,
+                    col->WorldXfm().m.x,
+                    col->mCurLength[1] + col->mCurRadius[1],
+                    p2
+                );
+                Interp(p1, p2, 0.5f, colPos);
+                colAdjust = Distance(p1, p2) * 0.5f;
+            } else if (shape == 0) {
+                colAdjust = kHugeFloat;
             }
 
             const Transform &rootXfm = curStrand.Root()->WorldXfm();

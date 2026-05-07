@@ -90,12 +90,11 @@ void DeployCountTracker::Poll_(float) {
             bool ismaxmult = pPlayer->GetIndividualMultiplier()
                 == pPlayer->GetMaxIndividualMultipler();
             bool b8 = pPlayer->CanDeployOverdrive();
-            // bool u12 = false;
-            // if(!mRequireFullEnergy || energy) u12 = true;
-            // bool b5 = false;
-            // if(!mRequireMaxMultiplier || ismaxmult) b5 = true;
-            bool b4 = (b8 && (!mRequireFullEnergy || energy))
-                && (!mRequireMaxMultiplier || ismaxmult);
+            int u12 = 0;
+            if (!mRequireFullEnergy || energy) u12 = 1;
+            int b5 = 0;
+            if (!mRequireMaxMultiplier || ismaxmult) b5 = 1;
+            bool b4 = (bool)((b8 & u12) & b5);
             bool c1 = data.unk2;
             bool deploying = pPlayer->IsDeployingBandEnergy();
             if (deploying && !data.unk3) {

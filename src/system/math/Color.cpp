@@ -52,8 +52,8 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
 }
 
 void MakeHSL(const Hmx::Color &color, float &f1, float &f2, float &f3) {
-    float maxCol = Max(color.red, color.green, color.blue);
-    float minCol = Min(color.red, color.green, color.blue);
+    float maxCol = Max(Max(color.red, color.green), color.blue);
+    float minCol = Min(Min(color.red, color.green), color.blue);
     f3 = (maxCol + minCol) / 2.0f;
     if (maxCol == minCol) {
         f1 = 0;

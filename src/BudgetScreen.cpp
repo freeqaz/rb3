@@ -235,7 +235,8 @@ BudgetScreen::BudgetScreen()
     TheSongMgr.AddSongs(SystemConfig("songs"));
     TheContentMgr->UnregisterCallback(&TheSongMgr, false);
 
-    const char *logFile = OptionStr("budget_log", SystemConfig()->FindArray("log_file")->Str(1));
+    Symbol logFileSym("log_file");
+    const char *logFile = OptionStr("budget_log", SystemConfig()->FindArray(logFileSym)->Str(1));
     mLog = new TextFileStream(logFile, false);
 
     // yes there's just a random list here lol
@@ -246,7 +247,8 @@ BudgetScreen::BudgetScreen()
         }
     }
 
-    int useSsv = SystemConfig()->FindArray("dump_scsv")->Int(1);
+    Symbol dumpScsvSym("dump_scsv");
+    int useSsv = SystemConfig()->FindArray(dumpScsvSym)->Int(1);
     StandardStream::sReportLargeTimerErrors = false;
     gUseSsv = useSsv;
 }

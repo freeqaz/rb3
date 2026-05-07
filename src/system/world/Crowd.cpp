@@ -232,7 +232,7 @@ void WorldCrowd::Set3DCharList(
     std::vector<std::pair<RndMultiMesh *, std::list<RndMultiMesh::Instance>::iterator> >
         grosserPairs;
     grosserPairs.reserve(pairVec.size());
-    for (int i = 0; i != pairVec.size(); i++) {
+    for (unsigned int i = 0; i != pairVec.size(); i++) {
         int cap1 = pairVec[i].first;
 #ifdef MILO_DEBUG
         if (cap1 >= mCharacters.size()) {
@@ -275,7 +275,7 @@ void WorldCrowd::Set3DCharList(
         }
 #endif
     }
-    for (int i = 0; i != grosserPairs.size(); i++) {
+    for (unsigned int i = 0; i != grosserPairs.size(); i++) {
         grosserPairs[i].first->mInstances.erase(grosserPairs[i].second);
         grosserPairs[i].first->InvalidateProxies();
     }
