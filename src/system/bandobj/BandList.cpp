@@ -226,7 +226,7 @@ bool BandList::RevealTimedOut() {
         float numframes = GetRevealNumFrames();
         float fps = GetRevealFramesPerSecond();
         return timePassed
-            >= (numframes / fps) + numdisp * mRevealEntryDelay + mRevealStartDelay;
+            >= (numframes / fps) + (numdisp * mRevealEntryDelay + mRevealStartDelay);
     }
 }
 
