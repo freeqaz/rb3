@@ -436,7 +436,7 @@ void Splash::Draw() {
     if (unk_0x50 != NULL) {
         if (MainThread()) {
             float msPerFrame = unk_0x50->mMovie.MsPerFrame() - 1.0f;
-            if (unk_0x100.mRunning > 0) {
+            if (unk_0x100.Running()) {
                 unk_0x100.Split();
                 if (unk_0x100.Ms() < msPerFrame)
                     return;

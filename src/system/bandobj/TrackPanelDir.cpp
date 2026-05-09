@@ -234,7 +234,7 @@ void TrackPanelDir::ConfigureTracks(bool b) {
     SetConfiguration(Find<Hmx::Object>(objname, true), b);
     bool b1 = !b18;
     if (mTrackPanel) {
-        b1 = b1 && mTrackPanel->GameResumedNoScore();
+        b1 = b1 & !mTrackPanel->GameResumedNoScore();
     }
     if (b1) {
         float f19 = 1.0f;

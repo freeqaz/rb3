@@ -1531,8 +1531,8 @@ bool SongParser::CheckTrillMarker(int pitch, bool) { return pitch == 127; }
 bool SongParser::CheckForceHopoMarker(int tick, int pitch, bool b) {
     if (mTrackType == kTrackRealKeys)
         return false;
-    int note = pitch / 12 - 5;
     int mod = pitch % 12;
+    int note = pitch / 12 - 5;
     if (note >= 0 && note < mNumDifficulties) {
         if (mod == 5) {
             DifficultyInfo &info = mDifficultyInfos[note];

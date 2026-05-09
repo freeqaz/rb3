@@ -336,7 +336,8 @@ void TrackWatcherImpl::HitGem(float ms, int gemID, unsigned int slots, GemHitFla
 }
 
 void TrackWatcherImpl::CheckForPasses(float ms) {
-    for (int i = mGemList->NumGems(); mLastGemPassed != i - 1;) {
+    int last = mGemList->NumGems() - 1;
+    while (mLastGemPassed != last) {
         int i3 = mLastGemPassed + 1;
         if (!GemCanBePassed(i3))
             break;
@@ -344,7 +345,8 @@ void TrackWatcherImpl::CheckForPasses(float ms) {
         float f6 = f5 + Slop(i3);
         int next = NextGemAfter(i3, false);
         if (next != -1) {
-            f6 = Min<float>(f6, (f5 + mGemList->TimeAt(next)) / 2.0f - mSyncOffset);
+            float other = (f5 + mGemList->TimeAt(next)) / 2.0f - mSyncOffset;
+            if (other < f6) f6 = other;
         }
         if (!Playable(i3))
             f6 = f5;
