@@ -10,8 +10,6 @@ CharGuitarString::CharGuitarString()
 
 CharGuitarString::~CharGuitarString() {}
 
-// fn_80507700 - poll
-// checks out in retail: https://decomp.me/scratch/Bxu4k
 void CharGuitarString::Poll() {
     if (!mNut || !mBridge || !mBend || !mTarget)
         return;
@@ -21,22 +19,17 @@ void CharGuitarString::Poll() {
     const Vector3 &targetvec = mTarget->WorldXfm().v;
     float ny = nutvec.y;
     float by = bridgevec.y;
-    float ty = targetvec.y;
     float dy = by - ny;
+    float ey = targetvec.y - ny;
     float nx = nutvec.x;
-    float ey = ty - ny;
     float bx = bridgevec.x;
-    float tx = targetvec.x;
     float dx = bx - nx;
-    float dy_sq = dy * dy;
+    float ex = targetvec.x - nx;
     float nz = nutvec.z;
-    float ey_dy = ey * dy;
     float bz = bridgevec.z;
-    float ex = tx - nx;
-    float tz = targetvec.z;
     float dz = bz - nz;
-    float ez = tz - nz;
-    float clamped = Clamp(0.0f, 1.0f, (ez*dz + (ex*dx + ey_dy)) / (dz*dz + (dx*dx + dy_sq)));
+    float ez = targetvec.z - nz;
+    float clamped = Clamp(0.0f, 1.0f, (ez*dz + (ex*dx + ey*dy)) / (dz*dz + (dx*dx + dy*dy)));
     if (mOpen)
         clamped = 0.0f;
     if (clamped == 0.0f) {
