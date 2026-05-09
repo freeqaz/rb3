@@ -257,7 +257,7 @@ void NetSession::Disconnect() {
         OnMsg(response);
     }
 
-    for (int jobID = mCurrentStateJobID; jobID != -1;) {
+    for (int jobID = mCurrentStateJobID; jobID != -1; jobID = mCurrentStateJobID) {
         mCurrentStateJobID = -1;
         MILO_ASSERT(mJobMgr.HasJob(jobID), 0x14C);
         mJobMgr.CancelJob(jobID);

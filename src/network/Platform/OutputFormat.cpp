@@ -9,9 +9,7 @@ namespace Quazal {
           m_bShowSessionTime(false), m_bShowSystemThreadName(false),
           m_bShowLocalStationHandle(false), m_bShowCurrentContext(false),
           m_bShowCID(false), m_bShowPID(false) {
-        Time time;
-        time.GetTime();
-        m_uiInitTime = (unsigned long long)time;
+        m_uiInitTime = (unsigned long long)Time::GetTime();
         m_szPrefix = 0;
     }
 

@@ -179,10 +179,7 @@ bool AccomplishmentProgress::IsAccomplished(Symbol s) const {
     return mAccomplishments.find(s) != mAccomplishments.end();
 }
 
-#pragma push
-#pragma dont_inline on
-DECOMP_FORCEFUNC(AccomplishmentProgress, AccomplishmentProgress, HasNewAwards())
-#pragma pop
+bool AccomplishmentProgress::HasNewAwards() const { return !mNewAwards.empty(); }
 
 Symbol AccomplishmentProgress::GetFirstNewAward() const {
     MILO_ASSERT(HasNewAwards(), 0x158);

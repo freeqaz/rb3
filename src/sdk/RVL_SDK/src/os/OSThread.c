@@ -439,7 +439,7 @@ BOOL OSCreateThread(OSThread* thread, OSThreadFunc func, void* funcArg,
     }
 
     thread->state = OS_THREAD_STATE_READY;
-    thread->state = flags & OS_THREAD_DETACHED;
+    thread->attr = flags & OS_THREAD_DETACHED;
     thread->base = prio;
     thread->priority = prio;
     thread->suspend = 1;

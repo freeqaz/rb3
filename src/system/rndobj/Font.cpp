@@ -131,7 +131,16 @@ float RndFont::Kerning(unsigned short us1, unsigned short us2) const {
         return 0;
     else {
         if (!IsMonospace() && mKerningTable) {
-            return mBaseKerning + mKerningTable->Kerning(us1, us2);
+            KerningTable::Entry *entry;
+            if (mKerningTable->mNumEntries == 0) {
+                entry = nullptr;
+            } else {
+                entry = mKerningTable->mTable[(us1 ^ us2) & 0x1F];
+                int key = us1 | (us2 << 16);
+                while (entry != nullptr && key != entry->key)
+                    entry = entry->next;
+            }
+            return mBaseKerning + (entry ? entry->kerning : 0);
         } else
             return mBaseKerning;
     }

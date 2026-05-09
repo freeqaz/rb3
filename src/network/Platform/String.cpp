@@ -52,7 +52,14 @@ namespace Quazal {
 
     void String::Reserve(int size) {
         YeetString(m_szContent);
-        u32 *str = (u32 *)QUAZAL_DEFAULT_ALLOC(size + 4, 203, _InstType9);
+        const char *file = __FILE__;
+        u32 *str = (u32 *)Quazal::MemoryManager::Allocate(
+            Quazal::MemoryManager::GetDefaultMemoryManager(),
+            size + 4,
+            file,
+            203,
+            Quazal::MemoryManager::_InstType9
+        );
         *str = size;
         m_szContent = (char *)&str[1];
         *m_szContent = 0;

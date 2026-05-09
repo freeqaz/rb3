@@ -62,6 +62,8 @@
 #define DEV_HANDLE_BOUNDS_CHECK(val_) (0 <= (val_) && (val_) < WUD_MAX_DEV_ENTRY)
 #endif // defined(NDEBUG)
 
+#define IS_ALIGNED(x_, align_) (((u32)(x_) & ((align_) - 1)) == 0)
+
 /*******************************************************************************
  * types
  */
@@ -1197,7 +1199,7 @@ static void __wudSeekWiiFitFile(void) {
     NANDSeekAsync(
         &_wudNandFileInfo,
         RP_HEALTH_FILE_OFFSET,
-        4,
+        0,
         &__wudSeekWiiFitCallback,
         &_wudNandBlock
     );
@@ -1550,8 +1552,20 @@ static void __wudDeleteCleanupSetting(void) {
 
 static WUDDeleteState __wudDeleteDone(void) {
     wud_cb_st *p_wcb = &__rvl_wudcb;
+    u8 connectable;
+    BOOL intrStatus;
 
-    WUDSetVisibility(FALSE, WUDGetConnectable());
+    intrStatus = OSDisableInterrupts();
+    connectable = p_wcb->connectable;
+    OSRestoreInterrupts(intrStatus);
+
+    intrStatus = OSDisableInterrupts();
+    p_wcb->discoverable = FALSE;
+    p_wcb->connectable = connectable;
+    OSRestoreInterrupts(intrStatus);
+
+    BTA_DmSetVisibility(FALSE, connectable);
+
     OSCancelAlarm(&p_wcb->alarm);
     p_wcb->deleteState = WUD_STATE_START;
 
@@ -2026,7 +2040,7 @@ static WUDInitState __wudGetDevInfoFromWiiFit(void) {
         _wudNandLocked = TRUE;
 
         result = NANDSeekAsync(
-            &_wudNandFileInfo, 0, 4, &__wudNandResultCallback, &_wudNandBlock
+            &_wudNandFileInfo, 0, 0, &__wudNandResultCallback, &_wudNandBlock
         );
 
         break;

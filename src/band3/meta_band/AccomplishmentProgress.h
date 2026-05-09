@@ -54,7 +54,7 @@ public:
     void ClearStepTrackingMap();
     void SetCurrentValue(Symbol, int);
     int GetNumCompleted() const;
-    bool HasNewAwards() const { return !mNewAwards.empty(); }
+    bool HasNewAwards() const;
     Symbol GetFirstNewAwardReason() const;
     Symbol GetFirstNewAward() const;
     void ClearFirstNewAward();

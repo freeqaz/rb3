@@ -8,10 +8,10 @@
 
 float gDefaultHoldMs = -1.0f;
 float gDefaultRepeatMs = -1.0f;
-std::vector<JoypadClient *> gClients;
 
 namespace {
     bool gInited = false;
+    std::vector<JoypadClient *> gClients;
 
     JoypadButton LeftStickToDpad(JoypadButton btn) {
         JoypadButton ret;
@@ -83,11 +83,6 @@ JoypadClient::JoypadClient(Hmx::Object *sink)
     Init();
 }
 
-JoypadClient::~JoypadClient() {
-    JoypadUnsubscribe(this);
-    gClients.erase(std::find(gClients.begin(), gClients.end(), this));
-}
-
 static inline void InitClients() {
     if (!gInited) {
         gClients.clear();
@@ -111,6 +106,11 @@ void JoypadClient::Init() {
     mRepeatMs = gDefaultRepeatMs;
 
     gClients.push_back(this);
+}
+
+JoypadClient::~JoypadClient() {
+    JoypadUnsubscribe(this);
+    gClients.erase(std::find(gClients.begin(), gClients.end(), this));
 }
 
 void JoypadClient::SetFilterAllButStart(bool ShouldWe) {

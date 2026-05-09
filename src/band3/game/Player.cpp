@@ -855,10 +855,10 @@ void Player::DelayReturn(bool b) {
     if (b) {
         mEnableMs += mParams->mMsToReturnFromBrink;
     }
-    float unkdc = TheGame->unkdc;
-    if (unkdc != -1.0f) {
-        mEnableMs = std::min(unkdc, mEnableMs);
-        EnableFills(mEnableMs, b);
+    if (TheGame->unkdc != -1.0f) {
+        float unkdc = TheGame->unkdc;
+        mEnableMs = std::max(unkdc, mEnableMs);
+        IgnoreUntilRollback(mEnableMs);
     }
     int tick = (int)MsToTick(mEnableMs);
     int phraseId = TheSongDB->GetCommonPhraseID(mTrackNum, tick);
