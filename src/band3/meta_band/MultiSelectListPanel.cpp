@@ -75,9 +75,11 @@ DataNode MultiSelectListPanel::OnMsg(const UIComponentScrollMsg &) {
         if (i1 < 0)
             i1 = 0;
         int i2 = mScrollList->SelectedDisplay();
-        Vector3 v(mSelectionStart);
-        v.z = -(mSpacing * i1 - v.z);
-        mSelectionMesh->SetLocalPos(v);
+        float y = mSelectionStart.y;
+        float z = mSelectionStart.z;
+        float fi1 = (float)i1;
+        z = -(mSpacing * fi1 - z);
+        mSelectionMesh->SetLocalPos(mSelectionStart.x, y, z);
         ResetSelectRect((i2 - i1) + 1);
     }
     return DataNode(kDataUnhandled, 0);

@@ -31,11 +31,12 @@ void CharIKSliderMidi::SetName(const char *cc, class ObjectDir *dir) {
 void CharIKSliderMidi::SetupTransforms() { mResetAll = true; }
 
 void CharIKSliderMidi::SetFraction(float f1, float f2) {
-    if (f1 != mTargetPercentage) {
-        if (std::fabs(f1 - mTargetPercentage) < mTolerance)
+    float old = mTargetPercentage;
+    if (f1 != old) {
+        if (std::fabs(f1 - old) < mTolerance)
             return;
         else {
-            mOldPercentage = mTargetPercentage;
+            mOldPercentage = old;
             mTargetPercentage = f1;
             if (f2 <= 0)
                 mFracPerBeat = kHugeFloat;
