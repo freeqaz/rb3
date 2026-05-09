@@ -385,6 +385,7 @@ WiiMapFile::~WiiMapFile() {
 
 void WiiMapFile::ReadLine(char *line, int size) {
     char *cur = line;
+    int limit = size - 1;
     int idx = 0;
     while (!mFile->Eof()) {
         char ch;
@@ -392,7 +393,7 @@ void WiiMapFile::ReadLine(char *line, int size) {
         if (ch == '\n') {
             break;
         }
-        if (idx < size - 1) {
+        if (idx < limit) {
             *cur = ch;
             idx++;
             cur++;

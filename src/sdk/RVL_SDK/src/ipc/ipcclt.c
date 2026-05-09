@@ -257,11 +257,11 @@ s32 IPCCltReInit(void) {
     void* lo;
 
     lo = IPCGetBufferLo();
-    if ((char*)lo + IPC_HEAP_SIZE_OLD > IPCGetBufferHi()) {
+    if ((char*)lo + IPC_HEAP_SIZE > IPCGetBufferHi()) {
         err = IPC_RESULT_ALLOC_FAILED;
     } else {
-        hid = iosCreateHeap(lo, IPC_HEAP_SIZE_OLD);
-        IPCSetBufferLo((char*)lo + IPC_HEAP_SIZE_OLD);
+        hid = iosCreateHeap(lo, IPC_HEAP_SIZE);
+        IPCSetBufferLo((char*)lo + IPC_HEAP_SIZE);
     }
 
     return err;

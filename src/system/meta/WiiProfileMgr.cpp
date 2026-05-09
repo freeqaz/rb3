@@ -121,13 +121,14 @@ bool WiiProfileMgr::NeedsLoading() const { return !mHasLoaded && !mDirty; }
 void WiiProfileMgr::SetProfileDirty(int Slot) { mDirty = true; }
 
 void WiiProfileMgr::SaveFixed(FixedSizeSaveableStream &fs) const {
+    int i;
     fs << sSaveVersion;
     fs << sSaveVersionWii;
     fs << unk4c;
-    for (int i = 0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         mWiiProfiles[i].SaveToStream(fs);
     }
-    for (int i = 0; i < 10; i++) {
+    for (i = 0; i < 10; i++) {
         fs << mDeleteQueue[i];
     }
 }

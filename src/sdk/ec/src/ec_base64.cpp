@@ -73,7 +73,8 @@ namespace ec {
     }
 
     ECResult base64_decode(const ECString &src, ECString &dest) {
-        return base64_decode(src.begin(), src.end(), std::inserter(dest, dest.end()));
+        std::insert_iterator<ECString> ins(dest, dest.end());
+        return base64_decode(src.begin(), src.end(), ins);
     }
 
     template <typename OutIter>

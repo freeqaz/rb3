@@ -798,7 +798,7 @@ void GemTrackDir::FillHit(int numNotes) {
 
 void GemTrackDir::ResetDrumFill() {
     mDrumFillResetTrig->Trigger();
-    float delay = 1.0f - (std::floor(TheTaskMgr.Beat()) - TheTaskMgr.Beat()) - 0.2f;
+    float delay = 1.0f - (TheTaskMgr.Beat() - std::floor(TheTaskMgr.Beat())) - 0.2f;
     if (mDrumMash2ndPassActivateAnim) {
         if (delay < 0.0f)
             delay += 1.0f;

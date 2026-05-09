@@ -133,7 +133,8 @@ namespace ec {
     }
 
     int hex_encode(const unsigned char *data, size_t length, ECString &dest) {
-        return hex_encode(data, length, std::inserter(dest, dest.end()));
+        std::insert_iterator<ECString> ins(dest, dest.end());
+        return hex_encode(data, length, ins);
     }
 
     template <typename InIter, typename OutIter>
@@ -178,7 +179,8 @@ namespace ec {
 
     int hex_decode(const ECString &data, unsigned char *dest, size_t length) {
         ECVector<char> vec;
-        int decoded = hex_decode(data.begin(), data.end(), std::inserter(vec, vec.end()));
+        std::insert_iterator<ECVector<char> > ins(vec, vec.end());
+        int decoded = hex_decode(data.begin(), data.end(), ins);
         if (decoded < 0) {
             return -1;
         }

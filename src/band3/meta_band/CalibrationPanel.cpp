@@ -137,7 +137,7 @@ float CalibrationPanel::HandlePreAndPostTestAnim(float f) {
     if (mTestState == tsPreRoll) {
         bool b6;
         if (mRestingFrame == 0) {
-            b6 = f < unk64;
+            b6 = unk64 > f;
         } else {
             b6 = false;
             if (f >= mRestingFrame && unk64 <= mRestingFrame)
@@ -156,18 +156,19 @@ float CalibrationPanel::HandlePreAndPostTestAnim(float f) {
         }
     } else if (mTestState == tsPostTest) {
         for (int i = 0; i < mAnimNumCycles; i++) {
-            ftouse = mAnimCycleFrames * (float)i + mRestingFrame;
+            float testFrame = mAnimCycleFrames * (float)i + mRestingFrame;
             bool b6;
-            if (ftouse == 0) {
-                b6 = f < unk64;
+            if (testFrame == 0) {
+                b6 = unk64 > f;
             } else {
                 b6 = false;
-                if (f >= ftouse && unk64 <= ftouse)
+                if (f >= testFrame && unk64 <= testFrame)
                     b6 = true;
             }
-            if (b6 || (unk64 == ftouse))
+            if (b6 || (unk64 == testFrame)) {
+                ftouse = testFrame;
                 break;
-            ftouse = f;
+            }
         }
     }
     unk64 = ftouse;

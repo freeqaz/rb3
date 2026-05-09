@@ -238,8 +238,8 @@ bool BandList::ConcealTimedOut() {
     MILO_ASSERT(SupportsRevealConcealAnim(), 0x1E0);
     float numframes = GetConcealNumFrames();
     float fps = GetConcealFramesPerSecond();
-    return (numframes / fps) + numdisp * mConcealEntryDelay + mConcealStartDelay
-        <= timePassed;
+    return timePassed
+        >= (numframes / fps) + (numdisp * mConcealEntryDelay + mConcealStartDelay);
 }
 
 void BandList::StartRevealAnim(int i, Transform &tf) {
