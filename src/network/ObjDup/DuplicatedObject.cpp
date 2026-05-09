@@ -59,7 +59,7 @@ namespace Quazal {
             mCurrentState =
                 reinterpret_cast<StateFuncFactory>(&DuplicatedObject::ValidState);
             return 0;
-        } else if ((e.GetSignal() & 0xFFFF) - 4 >= 0) {
+        } else if (((unsigned int)((e.GetSignal() & 0xFFFF) - 4) >> 31) == 0) {
             static_cast<const Operation &>(e).Trace(1);
             Trace(1);
             static TransitionPath t_;

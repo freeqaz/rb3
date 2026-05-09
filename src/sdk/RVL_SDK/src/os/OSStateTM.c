@@ -149,7 +149,11 @@ void __OSShutdownToSBY(void) {
     in_args[0] = 0;
     IOS_Ioctl(StmImDesc, STM_IOCTL_SHUTDOWN_TO_SBY, StmImInBuf,
               sizeof(StmImInBuf), StmImOutBuf, sizeof(StmImOutBuf));
-    LockUp();
+    OSDisableInterrupts();
+    ICFlashInvalidate();
+    while (TRUE) {
+        ;
+    }
 
 #undef in_args
 }
@@ -168,7 +172,11 @@ void __OSHotReset(void) {
 
     IOS_Ioctl(StmImDesc, STM_IOCTL_HOT_RESET, StmImInBuf, sizeof(StmImInBuf),
               StmImOutBuf, sizeof(StmImOutBuf));
-    LockUp();
+    OSDisableInterrupts();
+    ICFlashInvalidate();
+    while (TRUE) {
+        ;
+    }
 }
 
 //unused

@@ -37,6 +37,7 @@ void OSCancelAlarm(OSAlarm *alarm);
 void OSSetAlarmTag(OSAlarm *alarm, u32 tag);
 void OSSetAlarmUserData(OSAlarm *alarm, void *userData);
 void *OSGetAlarmUserData(const OSAlarm *alarm);
+void __OSSetInternalAlarmUserData(OSAlarm *alarm, void *userData);
 void __OSCancelInternalAlarms(struct OSThread *thread);
 void OSCancelAlarms(OSThread *);
 

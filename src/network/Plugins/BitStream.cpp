@@ -27,8 +27,9 @@ namespace Quazal {
 
     void BitStream::Append(const unsigned char *pBuffer, unsigned int uiTypeSize, unsigned int uiLength) {
         for (unsigned int base = 0, i = 0; i < uiLength; i++, base += uiTypeSize) {
+            const unsigned char *ptr;
             int j = uiTypeSize - 1;
-            const unsigned char *ptr = pBuffer + base + j;
+            ptr = pBuffer + base + j;
             for (; j >= 0; j--, ptr--) {
                 AppendRaw(ptr, 8);
             }
@@ -36,10 +37,11 @@ namespace Quazal {
     }
 
     BitStream &BitStream::operator<<(const Buffer &buf) {
-        unsigned char *uchars;
-        int size = buf.GetContentSize();
-        for (int i = 3; i >= 0; i--) {
-            AppendRaw(&uchars[i], 8);
+        unsigned int size = buf.GetContentSize();
+        int i = 3;
+        unsigned char *ptr = (unsigned char *)&size + 3;
+        for (; i >= 0; i--, ptr--) {
+            AppendRaw(ptr, 8);
         }
         if (buf.GetContentSize()) {
             int size = buf.GetContentSize();

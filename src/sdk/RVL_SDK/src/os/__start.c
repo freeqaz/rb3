@@ -298,6 +298,33 @@ void __copy_rom_section(void* dst, const void* src, size_t size) {
     __flush_cache(dst, size);
 }
 
+DECL_SECTION(".init") asm void __my_flush_cache(register void* dst, register size_t n) {
+    // clang-format off
+    nofralloc
+
+    cmplwi n, 0
+    blelr
+    clrlwi r5, dst, 27
+    add n, n, r5
+    addi n, n, 31
+    srwi n, n, 5
+    mtctr n
+
+loop:
+    dcbf 0, dst
+    addi dst, dst, 32
+    bdnz loop
+
+    mfspr r6, 0x3f0  // HID0
+    ori r7, r6, 0x8
+    mtspr 0x3f0, r7
+    isync
+    sync
+    mtspr 0x3f0, r6
+    blr
+    // clang-format on
+}
+
 DECL_SECTION(".init")
 void __init_bss_section(void* dst, size_t size) {
     if (size == 0) {
@@ -305,6 +332,7 @@ void __init_bss_section(void* dst, size_t size) {
     }
 
     memset(dst, 0, size);
+    __my_flush_cache(dst, size);
 }
 
 DECL_SECTION(".init") static asm void __init_registers(void) {
