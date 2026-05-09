@@ -54,7 +54,7 @@ float WiiLight::GetLightFieldOfView() {
 
     // this nightmare spaghetti removes 90% of the regswaps. end mii
     float magic_bs = std::atan2(
-        mBotRadius, mRange + mBotRadius / ((mBotRadius - mTopRadius) / mRange)
+        mBotRadius, mRange + mTopRadius / ((mBotRadius - mTopRadius) / mRange)
     );
     return (magic_bs * 2) * 180 / float(PI);
 }

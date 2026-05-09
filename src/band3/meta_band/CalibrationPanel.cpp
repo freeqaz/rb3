@@ -563,14 +563,18 @@ void CalibrationPanel::TriggerCalibration(int pad) {
         f8 = TheProfileMgr.GetPlatformAudioLatency();
         if (mEnableVideo)
             f8 = TheProfileMgr.GetPlatformVideoLatency();
-        f34 -= 16.66667f;
-        if (mEnableVideo) {
-            f34 -= 24.0f;
-        } else {
+        f34 -= 16.666666f;
+        if (!mEnableVideo) {
             f34 -= 20.0f;
+        } else {
+            f34 -= 24.0f;
         }
     } else {
-        f34 += mEnableVideo ? kAnimPerceptualOffset : -6.0f;
+        if (mEnableVideo) {
+            f34 += kAnimPerceptualOffset;
+        } else {
+            f34 += -6.0f;
+        }
     }
     switch (JoypadGetPadData(pad)->mType) {
     case kJoypadWiiButtonGuitar:
@@ -581,7 +585,10 @@ void CalibrationPanel::TriggerCalibration(int pad) {
         break;
     case kJoypadXboxButtonGuitar:
     case kJoypadPs3ButtonGuitar:
-        f34 -= mEnableVideo ? 12.0f : 34.0f;
+        if (mEnableVideo)
+            f34 -= 12.0f;
+        else
+            f34 -= 34.0f;
         break;
     default:
         break;

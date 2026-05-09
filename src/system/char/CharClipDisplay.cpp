@@ -32,8 +32,8 @@ void CharClipDisplay::SetClip(CharClip *clip, bool b) {
 
 void CharClipDisplay::SetText(const char *text) {
     strcpy(unk24, text);
-    unk14 = TheRnd->DrawString(text, Vector2(0, 0), Hmx::Color(1.0f, 0.0f, 0.0f), false).x
-        + sEm;
+    float drawWidth = TheRnd->DrawString(text, Vector2(0, 0), Hmx::Color(1.0f, 0.0f, 0.0f), false).x;
+    unk14 = drawWidth + sEm;
 }
 
 float CharClipDisplay::LineSpacing() { return sEm * 2.0f; }

@@ -153,7 +153,15 @@ void UIComponent::PreLoad(BinStream &bs) {
 void UIComponent::PostLoad(BinStream &bs) {
     if (mResource)
         mResource->PostLoad();
-    if (!Type().Null() && mResourcePath.length() != 0 && mResourceName.length() == 0) {
+    bool needsUpgrade = false;
+    bool typeOk = false;
+    if (!Type().Null()) {
+        if (mResourcePath.length() != 0) typeOk = true;
+    }
+    if (typeOk) {
+        if (mResourceName.length() == 0) needsUpgrade = true;
+    }
+    if (needsUpgrade) {
         mResourceName = Type().mStr;
         MILO_WARN(
             "upgrading UIComponent %s to new resource loading system (Old type: %s). Please resave this file and checkin (%s).\n",

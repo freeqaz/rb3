@@ -34,8 +34,7 @@ WiiSplitPostProc::~WiiSplitPostProc() {
 void WiiSplitPostProc::OnGPHangRecover() {
     WiiTex *wt = mTex;
     if (wt != nullptr) {
-        int siz = wt->Height() * wt->Width();
-        siz *= wt->Bpp() / 8;
+        int siz = (wt->Height() * wt->Width()) * (wt->Bpp() / 8);
         memset(wt->ImgData(), 0, siz);
         DCStoreRange(wt->ImgData(), siz);
     }

@@ -1263,8 +1263,13 @@ const char *CharBones::StringVal(Symbol s) {
     case TYPE_POS:
     case TYPE_SCALE:
         if (mCompression >= kCompressVects) {
-            Vector3 vshort((short *)ptr);
-            return MakeString("%g %g %g", vshort.x, vshort.y, vshort.z);
+            short *sptr = (short *)ptr;
+            return MakeString(
+                "%g %g %g",
+                sptr[0] * 0.000030518509f * 1300.0f,
+                sptr[1] * 0.000030518509f * 1300.0f,
+                sptr[2] * 0.000030518509f * 1300.0f
+            );
         } else {
             Vector3 *vptr = (Vector3 *)ptr;
             return MakeString("%g %g %g", vptr->x, vptr->y, vptr->z);
