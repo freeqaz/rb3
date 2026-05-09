@@ -782,8 +782,8 @@ Symbol AccomplishmentPanel::GetSelectedDetailsEntry() {
     else {
         DataNode handled = Handle(get_selected_details_entry_index_msg, true);
         int i = handled.Int();
-        AccomplishmentEntryProvider *pProvider = mAccomplishmentEntryProvider;
-        if (pProvider->NumData() > 0) {
+        if (mAccomplishmentEntryProvider->NumData() > 0) {
+            AccomplishmentEntryProvider *pProvider = mAccomplishmentEntryProvider;
             MILO_ASSERT(0 <= i && i < pProvider->NumData(), 0x244);
             return pProvider->m_vEntries[i];
         } else

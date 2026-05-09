@@ -107,7 +107,7 @@ public:
     bool unk74;
     String unk78[4];
     String unka8;
-    int unkb4;
+    Hmx::Object *unkb4;
     char unkb8;
     bool unkb9;
     Timer unkc0;

@@ -11,6 +11,7 @@ namespace Quazal {
     class UserContext : public RootObject {
     public:
         UserContext() { m_uContextStorage.m_uiValue = 0; }
+        ~UserContext() {}
 
     private:
         // total size: 0x4

@@ -95,18 +95,24 @@ WiiContent::WiiContent(
 }
 
 WiiContent::~WiiContent() {
-    int oldState = mState;
-    // switch/case for mState
-    if (oldState > 1 && oldState - 9U > 1) {
-        if (oldState == kMounting || oldState == kMounted) {
-            Unmount();
-            while (mState == kMounting) {
-                Timer::Sleep(2);
-                Poll();
-            }
-        } else if (oldState != kAlwaysMounted) {
-            MILO_LOG("Unknown state: %d", oldState);
+    switch (mState) {
+    case kMounting:
+    case kMounted:
+        Unmount();
+        while (mState == kMounting) {
+            Timer::Sleep(2);
+            Poll();
         }
+        break;
+    case kUnmounted:
+    case kNeedsMounting:
+    case kAlwaysMounted:
+    case kDeleted:
+    case kFailed:
+        break;
+    default:
+        MILO_LOG("Unknown state: %d", mState);
+        break;
     }
 }
 
@@ -366,6 +372,17 @@ void WiiContentMgr::Init() {
     InitAllocator(&gCNTAllocator);
 
     mMode = 1; // kNANDMode
+    unk74 = 1;
+    unk78 = 0;
+    unk7c = false;
+    unk80 = 0;
+    unk84 = 0;
+    unk88 = 0;
+    unk8c = 0.0f;
+    unk98 = 0;
+    unk90 = false;
+    unk7d = false;
+    unk9c = true;
 
     ContentMgr::Init();
     ThePlatformMgr.AddSink(this);

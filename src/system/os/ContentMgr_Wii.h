@@ -142,9 +142,21 @@ public:
     bool mNeedShopAccount; // 70
     bool mCNTSDInited; // 71
     bool mCreateSongCache; // 72
-    char pad73[0x1f]; // 73 - padding
+    bool unk73; // 73
+    int unk74; // 74
+    int unk78; // 78
+    bool unk7c; // 7c
+    bool unk7d; // 7d
+    char pad7e[2]; // 7e - padding
+    int unk80; // 80
+    int unk84; // 84
+    int unk88; // 88
+    float unk8c; // 8c
+    bool unk90; // 90
+    char pad91[3]; // 91
     int mLastTransferResult; // 94
     int unk98; // 98
+    bool unk9c; // 9c
 };
 
 extern WiiContentMgr TheWiiContentMgr;

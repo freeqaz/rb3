@@ -21,7 +21,7 @@ namespace Quazal {
         UserContext GetUserData();
 
         bool m_bOperationAborted; // 0x5
-        void *m_uUserData; // 0x8
+        UserContext m_uUserData; // 0x8
         unsigned int m_uiOrigin; // 0xc
     };
 

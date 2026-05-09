@@ -51,6 +51,7 @@ Gem &Gem::operator=(const Gem &g) {
     unk_0x67_0 = g.unk_0x67_0;
     unk_0x67_1 = g.unk_0x67_1;
     mKeyFingerNumber = g.mKeyFingerNumber;
+    return (Gem &)g;
 }
 
 bool Gem::OnScreen(float ms) {

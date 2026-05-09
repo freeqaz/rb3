@@ -1,4 +1,7 @@
 #include "network/net/WiiFriendMgr.h"
+
+extern "C" int NWC24CloseLib();
+
 #include "Platform/StringStream.h"
 #include "net/Server.h"
 #include "obj/Dir.h"
@@ -230,8 +233,10 @@ void WiiFriendMgr::Terminate() {
         RELEASE(unk64);
     }
     if (unkb4) {
+        RELEASE(unkb4);
     }
     if (unk2c) {
+        NWC24CloseLib();
         unk2c = false;
     }
 }
