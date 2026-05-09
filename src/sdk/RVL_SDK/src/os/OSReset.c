@@ -74,10 +74,11 @@ void __OSShutdownDevices(u32 event) {
     BOOL padIntr;
     BOOL osIntr;
     BOOL keepEnable;
+    OSThread* iter;
+    OSThread* next;
 
     switch (event) {
     case 0:
-    case OS_SHUTDOWN_EVENT_RESTART:
     case OS_SHUTDOWN_EVENT_RETURN_TO_MENU:
     case OS_SHUTDOWN_EVENT_LAUNCH_APP:
         keepEnable = FALSE;
@@ -85,6 +86,7 @@ void __OSShutdownDevices(u32 event) {
     case 1:
     case OS_SHUTDOWN_EVENT_SHUTDOWN:
     case 3:
+    case OS_SHUTDOWN_EVENT_RESTART:
     default:
         keepEnable = TRUE;
         break;
@@ -112,7 +114,16 @@ void __OSShutdownDevices(u32 event) {
         __PADDisableRecalibration(padIntr);
     }
 
-    KillThreads();
+    for (iter = OS_THREAD_QUEUE.head; iter != NULL; iter = next) {
+        next = iter->linkActive.next;
+
+        switch (iter->state) {
+        case OS_THREAD_STATE_READY:
+        case OS_THREAD_STATE_SLEEPING:
+            OSCancelThread(iter);
+            break;
+        }
+    }
 }
 
 // TODO: There must be a better way....

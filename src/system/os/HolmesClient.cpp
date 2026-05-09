@@ -104,9 +104,7 @@ namespace {
 #pragma optimization_level 3
     void WaitForReads() {
         CritSecTracker cst(&gCrit);
-        for (std::list<ReadRequest>::iterator it = gRequests.begin();
-             it != gRequests.end();
-             it++) {
+        while (gRequests.begin() != gRequests.end()) {
             WaitForResponse(Holmes::kReadFile);
             CheckReads();
         }

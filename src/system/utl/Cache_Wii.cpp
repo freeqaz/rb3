@@ -186,9 +186,9 @@ int CacheWii::ThreadStart() {
 
     switch (mOpCur) {
     case kOpDirectory: {
-        m0x10.m0x1c = m0x64;
-        m0x10.m0x1c = m0x10.m0x1c + "/" + m0x10.m0x1c;
-        return ThreadGetDir(m0x10.m0x1c);
+        String tmp(m0x64);
+        tmp = tmp + "/" + s_mThreadStr;
+        return ThreadGetDir(tmp);
     }
     case kOpFileSize:
         return ThreadGetFileSize();
@@ -199,7 +199,7 @@ int CacheWii::ThreadStart() {
     case kOpDelete:
         return ThreadDelete();
     default:
-        MILO_ASSERT(false, 0x00);
+        MILO_ASSERT(false, 0x163);
         return 0;
     }
 }

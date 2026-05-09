@@ -1738,7 +1738,7 @@ WPADSetSamplingCallback(WPADChannel chan, WPADSamplingCallback *cb) {
 
     OSAssert_Line(3371, (0 <= chan) && (chan < WPAD_MAX_CONTROLLERS));
 
-    if (WPADIsUsedCallbackByKPAD()) {
+    if (_wpadUsedCallback) {
         // clang-format off
 		OSReport("WARNING: Overwritten the callback needed by KPAD.\n");
 		OSReport("         Please call KPADSetSamplingCallback instead of "
@@ -1762,7 +1762,7 @@ WPADConnectCallback *WPADSetConnectCallback(WPADChannel chan, WPADConnectCallbac
 
     OSAssert_Line(3402, (0 <= chan) && (chan < WPAD_MAX_CONTROLLERS));
 
-    if (WPADIsUsedCallbackByKPAD()) {
+    if (_wpadUsedCallback) {
         // clang-format off
 		OSReport("WARNING: Overwritten the callback needed by KPAD.\n");
 		OSReport("         Please call KPADSetConnectCallback instead of "

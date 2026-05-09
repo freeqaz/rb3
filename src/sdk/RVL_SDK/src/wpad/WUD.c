@@ -3648,7 +3648,12 @@ __wudSearchEventStackCallback(tBTA_DM_SEARCH_EVT event, tBTA_DM_SEARCH *p_data) 
         break;
 
     case BTA_DM_DISC_CMPL_EVT:
-        __wudResetAuthFailCount();
+        BTM_VendorSpecificCommand(
+            BT_VSC_NINTENDO_WRITE_PATCH,
+            sizeof _wudResetAuthCountCmd,
+            _wudResetAuthCountCmd,
+            NULL
+        );
         __wudClearDiscoverResult();
 
         __rvl_wudcb.syncState = WUD_STATE_SYNC_CHECK_SEARCH_RESULT;

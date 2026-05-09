@@ -201,7 +201,7 @@ bool HDCache::LockCache() {
 void HDCache::UnlockCache() {
     CritSecTracker cst(mCritSec);
     MILO_ASSERT(mLockId == CurrentThreadId(), 0xF9);
-    if (!unk34--)
+    if (--unk34 == 0)
         mLockId = 0;
 }
 
