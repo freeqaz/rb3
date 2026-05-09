@@ -62,9 +62,10 @@ namespace Quazal {
         virtual ~ObjectThread() {}
         virtual void CallObjectMethod() {
             T1 *obj = m_pTargetObject;
+            ObjectFunc method = m_pMethod;
             T2 arg = m_arg;
             ReadyToRun();
-            (obj->*m_pMethod)(arg);
+            (obj->*method)(arg);
         }
 
         void Update(T1 *obj, ObjectFunc func, T2 arg, bool scheduled) {

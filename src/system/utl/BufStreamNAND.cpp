@@ -46,9 +46,11 @@ void BufStreamNAND::Clear() {
 }
 
 int BufStreamNAND::Open() {
+    const char *funcName = __FUNCTION__;
     s32 file;
     MCResult result;
-    SetGPHangDetectEnabled(false, __FUNCTION__);
+    SetGPHangDetectEnabled(false, funcName);
+    result = kMCNoError;
     if(!mFileOpen) {
         file = NANDOpen(mFilePath, &mFileInfo, 3);
         result = HandleResultNAND(file);
@@ -57,9 +59,9 @@ int BufStreamNAND::Open() {
         else
             mFileOpen = true;
     }
-    SetGPHangDetectEnabled(true, __FUNCTION__);
+    SetGPHangDetectEnabled(true, funcName);
 
-    return file;
+    return result;
 }
 
 int BufStreamNAND::Close() {
@@ -213,10 +215,14 @@ void BufStreamNAND::DeleteChecksum() {
 }
 
 int BufStreamNAND::LoadBufferFromNAND() {
-    SetGPHangDetectEnabled(false, __FUNCTION__);
-    s32 file = Open();
+    const char *funcName = __FUNCTION__;
+    MCResult result;
+    int v3;
+    s32 file;
+    SetGPHangDetectEnabled(false, funcName);
+    file = Open();
     DoSeek(0, kSeekCur);
-    int v3 = mChunkSize;
+    v3 = mChunkSize;
     int v4 = mRunningTell;
     int v5 = mSize;
 
@@ -224,42 +230,43 @@ int BufStreamNAND::LoadBufferFromNAND() {
         v3 = v5 - v4;
     s32 res = NANDRead(&mFileInfo, mBuffer, v3);
 
-    if(res == v3) {
-        mTell = 0;
-        SetGPHangDetectEnabled(true, __FUNCTION__);
-        return file;
+    if(res != v3) {
+        mFail = true;
+        result = HandleResultNAND(res);
+        SetGPHangDetectEnabled(true, funcName);
+        return result;
     }
     else {
-        mFail = true;
-        MCResult result = HandleResultNAND(res);
-        SetGPHangDetectEnabled(true, __FUNCTION__);
-        return result;
+        mTell = 0;
+        SetGPHangDetectEnabled(true, funcName);
+        return file;
     }
 }
 
 int BufStreamNAND::SaveBufferToNAND(bool b1) {
-    SetGPHangDetectEnabled(false, __FUNCTION__);
-    s32 file = Open();
+    const char *funcName = __FUNCTION__;
+    s32 file;
+    SetGPHangDetectEnabled(false, funcName);
+    file = Open();
     s32 write = NANDWrite(&mFileInfo, mBuffer, mTell);
-    if(write == mTell) {
-        memset(mBuffer, 0, mChunkSize);
-        mTell = 0;
-        if(b1 && mRunningTell == mSize && (file = Close()) != 0) {
-            mFail = true;
-            SetGPHangDetectEnabled(true, __FUNCTION__);
-            return file;
-        }
-        else {
-            SetGPHangDetectEnabled(true, __FUNCTION__);
-            return file;
-        }
-    }
-    else {
+    if(write != mTell) {
         mFail = true;
-        MCResult result = HandleResultNAND(write);
-        SetGPHangDetectEnabled(true, __FUNCTION__);
-        return result;
+        file = HandleResultNAND(write);
+        SetGPHangDetectEnabled(true, funcName);
+        return file;
     }
+    memset(mBuffer, 0, mChunkSize);
+    mTell = 0;
+    if(b1 && mRunningTell == mSize) {
+        file = Close();
+        if(file) {
+            mFail = true;
+            SetGPHangDetectEnabled(true, funcName);
+            return file;
+        }
+    }
+    SetGPHangDetectEnabled(true, funcName);
+    return file;
 }
 
 bool BufStreamNAND::FinishWrite() {

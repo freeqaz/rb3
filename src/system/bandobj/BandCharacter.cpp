@@ -182,6 +182,9 @@ bool BandCharacter::InVignetteOrCloset() const {
 DECOMP_FORCEACTIVE(BandCharacter, "BandCharacter.no_anim")
 
 CharClipDriver *BandCharacter::PlayMainClip(int i, bool b) {
+    static DataNode &noAnim = DataVariable("no_anim");
+    if (noAnim.Int())
+        return 0;
     if (mGroupName[0] == 0 || !unk454)
         return 0;
     else {

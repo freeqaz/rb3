@@ -152,11 +152,11 @@ void ScrollbarDisplay::UpdateThumbScaleAndPosition() {
     float scale = h * GetSavedScale();
     float pos = GetSavedPosition();
     MaxEq(scale, mMinThumbHeight);
-    float diff = h - scale;
+    pos *= h - scale;
     m_pThumbTopBone->SetLocalPos(
         m_pTopBone->mLocalXfm.v.x,
         m_pTopBone->mLocalXfm.v.y,
-        m_pTopBone->mLocalXfm.v.z - pos * diff
+        m_pTopBone->mLocalXfm.v.z - pos
     );
     m_pThumbBottomBone->SetLocalPos(
         m_pThumbTopBone->mLocalXfm.v.x,

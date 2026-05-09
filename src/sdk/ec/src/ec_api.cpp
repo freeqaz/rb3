@@ -368,7 +368,9 @@ int EC_GetIsSyncNeeded() {
     if (ec::op == NULL) {
         status = -4041;
     } else {
-        status = checkECDKSyncNeededForTitle() != 0 & -4006;
+        unsigned int *fields = (unsigned int *)((char *)ec::op + 0x1a0);
+        int mask = -(checkECDKSyncNeededForTitle(fields[0], fields[1]) != 0);
+        status = ECResult_NeedTicketSync & mask;
     }
     return status;
 }
