@@ -1122,12 +1122,11 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
         return;
     curLine.color = col;
     int mapInts[10];
-    std::map<unsigned int, MeshInfo>::iterator it;
     for (int i = 0; i < mMeshMap.size(); i++) {
         mapInts[i] = 0;
     }
 
-    it = mMeshMap.begin();
+    std::map<unsigned int, MeshInfo>::iterator it = mMeshMap.begin();
     for (int i = 0; i < mMeshMap.size(); i++) {
         RndFont *curFont = (RndFont *)it->first;
         for (int j = 0; j < curLine.startIdx;) {
@@ -1141,11 +1140,11 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
         ++it;
     }
 
-    it = mMeshMap.begin();
+    std::map<unsigned int, MeshInfo>::iterator it2 = mMeshMap.begin();
     for (int i = 0; i < mMeshMap.size(); i++) {
-        RndFont *curFont = (RndFont *)it->first;
-        int idx = curLine.startIdx;
-        int min = std::min<int>(curLine.endIdx, (int)mFixedLength);
+        RndFont *curFont = (RndFont *)it2->first;
+        unsigned int idx = curLine.startIdx;
+        unsigned int min = std::min<unsigned int>(curLine.endIdx, mFixedLength);
         int i11 = mapInts[i] * 4;
         for (; idx < min;) {
             unsigned short us88;
@@ -1161,7 +1160,7 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
             }
             idx += decoded;
         }
-        ++it;
+        ++it2;
     }
 
     curLine.lineStyle.color = col;

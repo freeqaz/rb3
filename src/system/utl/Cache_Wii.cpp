@@ -20,7 +20,7 @@ const char *CacheIDWii::GetCachePath(const char *param_1) {
         if (a[0] == '/') {
             a.erase(0, 1);
         }
-        return a.c_str();
+        return MakeString("%s", a.c_str());
     }
 }
 
@@ -101,7 +101,8 @@ bool CacheWii::DeleteSync(const char *param_1) {
         mLastResult = kCache_ErrorBadParam;
         return false;
     }
-    String filePath = String(m0x64) + "/" + param_1;
+    String filePath(m0x64);
+    filePath = filePath + "/" + param_1;
     int iVar1 = VFDeleteFile(filePath.c_str());
     if (iVar1 != 0 && iVar1 != 2) {
         TheDebug.Notify(MakeString("Couldn't delete file %s", filePath.c_str()));

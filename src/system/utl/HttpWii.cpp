@@ -40,7 +40,7 @@ const char *HttpWii::GetNHTTPErrorString(NHTTPError err) {
                                                        "NHTTP_ERROR_BUSY" };
         return table[err];
     } else {
-        TheDebug.Fail(FormatString("unknown NHTTPError! (added recently?)").Str());
+        MILO_FAIL("unknown NHTTPError! (added recently?)");
         return "unknown (internal error)";
     }
 }

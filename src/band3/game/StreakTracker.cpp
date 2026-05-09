@@ -49,7 +49,7 @@ void StreakTracker::TranslateRelativeTargets() {
     }
 
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] = std::floor((1.0f / unk60) * (mTargets[i]));
+        mTargets[i] = std::floor(mTargets[i] / unk60);
     }
 }
 

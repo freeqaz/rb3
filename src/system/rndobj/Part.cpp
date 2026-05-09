@@ -858,9 +858,10 @@ void RndParticleSys::MakeLocToRel(Transform &tf) {
 }
 
 void RndParticleSys::CreateParticles(float f1, float f2, const Transform &tf) {
-    if (f2 > 0 && mNumActive < mMaxParticles) {
+    if (!(f2 <= 0) && mNumActive < mMaxParticles) {
         mEmitCount += f2 * RandomFloat(mEmitRate.x, mEmitRate.y);
-        mEmitCount += CheckBursts(f2) + (float)mExplicitParts;
+        mEmitCount += CheckBursts(f2);
+        mEmitCount += (float)mExplicitParts;
         mExplicitParts = 0;
         while (mEmitCount >= 1.0f && mNumActive < mMaxParticles) {
             RndParticle *p = AllocParticle();
