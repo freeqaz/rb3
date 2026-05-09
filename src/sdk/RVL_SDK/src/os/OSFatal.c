@@ -132,7 +132,7 @@ static void ConfigureVideo(u16 width, u16 height) {
             rmode.xfbMode = VI_XFB_MODE_SF;
         } else {
             // Non-progressive mode
-            rmode.tvInfo = VI_TV_INFO(VI_TV_FMT_NTSC, VI_SCAN_MODE_INT);
+            rmode.tvInfo = VI_TV_INFO(VI_TV_FMT_NTSC, VI_SCAN_MODE_NON_INT);
             rmode.viYOrigin = 0;
             rmode.xfbMode = VI_XFB_MODE_DF;
         }
@@ -145,13 +145,13 @@ static void ConfigureVideo(u16 width, u16 height) {
             rmode.xfbMode = VI_XFB_MODE_SF;
         }else{
             // Non-progressive mode
-            rmode.tvInfo = VI_TV_INFO(VI_TV_FMT_EURGB60, VI_SCAN_MODE_INT);
+            rmode.tvInfo = VI_TV_INFO(VI_TV_FMT_EURGB60, VI_SCAN_MODE_NON_INT);
             rmode.viYOrigin = 0;
             rmode.xfbMode = VI_XFB_MODE_DF;
         }
         break;
     case VI_TV_FMT_PAL:
-        rmode.tvInfo = VI_TV_INFO(VI_TV_FMT_PAL, VI_SCAN_MODE_INT);
+        rmode.tvInfo = VI_TV_INFO(VI_TV_FMT_PAL, VI_SCAN_MODE_NON_INT);
         rmode.viYOrigin = 47;
         rmode.xfbMode = VI_XFB_MODE_DF;
         break;

@@ -374,7 +374,7 @@ bool RockCentral::SendMsg(
     Friend *friendObj, const char *c1, const char *c2, MemStream &ms
 ) {
     String str;
-    str = EncodeMessage((_WiiMessageType)1, (int)ms.Buffer()[0], c2);
+    str = EncodeMessage((_WiiMessageType)1, *(int *)ms.Buffer(), c2);
     TheWiiMessenger.SendMessage(friendObj->mFriendKey, c1, str.c_str(), nullptr, 600);
     return true;
 }
@@ -1302,9 +1302,9 @@ void RockCentral::ConvertToStr(MemStream &ms, String &str) {
     str.reserve(ms.BufferSize() * 2 + 1);
     ms.Seek(0, BinStream::kSeekBegin);
     while (!ms.Eof()) {
-        char uc;
+        unsigned char uc;
         ms >> uc;
-        short us = uc >> 4;
+        short us = (uc >> 4) & 0xF;
         if (us > 9) {
             str = str + (us + 0x37);
         } else {

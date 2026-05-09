@@ -56,9 +56,9 @@ WiiEnviron::WiiEnviron() {
 WiiEnviron::~WiiEnviron() {}
 
 bool WiiEnviron::SetLight(int i, WiiLight *lit) {
-    u16 id = LightId(i);
+    int id = LightId(i);
     lit->Update((GXLightID)id);
-    unk_0x19E |= id;
+    unk_0x19E = unk_0x19E | id;
     if (unk_0x19C && lit->GetType() != RndLight::kDirectional) {
         unk_0x19C = false;
     }

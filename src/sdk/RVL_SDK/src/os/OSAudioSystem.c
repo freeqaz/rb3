@@ -113,7 +113,7 @@ void __OSInitAudioSystem(void) {
     start = OSGetTick();
     do {
         ;
-    } while (OS_TICKS_DELTA(OSGetTick(), start) < 2194);
+    } while ((s32)(OSGetTick() - start) < 2194);
 
     *(u32*)&DSP_HW_REGS[DSP_AR_DMA_MMADDR_H] = 0x01000000;
     *(u32*)&DSP_HW_REGS[DSP_AR_DMA_ARADDR_H] = 0x00000000;
@@ -187,7 +187,7 @@ void __OSStopAudioSystem(void) {
     start = OSGetTick();
     do {
         ;
-    } while (OS_TICKS_DELTA(OSGetTick(), start) < 44);
+    } while ((s32)(OSGetTick() - start) < 44);
 
     // Reset DSP
     DSP_HW_REGS[DSP_CSR] |= 0x1;

@@ -284,7 +284,7 @@ static void ClearArena(void) {
     }
     // Region doesn't exist, or begins somewhere outside of MEM1
     else if (__OSRebootParams.regionStart == NULL ||
-             !OSIsMEM1Region(__OSRebootParams.regionStart)) {
+             ((u32)__OSRebootParams.regionStart & 0x30000000)) {
         MemClear(OSGetArenaLo(), (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
     }
     // Region begins after arena begins
@@ -317,7 +317,7 @@ static void ClearMEM2Arena(void) {
     }
     // Region doesn't exist, or begins somewhere outside of MEM2
     else if (__OSRebootParams.regionStart == NULL ||
-             !OSIsMEM2Region(__OSRebootParams.regionStart)) {
+             ((u32)__OSRebootParams.regionStart & 0x30000000) != 0x10000000) {
         MemClear(OSGetMEM2ArenaLo(),
                  (u32)OSGetMEM2ArenaHi() - (u32)OSGetMEM2ArenaLo());
     }

@@ -90,7 +90,7 @@ void SetlistMergePanel::UpdateProgressInfo() {
         setMsg[0] = i4;
         setMsg[1] = "";
         setMsg[2] = gt1;
-        setMsg[3] = Abs(param);
+        setMsg[3] = param < 0 ? -param : param;
         HandleType(setMsg);
         i4++;
     }

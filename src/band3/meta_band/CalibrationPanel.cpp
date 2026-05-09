@@ -117,7 +117,7 @@ void CalibrationPanel::UpdateAnimation() {
             f10 = ReshapeTime(f10);
             f10 = (f10 * mAnimCycleFrames) / mCycleTimeMs;
             MILO_ASSERT(mAnimNumCycles == 1 || mAnimNumCycles == 2, 0xBE);
-            if (mAnimNumCycles == 2 && GetTestRep()) {
+            if (mAnimNumCycles == 2 && GetTestRep() % 2) {
                 f10 = f10 + mAnimCycleFrames;
             }
             if (mHalfOffAnim) {

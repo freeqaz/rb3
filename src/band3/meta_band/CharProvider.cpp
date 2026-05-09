@@ -79,7 +79,7 @@ void CharProvider::AddCharactersFromProfile(BandProfile *profile) {
         MILO_ASSERT(pLocalChar, 0x8F);
         haschar = profile->HasChar(pLocalChar);
     }
-    if (chars.empty() || !haschar)
+    if (chars.empty() && !haschar)
         return;
     else {
         mCharacters.push_back(

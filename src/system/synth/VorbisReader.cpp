@@ -434,7 +434,7 @@ void VorbisReader::Init() {
 
 int VorbisReader::ConsumeData(void **v, int i1, int i2) {
     MILO_ASSERT(mSeekTarget == -1, 0x444);
-    if (mSamplesToSkip > 0) {
+    if (((volatile int &)mSamplesToSkip) > 0) {
         int ret = Min(i1, mSamplesToSkip);
         mSamplesToSkip -= ret;
         return ret;

@@ -362,12 +362,8 @@ int Spotlight::CollidePlane(const Plane &pl) {
 }
 
 void Spotlight::Poll() {
-    if (!LOADMGR_EDITMODE) {
-        if (!Showing())
-            return;
-        if (mIntensity == 0)
-            return;
-    }
+    if (!LOADMGR_EDITMODE && (!Showing() || mIntensity == 0))
+        return;
     Hmx::Matrix3 m38;
     if (!unk28c) {
         RndTransformable *target = ResolveTarget();

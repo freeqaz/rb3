@@ -357,7 +357,7 @@ bool PassiveMessenger::HasMessages() const {
         if (slot) {
             PassiveMessageQueue *pQueue = slot->GetMessageQueue();
             MILO_ASSERT(pQueue, 0x299);
-            if (pQueue->mQueue.size() > 0)
+            if ((int)pQueue->mQueue.size() > 0)
                 return true;
             if (pQueue->mTimer.Running())
                 return true;

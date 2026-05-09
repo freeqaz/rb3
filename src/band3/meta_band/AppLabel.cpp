@@ -140,10 +140,10 @@ void AppLabel::SetSongName(Symbol shortname, bool fail) {
 
 void AppLabel::SetSongNameWithNumber(int songID, int i2, const char *cc) {
     BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(songID);
-    if (data)
+    if (data) {
         cc = data->Title();
-    else if (!cc) {
-        cc = Localize(unknown_song, 0);
+    } else {
+        cc = cc ? cc : Localize(unknown_song, 0);
     }
     if (i2 > 0) {
         SetTokenFmt(setlist_song_fmt, i2, cc);
