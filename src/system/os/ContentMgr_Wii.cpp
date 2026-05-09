@@ -169,6 +169,7 @@ void WiiContent::StartBackup() {
     unk31 = false;
     unk24 = 0;
     unk20 = 0;
+    unk28 = 0;
     ThreadStart();
     ThreadDone(1);
 }

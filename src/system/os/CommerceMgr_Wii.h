@@ -42,8 +42,8 @@ public:
     long mPrice; // 68
     char *mAttributes[7]; // 6c
     unsigned long mAttributesNum; // 88
-    unsigned long mTitleIdsNum; // 8c
-    unsigned long long *mTitleIds; // 90
+    unsigned long long *mTitleIds; // 8c
+    unsigned long mTitleIdsNum; // 90
     int unk94[21]; // 94 - padding to unkE0
     int mProgressPercent; // e8
     int mLastErrorCode; // ec

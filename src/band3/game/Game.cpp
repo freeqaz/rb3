@@ -1214,16 +1214,15 @@ void Game::SetTimeOffset() {
 }
 
 void Game::SetRealtime(bool realtime) {
-    bool finalRealtime = realtime;
     if (mProperties.mInDrumTrainer) {
-        finalRealtime = true;
+        realtime = true;
     } else {
         FOREACH (it, mAllActivePlayers) {
-            (*it)->SetRealtime(finalRealtime);
+            (*it)->SetRealtime(realtime);
         }
     }
-    mRealtime = finalRealtime;
-    if (finalRealtime) {
+    mRealtime = realtime;
+    if (mRealtime) {
         SetTimeOffset();
     }
 }

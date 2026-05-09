@@ -165,7 +165,7 @@ bool BandHeadShaper::Start(
     if (mesh->Verts().size() == 0)
         return false;
     else {
-        ObjectDir *visemedir = GetViseme(s, false);
+        ObjectDir *visemedir = gVisemes[0 + 2 * (s != female)];
         if (visemedir) {
             CharClip *clip = visemedir->Find<CharClip>("Base", false);
             if (clip) {
@@ -180,7 +180,7 @@ bool BandHeadShaper::Start(
         if (mMapping->size() == 0)
             return false;
         else {
-            if (mDst->Verts().size() != mMapping->size()) {
+            if (mMapping->size() != mDst->Verts().size()) {
                 MILO_WARN(
                     "%s claims to be %s but has wrong vert number %d, should be %d",
                     PathName(mDst),

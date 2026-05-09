@@ -6,6 +6,7 @@
 #include "obj/Object.h"
 #include "obj/Task.h"
 #include "rndobj/Group.h"
+#include "rndobj/PostProc.h"
 #include "bandobj/CrowdAudio.h"
 #include "utl/Loader.h"
 #include "world/Dir.h"
@@ -124,7 +125,7 @@ void BandDirector::Enter() {
         mPostProcA = mWorldPostProc;
         mPostProcB = mWorldPostProc;
         mPostProcBlend = 0;
-        sMotionBlurBlendAmount = SystemConfig("rnd", "motion_blur")->Float(1);
+        RndPostProc::sMotionBlurBlendAmount = SystemConfig("rnd", "motion_blur")->Float(1);
         mCamPostProc = 0;
         mLightPresetCatA = mLightPresetCatB = gNullStr;
         mLightPresetCatBlend = 0;

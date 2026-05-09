@@ -148,7 +148,8 @@ void WiiProfileMgr::LoadFixed(FixedSizeSaveableStream &fs, int) {
             sSaveVersionWii
         );
         Clear(sSaveVersion, sSaveVersionWii);
-        fs.Seek(SaveSize(revWii) - 8, BinStream::kSeekCur);
+        int sz = SaveSize(revWii) - 8;
+        fs.Seek(sz, BinStream::kSeekCur);
     } else {
         fs >> unk4c;
         for (int i = 0; i < 4; i++) {

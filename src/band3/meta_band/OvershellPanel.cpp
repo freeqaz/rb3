@@ -779,14 +779,15 @@ void OvershellPanel::ResolveSlotStates() {
 
 void OvershellPanel::ResolveSignInWaitStates() {
     if (InOverrideFlow(kOverrideFlow_RegisterOnline)) {
-        bool b3 = false;
         bool b2 = true;
+        bool b3 = false;
         bool b1 = true;
         std::vector<LocalBandUser *> users;
         mBandUserMgr->GetLocalParticipants(users);
         if (!users.empty()) {
             b1 = false;
-            for (int i = 0; i < users.size(); i++) {
+            int i = 0;
+            do {
                 LocalBandUser *cur = users[i];
                 if (cur->GetOvershellState() == 0x14) {
                     if (!cur->HasOnlinePrivilege()
@@ -797,7 +798,8 @@ void OvershellPanel::ResolveSignInWaitStates() {
                     }
                 } else
                     b2 = false;
-            }
+                i++;
+            } while (i < users.size());
         }
         if (b1)
             EndOverrideFlow(kOverrideFlow_RegisterOnline, true);

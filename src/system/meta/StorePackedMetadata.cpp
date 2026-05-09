@@ -68,16 +68,16 @@ bool StoreSongTable::Load(const char *cc) {
     char buf[256];
     sprintf(buf, "%ssongs", cc);
 
-    char *loc12c;
+    int *loc12c;
     char *loc130;
     bool ret = StoreLoadPackedFile(
-        buf, true, 0x40000, false, true, &mBuffer, &loc12c, &loc130, &mNumSongs
+        buf, true, 0x40000, false, true, &mBuffer, (char **)&loc12c, &loc130, &mNumSongs
     );
     if (!ret)
         return ret;
     else {
         loc12c += mNumSongs;
-        int diff = loc130 - loc12c;
+        int diff = loc130 - (char *)loc12c;
         int u1 = diff / 0x1cul;
         if (u1 != mNumSongs) {
             MILO_LOG(
@@ -88,15 +88,16 @@ bool StoreSongTable::Load(const char *cc) {
                 mNumSongs
             );
         }
-        mSongs = (StorePackedSong *)loc12c;
+        mSongs = (StorePackedSong *)(char *)loc12c;
+        StorePackedSong *song;
         for (int i = 0; i < mNumSongs; i++) {
-            StorePackedSong *song = &mSongs[i];
+            song = &mSongs[i];
             song->EndianFix();
             if (!TheStoreMetadata.mStringTable->IsValid(song->mNameIndex)) {
-                MILO_LOG("Song %d: name %d is invalid\n", i, song->mNameIndex);
+                MILO_LOG("Song %d: name %d is invalid\n", i, (int)song->mNameIndex);
             }
             if (!TheStoreMetadata.mStringTable->IsValid(song->mArtistIndex)) {
-                MILO_LOG("Song %d: artist %d is invalid\n", i, song->mArtistIndex);
+                MILO_LOG("Song %d: artist %d is invalid\n", i, (int)song->mArtistIndex);
             }
         }
         return true;

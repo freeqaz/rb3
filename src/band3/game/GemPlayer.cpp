@@ -2230,8 +2230,10 @@ void GemPlayer::CheckSolo(float ms) {
     float tickF;
     if (!mQuarantined && TheGame->mProperties.mCanSolo &&
         (tickF = MsToTick(ms),
-         startTick = 0, endTick = 0,
-         inSolo = GetPhraseExtents(kSoloPhrase, mTrackNum, (int)tickF, startTick, endTick) & TheGame->mProperties.mCanSolo,
+         startTick = 0,
+         inSolo = (int)tickF, endTick = 0,
+         inSolo = GetPhraseExtents(kSoloPhrase, mTrackNum, inSolo, startTick, endTick),
+         inSolo = TheGame->mProperties.mCanSolo & inSolo,
          inSoloBool = (unsigned)(-inSolo | inSolo) >> 31U,
          (inSoloBool != (((unsigned)unk310 >> 31U) ^ 1U)))) {
         if (inSoloBool) {

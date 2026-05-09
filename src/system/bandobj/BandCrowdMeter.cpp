@@ -77,7 +77,11 @@ void BandCrowdMeter::UpdatePlayers(const std::vector<TrackInstrument> &insts) {
         IconData &curicon = mIconData[i];
         bool curused = curicon.Used();
         bool i10 = 0;
+        bool valid = false;
         if (insts[i] != kInstNone && insts[i] != kInstPending) {
+            valid = true;
+        }
+        if (valid) {
             if (curicon.unk0->HasIcon())
                 i10 = 1;
         }

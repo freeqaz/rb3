@@ -24,12 +24,12 @@ public:
     char unk7;
     char unk8;
     char unk9;
-    unsigned short unka;
+    unsigned short unka : 9;
     char unkc;
     char unkd;
     char unke;
     char unkf;
-    unsigned short unk10; // 0x10
+    unsigned short unk10 : 9; // 0x10
     unsigned short mNameIndex; // 0x12
     unsigned short mArtistIndex; // 0x14
     int unk18;
