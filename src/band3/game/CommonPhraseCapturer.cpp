@@ -98,8 +98,9 @@ void CommonPhraseCapturer::LocalHitLastGem(Player *p, int i2, int i3) {
 }
 
 void CommonPhraseCapturer::LocalFail(Player *p, int i2, int i3) {
-    if ((TheSongDB->GetCommonPhraseTracks(i2) & ~mDisabledTracks)
-        && (1 << p->GetTrackNum()) != 0) {
+    int tracks = TheSongDB->GetCommonPhraseTracks(i2);
+    int trackNum = p->GetTrackNum();
+    if ((tracks & ~mDisabledTracks) && (1 << trackNum) != 0) {
         p->UnisonMiss(i2);
     }
     ExtendPhraseStates(i2);

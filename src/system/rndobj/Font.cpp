@@ -378,8 +378,14 @@ BEGIN_LOADS(RndFont)
         } else
             bs >> mChars;
     } else {
-        for (const char *ptr = theChars; *ptr != '\0'; ptr++) {
-            mChars.push_back(*ptr);
+        char charBuf[96] =
+            " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+        const char *ptr = charBuf;
+        if (*ptr != '\0') {
+            do {
+                mChars.push_back(*ptr);
+                ptr++;
+            } while (*ptr != '\0');
         }
     }
     if (gRev > 4) {

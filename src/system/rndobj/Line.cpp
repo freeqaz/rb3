@@ -190,12 +190,12 @@ void RndLine::SetPointColor(int i, const Hmx::Color32 &color, bool sync) {
 
 void RndLine::SetPointsColor(int start, int end, const Hmx::Color32 &color) {
     MILO_ASSERT((start >= 0) && (start < mPoints.size()) && (end >= 0) && (end < mPoints.size()), 0x1EF);
-    int i = start;
     if (end < start) {
-        i = end;
-        end = start;
+        int tmp = start;
+        start = end;
+        end = tmp;
     }
-    for (; i <= end; i++) {
+    for (int i = start; i <= end; i++) {
         mPoints[i].c = color;
         VertsMap vmap;
         MapVerts(i, vmap);

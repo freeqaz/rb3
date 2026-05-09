@@ -229,31 +229,31 @@ int GuitarController::OnMsg(const ButtonUpMsg &msg) {
 }
 
 void GuitarController::ReconcileFretState() {
-    if (!mUser->IsLocal())
-        return;
-    LocalUser *lUser = mUser->GetLocalUser();
-    if (UserHasController(lUser)) {
-        JoypadData *padData = JoypadGetPadData(lUser->GetPadNum());
-        bool wasInMask;
-        int mask = 0;
-        for (int i = 0; i < 5; i++) {
-            int i10 = 1 << i;
-            wasInMask = (mFretMask & i10) != 0;
-            bool inMask = padData->IsButtonInMask(SlotToButton(i));
-            if (inMask) {
-                mask |= i10;
-            }
-            if (wasInMask != inMask) {
+    if (mUser->IsLocal()) {
+        LocalUser *lUser = mUser->GetLocalUser();
+        if (UserHasController(lUser)) {
+            JoypadData *padData = JoypadGetPadData(lUser->GetPadNum());
+            int mask = 0;
+            for (int i = 0; i < 5; i++) {
+                int fretmask = mFretMask;
+                bool wasInMask = (fretmask & 1 << i);
+                bool inMask = padData->IsButtonInMask(SlotToButton(i));
                 if (inMask) {
-                    mSink->FretButtonDown(i, -1);
-                } else
-                    mSink->FretButtonUp(i);
+                    mask |= 1 << i;
+                }
+                if (wasInMask != inMask) {
+                    if (inMask) {
+                        mSink->FretButtonDown(i, -1);
+                    } else {
+                        mSink->FretButtonUp(i);
+                    }
+                }
             }
-        }
-        mFretMask = mask;
-        mSink->ForceMercurySwitch(padData->IsButtonInMask(mForceMercuryBut));
-        if (mControllerStyle != kRoXbox) {
-            mSink->MercurySwitch(padData->IsButtonInMask(mMercuryButton) ? 1.0f : 0.0f);
+            mFretMask = mask;
+            mSink->ForceMercurySwitch(padData->IsButtonInMask(mForceMercuryBut));
+            if (mControllerStyle != kRoXbox) {
+                mSink->MercurySwitch(padData->IsButtonInMask(mMercuryButton) ? 1.0f : 0.0f);
+            }
         }
     }
 }

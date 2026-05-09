@@ -8,6 +8,7 @@ class CommonPhraseCapturer {
 public:
     class PhraseState {
     public:
+        PhraseState() : unk0(0), unk4(0), unk8(0) {}
         int unk0;
         int unk4;
         int unk8;
