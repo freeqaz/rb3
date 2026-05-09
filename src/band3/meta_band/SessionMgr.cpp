@@ -159,10 +159,11 @@ void SessionMgr::SendMsg(BandUser *user, NetMessage &msg, PacketType ty) {
 }
 
 void SessionMgr::SendMsg(RemoteBandMachine *machine, NetMessage &msg, PacketType ty) {
+    unsigned int curID;
     std::vector<BandUser *> bandusers;
     mBandUserMgr->GetParticipatingBandUsers(bandusers);
     for (int i = 0; i < bandusers.size(); i++) {
-        unsigned int curID = bandusers[i]->mMachineID;
+        curID = bandusers[i]->mMachineID;
         if (curID == machine->GetMachineID()) {
             mSession->SendMsg(bandusers[i], msg, ty);
             break;
