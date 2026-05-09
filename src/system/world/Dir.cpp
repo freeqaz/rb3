@@ -429,7 +429,8 @@ bool WorldDir::DrawShowingBudget(float fff) {
     for (; mDrawItr != mDraws.end(); ++mDrawItr) {
         float f1 = kHugeFloat;
         if (TheRnd->ProcCmds() & kProcessWorld) {
-            float split = timer.SplitMs() - 0.0f;
+            float startMs = 0.0f;
+            float split = timer.SplitMs() - startMs;
             f1 = fff - split;
             if (split > fff || std::fabs(f1) <= 1.0f)
                 return false;

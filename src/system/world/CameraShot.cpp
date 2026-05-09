@@ -403,7 +403,7 @@ void CamShot::GetKey(
 // matches in retail
 void CamShot::CacheFrames() {
     float frames = 0.0f;
-    for (int i = 0; i != mKeyframes.size(); i++) {
+    for (unsigned int i = 0; i != mKeyframes.size(); i++) {
         CamShotFrame &curframe = mKeyframes[i];
         curframe.mFrame = frames;
         frames += curframe.mDuration + curframe.mBlend;
