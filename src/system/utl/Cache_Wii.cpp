@@ -45,7 +45,7 @@ CacheWii::CacheWii(const CacheIDWii &param_1) {
     // m0x48 = String();
     m0x54 = 0;
     m0x58 = 0;
-    m0x5c = 0;
+    s_mCacheDirList = 0;
     m0x60 = 0;
     m0x64 = "A:/DLC";
     m0x68 = "MSTORE.vff";
@@ -112,20 +112,21 @@ bool CacheWii::DeleteSync(const char *param_1) {
 }
 
 bool CacheWii::
-    GetDirectoryAsync(const char *, std::vector<CacheDirEntry> *param_2, Hmx::Object *) {
-    bool isDone = IsDone();
-    if (!isDone) {
+    GetDirectoryAsync(const char *param_1, std::vector<CacheDirEntry> *param_2, Hmx::Object *) {
+    if (!IsDone()) {
+        mLastResult = kCache_ErrorBusy;
         return false;
     } else if (param_2 == NULL) {
+        mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
         MILO_ASSERT(s_mThreadStr.empty(), 0xc2);
-
+        s_mThreadStr = m0x10.GetCacheSearchPath(param_1);
         MILO_ASSERT(s_mCacheDirList == NULL, 0xc5);
-
         s_mCacheDirList = param_2;
         mLastResult = kCache_NoError;
         mOpCur = kOpDirectory;
+        ThreadCall(this);
         return true;
     }
 }
@@ -233,7 +234,7 @@ void CacheWii::ThreadDone(int param_1) {
     case kOpDirectory: {
         mLastResult = (CacheResult)param_1;
         s_mThreadStr = gNullStr;
-        m0x5c = 0;
+        s_mCacheDirList = 0;
         m0x60 = 0;
         break;
     }
