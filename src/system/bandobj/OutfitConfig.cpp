@@ -50,11 +50,9 @@ void OutfitConfig::MatSwap::SwapResource() {
             MemDoTempAllocations m(true, false);
             refs = mResourceMat->Refs();
         }
-        for (std::vector<ObjRef *>::reverse_iterator rit = refs.rbegin();
-             rit != refs.rend();
-             ++rit) {
+        for (std::vector<ObjRef *>::iterator rit = refs.end(); rit != refs.begin();) {
             bool replace = false;
-            ObjRef *cur = *rit;
+            ObjRef *cur = *--rit;
             if (cur->RefOwner()) {
                 if (cur->RefOwner()->ClassName() == mn)
                     replace = true;
@@ -73,11 +71,9 @@ void OutfitConfig::MatSwap::UnSwapResource() {
             MemDoTempAllocations m(true, false);
             refs = mMat->Refs();
         }
-        for (std::vector<ObjRef *>::reverse_iterator rit = refs.rbegin();
-             rit != refs.rend();
-             ++rit) {
+        for (std::vector<ObjRef *>::iterator rit = refs.end(); rit != refs.begin();) {
             bool replace = false;
-            ObjRef *cur = *rit;
+            ObjRef *cur = *--rit;
             if (cur->RefOwner()) {
                 if (cur->RefOwner()->ClassName() == mn)
                     replace = true;

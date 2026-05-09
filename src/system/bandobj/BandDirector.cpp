@@ -1224,7 +1224,7 @@ void BandDirector::OnMidiPresetCleanup() {
     PropKeys *keys = mPropAnim->GetKeys(this, dptr);
     if (!keys)
         return;
-    WorldDir *wdir = mVenue.Dir();
+    LightPresetManager *pm = &mVenue.Dir()->mPresetManager;
     Keys<Symbol, Symbol> &skeys = keys->AsSymbolKeys();
     Keys<Symbol, Symbol> local_keys;
     for (int i = 0; i < skeys.size(); i++) {
@@ -1233,7 +1233,7 @@ void BandDirector::OnMidiPresetCleanup() {
         if (s2 != gNullStr)
             s1 = s2;
         skeys[i].value = s1;
-        LightPreset *lpreset = wdir->mPresetManager.PickRandomPreset(skeys[i].value);
+        LightPreset *lpreset = pm->PickRandomPreset(skeys[i].value);
         if (lpreset && i > 0) {
             float fadein = lpreset->LegacyFadeIn() / 480.0f;
             ClampEq(fadein, 0.0f, 4.0f);

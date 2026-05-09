@@ -2119,8 +2119,7 @@ void GemPlayer::LocalSoloEnd(int pct, int numGems) {
     int total = points * numGems;
     mStats.AddSolo(total);
     Symbol awardSymCopy = awardSym;
-    BandTrack *track = GetBandTrack();
-    GetTrackPanelDir()->SoloEnd(track, total, awardSymCopy);
+    GetTrackPanelDir()->SoloEnd(GetBandTrack(), total, awardSymCopy);
     AddBonusPoints(total);
     mStats.UpdateBestSolo(pct);
     if (unk3d8) {

@@ -1440,8 +1440,10 @@ void Game::AddPlayer(BandUser *user) {
     MetaPerformer *perf = MetaPerformer::Current();
     if (perf != nullptr) {
         bool noPartInSong = true;
-        if (perf->HasSong() && perf->PartPlaysInSong(trackSym)) {
-            noPartInSong = false;
+        if (perf->HasSong()) {
+            if (perf->PartPlaysInSong(trackSym)) {
+                noPartInSong = false;
+            }
         }
         if (noPartInSong) {
             GetTrackPanel()->DoHandleAddPlayer(user);

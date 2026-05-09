@@ -130,7 +130,7 @@ void RndText::Load(BinStream &bs) {
     if (gRev < 2) {
         Vector2 v2;
         bs >> v2;
-        SetLocalPos(Vector3(v2.x, 0, -v2.y * 0.75f));
+        SetLocalPos(v2.x, 0, -v2.y * 0.75f);
     }
     bs >> mText;
     if (gRev < 0x14) {

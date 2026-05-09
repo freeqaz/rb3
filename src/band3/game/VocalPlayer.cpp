@@ -439,7 +439,8 @@ void VocalPlayer::UnpackBools(int i1, std::vector<int> &o_rBoolArray) const {
     MILO_ASSERT(o_rBoolArray.size() == 0, 0x723);
     o_rBoolArray.resize(4);
     for (int i = 0; i < 4; i++) {
-        o_rBoolArray[i] = (bool)(i1 & 0xFF);
+        unsigned char b = (unsigned char)i1;
+        o_rBoolArray[i] = b != 0 ? 1 : 0;
         i1 >>= 8;
     }
 }
