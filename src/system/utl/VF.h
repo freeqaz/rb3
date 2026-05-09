@@ -5,6 +5,10 @@
 #ifndef UTL_VF_H
 #define UTL_VF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int VFIsAvailable();
 extern void VFInitEx();
 extern bool VFMountDriveNANDFlashEx(const char *drive, const char *sysFileName);
@@ -29,5 +33,9 @@ extern int VFCreateDir(const char *);
 extern int VFChangeDir(const char *);
 extern void *VFCreateFile(const char *, int);
 extern const char *VFGetApiErrorString();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // UTL_VF_H

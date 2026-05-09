@@ -353,7 +353,9 @@ int ecFree(void *block) {
 ECNameValue ecFreeFunc = { "free", ecFree };
 
 WiiContentMgr::WiiContentMgr() {
-    //
+    mLastTransferResult = 0;
+    unk98 = 0;
+    mCNTSDInited = false;
 }
 
 void WiiContentMgr::PreInit() {}

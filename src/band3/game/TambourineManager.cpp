@@ -45,8 +45,7 @@ void TambourineManager::Restart() {
     mPlayerRef.PopupHelp(tambourine, false);
     unk48 = true;
     mGemStates.clear();
-    mGemStates.resize(10);
-    // mgem states resize
+    mGemStates.resize(mPlayerRef.mVocalParts[0]->mVocalNoteList->mTambourineGems.size());
 }
 
 void TambourineManager::Jump(float) {

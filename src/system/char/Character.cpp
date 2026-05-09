@@ -273,15 +273,15 @@ void Character::DrawLodOrShadow(int lod, Character::DrawMode mode) {
 
 void Character::DrawLod(int lod) {
     unsigned char drawMode = mDrawMode & 1;
-    if (TheRnd->DrawMode() != 4 && (TheRnd->DrawMode() != 2 || (mSpotCutout && drawMode))
-        && (TheRnd->DrawMode() != 3 || mFloorShadow && drawMode)) {
-        DrawLodOrShadow(
-            lod,
-            TheRnd->DrawMode() == 2 || TheRnd->DrawMode() == 3 || TheRnd->DrawMode() == 1
-                ? (DrawMode)4
-                : mDrawMode
-        );
-    }
+    if (TheRnd->DrawMode() == 4) return;
+    if (TheRnd->DrawMode() == 2 && !(mSpotCutout && drawMode)) return;
+    if (TheRnd->DrawMode() == 3 && !(mFloorShadow && drawMode)) return;
+    DrawLodOrShadow(
+        lod,
+        TheRnd->DrawMode() == 2 || TheRnd->DrawMode() == 3 || TheRnd->DrawMode() == 1
+            ? (DrawMode)4
+            : mDrawMode
+    );
 }
 
 CharEyes *Character::GetEyes() { return Find<CharEyes>("CharEyes.eyes", false); }

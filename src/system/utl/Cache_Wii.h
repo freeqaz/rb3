@@ -50,15 +50,12 @@ class CacheWii : public Cache, public ThreadCallback {
     int m0x60;
     char *m0x64;
     char *m0x68;
-    char *m0x6c;
+    char *drive; // 0x6c
     int m0x70; // padding
-    int m0x74;
-
-    String mCacheName; // 0x1c
+    bool m0x74;
 
     std::vector<CacheDirEntry> *s_mCacheDirList; // 0x5c
-    char *drive; // 0x68
-    String m0x100;
+    char *m0x100;
 };
 
 #endif

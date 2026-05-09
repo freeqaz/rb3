@@ -144,6 +144,7 @@ public:
     bool mCreateSongCache; // 72
     char pad73[0x1f]; // 73 - padding
     int mLastTransferResult; // 94
+    int unk98; // 98
 };
 
 extern WiiContentMgr TheWiiContentMgr;

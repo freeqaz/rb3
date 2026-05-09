@@ -8,9 +8,8 @@ CacheIDWii::~CacheIDWii() {}
 
 const char *CacheIDWii::GetCachePath(const char *param_1) {
     if (mStrCacheName.empty()) {
-        TheDebug.Fail(
-            FormatString("CacheID::GetCachePath() - mStrCacheName is empty.").Str()
-        );
+        FormatString fs("CacheID::GetCachePath() - mStrCacheName is empty.");
+        TheDebug.Fail(fs.Str());
     }
 
     if (param_1 == NULL) {
@@ -27,9 +26,8 @@ const char *CacheIDWii::GetCachePath(const char *param_1) {
 
 const char *CacheIDWii::GetCacheSearchPath(const char *param_1) {
     if (mStrCacheName.empty()) {
-        TheDebug.Fail(
-            FormatString("CacheID::GetCacheSearchPath() - mStrCacheName is empty.\n").Str()
-        );
+        FormatString fs("CacheID::GetCacheSearchPath() - mStrCacheName is empty.\n");
+        TheDebug.Fail(fs.Str());
     }
     if (param_1 == NULL) {
         return MakeString("%s/", mStrCacheName.c_str());
@@ -51,11 +49,12 @@ CacheWii::CacheWii(const CacheIDWii &param_1) {
     m0x60 = 0;
     m0x64 = "A:/DLC";
     m0x68 = "MSTORE.vff";
-    m0x6c = "A";
+    drive = "A";
 
     bool result = VFMountDriveNANDFlash();
     if (result != 0) {
-        TheDebug.Notify(FormatString("Can't mount nand drive.").Str());
+        FormatString fs("Can't mount nand drive.");
+        TheDebug.Notify(fs.Str());
     } else {
         int dirResult = VFCreateDir(m0x64);
         if (dirResult != 0 && dirResult != 0x11) {
@@ -71,10 +70,14 @@ CacheWii::CacheWii(const CacheIDWii &param_1) {
 }
 
 CacheWii::~CacheWii() {
-    int result = VFUnmountDrive(drive);
-    if (result == 0) {
-    } else {
-        TheDebug.Notify(FormatString("Can't unmount nand drive.").Str());
+    if (m0x74) {
+        int result = VFUnmountDrive(drive);
+        if (result != 0) {
+            FormatString fs("Can't unmount nand drive.");
+            TheDebug.Fail(fs.Str());
+        } else {
+            m0x74 = false;
+        }
     }
 }
 
@@ -85,7 +88,7 @@ void CacheWii::Poll() {}
 bool CacheWii::IsConnectedSync() { return true; }
 
 int CacheWii::GetFreeSpaceSync(unsigned long long *param_1) {
-    *param_1 = VFGetDriveFreeSize(m0x6c);
+    *param_1 = VFGetDriveFreeSize(drive);
     mLastResult = kCache_NoError;
     return true;
 }
@@ -163,7 +166,25 @@ bool CacheWii::ReadAsync(
     }
 }
 
-bool CacheWii::WriteAsync(const char *, void *, uint, Hmx::Object *) {}
+bool CacheWii::WriteAsync(
+    const char *param_1, void *param_2, uint param_3, Hmx::Object *param_4
+) {
+    if (!IsDone()) {
+        mLastResult = kCache_ErrorBusy;
+        return false;
+    } else if (param_1 == NULL || param_2 == NULL || param_3 == NULL) {
+        mLastResult = kCache_ErrorBadParam;
+        return false;
+    } else {
+        s_mThreadStr = m0x10.GetCachePath(param_1);
+        m0x54 = param_2;
+        m0x58 = param_3;
+        mLastResult = kCache_NoError;
+        mOpCur = kOpWrite;
+        ThreadCall(this);
+        return true;
+    }
+}
 
 bool CacheWii::DeleteAsync(const char *param_1, Hmx::Object *) {
     if (!IsDone()) {
@@ -288,7 +309,7 @@ int CacheWii::ThreadRead() {
 }
 
 int CacheWii::ThreadWrite() {
-    String fileName = m0x100 + "1" + "2";
+    String fileName = String(m0x100) + "1" + "2";
     void *file = VFOpenFile(fileName.c_str(), "", 0);
     if (file == 0 && (file = VFCreateFile(fileName.c_str(), 0), file == 0)) {
     } else {
