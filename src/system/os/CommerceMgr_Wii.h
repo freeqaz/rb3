@@ -1,5 +1,6 @@
 #pragma once
 #include "obj/Msg.h"
+#include "revolution/ec/ec.h"
 
 class WiiCommerceMgr : public MsgSource {
 public:
@@ -47,6 +48,9 @@ public:
     int unk94[21]; // 94 - padding to unkE0
     int mProgressPercent; // e8
     int mLastErrorCode; // ec
+    char unkF0[0x2128 - 0xf0]; // padding to ECTitleInfo
+    ECTitleInfo mTitleInfo; // 0x2128, sizeof = 0x24
+    char unk214c[0x41a8 - 0x214c - 4]; // padding to virtual base
 };
 
 extern WiiCommerceMgr TheWiiCommerceMgr;

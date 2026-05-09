@@ -50,21 +50,19 @@ bool WiiCommerceMgr::NeedSync() {
 bool WiiCommerceMgr::CheckPurchaseSync() { return true; }
 
 void WiiCommerceMgr::GetTitleInfo() {
-    // titleInfo is actually WiiCommerceMgr.mTitleInfo
-    ECTitleInfo titleInfo;
     for (int i = 0; i < mTitleIdsNum; i++) {
         unsigned long long titleId = mTitleIds[i];
-        long r = EC_GetTitleInfo(titleId, &titleInfo);
+        long r = EC_GetTitleInfo(titleId, &mTitleInfo);
         if (r != -4050) {
             const char *titleIdString = MakeTitleIdString(titleId);
             MILO_LOG(
                 "Store: titleinfo: %d - titleId = %s | isTmdPresent = %d | isOnDevice = %d | type = %d | version = %d\n",
                 r,
                 titleIdString,
-                titleInfo.isTmdPresent,
-                titleInfo.isOnDevice,
-                titleInfo.type,
-                titleInfo.version
+                mTitleInfo.isTmdPresent,
+                mTitleInfo.isOnDevice,
+                mTitleInfo.type,
+                mTitleInfo.version
             );
         } else {
             const char *titleIdString = MakeTitleIdString(titleId);
