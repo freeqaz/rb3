@@ -5,13 +5,19 @@
 MicClientID sNullMicClientID(-1, -1);
 
 MicClientMapper::MicClientMapper() : mMicManager(0), mNumPlayers(2) {
+    MicMappingData data;
+    PlayerMappingData player;
     for (int i = 0; i < 4; i++) {
-        MicMappingData data;
         data.unk0 = i;
+        data.unk4 = -1;
+        data.mMicID = -1;
+        data.bLocked = false;
         mMappingData.push_back(data);
     }
     for (int i = 0; i < mNumPlayers; i++) {
-        mPlayers.push_back(PlayerMappingData());
+        player.iActualMicID = -1;
+        player.iPreferredMicID = -1;
+        mPlayers.push_back(player);
     }
 }
 

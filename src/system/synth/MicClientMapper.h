@@ -20,7 +20,6 @@ public:
 
     class PlayerMappingData {
     public:
-        PlayerMappingData() : iActualMicID(-1), iPreferredMicID(-1) {}
         int iActualMicID; // 0x0
         int iPreferredMicID; // 0x4
     };
