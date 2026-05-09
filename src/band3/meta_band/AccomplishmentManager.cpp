@@ -1331,12 +1331,14 @@ void AccomplishmentManager::UpdateMiscellaneousSongDataForUser(Symbol s, LocalBa
     MILO_ASSERT(pBand, 0x86C);
     Performer *pBandPerformer = pBand->MainPerformer();
     MILO_ASSERT(pBandPerformer, 0x86E);
-    int codaScore = pBandPerformer->CodaScore();
+    int score = pBandPerformer->GetScore();
     AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
-    prog.UpdateStats(scoreType, diff, codaScore, pPerformer->mStats, pPerformer, pBand);
-    prog.SetTotalSongsPlayed(prog.GetTotalSongsPlayed() + 1);
+    prog.UpdateStats(scoreType, diff, score, pPerformer->mStats, pPerformer, pBand);
+    int total = prog.GetTotalSongsPlayed();
+    prog.SetTotalSongsPlayed(total + 1);
     if (TheGameMode->InMode("tour")) {
-        prog.SetTourTotalSongsPlayed(prog.GetTourTotalSongsPlayed() + 1);
+        prog.GetTourTotalSongsPlayed();
+        prog.SetTourTotalSongsPlayed(total + 1);
     }
     pProfile->MakeDirty();
 }
