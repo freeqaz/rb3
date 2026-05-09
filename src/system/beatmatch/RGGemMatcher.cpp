@@ -87,9 +87,9 @@ bool RGGemMatcher::FretHistoryMatch(int i1, int i2, float f3, float f4, RGMatchT
     else {
         float f1 = f3;
         for (int i = 0; i < 4; i++) {
-            if (i2 == pairs[i][0].i && f3 - f1 < f4)
+            if (i2 == pairs[i1][i].i && f3 - f1 < f4)
                 return true;
-            f1 = pairs[i][0].f;
+            f1 = pairs[i1][i].f;
         }
         return false;
     }
