@@ -146,6 +146,7 @@ void CharacterCreatorPanel::AddGridThumbnails(Symbol s) {
 DECOMP_FORCEACTIVE(CharacterCreatorPanel, "ui/character_creator/image/%s_keep.png")
 
 void CharacterCreatorPanel::AddGridThumbnails(Symbol s1, Symbol s2) {
+    const char *artStr = "ui/character_creator/image/%s_keep.png";
     int count;
     if (s2 == eyebrows) {
         AssetMgr *pAssetMgr = AssetMgr::GetAssetMgr();
@@ -156,7 +157,7 @@ void CharacterCreatorPanel::AddGridThumbnails(Symbol s1, Symbol s2) {
     }
     for (int i = 0; i < count; i++) {
         const char *str = MakeString("%s_%s_%d", s1.Str(), s2.Str(), i);
-        const char *charstr = MakeString("ui/character_creator/image/%s_keep.png", str);
+        const char *charstr = MakeString(artStr, str);
         AddTex(charstr, str, true, true);
     }
 }

@@ -585,8 +585,11 @@ void VocalTrackDir::SetEnableVocalsOptions(bool) {}
 
 void VocalTrackDir::ShowPhraseFeedback(int i1, int i2, int i3, bool b) {
     int parts = mStreakMeter->NumActiveParts();
-    if (BandTrack::mParent)
-        parts = Min(parts, BandTrack::mParent->NumSingers());
+    if (BandTrack::mParent) {
+        int singers = BandTrack::mParent->NumSingers();
+        if (singers < parts)
+            parts = singers;
+    }
     int i_sum = 0;
     if (i1 == 4)
         i_sum = 1;

@@ -49,25 +49,25 @@ TourSetlistType QuestFilterPanel::GetSelectedSetlistType() {
         return kTourSetlist_Invalid;
     DataNode handled = Handle(get_selected_filter_index_msg, true);
     int i = handled.Int();
-    TourSetlistType ret;
     if (m_pQuestFilterProvider->NumData() > 0) {
         TourProgress *prog = TheTour->GetTourProgress();
         if (prog) {
             TourDesc *desc = TheTour->GetTourDesc(prog->GetTourDesc());
             if (desc) {
+                TourSetlistType ret;
                 Symbol gigtype =
                     desc->GetSetlistTypeForGigNum(prog->GetCurrentGigNum(), i);
                 if (gigtype == random)
                     ret = kTourSetlist_Random;
                 else if (gigtype == custom)
                     ret = kTourSetlist_Custom;
+                else
+                    ret = kTourSetlist_Fixed;
                 return ret;
             }
         }
-        ret = kTourSetlist_Fixed;
-    } else
-        ret = kTourSetlist_Invalid;
-    return ret;
+    }
+    return kTourSetlist_Invalid;
 }
 
 void QuestFilterPanel::LoadIcons() {

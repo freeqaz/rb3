@@ -1048,12 +1048,10 @@ void ProfileMgr::ForceMicOutputGain(int i1, float f2) {
 #ifdef MILO_DEBUG
         static DataNode &n = DataVariable("print_mic_gains");
         if (n.Int()) {
-            MILO_LOG(
-                "Mic output gain forcing: %s - output gain for mic %d is %f dB\n",
-                f2 == 0 ? "INACTIVE" : "ACTIVE",
-                i1,
-                f2
-            );
+            const char *fmt =
+                "Mic output gain forcing: %s - output gain for mic %d is %f dB\n";
+            const char *state = f2 == 0 ? "INACTIVE" : "ACTIVE";
+            MILO_LOG(fmt, state, i1, f2);
         }
 #endif
         Mic *mic = TheSynth->GetMic(i1);

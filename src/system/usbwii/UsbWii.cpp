@@ -198,17 +198,21 @@ bool UsbWii::OpenLib() {
     MemPushHeap(_x);
     usbMem = _MemAlloc(0x3AE0, 0x20);
     MemPopHeap();
-    if (usbMem != NULL) {
-        sUSBOpenCloseResult = OPENCLOSE_START_MAGIC;
-        int r;
-        do {
-            r = HIDOpenAsync(usbMem, UsbOpenCloseCallback, 0);
-            if (r == 0) {
-                return WaitForUSBOpenCloseResult();
-            }
-        } while (r == -5);
+    if (usbMem == NULL) {
+        return false;
     }
-    return false;
+    sUSBOpenCloseResult = OPENCLOSE_START_MAGIC;
+    int r;
+    while (true) {
+        r = HIDOpenAsync(usbMem, UsbOpenCloseCallback, 0);
+        if (r == 0) {
+            break;
+        }
+        if (r != -5) {
+            return false;
+        }
+    }
+    return WaitForUSBOpenCloseResult();
 }
 
 void UsbWii::SetLED(int num, int led) {
