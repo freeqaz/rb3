@@ -149,6 +149,7 @@ void CharInit() {
     CharIKFingers::Init();
     CharIKFoot::Init();
     CharIKHand::Init();
+    CharIKHead::Init();
     CharIKMidi::Init();
     CharIKSliderMidi::Init();
     CharIKRod::Init();

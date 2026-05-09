@@ -256,12 +256,15 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
     } else {
         float oldBeat = mBeat;
         if (!useUserTime) {
+            float db;
             if (useRealTime) {
-                deltaBeat = mClip->DeltaSecondsToDeltaBeat(deltaSeconds, mBeat);
+                db = mClip->DeltaSecondsToDeltaBeat(deltaSeconds, oldBeat);
+            } else {
+                db = deltaBeat;
             }
-            mDBeat = mTimeScale * deltaBeat;
+            mDBeat = mTimeScale * db;
         }
-        mBeat += mDBeat;
+        mBeat = mDBeat + mBeat;
         float align = AlignToBeat(beat);
         mBeat += align;
         mAdvanceBeat = mDBeat + align;

@@ -263,7 +263,9 @@ void CharacterTest::PlayNew() {
             mDriver->Play(mClip2, CharClip::kPlayLast, -1.0f, kHugeFloat, 0.0f);
         }
     } else {
-        drv->mPlayFlags = drv->mPlayFlags & 0xffff0f0f | CharClip::kPlayLoop;
+        drv->mPlayFlags &= 0xffff0fff;
+        drv->mPlayFlags &= 0xffffff0f;
+        drv->mPlayFlags |= CharClip::kPlayLoop;
     }
 }
 

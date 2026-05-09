@@ -1,5 +1,6 @@
 #include "char/ClipGraphGen.h"
 #include "decomp.h"
+#include "math/Utl.h"
 #include "os/Debug.h"
 #include "utl/Symbols.h"
 
@@ -95,8 +96,9 @@ DataNode ClipGraphGenerator::OnGenerateTransitions(DataArray *da) {
     int aflag = mClipA->mPlayFlags >> 12 & 15;
     if (bflag < aflag)
         aflag = bflag;
-    if (beat_align < (float)aflag)
-        beat_align = aflag;
+    float aflagf = (float)aflag;
+    if (beat_align < aflagf)
+        beat_align = (float)aflag;
 
     DataArray *boneweightarr = unk1c->FindArray("transition_bone_weights", false);
     mDmap = new ClipDistMap(mClipA, mClipB, beat_align, blend_width, 3, boneweightarr);

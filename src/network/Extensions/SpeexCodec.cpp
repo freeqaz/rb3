@@ -8,8 +8,9 @@ namespace Quazal {
     SpeexCodec::SpeexCodec(int i1) : unk18(i1 / 20) {
         if (unk18 == 0)
             unk18 = 1;
+        int n = unk18;
         unk1c = 160;
-        mAudioStreamFormat.mNbSamplesPerPacket = unk18 * 160;
+        mAudioStreamFormat.mNbSamplesPerPacket = n * 160;
     }
 
     SpeexCodec::~SpeexCodec() {}

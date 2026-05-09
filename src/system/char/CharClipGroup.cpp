@@ -45,10 +45,10 @@ void CharClipGroup::Replace(Hmx::Object *from, Hmx::Object *to) {
 
 int CharClipGroup::NumFlagDuplicates(CharClip *clip, int x) {
     int count = 0;
-    int flags = clip->Flags();
+    int flags = x & clip->Flags();
     for (int i = 0; i < mClips.size(); i++) {
         if (clip != mClips[i]) {
-            if ((x & flags) == (x & mClips[i]->Flags()))
+            if (flags == (x & mClips[i]->Flags()))
                 count++;
         }
     }
