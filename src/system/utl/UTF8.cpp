@@ -201,7 +201,7 @@ void UTF8FilterString(char *out, int len, const char *in, const char *allowed, c
         us = 0;
         decoded = DecodeUTF8(us, in);
         if (UTF8strchr(allowed, us) != 0) {
-            for (unsigned int i = 0; i < decoded; i++)
+            for (unsigned int i = decoded; i != 0; i--)
                 *out++ = *in++;
         } else {
             *out++ = c;

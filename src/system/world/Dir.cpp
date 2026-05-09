@@ -11,6 +11,7 @@
 #include "world/SpotlightDrawer.h"
 #include "rndobj/Mat.h"
 #include "rndobj/Cam.h"
+#include "rndobj/Graph.h"
 #include "rndobj/Rnd.h"
 #include "string.h"
 #include "obj/ObjVersion.h"
@@ -360,6 +361,7 @@ void WorldDir::DrawShowing() {
     if (TheWorld) {
         if (Showing())
             DrawSplitWorld();
+        return;
     } else {
         SetTheWorld(this);
         CamShot *shot = mCameraManager.MiloCamera();
@@ -368,10 +370,11 @@ void WorldDir::DrawShowing() {
         if (shot)
             shot = shot->CurrentShot();
         RndCam *cam2 = CamOverride();
-        RndCam *cam7 = RndCam::sCurrent;
-        if (cam2) {
+        RndCam *cam7 = cam2;
+        if (!cam2) {
+            cam7 = RndCam::sCurrent;
+        } else {
             cam2->Select();
-            cam7 = cam2;
         }
         RndEnviron *env = GetEnv() ? GetEnv() : TheUI.GetEnv();
         env->Select(0);
@@ -401,6 +404,7 @@ void WorldDir::DrawShowing() {
                 (*it)->DrawShowing();
             }
         }
+        RndGraph::SetCamera(RndCam::sCurrent);
         if (mFakeHudDir)
             mFakeHudDir->DrawShowing();
         if (mHud && mHud->Showing()) {

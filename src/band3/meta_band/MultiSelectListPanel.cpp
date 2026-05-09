@@ -76,8 +76,8 @@ DataNode MultiSelectListPanel::OnMsg(const UIComponentScrollMsg &) {
             i1 = 0;
         int i2 = mScrollList->SelectedDisplay();
         float y = mSelectionStart.y;
-        float z = mSelectionStart.z;
         float fi1 = (float)i1;
+        float z = mSelectionStart.z;
         z = -(mSpacing * fi1 - z);
         mSelectionMesh->SetLocalPos(mSelectionStart.x, y, z);
         ResetSelectRect((i2 - i1) + 1);
@@ -90,8 +90,8 @@ DataNode MultiSelectListPanel::OnMsg(const ButtonDownMsg &) {
 }
 
 void MultiSelectListPanel::UnChoose() {
-    int i1 = Min(mStartSection, mScrollList->GetListState().FirstShowing());
-    mScrollList->SetSelected(mStartSection, i1);
+    UIListState& state = mScrollList->GetListState();
+    mScrollList->SetSelected(mStartSection, Min(mStartSection, state.FirstShowing()));
     mStartSection = -1;
     mSelectionMesh->SetShowing(false);
 }
