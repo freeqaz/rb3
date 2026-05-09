@@ -37,14 +37,16 @@ namespace Quazal {
     }
 
     void MemoryManager::BeginProtection() {
+        MutexPrimitive *mutex = m_pMutex;
         if (!MutexPrimitive::s_bNoOp) {
-            m_pMutex->EnterImpl();
+            mutex->EnterImpl();
         }
     }
 
     void MemoryManager::EndProtection() {
+        MutexPrimitive *mutex = m_pMutex;
         if (!MutexPrimitive::s_bNoOp) {
-            m_pMutex->LeaveImpl();
+            mutex->LeaveImpl();
         }
     }
 

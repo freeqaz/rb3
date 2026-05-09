@@ -946,7 +946,8 @@ float GemTrackDir::GetKeyOffset() { return mKeyOffset; }
 void GemTrackDir::UpdateFingerFeedback(const RGState &state) {
 #ifdef MILO_DEBUG
     static int count;
-    const RGState &touse = mFakeFingerShape ? mRGState : state;
+    const RGState *touse = &state;
+    if (mFakeFingerShape) touse = &mRGState;
     if (mCycleFakeFingerShapes) {
         count++;
         if (count == mRandomShapeFrameCount) {
@@ -957,7 +958,7 @@ void GemTrackDir::UpdateFingerFeedback(const RGState &state) {
         }
     }
     if (mFingerShape)
-        mFingerShape->Update(touse, true, false);
+        mFingerShape->Update(*touse, true, false);
 #else
     if (mFingerShape)
         mFingerShape->Update(state, true, false);

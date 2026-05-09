@@ -65,7 +65,7 @@ namespace Quazal {
 
     void Platform::Sleep(uint msecs) {
         if (msecs != 0) {
-            OSSleepTicks(OSMillisecondsToTicks(msecs));
+            OSSleepTicks(OSMillisecondsToTicks((s64)msecs));
         } else
             OSYieldThread();
     }

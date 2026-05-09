@@ -262,25 +262,24 @@ void BandTrack::SetupCrowdMeter() {
 }
 
 void BandTrack::SyncInstrument() {
-    Symbol instrument = mInstrument;
-    if (instrument == guitar) {
+    if (mInstrument == guitar) {
         mTrackInstrument = kInstGuitar;
-    } else if (instrument == bass) {
+    } else if (mInstrument == bass) {
         mTrackInstrument = kInstBass;
-    } else if (instrument == drum) {
+    } else if (mInstrument == drum) {
         mTrackInstrument = kInstDrum;
-    } else if (instrument == vocals) {
+    } else if (mInstrument == vocals) {
         mTrackInstrument = kInstVocals;
-    } else if (instrument == keys) {
+    } else if (mInstrument == keys) {
         mTrackInstrument = kInstKeys;
-    } else if (instrument == real_guitar) {
+    } else if (mInstrument == real_guitar) {
         mTrackInstrument = kInstRealGuitar;
-    } else if (instrument == real_bass) {
+    } else if (mInstrument == real_bass) {
         mTrackInstrument = kInstRealBass;
-    } else if (instrument == real_keys) {
+    } else if (mInstrument == real_keys) {
         mTrackInstrument = kInstRealKeys;
     } else {
-        MILO_NOTIFY_ONCE("unexpected instrument symbol \"%s\"", instrument);
+        MILO_NOTIFY_ONCE(MakeString("unexpected instrument symbol \"%s\"", mInstrument.mStr));
 
         mTrackInstrument = kInstNone;
     }

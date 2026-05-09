@@ -207,6 +207,8 @@ void NetCacheMgr::DeleteNetCacheLoader(NetCacheLoader *ncl) {
     }
 }
 
+static Symbol local("local");
+
 Symbol NetCacheMgr::CheatNextServer() {
     std::list<ServerData>::iterator s = mServers.begin();
     for (; s != mServers.end() && s->type != mServerType; s++)
@@ -217,8 +219,7 @@ Symbol NetCacheMgr::CheatNextServer() {
         s = mServers.begin();
     }
     mServerType = s->type;
-    static Symbol local_sym("local");
-    if (UsingCD() && mServerType == local_sym) {
+    if (UsingCD() && mServerType == local) {
         CheatNextServer();
     }
     return mServerType;

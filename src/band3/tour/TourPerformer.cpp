@@ -161,8 +161,8 @@ const GigData &TourPerformerImpl::GetMostRecentGigData() const {
 int TourPerformerImpl::GetSongQuestStars() const { return GetMostRecentGigData().unk8; }
 
 int TourPerformerImpl::GetQuestSuccessfulSongCount() const {
-    int num = mMetaPerformer->NumSongs();
     int successes = 0;
+    int num = mMetaPerformer->NumSongs();
     for (int i = 0; i < num; i++) {
         if (mGigData[i].unk8 >= 5)
             successes++;

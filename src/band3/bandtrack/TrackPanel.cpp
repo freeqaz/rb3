@@ -216,7 +216,7 @@ void TrackPanel::CleanUpTracks() {
             }
         }
         DeleteAll(mTracks);
-        ClearAndShrink(mTracks); // might be something else idk
+        TrimExcess(mTracks);
         if (unk5d) {
             for (int i = 0; i < mTrackSlots.size(); i++) {
                 mTrackPanelDir->RemoveTrack(i);

@@ -42,9 +42,14 @@ Gem &Gem::operator=(const Gem &g) {
     mTails = g.mTails;
     mWidgets = g.mWidgets;
     mArrhythmicDurationSeconds = g.mArrhythmicDurationSeconds;
+    unk_0x58 = g.unk_0x58;
     unk_0x40 = g.unk_0x40;
-    mChordLabel = g.mChordLabel;
+    unk_0x66_7 = g.unk_0x66_7;
+    unk_0x44 = g.unk_0x44;
+    mFirstFret = g.mFirstFret;
     mFirstFretString = g.mFirstFretString;
+    unk_0x67_0 = g.unk_0x67_0;
+    unk_0x67_1 = g.unk_0x67_1;
     mKeyFingerNumber = g.mKeyFingerNumber;
 }
 
@@ -366,7 +371,15 @@ void Gem::AddWidgetInstanceImpl(TrackWidget *w, int i) {
         static DataNode &rg_widget_scale = DataVariable("rg_widget_scale");
         float rgFloat = rg_widget_scale.Float();
         if (rgFloat > 0) {
-            Scale(tf38.m, Vector3(rgFloat, rgFloat, rgFloat), tf38.m);
+            tf38.m.x.z *= rgFloat;
+            tf38.m.x.y *= rgFloat;
+            tf38.m.x.x *= rgFloat;
+            tf38.m.y.z *= rgFloat;
+            tf38.m.y.y *= rgFloat;
+            tf38.m.y.x *= rgFloat;
+            tf38.m.z.z *= rgFloat;
+            tf38.m.z.y *= rgFloat;
+            tf38.m.z.x *= rgFloat;
         }
     }
     w->AddInstance(tf38, 0);

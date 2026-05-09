@@ -36,6 +36,9 @@ namespace Quazal {
     void Job::Resume() {
         ValidateTransition(m_eState, Ready);
         m_eState = Ready;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
     }
 
     void Job::SetToWaiting(int i) {
@@ -50,31 +53,49 @@ namespace Quazal {
     void Job::SetToSuspended() {
         ValidateTransition(m_eState, Suspended);
         m_eState = Suspended;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
     }
 
     void Job::SetToReady() {
         ValidateTransition(m_eState, Ready);
         m_eState = Ready;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
     }
 
     void Job::SetToRunning() {
         ValidateTransition(m_eState, Running);
         m_eState = Running;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
     }
 
     void Job::SetToComplete() {
         ValidateTransition(m_eState, Complete);
         m_eState = Complete;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
     }
 
     void Job::SetToCancel() {
         ValidateTransition(m_eState, Complete);
         m_eState = Complete;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
     }
 
     void Job::SetToInitial() {
         ValidateTransition(m_eState, Initial);
         m_eState = Initial;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
     }
 
     // what even is the point of this function lmao

@@ -803,8 +803,19 @@ DataNode BandCamShot::OnTestDelta(DataArray *arr) {
     float f4 = arr->Float(2);
     bool ret = true;
     if (f4 != 0) {
-        if ((mMinTime != 0 || !(f4 >= mMinTime)) && (mMaxTime != 0 || !(f4 <= mMaxTime)))
-            ret = false;
+        bool inRange = false;
+        bool passMin = true;
+        if (mMinTime != 0) {
+            if (!(f4 >= mMinTime)) passMin = false;
+        }
+        if (passMin) {
+            bool passMax = true;
+            if (mMaxTime != 0) {
+                if (!(f4 <= mMaxTime)) passMax = false;
+            }
+            if (passMax) inRange = true;
+        }
+        if (!inRange) ret = false;
     }
     return ret;
 }

@@ -148,15 +148,21 @@ void ScrollbarDisplay::UpdateThumbScaleAndPosition() {
     MILO_ASSERT(m_pThumbBottomBone, 0x11C);
     MILO_ASSERT(m_pTopBone, 0x11D);
     MILO_ASSERT(m_pBottomBone, 0x11E);
-    float scale = GetSavedScale();
+    float h = mScrollbarHeight;
+    float scale = h * GetSavedScale();
     float pos = GetSavedPosition();
-    scale *= mScrollbarHeight;
-    Vector3 v4c(m_pTopBone->mLocalXfm.v);
-    v4c.z -= (pos * (mScrollbarHeight - scale));
-    m_pThumbTopBone->SetLocalPos(v4c);
-    Vector3 v58(m_pThumbTopBone->mLocalXfm.v);
-    v58.z -= scale;
-    m_pThumbBottomBone->SetLocalPos(v58);
+    MaxEq(scale, mMinThumbHeight);
+    float diff = h - scale;
+    m_pThumbTopBone->SetLocalPos(
+        m_pTopBone->mLocalXfm.v.x,
+        m_pTopBone->mLocalXfm.v.y,
+        m_pTopBone->mLocalXfm.v.z - pos * diff
+    );
+    m_pThumbBottomBone->SetLocalPos(
+        m_pThumbTopBone->mLocalXfm.v.x,
+        m_pThumbTopBone->mLocalXfm.v.y,
+        m_pThumbTopBone->mLocalXfm.v.z - scale
+    );
     MILO_ASSERT(m_pThumbGroup, 0x13E);
     if (m_fSavedScale < 1.0f)
         m_pThumbGroup->SetShowing(true);

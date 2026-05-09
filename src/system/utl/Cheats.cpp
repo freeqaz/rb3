@@ -192,7 +192,19 @@ DataNode MemHuntStatsDF(DataArray *) { return 0; }
 
 DataNode ForceGPHangRecoveryDF(DataArray *arr) {
     if (!gbDbgRequestHangRecovery && !gbDbgRequestForcedHang) {
-        if (arr && arr->Size() > 1 && arr->Type(1) == kDataInt && arr->Int(1) != 0) {
+        bool b3 = false;
+        bool b2 = false;
+        bool b1 = false;
+        if (arr && arr->Size() > 1) {
+            b1 = true;
+        }
+        if (b1 && arr->Node(1).Type() == kDataInt) {
+            b2 = true;
+        }
+        if (b2 && arr->Int(1) != 0) {
+            b3 = true;
+        }
+        if (b3) {
             gbDbgRequestForcedHang = true;
             OSReport("GPHangDebug: Requesting forced hang.\n");
         } else {
