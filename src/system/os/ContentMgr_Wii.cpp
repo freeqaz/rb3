@@ -387,9 +387,7 @@ void WiiContentMgr::Init() {
     ContentMgr::Init();
     ThePlatformMgr.AddSink(this);
 
-    ECNameValue ec_alloc_funcs[2];
-    ec_alloc_funcs[0] = ecAllocFunc;
-    ec_alloc_funcs[1] = ecFreeFunc;
+    ECNameValue ec_alloc_funcs[2] = { ecAllocFunc, ecFreeFunc };
     int ec_r = EC_Init(ec_alloc_funcs, 2);
     if (ec_r == -4080) {
         mNeedShopAccount = true;

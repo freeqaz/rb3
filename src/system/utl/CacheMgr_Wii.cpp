@@ -1,6 +1,7 @@
 #include "CacheMgr_Wii.h"
 #include "Cache_Wii.h"
 #include "VF.h"
+#include "MemMgr.h"
 
 const char *unusedStrings[] = {
     "A",
@@ -21,7 +22,10 @@ void CacheMgrWii::CreateVFCache() {
     bool result = VFMountDriveNANDFlashEx("", "");
 }
 
-CacheMgrWii::~CacheMgrWii() {}
+CacheMgrWii::~CacheMgrWii() {
+    VFFinalize();
+    _MemFree((void *)mUnk);
+}
 
 void CacheMgrWii::Poll() {
     CacheMgr::OpType op = GetOp();

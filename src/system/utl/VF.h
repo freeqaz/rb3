@@ -11,6 +11,7 @@ extern "C" {
 
 extern int VFIsAvailable();
 extern void VFInitEx();
+extern void VFFinalize();
 extern bool VFMountDriveNANDFlashEx(const char *drive, const char *sysFileName);
 extern int VFUnmountDrive(const char *drive);
 extern void *VFOpenFile(const char *path, const char *mode, unsigned int attr);

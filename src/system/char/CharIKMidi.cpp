@@ -91,17 +91,15 @@ void CharIKMidi::Poll() {
 
 void DoDebugDraws(CharIKMidi *mid, float f) {
     for (ObjDirItr<MsgSource> it(ObjectDir::Main(), true); it != nullptr; ++it) {
-        if (it) {
-            for (std::list<MsgSource::Sink>::iterator sit = it->mSinks.begin();
-                 sit != it->mSinks.end();
-                 ++sit) {
-                if (sit->obj == mid) {
-                    static Message msg("debug_draw", 2.0f, 2.0f);
-                    msg[0] = f;
-                    msg[1] = TheTaskMgr.Beat();
-                    it->Handle(msg, false);
-                    return;
-                }
+        for (std::list<MsgSource::Sink>::iterator sit = it->mSinks.begin();
+             sit != it->mSinks.end();
+             ++sit) {
+            if (sit->obj == mid) {
+                static Message msg("debug_draw", 2.0f, 2.0f);
+                msg[0] = f;
+                msg[1] = TheTaskMgr.Beat();
+                it->Handle(msg, false);
+                return;
             }
         }
     }
