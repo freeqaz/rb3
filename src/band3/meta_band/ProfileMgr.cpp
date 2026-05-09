@@ -1016,7 +1016,7 @@ void ProfileMgr::UpdateMultiMicDeviceSliders(Mic *mic, int i2) {
                 TheSynth->GetMicClientMapper()->GetMicIDForClientID(MicClientID(i, -1));
             if (micID != -1) {
                 Mic *myMic = TheSynth->GetMic(micID);
-                if (mic != myMic) {
+                if (mic != myMic && myMic != NULL) {
                     if (myMic->GetName() == mic->GetName()) {
                         if (myMic->GetGain() == mic->GetGain()) {
                             mMicVolumes[i] = i2;

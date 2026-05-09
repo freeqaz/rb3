@@ -16,8 +16,9 @@ namespace Quazal {
         }
         virtual ~MethodCallJob() {}
         virtual void Execute() {
+            T1 *target = m_pTargetObject;
             JobFunc func = m_pMethod;
-            (m_pTargetObject->*func)(m_arg);
+            (target->*func)(m_arg);
         }
         virtual String GetTraceInfo() const {}
 

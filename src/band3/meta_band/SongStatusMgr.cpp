@@ -484,6 +484,7 @@ bool SongStatusMgr::UpdateSongStats(
     if (updated) {
         UpdateCachedTotalStars(ty);
     }
+    updated = updated != 0;
     updated |= songStatus->UpdateAccuracy(ty, diff, stats.mAccuracy);
     updated |= songStatus->UpdateStreak(ty, diff, stats.mStreak);
     if (ty == kScoreVocals || ty == kScoreHarmony) {

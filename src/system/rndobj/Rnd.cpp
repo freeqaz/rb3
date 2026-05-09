@@ -428,8 +428,8 @@ void Rnd::TestPoint(const Vector3 &pos, RndFlare *flare) {
     }
     std::list<PointTest>::iterator it = mPointTests.insert(mPointTests.end(), PointTest());
     it->unk_0xC = flare;
-    it->unk_0x0 = (int)((float)mWidth * screen.x);
-    it->unk_0x4 = (int)((float)mHeight * screen.y);
+    it->unk_0x0 = (int)(screen.x * (float)mWidth);
+    it->unk_0x4 = (int)(screen.y * (float)mHeight);
     it->unk_0x8 = cam->ProjectZ(depth);
 }
 

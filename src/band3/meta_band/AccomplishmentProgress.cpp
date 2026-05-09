@@ -241,7 +241,8 @@ void AccomplishmentProgress::ClearNewRewardVignetteFestival() {
 bool AccomplishmentProgress::AddAward(Symbol s1, Symbol s2) {
     if (!HasAward(s1)) {
         mAwards.insert(s1);
-        mNewAwards.push_back(std::make_pair(s1, s2));
+        std::pair<Symbol, Symbol> p(s1, s2);
+        mNewAwards.push_back(p);
         Award *pAward = TheAccomplishmentMgr->GetAward(s1);
         MILO_ASSERT(pAward, 0x1BD);
         pAward->GrantAwards(mParentProfile);

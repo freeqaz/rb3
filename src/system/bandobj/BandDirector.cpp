@@ -723,7 +723,7 @@ void BandDirector::ClearSymbolKeysFrameRange(Symbol s, float fstart, float fend)
                 keys->FrameFromIndex(i, frame);
                 frame /= 30.0f;
                 if (frame >= fstart && frame <= fend)
-                    keys->RemoveKey(i);
+                    numkeys = keys->RemoveKey(i);
                 else
                     i++;
             }

@@ -56,7 +56,11 @@ namespace Quazal {
                 mgr->BeginProtection();
             }
             void *toFree = (char *)mem - GetHeaderSize();
-            GenericFree(toFree);
+            FreeFunc *f = *(FreeFunc **)toFree;
+            if (f)
+                f(toFree);
+            else
+                free(toFree);
             ExceptionHandler::CheckCrtExceptions();
             if (mgr && !state) {
                 mgr->EndProtection();

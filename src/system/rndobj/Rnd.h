@@ -43,6 +43,7 @@ public:
     struct PointTest {
         int unk_0x0, unk_0x4, unk_0x8;
         RndFlare *unk_0xC;
+        PointTest() : unk_0x0(0), unk_0x4(0), unk_0x8(0), unk_0xC(0) {}
     };
 
     enum Aspect {

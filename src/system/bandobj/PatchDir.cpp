@@ -78,9 +78,7 @@ void PatchSticker::FinishLoad() {
             prev->SetMip(cur);
         other.SetMip(0);
         mTex->SetBitmap(other, 0, true);
-        other.Reset();
     }
-    bmap.Reset();
 }
 
 void PatchSticker::Unload() {
