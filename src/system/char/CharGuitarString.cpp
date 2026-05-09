@@ -39,7 +39,17 @@ void CharGuitarString::Poll() {
     float clamped = Clamp(0.0f, 1.0f, (ez*dz + (ex*dx + ey_dy)) / (dz*dz + (dx*dx + dy_sq)));
     if (mOpen)
         clamped = 0.0f;
-    Interp(nutvec, bridgevec, clamped, tf50.v);
+    if (clamped == 0.0f) {
+        tf50.v = nutvec;
+    } else if (clamped == 1.0f) {
+        tf50.v = bridgevec;
+    } else {
+        tf50.v.Set(
+            clamped * (bx - nx) + nx,
+            clamped * (by - ny) + ny,
+            clamped * (bz - nz) + nz
+        );
+    }
     mBend->SetWorldXfm(tf50);
 }
 

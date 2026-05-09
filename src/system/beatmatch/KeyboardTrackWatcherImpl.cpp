@@ -99,10 +99,10 @@ int KeyboardTrackWatcherImpl::ClosestUnplayedGem(float ms, int slot) {
     int i1 = mGemList->ClosestMarkerIdx(ms + mSyncOffset);
     float f4 = mGemList->TimeAt(i1);
     int i3;
-    for (i3 = i1; i3 + 1 < mGemList->NumGems() && mGemList->TimeAt(i3) <= f4 + 20.0f;
+    for (i3 = i1; i3 + 1 < mGemList->NumGems() && mGemList->TimeAt(i3 + 1) <= f4 + 20.0f;
          i3++)
         ;
-    for (; i1 - 1 >= 0 && mGemList->TimeAt(i1) >= f4 - 20.0f; i1--)
+    for (; i1 - 1 >= 0 && mGemList->TimeAt(i1 - 1) >= f4 - 20.0f; i1--)
         ;
     return RelevantGem(i1, i3, slot);
 }

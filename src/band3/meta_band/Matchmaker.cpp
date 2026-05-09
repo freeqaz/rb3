@@ -33,11 +33,12 @@ void MatchmakerPoolStats::ClearStats() {
 }
 
 void MatchmakerPoolStats::ReadStats(const std::vector<NetSearchResult *> &results) {
+    MatchmakingSettings *settings;
     int i10 = 0;
     int i9 = 0;
     int i8 = 0;
     for (int i = 0; i < results.size(); i++) {
-        MatchmakingSettings *settings = results[i]->mSettings;
+        settings = results[i]->mSettings;
         i10 += (2 - settings->GetCustomValueByID(0x1000000c));
         i9 += (1 - settings->GetCustomValueByID(0x1000000a));
         i8 += (1 - settings->GetCustomValueByID(0x1000000b));

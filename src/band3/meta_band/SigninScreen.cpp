@@ -64,9 +64,14 @@ void SigninScreen::ReEvaluateState() {
         return;
 
     LocalBandUser *user = GetUser()->GetLocalBandUser();
-    if ((mMustBeOnline && ThePlatformMgr.IsUserSignedIntoLive(user))
-        || (mMustBeMultiplayerCapable && ThePlatformMgr.IsUserSignedIn(user)
-            && ThePlatformMgr.UserHasOnlinePrivilege(user))) {
+    bool ok = false;
+    if (mMustBeOnline && ThePlatformMgr.IsUserSignedIntoLive(user)) {
+        ok = true;
+    } else if (mMustBeMultiplayerCapable && ThePlatformMgr.IsUserSignedIn(user)
+               && ThePlatformMgr.UserHasOnlinePrivilege(user)) {
+        ok = true;
+    }
+    if (ok) {
         bool b1 = true;
         if (mMustNotBeAGuest && ThePlatformMgr.IsUserAGuest(user))
             b1 = false;
