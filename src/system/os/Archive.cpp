@@ -91,10 +91,11 @@ bool Archive::GetFileInfo(
 
 BinStream &operator>>(BinStream &bs, FileEntry &f) {
     bs >> f.mOffset >> f.mHashedName >> f.mHashedPath >> f.mSize >> f.mUCSize;
-    if (f.mOffset != 0) {
+    long long highDword = ((int *)&f.mOffset)[0];
+    if (highDword != 0) {
         MILO_FAIL(
             "operator>>(BinStream&,FileEntry&): file offset > 32 bits. will overflow FileEntryWiiShip::mOffset. high dword:0x%08x)\n",
-            f.mOffset
+            (unsigned int)highDword
         );
     }
     return bs;

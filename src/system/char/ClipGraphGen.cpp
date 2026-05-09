@@ -98,7 +98,7 @@ DataNode ClipGraphGenerator::OnGenerateTransitions(DataArray *da) {
         aflag = bflag;
     float aflagf = (float)aflag;
     if (beat_align < aflagf)
-        beat_align = (float)aflag;
+        beat_align = aflagf;
 
     DataArray *boneweightarr = unk1c->FindArray("transition_bone_weights", false);
     mDmap = new ClipDistMap(mClipA, mClipB, beat_align, blend_width, 3, boneweightarr);

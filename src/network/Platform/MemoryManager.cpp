@@ -29,7 +29,7 @@ namespace Quazal {
         if (mgr)
             mgr->BeginProtection();
         unsigned int offset = GetHeaderSize();
-        s_fcnFree(malloced);
+        *(FreeFunc **)malloced = s_fcnFree;
         void *ret = (char *)malloced + offset;
         if (mgr)
             mgr->EndProtection();
