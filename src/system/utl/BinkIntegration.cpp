@@ -232,7 +232,7 @@ int BinkFileBGControl(BINKIO *bink, unsigned int flags) {
             bink->Suspended = 1;
         }
         if (flags & 0x80000000)
-            while (bink->DoingARead)
+            while (((volatile BINKIO *)bink)->DoingARead)
                 ;
     } else {
         if (flags & 2) {

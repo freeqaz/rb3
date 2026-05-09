@@ -45,11 +45,11 @@ class CacheWii : public Cache, public ThreadCallback {
     int ThreadDelete();
 
     CacheIDWii m0x10;
-    String s_mThreadStr; // 0x3c
+    String mThreadStr; // 0x3c
     String m0x48;
     void *m0x54;
     int m0x58;
-    std::vector<CacheDirEntry> *s_mCacheDirList; // 0x5c
+    std::vector<CacheDirEntry> *mCacheDirList; // 0x5c
     int m0x60;
     char *m0x64;
     char *m0x68;

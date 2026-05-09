@@ -883,9 +883,9 @@ CamShotFrame::CamShotFrame(Hmx::Object *o, const CamShotFrame &frame)
 }
 
 Vector2 CamShotFrame::MaxAngularOffset() const {
-    float x = (float)(signed char)mMaxAngularOffset[0] * 0.012319971f;
-    float y = (float)(signed char)mMaxAngularOffset[1] * 0.012319971f;
-    Vector2 result(x, y);
+    Vector2 result;
+    result.x = (float)(signed char)mMaxAngularOffset[0] * 0.012319971f;
+    result.y = (float)(signed char)mMaxAngularOffset[1] * 0.012319971f;
     return result;
 }
 

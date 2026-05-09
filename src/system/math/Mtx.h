@@ -637,8 +637,8 @@ inline void Invert(const Transform &tfin, Transform &tfout) {
 #ifdef VERSION_SZBE69_B8 // DEBUG
     Vector3 vtmp;
     vtmp.z = -tfin.v.z;
-    vtmp.y = -tfin.v.y;
     vtmp.x = -tfin.v.x;
+    vtmp.y = -tfin.v.y;
 #else // RETAIL
     Vector3 vtmp;
     Negate(tfin.v, vtmp);
@@ -651,8 +651,8 @@ inline void FastInvert(const Transform &tfin, Transform &tfout) {
 #ifdef VERSION_SZBE69_B8 // DEBUG
     Vector3 vtmp;
     vtmp.z = -tfin.v.z;
-    vtmp.y = -tfin.v.y;
     vtmp.x = -tfin.v.x;
+    vtmp.y = -tfin.v.y;
 #else // RETAIL
     Vector3 vtmp;
     Negate(tfin.v, vtmp);

@@ -11,7 +11,7 @@ CacheIDWii::~CacheIDWii() {}
 
 const char *CacheIDWii::GetCachePath(const char *param_1) {
     if (mStrCacheName.empty()) {
-        FormatString fs("CacheID::GetCachePath() - mStrCacheName is empty.");
+        FormatString fs("CacheID::GetCachePath() - mStrCacheName is empty.\n");
         TheDebug.Fail(fs.Str());
     }
 
@@ -33,7 +33,7 @@ const char *CacheIDWii::GetCacheSearchPath(const char *param_1) {
         TheDebug.Fail(fs.Str());
     }
     if (param_1 == NULL) {
-        return MakeString("%s/", mStrCacheName.c_str());
+        return MakeString("%s", mStrCacheName.c_str());
     } else {
         return GetCachePath(param_1);
     }
@@ -42,7 +42,7 @@ const char *CacheIDWii::GetCacheSearchPath(const char *param_1) {
 CacheWii::CacheWii(const CacheIDWii &param_1) : m0x10(param_1) {
     m0x54 = 0;
     m0x58 = 0;
-    s_mCacheDirList = 0;
+    mCacheDirList = 0;
     m0x60 = 0;
     m0x64 = "A:/DLC";
     m0x68 = "MSTORE.vff";
@@ -104,7 +104,7 @@ bool CacheWii::DeleteSync(const char *param_1) {
     filePath = filePath + "/" + param_1;
     int iVar1 = VFDeleteFile(filePath.c_str());
     if (iVar1 != 0 && iVar1 != 2) {
-        TheDebug.Notify(MakeString("Couldn't delete file %s", filePath.c_str()));
+        TheDebug.Notify(MakeString("Couldn't delete file %s\n", filePath.c_str()));
     }
     mOpCur = kOpNone;
     return true;
@@ -119,10 +119,10 @@ bool CacheWii::
         mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
-        MILO_ASSERT(s_mThreadStr.empty(), 0xc2);
-        s_mThreadStr = m0x10.GetCacheSearchPath(param_1);
-        MILO_ASSERT(s_mCacheDirList == NULL, 0xc5);
-        s_mCacheDirList = param_2;
+        MILO_ASSERT(mThreadStr.empty(), 0xc2);
+        mThreadStr = m0x10.GetCacheSearchPath(param_1);
+        MILO_ASSERT(mCacheDirList == NULL, 0xc5);
+        mCacheDirList = param_2;
         mLastResult = kCache_NoError;
         mOpCur = kOpDirectory;
         ThreadCall(this);
@@ -138,7 +138,7 @@ bool CacheWii::GetFileSizeAsync(const char *param_1, unsigned int *param_2, Hmx:
         mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
-        s_mThreadStr = m0x10.GetCachePath(param_1);
+        mThreadStr = m0x10.GetCachePath(param_1);
         m0x54 = param_2;
         mLastResult = kCache_NoError;
         mOpCur = kOpFileSize;
@@ -157,7 +157,7 @@ bool CacheWii::ReadAsync(
         mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
-        s_mThreadStr = m0x10.GetCachePath(param_1);
+        mThreadStr = m0x10.GetCachePath(param_1);
         m0x54 = param_2;
         m0x58 = param_3;
         mLastResult = kCache_NoError;
@@ -187,7 +187,7 @@ bool CacheWii::WriteAsync(
         }
         return false;
     } else {
-        s_mThreadStr = m0x10.GetCachePath(param_1);
+        mThreadStr = m0x10.GetCachePath(param_1);
         m0x54 = param_2;
         m0x58 = param_3;
         m0x60 = (int)param_4;
@@ -206,7 +206,7 @@ bool CacheWii::DeleteAsync(const char *param_1, Hmx::Object *) {
         mLastResult = kCache_ErrorBadParam;
         return false;
     } else {
-        s_mThreadStr = m0x10.GetCachePath(param_1);
+        mThreadStr = m0x10.GetCachePath(param_1);
         mLastResult = kCache_NoError;
         mOpCur = kOpDelete;
         ThreadCall(this);
@@ -220,7 +220,7 @@ int CacheWii::ThreadStart() {
     switch (mOpCur) {
     case kOpDirectory: {
         String tmp(m0x64);
-        tmp = tmp + "/" + s_mThreadStr;
+        tmp = tmp + "/" + mThreadStr;
         return ThreadGetDir(tmp);
     }
     case kOpFileSize:
@@ -243,21 +243,21 @@ void CacheWii::ThreadDone(int param_1) {
     switch (mOpCur) {
     case kOpDirectory: {
         mLastResult = (CacheResult)param_1;
-        s_mThreadStr = gNullStr;
-        s_mCacheDirList = 0;
+        mThreadStr = gNullStr;
+        mCacheDirList = 0;
         m0x60 = 0;
         break;
     }
     case kOpFileSize: {
         mLastResult = (CacheResult)param_1;
-        s_mThreadStr = gNullStr;
+        mThreadStr = gNullStr;
         m0x54 = 0;
         m0x60 = 0;
         break;
     }
     case kOpRead: {
         mLastResult = (CacheResult)param_1;
-        s_mThreadStr = gNullStr;
+        mThreadStr = gNullStr;
         m0x54 = 0;
         m0x58 = 0;
         m0x60 = 0;
@@ -265,7 +265,7 @@ void CacheWii::ThreadDone(int param_1) {
     }
     case kOpWrite: {
         mLastResult = (CacheResult)param_1;
-        s_mThreadStr = gNullStr;
+        mThreadStr = gNullStr;
         m0x54 = 0;
         m0x58 = 0;
         if (m0x60 != 0) {
@@ -278,7 +278,7 @@ void CacheWii::ThreadDone(int param_1) {
     }
     case kOpDelete: {
         mLastResult = (CacheResult)param_1;
-        s_mThreadStr = gNullStr;
+        mThreadStr = gNullStr;
         m0x60 = 0;
         break;
     }
@@ -293,7 +293,7 @@ int CacheWii::ThreadGetDir(String) {}
 
 int CacheWii::ThreadGetFileSize() {
     String filePath(m0x64);
-    filePath = filePath + "/" + s_mThreadStr;
+    filePath = filePath + "/" + mThreadStr;
     int result = VFGetFileSize(filePath.c_str());
     if (result != -1) {
         *(unsigned int *)m0x54 = result;
@@ -304,41 +304,41 @@ int CacheWii::ThreadGetFileSize() {
 
 int CacheWii::ThreadRead() {
     String filePath(m0x64);
-    filePath = filePath + "/" + s_mThreadStr;
+    filePath = filePath + "/" + mThreadStr;
     void *file = VFOpenFile(filePath.c_str(), "r", 0);
     if (file == NULL) {
-        TheDebug.Notify(MakeString("Couldn't open file %s", filePath.c_str()));
+        TheDebug.Notify(MakeString("Couldn't open file %s\n", filePath.c_str()));
         return -1;
     }
     int fileSize = VFGetFileSizeByFd(file);
     if (fileSize != -1) {
         fileSize = VFReadFile(file, m0x54, fileSize, 0);
         if (fileSize != 0) {
-            TheDebug.Notify(MakeString("Couldn't read file %s", filePath.c_str()));
+            TheDebug.Notify(MakeString("Couldn't read file %s\n", filePath.c_str()));
             VFCloseFile(file);
             return -1;
         }
     }
     if (VFCloseFile(file) != 0) {
-        TheDebug.Notify(MakeString("Couldn't close the file pointer %s", filePath.c_str()));
+        TheDebug.Notify(MakeString("Couldn't close the file pointer to file %s\n", filePath.c_str()));
     }
     return 0;
 }
 
 int CacheWii::ThreadWrite() {
     String filePath(m0x64);
-    filePath = filePath + "/" + s_mThreadStr;
-    void *file = VFOpenFile(filePath.c_str(), "w", 0);
+    filePath = filePath + "/" + mThreadStr;
+    void *file = VFOpenFile(filePath.c_str(), "r+", 0);
     if (file == NULL) {
         file = VFCreateFile(filePath.c_str(), 0);
         if (file == NULL) {
-            TheDebug.Notify(MakeString("Couldn't open file %s", filePath.c_str()));
+            TheDebug.Notify(MakeString("Couldn't create file %s\n", filePath.c_str()));
             return -1;
         }
     }
     int returnValue = 0;
     if (VFWriteFile(file, m0x54, m0x58) != 0) {
-        TheDebug.Notify(MakeString("Couldn't write file %s", filePath.c_str()));
+        TheDebug.Notify(MakeString("Couldn't write file %s\n", filePath.c_str()));
         returnValue = -1;
     }
     if (VFFileSync(file) != 0) {
@@ -347,17 +347,17 @@ int CacheWii::ThreadWrite() {
         returnValue = -1;
     }
     if (VFCloseFile(file) != 0) {
-        TheDebug.Notify(MakeString("Couldn't close the file pointer to file %s", filePath.c_str()));
+        TheDebug.Notify(MakeString("Couldn't close the file pointer to file %s\n", filePath.c_str()));
     }
     return returnValue;
 }
 
 int CacheWii::ThreadDelete() {
     String filePath(m0x64);
-    filePath = filePath + "/" + s_mThreadStr;
+    filePath = filePath + "/" + mThreadStr;
     int result = VFDeleteFile(filePath.c_str());
     if (result != 0 && result != 2) {
-        TheDebug.Notify(MakeString("Couldn't delete file %s", filePath.c_str()));
+        TheDebug.Notify(MakeString("Couldn't delete file %s\n", filePath.c_str()));
         return -1;
     }
     return 0;
