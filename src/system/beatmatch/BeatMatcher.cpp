@@ -543,8 +543,8 @@ void BeatMatcher::E3CheatDecSlop() { mWatcher->E3CheatDecSlop(); }
 
 void BeatMatcher::CheckMercurySwitch(float f) {
     if (mMercurySwitchFilter) {
-        bool b1 =
-            mMercurySwitchFilter->Poll(f, mRawMercurySwitchState) | mForceMercurySwitch;
+        bool pollResult = mMercurySwitchFilter->Poll(f, mRawMercurySwitchState);
+        bool b1 = pollResult | mForceMercurySwitch;
         if (b1 != mMercurySwitchState) {
             mMercurySwitchState = b1;
             UpdateMercurySwitch();

@@ -891,7 +891,7 @@ bool VocalTrack::CheckDeploySections(
 }
 
 bool VocalTrack::IdenticalLyric(const VocalNote &n1, const VocalNote &n2) const {
-    float f6 = Abs(n1.GetMs() - n2.GetMs());
+    float f6 = Abs(n2.GetMs() - n1.GetMs());
     if (f6 == 0)
         return true;
     else if (f6 > mLyricOverlapWindowMs)

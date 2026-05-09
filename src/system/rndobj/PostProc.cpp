@@ -233,7 +233,7 @@ BEGIN_LOADS(RndPostProc)
         int dRev;
         bs >> dRev;
         MILO_ASSERT(dRev == 3, 667);
-        float f = 0;
+        float f;
         bool x;
         Vector3 v;
         int i;
