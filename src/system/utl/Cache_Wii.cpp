@@ -1,6 +1,9 @@
 #include "Cache_Wii.h"
 #include "VF.h"
+#include "system/obj/Msg.h"
+#include "system/obj/Object.h"
 #include "system/os/ThreadCall.h"
+#include "system/utl/Symbols2.h"
 
 CacheIDWii::CacheIDWii() {}
 
@@ -36,13 +39,7 @@ const char *CacheIDWii::GetCacheSearchPath(const char *param_1) {
     }
 }
 
-CacheWii::CacheWii(const CacheIDWii &param_1) {
-    m0x10.mStrCacheName = String(param_1.mStrCacheName);
-    m0x10.m0x10 = String(param_1.m0x10);
-    m0x10.m0x1c = String(param_1.m0x1c);
-    m0x10.m0x28 = param_1.m0x28;
-    // m0x3c = String();
-    // m0x48 = String();
+CacheWii::CacheWii(const CacheIDWii &param_1) : m0x10(param_1) {
     m0x54 = 0;
     m0x58 = 0;
     s_mCacheDirList = 0;
@@ -50,12 +47,14 @@ CacheWii::CacheWii(const CacheIDWii &param_1) {
     m0x64 = "A:/DLC";
     m0x68 = "MSTORE.vff";
     drive = "A";
+    m0x74 = false;
 
-    bool result = VFMountDriveNANDFlash();
+    int result = VFMountDriveNANDFlash();
     if (result != 0) {
         FormatString fs("Can't mount nand drive.");
         TheDebug.Notify(fs.Str());
     } else {
+        m0x74 = true;
         int dirResult = VFCreateDir(m0x64);
         if (dirResult != 0 && dirResult != 0x11) {
             const char *error = VFGetApiErrorString();
@@ -173,14 +172,25 @@ bool CacheWii::WriteAsync(
 ) {
     if (!IsDone()) {
         mLastResult = kCache_ErrorBusy;
+        if (param_4) {
+            static Message msg("cache_write_result", GetLastResult());
+            msg[0] = GetLastResult();
+            param_4->Handle(msg, true);
+        }
         return false;
     } else if (param_1 == NULL || param_2 == NULL || param_3 == NULL) {
         mLastResult = kCache_ErrorBadParam;
+        if (param_4) {
+            static Message msg("cache_write_result", GetLastResult());
+            msg[0] = GetLastResult();
+            param_4->Handle(msg, true);
+        }
         return false;
     } else {
         s_mThreadStr = m0x10.GetCachePath(param_1);
         m0x54 = param_2;
         m0x58 = param_3;
+        m0x60 = (int)param_4;
         mLastResult = kCache_NoError;
         mOpCur = kOpWrite;
         ThreadCall(this);
@@ -259,7 +269,11 @@ void CacheWii::ThreadDone(int param_1) {
         m0x54 = 0;
         m0x58 = 0;
         if (m0x60 != 0) {
+            static Message msg("cache_write_result", GetLastResult());
+            msg[0] = GetLastResult();
+            ((Hmx::Object *)m0x60)->Handle(msg, true);
         }
+        m0x60 = 0;
         break;
     }
     case kOpDelete: {

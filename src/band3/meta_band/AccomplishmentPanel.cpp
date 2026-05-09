@@ -471,12 +471,13 @@ void AccomplishmentPanel::FillSetlistWithAccomplishmentSongs(Symbol s, int i) {
         if (accomplished || !pAccomplishment->IsSymbolEntryFulfilled(pProfile, cur)) {
             vSongs.push_back(cur);
             count++;
-            if (i > 0 && i <= count)
+            if (i > 0 && count >= i)
                 break;
         }
     }
     MILO_ASSERT(!vSongs.empty(), 0x5AA);
-    MILO_ASSERT(std::find( vSongs.begin(), vSongs.end(), gNullStr ) == vSongs.end(), 0x5AB);
+    std::vector<Symbol>::iterator vSongsEnd = vSongs.end();
+    MILO_ASSERT(std::find( vSongs.begin(), vSongsEnd, gNullStr ) == vSongsEnd, 0x5AB);
     pPerformer->SetSongs(vSongs);
 }
 

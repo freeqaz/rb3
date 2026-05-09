@@ -162,8 +162,8 @@ void Tail::Poll(float f1, float f2, float f3) {
     if (mTailGeomOwner) {
         bool t3 = mState == 2 && !mSlideInfo.unk0;
         float fvar1 = t3 ? mTemplate.kTailOffsetX * mTemplate.GetTailScaleX() : 0;
-        mTail1->SetLocalPos(Vector3(-fvar1, unk10, 0));
-        mTail2->SetLocalPos(Vector3(fvar1, unk10, 0));
+        mTail1->SetLocalPos(-fvar1, unk10, 0);
+        mTail2->SetLocalPos(fvar1, unk10, 0);
         if (unk28) {
             if (t3) {
                 float delta = TheTaskMgr.DeltaSeconds();

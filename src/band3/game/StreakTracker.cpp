@@ -48,8 +48,9 @@ void StreakTracker::TranslateRelativeTargets() {
         entry.unk1c = 0;
     }
 
+    float invScale = 1.0f / unk60;
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] = std::floor(mTargets[i] / unk60);
+        mTargets[i] = std::floor(mTargets[i] * invScale);
     }
 }
 

@@ -789,12 +789,12 @@ void VocalTrack::DumpLyricPlates(std::deque<LyricPlate *> &plates, bool lead) {
 }
 
 void VocalTrack::Poll(float f1) {
-    bool gamebool = TheGame->InTrainer();
+    bool gamebool = TheGame->InRollback();
     if (f1 < unk2a4 && !gamebool) {
         RebuildHUD();
     }
     float f6 = unk78 * -(f1 / unk74);
-    mDir->mScroller->SetLocalPos(Vector3(f6, 0, 0));
+    mDir->mScroller->SetLocalPos(f6, 0, 0);
     unk2a8 = f6 + mDir->mNowBarX;
     Track::Poll(f1);
     mDir->UpdatePartIsolation();

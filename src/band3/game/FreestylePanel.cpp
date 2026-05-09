@@ -58,9 +58,10 @@ void FreestylePanel::Poll() {
             unk48 -= TheTaskMgr.DeltaUISeconds();
             if (unk48 < 0) {
                 mMetronome->PlayBeat(unk4c);
-                while (unk48 < 0) {
+                unk4c = (unk4c + 1) % 4;
+                do {
                     unk48 += unk44;
-                }
+                } while (unk48 < 0);
             }
         }
         HandleSolo();

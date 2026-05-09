@@ -267,11 +267,11 @@ void PerformanceData::Prune(Stats &stats) {
 }
 
 void PerformanceData::InitializeStatsVectors() {
-    mStats.mFailurePoints.resize(3);
-    mStats.mSavedPoints.resize(3);
-    mStats.mClosestTimesSaved.resize(3);
-    mStats.mClosestPlayersSaved.resize(3);
-    mStats.mBestSolos.resize(3);
+    mStats.AccessFailurePoints().resize(3);
+    mStats.AccessSavedPoints().resize(3);
+    mStats.AccessClosestTimesSaved().resize(3);
+    mStats.AccessClosestPlayersSaved().resize(3);
+    mStats.AccessBestSolos().resize(3);
 }
 
 BEGIN_HANDLERS(PerformanceData)
