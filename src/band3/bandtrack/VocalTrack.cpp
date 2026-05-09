@@ -195,7 +195,9 @@ void VocalTrack::ClearAllTubePlates() {
 }
 
 void VocalTrack::ResetTubePlates(std::deque<TubePlate *> &plates) {
-    FOREACH (it, plates) {
+    std::deque<TubePlate *>::iterator it = plates.begin();
+    std::deque<TubePlate *>::iterator end = plates.end();
+    for (; it != end; ++it) {
         (*it)->Reset();
     }
 }
@@ -471,7 +473,9 @@ void VocalTrack::ConfigNoteTube(bool pitched, int pts, int part, bool b4, float 
 }
 
 LyricPlate *VocalTrack::GetNextLyricPlate(std::deque<LyricPlate *> &plates, bool b2) {
-    FOREACH (it, plates) {
+    std::deque<LyricPlate *>::iterator it = plates.begin();
+    std::deque<LyricPlate *>::iterator end = plates.end();
+    for (; it != end; ++it) {
         if ((*it)->Empty())
             return *it;
     }
@@ -484,11 +488,15 @@ LyricPlate *VocalTrack::GetNextLyricPlate(std::deque<LyricPlate *> &plates, bool
         DumpLyricPlates(plates, b2);
     }
     int numplates = plates.size();
+    bool grew;
     if (maxNumLyricPlates < numplates) {
         maxNumLyricPlates = numplates;
-        if (sDumpLyricPlates) {
-            MILO_LOG("Max Lyric Plates: %d\n", maxNumLyricPlates);
-        }
+        grew = true;
+    } else {
+        grew = false;
+    }
+    if (grew && sDumpLyricPlates) {
+        MILO_LOG("Max Lyric Plates: %d\n", maxNumLyricPlates);
     }
     return plates.back();
 }

@@ -489,7 +489,7 @@ DataNode CalibrationPanel::OnMsg(const ButtonDownMsg &msg) {
                 bool b3 = false;
                 if (msg.GetButton() == kPad_DUp || msg.GetButton() == kPad_DDown
                     || msg.GetAction() == kAction_Confirm) {
-                    bool b3 = true;
+                    b3 = true;
                 }
                 if (msg.GetButton() == kPad_Xbox_A)
                     b3 = unka0;

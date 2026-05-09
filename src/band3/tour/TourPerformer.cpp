@@ -164,7 +164,7 @@ int TourPerformerImpl::GetQuestSuccessfulSongCount() const {
     int successes = 0;
     int num = mMetaPerformer->NumSongs();
     for (int i = 0; i < num; i++) {
-        if (mGigData[i].unk8 >= 5)
+        if ((unsigned int)i < mGigData.size() && mGigData[i].unk8 >= 5)
             successes++;
     }
     return successes;

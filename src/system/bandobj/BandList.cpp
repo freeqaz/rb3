@@ -366,18 +366,18 @@ void BandList::StartFocusAnim(int i, BandList::AnimState astate) {
 
 void BandList::UpdateFocusAndPulseAnims(int i, Transform &tf) {
     float starttime = mStartTimes[i];
-    float time = TheTaskMgr.UISeconds();
+    float uisecs = TheTaskMgr.UISeconds();
     float startframe = mFocusAnim->StartFrame();
     float endframe = mFocusAnim->EndFrame();
     float defaulttime = 0;
-    time = (time - starttime) * mFocusAnim->FramesPerUnit();
+    float time = (uisecs - starttime) * mFocusAnim->FramesPerUnit();
     AnimState astate = mAnimStates[i];
     switch (astate) {
     case kGoingIn:
         time = startframe + time;
         if (time >= endframe) {
-            mAnimStates[i] = kIn;
             time = endframe;
+            mAnimStates[i] = kIn;
             if (mPulseAnim)
                 StartPulseAnim(i);
         }
@@ -385,16 +385,16 @@ void BandList::UpdateFocusAndPulseAnims(int i, Transform &tf) {
     case kGoingOut:
         time = endframe - time;
         if (time <= startframe) {
-            mAnimStates[i] = kOut;
             time = startframe;
+            mAnimStates[i] = kOut;
         }
         break;
     case kIn:
-        time = endframe;
         if (mPulseAnim) {
             UpdatePulseAnim(i, tf);
             return;
         }
+        time = endframe;
         break;
     case kOut:
         time = startframe;

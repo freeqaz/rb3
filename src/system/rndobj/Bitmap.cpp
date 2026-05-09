@@ -724,7 +724,7 @@ bool RndBitmap::LoadDIB(BinStream *bs, unsigned int offbits) {
         unsigned char *p = (unsigned char *)pixels;
         unsigned char *end = p + pixelBytes;
         for (; p != end; p++) {
-            *p = ((*p & 0x0F) << 4) | ((*p & 0xF0) >> 4);
+            *p = ((*p >> 4) & 0x0F) | ((*p << 4) & 0xF0);
         }
     }
     if ((int)infoheader.biXPelsPerMeter != 0xB11) {
