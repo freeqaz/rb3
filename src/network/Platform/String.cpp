@@ -76,14 +76,15 @@ namespace Quazal {
     void String::ReleaseCopy(char *copy) { YeetString(copy); }
 
     void String::Format(const char *fmt, ...) {
-        char buf[0x1010];
+        char buf[0x1000];
         va_list list;
         va_start(list, fmt);
         vsprintf(buf, fmt, list);
-        if (m_szContent == buf)
+        char *pBuf = buf;
+        if (m_szContent == pBuf)
             return;
         YeetString(m_szContent);
-        CopyString(&m_szContent, buf);
+        CopyString(&m_szContent, pBuf);
     }
 
     namespace {

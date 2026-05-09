@@ -41,6 +41,9 @@ namespace Quazal {
     void Job::SetToWaiting(int i) {
         ValidateTransition(m_eState, Waiting);
         m_eState = Waiting;
+        if (m_pfCompletionCallback) {
+            (*m_pfCompletionCallback)(this, &m_oContext);
+        }
         unk20 = i;
     }
 

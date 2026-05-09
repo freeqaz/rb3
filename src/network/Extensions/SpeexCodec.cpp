@@ -65,14 +65,30 @@ namespace Quazal {
     }
 
     void SpeexCodec::Encode(EncoderState *state, short *s, unsigned char *uc) {
+        SpeexBits *bits = &state->mBits;
         for (int i = 0; i < unk18; i++) {
-            state->Encode(&s[i * 160], &uc[i * 20]);
+            float input[160];
+            short *src = &s[i * 160];
+            for (int j = 0; j < 160; j++) {
+                input[j] = src[j];
+            }
+            speex_bits_reset(bits);
+            speex_encode(state->mState, input, bits);
+            speex_bits_write(bits, (char *)&uc[i * 20], 200);
         }
     }
 
     void SpeexCodec::Decode(DecoderState *state, unsigned char *uc, short *s) {
+        SpeexBits *bits = &state->mBits;
         for (int i = 0; i < unk18; i++) {
-            state->Decode(&uc[i * 20], &s[i * 160], 20);
+            float output[160];
+            speex_bits_reset(bits);
+            speex_bits_read_from(bits, (char *)&uc[i * 20], 20);
+            speex_decode(state->mState, bits, output);
+            short *dst = &s[i * 160];
+            for (int j = 0; j < 160; j++) {
+                dst[j] = output[j];
+            }
         }
     }
 }
