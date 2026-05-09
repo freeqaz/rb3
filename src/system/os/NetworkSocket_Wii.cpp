@@ -184,15 +184,16 @@ int WiiNetworkSocket::BroadcastTo(const void *, u32, u16) {
 
 bool WiiNetworkSocket::CanRead() const {
     bool ret = false;
+    so_event_t mask = (so_event_t)1;
     so_poll_t poll;
     poll.socket = mSocket;
-    poll.mask = (so_event_t)1;
+    poll.mask = mask;
     poll.result = (so_event_t)0;
     bool status = OSDisableInterrupts();
     so_ret_t ret2 = SOPoll(&poll, 1, 0);
     OSRestoreInterrupts(status);
     if (ret2 >= 0 && poll.result == poll.mask) {
-        ret = true;
+        ret = mask;
     }
     return ret;
 }
