@@ -26,13 +26,13 @@ const char *CacheIDWii::GetCachePath(const char *param_1) {
 }
 
 const char *CacheIDWii::GetCacheSearchPath(const char *param_1) {
-    if (mStrCacheName.c_str() == '\0') {
+    if (mStrCacheName.empty()) {
         TheDebug.Fail(
             FormatString("CacheID::GetCacheSearchPath() - mStrCacheName is empty.\n").Str()
         );
     }
-    if (param_1 == 0x0) {
-        return MakeString("%s", param_1);
+    if (param_1 == NULL) {
+        return MakeString("%s/", mStrCacheName.c_str());
     } else {
         return GetCachePath(param_1);
     }
@@ -127,8 +127,7 @@ bool CacheWii::
 }
 
 bool CacheWii::GetFileSizeAsync(const char *param_1, unsigned int *param_2, Hmx::Object *) {
-    bool isDone = IsDone();
-    if (!isDone) {
+    if (!IsDone()) {
         mLastResult = kCache_ErrorBusy;
         return false;
     } else if (param_2 == 0) {
@@ -139,6 +138,7 @@ bool CacheWii::GetFileSizeAsync(const char *param_1, unsigned int *param_2, Hmx:
         m0x54 = param_2;
         mLastResult = kCache_NoError;
         mOpCur = kOpFileSize;
+        ThreadCall(this);
         return true;
     }
 }
@@ -166,8 +166,7 @@ bool CacheWii::ReadAsync(
 bool CacheWii::WriteAsync(const char *, void *, uint, Hmx::Object *) {}
 
 bool CacheWii::DeleteAsync(const char *param_1, Hmx::Object *) {
-    bool isDone = IsDone();
-    if (!isDone) {
+    if (!IsDone()) {
         mLastResult = kCache_ErrorBusy;
         return false;
     } else if (param_1 == NULL) {
@@ -177,6 +176,7 @@ bool CacheWii::DeleteAsync(const char *param_1, Hmx::Object *) {
         s_mThreadStr = m0x10.GetCachePath(param_1);
         mLastResult = kCache_NoError;
         mOpCur = kOpDelete;
+        ThreadCall(this);
         return true;
     }
 }

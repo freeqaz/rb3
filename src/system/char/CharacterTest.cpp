@@ -274,7 +274,7 @@ void CharacterTest::Sync() {
     if (!mDriver || (mClip1 && mClip1->Dir() != Clips())) {
         mClip1 = nullptr;
     }
-    if (!mDriver || (mClip2 && mClip2->Dir() != Clips())) {
+    if (!mClip1 || !mDriver || (mClip2 && mClip2->Dir() != Clips())) {
         mClip2 = nullptr;
     }
     if (!mDriver || (mFilterGroup && mFilterGroup->Dir() != Clips())) {
@@ -304,7 +304,11 @@ void CharacterTest::Sync() {
         if (mClip2) {
             CharClip::NodeVector *vec = mClip1->mTransitions.FindNodes(mClip2);
             if (vec) {
-                ClampEq(mTransition, 0, vec->size - 1);
+                int maxVal = vec->size - 1;
+                if (mTransition < 0)
+                    mTransition = 0;
+                else if (mTransition > maxVal)
+                    mTransition = maxVal;
             } else
                 mTransition = 0;
             MinEq(bps, mClip2->AverageBeatsPerSecond());

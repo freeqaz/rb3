@@ -124,11 +124,14 @@ void TrackPanel::Exit() {
 #pragma optimization_level 2
 void TrackPanel::UpdateReservedVocalSlot() {
     MILO_ASSERT(mTrackSlots.size() == kTrackNumSlots, 0xF3);
+    int offset = 0;
     int u3 = -1;
     for (int i = 0; i < mTrackSlots.size(); i++) {
-        if (mTrackSlots[i].mInstrument == kInstVocals) {
+        TrackSlot *slot = (TrackSlot *)((char *)&mTrackSlots[0] + offset);
+        if (slot->mInstrument == kInstVocals) {
             u3 = i;
         }
+        offset += 8;
     }
     if (u3 != -1)
         mReservedVocalSlot = u3;
