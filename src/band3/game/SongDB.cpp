@@ -609,19 +609,7 @@ void SongDB::RecalculateGemTimes(int i1) { mSongData->RecalculateGemTimes(i1); }
 
 float SongDB::GetPitchOffsetForTick(int tick) const {
     const TuningOffsetList *list = mSongData->mTuningOffsetList;
-    int clampedTick = tick & ~(tick >> 31);
-    const TickedInfo<float> *it = std::upper_bound(
-        list->mInfos.begin(),
-        list->mInfos.end(),
-        clampedTick,
-        TickedInfoCollection<float>::Cmp
-    );
-    if (it == list->mInfos.begin()) {
-        MILO_FAIL("No information available at tick %d, fix MIDI file", clampedTick);
-    } else {
-        --it;
-    }
-    return it->mInfo;
+    return list->IteratorAt(tick, true)->mInfo;
 }
 
 void SongDB::EnableGems(int i1, float f2, float f3) { mSongData->EnableGems(i1, f2, f3); }

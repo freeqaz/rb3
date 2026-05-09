@@ -135,8 +135,8 @@ float RndFont::Kerning(unsigned short us1, unsigned short us2) const {
             if (mKerningTable->mNumEntries == 0) {
                 entry = nullptr;
             } else {
+                int key = (us2 << 16) | us1;
                 entry = mKerningTable->mTable[(us1 ^ us2) & 0x1F];
-                int key = us1 | (us2 << 16);
                 while (entry != nullptr && key != entry->key)
                     entry = entry->next;
             }

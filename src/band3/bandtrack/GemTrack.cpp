@@ -113,8 +113,9 @@ void GemTrack::RebuildBeats() {
 }
 
 void GemTrack::ApplyShiftImmediately(const RangeShift &shift) {
+    float min;
     float f1 = shift.unk14;
-    float min = Min(shift.unkc, 15.0f - f1);
+    min = Min(shift.unkc, 15.0f - f1);
     MILO_ASSERT(mTrackDir, 0xB6);
     if (f1 != mRange) {
         mTrackDir->SetDisplayRange(f1);

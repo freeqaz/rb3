@@ -698,12 +698,15 @@ void Tour::CreateAndSubmitMusicLibraryTask(
     GigFilter *pFilter = TheQuestMgr.GetQuestFilter(questSym);
     if (pFilter) {
         pFilter->InitializeMusicLibraryTask(task, maxSize, artistSym);
-    } else if (strncmp("filter_artist_", questSym.Str(), 14) == 0) {
-        String nameStr(questSym.Str());
-        String artistName = nameStr.substr(14);
-        InitializeMusicLibraryTaskForArtist(task, maxSize, artistName.c_str(), artistSym);
     } else {
-        MILO_ASSERT(false, 0x32d);
+        const char *questStr = questSym.Str();
+        if (strncmp("filter_artist_", questStr, 14) == 0) {
+            String nameStr(questStr);
+            String artistName = nameStr.substr(14);
+            InitializeMusicLibraryTaskForArtist(task, maxSize, artistName.c_str(), artistSym);
+        } else {
+            MILO_ASSERT(false, 0x32d);
+        }
     }
     task.backScreen = backScreen;
     task.nextScreen = nextScreen;

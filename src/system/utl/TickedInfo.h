@@ -41,6 +41,17 @@ public:
         mInfos[idx] = item;
     }
     static bool Cmp(int tick, const TickedInfo<T> &info) { return tick < info.mTick; }
+    const TickedInfo<T> *IteratorAt(int tick, bool clamp) const {
+        int clampedTick = clamp ? (tick & ~(tick >> 31)) : tick;
+        const TickedInfo<T> *it =
+            std::upper_bound(mInfos.begin(), mInfos.end(), clampedTick, Cmp);
+        if (it == mInfos.begin()) {
+            MILO_FAIL("No information available at tick %d, fix MIDI file", clampedTick);
+        } else {
+            --it;
+        }
+        return it;
+    }
     void Clear() { mInfos.clear(); }
     int Size() const { return mInfos.size(); }
     void CopyFrom(const TickedInfoCollection &other) {
