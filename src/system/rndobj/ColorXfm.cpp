@@ -143,9 +143,9 @@ void RndColorXfm::AdjustLevels() {
     float f3 = diffRed != 0
         ? (mLevelOutHi.red - mLevelOutLo.red) / diffRed
         : 0;
-    float v68z = -loBlue * f1 + mLevelOutLo.blue;
-    float v68y = -loGreen * f2 + mLevelOutLo.green;
-    float v68x = -loRed * f3 + mLevelOutLo.red;
+    float v68z = f1 * -loBlue + mLevelOutLo.blue;
+    float v68y = f2 * -loGreen + mLevelOutLo.green;
+    float v68x = f3 * -loRed + mLevelOutLo.red;
     Transform tf40;
     tf40.m.x.Set(f3, 0, 0);
     tf40.m.y.Set(0, f2, 0);

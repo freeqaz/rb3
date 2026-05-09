@@ -1163,10 +1163,10 @@ void TestTexturePaths(class ObjectDir *dir) {
     }
     if (dir->Loader()) {
         const char *fpstr = dir->Loader()->mFile.c_str();
-        const char *ng = strstr(fpstr, "/ng/"); // something's up with this part here
+        bool ng = strstr(fpstr, "/ng/") != 0;
         for (ObjDirItr<RndTex> it(dir, true); it != 0; ++it) {
             const char *texStr = it->mFilepath.c_str();
-            if (ng == 0 && strstr(texStr, "/ng/") != 0) {
+            if (!ng && strstr(texStr, "/ng/") != 0) {
                 MILO_WARN("og %s has ng texture %s", fpstr, texStr);
             } else if (ng && strstr(texStr, "/og/") != 0) {
                 MILO_WARN("ng %s has og texture %s", fpstr, texStr);
