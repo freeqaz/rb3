@@ -1437,9 +1437,10 @@ void Game::AddPlayer(BandUser *user) {
         return;
     }
     Symbol trackSym = user->GetTrackSym();
+    bool noPartInSong;
     MetaPerformer *perf = MetaPerformer::Current();
     if (perf != nullptr) {
-        bool noPartInSong = true;
+        noPartInSong = true;
         if (perf->HasSong()) {
             if (perf->PartPlaysInSong(trackSym)) {
                 noPartInSong = false;
@@ -1451,8 +1452,9 @@ void Game::AddPlayer(BandUser *user) {
             return;
         }
     }
-    PlayerTrackConfigList *cfgList = TheGameConfig->GetConfigList();
+    PlayerTrackConfigList *cfgList;
     SongData *songData = TheSongDB->GetData();
+    cfgList = TheGameConfig->GetConfigList();
     TheGameConfig->AssignTrack(user);
     cfgList->ProcessConfig(user->GetUserGuid());
     songData->UpdatePlayerTrackConfigList(cfgList);

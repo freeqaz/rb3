@@ -227,7 +227,7 @@ int CacheWii::ThreadStart() {
 }
 
 void CacheWii::ThreadDone(int param_1) {
-    MILO_ASSERT(!IsDone(), 0x00);
+    MILO_ASSERT(!IsDone(), 0x16c);
 
     switch (mOpCur) {
     case kOpDirectory: {
@@ -268,7 +268,7 @@ void CacheWii::ThreadDone(int param_1) {
         break;
     }
     default: {
-        MILO_ASSERT(false, 0x110);
+        MILO_ASSERT(false, 0x19b);
     }
     }
     mOpCur = kOpNone;
@@ -277,71 +277,73 @@ void CacheWii::ThreadDone(int param_1) {
 int CacheWii::ThreadGetDir(String) {}
 
 int CacheWii::ThreadGetFileSize() {
-    m0x10.m0x10 = m0x64;
-    m0x10.m0x10 = m0x10.m0x10 + "/" + m0x10.m0x1c;
-    int result = VFGetFileSize(m0x10.m0x10.c_str());
-    if (result == -1) {
-        return -1;
-    } else {
+    String filePath(m0x64);
+    filePath = filePath + "/" + s_mThreadStr;
+    int result = VFGetFileSize(filePath.c_str());
+    if (result != -1) {
+        *(unsigned int *)m0x54 = result;
         return 0;
     }
+    return -1;
 }
 
 int CacheWii::ThreadRead() {
-    char *fileName = "";
-    void *file = VFOpenFile(fileName, "", 0);
+    String filePath(m0x64);
+    filePath = filePath + "/" + s_mThreadStr;
+    void *file = VFOpenFile(filePath.c_str(), "r", 0);
     if (file == NULL) {
-        TheDebug.Notify(MakeString("Couldn't open file %s", fileName));
+        TheDebug.Notify(MakeString("Couldn't open file %s", filePath.c_str()));
         return -1;
-    } else {
-        int fileSize = VFGetFileSizeByFd(NULL);
-        if (fileSize == -1 || (fileSize = VFReadFile(file, m0x54, fileSize, 0))) {
-            if (fileSize == 0) {
-                TheDebug.Notify(MakeString("Couldn't close the file pointer %s", fileName)
-                );
-            }
-            return 0;
-        } else {
-            TheDebug.Notify(MakeString("Couldn't read file %s", fileName));
+    }
+    int fileSize = VFGetFileSizeByFd(file);
+    if (fileSize != -1) {
+        fileSize = VFReadFile(file, m0x54, fileSize, 0);
+        if (fileSize != 0) {
+            TheDebug.Notify(MakeString("Couldn't read file %s", filePath.c_str()));
             VFCloseFile(file);
             return -1;
         }
     }
+    if (VFCloseFile(file) != 0) {
+        TheDebug.Notify(MakeString("Couldn't close the file pointer %s", filePath.c_str()));
+    }
+    return 0;
 }
 
 int CacheWii::ThreadWrite() {
-    String fileName = String(m0x100) + "1" + "2";
-    void *file = VFOpenFile(fileName.c_str(), "", 0);
-    if (file == 0 && (file = VFCreateFile(fileName.c_str(), 0), file == 0)) {
-    } else {
-        int returnValue = 0;
-        int result = VFWriteFile(file, m0x54, m0x58);
-        if (result != 0) {
-            TheDebug.Notify(MakeString("Couldn't write file %s\n", fileName));
-            returnValue = -1;
-        }
-        result = VFFileSync(file);
-        if (result != 0) {
-            TheDebug.Notify(MakeString("Can't sync file", fileName));
-            returnValue = -1;
-        }
-        result = VFCloseFile(file);
-        if (result != 0) {
-            TheDebug.Notify(
-                MakeString("Couldn't close the file pointer to file %s\n", fileName)
-            );
+    String filePath(m0x64);
+    filePath = filePath + "/" + s_mThreadStr;
+    void *file = VFOpenFile(filePath.c_str(), "w", 0);
+    if (file == NULL) {
+        file = VFCreateFile(filePath.c_str(), 0);
+        if (file == NULL) {
+            TheDebug.Notify(MakeString("Couldn't open file %s", filePath.c_str()));
+            return -1;
         }
     }
+    int returnValue = 0;
+    if (VFWriteFile(file, m0x54, m0x58) != 0) {
+        TheDebug.Notify(MakeString("Couldn't write file %s", filePath.c_str()));
+        returnValue = -1;
+    }
+    if (VFFileSync(file) != 0) {
+        FormatString fs("Can't sync file");
+        TheDebug.Fail(fs.Str());
+        returnValue = -1;
+    }
+    if (VFCloseFile(file) != 0) {
+        TheDebug.Notify(MakeString("Couldn't close the file pointer to file %s", filePath.c_str()));
+    }
+    return returnValue;
 }
 
 int CacheWii::ThreadDelete() {
-    const char *file = (m0x10.m0x10 + m0x10.m0x28 + m0x10.m0x1c + m0x64).c_str();
-
-    int result = VFDeleteFile(file);
-    if ((result == 0) || (result == 2)) {
-        return 0;
-    } else {
-        TheDebug.Notify(MakeString("Couldn't delete file %s", file));
+    String filePath(m0x64);
+    filePath = filePath + "/" + s_mThreadStr;
+    int result = VFDeleteFile(filePath.c_str());
+    if (result != 0 && result != 2) {
+        TheDebug.Notify(MakeString("Couldn't delete file %s", filePath.c_str()));
         return -1;
     }
+    return 0;
 }
