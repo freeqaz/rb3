@@ -306,7 +306,7 @@ void SongUpgradeMgr::MarkAvailable(int i, Symbol s) {
     if ((size_t)it->second->mUpgradeVersion <= 1U) canInsert = true;
     if (canInsert) {
         mAvailableUpgrades.insert(i);
-        int j = *(volatile int*)&i;
-        unk4c[j] = s;
+        int key = i;
+        unk4c[key] = s;
     }
 }
