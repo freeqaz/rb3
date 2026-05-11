@@ -53,7 +53,7 @@ public:
     void Reset();
     Lyric *LatestLyric();
     void AddLyric(Lyric *);
-    void EstimateLyricWidth(const Lyric *);
+    float EstimateLyricWidth(const Lyric *);
     void HookUpParents(RndGroup *, RndTransformable *);
     bool Empty() const;
     void UpdateStaticTiming(float);

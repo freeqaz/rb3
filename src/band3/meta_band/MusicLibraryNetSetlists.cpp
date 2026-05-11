@@ -6,6 +6,7 @@
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
+#include "os/PlatformMgr.h"
 #include "rndobj/Utl.h"
 #include "utl/BufStream.h"
 #include "utl/NetCacheMgr.h"
@@ -109,8 +110,111 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
     MILO_LOG("Setlists from net:\n");
     mDataResults.Print(TheDebug);
     MILO_LOG("\n");
-    std::list<DataResult> &results = mDataResults.mDataResultList;
-    FOREACH (it, results) {
+    FOREACH (it, mDataResults.mDataResultList) {
+        DataNode node;
+        DataResult &result = *it;
+        result.GetDataResultValue("title", node);
+        String title(node.Str(nullptr));
+        result.GetDataResultValue("desc", node);
+        String desc(node.Str(nullptr));
+        result.GetDataResultValue("type", node);
+        int type = node.Int(nullptr);
+        bool validInstr = false;
+        if (type == 1 || type == 1001 || type == 2 || type == 1002) {
+            validInstr = true;
+        }
+        String artUrl(gNullStr);
+        if (validInstr) {
+            if (result.GetDataResultValue("art_url", node)) {
+                artUrl = node.Str(nullptr);
+            }
+        }
+        NetSavedSetlist *nss = nullptr;
+        switch (type) {
+        case 0:
+        case 1: {
+            result.GetDataResultValue("owner", node);
+            String owner(node.Str(nullptr));
+            result.GetDataResultValue("guid", node);
+            String guid(node.Str(nullptr));
+            MILO_ASSERT(!archived, 0xFC);
+            nss = new NetSavedSetlist(
+                SavedSetlist::kSetlistFriend, title.c_str(), desc.c_str(), validInstr,
+                owner.c_str(), artUrl.c_str(), guid.c_str()
+            );
+            break;
+        }
+        case 1000:
+        case 1001: {
+            result.GetDataResultValue("owner", node);
+            String owner(node.Str(nullptr));
+            result.GetDataResultValue("id", node);
+            int id = node.Int(nullptr);
+            result.GetDataResultValue("valid_instr", node);
+            int scoreType = node.Int(nullptr);
+            int secondsLeft = 0;
+            if (!archived) {
+                result.GetDataResultValue("seconds_left", node);
+                secondsLeft = node.Int(nullptr);
+            }
+            SavedSetlist::SetlistType battleType = archived
+                ? SavedSetlist::kBattleFriendArchived
+                : SavedSetlist::kBattleFriend;
+            nss = new BattleSavedSetlist(
+                id, (ScoreType)scoreType, battleType, title.c_str(), validInstr,
+                desc.c_str(), owner.c_str(), artUrl.c_str(), secondsLeft
+            );
+            break;
+        }
+        case 2: {
+            MILO_ASSERT(!archived, 0x108);
+            nss = new NetSavedSetlist(
+                SavedSetlist::kSetlistHarmonix, title.c_str(), desc.c_str(), validInstr,
+                gNullStr, artUrl.c_str(), gNullStr
+            );
+            break;
+        }
+        case 1002: {
+            result.GetDataResultValue("id", node);
+            int id = node.Int(nullptr);
+            result.GetDataResultValue("valid_instr", node);
+            int scoreType = node.Int(nullptr);
+            int secondsLeft = 0;
+            if (!archived) {
+                result.GetDataResultValue("seconds_left", node);
+                secondsLeft = node.Int(nullptr);
+            }
+            SavedSetlist::SetlistType battleType = archived
+                ? SavedSetlist::kBattleHarmonixArchived
+                : SavedSetlist::kBattleHarmonix;
+            nss = new BattleSavedSetlist(
+                id, (ScoreType)scoreType, battleType, title.c_str(), validInstr,
+                desc.c_str(), nullptr, artUrl.c_str(), secondsLeft
+            );
+            break;
+        }
+        default:
+            MILO_FAIL("Bad setlist type from RockCentral!\n");
+            break;
+        }
+        MILO_ASSERT(nss, 0x15C);
+        int i = 0;
+        while (result.GetDataResultValue(MakeString("s_id%03i", i), node)) {
+            nss->AddSong(node.Int(nullptr));
+            result.GetDataResultValue(MakeString("s_name%03i", i), node);
+            nss->AddSongTitle(node.Str(nullptr));
+            i++;
+        }
+        bool keep = true;
+        if (!nss->GetOwnerOnlineID()->IsInvalid()
+            && !ThePlatformMgr.CanSeeUserCreatedContent(nss->GetOwnerOnlineID())) {
+            keep = false;
+        }
+        if (keep && !nss->mSongs.empty()) {
+            setlists.push_back(nss);
+        } else {
+            RELEASE(nss);
+        }
     }
 }
 

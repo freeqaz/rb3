@@ -49,7 +49,7 @@ CacheWii::CacheWii(const CacheIDWii &param_1) : m0x10(param_1) {
     drive = "A";
     m0x74 = false;
 
-    int result = VFMountDriveNANDFlash();
+    int result = VFMountDriveNANDFlash(drive, m0x68);
     if (result != 0) {
         FormatString fs("Can't mount nand drive.");
         TheDebug.Notify(fs.Str());

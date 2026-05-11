@@ -46,8 +46,12 @@
 #include "os/UsbMidiGuitar.h"
 #include "os/UsbMidiKeyboard.h"
 #include "revolution/os/OSError.h"
+#include "revolution/os/OSThread.h"
+#include "revolution/os/OSTime.h"
+#include "bandobj/BandDirector.h"
 #include "rndobj/HiResScreen.h"
 #include "rndobj/Rnd.h"
+#include "rndwii/Env.h"
 #include "rndwii/Rnd.h"
 #include "synth/BinkReader.h"
 #include "synth/Synth.h"
@@ -77,6 +81,7 @@ const int regularArks = 3;
 
 extern bool gInitComplete;
 extern int gCheckConsistencyish;
+extern int gCooldown;
 extern Timer gTriFrameTimer;
 extern void MemCheckConsistency(const char *, int);
 static void CheckForPassivePlatformErrors();
@@ -342,9 +347,69 @@ void App::Draw() {
         DrawRegular();
 }
 
-void PollTriFrame(float, float) {
+float gAvg;
+float gSyncAvg;
+float gTempThresh;
+float gSleepAmt;
+float gTempTimes[10240];
+int gTempTimesIdx;
+bool gPreventTriFrameSwitchage;
+
+#pragma push
+#pragma pool_data off
+void PollTriFrame(float frameMs, float syncMs) {
     static DataNode &venue_test = DataVariable("venue_test");
+    if (venue_test == DataNode(1)) {
+    } else {
+        static float times[6];
+        static int count;
+        static float syncTimes[6];
+        static int syncCount;
+        static int trycount;
+
+        times[count % 6] = frameMs;
+        syncTimes[(count + 1) % 6] = syncMs;
+        gTempTimes[gTempTimesIdx] = frameMs;
+        gTempTimesIdx = (gTempTimesIdx + 1) % 10240;
+        count++;
+        syncCount++;
+        gAvg = (times[0] + times[1] + times[2] + times[3] + times[4] + times[5]) / 6.0f;
+        gSyncAvg = (syncTimes[0] + syncTimes[1] + syncTimes[2] + syncTimes[3]
+                    + syncTimes[4] + syncTimes[5])
+            / 6.0f;
+        if (gSleepAmt > 0.0f) {
+            OSSleepTicks(OSMicrosecondsToTicks((s64)(int)(1000.0f * gSleepAmt)));
+        }
+        if (!gPreventTriFrameSwitchage) {
+            if (TheBandDirector->IsMusicVideo()) {
+                TheWiiRnd.SetTriFrameRendering(false);
+                WiiEnviron::mbEnableShadows = false;
+            } else {
+                u8 triFrameOn = *(reinterpret_cast<u8 *>(&TheWiiRnd) + 0x149);
+                if (gCooldown++ < 8) {
+                    trycount = 0;
+                } else if (triFrameOn) {
+                    if (gAvg < gTempThresh) {
+                        if (++trycount > 6) {
+                            TheWiiRnd.SetTriFrameRendering(false);
+                            gCooldown = 0;
+                            trycount = 0;
+                        }
+                    } else if (gSyncAvg > 250.0f) {
+                        trycount--;
+                    }
+                } else if (gSyncAvg > 250.0f) {
+                    if (++trycount > 6) {
+                        TheWiiRnd.SetTriFrameRendering(true);
+                        gCooldown = 0;
+                        trycount = 0;
+                    }
+                }
+            }
+        }
+    }
 }
+#pragma pop
 
 void App::Run() { RunWithoutDebugging(); }
 

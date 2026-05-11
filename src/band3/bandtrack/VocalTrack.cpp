@@ -975,29 +975,27 @@ void VocalTrack::ProcessStaticLyrics(
 ) {
     if (b1) {
         if (b8) {
-            f3 = f4;
-            f7 = f4;
+            float v = f4;
+            f3 = v;
+            f7 = v;
             l5 = nullptr;
             l6 = nullptr;
         }
-        float d4 = mDir->unk42c;
-        float f1 = d4 - mDir->mNowBarX;
-        lp9->EstimateLyricWidth(l2);
-        float f2 = f4;
-        f4 += d4;
-        f2 = f4 - f3;
+        float width = mDir->unk42c - mDir->mNowBarX;
+        float halfWidth = 0.5f * width;
+        f4 += lp9->EstimateLyricWidth(l2);
+        float d2 = f4 - f3;
         if (l5 && !l6)
             l6 = l2;
-        if (l5 && f1 < f2) {
+        if (l5 && d2 > width) {
             l5->SetChunkEnd(true);
             l5 = nullptr;
-            f2 = f7;
-            f3 = f2;
-            f2 = f4 - f2;
+            f3 = f7;
+            d2 = f4 - f3;
             l6->SetAfterMidPhraseLyricShift(true);
             l6 = nullptr;
         }
-        if (!l5 && (f1 / 2.0f < f2) && l2->mWordEnd) {
+        if (!l5 && d2 > halfWidth && l2->mWordEnd) {
             l5 = l2;
             f7 = f4;
         }

@@ -244,10 +244,23 @@ Symbol StorePackedPage::DefaultSort() const {
     }
 }
 
-void StorePage::LoadFromBuffer(char *buffer, unsigned short num) {
+char *StorePage::LoadFromBuffer(char *buffer, unsigned short num) {
+    char *p = buffer + 9;
+    int mult;
     mPageNumber = num;
     mPage = (StorePackedPage *)buffer;
     mPage->EndianFix();
+    if (mPage->mHasOffers) {
+        mOffers = (unsigned short *)p;
+        mult = 2;
+        for (int i = 0; i < mPage->mNumOffers; i++) {
+            mOffers[i] -= 1;
+        }
+    } else {
+        mOffers = (unsigned short *)p;
+        mult = 8;
+    }
+    return p + mPage->mNumOffers * mult;
 }
 
 StorePackedOffer *StorePage::Offer(int idx) const {

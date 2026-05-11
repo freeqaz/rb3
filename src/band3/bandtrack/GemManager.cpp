@@ -374,6 +374,53 @@ void GemManager::SetupRealGuitarImportantStrings() {
     bool isRB = bandUser->GetTrack()->GetType() == real_bass;
     if (isRG || isRB) {
         for (int i = 1; i < mGems.size(); i++) {
+            const GameGem &cur = mGems[i].GetGameGem();
+            const GameGem &prev = mGems[i - 1].GetGameGem();
+            unsigned int prevID = prev.GetRGChordID();
+            if ((unsigned int)cur.GetRGChordID() == prevID && !cur.IsMuted() &&
+                cur.IsRealGuitarChord()) {
+                const_cast<GameGem &>(cur).SetImportantStrings(prev.GetImportantStrings());
+            } else if (!prev.IsMuted() && !cur.IsMuted()) {
+                int prevSlots = prev.NumSlots();
+                int curSlots = cur.NumSlots();
+                unsigned char bits = 0;
+                if (prevSlots >= 3 && curSlots >= 3) {
+                    int matches = 0;
+                    unsigned int s;
+                    for (s = 0; s < 6; s++) {
+                        int prevFret = prev.GetFret(s);
+                        if (cur.GetFret(s) != prevFret &&
+                            (cur.mTick - prev.mTick) < 0x780 &&
+                            cur.GetFret(s) != -1 &&
+                            cur.GetRGNoteType(s) != 1 &&
+                            prev.GetFret(s) != -1 &&
+                            prev.GetRGNoteType(s) != 1) {
+                            matches++;
+                            bits |= (unsigned char)(1 << s);
+                        }
+                    }
+                    if ((unsigned int)(matches - 1) <= 1U) {
+                        const_cast<GameGem &>(cur).SetImportantStrings(bits);
+                        if (prev.GetImportantStrings() == 0) {
+                            const_cast<GameGem &>(prev).SetImportantStrings(bits);
+                        }
+                    }
+                }
+            }
+            if (cur.GetImportantStrings() == 0 && !cur.IsMuted() &&
+                cur.IsRealGuitarChord()) {
+                int localIntervals[4] = { 10, 11, 4, 3 };
+                unsigned char root = cur.GetRootNote();
+                unsigned char strings;
+                for (int j = 0; j < 4 && cur.GetImportantStrings() == 0; j++) {
+                    RGStringContainsNote(
+                        (unsigned char)((root + localIntervals[j]) % 12), cur, strings
+                    );
+                    if (strings != 0 && GameGem::CountBitsInSlotType(strings) <= 2) {
+                        const_cast<GameGem &>(cur).SetImportantStrings(strings);
+                    }
+                }
+            }
         }
     }
 }

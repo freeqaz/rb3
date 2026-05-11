@@ -108,8 +108,8 @@ void LyricPlate::AddLyric(Lyric *lyric) {
     mInvalidateMs = std::max(mInvalidateMs, lyric->mEndMs + 100.0f);
 }
 
-void LyricPlate::EstimateLyricWidth(const Lyric *lyric) {
-    mText->GetStringWidthUTF8(
+float LyricPlate::EstimateLyricWidth(const Lyric *lyric) {
+    return mText->GetStringWidthUTF8(
         lyric->mText.c_str(), 0, false, lyric->mPitched ? &mPitchedStyle : &mUnpitchedStyle
     );
 }

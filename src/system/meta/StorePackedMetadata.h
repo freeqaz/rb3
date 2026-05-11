@@ -85,7 +85,7 @@ public:
 class StorePage {
 public:
     StorePage() : mPageNumber(0), mPage(0), mOffers(0) {}
-    void LoadFromBuffer(char *, unsigned short);
+    char *LoadFromBuffer(char *, unsigned short);
     StorePackedOffer *Offer(int) const;
     const StorePackedOfferBase *BaseOffer(int) const;
 

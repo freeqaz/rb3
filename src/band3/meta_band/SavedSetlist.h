@@ -2,6 +2,7 @@
 #include "bandobj/PatchDir.h"
 #include "game/Defines.h"
 #include "os/DateTime.h"
+#include "os/Debug.h"
 #include "os/OnlineID.h"
 #include "os/User.h"
 #include "rndobj/Tex.h"
@@ -11,6 +12,7 @@
 #include "meta_band/BandProfile.h"
 #include "utl/HxGuid.h"
 #include "utl/Locale.h"
+#include "utl/Symbol.h"
 
 class SavedSetlist {
 public:
@@ -65,6 +67,20 @@ public:
 class NetSavedSetlist : public SavedSetlist {
 public:
     NetSavedSetlist(const char *title, const char *desc) : SavedSetlist(title, desc) {}
+    NetSavedSetlist(
+        SetlistType type, const char *title, const char *desc, bool validInstr,
+        const char *owner, const char *artUrl, const char *guid
+    )
+        : SavedSetlist(title, desc), mSetlistType(type), mOwner(owner),
+          unk44(validInstr), unk48(artUrl), mGuid(guid) {
+        MILO_ASSERT(
+            mSetlistType == kSetlistFriend || mSetlistType == kSetlistHarmonix
+                || mSetlistType == kBattleHarmonix || mSetlistType == kBattleFriend
+                || mSetlistType == kBattleHarmonixArchived
+                || mSetlistType == kBattleFriendArchived,
+            0xAF
+        );
+    }
     virtual ~NetSavedSetlist() {}
     virtual SetlistType GetType() const { return mSetlistType; }
     virtual Symbol GetIdentifyingToken() const;
@@ -78,7 +94,7 @@ public:
     SetlistType mSetlistType; // 0x2c
     String mOwner; // 0x30
     OnlineID mOID; // 0x3c
-    int unk44;
+    bool unk44;
     String unk48;
     String mGuid; // 0x54
     std::vector<String> mSongTitles; // 0x60
@@ -88,6 +104,20 @@ class BattleSavedSetlist : public NetSavedSetlist {
 public:
     BattleSavedSetlist(const char *title, const char *desc)
         : NetSavedSetlist(title, desc) {}
+    BattleSavedSetlist(
+        int id, ScoreType scoreType, SavedSetlist::SetlistType type, const char *title,
+        bool validInstr, const char *desc, const char *owner, const char *artUrl,
+        int secondsLeft
+    )
+        : NetSavedSetlist(type, title, desc, validInstr, owner, artUrl, gNullStr),
+          mID(id), unk6c(scoreType), mBattleTimeLeft(secondsLeft) {
+        MILO_ASSERT(
+            mSetlistType == kBattleHarmonix || mSetlistType == kBattleFriend
+                || mSetlistType == kBattleHarmonixArchived
+                || mSetlistType == kBattleFriendArchived,
+            0xDE
+        );
+    }
     virtual ~BattleSavedSetlist() {}
     virtual Symbol GetIdentifyingToken() const;
     virtual bool IsBattle() const { return true; }
