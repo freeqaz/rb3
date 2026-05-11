@@ -239,25 +239,15 @@ void NetCacheMgr::Load(NetCacheMgr::CacheSize cs) {
 
 void NetCacheMgr::SetState(NetCacheMgrState state) {
     if (mState != state) {
-        while (true) {
-            if (mState == kNCMS_UnloadWaitForWrite) {
-                mHasFailed = false;
-            }
-            if (mState == kNCMS_Nil && state == kNCMS_UnloadWaitForWrite) {
-                MILO_FAIL(
-                    "NetCacheMgr attempted to move straight from kNCMS_Nil to kNCMS_Unload!\n"
-                );
-            }
-            mState = state;
-            if (state != kNCMS_Nil)
-                break;
-            MILO_ASSERT(mNetLoaderRefs.empty(), 0x28B);
-            if (mLoadCount <= 0)
-                return;
-            state = kNCMS_Load;
-            if (mState == kNCMS_Load)
-                return;
+        if (mState == kNCMS_UnloadWaitForWrite) {
+            mHasFailed = false;
         }
+        if (mState == kNCMS_Nil && state == kNCMS_UnloadWaitForWrite) {
+            TheDebug.Fail(MakeString(
+                "NetCacheMgr attempted to move straight from kNCMS_Nil to kNCMS_Unload!\n"
+            ));
+        }
+        mState = state;
         switch (state) {
         case kNCMS_Load:
             EnterLoadState();
@@ -267,6 +257,12 @@ void NetCacheMgr::SetState(NetCacheMgrState state) {
             break;
         case kNCMS_UnloadWaitForWrite:
             EnterUnloadState();
+            break;
+        case kNCMS_Nil:
+            MILO_ASSERT(mNetLoaderRefs.empty(), 0x28A);
+            if (mLoadCount > 0) {
+                SetState(kNCMS_Load);
+            }
             break;
         default:
             break;

@@ -528,8 +528,18 @@ void OvershellPanel::RefreshJoinableUsers() {
     }
 }
 
-void OvershellPanel::AddJoinUserEntryToSlot(LocalBandUser *user, OvershellSlot *) {
+void OvershellPanel::AddJoinUserEntryToSlot(LocalBandUser *user, OvershellSlot *pSlot) {
     MILO_ASSERT(user, 0x46D);
+    PotentialUserEntry entry;
+    if (mSessionMgr->IsOnlineEnabled() && !user->HasOnlinePrivilege()) {
+        entry.mJoinState = kMetaJoinNeedsOnline;
+    } else if (!mSessionMgr->IsLocal() && InGame()) {
+        entry.mJoinState = (JoinState)3;
+    } else {
+        entry.mJoinState = kMetaJoinOK;
+    }
+    entry.mUser = user;
+    pSlot->AddPotentialUser(entry);
 }
 
 bool OvershellPanel::IsAnySlotAllowingInputToShell() {

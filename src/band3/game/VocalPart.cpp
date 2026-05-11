@@ -129,7 +129,29 @@ void VocalPart::LocalDeployBandEnergy() {
         unkad = true;
 }
 
-void VocalPart::CalcNoteWeights() { mNoteWeights.clear(); }
+void VocalPart::CalcNoteWeights() {
+    mNoteWeights.clear();
+    if (mVocalNoteList) {
+        mNoteWeights.reserve(mVocalNoteList->mNotes.size());
+        for (unsigned int i = 0; i != mVocalNoteList->mNotes.size(); i++) {
+            const VocalNote &note = mVocalNoteList->mNotes[i];
+            float weight =
+                GetNoteSliceWeight(note.mMs, note.mMs + note.mDurationMs, i);
+            mNoteWeights.push_back(weight);
+        }
+        mThisPhrase = mVocalNoteList->mPhrases.begin();
+        mPhraseScoreMax = 0;
+        unk1c = 0;
+        for (std::vector<VocalPhrase>::const_iterator it =
+                 mVocalNoteList->mPhrases.begin();
+             it != mVocalNoteList->mPhrases.end();
+             ++it) {
+            if (it->unk10 != it->unk14) {
+                unk1c++;
+            }
+        }
+    }
+}
 
 void VocalPart::EnableScoring(bool b) { mScoringEnabled = b; }
 bool VocalPart::ScoringEnabled() const { return mScoringEnabled; }

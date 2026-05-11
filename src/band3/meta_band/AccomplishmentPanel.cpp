@@ -1000,6 +1000,10 @@ void AccomplishmentPanel::SetRandomUnplayedSong() {
     AccomplishmentSongFilterConditional *pFilterAccomplishment =
         dynamic_cast<AccomplishmentSongFilterConditional *>(pAccomplishment);
     MILO_ASSERT(pFilterAccomplishment, 0x8D9);
+    SongSortMgr::SongFilter filter = pFilterAccomplishment->GetFilter();
+    TheMusicLibrary->SetRandomSongs(
+        1, filter, pFilterAccomplishment->GetFilteredPartSym(), false, true
+    );
 }
 
 bool AccomplishmentPanel::CanLaunchSelectedEntry() const {

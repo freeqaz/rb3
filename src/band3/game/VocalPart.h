@@ -12,6 +12,7 @@ public:
     void SetDifficultyVariables(int);
     void PostLoad();
     void CalcNoteWeights();
+    float GetNoteSliceWeight(float, float, int) const;
     void Start();
     void StartIntro();
     void UpdateSongMinMaxPitch();

@@ -250,7 +250,34 @@ void GamePanel::RunVocalTest() {
     TheDebug.Exit(0, true);
 }
 
-void GamePanel::Poll() { START_AUTO_TIMER("game_poll"); }
+void GamePanel::Poll() {
+    START_AUTO_TIMER("game_poll");
+    if (!IsLoaded()) return;
+    UIPanel::Poll();
+    if (mGame->mMaster->GetAudio()->Fail()) return;
+    if (mGameState == kGameNeedIntro) {
+        StartIntro();
+    }
+    if (TheGame->mProperties.mCrowdReacts) {
+        SetExcitementLevel(mGame->GetCrowdExcitement());
+    }
+    mGame->Poll();
+    if (mGameState == kGameNeedStart && !mGame->IsWaiting()
+        && (TheTaskMgr.Seconds(TaskMgr::kRealTime) > -0.025f
+            || TheGame->mProperties.mIsPractice)) {
+        StartGame();
+    }
+    if (unk151 && 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime) > unk154) {
+        unk151 = false;
+    }
+    if (mTime->Showing()) {
+        UpdateNowBar();
+    }
+    if (mDeltaTime->Showing()) {
+        UpdateDeltaTimeOverlay();
+    }
+    UpdateLatency();
+}
 
 void GamePanel::SetPaused(bool b1) {
     MILO_WARN(

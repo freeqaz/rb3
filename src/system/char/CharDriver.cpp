@@ -19,6 +19,7 @@
 #include "os/Debug.h"
 #include "rndobj/Highlightable.h"
 #include "rndobj/Poll.h"
+#include "rndobj/Rnd.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
@@ -58,8 +59,86 @@ float CharDriver::Display(float f) {
         displays.back().SetClip(it->mClip, false);
         displays.back().unk20 = it->mBlendFrac;
     }
-    MakeString("%d");
-    MakeString("debug_draw");
+
+    float lineSpacing = CharClipDisplay::LineSpacing();
+    unsigned int displayCount = displays.size();
+    float y = f * (float)TheRnd->Height() + (float)displays.size() * lineSpacing;
+    for (unsigned int i = 0; i < displays.size(); i++) {
+        displays[i].unk18 = -((float)i * lineSpacing - y);
+    }
+
+    MsgSource *source = CharClipDisplay::FindSource(this);
+    float result = (y + (float)(1 + (source != nullptr)) * lineSpacing) / (float)TheRnd->Height();
+    Hmx::Rect rect(0, f, 1.0f, result - f);
+    Hmx::Color bgColor(0, 0, 0, 0.5f);
+    TheRnd->DrawRectScreen(rect, bgColor, nullptr, nullptr, nullptr);
+
+    Hmx::Color textColor(1, 1, 1, 1);
+    TheRnd->DrawString(
+        MakeString("%s %s, beat: %.2f", Dir()->Name(), PathName(this), mOldBeat),
+        Vector2(CharClipDisplay::sEm, lineSpacing * 0.1f + f * (float)TheRnd->Height()),
+        textColor,
+        true
+    );
+
+    for (unsigned int i = 0; i < displayCount; i++) {
+        displays[i].DrawTrack();
+    }
+
+    CharClipDriver *prev = mFirst;
+    int idx = 0;
+    CharClipDriver *next;
+    while (prev && (next = prev->Next()) != nullptr) {
+        CharClipDisplay *prevDisplay = &displays[idx];
+        CharClipDisplay *nextDisplay = &displays[idx + 1];
+        CharClip::NodeVector *nodes = next->GetClip()->mTransitions.FindNodes(prev->GetClip());
+        if (nodes) {
+            for (int i = 0; i < nodes->size; i++) {
+                int curOfs = 0;
+                int nextOfs = 0;
+                Vector2 curPos;
+                curPos.x = nextDisplay->GetX(nodes->nodes[i].curBeat);
+                for (int j = 0; j < i; j++) {
+                    if (std::fabs(curPos.x - nextDisplay->GetX(nodes->nodes[j].curBeat)) < 8.0f) {
+                        curOfs += 11;
+                    }
+                }
+                Hmx::Color redColor(1, 0, 0);
+                curPos.y = nextDisplay->unk18 + 1.0f + (float)curOfs;
+                TheRnd->DrawString(MakeString("%d", i), curPos, redColor, true);
+
+                Vector2 nextPos;
+                nextPos.x = prevDisplay->GetX(nodes->nodes[i].nextBeat);
+                for (int j = 0; j < i; j++) {
+                    if (std::fabs(nextPos.x - prevDisplay->GetX(nodes->nodes[j].nextBeat)) < 8.0f) {
+                        nextOfs += 11;
+                    }
+                }
+                Hmx::Color greenColor(0, 1, 0);
+                nextPos.y = prevDisplay->unk18 - 14.0f - (float)nextOfs;
+                TheRnd->DrawString(MakeString("%d", i), nextPos, greenColor, true);
+            }
+        }
+        nextDisplay->DrawBlend(next->mBeat + prev->mRampIn, prev->mBlendWidth);
+        float rampIn = prev->mRampIn;
+        if (rampIn < 0.0f) rampIn = 0.0f;
+        prevDisplay->DrawBlend(prev->mBeat + rampIn, prev->mBlendWidth);
+        prev = prev->Next();
+        idx++;
+    }
+
+    for (unsigned int i = 0; i < displayCount; i++) {
+        displays[i].DrawCursor();
+    }
+
+    if (source) {
+        static Message msg("debug_draw", DataNode(2.0f), DataNode(2.0f));
+        msg[0] = displays[0].unk18 + lineSpacing;
+        msg[1] = TheTaskMgr.Beat();
+        source->Handle(msg, false);
+    }
+
+    return result;
 }
 
 void CharDriver::Enter() {

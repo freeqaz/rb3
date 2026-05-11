@@ -1,5 +1,6 @@
 #include "meta_band/SigninScreen.h"
 #include "BandScreen.h"
+#include "math/Utl.h"
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
 #include "meta/Profile.h"
@@ -81,14 +82,46 @@ void SigninScreen::ReEvaluateState() {
 }
 
 DataNode SigninScreen::OnMsg(const SigninChangedMsg &msg) {
+    int state = 0;
     std::vector<LocalBandUser *> &users = TheBandUserMgr->GetLocalBandUsers();
     FOREACH (it, users) {
         LocalBandUser *pUser = *it;
         MILO_ASSERT(pUser, 0xA4);
         if (!mLimitUserSignin || pUser == GetUser()) {
-            bool isSignedIn = msg.GetMask() & (1 << pUser->GetPadNum());
+            int bit = 1 << pUser->GetPadNum();
+            bool isSignedIn = bit & msg.GetMask();
             MILO_ASSERT(isSignedIn == ThePlatformMgr.IsUserSignedIn(pUser), 0xAE);
+            if (isSignedIn) {
+                if (mMustNotBeAGuest && ThePlatformMgr.IsUserAGuest(pUser)) {
+                    state = Max(state, 1);
+                } else if (mMustBeOnline && !ThePlatformMgr.IsUserSignedIntoLive(pUser)) {
+                    state = Max(state, 2);
+                } else if (mMustBeMultiplayerCapable
+                           && !ThePlatformMgr.UserHasOnlinePrivilege(pUser)) {
+                    state = Max(state, 3);
+                } else {
+                    state = Max(state, 4);
+                }
+                unk41 = false;
+            }
         }
+    }
+    switch (state) {
+    case 1:
+        Handle(on_signed_into_guest_msg, true);
+        break;
+    case 2:
+        Handle(on_not_online_msg, true);
+        break;
+    case 3:
+        Handle(on_not_multiplayer_capable_msg, true);
+        break;
+    case 4:
+        Handle(on_signed_in_msg, true);
+        break;
+    }
+    if (ThePlatformMgr.mGuideShowing) {
+        unk41 = true;
     }
     return 0;
 }

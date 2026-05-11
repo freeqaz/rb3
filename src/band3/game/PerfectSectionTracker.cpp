@@ -8,6 +8,8 @@
 #include "utl/Symbols.h"
 #include "utl/Symbols4.h"
 #include "utl/TimeConversion.h"
+#include <algorithm>
+#include <cmath>
 
 PerfectSectionTracker::PerfectSectionTracker(
     TrackerSource *src, TrackerBandDisplay &banddisp, TrackerBroadcastDisplay &bcdisp
@@ -341,6 +343,24 @@ void PerfectSectionTracker::TranslateRelativeTargets() {
          id = mSource->GetNextPlayer(id)) {
         Player *player = mSource->GetPlayer(id);
         MILO_ASSERT(player, 0x2A5);
+        TrackType tt = player->GetTrackType();
+        PlayerStreakData &streak = unk5c[tt];
+        streak.unk0 = 0;
+        streak.unk4 = 0;
+        streak.unk8 = 0;
+        streak.unkc = 0;
+        streak.unk10 = -1.0f;
+        streak.unk14 = -1;
+        streak.unk18 = false;
+        streak.unk19 = false;
+        streak.unk1c = 0;
+        unk74[tt] = false;
+        unk8c[tt] = 0;
+    }
+    int sectionCount = unk104.CountNonEmptySections(mSource, unke5 == 0);
+    for (unsigned int i = 0; i < mTargets.size(); i++) {
+        int trackerCount = (int)std::ceil((float)sectionCount * mTargets[i]);
+        mTargets[i] = (float)std::max(1, trackerCount);
     }
 }
 

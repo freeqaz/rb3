@@ -10,9 +10,11 @@ class CharClipDisplay { // size 0x68
 public:
     CharClipDisplay()
         : unk0(0), unk4(0), unk8(0), unkc(0), unk10(0), unk14(0), unk18(0), unk1c(0),
-          unk20(0), unk64(0) {}
+          unk20(0), unk64(0) {
+        unk24[0] = 0;
+    }
 
-    MsgSource *FindSource(Hmx::Object *);
+    static MsgSource *FindSource(Hmx::Object *);
     void SetClip(CharClip *, bool);
     void SetText(const char *);
     void SetStartEnd(float, float, bool);
@@ -20,6 +22,9 @@ public:
     void GetXY(Vector2 &, float) const;
     void DrawBeatString(const char *, float, const Hmx::Color &);
     void DrawBeatString(float, const Hmx::Color &);
+    void DrawTrack();
+    void DrawCursor();
+    void DrawBlend(float, float);
 
     static void Init(ObjectDir *);
     static float LineSpacing();
