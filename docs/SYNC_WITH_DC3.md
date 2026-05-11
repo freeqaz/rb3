@@ -25,10 +25,10 @@ Shared toolkit (`milohax-decomp-toolkit` or similar) with both projects dependin
 
 These are mostly file ports with minimal adaptation. Order matters: docs structure first so later items have a place to land.
 
-- [ ] **Add `AGENTS.md`** (mirror of CLAUDE.md). DC3 keeps both with identical content; some agent runtimes prefer one over the other. RB3 currently has only `CLAUDE.md`.
-- [ ] **Add `docs/INDEX.md` sitemap** matching DC3's pattern. Visitors and agents both benefit from a single entry point.
-- [ ] **Restructure `docs/cw-compiler-patterns.md`** into `docs/decomp/patterns/INDEX.md` + per-pattern files (mirror DC3's `docs/decomp/patterns/` catalog: `fixable-bool-mask.md`, `fixable-casting.md`, `fixable-control-flow.md`, `fixable-loop-condition.md`, `fixable-struct-layout.md`, `harmful-avoid.md`, `unfixable-compiler.md`, etc.). Adapt MSVC-specific patterns to MWCC equivalents.
-- [ ] **Port `scripts/measure_progress.sh`** — HEAD vs current diff, worktree-aware. Adapt path to `build/SZBE69_B8/report.json`.
+- [x] **Add `AGENTS.md`** (mirror of CLAUDE.md). DC3 keeps both with identical content; some agent runtimes prefer one over the other. *Done 2026-05-11: implemented as a symlink to `CLAUDE.md` so they can't drift.*
+- [x] **Add `docs/INDEX.md` sitemap** matching DC3's pattern. Visitors and agents both benefit from a single entry point. *Done 2026-05-11.*
+- [x] **Restructure `docs/cw-compiler-patterns.md`** into `docs/decomp/patterns/INDEX.md` + per-pattern files. *Done 2026-05-11 — 10 categorized files mirroring DC3's filename schema (`fixable-bool-mask.md`, `fixable-casting.md`, `fixable-comparison.md`, `fixable-control-flow.md`, `fixable-copy-ctor.md`, `fixable-declarations.md`, `fixable-fsel-fma.md`, `fixable-macros.md`, `fixable-operators.md`, `fixable-struct-layout.md`, `verifiable-icf.md`) plus the INDEX.*
+- [x] **Port `scripts/measure_progress.sh`** — HEAD vs current diff, worktree-aware. *Verified 2026-05-11: RB3 already has its own adapted version (SZBE69_B8 paths, simplified symlink logic since RB3 has no PCH workaround needed). Not a stale copy — appropriate divergence.*
 - [x] **Port `scripts/setup_worktree.sh`** — configures ninja + symlinks compilers/tools/orig binary. Currently every worktree creation in RB3 fails its first build because of missing `orig/` symlinks and toolchain bootstrap. **High value** — proven painful in 2026-05-05 session. *Done 2026-05-07 (commit 83cde7bf), end-to-end tested.*
 - [x] **Port `scripts/configure_existing_worktree.sh`** — sister script that configures an already-created worktree (e.g. one made by Claude Code's built-in isolation rather than `setup_worktree.sh`). Idempotent. *Done 2026-05-07.*
 - [x] **Add `lookup_dc3` MCP tool** to RB3's orchestrator. Inverse of DC3's `lookup_rb3` — search the sister project's source for reference implementations of shared Milo engine functions. RB3 already has `scripts/dc3_compare.py` for offline comparison; this makes it an MCP tool callable from agents. *Done 2026-05-07.*
@@ -80,7 +80,7 @@ When porting DC3 → RB3, expect to change:
 
 Mark items complete in this doc as they ship. When the file gets long enough, split per-tier into separate files under `docs/sync/`.
 
-Last updated: 2026-05-07 (Tier 1: setup_worktree.sh, configure_existing_worktree.sh, lookup_dc3 MCP tool shipped).
+Last updated: 2026-05-11 (Tier 1 mostly done: AGENTS.md symlink, docs/INDEX.md, patterns/ restructure, measure_progress.sh verified — only slash-command ports remain).
 
 ## Related
 

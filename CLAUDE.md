@@ -77,9 +77,10 @@ python3 configure.py --version SZBE69_B8 --map
 
 MetroWorks uses a different mangling scheme from MSVC:
 - `Foo__Fv` = `Foo()` (free function, void args)
-- `Bar__6MyObjFv` = `MyObj::Bar()` (member function)
-- `__dt__6MyObjFv` = `MyObj::~MyObj()` (destructor)
-- `__ct__6MyObjFv` = `MyObj::MyObj()` (constructor)
+- `Bar__5MyObjFv` = `MyObj::Bar()` (member function — `5` is the length of `MyObj`)
+- `__dt__5MyObjFv` = `MyObj::~MyObj()` (destructor)
+- `__ct__5MyObjFv` = `MyObj::MyObj()` (constructor)
+- `Execute__9DataArrayFv` = `DataArray::Execute()` (real example — class name prefixed by char length)
 
 ## Shared Engine
 
@@ -104,7 +105,7 @@ Categories:
 - `-ipa file` = interprocedural analysis within a file
 - `-sdata 2 -sdata2 2` = small data area threshold (2 bytes)
 - No link-time optimization (unlike retail builds)
-- See [docs/cw-compiler-patterns.md](docs/cw-compiler-patterns.md) for detailed patterns affecting code generation (register allocation, bool materialization, pragma tricks, STL inlining, etc.)
+- See [docs/decomp/patterns/INDEX.md](docs/decomp/patterns/INDEX.md) for detailed patterns affecting code generation (register allocation, bool materialization, pragma tricks, STL inlining, etc.)
 
 ## Git Actions
 

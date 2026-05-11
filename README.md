@@ -80,7 +80,7 @@ RB3-specific:
 - **`scripts/dc3_compare.py`** — finds shared Milo engine functions DC3
   has decompiled to 100% that RB3 is still missing, ranked by
   portability
-- **MWCC pattern catalog** — [docs/cw-compiler-patterns.md](docs/cw-compiler-patterns.md)
+- **MWCC pattern catalog** — [docs/decomp/patterns/INDEX.md](docs/decomp/patterns/INDEX.md)
   documents register allocation, bool materialization, pragma tricks,
   and STL inlining quirks specific to MetroWorks CodeWarrior
 
