@@ -1,17 +1,38 @@
 #include "movie/Movie.h"
 #include "movie/TexMovie.h"
+#include "obj/Data.h"
+#include "obj/DataFunc.h"
 #include "obj/ObjMacros.h"
 #include "os/CritSec.h"
 #include "os/Debug.h"
+#include "os/System.h"
 #include "os/Timer.h"
 #include "utl/MemMgr.h"
 #include <list>
+#include <vector>
+
+extern "C" {
+    void BinkSetMemory(void *(*)(unsigned int), void (*)(void *), void *(*)(unsigned int));
+}
+
+int gBinkCore0 = -1;
+int gBinkCore1 = -1;
 
 namespace {
     CriticalSection gMovieCrit;
     bool gInitialized;
+    int gForceTrack;
+
+    void *RadAlloc(unsigned int size) { return _MemAlloc(size, 0x80); }
+    void RadFree(void *p) { _MemFree(p); }
 }
 
+static DataNode OnMovieSetTrack(DataArray *arr) {
+    gForceTrack = arr->Node(1).Int(arr);
+    return DataNode();
+}
+
+std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
 std::list<Movie::Impl *> Movie::openMovieFiles;
 
 Movie::Movie() {
@@ -24,7 +45,21 @@ Movie::~Movie() {
 }
 
 void Movie::Impl::Init() {
-    REGISTER_OBJ_FACTORY(TexMovie)
+    CriticalSection *cs = &gMovieCrit;
+    if (cs) cs->Enter();
+    DataArray *cfg = SystemConfig(Symbol("movie"));
+    cfg->FindData(Symbol("bink_core0"), gBinkCore0, true);
+    cfg->FindData(Symbol("bink_core1"), gBinkCore1, true);
+    if (!gInitialized) {
+        sActiveMovies.reserve(0x10);
+        REGISTER_OBJ_FACTORY(TexMovie)
+        TheDebug.AddExitCallback(Movie::Terminate);
+        BinkSetMemory(RadAlloc, RadFree, RadAlloc);
+        Movie::Impl::PlatformInit();
+        gInitialized = true;
+    }
+    DataRegisterFunc(Symbol("set_bink_track"), OnMovieSetTrack);
+    if (cs) cs->Exit();
 }
 
 void Movie::Init() { Movie::Impl::Init(); }

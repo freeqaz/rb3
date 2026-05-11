@@ -883,7 +883,56 @@ void WorldCrowd::Force3DCrowd(bool force) {
     }
 }
 
-DataNode WorldCrowd::OnIterateFrac(DataArray *da) { START_AUTO_TIMER("crowd_iter"); }
+DataNode WorldCrowd::OnIterateFrac(DataArray *da) {
+    START_AUTO_TIMER("crowd_iter");
+    Character *chars[64];
+    if (mCharacters.empty()) {
+        return DataNode(0);
+    }
+
+    // Gather non-null character pointers.
+    int count = 0;
+    for (std::list<CharData>::iterator it = mCharacters.begin();
+         it != mCharacters.end(); ++it) {
+        Character *c = it->mDef.mChar.mPtr;
+        if (c) {
+            chars[count++] = c;
+        }
+    }
+
+    // Fisher-Yates shuffle.
+    for (int i = count - 1; i > 0; i--) {
+        int j = RandomInt() % (i + 1);
+        Character *tmp = chars[i];
+        chars[i] = chars[j];
+        chars[j] = tmp;
+    }
+
+    // Sum positive fractions from the script's sub-arrays.
+    float totalWeight = 0.0f;
+    for (int i = 2; i < ((const DataArray *)da)->Size(); i++) {
+        const DataArray *sub = ((const DataArray *)da)->Node(i).Array(da);
+        float frac = sub->Node(0).Float(sub);
+        if (frac > 0.0f) {
+            totalWeight += frac;
+        }
+    }
+
+    // Dispatch each sub-script to a fraction of the shuffled characters.
+    float threshold = -0.5f;
+    float charsPerWeight = (float)count / totalWeight;
+    int charIdx = 0;
+    for (int i = 2; i < ((const DataArray *)da)->Size(); i++) {
+        DataArray *sub = ((const DataArray *)da)->Node(i).Array(da);
+        threshold += charsPerWeight * sub->Node(0).Float(sub);
+        while ((float)charIdx < threshold) {
+            sub->ExecuteScript(1, chars[charIdx], 0, 1);
+            charIdx++;
+        }
+    }
+
+    return DataNode(0);
+}
 
 void WorldCrowd::CleanUpCrowdFloor() {
     Hmx::Object *miloObj = ObjectDir::Main()->FindObject("milo", false);

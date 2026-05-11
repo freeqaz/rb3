@@ -313,9 +313,43 @@ void VocalPlayer::Poll(float, const SongPos &) {
     MILO_WARN("mFrameSpewData");
 }
 
-bool VocalPlayer::
-    FindBestPart(float, float, std::vector<VocalPart *> &, Singer *i_pSinger, VocalPart *&, float &, float &) {
+bool VocalPlayer::FindBestPart(
+    float i_fPitch,
+    float i_fTime,
+    std::vector<VocalPart *> &i_rParts,
+    Singer *i_pSinger,
+    VocalPart *&o_rpBestPart,
+    float &o_rfBestPitchDistance,
+    float &o_rfBestScore
+) {
     MILO_ASSERT(i_pSinger, 0x5DA);
+    o_rpBestPart = NULL;
+    o_rfBestScore = 0.0f;
+    for (std::vector<VocalPart *>::iterator it = i_rParts.begin(); it != i_rParts.end();
+         ++it) {
+        VocalPart *pPart = *it;
+        float fPitchDistance;
+        float fShiftedPitch
+            = 12.0f
+                * (float
+                )i_pSinger->AccessScoreHistory(pPart->PartIndex()).GetOctaveOffset()
+            + i_fPitch;
+        if (pPart->CouldScoreAgainstPart(
+                i_fTime,
+                i_pSinger->mTalkyMatcher,
+                fShiftedPitch,
+                mPitchMaximumDistance,
+                fPitchDistance
+            )) {
+            float fScore = i_pSinger->GetHistoricalScore(i_fTime, pPart->PartIndex());
+            if (fScore > o_rfBestScore) {
+                o_rfBestPitchDistance = fPitchDistance;
+                o_rfBestScore = fScore;
+                o_rpBestPart = pPart;
+            }
+        }
+    }
+    return o_rpBestPart != NULL;
 }
 
 void VocalPlayer::LocalEndgameEnergy(int x) {

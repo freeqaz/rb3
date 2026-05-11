@@ -3,6 +3,7 @@
 #include "game/Singer.h"
 
 class VocalPlayer;
+class TalkyMatcher;
 
 class VocalPart {
 public:
@@ -45,6 +46,7 @@ public:
     void ResetScoring();
     float CalcPhraseScoreMax(const VocalPhrase *const &) const;
     void AddScore(const VocalScoreCache &);
+    bool CouldScoreAgainstPart(float, TalkyMatcher *, float, float, float &);
     void AddPhrasePoints(float);
     void SetFirstPhraseMsToScore(float);
     void SetVocalNoteList(VocalNoteList *);

@@ -1595,10 +1595,67 @@ DataNode BandCharacter::OnInstallFilter(DataArray *da) {
     sOutfitDir = da->Obj<ObjectDir>(2);
     sToDir = da->Obj<ObjectDir>(3);
     sInstrumentDir = da->Obj<ObjectDir>(4);
+    Symbol sym = da->Sym(5);
+    ObjectDir *boneMeshDir;
+    sResourceDir = 0;
+    int inSession = 0;
+    sCharSharedDir = 0;
+    boneMeshDir = 0;
+    if (BandCharDesc::GetInstrumentFromSym(sym) < BandCharDesc::kNumInstruments) {
+        if (mInstDir) {
+            inSession = 1;
+        }
+    }
+    if (inSession) {
+        mInstDir->mSphere.radius = 0.0f;
+    }
+    sDrawOrder = -1.0f;
     const char *bodyparts[] = { "hair",      "glasses",  "facehair", "earrings",
                                 "piercings", "eyebrows", "wrist",    "torso",
                                 "head",      "legs",     "feet",     "rings",
-                                "hands" };
+                                "hands",     0 };
+    for (int i = 0; bodyparts[i] != 0; i++) {
+        if (strcmp(sym.mStr, bodyparts[i]) == 0) {
+            sDrawOrder = (i + 1) * 10;
+            break;
+        }
+    }
+    mFileMerger->mFilter = this;
+    if (Hmx::Object *pelvis = FindObject("bone_pelvis.mesh", false)) {
+        boneMeshDir = pelvis->Dir();
+    }
+    sInstResourceDir = 0;
+    if (sInstrumentDir && sInstrumentDir->mSubDirs.size() != 0) {
+        if (sOutfitDir->mSubDirs.size() > 1) {
+            MILO_WARN("instruments can only have one subdir, which is the "
+                      "resource or colorpalettes.milo");
+        }
+        ObjectDir *instSubdir = sInstrumentDir->mSubDirs[0];
+        if (instSubdir != boneMeshDir) {
+            sInstResourceDir = instSubdir;
+        }
+    }
+    if (sOutfitDir) {
+        RndTransformable *xfm = dynamic_cast<RndTransformable *>(
+            sOutfitDir->FindObject("bone_pelvis.mesh", false)
+        );
+        if (xfm) {
+            sBoneMergeDir = xfm->Dir();
+        }
+        Hmx::Object *feetObj = sOutfitDir->FindObject("feet_skin.mat", false);
+        if (feetObj) {
+            sCharSharedDir = feetObj->Dir();
+        }
+        if (sOutfitDir->mSubDirs.size() != 0) {
+            if (sOutfitDir->mSubDirs.size() > 1) {
+                MILO_WARN("outfits can only have one subdir, which is the resource");
+            }
+            ObjectDir *outfitSubdir = sOutfitDir->mSubDirs[0];
+            if (outfitSubdir != sBoneMergeDir && outfitSubdir != boneMeshDir) {
+                sResourceDir = outfitSubdir;
+            }
+        }
+    }
     return DataNode(0);
 }
 

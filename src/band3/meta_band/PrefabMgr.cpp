@@ -116,9 +116,38 @@ PrefabMgr::~PrefabMgr() {
 
 #define kGameNumSlots 4
 
+static void Randomize(int *arr, int n, int start) {
+    for (int i = start; i < n; i++) {
+        int j = RandomInt(i, n);
+        int tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+}
+
 void PrefabMgr::AssignPrefabsToSlots() {
     MILO_ASSERT(mPrefabs.size() >= kGameNumSlots, 0xD6);
     MILO_ASSERT(mPrefabs.size() < 256, 0xDB);
+    int indices[256];
+    for (int i = 0; i < mPrefabs.size(); i++) {
+        indices[i] = i;
+    }
+    for (int slot = 0; slot < kGameNumSlots; slot++) {
+        Symbol genderSym((slot & 1) ? "female" : "male");
+        Randomize(indices, mPrefabs.size(), slot);
+        int found = slot;
+        while (found < mPrefabs.size() - 1) {
+            if (mPrefabs[indices[found]]->GetBandCharDesc()->mGender == genderSym)
+                break;
+            found++;
+        }
+        int tmp = indices[slot];
+        indices[slot] = indices[found];
+        indices[found] = tmp;
+        PrefabChar *pPrefabChar = mPrefabs[indices[slot]];
+        MILO_ASSERT(pPrefabChar, 0xF1);
+        mDefaultPrefabs.push_back(pPrefabChar);
+    }
 }
 
 DECOMP_FORCEACTIVE(PrefabMgr, "female", "male")

@@ -32,5 +32,6 @@ public:
     OSThread mCNTReadThread;
     CNTFileInfo mCNTFileInfo;
 
+    void *operator new(size_t t) { return _MemAllocTemp(t, 0); }
     DELETE_OVERLOAD
 };

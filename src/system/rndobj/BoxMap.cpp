@@ -1,4 +1,6 @@
 #include "rndobj/BoxMap.h"
+#include "decomp.h"
+#include "os/Timer.h"
 #include "rndobj/Lit.h"
 
 Vector3 BoxMapLighting::sAxisDir[6] = { Vector3(1, 0, 0), Vector3(-1, 0, 0),
@@ -46,19 +48,33 @@ bool BoxMapLighting::QueueLight(RndLight *light, float colorScale) {
     return false;
 }
 
+UNPOOL_DATA
 void BoxMapLighting::ApplyQueuedLights(Hmx::Color *color, const Vector3 *v3) const {
-    for (int i = 0; i < mQueued_Directional.NumElements(); i++) {
-        ApplyLight(color, mQueued_Directional[i]);
+    START_AUTO_TIMER("light_approx_poll");
+    {
+        START_AUTO_TIMER("light_approx_dir");
+        const LightParams_Directional *pd = mQueued_Directional.mArray;
+        for (unsigned int i = 0; i < mQueued_Directional.NumElements(); i++, pd++) {
+            ApplyLight(color, *pd);
+        }
     }
     if (v3) {
-        for (int i = 0; i < mQueued_Point.NumElements(); i++) {
-            ApplyLight(color, mQueued_Point[i], *v3);
+        {
+            START_AUTO_TIMER("light_approx_point");
+            const LightParams_Point *pp = mQueued_Point.mArray;
+            for (unsigned int i = 0; i < mQueued_Point.NumElements(); i++, pp++) {
+                ApplyLight(color, *pp, *v3);
+            }
         }
-        if (mQueued_Spot.NumElements() != 0) {
-            ApplyLight(color, mQueued_Spot, *v3);
+        {
+            START_AUTO_TIMER("light_approx_spot");
+            if (mQueued_Spot.NumElements() != 0) {
+                ApplyLight(color, mQueued_Spot, *v3);
+            }
         }
     }
 }
+END_UNPOOL_DATA
 
 bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
     if (spot.unk44 > 0) {

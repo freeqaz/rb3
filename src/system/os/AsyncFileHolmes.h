@@ -5,6 +5,7 @@
 #include "utl/MemMgr.h"
 
 class AsyncFileHolmes : public AsyncFile {
+public:
     AsyncFileHolmes(const char *, int);
     virtual ~AsyncFileHolmes() { Terminate(); }
     virtual int GetFileHandle(DVDFileInfo *&);
@@ -20,5 +21,6 @@ class AsyncFileHolmes : public AsyncFile {
 
     int mHolmesHandle;
 
+    void *operator new(size_t t) { return _MemAllocTemp(t, 0); }
     DELETE_OVERLOAD
 };

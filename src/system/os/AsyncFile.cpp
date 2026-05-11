@@ -1,4 +1,6 @@
 #include "os/AsyncFile.h"
+#include "os/AsyncFileHolmes.h"
+#include "os/AsyncFileCNT.h"
 #include "os/Debug.h"
 #include <string.h>
 #include "os/Endian.h"
@@ -7,6 +9,27 @@
 #include "utl/MemMgr.h"
 #include "os/System.h"
 #include "os/Archive.h"
+
+class AsyncFileWii : public AsyncFile {
+public:
+    AsyncFileWii(const char *, int);
+    virtual ~AsyncFileWii();
+    virtual int GetFileHandle(DVDFileInfo *&);
+    virtual void _OpenAsync();
+    virtual bool _OpenDone();
+    virtual void _WriteAsync(const void *, int);
+    virtual bool _WriteDone();
+    virtual void _SeekToTell();
+    virtual void _ReadAsync(void *, int);
+    virtual bool _ReadDone();
+    virtual void _Close();
+    static bool GetUseDVDRoot();
+    void *operator new(size_t t) { return _MemAllocTemp(t, 0); }
+
+    char mWiiPad[0x80 - 0x38]; // AsyncFileWii is 0x80 total; current AsyncFile sizeof is 0x38
+};
+
+extern bool HolmesClientCacheFile(char *, const char *);
 
 template <>
 void EndianSwapEq(int &i) {
@@ -55,10 +78,31 @@ void PrintDiscFile(const char *cc) {
 extern bool UsingHolmes(int);
 
 AsyncFile *AsyncFile::New(const char *cc, int i) {
-    if (Archive::DebugArkOrder() != 0)
+    AsyncFile *result = NULL;
+    char buf[256];
+    if (Archive::DebugArkOrder())
         PrintDiscFile(cc);
-    if (!UsingHolmes(4) || !(i & 4U) || FileIsLocal(cc)) {
+    if (UsingHolmes(4) && (i & 4) && !FileIsLocal(cc)) {
+        result = new AsyncFileHolmes(cc, i);
+    } else if (!UsingCD() && !FileIsLocal(cc)) {
+        if (AsyncFileWii::GetUseDVDRoot() && HolmesClientCacheFile(buf, cc)) {
+            cc = buf;
+        } else {
+            result = new AsyncFileHolmes(cc, i);
+        }
     }
+    bool curCD = UsingCD();
+    if (!result) {
+        if (FileIsLocal(cc)) {
+            result = new AsyncFileCNT(cc, i);
+        } else {
+            result = new AsyncFileWii(cc, i);
+            SetUsingCD(true);
+        }
+    }
+    result->Init();
+    SetUsingCD(curCD);
+    return result;
 }
 
 AsyncFile::AsyncFile(const char *c, int i)

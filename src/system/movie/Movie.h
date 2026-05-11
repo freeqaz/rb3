@@ -2,6 +2,7 @@
 
 #include "utl/BinStream.h"
 #include <list>
+#include <vector>
 
 class Movie {
 public:
@@ -10,6 +11,8 @@ public:
         Impl();
         ~Impl();
         static void Init();
+        static void PlatformInit();
+        static std::vector<Impl *> sActiveMovies;
         void End();
         bool IsOpen() const;
         bool IsLoading() const;
