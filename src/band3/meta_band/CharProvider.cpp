@@ -101,7 +101,9 @@ void CharProvider::AddCharactersFromProfile(BandProfile *profile) {
                 CharacterEntry(kCharacterEntryCustom, "", pCharacter, 0, false)
             );
         }
-        std::sort(mCharacters.begin() + numchars, mCharacters.end(), CompareCharacters());
+        int endidx = mCharacters.size();
+        CompareCharacters cmp;
+        std::sort(mCharacters.begin() + numchars, mCharacters.begin() + endidx, cmp);
     }
 }
 

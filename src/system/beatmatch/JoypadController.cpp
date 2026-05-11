@@ -151,7 +151,7 @@ int JoypadController::GetVirtualSlot(int i) const {
     if (mPadShiftButton == kPad_NumButtons) {
         if ((thePadData->mType == kJoypadXboxRoDrums
              || thePadData->mType == kJoypadPs3RoDrums)) {
-            if (mLefty) {
+            if (!mLefty) {
                 switch (i) {
                 case 2:
                     ret = 5;
@@ -164,8 +164,8 @@ int JoypadController::GetVirtualSlot(int i) const {
                     }
                     break;
                 }
-                return ret;
             }
+            return ret;
         }
         return ret;
     }
@@ -179,7 +179,8 @@ int JoypadController::GetVirtualSlot(int i) const {
                 if (IsCymbal(3)) {
                     if (thePadData->mHasSecondaryPedal
                         && mSecondaryPedalFunction == kHiHatPedal) {
-                        ret = thePadData->IsButtonInMask(mSecondaryPedalButton) ? 5 : 6;
+                        JoypadButton secBtn = mSecondaryPedalButton;
+                        ret = thePadData->IsButtonInMask(secBtn) ? 5 : 6;
                     } else
                         ret = 5;
                 } else
@@ -192,7 +193,8 @@ int JoypadController::GetVirtualSlot(int i) const {
                 if (IsCymbal(2)) {
                     if (thePadData->mHasSecondaryPedal
                         && mSecondaryPedalFunction == kHiHatPedal) {
-                        ret = thePadData->IsButtonInMask(mSecondaryPedalButton) ? 5 : 6;
+                        JoypadButton secBtn = mSecondaryPedalButton;
+                        ret = thePadData->IsButtonInMask(secBtn) ? 5 : 6;
                     } else
                         ret = 5;
                 } else
