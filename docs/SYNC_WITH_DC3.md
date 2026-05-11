@@ -32,13 +32,12 @@ These are mostly file ports with minimal adaptation. Order matters: docs structu
 - [x] **Port `scripts/setup_worktree.sh`** — configures ninja + symlinks compilers/tools/orig binary. Currently every worktree creation in RB3 fails its first build because of missing `orig/` symlinks and toolchain bootstrap. **High value** — proven painful in 2026-05-05 session. *Done 2026-05-07 (commit 83cde7bf), end-to-end tested.*
 - [x] **Port `scripts/configure_existing_worktree.sh`** — sister script that configures an already-created worktree (e.g. one made by Claude Code's built-in isolation rather than `setup_worktree.sh`). Idempotent. *Done 2026-05-07.*
 - [x] **Add `lookup_dc3` MCP tool** to RB3's orchestrator. Inverse of DC3's `lookup_rb3` — search the sister project's source for reference implementations of shared Milo engine functions. RB3 already has `scripts/dc3_compare.py` for offline comparison; this makes it an MCP tool callable from agents. *Done 2026-05-07.*
-- [ ] **Port relevant slash commands** from `dc3-decomp/.claude/skills/`:
-  - `recon` — quick function reconnaissance (objdiff + Ghidra summary)
-  - `batch-check` — verify a list of functions still match after a header change
-  - `ai-advise` — meta-advisor that suggests next strategy
-  - `vtable` — dump vtable layouts
-  - `resolve-vcall` — resolve indirect calls to concrete targets
-  - Skip: `gpu-*`, `screenshot`, `xenia-gameplay`, `unicorn-query` (DC3 native-port specific)
+- [x] **Port relevant slash commands** from `dc3-decomp/.claude/skills/`:
+  - [x] `batch-check` — verify a list of functions still match after a header change. *Done 2026-05-11.* RB3 version reads `build/SZBE69_B8/report.json` instead of re-running objdiff per function — simpler/faster than DC3 because we have full DWARF and no ICF complications. See `scripts/batch_check.py` + `.claude/skills/batch-check/SKILL.md`.
+  - [N/A] `recon` — DC3's recon adds Unicorn behavioral comparison + DB diagnosis on top of objdiff. RB3's existing `/analyze-function` already covers objdiff + Ghidra (DWARF-rich) + m2c — the Unicorn layer isn't needed since RB3 has DWARF, and the DB diagnosis is provided by `mcp__orchestrator__run_diff_inspect`. Skip the direct port; treat `/analyze-function` as RB3's recon.
+  - **Demoted to Tier 2** — `vtable`, `resolve-vcall`. DC3's versions parse MSVC COFF object files and read `??_R4` RTTI Complete Object Locators to recover sub-object offsets. Wii MWCC vtables have a completely different layout (`__vt__N<classname>`, no RTTI tail) and Wii MWCC doesn't ICF the way MSVC does. These would need a DWARF-based rewrite for RB3 rather than a port. Planning agents kicked off 2026-05-11; outputs at `docs/plans/vtable-skill.md` and `docs/plans/resolve-vcall-skill.md` (or noted as not produced if the agents bailed).
+  - **Demoted to Tier 3** — `ai-advise`. DC3's version is heavy (LLM-driven, tied to permuter + tree-sitter) and is currently *disabled* in DC3 itself (`SKILL.md.disabled`). Reconsider only after RB3 has matching agent-home/ tooling.
+  - **Skipped** (DC3 native-port specific, not applicable to Wii Gekko): `gpu-*`, `screenshot`, `xenia-gameplay`, `unicorn-query`.
 
 ### Tier 2 — medium-value (assess after Tier 1)
 
@@ -80,7 +79,7 @@ When porting DC3 → RB3, expect to change:
 
 Mark items complete in this doc as they ship. When the file gets long enough, split per-tier into separate files under `docs/sync/`.
 
-Last updated: 2026-05-11 (Tier 1 mostly done: AGENTS.md symlink, docs/INDEX.md, patterns/ restructure, measure_progress.sh verified — only slash-command ports remain).
+Last updated: 2026-05-11 (Tier 1 complete: batch-check skill ported; recon is covered by `/analyze-function`; vtable/resolve-vcall demoted to Tier 2 with planning agents running; ai-advise demoted to Tier 3).
 
 ## Related
 
