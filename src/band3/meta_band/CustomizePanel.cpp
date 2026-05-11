@@ -526,7 +526,8 @@ void CustomizePanel::PreviewMakeup(Symbol s) {
         if (s == none_makeup) {
             if (mCurrentMakeupIndex != -1) {
                 MILO_ASSERT_RANGE(mCurrentMakeupIndex, 0, rPatches.size(), 0x3F3);
-                rPatches.erase(rPatches.begin() + mCurrentMakeupIndex);
+                std::vector<BandCharDesc::Patch>::iterator it = rPatches.begin() + mCurrentMakeupIndex;
+                rPatches.erase(it);
                 ClearCurrentMakeupIndex();
             }
         } else {

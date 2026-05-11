@@ -16,7 +16,7 @@ public:
     void ManualSave(LocalBandUser *);
     void ManualDelete();
     bool IsAutosaveEnabled(LocalBandUser *);
-    void GetDialogMsg();
+    DataNode GetDialogMsg();
     Symbol GetDialogOpt1();
     Symbol GetDialogOpt2();
     Symbol GetDialogOpt3();

@@ -102,7 +102,6 @@ const char *RndText::FindPathName() {
 SAVE_OBJ(RndText, 171)
 
 void RndText::Load(BinStream &bs) {
-    int dump;
     LOAD_REVS(bs)
     ASSERT_REVS(21, 0)
     if (gRev > 15)
@@ -110,6 +109,7 @@ void RndText::Load(BinStream &bs) {
     LOAD_SUPERCLASS(RndDrawable);
     if (gRev < 7) {
         ObjPtrList<Hmx::Object> dir(this);
+        int dump;
         bs >> dump >> dir;
     }
     if (gRev > 1)

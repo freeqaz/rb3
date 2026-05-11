@@ -25,10 +25,7 @@ BEGIN_HANDLERS(SaveLoadManager)
     HANDLE_ACTION(
         handle_eventresponse, HandleEventResponse(_msg->Obj<LocalUser>(2), _msg->Int(3))
     )
-    if (sym == get_dialog_msg) { // This handler doesn't return. Why?
-        GetDialogMsg();
-        timer.~MessageTimer();
-    }
+    HANDLE_EXPR(get_dialog_msg, GetDialogMsg())
     HANDLE_EXPR(get_dialog_opt1, GetDialogOpt1())
     HANDLE_EXPR(get_dialog_opt2, GetDialogOpt2())
     HANDLE_EXPR(get_dialog_opt3, GetDialogOpt3())

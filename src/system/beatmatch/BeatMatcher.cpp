@@ -400,7 +400,7 @@ void BeatMatcher::ResetPitchBend(int i1) {
 
 bool BeatMatcher::InFillNow() { return InFill(mSongPos.GetTotalTick(), true); }
 
-bool BeatMatcher::InFill(int i1, bool b2) {
+bool BeatMatcher::InFill(int tick, bool b2) {
     if (mForceFill)
         return true;
     if (mCurTrack >= mTrackTypes.size())
@@ -409,7 +409,7 @@ bool BeatMatcher::InFill(int i1, bool b2) {
     if (!FillsEnabled(mCurTrack))
         return false;
     else {
-        int tick = mSongData->GetTempoMap()->GetLoopTick(i1);
+        tick = mSongData->GetTempoMap()->GetLoopTick(tick);
         if (curTrackType == kTrackDrum || curTrackType == kTrackGuitar
             || curTrackType == kTrackBass || curTrackType == kTrackNone) {
             return mSongData->GetFillInfo(mCurTrack)->FillAt(tick, b2);
