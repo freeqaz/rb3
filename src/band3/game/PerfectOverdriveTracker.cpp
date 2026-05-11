@@ -100,8 +100,8 @@ void PerfectOverdriveTracker::SavePlayerStats() const {
          id = mSource->GetNextPlayer(id)) {
         Player *pPlayer = mSource->GetPlayer(id);
         MILO_ASSERT(pPlayer, 0xBE);
-        std::map<TrackType, PlayerStreakData>::const_iterator it =
-            unk70.find(pPlayer->GetTrackType());
+        TrackType tt = pPlayer->GetTrackType();
+        std::map<TrackType, PlayerStreakData>::const_iterator it = unk70.find(tt);
         if (it != unk70.end()) {
             pPlayer->mStats.unk1c0 = it->second.unk1c;
         }

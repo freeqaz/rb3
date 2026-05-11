@@ -485,12 +485,12 @@ UIScreen *BandUI::GetTargetScreen(UIScreen *screen) {
 
 void BandUI::GotoScreen(UIScreen *s, bool b2, bool b3) {
     if (TheNetSync->IsTransitionAllowed(s)) {
-        UIScreen *screen = GetTargetScreen(s);
+        s = GetTargetScreen(s);
         if (b3) {
             WipeOnNextTransition(false);
         }
-        UIManager::GotoScreen(screen, b2, b3);
-        NetGotoScreenMsg msg(screen, b2, b3);
+        UIManager::GotoScreen(s, b2, b3);
+        NetGotoScreenMsg msg(s, b2, b3);
         TheNetSync->SendStartTransitionMsg(msg);
     }
 }

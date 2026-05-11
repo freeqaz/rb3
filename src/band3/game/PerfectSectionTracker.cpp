@@ -370,7 +370,8 @@ void PerfectSectionTracker::SavePlayerStats() const {
          id = mSource->GetNextPlayer(id)) {
         Player *pPlayer = mSource->GetPlayer(id);
         MILO_ASSERT(pPlayer, 0x2EF);
-        std::map<TrackType, int>::const_iterator it = unk8c.find(pPlayer->GetTrackType());
+        TrackType tt = pPlayer->GetTrackType();
+        std::map<TrackType, int>::const_iterator it = unk8c.find(tt);
         if (it != unk8c.end()) {
             pPlayer->mStats.unk1c0 = it->second;
         }
