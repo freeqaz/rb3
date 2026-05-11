@@ -2141,10 +2141,12 @@ int GemPlayer::GetSoloData(int tick, float &pct, float &solo_pct, int &numGems) 
     if (!GetPhraseExtents(kSoloPhrase, mTrackNum, tick, startTick, endTick))
         return 0;
     unk316 = true;
+    int hit;
+    int solo;
     const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
     int idx = gemList->ClosestMarkerIdxAtOrAfterTick(startTick);
-    int solo = 0;
-    int hit = 0;
+    hit = 0;
+    solo = 0;
     if (idx != -1) {
         const std::vector<GameGem> &gems = TheSongDB->GetGems(mTrackNum);
         for (; (unsigned int)idx < gems.size(); idx++) {

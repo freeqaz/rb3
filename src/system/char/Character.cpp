@@ -227,12 +227,15 @@ void Character::Poll() {
 }
 
 void Character::DrawLodOrShadow(int lod, Character::DrawMode mode) {
-    bool oldUpdate = RndMesh::sUpdateApproxLight;
+    const bool oldUpdate = RndMesh::sUpdateApproxLight;
     RndMesh::SetUpdateApproxLight(false);
-    if (mode & 1 && RndEnviron::sCurrent) {
-        Sphere s48;
-        if (MakeWorldSphere(s48, false) && s48.GetRadius() > 0) {
-            RndEnviron::sCurrent->UpdateApproxLighting(&s48.center, nullptr);
+    if (mode & 1) {
+        RndEnviron *env = RndEnviron::sCurrent;
+        if (env) {
+            Sphere s48;
+            if (MakeWorldSphere(s48, false) && s48.GetRadius() > 0) {
+                env->UpdateApproxLighting(&s48.center, nullptr);
+            }
         }
     }
     if (mode == 1) {

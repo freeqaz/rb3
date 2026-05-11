@@ -166,16 +166,15 @@ void WorldCrowd::CollideList(const Segment &seg, std::list<Collision> &colls) {
     }
 }
 
-// matches in retail
 void WorldCrowd::Reset3DCrowd() {
     SetFullness(1.0f, mCharFullness);
     FOREACH (it, mCharacters) {
         RndMultiMesh *multiMesh = it->mMMesh;
         if (multiMesh) {
-            int i6 = 0;
             std::list<RndMultiMesh::Instance>::iterator instIt =
                 multiMesh->mInstances.begin();
-            for (int i = 0; i != it->m3DCharsCreated.size(); i++) {
+            int i6 = 0;
+            for (unsigned int i = 0; i != it->m3DCharsCreated.size(); i++) {
                 int cap = it->m3DCharsCreated[i].unk30;
                 for (; i6 != cap; i6++)
                     ++instIt;

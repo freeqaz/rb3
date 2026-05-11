@@ -182,10 +182,12 @@ void NetSync::SendNetFocus(User *u, UIComponent *c) {
 }
 
 void NetSync::SyncScreen(UIScreen *s, int i2) {
+    bool b2;
+    bool b1;
     BandUser *u = TheSessionMgr->GetLeaderUser();
-    bool b2 = true;
+    b2 = true;
     if (u) {
-        bool b1 = false;
+        b1 = false;
         if (u->IsLocal() && TheNetSession->HasUser(u)) {
             b1 = true;
         }
