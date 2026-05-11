@@ -249,44 +249,166 @@ DECOMP_FORCEACTIVE(PostProc, "%s can't load new %s version")
 
 void RndPostProc::LoadRev(BinStream &bs, int rev) {
     if (rev > 4) {
-        if (rev > 10) {
+        if (rev > 0xA) {
             bs >> mBloomColor;
-            if (rev < 24) {
-                int x;
-                bs >> x;
+            if (rev < 0x18) {
+                int dummy;
+                bs >> dummy;
             }
             bs >> mBloomIntensity;
             bs >> mBloomThreshold;
         } else {
             Hmx::Color c;
             bs >> c;
+            float minVal = c.red;
+            if (minVal > c.green)
+                minVal = c.green;
+            if (minVal > c.blue)
+                minVal = c.blue;
+            if (minVal < 4.0f) {
+                float range = 4.0f - minVal;
+                c.red = (4.0f - c.red) / range;
+                c.green = (4.0f - c.green) / range;
+                c.blue = (4.0f - c.blue) / range;
+                mBloomThreshold = c.alpha;
+                c.alpha = 0.0f;
+                mBloomColor = c;
+            } else {
+                mBloomColor.red = 1.0f;
+                mBloomColor.green = 1.0f;
+                mBloomColor.blue = 1.0f;
+                mBloomColor.alpha = 0.0f;
+                mBloomThreshold = c.alpha;
+            }
+            int dummy;
+            bs >> dummy;
+            bs >> mBloomIntensity;
+            mBloomIntensity = std::sqrt(mBloomIntensity);
+            int dummy2;
+            bs >> dummy2;
         }
     }
-    if (rev > 5)
+    if (rev > 5) {
         bs >> mLuminanceMap;
-
-    if (rev > 7) {
-        bs >> mTrailThreshold;
-        bs >> mTrailDuration;
-        bs >> mEmulateFPS;
     }
-
+    if (rev > 6) {
+        if (rev < 0x12) {
+            bs >> mColorXfm.mColorXfm.m.x >> mColorXfm.mColorXfm.m.y
+                >> mColorXfm.mColorXfm.m.z;
+            bs >> mColorXfm.mColorXfm.v;
+        } else {
+            if (!mColorXfm.Load(bs)) {
+                MILO_FAIL("%s can't load new %s version", PathName(this), ClassName());
+            }
+        }
+        bs >> mFlickerModBounds >> mFlickerTimeBounds;
+        if (rev < 9) {
+            mFlickerModBounds.x = 1.0f - mFlickerModBounds.x;
+            mFlickerModBounds.y = 1.0f - mFlickerModBounds.y;
+        }
+        if (rev < 0x1D) {
+            mFlickerModBounds.x = 0.0f;
+        }
+        bs >> mNoiseBaseScale >> mNoiseTopScale >> mNoiseIntensity;
+        if (rev > 0xC) {
+            bs >> mNoiseStationary;
+        }
+        if (rev > 8) {
+            bs >> mNoiseMap;
+        }
+        if (rev > 0x24) {
+            bs >> mNoiseMidtone;
+        } else {
+            mNoiseMidtone = false;
+        }
+        if (rev < 0x12) {
+            bs >> mColorXfm.mHue >> mColorXfm.mSaturation >> mColorXfm.mLightness
+                >> mColorXfm.mContrast >> mColorXfm.mBrightness;
+        }
+    }
+    if (rev > 7) {
+        bs >> mTrailThreshold >> mTrailDuration >> mEmulateFPS;
+    }
     if (rev > 9) {
-        if (rev > 0x12) {
-            // color correction stuff?
+        if (rev < 0x12) {
+            bs >> mColorXfm.mLevelInLo >> mColorXfm.mLevelInHi;
+            bs >> mColorXfm.mLevelOutLo >> mColorXfm.mLevelOutHi;
         }
         bs >> mPosterLevels;
     }
-
-    if (rev >> 13)
+    if (rev > 0xD) {
         bs >> mPosterMin;
-
-    if (rev > 32)
+    }
+    if (rev > 0xB) {
+        if (rev < 0x16) {
+            float complexity;
+            bs >> complexity;
+            if (complexity != 0.0f) {
+                mKaleidoscopeComplexity = 2.0f;
+            }
+        } else {
+            bs >> mKaleidoscopeComplexity >> mKaleidoscopeSize >> mKaleidoscopeAngle
+                >> mKaleidoscopeRadius >> mKaleidoscopeFlipUVs;
+        }
+    }
+    if (rev > 0xE && rev < 0x1F) {
+        int dummy;
+        bs >> dummy;
+        if (rev < 0x11) {
+            int dummy2;
+            bs >> dummy2;
+            ObjPtr<RndDrawable> dummyDraw(this, 0);
+            bs >> dummyDraw;
+        }
+    }
+    if (rev > 0x12) {
+        bs >> mHallOfTimeRate;
+        bs >> mHallOfTimeColor >> mHallOfTimeMix;
+        if (rev > 0x13 && rev < 0x20) {
+            bool hotType;
+            bs >> hotType;
+            mHallOfTimeType = hotType ? 1 : 0;
+        } else if (rev > 0x1F) {
+            bs >> mHallOfTimeType;
+        }
+    }
+    if (rev > 0x14) {
+        bs >> mMotionBlurBlend;
+        if (rev > 0x1A) {
+            bs >> mMotionBlurWeight;
+            if (rev > 0x21) {
+                bs >> mMotionBlurVelocity;
+            }
+        }
+    }
+    if (rev > 0x16) {
+        bs >> mGradientMap >> mGradientMapOpacity >> mGradientMapIndex
+            >> mGradientMapStart >> mGradientMapEnd;
+    }
+    if (rev < 0x18) {
+        mBloomThreshold *= 4.0f;
+    }
+    if (rev > 0x18) {
+        bs >> mRefractMap >> mRefractDist >> mRefractScale >> mRefractPanning
+            >> mRefractAngle;
+        if (rev > 0x1B) {
+            bs >> mRefractVelocity;
+        }
+    }
+    if (rev > 0x19) {
+        bs >> mChromaticAberrationOffset;
+        if (rev > 0x22) {
+            bs >> mChromaticSharpen;
+        }
+    }
+    if (rev > 0x1D) {
+        bs >> mVignetteColor >> mVignetteIntensity;
+    }
+    if (rev > 0x20) {
         bs >> mBloomGlare;
-    if (rev > 35) {
-        bs >> mBloomStreak;
-        bs >> mBloomStreakAttenuation;
-        bs >> mBloomStreakAngle;
+    }
+    if (rev > 0x23) {
+        bs >> mBloomStreak >> mBloomStreakAttenuation >> mBloomStreakAngle;
     }
 }
 

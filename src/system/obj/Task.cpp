@@ -174,7 +174,7 @@ void ThreadTask::Replace(Hmx::Object *from, Hmx::Object *to) {
         ScriptTask::Replace(from, to);
     } else {
         Hmx::Object::Replace(from, to);
-        // mObjects.remove_if(ObjMatchPr());
+        mObjects.remove_if(ObjMatchPr(from));
     }
 }
 

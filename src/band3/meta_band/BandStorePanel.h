@@ -21,7 +21,7 @@ public:
     virtual bool IsSongInLibrary(const int &) const;
     virtual void ExitStore(StoreError) const;
     virtual int StoreUser() const; // fix ret type
-    virtual void MakeNewOffer(const StorePackedOfferBase *, bool);
+    virtual StoreOffer *MakeNewOffer(const StorePackedOfferBase *, bool);
     virtual StoreOffer *FindOffer(Symbol) const;
     virtual bool EnumerateSubsetOfOfferIDs() const { return false; }
     virtual void LoadArt(const char *, UIPanel *);

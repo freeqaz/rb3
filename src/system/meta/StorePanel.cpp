@@ -169,10 +169,106 @@ void StorePanel::SetStoreMode(Symbol s) {
         mStoreMode = 3;
 }
 
-void StorePanel::PopulateOffers(DataArray *, bool) {
+void StorePanel::PopulateOffers(DataArray *arr, bool b) {
     DeleteAll(unk38);
     DeleteAll(unk40);
-    std::sort(unk38.begin(), unk38.end(), StoreOfferSort);
+    if (mStoreMode == 0) {
+        StorePage *page;
+        if (arr->Node(0).Type() == kDataInt) {
+            int idx = ((const DataArray *)arr)->Node(0).Int(arr);
+            page = TheStoreMetadata.LoadPage(idx);
+        } else {
+            page = TheStoreMetadata.LoadDynamicPage(arr);
+        }
+        if (page != nullptr) {
+            if (page->mPage->mHasOffers && page->mPage->mNumOffers != 0) {
+                for (int i = 0; i < page->mPage->mNumOffers; i++) {
+                    const StorePackedOfferBase *offer = page->BaseOffer(i);
+                    TheStoreMetadata.GetOfferStatus(offer);
+                    unk38.push_back(MakeNewOffer(offer, (page->mOffers[i] >> 15) & 1));
+                }
+            }
+        } else {
+            mStoreMode = 1;
+        }
+    }
+    if (mStoreMode == 1) {
+        int rowOff, idxOff;
+        rowOff = 0;
+        idxOff = 0;
+        for (int i = 0; i < TheStoreMetadata.mOfferTable->mNumOffers; i++) {
+            unsigned char flags =
+                ((StoreOfferState *)((char *)TheStoreMetadata.mOfferTable->mBufferNewRelease + rowOff))->mFlags;
+            if ((flags & 1) || (flags & 2)) {
+                StorePackedOffer *po =
+                    *(StorePackedOffer **)((char *)TheStoreMetadata.mOfferTable->mOffers + idxOff);
+                unk38.push_back(MakeNewOffer(po, false));
+            }
+            rowOff += 0xC;
+            idxOff += 4;
+        }
+        rowOff = 0;
+        idxOff = 0;
+        for (int i = 0; i < TheStoreMetadata.mRbnOfferTable->mNumOffers; i++) {
+            unsigned char flags =
+                ((StoreOfferState *)((char *)TheStoreMetadata.mRbnOfferTable->mBufferNewRelease + rowOff))->mFlags;
+            if ((flags & 1) || (flags & 2)) {
+                StorePackedRBNOffer *po =
+                    *(StorePackedRBNOffer **)((char *)TheStoreMetadata.mRbnOfferTable->mOffers + idxOff);
+                unk38.push_back(MakeNewOffer(po, true));
+            }
+            rowOff += 0xC;
+            idxOff += 4;
+        }
+        std::sort(unk38.begin(), unk38.end(), StoreOfferSort);
+        for (std::vector<StoreOffer *>::iterator it = unk38.begin(); it != unk38.end(); ++it) {
+        }
+        mStoreMode = 0;
+    }
+    if (mStoreMode == 2) {
+        // TheStoreMetadata.unk54 is a std::vector<const StorePackedOfferBase *>*
+#define VEC (**(std::vector<const StorePackedOfferBase *> **)((char *)&TheStoreMetadata + 0x54))
+        for (std::vector<const StorePackedOfferBase *>::iterator it = VEC.begin();
+             it != VEC.end(); ++it) {
+            unk38.push_back(
+                MakeNewOffer(*it, TheStoreMetadata.mRbnOfferTable->OfferIndex(*it) != -1)
+            );
+        }
+#undef VEC
+        mStoreMode = 0;
+    }
+    if (mStoreMode == 3) {
+        for (std::vector<int>::iterator it = StoreMetadataManager::mSetlistOffers.begin();
+             it != StoreMetadataManager::mSetlistOffers.end(); ++it) {
+            const StorePackedOfferBase *offer = TheStoreMetadata.FindOfferFromSongId(*it);
+            if (offer != nullptr) {
+                unk38.push_back(
+                    MakeNewOffer(offer, TheStoreMetadata.mRbnOfferTable->OfferIndex(offer) != -1)
+                );
+            }
+        }
+        std::sort(unk38.begin(), unk38.end(), StoreOfferSort);
+        for (std::vector<StoreOffer *>::iterator it = unk38.begin(); it != unk38.end(); ++it) {
+        }
+        mStoreMode = 0;
+    }
+    std::map<const StorePackedOfferBase *, bool> seen;
+    DeleteAll(unk48);
+    for (std::vector<StoreOffer *>::iterator it = unk38.begin(); it != unk38.end(); ++it) {
+        StoreOffer *off = *it;
+        if (off->mAlbum.mPackedData != nullptr) {
+            if (seen.find(off->mAlbum.mPackedData) == seen.end()) {
+                unk48.push_back(MakeNewOffer(off->mAlbum.mPackedData, off->mPackedData->mIsRBN));
+                seen[off->mAlbum.mPackedData] = true;
+            }
+        }
+        if (off->mPack.mPackedData != nullptr) {
+            if (seen.find(off->mAlbum.mPackedData) == seen.end()) {
+                unk48.push_back(MakeNewOffer(off->mPack.mPackedData, off->mPackedData->mIsRBN));
+                seen[off->mPack.mPackedData] = true;
+            }
+        }
+    }
 }
 
 void StorePanel::EnumerateOffers(bool b) {

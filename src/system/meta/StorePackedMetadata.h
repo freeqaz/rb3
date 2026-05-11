@@ -79,6 +79,7 @@ public:
     unsigned short mDefaultSort : 4;
     unsigned short mHasOffers : 1;
     unsigned short unk6p3 : 3;
+    unsigned char mNumOffers; // 0x8
 };
 
 class StorePage {
@@ -86,6 +87,7 @@ public:
     StorePage() : mPageNumber(0), mPage(0), mOffers(0) {}
     void LoadFromBuffer(char *, unsigned short);
     StorePackedOffer *Offer(int) const;
+    const StorePackedOfferBase *BaseOffer(int) const;
 
     int mPageNumber; // 0x0
     StorePackedPage *mPage; // 0x4
@@ -123,6 +125,8 @@ public:
     void Unload();
     bool LoadingFailed() const;
     StorePage *LoadPage(unsigned short);
+    StorePage *LoadDynamicPage(DataArray *);
+    const StorePackedOfferBase *FindOfferFromSongId(int) const;
     const char *GetString(int idx) const {
         StoreStringTable *table = mStringTable;
         if (idx & 0x8000)

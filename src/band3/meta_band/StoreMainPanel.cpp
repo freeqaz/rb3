@@ -3,5 +3,4 @@
 
 DECOMP_FORCEFUNC(StoreMainPanel, StoreMetadataManager, GetString(0))
 
-StoreMainPanel::~StoreMainPanel() {
-};
+StoreMainPanel::~StoreMainPanel() { ClearConfigData(); }

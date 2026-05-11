@@ -1207,8 +1207,43 @@ bool BandCharacter::AddDircut(const FilePath &f) {
 }
 
 void BandCharacter::SetDircuts() {
-    int maxNum = mFileMerger->FindMergerIndex("directed_cut_0", true);
+    int start = mFileMerger->FindMergerIndex("directed_cut_0", true);
+    int maxNum = mFileMerger->mMergers.size() - start;
     MILO_ASSERT(maxNum < 32, 0x7AE);
+    int slots[32];
+    int i = 0;
+    for (int j = 0; j < maxNum; j++) {
+        slots[j] = j + start;
+    }
+    for (std::list<String>::iterator it = mDircuts.begin(); it != mDircuts.end();
+         ++it, ++i) {
+        const String &str = *it;
+        int idx;
+        for (idx = i; idx < maxNum; idx++) {
+            FileMerger::Merger &cur = mFileMerger->mMergers[slots[idx]];
+            if (cur.mSelected == str || cur.mLoaded == str || cur.loading == str) {
+                int tmp = slots[idx];
+                slots[idx] = slots[i];
+                slots[i] = tmp;
+                break;
+            }
+        }
+        if (idx == maxNum) {
+            const char *cstr = str.c_str();
+            FilePath fp;
+            fp.Set(FilePath::sRoot.c_str(), cstr);
+            FileMerger::Merger &cur = mFileMerger->mMergers[slots[i]];
+            cur.mSelected = fp;
+            cur.unk29 = false;
+        }
+    }
+    for (; i < maxNum; i++) {
+        FilePath fp;
+        fp.Set(FilePath::sRoot.c_str(), "");
+        FileMerger::Merger &cur = mFileMerger->mMergers[slots[i]];
+        cur.mSelected = fp;
+        cur.unk29 = false;
+    }
 }
 
 int BandCharacter::GetShotFlags(Symbol s) {

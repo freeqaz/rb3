@@ -29,7 +29,7 @@ public:
     virtual bool IsSongInLibrary(const int &) const = 0;
     virtual void ExitStore(StoreError) const = 0;
     virtual int StoreUser() const = 0; // fix ret type
-    virtual void MakeNewOffer(const StorePackedOfferBase *, bool) = 0;
+    virtual StoreOffer *MakeNewOffer(const StorePackedOfferBase *, bool) = 0;
     virtual StoreOffer *FindOffer(Symbol) const = 0;
     virtual bool EnumerateSubsetOfOfferIDs() const { return false; }
     virtual void LoadArt(const char *, UIPanel *);

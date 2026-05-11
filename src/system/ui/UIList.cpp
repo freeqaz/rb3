@@ -503,16 +503,15 @@ RndDrawable *UIList::CollideShowing(const Segment &seg, float &fref, Plane &p) {
 }
 
 int UIList::CollidePlane(const std::vector<Vector3> &vec, const Plane &p) {
-    bool le0 = vec[0] <= p;
-    bool le1 = vec[1] <= p;
-    bool le2 = vec[2] <= p;
-    if (le0 == le1 && le1 == le2) {
-        int ret = -1;
-        if (le0)
-            ret = 1;
-        return ret;
-    } else
-        return 0;
+    bool first = p.Dot(vec[0]) >= 0;
+    bool second = p.Dot(vec[1]) >= 0;
+    bool third = p.Dot(vec[2]) >= 0;
+    if (first == second && second == third) {
+        if (first)
+            return 1;
+        return -1;
+    }
+    return 0;
 }
 
 int UIList::CollidePlane(const Plane &pl) {

@@ -563,7 +563,8 @@ void TrackPanel::CleanUpReloadChecks() {
          ++it) {
         delete it->second;
     }
-    mReloadChecks.clear();
+    std::map<Symbol, DepChecker *> tmp;
+    mReloadChecks.swap(tmp);
 }
 
 DataNode TrackPanel::ForEachTrack(const DataArray *arr) {

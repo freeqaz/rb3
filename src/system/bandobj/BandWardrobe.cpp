@@ -580,12 +580,48 @@ BandCharacter *BandWardrobe::GetCharacter(int which) const {
 
 DECOMP_FORCEACTIVE(BandWardrobe, "Bandcharacter is not target")
 
-bool BandWardrobe::AddDircut(BandCharacter *bchar, BandCamShot *, Symbol, int) {
+bool BandWardrobe::AddDircut(BandCharacter *bchar, BandCamShot *shot, Symbol cat, int ff) {
     if (!bchar)
         MILO_FAIL("BandWardrobe::AddDircut character is NULL");
-    MakeString("%s could not find directed cut group %s for inst %s");
-    MakeString("%s intro camera looking for non-intro anim group");
-    MakeString("%s can't load %s, group is %s, character is %s");
+    Symbol animinst = BandCharDesc::GetAnimInstrument(bchar->mInstrumentType);
+    DataArray *grouparr =
+        GetGroupArray(BandCharDesc::GetInstrumentFromSym(animinst));
+    int flag = -1;
+    for (int i = 0; i < grouparr->Size(); i++) {
+        if (cat == grouparr->Array(i)->Sym(0)) {
+            flag = grouparr->Array(i)->Int(1);
+            break;
+        }
+    }
+    if (flag == -1) {
+        MILO_NOTIFY_ONCE(
+            "%s could not find directed cut group %s for inst %s",
+            PathName(shot),
+            cat,
+            animinst
+        );
+        return true;
+    }
+    if (flag & 0x100)
+        return true;
+    if ((flag & 0x800) || (flag & 0x1000) || (flag & 0x2000))
+        return true;
+    if ((ff & 0x400) && !(flag & 0x400)) {
+        MILO_WARN("%s intro camera looking for non-intro anim group", PathName(shot));
+        return true;
+    }
+    int genderflags = GetGenreGenderFlags(mGenre, bchar->mGender);
+    if (genderflags != (genderflags & flag)) {
+        MILO_WARN(
+            "%s can't load %s, group is %s, character is %s",
+            PathName(shot),
+            cat,
+            FlagString(flag),
+            FlagString(genderflags)
+        );
+        return true;
+    }
+    return bchar->AddDircut(cat, mGenre, flag);
 }
 
 void BandWardrobe::SelectExtra(FileMerger::Merger &merger) {
