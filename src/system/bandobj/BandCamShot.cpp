@@ -438,23 +438,23 @@ void BandCamShot::SetFrame(float frame, float blend) {
     if (!unk16a) {
         SetPreFrame(frame, blend);
     }
-    float f4 = frame;
+    float origFrame = frame;
     if (!ShouldSetNextShot(frame)) {
-        f4 = frame - (unk15c + Duration());
+        frame = frame - (unk15c + Duration());
     }
-    if (CheckShotOver(frame)) {
+    if (CheckShotOver(origFrame)) {
         SetShotOver();
     }
     if (this == mCurShot) {
-        AnimateShot(f4, blend);
+        AnimateShot(frame, blend);
     } else {
         if (mAnimsDuringNextShots) {
             FOREACH (it, mAnims) {
-                (*it)->SetFrame(frame, 1);
+                (*it)->SetFrame(origFrame, 1);
             }
         }
-        mCurShot->SetFrameEx(f4, blend);
-        RndAnimatable::SetFrame(frame, blend);
+        mCurShot->SetFrameEx(frame, blend);
+        RndAnimatable::SetFrame(origFrame, blend);
     }
     unk16a = false;
 }

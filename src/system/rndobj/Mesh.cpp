@@ -914,8 +914,8 @@ int RndMesh::EstimatedSizeKb() const {
     int striperSum = 0;
     FOREACH (it, mStriperResults) {
         if (it->StripLengths) {
-            striperSum += it->NbStrips * sizeof(it->NbStrips)
-                + (it->StripLengths[it->NbStrips - 1]) * 2;
+            striperSum += it->NbStrips * sizeof(it->NbStrips);
+            striperSum += (it->StripLengths[it->NbStrips - 1]) * 2;
         }
     }
     return (NumVerts() * sizeof(Vert) + NumFaces() * sizeof(Face) + striperSum) >> 10;
@@ -1173,7 +1173,7 @@ DataNode RndMesh::OnCompareEdgeVerts(const DataArray *da) {
     for (int i = 0; i < Verts().size(); i++) {
         if (vec20[i] == -1) {
             vec20[i] = i;
-            for (int j = i; j < Verts().size(); j++) {
+            for (int j = i + 1; j < Verts().size(); j++) {
                 if (Verts(j).pos == Verts(i).pos) {
                     vec20[j] = i;
                 }

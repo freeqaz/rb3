@@ -133,9 +133,7 @@ void MultiMeshWidgetImp::RemoveUntil(float f1, float f2) {
 
 void MultiMeshWidgetImp::RemoveAt(float f1, float f2, float f3) {
     for (int i = 0; i < mMultiMeshes.size(); i++) {
-        RndMultiMesh *mesh = mMultiMeshes[i];
-        std::list<RndMultiMesh::Instance> &insts = mesh->mInstances;
-        DoRemoveAt(insts, f1, f2, f3);
+        DoRemoveAt(mMultiMeshes[i]->mInstances, f1, f2, f3);
     }
 }
 

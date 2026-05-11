@@ -89,15 +89,13 @@ void CharLipSync::Generator::RemoveViseme(int visemeIdx) {
     int i = 0;
     lipSync = mLipSync;
     while (i < mLipSync->mFrames) {
-        int j = 0;
         int count = lipSync->mData[cur++];
-        while (j < count) {
+        for (int j = 0; j < count; j++) {
             if (lipSync->mData[cur] >= visemeIdx) {
                 lipSync->mData[cur]--;
                 MILO_ASSERT(lipSync->mData[cur] < mLipSync->mVisemes.size(), 0x83);
             }
             cur += 2;
-            j++;
         }
         i++;
     }
