@@ -53,7 +53,7 @@ public:
     void BuildDrawState(
         UIListWidgetDrawState &, const UIListState &, UIComponent::State, float
     ) const;
-    void SetElementPos(Vector3 &, float, int, float, float) const;
+    float SetElementPos(Vector3 &, float, int, float, float) const;
 
     DECLARE_REVS;
     NEW_OVERLOAD

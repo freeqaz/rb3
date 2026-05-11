@@ -1241,7 +1241,8 @@ void BandDirector::OnMidiPresetCleanup() {
             float bts = BeatToSeconds(Max(0.0f, stb - fadein));
             float newframe = bts * 30.0f;
             if (skeys[i - 1].frame <= newframe) {
-                local_keys.push_back(Key<Symbol>(skeys[i - 1].value, newframe));
+                Key<Symbol> newkey(skeys[i - 1].value, newframe);
+                local_keys.push_back(newkey);
             }
         } else if (!lpreset) {
             MILO_WARN(

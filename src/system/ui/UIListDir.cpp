@@ -41,12 +41,13 @@ void UIListDir::BuildDrawState(
     UIListWidgetDrawState &, const UIListState &, UIComponent::State, float
 ) const {}
 
-void UIListDir::SetElementPos(Vector3 &v, float f1, int i2, float f3, float f4) const {
+float UIListDir::SetElementPos(Vector3 &v, float f1, int i2, float f3, float f4) const {
     v.Zero();
     int floored = std::floor(f1);
+    float spacing = mElementSpacing;
     float f3toset =
-        mElementSpacing * ((f1 - (float)floored) + (float)(floored / i2)) + f3;
-    float f2toset = mElementSpacing * (float)(floored % i2) + f4;
+        spacing * ((f1 - (float)floored) + (float)(floored / i2)) + f3;
+    float f2toset = spacing * (float)(floored % i2) + f4;
     if (mOrientation == kUIListVertical) {
         v.z -= f3toset;
         v.x += f2toset;
@@ -54,6 +55,7 @@ void UIListDir::SetElementPos(Vector3 &v, float f1, int i2, float f3, float f4) 
         v.x += f3toset;
         v.z -= f2toset;
     }
+    return f3toset;
 }
 
 UIList *UIListDir::SubList(int i, std::vector<UIListWidget *> &vec) {
