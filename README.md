@@ -1,16 +1,29 @@
-Rock Band 3 (Wii)
-=================
+Rock Band 3 (Wii) — AI-Assisted Fork
+====================================
+
+> ⚠️ **Unofficial fork.** This repository is **not** the canonical RB3
+> decomp. It is a personal experiment by
+> [@freeqaz](https://github.com/freeqaz) exploring how far AI agents can
+> push a clean-room Wii decompilation project. Code, commits, decisions,
+> tooling, and most of the documentation in this fork are **AI-assisted**
+> (primarily via Claude Code). Do not assume anything here represents the
+> views, code quality bar, or roadmap of the upstream maintainers.
+>
+> The community RB3 decomp this fork started from lives at
+> **[DarkRTA/rb3](https://github.com/DarkRTA/rb3)**. If you want to
+> contribute to or follow the canonical effort, please go there instead.
+> This fork has diverged in goals and methodology and is **not** aimed at
+> upstreaming back.
+>
+> No game assets, no Wii assembly, and no copyrighted binaries are
+> stored in this repo. An existing copy of the game is required to do
+> anything useful with it.
 
 A decompilation of Rock Band 3 for the Nintendo Wii (Build 100901_A,
 target binary `SZBE69_B8`), with an in-progress native engine rewrite to
-follow.
-
-Personal AI-assisted decomp series by [@freeqaz](https://github.com/freeqaz).
-Sister project to [Dance Central 3](https://github.com/freeqaz/dc3-decomp) —
+follow. Sister project to
+[Dance Central 3 (AI-assisted fork)](https://github.com/freeqaz/dc3-decomp) —
 same author, same methodology, shared Milo engine codebase.
-
-> This repository does **not** contain any game assets or assembly. An
-> existing copy of the game is required to build.
 
 Status
 ------
@@ -30,11 +43,6 @@ because they get replaced or stubbed in a desktop port anyway.
 
 Project relationship
 --------------------
-
-This started as a fork of [DarkRTA/rb3](https://github.com/DarkRTA/rb3),
-which provided the original symbol map and split work. It has since
-diverged in goals and methodology and is **not** aimed at upstreaming
-back to DarkRTA/rb3 or aligned with the milohax community projects.
 
 Two-project series (same author, same toolchain):
 
