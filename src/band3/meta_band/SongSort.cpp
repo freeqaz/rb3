@@ -151,54 +151,42 @@ void SongSort::BuildSongList() {
     if (IsReady()) {
         DeleteList();
         if (TheMusicLibrary->GetMakingSetlist(true) && IsLeaderLocal()) {
-            mFunctions.insert(
-                mFunctions.begin(),
-                new FunctionSortNode(
-                    nullptr,
-                    true,
-                    play_setlist,
-                    play_setlist_by_line,
-                    "ui/image/song_select_setlist_keep.png",
-                    "highlight_function.mat"
-                )
-            );
-        }
-
-        mFunctions.insert(
-            mFunctions.begin(),
-            new FunctionSortNode(
+            mFunctions.push_front(new FunctionSortNode(
                 nullptr,
                 true,
-                random_song,
-                random_song_by_line,
-                "ui/image/song_select_random_keep.png",
-                "highlight_function_random.mat"
-            )
-        );
+                play_setlist,
+                play_setlist_by_line,
+                "ui/image/song_select_setlist_keep.png",
+                "highlight_function.mat"
+            ));
+        }
+
+        mFunctions.push_front(new FunctionSortNode(
+            nullptr,
+            true,
+            random_song,
+            random_song_by_line,
+            "ui/image/song_select_random_keep.png",
+            "highlight_function_random.mat"
+        ));
 
         if (TheGameMode->InMode(qp_coop)) {
-            mFunctions.insert(
-                mFunctions.begin(),
-                new FunctionSortNode(
-                    nullptr,
-                    true,
-                    party_setlist,
-                    party_setlist_by_line,
-                    "ui/image/song_select_setlist_keep.png",
-                    "highlight_function.mat"
-                )
-            );
-            mFunctions.insert(
-                mFunctions.begin(),
-                new FunctionSortNode(
-                    nullptr,
-                    true,
-                    view_setlists,
-                    view_setlists_by_line,
-                    "ui/image/song_select_setlist_keep.png",
-                    "highlight_function_setlist.mat"
-                )
-            );
+            mFunctions.push_front(new FunctionSortNode(
+                nullptr,
+                true,
+                party_setlist,
+                party_setlist_by_line,
+                "ui/image/song_select_setlist_keep.png",
+                "highlight_function.mat"
+            ));
+            mFunctions.push_front(new FunctionSortNode(
+                nullptr,
+                true,
+                view_setlists,
+                view_setlists_by_line,
+                "ui/image/song_select_setlist_keep.png",
+                "highlight_function_setlist.mat"
+            ));
         }
         mList.reserve(6100);
         FOREACH (it, mFunctions) {
@@ -279,28 +267,22 @@ void SetlistSort::BuildSetlistTree(std::map<Symbol, SetlistRecord> &records) {
 
 void SetlistSort::BuildSetlistList() {
     DeleteList();
-    mFunctions.insert(
-        mFunctions.begin(),
-        new FunctionSortNode(
-            nullptr,
-            true,
-            make_a_setlist,
-            make_a_setlist_by_line,
-            "ui/image/song_select_setlist_keep.png",
-            "highlight_function_setlist.mat"
-        )
-    );
-    mFunctions.insert(
-        mFunctions.begin(),
-        new FunctionSortNode(
-            nullptr,
-            true,
-            view_songs,
-            view_songs_by_line,
-            "ui/image/song_select_setlist_keep.png",
-            "highlight_function_setlist.mat"
-        )
-    );
+    mFunctions.push_front(new FunctionSortNode(
+        nullptr,
+        true,
+        make_a_setlist,
+        make_a_setlist_by_line,
+        "ui/image/song_select_setlist_keep.png",
+        "highlight_function_setlist.mat"
+    ));
+    mFunctions.push_front(new FunctionSortNode(
+        nullptr,
+        true,
+        view_songs,
+        view_songs_by_line,
+        "ui/image/song_select_setlist_keep.png",
+        "highlight_function_setlist.mat"
+    ));
     mList.reserve(0x140);
     FOREACH_POST (it, mFunctions) {
         (*it)->Renumber(mList);

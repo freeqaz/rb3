@@ -288,14 +288,14 @@ static BOOL OnShutdown(OSShutdownPass pass, OSShutdownEvent event) {
     }
 
     if (WUDIsBusy()) {
-        WPADCancelSyncDevice();
+        WUDCancelSyncDevice();
         return FALSE;
     }
 
     BOOL isCleanup;
     switch (event) {
     case OS_SHUTDOWN_EVENT_FATAL:
-        WPADRegisterAllocator(&__wpadNoAlloc, &__wpadNoFree);
+        WUDRegisterAllocator(&__wpadNoAlloc, &__wpadNoFree);
 
         // fallthrough
 
@@ -319,10 +319,33 @@ static BOOL OnShutdown(OSShutdownPass pass, OSShutdownEvent event) {
         OSAssertMessage_Line(1082, FALSE, "WPAD: OnShutDown(): Unknown event %d\n", event);
     }
 
-    if (isCleanup)
-        __wpadCleanup();
-    else
-        __wpadReconnectStart(TRUE);
+    if (isCleanup) {
+        WPADChannel chan;
+        BOOL intrStatus = OSDisableInterrupts();
+        if (_wpadShutdownFlag) {
+            OSRestoreInterrupts(intrStatus);
+        } else {
+            _wpadShutdownFlag = TRUE;
+            WUDSetVisibility(FALSE, FALSE);
+            for (chan = WPAD_CHAN0; chan < WPAD_MAX_CONTROLLERS; chan++)
+                WUDSetDeviceHistory(chan, NULL);
+            OSCancelAlarm(&_wpadManageAlarm);
+            WUDSetHidRecvCallback(NULL);
+            WUDShutdown(FALSE);
+            OSRestoreInterrupts(intrStatus);
+        }
+    } else {
+        BOOL intrStatus = OSDisableInterrupts();
+        if (!_wpadStartup) {
+            OSRestoreInterrupts(intrStatus);
+        } else if (_wpadShutdownFlag) {
+            OSRestoreInterrupts(intrStatus);
+        } else {
+            _wpadShutdownFlag = TRUE;
+            _wpadOnReconnect = 1;
+            OSRestoreInterrupts(intrStatus);
+        }
+    }
 
     return FALSE;
 }

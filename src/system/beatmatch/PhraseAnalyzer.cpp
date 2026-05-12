@@ -101,15 +101,17 @@ void PhraseAnalyzer::Verify() const {
                     i3 -= i10;
                     String str54;
                     String str60;
-                    for (int bit = 0; i10 != 0; bit++) {
-                        int i11 = 1 << bit;
+                    int i11;
+                    int bit;
+                    for (bit = 0; i10 != 0; bit++) {
+                        i11 = 1 << bit;
                         if (i10 & i11) {
                             str54 += TrackTypeToSym((TrackType)bit);
                             str54 += " ";
                             i10 -= i11;
                         }
                     }
-                    for (int bit = 0; i3 != 0; bit++) {
+                    for (bit = 0; i3 != 0; bit++) {
                         i10 = 1 << bit;
                         if (i3 & i10) {
                             str60 += TrackTypeToSym((TrackType)bit);
