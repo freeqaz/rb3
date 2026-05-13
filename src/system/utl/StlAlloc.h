@@ -71,7 +71,11 @@ namespace STLPORT {
         pointer allocate(const size_type count, const void *hint = nullptr) const {
             const char *name = 0;
             if (gStlAllocNameLookup) {
+#ifdef STL_NODE_ALLOC_DEBUG
+                name = typeid(pointer).name();
+#else
                 name = "";
+#endif
             }
             return reinterpret_cast<pointer>(
                 _MemOrPoolAllocSTL(count * sizeof(T), FastPool)

@@ -1,3 +1,4 @@
+#define STL_NODE_ALLOC_DEBUG
 #include "BandProfile.h"
 #include "BandMachineMgr.h"
 #include "ProfileMgr.h"
