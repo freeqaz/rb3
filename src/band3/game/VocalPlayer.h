@@ -147,7 +147,7 @@ public:
     void RememberCurrentMics();
     float FramePhraseMeterFrac(int) const;
     int CalculatePhraseRating(float);
-    VocalPhrase *CurrentPhrase() const;
+    const VocalPhrase *const &CurrentPhrase() const;
     bool AtFirstPhrase() const;
     void EnablePartScoring(int, bool);
     void HitCoda();

@@ -30,6 +30,7 @@ public:
     short GetBandInstrumentMask() const { return mBandInstrumentMask; }
     Difficulty GetDifficulty(ScoreType s) const { return mDiffs[s]; }
     const BandSongMetadata *Data() const { return mData; }
+    inline const BandSongMetadata *GetData() const { return mData; }
     bool GetRestricted() const { return mRestricted; }
     bool IsNotBand() const { return mActiveScoreType != kScoreBand; }
     bool IsDemo() const { return mDemo; }

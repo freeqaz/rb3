@@ -1,9 +1,41 @@
 #pragma once
 #include "obj/Object.h"
 #include "utl/BinStream.h"
+#include "os/Debug.h"
+#include "math/Vec.h"
+#include <math.h>
 #include <vector>
 
 class CharClip;
+
+#line 94
+inline short MakeShortAng(float f) {
+    f = 0.5f + f * 1638.4f;
+    MILO_ASSERT(f < 32768 && f > -32767, 0x60);
+    f = floor(f);
+    return f;
+}
+#line 102
+
+class ShortVector3 {
+public:
+    ShortVector3() {}
+    ShortVector3(short *) {}
+
+    static short ToShort(float f) {
+        float scaled = f * (1.0f / 1300.0f) * 32767.0f + 0.5f;
+        return floor(Clamp(-32767.0f, 32767.0f, scaled));
+    }
+    void Set(const Vector3 &vec) {
+        x = ToShort(vec.x);
+        y = ToShort(vec.y);
+        z = ToShort(vec.z);
+    }
+
+    short x;
+    short y;
+    short z;
+};
 
 class CharBones {
 public:

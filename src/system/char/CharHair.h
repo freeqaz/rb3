@@ -22,7 +22,19 @@ public:
             lastZ.Zero();
             unk5c.Zero();
         }
-        // implicit copy ctor
+        Point(const Point &p) : bone(p.bone), collides(p.collides) {
+            pos = p.pos;
+            bone = p.bone;
+            length = p.length;
+            collides = p.collides;
+            radius = p.radius;
+            outerRadius = p.outerRadius;
+            force = p.force;
+            lastFriction = p.lastFriction;
+            lastZ = p.lastZ;
+            sideLength = p.sideLength;
+            unk5c = p.unk5c;
+        }
 
         Vector3 pos; // 0x0
         Vector3 force; // 0xc

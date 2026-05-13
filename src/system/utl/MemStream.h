@@ -20,6 +20,7 @@ public:
     void WriteStream(BinStream &, int);
     void Compact();
     int BufferSize() const { return mBuffer.size(); }
+    int Size() const { return mBuffer.size(); }
     void Resize(int size) { mBuffer.resize(size); }
     void Reserve(int size) { mBuffer.reserve(size); }
     const char *Buffer() const { return mBuffer.begin(); }

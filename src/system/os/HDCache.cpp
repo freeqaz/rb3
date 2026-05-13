@@ -125,34 +125,11 @@ void HDCache::Init() {
 
 void HDCache::OpenFiles(int numFilesToOpen) {}
 
-bool HDCache::ReadDone() {
-    int done;
-    ArkFile *readArkFile = mReadArkFiles[unk20];
-    if (readArkFile == 0) {
-        return true;
-    } else {
-        readArkFile->ReadDone(done);
-    }
-
-    return;
-}
-
-bool HDCache::ReadFail() {
-    ArkFile *readArkFile = mReadArkFiles[unk20];
-    if (readArkFile != nullptr) {
-        if (readArkFile->Fail()) {
-            TheDebug << MakeString("HDCache Read %d failed\n", unk20);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool HDCache::WriteDone() {
-    ArkFile *writeArkFile = mWriteArkFiles[mWriteFileIdx];
-    if (writeArkFile != nullptr) {
-    }
-    return false;
+void HDCache::UnlockCache() {
+    CritSecTracker cst(mCritSec);
+    MILO_ASSERT(mLockId == CurrentThreadId(), 0xF9);
+    if (--unk34 == 0)
+        mLockId = 0;
 }
 
 void HDCache::Poll() {
@@ -173,6 +150,72 @@ void HDCache::Poll() {
     }
 }
 
+void HDCache::WriteHdr() {
+    int done;
+    if (!mHdr[mHdrIdx]->Fail()) {
+        if (LockCache()) {
+            MILO_ASSERT(mHdr[mHdrIdx]->WriteDone(done), 0x143);
+            CSHA1 sha;
+            mHdrBuf->Seek(0, BinStream::kSeekBegin);
+            mHdrBuf->EnableWriteEncryption();
+            *mHdrBuf << 2;
+            HxGuid guid;
+            TheArchive->GetGuid(guid);
+            *mHdrBuf << guid;
+            int numArkfiles = TheArchive->mNumArkfiles;
+            *mHdrBuf << numArkfiles;
+            for (int i = 0; i < numArkfiles; i++) {
+                int blockSize = 0;
+                if (mBlockState[i]) {
+                    int arkBlocks = TheArchive->GetArkfileNumBlocks(i);
+                    int numBlocks = arkBlocks + 0x1F;
+                    blockSize = (numBlocks / 32) * 4;
+                }
+                *mHdrBuf << blockSize;
+                if (blockSize > 0) {
+                    mHdrBuf->Write(mBlockState[i], blockSize);
+                    sha.Update((const unsigned char *)mBlockState[i], blockSize);
+                }
+            }
+            char buf[256];
+            memset(buf, 0, 256);
+            sha.Final()->ReportHash(buf, 0);
+            mHdrBuf->Write(buf, 256);
+            mHdrBuf->DisableEncryption();
+            unk24 = 0;
+            int finalSize = HdrSize();
+            MILO_ASSERT(mHdrBuf->Size() <= finalSize, 0x175);
+            char zeroPad[0x80];
+            memset(zeroPad, 0, 0x80);
+            while (mHdrBuf->Size() < finalSize) {
+                int size = finalSize - mHdrBuf->Size();
+                if (size > 0x80U)
+                    size = 0x80;
+                mHdrBuf->Write(zeroPad, size);
+            }
+            MILO_ASSERT(mHdrBuf->Size() == finalSize, 0x182);
+            int oldSize = mHdr[mHdrIdx]->Size();
+            int newSize = mHdrBuf->Size();
+            MILO_ASSERT(oldSize == newSize, 0x185);
+            unk1c = true;
+            mHdr[mHdrIdx]->Seek(0, 0);
+            mHdr[mHdrIdx]->WriteAsync(mHdrBuf->Buffer(), mHdrBuf->Size());
+        }
+    }
+}
+
+bool HDCache::ReadDone() {
+    int done;
+    ArkFile *readArkFile = mReadArkFiles[unk20];
+    if (readArkFile == 0) {
+        return true;
+    } else {
+        readArkFile->ReadDone(done);
+    }
+
+    return;
+}
+
 bool HDCache::ReadAsync(int arkfileNum, int blockNum, void *ptr) {
     MILO_ASSERT(ReadDone(), 0x190);
     if (mBlockState[arkfileNum]) {
@@ -188,6 +231,24 @@ bool HDCache::ReadAsync(int arkfileNum, int blockNum, void *ptr) {
     return false;
 }
 
+bool HDCache::ReadFail() {
+    ArkFile *readArkFile = mReadArkFiles[unk20];
+    if (readArkFile != nullptr) {
+        if (readArkFile->Fail()) {
+            TheDebug << MakeString("HDCache Read %d failed\n", unk20);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HDCache::WriteDone() {
+    ArkFile *writeArkFile = mWriteArkFiles[mWriteFileIdx];
+    if (writeArkFile != nullptr) {
+    }
+    return false;
+}
+
 bool HDCache::LockCache() {
     CritSecTracker cst(mCritSec);
     if (mLockId == 0 || mLockId == CurrentThreadId()) {
@@ -196,13 +257,6 @@ bool HDCache::LockCache() {
         return true;
     } else
         return false;
-}
-
-void HDCache::UnlockCache() {
-    CritSecTracker cst(mCritSec);
-    MILO_ASSERT(mLockId == CurrentThreadId(), 0xF9);
-    if (--unk34 == 0)
-        mLockId = 0;
 }
 
 int HDCache::HdrSize() {
@@ -240,3 +294,4 @@ FileStream *HDCache::OpenHeader() {
         return new FileStream(str, FileStream::kReadNoArk, true);
     }
 }
+

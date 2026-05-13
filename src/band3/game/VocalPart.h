@@ -26,6 +26,7 @@ public:
     bool ScoringEnabled() const;
     void SetRemotePhraseMeterFrac(float);
     bool InTambourinePhrase() const;
+    int CalculateRemainingTambourineTicks();
     void ForcePhrasePointDelta(float);
     float FramePhraseMeterFrac() const;
     int GetSpotlightPhrase() const;

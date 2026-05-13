@@ -23,6 +23,14 @@ public:
     void GameOver();
     void Rollback(float, float);
     void SetBank(ObjectDir *bank) { mBank = bank; }
+    const std::vector<int> &TambourineGems() const;
+    bool GemHit(int) const;
+    bool GemProcessed(int) const;
+    void TambourineSucceed(int);
+    void TambourineFail(int, bool);
+    void LocalTambourineSoloEnd(int, int);
+    DataNode OnPlayTambourine(DataArray *);
+    void OnRemoteTambourineSucceeding(DataArray *);
 
     class VocalPlayer &mPlayerRef; // 0x1c
     bool mIsLocal; // 0x20

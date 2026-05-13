@@ -242,16 +242,38 @@ public:
         x = y = z = 0;
         w = 32767;
     }
+    void Set(const Hmx::Quat &q) {
+        x = (short)floor(Clamp(-32767.0f, 32767.0f, 0.5f + q.x * 32767.0f));
+        y = (short)floor(Clamp(-32767.0f, 32767.0f, 0.5f + q.y * 32767.0f));
+        z = (short)floor(Clamp(-32767.0f, 32767.0f, 0.5f + q.z * 32767.0f));
+        w = (short)floor(Clamp(-32767.0f, 32767.0f, 0.5f + q.w * 32767.0f));
+    }
     void ToQuat(Hmx::Quat& q) const {
-        q.Set(x * 0.000030518509f, y * 0.000030518509f, z * 0.000030518509f, w * 0.000030518509f);
+        q.Set(
+            (float)x * 3.051851e-05f,
+            (float)y * 3.051851e-05f,
+            (float)z * 3.051851e-05f,
+            (float)w * 3.051851e-05f
+        );
     }
 };
 
 class ByteQuat {
 public:
     char x, y, z, w;
+    void Set(const Hmx::Quat &q) {
+        x = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.x * 127.0f));
+        y = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.y * 127.0f));
+        z = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.z * 127.0f));
+        w = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.w * 127.0f));
+    }
     void ToQuat(Hmx::Quat& q) const {
-        q.Set(x * 0.0078740157f, y * 0.0078740157f, z * 0.0078740157f, w * 0.0078740157f);
+        q.Set(
+            (float)x * 0.0078740157f,
+            (float)y * 0.0078740157f,
+            (float)z * 0.0078740157f,
+            (float)w * 0.0078740157f
+        );
     }
 };
 

@@ -12,8 +12,10 @@
 #include "os/Timer.h"
 #include "utl/BinStream.h"
 #include "utl/TextFileStream.h"
+#include "utl/VectorSizeDefs.h"
 #include <cstring>
 #include <list>
+#include <vector>
 
 extern Timer gAsyncFileWiiOpenTimer;
 extern Timer gPollFrontLoaderTimer;
@@ -636,4 +638,44 @@ void HolmesClientStackTrace(const char *cc, unsigned int *ui, int i, String &s) 
     *gHolmesStream >> s;
     FinishResponse();
     EndCmd(Holmes::kStackTrace);
+}
+
+void HolmesClientEnumerate(
+    const char *path,
+    void (*callback)(const char *, const char *),
+    bool recurse,
+    const char *ext,
+    bool dirs
+) {
+    CritSecTracker cst(&gCrit);
+    BeginCmd(Holmes::kEnumerate, true);
+
+    *gStreamBuffer << u8(Holmes::kEnumerate);
+    BinStream &bs = *gStreamBuffer << path;
+    bs << u8(recurse);
+    BinStream &bs2 = bs << ext;
+    bs2 << u8(dirs);
+    HolmesFlushStreamBuffer();
+
+    std::vector<RecurseInfo VECTOR_SIZE_LARGE> entries;
+    WaitForResponse(Holmes::kEnumerate);
+
+    u8 more;
+    gHolmesStream->Read(&more, 1);
+    bool keep = more != 0;
+    while (keep) {
+        entries.push_back(RecurseInfo());
+        String dir, file;
+        *gHolmesStream >> entries.back().mDir >> entries.back().mFile;
+        gHolmesStream->Read(&more, 1);
+        keep = more != 0;
+    }
+
+    FinishResponse();
+
+    for (unsigned int i = 0; i < entries.size(); i++) {
+        callback(entries[i].mDir.c_str(), entries[i].mFile.c_str());
+    }
+
+    EndCmd(Holmes::kEnumerate);
 }

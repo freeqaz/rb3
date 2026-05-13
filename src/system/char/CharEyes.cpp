@@ -5,6 +5,7 @@
 #include "char/CharLookAt.h"
 #include "char/CharInterest.h"
 #include "char/CharWeightable.h"
+#include "char/CharEyeDartRuleset.h"
 #include "decomp.h"
 #include "math/Rand.h"
 #include "math/Utl.h"
@@ -13,10 +14,15 @@
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "obj/Task.h"
+#include "rndobj/Cam.h"
 #include "rndobj/Graph.h"
+#include "rndobj/Rnd.h"
 #include "rndobj/Trans.h"
+#include "ui/PanelDir.h"
 #include "utl/Symbols.h"
+#include "world/Dir.h"
 #include <cmath>
+#include <cstring>
 
 bool CharEyes::sDisableEyeDart;
 bool CharEyes::sDisableEyeJitter;
@@ -232,7 +238,69 @@ void CharEyes::Highlight() {
             }
         }
         if (mInterests.size() != 0) {
-            // more happens here
+            RndTransformable *head = GetHead();
+            const Transform &headxfm = head->WorldXfm();
+            Vector3 headFwd(headxfm.m.y);
+            Normalize(headFwd, headFwd);
+            const Vector3 &headPos = headxfm.v;
+            for (ObjVector<CharInterestState>::iterator it = mInterests.begin();
+                 it != mInterests.end();
+                 ++it) {
+                bool matchesFilter = true;
+                if (!it->mInterest->IsMatchingFilterFlags(mInterestFilterFlags)) {
+                    bool defaultOK = false;
+                    if (mInterestFilterFlags == mDefaultFilterFlags) {
+                        if (it->mInterest->mCategoryFlags == 0) {
+                            defaultOK = true;
+                        }
+                    }
+                    if (!defaultOK)
+                        matchesFilter = false;
+                }
+                if (unkc8 == it->mInterest) {
+                    oneframe->AddSphere(
+                        it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(0.0f, 1.0f, 0.0f, 1.0f)
+                    );
+                    Vector2 screen;
+                    if (RndCam::Current()->WorldToScreen(it->mInterest->WorldXfm().v, screen) > 0.0f) {
+                        screen.x = screen.x * TheRnd->Width() - 30.0f;
+                        screen.y = screen.y * -TheRnd->Height() + 15.0f;
+                        oneframe->AddString(
+                            MakeString("%s", it->mInterest->Name()),
+                            screen,
+                            Hmx::Color(1.0f, 1.0f, 1.0f, 1.0f)
+                        );
+                    }
+                } else if (it->mInterest->IsWithinViewCone(headPos, headFwd)
+                           && it->mInterest->IsWithinViewCone(headPos, headFwd)) {
+                    if (matchesFilter) {
+                        oneframe->AddSphere(
+                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(1.0f, 1.0f, 0.0f, 1.0f)
+                        );
+                    } else {
+                        oneframe->AddSphere(
+                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(1.0f, 0.64705884f, 0.0f, 1.0f)
+                        );
+                    }
+                } else {
+                    if (matchesFilter) {
+                        oneframe->AddSphere(
+                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(1.0f, 0.0f, 0.0f, 1.0f)
+                        );
+                    } else {
+                        oneframe->AddSphere(
+                            it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(0.6901961f, 0.1882353f, 0.3764706f, 1.0f)
+                        );
+                    }
+                }
+                if (it->IsInRefractoryPeriod()) {
+                    oneframe->AddString3D(
+                        MakeString("r=%f", it->RefractoryTimeRemaining()),
+                        it->mInterest->WorldXfm().v,
+                        Hmx::Color(1.0f, 1.0f, 1.0f, 1.0f)
+                    );
+                }
+            }
         }
     }
 #endif
@@ -451,6 +519,331 @@ void CharEyes::DartUpdate() {
 inline float EaseInExp(float t) {
     MILO_ASSERT(t >= 0 && t <= 1, 0x1F3);
     return std::pow(t, 3.76f);
+}
+
+void CharEyes::NextLook() {
+    Vector3 oldTarget = unk58;
+
+    RndTransformable *head = GetHead();
+    const Transform &headXfm = head->WorldXfm();
+
+    Vector3 facingDir(headXfm.m.y);
+    Normalize(facingDir, facingDir);
+
+    if (unkd4 && (unkd4->IsWithinViewCone(headXfm.v, facingDir) || IsHeadIKWeightIncreasing())) {
+        unk58 = unkd4->WorldXfm().v;
+        unkc8 = unkd4;
+        const CharEyeDartRuleset *dartOverride = unkc8->GetDartRulesetOverride();
+        if (dartOverride) {
+            mEyeDartRulesetData = dartOverride->mData;
+        } else {
+            mEyeDartRulesetData.ClearToDefaults();
+        }
+    } else {
+        const Vector3 &lastFacing = unka4;
+        float dx = (facingDir.x - lastFacing.x) * 45.0f;
+        float dy = (facingDir.y - lastFacing.y) * 45.0f;
+        float dz = (facingDir.z - lastFacing.z) * 45.0f;
+
+        float extrapMag = std::sqrt(dy * dy + (dx * dx + dz * dz));
+        float maxExtrap = std::tan(mMaxExtrapolation * 0.017453292f);
+
+        if (extrapMag > maxExtrap) {
+            float scale = maxExtrap / extrapMag;
+            dx = scale * dx;
+            dy = dy * scale;
+            dz = dz * scale;
+        }
+
+        float newFacingX = facingDir.x + dx;
+        float newFacingY = dy + facingDir.y;
+        float newFacingZ = dz + facingDir.z;
+
+        float dist = RandomFloat(20.0f, 100.0f);
+        dist *= 12.0f;
+
+        float projX = dist * newFacingX;
+        float projY = newFacingY * dist;
+        float projZ = newFacingZ * dist;
+
+        unk58.x = headXfm.v.x + projX;
+        unk58.y = projY + headXfm.v.y;
+        unk58.z = headXfm.v.z + projZ;
+
+        RndTransformable *dirTrans = dynamic_cast<RndTransformable *>(Dir());
+        if (dirTrans) {
+            const Vector3 &dirPos = dirTrans->WorldXfm().v;
+            if (unk58.z < dirPos.z) {
+                float scale = (dirPos.z - headXfm.v.z) / (unk58.z - headXfm.v.z);
+                float sx = projX * scale;
+                float sy = projY * scale;
+                float sz = projZ * scale;
+                unk58.x = headXfm.v.x + sx;
+                unk58.y = sy + headXfm.v.y;
+                unk58.z = headXfm.v.z + sz;
+            }
+        }
+
+        static DataNode &interestCheat = DataVariable("cheat.disable_interest_objects");
+
+        if (mInterests.size() > 0 && !sDisableInterestObjects) {
+            if (interestCheat.Int(0) == 0) {
+                float maxDistSq = -1.0f;
+                float bestScore = maxDistSq;
+                for (ObjVector<CharInterestState>::iterator it = mInterests.begin();
+                     it != mInterests.end();
+                     ++it) {
+                    const Vector3 &intPos = it->mInterest->WorldXfm().v;
+                    float fx = intPos.x - headXfm.v.x;
+                    float fy = intPos.y - headXfm.v.y;
+                    float fz = intPos.z - headXfm.v.z;
+                    float distSq = (fz * fz + (fx * fx + fy * fy));
+                    if (distSq > maxDistSq)
+                        maxDistSq = distSq;
+                }
+
+                if (maxDistSq > 0.0f) {
+                    CharInterestState *bestState = 0;
+                    Vector3 targetDir;
+                    Subtract(unk58, headXfm.v, targetDir);
+                    Normalize(targetDir, targetDir);
+
+                    float inverseDist = 1.0f / maxDistSq;
+
+                    for (ObjVector<CharInterestState>::iterator it = mInterests.begin();
+                         it != mInterests.end();
+                         ++it) {
+                        if (it->mInterest != unkc8) {
+                            if (!it->IsInRefractoryPeriod()) {
+                                float score = it->mInterest->ComputeScore(
+                                    headXfm.m.y,
+                                    headXfm.v,
+                                    targetDir,
+                                    inverseDist,
+                                    mInterestFilterFlags,
+                                    mDefaultFilterFlags == mInterestFilterFlags
+                                );
+                                if (score >= 0.0f && score > bestScore) {
+                                    bestScore = score;
+                                    bestState = &*it;
+                                }
+                            }
+                        }
+                    }
+
+                    if (bestState) {
+                        unk58 = bestState->mInterest->WorldXfm().v;
+                        unkc8 = bestState->mInterest;
+                        const CharEyeDartRuleset *dartOverride =
+                            unkc8->GetDartRulesetOverride();
+                        if (dartOverride) {
+                            mEyeDartRulesetData = dartOverride->mData;
+                        } else {
+                            mEyeDartRulesetData.ClearToDefaults();
+                        }
+                        bestState->BeginRefractoryPeriod();
+                    } else {
+                        unkc8 = 0;
+                        mEyeDartRulesetData.ClearToDefaults();
+                    }
+
+                    unk130 = targetDir;
+                    goto stateReset;
+                }
+            }
+        }
+
+        unkc8 = 0;
+        mEyeDartRulesetData.ClearToDefaults();
+    }
+
+stateReset:
+    unkb4 = 0.0f;
+    unkbc = 0.0f;
+    unk15c = false;
+    unke4 = false;
+    unkb0 = 1e30f;
+    unk124 = false;
+    unk128 = 0.2f;
+    unk12c = -1;
+
+    static DataNode &blinkCheat = DataVariable("cheat.disable_procedural_blinks");
+
+    if (!sDisableProceduralBlink && !blinkCheat.NotNull() && !unk13c && mFaceServo
+        && unk144 < 25
+        && TheTaskMgr.Seconds(TaskMgr::kRealTime) - unk14c > 0.6f
+        && unkc0 < 0.5f) {
+        Vector3 oldDir(
+            oldTarget.x - headXfm.v.x,
+            oldTarget.y - headXfm.v.y,
+            oldTarget.z - headXfm.v.z
+        );
+        Normalize(oldDir, oldDir);
+
+        Vector3 newDir(
+            unk58.x - headXfm.v.x,
+            unk58.y - headXfm.v.y,
+            unk58.z - headXfm.v.z
+        );
+        Normalize(newDir, newDir);
+
+        float dotProd = Dot(newDir, oldDir);
+        if (dotProd < 0.984808f) {
+            ForceBlink();
+            unk150 = unk58;
+            unk58 = oldTarget;
+        }
+    }
+}
+
+void CharEyes::Poll() {
+    if (mEyes.empty())
+        return;
+
+    RndTransformable *head = GetHead();
+    if (!head)
+        return;
+
+    float camWeight = TheTaskMgr.DeltaSeconds();
+    if (camWeight < 0.0f) {
+        Exit();
+        return;
+    }
+
+    camWeight = 0.0f;
+    if (mCamWeight) {
+        camWeight = mCamWeight->Weight();
+    }
+
+    unkb4 += TheTaskMgr.DeltaSeconds();
+
+    float blinkWeight;
+    if (mFaceServo) {
+        blinkWeight = mFaceServo->BlinkWeightLeft();
+    } else {
+        blinkWeight = 0.0f;
+    }
+
+    bool blinkDetected = false;
+    if (blinkWeight < 0.3f) {
+        unkc4 = true;
+    } else {
+        if (unkc4 && unkc0 > 0.8f && blinkWeight < unkc0) {
+            unkc4 = false;
+            unk144++;
+            blinkDetected = true;
+            unk14c = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+        }
+    }
+    unkc0 = blinkWeight;
+
+    const Transform &headXfm = head->WorldXfm();
+    const Vector3 &headPos = headXfm.v;
+
+    Vector3 targetDir;
+    Subtract(unk58, headPos, targetDir);
+    Normalize(targetDir, targetDir);
+
+    Vector3 facingDir(headXfm.m.y);
+    Normalize(facingDir, facingDir);
+
+    float cang = Dot(facingDir, targetDir);
+    cang = Clamp<float>(-1.0f, 1.0f, cang);
+
+    if (unkb0 != 1e30f) {
+        TheTaskMgr.Seconds(TaskMgr::kRealTime);
+        CharInterest *interest = unkc8;
+        unkbc = (cang - unkb0 - unkbc) * 0.1f + unkbc;
+
+        float minLookTime = interest ? interest->mMinLookTime : 1.0f;
+        float maxLookTime = interest ? interest->mMaxLookTime : 3.0f;
+        float viewAngleCos = interest ? interest->mMaxViewAngleCos : unkb8;
+
+        bool canSeeTarget = cang >= viewAngleCos;
+
+        if (unkb4 <= maxLookTime && !unke4
+            && (!unkd4 || interest == (CharInterest *)unkd4
+                || ((unkb4 <= 0.4f
+                     || !unkd4->IsWithinViewCone(headPos, facingDir))
+                    && !IsHeadIKWeightIncreasing()))
+            && (!unk15c || unkb4 <= 0.25f)) {
+            if (unkb4 <= minLookTime)
+                goto storeState;
+            if (!blinkDetected) {
+                if (canSeeTarget) {
+                    if (!EitherEyeClamped())
+                        goto storeState;
+                }
+                if (unkbc >= 0.0f)
+                    goto storeState;
+            }
+        }
+
+        if (camWeight == 0.0f) {
+            NextLook();
+        }
+    }
+
+storeState:
+    unkb0 = cang;
+    unka4 = facingDir;
+
+    float headLookWeight = 0.0f;
+    if (mHeadLookAt) {
+        headLookWeight = mHeadLookAt->Weight();
+    }
+    unkf4 = headLookWeight;
+
+    DartUpdate();
+
+    if (unkc8) {
+        if (!unk13c) {
+            unk58 = unkc8->WorldXfm().v;
+        }
+        EnforceMinimumTargetDistance(headPos, unk58, unk58);
+    }
+
+    RndTransformable *eyeTarget = GetTarget();
+
+    if (eyeTarget) {
+        float weight = Weight();
+        Transform xfm;
+        if (camWeight > 0.0f) {
+            RndCam *cam = 0;
+            if (TheWorld)
+                cam = TheWorld->GetCam();
+            if (!cam)
+                cam = RndCam::Current();
+            if (!cam)
+                cam = TheRnd->DefaultCam();
+            if (cam) {
+                xfm = eyeTarget->WorldXfm();
+                Interp(xfm.v, cam->WorldXfm().v, camWeight, xfm.v);
+                eyeTarget->SetWorldXfm(xfm);
+            }
+        } else {
+            Vector3 localTarget = unk58;
+            if (unk124) {
+                localTarget.x += unk130.x;
+                localTarget.y += unk130.y;
+                localTarget.z += unk130.z;
+                EnforceMinimumTargetDistance(headPos, localTarget, localTarget);
+            }
+            xfm = eyeTarget->WorldXfm();
+            Interp(xfm.v, localTarget, weight, xfm.v);
+            eyeTarget->SetWorldXfm(xfm);
+        }
+    }
+    ProceduralBlinkUpdate();
+
+    CharLookAt::sDisableJitter = sDisableEyeJitter;
+    for (ObjVector<EyeDesc>::iterator it = mEyes.begin(); it != mEyes.end(); ++it) {
+        it->mEye->Poll();
+        LidTrackAndClampingUpdate(*it, blinkWeight);
+    }
+    CharLookAt::sDisableJitter = false;
+
+    UpdateOverlay();
 }
 
 void CharEyes::LidTrackAndClampingUpdate(EyeDesc &desc, float blinkWeight) {

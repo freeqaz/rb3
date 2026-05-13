@@ -14,8 +14,14 @@
 #include "types.h"
 #include "obj/Msg.h"
 #include "utl/Cache.h"
+#include "utl/Str.h"
 
 #define DEFAULT_PORT 4544
+
+struct RecurseInfo {
+    String mDir;
+    String mFile;
+};
 
 namespace Holmes {
     enum Protocol {

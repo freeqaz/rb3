@@ -4,6 +4,8 @@
 #include "SongSortMgr.h"
 #include "beatmatch/TrackType.h"
 #include "decomp.h"
+#include "math/Rand.h"
+#include "meta/StoreOffer.h"
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/MusicLibrary.h"
 #include "meta_band/ProfileMgr.h"
@@ -17,6 +19,8 @@
 #include "meta_band/SongSortByRank.h"
 #include "meta_band/SongSortBySong.h"
 #include "meta_band/SongSortByStars.h"
+#include "meta_band/Utl.h"
+#include "game/BandUserMgr.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
 #include "os/System.h"
@@ -27,6 +31,7 @@
 #include "utl/Symbols.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include <algorithm>
 
 SongSortMgr *TheSongSortMgr;
 
@@ -236,6 +241,282 @@ void SongSortMgr::BuildFilteredSongList(SongFilter *filter, Symbol partSym) {
             }
         }
     }
+}
+
+bool SongSortMgr::DoesSongMatchFilter(int songID, const SongFilter *filter, Symbol partSym)
+    const {
+    if (!filter)
+        return true;
+    BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(songID);
+    MILO_ASSERT(data, 0x18B);
+    if (std::find(filter->excludedSongs.begin(), filter->excludedSongs.end(), songID)
+        != filter->excludedSongs.end()) {
+        return false;
+    }
+    bool reject = false;
+    if (filter->requiredTrackType != kTrackNone) {
+        Symbol trackSym = TrackTypeToSym(filter->requiredTrackType);
+        if (!data->HasPart(trackSym, false)) {
+            reject = true;
+        }
+    }
+    if (reject)
+        return false;
+    bool found = true;
+    for (int i = 0; i < kNumFilterTypes; i++) {
+        const std::set<Symbol> &curSet = filter->filters[i];
+        if (curSet.empty())
+            continue;
+        switch (i) {
+        case 0:
+            found = curSet.find(data->Genre()) != curSet.end();
+            break;
+        case 1:
+            found = curSet.find(data->Decade()) != curSet.end();
+            break;
+        case 2:
+            found = curSet.find(Symbol(data->Artist())) != curSet.end();
+            break;
+        case 3: {
+            MILO_ASSERT(partSym != "", 0x1B5);
+            if (!data->HasPart(partSym, false)) {
+                found = false;
+                break;
+            }
+            int tier = TheSongMgr.RankTier(data->Rank(partSym), partSym);
+            Symbol tierTok = TheSongMgr.RankTierToken(tier);
+            found = curSet.find(tierTok) != curSet.end();
+            break;
+        }
+        case 4:
+            found = curSet.find(data->LengthSym()) != curSet.end();
+            break;
+        case 5:
+            found = curSet.find(data->RatingSym()) != curSet.end();
+            break;
+        case 6:
+            found = curSet.find(data->SourceSym()) != curSet.end();
+            break;
+        case 7:
+            found = curSet.find(data->VocalPartsSym()) != curSet.end();
+            break;
+        case 8:
+            found = curSet.find(data->HasProGuitarSym()) != curSet.end();
+            break;
+        case 9:
+            found = curSet.find(data->HasKeysSym()) != curSet.end();
+            break;
+        case 10:
+            found = curSet.find(data->HasSoloSym(partSym)) != curSet.end();
+            break;
+        default:
+            found = false;
+            break;
+        }
+        if (!found)
+            break;
+    }
+    return found;
+}
+
+bool SongSortMgr::DoesOfferMatchFilter(
+    StoreOffer *offer, const SongFilter *filter, Symbol partSym
+) const {
+    if (!filter)
+        return true;
+    if (std::find(
+            filter->excludedSongs.begin(),
+            filter->excludedSongs.end(),
+            (int)offer->GetSingleSongID()
+        )
+        != filter->excludedSongs.end()) {
+        return false;
+    }
+    bool reject = false;
+    if (filter->requiredTrackType != kTrackNone) {
+        Symbol trackSym = TrackTypeToSym(filter->requiredTrackType);
+        if (offer->PartRank(trackSym) == 0.0f) {
+            reject = true;
+        }
+    }
+    if (reject)
+        return false;
+    bool found = true;
+    for (int i = 0; i < kNumFilterTypes; i++) {
+        const std::set<Symbol> &curSet = filter->filters[i];
+        if (curSet.empty())
+            continue;
+        switch (i) {
+        case 0:
+            found = curSet.find(offer->Genre()) != curSet.end();
+            break;
+        case 1:
+            found = curSet.find(offer->Decade()) != curSet.end();
+            break;
+        case 2:
+            found = curSet.find(Symbol(offer->Artist())) != curSet.end();
+            break;
+        case 3: {
+            MILO_ASSERT(partSym != "", 0x219);
+            if (offer->PartRank(partSym) == 0.0f) {
+                found = false;
+                break;
+            }
+            int tier = TheSongMgr.RankTier(offer->PartRank(partSym), partSym);
+            Symbol tierTok = TheSongMgr.RankTierToken(tier);
+            found = curSet.find(tierTok) != curSet.end();
+            break;
+        }
+        case 4:
+            found = curSet.find(offer->LengthSym()) != curSet.end();
+            break;
+        case 5:
+            found = curSet.find(offer->RatingSym()) != curSet.end();
+            break;
+        case 6:
+            found = curSet.find(offer->mPackedData->mIsRBN ? ugc : dlc) != curSet.end();
+            break;
+        case 7:
+            found = curSet.find(offer->VocalPartsSym()) != curSet.end();
+            break;
+        case 8: {
+            bool no = false;
+            if (offer->PartRank(real_guitar) == 0.0f
+                && offer->PartRank(real_bass) == 0.0f) {
+                no = true;
+            }
+            found = curSet.find(no ? has_part_no : has_part_yes) != curSet.end();
+            break;
+        }
+        case 9: {
+            bool no = false;
+            if (offer->PartRank(real_keys) == 0.0f
+                && offer->PartRank(keys) == 0.0f) {
+                no = true;
+            }
+            found = curSet.find(no ? has_part_no : has_part_yes) != curSet.end();
+            break;
+        }
+        case 10:
+            found = curSet.find(offer->HasSolo() ? has_part_yes : has_part_no)
+                != curSet.end();
+            break;
+        default:
+            found = false;
+            break;
+        }
+        if (!found)
+            break;
+    }
+    int rating = offer->Rating();
+    bool ok = false;
+    if (found && AllowedToAccessContent(rating)) {
+        ok = true;
+    }
+    return ok;
+}
+
+bool SongSortMgr::GetRandomSongs(
+    int count,
+    std::vector<Symbol> *randomSongs,
+    std::vector<int> *randomSongIDs,
+    std::vector<Symbol> *availableParts,
+    std::vector<Symbol> *excludedSyms,
+    bool b1,
+    bool b2
+) {
+    MILO_ASSERT(!randomSongs || randomSongs->empty(), 0x27F);
+    MILO_ASSERT(!randomSongIDs || randomSongIDs->empty(), 0x280);
+    MILO_ASSERT(randomSongs || randomSongIDs, 0x281);
+
+    Symbol curName;
+    std::vector<int> bucket4;
+    std::vector<int> bucket3;
+    std::vector<int> bucket2;
+    std::vector<int> bucket1;
+    std::vector<int> bucket0;
+    std::vector<int> excludeList;
+    std::vector<int> validSongs;
+    std::vector<int> *songPools[5];
+    songPools[0] = &bucket0;
+    songPools[1] = &bucket1;
+    songPools[2] = &bucket2;
+    songPools[3] = &bucket3;
+    songPools[4] = &bucket4;
+    if (excludedSyms) {
+        FOREACH (it, *excludedSyms) {
+            int id = TheSongMgr.GetSongIDFromShortName(*it, true);
+            excludeList.push_back(id);
+        }
+    }
+    TheSongMgr.GetValidSongs(
+        excludeList, *TheBandUserMgr, validSongs, -1.0f, -1.0f, b1, b2
+    );
+    int numAdded = 0;
+    FOREACH_POST (it, mSongs) {
+        curName = it->first;
+        SongRecord &rec = it->second;
+        int id = rec.GetData()->ID();
+        if (std::find(validSongs.begin(), validSongs.end(), id) == validSongs.end())
+            continue;
+        if (availableParts) {
+            bool partOk = false;
+            FOREACH (pit, *availableParts) {
+                if (!rec.GetData()->HasPart(*pit, false)) {
+                    partOk = true;
+                    break;
+                }
+            }
+            if (partOk)
+                continue;
+        }
+        int reviewIdx = rec.GetReview() - 1;
+        if (reviewIdx < 0)
+            reviewIdx = 2;
+        songPools[reviewIdx]->push_back(id);
+        numAdded++;
+    }
+    if (count == 0) {
+        count = numAdded;
+    } else if (numAdded < count) {
+        MILO_WARN("Not enough valid random songs!");
+        return false;
+    }
+    int weights[4];
+    DataArray *cfg = SystemConfig(Symbol("song_select"), Symbol("review_weights"));
+    for (int i = 0; i < 4; i++) {
+        weights[i] = cfg->FindInt(MakeString("review_%i", i + 1));
+    }
+    for (int i = 0; i < count; i++) {
+        int total = 0;
+        for (int j = 1; j < 5; j++) {
+            total += songPools[j]->size() * weights[j - 1];
+        }
+        std::vector<int> *chosen;
+        if (total == 0) {
+            chosen = songPools[0];
+        } else {
+            int r = RandomInt(0, total);
+            for (int j = 1; j < 5; j++) {
+                chosen = songPools[j];
+                r -= songPools[j]->size() * weights[j - 1];
+                if (r < 0)
+                    break;
+            }
+        }
+        MILO_ASSERT(chosen->size(), 0x2F9);
+        int idx = RandomInt(0, chosen->size());
+        std::vector<int>::iterator it = chosen->begin() + idx;
+        if (randomSongs) {
+            Symbol shortName = TheSongMgr.GetShortNameFromSongID(*it, true);
+            randomSongs->push_back(shortName);
+        }
+        if (randomSongIDs) {
+            randomSongIDs->push_back(*it);
+        }
+        chosen->erase(it);
+    }
+    return true;
 }
 
 NodeSort *SongSortMgr::GetSort(SongSortType ty) { return mSorts[ty]; }

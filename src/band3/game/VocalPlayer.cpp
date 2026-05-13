@@ -916,6 +916,11 @@ FORCE_LOCAL_INLINE
 bool VocalPlayer::ScoringEnabled() const { return mScoringEnabled && !InRollback(); }
 END_FORCE_LOCAL_INLINE
 
+const VocalPhrase *const &VocalPlayer::CurrentPhrase() const {
+    return mVocalParts.front()->mThisPhrase;
+}
+
+
 void VocalPlayer::HitCoda() {
     if (IsLocal()) {
         LocalHitCoda();

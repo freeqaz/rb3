@@ -90,6 +90,7 @@ public:
     void DartUpdate();
     Vector3 GenerateDartOffset();
     void LidTrackAndClampingUpdate(EyeDesc &, float);
+    void NextLook();
     int NumInterests() const { return mInterests.size(); }
 
     void SetInterestFilterFlags(int i) {

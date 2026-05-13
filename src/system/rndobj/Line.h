@@ -59,6 +59,8 @@ public:
     void SetUpdate(bool);
     void SetMat(RndMat *);
     void UpdateLine(const Transform &, float);
+    void UpdateLine(Point *, Point *);
+    void UpdateLinePair(Point *, Point *);
     void MapVerts(int, VertsMap &);
     void SetPointColor(int, const Hmx::Color32 &, bool);
     void SetPointsColor(int, int, const Hmx::Color32 &);

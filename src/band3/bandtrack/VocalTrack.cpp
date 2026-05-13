@@ -684,7 +684,7 @@ void VocalTrack::RebuildHUD() {
     mTambourineGemPool->FreeUsedGems();
     VocalNoteList *notes = GetVocalNoteList(0);
     if (mPlayer) {
-        VocalPhrase *cur = mPlayer->CurrentPhrase();
+        const VocalPhrase *cur = mPlayer->CurrentPhrase();
         if (mPlayer->AtFirstPhrase()) {
             mPhraseEndMs = 0;
             BuildPhrase(cur->unk0, cur->unk0); // fix
