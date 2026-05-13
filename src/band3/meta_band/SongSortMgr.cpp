@@ -210,6 +210,34 @@ void SongSortMgr::ClearInternalSetlists() {
     mInternalSetlists.clear();
 }
 
+void SongSortMgr::BuildFilteredSongList(SongFilter *filter, Symbol partSym) {
+    std::vector<int> songs;
+    TheSongMgr.GetRankedSongs(songs, true, true);
+    mSongs.clear();
+    FOREACH (it, songs) {
+        int songID = *it;
+        BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(songID);
+        if (data) {
+            SongRecord record(data);
+            if (!DoesSongMatchFilter(songID, filter, partSym)) {
+                continue;
+            }
+            mSongs.insert(std::pair<Symbol, SongRecord>(record.mShortName, record));
+        }
+    }
+    unk34.clear();
+    if (TheProfileMgr.unk58a && TheSessionMgr->IsLocal()) {
+        std::vector<StoreOffer *> offers;
+        TheMusicLibrary->GetStoreOffers(offers);
+        FOREACH (it, offers) {
+            StoreOffer *offer = *it;
+            if (DoesOfferMatchFilter(offer, filter, partSym)) {
+                unk34.push_back(offer);
+            }
+        }
+    }
+}
+
 NodeSort *SongSortMgr::GetSort(SongSortType ty) { return mSorts[ty]; }
 
 SongRecord *SongSortMgr::GetRecord(int songID) {

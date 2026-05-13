@@ -31,6 +31,21 @@ public:
     int mHashedPath;
     int mSize;
     int mUCSize;
+
+    bool operator<(const FileEntry &other) const {
+        if (mHashedPath != other.mHashedPath)
+            return mHashedPath < other.mHashedPath;
+        return mHashedName < other.mHashedName;
+    }
+};
+
+struct HashCollTestElem {
+    String mPathName;
+    unsigned int mHashCRC;
+
+    bool operator<(const HashCollTestElem &other) const {
+        return mHashCRC < other.mHashCRC;
+    }
 };
 
 BinStream &operator>>(BinStream &, FileEntry &);

@@ -1,8 +1,10 @@
 #pragma once
 #include "obj/ObjMacros.h"
+#include "os/System.h"
 #include "rndobj/Draw.h"
 #include "obj/ObjPtr_p.h"
 #include "rndobj/PostProc.h"
+#include "utl/Loader.h"
 #include "world/Spotlight.h"
 
 class RndEnviron;
@@ -97,6 +99,9 @@ public:
     static void Init();
     static void RemoveFromLists(Spotlight *);
     static void DrawLight(Spotlight *);
+    static bool DrawNGSpotlights() {
+        return GetGfxMode() == kNewGfx && TheLoadMgr.GetPlatform() != kPlatformPC;
+    }
     static void Register() { REGISTER_OBJ_FACTORY(SpotlightDrawer); }
     NEW_OBJ(SpotlightDrawer);
 

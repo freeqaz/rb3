@@ -650,11 +650,7 @@ void Spotlight::Generate() {
     if (!mBeam.mBeam || LOADMGR_EDITMODE) {
         RELEASE(mBeam.mBeam);
         if (mBeam.mLength > 0) {
-            bool b1 = false;
-            if (GetGfxMode() == 1 && TheLoadMgr.GetPlatform() != 3) {
-                b1 = true;
-            }
-            if (b1) {
+            if (SpotlightDrawer::DrawNGSpotlights()) {
                 BuildNGShaft(mBeam);
             } else {
                 BuildShaft(mBeam);
@@ -698,8 +694,7 @@ void Spotlight::BuildBoard() {
 DECOMP_FORCEACTIVE(
     Spotlight,
     "iVert == kNumVerts",
-    "iFace == kNumFaces",
-    "!SpotlightDrawer::DrawNGSpotlights()"
+    "iFace == kNumFaces"
 )
 
 void Spotlight::BuildNGShaft(Spotlight::BeamDef &def) {
@@ -731,6 +726,211 @@ void Spotlight::BuildShaft(Spotlight::BeamDef &def) {
         BuildCone(def);
     else
         BuildBeam(def);
+}
+
+void Spotlight::BuildBeam(BeamDef &def) {
+    MILO_ASSERT(!SpotlightDrawer::DrawNGSpotlights(), 0x5F3);
+    def.mIsCone = false;
+    def.mBeam = Hmx::Object::New<RndMesh>();
+    float bottomBorderLen = def.mBottomBorder * def.mLength;
+    RndMesh::VertVector &verts = def.mBeam->Verts();
+    std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
+
+    int numSectionsTop = 4;
+    int compTop = (int)((def.mLength - bottomBorderLen) / 15.0f);
+    if (compTop > 4) numSectionsTop = compTop;
+
+    int numSectionsBottom = 1;
+    int compBot = (int)(bottomBorderLen / 15.0f);
+    if (compBot > 1) numSectionsBottom = compBot;
+
+    unsigned int totalSections = numSectionsBottom + numSectionsTop;
+
+    verts.resize(totalSections * 4, true);
+    faces.resize(totalSections * 6);
+
+    float topLen = def.mLength - bottomBorderLen;
+    float topRadius = def.mTopRadius;
+    float borderTopRadius = (topLen / def.mLength) * (def.mBottomRadius - topRadius) + topRadius;
+    float radiusStepTop = borderTopRadius - topRadius;
+    float topSectionLen = 1.0f / (float)numSectionsTop;
+    float botSectionLen = 1.0f / (float)numSectionsBottom;
+    float radiusStepTopVal = radiusStepTop * topSectionLen;
+    float radiusStepBotVal = (def.mBottomRadius - borderTopRadius) * botSectionLen;
+
+    float halfWidth = topRadius;
+    int fi = 0;
+    int s = 6;
+    for (unsigned int i = 0; i < totalSections; i++) {
+        float y;
+        float alpha;
+        if (i == (unsigned int)(totalSections - 1)) {
+            y = def.mLength;
+            alpha = 0.0f;
+        } else if (i >= (unsigned int)numSectionsTop) {
+            int lVar31 = (int)i - numSectionsTop;
+            y = (botSectionLen * bottomBorderLen) * (float)lVar31 + topLen;
+            alpha = 1.0f - (float)lVar31 / (float)numSectionsBottom;
+        } else {
+            y = (topLen * topSectionLen) * (float)i;
+            alpha = 1.0f;
+        }
+
+        float yFrac = y / def.mLength;
+        float negY = -y;
+        float topSideBorderVal = def.mTopSideBorder * def.mTopRadius;
+        float bottomSideBorderVal = def.mBottomSideBorder * def.mBottomRadius;
+        float sideBorder = (bottomSideBorderVal - topSideBorderVal) * yFrac + topSideBorderVal;
+        float borderRatio = sideBorder / (halfWidth * 2.0f);
+
+        float leftInner = sideBorder - halfWidth;
+        float rightInner = halfWidth - sideBorder;
+
+        // Column 0: left edge
+        verts[i * 4].pos.z = negY;
+        verts[i * 4].pos.x = -halfWidth;
+        verts[i * 4].pos.y = 0.0f;
+        verts[i * 4].color.Set(0.0f, 0.0f, 0.0f, 0.0f);
+        verts[i * 4].uv.Set(0.0f, yFrac);
+
+        // Column 1: left inner
+        if (-leftInner < 0.0f) leftInner = 0.0f;
+        verts[i * 4 + 1].pos.x = leftInner;
+        verts[i * 4 + 1].pos.y = 0.0f;
+        verts[i * 4 + 1].pos.z = negY;
+        verts[i * 4 + 1].color.Set(alpha, alpha, alpha, alpha);
+        verts[i * 4 + 1].uv.Set(borderRatio, yFrac);
+
+        // Column 2: right inner
+        if (-rightInner < 0.0f) rightInner = 0.0f;
+        verts[i * 4 + 2].pos.x = rightInner;
+        verts[i * 4 + 2].pos.y = 0.0f;
+        verts[i * 4 + 2].pos.z = negY;
+        verts[i * 4 + 2].color.Set(alpha, alpha, alpha, alpha);
+        verts[i * 4 + 2].uv.Set(1.0f - borderRatio, yFrac);
+
+        // Column 3: right edge
+        verts[i * 4 + 3].pos.x = halfWidth;
+        verts[i * 4 + 3].pos.y = 0.0f;
+        verts[i * 4 + 3].pos.z = negY;
+        verts[i * 4 + 3].color.Set(0.0f, 0.0f, 0.0f, 0.0f);
+        verts[i * 4 + 3].uv.Set(1.0f, yFrac);
+
+        if (i != (unsigned int)(totalSections - 1)) {
+            int c0 = s - 6;
+            int c1 = c0 + 1;
+            int c2 = c0 + 2;
+            int c3 = c0 + 3;
+            int n0 = c0 + 4;
+            int n1 = c0 + 5;
+            int n2 = c0 + 6;
+            int n3 = c0 + 7;
+
+            if ((i & 1) != 0) {
+                faces[fi].Set(c0, n0, n1);
+                faces[fi + 1].Set(c0, n1, c1);
+                faces[fi + 2].Set(c1, n1, c2);
+                faces[fi + 3].Set(c2, n1, n2);
+                faces[fi + 4].Set(c2, n3, c3);
+                faces[fi + 5].v1 = c2;
+            } else {
+                faces[fi].Set(c0, n0, c1);
+                faces[fi + 1].Set(c1, n0, n1);
+                faces[fi + 2].Set(c1, n2, c2);
+                faces[fi + 3].Set(c1, n1, n2);
+                faces[fi + 4].Set(c2, n2, c3);
+                faces[fi + 5].v1 = c3;
+            }
+            faces[fi + 5].v2 = n2;
+            faces[fi + 5].v3 = n3;
+
+            if (i == (unsigned int)(totalSections - 2)) {
+                faces[fi].Set(c0, n0, c1);
+                faces[fi + 1].Set(c1, n0, n1);
+                faces[fi + 4].Set(c2, n2, n3);
+                faces[fi + 5].Set(c3, c2, n3);
+            }
+        }
+
+        if (i >= (unsigned int)numSectionsTop) {
+            halfWidth = radiusStepBotVal + halfWidth;
+        } else {
+            halfWidth = radiusStepTopVal + halfWidth;
+        }
+
+        s += 4;
+        fi += 6;
+    }
+
+    def.mBeam->Sync(0x13F);
+    def.mBeam->SetMat(def.mMat);
+    def.mBeam->SetTransConstraint(kBillboardZ, nullptr, false);
+    def.mBeam->SetTransParent(this, false);
+}
+
+void Spotlight::BuildCone(BeamDef &def) {
+    MILO_ASSERT(!SpotlightDrawer::DrawNGSpotlights(), 0x5AB);
+    def.mIsCone = true;
+    def.mBeam = Hmx::Object::New<RndMesh>();
+    RndMesh::VertVector &verts = def.mBeam->Verts();
+    std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
+
+    verts.resize(0x30, true);
+    faces.resize(60);
+
+    float len = def.mLength;
+    float bottomBorderLen = def.mBottomBorder * len;
+    if (len - bottomBorderLen < 0.0f) bottomBorderLen = len;
+    float borderY = len - bottomBorderLen;
+    float borderRadius = (borderY / len) * (def.mBottomRadius - def.mTopRadius) + def.mTopRadius;
+
+    float angle = 0.0f;
+    float uvStep = 1.0f / 15.0f;
+    float angleStep = 0.4188790f;
+
+    for (int i = 0; i != 15; i++) {
+        float cosA = std::cos(angle);
+        float sinA = std::sin(angle);
+
+        float uvX = (float)i * uvStep;
+
+        verts[i].pos.Set(def.mTopRadius * cosA, 0.0f, def.mTopRadius * sinA);
+        verts[i].color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+        verts[i].uv.Set(uvX, 0.0f);
+
+        verts[i + 16].pos.Set(borderRadius * cosA, borderY, borderRadius * sinA);
+        verts[i + 16].color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+        verts[i + 16].uv.Set(uvX, borderY / len);
+
+        verts[i + 32].pos.Set(def.mBottomRadius * cosA, len, def.mBottomRadius * sinA);
+        verts[i + 32].color.Set(0.0f, 0.0f, 0.0f, 0.0f);
+        verts[i + 32].uv.Set(uvX, 1.0f);
+
+        short s = (short)(i + 17);
+        int fi = i * 4;
+        faces[fi].Set(s - 17, s - 1, s);
+        faces[fi + 1].Set(s - 17, s, s - 16);
+        faces[fi + 2].Set(s - 1, s + 15, s + 16);
+        faces[fi + 3].Set(s - 1, s + 16, s);
+
+        angle += angleStep;
+    }
+
+    verts[15].pos.Set(def.mTopRadius, 0.0f, 0.0f);
+    verts[15].color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    verts[15].uv.Set(1.0f, 0.0f);
+
+    verts[31].pos.Set(borderRadius, borderY, 0.0f);
+    verts[31].color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    verts[31].uv.Set(1.0f, borderY / len);
+
+    verts[47].pos.Set(def.mBottomRadius, len, 0.0f);
+    verts[47].color.Set(0.0f, 0.0f, 0.0f, 0.0f);
+    verts[47].uv.Set(1.0f, 1.0f);
+
+    def.mBeam->Sync(0x13F);
+    def.mBeam->SetTransParent(this, false);
+    def.mBeam->SetMat(def.mMat);
 }
 
 void Spotlight::Mats(std::list<class RndMat *> &mats, bool b2) {

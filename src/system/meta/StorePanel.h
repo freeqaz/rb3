@@ -47,6 +47,7 @@ public:
     void CancelArt();
     bool ToggleTestOffers();
     void HandleNetCacheMgrFailure();
+    void FinishCheckout();
     void ExitError(StoreError);
     bool IsEnumerating() const;
     bool InCheckout() const;
@@ -58,7 +59,7 @@ public:
     std::vector<StoreOffer *> unk48;
     bool mLoadOK; // 0x50
     bool mShowTestOffers; // 0x51
-    std::list<StorePanel *> unk54; // 0x54
+    std::list<NetCacheLoader *> unk54; // 0x54
     NetCacheLoader *mPendingArtLoader; // 0x5c
     RndTex *mAlbumTex; // 0x60
     UIPanel *mPendingArtCallback; // 0x64

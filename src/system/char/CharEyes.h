@@ -89,6 +89,7 @@ public:
     bool IsHeadIKWeightIncreasing();
     void DartUpdate();
     Vector3 GenerateDartOffset();
+    void LidTrackAndClampingUpdate(EyeDesc &, float);
     int NumInterests() const { return mInterests.size(); }
 
     void SetInterestFilterFlags(int i) {

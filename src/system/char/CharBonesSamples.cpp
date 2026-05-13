@@ -17,10 +17,45 @@ DECOMP_FORCEACTIVE(
     "CharBonesSamples are already compressed, can't remove bones."
 )
 
-DECOMP_FORCEACTIVE(CharBonesSamples,
-    "FracToSample: sample is %d, clip only has %d samples, frac was %g, is %g",
-    "FracToSample: frac is %g, outside of 0 and 1"
-)
+int CharBonesSamples::FracToSample(float *frac) const {
+    if (mNumSamples < 2) {
+        *frac = 0.0f;
+        return 0;
+    }
+    float inputFrac = *frac;
+    ClampEq(*frac, 0.0f, 1.0f);
+    int total = Max((int)mFrames.size(), (int)mNumSamples);
+    float scaledPos = *frac * (float)(total - 1);
+    *frac = scaledPos;
+    int sampleIdx = (int)scaledPos;
+    if (sampleIdx >= total - 1) {
+        *frac = 0.0f;
+        return mNumSamples - 1;
+    }
+    *frac = scaledPos - (float)sampleIdx;
+    if (mFrames.size() != 0) {
+        float frame = mFrames[sampleIdx];
+        float nextFrame = mFrames[sampleIdx + 1];
+        float interpFrame = (*frac * (nextFrame - frame)) + frame;
+        sampleIdx = (int)interpFrame;
+        *frac = interpFrame - (float)sampleIdx;
+    }
+    if (sampleIdx < 0 || sampleIdx >= mNumSamples) {
+        MILO_NOTIFY_ONCE(
+            "FracToSample: sample is %d, clip only has %d samples, frac was %g, is %g",
+            sampleIdx,
+            mNumSamples,
+            inputFrac,
+            *frac
+        );
+        sampleIdx = 0;
+    }
+    if (!(*frac >= 0.0f && *frac < 1.0f)) {
+        MILO_NOTIFY_ONCE("FracToSample: frac is %g, outside of 0 and 1", *frac);
+        *frac = 0.0f;
+    }
+    return sampleIdx;
+}
 
 CharBonesSamples::CharBonesSamples() : mNumSamples(0), mPreviewSample(0), mRawData(0) {}
 

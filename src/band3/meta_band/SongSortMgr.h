@@ -104,6 +104,7 @@ public:
     virtual ~SongSortMgr();
 
     bool DoesSongMatchFilter(int, const SongFilter *, Symbol) const;
+    bool DoesOfferMatchFilter(StoreOffer *, const SongFilter *, Symbol) const;
     void BuildSortTree(SongSortType);
     void BuildSortList(SongSortType);
     void ClearAllSorts();

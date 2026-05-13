@@ -45,6 +45,32 @@ public:
     static void SetDeformClip(Hmx::Object *);
     static void NeutralLocalXfm(RndTransformable *, Transform &);
     static void NeutralWorldXfm(RndTransformable *, Transform &);
+    static void NeutralLocalPos(RndTransformable *, Vector3 &);
+
+    int GetType();
+    int MeasureLengths(
+        RndTransformable *&handBone,
+        RndTransformable *&elbowBone,
+        float &inv2ab,
+        float &aaPlusbb,
+        float &aPlusb
+    );
+    float ApplyPosConstraints(Vector3 &dst, const Vector3 &src, BandIKEffector *root);
+    float ApplyConstraints(QuatXfm &q, const Transform &tf, BandIKEffector *root);
+    void ComputeHandPullAndQuat(
+        QuatXfm &outQuat,
+        Transform &outElbowXfm,
+        const Transform &shoulderXfm,
+        const Vector3 &handTarget,
+        float inv2ab,
+        float aaPlusbb,
+        float aPlusb
+    );
+    void ComputeElbowPullAndQuat(
+        QuatXfm &outQuat, const Transform &shoulderXfm, const Vector3 &elbowTarget
+    );
+    void DoFancyElbow(QuatXfm &hand, float handWeight);
+    void IKElbow(const Vector3 &);
 
     ObjPtr<RndTransformable, ObjectDir> mEffector; // 0x28
     ObjPtr<RndTransformable, ObjectDir> mGround; // 0x34

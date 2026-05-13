@@ -3,7 +3,13 @@
 #include "meta/StoreOffer.h"
 #include "os/ContentMgr.h"
 #include "os/CommerceMgr_Wii.h"
+#include "os/Debug.h"
 #include "os/PlatformMgr.h"
+#include "rndobj/Bitmap.h"
+#include "rndobj/Tex.h"
+#include "utl/BufStream.h"
+#include "utl/MakeString.h"
+#include "utl/NetCacheLoader.h"
 #include "utl/NetCacheMgr.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
@@ -103,7 +109,109 @@ void StorePanel::Enter() {
     unk70 = false;
 }
 
-void StorePanel::Poll() {}
+void StorePanel::Poll() {
+    if (!mLoadOK) return;
+    UIPanel::Poll();
+    mStorePreviewMgr->Poll();
+
+    // Walk pending NetCacheLoaders (std::list at offset 0x54)
+    std::list<NetCacheLoader *>::iterator cur = unk54.begin();
+    while (cur != unk54.end()) {
+        NetCacheLoader *loader = *cur;
+        if (loader->IsLoaded()) {
+            if (loader == mPendingArtLoader) {
+                MILO_ASSERT(mPendingArtCallback, 0x15F);
+                int size = loader->GetSize();
+                char *pBuffer = (char *)loader->GetBuffer();
+                MILO_ASSERT(pBuffer, 0x165);
+                if (!pBuffer || size > 0x20000) {
+                    TheDebug.Notify(MakeString(
+                        "StorePanel: downloaded album art is too big (%d bytes) so ignoring it.",
+                        size
+                    ));
+                } else {
+                    RndBitmap bmap;
+                    BufStream stream(pBuffer, size, true);
+                    if (bmap.LoadSafely(stream, 0x100, 0x100)) {
+                        bmap.SetMip(0);
+                        mAlbumTex->SetBitmap(bmap, 0, false);
+                        if (mPendingArtCallback->GetState() == UIPanel::kUp) {
+                            mPendingArtCallback->Handle(art_loaded_msg, false);
+                        }
+                    }
+                }
+                CancelArt();
+            }
+            TheNetCacheMgr->DeleteNetCacheLoader(loader);
+            cur = unk54.erase(cur);
+        } else if (loader->HasFailed()) {
+            loader->GetFailType();
+            TheNetCacheMgr->DeleteNetCacheLoader(loader);
+            cur = unk54.erase(cur);
+        } else {
+            ++cur;
+        }
+    }
+
+    // Drive the enumeration if active
+    if (mEnum && mEnum->IsEnumerating()) {
+        mEnum->Poll();
+        if (!mEnum->IsEnumerating()) {
+            if (mEnum->IsSuccess()) {
+                unsigned int err =
+                    (unsigned int)UpdateOffers(mEnum->mContentList, false);
+                if (err <= 1u && unk40.size() != 0) {
+                    err = (unsigned int)UpdateOffers(mEnum->mContentList, true);
+                }
+                if (err > 1u) {
+                    ExitError((StoreError)err);
+                    return;
+                }
+                Hmx::Object::HandleType(enum_finished_msg);
+            } else {
+                FormatString fmt("An enumeration failed!\n");
+                TheDebug.Notify(fmt.Str());
+                Hmx::Object::HandleType(enum_finished_msg);
+                ExitError(kStoreErrorCacheNoSpace);
+                return;
+            }
+        }
+    }
+
+    // Re-enumerate if requested and no active purchaser/enumeration
+    if (!mPurchaser && unk70) {
+        bool enumerating = false;
+        if (mEnum && mEnum->IsEnumerating()) {
+            enumerating = true;
+        }
+        if (!enumerating) {
+            unk70 = false;
+            EnumerateOffers(unk40.size() != 0);
+        }
+    }
+
+    // Drive the purchaser
+    if (mPurchaser) {
+        // Cast to StorePurchaser to access Run() at vtable offset 0x1c
+        StorePurchaser *purch = (StorePurchaser *)mPurchaser;
+        purch->Run();
+        if (!mPurchaser->IsEnumerating()) {
+            if (mPurchaser->IsSuccess() &&
+                ((StorePurchaser *)mPurchaser)->Poll()) {
+                unk70 = true;
+                unk71 = true;
+            } else {
+                unk70 = false;
+                unk71 = false;
+            }
+            FinishCheckout();
+        }
+    }
+
+    if (TheNetCacheMgr->GetHasFailed()) {
+        HandleNetCacheMgrFailure();
+    }
+}
 
 void StorePanel::Exit() {
     gStoreAllowBandShotForceShowing = true;
@@ -137,7 +245,7 @@ bool StorePanel::InCheckout() const { return mPurchaser; }
 
 void StorePanel::LoadArt(const char *cc, UIPanel *panel) {
     String str(cc);
-    for (std::list<StorePanel *>::iterator it = unk54.begin(); it != unk54.end(); ++it) {
+    for (std::list<NetCacheLoader *>::iterator it = unk54.begin(); it != unk54.end(); ++it) {
     }
     mPendingArtCallback = panel;
 }
@@ -288,3 +396,5 @@ bool StorePanel::ToggleTestOffers() {
     mShowTestOffers = !mShowTestOffers;
     return mShowTestOffers;
 }
+
+void StorePanel::FinishCheckout() {}

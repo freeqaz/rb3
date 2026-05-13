@@ -2,6 +2,7 @@
 #include "os/BlockMgr.h"
 #include "os/ContentMgr.h"
 #include "os/Debug.h"
+#include "os/File.h"
 #include "os/System.h"
 #include "utl/BinStream.h"
 #include "utl/FileStream.h"
@@ -10,10 +11,30 @@
 #include "utl/Option.h"
 #include "math/Sort.h"
 #include "zlib/zlib.h"
+#include <algorithm>
 
 Archive *TheArchive;
 bool gDebugArkOrder = false;
 int kArkBlockSize = 0x10000;
+
+void ArchiveInit() {
+    if (UsingCD() || OptionBool("force_ark", false)) {
+        Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+        const char *hdrName;
+        if (UsingCD()) {
+            String titlePath(TheContentMgr->TitleContentPath());
+            if (!titlePath.empty()) {
+                hdrName = MakeString("%s/gen/patch_%s", titlePath.c_str(), plat);
+            }
+        } else {
+            hdrName = MakeString("gen/patch_%s", plat);
+        }
+        TheArchive = new Archive(MakeString("gen/main_%s", plat), 0);
+        TheArchive->SetArchivePermission(1, &preinitArk);
+    }
+    gDebugArkOrder = OptionBool("debug_arkorder", false);
+    TheBlockMgr.Init();
+}
 
 int HashCRC(const char *str) {
     if (!str || !*str)
@@ -87,7 +108,43 @@ bool Archive::GetFileInfo(
     unsigned long long &byteOffset,
     int &fileSize,
     int &fileUCSize
-) {}
+) {
+    if (file && *file) {
+        String name(FileGetName(file));
+        String path(FileGetPath(file, NULL));
+        int nameValue = mHashTable.GetHashValue(name.c_str());
+        int pathValue = mHashTable.GetHashValue(path.c_str());
+        if (nameValue != -1 && pathValue != -1) {
+            FileEntry entry;
+            entry.mHashedName = nameValue;
+            entry.mHashedPath = pathValue;
+            std::vector<FileEntry>::iterator it =
+                std::lower_bound(mFileEntries.begin(), mFileEntries.end(), entry);
+            if (it != mFileEntries.end() && it->mHashedName == nameValue
+                && it->mHashedPath == pathValue) {
+                arkfileNum = 0;
+                unsigned long long u7 = 0;
+                for (; arkfileNum < mNumArkfiles; arkfileNum++) {
+                    unsigned long long u6 = mArkfileSizes[arkfileNum] + u7;
+                    if (it->mOffset < u6)
+                        break;
+                    u7 = u6;
+                }
+                MILO_ASSERT(arkfileNum < mNumArkfiles, 0x183);
+                byteOffset = it->mOffset - u7;
+                fileSize = it->mSize;
+                fileUCSize = it->mUCSize;
+                return true;
+            }
+            arkfileNum = 0;
+            byteOffset = 0;
+            fileSize = 0;
+            fileUCSize = 0;
+            return false;
+        }
+    }
+    return false;
+}
 
 BinStream &operator>>(BinStream &bs, FileEntry &f) {
     bs >> f.mOffset >> f.mHashedName >> f.mHashedPath >> f.mSize >> f.mUCSize;
@@ -102,9 +159,9 @@ BinStream &operator>>(BinStream &bs, FileEntry &f) {
 }
 
 void Archive::Read(int heap_headroom) {
-    TheDebug << MakeString("Reading the archive\n");
+    MILO_LOG("Reading the archive\n");
     FileStream arkhdr(MakeString("%s.hdr", mBasename), FileStream::kReadNoArk, true);
-    MILO_ASSERT(!arkhdr.Fail(), 723);
+    MILO_ASSERT(!arkhdr.Fail(), 0x2D3);
     arkhdr.EnableReadEncryption();
     int version;
     arkhdr >> version;
@@ -113,11 +170,11 @@ void Archive::Read(int heap_headroom) {
         return;
     } else {
         arkhdr >> mGuid;
-        arkhdr >> mNumArkfiles >> mArkfileSizes;
-
+        arkhdr >> mNumArkfiles;
+        arkhdr >> mArkfileSizes;
         if (version == 3) {
             for (int i = 0; i < mArkfileSizes.size(); i++) {
-                mArkfileNames.push_back(String(MakeString("%s_%d.ark", mBasename, i)));
+                mArkfileNames.push_back(MakeString("%s_%d.ark", mBasename, i));
             }
         } else
             arkhdr >> mArkfileNames;
@@ -131,8 +188,73 @@ void Archive::Read(int heap_headroom) {
         }
 
         mHashTable.Read(arkhdr, heap_headroom);
-
+        std::vector<HashCollTestElem> collTest;
         arkhdr >> mFileEntries;
+
+        {
+            MemDoTempAllocations m(true, false);
+            collTest.resize(mFileEntries.size());
+            int overflows = 0;
+            int idx;
+            int size = mFileEntries.size();
+            for (idx = 0; idx < size; idx++) {
+                FileEntry &entry = mFileEntries[idx];
+                const char *path = mHashTable[entry.mHashedPath];
+                const char *name = mHashTable[entry.mHashedName];
+                char buf[256];
+                FileMakePath(path, name, buf);
+                unsigned int hash = HashCRC(buf);
+                collTest[idx].mPathName = buf;
+                collTest[idx].mHashCRC = hash;
+                unsigned int hi = ((unsigned int *)&entry.mOffset)[0];
+                unsigned int lo = ((unsigned int *)&entry.mOffset)[1];
+                if (hi != 0) {
+                    overflows++;
+                    TheDebug << MakeString(
+                        "Archive::Read() file offset for %s (0x%08x%08x) is past the 32 bit boundary!\n",
+                        buf,
+                        hi,
+                        lo
+                    );
+                }
+            }
+            if (overflows != 0) {
+                MILO_FAIL(
+                    "Archive::Read() there were %d 32 bit offset overflows in the file entry table!\n",
+                    overflows
+                );
+            }
+        }
+        arkhdr.DisableEncryption();
+
+        std::sort(collTest.begin(), collTest.end());
+        int collisions = 0;
+        for (int i = 1, collSize = collTest.size(); i < collSize; i++) {
+            if (collTest[i - 1].mHashCRC == collTest[i].mHashCRC) {
+                if (collTest[i - 1].mPathName == collTest[i].mPathName) {
+                    if (collTest[i - 1].mPathName != "__split_ark__") {
+                        TheDebug << MakeString(
+                            "Archive::Read() DUPLICATE ENTRIES FOR PATH %s\n",
+                            collTest[i].mPathName.c_str()
+                        );
+                    }
+                } else {
+                    collisions++;
+                    TheDebug << MakeString(
+                        "Archive::Read() HASH COLLISION - files %s and %s both map to crc hash value 0x%08x!\n",
+                        collTest[i - 1].mPathName.c_str(),
+                        collTest[i].mPathName.c_str(),
+                        collTest[i].mHashCRC
+                    );
+                }
+            }
+        }
+        if (collisions != 0) {
+            MILO_FAIL(
+                "Archive::Read() there were %d crc hash collisions in the file entry table!\n",
+                collisions
+            );
+        }
     }
 }
 
@@ -165,23 +287,4 @@ void Archive::GetGuid(HxGuid &g) const { g = mGuid; }
 const char *Archive::GetArkfileName(int filenum) const {
     MILO_ASSERT(filenum < mArkfileNames.size(), 1227);
     return mArkfileNames[filenum].c_str();
-}
-
-void ArchiveInit() {
-    if (UsingCD() || OptionBool("force_ark", false)) {
-        Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
-        const char *hdrName;
-        if (UsingCD()) {
-            String titlePath(TheContentMgr->TitleContentPath());
-            if (!titlePath.empty()) {
-                hdrName = MakeString("%s/gen/patch_%s", titlePath.c_str(), plat);
-            }
-        } else {
-            hdrName = MakeString("gen/patch_%s", plat);
-        }
-        TheArchive = new Archive(MakeString("gen/main_%s", plat), 0);
-        TheArchive->SetArchivePermission(1, &preinitArk);
-    }
-    gDebugArkOrder = OptionBool("debug_arkorder", false);
-    TheBlockMgr.Init();
 }

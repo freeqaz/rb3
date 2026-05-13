@@ -49,7 +49,7 @@ namespace Quazal {
         m_oOutputFormat->AddIndent(buf, 4094);
         m_oOutputFormat->AddMessage(buf, 4094, cc, l);
         m_oOutputFormat->EndString(buf, 4094);
-        m_oLogDevice->Output(buf); // >:(
+        m_oLogDevice->Output(LogEntry(buf));
     }
 
     void Log::AddCustomPrefix(char *, int, void *) {}

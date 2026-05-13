@@ -788,7 +788,7 @@ bool MakeBSPTree(BSPNode *&node, std::list<BSPFace> &faces, int depth) {
             Clip(cur->p, ray, frontFace.p);
             if (frontFace.p.mPoints.size() > 2) {
                 frontFace.Update();
-                frontFaces.insert(frontFaces.begin(), frontFace);
+                frontFaces.push_front(frontFace);
             }
             ray.dir.Set(-ray.dir.x, -ray.dir.y);
             Clip(cur->p, ray, cur->p);
