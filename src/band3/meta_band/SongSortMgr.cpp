@@ -97,16 +97,14 @@ void SongSortMgr::BuildSetlistList() {
     }
     FOREACH (it, mInternalSetlists) {
         SetlistRecord record(*it);
-        Symbol token = record.GetToken();
-        mSetlists.insert(std::make_pair(token, record));
+        mSetlists.insert(std::pair<Symbol, SetlistRecord>(record.GetToken(), record));
     }
     std::vector<BandProfile *> profiles = TheProfileMgr.GetSignedInProfiles();
     FOREACH (pit, profiles) {
         const std::vector<LocalSavedSetlist *> &setlists = (*pit)->GetSavedSetlists();
         FOREACH (it, setlists) {
             SetlistRecord record(*it);
-            Symbol token = record.GetToken();
-            mSetlists.insert(std::make_pair(token, record));
+            mSetlists.insert(std::pair<Symbol, SetlistRecord>(record.GetToken(), record));
         }
     }
     if (TheMusicLibrary->NetSetlistsSucceeded()) {
@@ -114,8 +112,7 @@ void SongSortMgr::BuildSetlistList() {
         TheMusicLibrary->GetNetSetlists(setlists);
         FOREACH (it, setlists) {
             SetlistRecord record(*it);
-            Symbol token = record.GetToken();
-            mSetlists.insert(std::make_pair(token, record));
+            mSetlists.insert(std::pair<Symbol, SetlistRecord>(record.GetToken(), record));
         }
     }
     MILO_ASSERT(mSetlists.size(), 0xF0);

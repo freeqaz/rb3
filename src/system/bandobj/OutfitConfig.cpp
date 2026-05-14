@@ -1,4 +1,5 @@
 #include "bandobj/OutfitConfig.h"
+#include "bandobj/BandCharacter.h"
 #include "math/Rand.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Dir.h"
@@ -442,10 +443,17 @@ BandCharDesc *OutfitConfig::FindBandCharDesc() {
     if (Dir()) {
         static Symbol sBandCharName("BandCharacter");
         if (Dir()->ClassName() == sBandCharName) {
+            return static_cast<BandCharacter *>(Dir());
+        }
+        if (Dir()->Dir()) {
+            if (Dir()->Dir()->ClassName() == sBandCharName) {
+                return static_cast<BandCharacter *>(Dir()->Dir());
+            }
         }
     }
-    const char *str = strstr(Dir()->GetPathName(), "female");
-    sBandCharDesc->SetGender(str ? "female" : "male");
+    sBandCharDesc->SetGender(
+        Symbol(strstr(Dir()->GetPathName(), "female") ? "female" : "male")
+    );
     return sBandCharDesc;
 }
 

@@ -385,38 +385,30 @@ Hmx::Rect HiResScreen::ScreenRect() const {
 
 Hmx::Rect HiResScreen::ScreenRect(const RndCam *cam, const Hmx::Rect &r) const {
     Hmx::Rect inRect = r;
-    Hmx::Rect ret = r;
     if ((cam->mTargetTex == NULL || mOverride) && mActive) {
         int tiling = mTiling;
         int tile = mCurrTile;
         if (tile < tiling * tiling) {
             float invTiling = 1.0f / (float)tiling;
+            Hmx::Rect ret;
             Hmx::Rect tileRect;
             CurrentTileRect(inRect, tileRect, ret);
-            int right, left, bottom, top;
+            int left, top, right, bottom;
             GetBorderForTile(tile % tiling, tile / tiling, left, right, top, bottom);
-            float screenH = (float)TheRnd->mHeight;
             float screenW = (float)TheRnd->mWidth;
-            float leftF = (float)left;
-            float rightF = (float)right;
-            float topF = (float)top;
-            float bottomF = (float)bottom;
-            float xScale = screenH / (screenH - leftF);
-            float yScale = screenW / (screenW - topF);
-            float xShift = screenH / (screenH - rightF);
-            float yShift = screenW / (screenW - bottomF);
-            float xOffset = (xScale - invTiling) - invTiling;
-            xShift = (xShift - invTiling) - invTiling;
-            float yOffset = yScale - invTiling;
-            yShift = yShift - invTiling;
-            ret.x = ret.x - xOffset;
-            ret.w = ret.w + (xOffset + xShift);
-            ret.y = ret.y - yOffset;
-            ret.h = ret.h + yOffset + yShift;
+            float screenH = (float)TheRnd->mHeight;
+            float xOffset = (screenW * invTiling) / (screenW - (float)left) - invTiling;
+            float xShift = (screenW * invTiling) / (screenW - (float)top) - invTiling;
+            float yOffset = (screenH * invTiling) / (screenH - (float)right) - invTiling;
+            float yShift = (screenH * invTiling) / (screenH - (float)bottom) - invTiling;
+            ret.y -= yOffset;
+            ret.x -= xOffset;
+            ret.w += (xOffset + xShift);
+            ret.h += (yOffset + yShift);
             return ret;
         }
     }
-    return ret;
+    return inRect;
 }
 
 Hmx::Rect HiResScreen::InvScreenRect() const {

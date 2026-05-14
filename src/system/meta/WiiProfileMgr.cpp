@@ -292,12 +292,11 @@ void WiiProfileMgr::SetIndexName(int idx, const char *name) {
 }
 
 int WiiProfileMgr::GetIndexForName(const char *name, int idx) const {
-    for (int i = 0; i < 4; i++) {
-        if (i != idx) {
-            const WiiProfile *curProfile = &mWiiProfiles[i];
-            if (curProfile->IsFlag(1) && stricmp(curProfile->mProfileName, name) == 0) {
-                return i;
-            }
+    const WiiProfile *curProfile = &mWiiProfiles[0];
+    for (int i = 0; i < 4; i++, curProfile++) {
+        if (i != idx && (mWiiProfiles[i].mFlags & 1) &&
+            stricmp(curProfile->mProfileName, name) == 0) {
+            return i;
         }
     }
     return -1;

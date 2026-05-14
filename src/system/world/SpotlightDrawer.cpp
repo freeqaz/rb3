@@ -307,15 +307,25 @@ void SpotlightDrawer::ApplyLightingApprox(BoxMapLighting &boxMap, float f2) cons
     for (; it != itEnd; ++it) {
         Spotlight *curSpotlight = it->unk4;
         Transform &xfm = curSpotlight->WorldXfm();
-        Hmx::Color c50(curSpotlight->Color());
-        Multiply(c50, f2, c50);
-        Multiply(c50, curSpotlight->Intensity(), c50);
+        int packed = (int)curSpotlight->Color().color;
+        float fr = (int)(packed & 0xFF) / 255.0f * f2;
+        float fa = (int)((packed >> 24) & 0xFF) / 255.0f * f2;
+        float fb = (int)((packed >> 16) & 0xFF) / 255.0f * f2;
+        float fg = (int)((packed >> 8) & 0xFF) / 255.0f * f2;
+        float intensity = curSpotlight->Intensity();
+        float final_a = fa * intensity;
+        float final_b = fb * intensity;
+        float final_g = fg * intensity;
+        float final_r = fr * intensity;
         BoxMapLighting::LightParams_Spot *params;
         if (!boxMap.ParamsAt(params))
             break;
         params->unk38 = xfm.v;
         params->unk0 = xfm.m.y;
-        params->mColor = c50;
+        params->mColor.red = final_r;
+        params->mColor.green = final_g;
+        params->mColor.blue = final_b;
+        params->mColor.alpha = final_a;
         params->unk48 = curSpotlight->mBeam.mTopRadius;
         params->unk4c = curSpotlight->mBeam.mBottomRadius * 2.0f;
         params->unk44 = curSpotlight->mBeam.mLength * 2.0f;

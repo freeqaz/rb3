@@ -210,14 +210,137 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
 }
 #endif
 
+inline void StrandMultiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
+    register const Hmx::Matrix3 *_a = &a;
+    register const Hmx::Matrix3 *_b = &b;
+    register Hmx::Matrix3 *_out = &out;
+    // NOLINT - _row0/_row1/_row2 used in asm la instructions
+    register float *_row0, *_row1, *_row2; // NOLINT(clang-diagnostic-unused-variable)
+    float row0[3], row1[3], row2[3];
+    asm { cmplw _b, _out }
+    asm volatile {
+        beq alias_path
+
+        psq_l f0, 0x4(_a), 0, 0
+        psq_l f9, 0x18(_b), 0, 0
+        psq_l f10, 0x20(_b), 1, 0
+        ps_muls1 f11, f9, f0
+        psq_l f9, 0xc(_b), 0, 0
+        ps_muls1 f12, f10, f0
+        psq_l f10, 0x14(_b), 1, 0
+        psq_l f3, 0x10(_a), 0, 0
+        psq_l f5, 0x18(_b), 0, 0
+        psq_l f6, 0x20(_b), 1, 0
+        ps_madds0 f11, f9, f0, f11
+        ps_muls1 f7, f5, f3
+        psq_l f1, 0x1c(_a), 0, 0
+        ps_mr f5, f9
+        psq_l f2, 0x20(_b), 1, 0
+        ps_muls1 f8, f6, f3
+        ps_mr f6, f10
+        ps_madds0 f12, f10, f0, f12
+        psq_l f0, 0x18(_b), 0, 0
+        ps_muls1 f2, f2, f1
+        psq_l f9, 0x0(_b), 0, 0
+        ps_madds0 f7, f5, f3, f7
+        ps_madds0 f8, f6, f3, f8
+        ps_muls1 f3, f0, f1
+        psq_l f0, 0x0(_a), 0, 0
+        psq_l f10, 0x8(_b), 1, 0
+        ps_madds0 f2, f6, f1, f2
+        psq_l f4, 0xc(_a), 0, 0
+        ps_madds0 f11, f9, f0, f11
+        ps_madds0 f12, f10, f0, f12
+        psq_l f0, 0x18(_a), 0, 0
+        ps_madds0 f3, f5, f1, f3
+        psq_st f11, 0x0(_out), 0, 0
+        ps_madds0 f7, f9, f4, f7
+        ps_madds0 f8, f10, f4, f8
+        ps_madds0 f3, f9, f0, f3
+        psq_st f12, 0x8(_out), 1, 0
+        ps_madds0 f2, f10, f0, f2
+        psq_st f7, 0xc(_out), 0, 0
+        psq_st f8, 0x14(_out), 1, 0
+        psq_st f3, 0x18(_out), 0, 0
+        psq_st f2, 0x20(_out), 1, 0
+        b mult_end
+
+    alias_path:
+        psq_l f0, 0x4(_a), 0, 0
+        la r8, row0
+        psq_l f8, 0x18(_b), 0, 0
+        la r7, row1
+        psq_l f10, 0x20(_b), 1, 0
+        la r6, row2
+        ps_muls1 f11, f8, f0
+        psq_l f8, 0xc(_b), 0, 0
+        ps_muls1 f12, f10, f0
+        psq_l f10, 0x14(_b), 1, 0
+        psq_l f3, 0x10(_a), 0, 0
+        psq_l f5, 0x18(_b), 0, 0
+        psq_l f6, 0x20(_b), 1, 0
+        ps_madds0 f11, f8, f0, f11
+        ps_muls1 f7, f5, f3
+        psq_l f1, 0x1c(_a), 0, 0
+        ps_mr f5, f8
+        psq_l f2, 0x20(_b), 1, 0
+        ps_muls1 f9, f6, f3
+        ps_mr f6, f10
+        ps_madds0 f12, f10, f0, f12
+        psq_l f0, 0x18(_b), 0, 0
+        ps_muls1 f2, f2, f1
+        psq_l f8, 0x0(_b), 0, 0
+        ps_madds0 f7, f5, f3, f7
+        ps_madds0 f9, f6, f3, f9
+        ps_muls1 f3, f0, f1
+        psq_l f0, 0x0(_a), 0, 0
+        psq_l f10, 0x8(_b), 1, 0
+        ps_madds0 f2, f6, f1, f2
+        psq_l f4, 0xc(_a), 0, 0
+        ps_madds0 f11, f8, f0, f11
+        ps_madds0 f12, f10, f0, f12
+        psq_l f0, 0x18(_a), 0, 0
+        ps_madds0 f3, f5, f1, f3
+        psq_st f11, 0x0(r8), 0, 0
+        ps_madds0 f7, f8, f4, f7
+        ps_madds0 f9, f10, f4, f9
+        psq_st f7, 0x0(r7), 0, 0
+        ps_madds0 f3, f8, f0, f3
+        ps_madds0 f2, f10, f0, f2
+        lfs f8, row0[0]
+        psq_st f12, 0x8(r8), 1, 0
+        lfs f7, row0[1]
+        psq_st f3, 0x0(r6), 0, 0
+        lfs f6, row0[2]
+        psq_st f2, 0x8(r6), 1, 0
+        lfs f5, row1[0]
+        psq_st f9, 0x8(r7), 1, 0
+        lfs f4, row1[1]
+        lfs f3, row1[2]
+        lfs f2, row2[0]
+        lfs f1, row2[1]
+        lfs f0, row2[2]
+        stfs f8, 0x0(_out)
+        stfs f7, 0x4(_out)
+        stfs f6, 0x8(_out)
+        stfs f5, 0xc(_out)
+        stfs f4, 0x10(_out)
+        stfs f3, 0x14(_out)
+        stfs f2, 0x18(_out)
+        stfs f1, 0x1c(_out)
+        stfs f0, 0x20(_out)
+    mult_end:
+    }
+}
+
 void CharHair::Strand::SetAngle(float angle) {
     register float angle_rad = angle * DEG2RAD;
     mAngle = angle;
     register float cos_val = Sine(1.5707964f + angle_rad);
     Hmx::Matrix3 m38;
-    float sin_val = Sine(angle_rad);
+    register float sin_val = Sine(angle_rad);
     m38.Set(1.0f, 0.0f, 0.0f, 0.0f, cos_val, sin_val, 0.0f, -sin_val, cos_val);
-    Multiply(m38, mBaseMat, mRootMat);
+    StrandMultiply(m38, mBaseMat, mRootMat);
 }
 
 CharHair::CharHair()
@@ -351,7 +474,10 @@ DECOMP_FORCEACTIVE(CharHair, "ObjPtr_p.h", "f.Owner()", "")
 void CharHair::SimulateInternal(float f) {
     float sixtyover = 60.0f / f;
     float f19 = (1.0f / f) * sixtyover;
+    float gravTerm = mGravity * f19 * -3.858268f;
     float powed = std::pow(1.0f - mStiffness, sixtyover * sixtyover);
+    float stiffFriction = 1.0f - powed;
+    float halfWeight = mWeight * -0.5f;
     Vector3 vec134(0, 0, 0);
     if (mWind) {
         if (mStrands[0].Root()) {
@@ -360,7 +486,7 @@ void CharHair::SimulateInternal(float f) {
             vec134 *= f19 * 0.5f;
         }
     }
-    vec134.z = vec134.z + mGravity * f19 * -3.858268f;
+    vec134.z = vec134.z + gravTerm;
 
     for (int i = 0; i < mStrands.size(); i++) {
         Strand &modStrand = mStrands[Mod(i + 1, mStrands.size())];
@@ -407,7 +533,7 @@ void CharHair::SimulateInternal(float f) {
                 float rsa = RecipSqrtAccurate(LengthSquared(m128.y));
                 float rsalen = thisPoint.length * rsa - 1.0f;
                 if (j > 0) {
-                    ScaleAddEq(points[j - 1].force, m128.y, -sixtyover * 0.5f * rsalen);
+                    ScaleAddEq(points[j - 1].force, m128.y, halfWeight * rsalen);
                 }
                 ScaleAddEq(thisPoint.pos, m128.y, rsalen);
                 Vector3 v158;
@@ -512,7 +638,7 @@ void CharHair::SimulateInternal(float f) {
                     Vector3 v170;
                     Subtract(thisPoint.lastFriction, thisPoint.force, v170);
                     thisPoint.lastFriction = thisPoint.force;
-                    thisPoint.force *= 1.0f - powed;
+                    thisPoint.force *= stiffFriction;
                     ScaleAddEq(thisPoint.force, v170, -mFriction);
                     Vector3 v17c;
                     Subtract(thisPoint.pos, v140, v17c);

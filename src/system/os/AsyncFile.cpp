@@ -9,6 +9,7 @@
 #include "utl/MemMgr.h"
 #include "os/System.h"
 #include "os/Archive.h"
+#include "math/Utl.h"
 
 class AsyncFileWii : public AsyncFile {
 public:
@@ -244,7 +245,16 @@ int AsyncFile::Seek(int i, int j) {
             Flush();
         else
             MILO_ASSERT(!mBytesLeft, 0x1CA);
-        // stuff in between
+        long long tell = mTell;
+        if (j == 1) {
+            tell += i;
+        } else if (j == 0) {
+            tell = (long long)i;
+        } else if (j == 2) {
+            tell = (unsigned int)(mSize + i);
+        }
+        ClampEq(tell, 0LL, (long long)(unsigned int)mSize);
+        mTell = (unsigned int)tell;
         _SeekToTell();
         if (mBuffer && (mMode & FILE_OPEN_READ)) {
             mOffset = gBufferSize;
