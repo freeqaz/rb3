@@ -629,20 +629,20 @@ void BandWardrobe::SelectExtra(FileMerger::Merger &merger) {
     ObjectDir *dir = merger.mDir;
     if (!dir)
         return;
-    else {
-        DataNode node = dir->PropertyArray("proxies");
-        DataArray *proparr = node.Array();
-        for (std::list<Symbol>::iterator it = unk2c.begin(); it != unk2c.end(); ++it) {
-            Symbol cur = *it;
-            for (int i = 0; i < proparr->Size(); i++) {
-                if (cur == proparr->Sym(i)) {
-                    unk2c.insert(it, *it);
-                    FilePath fp(MakeString("char/extras/%s.milo", cur));
-                }
+    DataNode node = dir->PropertyArray("proxies");
+    DataArray *proparr = node.Array();
+    for (std::list<Symbol>::iterator it = unk2c.begin(); it != unk2c.end(); ++it) {
+        Symbol cur = *it;
+        for (int i = 0; i < proparr->Size(); i++) {
+            if (cur == proparr->Sym(i)) {
+                unk2c.erase(it);
+                unk2c.push_back(cur);
+                merger.SetSelected(FilePath(MakeString("char/extras/%s.milo", cur)), false);
+                return;
             }
         }
-        MILO_FAIL("Couldn't find match!");
     }
+    MILO_FAIL("Couldn't find match!");
 }
 
 void BandWardrobe::LoadPrefabPrefs() {

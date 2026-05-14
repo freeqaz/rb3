@@ -1045,18 +1045,18 @@ void SongStatusMgr::SaveFixed(FixedSizeSaveableStream &stream) const {
 
 void SongStatusMgr::LoadFixed(FixedSizeSaveableStream &stream, int rev) {
     mCacheMgr.LoadFixed(stream, rev);
-    for (int i = 0; i < 11; i++) {
+    for (ScoreType i = (ScoreType)0; i < 11; i = (ScoreType)(i + 1)) {
         if (rev >= 0x92) {
             stream >> mCachedTotalScores[i];
             stream >> mCachedTotalDiscScores[i];
         } else {
-            UpdateCachedTotalScore((ScoreType)i);
-            UpdateCachedTotalDiscScore((ScoreType)i);
+            UpdateCachedTotalScore(i);
+            UpdateCachedTotalDiscScore(i);
         }
         if (rev >= 0x93) {
             stream >> mCachedTotalStars[i];
         } else {
-            UpdateCachedTotalStars((ScoreType)i);
+            UpdateCachedTotalStars(i);
         }
     }
 }

@@ -47,6 +47,7 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include <algorithm>
 
 GamePanel *TheGamePanel;
 LatencyCallback gGamePanelCallback;
@@ -307,7 +308,8 @@ void GamePanel::StartIntro() {
 
 void GamePanel::UpdateNowBar() {
     MILO_ASSERT(mGame, 0x212);
-    float t1 = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    TaskMgr& tm = TheTaskMgr;
+    float t1 = tm.Seconds(TaskMgr::kRealTime);
     float t2 = TheSongDB->GetSongDurationMs();
     float time = t2 / 1000 - t1;
     char surprise_tool = '-';
@@ -315,17 +317,22 @@ void GamePanel::UpdateNowBar() {
         time = -time;
         surprise_tool = '+';
     }
+    float totalTick = tm.GetSongPos().GetTotalTick();
+    float val = 0.0f;
+    if (t2 > 0.0f) {
+        val = std::min(100.0f * t1 / (0.001f * t2), 100.0f);
+    }
     *mTime << MakeString(
         "MBT %d:%d:%03d [%s %c%s %4.1f%%] (%.2fsec %dtk)\n",
-        TheTaskMgr.GetSongPos().GetMeasure() + 1,
-        TheTaskMgr.GetSongPos().GetBeat() + 1,
-        TheTaskMgr.GetSongPos().GetTick(),
+        tm.GetSongPos().GetMeasure() + 1,
+        tm.GetSongPos().GetBeat() + 1,
+        tm.GetSongPos().GetTick(),
         FormatTimeMSH(t1 * 1000),
         surprise_tool,
         FormatTimeMSH(time * 1000),
-        0.f,
-        0.f,
-        (int)TheTaskMgr.GetSongPos().GetTotalTick()
+        val,
+        t1,
+        (int)totalTick
     );
 }
 

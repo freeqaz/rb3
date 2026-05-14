@@ -790,7 +790,7 @@ void Player::Deploy() {
 
 bool Player::DeployBandEnergyIfPossible(bool b) {
     if (!b) {
-        if (TheGame->unkdc == -1.0f) {
+        if (TheGame->unkdc != -1.0f) {
             return false;
         }
     }
@@ -801,41 +801,33 @@ bool Player::DeployBandEnergyIfPossible(bool b) {
     }
     if (!unk2b0)
         return false;
-    bool bandOK = false;
-    if (mBand) {
-        if (mBand->GetBand()) {
-            bandOK = true;
-        }
+    int finished = 1;
+    int gameOver = 0;
+    int bandOK = 0;
+    if (mBand && mBand->GetBand()) {
+        bandOK = 1;
     }
-    bool gameOver = false;
-    if (bandOK) {
-        if (mBand->MainPerformer()->mGameOver) {
-            gameOver = true;
-        }
+    if (bandOK && mBand->MainPerformer()->mGameOver) {
+        gameOver = 1;
     }
-    bool finished = false;
     if (!gameOver && !unk1e1) {
-        finished = true;
+        finished = 0;
     }
     if (mEnabledState != kPlayerEnabled || finished) {
         return false;
     }
-    if (mDeployingBandEnergy) {
-        if (mBand->AnyoneSaveable()) {
-            return false;
+    if (!mDeployingBandEnergy || mBand->AnyoneSaveable()) {
+        if (mBandEnergy >= mParams->mDeployThreshold) {
+            unk294 = LocalDeployBandEnergy();
+            unk2b4 += unk294;
+            static Message msg("send_deploy", DataNode(0));
+            msg[0] = unk294;
+            HandleType(msg);
+            return true;
         }
+        mStats.mFailedDeploy = true;
     }
-    if (mBandEnergy < mParams->mDeployThreshold) {
-        unk2b8 = true;
-        return false;
-    }
-    unk294 = LocalDeployBandEnergy();
-    unk2b4 += unk294;
-    static Message msg("send_deploy", DataNode(Symbol("send_deploy")), DataNode(0));
-    msg[0] = unk294;
-    msg[1] = 6;
-    HandleType(msg);
-    return true;
+    return false;
 }
 
 void Player::Hit() {

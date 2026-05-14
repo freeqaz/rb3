@@ -307,7 +307,7 @@ void RndEnviron::UpdateApproxLighting(const Vector3 *v3, _GXColor *gxColor) {
         }
         if (UsesApproxLocal()) {
             boxLight.Clear();
-            FOREACH (it, mLightsReal) {
+            FOREACH (it, mLightsApprox) {
                 if (boxLight.QueueLight(*it, 1))
                     mNumLightsApprox++;
             }
@@ -322,13 +322,39 @@ void RndEnviron::UpdateApproxLighting(const Vector3 *v3, _GXColor *gxColor) {
         }
         if (gxColor) {
             for (int i = 0; i < 6; i++) {
+                _GXColor word;
+                _GXColor packed;
+                register __vec2x32float__ rg, ba;
+                register const Hmx::Color *src = &boxResults[i];
+                register _GXColor *dst = &packed;
+                ASM_BLOCK(
+                    psq_l rg, 0x0(src), 0, 0
+                    psq_l ba, 0x8(src), 0, 0
+                    psq_st rg, 0x0(dst), 0, 6
+                    psq_st ba, 0x2(dst), 0, 6
+                )
+                *(u32 *)&word = *(u32 *)&packed;
+                gxColor[i] = word;
             }
             ApplyApproxLighting(gxColor);
         } else {
-            _GXColor color;
+            _GXColor color[6];
             for (int i = 0; i < 6; i++) {
+                _GXColor word;
+                _GXColor packed;
+                register __vec2x32float__ rg, ba;
+                register const Hmx::Color *src = &boxResults[i];
+                register _GXColor *dst = &packed;
+                ASM_BLOCK(
+                    psq_l rg, 0x0(src), 0, 0
+                    psq_l ba, 0x8(src), 0, 0
+                    psq_st rg, 0x0(dst), 0, 6
+                    psq_st ba, 0x2(dst), 0, 6
+                )
+                *(u32 *)&word = *(u32 *)&packed;
+                color[i] = word;
             }
-            ApplyApproxLighting(&color);
+            ApplyApproxLighting(color);
         }
     }
 }

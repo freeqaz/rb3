@@ -188,6 +188,11 @@ void TrackPanel::Reset() {
     if (mScoreboard)
         mScoreboard->Reset();
     float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime) * 1000.0f;
+    if (!TheGame->mProperties.mHasSongSections) {
+        for (int i = 0; i < mTracks.size(); i++) {
+            mTracks[i]->Jump(secs);
+        }
+    }
     Hmx::Object::Handle(on_reset_msg, true);
     mTrackPanelDir->ConfigureTracks(false);
     MetaPerformer::Current();
