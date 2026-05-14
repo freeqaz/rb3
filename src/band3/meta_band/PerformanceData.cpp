@@ -92,8 +92,8 @@ void PerformanceData::SaveFixed(FixedSizeSaveableStream &stream) const {
             stream << 0;
         }
     }
-    int missStreakCount = mStats.mMissStreaks.size();
-    stream << missStreakCount;
+    unsigned short missStreakCount = mStats.mMissStreaks.size();
+    stream << (int)missStreakCount;
     for (int i = 0; i < 3; i++) {
         if (i < missStreakCount) {
             const Stats::StreakInfo &info = mStats.GetMissStreak(i);
@@ -104,8 +104,8 @@ void PerformanceData::SaveFixed(FixedSizeSaveableStream &stream) const {
             stream << 0;
         }
     }
-    int odDeployCount = mStats.mBestOverdriveDeployments.size();
-    stream << odDeployCount;
+    unsigned short odDeployCount = mStats.mBestOverdriveDeployments.size();
+    stream << (int)odDeployCount;
     for (int i = 0; i < 3; i++) {
         if (i < odDeployCount) {
             const Stats::MultiplierInfo &info = mStats.GetBestOverdriveDeployment(i);
@@ -122,8 +122,8 @@ void PerformanceData::SaveFixed(FixedSizeSaveableStream &stream) const {
             stream << 0;
         }
     }
-    int multCount = mStats.mBestStreakMultipliers.size();
-    stream << multCount;
+    unsigned short multCount = mStats.mBestStreakMultipliers.size();
+    stream << (int)multCount;
     for (int i = 0; i < 3; i++) {
         if (i < multCount) {
             const Stats::MultiplierInfo &info = mStats.GetBestStreakMultiplier(i);
@@ -163,9 +163,9 @@ void PerformanceData::SaveFixed(FixedSizeSaveableStream &stream) const {
     stream << mStats.mDoubleHarmonyPhraseCount;
     stream << mStats.mTripleHarmonyHit;
     stream << mStats.mTripleHarmonyPhraseCount;
-    int vocPartCount = mStats.mVocalPartCount;
     int vocSingerCount = mStats.mSingerCount;
     stream << vocSingerCount;
+    int vocPartCount = mStats.mVocalPartCount;
     stream << vocPartCount;
     for (int i = 0; i < 3; i++) {
         if (i < vocSingerCount) {
