@@ -571,18 +571,18 @@ void SongData::TrimOverlappingGems(int i1, int i2, int diff) {
 
 void SongData::ValidateVocalSPPhrases() {
     Symbol voxSym;
-    int i14;
-    bool harm = true;
+    int maxList;
+    int firstList;
     if (mPlayerTrackConfigList->UseVocalHarmony()) {
-        i14 = std::min<int>(kHarm3VocalNoteList, mVocalNoteLists.size() - 1);
+        firstList = 1;
+        maxList = std::min<int>(kHarm3VocalNoteList, mVocalNoteLists.size() - 1);
         voxSym = "HARM1";
     } else {
-        harm = false;
-        i14 = 0;
+        firstList = 0;
+        maxList = 0;
         voxSym = "PART VOCALS";
     }
 
-    int u15 = harm;
     int trackIdx;
     for (trackIdx = 0; trackIdx < mTrackInfos.size(); trackIdx++) {
         if (mTrackInfos[trackIdx]->mName == voxSym)
@@ -591,44 +591,84 @@ void SongData::ValidateVocalSPPhrases() {
 
     if (trackIdx == mTrackInfos.size() || mNumDifficulties <= 0)
         return;
-    else {
-        PhraseDB *curDB = mPhraseDBs[trackIdx];
-        const PhraseList &phrases =
-            curDB->GetPhraseList(mTrackDifficulties[trackIdx], kCommonPhrase);
-        VocalNoteList *curVoxList = mVocalNoteLists[u15];
-        for (int i = 0; i < phrases.mPhrases.size(); i++) {
-            float f20 = phrases.mPhrases[i].mMs;
-            float f1 = phrases.mPhrases[i].mMs;
-            float f18 = phrases.mPhrases[i].GetDurationMs();
-            int i13 = 0; // change type
-            bool b2 = false;
-            for (int j = u15; j <= i14; j++) {
-                if (mVocalNoteLists[j]->NextNote(f20)) {
-                    b2 = true;
-                    break;
-                }
+
+    const PhraseList &phrases =
+        mPhraseDBs[trackIdx]->GetPhraseList(mTrackDifficulties[trackIdx], kCommonPhrase);
+    VocalNoteList *curVoxList = mVocalNoteLists[firstList];
+    if (!phrases.mPhrases.size()) return;
+    for (int i = 0; i < phrases.mPhrases.size(); i++) {
+        float ms = phrases.mPhrases[i].mMs;
+        float endMs = ms + phrases.mPhrases[i].GetDurationMs();
+        VocalPhrase *phrase = NULL;
+        bool found1 = false;
+        for (int j = firstList; j <= maxList; j++) {
+            if (mVocalNoteLists[j]->NextNote(ms)) {
+                found1 = true;
+                break;
             }
-            if (!b2) {
-                curVoxList->GetTrackName();
-                SongFullPath();
+        }
+        if (!found1) {
+            TheDebug.Notify(MakeString(
+                "NOTIFY %s %s : vocal overdrive phrase at %i ms is after all notes.\n",
+                SongFullPath(),
+                curVoxList->GetTrackName(),
+                (int)ms
+            ));
+        } else {
+            VocalNote *next = curVoxList->NextNote(ms);
+            if (next && next->GetMs() < ms) {
+                TheDebug.Notify(MakeString(
+                    "NOTIFY %s %s : vocal overdrive phrase at %i ms begins during a note.\n",
+                    SongFullPath(),
+                    curVoxList->GetTrackName(),
+                    (int)ms
+                ));
+            } else if (next
+                       && (phrase = &curVoxList->GetPhrases()[next->mPhrase],
+                           &curVoxList->mNotes[phrase->unk10] != next)) {
+                TheDebug.Notify(MakeString(
+                    "NOTIFY %s %s : vocal overdrive phrase at %i ms starts mid-phrase.\n",
+                    SongFullPath(),
+                    curVoxList->GetTrackName(),
+                    (int)ms
+                ));
             } else {
-                VocalNote *next = curVoxList->NextNote(f20);
-                if (next) {
-                    float f19 = next->GetMs();
-                    if (f20 > f19) {
-                        curVoxList->GetTrackName();
-                        SongFullPath();
+                bool found2 = false;
+                for (int j = firstList; j <= maxList; j++) {
+                    VocalNote *n2 = mVocalNoteLists[j]->NextNote(ms);
+                    if (n2) {
+                        VocalPhrase *p =
+                            &mVocalNoteLists[j]->GetPhrases()[n2->mPhrase];
+                        if (p
+                            && mVocalNoteLists[j]->mNotes[p->unk14 - 1].GetMs()
+                                <= endMs) {
+                            found2 = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found2) {
+                    TheDebug.Notify(MakeString(
+                        "NOTIFY %s %s : vocal overdrive phrase at %i ms ends prematurely.\n",
+                        SongFullPath(),
+                        curVoxList->GetTrackName(),
+                        (int)ms
+                    ));
+                } else if (phrase) {
+                    int idx = phrase->unk14;
+                    if (idx < curVoxList->mNotes.size()
+                        && curVoxList->mNotes[idx].GetMs() < endMs) {
+                        TheDebug.Notify(MakeString(
+                            "NOTIFY %s %s : vocal overdrive phrase at %i ms cuts into next phrase.\n",
+                            SongFullPath(),
+                            curVoxList->GetTrackName(),
+                            (int)ms
+                        ));
                     }
                 }
             }
         }
     }
-
-    MILO_WARN("NOTIFY %s %s : vocal overdrive phrase at %i ms is after all notes.\n");
-    MILO_WARN("NOTIFY %s %s : vocal overdrive phrase at %i ms begins during a note.\n");
-    MILO_WARN("NOTIFY %s %s : vocal overdrive phrase at %i ms starts mid-phrase.\n");
-    MILO_WARN("NOTIFY %s %s : vocal overdrive phrase at %i ms ends prematurely.\n");
-    MILO_WARN("NOTIFY %s %s : vocal overdrive phrase at %i ms cuts into next phrase.\n");
 }
 
 void SongData::AddBeatMatcher(BeatMatcher *bm) { mBeatMatchers.push_back(bm); }

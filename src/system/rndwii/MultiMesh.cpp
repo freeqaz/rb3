@@ -11,6 +11,7 @@
 #include "revolution/mtx/mtx.h"
 #include "revolution/gx/GXTransform.h"
 
+#pragma pool_data off
 void WiiMultiMesh::DrawShowing() {
     START_AUTO_TIMER("multimesh");
     if (mInstances.empty() || mMesh == nullptr) {
@@ -21,23 +22,22 @@ void WiiMultiMesh::DrawShowing() {
     WiiMesh *m2 = (WiiMesh *)(RndMesh *)mesh->mGeomOwner;
 
     bool fadeOut = false;
-    if (RndEnviron::sCurrent->mFadeOut && RndEnviron::sCurrent->mFadeEnd != RndEnviron::sCurrent->mFadeStart) {
+    if (RndEnviron::sCurrent->mFadeOut && RndEnviron::sCurrent->mFadeStart != RndEnviron::sCurrent->mFadeEnd) {
         fadeOut = true;
     }
     RndCam *curCam = RndCam::sCurrent;
 
-    MILO_ASSERT(mesh->NumBones() == 0, 5);
+    MILO_ASSERT(mesh->NumBones() == 0, 0x2f);
 #ifdef MILO_DEBUG
     if (m2->NumFaces() == 0) {
         return;
     }
 #endif
-    TIMER_ACTION("faces", m2->SetVertexDesc(););
-    TIMER_ACTION("faces", m2->SetVertexBuffers(nullptr););
+    TIMER_ACTION("faces", m2->SetVertexDesc(); m2->SetVertexBuffers(nullptr););
+    if (mat == nullptr)
+        mat = (WiiMat *)TheRnd->mDefaultMat;
     {
         START_AUTO_TIMER("selmat");
-        if (mat == nullptr)
-            mat = (WiiMat *)TheRnd->mDefaultMat;
         mat->Select(false);
     }
 

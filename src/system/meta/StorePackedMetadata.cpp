@@ -432,6 +432,8 @@ void StoreMetadataManager::UpdateOfferOwnership() {
     }
 }
 
+void StoreMetadataManager::MarkDownloaded(unsigned long long, unsigned short) {}
+
 StorePage *StoreMetadataManager::LoadPage(unsigned short idx) {
     mCurrentPage = mPageTable->GetPage(idx);
     return mCurrentPage;

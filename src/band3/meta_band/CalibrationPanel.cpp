@@ -237,6 +237,37 @@ void CalibrationPanel::UpdateLabel() {
 void CalibrationPanel::UpdateProgress(bool b) {
     RndTransAnim *tabanim = mDir->Find<RndTransAnim>("prog_bar_tab.tnm", true);
     RndTransAnim *boneanim = mDir->Find<RndTransAnim>("bone_prog_bar.tnm", true);
+    float progress = (float)mTestSamples.size();
+    float maxProgress;
+    if (b) {
+        float a8 = unka4[1];
+        float ac = unka4[2];
+        float b0 = unka4[3];
+        float b4 = unka4[4];
+        float bc = unkb8[1];
+        float c0 = unkb8[2];
+        float c4 = unkb8[3];
+        float c8 = unkb8[4];
+        float sample = (float)((double)progress / 457453.4129);
+        unka4[0] = a8;
+        unka4[1] = ac;
+        unka4[2] = b0;
+        unka4[3] = b4;
+        unka4[4] = sample;
+        unkb8[0] = bc;
+        unkb8[1] = c0;
+        unkb8[2] = c4;
+        unkb8[3] = c8;
+        progress = (float)((6.0f * b0 + (4.0f * (ac + b4) + (a8 + sample)))
+            + -0.7805914145 * bc + 3.3180408913 * c0
+            + -5.2929307473 * c4 + 3.7554462943 * c8);
+        unkb8[4] = progress;
+    }
+    maxProgress = (float)mNumHits;
+    progress = progress * (float)((mNumHits + 2) / mNumHits);
+    progress = *(maxProgress < progress ? &maxProgress : &progress);
+    tabanim->SetFrame(24.0f * progress / (float)mNumHits, 1.0f);
+    boneanim->SetFrame(24.0f * progress / (float)mNumHits, 1.0f);
 }
 
 void CalibrationPanel::Draw() { UIPanel::Draw(); }

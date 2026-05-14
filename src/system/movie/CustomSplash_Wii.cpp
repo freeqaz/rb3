@@ -169,10 +169,35 @@ TPLPalette *CustomSplash::LoadFile(const char *filename, uint &fd, void *(*alloc
     void *v;
     DVDFileInfo fi;
     if (DVDOpen(const_cast<char *>(filename), &fi)) {
-        fd = fi.startAddr;
+        fd = fi.length;
         v = alloc((fd + 31) & ~31);
         DVDReadAsyncPrio(&fi, v, (fd + 31) & ~31, 0, NULL, 2);
-        // u32 blkstat = DVDGetCommandBlockStatus(&fi);
+        DVDGetCommandBlockStatus(&fi.cb);
+        int retries = 0;
+        while (DVDGetCommandBlockStatus(&fi.cb) != 0) {
+            switch (DVDGetDriveStatus()) {
+            case DVD_STATE_RETRY:
+                if (++retries >= 20) {
+                    ThePlatformMgr.SetDiskError(kDiskError);
+                    ThePlatformMgr.GetDiscErrorMgrWii()->LoopUntilNoDiscError(&fi, true);
+                }
+                break;
+            case DVD_STATE_NO_DISK:
+            case DVD_STATE_WRONG_DISK:
+                retries = 0;
+                ThePlatformMgr.SetDiskError(kWrongDisk);
+                ThePlatformMgr.GetDiscErrorMgrWii()->LoopUntilNoDiscError(&fi, true);
+                break;
+            default:
+                ThePlatformMgr.SetDiskError(kNoDiskError);
+                break;
+            case DVD_STATE_BUSY:
+            case DVD_STATE_WAITING:
+                retries = 0;
+                break;
+            }
+        }
+        DVDClose(&fi);
     } else
         return 0;
     return (TPLPalette *)v;

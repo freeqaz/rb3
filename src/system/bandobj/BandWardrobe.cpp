@@ -443,36 +443,12 @@ DataNode BandWardrobe::GetUserTrack(int i) {
     return HandleType(msg);
 }
 
-// TODO: remove this once LoadMainCharacters is fully matched
-DECOMP_FORCEACTIVE(
-    BandWardrobe,
-    "DemandLoad() || !shot",
-    "PowerOf2(ff)",
-    "male",
-    "pc",
-    "xbox",
-    "%s_budget_%s",
-    "could not find fallback prefab",
-    "none",
-    "guitar",
-    "bass",
-    "drum",
-    "keyboard",
-    "j != DIM(instOrder)",
-    "NOTIFY: %s (%s) has no %s\n",
-    "kelly02_triburst",
-    "mb4_triburst",
-    "generic_zebra",
-    "e935_resource",
-    "m50_resource",
-    "hey, we shouldn't be here"
-)
-
 void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
     MILO_ASSERT(DemandLoad() || !shot, 0x45C);
     HandleType(on_loading_characters_msg);
     Symbol playmode = GetPlayMode();
     Symbol gender = female;
+    int instOrderEnd = 5;
     if (shot) {
         int shotflags = GetShotFlags(shot);
         if ((shotflags & 0xFF) != 0xFF) {
@@ -481,58 +457,182 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
             MILO_ASSERT(PowerOf2(ff), 0x479);
             for (int i = 0; i < 5; i++) {
                 if (ff == gInstFocus[i]) {
+                    instOrderEnd = i;
                     if (shotflags & 0xF0) {
                         gender = "male";
                     }
                     break;
                 }
             }
-            flags = shotflags >> 4;
+            int gflags = shotflags >> 4;
             if (shotflags & 0xF)
-                flags = shotflags;
-
+                gflags = shotflags;
             for (int i = 0; i < 4; i++) {
-                if (flags & 1 << i) {
+                if (gflags & 1 << i) {
                     mGenre = gGenres[i];
                     break;
                 }
             }
         }
     }
-    std::vector<Symbol> syms(4);
-    for (int i = 0; i < 4; i++) {
-        syms[i] = BandCharDesc::GetInstrumentSym(GetInstrumentForTarget(playmode, i));
-    }
-    int iarr[4];
-    int count = 0;
-    for (int i = 0; i < 4; i++) {
-        DataNode tracknode = GetUserTrack(i);
-        Symbol inst = "none";
-        if (tracknode.Type() != kDataUnhandled) {
-            int instidx = InstrumentIndex(syms, tracknode.Sym());
-            if (instidx != syms.size()) {
-                inst = GrabInstrument(syms, tracknode.Sym());
-                goto lol;
+    bool usePrefabs = LOADMGR_EDITMODE;
+    if (!usePrefabs) {
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 2; j++) {
+                if (GetPrefab(i, j)) usePrefabs = true;
             }
-            iarr[i] = i;
-            count++;
-        } else {
-        lol:
+        }
+    }
+    if (usePrefabs) {
+        for (int i = 0; i < 4; i++) {
+            BandCharDesc *prefab = 0;
+            for (int j = 0; j < 2 && !prefab; j++) {
+                prefab = GetPrefab(i, j);
+            }
+            int forceInst = GetInstrumentForTarget(playmode, i);
+            bool needOverride = false;
+            bool genderMismatch = false;
+            if (forceInst == instOrderEnd && prefab) needOverride = true;
+            if (needOverride && prefab->mGender != gender) genderMismatch = true;
+            if (genderMismatch) {
+                char buf[256];
+                strcpy(buf, prefab->Name());
+                prefab = 0;
+                for (int j = 0; j < 2; j++) {
+                    BandCharDesc *p = GetPrefab(i, j);
+                    if (p && p->mGender == gender) {
+                        prefab = p;
+                        break;
+                    }
+                }
+                if (!prefab) {
+                    char *suffix = (char *)PrefabSuffix(buf);
+                    if (suffix) {
+                        strcpy(suffix + 1, gender.Str());
+                        prefab = BandCharDesc::FindPrefab(buf, false);
+                    }
+                }
+            }
+            if (!prefab) {
+                Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+                if (plat == "pc") plat = "xbox";
+                Symbol gen2;
+                if (forceInst == instOrderEnd) {
+                    gen2 = gender;
+                } else {
+                    const char *gs = (i & 1) ? "male" : "female";
+                    gen2 = Symbol(gs);
+                }
+                prefab = BandCharDesc::FindPrefab(
+                    MakeString("%s_budget_%s", gen2, plat), true
+                );
+                if (!prefab) {
+                    MILO_WARN("could not find fallback prefab");
+                }
+            }
+            BandCharacter *bchar = mTargets[i];
+            bchar->SetPrefab(prefab);
+            Symbol instSym = BandCharDesc::GetInstrumentSym(forceInst);
+            bchar->SetInstrumentType(instSym);
+            bchar->Enter();
+        }
+    } else {
+        std::vector<Symbol> syms(4);
+        for (int i = 0; i < 4; i++) {
+            syms[i] = BandCharDesc::GetInstrumentSym(GetInstrumentForTarget(playmode, i));
+        }
+        int forcedTargets[4];
+        int forcedCount = 0;
+        for (int i = 0; i < 4; i++) {
+            DataNode tracknode = GetUserTrack(i);
+            Symbol inst = "none";
+            if (tracknode.Type() != kDataUnhandled) {
+                if (InstrumentIndex(syms, tracknode.Sym()) == syms.size()) {
+                    forcedTargets[forcedCount++] = i;
+                    continue;
+                }
+                inst = GrabInstrument(syms, tracknode.Sym());
+            }
             mTargets[i]->SetInstrumentType(inst);
         }
-    }
-    for (int i = 0; i < count; i++) {
-        int i15 = iarr[i];
-        Symbol instsyms[5] = { "guitar", "bass", "mic", "drum", "keyboard" };
-        int instidx = 0;
-        for (; instidx < 5; instidx++) {
-            if (InstrumentIndex(syms, instsyms[instidx]) != syms.size())
-                break;
+        for (int i = 0; i < forcedCount; i++) {
+            int target = forcedTargets[i];
+            Symbol instOrder[5] = { "guitar", "bass", "mic", "drum", "keyboard" };
+            unsigned int j;
+            for (j = 0; j < 5; j++) {
+                if (InstrumentIndex(syms, instOrder[j]) != syms.size())
+                    break;
+            }
+            MILO_ASSERT(j != 5, 0x512);
+            mTargets[target]->SetInstrumentType(GrabInstrument(syms, instOrder[j]));
         }
-        mTargets[i15]->SetInstrumentType(GrabInstrument(syms, instsyms[instidx]));
+        if (InstrumentIndex(syms, mic) != syms.size()) {
+            for (int i = 0; i < 4; i++) {
+                BandCharacter *bchar = mTargets[(i + 2) % 4];
+                bool ok = false;
+                if (bchar->mInstrumentType == "none") {
+                    bool genderOk = true;
+                    if (bchar->mGender != mVocalGender && mVocalGender != gNullStr) {
+                        genderOk = false;
+                    }
+                    if (genderOk) ok = true;
+                }
+                if (ok) {
+                    GrabInstrument(syms, mic);
+                    bchar->SetInstrumentType(mic);
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < 4; i++) {
+            BandCharacter *bchar = mTargets[i];
+            if (bchar->mInstrumentType == "none") {
+                bchar->SetInstrumentType(GrabInstrument(syms, Symbol("none")));
+            }
+        }
     }
-    if (InstrumentIndex(syms, mic) != syms.size()) {
+    for (int i = 0; i < 4; i++) {
+        BandCharacter *bchar = mTargets[i];
+        Symbol inst = bchar->mInstrumentType;
+        BandCharDesc::OutfitPiece *piece = bchar->mInstruments.GetPiece(inst);
+        if (piece->mName.mStr == gNullStr) {
+            MILO_WARN(
+                "NOTIFY: %s (%s) has no %s\n",
+                PathName(bchar),
+                mVenueNames.names[i],
+                inst
+            );
+            BandCharDesc::CharInstrumentType type = BandCharDesc::GetInstrumentFromSym(inst);
+            switch (type) {
+                case BandCharDesc::kGuitar:
+                    piece->mName = "stratocaster04_paint";
+                    break;
+                case BandCharDesc::kBass:
+                    piece->mName = "telebass_sparkle";
+                    break;
+                case BandCharDesc::kDrum:
+                    piece->mName = "dw_marine_small_club";
+                    break;
+                case BandCharDesc::kMic:
+                    piece->mName = "md431ii_resource";
+                    break;
+                case BandCharDesc::kKeyboard:
+                    piece->mName = "test_keys";
+                    break;
+                default:
+                    MILO_WARN("hey, we shouldn't be here");
+                    break;
+            }
+        }
     }
+    for (int i = 0; i < 4; i++) {
+        BandCharacter *bchar = mTargets[i];
+        Symbol inst = bchar->mInstrumentType;
+        BandCharDesc::GetInstrumentFromSym(inst);
+        if (inst == "none") inst = "vocals";
+        mVenueNames.names[i] = MakeString("player_%s0", inst);
+    }
+    StartClipLoads(false, shot);
 }
 
 void BandWardrobe::StartClipLoads(bool b, BandCamShot *shot) {

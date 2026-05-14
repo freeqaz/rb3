@@ -138,6 +138,7 @@ public:
     void Load(const char *);
     void SetLoadingState(int);
     void Unload();
+    void MarkDownloaded(unsigned long long, unsigned short);
     bool LoadingFailed() const;
     StorePage *LoadPage(unsigned short);
     StorePage *LoadDynamicPage(DataArray *);

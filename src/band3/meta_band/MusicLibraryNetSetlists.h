@@ -9,8 +9,9 @@ class MusicLibraryNetSetlists : public Hmx::Object {
 public:
     class SetlistArtRecord {
     public:
-        int unk0;
+        Symbol unk0;
         RndTex *unk4;
+        SetlistArtRecord() : unk0(gNullStr), unk4(0) {}
     };
     MusicLibraryNetSetlists();
     virtual ~MusicLibraryNetSetlists();

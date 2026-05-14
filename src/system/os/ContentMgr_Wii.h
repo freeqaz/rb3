@@ -106,7 +106,7 @@ public:
     ContentLocT mLocation; // 0x2c - location
     char unk30; // 0x30 - times a handle has been opened
     char unk31; // 0x31
-    bool unk32; // 0x32
+    char unk32; // 0x32
 
     static bool mSDCardRemoved;
     static bool mHandleRestoreErrors;

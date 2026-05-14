@@ -98,6 +98,14 @@ DataNode MusicLibraryNetSetlists::OnMsg(const RockCentralOpCompleteMsg &msg) {
 
 void MusicLibraryNetSetlists::FinishGettingSetlistArt(bool b1) {
     if (b1 && mPendingSetlistArt->Height() && mPendingSetlistArt->Width()) {
+        mSetlists.push_back(SetlistArtRecord());
+        SetlistArtRecord &rec = mSetlists.back();
+        rec.unk0 = unk50;
+        rec.unk4 = mPendingSetlistArt;
+        mPendingSetlistArt = nullptr;
+        while (mSetlists.size() > 15) {
+            mSetlists.erase(mSetlists.begin());
+        }
         TheMusicLibrary->SetlistArtFinished();
     } else {
         RELEASE(mPendingSetlistArt);

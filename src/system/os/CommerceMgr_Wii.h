@@ -30,6 +30,7 @@ public:
     bool CheckPurchaseSync();
     bool NeedSync();
     void GetTitleInfo();
+    void MarkChanged(bool);
     bool SetParentalControlPin(String pin);
 
     static unsigned long long MakeDataTitleId(const char *);

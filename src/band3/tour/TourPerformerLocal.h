@@ -23,12 +23,12 @@ public:
     Symbol ChooseRandomQuestForGroupAndTier(Symbol, int);
     void InqSongsInFilterData(Symbol, std::map<Symbol, int> &, std::map<Symbol, int> &);
     Symbol GetRandomArtistFromMap(const std::map<Symbol, int> &, int);
-    void
+    Symbol
     GetRandomQuestFilter(TourProgress *, int, const std::map<Symbol, int> &, const std::map<Symbol, int> &);
-    void GetRandomFixedSetlist(TourProgress *, int, Symbol);
+    Symbol GetRandomFixedSetlist(TourProgress *, int, Symbol);
     void ChooseQuestFilters();
     bool SanityCheckFilterAgainstType(Symbol, Symbol);
-    void SanityCheckQuestFilters();
+    int SanityCheckQuestFilters();
     void InitializeNextGig();
     void CheatCycleChallenge();
     void CheatCycleSetlist();

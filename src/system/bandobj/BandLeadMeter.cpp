@@ -15,7 +15,7 @@ BandLeadMeter::BandLeadMeter()
 int BandLeadMeter::GetColor(int i) {
     if (i == 0)
         return 0;
-    else if (i < 1)
+    else if (i < 0)
         return 2;
     else
         return 1;

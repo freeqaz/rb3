@@ -38,6 +38,8 @@ WiiCommerceMgr::WiiCommerceMgr()
 
 WiiCommerceMgr::~WiiCommerceMgr() {}
 
+void WiiCommerceMgr::MarkChanged(bool) {}
+
 void WiiCommerceMgr::Init() {
     SetName("commerce_mgr", ObjectDir::sMainDir);
     TheStoreMetadata.Init();

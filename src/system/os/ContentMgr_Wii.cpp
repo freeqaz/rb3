@@ -1,5 +1,7 @@
 #include "os/ContentMgr_Wii.h"
 #include "decomp.h"
+#include "meta/StorePackedMetadata.h"
+#include "os/CommerceMgr_Wii.h"
 #include "os/ContentMgr.h"
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
@@ -315,65 +317,126 @@ void WiiContent::PollTransfer() {
     }
 }
 
+void DebugPrintContents(CNTHandle *) {}
+
 void WiiContent::Poll() {
-    int oldState = mState;
-    if (oldState == kNeedsMounting) {
+    switch (mState) {
+    case kNeedsMounting:
         StartMount();
-    } else if (oldState == kMounting) {
+        break;
+    case kMounting:
         if (unk20 == 1) {
             PollTransfer();
         }
-        int oldTransferState = unk20;
-        if (oldTransferState != 0) {
-            if (oldTransferState == 1) {
-                ThePlatformMgr.mHomeMenuDisabled = true;
-                if (ThePlatformMgr.mHomeMenuWii->mSDIconActive == false) {
-                    ThePlatformMgr.mHomeMenuWii->ActivateSDIcon(true);
-                }
-            } else if (oldTransferState == 2) {
-                if (unk31 == false) {
-                    if (unk24 == 0) {
-                        s32 result;
-                        GetHandle(&result);
-                        if (result == 0) {
-                            // CNTHandle::DebugPrintContents(handle);
-                            mState = kMounted;
-                        } else {
-                            MILO_FAIL(
-                                "CM: %s: CNTInitHandleTitle Failed: %i\n",
-                                mName.Str(),
-                                result
-                            );
-                            unk24 = 1;
-                            mState = kFailed;
-                        }
-                        FreeHandle();
+        switch (unk20) {
+        case 0:
+            break;
+        case 1:
+            ThePlatformMgr.mIgnorePowerOperations = true;
+            if (ThePlatformMgr.mHomeMenuWii->mSDIconActive == false) {
+                ThePlatformMgr.mHomeMenuWii->ActivateSDIcon(true);
+            }
+            break;
+        case 2:
+            if (unk31 == false) {
+                if (unk24 == 0) {
+                    s32 result = 0;
+                    CNTHandle *handle = GetHandle(&result);
+                    if (result == 0) {
+                        DebugPrintContents(handle);
+                        mState = kMounted;
                     } else {
-                        if (mHandleRestoreErrors == true) {
-                            HandleErrorFromRestore(this, (OpResult)unk24);
-                        }
+                        MILO_FAIL(
+                            "CM: %s: CNTInitHandleTitle Failed: %i\n",
+                            mName.Str(),
+                            result
+                        );
+                        unk24 = 1;
                         mState = kFailed;
                     }
-                } else if (unk32 == false) {
-                    mState = kUnmounted;
+                    FreeHandle();
                 } else {
-                    StartMount();
+                    if (mHandleRestoreErrors) {
+                        HandleErrorFromRestore(this, (OpResult)unk24);
+                    }
+                    mState = kFailed;
                 }
+            } else if (unk32) {
+                StartMount();
             } else {
-                MILO_ASSERT("0", 636);
-                unk24 = 1;
-                mState = kFailed;
+                mState = kUnmounted;
             }
+            break;
+        default:
+            MILO_ASSERT(0, 636);
+            unk24 = 1;
+            mState = kFailed;
+            break;
         }
         if (mState != kMounting) {
+            TheWiiContentMgr.mLastTransferResult = unk24;
             unk20 = 3;
             unk31 = false;
             unk32 = false;
-            ThePlatformMgr.mHomeMenuDisabled = false;
+            ThePlatformMgr.mIgnorePowerOperations = false;
         }
-    } else if (oldState == kNeedsBackup) {
+        break;
+    case kNeedsBackup:
         StartBackup();
-    } else if (oldState == kBackingUp) {
+        break;
+    case kBackingUp:
+        if (unk20 == 1) {
+            PollTransfer();
+        }
+        switch (unk20) {
+        case 0:
+            break;
+        case 1:
+            ThePlatformMgr.mIgnorePowerOperations = true;
+            if (ThePlatformMgr.mHomeMenuWii->mSDIconActive == false) {
+                ThePlatformMgr.mHomeMenuWii->ActivateSDIcon(true);
+            }
+            break;
+        case 2:
+            if (unk24 == 0) {
+                if (TheWiiContentMgr.unk7d) {
+                    TheStoreMetadata.MarkDownloaded(mTitleId, (u16)mContentId);
+                    TheWiiCommerceMgr.MarkChanged(true);
+                    mState = kDeleted;
+                } else {
+                    unsigned short cid = (u16)mContentId;
+                    int r = EC_DeleteContents(mTitleId, &cid, 1);
+                    if (r == 0) {
+                        mState = kDeleted;
+                    } else if (r == -0x6F) {
+                        MILO_FAIL(
+                            "EC_DeleteContents error: ISFS_ERROR_OPENFD -- you still have the file open\n",
+                            (long)r
+                        );
+                        unk24 = 1;
+                        mState = kFailed;
+                    } else {
+                        MILO_FAIL("EC_DeleteContents error: %d\n", (long)r);
+                        unk24 = 1;
+                        mState = kFailed;
+                    }
+                }
+            } else {
+                mState = kFailed;
+            }
+            break;
+        default:
+            MILO_ASSERT(0, 740);
+            unk24 = 1;
+            mState = kFailed;
+            break;
+        }
+        if (mState != kBackingUp) {
+            TheWiiContentMgr.mLastTransferResult = unk24;
+            unk20 = 3;
+            ThePlatformMgr.mIgnorePowerOperations = false;
+        }
+        break;
     }
 }
 
