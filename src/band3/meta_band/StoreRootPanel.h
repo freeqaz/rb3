@@ -14,6 +14,7 @@ public:
     StoreRootPanel();
     OBJ_CLASSNAME(StoreRootPanel);
     OBJ_SET_TYPE(StoreRootPanel);
+    NEW_OBJ(StoreRootPanel);
     virtual ~StoreRootPanel();
     virtual DataNode Handle(DataArray *, bool);
     virtual void Enter();

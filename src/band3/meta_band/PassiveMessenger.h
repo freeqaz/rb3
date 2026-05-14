@@ -75,6 +75,7 @@ public:
     PassiveMessagesPanel();
     OBJ_CLASSNAME(PassiveMessagesPanel);
     OBJ_SET_TYPE(PassiveMessagesPanel);
+    NEW_OBJ(PassiveMessagesPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~PassiveMessagesPanel();
     virtual void SetTypeDef(DataArray *);

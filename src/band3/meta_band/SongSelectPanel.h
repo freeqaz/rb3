@@ -10,6 +10,7 @@ public:
     SongSelectPanel();
     OBJ_CLASSNAME(SongSelectPanel);
     OBJ_SET_TYPE(SongSelectPanel);
+    NEW_OBJ(SongSelectPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~SongSelectPanel() {}
     virtual bool Exiting() const;

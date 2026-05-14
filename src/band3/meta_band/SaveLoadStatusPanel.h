@@ -7,6 +7,7 @@ public:
     SaveLoadStatusPanel();
     OBJ_CLASSNAME(SaveLoadStatusPanel);
     OBJ_SET_TYPE(SaveLoadStatusPanel);
+    NEW_OBJ(SaveLoadStatusPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~SaveLoadStatusPanel();
     virtual void Draw();

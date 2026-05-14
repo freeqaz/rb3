@@ -6,6 +6,7 @@
 class MemcardMgr : public MsgSource, public ThreadCallback {
 public:
     MemcardMgr();
+    void Init();
     virtual DataNode Handle(DataArray *, bool);
     virtual ~MemcardMgr();
     virtual int ThreadStart();

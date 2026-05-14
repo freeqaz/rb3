@@ -6,8 +6,9 @@
 class StoreMenuPanel : public UIPanel {
 public:
     StoreMenuPanel();
-    OBJ_CLASSNAME(UIPanel);
-    OBJ_SET_TYPE(UIPanel);
+    OBJ_CLASSNAME(StoreMenuPanel);
+    OBJ_SET_TYPE(StoreMenuPanel);
+    NEW_OBJ(StoreMenuPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~StoreMenuPanel();
     virtual void FinishLoad();

@@ -21,6 +21,7 @@ public:
     virtual int NumData() const;
     OBJ_CLASSNAME(TokenRedemptionPanel);
     OBJ_SET_TYPE(TokenRedemptionPanel);
+    NEW_OBJ(TokenRedemptionPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual void Enter();
     virtual void Poll();

@@ -7,6 +7,7 @@ public:
     TourChallengeResultsPanel();
     OBJ_CLASSNAME(TourChallengeResultsPanel);
     OBJ_SET_TYPE(TourChallengeResultsPanel);
+    NEW_OBJ(TourChallengeResultsPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~TourChallengeResultsPanel() {}
     virtual void Enter();

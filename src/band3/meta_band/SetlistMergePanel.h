@@ -9,6 +9,7 @@ public:
     SetlistMergePanel();
     OBJ_CLASSNAME(SetlistMergePanel);
     OBJ_SET_TYPE(SetlistMergePanel);
+    NEW_OBJ(SetlistMergePanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~SetlistMergePanel();
     virtual void Enter();

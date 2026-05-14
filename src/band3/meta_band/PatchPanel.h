@@ -73,6 +73,7 @@ public:
     PatchPanel();
     OBJ_CLASSNAME(PatchPanel);
     OBJ_SET_TYPE(PatchPanel);
+    NEW_OBJ(PatchPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~PatchPanel();
     virtual void Enter();

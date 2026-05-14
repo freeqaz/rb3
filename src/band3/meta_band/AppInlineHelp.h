@@ -9,6 +9,7 @@ public:
     AppInlineHelp();
     OBJ_CLASSNAME(AppInlineHelp)
     OBJ_SET_TYPE(AppInlineHelp)
+    NEW_OBJ(AppInlineHelp)
     virtual DataNode Handle(DataArray *, bool);
     virtual ~AppInlineHelp() {}
     virtual void Enter();

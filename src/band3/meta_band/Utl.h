@@ -4,6 +4,7 @@
 class BandUser;
 class MetaPerformer;
 
+void UtlInit();
 bool IsLeaderLocal();
 const char *GetFontCharFromInstrument(Symbol, int);
 const char *GetFontCharFromTrackType(TrackType, int);

@@ -9,6 +9,7 @@ public:
     NextSongPanel() {}
     OBJ_CLASSNAME(NextSongPanel);
     OBJ_SET_TYPE(NextSongPanel);
+    NEW_OBJ(NextSongPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~NextSongPanel() {}
     virtual void Enter();

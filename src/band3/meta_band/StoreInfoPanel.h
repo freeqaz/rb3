@@ -12,8 +12,9 @@ public:
         String unk18;
     };
     StoreInfoPanel();
-    OBJ_CLASSNAME(UIPanel);
-    OBJ_SET_TYPE(UIPanel);
+    OBJ_CLASSNAME(StoreInfoPanel);
+    OBJ_SET_TYPE(StoreInfoPanel);
+    NEW_OBJ(StoreInfoPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~StoreInfoPanel();
     virtual void Enter();

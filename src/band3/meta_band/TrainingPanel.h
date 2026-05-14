@@ -20,6 +20,7 @@ public:
     TrainingPanel();
     OBJ_CLASSNAME(TrainingPanel);
     OBJ_SET_TYPE(TrainingPanel);
+    NEW_OBJ(TrainingPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~TrainingPanel();
     virtual void Enter();

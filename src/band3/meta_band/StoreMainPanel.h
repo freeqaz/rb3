@@ -18,6 +18,8 @@ public:
 
     StoreMainPanel();
     ~StoreMainPanel();
+    OBJ_CLASSNAME(StoreMainPanel);
+    NEW_OBJ(StoreMainPanel);
 
     void ClearConfigData();
 

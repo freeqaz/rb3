@@ -9,6 +9,7 @@ public:
     virtual ~SigninScreen();
     OBJ_CLASSNAME(SigninScreen);
     OBJ_SET_TYPE(SigninScreen);
+    NEW_OBJ(SigninScreen);
     virtual DataNode Handle(DataArray *, bool);
     virtual void Poll();
     virtual void Enter(UIScreen *);

@@ -13,6 +13,7 @@ public:
     UGCPurchasePanel();
     OBJ_CLASSNAME(UGCPurchasePanel);
     OBJ_SET_TYPE(UGCPurchasePanel);
+    NEW_OBJ(UGCPurchasePanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~UGCPurchasePanel() {}
     virtual void Enter();

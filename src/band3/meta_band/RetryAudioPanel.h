@@ -6,6 +6,7 @@ public:
     RetryAudioPanel();
     OBJ_CLASSNAME(RetryAudioPanel);
     OBJ_SET_TYPE(RetryAudioPanel);
+    NEW_OBJ(RetryAudioPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~RetryAudioPanel();
     virtual void Enter();

@@ -10,6 +10,7 @@ public:
     MultiSelectListPanel();
     OBJ_CLASSNAME(MultiSelectListPanel);
     OBJ_SET_TYPE(MultiSelectListPanel);
+    NEW_OBJ(MultiSelectListPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~MultiSelectListPanel() {}
     virtual void Unload();

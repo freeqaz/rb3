@@ -32,6 +32,7 @@ public:
     PatchSelectPanel();
     OBJ_CLASSNAME(PatchSelectPanel);
     OBJ_SET_TYPE(PatchSelectPanel);
+    NEW_OBJ(PatchSelectPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~PatchSelectPanel() {}
     virtual void Draw();

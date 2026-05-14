@@ -8,6 +8,7 @@ public:
     SelectDifficultyPanel();
     OBJ_CLASSNAME(SelectDifficultyPanel);
     OBJ_SET_TYPE(SelectDifficultyPanel);
+    NEW_OBJ(SelectDifficultyPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~SelectDifficultyPanel() {}
     virtual void Enter();

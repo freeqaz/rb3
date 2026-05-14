@@ -39,6 +39,7 @@ public:
     TexLoadPanel();
     OBJ_CLASSNAME(TexLoadPanel);
     OBJ_SET_TYPE(TexLoadPanel);
+    NEW_OBJ(TexLoadPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~TexLoadPanel() {}
     virtual void Poll();

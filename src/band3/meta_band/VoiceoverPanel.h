@@ -9,6 +9,7 @@ public:
     VoiceoverPanel();
     OBJ_CLASSNAME(VoiceoverPanel);
     OBJ_SET_TYPE(VoiceoverPanel);
+    NEW_OBJ(VoiceoverPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~VoiceoverPanel();
     virtual void Exit();

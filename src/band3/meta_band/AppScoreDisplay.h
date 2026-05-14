@@ -6,6 +6,7 @@ public:
     AppScoreDisplay() {}
     OBJ_CLASSNAME(ScoreDisplay);
     OBJ_SET_TYPE(AppScoreDisplay);
+    NEW_OBJ(AppScoreDisplay);
     virtual ~AppScoreDisplay() {}
     virtual void UpdateDisplay();
 };

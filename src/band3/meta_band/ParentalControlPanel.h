@@ -6,6 +6,7 @@ public:
     ParentalControlPanel();
     OBJ_CLASSNAME(ParentalControlPanel);
     OBJ_SET_TYPE(ParentalControlPanel);
+    NEW_OBJ(ParentalControlPanel);
     virtual ~ParentalControlPanel() {}
     virtual void Enter();
     virtual void Poll();

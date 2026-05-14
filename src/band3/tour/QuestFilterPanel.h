@@ -37,6 +37,7 @@ public:
     QuestFilterPanel();
     OBJ_CLASSNAME(QuestFilterPanel);
     OBJ_SET_TYPE(QuestFilterPanel);
+    NEW_OBJ(QuestFilterPanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~QuestFilterPanel() {}
     virtual void Enter();

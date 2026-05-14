@@ -25,6 +25,7 @@ public:
     AppLabel() {}
     OBJ_CLASSNAME(AppLabel);
     OBJ_SET_TYPE(AppLabel);
+    NEW_OBJ(AppLabel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~AppLabel();
     virtual void SetCreditsText(DataArray *, UIListSlot *);

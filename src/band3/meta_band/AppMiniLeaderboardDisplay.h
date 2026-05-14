@@ -6,4 +6,5 @@ class AppMiniLeaderboardDisplay : public MiniLeaderboardDisplay,
                                   public Leaderboard::Callback {
 public:
     AppMiniLeaderboardDisplay();
+    static void Init();
 };

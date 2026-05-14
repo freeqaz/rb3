@@ -8,6 +8,7 @@ public:
     SetlistToStorePanel() {}
     OBJ_CLASSNAME(SetlistToStorePanel);
     OBJ_SET_TYPE(SetlistToStorePanel);
+    NEW_OBJ(SetlistToStorePanel);
     virtual DataNode Handle(DataArray *, bool);
     virtual ~SetlistToStorePanel() {}
     virtual void Enter();
