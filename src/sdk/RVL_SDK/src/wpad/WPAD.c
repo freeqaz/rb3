@@ -1,3 +1,4 @@
+#pragma ipa on
 #include <revolution/wpad/WPAD.h>
 #include "WPAD.h"
 
