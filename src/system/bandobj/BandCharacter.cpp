@@ -1725,6 +1725,14 @@ DataNode BandCharacter::OnPreClear(DataArray *da) {
     Symbol sym = da->Sym(2);
     FileMerger *fm = da->Obj<FileMerger>(3);
     static Symbol ocn("OutfitConfig");
+    FileMerger::Merger *m = fm->FindMerger(sym, true);
+    while (!m->mLoadedObjects.empty()) {
+        Hmx::Object *obj = m->mLoadedObjects.front();
+        if (obj->ClassName() == ocn) {
+            unk738 |= dynamic_cast<OutfitConfig *>(obj)->OverlayFlags();
+        }
+        delete obj;
+    }
     return DataNode(0);
 }
 

@@ -2,6 +2,8 @@
 #include "meta_band/BandSongMgr.h"
 #include "meta/StoreOffer.h"
 #include "meta/StorePackedMetadata.h"
+#include "utl/Symbols.h"
+#include "utl/Symbols3.h"
 
 BandStoreOffer::BandStoreOffer(const StorePackedOfferBase *base, SongMgr *mgr, bool b)
     : StoreOffer(base, mgr, b) {
@@ -37,6 +39,11 @@ bool BandStoreOffer::IsCompletelyUnavailable() const {
 }
 
 BEGIN_HANDLERS(BandStoreOffer)
+    HANDLE_EXPR(has_available_upgrade, (signed char)mPackedData->mUpgradeId[0])
+    HANDLE_EXPR(upgrade_purchased, mOfferState && (mOfferState->mFlags & 0x10))
+    HANDLE_EXPR(upgrade_downloaded, mOfferState && (mOfferState->mFlags & 0x20))
+    HANDLE_EXPR(upgrade, this)
+    HANDLE_EXPR(upgrade_in_library, mUpgradeAvailable)
     HANDLE_SUPERCLASS(StoreOffer)
     HANDLE_CHECK(0x79)
 END_HANDLERS

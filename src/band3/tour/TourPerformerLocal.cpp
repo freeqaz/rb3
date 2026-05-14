@@ -398,7 +398,7 @@ void TourPerformerLocal::InitializeNextGig() {
     pProgress->ClearNewStars();
     pProgress->SetCurrentGigNum(pProgress->GetNumCompletedGigs());
     Symbol currentQuestSym = pProgress->mCurrentQuest;
-    if (currentQuestSym == gNullStr) {
+    if (currentQuestSym != gNullStr) {
         if (!SanityCheckQuestFilters()) {
             pProgress->ClearQuestFilters();
             ChooseQuestFilters();

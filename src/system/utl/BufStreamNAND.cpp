@@ -89,6 +89,60 @@ int BufStreamNAND::Close() {
     return result;
 }
 
+int BufStreamNAND::DoSeek(int offset, BinStream::SeekType seekType) {
+    const char *funcName = __FUNCTION__;
+    SetGPHangDetectEnabled(false, funcName);
+    switch(seekType) {
+    case kSeekBegin:
+        break;
+    case kSeekCur:
+        offset += mRunningTell;
+        break;
+    case kSeekEnd:
+        offset += mSize;
+        break;
+    default:
+        SetGPHangDetectEnabled(true, funcName);
+        return kMCAccessError;
+    }
+
+    if(offset < 0 || offset > mSize) {
+        mFail = true;
+        SetGPHangDetectEnabled(true, funcName);
+        return kMCAccessError;
+    }
+
+    MILO_ASSERT(mFileOpen, 0x8D);
+
+    s32 res = NANDSeek(&mFileInfo, offset, 0);
+    MCResult result;
+    if(res < 0) {
+        if(res == NAND_RESULT_INVALID) {
+            if(TheMemcardMgr.IsWriteMode()) {
+                result = (MCResult)Pad(offset);
+            } else {
+                MILO_ASSERT(false, 0x9C);
+                mFail = true;
+                SetGPHangDetectEnabled(true, funcName);
+                return kMCUnknownError;
+            }
+            res = NANDSeek(&mFileInfo, 0, 2);
+        } else {
+            result = HandleResultNAND(res);
+        }
+        if(result) {
+            mFail = true;
+            SetGPHangDetectEnabled(true, funcName);
+            return result;
+        }
+    }
+
+    MILO_ASSERT(res == offset, 0xAF);
+    mRunningTell = offset;
+    SetGPHangDetectEnabled(true, funcName);
+    return kMCNoError;
+}
+
 MCResult BufStreamNAND::FinishStream() {
     MCResult result = (MCResult)Close();
     if(result) {
@@ -280,41 +334,6 @@ bool BufStreamNAND::FinishWrite() {
     if(result)
         mFail = true;
     return result;
-}
-
-int BufStreamNAND::DoSeek(int offset, BinStream::SeekType seekType) {
-    SetGPHangDetectEnabled(false, __FUNCTION__);
-    switch(seekType) {
-    case kSeekBegin:
-        break;
-    case kSeekCur:
-        offset += mRunningTell;
-        break;
-    case kSeekEnd:
-        offset += mSize;
-        break;
-    default:
-        SetGPHangDetectEnabled(true, __FUNCTION__);
-        return kMCAccessError;
-    }
-
-    if(offset < 0 || offset > mSize) {
-        mFail = true;
-        SetGPHangDetectEnabled(true, __FUNCTION__);
-        return kMCAccessError;
-    }
-
-    s32 res = NANDSeek(&mFileInfo, offset, 0);
-    MCResult result = HandleResultNAND(res);
-    if(result) {
-        mFail = true;
-        SetGPHangDetectEnabled(true, __FUNCTION__);
-        return result;
-    }
-
-    mRunningTell = offset;
-    SetGPHangDetectEnabled(true, __FUNCTION__);
-    return kMCNoError;
 }
 
 void BufStreamNAND::SeekImpl(int i1, BinStream::SeekType seekType) {

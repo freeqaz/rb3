@@ -48,14 +48,30 @@ void InterpTangent(
     float c = f6 - fsq * 6.0f;
     float d = fsq3 - f * 2.0f;
 
-    Scale(v1, a, vout);
-    Vector3 vtmp;
-    Scale(v2, b, vtmp);
-    Add(vout, vtmp, vout);
-    Scale(v3, c, vtmp);
-    Add(vout, vtmp, vout);
-    Scale(v4, d, vtmp);
-    Add(vout, vtmp, vout);
+    float z = v1.z * a;
+    float y_partial = v1.y * a;
+    float bz = v2.z * b;
+    float by = v2.y * b;
+    float x_partial = v1.x * a;
+    float bx = v2.x * b;
+    z += bz;
+    float y = y_partial + by;
+    float x = x_partial + bx;
+    float cz = v3.z * c;
+    z += cz;
+    float dz = v4.z * d;
+    z += dz;
+    vout.z = z;
+    float cy = v3.y * c;
+    y += cy;
+    float cx = v3.x * c;
+    x += cx;
+    float dy = v4.y * d;
+    y += dy;
+    float dx = v4.x * d;
+    x += dx;
+    vout.y = y;
+    vout.x = x;
 }
 
 // fn_802E36D4 - InterpVector(const Keys<Vector3, Vector3>&, const Key<Vector3>*, const

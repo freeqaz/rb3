@@ -162,6 +162,7 @@ __adjust_heap(_RandomAccessIterator __first, _Distance __holeIndex,
 }
 
 
+
 template <class _RandomAccessIterator, class _Tp, class _Compare>
 inline void 
 __pop_heap_aux(_RandomAccessIterator __first,

@@ -8,6 +8,6 @@ MemcardMgr::MemcardMgr()
 
 MemcardMgr::~MemcardMgr() {}
 
-bool MemcardMgr::IsWriteMode() {
+bool MemcardMgr::IsWriteMode() const {
   return (mIsWriteMode >> 1) & 1;
 }

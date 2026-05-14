@@ -538,7 +538,7 @@ void WiiContentMgr::Terminate() {
 }
 
 void WiiContent::Enumerate(
-    const char *cc, void (*func)(const char *, const char *), bool, const char *cc2
+    const char *cc, void (*func)(const char *, const char *), bool recurse, const char *cc2
 ) {
     if (mState != kMounted) {
         MILO_LOG("CM: Enumerate: %s not mounted\n", cc);
@@ -552,9 +552,32 @@ void WiiContent::Enumerate(
     }
     CNTDir directory;
     if (CNTOpenDir((CNTHandle *)handle, cc, &directory) == false) {
+        FreeHandle();
         MILO_LOG("CM: Enumerate: could not open dir %s\n", cc);
         return;
     }
+    CNTDirEntry entry;
+    char buf[256];
+    while (CNTReadDir(&directory, &entry)) {
+        if (entry.arc.type != 0) {
+            if (recurse) {
+                String path(cc);
+                if (path[strlen(path.c_str()) - 1] != '/') {
+                    path += "/";
+                }
+                path += entry.arc.name;
+                Enumerate(path.c_str(), func, recurse, cc2);
+            }
+        } else {
+            sprintf(buf, "%s/%s", cc, entry.arc.name);
+            if (cc2 == NULL || FileMatch(buf, cc2)) {
+                sprintf(buf, "dlc/%s/%s", gCurContentName, cc);
+                func(buf, entry.arc.name);
+            }
+        }
+    }
+    CNTCloseDir(&directory);
+    FreeHandle();
 }
 
 void WiiContent::SetPassiveErrorsEnabled(bool enabled) { mHandleRestoreErrors = enabled; }

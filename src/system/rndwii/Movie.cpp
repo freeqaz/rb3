@@ -33,7 +33,27 @@ void WiiMovie::SetTex(RndTex *tex) {
 
 void WiiMovie::SetFrame(float frame, float blend) {
     START_AUTO_TIMER("movie");
-
+    mFrame = frame;
+    if ((mStream && unk_0x40 == 0) || mTex == nullptr || mVideoData.mHeight == 0)
+        return;
+    int newFrame = (int)frame % (int)mVideoData.mHeight;
+    if (newFrame < 0)
+        newFrame += (int)mVideoData.mHeight;
+    int delta = newFrame - (int)unk_0x44;
+    if (delta == 0)
+        return;
+    unk_0x44 = newFrame;
+    if (mStream) {
+        if ((unsigned int)delta > 1) {
+            StreamRestart(newFrame);
+        } else {
+            StreamReadFinish();
+            unk_0x54 = (char *)unk_0x40 + unk_0x50;
+            StreamNextBuffer();
+        }
+    } else {
+        unk_0x54 = mVideoData.Frame(newFrame);
+    }
     Update();
 }
 

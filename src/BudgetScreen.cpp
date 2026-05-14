@@ -16,6 +16,7 @@
 // Explicit specializations to avoid bool materialization in comparison loops,
 // so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
 namespace stlpmtx_std {
+
 template <>
 inline less<float> __less<float>(float*) { return less<float>(); }
 
@@ -84,50 +85,6 @@ void __introsort_loop<float*, float, long, less<float> >(
     }
 }
 
-template <>
-void __adjust_heap<float*, long, float, less<float> >(
-    float* __first, long __holeIndex, long __len, float __val, less<float>) {
-    long __topIndex = __holeIndex;
-    long __secondChild = 2 * __holeIndex + 2;
-    while (__secondChild < __len) {
-        if (*(__first + __secondChild) < *(__first + (__secondChild - 1)))
-            __secondChild--;
-        *(__first + __holeIndex) = *(__first + __secondChild);
-        __holeIndex = __secondChild;
-        __secondChild = 2 * (__secondChild + 1);
-    }
-    if (__secondChild == __len) {
-        *(__first + __holeIndex) = *(__first + (__secondChild - 1));
-        __holeIndex = __secondChild - 1;
-    }
-    __push_heap(__first, __holeIndex, __topIndex, __val);
-}
-
-template <>
-void __insertion_sort<float*, float, less<float> >(
-    float* __first, float* __last, float*, less<float> __comp) {
-    if (__first == __last) return;
-    for (float* __i = __first + 1; __i != __last; ++__i) {
-        float __val = *__i;
-        if (__val < *__first) {
-            copy_backward(__first, __i, __i + 1);
-            *__first = __val;
-        } else {
-            __unguarded_linear_insert(__i, __val, __comp);
-        }
-    }
-}
-
-template <>
-void __partial_sort<float*, float, less<float> >(
-    float* __first, float* __middle, float* __last, float*, less<float> __comp) {
-    make_heap(__first, __middle, __comp);
-    for (float* __i = __middle; __i < __last; ++__i)
-        if (*__i < *__first)
-            __pop_heap(__first, __middle, __i, float(*__i), __comp,
-                       (long*)0);
-    sort_heap(__first, __middle, __comp);
-}
 } // namespace stlpmtx_std
 
 

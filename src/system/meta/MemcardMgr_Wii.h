@@ -11,7 +11,7 @@ public:
     virtual ~MemcardMgr();
     virtual int ThreadStart();
     virtual void ThreadDone(int);
-    bool IsWriteMode();
+    bool IsWriteMode() const;
 
     bool unk20;
     char unk21[64];

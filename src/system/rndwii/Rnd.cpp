@@ -35,13 +35,27 @@ WiiRnd TheWiiRnd;
 
 void DumpFifoStatus() {
     GXFifoObj fifo;
+    void *readPtr;
+    void *writePtr;
+    u32 low;
+    u32 hi;
     GXGetCPUFifo(&fifo);
-    GXGetFifoCount(&fifo);
-    GXGetFifoWrap(&fifo);
-
-    OSReport("Fifo Status\tbase:%p\tsize:\t%d\tlow:\t%d\thi:\t%d\tlinked:\t%d\n");
+    GXGetFifoPtrs(&fifo, &readPtr, &writePtr);
+    u32 count = GXGetFifoCount(&fifo);
+    u8 wrap = GXGetFifoWrap(&fifo);
+    void *base = GXGetFifoBase(&fifo);
+    u32 size = GXGetFifoSize(&fifo);
+    GXGetFifoLimits(&fifo, &low, &hi);
+    OSReport(
+        "Fifo Status\tbase:%p\tsize:\t%d\tlow:\t%d\thi:\t%d\tlinked:\t%d\n",
+        base, size, hi, low, GXIsCPUGPFifoLinked()
+    );
     OSReport("readPtr\twritePtr\treadIndex\twriteIndex\tcount\twrap\n");
-    OSReport("%p\t%p\t%d\t%d\t%d\t%d\n");
+    OSReport(
+        "%p\t%p\t%d\t%d\t%d\t%d\n",
+        readPtr, writePtr, (int)((char *)readPtr - (char *)base),
+        (int)((char *)writePtr - (char *)base), count, wrap
+    );
 }
 
 extern "C" void MemErrorHandler(u8 error, OSContext *ctx, u32 dsisr, u32 dar, ...) {

@@ -18,6 +18,12 @@ BOOL GXGetCPUFifo(GXFifoObj *);
 u32 GXGetFifoCount(GXFifoObj *);
 u8 GXGetFifoWrap(GXFifoObj *);
 
+void GXGetFifoPtrs(GXFifoObj *, void **, void **);
+void *GXGetFifoBase(GXFifoObj *);
+u32 GXGetFifoSize(GXFifoObj *);
+void GXGetFifoLimits(GXFifoObj *, u32 *, u32 *);
+u8 GXIsCPUGPFifoLinked();
+
 #ifdef __cplusplus
 }
 #endif
