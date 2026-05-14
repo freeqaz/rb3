@@ -8,6 +8,7 @@
 #include "game/Defines.h"
 #include "game/Game.h"
 #include "game/GameMode.h"
+#include "game/GamePanel.h"
 #include "game/Player.h"
 #include "meta_band/AppLabel.h"
 #include "meta_band/MetaPerformer.h"
@@ -32,14 +33,14 @@ void Track::Poll(float f) {
         bool warning = player->AllowWarningState();
         if (mLastRating != dispval || warning != unk50) {
             CrowdMeterState cty;
-            if (!player->mCrowd->IsBelowLoseLevel() || IsNoFailActive()
-                || GetPlayerDifficulty() == kDifficultyEasy) {
+            if (player->mCrowd->IsBelowLoseLevel() && !IsNoFailActive()
+                && GetPlayerDifficulty() != kDifficultyEasy) {
+                cty = kCrowdMeterFailed;
+            } else {
                 if (player->mCrowd->GetExcitement() <= 1 && warning) {
                     cty = kCrowdMeterWarning;
                 } else
                     cty = kCrowdMeterNormal;
-            } else {
-                cty = kCrowdMeterFailed;
             }
             if (mLastRatingState == cty) {
                 cty = kCrowdMeterInvalidState;
@@ -52,12 +53,21 @@ void Track::Poll(float f) {
         }
 
         int curstreak = player->mStats.GetCurrentStreak();
-        if (curstreak != mLastStreakCount) {
-            if (!GetBandTrack()) {
+        if (TheGame->mProperties.mEnableStreak && curstreak != mLastStreakCount) {
+            BandTrack *bandtrack = GetBandTrack();
+            if (!bandtrack) {
                 MILO_FAIL(
                     "no track dir for track %s (%s)!",
                     mTrackConfig.GetBandUser()->UserName(),
                     mTrackConfig.GetBandUser()->mUserGuid.ToString()
+                );
+            }
+            if (!TheGamePanel->IsGameOver()) {
+                bandtrack->SetStreak(
+                    curstreak,
+                    player->GetIndividualMultiplier(),
+                    player->GetNotesPerStreak(),
+                    false
                 );
             }
             mLastStreakCount = curstreak;

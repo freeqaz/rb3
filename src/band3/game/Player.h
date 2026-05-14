@@ -5,6 +5,7 @@
 #include "bandobj/BandTrack.h"
 #include "os/Debug.h"
 #include "utl/SongPos.h"
+#include "utl/VectorSizeDefs.h"
 #include "beatmatch/TrackType.h"
 #include "game/BandUser.h"
 #include "game/Defines.h"
@@ -215,7 +216,7 @@ public:
     int mTimesFailed; // 0x254
     float mEnableMs; // 0x258
     float unk25c;
-    std::vector<Extent> unk260;
+    std::vector<Extent VECTOR_SIZE_SMALL> unk260;
     bool mIsInCoda;
     float mBandEnergy; // 0x26c
     bool mDeployingBandEnergy; // 0x270

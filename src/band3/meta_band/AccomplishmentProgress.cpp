@@ -222,14 +222,11 @@ Symbol AccomplishmentProgress::GetFirstNewRewardVignette() const {
     return mNewRewardVignettes.front();
 }
 
-#pragma push
-#pragma dont_inline on
 void AccomplishmentProgress::ClearFirstNewRewardVignette() {
-    MILO_ASSERT(HasNewRewardVignettes(), 0x194);
+    MILO_ASSERT(!mNewRewardVignettes.empty(), 0x194);
     mNewRewardVignettes.pop_front();
     mParentProfile->MakeDirty();
 }
-#pragma pop
 
 bool AccomplishmentProgress::HasNewRewardVignetteFestival() const { return !unk645; }
 

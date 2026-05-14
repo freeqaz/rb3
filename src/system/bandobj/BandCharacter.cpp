@@ -1649,7 +1649,7 @@ void ReplaceRefs(Hmx::Object *mine, Hmx::Object *theirs) {
 }
 
 MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *) {
-    return DefaultSubdirAction(o1, mFileMerger->mSubdirs);
+    return DefaultSubdirAction(o1, (Subdirs)mFileMerger->mFilesPending.front()->mSubdirs);
 }
 
 DataNode BandCharacter::OnInstallFilter(DataArray *da) {

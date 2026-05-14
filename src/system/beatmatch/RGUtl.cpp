@@ -372,14 +372,17 @@ void RGUnpackChordShapeID(
     unsigned int ui, std::vector<int> &ivec, std::vector<bool> *bvec
 ) {
     ivec.clear();
-    for (int i = 0; i < 6; i++) {
-        int push = ((ui >> i) & 0xF) - 1;
+    unsigned int shift = 0;
+    for (unsigned int i = 0; i < 6; i++) {
+        int push = ((ui >> shift) & 0xF) - 1;
         ivec.push_back(push);
+        shift += 4;
     }
     if (bvec) {
         bvec->clear();
-        for (int i = 0; i < 6; i++) {
-            bool push = (ui >> 0x18) >> i;
+        unsigned int top = (ui >> 0x18) & 0x3F;
+        for (unsigned int i = 0; i < 6; i++) {
+            bool push = ((int)top >> i) & 1;
             bvec->push_back(push);
         }
     }

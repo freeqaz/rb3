@@ -275,8 +275,6 @@ void JoypadInitCommon(DataArray *joypad_config) {
     gJoypadLibInitialized = true;
 }
 
-inline WaitInfo::WaitInfo(int pad) : mPadNum(pad), mButtons(gJoypadData[pad].mButtons) {}
-
 unsigned int JoypadPollForButton(int pad) {
     if (!gJoypadLibInitialized)
         return 0;
@@ -287,11 +285,17 @@ unsigned int JoypadPollForButton(int pad) {
         if (pad == -1) {
             for (int i = 0; i < 4; i++) {
                 if (!gJoypadDisabled[i]) {
-                    waitInfos.push_back(WaitInfo(i));
+                    WaitInfo info;
+                    info.mPadNum = i;
+                    info.mButtons = gJoypadData[i].mButtons;
+                    waitInfos.push_back(info);
                 }
             }
         } else {
-            waitInfos.push_back(WaitInfo(pad));
+            WaitInfo info;
+            info.mPadNum = pad;
+            info.mButtons = gJoypadData[pad].mButtons;
+            waitInfos.push_back(info);
         }
         std::vector<WaitInfo>::iterator it = waitInfos.begin();
         unsigned int retMask = 0;

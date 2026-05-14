@@ -276,7 +276,6 @@ public:
 };
 
 struct WaitInfo {
-    WaitInfo(int pad);
     int mPadNum; // 0x0
     unsigned int mButtons; // 0x4
 };

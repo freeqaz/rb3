@@ -365,7 +365,7 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
     unk298 = 0;
     if (estate == kPlayerBeingSaved && mEnabledState != kPlayerDisabled) {
         MILO_ASSERT(causer, 0x260);
-        if (causer->GetPlayer()->IsLocal()) {
+        if (!causer->GetPlayer()->IsNet()) {
             static Message msg("send_already_saved", 0);
             msg[0] = causer;
             HandleType(msg);
@@ -379,31 +379,53 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
     }
     SetCrowdMeterActive(!b);
     float durms = TheSongDB->GetSongDurationMs();
-    float f11 = GetSongMs();
-    float newpct = f11 / durms;
+    float newpct = GetSongMs() / durms;
     if (b) {
         SetNoScorePercent(newpct);
     }
     mEnabledState = estate;
     switch (estate) {
     case kPlayerEnabled:
-        Handle(enable_player_msg, true);
+        Export(enable_player_msg, true);
+        if (unk260.size() != 0 && unk260.back().unk4 == -1) {
+            unk260.back().unk4 = i;
+        }
         break;
     case kPlayerDisabled:
     case kPlayerDisconnected:
         SetEnergy(0);
+        if (TheGamePanel->GetState() != UIPanel::kUnloaded) {
+            if (unk2a9) {
+                mTimesFailed = 0;
+            } else {
+                if (mBand) {
+                    std::vector<Player *> &active = mBand->GetActivePlayers();
+                    for (std::vector<Player *>::iterator it = active.begin();
+                         it != active.end();
+                         ++it) {
+                        if ((*it)->mDeployingBandEnergy) {
+                            (*it)->StopDeployingBandEnergy(true);
+                        }
+                    }
+                }
+                mTimesFailed++;
+            }
+            unk25c = PollMs();
+            DisablePlayer(mTimesFailed);
+            mStats.AddFailurePoint(newpct);
+            unk260.push_back(Extent(i, -1));
+        }
         break;
     case kPlayerDroppingIn:
-        DelayReturn(true);
+        DelayReturn(false);
         mUser->GetTrack()->SetGemsEnabledByPlayer();
         break;
     case kPlayerBeingSaved: {
         BandTrack *track = GetBandTrack();
         track->PlayerSaved();
         float savedurms = TheSongDB->GetSongDurationMs();
-        float savesongms = GetSongMs();
-        float savenewpct = f11 / durms;
-        mStats.AddToTimesSaved(0, savenewpct);
+        float savenewpct = GetSongMs() / savedurms;
+        mStats.AddToTimesSaved(mBand->MainPerformer()->Crowd()->GetValue(), savenewpct);
         mCrowd->SetDisplayValue(mParams->mCrowdSaveLevel);
         DelayReturn(true);
         track->SavePlayer();
@@ -411,6 +433,10 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
         player_saved[0] = causer->GetTrackSym();
         player_saved[1] = b;
         TheBandDirector->HandleType(player_saved);
+        GetTrackPanel()->PlaySequence(
+            MakeString("%s_regen.cue", mUser->GetTrackSym().Str()), 0.0f, 0.0f, 0.0f
+        );
+        TheGame->OnPlayerSaved(this);
         break;
     }
     default:
@@ -833,7 +859,8 @@ bool Player::DeployBandEnergyIfPossible(bool b) {
 void Player::Hit() {
     char slotStr[] = "p0_hit";
     slotStr[1] = (char)(mUser->GetSlot() + 0x30);
-    static Message hit(Symbol(slotStr), DataNode(Symbol(slotStr)));
+    static Message hit("");
+    hit.SetType(slotStr);
     TheGamePanel->HandleType(hit.mData);
     int mult = GetIndividualMultiplier();
     if (mult > unk274 && unk274 == 1) {
