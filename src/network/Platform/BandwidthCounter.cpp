@@ -1,3 +1,4 @@
+#pragma ipa on
 #include "network/Platform/BandwidthCounter.h"
 #include "Platform/CriticalSection.h"
 #include "Platform/ScopedCS.h"

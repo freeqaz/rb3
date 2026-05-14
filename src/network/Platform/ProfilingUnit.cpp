@@ -1,3 +1,4 @@
+#pragma ipa on
 #include "network/Platform/ProfilingUnit.h"
 #include "Platform/ScopedCS.h"
 
