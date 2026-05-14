@@ -85,26 +85,23 @@ void CharBones::ReallocateInternal() {}
 void CharBones::SetWeights(float f) { SetWeights(f, mBones); }
 
 void CharBones::AddBoneInternal(const Bone &bone) {
-    Type type = TypeOf(bone.name);
+    int type = TypeOf(bone.name);
+    int pos = mCounts[type];
     int end = mCounts[type + 1];
-    int start = mCounts[type];
-    int pos = start;
-    if (start < end) {
-        const char *name = bone.name.Str();
-        do {
-            const char *existing = mBones[pos].name.Str();
-            if (existing == name)
-                return;
-            if (strcmp(existing, name) >= 0)
-                break;
-            pos++;
-        } while (pos < end);
+    while (pos < end) {
+        if (mBones[pos].name == bone.name)
+            return;
+        if (strcmp(mBones[pos].name.Str(), bone.name.Str()) >= 0)
+            break;
+        pos++;
     }
     mBones.insert(mBones.begin() + pos, bone);
     int size = TypeSize(type);
-    for (int i = type + 1; i < NUM_TYPES; i++) {
-        mCounts[i]++;
-        mOffsets[i] += size;
+    type++;
+    while (type < NUM_TYPES) {
+        mCounts[type]++;
+        mOffsets[type] += size;
+        type++;
     }
     mTotalSize = (mOffsets[TYPE_END] + 0xFU) & 0xFFFFFFF0;
 }

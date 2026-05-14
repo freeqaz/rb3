@@ -635,6 +635,12 @@ void VocalPlayer::RemoteScorePhrase(int i1, int i2, bool b3) {
 void VocalPlayer::HookupTrack() {
     mTrack = dynamic_cast<VocalTrack *>(GetUser()->GetTrack());
     MILO_ASSERT(mTrack, 0x88A);
+    std::vector<VocalPhrase> &phrases = mVocalParts[0]->mVocalNoteList->mPhrases;
+    mTrack->Restart(this, phrases[0].unk0 + phrases[0].unk4, phrases[1].unk0 + phrases[1].unk4);
+    mCouldChat = !TheNetSession->IsLocal() && PressingToTalk();
+    SendCanChat(mCouldChat);
+    UpdateMicDisplay();
+    mTrack->GetVocalTrackDir()->SetMaxMultiplier(mBehavior->GetMaxMultiplier());
 }
 
 DECOMP_FORCEACTIVE(

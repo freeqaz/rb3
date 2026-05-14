@@ -139,15 +139,16 @@ BEGIN_LOADS(RndMeshDeform)
 END_LOADS
 
 void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
-    RndMesh *mesh = mMesh;
-    if (mesh == 0) return;
-    if (!cb->HasMesh(mesh) && !force && mDeformed) return;
-    cb->SyncMesh(mesh, 0x1f);
+    if (!mMesh) return;
+    if (!cb->HasMesh(mMesh) && !force && mDeformed) return;
+    cb->SyncMesh(mMesh, 0x1f);
     mDeformed = 1;
-    MemDoTempAllocations mem(1, 0);
     std::vector<Transform> xfms;
-    xfms.resize(mBones.size());
-    for (int i = 0; i < (int)mBones.size(); i++) {
+    {
+        MemDoTempAllocations mem(1, 0);
+        xfms.resize(mBones.size());
+    }
+    for (unsigned int i = 0; i < mBones.size(); i++) {
         if (mBones[i].mBone) {
             Transform tmp;
             mBones[i].ExportWorldXfm(tmp);
@@ -177,8 +178,8 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         u8 *pair = vertData;
         int n = 0;
         while (n < (int)*vertData) {
-            int boneIdx = pair[1];
-            int weightByte = pair[2];
+            unsigned int boneIdx = pair[1];
+            unsigned int weightByte = pair[2];
             pair += 2;
             n++;
             float w = (1.0f / 255.0f) * (float)weightByte;
@@ -205,40 +206,35 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         if (!mSkipInverse) {
             Multiply(weighted, mMeshInverse, weighted);
         }
+        // transform pos: new = pos * M + v (uses paired-singles)
+        Multiply(mMesh->Verts(vertIdx).pos, weighted, mMesh->Verts(vertIdx).pos);
         RndMesh::Vert &v = mMesh->Verts(vertIdx);
-        // build perpendicular axis to m.x column
+        // pick perpendicular axis to v.norm based on smallest abs
         Vector3 axis;
-        float ax = Abs(weighted.m.x.x);
-        float ay = Abs(weighted.m.y.x);
-        float az = Abs(weighted.m.z.x);
-        if (ay >= ax || az >= ax) {
-            if (ay < ax && ay < az) {
-                axis.x = weighted.m.x.x * -weighted.m.y.x;
-                axis.y = weighted.m.y.x * -weighted.m.y.x + 1.0f;
-                axis.z = weighted.m.z.x * -weighted.m.y.x;
-            } else {
-                axis.x = weighted.m.x.x * -weighted.m.z.x;
-                axis.y = weighted.m.y.x * -weighted.m.z.x;
-                axis.z = weighted.m.z.x * -weighted.m.z.x + 1.0f;
-            }
+        float anx = std::fabs(v.norm.x);
+        float any = std::fabs(v.norm.y);
+        float anz = std::fabs(v.norm.z);
+        if (anx <= any && anx <= anz) {
+            axis.x = v.norm.x * -v.norm.x + 1.0f;
+            axis.y = v.norm.y * -v.norm.x;
+            axis.z = v.norm.z * -v.norm.x;
+        } else if (any < anx && any < anz) {
+            axis.x = v.norm.x * -v.norm.y;
+            axis.y = v.norm.y * -v.norm.y + 1.0f;
+            axis.z = v.norm.z * -v.norm.y;
         } else {
-            axis.x = weighted.m.x.x * -weighted.m.x.x + 1.0f;
-            axis.y = weighted.m.y.x * -weighted.m.x.x;
-            axis.z = weighted.m.z.x * -weighted.m.x.x;
+            axis.x = v.norm.x * -v.norm.z;
+            axis.y = v.norm.y * -v.norm.z;
+            axis.z = v.norm.z * -v.norm.z + 1.0f;
         }
-        // cross = m.x_col x axis
+        // cross = v.norm x axis
         Vector3 cross;
-        cross.x = weighted.m.y.x * axis.z - weighted.m.z.x * axis.y;
-        cross.y = weighted.m.z.x * axis.x - weighted.m.x.x * axis.z;
-        cross.z = weighted.m.x.x * axis.y - weighted.m.y.x * axis.x;
-        // transform pos: new = M * pos + v
-        Vector3 oldPos = v.pos;
-        v.pos.x = weighted.m.x.x * oldPos.x + weighted.m.y.x * oldPos.y
-               + weighted.m.z.x * oldPos.z + weighted.v.x;
-        v.pos.y = weighted.m.x.y * oldPos.x + weighted.m.y.y * oldPos.y
-               + weighted.m.z.y * oldPos.z + weighted.v.y;
-        v.pos.z = weighted.m.x.z * oldPos.x + weighted.m.y.z * oldPos.y
-               + weighted.m.z.z * oldPos.z + weighted.v.z;
+        cross.x = v.norm.y * axis.z - v.norm.z * axis.y;
+        cross.y = v.norm.z * axis.x - v.norm.x * axis.z;
+        cross.z = v.norm.x * axis.y - v.norm.y * axis.x;
+        // transform axis and cross (rotation part only)
+        Multiply(axis, weighted.m, axis);
+        Multiply(cross, weighted.m, cross);
         // norm = axis x cross
         v.norm.x = axis.y * cross.z - axis.z * cross.y;
         v.norm.y = axis.z * cross.x - axis.x * cross.z;

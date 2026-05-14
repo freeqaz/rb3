@@ -27,14 +27,16 @@ inline bool UsbMidiKeyboardExists() { return true; }
 UsbMidiKeyboard::UsbMidiKeyboard() {
     mPadNum = 0;
     mUsbMidiKeyboardExists = UsbMidiKeyboardExists();
+    int j;
     for (int i = 0; i < 4; i++) {
         mSustain[i] = false;
         mStompPedal[i] = false;
         mModVal[i] = 0;
         mExpressionPedal[i] = 0;
         mConnectedAccessories[i] = 0;
-        for (int j = 0; j < 128; j++) {
-            mKeyPressed[i][j] = false;
+        bool *kp = mKeyPressed[i];
+        for (j = 0; j < 128; ++j) {
+            *kp++ = false;
             mKeyVelocity[i][j] = 0;
         }
     }

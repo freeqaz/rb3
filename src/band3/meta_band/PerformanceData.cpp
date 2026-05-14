@@ -80,7 +80,119 @@ void PerformanceData::SaveFixed(FixedSizeSaveableStream &stream) const {
     stream << mStats.mUnisonPhraseCompleted;
     stream << mStats.mUnisonPhraseCount;
     FixedSizeSaveable::SaveStd(stream, mStats.mBestSolos, 3, 4);
-    stream << mStats.mHitStreaks.size();
+    unsigned short hitStreakCount = mStats.mHitStreaks.size();
+    stream << (int)hitStreakCount;
+    for (int i = 0; i < 3; i++) {
+        if (i < hitStreakCount) {
+            const Stats::StreakInfo &info = mStats.GetHitStreak(i);
+            stream << info.mStart;
+            stream << info.mDuration;
+        } else {
+            stream << 0;
+            stream << 0;
+        }
+    }
+    int missStreakCount = mStats.mMissStreaks.size();
+    stream << missStreakCount;
+    for (int i = 0; i < 3; i++) {
+        if (i < missStreakCount) {
+            const Stats::StreakInfo &info = mStats.GetMissStreak(i);
+            stream << info.mStart;
+            stream << info.mDuration;
+        } else {
+            stream << 0;
+            stream << 0;
+        }
+    }
+    int odDeployCount = mStats.mBestOverdriveDeployments.size();
+    stream << odDeployCount;
+    for (int i = 0; i < 3; i++) {
+        if (i < odDeployCount) {
+            const Stats::MultiplierInfo &info = mStats.GetBestOverdriveDeployment(i);
+            stream << info.mStartMs;
+            stream << info.mDurationMs;
+            stream << info.mStartingMultiplier;
+            stream << info.mEndingMultiplier;
+            stream << info.mPoints;
+        } else {
+            stream << 0;
+            stream << 0;
+            stream << 0;
+            stream << 0;
+            stream << 0;
+        }
+    }
+    int multCount = mStats.mBestStreakMultipliers.size();
+    stream << multCount;
+    for (int i = 0; i < 3; i++) {
+        if (i < multCount) {
+            const Stats::MultiplierInfo &info = mStats.GetBestStreakMultiplier(i);
+            stream << info.mStartMs;
+            stream << info.mDurationMs;
+            stream << info.mStartingMultiplier;
+            stream << info.mEndingMultiplier;
+            stream << info.mPoints;
+        } else {
+            stream << 0;
+            stream << 0;
+            stream << 0;
+            stream << 0;
+            stream << 0;
+        }
+    }
+    stream << mStats.mTotalOverdriveDurationMs;
+    stream << mStats.mTotalMultiplierDuration;
+    stream << mStats.mRollsHitCompletely;
+    stream << mStats.mRollCount;
+    stream << mStats.mHopoGemsHopoed;
+    stream << mStats.mHopoGemsStrummed;
+    stream << mStats.mHopoGemCount;
+    stream << mStats.mHighGemsHitHigh;
+    stream << mStats.mHighGemsHitLow;
+    stream << mStats.mHighFretGemCount;
+    stream << mStats.mSustainGemsHitCompletely;
+    stream << mStats.mSustainGemsHitPartially;
+    stream << mStats.mSustainGemCount;
+    stream << mStats.mTrillsHitCompletely;
+    stream << mStats.mTrillsHitPartially;
+    stream << mStats.mTrillCount;
+    stream << mStats.mCymbalGemsHitOnCymbals;
+    stream << mStats.mCymbalGemsHitOnPads;
+    stream << mStats.mCymbalGemCount;
+    stream << mStats.mDoubleHarmonyHit;
+    stream << mStats.mDoubleHarmonyPhraseCount;
+    stream << mStats.mTripleHarmonyHit;
+    stream << mStats.mTripleHarmonyPhraseCount;
+    int vocPartCount = mStats.mVocalPartCount;
+    int vocSingerCount = mStats.mSingerCount;
+    stream << vocSingerCount;
+    stream << vocPartCount;
+    for (int i = 0; i < 3; i++) {
+        if (i < vocSingerCount) {
+            const SingerStats &ss = mStats.GetSingerStats(i);
+            for (int j = 0; j < 3; j++) {
+                if (j < vocPartCount) {
+                    const std::pair<int, float> &rd = ss.GetRankData(j);
+                    stream << rd.first;
+                    stream << rd.second;
+                } else {
+                    stream << 0;
+                    stream << 0.0f;
+                }
+            }
+            float dev1, dev2;
+            ss.GetPitchDeviationInfo(dev1, dev2);
+            stream << dev1;
+            stream << dev2;
+        } else {
+            for (int j = 0; j < 3; j++) {
+                stream << 0;
+                stream << 0.0f;
+            }
+            stream << 0.0f;
+            stream << 0.0f;
+        }
+    }
 }
 
 int PerformanceData::SaveSize(int i) {

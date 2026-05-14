@@ -524,8 +524,11 @@ NodeSort *SongSortMgr::GetSort(SongSortType ty) { return mSorts[ty]; }
 SongRecord *SongSortMgr::GetRecord(int songID) {
     if (TheSongMgr.Data(songID)) {
         Symbol theShortname = TheSongMgr.GetShortNameFromSongID(songID, false);
-        if (theShortname != gNullStr) {
-            // return &mSongs[theShortname];
+        if (!(theShortname == gNullStr)) {
+            std::map<Symbol, SongRecord>::iterator it = mSongs.find(theShortname);
+            if (it != mSongs.end()) {
+                return &it->second;
+            }
         }
     }
     return nullptr;

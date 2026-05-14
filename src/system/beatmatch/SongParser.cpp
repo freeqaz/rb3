@@ -160,12 +160,10 @@ void SongParser::Reset() {
         mDifficultyInfos[i].mRGLooseStrumEndTick = NULL_TICK;
         mDifficultyInfos[i].mRGChordTextTick = NULL_TICK;
         for (int j = 0; j < 32; j++) {
-            GemInProgress &gem = mDifficultyInfos[i].mGemsInProgress[j];
-            gem = GemInProgress();
+            mDifficultyInfos[i].mGemsInProgress[j] = GemInProgress();
         }
-        for (int j = 0; j < 6U; j++) {
-            DifficultyInfo &diff = mDifficultyInfos[i];
-            diff.mRGGemsInfo[j] = RGGemInfo();
+        for (int j = 0; j < 6; j++) {
+            mDifficultyInfos[i].mRGGemsInfo[j] = RGGemInfo();
         }
     }
 

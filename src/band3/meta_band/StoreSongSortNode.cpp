@@ -4,6 +4,7 @@
 #include "obj/Data.h"
 #include "obj/ObjMacros.h"
 #include "utl/Symbols2.h"
+#include "utl/Symbols3.h"
 
 StoreSongSortNode::StoreSongSortNode(SongSortCmp *cmp, StoreOffer* off) : SongSortNode(cmp) {
     unk38 = off;
@@ -56,7 +57,9 @@ Symbol StoreSongSortNode::GetToken() const {
 }
 
 BEGIN_HANDLERS(StoreSongSortNode)
-
-HANDLE_SUPERCLASS(SongSortNode)
-HANDLE_CHECK(76)
+    HANDLE_EXPR(id, (int)unk38->GetSingleSongID())
+    HANDLE_EXPR(get_offer, unk38)
+    HANDLE_MEMBER_PTR(unk38)
+    HANDLE_SUPERCLASS(SongSortNode)
+    HANDLE_CHECK(76)
 END_HANDLERS

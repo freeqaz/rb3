@@ -437,20 +437,20 @@ void Player::Save(BandUser *user, bool b) { SetEnabledState(kPlayerBeingSaved, u
 void Player::DisablePlayer(int i) {
     if (!unk2a9) {
         const char *cue = MakeString("%s_died.cue", TrackTypeToSym(mTrackType).Str());
-        float f = 0;
+        float f = 0.0f;
         if (TheBandUserMgr->IsMultiplayerGame()) {
-            if (mUser->GetSlot() == -1)
-                f = -1.0f;
-            else
+            if (mUser->GetSlot() % 2)
                 f = 1.0f;
+            else
+                f = -1.0f;
         }
-        GetTrackPanel()->PlaySequence(cue, 0, f, 0);
+        GetTrackPanel()->PlaySequence(cue, 0.0f, f, 0.0f);
     }
     if (GetBandTrack()) {
         GetBandTrack()->DisablePlayer(i);
     }
     if (mEnabledState == kPlayerDisabled) {
-        static Message player_failed("player_failed", 0);
+        static Message player_failed("player_failed", "");
         player_failed[0] = TrackTypeToSym(mTrackType);
         TheBandDirector->HandleType(player_failed);
     }
