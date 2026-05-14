@@ -1,4 +1,3 @@
-#define CHARHAIR_LOCAL_MULTIPLY
 #include "char/CharHair.h"
 #include "char/CharCollide.h"
 #include "decomp.h"
@@ -83,7 +82,7 @@ void CharHair::SetCloth(bool b) {
     }
 }
 
-#ifdef __MWERKS__
+#ifdef CHARHAIR_LOCAL_MULTIPLY
 inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
     float row2[3], row1[3], row0[3];
     asm { cmplw r4, r5 }
@@ -211,11 +210,13 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
 }
 #endif
 
-// matches in retail
 void CharHair::Strand::SetAngle(float angle) {
+    register float angle_rad = angle * DEG2RAD;
     mAngle = angle;
+    register float cos_val = Sine(1.5707964f + angle_rad);
     Hmx::Matrix3 m38;
-    m38.RotateAboutX(mAngle * DEG2RAD);
+    float sin_val = Sine(angle_rad);
+    m38.Set(1.0f, 0.0f, 0.0f, 0.0f, cos_val, sin_val, 0.0f, -sin_val, cos_val);
     Multiply(m38, mBaseMat, mRootMat);
 }
 
@@ -531,7 +532,7 @@ void CharHair::SimulateZeroTime() {
             RndTransformable *root = curStrand.Root();
             if (root && curStrand.Root()->TransParent()) {
                 Transform tf50;
-                Vector3 v2c = curStrand.Root()->WorldXfm().v;
+                tf50.v = curStrand.Root()->WorldXfm().v;
                 Multiply(
                     curStrand.mRootMat,
                     curStrand.Root()->TransParent()->WorldXfm().m,
@@ -541,13 +542,13 @@ void CharHair::SimulateZeroTime() {
                 for (int j = 0; j < points.size(); j++) {
                     Point &curPoint = points[j];
                     Hmx::Matrix3 m78;
-                    Subtract(curPoint.pos, v2c, m78.y);
+                    Subtract(curPoint.pos, tf50.v, m78.y);
                     m78.z = curPoint.lastZ;
                     Normalize(m78, tf50.m);
                     if (curPoint.bone) {
                         curPoint.bone->SetWorldXfm(tf50);
                     }
-                    v2c = curPoint.pos;
+                    tf50.v = curPoint.pos;
                 }
             }
         }

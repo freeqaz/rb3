@@ -1072,18 +1072,38 @@ void SongParser::HandlePitchOffsetCC(int tick, unsigned char uc) {
 
 // fn_8048CEE4 - parse and strip lyric text
 bool SongParser::ParseAndStripLyricText(const char *text, VocalNote &note) {
-    char c = *((char *)text);
+    const char *p;
     bool ret = false;
-    if (c == '+') {
+    if (*text == '+') {
         ret = true;
-        note.SetBends(ret);
+        note.mBends = ret;
         text++;
     }
-    const char *p = text + strlen(text);
-    // gross while loop
+    p = text + strlen(text);
+    int len = p - text;
+    p--;
+    if (p >= text) {
+        do {
+            char c = *p;
+            if (c == '$') {
+                note.mAllowCombine = false;
+            } else if (c == '#') {
+                note.mUnpitchedNote = true;
+            } else if (c == '^') {
+                note.mUnpitchedNote = true;
+                note.mUnpitchedEasy = true;
+            } else if (c == '%') {
+                note.mPitchRangeEnd = true;
+            } else if (c != '/' && c != '1' && c != '2') {
+                break;
+            }
+            p--;
+        } while (--len);
+    }
     String str;
-    str.reserve((int)(p + (1 - (int)text)));
-    strncpy((char *)str.c_str(), text, (int)(p + (1 - (int)text)));
+    int cap = (p - text) + 1;
+    str.reserve(cap);
+    strncpy((char *)str.c_str(), text, cap);
     char buf[0x100];
     ASCIItoUTF8(buf, 0x100, str.c_str());
     note.SetText(buf);

@@ -41,9 +41,12 @@ Confirmed empirically against `build/SZBE69_B8/obj/system/char/Character.o`:
 
 This is the cleanest mapping for the RB3 toolchain: it uses the same artifacts
 already produced by `ninja`, requires no live service, and gives byte-exact
-slot order for the version we're matching (`SZBE69_B8`). pyelftools is already
-installed (verified `import elftools; elftools.__version__ == '0.32'`) but is
-not declared in `requirements.txt`; we should add it explicitly.
+slot order for the version we're matching (`SZBE69_B8`). pyelftools is **not
+installed** in the project's Python env (verified 2026-05-12: `import
+pyelftools` raises `ModuleNotFoundError`; an earlier draft of this plan
+incorrectly claimed `0.32` was already available). Neither `requirements.txt`
+(only `pcpp`) nor `requirements-orchestrator.txt` declares it. Add
+`pyelftools>=0.32` to `requirements.txt` and install before any implementation.
 
 Pros:
 - Authoritative for the build target (the actual `.o` we diff against).
@@ -246,18 +249,31 @@ What's verified vs guessed:
 
 - Verified by inspection of `Character.o`: the "single `__vt__` symbol with
   multiple `__RTTI__` markers inside it" pattern.
-- Guessed and **needs verification** before relying on: that *no* MWCC build
-  emits separate `__vt__N<class>` symbols per base. If a multi-tu build (e.g.
-  templated mixins) ever does, the auto-detection should fall back to
-  enumerating every `__vt__*` symbol whose mangled portion contains the
-  class, and grouping by sub-object offset. Plan: implement the
-  "single-symbol" path first (covers the common case), then on first
-  counter-example extend to multi-symbol.
+- **Verified 2026-05-12 across the whole build:** no class anywhere in
+  `build/SZBE69_B8/obj/**/*.o` has more than one `__vt__N<class>` symbol.
+  Sweep:
+  ```bash
+  setopt globstar  # zsh; bash users: shopt -s globstar
+  for f in build/SZBE69_B8/obj/**/*.o; do
+      nm -g "$f" 2>/dev/null | awk -v file="$f" '/__vt__/ {print file, $3}'
+  done | sort -k2 | uniq -c -f1 | awk '$1 > 1' | head
+  ```
+  Returned no rows. Top vtable-density files: Game.o (19), NetSync.o (17),
+  VocalTrackDir.o (14), GemTrackDir.o (14). Single-symbol path is the only
+  path needed for v1. The multi-symbol fallback (enumerate `__vt__*`,
+  group by sub-object offset) stays a future-proofing note — implement on
+  the first counter-example, not pre-emptively.
 
 Virtual inheritance (`DW_AT_virtuality = 1` on `DW_TAG_inheritance`) **is**
-present in some classes — I saw it on at least three DIE offsets in the debug
-ELF. We should test against one such class (an unusual case for game code;
-likely an SDK / NW4R / STL class) before declaring done.
+present in some classes. **Locked test target: `RndDrawable`** (verified to
+have a `DW_TAG_inheritance` of `RndHighlightable` at offset 0 with
+`DW_AT_virtuality: 1`, plus a separate `DW_TAG_member` of type
+`RndHighlightable` at offset 96 — see
+[resolve-vcall-skill.md § 6](resolve-vcall-skill.md#6-worked-example-resolve-vcall-rnddrawable-0-5)).
+The `--offset 0` (vtable load lands here) vs offset-96 (member-access
+storage) distinction is the case the implementation must handle correctly.
+Don't substitute "an SDK / NW4R / STL class TBD" — RndDrawable is the
+regression target.
 
 ## 5. Integration with the decomp workflow
 
@@ -300,10 +316,11 @@ Rough size:
   if/when we want it. Keep this in a separate phase / module.
 
 Dependencies:
-- pyelftools: already installed (0.32), already used elsewhere indirectly.
-  **Should be added to `requirements.txt` explicitly** — currently neither
-  `requirements.txt` (only line: `pcpp`) nor `requirements-orchestrator.txt`
-  declares it.
+- pyelftools: **not installed** in the project env (verified 2026-05-12 —
+  `python3 -c "import pyelftools"` raises `ModuleNotFoundError`). Add
+  `pyelftools>=0.32` to `requirements.txt` and install before Step 1.3
+  in [tooling-roadmap.md](tooling-roadmap.md). Earlier draft of this doc
+  claimed it was already installed; that was wrong.
 - No new Rust deps. If we want demangled output, either (a) build the
   existing `tools/batch-demangle` crate (which already pulls in
   `cwdemangle`) and shell out, or (b) implement a minimal pure-Python
@@ -332,13 +349,15 @@ NW4R class with virtual inheritance).
    spawning a subprocess. Question is whether it's worth the API surface;
    defer to v2.
 
-2. **Single-vs-multi `__vt__` symbol invariant.** I verified Character
+2. **Single-vs-multi `__vt__` symbol invariant.** ~~I verified Character
    (multi-base, MI via `ObjectDir`+`RndDrawable`+`CharPollable`) emits one
    `__vt__9Character` symbol covering all sub-object vtables. Whether
    every MWCC-emitted class follows that invariant is unverified — would
-   require a sweep across `build/SZBE69_B8/obj/**/*.o`. If a class
-   somewhere emits multiple symbols, the auto-detection has to enumerate
-   them and stitch by offset; flag and handle on first failure.
+   require a sweep across `build/SZBE69_B8/obj/**/*.o`.~~ **Resolved
+   2026-05-12.** Whole-build sweep confirms no class has more than one
+   `__vt__N<class>` symbol (see § 4). Single-symbol path is the only path
+   needed for v1; multi-symbol fallback is documented but not implemented
+   until a counter-example appears.
 
 3. **Demangler choice.** Pure-Python mini-demangler vs shelling out to a
    built `tools/batch-demangle` vs invoking `objdiff-cli`. None is hard;

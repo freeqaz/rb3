@@ -1113,13 +1113,23 @@ void LightPreset::SpotlightEntry::CalculateDirection(Spotlight *s, Hmx::Quat &q)
 void LightPreset::SpotlightEntry::Animate(
     Spotlight *spot, const LightPreset::SpotlightEntry &entry, float f3
 ) {
-    Interp(mIntensity, entry.mIntensity, f3, mIntensity);
-    Hmx::Color c38;
-    Hmx::Color c48;
-    c38.Unpack(mColor);
-    c48.Unpack(entry.mColor);
-    Interp(c38, c48, f3, c38);
-    mColor = c38.Pack();
+    float i1 = mIntensity;
+    float i2 = entry.mIntensity;
+    int packed1 = mColor;
+    mIntensity = f3 * (i2 - i1) + i1;
+    int packed2 = entry.mColor;
+    float b1 = ((packed1 >> 16) & 0xFF) / 255.0f;
+    float b2 = ((packed2 >> 16) & 0xFF) / 255.0f;
+    float b = f3 * (b2 - b1) + b1;
+    float g1 = ((packed1 >> 8) & 0xFF) / 255.0f;
+    float g2 = ((packed2 >> 8) & 0xFF) / 255.0f;
+    float g = f3 * (g2 - g1) + g1;
+    float r1 = (packed1 & 0xFF) / 255.0f;
+    float r2 = (packed2 & 0xFF) / 255.0f;
+    float r = f3 * (r2 - r1) + r1;
+    mColor = (((int)(b * 255.0f) & 0xFF) << 16)
+        | ((int)(g * 255.0f) & 0xFF) << 8
+        | ((int)(r * 255.0f) & 0xFF);
     Hmx::Quat q58;
     CalculateDirection(spot, q58);
     Hmx::Quat q68;

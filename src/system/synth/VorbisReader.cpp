@@ -138,8 +138,15 @@ bool VorbisReader::DoFileRead() {
         if (mEnableReads && !mReadBuffer && !mFile->Eof()
             && QueuedInputBytes() < 0x10000) {
             mReadBuffer = ogg_sync_buffer(mOggSync, 0x4000);
-            START_AUTO_TIMER("synth_poll");
+            {
+                static Timer *_t = AutoTimer::GetTimer("synth_poll");
+                if (_t) _t->Stop();
+            }
             mFile->ReadAsync(mReadBuffer, 0x4000);
+            {
+                static Timer *_t = AutoTimer::GetTimer("synth_poll");
+                if (_t) _t->Start();
+            }
             mFail = mFile->Fail();
             ret = true;
         }

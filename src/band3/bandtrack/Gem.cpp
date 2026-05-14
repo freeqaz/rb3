@@ -16,13 +16,14 @@
 #include "utl/TimeConversion.h"
 
 Gem::Gem(
-    const GameGem &gg, unsigned int ui, float f1, float f2, bool b1, int i1, int i2, bool b2
+    const GameGem &gg, unsigned int ui, float f1, float f2, bool hopo, int beardTick, int i2, bool b2
 )
-    : mGameGem(gg), mStart(f1), mEnd(f2), mTailStart(0), mSlots(ui), mBeardTick(i1),
+    : mGameGem(gg), mStart(f1), mEnd(f2), mTailStart(0), mSlots(ui), mBeardTick(beardTick),
       mArrhythmicDurationSeconds(0), unk_0x40(0), unk_0x44(0), unk_0x48(0),
-      mChordLabel(""), mFirstFretString(-1), mFretPos(0), mKeyFingerNumber(-1), mHit(0),
-      mMissed(0), mReleased(0), mHopo(0), mInvisible(0), mBeard(0), unk_0x67_0(0),
-      unk_0x67_1(0), unk_0x67_2(0), unk_0x67_3(0), unk_0x67_4(0) {
+      mChordLabel(""), unk_0x58(-1), mFirstFret(-1), mFirstFretString(-1), mFretPos(0),
+      mKeyFingerNumber(-1), mHit(0), mMissed(0), mReleased(0), mHopo(hopo), mInvisible(0),
+      mBeard(beardTick != -1), mInArrhythmic(0), unk_0x66_7(0), unk_0x67_0(0), unk_0x67_1(0),
+      unk_0x67_2(0), unk_0x67_3(0), unk_0x67_4(0) {
     InitChordInfo(i2, b2);
 }
 

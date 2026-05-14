@@ -23,7 +23,10 @@ char *gCommerceFilterValue_Pack = "pack";
 char *gCommerceFilterValue_Song = "song";
 char *gCommerceFilterValuePurchasable = "PURCHASABLE";
 
-WiiCommerceMgr::WiiCommerceMgr() {
+WiiCommerceMgr::WiiCommerceMgr()
+    : mCommerceAsyncOpId(-1), mOpTimeoutMs(59000.0f), mProgressPercent(0),
+      mLastErrorCode(0), unkF1(0), unkF3(0), unkF4(0), unkF5(1), unk2110(0x1FE),
+      unk2150(0), unk2151(0), unk2154(0), unk2160(0) {
     mAttributes[0] = "Prices";
     mAttributes[1] = "MaxUserFileSize";
     mAttributes[2] = "MaxUserInodes";

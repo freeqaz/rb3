@@ -14,6 +14,7 @@
 #include "rndobj/Mesh.h"
 #include "rndobj/MultiMesh.h"
 #include "rndobj/Rnd.h"
+#include "rndobj/Stats_NG.h"
 #include "utl/Std.h"
 #include "utl/Symbols.h"
 #include "world/Spotlight.h"
@@ -138,14 +139,14 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
         sNeedDraw = true;
     }
 
-    RndMesh *lightCanMesh = sl->mLightCanMesh;
-    if (lightCanMesh && !sl->mLightCanSort) {
+    RndMesh *mesh = sl->mLightCanMesh;
+    if (mesh && !sl->mLightCanSort) {
         bool visible;
-        if (!lightCanMesh->Showing()) {
+        if (!mesh->Showing()) {
             visible = false;
         } else {
-            MILO_ASSERT(lightCanMesh, 0xB9);
-            Sphere s = lightCanMesh->GetSphere();
+            MILO_ASSERT(mesh, 0xB9);
+            Sphere s = mesh->GetSphere();
             if (s.GetRadius() > 0.0f) {
                 Multiply(s, sl->mLightCanXfm, s);
                 visible = !(s > RndCam::sCurrent->mWorldFrustum);
@@ -155,7 +156,7 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
         }
         if (visible) {
             SpotMeshEntry meshEntry;
-            meshEntry.unk0 = lightCanMesh;
+            meshEntry.unk0 = mesh;
             meshEntry.unk4 = (RndMesh *)RndEnviron::sCurrent;
             meshEntry.unk8 = sl;
             meshEntry.unkc = 0;
@@ -231,45 +232,70 @@ void SpotlightDrawer::SortLights() {
 }
 
 template <class T>
-void DrawAccessories(const SpotlightDrawer::SpotlightEntry *&, const SpotlightDrawer::SpotlightEntry *&);
+void DrawAccessories(
+    SpotlightDrawer::SpotlightEntry *const &, SpotlightDrawer::SpotlightEntry *const &
+);
 
 struct LensExtract {};
 
 void SpotlightDrawer::DrawWorld() {
+    int numLights = sLights.size();
+    if (numLights < TheNgStats->mMotionBlurs) {
+        numLights = TheNgStats->mMotionBlurs;
+    }
+    TheNgStats->mMotionBlurs = numLights;
     if ((!sLights.empty() || !sCans.empty()) && Showing()) {
         SortLights();
         DrawMeshVec(sCans);
         sCans.resize(0);
-        RndEnviron *cur = RndEnviron::sCurrent;
         if (!sLights.empty()) {
-            Vector3 *pos = cur->CurrentPos();
+            RndEnviron *cur = RndEnviron::sCurrent;
+            Vector3 *pos = RndEnviron::CurrentPos();
             MILO_ASSERT(sEnviron->GetUseApprox() == false, 0x1EE);
             sEnviron->Select(nullptr);
-            DrawShadow();
-            std::vector<SpotlightDrawer::SpotlightEntry>::iterator it = sLights.begin();
-            std::vector<SpotlightDrawer::SpotlightEntry>::iterator itEnd = sLights.end();
-            while (it != itEnd) {
-                const SpotlightEntry *const e1 = it;
-                const Hmx::Color &c = e1->unk4->IntensifiedColor();
-                const SpotlightEntry *const e2 = it;
-                // for (; e2 != itEnd && e2 == e1; ++e2)
-                //     ;
-                // SetAmbientColor(c);
-                // if (sHaveAdditionals) {
-                //     DrawAdditional(it, e2);
-                // }
-                // if (sHaveLenses) {
-                //     DrawAccessories<LensExtract>(e1, e2);
-                // }
-                // if (!sNoBeams && TheRnd->DrawMode() != 4) {
-                //     DrawBeams(it, e2);
-                // }
-                // if (sHaveFlares) {
-                //     DrawFlares(it, e2);
-                // }
-                // it = (SpotlightEntry *)e2;
+            if (GetGfxMode() == kOldGfx) {
+                DrawShadow();
             }
-            cur->Select(pos);
+            SpotlightEntry *it = &sLights[0];
+            SpotlightEntry *itEnd = it + sLights.size();
+            while (it != itEnd) {
+                SpotlightEntry *const e1 = it;
+                Spotlight *spot = it->unk4;
+                int packed = spot->Color().color;
+                float r = (packed & 255) / 255.0f;
+                float g = ((packed >> 8) & 255) / 255.0f;
+                float b = ((packed >> 0x10) & 255) / 255.0f;
+                float intensity = spot->Intensity();
+                Hmx::Color sp10;
+                sp10.red = r * intensity;
+                sp10.alpha = 1.0f;
+                sp10.green = g * intensity;
+                sp10.blue = b * intensity;
+                SpotlightEntry *e2 = it + 1;
+                for (; e2 != itEnd && e2->unk0 == it->unk0; ++e2) {
+                }
+                SetAmbientColor(sp10);
+                if (sHaveAdditionals) {
+                    DrawAdditional(it, e2);
+                }
+                if (sHaveLenses) {
+                    DrawAccessories<LensExtract>(e1, e2);
+                }
+                bool drawNG = false;
+                if (GetGfxMode() == kNewGfx && TheLoadMgr.GetPlatform() != kPlatformPC) {
+                    drawNG = true;
+                }
+                if (!drawNG && !sNoBeams && TheRnd->DrawMode() != 4) {
+                    DrawBeams(it, e2);
+                }
+                if (sHaveFlares) {
+                    DrawFlares(it, e2);
+                }
+                it = e2;
+            }
+            if (cur) {
+                cur->Select(pos);
+            }
         }
     }
 }

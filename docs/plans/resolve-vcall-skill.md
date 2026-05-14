@@ -202,9 +202,29 @@ behavior) so the agent can self-correct its query.
 
 ## 6. Worked example: `resolve-vcall RndDrawable 0 5`
 
-State observed in `band_r_wii.elf`:
+> **Refreshed 2026-05-12** to read from Bank 8 `.o` files per § 0. The
+> earlier version of this section used Bank 5 debug-ELF runtime addresses
+> (`0x80d4c0c0`) and Bank-5-specific bytes (vtable size 200, sub-table
+> boundary at +0x60, secondary `offset_to_top = -0x34`). The Bank 8
+> ground truth is different — vtable size 208, primary sub-table ends at
+> +0x6c, secondary sub-table is at sub-object offset +32 (`offset_to_top
+> = -32`), and there's a third sub-table at offset +64. The algorithm is
+> unchanged; only the byte source moved.
 
-DWARF for `RndDrawable` (at DIE `<c433>`):
+**Canonical answer (locked, used as the Step 1.4 success criterion in
+[tooling-roadmap.md](tooling-roadmap.md)):**
+
+```
+$ python3 scripts/dump_vtable.py resolve RndDrawable 0 5
+Resolved: RndDrawable::Copy(const Hmx::Object*, Hmx::Object::CopyType)
+Symbol:   Copy__11RndDrawableFPCQ23Hmx6ObjectQ33Hmx6Object8CopyType
+Vtable:   __vt__11RndDrawable   (208 bytes, build/SZBE69_B8/obj/system/rndobj/Draw.o:.data+0x08)
+Sub-object: offset 0, base RndDrawable (primary)
+Slot:     [5] at +0x1c (within sub-table starting at +0x00)
+Sub-table function count: 23
+```
+
+DWARF for `RndDrawable` (from `band_r_wii.elf`; cross-bank-stable):
 ```
 DW_TAG_class_type  name=RndDrawable  byte_size=0x70
   DW_TAG_inheritance  data_member_location=0  type=<RndHighlightable>  virtuality=virtual
@@ -214,16 +234,28 @@ DW_TAG_class_type  name=RndDrawable  byte_size=0x70
   DW_TAG_member       data_member_location=48 type=float                name=mOrder
 ```
 
-Symbol: `__vt__11RndDrawable` at `0x80d4c0c0`, size 200 bytes.
+Symbol: `__vt__11RndDrawable` lives in
+`build/SZBE69_B8/obj/system/rndobj/Draw.o` at `.data+0x08`, size 208 bytes.
+The 208 bytes break into three sub-tables:
 
-Raw `.data` dump:
+| Sub-table | File range | Bytes | offset_to_top | Sub-object offset | Slot count |
+|---|---|---|---|---|---|
+| Primary   | `.data+0x08` … `+0x6b` | 100 | `0`           | 0  | 23 |
+| Secondary | `.data+0x6c` … `+0xc7` | 92  | `-32` (`0xffffffe0`) | +32 | 21 |
+| Tertiary  | `.data+0xc8` … `+0xd7` | 16  | `-64` (`0xffffffc0`) | +64 | 2  |
+
+Primary sub-table's first six slot relocations (from
+`readelf -W -r build/SZBE69_B8/obj/system/rndobj/Draw.o`, `.rela.data`):
+
 ```
-0x80d4c0c0  80ca6e40 00000000 809c68b0 809c8530   <- __RTTI__11RndDrawable, offset_to_top=0, slot[0], slot[1]
-0x80d4c0d0  809c7230 809c80b0 809c6440 809c6350   <- slot[2..5]
-0x80d4c0e0  809c6520 8027f080 8027f070 8027f060   <- slot[6..9]
-0x80d4c0f0  809c6250 8027f040 8027f030 809c6ed0   <- slot[10..13]
-...
-0x80d4c120  ffffffcc 809c8750 ...                  <- new sub-table header: __RTTI@@cc..., offset_to_top=-0x34
+.data+0x08: R_PPC_ADDR32 -> __RTTI__11RndDrawable                                 (header: rtti)
+.data+0x0c:                  literal 0x00000000                                   (header: offset_to_top)
+.data+0x10: R_PPC_ADDR32 -> ClassName__11RndDrawableCFv                           (slot 0)
+.data+0x14: R_PPC_ADDR32 -> SetType__11RndDrawableF6Symbol                        (slot 1)
+.data+0x18: R_PPC_ADDR32 -> Handle__11RndDrawableFP9DataArrayb                    (slot 2)
+.data+0x1c: R_PPC_ADDR32 -> SyncProperty__11RndDrawableFR8DataNodeP9DataArrayi6PropOp (slot 3)
+.data+0x20: R_PPC_ADDR32 -> Save__11RndDrawableFR9BinStream                       (slot 4)
+.data+0x24: R_PPC_ADDR32 -> Copy__11RndDrawableFPCQ23Hmx6ObjectQ33Hmx6Object8CopyType (slot 5) <<
 ```
 
 Step-by-step:
@@ -233,24 +265,28 @@ Step-by-step:
 2. DWARF lookup of `RndDrawable` succeeds; inheritance offsets are `{0}` (the virtual-base
    inheritance record). The byte-size-96 RndHighlightable member is a virtual-base storage
    slot — present in the type but not a vptr-bearing sub-object — so not added to the resolve
-   table.
-3. Symtab: `__vt__11RndDrawable` -> `0x80d4c0c0`, size 200.
-4. Read 200 bytes; first sub-table parsed as: rtti=`__RTTI__11RndDrawable`,
-   offset_to_top=`0`. Function slots run from offset +0x08 until the next RTTI header at
-   roughly +0x60 (where `0x80ca6e40 ffffffcc` appears).
-5. Match: query offset `0` matches sub-table `offset_to_top=0` → primary sub-table.
-6. Slot 5 -> 32-bit word at `0x80d4c0c0 + 0x08 + 5*4 = 0x80d4c0dc` -> `0x809c6350`.
-7. Address-to-symbol: `0x809c6350` -> `Copy__11RndDrawableFPCQ23Hmx6ObjectQ33Hmx6Object8CopyType`.
+   table. (DWARF read from `band_r_wii.elf`; the inheritance graph is consistent across
+   banks, only generated vtable bytes differ.)
+3. Symtab: `__vt__11RndDrawable` -> `Draw.o:.data+0x08`, size 208.
+4. Read 208 bytes from `Draw.o`'s `.data`; walk `.rela.data` for relocations whose offset
+   falls in `[0x08, 0xd8)`. Identify sub-table boundaries by consecutive
+   `__RTTI__11RndDrawable` relocations at `+0x08`, `+0x6c`, `+0xc8`. Read the literal word
+   immediately after each as `offset_to_top` (`0`, `-32`, `-64`).
+5. Match: query offset `0` matches sub-table with `offset_to_top = 0` → primary sub-table.
+6. Slot 5 -> 4-byte word at `Draw.o:.data + 0x08 + 0x08 + 5*4 = +0x24`. The relocation at
+   that offset points at `Copy__11RndDrawableFPCQ23Hmx6ObjectQ33Hmx6Object8CopyType`.
+7. (No address-to-symbol step needed; `.o` relocations name the symbol directly. This is
+   simpler than the Bank-5 runtime-address path the earlier draft used.)
 8. Demangle: `RndDrawable::Copy(const Hmx::Object*, Hmx::Object::CopyType)`.
 
-Final output as shown in section 4.
+Final output as shown above.
 
-For contrast, `resolve-vcall CharEyes 8 0` would:
-- find sub-table with offset_to_top=`-8` inside `__vt__8CharEyes` (the CharWeightable
-  sub-object's vtable),
-- read its slot 0,
-- typically land on a `@8@__dt__8CharEyesFv` thunk pointing back into the real CharEyes
-  destructor — the output then shows both the thunk name and the underlying function.
+For contrast, `resolve-vcall RndDrawable 32 0` (sub-object offset +32) would land at the
+secondary sub-table's slot 0 = `@32@28@__dt__11RndDrawableFv` — an MWCC adjusting thunk.
+The output should report both the thunk name and the underlying `__dt__11RndDrawableFv`
+(strip the `@N@M@` prefix). The `@32@28@` prefix encodes a two-step `this` adjustment
+characteristic of MWCC's MI thunks; the implementation should treat any leading `@…@…@`
+(one or more groups) as a thunk marker.
 
 ## 7. Open questions / verification needed
 

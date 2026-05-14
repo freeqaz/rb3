@@ -1,17 +1,24 @@
 #include "tour/TourPerformerLocal.h"
 #include "game/BandUserMgr.h"
 #include "math/Rand.h"
+#include "meta_band/BandSongMetadata.h"
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/ModifierMgr.h"
+#include "meta_band/SongSortMgr.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
+#include "os/Timer.h"
+#include "tour/GigFilter.h"
+#include "tour/FixedSetlist.h"
 #include "tour/Quest.h"
 #include "tour/QuestManager.h"
 #include "tour/Tour.h"
 #include "tour/TourPerformer.h"
 #include "tour/TourProgress.h"
+#include "utl/MakeString.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
+#include "utl/Symbols2.h"
 #include <vector>
 
 TourPerformerLocal::TourPerformerLocal(BandUserMgr &mgr) : TourPerformerImpl(mgr) {}
@@ -123,18 +130,189 @@ Symbol TourPerformerLocal::ChooseRandomQuestForGroupAndTier(Symbol group, int ti
     return Symbol("");
 }
 
-void TourPerformerLocal::
-    InqSongsInFilterData(Symbol, std::map<Symbol, int> &, std::map<Symbol, int> &) {}
-
-void TourPerformerLocal::GetRandomArtistFromMap(const std::map<Symbol, int> &, int) {}
-
-void TourPerformerLocal::
-    GetRandomQuestFilter(TourProgress *, int, const std::map<Symbol, int> &, const std::map<Symbol, int> &) {
+void TourPerformerLocal::InqSongsInFilterData(
+    Symbol i_symFilter,
+    std::map<Symbol, int> &o_rSongsInFilter,
+    std::map<Symbol, int> &o_rSongsWithArtist
+) {
+    MILO_ASSERT(o_rSongsInFilter.empty(), 0xdf);
+    std::vector<int> validSongIDs;
+    std::vector<int> dummy;
+    GigFilter *pSecondaryFilter = nullptr;
+    if (i_symFilter != gNullStr) {
+        pSecondaryFilter = TheQuestMgr.GetQuestFilter(i_symFilter);
+        MILO_ASSERT(pSecondaryFilter, 0xe5);
+    }
+    TheSongMgr.GetValidSongs(validSongIDs, *TheBandUserMgr, dummy, -1.0f, -1.0f, true, true);
+    for (std::vector<int>::iterator it = validSongIDs.begin(); it != validSongIDs.end(); ++it) {
+        int songID = *it;
+        if (pSecondaryFilter) {
+            Symbol filteredPartSym = pSecondaryFilter->GetFilteredPartSym();
+            const SongSortMgr::SongFilter &filt = pSecondaryFilter->GetFilter();
+            if (!TheSongSortMgr->DoesSongMatchFilter(songID, &filt, filteredPartSym)) {
+                continue;
+            }
+        }
+        for (std::map<Symbol, GigFilter *>::iterator fit = TheQuestMgr.mMapQuestFilters.begin();
+             fit != TheQuestMgr.mMapQuestFilters.end();
+             ++fit) {
+            Symbol filterSym = fit->first;
+            if (strncmp("tour", filterSym.Str(), 4) == 0) {
+                FormatString fmt(MakeString("filter_artist_%s", filterSym.Str()));
+                TheDebug << fmt.Str();
+                continue;
+            }
+            GigFilter *pFilter = TheQuestMgr.GetQuestFilter(filterSym);
+            MILO_ASSERT(pFilter, 0x10c);
+            if (pFilter->IsInternal()) continue;
+            Symbol filteredPartSym = pFilter->GetFilteredPartSym();
+            const SongSortMgr::SongFilter &filt = pFilter->GetFilter();
+            if (!TheSongSortMgr->DoesSongMatchFilter(songID, &filt, filteredPartSym)) continue;
+            BandSongMetadata *pSongData = static_cast<BandSongMetadata *>(TheSongMgr.Data(songID));
+            o_rSongsInFilter[filterSym]++;
+            o_rSongsWithArtist[Symbol(pSongData->Artist())]++;
+        }
+    }
 }
 
-void TourPerformerLocal::GetRandomFixedSetlist(TourProgress *, int, Symbol) {}
+void TourPerformerLocal::GetRandomArtistFromMap(
+    const std::map<Symbol, int> &i_rSongsWithArtist,
+    int i_iNumSongs
+) {
+    std::vector<Symbol> validArtists;
+    for (std::map<Symbol, int>::const_iterator it = i_rSongsWithArtist.begin();
+         it != i_rSongsWithArtist.end();
+         ++it) {
+        if (it->second >= i_iNumSongs) {
+            validArtists.push_back(it->first);
+        }
+    }
+    int idx = RandomInt(0, validArtists.size());
+    int count = 0;
+    for (std::vector<Symbol>::iterator it = validArtists.begin();
+         it != validArtists.end();
+         ++it, ++count) {
+        if (count == idx) {
+            return;
+        }
+    }
+    MILO_ASSERT(false, 0x15a);
+    return;
+}
 
-void TourPerformerLocal::ChooseQuestFilters() {}
+void TourPerformerLocal::GetRandomQuestFilter(
+    TourProgress *i_pProgress,
+    int i_iNumSongs,
+    const std::map<Symbol, int> &i_rSongsInFilter,
+    const std::map<Symbol, int> &i_rSongsWithArtist
+) {
+    MILO_ASSERT(i_pProgress, 0x164);
+    std::vector<Symbol> validFilters;
+    float totalWeight = 0.0f;
+    for (std::map<Symbol, int>::const_iterator it = i_rSongsInFilter.begin();
+         it != i_rSongsInFilter.end();
+         ++it) {
+        Symbol filterSym = it->first;
+        int count = it->second;
+        if (!i_pProgress->HasQuestFilter(filterSym) && count >= i_iNumSongs) {
+            GigFilter *pFilter = TheQuestMgr.GetQuestFilter(filterSym);
+            MILO_ASSERT(pFilter, 0x179);
+            totalWeight += pFilter->GetWeight();
+            validFilters.push_back(filterSym);
+        }
+    }
+    float roll = RandomFloat(0.0f, totalWeight);
+    float cumWeight = 0.0f;
+    for (std::vector<Symbol>::iterator it = validFilters.begin();
+         it != validFilters.end();
+         ++it) {
+        Symbol filterSym = *it;
+        GigFilter *pFilter = TheQuestMgr.GetQuestFilter(filterSym);
+        MILO_ASSERT(pFilter, 0x18b);
+        cumWeight += pFilter->GetWeight();
+        if (roll < cumWeight) {
+            if (filterSym == filter_dynamic_artist) {
+                GetRandomArtistFromMap(i_rSongsWithArtist, i_iNumSongs);
+                return;
+            }
+            return;
+        }
+    }
+    TheDebug.Notify(MakeString(
+        "Unable to find a filter that has enough songs! Num Songs = %i: ", i_iNumSongs
+    ));
+    return;
+}
+
+void TourPerformerLocal::GetRandomFixedSetlist(
+    TourProgress *i_pProgress,
+    int i_iNumSongs,
+    Symbol i_symFixedSetlistGroup
+) {
+    MILO_ASSERT(i_pProgress, 0x1a5);
+    float totalWeight = 0.0f;
+    std::vector<Symbol> validSetlists;
+    for (std::map<Symbol, FixedSetlist *>::iterator it = TheQuestMgr.mMapFixedSetlists.begin();
+         it != TheQuestMgr.mMapFixedSetlists.end();
+         ++it) {
+        Symbol sym = it->first;
+        if (!i_pProgress->HasQuestFilter(sym)) {
+            FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sym);
+            MILO_ASSERT(pFixedSetlist, 0x1b8);
+            if (pFixedSetlist->GetGroup() == i_symFixedSetlistGroup) {
+                if (pFixedSetlist->GetNumSongs() == i_iNumSongs) {
+                    totalWeight += pFixedSetlist->GetWeight();
+                    validSetlists.push_back(sym);
+                }
+            }
+        }
+    }
+    float roll = RandomFloat(0.0f, totalWeight);
+    float cumWeight = 0.0f;
+    for (std::vector<Symbol>::iterator it = validSetlists.begin();
+         it != validSetlists.end();
+         ++it) {
+        Symbol sym = *it;
+        FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sym);
+        MILO_ASSERT(pFixedSetlist, 0x1d3);
+        cumWeight += pFixedSetlist->GetWeight();
+        if (roll < cumWeight) {
+            return;
+        }
+    }
+    TheDebug.Notify(MakeString(
+        "Unable to find a filter that has enough songs! Num Songs = %i: ", i_iNumSongs
+    ));
+    return;
+}
+
+void TourPerformerLocal::ChooseQuestFilters() {
+    Timer cTimer;
+    cTimer.Start();
+    TourProgress *pProgress = TheTour->GetTourProgress();
+    MILO_ASSERT(pProgress, 0x1eb);
+    MILO_ASSERT(pProgress->AreQuestFiltersEmpty(), 0x1ec);
+    Symbol symSecondaryFilter = pProgress->GetFilterForCurrentGig();
+    int iNumSongs = pProgress->GetNumSongsForCurrentGig();
+    std::map<Symbol, int> mapSongsInFilter;
+    std::map<Symbol, int> mapSongsWithArtist;
+    InqSongsInFilterData(symSecondaryFilter, mapSongsInFilter, mapSongsWithArtist);
+    for (int i = 0; i < kTour_NumQuestFilters; i++) {
+        Symbol setlistType = pProgress->GetSetlistTypeForCurrentGig(i);
+        if (setlistType == random) {
+            GetRandomQuestFilter(pProgress, iNumSongs + 3, mapSongsInFilter, mapSongsWithArtist);
+            pProgress->SetQuestFilter(i, Symbol(""));
+        } else if (setlistType == custom) {
+            GetRandomQuestFilter(pProgress, iNumSongs + 3, mapSongsInFilter, mapSongsWithArtist);
+            pProgress->SetQuestFilter(i, Symbol(""));
+        } else {
+            GetRandomFixedSetlist(pProgress, iNumSongs, setlistType);
+            pProgress->SetQuestFilter(i, Symbol(""));
+        }
+    }
+    cTimer.Stop();
+    TheDebug << MakeString("Quest Filter selection took %f Milliseconds\n", cTimer.Ms());
+}
 
 bool TourPerformerLocal::SanityCheckFilterAgainstType(Symbol s1, Symbol s2) {
     if (TheQuestMgr.HasFixedSetlist(s1)) {

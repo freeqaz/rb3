@@ -1036,7 +1036,7 @@ int SongStatusMgr::SaveSize(int rev) {
 
 void SongStatusMgr::SaveFixed(FixedSizeSaveableStream &stream) const {
     mCacheMgr.SaveFixed(stream);
-    for (int i = 0; i < 11; i++) {
+    for (ScoreType i = (ScoreType)0; i < 11; i = (ScoreType)(i + 1)) {
         stream << mCachedTotalScores[i];
         stream << mCachedTotalDiscScores[i];
         stream << mCachedTotalStars[i];
