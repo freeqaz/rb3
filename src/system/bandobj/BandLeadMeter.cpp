@@ -33,18 +33,21 @@ void BandLeadMeter::SyncScores() {
         RndMat *mat;
         if (mScoreDiff < 0)
             mat = mLensMat1;
-        else if (mScoreDiff < 1)
-            mat = mLensMatNeutral;
-        else
+        else if (mScoreDiff > 0)
             mat = mLensMat2;
+        else
+            mat = mLensMatNeutral;
         mLensMesh->SetMat(mat);
     }
-    float min = Min<float>(std::fabs((float)-mScoreDiff) / (float)unk204, 1.0f);
+    int neg = -mScoreDiff;
+    float min = Min<float>(std::fabs((float)neg) / (float)unk204, 1.0f);
+    float min50 = min * 50.0f;
     int i = -1;
-    if (mScoreDiff < 0)
+    if (neg > 0)
         i = 1;
-    if (-unk204 <= mScoreDiff && mScoreDiff <= unk204 && mNeedleAnim) {
-        mNeedleAnim->SetFrame(min * 50.0f * i + 50.0f, 1.0f);
+    float frame = min50 * i + 50.0f;
+    if (mScoreDiff >= -unk204 && mScoreDiff <= unk204 && mNeedleAnim) {
+        mNeedleAnim->SetFrame(frame, 1.0f);
     }
 }
 

@@ -2,6 +2,9 @@
 #define RNDWII_RND_H
 
 #include "math/Geo.h"
+#include "os/DiscErrorMgr_Wii.h"
+#include "os/HomeMenu_Wii.h"
+#include "os/VirtualKeyboard.h"
 #include "revolution/mtx/mtx.h"
 #include "rndobj/Rnd.h"
 #include "rndwii/SplitPostProc.h"
@@ -14,7 +17,10 @@ public:
     float proj[8];
 };
 
-class WiiRnd : public Rnd {
+class WiiRnd : public Rnd,
+               public HomeMenu::Callback,
+               public VirtualKeyboard::Callback,
+               public DiscErrorMgrWii::Callback {
 public:
     enum SharedTexType {
     };
@@ -44,16 +50,38 @@ public:
     void KeyboardClose();
     RndTex *GetSharedTex(SharedTexType, bool);
 
-    ushort unk_0x170, unk_0x172;
-    u8 unk_0x184, unk_0x185;
-    void *unk_0x1A8, *unk_0x1AC, *unk_0x1B0, *unk_0x1B4;
-    u32 unk_0x1B8;
-    Mtx44 unk_0x1BC, unk_0x1FC, unk_0x23C;
-    WiiSplitPostProc *unk_0x274;
-    bool mProgScan; // 0x2AC
-    bool unk_0x2B0, unk_0x2B1, unk_0x2B2, unk_0x2B3;
-    std::vector<Rnd::PointTest> unk_0x2B4;
-    bool unk_0x2BC;
+    // Layout: Rnd is 0x160. Three Callback bases add 4-byte vtables at
+    // 0x160, 0x164, 0x168. Own fields begin at 0x16C.
+    char pad_0x16C[0x4]; // 0x16C
+    ushort unk_0x170; // 0x170
+    ushort unk_0x172; // 0x172
+    char pad_0x174[0x10]; // 0x174
+    u8 unk_0x184; // 0x184
+    u8 unk_0x185; // 0x185
+    char pad_0x186[0x22]; // 0x186 (34 bytes -> 0x1A8)
+    void *unk_0x1A8; // 0x1A8
+    void *unk_0x1AC; // 0x1AC
+    bool unk_0x1B0; // 0x1B0 (init=true)
+    char pad_0x1B1[0x3]; // 0x1B1
+    void *unk_0x1B4; // 0x1B4
+    u32 unk_0x1B8; // 0x1B8
+    Mtx44 unk_0x1BC; // 0x1BC
+    Mtx44 unk_0x1FC; // 0x1FC
+    Mtx unk_0x23C; // 0x23C (48 bytes -> 0x26C)
+    int unk_0x26C; // 0x26C (init=0)
+    bool unk_0x270; // 0x270 (init=true)
+    char pad_0x271[0x3]; // 0x271
+    WiiSplitPostProc *unk_0x274; // 0x274
+    char pad_0x278[0x35]; // 0x278 (53 bytes -> 0x2AD)
+    bool mProgScan; // 0x2AD
+    bool unk_0x2AE; // 0x2AE
+    bool unk_0x2AF; // 0x2AF (init=true)
+    bool unk_0x2B0; // 0x2B0
+    bool unk_0x2B1; // 0x2B1
+    bool unk_0x2B2; // 0x2B2
+    bool unk_0x2B3; // 0x2B3
+    std::vector<Rnd::PointTest> unk_0x2B4; // 0x2B4 (8 bytes -> 0x2BC)
+    bool unk_0x2BC; // 0x2BC
     int mFramesBuffered; // 0x2C0
 
     void PrepareRenderAlley();

@@ -94,32 +94,45 @@ void *NetCacheLoader::GetBuffer() {
 }
 
 void NetCacheLoader::SetState(NetCacheLoader::State state) {
-    if (state == mState)
+    if (mState == state)
         return;
     switch (mState) {
-    case kS_0x0: {
+    case kS_0x0:
         if (state != kS_Loaded) {
             RELEASE(mFileLoader);
-            RELEASE(mFileLoaderBuffer);
+            delete mFileLoaderBuffer;
+            mFileLoaderBuffer = nullptr;
         }
         break;
-    }
-    case kS_0x2: {
+    case kS_0x2:
         if (state != kS_Loaded) {
-            MILO_ASSERT(!mNetLoader || mNetLoader->IsSafeToDelete(), 193);
+            MILO_ASSERT(!mNetLoader || mNetLoader->IsSafeToDelete(), 0xC1);
             RELEASE(mNetLoader);
         }
         break;
-    }
-    case kS_Loaded: {
-        MILO_ASSERT(!mNetLoader || mNetLoader->IsSafeToDelete(), 199);
+    case kS_Loaded:
+        MILO_ASSERT(!mNetLoader || mNetLoader->IsSafeToDelete(), 0xC7);
+        RELEASE(mNetLoader);
+        mNetLoaderBuffer = nullptr;
+        RELEASE(mFileLoader);
+        delete mFileLoaderBuffer;
+        mFileLoaderBuffer = nullptr;
         break;
     }
+    mState = state;
+    switch (state) {
+    case kS_0x0: {
+        MILO_ASSERT(!mFileLoader, 0xE3);
+        const char *path = strPath.c_str();
+        MILO_ASSERT(TheNetCacheMgr->IsLocalFile(path), 0xE6);
+        mFileLoader = new FileLoader(FilePath(path), path, kLoadFront, 0, false, true, nullptr);
+        break;
     }
-    MILO_ASSERT(!mFileLoader, 227);
-    MILO_ASSERT(TheNetCacheMgr->IsLocalFile(strPath), 230);
-    MILO_ASSERT(!mNetLoader, 239);
-    mNetLoader = NetLoader::Create(strPath);
+    case kS_0x2:
+        MILO_ASSERT(!mNetLoader, 0xEF);
+        mNetLoader = NetLoader::Create(strPath);
+        break;
+    }
 }
 
 void NetCacheLoader::WriteToCache() {

@@ -11,13 +11,18 @@
 #include "meta_band/AccomplishmentCategory.h"
 #include "meta_band/AccomplishmentGroup.h"
 #include "meta_band/AccomplishmentManager.h"
+#include "meta_band/CampaignLevel.h"
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/PassiveMessenger.h"
+#include "net/Server.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
 #include "stl/_pair.h"
+#include "utl/DataPointMgr.h"
 #include "utl/Symbols.h"
+#include "utl/Symbols2.h"
+#include "utl/Symbols4.h"
 
 GamerAwardStatus::GamerAwardStatus() : unk8(-1), unkc(0), unk10(0) {
     mSaveSizeMethod = &SaveSize;
@@ -135,7 +140,7 @@ bool AccomplishmentProgress::AddAccomplishment(Symbol s) {
         if (pAccomplishment->HasAward()) {
             AddAward(pAccomplishment->GetAward(), s);
         }
-        int lbhcstatus =
+        int oldLbHcStatus =
             TheAccomplishmentMgr->GetLeaderboardHardcoreStatus(mAccomplishments.size());
         TheAccomplishmentMgr->GetIconHardCoreStatus(mAccomplishments.size());
         mAccomplishments.insert(s);
@@ -162,14 +167,35 @@ bool AccomplishmentProgress::AddAccomplishment(Symbol s) {
             }
         }
 
-        Symbol level4 = TheCampaign->GetCampaignLevelForMetaScore(mMetaScore);
-        int metascoreval =
-            TheAccomplishmentMgr->GetMetaScoreValue(pAccomplishment->GetMetaScoreValue());
-        SetMetaScore(mMetaScore + metascoreval);
-        Symbol level5 = TheCampaign->GetCampaignLevelForMetaScore(mMetaScore);
-        if (level5 != level4) {
-            // MILO ASSERT pLevel
+        Symbol oldLevel = TheCampaign->GetCampaignLevelForMetaScore(mMetaScore);
+        SetMetaScore(
+            mMetaScore
+            + TheAccomplishmentMgr->GetMetaScoreValue(pAccomplishment->GetMetaScoreValue()
+              )
+        );
+        Symbol newLevel = TheCampaign->GetCampaignLevelForMetaScore(mMetaScore);
+        if (newLevel != oldLevel) {
+            CampaignLevel *pLevel = TheCampaign->GetCampaignLevel(newLevel);
+            MILO_ASSERT(pLevel, 0x112);
+            NotifyPlayerOfCampaignLevel(pLevel->GetEarnedText());
+            MILO_ASSERT(mParentProfile, 0x11A);
+            SendDataPoint(
+                "career/levelup",
+                pid,
+                TheServer.GetPlayerID(mParentProfile->GetPadNum()),
+                career_level,
+                newLevel
+            );
+            if (pLevel->HasAward()) {
+                AddAward(pLevel->GetAward(), newLevel);
+            }
         }
+        if (oldLbHcStatus
+            != TheAccomplishmentMgr->GetLeaderboardHardcoreStatus(mAccomplishments.size())) {
+            SendHardCoreStatusUpdateToRockCentral();
+        }
+        MILO_ASSERT(mParentProfile, 0x13E);
+        mParentProfile->MakeDirty();
         return true;
     } else
         return false;
@@ -318,9 +344,8 @@ int AccomplishmentProgress::SaveSize(int i) {
     int size = 0x2c9e;
     if (i >= 0x91)
         size = 0x2cbe;
-    size += 0x2b9;
-    size += GamerAwardStatus::SaveSize(i) * 0x32;
-    REPORT_SIZE("AccomplishmentProgress", size + 4);
+    size += (GamerAwardStatus::SaveSize(i) * 0x32) + 0x2bd;
+    REPORT_SIZE("AccomplishmentProgress", size);
 }
 
 void AccomplishmentProgress::LoadFixed(FixedSizeSaveableStream &stream, int rev) {

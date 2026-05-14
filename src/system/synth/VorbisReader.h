@@ -7,6 +7,8 @@
 #include "oggvorbis/ogg.h"
 #include "oggvorbis/codec.h"
 #include "synth/tomcrypt/mycrypt.h"
+#include "utl/MemMgr.h"
+#include <vector>
 
 class VorbisReader : public StreamReader, public CriticalSection {
 public:
@@ -72,8 +74,10 @@ public:
     bool unke1; // 0xe1
     bool unke2; // 0xe2
     bool mFail; // 0xe3
-    std::vector<int> unke4; // 0xe4
+    std::vector<std::vector<short> > unke4; // 0xe4
     int unkec; // 0xec
     long long mThreadBufferStart; // 0xf0
     int unkf8; // 0xf8
+
+    DELETE_OVERLOAD
 };

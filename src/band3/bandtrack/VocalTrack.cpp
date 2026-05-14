@@ -754,7 +754,9 @@ void VocalTrack::HideCoda() {
 void VocalTrack::DumpLyricPlates(std::deque<LyricPlate *> &plates, bool lead) {
     MILO_LOG("Dumping %s lyric plates\n", lead ? "lead" : "harmony");
     int idx = 0;
-    FOREACH (it, plates) {
+    std::deque<LyricPlate *>::iterator it = plates.begin();
+    std::deque<LyricPlate *>::iterator end = plates.end();
+    for (; it != end; ++it) {
         LyricPlate *cur = *it;
         MILO_LOG(
             "[%d] %x (%.2f - %.2f) %s\n",

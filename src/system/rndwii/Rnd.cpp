@@ -89,8 +89,12 @@ WiiOrthoProj::WiiOrthoProj() {
 WiiOrthoProj::~WiiOrthoProj() { GXSetProjectionv(proj); }
 
 WiiRnd::WiiRnd()
-    : unk_0x2B0(false), unk_0x2B1(false), unk_0x2B2(false), unk_0x2B3(false),
+    : unk_0x1B0(true), unk_0x1B4(nullptr), unk_0x1B8(0), unk_0x26C(0),
+      unk_0x270(true), mProgScan(false), unk_0x2AE(false), unk_0x2AF(true),
+      unk_0x2B0(false), unk_0x2B1(false), unk_0x2B2(false), unk_0x2B3(false),
       unk_0x2BC(false), mFramesBuffered(2) {
+    unk_0x1AC = nullptr;
+    unk_0x1A8 = nullptr;
     mClearColor.Set(0, 0, 0, 0);
     unk_0x2B4.reserve(0x20);
 }
