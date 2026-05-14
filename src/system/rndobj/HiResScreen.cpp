@@ -96,13 +96,10 @@ void HiResScreen::BmpCache::LoadCache(unsigned int y) {
 void HiResScreen::BmpCache::GetPixelColor(
     int x, int y, unsigned char &r, unsigned char &g, unsigned char &b, unsigned char &a
 ) const {
-    MILO_ASSERT(x >= 0 && x < mPixelsPerRow, 0xBC);
-    unsigned int nLoadedStart = mCurrLoadedIndex * mRowsPerCacheLine;
-    unsigned int nLoadedEnd = nLoadedStart + mRowsPerCacheLine - 1;
-    MILO_ASSERT(y >= nLoadedStart && y <= nLoadedEnd, 0xC1);
-    unsigned int yOffset = nLoadedEnd - y;
-    unsigned int offset = (yOffset * mPixelsPerRow + x) * 4;
-    unsigned char *ptr = mBuffer + offset;
+    unsigned int nLoadedStart, nLoadedEnd;
+    GetLoadedRange(nLoadedStart, nLoadedEnd);
+    MILO_ASSERT(y >= nLoadedStart && y <= nLoadedEnd, 0xBF);
+    unsigned char *ptr = mBuffer + (nLoadedEnd - y) * mPixelsPerRow * 4 + x * 4;
     a = ptr[3];
     r = ptr[2];
     g = ptr[1];

@@ -240,36 +240,28 @@ void PerfectSectionTracker::HandleInExtent(float f, int i) {
             TrackType key = pPlayer->GetTrackType();
             std::map<TrackType, PlayerStreakData>::iterator it = unk5c.find(key);
             if (it != unk5c.end()) {
-                if (it->second.unkc) {
-                    //         local_88 = 0x43300000;
-                    //         iVar5 = *(int *)(pPVar9 + 0x20) - (*(int *)(iVar8 + 0x1c) -
-                    //         *(int *)(pPVar9 + 0x1c)); uStack_84 = iVar5 ^ 0x80000000;
-                    //         iVar8 = *(int *)(iVar8 + 0x10) - *(int *)(pPVar9 + 0x18);
-                    //         fVar2 = (float)iVar5;
-                    //         fVar1 = 0.0;
-                    //         if (fVar2 != 0.0) {
-                    //           uStack_7c = iVar8 ^ 0x80000000;
-                    //           local_80 = 0x43300000;
-                    //           fVar1 = (float)iVar8 / fVar2;
-                    //         }
-                    //         if (fVar1 != *(float *)(pPVar9 + 0x24)) {
-                    //           fVar3 = fVar1 / *(float *)(this + 0xb0);
-                    //           fVar2 = 1.0;
-                    //           if ((fVar3 <= 1.0) && (fVar2 = fVar3, fVar3 < 0.0)) {
-                    //             fVar2 = 0.0;
-                    //           }
-                    //           Tracker::SetPlayerProgress((Tracker
-                    //           *)this,(TrackerPlayerID *)&local_98,fVar2); if ((*(float
-                    //           *)(this + 0xb0) <= fVar1) && (pPVar9[0x2c] ==
-                    //           (PerfectSectionTracker)0x0)) {
-                    //             this_00 = (TrackerPlayerDisplay *)
-                    //                       Tracker::GetPlayerDisplay((Tracker
-                    //                       *)this,(TrackerPlayerID *)&local_98);
-                    //             TrackerPlayerDisplay::SetSuccessState(this_00,true);
-                    //             pPVar9[0x2c] = (PerfectSectionTracker)0x1;
-                    //           }
-                    //           *(float *)(pPVar9 + 0x24) = fVar1;
-                    //         }
+                int total = it->second.unkc;
+                if (total) {
+                    int gemsLeft = total - (pPlayer->mStats.m0x0c - it->second.unk8);
+                    int hits = pPlayer->mStats.mHitCount - it->second.unk4;
+                    float fGemsLeft = (float)gemsLeft;
+                    float progress;
+                    if (0.0f == fGemsLeft) {
+                        progress = 0.0f;
+                    } else {
+                        progress = (float)hits / fGemsLeft;
+                    }
+                    if (progress != it->second.unk10) {
+                        float scaled = progress / unkb0;
+                        if (scaled > 1.0f) scaled = 1.0f;
+                        else if (scaled < 0.0f) scaled = 0.0f;
+                        SetPlayerProgress(id, scaled);
+                        if (progress >= unkb0 && !it->second.unk18) {
+                            GetPlayerDisplay(id).SetSuccessState(true);
+                            it->second.unk18 = true;
+                        }
+                        it->second.unk10 = progress;
+                    }
                 }
             }
         }

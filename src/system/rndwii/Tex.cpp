@@ -5,6 +5,7 @@
 #include "rndobj/Rnd.h"
 #include "rndobj/Tex.h"
 #include "rndwii/Rnd.h"
+#include "utl/MemMgr.h"
 #include <set>
 
 std::set<WiiTex *> gRenderTextureSet;
@@ -61,6 +62,12 @@ bool ConvertAndStoreYUV2BMP(void *, int, int, void *);
 
 void WiiTex::CreateScreenShot() {
     DeleteSurface();
+    mWidth = TheWiiRnd.unk_0x170;
+    mHeight = *(unsigned short *)((char *)&TheWiiRnd + 0x174);
+    mBpp = 24;
+    mImageData = _MemAlloc((mBpp >> 3) * (mWidth * mHeight), 0x20);
+    *(int *)((char *)this + 0xb0) = (*(int *)((char *)this + 0xb0) & ~0x2) | 0x2;
+    MILO_ASSERT(!((int)mImageData & 31), 0x3D6);
     if (!ConvertAndStoreYUV2BMP(WiiRnd::GetCurrXFB(), mWidth, mHeight, mImageData)) {
         MILO_WARN("[WiiTex::CreateScreenShot] Failed to covert XFB to BMP!\n"); // BUG:
                                                                                 // covert

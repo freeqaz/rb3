@@ -21,6 +21,7 @@
 #include "meta_band/ProfileAssets.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/TexLoadPanel.h"
+#include "meta/WiiProfileMgr.h"
 #include "obj/Data.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
@@ -123,6 +124,26 @@ void CharacterCreatorPanel::Exit() {
 DECOMP_FORCEACTIVE(CharacterCreatorPanel, "mClosetMgr", "pUser", "pPreviousCharacter")
 
 void CharacterCreatorPanel::Unload() {
+    TexLoadPanel::Unload();
+    LocalBandUser *pUser = mClosetMgr->mUser;
+    if (pUser && pUser->IsLocal()
+        && TheWiiProfileMgr.GetIndexForUser(pUser->GetLocalUser()) >= 0
+        && mCharacter) {
+        MILO_ASSERT(mClosetMgr, 0xFD);
+        MILO_ASSERT(pUser, 0xFE);
+        if (!mCharacter->IsFinalized()) {
+            if (pUser->GetChar() == mCharacter) {
+                CharData *pPreviousCharacter = mClosetMgr->mPreviousCharacter;
+                MILO_ASSERT(pPreviousCharacter, 0x106);
+                pUser->SetChar(pPreviousCharacter);
+            }
+            delete mCharacter;
+        }
+        mClosetMgr->PreviewCharacter(false, false);
+    }
+    mClosetMgr = NULL;
+    mCharacter = NULL;
+    mPreviewDesc = NULL;
     RELEASE(mEyebrowsGridProvider);
     RELEASE(mEyebrowsProvider);
     RELEASE(mFaceOptionsGridProvider);

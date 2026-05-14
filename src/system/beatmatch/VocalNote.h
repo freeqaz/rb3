@@ -99,6 +99,8 @@ public:
     void CopyLyricPhrases();
     void AddNote(const VocalNote &);
     void NotesDone(const TempoMap &, bool);
+    void DeterminePhraseTimes(const TempoMap &);
+    void Finalize();
     void AddTambourineGem(int);
     void SetFreestyleSections(const std::vector<std::pair<float, float> > &);
     void GenerateLegalFreestyleSections(std::vector<std::pair<float, float> > &) const;

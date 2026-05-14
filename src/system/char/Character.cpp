@@ -291,6 +291,11 @@ CharEyes *Character::GetEyes() { return Find<CharEyes>("CharEyes.eyes", false); 
 
 void Character::DrawShowing() {
     START_AUTO_TIMER("char_draw");
+    if (mDebugDrawInterestObjects) {
+        CharEyes *eyes = GetEyes();
+        if (eyes)
+            eyes->Highlight();
+    }
     float screenSize = ComputeScreenSize(RndCam::sCurrent);
     int i7;
     if (mMinLod < 0) {
@@ -306,22 +311,50 @@ void Character::DrawShowing() {
     } else {
         i7 = Clamp<int>(0, mLods.size() - 1, mMinLod);
     }
+    bool b3 = false;
     bool b2 = false;
-    if (mSelfShadow && TheRnd->DrawMode() == 0 && i7 <= 1 && mDrawMode & 1) {
+    bool b1 = false;
+    if (mSelfShadow && TheRnd->DrawMode() == 0) {
+        b1 = true;
+    }
+    if (b1 && i7 <= 1) {
         b2 = true;
     }
-    if (b2) {
+    if (b2 && (mDrawMode & 1)) {
+        b3 = true;
+    }
+    if (b3) {
         int lastMinLod = mMinLod;
         mMinLod = i7;
         RndShadowMap::PrepShadow(this, mEnv);
         mMinLod = lastMinLod;
     }
     DrawLod(i7);
-    if (b2)
+    if (b3)
         RndShadowMap::EndShadow();
+    if (LOADMGR_EDITMODE && TheRnd->DrawMode() == 0) {
+        mTest->Draw();
+    }
+    static DataNode &sShowName = DataVariable("character.show_name");
+    if (sShowName.Int(nullptr)) {
+        if (Type() == crowd)
+            return;
+        RndTransformable *bone = CharUtlFindBoneTrans("bone_head", this);
+        if (bone) {
+            Vector3 worldPos = bone->WorldXfm().v;
+            worldPos.z += 6.0f;
+            Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+            Vector2 screenPos;
+            RndCam::sCurrent->WorldToScreen(worldPos, screenPos);
+            screenPos.x *= TheRnd->Width();
+            screenPos.y *= TheRnd->Height();
+            const Vector2 &extent =
+                TheRnd->DrawString(Name(), screenPos, white, false);
+            screenPos.x = screenPos.x - (extent.x - screenPos.x) * 0.5f;
+            TheRnd->DrawString(Name(), screenPos, white, true);
+        }
+    }
 }
-
-DECOMP_FORCEACTIVE(Character, "character.show_name", "bone_head")
 
 void Character::UpdateSphere() {
     Sphere s78 = mBounding;

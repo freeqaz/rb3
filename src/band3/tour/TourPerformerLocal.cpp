@@ -183,8 +183,9 @@ Symbol TourPerformerLocal::GetRandomArtistFromMap(
     for (std::map<Symbol, int>::const_iterator it = i_rSongsWithArtist.begin();
          it != i_rSongsWithArtist.end();
          ++it) {
+        Symbol key = it->first;
         if (it->second >= i_iNumSongs) {
-            validArtists.push_back(it->first);
+            validArtists.push_back(key);
         }
     }
     int idx = RandomInt(0, validArtists.size());
@@ -364,15 +365,14 @@ void TourPerformerLocal::CheatCycleSetlist() {
     for (std::map<Symbol, int>::iterator it = mapSongsInFilter.begin();
          it != mapSongsInFilter.end();
          ++it) {
-        Symbol filterSym = it->first;
-        if (mapSongsInFilter[filterSym] >= iNumSongs) {
-            Symbol current = filterSym;
+        Symbol current = it->first;
+        if (mapSongsInFilter[current] >= iNumSongs) {
             // Find which quest filter slots have this filter selected
             unsigned int *pIndices = filterIndices;
             for (int i = 0; i < kTour_NumQuestFilters; i++, pIndices++) {
                 if (current == filter_dynamic_artist) {
                     Symbol artist = GetRandomArtistFromMap(mapSongsWithArtist, iNumSongs);
-                    current = Symbol(MakeString("filter_artist_%s", artist));
+                    current = Symbol(MakeString("filter_artist_%s", artist.mStr));
                 }
                 if (current == pProgress->GetQuestFilter(i)) {
                     *pIndices = validFilters.size();

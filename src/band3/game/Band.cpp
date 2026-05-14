@@ -242,30 +242,64 @@ void Band::SaveAll() {
 }
 
 void Band::CheckCoda(SongPos &pos) {
-    if (NumNonQuarantinedPlayers() != 1
-        || mActivePlayers[1]->mTrackType != kTrackVocals) {
-        bool past_start_of_coda = false;
-        if (TheSongDB->GetCodaStartTick() >= 0
-            && TheSongDB->GetCodaStartTick() >= pos.GetTick()) {
-            past_start_of_coda = true;
+    if (NumNonQuarantinedPlayers() == 1
+        && mActivePlayers[0]->mTrackType == kTrackVocals) {
+        return;
+    }
+    int tick = (int)pos.GetTotalTick();
+    int codaStart = TheSongDB->GetCodaStartTick();
+    bool past_start_of_coda = false;
+    if (codaStart > 0 && tick > TheSongDB->GetCodaStartTick()) {
+        past_start_of_coda = true;
+    }
+    bool end_of_coda = IsEndOfCoda(tick);
+    if (past_start_of_coda) {
+        if (end_of_coda && unk60 == 1) {
+            unk60 = 2;
+            TheBandDirector->SetCharacterHideHackEnabled(false);
+        } else if (!end_of_coda && unk60 == 0 && (int)mActivePlayers.size() > 2) {
+            unk60 = 1;
+            TheBandDirector->SetCharacterHideHackEnabled(true);
         }
-        bool end_of_coda = IsEndOfCoda(pos.GetTick());
-        if (past_start_of_coda) {
-            if (end_of_coda && unk60 == 1) {
-                unk60 = 2;
-                TheBandDirector->SetCharacterHideHackEnabled(false);
-            } else if (!end_of_coda && unk60 == 0 && mActivePlayers.size() > 2) {
-                unk60 = 1;
-                TheBandDirector->SetCharacterHideHackEnabled(true);
+    }
+    if (!unk40 && past_start_of_coda && end_of_coda) {
+        Player *p;
+        bool blown;
+        for (int i = 0; i < mActivePlayers.size(); i++) {
+            p = mActivePlayers[i];
+            if (p->mTrackType == kTrackVocals) {
+                blown = false;
+                if (p->AutoplaysCoda() || p->mHasFinishedCoda
+                    || p->mQuarantined || p->mHasBlownCoda) {
+                    blown = true;
+                }
+                if (!blown) {
+                    BlowCoda(mActivePlayers[i]);
+                }
+                break;
             }
         }
-        if (unk40 && past_start_of_coda && end_of_coda) {
+        bool allDone = true;
+        bool done;
+        for (int i = 0; i < mActivePlayers.size(); i++) {
+            p = mActivePlayers[i];
+            done = false;
+            if (p->AutoplaysCoda() || p->mHasFinishedCoda
+                || p->mQuarantined || p->mHasBlownCoda) {
+                done = true;
+            }
+            if (!done) {
+                allDone = false;
+                break;
+            }
         }
-        if (EveryoneFinishedCoda()) {
-            WinCoda();
+        if (allDone) {
+            if (EveryoneFinishedCoda()) {
+                WinCoda();
+            }
+            GetTrackPanelDir()->CodaEnd();
+            unk40 = true;
         }
-        GetTrackPanelDir()->CodaEnd();
-        unk40 = true;
     }
 }
 

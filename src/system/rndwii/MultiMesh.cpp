@@ -19,6 +19,13 @@ void WiiMultiMesh::DrawShowing() {
     WiiMesh *mesh = (WiiMesh *)(RndMesh *)mMesh;
     WiiMat *mat = (WiiMat *)mesh->Mat();
     WiiMesh *m2 = (WiiMesh *)(RndMesh *)mesh->mGeomOwner;
+
+    bool fadeOut = false;
+    if (RndEnviron::sCurrent->mFadeOut && RndEnviron::sCurrent->mFadeEnd != RndEnviron::sCurrent->mFadeStart) {
+        fadeOut = true;
+    }
+    RndCam *curCam = RndCam::sCurrent;
+
     MILO_ASSERT(mesh->NumBones() == 0, 5);
 #ifdef MILO_DEBUG
     if (m2->NumFaces() == 0) {
@@ -42,7 +49,8 @@ void WiiMultiMesh::DrawShowing() {
         // Load the camera's precomputed Wii view matrix into camMtx
         Mtx camMtx;
         {
-            const Transform &src = ((WiiCam *)RndCam::sCurrent)->mWiiViewXfm;
+            START_AUTO_TIMER("xfms");
+            const Transform &src = ((WiiCam *)curCam)->mWiiViewXfm;
             camMtx[0][0] = src.m.x.x; camMtx[0][1] = src.m.y.x; camMtx[0][2] = src.m.z.x; camMtx[0][3] = src.v.x;
             camMtx[1][0] = src.m.x.y; camMtx[1][1] = src.m.y.y; camMtx[1][2] = src.m.z.y; camMtx[1][3] = src.v.y;
             camMtx[2][0] = src.m.x.z; camMtx[2][1] = src.m.y.z; camMtx[2][2] = src.m.z.z; camMtx[2][3] = src.v.z;
@@ -56,11 +64,6 @@ void WiiMultiMesh::DrawShowing() {
             }
         }
 
-        bool fadeOut = false;
-        if (RndEnviron::sCurrent->mFadeOut && RndEnviron::sCurrent->mFadeEnd != RndEnviron::sCurrent->mFadeStart) {
-            fadeOut = true;
-        }
-
         std::list<RndMultiMesh::Instance>::iterator it = mInstances.begin();
         Mtx instMtx;
         Mtx resultMtx;
@@ -72,10 +75,10 @@ void WiiMultiMesh::DrawShowing() {
 
             {
                 START_AUTO_TIMER("xfms");
-                if (RndCam::sCurrent->Dirty()) {
-                    RndCam::sCurrent->WorldXfm_Force();
+                if (curCam->Dirty()) {
+                    curCam->WorldXfm_Force();
                 }
-                const Transform &camWorld = RndCam::sCurrent->mWorldXfm;
+                const Transform &camWorld = curCam->mWorldXfm;
                 instMtx[0][0] = camWorld.m.x.x; instMtx[0][1] = camWorld.m.y.x; instMtx[0][2] = camWorld.m.z.x; instMtx[0][3] = camWorld.v.x;
                 instMtx[1][0] = camWorld.m.x.y; instMtx[1][1] = camWorld.m.y.y; instMtx[1][2] = camWorld.m.z.y; instMtx[1][3] = camWorld.v.y;
                 instMtx[2][0] = camWorld.m.x.z; instMtx[2][1] = camWorld.m.y.z; instMtx[2][2] = camWorld.m.z.z; instMtx[2][3] = camWorld.v.z;
@@ -112,15 +115,13 @@ void WiiMultiMesh::DrawShowing() {
             }
             GXSetCurrentMtx(0);
             while (idx < count) {
-                TIMER_ACTION("xfms",
-                    instMtx[0][3] = it->mXfm.v.x;
-                    instMtx[1][3] = it->mXfm.v.y;
-                    instMtx[2][3] = it->mXfm.v.z;
-                    PSMTXConcat(camMtx, instMtx, resultMtx);
-                    GXLoadPosMtxImm(resultMtx, 0);
-                    GXLoadNrmMtxImm(resultMtx, 0);
-                    ++it;
-                );
+                instMtx[0][3] = it->mXfm.v.x;
+                instMtx[1][3] = it->mXfm.v.y;
+                instMtx[2][3] = it->mXfm.v.z;
+                PSMTXConcat(camMtx, instMtx, resultMtx);
+                GXLoadPosMtxImm(resultMtx, 0);
+                GXLoadNrmMtxImm(resultMtx, 0);
+                ++it;
                 TIMER_ACTION("faces", m2->DrawFaces(););
                 idx++;
             }
@@ -129,10 +130,10 @@ void WiiMultiMesh::DrawShowing() {
 
             {
                 START_AUTO_TIMER("xfms");
-                if (RndCam::sCurrent->Dirty()) {
-                    RndCam::sCurrent->WorldXfm_Force();
+                if (curCam->Dirty()) {
+                    curCam->WorldXfm_Force();
                 }
-                const Transform &camWorld = RndCam::sCurrent->mWorldXfm;
+                const Transform &camWorld = curCam->mWorldXfm;
                 instMtx[0][0] = camWorld.m.x.x; instMtx[0][1] = camWorld.m.y.x; instMtx[0][2] = camWorld.m.z.x; instMtx[0][3] = camWorld.v.x;
                 instMtx[1][0] = camWorld.m.x.y; instMtx[1][1] = camWorld.m.y.y; instMtx[1][2] = camWorld.m.z.y; instMtx[1][3] = camWorld.v.y;
                 instMtx[2][0] = camWorld.m.x.z; instMtx[2][1] = camWorld.m.y.z; instMtx[2][2] = camWorld.m.z.z; instMtx[2][3] = camWorld.v.z;
@@ -182,24 +183,22 @@ void WiiMultiMesh::DrawShowing() {
             }
             GXSetCurrentMtx(0);
             while (idx < count) {
-                TIMER_ACTION("xfms",
-                    instMtx[0][3] = it->mXfm.v.x;
-                    instMtx[1][3] = it->mXfm.v.y;
-                    instMtx[2][3] = it->mXfm.v.z;
-                    float sx = instMtx[0][0];
-                    float sy = instMtx[1][1];
-                    float sz = instMtx[2][2];
-                    instMtx[0][0] = sx * it->mXfm.m.x.x;
-                    instMtx[1][1] = sy * it->mXfm.m.y.y;
-                    instMtx[2][2] = sz * it->mXfm.m.z.z;
-                    PSMTXConcat(camMtx, instMtx, resultMtx);
-                    GXLoadPosMtxImm(resultMtx, 0);
-                    GXLoadNrmMtxImm(resultMtx, 0);
-                    instMtx[0][0] = baseDiag0;
-                    instMtx[1][1] = baseDiag1;
-                    instMtx[2][2] = baseDiag2;
-                    ++it;
-                );
+                instMtx[0][3] = it->mXfm.v.x;
+                instMtx[1][3] = it->mXfm.v.y;
+                instMtx[2][3] = it->mXfm.v.z;
+                float sx = instMtx[0][0];
+                float sy = instMtx[1][1];
+                float sz = instMtx[2][2];
+                instMtx[0][0] = sx * it->mXfm.m.x.x;
+                instMtx[1][1] = sy * it->mXfm.m.y.y;
+                instMtx[2][2] = sz * it->mXfm.m.z.z;
+                PSMTXConcat(camMtx, instMtx, resultMtx);
+                GXLoadPosMtxImm(resultMtx, 0);
+                GXLoadNrmMtxImm(resultMtx, 0);
+                instMtx[0][0] = baseDiag0;
+                instMtx[1][1] = baseDiag1;
+                instMtx[2][2] = baseDiag2;
+                ++it;
                 TIMER_ACTION("faces", m2->DrawFaces(););
                 idx++;
             }

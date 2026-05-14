@@ -338,8 +338,9 @@ void EntityUploader::Poll() {
         case 2:
         case 3:
         case 4: {
+            int rc = mUploadOps[0]->mRetCode;
             RockCentralOpCompleteMsg msg(
-                oldCallType != 1, oldCallType, DataNode(mEmptyArray, kDataArray)
+                rc != 1, rc, DataNode(mEmptyArray, kDataArray)
             );
             oldCallbackObj->Handle(msg);
         } break;
@@ -354,8 +355,8 @@ void EntityUploader::Poll() {
         MILO_ASSERT(mCallbackObj != NULL, 0x21C);
         Hmx::Object *oldCallbackObj = mCallbackObj;
         mState = 0;
-        mCallbackObj = nullptr;
         mCallType = 0;
+        mCallbackObj = nullptr;
         RockCentralOpCompleteMsg msg(false, 1, DataNode(mEmptyArray, kDataArray));
         oldCallbackObj->Handle(msg);
         unk34 = false;
