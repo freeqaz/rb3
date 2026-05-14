@@ -139,7 +139,7 @@ public:
     int mInfoChannels; // 0xe8
     float unkec; // 0xec
     bool mGetInfoOnly; // 0xf0
-    std::vector<void *> unkf4; // 0xf4
+    std::vector<void *> mVirtBufs; // 0xf4
     std::vector<std::pair<int, int> > mChanMaps; // 0xfc
     std::vector<int> unk104; // 0x104
     std::vector<Marker> mMarkerList; // 0x10c

@@ -5,6 +5,20 @@
 
 class StoreTitleContentState;
 
+class StoreMarqueeTable {
+public:
+    ~StoreMarqueeTable();
+    bool Load(const char *);
+
+    char *mBuffer; // 0x0
+};
+
+class StoreRedemptionsTable : public std::vector<int> {
+public:
+    StoreRedemptionsTable() {}
+    bool Load(const char *);
+};
+
 class StoreVersionHeader {
 public:
 };
@@ -99,6 +113,7 @@ public:
 
 class StorePageTable {
 public:
+    ~StorePageTable();
     StorePage *GetPage(unsigned short);
 
     int mNumOffsets; // 0x0
@@ -113,7 +128,7 @@ public:
     StoreMetadataManager()
         : mFlags(0), mLoadingState(0), mBasePath(), mVersion(0), mStringTable(0),
           mSongTable(0), mOfferTable(0), mRbnOfferTable(0), mPageTable(0),
-          mCurrentPage(0), unk50(0), unk54(0) {}
+          mCurrentPage(0), mMarqueeTable(0), mRedemptionsTable(0) {}
     ~StoreMetadataManager() {}
     virtual DataNode Handle(DataArray *, bool);
 
@@ -149,8 +164,8 @@ public:
     StoreRbnOfferTable *mRbnOfferTable; // 0x44
     StorePageTable *mPageTable; // 0x48
     StorePage *mCurrentPage; // 0x4c
-    int unk50; // ptr to StoreMarqueeTable
-    int unk54;
+    StoreMarqueeTable *mMarqueeTable; // 0x50
+    StoreRedemptionsTable *mRedemptionsTable; // 0x54
     std::map<unsigned long long, StoreTitleContentState *> unk58;
     int unk70;
     int unk74;

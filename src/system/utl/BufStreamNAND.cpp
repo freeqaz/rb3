@@ -5,9 +5,14 @@
 #include <cstring>
 
 
-BufStreamNAND::BufStreamNAND(void *v1, int i1, char* buffer, bool b1)
-    : FixedSizeSaveableStream(v1, i1, b1), mBuffer(buffer), mChecksum(0), mBytesChecksummed(0), mSize(i1), mFilePath(), mFileOpen(0) {
-
+BufStreamNAND::BufStreamNAND(void *buffer, int totalSize, char *filePath, bool b1)
+    : FixedSizeSaveableStream(buffer, totalSize, b1), mChecksum(NULL), mBytesChecksummed(0) {
+    mBuffer = (char *)buffer;
+    MILO_ASSERT(!((int)mBuffer & 31), 0x21);
+    mSize = totalSize;
+    strcpy(mFilePath, filePath);
+    mFileOpen = false;
+    Clear();
 }
 
 BufStreamNAND::~BufStreamNAND() {

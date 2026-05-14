@@ -8,6 +8,7 @@
 #include "utl/MemMgr.h"
 #include "utl/Symbols.h"
 #include "math/Mtx.h"
+#include "math/Vec.h"
 
 INIT_REVS(RndMeshDeform)
 
@@ -138,30 +139,114 @@ BEGIN_LOADS(RndMeshDeform)
 END_LOADS
 
 void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
-    if (!mMesh) return;
-    RndMesh *mesh = &*mMesh;
+    RndMesh *mesh = mMesh;
+    if (mesh == 0) return;
     if (!cb->HasMesh(mesh) && !force && mDeformed) return;
+    cb->SyncMesh(mesh, 0x1f);
     mDeformed = 1;
-    int numBones = mBones.size();
     MemDoTempAllocations mem(1, 0);
-    std::vector<Transform> xfms(numBones);
-    for (int i = 0; i < numBones; i++) {
+    std::vector<Transform> xfms;
+    xfms.resize(mBones.size());
+    for (int i = 0; i < (int)mBones.size(); i++) {
         if (mBones[i].mBone) {
-            mBones[i].ExportWorldXfm(xfms[i]);
+            Transform tmp;
+            mBones[i].ExportWorldXfm(tmp);
+            Multiply(mBones[i].unk14, tmp, xfms[i]);
         } else {
             xfms[i].Reset();
-            TheDebug.Notify(MakeString("%s null bone %d\n", PathName(this), i));
+            TheDebug << MakeString("%s null bone %d\n", PathName(this), i);
         }
     }
-    int meshVerts = mesh->NumVerts();
-    int myVerts = mVerts.NumVerts();
-    if (myVerts != meshVerts) {
-        TheDebug.Notify(MakeString(
-            "%s cannot reskin %s, the vert counts differ mesh:%d me:%d",
-            PathName(this), PathName(mesh), meshVerts, myVerts));
-        return;
+    int meshNumVerts = mMesh->Verts().size();
+    int vertIdx = 0;
+    u8 *vertData = (u8 *)mVerts.mData;
+    while (vertData < (u8 *)mVerts.mData + mVerts.mSize) {
+        if (vertIdx == meshNumVerts) {
+            TheDebug.Notify(MakeString(
+                "%s cannot reskin %s, the vert counts differ mesh:%d me:%d",
+                PathName(this), PathName(mMesh.Ptr()), meshNumVerts,
+                mVerts.NumVerts()));
+            return;
+        }
+        Transform weighted;
+        weighted.m.x.x = 0; weighted.m.x.y = 0; weighted.m.x.z = 0;
+        weighted.m.y.x = 0; weighted.m.y.y = 0; weighted.m.y.z = 0;
+        weighted.m.z.x = 0; weighted.m.z.y = 0; weighted.m.z.z = 0;
+        weighted.v.x = 0; weighted.v.y = 0; weighted.v.z = 0;
+        float totalWeight = 0.0f;
+        u8 *pair = vertData;
+        int n = 0;
+        while (n < (int)*vertData) {
+            int boneIdx = pair[1];
+            int weightByte = pair[2];
+            pair += 2;
+            n++;
+            float w = (1.0f / 255.0f) * (float)weightByte;
+            totalWeight += w;
+            Transform &bx = xfms[boneIdx];
+            weighted.m.x.x += bx.m.x.x * w;
+            weighted.m.x.y += bx.m.x.y * w;
+            weighted.m.x.z += bx.m.x.z * w;
+            weighted.m.y.x += bx.m.y.x * w;
+            weighted.m.y.y += bx.m.y.y * w;
+            weighted.m.y.z += bx.m.y.z * w;
+            weighted.m.z.x += bx.m.z.x * w;
+            weighted.m.z.y += bx.m.z.y * w;
+            weighted.m.z.z += bx.m.z.z * w;
+            weighted.v.x += bx.v.x * w;
+            weighted.v.y += bx.v.y * w;
+            weighted.v.z += bx.v.z * w;
+        }
+        float inv = 1.0f / totalWeight;
+        weighted.m.x.x *= inv; weighted.m.x.y *= inv; weighted.m.x.z *= inv;
+        weighted.m.y.x *= inv; weighted.m.y.y *= inv; weighted.m.y.z *= inv;
+        weighted.m.z.x *= inv; weighted.m.z.y *= inv; weighted.m.z.z *= inv;
+        weighted.v.x *= inv; weighted.v.y *= inv; weighted.v.z *= inv;
+        if (!mSkipInverse) {
+            Multiply(weighted, mMeshInverse, weighted);
+        }
+        RndMesh::Vert &v = mMesh->Verts(vertIdx);
+        // build perpendicular axis to m.x column
+        Vector3 axis;
+        float ax = Abs(weighted.m.x.x);
+        float ay = Abs(weighted.m.y.x);
+        float az = Abs(weighted.m.z.x);
+        if (ay >= ax || az >= ax) {
+            if (ay < ax && ay < az) {
+                axis.x = weighted.m.x.x * -weighted.m.y.x;
+                axis.y = weighted.m.y.x * -weighted.m.y.x + 1.0f;
+                axis.z = weighted.m.z.x * -weighted.m.y.x;
+            } else {
+                axis.x = weighted.m.x.x * -weighted.m.z.x;
+                axis.y = weighted.m.y.x * -weighted.m.z.x;
+                axis.z = weighted.m.z.x * -weighted.m.z.x + 1.0f;
+            }
+        } else {
+            axis.x = weighted.m.x.x * -weighted.m.x.x + 1.0f;
+            axis.y = weighted.m.y.x * -weighted.m.x.x;
+            axis.z = weighted.m.z.x * -weighted.m.x.x;
+        }
+        // cross = m.x_col x axis
+        Vector3 cross;
+        cross.x = weighted.m.y.x * axis.z - weighted.m.z.x * axis.y;
+        cross.y = weighted.m.z.x * axis.x - weighted.m.x.x * axis.z;
+        cross.z = weighted.m.x.x * axis.y - weighted.m.y.x * axis.x;
+        // transform pos: new = M * pos + v
+        Vector3 oldPos = v.pos;
+        v.pos.x = weighted.m.x.x * oldPos.x + weighted.m.y.x * oldPos.y
+               + weighted.m.z.x * oldPos.z + weighted.v.x;
+        v.pos.y = weighted.m.x.y * oldPos.x + weighted.m.y.y * oldPos.y
+               + weighted.m.z.y * oldPos.z + weighted.v.y;
+        v.pos.z = weighted.m.x.z * oldPos.x + weighted.m.y.z * oldPos.y
+               + weighted.m.z.z * oldPos.z + weighted.v.z;
+        // norm = axis x cross
+        v.norm.x = axis.y * cross.z - axis.z * cross.y;
+        v.norm.y = axis.z * cross.x - axis.x * cross.z;
+        v.norm.z = axis.x * cross.y - axis.y * cross.x;
+        Normalize(v.norm, v.norm);
+        vertIdx++;
+        vertData += (*vertData * 2) + 1;
     }
-    cb->SyncMesh(mesh, 0x1f);
 }
 
 BEGIN_HANDLERS(RndMeshDeform)

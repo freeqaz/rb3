@@ -14,6 +14,7 @@
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "os/System.h"
+#include "utl/HxGuid.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
@@ -272,12 +273,59 @@ void BandMatchmaker::AddCustomSettings(
     settings->AddCustomSetting(0x10000009, mDevChannel);
     std::vector<BandUser *> users;
     TheBandUserMgr->GetBandUsersInSession(users);
+    int drumSlots, vocalSlots, guitarSlots;
+    int instrumentIncr;
     if (settingsType == 1) {
+        guitarSlots = 0;
+        vocalSlots = 0;
+        drumSlots = 0;
+        instrumentIncr = 1;
     } else if (settingsType == 0) {
+        instrumentIncr = -1;
+        vocalSlots = 1;
+        drumSlots = 1;
+        guitarSlots = 2;
     } else {
         MILO_ASSERT(settingsType == kGeneralSearch, 0x214);
+        guitarSlots = 0;
+        vocalSlots = 0;
+        drumSlots = 0;
+        instrumentIncr = 0;
     }
-    MILO_FAIL("Session Participant has no controller\n");
+    for (int i = 0; i < users.size(); i++) {
+        ControllerType ct = users[i]->GetControllerType();
+        switch (ct) {
+        case kControllerDrum:
+            drumSlots += instrumentIncr;
+            break;
+        case kControllerKeys:
+        case kControllerRealGuitar:
+        case kControllerGuitar:
+            guitarSlots += instrumentIncr;
+            break;
+        case kControllerVocals:
+            vocalSlots += instrumentIncr;
+            break;
+        default:
+            MILO_FAIL("Session Participant has no controller\n");
+            break;
+        }
+    }
+    settings->AddCustomSetting(0x1000000A, drumSlots);
+    settings->AddCustomSetting(0x1000000B, vocalSlots);
+    settings->AddCustomSetting(0x1000000C, guitarSlots);
+    HxGuid guid;
+    settings->AddCustomSetting(0x10000005, guid.Chunk32(0));
+    settings->AddCustomSetting(0x10000006, guid.Chunk32(1));
+    settings->AddCustomSetting(0x10000007, guid.Chunk32(2));
+    settings->AddCustomSetting(0x10000008, guid.Chunk32(3));
+    bool hostingQp = (mMode == mQuickFindingMode) &&
+                     (mQuickFindingMode->mFindType == kMatchmaker_Qp);
+    bool hostingTour = (mMode == mQuickFindingMode) &&
+                       (mQuickFindingMode->mFindType == kMatchmaker_Tour);
+    settings->AddCustomSetting(0x10000013, hostingQp);
+    settings->AddCustomSetting(0x10000014, hostingTour);
+    settings->AddCustomSetting(0x10000015, 0);
 }
 
 bool BandMatchmaker::HasCompatibleInstruments(NetSearchResult *res) {

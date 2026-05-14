@@ -1,24 +1,134 @@
 #include "meta/StorePackedMetadata.h"
 #include "meta/StoreOffer.h"
+#include "os/CommerceMgr_Wii.h"
+#include "os/File.h"
+#include "utl/Compress.h"
+#include "utl/MemMgr.h"
+#include "sdk/RVL_SDK/revolution/cnt/cnt.h"
+
+void CM_CNTSDCacheClearRSO();
 
 StoreMetadataManager TheStoreMetadata;
 std::vector<int> StoreMetadataManager::mSetlistOffers;
 bool gDebugMakeAllSongsAvailable;
 bool gDebugDontRelyOnCommerceServer;
+int gStoreUseCompressedFiles;
 const char *gStoreMetadataManagerLoadStepName[12];
 
+class StoreIndexFileReader : public File {
+public:
+    StoreIndexFileReader() : mSize(-1) {}
+    virtual ~StoreIndexFileReader() {
+        if (mSize >= 0)
+            CNTClose(&mFileInfo);
+    }
+    virtual int Read(void *, int);
+    virtual bool ReadAsync(void *, int);
+    virtual int Write(const void *, int);
+    virtual int Seek(int, int);
+    virtual int Tell();
+    virtual void Flush();
+    virtual bool Eof();
+    virtual bool Fail();
+    virtual int Size();
+    virtual int UncompressedSize();
+    virtual bool ReadDone(int &);
+    virtual int GetFileHandle(DVDFileInfo *&);
+
+    static void Init(unsigned long long, unsigned short);
+
+    CNTFileInfo mFileInfo; // 0x4
+    int mSize; // 0x48
+
+    static CNTHandle mMetaDataCntHandle;
+    static bool mMetaDataCntHandleInited;
+};
+
+CNTHandle StoreIndexFileReader::mMetaDataCntHandle;
+bool StoreIndexFileReader::mMetaDataCntHandleInited;
+
 bool StoreLoadPackedFile(
-    const char *filename, bool b1, int size, bool b2, bool b3, char **buf1, char **buf2, char **buf3, int *num
+    const char *filename, bool compressed, int maxSize, bool relocate, bool extendedHeader,
+    char **outBuf, char **outDataStart, char **outDataEnd, int *outCount
 ) {
-    MILO_LOG("Store: file %s is missing\n", filename);
-    MILO_LOG("Store: file %s is over budget (%d > %d)\n", filename, 0, size);
-    MILO_LOG("Store: Failed to allocated %d byte buffer for store file %s.\n", size, filename);
-    MILO_LOG("Store: Failed to allocated %d byte buffer for decompressing store file %s.\n", size, filename);
-    MILO_LOG("sizeof(StoreVersionHeader) == %d\n", 0);
-    MILO_LOG("%d strings, but based on the data size, there can only be %d.\n", 0, 0);
-    MILO_LOG("There are %d null terminators, should have %d.\n", 0, 0);
-    MILO_LOG("String %d does not match up\n", 0);
-    return false;
+    File *file;
+    if (!(TheStoreMetadata.mFlags & 1)) {
+        StoreIndexFileReader *reader = new StoreIndexFileReader();
+        if (CNTOpen(&StoreIndexFileReader::mMetaDataCntHandle, filename, &reader->mFileInfo) != 0) {
+            delete reader;
+            reader = NULL;
+        } else {
+            reader->mSize = CNTGetLength(&reader->mFileInfo);
+        }
+        file = reader;
+    } else {
+        file = NewFile(filename, 2);
+    }
+    if (file == NULL) {
+        MILO_LOG("Store: file %s is missing\n", filename);
+        return false;
+    }
+    int fileSize = file->Size();
+    int alignedSize = (fileSize + 0x1F) & ~0x1F;
+    if (fileSize > maxSize) {
+        MILO_LOG("Store: file %s is over budget (%d > %d)\n", filename, fileSize, maxSize);
+        delete file;
+        return false;
+    }
+    if (compressed && gStoreUseCompressedFiles) {
+        char *rawBuf = (char *)_MemAllocTemp(alignedSize, 0x20);
+        if (rawBuf == NULL) {
+            MILO_LOG("Store: Failed to allocated %d byte buffer for store file %s.\n", fileSize, filename);
+            delete file;
+            return false;
+        }
+        char *decompBuf = (char *)_MemAllocTemp(maxSize, 0x20);
+        if (decompBuf == NULL) {
+            MILO_LOG("Store: Failed to allocated %d byte buffer for decompressing store file %s.\n", maxSize, filename);
+            _MemFree(rawBuf);
+            delete file;
+            return false;
+        }
+        file->Read(rawBuf, alignedSize);
+        delete file;
+        int decompSize = maxSize;
+        DecompressMem(rawBuf, fileSize, decompBuf, decompSize, true, NULL);
+        _MemFree(rawBuf);
+        *outBuf = (char *)_MemAlloc(decompSize, 4);
+        memcpy(*outBuf, decompBuf, decompSize);
+        _MemFree(decompBuf);
+        *outDataStart = *outBuf;
+        *outDataEnd = *outBuf + decompSize;
+    } else {
+        *outBuf = (char *)_MemAlloc(alignedSize, 0x20);
+        if (*outBuf == NULL) {
+            MILO_LOG("Store: Failed to allocated %d byte buffer for store file %s.\n", alignedSize, filename);
+            delete file;
+            return false;
+        }
+        *outDataEnd = *outBuf + fileSize;
+        file->Read(*outBuf, alignedSize);
+        *outDataStart = *outBuf;
+        delete file;
+    }
+    if (outCount != NULL) {
+        *outCount = *(unsigned short *)*outDataStart;
+        if (extendedHeader) {
+            *outDataStart += 4;
+        } else {
+            *outDataStart += 2;
+        }
+        if (relocate) {
+            char **ptr = (char **)*outDataStart;
+            for (int i = 0; i < *outCount; i++) {
+                if (*ptr != NULL) {
+                    *ptr += (int)*outBuf;
+                }
+                ptr++;
+            }
+        }
+    }
+    return true;
 }
 
 bool StoreStringTable::Load(const char *cc) {
@@ -327,10 +437,66 @@ void StoreMetadataManager::Load(const char *cc) {
     }
 }
 
+StoreMarqueeTable::~StoreMarqueeTable() {
+    if (mBuffer)
+        _MemFree(mBuffer);
+}
+
+StorePageTable::~StorePageTable() {
+    mPageLookup.clear();
+    delete[] mPages;
+    if (mBuffer)
+        _MemFree(mBuffer);
+}
+
 void StoreMetadataManager::Unload() {
-    RELEASE(mStringTable);
-    RELEASE(mOfferTable);
-    RELEASE(mRbnOfferTable);
+    if (StoreIndexFileReader::mMetaDataCntHandleInited) {
+        CNTReleaseHandle(&StoreIndexFileReader::mMetaDataCntHandle);
+        StoreIndexFileReader::mMetaDataCntHandleInited = false;
+    }
+    CM_CNTSDCacheClearRSO();
+    if (mFlags & 2) {
+        TheWiiCommerceMgr.DestroyCommerce();
+        mFlags &= ~2;
+    }
+    mCurrentPage = NULL;
+    delete mVersion;
+    mVersion = NULL;
+    delete mStringTable;
+    mStringTable = NULL;
+    delete mSongTable;
+    mSongTable = NULL;
+    delete mOfferTable;
+    mOfferTable = NULL;
+    delete mRbnOfferTable;
+    mRbnOfferTable = NULL;
+    delete mPageTable;
+    mPageTable = NULL;
+    delete mMarqueeTable;
+    mMarqueeTable = NULL;
+    delete mRedemptionsTable;
+    mRedemptionsTable = NULL;
+    delete (StoreVersionHeader *)unk7c;
+    unk7c = 0;
+    if (unk80 != 0) {
+        _MemFree((void *)unk80);
+        unk80 = 0;
+    }
+    for (std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.begin();
+         it != unk58.end(); ++it) {
+        delete it->second;
+    }
+    unk58.clear();
+    unk70 = 0;
+    unk74 = 0;
+    SetLoadingState(0);
+    mFlags &= ~0x1C;
+    unk8c = 0;
+    unk88 = 0;
+    unk90 = 0;
+    unk94 = 0;
+    unk98.clear();
+    unka0 = 0;
 }
 
 StoreOfferState *StoreMetadataManager::GetOfferStatus(const StorePackedOfferBase *base) {

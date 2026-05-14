@@ -10,7 +10,6 @@
 
 Symbol RootContent::FileName() { return Symbol(mRoot.c_str()); }
 
-MEMAllocator gCNTAllocator;
 bool gCNTThreadInUse;
 
 void (*CNTSDInitRSO)(void *workBuffer, int workBufferSize);
@@ -25,7 +24,7 @@ void (*CNTSDCardGetAvailableBlocksRSO)(void);
 void (*CNTSDGetBackupBlocksFromCntRSO)(void);
 void (*CNTSDBackupRSO)(void);
 void (*CNTSDSetThreadBackupRSO)(void);
-void (*CNTSDFinishThreadRSO)(void);
+int (*CNTSDFinishThreadRSO)(CNTSDThreadInfo *, int *);
 void (*CNTSDFinishRSO)(void);
 int (*CNTSDDeleteBackupRSO)(unsigned long long titleId, unsigned short contentId);
 void (*CNTSDNANDCheckRSO)(void);
@@ -40,14 +39,28 @@ void (*FAMountRSO)(void);
 void (*FAIsWriteProtectedRSO)(void);
 void (*CNTSDSetEventCallbackRSO)(void *);
 
+void *cntsdModule;
+void *cntsdBss;
+void *cntsdCode;
+
+MEMAllocator gCNTAllocator;
+
 Timer gLastPlatformErrorTimer;
 
-WiiContentMgr TheWiiContentMgr;
+struct CNTSDProgress {
+    int unk0;
+    int unk4;
+    int unk8;
+    int unkC;
+};
+CNTSDProgress gCNTSDProgress;
 
 void *gCNTThreadStackBuffer;
 void *gCNTThreadWorkBuffer;
 
 CNTSDThreadInfo *gCNTThreadInfo;
+
+WiiContentMgr TheWiiContentMgr;
 
 DECOMP_FORCEACTIVE(ContentMgr_Wii, "_unresolved func.\n")
 
@@ -266,9 +279,39 @@ void WiiContent::Delete() {
     TheWiiContentMgr.mLastTransferResult = r;
 }
 
+void WiiContent::PopAfterRestore() {}
+
 void WiiContent::PollTransfer() {
     MILO_ASSERT(unk20 == 1, 1119);
     if (unk20 == 1) {
+        if (unk31) {
+            gCNTSDProgress.unkC = 1;
+        }
+        if (gCNTSDProgress.unk8 != 0) {
+            int innerResult;
+            int r = CNTSDFinishThreadRSO(gCNTThreadInfo, &innerResult);
+            if (r == 0) {
+                r = innerResult;
+            }
+            gCNTThreadInUse = false;
+            if (gCNTSDProgress.unkC == 1) {
+                if (r != -0xBC0) {
+                    PopAfterRestore();
+                }
+                r = 0;
+            }
+            if (r != 0 && (mSDCardRemoved || !CNTSDIsInsertedRSO())) {
+                r = -0xBF8;
+            }
+            unk24 = ConvertCNTSDError(r);
+            if (unk24 == 0xB && mState == 7) {
+                unk24 = 1;
+            }
+            unk20 = 2;
+        } else if (ThePlatformMgr.IsShuttingDown()) {
+            unk31 = 1;
+            gCNTSDProgress.unkC = 1;
+        }
     }
 }
 

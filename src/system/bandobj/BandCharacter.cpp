@@ -1203,7 +1203,17 @@ bool BandCharacter::AddDircut(Symbol s1, Symbol s2, int i) {
 
 bool BandCharacter::AddDircut(const FilePath &f) {
     MILO_ASSERT(!f.empty(), 0x794);
-    // more
+    for (std::list<String>::iterator it = mDircuts.begin(); it != mDircuts.end(); ++it) {
+        if ((const String &)f == *it) {
+            return true;
+        }
+    }
+    int start = mFileMerger->FindMergerIndex("directed_cut_0", true);
+    unsigned int maxNum = mFileMerger->mMergers.size() - start;
+    if (mDircuts.size() >= maxNum)
+        return false;
+    mDircuts.push_back(f);
+    return true;
 }
 
 void BandCharacter::SetDircuts() {
@@ -1619,7 +1629,24 @@ DataNode BandCharacter::OnChangeFaceGroup(DataArray *da) {
     return DataNode(0);
 }
 
-void ReplaceRefs(Hmx::Object *, Hmx::Object *mine) { MILO_ASSERT(mine, 0xA72); }
+void ReplaceRefs(Hmx::Object *mine, Hmx::Object *theirs) {
+    MILO_ASSERT(theirs, 0xA72);
+    std::vector<ObjRef *>::const_iterator it = mine->Refs().end();
+    std::vector<ObjRef *>::const_iterator begin = mine->Refs().begin();
+    for (; it != begin; --it) {
+        ObjRef *ref = it[-1];
+        ref->RefOwner();
+        if (ref->RefOwner() != NULL) {
+            ObjectDir *dir = ref->RefOwner()->Dir();
+            bool match = (dir == sOutfitDir) || (dir == sResourceDir) || (dir == sToDir);
+            if (match && mine != theirs) {
+                ref->Replace(mine, theirs);
+                it = mine->Refs().end();
+                begin = mine->Refs().begin();
+            }
+        }
+    }
+}
 
 MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *) {
     return DefaultSubdirAction(o1, mFileMerger->mSubdirs);

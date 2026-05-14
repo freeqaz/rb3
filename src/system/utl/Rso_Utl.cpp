@@ -2,6 +2,7 @@
 #include "decomp.h"
 #include "os/Debug.h"
 #include "revolution/os/OSError.h"
+#include "utl/MakeString.h"
 #include <cstddef>
 
 #define MAX_RSO_INITERS 8
@@ -86,10 +87,20 @@ void *LoadRsoFile(const char *filename, unsigned int &size, void *(*alloc)(int))
     return ret;
 }
 
-void *RsoLoad(const char *filename, unsigned char **, void *(*alloc)(int)) {
+extern "C" int RSOLinkList(void *, unsigned char *);
+
+void *RsoLoad(const char *filename, unsigned char **bss, void *(*alloc)(int)) {
     uint size;
     void *rso = LoadRsoFile(filename, size, alloc);
     if (rso == NULL) {
         return NULL;
     }
+    int bssSize = ((int *)rso)[7];
+    if (bssSize != 0) {
+        *bss = (unsigned char *)alloc(bssSize);
+    }
+    if (RSOLinkList(rso, *bss) == 0) {
+        TheDebug.Notify(MakeString("RSO: %s: LinkList failed!\n", filename));
+    }
+    return rso;
 }
