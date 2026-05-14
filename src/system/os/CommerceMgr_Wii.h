@@ -1,6 +1,7 @@
 #pragma once
 #include "obj/Msg.h"
 #include "revolution/ec/ec.h"
+#include <vector>
 
 class WiiCommerceMgr : public MsgSource {
 public:
@@ -50,7 +51,9 @@ public:
     int mLastErrorCode; // ec
     char unkF0[0x2128 - 0xf0]; // padding to ECTitleInfo
     ECTitleInfo mTitleInfo; // 0x2128, sizeof = 0x24
-    char unk214c[0x41a8 - 0x214c - 4]; // padding to virtual base
+    char unk214c[0x2154 - 0x214c]; // padding to mContentUnits (8 bytes)
+    std::vector<unsigned short> mContentUnits; // 0x2154, data ptr at 0x2158, sizeof = 0xc
+    char unk2160[0x41a8 - 0x2160]; // padding to virtual base
 };
 
 extern WiiCommerceMgr TheWiiCommerceMgr;

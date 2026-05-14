@@ -1050,12 +1050,14 @@ float VocalPlayer::GetBestPercentage(int p) {
 void VocalPlayer::UpdateSectionStats() {
     float f1;
     int diff = mPhrasePercentageCount - mSectionStartPhrasePercentageCount;
-    if (diff >= 1) {
-        f1 = (mPhrasePercentageTotal - mSectionStartPhrasePercentageTotal) / (float)diff;
+    float phraseDelta = mPhrasePercentageTotal - mSectionStartPhrasePercentageTotal;
+    float scoreDelta = mScore - mSectionStartScore;
+    if (diff > 0) {
+        f1 = phraseDelta / (float)diff;
     } else {
         f1 = -1;
     }
-    Player::UpdateSectionStats(f1, mScore - mSectionStartScore);
+    Player::UpdateSectionStats(f1, scoreDelta);
 }
 
 void VocalPlayer::HandleNewSection(const PracticeSection &s, int i1, int i2) {

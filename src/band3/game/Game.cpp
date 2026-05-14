@@ -1383,14 +1383,12 @@ bool Game::IsWaiting() {
 
 float Game::GetFractionCompleted() const {
     if (mResumeTime != 0.0f) {
-        float frac = mResumeTime / TheSongDB->GetSongDurationMs();
-        return frac > 0.0f ? frac : 0.0f;
+        return std::max(0.0f, mResumeTime / mSongDB->GetSongDurationMs());
     }
     if (unk124 == 0.0f) {
         return 1.0f;
     }
-    float frac = unk124 / TheSongDB->GetSongDurationMs();
-    return frac > 0.0f ? frac : 0.0f;
+    return std::max(0.0f, unk124 / mSongDB->GetSongDurationMs());
 }
 
 void Game::AdjustForVocalPhrases(float &startMs, float &endMs) const {

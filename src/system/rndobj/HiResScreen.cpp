@@ -189,37 +189,36 @@ void HiResScreen::GetBorderForTile(
     }
 }
 
-Hmx::Rect HiResScreen::CurrentTileRect(
+void HiResScreen::CurrentTileRect(
     const Hmx::Rect &inRect, Hmx::Rect &outTileRect, Hmx::Rect &outAccumRect
 ) const {
     int tiling = mTiling;
     int tile = mCurrTile;
-    int tileX = tile % tiling;
     int tileY = tile / tiling;
-    float tileXf = (float)tileX;
+    int tileX = tile % tiling;
     float invTiling = 1.0f / (float)tiling;
-    float tileYf = (float)tileY;
-    float tileXStart = tileXf * invTiling;
-    float tileYStart = tileYf * invTiling;
-    float tileXWidth = (tileXf + 1.0f) * invTiling - tileXStart;
-    float tileYHeight = (tileYf + 1.0f) * invTiling - tileYStart;
+    float tileXStart = (float)tileX * invTiling;
+    float tileYStart = (float)tileY * invTiling;
+    float xPlusW = inRect.x + inRect.w;
+    float yPlusH = inRect.y + inRect.h;
+    float tileXWidth = (float)tileX * invTiling + invTiling - tileXStart;
+    float tileYHeight = (float)tileY * invTiling + invTiling - tileYStart;
     float x0 = (inRect.x - tileXStart) / tileXWidth;
-    float x1 = ((inRect.w + inRect.x) - tileXStart) / tileXWidth;
-    float y0 = (inRect.y - tileYStart) / tileYHeight;
-    float y1 = ((inRect.h + inRect.y) - tileYStart) / tileYHeight;
     x0 = Clamp(0.0f, 1.0f, x0);
-    x1 = Clamp(0.0f, 1.0f, x1);
+    float y0 = (inRect.y - tileYStart) / tileYHeight;
     y0 = Clamp(0.0f, 1.0f, y0);
+    float x1 = (xPlusW - tileXStart) / tileXWidth;
+    x1 = Clamp(0.0f, 1.0f, x1);
+    float y1 = (yPlusH - tileYStart) / tileYHeight;
     y1 = Clamp(0.0f, 1.0f, y1);
     outTileRect.x = x0;
-    outTileRect.w = x1;
     outTileRect.y = y0;
+    outTileRect.w = x1;
     outTileRect.h = y1;
     outAccumRect.x = x0 * invTiling + tileXStart;
     outAccumRect.y = y0 * invTiling + tileYStart;
     outAccumRect.w = (x1 * invTiling + tileXStart) - outAccumRect.x;
     outAccumRect.h = (y1 * invTiling + tileYStart) - outAccumRect.y;
-    return outAccumRect;
 }
 
 void HiResScreen::Accumulate() {

@@ -40,7 +40,7 @@ public:
     void Finish();
     int GetPaddingX() const;
     int GetPaddingY() const;
-    Hmx::Rect CurrentTileRect(const Hmx::Rect &, Hmx::Rect &, Hmx::Rect &) const;
+    void CurrentTileRect(const Hmx::Rect &, Hmx::Rect &, Hmx::Rect &) const;
     Hmx::Rect ScreenRect(const RndCam *, const Hmx::Rect &) const;
     Hmx::Rect ScreenRect() const;
     Hmx::Rect InvScreenRect() const;

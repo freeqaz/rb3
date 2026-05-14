@@ -293,27 +293,30 @@ NetCacheLoader *NetCacheMgr::AddNetCacheLoader(const char *cc, NetLoaderPos pos)
 
 
 NetLoaderRef *NetCacheMgr::AddLoaderRef(const char *name, RefType type, NetLoaderPos pos) {
+    bool ready;
+    if (*name == '\0') goto fail;
+    ready = (mState == kNCMS_Ready && !mHasFailed && mLoadCount == 1);
+    if (!ready) {
+    fail:
+        return NULL;
+    }
+    {
     NetLoaderRef *pNetLoaderRef = NULL;
-    if (*name == '\0') {
-        return NULL;
-    }
-    if (!IsReady()) {
-        return NULL;
-    }
     std::list<NetLoaderRef>::iterator it = mNetLoaderRefs.begin();
     for (; it != mNetLoaderRefs.end(); ++it) {
         NetLoaderRef &ref = *it;
         if (stricmp(ref.mName.c_str(), name) == 0) {
             if (kRT_CacheLoader == type && ref.mCacheLoader) {
                 MILO_ASSERT(ref.mNetLoader == NULL, 0x17A);
+                pNetLoaderRef = &ref;
+                break;
             } else if (kRT_NetLoader == type && ref.mNetLoader) {
                 MILO_ASSERT(ref.mCacheLoader == NULL, 0x180);
+                pNetLoaderRef = &ref;
+                break;
             } else {
-                TheDebug << MakeString("Found loader for %s, but it was not type %d.\n", ref.mName.c_str(), (int)type);
-                continue;
+                TheDebug << MakeString("Found loader for %s, but it was not type %d.\n", ref.mName.c_str(), type);
             }
-            pNetLoaderRef = &ref;
-            break;
         }
     }
 
@@ -323,40 +326,54 @@ NetLoaderRef *NetCacheMgr::AddLoaderRef(const char *name, RefType type, NetLoade
     newRef.mCacheLoader = NULL;
 
     if (!pNetLoaderRef) {
-        if ((unsigned int)type == 1) {
-            NetLoader *nl = NetLoader::Create(String(name));
-            String s(name);
-            NetLoaderRef tmp = { String(s), 0, nl, NULL };
-            newRef = tmp;
-        } else if ((unsigned int)type == 0) {
+        switch (type) {
+        case kRT_CacheLoader: {
             NetCacheLoader *ncl = new NetCacheLoader(mCache, String(name));
             String s(name);
-            NetLoaderRef tmp = { String(s), 0, NULL, ncl };
+            NetLoaderRef tmp;
+            tmp.mName = s;
+            tmp.mRefCount = 0;
+            tmp.mNetLoader = NULL;
+            tmp.mCacheLoader = ncl;
             newRef = tmp;
-        } else {
+            break;
+        }
+        case kRT_NetLoader: {
+            NetLoader *nl = NetLoader::Create(String(name));
+            String s(name);
+            NetLoaderRef tmp;
+            tmp.mName = s;
+            tmp.mRefCount = 0;
+            tmp.mNetLoader = nl;
+            tmp.mCacheLoader = NULL;
+            newRef = tmp;
+            break;
+        }
+        default:
             MILO_FAIL("Unknown ref type %d.\n", type);
+            break;
         }
 
-        if ((unsigned int)pos == 1) {
-            mNetLoaderRefs.insert(mNetLoaderRefs.end(), newRef);
-            pNetLoaderRef = &mNetLoaderRefs.back();
-        } else if ((unsigned int)pos == 0) {
-            std::list<NetLoaderRef>::iterator insertIt;
-            for (insertIt = mNetLoaderRefs.begin(); insertIt != mNetLoaderRefs.end(); ++insertIt) {
-                if (!insertIt->IsDownloading() && !insertIt->IsLoadedOrFailed()) {
-                    break;
-                }
-            }
-            std::list<NetLoaderRef>::iterator inserted = mNetLoaderRefs.insert(insertIt, newRef);
+        switch (pos) {
+        case (NetLoaderPos)0:
+            mNetLoaderRefs.insert(mNetLoaderRefs.begin(), newRef);
+            pNetLoaderRef = &mNetLoaderRefs.front();
+            break;
+        case (NetLoaderPos)1: {
+            std::list<NetLoaderRef>::iterator inserted = mNetLoaderRefs.insert(mNetLoaderRefs.end(), newRef);
             pNetLoaderRef = &*inserted;
-        } else {
+            break;
+        }
+        default:
             MILO_FAIL("Unknown net loader pos %d.\n", pos);
+            break;
         }
 
         MILO_ASSERT(pNetLoaderRef, 0x1C2);
     }
     pNetLoaderRef->AddRef();
     return pNetLoaderRef;
+    }
 }
 
 void NetCacheMgr::PollLoaders() {
@@ -472,10 +489,3 @@ bool NetLoaderRef::IsLoadedOrFailed() {
     return failed != '\0';
 }
 
-NetLoaderRef &NetLoaderRef::operator=(const NetLoaderRef &other) {
-    mName = other.mName;
-    mRefCount = other.mRefCount;
-    mNetLoader = other.mNetLoader;
-    mCacheLoader = other.mCacheLoader;
-    return *this;
-}

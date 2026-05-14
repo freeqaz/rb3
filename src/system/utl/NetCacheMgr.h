@@ -48,7 +48,13 @@ struct NetLoaderRef {
     void AddRef();
     void ReleaseRef();
     bool IsValid() const;
-    NetLoaderRef &operator=(const NetLoaderRef &);
+    inline NetLoaderRef &operator=(const NetLoaderRef &other) {
+        mName = other.mName;
+        mRefCount = other.mRefCount;
+        mNetLoader = other.mNetLoader;
+        mCacheLoader = other.mCacheLoader;
+        return *this;
+    }
 
     String mName; // 0x0
     int mRefCount; // 0xc

@@ -218,7 +218,9 @@ void VocalTrack::ResetAllTubePlates() {
 void VocalTrack::DumpPlates(std::deque<TubePlate *> &plates, const char *str) {
     MILO_LOG("dumping plates in %s\n", str);
     int idx = 0;
-    FOREACH (it, plates) {
+    std::deque<TubePlate *>::iterator it = plates.begin();
+    std::deque<TubePlate *>::iterator end = plates.end();
+    for (; it != end; ++it) {
         TubePlate *cur = *it;
         if (!cur->NoVerts()) {
             Transform &xfm = cur->mMesh->TransParent()->WorldXfm();

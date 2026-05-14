@@ -220,23 +220,26 @@ void PatchLayer::Draw() {
         sMat->SetColor(sColorPalette->GetColor(mColorIdx));
         Transform tf50;
         tf50.Reset();
-        tf50.v = Position();
-        Hmx::Matrix3 m78;
-        Vector3 vb4(0, Rotation() * DEG2RAD, 0);
+        tf50.v.Set((float)mPosX, 0, (float)mPosZ);
+        Vector3 vb4(0, ((float)mRot * 360.0f / 511.0f) * DEG2RAD, 0);
         MakeRotMatrix(vb4, tf50.m, true);
-        float scale = ScaleX();
+        float scale = (float)mScaleX * (1 / 1638.3f) - 5.0f;
         hackyScaleValue = scale;
         if (scale < 0) {
-            scale = ScaleX();
-            scale = scale * -1.0f;
+            scale = ((float)mScaleX * (1 / 1638.3f) - 5.0f) * -1.0f;
         }
-        Vector3 vc0(sticker->unk18 * scale * 7.5f, 1.0f, sticker->unk1c * ScaleY() * 7.5f);
-        Scale(vc0, tf50.m, tf50.m);
+        Scale(
+            Vector3(
+                sticker->unk18 * scale * 7.5f,
+                1.0f,
+                sticker->unk1c * ((float)mScaleY * (1 / 1638.3f) - 5.0f) * 7.5f
+            ),
+            tf50.m, tf50.m
+        );
         Transform tfa8;
         tfa8.Reset();
-        if (scale != ScaleX()) {
-            Vector3 vcc(-1.0f, 1.0f, 1.0f);
-            Scale(vcc, tfa8.m, tfa8.m);
+        if (scale != (float)mScaleX * (1 / 1638.3f) - 5.0f) {
+            Scale(Vector3(-1.0f, 1.0f, 1.0f), tfa8.m, tfa8.m);
             sMat->SetTexXfm(tfa8);
         } else
             sMat->SetTexXfm(tfa8);
@@ -245,7 +248,7 @@ void PatchLayer::Draw() {
             sTransAnim->SetFrame((unk28 - uisec) * 40.0f + 100.0f, 1.0f);
         else
             sTransAnim->SetFrame(0, 1.0f);
-        float deform = DeformFrame();
+        float deform = (float)mDeformFrame * (1 / 20.46f);
         if (deform != sGrpAnim->GetFrame()) {
             sGrpAnim->SetFrame(deform, 1.0f);
         }
