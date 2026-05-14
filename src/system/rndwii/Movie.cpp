@@ -1,11 +1,19 @@
 #include "Movie.h"
+#include "macros.h"
 #include "os/Timer.h"
 #include "rndobj/Tex.h"
 #include "rndwii/Tex.h"
+#include "utl/MemMgr.h"
 
 WiiMovie::WiiMovie() : unk_0x40(0), unk_0x48(0) {}
 
-WiiMovie::~WiiMovie() {}
+WiiMovie::~WiiMovie() {
+    RELEASE(unk_0x48);
+    if (unk_0x40) {
+        _MemFree(unk_0x40);
+        unk_0x40 = nullptr;
+    }
+}
 
 void WiiMovie::SetFile(const FilePath &fp, bool b) {}
 

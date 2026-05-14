@@ -394,26 +394,30 @@ int Splash::Show() {
     if (cs)
         cs->Enter();
     MILO_ASSERT(!mPreparedScreens.empty(), 684);
-    PreparedScreenParams params = *mPreparedScreens.begin();
+    PreparedScreenParams &params = *mPreparedScreens.begin();
+    RndDir *dir = params.unk_0x0;
+    int msecs = params.unk_0x4;
     if (cs)
         cs->Exit();
-    mLastSplash = params.unk_0x0;
+    mLastSplash = dir;
     mLastSplash->Enter();
-    unk_0x4C = (int)mLastSplash->Find<RndCam>(kSplashCam, false);
+    const char *camName = kSplashCam;
+    unk_0x4C = (int)mLastSplash->Find<RndCam>(camName, true);
     TexMovie *tm = mLastSplash->Find<TexMovie>(kSplashMovie, false);
     unk_0x50 = tm;
     if (tm != NULL) {
         if (unk_0x64) {
+            Movie &mov = tm->mMovie;
             tm->mShowing = true;
-            tm->mMovie.SetPaused(false);
-            mSplashTime = (int)ceilf(tm->mMovie.MsPerFrame() * (float)tm->mMovie.NumFrames()) * 2;
+            mov.SetPaused(false);
+            mSplashTime = (int)ceilf(mov.MsPerFrame() * (float)mov.NumFrames()) * 2;
             if (TheRnd->mAspect != Rnd::kWidescreen)
                 TheRnd->SetAspect(Rnd::kRegular);
         } else {
             return ShowNext();
         }
     } else {
-        mSplashTime = params.unk_0x4;
+        mSplashTime = msecs;
         if (TheRnd->mAspect != Rnd::kWidescreen)
             TheRnd->SetAspect(Rnd::kLetterbox);
     }

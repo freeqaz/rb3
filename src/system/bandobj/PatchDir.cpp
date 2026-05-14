@@ -314,17 +314,24 @@ void PatchDir::CacheRenderedTex(RndTex *tex, bool b) {
         mTex->Compress(true);
 }
 
+#define kStickerCategoryBits_2 8
+#define kStickerIdxBits_4 6
+#define kColorIdxBits 6
+
 void PatchLayer::SavePacked(IntPacker &packer) const {
-    int count = -1;
+    int stickerCategoryIndex = -1;
     if (!mStickerCategory.Null()) {
         std::vector<Symbol>::iterator it =
             std::find(sCategoryNames.begin(), sCategoryNames.end(), mStickerCategory);
         if (it != sCategoryNames.end()) {
-            count = it - sCategoryNames.begin();
+            stickerCategoryIndex = it - sCategoryNames.begin();
         }
     }
-    packer.AddS(count, 8);
+    MILO_ASSERT(stickerCategoryIndex < (1 << kStickerCategoryBits_2), 0x279);
+    packer.AddS(stickerCategoryIndex, 8);
+    MILO_ASSERT(mStickerIdx < (1 << kStickerIdxBits_4), 0x27C);
     packer.AddU(mStickerIdx, 6);
+    MILO_ASSERT(mColorIdx < (1 << kColorIdxBits), 0x27F);
     packer.AddU(mColorIdx, 6);
     packer.AddS(mPosX, 9);
     packer.AddS(mPosZ, 9);

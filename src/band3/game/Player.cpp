@@ -365,7 +365,7 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
     unk298 = 0;
     if (estate == kPlayerBeingSaved && mEnabledState != kPlayerDisabled) {
         MILO_ASSERT(causer, 0x260);
-        if (!causer->GetPlayer()->IsNet()) {
+        if (causer->GetPlayer()->IsNet()) {
             static Message msg("send_already_saved", 0);
             msg[0] = causer;
             HandleType(msg);
@@ -434,7 +434,7 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
         player_saved[1] = b;
         TheBandDirector->HandleType(player_saved);
         GetTrackPanel()->PlaySequence(
-            MakeString("%s_regen.cue", mUser->GetTrackSym().Str()), 0.0f, 0.0f, 0.0f
+            MakeString("%s_regen.cue", mUser->GetTrackSym()), 0.0f, 0.0f, 0.0f
         );
         TheGame->OnPlayerSaved(this);
         break;

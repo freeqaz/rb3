@@ -315,13 +315,12 @@ void AccomplishmentProgress::SaveFixed(FixedSizeSaveableStream &stream) const {
 }
 
 int AccomplishmentProgress::SaveSize(int i) {
-    int i3 = 0x2c9e;
+    int size = 0x2c9e;
     if (i >= 0x91)
-        i3 = 0x2cbe;
-    int size = GamerAwardStatus::SaveSize(i);
-    size *= 0x32;
-    size += i3;
-    REPORT_SIZE("AccomplishmentProgress", size + 0x2BD);
+        size = 0x2cbe;
+    size += 0x2b9;
+    size += GamerAwardStatus::SaveSize(i) * 0x32;
+    REPORT_SIZE("AccomplishmentProgress", size + 4);
 }
 
 void AccomplishmentProgress::LoadFixed(FixedSizeSaveableStream &stream, int rev) {

@@ -99,8 +99,16 @@ void ClipCollide::PickReport(const char *cc) {
                 RndCam *cam = dynamic_cast<RndCam *>(handled.GetObj());
                 if (cam) {
                     Transform tf70;
+                    Vector3 up(-1, 1, -1);
+                    Vector3 target(0, 0, 1);
                     tf70.Reset();
-                    tf70.LookAt(Vector3(-1, 1, 1), Vector3(0, 0, 1));
+                    tf70.m.z.Set(target.x - tf70.v.x, target.y - tf70.v.y, target.z - tf70.v.z);
+                    tf70.m.y = up;
+                    Normalize(tf70.m, tf70.m);
+                    tf70.v = curReport.pos;
+                    tf70.v.x += tf70.m.y.x * 3.0f;
+                    tf70.v.y += tf70.m.y.y * 3.0f;
+                    tf70.v.z += tf70.m.y.z * 3.0f;
                     cam->SetLocalXfm(tf70);
                 }
             }

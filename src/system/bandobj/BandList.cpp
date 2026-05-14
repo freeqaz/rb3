@@ -285,13 +285,14 @@ void BandList::StartConcealAnim(int i, Transform &tf) {
 void BandList::RevealAnimPoll(int i, Transform &tf) {
     MILO_ASSERT(SupportsRevealConcealAnim(), 0x23D);
     if (mRevealStates[i] == kRevealing) {
-        float f1 = TheTaskMgr.UISeconds() - mRevealStartTimes[i];
-        float f3 = mRevealSoundDelay;
-        float frame = 0;
+        float startTime = mRevealStartTimes[i];
+        float f1 = TheTaskMgr.UISeconds() - startTime;
         float f4 = mRevealEntryDelay * (float)i + mRevealStartDelay;
+        float soundTime = f4 + mRevealSoundDelay;
+        float frame = 0;
         if (f1 > f4)
             frame = (f1 - f4) * GetRevealFramesPerSecond();
-        if (!unk264[i] && (f1 > f4 + f3)) {
+        if (!unk264[i] && (f1 > soundTime)) {
             if (mRevealSound)
                 mRevealSound->Play(0, 0, 0);
             unk264[i] = true;
@@ -310,15 +311,16 @@ void BandList::RevealAnimPoll(int i, Transform &tf) {
 void BandList::ConcealAnimPoll(int i, Transform &tf) {
     MILO_ASSERT(SupportsRevealConcealAnim(), 0x270);
     if (mRevealStates[i] == kConcealing) {
-        float f1 = TheTaskMgr.UISeconds() - mRevealStartTimes[i];
+        float startTime = mRevealStartTimes[i];
+        float f1 = TheTaskMgr.UISeconds() - startTime;
         int numdisp = NumDisplay();
         numdisp = (numdisp - i) - 1;
-        float f3 = mConcealSoundDelay;
-        float frame = 0;
         float f4 = mConcealEntryDelay * (float)numdisp + mConcealStartDelay;
+        float soundTime = f4 + mConcealSoundDelay;
+        float frame = 0;
         if (f1 > f4)
             frame = (f1 - f4) * GetConcealFramesPerSecond();
-        if (!unk264[i] && (f1 > f4 + f3)) {
+        if (!unk264[i] && (f1 > soundTime)) {
             if (mConcealSound)
                 mConcealSound->Play(0, 0, 0);
             unk264[i] = true;

@@ -19,7 +19,10 @@ class WiiMovie : public RndMovie {
     void StreamRestart(int);
 
     SIVideo mVideoData; // 0x2c
-    u32 unk_0x40, unk_0x44, unk_0x48, unk_0x4c, unk_0x50;
+    void *unk_0x40;
+    u32 unk_0x44;
+    class Hmx::Object *unk_0x48;
+    u32 unk_0x4c, unk_0x50;
 
     void *unk_0x54;
 };

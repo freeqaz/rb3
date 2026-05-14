@@ -17,6 +17,7 @@
 #include "os/Debug.h"
 #include "os/Endian.h"
 #include "os/File.h"
+#include "os/HolmesClient.h"
 #include "os/System.h"
 #include "rndobj/Anim.h"
 #include "rndobj/Cam.h"
@@ -47,6 +48,7 @@
 #include "utl/Loader.h"
 #include "math/Key.h"
 #include "utl/Std.h"
+#include "utl/Str.h"
 #include "utl/ClassSymbols.h"
 #include <cmath>
 
@@ -959,6 +961,11 @@ const char *CacheResource(const char *cc, Hmx::Object *o) {
     }
 }
 
+class AsyncFileWii {
+public:
+    static bool FileExistsOnCD(const char *);
+};
+
 const char *CacheResource(const char *cc, CacheResourceResult &res) {
     Platform thisPlatform = TheLoadMgr.GetPlatform();
     res = kCacheUnnecessary;
@@ -980,14 +987,15 @@ const char *CacheResource(const char *cc, CacheResourceResult &res) {
         if (TheLoadMgr.GetPlatform() == kPlatformPS3) {
             const char *xboxStr = strstr(localized, "_xbox");
             if (xboxStr) {
-                static char *ps3File;
+                static char ps3File[256];
                 strcpy(ps3File, localized);
                 int ps3Idx = xboxStr - localized;
                 strcpy(ps3File + ps3Idx, "_ps3");
                 strcpy(ps3File + ps3Idx + 4, xboxStr + 5);
+                localized = ps3File;
             }
         }
-        static char *cacheFile;
+        static char cacheFile[256];
         strcpy(
             cacheFile,
             MakeString(
@@ -998,7 +1006,20 @@ const char *CacheResource(const char *cc, CacheResourceResult &res) {
                 PlatformSymbol(thisPlatform)
             )
         );
-        // the rest relies on AsyncFileWii and Holmes
+        bool existsOnCD = AsyncFileWii::FileExistsOnCD(cacheFile);
+        bool canUseCached = (islocal | existsOnCD) != 0;
+        if (UsingCD() || canUseCached) {
+            return cacheFile;
+        }
+        class String qualifiedName;
+        FileQualifiedFilename(qualifiedName, localized);
+        CacheResourceResult cacheResult =
+            HolmesClientCacheResource(qualifiedName.c_str(), cacheFile);
+        res = cacheResult;
+        if ((int)cacheResult > 0) {
+            return nullptr;
+        }
+        return cacheFile;
     }
 }
 

@@ -14,13 +14,13 @@ class ClipCollide : public Hmx::Object {
 public:
     // a la RB2 dump
     struct Report {
-        // total size: 0x160
+        // total size: 0x154
         char name[32]; // offset 0x0, size 0x20
         char charPath[256]; // offset 0x20, size 0x100
         char clip[32]; // offset 0x120, size 0x20
         class Waypoint *waypoint; // offset 0x140, size 0x4
         class Symbol position; // offset 0x144, size 0x4
-        class Vector3 pos; // offset 0x150, size 0x10
+        class Vector3 pos; // offset 0x148, size 0xC
     };
 
     ClipCollide();
