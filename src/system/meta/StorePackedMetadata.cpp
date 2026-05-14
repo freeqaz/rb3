@@ -390,6 +390,15 @@ StorePage *StorePageTable::GetPage(unsigned short idx) {
         return nullptr;
 }
 
+StoreMetadataManager::~StoreMetadataManager() {
+    unk98.clear();
+    for (std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.begin();
+         it != unk58.end(); ++it) {
+        delete it->second;
+    }
+    unk58.clear();
+}
+
 void StoreMetadataManager::Init() {
     SetName("store", ObjectDir::sMainDir);
     mLoadingState = 0;

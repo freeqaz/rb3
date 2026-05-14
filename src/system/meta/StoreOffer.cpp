@@ -626,15 +626,22 @@ DataArray *StoreOffer::DescriptionData(UILabel *label) const {
     String str(Description());
     std::vector<RndText::Line> lines;
     float f44, f48;
-    const char *c28;
+    const char *c28 = NULL;
     text->GetStringDimensions(f44, f48, lines, c28, text->Size());
     if (!gStoreOfferDescriptionArray) {
         gStoreOfferDescriptionArray = new DataArray(lines.size());
     } else
         gStoreOfferDescriptionArray->Resize(lines.size());
+    int i = 0;
     for (std::vector<RndText::Line>::iterator it = lines.begin(); it != lines.end();
-         ++it) {
-        MILO_WARN("line: %d - %d: %s\n"); // just here for the stringbase
+         ++it, ++i) {
+        int len = it->unk1c - it->unk18 + 1;
+        char *buf = (char *)_MemAlloc(len + 1, 1);
+        memcpy(buf, it->unk18, len);
+        buf[len] = 0;
+        TheDebug << MakeString("line: %d - %d: %s\n", it->startIdx, it->endIdx, buf);
+        gStoreOfferDescriptionArray->Node(i) = DataNode(buf);
+        _MemFree(buf);
     }
     return gStoreOfferDescriptionArray;
 }

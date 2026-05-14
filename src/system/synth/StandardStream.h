@@ -141,7 +141,7 @@ public:
     bool mGetInfoOnly; // 0xf0
     std::vector<void *> mVirtBufs; // 0xf4
     std::vector<std::pair<int, int> > mChanMaps; // 0xfc
-    std::vector<int> unk104; // 0x104
+    std::vector<float *> unk104; // 0x104
     std::vector<Marker> mMarkerList; // 0x10c
     Marker mStartMarker; // 0x114
     Marker mEndMarker; // 0x128

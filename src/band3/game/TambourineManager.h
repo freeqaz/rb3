@@ -1,6 +1,7 @@
 #pragma once
 #include "midi/MidiParser.h"
 #include "obj/Object.h"
+#include "os/Joypad.h"
 #include "synth/Faders.h"
 #include "obj/Dir.h"
 #include "synth/Sequence.h"
@@ -24,6 +25,8 @@ public:
     void Rollback(float, float);
     void SetBank(ObjectDir *bank) { mBank = bank; }
     const std::vector<int> &TambourineGems() const;
+    bool IsTambourineButton(JoypadButton) const;
+    void HandleButtonDown();
     bool GemHit(int) const;
     bool GemProcessed(int) const;
     void TambourineSucceed(int);

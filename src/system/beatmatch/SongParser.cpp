@@ -1853,12 +1853,11 @@ bool SongParser::HandleRGGemStart(
     unsigned char channel,
     int difflevel
 ) {
-    if ((uc + 0xE8 & 0xFF) <= 5) {
-        unsigned char newuc = uc - 24;
-        info.mRGGemsInfo[newuc] =
+    if ((unsigned char)(uc + 0xE8) <= 5U) {
+        info.mRGGemsInfo[uc - 24] =
             RGGemInfo(tick, info.mActivePlayers, GetFret(data), channel);
         if (mSoloPhraseInProgress != -1) {
-            mSoloGemDifficultyMask |= (1 << (difflevel & 0x3FU));
+            mSoloGemDifficultyMask |= 1 << difflevel;
         }
         return true;
     } else

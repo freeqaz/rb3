@@ -129,7 +129,7 @@ public:
         : mFlags(0), mLoadingState(0), mBasePath(), mVersion(0), mStringTable(0),
           mSongTable(0), mOfferTable(0), mRbnOfferTable(0), mPageTable(0),
           mCurrentPage(0), mMarqueeTable(0), mRedemptionsTable(0) {}
-    ~StoreMetadataManager() {}
+    ~StoreMetadataManager();
     virtual DataNode Handle(DataArray *, bool);
 
     StoreOfferState *GetOfferStatus(const class StorePackedOfferBase *);

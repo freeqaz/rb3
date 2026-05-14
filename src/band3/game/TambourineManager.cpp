@@ -75,6 +75,10 @@ const std::vector<int> &TambourineManager::TambourineGems() const {
     return mPlayerRef.mVocalParts[0]->mVocalNoteList->mTambourineGems;
 }
 
+bool TambourineManager::IsTambourineButton(JoypadButton btn) const { return btn == kPad_X; }
+
+void TambourineManager::HandleButtonDown() {}
+
 bool TambourineManager::GemHit(int index) const {
     if ((unsigned int)index >= mGemStates.size())
         return false;

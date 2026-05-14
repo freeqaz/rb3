@@ -1,3 +1,4 @@
+#define CHARHAIR_LOCAL_MULTIPLY
 #include "rndobj/Part.h"
 #include "math/Mtx.h"
 #include "math/Rand.h"
@@ -23,6 +24,131 @@
 #include "utl/MemMgr.h"
 #include "obj/DataFunc.h"
 #include "utl/Symbols.h"
+
+#ifdef __MWERKS__
+inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
+    typedef __vec2x32float__ psq;
+    register const Hmx::Matrix3 *_a = &a;
+    register const Hmx::Matrix3 *_b = &b;
+    register Hmx::Matrix3 *_out = &out;
+    float row0[3], row1[3], row2[3];
+    register psq _f0, _f1, _f2, _f3, _f4, _f5, _f6, _f7, _f8, _f9, _f10, _f11, _f12;
+    asm { cmplw _b, _out }
+    asm volatile {
+        beq alias_path
+        // non-alias path
+        psq_l  _f4, 0x4(_a),  0, 0
+        psq_l  _f3, 0x18(_b), 0, 0
+        psq_l  _f2, 0x20(_b), 1, 0
+        ps_muls1 _f1, _f3, _f4
+        psq_l  _f3, 0xc(_b),  0, 0
+        ps_muls1 _f0, _f2, _f4
+        psq_l  _f2, 0x14(_b), 1, 0
+        psq_l  _f9, 0x10(_a), 0, 0
+        psq_l  _f8, 0x18(_b), 0, 0
+        psq_l  _f7, 0x20(_b), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f4, 0x0(_a),  0, 0
+        ps_muls1 _f6, _f8, _f9
+        psq_l  _f3, 0x0(_b),  0, 0
+        ps_muls1 _f5, _f7, _f9
+        ps_madds0 _f1, _f3, _f4, _f1
+        psq_l  _f2, 0x8(_b),  1, 0
+        psq_l  _f8, 0xc(_b),  0, 0
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f7, 0x14(_b), 1, 0
+        ps_madds0 _f6, _f8, _f9, _f6
+        psq_l  _f2, 0xc(_a),  0, 0
+        ps_madds0 _f5, _f7, _f9, _f5
+        psq_l  _f4, 0x1c(_a), 0, 0
+        psq_l  _f7, 0x1c(_b), 0, 0
+        psq_l  _f3, 0x18(_b), 0, 0
+        ps_madds0 _f6, _f1, _f2, _f6
+        ps_madds0 _f5, _f0, _f2, _f5
+        psq_l  _f8, 0x20(_b), 1, 0
+        ps_muls1 _f3, _f3, _f7
+        psq_l  _f9, 0x18(_a), 0, 0
+        ps_muls1 _f2, _f8, _f7
+        psq_st _f1, 0x0(_out), 0, 0
+        ps_madds0 _f6, _f3, _f9, _f6
+        ps_madds0 _f5, _f2, _f9, _f5
+        psq_st _f0, 0x8(_out), 1, 0
+        ps_madds0 _f3, _f1, _f4, _f3
+        psq_st _f6, 0xc(_out), 0, 0
+        ps_madds0 _f2, _f0, _f4, _f2
+        psq_st _f5, 0x14(_out), 1, 0
+        psq_st _f3, 0x18(_out), 0, 0
+        psq_st _f2, 0x20(_out), 1, 0
+        b mult_end
+    alias_path:
+        psq_l  _f4, 0x4(_a),  0, 0
+        la r7, row2
+        psq_l  _f3, 0x18(_out), 0, 0
+        la r6, row1
+        psq_l  _f2, 0x20(_out), 1, 0
+        la r5, row0
+        ps_muls1 _f1, _f3, _f4
+        psq_l  _f3, 0xc(_out), 0, 0
+        ps_muls1 _f0, _f2, _f4
+        psq_l  _f2, 0x14(_out), 1, 0
+        psq_l  _f9, 0x10(_a),  0, 0
+        psq_l  _f8, 0x18(_out), 0, 0
+        psq_l  _f7, 0x20(_out), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_muls1 _f6, _f8, _f9
+        psq_l  _f12, 0x1c(_a), 0, 0
+        ps_mr  _f8, _f3
+        psq_l  _f3, 0x18(_out), 0, 0
+        ps_muls1 _f5, _f7, _f9
+        ps_muls1 _f11, _f3, _f12
+        ps_mr  _f7, _f2
+        psq_l  _f3, 0x0(_out), 0, 0
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f2, 0x20(_out), 1, 0
+        psq_l  _f4, 0x0(_a),  0, 0
+        ps_muls1 _f10, _f2, _f12
+        psq_l  _f2, 0x8(_out), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_madds0 _f6, _f8, _f9, _f6
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l  _f4, 0x18(_a), 0, 0
+        ps_madds0 _f5, _f7, _f9, _f5
+        psq_l  _f9, 0xc(_a),  0, 0
+        ps_madds0 _f11, _f8, _f12, _f11
+        ps_madds0 _f10, _f7, _f12, _f10
+        psq_st _f1, 0x0(r7), 0, 0
+        ps_madds0 _f6, _f3, _f9, _f6
+        ps_madds0 _f5, _f2, _f9, _f5
+        ps_madds0 _f11, _f3, _f4, _f11
+        lfs    _f8, 0x0(r7)
+        ps_madds0 _f10, _f2, _f4, _f10
+        psq_st _f6, 0x0(r6), 0, 0
+        lfs    _f7, 0x4(r7)
+        psq_st _f11, 0x0(r5), 0, 0
+        lfs    _f4, 0x4(r6)
+        psq_st _f5, 0x8(r6), 1, 0
+        lfs    _f5, 0x0(r6)
+        psq_st _f0, 0x8(r7), 1, 0
+        lfs    _f3, 0x8(r6)
+        psq_st _f10, 0x8(r5), 1, 0
+        lfs    _f6, 0x8(r7)
+        lfs    _f2, 0x0(r5)
+        lfs    _f1, 0x4(r5)
+        lfs    _f0, 0x8(r5)
+        stfs   _f8, 0x0(_out)
+        stfs   _f7, 0x4(_out)
+        stfs   _f6, 0x8(_out)
+        stfs   _f5, 0xc(_out)
+        stfs   _f4, 0x10(_out)
+        stfs   _f3, 0x14(_out)
+        stfs   _f2, 0x18(_out)
+        stfs   _f1, 0x1c(_out)
+        stfs   _f0, 0x20(_out)
+    mult_end:
+    }
+}
+#endif
 
 PartOverride gNoPartOverride;
 ParticleCommonPool *gParticlePool;
@@ -876,17 +1002,18 @@ void RndParticleSys::CreateParticles(float f1, float f2, const Transform &tf) {
 }
 
 void RndParticleSys::UpdateRelativeXfm() {
-    if (mRelativeMotion == 1) {
+    float one = 1.0f;
+    if (mRelativeMotion == one) {
         mRelativeXfm = mRelativeParent->WorldXfm();
     } else if (mRelativeMotion) {
         Transform &worldXfm = mRelativeParent->WorldXfm();
         Invert(mLastWorldXfm.m, mLastWorldXfm.m);
         Multiply(mLastWorldXfm.m, worldXfm.m, mLastWorldXfm.m);
-        Hmx::Quat q28(0, 0, 0, 1);
+        Hmx::Quat q28(0, 0, 0, one);
         FastInterp(q28, Hmx::Quat(mLastWorldXfm.m), mRelativeMotion, q28);
         MakeRotMatrix(q28, mLastWorldXfm.m);
         Subtract(mRelativeXfm.v, mLastWorldXfm.v, mRelativeXfm.v);
-        Multiply(mRelativeXfm, mLastWorldXfm.m, mRelativeXfm);
+        Multiply(mRelativeXfm.m, mLastWorldXfm.m, mRelativeXfm.m);
         Normalize(mRelativeXfm.m, mRelativeXfm.m);
         Interp(mLastWorldXfm.v, worldXfm.v, mRelativeMotion, mLastWorldXfm.v);
         Add(mRelativeXfm.v, mLastWorldXfm.v, mRelativeXfm.v);

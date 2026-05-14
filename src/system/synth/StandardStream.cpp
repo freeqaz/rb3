@@ -67,7 +67,18 @@ void StandardStream::Destroy() {
     DeleteAll(mChannels);
 }
 
-StandardStream::~StandardStream() { Destroy(); }
+StandardStream::~StandardStream() {
+    RELEASE(mFile);
+    for (int i = 0; i < unk104.size(); i++) {
+        delete[] unk104[i];
+    }
+    Destroy();
+    DeleteAll(mChanParams);
+    while (!mVirtBufs.empty()) {
+        _MemFree(mVirtBufs.back());
+        mVirtBufs.pop_back();
+    }
+}
 
 const char *StandardStream::GetSoundDisplayName() {
     if (!IsPlaying())

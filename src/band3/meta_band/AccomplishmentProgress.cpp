@@ -138,7 +138,8 @@ bool AccomplishmentProgress::AddAccomplishment(Symbol s) {
             s, pUser->UserName(), pPerformer->Song()
         );
         if (pAccomplishment->HasAward()) {
-            AddAward(pAccomplishment->GetAward(), s);
+            Symbol award = pAccomplishment->GetAward();
+            AddAward(award, s);
         }
         int oldLbHcStatus =
             TheAccomplishmentMgr->GetLeaderboardHardcoreStatus(mAccomplishments.size());
@@ -179,15 +180,17 @@ bool AccomplishmentProgress::AddAccomplishment(Symbol s) {
             MILO_ASSERT(pLevel, 0x112);
             NotifyPlayerOfCampaignLevel(pLevel->GetEarnedText());
             MILO_ASSERT(mParentProfile, 0x11A);
+            int padNum = mParentProfile->GetPadNum();
             SendDataPoint(
                 "career/levelup",
                 pid,
-                TheServer.GetPlayerID(mParentProfile->GetPadNum()),
+                TheServer.GetPlayerID(padNum),
                 career_level,
                 newLevel
             );
             if (pLevel->HasAward()) {
-                AddAward(pLevel->GetAward(), newLevel);
+                Symbol award = pLevel->GetAward();
+                AddAward(award, newLevel);
             }
         }
         if (oldLbHcStatus

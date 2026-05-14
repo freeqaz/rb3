@@ -20,7 +20,10 @@
 #include "game/VocalPart.h"
 #include "meta_band/BandSongMetadata.h"
 #include "meta_band/BandSongMgr.h"
+#include "meta_band/BandUI.h"
 #include "meta_band/MetaPerformer.h"
+#include "meta_band/OvershellPanel.h"
+#include "meta_band/OvershellSlot.h"
 #include "midi/MidiParser.h"
 #include "net/NetSession.h"
 #include "obj/Data.h"
@@ -773,15 +776,20 @@ bool VocalPlayer::HadMic(const MicClientID &id) const {
 int VocalPlayer::OnMsg(const ButtonDownMsg &msg) {
     if ((User *)GetUser() != msg.GetUser())
         return 0;
-    else {
-        bool b1 = false;
-        if (TheUI.FocusPanel()) {
-            b1 = strcmp(TheUI.FocusPanel()->Name(), "world_panel") == 0;
-        }
-        if (TheUI.FocusPanel() != TheGamePanel && !b1) {
-            if (!dynamic_cast<PracticePanel *>(TheUI.FocusPanel()))
-                return 0;
-        }
+    bool b1 = false;
+    if (TheUI.FocusPanel()) {
+        b1 = strcmp(TheUI.FocusPanel()->Name(), "world_panel") == 0;
+    }
+    if (TheUI.FocusPanel() != TheGamePanel && !b1) {
+        if (!dynamic_cast<PracticePanel *>(TheUI.FocusPanel()))
+            return 0;
+    }
+    OvershellSlot *slot = TheBandUI.GetOvershell()->FindSlotForUser(GetUser());
+    if (slot->IsLeavingOptions() || !slot->IsHidden())
+        return 0;
+    const DataArray *arr = msg.mData;
+    if (mTambourineManager.IsTambourineButton((JoypadButton)arr->Node(3).Int(arr))) {
+        mTambourineManager.HandleButtonDown();
     }
     return 0;
 }
