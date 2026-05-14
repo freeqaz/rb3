@@ -1,4 +1,5 @@
-/* Copyright (C) 2002-2006 Jean-Marc Valin 
+#pragma ipa on
+/* Copyright (C) 2002-2006 Jean-Marc Valin
    File: ltp.c
    Long-Term Prediction functions
 
