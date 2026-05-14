@@ -223,6 +223,7 @@
                 "-func_align 16",
                 "-O4,p",
                 "-lang=c99",
+                "-ipa file",
                 "-d NDEBUG"
             ]
         },
