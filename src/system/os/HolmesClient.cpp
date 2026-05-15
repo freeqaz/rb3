@@ -42,6 +42,25 @@ namespace {
 
     int gRealMaxBufferSize;
     HolmesProfileData gProfile[20];
+
+    void BeginCmd(Holmes::Protocol prot, bool b) {
+        if (b) {
+            gProfile[prot].count += 1;
+        }
+        gProfile[prot].work.Start();
+    }
+
+    void EndCmd(Holmes::Protocol prot) {
+        gProfile[prot].work.Stop();
+        if (gRealMaxBufferSize != 0) {
+            MILO_NOTIFY_ONCE(
+                "HolmesClient buffer exceeded %d < %d", 0x2000d, gRealMaxBufferSize
+            );
+        }
+    }
+
+    bool CheckForResponse(Holmes::Protocol ptcl);
+
     CriticalSection gCrit;
     NetStream *gHolmesStream;
     MemStream *gStreamBuffer;
@@ -64,24 +83,6 @@ namespace {
                                                 Holmes::kPollJoypad,
                                                 Holmes::kPrint,
                                                 Holmes::kInvalidOpcode };
-
-    void BeginCmd(Holmes::Protocol prot, bool b) {
-        if (b) {
-            gProfile[prot].count += 1;
-        }
-        gProfile[prot].work.Start();
-    }
-
-    void EndCmd(Holmes::Protocol prot) {
-        gProfile[prot].work.Stop();
-        if (gRealMaxBufferSize != 0) {
-            MILO_NOTIFY_ONCE(
-                "HolmesClient buffer exceeded %d < %d", 0x2000d, gRealMaxBufferSize
-            );
-        }
-    }
-
-    bool CheckForResponse(Holmes::Protocol ptcl);
 
     u32 CheckReads() {
         ReadRequest *currentRequest;

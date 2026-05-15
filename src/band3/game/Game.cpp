@@ -632,15 +632,7 @@ void Game::Restart(bool doSave) {
             if (0.0f == mResumeTime) {
                 mMaster->Reset();
             } else {
-                float t1 = mResumeTime - 2000.0f;
-                if (0.0f >= t1) {
-                    t1 = 0.0f;
-                }
-                float t2 = t1 - 2000.0f;
-                if (0.0f >= t2) {
-                    t2 = 0.0f;
-                }
-                mMaster->Jump(t2);
+                mMaster->Jump(std::max(0.0f, std::max(0.0f, mResumeTime - 2000.0f) - 2000.0f));
             }
             unk120 = true;
             if (!mMuckWithPitch) {
@@ -1498,12 +1490,10 @@ void Game::Poll() {
         float ms = (unkdc != -1.0f) ? unkdc : mLastPollMs;
         float rollbackTarget;
         if (mProperties.mInTrainer && TheTrainerPanel) {
-            float candidate = ms - 1000.0f;
-            rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+            rollbackTarget = std::max(0.0f, ms - 1000.0f);
             mLastPollMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
         } else {
-            float candidate = ms - 2000.0f;
-            rollbackTarget = candidate > 0.0f ? candidate : 0.0f;
+            rollbackTarget = std::max(0.0f, ms - 2000.0f);
         }
         Rollback(ms, rollbackTarget);
     }
@@ -1545,7 +1535,7 @@ void Game::Poll() {
         mSongPos = mSongDB->GetData()->CalcSongPos(realTimeSongMs);
         TheTaskMgr.mSongPos = mSongPos;
     }
-    if (songMs == 0.0f) {
+    if (songMs >= 0.0f) {
         mMaster->Poll(songMs);
         if (!isGameOver) {
             mBand->Poll(songMs, mSongPos);
@@ -1560,7 +1550,7 @@ void Game::Poll() {
     CheckRollbackEnd(songMs);
     mLastPollMs = songMs;
     if (mResumeTime == 0 && !mIsPaused) {
-        unk130 = mLastPollMs / TheSongDB->GetSongDurationMs();
+        unk130 = mLastPollMs / mSongDB->GetSongDurationMs();
     }
     if (!unk138) {
         float startMs = unk134;

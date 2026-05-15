@@ -1762,7 +1762,15 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
             }
             multiplier *= weight;
         }
-        if (noteScore > mCrowd->mRawValue) {
+        if (!(noteScore > mCrowd->mRawValue)) {
+            bool isSoloMod = unk315 && !unk314;
+            if (isSoloMod) {
+                Symbol trackSym = mUser->GetTrackSym();
+                multiplier *= TheScoring->GetSoloGemPenalty(trackSym);
+            } else if (inPhrase) {
+                multiplier *= TheScoring->mCommonPhrasePenalty;
+            }
+        } else {
             float reward = GetCrowdBoost();
             bool isSoloMod = unk315 && !unk314;
             if (isSoloMod) {
@@ -1772,14 +1780,6 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
                 reward = reward * TheScoring->mCommonPhraseReward;
             }
             multiplier = reward;
-        } else {
-            bool isSoloMod = unk315 && !unk314;
-            if (isSoloMod) {
-                Symbol trackSym = mUser->GetTrackSym();
-                multiplier *= TheScoring->GetSoloGemPenalty(trackSym);
-            } else if (inPhrase) {
-                multiplier *= TheScoring->mCommonPhrasePenalty;
-            }
         }
         mCrowd->Update(noteScore, multiplier);
         CheckCrowdFailure();

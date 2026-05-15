@@ -70,9 +70,7 @@ PrefabMgr::PrefabMgr() : unk60(0) {
     for (ObjDirItr<BandCharDesc> it(BandCharDesc::GetPrefabs(), true); it != 0; ++it) {
         String str(it->Name());
         std::vector<String> substrs;
-        if (str.split("_", substrs) < 1) {
-            MILO_WARN("Bad prefab name: (%s)\n", str);
-        } else {
+        if (str.split("_", substrs) > 0) {
             const char *substrname = substrs[0].c_str();
             if (strcmp(substrname, "prefab") == 0) {
                 mPrefabs.push_back(new PrefabChar(it));
@@ -85,14 +83,15 @@ PrefabMgr::PrefabMgr() : unk60(0) {
                 unk44.insert(boutiqueSym);
                 Symbol genderSym = it->mGender;
                 if (genderSym == male) {
-                    mCharCreatorMalePrefabs.push_back(new CharCreatorPrefab(it, genderSym)
+                    mCharCreatorMalePrefabs.push_back(
+                        new CharCreatorPrefab(it, boutiqueSym)
                     );
                 } else if (genderSym == female) {
                     mCharCreatorFemalePrefabs.push_back(
-                        new CharCreatorPrefab(it, genderSym)
+                        new CharCreatorPrefab(it, boutiqueSym)
                     );
                 } else
-                    MILO_WARN("Incorrect gender symbol %s\n", genderSym);
+                    MILO_FAIL("Incorrect gender symbol %s\n", genderSym);
             } else if (strcmp(substrname, "facetype") == 0) {
                 if (substrs.size() != 3) {
                     MILO_WARN("Bad facetype prefab name: (%s)\n", str);
@@ -102,6 +101,8 @@ PrefabMgr::PrefabMgr() : unk60(0) {
             } else if (strcmp(substrname, "BBE") == 0) {
                 mPrefabs.push_back(new PrefabChar(it));
             }
+        } else {
+            MILO_WARN("Bad prefab name: (%s)\n", str);
         }
     }
     AssignPrefabsToSlots();

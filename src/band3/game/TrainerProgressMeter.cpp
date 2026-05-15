@@ -51,7 +51,7 @@ void TrainerProgressMeter::Draw() {
         for (int i = 0; i < mCompleted.size(); i++) {
             if (mCompleted[i]) {
                 Transform xfm(mBarTrans);
-                xfm.v.x = f * 0.5f + (float)i * f + (xfm.v.x - 85.0f);
+                xfm.v.x = (mBarTrans.v.x - 85.0f) + (float)i * f + f * 0.5f;
                 mBar->SetWorldXfm(xfm);
                 mBar->Draw();
             }
@@ -63,7 +63,7 @@ void TrainerProgressMeter::Draw() {
         if (mCurrent >= 0) {
             mGlow->SetShowing(true);
             Transform xfm(mGlowTrans);
-            xfm.v.x = f * 0.5f + (float)mCurrent * f + (xfm.v.x - 85.0f);
+            xfm.v.x = (mBarTrans.v.x - 85.0f) + (float)mCurrent * f + f * 0.5f;
             mGlow->SetWorldXfm(xfm);
             mGlow->Draw();
             mGlow->SetShowing(false);
