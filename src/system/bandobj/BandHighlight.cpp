@@ -81,10 +81,7 @@ void BandHighlight::Poll() {
         py = loc28 * (unk118.y - fy) + fy;
         px = loc28 * (unk118.x - fx) + fx;
     }
-    mLocalXfm.v.x = px;
-    mLocalXfm.v.y = py;
-    mLocalXfm.v.z = pz;
-    SetDirty();
+    SetLocalPos(px, py, pz);
     if (unk148) {
         if (unk13c.x == 0) {
             UpdateTargetEdge(TransParent());
@@ -103,11 +100,7 @@ void BandHighlight::Poll() {
                 ey = loc28 * (unk13c.y - efy) + efy;
                 ex = loc28 * (unk13c.x - efx) + efx;
             }
-            RndTransformable *edge = unk148;
-            edge->mLocalXfm.v.x = ex;
-            edge->mLocalXfm.v.y = ey;
-            edge->mLocalXfm.v.z = ez;
-            edge->SetDirty();
+            unk148->SetLocalPos(ex, ey, ez);
         }
     }
 }

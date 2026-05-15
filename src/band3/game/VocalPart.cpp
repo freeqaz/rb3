@@ -4,7 +4,9 @@
 #include "obj/Data.h"
 #include "os/Debug.h"
 #include "os/System.h"
+#include <algorithm>
 #include <cfloat>
+#include <cmath>
 
 VocalPart::VocalPart(VocalPlayer *vp, int idx)
     : mPlayer(vp), mPartIndex(idx), mVocalNoteList(0), unk18(0), unk1c(0), unk20(0),
@@ -186,6 +188,22 @@ void VocalPart::ResetScoring() {
 void VocalPart::AddScore(const VocalScoreCache &c) { AddPhrasePoints(c.unk4); }
 void VocalPart::ForcePhrasePointDelta(float f1) { mPhraseScore += f1; }
 
+void VocalPart::AddPhrasePoints(float pts) {
+    float oldScore = mPhraseScore;
+    float newScore = oldScore + pts;
+    float cap = mPhraseScoreMax;
+    if (cap >= unk38)
+        cap = unk38;
+    if (cap >= newScore)
+        cap = newScore;
+    mPhraseScore = cap;
+    float delta = mPhraseScore - oldScore;
+    int i1, i2, i3;
+    mPlayer->GetMultiplier(true, i1, i2, i3);
+    unk44 += delta * (float)(i2 - 1);
+    unk48 += delta * (float)(i3 - 1);
+}
+
 void VocalPart::SetPhraseScoreMultiplier(float f1) { mPhraseScorePartMultiplier = f1; }
 void VocalPart::SetPhraseRank(int i) { mPhraseRank = i; }
 
@@ -220,6 +238,14 @@ bool VocalPart::IsEmptyPhrase(const VocalPhrase *const &p) const {
     const VocalNote &note = mVocalNoteList->mNotes[phrase->unk10 - 1];
     if (note.mMs + note.mDurationMs > phrase->unk0) return false;
     return true;
+}
+
+bool VocalPart::AtPhraseEnd(float ms) const {
+    const VocalPhrase *end =
+        mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
+    if (mThisPhrase != end && ms > mThisPhrase->unk0 + mThisPhrase->unk4)
+        return true;
+    return false;
 }
 
 bool VocalPart::InEmptyPhrase() const {
@@ -381,6 +407,80 @@ float VocalPart::GetFreestyleSectionDurationMs() const {
     return mFreestyleSection->second - mFreestyleSection->first;
 }
 
+bool VocalNoteEndCmp(float f, const VocalNote &note) {
+    return f < note.mMs + note.mDurationMs;
+}
+
+float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const {
+    static float kFrameTimeMs = 16.666668f;
+    if (fEnd < fBegin) {
+        float tmp = fBegin;
+        fBegin = fEnd;
+        fEnd = tmp;
+    }
+    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+    float noteMs = note.mMs;
+    float noteDurationMs = note.mDurationMs;
+    float fEndRel = fEnd - noteMs;
+    float fBeginRel = fBegin - noteMs;
+    float fDurationCap = 150.0f;
+    if (fEndRel < fDurationCap)
+        fDurationCap = noteDurationMs;
+    float accum = 0.0f;
+    if (note.mBeginPitch == note.mEndPitch) {
+        // Loop 1: no pitch bend (unpitched or single pitch)
+        float threshold = 0.0f;
+        float frameTime = kFrameTimeMs;
+        while (fBeginRel < fEndRel) {
+            float spC = fEndRel - fBeginRel;
+            float stepMs;
+            if (spC < frameTime)
+                stepMs = spC;
+            else
+                stepMs = kFrameTimeMs;
+            float weight;
+            if (fBeginRel < threshold) {
+                weight = threshold;
+            } else if (fBeginRel < fDurationCap) {
+                weight = (float)pow((double)(fBeginRel / fDurationCap), 0.5);
+            } else {
+                weight = 1.0f;
+            }
+            accum = weight * stepMs + accum;
+            fBeginRel += stepMs;
+        }
+    } else {
+        // Loop 2: pitch bend
+        float f22 = 1.0f - (float)pow(4.0 / 7.0, 2.0);
+        float zeroThresh = accum;
+        float frameTime = kFrameTimeMs;
+        float half = 0.5f;
+        float two = 2.0f;
+        float seventeenFourths = 1.75f;
+        while (fBeginRel < fEndRel) {
+            float sp8 = fEndRel - fBeginRel;
+            float stepMs;
+            if (sp8 < frameTime)
+                stepMs = sp8;
+            else
+                stepMs = kFrameTimeMs;
+            float weight;
+            if (fBeginRel < zeroThresh) {
+                weight = 1.0f;
+            } else if (fBeginRel > noteDurationMs) {
+                weight = 1.0f;
+            } else {
+                float t = fBeginRel / noteDurationMs;
+                float x = (two * (t - half)) / seventeenFourths;
+                weight = f22 + (float)pow((double)x, 2.0);
+            }
+            accum = weight * stepMs + accum;
+            fBeginRel += stepMs;
+        }
+    }
+    return accum;
+}
+
 float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
     const VocalPhrase *p = phrase;
     VocalNoteList *list = mVocalNoteList;
@@ -408,6 +508,41 @@ float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
         result += (duration / noteDurationMs) * weight;
     }
     return result;
+}
+
+void VocalPart::GetNoteRange(float ms, int &startOut, int &endOut) {
+    float slop = mSlop;
+    float lower = ms - slop;
+    float upper = ms + slop;
+    VocalNoteList *list = mVocalNoteList;
+    startOut = -1;
+    endOut = -1;
+    const VocalNote *it = std::upper_bound(
+        list->mNotes.data(),
+        list->mNotes.data() + list->mNotes.size(),
+        lower,
+        VocalNoteEndCmp
+    );
+    if (it == list->mNotes.data() + list->mNotes.size())
+        return;
+    for (;;) {
+        int idx = it - list->mNotes.data();
+        if (startOut == -1)
+            startOut = idx;
+        endOut = idx + 1;
+        ++it;
+        bool inRange = it->mMs < upper;
+        if (!inRange)
+            break;
+        if (it == list->mNotes.data() + list->mNotes.size())
+            break;
+    }
+}
+
+bool VocalPart::NearNote(float ms) {
+    int start = -1, end = -1;
+    GetNoteRange(ms, start, end);
+    return start < end;
 }
 
 bool VocalPart::FramePhraseMeterFracSorter(const VocalPart *i_pA, const VocalPart *i_pB) {

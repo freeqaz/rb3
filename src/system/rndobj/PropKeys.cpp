@@ -540,7 +540,7 @@ inline bool CheckVectorDiff(const Vector3 &v1, const Vector3 &v2, float f) {
 }
 
 void QuatKeys::SetFrame(float frame, float blend) {
-    if (!mProp || !mTarget || !size())
+    if (!mProp || !mTarget.Ptr() || !size())
         return;
     int idx = 0;
     if (mPropExceptionID == kTransQuat) {
@@ -594,7 +594,7 @@ int Vector3Keys::Vector3At(float frame, Vector3 &vec) {
 }
 
 void Vector3Keys::SetFrame(float frame, float blend) {
-    if (!mProp || !mTarget || !size())
+    if (!mProp || !mTarget.Ptr() || !size())
         return;
     int idx = 0;
     switch (mPropExceptionID) {
@@ -618,7 +618,7 @@ void Vector3Keys::SetFrame(float frame, float blend) {
             mTrans = dynamic_cast<RndTransformable *>(mTarget.Ptr());
         Vector3 v88;
         idx = Vector3At(frame, v88);
-        mTrans->SetLocalPos(v88.x, v88.y, v88.z);
+        mTrans->SetLocalPos(v88);
         break;
     }
     default:

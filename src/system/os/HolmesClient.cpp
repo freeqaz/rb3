@@ -42,10 +42,10 @@ namespace {
 
     int gRealMaxBufferSize;
     HolmesProfileData gProfile[20];
-    std::list<ReadRequest> gRequests;
     CriticalSection gCrit;
     NetStream *gHolmesStream;
     MemStream *gStreamBuffer;
+    std::list<ReadRequest> gRequests;
 
     char gMachineName[NETBIOS_NAME_MAX] = { 0 };
     char gShareName[NETBIOS_NAME_MAX] = { 0 };

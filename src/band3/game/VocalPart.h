@@ -5,6 +5,8 @@
 class VocalPlayer;
 class TalkyMatcher;
 
+bool VocalNoteEndCmp(float, const VocalNote &);
+
 class VocalPart {
 public:
     VocalPart(VocalPlayer *, int);
@@ -32,6 +34,7 @@ public:
     int GetSpotlightPhrase() const;
     void SetPhraseScoreMultiplier(float);
     void SetPhraseRank(int);
+    bool AtPhraseEnd(float) const;
     bool InEmptyPhrase() const;
     bool InPlayablePhrase() const;
     bool PhraseHasUnpitchedNotes() const;
@@ -52,6 +55,8 @@ public:
     void AddScore(const VocalScoreCache &);
     bool CouldScoreAgainstPart(float, TalkyMatcher *, float, float, float &);
     void AddPhrasePoints(float);
+    void GetNoteRange(float, int &, int &);
+    bool NearNote(float);
     void SetFirstPhraseMsToScore(float);
     void SetVocalNoteList(VocalNoteList *);
     void AddSingerCandidate(Singer *, float);
@@ -78,7 +83,7 @@ public:
     float mRemotePhraseMeterFrac; // 0x2c
     float mPhraseScorePartMultiplier; // 0x30
     float mPhraseScoreMax; // 0x34
-    int unk38;
+    float unk38;
     int unk3c;
     float mPhraseScore; // 0x40
     float unk44;

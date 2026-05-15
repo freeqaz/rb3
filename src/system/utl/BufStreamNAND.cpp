@@ -233,9 +233,10 @@ void BufStreamNAND::WriteImpl(const void *data, int count) {
             return;
         }
     }
-    if(mRunningTell + count > mSize || mTell + count > mChunkSize) {
+    int size = mSize;
+    if(mRunningTell + count > size || mTell + count > mChunkSize) {
         mFail = true;
-        count = mSize - mTell;
+        count = size - mTell;
     }
     memcpy(&mBuffer[mTell], data, count);
     mRunningTell += count;

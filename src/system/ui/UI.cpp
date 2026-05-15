@@ -771,7 +771,7 @@ void UIManager::EnableInputPerformanceMode(bool b) {
 void UIManager::PrintLoadedDirs(const char *cc) { DirLoader::PrintLoaded(cc); }
 
 void UIManager::ShowNetError() {
-    Message msg("show_net_error", ThePlatformMgr.GetNetErrorString(false));
+    Message msg(Symbol("show_net_error"), ThePlatformMgr.GetNetErrorString(false));
     Handle(msg, true);
     ThePlatformMgr.ClearNetError();
 }

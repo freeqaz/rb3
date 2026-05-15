@@ -1736,7 +1736,7 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
         if (mDrumSlotWeights) {
             const GameGem &gem = TheSongDB->GetGem(mTrackNum, gem_id);
             int slot = gem.GetSlot();
-            TickedInfoCollection<String> &submixes =
+            const TickedInfoCollection<String> &submixes =
                 TheSongDB->GetData()->GetSubmixes(mTrackNum);
             const char *mappingStr = mDrumSlotWeightMapping.mStr;
             if (submixes.mInfos.size() != 0) {
@@ -1752,11 +1752,10 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
                 }
                 mappingStr = it->mInfo.mStr;
             }
-            Symbol sym(mappingStr);
-            DataArray *arr = mDrumSlotWeights->FindArray(sym, false);
+            const DataArray *arr = mDrumSlotWeights->FindArray(Symbol(mappingStr), false);
             float weight;
             if (arr) {
-                DataArray *inner = arr->Node(1).Array(arr);
+                const DataArray *inner = arr->Node(1).Array(arr);
                 weight = inner->Node(slot).Float(inner);
             } else {
                 weight = 1.0f;

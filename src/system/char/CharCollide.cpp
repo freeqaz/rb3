@@ -201,7 +201,24 @@ void CharCollide::Deform() {
             upPtr = &upY;
         }
 
-        Cross(*upPtr, xfm.m.x, xfm.m.y);
+        {
+            const Vector3 &up = *upPtr;
+            float upy = up.y;
+            float mxz = xfm.m.x.z;
+            float mxx = xfm.m.x.x;
+            float upz = up.z;
+            float yz = upy * mxz;
+            float yx = upy * mxx;
+            float mxy = xfm.m.x.y;
+            float zx = upz * mxx;
+            float upx = up.x;
+            float zy = upz * mxy;
+            float xy = upx * mxy;
+            float xz = upx * mxz;
+            xfm.m.y.x = yz - zy;
+            xfm.m.y.y = zx - xz;
+            xfm.m.y.z = xy - yx;
+        }
         Normalize(xfm.m.y, xfm.m.y);
         Cross(xfm.m.x, xfm.m.y, xfm.m.z);
 

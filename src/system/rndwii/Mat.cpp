@@ -1,4 +1,5 @@
 #include "Mat.h"
+#include "decomp.h"
 #include "math/Color.h"
 #include "math/Mtx.h"
 #include "math/Rot.h"
@@ -13,12 +14,14 @@
 #include "revolution/gx/GXTev.h"
 #include "revolution/gx/GXTransform.h"
 #include "revolution/gx/GXTypes.h"
+#include "revolution/mtx/mtx.h"
 #include "revolution/os/OSError.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Env.h"
 #include "rndobj/Stats_NG.h"
 #include "rndobj/Utl.h"
 #include "rndobj/Mat.h"
+#include "rndwii/Cam.h"
 #include "rndwii/Env.h"
 #include "rndwii/Rnd.h"
 #include "utl/Loader.h"
@@ -377,8 +380,88 @@ void WiiMat::SetTexGen(GXTexCoordID tcid, GXTexMtx mtx) {
 void WiiMat::SetModelviewTexGen() {
     if (!unk_0xAD_6) {
         unk_0xAD_6 = true;
-        Mtx44 m;
-        GXLoadTexMtxImm(m, 33, GX_MTX_3x4);
+        Mtx mtxView;
+        Mtx mtxModel;
+        Mtx mtxResult;
+#ifdef MATCHING
+        // Inline MakeWiiMtx: convert Transform (3x3 + translation) to GX Mtx (3x4),
+        // transposing the rotation portion. Uses paired-single quantized loads:
+        //   W=0: load 2 floats; W=1: load 1 float (qr0 is identity quantizer).
+        {
+            register WiiCam *cam = static_cast<WiiCam *>(RndCam::sCurrent);
+            register Mtx *dst = &mtxView;
+            ASM_BLOCK(
+                psq_l       fp6,  0x278(cam), 0, 0
+                psq_l       fp8,  0x284(cam), 0, 0
+                psq_l       fp7,  0x280(cam), 1, 0
+                psq_l       fp9,  0x28c(cam), 1, 0
+                ps_merge00  fp0,  fp6,  fp8
+                psq_l       fp10, 0x290(cam), 0, 0
+                ps_merge11  fp2,  fp6,  fp8
+                psq_l       fp12, 0x29c(cam), 0, 0
+                ps_merge00  fp4,  fp7,  fp9
+                psq_l       fp11, 0x298(cam), 1, 0
+                psq_l       fp13, 0x2a4(cam), 1, 0
+                ps_merge00  fp1, fp10, fp12
+                ps_merge11  fp3, fp10, fp12
+                ps_merge00  fp5, fp11, fp13
+                psq_st      fp0,  0x0(dst),  0, 0
+                psq_st      fp1,  0x8(dst),  0, 0
+                psq_st      fp2,  0x10(dst), 0, 0
+                psq_st      fp3,  0x18(dst), 0, 0
+                psq_st      fp4,  0x20(dst), 0, 0
+                psq_st      fp5,  0x28(dst), 0, 0
+            )
+        }
+#else
+        {
+            const Transform &v = static_cast<WiiCam *>(RndCam::sCurrent)->mWiiViewXfm;
+            mtxView[0][0] = v.m.x.x; mtxView[0][1] = v.m.y.x; mtxView[0][2] = v.m.z.x; mtxView[0][3] = v.v.x;
+            mtxView[1][0] = v.m.x.y; mtxView[1][1] = v.m.y.y; mtxView[1][2] = v.m.z.y; mtxView[1][3] = v.v.y;
+            mtxView[2][0] = v.m.x.z; mtxView[2][1] = v.m.y.z; mtxView[2][2] = v.m.z.z; mtxView[2][3] = v.v.z;
+        }
+#endif
+        if (sCurrentModelXfm != nullptr) {
+#ifdef MATCHING
+            {
+                register Transform *src = sCurrentModelXfm;
+                register Mtx *dst = &mtxModel;
+                ASM_BLOCK(
+                    psq_l       fp6,  0x0(src),  0, 0
+                    psq_l       fp8,  0xc(src),  0, 0
+                    psq_l       fp7,  0x8(src),  1, 0
+                    psq_l       fp9,  0x14(src), 1, 0
+                    ps_merge00  fp0,  fp6,  fp8
+                    psq_l       fp10, 0x18(src), 0, 0
+                    ps_merge11  fp2,  fp6,  fp8
+                    psq_l       fp12, 0x24(src), 0, 0
+                    ps_merge00  fp4,  fp7,  fp9
+                    psq_l       fp11, 0x20(src), 1, 0
+                    psq_l       fp13, 0x2c(src), 1, 0
+                    ps_merge00  fp1, fp10, fp12
+                    ps_merge11  fp3, fp10, fp12
+                    ps_merge00  fp5, fp11, fp13
+                    psq_st      fp0,  0x0(dst),  0, 0
+                    psq_st      fp1,  0x8(dst),  0, 0
+                    psq_st      fp2,  0x10(dst), 0, 0
+                    psq_st      fp3,  0x18(dst), 0, 0
+                    psq_st      fp4,  0x20(dst), 0, 0
+                    psq_st      fp5,  0x28(dst), 0, 0
+                )
+            }
+#else
+            {
+                const Transform &m = *sCurrentModelXfm;
+                mtxModel[0][0] = m.m.x.x; mtxModel[0][1] = m.m.y.x; mtxModel[0][2] = m.m.z.x; mtxModel[0][3] = m.v.x;
+                mtxModel[1][0] = m.m.x.y; mtxModel[1][1] = m.m.y.y; mtxModel[1][2] = m.m.z.y; mtxModel[1][3] = m.v.y;
+                mtxModel[2][0] = m.m.x.z; mtxModel[2][1] = m.m.y.z; mtxModel[2][2] = m.m.z.z; mtxModel[2][3] = m.v.z;
+            }
+#endif
+            PSMTXConcat(mtxView, mtxModel, mtxResult);
+        } else {
+            PSMTXCopy(mtxView, mtxResult);
+        }
+        GXLoadTexMtxImm(mtxResult, 0x21, GX_MTX_3x4);
     }
 }
 

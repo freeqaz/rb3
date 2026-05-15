@@ -1,5 +1,6 @@
 #include "Movie.h"
 #include "macros.h"
+#include "math/Utl.h"
 #include "os/Timer.h"
 #include "rndobj/Tex.h"
 #include "rndwii/Tex.h"
@@ -70,5 +71,10 @@ void WiiMovie::StreamNextBuffer() { StreamReadFinish(); }
 
 void WiiMovie::StreamRestart(int i) {
     StreamReadFinish();
+    unk_0x48->Seek(mVideoData.FrameSize() * i + unk_0x4c, 0);
+    int remaining = unk_0x48->Size() - unk_0x48->Tell();
+    unk_0x48->Read(unk_0x40, Min(mVideoData.FrameSize(), remaining));
+    unk_0x50 = 0;
+    unk_0x54 = unk_0x40;
     StreamNextBuffer();
 }

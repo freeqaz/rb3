@@ -447,7 +447,7 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
     MILO_ASSERT(DemandLoad() || !shot, 0x45C);
     HandleType(on_loading_characters_msg);
     Symbol playmode = GetPlayMode();
-    Symbol gender = female;
+    Symbol gender = "female";
     int instOrderEnd = 5;
     if (shot) {
         int shotflags = GetShotFlags(shot);

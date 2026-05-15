@@ -151,10 +151,45 @@ WiiMesh::WiiMesh()
 BEGIN_COPYS(WiiMesh)
     COPY_SUPERCLASS(RndMesh)
     CREATE_COPY(WiiMesh)
-    BEGIN_COPYING_MEMBERS
-        if (mNumFaces > 0)
+    if (c && mGeomOwner == this && ty == kCopyDeep && mMutable == 0) {
+        if (mKeepMeshData) return;
+        mNumVerts = c->mNumVerts;
+        unk_0x164 = c->unk_0x164;
+        mNumFaces = c->mNumFaces;
+        CreateBuffers();
+        if (mNumVerts != 0) {
+            int factor;
+            if (((WiiMesh *)(RndMesh *)mGeomOwner)->bitmask_2
+                && ((WiiMesh *)(RndMesh *)mGeomOwner)->bitmask_1) {
+                factor = 9;
+            } else {
+                factor = 16;
+                if (((WiiMesh *)(RndMesh *)mGeomOwner)->bitmask_1)
+                    factor = 10;
+            }
+            memcpy(mCTVtxs, c->mCTVtxs, mNumVerts * 8);
+            if (mPosNrmVtxs)
+                memcpy(mPosNrmVtxs, c->mPosNrmVtxs, mNumVerts * factor);
+            if (mPosQ)
+                memcpy(mPosQ, c->mPosQ, mNumVerts * 6);
+            if (mNrmQ)
+                memcpy(mNrmQ, c->mNrmQ, mNumVerts * 3);
+            if (unk_0x164 > 1) {
+                memcpy(
+                    mBoneWeights,
+                    c->mBoneWeights,
+                    (mNumVerts * Min((int)unk_0x164, 4)) << 1
+                );
+            }
+            if (unk_0x164 > 4) {
+                memcpy(mBoneIndices, c->mBoneIndices, mNumVerts << 2);
+            } else if (unk_0x164 > 1) {
+                memcpy(mBoneIndices, c->mBoneIndices, unk_0x164);
+            }
+        }
+        if (mNumFaces != 0)
             mDisplays.Copy(c->mDisplays);
-    END_COPYING_MEMBERS
+    }
 END_COPYS
 
 int WiiMesh::GetSomeSizeFactor() {
@@ -270,10 +305,28 @@ void WiiMesh::SetVertexDesc() {
     GXInvalidateVtxCache();
 }
 
-void WiiMesh::SetVertexBuffers(const void *) {
-    const void *v = mCTVtxs;
-    GXSetArray(GX_VA_CLR0, v, 8);
-    GXSetArray(GX_VA_TEX0, (const void *)((u32)v + 4), 8);
+void WiiMesh::SetVertexBuffers(const void *arg) {
+    const void *v;
+    if (bitmask_1) {
+        if (arg != NULL) {
+            v = arg;
+        } else {
+            v = mPosNrmVtxs;
+        }
+        GXSetArray(GX_VA_POS, v, 0xA);
+        GXSetArray(GX_VA_NRM, (const void *)((u32)v + 6), 0xA);
+    } else {
+        if (arg != NULL) {
+            v = arg;
+        } else {
+            v = mPosNrmVtxs;
+        }
+        GXSetArray(GX_VA_POS, v, 0x10);
+        GXSetArray(GX_VA_NRM, (const void *)((u32)v + 0xC), 0x10);
+    }
+    const void *c = mCTVtxs;
+    GXSetArray(GX_VA_CLR0, c, 8);
+    GXSetArray(GX_VA_TEX0, (const void *)((u32)c + 4), 8);
 }
 
 void WiiMesh::DrawFaces() {

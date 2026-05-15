@@ -69,11 +69,27 @@ void WiiRnd::SwapFrameBuffer() {
         sDispFB = unk_0x1A8;
 }
 
-void WiiRnd::RemovePointTest(RndFlare *) {
+void WiiRnd::RemovePointTest(RndFlare *flare) {
     if (!TheHiResScreen.mActive) {
-        MILO_ASSERT(gSuppressPointTest>=0, 876);
-
-        MILO_ASSERT(gSuppressPointTest>0, 897);
+        MILO_ASSERT(gSuppressPointTest >= 0, 876);
+        gSuppressPointTest++;
+        for (std::list<PointTest>::iterator it = mPointTests.begin();
+             it != mPointTests.end();) {
+            if (it->unk_0xC == flare) {
+                it = mPointTests.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        for (std::vector<PointTest>::iterator vit = unk_0x2B4.begin();
+             vit != unk_0x2B4.end();) {
+            if (vit->unk_0xC == flare) {
+                vit = unk_0x2B4.erase(vit);
+            } else {
+                ++vit;
+            }
+        }
+        MILO_ASSERT(gSuppressPointTest > 0, 897);
         gSuppressPointTest--;
     }
 }

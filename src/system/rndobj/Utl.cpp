@@ -213,11 +213,13 @@ void CalcSphere(RndTransAnim *a, Sphere &s) {
             box.GrowToContain(vec, it == a->TransKeys().begin());
         }
         Vector3 vres;
-        CalcBoxCenter(vres, box);
+        Add(box.mMin, box.mMax, vres);
+        Scale(vres, 0.5f, vres);
         Subtract(box.mMax, vres, vec);
         Vector3 vsphere;
         float fmax = Max(vec.x, vec.y, vec.z);
-        CalcBoxCenter(vsphere, box);
+        Add(box.mMin, box.mMax, vsphere);
+        Scale(vsphere, 0.5f, vsphere);
         s.Set(vsphere, fmax);
     }
 }

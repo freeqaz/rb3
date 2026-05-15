@@ -1,6 +1,7 @@
 #pragma once
 
 #include "obj/ObjMacros.h"
+#include "os/File.h"
 #include "rndobj/Movie.h"
 #include "rndobj/SIVideo.h"
 class WiiMovie : public RndMovie {
@@ -21,7 +22,7 @@ class WiiMovie : public RndMovie {
     SIVideo mVideoData; // 0x2c
     void *unk_0x40;
     u32 unk_0x44;
-    class Hmx::Object *unk_0x48;
+    File *unk_0x48;
     u32 unk_0x4c, unk_0x50;
 
     void *unk_0x54;

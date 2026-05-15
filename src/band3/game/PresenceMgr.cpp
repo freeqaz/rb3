@@ -139,12 +139,10 @@ int PresenceMgr::GetPlayModeContextFromUser(const LocalBandUser *pUser, bool bLe
     case kTrackDrum: {
         trackSym = drums;
         is_pro = (pUser->GetPreferredScoreType() == kScoreRealDrum);
-        Symbol forceCym("force_use_cymbals");
-        if (TheGameMode->Property(forceCym, true)->Int(nullptr) != 0) {
+        if (TheGameMode->Property(Symbol("force_use_cymbals"), true)->Int(nullptr) != 0) {
             is_pro = true;
         } else {
-            Symbol forceNoCym("force_dont_use_cymbals");
-            if (TheGameMode->Property(forceNoCym, true)->Int(nullptr) != 0) {
+            if (TheGameMode->Property(Symbol("force_dont_use_cymbals"), true)->Int(nullptr) != 0) {
                 is_pro = false;
             }
         }
