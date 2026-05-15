@@ -262,11 +262,11 @@ void AppLabel::SetSongAndArtistName(const SongSortNode *ssn) {
 }
 
 void AppLabel::SetSongCount(int ct) {
-    Symbol s = song_select_songs;
+    const Symbol *sptr = &song_select_songs;
     if (ct == 1)
-        s = song_select_song;
+        sptr = &song_select_song;
+    DataNode word(*sptr);
     DataNode count(LocalizeSeparatedInt(ct));
-    DataNode word(s);
     DataArray *da = new DataArray(2);
     da->Node(0) = word;
     da->Node(1) = count;
