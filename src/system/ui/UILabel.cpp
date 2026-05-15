@@ -325,21 +325,17 @@ void UILabel::UpdateAndDrawHighlightMesh() {
             float f1 = 0;
             float f2 = 0;
             mText->GetCurrentStringDimensions(f1, f2);
-            Vector3 v74, v80;
+            Vector3 v80, v74;
             InqMinMaxFromWidthAndHeight(f1, f2, Alignment(), v74, v80);
             float x1 = v74.x;
             float x2 = v80.x;
             float z2 = v80.z;
             float z1 = v74.z;
             mLabelDir->SetWorldXfm(WorldXfm());
-            Vector3 v8c(x1, 0, z2);
-            Vector3 v98(x2, 0, z2);
-            Vector3 va4(x1, 0, z1);
-            Vector3 vb0(x2, 0, z1);
-            topleft->SetLocalPos(v8c);
-            topright->SetLocalPos(v98);
-            botleft->SetLocalPos(va4);
-            botright->SetLocalPos(vb0);
+            topleft->SetLocalPos(x1, 0, z2);
+            topright->SetLocalPos(x2, 0, z2);
+            botleft->SetLocalPos(x1, 0, z1);
+            botright->SetLocalPos(x2, 0, z1);
         }
         RndEnviron *env = meshgroup->GetEnv();
         if (env) {

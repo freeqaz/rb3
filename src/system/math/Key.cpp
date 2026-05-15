@@ -9,19 +9,25 @@ void SplineTangent(const Keys<Vector3, Vector3> &keys, int i, Vector3 &vout) {
     if (size == 2) {
         Subtract(keys[1].value, keys[0].value, vout);
     } else if (i <= 0) {
-        Subtract(keys[1].value, keys[0].value, vout);
-        Scale(vout, 1.5f, vout);
-        Vector3 vtmp;
-        Subtract(keys[2].value, keys[0].value, vtmp);
-        Scale(vtmp, 0.25f, vtmp);
-        Subtract(vout, vtmp, vout);
+        const Vector3 &k0 = keys[0].value;
+        const Vector3 &k1 = keys[1].value;
+        const Vector3 &k2 = keys[2].value;
+        vout.z = (k1.z - k0.z) * 1.5f;
+        vout.y = (k1.y - k0.y) * 1.5f;
+        vout.x = (k1.x - k0.x) * 1.5f;
+        vout.z -= (k2.z - k0.z) * 0.25f;
+        vout.y -= (k2.y - k0.y) * 0.25f;
+        vout.x -= (k2.x - k0.x) * 0.25f;
     } else if (i >= size - 1) {
-        Subtract(keys[size - 1].value, keys[size - 2].value, vout);
-        Scale(vout, 1.5f, vout);
-        Vector3 vtmp;
-        Subtract(keys[size - 1].value, keys[size - 3].value, vtmp);
-        Scale(vtmp, 0.25f, vtmp);
-        Subtract(vout, vtmp, vout);
+        const Vector3 &k1 = keys[size - 1].value;
+        const Vector3 &k2 = keys[size - 2].value;
+        const Vector3 &k3 = keys[size - 3].value;
+        vout.y = (k1.y - k2.y) * 1.5f;
+        vout.z = (k1.z - k2.z) * 1.5f;
+        vout.x = (k1.x - k2.x) * 1.5f;
+        vout.z -= (k1.z - k3.z) * 0.25f;
+        vout.y -= (k1.y - k3.y) * 0.25f;
+        vout.x -= (k1.x - k3.x) * 0.25f;
     } else {
         Subtract(keys[i + 1].value, keys[i - 1].value, vout);
         Scale(vout, 0.5f, vout);

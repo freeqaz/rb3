@@ -99,7 +99,7 @@ bool TrackerSectionManager::TickAfterSection(int tick, int section) const {
 
 void TrackerSectionManager::GatherSections() {
     SongDB *songDB = TheSongDB;
-    mSections.erase(mSections.begin(), mSections.end());
+    mSections.clear();
     mSections.reserve(songDB->mPracticeSections.size());
     std::vector<PracticeSection>::iterator it = songDB->mPracticeSections.begin();
     for (; it != songDB->mPracticeSections.end(); ++it) {

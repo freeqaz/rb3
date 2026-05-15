@@ -1104,11 +1104,9 @@ void Spotlight::BuildNGQuad(BeamDef &def, RndTransformable::Constraint constrain
     def.mBeam = Hmx::Object::New<RndMesh>();
     RndMesh::VertVector &verts = def.mBeam->Verts();
     std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
-    int numSegs = def.mNumSegments;
-    int numSecs = def.mNumSections;
-    int gridSize = numSegs;
-    if (numSegs < numSecs) {
-        gridSize = numSecs;
+    int gridSize = def.mNumSegments;
+    if (gridSize < def.mNumSections) {
+        gridSize = def.mNumSections;
     }
     static int kSideVerts = (gridSize > 0) ? gridSize + 1 : 2;
 

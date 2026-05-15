@@ -597,50 +597,42 @@ void BSPFace::Update() {
     MILO_ASSERT(p.mPoints.size() > 2, 0x696);
 
     const Vector2 *anchor = p.mPoints.begin();
-    const Vector2 *v1 = anchor + 1;
-    const Vector2 *v2 = v1 + 1;
+    const Vector2 *prev = anchor + 1;
+    const Vector2 *curr = prev + 1;
     area = 0.0f;
-    if (v2 != p.mPoints.end()) {
-        const Vector2 *next;
-        do {
-            next = v2 + 1;
-            area += (v1->y * anchor->x - v1->x * anchor->y +
-                     v2->x * anchor->y - v2->y * anchor->x +
-                     v2->y * v1->x - v2->x * v1->y) * 0.5f;
-            v1 = v2;
-            v2 = next;
-        } while (next != p.mPoints.end());
+    while (curr != p.mPoints.end()) {
+        float cx = curr->x, py = prev->y, px = prev->x;
+        prev = curr;
+        float ay = anchor->y;
+        float pycx = py * cx;
+        float cy = curr->y;
+        curr++;
+        float ax = anchor->x;
+        area += (((ax * py - ay * px) + (px * cy - pycx)) + (cx * ay - cy * ax)) * 0.5f;
     }
 
     planes.clear();
 
-    float fa = t.m.z.x;
-    float fb = t.m.z.y;
-    float fvy = t.v.y;
-    float fvx = t.v.x;
-    float fc = t.m.z.z;
+    Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
+    Vector3 curPt;
+    Vector3 d;
     Plane facePlane;
-    facePlane.a = fa;
-    facePlane.b = fb;
-    facePlane.c = fc;
-    float fd_bvy = fb * fvy;
-    float fvz = t.v.z;
-    float fd_avx = fa * fvx;
-    float fd_sum = fd_avx + fd_bvy;
-    float fd_cvz = fc * fvz;
-    facePlane.d = -(fd_cvz + fd_sum);
+    facePlane.a = t.m.z.x;
+    facePlane.b = t.m.z.y;
+    facePlane.c = t.m.z.z;
+    facePlane.d = -(t.m.z.x * t.v.x + t.m.z.y * t.v.y + t.m.z.z * t.v.z);
     planes.insert(planes.end(), facePlane);
 
-    Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
     Multiply(prevPt, t, prevPt);
 
     for (const Vector2 *it = p.mPoints.begin(); it != p.mPoints.end(); it++) {
         bool notXYZ = false;
         bool notXY = false;
-        Vector3 curPt(it->x, it->y, 0.0f);
+        curPt.x = it->x;
+        curPt.y = it->y;
+        curPt.z = 0.0f;
         Multiply(curPt, t, curPt);
 
-        Vector3 d;
         d.x = curPt.x - prevPt.x;
         d.y = curPt.y - prevPt.y;
         d.z = curPt.z - prevPt.z;
@@ -648,18 +640,16 @@ void BSPFace::Update() {
         if (d.x == 0.0f && d.y == 0.0f) notXY = true;
         if (notXY && d.z == 0.0f) notXYZ = true;
         if (!notXYZ) {
-            Vector3 normal;
-            normal.z = t.m.z.y * d.x - t.m.z.x * d.y;
-            normal.x = t.m.z.z * d.y - t.m.z.y * d.z;
-            normal.y = t.m.z.x * d.z - t.m.z.z * d.x;
-            Normalize(normal, normal);
+            d.z = t.m.z.y * d.x - t.m.z.x * d.y;
+            d.x = t.m.z.z * d.y - t.m.z.y * d.z;
+            d.y = t.m.z.x * d.z - t.m.z.z * d.x;
+            Normalize(d, d);
 
             Plane edgePlane;
-            edgePlane.a = normal.x;
-            edgePlane.b = normal.y;
-            edgePlane.c = normal.z;
-            float ep_d = normal.x * curPt.x + (normal.y * curPt.y + normal.z * curPt.z);
-            edgePlane.d = -ep_d;
+            edgePlane.a = d.x;
+            edgePlane.b = d.y;
+            edgePlane.c = d.z;
+            edgePlane.d = -(d.x * curPt.x + (d.y * curPt.y + d.z * curPt.z));
             planes.insert(planes.end(), edgePlane);
 
             prevPt = curPt;

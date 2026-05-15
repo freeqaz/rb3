@@ -187,10 +187,13 @@ MCResult BufStreamNAND::HandleResultNAND(s32 nandResult) {
         result = kMCNoPermission;
         break;
     default:
-        if (nandResult == NAND_RESULT_ALLOC_FAILED) {
+        switch (nandResult) {
+        case NAND_RESULT_ALLOC_FAILED:
             MILO_WARN("Unexpected Wii filesys error: %d (NAND_RESULT_ALLOC_FAILED)\n", nandResult);
-        } else if (nandResult == NAND_RESULT_FATAL_ERROR) {
+            break;
+        case NAND_RESULT_FATAL_ERROR:
             MILO_WARN("Unexpected Wii filesys error: %d (NAND_RESULT_FATAL_ERROR)\n", nandResult);
+            break;
         }
         MILO_WARN("Unexpected Wii filesys error: %d\n", nandResult);
         result = kMCGeneralError;
@@ -231,14 +234,14 @@ void BufStreamNAND::WriteImpl(const void *data, int count) {
             return;
         }
     }
-    int size = mSize;
-    if(mRunningTell + count > size || mTell + count > mChunkSize) {
+    int tell = mTell;
+    if(mRunningTell + count > mSize || tell + count > mChunkSize) {
         mFail = true;
-        count = size - mTell;
+        count = mChunkSize - tell;
     }
-    memcpy(&mBuffer[mTell], data, count);
+    memcpy(&mBuffer[tell], data, count);
     mRunningTell += count;
-    mTell += count;
+    mTell = tell + count;
     if(mChecksum) {
         mChecksum->Update((const unsigned char*)data, count);
     }

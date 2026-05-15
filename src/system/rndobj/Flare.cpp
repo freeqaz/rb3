@@ -111,25 +111,27 @@ Hmx::Rect &RndFlare::CalcRect(Vector2 &vref, float &fref) {
         RndCam *cam = RndCam::sCurrent;
         float dot = Dot(cam->WorldXfm().m.y, WorldXfm().m.y);
         float blend = Max(0.0f, -dot);
-        flareSize = Interp(mSizes.x, mSizes.y, blend);
+        flareSize = mSizes.x + blend * (mSizes.y - mSizes.x);
     }
     int width = TheRnd->Width();
     int height = TheRnd->Height();
     if (TheHiResScreen.IsActive()) {
-        width *= TheHiResScreen.mTiling;
-        int paddingX = TheHiResScreen.GetPaddingX();
         int tiling = TheHiResScreen.mTiling;
-        width -= paddingX * tiling;
+        width *= tiling;
         height *= tiling;
+        int paddingX = TheHiResScreen.GetPaddingX();
+        tiling = TheHiResScreen.mTiling;
+        width -= tiling * paddingX;
         int paddingY = TheHiResScreen.GetPaddingY();
-        height -= paddingY * TheHiResScreen.mTiling;
+        height -= tiling * paddingY;
         Hmx::Rect screenRect = TheHiResScreen.ScreenRect();
         vref.x -= screenRect.x;
         vref.y -= screenRect.y;
     }
     CalcScale();
-    mArea.w = flareSize * width * unk114.x;
-    mArea.h = (height * (flareSize * width * unk114.y)) / (width * TheRnd->YRatio());
+    flareSize *= width;
+    mArea.w = flareSize * unk114.x;
+    mArea.h = (height * (flareSize * unk114.y)) / (width * TheRnd->YRatio());
     mArea.x = vref.x * width - mArea.w * 0.5f;
     mArea.y = vref.y * height - mArea.h * 0.5f;
     float f1 = Min<float>(width, mArea.x + mArea.w) - Max(0.0f, mArea.x);

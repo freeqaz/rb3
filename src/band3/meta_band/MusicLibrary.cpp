@@ -1806,19 +1806,19 @@ void MusicLibrary::RebuildSharedSongData() {
         wasShared = true;
     }
     std::map<Symbol, SongRecord> &theSongs = TheSongSortMgr->mSongs;
-    bool b1 = false;
+    bool aSharedSongChanged = false;
     FOREACH (it, theSongs) {
         if (it->second.UpdateSharedStatus())
-            b1 = true;
+            aSharedSongChanged = true;
     }
-    bool sharedChanged = false;
+    bool mySharedSongChanged = false;
     if (curNode && wasShared != (bool)curNode->GetSongRecord()->mIsShared) {
-        sharedChanged = true;
+        mySharedSongChanged = true;
     }
-    MILO_ASSERT(!sharedChanged || b1, 0xAFD);
-    if (b1) {
+    MILO_ASSERT(!mySharedSongChanged || aSharedSongChanged, 0xAFD);
+    if (aSharedSongChanged) {
         PushSonglistToScreen();
-        if (sharedChanged) {
+        if (mySharedSongChanged) {
             PushHighlightToScreen(false);
         }
     }
@@ -1833,21 +1833,21 @@ void MusicLibrary::RebuildRestrictedData() {
         wasRestricted = true;
     }
     std::map<Symbol, SongRecord> &theSongs = TheSongSortMgr->mSongs;
-    bool b1 = false;
+    bool aRestrictedSongChanged = false;
     FOREACH (it, theSongs) {
         if (it->second.UpdateRestricted()) {
-            b1 = true;
+            aRestrictedSongChanged = true;
             it->second.UpdateSharedStatus();
         }
     }
-    bool restrictedChanged = false;
+    bool myRestrictedSongChanged = false;
     if (curNode && wasRestricted != (bool)curNode->GetSongRecord()->mRestricted) {
-        restrictedChanged = true;
+        myRestrictedSongChanged = true;
     }
-    MILO_ASSERT(!restrictedChanged || b1, 0xB27);
-    if (b1) {
+    MILO_ASSERT(!myRestrictedSongChanged || aRestrictedSongChanged, 0xB27);
+    if (aRestrictedSongChanged) {
         PushSonglistToScreen();
-        if (restrictedChanged) {
+        if (myRestrictedSongChanged) {
             PushHighlightToScreen(false);
         }
     }
