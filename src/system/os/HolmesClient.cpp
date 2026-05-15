@@ -114,7 +114,7 @@ namespace {
     }
 
     void HolmesFlushStreamBuffer() {
-        if (gStreamBuffer->mBuffer.size() > 0x2000d)
+        if ((int)gStreamBuffer->mBuffer.size() > 0x2000d)
             gRealMaxBufferSize = gStreamBuffer->mBuffer.size();
         gHolmesStream->Write(&gStreamBuffer->mBuffer[0], gStreamBuffer->mBuffer.size());
         gStreamBuffer->Seek(0, BinStream::kSeekEnd);
