@@ -732,19 +732,26 @@ void Spotlight::BuildBeam(BeamDef &def) {
     MILO_ASSERT(!SpotlightDrawer::DrawNGSpotlights(), 0x5F3);
     def.mIsCone = false;
     def.mBeam = Hmx::Object::New<RndMesh>();
-    float bottomBorderLen = def.mBottomBorder * def.mLength;
     RndMesh::VertVector &verts = def.mBeam->Verts();
     std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
+    float bottomBorderLen = def.mBottomBorder * def.mLength;
+    float topSideBorderVal = def.mTopSideBorder * def.mTopRadius;
 
     int numSectionsTop = 4;
-    int compTop = (int)((def.mLength - bottomBorderLen) / 15.0f);
-    if (compTop > 4) numSectionsTop = compTop;
+    {
+        int rawTop = (int)((def.mLength - bottomBorderLen) / 15.0f);
+        if (rawTop > 4) numSectionsTop = rawTop;
+    }
+
+    float bottomSideBorderVal = def.mBottomSideBorder * def.mBottomRadius;
 
     int numSectionsBottom = 1;
-    int compBot = (int)(bottomBorderLen / 15.0f);
-    if (compBot > 1) numSectionsBottom = compBot;
+    {
+        int rawBot = (int)(bottomBorderLen / 15.0f);
+        if (rawBot > 1) numSectionsBottom = rawBot;
+    }
 
-    unsigned int totalSections = numSectionsBottom + numSectionsTop;
+    int totalSections = numSectionsBottom + numSectionsTop;
 
     verts.resize(totalSections * 4, true);
     faces.resize(totalSections * 6);
@@ -752,99 +759,96 @@ void Spotlight::BuildBeam(BeamDef &def) {
     float topLen = def.mLength - bottomBorderLen;
     float topRadius = def.mTopRadius;
     float borderTopRadius = (topLen / def.mLength) * (def.mBottomRadius - topRadius) + topRadius;
-    float radiusStepTop = borderTopRadius - topRadius;
-    float topSectionLen = 1.0f / (float)numSectionsTop;
-    float botSectionLen = 1.0f / (float)numSectionsBottom;
-    float radiusStepTopVal = radiusStepTop * topSectionLen;
-    float radiusStepBotVal = (def.mBottomRadius - borderTopRadius) * botSectionLen;
-
+    float radiusStepTopVal = (borderTopRadius - topRadius) / (float)numSectionsTop;
+    float radiusStepBotVal = (def.mBottomRadius - borderTopRadius) / (float)numSectionsBottom;
     float halfWidth = topRadius;
     int fi = 0;
-    int s = 6;
-    for (unsigned int i = 0; i < totalSections; i++) {
+    int c0 = 0;
+    for (int i = 0; i < totalSections; i++) {
         float y;
         float alpha;
-        if (i == (unsigned int)(totalSections - 1)) {
+        if (i == totalSections - 1) {
             y = def.mLength;
             alpha = 0.0f;
-        } else if (i >= (unsigned int)numSectionsTop) {
-            int lVar31 = (int)i - numSectionsTop;
-            y = (botSectionLen * bottomBorderLen) * (float)lVar31 + topLen;
+        } else if (i >= numSectionsTop) {
+            int lVar31 = i - numSectionsTop;
+            y = (float)lVar31 * (bottomBorderLen / (float)numSectionsBottom) + topLen;
             alpha = 1.0f - (float)lVar31 / (float)numSectionsBottom;
         } else {
-            y = (topLen * topSectionLen) * (float)i;
+            y = (float)i * (topLen / (float)numSectionsTop);
             alpha = 1.0f;
         }
 
         float yFrac = y / def.mLength;
         float negY = -y;
-        float topSideBorderVal = def.mTopSideBorder * def.mTopRadius;
-        float bottomSideBorderVal = def.mBottomSideBorder * def.mBottomRadius;
         float sideBorder = (bottomSideBorderVal - topSideBorderVal) * yFrac + topSideBorderVal;
         float borderRatio = sideBorder / (halfWidth * 2.0f);
+
+        int c1 = c0 + 1;
+        int c2 = c0 + 2;
+        int c3 = c0 + 3;
+        int n0 = c0 + 4;
+        int n1 = n0 + 1;
+        int n2 = n0 + 2;
+        int n3 = n0 + 3;
+
+        // Column 0: left edge
+        verts[c0].pos.x = -halfWidth;
+        verts[c0].pos.y = 0.0f;
+        verts[c0].pos.z = negY;
+        verts[c0].color.color = 0;
+        verts[c0].uv.Set(0.0f, yFrac);
 
         float leftInner = sideBorder - halfWidth;
         float rightInner = halfWidth - sideBorder;
 
-        // Column 0: left edge
-        verts[i * 4].pos.z = negY;
-        verts[i * 4].pos.x = -halfWidth;
-        verts[i * 4].pos.y = 0.0f;
-        verts[i * 4].color.Set(0.0f, 0.0f, 0.0f, 0.0f);
-        verts[i * 4].uv.Set(0.0f, yFrac);
-
         // Column 1: left inner
         if (-leftInner < 0.0f) leftInner = 0.0f;
-        verts[i * 4 + 1].pos.x = leftInner;
-        verts[i * 4 + 1].pos.y = 0.0f;
-        verts[i * 4 + 1].pos.z = negY;
-        verts[i * 4 + 1].color.Set(alpha, alpha, alpha, alpha);
-        verts[i * 4 + 1].uv.Set(borderRatio, yFrac);
+        verts[c1].pos.x = leftInner;
+        verts[c1].pos.y = 0.0f;
+        verts[c1].pos.z = negY;
+        {
+            int iAlpha = (int)(alpha * 255.0f);
+            int alphaColor = ((iAlpha & 0xFF) << 24) | ((iAlpha & 0xFF) << 16) | ((iAlpha & 0xFF) << 8) | (iAlpha & 0xFF);
+            verts[c1].color.color = alphaColor;
+            verts[c2].color.color = alphaColor;
+        }
+        verts[c1].uv.Set(borderRatio, yFrac);
 
         // Column 2: right inner
         if (-rightInner < 0.0f) rightInner = 0.0f;
-        verts[i * 4 + 2].pos.x = rightInner;
-        verts[i * 4 + 2].pos.y = 0.0f;
-        verts[i * 4 + 2].pos.z = negY;
-        verts[i * 4 + 2].color.Set(alpha, alpha, alpha, alpha);
-        verts[i * 4 + 2].uv.Set(1.0f - borderRatio, yFrac);
+        verts[c2].pos.x = rightInner;
+        verts[c2].pos.y = 0.0f;
+        verts[c2].pos.z = negY;
+        verts[c2].uv.Set(1.0f - borderRatio, yFrac);
 
         // Column 3: right edge
-        verts[i * 4 + 3].pos.x = halfWidth;
-        verts[i * 4 + 3].pos.y = 0.0f;
-        verts[i * 4 + 3].pos.z = negY;
-        verts[i * 4 + 3].color.Set(0.0f, 0.0f, 0.0f, 0.0f);
-        verts[i * 4 + 3].uv.Set(1.0f, yFrac);
+        verts[c3].pos.x = halfWidth;
+        verts[c3].pos.y = 0.0f;
+        verts[c3].pos.z = negY;
+        verts[c3].color.color = 0;
+        verts[c3].uv.Set(1.0f, yFrac);
 
-        if (i != (unsigned int)(totalSections - 1)) {
-            int c0 = s - 6;
-            int c1 = c0 + 1;
-            int c2 = c0 + 2;
-            int c3 = c0 + 3;
-            int n0 = c0 + 4;
-            int n1 = c0 + 5;
-            int n2 = c0 + 6;
-            int n3 = c0 + 7;
-
-            if ((i & 1) != 0) {
-                faces[fi].Set(c0, n0, n1);
-                faces[fi + 1].Set(c0, n1, c1);
-                faces[fi + 2].Set(c1, n1, c2);
-                faces[fi + 3].Set(c2, n1, n2);
-                faces[fi + 4].Set(c2, n3, c3);
-                faces[fi + 5].v1 = c2;
-            } else {
+        if (i != totalSections - 1) {
+            if ((i & 1) == 0) {
                 faces[fi].Set(c0, n0, c1);
                 faces[fi + 1].Set(c1, n0, n1);
                 faces[fi + 2].Set(c1, n2, c2);
                 faces[fi + 3].Set(c1, n1, n2);
                 faces[fi + 4].Set(c2, n2, c3);
                 faces[fi + 5].v1 = c3;
+            } else {
+                faces[fi].Set(c0, n0, n1);
+                faces[fi + 1].Set(c0, n1, c1);
+                faces[fi + 2].Set(c1, n1, c2);
+                faces[fi + 3].Set(c2, n1, n2);
+                faces[fi + 4].Set(c2, n3, c3);
+                faces[fi + 5].v1 = c2;
             }
             faces[fi + 5].v2 = n2;
             faces[fi + 5].v3 = n3;
 
-            if (i == (unsigned int)(totalSections - 2)) {
+            if (i == totalSections - 2) {
                 faces[fi].Set(c0, n0, c1);
                 faces[fi + 1].Set(c1, n0, n1);
                 faces[fi + 4].Set(c2, n2, n3);
@@ -852,14 +856,14 @@ void Spotlight::BuildBeam(BeamDef &def) {
             }
         }
 
-        if (i >= (unsigned int)numSectionsTop) {
+        if (i >= numSectionsTop) {
             halfWidth = radiusStepBotVal + halfWidth;
         } else {
             halfWidth = radiusStepTopVal + halfWidth;
         }
 
-        s += 4;
         fi += 6;
+        c0 += 4;
     }
 
     def.mBeam->Sync(0x13F);
