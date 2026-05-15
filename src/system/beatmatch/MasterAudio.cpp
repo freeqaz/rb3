@@ -188,6 +188,7 @@ void MasterAudio::SetupChannels(SongInfo *info) {
 typedef void (MasterAudio::*ChannelSetupFunc)(int, MasterAudio::ExtraTrackInfo &);
 
 void MasterAudio::SetupTracks(SongInfo *info, PlayerTrackConfigList *pList) {
+    MILO_ASSERT(pList, 0x1F4);
     const std::vector<TrackChannels> &chans = info->GetTracks();
     for (int i = 0; i < chans.size(); i++) {
         SongInfoAudioType curAudioType = chans[i].mAudioType;
@@ -206,7 +207,7 @@ void MasterAudio::SetupTracks(SongInfo *info, PlayerTrackConfigList *pList) {
                 ? &MasterAudio::SetupTrackChannel_
                 : &MasterAudio::SetupBackgroundChannel_;
             for (int j = 0; j < curChannels.size(); j++) {
-                // (func)(curChannels[j], info);
+                (this->*func)(curChannels[j], extraInfo);
             }
             if (extraInfo.mVocal) {
                 SetNonmutable(AudioTrackNum(i));

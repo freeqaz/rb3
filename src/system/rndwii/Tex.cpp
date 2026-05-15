@@ -12,7 +12,7 @@ std::set<WiiTex *> gRenderTextureSet;
 
 bool WiiTex::bComposingOutfitTexture = false;
 
-WiiTex::WiiTex() : mImageData(NULL), mFormat() {}
+WiiTex::WiiTex() : mImageData(NULL), mFormat(), unkAC(0), unkB0(0), unkC8(0), unkCC(0), unkB8(0), unkB4(0) {}
 
 WiiTex::~WiiTex() { DeleteSurface(); }
 

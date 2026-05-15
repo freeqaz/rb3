@@ -405,8 +405,8 @@ BOOL EXIDetach(EXIChannel chan) {
 
 BOOL EXISelect(EXIChannel chan, u32 dev, u32 freq) {
     EXIControl* exi = &Ecb[chan];
-    u32 cpr;
     BOOL enabled;
+    u32 cpr;
 
     enabled = OSDisableInterrupts();
 

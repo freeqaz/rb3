@@ -299,15 +299,23 @@ void EntityUploader::RockCentralOpComplete(bool b1, int i2, int i3) {
                 if (i2 != 1 && i2 != 11) {
                     if (mUploadOps[i]->mOpType == 2) {
                         TourSavable *obj = mUploadOps[i]->mSavableObject;
-                        if (obj)
-                            obj->UploadComplete();
+                        obj->UploadComplete();
+                        obj->UploadSecComplete();
                     }
                     if (mUploadOps[i]->mOpType == 4) {
+                        LocalSavedSetlist *setlist =
+                            (LocalSavedSetlist *)mUploadOps[i]->mSavableObject;
+                        setlist->ProcessRetCode(mUploadOps[i]->mRetCode);
+                        setlist->UploadComplete();
                     }
                     if (mUploadOps[i]->mOpType == 3) {
+                        TourBand *band = (TourBand *)mUploadOps[i]->mSavableObject;
+                        band->ProcessRetCode(mUploadOps[i]->mRetCode);
+                        band->UploadComplete();
                     }
                 }
             }
+            bvar1 = bvar1 && mUploadOps[i]->mOpFinished;
         }
         if (bvar1) {
             for (int i = 0; i < mNumUploadOps; i++) {

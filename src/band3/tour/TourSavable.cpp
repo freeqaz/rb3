@@ -51,6 +51,8 @@ void TourSavable::UploadComplete() {
     GetDateAndTime(unkb);
 }
 
+void TourSavable::UploadSecComplete() {}
+
 BEGIN_HANDLERS(TourSavable)
     HANDLE_ACTION(set_dirty, SetDirty(_msg->Int(2), _msg->Int(3)))
     HANDLE_CHECK(0x89)

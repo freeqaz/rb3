@@ -590,9 +590,7 @@ bool HolmesClientReadDone(File *f) {
 }
 
 void HolmesClientClose(File *fi, int fd) {
-    CriticalSection *cs = &gCrit;
-    if (cs)
-        cs->Enter();
+    CritSecTracker cst(&gCrit);
     BeginCmd(Holmes::kCloseFile, true);
     MILO_ASSERT(gHolmesStream, 1081);
     if (PendingRead(fi))
@@ -600,8 +598,6 @@ void HolmesClientClose(File *fi, int fd) {
     *gStreamBuffer << u8(Holmes::kCloseFile) << fd;
     HolmesFlushStreamBuffer();
     EndCmd(Holmes::kCloseFile);
-    if (cs)
-        cs->Exit();
 }
 
 void HolmesClientPrint(const char *cc) {

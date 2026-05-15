@@ -31,6 +31,14 @@ public:
     u8 pad[32];
     void *mImageData; // 0x84
     GXTexFmt mFormat; // 0x88
+    u8 pad2[32]; // 0x8C
+    int unkAC; // 0xAC
+    int unkB0; // 0xB0
+    int unkB4; // 0xB4
+    int unkB8; // 0xB8
+    u8 pad3[16]; // 0xBC
+    int unkC8; // 0xC8
+    int unkCC; // 0xCC
 
     static bool bComposingOutfitTexture;
 

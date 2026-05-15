@@ -517,6 +517,26 @@ void StandardStream::UpdateTime() {
     mLastStreamTime = mTimer.Ms();
 }
 
+void StandardStream::UpdateTimeByFiltering() {
+    if (mChannels.empty() || mSampleRate == 0) {
+        mLastStreamTime = mStartMs;
+        return;
+    }
+
+    float drift = GetRawTime() - mTimer.Ms();
+
+    if (fabsf(drift) > 50.0f) {
+        if (sReportLargeTimerErrors) {
+            MILO_LOG("timer error is large: %f\n", drift);
+        }
+    } else {
+        drift *= 0.1f;
+    }
+
+    mTimer.Reset(mTimer.Ms() + drift);
+    mLastStreamTime = mTimer.Ms();
+}
+
 float StandardStream::GetJumpBackTotalTime() { return mAccumulatedLoopbacks; }
 
 float StandardStream::GetInSongTime() { return GetTime() + GetJumpBackTotalTime(); }

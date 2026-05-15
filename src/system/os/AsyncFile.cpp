@@ -207,34 +207,28 @@ bool AsyncFile::WriteAsync(const void *v, int i) {
     MILO_ASSERT(mMode & FILE_OPEN_WRITE, 0x18E);
     if (mFail)
         return false;
-    else {
-        if (!mBuffer) {
-            _WriteAsync(v, i);
-        } else {
-            do {
-                if (mOffset + i > gBufferSize) {
-                    int size = gBufferSize - mOffset;
-                    memcpy(mBuffer + mOffset, v, size);
-                    mOffset = gBufferSize;
-                    v = (void *)((int)v + size);
-                    mTell += size;
-                    Flush();
-                    i -= size;
-                } else {
-                    memcpy(mBuffer + mOffset, v, i);
-                    mTell += i;
-                    mOffset += i;
-                    if (mSize < mTell)
-                        mSize = mTell;
-                    goto okthen;
-                }
-
-            } while (!mFail);
-            return false;
+    if (!mBuffer) {
+        _WriteAsync(v, i);
+    } else {
+        int remaining = i;
+        while ((mOffset + remaining) > gBufferSize) {
+            int size = gBufferSize - mOffset;
+            memcpy(mBuffer + mOffset, v, size);
+            remaining -= size;
+            mOffset = gBufferSize;
+            v = (void *)((int)v + size);
+            mTell += size;
+            Flush();
+            if (mFail)
+                return false;
         }
-    okthen:
-        return i != 0;
+        memcpy(mBuffer + mOffset, v, remaining);
+        mTell += remaining;
+        mOffset += remaining;
+        if (mSize < mTell)
+            mSize = mTell;
     }
+    return i != 0;
 }
 
 int AsyncFile::Seek(int i, int j) {
