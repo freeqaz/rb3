@@ -1498,65 +1498,61 @@ void Game::Poll() {
         Rollback(ms, rollbackTarget);
     }
     unk6b = false;
-    if (!HandleRollbackAnimation() || !HandleAudioLoad()) {
-        return;
-    }
-    if (!unk6f && !mIsPaused) {
-        unk6f = true;
-        if (!mHasIntro) {
-            Go();
-        }
-    }
-    if (mTime.mRunning > 0) {
-        mTime.Split();
-    }
-    float songMs = 0.0f;
-    bool isGameOver = (TheGamePanel->mGameState == kGameOver);
-    if (TheGamePanel->unk150) {
-        if (mRealtime) {
-            songMs = mTimeOffset
-                + Timer::CyclesToMs(mTime.mCycles);
-        } else {
-            songMs = mMaster->GetAudio()->GetTime();
-            if (mShuttle->mActive) {
-                songMs = PollShuttle();
+    if (HandleRollbackAnimation() && HandleAudioLoad()) {
+        if (!unk6f && !mIsPaused) {
+            unk6f = true;
+            if (!mHasIntro) {
+                Go();
             }
         }
-        float rawMs;
-        float corrected = TheGamePanel->mDeJitter.Apply(
-            songMs + GetSongToTaskMgrMs(), rawMs
-        );
-        songMs = corrected;
-        TheGamePanel->SetDejitteredTime(corrected);
-        TheTaskMgr.SetSeconds(songMs / 1000.0f, false);
-    }
-    if ((!isGameOver && !mIsPaused && !mRealtime && IsReady()) || mProperties.mInDrumTrainer) {
-        float realTimeSongMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
-        mSongPos = mSongDB->GetData()->CalcSongPos(realTimeSongMs);
-        TheTaskMgr.mSongPos = mSongPos;
-    }
-    if (songMs >= 0.0f) {
-        mMaster->Poll(songMs);
-        if (!isGameOver) {
-            mBand->Poll(songMs, mSongPos);
-            mTrackerManager->Poll(songMs);
+        mTime.Split();
+        bool isGameOver = (TheGamePanel->mGameState == kGameOver);
+        float songMs = 0.0f;
+        if (TheGamePanel->unk150) {
+            float audioMs;
+            if (mRealtime) {
+                audioMs = mTimeOffset
+                    + Timer::CyclesToMs(mTime.mCycles);
+            } else {
+                audioMs = mMaster->GetAudio()->GetTime();
+                if (mShuttle->mActive) {
+                    audioMs = PollShuttle();
+                }
+            }
+            audioMs += GetSongToTaskMgrMs();
+            float rawMs;
+            songMs = TheGamePanel->mDeJitter.Apply(audioMs, rawMs);
+            TheGamePanel->SetDejitteredTime(songMs);
+            TheTaskMgr.SetSeconds(songMs / 1000.0f, false);
         }
-    } else {
-        mMaster->GetMidiParserMgr()->Poll();
-    }
-    if (!isGameOver) {
-        CheckSectionEnd(songMs);
-    }
-    CheckRollbackEnd(songMs);
-    mLastPollMs = songMs;
-    if (mResumeTime == 0 && !mIsPaused) {
-        unk130 = mLastPollMs / mSongDB->GetSongDurationMs();
-    }
-    if (!unk138) {
-        float startMs = unk134;
-        if (startMs > 0.0f && songMs > 0.0f) {
-            unk138 = true;
-            Jump(startMs, true);
+        if ((!isGameOver && !mIsPaused && !mRealtime && IsReady()) || mProperties.mInDrumTrainer) {
+            songMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
+            mSongPos = mSongDB->GetData()->CalcSongPos(songMs);
+            TheTaskMgr.mSongPos = mSongPos;
+        }
+        if (songMs >= 0.0f) {
+            mMaster->Poll(songMs);
+            if (!isGameOver) {
+                mBand->Poll(songMs, mSongPos);
+                mTrackerManager->Poll(songMs);
+            }
+        } else {
+            mMaster->GetMidiParserMgr()->Poll();
+        }
+        if (!isGameOver) {
+            CheckSectionEnd(songMs);
+        }
+        CheckRollbackEnd(songMs);
+        mLastPollMs = songMs;
+        if (mResumeTime == 0 && !mIsPaused) {
+            unk130 = mLastPollMs / mSongDB->GetSongDurationMs();
+        }
+        if (!unk138) {
+            float startMs = unk134;
+            if (startMs > 0.0f && songMs > 0.0f) {
+                unk138 = true;
+                Jump(startMs, true);
+            }
         }
     }
 }

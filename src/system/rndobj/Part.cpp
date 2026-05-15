@@ -412,14 +412,15 @@ BEGIN_LOADS(RndParticleSys)
         bs >> mBounce;
     else if (gRev > 1) {
         bool ba7;
+        Plane p150;
         bs >> ba7;
         if (gRev > 0xB) {
-            Plane c;
-            bs >> c;
+            bs >> p150;
         } else {
-            Vector3 v1, v2;
-            bs >> v1 >> v2;
-            float f144 = -Dot(v2, v1);
+            Vector3 v1;
+            bs >> v1;
+            bs >> p150.a >> p150.b >> p150.c;
+            p150.d = -(v1.x * p150.a + v1.y * p150.b + v1.z * p150.c);
         }
         if (ba7) {
             bool old = LOADMGR_EDITMODE;
@@ -429,13 +430,14 @@ BEGIN_LOADS(RndParticleSys)
             );
             TheLoadMgr.SetEditMode(old);
             Transform tf140;
-            Plane p150;
-            Vector3 v11c(p150.On());
-            Vector3 v128(reinterpret_cast<Vector3 &>(p150));
-            Cross(Vector3(0, 1, 0), v128, tf140.m.x);
-            Cross(v128, tf140.m.x, tf140.m.y);
+            float inv = -p150.d / (p150.a * p150.a + p150.b * p150.b + p150.c * p150.c);
+            Vector3 v11c(inv * p150.a, inv * p150.b, inv * p150.c);
+            tf140.m.z = reinterpret_cast<Vector3 &>(p150);
+            Cross(Vector3(0, 1, 0), tf140.m.z, tf140.m.x);
+            Cross(tf140.m.z, tf140.m.x, tf140.m.y);
             Normalize(tf140.m.x, tf140.m.x);
             Normalize(tf140.m.y, tf140.m.y);
+            tf140.v = v11c;
             mBounce->SetWorldXfm(tf140);
         }
     } else {

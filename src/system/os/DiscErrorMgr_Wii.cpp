@@ -1,6 +1,12 @@
 #include "os/DiscErrorMgr_Wii.h"
 #include "os/Debug.h"
+#include "os/Joypad_Wii.h"
+#include "os/PlatformMgr.h"
+#include "os/Timer.h"
 #include "revolution/SC.h"
+#include "usbwii/UsbWii.h"
+
+extern "C" BOOL DVDIsDiskIdentified();
 
 bool gInDiscError;
 
@@ -57,8 +63,34 @@ void DiscErrorMgrWii::SetDiscError(bool err) {
         mDiscError = err;
 }
 
-void DiscErrorMgrWii::LoopUntilNoDiscError(DVDFileInfo *, bool) {
-    MILO_WARN("LoopUntilNoDiscError");
+void DiscErrorMgrWii::LoopUntilNoDiscError(DVDFileInfo *fileInfo, bool detectBusy) {
+    AutoSlowFrame asf("LoopUntilNoDiscError");
+    if (mActive) {
+        NotifyCallbacksStart();
+        UsbWii::mDiscError = true;
+        while (true) {
+            int status = DVDGetCommandBlockStatus(&fileInfo->cb);
+            if (status == 11) {
+                mRetryError = true;
+            } else if (status == 4 || status == 6) {
+                mRetryError = false;
+            } else if ((unsigned int)(status - 1) <= 1 && detectBusy) {
+                mRetryError = false;
+            } else if (DVDIsDiskIdentified()) {
+                break;
+            }
+            if (JoypadPollWiiRemotes() == 0b1111
+                && !ThePlatformMgr.mHomeMenuWii->mBanIconActive) {
+                ThePlatformMgr.mHomeMenuWii->ActivateBanIcon(true);
+            }
+            ThePlatformMgr.WiiPoll();
+            NotifyCallbacksDiscDraw();
+        }
+        NotifyCallbacksEnd();
+        UsbWii::mDiscError = false;
+    } else {
+        OSReturnToMenu();
+    }
 }
 
 void DiscErrorMgrWii::RegisterCallback(Callback *cb) { mCallbacks.push_back(cb); }

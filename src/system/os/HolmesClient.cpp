@@ -304,10 +304,15 @@ NetAddress HolmesResolveIP() {
     return addr;
 }
 
-bool HolmesClientInitOpcode(bool r3) {
+bool HolmesClientInitOpcode(bool reinit) {
     bool fail = false;
-    *gStreamBuffer << (char)Holmes::kVersion;
-    *gStreamBuffer << 0x18; // version
+    int holmesVersion;
+    int version = 0x18;
+    uchar successByte;
+    char ver = (char)Holmes::kVersion;
+    BinStream *buf = gStreamBuffer;
+    buf->Write(&ver, 1);
+    buf->WriteEndian(&version, 4);
     *gStreamBuffer << NetworkSocket::GetHostName();
     *gStreamBuffer << gHolmesTarget;
     *gStreamBuffer << gShareName;
@@ -315,15 +320,14 @@ bool HolmesClientInitOpcode(bool r3) {
     *gStreamBuffer << (char)TheLoadMgr.GetPlatform(); // gPlatform?
     *gStreamBuffer << (char)GetGfxMode();
     HolmesFlushStreamBuffer();
-    if (r3 == false) {
+    if (reinit == false) {
         WaitForAnyResponse(Holmes::kVersion);
-        uchar successByte;
         *gHolmesStream >> successByte;
         fail = successByte;
     } else {
         WaitForResponse(Holmes::kVersion);
     }
-    int holmesVersion = -1;
+    holmesVersion = -1;
     if (fail == false) {
         *gHolmesStream >> holmesVersion;
         fail = holmesVersion != 0x18;
@@ -348,9 +352,9 @@ bool HolmesClientInitOpcode(bool r3) {
         }
     }
     if (fail == false) {
-        *gHolmesStream << gServerName;
+        *gHolmesStream >> gServerName;
     }
-    if (fail == false && gShareName[0] != 0) {
+    if (fail == false && gShareName[0] == 0) {
         String machineName = gMachineName;
         String fileRoot;
         *gHolmesStream >> fileRoot;

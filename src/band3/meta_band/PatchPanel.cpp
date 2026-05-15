@@ -486,10 +486,10 @@ void PatchPanel::Poll() {
 }
 
 void PatchPanel::SetStickerCategory(Symbol cat) {
-    if (mStickerProvider->unk30 != cat) {
-        if (!mStickerProvider->unk30.Null()) {
-            std::vector<PatchSticker *> *oldStickers =
-                mPatch->GetStickers(mStickerProvider->unk30);
+    Symbol curCat = mStickerProvider->unk30;
+    if (curCat != cat) {
+        if (!curCat.Null()) {
+            std::vector<PatchSticker *> *oldStickers = mPatch->GetStickers(curCat);
             for (unsigned int i = 0; i < oldStickers->size(); i++) {
                 mPatch->UnloadStickerTex((*oldStickers)[i]);
             }
@@ -509,38 +509,33 @@ inline void StickerProvider::SetStickers(std::vector<PatchSticker *> *stickers, 
     MILO_ASSERT(mStickerMat, 0x3E);
     mStickers = stickers;
     DeleteAll(mStickerMats);
-    float one = 1.0f;
     float zero = 0.0f;
+    float one = 1.0f;
     float oneone = one * one;
     float zerone = zero * one;
-    for (PatchSticker **it = stickers->begin(); it != stickers->end(); ++it) {
+    for (PatchSticker **it = mStickers->begin(); it != mStickers->end(); ++it) {
         PatchSticker *sticker = *it;
         RndMat *mat = Hmx::Object::New<RndMat>();
         mat->Copy(mStickerMat, kCopyDeep);
         sticker->SetIconOnMat(mat);
+        float scaleHW = 1.0f, scaleWH = 1.0f;
         float h = sticker->unk1c;
         float w = sticker->unk18;
-        float scaleWH, scaleHW;
-        if (w > h) {
-            scaleWH = w / h;
-            scaleHW = one;
-        } else {
-            scaleHW = h / w;
-            scaleWH = one;
-        }
+        if (w > h) scaleWH = w / h;
+        if (!(w > h)) scaleHW = h / w;
         Transform tf;
-        tf.m.x.x = scaleHW;
+        tf.m.x.x = one * scaleHW;
         tf.m.x.y = zero * scaleHW;
-        tf.m.x.z = zerone;
-        tf.m.y.x = zerone;
-        tf.m.y.y = scaleWH;
+        tf.m.x.z = zero * scaleHW;
+        tf.m.y.x = zero * scaleWH;
+        tf.m.y.y = one * scaleWH;
         tf.m.y.z = zero * scaleWH;
         tf.m.z.x = zerone;
         tf.m.z.y = zerone;
         tf.m.z.z = oneone;
-        tf.v.y = zerone;
-        tf.v.x = zerone;
-        tf.v.z = zerone;
+        tf.v.y = zero;
+        tf.v.x = zero;
+        tf.v.z = zero;
         mat->SetBlend(RndMat::kBlendAdd);
         mat->SetTexWrap(kTexBorderBlack);
         mat->SetTexXfm(tf);

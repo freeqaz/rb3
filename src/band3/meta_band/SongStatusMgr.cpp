@@ -1054,7 +1054,8 @@ void SongStatusMgr::LoadFixed(FixedSizeSaveableStream &stream, int rev) {
             UpdateCachedTotalDiscScore(i);
         }
         if (rev >= 0x93) {
-            stream >> mCachedTotalStars[i];
+            int *stars = mCachedTotalStars;
+            stream >> stars[i];
         } else {
             UpdateCachedTotalStars(i);
         }

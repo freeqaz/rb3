@@ -158,43 +158,45 @@ void Tail::Done() {
 
 void Tail::HandleMistake() { mTail2->SetShowing(false); }
 
-void Tail::Poll(float f1, float f2, float f3) {
+void Tail::Poll(float, float whammy, float) {
     if (mTailGeomOwner) {
         bool t3 = mState == 2 && !mSlideInfo.unk0;
         float fvar1 = t3 ? mTemplate.kTailOffsetX * mTemplate.GetTailScaleX() : 0;
         mTail1->SetLocalPos(-fvar1, unk10, 0);
         mTail2->SetLocalPos(fvar1, unk10, 0);
         if (unk28) {
+            float alpha;
             if (t3) {
                 float delta = TheTaskMgr.DeltaSeconds();
                 static float pulseRate = 1.0f / mTemplate.kTailPulseRate;
                 for (float time = TheTaskMgr.Seconds(TaskMgr::kRealTime) - delta;
                      time < TheTaskMgr.Seconds(TaskMgr::kRealTime);
                      time += pulseRate) {
-                    unk4e4 = Interp(unk4e4, f2, mTemplate.kTailPulseSmoothing);
+                    GemRepTemplate *tmp = &mTemplate;
+                    unk4e4 = Interp(unk4e4, whammy, tmp->kTailPulseSmoothing);
+                    float negWhammy = -unk4e4;
+                    float ampMin = tmp->kTailAmplitudeRange.x;
                     float f4 = Interp(
-                        mTemplate.kTailFrequencyRange.x,
-                        mTemplate.kTailFrequencyRange.y,
-                        -unk4e4
+                        tmp->kTailFrequencyRange.x,
+                        tmp->kTailFrequencyRange.y,
+                        negWhammy
                     );
-                    float f6 = Interp(
-                        mTemplate.kTailAmplitudeRange.x,
-                        mTemplate.kTailAmplitudeRange.y,
-                        -unk4e4
+                    mWhammy.Set(
+                        Interp(ampMin, tmp->kTailAmplitudeRange.y, negWhammy)
+                        * std::sin(unk4e0)
                     );
-                    mWhammy.Set(f6 * std::sin(unk4e0));
                     unk4e0 += pulseRate * f4;
                 }
-                unk4e8 = Interp(unk4e8, f2, mTemplate.kTailAlphaSmoothing);
-                f2 = Interp(mTemplate.kTailMinAlpha, mTemplate.kTailMaxAlpha, -unk4e8);
+                unk4e8 = Interp(unk4e8, whammy, mTemplate.kTailAlphaSmoothing);
+                alpha = Interp(mTemplate.kTailMinAlpha, mTemplate.kTailMaxAlpha, -unk4e8);
             } else {
                 unk4e0 = 0;
-                f2 = mTemplate.kTailMinAlpha;
+                alpha = mTemplate.kTailMinAlpha;
                 unk4e8 = 0;
             }
 
             if (unk4ec != unk4f0 || t3 || mSlideInfo.unk0 || t3 != unk4f4) {
-                UpdateVerts(f2, t3);
+                UpdateVerts(alpha, t3);
                 unk4f0 = unk4ec;
                 unk4f4 = t3;
             }

@@ -1,4 +1,5 @@
 #include "game/TrackerUtils.h"
+#include "game/SongDB.h"
 #include "game/TrackerSource.h"
 #include "math/Utl.h"
 #include "obj/Data.h"
@@ -96,4 +97,22 @@ bool TrackerSectionManager::TickAfterSection(int tick, int section) const {
     return tick > mSections[section].mEndTick;
 }
 
-void TrackerSectionManager::GatherSections() { mSections.clear(); }
+void TrackerSectionManager::GatherSections() {
+    SongDB *songDB = TheSongDB;
+    mSections.clear();
+    mSections.reserve(songDB->mPracticeSections.size());
+    for (std::vector<PracticeSection>::iterator it = songDB->mPracticeSections.begin();
+         it != songDB->mPracticeSections.end();
+         ++it) {
+        if (it->unk4 != it->unk8) {
+            Section section;
+            section.mStartTick = it->unk4;
+            section.mEndTick = it->unk8;
+            section.unk8 = it->unk0;
+            mSections.push_back(section);
+        }
+    }
+    if (mSections.size() == 0) {
+        MILO_WARN("No practice sections found in song!");
+    }
+}

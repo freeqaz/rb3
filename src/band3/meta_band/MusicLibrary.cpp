@@ -1565,63 +1565,58 @@ bool MusicLibrary::FilterSetlist(WiiFriendList *friends, NetSavedSetlist *setlis
     case SavedSetlist::kSetlistLocal:
     case SavedSetlist::kSetlistInternal:
         MILO_ASSERT(0 && "Net setlist contains unusual setlist type", 0x97D);
+        // fall through
+    case SavedSetlist::kSetlistHarmonix:
+    case SavedSetlist::kBattleHarmonix:
+    case SavedSetlist::kBattleHarmonixArchived:
         return true;
-    case SavedSetlist::kSetlistFriend:
-    case SavedSetlist::kBattleFriend:
-    case SavedSetlist::kBattleFriendArchived:
+    default: {
         if (ThePlatformMgr.IsOnlineRestricted())
             return false;
-        {
-            const char *owner = setlist->GetOwner();
-            const char *name = Localize(wii_friends_default_setlist_name, nullptr);
-            const char *desc = Localize(wii_friends_default_setlist_description, nullptr);
-            int numFriends = friends->mFriends.size();
-            for (int i = 0; i < 4; i++) {
-                const char *profileName = TheWiiProfileMgr.GetNameForIndex(i);
-                if (profileName && strcmp(profileName, owner) == 0) {
-                    return true;
-                }
+        const char *owner = setlist->GetOwner();
+        const char *name = Localize(wii_friends_default_setlist_name, nullptr);
+        const char *desc = Localize(wii_friends_default_setlist_description, nullptr);
+        int numFriends = friends->mFriends.size();
+        for (int i = 0; i < 4; i++) {
+            const char *profileName = TheWiiProfileMgr.GetNameForIndex(i);
+            if (profileName && strcmp(profileName, owner) == 0) {
+                return true;
             }
-            if (!TheProfileMgr.GetUsingWiiFriends()) {
-                return false;
-            }
-            for (int i = 0; i < numFriends; i++) {
-                WiiFriend *fr = friends->GetFriendByIdx(i);
-                if (fr->GetProfile(owner)) {
-                    return true;
-                }
-            }
-            const char *setlistName;
-            if (TheWiiFriendsProvider.IsPossessiveSuffixNeeded(name)) {
-                setlistName = MakeString(
-                    name,
-                    owner,
-                    TheWiiFriendsProvider.GetPossessiveSuffix(owner)
-                );
-            } else {
-                setlistName = MakeString(name, owner);
-            }
-            setlist->SetTitle(setlistName);
-            const char *setlistDesc;
-            if (TheWiiFriendsProvider.IsPossessiveSuffixNeeded(desc)) {
-                setlistDesc = MakeString(
-                    desc,
-                    owner,
-                    TheWiiFriendsProvider.GetPossessiveSuffix(owner)
-                );
-            } else {
-                setlistDesc = MakeString(desc, owner);
-            }
-            setlist->SetDescription(setlistDesc);
-            MILO_ASSERT(
-                setlist->GetArtTex() == NULL
-                    && "NetSaveSestlist has texture?  Tell Ian S.",
-                0x9CF
-            );
-            return true;
         }
-    default:
+        if (!TheProfileMgr.GetUsingWiiFriends()) {
+            return false;
+        }
+        for (int i = 0; i < numFriends; i++) {
+            WiiFriend *fr = friends->GetFriendByIdx(i);
+            if (fr->GetProfile(owner)) {
+                return true;
+            }
+        }
+        const char *setlistName;
+        if (TheWiiFriendsProvider.IsPossessiveSuffixNeeded(name)) {
+            setlistName = MakeString(
+                name, owner, TheWiiFriendsProvider.GetPossessiveSuffix(owner)
+            );
+        } else {
+            setlistName = MakeString(name, owner);
+        }
+        setlist->SetTitle(setlistName);
+        const char *setlistDesc;
+        if (TheWiiFriendsProvider.IsPossessiveSuffixNeeded(desc)) {
+            setlistDesc = MakeString(
+                desc, owner, TheWiiFriendsProvider.GetPossessiveSuffix(owner)
+            );
+        } else {
+            setlistDesc = MakeString(desc, owner);
+        }
+        setlist->SetDescription(setlistDesc);
+        MILO_ASSERT(
+            setlist->GetArtTex() == NULL
+                && "NetSaveSestlist has texture?  Tell Ian S.",
+            0x9CF
+        );
         return true;
+    }
     }
 }
 

@@ -131,6 +131,7 @@ inline void CheatsManager::RebuildKeyCheatsForMode() {
 
 void InitKeyCheats(const DataArray *arr) {
     for (int i = 1; i < arr->Size(); i++) {
+        KeyCheat keyCheat;
         DataArray *cheat = arr->Array(i);
         if (cheat->Type(0) == kDataInt) {
             if (cheat->Int(0) < 0) {
@@ -138,24 +139,28 @@ void InitKeyCheats(const DataArray *arr) {
                     "Error in quick_cheats: %i is not a valid key code\n", cheat->Int(0)
                 );
                 continue;
+            } else {
+                keyCheat.unk0 = cheat->Int(0);
             }
         } else {
             const char *key = cheat->Str(0);
             if (strlen(key) > 1) {
                 MILO_LOG("Error in quick_cheats: %s is not a valid key\n", key);
                 continue;
+            } else {
+                keyCheat.unk0 = key[0];
             }
         }
-        KeyCheat keyCheat;
-        keyCheat.unk0 = cheat->Int(0);
+        keyCheat.unk5 = false;
+        keyCheat.unk4 = false;
         int subIndex = 1;
         for (; subIndex < cheat->Size() && cheat->Type(subIndex) == kDataSymbol;
              subIndex++) {
             Symbol keyModifier = cheat->Sym(subIndex);
             if (keyModifier == ctrl)
-                keyCheat.unk4 = 1;
+                keyCheat.unk4 = true;
             else if (keyModifier == alt)
-                keyCheat.unk5 = 1;
+                keyCheat.unk5 = true;
             else {
                 MILO_WARN("Unknown modifier symbol in cheat: %s", cheat->Sym(subIndex));
             }

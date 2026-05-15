@@ -23,15 +23,7 @@ void StoreRootPanel::Unload() {
     UIPanel::Unload();
 }
 
-DataNode StoreRootPanel::OnMsg(const MetadataLoadedMsg &msg) { return DataNode(kDataFloat, 6); }
-
-BEGIN_HANDLERS(StoreRootPanel)
-    HANDLE_MESSAGE(MetadataLoadedMsg)
-    HANDLE_SUPERCLASS(UIPanel)
-    HANDLE_CHECK(149)
-END_HANDLERS
-
-void InitStoreOverlay() { 
+void InitStoreOverlay() {
     gStoreUIOverlay = RndOverlay::Find(store, false);
 }
 
@@ -39,9 +31,8 @@ void UpdateStoreOverlay() {
     if (gStoreUIOverlay && gStoreUIOverlay->mShowing != false) {
         gStoreUIOverlay->Clear();
         *gStoreUIOverlay << "store flags: " << TheStoreMetadata.mFlags;
-        int loadState = TheStoreMetadata.mLoadingState;
-        if (loadState != 0) {
-            *gStoreUIOverlay << " - load state: " << gStoreMetadataManagerLoadStepName[loadState];
+        if (TheStoreMetadata.mLoadingState != 0) {
+            *gStoreUIOverlay << " - load state: " << gStoreMetadataManagerLoadStepName[TheStoreMetadata.mLoadingState];
         }
         *gStoreUIOverlay << "\n";
         int lineCount = 1;
@@ -60,20 +51,28 @@ void UpdateStoreOverlay() {
         }
         const char *modeName = (TheWiiContentMgr.mMode == 0) ? "SD" : "NAND";
         *gStoreUIOverlay << "content mgr: " << modeName << " mode.\n";
-        int totalLines = lineCount + 1;
+        lineCount++;
         for (std::list<Content *>::iterator it = TheWiiContentMgr.mContents.begin();
              it != TheWiiContentMgr.mContents.end(); ++it) {
-            Content *content = *it;
+            WiiContent *content = (WiiContent *)*it;
             Content::State state = content->GetState();
             if (state != Content::kUnmounted && state != Content::kAlwaysMounted) {
                 const char *busyStr = gCNTThreadInUse ? " busy" : "";
-                *gStoreUIOverlay << "cu " << content->FileName() << " "
+                *gStoreUIOverlay << "cu " << content->mName << " "
                     << gContentStateName[state] << busyStr << "\n";
-                totalLines++;
+                lineCount++;
             }
         }
-        if (totalLines != 0) {
-            gStoreUIOverlay->SetLines(totalLines);
+        if (lineCount != 0) {
+            gStoreUIOverlay->SetLines(lineCount);
         }
     }
 }
+
+DataNode StoreRootPanel::OnMsg(const MetadataLoadedMsg &msg) { return DataNode(kDataFloat, 6); }
+
+BEGIN_HANDLERS(StoreRootPanel)
+    HANDLE_MESSAGE(MetadataLoadedMsg)
+    HANDLE_SUPERCLASS(UIPanel)
+    HANDLE_CHECK(149)
+END_HANDLERS

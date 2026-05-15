@@ -70,39 +70,43 @@ PrefabMgr::PrefabMgr() : unk60(0) {
     for (ObjDirItr<BandCharDesc> it(BandCharDesc::GetPrefabs(), true); it != 0; ++it) {
         String str(it->Name());
         std::vector<String> substrs;
+        const char *substrname;
+        String *substrsBase;
         if (str.split("_", substrs) > 0) {
-            const char *substrname = substrs[0].c_str();
-            if (strcmp(substrname, "prefab") == 0) {
-                mPrefabs.push_back(new PrefabChar(it));
-            } else if (strcmp(substrname, "charcreator") == 0) {
-                if (substrs.size() != 3) {
-                    MILO_WARN("Bad charcreator prefab name: (%s)\n", str);
-                    continue;
-                }
-                Symbol boutiqueSym = MakeString("boutique_%s", substrs[2].c_str());
-                unk44.insert(boutiqueSym);
-                Symbol genderSym = it->mGender;
-                if (genderSym == male) {
-                    mCharCreatorMalePrefabs.push_back(
-                        new CharCreatorPrefab(it, boutiqueSym)
-                    );
-                } else if (genderSym == female) {
-                    mCharCreatorFemalePrefabs.push_back(
-                        new CharCreatorPrefab(it, boutiqueSym)
-                    );
-                } else
-                    MILO_FAIL("Incorrect gender symbol %s\n", genderSym);
-            } else if (strcmp(substrname, "facetype") == 0) {
-                if (substrs.size() != 3) {
-                    MILO_WARN("Bad facetype prefab name: (%s)\n", str);
-                    continue;
-                }
-                unk34.push_back(it);
-            } else if (strcmp(substrname, "BBE") == 0) {
-                mPrefabs.push_back(new PrefabChar(it));
-            }
+            substrsBase = &substrs[0];
+            substrname = substrsBase->c_str();
         } else {
             MILO_WARN("Bad prefab name: (%s)\n", str);
+            continue;
+        }
+        if (strcmp(substrname, "prefab") == 0) {
+            mPrefabs.push_back(new PrefabChar(it));
+        } else if (strcmp(substrname, "charcreator") == 0) {
+            if (substrs.size() != 3) {
+                MILO_WARN("Bad charcreator prefab name: (%s)\n", str);
+                continue;
+            }
+            Symbol boutiqueSym = MakeString("boutique_%s", substrsBase[2].c_str());
+            unk44.insert(boutiqueSym);
+            Symbol genderSym = it->mGender;
+            if (genderSym == male) {
+                mCharCreatorMalePrefabs.push_back(
+                    new CharCreatorPrefab(it, boutiqueSym)
+                );
+            } else if (genderSym == female) {
+                mCharCreatorFemalePrefabs.push_back(
+                    new CharCreatorPrefab(it, boutiqueSym)
+                );
+            } else
+                MILO_FAIL("Incorrect gender symbol %s\n", genderSym);
+        } else if (strcmp(substrname, "facetype") == 0) {
+            if (substrs.size() != 3) {
+                MILO_WARN("Bad facetype prefab name: (%s)\n", str);
+                continue;
+            }
+            unk34.push_back(it);
+        } else if (strcmp(substrname, "BBE") == 0) {
+            mPrefabs.push_back(new PrefabChar(it));
         }
     }
     AssignPrefabsToSlots();

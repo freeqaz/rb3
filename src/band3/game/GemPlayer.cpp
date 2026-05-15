@@ -1717,6 +1717,9 @@ void GemPlayer::ResetController(bool b1) {
 void GemPlayer::GetPlayerState(PlayerState &state) const {
     int streak = mStats.GetCurrentStreak();
     float whammy = unk358;
+    volatile int spillPhrase;
+    volatile float spillFill;
+    volatile int spillStreak;
     state.warning = IsInCrowdWarning();
     state.overdriveReady = false;
     state.whammy = whammy;
@@ -1724,6 +1727,9 @@ void GemPlayer::GetPlayerState(PlayerState &state) const {
     state.phraseState = kPhraseNone;
     state.fillState = 0;
     state.streak = streak;
+    spillPhrase = 0;
+    spillFill = 0;
+    spillStreak = streak;
 }
 
 void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
@@ -1762,15 +1768,7 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
             }
             multiplier *= weight;
         }
-        if (!(noteScore > mCrowd->mRawValue)) {
-            bool isSoloMod = unk315 && !unk314;
-            if (isSoloMod) {
-                Symbol trackSym = mUser->GetTrackSym();
-                multiplier *= TheScoring->GetSoloGemPenalty(trackSym);
-            } else if (inPhrase) {
-                multiplier *= TheScoring->mCommonPhrasePenalty;
-            }
-        } else {
+        if (noteScore > mCrowd->mRawValue) {
             float reward = GetCrowdBoost();
             bool isSoloMod = unk315 && !unk314;
             if (isSoloMod) {
@@ -1780,6 +1778,14 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
                 reward = reward * TheScoring->mCommonPhraseReward;
             }
             multiplier = reward;
+        } else {
+            bool isSoloMod = unk315 && !unk314;
+            if (isSoloMod) {
+                Symbol trackSym = mUser->GetTrackSym();
+                multiplier *= TheScoring->GetSoloGemPenalty(trackSym);
+            } else if (inPhrase) {
+                multiplier *= TheScoring->mCommonPhrasePenalty;
+            }
         }
         mCrowd->Update(noteScore, multiplier);
         CheckCrowdFailure();
