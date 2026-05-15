@@ -149,6 +149,7 @@ public:
     int CalculatePhraseRating(float);
     const VocalPhrase *const &CurrentPhrase() const;
     bool AtFirstPhrase() const;
+    const VocalPhrase *GetNextPhraseMarker(const VocalPhrase *const &) const;
     void EnablePartScoring(int, bool);
     void HitCoda();
     void BuildPhrases(bool);

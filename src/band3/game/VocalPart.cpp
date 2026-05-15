@@ -2,6 +2,7 @@
 #include "game/SongDB.h"
 #include "game/VocalPlayer.h"
 #include "obj/Data.h"
+#include "os/Debug.h"
 #include "os/System.h"
 #include <cfloat>
 
@@ -174,4 +175,85 @@ void VocalPart::OnGameOver() {}
 
 int VocalPart::GetSpotlightPhrase() const { return mSpotlightPhraseID; }
 
+const VocalPhrase *VocalPart::GetFirstPhraseMarker() const {
+    return mVocalNoteList->mPhrases.data();
+}
+
+const VocalPhrase *VocalPart::GetNextPhraseMarker(const VocalPhrase *const &p) const {
+    const VocalPhrase *curPhrase = p;
+    const VocalPhrase *end = mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
+    if (curPhrase == end) return curPhrase;
+    return curPhrase + 1;
+}
+
+bool VocalPart::IsPhraseMarkerAtEnd(const VocalPhrase *const &p) const {
+    const VocalPhrase *end = mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
+    return p == end;
+}
+
+bool VocalPart::IsEmptyPhrase(const VocalPhrase *const &p) const {
+    const VocalPhrase *phrase = p;
+    const VocalPhrase *end = mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
+    if (phrase == end) return true;
+    if (phrase->mTambourinePhrase) return false;
+    if (phrase->unk10 != phrase->unk14) return false;
+    if (phrase->unk10 <= 0) return true;
+    const VocalNote &note = mVocalNoteList->mNotes[phrase->unk10 - 1];
+    if (note.mMs + note.mDurationMs > phrase->unk0) return false;
+    return true;
+}
+
+bool VocalPart::InEmptyPhrase() const {
+    return IsEmptyPhrase(mThisPhrase);
+}
+
+bool VocalPart::PhraseHasUnpitchedNotes() const {
+    const VocalPhrase *end = mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
+    if (mThisPhrase == end) return false;
+    return mThisPhrase->unk19;
+}
+
+bool VocalPart::InPlayablePhrase() const { return true; }
+
+bool VocalPart::InTambourinePhrase() const {
+    bool result = false;
+    const VocalPhrase *end = mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
+    if (mThisPhrase != end && mThisPhrase->mTambourinePhrase)
+        result = true;
+    return result;
+}
+
 void VocalPart::SetFirstPhraseMsToScore(float f1) { mFirstPhraseMsToScore = f1; }
+
+void VocalPart::AddSingerCandidate(Singer *singer, float dist) {
+    if (mBestSinger) {
+        if (!(dist > mBestSingerPitchDistance)) return;
+    }
+    mBestSinger = singer;
+    mBestSingerPitchDistance = dist;
+}
+
+void VocalPart::ClearSingerCandidates() {
+    mBestSinger = nullptr;
+    mBestSingerPitchDistance = FLT_MAX;
+}
+
+Singer *VocalPart::GetBestSingerCandidate() { return mBestSinger; }
+
+bool VocalPart::HasBestSingerCandidate() { return mBestSinger != nullptr; }
+
+int VocalPart::CurrentPhraseIndex() const {
+    return mThisPhrase - mVocalNoteList->mPhrases.data();
+}
+
+void VocalPart::SetVocalNoteList(VocalNoteList *list) {
+    MILO_ASSERT(list, 0x771);
+    mVocalNoteList = list;
+    CalcNoteWeights();
+    ResetScoring();
+}
+
+int VocalPart::NumPracticePhrases(const std::vector<VocalPhrase> &phrases) const {
+    if (!mVocalNoteList) return 0;
+    return mVocalNoteList->GetNumPracticePhrases(phrases);
+}

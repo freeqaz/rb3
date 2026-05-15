@@ -24,6 +24,7 @@
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/OvershellPanel.h"
 #include "meta_band/OvershellSlot.h"
+#include "meta_band/ProfileMgr.h"
 #include "midi/MidiParser.h"
 #include "net/NetSession.h"
 #include "obj/Data.h"
@@ -1088,6 +1089,48 @@ bool VocalPlayer::CanDeployCoda() const {
 
 bool VocalPlayer::AutoplaysCoda() const { return mAutoPlay && !IsNet(); }
 bool VocalPlayer::NeedsToOverrideBasePoints() const { return !mUser->IsNullUser(); }
+
+int VocalPlayer::GetBaseMaxPoints() const {
+    return mTambourineManager.unk78 + mPhraseValue * (unk36c - unk370);
+}
+
+int VocalPlayer::GetBaseMaxStreakPoints() const {
+    int n = unk36c - unk370;
+    int mult;
+    switch (n) {
+    case 0: mult = 0; break;
+    case 1: mult = 1; break;
+    case 2: mult = 3; break;
+    default: mult = n * 4 - 6; break;
+    }
+    return mPhraseValue * mult + mTambourineManager.unk78;
+}
+
+int VocalPlayer::GetBaseBonusPoints() const {
+    return mTambourineManager.unk7c;
+}
+
+bool Singer::HasAssignedPart() const {
+    return mFrameAssignedPart != -1;
+}
+
+bool VocalPlayer::ShowPitchCorrectionNotice() const {
+    return AllowPitchCorrection() && TheProfileMgr.mSynapseEnabled;
+}
+
+const VocalPhrase *VocalPlayer::GetNextPhraseMarker(const VocalPhrase *const &p) const {
+    return mVocalParts.front()->GetNextPhraseMarker(p);
+}
+
+bool VocalPlayer::AtFirstPhrase() const {
+    VocalPart *vp = mVocalParts.front();
+    return vp->mThisPhrase == vp->mVocalNoteList->mPhrases.data();
+}
+
+bool VocalPlayer::AtLastPhrase() const {
+    VocalPart *vp = mVocalParts.front();
+    return vp->mThisPhrase == vp->mVocalNoteList->mPhrases.data() + vp->mVocalNoteList->mPhrases.size();
+}
 
 void VocalPlayer::ToggleOverlay() {
     MILO_ASSERT(mOverlay, 0xDF0);

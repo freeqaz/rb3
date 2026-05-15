@@ -34,6 +34,7 @@ public:
     void SetPhraseRank(int);
     bool InEmptyPhrase() const;
     bool InPlayablePhrase() const;
+    bool PhraseHasUnpitchedNotes() const;
     void HandlePhraseEnd(int &, float &, float &, int &, float);
     float GetOverallPartHitPercentage() const;
     int CurrentPhraseIndex() const;
@@ -44,6 +45,7 @@ public:
     bool IsEmptyPhrase(const VocalPhrase *const &) const;
     void Rollback(float, float);
     float GetPartHitPercentage(const std::vector<VocalPhrase> &, int, int) const;
+    int NumPracticePhrases(const std::vector<VocalPhrase> &) const;
     void ResetScoring();
     float CalcPhraseScoreMax(const VocalPhrase *const &) const;
     void AddScore(const VocalScoreCache &);
@@ -51,6 +53,10 @@ public:
     void AddPhrasePoints(float);
     void SetFirstPhraseMsToScore(float);
     void SetVocalNoteList(VocalNoteList *);
+    void AddSingerCandidate(Singer *, float);
+    void ClearSingerCandidates();
+    Singer *GetBestSingerCandidate();
+    bool HasBestSingerCandidate();
 
     int PartIndex() const { return mPartIndex; }
     float MaxPhraseScore() const { return mPhraseScoreMax; }
