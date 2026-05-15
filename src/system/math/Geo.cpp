@@ -601,38 +601,42 @@ void BSPFace::Update() {
     const Vector2 *curr = prev + 1;
     area = 0.0f;
     while (curr != p.mPoints.end()) {
-        float cx = curr->x, py = prev->y, px = prev->x;
+        area += (anchor->x * prev->y - anchor->y * prev->x +
+                 prev->x * curr->y - prev->y * curr->x +
+                 curr->x * anchor->y - curr->y * anchor->x) * 0.5f;
         prev = curr;
-        float ay = anchor->y;
-        float pycx = py * cx;
-        float cy = curr->y;
         curr++;
-        float ax = anchor->x;
-        area += (((ax * py - ay * px) + (px * cy - pycx)) + (cx * ay - cy * ax)) * 0.5f;
     }
 
     planes.clear();
 
-    Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
-    Vector3 curPt;
-    Vector3 d;
+    float fa = t.m.z.x;
+    float fb = t.m.z.y;
+    float fvy = t.v.y;
+    float fvx = t.v.x;
+    float fc = t.m.z.z;
     Plane facePlane;
-    facePlane.a = t.m.z.x;
-    facePlane.b = t.m.z.y;
-    facePlane.c = t.m.z.z;
-    facePlane.d = -(t.m.z.x * t.v.x + t.m.z.y * t.v.y + t.m.z.z * t.v.z);
+    facePlane.a = fa;
+    facePlane.b = fb;
+    facePlane.c = fc;
+    float fd_bvy = fb * fvy;
+    float fvz = t.v.z;
+    float fd_avx = fa * fvx;
+    float fd_sum = fd_avx + fd_bvy;
+    float fd_cvz = fc * fvz;
+    facePlane.d = -(fd_cvz + fd_sum);
     planes.insert(planes.end(), facePlane);
 
+    Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
     Multiply(prevPt, t, prevPt);
 
     for (const Vector2 *it = p.mPoints.begin(); it != p.mPoints.end(); it++) {
         bool notXYZ = false;
         bool notXY = false;
-        curPt.x = it->x;
-        curPt.y = it->y;
-        curPt.z = 0.0f;
+        Vector3 curPt(it->x, it->y, 0.0f);
         Multiply(curPt, t, curPt);
 
+        Vector3 d;
         d.x = curPt.x - prevPt.x;
         d.y = curPt.y - prevPt.y;
         d.z = curPt.z - prevPt.z;
@@ -640,16 +644,18 @@ void BSPFace::Update() {
         if (d.x == 0.0f && d.y == 0.0f) notXY = true;
         if (notXY && d.z == 0.0f) notXYZ = true;
         if (!notXYZ) {
-            d.z = t.m.z.y * d.x - t.m.z.x * d.y;
-            d.x = t.m.z.z * d.y - t.m.z.y * d.z;
-            d.y = t.m.z.x * d.z - t.m.z.z * d.x;
-            Normalize(d, d);
+            Vector3 normal;
+            normal.z = t.m.z.y * d.x - t.m.z.x * d.y;
+            normal.x = t.m.z.z * d.y - t.m.z.y * d.z;
+            normal.y = t.m.z.x * d.z - t.m.z.z * d.x;
+            Normalize(normal, normal);
 
             Plane edgePlane;
-            edgePlane.a = d.x;
-            edgePlane.b = d.y;
-            edgePlane.c = d.z;
-            edgePlane.d = -(d.x * curPt.x + (d.y * curPt.y + d.z * curPt.z));
+            edgePlane.a = normal.x;
+            edgePlane.b = normal.y;
+            edgePlane.c = normal.z;
+            float ep_d = normal.x * curPt.x + (normal.y * curPt.y + normal.z * curPt.z);
+            edgePlane.d = -ep_d;
             planes.insert(planes.end(), edgePlane);
 
             prevPt = curPt;
