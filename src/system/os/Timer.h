@@ -112,7 +112,13 @@ public:
     void Reset();
     void Restart();
 
-    float Ms() { return CyclesToMs(mCycles); }
+    float Ms() {
+        // NOTE: do not simplify - intermediate variable affects codegen
+        unsigned long lowCycles = mCycles;
+        long highCycles = mCycles >> 32;
+        float highMs = highCycles * sHighCycles2Ms;
+        return lowCycles * sLowCycles2Ms + highMs;
+    }
     float GetLastMs() { return mLastMs; }
     void SetLastMs(float ms);
 };
