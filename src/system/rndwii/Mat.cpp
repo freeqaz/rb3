@@ -80,13 +80,15 @@ void WiiMat::PreInit() {
 void WiiMat::Init() {}
 
 void WiiMat::SelectParticles() {
-    if (this == sCurrent) {
+    if (this == sCurrent && !mDirty) {
+        return;
     }
+    START_AUTO_TIMER("mat_select_part");
 }
 
-bool WiiMat::Select(bool hasAOCalc) {
+RndMat *WiiMat::Select(bool hasAOCalc) {
     if (this == sCurrent && !mDirty)
-        return 0;
+        return nullptr;
     bool fadeResult = false;
     TheNgStats->mMats++;
     START_AUTO_TIMER("mat_select");
@@ -112,12 +114,45 @@ bool WiiMat::Select(bool hasAOCalc) {
     if (mUseEnviron) {
         diffuseCol.alpha *= RndEnviron::sCurrent->AmbientColor().alpha;
     }
+#ifdef MATCHING
+    GXColor matGxc;
+    GXColor ambGxc;
+    {
+        register __vec2x32float__ ba_pair;
+        register __vec2x32float__ rg_pair;
+        register const Hmx::Color *_c = &diffuseCol;
+        register GXColor *_dst = &matGxc;
+        ASM_BLOCK(
+            psq_l ba_pair, 0x8(_c), 0, 0
+            psq_l rg_pair, 0x0(_c), 0, 0
+            psq_st rg_pair, 0x0(_dst), 0, 6
+            psq_st ba_pair, 0x2(_dst), 0, 6
+        )
+    }
+    {
+        register __vec2x32float__ ba_pair;
+        register __vec2x32float__ rg_pair;
+        register const Hmx::Color *_c = &ambCol;
+        register GXColor *_dst = &ambGxc;
+        ASM_BLOCK(
+            psq_l ba_pair, 0x8(_c), 0, 0
+            psq_l rg_pair, 0x0(_c), 0, 0
+            psq_st rg_pair, 0x0(_dst), 0, 6
+            psq_st ba_pair, 0x2(_dst), 0, 6
+        )
+    }
+    GXSetChanMatColor(GX_COLOR0A0, matGxc);
+    GXSetChanMatColor(GX_COLOR1A1, matGxc);
+    GXSetChanAmbColor(GX_COLOR0A0, ambGxc);
+    GXSetChanAmbColor(GX_COLOR1A1, ambGxc);
+#else
     int matPacked = MakeU32Color(diffuseCol);
     GXSetChanMatColor(GX_COLOR0A0, *(GXColor *)&matPacked);
     GXSetChanMatColor(GX_COLOR1A1, *(GXColor *)&matPacked);
     int ambPacked = MakeU32Color(ambCol);
     GXSetChanAmbColor(GX_COLOR0A0, *(GXColor *)&ambPacked);
     GXSetChanAmbColor(GX_COLOR1A1, *(GXColor *)&ambPacked);
+#endif
     if (!mUseEnviron && !mPreLit) {
         numLightChannels = 1;
         GXSetNumChans(1);

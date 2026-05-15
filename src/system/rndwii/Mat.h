@@ -15,7 +15,7 @@ public:
 
     void Reset();
     void SelectParticles();
-    bool Select(bool);
+    RndMat *Select(bool);
     void SetModelviewTexGen();
     void SetTexGen(GXTexCoordID, GXTexMtx);
     void SetStageState(int &, int &, int &, bool, int);

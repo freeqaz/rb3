@@ -9,6 +9,13 @@
 #include "utl/VectorSizeDefs.h"
 #include <algorithm>
 
+namespace stlpmtx_std {
+
+template <>
+inline less<CameraManager::Category> __less<CameraManager::Category>(CameraManager::Category*) { return less<CameraManager::Category>(); }
+
+} // namespace stlpmtx_std
+
 Rand CameraManager::sRand(0);
 int CameraManager::sSeed;
 int gCooldown; // might need to change type

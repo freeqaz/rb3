@@ -1,6 +1,13 @@
 #include "beatmatch/GameGemList.h"
 #include <algorithm>
 
+namespace stlpmtx_std {
+
+template <>
+inline less<GameGem> __less<GameGem>(GameGem*) { return less<GameGem>(); }
+
+} // namespace stlpmtx_std
+
 bool GameGemTickCmp(const GameGem &gem, int tick);
 
 GameGemList::GameGemList(int thresh) : mHopoThreshold(thresh) {}

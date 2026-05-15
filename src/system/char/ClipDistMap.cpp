@@ -115,6 +115,14 @@ void ClipDistMap::Array2d::Resize(int w, int h) {
 
 DECOMP_FORCEACTIVE(ClipDistMap, "bone_facing.rotz")
 
+float LimitAng(float ang) {
+    float r = (float)fmod(ang + 3.1415927f, 2.0 * 3.1415927f);
+    if (r < 0.0f)
+        return r + 3.1415927f;
+    else
+        return r - 3.1415927f;
+}
+
 #pragma push
 #pragma dont_inline on
 void ClipDistMap::FindDists(float f1, DataArray *arr) {
