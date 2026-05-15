@@ -1742,9 +1742,9 @@ static WUDInitState __wudInitWaitForDeviceUp(void) {
 static WUDInitState __wudInitWaitForInitialization(void) {
     s32 diff = 0;
     WUDInitState nextState = WUD_STATE_INIT_WAIT_FOR_INITIALIZATION;
-    OSTime time = __OSGetSystemTime();
+    u32 time = (u32)__OSGetSystemTime();
 
-    diff = 500 - OSTicksToMilliseconds(OSDiffTick(time, __OSStartTime));
+    diff = 500 - OSTicksToMilliseconds(time - (u32)__OSStartTime);
 
     if (diff < 0 && SCCheckStatus() != SC_STATUS_BUSY) {
         __wudClearControlBlock();

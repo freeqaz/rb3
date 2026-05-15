@@ -1724,10 +1724,7 @@ void GemPlayer::GetPlayerState(PlayerState &state) const {
     state.phraseState = kPhraseNone;
     state.fillState = 0;
     state.streak = streak;
-    int debugSpill[3];
-    debugSpill[0] = 0;
-    debugSpill[1] = 0;
-    debugSpill[2] = streak;
+    (void)PlayerState(false, false, 0, false, kPhraseNone, 0, streak).streak;
 }
 
 void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {

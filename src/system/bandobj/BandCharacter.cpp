@@ -1582,10 +1582,8 @@ DataNode BandCharacter::OnPlayGroup(DataArray *da) {
         i5 = da->Int(6);
         s = da->Sym(7);
     }
-    int i3;
-    if (!b1)
-        i3 = 2;
-    else
+    int i3 = 2;
+    if (b1)
         i3 = 1;
     PlayGroup(da->Str(2), b6, i3, f7, (TaskUnits)i5, s);
     return DataNode(0);

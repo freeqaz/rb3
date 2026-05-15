@@ -199,6 +199,9 @@ ISFSError nandCreateDir(const char *path, const u8 perm, const u8 attr,
                         const BOOL privilege_flag) {
   char absPath[64] = "";
 
+  if (!nandCheckPathName()) {
+    return ISFS_ERROR_INVALID;
+  }
   nandGenerateAbsPath(absPath, path);
   if (!privilege_flag && nandIsPrivatePath(absPath)) {
     return ISFS_ERROR_ACCESS;

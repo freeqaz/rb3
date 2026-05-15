@@ -157,44 +157,42 @@ MCResult BufStreamNAND::HandleResultNAND(s32 nandResult) {
     case NAND_RESULT_OK:
         result = kMCNoError;
         break;
+    case NAND_RESULT_ECC_CRIT:
+    case NAND_RESULT_AUTHENTICATION:
+        result = kMCCorrupt;
+        break;
+    case NAND_RESULT_CORRUPT:
+        result = kMCSystemCorrupt;
+        break;
+    case NAND_RESULT_UNKNOWN:
+        result = kMCUnknownError;
+        break;
     case NAND_RESULT_ACCESS:
     case NAND_RESULT_ALLOC_FAILED:
     case NAND_RESULT_BUSY:
         result = kMCAccessError;
         break;
-    case NAND_RESULT_CORRUPT:
-        result = kMCSystemCorrupt;
-        break;
-    case NAND_RESULT_ECC_CRIT:
-    case NAND_RESULT_AUTHENTICATION:
-        result = kMCCorrupt;
-        break;
-    case NAND_RESULT_EXISTS:
-        result = kMCFileExists;
-        break;
-    case NAND_RESULT_OPENFD:
-        result = kMCNoPermission;
-        break;
     case NAND_RESULT_MAXBLOCKS:
     case NAND_RESULT_MAXFILES:
         result = kMCMaxedSysMem;
         break;
+    case NAND_RESULT_EXISTS:
+        result = kMCFileExists;
+        break;
     case NAND_RESULT_NOEXISTS:
         result = kMCFileNotFound;
         break;
-    case NAND_RESULT_NOTEMPTY:
-        result = kMCFileNotFound;
-        break;
-    case NAND_RESULT_UNKNOWN:
-        result = kMCUnknownError;
+    case NAND_RESULT_INVALID:
+    case NAND_RESULT_OPENFD:
+        result = kMCNoPermission;
         break;
     default:
         if (nandResult == NAND_RESULT_ALLOC_FAILED) {
-            MILO_WARN("BufStreamNAND: NAND_RESULT_ALLOC_FAILED %d", nandResult);
+            MILO_WARN("Unexpected Wii filesys error: %d (NAND_RESULT_ALLOC_FAILED)\n", nandResult);
         } else if (nandResult == NAND_RESULT_FATAL_ERROR) {
-            MILO_WARN("BufStreamNAND: NAND_RESULT_FATAL_ERROR %d", nandResult);
+            MILO_WARN("Unexpected Wii filesys error: %d (NAND_RESULT_FATAL_ERROR)\n", nandResult);
         }
-        MILO_WARN("BufStreamNAND: unknown NAND result %d", nandResult);
+        MILO_WARN("Unexpected Wii filesys error: %d\n", nandResult);
         result = kMCGeneralError;
         break;
     }

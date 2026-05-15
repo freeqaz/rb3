@@ -1102,11 +1102,13 @@ void Spotlight::BuildNGQuad(BeamDef &def, RndTransformable::Constraint constrain
         Vector3(0.0f, 1.0f, 0.0f)
     );
     def.mBeam = Hmx::Object::New<RndMesh>();
-    std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
-    int gridSize = def.mNumSegments;
     RndMesh::VertVector &verts = def.mBeam->Verts();
-    if (def.mNumSections >= gridSize) {
-        gridSize = def.mNumSections;
+    std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
+    int numSegs = def.mNumSegments;
+    int numSecs = def.mNumSections;
+    int gridSize = numSegs;
+    if (numSegs < numSecs) {
+        gridSize = numSecs;
     }
     static int kSideVerts = (gridSize > 0) ? gridSize + 1 : 2;
 
@@ -1146,11 +1148,11 @@ void Spotlight::BuildNGQuad(BeamDef &def, RndTransformable::Constraint constrain
     int iFace = 0;
     for (int row = 0; row < nMinus1; row++) {
         for (int col = 0; col < nMinus1; col++) {
-            short base = (short)(row + 1 + col * n);
-            unsigned short uBase = (unsigned short)base;
-            unsigned short uPrev = (unsigned short)(base - 1);
-            unsigned short uBaseN = (unsigned short)(base + (short)n - 1);
-            unsigned short uBasePN = (unsigned short)(base + (short)n);
+            int ibase = row + col * n;
+            unsigned short uPrev = (unsigned short)(ibase);
+            unsigned short uBase = (unsigned short)(ibase + 1);
+            unsigned short uBaseN = (unsigned short)(ibase + n);
+            unsigned short uBasePN = (unsigned short)(ibase + n + 1);
             if ((iFace & 2) != 0) {
                 faces[iFace].v1 = uBaseN;
                 faces[iFace].v2 = uPrev;

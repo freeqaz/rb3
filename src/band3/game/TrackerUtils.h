@@ -2,7 +2,6 @@
 #include "beatmatch/TrackType.h"
 #include "game/Player.h"
 #include "obj/Data.h"
-#include "utl/Symbol.h"
 #include <map>
 
 class TrackerMultiplierMap {
@@ -34,7 +33,7 @@ public:
     public:
         int mStartTick; // 0x0
         int mEndTick; // 0x4
-        Symbol unk8; // 0x8
+        int unk8; // 0x8
     };
 
     TrackerSectionManager();

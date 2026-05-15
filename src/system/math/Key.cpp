@@ -3,22 +3,22 @@
 #include "math/Vec.h"
 #include "os/Debug.h"
 
-// matches in retail with the right inline settings: https://decomp.me/scratch/xQcyC
 void SplineTangent(const Keys<Vector3, Vector3> &keys, int i, Vector3 &vout) {
     int size = keys.size();
     MILO_ASSERT(size > 1, 0x17);
-    Vector3 vtmp;
     if (size == 2) {
         Subtract(keys[1].value, keys[0].value, vout);
     } else if (i <= 0) {
         Subtract(keys[1].value, keys[0].value, vout);
         Scale(vout, 1.5f, vout);
+        Vector3 vtmp;
         Subtract(keys[2].value, keys[0].value, vtmp);
         Scale(vtmp, 0.25f, vtmp);
         Subtract(vout, vtmp, vout);
     } else if (i >= size - 1) {
         Subtract(keys[size - 1].value, keys[size - 2].value, vout);
         Scale(vout, 1.5f, vout);
+        Vector3 vtmp;
         Subtract(keys[size - 1].value, keys[size - 3].value, vtmp);
         Scale(vtmp, 0.25f, vtmp);
         Subtract(vout, vtmp, vout);

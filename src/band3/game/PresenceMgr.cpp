@@ -139,10 +139,10 @@ int PresenceMgr::GetPlayModeContextFromUser(const LocalBandUser *pUser, bool bLe
     case kTrackDrum: {
         trackSym = drums;
         is_pro = (pUser->GetPreferredScoreType() == kScoreRealDrum);
-        if (TheGameMode->Property(Symbol("force_use_cymbals"), true)->Int(nullptr) != 0) {
+        if (TheGameMode->Property("force_use_cymbals", true)->Int(nullptr) != 0) {
             is_pro = true;
         } else {
-            if (TheGameMode->Property(Symbol("force_dont_use_cymbals"), true)->Int(nullptr) != 0) {
+            if (TheGameMode->Property("force_dont_use_cymbals", true)->Int(nullptr) != 0) {
                 is_pro = false;
             }
         }
@@ -174,7 +174,7 @@ int PresenceMgr::GetPlayModeContextFromUser(const LocalBandUser *pUser, bool bLe
     }
     if (trackSym.Null()) {
         static Symbol symDefault("default");
-        return unk24->FindArray(symDefault, true)->Int(1);
+        return unk24->FindInt(symDefault);
     }
     DataArray *trackArr = unk24->FindArray(trackSym, true);
     Symbol modeSym = is_pro ? (bLearn ? learn_pro : play_pro) : (bLearn ? learn : play);

@@ -597,15 +597,19 @@ void BSPFace::Update() {
     MILO_ASSERT(p.mPoints.size() > 2, 0x696);
 
     const Vector2 *anchor = p.mPoints.begin();
-    const Vector2 *prev = anchor + 1;
-    const Vector2 *curr = prev + 1;
+    const Vector2 *v1 = anchor + 1;
+    const Vector2 *v2 = v1 + 1;
     area = 0.0f;
-    while (curr != p.mPoints.end()) {
-        area += (anchor->x * prev->y - anchor->y * prev->x +
-                 prev->x * curr->y - prev->y * curr->x +
-                 curr->x * anchor->y - curr->y * anchor->x) * 0.5f;
-        prev = curr;
-        curr++;
+    if (v2 != p.mPoints.end()) {
+        const Vector2 *next;
+        do {
+            next = v2 + 1;
+            area += (v1->y * anchor->x - v1->x * anchor->y +
+                     v2->x * anchor->y - v2->y * anchor->x +
+                     v2->y * v1->x - v2->x * v1->y) * 0.5f;
+            v1 = v2;
+            v2 = next;
+        } while (next != p.mPoints.end());
     }
 
     planes.clear();

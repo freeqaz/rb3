@@ -420,7 +420,10 @@ BEGIN_LOADS(RndParticleSys)
             Vector3 v1;
             bs >> v1;
             bs >> p150.a >> p150.b >> p150.c;
-            p150.d = -(v1.x * p150.a + v1.y * p150.b + v1.z * p150.c);
+            float t2 = v1.y * p150.b;
+            float t1 = v1.x * p150.a;
+            float t3 = v1.z * p150.c;
+            p150.d = -(t1 + t2 + t3);
         }
         if (ba7) {
             bool old = LOADMGR_EDITMODE;
@@ -433,7 +436,9 @@ BEGIN_LOADS(RndParticleSys)
             float inv = -p150.d / (p150.a * p150.a + p150.b * p150.b + p150.c * p150.c);
             Vector3 v11c(inv * p150.a, inv * p150.b, inv * p150.c);
             tf140.v = v11c;
-            tf140.m.z = reinterpret_cast<Vector3 &>(p150);
+            tf140.m.z.x = p150.a;
+            tf140.m.z.y = p150.b;
+            tf140.m.z.z = p150.c;
             Cross(Vector3(0, 1, 0), tf140.m.z, tf140.m.x);
             Cross(tf140.m.z, tf140.m.x, tf140.m.y);
             Normalize(tf140.m.x, tf140.m.x);

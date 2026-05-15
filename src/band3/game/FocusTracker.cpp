@@ -329,7 +329,8 @@ void StreakFocusTracker::TranslateRelativeTargets() {
 
     float fcc = 1.0f / unkcc;
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] = std::floor(fcc * mTargets[i]);
+        float &tref = mTargets[i];
+        tref = std::floor(fcc * tref);
     }
 }
 

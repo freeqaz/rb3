@@ -5,6 +5,7 @@
 #include "os/Debug.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Draw.h"
+#include "rndobj/HiResScreen.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/Trans.h"
 #include "rndobj/Utl.h"
@@ -105,18 +106,30 @@ void RndFlare::SetPointTest(bool b) {
 void RndFlare::DrawShowing() {}
 
 Hmx::Rect &RndFlare::CalcRect(Vector2 &vref, float &fref) {
-    float f9 = mSizes.x;
-    if (f9 != mSizes.y) {
+    float flareSize = mSizes.x;
+    if (flareSize != mSizes.y) {
         RndCam *cam = RndCam::sCurrent;
         float dot = Dot(cam->WorldXfm().m.y, WorldXfm().m.y);
-        float max = Max(0.0f, -dot);
-        f9 = Interp(mSizes.x, mSizes.y, max);
+        float blend = Max(0.0f, -dot);
+        flareSize = Interp(mSizes.x, mSizes.y, blend);
     }
     int width = TheRnd->Width();
     int height = TheRnd->Height();
+    if (TheHiResScreen.IsActive()) {
+        width *= TheHiResScreen.mTiling;
+        int paddingX = TheHiResScreen.GetPaddingX();
+        int tiling = TheHiResScreen.mTiling;
+        width -= paddingX * tiling;
+        height *= tiling;
+        int paddingY = TheHiResScreen.GetPaddingY();
+        height -= paddingY * TheHiResScreen.mTiling;
+        Hmx::Rect screenRect = TheHiResScreen.ScreenRect();
+        vref.x -= screenRect.x;
+        vref.y -= screenRect.y;
+    }
     CalcScale();
-    mArea.w = f9 * width * unk114.x;
-    mArea.h = (height * f9 * width * unk114.y) / (width * TheRnd->YRatio());
+    mArea.w = flareSize * width * unk114.x;
+    mArea.h = (height * (flareSize * width * unk114.y)) / (width * TheRnd->YRatio());
     mArea.x = vref.x * width - mArea.w * 0.5f;
     mArea.y = vref.y * height - mArea.h * 0.5f;
     float f1 = Min<float>(width, mArea.x + mArea.w) - Max(0.0f, mArea.x);

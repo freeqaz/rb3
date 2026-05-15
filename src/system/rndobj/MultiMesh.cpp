@@ -119,7 +119,7 @@ void RndMultiMesh::CollideList(const Segment &seg, std::list<Collision> &colls) 
                              sProxyPool.begin();
                          sit != sProxyPool.end();
                          ++sit) {
-                        if (sit->first->mIndex == it && sit->first->mMultiMesh == this) {
+                        if (sit->first->mMultiMesh == this && sit->first->mIndex == it) {
                             proxy = sit->first;
                             break;
                         }

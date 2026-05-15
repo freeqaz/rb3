@@ -214,8 +214,8 @@ Symbol NetCacheMgr::CheatNextServer() {
     for (; s != mServers.end() && s->type != mServerType; s++)
         ;
     MILO_ASSERT(s != mServers.end(), 0x22a);
-    std::list<ServerData>::iterator _tmp2 = mServers.end();
-    if (s == _tmp2) {
+    ++s;
+    if (s == mServers.end()) {
         s = mServers.begin();
     }
     mServerType = s->type;

@@ -395,10 +395,10 @@ void UtilDrawPlane(
     Hmx::Matrix3 mb0;
     mb0.Identity();
     int minIdx = 0;
-    float ref = 10000.0f;
     int idx = 0;
+    float minDotProduct = 10000.0f;
     for (; idx < 3; idx++) {
-        if (MinEq(ref, Dot(mb0[idx], tf88.m.y))) {
+        if (MinEq(minDotProduct, Dot(mb0[idx], tf88.m.y))) {
             minIdx = idx;
         }
     }
