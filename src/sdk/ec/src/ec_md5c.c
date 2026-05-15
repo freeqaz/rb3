@@ -138,6 +138,12 @@ void HASH_FINAL(unsigned char *md, HASH_CTX *c) {
     MD5_memset(c, 0, sizeof(*c));
 }
 
+/* Use traditional F/G forms to match target assembly (and+andc+or pattern) */
+#undef F
+#undef G
+#define F(b, c, d) (((b) & (c)) | ((~(b)) & (d)))
+#define G(b, c, d) (((b) & (d)) | ((c) & (~(d))))
+
 static void MD5Transform(MD5_CTX *c, const void *data_) {
     const unsigned char *cdata = data_;
     register unsigned MD32_REG_T A, B, C, D, l;
@@ -148,9 +154,17 @@ static void MD5Transform(MD5_CTX *c, const void *data_) {
     C = c->C;
     D = c->D;
 
-    for (int i = 0; i < sizeof(XX) / sizeof(*XX); i++) {
-        HOST_c2l(cdata, l);
-        XX[i] = l;
+    {
+        int _j = 0;
+        int _k = 0;
+        while (_k < MD5_LBLOCK) {
+            l = cdata[_j];
+            l = __rlwimi(l, cdata[_j + 1], 8, 16, 23);
+            l = __rlwimi(l, cdata[_j + 2], 16, 8, 15);
+            l = __rlwimi(l, cdata[_j + 3], 24, 0, 7);
+            _j += 4;
+            XX[_k++] = l;
+        }
     }
 
     /* Round 0 */
