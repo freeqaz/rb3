@@ -331,25 +331,25 @@ int TourPerformerLocal::SanityCheckQuestFilters() {
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0x231);
     MILO_ASSERT(!pProgress->AreQuestFiltersEmpty(), 0x233);
-    Symbol filt = pProgress->GetFilterForCurrentGig();
-    int numSongs = pProgress->GetNumSongsForCurrentGig();
     GigFilter *pSecondaryFilter = nullptr;
-    if (filt != gNullStr) {
-        pSecondaryFilter = TheQuestMgr.GetQuestFilter(filt);
-        MILO_ASSERT(pSecondaryFilter, 0x242);
+    int questFilterCounts[kTour_NumQuestFilters] = {0, 0, 0};
+    int numSongs = pProgress->GetNumSongsForCurrentGig();
+    {
+        Symbol filt = pProgress->GetFilterForCurrentGig();
+        if (filt != gNullStr) {
+            pSecondaryFilter = TheQuestMgr.GetQuestFilter(filt);
+            MILO_ASSERT(pSecondaryFilter, 0x242);
+        }
     }
     std::vector<int> validSongIDs;
     std::vector<int> dummy;
     TheSongMgr.GetValidSongs(validSongIDs, *TheBandUserMgr, dummy, -1.0f, -1.0f, true, true);
-    int questFilterCounts[kTour_NumQuestFilters] = {0, 0, 0};
     for (std::vector<int>::iterator it = validSongIDs.begin();
          it != validSongIDs.end();
          ++it) {
         int songID = *it;
         if (pSecondaryFilter) {
-            Symbol filteredPartSym = pSecondaryFilter->GetFilteredPartSym();
-            const SongSortMgr::SongFilter &filt2 = pSecondaryFilter->GetFilter();
-            if (!TheSongSortMgr->DoesSongMatchFilter(songID, &filt2, filteredPartSym)) {
+            if (!TheSongSortMgr->DoesSongMatchFilter(songID, &pSecondaryFilter->GetFilter(), pSecondaryFilter->GetFilteredPartSym())) {
                 continue;
             }
         }
@@ -363,24 +363,24 @@ int TourPerformerLocal::SanityCheckQuestFilters() {
             }
             GigFilter *pGigFilter = TheQuestMgr.GetQuestFilter(questFilter);
             if (pGigFilter) {
-                Symbol filteredPartSym = pGigFilter->GetFilteredPartSym();
-                const SongSortMgr::SongFilter &f = pGigFilter->GetFilter();
-                if (!TheSongSortMgr->DoesSongMatchFilter(songID, &f, filteredPartSym)) {
+                if (!TheSongSortMgr->DoesSongMatchFilter(songID, &pGigFilter->GetFilter(), pGigFilter->GetFilteredPartSym())) {
                     continue;
                 }
-                (*pCounts)++;
-            } else {
-                if (!TheQuestMgr.HasFixedSetlist(questFilter)) {
-                    MILO_ASSERT(strncmp(questFilter.mStr, "filter_artist_", 14) == 0, 0x286);
+            } else if (!TheQuestMgr.HasFixedSetlist(questFilter)) {
+                if (strncmp(questFilter.mStr, "filter_artist_", 14) == 0) {
                     String artistStr(questFilter.mStr);
                     String artistSubstr = artistStr.substr(14);
                     BandSongMetadata *pSongData = static_cast<BandSongMetadata *>(TheSongMgr.Data(songID));
                     MILO_ASSERT(pSongData, 0x27c);
-                    if (strcmp(pSongData->Artist(), artistSubstr.c_str()) == 0) {
-                        (*pCounts)++;
+                    if (strcmp(pSongData->Artist(), artistSubstr.c_str()) != 0) {
+                        continue;
                     }
+                } else {
+                    MILO_ASSERT(false, 0x286);
+                    continue;
                 }
             }
+            (*pCounts)++;
         }
     }
     int *pCounts = questFilterCounts;
