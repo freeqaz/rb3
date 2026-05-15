@@ -432,12 +432,12 @@ BEGIN_LOADS(RndParticleSys)
             Transform tf140;
             float inv = -p150.d / (p150.a * p150.a + p150.b * p150.b + p150.c * p150.c);
             Vector3 v11c(inv * p150.a, inv * p150.b, inv * p150.c);
+            tf140.v = v11c;
             tf140.m.z = reinterpret_cast<Vector3 &>(p150);
             Cross(Vector3(0, 1, 0), tf140.m.z, tf140.m.x);
             Cross(tf140.m.z, tf140.m.x, tf140.m.y);
             Normalize(tf140.m.x, tf140.m.x);
             Normalize(tf140.m.y, tf140.m.y);
-            tf140.v = v11c;
             mBounce->SetWorldXfm(tf140);
         }
     } else {

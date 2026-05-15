@@ -1217,15 +1217,16 @@ void CamShotFrame::BuildTransform(RndCam *cam, Transform &tf, bool b3) const {
 
     if (mCamShot->mPath) {
         float pathFrame = mCamShot->mPathFrame;
-        if (pathFrame < 0.0f) {
+        if (!(pathFrame >= 0.0f)) {
             if (mCamShot->mDuration > 0.0f) {
                 pathFrame = mCamShot->GetFrame() / mCamShot->mDuration;
             } else {
                 pathFrame = 0.0f;
             }
         }
-        RndTransAnim *path = mCamShot->mPath;
-        path->MakeTransform(pathFrame * path->EndFrame(), tf, true, 1.0f);
+        mCamShot->mPath->MakeTransform(
+            pathFrame * mCamShot->mPath->EndFrame(), tf, true, 1.0f
+        );
         Transform tempXfm;
         Multiply(mCamShot->mKeyframes[0].mWorldOffset.ToTransform(tempXfm), tf, tf);
     } else {

@@ -1568,23 +1568,24 @@ DataNode BandCharacter::OnLoadDircut(DataArray *da) {
 }
 
 DataNode BandCharacter::OnPlayGroup(DataArray *da) {
-    int size = da->Size();
     bool b6 = false;
-    if (size > 3)
+    if (da->Size() > 3)
         b6 = da->Int(3);
     bool b1 = false;
-    if (size > 4)
+    if (da->Size() > 4)
         b1 = da->Int(4);
     float f7 = 0;
     int i5 = 0;
     Symbol s;
-    if (size > 5) {
+    if (da->Size() > 5) {
         f7 = da->Float(5);
         i5 = da->Int(6);
         s = da->Sym(7);
     }
-    int i3 = 2;
-    if (b1)
+    int i3;
+    if (!b1)
+        i3 = 2;
+    else
         i3 = 1;
     PlayGroup(da->Str(2), b6, i3, f7, (TaskUnits)i5, s);
     return DataNode(0);

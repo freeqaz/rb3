@@ -101,9 +101,8 @@ void TrackerSectionManager::GatherSections() {
     SongDB *songDB = TheSongDB;
     mSections.clear();
     mSections.reserve(songDB->mPracticeSections.size());
-    for (std::vector<PracticeSection>::iterator it = songDB->mPracticeSections.begin();
-         it != songDB->mPracticeSections.end();
-         ++it) {
+    std::vector<PracticeSection>::iterator it = songDB->mPracticeSections.begin();
+    for (; it != songDB->mPracticeSections.end(); ++it) {
         if (it->unk4 != it->unk8) {
             Section section;
             section.mStartTick = it->unk4;

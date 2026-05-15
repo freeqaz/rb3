@@ -15,6 +15,7 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols4.h"
 #include "utl/TimeConversion.h"
+#include <algorithm>
 
 FocusTracker::FocusTracker(
     TrackerSource *src, TrackerBandDisplay &banddisp, TrackerBroadcastDisplay &bcdisp
@@ -323,12 +324,12 @@ void StreakFocusTracker::TranslateRelativeTargets() {
             );
         }
         int value = (float)count * unkcc;
-        unke8[id] = Max(1, value);
+        unke8[id] = std::max(value, 1);
     }
 
-    float fcc = unkcc;
+    float fcc = 1.0f / unkcc;
     for (int i = 0; i < mTargets.size(); i++) {
-        mTargets[i] = std::floor((1.0f / fcc) * mTargets[i]);
+        mTargets[i] = std::floor(fcc * mTargets[i]);
     }
 }
 

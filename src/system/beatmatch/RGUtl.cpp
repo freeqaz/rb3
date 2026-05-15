@@ -334,33 +334,37 @@ unsigned int RGGetStrumBitMask(const GameGem &gem) {
     unsigned int mask = 0;
     int low = gem.GetLowestString();
     int high = gem.GetHighestString();
-    float diff = (high - low) + 1;
+    float diff = (float)((high - low) + 1);
     switch (gem.GetRGStrumType()) {
-    case kRGStrum:
+    case kRGStrum: {
+        float prod = 0.2f * diff;
+        float lowf = (float)low + prod;
+        float highf = (float)high - prod;
         for (int i = 0; i < 6; i++) {
-            float prod = diff * 0.2f;
-            float i_f = i;
-            float highf = high - prod;
-            float lowf = prod + low;
-            if (i_f >= lowf && i_f <= highf) {
+            if ((float)i >= lowf && (float)i <= highf) {
                 mask |= (1 << i);
             }
         }
         break;
-    case kRGStrumLow:
+    }
+    case kRGStrumLow: {
+        float threshold = 0.4f * diff + (float)low;
         for (int i = 0; i < 6; i++) {
-            if (i < diff * 0.4f - low) {
+            if ((float)i < threshold) {
                 mask |= (1 << i);
             }
         }
         break;
-    case kRGStrumHigh:
+    }
+    case kRGStrumHigh: {
+        float threshold = (float)high - 0.4f * diff;
         for (int i = 0; i < 6; i++) {
-            if (-(diff * 0.4f - high) < i) {
+            if ((float)i > threshold) {
                 mask |= (1 << i);
             }
         }
         break;
+    }
     default:
         mask = 0x3F;
         break;

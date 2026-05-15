@@ -601,14 +601,11 @@ void BSPFace::Update() {
     const Vector2 *curr = prev + 1;
     area = 0.0f;
     while (curr != p.mPoints.end()) {
-        float cx = curr->x, py = prev->y, px = prev->x;
+        area += (anchor->x * prev->y - anchor->y * prev->x +
+                 prev->x * curr->y - prev->y * curr->x +
+                 curr->x * anchor->y - curr->y * anchor->x) * 0.5f;
         prev = curr;
-        float ay = anchor->y;
-        float pycx = py * cx;
-        float cy = curr->y;
         curr++;
-        float ax = anchor->x;
-        area += (((ax * py - ay * px) + (px * cy - pycx)) + (cx * ay - cy * ax)) * 0.5f;
     }
 
     planes.clear();

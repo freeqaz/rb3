@@ -1717,9 +1717,6 @@ void GemPlayer::ResetController(bool b1) {
 void GemPlayer::GetPlayerState(PlayerState &state) const {
     int streak = mStats.GetCurrentStreak();
     float whammy = unk358;
-    volatile int spillPhrase;
-    volatile float spillFill;
-    volatile int spillStreak;
     state.warning = IsInCrowdWarning();
     state.overdriveReady = false;
     state.whammy = whammy;
@@ -1727,9 +1724,10 @@ void GemPlayer::GetPlayerState(PlayerState &state) const {
     state.phraseState = kPhraseNone;
     state.fillState = 0;
     state.streak = streak;
-    spillPhrase = 0;
-    spillFill = 0;
-    spillStreak = streak;
+    int debugSpill[3];
+    debugSpill[0] = 0;
+    debugSpill[1] = 0;
+    debugSpill[2] = streak;
 }
 
 void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {

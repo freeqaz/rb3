@@ -509,8 +509,8 @@ inline void StickerProvider::SetStickers(std::vector<PatchSticker *> *stickers, 
     MILO_ASSERT(mStickerMat, 0x3E);
     mStickers = stickers;
     DeleteAll(mStickerMats);
-    float zero = 0.0f;
     float one = 1.0f;
+    float zero = 0.0f;
     float oneone = one * one;
     float zerone = zero * one;
     for (PatchSticker **it = mStickers->begin(); it != mStickers->end(); ++it) {
