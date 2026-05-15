@@ -33,6 +33,10 @@
 #include "utl/Symbols4.h"
 #include <algorithm>
 
+// Inline definition of Hmx::Object copy constructor to allow inlining in this TU
+inline Hmx::Object::Object(const Hmx::Object &o)
+    : mTypeProps(o.mTypeProps), mTypeDef(o.mTypeDef), mName(o.mName), mDir(o.mDir), mRefs(o.mRefs) {}
+
 SongSortMgr *TheSongSortMgr;
 
 void SongSortMgr::Init() {
@@ -97,14 +101,16 @@ void SongSortMgr::BuildSetlistList() {
     }
     FOREACH (it, mInternalSetlists) {
         SetlistRecord record(*it);
-        mSetlists.insert(std::pair<Symbol, SetlistRecord>(record.GetToken(), record));
+        std::pair<Symbol, SetlistRecord> p(record.GetToken(), record);
+        mSetlists.insert(std::pair<const Symbol, SetlistRecord>(p));
     }
     std::vector<BandProfile *> profiles = TheProfileMgr.GetSignedInProfiles();
     FOREACH (pit, profiles) {
         const std::vector<LocalSavedSetlist *> &setlists = (*pit)->GetSavedSetlists();
         FOREACH (it, setlists) {
             SetlistRecord record(*it);
-            mSetlists.insert(std::pair<Symbol, SetlistRecord>(record.GetToken(), record));
+            std::pair<Symbol, SetlistRecord> p(record.GetToken(), record);
+            mSetlists.insert(std::pair<const Symbol, SetlistRecord>(p));
         }
     }
     if (TheMusicLibrary->NetSetlistsSucceeded()) {
@@ -112,7 +118,8 @@ void SongSortMgr::BuildSetlistList() {
         TheMusicLibrary->GetNetSetlists(setlists);
         FOREACH (it, setlists) {
             SetlistRecord record(*it);
-            mSetlists.insert(std::pair<Symbol, SetlistRecord>(record.GetToken(), record));
+            std::pair<Symbol, SetlistRecord> p(record.GetToken(), record);
+            mSetlists.insert(std::pair<const Symbol, SetlistRecord>(p));
         }
     }
     MILO_ASSERT(mSetlists.size(), 0xF0);
