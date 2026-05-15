@@ -54,15 +54,13 @@ TourSetlistType QuestFilterPanel::GetSelectedSetlistType() {
         if (prog) {
             TourDesc *desc = TheTour->GetTourDesc(prog->GetTourDesc());
             if (desc) {
-                TourSetlistType ret;
+                TourSetlistType ret = kTourSetlist_Fixed;
                 Symbol gigtype =
                     desc->GetSetlistTypeForGigNum(prog->GetCurrentGigNum(), i);
                 if (gigtype == random)
                     ret = kTourSetlist_Random;
                 else if (gigtype == custom)
                     ret = kTourSetlist_Custom;
-                else
-                    ret = kTourSetlist_Fixed;
                 return ret;
             }
         }
