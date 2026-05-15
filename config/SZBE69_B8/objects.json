@@ -574,7 +574,10 @@
             "network/Plugins/JobConnectEndPoint.cpp": "MISSING",
             "network/Plugins/JobDeriveKey.cpp": "NonMatching",
             "network/Plugins/JobGetPublicURL.cpp": "Matching",
-            "network/Plugins/Key.cpp": "NonMatching",
+            "network/Plugins/Key.cpp": {
+                "status": "NonMatching",
+                "extra_cflags": ["-inline auto"]
+            },
             "network/Plugins/KeyCache.cpp": "NonMatching",
             "network/Plugins/KeyedChecksumAlgorithm.cpp": "Matching",
             "network/Plugins/LANSessionDiscovery.cpp": "MISSING",

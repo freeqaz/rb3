@@ -125,6 +125,25 @@ void VocalPart::Jump(float f1, bool) {
     }
 }
 
+void VocalPart::Rollback(float, float ms) {
+    unk58 = 0;
+    unk54 = ms;
+    if (mVocalNoteList != nullptr) {
+        mThisPhrase = mVocalNoteList->mPhrases.begin();
+        while (mThisPhrase != mVocalNoteList->mPhrases.end()
+               && mThisPhrase->unk0 + mThisPhrase->unk4 < ms) {
+            mThisPhrase++;
+        }
+        mFreestyleSection = mVocalNoteList->mFreestyleSections.begin();
+        while (mFreestyleSection != mVocalNoteList->mFreestyleSections.end()
+               && ms > mFreestyleSection->second) {
+            mFreestyleSection++;
+        }
+        mSpotlightPhraseID = -1;
+        UpdateMinMaxPitch(mThisPhrase);
+    }
+}
+
 void VocalPart::LocalDeployBandEnergy() {
     if (mInFreestyleSection)
         unkad = true;
@@ -223,6 +242,85 @@ bool VocalPart::InTambourinePhrase() const {
     return result;
 }
 
+float VocalPart::FramePhraseMeterFrac() const {
+    if (!mPlayer->IsNet()) {
+        float ratio = 0.0f;
+        if (mPhraseScoreMax != 0.0f)
+            ratio = mPhraseScore / mPhraseScoreMax;
+        if (ratio > 1.0f) return 1.0f;
+        if (ratio < 0.0f) return 0.0f;
+        return ratio;
+    }
+    return mRemotePhraseMeterFrac;
+}
+
+void VocalPart::UpdateMinMaxPitch(const VocalPhrase *const &phraseRef) {
+    VocalNoteList *list = mVocalNoteList;
+    const VocalPhrase *cur = phraseRef;
+    const VocalPhrase *end = list->mPhrases.data() + list->mPhrases.size();
+    if (cur == end) {
+        unka8 = 0.0f;
+        unka4 = 0.0f;
+        return;
+    }
+    bool foundPitchedNote = false;
+    unka4 = FLT_MAX;
+    unka8 = -FLT_MAX;
+    while (cur != end) {
+        if (cur->unk10 != cur->unk14) {
+            int noteIdx = cur->unk10;
+            int noteCount = cur->unk14 - cur->unk10;
+            if (cur->unk10 < cur->unk14) {
+                while (true) {
+                    const VocalNote &note = list->mNotes[noteIdx];
+                    if (!note.mUnpitchedNote) {
+                        foundPitchedNote = true;
+                        if (cur->unk24 < unka4)
+                            unka4 = cur->unk24;
+                        if (unka8 < cur->unk28)
+                            unka8 = cur->unk28;
+                        break;
+                    } else {
+                        noteIdx++;
+                        noteCount--;
+                        if (noteCount == 0)
+                            break;
+                    }
+                }
+            }
+        }
+        if (cur->unk1a)
+            break;
+        cur++;
+    }
+    if (!foundPitchedNote) {
+        unka4 = 50.0f;
+        unka8 = 67.0f;
+        return;
+    }
+    if (unka4 == unka8) {
+        unka4 = unka4 - 5.0f;
+        unka8 = unka8 + 5.0f;
+    }
+}
+
+int VocalPart::CalculateRemainingTambourineTicks() {
+    MILO_ASSERT(mThisPhrase->mTambourinePhrase, 0x614);
+    int dur = mThisPhrase->unkc;
+    const VocalPhrase *sp8 = GetNextPhraseMarker(mThisPhrase);
+    while (true) {
+        const VocalPhrase *end =
+            mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
+        if (sp8 == end)
+            break;
+        if (!sp8->mTambourinePhrase)
+            break;
+        dur += sp8->unkc;
+        sp8 = GetNextPhraseMarker(sp8);
+    }
+    return dur;
+}
+
 void VocalPart::SetFirstPhraseMsToScore(float f1) { mFirstPhraseMsToScore = f1; }
 
 void VocalPart::AddSingerCandidate(Singer *singer, float dist) {
@@ -256,4 +354,64 @@ void VocalPart::SetVocalNoteList(VocalNoteList *list) {
 int VocalPart::NumPracticePhrases(const std::vector<VocalPhrase> &phrases) const {
     if (!mVocalNoteList) return 0;
     return mVocalNoteList->GetNumPracticePhrases(phrases);
+}
+
+float VocalPart::GetOverallPartHitPercentage() const {
+    if (unk50 == 0) return 0.0f;
+    float fPercentage = unk4c / (float)unk50;
+    MILO_ASSERT_RANGE_EQ(fPercentage, 0.0f, 1.0f, 0x6d6);
+    return fPercentage;
+}
+
+float VocalPart::GetPartHitPercentage(const std::vector<VocalPhrase> &phrases, int, int) const {
+    if (unk50 == 0) return 0.0f;
+    int numPhrases = NumPracticePhrases(phrases);
+    float fPercentage = unk4c / (float)numPhrases;
+    MILO_ASSERT_RANGE_EQ(fPercentage, 0.0f, 1.0f, 0x6e4);
+    return fPercentage;
+}
+
+float VocalPart::GetFreestyleSectionDurationMs() const {
+    MILO_ASSERT(mInFreestyleSection, 0x6ab);
+    VocalNoteList *list = mVocalNoteList;
+    const std::pair<float, float> *end =
+        list->mFreestyleSections.data() + list->mFreestyleSections.size();
+    if (mFreestyleSection == end)
+        return 0.0f;
+    return mFreestyleSection->second - mFreestyleSection->first;
+}
+
+float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
+    const VocalPhrase *p = phrase;
+    VocalNoteList *list = mVocalNoteList;
+    int start = p->unk10;
+    if (start > 0) {
+        const VocalNote &prev = list->mNotes[start - 1];
+        if (prev.mMs + prev.mDurationMs > p->unk0) {
+            start--;
+        }
+    }
+    unsigned int end = p->unk14;
+    float result = 0.0f;
+    if ((unsigned int)start == end) return result;
+    float phraseStart = p->unk0;
+    float phraseEnd = p->unk0 + p->unk4;
+    for (unsigned int i = start; i != end; i++) {
+        const VocalNote &note = list->mNotes[i];
+        float noteMs = note.mMs;
+        float noteDurationMs = note.mDurationMs;
+        float clampedStart = (noteMs < phraseStart) ? phraseStart : noteMs;
+        float noteEnd = noteMs + noteDurationMs;
+        float clampedEnd = (phraseEnd < noteEnd) ? phraseEnd : noteEnd;
+        float duration = clampedEnd - clampedStart;
+        float weight = mNoteWeights[i];
+        result += (duration / noteDurationMs) * weight;
+    }
+    return result;
+}
+
+bool VocalPart::FramePhraseMeterFracSorter(const VocalPart *i_pA, const VocalPart *i_pB) {
+    MILO_ASSERT(i_pA, 0x6c8);
+    MILO_ASSERT(i_pB, 0x6c9);
+    return i_pA->FramePhraseMeterFrac() > i_pB->FramePhraseMeterFrac();
 }

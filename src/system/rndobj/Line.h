@@ -11,6 +11,19 @@ public:
     class Point {
     public:
         Point() : v(0, 0, 0), c(-1) {}
+        Point(const Point &p) {
+            v = p.v;
+            c = p.c;
+            unk0 = p.unk0;
+            unk1 = p.unk1;
+            unk2 = p.unk2;
+            unk3 = p.unk3;
+            unk4 = p.unk4;
+            unk5 = p.unk5;
+            unk6 = p.unk6;
+            unk7 = p.unk7;
+            unk8 = p.unk8;
+        }
         Vector3 v; // 0x0
         Hmx::Color32 c; // 0xc
         union {

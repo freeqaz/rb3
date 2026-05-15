@@ -13,7 +13,7 @@ namespace Quazal {
         Key &operator=(const Key &);
         int GetLength() const;
         const unsigned char *GetContentPtr() const;
-        void PrepareContentPtr(unsigned int);
+        unsigned char *PrepareContentPtr(unsigned int);
 
         qVector<unsigned char> mData;
     };

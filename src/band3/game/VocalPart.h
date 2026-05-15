@@ -44,6 +44,7 @@ public:
     bool IsPhraseMarkerAtEnd(const VocalPhrase *const &) const;
     bool IsEmptyPhrase(const VocalPhrase *const &) const;
     void Rollback(float, float);
+    float GetFreestyleSectionDurationMs() const;
     float GetPartHitPercentage(const std::vector<VocalPhrase> &, int, int) const;
     int NumPracticePhrases(const std::vector<VocalPhrase> &) const;
     void ResetScoring();

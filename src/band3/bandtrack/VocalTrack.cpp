@@ -16,6 +16,7 @@
 #include "game/Player.h"
 #include "game/SongDB.h"
 #include "math/Mtx.h"
+#include "math/Utl.h"
 #include "meta_band/BandSongMetadata.h"
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/GameplayOptions.h"
@@ -654,6 +655,7 @@ void VocalTrack::UpdateVocalStyle() {
 }
 
 void VocalTrack::RebuildHUD() {
+    static bool sDump;
     for (int i = 0; i < 3; i++) {
         mNextScrollNote[i] = 0;
     }
@@ -686,12 +688,43 @@ void VocalTrack::RebuildHUD() {
     mTambourineGemPool->FreeUsedGems();
     VocalNoteList *notes = GetVocalNoteList(0);
     if (mPlayer) {
-        const VocalPhrase *cur = mPlayer->CurrentPhrase();
+        const VocalPhrase *const &cur = mPlayer->CurrentPhrase();
+        const VocalPhrase *next = mPlayer->GetNextPhraseMarker(cur);
+        if (HasNetPlayer()) {
+            unk70 = 0;
+        } else {
+            unk70 = 2;
+        }
         if (mPlayer->AtFirstPhrase()) {
             mPhraseEndMs = 0;
-            BuildPhrase(cur->unk0, cur->unk0); // fix
+            BuildPhrase(cur->unk0 + cur->unk4, next->unk0 + next->unk4);
         } else {
-            // more stuff
+            std::vector<VocalPhrase> &phrases = notes->mPhrases;
+            if (cur != &*phrases.end()) {
+                const VocalPhrase *prev = &*phrases.begin();
+                while (prev != &*phrases.end()) {
+                    if (mPlayer->GetNextPhraseMarker(prev) == cur)
+                        break;
+                    prev++;
+                }
+                if (prev != &*phrases.end()) {
+                    if (!IsScrolling()) {
+                        mPhraseEndMs = prev->unk0;
+                        BuildPhrase(
+                            prev->unk0 + prev->unk4, cur->unk0 + cur->unk4
+                        );
+                    }
+                    mPhraseEndMs = prev->unk0 + prev->unk4;
+                    float curEnd = cur->unk0 + cur->unk4;
+                    float endMs;
+                    if (next == &*phrases.end()) {
+                        endMs = TheSongDB->GetSongDurationMs();
+                    } else {
+                        endMs = next->unk0 + next->unk4;
+                    }
+                    BuildPhrase(curEnd, endMs);
+                }
+            }
         }
         if (mPlayer->InTambourinePhrase()) {
             mDir->SetTambourine(true);
@@ -714,9 +747,109 @@ void VocalTrack::RebuildHUD() {
         colors[1] = GetVocalHUDColor(tubestyle->Property("harmony_1_color", true)->Sym());
         colors[2] = GetVocalHUDColor(tubestyle->Property("harmony_2_color", true)->Sym());
         for (int i = 0; i < mPlayer->NumVocalParts(); i++) {
-            // setting parts here
+            mPlayer->mVocalParts[i]->unkc8 = colors[i];
         }
         mDir->SetVocalLineColors(colors);
+        mDir->mStreakMeter->SetNumParts(mPlayer->NumVocalParts());
+        float margin = mDir->mPitchDisplayMargin;
+        mRangeShifts.clear();
+        std::vector<RangeSection> &sections = TheSongDB->GetRangeSections();
+        float prevMin = sections[0].unk8 - margin;
+        float prevMax = margin + sections[0].unkc;
+        float maxRange = mDir->mMinPitchRange;
+        if (sDump) {
+            MILO_LOG("Range Shift Data\n");
+        }
+        for (int i = 0; i < sections.size(); i++) {
+            RangeSection &section = sections[i];
+            float secMin = section.unk8;
+            float secMax = section.unkc;
+            if (!(secMax < secMin)) {
+                float secIntro = section.unk4;
+                RangeShift rs;
+                rs.unk0 = TickToMs((float)section.unk0);
+                rs.unk4 = prevMin;
+                rs.unk8 = prevMax;
+                rs.unkc = secMin - margin;
+                rs.unk10 = secMax + margin;
+                rs.unk14 = secIntro;
+                mRangeShifts.push_back(rs);
+                prevMin = section.unk8 - margin;
+                prevMax = section.unkc + margin;
+                float range = prevMax - prevMin;
+                float *bigger = (maxRange < range) ? &range : &maxRange;
+                maxRange = *bigger;
+                if (sDump) {
+                    MILO_LOG(
+                        "[%d]\tstart ms: %.2f, intro ms: %.2f, min: %.1f -> %.1f, "
+                        "max: %.1f -> %.1f\n",
+                        i,
+                        mRangeShifts.back().unk0,
+                        mRangeShifts.back().unk14,
+                        mRangeShifts.back().unk4,
+                        mRangeShifts.back().unkc,
+                        mRangeShifts.back().unk8,
+                        mRangeShifts.back().unk10
+                    );
+                }
+            }
+        }
+        if (maxRange > 0) {
+            int idx = 0;
+            std::deque<RangeShift>::iterator it = mRangeShifts.begin();
+            std::deque<RangeShift>::iterator end = mRangeShifts.end();
+            for (; it != end; ++it) {
+                float diffFrom = it->unk4 + (maxRange - it->unk8);
+                if (diffFrom > 0) {
+                    diffFrom *= 0.5f;
+                    it->unk4 -= diffFrom;
+                    it->unk8 += diffFrom;
+                }
+                float diffTo = it->unkc + (maxRange - it->unk10);
+                if (diffTo > 0) {
+                    diffTo *= 0.5f;
+                    it->unkc -= diffTo;
+                    it->unk10 += diffTo;
+                }
+                if (sDump) {
+                    MILO_LOG(
+                        "[%d]\tstart ms: %.2f, intro ms: %.2f, min: %.1f -> %.1f, "
+                        "max: %.1f -> %.1f\n",
+                        idx++,
+                        it->unk0,
+                        it->unk14,
+                        it->unk4,
+                        it->unkc,
+                        it->unk8,
+                        it->unk10
+                    );
+                }
+            }
+        }
+        if (mDir->mStreakMeter) {
+            int parts = GetNumVocalParts();
+            for (int i = 0; i < parts; i++) {
+                bool active = false;
+                VocalPart *part = mPlayer->mVocalParts[i];
+                if (part && !part->InEmptyPhrase()) {
+                    active = true;
+                }
+                mDir->mStreakMeter->SetPartActive(i, active);
+            }
+        }
+        for (int i = 0; i < mPlayer->NumSingers(); i++) {
+            if (mPlayer->mSingers[i]) {
+                MicClientID id = mPlayer->mSingers[i]->GetMicClientID();
+                if (id.unk0 != -1) {
+                    PitchArrow *arrow = mDir->GetPitchArrow(id.unk0);
+                    if (arrow) {
+                        arrow->ClearParticles();
+                    }
+                }
+            }
+        }
+        mDir->RefreshCrowdRating(mLastRating, mLastRatingState);
+        unk2ec = true;
     }
 }
 

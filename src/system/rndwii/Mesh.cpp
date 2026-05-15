@@ -208,10 +208,22 @@ void WiiMesh::ReleaseBuffers() {
     unk_0x150 = NULL;
 }
 
-void *SkinAlloc(int i1, char *, int i2) {
-    static int fastHeapNum = MemFindHeap("");
+void *SkinAlloc(int size, char *, int align) {
+    static int fastHeapNum = MemFindHeap("fast");
     int a, b, c, d;
     MemFreeBlockStats(fastHeapNum, a, b, c, d);
+    if (d > size) {
+        static int _x = MemFindHeap("fast");
+        MemPushHeap(_x);
+        void *result = _MemAlloc(size, align);
+        MemPopHeap();
+        return result;
+    }
+    static int _x = MemFindHeap("char");
+    MemPushHeap(_x);
+    void *result = _MemAlloc(size, align);
+    MemPopHeap();
+    return result;
 }
 
 void WiiMesh::CreateBuffers() {

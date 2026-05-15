@@ -25,5 +25,8 @@ namespace Quazal {
             return &mData.front();
     }
 
-    void Key::PrepareContentPtr(unsigned int size) { mData.resize(size); }
+    unsigned char *Key::PrepareContentPtr(unsigned int size) {
+        mData.resize(size);
+        return &mData.front();
+    }
 }

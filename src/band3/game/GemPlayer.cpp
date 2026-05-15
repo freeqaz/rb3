@@ -2178,17 +2178,16 @@ int GemPlayer::GetSoloData(int tick, float &pct, float &solo_pct, int &numGems) 
 }
 
 float GemPlayer::GetCommonPhraseFraction(int tick) {
-    Extent ext;
-    TheSongDB->GetCommonPhraseExtent(mTrackNum, tick, ext);
-    int startTick = ext.unk0;
-    int endTick = ext.unk4;
-    const GameGemList *gemList = TheSongDB->GetGemList(mTrackNum);
-    int idx = gemList->ClosestMarkerIdxAtOrAfterTick(startTick);
     int total = 0;
     int hit = 0;
+    Extent ext;
+    TheSongDB->GetCommonPhraseExtent(mTrackNum, tick, ext);
+    int idx = TheSongDB->GetGemList(mTrackNum)->ClosestMarkerIdxAtOrAfterTick(ext.unk0);
     if (idx != -1) {
         const std::vector<GameGem> &gems = TheSongDB->GetGems(mTrackNum);
-        for (int n = (int)gems.size() - idx; (unsigned int)idx < gems.size() && n > 0 && gems[idx].GetTick() < endTick; idx++, n--) {
+        for (int n = (int)gems.size() - idx; n > 0; n--, idx++) {
+            if ((unsigned int)idx >= gems.size()) break;
+            if (gems[idx].GetTick() >= ext.unk4) break;
             total++;
             if (!mGemStatus->GetHit(idx)) {
                 if (!mGemStatus->GetIgnored(idx))

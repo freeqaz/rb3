@@ -54,12 +54,16 @@ public:
 
     class RangeShift {
     public:
-        int unk0;
-        int unk4;
-        int unk8;
-        int unkc;
-        int unk10;
-        int unk14;
+        RangeShift() {}
+        RangeShift(const RangeShift &o)
+            : unk0(o.unk0), unk4(o.unk4), unk8(o.unk8), unkc(o.unkc),
+              unk10(o.unk10), unk14(o.unk14) {}
+        float unk0;
+        float unk4;
+        float unk8;
+        float unkc;
+        float unk10;
+        float unk14;
     };
 
     VocalTrack(BandUser *);
