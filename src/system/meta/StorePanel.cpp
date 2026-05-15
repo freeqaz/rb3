@@ -245,7 +245,17 @@ bool StorePanel::InCheckout() const { return mPurchaser; }
 
 void StorePanel::LoadArt(const char *cc, UIPanel *panel) {
     String str(cc);
-    for (std::list<NetCacheLoader *>::iterator it = unk54.begin(); it != unk54.end(); ++it) {
+    std::list<NetCacheLoader *>::iterator it = unk54.begin();
+    for (; unk54.end() != it && !(str == (*it)->GetRemotePath()); ++it) {
+    }
+    if (unk54.end() == it) {
+        NetCacheLoader *loader = TheNetCacheMgr->AddNetCacheLoader(cc, (NetLoaderPos)0);
+        mPendingArtLoader = loader;
+        if (loader) {
+            unk54.push_back(loader);
+        }
+    } else {
+        mPendingArtLoader = *it;
     }
     mPendingArtCallback = panel;
 }

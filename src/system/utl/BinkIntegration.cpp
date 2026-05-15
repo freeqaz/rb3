@@ -2,10 +2,13 @@
 #include "obj/DataFile.h"
 #include "os/File.h"
 #include "os/Debug.h"
+#include "os/Timer.h"
 #include "KeyChain.h"
 #include "synth/Synth.h"
 #include "utl/EncryptXTEA.h"
 #include <string.h>
+
+extern "C" unsigned int RADTimerRead();
 
 extern "C" {
     void BinkSetMemory(void *(*)(unsigned int), void (*)(void *));
@@ -142,33 +145,64 @@ unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int le
     return r;
 }
 
-void ReadFunc(BINKIO *bink, bool r4) {
+void ReadFunc(BINKIO *bink, bool startNewRead) {
     BINKFILE *bf = (BINKFILE *)bink->iodata;
     if (bink->DoingARead) {
-        int lengthRead;
+        int lengthRead = 0;
         if (!bf->pFile->ReadDone(lengthRead))
             return;
         bink->DoingARead = 0;
         if (bf->mEncryptionHeader.mVersion == 2) {
-            static Timer *_t = AutoTimer::GetTimer(Symbol("XTEA"));
-            _t->Start();
-            // XTEA encryption
-            _t->Stop();
+            START_AUTO_TIMER("XTEA");
+            for (XTEABlock *blk = (XTEABlock *)bf->pBufBack;
+                 (unsigned char *)blk < bf->pBufBack + lengthRead;
+                 blk++) {
+                XTEABlock outBlock;
+                unsigned int *p = (unsigned int *)blk;
+                unsigned int p0 = p[0];
+                unsigned int p1 = p[1];
+                p[1] = BSWAP(p0);
+                p[0] = BSWAP(p1);
+                unsigned int p2 = p[2];
+                unsigned int p3 = p[3];
+                p[3] = BSWAP(p2);
+                p[2] = BSWAP(p3);
+                bf->pXTEADecrypter->Encrypt(blk, &outBlock);
+                unsigned int *outU = (unsigned int *)&outBlock;
+                p[0] = outU[1];
+                p[1] = outU[0];
+                p[2] = outU[3];
+                p[3] = outU[2];
+            }
         } else {
             intelendian(bf->pBufBack, lengthRead);
         }
+        bf->pBufBack += lengthRead;
+        if (bf->pBufBack >= bf->pBufEnd) {
+            bf->pBufBack = bf->pBuffer;
+        }
+        bf->iBufEmpty -= lengthRead;
+        bink->CurBufUsed += lengthRead;
+        bink->BytesRead += lengthRead;
+        if (bink->CurBufUsed > bink->BufHighUsed) {
+            bink->BufHighUsed = bink->CurBufUsed;
+        }
+        bf->iShowSpeed = RADTimerRead() - bf->iShowSpeed;
+        bink->TotalTime += bf->iShowSpeed;
+        if (bink->Suspended != 0)
+            return;
     }
-    if (r4) {
+    if (startNewRead) {
         int fileSize = bf->pFile->Size();
         int filePos = bf->pFile->Tell();
-        int diff = fileSize - filePos;
-        if (bf->iBufEmpty < 0x8000 || bf->pFile->Eof()) {
-            bink->CurBufSize = bink->CurBufUsed;
-        } else {
+        unsigned int diff = fileSize - filePos;
+        if (bf->iBufEmpty >= 0x8000 && !bf->pFile->Eof()) {
             bink->DoingARead = 1;
             if (diff > 0x8000)
                 diff = 0x8000;
             bf->pFile->ReadAsync(bf->pBufBack, diff);
+        } else {
+            bink->CurBufSize = bink->CurBufUsed;
         }
     }
 }

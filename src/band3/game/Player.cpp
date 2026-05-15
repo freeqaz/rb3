@@ -926,34 +926,24 @@ void Player::FinalizeStats() {
 }
 
 void Player::HandleNewSection(const PracticeSection &section, int sectionIdx, int totalSections) {
-    if (TheGame->unkdc != -1.0f)
-        return;
-    if (mQuarantined)
+    if (TheGame->unkdc != -1.0f || mQuarantined)
         return;
     unk2c0 = sectionIdx;
-    if ((unsigned short)sectionIdx == mStats.mSections.size())
-        goto after_fill;
-    {
+    if (totalSections != (int)mStats.mSections.size()) {
         Stats::SectionInfo info;
-        unsigned short curSize = mStats.mSections.size();
-        if ((unsigned long)totalSections < curSize) {
-            // resize down
-            unsigned long newSize = totalSections;
-            mStats.mSections.insert(
-                mStats.mSections.begin() + newSize,
-                curSize - newSize,
-                info
+        if ((unsigned long)totalSections < mStats.mSections.size()) {
+            mStats.mSections.erase(
+                mStats.mSections.begin() + totalSections,
+                mStats.mSections.end()
             );
         } else {
-            // fill insert at end
             mStats.mSections.insert(
                 mStats.mSections.end(),
-                (unsigned long)totalSections - curSize,
+                (unsigned long)totalSections - mStats.mSections.size(),
                 info
             );
         }
     }
-after_fill:
     mStats.SetSectionInfo(unk2c0, section.unk0, -1.0f, 0.0f);
 }
 

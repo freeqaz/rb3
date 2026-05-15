@@ -580,8 +580,9 @@ float segmentLength(int i1, int i2, int i3, int i4, float *f5, const char *c6) {
     float lineLen = 0;
     for (; c6[i2 - 1] == ' ' && i1 < i2; i2--, i4--)
         ;
-    for (; i3 < i4; i3++)
-        lineLen += f5[i3];
+    for (int i = i3; i < i4; i++) {
+        lineLen += f5[i];
+    }
     return lineLen;
 }
 

@@ -132,22 +132,68 @@ void BandPatchMesh::WorkVerts::SetMeshVerts() {
     unk20.reserve(mMesh->Faces().size());
     unk28.resize(mMesh->Faces().size());
     for (int i = 0; i < unk28.size(); i++) {
-        unk28[i] = -1;
+        unk28[i].mFlags = -1;
     }
     mMeshVerts.resize(mMesh->Verts().size());
-    // for(int i = 0; i < mMeshVerts.size(); i++){
-    //     mMeshVerts[i]->mVert = 0;
-    // }
-    // for(int i = 0; i < unk30->Faces().size(); i++){
-    //     RndMesh::Face& curface = unk30->Faces()[i];
-    //     for(int j = 0; j < 3; j++){
-    //         mMeshVerts[curface[j]]->mVert++;
-    //     }
-    // }
-    // int count = 0;
-    // for(int i = 0; i < mMeshVerts.size(); i++){
-
-    // }
+    for (int i = 0; i < mMeshVerts.size(); i++) {
+        mMeshVerts[i] = 0;
+    }
+    for (int i = 0; i < mMesh->Faces().size(); i++) {
+        RndMesh::Face &curface = mMesh->Faces()[i];
+        for (int j = 0; j < 3; j++) {
+            ((int &)mMeshVerts[curface[j]])++;
+        }
+    }
+    int count = 0;
+    for (int i = 0; i < mMeshVerts.size(); i++) {
+        int c = (int)mMeshVerts[i];
+        mMeshVerts[i] = (MeshVert *)count;
+        count += (((c + 1) & ~1) - 2) * 2 + 0x38;
+    }
+    unkc = new char[count];
+    for (int i = 0; i < mMeshVerts.size(); i++) {
+        mMeshVerts[i] = (MeshVert *)((char *)unkc + (int)mMeshVerts[i]);
+        MeshVert *v = mMeshVerts[i];
+        *((unsigned char *)v + 0x27) = 0;
+        v->unk28 = -1;
+        v->unk2c = -1;
+        v->unk30 = 0;
+        v->mVert = 0;
+        v->unk24 = 0;
+    }
+    for (int i = 0; i < mMesh->Faces().size(); i++) {
+        RndMesh::Face &curface = mMesh->Faces()[i];
+        for (int j = 0; j < 3; j++) {
+            MeshVert *mv = mMeshVerts[curface[j]];
+            int n = mv->unk30;
+            ((unsigned short *)((char *)mv + 0x32))[n] = i;
+            mv->unk30 = n + 1;
+        }
+    }
+    RndMesh::Vert *base = &mMesh->Verts()[0];
+    for (int i = 0; i < unk18.size(); i++) {
+        RndMesh::Vert *v1 = unk18[i];
+        int vi = v1 - base;
+        MeshVert *mv = mMeshVerts[vi];
+        if (mv->unk28 == -1) {
+            mv->unk28 = vi;
+            int prev = vi;
+            for (int j = i + 1; j < unk18.size(); j++) {
+                RndMesh::Vert *v2 = unk18[j];
+                if (v1->pos.x != v2->pos.x || v1->pos.y != v2->pos.y
+                    || v1->pos.z != v2->pos.z)
+                    break;
+                int vi2 = v2 - base;
+                mMeshVerts[vi2]->unk28 = vi;
+                *((unsigned char *)mMeshVerts[vi2] + 0x27) = 1;
+                mMeshVerts[prev]->unk2c = vi2;
+                prev = vi2;
+            }
+            if (prev != vi) {
+                *((unsigned char *)mMeshVerts[vi] + 0x27) = 1;
+            }
+        }
+    }
 }
 
 void BandPatchMesh::WorkVerts::AddFace(int i, MeshVert *mv) {

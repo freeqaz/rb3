@@ -31,6 +31,7 @@ public:
 
     class MeshFace {
     public:
+        char mFlags;
     };
 
     class MeshVert {
@@ -77,7 +78,7 @@ public:
         std::vector<MeshVert *> unk10;
         std::vector<RndMesh::Vert *> unk18;
         std::vector<unsigned short> unk20;
-        std::vector<char> unk28;
+        std::vector<MeshFace> unk28;
         RndMesh *mMesh; // 0x30
         Vector2 unk34;
         Vector2 unk3c;

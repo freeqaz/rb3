@@ -4,13 +4,50 @@
 #include "os/PlatformMgr.h"
 #include "rndobj/Rnd.h"
 
+struct RSOObjectHeader;
+
+extern void RsoPreInit();
+extern void RsoPostTerminate();
+extern void RsoInit2HelperNoAlloc(
+    RSOObjectHeader **, const char *, unsigned char **, unsigned long **,
+    void (*)(const RSOObjectHeader *)
+);
+extern void RsoTerminate2HelperNoFree(
+    RSOObjectHeader *, unsigned char *, unsigned long *, void (*)()
+);
+
+RSOObjectHeader *HBMCreateRSO;
+RSOObjectHeader *HBMInitRSO;
+RSOObjectHeader *HBMUpdateSoundRSO;
+RSOObjectHeader *HBMCalcRSO;
+RSOObjectHeader *HBMGetSelectBtnNumRSO;
+RSOObjectHeader *HBMDeleteRSO;
+RSOObjectHeader *HBMDeleteSoundRSO;
+RSOObjectHeader *HBMDrawRSO;
+RSOObjectHeader *HBMSetAdjustFlagRSO;
+RSOObjectHeader *HBMCreateSoundRSO;
+RSOObjectHeader *hmbModule;
+unsigned char *hmbBss;
+unsigned long *hmbCode;
+
+void ResolvedModule_hmbModule(const RSOObjectHeader *);
+void UnresolvedModule_hmbModule();
+
 DECOMP_FORCEACTIVE(HomeMenu_Wii, "_unresolved func.\n")
 
 void unresolved_hmbModule() { OSReport("\nError: call hmbModule unlinked function.\n"); }
 
-void HmbRsoInit() { MILO_WARN("hmbrso_r.rso"); }
+void HmbRsoInit() {
+    RsoPreInit();
+    RsoInit2HelperNoAlloc(
+        &hmbModule, "hmbrso_r.rso", &hmbBss, &hmbCode, ResolvedModule_hmbModule
+    );
+}
 
-void HmbRsoTerminate() {}
+void HmbRsoTerminate() {
+    RsoTerminate2HelperNoFree(hmbModule, hmbBss, hmbCode, UnresolvedModule_hmbModule);
+    RsoPostTerminate();
+}
 
 HomeMenu::HomeMenu()
     : mAllowHomeMenu(false), mHomeMenuActive(false), mSoundActive(true), mInGame(false),

@@ -240,12 +240,13 @@ void UsbWii::SetInactive(int num) {
 void UsbWii::UsbReadInstrCallback(
     HIDDevice *device, long result, u8 *bytes, unsigned long length, unsigned long user
 ) {
+    UsbDevice &dev = sDevices[user];
     // error during read
     if (result != 0) {
-        if (sDevices[user].state == kUsbStateDone) {
-            sDevices[user].state = kUsbStateReading;
-            if ((sDevices[user].flags & kUsbFlagInactive) == 0) {
-                sDevices[user].inactivity = 0;
+        if ((int)dev.state == kUsbStateDone) {
+            dev.state = kUsbStateReading;
+            if ((dev.flags & kUsbFlagInactive) == 0) {
+                dev.inactivity = 0;
             }
         }
         // fatal error / device disconnected?
@@ -256,56 +257,75 @@ void UsbWii::UsbReadInstrCallback(
         return;
     }
     // D-PAD correction
-    if ((sDevices[user].packet[2] & 8) == 0) {
-        switch (sDevices[user].packet[2]) {
+    u8 dpad = dev.packet[2];
+    if ((dpad & 8) != 0) {
+        dev.packet[2] = 0;
+    } else {
+        switch (dpad) {
         case 0:
-            sDevices[user].packet[2] = 1;
+            dev.packet[2] = 1;
             break;
         case 2:
-            sDevices[user].packet[2] = 8;
-            break;
-        case 4:
-            sDevices[user].packet[2] = 2;
+            dev.packet[2] = 8;
             break;
         case 6:
-            sDevices[user].packet[2] = 4;
+            dev.packet[2] = 4;
+            break;
+        case 4:
+            dev.packet[2] = 2;
             break;
         }
-    } else {
-        sDevices[user].packet[2] = 0;
     }
     // fill in the button mask
-    sDevices[user].buttonMask = (sDevices[user].packet[2] << 16)
-        | (sDevices[user].packet[1] << 8) | sDevices[user].packet[0];
+    dev.buttonMask = dev.packet[0] | (dev.packet[1] << 8) | (dev.packet[2] << 16);
     // fill in the stick values
-    sDevices[user].lstickX = sDevices[user].packet[3];
-    sDevices[user].lstickY = sDevices[user].packet[4];
-    sDevices[user].rstickX = sDevices[user].packet[5];
-    sDevices[user].rstickY = sDevices[user].packet[6];
+    dev.lstickX = dev.packet[3];
+    dev.lstickY = dev.packet[4];
+    dev.rstickX = dev.packet[5];
+    dev.rstickY = dev.packet[6];
     // fill in the pressure values
-    sDevices[user].pressures[0] = sDevices[user].packet[11];
-    sDevices[user].pressures[1] = sDevices[user].packet[12];
-    sDevices[user].pressures[2] = sDevices[user].packet[13];
-    sDevices[user].pressures[3] = sDevices[user].packet[14];
-    // copy over the extra values
-    for (int i = 0; i < 0x10; i++) {
-        sDevices[user].extended[i] = sDevices[user].packet[5 + i];
+    dev.pressures[0] = dev.packet[11];
+    dev.pressures[1] = dev.packet[12];
+    dev.pressures[2] = dev.packet[13];
+    dev.pressures[3] = dev.packet[14];
+    // copy over the extra values - manually 8-wide unrolled with ctr=2
+    // matches CW's mtctr/bdnz pattern from -O4,p partial unroll
+    {
+        u8 *base = (u8 *)&dev;
+        int i = 0;
+        int ctr = 2;
+        do {
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+            base[i + 0x2c] = base[i + 0x45]; ++i;
+        } while (--ctr);
     }
     // check if buttons are pressed for inactivity reading
-    int buttonsPressed = sDevices[user].buttonMask;
-    if (sDevices[user].type == kUsbGuitar || sDevices[user].type == kUsbGuitarRb2)
-        buttonsPressed &= ~0x20;
-    if (buttonsPressed == 0) {
-        if ((sDevices[user].flags & kUsbFlagInactive) != 0)
-            sDevices[user].inactivity += 1;
-    } else if ((sDevices[user].flags & kUsbFlagInactive) == 0) {
-        sDevices[user].flags |= kUsbFlagActive;
-    } else {
-        sDevices[user].inactivity = 0;
+    int buttonsPressed = dev.buttonMask;
+    int type = dev.type;
+    // CW emits cmpwi/beq + cmpwi/bne for chained ==, vs subic/cmplwi/bgt for ||.
+    if (type == kUsbGuitar) goto mask_select;
+    if (type != kUsbGuitarRb2) goto inactivity_check;
+mask_select:
+    buttonsPressed &= ~0x20;
+inactivity_check:;
+    if (buttonsPressed != 0) {
+        if ((dev.flags & kUsbFlagInactive) == 0) {
+            dev.flags |= kUsbFlagActive;
+        } else {
+            dev.inactivity = 0;
+        }
+    } else if ((dev.flags & kUsbFlagInactive) != 0) {
+        dev.inactivity += 1;
     }
     // send another request if we're done reading
-    if (sDevices[user].state == kUsbStateDone) {
-        sDevices[user].state = kUsbStateReading;
+    if ((int)dev.state == kUsbStateDone) {
+        dev.state = kUsbStateReading;
         RequestReadInstr(user, false);
         return;
     }
