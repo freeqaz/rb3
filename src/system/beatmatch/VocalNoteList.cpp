@@ -253,3 +253,14 @@ void VocalNoteList::SetFreestyleSections(const std::vector<std::pair<float, floa
 ) {
     mFreestyleSections = sects;
 }
+
+int VocalNoteList::GetNumPracticePhrases(const std::vector<VocalPhrase> &phrases) const {
+    int count = 0;
+    for (const VocalPhrase *phrase = phrases.data();
+         phrase != phrases.data() + phrases.size();
+         ++phrase) {
+        if (HasNoteInRange(phrase->unk8, phrase->unk8 + phrase->unkc) != -1)
+            count++;
+    }
+    return count;
+}
