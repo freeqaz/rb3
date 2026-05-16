@@ -20,6 +20,9 @@ static char s_homeDir[64] = "" __attribute__ ((aligned(32)));
 static BOOL nandOnShutdown(BOOL final, u32 event);
 void nandConvertPath(char *, const char *, const char *);
 static void nandShutdownCallback(ISFSError, void *);
+static void nandLoggingCallback(BOOL, ISFSError);
+extern void __NANDPrintErrorMessage(ISFSError);
+extern BOOL NANDLoggingAddMessageAsync(NANDLoggingCallback cb, ISFSError err, const char* fmt, ...);
 
 static OSShutdownFunctionInfo s_shutdownFuncInfo =
 {
@@ -166,8 +169,20 @@ BOOL nandIsInitialized(void) {
     }
 }
 
-void nandReportErrorCode(const ISFSError err) {
-    return;
+static void nandLoggingCallback(BOOL b, ISFSError err) {
+#pragma unused(b)
+    if (err == ISFS_ERROR_UNKNOWN || err == IOS_ERROR_UNKNOWN) {
+        __NANDPrintErrorMessage(err);
+    }
+}
+
+static void nandReportErrorCode(const ISFSError err) {
+    if (err >= IOS_ERROR_INVALID_SIZE) return;
+    if (err == -0x64 || err == ISFS_ERROR_MAXBLOCKS || err == ISFS_ERROR_MAXFILES ||
+        err == ISFS_ERROR_CORRUPT || err == ISFS_ERROR_BUSY ||
+        err == IOS_ERROR_QFULL || err == IOS_ERROR_FAIL_ALLOC) {
+        __NANDPrintErrorMessage(err);
+    }
 }
 
 s32 nandConvertErrorCode(const ISFSError err) {
@@ -229,7 +244,7 @@ s32 nandConvertErrorCode(const ISFSError err) {
             if (err == ISFS_ERROR_ECC_CRIT || err == ISFS_ERROR_HMAC || err == ISFS_ERROR_UNKNOWN || err == IOS_ERROR_UNKNOWN || err == IOS_ERROR_ECC_CRIT) {
                 char buf[128] __attribute__ ((aligned(64)));
                 sprintf(buf, "ISFS error code: %d", err);
-                NANDLoggingAddMessageAsync(0, buf);
+                NANDLoggingAddMessageAsync(nandLoggingCallback, err, buf);
             }
 
             nandReportErrorCode(err);
@@ -241,10 +256,9 @@ s32 nandConvertErrorCode(const ISFSError err) {
     {
         char buf[128] __attribute__ ((aligned(64)));
         sprintf(buf, "ISFS unexpected error code: %d", err);
-        NANDLoggingAddMessageAsync(0, buf);
+        NANDLoggingAddMessageAsync(nandLoggingCallback, err, buf);
     }
 
-    nandReportErrorCode(err);
     return -64;
 }
 

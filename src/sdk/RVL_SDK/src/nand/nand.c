@@ -339,7 +339,7 @@ s32 NANDGetLengthAsync(NANDFileInfo *info, u32 *length, NANDCallback cb,
       nandGetFileStatusAsync(info->fileDescriptor, block));
 }
 
-void nandComposePerm(u8 *perm, const u32 ownerAcc, const u32 groupAcc,
+__declspec(noinline) void nandComposePerm(u8 *perm, const u32 ownerAcc, const u32 groupAcc,
                      const u32 othersAcc) {
   u32 p = 0;
 

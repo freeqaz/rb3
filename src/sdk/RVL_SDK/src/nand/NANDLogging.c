@@ -6,7 +6,7 @@
 #include <string.h>
 
 static IOSFd s_fd = -255;
-static BOOL s_err = 1;
+static ISFSError s_err = 1;
 static int s_stage;
 static char s_message[256] __attribute__ ((aligned (64)));
 static NANDLoggingCallback s_callback = 0;
@@ -38,13 +38,13 @@ BOOL reserveFileDescriptor(void) {
     return busy_flag ? FALSE : TRUE;
 }
 
-BOOL NANDLoggingAddMessageAsync(NANDLoggingCallback cb, const char* fmt, ...) {
+BOOL NANDLoggingAddMessageAsync(NANDLoggingCallback cb, ISFSError err, const char* fmt, ...) {
     va_list ap;
-    ISFSError err = ISFS_ERROR_UNKNOWN;
+    ISFSError result = ISFS_ERROR_UNKNOWN;
 
     if (!reserveFileDescriptor()) {
         return FALSE;
-    }   
+    }
 
     va_start(ap, fmt);
     vsnprintf(s_message, 256, fmt, ap);
@@ -52,9 +52,12 @@ BOOL NANDLoggingAddMessageAsync(NANDLoggingCallback cb, const char* fmt, ...) {
 
     s_callback = cb;
     s_stage = 1;
-    err = ISFS_OpenAsync("/shared2/test2/nanderr.log", 3, asyncRoutine, 0);
+    if (err == ISFS_ERROR_UNKNOWN || err == IOS_ERROR_UNKNOWN) {
+        s_err = err;
+    }
+    result = ISFS_OpenAsync("/shared2/test2/nanderr.log", 3, asyncRoutine, 0);
 
-    if (err == ISFS_ERROR_OK) {
+    if (result == ISFS_ERROR_OK) {
         return TRUE;
     }
     else {
@@ -64,7 +67,7 @@ BOOL NANDLoggingAddMessageAsync(NANDLoggingCallback cb, const char* fmt, ...) {
 
 static void callbackRoutine(BOOL result) {
     if (s_callback) {
-        s_callback(result);
+        s_callback(result, s_err);
     }
 }
 

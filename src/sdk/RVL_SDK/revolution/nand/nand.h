@@ -121,7 +121,7 @@ void NANDInitBanner(NANDBanner *, u32, const u16 *, const u16 *);
 
 typedef void (*NANDCallback)(s32, NANDCommandBlock *);
 typedef void (*NANDAsyncCallback)(s32 result, struct NANDCommandBlock* block);
-typedef void (*NANDLoggingCallback)(BOOL);
+typedef void (*NANDLoggingCallback)(BOOL, ISFSError);
 
 s32 NANDInit(void);
 
