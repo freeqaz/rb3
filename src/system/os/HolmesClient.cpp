@@ -478,14 +478,13 @@ FileStat *HolmesClientGetStat(const char *cc, FileStat &fs) {
 }
 
 bool HolmesClientOpen(const char *filepath, int flags, uint &result, int &r6) {
-    gCrit.Enter();
+    CritSecTracker cst(&gCrit);
     if (gHostLogging) {
         if ((flags & 4) == 0) {
             if (gHostConfig == false) {
                 MILO_FAIL("gHostLogging tried to read file: %s", filepath);
             }
         } else if (gHolmesStream == NULL) {
-            gCrit.Exit();
             return false;
         }
     }
@@ -493,14 +492,17 @@ bool HolmesClientOpen(const char *filepath, int flags, uint &result, int &r6) {
 
     if (!gHolmesStream->Fail()) {
         BeginCmd(Holmes::kOpenFile, true);
-        bool someFlagSet = (bool)(flags >> 1 & 1);
+        bool write = (flags >> 1) & 1;
+        bool trunc = (flags >> 18) & 1;
+        bool create = (flags >> 9) & 1;
+        bool noCreate = (flags >> 11) & 1;
         *gStreamBuffer << (char)Holmes::kOpenFile;
         *gStreamBuffer << filepath;
-        *gStreamBuffer << someFlagSet; // write?
-        *gStreamBuffer << (bool)((flags >> 18) & 1);
-        if (!someFlagSet) {
-            *gStreamBuffer << (bool)((flags >> 9) & 1);
-            *gStreamBuffer << (bool)((flags >> 11) & 1);
+        *gStreamBuffer << write;
+        *gStreamBuffer << trunc;
+        if (!write) {
+            *gStreamBuffer << create;
+            *gStreamBuffer << noCreate;
         }
         HolmesFlushStreamBuffer();
         WaitForResponse(Holmes::kOpenFile);
@@ -513,30 +515,30 @@ bool HolmesClientOpen(const char *filepath, int flags, uint &result, int &r6) {
         FinishResponse();
         EndCmd(Holmes::kOpenFile);
         if (returnCode == -1) {
-            gCrit.Exit();
             return false;
         } else {
-            gCrit.Exit();
             return true;
         }
     }
 
-    gCrit.Exit();
     return false;
 }
 
 void HolmesClientWrite(int file, int offset, int length, const void *data) {
     if (length == 0)
         return;
-    gCrit.Enter();
-    MILO_ASSERT(gHolmesStream, 944);
+    CritSecTracker cst(&gCrit);
+    MILO_ASSERT(gHolmesStream, 987);
 
     if (!gHolmesStream->Fail() || gHostLogging == false) {
         BeginCmd(Holmes::kWriteFile, true);
+        int ifile = file;
+        int ioffset = offset;
+        int ilength = length;
         *gStreamBuffer << (char)Holmes::kWriteFile;
-        *gStreamBuffer << file;
-        *gStreamBuffer << offset; // write?
-        *gStreamBuffer << length;
+        gStreamBuffer->WriteEndian(&ifile, 4);
+        gStreamBuffer->WriteEndian(&ioffset, 4);
+        gStreamBuffer->WriteEndian(&ilength, 4);
         gStreamBuffer->Write(data, length);
         HolmesFlushStreamBuffer();
         WaitForResponse(Holmes::kWriteFile);
@@ -545,9 +547,6 @@ void HolmesClientWrite(int file, int offset, int length, const void *data) {
         FinishResponse();
         EndCmd(Holmes::kWriteFile);
     }
-
-    gCrit.Exit();
-    return;
 }
 
 void HolmesClientTruncate(int a, int b) {

@@ -473,7 +473,13 @@ Symbol StoreOffer::Genre() const {
 }
 
 Symbol StoreOffer::SubGenre() const {
-    return gSubGenreStrs[Clamp(0, 0x5D, mPackedRbnOffer->SubGenre())];
+    int sg = mPackedRbnOffer->mSubGenre;
+    int clamped;
+    if (sg > 0x5D)
+        clamped = 0x5D;
+    else
+        clamped = sg < 0 ? 0 : sg;
+    return gSubGenreStrs[clamped];
 }
 
 Symbol StoreOffer::RatingSym() const {

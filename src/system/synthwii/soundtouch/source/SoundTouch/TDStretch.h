@@ -114,15 +114,15 @@ protected:
     BOOL bQuickseek;
     BOOL bMidBufferDirty;
 
-    int sampleRate;
-    int sequenceMs;
-    int seekWindowMs;
-    int overlapMs;
+    uint sampleRate;
+    uint sequenceMs;
+    uint seekWindowMs;
+    uint overlapMs;
 
     void acceptNewOverlapLength(int newOverlapLength);
 
     virtual void clearCrossCorrState();
-    void calculateOverlapLength(int overlapMs);
+    void calculateOverlapLength(uint overlapMs);
 
     virtual LONG_SAMPLETYPE calcCrossCorrStereo(const SAMPLETYPE *mixingPos, const SAMPLETYPE *compare) const;
     virtual LONG_SAMPLETYPE calcCrossCorrMono(const SAMPLETYPE *mixingPos, const SAMPLETYPE *compare) const;

@@ -458,10 +458,13 @@ void VocalPlayer::UnpackFloats(
     o_rFractionArray.resize(4);
     float fDifference = f2 - f1;
     MILO_ASSERT(fDifference > 0.0f, 0x6F3);
-    for (int i = 0; i < 4; i++) {
-        o_rFractionArray[i] =
-            fDifference * ((float)((i1 >> (i * 8)) & 0xFF) / 255.0f) + f1;
-    }
+    o_rFractionArray[0] = fDifference * ((float)(unsigned char)i1 / 255.0f) + f1;
+    i1 >>= 8;
+    o_rFractionArray[1] = fDifference * ((float)(unsigned char)i1 / 255.0f) + f1;
+    i1 >>= 8;
+    o_rFractionArray[2] = fDifference * ((float)(unsigned char)i1 / 255.0f) + f1;
+    i1 >>= 8;
+    o_rFractionArray[3] = fDifference * ((float)(unsigned char)i1 / 255.0f) + f1;
 }
 
 unsigned int VocalPlayer::PackBools(const std::vector<int> &i_rBoolArray) const {

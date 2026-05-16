@@ -130,25 +130,24 @@ void BinStream::Seek(int offset, SeekType type) {
     SeekImpl(offset, type);
 }
 
-static void SwapData(const void *v1, void *v2, int num_bytes) {
+inline void SwapData(const void *v1, void *v2, int num_bytes) {
     switch (num_bytes) {
     case 2: {
         unsigned short *s1 = (unsigned short *)v1;
-        unsigned short *s2 = (unsigned short *)v2;
+        short *s2 = (short *)v2;
         *s2 = EndianSwap(*s1);
         break;
     }
     case 4: {
-        unsigned int *i1 = (unsigned int *)v1;
-        unsigned int *i2 = (unsigned int *)v2;
-        *i2 = EndianSwap(*i1);
+        int *i1 = (int *)v1;
+        int *i2 = (int *)v2;
+        *i2 = EndianSwap((unsigned int)*i1);
         break;
     }
     case 8: {
-        unsigned int *i1 = (unsigned int *)v1;
-        unsigned int *i2 = (unsigned int *)v2;
-        i2[0] = EndianSwap(i1[1]);
-        i2[1] = EndianSwap(i1[0]);
+        unsigned long long *l1 = (unsigned long long *)v1;
+        long long *l2 = (long long *)v2;
+        *l2 = EndianSwap(*l1);
         break;
     }
     default:
@@ -165,10 +164,10 @@ void BinStream::ReadEndian(void *data, int bytes) {
 }
 
 void BinStream::WriteEndian(const void *void_data, int bytes) {
+    char sp8;
     if (mLittleEndian) {
-        unsigned int sp8[2];
-        SwapData(void_data, sp8, bytes);
-        Write(sp8, bytes);
+        SwapData((void *)void_data, &sp8, bytes);
+        Write(&sp8, bytes);
     } else
         Write(void_data, bytes);
 }

@@ -69,22 +69,16 @@ bool Box::Clamp(Vector3 &vec) {
 void Multiply(const Box &box, float f, Box &out) {
     float miny = box.mMin.y, maxy = box.mMax.y;
     float minz = box.mMin.z, maxz = box.mMax.z;
+    float cy = (maxy - miny) * 0.5f + miny;
     float minx = box.mMin.x, maxx = box.mMax.x;
-    float cy = miny + (maxy - miny) * 0.5f;
-    float cz = minz + (maxz - minz) * 0.5f;
-    float cx = minx + (maxx - minx) * 0.5f;
-    float py = (maxy - cy) * f;
-    float pz = (maxz - cz) * f;
-    float ny = (miny - cy) * f;
-    float nz = (minz - cz) * f;
-    float nx = (minx - cx) * f;
-    float px = (maxx - cx) * f;
-    out.mMax.z = cz + pz;
-    out.mMax.y = cy + py;
-    out.mMin.x = cx + nx;
-    out.mMax.x = cx + px;
-    out.mMin.y = cy + ny;
-    out.mMin.z = cz + nz;
+    float cz = (maxz - minz) * 0.5f + minz;
+    float cx = (maxx - minx) * 0.5f + minx;
+    out.mMax.z = cz + (maxz - cz) * f;
+    out.mMax.y = cy + (maxy - cy) * f;
+    out.mMin.x = cx + (minx - cx) * f;
+    out.mMax.x = cx + (maxx - cx) * f;
+    out.mMin.y = cy + (miny - cy) * f;
+    out.mMin.z = cz + (minz - cz) * f;
 }
 
 void Multiply(const Plane &p, const Transform &t, Plane &out) {

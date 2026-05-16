@@ -849,7 +849,7 @@ void TDStretch::overlapStereo(float *pOutput, const float *pInput) const
 
 
 /// Calculates overlapInMsec period length in samples.
-void TDStretch::calculateOverlapLength(int overlapInMsec)
+void TDStretch::calculateOverlapLength(uint overlapInMsec)
 {
     int newOvl;
 
