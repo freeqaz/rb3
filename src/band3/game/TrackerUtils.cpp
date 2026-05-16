@@ -42,7 +42,10 @@ float TrackerMultiplierMap::GetPercentOfMaxMultiplier(float f) const {
 
 const TrackerMultiplierMap::MultiplierEntry &TrackerMultiplierMap::FindEntry(float f
 ) const {
-    return unk4.find(f)->second;
+    std::map<float, MultiplierEntry>::const_iterator it = unk4.lower_bound(f);
+    if (it != unk4.begin())
+        --it;
+    return it->second;
 }
 
 TrackerSectionManager::TrackerSectionManager() {}

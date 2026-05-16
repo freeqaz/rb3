@@ -800,20 +800,20 @@ bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
     MILO_ASSERT(metadata, 0x4a2);
     if (!metadata->IsVersionOK()) {
         if (!b3)
-            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("setlist_content_restricted_screen", false));
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("setlist_content_restricted_screen", true));
         return false;
     }
     if (TheSongMgr.IsDemo(metadata->ID())) {
         if (!TheGameMode->Property(Symbol("demos_allowed"), true)->Int(nullptr)) {
             if (!b3)
-                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_mode_screen", false));
+                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_mode_screen", true));
             return false;
         }
-        if (!TheSessionMgr->IsLocal()) {
-            if (!b3)
-                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_online_screen", false));
-            return false;
-        }
+    }
+    if (TheSongMgr.IsDemo(metadata->ID()) && !TheSessionMgr->IsLocal()) {
+        if (!b3)
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_online_screen", true));
+        return false;
     }
     if (TheSongMgr.IsDemo(metadata->ID())) {
         bool demoNotAllowed = false;
@@ -823,18 +823,18 @@ bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
         }
         if (demoNotAllowed) {
             if (!b3)
-                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_setlist_screen", false));
+                TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_setlist_screen", true));
             return false;
         }
     }
     if (TheSongMgr.IsRestricted(metadata->ID())) {
         if (!b3)
-            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("content_restricted_screen", false));
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("content_restricted_screen", true));
         return false;
     }
     if (!TheSessionMgr->GetMachineMgr()->IsSongShared(songID)) {
         if (!b3)
-            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_selection_screen", false));
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_selection_screen", true));
         return false;
     }
     return true;
