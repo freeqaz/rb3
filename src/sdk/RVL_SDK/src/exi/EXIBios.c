@@ -404,11 +404,12 @@ BOOL EXIDetach(EXIChannel chan) {
 }
 
 BOOL EXISelect(EXIChannel chan, u32 dev, u32 freq) {
-    EXIControl* exi = &Ecb[chan];
+    EXIControl* exi;
     BOOL enabled;
     u32 cpr;
 
     enabled = OSDisableInterrupts();
+    exi = &Ecb[chan];
 
     if ((exi->state & 4) || chan != 2 && (dev == 0 && !(exi->state & 8) && !__EXIProbe(chan) || !(exi->state & 0x10) || (exi->dev != dev))) {
         OSRestoreInterrupts(enabled);
@@ -437,9 +438,9 @@ BOOL EXISelect(EXIChannel chan, u32 dev, u32 freq) {
 }
 
 BOOL EXIDeselect(EXIChannel chan) {
-    EXIControl* exi = &Ecb[chan];
     u32 cpr;
     BOOL enabled;
+    EXIControl* exi = &Ecb[chan];
     enabled = OSDisableInterrupts();
 
     if (!(exi->state & 4)) {
