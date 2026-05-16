@@ -409,13 +409,14 @@ void BandCamShot::SetPreFrame(float f1, float f2) {
             ResetNextShot();
     } else {
         float sub = f1 - dur;
-        while (sub < unk15c && mShotIter != mNextShots.begin()) {
+        float u15c;
+        while (sub < (u15c = unk15c) && mShotIter != mNextShots.begin()) {
             mShotIter.mNode = mShotIter.mNode->prev;
             unk160 = (*mShotIter)->GetTotalDuration();
             unk15c -= unk160;
             mCurShot = *mShotIter;
         }
-        f1 = sub - unk15c;
+        f1 = sub - u15c;
         while (f1 >= unk160) {
             if (IterateNextShot()) {
                 f1 -= unk160;
