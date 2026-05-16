@@ -2,6 +2,7 @@
 #include "rndobj/Mat.h"
 #include "rndwii/Rnd.h"
 #include "ui/UI.h"
+#include "utl/Std.h"
 #include "utl/Symbols.h"
 
 std::vector<Symbol> PatchLayer::sCategoryNames;
@@ -305,7 +306,16 @@ PatchDir::PatchDir() : unk1c0(0) {
         LoadStickerData();
 }
 
-PatchDir::~PatchDir() {}
+PatchDir::~PatchDir() {
+    for (std::map<Symbol, std::vector<PatchSticker *> >::iterator it = mStickerMap.begin();
+         it != mStickerMap.end();
+         ++it) {
+        DeleteAll(it->second);
+    }
+    PatchLayer::sStickerOwner = 0;
+    mLayers.clear();
+    delete mTex;
+}
 
 void PatchDir::CacheRenderedTex(RndTex *tex, bool b) {
     MILO_ASSERT(tex->Width() > 0 && tex->Height() > 0, 0x1EF);

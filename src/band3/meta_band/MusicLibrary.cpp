@@ -800,7 +800,7 @@ bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
     MILO_ASSERT(metadata, 0x4a2);
     if (!metadata->IsVersionOK()) {
         if (!b3)
-            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("setlist_content_restricted_screen", true));
+            TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_version_screen", true));
         return false;
     }
     if (TheSongMgr.IsDemo(metadata->ID())) {

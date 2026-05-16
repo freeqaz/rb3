@@ -11,10 +11,19 @@ void Profiler::Start() { mTimer.Start(); }
 extern const char *FormatTime(float);
 
 void Profiler::Stop() {
-    if (--mTimer.mRunning == 1) {
-        mTimer.SplitMs();
-    } else {
-        if (mCount == 1) {
+    mTimer.Stop();
+    float ms = mTimer.Ms();
+    if (ms < mMin) {
+        mMin = ms;
+    }
+    ms = mTimer.Ms();
+    if (mMax < ms) {
+        mMax = ms;
+    }
+    mSum += mTimer.Ms();
+    mCount++;
+    if (mCount == mCountMax) {
+        if (mCountMax == 1) {
             TheDebug << MakeString("%s: %s\n", mName, FormatTime(mMin));
         } else {
             TheDebug << MakeString(
@@ -22,7 +31,7 @@ void Profiler::Stop() {
                 mName,
                 FormatTime(mMin),
                 FormatTime(mMax),
-                FormatTime(mSum)
+                FormatTime(mSum / (float)mCount)
             );
         }
 
