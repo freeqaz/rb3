@@ -1102,22 +1102,22 @@ void RndBitmap::DxtColor(
     int dxt = mOrder & 0x38;
     MILO_ASSERT(dxt != 0, 0x7EE);
 
-    int tmpx = (x / 4) + (x < 0 && (x & 3U) != 0);
-    int tmpy = (y / 4) + (y < 0 && (y & 3U) != 0);
-    int i5 = x + tmpx * -4;
-    int i6 = y + tmpy * -4;
-    int i2 = tmpx + (mWidth / 4) * tmpy;
+    int xQuotient = x / 4;
+    int xRemainder = x - xQuotient * 4;
+    int yQuotient = y / 4;
+    int yRemainder = y - yQuotient * 4;
+    int i2 = xQuotient + (mWidth >> 2) * yQuotient;
 
     if (dxt == 8) {
-        DecodeDxtColor(mPixels + i2 * 8, i5, i6, true, r, g, b, a);
+        DecodeDxtColor(mPixels + i2 * 8, xRemainder, yRemainder, true, r, g, b, a);
     } else {
         u8 *newpixels = mPixels + i2 * 0x10;
         unsigned char throwaway;
-        DecodeDxtColor(newpixels + 8, i5, i6, false, r, g, b, throwaway);
+        DecodeDxtColor(newpixels + 8, xRemainder, yRemainder, false, r, g, b, throwaway);
         if (dxt == 0x10) {
-            DecodeDxt3Alpha(newpixels, i5, i6, a);
+            DecodeDxt3Alpha(newpixels, xRemainder, yRemainder, a);
         } else {
-            DecodeDxt5Alpha(newpixels, i5, i6, a);
+            DecodeDxt5Alpha(newpixels, xRemainder, yRemainder, a);
         }
     }
 }

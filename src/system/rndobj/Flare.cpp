@@ -120,8 +120,8 @@ Hmx::Rect &RndFlare::CalcRect(Vector2 &vref, float &fref) {
         width *= tiling;
         height *= tiling;
         int paddingX = TheHiResScreen.GetPaddingX();
-        tiling = TheHiResScreen.mTiling;
         width -= tiling * paddingX;
+        tiling = TheHiResScreen.mTiling;
         int paddingY = TheHiResScreen.GetPaddingY();
         height -= tiling * paddingY;
         Hmx::Rect screenRect = TheHiResScreen.ScreenRect();

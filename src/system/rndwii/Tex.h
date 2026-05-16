@@ -36,7 +36,7 @@ public:
     int unkB0; // 0xB0
     int unkB4; // 0xB4
     int unkB8; // 0xB8
-    u8 pad3[16]; // 0xBC
+    u8 pad3[12]; // 0xBC
     int unkC8; // 0xC8
     int unkCC; // 0xCC
 
