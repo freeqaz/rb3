@@ -169,16 +169,16 @@ _VECTOR_IMPL<_Tp, _Size, _Alloc>::operator=(const _VECTOR_IMPL<_Tp, _Size, _Allo
   if (&__x != this) {
     const size_type __xlen = __x.size();
     if (__xlen > capacity()) {
-      pointer __tmp = _M_allocate_and_copy(__xlen, __CONST_CAST(const_pointer, __x._M_start())+0, __CONST_CAST(const_pointer, __x._M_finish())+0);
+      pointer __tmp = _M_allocate_and_copy(__xlen, __CONST_CAST(const_pointer, __x._M_ptr._M_data)+0, __CONST_CAST(const_pointer, __x._M_finish())+0);
       _M_clear();
       this->_M_ptr._M_data = __tmp;
       _M_set_data_size(__xlen);
     } else if (size() >= __xlen) {
-      pointer __i = __copy_ptrs(__CONST_CAST(const_pointer, __x._M_start())+0, __CONST_CAST(const_pointer, __x._M_finish())+0, this->_M_start(), _TrivialAss());
+      pointer __i = __copy_ptrs(__CONST_CAST(const_pointer, __x._M_ptr._M_data)+0, __CONST_CAST(const_pointer, __x._M_finish())+0, this->_M_ptr._M_data, _TrivialAss());
       _STLP_STD::_Destroy_Range(__i, this->_M_finish());
     } else {
-      __copy_ptrs(__CONST_CAST(const_pointer, __x._M_start()), __CONST_CAST(const_pointer, __x._M_start()) + size(), this->_M_start(), _TrivialAss());
-      __uninitialized_copy(__CONST_CAST(const_pointer, __x._M_start()) + size(),
+      __copy_ptrs(__CONST_CAST(const_pointer, __x._M_ptr._M_data), __CONST_CAST(const_pointer, __x._M_ptr._M_data) + size(), this->_M_ptr._M_data, _TrivialAss());
+      __uninitialized_copy(__CONST_CAST(const_pointer, __x._M_ptr._M_data) + size(),
                            __CONST_CAST(const_pointer, __x._M_finish())+0, this->_M_finish(), _TrivialUCpy());
     }
     _M_set_finish_idx(__xlen);
