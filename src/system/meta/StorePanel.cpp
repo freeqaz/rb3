@@ -44,6 +44,20 @@ void StorePanel::Load() {
     unk89 = false;
 }
 
+void StorePanel::ExitError(StoreError e) {
+    if (e == kStoreErrorSuccess) {
+        FormatString fmt("StorePanel: ExitError called with success!\n");
+        TheDebug.Notify(fmt.Str());
+        e = (StoreError)100;
+    }
+    mLoadOK = false;
+    StoreError finalErr = e;
+    if (TheStoreMetadata.mErrorMsg != 0) {
+        finalErr = (StoreError)TheStoreMetadata.mErrorMsg;
+    }
+    ExitStore(finalErr);
+}
+
 void StorePanel::HandleNetCacheMgrFailure() {
     StoreError err = kStoreErrorSuccess;
     NetCacheMgrFailType failTy = TheNetCacheMgr->GetFailType();

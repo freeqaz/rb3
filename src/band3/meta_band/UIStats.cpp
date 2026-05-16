@@ -43,6 +43,18 @@ void UIStats::EventLog(unsigned int pad, unsigned int but, unsigned int state) {
     MILO_ASSERT(but < 32, 0x139);
     MILO_ASSERT(pad < 8, 0x13B);
     MILO_ASSERT(state < 2, 0x13D);
+    int now = SystemMs();
+    unsigned int elapsed = (unsigned int)(now - unkac) >> 4;
+    if (elapsed > 0x7FFFFF) elapsed = 0x7FFFFF;
+    unsigned int packed = (elapsed | ((but << 23) & 0x0F800000)) | (((pad << 28) & 0x70000000) | (state << 31));
+    *(unsigned int *)unkb4 = (unsigned short)packed;
+    int count = unkb8 + 1;
+    unkb8 = count;
+    unkb4 = (char *)unkb4 + 4;
+    if ((unkb8 & 0x3FFF) == 0) {
+        unkb4 = unkb0;
+    }
+    unkac = now;
 }
 
 DataNode UIStats::OnMsg(const ButtonDownMsg &msg) {
