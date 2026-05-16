@@ -184,7 +184,7 @@ static void SetRun(OSThread* thread) {
     RunQueueHint = TRUE;
 }
 
-static void UnsetRun(OSThread* thread) {
+static __declspec(noinline) void UnsetRun(OSThread* thread) {
     OSThreadQueue* queue;
     OSThread* next;
     OSThread* prev;
@@ -766,7 +766,6 @@ s32 OSSuspendThread(OSThread* thread) {
     s32 suspend;
     OSThread* next;
     OSThread* prev;
-    OSThread* tail;
 
     enabled = OSDisableInterrupts();
     suspend = thread->suspend++;
@@ -797,17 +796,18 @@ s32 OSSuspendThread(OSThread* thread) {
 
             thread->priority = OS_PRIORITY_MAX + 1;
 
-            tail = thread->queue->tail;
-            if (tail == NULL) {
-                thread->queue->head = thread;
-            } else {
-                tail->link.next = thread;
-            }
+            {
+                OSThread* tail = thread->queue->tail;
+                if (tail == NULL) {
+                    thread->queue->head = thread;
+                } else {
+                    tail->link.next = thread;
+                }
 
-            thread->link.prev = tail;
-            thread->link.next = NULL;
-            thread->queue->tail = thread;
-            tail = thread;
+                thread->link.prev = tail;
+                thread->link.next = NULL;
+                thread->queue->tail = thread;
+            }
 
             if (thread->mutex != NULL) {
                 UpdatePriority(thread->mutex->thread);
