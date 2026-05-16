@@ -69,29 +69,42 @@ bool Box::Clamp(Vector3 &vec) {
 void Multiply(const Box &box, float f, Box &out) {
     float miny = box.mMin.y, maxy = box.mMax.y;
     float minz = box.mMin.z, maxz = box.mMax.z;
-    float cy = (maxy - miny) * 0.5f + miny;
-    float minx = box.mMin.x, maxx = box.mMax.x;
-    float cz = (maxz - minz) * 0.5f + minz;
-    float cx = (maxx - minx) * 0.5f + minx;
-    out.mMax.z = cz + (maxz - cz) * f;
-    out.mMax.y = cy + (maxy - cy) * f;
-    out.mMin.x = cx + (minx - cx) * f;
-    out.mMax.x = cx + (maxx - cx) * f;
-    out.mMin.y = cy + (miny - cy) * f;
-    out.mMin.z = cz + (minz - cz) * f;
+    float cy = miny + (maxy - miny) * 0.5f;
+    float minx = box.mMin.x;
+    float maxx = box.mMax.x;
+    float cz = minz + (maxz - minz) * 0.5f;
+    float ny = miny - cy;
+    float cx = minx + (maxx - minx) * 0.5f;
+    float pz = maxz - cz;
+    float py = maxy - cy;
+    float nz = minz - cz;
+    float nx = minx - cx;
+    float pyf = py * f;
+    float px = maxx - cx;
+    float pzf = pz * f;
+    float nxf = nx * f;
+    float pxf = px * f;
+    out.mMax.z = cz + pzf;
+    out.mMax.y = cy + pyf;
+    out.mMin.x = cx + nxf;
+    float nyf = ny * f;
+    float nzf = nz * f;
+    out.mMax.x = cx + pxf;
+    out.mMin.y = cy + nyf;
+    out.mMin.z = cz + nzf;
 }
 
 void Multiply(const Plane &p, const Transform &t, Plane &out) {
     Hmx::Matrix3 invM;
     FastInvert(t.m, invM);
     float b = p.b;
-    float negD = -p.d;
+    float d = p.d;
     float a = p.a;
     float c = p.c;
     float nx = invM.x.x * a + invM.x.y * b + invM.x.z * c;
     float ny = invM.y.x * a + invM.y.y * b + invM.y.z * c;
     float nz = invM.z.x * a + invM.z.y * b + invM.z.z * c;
-    float scalar = negD / (a * a + b * b + c * c);
+    float scalar = -d / (a * a + b * b + c * c);
     Vector3 on(a * scalar, b * scalar, c * scalar);
     Vector3 pOut;
     Multiply(on, t, pOut);
