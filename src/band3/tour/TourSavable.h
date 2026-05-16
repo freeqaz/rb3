@@ -13,7 +13,6 @@ public:
     virtual int SecBetweenUploads() const = 0;
     virtual void SetDirty(bool, int);
     virtual void UploadComplete();
-    virtual void UploadSecComplete();
 
     bool IsDirtyUpload() const;
     bool IsNameUnchecked() const;

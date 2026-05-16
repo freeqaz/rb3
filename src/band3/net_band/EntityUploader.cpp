@@ -299,8 +299,8 @@ void EntityUploader::RockCentralOpComplete(bool b1, int i2, int i3) {
                 if (i2 != 1 && i2 != 11) {
                     if (mUploadOps[i]->mOpType == 2) {
                         TourSavable *obj = mUploadOps[i]->mSavableObject;
-                        obj->UploadComplete();
-                        obj->UploadSecComplete();
+                        if (obj)
+                            obj->UploadComplete();
                     }
                     if (mUploadOps[i]->mOpType == 4) {
                         LocalSavedSetlist *setlist =

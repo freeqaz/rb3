@@ -120,7 +120,7 @@ int SampleData::SizeAs(Format fmt) const {
         return mNumSamples / 5;
     }
     case kNintendoADPCM: {
-        return ((mNumSamples * 2) / 3.4f) + 0x60;
+        return (int)((float)(mNumSamples * 2) / 3.4f) + 0x60;
     }
     default: {
         MILO_ASSERT(0, 0x136);
