@@ -225,7 +225,7 @@ bool AsyncFile::WriteAsync(const void *v, int i) {
         memcpy(mBuffer + mOffset, v, remaining);
         mTell += remaining;
         mOffset += remaining;
-        if (mSize < mTell)
+        if (mTell > mSize)
             mSize = mTell;
     }
     return i != 0;
