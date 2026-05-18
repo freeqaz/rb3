@@ -1,5 +1,6 @@
 #include "network/Core/SystemComponentGroup.h"
 #include "Core/SystemComponent.h"
+#include <algorithm>
 
 namespace Quazal {
     SystemComponentGroup::SystemComponentGroup(const String &str)
@@ -8,18 +9,22 @@ namespace Quazal {
     SystemComponentGroup::~SystemComponentGroup() {
         while (!m_lstComponents.empty()) {
             SystemComponent *comp = m_lstComponents.front();
-            m_lstComponents.remove(comp);
+            qList<SystemComponent*>::iterator it = std::find(m_lstComponents.begin(), m_lstComponents.end(), comp);
+            if (it != m_lstComponents.end()) {
+                m_lstComponents.erase(it);
+            }
             comp->ReleaseRef();
         }
     }
 
-    void SystemComponentGroup::UnregisterComponent(SystemComponent *comp) {
+    bool SystemComponentGroup::UnregisterComponent(SystemComponent *comp) {
         qList<SystemComponent*>::iterator it = m_lstComponents.begin();
-        qList<SystemComponent*>::iterator end_it = m_lstComponents.end();
-        while (it != end_it && *it != comp) ++it;
-        if (it != end_it) {
+        while (it != m_lstComponents.end() && *it != comp) ++it;
+        if (it != m_lstComponents.end()) {
             m_lstComponents.erase(it);
             comp->ReleaseRef();
+            return true;
         }
+        return false;
     }
 }

@@ -21,8 +21,8 @@ namespace Quazal {
         virtual _State TestState(); // 0x48
         virtual void DoWork(); // 0x4C
 
-        void RegisterComponent(SystemComponent *);
-        void UnregisterComponent(SystemComponent *);
+        bool RegisterComponent(SystemComponent *);
+        bool UnregisterComponent(SystemComponent *);
 
         qList<SystemComponent *> m_lstComponents; // 0x18
     };
