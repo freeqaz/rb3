@@ -130,7 +130,8 @@ BOOL OSTryLockMutex(OSMutex* mutex) {
 }
 
 //unused
-void OSInitCond(OSCond*){
+void OSInitCond(OSCond* cond) {
+    OSInitThreadQueue(&cond->queue);
 }
 
 //unused
@@ -138,7 +139,8 @@ void OSWaitCond(OSCond* cond, OSMutex* mutex){
 }
 
 //unused
-void OSSignalCond(OSCond* cond){
+void OSSignalCond(OSCond* cond) {
+    OSWakeupThread(&cond->queue);
 }
 
 //unused

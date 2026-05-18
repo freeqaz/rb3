@@ -26,7 +26,31 @@ WiiTex::~WiiTex() { DeleteSurface(); }
 
 void WiiTex::PresyncBitmap() { DeleteSurface(); }
 
-void WiiTex::DeleteSurface() {}
+void WiiTex::DeleteSurface() {
+    if (unkB0 & 0x2) {
+        unkB0 &= ~0x2;
+        WiiRnd::SyncFree(mImageData);
+        gRenderTextureSet.erase(this);
+    }
+    if (unkB0 & 0x4) {
+        unkB0 &= ~0x4;
+        WiiRnd::SyncFree((void *)unkC8);
+    }
+    if (unkB0 & 0x8) {
+        unkB0 &= ~0x8;
+        WiiRnd::SyncFree((void *)unkAC);
+    }
+    if (unkB0 & 0x10) {
+        unkB0 &= ~0x10;
+        WiiRnd::SyncFree((void *)unkB4);
+        WiiRnd::SyncFree((void *)unkB8);
+    }
+    mImageData = NULL;
+    unkC8 = 0;
+    unkAC = 0;
+    unkB8 = 0;
+    unkB4 = 0;
+}
 
 u32 OrderFromFormat(unsigned int ui) {
     switch (ui) {

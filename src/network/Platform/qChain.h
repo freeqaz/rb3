@@ -23,7 +23,27 @@ namespace Quazal {
 
         void clear();
         iterator erase(iterator);
-        iterator erase(iterator, iterator);
+        iterator erase(iterator first, iterator last) {
+            if (last.mLink != first.mLink) {
+                while (first.mLink != last.mLink) {
+                    T prev = *(T*)((char*)first.mLink + sizeof(T*));
+                    T next = *(T*)first.mLink;
+                    if (prev)
+                        *(T*)prev = next;
+                    *(T*)((char*)first.mLink + sizeof(T*)) = (T)0;
+                    if (next)
+                        *(T*)((char*)next + sizeof(T*)) = prev;
+                    *(T*)first.mLink = (T)0;
+                    if (mItFirst.mLink == first.mLink)
+                        mItFirst.mLink = next;
+                    if (mItLast.mLink == first.mLink)
+                        mItLast.mLink = prev;
+                    mNBLinks--;
+                    first.mLink = next;
+                }
+            }
+            return first;
+        }
         void push_back(const T &item) {
             if (mItFirst.mLink != mItEnd.mLink) {
                 *(T*)mItLast.mLink = item;

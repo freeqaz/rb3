@@ -6,8 +6,12 @@ namespace Quazal {
     RTT::~RTT() {}
 
     void RTT::Adjust(uint i) {
-        int r8 = i - unk_0x0 / 8;
+        uint oldSmoothed = unk_0x0;
+        uint oldVariance = unk_0x4;
         unk_0x8 = i;
-        unk_0x0 += r8;
+        int delta = (int)i - (int)(oldSmoothed >> 3);
+        int sign = delta >> 31;
+        unk_0x0 = oldSmoothed + delta;
+        unk_0x4 = oldVariance + ((((sign ^ delta) - sign)) - (int)(oldVariance >> 2));
     }
 }

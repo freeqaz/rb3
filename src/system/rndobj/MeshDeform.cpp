@@ -67,7 +67,10 @@ void RndMeshDeform::SetMesh(RndMesh *mesh) {
     mVerts.Clear();
 }
 
-BinStream &operator>>(BinStream &bs, RndMeshDeform::BoneDesc &) { return bs; }
+void operator>>(BinStream &bs, RndMeshDeform::BoneDesc &desc) {
+    bs >> desc.mBone;
+    bs >> desc.unk14 >> desc.unk54;
+}
 
 SAVE_OBJ(RndMeshDeform, 532)
 

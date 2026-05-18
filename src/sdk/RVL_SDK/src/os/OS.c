@@ -694,60 +694,47 @@ static u32 __OSExceptionLocations[OS_EXC_MAX] = {
     0x0900, 0x0C00, 0x0D00, 0x0F00, 0x1300, 0x1400, 0x1700};
 
 static void OSExceptionInit(void) {
-    u32* dst;
-    u8 i;
     u32* pInst;
     u32 inst;
     void* vectorCode;
     u32 vectorSize;
-    int j;
+    u32* dst;
+    u32 jumpSize;
     u32* code;
+    u8 i;
 
-    // Instruction that will be modified
     pInst = (u32*)__OSEVSetNumber;
     inst = *pInst;
 
-    // OS exception vector
-    vectorCode = __OSEVStart;
+    vectorCode = (void*)__OSEVStart;
     vectorSize = (u32)__OSEVEnd - (u32)__OSEVStart;
 
     dst = (u32*)OSPhysicalToCached(OS_PHYS_DB_INTEGRATOR_HOOK);
-    // Code is empty if DB integrator has not yet been installed
     if (*dst == 0) {
-        DBPrintf("Installing OSDBIntegrator\n");
         memcpy(dst, __OSDBINTSTART, (u32)__OSDBINTEND - (u32)__OSDBINTSTART);
         DCFlushRangeNoSync(dst, (u32)__OSDBINTEND - (u32)__OSDBINTSTART);
         __sync();
         ICInvalidateRange(dst, (u32)__OSDBINTEND - (u32)__OSDBINTSTART);
     }
 
+    jumpSize = (u32)__OSDBJUMPEND - (u32)__OSDBJUMPSTART;
+
     for (i = 0; i < OS_EXC_MAX; i++) {
-        if (BI2DebugFlag != NULL && *BI2DebugFlag >= 2 &&
-            __DBIsExceptionMarked(i)) {
-            DBPrintf(">>> OSINIT: exception %d commandeered by TRK\n", i);
-        } else {
-            // Modify li instruction with exception ID
-            *pInst = inst | i;
-
-            if (__DBIsExceptionMarked(i)) {
-                DBPrintf(">>> OSINIT: exception %d vectored to debugger\n", i);
-                memcpy(__DBVECTOR, __OSDBJUMPSTART,
-                       (u32)__OSDBJUMPEND - (u32)__OSDBJUMPSTART);
-            } else {
-                code = (u32*)__DBVECTOR;
-                for (j = 0; j < (u32)__OSDBJUMPEND - (u32)__OSDBJUMPSTART;
-                     j += sizeof(u32), code++) {
-                    // Write nop
-                    *code = 0x60000000;
-                }
-            }
-
-            dst = OSPhysicalToCached(__OSExceptionLocations[i]);
-            memcpy(dst, vectorCode, vectorSize);
-            DCFlushRangeNoSync(dst, vectorSize);
-            __sync();
-            ICInvalidateRange(dst, vectorSize);
+        if (BI2DebugFlag != NULL && *BI2DebugFlag >= 2) {
+            continue;
         }
+
+        *pInst = inst | i;
+
+        for (code = (u32*)__DBVECTOR; (u32)code < (u32)__DBVECTOR + jumpSize; code++) {
+            *code = 0x60000000;
+        }
+
+        dst = (u32*)OSPhysicalToCached(__OSExceptionLocations[i]);
+        memcpy(dst, vectorCode, vectorSize);
+        DCFlushRangeNoSync(dst, vectorSize);
+        __sync();
+        ICInvalidateRange(dst, vectorSize);
     }
 
     OSExceptionTable =
@@ -756,9 +743,7 @@ static void OSExceptionInit(void) {
         __OSSetExceptionHandler(i, OSDefaultExceptionHandler);
     }
 
-    // Restore original instruction
     *pInst = inst;
-    DBPrintf("Exceptions initialized...\n");
 }
 
 static asm void __OSDBIntegrator(void) {

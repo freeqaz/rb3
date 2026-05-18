@@ -13,14 +13,20 @@ namespace {
     const char *dataID = "data";
 }
 
+#pragma push
+#pragma dont_inline on
+DECOMP_FORCEBLOCK(Wav, (void), uint x = 2; uint& ui = x; EndianSwapEq(ui);)
+DECOMP_FORCEBLOCK(Wav, (void), ushort x = 2; ushort& us = x; EndianSwapEq(us);)
+DECOMP_FORCEBLOCK(Wav, (void), short x = 2; short& ui = x; EndianSwapEq(ui);)
+#pragma pop
+
 void WriteWav(const char *fname, int sampleRate, const void *samples, int numBytes) {
     int buf[8];
     short fmtChunk[8];
-    short sampleBuf;
     int fd = FileOpen(fname, 0xA04);
     MILO_ASSERT(fd >= 0, 87);
-    memcpy(&buf[6], ::riffID, 4);
     *(unsigned int *)&buf[7] = EndianSwap((unsigned int)(numBytes + 0x24));
+    memcpy(&buf[6], ::riffID, 4);
     FileWrite(fd, &buf[6], 8);
     memcpy(&buf[1], ::waveID, 4);
     FileWrite(fd, &buf[1], 4);
@@ -40,23 +46,16 @@ void WriteWav(const char *fname, int sampleRate, const void *samples, int numByt
     EndianSwapEq((unsigned short &)fmtChunk[6]);
     EndianSwapEq((unsigned short &)fmtChunk[7]);
     FileWrite(fd, fmtChunk, 0x10);
-    memcpy(&buf[2], ::dataID, 4);
     *(unsigned int *)&buf[3] = EndianSwap((unsigned int)numBytes);
+    memcpy(&buf[2], ::dataID, 4);
     FileWrite(fd, &buf[2], 8);
     const short *src = (const short *)samples;
     int limit = numBytes / 2;
     for (int i = 0; i < limit; i++) {
         short s = *src;
-        sampleBuf = ((unsigned short)s << 8) | ((unsigned short)s >> 8);
-        FileWrite(fd, &sampleBuf, 2);
+        short swapped = ((unsigned short)s << 8) | ((unsigned short)s >> 8);
+        FileWrite(fd, &swapped, 2);
         src++;
     }
     FileClose(fd);
 }
-
-#pragma push
-#pragma dont_inline on
-DECOMP_FORCEBLOCK(Wav, (void), uint x = 2; uint& ui = x; EndianSwapEq(ui);)
-DECOMP_FORCEBLOCK(Wav, (void), ushort x = 2; ushort& us = x; EndianSwapEq(us);)
-DECOMP_FORCEBLOCK(Wav, (void), short x = 2; short& ui = x; EndianSwapEq(ui);)
-#pragma pop

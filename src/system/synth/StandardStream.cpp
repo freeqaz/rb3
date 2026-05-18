@@ -101,7 +101,47 @@ void StandardStream::PollStream() {
         std::for_each(
             mChannels.begin(), mChannels.end(), std::mem_fun(&StreamReceiver::Poll)
         );
-        MILO_WARN("bad state logic.");
+        switch (mState) {
+        case kInit:
+        case kReady:
+        case kFinished:
+            break;
+        case kBuffering:
+            if (StuffChannels()) {
+                mState = kReady;
+            }
+            break;
+        case kPlaying:
+        case kSuspended:
+        case kStopped:
+            StuffChannels();
+            if (mChannels[0]->mDoneBufferCounter > mChannels[0]->mNumBuffers + 2) {
+                mState = kFinished;
+            }
+            break;
+        default:
+            MILO_FAIL("bad state logic.");
+            break;
+        }
+        if (mState != kInit && mJumpFromSamples != 0) {
+            if (mJumpFromSamples < 0) {
+                if (mRdr->Done()) {
+                    DoJump();
+                }
+            } else if (mJumpFromSamples > 0) {
+                if (mJumpFromSamples < mJumpToSamples) {
+                    if (mCurrentSamp >= mJumpFromSamples && mCurrentSamp < mJumpToSamples) {
+                        DoJump();
+                    }
+                } else if (mJumpFromSamples > mJumpToSamples) {
+                    if (mCurrentSamp >= mJumpFromSamples) {
+                        DoJump();
+                    }
+                }
+            }
+        }
+        UpdateVolumes();
+        UpdateTime();
     }
 }
 
