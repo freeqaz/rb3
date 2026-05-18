@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "obj/Object.h"
+#include "os/DateTime.h"
+#include "utl/Str.h"
 
 enum OpType {
     kOpNone = 0,
@@ -35,7 +37,12 @@ enum CacheResourceResult {
     kCacheSuccessful = -1
 };
 
-struct CacheDirEntry {};
+struct CacheDirEntry {
+    String mName;        // 0x00
+    DateTime mDateTime;  // 0x0C
+    // 2 bytes padding
+    unsigned int mSize;  // 0x14
+};
 
 class CacheID {
 public:

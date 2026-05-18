@@ -289,7 +289,41 @@ void CacheWii::ThreadDone(int param_1) {
     mOpCur = kOpNone;
 }
 
-int CacheWii::ThreadGetDir(String) {}
+struct VFFileSearchData {
+    unsigned char mInternal[0x224];      // 0x000
+    unsigned short mFileTime;            // 0x224
+    unsigned short mFileDate;            // 0x226
+    unsigned int mFileSize;              // 0x228
+    unsigned char mAttributes;           // 0x22C
+    unsigned char mPad[0x23A - 0x22D];   // 0x22D
+    char mFileName[128];                 // 0x23A
+    unsigned char mTrailing[0x180];      // 0x2BA
+};
+
+int CacheWii::ThreadGetDir(String searchStr) {
+    TheDebug << MakeString("VFFileSearch: %s\n", searchStr.c_str());
+    CacheDirEntry entry;
+    VFFileSearchData dta;
+    long result;
+    for (result = VFFileSearchFirst(&dta, searchStr.c_str(), 0x7F);
+         result == 0;
+         result = VFFileSearchNext(&dta)) {
+        String path = searchStr + "/" + dta.mFileName;
+        if (dta.mAttributes & 0x10) {
+            TheDebug << MakeString("VFFileSearch: recurse into %s\n", path.c_str());
+            ThreadGetDir(path);
+        } else {
+            entry.mSize = dta.mFileSize;
+            entry.mName = path;
+            DateTime tmp(VFiConvertFileTimeToSeconds(dta.mFileDate, dta.mFileTime));
+            entry.mDateTime = tmp;
+            TheDebug << MakeString("VFFileSearch: Adding file %s\n", path.c_str());
+            mCacheDirList->push_back(entry);
+        }
+    }
+    TheDebug << MakeString("VFFileSearch: %d\n", result);
+    return 0;
+}
 
 int CacheWii::ThreadGetFileSize() {
     String filePath(m0x64);

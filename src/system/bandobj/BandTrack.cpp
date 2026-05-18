@@ -261,6 +261,45 @@ void BandTrack::SetupCrowdMeter() {
         mUnisonIcon->SetIcon(icon);
 }
 
+void BandTrack::SetInstrument(TrackInstrument inst) {
+    mTrackInstrument = inst;
+    switch (inst) {
+    case kInstGuitar:
+        mInstrument = guitar;
+        break;
+    case kInstBass:
+        mInstrument = bass;
+        break;
+    case kInstDrum:
+        mInstrument = drum;
+        break;
+    case kInstVocals:
+        mInstrument = vocals;
+        break;
+    case kInstKeys:
+        mInstrument = keys;
+        break;
+    case kInstRealGuitar:
+        mInstrument = real_guitar;
+        break;
+    case kInstRealBass:
+        mInstrument = real_bass;
+        break;
+    case kInstRealKeys:
+        mInstrument = real_keys;
+        break;
+    case kInstNone:
+        mInstrument = none;
+        break;
+    case kInstPending:
+        mInstrument = pending;
+        break;
+    default:
+        MILO_NOTIFY_ONCE(MakeString("unrecognized instrument type \"%d\"", inst));
+        break;
+    }
+}
+
 void BandTrack::SyncInstrument() {
     if (mInstrument == guitar) {
         mTrackInstrument = kInstGuitar;

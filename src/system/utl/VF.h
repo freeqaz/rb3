@@ -37,6 +37,10 @@ extern int VFChangeDir(const char *);
 extern void *VFCreateFile(const char *, int);
 extern const char *VFGetApiErrorString();
 
+extern int VFFileSearchFirst(void *dta, const char *pattern, int maxNameLen);
+extern int VFFileSearchNext(void *dta);
+extern unsigned long long VFiConvertFileTimeToSeconds(unsigned short date, unsigned short time);
+
 #ifdef __cplusplus
 }
 #endif

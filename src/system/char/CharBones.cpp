@@ -982,8 +982,8 @@ void CharBones::RotateTo(CharBones &dst, float f) const {
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
-                short sz = sdata[2];
-                short sy = sdata[1];
+                float fsz = (float)sdata[2];
+                float fsy = (float)sdata[1];
                 while (db->name != src->name) {
                     db++;
                     if (db >= db_end) {
@@ -994,8 +994,8 @@ void CharBones::RotateTo(CharBones &dst, float f) const {
                 }
                 src++;
                 ddata->x += (float)sdata[0] * 0.039674062f * f;
-                ddata->y += (float)sy * 0.039674062f * f;
-                ddata->z += (float)sz * 0.039674062f * f;
+                ddata->y += fsy * 0.039674062f * f;
+                ddata->z += fsz * 0.039674062f * f;
                 if (src == src_end)
                     goto rotateto_quat;
                 db++;

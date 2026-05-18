@@ -442,7 +442,8 @@ bool SongSortMgr::GetRandomSongs(
     songPools[4] = &bucket4;
     if (excludedSyms) {
         FOREACH (it, *excludedSyms) {
-            int id = TheSongMgr.GetSongIDFromShortName(*it, true);
+            Symbol s = *it;
+            int id = TheSongMgr.GetSongIDFromShortName(s, true);
             excludeList.push_back(id);
         }
     }
@@ -506,7 +507,8 @@ bool SongSortMgr::GetRandomSongs(
         int idx = RandomInt(0, chosen->size());
         std::vector<int>::iterator it = chosen->begin() + idx;
         if (randomSongs) {
-            Symbol shortName = TheSongMgr.GetShortNameFromSongID(*it, true);
+            Symbol shortName;
+            shortName = TheSongMgr.GetShortNameFromSongID(*it, true);
             randomSongs->push_back(shortName);
         }
         if (randomSongIDs) {
