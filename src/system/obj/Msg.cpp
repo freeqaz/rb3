@@ -169,16 +169,16 @@ void MsgSource::Export(DataArray *da, bool b) {
             DataNode node(da->Node(1));
             for (std::list<EventSinkElem>::iterator elemIt = it->sinks.begin();
                  elemIt != it->sinks.end();
-                 ++elemIt) {
+                 elemIt) {
                 if (elemIt->obj) {
                     da->Node(1) = DataNode(elemIt->handler);
                     elemIt->Export(da);
-                    elemIt++;
+                    ++elemIt;
                 } else {
                     if (mExporting == 1) {
                         elemIt = it->sinks.erase(elemIt);
                     } else
-                        elemIt++;
+                        ++elemIt;
                 }
             }
             da->Node(1) = node;
