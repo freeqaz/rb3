@@ -132,21 +132,22 @@ Symbol TourPerformerLocal::ChooseRandomQuestForGroupAndTier(Symbol group, int ti
     return Symbol("");
 }
 
-void TourPerformerLocal::InqSongsInFilterData(
+bool TourPerformerLocal::InqSongsInFilterData(
     Symbol i_symFilter,
     std::map<Symbol, int> &o_rSongsInFilter,
     std::map<Symbol, int> &o_rSongsWithArtist
 ) {
     MILO_ASSERT(o_rSongsInFilter.empty(), 0xdf);
-    std::vector<int> validSongIDs;
-    std::vector<int> dummy;
     GigFilter *pSecondaryFilter = nullptr;
     if (i_symFilter != gNullStr) {
         pSecondaryFilter = TheQuestMgr.GetQuestFilter(i_symFilter);
         MILO_ASSERT(pSecondaryFilter, 0xe5);
     }
-    TheSongMgr.GetValidSongs(validSongIDs, *TheBandUserMgr, dummy, -1.0f, -1.0f, true, true);
-    for (std::vector<int>::iterator it = validSongIDs.begin(); it != validSongIDs.end(); ++it) {
+    std::vector<int> cEmptySongs;
+    std::vector<int> cSongs;
+    TheSongMgr.GetValidSongs(cSongs, *TheBandUserMgr, cEmptySongs, -1.0f, -1.0f, true, true);
+    int iHighArtistCount = 0;
+    for (std::vector<int>::iterator it = cSongs.begin(); it != cSongs.end(); ++it) {
         int songID = *it;
         if (pSecondaryFilter) {
             Symbol filteredPartSym = pSecondaryFilter->GetFilteredPartSym();
@@ -161,7 +162,7 @@ void TourPerformerLocal::InqSongsInFilterData(
             Symbol filterSym = fit->first;
             if (strncmp("tour", filterSym.Str(), 4) == 0) {
                 FormatString fmt(MakeString("filter_artist_%s", filterSym.Str()));
-                TheDebug << fmt.Str();
+                TheDebug.Notify(fmt.Str());
                 continue;
             }
             GigFilter *pFilter = TheQuestMgr.GetQuestFilter(filterSym);
@@ -172,9 +173,14 @@ void TourPerformerLocal::InqSongsInFilterData(
             if (!TheSongSortMgr->DoesSongMatchFilter(songID, &filt, filteredPartSym)) continue;
             BandSongMetadata *pSongData = static_cast<BandSongMetadata *>(TheSongMgr.Data(songID));
             o_rSongsInFilter[filterSym]++;
-            o_rSongsWithArtist[Symbol(pSongData->Artist())]++;
+            int newArtistCount = ++o_rSongsWithArtist[Symbol(pSongData->Artist())];
+            if (newArtistCount > iHighArtistCount) {
+                iHighArtistCount = newArtistCount;
+            }
         }
     }
+    o_rSongsInFilter[filter_dynamic_artist] = iHighArtistCount;
+    return true;
 }
 
 Symbol TourPerformerLocal::GetRandomArtistFromMap(

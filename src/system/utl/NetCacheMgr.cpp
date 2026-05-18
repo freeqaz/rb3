@@ -2,6 +2,7 @@
 #include "obj/Data.h"
 #include "obj/Dir.h"
 #include "obj/Object.h"
+#include "os/CommerceMgr_Wii.h"
 #include "os/Debug.h"
 #include "os/FileCache.h"
 #include "os/System.h"
@@ -378,17 +379,36 @@ NetLoaderRef *NetCacheMgr::AddLoaderRef(const char *name, RefType type, NetLoade
 
 void NetCacheMgr::PollLoaders() {
     bool firstDownload = true;
+    NetLoaderRef *pDownloading = NULL;
+    NetLoaderRef *pFirstToDownload = NULL;
+    bool commerceBusy = (TheWiiCommerceMgr.mCommerceAsyncOpId != -1);
     std::list<NetLoaderRef>::iterator it = mNetLoaderRefs.begin();
     while (it != mNetLoaderRefs.end()) {
-        MILO_ASSERT(it->IsValid(), 0xE9);
-        if (!it->NeedsToDownload() || it->IsLoadedOrFailed()) {
-            it->Poll();
-        } else if (firstDownload) {
-            it->Poll();
+        NetLoaderRef *ref = &(*it);
+        MILO_ASSERT(ref->IsValid(), 0xE9);
+        if (ref->IsDownloading()) {
+            pDownloading = ref;
             firstDownload = false;
+        } else if (ref->NeedsToDownload()) {
+            if (firstDownload) {
+                pFirstToDownload = ref;
+                firstDownload = false;
+            }
+        } else {
+            ref->Poll();
         }
-        if (it->mRefCount < 1 && it->IsSafeToDelete()) {
-            it->DeleteLoader();
+        ++it;
+    }
+    if (pDownloading) {
+        pDownloading->Poll();
+    } else if (pFirstToDownload && !commerceBusy) {
+        pFirstToDownload->Poll();
+    }
+    it = mNetLoaderRefs.begin();
+    while (it != mNetLoaderRefs.end()) {
+        NetLoaderRef *ref = &(*it);
+        if (ref->mRefCount < 1 && ref->IsSafeToDelete()) {
+            ref->DeleteLoader();
             it = mNetLoaderRefs.erase(it);
         } else {
             ++it;
@@ -398,11 +418,6 @@ void NetCacheMgr::PollLoaders() {
 
 void NetLoaderRef::AddRef() { mRefCount++; }
 void NetLoaderRef::ReleaseRef() { mRefCount--; }
-
-bool NetLoaderRef::IsValid() const {
-    // mCacheLoader XOR mNetLoader
-    return (!mCacheLoader || !mNetLoader) && (mCacheLoader || mNetLoader);
-}
 
 void NetLoaderRef::Poll() {
     bool valid = (!mCacheLoader || !mNetLoader) && (mCacheLoader || mNetLoader);

@@ -77,25 +77,28 @@ void BoxMapLighting::ApplyQueuedLights(Hmx::Color *color, const Vector3 *v3) con
 END_UNPOOL_DATA
 
 bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
-    if (spot.unk44 > 0) {
-        float f1 = spot.unk48;
-        if (spot.unk4c >= f1
+    float beamLen = spot.unk44;
+    if (beamLen > 0) {
+        float topR = spot.unk48;
+        float botR = spot.unk4c;
+        if (botR >= topR
             && (spot.mColor.red > 0.003921569f || spot.mColor.green > 0.003921569f
                 || spot.mColor.blue > 0.003921569f)) {
-            f1 = (f1 * spot.unk44) / (spot.unk4c - f1);
-            Vector3 v58;
-            Scale(spot.unk0, f1, v58);
-            Vector3 v4c;
-            Subtract(spot.unk38, v58, v4c);
-            float f2 = spot.unk4c / (spot.unk44 + f1);
+            float f1 = (topR * beamLen) / (botR - topR);
+            float vy = spot.unk0.y * f1;
+            float vz = spot.unk0.z * f1;
+            float f2 = botR / (beamLen + f1);
             f2 *= f2;
-            float f3 = 1.0f / (spot.unk44 * 2.0f);
+            float vx = spot.unk0.x * f1;
+            float f3 = 1.0f / (beamLen * 2.0f);
             f2 = (1.0f - f2) / (f2 + 1.0f);
-            spot.unk1c = v4c;
-            spot.unk28 = f2;
             spot.unk30 = f3;
-            spot.unk34 = f1 * f3;
+            spot.unk1c.x = spot.unk38.x - vx;
+            spot.unk28 = f2;
+            spot.unk1c.z = spot.unk38.z - vz;
+            spot.unk1c.y = spot.unk38.y - vy;
             spot.unk2c = 1.0f / (1.0f - f2);
+            spot.unk34 = f1 * f3;
             return true;
         }
     }

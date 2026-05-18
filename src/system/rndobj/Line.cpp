@@ -250,100 +250,111 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
     MapVerts((pt1 - &mPoints[0]), vmap);
 
     if (pt1 == pt2) {
+        Vector3 *vp;
         if (mLineHasCaps) {
-            *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt1->unk0;
+            vp = (Vector3 *)&vmap.v->pos;
             vmap.v++;
-            *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt1->unk0;
+            vp->x = pt1->unk0;
+            vp->y = pt1->unk1;
+            vp->z = pt1->unk2;
+            vp = (Vector3 *)&vmap.v->pos;
             vmap.v++;
+            vp->x = pt1->unk0;
+            vp->y = pt1->unk1;
+            vp->z = pt1->unk2;
         }
-        *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt1->unk0;
+        vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
-        *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt1->unk0;
+        vp->x = pt1->unk0;
+        vp->y = pt1->unk1;
+        vp->z = pt1->unk2;
+        vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
-        *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt2->unk0;
+        vp->x = pt1->unk0;
+        vp->y = pt1->unk1;
+        vp->z = pt1->unk2;
+        vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
-        *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt2->unk0;
+        vp->x = pt2->unk0;
+        vp->y = pt2->unk1;
+        vp->z = pt2->unk2;
+        vp = (Vector3 *)&vmap.v->pos;
         vmap.v++;
+        vp->x = pt2->unk0;
+        vp->y = pt2->unk1;
+        vp->z = pt2->unk2;
         if (mLineHasCaps) {
-            *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt2->unk0;
+            vp = (Vector3 *)&vmap.v->pos;
             vmap.v++;
-            *(Vector3 *)&vmap.v->pos = *(Vector3 *)&pt2->unk0;
+            vp->x = pt2->unk0;
+            vp->y = pt2->unk1;
+            vp->z = pt2->unk2;
+            vp = (Vector3 *)&vmap.v->pos;
+            vmap.v++;
+            vp->x = pt2->unk0;
+            vp->y = pt2->unk1;
+            vp->z = pt2->unk2;
         }
     } else {
-        float *viewPos1 = &pt1->unk0;
-        float *viewPos2 = &pt2->unk0;
-        float *proj1 = &pt1->unk3;
-        float *dir1 = &pt1->unk5;
-        float *side1 = &pt1->unk7;
-        float *proj2 = &pt2->unk3;
-        float *side2 = &pt2->unk7;
+        Vector2 perp;
 
-        float invY1 = 1.0f / viewPos1[1];
-        proj1[1] = viewPos1[2] * invY1;
-        proj1[0] = viewPos1[0] * invY1;
-        float invY2 = 1.0f / viewPos2[1];
-        proj2[0] = viewPos2[0] * invY2;
-        proj2[1] = viewPos2[2] * invY2;
+        float epsilon = 1e-4f;
+        float invY1 = 1.0f / pt1->unk1;
+        pt1->unk3 = pt1->unk0 * invY1;
+        pt1->unk4 = pt1->unk2 * invY1;
+        float invY2 = 1.0f / pt2->unk1;
+        pt2->unk3 = pt2->unk0 * invY2;
+        pt2->unk4 = pt2->unk2 * invY2;
 
-        float dirZ = proj2[1] - proj1[1];
-        dir1[1] = dirZ;
-        float dirX = proj2[0] - proj1[0];
-        dir1[0] = dirX;
-        float len = std::sqrt(dirX * dirX + dirZ * dirZ);
-        float invLen = 0.0f;
-        if (len != 0.0f) {
-            invLen = 1.0f / len;
+        float dirX = pt2->unk3 - pt1->unk3;
+        float dirZ = pt2->unk4 - pt1->unk4;
+        pt1->unk5 = dirX;
+        pt1->unk6 = dirZ;
+        if (!(fabsf(dirX) < epsilon) || !(fabsf(dirZ) < epsilon)) {
+            float zz = pt1->unk6;
+            float inv = 1.0f / std::sqrt(dirX * dirX + zz * zz);
+            pt1->unk5 = dirX * inv;
+            pt1->unk6 = zz * inv;
         }
-        dir1[1] = invLen * dir1[1];
-        dir1[0] = invLen * dirX;
-
-        side1[1] = dir1[0];
-        side1[0] = -dir1[1];
+        float dx2 = pt1->unk5;
+        float ndy = -pt1->unk6;
+        pt1->unk8 = dx2;
+        pt1->unk7 = ndy;
         float width = mWidth;
-        side1[1] = side1[1] * width;
-        side1[0] = side1[0] * width;
-        ((int *)side2)[0] = ((int *)side1)[0];
-        ((int *)side2)[1] = ((int *)side1)[1];
-
-        float sideZ = side1[1];
-        float sideX = side1[0];
+        float sx = ndy * width;
+        pt1->unk8 = dx2 * width;
+        pt1->unk7 = sx;
+        pt2->unk7 = sx;
+        pt2->unk8 = pt1->unk8;
+        perp.y = pt1->unk7;
+        perp.x = -pt1->unk8;
 
         if (mLineHasCaps) {
-            vmap.v->pos.x = viewPos1[0] - sideX;
-            vmap.v->pos.y = viewPos1[1];
-            vmap.v->pos.z = viewPos1[2] - sideZ;
-            vmap.v->pos.z = vmap.v->pos.z + sideX;
-            vmap.v->pos.x = vmap.v->pos.x + -sideZ;
+            Subtract(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
+            Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
             vmap.v++;
-            vmap.v->pos.x = viewPos1[0] + sideX;
-            vmap.v->pos.y = viewPos1[1];
-            vmap.v->pos.z = viewPos1[2] + sideZ;
-            vmap.v->pos.z = vmap.v->pos.z + sideX;
-            vmap.v->pos.x = vmap.v->pos.x + -sideZ;
+            Add(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
+            Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
             vmap.v++;
         }
 
-        vmap.v->pos.Set(viewPos1[0] - sideX, viewPos1[1], viewPos1[2] - sideZ);
+        Subtract(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
-        vmap.v->pos.Set(viewPos1[0] + sideX, viewPos1[1], viewPos1[2] + sideZ);
+        Add(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
-        vmap.v->pos.Set(viewPos2[0] - side2[0], viewPos2[1], viewPos2[2] - side2[1]);
+        Subtract(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
-        vmap.v->pos.Set(viewPos2[0] + side2[0], viewPos2[1], viewPos2[2] + side2[1]);
+        Add(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
         vmap.v++;
 
         if (mLineHasCaps) {
-            vmap.v->pos.x = viewPos2[0] - side2[0];
-            vmap.v->pos.y = viewPos2[1];
-            vmap.v->pos.z = viewPos2[2] - side2[1];
-            vmap.v->pos.x = vmap.v->pos.x + side2[1];
-            vmap.v->pos.z = vmap.v->pos.z + -side2[0];
+            perp.y = -pt2->unk7;
+            perp.x = pt2->unk8;
+            Subtract(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
+            Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
             vmap.v++;
-            vmap.v->pos.x = viewPos2[0] + side2[0];
-            vmap.v->pos.y = viewPos2[1];
-            vmap.v->pos.z = viewPos2[2] + side2[1];
-            vmap.v->pos.x = vmap.v->pos.x + side2[1];
-            vmap.v->pos.z = vmap.v->pos.z + -side2[0];
+            Add(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
+            Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
         }
     }
 }

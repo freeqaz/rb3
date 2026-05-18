@@ -1,6 +1,7 @@
 #pragma once
 #include "Platform/DateTime.h"
 #include "Platform/qStd.h"
+#include "network/net/Jobs_Wii.h"
 #include "obj/Msg.h"
 #include "obj/Object.h"
 #include "utl/Str.h"
@@ -53,11 +54,11 @@ public:
     void SendMessage(int, const char *, const char *, Hmx::Object *, int);
     void Poll();
 
-    int unk1c; // 0x1c - JobSendMessage*
+    JobSendMessage *unk1c; // 0x1c
     WiiMessageRecord *unk20; // 0x20
     int unk24;
     int unk28;
-    int unk2c; // 0x2c - JobEnumerateMessages*
+    JobEnumerateMessages *unk2c; // 0x2c
     Timer unk30;
     WiiMessageList *unk60;
     Hmx::Object *unk64;

@@ -47,7 +47,9 @@ struct NetLoaderRef {
     void DeleteLoader();
     void AddRef();
     void ReleaseRef();
-    bool IsValid() const;
+    bool IsValid() const {
+        return (!mCacheLoader || !mNetLoader) && (mCacheLoader || mNetLoader);
+    }
     inline NetLoaderRef &operator=(const NetLoaderRef &other) {
         mName = other.mName;
         mRefCount = other.mRefCount;

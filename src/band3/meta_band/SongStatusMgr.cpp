@@ -842,7 +842,23 @@ int SongStatusMgr::GetTotalSongs(ScoreType ty, Symbol s) const {
     return TheSongMgr.NumRankedSongs(trackty, ty == kScoreHarmony, s);
 }
 
-int SongStatusMgr::GetCompletedSongs(ScoreType, Difficulty, Symbol) const {}
+int SongStatusMgr::GetCompletedSongs(ScoreType ty, Difficulty diff, Symbol s) const {
+    int ret = 0;
+    for (int i = 0; i < 1000; i++) {
+        int songID = mCacheMgr.GetSongID(i);
+        if (songID && mSongMgr->HasSong(songID)) {
+            if (s != gNullStr) {
+                BandSongMetadata *metaData = (BandSongMetadata *)mSongMgr->Data(songID);
+                MILO_ASSERT(metaData, 0x701);
+                if (s != metaData->SourceSym())
+                    continue;
+            }
+            if (IsSongPlayedAtMinDifficulty(songID, ty, diff))
+                ret++;
+        }
+    }
+    return ret;
+}
 
 int SongStatusMgr::GetSongPlayCount(int idx) const {
     if (HasSongStatus(idx)) {

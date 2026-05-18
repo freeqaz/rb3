@@ -74,4 +74,13 @@ WiiMessenger::WiiMessenger()
     unk74 = new Quazal::qList<unsigned int>();
 }
 
-WiiMessenger::~WiiMessenger() {}
+WiiMessenger::~WiiMessenger() {
+    if (unk1c) {
+        unk1c->ReleaseRef();
+        unk1c = 0;
+    }
+    if (unk2c) {
+        unk2c->ReleaseRef();
+        unk2c = 0;
+    }
+}
