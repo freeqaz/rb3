@@ -16,6 +16,9 @@
 #include "revolution/vi/vi.h"
 #include <revolution/SC.h>
 #include <revolution/MEM.h>
+#include "revolution/rvl/so.h"
+
+extern "C" int SOGetLastError();
 #include "DWC/dwc_common/dwc_init.h"
 #include "DWC/dwc_common/dwc_error.h"
 #include "DWC/dwcsec_prof/dwc_prof.h"
@@ -89,7 +92,35 @@ void _SOFree(unsigned long, void *v, long lll) { SOFreeFunc(v, lll); }
 
 // }
 
-void *DNSThread(void *) {}
+void *DNSThread(void *p) {
+    String *result = (String *)p;
+    gDNSRunning = true;
+    *result = "This is a string";
+    so_host_t *ret = SOGetHostByName(gDNSRequest);
+    if (ret == nullptr) {
+        gDNSError = SOGetLastError();
+        TheDebug << MakeString("CCS DEBUG: DNS error %d\n", gDNSError);
+        gDNSRunning = false;
+        return nullptr;
+    }
+    char ip[16];
+    ip[0] = '\0';
+    unsigned char *addr = (unsigned char *)ret->h_addr_list[0];
+    short length = ret->h_length;
+    if (addr == nullptr || length != 4) {
+        gDNSRunning = false;
+        return nullptr;
+    }
+    sprintf(ip, "%d", *addr);
+    for (int i = 1; i < length; i++) {
+        addr++;
+        sprintf(ip, "%s.%d", ip, *addr);
+    }
+    *result = ip;
+    gDNSError = 0;
+    gDNSRunning = false;
+    return nullptr;
+}
 
 PlatformMgr::PlatformMgr()
     : mSigninMask(0), mSigninChangeMask(0), mGuideShowing(0), mConnected(0), unk2a(0),
