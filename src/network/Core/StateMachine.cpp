@@ -13,7 +13,7 @@ namespace Quazal {
 
     void StateMachine::InitialTransition() {
         QSimpleEvent event(0);
-        (this->*mSourceState)(event);
+        (this->*reinterpret_cast<StateFunc>(mSourceState))(event);
         StateFuncFactory state = mCurrentState;
 
         Trigger(state, 2);
