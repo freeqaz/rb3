@@ -13,6 +13,18 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 
+struct CompareHeaders {
+    bool operator()(const Node *n1, const Node *n2) const {
+        return n1->Compare(n2, kNodeHeader) < 0;
+    }
+};
+
+struct CompareSubheaders {
+    bool operator()(const Node *n1, const Node *n2) const {
+        return n1->Compare(n2, kNodeSubheader) < 0;
+    }
+};
+
 Node::~Node() { RELEASE(mCmp); }
 
 FORCE_LOCAL_INLINE
@@ -37,6 +49,21 @@ void ShortcutNode::DeleteAll() {
         RELEASE(*it);
     }
     mChildren.clear();
+}
+
+void ShortcutNode::Insert(LeafSortNode *node, NodeSort *sort) {
+    std::pair<std::list<SortNode *>::iterator, std::list<SortNode *>::iterator> found;
+    found = std::equal_range(mChildren.begin(), mChildren.end(), node, CompareHeaders());
+    HeaderSortNode *header;
+    if (found.first != found.second) {
+        header = static_cast<HeaderSortNode *>(*found.first);
+    } else {
+        header = sort->NewHeaderNode(node);
+        header->SetShortcut(this);
+        header->SetParent(this);
+        mChildren.insert(found.first, header);
+    }
+    header->Insert(node, sort, false);
 }
 
 void ShortcutNode::FinishSort(NodeSort *node) {
@@ -159,6 +186,65 @@ HeaderSortNode::~HeaderSortNode() { delete mDateTime; }
 Symbol HeaderSortNode::GetToken() const { return mToken; }
 bool HeaderSortNode::LocalizeToken() const { return mLocalizeToken; }
 DateTime *HeaderSortNode::GetDateTime() const { return mDateTime; }
+
+void HeaderSortNode::Insert(LeafSortNode *node, NodeSort *sort, bool b3) {
+    if (!b3 && node->mCmp->HasSubheader()) {
+        std::pair<std::list<SortNode *>::iterator, std::list<SortNode *>::iterator> found;
+        found = std::equal_range(mChildren.begin(), mChildren.end(), node, CompareSubheaders());
+        SubheaderSortNode *sub;
+        if (found.first != found.second) {
+            sub = static_cast<SubheaderSortNode *>(*found.first);
+        } else {
+            sub = sort->NewSubheaderNode(node);
+            sub->SetParent(this);
+            sub->SetShortcut(mShortcut);
+            mChildren.insert(found.first, sub);
+        }
+        sub->Insert(node, sort, false);
+    } else {
+        MILO_ASSERT(Compare(node, kNodeHeader) == 0, 0x148);
+        std::list<SortNode *>::iterator it =
+            std::lower_bound(mChildren.begin(), mChildren.end(), node, CompareLeaves());
+        node->SetShortcut(mShortcut);
+        node->SetParent(this);
+        mChildren.insert(it, node);
+    }
+}
+
+void HeaderSortNode::FinishSort(NodeSort *sort) {
+    SortNode::FinishSort(sort);
+    sort->ConfirmSubheaders(this);
+    FOREACH (it, mChildren) {
+        SortNode *cur = *it;
+        switch (cur->GetType()) {
+        case kNodeSong: {
+            OwnedSongSortNode *song = dynamic_cast<OwnedSongSortNode *>(cur);
+            if (song->mSongRecord->mData->IsDownload()) {
+                unk3c++;
+            } else {
+                unk38++;
+            }
+            break;
+        }
+        case kNodeSubheader: {
+            SubheaderSortNode *subh = dynamic_cast<SubheaderSortNode *>(cur);
+            FOREACH (it2, subh->mChildren) {
+                OwnedSongSortNode *song = dynamic_cast<OwnedSongSortNode *>(*it2);
+                if (song) {
+                    if (song->mSongRecord->mData->IsDownload()) {
+                        unk3c++;
+                        subh->unk3c++;
+                    } else {
+                        unk38++;
+                        subh->unk38++;
+                    }
+                }
+            }
+            break;
+        }
+        }
+    }
+}
 
 SortNode *HeaderSortNode::GetFirstActive() {
     FOREACH_POST (it, mChildren) {
@@ -344,13 +430,13 @@ int SetlistSortNode::GetTotalScore() {
 }
 
 int SetlistSortNode::GetTotalStars(bool b) {
-    int sum = 0;
     std::vector<int> &songs = mSetlistRecord->mSetlist->mSongs;
+    int sum = 0;
     for (std::vector<int>::iterator it = songs.begin(); it != songs.end(); ++it) {
         SongRecord *rec = TheSongSortMgr->GetRecord(*it);
         if (rec) {
-            int cap = (b != 0) + 5;
             int stars = rec->mStars[rec->mActiveScoreType];
+            int cap = (b != 0) + 5;
             sum += (cap < stars) ? cap : stars;
         }
     }

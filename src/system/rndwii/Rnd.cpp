@@ -26,12 +26,22 @@
 #include "revolution/GX.h"
 #include "revolution/OS.h"
 #include <cstdarg>
+#include <list>
+
+int gFrameCount;
+int gGPHangDetectDisabled;
+RndTex *WiiRnd::mSharedTexture[WiiRnd::kNumSharedTexTypes];
+WiiRnd TheWiiRnd;
+Rnd *TheRnd = &TheWiiRnd;
+std::list<void *> sDelayedFreeLists[4];
+int sDelayedFreeListIndex;
 
 bool gInBegin, gBeginIntState;
-int gSuppressPointTest;
 void *sDispFB, *sCopyFB;
 OSThreadQueue drawDoneThreadQueue;
-WiiRnd TheWiiRnd;
+Timer sFrameTimer;
+int gSuppressPointTest;
+Timer gTriFrameTimer;
 
 void DumpFifoStatus() {
     GXFifoObj fifo;

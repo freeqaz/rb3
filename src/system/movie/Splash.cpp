@@ -1,6 +1,7 @@
 #include "Splash.h"
 #include "movie/TexMovie.h"
 #include "obj/Dir.h"
+#include "obj/DirLoader.h"
 #include "obj/Task.h"
 #include "os/Archive.h"
 #include "os/CritSec.h"
@@ -16,6 +17,7 @@
 #include "rndobj/EventTrigger.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/Utl.h"
+#include "utl/FilePath.h"
 #include "utl/MemMgr.h"
 #include "utl/MakeString.h"
 #include <revolution/VI.h>
@@ -224,7 +226,42 @@ void Splash::AddScreen(const char *s, int msecs) {
         cs->Exit();
 }
 
-int Splash::PrepareNext() {}
+extern "C" void SetTimeCallback__5MovieFPFv_f(Movie *, float (*)(void));
+
+int Splash::PrepareNext() {
+    MemDoTempAllocations mdta(true, false);
+    CriticalSection *cs = &unk_0xD4;
+    if (cs)
+        cs->Enter();
+    if (mScreens.empty()) {
+        if (cs)
+            cs->Exit();
+        return 0;
+    }
+    ScreenParams sp = mScreens.front();
+    if (cs)
+        cs->Exit();
+    FilePath fp(FilePath::sRoot.c_str(), sp.fname);
+    RndDir *d =
+        dynamic_cast<RndDir *>(DirLoader::LoadObjects(fp, NULL, NULL));
+    TexMovie *tm = d->Find<TexMovie>(kSplashMovie, false);
+    if (tm != NULL) {
+        SetTimeCallback__5MovieFPFv_f(&tm->mMovie, NULL);
+        tm->mMovie.CheckOpen(false);
+    }
+    MILO_ASSERT(d, 408);
+    PreparedScreenParams psp;
+    psp.unk_0x0 = d;
+    psp.unk_0x4 = sp.msecs;
+    cs = &unk_0xD4;
+    if (cs)
+        cs->Enter();
+    mPreparedScreens.push_back(psp);
+    mScreens.pop_front();
+    if (cs)
+        cs->Exit();
+    return 1;
+}
 
 void Splash::PrepareRemaining() {
     while (PrepareNext())

@@ -23,7 +23,12 @@ class WiiRnd : public Rnd,
                public DiscErrorMgrWii::Callback {
 public:
     enum SharedTexType {
+        kSharedTex0 = 0,
+        kSharedTex1 = 1,
+        kSharedTex2 = 2,
+        kNumSharedTexTypes = 3
     };
+    static RndTex *mSharedTexture[kNumSharedTexTypes];
 
     WiiRnd();
     virtual ~WiiRnd();
