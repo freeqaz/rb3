@@ -226,16 +226,18 @@ void BandPatchMesh::WorkVerts::SpreadEdges(int i) {
 int BandPatchMesh::WorkVerts::AddUvs(
     BandPatchMesh::MeshVert *mv1, BandPatchMesh::MeshVert *mv2, const Vector2 *v2
 ) {
+    unsigned short *idxptr = (unsigned short *)mv2;
     int ret = 0;
     for (int i = 0; i < mv2->unk30; i++) {
-        RndMesh::Face &curface = mMesh->Faces()[i];
+        RndMesh::Face &curface = mMesh->Faces()[idxptr[0x32 / 2]];
         for (int j = 0; j < 3; j++) {
             MeshVert *curmv = mMeshVerts[curface[j]];
-            if (curmv != mv2 && curmv != 0 && curmv->unk24 != unk0) {
+            if (curmv != mv2 && curmv->mVert != 0 && curmv->unk24 != unk0) {
                 curmv->unk24 = unk0;
                 ret += mv1->AddUV(curmv, unk34, v2);
             }
         }
+        idxptr++;
     }
     return ret;
 }
@@ -500,7 +502,7 @@ void BandPatchMesh::Render(RndTex *tex, RndMat *mat) {
                         mat->SetBlend(patchmat->GetBlend());
                         mat->SetDiffuseTex(patchmat->GetDiffuseTex());
                     } else {
-                        mat->SetColor(Hmx::Color(1, 1, 1, 1));
+                        mat->SetColor(1, 1, 1);
                         mat->SetTexWrap(kTexBorderBlack);
                         mat->SetBlend(RndMat::kPreMultAlpha);
                         mat->SetDiffuseTex(mMeshes[i].patches[j].mTex);
@@ -593,18 +595,18 @@ void BandPatchMesh::Construct(
         patchpair.mPatch->Verts().resize(4, true);
         patchpair.mPatch->Faces().resize(2);
         for (int i = 0; i < 4; i++) {
-            bool b13 = false;
-            if (i == 1 || i == 2)
-                b13 = true;
             float x, y;
-            if (b13)
-                x = 1.0f;
-            else
-                x = 0;
             if (i < 2)
                 y = 1.0f;
             else
                 y = 0;
+            bool b13 = false;
+            if (i == 1 || i == 2)
+                b13 = true;
+            if (b13)
+                x = 1.0f;
+            else
+                x = 0;
             Vector2 v30(y, x);
             SetRenderToVert(patchpair.mPatch->Verts(i), v30, v30);
         }

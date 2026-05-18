@@ -163,7 +163,7 @@ float CharClipDriver::AlignToBeat(float oldBeat) {
         float delta = Modulo(oldBeat - mBeat, align);
         if (delta > align * 0.5f) {
             delta -= align;
-            if (delta + mBeat < mClip->StartBeat()) {
+            if (mBeat + delta < mClip->StartBeat()) {
                 delta += align;
             }
         }
@@ -264,7 +264,7 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
             }
             mDBeat = mTimeScale * db;
         }
-        mBeat = mDBeat + mBeat;
+        mBeat = mBeat + mDBeat;
         float align = AlignToBeat(beat);
         mBeat += align;
         mAdvanceBeat = mDBeat + align;
