@@ -240,3 +240,98 @@ void Singer::ClearScoreHistories() {
         it->Reset();
     }
 }
+
+void Singer::ClearPitchHistory() {
+    unka0 = 0;
+    unka4 = 0;
+    unka8 = 0;
+    mPitchHistory[0] = 0;
+    mPitchHistory[1] = 0;
+    mPitchHistory[2] = 0;
+    mPitchHistory[3] = 0;
+    mPitchHistory[4] = 0;
+}
+
+void Singer::UpdatePitchHistory(float pitch) {
+    if (unka4 > 4) {
+        TheDebug.Notify(MakeString("pitch history index out of bounds (%d) singer %d", unka4, mSingerIndex));
+        ClearPitchHistory();
+    }
+    float prev = mPitchHistory[unka4];
+    if ((pitch > 0.0f) == (prev > 0.0f)) {
+        if (pitch > 0.0f) {
+            unka8 += 1;
+            unka0 = unka0 + (pitch - unka0) / (float)unka8;
+        }
+    } else if (pitch > 0.0f) {
+        unka8 -= 1;
+        if (unka8 == 0) ClearPitchHistory();
+        if (unka8 > 5) {
+            TheDebug.Notify(MakeString("pitch history valid frames out of bounds (%d)", unka8));
+            ClearPitchHistory();
+        }
+    } else {
+        if (pitch > 0.0f) {
+            unka0 = unka0 + (pitch - prev) / (float)unka8;
+        }
+    }
+    mPitchHistory[unka4] = pitch;
+    unka4 = (unka4 + 1) % 5;
+}
+
+int Singer::SuddenOctaveShift(float pitch) const {
+    if (unka8 < 1) return 0;
+    if (!(pitch > 0.0f)) return 0;
+    int sign;
+    if (pitch > unka0) sign = 1;
+    else sign = -1;
+    int shift = 0;
+    float step = 12.0f * (float)sign;
+    while (true) {
+        float diff = pitch - unka0;
+        if (!(diff > 0.0f)) diff = -diff;
+        if (!(diff > 10.0f)) break;
+        pitch -= step;
+        shift += sign;
+    }
+    return shift;
+}
+
+void Singer::UpdatePitchDeviation(float pitch) {
+    float mean = unk29c;
+    int count = unk2a4 + 1;
+    float dev = unk2a0;
+    unk2a4 = count;
+    float newMean = mean + (pitch - mean) / (float)count;
+    unk29c = newMean;
+    unk2a0 = dev + (std::fabs(pitch - newMean) - dev) / (float)count;
+}
+
+float Singer::GetPartPercentage(int part) const {
+    const SingerResultsData &rd = mResultsData[part];
+    if (rd.unk1c == 0) return 0.0f;
+    return rd.unk18 / (float)rd.unk1c;
+}
+
+int Singer::GetFrameMatchType() {
+    if (mFrameAssignedPart != -1) {
+        return mPlayer->mVocalParts[mFrameAssignedPart]->unk98;
+    }
+    return 4;
+}
+
+float Singer::AddToFreestyleDeployment(float val) {
+    if (mFrameMicPitch < mScreamEnergyThreshold) {
+        unk40 = 0;
+        unk44 = 0;
+    } else if (val >= unk3c) {
+        if (unk40 > 0.0f) {
+            float diff = val - unk40;
+            if (diff > 0.0f) {
+                unk44 += diff;
+            }
+        }
+        unk40 = val;
+    }
+    return unk44;
+}

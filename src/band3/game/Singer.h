@@ -128,6 +128,12 @@ public:
     void HandlePhraseEnd(float, const std::vector<float> &);
     float GetPartPercentage(int) const;
     void GetPitchDeviation(float &, float &) const;
+    void ClearPitchHistory();
+    void UpdatePitchHistory(float);
+    int SuddenOctaveShift(float) const;
+    void UpdatePitchDeviation(float);
+    int GetFrameMatchType();
+    float AddToFreestyleDeployment(float);
 
     float GetFrameMicPitch() const { return mFrameMicPitch; }
     float GetFrameTargetPitch() const { return mFrameTargetPitch; }
