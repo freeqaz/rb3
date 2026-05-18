@@ -1,4 +1,7 @@
 #include "network/net/NetworkEmulator.h"
+#include "Core/InstanceControl.h"
+#include "Core/PseudoSingleton.h"
+#include "Platform/SystemError.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
 #include "obj/ObjMacros.h"
@@ -10,6 +13,41 @@ NetworkEmulator::NetworkEmulator()
     : mInBandwidth(-1), mOutBandwidth(-1), mInJitter(0), mOutJitter(0), mInLatency(0),
       mOutLatency(0), mInDropProb(0), mOutDropProb(0), mEnabled(0) {
     SetName("emulator", ObjectDir::Main());
+
+    // Resolve mInDevice
+    {
+        unsigned int ctx = Quazal::PseudoSingleton::GetCurrentContext();
+        Quazal::InstanceControl *ic;
+        if (ctx == 0) {
+            ic = (Quazal::InstanceControl *)Quazal::InstanceControl::s_oInstanceTable.m_oDefaultContext.GetInstance(1);
+        } else if (ctx < Quazal::InstanceControl::s_oInstanceTable.m_pvContextVector->size()) {
+            ic = (Quazal::InstanceControl *)(*Quazal::InstanceControl::s_oInstanceTable.m_pvContextVector)[ctx]->GetInstance(1);
+        } else {
+            Quazal::SystemError::SignalError(0, 0, 0xe0000003, 0);
+            ic = (Quazal::InstanceControl *)-1;
+        }
+        void *delegator = ic ? ic->m_pDelegatorInstance : nullptr;
+        void *ptr = delegator ? *(void **)((char *)delegator + 0x4c) : nullptr;
+        mInDevice = (Quazal::EmulationDevice *)((char *)ptr + 0x4ac);
+    }
+
+    // Resolve mOutDevice
+    {
+        unsigned int ctx = Quazal::PseudoSingleton::GetCurrentContext();
+        Quazal::InstanceControl *ic;
+        if (ctx == 0) {
+            ic = (Quazal::InstanceControl *)Quazal::InstanceControl::s_oInstanceTable.m_oDefaultContext.GetInstance(1);
+        } else if (ctx < Quazal::InstanceControl::s_oInstanceTable.m_pvContextVector->size()) {
+            ic = (Quazal::InstanceControl *)(*Quazal::InstanceControl::s_oInstanceTable.m_pvContextVector)[ctx]->GetInstance(1);
+        } else {
+            Quazal::SystemError::SignalError(0, 0, 0xe0000003, 0);
+            ic = (Quazal::InstanceControl *)-1;
+        }
+        void *delegator = ic ? ic->m_pDelegatorInstance : nullptr;
+        void *ptr = delegator ? *(void **)((char *)delegator + 0x4c) : nullptr;
+        mOutDevice = (Quazal::EmulationDevice *)((char *)ptr + 0x490);
+    }
+
     // assigning emulation devices here
     DataArray *cfg = SystemConfig("net", "emulator");
     DataArray *bandwidthArr = cfg->FindArray("bandwidth");

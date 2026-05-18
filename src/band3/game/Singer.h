@@ -30,6 +30,23 @@ public:
         *reinterpret_cast<int*>(&unk18) = w18;
         unk1c = o.unk1c;
     }
+    SingerResultsData& operator=(const SingerResultsData& o) {
+        int w0 = *reinterpret_cast<const int*>(&o.unk0);
+        int w4 = *reinterpret_cast<const int*>(&o.unk4);
+        *reinterpret_cast<int*>(&unk0) = w0;
+        *reinterpret_cast<int*>(&unk4) = w4;
+        unk8 = o.unk8;
+        int wc = *reinterpret_cast<const int*>(&o.unkc);
+        int w10 = *reinterpret_cast<const int*>(&o.unk10);
+        *reinterpret_cast<int*>(&unkc) = wc;
+        *reinterpret_cast<int*>(&unk10) = w10;
+        int w14 = *reinterpret_cast<const int*>(&o.unk14);
+        int w18 = *reinterpret_cast<const int*>(&o.unk18);
+        *reinterpret_cast<int*>(&unk14) = w14;
+        *reinterpret_cast<int*>(&unk18) = w18;
+        unk1c = o.unk1c;
+        return *this;
+    }
     void Reset() {
         unk0 = 0;
         unk4 = 0;

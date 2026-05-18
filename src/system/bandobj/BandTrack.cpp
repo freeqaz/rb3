@@ -170,11 +170,6 @@ void BandTrack::Reset() {
     ResetEffectSelector();
 }
 
-RndDir *BandTrack::AsRndDir() {
-    TheDebug.Fail(MakeString("BandTrack::AsRndDir() base impl should never be called"));
-    return 0;
-}
-
 void BandTrack::DropIn() {
     BandCrowdMeter *meter = GetCrowdMeter();
     if ((meter != nullptr) && meter->Disabled() == 0 && mTrackIdx > -1) {
@@ -210,10 +205,6 @@ const char *BandTrack::UserName() const {
     return mParent ? mParent->UserName() : MakeString("");
 }
 
-const char *BandTrack::GetTrackIcon() const {
-    return mParent ? mParent->GetTrackIcon() : MakeString("G");
-}
-
 Symbol BandTrack::GetPlayerDifficultySym() const {
     return mParent ? mParent->GetPlayerDifficultySym() : Symbol(gNullStr);
 }
@@ -223,6 +214,46 @@ TrackPanelDirBase *BandTrack::MyTrackPanelDir() {
 }
 
 Symbol BandTrack::GetInstrumentSymbol() const { return mInstrument; }
+
+bool BandTrack::SetMultiplier(int mult) {
+    if (mult > 0 && mStreakMeter)
+        return mStreakMeter->SetMultiplier(mult);
+    return false;
+}
+
+void BandTrack::SetBandMultiplier(int mult) {
+    if (mult > 0 && mStreakMeter)
+        mStreakMeter->SetBandMultiplier(mult);
+}
+
+void BandTrack::SetControllerType(const Symbol &sym) { unk110 = sym; }
+
+void BandTrack::SetQuarantined(bool b) {
+    BandCrowdMeter *meter = GetCrowdMeter();
+    if ((meter != nullptr) && meter->Disabled() == 0 && mTrackIdx > -1) {
+        meter->SetPlayerQuarantined(mTrackIdx, b);
+    }
+}
+
+void BandTrack::ResetPlayerFeedback() {
+    if (mPlayerFeedback)
+        mPlayerFeedback->HandleType(reset_msg);
+}
+
+void BandTrack::SetNetTalking(bool talking) {
+    if (mPlayerIntro)
+        mPlayerIntro->HandleType(talking ? talk_msg : talk_stop_msg);
+}
+
+void BandTrack::SetPlayerFeedbackShowing(bool showing) const {
+    if (mPlayerFeedback) {
+        if (showing) {
+            mPlayerFeedback->HandleType(feedback_on_msg);
+        } else {
+            mPlayerFeedback->HandleType(feedback_off_msg);
+        }
+    }
+}
 
 void BandTrack::PeakState(bool enabled, bool b2) {
     if (enabled == unk1a)
@@ -256,6 +287,10 @@ void BandTrack::SuperStreak(bool enabled, bool b2) {
 
 void BandTrack::PracticeReset() {
     ThisDir()->Find<EventTrigger>("reset_practice.trig", true)->Trigger();
+}
+
+const char *BandTrack::GetTrackIcon() const {
+    return mParent ? mParent->GetTrackIcon() : MakeString("G");
 }
 
 void BandTrack::ShowOverdriveMeter(bool show) {
@@ -477,6 +512,11 @@ void BandTrack::UnisonEnd() {
 void BandTrack::UnisonStart() {
     if (mUnisonIcon)
         mUnisonIcon->UnisonStart();
+}
+
+RndDir *BandTrack::AsRndDir() {
+    TheDebug.Fail(MakeString("BandTrack::AsRndDir() base impl should never be called"));
+    return 0;
 }
 
 BEGIN_PROPSYNCS(BandTrack)

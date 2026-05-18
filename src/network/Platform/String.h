@@ -31,7 +31,7 @@ namespace Quazal {
         static uint s_uiDefaultStringEncoding;
     };
 
-    String &operator+(const Quazal::String &, const Quazal::String &);
+    String operator+(const Quazal::String &, const Quazal::String &);
     String operator+(const Quazal::String &, const char *);
     StringStream &operator<<(Quazal::StringStream &, const Quazal::String &);
 }

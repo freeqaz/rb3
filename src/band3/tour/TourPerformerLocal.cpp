@@ -336,18 +336,17 @@ bool TourPerformerLocal::SanityCheckFilterAgainstType(Symbol s1, Symbol s2) {
 }
 
 int TourPerformerLocal::SanityCheckQuestFilters() {
+    GigFilter *pSecondaryFilter;
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0x231);
     MILO_ASSERT(!pProgress->AreQuestFiltersEmpty(), 0x233);
-    GigFilter *pSecondaryFilter = nullptr;
     int questFilterCounts[kTour_NumQuestFilters] = {0, 0, 0};
+    Symbol filt = pProgress->GetFilterForCurrentGig();
     int numSongs = pProgress->GetNumSongsForCurrentGig();
-    {
-        Symbol filt = pProgress->GetFilterForCurrentGig();
-        if (filt != gNullStr) {
-            pSecondaryFilter = TheQuestMgr.GetQuestFilter(filt);
-            MILO_ASSERT(pSecondaryFilter, 0x242);
-        }
+    pSecondaryFilter = nullptr;
+    if (filt != gNullStr) {
+        pSecondaryFilter = TheQuestMgr.GetQuestFilter(filt);
+        MILO_ASSERT(pSecondaryFilter, 0x242);
     }
     std::vector<int> validSongIDs;
     std::vector<int> dummy;

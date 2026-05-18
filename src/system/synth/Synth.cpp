@@ -30,10 +30,13 @@ MicClientID sNullClientID(-1, -1);
 
 namespace {
     struct DebugGraph {
-        DebugGraph(const Hmx::Color &c) {
+        DebugGraph(float r, float g, float b, float a) {
             unk0.resize(200);
             unk8 = 0;
-            unkc = c;
+            unkc.red = r;
+            unkc.green = g;
+            unkc.blue = b;
+            unkc.alpha = a;
         }
 
         std::vector<float> unk0;
@@ -71,10 +74,10 @@ Synth::Synth()
     DataArray *cfg = SystemConfig("synth");
     cfg->FindData("mics", mNumMics, true);
     mMidiSynth = new MidiSynth();
-    gDebugGraphs.push_back(DebugGraph(Hmx::Color(1, 0, 0)));
-    gDebugGraphs.push_back(DebugGraph(Hmx::Color(0, 1, 0)));
-    gDebugGraphs.push_back(DebugGraph(Hmx::Color(1, 1, 0)));
-    gDebugGraphs.push_back(DebugGraph(Hmx::Color(1, 1, 1)));
+    gDebugGraphs.push_back(DebugGraph(1, 0, 0, 1));
+    gDebugGraphs.push_back(DebugGraph(0, 1, 0, 1));
+    gDebugGraphs.push_back(DebugGraph(1, 1, 0, 1));
+    gDebugGraphs.push_back(DebugGraph(1, 1, 1, 1));
     mMicClientMapper = new MicClientMapper();
     mMidiInstrumentMgr = new MidiInstrumentMgr();
     MILO_ASSERT(!TheSynth, 0xBB);

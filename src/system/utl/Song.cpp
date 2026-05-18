@@ -122,6 +122,34 @@ float Song::UpdateOverlay(RndOverlay *o, float f) {
 
 float Song::EndFrame() { return mSongEndFrame; }
 
+void Song::SetFrame(float frame, float blend) {
+    float curFrame = GetFrame();
+    bool paused = false;
+    if (mHxMaster) {
+        paused = !mHxMaster->GetHxAudio()->Paused();
+    }
+    if (paused && (frame > unk5c.y || frame < unk5c.x)) {
+        if (frame > unk5c.y) {
+            frame -= unk5c.y - unk5c.x;
+        } else {
+            frame = unk5c.x;
+        }
+        SetStateDirty(true);
+    }
+    frame = Clamp(StartFrame(), EndFrame(), frame);
+    RndAnimatable::SetFrame(frame, blend);
+    if (paused) {
+        if (mHxMaster) {
+            mHxMaster->Poll(frame * 1000.0f);
+        }
+        if (unk7c) {
+            SyncState();
+        }
+    } else if (curFrame != frame) {
+        SetStateDirty(true);
+    }
+}
+
 void Song::Load() {
     std::vector<Symbol> vec;
     FOREACH (it, mDebugParsers) {

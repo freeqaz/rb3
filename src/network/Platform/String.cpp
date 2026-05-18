@@ -86,25 +86,50 @@ namespace Quazal {
         YeetString(m_szContent);
         CopyString(&m_szContent, pBuf);
     }
+}
 
-    namespace {
-        String _Copy(const char *c1, unsigned int s1, const char *c2, unsigned int s2) {
-            String s = "";
-            YeetString(s.m_szContent);
-            int size = s1 + s2;
-            u32 *str = (u32 *)QUAZAL_DEFAULT_ALLOC(size + 4, 203, _InstType9);
-            *str = size;
-            s.m_szContent = (char *)&str[1];
-            *s.m_szContent = 0;
-            char *s3 = s.m_szContent;
-            strcpy(s3, c1);
-            strcpy(s3 + s1, c2);
+namespace {
+    Quazal::String _Copy(const char *c1, unsigned int s1, const char *c2, unsigned int s2) {
+        Quazal::String s = "";
+        YeetString(s.m_szContent);
+        int size = s1 + s2;
+        u32 *str = (u32 *)QUAZAL_DEFAULT_ALLOC(size + 4, 203, _InstType9);
+        *str = size;
+        s.m_szContent = (char *)&str[1];
+        *s.m_szContent = 0;
+        char *s3 = s.m_szContent;
+        strcpy(s3, c1);
+        strcpy(s3 + s1, c2);
 
-            return s;
-        }
+        return s;
     }
+}
 
-    String &operator+(const Quazal::String &, const Quazal::String &) {}
+namespace Quazal {
+    String operator+(const Quazal::String &lhs, const Quazal::String &rhs) {
+        const char *left = lhs.m_szContent;
+        const char *right;
+        unsigned int uiSizeLeft;
+        unsigned int uiSizeRight;
+        if (left == nullptr) {
+            uiSizeLeft = 0;
+        } else {
+            uiSizeLeft = strlen(left);
+        }
+        if (uiSizeLeft == 0) {
+            return String(rhs.m_szContent);
+        }
+        right = rhs.m_szContent;
+        if (right == nullptr) {
+            uiSizeRight = 0;
+        } else {
+            uiSizeRight = strlen(right);
+        }
+        if (uiSizeRight == 0) {
+            return String(left);
+        }
+        return _Copy(left, uiSizeLeft, right, uiSizeRight);
+    }
     String operator+(const Quazal::String &lhs, const char *rhs) {
         const char *left = lhs.m_szContent;
         unsigned int uiSizeLeft = (left == nullptr) ? 0 : strlen(left);

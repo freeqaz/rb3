@@ -82,7 +82,7 @@ public:
     void SpotlightFail(bool);
     void SyncInstrument();
     void EnablePlayer();
-    void SetMultiplier(int);
+    bool SetMultiplier(int);
     void CodaFail(bool);
     void CodaSuccess();
     void PopupHelp(Symbol, bool);
