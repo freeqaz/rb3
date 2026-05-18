@@ -157,16 +157,15 @@ void LINTSub(ULONG *dst, const ULONG *lhs, const ULONG *rhs) {
     *dst = i + 1;
 }
 
-// TODO on release
 void LINTMul(ULONG *dst, const ULONG *lhs, const ULONG *rhs) {
     int i, j;
 
     const ULONG lhsSize = lhs[0];
+    ULONG *dstData = dst + 1;
     const ULONG rhsSize = rhs[0];
 
     const ULONG *lhsData = lhs + 1;
     const ULONG *rhsData = rhs + 1;
-    ULONG *dstData = dst + 1;
 
     ULLONG num = 0;
 
@@ -175,18 +174,17 @@ void LINTMul(ULONG *dst, const ULONG *lhs, const ULONG *rhs) {
     memset(dst + 1, 0, 128); // where is 128 from?
 
     // buffer was cleared
-    if ((lhs[0] == 1 && lhs[1] == 0) || (rhs[0] == 1 && rhs[1] == 0))
+    if ((lhs[0] == 1 && (int)lhs[1] == 0) || (rhs[0] == 1 && (int)rhs[1] == 0))
         return;
 
-    for (i = 0; i < rhsSize; i++) {
+    for (i = 0; i < (int)rhsSize; i++) {
         num = 0;
 
-        for (j = 0; j < lhsSize; j++) {
+        for (j = 0; j < (int)lhsSize; j++) {
             num = (ULLONG)lhsData[j] * rhsData[i] + num + dstData[i + j];
 
             dstData[i + j] = num & ULONG_MAX;
-            num = ((num >> ULLONG_ULONG_BIT_DIFF) & ULONG_MAX)
-                % (1ull << ULLONG_ULONG_BIT_DIFF);
+            num = num >> ULLONG_ULONG_BIT_DIFF;
         }
 
         dstData[i + j] = num;
