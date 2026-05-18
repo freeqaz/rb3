@@ -76,9 +76,9 @@ Symbol BandWardrobe::GetCoopMode(BandCamShot *shot) {
     int allModes = 0x700000;
     int shotModes = shot->Flags() & 0x700000;
     Symbol curMode = GetPlayMode();
-    int curBit = 0;
     const char *const *modePtr = &modes[2];
     const char *modeName;
+    int curBit = 0;
     int i;
     for (i = 2; i >= 0; i--, modePtr--) {
         modeName = *modePtr;

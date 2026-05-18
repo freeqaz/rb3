@@ -3,6 +3,7 @@
 #include "game/BandUserMgr.h"
 #include "obj/Data.h"
 #include "obj/ObjMacros.h"
+#include "os/Debug.h"
 #include "os/Joypad.h"
 #include "os/JoypadMsgs.h"
 #include "ui/UI.h"
@@ -55,6 +56,20 @@ DataNode ShellInputInterceptor::OnMsg(const ButtonUpMsg &msg) {
         }
     }
     return DataNode(kDataUnhandled, 0);
+}
+
+bool ShellInputInterceptor::IsDoubleStrum(LocalBandUser *pUser, int button) {
+    float ms = mTime.SplitMs();
+    if (button == kPad_DUp || button == kPad_DDown) {
+        MILO_ASSERT(pUser && pUser->IsLocal(), 0xAC);
+        int slot = pUser->GetSlot();
+        float last = mLastUpDown[slot];
+        mLastUpDown[slot] = ms;
+        if (ms - last < 50.0f) {
+            return true;
+        }
+    }
+    return false;
 }
 
 BEGIN_HANDLERS(ShellInputInterceptor)

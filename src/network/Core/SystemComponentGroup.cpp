@@ -43,9 +43,8 @@ namespace Quazal {
 
     bool SystemComponentGroup::BeginInitialization() {
         DoWork();
-        qList<SystemComponent*>::iterator it = m_lstComponents.begin();
         uint groupState = 0;
-        for (; it != m_lstComponents.end(); ++it) {
+        for (qList<SystemComponent*>::iterator it = m_lstComponents.begin(); it != m_lstComponents.end(); ++it) {
             groupState |= (*it)->TestState();
         }
         _State state;
@@ -66,9 +65,8 @@ namespace Quazal {
 
     bool SystemComponentGroup::EndInitialization() {
         DoWork();
-        qList<SystemComponent*>::iterator it = m_lstComponents.begin();
         uint groupState = 0;
-        for (; it != m_lstComponents.end(); ++it) {
+        for (qList<SystemComponent*>::iterator it = m_lstComponents.begin(); it != m_lstComponents.end(); ++it) {
             groupState |= (*it)->TestState();
         }
         _State state;
@@ -89,9 +87,8 @@ namespace Quazal {
 
     bool SystemComponentGroup::BeginTermination() {
         DoWork();
-        qList<SystemComponent*>::iterator it = m_lstComponents.begin();
         uint groupState = 0;
-        for (; it != m_lstComponents.end(); ++it) {
+        for (qList<SystemComponent*>::iterator it = m_lstComponents.begin(); it != m_lstComponents.end(); ++it) {
             groupState |= (*it)->TestState();
         }
         _State state;
@@ -112,9 +109,8 @@ namespace Quazal {
 
     bool SystemComponentGroup::EndTermination() {
         DoWork();
-        qList<SystemComponent*>::iterator it = m_lstComponents.begin();
         uint groupState = 0;
-        for (; it != m_lstComponents.end(); ++it) {
+        for (qList<SystemComponent*>::iterator it = m_lstComponents.begin(); it != m_lstComponents.end(); ++it) {
             groupState |= (*it)->TestState();
         }
         _State state;
