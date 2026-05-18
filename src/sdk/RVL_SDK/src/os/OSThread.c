@@ -988,15 +988,15 @@ static void SleepAlarmHandler(OSAlarm* alarm, OSContext* ctx) {
     if (thread->state == OS_THREAD_STATE_EXITED) {
         found = FALSE;
     } else {
-        found = FALSE;
         for (iter = OS_THREAD_QUEUE.head; iter != NULL; iter = iter->linkActive.next) {
             if (thread == iter) {
                 found = TRUE;
-                break;
+                goto done;
             }
         }
+        found = FALSE;
     }
-
+done:
     if (found) {
         OSResumeThread((OSThread*)OSGetAlarmUserData(alarm));
     }

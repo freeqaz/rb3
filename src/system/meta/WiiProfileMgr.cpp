@@ -404,7 +404,18 @@ void WiiProfileMgr::DoSignin(LocalUser *u, int idx, int pad, int) {
     u->UpdateOnlineID();
 }
 
-bool WiiProfileMgr::AddIdToDeleteQueue(unsigned int id) {}
+bool WiiProfileMgr::AddIdToDeleteQueue(unsigned int id) {
+    for (int i = 0; i < 10; i++) {
+        if (mDeleteQueue[i] == 0) {
+            DeleteQueueUpdatedMsg msg;
+            mDeleteQueue[i] = id;
+            mDirty = true;
+            Handle(msg, true);
+            return true;
+        }
+    }
+    return false;
+}
 
 bool WiiProfileMgr::IsDeleteQueueFull() const {
     for (int i = 0; i < 10; i++) {

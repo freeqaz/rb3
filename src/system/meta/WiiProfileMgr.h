@@ -98,6 +98,7 @@ public:
 };
 
 DECLARE_MESSAGE(DeleteQueueUpdatedMsg, "delete_queue_update")
+DeleteQueueUpdatedMsg() : Message(Type()) {}
 END_MESSAGE
 
 DECLARE_MESSAGE(DeleteUserCompleteMsg, "delete_user_complete")

@@ -13,7 +13,19 @@ s32 NANDSecretGetUsage(const char* path, s32* fsBlock, s32* inode) {
     }
 }
 
-NANDResult NANDSecretGetFileSystemStatus() {
+NANDResult NANDSecretGetFileSystemStatus(ISFSStats* statsOut) {
     if (!nandIsInitialized()) return NAND_RESULT_FATAL_ERROR;
 
+    ISFSStats stats;
+    ISFSError err = ISFS_GetStats(&stats);
+    if (err == 0) {
+        statsOut->blockSize = stats.blockSize;
+        statsOut->freeBlocks = stats.freeBlocks;
+        statsOut->occupiedBlcocks = stats.occupiedBlcocks;
+        statsOut->badBlocks = stats.badBlocks;
+        statsOut->reservedBlocks = stats.reservedBlocks;
+        statsOut->freeInodes = stats.freeInodes;
+        statsOut->occupedInodes = stats.occupedInodes;
+    }
+    return nandConvertErrorCode(err);
 }

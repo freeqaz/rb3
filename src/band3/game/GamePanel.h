@@ -93,7 +93,7 @@ public:
 
 class LatencyCallback : public RndOverlay::Callback {
 public:
-    LatencyCallback() : unk4(0) {}
+    LatencyCallback() {}
     virtual ~LatencyCallback() {}
     virtual float UpdateOverlay(RndOverlay *, float);
     bool unk4;

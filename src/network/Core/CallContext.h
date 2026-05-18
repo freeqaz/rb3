@@ -10,6 +10,11 @@ namespace Quazal {
     class CallContext : public RefCountedObject {
     public:
         enum _State {
+            CallInit = 0,
+            CallPending = 1,
+            CallSuccess = 2,
+            CallError = 3,
+            CallCancelled = 4,
         };
         CallContext();
         virtual ~CallContext();
@@ -20,6 +25,8 @@ namespace Quazal {
         void RegisterCompletionCallback(CallbackRoot *, bool, bool);
         void SetFlag(unsigned int);
         void Reset();
+        void Trace(unsigned int) const;
+        void SetStateImpl(_State, qResult, bool);
 
         _State GetState() const { return unkc; }
 

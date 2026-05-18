@@ -15,6 +15,7 @@
 #define INVALID_NAME_CHAR(c) ('0' > c || ('9' < c && c < 'A') || c > 'Z')
 #define OS_PHYS_BOOT_PARTITION_TYPE 0x3194
 #define OS_PHYS_CURRENT_APP_NAME 0x3180
+#define MAKE_DVD_DEVICE_CODE(x) ((x) | DVD_DEVICE_CODE_READ)
 
 OSExecParams __OSRebootParams;
 static DVDDriveInfo DriveInfo ALIGN(32);
@@ -278,7 +279,7 @@ static void MemClear(void* mem, u32 size) {
     DCFlushRange(flush, 0x40000);
 }
 
-static void ClearArena(void) {
+__declspec(noinline) static void ClearArena(void) {
     // System reset
     if (!((OSGetResetCode() >> 31) & 1)) {
         MemClear(OSGetArenaLo(), (u32)OSGetArenaHi() - (u32)OSGetArenaLo());
@@ -310,7 +311,7 @@ static void ClearArena(void) {
     }
 }
 
-static void ClearMEM2Arena(void) {
+__declspec(noinline) static void ClearMEM2Arena(void) {
     // System reset
     if (!((OSGetResetCode() >> 31) & 1)) {
         MemClear(OSGetMEM2ArenaLo(),
@@ -364,7 +365,7 @@ static void CheckTargets(void) {
         OSReport("OS ERROR: boot program is not for RVL target. Please use "
                  "correct boot program.\n");
         // clang-format off
-#line 1153
+#line 1160
         OSError("Failed to run app");
         // clang-format on
         break;
@@ -377,7 +378,7 @@ static void CheckTargets(void) {
     case 0x81:
         OSReport("OS ERROR: apploader[D].img is not for RVL target. Please use "
                  "correct apploader[D].img.\n");
-#line 1171
+#line 1178
         OSError("Failed to run app");
         // clang-format on
         break;
@@ -468,8 +469,8 @@ static void ReportOSInfo(void) {
 static void CheckFirmare(void){
     OSIOSRev rev;
     u32 myVersion;
-    const GXColor bgColor = {0,0,255,0};
     const GXColor textColor = {255,255,255,0};
+    const GXColor bgColor = {0,0,255,0};
 
     __OSGetIOSRev(&rev);
 
@@ -479,7 +480,7 @@ static void CheckFirmare(void){
         || rev.idLo == (OS_MINIMUM_IOS_VERSION >> 16) && myVersion < OS_MINIMUM_IOS_VERSION) {
         OSReport("OS ERROR: This firmware is an improper version for this SDK. Please use a correct Firmware.\n");
         OSFatal(textColor, bgColor, "\n\nERROR #002\nAn error has occurred.\nPress the Eject Button, remove the\nGame Disc, and turn off the power to \nthe console. \nPlease read the Wii Operations Manual \nfor further instructions.\n");
-#line 1236
+#line 1243
         OSError("Failed to run app");
       }
 }
@@ -502,6 +503,8 @@ void OSInit(void) {
     void* mem1hi;
     void* mem2lo;
     void* mem2hi;
+    void* arenaLoRounded = ROUND_UP_PTR(__ArenaLo, 32);
+    void* arenaHiDefault = __ArenaHi;
 
     if (!AreWeInitialized) {
         AreWeInitialized = TRUE;
@@ -547,10 +550,10 @@ void OSInit(void) {
         mem1lo = *(void**)OSPhysicalToCached(OS_PHYS_USABLE_MEM1_START);
         if (mem1lo == NULL) {
             // Use the linker-generated arena if it is in MEM1...
-            if (OSIsMEM1Region(__ArenaLo)) {
+            if (OS_MEM_IS_MEM1(arenaLoRounded)) {
                 // ...and if the OS boot info does not specify one
                 mem1lo =
-                    BootInfo->arenaLo == NULL ? __ArenaLo : BootInfo->arenaLo;
+                    BootInfo->arenaLo == NULL ? arenaLoRounded : BootInfo->arenaLo;
 
                 /**
                  * Linker generates stack/arena in this order:
@@ -567,7 +570,7 @@ void OSInit(void) {
                  */
                 if (BootInfo->arenaLo == NULL && BI2DebugFlag != NULL &&
                     *BI2DebugFlag < 2) {
-                    mem1lo = ROUND_UP_PTR(_db_stack_end, 32);
+                    mem1lo = ROUND_UP_PTR(_stack_addr, 32);
                 }
             } else {
                 // ???
@@ -581,7 +584,7 @@ void OSInit(void) {
         if (mem1hi == NULL) {
             // Use the linker-generated arena if OS boot info does not specify
             // one
-            mem1hi = BootInfo->arenaHi == NULL ? __ArenaHi : BootInfo->arenaHi;
+            mem1hi = BootInfo->arenaHi == NULL ? arenaHiDefault : BootInfo->arenaHi;
         }
         OSSetMEM1ArenaHi(mem1hi);
 
@@ -589,12 +592,12 @@ void OSInit(void) {
         mem2lo = *(void**)OSPhysicalToCached(OS_PHYS_USABLE_MEM2_START);
         if (mem2lo != NULL) {
             // Use the linker-generated arena if it is in MEM2
-            if (OSIsMEM2Region(__ArenaLo)) {
-                mem2lo = __ArenaLo;
+            if (OS_MEM_IS_MEM2(arenaLoRounded)) {
+                mem2lo = arenaLoRounded;
 
                 // Use debugger stack if it would be wasted
                 if (BI2DebugFlag != NULL && *BI2DebugFlag < 2) {
-                    mem2lo = ROUND_UP_PTR(_db_stack_end, 32);
+                    mem2lo = ROUND_UP_PTR(_stack_addr, 32);
                 }
             }
             // First 2K of MEM2 is reserved?
@@ -633,7 +636,7 @@ void OSInit(void) {
         }
 
         ReportOSInfo();
-        OSRegisterVersion(__OSVersion);
+        OSReport("%s\n", __OSVersion);
 
         // Check for debugger just like earlier
         if (BI2DebugFlag != NULL && *BI2DebugFlag >= 2) {

@@ -96,7 +96,6 @@ typedef struct NANDCommandBlock {
     u32 userInodes;
     u32 workBlocks;
     u32 workInodes;
-    const char **dir;
     BOOL simpleFlag;
 } NANDCommandBlock;
 

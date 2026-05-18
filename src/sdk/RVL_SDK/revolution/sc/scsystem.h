@@ -111,7 +111,7 @@ typedef struct SCControl {
 } SCControl;
 
 void SCInit(void);
-u32 SCCheckStatus(void);
+u8 SCCheckStatus(void);
 
 BOOL SCFindByteArrayItem(void* dst, u32 len, SCItemID id);
 BOOL SCReplaceByteArrayItem(const void* src, u32 len, SCItemID id);
