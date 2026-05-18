@@ -172,7 +172,7 @@ bool TourPerformerLocal::InqSongsInFilterData(
             const SongSortMgr::SongFilter &filt = pFilter->GetFilter();
             if (!TheSongSortMgr->DoesSongMatchFilter(songID, &filt, filteredPartSym)) continue;
             BandSongMetadata *pSongData = static_cast<BandSongMetadata *>(TheSongMgr.Data(songID));
-            o_rSongsInFilter[filterSym]++;
+            o_rSongsInFilter[filterSym] = o_rSongsInFilter[filterSym] + 1;
             int newArtistCount = ++o_rSongsWithArtist[Symbol(pSongData->Artist())];
             if (newArtistCount > iHighArtistCount) {
                 iHighArtistCount = newArtistCount;

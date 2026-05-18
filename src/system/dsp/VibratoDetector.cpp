@@ -1,5 +1,6 @@
 #include "dsp/VibratoDetector.h"
 #include <string.h>
+#include <math.h>
 
 
 
@@ -44,5 +45,28 @@ int VibratoDetector::Analyze(float f1) {
 }
 
 int VibratoDetector::Detect() {
-
+    float diffs[4];
+    float diffs_pitch[4];
+    float total = 0.0f;
+    int d = 0;
+    int last = mBuffer[mBufIdx % 5];
+    float last_pitch = mPitches[mBufIdx % 5];
+    for (int i = 1; i <= 4; i++) {
+        int idx = (mBufIdx + i) % 5;
+        int s = mBuffer[idx];
+        float p = mPitches[idx];
+        diffs[i - 1] = (float)(s - last);
+        diffs_pitch[i - 1] = fabsf(last_pitch - p);
+        total += diffs[i - 1];
+        last = s;
+        last_pitch = p;
+        d++;
+    }
+    float ave = total / (float)d;
+    for (int i = 0; i < d; i++) {
+        if (diffs[i] < 3.0f || diffs[i] > 8.0f) return 0;
+        if (fabsf(diffs[i] - ave) > 2.0f) return 0;
+        if (diffs_pitch[i] < 0.1f || diffs_pitch[i] > 1.2f) return 0;
+    }
+    return (int)total;
 }
