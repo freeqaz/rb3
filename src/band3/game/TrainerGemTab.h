@@ -26,6 +26,10 @@ public:
     void SetLefty(bool);
     void Draw(int);
     void SetPattern(const TrainerSection *, const std::vector<GameGem> &);
+    int SlotToGemIndex(int) const;
+    int GetLane(int) const;
+    void DrawStartFinish();
+    void DrawExtraTails();
 
     RndDir *mGemTab; // 0x0
     TrackType mTrackType; // 0x4

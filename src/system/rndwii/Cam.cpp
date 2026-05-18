@@ -1,4 +1,7 @@
 #include "Cam.h"
+#include "rndwii/Rnd.h"
+#include "rndobj/Stats_NG.h"
+#include "revolution/gx/GXTransform.h"
 
 Transform WiiCam::sViewToWiiViewXfm(
     Hmx::Matrix3(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f));
@@ -7,7 +10,68 @@ Transform WiiCam::sWiiViewToViewXfm(
 
 WiiCam::WiiCam() {}
 
-void WiiCam::Select() {}
+void WiiCam::Select() {
+    TheNgStats->mCams++;
+    RndCam::Select();
+    int ox = 0;
+    int oy = 0;
+    int width;
+    int height;
+    if (mTargetTex) {
+        width = mTargetTex->mWidth;
+        height = mTargetTex->mHeight;
+        if (width <= 0x20) {
+            ox = 0x260;
+        }
+    } else {
+        if (TheWiiRnd.unk_0x2B0) {
+            width = 0x260;
+        } else {
+            width = TheWiiRnd.mWidth;
+        }
+        height = TheWiiRnd.mHeight;
+        if (TheWiiRnd.mAspect == Rnd::kLetterbox && !TheWiiRnd.unk_0x2B0) {
+            float bar = (float)height - (float)width * 0.5625f;
+            unsigned int barI;
+            if (bar > 0.0f) {
+                barI = (unsigned int)(0.5f * bar);
+            } else {
+                barI = 0;
+            }
+            oy = barI;
+            height -= barI * 2;
+        }
+    }
+    Multiply(mInvWorldXfm, sViewToWiiViewXfm, mWiiViewXfm);
+    Mtx44 proj;
+    memset(proj, 0, sizeof(proj));
+    float a, b;
+    if (mYFov == 0.0f) {
+        proj[1][1] = 1.0f;
+        a = 1.0f / (mFarPlane - mNearPlane);
+        b = a;
+    } else {
+        proj[1][0] = -1.0f;
+        a = mFarPlane / (mFarPlane - mNearPlane);
+        b = 1.0f - a;
+    }
+    proj[0][0] = mLocalProjectXfm.m.x.x * mScreenRect.w;
+    proj[1][2] = a;
+    proj[1][3] = -a * mNearPlane;
+    proj[2][1] = -mLocalProjectXfm.m.z.y * mScreenRect.h;
+    proj[2][2] = b;
+    proj[0][2] = mLocalProjectXfm.v.x;
+    proj[2][3] = -mLocalProjectXfm.v.y;
+    GXSetProjection(
+        proj, (mYFov == 0.0f) ? GX_ORTHOGRAPHIC : GX_PERSPECTIVE
+    );
+    float vw = mScreenRect.w * (float)width;
+    float vh = mScreenRect.h * (float)height;
+    float vx = mScreenRect.x * (float)width + (float)ox;
+    float vy = mScreenRect.y * (float)height + (float)oy;
+    GXSetViewport(vx, vy, vw, vh, mZRange.x, mZRange.y);
+    GXSetScissor((u32)vx, (u32)vy, (u32)vw, (u32)vh);
+}
 
 u32 WiiCam::ProjectZ(float f1) {
     float near = mNearPlane;

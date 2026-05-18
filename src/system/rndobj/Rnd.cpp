@@ -669,7 +669,7 @@ RndTex *Rnd::CreateDefaultTexture(DefaultTextureType textureType) {
             }
         }
         break;
-    case 6:
+    case 6: {
         Hmx::Color color;
         for (int i = 0; i < kWidth; i++) {
             MakeColor((float)i / 255.0f, 1, 0.5f, color);
@@ -681,6 +681,7 @@ RndTex *Rnd::CreateDefaultTexture(DefaultTextureType textureType) {
             }
         }
         break;
+    }
     case 7:
         for (int i = 0; i < kHeight; i++) {
             for (int j = 0; j < kWidth; j++) {

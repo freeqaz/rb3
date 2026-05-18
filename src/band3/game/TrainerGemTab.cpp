@@ -186,6 +186,56 @@ void TrainerGemTab::Init(RndDir *gemTab, TrackType ty) {
     }
 }
 
+void TrainerGemTab::SetLefty(bool lefty) { mLefty = lefty; }
+
+int TrainerGemTab::SlotToGemIndex(int slot) const {
+    static int keyGems[25] = {
+        1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1,
+        0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1,
+    };
+    if (mTrackType != kTrackRealKeys) {
+        return slot;
+    }
+    return keyGems[slot];
+}
+
+int TrainerGemTab::GetLane(int slot) const {
+    if (mTrackType == kTrackDrum) {
+        if (slot == 0) return 0;
+        if (mLefty) return mLanes - slot;
+        return slot;
+    }
+    if (mLefty) return mLanes - slot - 1;
+    return slot;
+}
+
+void TrainerGemTab::DrawStartFinish() {
+    mStartLabel->SetShowing(true);
+    mStartLabel->Draw();
+    mStartLabel->SetShowing(false);
+    mFinishLabel->SetShowing(true);
+    mFinishLabel->Draw();
+    mFinishLabel->SetShowing(false);
+}
+
+void TrainerGemTab::DrawExtraTails() {
+    unsigned long off = 0;
+    for (unsigned long i = 0; i < unk130.size(); i++, off += 0x38) {
+        ExtraTail *et = (ExtraTail *)((char *)&unk130[0] + off);
+        RndMesh *mesh;
+        // ExtraTail layout: Transform (0x0..0x2F), int slot (0x30), bool isSustainCyan (0x34)
+        if (*(bool *)((char *)et + 0x34)) {
+            mesh = mGemSustainCyan;
+        } else {
+            mesh = mTails[SlotToGemIndex(*(int *)((char *)et + 0x30))];
+        }
+        mesh->SetShowing(true);
+        mesh->SetWorldXfm(*(Transform *)et);
+        mesh->Draw();
+        mesh->SetShowing(false);
+    }
+}
+
 // enum TrackType {
 //     kTrackDrum,
 //     kTrackGuitar,
