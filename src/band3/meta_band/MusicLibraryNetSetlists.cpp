@@ -150,6 +150,14 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
             );
             break;
         }
+        case 2: {
+            MILO_ASSERT(!archived, 0x108);
+            nss = new NetSavedSetlist(
+                SavedSetlist::kSetlistHarmonix, title.c_str(), desc.c_str(), validInstr,
+                gNullStr, artUrl.c_str(), gNullStr
+            );
+            break;
+        }
         case 1000:
         case 1001: {
             result.GetDataResultValue("owner", node);
@@ -169,14 +177,6 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
             nss = new BattleSavedSetlist(
                 id, (ScoreType)scoreType, battleType, title.c_str(), validInstr,
                 desc.c_str(), owner.c_str(), artUrl.c_str(), secondsLeft
-            );
-            break;
-        }
-        case 2: {
-            MILO_ASSERT(!archived, 0x108);
-            nss = new NetSavedSetlist(
-                SavedSetlist::kSetlistHarmonix, title.c_str(), desc.c_str(), validInstr,
-                gNullStr, artUrl.c_str(), gNullStr
             );
             break;
         }
