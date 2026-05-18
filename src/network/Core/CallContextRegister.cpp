@@ -11,7 +11,23 @@ namespace Quazal {
         : SystemComponent("CallContextRegister"), m_uiNextID(1),
           m_pCheckExpiredCallsJob(0) {}
 
-    CallContextRegister::~CallContextRegister() {}
+    CallContextRegister::~CallContextRegister() {
+        qResult outcome;
+        {
+            typedef qMap<unsigned int, CallContext *>::iterator _Iter;
+            _Iter it = m_mapCallContextes.begin();
+            _Iter _end = m_mapCallContextes.end();
+            while (it != _end) {
+                CallContext *ctx = it->second;
+                ctx->Trace(1);
+                _Iter next = it;
+                ++next;
+                ctx->SetStateImpl(CallContext::CallCancelled, outcome, true);
+                it = next;
+            }
+        }
+        m_mapCallContextes.clear();
+    }
 
     bool CallContextRegister::BeginInitialization() {
         Start();
