@@ -1,5 +1,6 @@
 #include "meta_band/SongSortNode.h"
 #include "meta_band/SongSort.h"
+#include "meta_band/SongSortMgr.h"
 #include "decomp.h"
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/MusicLibrary.h"
@@ -209,6 +210,34 @@ void SubheaderSortNode::Insert(LeafSortNode *node, NodeSort *n2, bool b3) {
     mChildren.insert(it, node);
 }
 
+SortNode *SubheaderSortNode::GetFirstChildSong() const {
+    for (std::list<SortNode *>::const_iterator it = mChildren.begin();
+         it != mChildren.end();
+         ++it) {
+        SortNode *cast = dynamic_cast<OwnedSongSortNode *>(*it);
+        if (cast)
+            return cast;
+    }
+    MILO_FAIL("Subheader has no song children!");
+    return nullptr;
+}
+
+const char *SubheaderSortNode::GetArtist() const {
+    SortNode *child = GetFirstChildSong();
+    MILO_ASSERT(child, 0x1DF);
+    return static_cast<OwnedSongSortNode *>(child)->GetArtist();
+}
+
+const char *SubheaderSortNode::GetAlbumArtPath() {
+    SortNode *child = GetFirstChildSong();
+    MILO_ASSERT(child, 0x1F1);
+    if (TheSongMgr.IsSongMounted(child->GetToken())) {
+        return child->GetAlbumArtPath();
+    } else {
+        return "ui/image/blank_album_art_keep.png";
+    }
+}
+
 BEGIN_HANDLERS(SubheaderSortNode)
     HANDLE_SUPERCLASS(HeaderSortNode)
     HANDLE_MEMBER_PTR(GetFirstChildSong())
@@ -265,6 +294,16 @@ const char *OwnedSongSortNode::GetAlbum() const { return mSongRecord->mData->Alb
 int OwnedSongSortNode::GetTotalMs() const { return mSongRecord->mData->LengthMs(); }
 int OwnedSongSortNode::GetTotalScore() { return mSongRecord->GetScore(); }
 
+int OwnedSongSortNode::GetTotalStars(bool b) {
+    int stars = mSongRecord->mStars[mSongRecord->mActiveScoreType];
+    int cap = (b != 0) + 5;
+    return cap < stars ? cap : stars;
+}
+
+int OwnedSongSortNode::GetPotentialStars() {
+    return mSongRecord->mDemo ? 0 : 5;
+}
+
 int OwnedSongSortNode::GetTier(Symbol s) const { return mSongRecord->GetTier(s); }
 
 BEGIN_HANDLERS(OwnedSongSortNode)
@@ -276,12 +315,50 @@ END_HANDLERS
 int SetlistSortNode::GetSongCount() { return mSetlistRecord->mSetlist->mSongs.size(); }
 Symbol SetlistSortNode::GetToken() const { return mSetlistRecord->mToken; }
 
+bool SetlistSortNode::IsActive() const { return true; }
+
+bool SetlistSortNode::IsEnabled() const {
+    if (mSetlistRecord->unk24 && mSetlistRecord->mBattleTimeLeft == 0)
+        return false;
+    return IsActive();
+}
+
 const char *SetlistSortNode::GetAlbumArtPath() {
     return "ui/image/song_select_setlist_keep.png";
 }
 
 int SetlistSortNode::GetTotalMs() const {
     return mSetlistRecord->mSetlist->GetLengthMs();
+}
+
+int SetlistSortNode::GetTotalScore() {
+    int sum = 0;
+    std::vector<int> &songs = mSetlistRecord->mSetlist->mSongs;
+    for (std::vector<int>::iterator it = songs.begin(); it != songs.end(); ++it) {
+        SongRecord *rec = TheSongSortMgr->GetRecord(*it);
+        if (rec) {
+            sum += rec->GetScore();
+        }
+    }
+    return sum;
+}
+
+int SetlistSortNode::GetTotalStars(bool b) {
+    int sum = 0;
+    std::vector<int> &songs = mSetlistRecord->mSetlist->mSongs;
+    for (std::vector<int>::iterator it = songs.begin(); it != songs.end(); ++it) {
+        SongRecord *rec = TheSongSortMgr->GetRecord(*it);
+        if (rec) {
+            int cap = (b != 0) + 5;
+            int stars = rec->mStars[rec->mActiveScoreType];
+            sum += (cap < stars) ? cap : stars;
+        }
+    }
+    return sum;
+}
+
+int SetlistSortNode::GetPotentialStars() {
+    return mSetlistRecord->mSetlist->mSongs.size() * 5;
 }
 
 BEGIN_HANDLERS(SetlistSortNode)

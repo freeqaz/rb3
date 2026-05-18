@@ -189,16 +189,12 @@ void StreakMeter::SetPartActive(int i, bool b) {
         return;
     unk270[i] = b;
     if (unk2d0 != -1) {
-        if (!b)
-            b = false;
-        else if (unk2d0 != i)
-            b = false;
-        else
-            b = true;
+        b = (bool)((int)b & (int)(i == unk2d0));
     }
-    if (!b && mPartFadeAnims[i]->GetFrame() > 0.1f)
+    if (!b && !(mPartFadeAnims[i]->GetFrame() < 0.1f))
         return;
-    mPartFadeAnims[i]->SetFrame(b ? 0.0f : 1.0f, 1.0f);
+    RndPropAnim *anim = mPartFadeAnims[i];
+    anim->SetFrame(b ? 0.0f : 1.0f, 1.0f);
 }
 
 void StreakMeter::SetIsolatedPart(int i) {
