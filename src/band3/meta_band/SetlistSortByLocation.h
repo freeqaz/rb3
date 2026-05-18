@@ -1,6 +1,7 @@
 #pragma once
 #include "meta_band/SongSort.h"
 #include "meta_band/SongSortNode.h"
+#include "utl/Str.h"
 #include "utl/Symbols.h"
 
 class LocationCmp : public SongSortCmp {
@@ -13,6 +14,14 @@ public:
     virtual const LocationCmp *GetLocationCmp() const { return this; }
 
     static Symbol SetlistHeaderTypeToSym(SetlistHeaderType);
+
+    const char *mCmp; // 0x4
+    SavedSetlist::SetlistType mSetlistType; // 0x8
+    const char *mOwner; // 0xc
+    int mId; // 0x10
+    String mName; // 0x14
+    int mField20; // 0x20
+    int mField24; // 0x24
 };
 
 class SetlistSortByLocation : public SetlistSort {
