@@ -49,7 +49,7 @@ bool WiiCommerceMgr::IsBusy() const { return mCommerceAsyncOpId != -1; }
 
 bool WiiCommerceMgr::NeedSync() {
     int r = EC_GetIsSyncNeeded();
-    return (bool)(gAllowNeedSyncReturn & r != -0xFE2);
+    return (~((r + 0xFE2) | (-0xFE2 - r)) >> 31) & gAllowNeedSyncReturn;
 }
 
 bool WiiCommerceMgr::CheckPurchaseSync() { return true; }

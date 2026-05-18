@@ -3,8 +3,10 @@
 #include "os/Debug.h"
 #include "synth/MicNull.h"
 #include "synth/Synth.h"
+#include "utl/FileStream.h"
 #include "utl/MemStream.h"
 #include "utl/Wav.h"
+#include "utl/WaveFile.h"
 
 bool gIdxTaken[6];
 
@@ -72,7 +74,33 @@ int GameMic::GetDataSampleRate() {
     return GetMyMic()->GetSampleRate();
 }
 
-void GameMic::SetInputFile(const char *) {}
+void GameMic::SetInputFile(const char *filename) {
+    int sampleRate;
+    if (filename == nullptr) {
+        sampleRate = GetMyMic()->GetSampleRate();
+        unkc = 0;
+    } else {
+        mWriteWav = false;
+        FileStream fs(filename, FileStream::kRead, true);
+        WaveFile wav(fs);
+        unkc = wav.mSamplesPerSec;
+        WaveFileData data(wav);
+        if (!mStoredAudio) {
+            mStoredAudio = new MemStream();
+        }
+        mStoredAudio->Resize(
+            (int)(wav.mNumChannels * wav.mNumSamples * wav.mBitsPerSample) / 8
+        );
+        data.Read(
+            mStoredAudio->mBuffer.begin(),
+            (int)(wav.mNumChannels * wav.mNumSamples * wav.mBitsPerSample) / 8
+        );
+        sampleRate = unkc;
+    }
+    delete mDetector;
+    mDetector = nullptr;
+    mDetector = new PitchDetector(sampleRate);
+}
 
 void GameMic::AccessContinuousSamples(const short *&s, int &i) const {
     s = mSamplesContinuous;

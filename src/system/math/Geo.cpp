@@ -67,14 +67,16 @@ bool Box::Clamp(Vector3 &vec) {
 }
 
 void Multiply(const Box &box, float f, Box &out) {
-    float miny = box.mMin.y, maxy = box.mMax.y;
-    float minz = box.mMin.z, maxz = box.mMax.z;
-    float cy = miny + (maxy - miny) * 0.5f;
+    float miny = box.mMin.y;
+    float maxy = box.mMax.y;
+    float minz = box.mMin.z;
+    float maxz = box.mMax.z;
     float minx = box.mMin.x;
+    float cy = (maxy - miny) * 0.5f + miny;
     float maxx = box.mMax.x;
-    float cz = minz + (maxz - minz) * 0.5f;
+    float cz = (maxz - minz) * 0.5f + minz;
+    float cx = (maxx - minx) * 0.5f + minx;
     float ny = miny - cy;
-    float cx = minx + (maxx - minx) * 0.5f;
     float pz = maxz - cz;
     float py = maxy - cy;
     float nz = minz - cz;

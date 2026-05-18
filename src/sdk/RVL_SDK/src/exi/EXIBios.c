@@ -408,8 +408,8 @@ BOOL EXISelect(EXIChannel chan, u32 dev, u32 freq) {
     BOOL enabled;
     u32 cpr;
 
-    enabled = OSDisableInterrupts();
     exi = &Ecb[chan];
+    enabled = OSDisableInterrupts();
 
     if ((exi->state & 4) || chan != 2 && (dev == 0 && !(exi->state & 8) && !__EXIProbe(chan) || !(exi->state & 0x10) || (exi->dev != dev))) {
         OSRestoreInterrupts(enabled);
@@ -538,7 +538,7 @@ static void EXTIntrruptHandler(s32 interrupt, OSContext* context) {
 void EXIInit(void) {
     u32 id;
 
-    while(EXI_0CR_GET_TSTART(REG(0, 3)) == 1 || EXI_0CR_GET_TSTART(REG(1, 0)) == 1 || EXI_0CR_GET_TSTART(REG(2, 0)) == 1) {
+    while(EXI_0CR_GET_TSTART(REG(0, 3)) == 1 || EXI_0CR_GET_TSTART(REG(1, 3)) == 1 || EXI_0CR_GET_TSTART(REG(2, 3)) == 1) {
 
     }
 

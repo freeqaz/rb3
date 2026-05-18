@@ -120,10 +120,12 @@ int SetlistMergePanel::IntToSetlistIndex(int i, int setlistSize) {
     MILO_ASSERT_RANGE_EQ(setlistSize, 1, 100, 0xAA);
 
     int index = -1;
+    float ratio = 100.0f / setlistSize;
     for (int i3 = 0; i3 < setlistSize; i3++) {
-        index = i3;
-        if (i != (int)std::floor(100.0f / setlistSize) * i3)
+        if (i == (int)std::floor(ratio * i3)) {
+            index = i3;
             break;
+        }
     }
 
     MILO_ASSERT(index < setlistSize, 0xB8);

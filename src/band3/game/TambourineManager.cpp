@@ -7,8 +7,11 @@
 #include "game/Scoring.h"
 #include "game/VocalPart.h"
 #include "game/VocalPlayer.h"
+#include "meta_band/ProfileMgr.h"
 #include "midi/MidiParser.h"
 #include "obj/Data.h"
+#include "obj/Task.h"
+#include "utl/TimeConversion.h"
 #include "obj/Dir.h"
 #include "obj/MessageTimer.h"
 #include "obj/Msg.h"
@@ -77,7 +80,16 @@ const std::vector<int> &TambourineManager::TambourineGems() const {
 
 bool TambourineManager::IsTambourineButton(JoypadButton btn) const { return btn == kPad_X; }
 
-void TambourineManager::HandleButtonDown() {}
+void TambourineManager::HandleButtonDown() {
+    if (mTambourineActive && mTambourineIdx < TambourineGems().size() && unk60 > 0) {
+        int pad = -1;
+        if (mIsLocal) {
+            pad = mPlayerRef.GetUser()->GetLocalBandUser()->GetPadNum();
+        }
+        float offset = TheProfileMgr.GetSyncOffset(pad);
+        TambourineSwing(MsToTick(1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime) + offset));
+    }
+}
 
 bool TambourineManager::GemHit(int index) const {
     if ((unsigned int)index >= mGemStates.size())
