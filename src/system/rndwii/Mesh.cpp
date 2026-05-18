@@ -25,9 +25,13 @@ extern "C" {
 
 int NUM_BUFFERS = 4;
 bool gToggleAO = true;
+void *gVertexCache[4];
+void *gNrmCache[4];
+void *gBoneWeightCache[4];
+void *gBoneIndexCache[4];
+void *gBoneTransformCache;
 void *DisplayList::sTemp;
 void *DisplayList::sCurr;
-void *gBoneTransformCache;
 
 static DataNode OnToggleAO(DataArray *) {
     gToggleAO = !gToggleAO;
@@ -230,7 +234,25 @@ void WiiMesh::Init() {
 
     DisplayList::Init();
     gBoneTransformCache = (void *)0xe0000000;
-    MaxBones();
+    int numBones = MaxBones();
+    char *maxBase = (char *)0xe0003fe0;
+    char *base = (char *)0xe0000000 + ((numBones * 0x30 + 0x1f) & ~0x1f);
+    void **vp = gVertexCache;
+    void **np = gNrmCache;
+    void **wp = gBoneWeightCache;
+    void **ip = gBoneIndexCache;
+    int i = 0;
+    do {
+        *vp = base;
+        *np = base + 0x3c0;
+        MILO_ASSERT(base + 0x5a0 <= maxBase, 556);
+        *wp = base + 0x5a0;
+        MILO_ASSERT(base + 0xaa0 <= maxBase, 560);
+        *ip = base + 0xaa0;
+        MILO_ASSERT(base + 0xd20 <= maxBase, 564);
+        base += 0xd20;
+        vp++; np++; wp++; ip++;
+    } while (++i < NUM_BUFFERS);
     DataRegisterFunc("toggle_ao", OnToggleAO);
 }
 

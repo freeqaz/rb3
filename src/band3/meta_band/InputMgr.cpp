@@ -7,6 +7,8 @@
 #include "meta_band/NetSync.h"
 #include "meta_band/SessionMgr.h"
 #include "meta_band/UIEventMgr.h"
+#include "meta_band/Utl.h"
+#include "net/NetSession.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
 #include "obj/Msg.h"
@@ -131,7 +133,23 @@ LocalBandUser *InputMgr::GetUserWithInvalidController() const {
 void InputMgr::SetInvalidMessageSink(Hmx::Object *) {}
 void InputMgr::ClearInvalidMessageSink() {}
 
-bool InputMgr::AllowRemoteExit() const {}
+bool InputMgr::AllowRemoteExit() const {
+    bool hasRemoteUsers = false;
+    if (mNetSync && mNetSync->GetUIState() == (NetUIState)20) {
+        hasRemoteUsers = true;
+    }
+    bool notLocal = !TheNetSession->IsLocal();
+    if (mEventMgr && !mEventMgr->HasActiveEvent()
+        && ((mNetSync && mNetSync->IsEnabled()) || hasRemoteUsers)) {
+        if (mUser == NULL) {
+            if (hasRemoteUsers && notLocal) return true;
+            if (!IsLeaderLocal()) return true;
+        } else {
+            if (!mUser->IsLocal()) return true;
+        }
+    }
+    return false;
+}
 
 DataNode InputMgr::OnMsg(const LocalUserLeftMsg &msg) {
     if (mUser && mUser->IsLocal()) {
