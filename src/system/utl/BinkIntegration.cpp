@@ -181,7 +181,7 @@ unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int le
             file->Seek(-encread, SEEK_CUR);
             BINK *curBink = bink->bink;
             // only warn if this is a multitrack?
-            if (curBink != NULL && curBink->NumTracks >= 2 && curBink->Width < 8) {
+            if (curBink != NULL && curBink->NumTracks > 2 && curBink->Width <= 7) {
                 MILO_WARN("Attempting read of unsecure Bink song file!\n");
             }
         }
@@ -195,7 +195,7 @@ unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int le
     ((BINKFILE *)bink->iodata)->iFileBufPos += r;
     unsigned int size = file->Size();
     unsigned int anothersize = size - ((BINKFILE *)bink->iodata)->iFileBufPos;
-    if (bink->BufSize <= anothersize) {
+    if (bink->BufSize < anothersize) {
         anothersize = bink->BufSize;
     }
     bink->CurBufSize = anothersize;
