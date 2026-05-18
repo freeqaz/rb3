@@ -32,7 +32,8 @@ namespace Quazal {
 
         class TransitionPath {
         public:
-            StateFuncFactory unk0;
+            StateFuncFactory actions[8]; // 0x0..0x5F
+            unsigned short myActions;    // 0x60
         };
 
         StateMachine(StateFunc);

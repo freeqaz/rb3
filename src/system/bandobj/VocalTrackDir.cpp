@@ -625,9 +625,11 @@ void VocalTrackDir::SetMicDisplayLabel(Symbol s) {
 }
 
 void VocalTrackDir::SetMissingMicsForDisplay(bool b1, bool b2, bool b3) {
-    bool big_b = b1 | b2 | b3;
+    int bit1 = b2 ? 2 : 0;
+    int bit2 = b3 ? 4 : 0;
+    int frame = (int)b1 + bit1 + bit2;
     mVocalMics->Find<RndAnimatable>("arrow_configuration.anim", true)
-        ->SetFrame(big_b, 1.0f);
+        ->SetFrame(frame, 1.0f);
 }
 
 void VocalTrackDir::CanChat(bool show) {

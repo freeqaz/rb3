@@ -23,14 +23,33 @@ namespace Quazal {
         }
     }
 
-    void
-    StateMachine::StaticStateTransition(TransitionPath *path, StateFuncFactory func) {
+    void StateMachine::StaticStateTransition(TransitionPath *tran, StateFuncFactory func) {
         StateFuncFactory state = mCurrentState;
         while (state != mSourceState) {
-            StateFunc ret = (this->*state)(QSimpleEvent(3));
-            if (!ret) {
+            StateFuncFactory savedState = state;
+            StateFunc ret = (this->*savedState)(QSimpleEvent(3));
+            StateFuncFactory retF = reinterpret_cast<StateFuncFactory>(ret);
+            StateFuncFactory retF2 = retF;
+            if (retF2) {
+                state = retF2;
             } else {
+                StateFunc ret2 = (this->*savedState)(QSimpleEvent(0));
+                StateFuncFactory retF3 = reinterpret_cast<StateFuncFactory>(ret2);
+                state = retF3;
             }
+        }
+        if (tran->myActions == 0) {
+            TransitionPathSetup(tran, func);
+        } else {
+            StateFuncFactory *actionPtr = &tran->actions[0];
+            unsigned short actions = (tran->myActions >> 1) & 0x7FFF;
+            while (actions) {
+                unsigned short sig = actions & 3;
+                (this->*(*actionPtr))(QSimpleEvent(sig));
+                actionPtr++;
+                actions = (actions >> 2) & 0x3FFF;
+            }
+            mCurrentState = *actionPtr;
         }
     }
 

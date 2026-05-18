@@ -264,3 +264,14 @@ int VocalNoteList::GetNumPracticePhrases(const std::vector<VocalPhrase> &phrases
     }
     return count;
 }
+
+int VocalNoteList::HasNoteInRange(int startTick, int endTick) const {
+    for (const VocalNote *it = mNotes.data(); it != mNotes.data() + mNotes.size();
+         ++it) {
+        if (!it->IsUnpitched() && it->GetTick() <= endTick
+            && it->EndTick() >= startTick) {
+            return it->GetTick();
+        }
+    }
+    return -1;
+}

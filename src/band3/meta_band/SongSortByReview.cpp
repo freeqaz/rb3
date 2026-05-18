@@ -4,7 +4,13 @@
 #include "meta/Sorting.h"
 #include "meta_band/StoreSongSortNode.h"
 #include "os/Debug.h"
+#include "ui/UIListLabel.h"
+#include "ui/UIListCustom.h"
+#include "ui/UILabel.h"
 #include "utl/MemMgr.h"
+#include "utl/Symbol.h"
+#include "utl/Symbols.h"
+#include "utl/Symbols4.h"
 
 ReviewCmp::ReviewCmp(int review, const char *name) : mReview(review), mName(name) {
     mHeaderSym = ReviewDisplay::GetSymbolForReviewScore(review);
@@ -54,4 +60,48 @@ StoreSongSortNode *SongSortByReview::NewSongNode(StoreOffer *offer) const {
     ReviewCmp *cmp = new ReviewCmp(0, name);
     StoreSongSortNode *node = new StoreSongSortNode(cmp, offer);
     return node;
+}
+
+ShortcutNode *SongSortByReview::NewShortcutNode(SongSortNode *node) const {
+    MemDoTempAllocations m(true, false);
+    int review = 0;
+    OwnedSongSortNode *owned = dynamic_cast<OwnedSongSortNode *>(node);
+    if (owned) {
+        review = owned->GetSongRecord()->mReview;
+    }
+    ReviewCmp *cmp = new ReviewCmp(review, "review");
+    ShortcutNode *newNode = new ShortcutNode(cmp, cmp->mHeaderSym, true);
+    return newNode;
+}
+
+HeaderSortNode *SongSortByReview::NewHeaderNode(SongSortNode *node) const {
+    MemDoTempAllocations m(true, false);
+    int review = 0;
+    OwnedSongSortNode *owned = dynamic_cast<OwnedSongSortNode *>(node);
+    if (owned) {
+        review = owned->GetSongRecord()->mReview;
+    }
+    ReviewCmp *cmp = new ReviewCmp(review, "review");
+    HeaderSortNode *newNode = new HeaderSortNode(cmp, cmp->mHeaderSym, true);
+    return newNode;
+}
+
+const char *SongSortByReview::TextForNode(
+    ShortcutNode *node, UIListLabel *listLabel, UILabel *label
+) const {
+    label->SetTextToken(gNullStr);
+    return (const char *)1;
+}
+
+bool SongSortByReview::CustomForNode(
+    ShortcutNode *node, UIListCustom *custom, Hmx::Object *obj
+) const {
+    if (custom->Matches("review")) {
+        ReviewDisplay *rd = dynamic_cast<ReviewDisplay *>(obj);
+        MILO_ASSERT(rd, 0x7A);
+        rd->SetToToken(node->GetToken());
+        rd->SetShowing(true);
+        return true;
+    }
+    return false;
 }
