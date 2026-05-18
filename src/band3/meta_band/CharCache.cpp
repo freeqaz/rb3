@@ -48,6 +48,17 @@ void CharCache::RecomposeCharsWithPatchIx(int idx) {
         for (int i = 0; i < 4; i++) {
             BandCharacter *c = GetCharacter(i);
             MILO_ASSERT(c, 0x60);
+            int recomp = 0;
+            for (std::vector<BandCharDesc::Patch>::iterator it = c->mPatches.begin();
+                 it != c->mPatches.end();
+                 ++it) {
+                if (it->mTexture == idx) {
+                    recomp |= it->mCategory;
+                }
+            }
+            if (recomp != 0) {
+                c->RecomposePatches(c, recomp);
+            }
         }
     }
 }

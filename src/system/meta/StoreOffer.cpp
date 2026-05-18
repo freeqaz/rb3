@@ -5,6 +5,12 @@
 #include "utl/Locale.h"
 #include "utl/Symbols.h"
 
+// StorePage::RbnOffer is not yet declared in the header; provide a local
+// declaration so we can emit the correct call symbol from the constructor.
+extern "C" const StorePackedRBNOffer *RbnOffer__9StorePageCFi(
+    const StorePage *page, int idx
+);
+
 DataArray *gStoreOfferDescriptionArray;
 
 namespace {
@@ -266,54 +272,53 @@ StoreOffer::StoreOffer(const StorePackedOfferBase *base, SongMgr *mgr, bool b)
     mAlbum.mPackedData = nullptr;
     if (mPackedData->mAlbumLink && ty == kStoreOfferSong) {
         StorePage *page = TheStoreMetadata.LoadPage(mPackedData->mAlbumLink);
-        if (!page) {
+        if (page) {
+            if (page->mPage->mHasOffers && page->mPage->mNumOffers != 0) {
+                const StorePackedOfferBase *off;
+                if (page->mOffers[0] & 0x8000) {
+                    off = RbnOffer__9StorePageCFi(page, 0);
+                } else {
+                    off = page->Offer(0);
+                }
+                mAlbum.mPackedData = off;
+                UpdatePurchasable(&mAlbum);
+            }
+        } else {
             MILO_WARN(
                 "Offer %s has pack link, but page not found.\n", mPackedData->GetName()
             );
-        } else {
-            UpdatePurchasable(&mAlbum);
         }
-        //     iVar3 = StoreMetadataManager::LoadPage(TheStoreMetadata);
-        //     if (iVar3 == 0) {
-        //       StorePackedOfferBase::GetName(*(undefined4 *)(this + 0x1c));
-        //     }
-        //     else {
-        //       iVar4 = fn_8028F9C4();
-        //       if ((iVar4 != 0) && (iVar4 = fn_80290204(iVar3), iVar4 != 0)) {
-        //         iVar4 = fn_8051A1E4(iVar3,0);
-        //         if (iVar4 == 0) {
-        //           uVar5 = StorePage::Offer(iVar3,0);
-        //         }
-        //         else {
-        //           uVar5 = StorePage::RbnOffer(iVar3,0);
-        //         }
-        //         *(undefined4 *)(this + 0x40) = uVar5;
-        //         UpdatePurchasable(this + 0x24);
-        //       }
-        //     }
     }
     mPack.mPackedData = nullptr;
     if (mPackedData->mPackLink && ty == kStoreOfferSong) {
-        //     iVar2 = StoreMetadataManager::LoadPage(TheStoreMetadata);
-        //     if (iVar2 == 0) {
-        //       StorePackedOfferBase::GetName(*(undefined4 *)(this + 0x1c));
-        //     }
-        //     else {
-        //       iVar3 = fn_8028F9C4();
-        //       if ((iVar3 != 0) && (iVar3 = fn_80290204(iVar2), iVar3 != 0)) {
-        //         iVar3 = fn_8051A1E4(iVar2,0);
-        //         if (iVar3 == 0) {
-        //           uVar5 = StorePage::Offer(iVar2,0);
-        //         }
-        //         else {
-        //           uVar5 = StorePage::RbnOffer(iVar2,0);
-        //         }
-        //         *(undefined4 *)(this + 100) = uVar5;
-        //         UpdatePurchasable(this + 0x48);
-        //       }
-        //     }
+        StorePage *page = TheStoreMetadata.LoadPage(mPackedData->mPackLink);
+        if (page) {
+            if (page->mPage->mHasOffers && page->mPage->mNumOffers != 0) {
+                const StorePackedOfferBase *off;
+                if (page->mOffers[0] & 0x8000) {
+                    off = RbnOffer__9StorePageCFi(page, 0);
+                } else {
+                    off = page->Offer(0);
+                }
+                mPack.mPackedData = off;
+                UpdatePurchasable(&mPack);
+            }
+        } else {
+            MILO_WARN(
+                "Offer %s has pack link, but page not found.\n", mPackedData->GetName()
+            );
+        }
     }
-    DateTime dt(0, 0, 0, 0, 0, 0);
+    unsigned char day = mPackedData->unk41;
+    unsigned short packed = *(const unsigned short *)&mPackedData->unk3f;
+    DateTime dt(
+        (unsigned short)((packed >> 4) & 0xFFF),
+        (unsigned char)(packed & 0xF),
+        (unsigned char)((day >> 3) & 0x1F),
+        0,
+        0,
+        0
+    );
     unk6c = Localize(store_release_date_format, 0);
     dt.Format(unk6c);
     if (mPackedData->mNumSongs == 0) {

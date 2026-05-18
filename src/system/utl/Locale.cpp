@@ -21,7 +21,7 @@ DataNode DataDbgPrintLocaleSize(DataArray *) {
         "Localization table: %d entries, %gK in strings. Total mem: %gK\n",
         gDbgLocaleNumEntries,
         (float)gDbgLocaleStringsSize * 0.0009765625f,
-        (float)(gDbgLocaleStringsSize + gDbgLocaleNumEntries * 4) * 0.0009765625f
+        (float)(unsigned int)(gDbgLocaleStringsSize + gDbgLocaleNumEntries * 4) * 0.0009765625f
     );
     return 0;
 }

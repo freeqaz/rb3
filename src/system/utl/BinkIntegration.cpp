@@ -35,7 +35,65 @@ void *BinkAlloc(unsigned int size) { _MemAlloc(size, 128); }
 
 void BinkFree(void *mem) { _MemFree(mem); }
 
-void intelendian(void *, unsigned int) {}
+#ifdef __MWERKS__
+asm void intelendian(register void *buf, register unsigned int length) {
+    // r3 = buf, r4 = length
+    addi    r0, r4, 3
+    li      r4, 0
+    srwi.   r5, r0, 2
+    beqlr
+    srwi.   r0, r5, 3
+    mtctr   r0
+    beq-    tail_setup
+main_loop:
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    bdnz+   main_loop
+    andi.   r5, r5, 7
+    beqlr
+tail_setup:
+    mtctr   r5
+    nop
+tail_loop:
+    lwbrx   r0, r4, r3
+    stw     r0, 0(r3)
+    addi    r3, r3, 4
+    bdnz+   tail_loop
+    blr
+}
+#else
+void intelendian(void *buf, unsigned int length) {
+    unsigned int count = (length + 3) >> 2;
+    unsigned int *p = (unsigned int *)buf;
+    for (unsigned int i = 0; i < count; i++) {
+        unsigned int v = p[i];
+        p[i] = ((v & 0xff) << 24) | ((v & 0xff00) << 8) |
+               ((v & 0xff0000) >> 8) | ((v >> 24) & 0xff);
+    }
+}
+#endif
 
 bool BinkFileOpen(BINKIO *bink, const char *cc, unsigned int ui) {
     memset(bink, 0, sizeof(BINKIO));
