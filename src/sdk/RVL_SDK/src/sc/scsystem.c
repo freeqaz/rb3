@@ -52,7 +52,7 @@ u8 SCCheckStatus(void) {
         } else {
             BOOL ints2 = OSDisableInterrupts();
             u8 *buf = Control.fileBuffers[1];
-            u32 bufSize = 0x4000;
+            u32 bufSize = Control.bufferSizes[1];
             memset(buf, 0, bufSize);
             if (bufSize > 0xc) {
                 memcpy(buf, "SCv0", 4);

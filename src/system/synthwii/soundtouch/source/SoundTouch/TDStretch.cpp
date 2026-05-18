@@ -529,23 +529,38 @@ void TDStretch::processNominalTempo()
         // If there are samples in pMidBuffer waiting for overlapping,
         // do a single sliding overlapping with them in order to prevent a
         // clicking distortion in the output sound
-        if (inputBuffer.numSamples() < overlapLength)
+        if (inputBuffer.numSamples() < (uint)overlapLength)
         {
             // wait until we've got overlapLength input samples
             return;
         }
         // Mix the samples in the beginning of 'inputBuffer' with the
         // samples in 'midBuffer' using sliding overlapping
-        overlap(outputBuffer.ptrEnd(overlapLength), inputBuffer.ptrBegin(), 0);
+        {
+            SAMPLETYPE *pInput = inputBuffer.ptrBegin();
+            SAMPLETYPE *pOutput = outputBuffer.ptrEnd(overlapLength);
+            if ((uint)channels == 2)
+            {
+                overlapStereo(pOutput, pInput);
+            }
+            else
+            {
+                overlapMono(pOutput, pInput);
+            }
+        }
         outputBuffer.putSamples(overlapLength);
-        inputBuffer.receiveSamples(overlapLength);
+        inputBuffer.receiveSamples((uint)overlapLength);
         clearMidBuffer();
         // now we've caught the nominal sample flow and may switch to
         // bypass mode
     }
 
     // Simply bypass samples from input to output
-    outputBuffer.moveSamples(inputBuffer);
+    {
+        int oNumSamples = inputBuffer.numSamples();
+        outputBuffer.putSamples(inputBuffer.ptrBegin(), oNumSamples);
+        inputBuffer.receiveSamples(oNumSamples);
+    }
 }
 #pragma dont_inline reset
 
