@@ -111,6 +111,7 @@ const NetCacheMgr::ServerData &NetCacheMgr::Server() const {
 
 unsigned short NetCacheMgr::GetPort() const { return Server().port; }
 const char *NetCacheMgr::GetServerRoot() const { return Server().root; }
+const char *NetCacheMgr::GetServer() const { return Server().server; }
 bool NetCacheMgr::IsServerLocal() const { return Server().local; }
 
 void NetCacheMgr::Poll() {

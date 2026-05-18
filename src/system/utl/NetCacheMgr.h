@@ -95,6 +95,7 @@ public:
 
     unsigned short GetPort() const;
     const char *GetServerRoot() const;
+    const char *GetServer() const;
     bool IsServerLocal() const;
     NetCacheMgrFailType GetFailType() const;
     void SetState(NetCacheMgrState);

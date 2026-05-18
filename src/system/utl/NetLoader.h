@@ -56,13 +56,35 @@ public:
 
 class NetLoaderWii : public NetLoader {
 public:
+    enum State {
+        kSendRequest = 0,
+        kGetContentLength = 1,
+        kDispatchRequest = 2,
+        kReceiveRequest = 3,
+        kDone = 4,
+        kFailure = 5,
+        kFailureComplete = 6,
+    };
+
     NetLoaderWii(const String &);
     virtual ~NetLoaderWii();
     virtual void PollLoading();
     virtual bool HasFailed();
     virtual bool IsSafeToDelete() const;
 
-    char unk[0x2c]; // platform-specific Wii network members
+    bool SendRequest();
+    bool GetContentLength();
+    bool DispatchDownload();
+    bool ReceiveResponse();
+    void FinishTransaction();
+    void SetState(State);
+
+    int mHandle; // 0x24
+    State mState; // 0x28
+    long long mContentLength; // 0x30
+    long long mReceived; // 0x38
+    void *mDataBuffer; // 0x40
+    String mUrl; // 0x44
 };
 
 // called DataNetLoader but not a subclass of NetLoader/Stub, wtf lol
