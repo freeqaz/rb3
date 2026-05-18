@@ -18,12 +18,25 @@ DECOMP_FORCEACTIVE(
     "Invalid"
 )
 
+DECOMP_FORCEBLOCK(SystemComponent, (Quazal::SystemComponent *dummy),
+    void (Quazal::SystemComponent::*fp)(Quazal::SystemComponent *) = &Quazal::SystemComponent::SetParent;
+    (void)fp;
+)
+
 namespace Quazal {
     SystemComponent::SystemComponent(const String &s)
         : mName(s), mState((_State)1), mRefs(0), mParent(NULL) {}
 
     SystemComponent::~SystemComponent() {
         SetParent(NULL);
+    }
+
+    inline void SystemComponent::SetParent(Quazal::SystemComponent *parent) {
+        if (mParent != NULL)
+            mParent = NULL;
+        if (parent == NULL)
+            return;
+        mParent = parent;
     }
 
     void SystemComponent::SetName(const String &name) { mName = name; }

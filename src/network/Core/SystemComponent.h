@@ -54,13 +54,7 @@ namespace Quazal {
 
         void SetName(const Quazal::String &);
         bool SetState(_State, bool);
-        inline void SetParent(Quazal::SystemComponent *parent) {
-            if (mParent != NULL)
-                mParent = NULL;
-            if (parent == NULL)
-                return;
-            mParent = parent;
-        }
+        void SetParent(Quazal::SystemComponent *);
         void Trace(unsigned int, bool) const;
         _State Initialize();
         _State Terminate();
