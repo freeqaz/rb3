@@ -84,14 +84,18 @@ void UtlInit();
 // Classes with no header yet — defined inline for factory registration
 class TourDescPanel : public UIPanel {
 public:
+    TourDescPanel();
     OBJ_CLASSNAME(TourDescPanel);
     NEW_OBJ(TourDescPanel);
+    char unk_pad[0x18]; // sizeof(TourDescPanel) == 0x70
 };
 
 class JoinInvitePanel : public UIPanel {
 public:
+    JoinInvitePanel();
     OBJ_CLASSNAME(JoinInvitePanel);
     NEW_OBJ(JoinInvitePanel);
+    char unk_pad[0x8]; // sizeof(JoinInvitePanel) == 0x60
 };
 
 class WiiFriendsScreen : public UIPanel {
@@ -103,8 +107,10 @@ public:
 
 class WiiProfilePanel : public UIPanel {
 public:
+    WiiProfilePanel();
     OBJ_CLASSNAME(WiiProfilePanel);
     NEW_OBJ(WiiProfilePanel);
+    char unk_pad[0x44]; // sizeof(WiiProfilePanel) == 0x9c
 };
 
 class WiiFriendsDetailsProvider : public UIListProvider, public Hmx::Object {

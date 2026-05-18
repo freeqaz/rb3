@@ -2,6 +2,7 @@
 #include "obj/DataFile.h"
 #include "os/File.h"
 #include "os/Debug.h"
+#include "os/Endian.h"
 #include "os/Timer.h"
 #include "KeyChain.h"
 #include "synth/Synth.h"
@@ -125,21 +126,20 @@ bool BinkFileOpen(BINKIO *bink, const char *cc, unsigned int ui) {
 
 unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int length) {
     BINKENCRYPTIONHEADER *encHeader = &((BINKFILE *)bink->iodata)->mEncryptionHeader;
-    File *file = (File *)&bink->iodata[0];
+    File *file = ((BINKFILE *)bink->iodata)->pFile;
     // check if we've read a file header before
     if (encHeader->mSignature == 0) {
         // read the header
-        int encread = file->Read(encHeader, sizeof(BINKENCRYPTIONHEADER));
+        unsigned int encread = file->Read(encHeader, sizeof(BINKENCRYPTIONHEADER));
         // byteswap mSignature through mMagicB from bad endian to big endian
         intelendian(encHeader, 0x14);
-        // byteswap mNonce (THIS DOESNT MATCH!)
-        unsigned int nonceSwap[4];
-        nonceSwap[0] = (unsigned int)(encHeader->mNonce[0] >> 32);
-        nonceSwap[2] = (unsigned int)(encHeader->mNonce[1] >> 32);
-        nonceSwap[1] = (unsigned int)(encHeader->mNonce[0]);
-        nonceSwap[3] = (unsigned int)(encHeader->mNonce[1]);
-        encHeader->mNonce[0] = BSWAP(nonceSwap[1]) << 32 | BSWAP(nonceSwap[0]);
-        encHeader->mNonce[1] = BSWAP(nonceSwap[3]) << 32 | BSWAP(nonceSwap[2]);
+        // byteswap mNonce (each 32-bit word independently)
+        unsigned int *nonce = (unsigned int *)encHeader->mNonce;
+        unsigned int n0 = nonce[0], n1 = nonce[1], n2 = nonce[2], n3 = nonce[3];
+        nonce[0] = BSWAP(n0);
+        nonce[1] = BSWAP(n1);
+        nonce[2] = BSWAP(n2);
+        nonce[3] = BSWAP(n3);
         // check if the header is BIKE
         int whatever = encHeader->mSignature - 0x45420000; // 'BI--'
         if (whatever == 0x494B) { // '--KE'
@@ -187,14 +187,14 @@ unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int le
         }
     }
     // read the actual bink file header
-    int r = file->Read(header, length);
+    unsigned int r = file->Read(header, length);
     if (r != length) {
         bink->ReadError = 1;
     }
     ((BINKFILE *)bink->iodata)->iHeaderSize += r;
     ((BINKFILE *)bink->iodata)->iFileBufPos += r;
-    int size = file->Size();
-    int anothersize = size - ((BINKFILE *)bink->iodata)->iFileBufPos;
+    unsigned int size = file->Size();
+    unsigned int anothersize = size - ((BINKFILE *)bink->iodata)->iFileBufPos;
     if (bink->BufSize <= anothersize) {
         anothersize = bink->BufSize;
     }

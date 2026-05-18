@@ -217,6 +217,21 @@ const char *LocalizeFloat(const char *fmt, float num) {
     return buf;
 }
 
+void SyncReloadLocale() {
+    DataArray *cfg = SystemConfig(locale);
+    for (int i = 1; i < cfg->Size(); i++) {
+        const char *str = cfg->Str(i);
+        const char *path = FileMakePath(FileGetPath(cfg->File(), 0), str, 0);
+        if (SystemExec(MakeString("p4 sync %s", path)) == 0) {
+            TheDebug << MakeString("updated %s\n", path);
+        } else {
+            TheDebug << MakeString("failed to update %s\n", path);
+        }
+    }
+    TheLocale.Terminate();
+    TheLocale.Init();
+}
+
 const char *Localize(Symbol token, bool *notify) {
     bool localized;
     const char *textStr = TheLocale.Localize(token, false);
