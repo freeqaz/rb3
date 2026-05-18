@@ -44,7 +44,18 @@ u32 OrderFromFormat(unsigned int ui) {
     }
 }
 
-void WiiTex::MovieSwapFrames() {}
+extern "C" void GXInitTexObjData(GXTexObj *obj, void *imageData);
+
+void WiiTex::MovieSwapFrames() {
+    MILO_ASSERT_FMT(!(unkB0 & 2), "mImageData 0x%08x being leaked!\n", (int)mImageData);
+    mImageData = (void *)((&unkB4)[(unkB0 & 0x100) ? 1 : 0]);
+    MILO_ASSERT(!((int)mImageData & 31), 0x25C);
+    unkB0 ^= 0x100;
+    typedef u32 (*PFN_GXGetTexBufferSize)(u16, u16, GXTexFmt, u32, u32);
+    u32 sz = ((PFN_GXGetTexBufferSize)&GXGetTexBufferSize)(mWidth, mHeight, mFormat, 1, 2);
+    DCStoreRange(mImageData, sz);
+    GXInitTexObjData((GXTexObj *)((char *)this + 0x64), mImageData);
+}
 
 void WiiTex::CopyFromFB(
     int src_x, int src_y, int src_w, int src_h, bool copy_bool, bool is_mip

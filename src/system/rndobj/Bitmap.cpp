@@ -1094,7 +1094,44 @@ void DecodeDxt3Alpha(unsigned char *uc, int i, int j, unsigned char &alpha) {
     alpha = ((i1 << 4) & 0xF0) | (i1 & 0xF);
 }
 
-void DecodeDxt5Alpha(unsigned char *, int, int, unsigned char &) {}
+void DecodeDxt5Alpha(unsigned char *uc, int i, int j, unsigned char &alpha) {
+    unsigned char bitOffsets[16] = {
+        0, 3, 6, 1, 4, 7, 2, 5,
+        0, 3, 6, 1, 4, 7, 2, 5,
+    };
+    unsigned char byteOffsets[16] = {
+        0, 0, 0, 1, 1, 1, 2, 2,
+        3, 3, 3, 4, 4, 4, 5, 5,
+    };
+    unsigned char a0 = uc[0];
+    unsigned char a1 = uc[1];
+    int pixel = i + (j << 2);
+    unsigned int bit = bitOffsets[pixel];
+    unsigned int byte = byteOffsets[pixel];
+    int code;
+    if (bit < 6) {
+        code = (uc[byte + 2] >> bit) & 7;
+    } else if (bit == 6) {
+        code = ((uc[byte + 3] & 1) << 2) | ((uc[byte + 2] >> 6) & 3);
+    } else {
+        code = ((uc[byte + 3] & 3) << 1) | ((uc[byte + 2] >> 7) & 1);
+    }
+    if (code == 0) {
+        alpha = a0;
+    } else if (code == 1) {
+        alpha = a1;
+    } else if (a0 <= a1) {
+        if (code == 6) {
+            alpha = 0;
+        } else if (code == 7) {
+            alpha = 0xFF;
+        } else {
+            alpha = (unsigned char)(((unsigned int)(6 - code) * a0 + (unsigned int)(code - 1) * a1 + 2U) / 5U);
+        }
+    } else {
+        alpha = (unsigned char)(((unsigned int)(8 - code) * a0 + (unsigned int)(code - 1) * a1 + 3U) / 7U);
+    }
+}
 
 void RndBitmap::DxtColor(
     int x, int y, unsigned char &r, unsigned char &g, unsigned char &b, unsigned char &a

@@ -487,9 +487,10 @@ void MakeRotQuat(const Vector3 &v1, const Vector3 &v2, Hmx::Quat &q) {
 }
 
 void MakeRotQuatUnitX(const Vector3 &vec, Hmx::Quat &q) {
-    float sq = std::sqrt(vec.x / 2.0f + 0.5f);
+    float sq = std::sqrt(0.5f + vec.x * 0.5f);
     if (sq > 1e-7f) {
-        q.Set(0, vec.z * (0.5f / sq), -vec.y * (0.5f / sq), sq);
+        float inv2sq = 0.5f / sq;
+        q.Set(0, vec.z * inv2sq, -vec.y * inv2sq, sq);
     } else {
         q.Set(0, 0, 1, 0);
     }

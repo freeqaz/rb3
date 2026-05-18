@@ -32,12 +32,10 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
     float qmp_six = 6.0f * qmp;
     float t;
     for (int i = 0; i < 3; i++) {
-        if (i == 0) {
-            t = t0;
-        } else if (i == 1) {
-            t = hue;
-        } else {
-            t = hue - (1.0f / 3.0f);
+        switch (i) {
+            case 0: t = t0; break;
+            case 1: t = hue; break;
+            default: t = hue - (1.0f / 3.0f); break;
         }
 
         if (t < 0.0f) {
@@ -51,8 +49,7 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
         } else if (t * 2.0f < 1.0f) {
             color[i] = q;
         } else if (t * 3.0f < 2.0f) {
-            t = (2.0f / 3.0f) - t;
-            color[i] = 6.0f * (t * qmp) + p;
+            color[i] = 6.0f * (((2.0f / 3.0f) - t) * qmp) + p;
         } else {
             color[i] = p;
         }
