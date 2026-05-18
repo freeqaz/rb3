@@ -1,8 +1,11 @@
 #define CHARHAIR_LOCAL_MULTIPLY
 #include "bandobj/BandIKEffector.h"
+#include "char/CharBones.h"
+#include "char/CharClip.h"
 #include "math/Mtx.h"
 #include "math/Rot.h"
 #include "utl/Symbols.h"
+#include <string.h>
 
 #ifdef __MWERKS__
 inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
@@ -164,6 +167,76 @@ void BandIKEffector::SetDeformClip(Hmx::Object *o) {
             BandCharDesc::GetDeformClip(dynamic_cast<BandCharacter *>(o)->mGender);
     } else
         sDeformClip = 0;
+}
+
+int BandIKEffector::MeasureLengths(
+    RndTransformable *&handBone,
+    RndTransformable *&elbowBone,
+    float &inv2ab,
+    float &aaPlusbb,
+    float &aPlusb
+) {
+    handBone = mEffector->TransParent();
+    if (!handBone)
+        return 0;
+    elbowBone = handBone->TransParent();
+    if (!elbowBone)
+        return 0;
+    float a = mEffector->mLocalXfm.v.x;
+    float b = handBone->mLocalXfm.v.x;
+    aPlusb = a + b;
+    aaPlusbb = a * a + b * b;
+    inv2ab = 1.0f / (2.0f * a * b);
+    return 1;
+}
+
+void BandIKEffector::NeutralLocalPos(RndTransformable *bone, Vector3 &pos) {
+    if (sDeformClip) {
+        const char *name = bone->Name();
+        if (strcmp(name, "bone_pelvis.mesh") != 0) {
+            Symbol sym = CharBones::ChannelName(name, CharBones::TYPE_POS);
+            void *chan = sDeformClip->GetChannel(sym);
+            if (chan) {
+                sDeformClip->EvaluateChannel(&pos, chan, 0.0f);
+                return;
+            }
+        }
+    }
+    pos = bone->mLocalXfm.v;
+}
+
+void BandIKEffector::NeutralLocalXfm(RndTransformable *bone, Transform &tf) {
+    tf = bone->mLocalXfm;
+    if (sDeformClip) {
+        if (strcmp(bone->Name(), "bone_pelvis.mesh") != 0) {
+            void *posChan = sDeformClip->GetChannel(
+                CharBones::ChannelName(bone->Name(), CharBones::TYPE_POS)
+            );
+            if (posChan)
+                sDeformClip->EvaluateChannel(&tf.v, posChan, 0.0f);
+            void *scaleChan = sDeformClip->GetChannel(
+                CharBones::ChannelName(bone->Name(), CharBones::TYPE_SCALE)
+            );
+            if (scaleChan) {
+                Vector3 targetScale;
+                sDeformClip->EvaluateChannel(&targetScale, scaleChan, 0.0f);
+                Vector3 currScale;
+                MakeScale(tf.m, currScale);
+                float rx = targetScale.x / currScale.x;
+                tf.m.x.x *= rx;
+                tf.m.x.y *= rx;
+                tf.m.x.z *= rx;
+                float ry = targetScale.y / currScale.y;
+                tf.m.y.x *= ry;
+                tf.m.y.y *= ry;
+                tf.m.y.z *= ry;
+                float rz = targetScale.z / currScale.z;
+                tf.m.z.x *= rz;
+                tf.m.z.y *= rz;
+                tf.m.z.z *= rz;
+            }
+        }
+    }
 }
 
 void BandIKEffector::NeutralWorldXfm(RndTransformable *trans, Transform &tf) {

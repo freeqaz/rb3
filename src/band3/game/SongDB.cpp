@@ -263,7 +263,8 @@ int SongDB::GetPhraseID(int track_num, int i2) const {
         return mTrackData[track_num].unk34[i2];
     } else {
         int num = (unk28 - unk24) + 1;
-        return mTrackData[track_num].unk34[(i2 % num) + unk24];
+        i2 %= num;
+        return mTrackData[track_num].unk34[i2 + unk24];
     }
 }
 
