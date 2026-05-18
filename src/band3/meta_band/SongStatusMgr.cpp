@@ -739,8 +739,15 @@ int SongStatusMgr::GetBestTripleAwesomes(int idx, ScoreType ty, Difficulty diff)
 }
 
 int SongStatusMgr::GetBestSongStatusFlag(
-    Symbol, SongStatusFlagType, ScoreType, Difficulty
-) const {}
+    Symbol songName, SongStatusFlagType flag, ScoreType ty, Difficulty diff
+) const {
+    for (; diff < 4; diff = (Difficulty)(diff + 1)) {
+        if (GetSongStatusFlag(songName, flag, ty, diff)) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 int SongStatusMgr::GetCachedTotalDiscScore(ScoreType ty) const {
     return mCachedTotalDiscScores[ty];

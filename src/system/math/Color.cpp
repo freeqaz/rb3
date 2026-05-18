@@ -26,28 +26,36 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
     } else {
         q = -(sat * val - (sat + val));
     }
-    float two = 2.0f;
-    float third = 1.0f / 3.0f;
-    float six = 6.0f;
-    float zero = 0.0f;
-    float three = 3.0f;
-    float two_thirds = 2.0f / 3.0f;
-    float one = 1.0f;
-    float p = val * two - q;
-    float t0 = hue + third;
+    float p = val * 2.0f - q;
+    float t0 = (1.0f / 3.0f) + hue;
     float qmp = q - p;
-    float qmp_six = six * qmp;
+    float qmp_six = 6.0f * qmp;
     float t;
     for (int i = 0; i < 3; i++) {
-        if (i == 0) { t = t0; }
-        else if (i == 1) { t = hue; }
-        else { t = hue - third; }
-        if (t < zero) { t += one; }
-        else if (t > one) { t -= one; }
-        if (t * six < one) { color[i] = t * qmp_six + p; }
-        else if (t * two < one) { color[i] = q; }
-        else if (t * three < two) { t = two_thirds - t; color[i] = qmp * t * six + p; }
-        else { color[i] = p; }
+        if (i == 0) {
+            t = t0;
+        } else if (i == 1) {
+            t = hue;
+        } else {
+            t = hue - (1.0f / 3.0f);
+        }
+
+        if (t < 0.0f) {
+            t += 1.0f;
+        } else if (t > 1.0f) {
+            t -= 1.0f;
+        }
+
+        if (t * 6.0f < 1.0f) {
+            color[i] = t * qmp_six + p;
+        } else if (t * 2.0f < 1.0f) {
+            color[i] = q;
+        } else if (t * 3.0f < 2.0f) {
+            t = (2.0f / 3.0f) - t;
+            color[i] = 6.0f * (t * qmp) + p;
+        } else {
+            color[i] = p;
+        }
     }
 }
 

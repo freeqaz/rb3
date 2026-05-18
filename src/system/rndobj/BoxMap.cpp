@@ -91,7 +91,6 @@ bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
             f2 *= f2;
             float f3 = 1.0f / (beamLen * 2.0f);
             float vx = spot.unk0.x * f1;
-            float unk38y = spot.unk38.y;
             float unk1c_x = spot.unk38.x - vx;
             float f2_new = (1.0f - f2) / (f2 + 1.0f);
             spot.unk30 = f3;
@@ -99,7 +98,7 @@ bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
             spot.unk28 = f2_new;
             float f2c = 1.0f - f2_new;
             spot.unk1c.z = spot.unk38.z - vz;
-            spot.unk1c.y = unk38y - vy;
+            spot.unk1c.y = spot.unk38.y - vy;
             spot.unk2c = 1.0f / f2c;
             spot.unk34 = f1 * f3;
             return true;

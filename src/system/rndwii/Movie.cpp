@@ -65,9 +65,21 @@ void WiiMovie::Update() {
     tex->MovieSwapFrames();
 }
 
-void WiiMovie::StreamReadFinish() {}
+void WiiMovie::StreamReadFinish() {
+    int bytesRead;
+    while (!unk_0x48->ReadDone(bytesRead)) {
+    }
+}
 
-void WiiMovie::StreamNextBuffer() { StreamReadFinish(); }
+void WiiMovie::StreamNextBuffer() {
+    StreamReadFinish();
+    unk_0x50 = (unk_0x50 != 0) ? 0 : mVideoData.FrameSize();
+    int remaining = unk_0x48->Size() - unk_0x48->Tell();
+    int frameSize = mVideoData.FrameSize();
+    unk_0x48->ReadAsync(
+        (char *)unk_0x40 + unk_0x50, Min(frameSize, remaining)
+    );
+}
 
 void WiiMovie::StreamRestart(int i) {
     StreamReadFinish();
