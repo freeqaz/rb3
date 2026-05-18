@@ -164,7 +164,7 @@ void BinStream::ReadEndian(void *data, int bytes) {
 }
 
 void BinStream::WriteEndian(const void *void_data, int bytes) {
-    long long sp8;
+    char sp8;
     if (mLittleEndian) {
         SwapData((void *)void_data, &sp8, bytes);
         Write(&sp8, bytes);

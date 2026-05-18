@@ -472,9 +472,9 @@ void StoreMetadataManager::UpdateOfferOwnership() {
 }
 
 void StoreMetadataManager::MarkDownloaded(unsigned long long key, unsigned short idx) {
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
     StoreTitleContentState *state;
-    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.lower_bound(key);
-    if (it == unk58.end() || key < (*it).first) {
+    if (it == unk58.end()) {
         state = (StoreTitleContentState *)operator new(0x1000);
         if (state) memset(state, 0, 0x1000);
         unk58[key] = state;

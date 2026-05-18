@@ -150,7 +150,7 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
 }
 
 void LoadMgr::PollUntilEmpty() {
-    const char *funcName = __FUNCTION__;
+    char *funcName = (char *)__FUNCTION__;
     SetGPHangDetectEnabled(false, funcName);
     float savedPeriod = TheLoadMgr.mPeriod;
     TheLoadMgr.unk1c = 1e+30f;
