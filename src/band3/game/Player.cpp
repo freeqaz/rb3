@@ -311,7 +311,10 @@ void Player::EnterCoda() {
     }
 }
 
-void Player::AddBonusPoints(int i) { TheGame->AddBonusPoints(mUser, i, unk28c++); }
+void Player::AddBonusPoints(int i) {
+    BandUser *u = mUser;
+    TheGame->AddBonusPoints(u, i, unk28c++);
+}
 
 void Player::Rollback(float, float) {
     BandTrack *track = GetBandTrack();

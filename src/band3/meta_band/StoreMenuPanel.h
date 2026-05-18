@@ -20,13 +20,16 @@ public:
     void AddMenu(DataArray*, const char*);
     void OnBack(const DataArray*);
     void OnMsg(const MetadataLoadedMsg&);
-    void GetCrumbText(int) const;
+    const char* GetCrumbText() const;
     void SetPendingMenuIx(int);
-    
+
+    static StoreMenuPanel* sInstance() { return inst; }
+
     std::vector<int> unk38; // 0x38, 0x3c, 0x3e
     int (unk40); // 0x40
     int (unk44); // 0x44
     int (unk48); // 0x48
     int (unk4c); // 0x4c
+
+    static StoreMenuPanel* inst;
 };
-extern StoreMenuPanel* inst;

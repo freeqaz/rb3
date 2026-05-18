@@ -18,8 +18,11 @@
 #include "meta_band/SessionMgr.h"
 #include "meta_band/SongRecord.h"
 #include "meta_band/SongSortNode.h"
+#include "meta_band/BandStorePanel.h"
 #include "meta_band/StoreInfoPanel.h"
+#include "meta_band/StoreMenuPanel.h"
 #include "meta_band/Utl.h"
+#include "obj/Dir.h"
 #include "obj/Data.h"
 #include "obj/ObjMacros.h"
 #include "os/DateTime.h"
@@ -430,7 +433,23 @@ void AppLabel::SetOfferDescription(const StoreOffer *offer) {
     SetDisplayText(offer->Description(), true);
 }
 
-void AppLabel::SetStoreCrumbText() {}
+void AppLabel::SetStoreCrumbText() {
+    StoreMenuPanel *smp = StoreMenuPanel::inst;
+    MILO_ASSERT(smp, 0x32A);
+    UIPanel *sbp = ObjectDir::Main()->Find<UIPanel>("store_browser_panel", true);
+    MILO_ASSERT(sbp, 0x32D);
+    BandStorePanel *bsp = BandStorePanel::Instance();
+    MILO_ASSERT(bsp, 0x330);
+    const char *title;
+    if (sbp->GetState() != UIPanel::kUp || strlen(title = bsp->MenuTitle().c_str()) == 0) {
+        SetDisplayText(smp->GetCrumbText(), true);
+    } else {
+        SetDisplayText(
+            MakeString("%s::%s", smp->GetCrumbText(), title),
+            true
+        );
+    }
+}
 void AppLabel::SetMusicLibraryStatus() {
     SetDisplayText(TheMusicLibrary->GetStatusText(), true);
 }

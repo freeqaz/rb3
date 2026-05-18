@@ -31,4 +31,8 @@ public:
     static BandStorePanel *Instance();
     NEW_OBJ(BandStorePanel);
     static void Init() { REGISTER_OBJ_FACTORY(BandStorePanel); }
+
+    // Layout helpers (members live in compiled asm; see BandStorePanel ctor)
+    String& MenuTitle() { return *(String*)((char*)this + 0xE4); }
+    const String& MenuTitle() const { return *(const String*)((const char*)this + 0xE4); }
 };

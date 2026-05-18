@@ -100,27 +100,29 @@ const char *unusedStrings2[] = { "\n"
 bool CacheMgrWii::SearchAsync(const char *param_1, CacheID **param_2) {
     if (!IsDone()) {
         SetLastResult(kCache_ErrorBusy);
-    } else {
-        if (param_2 != NULL && (*param_2) != NULL) {
-            SetLastResult(kCache_ErrorBadParam);
-            return true;
-        }
-        TheDebug << "SearchAsync BAD PARAM: mStrCacheName is empty\n";
-
+        return false;
+    }
+    if (param_2 == NULL || *param_2 == NULL) {
+        TheDebug << MakeString("SearchAsync BAD PARAM: ppCacheID = 0x%X", param_2);
         if (param_2 != NULL) {
-            TheDebug << MakeString(", *ppCacheID = 0x%X", param_2);
+            TheDebug << MakeString(", *ppCacheID = 0x%X", *param_2);
         }
-        TheDebug << "";
-        SetLastResult(kCache_NoError);
-        return true;
+        FormatString fs("\n");
+        TheDebug << fs.Str();
+        SetLastResult(kCache_ErrorBadParam);
+        return false;
     }
-    TheDebug << MakeString("SearchAsync BAD PARAM: ppCacheID = 0x%X", param_2);
-    if (param_2 != NULL) {
-        TheDebug << MakeString(", *ppCacheID = 0x%X", param_2);
+    mVar1 = param_1;
+    if (mVar1.c_str()[0] == '\0') {
+        FormatString fs("SearchAsync BAD PARAM: mStrCacheName is empty\n");
+        TheDebug << fs.Str();
+        SetLastResult(kCache_ErrorBadParam);
+        return false;
     }
-    SetLastResult(kCache_ErrorBadParam);
-
-    return false;
+    mVar2 = (int)param_2;
+    SetOp((CacheMgr::OpType)1);
+    SetLastResult(kCache_NoError);
+    return true;
 }
 
 /*

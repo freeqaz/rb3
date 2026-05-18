@@ -104,6 +104,56 @@ void WiiMat::SelectParticles() {
         return;
     }
     START_AUTO_TIMER("mat_select_part");
+    Reset();
+    RndEnviron *env = RndEnviron::sCurrent;
+    GXSetCullMode(GX_CULL_NONE);
+    Hmx::Color diffuseCol = mColor;
+    if (mBlend == kPreMultAlpha) {
+        PreMultiplyAlpha(diffuseCol);
+    }
+    if (mUseEnviron) {
+        const Hmx::Color &ambc = env->AmbientColor();
+        diffuseCol.alpha *= ambc.alpha;
+        diffuseCol.blue *= ambc.blue;
+        diffuseCol.green *= ambc.green;
+        diffuseCol.red *= ambc.red;
+    }
+    GXColor matGxc;
+    {
+        register __vec2x32float__ ba_pair;
+        register __vec2x32float__ rg_pair;
+        register const Hmx::Color *_c = &diffuseCol;
+        register GXColor *_dst = &matGxc;
+        ASM_BLOCK(
+            psq_l ba_pair, 0x8(_c), 0, 0
+            psq_l rg_pair, 0x0(_c), 0, 0
+            psq_st rg_pair, 0x0(_dst), 0, 6
+            psq_st ba_pair, 0x2(_dst), 0, 6
+        )
+    }
+    GXSetChanAmbColor(GX_COLOR1A1, matGxc);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR1A1, 0, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+    GXSetChanCtrl(GX_COLOR0, 1, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+    GXSetChanCtrl(GX_ALPHA0, 1, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+    SetAlphaCutout(mAlphaCut, mAlphaThresh);
+    SetZBufferMode(mZMode);
+    SetFog(false, NULL, NULL);
+    SetFrameBlend(mBlend);
+    int tex = 0;
+    int tev = 0;
+    int stage = 0;
+    SetStageState(tex, tev, stage, mIntensify, 1);
+    GXSetDstAlpha(0, 0);
+    if (sOverrideAlphaWrite) {
+        GXSetAlphaUpdate(0);
+    } else {
+        GXSetAlphaUpdate((GXBool)mAlphaWrite);
+    }
+    GXSetNumTexGens((u8)tex);
+    GXSetNumTevStages((u8)tev);
+    sCurrent = this;
+    mDirty = 0;
 }
 
 RndMat *WiiMat::Select(bool hasAOCalc) {
