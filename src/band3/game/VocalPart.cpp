@@ -336,13 +336,8 @@ int VocalPart::CalculateRemainingTambourineTicks() {
     MILO_ASSERT(mThisPhrase->mTambourinePhrase, 0x614);
     int dur = mThisPhrase->unkc;
     const VocalPhrase *sp8 = GetNextPhraseMarker(mThisPhrase);
-    while (true) {
-        const VocalPhrase *end =
-            mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
-        if (sp8 == end)
-            break;
-        if (!sp8->mTambourinePhrase)
-            break;
+    while (sp8 != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()
+           && sp8->mTambourinePhrase) {
         dur += sp8->unkc;
         sp8 = GetNextPhraseMarker(sp8);
     }

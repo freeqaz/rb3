@@ -492,6 +492,12 @@ void GemManager::UpdateSlotPositions() {
     }
 }
 
+Hmx::Object *GemManager::GetSmasherObj(int slot) {
+    GemSmasher *smasher = mNowBar->FindSmasher(slot);
+    if (!smasher) return 0;
+    return smasher->Dir();
+}
+
 int GemManager::GetNumGems() const { return mGems.size(); }
 const Gem &GemManager::GetGem(int idx) const { return mGems[idx]; }
 

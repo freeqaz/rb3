@@ -8,6 +8,7 @@
 #include "utl/MemMgr.h"
 #include "utl/Symbols.h"
 #include "math/Mtx.h"
+#include "math/Rot.h"
 #include "math/Vec.h"
 
 INIT_REVS(RndMeshDeform)
@@ -88,7 +89,33 @@ END_COPYS
 
 void RndMeshDeform::PreSave(BinStream &) { SetKeepMeshData(); }
 
-void RndMeshDeform::Print() {}
+void RndMeshDeform::Print() {
+    TheDebug << "num_verts " << mVerts.NumVerts() << "\n";
+    TheDebug << "mesh_inverse " << mMeshInverse << "\n";
+    TheDebug << "skip_inverse " << mSkipInverse << "\n";
+    TheDebug << "mesh " << mMesh.Ptr() << "\n";
+    for (unsigned int i = 0; i < mBones.size(); i++) {
+        BoneDesc &cur = mBones[i];
+        TheDebug << "bone" << (int)i << ":\n";
+        TheDebug << "   " << cur.mBone.Ptr() << "\n";
+        TheDebug << "   " << cur.unk14 << "\n";
+        TheDebug << "   " << cur.unk54 << "\n";
+    }
+    int idx = 0;
+    u8 *cData = (u8 *)mVerts.mData;
+    while (cData < (u8 *)mVerts.mData + mVerts.mSize) {
+        TheDebug << "weights" << idx << ": ";
+        u8 *p = cData + 1;
+        for (int j = 0; j < (int)*cData; j++) {
+            TheDebug << "(" << (int)p[0] << " "
+                     << (float)p[1] * 0.003921568859368563f << ") ";
+            p += 2;
+        }
+        TheDebug << "\n";
+        idx++;
+        cData += (*cData * 2) + 1;
+    }
+}
 
 BEGIN_PROPSYNCS(RndMeshDeform)
     SYNC_PROP(mesh, mMesh)

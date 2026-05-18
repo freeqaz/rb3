@@ -40,7 +40,7 @@ void __OSThreadInit(void) {
     OSThread* tail;
 
     thread->state = OS_THREAD_STATE_RUNNING;
-    thread->state = OS_THREAD_DETACHED;
+    thread->attr = OS_THREAD_DETACHED;
     thread->base = 16;
     thread->priority = 16;
     thread->suspend = 0;
@@ -981,7 +981,25 @@ void OSGetThreadSpecific(){
 static void SleepAlarmHandler(OSAlarm* alarm, OSContext* ctx) {
 #pragma unused(ctx)
 
-    OSResumeThread((OSThread*)OSGetAlarmUserData(alarm));
+    OSThread* thread = (OSThread*)OSGetAlarmUserData(alarm);
+    OSThread* iter;
+    BOOL found;
+
+    if (thread->state == OS_THREAD_STATE_EXITED) {
+        found = FALSE;
+    } else {
+        found = FALSE;
+        for (iter = OS_THREAD_QUEUE.head; iter != NULL; iter = iter->linkActive.next) {
+            if (thread == iter) {
+                found = TRUE;
+                break;
+            }
+        }
+    }
+
+    if (found) {
+        OSResumeThread((OSThread*)OSGetAlarmUserData(alarm));
+    }
 }
 
 //unused
