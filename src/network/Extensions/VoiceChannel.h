@@ -20,5 +20,8 @@ namespace Quazal {
         virtual void OperationEnd(DOOperation *);
         virtual void Trace(unsigned int) const;
         virtual bool Publish();
+
+        void SetCodecID(unsigned char);
+        void SetTransmissionFrequency(unsigned int);
     };
 }

@@ -32,6 +32,6 @@ namespace Quazal {
     };
 
     String &operator+(const Quazal::String &, const Quazal::String &);
-    String &operator+(const Quazal::String &, const char *);
+    String operator+(const Quazal::String &, const char *);
     StringStream &operator<<(Quazal::StringStream &, const Quazal::String &);
 }

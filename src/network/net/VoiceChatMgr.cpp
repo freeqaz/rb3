@@ -2,12 +2,18 @@
 #include "Extensions/CodecManager.h"
 #include "Extensions/DemuxEventHandler.h"
 #include "Extensions/SpeexCodec.h"
+#include "Extensions/VoiceChannel.h"
 #include "ObjDup/Session.h"
+#include "ObjDup/WKHandle.h"
 #include "net/NetSession.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
+
+namespace Quazal {
+    extern WKHandle gVoiceChannel;
+}
 
 VoiceChatMgr *TheVoiceChatMgr;
 
@@ -30,8 +36,12 @@ namespace {
     };
 
     void CreateVoiceChannel() {
-        char *channel;
-        MILO_ASSERT(channel != NULL, 0x0);
+        Quazal::VoiceChannel *channel =
+            Quazal::_DO_VoiceChannel::CreateWellKnown(Quazal::gVoiceChannel);
+        MILO_ASSERT(channel != NULL, 93);
+        channel->SetCodecID(0);
+        channel->SetTransmissionFrequency(10);
+        channel->Publish();
     }
 }
 

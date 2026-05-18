@@ -105,9 +105,16 @@ namespace Quazal {
     }
 
     String &operator+(const Quazal::String &, const Quazal::String &) {}
-    String &operator+(const Quazal::String &lhs, const char *rhs) {
-        String s(lhs);
-        return s;
+    String operator+(const Quazal::String &lhs, const char *rhs) {
+        const char *left = lhs.m_szContent;
+        unsigned int uiSizeLeft = (left == nullptr) ? 0 : strlen(left);
+        if (uiSizeLeft == 0) {
+            return String(rhs);
+        }
+        if (rhs == nullptr || *rhs == '\0') {
+            return String(left);
+        }
+        return _Copy(left, uiSizeLeft, rhs, strlen(rhs));
     }
     StringStream &operator<<(Quazal::StringStream &ss, const Quazal::String &str) {
         return ss << str.m_szContent;
