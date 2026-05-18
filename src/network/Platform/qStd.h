@@ -12,6 +12,10 @@ namespace Quazal {
     template <class T VECTOR_SIZE_DFLT_PARAM>
     class qVector : public std::vector<T VECTOR_SIZE_ARG, MemAllocator<T> > {
     public:
+        typedef std::vector<T VECTOR_SIZE_ARG, MemAllocator<T> > _Base;
+        typedef typename _Base::size_type size_type;
+        qVector() {}
+        qVector(size_type __n, const T& __val) : _Base(__n, __val) {}
     };
 
     template <class T>

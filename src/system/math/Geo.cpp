@@ -838,51 +838,51 @@ void Sphere::GrowToContain(const Vector3 &v, float r) {
     d.z = v.z - center.z;
     float dist = Length(d);
     float oldRadius = radius;
-    if (r + dist > oldRadius) {
-        float totalDist = dist + oldRadius;
-        if (totalDist < r) {
-            center = v;
-            radius = r;
-            return;
-        }
-        if (dist != 0.0f) {
-            float invDist = 1.0f / dist;
-            float dz = d.z;
-            float dy = d.y;
-            float dx = d.x;
-            float cz = center.z;
-            float vz = v.z;
-            float cy = center.y;
-            float vy = v.y;
-            float cx = center.x;
-            float vx = v.x;
-            float half = 0.5f;
-            float ndz = dz * invDist;
-            float ndy = dy * invDist;
-            float ndx = dx * invDist;
-            float t_zR = ndz * oldRadius;
-            float t_zr = ndz * r;
-            d.x = ndx;
-            float t_yr = ndy * r;
-            float t_yR = ndy * oldRadius;
-            float t_xR = ndx * oldRadius;
-            d.y = ndy;
-            radius = half * (r + totalDist);
-            float t_xr = ndx * r;
-            d.z = ndz;
-            float az = cz - t_zR;
-            float vz_plus = vz + t_zr;
-            float vy_plus = vy + t_yr;
-            float ay = cy - t_yR;
-            float vx_plus = vx + t_xr;
-            float ax = cx - t_xR;
-            float dz_off = vz_plus - az;
-            float dy_off = vy_plus - ay;
-            float dx_off = vx_plus - ax;
-            center.z = half * dz_off + az;
-            center.y = half * dy_off + ay;
-            center.x = half * dx_off + ax;
-        }
+    if (r + dist <= oldRadius)
+        return;
+    float totalDist = dist + oldRadius;
+    if (totalDist < r) {
+        center = v;
+        radius = r;
+        return;
+    }
+    if (dist != 0.0f) {
+        float invDist = 1.0f / dist;
+        float dz = d.z;
+        float dy = d.y;
+        float dx = d.x;
+        float cz = center.z;
+        float vz = v.z;
+        float cy = center.y;
+        float vy = v.y;
+        float cx = center.x;
+        float vx = v.x;
+        float half = 0.5f;
+        float ndz = dz * invDist;
+        float ndy = dy * invDist;
+        float ndx = dx * invDist;
+        float t_zR = ndz * oldRadius;
+        float t_zr = ndz * r;
+        d.x = ndx;
+        float t_yr = ndy * r;
+        float t_yR = ndy * oldRadius;
+        float t_xR = ndx * oldRadius;
+        d.y = ndy;
+        radius = half * (r + totalDist);
+        float t_xr = ndx * r;
+        d.z = ndz;
+        float az = cz - t_zR;
+        float vz_plus = vz + t_zr;
+        float vy_plus = vy + t_yr;
+        float ay = cy - t_yR;
+        float vx_plus = vx + t_xr;
+        float ax = cx - t_xR;
+        float dz_off = vz_plus - az;
+        float dy_off = vy_plus - ay;
+        float dx_off = vx_plus - ax;
+        center.z = half * dz_off + az;
+        center.y = half * dy_off + ay;
+        center.x = half * dx_off + ax;
     }
 }
 

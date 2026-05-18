@@ -3,9 +3,9 @@
 namespace Quazal {
     Key::Key() {}
 
-    Key::Key(unsigned char *uc, unsigned int ui) {
-        for (int i = 0; i < ui; i++) {
-            mData[i] = uc[i];
+    Key::Key(unsigned char *pbyContent, unsigned int uiLength) : mData(uiLength, 0) {
+        for (unsigned int i = 0; i < uiLength; i++) {
+            mData[i] = pbyContent[i];
         }
     }
 

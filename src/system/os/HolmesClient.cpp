@@ -60,6 +60,7 @@ namespace {
     }
 
     bool CheckForResponse(Holmes::Protocol ptcl);
+    void FinishResponse();
 
     CriticalSection gCrit;
     NetStream *gHolmesStream;
@@ -85,21 +86,26 @@ namespace {
                                                 Holmes::kInvalidOpcode };
 
     u32 CheckReads() {
-        ReadRequest *currentRequest;
-        do {
-            if (gRequests.empty()) {
-                return false;
-            }
+        while (!gRequests.empty()) {
             if (!CheckForResponse(Holmes::kReadFile)) {
                 return false;
             }
             BeginCmd(Holmes::kReadFile, false);
-            currentRequest = &gRequests.front();
-            int r =
-                gHolmesStream->ReadAsync(currentRequest->mBuffer, currentRequest->mBytes);
-            gRequests.pop_back();
+            ReadRequest *currentRequest = &gRequests.front();
+            int r = gHolmesStream->ReadAsync(
+                currentRequest->mBuffer, currentRequest->mBytes
+            );
+            currentRequest->mBuffer = (char *)currentRequest->mBuffer + r;
+            currentRequest->mBytes -= r;
             EndCmd(Holmes::kReadFile);
-        } while (currentRequest != NULL);
+            if (r <= 0) break;
+            if (currentRequest->mBytes == 0) {
+                gRequests.pop_front();
+                FinishResponse();
+                return true;
+            }
+        }
+        return false;
     }
 
     void WaitForResponse(Holmes::Protocol ptcl);
