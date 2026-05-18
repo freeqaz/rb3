@@ -313,9 +313,6 @@ bool SongSortMgr::DoesSongMatchFilter(int songID, const SongFilter *filter, Symb
         case 10:
             found = curSet.find(data->HasSoloSym(partSym)) != curSet.end();
             break;
-        default:
-            found = false;
-            break;
         }
         if (!found)
             break;
@@ -404,9 +401,6 @@ bool SongSortMgr::DoesOfferMatchFilter(
         case 10:
             found = curSet.find(offer->HasSolo() ? has_part_yes : has_part_no)
                 != curSet.end();
-            break;
-        default:
-            found = false;
             break;
         }
         if (!found)
