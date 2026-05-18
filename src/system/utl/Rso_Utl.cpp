@@ -13,12 +13,16 @@
 RsoInitFunc gRsoIniters[MAX_RSO_INITERS];
 RsoDeinitFunc gRsoDeiniters[MAX_RSO_INITERS];
 int gRsoIniterCount;
+void *staticRso;
+void *g_jumpCodeBuffer;
 
 extern void *g_pRSOReserveBuf;
-uint g_RSOBufOffset = 0;
+uint g_RSOBufOffset;
 
 extern void *g_pDefaultRSOBuf;
-uint g_DefaultRSOBufOffset = 0;
+uint g_DefaultRSOBufOffset;
+
+bool gbCleanBuffersOnPreInit = true;
 
 DECOMP_FORCEACTIVE(Rso_Utl, "_unresolved func.\n")
 
@@ -91,12 +95,11 @@ void *LoadRsoFile(const char *filename, unsigned int &size, void *(*alloc)(int))
 extern "C" int RSOLinkList(void *, unsigned char *);
 extern "C" int RSOListInit();
 extern "C" int RSOUnLinkList(void *);
+extern "C" int RSOGetJumpCodeSize();
+extern "C" void RSOMakeJumpCode(void *, void *);
 extern "C" void OSEnableCodeExecOnMEM2Lo16MB();
 extern "C" void DVDInit();
 extern void RndGxDrawDone();
-
-void *staticRso;
-bool gbCleanBuffersOnPreInit = true;
 
 void *RsoLoad(const char *filename, unsigned char **bss, void *(*alloc)(int)) {
     uint size;
@@ -126,11 +129,12 @@ void *StaticRsoLoad(const char *filename) {
     return rso;
 }
 
-void RsoInitDefaults() {
+bool RsoInitDefaults() {
     bool ok = true;
     for (int i = 0; i < gRsoIniterCount; i++) {
-        ok = ok && gRsoIniters[i]((struct RSOObjectHeader *)staticRso);
+        ok = (bool)(ok & gRsoIniters[i]((struct RSOObjectHeader *)staticRso));
     }
+    return ok;
 }
 
 void RsoPostTerminate() {
@@ -138,14 +142,19 @@ void RsoPostTerminate() {
     memset(g_pRSOReserveBuf, 0, kRSOBufferSize);
 }
 
-void RsoInit(const char *staticRsoName) {
+bool RsoInit(const char *staticRsoName) {
     OSEnableCodeExecOnMEM2Lo16MB();
     DVDInit();
     staticRso = StaticRsoLoad(staticRsoName);
     if (staticRso == NULL) {
-        return;
+        return false;
     }
-    // Reserved for jump code buffer init
+    int jcsize = RSOGetJumpCodeSize();
+    if (jcsize != 0) {
+        g_jumpCodeBuffer = DefaultRsoMemAlloc2(jcsize);
+        RSOMakeJumpCode(staticRso, g_jumpCodeBuffer);
+    }
+    return RsoInitDefaults();
 }
 
 void RsoPreInit() {

@@ -4,6 +4,7 @@
 #include "ui/UI.h"
 #include "utl/Std.h"
 #include "utl/Symbols.h"
+#include <functional>
 
 // TU-local inline definition of Hmx::Object copy constructor so CW inlines it
 // in _M_fill_insert_aux and _M_insert_overflow_aux for vector<PatchLayer>.
@@ -331,10 +332,7 @@ int PatchDir::SaveSize(int) {
 }
 
 void PatchDir::Clear() {
-    for (std::vector<PatchLayer>::iterator it = mLayers.begin(); it != mLayers.end();
-         ++it) {
-        (*it).Reset();
-    }
+    std::for_each(mLayers.begin(), mLayers.end(), std::mem_fun_ref(&PatchLayer::Reset));
     unk1c0 = true;
 }
 
@@ -611,9 +609,9 @@ void PatchDir::LoadLayerStickers() {
 
 void PatchDir::CollapseEmptyLayers() {
     int destIndex = 0;
-    int numLayers = mLayers.size();
+    int byteOffset = 0;
     for (std::vector<PatchLayer>::iterator it = mLayers.begin(); it != mLayers.end();
-         ++it, ++destIndex) {
+         ++it) {
         if (!(*it).mStickerCategory.Null()) {
             int empty = FindEmptyLayer();
             if (empty >= 0 && empty < destIndex) {
@@ -621,6 +619,8 @@ void PatchDir::CollapseEmptyLayers() {
                 mLayers[destIndex].ClearSticker();
             }
         }
+        destIndex++;
+        byteOffset += 0x44;
     }
 }
 

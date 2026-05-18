@@ -259,6 +259,60 @@ void TambourineManager::OnRemoteTambourineSucceeding(DataArray *msg) {
     }
 }
 
+void TambourineManager::SetPaused(bool paused) { mTambourineActive = !paused; }
+
+void TambourineManager::GameOver() {
+    mTambourineActive = false;
+    mTambourineFader->DoFade(-96.0f, 0.0f);
+}
+
+void TambourineManager::Rollback(float, float toMs) {
+    int tickStart = (int)MsToTick(toMs);
+    mTambourineIdx = 0;
+    while ((unsigned int)mTambourineIdx < TambourineGems().size() &&
+           TambourineGems()[mTambourineIdx] < tickStart) {
+        mTambourineIdx++;
+    }
+    for (unsigned int i = 0; i < mGemStates.size(); i++) {
+        if ((mGemStates[i] & 3) != 0) {
+            mGemStates[i] |= 4;
+        }
+    }
+    mTambourineFader->DoFade(0.0f, 0.0f);
+    unk48 = true;
+}
+
+int TambourineManager::TambourineSwing(int tick) {
+    if (unk60 <= 0)
+        return 0;
+    int idx = mTambourineIdx;
+    if ((unsigned int)idx >= mGemStates.size())
+        return 0;
+    int diff = tick - TambourineGems()[idx];
+    if (unk4c >= 8) {
+        mPlayerRef.PopupHelp(Symbol("tambourine"), false);
+    }
+    unk4c = 0;
+    int window = mTambourineWindowTicks;
+    if (diff < -window) {
+        TambourineFail(-1, true);
+        return 1;
+    }
+    if (diff <= window) {
+        TambourineSucceed(mTambourineIdx);
+        mTambourineIdx++;
+        return 2;
+    }
+    TambourineFail(mTambourineIdx, true);
+    mTambourineIdx++;
+    return 3;
+}
+
+// These empty inline-emitted definitions live in this TU to match link order
+// of the original binary.
+bool VocalPlayer::IsAutoplay() const { return mAutoPlay; }
+void BandTrack::SetTambourine(bool) {}
+
 BEGIN_HANDLERS(TambourineManager)
     HANDLE_ACTION(remote_solo_end, LocalTambourineSoloEnd(_msg->Int(2), _msg->Int(3)))
     HANDLE_ACTION(remote_tambourine_succeeding, OnRemoteTambourineSucceeding(_msg))
