@@ -1933,7 +1933,12 @@
             "sdk/RVL_SDK/src/dvd/dvdqueue.c": "MISSING",
             "sdk/RVL_SDK/src/esp/esp.c": "NonMatching",
             "sdk/RVL_SDK/src/euart/euart.c": "Matching",
-            "sdk/RVL_SDK/src/exi/EXIBios.c": "NonMatching",
+            "sdk/RVL_SDK/src/exi/EXIBios.c": {
+                "status": "NonMatching",
+                "extra_cflags": [
+                    "-opt noschedule"
+                ]
+            },
             "sdk/RVL_SDK/src/exi/EXICommon.c": "Matching",
             "sdk/RVL_SDK/src/exi/EXIUart.c": "Matching",
             "sdk/RVL_SDK/src/fs/fs.c": "NonMatching",
