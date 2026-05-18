@@ -123,6 +123,25 @@ void PitchArrow::SetTiltDegrees(float f) {
     }
 }
 
+void PitchArrow::SetFrameScore(float score, VocalHUDColor color, float harmony) {
+    if (mVocalHUDColor == kVocalColorInvalid && color == kVocalColorInvalid) {
+        color = (VocalHUDColor)6;
+    }
+    if (mScore != score) {
+        mScoreAnim->SetFrame(score, 1.0f);
+        mScore = score;
+    }
+    unk280 = false;
+    if (color != mVocalHUDColor && color != kVocalColorInvalid) {
+        SetColor(color);
+    }
+    SetColorFade(score > 0.1f ? 0.0f : 1.0f);
+    if (mHarmonyFX != harmony) {
+        mHarmonyFXAnim->SetFrame(harmony, 1.0f);
+        mHarmonyFX = harmony;
+    }
+}
+
 VocalHUDColor GetVocalHUDColor(Symbol s) {
     if (s == green)
         return kVocalColorGreen;
@@ -158,6 +177,55 @@ void PitchArrow::SetColor(VocalHUDColor col) {
     }
 }
 
+void PitchArrow::SetColorFade(float f) {
+    float clamped;
+    if (f > 1.0f) clamped = 1.0f;
+    else if (f < 0.0f) clamped = 0.0f;
+    else clamped = f;
+    float cur = mColorFade;
+    if (clamped != cur && mColorAnim && mColorFadeAnim) {
+        float hi = 0.1f + cur;
+        float lo = cur - 0.1f;
+        float final;
+        if (clamped > hi) final = hi;
+        else if (clamped < lo) final = lo;
+        else final = clamped;
+        mColorFade = final;
+        mColorFadeAnim->SetFrame(final, 1.0f);
+    }
+}
+
+
+
+void PitchArrow::SetVolume(float b) {
+    float lo = mVolume - 0.05f;
+    float clamped;
+    float cur = mVolume;
+    if (b > 1.0f) clamped = 1.0f;
+    else if (b < lo) clamped = lo;
+    else clamped = b;
+    if (clamped != cur) {
+        if (mVolumeAnim) {
+            mVolumeAnim->SetFrame(clamped, 1.0f);
+            mVolume = clamped;
+        }
+    }
+}
+
+void PitchArrow::SetSplit(bool b) {
+    RndPropAnim *anim = mSplitAnim;
+    if (anim) {
+        float next = anim->mFrame;
+        if (b) next = next + 0.05f;
+        else next = next - 0.05f;
+        float clamped;
+        if (next > 1.0f) clamped = 1.0f;
+        else if (next < 0.0f) clamped = 0.0f;
+        else clamped = next;
+        anim->SetFrame(clamped, 1.0f);
+    }
+}
+
 void PitchArrow::Clear() {
     mPitched = true;
     mDeploying = false;
@@ -180,6 +248,21 @@ void PitchArrow::Poll() {
     if (mSpinAnim)
         PollHelix();
     RndDir::Poll();
+}
+
+void PitchArrow::PollHelix() {
+    float speed = mSpinSpeed;
+    float cur = mSpinAnim->mFrame;
+    float next = mSpinRestFrame;
+    if (speed > 0.0f && mSpinBeginFrame < mSpinEndFrame) {
+        next = cur + speed;
+        if (next > mSpinEndFrame) {
+            next = next - (mSpinEndFrame - mSpinBeginFrame);
+        }
+    }
+    if (cur != next) {
+        mSpinAnim->SetFrame(next, 1.0f);
+    }
 }
 
 void PitchArrow::SetGhostFade(float f) {

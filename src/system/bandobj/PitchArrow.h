@@ -30,6 +30,9 @@ public:
     void SetTiltDegrees(float);
     void SetFrameScore(float, VocalHUDColor, float);
     void SetColor(VocalHUDColor);
+    void SetColorFade(float);
+    void SetVolume(float);
+    void SetSplit(bool);
     void PollHelix();
     void SetGhostFade(float);
 

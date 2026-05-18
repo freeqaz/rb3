@@ -1,5 +1,6 @@
 #include "VoiceWii.h"
 #include "math/Decibels.h"
+#include "math/Utl.h"
 #include "os/Debug.h"
 #include "utl/MakeString.h"
 #include "utl/MemMgr.h"
@@ -119,3 +120,23 @@ void Voice::SetStartSamp(int samp) {
 }
 
 void Voice::SetVolume(float volume) { SetVolume(volume, true); }
+
+void Voice::SetPan(float f) {
+    float v = Modulo(f - -4.0f, 8.0f) + -4.0f;
+    float clamped;
+    if (v < -3.0f) {
+        clamped = -1.0f - (v + 3.0f);
+    } else if (v < -1.0f) {
+        clamped = -1.0f;
+    } else if (v > 3.0f) {
+        clamped = 1.0f - (v - 3.0f);
+    } else if (v > 1.0f) {
+        clamped = 1.0f;
+    } else {
+        clamped = v;
+    }
+    mPan = (clamped + 1.0f) * 63.5f;
+    MILO_ASSERT(mPan >= 0, 0x1ee);
+    MILO_ASSERT(mPan <= 127, 0x1ef);
+    mMixDirty = true;
+}

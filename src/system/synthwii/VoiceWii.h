@@ -208,6 +208,7 @@ public:
     void SetFX(bool);
     void SetFormat(SampleData::Format);
     void SetLoopSamp(int);
+    void SetPan(float);
     void SetStartSamp(int);
     void SetVolume(float);
     void SetVolume(float, bool);

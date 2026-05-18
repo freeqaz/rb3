@@ -1,5 +1,6 @@
 #include "meta_band/SetlistMergePanel.h"
 #include "decomp.h"
+#include "math/Rand.h"
 #include "game/BandUserMgr.h"
 #include "game/NetGameMsgs.h"
 #include "meta_band/BandMachine.h"
@@ -135,7 +136,56 @@ int SetlistMergePanel::IntToSetlistIndex(int i, int setlistSize) {
     return index;
 }
 
-DataNode SetlistMergePanel::OnMsg(const ReleasingLockStepMsg &) {}
+DataNode SetlistMergePanel::OnMsg(const ReleasingLockStepMsg &msg) {
+    MILO_ASSERT(IsLeaderLocal(), 0xBF);
+    if (!msg->Int(2)) {
+        return 1;
+    }
+    if (mSetlists.size() == 1) {
+        SendSongsToMetaPerformer(mSetlists[0].first);
+        return 1;
+    }
+    int totalUsers = 0;
+    int numSetlists = mSetlists.size();
+    for (int i = 0; i < numSetlists; i++) {
+        totalUsers += mSetlists[i].second;
+    }
+    for (int i = 0; i < numSetlists; i++) {
+        std::vector<int> &songs = mSetlists[i].first;
+        int targetSize = mSetlists[i].second * 100 / totalUsers;
+        if ((int)songs.size() > targetSize) {
+            songs.resize(targetSize);
+        }
+    }
+    std::vector<int> mergedSetlist;
+    if (TheGameMode->InMode("tour")) {
+        MILO_ASSERT(!mSetlists.empty(), 0xDC);
+        int targetSize = mSetlists[0].first.size();
+        for (int i = 0; i < numSetlists; i++) {
+            MILO_ASSERT(targetSize == (int)mSetlists[i].first.size(), 0xE4);
+        }
+        for (int i = 0; i < targetSize; i++) {
+            int pick = RandomInt(0, numSetlists);
+            mergedSetlist.push_back(mSetlists[pick].first[i]);
+        }
+    } else {
+        for (int i = 0; i < 100; i++) {
+            for (int j = 0; j < numSetlists; j++) {
+                int idx = IntToSetlistIndex(i, mSetlists[j].first.size());
+                if (idx != -1) {
+                    mergedSetlist.push_back(mSetlists[j].first[idx]);
+                }
+            }
+        }
+        int targetSize = 0;
+        for (int i = 0; i < numSetlists; i++) {
+            targetSize += mSetlists[i].first.size();
+        }
+        MILO_ASSERT(targetSize == (int)mergedSetlist.size(), 0x107);
+    }
+    SendSongsToMetaPerformer(mergedSetlist);
+    return 1;
+}
 
 void SetlistMergePanel::SendSongsToMetaPerformer(const std::vector<int> &songs) {
     unsigned short size = songs.size();
