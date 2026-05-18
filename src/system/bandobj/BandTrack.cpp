@@ -1,6 +1,7 @@
 #include "bandobj/BandTrack.h"
 #include "bandobj/EndingBonus.h"
 #include "bandobj/TrackPanelDirBase.h"
+#include "rndobj/Group.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 #include <os/Debug.h>
@@ -24,6 +25,15 @@ BEGIN_LOADS(BandTrack)
 END_LOADS
 
 void BandTrack::Save(BinStream &) {}
+
+void BandTrack::StartPulseAnims(float timeTillBeat) {
+    if (mBeatAnimsGrp) {
+        mBeatAnimsGrp->Animate(
+            0.0f, false, timeTillBeat, RndAnimatable::k480_fpb, 0.0f, 960.0f, 0.0f, 1.0f,
+            loop
+        );
+    }
+}
 
 DECOMP_FORCEACTIVE(BandTrack, __FILE__, "0")
 
@@ -187,6 +197,32 @@ int BandTrack::GetPlayerDifficulty() const {
         return mParent->GetPlayerDifficulty();
     return 0;
 }
+
+bool BandTrack::HasLocalPlayer() const {
+    return mParent && mParent->HasLocalPlayer();
+}
+
+bool BandTrack::HasNetPlayer() const {
+    return mParent && mParent->HasNetPlayer();
+}
+
+const char *BandTrack::UserName() const {
+    return mParent ? mParent->UserName() : MakeString("");
+}
+
+const char *BandTrack::GetTrackIcon() const {
+    return mParent ? mParent->GetTrackIcon() : MakeString("G");
+}
+
+Symbol BandTrack::GetPlayerDifficultySym() const {
+    return mParent ? mParent->GetPlayerDifficultySym() : Symbol(gNullStr);
+}
+
+TrackPanelDirBase *BandTrack::MyTrackPanelDir() {
+    return dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir());
+}
+
+Symbol BandTrack::GetInstrumentSymbol() const { return mInstrument; }
 
 void BandTrack::PeakState(bool enabled, bool b2) {
     if (enabled == unk1a)

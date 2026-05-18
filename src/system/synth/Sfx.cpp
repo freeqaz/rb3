@@ -8,6 +8,11 @@
 #include "synth/Utl.h"
 #include "utl/Symbols.h"
 
+// TU-local inline definition of Hmx::Object copy constructor so CW inlines it
+// in operator= for ObjVector<MoggClipMap>.
+inline Hmx::Object::Object(const Hmx::Object &o)
+    : mTypeProps(o.mTypeProps), mTypeDef(o.mTypeDef), mName(o.mName), mDir(o.mDir), mRefs(o.mRefs) {}
+
 SfxInst::SfxInst(Sfx *sfx)
     : SeqInst(sfx), mMoggClips(this, kObjListNoNull), mStartProgress(0.0f) {
     for (ObjVector<SfxMap>::iterator it = sfx->mMaps.begin(); it != sfx->mMaps.end();
