@@ -1,9 +1,11 @@
 #include "tour/QuestFilterPanel.h"
 #include "game/NetGameMsgs.h"
+#include "meta_band/AccomplishmentManager.h"
 #include "meta_band/TexLoadPanel.h"
 #include "net/NetSession.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
+#include "tour/QuestManager.h"
 #include "tour/Tour.h"
 #include "tour/TourPerformer.h"
 #include "tour/TourPerformerLocal.h"
@@ -55,13 +57,15 @@ TourSetlistType QuestFilterPanel::GetSelectedSetlistType() {
         if (prog) {
             TourDesc *desc = TheTour->GetTourDesc(prog->GetTourDesc());
             if (desc) {
-                TourSetlistType ret = kTourSetlist_Fixed;
+                TourSetlistType ret;
                 Symbol gigtype =
                     desc->GetSetlistTypeForGigNum(prog->GetCurrentGigNum(), i);
                 if (gigtype == random)
                     ret = kTourSetlist_Random;
                 else if (gigtype == custom)
                     ret = kTourSetlist_Custom;
+                else
+                    ret = kTourSetlist_Fixed;
                 return ret;
             }
         }
@@ -168,6 +172,52 @@ Symbol QuestFilterPanel::GetGigFilter() {
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0x1D8);
     return pProgress->GetFilterForCurrentGig();
+}
+
+void QuestFilterPanel::CheatWinQuest() {
+    if (m_symQuest != "") {
+        TourPerformerImpl *pPerformer;
+        TourProgress *pProgress = TheTour->GetTourProgress();
+        MILO_ASSERT(pProgress, 0x214);
+        pPerformer = TheTour->m_pTourPerformer;
+        MILO_ASSERT(pPerformer, 0x217);
+        pPerformer->HandleCheatWinQuest(m_symQuest);
+        TheQuestMgr.CompleteQuest(pProgress, m_symQuest);
+        pProgress->HandleQuestFinished();
+        if (pProgress->IsTourComplete()) {
+            pPerformer->UpdateCompleteTourStats(pProgress);
+        }
+        TheAccomplishmentMgr->CheckForFinishedTourAccomplishmentsForUser(
+            TheTour->GetUser()
+        );
+    }
+}
+
+void QuestFilterPanel::CheatCycleChallenge() {
+    TourPerformerImpl *pPerformer = TheTour->m_pTourPerformer;
+    MILO_ASSERT(pPerformer, 0x222);
+    MILO_ASSERT(pPerformer->IsLocal(), 0x223);
+    TourPerformerLocal *pLocalPerformer = dynamic_cast<TourPerformerLocal *>(pPerformer);
+    MILO_ASSERT(pLocalPerformer, 0x225);
+    pLocalPerformer->CheatCycleChallenge();
+}
+
+void QuestFilterPanel::CheatCycleSetlist() {
+    TourPerformerImpl *pPerformer = TheTour->m_pTourPerformer;
+    MILO_ASSERT(pPerformer, 0x206);
+    MILO_ASSERT(pPerformer->IsLocal(), 0x207);
+    TourPerformerLocal *pLocalPerformer = dynamic_cast<TourPerformerLocal *>(pPerformer);
+    MILO_ASSERT(pLocalPerformer, 0x209);
+    pLocalPerformer->CheatCycleSetlist();
+}
+
+int QuestFilterPanel::AreCurrentFiltersValid() {
+    TourPerformerImpl *pPerformer = TheTour->m_pTourPerformer;
+    MILO_ASSERT(pPerformer, 0x1EC);
+    MILO_ASSERT(pPerformer->IsLocal(), 0x1ED);
+    TourPerformerLocal *pLocalPerformer = dynamic_cast<TourPerformerLocal *>(pPerformer);
+    MILO_ASSERT(pLocalPerformer, 0x1EF);
+    return pLocalPerformer->SanityCheckQuestFilters();
 }
 
 BEGIN_HANDLERS(QuestFilterPanel)
