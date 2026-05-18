@@ -7,8 +7,8 @@
 #define IPC_HANDLE_MAX  0x80
 #define IPC_PATH_LEN    0x30
 
-s32 IpcNumPendingReqs;
 s32 IpcNumUnIssuedReqs;
+s32 IpcNumPendingReqs;
 
 IPCRequest IpcReqArray[IPC_REQUEST_MAX];
 IPCRequestEx* IpcReqPtrArray[IPC_REQUEST_MAX];
@@ -92,14 +92,14 @@ static void DelReqInfo(IPCRequestEx* req, s32 fd) {
     for (i = 0; i < IPC_REQUEST_MAX; i++) {
         if (req == IpcReqPtrArray[i] && (u32)req->base.fd == (u32)IpcReqArray[i].type) {
             enabled = OSDisableInterrupts();
-            if (IpcReqArray[i].type == IPC_REQ_OPEN) {
+            if ((u32)IpcReqArray[i].type == (u32)IPC_REQ_OPEN) {
                 if (req->base.ret >= 0) {
                     strncpy(IpcHandlePathBuf[req->base.ret], IpcReqArray[i].open.path, IPC_PATH_LEN - 1);
                     IpcHandlePathBuf[req->base.ret][IPC_PATH_LEN - 1] = '\0';
                     memset(IpcOpenPathBuf[i], 0, IPC_PATH_LEN);
                 }
             }
-            if (IpcReqArray[i].type == IPC_REQ_CLOSE) {
+            if ((u32)IpcReqArray[i].type == (u32)IPC_REQ_CLOSE) {
                 memset(IpcHandlePathBuf[IpcReqArray[i].fd], 0, IPC_PATH_LEN);
             }
             IpcReqPtrArray[i] = NULL;

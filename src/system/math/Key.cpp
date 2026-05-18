@@ -45,14 +45,14 @@ void InterpTangent(
     Vector3 &vout
 ) {
     float fsq = f * f;
-    float f4 = 4.0f * f;
     float fsq3 = 3.0f * fsq;
-    float f6 = 6.0f * f;
+    float f4 = 4.0f * f;
     float fsq6 = 6.0f * fsq;
+    float f6 = 6.0f * f;
     float bsub = fsq3 - f4;
-    float negFsq6 = -6.0f * fsq;
     float a = fsq6 - f6;
     float b = 1.0f + bsub;
+    float negFsq6 = -6.0f * fsq;
     float c = negFsq6 + f6;
     float d = fsq3 - 2.0f * f;
 
