@@ -690,9 +690,10 @@ void SongData::PostDynamicAdd(BeatMatcher *bm, int trk) {
 }
 
 void SongData::RemoveBeatMatcher(BeatMatcher *bm) {
-    std::vector<BeatMatcher *>::iterator it =
-        std::find(mBeatMatchers.begin(), mBeatMatchers.end(), bm);
-    mBeatMatchers.erase(it, mBeatMatchers.end());
+    mBeatMatchers.erase(
+        std::remove(mBeatMatchers.begin(), mBeatMatchers.end(), bm),
+        mBeatMatchers.end()
+    );
 }
 
 const PhraseList &SongData::GetPhraseList(int i, BeatmatchPhraseType ty) const {

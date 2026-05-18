@@ -7,6 +7,7 @@
 #include "rndwii/Rnd.h"
 #include "utl/MemMgr.h"
 #include <set>
+#include <stdlib.h>
 
 std::set<WiiTex *> gRenderTextureSet;
 
@@ -65,6 +66,12 @@ void WiiTex::CopyFromFB(
         RndGxDrawDone();
 }
 
+struct YUV422;
+struct YUV444;
+struct RGB;
+void YUV422To444(YUV422 *, YUV444 *, int, int);
+void YUV444ToRGB(YUV444 *, RGB *, int, int);
+void RGBToBMP(RGB *, void *, unsigned long, unsigned long);
 bool ConvertAndStoreYUV2BMP(void *, int, int, void *);
 
 void WiiTex::CreateScreenShot() {
@@ -82,4 +89,16 @@ void WiiTex::CreateScreenShot() {
     }
 }
 
-bool ConvertAndStoreYUV2BMP(void *, int, int, void *) {}
+bool ConvertAndStoreYUV2BMP(void *src, int w, int h, void *dst) {
+    int n = w * h;
+    YUV444 *yuv444 = (YUV444 *)calloc(n, 3);
+    if (yuv444 == NULL) return false;
+    YUV422To444((YUV422 *)src, yuv444, w, h);
+    RGB *rgb = (RGB *)calloc(n, 3);
+    if (rgb == NULL) return false;
+    YUV444ToRGB(yuv444, rgb, w, h);
+    free(yuv444);
+    RGBToBMP(rgb, dst, w, h);
+    free(rgb);
+    return true;
+}

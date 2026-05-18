@@ -136,7 +136,21 @@ param_6; return true;
 /*
 bool CacheMgrWii::MountAsync(CacheID*, Cache*, Hmx::Object*) {}
 */
-bool CacheMgrWii::UnmountAsync(Cache **, Hmx::Object *) {}
+bool CacheMgrWii::UnmountAsync(Cache **ppCache, Hmx::Object *pObject) {
+    if (!IsDone()) {
+        SetLastResult(kCache_ErrorBusy);
+        return false;
+    }
+    if (ppCache == NULL || *ppCache == NULL) {
+        SetLastResult(kCache_ErrorBadParam);
+        return false;
+    }
+    mVar2 = (int)ppCache;
+    mVar3 = (int)pObject;
+    SetLastResult(kCache_NoError);
+    SetOp((CacheMgr::OpType)4);
+    return true;
+}
 bool CacheMgrWii::DeleteAsync(CacheID *) {
     MILO_ASSERT(false, 296);
     return false;
