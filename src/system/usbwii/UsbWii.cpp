@@ -19,18 +19,22 @@ void UsbWii::DbgVerifyNoBufferOverrun(int unk) {}
 void UsbWii::KeepAlive(int unk) {}
 
 bool UsbWii::AddDevice(HIDDevice *device, UsbType type) {
+    UsbDevice *base;
+    int off;
     // check if we already have this device in our list
-    for (int i = 0; i < 4; i++) {
-        if (sDevices[i].dd == device) {
-            sDevices[i].state = 0;
+    base = sDevices;
+    for (off = 0; off < 0x400; off += 0x100) {
+        if (*(HIDDevice **)((char *)base + off) == device) {
+            ((UsbDevice *)((char *)base + off))->state = 0;
             return false;
         }
     }
     // if we don't, find a free spot and add the device
-    for (int i = 0; i < 4; i++) {
-        if (sDevices[i].dd == NULL) {
-            sDevices[i].dd = device;
-            sDevices[i].type = type;
+    base = sDevices;
+    for (off = 0; off < 0x400; off += 0x100) {
+        if (*(HIDDevice **)((char *)base + off) == NULL) {
+            *(HIDDevice **)((char *)base + off) = device;
+            ((UsbDevice *)((char *)base + off))->type = type;
             return true;
         }
     }

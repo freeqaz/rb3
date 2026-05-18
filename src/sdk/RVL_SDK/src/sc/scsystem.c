@@ -36,22 +36,22 @@ void SCInit(void) {
 }
 
 u8 SCCheckStatus(void) {
+    u8 status;
     BOOL ints = OSDisableInterrupts();
-    u8 status = BgJobStatus;
+    status = BgJobStatus;
     if (status == 3) {
         BgJobStatus = 1;
         OSRestoreInterrupts(ints);
-        SCControl *ctrl = &Control;
-        if (ParseConfBuf(ctrl->fileBuffers[1], ctrl->fileSizes[1]) == 0) {
+        if (ParseConfBuf(Control.fileBuffers[1], Control.fileSizes[1]) == 0) {
             BOOL ints2 = OSDisableInterrupts();
-            if (ConfBuf != ctrl->fileBuffers[1]) {
-                memcpy(ConfBuf, ctrl->fileBuffers[1], 0x4000);
+            if (ConfBuf != Control.fileBuffers[1]) {
+                memcpy(ConfBuf, Control.fileBuffers[1], 0x4000);
             }
             DirtyFlag = 0;
             OSRestoreInterrupts(ints2);
         } else {
             BOOL ints2 = OSDisableInterrupts();
-            u8 *buf = ctrl->fileBuffers[1];
+            u8 *buf = Control.fileBuffers[1];
             u32 bufSize = 0x4000;
             memset(buf, 0, bufSize);
             if (bufSize > 0xc) {

@@ -127,10 +127,8 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
         String desc(node.Str(nullptr));
         result.GetDataResultValue("type", node);
         int type = node.Int(nullptr);
-        bool validInstr = false;
-        if (type == 1 || type == 1001 || type == 2 || type == 1002) {
-            validInstr = true;
-        }
+        bool validInstr =
+            (type == 1 || type == 1001 || type == 2 || type == 1002);
         String artUrl(gNullStr);
         if (validInstr) {
             if (result.GetDataResultValue("art_url", node)) {

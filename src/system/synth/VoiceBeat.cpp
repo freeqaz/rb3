@@ -52,6 +52,7 @@ void TalkyMatcher::updateScoring(float f) {
         mRefEvents.Hit(f - 180.0f, f + 180.0f, f);
         mVoiceBeat.ClearEventList();
     }
+    std::vector<double> unused;
     mRefEvents.Miss(f - 120.0f, f - 60.0f);
     mVoiceBeat.ClearTrigger();
 }

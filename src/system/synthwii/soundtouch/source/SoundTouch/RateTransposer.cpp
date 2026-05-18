@@ -250,26 +250,34 @@ void RateTransposer::processSamples(const SAMPLETYPE *src, uint nSamples)
 
     // If anti-alias filter is turned off, simply transpose without applying
     // the filter
-    if (bUseAAFilter == FALSE) 
+    if (bUseAAFilter == FALSE)
     {
+        SAMPLETYPE *dest;
         sizeReq = ((float)nSamples / fRate + 1.0f);
-        count = transpose(outputBuffer.ptrEnd(sizeReq), src, nSamples);
+        dest = outputBuffer.ptrEnd(sizeReq);
+        if ((uint)numChannels == 2)
+        {
+            count = transposeStereo(dest, src, nSamples);
+        }
+        else
+        {
+            count = transposeMono(dest, src, nSamples);
+        }
         outputBuffer.putSamples(count);
         return;
     }
 
-#pragma push
-#pragma inline_depth 0
+#pragma inline_depth(0)
     // Transpose with anti-alias filter
-    if (fRate < 1.0f) 
+    if (fRate < 1.0f)
     {
         upsample(src, nSamples);
-    } 
-    else  
+    }
+    else
     {
         downsample(src, nSamples);
     }
-#pragma pop
+#pragma inline_depth()
 }
 
 

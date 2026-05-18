@@ -56,9 +56,18 @@ void InterpTangent(
     float c = negFsq6 + f6;
     float d = fsq3 - 2.0f * f;
 
-    vout.z = (v1.z * a) + (v2.z * b) + (v3.z * c) + (v4.z * d);
-    vout.y = (v1.y * a) + (v2.y * b) + (v3.y * c) + (v4.y * d);
-    vout.x = (v1.x * a) + (v2.x * b) + (v3.x * c) + (v4.x * d);
+    float zz = v1.z * a;
+    float yy = v1.y * a;
+    float xx = v1.x * a;
+    zz += v2.z * b;
+    yy += v2.y * b;
+    xx += v2.x * b;
+    zz += v3.z * c;
+    yy += v3.y * c;
+    xx += v3.x * c;
+    vout.z = zz + v4.z * d;
+    vout.y = yy + v4.y * d;
+    vout.x = xx + v4.x * d;
 }
 
 // fn_802E36D4 - InterpVector(const Keys<Vector3, Vector3>&, const Key<Vector3>*, const

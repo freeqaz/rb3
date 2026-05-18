@@ -142,6 +142,8 @@ protected:
     void precalcCorrReferenceMono();
     void precalcCorrReferenceStereo();
 
+    void processNominalTempo();
+
     /// Changes the tempo of the given sound samples.
     /// Returns amount of samples returned in the "output" buffer.
     /// The maximum amount of samples that can be returned at a time is set by

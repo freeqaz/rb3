@@ -519,7 +519,7 @@ void TDStretch::setChannels(uint numChannels)
 
 // nominal tempo, no need for processing, just pass the samples through
 // to outputBuffer
-/*
+#pragma dont_inline on
 void TDStretch::processNominalTempo()
 {
     assert(tempo == 1.0f);
@@ -547,7 +547,7 @@ void TDStretch::processNominalTempo()
     // Simply bypass samples from input to output
     outputBuffer.moveSamples(inputBuffer);
 }
-*/
+#pragma dont_inline reset
 
 // Processes as many processing frames of the samples 'inputBuffer', store
 // the result into 'outputBuffer'
@@ -556,15 +556,12 @@ void TDStretch::processSamples()
     int ovlSkip, offset;
     int temp;
 
-    /* Removed this small optimization - can introduce a click to sound when tempo setting
-       crosses the nominal value
     if (tempo == 1.0f)
     {
         // tempo not changed from the original, so bypass the processing
         processNominalTempo();
         return;
     }
-    */
 
     if (bMidBufferDirty == FALSE)
     {
