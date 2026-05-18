@@ -3,6 +3,20 @@
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
 #include "rndobj/Rnd.h"
+#include "utl/MemMgr.h"
+
+struct HomeMenuInfo {
+    void *unk0;
+    void *unk4;
+    void *unk8;
+    void *unkC;
+    void *unk10;
+    int unk14;
+    int unk18;
+    int unk1C;
+    char pad20[0x20];
+};
+HomeMenuInfo gHomeMenuInfo;
 
 struct RSOObjectHeader;
 
@@ -89,7 +103,22 @@ void HomeMenu::Begin() {
     ThePlatformMgr.GetDiscErrorMgrWii()->UnregisterCallback(this);
 }
 
-void HomeMenu::End() {}
+void HomeMenu::End() {
+    if (unk30) {
+        _MemFree(unk30);
+        unk30 = nullptr;
+    }
+    if (unk34) {
+        _MemFree(unk34);
+        unk34 = nullptr;
+    }
+    _MemFree(gHomeMenuInfo.unk10);
+    _MemFree(gHomeMenuInfo.unk0);
+    _MemFree(gHomeMenuInfo.unk4);
+    _MemFree(gHomeMenuInfo.unk8);
+    _MemFree(gHomeMenuInfo.unkC);
+    HmbRsoTerminate();
+}
 
 void HomeMenu::AllowHomeMenu(bool allow) {
     if (mHomeMenuLocked == 0)

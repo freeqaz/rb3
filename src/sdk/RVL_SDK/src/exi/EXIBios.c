@@ -57,7 +57,7 @@ static u32 IDSerialPort1;
 
 static const char* __EXIVersion = "<< RVL_SDK - EXI \trelease build: Dec 11 2009 15:55:59 (0x4302_145) >>";
 
-#define REG(chan, idx) (__EXIRegs[((chan) * 5) + (idx)])
+#define REG(chan, idx) (*(volatile u32*)((u8*)__EXIRegs + (s32)(chan) * 20 + (idx) * 4))
 
 void SetExiInterruptMask(s32 chan, EXIControl* exi) {
     EXIControl* exi2;
@@ -438,9 +438,9 @@ BOOL EXISelect(EXIChannel chan, u32 dev, u32 freq) {
 }
 
 BOOL EXIDeselect(EXIChannel chan) {
+    EXIControl* exi = &Ecb[chan];
     u32 cpr;
     BOOL enabled;
-    EXIControl* exi = &Ecb[chan];
     enabled = OSDisableInterrupts();
 
     if (!(exi->state & 4)) {

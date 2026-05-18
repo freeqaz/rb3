@@ -6,6 +6,7 @@
 #include "os/Debug.h"
 #include "tour/Tour.h"
 #include "tour/TourPerformer.h"
+#include "tour/TourPerformerLocal.h"
 #include "tour/TourProgress.h"
 #include "ui/UIList.h"
 #include "ui/UIPanel.h"
@@ -137,7 +138,23 @@ Symbol QuestFilterPanel::GetDiffSelectScreen() {
     return Handle(get_diffselect_screen_msg, true).Sym();
 }
 
-void QuestFilterPanel::HandleFilterSelected() {}
+void QuestFilterPanel::HandleFilterSelected() {
+    TourSetlistType ty = GetSelectedSetlistType();
+    TourPerformerLocal *pPerformer =
+        dynamic_cast<TourPerformerLocal *>(TheTour->m_pTourPerformer);
+    MILO_ASSERT(pPerformer, 0x1BB);
+    pPerformer->SetCurrentQuest(m_symQuest);
+    Symbol filter = GetSelectedFilter();
+    pPerformer->SetCurrentQuestFilter(filter, ty);
+    TourProgress *pProgress = TheTour->GetTourProgress();
+    MILO_ASSERT(pProgress, 0x1C3);
+    int n = pProgress->GetNumSongsForCurrentGig();
+    Symbol gigFilter = GetGigFilter();
+    TheTour->LaunchQuestFilter(
+        n, m_symQuest, filter, gigFilter, ty,
+        GetSongSelectScreen(), GetDiffSelectScreen(), GetBackScreen()
+    );
+}
 
 void QuestFilterPanel::HandleLeaderToggledFilters(bool bShowMode) {
     if (TheNetSession != NULL) {
