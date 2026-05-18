@@ -8,16 +8,16 @@ This index mirrors the structure of [DC3's pattern catalog](../../../../dc3-deco
 
 | File | Topic |
 |------|-------|
-| [fixable-declarations.md](fixable-declarations.md) | Declaration order, register hoisting, pre-load before loop, function definition order, `CopyFrom` vs `operator=` |
+| [fixable-declarations.md](fixable-declarations.md) | Declaration order, register hoisting, pre-load before loop, function definition order, `CopyFrom` vs `operator=`, `return *this;`, stlport accessor inlining, `__less<T>` specialization, inline container helpers in headers |
 | [fixable-bool-mask.md](fixable-bool-mask.md) | Bool materialization (`IsLocal()` vs `!IsNet()`, compound bools, condition inversion) |
 | [fixable-control-flow.md](fixable-control-flow.md) | `switch` vs if/else, early return inversion, `do-while` vs `while`, loop unrolling, nested scopes, STL `__find` / `vector::erase` patterns |
 | [fixable-fsel-fma.md](fixable-fsel-fma.md) | Float expression splitting, `fmadds` scheduling, `#pragma fp_contract` |
 | [fixable-casting.md](fixable-casting.md) | `(float)x` vs `(float)(long long)x`, `(int)` for arithmetic shift, enum return type, float truthiness `fcmpu` ordering |
 | [fixable-comparison.md](fixable-comparison.md) | `!=` vs `<` for loop comparisons |
 | [fixable-operators.md](fixable-operators.md) | Arg eval order (right-to-left), commutative `fmuls` operand order, `.Set()` vs constructor assignment, `std::max` literal-first quirk |
-| [fixable-macros.md](fixable-macros.md) | `#pragma pool_data`, `#pragma dont_inline`, static `Message` guards |
+| [fixable-macros.md](fixable-macros.md) | `#pragma pool_data`, `#pragma dont_inline`, static `Message` guards, `__declspec(noinline)`, per-file `#pragma ipa on`, TU-local conditional inline macros |
 | [fixable-struct-layout.md](fixable-struct-layout.md) | `virtual` vs non-`virtual` vtable layout |
-| [fixable-copy-ctor.md](fixable-copy-ctor.md) | Explicit copy constructor blocks small-struct register-return ABI (Vec.h fix) |
+| [fixable-copy-ctor.md](fixable-copy-ctor.md) | Explicit copy constructor blocks small-struct return ABI; TU-local inline `Hmx::Object` copy ctor; member function pointer to force out-of-line emission |
 | [verifiable-icf.md](verifiable-icf.md) | Linker ICF risks — verify before treating as unfixable |
 
 ## Quick Decision Tree
