@@ -123,20 +123,17 @@ void Voice::SetVolume(float volume) { SetVolume(volume, true); }
 
 void Voice::SetPan(float f) {
     float v = Modulo(f - -4.0f, 8.0f) + -4.0f;
-    float clamped;
     if (v < -3.0f) {
-        clamped = -1.0f - (v + 3.0f);
+        v = -1.0f - (v + 3.0f);
     } else if (v < -1.0f) {
-        clamped = -1.0f;
+        v = -1.0f;
     } else if (v > 3.0f) {
-        clamped = 1.0f - (v - 3.0f);
+        v = 1.0f - (v - 3.0f);
     } else if (v > 1.0f) {
-        clamped = 1.0f;
-    } else {
-        clamped = v;
+        v = 1.0f;
     }
-    mPan = (clamped + 1.0f) * 63.5f;
-    MILO_ASSERT(mPan >= 0, 0x1ee);
-    MILO_ASSERT(mPan <= 127, 0x1ef);
+    mPan = (1.0 + v) * 63.5;
+    MILO_ASSERT(mPan >= 0, 0x1f3);
+    MILO_ASSERT(mPan <= 127, 0x1f4);
     mMixDirty = true;
 }
