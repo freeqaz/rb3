@@ -56,7 +56,6 @@ public:
     int Size() const { return mInfos.size(); }
     void CopyFrom(const TickedInfoCollection &other) {
         mInfos.clear();
-        mInfos.reserve(other.mInfos.size());
         mInfos.insert(mInfos.begin(), other.mInfos.begin(), other.mInfos.end());
     }
     std::vector<TickedInfo<T> > mInfos;
