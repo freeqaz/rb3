@@ -72,15 +72,47 @@ int GetGenreGenderFlags(Symbol s1, Symbol s2) {
 }
 
 Symbol BandWardrobe::GetCoopMode(BandCamShot *shot) {
-    const char *modes[] = { "coop_bg", "coop_bk", "coop_gk" };
+    static const char *modes[] = { "coop_bg", "coop_bk", "coop_gk" };
+    int allModes = 0x700000;
+    int shotModes = shot->Flags() & 0x700000;
+    Symbol curMode = GetPlayMode();
+    int curBit = 0;
+    const char *const *modePtr = &modes[2];
+    const char *modeName;
+    int i;
+    for (i = 2; i >= 0; i--, modePtr--) {
+        modeName = *modePtr;
+        int bit = 0x100000 << i;
+        if (curMode == modeName) {
+            curBit = bit;
+        }
+        DataArray *remap = GetRemap(modeName);
+        if (remap->FindArray(shot->Category(), false)) {
+            allModes &= ~bit;
+        }
+    }
+    shotModes &= allModes;
+    if (curBit & shotModes) {
+        return curMode;
+    }
+    for (int i = 0; i < 3; i++) {
+        if ((0x100000 << i) & shotModes) {
+            return Symbol(modes[i]);
+        }
+    }
+    TheDebug.Notify(MakeString("%s is not valid for any modes", PathName(shot)));
+    for (int i = 0; i < 3; i++) {
+        if ((0x100000 << i) & allModes) {
+            return Symbol(modes[i]);
+        }
+    }
+    MILO_FAIL(
+        "%s: category %s is excluded from all play modes!",
+        PathName(shot),
+        shot->Category()
+    );
+    return Symbol("coop_bg");
 }
-
-DECOMP_FORCEACTIVE(
-    BandWardrobe,
-    "%s is not valid for any modes",
-    "%s: category %s is excluded from all play modes!",
-    "coop_bg"
-)
 
 int BandWardrobe::GetShotFlags(CamShot *shot) {
     int flags = 0x100;

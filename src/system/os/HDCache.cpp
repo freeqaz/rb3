@@ -246,12 +246,10 @@ bool HDCache::WriteDone() {
     int done;
     if (unk18 >= 0) {
         if (mWriteArkFiles[mWriteFileIdx]->WriteDone(done)) {
-            int wsize = mWriteArkFiles[mWriteFileIdx]->Size();
-            int rsize = mReadArkFiles[mWriteFileIdx]->Size();
-            MILO_ASSERT(rsize == wsize, 0x1F2);
+            MILO_ASSERT(mReadArkFiles[mWriteFileIdx]->Size() == mWriteArkFiles[mWriteFileIdx]->Size(), 0x1F2);
             UnlockCache();
             if (mWriteArkFiles[mWriteFileIdx]->Fail()) {
-                TheDebug << MakeString("HDCache Write %d %d failed\n", mWriteFileIdx, unk18);
+                TheDebug << MakeString("HDCache Write %d.%d failed\n", mWriteFileIdx, unk18);
             } else {
                 mBlockState[mWriteFileIdx][unk18 / 32] |= 1 << (unk18 % 32);
                 if (++unk24 == 1) {

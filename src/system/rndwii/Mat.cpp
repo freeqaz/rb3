@@ -1,3 +1,7 @@
+// Hide the empty inline `InterpAng` stub in math/Utl.h so we can provide a
+// real out-of-line definition below. The stub is pulled in transitively via
+// math/Color.h / rndobj/Cam.h.
+#define InterpAng InterpAng_stub_unused
 #include "Mat.h"
 #include "decomp.h"
 #include "math/Color.h"
@@ -25,6 +29,21 @@
 #include "rndwii/Env.h"
 #include "rndwii/Rnd.h"
 #include "utl/Loader.h"
+#undef InterpAng
+#include <cmath>
+
+// Linearly interpolates between angles a and b (in radians), wrapping the
+// shortest path. Normalises (b - a) into [-PI, PI] before lerping by t.
+float InterpAng(float a, float b, float t) {
+    float r = (float)fmod(3.1415927f + (b - a), 2.0 * 3.1415927f);
+    float n;
+    if (r < 0.0f) {
+        n = 3.1415927f + r;
+    } else {
+        n = r - 3.1415927f;
+    }
+    return t * n + a;
+}
 
 int DbgGetFrameID();
 
