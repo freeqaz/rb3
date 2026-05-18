@@ -3,6 +3,7 @@
 #include "math/Rot.h"
 #include "revolution/gx/GXLight.h"
 #include "revolution/gx/GXTypes.h"
+#include "rndwii/Cam.h"
 #include "rndwii/Rnd.h"
 #include "decomp.h"
 #include <cmath>
@@ -47,7 +48,29 @@ void WiiLight::Update(GXLightID lit) {
     }
 }
 
-void WiiLight::UpdatePosition() { Transform &t = WorldXfm(); }
+void WiiLight::UpdatePosition() {
+    Transform &t = WorldXfm();
+    WiiCam *cam = (WiiCam *)RndCam::sCurrent;
+    if (mType == kPoint) {
+        Vector3 p;
+        Multiply(t.v, cam->mWiiViewXfm, p);
+        GXInitLightPos(&mLight, p.x, p.y, p.z);
+    } else if (mType == kDirectional) {
+        Vector3 d;
+        Multiply(t.m.y, cam->mWiiViewXfm.m, d);
+        float k = -1e18f;
+        GXInitLightPos(&mLight, k * d.x, k * d.y, k * d.z);
+    } else if (mType == kFakeSpot) {
+        Vector3 dir;
+        Vector3 pos = CalcAdjustedPos();
+        Multiply(t.m.y, cam->mWiiViewXfm.m, dir);
+        Multiply(pos, cam->mWiiViewXfm, pos);
+        if (!mOnlyProjection) {
+            GXInitLightPos(&mLight, pos.x, pos.y, pos.z);
+            GXInitLightDir(&mLight, dir.x, dir.y, dir.z);
+        }
+    }
+}
 
 float WiiLight::GetLightFieldOfView() {
     Transform t = WorldXfm();
