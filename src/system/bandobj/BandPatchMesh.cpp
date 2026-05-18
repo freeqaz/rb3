@@ -3,6 +3,7 @@
 #include "math/Rot.h"
 #include "utl/Symbols.h"
 #include <algorithm>
+#include <cmath>
 
 INIT_REVS(BandPatchMesh);
 
@@ -37,24 +38,30 @@ int BandPatchMesh::MeshVert::AddUV(
     float lensq = LengthSquared(v48);
     float dot = Dot(v48, mv->mVert->norm);
     ScaleAddEq(v48, mv->mVert->norm, -dot);
-    Vector2 v50(mv->unk1c.x, mv->unk1c.y);
+    float v50x = mv->unk1c.x;
+    float v50y = mv->unk1c.y;
     float newlensq = LengthSquared(v48);
     if (newlensq > 0) {
-        float recipsq = RecipSqrtAccurate(newlensq / lensq);
+        float ratio = newlensq / lensq;
+        float r = 1.0f / std::sqrt(ratio);
         float dot4 = Dot(v48, mv->unk10);
-        float vry = vr.y;
         float dot5 = Dot(v48, mv->unk4);
-        v50 += Vector2(recipsq * vr.x * dot5, recipsq * vry * dot4);
+        float recipsq = 0.5f * r * (3.0f - ratio * r * r);
+        v50x += recipsq * vr.x * dot5;
+        v50y += recipsq * vr.y * dot4;
     } else if (lensq > 0)
         return 0;
-    if (vp) { // && some float that takes in vp and v50 <= 0.25
-        return 0;
-    } else {
-        unk1c += v50;
-        unk4 += mv->unk4;
-        unk10 += mv->unk10;
-        return 1;
+    if (vp) {
+        float dx = vp->x - v50x;
+        float dy = vp->y - v50y;
+        if (dx * dx + dy * dy > 0.25f)
+            return 0;
     }
+    unk1c.x += v50x;
+    unk1c.y += v50y;
+    unk4 += mv->unk4;
+    unk10 += mv->unk10;
+    return 1;
 }
 
 void BandPatchMesh::MeshVert::Normalize(int count) {

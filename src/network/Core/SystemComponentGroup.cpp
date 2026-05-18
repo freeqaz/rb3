@@ -12,4 +12,14 @@ namespace Quazal {
             comp->ReleaseRef();
         }
     }
+
+    void SystemComponentGroup::UnregisterComponent(SystemComponent *comp) {
+        qList<SystemComponent*>::iterator it = m_lstComponents.begin();
+        qList<SystemComponent*>::iterator end_it = m_lstComponents.end();
+        while (it != end_it && *it != comp) ++it;
+        if (it != end_it) {
+            m_lstComponents.erase(it);
+            comp->ReleaseRef();
+        }
+    }
 }

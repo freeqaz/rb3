@@ -243,10 +243,25 @@ bool HDCache::ReadFail() {
 }
 
 bool HDCache::WriteDone() {
-    ArkFile *writeArkFile = mWriteArkFiles[mWriteFileIdx];
-    if (writeArkFile != nullptr) {
+    int done;
+    if (unk18 >= 0) {
+        if (mWriteArkFiles[mWriteFileIdx]->WriteDone(done)) {
+            int wsize = mWriteArkFiles[mWriteFileIdx]->Size();
+            int rsize = mReadArkFiles[mWriteFileIdx]->Size();
+            MILO_ASSERT(rsize == wsize, 0x1F2);
+            UnlockCache();
+            if (mWriteArkFiles[mWriteFileIdx]->Fail()) {
+                TheDebug << MakeString("HDCache Write %d %d failed\n", mWriteFileIdx, unk18);
+            } else {
+                mBlockState[mWriteFileIdx][unk18 / 32] |= 1 << (unk18 % 32);
+                if (++unk24 == 1) {
+                    unk28 = SystemMs();
+                }
+            }
+            unk18 = -1;
+        }
     }
-    return false;
+    return unk18 + 1 == 0;
 }
 
 bool HDCache::LockCache() {
