@@ -3,8 +3,12 @@
 #include "decomp.h"
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
+#include "game/Game.h"
 #include "game/GameMode.h"
 #include "game/SongDB.h"
+#include "beatmatch/BeatMaster.h"
+#include "midi/MidiParser.h"
+#include "midi/MidiParserMgr.h"
 #include "game/TrainerProgressMeter.h"
 #include "meta_band/BandProfile.h"
 #include "meta_band/ProfileMgr.h"
@@ -161,7 +165,14 @@ void TrainerPanel::SetProgressMeterShowing(bool show) { mShowProgressMeter = sho
 
 void TrainerPanel::InitSections() {
     ClearSections();
-    Symbol parserSym = TheGameMode->Property("midi_parser", true)->Sym();
+    MidiParser *parser = TheGame->GetBeatMaster()->GetMidiParserMgr()->GetParser(
+        TheGameMode->Property("midi_parser", true)->Sym()
+    );
+    // MidiParser::mEvents is private; access via offset to avoid header edit.
+    InternalInitSections(*(DataEventList **)((char *)parser + 0x1c));
+    if (mSections.size() == 0) {
+        InternalInitSections(TheGame->GetBeatMaster()->GetMidiParserMgr()->GetEventsList());
+    }
 }
 
 DECOMP_FORCEACTIVE(

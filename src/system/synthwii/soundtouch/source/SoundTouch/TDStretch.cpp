@@ -207,11 +207,13 @@ void TDStretch::clearMidBuffer()
 }
 
 
+#pragma dont_inline on
 void TDStretch::clearInput()
 {
     inputBuffer.clear();
     clearMidBuffer();
 }
+#pragma dont_inline reset
 
 
 

@@ -70,6 +70,8 @@
 #include "meta_band/NameGenerator.h"
 #include "meta_band/OvershellPanel.h"
 #include "net/NetMessage.h"
+#include "net/WiiFriendMgr.h"
+#include "ui/UIListProvider.h"
 #include "obj/Dir.h"
 #include "obj/ObjMacros.h"
 #include "os/PlatformMgr.h"
@@ -105,10 +107,23 @@ public:
     NEW_OBJ(WiiProfilePanel);
 };
 
-class WiiFriendsDetailsProvider : public Hmx::Object {
+class WiiFriendsDetailsProvider : public UIListProvider, public Hmx::Object {
 public:
+    WiiFriendsDetailsProvider();
+    virtual ~WiiFriendsDetailsProvider();
     OBJ_CLASSNAME(WiiFriendsDetailsProvider);
     NEW_OBJ(WiiFriendsDetailsProvider);
+
+    virtual void Text(int, int, UIListLabel *, UILabel *) const;
+    virtual int NumData() const;
+    virtual UIListWidgetState
+    SlotElementStateOverride(int, int, class UIListWidget *, UIListWidgetState) const;
+
+    int unk20; // 0x20
+    int unk24; // 0x24
+    int unk28; // 0x28
+    String unk2c; // 0x2c
+    char unk38[0x18]; // 0x38
 };
 
 class WiiFriendsProvider {

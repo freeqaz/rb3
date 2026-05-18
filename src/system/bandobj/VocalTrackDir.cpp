@@ -664,7 +664,26 @@ DataNode VocalTrackDir::OnGetDisplayMode(DataArray *da) {
     return DataNode("invalid");
 }
 
-void VocalTrackDir::RecalculateLyricZ(bool *, bool *) {}
+void VocalTrackDir::RecalculateLyricZ(bool *leadChanged, bool *harmChanged) {
+    float oldLeadZ = unk694;
+    float bottomZ = mTrackBottomZ;
+    float newLeadZ = bottomZ + mLeadText->LocalXfm().v.z;
+    float oldLeadPhonemeZ = unk69c;
+    unk694 = newLeadZ;
+    float topZ = mPitchTopZ;
+    float newLeadPhonemeZ = bottomZ + mLeadPhonemeText->LocalXfm().v.z;
+    float oldHarmZ = unk698;
+    unk69c = newLeadPhonemeZ;
+    float oldHarmPhonemeZ = unk6a0;
+    unk698 = topZ + mHarmText->LocalXfm().v.z;
+    unk6a0 = topZ + mHarmPhonemeText->LocalXfm().v.z;
+    if (oldLeadZ != newLeadZ || oldLeadPhonemeZ != newLeadPhonemeZ) {
+        *leadChanged = true;
+    }
+    if (oldHarmZ != unk698 || oldHarmPhonemeZ != unk6a0) {
+        *harmChanged = true;
+    }
+}
 
 PitchArrow *VocalTrackDir::GetPitchArrow(int idx) {
     switch (idx) {
