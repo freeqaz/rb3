@@ -209,12 +209,15 @@ void ChordShapeGenerator::TransformVert(
     const Transform &tf,
     Hmx::Color32 col
 ) {
-    vert.pos.x = (vert.pos.x - xOffset) * xScale;
-    if (vert.pos.y > unkd0) {
-        vert.pos.y = fretHeight * (vert.pos.y - unkd0) + unkd0;
+    float px = vert.pos.x;
+    float pz = vert.pos.z;
+    px -= xOffset;
+    vert.pos.x = px * xScale;
+    if (pz > unkd0) {
+        vert.pos.z = fretHeight * (pz - unkd0) + unkd0;
     }
-    Multiply(vert.pos, tf, vert.pos);
     vert.color = col;
+    Multiply(vert.pos, tf, vert.pos);
 }
 
 #pragma push

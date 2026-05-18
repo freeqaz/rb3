@@ -2,8 +2,10 @@
 #include "Cache_Wii.h"
 #include "VF.h"
 #include "MemMgr.h"
+#include "obj/Msg.h"
 #include "os/Debug.h"
 #include "utl/MakeString.h"
+#include "utl/Symbols2.h"
 
 extern "C" int CM_CNTSDNANDCheckRSO(unsigned long, unsigned long, unsigned long *);
 
@@ -157,7 +159,35 @@ bool CacheMgrWii::DeleteAsync(CacheID *) {
     MILO_ASSERT(false, 296);
     return false;
 }
-void CacheMgrWii::PollSearch() {}
+void CacheMgrWii::PollSearch() {
+    Cache *localCache = NULL;
+    SetOp((CacheMgr::OpType)0);
+    if (!MountAsync(*(CacheID **)mVar2, &localCache, NULL)) {
+        EndSearch(kCache_ErrorUnknown);
+        return;
+    }
+    PollMount();
+    if (GetLastResult() != kCache_NoError) {
+        EndSearch(kCache_ErrorUnknown);
+        return;
+    }
+    MILO_ASSERT(IsDone(), 0x13e);
+    String vfDir = String(kCacheMgrVFDir) + "/" + mVar1;
+    char foundName[0x80];
+    int searchResult = VFFileSearchFirst(foundName, vfDir.c_str(), 0x7f);
+    if (UnmountAsync(&localCache, NULL)) {
+        PollUnmount();
+    }
+    MILO_ASSERT(IsDone(), 0x14d);
+    if (searchResult == 0) {
+        EndSearch(kCache_NoError);
+    } else if (searchResult == 2) {
+        EndSearch(kCache_ErrorCacheNotFound);
+    } else {
+        EndSearch(kCache_ErrorUnknown);
+    }
+}
+
 void CacheMgrWii::EndSearch(CacheResult result) {
     mVar2 = 0;
     mVar1 = gNullStr;
@@ -165,6 +195,38 @@ void CacheMgrWii::EndSearch(CacheResult result) {
     SetOp((CacheMgr::OpType)0);
 }
 
-void CacheMgrWii::PollMount() {}
+void CacheMgrWii::PollMount() {
+    CacheWii *pCache = new CacheWii(*(CacheIDWii *)mVar5);
+    *(Cache **)mVar3 = pCache;
+    if (pCache->m0x74) {
+        SetLastResult(kCache_NoError);
+    } else {
+        SetLastResult(kCache_ErrorUnknown);
+    }
+    mVar5 = 0;
+    mVar3 = 0;
+    SetOp((CacheMgr::OpType)0);
+    if (mVar4) {
+        static Message msg(cache_mgr_mount_result, DataNode((int)GetLastResult()));
+        msg[0] = DataNode((int)GetLastResult());
+        ((Hmx::Object *)mVar4)->Handle(msg, true);
+        mVar4 = 0;
+    }
+}
 
-void CacheMgrWii::PollUnmount() {}
+void CacheMgrWii::PollUnmount() {
+    Cache *pCache = *(Cache **)mVar3;
+    if (pCache) {
+        delete pCache;
+    }
+    *(Cache **)mVar3 = NULL;
+    SetLastResult(kCache_NoError);
+    mVar3 = 0;
+    SetOp((CacheMgr::OpType)0);
+    if (mVar4) {
+        static Message msg(cache_mgr_unmount_result, DataNode((int)GetLastResult()));
+        msg[0] = DataNode((int)GetLastResult());
+        ((Hmx::Object *)mVar4)->Handle(msg, true);
+        mVar4 = 0;
+    }
+}

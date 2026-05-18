@@ -23,6 +23,7 @@ public:
 };
 
 class CacheWii : public Cache, public ThreadCallback {
+public:
     CacheWii(const CacheIDWii &);
     virtual ~CacheWii();
     virtual const char *GetCacheName();

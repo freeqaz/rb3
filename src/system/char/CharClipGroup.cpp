@@ -154,7 +154,7 @@ void CharClipGroup::MakeMRU(int i) {
         mWhich = i;
         return;
     }
-    ObjOwnerPtr<CharClip, ObjectDir> temp = mClips[i];
+    CharClip *temp = mClips[i];
     if (i > which) {
         mWhich++;
         for (int k = i; k > mWhich; k--) {

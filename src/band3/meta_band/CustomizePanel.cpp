@@ -899,6 +899,69 @@ DataNode CustomizePanel::LeaveCustomizePanel() {
 
 void CustomizePanel::SetIsWaitingToLeave(bool b) { mWaitingToLeave = b; }
 
+void CustomizePanel::MovePatch(float dx, float dy) {
+    int idx = mPreviewDesc->FindPatchIndex(
+        (BandCharDesc::Patch::Category)mPatchCategory, mPatchName.c_str()
+    );
+    if (idx != -1) {
+        BandCharDesc::Patch *patch = mPreviewDesc->GetPatch(idx);
+        float oldX = patch->mUV.x;
+        float oldY = patch->mUV.y;
+        float newX = oldX + dx;
+        float newY = oldY + dy;
+        if (newX < 0.0f)
+            newX = 0.0f;
+        else if (newX > 1.0f)
+            newX = 1.0f;
+        if (newY < 0.0f)
+            newY = 0.0f;
+        else if (newY > 1.0f)
+            newY = 1.0f;
+        if (newX != oldX || newY != oldY) {
+            patch->mUV.x = newX;
+            patch->mUV.y = newY;
+            RefreshPatchEdit();
+        }
+    }
+}
+
+void CustomizePanel::RotatePatch(int degrees) {
+    int idx = mPreviewDesc->FindPatchIndex(
+        (BandCharDesc::Patch::Category)mPatchCategory, mPatchName.c_str()
+    );
+    if (idx != -1) {
+        BandCharDesc::Patch *patch = mPreviewDesc->GetPatch(idx);
+        patch->mRotation = fmod(0.017453292f * (float)degrees + patch->mRotation, 6.2831854820251465);
+        RefreshPatchEdit();
+    }
+}
+
+void CustomizePanel::ScalePatch(float dx, float dy) {
+    int idx = mPreviewDesc->FindPatchIndex(
+        (BandCharDesc::Patch::Category)mPatchCategory, mPatchName.c_str()
+    );
+    if (idx != -1) {
+        BandCharDesc::Patch *patch = mPreviewDesc->GetPatch(idx);
+        float oldX = patch->mScale.x;
+        float oldY = patch->mScale.y;
+        float newX = oldX + dx;
+        float newY = oldY + dy;
+        if (newX < 0.0f)
+            newX = 0.0f;
+        else if (newX > 5.0f)
+            newX = 5.0f;
+        if (newY < 0.0f)
+            newY = 0.0f;
+        else if (newY > 5.0f)
+            newY = 5.0f;
+        if (newX != oldX || newY != oldY) {
+            patch->mScale.x = newX;
+            patch->mScale.y = newY;
+            RefreshPatchEdit();
+        }
+    }
+}
+
 void CustomizePanel::ClearAssetPatchData() {
     unk90 = gNullStr;
     mPatchCategory = BandCharDesc::Patch::kPatchNone;
@@ -909,6 +972,47 @@ bool CustomizePanel::IsCurrentAssetPatchable() {
         return true;
     else
         return false;
+}
+
+void CustomizePanel::SetupAssetPatchData(Symbol sym) {
+    if (sym == none) {
+        ClearAssetPatchData();
+        return;
+    }
+    AssetMgr *pAssetMgr = AssetMgr::GetAssetMgr();
+    MILO_ASSERT(pAssetMgr, 0x65F);
+    AssetType ty = pAssetMgr->GetTypeFromName(sym);
+    if (mClosetMgr->GetAssetFromAssetType(ty) != sym) {
+        ClearAssetPatchData();
+        return;
+    }
+    OutfitConfig *cfg = mClosetMgr->GetCurrentOutfitConfig();
+    if (!cfg) {
+        ClearAssetPatchData();
+        return;
+    }
+    BandCharDesc::Patch::Category cat = GetPatchCategoryFromAssetType(ty);
+    for (int i = 0; i < cfg->mPatches.size(); i++) {
+        if (cfg->mPatches[i].mCategory == cat) {
+            unk90 = sym;
+            mPatchCategory = cat;
+            return;
+        }
+    }
+    ClearAssetPatchData();
+}
+
+bool CustomizePanel::IsAssetPatchable() {
+    OutfitConfig *cfg = mClosetMgr->GetCurrentOutfitConfig();
+    if (!cfg)
+        return false;
+    BandCharDesc::Patch::Category cat =
+        GetPatchCategoryFromAssetType(GetAssetTypeFromSymbol(mClosetMgr->unk44));
+    for (int i = 0; i < cfg->mPatches.size(); i++) {
+        if (cfg->mPatches[i].mCategory == cat)
+            return true;
+    }
+    return false;
 }
 
 const char *CustomizePanel::GetPlacementMeshFromCurrentCamShot() {

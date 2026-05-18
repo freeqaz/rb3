@@ -11,6 +11,14 @@ public:
     virtual ~MemcardMgr();
     virtual int ThreadStart();
     virtual void ThreadDone(int);
+    void SetDevice(unsigned int);
+    void SelectDevice(Profile *, bool, Hmx::Object *, int);
+    void OnSearchForDevice(Profile *);
+    void OnCheckForSaveContainer(Profile *);
+    void UnLoadBanner();
+    int GetSizeNeeded();
+    void DisableWriting(bool);
+    bool IsDisableWriting() const;
     bool IsWriteMode() const;
 
     bool unk20;
@@ -19,10 +27,10 @@ public:
     int unka4;
     int unka8; // bufstreamnand
     int unkac;
-    int unkb0;
-    int unkb4;
+    void *mBannerIcons; // 0xB0
+    void *mBanner; // 0xB4
     bool unkb8;
-    bool mIsWriteMode; // 0xB9
+    unsigned char mFlags; // 0xB9: bit0 = mDisableWriting, bit1 = mIsWriteMode
     int unkbc;
     int unkc0; // mState
     int unkc4;

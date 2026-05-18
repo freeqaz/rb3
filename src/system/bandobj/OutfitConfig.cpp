@@ -476,6 +476,38 @@ void OutfitConfig::Randomize() {
     Recompose();
 }
 
+int OutfitConfig::NumColorOptions() const {
+    int maxOption = -1;
+    for (int i = 0; i < mMats.size(); i++) {
+        const MatSwap &m = mMats[i];
+        if (m.mColor1Palette || !m.mTextures.empty()) {
+            if (maxOption < m.mColor1Option)
+                maxOption = m.mColor1Option;
+        }
+        if (m.mColor2Palette) {
+            if (maxOption < m.mColor2Option)
+                maxOption = m.mColor2Option;
+        }
+    }
+    return maxOption + 1;
+}
+
+int OutfitConfig::NumIndices(int idx) const {
+    for (int i = 0; i < mMats.size(); i++) {
+        const MatSwap &m = mMats[i];
+        if (m.mColor1Option == idx) {
+            if (m.mColor1Palette)
+                return m.mColor1Palette->NumColors();
+            if (!m.mTextures.empty())
+                return m.mTextures.size();
+        } else if (m.mColor2Option == idx) {
+            if (m.mColor2Palette)
+                return m.mColor2Palette->NumColors();
+        }
+    }
+    return 0;
+}
+
 void OutfitConfig::CompressTextures() {
     if (unk3c != 2)
         unk3c = 1;
