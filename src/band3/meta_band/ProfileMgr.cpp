@@ -792,8 +792,8 @@ void ProfileMgr::SetWiiFriendsPromptShown() {
 }
 
 void ProfileMgr::SetUsingWiiFriends(int i1) {
-    mGlobalOptionsDirty = true;
     mUsingWiiFriends = i1 != 0;
+    mGlobalOptionsDirty = true;
     TheWiiFriendMgr.UseConsoleFriends(mUsingWiiFriends);
     TheRockCentral.UpdateOnlineStatus();
     TheSaveLoadMgr->AutoSave();

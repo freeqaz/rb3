@@ -322,6 +322,22 @@ PatchDir::~PatchDir() {
     delete mTex;
 }
 
+int PatchDir::SaveSize(int) {
+    int bits = PatchLayer::PackedBitCount() * 50;
+    int size = bits / 8;
+    if (bits % 8 != 0) size++;
+    size += 0x10021;
+    REPORT_SIZE("PatchDir", size);
+}
+
+void PatchDir::Clear() {
+    for (std::vector<PatchLayer>::iterator it = mLayers.begin(); it != mLayers.end();
+         ++it) {
+        (*it).Reset();
+    }
+    unk1c0 = true;
+}
+
 void PatchDir::CacheRenderedTex(RndTex *tex, bool b) {
     MILO_ASSERT(tex->Width() > 0 && tex->Height() > 0, 0x1EF);
     RndBitmap bmap;
@@ -581,6 +597,66 @@ int PatchDir::FindEmptyLayer() {
             idx++;
     }
     return -1;
+}
+
+void PatchDir::LoadLayerStickers() {
+    for (std::vector<PatchLayer>::iterator it = mLayers.begin(); it != mLayers.end();
+         ++it) {
+        PatchSticker *sticker = (*it).GetSticker(false);
+        if (sticker) {
+            LoadStickerTex(sticker, true);
+        }
+    }
+}
+
+void PatchDir::CollapseEmptyLayers() {
+    int destIndex = 0;
+    int numLayers = mLayers.size();
+    for (std::vector<PatchLayer>::iterator it = mLayers.begin(); it != mLayers.end();
+         ++it, ++destIndex) {
+        if (!(*it).mStickerCategory.Null()) {
+            int empty = FindEmptyLayer();
+            if (empty >= 0 && empty < destIndex) {
+                mLayers[empty] = mLayers[destIndex];
+                mLayers[destIndex].ClearSticker();
+            }
+        }
+    }
+}
+
+std::vector<PatchSticker *> *PatchDir::GetStickers(Symbol category) {
+    std::map<Symbol, std::vector<PatchSticker *> >::iterator it =
+        mStickerMap.find(category);
+    MILO_ASSERT(it != mStickerMap.end(), 0x490);
+    return &it->second;
+}
+
+PatchSticker *PatchDir::GetSticker(Symbol category, int ix, bool b) {
+    MILO_ASSERT(!mStickerMap.empty(), 0x497);
+    std::map<Symbol, std::vector<PatchSticker *> >::iterator it =
+        mStickerMap.find(category);
+    MILO_ASSERT(it != mStickerMap.end(), 0x49A);
+    std::vector<PatchSticker *> *stickers = &it->second;
+    MILO_ASSERT(ix >= 0 && ix < stickers->size(), 0x49D);
+    PatchSticker *sticker = (*stickers)[ix];
+    if (b && !sticker->mTex) {
+        LoadStickerTex(sticker, false);
+    }
+    return sticker;
+}
+
+void PatchDir::Poll() {
+    std::vector<PatchSticker *>::iterator it = mStickersLoading.begin();
+    while (it != mStickersLoading.end()) {
+        PatchSticker *sticker = *it;
+        MILO_ASSERT(sticker->GetLoader(), 0x4DD);
+        if (sticker->GetLoader()->IsLoaded()) {
+            sticker->FinishLoad();
+            it = mStickersLoading.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 void PatchDir::LoadStickerTex(PatchSticker *sticker, bool push) {

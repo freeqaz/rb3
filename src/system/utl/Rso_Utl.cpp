@@ -4,6 +4,7 @@
 #include "revolution/os/OSError.h"
 #include "utl/MakeString.h"
 #include <cstddef>
+#include <cstring>
 
 #define MAX_RSO_INITERS 8
 #define kRSOBufferSize 0x10EC00
@@ -38,7 +39,7 @@ void *RsoMemAlloc2Fake(int size) {
         return NULL;
 }
 
-void *DefaultRSOMemAlloc2(int size) {
+void *DefaultRsoMemAlloc2(int size) {
     size = size + 31 & ~31;
     MILO_ASSERT(size >= 0, 66);
     if (u32(g_pDefaultRSOBuf) + g_DefaultRSOBufOffset + size >= 0x91000000) {
@@ -88,6 +89,14 @@ void *LoadRsoFile(const char *filename, unsigned int &size, void *(*alloc)(int))
 }
 
 extern "C" int RSOLinkList(void *, unsigned char *);
+extern "C" int RSOListInit();
+extern "C" int RSOUnLinkList(void *);
+extern "C" void OSEnableCodeExecOnMEM2Lo16MB();
+extern "C" void DVDInit();
+extern void RndGxDrawDone();
+
+void *staticRso;
+bool gbCleanBuffersOnPreInit = true;
 
 void *RsoLoad(const char *filename, unsigned char **bss, void *(*alloc)(int)) {
     uint size;
@@ -103,4 +112,54 @@ void *RsoLoad(const char *filename, unsigned char **bss, void *(*alloc)(int)) {
         TheDebug.Notify(MakeString("RSO: %s: LinkList failed!\n", filename));
     }
     return rso;
+}
+
+void *StaticRsoLoad(const char *filename) {
+    uint size;
+    void *rso = LoadRsoFile(filename, size, DefaultRsoMemAlloc2);
+    if (rso == NULL) {
+        return NULL;
+    }
+    if (RSOListInit() == 0) {
+        TheDebug.Notify(MakeString("RSO: failed to load static function list\n"));
+    }
+    return rso;
+}
+
+void RsoInitDefaults() {
+    bool ok = true;
+    for (int i = 0; i < gRsoIniterCount; i++) {
+        ok = ok && gRsoIniters[i]((struct RSOObjectHeader *)staticRso);
+    }
+}
+
+void RsoPostTerminate() {
+    MILO_ASSERT(g_pRSOReserveBuf != NULL, 249);
+    memset(g_pRSOReserveBuf, 0, kRSOBufferSize);
+}
+
+void RsoInit(const char *staticRsoName) {
+    OSEnableCodeExecOnMEM2Lo16MB();
+    DVDInit();
+    staticRso = StaticRsoLoad(staticRsoName);
+    if (staticRso == NULL) {
+        return;
+    }
+    // Reserved for jump code buffer init
+}
+
+void RsoPreInit() {
+    if (gbCleanBuffersOnPreInit) {
+        RndGxDrawDone();
+    }
+    g_RSOBufOffset = 0;
+}
+
+void RsoTerminate2HelperNoFree(
+    struct RSOObjectHeader *module, unsigned char *bss, unsigned long *code,
+    void (*unresolvedModule)()
+) {
+    (*(void (**)())((char *)module + 0x28))();
+    RSOUnLinkList(module);
+    unresolvedModule();
 }

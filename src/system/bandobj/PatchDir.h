@@ -150,7 +150,7 @@ public:
     std::map<Symbol, std::vector<PatchSticker *> > mStickerMap; // 0x19c
     std::vector<PatchSticker *> mStickersLoading; // 0x1b4
     RndTex *mTex; // 0x1bc
-    bool unk1c0; // 0x1c0
+    mutable bool unk1c0; // 0x1c0
 };
 
 BinStream &operator<<(BinStream &, const PatchDescriptor &);

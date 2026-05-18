@@ -7,7 +7,7 @@ typedef bool (*RsoInitFunc)(struct RSOObjectHeader *);
 typedef void (*RsoDeinitFunc)(void);
 
 void *RsoMemAlloc2Fake(int size);
-void *DefaultRSOMemAlloc2(int size);
+void *DefaultRsoMemAlloc2(int size);
 void RsoAddIniter(RsoInitFunc, RsoDeinitFunc);
 void *LoadRsoFile(const char *, unsigned int &, void *(*)(int));
 
