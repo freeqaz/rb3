@@ -350,8 +350,8 @@ EnabledState Player::GetEnabledStateAt(float f) const {
     }
     if (mEnabledState == kPlayerDisconnected)
         return kPlayerDisconnected;
-    int tick = (int)MsToTick(f);
     unsigned int size = unk260.size();
+    int tick = (int)MsToTick(f);
     for (unsigned int i = 0; i < size; i++) {
         const Extent &e = unk260[i];
         if (tick >= e.unk0 && (e.unk4 < 0 || tick < e.unk4))

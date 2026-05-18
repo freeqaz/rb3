@@ -1439,10 +1439,11 @@ int nb_decode(void *state, SpeexBits *bits, void *vout)
             SPEEX_MEMSET(exc, 0, st->subframeSize);
             while (st->voc_offset<st->subframeSize)
             {
+               int voc_off = st->voc_offset;
                /* exc[st->voc_offset]= g*sqrt(2*ol_pitch)*ol_gain;
                   Not quite sure why we need the factor of two in the sqrt */
-               if (st->voc_offset>=0)
-                  exc[st->voc_offset]=MULT16_16(spx_sqrt(MULT16_16_16(2,ol_pitch)),EXTRACT16(PSHR32(MULT16_16(g,PSHR32(ol_gain,SIG_SHIFT)),6)));
+               if (voc_off>=0)
+                  exc[voc_off]=MULT16_16(spx_sqrt(MULT16_16_16(2,ol_pitch)),EXTRACT16(PSHR32(MULT16_16(g,PSHR32(ol_gain,SIG_SHIFT)),6)));
                st->voc_offset+=ol_pitch;
             }
             st->voc_offset -= st->subframeSize;

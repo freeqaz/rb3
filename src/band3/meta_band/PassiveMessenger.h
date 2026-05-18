@@ -30,11 +30,16 @@ public:
         int i48,
         bool b4c
     )
-        : mText(a), mType(t), mChannel(s), unk10(i4), unk14(i6), unk18(i7), unk1c(i8),
+        : mText(a), mType(t), mChannel(s), unk10(i4), unk14(i6), unk18(i7), mMeterAnimValue(i8),
           unk20(i5), unk24(c1), unk30(c2), unk3c(c3), unk48(i48), unk4c(b4c) {
         mText->AddRef();
     }
     virtual ~PassiveMessage() { mText->Release(); }
+
+    void AddAnim(int delta) {
+        MILO_ASSERT(mMeterAnimValue >= 0, 0x4A);
+        mMeterAnimValue += delta;
+    }
 
     DataArray *mText; // 0x4
     PassiveMessageType mType; // 0x8
@@ -42,7 +47,7 @@ public:
     int unk10; // 0x10
     int unk14;
     int unk18;
-    int unk1c;
+    int mMeterAnimValue; // 0x1c
     int unk20;
     String unk24;
     String unk30;

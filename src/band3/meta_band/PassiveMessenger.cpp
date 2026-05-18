@@ -67,7 +67,7 @@ void PassiveMessageQueue::HandlePassiveMessage(PassiveMessage *msg) {
         setupCareerGoalMsg[1] = msg->unk20;
         setupCareerGoalMsg[2] = msg->unk14;
         setupCareerGoalMsg[3] = msg->unk18;
-        setupCareerGoalMsg[4] = msg->unk1c;
+        setupCareerGoalMsg[4] = msg->mMeterAnimValue;
         setupCareerGoalMsg[5] = msg->unk24.c_str();
         setupCareerGoalMsg[6] = msg->unk30.c_str();
         setupCareerGoalMsg[7] = msg->unk3c.c_str();
@@ -79,7 +79,7 @@ void PassiveMessageQueue::HandlePassiveMessage(PassiveMessage *msg) {
         setupCareerStepMsg[0] = DataNode(msg->mText, kDataArray);
         setupCareerStepMsg[1] = msg->unk14;
         setupCareerStepMsg[2] = msg->unk18;
-        setupCareerStepMsg[3] = msg->unk1c;
+        setupCareerStepMsg[3] = msg->mMeterAnimValue;
         setupCareerStepMsg[4] = msg->unk24.c_str();
         mCallback->Handle(setupCareerStepMsg, true);
         break;
@@ -91,7 +91,7 @@ void PassiveMessageQueue::HandlePassiveMessage(PassiveMessage *msg) {
         setupCareerMultiGoalMsg[1] = msg->unk20;
         setupCareerMultiGoalMsg[2] = msg->unk14;
         setupCareerMultiGoalMsg[3] = msg->unk18;
-        setupCareerMultiGoalMsg[4] = msg->unk1c;
+        setupCareerMultiGoalMsg[4] = msg->mMeterAnimValue;
         setupCareerMultiGoalMsg[5] = msg->unk30.c_str();
         setupCareerMultiGoalMsg[6] = msg->unk3c.c_str();
         setupCareerMultiGoalMsg[7] = msg->unk48;
@@ -104,7 +104,60 @@ void PassiveMessageQueue::HandlePassiveMessage(PassiveMessage *msg) {
 }
 END_UNPOOL_DATA
 
-PassiveMessage *PassiveMessageQueue::GetAndPreProcessFirstMessage() {}
+PassiveMessage *PassiveMessageQueue::GetAndPreProcessFirstMessage() {
+    PassiveMessage *firstMessage = mQueue.front();
+    if (firstMessage->mText->Sym(0) == passive_message_earned_accomplishment) {
+        int count = 0;
+        FOREACH (it, mQueue) {
+            PassiveMessage *msg = *it;
+            if (msg->mText->Sym(0) == passive_message_earned_accomplishment) {
+                count++;
+            }
+        }
+        if (count >= 4) {
+            MakeIntoCoalescedGoalMessage(firstMessage, count);
+            PassiveMessage *campaignLevelMsg = nullptr;
+            for (std::list<PassiveMessage *>::iterator it = mQueue.begin();
+                 it != mQueue.end();) {
+                PassiveMessage *msg = *it;
+                if (msg->mText->Sym(0) == passive_message_earned_accomplishment) {
+                    firstMessage->AddAnim(msg->mMeterAnimValue - msg->unk14);
+                    firstMessage->unk20 += msg->unk20;
+                    PassiveMessage *pMessage = *it;
+                    MILO_ASSERT(pMessage, 0xC5);
+                    delete pMessage;
+                    it = mQueue.erase(it);
+                } else {
+                    if (msg->mText->Sym(0) == passive_message_earned_campaign_level) {
+                        campaignLevelMsg = msg;
+                    }
+                    ++it;
+                }
+            }
+            if (campaignLevelMsg) {
+                for (std::list<PassiveMessage *>::iterator it = mQueue.begin();
+                     it != mQueue.end();) {
+                    PassiveMessage *msg = *it;
+                    bool shouldErase = false;
+                    if (msg->mText->Sym(0) == passive_message_earned_campaign_level) {
+                        if (msg != campaignLevelMsg) {
+                            shouldErase = true;
+                        }
+                    }
+                    if (shouldErase) {
+                        PassiveMessage *pMessage = *it;
+                        MILO_ASSERT(pMessage, 0xDD);
+                        delete pMessage;
+                        it = mQueue.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+            }
+        }
+    }
+    return firstMessage;
+}
 
 void PassiveMessageQueue::MakeIntoCoalescedGoalMessage(PassiveMessage *msg, int i2) {
     msg->mText->Node(0) = passive_message_earned_accomplishments;

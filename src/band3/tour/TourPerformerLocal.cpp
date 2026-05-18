@@ -161,7 +161,7 @@ bool TourPerformerLocal::InqSongsInFilterData(
              ++fit) {
             Symbol filterSym = fit->first;
             if (strncmp("tour", filterSym.Str(), 4) == 0) {
-                FormatString fmt(MakeString("filter_artist_%s", filterSym.Str()));
+                FormatString fmt("filter_artist_%s");
                 TheDebug.Notify(fmt.Str());
                 continue;
             }
@@ -173,7 +173,8 @@ bool TourPerformerLocal::InqSongsInFilterData(
             if (!TheSongSortMgr->DoesSongMatchFilter(songID, &filt, filteredPartSym)) continue;
             BandSongMetadata *pSongData = static_cast<BandSongMetadata *>(TheSongMgr.Data(songID));
             o_rSongsInFilter[filterSym] = o_rSongsInFilter[filterSym] + 1;
-            int newArtistCount = ++o_rSongsWithArtist[Symbol(pSongData->Artist())];
+            Symbol artist(pSongData->Artist());
+            int newArtistCount = ++o_rSongsWithArtist[artist];
             if (newArtistCount > iHighArtistCount) {
                 iHighArtistCount = newArtistCount;
             }
