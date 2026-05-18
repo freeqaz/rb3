@@ -1340,7 +1340,7 @@ void OvershellSlot::UpdateView() {
         static Message updateLocalStatusMsg("update_local_status", 0);
         updateLocalStatusMsg[0] = user->IsLocal();
         mOvershellDir->HandleType(updateLocalStatusMsg);
-        mSessionMgr->Disconnect();
+        mSessionMgr->IsLocal();
         static Message updateRestartAllowedMsg("update_restart_allowed", 0);
         updateRestartAllowedMsg[0] = mSessionMgr->IsLocalToLeader(user);
         mOvershellDir->HandleType(updateRestartAllowedMsg);
