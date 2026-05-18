@@ -243,9 +243,9 @@ void ChordShapeGenerator::BuildContourCap(
     float xScale = (tf2.v.x - tf1.v.x) / (unkcc - unkc8);
     float xMid = (unkc8 + unkcc) * 0.5f;
     float fretHeight = mFretHeights[iii];
-    float zScale = -xScale;
     std::map<unsigned short, unsigned short>::const_iterator vit = capMap.begin();
     std::map<unsigned short, unsigned short>::const_iterator vend = capMap.end();
+    float zScale = -xScale;
     for (; vit != vend; ++vit) {
         RndMesh::Vert &curvert = meshVerts[vit->second];
         curvert = srcVerts[vit->first];

@@ -66,8 +66,8 @@ SongSortMgr::~SongSortMgr() {
 
 void SongSortMgr::SongFilter::IntersectFilter(SongSortMgr::SongFilter *filter) {
     MILO_ASSERT(filter, 0x51);
-    FOREACH (it, filter->excludedSongs) {
-        filter->excludedSongs.push_back(*it); // ???
+    FOREACH (it, excludedSongs) {
+        filter->excludedSongs.push_back(*it);
     }
     for (int i = 0; i < kNumFilterTypes; i++) {
         std::set<Symbol> &curSet = filter->filters[i];

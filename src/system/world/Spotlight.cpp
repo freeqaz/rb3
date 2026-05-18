@@ -736,14 +736,13 @@ void Spotlight::BuildBeam(BeamDef &def) {
     std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
     float bottomBorderLen = def.mBottomBorder * def.mLength;
     float topSideBorderVal = def.mTopSideBorder * def.mTopRadius;
+    float bottomSideBorderVal = def.mBottomSideBorder * def.mBottomRadius;
 
     int numSectionsTop = 4;
     {
         int rawTop = (int)((def.mLength - bottomBorderLen) / 15.0f);
         if (rawTop > 4) numSectionsTop = rawTop;
     }
-
-    float bottomSideBorderVal = def.mBottomSideBorder * def.mBottomRadius;
 
     int numSectionsBottom = 1;
     {
@@ -762,6 +761,7 @@ void Spotlight::BuildBeam(BeamDef &def) {
     float radiusStepTopVal = (borderTopRadius - topRadius) / (float)numSectionsTop;
     float radiusStepBotVal = (def.mBottomRadius - borderTopRadius) / (float)numSectionsBottom;
     float halfWidth = topRadius;
+    float sideBorderDiff = bottomSideBorderVal - topSideBorderVal;
     int fi = 0;
     int c0 = 0;
     for (int i = 0; i < totalSections; i++) {
@@ -781,7 +781,7 @@ void Spotlight::BuildBeam(BeamDef &def) {
 
         float yFrac = y / def.mLength;
         float negY = -y;
-        float sideBorder = (bottomSideBorderVal - topSideBorderVal) * yFrac + topSideBorderVal;
+        float sideBorder = sideBorderDiff * yFrac + topSideBorderVal;
         float borderRatio = sideBorder / (halfWidth * 2.0f);
 
         int c1 = c0 + 1;

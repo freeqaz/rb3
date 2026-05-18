@@ -1,6 +1,10 @@
 #include "HttpWii.h"
 #include "system/os/Debug.h"
+#include "system/os/File.h"
+#include "system/os/System.h"
 #include "system/utl/MemMgr.h"
+#include "system/utl/Symbol.h"
+#include "system/utl/Symbols2.h"
 #include <RevoEX/nhttp/nhttp.h>
 
 HttpWii TheHttpWii;
@@ -48,7 +52,35 @@ const char *HttpWii::GetNHTTPErrorString(NHTTPError err) {
 HttpWii::HttpWii() {}
 HttpWii::~HttpWii() {}
 
-void HttpWii::Init() { mDataBuffer = NULL; }
+void HttpWii::Init() {
+    mDataBuffer = NULL;
+    Symbol serverName;
+    if (SystemConfig(Symbol("store"))->FindArray(Symbol("netcache_init"), false)) {
+        SystemConfig(Symbol("store"))->FindArray(Symbol("netcache_init"))
+            ->FindData(default_server, serverName, true);
+        mServerInfo =
+            SystemConfig(Symbol("store"), Symbol("netcache_init"), Symbol("servers"), serverName);
+        mUseFileLoad = false;
+        mUseSSL = true;
+        String keyPath;
+        mServerInfo->FindData(Symbol("key_path2"), keyPath, false);
+        mServerInfo->FindData(Symbol("verify_ssl"), mUseSSL, false);
+        if (mUseSSL) {
+            mCertSize = 0;
+            File *file = NewFile(keyPath.c_str(), 2);
+            if (file) {
+                mCertSize = file->Size();
+                if (mCertSize) {
+                    mRootCA = (char *)_MemAlloc(mCertSize, 0x20);
+                    int sz = file->Size();
+                    file->Read(mRootCA, sz);
+                }
+                delete file;
+            }
+        }
+        mStatus = 0;
+    }
+}
 
 void HttpWii::Start() {
     if (mStatus != 1) {

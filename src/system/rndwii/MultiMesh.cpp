@@ -1,4 +1,5 @@
 #include "MultiMesh.h"
+#include "decomp.h"
 #include "os/Timer.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Env.h"
@@ -13,14 +14,15 @@
 
 #pragma pool_data off
 void WiiMultiMesh::DrawShowing() {
+    int count;
     float baseDiag0, baseDiag1, baseDiag2;
     START_AUTO_TIMER("multimesh");
     if (mInstances.empty() || mMesh == nullptr) {
         return;
     }
     WiiMesh *mesh = (WiiMesh *)(RndMesh *)mMesh;
-    WiiMat *mat = (WiiMat *)mesh->Mat();
     WiiMesh *m2 = (WiiMesh *)(RndMesh *)mesh->mGeomOwner;
+    WiiMat *mat = (WiiMat *)mesh->Mat();
 
     bool fadeOut = false;
     if (RndEnviron::sCurrent->mFadeOut && RndEnviron::sCurrent->mFadeStart != RndEnviron::sCurrent->mFadeEnd) {
@@ -42,7 +44,7 @@ void WiiMultiMesh::DrawShowing() {
         mat->Select(false);
     }
 
-    int count = 0;
+    count = 0;
 
     {
         START_AUTO_TIMER("xfms");
@@ -51,10 +53,39 @@ void WiiMultiMesh::DrawShowing() {
         Mtx camMtx;
         {
             START_AUTO_TIMER("xfms");
+#ifdef MATCHING
+            {
+                register WiiCam *cam = static_cast<WiiCam *>(curCam);
+                register Mtx *dst = &camMtx;
+                ASM_BLOCK(
+                    psq_l fp6, 0x278(cam), 0, 0
+                    psq_l fp8, 0x284(cam), 0, 0
+                    psq_l fp7, 0x280(cam), 1, 0
+                    psq_l fp9, 0x28c(cam), 1, 0
+                    ps_merge00 fp0, fp6, fp8
+                    psq_l fp10, 0x290(cam), 0, 0
+                    ps_merge11 fp2, fp6, fp8
+                    psq_l fp12, 0x29c(cam), 0, 0
+                    ps_merge00 fp4, fp7, fp9
+                    psq_l fp11, 0x298(cam), 1, 0
+                    psq_l fp13, 0x2a4(cam), 1, 0
+                    ps_merge00 fp1, fp10, fp12
+                    ps_merge11 fp3, fp10, fp12
+                    ps_merge00 fp5, fp11, fp13
+                    psq_st fp0, 0x0(dst), 0, 0
+                    psq_st fp1, 0x8(dst), 0, 0
+                    psq_st fp2, 0x10(dst), 0, 0
+                    psq_st fp3, 0x18(dst), 0, 0
+                    psq_st fp4, 0x20(dst), 0, 0
+                    psq_st fp5, 0x28(dst), 0, 0
+                )
+            }
+#else
             const Transform &src = ((WiiCam *)curCam)->mWiiViewXfm;
             camMtx[0][0] = src.m.x.x; camMtx[0][1] = src.m.y.x; camMtx[0][2] = src.m.z.x; camMtx[0][3] = src.v.x;
             camMtx[1][0] = src.m.x.y; camMtx[1][1] = src.m.y.y; camMtx[1][2] = src.m.z.y; camMtx[1][3] = src.v.y;
             camMtx[2][0] = src.m.x.z; camMtx[2][1] = src.m.y.z; camMtx[2][2] = src.m.z.z; camMtx[2][3] = src.v.z;
+#endif
         }
 
         // Count instances
@@ -79,10 +110,39 @@ void WiiMultiMesh::DrawShowing() {
                 if (curCam->Dirty()) {
                     curCam->WorldXfm_Force();
                 }
+#ifdef MATCHING
+                {
+                    register Transform *src = &curCam->mWorldXfm;
+                    register Mtx *dst = &instMtx;
+                    ASM_BLOCK(
+                        psq_l fp6, 0x0(src), 0, 0
+                        psq_l fp8, 0xc(src), 0, 0
+                        psq_l fp7, 0x8(src), 1, 0
+                        psq_l fp9, 0x14(src), 1, 0
+                        ps_merge00 fp0, fp6, fp8
+                        psq_l fp10, 0x18(src), 0, 0
+                        ps_merge11 fp2, fp6, fp8
+                        psq_l fp12, 0x24(src), 0, 0
+                        ps_merge00 fp4, fp7, fp9
+                        psq_l fp11, 0x20(src), 1, 0
+                        psq_l fp13, 0x2c(src), 1, 0
+                        ps_merge00 fp1, fp10, fp12
+                        ps_merge11 fp3, fp10, fp12
+                        ps_merge00 fp5, fp11, fp13
+                        psq_st fp0, 0x0(dst), 0, 0
+                        psq_st fp1, 0x8(dst), 0, 0
+                        psq_st fp2, 0x10(dst), 0, 0
+                        psq_st fp3, 0x18(dst), 0, 0
+                        psq_st fp4, 0x20(dst), 0, 0
+                        psq_st fp5, 0x28(dst), 0, 0
+                    )
+                }
+#else
                 const Transform &camWorld = curCam->mWorldXfm;
                 instMtx[0][0] = camWorld.m.x.x; instMtx[0][1] = camWorld.m.y.x; instMtx[0][2] = camWorld.m.z.x; instMtx[0][3] = camWorld.v.x;
                 instMtx[1][0] = camWorld.m.x.y; instMtx[1][1] = camWorld.m.y.y; instMtx[1][2] = camWorld.m.z.y; instMtx[1][3] = camWorld.v.y;
                 instMtx[2][0] = camWorld.m.x.z; instMtx[2][1] = camWorld.m.y.z; instMtx[2][2] = camWorld.m.z.z; instMtx[2][3] = camWorld.v.z;
+#endif
             }
 
             int idx = 0;
@@ -134,10 +194,39 @@ void WiiMultiMesh::DrawShowing() {
                 if (curCam->Dirty()) {
                     curCam->WorldXfm_Force();
                 }
+#ifdef MATCHING
+                {
+                    register Transform *src = &curCam->mWorldXfm;
+                    register Mtx *dst = &instMtx;
+                    ASM_BLOCK(
+                        psq_l fp6, 0x0(src), 0, 0
+                        psq_l fp8, 0xc(src), 0, 0
+                        psq_l fp7, 0x8(src), 1, 0
+                        psq_l fp9, 0x14(src), 1, 0
+                        ps_merge00 fp0, fp6, fp8
+                        psq_l fp10, 0x18(src), 0, 0
+                        ps_merge11 fp2, fp6, fp8
+                        psq_l fp12, 0x24(src), 0, 0
+                        ps_merge00 fp4, fp7, fp9
+                        psq_l fp11, 0x20(src), 1, 0
+                        psq_l fp13, 0x2c(src), 1, 0
+                        ps_merge00 fp1, fp10, fp12
+                        ps_merge11 fp3, fp10, fp12
+                        ps_merge00 fp5, fp11, fp13
+                        psq_st fp0, 0x0(dst), 0, 0
+                        psq_st fp1, 0x8(dst), 0, 0
+                        psq_st fp2, 0x10(dst), 0, 0
+                        psq_st fp3, 0x18(dst), 0, 0
+                        psq_st fp4, 0x20(dst), 0, 0
+                        psq_st fp5, 0x28(dst), 0, 0
+                    )
+                }
+#else
                 const Transform &camWorld = curCam->mWorldXfm;
                 instMtx[0][0] = camWorld.m.x.x; instMtx[0][1] = camWorld.m.y.x; instMtx[0][2] = camWorld.m.z.x; instMtx[0][3] = camWorld.v.x;
                 instMtx[1][0] = camWorld.m.x.y; instMtx[1][1] = camWorld.m.y.y; instMtx[1][2] = camWorld.m.z.y; instMtx[1][3] = camWorld.v.y;
                 instMtx[2][0] = camWorld.m.x.z; instMtx[2][1] = camWorld.m.y.z; instMtx[2][2] = camWorld.m.z.z; instMtx[2][3] = camWorld.v.z;
+#endif
             }
 
             baseDiag0 = instMtx[0][0];
@@ -199,11 +288,43 @@ void WiiMultiMesh::DrawShowing() {
             }
         } else {
             while (it != mInstances.end()) {
-                TIMER_ACTION("xfms",
-                    const Transform &src = it->mXfm;
-                    instMtx[0][0] = src.m.x.x; instMtx[0][1] = src.m.y.x; instMtx[0][2] = src.m.z.x; instMtx[0][3] = src.v.x;
-                    instMtx[1][0] = src.m.x.y; instMtx[1][1] = src.m.y.y; instMtx[1][2] = src.m.z.y; instMtx[1][3] = src.v.y;
-                    instMtx[2][0] = src.m.x.z; instMtx[2][1] = src.m.y.z; instMtx[2][2] = src.m.z.z; instMtx[2][3] = src.v.z;
+                {
+                    START_AUTO_TIMER("xfms");
+#ifdef MATCHING
+                    {
+                        register Transform *src = &it->mXfm;
+                        register Mtx *dst = &instMtx;
+                        ASM_BLOCK(
+                            psq_l fp6, 0x0(src), 0, 0
+                            psq_l fp8, 0xc(src), 0, 0
+                            psq_l fp7, 0x8(src), 1, 0
+                            psq_l fp9, 0x14(src), 1, 0
+                            ps_merge00 fp0, fp6, fp8
+                            psq_l fp10, 0x18(src), 0, 0
+                            ps_merge11 fp2, fp6, fp8
+                            psq_l fp12, 0x24(src), 0, 0
+                            ps_merge00 fp4, fp7, fp9
+                            psq_l fp11, 0x20(src), 1, 0
+                            psq_l fp13, 0x2c(src), 1, 0
+                            ps_merge00 fp1, fp10, fp12
+                            ps_merge11 fp3, fp10, fp12
+                            ps_merge00 fp5, fp11, fp13
+                            psq_st fp0, 0x0(dst), 0, 0
+                            psq_st fp1, 0x8(dst), 0, 0
+                            psq_st fp2, 0x10(dst), 0, 0
+                            psq_st fp3, 0x18(dst), 0, 0
+                            psq_st fp4, 0x20(dst), 0, 0
+                            psq_st fp5, 0x28(dst), 0, 0
+                        )
+                    }
+#else
+                    {
+                        const Transform &src = it->mXfm;
+                        instMtx[0][0] = src.m.x.x; instMtx[0][1] = src.m.y.x; instMtx[0][2] = src.m.z.x; instMtx[0][3] = src.v.x;
+                        instMtx[1][0] = src.m.x.y; instMtx[1][1] = src.m.y.y; instMtx[1][2] = src.m.z.y; instMtx[1][3] = src.v.y;
+                        instMtx[2][0] = src.m.x.z; instMtx[2][1] = src.m.y.z; instMtx[2][2] = src.m.z.z; instMtx[2][3] = src.v.z;
+                    }
+#endif
                     if (unk34) {
                         Mtx scaleMtx;
                         PSMTXScale(scaleMtx, m2->mLocalXfm.m.x.x, m2->mLocalXfm.m.y.y, m2->mLocalXfm.m.z.z);
@@ -216,7 +337,7 @@ void WiiMultiMesh::DrawShowing() {
                     GXLoadPosMtxImm(resultMtx, 0);
                     GXLoadNrmMtxImm(resultMtx, 0);
                     ++it;
-                );
+                }
                 TIMER_ACTION("faces", m2->DrawFaces(););
             }
         }
