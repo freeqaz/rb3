@@ -2,10 +2,15 @@
 #include "obj/Object.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Graph.h"
+#include "rndobj/Mat.h"
+#include "rndobj/Mesh.h"
 #include "char/Character.h"
+#include "char/CharServoBone.h"
+#include "char/CharUtl.h"
 #include "char/Waypoint.h"
 #include "char/CharClip.h"
 #include "char/CharDriver.h"
+#include "math/Geo.h"
 #include "utl/Std.h"
 #include "utl/Symbols.h"
 
@@ -144,7 +149,94 @@ void ClipCollide::SetTypeDef(DataArray *da) {
     }
 }
 
-void ClipCollide::Collide() {}
+void ClipCollide::Collide() {
+    bool b1 = mChar && mWaypoint && mClip;
+    if (b1) {
+        mChar->SetShowing(false);
+
+        RndDrawable *w = dynamic_cast<RndDrawable *>(Dir());
+
+        const char *names[3] = { "bone_L-ankle", "bone_R-ankle", "bone_pos_guitar" };
+        RndTransformable *meshes[3];
+        int i = 0;
+        do {
+            meshes[i] = CharUtlFindBoneTrans(names[i], mChar);
+            i++;
+        } while (i < 3);
+
+        SyncWaypoint();
+
+        CharServoBone *b = mChar->BoneServo();
+        CharClip *clip = mClip;
+
+        float blend = 0.0f;
+        float f = clip->StartBeat();
+        float delta = 1.0f;
+        Vector3 points[3];
+        while (f <= clip->EndBeat()) {
+            {
+                clip->ScaleDown(*b, 0.0f);
+                mClip->ScaleAdd(*b, delta, f, blend);
+                b->Poll();
+
+                for (i = 0; i < 3; i++) {
+                    const Transform &xfm = meshes[i]->WorldXfm();
+                    Vector3 p = xfm.v;
+
+                    if (i == 2) {
+                        const Transform &gxfm = meshes[2]->WorldXfm();
+                        p.x += gxfm.m.z.x * 2.5f;
+                        p.y += gxfm.m.z.y * 2.5f;
+                        p.z += gxfm.m.z.z * 2.5f;
+                    }
+
+                    if (blend > 0.0f) {
+                        if (mWorldLines && mGraph) {
+                            Hmx::Color c(delta, 0.0f, 0.0f, delta);
+                            mGraph->AddLine(points[i], p, c, false);
+                        }
+
+                        Segment s;
+                        s.start = points[i];
+                        s.end = p;
+                        float dist;
+                        Plane plane;
+                        RndDrawable *d = w->Collide(s, dist, plane);
+                        if (d) {
+                            Vector3 pos;
+                            Interp(s.start, s.end, dist, pos);
+
+                            bool punt = pos.z < mChar->WorldXfm().v.z + delta;
+
+                            if (!punt) {
+                                RndMesh *mesh = dynamic_cast<RndMesh *>(d);
+                                if (mesh) {
+                                    RndMat *mat = mesh->Mat();
+                                    if (mat && !mat->GetDiffuseTex()
+                                        && mat->Alpha() <= 0.0f) {
+                                        punt = true;
+                                    }
+                                }
+                            }
+
+                            if (!punt) {
+                                AddReport(pos);
+                            }
+                        }
+                    }
+
+                    points[i] = p;
+                }
+
+                clip = mClip;
+                f += delta;
+                blend = delta;
+            }
+        }
+
+        mChar->SetShowing(true);
+    }
+}
 
 ObjectDir *ClipCollide::Clips() {
     if (mChar)

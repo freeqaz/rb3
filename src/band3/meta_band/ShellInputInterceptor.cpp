@@ -59,13 +59,13 @@ DataNode ShellInputInterceptor::OnMsg(const ButtonUpMsg &msg) {
 }
 
 bool ShellInputInterceptor::IsDoubleStrum(LocalBandUser *pUser, int button) {
-    float ms = mTime.SplitMs();
+    mTime.Split();
     if (button == kPad_DUp || button == kPad_DDown) {
         MILO_ASSERT(pUser && pUser->IsLocal(), 0xAC);
-        int slot = pUser->GetSlot();
-        float last = mLastUpDown[slot];
-        mLastUpDown[slot] = ms;
-        if (ms - last < 50.0f) {
+        int slot = pUser->GetLocalBandUser()->GetPadNum();
+        float diff = mTime.Ms() - mLastUpDown[slot];
+        mLastUpDown[slot] = mTime.Ms();
+        if (diff < 50.0f) {
             return true;
         }
     }
