@@ -471,7 +471,22 @@ void StoreMetadataManager::UpdateOfferOwnership() {
     }
 }
 
-void StoreMetadataManager::MarkDownloaded(unsigned long long, unsigned short) {}
+void StoreMetadataManager::MarkDownloaded(unsigned long long key, unsigned short idx) {
+    StoreTitleContentState *state;
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.lower_bound(key);
+    if (it == unk58.end() || key < (*it).first) {
+        state = (StoreTitleContentState *)operator new(0x1000);
+        if (state) memset(state, 0, 0x1000);
+        unk58[key] = state;
+    } else {
+        state = (*it).second;
+    }
+    unsigned char *p = (unsigned char *)state + (idx << 3);
+    if (p) {
+        *p |= 1;
+        mFlags |= 0x40;
+    }
+}
 
 StorePage *StoreMetadataManager::LoadPage(unsigned short idx) {
     mCurrentPage = mPageTable->GetPage(idx);

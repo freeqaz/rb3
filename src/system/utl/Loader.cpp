@@ -149,7 +149,17 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
     SetGPHangDetectEnabled(true, funcName);
 }
 
-void LoadMgr::PollUntilEmpty() {}
+void LoadMgr::PollUntilEmpty() {
+    const char *funcName = __FUNCTION__;
+    SetGPHangDetectEnabled(false, funcName);
+    float savedPeriod = TheLoadMgr.mPeriod;
+    TheLoadMgr.unk1c = 1e+30f;
+    TheLoadMgr.mPeriod = 1e+30f;
+    TheLoadMgr.Poll();
+    TheLoadMgr.mPeriod = savedPeriod;
+    TheLoadMgr.unk1c = savedPeriod;
+    SetGPHangDetectEnabled(true, funcName);
+}
 
 void LoadMgr::Print() {
     for (std::list<Loader *>::iterator it = mLoading.begin(); it != mLoading.end();
