@@ -83,37 +83,9 @@ void HandleErrorFromRestore(WiiContent *content, OpResult result) {}
 
 int ConvertCNTSDError(int error) {
     switch (error) {
-        case 0:
-            return 0;
         case -0xBB8:
-            return 1;
-        case -0xBBB:
-            return 0xD;
         case -0xBBC:
-            return 1;
-        case -0xBBD:
-            return 8;
-        case -0xBBE:
-            return 0xF;
-        case -0xBBF:
-            return 1;
-        case -0xBC0:
-            return 1;
-        case -0xBC1:
-            return 0xE;
         case -0xBC2:
-            return 1;
-        case -0xBC3:
-            return 1;
-        case -0xBC4:
-            return 0xD;
-        case -0xBC5:
-            return 0x10;
-        case -0xBC6:
-            return 0x10;
-        case -0xBF6:
-            return 1;
-        case -0xBF7:
             return 1;
         case -0xBF8:
             return 2;
@@ -121,12 +93,32 @@ int ConvertCNTSDError(int error) {
             return 3;
         case -0xBFA:
             return 7;
-        case -0xBFB:
-            return 0xC;
+        case -0xBC5:
+        case -0xBC6:
+            return 0x10;
+        case -0xBBD:
+            return 8;
         case -0xBFC:
             return 0xB;
+        case -0xBFB:
+            return 0xC;
+        case -0xBC1:
+            return 0xE;
+        case -0xBBE:
+            return 0xF;
+        case -0xBBB:
+        case -0xBC4:
         case -0xC37:
             return 0xD;
+        case -0xBBF:
+        case -0xBC0:
+            return 1;
+        case -0xBF6:
+        case -0xBF7:
+        case -0xBC3:
+            return 1;
+        case 0:
+            return 0;
         default:
             MILO_WARN("ConvertCNTSDError unhandled error: %d\n", error);
             return 1;

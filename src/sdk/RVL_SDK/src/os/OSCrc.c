@@ -5,11 +5,38 @@ u32 OSCalcCRC32(const void *buf, u32 length) {
                                    0x76DC4190, 0x6B6B51F4, 0x4DB26158, 0x5005713C,
                                    0xEDB88320, 0xF00F9344, 0xD6D6A3E8, 0xCB61B38C,
                                    0x9B64C2B0, 0x86D3D2D4, 0xA00AE278, 0xBDBDF21C };
-    unsigned int crc = -1;
-    u8 *buf2 = (void *)buf;
-    while (length--) {
-        crc = (crc << 8) ^ crc32_table[((crc >> 24) ^ *buf2) & 255];
-        buf2++;
+    u8 *p = (u8 *)buf;
+    u32 crc = 0xFFFFFFFF;
+
+    if (length == 0)
+        return ~crc;
+
+    int words = (int)length >> 2;
+    for (; words > 0; --words) {
+        u8 b;
+        u32 lo;
+
+        b = p[0];
+        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+        b = p[1];
+        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+        b = p[2];
+        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+        b = p[3];
+        p += 4;
+        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
     }
+
+    length &= 3;
+    for (; length > 0; --length) {
+        u8 b = *p++;
+        u32 lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+    }
+
     return ~crc;
 }
