@@ -236,7 +236,7 @@ DataNode TambourineManager::OnPlayTambourine(DataArray *d) {
     }
     MILO_ASSERT(!seq_name.Null(), 0x1ef);
     RELEASE(mTambourineSequence);
-    Sequence *seq = mBank->Find<Sequence>(seq_name.Str(), false);
+    Sequence *seq = mBank->Find<Sequence>(seq_name.Str(), true);
     MILO_ASSERT(seq, 0x1f5);
     mTambourineSequence = dynamic_cast<Sequence *>(
         Hmx::Object::NewObject(seq->ClassName())

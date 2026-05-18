@@ -5,7 +5,9 @@
 #include "meta_band/BandMachine.h"
 #include "meta_band/LockMessages.h"
 #include "meta_band/LockStepMgr.h"
+#include "meta_band/MetaPerformer.h"
 #include "meta_band/MusicLibrary.h"
+#include "meta_band/SavedSetlist.h"
 #include "meta_band/SessionMgr.h"
 #include "meta_band/Utl.h"
 #include "net/NetSession.h"
@@ -135,7 +137,36 @@ int SetlistMergePanel::IntToSetlistIndex(int i, int setlistSize) {
 
 DataNode SetlistMergePanel::OnMsg(const ReleasingLockStepMsg &) {}
 
-void SetlistMergePanel::SendSongsToMetaPerformer(const std::vector<int> &) {}
+void SetlistMergePanel::SendSongsToMetaPerformer(const std::vector<int> &songs) {
+    unsigned short size = songs.size();
+    SavedSetlist *current = TheMusicLibrary->mCurrentSetlist;
+    bool sameSongs = false;
+    if (current && size == current->mSongs.size()) {
+        sameSongs = true;
+        for (int i = 0; i < size; i++) {
+            if (songs[i] != current->mSongs[i]) {
+                sameSongs = false;
+                break;
+            }
+        }
+    }
+    if (sameSongs) {
+        if (current->IsBattle()) {
+            BattleSavedSetlist *bss = dynamic_cast<BattleSavedSetlist *>(current);
+            MILO_ASSERT(bss, 0x12F);
+            SavedSetlist::SetlistType type = bss->mSetlistType;
+            bool notArchived = (type != SavedSetlist::kBattleHarmonixArchived
+                                && type != SavedSetlist::kBattleFriendArchived);
+            if (notArchived) {
+                MetaPerformer::Current()->SetBattle(bss);
+                return;
+            }
+        }
+        MetaPerformer::Current()->SetSetlist(current);
+    } else {
+        MetaPerformer::Current()->SetSongs(songs);
+    }
+}
 
 DataNode SetlistMergePanel::OnMsg(const LockStepStartMsg &) {
     UIScreen *screen = ObjectDir::Main()->Find<UIScreen>("setlist_merge_screen", true);

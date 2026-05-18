@@ -44,11 +44,12 @@ int BandPatchMesh::MeshVert::AddUV(
     if (newlensq > 0) {
         float ratio = newlensq / lensq;
         float r = 1.0f / std::sqrt(ratio);
-        float dot4 = Dot(v48, mv->unk10);
-        float dot5 = Dot(v48, mv->unk4);
         float recipsq = 0.5f * r * (3.0f - ratio * r * r);
+        float dot4 = Dot(v48, mv->unk10);
+        float vry = vr.y;
+        float dot5 = Dot(v48, mv->unk4);
         v50x += recipsq * vr.x * dot5;
-        v50y += recipsq * vr.y * dot4;
+        v50y += recipsq * vry * dot4;
     } else if (lensq > 0)
         return 0;
     if (vp) {
