@@ -435,7 +435,19 @@ Symbol GrabInstrument(std::vector<Symbol> &syms, Symbol s) {
     return s;
 }
 
-const char *PrefabSuffix(char *c) { const char *names[2] = { "_male", "_female" }; }
+const char *PrefabSuffix(char *c) {
+    static const char *names[2] = { "_male", "_female" };
+    const char *found;
+    int i = 0;
+    do {
+        found = strstr(c, names[i]);
+        if (found) {
+            return (found + strlen(found) == c + strlen(c)) ? found : NULL;
+        }
+        i++;
+    } while (i < 2);
+    return NULL;
+}
 
 DataNode BandWardrobe::GetUserTrack(int i) {
     static Message msg("get_user_track", DataNode(0));

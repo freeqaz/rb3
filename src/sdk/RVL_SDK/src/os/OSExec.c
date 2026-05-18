@@ -1,18 +1,12 @@
 #include <revolution/ESP.h>
-#include <revolution/IPC.h>
 #include <revolution/OS.h>
 #include <string.h>
 
-#define MENU_TITLE_ID 0x0000000100000002
+#define MENU_TITLE_ID_HI 0x00000001
+#define MENU_TITLE_ID_LO 0x00000002
 #define TICKET_VIEW_SIZE 0xD8
 
-static u8 views[0xBD00] ALIGN(32);
-
 BOOL __OSInReboot;
-
-static s32 _ES_InitLib(s32* fd);
-static s32 _ES_GetTicketViews(s32* fd, u64 tid, void* pViews, u32* count);
-static s32 _ES_LaunchTitle(s32* fd, u64 tid, void* pViews);
 
 void __OSGetExecParams(OSExecParams* out) {
     if (OS_DOL_EXEC_PARAMS >= (void*)0x80000000) {
@@ -27,132 +21,37 @@ void __OSSetExecParams(){
 }
 
 void __OSLaunchMenu(void) {
-    // This makes me feel sick
     s32 result;
-    void* pviews = &views;
     u32 count = 1;
-    s32 fd = -1;
-    struct {
-        u8 tmp[4];
-    } unused = {0xFF, 0xFF, 0xFF, 0};
+    ESTicketView* pviews;
 
-    if (_ES_InitLib(&fd) != IPC_RESULT_OK) {
+    OSSetArenaLo((void*)0x81280000);
+    OSSetArenaHi((void*)0x812f0000);
+
+    if (ESP_InitLib() != 0) {
         return;
     }
 
     // Get num ticket views
-    result = _ES_GetTicketViews(&fd, MENU_TITLE_ID, NULL, &count);
-    if (count != 1 || result != IPC_RESULT_OK) {
+    result = ESP_GetTicketViews(((u64)MENU_TITLE_ID_HI << 32) | MENU_TITLE_ID_LO, NULL, &count);
+    if (count != 1 || result != 0) {
         return;
     }
 
+    // Allocate ticket view buffer
+    pviews = OSAllocFromMEM1ArenaLo((count * TICKET_VIEW_SIZE + 0x1f) & ~0x1f, 0x20);
+
     // Get ticket views
-    if (_ES_GetTicketViews(&fd, MENU_TITLE_ID, pviews, &count) !=
-        IPC_RESULT_OK) {
+    if (ESP_GetTicketViews(((u64)MENU_TITLE_ID_HI << 32) | MENU_TITLE_ID_LO, pviews, &count) != 0) {
         return;
     }
 
     // Launch title
-    if (_ES_LaunchTitle(&fd, MENU_TITLE_ID, pviews) != IPC_RESULT_OK) {
+    if (ESP_LaunchTitle(((u64)MENU_TITLE_ID_HI << 32) | MENU_TITLE_ID_LO, pviews) != 0) {
         return;
     }
 
     while (TRUE) {
         ;
     }
-}
-
-/**
- * These were actually re(?)implemented in NANDCore/OSExec according to BBA
- */
-
-static s32 _ES_InitLib(s32* fd) {
-    s32 result;
-
-    // Had to remove fd initialization to match __OSLaunchMenu
-    // *fd = -1;
-
-    result = IPC_RESULT_OK;
-
-    *fd = IOS_Open("/dev/es", IPC_OPEN_NONE);
-    if (*fd < 0) {
-        result = *fd;
-    }
-
-    return result;
-}
-
-static s32 _ES_GetTicketViews(s32* fd, u64 tid, void* pViews, u32* count) {
-    s32 result;
-    // TODO: Hacky solution
-    u8 work[0x120] ALIGN(32);
-    IPCIOVector* pVectors = (IPCIOVector*)(work + 0x0);
-    u64* pTid = (u64*)(work + 0x20);
-    u32* pCount = (u32*)(work + 0x40);
-
-    // Cast is necessary
-    if (*fd < 0 || count == ((void*)NULL)) {
-        return -0x3F9;
-    }
-
-    if ((u32)pViews % 32 != 0) {
-        return -0x3F9;
-    }
-
-    *pTid = tid;
-
-    // NULL views ptr = get num views
-    if (pViews == (void*)NULL) {
-        pVectors[0].base = pTid;
-        pVectors[0].length = sizeof(u64);
-        pVectors[1].base = pCount;
-        pVectors[1].length = sizeof(u32);
-
-        result =
-            IOS_Ioctlv(*fd, IPC_IOCTLV_GET_NUM_TICKET_VIEWS, 1, 1, pVectors);
-        if (result == IPC_RESULT_OK) {
-            *count = *pCount;
-        }
-
-        return result;
-    }
-
-    if (*count == 0) {
-        return -0x3F9;
-    }
-
-    *pCount = *count;
-
-    pVectors[0].base = pTid;
-    pVectors[0].length = sizeof(u64);
-    pVectors[1].base = pCount;
-    pVectors[1].length = sizeof(u32);
-    pVectors[2].base = pViews;
-    pVectors[2].length = *count * TICKET_VIEW_SIZE;
-    return IOS_Ioctlv(*fd, IPC_IOCTLV_GET_NUM_TICKET_VIEWS, 2, 1, pVectors);
-}
-
-static s32 _ES_LaunchTitle(s32* fd, u64 tid, void* pViews) {
-    // TODO: Hacky solution
-    u8 tidWork[256] ALIGN(32);
-    u8 vectorWork[32] ALIGN(32);
-    IPCIOVector* pVectors = (IPCIOVector*)vectorWork;
-    u64* pTid = (u64*)tidWork;
-
-    if (*fd < 0) {
-        return -0x3F9;
-    }
-
-    if ((u32)pViews % 32 != 0) {
-        return -0x3F9;
-    }
-
-    *pTid = tid;
-
-    pVectors[0].base = pTid;
-    pVectors[0].length = sizeof(u64);
-    pVectors[1].base = pViews;
-    pVectors[1].length = TICKET_VIEW_SIZE;
-
-    return IOS_IoctlvReboot(*fd, IPC_IOCTLV_LAUNCH_TITLE, 2, 0, pVectors);
 }

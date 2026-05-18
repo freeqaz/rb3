@@ -83,11 +83,11 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
             ret = ISFS_SeekAsync(s_fd, 0, 0, asyncRoutine, 0);
 
             if (ret != ISFS_ERROR_OK) {
-                callbackRoutine(s_err);
+                callbackRoutine(FALSE);
             }
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
     else if (s_stage == 3) {
@@ -95,11 +95,11 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
             ret = ISFS_ReadAsync(s_fd, (u8*)s_rBuf, 256, asyncRoutine, 0);
 
             if (ret != ISFS_ERROR_OK) {
-                callbackRoutine(s_err);
+                callbackRoutine(FALSE);
             }
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
     else if (s_stage == 4) {
@@ -107,11 +107,11 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
             ret = ISFS_SeekAsync(s_fd, 0, 0, asyncRoutine, 0);
 
             if (ret != ISFS_ERROR_OK) {
-                callbackRoutine(s_err);
+                callbackRoutine(FALSE);
             }
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
     else if (s_stage == 5) {
@@ -123,11 +123,11 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
             ret = ISFS_WriteAsync(s_fd, (const u8*)s_wBuf, 256, asyncRoutine, 0);
 
             if (ret != ISFS_ERROR_OK) {
-                callbackRoutine(s_err);
+                callbackRoutine(FALSE);
             }
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
     else if (s_stage == 6) {
@@ -136,11 +136,11 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
             ret = ISFS_SeekAsync(s_fd, n * 256, 0, asyncRoutine, 0);
 
             if (ret != ISFS_ERROR_OK) {
-                callbackRoutine(s_err);
+                callbackRoutine(FALSE);
             }
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
     else if (s_stage == 7) {
@@ -149,11 +149,11 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
         {
             ret = ISFS_WriteAsync(s_fd, (const u8*)s_wBuf, 256, asyncRoutine, 0);
             if (ret != ISFS_ERROR_OK) {
-                callbackRoutine(s_err);
+                callbackRoutine(FALSE);
             }
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
     else if (s_stage == 8) {
@@ -161,11 +161,11 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
             ret = ISFS_CloseAsync(s_fd, asyncRoutine, 0);
 
             if (ret != ISFS_ERROR_OK) {
-                callbackRoutine(s_err);
+                callbackRoutine(FALSE);
             }
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
     else if (s_stage == 9) {
@@ -174,7 +174,7 @@ static void asyncRoutine(ISFSError result, void *ctxt) {
             callbackRoutine(TRUE);
         }
         else {
-            callbackRoutine(s_err);
+            callbackRoutine(FALSE);
         }
     }
 }

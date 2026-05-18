@@ -46,12 +46,13 @@ void TransformNoScale::SetRot(const Hmx::Matrix3 &m) {
     q.w = floorf(nuw > 32767.0f ? 32767.0f : (nuw < -32767.0f ? -32767.0f : nuw));
 }
 
-void TransformNoScale::GetRot(Hmx::Quat &qout) const {
+Hmx::Quat &TransformNoScale::GetRot(Hmx::Quat &qout) const {
     short qw = q.w, qz = q.z, qy = q.y, qx = q.x;
     qout.w = qw * 0.000030518509f;
     qout.z = qz * 0.000030518509f;
     qout.y = qy * 0.000030518509f;
     qout.x = qx * 0.000030518509f;
+    return qout;
 }
 
 void TransformNoScale::SetRot(const Hmx::Quat &quat) {

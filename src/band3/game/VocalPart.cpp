@@ -234,9 +234,11 @@ bool VocalPart::IsEmptyPhrase(const VocalPhrase *const &p) const {
     if (phrase == end) return true;
     if (phrase->mTambourinePhrase) return false;
     if (phrase->unk10 != phrase->unk14) return false;
-    if (phrase->unk10 <= 0) return true;
-    const VocalNote &note = mVocalNoteList->mNotes[phrase->unk10 - 1];
-    if (note.mMs + note.mDurationMs > phrase->unk0) return false;
+    int idx = phrase->unk10 - 1;
+    if (idx >= 0) {
+        const VocalNote &note = mVocalNoteList->mNotes[idx];
+        if (note.mMs + note.mDurationMs > phrase->unk0) return false;
+    }
     return true;
 }
 

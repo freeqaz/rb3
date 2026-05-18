@@ -104,9 +104,9 @@ protected:
     int overlapLength;
     int overlapDividerBits;
     int slopingDivider;
-    int seekLength;
-    int seekWindowLength;
-    int maxOffset;
+    uint seekLength;
+    uint seekWindowLength;
+    uint maxOffset;
     float nominalSkip;
     float skipFract;
     FIFOSampleBuffer outputBuffer;

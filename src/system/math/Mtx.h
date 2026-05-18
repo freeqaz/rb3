@@ -285,7 +285,7 @@ public:
     void Set(const TransformNoScale &);
     void SetRot(const Hmx::Matrix3 &);
     void SetRot(const Hmx::Quat &);
-    void GetRot(Hmx::Quat &) const;
+    Hmx::Quat &GetRot(Hmx::Quat &) const;
     void Reset();
     Transform &ToTransform(Transform &) const;
     TransformNoScale &operator=(const TransformNoScale &t) { Set(t); }

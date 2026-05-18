@@ -96,8 +96,8 @@ DataResult *DataResultList::GetDataResult(int ix) const {
     MILO_ASSERT(mDataResultList.size() > 0, 0xA3);
     MILO_ASSERT_RANGE(ix, 0, mDataResultList.size(), 0xA4);
     std::list<DataResult>::const_iterator it = mDataResultList.begin();
-    NextItr(it, ix);
-    // return *it;
+    std::advance(it, ix);
+    return (DataResult *)&*it;
 }
 
 void DataResultList::Print(TextStream &ts) { ts.Print(mQDataResultString->m_szContent); }
