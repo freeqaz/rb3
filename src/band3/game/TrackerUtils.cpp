@@ -118,3 +118,61 @@ void TrackerSectionManager::GatherSections() {
         MILO_WARN("No practice sections found in song!");
     }
 }
+
+int TrackerUtils::CountVocalPhrasesInSong(int iPlayer) {
+    VocalNoteList *pPlayer = TheSongDB->GetVocalNoteList(0);
+    MILO_ASSERT(pPlayer, 0x193);
+    int count = 0;
+    for (std::vector<VocalPhrase>::iterator it = pPlayer->mPhrases.begin();
+         it != pPlayer->mPhrases.end(); ++it) {
+        if (it->unk14 > it->unk10 && !it->mTambourinePhrase) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int TrackerUtils::CountGemsInSong(int iPlayer, TrackType iTrackType) {
+    MILO_ASSERT(iTrackType != kTrackVocals, 0x1AC);
+    int count = TheSongDB->GetTotalGems(iPlayer);
+    if (iTrackType != kTrackDrum) {
+        return count;
+    }
+    DrumFillInfo *pFillInfo = TheSongDB->GetDrumFillInfo(iPlayer);
+    const GameGemList *pGemList = TheSongDB->GetGemList(iPlayer);
+    std::vector<FillExtent>::iterator fillIt = pFillInfo->mFills.begin();
+    std::vector<FillExtent>::iterator fillEnd = pFillInfo->mFills.end();
+    std::vector<GameGem>::const_iterator gemIt = pGemList->mGems.begin();
+    for (; fillIt != fillEnd; ++fillIt) {
+        while (gemIt != pGemList->mGems.end() && gemIt->mTick < fillIt->start) {
+            ++gemIt;
+        }
+        while (gemIt != pGemList->mGems.end() && gemIt->mTick <= fillIt->end) {
+            count--;
+            ++gemIt;
+        }
+    }
+    return count;
+}
+
+float TrackerUtils::GetNextNoteMs(int iPlayer, TrackType iTrackType, float f) {
+    float nextMs = TheSongDB->GetSongDurationMs();
+    if (iTrackType == kTrackVocals) {
+        for (int i = 0; i < TheSongDB->GetVocalNoteListCount(); i++) {
+            VocalNote *pNote = TheSongDB->GetVocalNoteList(i)->NextNote(f);
+            if (pNote) {
+                float ms = pNote->mMs;
+                if (ms < nextMs) {
+                    nextMs = ms;
+                }
+            }
+        }
+    } else {
+        const GameGemList *pGemList = TheSongDB->GetGemList(iPlayer);
+        int idx = pGemList->ClosestMarkerIdxAtOrAfter(f);
+        if (idx != -1) {
+            nextMs = pGemList->GetGem(idx).mMs;
+        }
+    }
+    return nextMs;
+}
