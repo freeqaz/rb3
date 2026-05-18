@@ -1,6 +1,7 @@
 #include "os/ContentMgr_Wii.h"
 #include "decomp.h"
 #include "meta/StorePackedMetadata.h"
+#include "obj/Data.h"
 #include "os/CommerceMgr_Wii.h"
 #include "os/ContentMgr.h"
 #include "os/Debug.h"
@@ -8,9 +9,12 @@
 #include "revolution/cnt/cnt.h"
 #include "revolution/ec/ec.h"
 #include "revolution/mem/mem_allocator.h"
+#include <list>
 #include <revolution/CNT.h>
 
 Symbol RootContent::FileName() { return Symbol(mRoot.c_str()); }
+
+std::list<DataArrayPtr> gPlatformErrorMsg;
 
 bool gCNTThreadInUse;
 
@@ -63,6 +67,11 @@ void *gCNTThreadWorkBuffer;
 CNTSDThreadInfo *gCNTThreadInfo;
 
 WiiContentMgr TheWiiContentMgr;
+ContentMgr *TheContentMgr;
+
+static struct TheContentMgrInit {
+    TheContentMgrInit() { TheContentMgr = &TheWiiContentMgr; }
+} _theContentMgrInit;
 
 DECOMP_FORCEACTIVE(ContentMgr_Wii, "_unresolved func.\n")
 

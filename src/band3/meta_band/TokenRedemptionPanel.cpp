@@ -1,6 +1,7 @@
 #include "meta_band/TokenRedemptionPanel.h"
 #include "decomp.h"
 #include "game/BandUser.h"
+#include "meta/StorePackedMetadata.h"
 #include "meta_band/AppLabel.h"
 #include "net/Server.h"
 #include "net_band/RockCentral.h"
@@ -123,7 +124,35 @@ void TokenRedemptionPanel::GetPreviousOffersForUser(LocalBandUser *user) {
     TheRockCentral.GetRedeemedTokensByPlayer(id, mResultList, this);
 }
 
-void TokenRedemptionPanel::EnumerateOffers(LocalBandUser *user) { DataNode n38(0); }
+extern "C" void
+AddRedeemedOffer__21StoreRedemptionsTableFPCc(StoreRedemptionsTable *, const char *);
+
+void TokenRedemptionPanel::EnumerateOffers(LocalBandUser *user) {
+    DataNode node(0);
+    std::list<DataResult>::iterator end = mResultList.mDataResultList.end();
+    std::list<DataResult>::iterator it = mResultList.mDataResultList.begin();
+    for (; it != end; ++it) {
+        it->GetDataResultValue(String("offer"), node);
+        AddRedeemedOffer__21StoreRedemptionsTableFPCc(
+            TheStoreMetadata.mRedemptionsTable, node.Str(NULL)
+        );
+    }
+    int count = TheStoreMetadata.mRedemptionsTable->size();
+    if (count == 0) {
+        static Message token_msg("token_redemption_msg", gNullStr);
+        if (mRedemptionState == 6) {
+            token_msg[0] = token_error_no_previous_offers;
+        } else {
+            token_msg[0] = token_redemption_error;
+        }
+        HandleType(token_msg);
+        mRedemptionState = 0;
+    } else {
+        MILO_ASSERT(!mEnumeration, 0x14A);
+        mEnumeration = new WiiEnumeration(count);
+        mEnumeration->Start();
+    }
+}
 
 BEGIN_HANDLERS(TokenRedemptionPanel)
     HANDLE_ACTION(

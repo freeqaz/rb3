@@ -1,9 +1,15 @@
 #include "Movie.h"
 #include "macros.h"
 #include "math/Utl.h"
+#include "os/Debug.h"
 #include "os/Timer.h"
 #include "rndobj/Tex.h"
+#include "rndobj/Utl.h"
 #include "rndwii/Tex.h"
+#include "utl/BufStream.h"
+#include "utl/FileStream.h"
+#include "utl/Loader.h"
+#include "utl/MakeString.h"
 #include "utl/MemMgr.h"
 
 WiiMovie::WiiMovie() : unk_0x40(0), unk_0x48(0) {}
@@ -16,7 +22,52 @@ WiiMovie::~WiiMovie() {
     }
 }
 
-void WiiMovie::SetFile(const FilePath &fp, bool b) {}
+void WiiMovie::SetFile(const FilePath &fp, bool b) {
+    RELEASE(unk_0x48);
+    if (unk_0x40) {
+        _MemFree(unk_0x40);
+        unk_0x40 = nullptr;
+    }
+    mVideoData.Reset();
+    mFile = fp;
+    mStream = b;
+    if (!mFile.empty()) {
+        if (b) {
+            unk_0x48 = NewFile(CacheResource(mFile.c_str(), this), 2);
+            if (unk_0x48 == nullptr) {
+                TheDebug.Notify(MakeString("%s: %s not found", PathName(this), mFile));
+                return;
+            }
+            FileStream fs(unk_0x48, true);
+            mVideoData.Load(fs, true);
+            unk_0x40 = _MemAlloc(mVideoData.FrameSize() * 2, 0);
+            unk_0x54 = unk_0x40;
+            unk_0x50 = 0;
+            unk_0x4c = fs.Tell();
+        } else {
+            TheDebug << FormatString("Loading RndMovie into RAM\n").Str();
+            TheDebug << MakeString("Opening file - %s\n", mFile.c_str());
+            FileLoader *fl = dynamic_cast<FileLoader *>(TheLoadMgr.GetLoader(fp));
+            const char *buf;
+            int bufSize;
+            if (fl) {
+                buf = fl->GetBuffer(&bufSize);
+                delete fl;
+            } else {
+                buf = nullptr;
+            }
+            if (buf == nullptr)
+                return;
+            BufStream bs((void *)buf, bufSize, true);
+            mVideoData.Load(bs, false);
+            if (buf)
+                _MemFree((void *)buf);
+        }
+        unk_0x44 = mVideoData.mHeight;
+        SetTex(mTex);
+        SetFrame(0.0f, 1.0f);
+    }
+}
 
 void WiiMovie::SetTex(RndTex *tex) {
     RndMovie::SetTex(tex);
