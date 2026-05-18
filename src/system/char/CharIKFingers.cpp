@@ -279,7 +279,7 @@ void CharIKFingers::CalculateHandDest(int i1, int i2) {
                 if (curDesc.unk0) {
                     ::Add(curDesc.unk8, v194, v194);
                     Vector3 v1ac;
-                    Scale(v1a0, (float)(i - 2), v1ac);
+                    Scale(v1a0, i - 2.0f, v1ac);
                     ::Add(v1ac, v194, v194);
                     if (i == 0) {
                         Hmx::Matrix3 m158;

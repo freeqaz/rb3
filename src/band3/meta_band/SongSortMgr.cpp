@@ -228,10 +228,10 @@ void SongSortMgr::BuildFilteredSongList(SongFilter *filter, Symbol partSym) {
         BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(songID);
         if (data) {
             SongRecord record(data);
-            if (!DoesSongMatchFilter(songID, filter, partSym)) {
-                continue;
+            if (DoesSongMatchFilter(songID, filter, partSym)) {
+                std::pair<Symbol, SongRecord> p(record.mShortName, record);
+                mSongs.insert(std::pair<const Symbol, SongRecord>(p));
             }
-            mSongs.insert(std::pair<Symbol, SongRecord>(record.mShortName, record));
         }
     }
     unk34.clear();

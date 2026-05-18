@@ -198,7 +198,8 @@ RndMesh *ChordShapeGenerator::MakeInvertedMesh(const RndMesh *mesh) {
     return ret;
 }
 
-int vertIt; // this type might be wrong
+int vertIt;
+unsigned int faceIt;
 
 #pragma push
 #pragma dont_inline on
@@ -213,76 +214,100 @@ void ChordShapeGenerator::BuildContourCap(
     Hmx::Color32 col2
 ) {
     MILO_ASSERT(connectingVerts.size(), 0x24B);
-    RndMesh::VertVector &verts = unkc4->Verts();
-    std::map<unsigned short, unsigned short> map150;
-    for (int i = 0; i < verts.size(); i++) {
-        RndMesh::Vert &curvert = verts[i];
-        if (curvert.pos.x > unkc8 + 0.1f && curvert.pos.x < unkcc - 0.1f) {
-            map150[i] = vertIt++;
+    RndMesh::VertVector &srcVerts = unkc4->Verts();
+    std::map<unsigned short, unsigned short> capMap;
+    for (int i = 0; i < srcVerts.size(); i++) {
+        float sx = srcVerts[i].pos.x;
+        if (sx > unkc8 + 0.1f && sx < unkcc - 0.1f) {
+            capMap[i] = vertIt++;
         }
     }
-    bool isright = sym == right;
-    RndMesh::VertVector &meshverts = mesh->Verts();
-    if (vertIt > meshverts.size()) {
-        unsigned int newsize = meshverts.size() * 2;
+    bool invert = sym == right;
+    RndMesh::VertVector &meshVerts = mesh->Verts();
+    if (vertIt > meshVerts.size()) {
+        unsigned int newsize = meshVerts.size() * 2;
         MILO_LOG("RG: too few verts for chord shape - increasing to %d", newsize);
-        meshverts.resize(newsize, true);
+        meshVerts.resize(newsize, true);
     }
-    Transform tfd8;
-    Transform tf108;
-    Transform tf138;
-    InterpolateXfm(tf1, tf2, 0.33f, tfd8);
-    InterpolateXfm(tf1, tf2, 0.67f, tf108);
-    InterpolateXfm(tf1, tf2, 0.50f, tf138);
-    tf138.v = tfd8.v;
-    tf138.v += tf108.v;
-    tf138.v /= 2.0f;
-    float f6 = (unkc8 * 2.0f + unkcc) / 3.0f;
-    float f7 = (unkcc * 2.0f + unkc8) / 3.0f;
-    float f22 = (tf2.v.x - tf1.v.x) / (unkcc - unkc8);
-    float f23 = -f22;
-    float var29 = (unkc8 + unkcc) / 2.0f;
-    float var28 = mFretHeights[iii];
-    std::map<unsigned short, unsigned short>::iterator it = map150.begin();
-    std::map<unsigned short, unsigned short>::iterator itEnd = map150.end();
-    for (; it != itEnd; ++it) {
-        RndMesh::Vert &curvert = meshverts[it->first];
-        curvert = verts[it->first];
-        if (isright) {
-            if (curvert.pos.x < f6) {
-                TransformVert(curvert, unkc8, f23, var28, tf2, Hmx::Color32(col2));
-            } else if (curvert.pos.x < f7) {
-                TransformVert(curvert, var29, f23, var28, tf138, Hmx::Color32(col2));
+    Transform trisectA;
+    Transform trisectB;
+    Transform midPt;
+    InterpolateXfm(tf1, tf2, 0.33f, trisectA);
+    InterpolateXfm(tf1, tf2, 0.67f, trisectB);
+    InterpolateXfm(tf1, tf2, 0.50f, midPt);
+    midPt.v = trisectA.v;
+    midPt.v += trisectB.v;
+    midPt.v /= 2.0f;
+    float capTessA = (unkc8 * 2.0f + unkcc) / 3.0f;
+    float capTessB = (unkcc * 2.0f + unkc8) / 3.0f;
+    float xScale = (tf2.v.x - tf1.v.x) / (unkcc - unkc8);
+    float xMid = (unkc8 + unkcc) * 0.5f;
+    float fretHeight = mFretHeights[iii];
+    float zScale = -xScale;
+    std::map<unsigned short, unsigned short>::const_iterator vit = capMap.begin();
+    std::map<unsigned short, unsigned short>::const_iterator vend = capMap.end();
+    for (; vit != vend; ++vit) {
+        RndMesh::Vert &curvert = meshVerts[vit->second];
+        curvert = srcVerts[vit->first];
+        if (invert) {
+            if (curvert.pos.x < capTessA) {
+                TransformVert(curvert, unkc8, zScale, fretHeight, tf2, Hmx::Color32(col2));
+            } else if (curvert.pos.x < capTessB) {
+                TransformVert(curvert, xMid, zScale, fretHeight, midPt, Hmx::Color32(col2));
             } else {
-                TransformVert(curvert, unkcc, f23, var28, tf1, Hmx::Color32(col2));
+                TransformVert(curvert, unkcc, zScale, fretHeight, tf1, Hmx::Color32(col2));
             }
         } else {
-            if (curvert.pos.x < f6) {
-                TransformVert(curvert, unkc8, f22, var28, tf1, Hmx::Color32(col1));
-            } else if (curvert.pos.x < f7) {
-                TransformVert(curvert, var29, f22, var28, tf138, Hmx::Color32(col1));
+            if (curvert.pos.x < capTessA) {
+                TransformVert(curvert, unkc8, xScale, fretHeight, tf1, Hmx::Color32(col1));
+            } else if (curvert.pos.x < capTessB) {
+                TransformVert(curvert, xMid, xScale, fretHeight, midPt, Hmx::Color32(col1));
             } else {
-                TransformVert(curvert, unkcc, f22, var28, tf2, Hmx::Color32(col1));
+                TransformVert(curvert, unkcc, xScale, fretHeight, tf2, Hmx::Color32(col1));
             }
         }
     }
-    std::map<unsigned short, unsigned short> map168;
+    std::map<unsigned short, unsigned short> endVerts;
+    Hmx::Color32 endColor(invert ? col1 : col2);
     AddVertProfile(
         mesh,
         tf2,
-        var29,
-        isright ? sec2 : sec1,
-        map168,
-        Hmx::Color32(isright ? col2 : col1)
+        xMid,
+        invert ? sec2 : sec1,
+        endVerts,
+        Hmx::Color32(endColor)
     );
-    map150.insert(map168.begin(), map168.end());
-    map150.insert(map168.begin(), map168.end()); // fix
-    std::vector<RndMesh::Face> &faces = unkc4->Faces();
-    std::vector<RndMesh::Face> &meshfaces = mesh->Faces();
-    for (int i = 0; i < faces.size(); i++) {
-        // idek
+    capMap.insert(connectingVerts.begin(), connectingVerts.end());
+    capMap.insert(endVerts.begin(), endVerts.end());
+    std::vector<RndMesh::Face> &srcFaces = unkc4->Faces();
+    std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
+    for (unsigned int i = 0; i < srcFaces.size(); i++) {
+        const RndMesh::Face &f = srcFaces[i];
+        float minX = srcVerts[f.v1].pos.x;
+        MinEq(minX, srcVerts[f.v2].pos.x);
+        MinEq(minX, srcVerts[f.v3].pos.x);
+        if (minX < unkc8 - 0.1f) continue;
+        float maxX = srcVerts[f.v1].pos.x;
+        MaxEq(maxX, srcVerts[f.v2].pos.x);
+        MaxEq(maxX, srcVerts[f.v3].pos.x);
+        if (maxX > unkcc + 0.1f) continue;
+        if (faceIt >= meshFaces.size()) {
+            unsigned int newsize = meshFaces.size() * 2;
+            MILO_LOG("RG: too few faces for chord shape - increasing to %d", newsize);
+            meshFaces.resize(newsize, RndMesh::Face());
+        }
+        RndMesh::Face &mf = meshFaces[faceIt++];
+        bool allFound = capMap.find(f.v1) != capMap.end()
+            && capMap.find(f.v2) != capMap.end()
+            && capMap.find(f.v3) != capMap.end();
+        MILO_ASSERT(allFound, 0x2BC);
+        if (invert) {
+            mf.Set(capMap[f.v1], capMap[f.v3], capMap[f.v2]);
+        } else {
+            mf.Set(capMap[f.v1], capMap[f.v2], capMap[f.v3]);
+        }
     }
-    connectingVerts.swap(map168);
+    connectingVerts.swap(endVerts);
 }
 #pragma pop
 

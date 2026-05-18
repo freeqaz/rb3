@@ -13,6 +13,7 @@
 
 #pragma pool_data off
 void WiiMultiMesh::DrawShowing() {
+    float baseDiag0, baseDiag1, baseDiag2;
     START_AUTO_TIMER("multimesh");
     if (mInstances.empty() || mMesh == nullptr) {
         return;
@@ -139,9 +140,9 @@ void WiiMultiMesh::DrawShowing() {
                 instMtx[2][0] = camWorld.m.x.z; instMtx[2][1] = camWorld.m.y.z; instMtx[2][2] = camWorld.m.z.z; instMtx[2][3] = camWorld.v.z;
             }
 
-            float baseDiag0 = instMtx[0][0];
-            float baseDiag1 = instMtx[1][1];
-            float baseDiag2 = instMtx[2][2];
+            baseDiag0 = instMtx[0][0];
+            baseDiag1 = instMtx[1][1];
+            baseDiag2 = instMtx[2][2];
 
             int idx = 0;
             while (idx + 9 < count) {
@@ -151,12 +152,9 @@ void WiiMultiMesh::DrawShowing() {
                         instMtx[0][3] = it->mXfm.v.x;
                         instMtx[1][3] = it->mXfm.v.y;
                         instMtx[2][3] = it->mXfm.v.z;
-                        float sx = instMtx[0][0];
-                        float sy = instMtx[1][1];
-                        float sz = instMtx[2][2];
-                        instMtx[0][0] = sx * it->mXfm.m.x.x;
-                        instMtx[1][1] = sy * it->mXfm.m.y.y;
-                        instMtx[2][2] = sz * it->mXfm.m.z.z;
+                        instMtx[0][0] = instMtx[0][0] * it->mXfm.m.x.x;
+                        instMtx[1][1] = instMtx[1][1] * it->mXfm.m.y.y;
+                        instMtx[2][2] = instMtx[2][2] * it->mXfm.m.z.z;
                         PSMTXConcat(camMtx, instMtx, resultMtx);
                         GXLoadPosMtxImm(resultMtx, slot);
                         GXLoadNrmMtxImm(resultMtx, slot);
@@ -186,12 +184,9 @@ void WiiMultiMesh::DrawShowing() {
                 instMtx[0][3] = it->mXfm.v.x;
                 instMtx[1][3] = it->mXfm.v.y;
                 instMtx[2][3] = it->mXfm.v.z;
-                float sx = instMtx[0][0];
-                float sy = instMtx[1][1];
-                float sz = instMtx[2][2];
-                instMtx[0][0] = sx * it->mXfm.m.x.x;
-                instMtx[1][1] = sy * it->mXfm.m.y.y;
-                instMtx[2][2] = sz * it->mXfm.m.z.z;
+                instMtx[0][0] = instMtx[0][0] * it->mXfm.m.x.x;
+                instMtx[1][1] = instMtx[1][1] * it->mXfm.m.y.y;
+                instMtx[2][2] = instMtx[2][2] * it->mXfm.m.z.z;
                 PSMTXConcat(camMtx, instMtx, resultMtx);
                 GXLoadPosMtxImm(resultMtx, 0);
                 GXLoadNrmMtxImm(resultMtx, 0);
