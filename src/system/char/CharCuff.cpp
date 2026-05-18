@@ -30,9 +30,12 @@ CharCuff::CharCuff()
 CharCuff::~CharCuff() {}
 
 float CharCuff::Eccentricity(const Vector2 &v) const {
-    float f1 = v.y * v.y;
-    float f2 = v.x * v.x;
-    return std::sqrt((f1 + f2) / (f1 * (1.0f / (mEccentricity * mEccentricity)) + f2));
+    float inv_ecc_sq = 1.0f / (mEccentricity * mEccentricity);
+    float vy = v.y;
+    float vx = v.x;
+    float vy2 = vy * vy;
+    float vx2 = vx * vx;
+    return std::sqrt((vy2 + vx2) / (vy2 * inv_ecc_sq + vx2));
 }
 
 // fn_804C3D90 - highlight
