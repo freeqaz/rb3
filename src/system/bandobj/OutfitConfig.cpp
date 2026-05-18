@@ -481,15 +481,23 @@ int OutfitConfig::NumColorOptions() const {
     for (int i = 0; i < mMats.size(); i++) {
         const MatSwap &m = mMats[i];
         if (m.mColor1Palette || !m.mTextures.empty()) {
-            if (maxOption < m.mColor1Option)
-                maxOption = m.mColor1Option;
+            if (maxOption < mMats[i].mColor1Option)
+                maxOption = mMats[i].mColor1Option;
         }
         if (m.mColor2Palette) {
-            if (maxOption < m.mColor2Option)
-                maxOption = m.mColor2Option;
+            if (maxOption < mMats[i].mColor2Option)
+                maxOption = mMats[i].mColor2Option;
         }
     }
     return maxOption + 1;
+}
+
+unsigned int OutfitConfig::OverlayFlags() const {
+    unsigned int flags = 0;
+    for (int i = 0; i < mOverlays.size(); i++) {
+        flags |= mOverlays[i].mCategory;
+    }
+    return flags;
 }
 
 int OutfitConfig::NumIndices(int idx) const {
@@ -500,7 +508,8 @@ int OutfitConfig::NumIndices(int idx) const {
                 return m.mColor1Palette->NumColors();
             if (!m.mTextures.empty())
                 return m.mTextures.size();
-        } else if (m.mColor2Option == idx) {
+        }
+        if (m.mColor2Option == idx) {
             if (m.mColor2Palette)
                 return m.mColor2Palette->NumColors();
         }

@@ -11,6 +11,7 @@ public:
     virtual ~MemcardMgr();
     virtual int ThreadStart();
     virtual void ThreadDone(int);
+    void SaveLoadProfileComplete(Profile *, int);
     void SetDevice(unsigned int);
     void SelectDevice(Profile *, bool, Hmx::Object *, int);
     void OnSearchForDevice(Profile *);

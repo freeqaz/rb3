@@ -1,4 +1,5 @@
 #include "meta/MemcardMgr_Wii.h"
+#include "meta/WiiProfileMgr.h"
 #include "os/Debug.h"
 #include "utl/MemMgr.h"
 
@@ -13,6 +14,12 @@ MemcardMgr::MemcardMgr()
       unkd4(-1), unkd8(-1), unkdc(0) {}
 
 MemcardMgr::~MemcardMgr() {}
+
+void MemcardMgr::SaveLoadProfileComplete(Profile *pProfile, int result) {
+    TheWiiProfileMgr.SetLocked(pProfile, false);
+    MILO_ASSERT(pProfile, 0xee);
+    pProfile->SaveLoadComplete((ProfileSaveState)result);
+}
 
 void MemcardMgr::SetDevice(unsigned int) {
     MILO_FAIL("SetDevice not supported on the Wii.\n");
@@ -31,11 +38,11 @@ void MemcardMgr::OnCheckForSaveContainer(Profile *) {
 }
 
 void MemcardMgr::UnLoadBanner() {
-    if (mBanner) {
+    if (&mBanner != NULL) {
         _MemFree(mBanner);
         mBanner = NULL;
     }
-    if (mBannerIcons) {
+    if (&mBannerIcons != NULL) {
         _MemFree(mBannerIcons);
         mBannerIcons = NULL;
     }
