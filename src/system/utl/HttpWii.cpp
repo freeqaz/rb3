@@ -55,11 +55,13 @@ HttpWii::~HttpWii() {}
 void HttpWii::Init() {
     mDataBuffer = NULL;
     Symbol serverName;
-    if (SystemConfig(Symbol("store"))->FindArray(Symbol("netcache_init"), false)) {
-        SystemConfig(Symbol("store"))->FindArray(Symbol("netcache_init"))
-            ->FindData(default_server, serverName, true);
-        mServerInfo =
-            SystemConfig(Symbol("store"), Symbol("netcache_init"), Symbol("servers"), serverName);
+    DataArray *arr =
+        SystemConfig(Symbol("store"))->FindArray(Symbol("netcache_init"), false);
+    if (arr) {
+        arr->FindData(default_server, serverName, true);
+        mServerInfo = SystemConfig(
+            Symbol("store"), Symbol("netcache_init"), Symbol("servers"), serverName
+        );
         mUseFileLoad = false;
         mUseSSL = true;
         String keyPath;
@@ -72,8 +74,7 @@ void HttpWii::Init() {
                 mCertSize = file->Size();
                 if (mCertSize) {
                     mRootCA = (char *)_MemAlloc(mCertSize, 0x20);
-                    int sz = file->Size();
-                    file->Read(mRootCA, sz);
+                    file->Read(mRootCA, file->Size());
                 }
                 delete file;
             }

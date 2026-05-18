@@ -57,6 +57,7 @@ public:
             mLoadedObjects = m.mLoadedObjects;
             mLoadedSubdirs = m.mLoadedSubdirs;
             mPreClear = m.mPreClear;
+            return *this;
         }
 
         void Clear();

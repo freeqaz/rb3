@@ -1036,8 +1036,8 @@ void CharBones::RotateTo(CharBones &dst, float f) const {
 rotateto_quat:
     if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
         const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
-        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
         if (mCompression >= kCompressQuats) {
             char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);

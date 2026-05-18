@@ -374,7 +374,7 @@ void RndBitmap::Create(void *buffer) {
     }
 }
 
-int RndBitmap::PixelOffset(int, int, bool &) const {
+int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
     static char bytes02[64] = {
         0x0,  0x4,  0x8,  0xC,  0x10, 0x14, 0x18, 0x1c, 0x2,  0x6,  0xa,  0xe,  0x12,
         0x16, 0x1a, 0x1e, 0x20, 0x24, 0x28, 0x2c, 0x30, 0x34, 0x38, 0x3c, 0x22, 0x26,
@@ -413,6 +413,59 @@ int RndBitmap::PixelOffset(int, int, bool &) const {
         0x43, 0x4b, 0x53, 0x5b, 0x63, 0x6b, 0x73, 0x7b, 0x45, 0x4d, 0x55, 0x5d, 0x65,
         0x6d, 0x75, 0x7d, 0x47, 0x4f, 0x57, 0x5f, 0x67, 0x6f, 0x77, 0x7f
     };
+
+    if (mOrder & 4) {
+        if (mBpp == 8) {
+            int temp_r9 = (int)mRowBytes * 2;
+            char *lookup = (((y >> 2) % 4) & 1) ? hbytes13 : hbytes02;
+            unsigned char var_r11_3 = lookup[(y % 4) * 0x10 + (x % 16)];
+            if ((int)var_r11_3 > 0x1F) {
+                var_r11_3 = (var_r11_3 + temp_r9) - 0x20;
+            }
+            return var_r11_3 + ((((y >> 1) & 0xFFFFFFFE) * temp_r9) + (((x >> 1) * 4) & 0xFFFFFFE0));
+        }
+        int temp_r10_2 = (y >> 2) % 4;
+        int var_r3, var_r8, var_r11_2;
+        if ((mWidth > 0x80U) && (mHeight > 0x80U)) {
+            var_r3 = (((int)(y - ((y / 128) << 7)) >> 1) & 0xFFFFFFF8) + ((x >> 1) & 0xFFFFFFC0);
+            var_r8 = (((int)(x - ((x / 128) << 7)) >> 2) & 0xFFFFFFF8) + ((y >> 2) & 0xFFFFFFE0) + (temp_r10_2 * 2);
+            var_r11_2 = (((mHeight - (((int)mHeight / 128) << 7)) & 0xFFFFFFF0) + (mWidth & 0xFFFFFF80)) * 2;
+        } else {
+            var_r3 = (y >> 1) & 0xFFFFFFF8;
+            var_r8 = ((x >> 2) & 0xFFFFFFF8) + (temp_r10_2 * 2);
+            var_r11_2 = (int)mHeight * 2;
+        }
+        char *lookup2 = (temp_r10_2 & 1) ? hbytes13 : hbytes02;
+        unsigned char temp_r10_3 = lookup2[(y % 4) << 5 + (x - ((x / 32) << 5))];
+        int var_r10_2 = (int)temp_r10_3 >> 1;
+        nibble = temp_r10_3 & 1;
+        if (var_r10_2 > 0x1F) {
+            var_r10_2 = (var_r10_2 + var_r11_2) - 0x20;
+        }
+        return var_r10_2 + ((var_r11_2 * var_r8) + (var_r3 * 4));
+    }
+    if (mOrder & 0x40) {
+        unsigned char temp_r11_3 = mBpp;
+        int var_r10_3 = 8;
+        if (temp_r11_3 != 4) {
+            var_r10_3 = 4;
+        }
+        unsigned short temp_r31 = mWidth;
+        int temp_r11_4 = temp_r11_3 - 0x10;
+        nibble = x & 1;
+        int temp_r11_5 = (((temp_r11_4 - temp_r11_4) - !(temp_r11_4 >> 31)) & 4) + 4;
+        int temp_r9_2 = (((temp_r11_3 - 0x20) == 0) & 1) + 1;
+        int temp_r7_2 = x % temp_r11_5;
+        int temp_r8_2 = ((((((int)temp_r31 / temp_r11_5) * (y / var_r10_3)) + (x / temp_r11_5)) * temp_r9_2 * var_r10_3) + (y % var_r10_3)) * temp_r11_5;
+        unsigned int temp_r27 = temp_r31 * temp_r9_2;
+        int var_r11 = (int)(mBpp * ((temp_r8_2 + temp_r7_2) % temp_r27)) >> (temp_r9_2 + 2);
+        int var_r10 = mRowBytes * ((unsigned int)(temp_r8_2 + temp_r7_2) / temp_r27);
+        return var_r11 + var_r10;
+    }
+    nibble = x & 1;
+    int var_r11 = (int)(mBpp * x) >> 3;
+    int var_r10 = mRowBytes * y;
+    return var_r11 + var_r10;
 }
 
 unsigned char RndBitmap::PixelIndex(int i1, int i2) const {
