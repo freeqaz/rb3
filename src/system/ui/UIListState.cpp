@@ -249,10 +249,11 @@ void UIListState::SetScrollPastMinDisplay(bool scroll) {
 void UIListState::SetScrollPastMaxDisplay(bool scroll) { mScrollPastMaxDisplay = scroll; }
 
 void UIListState::SetSelected(int i, int j, bool b) {
+    int data;
     int showing = WrapShowing(i);
 
     if (b) {
-        int data = showing;
+        data = showing;
         goto check_active;
     increment:
         data++;

@@ -765,6 +765,13 @@ void Spotlight::BuildBeam(BeamDef &def) {
     int fi = 0;
     int c0 = 0;
     for (unsigned int i = 0; i < (unsigned int)totalSections; i++) {
+        int c1 = c0 + 1;
+        int c2 = c0 + 2;
+        int c3 = c0 + 3;
+        int n0 = c0 + 4;
+        int n1 = n0 + 1;
+        int n2 = n0 + 2;
+        int n3 = n0 + 3;
         float y;
         float alpha;
         if (i == (unsigned int)totalSections - 1) {
@@ -784,14 +791,6 @@ void Spotlight::BuildBeam(BeamDef &def) {
         float sideBorder = sideBorderDiff * yFrac + topSideBorderVal;
         float borderRatio = sideBorder / (halfWidth * 2.0f);
 
-        int c1 = c0 + 1;
-        int c2 = c0 + 2;
-        int c3 = c0 + 3;
-        int n0 = c0 + 4;
-        int n1 = n0 + 1;
-        int n2 = n0 + 2;
-        int n3 = n0 + 3;
-
         // Column 0: left edge
         verts[c0].pos.x = -halfWidth;
         verts[c0].pos.y = 0.0f;
@@ -800,7 +799,6 @@ void Spotlight::BuildBeam(BeamDef &def) {
         verts[c0].uv.Set(0.0f, yFrac);
 
         float leftInner = sideBorder - halfWidth;
-        float rightInner = halfWidth - sideBorder;
 
         // Column 1: left inner
         if (-leftInner < 0.0f) leftInner = 0.0f;
@@ -816,6 +814,7 @@ void Spotlight::BuildBeam(BeamDef &def) {
         verts[c1].uv.Set(borderRatio, yFrac);
 
         // Column 2: right inner
+        float rightInner = halfWidth - sideBorder;
         if (-rightInner < 0.0f) rightInner = 0.0f;
         verts[c2].pos.x = rightInner;
         verts[c2].pos.y = 0.0f;

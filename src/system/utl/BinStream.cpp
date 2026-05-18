@@ -159,7 +159,28 @@ inline void SwapData(const void *v1, void *v2, int num_bytes) {
 void BinStream::ReadEndian(void *data, int bytes) {
     Read(data, bytes);
     if (mLittleEndian) {
-        SwapData(data, data, bytes);
+        switch (bytes) {
+        case 2: {
+            unsigned short *s = (unsigned short *)data;
+            *s = EndianSwap(*s);
+            break;
+        }
+        case 4: {
+            unsigned int *i = (unsigned int *)data;
+            *i = EndianSwap(*i);
+            break;
+        }
+        case 8: {
+            unsigned long long *l = (unsigned long long *)data;
+            unsigned long long ull = *l;
+            *l = (ull >> 56) | ((ull >> 40) & 0xFF00ULL) | ((ull >> 24) & 0xFF0000ULL) | ((ull >> 8) & 0xFF000000ULL)
+                | ((ull & 0xFF000000ULL) << 8) | ((ull & 0xFF0000ULL) << 24) | ((ull & 0xFF00ULL) << 40) | ((ull & 0xFFULL) << 56);
+            break;
+        }
+        default:
+            MILO_ASSERT(0, 0x6F);
+            break;
+        }
     }
 }
 

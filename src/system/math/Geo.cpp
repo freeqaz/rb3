@@ -103,14 +103,15 @@ void Multiply(const Plane &p, const Transform &t, Plane &out) {
     float d = p.d;
     float a = p.a;
     float c = p.c;
-    float nx = invM.x.x * a + invM.x.y * b + invM.x.z * c;
-    float ny = invM.y.x * a + invM.y.y * b + invM.y.z * c;
-    float nz = invM.z.x * a + invM.z.y * b + invM.z.z * c;
+    Vector3 n;
+    n.x = invM.x.x * a + invM.x.y * b + invM.x.z * c;
+    n.y = invM.y.x * a + invM.y.y * b + invM.y.z * c;
+    n.z = invM.z.x * a + invM.z.y * b + invM.z.z * c;
     float scalar = -d / (a * a + b * b + c * c);
     Vector3 on(a * scalar, b * scalar, c * scalar);
     Vector3 pOut;
     Multiply(on, t, pOut);
-    out.Set(nx, ny, nz, -(pOut.y * ny + (pOut.z * nz + pOut.x * nx)));
+    out.Set(n.x, n.y, n.z, -(pOut.y * n.y + (pOut.z * n.z + pOut.x * n.x)));
 }
 
 void Intersect(const Hmx::Ray &r1, const Hmx::Ray &r2, Vector2 &out) {

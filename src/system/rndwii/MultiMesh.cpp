@@ -44,8 +44,6 @@ void WiiMultiMesh::DrawShowing() {
         mat->Select(false);
     }
 
-    count = 0;
-
     {
         START_AUTO_TIMER("xfms");
 
@@ -87,6 +85,8 @@ void WiiMultiMesh::DrawShowing() {
             camMtx[2][0] = src.m.x.z; camMtx[2][1] = src.m.y.z; camMtx[2][2] = src.m.z.z; camMtx[2][3] = src.v.z;
 #endif
         }
+
+        count = 0;
 
         // Count instances
         {
