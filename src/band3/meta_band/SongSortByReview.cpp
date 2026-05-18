@@ -69,7 +69,7 @@ ShortcutNode *SongSortByReview::NewShortcutNode(SongSortNode *node) const {
     if (owned) {
         review = owned->GetSongRecord()->mReview;
     }
-    ReviewCmp *cmp = new ReviewCmp(review, "review");
+    ReviewCmp *cmp = new ReviewCmp(review, "");
     ShortcutNode *newNode = new ShortcutNode(cmp, cmp->mHeaderSym, true);
     return newNode;
 }
@@ -81,7 +81,7 @@ HeaderSortNode *SongSortByReview::NewHeaderNode(SongSortNode *node) const {
     if (owned) {
         review = owned->GetSongRecord()->mReview;
     }
-    ReviewCmp *cmp = new ReviewCmp(review, "review");
+    ReviewCmp *cmp = new ReviewCmp(review, "");
     HeaderSortNode *newNode = new HeaderSortNode(cmp, cmp->mHeaderSym, true);
     return newNode;
 }
