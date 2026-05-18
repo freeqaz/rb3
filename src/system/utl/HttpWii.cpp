@@ -70,14 +70,15 @@ void HttpWii::Init() {
         if (mUseSSL) {
             mCertSize = 0;
             File *file = NewFile(keyPath.c_str(), 2);
-            if (file) {
-                mCertSize = file->Size();
-                if (mCertSize) {
-                    mRootCA = (char *)_MemAlloc(mCertSize, 0x20);
-                    file->Read(mRootCA, file->Size());
-                }
-                delete file;
+            if (!file) {
+                return;
             }
+            mCertSize = file->Size();
+            if (mCertSize) {
+                mRootCA = (char *)_MemAlloc(mCertSize, 0x20);
+                file->Read(mRootCA, file->Size());
+            }
+            delete file;
         }
         mStatus = 0;
     }

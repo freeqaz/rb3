@@ -360,6 +360,13 @@ bool CheatsManager::OnMsg(const ButtonDownMsg &msg) {
     return 1;
 }
 
-void SetCheatMode(Symbol mode) {}
+void SetCheatMode(Symbol mode) {
+    Symbol m = mode;
+    CheatsManager *mgr = gCheatsManager;
+    if (m != mgr->mSymMode) {
+        mgr->mSymMode = m;
+        mgr->RebuildKeyCheatsForMode();
+    }
+}
 
 Symbol GetCheatMode() { return gCheatsManager->mSymMode; }

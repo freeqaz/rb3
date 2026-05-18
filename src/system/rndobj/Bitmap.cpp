@@ -417,8 +417,12 @@ int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
     if (mOrder & 4) {
         if (mBpp == 8) {
             int temp_r9 = (int)mRowBytes * 2;
-            char *lookup = (((y >> 2) % 4) & 1) ? bytes13 : bytes02;
-            unsigned char var_r11_3 = lookup[(y % 4) * 0x10 + (x % 16)];
+            unsigned char var_r11_3;
+            if (((y >> 2) % 4) & 1) {
+                var_r11_3 = bytes13[(y % 4) * 0x10 + (x % 16)];
+            } else {
+                var_r11_3 = bytes02[(y % 4) * 0x10 + (x % 16)];
+            }
             if ((int)var_r11_3 > 0x1F) {
                 var_r11_3 = (var_r11_3 + temp_r9) - 0x20;
             }
@@ -435,8 +439,12 @@ int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
             var_r8 = ((x >> 2) & 0xFFFFFFF8) + (temp_r10_2 * 2);
             var_r11_2 = (int)mHeight * 2;
         }
-        char *lookup2 = (temp_r10_2 & 1) ? hbytes13 : hbytes02;
-        unsigned char temp_r10_3 = lookup2[(y % 4) << 5 + (x - ((x / 32) << 5))];
+        unsigned char temp_r10_3;
+        if (temp_r10_2 & 1) {
+            temp_r10_3 = hbytes13[((y % 4) << 5) + (x % 32)];
+        } else {
+            temp_r10_3 = hbytes02[((y % 4) << 5) + (x % 32)];
+        }
         int var_r10_2 = (int)temp_r10_3 >> 1;
         nibble = temp_r10_3 & 1;
         if (var_r10_2 > 0x1F) {
@@ -446,14 +454,14 @@ int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
     }
     if (mOrder & 0x40) {
         unsigned char temp_r11_3 = mBpp;
-        int var_r10_3 = 8;
-        if (temp_r11_3 != 4) {
-            var_r10_3 = 4;
+        int var_r10_3 = 4;
+        if (temp_r11_3 == 4) {
+            var_r10_3 = 8;
         }
         unsigned short temp_r31 = mWidth;
-        int temp_r11_5 = 8;
-        if (temp_r11_3 >= 0x10) {
-            temp_r11_5 = 4;
+        int temp_r11_5 = 4;
+        if (temp_r11_3 < 0x10) {
+            temp_r11_5 = 8;
         }
         nibble = x & 1;
         int temp_r9_2 = (((temp_r11_3 - 0x20) == 0) & 1) + 1;

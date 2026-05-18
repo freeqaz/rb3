@@ -167,6 +167,7 @@ bool CacheWii::ReadAsync(
     }
 }
 
+#pragma pool_data off
 bool CacheWii::WriteAsync(
     const char *param_1, void *param_2, uint param_3, Hmx::Object *param_4
 ) {
@@ -198,6 +199,7 @@ bool CacheWii::WriteAsync(
     }
 }
 
+#pragma pool_data reset
 bool CacheWii::DeleteAsync(const char *param_1, Hmx::Object *) {
     if (!IsDone()) {
         mLastResult = kCache_ErrorBusy;

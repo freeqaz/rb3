@@ -5,6 +5,11 @@
 #include "utl/Std.h"
 #include "utl/Symbols.h"
 
+// TU-local inline definition of Hmx::Object copy constructor so CW inlines it
+// in _M_fill_insert_aux and _M_insert_overflow_aux for vector<PatchLayer>.
+inline Hmx::Object::Object(const Hmx::Object &o)
+    : mTypeProps(o.mTypeProps), mTypeDef(o.mTypeDef), mName(o.mName), mDir(o.mDir), mRefs(o.mRefs) {}
+
 std::vector<Symbol> PatchLayer::sCategoryNames;
 PatchDir *PatchLayer::sStickerOwner;
 RndDir *PatchLayer::sResource;

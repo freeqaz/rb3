@@ -10,12 +10,24 @@ struct MemHeapStack {
 class Heap {
 public:
     void FreeBlockStats(int &, int &, int &, int &);
-    char mPad[0x34]; // padding to match sizeof(Heap) == 0x34
+    const char *Name() const { return mName; }
+
+    char mPad0[8];      // 0x0
+    const char *mName;  // 0x8
+    char mPadC[0x28];   // 0xC, total size 0x34
 };
 
 extern int gDefaultHeap;
 extern Heap gHeaps[16];
+int gNumHeaps;
 static bool gMemInited;
+
+int MemNumHeaps() { return gNumHeaps; }
+
+const char *MemHeapName(int heap) {
+    if (heap < 0) return "system";
+    return gHeaps[heap].Name();
+}
 
 static MemHeapStack &ThreadMemStack(bool);
 

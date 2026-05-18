@@ -233,6 +233,7 @@ BOOL TDStretch::isQuickSeekEnabled() const
 
 
 // Seeks for the optimal overlap-mixing position.
+#pragma dont_inline on
 int TDStretch::seekBestOverlapPosition(const SAMPLETYPE *refPos)
 {
     if (channels == 2u)
@@ -260,6 +261,7 @@ int TDStretch::seekBestOverlapPosition(const SAMPLETYPE *refPos)
         }
     }
 }
+#pragma dont_inline reset
 
 
 
@@ -268,7 +270,7 @@ int TDStretch::seekBestOverlapPosition(const SAMPLETYPE *refPos)
 // of 'ovlPos'.
 inline void TDStretch::overlap(SAMPLETYPE *pOutput, const SAMPLETYPE *pInput, uint ovlPos) const
 {
-    if (channels == 2)
+    if (channels == 2u)
     {
         // stereo sound
         overlapStereo(pOutput, pInput + 2 * ovlPos);
@@ -568,7 +570,8 @@ void TDStretch::processNominalTempo()
 // the result into 'outputBuffer'
 void TDStretch::processSamples()
 {
-    int ovlSkip, offset;
+    uint ovlSkip;
+    int offset;
     int temp;
 
     if (tempo == 1.0f)
@@ -582,7 +585,7 @@ void TDStretch::processSamples()
     {
         // if midBuffer is empty, move the first samples of the input stream
         // into it
-        if ((int)inputBuffer.numSamples() < overlapLength)
+        if (inputBuffer.numSamples() < (uint)overlapLength)
         {
             // wait until we've got overlapLength samples
             return;
@@ -594,7 +597,7 @@ void TDStretch::processSamples()
 
     // Process samples as long as there are enough samples in 'inputBuffer'
     // to form a processing frame.
-    while ((int)inputBuffer.numSamples() >= sampleReq)
+    while (inputBuffer.numSamples() >= (uint)sampleReq)
     {
         // If tempo differs from the normal ('SCALE'), scan for the best overlapping
         // position
