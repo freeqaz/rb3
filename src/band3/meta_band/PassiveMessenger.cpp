@@ -138,13 +138,8 @@ PassiveMessage *PassiveMessageQueue::GetAndPreProcessFirstMessage() {
                 for (std::list<PassiveMessage *>::iterator it = mQueue.begin();
                      it != mQueue.end();) {
                     PassiveMessage *msg = *it;
-                    bool shouldErase = false;
-                    if (msg->mText->Sym(0) == passive_message_earned_campaign_level) {
-                        if (msg != campaignLevelMsg) {
-                            shouldErase = true;
-                        }
-                    }
-                    if (shouldErase) {
+                    if (msg->mText->Sym(0) == passive_message_earned_campaign_level
+                        && msg != campaignLevelMsg) {
                         PassiveMessage *pMessage = *it;
                         MILO_ASSERT(pMessage, 0xDD);
                         delete pMessage;

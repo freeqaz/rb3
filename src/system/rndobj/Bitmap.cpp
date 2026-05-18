@@ -417,19 +417,19 @@ int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
     if (mOrder & 4) {
         if (mBpp == 8) {
             int temp_r9 = (int)mRowBytes * 2;
-            char *lookup = (((y >> 2) % 4) & 1) ? hbytes13 : hbytes02;
+            char *lookup = (((y >> 2) % 4) & 1) ? bytes13 : bytes02;
             unsigned char var_r11_3 = lookup[(y % 4) * 0x10 + (x % 16)];
             if ((int)var_r11_3 > 0x1F) {
                 var_r11_3 = (var_r11_3 + temp_r9) - 0x20;
             }
-            return var_r11_3 + ((((y >> 1) & 0xFFFFFFFE) * temp_r9) + (((x >> 1) * 4) & 0xFFFFFFE0));
+            return ((unsigned char)var_r11_3) + (((y >> 1) & 0xFFFFFFFE) * temp_r9) + ((x << 1) & 0xFFFFFFE0);
         }
         int temp_r10_2 = (y >> 2) % 4;
         int var_r3, var_r8, var_r11_2;
         if ((mWidth > 0x80U) && (mHeight > 0x80U)) {
-            var_r3 = (((int)(y - ((y / 128) << 7)) >> 1) & 0xFFFFFFF8) + ((x >> 1) & 0xFFFFFFC0);
-            var_r8 = (((int)(x - ((x / 128) << 7)) >> 2) & 0xFFFFFFF8) + ((y >> 2) & 0xFFFFFFE0) + (temp_r10_2 * 2);
-            var_r11_2 = (((mHeight - (((int)mHeight / 128) << 7)) & 0xFFFFFFF0) + (mWidth & 0xFFFFFF80)) * 2;
+            var_r3 = (((int)(y % 128) >> 1) & 0xFFFFFFF8) + ((x >> 1) & 0xFFFFFFC0);
+            var_r8 = (((int)(x % 128) >> 2) & 0xFFFFFFF8) + ((y >> 2) & 0xFFFFFFE0) + (temp_r10_2 * 2);
+            var_r11_2 = (((mHeight % 128) & 0xFFFFFFF0) + (mWidth & 0xFFFFFF80)) * 2;
         } else {
             var_r3 = (y >> 1) & 0xFFFFFFF8;
             var_r8 = ((x >> 2) & 0xFFFFFFF8) + (temp_r10_2 * 2);
@@ -451,9 +451,11 @@ int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
             var_r10_3 = 4;
         }
         unsigned short temp_r31 = mWidth;
-        int temp_r11_4 = temp_r11_3 - 0x10;
+        int temp_r11_5 = 8;
+        if (temp_r11_3 >= 0x10) {
+            temp_r11_5 = 4;
+        }
         nibble = x & 1;
-        int temp_r11_5 = (((temp_r11_4 - temp_r11_4) - !(temp_r11_4 >> 31)) & 4) + 4;
         int temp_r9_2 = (((temp_r11_3 - 0x20) == 0) & 1) + 1;
         int temp_r7_2 = x % temp_r11_5;
         int temp_r8_2 = ((((((int)temp_r31 / temp_r11_5) * (y / var_r10_3)) + (x / temp_r11_5)) * temp_r9_2 * var_r10_3) + (y % var_r10_3)) * temp_r11_5;

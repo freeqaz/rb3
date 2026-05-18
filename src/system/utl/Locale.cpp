@@ -4,8 +4,12 @@
 #include "os/Debug.h"
 #include "os/System.h"
 #include "utl/DataPointMgr.h"
+#include "utl/MakeString.h"
+#include "utl/Str.h"
 #include "utl/Symbols.h"
+#include <string.h>
 
+const char *Locale::sIgnoreMissingText;
 Locale TheLocale;
 int gDbgLocaleNumEntries;
 int gDbgLocaleStringsSize;
@@ -185,6 +189,32 @@ bool Locale::FindDataIndex(Symbol s, int &idx, bool fail) const {
         MILO_FAIL("Couldn't find '%s' in array (file %s)", s.mStr, mFile.mStr);
     }
     return false;
+}
+
+char gLocalizeSepBuf[4][0x32];
+int gLocalizeSepIdx;
+static char gFloatBufs[4][0x32];
+static int gNextFloatBuf;
+
+const char *LocalizeFloat(const char *fmt, float num) {
+    const char *str = MakeString(fmt, num);
+    const char *sep = TheLocale.Localize(locale_decimal_separator, false);
+    if (sep == 0 || *sep == '.') {
+        return str;
+    }
+    char *buf = gFloatBufs[gNextFloatBuf];
+    strncpy(buf, str, 0x32);
+    buf[0x31] = '\0';
+    char *p = buf;
+    while (*p != '\0') {
+        if (*p == '.') {
+            *p = *sep;
+            break;
+        }
+        p++;
+    }
+    gNextFloatBuf = (gNextFloatBuf + 1) % 4;
+    return buf;
 }
 
 const char *Localize(Symbol token, bool *notify) {
