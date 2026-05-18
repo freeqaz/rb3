@@ -451,9 +451,10 @@ bool SongSortMgr::GetRandomSongs(
         excludeList, *TheBandUserMgr, validSongs, -1.0f, -1.0f, b1, b2
     );
     int numAdded = 0;
-    FOREACH_POST (it, mSongs) {
+    std::map<Symbol, SongRecord>::const_iterator it = mSongs.begin();
+    for (; it != mSongs.end(); ++it) {
         curName = it->first;
-        SongRecord &rec = it->second;
+        const SongRecord &rec = it->second;
         int id = rec.GetData()->ID();
         if (std::find(validSongs.begin(), validSongs.end(), id) == validSongs.end())
             continue;

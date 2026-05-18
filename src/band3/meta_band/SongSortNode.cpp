@@ -430,14 +430,13 @@ int SetlistSortNode::GetTotalScore() {
 }
 
 int SetlistSortNode::GetTotalStars(bool b) {
-    std::vector<int> &songs = mSetlistRecord->mSetlist->mSongs;
     int sum = 0;
+    std::vector<int> &songs = mSetlistRecord->mSetlist->mSongs;
     for (std::vector<int>::iterator it = songs.begin(); it != songs.end(); ++it) {
         SongRecord *rec = TheSongSortMgr->GetRecord(*it);
         if (rec) {
             int stars = rec->mStars[rec->mActiveScoreType];
-            int cap = (b != 0) + 5;
-            sum += (cap < stars) ? cap : stars;
+            sum += Min<int>(((b != 0) + 5), stars);
         }
     }
     return sum;

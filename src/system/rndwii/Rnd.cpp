@@ -25,6 +25,7 @@
 #include "utl/Symbols.h"
 #include "revolution/GX.h"
 #include "revolution/OS.h"
+#include "rndobj/Stats_NG.h"
 #include <cstdarg>
 #include <list>
 
@@ -36,10 +37,32 @@ Rnd *TheRnd = &TheWiiRnd;
 std::list<void *> sDelayedFreeLists[4];
 int sDelayedFreeListIndex;
 
+NgStats gNgStats[3] __attribute__((aligned(8)));
+NgStats *TheNgStats = &gNgStats[0];
+OSThreadQueue sThreadQueue;
+OSThreadQueue netThreadQueue;
+OSThreadQueue drawDoneThreadQueue;
+int sDoneCount;
 bool gInBegin, gBeginIntState;
 void *sDispFB, *sCopyFB;
-OSThreadQueue drawDoneThreadQueue;
 Timer sFrameTimer;
+long long sFrameQueue[0xA0 / 8]; // 0xA0 bytes, alignment 8
+int sCurrentFrame;
+int sFreeFrame;
+int sRenderingFrame;
+void *sAlignedfifoBase;
+void *sAlignedfifoEnd;
+int gDumpThisFrameRightNow;
+int gLastQueueSize;
+int gMainThread;
+long long gActiveThreadNames[0x80 / 8] __attribute__((aligned(8))); // 0x80 bytes
+int gNumActiveThreads;
+long long onVIPreRetraceBuffer[0x100 / 8] __attribute__((aligned(8))); // 0x100 bytes
+int gCur;
+int gDebugPrio;
+long long gDeferredCalls[0x200 / 8] __attribute__((aligned(8))); // 0x200 bytes
+int gDeferredCallsCount;
+int gShouldDiagnose;
 int gSuppressPointTest;
 Timer gTriFrameTimer;
 

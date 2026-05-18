@@ -1,4 +1,5 @@
 #include "os/CommerceMgr_Wii.h"
+#include "os/ContentMgr_Wii.h"
 #include "system/meta/StorePackedMetadata.h"
 #include "revolution/ec/ec.h"
 
@@ -38,7 +39,12 @@ WiiCommerceMgr::WiiCommerceMgr()
 
 WiiCommerceMgr::~WiiCommerceMgr() {}
 
-void WiiCommerceMgr::MarkChanged(bool) {}
+void WiiCommerceMgr::MarkChanged(bool propagate) {
+    *((char *)this + 0x4194) = 1;
+    if (propagate) {
+        TheWiiContentMgr.mDirty = true;
+    }
+}
 
 void WiiCommerceMgr::Init() {
     SetName("commerce_mgr", ObjectDir::sMainDir);
