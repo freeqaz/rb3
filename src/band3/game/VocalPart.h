@@ -56,6 +56,7 @@ public:
     bool CouldScoreAgainstPart(float, TalkyMatcher *, float, float, float &);
     void AddPhrasePoints(float);
     void GetNoteRange(float, int &, int &);
+    void AfterPoll(float);
     bool NearNote(float);
     void SetFirstPhraseMsToScore(float);
     void SetVocalNoteList(VocalNoteList *);

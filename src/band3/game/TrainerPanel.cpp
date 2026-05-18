@@ -145,6 +145,16 @@ int TrainerPanel::GetLoopTicks(int idx) const {
     return GetSectionLoopEnd(idx) - GetSectionLoopStart(idx);
 }
 
+int TrainerPanel::FixupTick(int tick) const {
+    int mod = tick % 0x1e0;
+    if (mod < 0xf) {
+        tick -= mod;
+    } else if (mod > 0x1d1) {
+        tick += 0x1e0 - mod;
+    }
+    return tick;
+}
+
 void TrainerPanel::ResetChallenge() {
     TrainerChallenge *tc = mSections[mCurrSection].mChallenge;
     if (tc) {

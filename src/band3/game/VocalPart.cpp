@@ -408,6 +408,27 @@ bool VocalNoteEndCmp(float f, const VocalNote &note) {
     return f < note.mMs + note.mDurationMs;
 }
 
+void VocalPart::AfterPoll(float ms) {
+    int beginNote;
+    int endNote;
+    GetNoteRange(ms, beginNote, endNote);
+    unk58 = beginNote & ~(beginNote >> 31);
+    unk54 = ms;
+}
+
+bool PitchBetween(float pitch, float a, float b, float &out) {
+    float lo = (b < a) ? b : a;
+    float hi = (a < b) ? b : a;
+    while (pitch > hi)
+        pitch -= 12.0f;
+    while (pitch < lo)
+        pitch += 12.0f;
+    out = pitch;
+    if (pitch >= lo && pitch <= hi)
+        return true;
+    return false;
+}
+
 float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const {
     static float kFrameTimeMs = 16.666668f;
     if (fEnd < fBegin) {
