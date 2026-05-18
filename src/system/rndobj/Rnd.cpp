@@ -647,47 +647,47 @@ RndTex *Rnd::CreateDefaultTexture(DefaultTextureType textureType) {
         0xff, 0xff, 0xff, 0xff, 0,    0x7f, 0x7f, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0,    0,    0,    0xff
     };
-    int width = sDefSize[textureType][0];
-    int height = sDefSize[textureType][1];
-    unsigned char red = sDefColor[textureType][0];
-    unsigned char green = sDefColor[textureType][1];
-    unsigned char blue = sDefColor[textureType][2];
-    unsigned char alpha = sDefColor[textureType][3];
+    const int kWidth = sDefSize[textureType][0];
+    const int kHeight = sDefSize[textureType][1];
+    const unsigned char kColorR = sDefColor[textureType][0];
+    const unsigned char kColorG = sDefColor[textureType][1];
+    const unsigned char kColorB = sDefColor[textureType][2];
+    const unsigned char kColorA = sDefColor[textureType][3];
     RndBitmap bmap;
-    bmap.Create(width, height, 0, 0x20, 0x40, 0, 0, 0);
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            bmap.SetPixelColor(j, i, red, green, blue, alpha);
+    bmap.Create(kWidth, kHeight, 0, 0x20, 0x40, 0, 0, 0);
+    for (int i = 0; i < kHeight; i++) {
+        for (int j = 0; j < kWidth; j++) {
+            bmap.SetPixelColor(j, i, kColorR, kColorG, kColorB, kColorA);
         }
     }
     switch (textureType) {
     case 5:
-        for (int i = 0; i < width; i++) {
-            unsigned char u10 = 0xFF - (i * 255) / (width - 1);
-            for (int j = 0; j < height; j++) {
-                bmap.SetPixelColor(i, j, u10, u10, u10, alpha);
+        for (int i = 0; i < kWidth; i++) {
+            unsigned char u10 = 0xFF - (i * 255) / (kWidth - 1);
+            for (int j = 0; j < kHeight; j++) {
+                bmap.SetPixelColor(i, j, u10, u10, u10, kColorA);
             }
         }
         break;
     case 6:
         Hmx::Color color;
-        for (int i = 0; i < width; i++) {
+        for (int i = 0; i < kWidth; i++) {
             MakeColor((float)i / 255.0f, 1, 0.5f, color);
             unsigned char thisRed = color.red * 255.0f;
             unsigned char thisGreen = color.green * 255.0f;
             unsigned char thisBlue = color.blue * 255.0f;
-            for (int j = 0; j < height; j++) {
-                bmap.SetPixelColor(i, j, thisRed, thisGreen, thisBlue, alpha);
+            for (int j = 0; j < kHeight; j++) {
+                bmap.SetPixelColor(i, j, thisRed, thisGreen, thisBlue, kColorA);
             }
         }
         break;
     case 7:
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
+        for (int i = 0; i < kHeight; i++) {
+            for (int j = 0; j < kWidth; j++) {
                 if (((i ^ j) >> 2) & 1) {
-                    bmap.SetPixelColor(j, i, 0xff, 0x80, 0x40, alpha);
+                    bmap.SetPixelColor(j, i, 0xff, 0x80, 0x40, kColorA);
                 } else {
-                    bmap.SetPixelColor(j, i, 0, 0, 0, alpha);
+                    bmap.SetPixelColor(j, i, 0, 0, 0, kColorA);
                 }
             }
         }

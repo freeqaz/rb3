@@ -109,6 +109,8 @@ public:
     void UpdateLeftyFlip(bool);
     bool KeyShifting();
     void FreeChordMeshes();
+    void FreeChordMeshes(std::map<unsigned int, std::pair<int, RndMesh *> > &);
+    void ClearChordMeshRefCounts(std::map<unsigned int, std::pair<int, RndMesh *> > &);
     void SetGemTrackID(int id) { mGemTrackDirID = id; }
 
     DataNode OnDrawSampleChord(DataArray *);

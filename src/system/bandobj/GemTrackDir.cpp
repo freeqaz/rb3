@@ -925,6 +925,138 @@ int WhiteKeyToSemitone(int whiteKey) {
     return semitone;
 }
 
+int SemitoneToWhiteKey(int semitone) {
+    MILO_ASSERT(semitone > -1, 0x57D);
+    int whiteKey = 0;
+    while (semitone >= kNumSemitones) {
+        semitone -= kNumSemitones;
+        whiteKey += kNumWhiteKeys;
+    }
+    switch (semitone) {
+    case kNoteC:
+    case kNoteCSharp:
+        whiteKey += kWhiteKeyC;
+        break;
+    case kNoteD:
+    case kNoteDSharp:
+        whiteKey += kWhiteKeyD;
+        break;
+    case kNoteE:
+        whiteKey += kWhiteKeyE;
+        break;
+    case kNoteF:
+    case kNoteFSharp:
+        whiteKey += kWhiteKeyF;
+        break;
+    case kNoteG:
+    case kNoteGSharp:
+        whiteKey += kWhiteKeyG;
+        break;
+    case kNoteA:
+    case kNoteASharp:
+        whiteKey += kWhiteKeyA;
+        break;
+    case kNoteB:
+        whiteKey += kWhiteKeyB;
+        break;
+    default:
+        MILO_FAIL("unexpected semitone %d", semitone);
+        break;
+    }
+    return whiteKey;
+}
+
+bool GemTrackDir::IsBlackKey(int semitone) const {
+    int s = semitone % kNumSemitones;
+    switch (s) {
+    case kNoteCSharp:
+    case kNoteDSharp:
+    case kNoteFSharp:
+    case kNoteGSharp:
+    case kNoteASharp:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void GemTrackDir::SetScreenRectX(float f) {
+    RndCam *cam = mGameCam;
+    if (cam && unk488 >= 0 && unk488 < mNumTracks) {
+        float oldy = cam->mScreenRect.y;
+        cam->mScreenRect.x = f * (unk488 - 0.5f * (mNumTracks - 1));
+        cam->mScreenRect.y = oldy;
+        cam->UpdateLocal();
+    }
+}
+
+void GemTrackDir::SetTrackOffset(float f) {
+    if (unk488 >= 0 && unk488 < mNumTracks) {
+        mRotater->mLocalXfm.v.y = -f * (unk488 - 0.5f * (mNumTracks - 1));
+        mRotater->SetDirty();
+    }
+}
+
+void GemTrackDir::SetSideAngle(float f) {
+    if (unk488 >= 0 && unk488 < mNumTracks) {
+        Hmx::Matrix3 mtx;
+        Vector3 v;
+        MakeEuler(mRotater->LocalXfm().m, v);
+        v.z = (f * DEG2RAD) * (unk488 - 0.5f * (mNumTracks - 1));
+        MakeRotMatrix(v, mtx, true);
+        mRotater->SetLocalRot(mtx);
+    }
+}
+
+void GemTrackDir::ClearChordMeshRefCounts(
+    std::map<unsigned int, std::pair<int, RndMesh *> > &chordMap
+) {
+    for (std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
+         = chordMap.begin();
+         it != chordMap.end();
+         ++it) {
+        it->second.first = 0;
+    }
+}
+
+void GemTrackDir::ClearChordMeshRefCounts() {
+    ClearChordMeshRefCounts(unk6b4);
+    ClearChordMeshRefCounts(unk6cc);
+}
+
+void GemTrackDir::FreeChordMeshes(
+    std::map<unsigned int, std::pair<int, RndMesh *> > &chordMap
+) {
+    for (std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
+         = chordMap.begin();
+         it != chordMap.end();
+         ++it) {
+        delete it->second.second;
+    }
+    chordMap.clear();
+}
+
+void GemTrackDir::FreeChordMeshes() {
+    FreeChordMeshes(unk6b4);
+    FreeChordMeshes(unk6cc);
+}
+
+RndMesh *GemTrackDir::GetChordMesh(unsigned int key, bool which) {
+    std::map<unsigned int, std::pair<int, RndMesh *> > &chordMap
+        = which ? unk6cc : unk6b4;
+    std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
+        = chordMap.find(key);
+    if (it != chordMap.end()) {
+        return it->second.second;
+    }
+    TheDebug.Notify(MakeString(
+        "GemTrackDir::GetChordMesh: no %s mesh for chord %u",
+        which ? "arpeggio" : "chord",
+        key
+    ));
+    return NULL;
+}
+
 float GemTrackDir::GetFretPosOffset(int idx) const {
     float f;
     if (idx > mFretPosOffsets.size()) {

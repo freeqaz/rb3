@@ -265,7 +265,114 @@ void ReadFunc(BINKIO *bink, bool startNewRead) {
     }
 }
 
-unsigned int BinkFileReadFrame(BINKIO *, unsigned int, int, void *, unsigned int) {}
+unsigned int BinkFileReadFrame(
+    BINKIO *bink, unsigned int, int iOffset, void *pDest, unsigned int iReadSize
+) {
+    if (bink->ReadError) {
+        return 0;
+    }
+    BINKFILE *bf = (BINKFILE *)bink->iodata;
+    int adjustedOffset =
+        iOffset + ((bf->mEncryptionHeader.mSignature != 0) ? 0x38 : 0);
+    if ((unsigned int)(adjustedOffset + iReadSize) > bf->pFile->Size()) {
+        bink->ReadError = 1;
+        return 0;
+    }
+    unsigned int iTimerReadStart = RADTimerRead();
+    unsigned int totalRead = 0;
+    if (adjustedOffset != -1
+        && (unsigned int)bf->iFileBufPos != (unsigned int)adjustedOffset) {
+        unsigned int unaligned = 0;
+        if ((unsigned int)adjustedOffset > bf->iFileBufPos
+            && adjustedOffset <= bf->pFile->Tell()) {
+            int diff = adjustedOffset - bf->iFileBufPos;
+            bf->pBufPos += diff;
+            if ((unsigned int)bf->pBufPos > (unsigned int)bf->pBufEnd) {
+                bf->pBufPos -= bink->BufSize;
+            }
+            bf->iBufEmpty += diff;
+            bink->CurBufUsed -= diff;
+            goto after_seek;
+        }
+        while (bink->DoingARead) {
+            ReadFunc(bink, false);
+        }
+        bf->iBufEmpty = bink->BufSize;
+        bink->CurBufUsed = 0;
+        bf->pBufPos = bf->pBuffer;
+        bf->pBufBack = bf->pBuffer;
+        int seekTo = adjustedOffset;
+        if (bf->mEncryptionHeader.mVersion == 2) {
+            unsigned int delta =
+                (adjustedOffset - 0x38) - bf->iHeaderSize;
+            unsigned int aligned = delta & ~0xf;
+            seekTo = bf->iHeaderSize + aligned + 0x38;
+            unaligned = delta & 0xf;
+            bf->pBufPos = bf->pBuffer + unaligned;
+            bf->pXTEADecrypter->SetNonce(bf->mEncryptionHeader.mNonce, delta >> 4);
+        }
+        bf->pFile->Seek(seekTo, 0);
+        bink->DoingARead = 0;
+    after_seek:
+        bf->iFileBufPos = adjustedOffset + unaligned;
+    }
+    if (bf->pBuffer == NULL) {
+        unsigned int readStart = RADTimerRead();
+        unsigned int r =
+            bf->pFile->Read(pDest, iReadSize);
+        if (r < iReadSize) {
+            bink->ReadError = 1;
+        }
+        totalRead = r;
+        bink->BytesRead += r;
+        bf->iFileBufPos += r;
+        unsigned int now = RADTimerRead();
+        bink->TotalTime += (now - readStart);
+        bink->TotalTime += (now - iTimerReadStart);
+        intelendian(pDest, r);
+    } else {
+        unsigned int remaining = iReadSize;
+        unsigned char *dst = (unsigned char *)pDest;
+        while (remaining != 0 && bink->ReadError == 0) {
+            ReadFunc(bink, true);
+            unsigned int chunk = bink->CurBufUsed;
+            if (chunk > remaining) {
+                chunk = remaining;
+            }
+            if (chunk == 0) continue;
+            remaining -= chunk;
+            totalRead += chunk;
+            bf->iFileBufPos += chunk;
+            unsigned int wrap = bf->pBufEnd - bf->pBufPos;
+            if (wrap <= chunk) {
+                memcpy(dst, bf->pBufPos, wrap);
+                dst += wrap;
+                chunk -= wrap;
+                bf->pBufPos = bf->pBuffer;
+                bink->CurBufUsed -= wrap;
+                bf->iBufEmpty += wrap;
+            }
+            if (chunk != 0) {
+                memcpy(dst, bf->pBufPos, chunk);
+                dst += chunk;
+                bf->pBufPos += chunk;
+                bink->CurBufUsed -= chunk;
+                bf->iBufEmpty += chunk;
+            }
+        }
+        bink->ForegroundTime += (RADTimerRead() - iTimerReadStart);
+    }
+    unsigned int fileSize = bf->pFile->Size();
+    unsigned int avail = fileSize - bf->iFileBufPos;
+    if (avail >= bink->BufSize) {
+        avail = bink->BufSize;
+    }
+    bink->CurBufSize = avail;
+    if (bink->CurBufSize < bink->CurBufUsed + 0x8000) {
+        bink->CurBufSize = bink->CurBufUsed;
+    }
+    return totalRead;
+}
 
 unsigned int BinkFileGetBufferSize(BINKIO *bink, unsigned int size) {
     unsigned int result = (size + 0x7fff) & 0xffff8000;

@@ -424,7 +424,7 @@ void WiiMat::SetTexGen(GXTexCoordID tcid, GXTexMtx mtx) {
             MakeWiiMtx(t1, m);
             GXLoadTexMtxImm(m, mtx, GX_MTX_2x4);
             break;
-        case kTexGenEnviron:
+        case kTexGenEnviron: {
             Transpose(mTexXfm.m, t1.m);
             Multiply(RndCam::Current()->WorldXfm().m, t1.m, t1.m);
             Hmx::Matrix3 m2(1, 0, 0, 0, 0, 1, 0, 1, 0);
@@ -436,6 +436,7 @@ void WiiMat::SetTexGen(GXTexCoordID tcid, GXTexMtx mtx) {
             MakeWiiMtx(t1, m);
             GXLoadTexMtxImm(m, mtx, GX_MTX_3x4);
             break;
+        }
         case kTexGenSphere:
             Transpose(mTexXfm.m, t1.m);
             Multiply(RndCam::Current()->WorldXfm().m, t1.m, t1.m);
