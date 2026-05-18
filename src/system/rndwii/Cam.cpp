@@ -15,8 +15,8 @@ void WiiCam::Select() {
     RndCam::Select();
     int ox = 0;
     int oy = 0;
-    int width;
     int height;
+    int width;
     if (mTargetTex) {
         width = mTargetTex->mWidth;
         height = mTargetTex->mHeight;
@@ -31,7 +31,8 @@ void WiiCam::Select() {
         }
         height = TheWiiRnd.mHeight;
         if (TheWiiRnd.mAspect == Rnd::kLetterbox && !TheWiiRnd.unk_0x2B0) {
-            float bar = (float)height - (float)width * 0.5625f;
+            float scaled = 9.0f * (float)width * 0.0625f;
+            float bar = (float)height - scaled;
             unsigned int barI;
             if (bar > 0.0f) {
                 barI = (unsigned int)(0.5f * bar);
@@ -45,23 +46,21 @@ void WiiCam::Select() {
     Multiply(mInvWorldXfm, sViewToWiiViewXfm, mWiiViewXfm);
     Mtx44 proj;
     memset(proj, 0, sizeof(proj));
-    float a, b;
+    float var_f2;
     if (mYFov == 0.0f) {
-        proj[1][1] = 1.0f;
-        a = 1.0f / (mFarPlane - mNearPlane);
-        b = a;
+        proj[3][3] = 1.0f;
+        var_f2 = 1.0f / (mFarPlane - mNearPlane);
+        proj[2][2] = var_f2;
     } else {
-        proj[1][0] = -1.0f;
-        a = mFarPlane / (mFarPlane - mNearPlane);
-        b = 1.0f - a;
+        proj[3][2] = -1.0f;
+        var_f2 = mFarPlane / (mFarPlane - mNearPlane);
+        proj[2][2] = 1.0f - var_f2;
     }
     proj[0][0] = mLocalProjectXfm.m.x.x * mScreenRect.w;
-    proj[1][2] = a;
-    proj[1][3] = -a * mNearPlane;
-    proj[2][1] = -mLocalProjectXfm.m.z.y * mScreenRect.h;
-    proj[2][2] = b;
-    proj[0][2] = mLocalProjectXfm.v.x;
-    proj[2][3] = -mLocalProjectXfm.v.y;
+    proj[1][1] = -mLocalProjectXfm.m.z.y * mScreenRect.h;
+    proj[2][3] = -var_f2 * mNearPlane;
+    proj[0][3] = mLocalProjectXfm.v.x;
+    proj[1][3] = -mLocalProjectXfm.v.y;
     GXSetProjection(
         proj, (mYFov == 0.0f) ? GX_ORTHOGRAPHIC : GX_PERSPECTIVE
     );

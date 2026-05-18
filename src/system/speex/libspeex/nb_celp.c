@@ -451,28 +451,31 @@ int nb_encode(void *state, void *vin, SpeexBits *bits)
       st->relative_quality = vbr_analysis(st->vbr, in, st->frameSize, ol_pitch, GAIN_SCALING_1*ol_pitch_coef);
       /*if (delta_qual<0)*/
       /*  delta_qual*=.1*(3+st->vbr_quality);*/
-      if (st->vbr_enabled) 
+      if (st->vbr_enabled)
       {
          spx_int32_t mode;
+         const float *thresh_ptr;
          int choice=0;
          float min_diff=100;
          mode = 8;
-         while (mode)
+         thresh_ptr = vbr_nb_thresh[8];
+         while (mode > 0)
          {
             int v1;
             float thresh;
             v1=(int)floor(st->vbr_quality);
             if (v1==10)
-               thresh = vbr_nb_thresh[mode][v1];
+               thresh = thresh_ptr[v1];
             else
-               thresh = (st->vbr_quality-v1)*vbr_nb_thresh[mode][v1+1] + (1+v1-st->vbr_quality)*vbr_nb_thresh[mode][v1];
-            if (st->relative_quality > thresh && 
+               thresh = (st->vbr_quality-v1)*thresh_ptr[v1+1] + (1+v1-st->vbr_quality)*thresh_ptr[v1];
+            if (st->relative_quality > thresh &&
                 st->relative_quality-thresh<min_diff)
             {
                choice = mode;
                min_diff = st->relative_quality-thresh;
             }
             mode--;
+            thresh_ptr -= 11;
          }
          mode=choice;
          if (mode==0)

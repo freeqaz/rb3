@@ -1365,7 +1365,7 @@ void OvershellSlot::UpdateView() {
                 i6 = i4->HasMic(MicClientID(1, -1));
                 i16 = i4->HasMic(MicClientID(2, -1));
             }
-            if (!l14->IsGuest() && l14->IsSignedIn()) {
+            if (!l14->IsGuest() && l14->IsSignedIn() && TheRockCentral.unk111) {
                 b1 = true;
             }
         } else {
