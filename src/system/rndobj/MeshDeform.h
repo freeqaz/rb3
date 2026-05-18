@@ -57,6 +57,7 @@ public:
     virtual void Print();
 
     void CopyWeights(int, int, RndMeshDeform *);
+    static bool IsExoBone(RndTransformable *);
     void Reskin(SyncMeshCB *, bool);
     void SetNumBones(int);
     void SetMesh(RndMesh *);

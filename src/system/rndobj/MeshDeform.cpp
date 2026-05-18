@@ -1,4 +1,5 @@
 #include "rndobj/MeshDeform.h"
+#include "MSL_Common/extras.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "obj/PropSync_p.h"
@@ -61,6 +62,25 @@ void RndMeshDeform::SetKeepMeshData() {
     if (mMesh) {
         mMesh->SetKeepMeshData(true);
     }
+}
+
+void RndMeshDeform::CopyWeights(int to, int from, RndMeshDeform *fromMd) {
+    mVerts.CopyVert(to, from, fromMd ? fromMd->mVerts : mVerts);
+}
+
+bool RndMeshDeform::IsExoBone(RndTransformable *t) {
+    if (!t) return false;
+    return strnicmp("exo_", ((const char **)((void **)(*(void ***)t))[0])[3], 4) == 0;
+}
+
+void RndMeshDeform::BoneDesc::ExportWorldXfm(Transform &xfm) {
+    xfm.Reset();
+    RndTransformable *t = mBone;
+    while (RndMeshDeform::IsExoBone(t)) {
+        Multiply(xfm, t->LocalXfm(), xfm);
+        t = t->TransParent();
+    }
+    Multiply(xfm, unk54, xfm);
 }
 
 void RndMeshDeform::SetMesh(RndMesh *mesh) {
