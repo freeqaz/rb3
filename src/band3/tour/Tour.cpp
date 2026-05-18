@@ -647,28 +647,33 @@ SongSortMgr::SongFilter Tour::CreateArtistFilter(const char *artistName) {
     return filter;
 }
 
+#pragma push
+#pragma dont_inline on
 void Tour::ChooseRandomSongsForQuestFilter(int count, Symbol questSym1, Symbol questSym2, bool allowDups) {
     SongSortMgr::SongFilter filter;
-    Symbol partSym;
+    Symbol partSym(gNullStr);
     GigFilter *pFilter1 = TheQuestMgr.GetQuestFilter(questSym1);
     if (pFilter1) {
         filter = pFilter1->GetFilter();
         partSym = pFilter1->GetFilteredPartSym();
     } else if (strncmp("filter_artist_", questSym1.Str(), 14) == 0) {
         String s(questSym1.Str());
-        SongSortMgr::SongFilter artistFilter = CreateArtistFilter(s.substr(14).c_str());
+        String substr = s.substr(14);
+        SongSortMgr::SongFilter artistFilter = CreateArtistFilter(substr.c_str());
         filter = artistFilter;
     } else {
-        MILO_FAIL("ChooseRandomSongsForQuestFilter: unrecognized filter %s", questSym1.Str());
+        MILO_FAIL("Invalid Random Filter = %s\n", questSym1);
     }
     GigFilter *pFilter2 = TheQuestMgr.GetQuestFilter(questSym2);
     if (pFilter2) {
         SongSortMgr::SongFilter filter2 = pFilter2->GetFilter();
         filter.IntersectFilter(&filter2);
-        partSym = CombinePartSymbols(pFilter2->GetFilteredPartSym(), partSym);
+        Symbol other(pFilter2->GetFilteredPartSym());
+        partSym = CombinePartSymbols(partSym, other);
     }
     TheMusicLibrary->SetRandomSongs(count, filter, partSym, true, allowDups);
 }
+#pragma pop
 
 void Tour::InitializeMusicLibraryTaskForArtist(
     MusicLibrary::MusicLibraryTask &task, int maxSize, const char *artistName, Symbol questSym

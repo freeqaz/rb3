@@ -374,34 +374,33 @@ bool SongSortMgr::DoesOfferMatchFilter(
         case 5:
             found = curSet.find(offer->RatingSym()) != curSet.end();
             break;
-        case 6:
-            found = curSet.find(offer->mPackedData->mIsRBN ? ugc : dlc) != curSet.end();
+        case 6: {
+            Symbol key = offer->mPackedData->mIsRBN ? ugc : dlc;
+            found = curSet.find(key) != curSet.end();
             break;
+        }
         case 7:
             found = curSet.find(offer->VocalPartsSym()) != curSet.end();
             break;
         case 8: {
-            bool no = false;
-            if (offer->PartRank(real_guitar) == 0.0f
-                && offer->PartRank(real_bass) == 0.0f) {
-                no = true;
-            }
-            found = curSet.find(no ? has_part_no : has_part_yes) != curSet.end();
+            found = offer->PartRank(real_guitar) == 0.0f
+                && offer->PartRank(real_bass) == 0.0f;
+            Symbol key = found ? has_part_no : has_part_yes;
+            found = curSet.find(key) != curSet.end();
             break;
         }
         case 9: {
-            bool no = false;
-            if (offer->PartRank(real_keys) == 0.0f
-                && offer->PartRank(keys) == 0.0f) {
-                no = true;
-            }
-            found = curSet.find(no ? has_part_no : has_part_yes) != curSet.end();
+            found = offer->PartRank(real_keys) == 0.0f
+                && offer->PartRank(keys) == 0.0f;
+            Symbol key = found ? has_part_no : has_part_yes;
+            found = curSet.find(key) != curSet.end();
             break;
         }
-        case 10:
-            found = curSet.find(offer->HasSolo() ? has_part_yes : has_part_no)
-                != curSet.end();
+        case 10: {
+            Symbol key = offer->HasSolo() ? has_part_yes : has_part_no;
+            found = curSet.find(key) != curSet.end();
             break;
+        }
         }
         if (!found)
             break;

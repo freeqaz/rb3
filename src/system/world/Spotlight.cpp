@@ -764,13 +764,13 @@ void Spotlight::BuildBeam(BeamDef &def) {
     float sideBorderDiff = bottomSideBorderVal - topSideBorderVal;
     int fi = 0;
     int c0 = 0;
-    for (int i = 0; i < totalSections; i++) {
+    for (unsigned int i = 0; i < (unsigned int)totalSections; i++) {
         float y;
         float alpha;
-        if (i == totalSections - 1) {
+        if (i == (unsigned int)totalSections - 1) {
             y = def.mLength;
             alpha = 0.0f;
-        } else if (i >= numSectionsTop) {
+        } else if (i >= (unsigned int)numSectionsTop) {
             int lVar31 = i - numSectionsTop;
             y = (float)lVar31 * (bottomBorderLen / (float)numSectionsBottom) + topLen;
             alpha = 1.0f - (float)lVar31 / (float)numSectionsBottom;

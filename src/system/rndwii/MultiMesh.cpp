@@ -107,12 +107,9 @@ void WiiMultiMesh::DrawShowing() {
 
             {
                 START_AUTO_TIMER("xfms");
-                if (curCam->Dirty()) {
-                    curCam->WorldXfm_Force();
-                }
 #ifdef MATCHING
                 {
-                    register Transform *src = &curCam->mWorldXfm;
+                    register Transform *src = &curCam->WorldXfm();
                     register Mtx *dst = &instMtx;
                     ASM_BLOCK(
                         psq_l fp6, 0x0(src), 0, 0
@@ -138,7 +135,7 @@ void WiiMultiMesh::DrawShowing() {
                     )
                 }
 #else
-                const Transform &camWorld = curCam->mWorldXfm;
+                const Transform &camWorld = curCam->WorldXfm();
                 instMtx[0][0] = camWorld.m.x.x; instMtx[0][1] = camWorld.m.y.x; instMtx[0][2] = camWorld.m.z.x; instMtx[0][3] = camWorld.v.x;
                 instMtx[1][0] = camWorld.m.x.y; instMtx[1][1] = camWorld.m.y.y; instMtx[1][2] = camWorld.m.z.y; instMtx[1][3] = camWorld.v.y;
                 instMtx[2][0] = camWorld.m.x.z; instMtx[2][1] = camWorld.m.y.z; instMtx[2][2] = camWorld.m.z.z; instMtx[2][3] = camWorld.v.z;
@@ -191,12 +188,9 @@ void WiiMultiMesh::DrawShowing() {
 
             {
                 START_AUTO_TIMER("xfms");
-                if (curCam->Dirty()) {
-                    curCam->WorldXfm_Force();
-                }
 #ifdef MATCHING
                 {
-                    register Transform *src = &curCam->mWorldXfm;
+                    register Transform *src = &curCam->WorldXfm();
                     register Mtx *dst = &instMtx;
                     ASM_BLOCK(
                         psq_l fp6, 0x0(src), 0, 0
@@ -222,7 +216,7 @@ void WiiMultiMesh::DrawShowing() {
                     )
                 }
 #else
-                const Transform &camWorld = curCam->mWorldXfm;
+                const Transform &camWorld = curCam->WorldXfm();
                 instMtx[0][0] = camWorld.m.x.x; instMtx[0][1] = camWorld.m.y.x; instMtx[0][2] = camWorld.m.z.x; instMtx[0][3] = camWorld.v.x;
                 instMtx[1][0] = camWorld.m.x.y; instMtx[1][1] = camWorld.m.y.y; instMtx[1][2] = camWorld.m.z.y; instMtx[1][3] = camWorld.v.y;
                 instMtx[2][0] = camWorld.m.x.z; instMtx[2][1] = camWorld.m.y.z; instMtx[2][2] = camWorld.m.z.z; instMtx[2][3] = camWorld.v.z;
