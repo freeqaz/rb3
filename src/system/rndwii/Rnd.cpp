@@ -63,6 +63,9 @@ int gDebugPrio;
 long long gDeferredCalls[0x200 / 8] __attribute__((aligned(8))); // 0x200 bytes
 int gDeferredCallsCount;
 int gShouldDiagnose;
+int sOnGXBreakpointT;
+int sOnGXBreakpointT0;
+int sOnGXBreakpointT1;
 int gSuppressPointTest;
 Timer gTriFrameTimer;
 
