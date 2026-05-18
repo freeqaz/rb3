@@ -47,6 +47,7 @@ void MemTerminate();
 DataNode ResetHWM(DataArray *);
 DataNode CycleMemConsistencyCheck(DataArray *);
 bool InitWiiRSO();
+bool RsoInit(const char *);
 u32 HolmesClientSysExec(const char *);
 void HolmesClientStackTrace(const char *, unsigned int *, int, String &);
 void GetMapFileName(String &);
@@ -319,7 +320,37 @@ void SystemTerminate() {
     TerminateMakeString();
 }
 
+bool InitWiiRSO() {
+    String s(TheSystemArgs[0]);
+    s.replace(s.find(".elf"), sizeof(".elf") - 1, ".sel");
+    return RsoInit(s.c_str());
+}
+
 void SystemPreInit(const char *cc) { CheckForArchive(); }
+
+void NormalizeSystemArgs() {
+    for (unsigned int i = 0; i < TheSystemArgs.size(); i++) {
+        char *p = TheSystemArgs[i];
+        while (*p != '\0') {
+            if (*p == (char)0x96) {
+                *p = '-';
+            }
+            if (*p == (char)0x93 || *p == (char)0x94) {
+                *p = '"';
+            }
+            p++;
+        }
+    }
+}
+
+void SetSystemArgs(int argc, char **argv) {
+    TheSystemArgs.reserve(argc);
+    TheSystemArgs.erase(TheSystemArgs.begin(), TheSystemArgs.end());
+    for (int i = 0; i < argc; i++) {
+        TheSystemArgs.push_back(argv[i]);
+    }
+    NormalizeSystemArgs();
+}
 
 int SystemMs() {
     gSystemTimer.Restart();
