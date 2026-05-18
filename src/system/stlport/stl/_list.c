@@ -37,6 +37,10 @@
 # undef list
 # define  list  __WORKAROUND_DBG_RENAME(list)
 
+# ifndef _STLP_LIST_CLEAR_INLINE
+#  define _STLP_LIST_CLEAR_INLINE
+# endif
+
 _STLP_BEGIN_NAMESPACE
 
 # if defined (_STLP_EXPOSE_GLOBALS_IMPLEMENTATION)
@@ -63,7 +67,7 @@ _List_global<_Dummy>::_Transfer(_List_node_base* __position,
 
 
 template <class _Tp, class _Alloc>
-void _List_base<_Tp,_Alloc>::clear() {
+_STLP_LIST_CLEAR_INLINE void _List_base<_Tp,_Alloc>::clear() {
   _Node* __cur = __STATIC_CAST(_Node*, _M_node._M_data._M_next);
   while (__cur != &(_M_node._M_data)) {
     _Node* __tmp = __cur;
