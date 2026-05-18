@@ -5,8 +5,10 @@
 #include "game/BandUser.h"
 #include "game/Band.h"
 #include "game/Game.h"
+#include "game/SongDB.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
+#include <algorithm>
 
 DECOMP_FORCEACTIVE(
     Performer,
@@ -42,6 +44,13 @@ int Performer::GetIndividualScore() const {
         return score - (int)mStats.GetBandContribution();
     else
         return 0;
+}
+
+int Performer::GetPercentComplete() const {
+    if (unk1e1 && !unk1e0) return 100;
+    float p = mProgressMs / TheSongDB->GetSongDurationMs();
+    p = (p < 1.0f) ? p : 1.0f;
+    return std::min(99, (int)(p * 100.0f));
 }
 
 int Performer::GetMultiplier(bool b, int &i1, int &i2, int &i3) const {

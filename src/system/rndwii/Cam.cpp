@@ -1,7 +1,9 @@
 #include "Cam.h"
 
-Transform WiiCam::sViewToWiiViewXfm;
-Transform WiiCam::sWiiViewToViewXfm;
+Transform WiiCam::sViewToWiiViewXfm(
+    Hmx::Matrix3(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f));
+Transform WiiCam::sWiiViewToViewXfm(
+    Hmx::Matrix3(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f));
 
 WiiCam::WiiCam() {}
 
