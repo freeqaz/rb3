@@ -22,6 +22,28 @@ CharClip *CharClipGroup::GetClip() {
     return mClips[mWhich];
 }
 
+CharClip *CharClipGroup::GetClip(int flags) {
+    int size = mClips.size();
+    if (size == 0)
+        return nullptr;
+    int which = mWhich;
+    for (int i = which + 1; i < size; i++) {
+        CharClip *clip = mClips[i];
+        if ((clip->Flags() & flags) == flags) {
+            MakeMRU(i);
+            return clip;
+        }
+    }
+    for (int i = 0; i <= which; i++) {
+        CharClip *clip = mClips[i];
+        if ((clip->Flags() & flags) == flags) {
+            MakeMRU(i);
+            return clip;
+        }
+    }
+    return nullptr;
+}
+
 void CharClipGroup::Replace(Hmx::Object *from, Hmx::Object *to) {
     Hmx::Object::Replace(from, to);
     int idx = 0;
@@ -119,6 +141,31 @@ void CharClipGroup::SetClipFlags(int flags) {
     for (int i = 0; i < mClips.size(); i++) {
         mClips[i]->SetFlags(flags | mClips[i]->Flags());
     }
+}
+
+void CharClipGroup::MakeMRU(int i) {
+    int which = mWhich;
+    if (i == which)
+        return;
+    unsigned int next = which + 1;
+    if (next >= mClips.size())
+        next = 0;
+    if ((int)next == i) {
+        mWhich = i;
+        return;
+    }
+    ObjOwnerPtr<CharClip, ObjectDir> temp = mClips[i];
+    if (i > which) {
+        mWhich++;
+        for (int k = i; k > mWhich; k--) {
+            mClips[k] = mClips[k - 1];
+        }
+    } else {
+        for (int k = i; k < mWhich; k++) {
+            mClips[k] = mClips[k + 1];
+        }
+    }
+    mClips[mWhich] = temp;
 }
 
 void CharClipGroup::MakeMRU(CharClip *clip) {

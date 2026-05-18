@@ -201,6 +201,22 @@ RndMesh *ChordShapeGenerator::MakeInvertedMesh(const RndMesh *mesh) {
 int vertIt;
 unsigned int faceIt;
 
+void ChordShapeGenerator::TransformVert(
+    RndMesh::Vert &vert,
+    float xOffset,
+    float xScale,
+    float fretHeight,
+    const Transform &tf,
+    Hmx::Color32 col
+) {
+    vert.pos.x = (vert.pos.x - xOffset) * xScale;
+    if (vert.pos.y > unkd0) {
+        vert.pos.y = fretHeight * (vert.pos.y - unkd0) + unkd0;
+    }
+    Multiply(vert.pos, tf, vert.pos);
+    vert.color = col;
+}
+
 #pragma push
 #pragma dont_inline on
 void ChordShapeGenerator::BuildContourCap(
