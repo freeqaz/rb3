@@ -109,28 +109,28 @@ void HiResScreen::BmpCache::GetPixelColor(
 void HiResScreen::BmpCache::SetPixelColor(
     int x, int y, unsigned char r, unsigned char g, unsigned char b, unsigned char a
 ) {
-    MILO_ASSERT(x >= 0 && x < mPixelsPerRow, 0xD0);
-    unsigned int nLoadedStart = mCurrLoadedIndex * mRowsPerCacheLine;
-    unsigned int nLoadedEnd = nLoadedStart + mRowsPerCacheLine - 1;
-    MILO_ASSERT(y >= nLoadedStart && y <= nLoadedEnd, 0xD5);
+    unsigned int nLoadedStart, nLoadedEnd;
+    GetLoadedRange(nLoadedStart, nLoadedEnd);
+    MILO_ASSERT(y >= nLoadedStart && y <= nLoadedEnd, 0xD1);
     unsigned int yOffset = nLoadedEnd - y;
     unsigned int offset = (yOffset * mPixelsPerRow + x) * 4;
-    unsigned int newPixel = (a << 24) | (r << 16) | (g << 8) | b;
+    unsigned char newBuf[4];
+    newBuf[3] = a;
+    newBuf[2] = r;
+    newBuf[1] = g;
+    newBuf[0] = b;
+    unsigned int newPixel = *(unsigned int *)newBuf;
     unsigned char *bufPtr = mBuffer + offset;
     unsigned int oldPixel = *(unsigned int *)bufPtr;
     if (newPixel != oldPixel) {
         *(unsigned int *)bufPtr = newPixel;
-        unsigned int minDirty = mDirtyStart;
-        if (minDirty > offset) {
-            minDirty = offset;
+        if (offset < mDirtyStart) {
+            mDirtyStart = offset;
         }
-        mDirtyStart = minDirty;
-        unsigned int maxDirty = offset + 4;
-        unsigned int curEnd = mDirtyEnd;
-        if (maxDirty >= curEnd) {
-            curEnd = maxDirty;
+        unsigned int endOff = offset + 4;
+        if (mDirtyEnd < endOff) {
+            mDirtyEnd = endOff;
         }
-        mDirtyEnd = curEnd;
     }
 }
 
