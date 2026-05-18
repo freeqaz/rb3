@@ -317,7 +317,46 @@ StoreRbnOfferTable::~StoreRbnOfferTable() {
     mBufferNewRelease = 0;
 }
 
-bool StoreRbnOfferTable::Load(const char *cc) {}
+bool StoreRbnOfferTable::Load(const char *cc) {
+    char buf[256];
+    sprintf(buf, "%srbn_offers", cc);
+    char *dataStart;
+    char *dataEnd;
+    bool ret = StoreLoadPackedFile(
+        buf,
+        true,
+        0x40000,
+        true,
+        true,
+        &mBuffer,
+        &dataStart,
+        &dataEnd,
+        &mNumOffers
+    );
+    if (!ret)
+        return ret;
+    else {
+        int diff = (int)dataEnd - (int)dataStart;
+        int actualNumOffers = diff / 75UL;
+        if (actualNumOffers < mNumOffers) {
+            MILO_LOG(
+                "There are %d bytes left in rbn_offers file, at %d bytes per offer is %d offers, but the file says there are %d offers.\n",
+                diff,
+                75UL,
+                actualNumOffers,
+                mNumOffers
+            );
+        }
+        mOffers = (StorePackedRBNOffer **)dataStart;
+        void *buf = new StoreOfferState[mNumOffers];
+        mBufferNewRelease = (StoreOfferState *)buf;
+        memset(buf, 0, mNumOffers * sizeof(StoreOfferState));
+        for (int i = 0; i < mNumOffers; i++) {
+            mOffers[i]->EndianFix();
+        }
+        return true;
+    }
+}
 
 int StoreRbnOfferTable::OfferIndex(const StorePackedOfferBase *base) const {
     for (int i = 0; i < mNumOffers; i++) {

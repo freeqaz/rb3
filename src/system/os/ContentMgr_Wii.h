@@ -91,7 +91,7 @@ public:
     void StartBackup();
     void Backup();
     void PollTransfer();
-    void PopAfterRestore();
+    int PopAfterRestore();
 
     static void SetPassiveErrorsEnabled(bool);
 

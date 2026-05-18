@@ -186,6 +186,7 @@ void CharEyes::Highlight() {
         if (trans) {
             float f1 = unkc8 ? unkc8->mMaxViewAngleCos : unkb8;
             float f2 = unkb0;
+            bool f2ltf1 = f2 < f1;
             if (unk124) {
                 oneframe->AddSphere(
                     unk58, mEyeDartRulesetData.mMaxRadius, Hmx::Color(0.9f, 0.9f, 0.9f)
@@ -196,14 +197,14 @@ void CharEyes::Highlight() {
                 oneframe->AddLine(
                     trans->WorldXfm().v,
                     v118,
-                    f2 < f1 ? Hmx::Color(1.0f, 0.0f, 0.0f) : Hmx::Color(0.2f, 0.2f, 1.0f),
+                    f2ltf1 ? Hmx::Color(1.0f, 0.0f, 0.0f) : Hmx::Color(0.2f, 0.2f, 1.0f),
                     true
                 );
             } else {
                 oneframe->AddLine(
                     trans->WorldXfm().v,
                     unk58,
-                    f2 < f1 ? Hmx::Color(1.0f, 0.0f, 0.0f) : Hmx::Color(1.0f, 1.0f, 1.0f),
+                    f2ltf1 ? Hmx::Color(1.0f, 0.0f, 0.0f) : Hmx::Color(1.0f, 1.0f, 1.0f),
                     true
                 );
             }

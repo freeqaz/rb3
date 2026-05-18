@@ -8,34 +8,35 @@ u32 OSCalcCRC32(const void *buf, u32 length) {
     u8 *p = (u8 *)buf;
     u32 crc = 0xFFFFFFFF;
 
-    if (length == 0)
-        return ~crc;
+    if (length != 0) {
+        u32 words = length >> 2;
+        for (; words > 0; --words) {
+            u32 b;
+            u32 lo;
 
-    int words = (int)length >> 2;
-    for (; words > 0; --words) {
-        u8 b;
-        u32 lo;
+            b = p[0];
+            lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+            crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+            b = p[1];
+            lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+            crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+            b = p[2];
+            lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+            crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+            b = p[3];
+            p += 4;
+            lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+            crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+        }
 
-        b = p[0];
-        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
-        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
-        b = p[1];
-        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
-        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
-        b = p[2];
-        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
-        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
-        b = p[3];
-        p += 4;
-        lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
-        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
-    }
-
-    length &= 3;
-    for (; length > 0; --length) {
-        u8 b = *p++;
-        u32 lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
-        crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+        length &= 3;
+        if (length != 0) {
+            do {
+                u32 b = *p++;
+                u32 lo = (crc >> 4) ^ crc32_table[(crc ^ b) & 0xF];
+                crc = (lo >> 4) ^ crc32_table[(lo ^ (b >> 4)) & 0xF];
+            } while (--length != 0);
+        }
     }
 
     return ~crc;

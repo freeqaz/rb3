@@ -323,7 +323,19 @@ void WiiContent::Delete() {
     TheWiiContentMgr.mLastTransferResult = r;
 }
 
-void WiiContent::PopAfterRestore() {}
+int CM_CNTSDCachePopRSO(long);
+
+int WiiContent::PopAfterRestore() {
+    int r = CM_CNTSDCachePopRSO(-1);
+    if (r != 0) {
+        MILO_FAIL(
+            "CM: %s: Failed: Unmount, CNTSDCachePop() returned %d\n", mName.Str(), (long)r
+        );
+    }
+    unsigned short contentIds[1] = { (unsigned short)mContentId };
+    EC_DeleteContents(mTitleId, contentIds, 1);
+    return r;
+}
 
 void WiiContent::PollTransfer() {
     MILO_ASSERT(unk20 == 1, 1119);
