@@ -350,7 +350,7 @@ static void InquiryCallback(s32 result, DVDCommandBlock* block) {
 #pragma unused(result)
 
     switch (block->state) {
-    case DVD_STATE_WAITING:
+    case DVD_STATE_END:
         OS_DVD_DEVICE_CODE_ADDR = MAKE_DVD_DEVICE_CODE(DriveInfo.deviceCode);
         break;
     default:
