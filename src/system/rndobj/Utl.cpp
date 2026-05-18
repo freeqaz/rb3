@@ -264,9 +264,9 @@ void AttachMesh(RndMesh *main, RndMesh *attach) {
     int numverts = main->Verts().size();
     for (int i = 0; i < numattachfaces; i++) {
         RndMesh::Face &curattachface = attach->Faces(i);
-        int iv1 = curattachface.v1 + numverts;
-        int iv2 = curattachface.v2 + numverts;
         int iv3 = curattachface.v3 + numverts;
+        int iv2 = curattachface.v2 + numverts;
+        int iv1 = curattachface.v1 + numverts;
         main->Faces(i + nummainfaces).Set(iv1, iv2, iv3);
     }
     Transform tf50;
