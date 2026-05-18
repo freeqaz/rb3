@@ -837,7 +837,7 @@ float Rnd::DrawTimers(float f) {
     barColor.red = 1.0f;
     barColor.green = 1.0f;
     barColor.blue = 1.0f;
-    Vector2 pos(bgLeft + 0.05f, f + 0.00446f);
+    Vector2 pos(bgLeft + 0.00391f, f + 0.00446f);
 
     for (std::vector<std::pair<Timer, TimerStats> >::iterator it = timers.begin();
          it != timers.end();
