@@ -74,8 +74,8 @@ DateTime::DateTime(
 }
 
 unsigned int DateTime::ToCode() const {
-    return mMin * 0x3C + mSec + mHour * 0xE10 + (mYear - 100) * 0x1FA4000
-        + mMonth * 0x2A3000 + mDay * 0x15180;
+    return mSec + mMin * 0x3C + mHour * 0xE10
+        + mDay * 0x15180 + mMonth * 0x2A3000 + (mYear - 100) * 0x1FA4000;
 }
 
 // uint __thiscall DateTime::ToCode(DateTime *this)

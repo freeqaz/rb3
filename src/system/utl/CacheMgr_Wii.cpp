@@ -137,9 +137,17 @@ param_6; return true;
 bool CacheMgrWii::MountAsync(CacheID*, Cache*, Hmx::Object*) {}
 */
 bool CacheMgrWii::UnmountAsync(Cache **, Hmx::Object *) {}
-bool CacheMgrWii::DeleteAsync(CacheID *) {}
+bool CacheMgrWii::DeleteAsync(CacheID *) {
+    MILO_ASSERT(false, 296);
+    return false;
+}
 void CacheMgrWii::PollSearch() {}
-void CacheMgrWii::EndSearch(CacheResult) {}
+void CacheMgrWii::EndSearch(CacheResult result) {
+    mVar2 = 0;
+    mVar1 = gNullStr;
+    SetLastResult(result);
+    SetOp((CacheMgr::OpType)0);
+}
 
 void CacheMgrWii::PollMount() {}
 

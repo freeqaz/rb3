@@ -66,6 +66,7 @@ void TourPropertyCollection::FakeFill() {
     std::map<Symbol, TourProperty *>::iterator end =
         TheTour->m_mapTourProperties.end();
     for (; it != end; ++it) {
-        mTourProperties[it->first] = 0.0f;
+        Symbol key = it->first;
+        mTourProperties[key] = 0.0f;
     }
 }

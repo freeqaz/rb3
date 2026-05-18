@@ -28,6 +28,7 @@
 
 int DbgGetFrameID();
 
+
 bool WiiMat::sOverrideAlphaWrite = 0;
 bool WiiMat::sCurrentZCompLoc = 1;
 bool bDoMatLightHackBS = 1;
