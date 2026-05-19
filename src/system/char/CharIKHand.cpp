@@ -171,7 +171,7 @@ void CharIKHand::IKElbow(RndTransformable *trans1, RndTransformable *trans2) {
     Transform tf78(trans2->WorldXfm());
     tf78.v += v100;
     trans2->SetWorldXfm(tf78);
-    float loc210 = unk64 * (DistanceSquared(trans2->WorldXfm().v, mWorldDst) - mInv2ab);
+    float loc210 = mInv2ab * (DistanceSquared(trans2->WorldXfm().v, mWorldDst) - mAABB);
     ClampEq(loc210, -1.0f, 1.0f);
     float sqrted = -std::sqrt(-(loc210 * loc210 - 1.0f));
     float negSqrted = -sqrted;
@@ -313,10 +313,10 @@ void CharIKHand::MeasureLengths() {
             if (mHand->TransParent()->TransParent()) {
                 float len = Length(mHand->mLocalXfm.v);
                 float parentlen = Length(mHand->TransParent()->mLocalXfm.v);
-                unk64 = len * 2.0f * parentlen;
-                mInv2ab = parentlen * parentlen + (len * len + 0.0f);
-                if (unk64 != 0.0f)
-                    unk64 = 1.0f / unk64;
+                mInv2ab = parentlen * 2.0f * len;
+                if (mInv2ab != 0.0f)
+                    mInv2ab = 1.0f / mInv2ab;
+                mAABB = (parentlen * parentlen) + len * len;
                 mAAPlusBB = len + parentlen;
             }
         }

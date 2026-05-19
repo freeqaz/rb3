@@ -75,8 +75,8 @@ public:
 
     // this range of data is unknown, not referenced in SyncProperty or anything like that
     Vector3 mWorldDst; // 0x58
-    float unk64; // 0x64
-    float mInv2ab; // 0x68
+    float mInv2ab; // 0x64
+    float mAABB; // 0x68
     float mAAPlusBB; // 0x6c
     // end unknown data range
 
