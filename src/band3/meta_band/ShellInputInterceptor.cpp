@@ -63,8 +63,8 @@ bool ShellInputInterceptor::IsDoubleStrum(LocalBandUser *pUser, int button) {
     if (button == kPad_DUp || button == kPad_DDown) {
         MILO_ASSERT(pUser && pUser->IsLocal(), 0xAC);
         int slot = pUser->GetLocalBandUser()->GetPadNum();
-        float diff = mTime.Ms() - mLastUpDown[slot];
-        mLastUpDown[slot] = mTime.Ms();
+        float diff = Timer::CyclesToMs(mTime.mCycles) - mLastUpDown[slot];
+        mLastUpDown[slot] = Timer::CyclesToMs(mTime.mCycles);
         if (diff < 50.0f) {
             return true;
         }
