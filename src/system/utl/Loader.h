@@ -71,7 +71,10 @@ public:
         return ret;
     }
 
-    bool CheckSplit() { return mTimer.SplitMs() > unk1c ? true : false; }
+    bool CheckSplit() {
+        mTimer.Split();
+        return Timer::CyclesToMs(mTimer.mCycles) > unk1c ? true : false;
+    }
 
     Loader *GetFirstLoading() {
         if (mLoading.empty()) {
