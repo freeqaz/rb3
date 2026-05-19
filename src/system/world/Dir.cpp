@@ -511,11 +511,10 @@ void WorldDir::BitmapOverride::Sync(bool b) {
             MemDoTempAllocations m(true, false);
             texrefs = replacement->Refs();
         }
-        std::vector<ObjRef *>::const_reverse_iterator rit = texrefs.rbegin();
-        std::vector<ObjRef *>::const_reverse_iterator ritEnd = texrefs.rend();
-        while (rit != ritEnd) {
-            rit++;
-            ObjRef *ref = *rit;
+        std::vector<ObjRef *>::iterator it = texrefs.end();
+        std::vector<ObjRef *>::iterator itBegin = texrefs.begin();
+        while (it != itBegin) {
+            ObjRef *ref = *--it;
             if (ref->RefOwner()->Dir() != replacement->Dir()) {
                 ref->Replace(replacement, original);
             }
@@ -526,11 +525,10 @@ void WorldDir::BitmapOverride::Sync(bool b) {
             MemDoTempAllocations m(true, false);
             texrefs = replacement->Refs();
         }
-        std::vector<ObjRef *>::const_reverse_iterator rit = texrefs.rbegin();
-        std::vector<ObjRef *>::const_reverse_iterator ritEnd = texrefs.rend();
-        while (rit != ritEnd) {
-            rit++;
-            ObjRef *ref = *rit;
+        std::vector<ObjRef *>::iterator it = texrefs.end();
+        std::vector<ObjRef *>::iterator itBegin = texrefs.begin();
+        while (it != itBegin) {
+            ObjRef *ref = *--it;
             if (ref->RefOwner() && ref->RefOwner()->Dir() != replacement->Dir()) {
                 ref->Replace(original, replacement);
             }
