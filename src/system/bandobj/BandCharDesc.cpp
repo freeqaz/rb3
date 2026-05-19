@@ -564,6 +564,20 @@ Symbol BandCharDesc::NameToDrumVenue(const char *name) {
     return Symbol(sDrumVenueMappings[0]);
 }
 
+bool BandCharDesc::DrumCallback(char *name) {
+    char buf[264];
+    strcpy(buf, FileGetBase(name, 0));
+    for (int i = 0, offset = 0; i < 4; i++, offset += 8) {
+        char *found = strstr(buf, sDrumVenueMappings[offset / 4]);
+        if (found) {
+            found[-1] = 0;
+            break;
+        }
+    }
+    strcpy(name, buf);
+    return true;
+}
+
 DECOMP_FORCEACTIVE(BandCharDesc, "f", "female")
 
 BinStream &operator<<(BinStream &bs, const BandCharDesc::Patch &patch) {

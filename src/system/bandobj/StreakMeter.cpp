@@ -1,4 +1,6 @@
 #include "bandobj/StreakMeter.h"
+#include "math/Rot.h"
+#include "math/Trig.h"
 #include "rndobj/MatAnim.h"
 #include "utl/Symbols.h"
 
@@ -217,6 +219,22 @@ int StreakMeter::NumActiveParts() const {
         return unk270[0] + unk270[1] + unk270[2];
     else
         return 1;
+}
+
+void StreakMeter::SetPitch(float pitch) {
+    Hmx::Matrix3 &lm = mLocalXfm.m;
+    Vector3 e;
+    Vector3 s;
+    Hmx::Matrix3 m;
+    MakeEuler(lm, e);
+    MakeScale(lm, s);
+    e.x = DegreesToRadians(pitch);
+    MakeRotMatrix(e, m, true);
+    m.x *= s.x;
+    m.y *= s.y;
+    m.z *= s.z;
+    lm = m;
+    SetDirty();
 }
 
 BEGIN_HANDLERS(StreakMeter)
