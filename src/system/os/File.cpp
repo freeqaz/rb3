@@ -609,3 +609,16 @@ bool FileDiscSpinUp() { return TheBlockMgr.SpinUp(); }
 
 // the weird __rs in the debug symbols here, is for a FileStat&
 // so BinStream >> FileStat
+BinStream *operator>>(BinStream *bs, FileStat &fs) {
+    *bs >> fs.st_mode >> fs.st_size;
+    long ctime;
+    *bs >> ctime;
+    fs.st_ctime = ctime;
+    long atime;
+    *bs >> atime;
+    fs.st_atime = atime;
+    long mtime;
+    *bs >> mtime;
+    fs.st_mtime = mtime;
+    return bs;
+}

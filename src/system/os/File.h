@@ -102,7 +102,7 @@ void FileEnumerate(
 void FileRecursePattern(const char *, void (*)(char const *, char const *), bool);
 void DirRecursePattern(const char *, void (*)(char const *, char const *), bool);
 
-void operator>>(BinStream *, FileStat &);
+BinStream *operator>>(BinStream *, FileStat &);
 }
 
 File *NewFile(const char *, int);
