@@ -6,6 +6,7 @@
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/SaveLoadManager.h"
 #include "meta_band/SavedSetlist.h"
+#include "net_band/RockCentral.h"
 #include "net_band/RockCentralMsgs.h"
 #include "obj/Data.h"
 #include "obj/ObjMacros.h"
@@ -287,6 +288,83 @@ void EditSetlistPanel::VerifyStringsComplete(bool b1, bool b2) {
 void EditSetlistPanel::FailWithReason(FailureReason r) {
     unka4 = r;
     SetEditState((EditState)8);
+}
+
+DataNode EditSetlistPanel::OnMsg(const DWCProfanityResultMsg &msg) {
+    if (mEditState == kCheckingProfanity && unk98) {
+        unk98 = false;
+        MILO_ASSERT(unk94, 0x252);
+        if (msg.Success()) {
+            bool b1 = !unk94[0];
+            bool b2 = !unk94[1];
+            CleanupStringVerify();
+            VerifyStringsComplete(b1, b2);
+        } else {
+            CleanupStringVerify();
+            FailWithReason((FailureReason)7);
+        }
+    }
+    return DataNode(1);
+}
+
+void EditSetlistPanel::SetEditState(EditState s) {
+    if (mEditState != s) {
+        mEditState = s;
+        switch (s) {
+        case 0:
+            SetUIState((UIState)1);
+            break;
+        case 1:
+            SetUIState((UIState)1);
+            TheRockCentral.CheckBattleLimits(mProfile, unk68, this);
+            break;
+        case 2:
+            MILO_ASSERT(mProfile, 0x2DD);
+            if (mProfile->NumSavedSetlists() < 20) {
+                SetEditState((EditState)3);
+            } else {
+                FailWithReason((FailureReason)1);
+            }
+            break;
+        case 3:
+            SetUIState((UIState)0);
+            break;
+        case 4:
+            SetUIState((UIState)1);
+            break;
+        case 5:
+            SetUIState((UIState)1);
+            unk84 = -1;
+            TheRockCentral.UpdateBattleArt(GetArtTex(), this, 0);
+            break;
+        case 6:
+            SetUIState((UIState)1);
+            unk80 = -1;
+            TheRockCentral.CreateBattle(
+                mProfile,
+                mSetlistName.c_str(),
+                mSetlistDescription.c_str(),
+                TheMusicLibrary->GetSetlist(),
+                mSetlistArt,
+                unk84,
+                unk50,
+                unk54,
+                (BattleTimeUnits)unk58,
+                unk68,
+                this,
+                -1,
+                1
+            );
+            break;
+        case 7:
+        case 8:
+            SetUIState((UIState)2);
+            break;
+        default:
+            MILO_FAIL("Bad edit state %i!");
+            break;
+        }
+    }
 }
 
 int EditSetlistPanel::SymToDayCount(Symbol s) {

@@ -32,6 +32,7 @@ public:
 
     void CleanupStringVerify();
     void SetEditState(EditState);
+    void SetUIState(UIState);
     void VerifyStrings(const char *, const char *);
     bool CreateSetlist(bool);
     bool EditSetlist(LocalBandUser *, LocalSavedSetlist *);
