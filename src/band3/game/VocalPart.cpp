@@ -219,7 +219,77 @@ bool VocalPart::CouldScoreAgainstPart(
     return false;
 }
 
-float VocalPart::GetSloppyPitch(float, int, float, float &) const { return 0.0f; }
+bool PitchBetween(float pitch, float a, float b, float &out);
+
+float VocalPart::GetSloppyPitch(float ms, int noteIdx, float pitch, float &outPitch)
+    const {
+    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+    float msPlus = ms + mSlop;
+    float pitchHi;
+    if (note.mEndPitch == note.mBeginPitch) {
+        pitchHi = (float)note.mBeginPitch;
+    } else {
+        float dur = note.mDurationMs;
+        float noteMs = note.mMs;
+        float endMs = noteMs + dur;
+        msPlus = Min(msPlus, endMs);
+        float rel = Max(msPlus - noteMs, 0.0f);
+        float t = rel / dur;
+        pitchHi = t * (float)note.mEndPitch + (1.0f - t) * (float)note.mBeginPitch;
+    }
+    float msMinus = ms - mSlop;
+    float pitchLo;
+    if (note.mEndPitch == note.mBeginPitch) {
+        pitchLo = (float)note.mBeginPitch;
+    } else {
+        float dur = note.mDurationMs;
+        float noteMs = note.mMs;
+        float endMs = noteMs + dur;
+        msMinus = Min(msMinus, endMs);
+        float rel = Max(msMinus - noteMs, 0.0f);
+        float t = rel / dur;
+        pitchLo = t * (float)note.mEndPitch + (1.0f - t) * (float)note.mBeginPitch;
+    }
+    float modPitch = (float)fmod(pitch, 12.0);
+    float modHi = (float)fmod(pitchHi, 12.0);
+    float modLo = (float)fmod(pitchLo, 12.0);
+    float between = -1.0f;
+    if (!PitchBetween(pitch, pitchHi, pitchLo, between)) {
+        float diffHi = fabs(modPitch - modHi);
+        float diffLo = fabs(modPitch - modLo);
+        if (diffHi < diffLo) {
+            float spHi = ms + mSlop;
+            float spEnd = note.mMs + note.mDurationMs;
+            outPitch = Min(spHi, spEnd);
+            return pitchHi;
+        }
+        if (diffHi > diffLo) {
+            float spMs = note.mMs;
+            float spLo = ms - mSlop;
+            outPitch = Max(spMs, spLo);
+            return pitchLo;
+        }
+        float noteMs = note.mMs;
+        bool inRange = false;
+        if (ms >= noteMs && ms < noteMs + note.mDurationMs)
+            inRange = true;
+        if (inRange) {
+            outPitch = ms;
+        } else {
+            float endMs = noteMs + note.mDurationMs;
+            if (endMs > noteMs) {
+                if (endMs < ms)
+                    noteMs = ms;
+                else
+                    noteMs = endMs;
+            }
+            outPitch = noteMs;
+        }
+        return pitchHi;
+    }
+    outPitch = pitch;
+    return between;
+}
 
 void VocalPart::AddScore(const VocalScoreCache &c) { AddPhrasePoints(c.unk4); }
 void VocalPart::ForcePhrasePointDelta(float f1) { mPhraseScore += f1; }
