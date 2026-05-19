@@ -2,6 +2,7 @@
 #include "rndobj/Rnd.h"
 #include "utl/Loader.h"
 #include "utl/MakeString.h"
+#include "math/Decibels.h"
 #include "synth/Faders.h"
 #include "synth/Sfx.h"
 #include "synth/MidiInstrument.h"
@@ -300,7 +301,47 @@ void Synth::DrawMeterScale(float &y) {
     y += 16.0f;
 }
 
-float Synth::UpdateOverlay(RndOverlay *, float) {}
+float Synth::UpdateOverlay(RndOverlay *, float y) {
+    Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+    float yPos = (float)TheRnd->Width() * (y + 0.265f);
+    if (unk64) {
+        DrawMeterScale(yPos);
+        DrawMeter(yPos, ((Stream *)unk64)->Faders()->GetVal(), 0.0f, "stream");
+        for (int i = 0; i < ((Stream *)unk64)->GetNumChannels(); i++) {
+            DrawMeter(
+                yPos,
+                ((Stream *)unk64)->ChannelFaders(i)->GetVal(),
+                0.0f,
+                MakeString("chan %i", i)
+            );
+        }
+    }
+    if (!mLevelData.empty()) {
+        DrawMeterScale(yPos);
+    }
+    for (int i = 0; i < mLevelData.size(); i++) {
+        float rms = RatioToDb(mLevelData[i].mRMS);
+        float peakHold = RatioToDb(mLevelData[i].mPeakHold);
+        if (rms > 2.0f) {
+            rms = -30.0f;
+        }
+        DrawMeter(yPos, rms, peakHold, mLevelData[i].mName.c_str());
+    }
+    char buf[64];
+    sprintf(buf, "Total active Sequences: %d", SynthPollable::sPollables.size());
+    TheRnd->DrawString(buf, Vector2(100.0f, yPos), white, true);
+    yPos += 12.0f;
+    for (std::list<SynthPollable *>::iterator it = SynthPollable::sPollables.begin();
+         it != SynthPollable::sPollables.end();
+         ++it) {
+        const char *name = (*it)->GetSoundDisplayName();
+        if (*name != '\0') {
+            TheRnd->DrawString(name, Vector2(100.0f, yPos), white, true);
+            yPos += 12.0f;
+        }
+    }
+    return yPos / (float)TheRnd->Width();
+}
 
 DataNode Synth::OnStartMic(const DataArray *a) {
     GetMic(a->Int(2))->Start();
