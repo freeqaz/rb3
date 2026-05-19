@@ -1,6 +1,7 @@
 #include "bandobj/LayerDir.h"
 #include "rndobj/Cam.h"
 #include "obj/ObjVersion.h"
+#include "math/Rand.h"
 #include "decomp.h"
 #include "utl/Symbols.h"
 
@@ -132,3 +133,16 @@ BEGIN_HANDLERS(LayerDir)
     HANDLE(randomize_colors, RandomizeColors)
     HANDLE_CHECK(0x12E)
 END_HANDLERS
+
+DataNode LayerDir::RandomizeColors(DataArray *) {
+    for (ObjList<Layer>::iterator it = mLayers.begin(); it != mLayers.end(); ++it) {
+        if (it->mColorPalette && it->mAllowColor) {
+            int idx = RandomInt(0, it->mColorPalette->Property(Symbol("colors"), true)->Array()->Size());
+            DataArray *arr = it->mColorPalette->Property(Symbol("colors"), true)->Array();
+            int packed = arr->Node(idx).Int(arr);
+            it->mColor.Unpack(packed);
+            RefreshLayer(*it, false);
+        }
+    }
+    return DataNode(0);
+}
