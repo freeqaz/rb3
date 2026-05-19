@@ -120,7 +120,7 @@ void SelectDifficultyPanel::Enter() {
 
 void SelectDifficultyPanel::Poll() {
     UIPanel::Poll();
-    if (mMarqueeTimer.Running() && mMarqueeTimer.SplitMs() > mMarqueeRotationMs) {
+    if (mMarqueeTimer.Running() && (mMarqueeTimer.Split(), Timer::CyclesToMs(mMarqueeTimer.mCycles)) > mMarqueeRotationMs) {
         mMarqueeTimer.Restart();
         MetaPerformer *mp = MetaPerformer::Current();
         if (mp) {

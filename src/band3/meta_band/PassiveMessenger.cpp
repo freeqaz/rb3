@@ -23,7 +23,8 @@ PassiveMessenger *ThePassiveMessenger;
 
 void PassiveMessageQueue::Poll() {
     if (mTimer.Running()) {
-        if (mTimer.SplitMs() >= mMessageDuration) {
+        mTimer.Split();
+        if (Timer::CyclesToMs(mTimer.mCycles) >= mMessageDuration) {
             mTimer.Stop();
             mCallback->Handle(hide_message_msg, true);
         }
@@ -222,7 +223,8 @@ PassiveMessenger::~PassiveMessenger() {
 
 void PassiveMessenger::Poll() {
     if (mTimer.Running()) {
-        if (mTimer.SplitMs() >= 6000.0f) {
+        mTimer.Split();
+        if (Timer::CyclesToMs(mTimer.mCycles) >= 6000.0f) {
             mTimer.Stop();
         }
     }

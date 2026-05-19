@@ -482,7 +482,7 @@ void MusicLibrary::StartSongPreview() {
 
 void MusicLibrary::CheckSongPreview() {
     if (mSongPreviewTimer.Running()
-        && mSongPreviewTimer.SplitMs() > mSongPreviewDelay * 1000.0f) {
+        && (mSongPreviewTimer.Split(), Timer::CyclesToMs(mSongPreviewTimer.mCycles)) > mSongPreviewDelay * 1000.0f) {
         SortNode *node = TheMusicLibrary->GetHighlightedNode();
         if (node->GetType() == kNodeSubheader) {
             SubheaderSortNode *ssn = dynamic_cast<SubheaderSortNode *>(node);

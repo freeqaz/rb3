@@ -28,7 +28,8 @@ public:
         float f1 = 0.0f;
         float f18 = 0.0f;
         if (t) {
-            f1 = dj.Apply(t->SplitMs(), f18) * 0.001f;
+            t->Split();
+            f1 = dj.Apply(Timer::CyclesToMs(t->mCycles), f18) * 0.001f;
             f18 *= 0.001f;
         }
         TheTaskMgr.SetTimeAndDelta(kTaskSeconds, f1, f18);

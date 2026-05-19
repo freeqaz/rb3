@@ -180,11 +180,11 @@ void RockCentral::Poll() {
 #endif
         if (TheServer.IsConnected() && !ThePlatformMgr.IsOnlineRestricted()
             && TheProfileMgr.GetUsingWiiFriends()) {
-            if (!unka8.Running() || unka8.SplitMs() > 60000.0f) {
+            if (!unka8.Running() || (unka8.Split(), Timer::CyclesToMs(unka8.mCycles) > 60000.0f)) {
                 unka8.Restart();
                 TheWiiFriendMgr.EnumerateFriends(unk9c, nullptr);
             }
-            if ((!unke0.Running() || unke0.SplitMs() > 10000.0f) && !unk110) {
+            if ((!unke0.Running() || (unke0.Split(), Timer::CyclesToMs(unke0.mCycles) > 10000.0f)) && !unk110) {
                 unke0.Restart();
                 unk110 = true;
                 TheWiiMessenger.EnumerateMessages(unkd8, this);

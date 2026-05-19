@@ -45,10 +45,10 @@ void FadePanel::Poll() {
     mTimer.Split();
     if (unk_0x38 != 0) {
         float ratio;
-        if (mTimer.Ms() > mVolume) {
+        if (Timer::CyclesToMs(mTimer.mCycles) > mVolume) {
             ratio = 1.0f;
         } else {
-            ratio = mTimer.Ms() / mVolume;
+            ratio = Timer::CyclesToMs(mTimer.mCycles) / mVolume;
         }
         unk_0x84 = ratio;
         if (!mFadeOut) {

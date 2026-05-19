@@ -257,7 +257,7 @@ void FaderTask::Poll() {
     MILO_ASSERT(!mDone, 0x1DE);
     MILO_ASSERT(mInterp != NULL, 0x1DF);
     mTimer.Split();
-    float f = mTimer.Ms();
+    float f = Timer::CyclesToMs(mTimer.mCycles);
     if (f > mInterp->mX1) {
         mFader->UpdateValue(mInterp->mY1);
         mFader->CancelFade();

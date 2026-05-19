@@ -19,7 +19,8 @@ void SaveLoadStatusPanel::FinishLoad() {
 void SaveLoadStatusPanel::Draw() {
     UIPanel::Draw();
     if (unk71 && !unk70) {
-        if (unk78.SplitMs() >= 3000.0f) {
+        unk78.Split();
+        if (Timer::CyclesToMs(unk78.mCycles) >= 3000.0f) {
             unk71 = false;
             ThePlatformMgr.mHomeMenuWii->unk_0x9 = false;
             Handle(hide_physical_write_icon_msg, true);
@@ -48,7 +49,8 @@ void SaveLoadStatusPanel::QueueDeactivation() {
 
 void SaveLoadStatusPanel::PollDeactivation() {
     if (unk38) {
-        if (unk40.SplitMs() >= 1000.0f) {
+        unk40.Split();
+        if (Timer::CyclesToMs(unk40.mCycles) >= 1000.0f) {
             unk38 = false;
             Handle(deactivate_msg, true);
         }

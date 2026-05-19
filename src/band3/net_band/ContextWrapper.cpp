@@ -43,7 +43,8 @@ int ContextWrapper::Poll() {
         case 0:
             break;
         case 1:
-            if (mTimeout.SplitMs() > 30000.0f)
+            mTimeout.Split();
+            if (Timer::CyclesToMs(mTimeout.mCycles) > 30000.0f)
                 ret = 2;
             break;
         case 2: {
