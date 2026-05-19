@@ -10,7 +10,7 @@ void VarTimer::Start() {
 void VarTimer::Stop() {
     if (mRawTimer.Running())
         mRawTimer.Stop();
-    mAccumMs += mRawTimer.Ms() * mSpeed;
+    mAccumMs += Timer::CyclesToMs(mRawTimer.mCycles) * mSpeed;
     mRawTimer.Reset();
 }
 
@@ -35,5 +35,5 @@ float VarTimer::Ms() {
     if (mRawTimer.Running()) {
         mRawTimer.Split();
     }
-    return mSpeed * mRawTimer.Ms() + mAccumMs;
+    return mSpeed * Timer::CyclesToMs(mRawTimer.mCycles) + mAccumMs;
 }
