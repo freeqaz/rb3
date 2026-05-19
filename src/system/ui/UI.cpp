@@ -383,7 +383,8 @@ void UIManager::Terminate() {
 void UIManager::Poll() {
     UIList::CollectGarbage();
     mAutomator->Poll();
-    TheTaskMgr.SetUISeconds(mTimer.SplitMs() / 1000.0f, false);
+    mTimer.Split();
+    TheTaskMgr.SetUISeconds(Timer::CyclesToMs(mTimer.mCycles) / 1000.0f, false);
     for (std::vector<UIScreen *>::iterator it = mPushedScreens.begin();
          it != mPushedScreens.end();
          ++it) {
@@ -435,10 +436,11 @@ void UIManager::Poll() {
         if (!mCurrentScreen || !mCurrentScreen->Entering()) {
             if (mOverlay->Showing() && mLoadTimer.Running()) {
                 if (mCurrentScreen) {
+                    mLoadTimer.Split();
                     mOverlay->CurrentLine() = MakeString(
                         "%s entered in %f seconds",
                         mCurrentScreen->Name(),
-                        mLoadTimer.SplitMs() / 1000.0f
+                        Timer::CyclesToMs(mLoadTimer.mCycles) / 1000.0f
                     );
                     MILO_LOG("%s\n", mOverlay->CurrentLine());
                 }
