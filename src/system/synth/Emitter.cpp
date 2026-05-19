@@ -87,7 +87,33 @@ void SynthEmitter::CheckLoadResources() {
 // fn_8066E758 in retail
 void SynthEmitter::Poll() {
     if (mSfx && mListener && mSynthEmitterEnabled) {
-        Transform &xfm = mListener->WorldXfm();
+        Transform tf70;
+        Invert(mListener->WorldXfm(), tf70);
+        Vector3 v80;
+        Multiply(WorldXfm().v, tf70, v80);
+        float len = Length(v80);
+        if (len > mRadOuter) {
+            delete mInst;
+        } else {
+            bool needStart = !mInst;
+            if (needStart) {
+                mInst = dynamic_cast<SfxInst *>(mSfx->MakeInst());
+                if (!mInst) {
+                    return;
+                }
+            }
+            if (len > mRadInner) {
+                float slope = (mVolOuter - mVolInner) / (mRadOuter - mRadInner);
+                float vol = slope * len + (mVolInner - slope * mRadInner);
+                mInst->SetVolume(vol);
+            } else {
+                mInst->SetVolume(mVolInner);
+            }
+            mInst->SetTranspose(atan2f(v80.x, v80.y) * 1.2732395f);
+            if (needStart) {
+                mInst->Start();
+            }
+        }
     }
 }
 
