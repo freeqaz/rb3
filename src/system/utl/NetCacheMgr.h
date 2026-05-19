@@ -113,6 +113,7 @@ public:
     NetLoader *AddNetLoader(const char *, NetLoaderPos);
 
     bool GetHasFailed() const { return mHasFailed; }
+    bool UseSSL();
 
 private:
     void EnterLoadState();

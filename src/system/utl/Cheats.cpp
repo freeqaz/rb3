@@ -291,6 +291,23 @@ void CheatsManager::AppendLog(char *c) {
     }
 }
 
+DataNode CheatsManager::OnMsg(const KeyboardKeyMsg &msg) {
+    if (!mKeyCheatsEnabled) {
+        return DataNode(kDataUnhandled, 0);
+    }
+    int key = msg.GetKey();
+    std::vector<KeyCheat *> cheats(mKeyCheatPtrsMode);
+    for (std::vector<KeyCheat *>::iterator it = cheats.begin(); it != cheats.end();
+         ++it) {
+        KeyCheat *cur = *it;
+        if (key == cur->unk0 && msg.GetCtrl() == cur->unk4
+            && msg.GetAlt() == cur->unk5) {
+            CallCheatScript(true, cur->unk8, nullptr, true);
+        }
+    }
+    return DataNode(1);
+}
+
 bool CheatsManager::OnMsg(const ButtonDownMsg &msg) {
     User *user = msg.GetUser();
     if (!user)

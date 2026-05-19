@@ -2,12 +2,66 @@
 #include "system/os/Debug.h"
 #include "system/os/File.h"
 #include "system/os/System.h"
+#include "system/utl/MakeString.h"
 #include "system/utl/MemMgr.h"
+#include "system/utl/NetCacheMgr.h"
 #include "system/utl/Symbol.h"
 #include "system/utl/Symbols2.h"
 #include <RevoEX/nhttp/nhttp.h>
 
+enum NHTTPConnectionEvent {
+    NHTTP_CONNECTION_EVENT_RESPONSE = 2,
+    NHTTP_CONNECTION_EVENT_BODY = 3,
+};
+
+typedef int (*NHTTPConnectionCallback)(void *, NHTTPConnectionEvent, void *);
+
+extern "C" {
+void *NHTTPCreateConnection(
+    const char *, int, void *, int, NHTTPConnectionCallback, int
+);
+int NHTTPStartConnection(void *);
+void NHTTPDeleteConnection(void *);
+void NHTTPSetRootCA(void *, char *, unsigned long);
+void NHTTPSetBuiltinClientCert(void *, int);
+void NHTTPDisableVerifyOptionForDebug(void *, int);
+void NHTTPGetConnectionProgress(void *, unsigned long *, unsigned long *);
+}
+
+struct NHTTPBodyBufArg {
+    void *buf;
+    unsigned long size;
+    int flags;
+};
+
+static int ECConnectionCallback(void *, NHTTPConnectionEvent, void *);
+
 HttpWii TheHttpWii;
+
+static int ECConnectionCallback(
+    void *conn, NHTTPConnectionEvent event, void *arg
+) {
+    unsigned long temp = 0;
+    unsigned long size = 0;
+    NHTTPBodyBufArg *bodyBufArg = (NHTTPBodyBufArg *)arg;
+    switch (event) {
+    case NHTTP_CONNECTION_EVENT_RESPONSE:
+        TheHttpWii.mDataBuffer = bodyBufArg->buf;
+        if (TheHttpWii.mDataBuffer == NULL) {
+            NHTTPGetConnectionProgress(conn, &temp, &size);
+            TheHttpWii.mDataBuffer = _MemAlloc(size, 0x20);
+            TheHttpWii.mDataBufferSize = size;
+        }
+        bodyBufArg->buf = TheHttpWii.mDataBuffer;
+        bodyBufArg->size = size;
+        bodyBufArg->flags = 0;
+        break;
+    case NHTTP_CONNECTION_EVENT_BODY:
+        TheHttpWii.mDataBuffer = bodyBufArg->buf;
+        break;
+    }
+    return 0;
+}
 
 void *CommerceEcAlloc(int sz, int al) {
     void *r = NULL;
@@ -118,6 +172,40 @@ int HttpWii::GetStatus() {
         }
     }
     return mStatus;
+}
+
+int HttpWii::GetFileAsync(const char *path, void *buffer, int bufSize) {
+    if (mStatus != 1) {
+        return -1;
+    }
+    unsigned int i;
+    for (i = 0; i < NUM_HTTPWII_HANDLES; i++) {
+        if (mHandles[i] == NULL)
+            break;
+    }
+    if (i == NUM_HTTPWII_HANDLES) {
+        return -1;
+    }
+    TheDebug << MakeString("url = %s\n", path);
+    mHandles[i] = NHTTPCreateConnection(
+        path, 0, buffer, bufSize, ECConnectionCallback, 0
+    );
+    if (mHandles[i] == NULL) {
+        return -1;
+    }
+    if (!TheNetCacheMgr->UseSSL()) {
+        NHTTPDisableVerifyOptionForDebug(mHandles[i], 0xb);
+    } else {
+        NHTTPSetRootCA(mHandles[i], mRootCA, mCertSize);
+        NHTTPSetBuiltinClientCert(mHandles[i], 0);
+    }
+    if (NHTTPStartConnection(mHandles[i]) < 0) {
+        NHTTPDeleteConnection(mHandles[i]);
+        mHandles[i] = NULL;
+        return -1;
+    }
+    mTimeout[i].Stop();
+    return i;
 }
 
 int HttpWii::CancelAsync(int task) {
