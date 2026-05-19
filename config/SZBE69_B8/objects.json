@@ -672,7 +672,7 @@
             "network/Services/Data.cpp": "Matching",
             "network/Services/DataDDL.cpp": "Matching",
             "network/Services/DeletionEntryDDL.cpp": "Matching",
-            "network/Services/DynamicGatheringDDL.cpp": "MISSING",
+            "network/Services/DynamicGatheringDDL.cpp": "NonMatching",
             "network/Services/FriendDataDDL.cpp": "Matching",
             "network/Services/FriendsClient.cpp": "MISSING",
             "network/Services/FriendsProtocolDDL.cpp": "MISSING",
