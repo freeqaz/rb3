@@ -37,9 +37,9 @@ void BeginTrackObjMem(const char *cc1, const char *cc2) {
     if (DirLoader::mbTrackObjMem) {
         *gTrackMemStackPtr = MemPoint();
         gTrackMemStackPtr++;
-    }
-    if (gTrackMemStackPtr >= &gTrackMemStack[16]) {
-        MILO_FAIL("MemPoint Overflow");
+        if (gTrackMemStackPtr >= &gTrackMemStack[16]) {
+            MILO_FAIL("MemPoint Overflow");
+        }
     }
 }
 
