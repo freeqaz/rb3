@@ -200,7 +200,8 @@ void GlitchFinder::PokeStart(
         }
         GlitchPoker *poker = NewPoker();
         strcpy(poker->mName, cc);
-        poker->mTime = mTime.SplitMs();
+        mTime.Split();
+        poker->mTime = Timer::CyclesToMs(mTime.mCycles);
         poker->mParent = mCurPoker;
         poker->mBudget = f1;
         poker->mAvg = avg;
@@ -222,7 +223,8 @@ void GlitchFinder::PokeStart(
 
 void GlitchFinder::PokeEnd(unsigned int ui) {
     if (mCurPoker) {
-        mCurPoker->mTimeEnd = mTime.SplitMs();
+        mTime.Split();
+        mCurPoker->mTimeEnd = Timer::CyclesToMs(mTime.mCycles);
         mCurPoker = mCurPoker->mParent;
         if (!mCurPoker)
             CheckDump();
@@ -238,7 +240,8 @@ void GlitchFinder::CheckDump() {
         if (!mStartPoker)
             return;
         mStop = true;
-        mStartPoker->mTimeEnd = mTime.SplitMs();
+        mTime.Split();
+        mStartPoker->mTimeEnd = Timer::CyclesToMs(mTime.mCycles);
         static unsigned int sStart;
         if (sStart == 0) {
             TIMER_GET_CYCLES(start_cycles);
