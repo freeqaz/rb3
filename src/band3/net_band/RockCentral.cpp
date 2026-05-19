@@ -150,7 +150,7 @@ void RockCentral::Poll() {
         if (mState - 1U > 2)
 #endif
             if ((mState == 4 || mState == 0) && ThePlatformMgr.IsConnected()
-                && (mTime.Ms() < mRetryTime && !IsLoginMandatory())
+                && (Timer::CyclesToMs(mTime.mCycles) < mRetryTime && !IsLoginMandatory())
                 && (!mLoginBlocked
                     && (!TheGamePanel || TheGamePanel->GetState() == UIPanel::kUnloaded)
                 )) {
