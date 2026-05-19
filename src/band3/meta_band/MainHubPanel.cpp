@@ -108,16 +108,19 @@ void MainHubPanel::Enter() {
 
 void MainHubPanel::Poll() {
     UIPanel::Poll();
-    if (mMessageTimer.Running() && mMessageTimer.SplitMs() > mMessageRotationMs) {
-        mMessageTimer.Restart();
-        int num = mMessageProvider->NumData();
-        if (num == 0) {
-            mMessageTimer.Stop();
-            mCurrentMessage = 0;
-            PrepareProfilesAndMessages();
-        } else {
-            mCurrentMessage = (mCurrentMessage + 1) % num;
-            UpdateHeader();
+    if (mMessageTimer.Running()) {
+        mMessageTimer.Split();
+        if (Timer::CyclesToMs(mMessageTimer.mCycles) > mMessageRotationMs) {
+            mMessageTimer.Restart();
+            int num = mMessageProvider->NumData();
+            if (num == 0) {
+                mMessageTimer.Stop();
+                mCurrentMessage = 0;
+                PrepareProfilesAndMessages();
+            } else {
+                mCurrentMessage = (mCurrentMessage + 1) % num;
+                UpdateHeader();
+            }
         }
     }
 }

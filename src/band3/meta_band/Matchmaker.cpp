@@ -138,10 +138,10 @@ void BandMatchmaker::Poll() {
     mTime.Split();
     if (mSearching && !unk6c && TheNetSession->IsLocal() && !TheNetSession->IsBusy()) {
         if (!TheNet.GetSearcher()->Searching()) {
-            unk6c = mTime.Ms();
+            unk6c = Timer::CyclesToMs(mTime.mCycles);
         }
     }
-    if (unk6c && mTime.Ms() > unk6c) {
+    if (unk6c && Timer::CyclesToMs(mTime.mCycles) > unk6c) {
         MILO_ASSERT(mSearching, 0x136);
         unk6c = 0;
         StartSearch(false);
