@@ -1,5 +1,7 @@
 #include "synth/Synth.h"
+#include "rndobj/Rnd.h"
 #include "utl/Loader.h"
+#include "utl/MakeString.h"
 #include "synth/Faders.h"
 #include "synth/Sfx.h"
 #include "synth/MidiInstrument.h"
@@ -281,6 +283,22 @@ void Synth::ToggleHud() {
 }
 
 DECOMP_FORCEACTIVE(Synth, "%i", "0", "stream", "chan %i", "Total active Sequences: %d")
+
+void Synth::DrawMeterScale(float &y) {
+    float db = -40.0f;
+    Hmx::Color color(1.0f, 1.0f, 1.0f, 1.0f);
+    int w = TheRnd->Width();
+    float left = (float)w * 0.2f;
+    float barWidth = (float)w * 0.7f;
+    Vector2 pos(left, y);
+    TheRnd->DrawString(MakeString("%i", (int)db), pos, color, true);
+    db *= 0.5f;
+    Vector2 pos2(left + barWidth * 0.5f, y);
+    TheRnd->DrawString(MakeString("%i", (int)db), pos2, color, true);
+    Vector2 pos3(left + barWidth, y);
+    TheRnd->DrawString("0", pos3, color, true);
+    y += 16.0f;
+}
 
 float Synth::UpdateOverlay(RndOverlay *, float) {}
 
