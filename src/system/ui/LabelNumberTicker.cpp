@@ -74,7 +74,8 @@ void LabelNumberTicker::UpdateDisplay() {
 void LabelNumberTicker::Poll() {
     UIComponent::Poll();
     if (mTimer.Running()) {
-        float split = mTimer.SplitMs();
+        mTimer.Split();
+        float split = Timer::CyclesToMs(mTimer.mCycles);
         float animtime = mAnimTime * 1000.0f;
         float animdelay = mAnimDelay * 1000.0f;
         float animsum = animdelay + animtime;

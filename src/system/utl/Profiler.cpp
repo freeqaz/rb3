@@ -12,15 +12,15 @@ extern const char *FormatTime(float);
 
 void Profiler::Stop() {
     mTimer.Stop();
-    float ms = mTimer.Ms();
+    float ms = Timer::CyclesToMs(mTimer.mCycles);
     if (ms < mMin) {
         mMin = ms;
     }
-    ms = mTimer.Ms();
+    ms = Timer::CyclesToMs(mTimer.mCycles);
     if (mMax < ms) {
         mMax = ms;
     }
-    mSum += mTimer.Ms();
+    mSum += Timer::CyclesToMs(mTimer.mCycles);
     mCount++;
     if (mCount == mCountMax) {
         if (mCountMax == 1) {
