@@ -209,9 +209,25 @@ void ClipDistMap::FindDists(float f1, DataArray *arr) {
                 GenerateDistEntry(meshes, curDistEntry, BeatB(j), mClipB, transes);
                 GenerateDistEntry(meshes, newDistEntry, BeatA(i), mClipA, transes);
                 if (f1 > 0) {
-                    float fvar1 = 0.33333334f;
-                    float fvar2 = newDistEntry.facing[0];
-                    // some more stuff happens here
+                    float *curFacing = curDistEntry.facing;
+                    float *newFacing = newDistEntry.facing;
+                    float facing = newFacing[0];
+                    float weight = 0.33333334f;
+                    int k = 3;
+                    do {
+                        float angleDiff1 = LimitAng(curFacing[1] - curFacing[0]);
+                        float angleDiff2 = LimitAng(newFacing[1] - newFacing[0]);
+                        curFacing++;
+                        facing += (1.0f - weight) * angleDiff1 + weight * angleDiff2;
+                        newFacing++;
+                        weight += 0.33333334f;
+                        k--;
+                    } while (k != 0);
+                    facing = LimitAng(facing - curDistEntry.facing[3]);
+                    if (std::fabs(facing) > f1) {
+                        mDists(i, j) = kHugeFloat;
+                        continue;
+                    }
                 }
                 if (floatVec.empty()) {
                     FindWeights(transes, floatVec, mWeightData);
