@@ -135,10 +135,10 @@ void CharClipDisplay::DrawCursor() {
     Hmx::Rect rect(v.x, v.y - 3.0f, 1.0f, 9.0f);
     TheRnd->DrawRect(rect, yellow, NULL, NULL, NULL);
     const char *text;
-    if (unk20 >= 1.0f) {
-        text = MakeString("%.1f (%.2f)", unk1c, unk20);
-    } else {
+    if (unk20 < 1.0f) {
         text = MakeString("%.1f", unk1c);
+    } else {
+        text = MakeString("%.1f (%.2f)", unk1c, unk20);
     }
     DrawBeatString(text, unk1c, yellow);
 }
