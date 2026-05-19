@@ -5,6 +5,8 @@
 #include "decomp.h"
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
+#include "game/Game.h"
+#include "game/TrackerManager.h"
 #include "meta_band/AccomplishmentProgress.h"
 #include "meta_band/AccomplishmentManager.h"
 #include "meta_band/MetaPerformer.h"
@@ -229,6 +231,25 @@ void TourPerformerImpl::HandleCheatWinQuest(Symbol s) {
     int songcount = pTourDesc->GetNumSongsForGigNum(pProgress->GetCurrentGigNum());
     for (int i = 0; i < songcount; i++)
         pProgress->EarnStars(10);
+}
+
+void TourPerformerImpl::UpdateQuestGoalLabel(UILabel *label) {
+    TheGame->mTrackerManager->UpdateQuestGoalLabel(label);
+}
+
+void TourPerformerImpl::UpdateQuestResultLabel(UILabel *label) {
+    TheGame->mTrackerManager->UpdateQuestResultLabel(label);
+}
+
+void TourPerformerImpl::UpdateTourPlayerContributionLabel(UILabel *label, BandUser *user) {
+    MILO_ASSERT(label, 0x1F5);
+    MILO_ASSERT(user, 0x1F6);
+    label->SetTokenFmt(generic_string, GetPlayerContributionString(user).c_str());
+}
+
+String TourPerformerImpl::GetPlayerContributionString(BandUser *user) {
+    MILO_ASSERT(user, 0x202);
+    return TheGame->mTrackerManager->GetPlayerContributionString(user->GetTrackSym());
 }
 
 #pragma push

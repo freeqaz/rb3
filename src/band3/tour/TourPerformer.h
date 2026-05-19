@@ -60,6 +60,7 @@ public:
     void UpdateQuestGoalLabel(UILabel *);
     void UpdateQuestResultLabel(UILabel *);
     void UpdateTourPlayerContributionLabel(UILabel *, BandUser *);
+    String GetPlayerContributionString(BandUser *);
 
     const BandUserMgr &mUserMgr; // 0x1c
     MetaPerformer *mMetaPerformer; // 0x20
