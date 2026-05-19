@@ -3,6 +3,7 @@
 #include "game/Defines.h"
 #include "meta_band/AppLabel.h"
 #include "meta_band/BandSongMgr.h"
+#include "meta_band/SongStatusMgr.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
@@ -60,6 +61,18 @@ void SetlistScoresProvider::SetProfile(BandProfile *profile) {
 }
 
 void SetlistScoresProvider::SetScoreType(ScoreType type) { mScoreType = type; }
+
+void SetlistScoresProvider::RefreshScores() {
+    MILO_ASSERT(mProfile, 0x70);
+    int n = unk20.size();
+    for (int i = 0; i < n; i++) {
+        int songID = unk20[i];
+        SongStatusMgr *mgr = mProfile->GetSongStatusMgr();
+        MILO_ASSERT(mgr, 0x77);
+        unk28[i] = mgr->GetHighScore(songID, mScoreType);
+        unk30[i] = mgr->GetBandInstrumentMask(songID);
+    }
+}
 
 BEGIN_HANDLERS(SetlistScoresProvider)
     HANDLE_ACTION(set_score_type, SetScoreType(SymToScoreType(_msg->Sym(2))))

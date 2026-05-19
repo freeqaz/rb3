@@ -23,6 +23,15 @@ AccomplishmentPlayerConditional::AccomplishmentPlayerConditional(DataArray *arr,
 
 AccomplishmentPlayerConditional::~AccomplishmentPlayerConditional() {}
 
+void AccomplishmentPlayerConditional::InitializeMusicLibraryTask(
+    MusicLibrary::MusicLibraryTask &task, BandProfile *
+) const {
+    const SongSortMgr::SongFilter &filt = mLaunchFilter;
+    task.filter = filt;
+    task.allowDuplicates = false;
+    task.partSym = mLaunchPartDifficultySym;
+}
+
 void AccomplishmentPlayerConditional::Configure(DataArray *i_pConfig) {
     MILO_ASSERT(i_pConfig, 0x21);
     i_pConfig->FindData(launch_part_difficulty_sym, mLaunchPartDifficultySym, false);
