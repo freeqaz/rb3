@@ -126,6 +126,19 @@ DataNode SigninScreen::OnMsg(const SigninChangedMsg &msg) {
     return 0;
 }
 
+DataNode SigninScreen::OnMsg(const UIChangedMsg &msg) {
+    if (msg->Int(2) == 0) {
+        if (unk41 && mHandleSignOuts
+            && !ThePlatformMgr.IsUserSignedIn(GetUser())) {
+            Handle(on_signed_out_msg, true);
+        } else {
+            ReEvaluateState();
+        }
+        unk41 = false;
+    }
+    return 0;
+}
+
 BEGIN_HANDLERS(SigninScreen)
     HANDLE_MESSAGE(SigninChangedMsg)
     HANDLE_MESSAGE(UIChangedMsg)
