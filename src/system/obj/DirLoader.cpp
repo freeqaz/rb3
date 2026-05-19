@@ -661,7 +661,7 @@ void DirLoader::Cleanup(const char *s) {
     mState = &DirLoader::DoneLoading;
     mTimer.Stop();
     if (sPrintTimes) {
-        MILO_LOG("%s: %f ms\n", mFile, mTimer.Ms());
+        MILO_LOG("%s: %f ms\n", mFile, Timer::CyclesToMs(mTimer.mCycles));
     }
     if (mCallback && (s || unk99)) {
         mCallback->FailedLoading(this);

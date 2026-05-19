@@ -675,8 +675,8 @@ DEF_DATA_FUNC(DataTime) {
     }
     time.Stop();
 
-    MILO_LOG(" %f ms\n", time.Ms());
-    return time.Ms();
+    MILO_LOG(" %f ms\n", Timer::CyclesToMs(time.mCycles));
+    return Timer::CyclesToMs(time.mCycles);
 };
 
 DEF_DATA_FUNC(DataRandomInt) { return RandomInt(array->Int(1), array->Int(2)); }

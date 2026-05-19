@@ -245,7 +245,8 @@ bool RndGroup::DrawShowingBudget(float f1) {
             mDrawItr = mDraws.begin();
         }
         while (mDrawItr != mDraws.end()) {
-            float splitMs = timer.SplitMs();
+            timer.Split();
+            float splitMs = Timer::CyclesToMs(timer.mCycles);
             if (splitMs > f1)
                 return false;
             if (mDrawItr && *mDrawItr && !(*mDrawItr)->DrawBudget(f1 - splitMs))
