@@ -1,6 +1,7 @@
 #pragma once
 #include "ObjDup/DataSet.h"
 #include "ObjDup/DOHandle.h"
+#include "Core/Operation.h"
 #include "Platform/RootObject.h"
 #include "Platform/String.h"
 #include "Platform/Time.h"
@@ -14,10 +15,6 @@ namespace Quazal {
         int unk4;
         const char *m_szName; // 0x8
     };
-
-    namespace Operation {
-        enum _Event {};
-    }
 
     class _Type_byte {
     public:
