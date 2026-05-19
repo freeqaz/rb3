@@ -4,11 +4,6 @@
 #include "Plugins/Message.h"
 
 namespace Quazal {
-    // Free functions in Quazal namespace defined in the (still-to-be-decompiled)
-    // GatheringDDL.cpp.  Declare them here so we can delegate StreamIn/StreamOut.
-    void Add(Message *, const _DDL_Gathering &);
-    void Extract(Message *, _DDL_Gathering *);
-
     Gathering *_DDL_GameSession::Clone() const {
         return new (__FILE__, 27) GameSession;
     }
@@ -31,10 +26,10 @@ namespace Quazal {
     }
 
     void _DDL_GameSession::StreamIn(Message *msg) const {
-        Add(msg, *this);
+        _DDL_Gathering::Add(msg, *this);
     }
 
     void _DDL_GameSession::StreamOut(Message *msg) {
-        Extract(msg, this);
+        _DDL_Gathering::Extract(msg, this);
     }
 }

@@ -8,7 +8,7 @@ namespace Quazal {
 
     class _DDL_Gathering : public RootObject {
     public:
-        _DDL_Gathering();
+        _DDL_Gathering() {}
         virtual ~_DDL_Gathering() {}
         virtual Gathering *Clone() const;
         virtual String GetGatheringType() const;
@@ -16,6 +16,9 @@ namespace Quazal {
         virtual bool IsAKindOf(const String &) const;
         virtual void StreamIn(Message *) const;
         virtual void StreamOut(Message *);
+
+        static void Add(Message *, const _DDL_Gathering &);
+        static void Extract(Message *, _DDL_Gathering *);
 
         int unk4;
         int unk8;
