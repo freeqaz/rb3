@@ -1,4 +1,5 @@
 #include "bandobj/CharKeyHandMidi.h"
+#include "os/Debug.h"
 #include "utl/Symbols.h"
 
 CharKeyHandMidi::CharKeyHandMidi()
@@ -14,6 +15,37 @@ CharKeyHandMidi::CharKeyHandMidi()
 }
 
 CharKeyHandMidi::~CharKeyHandMidi() {}
+
+void CharKeyHandMidi::EndTest() {
+    if (mIKObject) {
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerThumb);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerIndex);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerMiddle);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerRing);
+        mIKObject->ReleaseFinger(CharIKFingers::kFingerPinky);
+    }
+}
+
+void CharKeyHandMidi::UnkeyFinger(CharIKFingers::FingerNum finger) {
+    MILO_ASSERT(finger >= 0 && finger < CharIKFingers::kFingerNone, 0x16a);
+    mIKObject->ReleaseFinger(finger);
+    unk6c[finger] = 0;
+    unk74++;
+}
+
+CharIKFingers::FingerNum CharKeyHandMidi::DefaultSelectFinger(KeyboardKey key) {
+    for (int i = 1; i < 5; i++) {
+        if (unk6c[i] == 0) {
+            KeyFinger((CharIKFingers::FingerNum)i, key);
+            return (CharIKFingers::FingerNum)i;
+        }
+    }
+    if (unk6c[0] == 0) {
+        KeyFinger(CharIKFingers::kFingerThumb, key);
+        return CharIKFingers::kFingerThumb;
+    }
+    return CharIKFingers::kFingerNone;
+}
 
 BEGIN_HANDLERS(CharKeyHandMidi)
     HANDLE(fingers_up, OnFingersUp)

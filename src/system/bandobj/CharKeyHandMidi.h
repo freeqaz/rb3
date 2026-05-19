@@ -8,6 +8,11 @@ class CharKeyHandMidi : public RndHighlightable,
                         public CharWeightable,
                         public CharPollable {
 public:
+    enum KeyboardKey {
+        kNoKey = 0x2f,
+        kKeyC4 = 0x48
+    };
+
     CharKeyHandMidi();
     virtual ~CharKeyHandMidi();
     virtual void Highlight();
@@ -25,6 +30,9 @@ public:
 
     void RunTest();
     void EndTest();
+    void KeyFinger(CharIKFingers::FingerNum, KeyboardKey);
+    void UnkeyFinger(CharIKFingers::FingerNum);
+    CharIKFingers::FingerNum DefaultSelectFinger(KeyboardKey);
 
     DataNode OnFingersUp(DataArray *);
     DataNode OnFingersDown(DataArray *);
