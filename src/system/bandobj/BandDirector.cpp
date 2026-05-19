@@ -233,10 +233,10 @@ void BandDirector::Poll() {
         }
     }
     if (mWorldPostProc) {
+        const char *presets = "";
         const RndPostProc *p1 = nullptr;
         const RndPostProc *p2 = nullptr;
         float fref = 1.0f;
-        const char *presets = "";
         if (mCamPostProc) {
             mWorldPostProc->Copy(mCamPostProc, kCopyDeep);
             presets = "camera";
