@@ -32,6 +32,41 @@
 #undef InterpAng
 #include <cmath>
 
+// Convert a Transform (3x3 + translation Vector3) to a GX Mtx (3x4),
+// transposing the rotation portion. Uses paired-single quantized loads.
+void MakeWiiMtx(const Transform &t, Mtx &m) {
+#ifdef MATCHING
+    register const Transform *src = &t;
+    register Mtx *dst = &m;
+    ASM_BLOCK(
+        psq_l       fp6,  0x0(src),  0, 0
+        psq_l       fp8,  0xc(src),  0, 0
+        psq_l       fp7,  0x8(src),  1, 0
+        psq_l       fp9,  0x14(src), 1, 0
+        ps_merge00  fp0,  fp6,  fp8
+        psq_l       fp10, 0x18(src), 0, 0
+        ps_merge11  fp2,  fp6,  fp8
+        psq_l       fp12, 0x24(src), 0, 0
+        ps_merge00  fp4,  fp7,  fp9
+        psq_l       fp11, 0x20(src), 1, 0
+        psq_l       fp13, 0x2c(src), 1, 0
+        ps_merge00  fp1, fp10, fp12
+        ps_merge11  fp3, fp10, fp12
+        ps_merge00  fp5, fp11, fp13
+        psq_st      fp0,  0x0(dst),  0, 0
+        psq_st      fp1,  0x8(dst),  0, 0
+        psq_st      fp2,  0x10(dst), 0, 0
+        psq_st      fp3,  0x18(dst), 0, 0
+        psq_st      fp4,  0x20(dst), 0, 0
+        psq_st      fp5,  0x28(dst), 0, 0
+    )
+#else
+    m[0][0] = t.m.x.x; m[0][1] = t.m.y.x; m[0][2] = t.m.z.x; m[0][3] = t.v.x;
+    m[1][0] = t.m.x.y; m[1][1] = t.m.y.y; m[1][2] = t.m.z.y; m[1][3] = t.v.y;
+    m[2][0] = t.m.x.z; m[2][1] = t.m.y.z; m[2][2] = t.m.z.z; m[2][3] = t.v.z;
+#endif
+}
+
 // Linearly interpolates between angles a and b (in radians), wrapping the
 // shortest path. Normalises (b - a) into [-PI, PI] before lerping by t.
 float InterpAng(float a, float b, float t) {
