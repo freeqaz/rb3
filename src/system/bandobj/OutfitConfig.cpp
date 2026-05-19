@@ -552,6 +552,39 @@ void OutfitConfig::CompressTextures() {
         unk3c = 1;
 }
 
+void OutfitConfig::MeshAO::Apply(OutfitConfig *cfg, SyncMeshCB *mesh) {
+    RndMesh *m =
+        dynamic_cast<RndMesh *>(cfg->Dir()->FindObject(mMeshName.c_str(), false));
+    if (m) {
+        if (m->mKeepMeshData) {
+            mesh->SyncMesh(m, 0x400);
+            if ((unsigned int)m->mGeomOwner->mVerts.size() == mCoeffs.size()) {
+                m->mHasAOCalc = true;
+                for (unsigned int i = 0; i < mCoeffs.size(); i++) {
+                    Hmx::Color32 ao(mCoeffs[i]);
+                    Hmx::Color32 &vc = m->mGeomOwner->mVerts[i].color;
+                    vc.a = Min(vc.a, ao.a);
+                    vc.r = Min(vc.r, ao.r);
+                    vc.g = Min(vc.g, ao.g);
+                    vc.b = Min(vc.b, ao.b);
+                }
+            } else {
+                MILO_WARN(
+                    "%s MeshAO has different vert count %d v %d from %s, can't apply",
+                    PathName(cfg),
+                    (unsigned long)mCoeffs.size(),
+                    m->mGeomOwner->mVerts.size(),
+                    m->Name()
+                );
+            }
+        }
+    } else {
+        MILO_WARN(
+            "%s MeshAO %s can't find matching mesh to apply", PathName(cfg), mMeshName
+        );
+    }
+}
+
 void OutfitConfig::ApplyAO(SyncMeshCB *mesh) {
     for (int i = 0; i < mMeshAO.size(); i++) {
         mMeshAO[i].Apply(this, mesh);
