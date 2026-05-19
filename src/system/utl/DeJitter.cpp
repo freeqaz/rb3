@@ -30,23 +30,19 @@ float DeJitter::Apply(float ms, float &delta) {
         if (unk_0xC > 8) {
             int prevPos = (unk_0x8 - 1) & 0x1F;
             int historyPos = (prevPos - unk_0xC) & 0x1F;
-            float f0 = (unk_0x0[prevPos] - unk_0x0[historyPos]) / (float)unk_0xC;
+            float f1 = (unk_0x0[prevPos] - unk_0x0[historyPos]) / (float)unk_0xC;
             if (unk_0x10 == 0.0f) {
-                unk_0x10 = f0;
+                unk_0x10 = f1;
             }
             float f3 = unk_0x10;
             float f4 = unk_0x14;
             filteredValue = ms + 16.0f;
-            f0 = (f0 - f3) * 0.1f + f3;
-            unk_0x10 = f0;
-            float f1 = f4 + f0;
-            if (f1 > filteredValue) {
-                // clamp high: filteredValue stays as ms + 16.0f
-            } else {
+            f1 = (f1 - f3) * 0.1f + f3;
+            unk_0x10 = f1;
+            f1 = f4 + f1;
+            if (f1 <= filteredValue) {
                 filteredValue = ms - 16.0f;
-                if (f1 < filteredValue) {
-                    // clamp low: filteredValue stays as ms - 16.0f
-                } else {
+                if (f1 >= filteredValue) {
                     filteredValue = f1;
                 }
             }
