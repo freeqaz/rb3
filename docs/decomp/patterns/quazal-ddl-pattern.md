@@ -71,6 +71,29 @@ Then check asm size — anything under ~1000 lines is wave-sized.
 - `PrivateDataDDL`: RTTI-only, table won't emit without forcing vtable instantiation.
 - `RVConnectionDataDDL`, `GatheringStatsDDL`, `GatheringURLsDDL`: each requires `qList<T>::clear()` + `push_back` inlining match (intrusive-list alloc patterns) — non-trivial.
 
+## `_DS_X` DataSet Pattern (Wave 72A)
+
+Different beast: `_DS_X` classes in `network/ObjDup/` have three virtual-ish methods:
+- `FormatVariableValue(Variable *, String *) const` — checks each member name and formats it
+- `AddSourceTo(Message *, Time, bool)` — appends raw bytes
+- `CallOperationOnVars(Operation::_Event, void *)` — usually empty
+
+For `FormatVariableValue` to match, the per-type formatter (`_Type_byte::FormatVariableValue`, `_Type_uint16::FormatVariableValue`, `_Type_uint32::FormatVariableValue`) must be defined `inline` in a shared header so it inlines into each `_DS_X` TU and emits the weak `@STRING@FormatVariableValue__Q26Quazal*_TypeXFPCvPQ26Quazal6String` literal `"%d"`.
+
+Critical: the literal key string in the `IsEqual` call MUST be stored to a local `const char *key` variable. Inlining the literal directly gives 82.6% match (wrong arg-eval ordering). Example:
+
+```cpp
+bool _DS_StationState::FormatVariableValue(Variable *var, String *out) const {
+    const char *key = "m_ui16State";  // local! Triggers correct codegen.
+    if (String::IsEqual(var->m_szName, key)) {
+        return _Type_uint16::FormatVariableValue(&m_ui16State, out);
+    }
+    return false;
+}
+```
+
+Wave 72A took `RangeDDL`, `SessionStateDDL`, `StationStateDDL`, `UserDefinedStateDDL` from MISSING to Matching (12 funcs at 100%).
+
 ## Reference Files
 
 Look at any of these for canonical examples:
