@@ -336,8 +336,8 @@ void AccomplishmentManager::ConfigureFanValueData(DataArray *arr) {
 }
 
 void AccomplishmentManager::ConfigureFanScalingData(DataArray *arr) {
-    int i8 = 0;
     int i9 = 0;
+    int i8 = 0;
     for (int i = 1; i < arr->Size(); i++) {
         DataArray *pEntry = arr->Array(i);
         MILO_ASSERT(pEntry, 0x1E0);
@@ -346,19 +346,13 @@ void AccomplishmentManager::ConfigureFanScalingData(DataArray *arr) {
         int i4 = pEntry->Int(1);
         if (i3 < i9) {
             MILO_WARN("Fan Scaling data point values are not in sequence: %i index.", i);
-            // i4 = i8;
-            // i3 = i9;
         } else if (i4 < i8) {
             MILO_WARN("Fan Scaling data fan values are not in sequence: %i index.", i);
-            // i4 = i8;
-            // i3 = i9;
         } else {
-            m_vFanScalingData.push_back(std::make_pair(i3, i4));
-            i8 = i4;
             i9 = i3;
+            i8 = i4;
+            m_vFanScalingData.push_back(std::make_pair(i3, i4));
         }
-        // i8 = i4;
-        // i9 = i3;
     }
 }
 
