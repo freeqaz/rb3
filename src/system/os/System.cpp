@@ -1,6 +1,8 @@
 #include "System.h"
 
+#include "math/FileChecksum.h"
 #include "math/Geo.h"
+#include "math/Rand.h"
 #include "math/Trig.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
@@ -11,6 +13,7 @@
 #include "os/AppChild.h"
 #include "os/Archive.h"
 #include "os/ContentMgr.h"
+#include "os/DateTime.h"
 #include "os/Debug.h"
 #include "os/File.h"
 #include "os/FileCache.h"
@@ -29,6 +32,8 @@
 #include "utl/GlitchFinder.h"
 #include "utl/Locale.h"
 #include "utl/Loader.h"
+#include "utl/TimeConversion.h"
+#include "utl/MemMgr.h"
 #include "utl/NetCacheMgr.h"
 #include "utl/Option.h"
 #include "utl/Spew.h"
@@ -39,10 +44,13 @@
 #include <cstdio>
 #include <vector>
 
+void ArchiveInit();
 void CheatsInit();
 void CheatsTerminate();
 void GeoInit();
+void JoypadInit();
 void JoypadTerminate();
+void MemInit();
 void MemTerminate();
 DataNode ResetHWM(DataArray *);
 DataNode CycleMemConsistencyCheck(DataArray *);
@@ -51,6 +59,9 @@ bool RsoInit(const char *);
 u32 HolmesClientSysExec(const char *);
 void HolmesClientStackTrace(const char *, unsigned int *, int, String &);
 void GetMapFileName(String &);
+
+#define kRSOBufferSize 0x10EC00
+#define kDefaultRSOBufferSize 0x89460
 
 extern bool (*ParseStack)(const char *, unsigned int *, int, char *);
 
@@ -326,7 +337,69 @@ bool InitWiiRSO() {
     return RsoInit(s.c_str());
 }
 
-void SystemPreInit(const char *cc) { CheckForArchive(); }
+void SystemPreInit(const char *config) {
+    MemInit();
+    g_pRSOReserveBuf = (unsigned char *)_MemAlloc(kRSOBufferSize, 0x20);
+    MILO_ASSERT((char*)g_pRSOReserveBuf + kRSOBufferSize <= (char*)0x91000000, 0x2C8);
+    g_pDefaultRSOBuf = (unsigned char *)_MemAlloc(kDefaultRSOBufferSize, 0x20);
+    MILO_ASSERT(
+        (char*)g_pDefaultRSOBuf + kDefaultRSOBufferSize <= (char*)0x91000000, 0x2CC
+    );
+    InitMakeString();
+    if (!gStringTable) {
+        Symbol::PreInit(600000, 75000);
+    }
+    if (OptionBool("force_ark", false)) {
+        SetUsingCD(true);
+    }
+    if (OptionBool("force_cd", true)) {
+        CheckForArchive();
+    }
+    ThePlatformMgr.RegionInit();
+    TheContentMgr->PreInit();
+    OptionInit();
+    if (OptionBool("no_checksum", false)) {
+        ClearFileChecksumData();
+    }
+    TimeConversionInit();
+    Timer::Init();
+    gHostConfig = OptionBool("host_config", false);
+    gHostLogging = OptionBool("host_logging", false);
+    gHostFile = OptionStr("host_file", NULL);
+    if (gHostFile != NULL) {
+        gHostConfig = true;
+    }
+    gHostCached = OptionBool("host_cached", false);
+    if (gUsingCD == 0 || gHostConfig || gHostLogging) {
+        WiiNetworkSocket::Init();
+    }
+    FileInit();
+    AppChild::Init();
+    DateTimeInit();
+    DateTime dt;
+    GetDateAndTime(dt);
+    SeedRand(dt.mSec + dt.mMin * 60 + dt.mHour * 3600);
+    srand(RandomInt());
+    ArchiveInit();
+    ThePlatformMgr.PreInit();
+    TheDebug.Init();
+    String commandLine;
+    for (unsigned int i = 0; i < TheSystemArgs.size(); ++i) {
+        commandLine += ' ';
+        commandLine += TheSystemArgs[i];
+    }
+    MILO_LOG("SystemInit Params:%s\n", commandLine);
+    DataInit();
+    PreInitSystem(config);
+    LanguageInit();
+    TheLoadMgr.Init();
+    JoypadInit();
+    KeyboardInit();
+    AutoTimer::Init();
+    ThreadCallPreInit();
+    TheTaskMgr.Init();
+    TheDebug.AddExitCallback(SystemTerminate);
+}
 
 void NormalizeSystemArgs() {
     for (unsigned int i = 0; i < TheSystemArgs.size(); i++) {
