@@ -25,8 +25,10 @@ int VibratoDetector::Analyze(float f1) {
     }
 
     else {
-        mY0 = (0.300000001f * f1) + (1.0f - 0.300000001f) * mY0;
-        if(mY1 > mY0 && mY1 > mY2 || (mY1 < mY0) && mY1 < mY2) {
+        float y1 = mY1;
+        float y0 = (0.300000001f * f1) + (1.0f - 0.300000001f) * mY0;
+        mY0 = y0;
+        if(y1 > y0 && y1 > mY2 || (y1 < y0) && y1 < mY2) {
             mBuffer[mBufIdx % 5] = mSample;
             mPitches[mBufIdx % 5] = mY1;
             mBufIdx++;
