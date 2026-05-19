@@ -55,7 +55,7 @@ public:
     std::vector<int> mSwings; // 0x20
     int mSelFrom; // 0x28
     int mSelTo; // 0x2c
-    float mAvgHitTime; // 0x2c
+    float mAvgHitTime; // 0x30
 };
 
 class TalkyMatcher {

@@ -1,4 +1,5 @@
 #include "synth/VoiceBeat.h"
+#include <algorithm>
 
 VoiceBeat::VoiceBeat() {
     mEnabled = true;
@@ -44,6 +45,67 @@ void VoiceBeat::ClearEventList() {
 }
 
 EventTracker::EventTracker() : mSelFrom(-1), mSelTo(-1), mAvgHitTime(0) {}
+
+void EventTracker::invalidate() {
+    mSelFrom = -1;
+    mSelTo = -1;
+}
+
+int EventTracker::findEarliest(float t, int start) {
+    int n = mTimes.size();
+    if (n == 0) return -1;
+    int last = n - 1;
+    if (start < 0) start = 0;
+    if (start > last) start = last;
+    while (start >= 0 && mTimes[start] >= t) {
+        start--;
+    }
+    if (start < 0) return 0;
+    while (start < n && mTimes[start] < t) {
+        start++;
+    }
+    return start;
+}
+
+int EventTracker::findLatest(float t, int start) {
+    int n = mTimes.size();
+    if (n == 0) return -1;
+    int idx = start;
+    if (idx > n) idx = n - 1;
+    if (idx < 0) idx = 0;
+    while (idx < n && mTimes[idx] < t) {
+        idx++;
+    }
+    if (idx >= n) return n - 1;
+    while (idx >= 0 && mTimes[idx] >= t) {
+        idx--;
+    }
+    return idx;
+}
+
+void EventTracker::Reset() {
+    mMisses.clear();
+    mMisses.resize(mTimes.size(), false);
+    mHits.clear();
+    mHits.resize(mTimes.size(), false);
+    mSwings.clear();
+    mSwings.resize(mTimes.size(), 0);
+    mAvgHitTime = 0;
+    invalidate();
+}
+
+bool EventTracker::Miss(float msFrom, float msUpTo) {
+    mSelFrom = findEarliest(msFrom, mSelFrom);
+    mSelTo = findLatest(msUpTo, mSelTo);
+    bool result = false;
+    for (int i = mSelFrom; i <= mSelTo; i++) {
+        if (!mHits[i]) {
+            result = true;
+            mMisses[i] = true;
+        }
+    }
+    return result;
+}
 
 TalkyMatcher::TalkyMatcher() { memset(mBuffer, 0, sizeof(mBuffer)); }
 
