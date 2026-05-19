@@ -197,7 +197,8 @@ void LoadMgr::Poll() {
                 mLoading.pop_front();
             }
         }
-        if (CheckSplit())
+        mTimer.Split();
+        if (Timer::CyclesToMs(mTimer.mCycles) > unk1c)
             return;
     }
 }
