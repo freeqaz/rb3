@@ -1,7 +1,9 @@
 #include "bandtrack/Track.h"
 #include "bandobj/BandTrack.h"
 #include "bandobj/CrowdMeterIcon.h"
+#include "bandtrack/GemTrack.h"
 #include "bandtrack/TrackPanel.h"
+#include "bandtrack/VocalTrack.h"
 #include "decomp.h"
 #include "game/Band.h"
 #include "game/BandUser.h"
@@ -10,6 +12,7 @@
 #include "game/GameMode.h"
 #include "game/GamePanel.h"
 #include "game/Player.h"
+#include "obj/Task.h"
 #include "meta_band/AppLabel.h"
 #include "meta_band/MetaPerformer.h"
 #include "obj/ObjMacros.h"
@@ -319,6 +322,23 @@ void Track::StartPulseAnims(float f) {
 }
 
 int Track::GetTrackNum() const { return mTrackConfig.TrackNum(); }
+
+void Track::SetPlayingIntro(float f) {
+    mIntroPlaying = true;
+    mIntroEndMs = TheTaskMgr.Seconds(TaskMgr::kRealTime) * 1000.0f + f;
+    if (TheGamePanel) {
+        TheGamePanel->SetPlayingTrackIntroUntil(mIntroEndMs);
+    }
+}
+
+Track *NewTrack(BandUser *user) {
+    TrackType t = user->GetTrackType();
+    if (t == kTrackVocals || t == kTrackPendingVocals) {
+        return new VocalTrack(user);
+    } else {
+        return new GemTrack(user);
+    }
+}
 
 BEGIN_HANDLERS(Track)
     HANDLE_EXPR(get_dir, GetDir())

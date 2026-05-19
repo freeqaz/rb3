@@ -128,6 +128,18 @@ void GemTrack::ApplyShiftImmediately(const RangeShift &shift) {
     }
 }
 
+float GemTrack::TickToOffset(int tick) const {
+    float ret = 0;
+    for (std::vector<RangeShift>::const_iterator it = mRangeShifts.begin();
+         it != mRangeShifts.end() && it->unk0 <= tick; ++it) {
+        if (tick <= it->unk4) {
+            return 0.5f * (it->unkc + it->unk8);
+        }
+        ret = it->unkc;
+    }
+    return ret;
+}
+
 DECOMP_FORCEACTIVE(
     GemTrack,
     "set_drum_fill_complete.trig",

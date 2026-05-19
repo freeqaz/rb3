@@ -10,6 +10,7 @@
 #include "game/BandUserMgr.h"
 #include "game/Game.h"
 #include "game/Player.h"
+#include "game/Scoring.h"
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/ModifierMgr.h"
 #include "obj/Dir.h"
@@ -377,7 +378,9 @@ void TrackPanel::HandleRemoveUser(BandUser *user) {
 void TrackPanel::PostHandleRemoveUser(BandUser *user) {
     Track *track = user->GetTrack();
     if (std::find(mTracks.begin(), mTracks.end(), track) != mTracks.end()) {
-        mTracks.erase(std::find(mTracks.begin(), mTracks.end(), track));
+        mTracks.erase(
+            std::remove(mTracks.begin(), mTracks.end(), track), mTracks.end()
+        );
         delete track;
     }
 }
@@ -683,7 +686,17 @@ int TrackPanel::GetNoCrowdMeter() const {
     return 0;
 }
 
-DECOMP_FORCEACTIVE(TrackPanel, "initial_display_level")
+float TrackPanel::CrowdRatingDefaultVal(Symbol s) const {
+    Difficulty diff = kDifficultyEasy;
+    if (s == medium) {
+        diff = kDifficultyMedium;
+    } else if (s == hard) {
+        diff = kDifficultyHard;
+    } else if (s == expert) {
+        diff = kDifficultyExpert;
+    }
+    return TheScoring->GetCrowdConfig(diff, NULL)->FindFloat("initial_display_level");
+}
 
 bool TrackPanel::SlotReservedForVocals(int slot) const {
     return slot == mReservedVocalSlot;
