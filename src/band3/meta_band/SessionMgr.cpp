@@ -26,6 +26,7 @@
 #include "os/User.h"
 #include "utl/HxGuid.h"
 #include "utl/Symbols.h"
+#include "utl/Symbols3.h"
 #include <vector>
 
 void SessionUsersProvidersInit();
@@ -402,6 +403,22 @@ void SessionMgr::ChangeRandomSeed() {
         mNetRandomSeed = RandomInt();
         SetSyncDirty(-1, false);
     }
+}
+
+bool SessionMgr::AreInvitesAllowed() const {
+    bool blocked = false;
+    if (!TheGameMode->Property(joining_allowed_in_transition, true)->Int())
+        if (TheUI.InTransition())
+            blocked = true;
+    if (blocked)
+        return false;
+    bool allowed;
+    UIFlowType ft = TheBandUI.GetCurrentFlowType();
+    allowed = false;
+    if (TheGameMode->Property(joining_allowed, true)->Int())
+        if (TheBandUI.GetJoinEntryPointForFlowType(ft))
+            allowed = true;
+    return allowed;
 }
 
 void SessionMgr::UpdateInvitesAllowed() {
