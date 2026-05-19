@@ -4,6 +4,7 @@
 #include "obj/Data.h"
 #include "os/Debug.h"
 #include "os/System.h"
+#include "synth/VoiceBeat.h"
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -184,6 +185,41 @@ void VocalPart::ResetScoring() {
     } else
         mPhraseScoreMax = 0;
 }
+
+bool VocalPart::CouldScoreAgainstPart(
+    float ms, TalkyMatcher *i_pTalkyMatcher, float pitch, float maxPitchDist, float &outPitch
+) {
+    int beginNote = -1;
+    int endNote = -1;
+    GetNoteRange(ms, beginNote, endNote);
+    for (int noteIdx = beginNote; noteIdx < endNote; noteIdx++) {
+        const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+        if (note.mUnpitchedNote) {
+            MILO_ASSERT(i_pTalkyMatcher, 0x1F2);
+            bool unk1 = i_pTalkyMatcher->mVoiceBeat.unk1;
+            bool unk0 = i_pTalkyMatcher->mVoiceBeat.unk0;
+            bool overEnergy = i_pTalkyMatcher->mVoiceBeat.unk4 > mTalkyEnergyThreshold;
+            if (mPlayer->IsAutoplay() || (unk1 && !unk0 && overEnergy)) {
+                return true;
+            }
+        } else if (pitch != 0.0f) {
+            float localPitch;
+            float sloppyPitch = GetSloppyPitch(ms, noteIdx, pitch, localPitch);
+            float absDiff = fabs(sloppyPitch - pitch);
+            float diff = (float)fmod(absDiff, 12.0);
+            float wrapped = 12.0f - diff;
+            diff = Min(wrapped, diff);
+            if (diff < maxPitchDist) {
+                outPitch = sloppyPitch;
+                return true;
+            }
+        }
+    }
+    outPitch = 0.0f;
+    return false;
+}
+
+float VocalPart::GetSloppyPitch(float, int, float, float &) const { return 0.0f; }
 
 void VocalPart::AddScore(const VocalScoreCache &c) { AddPhrasePoints(c.unk4); }
 void VocalPart::ForcePhrasePointDelta(float f1) { mPhraseScore += f1; }
