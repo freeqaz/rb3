@@ -403,7 +403,7 @@
             "network/Extensions/ChannelInfoDDL.cpp": "Matching",
             "network/Extensions/ChannelMemberSink.cpp": "Matching",
             "network/Extensions/ChannelMembers.cpp": "NonMatching",
-            "network/Extensions/ChannelMembersDDL.cpp": "MISSING",
+            "network/Extensions/ChannelMembersDDL.cpp": "NonMatching",
             "network/Extensions/Codec.cpp": "Matching",
             "network/Extensions/CodecManager.cpp": "NonMatching",
             "network/Extensions/DefaultCellDDL.cpp": "MISSING",
