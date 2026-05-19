@@ -154,7 +154,7 @@ void DrawSphere::DrawFixedZ(float f) {
 void DrawSphere::Draw() { UtilDrawSphere(mCenter, mRadius, mCol); }
 
 void Line::DrawFixedZ(float f) {
-    TheRnd->DrawLine(Vector3(mA.X(), mA.Y(), f), Vector3(mB.X(), mB.Y(), f), mCol, mZBuf);
+    TheRnd->DrawLine(Vector3(mA.x, mA.y, f), Vector3(mB.x, mB.y, f), mCol, mZBuf);
 }
 
 void Line::Draw() { TheRnd->DrawLine(mA, mB, mCol, mZBuf); }
