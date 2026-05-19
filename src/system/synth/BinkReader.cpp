@@ -2,6 +2,9 @@
 #include "lib/binkwii/binkread.h"
 #include "os/Debug.h"
 #include "os/Timer.h"
+#include "rndwii/Rnd.h"
+#include "sdk/RVL_SDK/revolution/os/OSCache.h"
+#include "ui/UI.h"
 #include "utl/BinkIntegration.h"
 #include "utl/MakeString.h"
 #include "utl/MemMgr.h"
@@ -10,12 +13,16 @@ extern "C" {
 void BinkNextFrame(BINK *);
 unsigned int BinkGetTrackData(BINKTRACK *, void *);
 void BinkGoto(BINK *, unsigned int, int);
+int Ntsc__6WiiRndFv(WiiRnd *);
 }
+
+extern bool gDebugFullQuota;
 
 int BinkReader::mPlaying;
 int BinkReader::sHeap = 1;
 int gTempLastDecodeSize = -1;
 int gTempPrevFrameSize = -1;
+int gTempCurFrameSize;
 
 struct BinkHeapEntry {
     void *ptr;
@@ -117,7 +124,84 @@ void BinkReader::PollInitStream() {
     gTempLastDecodeSize = -1;
 }
 
-void BinkReader::PollPlay() {}
+void BinkReader::PollPlay() {
+    int outerIter = 0;
+    int innerCount = 0;
+    do {
+        if (mSamplesReady > 0) {
+            START_AUTO_TIMER("bink_consume");
+            int consumed = mStream->ConsumeData(
+                (void **)mPCMOffsets, mSamplesReady, mSampleCurrent
+            );
+            MILO_ASSERT(consumed <= mSamplesReady, 0xF7);
+            mSampleCurrent += consumed;
+            mSamplesReady -= consumed;
+            for (unsigned char i = 0; i < mBink->NumTracks; i++) {
+                mPCMOffsets[i] += consumed * 2;
+            }
+        }
+        if (mDecodeTrack == mBink->NumTracks) {
+            START_AUTO_TIMER("bink_read");
+            mState = (mBink->FrameNum == mBink->Frames) ? kDone : kPlay;
+            if (mState == kPlay) {
+                BinkNextFrame(mBink);
+            }
+            mDecodeTrack = 0;
+        }
+        if (mSamplesReady > 0) break;
+        unsigned int lastTrackBytes;
+        {
+            START_AUTO_TIMER("bink_decode");
+            int budget;
+            lastTrackBytes = 0;
+            if (gDebugFullQuota) {
+                budget = mBink->NumTracks;
+            } else {
+                budget = (int)mBink->NumTracks / 2;
+                if (TheWiiRnd.GetProgressiveScan() || Ntsc__6WiiRndFv(&TheWiiRnd)) {
+                    if (!TheUI.unkb4) {
+                        static bool skip;
+                        budget -= skip;
+                        skip = !skip;
+                    }
+                }
+            }
+            innerCount = budget < 2 ? 2 : budget;
+            while (innerCount-- > 0) {
+                if (mDecodeTrack == mBink->NumTracks) {
+                    gTempPrevFrameSize = gTempCurFrameSize;
+                    gTempCurFrameSize = 0;
+                    break;
+                }
+                DCZeroRange(
+                    mPCMBuffers[mDecodeTrack], mBinkTracks[mDecodeTrack]->MaxSize
+                );
+                lastTrackBytes = BinkGetTrackData(
+                    mBinkTracks[mDecodeTrack], mPCMBuffers[mDecodeTrack]
+                );
+                gTempCurFrameSize += lastTrackBytes;
+                if ((unsigned int)gTempLastDecodeSize != lastTrackBytes) {
+                    gTempLastDecodeSize = lastTrackBytes;
+                }
+                mPCMOffsets[mDecodeTrack] =
+                    mPCMBuffers[mDecodeTrack] + mSamplesJump * 2;
+                mDecodeTrack++;
+            }
+        }
+        {
+            START_AUTO_TIMER("bink_read");
+            mSamplesReady = (int)(lastTrackBytes >> 1) - mSamplesJump;
+            mSampleCurrent += mSamplesJump;
+            mSamplesJump = 0;
+            mState = (mBink->FrameNum == mBink->Frames) ? kDone : kPlay;
+            if (innerCount > 0 && mState == kPlay) {
+                BinkNextFrame(mBink);
+                mDecodeTrack = 0;
+            }
+        }
+        outerIter++;
+    } while (innerCount > 0 && outerIter < 3);
+}
 
 void BinkReader::Poll(float) {
     START_AUTO_TIMER("bink_audio");
