@@ -10,6 +10,7 @@ namespace Quazal {
         bool operator<(const DOHandle &h) const { return mValue < h.mValue; }
 
         void SetDOClassID(unsigned int);
+        const char *GetClassNameString() const;
 
         unsigned int mValue; // 0x0
     };

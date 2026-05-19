@@ -1,5 +1,6 @@
 #pragma once
 #include "ObjDup/DataSet.h"
+#include "ObjDup/DOHandle.h"
 #include "Platform/RootObject.h"
 #include "Platform/String.h"
 #include "Platform/Time.h"
@@ -38,6 +39,15 @@ namespace Quazal {
     public:
         static inline bool FormatVariableValue(const void *v, String *out) {
             out->Format("%d", *(const unsigned int *)v);
+            return true;
+        }
+    };
+
+    class _Type_dohandle {
+    public:
+        static inline bool FormatVariableValue(const void *v, String *out) {
+            DOHandle h = *(const DOHandle *)v;
+            out->Format("%s %x", h.GetClassNameString(), h.mValue);
             return true;
         }
     };

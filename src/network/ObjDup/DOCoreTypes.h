@@ -13,6 +13,11 @@ namespace Quazal {
     public:
         static void Add(Message *, const String &);
         static void Extract(Message *, String *);
+        static inline bool FormatVariableValue(const void *v, String *out) {
+            const char *s = *(const char *const *)v;
+            out->Format("%s", s ? s : "");
+            return true;
+        }
     };
 
     class _Type_qresult {
