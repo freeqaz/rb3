@@ -178,7 +178,7 @@ void BlockMgr::Poll() {
                 }
                 if (seekDist != 1) {
                     gSeekCount++;
-                    gSeekTimeMs += gReadTime.Ms();
+                    gSeekTimeMs += Timer::CyclesToMs(gReadTime.mCycles);
                 } else {
                     gSeekCount = 0;
                     gSeekTimeMs = 0.0f;
@@ -251,7 +251,7 @@ void BlockMgr::Poll() {
 bool BlockMgr::SpinUp() {
     TheBlockMgr.Poll();
     if (UsingCD()) {
-        if (mSpinDownTimer.Ms() > 120000.000f) {
+        if (Timer::CyclesToMs(mSpinDownTimer.mCycles) > 120000.000f) {
             if (mReadingBlock == nullptr) {
                 MILO_LOG("BlockMgr spinning up...\n");
                 Block *blk = FindMRUBlock();
