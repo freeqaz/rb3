@@ -14,6 +14,9 @@ namespace Quazal {
         virtual void StreamIn(Message *) const;
         virtual void StreamOut(Message *);
 
+        static void Add(Message *, const _DDL_HarmonixGathering &);
+        static void Extract(Message *, _DDL_HarmonixGathering *);
+
         bool unk28;
         int unk2c;
         int unk30;
