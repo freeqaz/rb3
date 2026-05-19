@@ -475,7 +475,7 @@
             "network/ObjDup/ChangeDupSetOperation.cpp": "MISSING",
             "network/ObjDup/ChangeMasterStationOperation.cpp": "MISSING",
             "network/ObjDup/ConnectionInfo.cpp": "MISSING",
-            "network/ObjDup/ConnectionInfoDDL.cpp": "MISSING",
+            "network/ObjDup/ConnectionInfoDDL.cpp": "Matching",
             "network/ObjDup/CreateMasterOperation.cpp": "MISSING",
             "network/ObjDup/DataSet.cpp": "Matching",
             "network/ObjDup/DDLDeclarations.cpp": "Matching",

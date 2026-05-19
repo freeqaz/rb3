@@ -24,6 +24,14 @@ namespace Quazal {
         }
     };
 
+    class _Type_bool {
+    public:
+        static inline bool FormatVariableValue(const void *v, String *out) {
+            out->Format("%d", *(const bool *)v);
+            return true;
+        }
+    };
+
     class _Type_uint16 {
     public:
         static inline bool FormatVariableValue(const void *v, String *out) {
