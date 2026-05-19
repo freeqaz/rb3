@@ -4,7 +4,9 @@
 #include "math/Rand.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Dir.h"
+#include "rndwii/Tex.h"
 #include "utl/Symbols.h"
+#include <revolution/gx/GXMisc.h>
 
 INIT_REVS(OutfitConfig);
 
@@ -85,6 +87,103 @@ void OutfitConfig::MatSwap::UnSwapResource() {
             if (replace)
                 cur->Replace(mMat, mResourceMat);
         }
+    }
+}
+
+void OutfitConfig::MatSwap::Compose(
+    int *colors, ObjVector<BandPatchMesh> &patches, int category
+) {
+    if (!MatchesPatchCategory(category, patches))
+        return;
+    RndTex *diffTex = mMat->GetDiffuseTex();
+    if (!diffTex || (diffTex->GetType() & RndTex::kRenderedNoZ) != RndTex::kRenderedNoZ) {
+        if (mTwoColor)
+            return;
+        if (!mTextures.empty()) {
+            int idx = colors[mColor1Option] % mTextures.size();
+            mMat->SetDiffuseTex(mTextures[idx]);
+        } else if (mColor1Palette) {
+            const Hmx::Color &c = mColor1Palette->GetColor(colors[mColor1Option]);
+            mMat->SetColor(c.red, c.green, c.blue);
+        }
+    } else {
+        RndCam *prevCam = RndCam::sCurrent;
+        RndTex *prevTarget = prevCam->TargetTex();
+        if (prevTarget) {
+            MILO_NOTIFY_ONCE(
+                "%s: Cannot render to texture (%s) while already rendering to texture "
+                "(%s).",
+                PathName(prevTarget),
+                PathName(diffTex),
+                PathName(prevTarget)
+            );
+        }
+        RndCam *defaultCam = TheRnd->DefaultCam();
+        if (defaultCam) {
+            defaultCam->ClassName();
+        }
+        sCam->Copy(defaultCam, Hmx::Object::kCopyShallow);
+        sCam->SetTargetTex(diffTex);
+        sCam->SetTransParent(nullptr, false);
+        {
+            Transform &lx = sCam->DirtyLocalXfm();
+            lx.v.Set(0.0f, 0.0f, 1.0f);
+            lx.m.x.Set(1.0f, 0.0f, 0.0f);
+            lx.m.y.Set(0.0f, 0.0f, -1.0f);
+            lx.m.z.Set(0.0f, -1.0f, 0.0f);
+        }
+        sCam->SetFrustum(0.01f, 5.0f, 0.0f, 1.0f);
+        sCam->Select();
+        Hmx::Color baseColor(1.0f, 1.0f, 1.0f, 1.0f);
+        sMat->SetColorModFlags(RndMat::kColorModNone);
+        sMat->SetBlend(RndMat::kBlendSrc);
+        sMat->SetTexWrap(kTexWrapClamp);
+        sMat->SetDiffuseTex(nullptr);
+        sMat->SetAlpha(1.0f);
+        {
+            const Hmx::Color *col = &baseColor;
+            if (mColor1Palette) {
+                col = &mColor1Palette->GetColor(colors[mColor1Option]);
+            }
+            sMat->SetColor(col->red, col->green, col->blue);
+        }
+        mMat->SetColor(baseColor.red, baseColor.green, baseColor.blue);
+        Hmx::Rect rect(0.0f, 0.0f, (float)TheRnd->Width(), (float)TheRnd->Height());
+        sMat->SetAlphaCut(false);
+        TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
+        if (mTwoColorDiffuse) {
+            sMat->SetColorModFlags(RndMat::kColorModModulate);
+            sMat->SetDiffuseTex(mTwoColorDiffuse);
+            const Hmx::Color *col = &baseColor;
+            if (mColor2Palette) {
+                col = &mColor2Palette->GetColor(colors[mColor2Option]);
+            }
+            sMat->SetColor(col->red, col->green, col->blue);
+            TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
+        }
+        if (mTwoColorInterp) {
+            sMat->SetColorModFlags(RndMat::kColorModModulate);
+            sMat->SetDiffuseTex(mTwoColorInterp);
+            sMat->SetColor(baseColor.red, baseColor.green, baseColor.blue);
+            TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
+        }
+        if (mTwoColorMask) {
+            sMat->SetColorModFlags(RndMat::kColorModAlphaUnpackModulate);
+            sMat->SetDiffuseTex(mTwoColorMask);
+            sMat->SetColor(baseColor.red, baseColor.green, baseColor.blue);
+            TheRnd->DrawRect(rect, baseColor, sMat, nullptr, nullptr);
+        }
+        sMat->SetAlphaCut(false);
+        sMat->SetCull(false);
+        for (int i = 0; i < patches.size(); i++) {
+            patches[i].Render(diffTex, sMat);
+        }
+        WiiTex::bComposingOutfitTexture = true;
+        sCam->SetTargetTex(nullptr);
+        WiiTex::bComposingOutfitTexture = false;
+        prevCam->Select();
+        sMat->SetDiffuseTex(nullptr);
+        GXPixModeSync();
     }
 }
 
