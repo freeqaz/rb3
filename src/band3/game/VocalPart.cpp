@@ -264,8 +264,9 @@ bool VocalPart::InPlayablePhrase() const { return true; }
 
 bool VocalPart::InTambourinePhrase() const {
     bool result = false;
-    const VocalPhrase *end = mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size();
-    if (mThisPhrase != end && mThisPhrase->mTambourinePhrase)
+    VocalNoteList *list = mVocalNoteList;
+    const VocalPhrase *phrase = mThisPhrase;
+    if (phrase != list->mPhrases.data() + list->mPhrases.size() && phrase->mTambourinePhrase)
         result = true;
     return result;
 }
