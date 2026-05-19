@@ -4,6 +4,8 @@
 #include "system/os/Debug.h"
 #include "system/os/Timer.h"
 
+class ADSR;
+
 class EnvelopeWii {
 public:
     EnvelopeWii();
@@ -12,6 +14,7 @@ public:
     bool IsDone();
     void Pause();
     void Resume();
+    void SetADSR(const ADSR &);
     void StartAttack();
     void StartRelease();
 

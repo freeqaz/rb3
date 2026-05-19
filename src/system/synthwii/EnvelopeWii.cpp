@@ -1,4 +1,5 @@
 #include "EnvelopeWii.h"
+#include "system/synth/ADSR.h"
 
 EnvelopeWii::EnvelopeWii() {
     mAttackDuration = 5.0f;
@@ -52,6 +53,11 @@ void EnvelopeWii::Resume() {
         mTimer.Resume();
     }
     mIsPaused = false;
+}
+
+void EnvelopeWii::SetADSR(const ADSR &adsr) {
+    mAttackDuration = adsr.GetAttackRate() * 1000.0f;
+    mReleaseDuration = adsr.GetReleaseRate() * 1000.0f;
 }
 
 void EnvelopeWii::StartAttack() {
