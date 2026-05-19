@@ -27,7 +27,8 @@ void NetStream::ClientConnect(const NetAddress &addr) {
                 mFail = true;
                 break;
             }
-            if (timer.SplitMs() > 1000) {
+            timer.Split();
+            if (Timer::CyclesToMs(timer.mCycles) > 1000) {
                 mFail = true;
                 break;
             }

@@ -341,7 +341,7 @@ bool CheatsManager::OnMsg(const ButtonDownMsg &msg) {
     }
 
     mLastButtonTime.Stop();
-    if (mLastButtonTime.Ms() > 2000.0f) {
+    if (Timer::CyclesToMs(mLastButtonTime.mCycles) > 2000.0f) {
         for (std::vector<LongJoyCheat>::iterator it = mLongJoyCheats.begin();
              it != mLongJoyCheats.end(); ++it) {
             it->unk8 = 0;
