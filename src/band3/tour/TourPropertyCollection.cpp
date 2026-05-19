@@ -61,10 +61,10 @@ void TourPropertyCollection::LoadFixed(FixedSizeSaveableStream &stream, int rev)
 }
 
 void TourPropertyCollection::FakeFill() {
-    std::map<Symbol, TourProperty *>::iterator it =
-        TheTour->m_mapTourProperties.begin();
     std::map<Symbol, TourProperty *>::iterator end =
         TheTour->m_mapTourProperties.end();
+    std::map<Symbol, TourProperty *>::iterator it =
+        TheTour->m_mapTourProperties.begin();
     for (; it != end; ++it) {
         Symbol key = it->first;
         mTourProperties[key] = 0.0f;
