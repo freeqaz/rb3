@@ -16,6 +16,7 @@ public:
     OBJ_SET_TYPE(WiiEnviron)
 
     bool SetLight(int, WiiLight *);
+    void SetDirLight(int, _GXColor, const Vector3 &);
     void RenderCharactersToShadowBuffers();
 
     bool unk_0x19B, unk_0x19C;

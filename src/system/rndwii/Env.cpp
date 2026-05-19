@@ -3,6 +3,7 @@
 #include "obj/DataFunc.h"
 #include "obj/ObjPtr_p.h"
 #include "os/Debug.h"
+#include "revolution/gx/GXLight.h"
 #include "revolution/gx/GXTypes.h"
 #include "rndobj/Lit.h"
 #include "rndobj/Mat.h"
@@ -63,6 +64,17 @@ bool WiiEnviron::SetLight(int i, WiiLight *lit) {
         unk_0x19C = false;
     }
     return 1;
+}
+
+void WiiEnviron::SetDirLight(int n, GXColor color, const Vector3 &dir) {
+    GXLightObj lit;
+    int id = LightId(n);
+    unk_0x19E = unk_0x19E | id;
+    GXInitLightPos(&lit, 1e18f * dir.x, 1e18f * dir.y, 1e18f * dir.z);
+    GXInitLightDir(&lit, -dir.x, -dir.y, -dir.z);
+    GXInitLightAttn(&lit, 1, 0, 0, 1, 0, 0);
+    GXInitLightColor(&lit, color);
+    GXLoadLightObjImm(&lit, (GXLightID)id);
 }
 
 void WiiEnviron::RenderCharactersToShadowBuffers() {
