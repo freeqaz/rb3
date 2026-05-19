@@ -2,11 +2,15 @@
 #include "meta_band/BandSongMgr.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
+#include "os/ContentMgr_Wii.h"
 #include "os/Debug.h"
+#include "os/File.h"
 #include "utl/Symbols.h"
 
 String *gMidiFileResult;
 bool gMidiFileFound;
+
+void RecurseMidiFileCallback(const char *c1, const char *c2);
 
 void SongUpgradeData::InitSongUpgradeData() {
     mUpgradeVersion = -1;
@@ -125,6 +129,26 @@ int SongUpgradeData::RealGuitarTuning(int string) const {
 }
 
 int SongUpgradeData::RealBassTuning(int string) const { return mRealBassTuning[string]; }
+
+bool SongUpgradeData::CorrectMidiFile(ContentLocT loc, Symbol s) {
+    if (FileExists(mMidiFile.c_str(), 0)) {
+        return true;
+    }
+    if (loc != kLocationRoot) {
+        WiiContent *content = TheWiiContentMgr.ContentOf(s);
+        if (content) {
+            gMidiFileFound = false;
+            gMidiFileResult = &mMidiFile;
+            content->Enumerate("songs_upgrades", RecurseMidiFileCallback, true, "/");
+            if (gMidiFileFound) {
+                MILO_LOG("SongUpgradeData: updated MIDI file to %s\n", mMidiFile.c_str());
+                return true;
+            }
+        }
+    }
+    MILO_LOG("SongUpgradeData: MIDI file %s does not exist in %s\n", mMidiFile.c_str(), s);
+    return false;
+}
 
 void RecurseMidiFileCallback(const char *c1, const char *c2) {
     gMidiFileFound = true;
