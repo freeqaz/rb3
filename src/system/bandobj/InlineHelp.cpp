@@ -1,4 +1,7 @@
 #include "InlineHelp.h"
+#include "math/Mtx.h"
+#include "math/Rot.h"
+#include "math/Trig.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
 #include "os/System.h"
@@ -162,6 +165,46 @@ void InlineHelp::Poll() {
     }
     if (sNeedsTextUpdate)
         UpdateLabelText();
+}
+
+void InlineHelp::DrawShowing() {
+    int numLabels = mTextLabels.size();
+    Transform offsetXfm;
+    Transform rotXfm;
+    Transform labelXfm;
+    Transform worldXfm = WorldXfm();
+    const DataArray *t = TypeDef();
+    MILO_ASSERT(t, 0x10F);
+
+    offsetXfm.m.Identity();
+    offsetXfm.v.Zero();
+
+    if (sLabelRot != 0.0f) {
+        Vector3 angles(DegreesToRadians(sLabelRot), 0.0f, 0.0f);
+        Hmx::Matrix3 rotMtx;
+        MakeRotMatrix(angles, rotMtx, true);
+        Multiply(offsetXfm.v, rotMtx, rotXfm.v);
+        Multiply(offsetXfm.m, rotMtx, rotXfm.m);
+    } else {
+        rotXfm.m.Identity();
+        rotXfm.v.Zero();
+    }
+
+    for (int i = 0; i < numLabels; i++) {
+        if (i > 0) {
+            if (mHorizontal) {
+                offsetXfm.v.x += mSpacing;
+            } else {
+                offsetXfm.v.z += mSpacing;
+            }
+        }
+        Multiply(offsetXfm, worldXfm, labelXfm);
+        if (*mConfig[i].mSecondaryStr.c_str() != '\0') {
+            Multiply(rotXfm, labelXfm, labelXfm);
+        }
+        mTextLabels[i]->SetWorldXfm(labelXfm);
+        mTextLabels[i]->Draw();
+    }
 }
 
 void InlineHelp::SetActionToken(JoypadAction a, DataNode &node) {
