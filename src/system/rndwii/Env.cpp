@@ -66,6 +66,11 @@ bool WiiEnviron::SetLight(int i, WiiLight *lit) {
     return 1;
 }
 
+void WiiEnviron::ClearLights() {
+    unk_0x19E = 0;
+    unk_0x19C = true;
+}
+
 void WiiEnviron::SetDirLight(int n, GXColor color, const Vector3 &dir) {
     GXLightObj lit;
     int id = LightId(n);
