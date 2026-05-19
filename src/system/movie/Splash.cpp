@@ -286,7 +286,8 @@ void Splash::Poll() {
 }
 
 bool Splash::UpdateThreadLoop() {
-    if (unk_0x18.SplitMs() > mSplashTime && !ShowNext())
+    unk_0x18.Split();
+    if (Timer::CyclesToMs(unk_0x18.mCycles) > mSplashTime && !ShowNext())
         return true;
     Draw();
     if (mState == kTerminating) {
@@ -380,7 +381,8 @@ void Splash::UpdateThread() {
         MILO_ASSERT(mState == s1, 617);
         CheckWorkerSuspend(false);
     }
-    float elapsed = timer.SplitMs();
+    timer.Split();
+    float elapsed = Timer::CyclesToMs(timer.mCycles);
     if (TheArchive && Archive::DebugArkOrder()) {
         TheDebug << MakeString("Splash Time: %f\n", elapsed);
     }
@@ -479,7 +481,7 @@ void Splash::Draw() {
             float msPerFrame = unk_0x50->mMovie.MsPerFrame() - 1.0f;
             if (unk_0x100.Running()) {
                 unk_0x100.Split();
-                if (unk_0x100.Ms() < msPerFrame)
+                if (Timer::CyclesToMs(unk_0x100.mCycles) < msPerFrame)
                     return;
             }
             unk_0x100.Restart();
@@ -498,7 +500,8 @@ void Splash::Draw() {
     TheRnd->EndDrawing();
     if (MainThread())
         return;
-    int x = mSplashTime - (int)unk_0x18.SplitMs();
+    unk_0x18.Split();
+    int x = mSplashTime - (int)Timer::CyclesToMs(unk_0x18.mCycles);
     if (unk_0x50 != NULL) {
         int z = (int)(unk_0x50->mMovie.MsPerFrame() - 10.0f);
         if (z < x)
