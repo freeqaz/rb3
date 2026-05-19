@@ -978,6 +978,13 @@ void VocalTrack::PollKaraoke(float f1) {
     }
 }
 
+bool VocalTrack::InTambourinePhrase() const {
+    Player *p = GetPlayer();
+    if (!p)
+        return false;
+    return p->InTambourinePhrase();
+}
+
 void VocalTrack::StartUpdateArrows() {
     for (int i = 0; i < 3; i++) {
         if (mDir->GetPitchArrow(i)) {
