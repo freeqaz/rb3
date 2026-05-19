@@ -1,6 +1,9 @@
 #include "synth/BinkReader.h"
 #include "lib/binkwii/binkread.h"
+#include "os/Debug.h"
+#include "os/Timer.h"
 #include "utl/BinkIntegration.h"
+#include "utl/MakeString.h"
 #include "utl/MemMgr.h"
 
 extern "C" {
@@ -116,21 +119,38 @@ void BinkReader::PollInitStream() {
 
 void BinkReader::PollPlay() {}
 
-void BinkReader::Poll(float) {}
+void BinkReader::Poll(float) {
+    START_AUTO_TIMER("bink_audio");
+    switch (mState) {
+    case kOpenTracks:
+        PollOpenTracks();
+        break;
+    case kInitStream:
+        PollInitStream();
+        break;
+    case kPlay:
+        PollPlay();
+        break;
+    }
+    if (mState != kFailure && mBink->ReadError != 0) {
+        MILO_WARN("BinkReader::Poll() failed from read error!\n");
+        mState = kFailure;
+    }
+}
 
 void BinkReader::Init() {
     MILO_ASSERT(mStream, 0x1F9);
     mStream->InitInfo(mBink->NumTracks, mBinkTracks[0]->Frequency, false, -1);
 }
 
-void BinkReader::Seek(int targetSample) {
-    MILO_ASSERT(targetSample >= 0, 0x1B1);
+void BinkReader::Seek(int iSample) {
+    MILO_ASSERT(iSample >= 0, 0x1B1);
     if (mBink != nullptr) {
         if (mState == kFailure)
             return;
         float kfBinkFreq = (float)mBinkTracks[0]->Frequency;
         float kfBinkRate = (float)mBink->FrameRate / (float)mBink->FrameRateDiv;
-        int kiSampleFrame = (int)(kfBinkRate * ((float)targetSample / kfBinkFreq - 0.75f)) + 1;
+        int kiSampleFrame = (int)(kfBinkRate * ((float)iSample / kfBinkFreq - 0.75f)) + 1;
         if (kiSampleFrame < 1) {
             kiSampleFrame = 1;
         } else if ((unsigned int)kiSampleFrame >= mBink->Frames) {
@@ -139,7 +159,7 @@ void BinkReader::Seek(int targetSample) {
                 kiSampleFrame,
                 mBink->Frames
             );
-            targetSample = 0;
+            iSample = 0;
             kiSampleFrame = 1;
         }
         BinkGoto(mBink, kiSampleFrame, 1);
@@ -152,11 +172,11 @@ void BinkReader::Seek(int targetSample) {
         }
         int samplesAfterSeek = (int)(fSamplesAfterSeek * kfBinkFreq);
         mSampleCurrent = samplesAfterSeek;
-        if (targetSample == 0) {
+        if (iSample == 0) {
             mSamplesJump = 0;
             mSampleCurrent = 0;
         } else {
-            mSamplesJump = targetSample - samplesAfterSeek;
+            mSamplesJump = iSample - samplesAfterSeek;
         }
         if (mBink->FrameNum == 1) {
             int maxJump = (int)(0.75f * kfBinkFreq) - 1;
