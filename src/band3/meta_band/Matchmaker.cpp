@@ -217,7 +217,7 @@ DataNode BandMatchmaker::OnSearchFinished() {
             Export(msg, true);
         } else {
             float partialSum = mSearchingInterval + RandomFloat(0, mSearchingInterval);
-            unk6c = partialSum + mTime.Ms();
+            unk6c = partialSum + Timer::CyclesToMs(mTime.mCycles);
             if (unk32)
                 TheNetSession->mSettings->SetPublic(true);
         }
