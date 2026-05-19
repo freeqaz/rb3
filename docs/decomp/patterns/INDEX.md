@@ -19,6 +19,8 @@ This index mirrors the structure of [DC3's pattern catalog](../../../../dc3-deco
 | [fixable-struct-layout.md](fixable-struct-layout.md) | `virtual` vs non-`virtual` vtable layout |
 | [fixable-copy-ctor.md](fixable-copy-ctor.md) | Explicit copy constructor blocks small-struct return ABI; TU-local inline `Hmx::Object` copy ctor; member function pointer to force out-of-line emission |
 | [verifiable-icf.md](verifiable-icf.md) | Linker ICF risks — verify before treating as unfixable |
+| [quazal-ddl-pattern.md](quazal-ddl-pattern.md) | `_DDL_X::Extract`/`::Add` are static members — porting MISSING Quazal DDL units to Matching |
+| [wave-session-2026-05-18.md](wave-session-2026-05-18.md) | Session notes — param-slot reuse, `bool`→`int` returns, double-precision lowering, .cpp ordering controls inlining, MemcardMgr bitfield+dead-null pattern, header-edit blockers |
 
 ## Quick Decision Tree
 
