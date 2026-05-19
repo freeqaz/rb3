@@ -1,6 +1,8 @@
 #include "bandobj/CharKeyHandMidi.h"
 #include "os/Debug.h"
+#include "utl/MakeString.h"
 #include "utl/Symbols.h"
+#include <algorithm>
 
 CharKeyHandMidi::CharKeyHandMidi()
     : mIKObject(this, 0), mFirstSpot(this, 0), mSecondSpot(this, 0),
@@ -26,11 +28,23 @@ void CharKeyHandMidi::EndTest() {
     }
 }
 
-void CharKeyHandMidi::UnkeyFinger(CharIKFingers::FingerNum finger) {
-    MILO_ASSERT(finger >= 0 && finger < CharIKFingers::kFingerNone, 0x16a);
-    mIKObject->ReleaseFinger(finger);
-    unk6c[finger] = 0;
-    unk74++;
+DataNode CharKeyHandMidi::OnFingersUp(DataArray *msg) {
+    KeyboardKey key = (KeyboardKey)msg->Int(2);
+    MILO_ASSERT(key > kNoKey && key <= kKeyC4, 0x65);
+    for (int i = 0; i < 5; i++) {
+        if (unk6c[i] == (KeyboardKey)(key - kNoKey)) {
+            UnkeyFinger((CharIKFingers::FingerNum)i);
+        }
+    }
+    std::remove(unk5c.begin(), unk5c.end(), (KeyboardKey)(key - kNoKey));
+    return 0;
+}
+
+DataNode CharKeyHandMidi::OnFingersDown(DataArray *msg) {
+    KeyboardKey key = (KeyboardKey)msg->Int(2);
+    MILO_ASSERT(key > kNoKey && key <= kKeyC4, 0x81);
+    unk5c.push_back((KeyboardKey)(key - kNoKey));
+    return 0;
 }
 
 CharIKFingers::FingerNum CharKeyHandMidi::DefaultSelectFinger(KeyboardKey key) {
@@ -45,6 +59,35 @@ CharIKFingers::FingerNum CharKeyHandMidi::DefaultSelectFinger(KeyboardKey key) {
         return CharIKFingers::kFingerThumb;
     }
     return CharIKFingers::kFingerNone;
+}
+
+bool CharKeyHandMidi::KeyFinger(CharIKFingers::FingerNum finger, KeyboardKey setToKey) {
+    if (!(finger >= 0 && finger < CharIKFingers::kFingerNone)) {
+        TheDebug.Notify(MakeString("CharKeyHandMidi: Trying to key non-existent finger"));
+        return false;
+    }
+    if ((unsigned int)(setToKey - 1) > 0x18) {
+        TheDebug.Notify(MakeString("CharKeyHandMidi: Trying to put finger on non-existent key"));
+        return false;
+    }
+    if (setToKey == unk6c[0]) return false;
+    if (setToKey == unk6c[1]) return false;
+    if (setToKey == unk6c[2]) return false;
+    if (setToKey == unk6c[3]) return false;
+    if (setToKey == unk6c[4]) return false;
+    mIKObject->SetFinger(unk4c[setToKey], unk54[setToKey], finger);
+    unk6c[finger] = setToKey;
+    unk68 = finger;
+    unk64 = setToKey;
+    unk74--;
+    return true;
+}
+
+void CharKeyHandMidi::UnkeyFinger(CharIKFingers::FingerNum finger) {
+    MILO_ASSERT(finger >= 0 && finger < CharIKFingers::kFingerNone, 0x16a);
+    mIKObject->ReleaseFinger(finger);
+    unk6c[finger] = 0;
+    unk74++;
 }
 
 BEGIN_HANDLERS(CharKeyHandMidi)
