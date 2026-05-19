@@ -503,6 +503,33 @@ unsigned int OutfitConfig::OverlayFlags() const {
     return flags;
 }
 
+bool OutfitConfig::InMilo() {
+    if (ObjectDir::sMainDir->FindObject("milo", false)) {
+        static DataNode &n = DataVariable(Symbol("milo.dir"));
+        bool result = false;
+        bool isSameDir = false;
+        bool isMiloObj = false;
+        if (n.Type() == kDataObject) {
+            if (Dir()) {
+                isMiloObj = true;
+            }
+        }
+        if (isMiloObj) {
+            ObjectDir *castedDir = dynamic_cast<ObjectDir *>(n.GetObj(NULL));
+            if (Dir() == castedDir) {
+                isSameDir = true;
+            }
+        }
+        if (isSameDir) {
+            if (strcmp(Dir()->Name(), "main")) {
+                result = true;
+            }
+        }
+        return result;
+    }
+    return false;
+}
+
 int OutfitConfig::NumIndices(int idx) const {
     for (int i = 0; i < mMats.size(); i++) {
         const MatSwap &m = mMats[i];

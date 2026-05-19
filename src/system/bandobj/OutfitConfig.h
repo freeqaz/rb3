@@ -105,6 +105,7 @@ public:
     void ApplyAO(SyncMeshCB *);
     int NumIndices(int) const;
     void SetSkinTextures();
+    bool InMilo();
 
     static RndMat *sMat;
     static RndCam *sCam;
