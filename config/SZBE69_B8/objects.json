@@ -490,7 +490,7 @@
             "network/ObjDup/DOFilters.cpp": "MISSING",
             "network/ObjDup/DOHandle.cpp": "MISSING",
             "network/ObjDup/DOOperation.cpp": "MISSING",
-            "network/ObjDup/DOProtocol.cpp": "MISSING",
+            "network/ObjDup/DOProtocol.cpp": "Matching",
             "network/ObjDup/DOProtocolDDL.cpp": "MISSING",
             "network/ObjDup/DOProtocolServer.cpp": "MISSING",
             "network/ObjDup/DORef.cpp": "NonMatching",
@@ -536,7 +536,7 @@
             "network/ObjDup/Selection.cpp": "MISSING",
             "network/ObjDup/Session.cpp": "MISSING",
             "network/ObjDup/SessionDDL.cpp": "MISSING",
-            "network/ObjDup/SessionInfo.cpp": "MISSING",
+            "network/ObjDup/SessionInfo.cpp": "NonMatching",
             "network/ObjDup/SessionInfoDDL.cpp": "Matching",
             "network/ObjDup/SessionOperation.cpp": "MISSING",
             "network/ObjDup/SessionState.cpp": "MISSING",
@@ -745,7 +745,7 @@
             "network/Utility/Chrono.cpp": "MISSING",
             "network/Utility/LocalClock.cpp": "MISSING",
             "network/Utility/Statistics.cpp": "Matching",
-            "network/Utility/UtilitySubsystem.cpp": "MISSING"
+            "network/Utility/UtilitySubsystem.cpp": "Matching"
         }
     },
     "network/json_c": {

@@ -20,6 +20,9 @@ namespace Quazal {
         void SetContentSize(unsigned int);
         unsigned int GetSize() const;
         void Resize(unsigned int);
+        bool IsCheckSumValid(unsigned char);
+        void StripCheckSum();
+        void AppendCheckSum(unsigned char);
 
         unsigned char *mData; // 0x8
         unsigned int mContentSize; // 0xc
