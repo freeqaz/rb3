@@ -195,6 +195,39 @@ void GameConfig::AssignTracks() {
     }
 }
 
+int GameConfig::GetFxSwitchPosition(LocalBandUser *pUser) {
+    MILO_ASSERT(pUser, 0x242);
+    int padNum = pUser->GetPadNum();
+    Symbol cnttype = JoypadControllerTypePadNum(padNum);
+    const DataArray *cfg = SystemConfig(joypad)->FindArray(five_way_controllers, false);
+    if (!cfg) return -1;
+    if (pUser->GetTrackType() == kTrackBass) return -1;
+    for (int i = 1; i < cfg->Size(); i++) {
+        if (cfg->Node(i).Sym(cfg) == cnttype) {
+            int tbl[30] = {
+                0, 0, 0, 0, 0,
+                -1, -1,
+                1, 1, 1, 1,
+                -1, -1,
+                2, 2, 2, 2, 2, 2,
+                3, 3, 3, 3,
+                -1, -1,
+                4, 4, 4, 4, 4
+            };
+            float ry = JoypadGetPadData(padNum)->mSticks[1][1];
+            if (ry == 0.0) return -1;
+            int idx = (int)((1.0f + ry) * 15.0f + 0.5);
+            if (idx > 29) {
+                idx = 29;
+            } else {
+                idx &= ~((int)((1.0f + ry) * 15.0f + 0.5) >> 31);
+            }
+            return tbl[idx];
+        }
+    }
+    return -1;
+}
+
 void GameConfig::ChangeDifficulty(BandUser *u, int i) {
     mPlayerTrackConfigList->ChangeDifficulty(u->GetUserGuid(), i);
 }
