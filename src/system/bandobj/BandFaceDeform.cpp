@@ -148,7 +148,7 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
         if (start < pos.size()) {
             int count = end - start;
             char *rec = (char *)MemResizeElem(
-                mData, mSize, (char *)mData + mSize, 0, count * 3 + 4, "BandFaceDeform.cpp"
+                mData, mSize, (char *)mData + mSize, 0, count * 3 + 4, "BandFaceDeform"
             );
 
             *(unsigned short *)(rec + 0) = start;
