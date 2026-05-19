@@ -652,7 +652,7 @@
             "network/RVPackages/JobNintendoUpdateNameByGuest.cpp": "NonMatching",
             "network/RVPackages/NintendoClient.cpp": "MISSING",
             "network/RVPackages/NintendoManagementProtocolDDL.cpp": "MISSING",
-            "network/RVPackages/NintendoTokenDDL.cpp": "MISSING",
+            "network/RVPackages/NintendoTokenDDL.cpp": "NonMatching",
             "network/Services/AccountDataDDL.cpp": "Matching",
             "network/Services/AccountManagementClient.cpp": "MISSING",
             "network/Services/AccountManagementCommand.cpp": "MISSING",

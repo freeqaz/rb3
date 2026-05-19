@@ -15,7 +15,7 @@ namespace Quazal {
         virtual void StreamOut(class Message *);
 
         _DDL_Data &operator=(const Quazal::_DDL_Data &);
-        void Extract(class Message *, class _DDL_Data *);
-        void Add(Message *, const _DDL_Data &);
+        static void Extract(class Message *, class _DDL_Data *);
+        static void Add(Message *, const _DDL_Data &);
     };
 }
