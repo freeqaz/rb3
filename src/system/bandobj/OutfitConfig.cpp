@@ -1,11 +1,14 @@
 #include "bandobj/OutfitConfig.h"
 #include "bandobj/BandCharacter.h"
+#include "decomp.h"
 #include "math/Rand.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Dir.h"
 #include "utl/Symbols.h"
 
 INIT_REVS(OutfitConfig);
+
+DECOMP_FORCEACTIVE(OutfitConfig, "ObjPtr_p.h", "f.Owner()", "")
 
 RndMat *OutfitConfig::sMat;
 RndCam *OutfitConfig::sCam;
