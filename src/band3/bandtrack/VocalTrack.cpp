@@ -978,6 +978,25 @@ void VocalTrack::PollKaraoke(float f1) {
     }
 }
 
+void VocalTrack::StartUpdateArrows() {
+    for (int i = 0; i < 3; i++) {
+        if (mDir->GetPitchArrow(i)) {
+            mDir->GetPitchArrow(i)->unk18c = true;
+        }
+    }
+}
+
+void VocalTrack::UpdateUnusedArrows() {
+    for (int i = 0; i < 3; i++) {
+        PitchArrow *arrow = mDir->GetPitchArrow(i);
+        if (arrow && arrow->unk18c) {
+            arrow->SetFrameScore(0.0f, (VocalHUDColor)-1, 0.0f);
+            arrow->SetVolume(0.0f);
+            arrow->unk18c = false;
+        }
+    }
+}
+
 void UpdateSyllableText(String &str, bool b2, bool &bref) {
     bref = false;
     if (b2 && !str.empty() && str.rindex(-1) == '-') {
