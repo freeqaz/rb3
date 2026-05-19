@@ -3,6 +3,7 @@
 #include "game/Defines.h"
 #include "meta_band/Accomplishment.h"
 #include "meta_band/BandSongMgr.h"
+#include "meta_band/MusicLibrary.h"
 #include "meta_band/SongSortMgr.h"
 #include "meta_band/SongStatusMgr.h"
 #include "obj/Data.h"
@@ -156,4 +157,20 @@ bool AccomplishmentSongFilterConditional::IsSymbolEntryFulfilled(
         return false;
     else
         return AccomplishmentSongConditional::IsSymbolEntryFulfilled(profile, s);
+}
+
+void AccomplishmentSongFilterConditional::InitializeMusicLibraryTask(
+    MusicLibrary::MusicLibraryTask &o_rTask, BandProfile *i_pProfile
+) const {
+    int iNumCompleted = GetNumCompletedSongs(i_pProfile);
+    int iNumTotal = GetTotalNumSongs();
+    int iNumSongsInSetlist = iNumTotal - iNumCompleted;
+    MILO_ASSERT(iNumSongsInSetlist >= 0, 0x108);
+    if (iNumSongsInSetlist != 0) {
+        InqCompletedSongs(i_pProfile, o_rTask.filter.excludedSongs);
+    }
+    const SongSortMgr::SongFilter &rFilter = mFilter;
+    o_rTask.filter = rFilter;
+    o_rTask.allowDuplicates = false;
+    o_rTask.partSym = mPartDifficultySym;
 }
