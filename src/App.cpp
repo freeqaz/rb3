@@ -456,3 +456,7 @@ void App::RunWithoutDebugging() {
         PollTriFrame(gTriFrameTimer.mLastMs, f);
     }
 }
+
+// Stub: original implementation (.text:0x80010420, size 0xF8) not yet decompiled.
+// Empty body unblocks the link; behavior diff is a no-op poll path.
+static void CheckForPassivePlatformErrors() {}
