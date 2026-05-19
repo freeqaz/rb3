@@ -16,7 +16,12 @@ HiResScreen::BmpCache::BmpCache(unsigned int ui1, unsigned int ui2) {
     mTotalRows = ui2;
     mDirtyStart = 0;
     mDirtyEnd = 0;
-    mByteSize = mTotalRows % mRowsPerCacheLine;
+    while (true) {
+        mRowsPerCacheLine--;
+        if (mTotalRows % mRowsPerCacheLine != 0) continue;
+        mByteSize = mPixelsPerRow * 4 * mRowsPerCacheLine;
+        if (mByteSize <= 0xC5C100) break;
+    }
     MILO_ASSERT(mTotalRows % mRowsPerCacheLine == 0, 0x3B);
     mTotalNumCacheLines = mTotalRows / mRowsPerCacheLine;
     mFileNames = new String[mTotalNumCacheLines];
