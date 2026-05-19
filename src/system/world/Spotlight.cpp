@@ -551,9 +551,7 @@ void Spotlight::UpdateTransforms() {
 
 void Spotlight::CheckFloorSpotTransform() {
     if (DoFloorSpot()) {
-        float vz = GetFloorSpotTarget()->WorldXfm().v.z;
-        float uz = unk22c;
-        if (vz != uz) {
+        if (GetFloorSpotTarget()->WorldXfm().v.z != unk22c) {
             UpdateFloorSpotTransform(WorldXfm());
         }
     }
