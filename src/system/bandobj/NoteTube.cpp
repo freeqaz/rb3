@@ -246,13 +246,13 @@ void TubePlate::SetDeployTiming(float f1, float f2) {
 void TubePlate::PollDeploy(float f) {
     if (mBaked && mActiveMs < f && f < mInvalidateMs) {
         RndMesh::VertVector &verts = mMesh->Verts();
-        float f1 = mWidthX;
-        float f2 = mMatSize;
         float f3 = (mInvalidateMs - f) / (mInvalidateMs - mActiveMs);
+        float f1 = mWidthX * f3;
+        float f2 = mMatSize * f3;
         for (int i = verts.size() - 2; i < verts.size(); i++) {
             RndMesh::Vert &curvert = verts[i];
-            curvert.pos.x = f1 * f3;
-            curvert.uv.x = f2 * f3;
+            curvert.pos.x = f1;
+            curvert.uv.x = f2;
         }
     }
 }
