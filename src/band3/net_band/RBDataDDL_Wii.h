@@ -12,7 +12,7 @@ namespace Quazal {
         virtual ~RBDataClient() {}
         virtual void ExtractCallSpecificResults(Message *, ProtocolCallContext *);
 
-        bool CallDataPoint(ProtocolCallContext *, const String &, String *);
-        bool CallDataPointNoRet(ProtocolCallContext *, const String &);
+        int CallDataPoint(ProtocolCallContext *, const String &, String *);
+        int CallDataPointNoRet(ProtocolCallContext *, const String &);
     };
 }
