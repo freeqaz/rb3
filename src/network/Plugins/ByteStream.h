@@ -16,6 +16,7 @@ namespace Quazal {
         bool SetPosition(unsigned int);
         bool Append(const unsigned char *, unsigned int, unsigned int);
         bool Extract(unsigned char *, unsigned int, unsigned int);
+        bool AppendString(const char *, unsigned int);
 
         ByteStream &operator<<(const Buffer &);
         ByteStream &operator>>(Buffer &);
