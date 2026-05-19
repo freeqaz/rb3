@@ -12,7 +12,15 @@ static const float sMaxThreshold = 80.0f;
 
 INIT_REVS(CharLookAt);
 
-void DrawBounds(Vector3, const Hmx::Matrix3 &, const Vector3 &, RndGraph *);
+void DrawBounds(Vector3 lookDir, const Hmx::Matrix3 &rotMat, const Vector3 &pos, RndGraph *graph) {
+    float scale = 10.0f;
+    Normalize(lookDir, lookDir);
+    Multiply(lookDir, rotMat, lookDir);
+    lookDir *= scale;
+    lookDir += pos;
+    Hmx::Color green(0, 1, 0, 1);
+    graph->AddLine(pos, lookDir, green, false);
+}
 
 CharLookAt::CharLookAt()
     : mSource(this), mPivot(this), mDest(this), mHalfTime(0.0f), mMinYaw(-80.0f),
