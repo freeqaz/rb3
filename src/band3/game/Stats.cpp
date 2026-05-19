@@ -98,7 +98,7 @@ void Stats::SetFinalized(bool b) {
 void Stats::UpdateBestSolo(int i) {
     int item = i;
     SaveHighest(mBestSolos, item);
-    mSoloPercentage = Max(mBestSolos[0], 0);
+    mSoloPercentage = std::max(mBestSolos[0], 0);
 }
 
 void Stats::SetSoloButtonedSoloPercentage(int i) {

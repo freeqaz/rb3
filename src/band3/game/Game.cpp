@@ -503,13 +503,17 @@ int Game::GetScoringTracks() const {
 }
 
 EndGameResult Game::GetResult(bool won) {
+    EndGameResult result;
     if (won) {
         if (MetaPerformer::Current()->SongEndsWithEndgameSequence()) {
-            return kWonFinale;
+            result = kWonFinale;
+        } else {
+            result = kWon;
         }
-        return kWon;
+    } else {
+        result = kLost;
     }
-    return kLost;
+    return result;
 }
 
 EndGameResult Game::GetResultForUser(BandUser *) {
