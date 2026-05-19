@@ -108,7 +108,7 @@ void VorbisReader::Poll(float until) {
             Timer timer;
             timer.Start();
             bool b1 = !unke0;
-            while (timer.Ms() < until || b1) {
+            while (Timer::CyclesToMs(timer.mCycles) < until || b1) {
                 b1 = false;
                 TryConsumeData();
                 if (!TryDecode())
