@@ -319,7 +319,7 @@ void TourPerformerLocal::ChooseQuestFilters() {
         }
     }
     cTimer.Stop();
-    TheDebug << MakeString("Quest Filter selection took %f Milliseconds\n", cTimer.Ms());
+    TheDebug << MakeString("Quest Filter selection took %f Milliseconds\n", Timer::CyclesToMs(cTimer.mCycles));
 }
 
 bool TourPerformerLocal::SanityCheckFilterAgainstType(Symbol s1, Symbol s2) {
