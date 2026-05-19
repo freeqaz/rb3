@@ -86,7 +86,10 @@ public:
         mMessage = message;
         mTimer.Restart();
     }
-    ~MessageTimer() { AddTime(mObject, mMessage, mTimer.SplitMs()); }
+    ~MessageTimer() {
+        mTimer.Split();
+        AddTime(mObject, mMessage, Timer::CyclesToMs(mTimer.mCycles));
+    }
     static bool Active() { return sActive; }
     static void AddTime(Hmx::Object *o, Symbol msg, float ms);
     static void Init();
