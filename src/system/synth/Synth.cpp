@@ -287,16 +287,16 @@ DECOMP_FORCEACTIVE(Synth, "%i", "0", "stream", "chan %i", "Total active Sequence
 
 void Synth::DrawMeterScale(float &y) {
     float db = -40.0f;
+    float height = (float)TheRnd->Width();
     Hmx::Color color(1.0f, 1.0f, 1.0f, 1.0f);
-    int w = TheRnd->Width();
-    float left = (float)w * 0.2f;
-    float barWidth = (float)w * 0.7f;
+    float left = height * 0.2f;
+    float width = height * 0.7f;
     Vector2 pos(left, y);
     TheRnd->DrawString(MakeString("%i", (int)db), pos, color, true);
     db *= 0.5f;
-    Vector2 pos2(left + barWidth * 0.5f, y);
+    Vector2 pos2(left + width * 0.5f, y);
     TheRnd->DrawString(MakeString("%i", (int)db), pos2, color, true);
-    Vector2 pos3(left + barWidth, y);
+    Vector2 pos3(left + width, y);
     TheRnd->DrawString("0", pos3, color, true);
     y += 16.0f;
 }
