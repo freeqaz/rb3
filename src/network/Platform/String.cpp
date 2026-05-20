@@ -107,10 +107,13 @@ namespace {
 
 namespace Quazal {
     String operator+(const Quazal::String &lhs, const Quazal::String &rhs) {
-        const char *left = lhs.m_szContent;
-        const char *right;
+        // Declaring `right` first with its initializer (then reassigning it
+        // below) coalesces the rhs base pointer with the right-content pointer
+        // in the same callee-saved register, matching the target's reg alloc.
+        const char *right = rhs.m_szContent;
         unsigned int uiSizeLeft;
         unsigned int uiSizeRight;
+        const char *left = lhs.m_szContent;
         if (left == nullptr) {
             uiSizeLeft = 0;
         } else {
