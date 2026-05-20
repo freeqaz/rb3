@@ -934,14 +934,15 @@ void MetaPerformer::SelectRandomVenue() {
     cfg->FindFloat(artist_specific_probability);
     bool autoVox = TheModifierMgr->IsModifierActive(mod_auto_vocals);
     BandProfile *profile = TheProfileMgr.GetPrimaryProfile();
-    if (!autoVox && profile && profile->HasCampaignKey(key_video_venues)) {
+    if (autoVox || (profile && profile->HasCampaignKey(key_video_venues))) {
         Symbol s50 = gNullStr;
-        cfg = SystemConfig(video_venues, venues);
+        DataArray *venuesCfg = SystemConfig(video_venues, venues);
         Symbol s54 = gNullStr;
-        for (int i = 1; i < cfg->Size(); i++) {
-            DataArray *curArr = cfg->Array(i);
+        DataArray *artistArr;
+        for (int i = 1; i < venuesCfg->Size(); i++) {
+            DataArray *curArr = venuesCfg->Array(i);
             s54 = curArr->Sym(0);
-            DataArray *artistArr = curArr->FindArray(artists, false);
+            artistArr = curArr->FindArray(artists, false);
             bool b2 = false;
             if (artistArr && !mSongs.empty()) {
                 b2 = true;
@@ -969,20 +970,20 @@ void MetaPerformer::SelectRandomVenue() {
             }
         }
         if (!s50.Null()) {
-            if (RandomFloat()
-                    < SystemConfig(video_venues)->FindFloat(artist_specific_probability)
-                || autoVox) {
+            float artistProb = SystemConfig(video_venues)
+                                   ->FindFloat(artist_specific_probability);
+            if (artistProb > RandomFloat() || autoVox) {
                 SetVenue(s50);
                 return;
             }
         } else {
-            if (RandomFloat() < SystemConfig(video_venues)->FindFloat(probability)
-                || autoVox) {
+            float prob1 = SystemConfig(video_venues)->FindFloat(probability);
+            if (prob1 > RandomFloat() || autoVox) {
                 std::vector<Symbol> validVenues;
                 DataArray *venuesVideoCfg = SystemConfig(venues_video);
                 for (int i = 1; i < venuesVideoCfg->Size(); i++) {
                     Symbol curSym = venuesVideoCfg->Sym(i);
-                    if (!cfg->FindArray(curSym)->FindArray(artists, false)) {
+                    if (!venuesCfg->FindArray(curSym)->FindArray(artists, false)) {
                         validVenues.push_back(curSym);
                     }
                 }
