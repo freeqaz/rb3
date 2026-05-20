@@ -639,7 +639,7 @@ void VocalPart::GetNoteRange(float ms, int &startOut, int &endOut) {
     float slop = mSlop;
     float lower = ms - slop;
     float upper = ms + slop;
-    VocalNoteList *list = mVocalNoteList;
+    const VocalNoteList *list = mVocalNoteList;
     startOut = -1;
     endOut = -1;
     const VocalNote *it = std::upper_bound(
