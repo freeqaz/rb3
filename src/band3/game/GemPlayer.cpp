@@ -2183,10 +2183,10 @@ void GemPlayer::HandleCommonPhraseNote(int hit, int gem_id) {
         if (hit != 0) {
             int phraseId = TheSongDB->GetPhraseID(mTrackNum, gem_id);
             if (phraseId != -1 && GetBandTrack() != nullptr) {
-                float fraction = GetCommonPhraseFraction(phraseId);
-                GetTrackPanelDir()->GetEndingBonus()->SetProgress(
-                    GetBandTrack()->mTrackIdx, fraction
-                );
+                int trackIdx;
+                EndingBonus *bonus = GetTrackPanelDir()->GetEndingBonus();
+                trackIdx = GetBandTrack()->mTrackIdx;
+                bonus->SetProgress(trackIdx, GetCommonPhraseFraction(phraseId));
             }
         }
     }
