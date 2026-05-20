@@ -447,19 +447,17 @@ void StandardStream::setJumpSamplesFromMs(float f1, float f2) {
     }
     if (unk144 != -1) {
         if (mJumpFromSamples >= unk144) {
-            String str = mFile ? mFile->Filename().c_str() : "SynthStream";
             MILO_WARN(
                 "%s: JumpFromSamples (%g sec) exceeds the length of the stream (%g sec)!",
-                str,
+                mFile ? mFile->Filename() : String("SynthStream"),
                 f1 / 1000.0f,
                 SampToMs(unk144) / 1000.0f
             );
         }
         if (mJumpToSamples >= unk144) {
-            String str = mFile ? mFile->Filename().c_str() : "SynthStream:";
             MILO_WARN(
                 "%s: JumpToSamples (%g sec) exceeds the length of the stream (%g sec)!",
-                str,
+                mFile ? mFile->Filename() : String("SynthStream:"),
                 f2 / 1000.0f,
                 SampToMs(unk144) / 1000.0f
             );
