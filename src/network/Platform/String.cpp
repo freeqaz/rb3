@@ -90,9 +90,15 @@ namespace Quazal {
 
 namespace {
     Quazal::String _Copy(const char *c1, unsigned int s1, const char *c2, unsigned int s2) {
+        // size includes the null terminator so the allocated buffer fits
+        // strcpy(s3, c1) + strcpy(s3 + s1, c2) (total s1 + s2 + 1 bytes).
+        // The 4 extra prefix bytes hold the size.
+        // Remaining diff is an r30<->r31 swap inside the inlined "" ctor and
+        // a string-pool layout offset on the second Allocate's __FILE__ arg
+        // (address relocation noise; ~88.6% matched).
         Quazal::String s = "";
         YeetString(s.m_szContent);
-        int size = s1 + s2;
+        unsigned int size = s1 + s2 + 1;
         u32 *str = (u32 *)QUAZAL_DEFAULT_ALLOC(size + 4, 203, _InstType9);
         *str = size;
         s.m_szContent = (char *)&str[1];
