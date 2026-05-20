@@ -56,24 +56,41 @@ def unit_matches(unit_name: str, pattern: str) -> bool:
 
 
 def _func_percent(func: dict) -> float:
-    """Match% in the same convention as ingest_report: prefer fuzzy_match_percent."""
+    """Fuzzy match% — the 'how close' ranking metric. Stored as
+    decomp.db.current_percent (the long-standing convention) and used to
+    sort partial work. NOT the completeness signal — see _func_normalized."""
     pct = func.get("fuzzy_match_percent")
     if pct is None:
         pct = func.get("match_percent")
     return float(pct) if pct is not None else 0.0
 
 
-def classify_function(func: dict) -> str:
-    """Return one of: complete, partial, unimplemented."""
-    size = int(func.get("size", 0) or 0)
-    pct = _func_percent(func)
+def _func_normalized(func: dict) -> float:
+    """Completeness signal. `match_percent_normalized` is objdiff's own
+    matched-function metric — its per-unit `measures.matched_functions`
+    count equals count(match_percent_normalized >= 100). A byte-perfect
+    function reads exactly 100.0 here even when `fuzzy_match_percent` dips
+    slightly below 100, so the verdict MUST key off this field, not fuzzy.
+    Falls back to the fuzzy percent only if the field is absent."""
+    pct = func.get("match_percent_normalized")
+    if pct is None:
+        return _func_percent(func)
+    return float(pct)
 
+
+def classify_function(func: dict) -> str:
+    """Return one of: complete, partial, unimplemented.
+
+    'complete' is decided by match_percent_normalized (objdiff's
+    matched-function signal), NOT fuzzy_match_percent — a genuinely
+    complete function routinely has fuzzy_match_percent a hair below 100."""
+    size = int(func.get("size", 0) or 0)
     if size == 0:
         # 0-size functions shouldn't show up in practice — treat as unimplemented.
         return "unimplemented"
-    if pct >= 100.0 - 1e-6:
+    if _func_normalized(func) >= 100.0 - 1e-6:
         return "complete"
-    if pct > 0:
+    if _func_percent(func) > 0:
         return "partial"
     return "unimplemented"
 
