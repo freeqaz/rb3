@@ -14,9 +14,10 @@ namespace Quazal {
             }
             Buffer buffer((unsigned char)GetChecksumLength());
             ComputeChecksum(*buf, &buffer);
+            unsigned char len;
             unsigned int it = mTransmittedChecksumLength;
             if (it < (unsigned char)GetChecksumLength()) {
-                unsigned char len = GetChecksumLength();
+                len = GetChecksumLength();
                 for (; it < len; it++) {
                     buffer[mTransmittedChecksumLength - 1] ^= buffer[it];
                 }
@@ -46,9 +47,10 @@ namespace Quazal {
                 );
                 Buffer buf38((unsigned char)GetChecksumLength());
                 ComputeChecksum(*buf, &buf38);
+                unsigned char len;
                 unsigned int it = mTransmittedChecksumLength;
                 if (it < (unsigned char)GetChecksumLength()) {
-                    unsigned char len = GetChecksumLength();
+                    len = GetChecksumLength();
                     for (; it < len; it++) {
                         buf38[mTransmittedChecksumLength - 1] ^= buf38[it];
                     }
