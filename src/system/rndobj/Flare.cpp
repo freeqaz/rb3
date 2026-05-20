@@ -5,7 +5,9 @@
 #include "os/Debug.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Draw.h"
+#include "rndobj/Env.h"
 #include "rndobj/HiResScreen.h"
+#include "rndobj/Mat.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/Trans.h"
 #include "rndobj/Utl.h"
@@ -103,7 +105,128 @@ void RndFlare::SetPointTest(bool b) {
     mPointTest = b;
 }
 
-void RndFlare::DrawShowing() {}
+void RndFlare::DrawShowing() {
+    if (TheRnd->DrawMode() != 0)
+        return;
+    RndCam *cam = RndCam::sCurrent;
+
+    Vector2 screenPos;
+    float depth = cam->WorldToScreen(WorldXfm().v, screenPos);
+
+    float scale;
+    Hmx::Rect localRect = CalcRect(screenPos, scale);
+
+    if (RectOffscreen(localRect) || depth <= 0.0f) {
+        mTestDone = false;
+        mLastDone = mTestDone;
+        mStep = 0;
+        unkec = 0.0f;
+        return;
+    }
+
+    bool useOcc = false;
+    if (mPointTest && !TheHiResScreen.IsActive()) {
+        useOcc = !mLastDone && mTestDone;
+        mLastDone = mTestDone;
+        mTestDone = false;
+
+        const Transform &camXfm = cam->WorldXfm();
+        const Transform &flareXfm = WorldXfm();
+        Vector3 dir;
+        dir.z = camXfm.v.z - flareXfm.v.z;
+        dir.y = camXfm.v.y - flareXfm.v.y;
+        dir.x = camXfm.v.x - flareXfm.v.x;
+        Normalize(dir, dir);
+
+        const Transform &flareXfm2 = WorldXfm();
+        float offset = mOffset;
+        dir.x = dir.x * offset + flareXfm2.v.x;
+        dir.y = dir.y * offset + flareXfm2.v.y;
+        dir.z = dir.z * offset + flareXfm2.v.z;
+        TheRnd->TestPoint(dir, this);
+    } else {
+        unkec = scale;
+        mVisible = true;
+    }
+
+    if (useOcc) {
+        mStep = mVisible ? mSteps : 0;
+    } else {
+        int steps = mSteps;
+        int newStep = (mStep + mVisible * 2) - 1;
+        if (newStep > steps) {
+        } else {
+            steps = newStep & ~(newStep >> 31);
+        }
+        mStep = steps;
+    }
+
+    float ratio = (float)mStep / (float)mSteps;
+    if (mAreaTest) {
+        ratio *= unkec / (localRect.w * localRect.h);
+    }
+
+    if (ratio > 0.0f) {
+        if (mMat) {
+            float t;
+            if (mRange.x != mRange.y) {
+                t = (depth - mRange.y) / (mRange.x - mRange.y);
+            } else {
+                t = 1.0f;
+            }
+            float alpha = Clamp(0.0f, 1.0f, t * ratio);
+
+            Hmx::Color col;
+            col.red = alpha * 0.6f;
+            col.green = alpha * 0.6f;
+            col.blue = alpha * 0.6f;
+            col.alpha = 1.0f;
+            if (mMat->mUseEnviron) {
+                RndEnviron *env = RndEnviron::sCurrent;
+                if (env) {
+                    const Hmx::Color &ambColor = env->AmbientColor();
+                    col.red *= ambColor.red;
+                    col.green *= ambColor.green;
+                    col.blue *= ambColor.blue;
+                    col.alpha *= ambColor.alpha;
+                }
+            }
+            mMat->mColor.red = col.red;
+            mMat->mColor.green = col.green;
+            mMat->mColor.blue = col.blue;
+            mMat->mDirty |= 1;
+        }
+
+        if (mMat && mMat->mTexGen == kTexGenXfm) {
+            Transform texMat;
+            texMat = mMat->TexXfm();
+            float angle = screenPos.x - 0.5f;
+            float c = Cosine(angle);
+            float s = Sine(angle);
+            texMat.m.x.x = c;
+            texMat.m.x.y = s;
+            texMat.m.x.z = 0.0f;
+            texMat.m.y.x = -s;
+            texMat.m.y.y = c;
+            texMat.m.y.z = 0.0f;
+            texMat.m.z.x = 0.0f;
+            texMat.m.z.y = 0.0f;
+            texMat.m.z.z = 1.0f;
+            mMat->mTexXfm = texMat;
+            mMat->mDirty |= 2;
+        }
+
+        Hmx::Rect *drawRect;
+        if (mAreaTest) {
+            drawRect = &mArea;
+        } else {
+            drawRect = &CalcRect(screenPos, scale);
+        }
+        Hmx::Rect rect = *drawRect;
+        Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+        TheRnd->DrawRect(rect, white, mMat, NULL, NULL);
+    }
+}
 
 Hmx::Rect &RndFlare::CalcRect(Vector2 &vref, float &fref) {
     float flareSize = mSizes.x;
