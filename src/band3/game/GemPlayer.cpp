@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "PracticePanel.h"
 #include "bandobj/BandTrack.h"
+#include "bandobj/EndingBonus.h"
 #include "bandobj/GemTrackDir.h"
 #include "bandtrack/GemManager.h"
 #include "bandtrack/TrackPanel.h"
@@ -2174,6 +2175,21 @@ int GemPlayer::GetSoloData(int tick, float &pct, float &solo_pct, int &numGems) 
         solo_pct = (100.0f * (float)solo) / (float)numGems;
     }
     return 1;
+}
+
+void GemPlayer::HandleCommonPhraseNote(int hit, int gem_id) {
+    if (TheGame->mProperties.mAllowOverdrivePhrases) {
+        mCommonPhraseCapturer->HandlePhraseNote(this, mTrackNum, gem_id, hit != 0);
+        if (hit != 0) {
+            int phraseId = TheSongDB->GetPhraseID(mTrackNum, gem_id);
+            if (phraseId != -1 && GetBandTrack() != nullptr) {
+                float fraction = GetCommonPhraseFraction(phraseId);
+                GetTrackPanelDir()->GetEndingBonus()->SetProgress(
+                    GetBandTrack()->mTrackIdx, fraction
+                );
+            }
+        }
+    }
 }
 
 float GemPlayer::GetCommonPhraseFraction(int tick) {
