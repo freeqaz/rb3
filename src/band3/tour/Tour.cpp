@@ -649,6 +649,7 @@ SongSortMgr::SongFilter Tour::CreateArtistFilter(const char *artistName) {
 
 #pragma push
 #pragma dont_inline on
+#pragma pool_data off
 void Tour::ChooseRandomSongsForQuestFilter(int count, Symbol questSym1, Symbol questSym2, bool allowDups) {
     SongSortMgr::SongFilter filter;
     Symbol partSym(gNullStr);
