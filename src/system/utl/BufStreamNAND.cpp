@@ -189,7 +189,8 @@ MCResult BufStreamNAND::HandleResultNAND(s32 nandResult) {
     default:
         if (nandResult == NAND_RESULT_ALLOC_FAILED) {
             MILO_WARN("Unexpected Wii filesys error: %d (NAND_RESULT_ALLOC_FAILED)\n", nandResult);
-        } else if (nandResult == NAND_RESULT_FATAL_ERROR) {
+        }
+        if (nandResult == NAND_RESULT_FATAL_ERROR) {
             MILO_WARN("Unexpected Wii filesys error: %d (NAND_RESULT_FATAL_ERROR)\n", nandResult);
         }
         MILO_WARN("Unexpected Wii filesys error: %d\n", nandResult);
