@@ -213,7 +213,7 @@ static Symbol local("local");
 
 Symbol NetCacheMgr::CheatNextServer() {
     std::list<ServerData>::iterator s = mServers.begin();
-    for (; s != mServers.end() && s->type != mServerType; s++)
+    for (; s != mServers.end() && mServerType != s->type; s++)
         ;
     MILO_ASSERT(s != mServers.end(), 0x22a);
     ++s;
