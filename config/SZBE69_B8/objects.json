@@ -168,7 +168,7 @@
             "band3/meta_band/BandStoreUIPanel.cpp": "NonMatching",
             "band3/meta_band/BandUI.cpp": "NonMatching",
             "band3/meta_band/CalibrationPanel.cpp": "NonMatching",
-            "band3/meta_band/Campaign.cpp": "MISSING",
+            "band3/meta_band/Campaign.cpp": "NonMatching",
             "band3/meta_band/CampaignCareerLeaderboardPanel.cpp": {
                 "status": "LinkIssues",
                 "comment": "bss meme"
@@ -779,7 +779,7 @@
             "network/Platform/HighResolutionChrono.cpp": "MISSING",
             "network/Platform/HighResolutionClock.cpp": "MISSING",
             "network/Platform/Inet.cpp": "Matching",
-            "network/Platform/InetAddress.cpp": "MISSING",
+            "network/Platform/InetAddress.cpp": "NonMatching",
             "network/Platform/InterfaceInfo.cpp": "MISSING",
             "network/Platform/InterfaceTable.cpp": "MISSING",
             "network/Platform/IOCompletionContext.cpp": "Matching",
@@ -1423,7 +1423,7 @@
             "system/utl/BinStream.cpp": "NonMatching",
             "system/utl/BinkIntegration.cpp": "NonMatching",
             "system/utl/BufStream.cpp": "Matching",
-            "system/utl/BufStreamNAND.cpp": "MISSING",
+            "system/utl/BufStreamNAND.cpp": "NonMatching",
             "system/utl/Cache.cpp": "Matching",
             "system/utl/Cache_Wii.cpp": "NonMatching",
             "system/utl/CacheMgr.cpp": "Matching",
@@ -1819,7 +1819,7 @@
             "sdk/PowerPC_EABI_Support/MetroTRK/string_TRK.c": "MISSING",
             "sdk/PowerPC_EABI_Support/MetroTRK/support.c": "MISSING",
             "sdk/PowerPC_EABI_Support/MetroTRK/targcont.c": "MISSING",
-            "sdk/PowerPC_EABI_Support/MetroTRK/target_options.c": "MISSING",
+            "sdk/PowerPC_EABI_Support/MetroTRK/target_options.c": "Matching",
             "sdk/PowerPC_EABI_Support/MetroTRK/targimpl.c": "MISSING",
             "sdk/PowerPC_EABI_Support/MetroTRK/targsupp.s": "MISSING"
         }
@@ -2196,7 +2196,7 @@
             "sdk/ec/src/ec_chkDownload_bw.cpp": "MISSING",
             "sdk/ec/src/ec_connect.cpp": "MISSING",
             "sdk/ec/src/ec_content.cpp": "MISSING",
-            "sdk/ec/src/ec_csup.cpp": "MISSING",
+            "sdk/ec/src/ec_csup.cpp": "NonMatching",
             "sdk/ec/src/ec_deleteContents.cpp": "MISSING",
             "sdk/ec/src/ec_dk.cpp": "MISSING",
             "sdk/ec/src/ec_downloadContents.cpp": "MISSING",
