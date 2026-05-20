@@ -84,8 +84,8 @@ float WiiLight::GetLightFieldOfView() {
 
 Vector3 WiiLight::CalcAdjustedPos() {
     Transform t = WorldXfm();
-    float f = (mBotRadius - mTopRadius);
-    Vector3 v(0, -(mTopRadius / (f / mRange)), 0);
+    float top = mTopRadius;
+    Vector3 v(0, -(top / ((mBotRadius - top) / mRange)), 0);
     Multiply(v, t.m, v);
     Add(v, t.v, v);
     return v;
