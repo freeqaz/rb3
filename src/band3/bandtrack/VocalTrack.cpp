@@ -498,7 +498,8 @@ LyricPlate *VocalTrack::GetNextLyricPlate(std::deque<LyricPlate *> &plates, bool
     } else {
         grew = false;
     }
-    if (grew && sDumpLyricPlates) {
+    bool doDump = grew && sDumpLyricPlates;
+    if (doDump) {
         MILO_LOG("Max Lyric Plates: %d\n", maxNumLyricPlates);
     }
     return plates.back();
@@ -967,7 +968,7 @@ void VocalTrack::PollKaraoke(float f1) {
             UpdateUnusedArrows();
         }
         float f7 = 0;
-        for (int i = i1; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             float clamped = Clamp<float>(0, 1, mPlayer->FramePhraseMeterFrac(i));
             int rating = mPlayer->CalculatePhraseRating(clamped);
             mDir->mStreakMeter->SetPartPct(i, clamped, rating <= 4);

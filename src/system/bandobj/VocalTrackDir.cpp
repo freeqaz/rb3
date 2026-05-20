@@ -863,7 +863,10 @@ DECOMP_FORCEACTIVE(
 )
 
 void VocalTrackDir::ApplyArrowStyle(Hmx::Object *o) {
-    if (o && o->Type() == arrow_style) {
+    bool isArrow;
+    if (!o) isArrow = false;
+    else isArrow = (o->Type() == arrow_style);
+    if (isArrow) {
         if (mPitchArrow1 && o->Property(arrow_A, true)->NotNull()) {
             FilePath fp(o->Property(arrow_A, true)->Str());
             mPitchArrow1->SetProxyFile(fp, false);
