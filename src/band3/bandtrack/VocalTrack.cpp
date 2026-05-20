@@ -959,16 +959,17 @@ void VocalTrack::Poll(float f1) {
 
 void VocalTrack::PollKaraoke(float f1) {
     if (mPlayer) {
-        int i1 = mPlayer->NumSingers();
+        int numSingers = mPlayer->NumSingers();
+        int i;
         if (!unk2e5) {
             StartUpdateArrows();
-            for (int i = 0; i < i1; i++) {
+            for (i = 0; i < numSingers; i++) {
                 UpdatePitchArrow(f1, i);
             }
             UpdateUnusedArrows();
         }
         float f7 = 0;
-        for (int i = 0; i < 3; i++) {
+        for (i = 0; i < 3; i++) {
             float clamped = Clamp<float>(0, 1, mPlayer->FramePhraseMeterFrac(i));
             int rating = mPlayer->CalculatePhraseRating(clamped);
             mDir->mStreakMeter->SetPartPct(i, clamped, rating <= 4);
