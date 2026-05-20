@@ -31,6 +31,8 @@ public:
         void SetAspect(float);
         void Begin(const char *, float, bool, bool, bool, bool, int, BinStream *);
         void Terminate();
+
+        char mPad[0xe0]; // size from target binary
     };
 
     Movie();
