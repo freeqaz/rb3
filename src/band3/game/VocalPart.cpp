@@ -547,10 +547,9 @@ float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const
     if (note.mBeginPitch == note.mEndPitch) {
         // Loop 1: no pitch bend (unpitched or single pitch)
         float threshold = 0.0f;
-        float frameTime = kFrameTimeMs;
         while (fBeginRel < fEndRel) {
             float spC = fEndRel - fBeginRel;
-            float stepMs = std::min(spC, frameTime);
+            float stepMs = std::min(spC, kFrameTimeMs);
             float weight;
             if (fBeginRel < threshold) {
                 weight = threshold;
@@ -566,13 +565,12 @@ float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const
         // Loop 2: pitch bend
         float f22 = 1.0f - (float)pow(4.0 / 7.0, 2.0);
         float zeroThresh = accum;
-        float frameTime = kFrameTimeMs;
         float half = 0.5f;
         float two = 2.0f;
         float seventeenFourths = 1.75f;
         while (fBeginRel < fEndRel) {
             float sp8 = fEndRel - fBeginRel;
-            float stepMs = std::min(sp8, frameTime);
+            float stepMs = std::min(sp8, kFrameTimeMs);
             float weight;
             if (fBeginRel < zeroThresh) {
                 weight = 1.0f;
