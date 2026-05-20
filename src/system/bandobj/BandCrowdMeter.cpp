@@ -116,7 +116,7 @@ void BandCrowdMeter::Poll() {
             if (curicon.Used() && curicon.unk20) {
                 float f15 = curicon.unk1c;
                 curicon.unkc->GetFrame();
-                if (f13 >= f15) {
+                if (f15 >= f13) {
                     if (!curicon.unk19) {
                         curicon.unk19 = 1;
                         mOrderedPeaks.push_back(curicon.unkc);
