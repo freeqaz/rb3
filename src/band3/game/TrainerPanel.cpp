@@ -27,6 +27,9 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include "midi/DataEvent.h"
+#include "obj/Data.h"
+#include <map>
 
 TrainerPanel *TheTrainerPanel;
 
@@ -196,7 +199,70 @@ DECOMP_FORCEACTIVE(
     "Unknown trainer section name for start norm \n"
 )
 
-void TrainerPanel::InternalInitSections(const DataEventList *) {}
+void TrainerPanel::InternalInitSections(const DataEventList *events) {
+    ClearSections();
+    std::map<Symbol, TrainerSection> sectionMap;
+    for (int i = 0; i < events->Size(); i++) {
+        const DataEvent &ev = events->Event(i);
+        Symbol tok = ((const DataArray *)ev.mMsg)->Node(1).Sym(((const DataArray *)ev.mMsg));
+        int tick = (int)BeatToTick(ev.start);
+        if (tok == TheGameMode->Property("begin_token", true)->Sym()) {
+            Symbol name = ((const DataArray *)ev.mMsg)->Node(2).Sym(((const DataArray *)ev.mMsg));
+            std::map<Symbol, TrainerSection>::iterator it = sectionMap.find(name);
+            if (it != sectionMap.end()) {
+                TheDebug.Notify(MakeString("Duplicate trainer section detected - %s \n", name.Str()));
+            } else {
+                TrainerSection sect;
+                sect.SetName(name);
+                sect.SetStartTick(FixupTick(tick));
+                sect.SetStartEarly(
+                    !!TheGameMode->Property("song_lessons", true)->Int()
+                );
+                sectionMap[name] = sect;
+            }
+        } else if (tok == TheGameMode->Property("end_token", true)->Sym()) {
+            Symbol name = ((const DataArray *)ev.mMsg)->Node(2).Sym(((const DataArray *)ev.mMsg));
+            std::map<Symbol, TrainerSection>::iterator it = sectionMap.find(name);
+            if (it == sectionMap.end()) {
+                TheDebug.Notify(MakeString("Unknown trainer section end - %s \n", name.Str()));
+            } else {
+                TrainerSection &sect = it->second;
+                sect.SetEndTick(FixupTick(tick));
+                if (sect.SanityCheck()) {
+                    AddSection(sect);
+                } else {
+                    TheDebug.Notify(MakeString("Invalid trainer section - %s \n", name.Str()));
+                }
+                sectionMap.erase(it);
+            }
+        } else if (tok == TheGameMode->Property("challenge_token", true)->Sym()) {
+            Symbol name = ((const DataArray *)ev.mMsg)->Node(2).Sym(((const DataArray *)ev.mMsg));
+            Symbol challenge = ((const DataArray *)ev.mMsg)->Node(3).Sym(((const DataArray *)ev.mMsg));
+            std::map<Symbol, TrainerSection>::iterator it = sectionMap.find(name);
+            if (it == sectionMap.end()) {
+                TheDebug.Notify(MakeString("Unknown trainer section name for challenge - %s \n", name.Str()));
+            } else {
+                it->second.SetChallengeName(challenge);
+            }
+        } else if (tok == TheGameMode->Property("start_early", true)->Sym()) {
+            Symbol name = ((const DataArray *)ev.mMsg)->Node(2).Sym(((const DataArray *)ev.mMsg));
+            std::map<Symbol, TrainerSection>::iterator it = sectionMap.find(name);
+            if (it == sectionMap.end()) {
+                TheDebug.Notify(MakeString("Unknown trainer section name for start early \n"));
+            } else {
+                it->second.SetStartEarly(true);
+            }
+        } else if (tok == TheGameMode->Property("start_norm", true)->Sym()) {
+            Symbol name = ((const DataArray *)ev.mMsg)->Node(2).Sym(((const DataArray *)ev.mMsg));
+            std::map<Symbol, TrainerSection>::iterator it = sectionMap.find(name);
+            if (it == sectionMap.end()) {
+                TheDebug.Notify(MakeString("Unknown trainer section name for start norm \n"));
+            } else {
+                it->second.SetStartEarly(false);
+            }
+        }
+    }
+}
 
 void TrainerPanel::OnSuccess(int idx) {
     if (idx == 0) {
