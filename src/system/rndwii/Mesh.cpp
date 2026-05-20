@@ -94,6 +94,8 @@ void DisplayList::Start(_GXPrimitive pr, _GXVtxFmt f, unsigned short us) {
     sCurr = (void *)((u8 *)sCurr + 2);
 }
 
+#pragma push
+#pragma pool_data off
 void DisplayList::End() {
     MILO_ASSERT(sCurr, 174);
     MILO_ASSERT(!mSize && !mData, 175);
@@ -110,6 +112,7 @@ void DisplayList::End() {
     sCurr = NULL; // memleak? mem is alloc'd but not freed
     MemPopHeap();
 }
+#pragma pop
 
 DisplayList &DisplayList::operator<<(unsigned short us) {
     MILO_ASSERT(sCurr, 202);
