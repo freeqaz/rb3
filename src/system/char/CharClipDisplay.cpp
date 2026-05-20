@@ -75,6 +75,8 @@ void CharClipDisplay::DrawBeatString(float beat, const Hmx::Color &color) {
     DrawBeatString(text, beat, color);
 }
 
+#pragma push
+#pragma fp_contract off
 __declspec(noinline) void
 CharClipDisplay::SetStartEnd(float start, float end, bool resetZoom) {
     unk4 = start;
@@ -84,14 +86,18 @@ CharClipDisplay::SetStartEnd(float start, float end, bool resetZoom) {
     float zoomRange = 16.0f / sZoom;
     if (resetZoom) {
         float margin = sEm * 3.0f;
-        float screenWidth = (float)TheRnd->Width();
+        int width = TheRnd->Width();
         float textOffset = unk64 + unk14 + margin;
-        unkc = unk1c - ((screenWidth * 0.5f - textOffset) * zoomRange) / screenWidth;
-        unk10 = (((screenWidth - margin) - textOffset) * zoomRange)
+        unkc = unk1c - (((float)width * 0.5f - textOffset) * zoomRange) / (float)width;
+        unk10 = ((((float)width - margin) - textOffset) * zoomRange)
                 / (float)TheRnd->Width() + unkc;
         GetX(unk1c);
     } else {
-        if (end - start > zoomRange) {
+        // (float)(double)x casts force CW to emit `frsp` (single-precision round)
+        // here, matching the original binary's else-branch instruction sequence.
+        float fstart = (float)(double)start;
+        float fend = (float)(double)end;
+        if (fend - fstart > zoomRange) {
             float cursor = unk1c;
             float halfZoom = zoomRange * 0.5f;
             if (cursor < halfZoom + start) {
@@ -113,6 +119,7 @@ CharClipDisplay::SetStartEnd(float start, float end, bool resetZoom) {
         }
     }
 }
+#pragma pop
 
 void CharClipDisplay::DrawBlend(float beat, float weight) {
     Hmx::Rect rect(0.0f, unk18 + 1.0f, 0.0f, 2.0f);
