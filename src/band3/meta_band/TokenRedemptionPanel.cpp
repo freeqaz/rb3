@@ -147,11 +147,11 @@ void TokenRedemptionPanel::EnumerateOffers(LocalBandUser *user) {
         }
         HandleType(token_msg);
         mRedemptionState = 0;
-    } else {
-        MILO_ASSERT(!mEnumeration, 0x14A);
-        mEnumeration = new WiiEnumeration(count);
-        mEnumeration->Start();
+        return;
     }
+    MILO_ASSERT(!mEnumeration, 0x14A);
+    mEnumeration = new WiiEnumeration(count);
+    mEnumeration->Start();
 }
 
 BEGIN_HANDLERS(TokenRedemptionPanel)
