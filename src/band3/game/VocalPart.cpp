@@ -402,26 +402,18 @@ void VocalPart::UpdateMinMaxPitch(const VocalPhrase *const &phraseRef) {
     unka4 = FLT_MAX;
     unka8 = -FLT_MAX;
     while (cur != end) {
-        if (cur->unk10 != cur->unk14) {
-            int noteIdx = cur->unk10;
-            int noteCount = cur->unk14 - cur->unk10;
-            if (cur->unk10 < cur->unk14) {
-                while (true) {
-                    const VocalNote &note = list->mNotes[noteIdx];
-                    if (!note.mUnpitchedNote) {
-                        foundPitchedNote = true;
-                        if (cur->unk24 < unka4)
-                            unka4 = cur->unk24;
-                        if (unka8 < cur->unk28)
-                            unka8 = cur->unk28;
-                        break;
-                    } else {
-                        noteIdx++;
-                        noteCount--;
-                        if (noteCount == 0)
-                            break;
-                    }
+        int lastNote = cur->unk14;
+        int noteIdx = cur->unk10;
+        if (noteIdx != lastNote) {
+            int noteCount = lastNote - noteIdx;
+            for (int i = 0; i < noteCount; ++i) {
+                if (!list->mNotes[noteIdx].mUnpitchedNote) {
+                    foundPitchedNote = true;
+                    unka4 = (cur->unk24 < unka4) ? cur->unk24 : unka4;
+                    unka8 = (unka8 < cur->unk28) ? cur->unk28 : unka8;
+                    break;
                 }
+                ++noteIdx;
             }
         }
         if (cur->unk1a)
@@ -558,11 +550,7 @@ float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const
         float frameTime = kFrameTimeMs;
         while (fBeginRel < fEndRel) {
             float spC = fEndRel - fBeginRel;
-            float stepMs;
-            if (spC < frameTime)
-                stepMs = spC;
-            else
-                stepMs = kFrameTimeMs;
+            float stepMs = std::min(spC, frameTime);
             float weight;
             if (fBeginRel < threshold) {
                 weight = threshold;
@@ -584,11 +572,7 @@ float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const
         float seventeenFourths = 1.75f;
         while (fBeginRel < fEndRel) {
             float sp8 = fEndRel - fBeginRel;
-            float stepMs;
-            if (sp8 < frameTime)
-                stepMs = sp8;
-            else
-                stepMs = kFrameTimeMs;
+            float stepMs = std::min(sp8, frameTime);
             float weight;
             if (fBeginRel < zeroThresh) {
                 weight = 1.0f;
