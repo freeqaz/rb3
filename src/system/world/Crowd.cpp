@@ -308,7 +308,84 @@ bool WorldCrowd::Crowd3DExists() {
     return false;
 }
 
-void WorldCrowd::Draw3DChars() {}
+void WorldCrowd::Draw3DChars() {
+    if (!Crowd3DExists()) return;
+    ObjPtr<RndEnviron> *envPtr = mEnviron3D.mPtr ? &mEnviron3D : &mEnviron;
+    RndEnviron *env = envPtr->mPtr;
+    bool savedApprox = true;
+    if (env) {
+        savedApprox = env->UsesApproxGlobal();
+        env->SetUseApproxGlobal(false);
+    }
+    RndEnvironTracker tracker(env, nullptr);
+    FOREACH (charIt, mCharacters) {
+        Character *curChar = charIt->mDef.mChar;
+        if (curChar && charIt->mMMesh) {
+            for (unsigned int i = 0; i != charIt->m3DChars.size(); i++) {
+                Transform spXfm;
+                {
+                    const Transform &charXfm = charIt->m3DChars[i].unk0;
+                    spXfm.v.x = charXfm.v.x;
+                    spXfm.v.y = charXfm.v.y;
+                    spXfm.v.z = charXfm.v.z;
+                }
+                spXfm.v.z = -(charIt->mDef.mRadius * 0.5f - spXfm.v.z);
+                if (mRotate != 0 || mFocus) {
+                    Transform &placeXfm = mPlacementMesh->WorldXfm();
+                    spXfm.m.z.x = placeXfm.m.z.x;
+                    spXfm.m.z.y = placeXfm.m.z.y;
+                    spXfm.m.z.z = placeXfm.m.z.z;
+                    if (mRotate == 1) {
+                        Transform &camXfm = RndCam::sCurrent->WorldXfm();
+                        spXfm.m.x.x = spXfm.m.z.y * camXfm.m.y.z - spXfm.m.z.z * camXfm.m.y.y;
+                        spXfm.m.x.y = spXfm.m.z.z * camXfm.m.y.x - spXfm.m.z.x * camXfm.m.y.z;
+                        spXfm.m.x.z = spXfm.m.z.x * camXfm.m.y.y - spXfm.m.z.y * camXfm.m.y.x;
+                    } else if (mRotate == 2) {
+                        Transform &camXfm = RndCam::sCurrent->WorldXfm();
+                        spXfm.m.x.x = camXfm.m.y.y * spXfm.m.z.z - camXfm.m.y.z * spXfm.m.z.y;
+                        spXfm.m.x.y = camXfm.m.y.z * spXfm.m.z.x - camXfm.m.y.x * spXfm.m.z.z;
+                        spXfm.m.x.z = camXfm.m.y.x * spXfm.m.z.y - camXfm.m.y.y * spXfm.m.z.x;
+                    } else {
+                        Transform &focusXfm = mFocus->WorldXfm();
+                        Vector3 fwd2d;
+                        fwd2d.x = focusXfm.v.x - spXfm.v.x;
+                        fwd2d.y = focusXfm.v.y - spXfm.v.y;
+                        fwd2d.z = 0.0f;
+                        spXfm.m.x.x = fwd2d.y * spXfm.m.z.z - fwd2d.z * spXfm.m.z.y;
+                        spXfm.m.x.z = fwd2d.x * spXfm.m.z.y - fwd2d.y * spXfm.m.z.x;
+                        spXfm.m.x.y = fwd2d.z * spXfm.m.z.x - fwd2d.x * spXfm.m.z.z;
+                    }
+                    Normalize(spXfm.m.x, spXfm.m.x);
+                    spXfm.m.y.x = spXfm.m.z.y * spXfm.m.x.z - spXfm.m.z.z * spXfm.m.x.y;
+                    spXfm.m.y.y = spXfm.m.z.z * spXfm.m.x.x - spXfm.m.z.x * spXfm.m.x.z;
+                    spXfm.m.y.z = spXfm.m.z.x * spXfm.m.x.y - spXfm.m.z.y * spXfm.m.x.x;
+                } else {
+                    Transform &placeXfm = mPlacementMesh->WorldXfm();
+                    spXfm.m = placeXfm.m;
+                }
+                if (charIt->mDef.mUseRandomColor) {
+                    SetMatColorFlags(charIt->mDef.mMats, RndMat::kColorModModulate, &charIt->m3DChars[i].mRandomColors);
+                }
+                bool savedSelfShadow = curChar->mSelfShadow;
+                bool savedFloorShadow = curChar->mFloorShadow;
+                bool savedSpotCutout = curChar->mSpotCutout;
+                if (TheRnd->InGame()) {
+                    curChar->mSelfShadow = false;
+                    curChar->mFloorShadow = false;
+                    curChar->mSpotCutout = false;
+                }
+                curChar->SetWorldXfm(spXfm);
+                curChar->DrawShowing();
+                curChar->mSelfShadow = savedSelfShadow;
+                curChar->mFloorShadow = savedFloorShadow;
+                curChar->mSpotCutout = savedSpotCutout;
+            }
+        }
+    }
+    if (env) {
+        env->SetUseApproxGlobal(savedApprox);
+    }
+}
 
 void WorldCrowd::DrawShowing() {
     START_AUTO_TIMER("crowd_draw");
