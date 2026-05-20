@@ -494,13 +494,16 @@ void OvershellSlot::SelectDifficulty(Difficulty diff) {
     mSongOptionsRequired = 0;
     if (mOvershell->SongOptionsRequired()) {
         if (!old5e && mOvershell->InSong()) {
-            if (!TheGameMode->Property("skip_choose_diff_prompt", true)->Int()) {
+            if (TheGameMode->Property("skip_choose_diff_prompt", true)->Int()) {
+                pUser->SetDifficulty(diff);
+                EndOverrideFlow(kOverrideFlow_SongSettings, true);
+            } else {
                 Difficulty pUserDiff = pUser->GetDifficulty();
                 if (diff == pUserDiff)
                     CancelSongSettings();
                 else {
-                    mStateMgr->GetSlotState(kState_ChooseDiffConfirm)
-                        ->SetProperty("difficulty", diff);
+                    OvershellSlotState* state = mStateMgr->GetSlotState(kState_ChooseDiffConfirm);
+                    state->SetProperty("difficulty", diff);
                     pUser->SetOvershellSlotState(kState_ChooseDiffConfirm);
                 }
             }
