@@ -221,16 +221,15 @@ void TrainerGemTab::DrawStartFinish() {
 void TrainerGemTab::DrawExtraTails() {
     unsigned long off = 0;
     for (unsigned long i = 0; i < unk130.size(); i++, off += 0x38) {
-        ExtraTail *et = (ExtraTail *)((char *)&unk130[0] + off);
         RndMesh *mesh;
         // ExtraTail layout: Transform (0x0..0x2F), int slot (0x30), bool isSustainCyan (0x34)
-        if (*(bool *)((char *)et + 0x34)) {
+        if (*(bool *)((char *)&unk130[0] + off + 0x34)) {
             mesh = mGemSustainCyan;
         } else {
-            mesh = mTails[SlotToGemIndex(*(int *)((char *)et + 0x30))];
+            mesh = mTails[SlotToGemIndex(*(int *)((char *)&unk130[0] + off + 0x30))];
         }
         mesh->SetShowing(true);
-        mesh->SetWorldXfm(*(Transform *)et);
+        mesh->SetWorldXfm(*(Transform *)((char *)&unk130[0] + off));
         mesh->Draw();
         mesh->SetShowing(false);
     }
