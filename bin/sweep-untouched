@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# List RB3 functions with no decomp progress, ranked by size descending.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "${SCRIPT_DIR}/../scripts/sweep_untouched.py" "$@"

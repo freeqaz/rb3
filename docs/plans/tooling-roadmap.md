@@ -155,33 +155,136 @@ shippable, each pays for itself in days, and Step 2.1 (`next_target`)
 feeds the validation-set selection for the more speculative Phase 3
 spike. Doing Phase 2 first means Phase 3's go/no-go is made on better data.
 
+### Design review applied 2026-05-20
+
+A staff-engineer review against the live codebase found four spec gaps,
+all resolved in the steps below. **The "Locked decisions" blocks are
+ground truth — implement them as written; do not re-derive.**
+
+1. **Step 2.2 ignored `tools/sync_decomp_db.py`.** That script already
+   syncs `report.json` → `decomp.db` (percentages only, no verdicts) and
+   is a manual rescue tool, not wired into the build. Step 2.2 now folds
+   its job into `batch_check.py` and deletes it.
+2. **Step 2.1a had no scoring defaults and an unmeasurable success bar.**
+   `attempt_count` is 0 for 40,385 of 41,233 functions, so the
+   `/(attempt_count+1)` term barely moves rankings — the score is
+   effectively `current_percent DESC`, which surfaces the 99.9%+
+   AT-LIMIT-adjacent residual band (mostly stuck `Handle__…` dispatchers).
+   Step 2.1a now locks a `max_percent` cap and a measurable criterion.
+3. **Step 2.3 left three sub-decisions open** (which DC3 measure, default
+   filter, dedup granularity, `.h` handling). All locked below.
+4. **Step 2.4's "shared ranking library" was mis-framed.** `next_target`
+   ranks by closeness; `sweep-untouched` ranks by size — no common
+   scoring function exists. They share *SQL filter helpers* only.
+
+### Verified ground truth (2026-05-20)
+
+**`decomp.db` `functions` table** — columns: `id, symbol, demangled, unit,
+size, current_percent, best_percent, verdict, locked_by, locked_at,
+attempt_count, last_model, next_model, …`. 41,233 rows: 29,230
+`verdict='COMPLETE'`, 562 `'AT_LIMIT'`, 11,441 `verdict IS NULL`
+(workable). `attempt_count` distribution: 40,385 at 0, 810 at 1, 36 at 2,
+2 at 3. All `unit` values are `main/`-prefixed.
+
+**`scripts/orchestrator/database.py`** — `query_functions()` (`:412`,
+multi-row, `ORDER BY current_percent DESC`, supports
+`pattern/min_percent/max_percent/exclude_complete/exclude_at_limit/exclude_locked/max_attempts`);
+`get_next_function()` (`:304`, single-row, supports `order_by="size"`);
+`_build_unit_glob_clause()` (`:387`, reusable WHERE-clause builder for
+unit GLOB + `DEFAULT_EXCLUDE_PATTERNS`); `get_last_attempt()` (`:623`);
+`get_attempts_for_function()` (`:640`); `record_attempt()` increments
+`attempt_count` (`:582`). The `attempts` table has `exit_status,
+start_percent, end_percent, verdict, notes, model, created_at`.
+
+**`scripts/orchestrator/mcp_server.py`** — tool list in `list_tools()`
+(`:137`–`:321`); dispatch in `call_tool()` (`:323`–`:340`); per-tool
+handlers `_query_functions` etc. `_lookup_dc3` handler at `:1028`–`:1084`;
+its search-term extraction (mangled → method name) at `:1037`–`:1052`.
+The MCP server process is long-lived across tool calls — instance-level
+caches persist.
+
+**Build graph** — `build/SZBE69_B8/report.json` is produced by the
+`report` rule (`tools/project.py:1206`–`1216`, runs `objdiff-cli report
+generate`). `build/SZBE69_B8/progress.json` is produced by the `progress`
+rule (`tools/project.py:1185`–`1200`), depends on `report.json`, and is
+the sole `default` target. Builds run through **`tools/ninja-locked`** (a
+flock wrapper — bare `ninja` is unsafe; concurrent runs corrupt
+`.ninja_log`/`.ninja_deps`). The hook rides the ninja graph so it fires
+under both `tools/ninja-locked` and objdiff-cli's `custom_make`.
+
+**DC3 report** — `/home/free/code/milohax/dc3-decomp/build/373307D9/report.json`
+(~15 MB, 2224 units, all `default/`-prefixed). Each unit carries
+`measures.fuzzy_match_percent` and `measures.matched_functions_percent`.
+DC3 source root: `/home/free/code/milohax/dc3-decomp/src`.
+
+### Parallelization & file ownership
+
+All four steps build concurrently. To prevent edit collisions, ownership
+is partitioned — assign whole rows to a single implementer:
+
+| Step | Files it may create/modify | Build? |
+|---|---|---|
+| 2.1 + 2.3 | `scripts/orchestrator/mcp_server.py`, `scripts/orchestrator/database.py` | no |
+| 2.2 | `scripts/batch_check.py`, `tools/project.py`; deletes `tools/sync_decomp_db.py` | yes |
+| 2.4 | `scripts/sweep_untouched.py` (new), `bin/sweep-untouched` (new) | no |
+
+Steps 2.1 and 2.3 **both edit `mcp_server.py`** — they must go to the
+same implementer (or be serialized). 2.2 and 2.4 touch disjoint files and
+run fully parallel with everything. 2.4 may *import from* `database.py`
+but must not modify it (2.1 owns `database.py` edits). Only 2.2 builds.
+
 ### Step 2.1 — `mcp__orchestrator__next_target` MCP tool
 
 Add to `scripts/orchestrator/mcp_server.py`. Queries `decomp.db` for
-workable functions ranked by closeness to 100% and prior attempt count.
-Filters out `verdict IN ('COMPLETE', 'AT_LIMIT')`. Inputs: optional unit
-glob, optional `min_percent` floor. Returns top N with metadata (current
-%, last attempt timestamp, last attempt outcome).
+workable functions ranked for ROI, so an agent in a fresh session can ask
+"give me functions to work on" and get a ready list. Split into two
+sub-steps; only 2.1a is in Phase 2 scope.
 
-The original scoring formula needed a column the schema doesn't have, so
-this is split into two sub-steps:
+#### Step 2.1a — MVP scoring (~3 hr) — DONE 2026-05-20
 
-#### Step 2.1a — MVP scoring (~3 hr)
+**Locked decisions:**
 
-Use:
+- **Tool name:** `next_target`. Register it in `list_tools()` and the
+  `call_tool()` dispatch; add a `_next_target` handler alongside
+  `_query_functions`.
+- **Inputs** (all optional): `unit_pattern` (glob, default `*`),
+  `min_percent` (default `0`), `max_percent` (default `99.5`), `min_size`
+  (default `16`), `limit` (default `5`).
+- **The `max_percent=99.5` default is the core fix.** The 99.9%+ band is
+  dominated by `Handle__…P9DataArrayb` dispatchers stuck on switch-table
+  reordering (verified: the top 10 of the workable ≥99% slice are *all*
+  `Handle__` dispatchers). Capping at 99.5% keeps the tool from handing
+  agents known-stuck residuals as "top picks." A caller deliberately
+  chasing residuals can raise the cap.
+- **Score:** `current_percent / (attempt_count + 1)`, evaluated directly
+  in the SQL `ORDER BY` (descending). Rows with `current_percent IS NULL`
+  are *excluded* — those are unimplemented; route them to
+  `sweep-untouched` (Step 2.4), not here.
+- **Filters:** exclude `verdict IN ('COMPLETE','AT_LIMIT')` and
+  `locked_by IS NOT NULL` (reuse the clauses `query_functions` already
+  builds). Apply `min_size` against `size`.
+- **Implementation:** add `query_next_targets(...)` to `database.py`
+  (Step 2.1's implementer owns `database.py`); the `_next_target` handler
+  calls it. Reuse `_build_unit_glob_clause()` for the unit GLOB.
+- **Per-row output:** `symbol`, `demangled`, `unit`, `current_percent`,
+  `size`, `attempt_count`, and a last-attempt line — pull the most recent
+  `attempts` row via `get_last_attempt()` and show
+  `exit_status` + `end_percent` + `created_at`, or `never attempted` when
+  there is none.
 
-```
-score = closeness_to_100 / (attempt_count + 1)
-```
+Note on the `(attempt_count+1)` term: it is correct but mostly *latent*
+today (only 848 of 41,233 functions have any attempts). It starts
+mattering once agents run more loops; keep it in the formula.
 
-Both columns already exist on `functions` (verified 2026-05-12;
-`attempt_count` is incremented in `scripts/orchestrator/database.py:582`
-on every `record_attempt`). No schema changes; no new infra. Ships
-immediately.
+**Success criterion (measurable):**
 
-**Success criterion:** an agent in a fresh session can ask "give me 5 RB3
-functions to work on right now" and get a list ranked by ROI without any
-preamble.
+- `next_target` with no args returns exactly 5 rows; every row has
+  `verdict` NULL, `0 ≤ current_percent ≤ 99.5`, `size ≥ 16`; rows are
+  ordered by `current_percent/(attempt_count+1)` descending.
+- After an agent calls `report_result` marking the #1 row `COMPLETE`, a
+  second `next_target` call no longer lists it, and the former #2 is #1.
+- Each row's text output carries the last-attempt outcome line (or
+  `never attempted`).
 
 #### Step 2.1b — Call-graph weighting (deferred, ~6 hr when picked up)
 
@@ -192,73 +295,158 @@ Ghidra cross-ref dump), back-fill for ~41K functions, plus an incremental
 refresh hook so it doesn't decay against new builds.
 
 Schedule independently after 2.1a's rankings prove insufficient. Concrete
-trigger: 2.1b becomes worth the work only if 2.1a's top-10 picks regularly
-come back as low-impact (e.g. tiny leaf functions agents complete easily
-but that don't unblock anything).
+trigger: 2.1b becomes worth the work only if 2.1a's top picks regularly
+need **more than two attempts** to close — i.e. closeness alone stops
+predicting yield and a structural signal (fan-in) is needed to separate
+"99% and one register swap away" from "99% and structurally stuck."
 
-### Step 2.2 — Hook `batch_check` to the `report.json` build edge (~1-2 hr)
+### Step 2.2 — Hook `batch_check` to the `report.json` build edge (~2-3 hr) — DONE 2026-05-20
 
-The original doc proposed two options (phony target, post-build hook in
-`configure.py`) and recommended Option A. Both fail the stated success
-criterion ("after a header change, decomp.db reflects the new 100%
-matches with no manual intervention") because both require user
-discipline.
+Make every build finish by syncing `decomp.db` to `report.json`, so
+`next_target` and `query_functions` always rank on fresh data with no
+manual step.
 
-**Option C — recommended:** chain `batch_check` to the existing
-`build/SZBE69_B8/report.json` build edge as a follow-up rule, so plain
-`ninja` always finishes by sweeping. `batch_check` reads `report.json`
-(no per-function objdiff invocations — see
-`.claude/skills/batch-check/SKILL.md`) and should run sub-second; the
-"could slow the build" concern from Option B doesn't apply.
+**Why this is more than a one-line ninja rule:** two existing scripts
+each do *half* the sync.
 
-**Process:** measure the actual sweep cost on the existing report before
-committing to Option C. If steady-state cost is >2s, fall back to
-Option A (phony target) and document the manual step explicitly.
+- `tools/sync_decomp_db.py` updates `current_percent/best_percent/size/
+  unit` for every function — but never sets `verdict`, and is not wired
+  into the build (manual rescue tool; nothing references it — verified).
+- `scripts/batch_check.py` sets `verdict='COMPLETE'` for new 100%s — but
+  only touches the 100%-complete rows; partial-percent rows go stale.
 
-**Success criterion:** running plain `ninja` after a header change
-leaves `decomp.db` reflecting the new 100% matches with no extra commands.
+`next_target` ranks on `decomp.db.current_percent`, so stale partial
+percentages directly degrade Step 2.1. The hook must do **both** jobs.
 
-### Step 2.3 — `lookup_dc3` ranking by DC3 match% (~1-2 hr)
+**Locked decisions:**
 
-Current `lookup_dc3` (`scripts/orchestrator/mcp_server.py:1028-1084`) is a
-simple grep — no ranking, no filtering, returns the first 20 of up to 1948
-hits for common names like `Poll` (1948 confirmed empirically 2026-05-12).
-Improve by:
+- **Extend `batch_check.py`, then delete `sync_decomp_db.py`.** A full
+  sweep (`batch_check.py '*'`) must additionally update
+  `current_percent/best_percent/size/unit` for *every* function in
+  matched units (not just the 100%s), absorbing `sync_decomp_db.py`'s
+  job. After this lands, delete `tools/sync_decomp_db.py` (confirm
+  `grep -rn sync_decomp_db` finds only doc mentions first).
+- **Add verdict downgrade.** When `report.json` shows a function that is
+  `verdict='COMPLETE'` in `decomp.db` has regressed below 100%, reset its
+  `verdict` to `NULL`. `batch_check` never downgrades today — a real bug
+  for header-regression cases, and a correctness requirement for a hook
+  that claims "decomp.db reflects the current build."
+- **Add a `--quiet` flag** to `batch_check.py` that suppresses the
+  partial/unimplemented tables (build logs must not get a 50-line dump);
+  it should print a single summary line. `'*'` already works (normalizes
+  to `main/*`, covers all 1876 units).
+- **Wire as Option C — a build-edge follow-up rule.** In
+  `tools/project.py` near the `report`/`progress` rules (`:1185`–`:1216`):
+  add a `batch_check` rule running
+  `$python scripts/batch_check.py '*' --quiet`, output a stamp file
+  `build/SZBE69_B8/.decomp_db_synced`, with `build/SZBE69_B8/report.json`
+  as an implicit input. Add the stamp to the `default` target set so
+  plain `tools/ninja-locked` always finishes by syncing (find where
+  `tools/project.py` emits `progress.json` as the default and add the
+  stamp beside it).
+- **Cost is settled.** `batch_check.py '*'` runs in ~0.24 s on the
+  current report — far under the 2 s threshold. Option C stands; no
+  fallback to a phony target. Builds go through `tools/ninja-locked`
+  (flock-serialized) so the hook never races a concurrent build; the
+  decomp.db write is WAL-safe against concurrent MCP reads.
 
-1. Load DC3's `build/373307D9/report.json` (cache on path mtime). Confirmed
-   present at `/home/free/code/milohax/dc3-decomp/build/373307D9/report.json`
-   (14.9 MB, mtime 2026-05-11).
-2. For each grep hit, find which DC3 unit it's in and look up the unit's
-   match%.
-3. Sort results by descending unit match% (higher = more reliable
-   reference).
-4. Add `--min-match` flag to filter to e.g. ≥90% units only.
+**Success criterion:**
 
-**Success criterion:** `lookup_dc3 Poll --min-match 90` returns ≤20 hits,
-all from DC3 units that decomp'd cleanly.
+- After `tools/ninja-locked` completes following a source change that
+  lands a new 100% match, `decomp.db` shows that function
+  `verdict='COMPLETE'` — no extra commands.
+- After a change that regresses a previously-`COMPLETE` function below
+  100%, its `verdict` is back to `NULL`.
+- The build log gains at most one summary line from the sweep.
+- `tools/sync_decomp_db.py` no longer exists.
 
-### Step 2.4 — `bin/sweep-untouched` script (~1 hr if 2.1 is done first)
+### Step 2.3 — `lookup_dc3` ranking by DC3 match% (~1-2 hr) — DONE 2026-05-20
 
-Promote the focused subset of `scripts/dc3_compare.py`'s "find untouched
-work" surface to a thin CLI wrapper:
+Current `lookup_dc3` (`mcp_server.py:1028`–`1084`) greps DC3 source and
+dumps the first 20 *lines* — no ranking, no dedup. For `Poll` that is 20
+of 1958 line-hits across 537 files, often several lines from one file.
 
-```
-bin/sweep-untouched system/char/ --min-size 100 --max-attempts 0
-```
+**Locked decisions:**
 
-Lists untouched (zero-decomp) functions in the unit glob, ranked by size
-descending, with `--max-attempts N` to filter out things that already
-failed N times. `attempt_count` is already filterable via existing
-`database.py` infrastructure (verified 2026-05-12).
+- **Ranking measure: `measures.matched_functions_percent`** (per DC3
+  unit) — the fraction of the unit's functions verified at 100%. This is
+  the right proxy for "is the function I want to port actually finished
+  in DC3?" Do *not* use `fuzzy_match_percent`: a unit can sit at 95%
+  fuzzy with only 30% of its functions truly closed.
+- **No default filter.** DC3 unit `matched_functions_percent` has median
+  ~30%; only 853 of 2224 units are ≥90%. A default `--min-match 90`
+  would zero-result most lookups. `--min-match` is opt-in (default `0`);
+  results are *ranked* by the measure — the user filters only when they
+  want hardened references. When `--min-match` excludes hits, print an
+  explicit `N hits filtered out below X%` line, never a silent empty
+  result.
+- **Dedup at file level.** Collapse line-hits to one result row per
+  source file, with a hit count. Return the top 20 files ranked by their
+  unit's `matched_functions_percent` descending.
+- **`.h` handling.** Map `<dir>/Foo.h` to the unit of `<dir>/Foo.cpp`
+  when that sibling exists on disk, and score it with that unit's
+  measure. A header with no sibling `.cpp` gets no unit score — sort it
+  last, tagged `(header, no unit)`.
+- **File path → DC3 unit name:** strip the `<dc3_src>/` prefix, strip the
+  extension, prepend `default/`. E.g.
+  `…/dc3-decomp/src/system/char/CharBones.cpp` →
+  `default/system/char/CharBones`.
+- **Caching:** parse DC3's `report.json` once into
+  `{unit_name: matched_functions_percent}` and cache it on the
+  `DecompMCPServer` instance, keyed by the report's mtime; reload only
+  when mtime changes (~150 ms load cost, paid once per server lifetime).
+- Keep the existing mangled-symbol → method-name extraction
+  (`mcp_server.py:1037`–`1052`) unchanged.
 
-**Implementation constraint:** share the ranking library function with
-Step 2.1 — both should read from the same scoring code so the MCP tool
-and the CLI never disagree. If 2.1 ships first, this is mostly a CLI
-shim over the same library; if it ships in isolation, factor the ranking
-out cleanly so 2.1 can pick it up without rework.
+**Success criterion:**
 
-`bin/` confirmed not to contain `sweep-untouched` today (current contents:
-`analyze-function`, `decompile`, `objdiff-cli`, `orchestrate`).
+- `lookup_dc3 Poll` returns ≤20 rows, one per file, each annotated with
+  its DC3 unit and that unit's `matched_functions_percent`, sorted by
+  that percent descending.
+- `lookup_dc3 Poll --min-match 90` returns only files whose unit is
+  ≥90%, plus the `N hits filtered out` line.
+- A second call in the same server session does not re-parse
+  `report.json` (mtime unchanged).
+
+### Step 2.4 — `bin/sweep-untouched` script (~1-2 hr) — DONE 2026-05-20
+
+A standalone CLI listing RB3 functions with no decomp progress, ranked by
+size, so an agent can pick a fresh unit to start on.
+
+**Locked decisions:**
+
+- **This is a new script, not a `dc3_compare.py` promotion.**
+  `dc3_compare.py` finds "untouched in RB3 *that DC3 has a reference
+  for*" — a cross-project join. `sweep-untouched` is RB3-only:
+  "untouched in RB3, period." Build it fresh as
+  `scripts/sweep_untouched.py` with a `bin/sweep-untouched` shim that
+  mirrors `bin/analyze-function` (a ~3-line bash `exec python3
+  "$SCRIPT_DIR/../scripts/sweep_untouched.py" "$@"`).
+- **"Untouched" =** `(current_percent IS NULL OR current_percent = 0)`
+  AND `verdict` not in `('COMPLETE','AT_LIMIT')`, within the unit glob.
+- **CLI:** `bin/sweep-untouched UNIT_GLOB [--min-size N] [--max-attempts N]
+  [--limit N] [--json]`. Defaults: `--max-attempts 0` (truly untouched),
+  `--min-size 0`, `--limit 40`. Ranked by `size` descending.
+- **Share SQL helpers, not a scoring function.** `next_target` ranks by
+  closeness, `sweep-untouched` ranks by size — there is no common
+  scoring function (the original "shared ranking library" framing was
+  wrong). Reuse `_build_unit_glob_clause()` (`database.py:387`) and
+  `DEFAULT_EXCLUDE_PATTERNS` for the unit GLOB; import `get_connection`.
+  Do **not** modify `database.py` (Step 2.1 owns it) — write the SELECT
+  inline in `sweep_untouched.py`.
+- **Output:** a text table (size, symbol, unit) plus a `--json` mode,
+  following `scripts/batch_check.py`'s output conventions.
+
+`bin/` today contains `analyze-function, decompile, objdiff-cli,
+orchestrate` — `sweep-untouched` is new; mark it executable (`chmod +x`).
+
+**Success criterion:**
+
+- `bin/sweep-untouched system/char/` lists zero-decomp functions under
+  `main/system/char/*`, largest first, none `COMPLETE`/`AT_LIMIT`.
+- `--max-attempts 0` excludes anything with `attempt_count > 0`;
+  `--min-size 100` excludes smaller functions.
+- `bin/sweep-untouched` is executable and runs from the repo root.
 
 ---
 

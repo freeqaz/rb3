@@ -160,6 +160,9 @@ class ProjectConfig:
         self.non_matching: bool = False
         self.build_rels: bool = True  # Build REL files
         self.check_sha_path: Optional[Path] = None  # Path to version.sha1
+        self.check_sha_in_default: bool = (
+            True  # Gate the default build on the SHA1 hash check
+        )
         self.config_path: Optional[Path] = None  # Path to config.yml
         self.generate_map: bool = False  # Generate map file(s)
         self.asflags: Optional[List[str]] = None  # Assembler flags
@@ -1187,15 +1190,16 @@ def generate_build_ninja(
             command=f"$python {configure_script} $configure_args progress",
             description="PROGRESS",
         )
+        progress_implicit = [configure_script, python_lib, report_path]
+        if config.check_sha_in_default:
+            # The SHA1 check gates the default build only when opted in.
+            # Mid-decomp it never passes, so by default it is left as an
+            # on-demand target (`ninja <build>/ok`) instead.
+            progress_implicit.insert(0, ok_path)
         n.build(
             outputs=progress_path,
             rule="progress",
-            implicit=[
-                ok_path,
-                configure_script,
-                python_lib,
-                report_path,
-            ],
+            implicit=progress_implicit,
             order_only="post-build",
         )
 
@@ -1212,6 +1216,23 @@ def generate_build_ninja(
             outputs=report_path,
             rule="report",
             implicit=[objdiff, "all_source"],
+            order_only="post-build",
+        )
+
+        ###
+        # Sync decomp.db from report.json
+        ###
+        n.comment("Sync decomp.db from report.json")
+        decomp_db_stamp = build_path / ".decomp_db_synced"
+        n.rule(
+            name="batch_check",
+            command=f"$python scripts/batch_check.py '*' --quiet && touch $out",
+            description="SYNC decomp.db",
+        )
+        n.build(
+            outputs=decomp_db_stamp,
+            rule="batch_check",
+            implicit=[report_path],
             order_only="post-build",
         )
 
@@ -1269,6 +1290,12 @@ def generate_build_ninja(
         description="SPLIT $in",
         depfile="$out_dir/dep",
         deps="gcc",
+        # restat: dtk split is deterministic, so re-running it with an
+        # unchanged config.yml produces an identical config.json. restat lets
+        # ninja keep the old mtime and avoid re-triggering the `configure`
+        # generator rule -- which otherwise causes an infinite
+        # SPLIT->configure manifest-regeneration loop.
+        restat=True,
     )
     n.build(
         inputs=config.config_path,
@@ -1311,6 +1338,8 @@ def generate_build_ninja(
             n.default(link_outputs)
         elif config.progress:
             n.default(progress_path)
+            # Always finish a build by syncing decomp.db to report.json.
+            n.default(build_path / ".decomp_db_synced")
         else:
             n.default(ok_path)
     else:
@@ -1340,7 +1369,9 @@ def generate_objdiff_config(
 
     objdiff_config: Dict[str, Any] = {
         "min_version": "2.0.0-beta.5",
-        "custom_make": "ninja",
+        # ninja-locked serializes concurrent builds via flock; running bare
+        # `ninja` from multiple agents at once corrupts .ninja_log/.ninja_deps.
+        "custom_make": "tools/ninja-locked",
         "build_target": False,
         "watch_patterns": [
             "*.c",

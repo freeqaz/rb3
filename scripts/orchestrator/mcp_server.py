@@ -43,7 +43,9 @@ from orchestrator.database import (
     get_connection,
     get_function_by_symbol,
     query_functions as db_query_functions,
+    query_next_targets as db_query_next_targets,
     get_attempts_for_function,
+    get_last_attempt,
     record_attempt,
     update_function_status,
     search_functions_by_name,
@@ -128,6 +130,14 @@ class DecompMCPServer:
         self.project_root = Path(__file__).resolve().parent.parent.parent
         # DC3 source path for lookup_dc3 (shared Milo engine reference)
         self.dc3_path = dc3_path or os.path.expanduser("~/code/milohax/dc3-decomp/src")
+        # DC3 build report path (per-unit match% used to rank lookup_dc3 results)
+        self.dc3_report_path = os.path.expanduser(
+            "~/code/milohax/dc3-decomp/build/373307D9/report.json"
+        )
+        # Cache for the parsed DC3 report: {unit_name: matched_functions_percent}.
+        # Keyed by the report file's mtime; reloaded only when mtime changes.
+        self._dc3_report_cache: dict[str, float] | None = None
+        self._dc3_report_mtime: float | None = None
         self.server = Server("rb3-decomp")
         self._setup_tools()
 
@@ -194,6 +204,35 @@ class DecompMCPServer:
                                 "type": "string",
                                 "description": "Filter by function status: 'workable' (default), 'all', 'complete', 'at_limit'",
                                 "enum": ["workable", "all", "complete", "at_limit"],
+                            },
+                        },
+                    },
+                ),
+                Tool(
+                    name="next_target",
+                    description="Return workable functions ranked for ROI (score = current_percent / (attempt_count + 1)). Use to get a ready list of functions to work on.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "unit_pattern": {
+                                "type": "string",
+                                "description": "Glob pattern for unit path (e.g., 'main/*', 'main/system/char/*'). Default: '*'.",
+                            },
+                            "min_percent": {
+                                "type": "number",
+                                "description": "Minimum current match percentage (default: 0)",
+                            },
+                            "max_percent": {
+                                "type": "number",
+                                "description": "Maximum current match percentage (default: 99.5; caps out stuck residuals)",
+                            },
+                            "min_size": {
+                                "type": "integer",
+                                "description": "Minimum function size in bytes (default: 16)",
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "description": "Max results to return (default: 5)",
                             },
                         },
                     },
@@ -306,13 +345,17 @@ class DecompMCPServer:
                 ),
                 Tool(
                     name="lookup_dc3",
-                    description="Search DC3 decomp source for a method or class name (shared Milo engine reference). Use to find a working implementation of a function RB3 hasn't decompiled yet. Accepts a method name, qualified name, or RB3 MWCC mangled symbol — extraction is automatic.",
+                    description="Search DC3 decomp source for a method or class name (shared Milo engine reference). Results are deduped per file and ranked by the DC3 unit's matched_functions_percent (how complete that unit's decomp is). Accepts a method name, qualified name, or RB3 MWCC mangled symbol — extraction is automatic.",
                     inputSchema={
                         "type": "object",
                         "properties": {
                             "symbol": {
                                 "type": "string",
                                 "description": "Method name (e.g. 'Poll'), qualified name (e.g. 'CharServoBone::Poll'), or RB3 mangled symbol (e.g. 'Poll__13CharServoBoneFv'). Mangled MWCC symbols are auto-extracted to their method name.",
+                            },
+                            "min_match": {
+                                "type": "number",
+                                "description": "Only return files whose DC3 unit is at least this matched_functions_percent (0-100). Default: 0 (no filter).",
                             },
                         },
                         "required": ["symbol"],
@@ -326,6 +369,8 @@ class DecompMCPServer:
                 return await self._report_result(arguments)
             elif name == "query_functions":
                 return await self._query_functions(arguments)
+            elif name == "next_target":
+                return await self._next_target(arguments)
             elif name == "get_attempts":
                 return await self._get_attempts(arguments)
             elif name == "run_objdiff":
@@ -482,6 +527,58 @@ class DecompMCPServer:
 
         if hidden_note:
             output += hidden_note
+
+        return [TextContent(type="text", text=output)]
+
+    async def _next_target(self, args: dict) -> list[TextContent]:
+        """Handle next_target tool call.
+
+        Returns workable functions ranked by ROI score
+        (current_percent / (attempt_count + 1)), descending.
+        """
+        pattern = args.get("unit_pattern", "*")
+        min_percent = args.get("min_percent", 0)
+        max_percent = args.get("max_percent", 99.5)
+        min_size = args.get("min_size", 16)
+        limit = args.get("limit", 5)
+
+        results = db_query_next_targets(
+            pattern=pattern,
+            min_percent=min_percent,
+            max_percent=max_percent,
+            min_size=min_size,
+            limit=limit,
+            db_path=self.db_path,
+        )
+
+        if not results:
+            return [TextContent(
+                type="text",
+                text="No workable targets found matching criteria.",
+            )]
+
+        output = f"Top {len(results)} ROI targets (score = current_percent / (attempt_count + 1)):\n\n"
+        for func in results:
+            pct = func.get("current_percent")
+            pct_str = f"{pct:.1f}%" if pct is not None else "unimplemented"
+            attempts = func.get("attempt_count") or 0
+            output += f"- `{func['symbol']}` ({func.get('demangled', 'N/A')})\n"
+            output += (
+                f"  Unit: {func.get('unit', 'unknown')} | Match: {pct_str} | "
+                f"Size: {func.get('size', '?')} | Attempts: {attempts}\n"
+            )
+
+            last = get_last_attempt(func["id"], db_path=self.db_path)
+            if last:
+                exit_status = last.get("exit_status", "unknown")
+                end_pct = last.get("end_percent")
+                end_str = f"{end_pct:.1f}%" if end_pct is not None else "?"
+                created = last.get("created_at", "?")
+                output += (
+                    f"  Last attempt: {exit_status} -> {end_str} ({created})\n"
+                )
+            else:
+                output += "  Last attempt: never attempted\n"
 
         return [TextContent(type="text", text=output)]
 
@@ -1025,11 +1122,71 @@ Read in chunks of 200 lines.
 
         return [TextContent(type="text", text=f"Patch {queue_id} marked as {status}. Reason: {reason or 'N/A'}")]
 
+    def _load_dc3_report(self) -> dict[str, float]:
+        """Parse DC3's report.json into {unit_name: matched_functions_percent}.
+
+        Cached on the instance and keyed by the report file's mtime; the JSON is
+        re-parsed only when the file changes. Returns an empty dict if the
+        report does not exist or cannot be parsed.
+        """
+        report_path = Path(self.dc3_report_path)
+        try:
+            mtime = report_path.stat().st_mtime
+        except OSError:
+            return {}
+
+        if self._dc3_report_cache is not None and self._dc3_report_mtime == mtime:
+            return self._dc3_report_cache
+
+        try:
+            with open(report_path) as f:
+                report = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+        cache: dict[str, float] = {}
+        for unit in report.get("units", []):
+            name = unit.get("name")
+            if not name:
+                continue
+            measures = unit.get("measures", {}) or {}
+            pct = measures.get("matched_functions_percent")
+            if pct is not None:
+                cache[name] = pct
+
+        self._dc3_report_cache = cache
+        self._dc3_report_mtime = mtime
+        return cache
+
+    def _dc3_file_to_unit(self, file_path: str) -> str | None:
+        """Map an absolute DC3 source path to its DC3 unit name.
+
+        Strips the DC3 src-root prefix and the file extension, prepends
+        'default/'. For a '.h' file, maps to the unit of the sibling '.cpp'
+        when that file exists on disk. Returns None when no unit can be
+        derived (header with no sibling .cpp).
+        """
+        p = Path(file_path)
+        if p.suffix == ".h":
+            sibling = p.with_suffix(".cpp")
+            if not sibling.exists():
+                return None
+            p = sibling
+
+        try:
+            rel = p.resolve().relative_to(Path(self.dc3_path).resolve())
+        except ValueError:
+            return None
+
+        rel_no_ext = rel.with_suffix("")
+        return f"default/{rel_no_ext.as_posix()}"
+
     async def _lookup_dc3(self, args: dict) -> list[TextContent]:
         """Search DC3 source for a method/class name (shared Milo engine reference)."""
         symbol = args.get("symbol", "")
         if not symbol:
             return [TextContent(type="text", text="No symbol provided.")]
+        min_match = args.get("min_match", 0)
 
         # Extract a searchable name from MWCC mangling or qualified C++ name.
         # MWCC examples (RB3): 'Poll__13CharServoBoneFv', '__dt__6MyObjFv',
@@ -1075,12 +1232,79 @@ Read in chunks of 200 lines.
         if not stdout:
             return [TextContent(type="text", text=f"No matches found in DC3 for: {search_term}")]
 
-        all_lines = stdout.split("\n")
-        shown = all_lines[:20]
-        output = f"DC3 matches for '{search_term}' ({len(shown)} of {len(all_lines)} shown):\n\n"
-        output += "\n".join(shown)
-        if len(all_lines) > 20:
-            output += "\n\n... and more matches"
+        # Dedup grep line-hits to one row per source file, counting hits.
+        file_hits: dict[str, int] = {}
+        for line in stdout.split("\n"):
+            # grep -rn output: "<path>:<lineno>:<text>"
+            file_part = line.split(":", 1)[0]
+            if file_part:
+                file_hits[file_part] = file_hits.get(file_part, 0) + 1
+
+        if not file_hits:
+            return [TextContent(type="text", text=f"No matches found in DC3 for: {search_term}")]
+
+        # Score each file by its DC3 unit's matched_functions_percent.
+        dc3_report = self._load_dc3_report()
+        rows = []
+        for file_path, hits in file_hits.items():
+            unit = self._dc3_file_to_unit(file_path)
+            if unit is None:
+                # Header with no sibling .cpp: no unit score, sort last.
+                rows.append({
+                    "file": file_path, "unit": None,
+                    "percent": None, "hits": hits,
+                })
+            else:
+                pct = dc3_report.get(unit)
+                rows.append({
+                    "file": file_path, "unit": unit,
+                    "percent": pct, "hits": hits,
+                })
+
+        # Apply min_match filter (rows with no unit score are excluded by a
+        # positive threshold; never silently — count and report them).
+        filtered_out = 0
+        if min_match and min_match > 0:
+            kept = []
+            for r in rows:
+                pct = r["percent"]
+                if pct is not None and pct >= min_match:
+                    kept.append(r)
+                else:
+                    filtered_out += 1
+            rows = kept
+
+        # Sort by unit matched_functions_percent descending; unscored last.
+        rows.sort(key=lambda r: (r["percent"] is None, -(r["percent"] or 0.0)))
+
+        total_files = len(file_hits)
+        shown = rows[:20]
+
+        if not shown:
+            msg = f"No DC3 files for '{search_term}' meet the criteria."
+            if filtered_out:
+                msg += f"\n{filtered_out} hits filtered out below {min_match}%."
+            return [TextContent(type="text", text=msg)]
+
+        output = (
+            f"DC3 matches for '{search_term}' "
+            f"({len(shown)} of {total_files} files, ranked by DC3 unit match%):\n\n"
+        )
+        for r in shown:
+            if r["unit"] is None:
+                unit_str = "(header, no unit)"
+                pct_str = "n/a"
+            else:
+                unit_str = r["unit"]
+                pct_str = f"{r['percent']:.1f}%" if r["percent"] is not None else "unknown"
+            output += f"- {r['file']}\n"
+            output += f"  Unit: {unit_str} | Match: {pct_str} | Hits: {r['hits']}\n"
+
+        if filtered_out:
+            output += f"\n{filtered_out} hits filtered out below {min_match}%."
+        if total_files > 20:
+            output += f"\n\n... and {total_files - 20} more files"
+
         return [TextContent(type="text", text=output)]
 
     async def run(self):

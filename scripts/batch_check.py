@@ -3,17 +3,24 @@
 
 Reads build/SZBE69_B8/report.json (no per-function objdiff invocations) and
 classifies each function as complete (100%), partial, unimplemented (no
-decomp object), or already-tracked. Auto-marks newly-100% functions as
-COMPLETE in decomp.db.
+decomp object), or already-tracked.
+
+For every function in the matched units it performs a full sync of
+decomp.db: updating current_percent/best_percent/size/unit, marking
+newly-100% functions COMPLETE, and downgrading any function whose verdict
+is COMPLETE but has regressed below 100% back to NULL.
 
 Use this to sweep a unit after a header or build-system change and
 quickly see what's at 100%, what's partial, and what's still untouched.
+A full sweep (`batch_check.py '*' --quiet`) is wired into the ninja build
+so decomp.db always reflects the current report.json.
 
 Usage:
     python3 scripts/batch_check.py 'system/char/CharBones'
     python3 scripts/batch_check.py 'system/char/*'
     python3 scripts/batch_check.py 'system/*' --dry-run
     python3 scripts/batch_check.py 'band3/*' --json
+    python3 scripts/batch_check.py '*' --quiet
 """
 
 from __future__ import annotations
@@ -95,6 +102,9 @@ def batch_check(
             "partial": [],
             "unimplemented": [],
             "newly_complete": [],
+            "downgraded": [],
+            "percent_updates": 0,
+            "dry_run": dry_run,
         }
 
     complete: list[dict] = []
@@ -122,43 +132,79 @@ def batch_check(
             elif klass == "unimplemented":
                 unimplemented.append(row)
 
-    # Update DB: mark newly-100% as COMPLETE
+    # Full DB sync: for EVERY function in matched units, refresh
+    # current_percent/best_percent/size/unit; mark newly-100% as COMPLETE;
+    # downgrade regressed COMPLETE rows back to NULL.
     newly_complete: list[str] = []
-    if complete and not dry_run:
+    downgraded: list[str] = []
+    percent_updates = 0
+    if not dry_run:
         conn = get_connection(db_path)
         try:
             cur = conn.cursor()
-            for row in complete:
-                symbol = row["name"]
+            for unit_name, func, klass in all_funcs:
+                symbol = func.get("name", "")
+                if not symbol:
+                    continue
+                pct = _func_percent(func)
+                size = int(func.get("size", 0) or 0)
+                demangled = (func.get("metadata") or {}).get("demangled_name", "")
+                is_complete = klass == "complete"
+
                 existing = cur.execute(
-                    "SELECT verdict, current_percent FROM functions WHERE symbol = ?",
+                    "SELECT verdict, current_percent, best_percent FROM functions"
+                    " WHERE symbol = ?",
                     (symbol,),
                 ).fetchone()
+
                 if existing is None:
-                    # Insert new function as COMPLETE.
                     cur.execute(
                         """
                         INSERT INTO functions
                             (symbol, demangled, unit, size, current_percent,
                              best_percent, verdict)
-                        VALUES (?, ?, ?, ?, ?, ?, 'COMPLETE')
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                         """,
-                        (symbol, row["demangled"] or None, row["unit"],
-                         row["size"], row["percent"], row["percent"]),
+                        (symbol, demangled or None, unit_name, size, pct, pct,
+                         "COMPLETE" if is_complete else None),
                     )
+                    percent_updates += 1
+                    if is_complete:
+                        newly_complete.append(symbol)
+                    continue
+
+                old_verdict = existing["verdict"]
+                old_pct = existing["current_percent"]
+                old_best = existing["best_percent"]
+                new_best = max(old_best or 0.0, pct)
+
+                # Determine the new verdict.
+                new_verdict = old_verdict
+                if is_complete and old_verdict != "COMPLETE":
+                    new_verdict = "COMPLETE"
                     newly_complete.append(symbol)
-                elif existing["verdict"] != "COMPLETE":
-                    cur.execute(
-                        """
-                        UPDATE functions
-                        SET verdict = 'COMPLETE',
-                            current_percent = ?,
-                            best_percent = MAX(COALESCE(best_percent, 0), ?)
-                        WHERE symbol = ?
-                        """,
-                        (row["percent"], row["percent"], symbol),
-                    )
-                    newly_complete.append(symbol)
+                elif not is_complete and old_verdict == "COMPLETE":
+                    # Regressed below 100% — downgrade.
+                    new_verdict = None
+                    downgraded.append(symbol)
+
+                cur.execute(
+                    """
+                    UPDATE functions
+                    SET current_percent = ?,
+                        best_percent = ?,
+                        size = ?,
+                        unit = ?,
+                        demangled = ?,
+                        verdict = ?
+                    WHERE symbol = ?
+                    """,
+                    (pct, new_best, size, unit_name, demangled or None,
+                     new_verdict, symbol),
+                )
+                if (old_pct != pct or old_best != new_best
+                        or old_verdict != new_verdict):
+                    percent_updates += 1
             conn.commit()
         finally:
             conn.close()
@@ -175,6 +221,8 @@ def batch_check(
         "partial": partial,
         "unimplemented": unimplemented,
         "newly_complete": newly_complete,
+        "downgraded": downgraded,
+        "percent_updates": percent_updates,
         "dry_run": dry_run,
     }
 
@@ -191,12 +239,14 @@ def format_text(result: dict, partial_limit: int = 30, unimpl_limit: int = 20) -
     lines.append(f"  Unimplemented:    {len(result['unimplemented'])}")
 
     nc = result.get("newly_complete", [])
+    dg = result.get("downgraded", [])
     if result.get("dry_run"):
         lines.append("")
-        lines.append(f"(dry-run — would mark {len(result['complete'])} as COMPLETE)")
-    elif nc:
+        lines.append(f"(dry-run — no decomp.db writes; would sync {result['checked']} functions)")
+    else:
         lines.append("")
-        lines.append(f"Marked COMPLETE in decomp.db: {len(nc)}")
+        lines.append(f"decomp.db synced: {result.get('percent_updates', 0)} rows updated, "
+                     f"{len(nc)} marked COMPLETE, {len(dg)} downgraded")
 
     if result["partial"]:
         lines.append("")
@@ -217,6 +267,17 @@ def format_text(result: dict, partial_limit: int = 30, unimpl_limit: int = 20) -
     return "\n".join(lines)
 
 
+def format_summary(result: dict) -> str:
+    """Single-line summary for --quiet (e.g. build logs)."""
+    prefix = "batch_check (dry-run)" if result.get("dry_run") else "batch_check"
+    return (
+        f"{prefix}: {result['units_matched']} units, {result['checked']} functions, "
+        f"{len(result.get('newly_complete', []))} marked COMPLETE, "
+        f"{len(result.get('downgraded', []))} downgraded, "
+        f"{result.get('percent_updates', 0)} percentages updated"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Sweep a unit pattern for 100% matches; mark them COMPLETE in decomp.db.",
@@ -230,6 +291,8 @@ def main() -> int:
                         help="Don't update the database — show what would change.")
     parser.add_argument("--json", action="store_true",
                         help="Emit machine-readable JSON instead of text.")
+    parser.add_argument("--quiet", action="store_true",
+                        help="Suppress the partial/unimplemented tables; print one summary line.")
     parser.add_argument("--partial-limit", type=int, default=30,
                         help="Max partial-match rows to display (default: 30)")
     parser.add_argument("--unimpl-limit", type=int, default=20,
@@ -245,6 +308,8 @@ def main() -> int:
 
     if args.json:
         print(json.dumps(result, indent=2))
+    elif args.quiet:
+        print(format_summary(result))
     else:
         print(format_text(result, partial_limit=args.partial_limit, unimpl_limit=args.unimpl_limit))
 

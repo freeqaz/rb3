@@ -474,6 +474,48 @@ def query_functions(
     return [dict(row) for row in rows]
 
 
+def query_next_targets(
+    pattern: str | list[str] = "*",
+    min_percent: float = 0,
+    max_percent: float = 99.5,
+    min_size: int = 16,
+    limit: int = 5,
+    db_path: str | Path = DEFAULT_DB_PATH,
+) -> list[dict[str, Any]]:
+    """
+    Query workable functions ranked for ROI.
+
+    Score = current_percent / (attempt_count + 1), evaluated in SQL and used
+    as the descending sort key. Rows with current_percent IS NULL (unimplemented)
+    are excluded. Excludes COMPLETE/AT_LIMIT verdicts and locked rows.
+
+    Returns list of function dicts, highest score first.
+    """
+    conn = get_connection(db_path)
+
+    glob_clause, glob_params = _build_unit_glob_clause(pattern, DEFAULT_EXCLUDE_PATTERNS)
+
+    query = f"""
+        SELECT id, symbol, demangled, unit, size, current_percent, best_percent,
+               verdict, locked_by, attempt_count
+        FROM functions
+        WHERE {glob_clause}
+          AND current_percent IS NOT NULL
+          AND current_percent >= ?
+          AND current_percent <= ?
+          AND size IS NOT NULL
+          AND size >= ?
+          AND locked_by IS NULL
+          AND (verdict IS NULL OR verdict NOT IN ('COMPLETE', 'AT_LIMIT'))
+        ORDER BY (current_percent / (COALESCE(attempt_count, 0) + 1)) DESC
+        LIMIT ?
+    """
+    params: list[Any] = glob_params + [min_percent, max_percent, min_size, limit]
+
+    rows = conn.execute(query, params).fetchall()
+    return [dict(row) for row in rows]
+
+
 def lock_function(
     function_id: int, session_id: str, db_path: str | Path = DEFAULT_DB_PATH
 ) -> bool:
