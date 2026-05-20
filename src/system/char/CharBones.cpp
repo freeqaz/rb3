@@ -757,8 +757,9 @@ void CharBones::RotateBy(CharBones &dst) const {
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
-                short sz = sdata[2];
-                short sy = sdata[1];
+                float fz = (float)sdata[2] * 0.000030518509f * 1300.0f;
+                float fy = (float)sdata[1] * 0.000030518509f * 1300.0f;
+                float fx = (float)sdata[0] * 0.000030518509f * 1300.0f;
                 while (db->name != src->name) {
                     db++;
                     if (db >= db_end) {
@@ -768,9 +769,9 @@ void CharBones::RotateBy(CharBones &dst) const {
                     ddata++;
                 }
                 src++;
-                ddata->x += (float)sdata[0] * 0.039674062f;
-                ddata->y += (float)sy * 0.039674062f;
-                ddata->z += (float)sz * 0.039674062f;
+                ddata->x += fx;
+                ddata->y += fy;
+                ddata->z += fz;
                 if (src_end == src)
                     goto rotate_quat;
                 db++;
