@@ -141,15 +141,13 @@ void BandCrowdMeter::Poll() {
             RndGroup *curgrp = *it;
             float d15 = curgrp->GetFrame();
             if (d15 < loc80) {
-                float max = std::max(1.0f, loc80 - d15);
-                float scaled = max * 0.1f;
-                float min = std::min(loc80, d15 + scaled);
-                curgrp->SetFrame(max, 1.0f);
+                curgrp->SetFrame(
+                    std::min(loc80, d15 + std::max(1.0f, loc80 - d15) * 0.1f), 1.0f
+                );
             } else if (d15 > loc80) {
-                float max = std::max(1.0f, d15 - loc80);
-                float scaled = max * -0.1f;
-                max = std::max(loc80, d15 + scaled);
-                curgrp->SetFrame(max, 1.0f);
+                curgrp->SetFrame(
+                    std::max(loc80, d15 + std::max(1.0f, d15 - loc80) * -0.1f), 1.0f
+                );
             }
         }
         std::sort(mDraws.begin(), mDraws.end(), SortDraws);
