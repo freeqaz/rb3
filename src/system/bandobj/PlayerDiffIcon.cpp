@@ -49,7 +49,7 @@ void PlayerDiffIcon::DrawShowing() {
         mPlayerMeshes[i]->SetMat(i < mNumPlayers ? mPlayerMat : mNoPlayerMat);
     }
     for (int i = 0; i < mDiffLabels.size(); i++) {
-        mDiffLabels[i]->SetShowing(mDiff == i);
+        mDiffLabels[i]->SetShowing(i == mDiff);
     }
     for (ObjDirItr<UILabel> it(d, true); it != 0; ++it) {
         it->SetAlpha(mAlpha);
