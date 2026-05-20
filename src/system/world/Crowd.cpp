@@ -383,7 +383,8 @@ void WorldCrowd::Draw3DChars() {
                     curChar->mSpotCutout = false;
                 }
                 curChar->SetWorldXfm(spXfm);
-                curChar->DrawShowing();
+                RndDrawable &drawable = *curChar;
+                drawable.DrawShowing();
                 curChar->mSelfShadow = savedSelfShadow;
                 curChar->mFloorShadow = savedFloorShadow;
                 curChar->mSpotCutout = savedSpotCutout;
