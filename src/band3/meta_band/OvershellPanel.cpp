@@ -787,6 +787,48 @@ void OvershellPanel::ResolveSlotStates() {
     HandleType(msgHideConnectControllerMesh);
 }
 
+void OvershellPanel::ResolveReadyToPlayStates() {
+    std::vector<OvershellSlot *> slots;
+    for (int i = 0; i < mSlots.size(); i++) {
+        if (mSlots[i]->InOverrideFlow(kOverrideFlow_SongSettings)
+            && mSlots[i]->GetUser()) {
+            slots.push_back(mSlots[i]);
+        }
+    }
+    if (!slots.empty()) {
+        bool allReady = true;
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots[i]->GetState()->GetStateID() != kState_ReadyToPlay
+                && slots[i]->GetState()->GetStateID() != kState_ReadyToPlayWait) {
+                allReady = false;
+                break;
+            }
+        }
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots[i]->GetUser()->IsLocal()) {
+                if (allReady) {
+                    slots[i]->GetUser()->SetOvershellSlotState(kState_ReadyToPlayWait);
+                } else if (slots[i]->GetUser()->GetOvershellState()
+                           == kState_ReadyToPlayWait) {
+                    slots[i]->GetUser()->SetOvershellSlotState(kState_ReadyToPlay);
+                }
+            }
+        }
+        if (allReady && mSessionMgr->IsLeaderLocal()) {
+            bool allWait = true;
+            for (int i = 0; i < slots.size(); i++) {
+                if (slots[i]->GetUser()->GetOvershellState() != kState_ReadyToPlayWait) {
+                    allWait = false;
+                    break;
+                }
+            }
+            if (allWait && mPanelOverrideFlow == kOverrideFlow_SongSettings) {
+                EndOverrideFlow(kOverrideFlow_SongSettings, false);
+            }
+        }
+    }
+}
+
 void OvershellPanel::ResolveSignInWaitStates() {
     if (InOverrideFlow(kOverrideFlow_RegisterOnline)) {
         bool b2 = true;
