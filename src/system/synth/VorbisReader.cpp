@@ -4,6 +4,7 @@
 #include "synth/Synth.h"
 #include "utl/BufStream.h"
 #include "os/Endian.h"
+#include "decomp.h"
 
 namespace {
     static unsigned char gKey[256];
@@ -314,6 +315,7 @@ bool VorbisReader::TryConsumeData() {
     return ret;
 }
 
+UNPOOL_DATA
 bool VorbisReader::TryDecode() {
     if (mFail)
         return false;
@@ -323,20 +325,24 @@ bool VorbisReader::TryDecode() {
         unk98 = true;
     }
     if (unk98) {
+        int pollErr;
         START_AUTO_TIMER("vorbis_synthesis_poll_cpu");
         if (mVorbisBlock->synthesis_state == vorbis_block::vss_init) {
             START_AUTO_TIMER("vorbis_synthesis_vssinit_cpu");
+            pollErr = vorbis_synthesis_poll(mVorbisBlock, &mPendingPacket);
         } else if (mVorbisBlock->synthesis_state == vorbis_block::vss_decode) {
             START_AUTO_TIMER("vorbis_synthesis_vssdecode_cpu");
+            pollErr = vorbis_synthesis_poll(mVorbisBlock, &mPendingPacket);
         } else {
             START_AUTO_TIMER("vorbis_synthesis_vssmdct_cpu");
+            pollErr = vorbis_synthesis_poll(mVorbisBlock, &mPendingPacket);
         }
-        int pollErr = vorbis_synthesis_poll(mVorbisBlock, &mPendingPacket);
+        bool result = false;
         if (pollErr == OV_ENOTAUDIO) {
             unk98 = false;
+        } else if (pollErr == -0x32) {
+            result = true;
         } else {
-            if (pollErr == -0x32)
-                return true;
             if (pollErr < 0) {
                 VORBIS_FAIL("Synthesis", pollErr);
             }
@@ -347,15 +353,17 @@ bool VorbisReader::TryDecode() {
                 if (blockErr < 0) {
                     VORBIS_FAIL("BlockIn", blockErr);
                 }
-                return true;
+                result = true;
             }
         }
+        return result;
     } else if (unke2 && !mReadBuffer && QueuedOutputSamples() == 0 && !mDone) {
         EndData();
         mDone = true;
     }
     return false;
 }
+END_UNPOOL_DATA
 
 bool VorbisReader::TryReadPacket(ogg_packet &pk) {
     MILO_ASSERT(mOggStream, 0x3AA);
