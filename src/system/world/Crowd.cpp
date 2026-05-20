@@ -329,7 +329,7 @@ void WorldCrowd::Draw3DChars() {
                     spXfm.v.y = charXfm.v.y;
                     spXfm.v.z = charXfm.v.z;
                 }
-                spXfm.v.z = -(charIt->mDef.mRadius * 0.5f - spXfm.v.z);
+                spXfm.v.z = -(charIt->mDef.mHeight * 0.5f - spXfm.v.z);
                 if (mRotate != 0 || mFocus) {
                     Transform &placeXfm = mPlacementMesh->WorldXfm();
                     spXfm.m.z.x = placeXfm.m.z.x;
@@ -337,14 +337,22 @@ void WorldCrowd::Draw3DChars() {
                     spXfm.m.z.z = placeXfm.m.z.z;
                     if (mRotate == 1) {
                         Transform &camXfm = RndCam::sCurrent->WorldXfm();
-                        spXfm.m.x.x = spXfm.m.z.y * camXfm.m.y.z - spXfm.m.z.z * camXfm.m.y.y;
-                        spXfm.m.x.y = spXfm.m.z.z * camXfm.m.y.x - spXfm.m.z.x * camXfm.m.y.z;
-                        spXfm.m.x.z = spXfm.m.z.x * camXfm.m.y.y - spXfm.m.z.y * camXfm.m.y.x;
+                        Vector3 cross;
+                        cross.x = spXfm.m.z.y * camXfm.m.y.z;
+                        cross.y = spXfm.m.z.z * camXfm.m.y.x;
+                        cross.z = spXfm.m.z.x * camXfm.m.y.y;
+                        spXfm.m.x.x = cross.x - spXfm.m.z.z * camXfm.m.y.y;
+                        spXfm.m.x.y = cross.y - spXfm.m.z.x * camXfm.m.y.z;
+                        spXfm.m.x.z = cross.z - spXfm.m.z.y * camXfm.m.y.x;
                     } else if (mRotate == 2) {
                         Transform &camXfm = RndCam::sCurrent->WorldXfm();
-                        spXfm.m.x.x = camXfm.m.y.y * spXfm.m.z.z - camXfm.m.y.z * spXfm.m.z.y;
-                        spXfm.m.x.y = camXfm.m.y.z * spXfm.m.z.x - camXfm.m.y.x * spXfm.m.z.z;
-                        spXfm.m.x.z = camXfm.m.y.x * spXfm.m.z.y - camXfm.m.y.y * spXfm.m.z.x;
+                        Vector3 cross;
+                        cross.x = camXfm.m.y.y * spXfm.m.z.z;
+                        cross.y = camXfm.m.y.z * spXfm.m.z.x;
+                        cross.z = camXfm.m.y.x * spXfm.m.z.y;
+                        spXfm.m.x.x = cross.x - camXfm.m.y.z * spXfm.m.z.y;
+                        spXfm.m.x.y = cross.y - camXfm.m.y.x * spXfm.m.z.z;
+                        spXfm.m.x.z = cross.z - camXfm.m.y.y * spXfm.m.z.x;
                     } else {
                         Transform &focusXfm = mFocus->WorldXfm();
                         Vector3 fwd2d;
