@@ -27,39 +27,42 @@ void BandStarDisplay::SetNumStars(float f, bool b) {
         double intPart;
         float fracPart = (float)modf(f, &intPart);
         bool animated = false;
-        while (newStar > i && i < size) {
-            mStarSweepAnims[i]->SetFrame(1.0f, 1.0f);
-            mStarFullTriggers[i]->Trigger();
-            i++;
-            if (i < size) {
-                mStars[i]->SetShowing(true);
+        if (newStar > i) {
+            while (newStar > i && i < size) {
+                mStarSweepAnims[i]->SetFrame(1.0f, 1.0f);
+                mStarFullTriggers[i]->Trigger();
+                i++;
+                if (i < size) {
+                    mStars[i]->SetShowing(true);
+                }
+                animated = true;
             }
-            animated = true;
-        }
-        if (newStar == size + 1) {
-            for (int j = 0; j < size; j++) {
-                mStarGoldTriggers[j]->Trigger();
+            if (newStar == size + 1) {
+                for (int j = 0; j < size; j++) {
+                    mStarGoldTriggers[j]->Trigger();
+                }
             }
-        }
-        if (animated) {
-            mStarOffsetAnim->Animate(
-                0.0f, false, 0.0f, RndAnimatable::k30_fps_ui,
-                mStarOffsetAnim->mFrame, 10.0f * (float)newStar, 0.0f, 1.0f, dest
-            );
-            if (b) {
-                if (mStarType == tour)
-                    mEarnSpadeSfx->Play(0.0f, 0.0f, 0.0f);
-                else
-                    mEarnStarSfx->Play(0.0f, 0.0f, 0.0f);
+            if (animated) {
+                mStarOffsetAnim->Animate(
+                    0.0f, false, 0.0f, RndAnimatable::k30_fps_ui,
+                    mStarOffsetAnim->mFrame, 10.0f * (float)i, 0.0f, 1.0f, dest
+                );
+                if (b) {
+                    if (mStarType == tour)
+                        mEarnSpadeSfx->Play(0.0f, 0.0f, 0.0f);
+                    else
+                        mEarnStarSfx->Play(0.0f, 0.0f, 0.0f);
+                }
             }
         }
         if (mStarType == tour && newStar < size) {
             EventTrigger *et =
-                mStars[newStar]->Find<EventTrigger>("pulse_success.trig", true);
+                mStars[i]->Find<EventTrigger>("pulse_success.trig", true);
             et->Trigger();
         }
         if (i < size) {
-            mStarSweepAnims[i]->SetFrame(Min<float>(fracPart, 0.95f), 1.0f);
+            RndAnimatable *anim = mStarSweepAnims[i];
+            anim->SetFrame(Min<float>(fracPart, 0.95f), 1.0f);
         }
         mNumStars = f;
     }
