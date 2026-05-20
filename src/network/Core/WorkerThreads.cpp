@@ -28,16 +28,22 @@ namespace Quazal {
 
     bool WorkerThreads::Stop() {
         ScopedCS cs(m_csState);
-        if (m_eState != Running)
+        if (m_eState != Running) {
             return false;
-        else {
-            m_eState = Stopping;
-            for (int i = 0; i < m_vecThreads.size(); i++) {
-                m_vecThreads[i]->Wait(-1);
-                delete m_vecThreads[i];
-            }
-            return true;
         }
+        m_eState = Stopping;
+        cs.EndScope();
+        unsigned int i;
+        for (i = 0; i < m_vecThreads.size(); i++) {
+            m_vecThreads[i]->Wait(-1);
+            delete m_vecThreads[i];
+        }
+        m_vecThreads.erase(m_vecThreads.begin(), m_vecThreads.end());
+        {
+            ScopedCS cs2(m_csState);
+            m_eState = Stopped;
+        }
+        return true;
     }
 
     unsigned int WorkerThreads::GetNbWorkers() const { return m_vecThreads.size(); }
