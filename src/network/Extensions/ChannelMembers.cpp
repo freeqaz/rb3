@@ -1,3 +1,4 @@
+#define _STLP_LIST_CLEAR_INLINE inline
 #include "network/Extensions/ChannelMembers.h"
 #include "VoiceChannelMember.h"
 
