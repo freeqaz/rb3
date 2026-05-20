@@ -731,11 +731,12 @@ void Player::UpdateEnergy(const SongPos &pos) {
         float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime);
         if (secs > 0.0f) {
             SetEnergy(1.0f);
-            EnableFills(0.0f, false);
+            DeployBandEnergyIfPossible(false);
         }
     }
     if (TheGame->unkdc == -1.0f) {
         if (unk2b0 && mDeployingBandEnergy) {
+            TheSongDB->GetData()->GetBeatMap();
             float curBeat = TickToBeat((int)pos.mTotalTick);
             float prevBeat = TickToBeat((int)mSongPos.mTotalTick);
             float delta = curBeat - prevBeat;
