@@ -108,9 +108,8 @@ CharClip::Transitions::Resize(int i, const CharClip::NodeVector *old) {
             }
         }
     }
-    NodeVector *v = mNodeStart;
-    mNodeEnd = (NodeVector *)((char *)v + i);
-    return (NodeVector *)((char *)v + n);
+    mNodeEnd = (NodeVector *)((char *)mNodeStart + i);
+    return (NodeVector *)((char *)mNodeStart + n);
 }
 
 void CharClip::Transitions::AddNode(CharClip *clip, const CharGraphNode &node) {
