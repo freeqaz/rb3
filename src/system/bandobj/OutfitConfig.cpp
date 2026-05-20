@@ -604,14 +604,12 @@ unsigned int OutfitConfig::OverlayFlags() const {
 
 bool OutfitConfig::InMilo() {
     if (ObjectDir::sMainDir->FindObject("milo", false)) {
-        static DataNode &n = DataVariable(Symbol("milo.dir"));
+        static DataNode &n = DataVariable("milo.dir");
         bool result = false;
         bool isSameDir = false;
         bool isMiloObj = false;
-        if (n.Type() == kDataObject) {
-            if (Dir()) {
-                isMiloObj = true;
-            }
+        if (n.Type() == kDataObject && Dir()) {
+            isMiloObj = true;
         }
         if (isMiloObj) {
             ObjectDir *castedDir = dynamic_cast<ObjectDir *>(n.GetObj(NULL));
