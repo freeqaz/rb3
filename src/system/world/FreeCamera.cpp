@@ -191,9 +191,8 @@ BEGIN_HANDLERS(FreeCamera)
     HANDLE_ACTION(set_pos, mXfm.v.Set(_msg->Float(2), _msg->Float(3), _msg->Float(4)))
     HANDLE_ACTION(
         set_rot,
-        mRot.Set(
-            _msg->Float(2) * DEG2RAD, _msg->Float(3) * DEG2RAD, _msg->Float(4) * DEG2RAD
-        )
+        (mRot.Set(_msg->Float(2), _msg->Float(3), _msg->Float(4)),
+         mRot.x *= DEG2RAD, mRot.y *= DEG2RAD, mRot.z *= DEG2RAD)
     )
     HANDLE_ACTION(set_parent_dof, SetParentDof(_msg->Int(2), _msg->Int(3), _msg->Int(4)))
     HANDLE_ACTION(set_frozen, mFrozen = _msg->Int(2))
