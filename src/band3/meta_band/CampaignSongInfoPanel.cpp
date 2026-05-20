@@ -1,6 +1,8 @@
 #include "meta_band/CampaignSongInfoPanel.h"
 #include "BandProfile.h"
 #include "Campaign.h"
+#include "MusicLibrary.h"
+#include "SongSortMgr.h"
 #include "SongStatusMgr.h"
 #include "Utl.h"
 #include "game/Defines.h"
@@ -176,7 +178,19 @@ Symbol CampaignSongInfoPanel::GetMusicLibraryNextScreen() {
     return handled.Sym();
 }
 
-void CampaignSongInfoPanel::CreateAndSubmitMusicLibraryTask() {}
+void CampaignSongInfoPanel::CreateAndSubmitMusicLibraryTask() {
+    Symbol src = SelectedSource();
+    SongSortMgr::SongFilter filt;
+    MusicLibrary::MusicLibraryTask task;
+    if (src != all) {
+        filt.AddFilter((FilterType)5, src);
+        task.filter = filt;
+    }
+    task.allowDuplicates = false;
+    task.backScreen = GetMusicLibraryBackScreen();
+    task.nextScreen = GetMusicLibraryNextScreen();
+    TheMusicLibrary->SetTask(task);
+}
 
 void CampaignSongInfoPanel::Launch() {
     CreateAndSubmitMusicLibraryTask();
