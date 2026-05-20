@@ -145,7 +145,10 @@ done:
     Vector3 v7c(WorldXfm().v);
     Vector3 v88;
     Subtract(v7c, v2, v88);
-    float lensq = LengthSquared(v88);
+    float xx = v88.x * v88.x;
+    float yy = v88.y * v88.y;
+    float zz = v88.z * v88.z;
+    float lensq = xx + yy + zz;
     Normalize(v88, v88);
 
     float f1score = 0.0f;
@@ -160,7 +163,7 @@ done:
     if (f7 != f7) {
         f7 = 0.2f;
     }
-    if (f7 < -0.0001f) {
+    if (!(f7 >= -0.0001f)) {
         MILO_FAIL("error scoring interest object: bad normalize factor gave score %f", f7);
     }
 
