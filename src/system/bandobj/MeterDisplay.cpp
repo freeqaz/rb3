@@ -99,12 +99,13 @@ void MeterDisplay::DrawShowing() {
     if (mMaxValue > 0) {
         f = (float)mCurrentValue / (float)mMaxValue;
         float f1 = TheTaskMgr.UISeconds() - unk114;
-        if (mAnimPeriod > 0) {
+        float period = mAnimPeriod;
+        if (period > 0) {
             int itouse = unk118;
             if (itouse >= 0 && f1 > 0) {
-                if (f1 < mAnimPeriod) {
-                    f = (f1 / mAnimPeriod) * (float)(itouse - mCurrentValue)
-                        + (float)mCurrentValue / (float)mMaxValue;
+                if (f1 < period) {
+                    f = ((f1 / period) * (float)(itouse - mCurrentValue)
+                        + (float)mCurrentValue) / (float)mMaxValue;
                 } else {
                     mCurrentValue = itouse;
                     unk118 = -1;
