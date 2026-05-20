@@ -53,7 +53,7 @@ public:
     void SetFX(bool);
     void SetMicIndex(int);
     void SetPad(int);
-    int GetPad();
+    int GetPad() const;
 
     int mMicIndex; // 0x0
     bool mOn; // 0x4
