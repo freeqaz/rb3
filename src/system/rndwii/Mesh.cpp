@@ -276,6 +276,8 @@ void WiiMesh::ReleaseBuffers() {
     unk_0x150 = NULL;
 }
 
+#pragma push
+#pragma pool_data off
 void *SkinAlloc(int size, char *, int align) {
     static int fastHeapNum = MemFindHeap("fast");
     int a, b, c, d;
@@ -293,6 +295,7 @@ void *SkinAlloc(int size, char *, int align) {
     MemPopHeap();
     return result;
 }
+#pragma pop
 
 void WiiMesh::CreateBuffers() {
     u32 pos_nrm_vtx_scale = GetSomeSizeFactor();

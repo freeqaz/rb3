@@ -331,6 +331,8 @@ void RandomPointOnMesh(RndMesh *m, Vector3 &v1, Vector3 &v2) {
     }
 }
 
+#pragma push
+#pragma pool_data off
 void UtilDrawSphere(const Vector3 &v, float f, const Hmx::Color &col) {
     if (!sSphereMesh) {
         MILO_NOTIFY_ONCE("Sphere mesh is not loaded");
@@ -348,6 +350,7 @@ void UtilDrawSphere(const Vector3 &v, float f, const Hmx::Color &col) {
         sSphereMesh->Draw();
     }
 }
+#pragma pop
 
 void UtilDrawString(const char *c, const Vector3 &v, const Hmx::Color &col) {
     Vector2 v2;
