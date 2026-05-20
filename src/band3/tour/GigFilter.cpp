@@ -44,13 +44,13 @@ Symbol GigFilter::GetFilteredPartSym() const { return mFilteredPartSym; }
 void GigFilter::InitializeMusicLibraryTask(
     MusicLibrary::MusicLibraryTask &task, int size, Symbol s
 ) const {
-    task.maxSetlistSize = size;
     task.filter = mFilter;
+    task.maxSetlistSize = size;
     task.partSym = mFilteredPartSym;
     if (s != gNullStr) {
         GigFilter *pSecondaryFilter = TheQuestMgr.GetQuestFilter(s);
         MILO_ASSERT(pSecondaryFilter, 102);
-        SongSortMgr::SongFilter secondaryFilter = pSecondaryFilter->GetFilter();
+        SongSortMgr::SongFilter secondaryFilter = pSecondaryFilter->mFilter;
         task.filter.IntersectFilter(&secondaryFilter);
         task.partSym = TheTour->CombinePartSymbols(task.partSym, pSecondaryFilter->mFilteredPartSym);
     }
