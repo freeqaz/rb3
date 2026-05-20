@@ -110,6 +110,8 @@ namespace Quazal {
         // Declaring `right` first with its initializer (then reassigning it
         // below) coalesces the rhs base pointer with the right-content pointer
         // in the same callee-saved register, matching the target's reg alloc.
+        // Remaining ~0.4% diff is an r30<->r31 swap in the inlined String ctor
+        // for the uiSizeLeft==0 path; verdict: AtLimit (register allocation).
         const char *right = rhs.m_szContent;
         unsigned int uiSizeLeft;
         unsigned int uiSizeRight;
