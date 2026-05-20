@@ -1,11 +1,13 @@
 #include "bandtrack/Tail.h"
 #include "bandtrack/GraphicsUtl.h"
 #include "math/Mtx.h"
+#include "math/Utl.h"
 #include "obj/Object.h"
 #include "obj/Task.h"
 #include "os/Debug.h"
 #include "rndobj/Group.h"
 #include "rndobj/Mesh.h"
+#include <math.h>
 
 Tail::Tail(GemRepTemplate &tmp)
     : mGroup(Hmx::Object::New<RndGroup>()), mTail1(Hmx::Object::New<RndMesh>()),
@@ -204,4 +206,126 @@ void Tail::Poll(float, float whammy, float) {
     }
 }
 
-void Tail::UpdateVerts(float f1, bool b2) {}
+void Tail::UpdateVerts(float alpha, bool active) {
+    if (!unk28) return;
+
+    int tailFlag = 0;
+    if (active || mSlideInfo.unk0) tailFlag = 1;
+    GemRepTemplate::TailType tailType = (GemRepTemplate::TailType) !tailFlag;
+    float scaleX = mTemplate.mTailScaleX;
+    int total_sections = mTemplate.GetNumTailSections(tailType);
+    float sectionLen = mTemplate.GetTailSectionLength(tailType);
+    float clamped = Clamp<float>(0, mTemplate.kTailMaxLength, unk4ec);
+    float capLen = Clamp<float>(0, mTemplate.mTailSectionLength[0], clamped);
+    int capInc = (capLen > 0) ? 1 : 0;
+    float midLen = clamped - capLen;
+    int midSections = 0;
+    float midStart = 0;
+    if (midLen > 0) {
+        midSections = (int) (float) ceil(midLen / sectionLen);
+        midStart = -(((float) (midSections - 1) * sectionLen) - midLen);
+    }
+    int used_sections = capInc + midSections;
+    MILO_ASSERT(used_sections <= total_sections, 0x1C3);
+
+    GemRepTemplate &templ = mTemplate;
+    int vertCount = templ.GetRequiredVertCount(used_sections);
+    RndMesh::VertVector &verts = mTailGeomOwner->Verts();
+    bool resized = false;
+    if (vertCount != verts.size()) {
+        verts.resize(vertCount, true);
+        resized = true;
+    }
+
+    RndMesh::Vert *out = verts.begin();
+    RndMesh::Vert *tailBegin = &templ.mTailVerts[0];
+    RndMesh::Vert *tailEnd = &templ.mTailVerts[templ.mTailVerts.size()];
+    float curY = 0;
+    float yWorld = unk10;
+
+    float baseOfs = 0;
+    if (active) {
+        baseOfs = baseOfs + mWhammy[0];
+    }
+    if (mSlideInfo.unk0) {
+        baseOfs += mInterpolator.Eval(yWorld);
+    }
+
+    for (RndMesh::Vert *src = tailBegin; src != tailEnd; ++src, ++out) {
+        out->pos.y = 0;
+        out->pos.x = scaleX * (src->pos.x + baseOfs);
+        out->pos.z = src->pos.z * 1.0f;
+        out->uv.x = src->uv.x;
+        out->uv.y = src->uv.y;
+    }
+
+    curY += midStart;
+    yWorld += midStart;
+
+    for (int i = 0; i < midSections; i++) {
+        float ofs = 0;
+        if (active) {
+            int idx = (int) (0.5f * curY);
+            MILO_ASSERT(idx >= 0 && idx <= 0x12B, 0x39);
+            ofs += mWhammy[idx];
+        }
+        if (mSlideInfo.unk0) {
+            ofs += mInterpolator.Eval(yWorld);
+        }
+        for (RndMesh::Vert *src = tailBegin; src != tailEnd; ++src, ++out) {
+            out->pos.y = curY;
+            out->pos.x = scaleX * (src->pos.x + ofs);
+            out->pos.z = src->pos.z * 1.0f;
+            out->uv.x = src->uv.x;
+            out->uv.y = src->uv.y;
+        }
+        if (i + 1 == midSections) break;
+        curY += sectionLen;
+        yWorld += sectionLen;
+    }
+
+    if (capLen > 0) {
+        curY += capLen;
+        yWorld += capLen;
+        float ofs = 0;
+        if (active) {
+            int idx = (int) (0.5f * curY);
+            MILO_ASSERT(idx >= 0 && idx <= 0x12B, 0x39);
+            ofs += mWhammy[idx];
+        }
+        if (mSlideInfo.unk0) {
+            ofs += mInterpolator.Eval(yWorld);
+        }
+        RndMesh::Vert *csrc = &templ.mCapVerts[0];
+        RndMesh::Vert *cend = &templ.mCapVerts[templ.mCapVerts.size()];
+        for (; csrc != cend; ++csrc, ++out) {
+            out->pos.y = curY;
+            out->pos.x = scaleX * (csrc->pos.x + ofs);
+            out->pos.z = csrc->pos.z * 1.0f;
+            out->uv.x = csrc->uv.x;
+            out->uv.y = csrc->uv.y;
+        }
+    }
+    MILO_ASSERT(out == verts.end(), 0x219);
+
+    int syncFlags = 0x9F;
+    if (resized) {
+        std::vector<RndMesh::Face> &faces = mTailGeomOwner->Faces();
+        RndMesh::Face zeroFace;
+        zeroFace.v1 = 0; zeroFace.v2 = 0; zeroFace.v3 = 0;
+        int faceCount = mTemplate.GetRequiredFaceCount(used_sections);
+        if ((unsigned int) faceCount < (unsigned int) faces.size()) {
+            faces.erase(faces.begin() + faceCount, faces.end());
+        } else {
+            faces.insert(faces.end(), faceCount - faces.size(), zeroFace);
+        }
+        unsigned short v = 0;
+        for (int i = 0; i < used_sections; i++) {
+            faces[i*2].Set(v, v + 1, v + 2);
+            faces[i*2 + 1].Set(v + 2, v + 1, v + 3);
+            v += 2;
+        }
+        syncFlags |= 0x20;
+    }
+    mTailGeomOwner->Sync(syncFlags);
+}
