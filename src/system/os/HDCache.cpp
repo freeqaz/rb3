@@ -123,7 +123,77 @@ void HDCache::Init() {
     }
 }
 
-void HDCache::OpenFiles(int numFilesToOpen) {}
+void HDCache::OpenFiles(int numCachedArkfiles) {
+    if (mFileFmt.empty())
+        return;
+    int numArkfiles = TheArchive->mNumArkfiles;
+    MILO_ASSERT(numCachedArkfiles <= numArkfiles, 0x22E);
+    FileMkDir(FileGetPath(mFileFmt.c_str(), 0));
+    std::vector<int> pendingArkfiles;
+    for (int i = 0; i < numArkfiles; i++) {
+        const char *fileFmt = MakeString(mFileFmt.c_str(), i);
+        bool exists = FileExists(fileFmt, 0x10000);
+        int prio = TheArchive->GetArkfileCachePriority(i);
+        if (exists && i > numCachedArkfiles) {
+            FileDelete(fileFmt);
+        }
+        if (prio >= 0) {
+            pendingArkfiles.push_back(i);
+        }
+    }
+    const char *hdrFmt = MakeString(mHdrFmt.c_str(), 0);
+    mHdr[0] = NewFile(hdrFmt, 0x50204);
+    bool hdrValid = mHdr[0] && !mHdr[0]->Fail();
+    if (hdrValid) {
+        int hdrSize = HdrSize();
+        mHdr[0]->Truncate(hdrSize);
+        delete mHdr[0]; mHdr[0] = NULL;
+        mHdr[0] = NewFile(hdrFmt, 0x50004);
+        hdrValid = mHdr[0]->Size() == hdrSize;
+    }
+    if (!hdrValid) {
+        delete mHdr[0]; mHdr[0] = NULL;
+        return;
+    }
+    while (!pendingArkfiles.empty()) {
+        int maxPrio = -1;
+        std::vector<int>::iterator max = pendingArkfiles.end();
+        for (std::vector<int>::iterator it = pendingArkfiles.begin();
+             it != pendingArkfiles.end(); ++it) {
+            int prio = TheArchive->GetArkfileCachePriority(*it);
+            if (prio > maxPrio) {
+                maxPrio = prio;
+                max = it;
+            }
+        }
+        MILO_ASSERT(max != pendingArkfiles.end(), 0x26E);
+        int idx = *max;
+        const char *fileFmt = MakeString(mFileFmt.c_str(), idx);
+        File *file = NewFile(fileFmt, 0x50204);
+        bool ok = false;
+        if (file && file->Truncate(TheArchive->GetArkfileNumBlocks(idx) * kArkBlockSize)) {
+            ok = true;
+        }
+        if (file) {
+            delete file;
+            if (!ok) FileDelete(fileFmt);
+        }
+        pendingArkfiles.erase(max);
+    }
+    for (int i = 0; i < numArkfiles; i++) {
+        const char *fileFmt = MakeString(mFileFmt.c_str(), i);
+        File *read = NewFile(fileFmt, 0x50002);
+        File *write = NewFile(fileFmt, 0x50004);
+        if (!read || !write || read->Fail() || write->Fail()) {
+            if (read) delete read;
+            read = NULL;
+            if (write) delete write;
+            write = NULL;
+        }
+        mReadArkFiles[i] = (ArkFile *)read;
+        mWriteArkFiles[i] = (ArkFile *)write;
+    }
+}
 
 void HDCache::UnlockCache() {
     CritSecTracker cst(mCritSec);
