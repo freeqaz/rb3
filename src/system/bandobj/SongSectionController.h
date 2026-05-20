@@ -7,7 +7,7 @@ class SongSectionController : public RndPollable {
 public:
     class PracticeSectionMapping {
     public:
-        PracticeSectionMapping(Hmx::Object *);
+        PracticeSectionMapping(Hmx::Object *) {}
         Symbol mPoolCategory; // 0x0
         std::list<String> mValidPracticeSections; // 0x4
         std::list<String> mInvalidPracticeSections; // 0xc
