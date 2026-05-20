@@ -139,7 +139,8 @@ void MsgSource::RemoveSink(Hmx::Object *s, Symbol ev) {
 }
 
 void MsgSource::MergeSinks(MsgSource *from) {
-    FOREACH (it, from->mSinks) {
+    std::list<Sink> &sinks = from->mSinks;
+    FOREACH (it, sinks) {
         AddSink(it->obj, Symbol(), Symbol(), it->mode);
     }
     FOREACH (it, from->mEventSinks) {
