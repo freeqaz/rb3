@@ -18,6 +18,8 @@ extern "C" {
 int gBinkCore0 = -1;
 int gBinkCore1 = -1;
 
+std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
+
 namespace {
     CriticalSection gMovieCrit;
     bool gInitialized;
@@ -32,7 +34,6 @@ static DataNode OnMovieSetTrack(DataArray *arr) {
     return DataNode();
 }
 
-std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
 std::list<Movie::Impl *> Movie::openMovieFiles;
 
 Movie::Movie() {
