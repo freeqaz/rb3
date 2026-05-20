@@ -6,8 +6,8 @@
 struct AccomplishmentTourCondition {
     AccomplishmentTourCondition() : mGameType((TourGameType)0), mValue(0) {}
     Symbol mCondition;
-    TourGameType mGameType;
     int mValue;
+    TourGameType mGameType;
     Symbol mTourDesc;
 };
 
