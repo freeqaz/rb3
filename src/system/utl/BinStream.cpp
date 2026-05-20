@@ -146,8 +146,10 @@ inline void SwapData(const void *v1, void *v2, int num_bytes) {
     }
     case 8: {
         unsigned long long *l1 = (unsigned long long *)v1;
-        long long *l2 = (long long *)v2;
-        *l2 = EndianSwap(*l1);
+        unsigned long long *l2 = (unsigned long long *)v2;
+        unsigned long long ull = *l1;
+        *l2 = (ull >> 56) | ((ull >> 40) & 0xFF00ULL) | ((ull >> 24) & 0xFF0000ULL) | ((ull >> 8) & 0xFF000000ULL)
+            | ((ull & 0xFF000000ULL) << 8) | ((ull & 0xFF0000ULL) << 24) | ((ull & 0xFF00ULL) << 40) | ((ull & 0xFFULL) << 56);
         break;
     }
     default:
@@ -185,10 +187,10 @@ void BinStream::ReadEndian(void *data, int bytes) {
 }
 
 void BinStream::WriteEndian(const void *void_data, int bytes) {
-    char sp8;
     if (mLittleEndian) {
-        SwapData((void *)void_data, &sp8, bytes);
-        Write(&sp8, bytes);
+        u64 output[2];
+        SwapData(void_data, output, bytes);
+        Write(output, bytes);
     } else
         Write(void_data, bytes);
 }
