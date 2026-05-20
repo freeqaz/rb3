@@ -327,12 +327,12 @@ void StreakMeter::ShowPhraseFeedback(int i, bool b) {
         case 5:
         case 6:
             if (!b)
-                mFlashTrig->Trigger();
+                mFlashSparksTrig->Trigger();
             break;
         case 2:
         case 3:
             if (!b)
-                mFlashSparksTrig->Trigger();
+                mFlashTrig->Trigger();
             break;
     }
     SetWipe(0);

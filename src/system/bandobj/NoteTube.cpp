@@ -133,7 +133,7 @@ void NoteTube::LookupPitchedUVCoordinates(
         i2 = 0;
     } else {
         column = mGlowLevel;
-        i2 = mPart + (unk_0x2C != 0 ? 3 : 0) + 1;
+        i2 = 1 + mPart + (unk_0x2C != 0 ? 3 : 0);
     }
     if (i2 != -1) {
         MILO_ASSERT(column != -1, 0x1C0);
