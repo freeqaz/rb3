@@ -59,15 +59,18 @@ void FindWeights(
 ) {
     floats.resize(transes.size());
     float f1 = 0;
-    for (int i = 0; i < transes.size(); i++) {
-        float len = Length(transes[i]->mLocalXfm.v);
-        if (arr) {
-            float f84 = 1;
-            arr->FindData(transes[i]->Name(), f84, false);
-            len *= f84;
+    int i = 0;
+    if (transes.size() != 0) {
+        for (; i < transes.size(); i++) {
+            float len = Length(transes[i]->mLocalXfm.v);
+            if (arr) {
+                float f84 = 1;
+                arr->FindData(transes[i]->Name(), f84, false);
+                len *= f84;
+            }
+            floats[i] = len;
+            f1 += floats[i];
         }
-        floats[i] = len;
-        f1 += floats[i];
     }
     for (int i = 0; i < floats.size(); i++) {
         floats[i] *= floats.size() / f1;
