@@ -1808,7 +1808,7 @@
             "sdk/PowerPC_EABI_Support/MetroTRK/mainloop.c": "MISSING",
             "sdk/PowerPC_EABI_Support/MetroTRK/mem_TRK.c": "MISSING",
             "sdk/PowerPC_EABI_Support/MetroTRK/mpc_7xx_603e.c": "MISSING",
-            "sdk/PowerPC_EABI_Support/MetroTRK/msg.c": "MISSING",
+            "sdk/PowerPC_EABI_Support/MetroTRK/msg.c": "NonMatching",
             "sdk/PowerPC_EABI_Support/MetroTRK/msgbuf.c": "MISSING",
             "sdk/PowerPC_EABI_Support/MetroTRK/msghndlr.c": "MISSING",
             "sdk/PowerPC_EABI_Support/MetroTRK/mslsupp.c": "MISSING",
@@ -2187,7 +2187,7 @@
         "mw_version": "Wii/1.3",
         "cflags": "sdk/ec",
         "objects": {
-            "sdk/ec/src/ec_api.cpp": "MISSING",
+            "sdk/ec/src/ec_api.cpp": "NonMatching",
             "sdk/ec/src/ec_asyncOp.cpp": "MISSING",
             "sdk/ec/src/ec_base64.cpp": "Equivalent",
             "sdk/ec/src/ec_checkECard.cpp": "MISSING",
