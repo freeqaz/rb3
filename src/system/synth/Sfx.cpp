@@ -191,7 +191,7 @@ SeqInst *Sfx::MakeInstImpl() {
     return inst;
 }
 
-DECOMP_FORCEFUNC(Sfx, SynthSample, LengthMs)
+DECOMP_FORCEACTIVE(Sfx, &SynthSample::LengthMs)
 
 BEGIN_HANDLERS(Sfx)
     HANDLE_ACTION(add_map, mMaps.push_back())
