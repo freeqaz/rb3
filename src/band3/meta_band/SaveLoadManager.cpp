@@ -1,15 +1,81 @@
 #include "SaveLoadManager.h"
 #include "game/BandUser.h"
 #include "meta/Profile.h"
+#include "meta_band/ProfileMgr.h"
 #include "net_band/RockCentralMsgs.h"
 #include "obj/Data.h"
 #include "obj/MessageTimer.h"
 #include "obj/ObjMacros.h"
+#include "os/Debug.h"
 #include "os/Memcard.h"
 #include "os/User.h"
+#include "utl/MemMgr.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+
+SaveLoadManager *TheSaveLoadMgr;
+
+bool SaveLoadManager::IsInitialLoadDone() const { return !mInitialLoadNotDone; }
+
+bool SaveLoadManager::IsIdle() {
+    bool idle = false;
+    if (mState == kS_Idle && mRequestFlags == 0) {
+        idle = true;
+    }
+    return idle;
+}
+
+int SaveLoadManager::GetDialogFocusOption() {
+    int ret = 1;
+    if (mState == kS_ManualLoadConfirm) {
+        ret = 2;
+    }
+    return ret;
+}
+
+void SaveLoadManager::Activate() {
+    if (!mActivated) {
+        mActivated = true;
+        mRequestFlags |= 2;
+    }
+}
+
+void SaveLoadManager::HandleEventResponseStart(int) { mStateAtSelectStart = mState; }
+
+void SaveLoadManager::Start() {
+    mUser = NULL;
+    mLocalUser = NULL;
+    SetState(kS_Start);
+    if (mMode == kMode_AutoLoad) {
+        UpdateStatus(kSaveLoadMgrStatus_Start);
+    }
+}
+
+void SaveLoadManager::Finish() {
+    if (mMode == kMode_AutoLoad) {
+        UpdateStatus(kSaveLoadMgrStatus_Finish);
+    }
+    SetState(kS_Finish);
+}
+
+void SaveLoadManager::AutoSave() {
+    if (IsReasonToAutosave(false)) {
+        mRequestFlags |= 4;
+        UpdateStatus(kSaveLoadMgrStatus_Saving);
+    }
+}
+
+void SaveLoadManager::AutoLoad() {
+    if (IsReasonToAutoload()) {
+        mRequestFlags |= 2;
+    }
+}
+
+void SaveLoadManager::ManualDelete() {
+    MILO_LOG("Manual Delete has been called\n");
+    mRequestFlags |= 1;
+}
 
 #pragma push
 #pragma dont_inline on
