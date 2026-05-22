@@ -1,9 +1,14 @@
 #include "bandobj/LayerDir.h"
 #include "rndobj/Cam.h"
+#include "rndobj/Tex.h"
+#include "rndobj/TexRenderer.h"
 #include "obj/ObjVersion.h"
+#include "obj/Data.h"
 #include "math/Rand.h"
+#include "os/File.h"
 #include "decomp.h"
 #include "utl/Symbols.h"
+#include <string.h>
 
 INIT_REVS(LayerDir)
 
@@ -146,4 +151,92 @@ DataNode LayerDir::RandomizeColors(DataArray *) {
         }
     }
     return DataNode(0);
+}
+
+void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
+    RndMat *mat = layer.mMat;
+    if (mat) {
+        if (layer.mActive) {
+            if (layer.mAllowColor) {
+                if (useColorIdx) {
+                    Hmx::Object *palette = layer.mColorPalette;
+                    if (palette) {
+                        if (palette->Property(Symbol("colors"), true)->Array()->Size()
+                            > layer.mColorIdx) {
+                            int packed = palette->Property(Symbol("colors"), true)
+                                             ->Array()
+                                             ->Node(layer.mColorIdx)
+                                             .Int();
+                            layer.mColor.Unpack(packed);
+                        }
+                    }
+                }
+                mat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
+            }
+            if (layer.mAllowAlpha) {
+                float a = layer.mAlpha * (layer.mAlphaMax - layer.mAlphaMin)
+                    + layer.mAlphaMin;
+                mat->SetProperty(Symbol("alpha"), DataNode(a));
+            } else {
+                mat->SetProperty(Symbol("alpha"), DataNode(1.0f));
+            }
+            if (layer.mProxy) {
+                FilePath fp(FilePath::sRoot.c_str(), layer.unk40.c_str());
+                layer.mProxy->SetProxyFile(fp, false);
+                layer.mProxy->SyncObjects();
+                layer.mProxy->SetFrame(mFrame, 1.0f);
+            } else {
+                String png = layer.mBitmap + ".png";
+                String bmp = layer.mBitmap + ".bmp";
+                String normPng = layer.mBitmap + "_norm.png";
+                String specPng = layer.mBitmap + "_spec.png";
+                String normBmp = layer.mBitmap + "_norm.bmp";
+                String specBmp = layer.mBitmap + "_spec.bmp";
+                for (std::vector<FilePath>::iterator it = layer.mBitmapList.begin();
+                     it != layer.mBitmapList.end();
+                     ++it) {
+                    const char *name = FileGetName(it->c_str());
+                    if (strcmp(name, png.c_str()) == 0
+                        || strcmp(name, bmp.c_str()) == 0
+                        || strcmp(name, normPng.c_str()) == 0
+                        || strcmp(name, specPng.c_str()) == 0
+                        || strcmp(name, normBmp.c_str()) == 0
+                        || strcmp(name, specBmp.c_str()) == 0) {
+                        FilePath bitmap(FilePath::sRoot.c_str(), it->c_str());
+                        mat->mDiffuseTex->SetBitmap(bitmap);
+                        break;
+                    }
+                }
+            }
+        } else {
+            mat->SetProperty(Symbol("alpha"), DataNode(0.0f));
+        }
+        const std::vector<ObjRef *> &refs = mat->Refs();
+        for (std::vector<ObjRef *>::const_iterator it = refs.end();
+             it != refs.begin();) {
+            --it;
+            RndTexRenderer *tr = dynamic_cast<RndTexRenderer *>((*it)->RefOwner());
+            if (tr)
+                tr->SetFrame(tr->mFrame, 1.0f);
+        }
+    }
+}
+
+DataNode LayerDir::GetBitmapList(DataArray *arr) {
+    DataArray *propPath = DataVariable("milo_prop_path").Array(NULL);
+    DataNode savedNode(propPath->Node(2));
+    propPath->Node(2) = DataNode(Symbol("name"));
+    const char *name = arr->GetObj(0)->Property(propPath, true)->Str(NULL);
+    for (ObjList<Layer>::iterator it = mLayers.begin(); it != mLayers.end(); ++it) {
+        if (strcmp(it->mName.c_str(), name) == 0) {
+            DataArray *result = new DataArray(it->mBitmapList.size());
+            for (int i = 0; i < it->mBitmapList.size(); i++) {
+                String fileName(FileGetName(it->mBitmapList[i].c_str()));
+                result->Node(i) =
+                    DataNode(fileName.substr(0, fileName.length() - 4));
+            }
+            return DataNode(DataArrayPtr(result));
+        }
+    }
+    return DataNode(DataArrayPtr(new DataArray(0)));
 }
