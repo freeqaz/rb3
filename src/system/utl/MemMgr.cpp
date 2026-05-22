@@ -34,7 +34,8 @@ public:
     FreeBlock *mFreeBlockChain; // 0x0
     char mPad4[4];      // 0x4
     const char *mName;  // 0x8
-    char mPadC[0x14];   // 0xC
+    char mPadC[0x10];   // 0xC
+    int mStrategy;      // 0x1C
     bool mAllowTemp;    // 0x20
     char mPad21[3];     // 0x21
     int mNumFreeBytes;  // 0x24
@@ -139,6 +140,40 @@ void Heap::MoreFreeBlockStats(int &i1, int &i2, int &i3, int &i4) {
 void Heap::ResetMinFreeBlockStats() {
     mBiggestFree = mNumFreeBytes;
     mMinLargest = mLargestFree;
+}
+
+bool MemDoTempAllocations::enabled;
+
+MemDoTempAllocations::MemDoTempAllocations(bool noTemp, bool reset) {
+    CritSecTracker tracker(gMemLock);
+    int heapNum = GetCurrentHeapNum();
+    Heap *heap = heapNum > -1 ? &gHeaps[heapNum] : nullptr;
+    if (heap != nullptr) {
+        mOld = heap->mStrategy;
+        if (reset) {
+            heap->mStrategy = 0;
+        } else {
+            if (noTemp) {
+                heap->mStrategy = 2;
+            } else {
+                heap->mStrategy = 1;
+            }
+            enabled = noTemp;
+        }
+    } else {
+        mOld = -1;
+    }
+}
+
+MemDoTempAllocations::~MemDoTempAllocations() {
+    CritSecTracker tracker(gMemLock);
+    if (mOld != -1) {
+        int heapNum = GetCurrentHeapNum();
+        Heap *heap = heapNum > -1 ? &gHeaps[heapNum] : nullptr;
+        MILO_ASSERT(heap, 0x675);
+        heap->mStrategy = mOld;
+    }
+    enabled = mOld == 2;
 }
 
 void *MemResizeElem(void *&mem, int &totalSize, void *cutPoint, int cutLength, int insertLength, const char *name) {

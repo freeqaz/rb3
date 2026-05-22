@@ -14,6 +14,8 @@ public:
     ~MemDoTempAllocations();
 
     int mOld; // 0x0
+
+    static bool enabled;
 };
 
 class MemHandle {
