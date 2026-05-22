@@ -20,6 +20,69 @@ DECOMP_FORCEACTIVE(
     "abs(add_points - (points + individualContribution + overdriveContribution + bandContribution) < 0.01f)"
 )
 
+Stats::Stats(const Stats &s)
+    : mHitCount(s.mHitCount), mMissCount(s.mMissCount), m0x08(s.m0x08),
+      m0x0c(s.m0x0c), mPersistentStreak(s.mPersistentStreak),
+      mLongestPersistentStreak(s.mLongestPersistentStreak),
+      mNotesHitFraction(s.mNotesHitFraction), mFailedDeploy(s.mFailedDeploy),
+      mDeployCount(s.mDeployCount), mFillHitCount(s.mFillHitCount),
+      mUpstrumCount(s.mUpstrumCount), mDownstrumCount(s.mDownstrumCount),
+      m0x30(s.m0x30), m0x34(s.m0x34), mFinalized(s.mFinalized),
+      mSoloPercentage(s.mSoloPercentage),
+      mSoloButtonedSoloPercentage(s.mSoloButtonedSoloPercentage),
+      mPerfectSoloWithSoloButtons(s.mPerfectSoloWithSoloButtons), m0x41(s.m0x41),
+      mSingerCount(s.mSingerCount), mVocalPartCount(s.mVocalPartCount),
+      mDoubleHarmonyHit(s.mDoubleHarmonyHit),
+      mDoubleHarmonyPhraseCount(s.mDoubleHarmonyPhraseCount),
+      mTripleHarmonyHit(s.mTripleHarmonyHit),
+      mTripleHarmonyPhraseCount(s.mTripleHarmonyPhraseCount), m0x5c(s.m0x5c),
+      mTambourineCount(s.mTambourineCount),
+      mTambourineHitCount(s.mTambourineHitCount), m0x68(s.m0x68),
+      m0x6c(s.m0x6c), mVocalPartPercentages(s.mVocalPartPercentages),
+      mSingerStats(s.mSingerStats), mPerformanceAwards(s.mPerformanceAwards),
+      mAccuracy(s.mAccuracy), m0x8c(s.m0x8c), mSolo(s.mSolo),
+      mOverdrive(s.mOverdrive), mSustain(s.mSustain),
+      mScoreStreak(s.mScoreStreak), mBandContribution(s.mBandContribution),
+      mCodaPoints(s.mCodaPoints), mHasCoda(s.mHasCoda), mHasSolos(s.mHasSolos),
+      mTambourine(s.mTambourine), mHarmony(s.mHarmony),
+      mFullCombo(s.mFullCombo), mNoScorePercent(s.mNoScorePercent),
+      mCurrentHitStreak(s.mCurrentHitStreak), mHitStreaks(s.mHitStreaks),
+      mCurrentMissStreak(s.mCurrentMissStreak), mMissStreaks(s.mMissStreaks),
+      mFailurePoints(s.mFailurePoints), mSavedPoints(s.mSavedPoints),
+      mPlayersSaved(s.mPlayersSaved),
+      mClosestPlayersSaved(s.mClosestPlayersSaved),
+      mTimesSaved(s.mTimesSaved),
+      mClosestTimesSaved(s.mClosestTimesSaved), mBestSolos(s.mBestSolos),
+      mCurrentOverdriveDeployment(s.mCurrentOverdriveDeployment),
+      mBestOverdriveDeployments(s.mBestOverdriveDeployments),
+      mTotalOverdriveDurationMs(s.mTotalOverdriveDurationMs),
+      mCurrentStreakMultiplier(s.mCurrentStreakMultiplier),
+      mBestStreakMultipliers(s.mBestStreakMultipliers),
+      mTotalMultiplierDuration(s.mTotalMultiplierDuration), m0x14c(s.m0x14c),
+      m0x150(s.m0x150), mEndGameScore(s.mEndGameScore),
+      mEndGameCrowdLevel(s.mEndGameCrowdLevel),
+      mEndGameOverdrive(s.mEndGameOverdrive),
+      mOverdrivePhrasesCompleted(s.mOverdrivePhrasesCompleted),
+      mOverdrivePhraseCount(s.mOverdrivePhraseCount),
+      mUnisonPhraseCompleted(s.mUnisonPhraseCompleted),
+      mUnisonPhraseCount(s.mUnisonPhraseCount),
+      mHopoGemsHopoed(s.mHopoGemsHopoed),
+      mHopoGemsStrummed(s.mHopoGemsStrummed), mHopoGemCount(s.mHopoGemCount),
+      mHighGemsHitHigh(s.mHighGemsHitHigh),
+      mHighGemsHitLow(s.mHighGemsHitLow),
+      mHighFretGemCount(s.mHighFretGemCount),
+      mSustainGemsHitCompletely(s.mSustainGemsHitCompletely),
+      mSustainGemsHitPartially(s.mSustainGemsHitPartially),
+      mSustainGemCount(s.mSustainGemCount),
+      mAverageMultiplier(s.mAverageMultiplier), mRollCount(s.mRollCount),
+      mRollsHitCompletely(s.mRollsHitCompletely), mTrillCount(s.mTrillCount),
+      mTrillsHitCompletely(s.mTrillsHitCompletely),
+      mTrillsHitPartially(s.mTrillsHitPartially),
+      mCymbalGemCount(s.mCymbalGemCount),
+      mCymbalGemsHitOnCymbals(s.mCymbalGemsHitOnCymbals),
+      mCymbalGemsHitOnPads(s.mCymbalGemsHitOnPads), mSections(s.mSections),
+      unk1c0(s.unk1c0), unk1c4(s.unk1c4), unk1c8(s.unk1c8) {}
+
 #pragma push
 #pragma dont_inline on
 Performer::Performer(BandUser *user, Band *band)
@@ -147,6 +210,45 @@ void Performer::SendStreak() {
     if (unk1fe) {
         Handle(send_streak_msg, false);
     }
+}
+
+void Performer::AddPoints(float points, bool apply_multiplier, bool apply_streak) {
+    if (mStats.FailedNoScore())
+        return;
+    points = std::max(0.0f, points);
+    float individualContribution = 0.0f;
+    float overdriveContribution = 0.0f;
+    float bandContribution = 0.0f;
+    int multiplier = 1;
+    if (apply_multiplier) {
+        int i1 = 1;
+        int i3 = 1;
+        int i2 = 1;
+        multiplier = GetMultiplier(apply_streak, i1, i2, i3);
+        individualContribution = points * (i1 - 1);
+        mStats.AddScoreStreak(individualContribution);
+        overdriveContribution =
+            (i3 * (points * i1)) - points - individualContribution;
+        mStats.AddOverdrive(overdriveContribution);
+        bandContribution = (points * multiplier) - individualContribution
+            - overdriveContribution - points;
+        mStats.AddBandContribution(bandContribution);
+    }
+    float add_points = points * multiplier;
+    mScore += add_points;
+    float diff = add_points
+        - (points + individualContribution + overdriveContribution
+           + bandContribution);
+    if (abs(diff > 0.0001f)) {
+        MILO_WARN("points differ by %f", std::fabs(diff));
+    }
+    MILO_ASSERT(
+        abs(add_points
+                    - (points + individualContribution + overdriveContribution
+                       + bandContribution)
+                < 0.01f),
+        0x13F
+    );
 }
 
 void Performer::SendRemoteStats(BandUser *user) {
