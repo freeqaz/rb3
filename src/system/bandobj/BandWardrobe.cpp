@@ -10,6 +10,8 @@
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 
+#define DIM(x) (sizeof(x) / sizeof((x)[0]))
+
 BandWardrobe *TheBandWardrobe;
 
 INIT_REVS(BandWardrobe);
@@ -607,7 +609,7 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
                 if (InstrumentIndex(syms, instOrder[j]) != syms.size())
                     break;
             }
-            MILO_ASSERT(j != 5, 0x512);
+            MILO_ASSERT(j != DIM(instOrder), 0x512);
             mTargets[target]->SetInstrumentType(GrabInstrument(syms, instOrder[j]));
         }
         if (InstrumentIndex(syms, mic) != syms.size()) {
@@ -649,19 +651,19 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
             BandCharDesc::CharInstrumentType type = BandCharDesc::GetInstrumentFromSym(inst);
             switch (type) {
                 case BandCharDesc::kGuitar:
-                    piece->mName = "stratocaster04_paint";
+                    piece->mName = "kelly02_triburst";
                     break;
                 case BandCharDesc::kBass:
-                    piece->mName = "telebass_sparkle";
+                    piece->mName = "mb4_triburst";
                     break;
                 case BandCharDesc::kDrum:
-                    piece->mName = "dw_marine_small_club";
+                    piece->mName = "generic_zebra";
                     break;
                 case BandCharDesc::kMic:
-                    piece->mName = "md431ii_resource";
+                    piece->mName = "e935_resource";
                     break;
                 case BandCharDesc::kKeyboard:
-                    piece->mName = "test_keys";
+                    piece->mName = "m50_resource";
                     break;
                 default:
                     MILO_WARN("hey, we shouldn't be here");
@@ -812,12 +814,13 @@ BandCharDesc *BandWardrobe::GetPrefab(int target, int variation) {
     MILO_ASSERT(variation < 2 && target >= 0, 0x6B0);
     if (!mDemandLoad.Null()) {
         char buf[256];
-        const char *platstr = PlatformSymbol(TheLoadMgr.GetPlatform()).Str();
-        Symbol platsym = streq(platstr, "pc") ? "xbox" : platstr;
-        strcpy(buf, MakeString("%s_%s", mDemandLoad, platsym));
+        Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+        if (plat == "pc") plat = Symbol("xbox");
+        strcpy(buf, MakeString("%s_%s", plat, mDemandLoad));
         if (variation == 1) {
             char *suffix = (char *)PrefabSuffix(buf);
-            strcpy(suffix + 1, strstr(suffix, "female") ? "male" : "female");
+            const char *found = strstr(suffix, "female");
+            strcpy(suffix + 1, found ? "male" : "female");
         }
         return BandCharDesc::FindPrefab(buf, false);
     } else {
