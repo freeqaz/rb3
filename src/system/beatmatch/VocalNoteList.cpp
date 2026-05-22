@@ -2,6 +2,8 @@
 #include "beatmatch/SongData.h"
 #include "os/System.h"
 #include "utl/MemMgr.h"
+#include <algorithm>
+#include <functional>
 
 inline const char *VocalNoteList::PrintTick(int tick) const {
     return TickFormat(tick, *mSongData->GetMeasureMap());
@@ -329,6 +331,69 @@ void VocalNoteList::AddTambourineGem(int gem) { mTambourineGems.push_back(gem); 
 void VocalNoteList::SetFreestyleSections(const std::vector<std::pair<float, float> > &sects
 ) {
     mFreestyleSections = sects;
+}
+
+bool VocalNoteList::IsIllegalFreestyleSection(
+    DataArray *arr, const std::pair<float, float> &section
+) {
+    float duration = section.second - section.first;
+    for (int i = 0; i < arr->Size(); i++) {
+        if (duration >= arr->Float(i))
+            return false;
+    }
+    return true;
+}
+
+void VocalNoteList::RemoveInvalidFreestyleSections() {
+    std::binder1st<
+        std::pointer_to_binary_function<
+            DataArray *, const std::pair<float, float> &, bool> >
+        pred(std::ptr_fun(IsIllegalFreestyleSection), mFreestyleMinDuration);
+    std::vector<std::pair<float, float> >::iterator first =
+        mFreestyleSections.begin();
+    std::vector<std::pair<float, float> >::iterator last =
+        mFreestyleSections.end();
+    int tripCount = (last - first) >> 2;
+    for (; tripCount > 0; --tripCount) {
+        if (pred(*first))
+            goto found;
+        ++first;
+        if (pred(*first))
+            goto found;
+        ++first;
+        if (pred(*first))
+            goto found;
+        ++first;
+        if (pred(*first))
+            goto found;
+        ++first;
+    }
+    switch (last - first) {
+    case 3:
+        if (pred(*first))
+            goto found;
+        ++first;
+    case 2:
+        if (pred(*first))
+            goto found;
+        ++first;
+    case 1:
+        if (pred(*first))
+            goto found;
+    default:
+        first = last;
+    }
+found:
+    if (first != last) {
+        std::vector<std::pair<float, float> >::iterator it = first;
+        for (++it; it != last; ++it) {
+            if (!pred(*it)) {
+                *first = *it;
+                ++first;
+            }
+        }
+        mFreestyleSections.erase(first, last);
+    }
 }
 
 void VocalNoteList::CapLastFreestyleSection(float ms) {
