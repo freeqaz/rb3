@@ -337,10 +337,8 @@ float Performer::GetPartialStreakFraction() const {
 void Performer::CheckGameWon() {
     if (unk1e2) {
         std::vector<Player *> &players = TheGame->GetActivePlayers();
-        for (std::vector<Player *>::iterator it = players.begin();
-             it != players.end();
-             ++it) {
-            if (!(*it)->unk1e2)
+        for (int i = 0; i < players.size(); ++i) {
+            if (!players[i]->unk1e2)
                 return;
         }
         TrulyWinGame();
@@ -349,10 +347,10 @@ void Performer::CheckGameWon() {
 
 void Performer::Poll(float ms, const SongPos &pos) {
     float frac = mProgressMs / TheSongDB->GetSongDurationMs();
-    frac = (frac < 1.0f) ? frac : 1.0f;
-    mCrowd->Poll(frac);
+    mCrowd->Poll((frac < 1.0f) ? frac : 1.0f);
     if (TheGame->mProperties.mEndWithSong) {
-        if (!unk1e2 && !unk1e0 && ms > TheSongDB->GetSongDurationMs()) {
+        float dur = TheSongDB->GetSongDurationMs();
+        if (!unk1e2 && !unk1e0 && ms > dur) {
             unk1e1 = true;
             WinGame(0);
         }
