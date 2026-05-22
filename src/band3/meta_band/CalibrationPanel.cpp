@@ -209,7 +209,7 @@ void CalibrationPanel::UpdateLabel() {
             } else {
                 progbargrp->SetShowing(false);
                 if (unk5c > f14) {
-                    if (GetTestRep() - 4 == 0) {
+                    if (4 - GetTestRep() == 0) {
                         countdownlabel->SetTextToken(lag_go);
                     } else {
                         countdownlabel->SetInt(4 - GetTestRep(), false);
