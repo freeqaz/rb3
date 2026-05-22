@@ -253,27 +253,25 @@ void Singer::ClearPitchHistory() {
 }
 
 void Singer::UpdatePitchHistory(float pitch) {
-    if (unka4 > 4) {
+    if ((unsigned int)unka4 > 4) {
         TheDebug.Notify(MakeString("pitch history index out of bounds (%d) singer %d", unka4, mSingerIndex));
         ClearPitchHistory();
     }
     float prev = mPitchHistory[unka4];
-    if ((pitch > 0.0f) == (prev > 0.0f)) {
+    if ((pitch > 0.0f) != (prev > 0.0f)) {
         if (pitch > 0.0f) {
             unka8 += 1;
             unka0 = unka0 + (pitch - unka0) / (float)unka8;
+        } else {
+            unka8 -= 1;
+            if (unka8 == 0) ClearPitchHistory();
+            if ((unsigned int)unka8 > 5) {
+                TheDebug.Notify(MakeString("pitch history valid frames out of bounds (%d)", unka8));
+                ClearPitchHistory();
+            }
         }
     } else if (pitch > 0.0f) {
-        unka8 -= 1;
-        if (unka8 == 0) ClearPitchHistory();
-        if (unka8 > 5) {
-            TheDebug.Notify(MakeString("pitch history valid frames out of bounds (%d)", unka8));
-            ClearPitchHistory();
-        }
-    } else {
-        if (pitch > 0.0f) {
-            unka0 = unka0 + (pitch - prev) / (float)unka8;
-        }
+        unka0 = unka0 + (pitch - prev) / (float)unka8;
     }
     mPitchHistory[unka4] = pitch;
     unka4 = (unka4 + 1) % 5;
