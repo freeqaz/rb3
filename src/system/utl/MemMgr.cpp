@@ -29,12 +29,24 @@ public:
         kLastFit = 4,
     };
 
+    struct FreeBlockInfo {
+        FreeBlock *mBlock; // 0x0
+        FreeBlock *mPrev;  // 0x4
+        int mBlockSize;    // 0x8
+        int mPadWords;     // 0xC
+    };
+
     void FreeBlockStats(int &, int &, int &, int &);
     void MoreFreeBlockStats(int &, int &, int &, int &);
     void ResetMinFreeBlockStats();
     void InsertFreeBlock(FreeBlock *, int, FreeBlock *, FreeBlock *, int);
     int AllocSize(int *);
     void FindFreeNeighbors(AllocBlock *, FreeBlock *&, FreeBlock *&);
+    void FirstFit(int, int, FreeBlockInfo &);
+    void BestFit(int, int, FreeBlockInfo &);
+    void BestLastFit(int, int, FreeBlockInfo &);
+    void LRUFit(int, int, FreeBlockInfo &);
+    void LastFit(int, int, FreeBlockInfo &);
     const char *Name() const { return mName; }
 
     FreeBlock *mFreeBlockChain; // 0x0
@@ -120,6 +132,67 @@ void Heap::FindFreeNeighbors(AllocBlock *block, FreeBlock *&prev, FreeBlock *&ne
     }
     next = cur;
     prev = last;
+}
+
+void Heap::FirstFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
+    FreeBlock *block = mFreeBlockChain;
+    FreeBlock *prev = nullptr;
+    for (; block != nullptr; prev = block, block = block->mNext) {
+        int blockSize = block->mSizeWords;
+        int wordAddr = ((int)block >> 2) + 1;
+        int padWords =
+            ((((unsigned int)(wordAddr + (1 << alignShift) - 1)) >> alignShift) << alignShift) -
+            wordAddr;
+        if (blockSize >= sizeWords + padWords) {
+            info.mBlockSize = blockSize;
+            info.mPadWords = padWords;
+            info.mBlock = block;
+            info.mPrev = prev;
+            return;
+        }
+    }
+}
+
+void Heap::LastFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
+    FreeBlock *block = mFreeBlockChain;
+    FreeBlock *prev = nullptr;
+    if (block != nullptr) {
+        int shift = alignShift + 2;
+        for (; block != nullptr; prev = block, block = block->mNext) {
+            int blockSize = block->mSizeWords;
+            int padWords =
+                (((((int)block + blockSize * 4 - sizeWords * 4) >> shift) << shift) - 4 -
+                 (int)block) /
+                4;
+            if (padWords >= 0) {
+                info.mBlockSize = blockSize;
+                info.mPadWords = padWords;
+                info.mBlock = block;
+                info.mPrev = prev;
+            }
+        }
+    }
+}
+
+void Heap::LRUFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
+    FreeBlock *block = mFreeBlockChain;
+    FreeBlock *prev = nullptr;
+    int bestTime = 0x7FFFFFFF;
+    for (; block != nullptr; prev = block, block = block->mNext) {
+        int blockSize = block->mSizeWords;
+        int wordAddr = ((int)block >> 2) + 1;
+        unsigned int timeStamp = block->mTimeStamp;
+        int padWords =
+            ((((unsigned int)(wordAddr + (1 << alignShift) - 1)) >> alignShift) << alignShift) -
+            wordAddr;
+        if (blockSize >= sizeWords + padWords && (int)timeStamp < bestTime) {
+            info.mBlockSize = blockSize;
+            info.mPadWords = padWords;
+            info.mBlock = block;
+            info.mPrev = prev;
+            bestTime = timeStamp;
+        }
+    }
 }
 
 void MemSetAllowTemp(char *name, bool allow) {
