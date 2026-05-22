@@ -480,6 +480,32 @@ float VocalNoteList::PitchAt(float ms) const {
     return 0.0f;
 }
 
+void VocalNoteList::GetPracticePhrases(
+    std::vector<VocalPhrase> &out, int startTick, int endTick
+) const {
+    for (const VocalPhrase *phrase = mPhrases.data();
+         phrase != mPhrases.data() + mPhrases.size();
+         ++phrase) {
+        if (startTick < phrase->unk8 + phrase->unkc
+            && endTick > phrase->unk8) {
+            out.push_back(*phrase);
+        }
+    }
+}
+
+void VocalNoteList::GetPracticePhrases2(
+    std::vector<VocalPhrase> &out, int startTick, int endTick
+) const {
+    for (const VocalPhrase *phrase = mPhrases.data();
+         phrase != mPhrases.data() + mPhrases.size();
+         ++phrase) {
+        if (startTick < phrase->unk8 + phrase->unkc && endTick > phrase->unk8
+            && phrase->unk8 + phrase->unkc <= endTick) {
+            out.push_back(*phrase);
+        }
+    }
+}
+
 int VocalNoteList::GetNumPracticePhrases(const std::vector<VocalPhrase> &phrases) const {
     int count = 0;
     for (const VocalPhrase *phrase = phrases.data();

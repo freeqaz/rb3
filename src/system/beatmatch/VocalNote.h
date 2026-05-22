@@ -116,6 +116,7 @@ public:
     float PitchAt(float) const;
     void CapLastFreestyleSection(float);
     void GetPracticePhrases(std::vector<VocalPhrase> &, int, int) const;
+    void GetPracticePhrases2(std::vector<VocalPhrase> &, int, int) const;
     int GetNumPracticePhrases(const std::vector<VocalPhrase> &) const;
     static bool
     IsIllegalFreestyleSection(DataArray *, const std::pair<float, float> &);
