@@ -218,6 +218,30 @@ bool BandHeadShaper::Start(
     }
 }
 
+void TestMesh(RndTransformable *start, RndTransformable *top) {
+    Transform ident;
+    ident.Reset();
+    for (RndTransformable *cur = start; cur != top; cur = cur->TransParent()) {
+        if (!cur->TransParent()) {
+            MILO_WARN(
+                "%s needs to have eventual parent of %s, does not, stops at %s",
+                PathName(start),
+                PathName(top),
+                PathName(cur)
+            );
+            return;
+        }
+        if (!(cur->LocalXfm() == ident)) {
+            MILO_WARN(
+                "%s needs to be all zero'd xfms all the way up, but %s is not",
+                PathName(start),
+                PathName(cur)
+            );
+            return;
+        }
+    }
+}
+
 void BandHeadShaper::AddChildBones(RndTransformable *t) {
     if (!t)
         MILO_WARN("Trying to add a NULL child bone.\n");
