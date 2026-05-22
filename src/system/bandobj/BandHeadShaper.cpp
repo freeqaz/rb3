@@ -148,6 +148,18 @@ void BandHeadShaper::Init() {
     }
 }
 
+int BandHeadShaper::GetCount(Symbol s) {
+    if (s == shape)
+        return sShapeNum;
+    if (s == chin)
+        return sChinNum;
+    if (s == eye)
+        return sEyeNum;
+    if (s == nose)
+        return sNoseNum;
+    return s == mouth ? sMouthNum : 0;
+}
+
 void BandHeadShaper::Terminate() {
     RELEASE(gHeadFemale);
     RELEASE(gHeadMale);
