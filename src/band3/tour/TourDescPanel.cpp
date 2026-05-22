@@ -273,7 +273,7 @@ Symbol TourDescProvider::DataSymbol(int i_iData) const {
     return mTours[i_iData];
 }
 
-void TourDescProvider::InitData(RndDir *i_pDir) {
+inline void TourDescProvider::InitData(RndDir *i_pDir) {
     mUnearnedMat = i_pDir->Find<RndMat>("song_disc_dark.mat", false);
     mEarnedMat = i_pDir->Find<RndMat>("song_disc_light.mat", false);
 }
@@ -331,7 +331,8 @@ void TourDescPanel::Unload() {
 Symbol TourDescPanel::GetSelectedTourDesc(UIComponent *) {
     if (GetState() != kUp)
         return Symbol("");
-    int index = Handle(get_selected_tourdesc_index_msg, true).Int();
+    DataNode handled = Handle(get_selected_tourdesc_index_msg, true);
+    int index = handled.Int();
     if (m_pTourDescProvider->NumData() > 0)
         return m_pTourDescProvider->DataSymbol(index);
     return Symbol("");
