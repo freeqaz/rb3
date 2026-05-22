@@ -915,6 +915,14 @@ float BandCharacter::ComputeScreenSize(RndCam *cam) {
         return 0;
 }
 
+bool BandCharacter::IsLoading() {
+    if (mCompressedTextureIDs.size() != 0)
+        return true;
+    if (mFileMerger)
+        return !mFileMerger->mFilesPending.empty();
+    return false;
+}
+
 void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     bool b4 = false;
     if (!mInCloset) {
