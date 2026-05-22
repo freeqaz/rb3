@@ -254,6 +254,22 @@ void VocalNoteList::SetFreestyleSections(const std::vector<std::pair<float, floa
     mFreestyleSections = sects;
 }
 
+bool VocalNoteCmp(float ms, const VocalNote &note) { return ms < note.GetMs(); }
+
+VocalNote *VocalNoteList::NextNote(float ms) const {
+    if (mNotes.size() == 0)
+        return NULL;
+    std::vector<VocalNote>::const_iterator it =
+        std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
+    if (it == mNotes.begin())
+        return (VocalNote *)it;
+    if (ms <= it[-1].GetMs() + it[-1].GetDurationMs())
+        return (VocalNote *)(it - 1);
+    if (it == mNotes.end())
+        return NULL;
+    return (VocalNote *)it;
+}
+
 int VocalNoteList::GetNumPracticePhrases(const std::vector<VocalPhrase> &phrases) const {
     int count = 0;
     for (const VocalPhrase *phrase = phrases.data();
