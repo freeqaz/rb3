@@ -68,6 +68,7 @@ public:
     void SetStats(int, const Stats &);
     void SendStreak();
     void TrulyWinGame();
+    void CheckGameWon();
     void ForceStars(int);
     int GetNumRestarts() const;
     void SetNoScorePercent(float);

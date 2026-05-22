@@ -5,6 +5,8 @@
 #include "game/BandUser.h"
 #include "game/Band.h"
 #include "game/Game.h"
+#include "game/Player.h"
+#include "game/Scoring.h"
 #include "game/SongDB.h"
 #include "game/NetGameMsgs.h"
 #include "net/Net.h"
@@ -312,6 +314,54 @@ int Performer::GetNumRestarts() const { return mNumRestarts; }
 void Performer::SetNoScorePercent(float f) {
     mScore = 0;
     mStats.SetNoScorePercent(f);
+}
+
+int Performer::GetSongNumVocalParts() const {
+    return TheSongDB->GetVocalNoteListCount();
+}
+
+Symbol Performer::GetStarRating() const {
+    return TheScoring->GetStarRating(GetNumStars());
+}
+
+int Performer::GetNotesPerStreak() const {
+    return TheScoring->GetNotesPerMultiplier(GetStreakType());
+}
+
+float Performer::GetPartialStreakFraction() const {
+    return TheScoring->GetPartialStreakFraction(
+        mStats.GetCurrentStreak(), GetStreakType()
+    );
+}
+
+void Performer::CheckGameWon() {
+    if (unk1e2) {
+        std::vector<Player *> &players = TheGame->GetActivePlayers();
+        for (std::vector<Player *>::iterator it = players.begin();
+             it != players.end();
+             ++it) {
+            if (!(*it)->unk1e2)
+                return;
+        }
+        TrulyWinGame();
+    }
+}
+
+void Performer::Poll(float ms, const SongPos &pos) {
+    float frac = mProgressMs / TheSongDB->GetSongDurationMs();
+    frac = (frac < 1.0f) ? frac : 1.0f;
+    mCrowd->Poll(frac);
+    if (TheGame->mProperties.mEndWithSong) {
+        if (!unk1e2 && !unk1e0 && ms > TheSongDB->GetSongDurationMs()) {
+            unk1e1 = true;
+            WinGame(0);
+        }
+        CheckGameWon();
+    }
+    mPollMs = ms;
+    if (!unk1e0)
+        mProgressMs = ms;
+    mSongPos = pos;
 }
 
 #pragma push
