@@ -336,6 +336,29 @@ void SongData::SendPhrases(int track) {
     }
 }
 
+void SongData::ChangeTrackDiff(int track, int newDiff) {
+    if ((unsigned int)track < mTrackDifficulties.size() && track != -1) {
+        mTrackDifficulties[track] = newDiff;
+        PhraseDB *curPhraseDB = mPhraseDBs[track];
+        for (int i = 0; i < kNumPhraseTypes; i++) {
+            if ((unsigned int)(i - kArpeggioPhrase) <= 1) {
+                const PhraseList &phrases =
+                    curPhraseDB->GetPhraseList(newDiff, (BeatmatchPhraseType)i);
+                for (std::vector<Phrase>::const_iterator it = phrases.mPhrases.begin();
+                     it != phrases.mPhrases.end();
+                     ++it) {
+                    for (std::vector<SongParserSink *>::iterator sit =
+                             mSongParserSinks.begin();
+                         sit != mSongParserSinks.end();
+                         ++sit) {
+                        (*sit)->AddPhrase((BeatmatchPhraseType)i, track, *it);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void SongData::SendGems(int track) {
     int curTrackDiff = mTrackDifficulties[track];
     const GameGemDB *curDB = mGemDBs[curTrackDiff];
