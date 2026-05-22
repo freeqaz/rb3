@@ -714,6 +714,23 @@ int VocalPlayer::GetSingerAutoplayPart(int x) {
         return -1;
 }
 
+void VocalPlayer::RotateSingerAutoplayVariationMagnitude(int x) {
+    if (x < mSingers.size()) {
+        Singer *cur = mSingers[x];
+        float mag = cur->GetAutoplayVariationMagnitude() + 0.2f;
+        if (mag > 2.1f)
+            mag = 0.0f;
+        cur->SetAutoplayVariationMagnitude(mag);
+    }
+}
+
+float VocalPlayer::GetSingerAutoplayVariationMagnitude(int x) {
+    if (x < mSingers.size()) {
+        return mSingers[x]->GetAutoplayVariationMagnitude();
+    } else
+        return -1.0f;
+}
+
 void VocalPlayer::SetAutoplayOffset(float f1) {
     FOREACH (it, mSingers) {
         (*it)->SetAutoplayOffset(f1);
