@@ -4,6 +4,8 @@
 #include "obj/ObjVersion.h"
 #include "math/Rand.h"
 #include "math/Utl.h"
+#include "rndwii/Mesh.h"
+#include "utl/Loader.h"
 #include "beatmatch/RGUtl.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
@@ -1097,6 +1099,36 @@ RndMesh *GemTrackDir::GetChordMesh(unsigned int key, bool which) {
         key
     ));
     return NULL;
+}
+
+int GemTrackDir::PrepareChordMesh(unsigned int chord) {
+    std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
+        = unk6b4.find(chord);
+    if (it != unk6b4.end()) {
+        it->second.first = 1;
+        return 0;
+    }
+    RndMesh *chordMesh = mChordShapeGen->BuildChordMesh(chord, 6);
+    RndMesh *invMesh = mChordShapeGen->MakeInvertedMesh(chordMesh);
+
+    chordMesh->SetMutable(0);
+    dynamic_cast<WiiMesh *>(chordMesh->GeomOwner())->mDisplays.Clear();
+    chordMesh->Sync(0x3F);
+    unk6b4[chord] = std::make_pair(1, chordMesh);
+
+    invMesh->SetMutable(0);
+    dynamic_cast<WiiMesh *>(invMesh->GeomOwner())->mDisplays.Clear();
+    invMesh->Sync(0x3F);
+    unk6cc[chord] = std::make_pair(1, invMesh);
+
+    if (TheLoadMgr.EditMode()) {
+        chordMesh->SetName(MakeString("chord_%d", chord), this);
+        invMesh->SetName(MakeString("chord_L_%d", chord), this);
+    } else {
+        chordMesh->SetName("", this);
+        invMesh->SetName("", this);
+    }
+    return 1;
 }
 
 float GemTrackDir::GetFretPosOffset(int idx) const {
