@@ -7,14 +7,40 @@ struct MemHeapStack {
     int mSize;      // 0x40
 };
 
+struct FreeBlock {
+    int mSizeWords;     // 0x0
+    int mTimeStamp;     // 0x4
+    FreeBlock *mNext;   // 0x8
+
+    bool AttemptMerge(FreeBlock *, int);
+};
+
 class Heap {
 public:
+    enum Strategy {
+        kFirstFit = 0,
+        kBestFit = 1,
+        kBestLastFit = 2,
+        kLRUFit = 3,
+        kLastFit = 4,
+    };
+
     void FreeBlockStats(int &, int &, int &, int &);
+    void MoreFreeBlockStats(int &, int &, int &, int &);
+    void ResetMinFreeBlockStats();
+    void InsertFreeBlock(FreeBlock *, int, FreeBlock *, FreeBlock *, int);
     const char *Name() const { return mName; }
 
-    char mPad0[8];      // 0x0
+    FreeBlock *mFreeBlockChain; // 0x0
+    char mPad4[4];      // 0x4
     const char *mName;  // 0x8
-    char mPadC[0x28];   // 0xC, total size 0x34
+    char mPadC[0x14];   // 0xC
+    bool mAllowTemp;    // 0x20
+    char mPad21[3];     // 0x21
+    int mNumFreeBytes;  // 0x24
+    int mBiggestFree;   // 0x28
+    int mLargestFree;   // 0x2C
+    int mMinLargest;    // 0x30
 };
 
 extern int gDefaultHeap;
@@ -49,6 +75,47 @@ void MemFreeBlockStats(int heapNum, int &a, int &b, int &c, int &d) {
     CritSecTracker tracker(gMemLock);
     MILO_ASSERT(heapNum < 0x10, 0x293);
     gHeaps[heapNum].FreeBlockStats(a, b, c, d);
+}
+
+void Heap::FreeBlockStats(int &i1, int &i2, int &totalFree, int &biggest) {
+    FreeBlock *block = mFreeBlockChain;
+    int idx = 0;
+    int maxBytes = 0;
+    int sumBytes = 0;
+    int maxIdx = -1;
+    for (; block != nullptr; block = block->mNext) {
+        int bytes = block->mSizeWords << 2;
+        if (maxBytes < bytes) {
+            maxBytes = bytes;
+            maxIdx = idx;
+        }
+        sumBytes += bytes;
+        idx++;
+    }
+    totalFree = sumBytes;
+    biggest = maxBytes;
+    mLargestFree = maxBytes;
+    if (maxBytes < mMinLargest) {
+        mMinLargest = maxBytes;
+    }
+    mNumFreeBytes = totalFree;
+    if (totalFree < mBiggestFree) {
+        mBiggestFree = totalFree;
+    }
+    i1 = maxIdx;
+    i2 = (idx - maxIdx) - 1;
+}
+
+void Heap::MoreFreeBlockStats(int &i1, int &i2, int &i3, int &i4) {
+    i1 = mNumFreeBytes;
+    i3 = mBiggestFree;
+    i2 = mLargestFree;
+    i4 = mMinLargest;
+}
+
+void Heap::ResetMinFreeBlockStats() {
+    mBiggestFree = mNumFreeBytes;
+    mMinLargest = mLargestFree;
 }
 
 void *MemResizeElem(void *&mem, int &totalSize, void *cutPoint, int cutLength, int insertLength, const char *name) {
