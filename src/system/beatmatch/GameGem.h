@@ -62,7 +62,9 @@ public:
     float GetMs() const { return mMs; }
     bool GetNoStrum() const { return mForceStrum; }
 
-    bool CompareTimes(const GameGem &g1, const GameGem &g2) { return g1.mMs < g2.mMs; }
+    static bool CompareTimes(const GameGem &g1, const GameGem &g2) {
+        return g1.mMs < g2.mMs;
+    }
 
     int GetSlot() const {
         for (unsigned int i = 0; i < 32; i++) {
