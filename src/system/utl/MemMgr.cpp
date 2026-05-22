@@ -32,7 +32,7 @@ public:
     const char *Name() const { return mName; }
 
     FreeBlock *mFreeBlockChain; // 0x0
-    char mPad4[4];      // 0x4
+    void *mStart;       // 0x4
     const char *mName;  // 0x8
     char mPadC[0x10];   // 0xC
     int mStrategy;      // 0x1C
@@ -91,6 +91,10 @@ void Heap::InsertFreeBlock(
         mFreeBlockChain = block;
     }
 }
+
+void MemTerminate() {}
+
+void *MemHeapStartAddr(int heap) { return gHeaps[heap].mStart; }
 
 void MemSetAllowTemp(char *name, bool allow) {
     int heap = MemFindHeap(name);
