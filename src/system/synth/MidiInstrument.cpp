@@ -50,7 +50,7 @@ void NoteVoiceInst::Poll() {
 void NoteVoiceInst::SetFineTune(float tune) {
     mFineTune = tune;
     if (mGlideFramesLeft <= 0) {
-        mSample->SetBankSpeed(CalcSpeedFromTranspose(CalcBankSpeed(mTriggerNote)));
+        mSample->SetBankSpeed(CalcSpeedFromTranspose(CalcSpeedFromTranspose(mFineTune / 100.0f + ((float)mTriggerNote - (float)mCenterNote))));
     }
 }
 
