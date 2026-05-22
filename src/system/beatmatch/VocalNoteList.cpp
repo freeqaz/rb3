@@ -505,6 +505,35 @@ void VocalNoteList::AddLyricShift(float ms) {
     }
 }
 
+bool VocalNote::PlayableBy(int activeNum) const {
+    MILO_ASSERT(activeNum == 0 || activeNum == 1, 0x3d2);
+    return (mPlayerMask & (1 << activeNum)) != 0;
+}
+
+void VocalNoteList::UpdatePitchRangeTickDelimited(
+    int startTick, int endTick, float &min, float &max
+) {
+    VocalNote *end = mNotes.data() + mNotes.size();
+    for (VocalNote *it = mNotes.data(); it != end; ++it) {
+        if (it->IsUnpitched())
+            continue;
+        if (it->GetTick() < startTick)
+            continue;
+        if (endTick > -1 && it->GetTick() > endTick)
+            break;
+        int startPitch = it->StartPitch();
+        if ((float)startPitch < min)
+            min = (float)startPitch;
+        if ((float)startPitch > max)
+            max = (float)startPitch;
+        int endPitch = it->EndPitch();
+        if ((float)endPitch < min)
+            min = (float)endPitch;
+        if ((float)endPitch > max)
+            max = (float)endPitch;
+    }
+}
+
 int VocalNoteList::HasNoteInRange(int startTick, int endTick) const {
     for (const VocalNote *it = mNotes.data(); it != mNotes.data() + mNotes.size();
          ++it) {
