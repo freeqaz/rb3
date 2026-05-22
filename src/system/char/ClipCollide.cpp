@@ -320,22 +320,17 @@ DataNode ClipCollide::OnVenueName(DataArray *da) {
         char buf[0x100];
         strcpy(buf, handled.Str());
         int len = strlen(buf);
-        char *p = buf + len;
-        if (buf <= p) {
-            for (; len != 0; len--, p--) {
-                if (*p == '\\' || *p == '/') {
-                    *p = '\0';
-                    break;
-                }
+        char *p = buf + len - 1;
+        for (; p >= buf; p--) {
+            if (*p == '\\' || *p == '/') {
+                *p = '\0';
+                break;
             }
         }
-        char *p1 = p + (1 - (int)buf);
-        if (buf <= p) {
-            for (; p1 != 0; p1--, p--) {
-                if (*p == '\\' || *p == '/') {
-                    str = buf;
-                    break;
-                }
+        for (; p >= buf; p--) {
+            if (*p == '\\' || *p == '/') {
+                str = p + 1;
+                break;
             }
         }
     }
