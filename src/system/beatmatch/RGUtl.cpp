@@ -270,6 +270,104 @@ void HandleNoSeventhMinor(char *buf, int bufLen, const GameGem &gem, int i4, int
 
 DECOMP_FORCEACTIVE(RGUtl, "+-5", "b5", "9", "b9", "b13")
 
+void RGGetChordName(
+    char *buffer, int bufferLen, const GameGem &gem, int i4, int key, bool flip
+) {
+    GameGem chord(gem);
+    memset(buffer, 0, bufferLen);
+    if (flip)
+        key = (key + 3) % 12;
+    bool isFlat = false;
+    int km1 = key - 1;
+    if ((unsigned)km1 <= 9u && ((1 << km1) & 0x295) != 0)
+        isFlat = true;
+    if (chord.Enharmonic())
+        isFlat = !isFlat;
+    const char **noteNames = isFlat ? gNoteFlatNames : gNoteNames;
+    gCurrNoteNames = noteNames;
+    int level = 0;
+    gSuperscriptStarted = false;
+    unsigned char root = chord.GetRootNote();
+    if (root == 0xFF)
+        return;
+    if (chord.GetShowSlashes()) {
+        int fret = -1;
+        for (unsigned int i = 0; i < 6 && fret < 0; i++) {
+            fret = chord.GetFret(i);
+            if (fret >= 0) {
+                gSlashString = i;
+                gSlashFret = fret;
+                gSlashNote = (gTunedNotes[i] + fret) % 12;
+                chord.SetFret(i, -1);
+            }
+        }
+    }
+    if (!AddChordLevel(buffer, bufferLen, i4, level, noteNames[root], false))
+        return;
+    if (HandleInterval(buffer, bufferLen, chord, i4, level)) {
+        HandleSlashChords(buffer, bufferLen, chord, i4, level);
+        return;
+    }
+    bool hasMajor3rd = RGContainsNote((root + 4) % 12, chord);
+    bool hasMinor3rd = RGContainsNote((root + 3) % 12, chord);
+    if (!hasMajor3rd && !hasMinor3rd) {
+        HandleNoThird(buffer, bufferLen, chord, i4, level);
+        return;
+    }
+    bool hasMajor7th = RGContainsNote((root + 11) % 12, chord);
+    bool hasMinor7th = RGContainsNote((root + 10) % 12, chord);
+    if (!hasMajor7th && !hasMinor7th) {
+        if (hasMajor3rd)
+            HandleNoSeventh(buffer, bufferLen, chord, i4, level);
+        else
+            HandleNoSeventhMinor(buffer, bufferLen, chord, i4, level);
+        return;
+    }
+    if (!hasMajor3rd && hasMinor3rd
+        && !AddChordLevel(buffer, bufferLen, i4, level, "m", false))
+        return;
+    bool has2nd = RGContainsNote((root + 2) % 12, chord);
+    bool has4th = RGContainsNote((root + 5) % 12, chord);
+    bool has6th = RGContainsNote((root + 9) % 12, chord);
+    if (hasMinor7th && !has2nd && !has4th && !has6th) {
+        if (!AddChordLevel(buffer, bufferLen, i4, level, "7", false))
+            return;
+    } else if (hasMajor7th
+               && !AddChordLevel(buffer, bufferLen, i4, level, "M7", false)) {
+        return;
+    }
+    bool hasSharp4th = RGContainsNote((root + 6) % 12, chord);
+    bool hasSharp5th = RGContainsNote((root + 8) % 12, chord);
+    if (hasSharp4th && hasSharp5th) {
+        if (!AddChordLevel(buffer, bufferLen, i4, level, "+-5", true))
+            return;
+    } else if (hasSharp4th
+               && !AddChordLevel(buffer, bufferLen, i4, level, "b5", true)) {
+        return;
+    }
+    if (has2nd && !AddChordLevel(buffer, bufferLen, i4, level, "9", true))
+        return;
+    if (RGContainsNote((root + 1) % 12, chord)
+        && !AddChordLevel(buffer, bufferLen, i4, level, "b9", true))
+        return;
+    if (hasMajor3rd && hasMinor3rd
+        && !AddChordLevel(buffer, bufferLen, i4, level, "#9", true))
+        return;
+    if (has4th && !AddChordLevel(buffer, bufferLen, i4, level, "4", true))
+        return;
+    if (has6th && !AddChordLevel(buffer, bufferLen, i4, level, "6", true))
+        return;
+    if (hasSharp5th && !AddChordLevel(buffer, bufferLen, i4, level, "b13", true))
+        return;
+    if (gSuperscriptStarted) {
+        const char *end = "</gtr>";
+        MILO_ASSERT(strlen(buffer) + strlen(end) < bufferLen - 1, 0x24D);
+        strcat(buffer, end);
+        gSuperscriptStarted = false;
+    }
+    HandleSlashChords(buffer, bufferLen, chord, i4, level);
+}
+
 void RGGetFretLabelInfo(const GameGem &gem, int &i1, int &i2, bool b) {
     RGState state;
     RGGameGemToRGState(gem, state, b);
