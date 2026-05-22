@@ -78,6 +78,10 @@ void GameGemList::RecalculateGemTimes(TempoMap *tmap) {
     std::sort(mGems.begin(), mGems.end());
 }
 
+void GameGemList::Finalize() {
+    std::vector<GameGem>(mGems).swap(mGems);
+}
+
 bool GameGemList::WillBeNoStrum(const GameGem &gem) {
     if (gem.IsRealGuitar() && gem.RightHandTap())
         return true;
