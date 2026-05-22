@@ -4,6 +4,7 @@
 #include "math/Geo.h"
 #include "rndobj/Rnd.h"
 #include "obj/Msg.h"
+#include "os/Debug.h"
 #include <cmath>
 
 float CharClipDisplay::sZoom;
@@ -133,6 +134,150 @@ void CharClipDisplay::DrawBlend(float beat, float weight) {
     rect.x = GetX(weight * 0.5f + beat) - 1.0f;
     Hmx::Color markerColor(0.0f, 0.0f, 1.0f, 1.0f);
     TheRnd->DrawRect(rect, markerColor, NULL, NULL, NULL);
+}
+
+void CharClipDisplay::DrawTrack() {
+    Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+    Hmx::Color green(0.0f, 1.0f, 0.0f, 1.0f);
+    Hmx::Color black(0.0f, 0.0f, 0.0f, 1.0f);
+
+    float startBeat = (unkc - unk4 >= 0.0f) ? unkc : unk4;
+    float endBeat = (unk10 - unk8 >= 0.0f) ? unk8 : unk10;
+
+    float drawY = unk18;
+    float halfEm = sEm * 0.5f;
+    float nameY = -(halfEm - drawY);
+
+    float startX = GetX(startBeat);
+    float endX = GetX(endBeat);
+    Hmx::Rect trackRect(startX, drawY, endX - startX, 3.0f);
+    TheRnd->DrawRect(trackRect, white, NULL, NULL, NULL);
+
+    float firstBeat = (float)std::ceil(startBeat);
+    float lastBeat = (float)std::floor(endBeat);
+    if (firstBeat + 1.0f != firstBeat && firstBeat <= lastBeat) {
+        float markerY = drawY - 3.0f;
+        float markerH = 9.0f;
+        float beat = firstBeat;
+        do {
+            Hmx::Rect markerRect(GetX(beat), markerY, 1.0f, markerH);
+            TheRnd->DrawRect(markerRect, green, NULL, NULL, NULL);
+            beat += 1.0f;
+        } while (beat <= lastBeat);
+    }
+
+    if (unk0 == NULL)
+        goto drawName;
+
+    {
+        bool firstEvent = true;
+        int idx = 0;
+        float eventLabelOffset = 10.0f;
+        if (unk0->NumBeatEvents() != 0) {
+            float eventAlpha = 0.2f;
+            do {
+                const CharClip::BeatEvent &ev = unk0->mBeatEvents[idx];
+                float eventX = GetX(ev.beat);
+                float halfEmVal = sEm * 0.5f;
+                Hmx::Rect eventRect(eventX, drawY - halfEmVal, halfEmVal, 1.0f);
+                Hmx::Color eventColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
+                TheRnd->DrawRect(eventRect, eventColor, NULL, NULL, NULL);
+
+                if (firstEvent
+                    && (ev.beat > unk1c
+                        || (idx == 0
+                            && unk1c > unk0->mBeatEvents.back().beat))) {
+                    Hmx::Color eventLabelColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
+                    firstEvent = false;
+                    float labelY = drawY - (halfEmVal + eventLabelOffset);
+                    TheRnd->DrawString(
+                        ev.event.Str(),
+                        Vector2(eventX, labelY),
+                        eventLabelColor,
+                        true
+                    );
+                }
+                idx += 1;
+            } while ((unsigned int)idx < (unsigned int)unk0->NumBeatEvents());
+        }
+    }
+
+    {
+        CharIKFoot *leftIk = sDir->Find<CharIKFoot>("left.ikfoot", false);
+        CharIKFoot *rightIk = sDir->Find<CharIKFoot>("right.ikfoot", false);
+
+        if (leftIk == NULL) {
+            if (rightIk == NULL) {
+                Hmx::Rect sampleRect(0.0f, drawY + 1.0f, 1.0f, 1.0f);
+                float frac;
+                int startSample = unk0->BeatToSample(startBeat, &frac);
+                int endSample = unk0->BeatToSample(endBeat, &frac);
+                for (; startSample <= endSample; startSample++) {
+                    float sampleBeat = unk0->SampleToBeat(startSample);
+                    sampleRect.x = GetX(sampleBeat);
+                    TheRnd->DrawRect(sampleRect, black, NULL, NULL, NULL);
+                }
+            } else {
+                RndTransformable *data = rightIk->mData;
+                goto drawIKData;
+            }
+        } else {
+            MILO_ASSERT(
+                !rightIk || !leftIk || (rightIk->mData == leftIk->mData), 0xCB
+            );
+            RndTransformable *data = leftIk->mData;
+        drawIKData:
+            if (data != NULL) {
+                Symbol channelName
+                    = CharBones::ChannelName(data->Name(), CharBones::TYPE_POS);
+                void *channel = unk0->GetChannel(channelName);
+                Vector3 channelData;
+                Hmx::Color ikColor(0.0f, 0.0f, 0.0f, 1.0f);
+                Hmx::Rect ikRect(0.0f, drawY, 1.0f, 1.0f);
+                int firstFrame = (int)(float)std::ceil(unk0->BeatToFrame(startBeat));
+                int lastFrame = (int)(float)std::floor(unk0->BeatToFrame(endBeat));
+                for (int frame = firstFrame; frame <= lastFrame; frame++) {
+                    float frameBeat = unk0->FrameToBeat((float)frame);
+                    unk0->EvaluateChannel(&channelData, channel, frameBeat);
+                    if (leftIk != NULL
+                        && channelData[leftIk->mDataIndex] > 0.0f) {
+                        ikRect.x = GetX(frameBeat);
+                        TheRnd->DrawRect(ikRect, ikColor, NULL, NULL, NULL);
+                    }
+                    if (rightIk != NULL
+                        && channelData[rightIk->mDataIndex] > 0.0f) {
+                        ikRect.x = GetX(frameBeat);
+                        ikRect.y += 2.0f;
+                        TheRnd->DrawRect(ikRect, ikColor, NULL, NULL, NULL);
+                        ikRect.y -= 2.0f;
+                    }
+                }
+            }
+        }
+
+        DrawBeatString(firstBeat, green);
+        DrawBeatString(lastBeat, green);
+
+        {
+            float labelX = -((sEm * 2.0f) - (sEm * 3.0f + unk64 + unk14));
+            Vector2 startPos(labelX, nameY);
+            TheRnd->DrawString(MakeString("%.1f", unk4), startPos, white, true);
+        }
+
+        {
+            float screenWidth = (float)TheRnd->Width();
+            float labelX = -(sEm * 3.0f - screenWidth);
+            Vector2 endPos(labelX, nameY);
+            TheRnd->DrawString(MakeString("%.1f", unk8), endPos, white, true);
+        }
+    }
+
+drawName:
+    {
+        Hmx::Color nameColor(1.0f, 1.0f, 1.0f, 1.0f);
+        Vector2 namePos(unk64 + sEm, nameY);
+        TheRnd->DrawString(unk24, namePos, nameColor, true);
+    }
 }
 
 void CharClipDisplay::DrawCursor() {
