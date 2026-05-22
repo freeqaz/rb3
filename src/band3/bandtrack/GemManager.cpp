@@ -13,6 +13,10 @@
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/MetaPerformer.h"
 #include "game/TrainerPanel.h"
+#include "game/GemTrainerPanel.h"
+#include "game/PracticePanel.h"
+#include "game/RGTrainerPanel.h"
+#include "game/GemPlayer.h"
 #include "obj/Data.h"
 #include "obj/DataFunc.h"
 #include "obj/Task.h"
@@ -708,6 +712,77 @@ bool GemManager::OnMissPhrase(int i1) {
         }
     }
     return ret;
+}
+
+bool GemManager::InMissedPhrase(int gemId) {
+    if (TheGame->InTrainer() && TheGemTrainerPanel->IsGemInFutureLoop(gemId)) {
+        return false;
+    }
+    int rawTick = mGems[gemId].GetGameGem().GetTick();
+    for (int i = 0; i < mMissedPhrases.size(); i++) {
+        int tick = GetLoopTick(rawTick);
+        bool inPhrase = tick >= mMissedPhrases[i].unk0 && tick <= mMissedPhrases[i].unk4;
+        if (inPhrase) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void GemManager::PollHitGems(float ms) {
+    PruneHitGems(ms);
+    float bottom = ms / 1000.0f + mTrackDir->YToSeconds(mTemplate.mTailClipY);
+    FOREACH (it, mHitGems) {
+        Gem &gem = mGems[it->mGemId];
+        if (gem.OnScreen(ms)) {
+            if (gem.CompareBounds() && !gem.Released()) {
+                if (gem.mEnd > bottom) {
+                    gem.mTailStart = bottom - gem.GetStart();
+                } else {
+                    gem.KillDuration();
+                    mNowBar->StopBurning(gem.Slots());
+                    gem.Release();
+                }
+            }
+        }
+    }
+}
+
+void GemManager::Poll(float ms, const PlayerState &state) {
+    if (TheGame->IsWaiting() || TheGame->unkdc != -1.0f ||
+        (TheRGTrainerPanel && TheRGTrainerPanel->GetLegendMode())) {
+        UpdateArpeggios(ms, true);
+    } else if (!TheGame || !TheGame->InPracticeMode() || !ThePracticePanel ||
+               ThePracticePanel->unk5c <= 0) {
+        PollHelper(ms, state);
+    }
+}
+
+void GemManager::PollHelper(float ms, const PlayerState &state) {
+    int begin;
+    for (begin = mBegin; begin < mGems.size() && !mGems[begin].OnScreen(ms);
+         begin++) {
+    }
+    mEnd = Max(begin, mEnd);
+    float top = ms / 1000.0f + mTrackDir->TopSeconds();
+    while (mEnd < mGems.size() && mGems[mEnd].GetStart() < top) {
+        AdvanceEnd();
+    }
+    while (mBegin < begin) {
+        AdvanceBegin();
+    }
+    if (state.whammyActive) {
+        float up = unkc4 + 0.1f;
+        unkc4 = std::min(up, 1.0f);
+    } else {
+        float down = unkc4 - 0.1f;
+        unkc4 = std::max(down, 0.0f);
+    }
+    DrawTrackMasks(MsToTickInt(top * 1000.0f), -1);
+    UpdateArpeggios(ms, false);
+    PollHitGems(ms);
+    PollVisibleGems(ms, state.whammy);
+    mNowBar->Poll(ms, state.whammyActive);
 }
 
 bool GemManager::GetWidgetName(Symbol &sref, int i2, Symbol s3) {

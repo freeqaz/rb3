@@ -129,6 +129,9 @@ public:
     bool GetFill(int, FillExtent &);
     bool IsInFill(int);
     bool IsEndOfFill(int);
+    void Poll(float, const PlayerState &);
+    void PollHitGems(float);
+    bool InMissedPhrase(int);
 
     unsigned int EnabledSlots() const { return mEnabledSlots; }
 
