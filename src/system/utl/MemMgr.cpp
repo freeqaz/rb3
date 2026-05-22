@@ -43,6 +43,7 @@ public:
     int AllocSize(int *);
     int *SplitFromBack(int);
     bool Free(int *);
+    int *Truncate(int *, int, int &);
     void FindFreeNeighbors(AllocBlock *, FreeBlock *&, FreeBlock *&);
     void FirstFit(int, int, FreeBlockInfo &);
     void BestFit(int, int, FreeBlockInfo &);
@@ -71,6 +72,10 @@ extern Heap gHeaps[16];
 int gNumHeaps;
 static bool gMemInited;
 extern int gSingleHeap;
+
+namespace {
+    unsigned int gTimeStamp;
+}
 
 int MemNumHeaps() { return gNumHeaps; }
 
@@ -201,8 +206,38 @@ int *Heap::SplitFromBack(int n) {
     return mStart + mSizeWords;
 }
 
-namespace {
-    unsigned int gTimeStamp;
+int *Heap::Truncate(int *mem, int truncWords, int &outSize) {
+    if (mem < mStart || mem >= mStart + mSizeWords) {
+        return nullptr;
+    }
+    unsigned int header = ((unsigned int *)mem)[-1];
+    AllocBlock *allocBlock = (AllocBlock *)(mem - 1);
+    int newFreeWords = ((header >> 8) - 1 - (header & 0xFF)) - truncWords;
+    MILO_ASSERT(newFreeWords >= 0, 0x49E);
+    if (newFreeWords > 8) {
+        FreeBlock *prev = nullptr;
+        FreeBlock *next = nullptr;
+        FindFreeNeighbors(allocBlock, prev, next);
+        unsigned int timeStamp = gTimeStamp;
+        FreeBlock *block = (FreeBlock *)(mem + truncWords);
+        gTimeStamp = timeStamp + 1;
+        InsertFreeBlock(block, newFreeWords, prev, next, timeStamp);
+        if (mDebugLevel >= 1) {
+            int *fillEnd = (int *)block + block->mSizeWords;
+            int *fillStart = (int *)block + 3;
+            for (int *p = fillStart; p < fillEnd; p++) {
+                *p = 0xDEADDEAD;
+            }
+        }
+        if (next != nullptr) {
+            block->AttemptMerge(next, mDebugLevel);
+        }
+        unsigned int oldHeader = allocBlock->mHeader;
+        allocBlock->mHeader =
+            (oldHeader & 0xFF) | (((oldHeader >> 8) - newFreeWords) << 8);
+    }
+    outSize = allocBlock->mHeader >> 8;
+    return mem;
 }
 
 bool Heap::Free(int *mem) {
