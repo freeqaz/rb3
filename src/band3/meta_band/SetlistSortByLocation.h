@@ -7,6 +7,9 @@
 class LocationCmp : public SongSortCmp {
 public:
     enum SetlistHeaderType {
+        kHeaderBattles = 0,
+        kHeaderCustom = 1,
+        kHeaderInternal = 2
     };
     LocationCmp(SavedSetlist::SetlistType, const char *, const char *, int, const char *);
     virtual ~LocationCmp() {}
@@ -17,7 +20,7 @@ public:
 
     const char *mCmp; // 0x4
     SavedSetlist::SetlistType mSetlistType; // 0x8
-    const char *mOwner; // 0xc
+    const char *mOwnerName; // 0xc
     int mId; // 0x10
     String mName; // 0x14
     int mField20; // 0x20
@@ -28,8 +31,8 @@ class SetlistSortByLocation : public SetlistSort {
 public:
     SetlistSortByLocation() { mShortName = by_location; }
     virtual ~SetlistSortByLocation() {}
-    virtual ShortcutNode *NewShortcutNode(SongSortNode *) const;
-    virtual HeaderSortNode *NewHeaderNode(SongSortNode *) const;
+    virtual ShortcutNode *NewShortcutNode(SetlistSortNode *) const;
+    virtual HeaderSortNode *NewHeaderNode(SetlistSortNode *) const;
     virtual ShortcutNode *NewShortcutNode(FunctionSortNode *) const;
     virtual HeaderSortNode *NewHeaderNode(FunctionSortNode *) const;
     virtual SetlistSortNode *NewSetlistNode(SetlistRecord *) const;

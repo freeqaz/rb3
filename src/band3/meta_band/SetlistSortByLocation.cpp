@@ -1,8 +1,11 @@
 #include "meta_band/SetlistSortByLocation.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/SavedSetlist.h"
+#include "meta_band/SongRecord.h"
 #include "system/meta/Profile.h"
+#include "meta/Sorting.h"
 #include "os/Debug.h"
+#include "utl/MakeString.h"
 #include "utl/Str.h"
 
 #include <string.h>
@@ -11,7 +14,7 @@ LocationCmp::LocationCmp(
     SavedSetlist::SetlistType type, const char *owner, const char *cmp, int id,
     const char *name
 )
-    : mCmp(cmp), mSetlistType(type), mOwner(owner), mId(id), mName(name) {
+    : mCmp(cmp), mSetlistType(type), mOwnerName(owner), mId(id), mName(name) {
     switch (mSetlistType) {
     case SavedSetlist::kBattleHarmonix:
     case SavedSetlist::kBattleFriend:
@@ -63,4 +66,153 @@ LocationCmp::LocationCmp(
         MILO_FAIL("Bad SetlistType in LocationCmp::LocationCmp!");
         break;
     }
+}
+
+int LocationCmp::Compare(const SongSortCmp *cmp, SongNodeType nodeType) const {
+    LocationCmp *loc = (LocationCmp *)cmp;
+    MILO_ASSERT(cmp, 0x73);
+    switch (nodeType) {
+    case kNodeShortcut:
+    case kNodeHeader:
+        return mField20 - loc->mField20;
+    case kNodeSetlist:
+        if (mField20 != loc->mField20) {
+            return mField20 - loc->mField20;
+        } else {
+            bool thisHasId = mId != 0;
+            bool otherHasId = loc->mId != 0;
+            if (thisHasId != otherHasId) {
+                return loc->mId - mId;
+            } else if (mField24 != loc->mField24) {
+                return mField24 - loc->mField24;
+            } else {
+                switch (mField20) {
+                case 0: {
+                    if (loc->mField24 == 2) {
+                        MILO_ASSERT(mOwnerName, 0x8E);
+                        MILO_ASSERT(loc->mOwnerName, 0x8F);
+                        int ownerCmp = AlphaKeyStrCmp(mOwnerName, loc->mOwnerName, false);
+                        if (ownerCmp != 0)
+                            return ownerCmp;
+                    }
+                    int idCmp = mId - loc->mId;
+                    if (idCmp != 0)
+                        return idCmp;
+                    int cmpCmp = AlphaKeyStrCmp(mCmp, loc->mCmp, false);
+                    if (cmpCmp != 0)
+                        return cmpCmp;
+                    return AlphaKeyStrCmp(mName.c_str(), loc->mName.c_str(), false);
+                }
+                case 1: {
+                    if (loc->mField24 == 2) {
+                        MILO_ASSERT(mOwnerName, 0xA8);
+                        MILO_ASSERT(loc->mOwnerName, 0xA9);
+                        int ownerCmp = AlphaKeyStrCmp(mOwnerName, loc->mOwnerName, false);
+                        if (ownerCmp != 0)
+                            return ownerCmp;
+                    }
+                    return AlphaKeyStrCmp(mCmp, loc->mCmp, false);
+                }
+                case 2:
+                    return AlphaKeyStrCmp(mCmp, loc->mCmp, false);
+                default:
+                    MILO_FAIL("Bad SetlistHeaderType in LocationCmp::Compare!");
+                    return 0;
+                }
+            }
+        }
+    default:
+        MILO_FAIL("invalid type of node comparison.\n");
+        return 0;
+    }
+}
+
+Symbol LocationCmp::SetlistHeaderTypeToSym(SetlistHeaderType type) {
+    switch (type) {
+    case kHeaderBattles:
+        return setlist_header_battles;
+    case kHeaderCustom:
+        return setlist_header_custom;
+    case kHeaderInternal:
+        return setlist_header_internal;
+    default:
+        MILO_FAIL("Bad SetlistHeaderType in LocationCmp::Compare!");
+        return gNullStr;
+    }
+}
+
+ShortcutNode *SetlistSortByLocation::NewShortcutNode(SetlistSortNode *node) const {
+    LocationCmp *cmp = new LocationCmp(
+        node->GetSetlistRecord()->GetSetlist()->GetType(), gNullStr, gNullStr, 0, gNullStr
+    );
+    return new ShortcutNode(
+        cmp,
+        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
+        true
+    );
+}
+
+HeaderSortNode *SetlistSortByLocation::NewHeaderNode(SetlistSortNode *node) const {
+    LocationCmp *cmp = new LocationCmp(
+        node->GetSetlistRecord()->GetSetlist()->GetType(), gNullStr, gNullStr, 0, gNullStr
+    );
+    return new HeaderSortNode(
+        cmp,
+        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
+        true
+    );
+}
+
+ShortcutNode *SetlistSortByLocation::NewShortcutNode(FunctionSortNode *node) const {
+    LocationCmp *cmp = new LocationCmp(
+        SavedSetlist::kBattleHarmonix, gNullStr, gNullStr, 0, gNullStr
+    );
+    return new ShortcutNode(
+        cmp,
+        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
+        true
+    );
+}
+
+HeaderSortNode *SetlistSortByLocation::NewHeaderNode(FunctionSortNode *node) const {
+    LocationCmp *cmp = new LocationCmp(
+        SavedSetlist::kBattleHarmonix, gNullStr, gNullStr, 0, gNullStr
+    );
+    return new HeaderSortNode(
+        cmp,
+        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
+        true
+    );
+}
+
+SetlistSortNode *SetlistSortByLocation::NewSetlistNode(SetlistRecord *record) const {
+    BattleSavedSetlist *battle =
+        dynamic_cast<BattleSavedSetlist *>(record->GetSetlist());
+    int id = battle ? battle->mBattleTimeLeft : 0;
+    NetSavedSetlist *net = dynamic_cast<NetSavedSetlist *>(record->GetSetlist());
+    const char *name;
+    if (battle) {
+        name = MakeString("%i", battle->mID);
+    } else if (net) {
+        name = net->mGuid.c_str();
+    } else {
+        name = gNullStr;
+    }
+    LocationCmp *cmp = new LocationCmp(
+        record->GetSetlist()->GetType(), record->GetOwner(),
+        record->GetSetlist()->GetTitle(), id, name
+    );
+    return new SetlistSortNode(cmp, record);
+}
+
+FunctionSortNode *SetlistSortByLocation::NewFunctionNode(Symbol sym) const {
+    LocationCmp *cmp = new LocationCmp(
+        SavedSetlist::kBattleHarmonix, gNullStr, gNullStr, 0, gNullStr
+    );
+    return new FunctionSortNode(cmp, false, sym, gNullStr, "", "");
+}
+
+SubheaderSortNode *SetlistSort::NewSubheaderNode(SetlistSortNode *node) const {
+    MILO_FAIL(__FUNCTION__);
+    return nullptr;
 }

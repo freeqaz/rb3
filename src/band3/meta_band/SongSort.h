@@ -74,9 +74,9 @@ public:
     virtual ShortcutNode *NewShortcutNode(LeafSortNode *) const;
     virtual HeaderSortNode *NewHeaderNode(LeafSortNode *) const;
     virtual SubheaderSortNode *NewSubheaderNode(LeafSortNode *) const;
-    virtual ShortcutNode *NewShortcutNode(SongSortNode *) const = 0;
-    virtual HeaderSortNode *NewHeaderNode(SongSortNode *) const = 0;
-    virtual SubheaderSortNode *NewSubheaderNode(SongSortNode *) const;
+    virtual ShortcutNode *NewShortcutNode(SetlistSortNode *) const = 0;
+    virtual HeaderSortNode *NewHeaderNode(SetlistSortNode *) const = 0;
+    virtual SubheaderSortNode *NewSubheaderNode(SetlistSortNode *) const;
     virtual ShortcutNode *NewShortcutNode(FunctionSortNode *) const = 0;
     virtual HeaderSortNode *NewHeaderNode(FunctionSortNode *) const = 0;
     virtual SetlistSortNode *NewSetlistNode(SetlistRecord *) const = 0;

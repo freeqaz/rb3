@@ -298,7 +298,7 @@ ShortcutNode *SetlistSort::NewShortcutNode(LeafSortNode *node) const {
     FunctionSortNode *fsn = dynamic_cast<FunctionSortNode *>(node);
     MILO_ASSERT(setlist || fsn, 0x1D2);
     if (setlist) {
-        return NewShortcutNode((SongSortNode *)setlist);
+        return NewShortcutNode((SetlistSortNode *)setlist);
     } else
         return NewShortcutNode(fsn);
 }
@@ -308,7 +308,7 @@ HeaderSortNode *SetlistSort::NewHeaderNode(LeafSortNode *node) const {
     FunctionSortNode *fsn = dynamic_cast<FunctionSortNode *>(node);
     MILO_ASSERT(setlist || fsn, 0x1DD);
     if (setlist) {
-        return NewHeaderNode((SongSortNode *)setlist);
+        return NewHeaderNode((SetlistSortNode *)setlist);
     } else
         return NewHeaderNode(fsn);
 }
@@ -316,5 +316,5 @@ HeaderSortNode *SetlistSort::NewHeaderNode(LeafSortNode *node) const {
 SubheaderSortNode *SetlistSort::NewSubheaderNode(LeafSortNode *node) const {
     SetlistSortNode *setlist = dynamic_cast<SetlistSortNode *>(node);
     MILO_ASSERT(setlist, 0x1E7);
-    return NewSubheaderNode((SongSortNode *)setlist);
+    return NewSubheaderNode((SetlistSortNode *)setlist);
 }
