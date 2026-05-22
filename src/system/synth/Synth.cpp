@@ -52,13 +52,17 @@ namespace {
 
 Synth *TheSynth;
 
+static unsigned char sMasterKeyStr[] = { 0x7a, 0x4d, 0x60, 0x7c, 0xFF };
+
 DataNode returnMasterKey(DataArray *a) {
     unsigned char str[8];
     unsigned char masher[64];
     if (a->Size() > 1) {
         KeyChain::getMasher(masher);
-        *(unsigned int *)(&str[0]) = 0x7a4d607cu;
-        str[4] = '\xFF';
+        unsigned char *p = sMasterKeyStr;
+        unsigned int word = *((unsigned int *&)p)++;
+        *(unsigned int *)(&str[0]) = word;
+        str[4] = *p;
         for (int i = 0; i < 5; i++) {
             str[i]++;
         }
@@ -285,6 +289,49 @@ void Synth::ToggleHud() {
 
 DECOMP_FORCEACTIVE(Synth, "%i", "0", "stream", "chan %i", "Total active Sequences: %d")
 
+void Synth::DrawMeter(float &y, float level, float peakHold, const char *name) {
+    Hmx::Color yellow(0.5f, 0.5f, 0.0f, 1.0f);
+    Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+    Hmx::Color black(0.0f, 0.0f, 0.0f, 1.0f);
+    Hmx::Color grey(0.5f, 0.5f, 0.5f, 1.0f);
+
+    float rndWidth = (float)TheRnd->Width();
+    Vector2 labelPos(rndWidth * 0.1f, y);
+    TheRnd->DrawString(name, labelPos, white, true);
+
+    float barLeft = rndWidth * 0.2f;
+    float barWidth = rndWidth * 0.7f;
+    Hmx::Rect bgRect(barLeft, y, barWidth, 12.0f);
+    TheRnd->DrawRect(bgRect, black, 0, 0, 0);
+
+    float levelNorm = (level + 40.0f) / 40.0f;
+    if (levelNorm < 0.0f) {
+        levelNorm = 0.0f;
+    } else if (levelNorm > 1.0f) {
+        levelNorm = 1.0f;
+    }
+    Hmx::Rect levelRect(barLeft, y, levelNorm * barWidth, 12.0f);
+    TheRnd->DrawRect(levelRect, grey, 0, 0, 0);
+
+    float peakNorm = (peakHold + 40.0f) / 40.0f;
+    if (peakNorm < 0.0f) {
+        peakNorm = 0.0f;
+    } else if (peakNorm > 1.0f) {
+        peakNorm = 1.0f;
+    }
+    Hmx::Color *peakColor = &white;
+    if (peakNorm != 1.0f) {
+        peakColor = &yellow;
+    }
+    Hmx::Rect peakRect(barLeft + peakNorm * barWidth, y, 8.0f, 12.0f);
+    TheRnd->DrawRect(peakRect, *peakColor, 0, 0, 0);
+
+    Vector2 dbLabelPos(barWidth + barLeft, y);
+    TheRnd->DrawString(MakeString("%i", (int)peakHold), dbLabelPos, white, true);
+
+    y += 16.0f;
+}
+
 void Synth::DrawMeterScale(float &y) {
     float db = -40.0f;
     float height = (float)TheRnd->Width();
@@ -491,7 +538,9 @@ int Synth::GetFXOverhead() {
 int Synth::GetSPUOverhead() {
     DataArray *cfg = SystemConfig("synth");
     int spuBufs = cfg->FindArray("iop")->FindInt("spu_buffers");
-    return spuBufs * 0x800 + 0x5010 + GetFXOverhead();
+    spuBufs *= 0x800;
+    spuBufs += 0x5010;
+    return spuBufs + GetFXOverhead();
 }
 
 FxSendPitchShift *Synth::CreatePitchShift(int stage, SendChannels chans) {
