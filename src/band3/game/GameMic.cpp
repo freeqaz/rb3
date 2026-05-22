@@ -1,4 +1,5 @@
 #include "game/GameMic.h"
+#include "math/Utl.h"
 #include "obj/Data.h"
 #include "obj/Task.h"
 #include "os/Debug.h"
@@ -9,6 +10,19 @@
 #include "utl/MemStream.h"
 #include "utl/Wav.h"
 #include "utl/WaveFile.h"
+#include <time.h>
+
+extern "C" void AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf(
+    PitchDetector *self,
+    const char *name,
+    const short *samples,
+    int numSamples,
+    float sensitivity,
+    float gain,
+    float &livePitch,
+    float &energy,
+    float &outc
+);
 
 bool gIdxTaken[6];
 
@@ -107,6 +121,56 @@ void GameMic::SetInputFile(const char *filename) {
 void GameMic::AccessContinuousSamples(const short *&s, int &i) const {
     s = mSamplesContinuous;
     i = unk8034;
+}
+
+void GameMic::ThreadProcessOneFrame() {
+    float livePitch = 0.0f;
+    float energy = 0.0f;
+    TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    clock();
+    int droppedSamples = 0;
+    if (!unkc) {
+        Mic *mic = GetMyMic();
+        droppedSamples = mic->GetDroppedSamples();
+        char *recentBuf = mic->GetRecentBuf(unk8030);
+        MinEq(unk8030, 8192);
+        memcpy(mSamplesRecent, recentBuf, unk8030 * 2);
+        char *continuousBuf = mic->GetContinuousBuf(unk8034);
+        MinEq(unk8034, 8192);
+        memcpy(mSamplesContinuous, continuousBuf, unk8034 * 2);
+    }
+    Mic *myMic = GetMyMic();
+    float outc = 0.0f;
+    float micGain = myMic->unk8;
+    const char *micName = myMic->GetName().mStr;
+    AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf(
+        mDetector,
+        micName,
+        mSamplesRecent,
+        unk8030,
+        myMic->GetSensitivity(),
+        micGain,
+        livePitch,
+        energy,
+        outc
+    );
+    energy = Clamp(0.0f, 1.0f, energy / (unk24 * 500.0f));
+    float rate = (energy > unk1c) ? 0.3f : 0.1f;
+    unk1c = rate * energy + (1.0f - rate) * unk1c;
+    unk20 = livePitch;
+    if (mWriteWav && TheTaskMgr.Seconds(TaskMgr::kRealTime) >= 0.0f) {
+        if ((unsigned int)(droppedSamples - 1) <= 0xbb7e) {
+            short *zeros = new short[droppedSamples];
+            memset(zeros, 0, droppedSamples * 2);
+            mStoredAudio->Write(zeros, droppedSamples * 2);
+            delete[] zeros;
+        }
+        mStoredAudio->Write(mSamplesContinuous, unk8034 * 2);
+    }
+    if (!unkc && GetMyMic()->IsConnected() == 0) {
+        unk20 = 0.0f;
+        unk1c = 0.0f;
+    }
 }
 
 void GameMic::Update() {
