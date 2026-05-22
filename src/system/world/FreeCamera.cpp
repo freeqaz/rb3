@@ -52,9 +52,10 @@ void FreeCamera::Poll() {
 
     // LimitAng(mRot.z - rotSpeed * lx * |lx|)
     // rotXDelta is kept in f30 across the first fmod call
+    float zDelta = rotSpeed * (-lx) * fabsf(lx);
     float lyPart = rotSpeed * ly;
     float rotXDelta = lyPart * fabsf(ly);
-    float limZ = (float)fmod(mRot.z + rotSpeed * (-lx) * fabsf(lx) + 3.14159265f, 2.0 * 3.14159265f);
+    float limZ = (float)fmod(mRot.z + zDelta + 3.14159265f, 2.0 * 3.14159265f);
     mRot.z = (limZ < 0.0f) ? limZ + 3.14159265f : limZ - 3.14159265f;
 
     // LimitAng(mRot.x + rotSpeed * ly * |ly|)
