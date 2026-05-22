@@ -89,6 +89,22 @@ void GameGemList::RecalculateGemTimes(TempoMap *tmap) {
     std::sort(mGems.begin(), mGems.end());
 }
 
+void GameGemList::SetGems(
+    int startTick, int loopStartTick, int loopEndTick,
+    const std::vector<GameGem> &gems, int numLoops) {
+    mGems.clear();
+    mGems.reserve(numLoops * gems.size());
+    int tickOffset = 0;
+    for (int i = 0; i < numLoops; i++) {
+        for (unsigned int j = 0; j < gems.size(); j++) {
+            GameGem gem = gems[j];
+            gem.CopyGem((GameGem *)&gems[j], (loopStartTick - startTick) + tickOffset);
+            mGems.push_back(gem);
+        }
+        tickOffset += loopEndTick - loopStartTick;
+    }
+}
+
 void GameGemList::MergeChordGems() {
     if (mGems.empty())
         return;
