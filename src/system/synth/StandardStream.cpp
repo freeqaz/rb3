@@ -124,17 +124,18 @@ void StandardStream::PollStream() {
             break;
         }
         if (mState != kInit && mJumpFromSamples != 0) {
-            if (mJumpFromSamples < 0) {
+            int jumpFrom = mJumpFromSamples;
+            if (jumpFrom < 0) {
                 if (mRdr->Done()) {
                     DoJump();
                 }
-            } else if (mJumpFromSamples > 0) {
-                if (mJumpFromSamples < mJumpToSamples) {
-                    if (mCurrentSamp >= mJumpFromSamples && mCurrentSamp < mJumpToSamples) {
+            } else if (jumpFrom > 0) {
+                if (jumpFrom < mJumpToSamples) {
+                    if (mCurrentSamp >= jumpFrom && mCurrentSamp < mJumpToSamples) {
                         DoJump();
                     }
-                } else if (mJumpFromSamples > mJumpToSamples) {
-                    if (mCurrentSamp >= mJumpFromSamples) {
+                } else if (jumpFrom > mJumpToSamples) {
+                    if (mCurrentSamp >= jumpFrom) {
                         DoJump();
                     }
                 }
