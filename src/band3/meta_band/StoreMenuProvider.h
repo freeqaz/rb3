@@ -20,7 +20,10 @@ public:
     const char *GetTitle();
 
     int mIxHighlight; // 0x20
-    String mPathBase;
-    StorePage *mPage;
-    RndTex *mBanner;
-};
+    String mPathBase; // 0x24 (String = 8 bytes)
+    StorePage *mPage; // 0x2c
+    RndTex *mBanner; // 0x30
+    int unk34;
+    int unk38;
+    int unk3c;
+}; // 0x44

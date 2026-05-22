@@ -103,8 +103,8 @@ const char *StoreMenuPanel::GetCrumbText() const {
 }
 
 void StoreMenuPanel::AddMenu(DataArray *data, const char *path) {
-    int next = mCurrentMenuIx + 1;
     StoreMenuProvider *provider;
+    int next = mCurrentMenuIx + 1;
     if (next >= mMenuStack.size()) {
         provider = new StoreMenuProvider(data, path);
         mMenuStack.push_back(provider);
