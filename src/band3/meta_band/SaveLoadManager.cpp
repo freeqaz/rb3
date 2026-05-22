@@ -7,6 +7,7 @@
 #include "obj/MessageTimer.h"
 #include "obj/ObjMacros.h"
 #include "meta/MemcardMgr_Wii.h"
+#include "net_band/EntityUploader.h"
 #include "os/Debug.h"
 #include "os/Memcard.h"
 #include "os/User.h"
@@ -76,6 +77,24 @@ void SaveLoadManager::AutoLoad() {
 void SaveLoadManager::ManualDelete() {
     MILO_LOG("Manual Delete has been called\n");
     mRequestFlags |= 1;
+}
+
+void SaveLoadManager::Init() {
+    MILO_ASSERT(!TheSaveLoadMgr, 0x57);
+    TheSaveLoadMgr = new SaveLoadManager();
+}
+
+void SaveLoadManager::AutoSaveNow() {
+    if (IsReasonToAutosave(true)) {
+        int i = 0x20;
+        mRequestFlags |= 8;
+        TheEntityUploader.Abort();
+        do {
+            TheEntityUploader.Poll();
+            Poll();
+            i--;
+        } while (mState != kS_Idle && i > 0);
+    }
 }
 
 Symbol SaveLoadManager::GetDialogOpt3() {
