@@ -47,7 +47,7 @@ public:
     void SetNodes(Node *, Node *);
     void Draw(float, float, CharDriver *);
     void DrawDot(float, float, float, float, const Hmx::Color &);
-    bool ClipBeat(CharClip *, CharDriver *, bool);
+    float ClipBeat(CharClip *, CharDriver *, bool);
     float BeatA(int);
     float BeatB(int);
     inline bool BeatAligned(int, int);

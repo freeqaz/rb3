@@ -483,3 +483,15 @@ void ClipDistMap::DrawDot(float x, float y, float f3, float f4, Hmx::Color const
     rect.y = 2.0f * inner + (y + 1.0f);
     TheRnd->DrawRect(rect, color, nullptr, nullptr, nullptr);
 }
+
+float ClipDistMap::ClipBeat(CharClip *clip, CharDriver *driver, bool last) {
+    float beat = clip->StartBeat();
+    for (CharClipDriver *cd = driver->mFirst; cd != nullptr; cd = cd->mNext) {
+        if (cd->GetClip() == clip) {
+            beat = cd->mBeat;
+            if (last)
+                return beat;
+        }
+    }
+    return beat;
+}
