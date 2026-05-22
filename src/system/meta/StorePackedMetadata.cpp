@@ -703,8 +703,36 @@ void StorePackedRanks::EndianFix() {
     mRealGuitar = rank;
 }
 
+void StorePackedPage::EndianFix() {
+    unsigned char *b = (unsigned char *)this;
+    unsigned char b6 = b[6];
+    mHasOffers = b6 >> 4;
+    mDefaultSort = b6;
+    unsigned char b7 = b[7];
+    unk6p0 = b7 >> 4;
+    unk6p1 = b7;
+}
+
 unsigned long long StorePackedSong::DataTitle() const {
     return WiiCommerceMgr::MakeDataTitleId(&unk6);
+}
+
+bool StoreVersionHeader::LoadFile(const char *cc) {
+    char *buffer;
+    char *dataStart;
+    char *dataEnd;
+    bool ret = StoreLoadPackedFile(
+        cc, false, 0x20, false, true, &buffer, &dataStart, &dataEnd, NULL
+    );
+    if (!ret)
+        return false;
+    unsigned char *data = (unsigned char *)buffer;
+    mVersion = data[0];
+    unsigned int hi = data[1] << 8;
+    mBuildNumber = hi | data[2];
+    mCompressed = data[3];
+    gStoreUseCompressedFiles = data[3];
+    return true;
 }
 
 StoreError StoreMetadataManager::LoadError() const {
@@ -713,6 +741,14 @@ StoreError StoreMetadataManager::LoadError() const {
 
 bool StoreMetadataManager::LoadingFailed() const {
     return mLoadingState == 11;
+}
+
+void StoreMetadataManager::AddSetlistOffer(int offer) {
+    mSetlistOffers.push_back(offer);
+}
+
+void StoreMetadataManager::ClearSetlistOffers() {
+    mSetlistOffers.clear();
 }
 
 void StoreMetadataManager::SetMetadataIndex(unsigned long long key, unsigned short idx, long l) {

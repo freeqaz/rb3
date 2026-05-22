@@ -31,9 +31,17 @@ public:
     bool Load(const char *);
 };
 
+#pragma push
+#pragma pack(1)
 class StoreVersionHeader {
 public:
+    bool LoadFile(const char *);
+
+    unsigned char mVersion; // 0x0
+    unsigned short mBuildNumber; // 0x1
+    unsigned char mCompressed; // 0x3
 };
+#pragma pop
 
 class StoreOfferTable {
 public:
