@@ -7,6 +7,9 @@
 #include "utl/MemMgr.h"
 #include "utl/Symbols2.h"
 #include "sdk/RVL_SDK/revolution/cnt/cnt.h"
+#include "sdk/RVL_SDK/revolution/nand/nand.h"
+
+extern "C" int NANDGetStatus(const char *, NANDStatus *);
 
 void CM_CNTSDCacheClearRSO();
 
@@ -366,6 +369,80 @@ int StoreRbnOfferTable::OfferIndex(const StorePackedOfferBase *base) const {
             return i;
     }
     return -1;
+}
+
+void StorePackedRedemptionOffer::EndianFix() {
+    mOfferIndex -= 1;
+}
+
+static bool CheckOtherTitlesExistence(const char *titleId) {
+    char path[128];
+    sprintf(
+        path,
+        "/title/00010000/%02x%02x%02x%02x/data/",
+        titleId[0],
+        titleId[1],
+        titleId[2],
+        titleId[3]
+    );
+    bool exists = true;
+    if (!titleId[0] && !titleId[1] && !titleId[2] && !titleId[3]) {
+        exists = false;
+    } else {
+        NANDStatus status;
+        if (NANDGetStatus(path, &status) < 0)
+            exists = false;
+    }
+    return exists;
+}
+
+bool StoreRedemptionsTable::Load(const char *cc) {
+    char buf[256];
+    sprintf(buf, "%sredemption_offers", cc);
+    char *buffer;
+    int numEntries;
+    char *dataStart;
+    char *dataEnd;
+    bool ret = StoreLoadPackedFile(
+        buf, true, 0x20000, false, false, &buffer, &dataStart, &dataEnd, &numEntries
+    );
+    if (!ret)
+        return ret;
+    int byteCount = numEntries * 6;
+    int diff = dataEnd - dataStart;
+    if (diff != byteCount) {
+        MILO_LOG(
+            "Redemption file says is has %d entries, but at %d bytes each that would take %d bytes, and there are %d bytes left in the file.\n",
+            numEntries,
+            6UL,
+            byteCount,
+            diff
+        );
+        numEntries = diff / 6;
+    }
+    StorePackedRedemptionOffer *offer = (StorePackedRedemptionOffer *)dataStart;
+    unsigned short *validIndices = (unsigned short *)dataStart;
+    int numValid = 0;
+    for (int i = 0; i < numEntries; i++) {
+        offer->EndianFix();
+        if (CheckOtherTitlesExistence(offer->mTitleId)) {
+            numValid++;
+            *validIndices = offer->mOfferIndex;
+            validIndices++;
+        }
+        offer = (StorePackedRedemptionOffer *)((char *)offer + 6);
+    }
+    reserve(numValid);
+    unsigned short *idxPtr = (unsigned short *)dataStart;
+    for (int i = 0; i < numValid; i++) {
+        unsigned short idx = *idxPtr;
+        if (idx < TheStoreMetadata.mOfferTable->mNumOffers) {
+            push_back(TheStoreMetadata.mOfferTable->mOffers[idx]);
+        }
+        idxPtr++;
+    }
+    _MemFree(buffer);
+    return true;
 }
 
 Symbol StorePackedPage::DefaultSort() const {

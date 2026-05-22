@@ -17,7 +17,15 @@ public:
     char *mBuffer; // 0x0
 };
 
-class StoreRedemptionsTable : public std::vector<int> {
+class StorePackedRedemptionOffer {
+public:
+    void EndianFix();
+
+    unsigned short mOfferIndex; // 0x0
+    char mTitleId[4]; // 0x2
+};
+
+class StoreRedemptionsTable : public std::vector<StorePackedOffer *> {
 public:
     StoreRedemptionsTable() {}
     bool Load(const char *);
