@@ -213,6 +213,7 @@ public:
     float GetSingerAutoplayVariationMagnitude(int);
     float GetNumPhrases(int, int, int);
     void ResetScoring();
+    float GetCompensatedTime(float);
 
     int NumSingers() const { return mSingers.size(); }
     int NumVocalParts() const { return mVocalParts.size(); }

@@ -731,6 +731,14 @@ float VocalPlayer::GetSingerAutoplayVariationMagnitude(int x) {
         return -1.0f;
 }
 
+float VocalPlayer::GetCompensatedTime(float ms) {
+    int padNum = -1;
+    if (mUser->IsLocal()) {
+        padNum = mUser->GetLocalUser()->GetPadNum();
+    }
+    return ms + TheProfileMgr.GetSyncOffset(padNum);
+}
+
 void VocalPlayer::SetAutoplayOffset(float f1) {
     FOREACH (it, mSingers) {
         (*it)->SetAutoplayOffset(f1);
