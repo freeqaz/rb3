@@ -70,14 +70,23 @@
 #include "meta_band/NameGenerator.h"
 #include "meta_band/OvershellPanel.h"
 #include "net/NetMessage.h"
+#include "net/NetSession.h"
 #include "net/WiiFriendMgr.h"
+#include "rndobj/PostProc.h"
+#include "synth/Faders.h"
+#include "synth/Synth.h"
+#include "ui/UI.h"
 #include "ui/UIListProvider.h"
+#include "ui/UIScreen.h"
 #include "obj/Dir.h"
 #include "obj/ObjMacros.h"
+#include "os/Debug.h"
 #include "os/PlatformMgr.h"
 #include "obj/DataFunc.h"
 #include "tour/QuestFilterPanel.h"
 #include "tour/TourChallengeResultsPanel.h"
+#include "utl/Symbols.h"
+#include "utl/Std.h"
 
 void UtlInit();
 
@@ -135,6 +144,7 @@ public:
 class WiiFriendsProvider {
 public:
     void Init();
+    void Poll();
     int pad[1]; // size > 2 to avoid sda21 addressing
 };
 extern WiiFriendsProvider TheWiiFriendsProvider;
@@ -278,3 +288,164 @@ MetaPanel::~MetaPanel() {
     RELEASE(mHAQMgr);
     TheBandUI.RemoveSink(this, "current_screen_changed");
 }
+
+void MetaPanel::Load() {
+    UIPanel::Load();
+    DataArray *cfg = SystemConfig("synth", "metamusic", "metamusic_loop");
+    DataArray *loopArr = cfg->Node(PickLoopIndex(cfg->Size())).Array();
+    const char *file = loopArr->Node(0).Str();
+    float vol = loopArr->Node(1).Float();
+    mMusic = new MetaMusic("metamusic");
+    mMusic->Load(file, vol, true, true);
+    mSongPreview.Init();
+    UpdateMusicMuteState();
+}
+
+void MetaPanel::PollForLoading() {
+    UIPanel::PollForLoading();
+    if (UIPanel::IsLoaded()) {
+        mMusic->Poll();
+    }
+}
+
+bool MetaPanel::IsLoaded() const {
+    return UIPanel::IsLoaded() && mMusic && mMusic->Loaded();
+}
+
+void MetaPanel::FinishLoad() {
+    UIPanel::FinishLoad();
+    mMusic->AddFader(TheSynth->Find<Fader>("fade", true));
+}
+
+void MetaPanel::Unload() {
+    UIPanel::Unload();
+    RELEASE(mMusic);
+    mSongPreview.Terminate();
+    RndPostProc::Reset();
+}
+
+void MetaPanel::Draw() {}
+
+void MetaPanel::Poll() {
+    UIPanel::Poll();
+    mMusic->Poll();
+    mSongPreview.Poll();
+    TheWiiFriendsProvider.Poll();
+    SyncGameTimer();
+    UpdatePostProc();
+}
+
+void MetaPanel::Enter() {
+    UIPanel::Enter();
+    TheTaskMgr.SetSecondsAndBeat(TheTaskMgr.UISeconds(), 0.0f, true);
+}
+
+void MetaPanel::Exit() {
+    UIPanel::Exit();
+    mMusic->Stop();
+}
+
+bool MetaPanel::Exiting() const {
+    if (GetState() == kDown) {
+        return UIPanel::Exiting();
+    } else {
+        return (mMusic->IsPlaying() && !mMusic->IsFading()) || UIPanel::Exiting();
+    }
+}
+
+void MetaPanel::SyncGameTimer() {
+    TheTaskMgr.SetSecondsAndBeat(TheTaskMgr.UISeconds(), TheTaskMgr.UISeconds(), false);
+}
+
+int MetaPanel::PickLoopIndex(int numLoops) {
+    int prevSize = mRecentIndices.size();
+    int idx;
+    while (true) {
+        idx = RandomInt(1, numLoops);
+        if (numLoops < prevSize + 2)
+            break;
+        int count = 0;
+        for (int i = 0; i < prevSize; i++) {
+            if (mRecentIndices[i] == idx)
+                count++;
+        }
+        if (count != prevSize)
+            break;
+    }
+    mRecentIndices[unk58++] = idx;
+    if (unk58 == prevSize)
+        unk58 = 0;
+    return idx;
+}
+
+void MetaPanel::UpdatePostProc() {
+    RndPostProc *found = 0;
+    UIScreen *screen = TheUI.BottomScreen();
+    if (screen) {
+        std::vector<PanelRef>::iterator it = screen->mPanelList.begin();
+        std::vector<PanelRef>::iterator end = screen->mPanelList.end();
+        for (; it != end; ++it) {
+            bool active = it->mActive && it->mPanel->TypeDef();
+            const DataNode *prop = 0;
+            if (active) {
+                prop = it->mPanel->Property(postprocess, false);
+            }
+            if (prop) {
+                RndPostProc *pp = dynamic_cast<RndPostProc *>(prop->GetObj());
+                if (pp)
+                    found = pp;
+            }
+        }
+    }
+    if (found)
+        found->Select();
+}
+
+void MetaPanel::OnSendBackSoundMsgToAll() {
+    TriggerBackSoundMsg msg;
+    TheNetSession->SendMsgToAll(msg, kReliable);
+}
+
+void MetaPanel::UpdateMusicMuteState() {
+    if (mMusic) {
+        if (unkd4)
+            mMusic->Mute();
+        else
+            mMusic->UnMute();
+    }
+}
+
+DataNode MetaPanel::OnMsg(const CurrentScreenChangedMsg &msg) {
+    UpdateMetaMusic(msg.GetScreen());
+    return 0;
+}
+
+DataNode MetaPanel::OnMsg(const XMPStateChangedMsg &msg) {
+    unkd4 = msg.Success();
+    UpdateMusicMuteState();
+    return 0;
+}
+
+void MetaPanel::UpdateMetaMusic(Symbol screen) {
+    MILO_ASSERT(TheMetaMusicManager, 0x219);
+    if (mMusic) {
+        Symbol scene = TheMetaMusicManager->GetSceneForScreen(screen);
+        if (scene != gNullStr) {
+            MetaMusicScene *pScene = TheMetaMusicManager->GetScene(scene);
+            MILO_ASSERT(pScene, 0x224);
+            mMusic->SetScene(pScene);
+        } else {
+            mMusic->SetScene(0);
+        }
+    }
+}
+
+BEGIN_HANDLERS(MetaPanel)
+    HANDLE_EXPR(meta_music, mMusic)
+    HANDLE_ACTION(send_back_sound_msg_to_all, OnSendBackSoundMsgToAll())
+    HANDLE_ACTION(sync_game_timer, SyncGameTimer())
+    HANDLE_MESSAGE(CurrentScreenChangedMsg)
+    HANDLE_MESSAGE(XMPStateChangedMsg)
+    HANDLE_SUPERCLASS(UIPanel)
+    HANDLE_CHECK(0x246)
+END_HANDLERS

@@ -5,10 +5,18 @@
 #include "meta_band/Campaign.h"
 #include "meta_band/NameGenerator.h"
 #include "obj/Data.h"
+#include "obj/Msg.h"
 #include "obj/ObjMacros.h"
 #include "synth/MetaMusic.h"
 #include "tour/Tour.h"
 #include "ui/UIPanel.h"
+
+class CurrentScreenChangedMsg;
+
+DECLARE_MESSAGE(XMPStateChangedMsg, "xmp_state_changed")
+XMPStateChangedMsg(int i) : Message(Type(), i) {}
+bool Success() const { return mData->Int(2); }
+END_MESSAGE
 
 class MetaPanel : public UIPanel {
 public:
@@ -38,6 +46,15 @@ public:
     static DataNode ToggleUnlockAll(DataArray *);
     static DataNode ToggleIsPlaytest(DataArray *);
     static DataNode ToggleLaunchedGoalMsgsOnly(DataArray *);
+
+    void SyncGameTimer();
+    int PickLoopIndex(int);
+    void UpdatePostProc();
+    void OnSendBackSoundMsgToAll();
+    void UpdateMusicMuteState();
+    void UpdateMetaMusic(Symbol);
+    DataNode OnMsg(const CurrentScreenChangedMsg &);
+    DataNode OnMsg(const XMPStateChangedMsg &);
 
     Tour *mTour; // 0x38
     Campaign *mCampaign; // 0x3c
