@@ -239,6 +239,77 @@ void BandPatchMesh::WorkVerts::AddEdge(
     }
 }
 
+int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
+    unk28[faceidx].mFlags = b;
+    unk20.push_back(faceidx);
+    MILO_ASSERT(b != 4, 0x2A1);
+    MILO_ASSERT(b != -1, 0x2A2);
+    RndMesh::Face &face = mMesh->Faces()[faceidx];
+    int prevVertCount = unk10.size();
+    MeshVert *verts[3];
+    int allOut = 0xf;
+    for (int i = 0; i < 3; i++) {
+        MeshVert *mv = mMeshVerts[face[i]];
+        verts[i] = mv;
+        if (mv->mVert == 0) {
+            MILO_ASSERT(b != 3, 0x2B1);
+            AddMeshVertAndTwins(face[i], mMeshVerts[face[b]]);
+        }
+        allOut &= verts[i]->unk26;
+    }
+    int reject;
+    if (allOut != 0) {
+        reject = 1;
+    } else {
+        MeshVert temp;
+        temp.SetVert(verts[0]->mVert);
+        reject = 0;
+        Vector2 v(temp.unk1c);
+        if (temp.AddUV(verts[1], unk34, &v) != 0
+            && temp.AddUV(verts[2], unk34, &v) != 0) {
+            reject = 0;
+        } else {
+            reject = 1;
+        }
+    }
+    if (reject == 0 && b != 3) {
+        int prev = (b == 0) ? 2 : b - 1;
+        int next = (b + 1) % 3;
+        MeshVert *vb = verts[b];
+        MeshVert *vn = verts[next];
+        MeshVert *vp = verts[prev];
+        float ey = vn->unk1c.y - vb->unk1c.y;
+        float py = vp->unk1c.y - vb->unk1c.y;
+        float ex = vn->unk1c.x - vb->unk1c.x;
+        float px = vp->unk1c.x - vb->unk1c.x;
+        float t = (ex * px + ey * py) / (ex * ex + ey * ey);
+        if (t > 1.0f)
+            t = 1.0f;
+        else if (t < 0)
+            t = 0;
+        float projx = vb->unk1c.x + t * (vn->unk1c.x - vb->unk1c.x);
+        float projy = vb->unk1c.y + t * (vn->unk1c.y - vb->unk1c.y);
+        float dot = (vp->unk1c.x - projx) * (vp->unk1c.x - 0.5f)
+            + (vp->unk1c.y - projy) * (vp->unk1c.y - 0.5f);
+        reject = (dot < 0) ? 1 : 0;
+    }
+    if (reject != 0) {
+        int added = unk10.size() - prevVertCount;
+        for (int i = 0; i < added; i++) {
+            unk10[unk10.size() - 1]->mVert = 0;
+            unk10.resize(unk10.size() - 1);
+        }
+        unk20.resize(unk20.size() - 1);
+        if (allOut == 0) {
+            unk28[faceidx].mFlags = -1;
+        }
+        return 0;
+    } else {
+        unk28[faceidx].mFlags = 4;
+        return 1;
+    }
+}
+
 void BandPatchMesh::WorkVerts::SpreadEdges(int i) {
     MeshVert *meshverts[3];
     RndMesh::Face &curface = mMesh->Faces()[unk20[i]];

@@ -66,7 +66,7 @@ public:
         int AddUvs(MeshVert *, MeshVert *, const Vector2 *);
         void SetMeshVertAndTwins(int, MeshVert *);
         void AddMeshVertAndTwins(int, MeshVert *);
-        void TryAddFace(int, int);
+        int TryAddFace(int, int);
         void SortWorkVertsByZ();
         void SetVertsAndFaces(RndMesh *, bool);
         void ExtendTwin(const MeshVert *, Vector2 &, Vector2 &);
