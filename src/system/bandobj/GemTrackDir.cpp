@@ -3,6 +3,7 @@
 #include "bandobj/GemTrackResourceManager.h"
 #include "obj/ObjVersion.h"
 #include "math/Rand.h"
+#include "math/Utl.h"
 #include "beatmatch/RGUtl.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
@@ -855,6 +856,47 @@ void GemTrackDir::SetDisplayRange(float f) {
     if (BandTrack::mParent)
         BandTrack::mParent->UpdateSlotXfms();
     mKeyRange = f;
+}
+
+void GemTrackDir::SetDisplayOffset(float offset, bool force) {
+    if (offset < 0.0f || offset > 5.0f) {
+        MILO_WARN("keyboard shift must be between 0 and 5 white keys inclusive");
+        return;
+    }
+    if (mKeyRange != 10.0f) {
+        MILO_WARN("Keyboard display range should always be 10");
+        return;
+    }
+    if (mKeyOffset == offset && !force)
+        return;
+    unk654->SetFrame(offset, 1.0f);
+    mKeysShiftAnim->SetFrame(offset, 1.0f);
+    int startSemitone = WhiteKeyToSemitone(Round(offset));
+    int endSemitone = Min(WhiteKeyToSemitone(Round(offset + mKeyRange - 1.0f)), 24);
+    if (startSemitone > 0 && IsBlackKey(startSemitone - 1))
+        startSemitone--;
+    if (endSemitone < 24 && IsBlackKey(endSemitone + 1))
+        endSemitone++;
+    int i;
+    for (i = 0; i < startSemitone; i++) {
+        if (unk680[i]->Showing() || force) {
+            unk680[i]->SetShowing(false);
+            unk690[i]->Trigger();
+        }
+    }
+    for (i = startSemitone; i <= endSemitone; i++) {
+        if (!unk680[i]->Showing() || force) {
+            unk680[i]->SetShowing(true);
+            unk688[i]->Trigger();
+        }
+    }
+    for (i = endSemitone + 1; i < unk680.size(); i++) {
+        if (unk680[i]->Showing() || force) {
+            unk680[i]->SetShowing(false);
+            unk690[i]->Trigger();
+        }
+    }
+    mKeyOffset = offset;
 }
 
 enum {
