@@ -31,18 +31,18 @@ bool GameGemList::AddRGGem(const RGGemInfo &info) {
     return AddGameGem(GameGem(info), info.no_strum);
 }
 
-int GameGemList::ClosestMarkerIdx(float f) const {
-    float theFloat = f;
-    const GameGem *theGem = std::lower_bound(mGems.begin(), mGems.end(), theFloat, GameGemCmp);
-    if (theGem == mGems.begin())
+int GameGemList::ClosestMarkerIdx(float ms) const {
+    const GameGem *it = std::lower_bound(mGems.begin(), mGems.end(), ms, GameGemCmp);
+    if (it == mGems.begin())
         return 0;
-    if (theGem == mGems.end())
+    if (it == mGems.end())
         return mGems.size() - 1;
-    MILO_ASSERT(theFloat <= theGem->mMs, 0x83);
-    MILO_ASSERT(theFloat >= (theGem - 1)->mMs, 0x84);
-    if (fabsf(theFloat - (theGem - 1)->mMs) < fabsf(theFloat - theGem->mMs))
-        theGem--;
-    return theGem - mGems.begin();
+    MILO_ASSERT(ms <= it->GetMs(), 0x83);
+    const GameGem *prev_it = it - 1;
+    MILO_ASSERT(ms >= prev_it->GetMs(), 0x84);
+    if (fabsf(ms - prev_it->mMs) < fabsf(ms - it->mMs))
+        it--;
+    return it - mGems.begin();
 }
 
 int GameGemList::ClosestMarkerIdxAtOrAfter(float f) const {
@@ -71,6 +71,15 @@ bool GameGemTickCmp(const GameGem &gem, int tick) { return gem.mTick < tick; }
 float GameGemList::TimeAt(int idx) const {
     MILO_ASSERT(idx < mGems.size(), 0xA5);
     return mGems[idx].mMs;
+}
+
+float GameGemList::TimeAtNext(int idx) const {
+    MILO_ASSERT(idx < mGems.size(), 0xAC);
+    if (idx + 1 == mGems.size()) {
+        float ms = mGems[idx].mMs;
+        return 4000.0f + ms;
+    }
+    return mGems[idx + 1].mMs;
 }
 
 void GameGemList::RecalculateGemTimes(TempoMap *tmap) {
