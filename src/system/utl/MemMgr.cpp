@@ -68,6 +68,7 @@ extern int gDefaultHeap;
 extern Heap gHeaps[16];
 int gNumHeaps;
 static bool gMemInited;
+extern int gSingleHeap;
 
 int MemNumHeaps() { return gNumHeaps; }
 
@@ -113,6 +114,16 @@ void Heap::InsertFreeBlock(
 }
 
 void MemTerminate() {}
+
+int MemFindAddrHeap(void *addr) {
+    for (int i = 0; i < gNumHeaps; i++) {
+        int *start = gHeaps[i].mStart;
+        if (addr >= start && addr < start + gHeaps[i].mSizeWords) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 void *MemHeapStartAddr(int heap) { return gHeaps[heap].mStart; }
 
@@ -281,6 +292,19 @@ void Heap::LRUFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
             bestTime = timeStamp;
         }
     }
+}
+
+int MemFindHeap(const char *name) {
+    for (int i = 0; i < gNumHeaps; i++) {
+        if (strcmp(gHeaps[i].mName, name) == 0) {
+            return i;
+        }
+    }
+    if (gSingleHeap) {
+        return 0;
+    }
+    MILO_ASSERT_FMT(gNumHeaps <= 0, "could not find heap %s", name);
+    return -1;
 }
 
 void MemSetAllowTemp(char *name, bool allow) {
