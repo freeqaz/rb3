@@ -46,15 +46,43 @@ void RndMeshDeform::VertArray::Copy(const RndMeshDeform::VertArray &other) {
     memcpy(mData, other.mData, mSize);
 }
 
+extern void *
+MemResizeElem(void *&, int &, void *, int, int, const char *);
+
+void *RndMeshDeform::VertArray::FindVert(int vert) {
+    u8 *buf = (u8 *)mData;
+    while (vert != 0) {
+        buf = (*buf * 2) + buf + 1;
+        vert--;
+    }
+    MILO_ASSERT(buf <= (u8 *)mData + mSize, 0x37);
+    return buf;
+}
+
+void RndMeshDeform::VertArray::CopyVert(int to, int from, RndMeshDeform::VertArray &fromArr) {
+    int num = fromArr.NumVerts();
+    MILO_ASSERT(from >= 0 && from < num, 0x41);
+    u8 buf[VertArray::kMaxWeights * 2 + 1];
+    u8 *src = (u8 *)fromArr.FindVert(from);
+    memcpy(buf, src, *src * 2 + 1);
+    if (to > NumVerts()) {
+        MILO_FAIL("can't copy vert past end");
+        return;
+    }
+    u8 *dst = (u8 *)FindVert(to);
+    int insertLength = *buf * 2 + 1;
+    int cutLength = (dst == (u8 *)mData + mSize) ? 0 : *dst * 2 + 1;
+    void *out = MemResizeElem(
+        mData, mSize, dst, cutLength, insertLength, "RndMeshDeform");
+    memcpy(out, buf, *buf * 2 + 1);
+}
+
 void RndMeshDeform::VertArray::Load(BinStream &bs) {
     int siz;
     bs >> siz;
     SetSize(siz);
     bs.Read(mData, mSize);
 }
-
-extern void *
-MemResizeElem(void *&, int &, void *, int, int, const char *);
 
 int RndMeshDeform::VertArray::AppendWeights(int num, int *boneIndices, float *weights) {
     MILO_ASSERT(num < VertArray::kMaxWeights, 0x5F);
