@@ -6,6 +6,7 @@
 #include "math/Mtx.h"
 #include "math/Rand.h"
 #include "math/Rot.h"
+#include "math/Trig.h"
 #include "math/Utl.h"
 #include "math/Vec.h"
 #include "obj/Data.h"
@@ -351,6 +352,95 @@ void UtilDrawSphere(const Vector3 &v, float f, const Hmx::Color &col) {
     }
 }
 #pragma pop
+
+void UtilDrawCigar(
+    const Transform &tf,
+    const float *const radii,
+    const float *const lengths,
+    const Hmx::Color &col,
+    int segments
+) {
+    float sLen0 = lengths[0] * Length(tf.m.x);
+    float sLen1 = lengths[1] * Length(tf.m.x);
+    Transform basis;
+    memcpy(&basis, &tf, 0x40);
+    Normalize(basis.m, basis.m);
+
+    Vector3 top;
+    top.Set(0, sLen0 - radii[0], 0);
+    Multiply(top, basis, top);
+
+    Vector3 bottom;
+    bottom.Set(0, sLen1 + radii[1], 0);
+    Multiply(bottom, basis, bottom);
+
+    float anglePiHalf = 1.5707963705062866f;
+
+    Vector3 verts2e0[18];
+    Vector3 verts1c0[18];
+
+    int iIdx = 0;
+    int iLatSum = 0;
+    do {
+        float latVal = (1.5707963705062866f * (float)iIdx) / 3.0f;
+        float r0 = radii[0] * FastSin(latVal + anglePiHalf);
+        float h0 = FastSin(latVal) * radii[0];
+        float r1 = FastSin(latVal + anglePiHalf) * radii[1];
+        float h1 = FastSin(latVal) * radii[1] + sLen1;
+        float h0b = sLen0 - h0;
+        int iLon = 0;
+        do {
+            float lonVal = (3.1415927410125732f * (float)iLon) / -3.0f;
+            float sinLon = FastSin(lonVal);
+            float sinLonPi2 = FastSin(lonVal + anglePiHalf);
+            int idx = iLatSum + iLon;
+            Vector3 v1(h0b, sinLonPi2 * r0, sinLon * r0);
+            Multiply(v1, basis, verts1c0[idx]);
+            Vector3 v2(h1, sinLonPi2 * r1, sinLon * r1);
+            Multiply(v2, basis, verts2e0[idx]);
+            iLon = iLon + 1;
+        } while (iLon < 6);
+        iLatSum = iLatSum + 6;
+        iIdx = iIdx + 1;
+    } while (iLatSum < 0x12);
+
+    int i = 0;
+    do {
+        TheRnd->DrawLine(verts2e0[i], verts1c0[i], col, false);
+        i = i + 1;
+    } while (i < 6);
+
+    int iRing = 0;
+    do {
+        int iJ = 0;
+        int iK = 5;
+        int iJcur;
+        do {
+            iJcur = iJ;
+            int p1 = iRing * 6 + iJcur;
+            int p2 = iRing * 6 + iK;
+            TheRnd->DrawLine(verts2e0[p1], verts2e0[p2], col, false);
+            Vector3 *pTop;
+            if (iRing == 2) {
+                pTop = &top;
+            } else {
+                pTop = &verts2e0[p1 + 6];
+            }
+            TheRnd->DrawLine(verts2e0[p1], *pTop, col, false);
+            TheRnd->DrawLine(verts1c0[p1], verts1c0[p2], col, false);
+            Vector3 *pBottom;
+            if (iRing == 2) {
+                pBottom = &bottom;
+            } else {
+                pBottom = &verts1c0[p1 + 6];
+            }
+            TheRnd->DrawLine(verts1c0[p1], *pBottom, col, false);
+            iJ = iJcur + 1;
+            iK = iJcur;
+        } while (iJcur + 1 < 6);
+        iRing = iRing + 1;
+    } while (iRing < 3);
+}
 
 void UtilDrawString(const char *c, const Vector3 &v, const Hmx::Color &col) {
     Vector2 v2;
