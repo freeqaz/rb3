@@ -30,6 +30,8 @@ public:
 
     static BandStorePanel *Instance();
     const char *ShortcutTextAtData(int);
+    const char *GetIndexFile() const;
+    void Request(const String &, bool);
     NEW_OBJ(BandStorePanel);
     static void Init() { REGISTER_OBJ_FACTORY(BandStorePanel); }
 
