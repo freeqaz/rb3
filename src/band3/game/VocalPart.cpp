@@ -624,6 +624,67 @@ float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
 
 extern "C" float kInvalidPitch__11VocalPlayer;
 extern "C" VocalNote *NoteAt__13VocalNoteListCFf(const VocalNoteList *, float);
+extern "C" float PitchAt__13VocalNoteListCFf(const VocalNoteList *, float);
+
+void VocalPart::Poll(float ms, const SongPos &) {
+    while (mFreestyleSection
+               != mVocalNoteList->mFreestyleSections.data()
+                   + mVocalNoteList->mFreestyleSections.size()
+           && ms > mFreestyleSection->second) {
+        mFreestyleSection++;
+    }
+    if ((mPlayer->CanDeployOverdrive() || mPlayer->mIsInCoda
+         || mPlayer->IsDeployingBandEnergy())
+        && (mThisPhrase
+                == mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()
+            || (mFreestyleSection
+                    != mVocalNoteList->mFreestyleSections.data()
+                        + mVocalNoteList->mFreestyleSections.size()
+                && ms >= mFreestyleSection->first
+                && ms < mFreestyleSection->second))) {
+        mInFreestyleSection = true;
+    } else {
+        mInFreestyleSection = false;
+        unkad = false;
+    }
+    mPlayer->IsNet();
+    if (mPlayer->mIsInCoda && ms > unkb0) {
+        unkb4 = true;
+    }
+    if (mInFreestyleSection) {
+        unk98 = 3;
+    } else if (mPlayer->InTambourinePhrase()) {
+        unk98 = 2;
+    } else {
+        unk98 = 0;
+    }
+    int beginNote = -1;
+    int endNote = -1;
+    GetNoteRange(ms, beginNote, endNote);
+    while (endNote > unk3c && unk3c < mThisPhrase->unk14) {
+        unk38 += mPhraseScoreCapGrowth * mNoteWeights[unk3c];
+        unk3c++;
+    }
+    int noteCount = mVocalNoteList->mNotes.size();
+    int *pEnd = (noteCount < endNote) ? &noteCount : &endNote;
+    int lastNote = *pEnd;
+    endNote = lastNote;
+    bool allUnpitched = true;
+    for (int i = beginNote; i < lastNote; i++) {
+        if (!mVocalNoteList->mNotes[i].mUnpitchedNote) {
+            allUnpitched = false;
+            break;
+        }
+    }
+    if (allUnpitched && beginNote != lastNote) {
+        unk98 = 1;
+    }
+    VocalFrameSpewData *spew = mPlayer->mFrameSpewData;
+    if (spew) {
+        float pitch = PitchAt__13VocalNoteListCFf(mVocalNoteList, ms);
+        spew->mPartData[mPartIndex].unk0 = pitch;
+    }
+}
 
 void VocalPart::HandlePhraseEnd(
     int &o_rRating, float &o_rStartMs, float &o_rEndMs, int &o_rPrevScore, float ms
