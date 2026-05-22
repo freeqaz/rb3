@@ -85,8 +85,8 @@
 #include "obj/DataFunc.h"
 #include "tour/QuestFilterPanel.h"
 #include "tour/TourChallengeResultsPanel.h"
+#include "utl/MakeString.h"
 #include "utl/Symbols.h"
-#include "utl/Std.h"
 
 void UtlInit();
 
@@ -292,11 +292,10 @@ MetaPanel::~MetaPanel() {
 void MetaPanel::Load() {
     UIPanel::Load();
     DataArray *cfg = SystemConfig("synth", "metamusic", "metamusic_loop");
-    DataArray *loopArr = cfg->Node(PickLoopIndex(cfg->Size())).Array();
-    const char *file = loopArr->Node(0).Str();
-    float vol = loopArr->Node(1).Float();
+    DataArray *loopArr = cfg->Array(PickLoopIndex(cfg->Size()));
+    String filename(MakeString("%s", loopArr->Str(0)));
     mMusic = new MetaMusic("metamusic");
-    mMusic->Load(file, vol, true, true);
+    mMusic->Load(filename, loopArr->Float(1), true, true);
     mSongPreview.Init();
     UpdateMusicMuteState();
 }
@@ -354,7 +353,8 @@ bool MetaPanel::Exiting() const {
 }
 
 void MetaPanel::SyncGameTimer() {
-    TheTaskMgr.SetSecondsAndBeat(TheTaskMgr.UISeconds(), TheTaskMgr.UISeconds(), false);
+    float s = TheTaskMgr.UISeconds();
+    TheTaskMgr.SetSecondsAndBeat(s, s, false);
 }
 
 int MetaPanel::PickLoopIndex(int numLoops) {
