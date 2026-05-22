@@ -2,6 +2,9 @@
 #include "bandobj/EndingBonus.h"
 #include "bandobj/TrackPanelDirBase.h"
 #include "rndobj/Group.h"
+#include "obj/Task.h"
+#include "os/System.h"
+#include "os/Timer.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 #include <os/Debug.h>
@@ -496,6 +499,58 @@ void BandTrack::SpotlightPhraseSuccess() {
     }
     if (mUnisonIcon)
         mUnisonIcon->Succeed();
+}
+
+void BandTrack::PopupHelp(Symbol sym, bool b) {
+    if (sym == unk74 && b == unk78)
+        return;
+    if (!mPopupObject)
+        return;
+    if (!mParent)
+        return;
+    if (mParent->PlayerDisabled())
+        return;
+    static Message msg("help", DataNode(""), DataNode(0), DataNode(""), DataNode(""));
+    msg[0] = sym;
+    msg[1] = b;
+    msg[2] = mInstrument;
+    msg[3] = unk110;
+    bool handled = mPopupObject->Handle(msg, true).Int() != 0;
+    if (b) {
+        unk74 = sym;
+        unk78 = handled;
+    } else if (sym == unk74) {
+        unk74 = gNullStr;
+        unk78 = false;
+    }
+}
+
+void BandTrack::ClearFinaleHelp() {
+    if (unk8c && mEndgameFeedback) {
+        TIMER_GET_CYCLES(cycle);
+        float elapsed = Timer::CyclesToMs(cycle - unk88);
+        static float kMinFinaleHelpTime =
+            SystemConfig("objects", "min_finale_help_time")->Float(1);
+        float delay = 0.0f;
+        if (elapsed < kMinFinaleHelpTime)
+            delay = kMinFinaleHelpTime - elapsed;
+        TheTaskMgr.Start(
+            new MessageTask(mEndgameFeedback, end_game_end_msg), kTaskSeconds, delay
+        );
+        unk8c = false;
+    }
+}
+
+void BandTrack::ResetPopup() {
+    if (mPopupObject) {
+        if (unk78) {
+            PopupHelp(unk74, false);
+        }
+        mPopupObject->Find<EventTrigger>("reset.trig", true)->Trigger();
+        unk74 = "";
+        unk78 = false;
+        mPopupObject->Handle(reset_msg, true);
+    }
 }
 
 void BandTrack::FillReset() {
