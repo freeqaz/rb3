@@ -9,6 +9,11 @@
 // forward declaration
 class FixedSizeAlloc;
 
+int MemFindHeap(const char *);
+void MemPushHeap(int);
+void MemPopHeap();
+void *_MemAlloc(int, int);
+
 class ChunkAllocator {
 public:
     struct Hunk {
@@ -33,7 +38,13 @@ public:
     int *RawPoolAlloc(int);
     static void UploadDebugStats();
 
-    void *operator new(size_t);
+    void *operator new(size_t size) {
+        static int _x = MemFindHeap("fast");
+        MemPushHeap(_x);
+        void *mem = _MemAlloc(size, 0);
+        MemPopHeap();
+        return mem;
+    }
 };
 
 class FixedSizeAlloc {

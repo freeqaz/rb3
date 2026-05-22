@@ -50,14 +50,6 @@ int *ChunkAllocator::RawPoolAlloc(int size) {
     return ret;
 }
 
-void *ChunkAllocator::operator new(size_t size) {
-    static int _x = MemFindHeap("fast");
-    MemPushHeap(_x);
-    void *mem = _MemAlloc(size, 0);
-    MemPopHeap();
-    return mem;
-}
-
 FixedSizeAlloc::FixedSizeAlloc(int mAllocSizeWords, ChunkAllocator *alloc, int j)
     : mAllocSizeWords(mAllocSizeWords), mFreeList(0), mMaxAllocs(0), mNumChunks(0),
       mNumAllocs(0), mNodesPerChunk(j), mAlloc(alloc) {
@@ -111,6 +103,57 @@ void ChunkAllocator::Free(void *v, int i) {
     MILO_ASSERT(fixedSizeIndex < MAX_FIXED_ALLOCS, 0x16D);
     MILO_ASSERT(mAllocs[fixedSizeIndex], 0x16E);
     mAllocs[fixedSizeIndex]->Free(v);
+}
+
+void *_PoolAlloc(int classSize, int reqSize, PoolType pool) {
+    if (MemTempAllocationsEnabled()) {
+        bool notPoolSize = true;
+        switch (reqSize) {
+        case 0:
+        case 4:
+        case 8:
+        case 0xC:
+        case 0x10:
+        case 0x14:
+        case 0x18:
+        case 0x20:
+        case 0x24:
+        case 0x28:
+        case 0x29:
+        case 0x30:
+        case 0x38:
+        case 0x3C:
+        case 0x40:
+        case 0x48:
+        case 0x60:
+        case 0x80:
+        case 0xC0:
+        case 0xD0:
+            notPoolSize = false;
+            break;
+        }
+        if (!notPoolSize) {
+            return _MemAlloc(classSize, 0x20);
+        }
+    }
+    MILO_ASSERT_FMT(classSize >= 0, "PoolAlloc class size is < 0: %d", classSize);
+    CritSecTracker cst(gMemLock);
+    if (!gChunkAlloc[pool]) {
+        int fastHeap = MemFindHeap("fast");
+        switch (pool) {
+        case FastPool:
+            gChunkAlloc[FastPool] = new ChunkAllocator(fastHeap, 0x947000, 0x19000);
+            break;
+        case MainPool:
+            gChunkAlloc[MainPool] =
+                new ChunkAllocator(MemFindHeap("main"), 0x400, 0x19000);
+            break;
+        default:
+            MILO_ASSERT(0, 0x1F6);
+        }
+    }
+    MILO_ASSERT(reqSize == classSize, 0x1FA);
+    return gChunkAlloc[pool]->Alloc(classSize);
 }
 
 void _PoolFree(int size, PoolType pool, void *addr) {
