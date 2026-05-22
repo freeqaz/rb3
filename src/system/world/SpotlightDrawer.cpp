@@ -238,6 +238,67 @@ void DrawAccessories(
 
 struct LensExtract {};
 
+template <>
+void DrawAccessories<LensExtract>(
+    SpotlightDrawer::SpotlightEntry *const &spotBegin,
+    SpotlightDrawer::SpotlightEntry *const &spotEnd
+) {
+    SpotlightDrawer::SpotlightEntry *it = spotBegin;
+    RndMat *curMat = NULL;
+    RndMesh *curDisk = NULL;
+    RndMultiMesh *multiMesh = NULL;
+    for (; it != spotEnd; ++it) {
+        Spotlight *sl = it->unk4;
+        if (sl->LensMesh() != NULL) {
+            RndMesh *disk = Spotlight::sDiskMesh;
+            RndMultiMesh *nextMesh;
+            if (disk != curDisk) {
+                nextMesh = disk->CreateMultiMesh();
+            } else {
+                nextMesh = multiMesh;
+            }
+            const Transform &lensXfm = sl->mLensXfm;
+            bool visible;
+            if (!disk->Showing()) {
+                visible = false;
+            } else {
+                Sphere sphere = disk->GetSphere();
+                if (sphere.radius > 0.0f) {
+                    Multiply(sphere, lensXfm, sphere);
+                    visible = !(sphere > RndCam::Current()->mWorldFrustum);
+                } else {
+                    visible = true;
+                }
+            }
+            if (visible) {
+                bool diskChanged = (curDisk != disk);
+                RndMat *lensMat = sl->LensMesh();
+                bool matChanged = (curMat != lensMat);
+                if ((diskChanged || matChanged) && multiMesh != NULL
+                    && !multiMesh->mInstances.empty()) {
+                    multiMesh->DrawShowing();
+                    multiMesh->mInstances.resize(0, RndMultiMesh::Instance());
+                }
+                if (diskChanged) {
+                    curDisk = disk;
+                    nextMesh = disk->CreateMultiMesh();
+                }
+                if (matChanged || diskChanged) {
+                    curMat = lensMat;
+                    curDisk->SetMat(lensMat);
+                }
+                RndMultiMesh::Instance inst(lensXfm);
+                nextMesh->mInstances.insert(nextMesh->mInstances.end(), inst);
+                multiMesh = nextMesh;
+            }
+        }
+    }
+    if (multiMesh != NULL && !multiMesh->mInstances.empty()) {
+        multiMesh->DrawShowing();
+        multiMesh->mInstances.resize(0, RndMultiMesh::Instance());
+    }
+}
+
 void SpotlightDrawer::DrawWorld() {
     int numLights = sLights.size();
     if (numLights < TheNgStats->mMotionBlurs) {
