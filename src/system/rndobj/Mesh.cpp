@@ -1117,12 +1117,12 @@ void RndMesh::UpdateApproxLighting() {
             if (mUseCachedBoxLightColors) {
                 curEnv->ApplyApproxLighting(mBoxLightColorsCached);
             } else {
-                Vector3 &v = WorldXfm().v;
+                Vector3 *v = &WorldXfm().v;
                 Sphere s;
                 if (MakeWorldSphere(s, false) && s.GetRadius() > 0) {
-                    v = s.center;
+                    v = &s.center;
                 }
-                curEnv->UpdateApproxLighting(&v, mBoxLightColorsCached);
+                curEnv->UpdateApproxLighting(v, mBoxLightColorsCached);
             }
         }
     }
