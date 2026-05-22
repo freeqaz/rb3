@@ -1,5 +1,5 @@
 #include "bandobj/SongSectionController.h"
-#include "obj/Msg.h"
+#include "math/Rand.h"
 #include "obj/Msg.h"
 #include "utl/Symbols.h"
 
@@ -92,6 +92,61 @@ void SongSectionController::Enter() {
 void SongSectionController::ForceCatchAll() {
     mCurPoolCategory = "CATCH_ALL";
     ActivatePool(mCurPoolCategory, true);
+}
+
+bool SongSectionController::ActivatePool(Symbol cat, bool forceTrigger) {
+    ContentPoolMapping *cpm = GetContentPoolMapping(cat);
+    if (cpm) {
+        int count = cpm->mContentPools.size();
+        int idx = -1;
+        if (count > 0) {
+            switch (cpm->mTriggerOrder) {
+            case kPoolTriggerSequence:
+                idx = cpm->mLastActivatedIdx + 1;
+                if (idx >= count)
+                    idx = count - 1;
+                break;
+            case kPoolTriggerLoop:
+                idx = (cpm->mLastActivatedIdx + 1) % count;
+                break;
+            case kPoolTriggerRandom:
+                if (count == 1) {
+                    idx = 0;
+                } else {
+                    do {
+                        idx = RandomInt(0, count);
+                    } while (idx == cpm->mLastActivatedIdx);
+                }
+                break;
+            }
+            if (idx != -1) {
+                cpm->mLastActivatedIdx = idx;
+                ObjPtrList<EventTrigger, ObjectDir>::iterator it =
+                    cpm->mContentPools.begin();
+                while (it != cpm->mContentPools.end()) {
+                    if (idx == 0) {
+                        if (forceTrigger || mWaitForEvent.Null()) {
+                            if (mActivePool) {
+                                mActivePool->SetEnabled(false);
+                                mActivePool->BasicReset();
+                                mActivePool = 0;
+                            }
+                            (*it)->SetEnabled(true);
+                            (*it)->Trigger();
+                            mActivePool = *it;
+                        } else {
+                            mPendingPool = *it;
+                        }
+                        break;
+                    }
+                    ++it;
+                    idx--;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void SongSectionController::ResetAll() {

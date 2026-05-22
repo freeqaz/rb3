@@ -47,7 +47,7 @@ public:
     void UnregisterEvents();
     void ResetAll();
     void ForceCatchAll();
-    void ActivatePool(Symbol, bool);
+    bool ActivatePool(Symbol, bool);
     bool UpdatePoolCategory();
     void UpdateOverlay();
     ContentPoolMapping *GetContentPoolMapping(Symbol);
