@@ -43,9 +43,7 @@ void ClipCollide::SyncWaypoint() {
         Waypoint *wp = mWaypoint;
         mChar->Teleport(wp);
         Transform xfm = wp->WorldXfm();
-        float radius = wp->mYRadius;
-        if (radius <= 0)
-            radius = wp->mRadius;
+        float radius = wp->mYRadius > 0 ? wp->mYRadius : wp->mRadius;
         if (mPosition == front) {
             xfm.v.x += xfm.m.y.x * radius;
             xfm.v.y += xfm.m.y.y * radius;
