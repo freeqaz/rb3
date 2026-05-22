@@ -99,14 +99,16 @@ void MetaMusic::Poll() {
     if (mRndHeap && !mBuf) {
         int i18, i1c, i20, i24;
         MemFreeBlockStats(MemFindHeap("rnd"), i18, i1c, i20, i24);
-        if (i24 <= mBufSize + 0x20)
+        if (i24 > mBufSize + 0x20) {
+            static int _x = MemFindHeap("rnd");
+            MemTempHeap tmp(_x);
+            mBufferH = _MemAllocH(mBufSize);
+            mBuf = (unsigned char *)mBufferH->Lock();
+            MILO_ASSERT(!mLoader, 0xE9);
+            mLoader = new MetaMusicLoader(mFile, mBytesRead, mBuf, mBufSize);
+        } else {
             return;
-        static int _x = MemFindHeap("rnd");
-        MemTempHeap tmp(_x);
-        mBufferH = _MemAllocH(mBufSize);
-        mBuf = (unsigned char *)mBufferH->Lock();
-        MILO_ASSERT(!mLoader, 0xE9);
-        mLoader = new MetaMusicLoader(mFile, mBytesRead, mBuf, mBufSize);
+        }
     }
     if (mLoader && mBytesRead == mBufSize) {
         RELEASE(mLoader);
