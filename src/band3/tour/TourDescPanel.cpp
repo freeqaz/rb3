@@ -77,7 +77,7 @@ public:
     virtual UIComponent::State
     ComponentStateOverride(int, int, UIComponent::State) const;
 
-    bool IsTourDescAvailable(Symbol) const;
+    inline bool IsTourDescAvailable(Symbol) const;
     void UpdateList();
 
     std::vector<DynamicTex *> *mTexs; // 0x20
@@ -86,7 +86,7 @@ public:
     std::vector<Symbol> mTours; // 0x2c
 };
 
-bool TourDescProvider::IsTourDescAvailable(Symbol s) const {
+inline bool TourDescProvider::IsTourDescAvailable(Symbol s) const {
     TourDesc *pTourDesc = TheTour->GetTourDesc(s);
     MILO_ASSERT(pTourDesc, 0x226);
     MILO_ASSERT(TheTour->GetTourProgress(), 0x229);
@@ -184,12 +184,8 @@ void TourDescProvider::UpdateExtendedMesh(int, int iData, RndMesh *i_pMesh) cons
     if (!strcmp(i_pMesh->Name(), "tour_art.mesh")) {
         String texName(bAvailable ? pTourDesc->GetName()
                                   : MakeString("%s_gray", pTourDesc->GetName()));
-        std::vector<DynamicTex *>::iterator it = mTexs->begin();
-        std::vector<DynamicTex *>::iterator itEnd = mTexs->end();
-        for (; it != itEnd; ++it) {
-            if (*it == texName)
-                break;
-        }
+        std::vector<DynamicTex *>::iterator it =
+            std::find(mTexs->begin(), mTexs->end(), texName);
         if (it != mTexs->end())
             i_pMesh->SetMat((*it)->mMat);
         else
