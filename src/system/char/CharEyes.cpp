@@ -384,9 +384,9 @@ void CharEyes::AddInterestObject(CharInterest *interest) {
 }
 
 bool CharEyes::SetFocusInterest(CharInterest *interest, int i) {
-    if (unkd4 && unke0 > i)
+    if (unkd4.mPtr && unke0 > i)
         return false;
-    bool temp = interest != unkd4;
+    bool temp = interest != unkd4.mPtr;
     unkd4 = interest;
     unke0 = i;
     if (temp)
@@ -808,6 +808,7 @@ storeState:
 
     if (eyeTarget) {
         float weight = Weight();
+        Transform camXfm;
         Transform xfm;
         if (camWeight > 0.0f) {
             RndCam *cam = 0;
@@ -818,9 +819,9 @@ storeState:
             if (!cam)
                 cam = TheRnd->DefaultCam();
             if (cam) {
-                xfm = eyeTarget->WorldXfm();
-                Interp(xfm.v, cam->WorldXfm().v, camWeight, xfm.v);
-                eyeTarget->SetWorldXfm(xfm);
+                camXfm = eyeTarget->WorldXfm();
+                Interp(camXfm.v, cam->WorldXfm().v, camWeight, camXfm.v);
+                eyeTarget->SetWorldXfm(camXfm);
             }
         } else {
             Vector3 localTarget = unk58;
