@@ -474,10 +474,10 @@ DECOMP_FORCEACTIVE(CharHair, "ObjPtr_p.h", "f.Owner()", "")
 void CharHair::SimulateInternal(float f) {
     float sixtyover = 60.0f / f;
     float f19 = (1.0f / f) * sixtyover;
-    float gravTerm = mGravity * f19 * -3.858268f;
+    float gravTerm = -3.85826778f * (mGravity * f19);
     float powed = std::pow(1.0f - mStiffness, sixtyover * sixtyover);
     float stiffFriction = 1.0f - powed;
-    float halfWeight = mWeight * -0.5f;
+    float halfWeight = 0.5f * -mWeight;
     Vector3 vec134(0, 0, 0);
     if (mWind) {
         if (mStrands[0].Root()) {
@@ -512,19 +512,19 @@ void CharHair::SimulateInternal(float f) {
                     Point &modPoint = modStrand.Points()[j];
                     Subtract(thisPoint.pos, modPoint.pos, vRes);
                     float lensq = LengthSquared(vRes);
-                    float sidelen = thisPoint.sideLength - mMinSlack;
-                    float sidelensq = sidelen * sidelen;
+                    float sidelensq = thisPoint.sideLength - mMinSlack;
+                    sidelensq = sidelensq * sidelensq;
                     if (lensq < sidelensq) {
                         vRes *= (sidelensq / (sidelensq + lensq) - 0.5f);
                         thisPoint.pos += vRes;
-                        modPoint.pos -= vRes;
+                        modPoint.force -= vRes;
                     } else {
-                        float maxslacklen = thisPoint.sideLength + mMaxSlack;
-                        float maxslacklensq = maxslacklen * maxslacklen;
-                        if (maxslacklen > maxslacklensq) {
+                        float maxslacklensq = thisPoint.sideLength + mMaxSlack;
+                        maxslacklensq = maxslacklensq * maxslacklensq;
+                        if (lensq > maxslacklensq) {
                             vRes *= (maxslacklensq / (maxslacklensq + lensq) - 0.5f);
                             thisPoint.pos += vRes;
-                            modPoint.pos -= vRes;
+                            modPoint.force -= vRes;
                         }
                     }
                 }
