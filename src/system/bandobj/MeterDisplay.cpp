@@ -115,11 +115,8 @@ void MeterDisplay::DrawShowing() {
         }
     }
     ClampEq(f, 0.0f, 1.0f);
-    mMeterAnim->SetFrame(
-        (mMeterAnim->EndFrame() - mMeterAnim->StartFrame())
-            * (f + mMeterAnim->StartFrame()),
-        1.0f
-    );
+    float diff = mMeterAnim->EndFrame() - mMeterAnim->StartFrame();
+    mMeterAnim->SetFrame(diff * f + mMeterAnim->StartFrame(), 1.0f);
     dir->SetWorldXfm(WorldXfm());
     dir->Draw();
     if (mShowText && mMeterLabel)
