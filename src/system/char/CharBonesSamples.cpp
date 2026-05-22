@@ -253,6 +253,186 @@ void CharBonesSamples::Relativize(CharClip *clip) {
     }
 }
 
+void CharBonesSamples::EvaluateChannel(void *dest, int byteOffset, int sample, float frac) {
+    char *src = mRawData + mTotalSize * sample + byteOffset;
+    if (frac == 0.0f) {
+        char *s = src;
+        if (byteOffset >= mOffsets[TYPE_ROTX]) {
+            if (mCompression != kCompressNone) {
+                *(float *)dest = (float)*(short *)s * (1.0f / 1638.4f);
+            } else {
+                *(float *)dest = *(float *)s;
+            }
+            return;
+        }
+        if (byteOffset >= mOffsets[TYPE_QUAT]) {
+            float *out = (float *)dest;
+            if (mCompression >= kCompressQuats) {
+                int q3 = (signed char)s[3];
+                int q2 = (signed char)s[2];
+                int q1 = (signed char)s[1];
+                int q0 = (signed char)s[0];
+                out[3] = (float)q3 * (1.0f / 127.0f);
+                out[2] = (float)q2 * (1.0f / 127.0f);
+                out[1] = (float)q1 * (1.0f / 127.0f);
+                out[0] = (float)q0 * (1.0f / 127.0f);
+                return;
+            }
+            if (mCompression != kCompressNone) {
+                short *sq = (short *)s;
+                int q3 = sq[3];
+                int q2 = sq[2];
+                int q1 = sq[1];
+                int q0 = sq[0];
+                out[3] = (float)q3 * (1.0f / 32767.0f);
+                out[2] = (float)q2 * (1.0f / 32767.0f);
+                out[1] = (float)q1 * (1.0f / 32767.0f);
+                out[0] = (float)q0 * (1.0f / 32767.0f);
+                return;
+            }
+            out[0] = ((float *)s)[0];
+            out[1] = ((float *)s)[1];
+            out[2] = ((float *)s)[2];
+            out[3] = ((float *)s)[3];
+            return;
+        }
+        if (mCompression >= kCompressVects) {
+            short *sv = (short *)s;
+            float *out = (float *)dest;
+            int v2 = sv[2];
+            int v0 = sv[0];
+            int v1 = sv[1];
+            out[2] = (float)v2 * (1.0f / 32767.0f) * 1300.0f;
+            out[0] = (float)v0 * (1.0f / 32767.0f) * 1300.0f;
+            out[1] = (float)v1 * (1.0f / 32767.0f) * 1300.0f;
+            return;
+        }
+        ((float *)dest)[0] = ((float *)s)[0];
+        ((float *)dest)[1] = ((float *)s)[1];
+        ((float *)dest)[2] = ((float *)s)[2];
+        return;
+    }
+    char *srcNext = src + mTotalSize;
+    if (byteOffset >= mOffsets[TYPE_ROTX]) {
+        if (mCompression != kCompressNone) {
+            float v0 = (float)*(short *)src;
+            float v1 = (float)*(short *)srcNext;
+            *(float *)dest = (v0 + (v1 - v0) * frac) * (1.0f / 1638.4f);
+        } else {
+            float v0 = *(float *)src;
+            float v1 = *(float *)srcNext;
+            *(float *)dest = v0 + (v1 - v0) * frac;
+        }
+        return;
+    }
+    if (byteOffset >= mOffsets[TYPE_QUAT]) {
+        float *out = (float *)dest;
+        if (mCompression >= kCompressQuats) {
+            int p3 = (signed char)src[3];
+            int p2 = (signed char)src[2];
+            int p1 = (signed char)src[1];
+            int p0 = (signed char)src[0];
+            int n3 = (signed char)srcNext[3];
+            int n2 = (signed char)srcNext[2];
+            int n1 = (signed char)srcNext[1];
+            int n0 = (signed char)srcNext[0];
+            float a3 = (float)p3 * (1.0f / 127.0f);
+            float a2 = (float)p2 * (1.0f / 127.0f);
+            float a1 = (float)p1 * (1.0f / 127.0f);
+            float a0 = (float)p0 * (1.0f / 127.0f);
+            float b3 = (float)n3 * (1.0f / 127.0f);
+            float b2 = (float)n2 * (1.0f / 127.0f);
+            float b1 = (float)n1 * (1.0f / 127.0f);
+            float b0 = (float)n0 * (1.0f / 127.0f);
+            out[3] = a3 + (b3 - a3) * frac;
+            out[2] = a2 + (b2 - a2) * frac;
+            out[1] = a1 + (b1 - a1) * frac;
+            out[0] = a0 + (b0 - a0) * frac;
+            return;
+        }
+        if (mCompression != kCompressNone) {
+            short *s0 = (short *)src;
+            short *s1 = (short *)srcNext;
+            int p3 = s0[3];
+            int p2 = s0[2];
+            int p1 = s0[1];
+            int p0 = s0[0];
+            int n3 = s1[3];
+            int n2 = s1[2];
+            int n1 = s1[1];
+            int n0 = s1[0];
+            float a3 = (float)p3 * (1.0f / 32767.0f);
+            float a2 = (float)p2 * (1.0f / 32767.0f);
+            float a1 = (float)p1 * (1.0f / 32767.0f);
+            float a0 = (float)p0 * (1.0f / 32767.0f);
+            float b3 = (float)n3 * (1.0f / 32767.0f);
+            float b2 = (float)n2 * (1.0f / 32767.0f);
+            float b1 = (float)n1 * (1.0f / 32767.0f);
+            float b0 = (float)n0 * (1.0f / 32767.0f);
+            out[3] = a3 + (b3 - a3) * frac;
+            out[2] = a2 + (b2 - a2) * frac;
+            out[1] = a1 + (b1 - a1) * frac;
+            out[0] = a0 + (b0 - a0) * frac;
+            return;
+        }
+        float *f0 = (float *)src;
+        float *f1 = (float *)srcNext;
+        out[0] = f0[0] + (f1[0] - f0[0]) * frac;
+        out[1] = f0[1] + (f1[1] - f0[1]) * frac;
+        out[2] = f0[2] + (f1[2] - f0[2]) * frac;
+        out[3] = f0[3] + (f1[3] - f0[3]) * frac;
+        return;
+    }
+    float *out = (float *)dest;
+    if (mCompression >= kCompressVects) {
+        short *s0 = (short *)src;
+        short *s1 = (short *)srcNext;
+        float b2 = (float)s0[2] * (1.0f / 32767.0f) * 1300.0f;
+        float b1 = (float)s0[1] * (1.0f / 32767.0f) * 1300.0f;
+        float b0 = (float)s0[0] * (1.0f / 32767.0f) * 1300.0f;
+        float c2 = (float)s1[2] * (1.0f / 32767.0f) * 1300.0f;
+        float c1 = (float)s1[1] * (1.0f / 32767.0f) * 1300.0f;
+        float c0 = (float)s1[0] * (1.0f / 32767.0f) * 1300.0f;
+        if (frac == 0.0f) {
+            out[0] = b0;
+            out[1] = b1;
+            out[2] = b2;
+            return;
+        }
+        if (frac == 1.0f) {
+            out[0] = c0;
+            out[1] = c1;
+            out[2] = c2;
+            return;
+        }
+        out[0] = b0 + (c0 - b0) * frac;
+        out[1] = b1 + (c1 - b1) * frac;
+        out[2] = b2 + (c2 - b2) * frac;
+        return;
+    }
+    if (frac == 0.0f) {
+        float *f0 = (float *)src;
+        out[0] = f0[0];
+        out[1] = f0[1];
+        out[2] = f0[2];
+        return;
+    }
+    if (frac == 1.0f) {
+        float *f1 = (float *)srcNext;
+        out[0] = f1[0];
+        out[1] = f1[1];
+        out[2] = f1[2];
+        return;
+    }
+    {
+        float *f0 = (float *)src;
+        float *f1 = (float *)srcNext;
+        out[2] = f0[2] + (f1[2] - f0[2]) * frac;
+        out[1] = f0[1] + (f1[1] - f0[1]) * frac;
+        out[0] = f0[0] + (f1[0] - f0[0]) * frac;
+    }
+}
+
 DECOMP_FORCEACTIVE(
     CharBonesSamples,
     "numSamples > 0",
