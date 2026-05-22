@@ -12,6 +12,7 @@
 #include "meta_band/AccomplishmentGroup.h"
 #include "meta_band/AccomplishmentManager.h"
 #include "meta_band/CampaignLevel.h"
+#include "meta_band/MetaPanel.h"
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/PassiveMessenger.h"
 #include "net/Server.h"
@@ -204,6 +205,47 @@ bool AccomplishmentProgress::AddAccomplishment(Symbol s) {
         return true;
     } else
         return false;
+}
+
+void AccomplishmentProgress::NotifyPlayerOfAccomplishment(Symbol s, const char *iconArt) {
+    if (!MetaPanel::sLaunchedGoalMsgsOnly
+        || s == TheCampaign->GetCurrentGoal()) {
+        LocalBandUser *pUser = mParentProfile->GetAssociatedLocalBandUser();
+        MILO_ASSERT(pUser, 0x34D);
+        Accomplishment *pAccomplishment = TheAccomplishmentMgr->GetAccomplishment(s);
+        MILO_ASSERT(pAccomplishment, 0x350);
+        int metaScoreValue =
+            TheAccomplishmentMgr->GetMetaScoreValue(pAccomplishment->GetMetaScoreValue());
+        int currentPoints =
+            TheCampaign->GetCurrentPointsForNextMajorCampaignLevelForUser(pUser);
+        int totalPoints =
+            TheCampaign->GetTotalPointsForNextMajorCampaignLevelForUser(pUser);
+        Symbol channel = pAccomplishment->GetPassiveMsgChannel();
+        int priority = pAccomplishment->GetPassiveMsgPriority();
+        String currentIcon = TheCampaign->GetCurrentMajorLevelIcon(pUser);
+        String nextIcon("");
+        if (!TheCampaign->IsUserOnLastCampaignLevel(pUser)) {
+            nextIcon = TheCampaign->GetNextMajorLevelIcon(pUser);
+        }
+        int newMetaScore = mMetaScore + metaScoreValue;
+        int oldFanCount = TheAccomplishmentMgr->GetScaledFanValue(mMetaScore);
+        int newFanCount = TheAccomplishmentMgr->GetScaledFanValue(newMetaScore);
+        MILO_ASSERT(newFanCount >= oldFanCount, 0x365);
+        ThePassiveMessenger->TriggerEarnedAccomplishmentMsg(
+            pUser,
+            s,
+            channel,
+            priority,
+            newFanCount - oldFanCount,
+            currentPoints,
+            totalPoints,
+            metaScoreValue,
+            iconArt,
+            currentIcon,
+            nextIcon,
+            newMetaScore
+        );
+    }
 }
 
 bool AccomplishmentProgress::IsAccomplished(Symbol s) const {
