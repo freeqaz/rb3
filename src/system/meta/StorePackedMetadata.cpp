@@ -52,6 +52,19 @@ public:
 CNTHandle StoreIndexFileReader::mMetaDataCntHandle;
 bool StoreIndexFileReader::mMetaDataCntHandleInited;
 
+int StoreIndexFileReader::Read(void *buf, int len) { return CNTRead(&mFileInfo, buf, len); }
+bool StoreIndexFileReader::ReadAsync(void *, int) { return false; }
+int StoreIndexFileReader::Write(const void *, int) { return 0; }
+int StoreIndexFileReader::Seek(int, int) { return 0; }
+int StoreIndexFileReader::Tell() { return 0; }
+void StoreIndexFileReader::Flush() {}
+bool StoreIndexFileReader::Eof() { return false; }
+bool StoreIndexFileReader::Fail() { return false; }
+int StoreIndexFileReader::Size() { return mSize; }
+int StoreIndexFileReader::UncompressedSize() { return 0; }
+bool StoreIndexFileReader::ReadDone(int &) { return false; }
+int StoreIndexFileReader::GetFileHandle(DVDFileInfo *&) { return 0; }
+
 bool StoreLoadPackedFile(
     const char *filename, bool compressed, int maxSize, bool relocate, bool extendedHeader,
     char **outBuf, char **outDataStart, char **outDataEnd, int *outCount
