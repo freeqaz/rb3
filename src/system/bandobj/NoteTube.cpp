@@ -109,10 +109,261 @@ void NoteTube::InitializePlate(TubePlate *plate, RndMat *mat, RndGroup *parent) 
 }
 
 void NoteTube::DrawToPlate(TubePlate *plate) {
+    static bool warnOnReallocate = false;
+
     MILO_ASSERT(plate, 0xB4);
     RndMesh *mesh = plate->mMesh;
     MILO_ASSERT(mesh, 0xB7);
     MILO_ASSERT(!mesh->Showing(), 0xB8);
+
+    if (mXPos < plate->mBeginX)
+        plate->mBeginX = mXPos;
+
+    float baseX = mXPos - mesh->LocalXfm().v.x;
+    int vertStart = mesh->Verts().size();
+    int faceStart = mesh->Faces().size();
+    int numPoints = mPoints.size();
+
+    if (mPitched) {
+        MILO_ASSERT(unk_0x30 > 0.0f, 0xCE);
+        int numEdges = numPoints * 2;
+        plate->AllocateVerts(numEdges + 4, warnOnReallocate);
+
+        bool atFront = mFrontPlate == plate;
+        float uvX1, uvX0, uvY1, uvY0;
+        LookupPitchedUVCoordinates(uvX1, uvX0, uvY1, uvY0, atFront);
+        uvX1 -= 0.0078125f;
+        uvX0 += 0.0078125f;
+
+        RndMesh::VertVector &verts = mesh->Verts();
+        SetMeshVert(
+            verts[vertStart],
+            (0.015625f + (baseX + mPoints[0].x)) - 2.0f * unk_0x30,
+            unk_0x30 + mPoints[0].z,
+            uvX1,
+            uvY1
+        );
+        SetMeshVert(
+            verts[vertStart + 1],
+            (0.015625f + (baseX + mPoints[0].x)) - 2.0f * unk_0x30,
+            mPoints[0].z - unk_0x30,
+            uvX1,
+            uvY0
+        );
+
+        float halfWidth = 0.0f;
+        int vertIdx = vertStart;
+        for (int i = 0; i < numPoints; i++) {
+            float px = mPoints[i].x;
+            float pz = mPoints[i].z;
+            if (i % 2) {
+                if (i >= numPoints - 1) {
+                    halfWidth = 0.0f;
+                } else {
+                    float angle =
+                        atan((mPoints[i + 1].z - pz) / (mPoints[i + 1].x - px));
+                    halfWidth = unk_0x30 * tan(angle * 0.5f);
+                }
+            }
+            SetMeshVert(
+                verts[vertIdx + 2],
+                baseX + (px - halfWidth),
+                pz + unk_0x30,
+                uvX0,
+                uvY1
+            );
+            SetMeshVert(
+                verts[vertIdx + 3],
+                baseX + (px + halfWidth),
+                pz - unk_0x30,
+                uvX0,
+                uvY0
+            );
+            vertIdx += 2;
+        }
+
+        int lastVert = vertStart + numEdges;
+        SetMeshVert(
+            verts[lastVert + 2],
+            (baseX + (2.0f * unk_0x30 + mPoints[numPoints - 1].x)) - 0.015625f,
+            mPoints[numPoints - 1].z + unk_0x30,
+            uvX1,
+            uvY1
+        );
+        SetMeshVert(
+            verts[lastVert + 3],
+            (baseX + (2.0f * unk_0x30 + mPoints[numPoints - 1].x)) - 0.015625f,
+            mPoints[numPoints - 1].z - unk_0x30,
+            uvX1,
+            uvY0
+        );
+
+        int numFaces = numEdges + 2;
+        plate->AllocateFaces(numFaces, warnOnReallocate);
+        for (int i = 0; i < numFaces; i++) {
+            if (i % 2) {
+                mesh->Faces()[faceStart + i].Set(
+                    vertStart + i + 2, vertStart + i + 1, vertStart + i
+                );
+            } else {
+                mesh->Faces()[faceStart + i].Set(
+                    vertStart + i, vertStart + i + 1, vertStart + i + 2
+                );
+            }
+        }
+    } else if (unk_0x24) {
+        static const float kMaxQuadSize = 5.0f;
+        float length = mPoints[1].x - mPoints[0].x;
+        float uvScale = length / (16.0f * unk_0x30);
+        int numColumns = 1;
+        for (float remaining = length; remaining > kMaxQuadSize;
+             remaining -= kMaxQuadSize)
+            numColumns++;
+        int numVerts = (numColumns + 1) * 2;
+        plate->AllocateVerts(numVerts, warnOnReallocate);
+
+        RndMesh::VertVector &verts = mesh->Verts();
+        SetMeshVert(
+            verts[vertStart],
+            baseX + mPoints[0].x,
+            unk_0x30 + mPoints[0].z,
+            0.0f,
+            0.0f
+        );
+        SetMeshVert(
+            verts[vertStart + 1],
+            baseX + mPoints[0].x,
+            mPoints[0].z - unk_0x30,
+            0.0f,
+            1.0f
+        );
+
+        int vertIdx = vertStart + 2;
+        for (int i = 1; i < numColumns; i++) {
+            float offset = (float)i * kMaxQuadSize;
+            float u = (uvScale * offset) / length;
+            SetMeshVert(
+                verts[vertIdx],
+                offset + (baseX + mPoints[0].x),
+                unk_0x30 + mPoints[0].z,
+                u,
+                0.0f
+            );
+            SetMeshVert(
+                verts[vertIdx + 1],
+                offset + (baseX + mPoints[0].x),
+                mPoints[0].z - unk_0x30,
+                u,
+                1.0f
+            );
+            vertIdx += 2;
+        }
+
+        int lastVert = vertStart + numVerts;
+        SetMeshVert(
+            verts[lastVert - 2],
+            baseX + mPoints[1].x,
+            unk_0x30 + mPoints[1].z,
+            uvScale,
+            0.0f
+        );
+        SetMeshVert(
+            verts[lastVert - 1],
+            baseX + mPoints[1].x,
+            mPoints[1].z - unk_0x30,
+            uvScale,
+            1.0f
+        );
+
+        int numFaces = numColumns * 2;
+        plate->AllocateFaces(numFaces, warnOnReallocate);
+        for (int i = 0; i < numFaces; i++) {
+            if (i % 2) {
+                mesh->Faces()[faceStart + i].Set(
+                    vertStart + i + 2, vertStart + i + 1, vertStart + i
+                );
+            } else {
+                mesh->Faces()[faceStart + i].Set(
+                    vertStart + i, vertStart + i + 1, vertStart + i + 2
+                );
+            }
+        }
+    } else {
+        plate->AllocateVerts(8, warnOnReallocate);
+
+        RndMesh::VertVector &verts = mesh->Verts();
+        float x0 = baseX + mPoints[0].x;
+        SetMeshVert(
+            verts[vertStart], x0 - 0.05f, unk_0x30 + mPoints[0].z, 0.0f, 0.0f
+        );
+        SetMeshVert(
+            verts[vertStart + 1],
+            x0 - 0.05f,
+            mPoints[0].z - unk_0x30,
+            0.0f,
+            1.0f
+        );
+        SetMeshVert(
+            verts[vertStart + 2],
+            0.05f + x0,
+            unk_0x30 + mPoints[0].z,
+            0.015625f,
+            0.0f
+        );
+        SetMeshVert(
+            verts[vertStart + 3],
+            0.05f + x0,
+            mPoints[0].z - unk_0x30,
+            0.015625f,
+            1.0f
+        );
+
+        float x1 = baseX + mPoints[1].x;
+        SetMeshVert(
+            verts[vertStart + 4],
+            x1 - 0.05f,
+            unk_0x30 + mPoints[1].z,
+            0.984375f,
+            0.0f
+        );
+        SetMeshVert(
+            verts[vertStart + 5],
+            x1 - 0.05f,
+            mPoints[1].z - unk_0x30,
+            0.984375f,
+            1.0f
+        );
+        SetMeshVert(
+            verts[vertStart + 6],
+            0.05f + x1,
+            unk_0x30 + mPoints[1].z,
+            1.0f,
+            0.0f
+        );
+        SetMeshVert(
+            verts[vertStart + 7],
+            0.05f + x1,
+            mPoints[1].z - unk_0x30,
+            1.0f,
+            1.0f
+        );
+
+        plate->AllocateFaces(6, warnOnReallocate);
+        for (int i = 0; i < 6; i++) {
+            if (i % 2) {
+                mesh->Faces()[faceStart + i].Set(
+                    vertStart + i + 2, vertStart + i + 1, vertStart + i
+                );
+            } else {
+                mesh->Faces()[faceStart + i].Set(
+                    vertStart + i, vertStart + i + 1, vertStart + i + 2
+                );
+            }
+        }
+    }
+
+    plate->mWidthX = Max(plate->mWidthX, mEndX);
+    mEndX = 0.0f;
 }
 
 DECOMP_FORCEACTIVE(NoteTube, "mWidth > 0.0f")
