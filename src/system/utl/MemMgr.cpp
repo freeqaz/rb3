@@ -174,6 +174,80 @@ void Heap::LastFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
     }
 }
 
+void Heap::BestFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
+    FreeBlock *block = mFreeBlockChain;
+    int bestSize = 0x7FFFFFFF;
+    int bestPad = 0x7FFFFFFF;
+    int align = 1 << alignShift;
+    FreeBlock *prev = nullptr;
+    FreeBlock *bestBlock = nullptr;
+    FreeBlock *bestPrev = nullptr;
+    int largestSeen = 0;
+    for (; block != nullptr; prev = block, block = block->mNext) {
+        int blockSize = block->mSizeWords;
+        int wordAddr = ((int)block >> 2) + 1;
+        int padWords =
+            ((((unsigned int)(wordAddr + align - 1)) >> alignShift) << alignShift) - wordAddr;
+        bool fits = blockSize >= sizeWords + padWords;
+        if (fits && blockSize < bestSize) {
+            bestSize = blockSize;
+            bestPad = padWords;
+            bestBlock = block;
+            bestPrev = prev;
+            if (!mAllowTemp) {
+                info.mBlock = block;
+                info.mPrev = prev;
+                info.mBlockSize = blockSize;
+                info.mPadWords = padWords;
+                if (blockSize == sizeWords + padWords) {
+                    return;
+                }
+            }
+        }
+        if (mAllowTemp && blockSize > largestSeen) {
+            info.mBlock = bestBlock;
+            info.mPrev = bestPrev;
+            info.mBlockSize = bestSize;
+            info.mPadWords = bestPad;
+            if (bestSize == sizeWords + bestPad) {
+                return;
+            }
+            largestSeen = blockSize;
+        }
+    }
+}
+
+void Heap::BestLastFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
+    FreeBlock *prev = nullptr;
+    FreeBlock *block = mFreeBlockChain;
+    int bestSize = 0;
+    if (!mAllowTemp) {
+        bestSize = 0x7FFFFFFF;
+    }
+    if (block != nullptr) {
+        int shift = alignShift + 2;
+        int sizeBytes = sizeWords << 2;
+        for (; block != nullptr; prev = block, block = block->mNext) {
+            int blockSize = block->mSizeWords;
+            int padWords =
+                ((((((int)block + (blockSize << 2)) - sizeBytes) >> shift) << shift) - 4 -
+                 (int)block) /
+                4;
+            if (padWords >= 0) {
+                if (blockSize >= bestSize || blockSize <= info.mBlockSize) {
+                    info.mBlockSize = blockSize;
+                    info.mPadWords = padWords;
+                    info.mBlock = block;
+                    info.mPrev = prev;
+                }
+            }
+            if (blockSize > bestSize) {
+                bestSize = blockSize;
+            }
+        }
+    }
+}
+
 void Heap::LRUFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
     FreeBlock *block = mFreeBlockChain;
     FreeBlock *prev = nullptr;
