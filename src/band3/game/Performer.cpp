@@ -6,6 +6,9 @@
 #include "game/Band.h"
 #include "game/Game.h"
 #include "game/SongDB.h"
+#include "game/NetGameMsgs.h"
+#include "net/Net.h"
+#include "net/NetSession.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 #include <algorithm>
@@ -144,6 +147,11 @@ void Performer::SendStreak() {
     if (unk1fe) {
         Handle(send_streak_msg, false);
     }
+}
+
+void Performer::SendRemoteStats(BandUser *user) {
+    PlayerStatsMsg msg(user, GetScore(), mStats);
+    TheNet.GetNetSession()->SendMsgToAll(msg, kReliable);
 }
 
 void Performer::SetRemoteStreak(int i) {
