@@ -865,6 +865,15 @@ DataNode AccomplishmentProgress::OnMsg(const RockCentralOpCompleteMsg &msg) {
     return DataNode(1);
 }
 
+void AccomplishmentProgress::HandleSuccessfulUpload() {
+    for (std::vector<Symbol>::iterator it = unk7c.begin(); it != unk7c.end(); ++it) {
+        std::set<Symbol>::iterator found = unk64.find(*it);
+        MILO_ASSERT(found != unk64.end(), 0x755);
+        unk64.erase(found);
+    }
+    unk7c.clear();
+}
+
 BEGIN_HANDLERS(AccomplishmentProgress)
     HANDLE_EXPR(
         get_icon_hardcore_status,
