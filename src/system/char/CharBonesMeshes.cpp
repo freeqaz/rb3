@@ -35,7 +35,10 @@ void CharBonesMeshes::ReallocateInternal() {
     CharBonesAlloc::ReallocateInternal();
     String str;
 #ifdef MILO_DEBUG
-    ClearAndShrink(mMeshes);
+    {
+        ObjVector<ObjOwnerPtr<RndTransformable, ObjectDir> > temp(this);
+        mMeshes.swap(temp);
+    }
 #else
     mMeshes =
         ObjVector<ObjOwnerPtr<RndTransformable, ObjectDir> >(this); // ClearAndShrink?
