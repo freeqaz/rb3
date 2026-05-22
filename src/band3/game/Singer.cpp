@@ -162,6 +162,28 @@ void Singer::CancelScream() { unk48 = -1.0f; }
 void Singer::SetIsSinging(bool b1) { mIsSinging = b1; }
 void Singer::Detune(float f1) { mDetune = f1; }
 
+void Singer::HandlePhraseEnd(float, const std::vector<float> &micPitches) {
+    MILO_ASSERT(micPitches.size() == mResultsData.size(), 0x3BF);
+    for (int i = 0; i < (int)mResultsData.size(); i++) {
+        float micPitch = micPitches[i];
+        if (micPitch > 0.0f) {
+            mResultsData[i].unk18 +=
+                std::max(std::min(mResultsData[i].unk10 / micPitch, 1.0f), 0.0f);
+            mResultsData[i].unk1c++;
+        }
+        mResultsData[i].unk10 = 0.0f;
+        mResultsData[i].unk14 = 0.0f;
+        mResultsData[i].unkc = 0.0f;
+        if (micPitch > 0.0f) {
+            mResultsData[i].unk4 +=
+                std::max(std::min(mResultsData[i].unk0 / micPitch, 1.0f), 0.0f);
+            mResultsData[i].unk8++;
+        }
+        mResultsData[i].unk0 = 0.0f;
+    }
+    mAmbiguousData.clear();
+}
+
 void Singer::SetFrameMicPitch(float f1) { mFrameMicPitch = f1; }
 void Singer::EnableController() {}
 void Singer::DisableController() {}
