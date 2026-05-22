@@ -344,6 +344,46 @@ void GemPlayer::Hit(int, float, int, unsigned int gem_hit_slots, GemHitFlags) {
     MILO_WARN("send_hit");
 }
 
+void GemPlayer::Miss(
+    int track, int slot, float ms, int gem_id, int chordSlotsInProgress, GemHitFlags flags
+) {
+    if (!TheGame->IsPaused()) {
+        InputReceived();
+        if (!HandleSpecialMissScenarios(slot, ms) && !mGemStatus->Get0x40(gem_id)) {
+            if (InRollback())
+                return;
+            HandleFirstGemAfterRollback(gem_id);
+            TheSongDB->GetGem(mTrackNum, gem_id);
+            if (mTrack) {
+                mTrack->Miss(ms, gem_id, slot);
+            }
+            int gemTick = TheSongDB->GetGem(mTrackNum, gem_id).GetTick();
+            if (!InIgnorableFill(gemTick)) {
+                if (IgnoreGemsAt(gemTick)) {
+                    return;
+                }
+                if (!mGemStatus->Get0x2(gem_id)) {
+                    BuildMissStreak(gem_id);
+                }
+                mGemStatus->Set0x2(gem_id);
+                if (!(flags & kGemHitFlagNoPenalize)) {
+                    Penalize(ms, gem_id, 0.0f);
+                }
+                if (mIsInCoda && IsCodaMiss(ms)) {
+                    mBand->DealWithCodaGem(this, gem_id, false, false);
+                }
+                PlayMissSound(slot);
+                static Message missMsg("miss", 0, 0, 0);
+                missMsg[0] = GetUser();
+                missMsg[1] = slot;
+                missMsg[2] = gem_id;
+                Export(missMsg, true);
+                MissHook(track, slot, ms, gem_id, chordSlotsInProgress);
+            }
+        }
+    }
+}
+
 bool GemPlayer::HandleSpecialMissScenarios(int i1, float f2) {
     if (CanFlail(f2)) {
         if (mUser->GetTrackType() == 0) {
