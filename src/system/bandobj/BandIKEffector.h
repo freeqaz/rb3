@@ -48,6 +48,7 @@ public:
     static void NeutralLocalPos(RndTransformable *, Vector3 &);
 
     int GetType();
+    float GetGroundHeight(RndTransformable *);
     int MeasureLengths(
         RndTransformable *&handBone,
         RndTransformable *&elbowBone,
