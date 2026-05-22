@@ -19,6 +19,7 @@
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/PassiveMessenger.h"
 #include "net/Server.h"
+#include "tour/Tour.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
@@ -472,6 +473,38 @@ void AccomplishmentProgress::UpdateScoreTypeSpecificStats(
     }
     if (stats.mUnisonPhraseCompleted > mMostUnisonPhrases[type]) {
         mMostUnisonPhrases[type] = stats.mUnisonPhraseCompleted;
+    }
+}
+
+void AccomplishmentProgress::FakeFill() {
+    const std::map<Symbol, Accomplishment *> &accs =
+        TheAccomplishmentMgr->GetAccomplishments();
+    for (std::map<Symbol, Accomplishment *>::const_iterator it = accs.begin();
+         it != accs.end();
+         ++it) {
+        Symbol key = it->first;
+        mStepTrackingMap[key] = 0;
+        mAccomplishments.insert(key);
+    }
+    const std::map<Symbol, Award *> &awards = TheAccomplishmentMgr->mAwards;
+    for (std::map<Symbol, Award *>::const_iterator it = awards.begin();
+         it != awards.end();
+         ++it) {
+        Symbol key = it->first;
+        mAwards.insert(key);
+        mNewAwards.push_back(std::pair<Symbol, Symbol>(key, key));
+    }
+    const std::map<Symbol, TourDesc *> &tours = TheTour->m_mapTourDesc;
+    for (std::map<Symbol, TourDesc *>::const_iterator it = tours.begin();
+         it != tours.end();
+         ++it) {
+        Symbol key = it->first;
+        mToursGotAllStarsMap[key] = 0;
+        mTourMostStarsMap[key] = 0;
+        mToursGotAllStarsMap[key] = 0;
+    }
+    for (int i = 0; i < 0x32; i++) {
+        mGigTypeCompletedMap[i + 0x3E8] = 0;
     }
 }
 
