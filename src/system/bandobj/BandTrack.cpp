@@ -639,6 +639,42 @@ void BandTrack::SavePlayer() {
     }
 }
 
+void BandTrack::SetCrowdRating(float f, CrowdMeterState state) {
+    BandCrowdMeter *meter = GetCrowdMeter();
+    if (meter && !meter->Disabled() && mTrackIdx > -1) {
+        meter->SetPlayerValue(mTrackIdx, f);
+        if (state != kCrowdMeterInvalidState) {
+            meter->SetPlayerIconState(mTrackIdx, state);
+            bool isWarning = state == kCrowdMeterWarning;
+            bool isFailed = state == kCrowdMeterFailed;
+            if (isWarning != (bool)unk1c && !isFailed) {
+                unk1c = isWarning;
+                RndAnimatable *anim =
+                    dynamic_cast<RndAnimatable *>(
+                        ThisDir()->FindObject("warning_anims.grp", false)
+                    );
+                if (anim) {
+                    if (unk1c) {
+                        anim->SetFrame(0.0f, 1.0f);
+                        TrackPanelDirBase *tpd = dynamic_cast<TrackPanelDirBase *>(
+                            ThisDir()->Dir()
+                        );
+                        anim->Animate(
+                            0.0f, false, tpd->GetPulseAnimStartDelay(false),
+                            RndAnimatable::k1_fpb, 0.0f, 1.0f, 0.0f, 1.0f, loop
+                        );
+                    } else {
+                        anim->Animate(
+                            0.0f, false, 0.0f, RndAnimatable::k1_fpb, 0.0f, 1.0f,
+                            0.0f, 1.0f, dest
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 void BandTrack::DisablePlayer(int i) {
     bool disconnected;
     if (mParent)
