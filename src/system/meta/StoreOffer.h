@@ -17,6 +17,7 @@ public:
     const char *GetArtist() const;
     const char *GetDataTitle() const;
     const char *GetUpgradeDataTitle() const;
+    unsigned long long DataTitle() const;
 
     unsigned int mSongID; // 0x0
     unsigned short unk4;
@@ -32,7 +33,9 @@ public:
     unsigned short unk10 : 9; // 0x10
     unsigned short mNameIndex; // 0x12
     unsigned short mArtistIndex; // 0x14
-    int unk18;
+    unsigned short mOfferIndex; // 0x16
+    unsigned short unk18; // 0x18
+    unsigned short unk1a; // 0x1a
 };
 
 class StoreSongTable {

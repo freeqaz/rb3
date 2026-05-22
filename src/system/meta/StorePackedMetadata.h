@@ -108,12 +108,22 @@ public:
     unsigned char mNumOffers; // 0x8
 };
 
+class StorePackedSubMenu {
+public:
+    unsigned short unk0;
+    unsigned short unk2;
+    unsigned short unk4;
+    unsigned short unk6;
+};
+
 class StorePage {
 public:
     StorePage() : mPageNumber(0), mPage(0), mOffers(0) {}
     char *LoadFromBuffer(char *, unsigned short);
     StorePackedOffer *Offer(int) const;
     const StorePackedOfferBase *BaseOffer(int) const;
+    StorePackedRBNOffer *RbnOffer(int) const;
+    class StorePackedSubMenu *Submenu(int) const;
 
     int mPageNumber; // 0x0
     StorePackedPage *mPage; // 0x4
@@ -163,6 +173,20 @@ public:
             return table->mNonLocalized.GetString(idx - 1);
     }
     StoreError LoadError() const;
+    void SetMetadataIndex(unsigned long long, unsigned short, long);
+    const StorePackedOfferBase *GetOffer(unsigned short) const;
+    bool Poll();
+    void PollLoading();
+    void UpdateOfferPrices();
+    void UpdateAvailability();
+    int SongStateFlags(const StorePackedSong *);
+    int GetContentStateFlags(unsigned long long, unsigned short);
+    int GetContentFileSize(unsigned long long, unsigned short);
+    void MarkDeleted(unsigned long long, unsigned short);
+    void AddOldMetadataIndex(unsigned long long, unsigned short);
+    const StorePackedOfferBase *FindOffer(const char *, int *, bool *, bool *) const;
+    void AddSetlistOffer(int);
+    void ClearSetlistOffers();
 
     DataNode OnMsg(const CommerceMgrOpCompleteMsg &);
     void DebugPurchase();

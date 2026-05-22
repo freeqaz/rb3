@@ -702,3 +702,84 @@ void StorePackedRanks::EndianFix() {
     rank = ((buf[10] & 0x03) << 8) | buf[11];
     mRealGuitar = rank;
 }
+
+unsigned long long StorePackedSong::DataTitle() const {
+    return WiiCommerceMgr::MakeDataTitleId(&unk6);
+}
+
+StoreError StoreMetadataManager::LoadError() const {
+    return (StoreError)mErrorMsg;
+}
+
+bool StoreMetadataManager::LoadingFailed() const {
+    return mLoadingState == 11;
+}
+
+void StoreMetadataManager::SetMetadataIndex(unsigned long long key, unsigned short idx, long l) {
+    *(unsigned long long *)&unk88 = key;
+    unk90 = idx;
+    unk94 = l;
+}
+
+const StorePackedOfferBase *StoreMetadataManager::GetOffer(unsigned short key) const {
+    if (key & 0x8000) {
+        int idx = key & 0x7FFF;
+        StoreRbnOfferTable *table = TheStoreMetadata.mRbnOfferTable;
+        if (idx < table->mNumOffers)
+            return table->mOffers[(unsigned short)idx];
+    } else {
+        StoreOfferTable *table = TheStoreMetadata.mOfferTable;
+        if ((int)key < table->mNumOffers)
+            return table->mOffers[key];
+    }
+    return NULL;
+}
+
+bool StoreMetadataManager::Poll() {
+    if (TheWiiCommerceMgr.mCommerceAsyncOpId == -1) {
+        if (mFlags & 4)
+            PollLoading();
+        return mFlags & 8;
+    }
+    return false;
+}
+
+const StorePackedOfferBase *StoreMetadataManager::FindOfferFromSongId(int songId) const {
+    StorePackedSong *found = NULL;
+    for (int i = 0; i < mSongTable->mNumSongs; i++) {
+        if ((unsigned int)songId == mSongTable->mSongs[i].mSongID) {
+            found = &mSongTable->mSongs[i];
+            break;
+        }
+    }
+    if (found)
+        return GetOffer(found->mOfferIndex);
+    return NULL;
+}
+
+const StorePackedOfferBase *StorePage::BaseOffer(int idx) const {
+    if (mPage->mHasOffers) {
+        int key = mOffers[idx];
+        if (key & 0x8000) {
+            return TheStoreMetadata.mRbnOfferTable->mOffers[key & 0x7FFF];
+        } else {
+            return TheStoreMetadata.mOfferTable->mOffers[key];
+        }
+    }
+    return NULL;
+}
+
+StorePackedRBNOffer *StorePage::RbnOffer(int idx) const {
+    if (mPage->mHasOffers) {
+        unsigned short key = mOffers[idx];
+        if (key & 0x8000)
+            return TheStoreMetadata.mRbnOfferTable->mOffers[key & 0x7FFF];
+    }
+    return NULL;
+}
+
+StorePackedSubMenu *StorePage::Submenu(int idx) const {
+    if (mPage->mHasOffers)
+        return NULL;
+    return &mSubmenus[idx];
+}
