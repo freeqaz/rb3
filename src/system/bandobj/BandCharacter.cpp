@@ -1974,6 +1974,38 @@ DataNode BandCharacter::OnPortraitEnd(DataArray *da) {
     return DataNode(0);
 }
 
+DataNode BandCharacter::OnHideCategories(DataArray *da) {
+    if (!mFileMerger)
+        return DataNode(0);
+    static Symbol rm("RndMesh");
+    for (int i = 2; i < da->Size(); i++) {
+        FileMerger::Merger *merger = mFileMerger->FindMerger(da->Sym(i), true);
+        for (ObjPtrList<Hmx::Object, ObjectDir>::iterator it =
+                 merger->mLoadedObjects.begin();
+             it != merger->mLoadedObjects.end();
+             ++it) {
+            Hmx::Object *obj = *it;
+            if (obj->ClassName() == rm) {
+                RndMesh *mesh = dynamic_cast<RndMesh *>(obj);
+                if (mesh->Showing()) {
+                    mesh->SetShowing(false);
+                    unk74c.push_back(mesh);
+                }
+            }
+        }
+    }
+    return DataNode(0);
+}
+
+DataNode BandCharacter::OnRestoreCategories(DataArray *da) {
+    while (unk74c.size() != 0) {
+        RndMesh *mesh = unk74c.front();
+        mesh->SetShowing(true);
+        unk74c.pop_front();
+    }
+    return DataNode(0);
+}
+
 BEGIN_PROPSYNCS(BandCharacter)
     SYNC_PROP(tempo, mTempo)
     SYNC_PROP(genre, mGenre)
