@@ -165,15 +165,14 @@ void ClipCollide::Collide() {
         SyncWaypoint();
 
         CharServoBone *b = mChar->BoneServo();
-        CharClip *clip = mClip;
 
         float blend = 0.0f;
-        float f = clip->StartBeat();
+        float f = mClip->StartBeat();
         float delta = 1.0f;
         Vector3 points[3];
-        while (f <= clip->EndBeat()) {
+        while (f <= mClip->EndBeat()) {
             {
-                clip->ScaleDown(*b, 0.0f);
+                mClip->ScaleDown(*b, 0.0f);
                 mClip->ScaleAdd(*b, delta, f, blend);
                 b->Poll();
 
@@ -182,7 +181,7 @@ void ClipCollide::Collide() {
                     Vector3 p = xfm.v;
 
                     if (i == 2) {
-                        const Transform &gxfm = meshes[2]->WorldXfm();
+                        const Transform &gxfm = meshes[i]->WorldXfm();
                         p.x += gxfm.m.z.x * 2.5f;
                         p.y += gxfm.m.z.y * 2.5f;
                         p.z += gxfm.m.z.z * 2.5f;
@@ -226,7 +225,6 @@ void ClipCollide::Collide() {
                     points[i] = p;
                 }
 
-                clip = mClip;
                 f += delta;
                 blend = delta;
             }
