@@ -283,6 +283,7 @@ void TourDescPanel::CheatWinTour() {
     Refresh();
 }
 
+
 BEGIN_HANDLERS(TourDescPanel)
     HANDLE_ACTION(refresh, Refresh())
     HANDLE_EXPR(get_selected_tour, GetSelectedTourDesc(0))
