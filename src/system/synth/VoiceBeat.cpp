@@ -100,8 +100,8 @@ bool EventTracker::Miss(float msFrom, float msUpTo) {
     bool result = false;
     for (int i = mSelFrom; i <= mSelTo; i++) {
         if (!mHits[i]) {
-            result = true;
             mMisses[i] = true;
+            result = true;
         }
     }
     return result;
