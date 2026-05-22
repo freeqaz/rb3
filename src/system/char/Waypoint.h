@@ -17,6 +17,7 @@ public:
     virtual DataNode Handle(DataArray *, bool);
     virtual bool SyncProperty(DataNode &, DataArray *, int, PropOp);
     virtual void Highlight();
+    virtual void Replace(Hmx::Object *, Hmx::Object *);
 
     void Constrain(Transform &);
     void ShapeDelta(const Vector3 &, Vector3 &);

@@ -98,6 +98,19 @@ Waypoint::~Waypoint() {
 
 void Waypoint::Highlight() {}
 
+void Waypoint::Replace(Hmx::Object *from, Hmx::Object *to) {
+    RndTransformable::Replace(from, to);
+    for (int i = 0; i < mConnections.size(); i++) {
+        if (mConnections[i] == from) {
+            mConnections[i] = dynamic_cast<Waypoint *>(to);
+        }
+        if (mConnections[i] == nullptr) {
+            mConnections.erase(mConnections.begin() + i);
+            i--;
+        }
+    }
+}
+
 // https://decomp.me/scratch/jaExl - retail scratch
 void Waypoint::Constrain(Transform &tf) {
     float strictRadius = mStrictRadiusDelta;
