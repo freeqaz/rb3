@@ -866,6 +866,23 @@ void VocalPlayer::OnGameOver() {
     }
 }
 
+void VocalPlayer::ResetScoring() {
+    std::vector<int> phraseActiveParts(3);
+    for (int i = 0; i < mVocalParts.size(); i++) {
+        VocalPart *cur = mVocalParts[i];
+        if (cur->ScoringEnabled()) {
+            mVocalParts[i]->ResetScoring();
+        }
+        if (!mVocalParts[i]->InEmptyPhrase() && mVocalParts[i]->InPlayablePhrase()
+            && mVocalParts[i]->ScoringEnabled()) {
+            phraseActiveParts[mVocalParts[i]->PartIndex()] = 1;
+        }
+    }
+    mTrack->GetVocalTrackDir()->UpdateVocalMeters(
+        phraseActiveParts[0], phraseActiveParts[1], phraseActiveParts[2], true
+    );
+}
+
 void VocalPlayer::EnableController() {
     TheGameMicManager->SetPlayback(true);
     FOREACH (it, mSingers) {
