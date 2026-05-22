@@ -2,8 +2,10 @@
 #include "meta/StoreOffer.h"
 #include "os/CommerceMgr_Wii.h"
 #include "os/File.h"
+#include "obj/ObjMacros.h"
 #include "utl/Compress.h"
 #include "utl/MemMgr.h"
+#include "utl/Symbols2.h"
 #include "sdk/RVL_SDK/revolution/cnt/cnt.h"
 
 void CM_CNTSDCacheClearRSO();
@@ -575,3 +577,13 @@ StoreOfferState *StoreMetadataManager::GetOfferStatus(const StorePackedOfferBase
     }
     return 0;
 }
+
+BEGIN_HANDLERS(StoreMetadataManager)
+    HANDLE_MESSAGE(CommerceMgrOpCompleteMsg)
+    HANDLE_EXPR(exit_error, mErrorMsg)
+    HANDLE_EXPR(check_content_size, mContentSize)
+    HANDLE_EXPR(debug_purchase, (DebugPurchase(), 0))
+    HANDLE_EXPR(debug_download, (DebugDownload(), 0))
+    HANDLE_SUPERCLASS(Hmx::Object)
+    HANDLE_CHECK(0xC10)
+END_HANDLERS

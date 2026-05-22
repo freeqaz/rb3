@@ -1,9 +1,13 @@
 #pragma once
 #include "obj/Object.h"
+#include "obj/Msg.h"
 #include "meta/StoreEnumeration.h"
 #include "meta/StoreOffer.h"
 
 class StoreTitleContentState;
+
+DECLARE_MESSAGE(CommerceMgrOpCompleteMsg, "commerce_mgr_op_complete")
+END_MESSAGE
 
 class StoreMarqueeTable {
 public:
@@ -151,6 +155,10 @@ public:
             return table->mNonLocalized.GetString(idx - 1);
     }
     StoreError LoadError() const;
+
+    DataNode OnMsg(const CommerceMgrOpCompleteMsg &);
+    void DebugPurchase();
+    void DebugDownload();
 
     static std::vector<int> mSetlistOffers;
 
