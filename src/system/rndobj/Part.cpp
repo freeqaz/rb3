@@ -19,6 +19,7 @@
 #include "rndobj/Poll.h"
 #include "rndobj/Trans.h"
 #include "rndobj/Utl.h"
+#include "rndwii/Rnd.h"
 #include "types.h"
 #include "utl/Loader.h"
 #include "utl/MemMgr.h"
@@ -1004,6 +1005,88 @@ void RndParticleSys::CreateParticles(float f1, float f2, const Transform &tf) {
             }
             InitParticle(f1, p, &tf, gNoPartOverride);
             mEmitCount -= 1.0f;
+        }
+    }
+}
+
+void RndParticleSys::UpdateParticles() {
+    if (mPreserveParticles)
+        return;
+
+    float currentFrame = CalcFrame();
+    if (TheWiiRnd.mProcCounter.mTriFrameRendering) {
+        if (ConvertFrames(currentFrame))
+            currentFrame = currentFrame + 0.06666640192270279;
+        currentFrame *= FramesPerUnit();
+    }
+
+    if (unke4 == 0.0f)
+        unke4 = currentFrame;
+
+    if (mNeedForward) {
+        RunFastForward();
+        if (!mFrameDrive)
+            unke4 = currentFrame;
+    } else {
+        unkbp2 = !unkbp2;
+        if (!unkbp2) {
+            float frameUpdate = currentFrame - unke4;
+            if (!mFrameDrive)
+                unke4 = currentFrame;
+
+            if (frameUpdate != 0.0f) {
+                if (mPauseOffscreen) {
+                    if (frameUpdate > 4.0f) {
+                        float excess = frameUpdate - 4.0f;
+                        frameUpdate = 4.0f;
+                        unkec += excess;
+                    }
+                    currentFrame -= unkec;
+                }
+
+                MoveParticles(currentFrame, frameUpdate);
+
+                if (mExplicitParts != 0 || !(mEmitRate.x <= 0.0f)
+                    || !(mEmitRate.y <= 0.0f) || mMaxBurst != 0) {
+                    Transform locToRel;
+                    MakeLocToRel(locToRel);
+
+                    if (mSubSamples > 1) {
+                        Vector3 vel;
+                        if (!mMesh) {
+                            float half = 0.5f;
+                            float pitchMid =
+                                LimitAng(mPitch.y - mPitch.x) * half + mPitch.x;
+                            float yawMid = LimitAng(mYaw.y - mYaw.x) * half + mYaw.x;
+                            float speedMid = (mSpeed.y - mSpeed.x) * half + mSpeed.x;
+                            float halfPi = 1.5707963705062866f;
+                            float cosPitch = FastSin(pitchMid + halfPi);
+                            vel.x = speedMid * -(cosPitch * FastSin(yawMid));
+                            vel.y = speedMid * (cosPitch * FastSin(yawMid + halfPi));
+                            float velZ = speedMid * FastSin(pitchMid);
+                            vel.y *= frameUpdate;
+                            vel.z = velZ * frameUpdate;
+                            vel.x *= frameUpdate;
+                            Multiply(vel, mSubSampleXfm, vel);
+                        } else {
+                            vel = mSubSampleXfm.v;
+                        }
+
+                        mSubSampleXfm = locToRel;
+
+                        int count = mSubSamples;
+                        float step = frameUpdate / (float)mSubSamples;
+                        while (count != 0) {
+                            CreateParticles(currentFrame, step, locToRel);
+                            float invCount = 1.0f / (float)count;
+                            Interp(locToRel.v, vel, invCount, locToRel.v);
+                            count--;
+                        }
+                    } else {
+                        CreateParticles(currentFrame, frameUpdate, locToRel);
+                    }
+                }
+            }
         }
     }
 }
