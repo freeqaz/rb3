@@ -20,6 +20,8 @@
 
 class Node;
 class StoreMainPanel;
+class ViewSetting;
+class StoreOfferProvider;
 
 class AppLabel : public BandLabel {
 public:
@@ -91,4 +93,7 @@ public:
     void SetNewReleaseEntryText2(const StoreMainPanel *);
     void SetNewReleaseEntryText3(const StoreMainPanel *);
     void SetRawStoreShortcut(int);
+    void SetViewSetting(const ViewSetting *);
+    void SetViewSettingStatus(const ViewSetting *);
+    void SetStoreGroupName(const StoreOfferProvider *, int);
 };

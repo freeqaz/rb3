@@ -22,6 +22,8 @@
 #include "meta_band/StoreInfoPanel.h"
 #include "meta_band/StoreMainPanel.h"
 #include "meta_band/StoreMenuPanel.h"
+#include "meta_band/StoreOfferProvider.h"
+#include "meta_band/ViewSetting.h"
 #include "meta_band/Utl.h"
 #include "obj/Dir.h"
 #include "obj/Data.h"
@@ -576,6 +578,35 @@ void AppLabel::SetRawStoreShortcut(int i) {
     BandStorePanel *bsp = BandStorePanel::Instance();
     MILO_ASSERT(bsp, 659);
     SetDisplayText(bsp->ShortcutTextAtData(i), true);
+}
+
+void AppLabel::SetViewSetting(const ViewSetting *setting) {
+    const char *status = setting->GetCurrentStatus();
+    const char *name = Localize(setting->GetName(), nullptr);
+    DataNode fmt(setting_option_fmt);
+    DataNode nameNode(name);
+    DataNode valueNode(status);
+    DataArray *da = new DataArray(3);
+    da->Node(0) = fmt;
+    da->Node(1) = nameNode;
+    da->Node(2) = valueNode;
+    SetTokenFmt(da);
+    da->Release();
+}
+
+void AppLabel::SetViewSettingStatus(const ViewSetting *setting) {
+    MILO_ASSERT(setting, 771);
+    SetDisplayText(setting->GetCurrentStatus(), true);
+}
+
+void AppLabel::SetStoreGroupName(const StoreOfferProvider *provider, int i) {
+    const StoreOfferProvider::Element *e = provider->GetElementAtIndex(i);
+    MILO_ASSERT(!e->mOffer, 648);
+    if (e->mLocalize) {
+        SetTextToken(e->mGroupHeading);
+    } else {
+        SetDisplayText(e->mGroupHeading.Str(), true);
+    }
 }
 
 void AppLabel::SetPitch(int pitch, int chrom) {

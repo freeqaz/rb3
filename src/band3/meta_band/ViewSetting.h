@@ -1,9 +1,26 @@
 #pragma once
 #include "obj/Object.h"
 #include "ui/UIListProvider.h"
+#include "utl/Symbol.h"
 #include <vector>
 
-class ViewSetting;
+class ViewSetting : public UIListProvider {
+public:
+    enum Type {
+        kBool,
+        kSort,
+        kFilter,
+    };
+
+    virtual const char *GetCurrentStatus() const;
+
+    Symbol GetName() const { return mName; }
+    Type GetSettingType() const { return mType; }
+
+protected:
+    Symbol mName; // 0x4
+    Type mType; // 0x8
+};
 
 class ViewSettingsProvider : public UIListProvider, public Hmx::Object {
 public:
