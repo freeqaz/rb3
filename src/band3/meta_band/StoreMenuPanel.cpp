@@ -36,9 +36,9 @@ void StoreMenuPanel::SetPendingMenuIx(int ix) {
 
 void StoreMenuPanel::FinishLoad() {
     UIPanel::FinishLoad();
-    const DataArray *typeDef = TypeDef();
-    MILO_ASSERT(typeDef, 0x2B);
-    const char *name = typeDef->FindArray(menu_list, true)->Str(1);
+    const DataArray *t = TypeDef();
+    MILO_ASSERT(t, 0x2B);
+    const char *name = t->FindArray(menu_list, true)->Str(1);
     mList = mDir->Find<BandList>(name, true);
 }
 
@@ -74,7 +74,7 @@ void StoreMenuPanel::Poll() {
     UIPanel::Poll();
     if (mPendingMenuIx >= 0) {
         if (mList && !mList->IsAnimating()) {
-            MILO_ASSERT(mPendingMenuIx < (int)mMenuStack.size(), 0x58);
+            MILO_ASSERT(mPendingMenuIx < mMenuStack.size(), 0x58);
             mList->SetShowing(true);
             mList->SetProvider(mMenuStack[mPendingMenuIx]);
             mList->SetSelected(mMenuStack[mPendingMenuIx]->mIxHighlight, -1);
@@ -89,9 +89,10 @@ void StoreMenuPanel::Poll() {
 
 const char *StoreMenuPanel::GetCrumbText() const {
     const char *result = "";
-    for (int i = 1; i <= mCurrentMenuIx; i++) {
+    int limit = mCurrentMenuIx + 1;
+    for (int i = 1; i < limit; i++) {
         const char *title = mMenuStack[i]->GetTitle();
-        if (title != gNullStr && strlen(title) != 0) {
+        if (gNullStr != title && strlen(title) != 0) {
             if (i == 1)
                 result = MakeString("::%s", title);
             else
