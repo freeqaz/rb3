@@ -1,6 +1,7 @@
 #include "beatmatch/GameGemList.h"
 #include "beatmatch/BeatMatchUtl.h"
 #include "utl/MemMgr.h"
+#include "utl/Std.h"
 #include <algorithm>
 
 namespace stlpmtx_std {
@@ -77,6 +78,37 @@ void GameGemList::RecalculateGemTimes(TempoMap *tmap) {
         it->RecalculateTimes(tmap);
     }
     std::sort(mGems.begin(), mGems.end());
+}
+
+void GameGemList::MergeChordGems() {
+    if (mGems.empty())
+        return;
+    std::vector<GameGem> merged;
+    std::vector<GameGem>::iterator it = mGems.begin();
+    while (it != mGems.end()) {
+        int tick = it->mTick;
+        int durTicks = it->mDurationTicks;
+        GameGem chord = *it;
+        bool keep = true;
+        std::vector<GameGem>::iterator next = it + 1;
+        while (next != mGems.end() && abs(next->mTick - tick) < 10) {
+            if (abs(next->mDurationTicks - durTicks) < 10) {
+                chord.mSlots |= next->mSlots;
+            } else {
+                keep = false;
+            }
+            next++;
+        }
+        if (keep) {
+            merged.push_back(chord);
+            it = next;
+        } else {
+            for (; it != next; it++) {
+                merged.push_back(*it);
+            }
+        }
+    }
+    mGems = merged;
 }
 
 bool GameGemList::AddGameGem(const GameGem &gem, NoStrumState noStrum) {
