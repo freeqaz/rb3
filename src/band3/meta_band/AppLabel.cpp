@@ -693,10 +693,11 @@ void AppLabel::SetFromScoreDisplayData(short mask, int score, int rank, bool amo
         Symbol sym = amongAll ? ir_among_all : ir_among_friends;
         SetDisplayText(
             MakeString(
-                Localize(sym, nullptr),
+                "<alt>%s</alt> %s (%s %s)",
                 icons.c_str(),
                 LocalizeSeparatedInt(score),
-                LocalizeOrdinal(rank, LocaleGenderMasculine, LocaleSingular, true)
+                LocalizeOrdinal(rank, LocaleGenderMasculine, LocaleSingular, true),
+                Localize(sym, nullptr)
             ),
             true
         );
