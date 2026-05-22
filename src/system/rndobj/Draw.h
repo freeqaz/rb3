@@ -156,6 +156,7 @@ public:
     bool mPerspectiveStretch : 1; // used in RndParticleSys
     bool unkbp2 : 1;
     bool mTextMarkup : 1; // used in RndText
+    bool unkbp4 : 1;
     bool unkbp5 : 1; // used in RndText
     bool unkbp6 : 1; // used in RndText
     bool unkbp7 : 1; // used in RndText
