@@ -35,3 +35,15 @@ void StoreMainPanel::ClearConfigData() {
     mCoverArtTexs.resize(0);
     ClearAndShrink(mNewReleaseList);
 }
+
+const StoreMainPanel::NewReleaseEntry *StoreMainPanel::CurrentEntry() const {
+    MILO_ASSERT(mCurrentEntry < mNewReleaseList.size(), 0x134);
+    return &mNewReleaseList[mCurrentEntry];
+}
+
+const char *StoreMainPanel::MarqueePath() const {
+    if (mNewReleaseList.size() && mCurrentEntry >= 0) {
+        return CurrentEntry()->mText4;
+    }
+    return gNullStr;
+}
