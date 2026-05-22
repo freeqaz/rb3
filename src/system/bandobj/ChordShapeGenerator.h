@@ -56,6 +56,14 @@ public:
         Hmx::Color32,
         Hmx::Color32
     );
+    void BuildEndCap(
+        RndMesh *,
+        std::map<unsigned short, unsigned short> &,
+        int,
+        const Transform &,
+        Symbol,
+        Hmx::Color32
+    );
     void GetCrossSection(float, CrossSec &);
     void ExtendProfile(
         RndMesh *,
