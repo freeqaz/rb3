@@ -48,6 +48,11 @@ void MemcardMgr::UnLoadBanner() {
     }
 }
 
+void MemcardMgr::SaveLoadAllComplete() {
+    static SaveLoadAllCompleteMsg msg;
+    MsgSource::Handle(msg, false);
+}
+
 int MemcardMgr::GetSizeNeeded() { return TheWiiNeedSizeFSBlocks; }
 
 void MemcardMgr::DisableWriting(bool b) {

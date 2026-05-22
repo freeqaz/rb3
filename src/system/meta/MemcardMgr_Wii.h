@@ -22,6 +22,8 @@ public:
     bool IsDisableWriting() const;
     bool IsWriteMode() const;
 
+    void SaveLoadAllComplete();
+
     bool unk20;
     char unk21[64];
     char unk61[64];
@@ -42,5 +44,9 @@ public:
     int unkd8;
     Profile *unkdc;
 };
+
+DECLARE_MESSAGE(SaveLoadAllCompleteMsg, "save_load_all_complete_msg")
+SaveLoadAllCompleteMsg() : Message(Type()) {}
+END_MESSAGE
 
 extern MemcardMgr TheMemcardMgr;
