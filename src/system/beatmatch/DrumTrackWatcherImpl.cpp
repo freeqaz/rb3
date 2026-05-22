@@ -29,25 +29,26 @@ void DrumTrackWatcherImpl::Restart() {
 
 // fn_8045ED64 - relevantgem
 int DrumTrackWatcherImpl::RelevantGem(int i1, int i2, int i3) {
-    int count = 0;
-    int closest_gem = i1;
-    for (; closest_gem < i2; closest_gem++) {
-        GameGem &gem = mGemList->GetGem(closest_gem);
+    int g = i1;
+    int num_unplayed = 0;
+    for (; g <= i2; g++) {
+        GameGem &gem = mGemList->GetGem(g);
         int slot = gem.GetSlot();
         if (i3 == slot)
-            return closest_gem;
+            return g;
         if (!gem.GetPlayed())
-            count++;
+            num_unplayed++;
     }
-    closest_gem = -1;
-    count = 999;
+    bool choose_any = (num_unplayed == 0);
+    int closest_gem = -1;
+    int closest_gem_distance = 999;
     for (; i1 <= i2; i1++) {
         GameGem &gem = mGemList->GetGem(i1);
-        if (count != 0 || !gem.GetPlayed()) {
+        if (choose_any || !gem.GetPlayed()) {
             int absval = abs(i3 - gem.GetSlot());
-            if (absval < count) {
+            if (absval < closest_gem_distance) {
+                closest_gem_distance = absval;
                 closest_gem = i1;
-                count = absval;
             }
         }
     }
