@@ -47,6 +47,8 @@ public:
 
 class StorePackedRanks {
 public:
+    void EndianFix();
+
     unsigned int mBand : 10;
     unsigned int mVocals : 10;
     unsigned int mGuitar : 10;

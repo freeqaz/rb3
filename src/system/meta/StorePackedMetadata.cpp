@@ -664,3 +664,28 @@ BEGIN_HANDLERS(StoreMetadataManager)
     HANDLE_SUPERCLASS(Hmx::Object)
     HANDLE_CHECK(0xC10)
 END_HANDLERS
+
+void StorePackedRanks::EndianFix() {
+    unsigned char buf[12]; memcpy(buf, this, 12); int rank;
+    if (buf[0] >> 6) MILO_WARN("%s(%d) : Warning: %s", __FILE__, __LINE__, "!padding");
+    rank = ((buf[0] & 0x3F) << 4) | (buf[1] >> 4);
+    mGuitar = rank;
+    rank = ((buf[1] & 0x0F) << 6) | (buf[2] >> 2);
+    mVocals = rank;
+    rank = ((buf[2] & 0x03) << 8) | buf[3];
+    mBand = rank;
+    if (buf[4] >> 6) MILO_WARN("%s(%d) : Warning: %s", __FILE__, __LINE__, "!padding");
+    rank = ((buf[4] & 0x3F) << 4) | (buf[5] >> 4);
+    mKeys = rank;
+    rank = ((buf[5] & 0x0F) << 6) | (buf[6] >> 2);
+    mDrums = rank;
+    rank = ((buf[6] & 0x03) << 8) | buf[7];
+    mBass = rank;
+    if (buf[8] >> 6) MILO_WARN("%s(%d) : Warning: %s", __FILE__, __LINE__, "!padding");
+    rank = ((buf[8] & 0x3F) << 4) | (buf[9] >> 4);
+    mRealKeys = rank;
+    rank = ((buf[9] & 0x0F) << 6) | (buf[10] >> 2);
+    mRealBass = rank;
+    rank = ((buf[10] & 0x03) << 8) | buf[11];
+    mRealGuitar = rank;
+}
