@@ -105,8 +105,8 @@ void ClipCollide::PickReport(const char *cc) {
                     Vector3 up(-1, 1, -1);
                     Vector3 target(0, 0, 1);
                     tf70.Reset();
-                    tf70.m.z.Set(target.x - tf70.v.x, target.y - tf70.v.y, target.z - tf70.v.z);
-                    tf70.m.y = up;
+                    tf70.m.y.Set(up.x - tf70.v.x, up.y - tf70.v.y, up.z - tf70.v.z);
+                    tf70.m.z = target;
                     Normalize(tf70.m, tf70.m);
                     tf70.v = curReport.pos;
                     tf70.v.x += tf70.m.y.x * 3.0f;
