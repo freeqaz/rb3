@@ -115,6 +115,7 @@ public:
     void UpdateScrolling(float);
     void UpdateTambourineGems();
     void PollLyricAnimations(std::deque<LyricPlate *> &, float, bool);
+    void UpdateLyricZ();
     void PollKaraoke(float);
     void HideCoda();
     bool WantBeatLines(int);

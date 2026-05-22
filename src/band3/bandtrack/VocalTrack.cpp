@@ -1013,6 +1013,78 @@ void VocalTrack::PollLyricAnimations(
     }
 }
 
+void VocalTrack::UpdateLyricZ() {
+    bool leadDirty = false;
+    bool harmonyDirty = false;
+    mDir->RecalculateLyricZ(&leadDirty, &harmonyDirty);
+    if (leadDirty) {
+        FOREACH (it, mLyricsLead) {
+            LyricPlate *plate = *it;
+            if (plate->mBaked) {
+                float delta = 0.0f;
+                for (unsigned int i = 0; i < plate->mSyllables.size(); i++) {
+                    Lyric *lyric = plate->mSyllables[i];
+                    float z;
+                    if (lyric->PitchNote()) {
+                        z = mDir->unk694;
+                    } else {
+                        z = mDir->unk69c;
+                    }
+                    if (delta == 0.0f) {
+                        delta = z - lyric->mBeginPos.z;
+                    } else {
+                        float diff = (z - lyric->mBeginPos.z) - delta;
+                        if (diff > 0.0f) {
+                        } else {
+                            diff = -diff;
+                        }
+                        if (diff > 0.01f) {
+                            MILO_WARN(
+                                "relative lyric placement changed in baked plate (lead)"
+                            );
+                        }
+                    }
+                    lyric->mBeginPos.z = z;
+                }
+                plate->mText->DirtyLocalXfm().v.z += delta;
+            }
+        }
+    }
+    if (harmonyDirty) {
+        FOREACH (it, mLyricsHarmony) {
+            LyricPlate *plate = *it;
+            if (plate->mBaked) {
+                float delta = 0.0f;
+                for (unsigned int i = 0; i < plate->mSyllables.size(); i++) {
+                    Lyric *lyric = plate->mSyllables[i];
+                    float z;
+                    if (lyric->PitchNote()) {
+                        z = mDir->unk698;
+                    } else {
+                        z = mDir->unk6a0;
+                    }
+                    if (delta == 0.0f) {
+                        delta = z - lyric->mBeginPos.z;
+                    } else {
+                        float diff = (z - lyric->mBeginPos.z) - delta;
+                        if (diff > 0.0f) {
+                        } else {
+                            diff = -diff;
+                        }
+                        if (diff > 0.01f) {
+                            MILO_WARN(
+                                "relative lyric placement changed in baked plate (harmony)"
+                            );
+                        }
+                    }
+                    lyric->mBeginPos.z = z;
+                }
+                plate->mText->DirtyLocalXfm().v.z += delta;
+            }
+        }
+    }
+}
+
 void VocalTrack::Poll(float f1) {
     bool gamebool = TheGame->InRollback();
     if (f1 < unk2a4 && !gamebool) {
