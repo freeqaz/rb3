@@ -435,14 +435,12 @@ unsigned int VocalPlayer::PackFloats(
     unsigned int packed = 0;
     for (int i = 0; i < i_rFractionArray.size(); i++) {
         float curF = i_rFractionArray[i];
-        float f2ToUse;
-        if (curF >= f1) {
-            f2ToUse = f1;
-        } else if (curF <= f2) {
-            f2ToUse = curF;
-        } else
-            f2ToUse = f2;
-        float fNormalized = (f2ToUse - f1) / fDenominator;
+        if (!(curF >= f1)) {
+            curF = f1;
+        } else if (!(curF <= f2)) {
+            curF = f2;
+        }
+        float fNormalized = (curF - f1) / fDenominator;
         MILO_ASSERT(( 0.0f) <= ( fNormalized) && ( fNormalized) <= ( 1.0f), 0x6D9);
         int iByteValue = fNormalized * 255.0f;
         MILO_ASSERT(( 0) <= ( iByteValue) && ( iByteValue) <= ( 255), 0x6DC);
