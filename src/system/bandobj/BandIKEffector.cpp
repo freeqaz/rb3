@@ -536,6 +536,34 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     }
 }
 
+float BandIKEffector::ApplyPosConstraints(
+    Vector3 &dst, const Vector3 &src, BandIKEffector *root
+) {
+    float totalWeight = 0.0f;
+    for (int i = 0; i < mConstraints.size(); i++) {
+        Constraint &c = mConstraints[i];
+        if (c.mTarget) {
+            Transform neutral;
+            NeutralWorldXfm(c.mTarget, neutral);
+            Normalize(neutral.m, neutral.m);
+            Transform tpose;
+            Transpose(neutral, tpose);
+            Vector3 local;
+            Multiply(src, tpose, local);
+            float lensq = LengthSquared(local);
+            Multiply(local, c.mTarget->WorldXfm(), local);
+            float clamped = Max(lensq, 0.001f);
+            float w = 144.0f * c.mWeight / clamped;
+            ScaleAdd(dst, local, w, dst);
+            totalWeight += w;
+        }
+    }
+    if (mMore) {
+        totalWeight += mMore->ApplyPosConstraints(dst, src, root);
+    }
+    return totalWeight;
+}
+
 void BandIKEffector::PollDeps(
     std::list<Hmx::Object *> &changedBy, std::list<Hmx::Object *> &change
 ) {
