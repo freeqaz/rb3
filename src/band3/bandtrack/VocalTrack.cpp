@@ -21,6 +21,7 @@
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/GameplayOptions.h"
 #include "meta_band/MetaPerformer.h"
+#include "meta_band/ProfileMgr.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
 #include "obj/DataFunc.h"
@@ -1693,6 +1694,39 @@ void VocalTrack::PushGameplayOptions(VocalParam p, int id) {
     Track::PushGameplayOptions(p, id);
     mCharOptParam = p;
     mCharOptMicID = id;
+}
+
+int VocalTrack::IncrementVolume(int val) {
+    switch (mCharOptParam) {
+    case kVocalParamMic1Gain:
+    case kVocalParamMic2Gain:
+    case kVocalParamMic3Gain:
+        MILO_ASSERT(mCharOptMicID != -1, 0xE0F);
+        if (val != 0) {
+            TheProfileMgr.SetMicVol(
+                mCharOptMicID, val + TheProfileMgr.GetMicVol(mCharOptMicID)
+            );
+            TheProfileMgr.UpdateMicLevels(mCharOptMicID);
+        }
+        return TheProfileMgr.GetMicVol(mCharOptMicID);
+    case kVocalParamMicVolume:
+        if (val != 0) {
+            TheProfileMgr.SetVocalCueVolume(val + TheProfileMgr.GetVocalCueVolume());
+        }
+        return TheProfileMgr.GetVocalCueVolume();
+    case kVocalParamCueVolume:
+        if (val == 1) {
+            TheProfileMgr.SetSynapseEnabled(true);
+        } else if (val == -1) {
+            TheProfileMgr.SetSynapseEnabled(false);
+        }
+        return TheProfileMgr.GetSynapseEnabled();
+    default:
+        MILO_NOTIFY_ONCE(
+            "trying to increment unimplemented vocal param %d", mCharOptParam
+        );
+        return 0;
+    }
 }
 
 DataNode VocalTrack::OnGetDisplayMode(const DataArray *a) {
