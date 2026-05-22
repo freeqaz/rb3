@@ -38,6 +38,15 @@ Use the `mcp__orchestrator__` tools for all decomp analysis.
 - **Differ**: objdiff-cli (v2.7.1)
 - **Splitter**: decomp-toolkit (dtk v1.3.0)
 
+### Concurrent Builds
+
+Multiple agents share one build dir. Two complementary safeguards — **keep both, they fix different layers**:
+
+- **`tools/ninja-locked`** — flock wrapper that serializes builds (ninja requires one process per build dir). Wired into `objdiff.json`'s `custom_make` and a `~/.zshrc` `ninja()` function. **Build with this, not bare `ninja`** — concurrent runs otherwise silently corrupt `.o` files and race on `build.ninja`.
+- **No binary deps cache** — `deps="gcc"` was removed from all build rules, so ninja reads `.d` files directly. This kills the rebuild-everything failure mode and survives killed builds, but does *not* make concurrent builds safe (that's the wrapper's job).
+
+The SHA1 `ok` check is opt-in (`ninja build/SZBE69_B8/ok`), not part of the default build — it can't pass until decomp is 100%.
+
 ### Compiler Flags
 
 - Game code (band3/network/system): `-O4,p -inline noauto -ipa file -sdata 2 -sdata2 2`

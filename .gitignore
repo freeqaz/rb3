@@ -7,6 +7,8 @@ __pycache__/
 build/
 .ninja_deps
 .ninja_log
+.ninja_lock
+.ninja-build.lock
 build.ninja
 objdiff.json
 

@@ -450,7 +450,6 @@ def generate_build_ninja(
         command=f"$python {decompctx} $in -o $out -d $out.d $includes",
         description="CTX $in",
         depfile="$out.d",
-        deps="gcc",
     )
 
     cargo_rule_written = False
@@ -465,7 +464,6 @@ def generate_build_ninja(
                 description="CARGO $bin",
                 pool="cargo",
                 depfile=Path("$target") / "release" / "$bin.d",
-                deps="gcc",
             )
             cargo_rule_written = True
 
@@ -662,7 +660,6 @@ def generate_build_ninja(
         command=mwcc_cmd,
         description="MWCC $out",
         depfile="$basefile.d",
-        deps="gcc",
     )
     n.newline()
 
@@ -672,7 +669,6 @@ def generate_build_ninja(
         command=mwcc_sjis_cmd,
         description="MWCC $out",
         depfile="$basefile.d",
-        deps="gcc",
     )
     n.newline()
 
@@ -682,7 +678,6 @@ def generate_build_ninja(
         command=gnu_as_cmd,
         description="AS $out",
         depfile="$out.d",
-        deps="gcc",
     )
     n.newline()
 
@@ -1289,7 +1284,6 @@ def generate_build_ninja(
         command=f"{dtk} dol split $in $out_dir",
         description="SPLIT $in",
         depfile="$out_dir/dep",
-        deps="gcc",
         # restat: dtk split is deterministic, so re-running it with an
         # unchanged config.yml produces an identical config.json. restat lets
         # ninja keep the old mtime and avoid re-triggering the `configure`

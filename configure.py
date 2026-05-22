@@ -148,6 +148,9 @@ config_json_path = config_dir / "config.json"
 objects_path = config_dir / "objects.json"
 config.config_path = config_dir / "config.yml"
 config.check_sha_path = config_dir / "build.sha1"
+# SHA1 check is opt-in: run `ninja build/<version>/ok` on demand. It cannot
+# pass until the decomp is 100%, so don't gate every default build on it.
+config.check_sha_in_default = False
 config.reconfig_deps = [
     config_json_path,
     objects_path,

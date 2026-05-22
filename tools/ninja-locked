@@ -1,0 +1,18 @@
+#!/bin/sh
+# ninja-locked: serialized ninja wrapper.
+#
+# Running multiple `ninja` instances concurrently in one build directory
+# corrupts .ninja_log/.ninja_deps and can trigger an infinite
+# SPLIT->configure manifest-regeneration loop. This wrapper takes an
+# exclusive flock so concurrent builds queue up instead of colliding.
+#
+# Used as objdiff.json's `custom_make` (so every orchestrator / objdiff-cli
+# build is serialized) and by build scripts. For manual builds, run this
+# instead of bare `ninja`.
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+exec 9>"$REPO/.ninja-build.lock"
+if ! flock -n 9; then
+    echo "ninja-locked: another build is running; waiting for the lock..." >&2
+    flock 9
+fi
+exec ninja "$@"

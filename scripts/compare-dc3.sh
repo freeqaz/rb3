@@ -76,7 +76,7 @@ fi
 
 # Auto-ingest: rebuild report and update DB before comparing
 echo "Rebuilding report and updating DB..." >&2
-(cd "$PROJECT_ROOT" && ninja build/SZBE69_B8/report.json 2>&1 | grep -E "^(ninja|ERROR|REPORT)" >&2 || true)
+(cd "$PROJECT_ROOT" && tools/ninja-locked build/SZBE69_B8/report.json 2>&1 | grep -E "^(ninja|ERROR|REPORT)" >&2 || true)
 (cd "$PROJECT_ROOT" && bin/orchestrate ingest 2>&1 | grep -v "^$" >&2)
 
 python3 - "$RB3_DB" "$DC3_DB" "$DC3_ROOT" "$LIMIT" "$UNIT_FILTER" "$MIN_RB3" "$MAX_RB3" "$JSON" "$SUMMARY" "$SORT" <<'PYTHON'
