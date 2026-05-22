@@ -13,7 +13,7 @@ class Splash {
 public:
     enum SplashState {
         s0,
-        s1,
+        kSuspending,
         s2,
         s3,
         kResuming,

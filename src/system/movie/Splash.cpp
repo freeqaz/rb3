@@ -111,7 +111,7 @@ void Splash::Suspend() {
     MILO_ASSERT(MainThread(), 207);
     if (++mSuspendCount <= 1) {
         if (unk_0x64) {
-            if (SetMutableState(s1)) {
+            if (SetMutableState(kSuspending)) {
                 WaitForState(s2);
                 if (unk_0x50 != NULL) {
                     unk_0x50->SetShowing(true);
@@ -320,14 +320,14 @@ void Splash::CheckWorkerSuspend(bool b) {
     MILO_ASSERT((gMainThreadID != CurrentThreadId()), 512);
     if (gMainThreadID != 0) {
         CriticalSection *cs = &unk_0x6C;
-        while (mState == s1) {
+        while (mState == kSuspending) {
             if (unk_0x50 != NULL) {
                 unk_0x50->mShowing = false;
                 unk_0x50->mMovie.UnlockThread();
             }
             if (cs)
                 cs->Enter();
-            MILO_ASSERT(mState == s1, 541);
+            MILO_ASSERT(mState == kSuspending, 541);
             mState = s2;
             unk_0x88.Set();
             if (cs)
@@ -378,7 +378,7 @@ void Splash::UpdateThread() {
     }
     MILO_ASSERT(mScreens.empty(), 603);
     while (!SetImmutableState(kWaitingForTerminating)) {
-        MILO_ASSERT(mState == s1, 617);
+        MILO_ASSERT(mState == kSuspending, 617);
         CheckWorkerSuspend(false);
     }
     timer.Split();
