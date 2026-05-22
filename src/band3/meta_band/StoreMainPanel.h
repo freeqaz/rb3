@@ -4,6 +4,11 @@
 #include "obj/Data.h"
 #include "utl/Str.h"
 
+class RndMat;
+class RndTex;
+class RndAnimatable;
+class AppLabel;
+
 class StoreMainPanel : public StoreArtLoaderPanel {
 public:
     class NewReleaseEntry {
@@ -17,31 +22,34 @@ public:
     };
 
     StoreMainPanel();
-    ~StoreMainPanel();
+    virtual ~StoreMainPanel();
     OBJ_CLASSNAME(StoreMainPanel);
+    virtual DataNode Handle(DataArray *, bool);
+    virtual void Poll();
+    virtual void Load();
+    virtual void Unload();
+    virtual void FinishLoad();
     NEW_OBJ(StoreMainPanel);
 
+    DataNode OnMsg(const class MetadataLoadedMsg &);
+    virtual void SetType(Symbol);
+    void ParseConfigData();
     void ClearConfigData();
     const NewReleaseEntry *CurrentEntry() const;
+    const char *MarqueePath() const;
 
-    // 0x40
-    int unk40;
+    int unk40; // 0x40
     float mTimeNextEvent; // 0x44
-    int unk48;
-    float unk4c;
-    float unk50;
-    int unk54;
-    int unk58;
-    int unk5c;
-    int unk60;
-    int unk64;
-    int unk68;
-    bool unk6c; // 0x6C
-    DataArray *mPendingConfigData; // 0x70
-    std::vector<class RndMat *> unk74; // 0x74
-    int unk7c;
-    int unk80;
-    int unk84;
-    int unk88;
-    std::vector<NewReleaseEntry> mNewReleases; // 0x8C
+    int mCurrentEntry; // 0x48
+    float mDisplayRate; // 0x4c
+    float mCrossfadeDuration; // 0x50
+    RndMat *mCoverArtMats[6]; // 0x54
+    bool unk6c; // 0x6c
+    RndTex *mNoneTex; // 0x70
+    std::vector<RndTex *> mCoverArtTexs; // 0x74
+    RndAnimatable *mScrollAnim; // 0x7c
+    AppLabel *mLabel1; // 0x80
+    AppLabel *mLabel2; // 0x84
+    AppLabel *mLabel3; // 0x88
+    std::vector<NewReleaseEntry> mNewReleaseList; // 0x8c
 };
