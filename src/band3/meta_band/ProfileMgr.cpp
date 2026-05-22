@@ -832,6 +832,288 @@ void ProfileMgr::SetSongToTaskMgrMsRaw(float ms) {
     }
 }
 
+float ProfileMgr::GetJoypadExtraLagInits(JoypadType type, LagContext ctx) const {
+    float ret = 0.0f;
+    switch (type) {
+    case kJoypadXboxButtonGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 43.0f;
+            break;
+        case kACal:
+            ret = 19.0f;
+            break;
+        default:
+            ret = 45.0f;
+            break;
+        }
+        break;
+    case kJoypadXboxRealGuitar22Fret:
+        switch (ctx) {
+        case kVCal:
+            ret = 43.0f;
+            break;
+        case kACal:
+            ret = 19.0f;
+            break;
+        default:
+            ret = 58.0f;
+            break;
+        }
+        break;
+    case kJoypadPs3ButtonGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 35.0f;
+            break;
+        case kACal:
+            ret = 11.0f;
+            break;
+        default:
+            ret = 20.0f;
+            break;
+        }
+        break;
+    case kJoypadPs3RealGuitar22Fret:
+        switch (ctx) {
+        case kVCal:
+            ret = 74.0f;
+            break;
+        case kACal:
+            ret = 60.0f;
+            break;
+        default:
+            ret = 58.0f;
+            break;
+        }
+        break;
+    case kJoypadXboxHxGuitar:
+    case kJoypadXboxHxGuitarRb2:
+    case kJoypadXboxRoGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 27.0f;
+            break;
+        case kACal:
+            ret = 18.0f;
+            break;
+        default:
+            ret = 18.0f;
+            break;
+        }
+        break;
+    case kJoypadPs3RoGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 10.0f;
+            break;
+        case kACal:
+            ret = 10.0f;
+            break;
+        default:
+            ret = 10.0f;
+            break;
+        }
+        break;
+    case kJoypadPs3HxGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 25.0f;
+            break;
+        case kACal:
+            ret = 10.0f;
+            break;
+        default:
+            ret = 10.0f;
+            break;
+        }
+        break;
+    case kJoypadPs3HxGuitarRb2:
+        switch (ctx) {
+        case kVCal:
+            ret = 35.0f;
+            break;
+        case kACal:
+            ret = 20.0f;
+            break;
+        default:
+            ret = 20.0f;
+            break;
+        }
+        break;
+    case kJoypadXboxDrums:
+    case kJoypadXboxDrumsRb2:
+    case kJoypadXboxStageKit:
+        switch (ctx) {
+        case kVCal:
+            ret = 43.0f;
+            break;
+        case kACal:
+            ret = 19.0f;
+            break;
+        default:
+            ret = 36.0f;
+            break;
+        }
+        break;
+    case kJoypadPs3HxDrums:
+    case kJoypadPs3HxDrumsRb2:
+    case kJoypadPs3RoDrums:
+    case kJoypadPs3KonamiDrums:
+        switch (ctx) {
+        case kVCal:
+            ret = 24.0f;
+            break;
+        case kACal:
+            ret = -1.0f;
+            break;
+        default:
+            ret = 16.0f;
+            break;
+        }
+        break;
+    case kJoypadXboxMidiBoxKeyboard:
+    case kJoypadXboxKeytar:
+        switch (ctx) {
+        case kVCal:
+            ret = 30.0f;
+            break;
+        case kACal:
+            ret = 24.0f;
+            break;
+        default:
+            ret = 24.0f;
+            break;
+        }
+        break;
+    case kJoypadPs3MidiBoxKeyboard:
+    case kJoypadPs3Keytar:
+        switch (ctx) {
+        case kVCal:
+            ret = 22.0f;
+            break;
+        case kACal:
+            ret = 16.0f;
+            break;
+        default:
+            ret = 20.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 1.0f;
+            break;
+        case kACal:
+            ret = -14.0f;
+            break;
+        default:
+            ret = -14.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiHxGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 5.0f;
+            break;
+        case kACal:
+            ret = 10.0f;
+            break;
+        default:
+            ret = 10.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiHxGuitarRb2:
+    case kJoypadWiiCoreGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 42.0f;
+            break;
+        case kACal:
+            ret = 42.0f;
+            break;
+        default:
+            ret = 0.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiDrums:
+        switch (ctx) {
+        case kVCal:
+            ret = 17.0f;
+            break;
+        case kACal:
+            ret = 5.0f;
+            break;
+        default:
+            ret = 0.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiHxDrums:
+    case kJoypadWiiHxDrumsRb2:
+        switch (ctx) {
+        case kVCal:
+            ret = 37.0f;
+            break;
+        case kACal:
+            ret = 14.0f;
+            break;
+        default:
+            ret = 14.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiButtonGuitar:
+        switch (ctx) {
+        case kVCal:
+            ret = 37.0f;
+            break;
+        case kACal:
+            ret = 10.0f;
+            break;
+        default:
+            ret = -15.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiRealGuitar22Fret:
+        switch (ctx) {
+        case kVCal:
+            ret = 56.0f;
+            break;
+        case kACal:
+            ret = 44.0f;
+            break;
+        default:
+            ret = 44.0f;
+            break;
+        }
+        break;
+    case kJoypadWiiMidiBoxKeyboard:
+    case kJoypadWiiKeytar:
+        switch (ctx) {
+        case kVCal:
+            ret = 10.0f;
+            break;
+        case kACal:
+            ret = 20.0f;
+            break;
+        default:
+            ret = -24.0f;
+            break;
+        }
+        break;
+    default:
+        ret = 0.0f;
+        break;
+    }
+    return ret;
+}
+
 float ProfileMgr::GetJoypadExtraLag(JoypadType type, LagContext ctx) const {
     MILO_ASSERT_RANGE(type, 0, kJoypadNumTypes, 0x6DE);
     MILO_ASSERT_RANGE(ctx, 0, kNumLagContexts, 0x6DF);
