@@ -19,6 +19,7 @@
 #include "ui/UIPanel.h"
 
 class Node;
+class StoreMainPanel;
 
 class AppLabel : public BandLabel {
 public:
@@ -86,4 +87,8 @@ public:
     void SetBattleInstrument(ScoreType);
     void SetBattleInstrument(const SetlistRecord *);
     void SetPrimaryBandName();
+    void SetNewReleaseEntryText1(const StoreMainPanel *);
+    void SetNewReleaseEntryText2(const StoreMainPanel *);
+    void SetNewReleaseEntryText3(const StoreMainPanel *);
+    void SetRawStoreShortcut(int);
 };

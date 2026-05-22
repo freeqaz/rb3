@@ -29,6 +29,7 @@ public:
     virtual void StoreUserProfileSwappedToUser(LocalUser *);
 
     static BandStorePanel *Instance();
+    const char *ShortcutTextAtData(int);
     NEW_OBJ(BandStorePanel);
     static void Init() { REGISTER_OBJ_FACTORY(BandStorePanel); }
 

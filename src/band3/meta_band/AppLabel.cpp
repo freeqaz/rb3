@@ -20,6 +20,7 @@
 #include "meta_band/SongSortNode.h"
 #include "meta_band/BandStorePanel.h"
 #include "meta_band/StoreInfoPanel.h"
+#include "meta_band/StoreMainPanel.h"
 #include "meta_band/StoreMenuPanel.h"
 #include "meta_band/Utl.h"
 #include "obj/Dir.h"
@@ -32,11 +33,13 @@
 #include "ui/UIListSlot.h"
 #include "ui/UIPanel.h"
 #include "utl/Locale.h"
+#include "utl/LocaleOrdinal.h"
 #include "utl/MakeString.h"
 #include "utl/Messages2.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
+#include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
 DECOMP_FORCEACTIVE(AppLabel, "%s) %s")
@@ -531,6 +534,131 @@ void AppLabel::SetRatingIcon(int i) {
     AUTO(ratingIcons, SystemConfig(song_select, rating_icons, SystemLanguage()));
     MILO_ASSERT(ratingIcons, 943);
     SetIcon(ratingIcons->Str(i)[0]);
+}
+
+void AppLabel::SetNewReleaseEntryText1(const StoreMainPanel *panel) {
+    MILO_ASSERT(panel, 570);
+    SetDisplayText(panel->CurrentEntry()->mText1.c_str(), true);
+}
+
+void AppLabel::SetNewReleaseEntryText2(const StoreMainPanel *panel) {
+    MILO_ASSERT(panel, 576);
+    SetDisplayText(panel->CurrentEntry()->mText2.c_str(), true);
+}
+
+void AppLabel::SetNewReleaseEntryText3(const StoreMainPanel *panel) {
+    MILO_ASSERT(panel, 582);
+    SetDisplayText(panel->CurrentEntry()->mText3.c_str(), true);
+}
+
+void AppLabel::SetSectionName(const PracticeSection &section) {
+    if (DataVariable("practice_mbt").Int(nullptr) != 0) {
+        SetDisplayText(
+            MakeString(
+                "%s (%d:%d:%d)",
+                Localize(section.unk0, nullptr),
+                section.unk18 + 1,
+                section.unk1c + 1,
+                section.unk20 + 1
+            ),
+            true
+        );
+    } else {
+        SetDisplayText(Localize(section.unk0, nullptr), true);
+    }
+}
+
+void AppLabel::SetRawStoreShortcut(int i) {
+    BandStorePanel *bsp = BandStorePanel::Instance();
+    MILO_ASSERT(bsp, 659);
+    SetDisplayText(bsp->ShortcutTextAtData(i), true);
+}
+
+void AppLabel::SetPitch(int pitch, int chrom) {
+    char buf[3];
+    int p = pitch % 12;
+    int c;
+    if (chrom >= 2) {
+        c = 1;
+    } else if (chrom < -1) {
+        c = -1;
+    } else {
+        c = chrom;
+    }
+    if (p == 1 || p == 6 || p == 8) {
+        if (c == 0)
+            c = 1;
+        p -= c;
+    } else if (p == 3 || p == 10) {
+        if (c == 0)
+            c = -1;
+        p -= c;
+    } else {
+        c = 0;
+    }
+    buf[1] = 0;
+    buf[0] = 0;
+    buf[2] = 0;
+    if (p == 0) {
+        buf[1] = 0;
+        buf[0] = 'C';
+    } else if (p == 2) {
+        buf[1] = 0;
+        buf[0] = 'D';
+    } else if (p == 4) {
+        buf[1] = 0;
+        buf[0] = 'E';
+    } else if (p == 5) {
+        buf[1] = 0;
+        buf[0] = 'F';
+    } else if (p == 7) {
+        buf[1] = 0;
+        buf[0] = 'G';
+    } else if (p == 9) {
+        buf[1] = 0;
+        buf[0] = 'A';
+    } else if (p == 11) {
+        buf[1] = 0;
+        buf[0] = 'B';
+    } else {
+        MILO_FAIL("pitch %d doesn't map to a white key", p);
+    }
+    if (c == 1) {
+        buf[1] = '#';
+    } else if (c == -1) {
+        buf[1] = 'b';
+    }
+    SetDisplayText(buf, true);
+}
+
+void AppLabel::SetTokenRedemptionString(const TokenRedemptionPanel *panel, int ix) {
+    MILO_ASSERT(panel, 757);
+    SetDisplayText(panel->GetListString(ix), true);
+}
+
+void AppLabel::SetFromScoreDisplayData(short mask, int score, int rank, bool amongAll) {
+    String icons;
+    for (int i = 0; i < 11; i++) {
+        if (mask & (1 << i)) {
+            icons += GetFontCharFromScoreType((ScoreType)i, 0);
+        }
+    }
+    if (rank == 0) {
+        SetDisplayText(
+            MakeString("%s%s", icons.c_str(), LocalizeSeparatedInt(score)), true
+        );
+    } else {
+        Symbol sym = amongAll ? ir_among_all : ir_among_friends;
+        SetDisplayText(
+            MakeString(
+                Localize(sym, nullptr),
+                icons.c_str(),
+                LocalizeSeparatedInt(score),
+                LocalizeOrdinal(rank, LocaleGenderMasculine, LocaleSingular, true)
+            ),
+            true
+        );
+    }
 }
 
 #pragma push

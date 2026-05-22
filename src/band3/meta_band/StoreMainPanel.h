@@ -22,6 +22,7 @@ public:
     NEW_OBJ(StoreMainPanel);
 
     void ClearConfigData();
+    const NewReleaseEntry *CurrentEntry() const;
 
     // 0x40
     int unk40;
