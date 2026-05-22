@@ -55,6 +55,7 @@ public:
     void UpdateTubeStyle();
     void ConfigPanels();
     PitchArrow *GetPitchArrow(int);
+    float PitchToZ(float, bool) const;
     void Tambourine(Symbol);
     void TambourineNote();
     void SetVocalLineColors(VocalHUDColor *);

@@ -995,6 +995,114 @@ void VocalTrack::StartUpdateArrows() {
     }
 }
 
+void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
+    int phraseID =
+        TheSongDB->GetCommonPhraseID(mTrackConfig.TrackNum(), MsToTickInt(ms));
+    VocalPlayer *player = mPlayer;
+    bool spotlight = phraseID != -1;
+    bool enabled = player && player->GetEnabledState() == kPlayerEnabled;
+    Singer *singer = player->mSingers[singerIdx];
+    float pitchFrame = 0.0f;
+    int arrowIdx = singerIdx;
+    if (singer) {
+        arrowIdx = singer->GetMicClientID().unk0;
+    }
+    PitchArrow *arrow = mDir->GetPitchArrow(arrowIdx);
+    if (arrow) {
+        int matchType = singer->GetFrameMatchType();
+        bool inPhonemePhrase = matchType == 1;
+        arrow->SetPitched(!inPhonemePhrase);
+        arrow->SetSpotlight(spotlight);
+        bool clampPitch = true;
+        if (gDebugSpew) {
+            MILO_LOG("--------\n");
+            TheDebug << "singer->FrameTargetPitch()" << ": "
+                     << singer->mFrameTargetPitch << "\n";
+            TheDebug << "singer->FrameMicPitch()" << ": " << singer->mFrameMicPitch
+                     << "\n";
+            TheDebug << "singer->FrameBestHit()" << ": " << singer->unk6c << "\n";
+            TheDebug << "mPlayer->Freestyling()" << ": " << mPlayer->Freestyling()
+                     << "\n";
+        }
+        if (enabled && inPhonemePhrase) {
+            VocalPart *part = NULL;
+            if (singer->mFrameAssignedPart > -1) {
+                part = mPlayer->mVocalParts[singer->mFrameAssignedPart];
+            }
+            VocalHUDColor color = (VocalHUDColor)-1;
+            if (part) {
+                color = (VocalHUDColor)part->unkc8;
+            }
+            arrow->SetFrameScore(singer->unk60, color, 0.0f);
+            if (gDebugSpew) {
+                MILO_LOG("phoneme phrase\n");
+            }
+        } else if (matchType != 0 || 0.0f == singer->mFrameMicPitch) {
+            arrow->SetFrameScore(0.0f, (VocalHUDColor)-1, 0.0f);
+            if (gDebugSpew) {
+                MILO_LOG("non-singing section\n");
+            }
+        } else if (enabled && singer->mFrameTargetPitch > 0.0f) {
+            VocalPart *part = NULL;
+            float frameScore = singer->unk6c;
+            if (singer->mFrameAssignedPart > -1) {
+                part = mPlayer->mVocalParts[singer->mFrameAssignedPart];
+            }
+            VocalHUDColor color = (VocalHUDColor)-1;
+            if (part) {
+                color = (VocalHUDColor)part->unkc8;
+            }
+            pitchFrame = singer->mFrameTargetPitch - singer->mFrameMicPitch;
+            float harmonyScore = GetHarmonyScore(singerIdx);
+            arrow->SetFrameScore(frameScore, color, harmonyScore);
+            if (gDebugSpew) {
+                MILO_LOG("singing\n");
+                TheDebug << "pitchFrame" << ": " << pitchFrame << "\n";
+                TheDebug << "frameScore" << ": " << frameScore << "\n";
+                TheDebug << "harmonyScore" << ": " << harmonyScore << "\n";
+            }
+        } else {
+            arrow->SetFrameScore(0.0f, (VocalHUDColor)-1, 0.0f);
+            clampPitch = false;
+        }
+        if (singer->mFrameMicPitch > 0.0f) {
+            const Vector3 &v = arrow->LocalXfm().v;
+            float vx = v.x;
+            float vy = v.y;
+            float vz = v.z;
+            float pitchZ = mDir->PitchToZ(singer->mFrameMicPitch, clampPitch);
+            if (gDebugSpew) {
+                TheDebug << "pitchZ" << ": " << pitchZ << "\n";
+            }
+            if (std::fabs((pitchZ - vz / mDir->mPitchTopZ) - mDir->mPitchBottomZ) >
+                0.9f) {
+            } else {
+                pitchZ += mDir->mArrowSmoothing * (vz - pitchZ);
+            }
+            if (gDebugSpew) {
+                TheDebug << "v.z" << ": " << pitchZ << "\n";
+            }
+            arrow->SetLocalPos(vx, vy, pitchZ);
+        }
+        if (gDebugSpew) {
+            TheDebug << "pitchFrame" << ": " << pitchFrame << "\n";
+        }
+        arrow->SetTiltDegrees(5.0f * pitchFrame);
+        float volume = Clamp<float>(0, 1, 4.0f * singer->unk60);
+        if (singer->mFrameAssignedPart != -1) {
+            volume = std::max<float>(volume, 0.5f);
+        }
+        arrow->SetVolume(volume);
+        arrow->SetGhostFade(0.0f);
+        arrow->SetSplit(false);
+        if (mPlayer->Freestyling()) {
+            mDir->Find<RndAnimatable>("vocal_feedback.anim", true)
+                ->SetFrame(singer->unk60, 1.0f);
+        }
+        arrow->unk18c = false;
+    }
+}
+
 void VocalTrack::UpdateUnusedArrows() {
     for (int i = 0; i < 3; i++) {
         PitchArrow *arrow = mDir->GetPitchArrow(i);

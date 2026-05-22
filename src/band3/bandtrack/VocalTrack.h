@@ -131,6 +131,7 @@ public:
     void StartUpdateArrows();
     void UpdatePitchArrow(float, int);
     void UpdateUnusedArrows();
+    float GetHarmonyScore(int);
     float GetBottomDisplayPitch() const;
     float GetTopDisplayPitch() const;
     bool
