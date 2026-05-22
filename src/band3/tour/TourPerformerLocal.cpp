@@ -103,10 +103,9 @@ Symbol TourPerformerLocal::ChooseRandomQuestForGroupAndTier(Symbol group, int ti
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 166);
     std::vector<Symbol> availableQuests;
+    std::map<Symbol, Quest *>::iterator it = TheQuestMgr.mMapQuests.begin();
     float totalWeight = 0.0f;
-    for (std::map<Symbol, Quest *>::iterator it = TheQuestMgr.mMapQuests.begin();
-         it != TheQuestMgr.mMapQuests.end();
-         ++it) {
+    for (; it != TheQuestMgr.mMapQuests.end(); ++it) {
         Symbol questSym = it->first;
         if (TheQuestMgr.IsQuestAvailable(*pProgress, questSym, group, tier)) {
             Quest *pQuest = TheQuestMgr.GetQuest(questSym);
