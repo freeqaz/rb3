@@ -22,7 +22,7 @@ public:
     void Zero();
     void SetDefaults();
     void SyncLoops();
-    float GetWind(float);
+    static float GetWind(float);
     void GetWind(const Vector3 &v, float f, Vector3 &v2) {
         return mWindOwner->SelfGetWind(v, f, v2);
     }
