@@ -83,7 +83,7 @@ public:
     float unk20;
     float unk24;
     float unk28;
-    bool unk2c;
+    unsigned char unk2c;
     bool mTambourinePhrase; // 0x2d
     float unk30;
     float unk34;
@@ -101,6 +101,7 @@ public:
     void NotesDone(const TempoMap &, bool);
     void DeterminePhraseTimes(const TempoMap &);
     void Finalize();
+    void DetermineFreestyleSections();
     void AddTambourineGem(int);
     void SetFreestyleSections(const std::vector<std::pair<float, float> > &);
     void GenerateLegalFreestyleSections(std::vector<std::pair<float, float> > &) const;

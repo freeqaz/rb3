@@ -247,6 +247,24 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
     Finalize();
 }
 
+void VocalNoteList::StartPlayerPhrase(int tick, int player) {
+    if (!mPhrases.empty() && mPhrases.back().unkc == -1) {
+        if (tick > mPhrases.back().unk8 + 0x1e0) {
+            MILO_WARN(
+                "%s (%s): confused by vocal phrase overlap around tick %s",
+                mSongData->SongFullPath(),
+                mTrackName,
+                PrintTick(tick)
+            );
+        }
+    } else {
+        VocalPhrase phrase;
+        mPhrases.push_back(phrase);
+        mPhrases.back().unk8 = tick;
+    }
+    mPhrases.back().unk2c |= 1 << player;
+}
+
 void VocalNoteList::EndPlayerPhrase(int tick, int) {
     MILO_ASSERT(!mPhrases.empty(), 0x24d);
     if (mPhrases.back().unkc != -1
@@ -270,11 +288,56 @@ void VocalNoteList::EndPlayerPhrase(int tick, int) {
     mPhrases.back().unkc = duration;
 }
 
+void VocalNoteList::Finalize() {
+    std::vector<VocalNote>(mNotes).swap(mNotes);
+    DetermineFreestyleSections();
+}
+
+void VocalNoteList::DetermineFreestyleSections() {
+    MILO_ASSERT(mFreestyleSections.empty(), 0x287);
+    float sectionStart = 0.0f;
+    bool atWordBoundary = true;
+    for (std::vector<VocalNote>::iterator note = mNotes.begin(); note != mNotes.end();
+         ++note) {
+        if (atWordBoundary) {
+            float gap = note->GetMs() - sectionStart;
+            for (int i = 0; i < mFreestyleMinDuration->Size(); i++) {
+                float pad = mFreestylePad->Float(i);
+                float minDuration = mFreestyleMinDuration->Float(i);
+                if (gap > 64.0f * pad + minDuration) {
+                    mFreestyleSections.push_back(
+                        std::make_pair(sectionStart + pad, note->GetMs() - pad)
+                    );
+                    break;
+                }
+            }
+        }
+        atWordBoundary = false;
+        sectionStart = note->EndMs();
+        if (note->mText.empty()
+            || (note->mText.rindex(-1) != '-' && note->mText.rindex(-1) != '=')) {
+            atWordBoundary = true;
+        }
+    }
+    mFreestyleSections.push_back(std::make_pair(
+        sectionStart + mFreestyleMinDuration->Float(0), 3.4028235E+38f
+    ));
+}
+
 void VocalNoteList::AddTambourineGem(int gem) { mTambourineGems.push_back(gem); }
 
 void VocalNoteList::SetFreestyleSections(const std::vector<std::pair<float, float> > &sects
 ) {
     mFreestyleSections = sects;
+}
+
+void VocalNoteList::CapLastFreestyleSection(float ms) {
+    while (!mFreestyleSections.empty() && mFreestyleSections.back().first >= ms) {
+        mFreestyleSections.erase(mFreestyleSections.end() - 1);
+    }
+    if (!mFreestyleSections.empty() && mFreestyleSections.back().second > ms) {
+        mFreestyleSections.back().second = ms;
+    }
 }
 
 bool VocalNoteCmp(float ms, const VocalNote &note) { return ms < note.GetMs(); }
