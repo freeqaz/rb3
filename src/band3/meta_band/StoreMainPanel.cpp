@@ -78,17 +78,17 @@ void StoreMainPanel::Poll() {
         }
         unk6c = true;
     }
-    if (TheTaskMgr.UISeconds() >= mTimeNextEvent) {
+    if (mTimeNextEvent <= TheTaskMgr.UISeconds()) {
         int n = mNewReleaseList.size();
         mCurrentEntry = (mCurrentEntry + 1) % n;
         for (int i = 0; i < 6; i++) {
             int idx = (mCurrentEntry + i - 2);
-            if (n != 0) {
+            if (n == 0) {
+                idx = 0;
+            } else {
                 idx = idx % n;
                 if (idx < 0)
                     idx += n;
-            } else {
-                idx = 0;
             }
             if (i < 2) {
                 RndTex *tex = mCoverArtMats[i + 1]->GetDiffuseTex();
