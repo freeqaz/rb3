@@ -527,6 +527,62 @@ void PatchDir::LoadRemote(BinStream &bs) {
     LoadRemote(packer2);
 }
 
+void PatchDir::SaveFixed(FixedSizeSaveableStream &stream) const {
+    char buf[0x830];
+    IntPacker packer(buf, 0x830);
+    for (unsigned int i = 0; i < mLayers.size(); i++) {
+        mLayers[i].SavePacked(packer);
+    }
+    unsigned int size = packer.mPos >> 3 & 0xFFFF;
+    if (packer.mPos & 7)
+        size = size + 1 & 0xFFFF;
+    stream.Write(buf, size);
+    if (HasLayers()) {
+        bool b = true;
+        stream.Write(&b, 1);
+        RndBitmap bmap;
+        mTex->LockBitmap(bmap, 1);
+        bmap.Save(stream);
+        mTex->UnlockBitmap();
+    } else {
+        bool b = false;
+        stream.Write(&b, 1);
+        char *empty = new char[0x10020];
+        memset(empty, 0, 0x10020);
+        stream.Write(empty, 0x10020);
+        delete[] empty;
+    }
+    unk1c0 = false;
+}
+
+void PatchDir::LoadFixed(FixedSizeSaveableStream &stream, int) {
+    char buf[2];
+    IntPacker packer(buf, 2);
+    char buf2[0x830];
+    IntPacker packer2(buf2, 0x830);
+    int bits = PatchLayer::PackedBitCount() * 50;
+    int size = bits / 8;
+    if (bits % 8 != 0)
+        size++;
+    stream.Read(buf2, size);
+    gRev = 5;
+    for (unsigned int i = 0; i < mLayers.size(); i++) {
+        mLayers[i].LoadPacked(packer2);
+    }
+    char hasLayers;
+    stream.Read(&hasLayers, 1);
+    if (hasLayers > 0) {
+        RndBitmap bmap;
+        bmap.Load(stream);
+        mTex->SetBitmap(bmap, 0, true);
+    } else {
+        char *empty = new char[0x10020];
+        stream.Read(empty, 0x10020);
+        delete[] empty;
+    }
+    unk1c0 = false;
+}
+
 void PatchDir::SaveRemote(IntPacker &packer) {
     unsigned char size = mLayers.size();
     packer.AddU(size, 8);
