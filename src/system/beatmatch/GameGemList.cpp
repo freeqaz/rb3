@@ -1,4 +1,5 @@
 #include "beatmatch/GameGemList.h"
+#include "beatmatch/BeatMatchUtl.h"
 #include <algorithm>
 
 namespace stlpmtx_std {
@@ -75,6 +76,26 @@ void GameGemList::RecalculateGemTimes(TempoMap *tmap) {
         it->RecalculateTimes(tmap);
     }
     std::sort(mGems.begin(), mGems.end());
+}
+
+bool GameGemList::WillBeNoStrum(const GameGem &gem) {
+    if (gem.IsRealGuitar() && gem.RightHandTap())
+        return true;
+    if (mGems.empty() || gem.mTick - mGems.back().mTick > mHopoThreshold)
+        return false;
+    if (gem.IsRealGuitar()) {
+        const GameGem &last = mGems.back();
+        if (last.IsMuted())
+            return false;
+        if (gem.GetNumStrings() == 1 && last.GetNumStrings() == 1) {
+            int str = gem.GetLowestString();
+            if (str == (int)last.GetLowestString()) {
+                return gem.GetFret(str) != last.GetFret(str);
+            }
+        }
+        return false;
+    }
+    return !(gem.mSlots & mGems.back().mSlots) && GemNumSlots(gem.mSlots) == 1;
 }
 
 void GameGemList::Reset() {
