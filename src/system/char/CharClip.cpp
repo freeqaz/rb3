@@ -402,7 +402,14 @@ void CharClip::FacingSet::ScaleAddSample(
             samples.EvaluateChannel(&f64, mFullRot, i1, f2);
             samples.EvaluateChannel(&f68, mFullRot, i2, f3);
             mFacingBones->mDeltaAng = LimitAng(f64 - f68);
-            RotateAboutZ(mFacingBones->mDeltaPos, -f68, mFacingBones->mDeltaPos);
+            Vector3 &p = mFacingBones->mDeltaPos;
+            float negF68 = -f68;
+            float c = Cosine(negF68);
+            float s = Sine(negF68);
+            float px = p.x;
+            float py = p.y;
+            p.x = px * c - py * s;
+            p.y = px * s + py * c;
         }
         mFacingBones->SetWeights(f1);
         mFacingBones->ScaleAdd(bones, f1);
