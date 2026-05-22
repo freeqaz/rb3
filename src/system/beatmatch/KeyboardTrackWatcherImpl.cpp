@@ -6,6 +6,7 @@
 #include "beatmatch/SongData.h"
 #include "beatmatch/TrackType.h"
 #include "beatmatch/TrackWatcherImpl.h"
+#include "math/Utl.h"
 #include "os/Debug.h"
 #include "utl/Std.h"
 
@@ -395,4 +396,23 @@ int KeyboardTrackWatcherImpl::GetNeighboring5LaneSlot(int slot, int direction) c
 
 bool KeyboardTrackWatcherImpl::TrackForgivesFatFingering() const {
     return mSongData->TrackTypeAt(Track()) == kTrackRealKeys;
+}
+
+int KeyboardTrackWatcherImpl::NextGemAfter(int gemID, bool timeout) {
+    int slot = mGemList->GetGem(gemID).GetSlot();
+    int lastTick = mGemList->GetGem(gemID).GetTick();
+    int gapCount = 0;
+    for (int i = gemID + 1; i < mGemList->NumGems(); i++) {
+        int tick = mGemList->GetGem(i).GetTick();
+        if (timeout && tick - lastTick > 10) {
+            lastTick = tick;
+            if (++gapCount == 2) {
+                return Min(gemID + 1, mGemList->NumGems() - 1);
+            }
+        }
+        if (mGemList->GetGem(i).GetSlot() == slot) {
+            return i;
+        }
+    }
+    return -1;
 }
