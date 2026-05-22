@@ -186,7 +186,8 @@ void CharIKHand::IKElbow(RndTransformable *trans1, RndTransformable *trans2) {
         float max200 = Max(LengthSquared(v200), 16.0f);
         float sqrted2 = std::sqrt(max200 * max208);
         float crossed = Cross(v208, v200);
-        float clamped = Clamp(-mElbowSwing, mElbowSwing, crossed / sqrted2);
+        float negSwing = -mElbowSwing;
+        float clamped = Clamp(negSwing, mElbowSwing, crossed / sqrted2);
         Transform &dirty_temp = trans1->DirtyLocalXfm();
         RotateAboutX(dirty_temp.m, -clamped, dirty_temp.m);
         Multiply(trans2->WorldXfm(), mHand->WorldXfm().v, v118);
