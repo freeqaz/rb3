@@ -537,7 +537,60 @@ void TrackPanel::StartPulseAnims() {
     }
 }
 
-DECOMP_FORCEACTIVE(TrackPanel, "hud_track_poll")
+void TrackPanel::Poll() {
+    START_AUTO_TIMER("hud_track_poll");
+    if (!TheSongDB || TheSongDB->GetNumTrackData() == 0)
+        return;
+    if (!unk5c)
+        return;
+    float ms = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    int tick = MsToTick(ms);
+    if (TheGame->mMaster->GetAudio()->Fail())
+        return;
+    StartPulseAnims();
+    bool wasSoloing = unk62;
+    bool soloing = false;
+    for (unsigned int i = 0; i < mTracks.size(); i++) {
+        mTracks[i]->Poll(ms);
+        BandTrack *bandTrack = mTracks[i]->GetBandTrack();
+        if (bandTrack && bandTrack->unk78) {
+            soloing = true;
+        }
+    }
+    if (!wasSoloing && soloing) {
+        SendTrackerBroadcastDisplayMessage(hide_msg);
+    }
+    unk62 = soloing;
+    if (mScoreboard) {
+        Performer *mainPerformer = TheGame->GetMainPerformer();
+        if (unk61) {
+            MetaPerformer::Current();
+            mScoreboard->SetScore(mainPerformer->GetAccumulatedScore());
+        } else if (TheGame->mProperties.mShowStars) {
+            mScoreboard->SetNumStars(
+                mainPerformer->GetNumStarsFloat(), TheGame->mProperties.mPlayStarSfx
+            );
+        }
+        unk61 = !unk61;
+    }
+    Performer *mainPerformer = TheGame->GetMainPerformer();
+    Band *band = mainPerformer->GetBand();
+    if (band) {
+        TrackPanelDirBase *dir = mTrackPanelDir;
+        dir->SetMultiplier(band->EnergyMultiplier(), false);
+    }
+    if (TheSongDB->IsInCoda(tick)) {
+        TrackPanelDirBase *dir = mTrackPanelDir;
+        dir->SetCodaScore(mainPerformer->CodaScore());
+    }
+    float crowdRating = mainPerformer->Crowd()->GetDisplayValue();
+    if (crowdRating != mLastCrowdRating) {
+        mTrackPanelDir->SetCrowdRating(crowdRating);
+        mLastCrowdRating = crowdRating;
+    }
+    UIPanel::Poll();
+    unk84++;
+}
 
 void TrackPanel::Draw() {
     START_AUTO_TIMER("hud_track_draw");
