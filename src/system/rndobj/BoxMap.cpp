@@ -1,5 +1,6 @@
 #include "rndobj/BoxMap.h"
 #include "decomp.h"
+#include "math/Utl.h"
 #include "os/Timer.h"
 #include "rndobj/Lit.h"
 
@@ -106,4 +107,15 @@ bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
     }
     mQueued_Spot.RemoveEntry();
     return 0;
+}
+
+void BoxMapLighting::ApplyLight(Hmx::Color *color, const LightParams_Directional &light)
+    const {
+    for (int i = 0; i < 6; i++) {
+        float d = Max(0.0f, Dot(sAxisDir[i], light.mDirection));
+        d *= d;
+        color[i].red += d * light.mColor.red;
+        color[i].green += d * light.mColor.green;
+        color[i].blue += d * light.mColor.blue;
+    }
 }
