@@ -1085,6 +1085,34 @@ void GemTrackDir::FreeChordMeshes() {
     FreeChordMeshes(unk6cc);
 }
 
+void GemTrackDir::DeleteUnusedChordMeshes() {
+    std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it;
+    for (it = unk6b4.begin(); it != unk6b4.end(); ++it) {
+    }
+    for (it = unk6b4.begin(); it != unk6b4.end();) {
+        if (it->second.first == 0) {
+            RndMesh *chordMesh = it->second.second;
+            std::map<unsigned int, std::pair<int, RndMesh *> >::iterator arpIt
+                = unk6cc.find(it->first);
+            RndMesh *arpMesh =
+                arpIt != unk6cc.end() ? arpIt->second.second : NULL;
+            delete chordMesh;
+            delete arpMesh;
+            if (arpIt != unk6cc.end())
+                unk6cc.erase(arpIt);
+            std::map<unsigned int, std::pair<int, RndMesh *> >::iterator next
+                = it;
+            ++next;
+            unk6b4.erase(it);
+            it = next;
+        } else {
+            ++it;
+        }
+    }
+    for (it = unk6b4.begin(); it != unk6b4.end(); ++it) {
+    }
+}
+
 RndMesh *GemTrackDir::GetChordMesh(unsigned int key, bool which) {
     std::map<unsigned int, std::pair<int, RndMesh *> > &chordMap
         = which ? unk6cc : unk6b4;
