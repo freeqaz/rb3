@@ -1,6 +1,8 @@
 #include "bandobj/BandTrack.h"
+#include "bandobj/BandLabel.h"
 #include "bandobj/EndingBonus.h"
 #include "bandobj/TrackPanelDirBase.h"
+#include "ui/UILabel.h"
 #include "rndobj/Group.h"
 #include "obj/Task.h"
 #include "os/System.h"
@@ -567,6 +569,105 @@ void BandTrack::UnisonEnd() {
 void BandTrack::UnisonStart() {
     if (mUnisonIcon)
         mUnisonIcon->UnisonStart();
+}
+
+void BandTrack::SoloHit(int i) {
+    if (mPlayerFeedback && !unk1e && !mSoloDisplay) {
+        mPlayerFeedback->Find<UILabel>("solo_percent.lbl", true)
+            ->SetTokenFmt(me_percent_format, i);
+    }
+}
+
+void BandTrack::SoloEnd(int i, Symbol sym) {
+    if (!unk1e && !mSoloDisplay) {
+        if (mPlayerFeedback) {
+            mPlayerFeedback->Find<BandLabel>("solo_rating.lbl", true)->SetTextToken(sym);
+            mPlayerFeedback->Find<UILabel>("score.lbl", true)->SetInt(i, true);
+            mPlayerFeedback->HandleType(end_solo_msg);
+        }
+        EventTrigger *trig =
+            ThisDir()->Find<EventTrigger>("guitar_solo_stop.trig", false);
+        if (trig)
+            trig->Trigger();
+    }
+}
+
+void BandTrack::PlayIntro() {
+    if (mParent && mParent->FailedAtStart()) {
+        DisablePlayer(0);
+        return;
+    }
+    if (!mPlayerIntro)
+        return;
+    if (!mParent)
+        return;
+    if (mParent->InGameMode("practice"))
+        return;
+    if (mSimulatedNet || (mParent && !mParent->IsLocal())) {
+        mPlayerIntro->Handle(intro_remote_msg, true);
+    } else {
+        mPlayerIntro->Handle(intro_msg, true);
+    }
+    if (mParent && mParent->PlayerDisconnected()) {
+        DisablePlayer(0);
+    }
+    if (mParent) {
+        mParent->RefreshPlayerHUD();
+        mParent->SetPlayingIntro(1000.0f);
+    }
+}
+
+void BandTrack::SavePlayer() {
+    if (!mDisabled)
+        return;
+    delete unkf0;
+    EventTrigger *trig = ThisDir()->Find<EventTrigger>("bfb_saved.trig", false);
+    if (trig)
+        trig->Trigger();
+    if (mFailedFeedback) {
+        if (mParent && mParent->HasLocalPlayer()) {
+            mPlayerIntro->Handle(icon_hide_msg, true);
+        }
+        mFailedFeedback->Handle(saved_msg, true);
+    }
+    if (mParent)
+        mParent->SetGemsEnabledByPlayer();
+    TrackPanelDirBase *tpd = dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir());
+    if (tpd) {
+        int idx = mTrackIdx;
+        dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())->EnablePlayer(idx);
+    }
+}
+
+void BandTrack::SetTourMomentGoalText(const char *top, const char *bottom) {
+    MILO_ASSERT(top, 0x4E8);
+    MILO_ASSERT(bottom, 0x4E9);
+    if (mPlayerFeedback) {
+        RndDir *goal = mPlayerFeedback->Find<RndDir>("tour_moment_goal", true);
+        if (goal) {
+            goal->Find<BandLabel>("tg_main_text_top.lbl", true)
+                ->SetDisplayText(top, true);
+            goal->Find<BandLabel>("tg_main_text_bottom.lbl", true)
+                ->SetDisplayText(bottom, true);
+        }
+    }
+}
+
+void BandTrack::SetHasTrackerFocus(bool b) {
+    if (mPlayerFeedback) {
+        RndDir *goal =
+            mPlayerFeedback->Find<RndDir>("tour_moment_goal", true);
+        if (goal) {
+            EventTrigger *trig;
+            if (b) {
+                trig = goal->Find<EventTrigger>("show.trig", true);
+                SetTourMomentGoalText("Spotlight", "");
+            } else {
+                trig = goal->Find<EventTrigger>("hide.trig", true);
+            }
+            trig->Trigger();
+        }
+    }
 }
 
 RndDir *BandTrack::AsRndDir() {

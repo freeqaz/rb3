@@ -114,6 +114,7 @@ public:
     void ResetPlayerFeedback();
     void SoloStart();
     void SoloHit(int);
+    void SetTourMomentGoalText(const char *, const char *);
 
     TrackInstrument GetInstrument() const { return mTrackInstrument; }
     bool InUse() const { return mInUse; }
