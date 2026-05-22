@@ -758,6 +758,33 @@ bool GemManager::OnMissPhrase(int i1) {
     return ret;
 }
 
+void GemManager::SetupRealGuitarAreaStrumSections() {
+    const std::vector<GameGem> &gems =
+        TheSongDB->GetGems(mTrackConfig.TrackNum());
+    for (int i = 0; i < gems.size();) {
+        const GameGem &gem = gems[i];
+        if (gem.GetRGStrumType() == 0) {
+            i++;
+        } else {
+            mGems[i].unk_0x67_0 = false;
+            for (int j = i - 1; j >= 0; j--) {
+                if ((unsigned int)gems[j].GetRGChordID()
+                    != (unsigned int)gem.GetRGChordID()) {
+                    break;
+                }
+                mGems[j].unk_0x67_0 = false;
+            }
+            for (i++; i < gems.size(); i++) {
+                if ((unsigned int)gems[i].GetRGChordID()
+                    != (unsigned int)gem.GetRGChordID()) {
+                    break;
+                }
+                mGems[i].unk_0x67_0 = false;
+            }
+        }
+    }
+}
+
 void GemManager::CheckRemoveChordBracket(int gemId) {
     const GameGem &gem = mGems[gemId].GetGameGem();
     int chordTick = gem.GetTick();

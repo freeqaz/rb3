@@ -132,6 +132,7 @@ public:
     void Poll(float, const PlayerState &);
     void PollHitGems(float);
     bool InMissedPhrase(int);
+    void SetupRealGuitarAreaStrumSections();
 
     unsigned int EnabledSlots() const { return mEnabledSlots; }
 
