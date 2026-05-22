@@ -3,6 +3,7 @@
 #include "game/Defines.h"
 #include "meta_band/AppLabel.h"
 #include "meta_band/BandSongMgr.h"
+#include "meta_band/SavedSetlist.h"
 #include "meta_band/SongStatusMgr.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
@@ -71,6 +72,22 @@ void SetlistScoresProvider::RefreshScores() {
         MILO_ASSERT(mgr, 0x77);
         unk28[i] = mgr->GetHighScore(songID, mScoreType);
         unk30[i] = mgr->GetBandInstrumentMask(songID);
+    }
+}
+
+void SetlistScoresProvider::SetSetlist(SavedSetlist *setlist) {
+    unk20 = setlist->mSongs;
+    int n = unk20.size();
+    unk28.resize(n);
+    unk30.resize(n);
+    unk38.resize(n);
+    NetSavedSetlist *net = dynamic_cast<NetSavedSetlist *>(setlist);
+    for (int i = 0; i < n; i++) {
+        if (net) {
+            unk38[i] = net->GetSongTitle(i);
+        } else {
+            unk38[i] = gNullStr;
+        }
     }
 }
 
