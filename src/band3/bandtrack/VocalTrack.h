@@ -140,6 +140,7 @@ public:
     bool IdenticalLyric(const VocalNote &, const VocalNote &) const;
     void
     BuildStaticDeployZone(int, const std::pair<float, float> &, float, float &, std::deque<LyricShift> &);
+    void BuildScrollingDeployZone(int, const std::pair<float, float> &);
     void
     ProcessStaticLyrics(bool, Lyric *, float &, float &, Lyric *&, Lyric *&, float &, bool, LyricPlate *);
 

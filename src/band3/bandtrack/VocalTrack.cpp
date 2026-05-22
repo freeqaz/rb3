@@ -1394,6 +1394,50 @@ void VocalTrack::BuildStaticDeployZone(
         MILO_LOG("new final deploy section for part %d\n", i1);
 }
 
+void VocalTrack::BuildScrollingDeployZone(
+    int part, const std::pair<float, float> &timing
+) {
+    float lastLyricX = 0.0f;
+    float startMs = timing.first;
+    float endMs = timing.second;
+    ConfigNoteTube(false, 2, part, true, 1.0f);
+    HookupTubePlates(mNoteTube);
+    std::deque<LyricPlate *> &plates = part != 0 ? mLyricsHarmony : mLyricsLead;
+    std::deque<LyricPlate *>::iterator it = plates.begin();
+    std::deque<LyricPlate *>::iterator end = plates.end();
+    for (; it != end; ++it) {
+        LyricPlate *plate = *it;
+        if (plate->GetBeginMs() > endMs)
+            break;
+        lastLyricX = plate->GetLastLyricXBeforeMS(startMs);
+        if (it + 1 == end)
+            break;
+        if ((*(it + 1))->GetBeginMs() > endMs)
+            break;
+    }
+    float xPos = unk78 * (startMs / unk74);
+    float minX = lastLyricX + mStaticDeployBufferX;
+    if (xPos < minX)
+        xPos = minX;
+    float height;
+    float z;
+    if (part == 0) {
+        height = mDir->mLeadLyricHeight * 0.5f;
+        z = (mDir->mPitchBottomZ + mDir->mTrackBottomZ) * 0.5f;
+    } else {
+        height = mDir->mHarmLyricHeight * 0.5f;
+        z = (mDir->mPitchTopZ + mDir->mTrackTopZ) * 0.5f;
+    }
+    bool inCoda = TheSongDB->IsInCoda(MsToTickInt(startMs));
+    mNoteTube->SetPointPos(0, Vector3(0, 0, z));
+    mNoteTube->SetPointPos(1, Vector3(unk78 * (endMs / unk74) - xPos, 0, z));
+    mNoteTube->unk_0x30 = height;
+    mNoteTube->SetBackParent(inCoda ? mDir->mBREGrp : mDir->mPitchScrollGroup);
+    mNoteTube->SetXPos(xPos);
+    mNoteTube->CreateMeshes();
+    mNoteTube->BakePlates();
+}
+
 void VocalTrack::ProcessStaticLyrics(
     bool b1,
     Lyric *l2,
