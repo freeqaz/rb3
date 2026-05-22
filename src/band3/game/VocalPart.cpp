@@ -660,9 +660,9 @@ void VocalPart::HandlePhraseEnd(
             if (scoreMax != 0.0f) {
                 int rating = mPlayer->CalculatePhraseRating(mPhraseScore / scoreMax);
                 o_rRating = rating;
+                unk18 += rating;
                 float denom = mPhraseScoreMax;
                 float mult = mPhraseScorePartMultiplier * (float)mPhraseValue;
-                unk18 += rating;
                 int accPts = (int)(0.5 + (double)((mPhraseScore * mult) / denom));
                 int bandPts = (int)(0.5 + (double)((unk44 * mult) / denom));
                 int odPts = (int)(0.5 + (double)((unk48 * mult) / denom));
