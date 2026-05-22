@@ -632,19 +632,14 @@ void VocalPart::GetNoteRange(float ms, int &startOut, int &endOut) {
         lower,
         VocalNoteEndCmp
     );
-    if (it == list->mNotes.data() + list->mNotes.size())
-        return;
-    for (;;) {
-        int idx = it - list->mNotes.data();
-        if (startOut == -1)
-            startOut = idx;
-        endOut = idx + 1;
-        ++it;
-        bool inRange = it->mMs < upper;
-        if (!inRange)
-            break;
-        if (it == list->mNotes.data() + list->mNotes.size())
-            break;
+    if (it != list->mNotes.data() + list->mNotes.size()) {
+        while (it->mMs < upper && it != list->mNotes.data() + list->mNotes.size()) {
+            int idx = it - list->mNotes.data();
+            if (startOut == -1)
+                startOut = idx;
+            endOut = idx + 1;
+            ++it;
+        }
     }
 }
 
