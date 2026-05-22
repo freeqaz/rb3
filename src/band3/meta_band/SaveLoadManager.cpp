@@ -86,6 +86,23 @@ void SaveLoadManager::Init() {
     TheSaveLoadMgr = new SaveLoadManager();
 }
 
+void SaveLoadManager::SaveLoadErrorSetState() {
+    switch (mMode) {
+    case kMode_AutoLoad:
+        SetState(kS_AutoloadSelectProfile);
+        break;
+    case kMode_AutoSave:
+    case kMode_ManualLoad:
+        SetState(kS_SaveCheckProfile);
+        break;
+    case kMode_DisableAutoSave:
+        SetState(kS_SaveCheckAutosave);
+        break;
+    default:
+        break;
+    }
+}
+
 void SaveLoadManager::UpdateStatus(SaveLoadMgrStatus status) {
     static SaveLoadMgrStatusUpdateMsg msg(-1);
     msg[0] = (int)status;

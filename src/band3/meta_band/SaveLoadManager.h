@@ -27,10 +27,14 @@ public:
         kMode_AutoSave,
         kMode_DisableAutoSave,
         kMode_ManualDelete,
+        kMode_ManualLoad,
     };
     enum State {
         kS_Idle = 0,
         kS_Start = 1,
+        kS_AutoloadSelectProfile = 0x3,
+        kS_SaveCheckProfile = 0x54,
+        kS_SaveCheckAutosave = 0x55,
         kS_SaveOverwrite = 0x46,
         kS_SaveNoOverwrite = 0x47,
         kS_SaveNotEnoughSpacePS3 = 0x4A,
