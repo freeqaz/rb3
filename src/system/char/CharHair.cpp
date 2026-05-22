@@ -481,8 +481,11 @@ void CharHair::SimulateInternal(float f) {
     Vector3 vec134(0, 0, 0);
     if (mWind) {
         if (mStrands[0].Root()) {
-            float secs = TheTaskMgr.Seconds(TaskMgr::kRealTime);
-            mWind->GetWind(mStrands[0].Root()->WorldXfm().v, secs, vec134);
+            mWind->GetWind(
+                mStrands[0].Root()->WorldXfm().v,
+                TheTaskMgr.Seconds(TaskMgr::kRealTime),
+                vec134
+            );
             vec134 *= f19 * 0.5f;
         }
     }
@@ -512,8 +515,8 @@ void CharHair::SimulateInternal(float f) {
                     Point &modPoint = modStrand.Points()[j];
                     Subtract(thisPoint.pos, modPoint.pos, vRes);
                     float lensq = LengthSquared(vRes);
-                    float sidelensq = thisPoint.sideLength - mMinSlack;
-                    sidelensq = sidelensq * sidelensq;
+                    float sidelen = thisPoint.sideLength - mMinSlack;
+                    float sidelensq = sidelen * sidelen;
                     if (lensq < sidelensq) {
                         vRes *= (sidelensq / (sidelensq + lensq) - 0.5f);
                         thisPoint.pos += vRes;
