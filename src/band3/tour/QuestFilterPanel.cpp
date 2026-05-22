@@ -47,6 +47,11 @@ inline Symbol QuestFilterProvider::DataSymbol(int i_iData) const {
     return m_vQuestFilters[i_iData];
 }
 
+String QuestFilterProvider::GetFilterName(int i_iData) const {
+    MILO_ASSERT_RANGE(i_iData, 0, NumData(), 0xC6);
+    return TheTour->GetFilterName(DataSymbol(i_iData));
+}
+
 TourSetlistType QuestFilterPanel::GetSelectedSetlistType() {
     if (GetState() != kUp)
         return kTourSetlist_Invalid;

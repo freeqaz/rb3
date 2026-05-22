@@ -19,6 +19,8 @@ public:
     virtual UIComponent::State
     ComponentStateOverride(int, int, UIComponent::State s) const;
 
+    String GetFilterName(int) const;
+
     void Update() {
         m_vQuestFilters.clear();
         for (int i = 0; i < 3; i++) {
