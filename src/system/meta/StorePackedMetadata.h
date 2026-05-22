@@ -147,6 +147,7 @@ public:
 class StorePageTable {
 public:
     ~StorePageTable();
+    bool Load(const char *);
     StorePage *GetPage(unsigned short);
 
     int mNumOffsets; // 0x0

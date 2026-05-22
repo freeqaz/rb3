@@ -429,12 +429,12 @@ bool StoreRedemptionsTable::Load(const char *cc) {
             numEntries,
             6UL,
             byteCount,
-            diff
+            (int)diff
         );
         numEntries = diff / 6;
     }
-    int numValid = 0;
     unsigned short *idxPtr = (unsigned short *)dataStart;
+    int numValid = 0;
     StorePackedRedemptionOffer *offer = (StorePackedRedemptionOffer *)dataStart;
     unsigned short *validIndices = (unsigned short *)dataStart;
     for (int i = 0; i < numEntries; i++) {
@@ -532,6 +532,36 @@ StorePackedOffer *StorePage::Offer(int idx) const {
             return TheStoreMetadata.mOfferTable->mOffers[key];
     }
     return nullptr;
+}
+
+bool StorePageTable::Load(const char *cc) {
+    char buf[256];
+    sprintf(buf, "%spages", cc);
+    char *dataStart;
+    char *dataEnd;
+    bool ret = StoreLoadPackedFile(
+        buf, true, 0x80000, true, true, &mBuffer, &dataStart, &dataEnd, &mNumOffsets
+    );
+    if (!ret)
+        return ret;
+    mNumPages = 0;
+    char **offsets = (char **)dataStart;
+    for (int i = 0; i < mNumOffsets; i++) {
+        if (offsets[i] != NULL)
+            mNumPages++;
+    }
+    mPageLookup.clear();
+    mPages = new StorePage[mNumPages];
+    int pageIdx = 0;
+    for (int i = 0; i < mNumOffsets; i++) {
+        if (offsets[i] != NULL) {
+            StorePage *page = &mPages[pageIdx];
+            pageIdx++;
+            page->LoadFromBuffer(offsets[i], i + 1);
+            mPageLookup[i + 1] = page;
+        }
+    }
+    return true;
 }
 
 StorePage *StorePageTable::GetPage(unsigned short idx) {
