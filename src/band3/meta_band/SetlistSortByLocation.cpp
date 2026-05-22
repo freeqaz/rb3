@@ -142,47 +142,43 @@ Symbol LocationCmp::SetlistHeaderTypeToSym(SetlistHeaderType type) {
 }
 
 ShortcutNode *SetlistSortByLocation::NewShortcutNode(SetlistSortNode *node) const {
-    LocationCmp *cmp = new LocationCmp(
-        node->GetSetlistRecord()->GetSetlist()->GetType(), gNullStr, gNullStr, 0, gNullStr
+    SavedSetlist::SetlistType type =
+        node->GetSetlistRecord()->GetSetlist()->GetType();
+    LocationCmp *cmp = new LocationCmp(type, gNullStr, gNullStr, 0, gNullStr);
+    Symbol sym = LocationCmp::SetlistHeaderTypeToSym(
+        (LocationCmp::SetlistHeaderType)cmp->mField20
     );
-    return new ShortcutNode(
-        cmp,
-        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
-        true
-    );
+    return new ShortcutNode(cmp, sym, true);
 }
 
 HeaderSortNode *SetlistSortByLocation::NewHeaderNode(SetlistSortNode *node) const {
-    LocationCmp *cmp = new LocationCmp(
-        node->GetSetlistRecord()->GetSetlist()->GetType(), gNullStr, gNullStr, 0, gNullStr
+    SavedSetlist::SetlistType type =
+        node->GetSetlistRecord()->GetSetlist()->GetType();
+    LocationCmp *cmp = new LocationCmp(type, gNullStr, gNullStr, 0, gNullStr);
+    Symbol sym = LocationCmp::SetlistHeaderTypeToSym(
+        (LocationCmp::SetlistHeaderType)cmp->mField20
     );
-    return new HeaderSortNode(
-        cmp,
-        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
-        true
-    );
+    return new HeaderSortNode(cmp, sym, true);
 }
 
 ShortcutNode *SetlistSortByLocation::NewShortcutNode(FunctionSortNode *node) const {
     LocationCmp *cmp = new LocationCmp(
         SavedSetlist::kBattleHarmonix, gNullStr, gNullStr, 0, gNullStr
     );
-    return new ShortcutNode(
-        cmp,
-        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
-        true
+    Symbol sym = LocationCmp::SetlistHeaderTypeToSym(
+        (LocationCmp::SetlistHeaderType)cmp->mField20
     );
+    return new ShortcutNode(cmp, sym, true);
 }
 
 HeaderSortNode *SetlistSortByLocation::NewHeaderNode(FunctionSortNode *node) const {
     LocationCmp *cmp = new LocationCmp(
         SavedSetlist::kBattleHarmonix, gNullStr, gNullStr, 0, gNullStr
     );
-    return new HeaderSortNode(
-        cmp,
-        LocationCmp::SetlistHeaderTypeToSym((LocationCmp::SetlistHeaderType)cmp->mField20),
-        true
+    Symbol sym = LocationCmp::SetlistHeaderTypeToSym(
+        (LocationCmp::SetlistHeaderType)cmp->mField20
     );
+    return new HeaderSortNode(cmp, sym, true);
 }
 
 SetlistSortNode *SetlistSortByLocation::NewSetlistNode(SetlistRecord *record) const {
@@ -190,13 +186,11 @@ SetlistSortNode *SetlistSortByLocation::NewSetlistNode(SetlistRecord *record) co
         dynamic_cast<BattleSavedSetlist *>(record->GetSetlist());
     int id = battle ? battle->mBattleTimeLeft : 0;
     NetSavedSetlist *net = dynamic_cast<NetSavedSetlist *>(record->GetSetlist());
-    const char *name;
+    const char *name = gNullStr;
     if (battle) {
         name = MakeString("%i", battle->mID);
     } else if (net) {
         name = net->mGuid.c_str();
-    } else {
-        name = gNullStr;
     }
     LocationCmp *cmp = new LocationCmp(
         record->GetSetlist()->GetType(), record->GetOwner(),
@@ -213,6 +207,6 @@ FunctionSortNode *SetlistSortByLocation::NewFunctionNode(Symbol sym) const {
 }
 
 SubheaderSortNode *SetlistSort::NewSubheaderNode(SetlistSortNode *node) const {
-    MILO_FAIL(__FUNCTION__);
+    MILO_FAIL(__PRETTY_FUNCTION__);
     return nullptr;
 }
