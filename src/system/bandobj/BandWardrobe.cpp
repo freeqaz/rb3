@@ -1,7 +1,13 @@
 #include "bandobj/BandWardrobe.h"
 #include "bandobj/BandCharDesc.h"
 #include "bandobj/BandDirector.h"
+#include "bandobj/BandRetargetVignette.h"
 #include "char/CharInterest.h"
+#include "char/CharLipSync.h"
+#include "char/CharLipSyncDriver.h"
+#include "char/CharFaceServo.h"
+#include "char/CharWeightSetter.h"
+#include "char/CharServoBone.h"
 #include "obj/DataUtl.h"
 #include "obj/Utl.h"
 #include "rndobj/TransProxy.h"
@@ -968,6 +974,138 @@ DataNode BandWardrobe::OnEnterCloset(DataArray *da) {
                 for (int i = 0; i < 4; i++) {
                     mTargets[i]->SetShowing(i == i3);
                 }
+            }
+        }
+    }
+    return DataNode(0);
+}
+
+DataNode BandWardrobe::OnEnterVignette(DataArray *da) {
+    static const char *player_names[4] = {
+        "player0", "player1", "player2", "player3"
+    };
+    WorldDir *worldDir = da->Obj<WorldDir>(2);
+    mCurNames = &mVignetteNames;
+    LoadPrefabPrefs();
+    SetContexts(Symbol("vignette"));
+    ObjectDir *charsDir = dynamic_cast<ObjectDir *>(worldDir->FindObject("clips", false));
+    if (charsDir) {
+        for (ObjDirItr<Character> it(worldDir, true); it; ++it) {
+            CharDriver *driver = it->GetDriver();
+            const char *name = it->Name();
+            if (!driver) {
+                TheDebug.Notify(MakeString(
+                    "%s has no main.drv, not valid character", PathName(it)
+                ));
+            } else if (!strstr(name, "extra")) {
+                driver->SetClipType(vignette);
+                it->BoneServo()->SetClipType(vignette);
+                ObjectDir *visemes = dynamic_cast<ObjectDir *>(
+                    it->FindObject("vignette_visemes", false)
+                );
+                if (visemes) {
+                    CharLipSyncDriver *lsd = dynamic_cast<CharLipSyncDriver *>(
+                        it->FindObject("vignette.lipdrv", false)
+                    );
+                    if (lsd)
+                        lsd->SetClips(visemes);
+                    CharFaceServo *fs = dynamic_cast<CharFaceServo *>(
+                        it->FindObject("face.faceservo", false)
+                    );
+                    if (fs)
+                        fs->SetClips(visemes);
+                }
+                CharWeightSetter *ws = dynamic_cast<CharWeightSetter *>(
+                    it->FindObject("venue.weight", false)
+                );
+                if (ws)
+                    ws->SetWeight(0.0f);
+                CharLipSyncDriver *lsd2 = dynamic_cast<CharLipSyncDriver *>(
+                    it->FindObject("vignette.lipdrv", false)
+                );
+                if (lsd2) {
+                    CharLipSync *ls = dynamic_cast<CharLipSync *>(
+                        charsDir->FindObject(MakeString("%s.lipsync", name), false)
+                    );
+                    lsd2->SetLipSync(ls);
+                    lsd2->Sync();
+                }
+            }
+        }
+        if (TheLoadMgr.EditMode()) {
+            for (int i = 0; i < 4; i++) {
+                mVignetteNames.names[i] = Symbol(player_names[i]);
+            }
+        } else {
+            static Message msg("get_slot_info", DataNode(0));
+            SlotInfo info[4];
+            for (int i = 0; i < 4; i++)
+                info[i].inst = Symbol();
+            bool hasBass = false;
+            for (int i = 0; i < 4; i++) {
+                info[i].hint = -1;
+                msg[0] = DataNode(i);
+                DataArray *result = HandleType(msg).Array();
+                info[i].human = result->Int(0) != 0;
+                info[i].inst = result->Sym(1);
+                info[i].score = 1.0f - result->Float(2);
+                if (info[i].inst == "bass")
+                    hasBass = true;
+            }
+            if (info[1].inst.Null())
+                info[1].inst = Symbol("drum");
+            if (info[2].inst.Null())
+                info[2].inst = Symbol("mic");
+            Symbol fallback(hasBass ? "guitar" : "bass");
+            if (info[0].inst.Null())
+                info[0].inst = fallback;
+            if (info[3].inst.Null())
+                info[3].inst = fallback;
+            Symbol hints[4];
+            for (int i = 0; i < 4; i++)
+                hints[i] = Symbol();
+            ObjectDir *hintsDir = dynamic_cast<ObjectDir *>(
+                worldDir->FindObject("player_hints.obj", false)
+            );
+            if (hintsDir) {
+                for (int i = 0; i < 4; i++) {
+                    const DataNode *prop = hintsDir->Property(
+                        Symbol(MakeString("player%d_hint", i)), false
+                    );
+                    if (prop)
+                        hints[i] = prop->Sym();
+                }
+            }
+            int slot;
+            for (int idx = FindBestScoringHint(hints, info, slot); idx != -1;
+                 idx = FindBestScoringHint(hints, info, slot)) {
+                if (slot == -1)
+                    slot = MostImportantHuman(info);
+                hints[idx] = Symbol("done");
+                info[slot].hint = idx;
+                mVignetteNames.names[idx] = Symbol(player_names[idx]);
+            }
+        }
+    }
+    SetDir(worldDir);
+    BandRetargetVignette *brv = dynamic_cast<BandRetargetVignette *>(
+        worldDir->FindObject("BandRetargetVignette.brv", false)
+    );
+    if (brv)
+        brv->EnterDir();
+    if (charsDir) {
+        for (int i = 0; i < 4; i++) {
+            BandCharacter *bc = TheBandWardrobe->GetCharacter(i);
+            Symbol name = mVignetteNames.names[i];
+            CharLipSyncDriver *lsd = dynamic_cast<CharLipSyncDriver *>(
+                bc->FindObject("vignette.lipdrv", false)
+            );
+            if (lsd) {
+                CharLipSync *ls = dynamic_cast<CharLipSync *>(
+                    charsDir->FindObject(MakeString("%s.lipsync", name), false)
+                );
+                lsd->SetLipSync(ls);
+                lsd->Sync();
             }
         }
     }
