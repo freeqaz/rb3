@@ -179,7 +179,8 @@ Game::Game()
     TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type());
     TheSessionMgr->AddSink(this, RemoteUserLeftMsg::Type());
     TheSessionMgr->AddSink(this, RemoteLeaderLeftMsg::Type());
-    TheBandUI.mOvershell->AddSink(this, "required_song_options_chosen");
+    OvershellPanel *overshell = TheBandUI.mOvershell;
+    overshell->AddSink(this, "required_song_options_chosen");
     TheBandUI.mOvershell->AddSink(this, NewOvershellLocalUserMsg::Type());
     TheBandUI.AddSink(this, UIScreenChangeMsg::Type());
 
