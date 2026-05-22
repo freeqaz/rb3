@@ -385,6 +385,86 @@ void ChordShapeGenerator::BuildContourCap(
 }
 #pragma pop
 
+void ChordShapeGenerator::ExtendProfile(
+    RndMesh *mesh,
+    std::map<unsigned short, unsigned short> &connectingVerts,
+    const Transform &tfA,
+    const Transform &tfB,
+    float t,
+    float fretHeight,
+    const CrossSec &crossSec,
+    Hmx::Color32 col1,
+    Hmx::Color32 col2
+) {
+    std::map<unsigned short, unsigned short> profileVerts;
+    Transform interp;
+    InterpolateXfm(tfA, tfB, t, interp);
+    Hmx::Color32 col;
+    col.a = col1.a + (int)(t * (col2.a - col1.a));
+    col.b = col1.b + (int)(t * (col2.b - col1.b));
+    col.g = col1.g + (int)(t * (col2.g - col1.g));
+    col.r = col1.r + (int)(t * (col2.r - col1.r));
+    AddVertProfile(mesh, interp, fretHeight, crossSec, profileVerts, Hmx::Color32(col));
+    ConnectVertProfiles(mesh, connectingVerts, profileVerts, crossSec);
+    connectingVerts.swap(profileVerts);
+}
+
+void ChordShapeGenerator::BuildSpan(
+    RndMesh *mesh,
+    std::map<unsigned short, unsigned short> &connectingVerts,
+    int fretA,
+    int fretB,
+    const Transform &tfA,
+    const Transform &tfB,
+    Hmx::Color32 col1,
+    Hmx::Color32 col2
+) {
+    MILO_ASSERT(connectingVerts.size(), 0x2D0);
+    MILO_ASSERT(bool(fretA) == bool(fretB), 0x2D3);
+    if (fretA == 0) {
+        for (int i = 1; i < 3; i++) {
+            ExtendProfile(
+                mesh,
+                connectingVerts,
+                tfA,
+                tfB,
+                (float)i / 3.0f,
+                1.0f,
+                sec2,
+                Hmx::Color32(col1),
+                Hmx::Color32(col2)
+            );
+        }
+        return;
+    }
+    float gradeDist = mGradeDistances[abs(fretB - fretA)];
+    float frac0 = (1.0f - gradeDist) * 0.5f;
+    float frac1 = (1.0f + gradeDist) * 0.5f;
+    float heightA = mFretHeights[fretA];
+    ExtendProfile(
+        mesh, connectingVerts, tfA, tfB, frac0, heightA, sec1, Hmx::Color32(col1),
+        Hmx::Color32(col2)
+    );
+    ExtendProfile(
+        mesh, connectingVerts, tfA, tfB, frac0 + 0.05f,
+        0.9f * mFretHeights[fretA] + 0.1f * mFretHeights[fretB], sec1,
+        Hmx::Color32(col1), Hmx::Color32(col2)
+    );
+    ExtendProfile(
+        mesh, connectingVerts, tfA, tfB, frac1 - 0.05f,
+        0.1f * mFretHeights[fretA] + 0.9f * mFretHeights[fretB], sec1,
+        Hmx::Color32(col1), Hmx::Color32(col2)
+    );
+    ExtendProfile(
+        mesh, connectingVerts, tfA, tfB, frac1, mFretHeights[fretB], sec1,
+        Hmx::Color32(col1), Hmx::Color32(col2)
+    );
+    ExtendProfile(
+        mesh, connectingVerts, tfA, tfB, 1.0f, mFretHeights[fretB], sec1,
+        Hmx::Color32(col1), Hmx::Color32(col2)
+    );
+}
+
 DataNode ChordShapeGenerator::OnGenerate(const DataArray *da) {
     RndMesh *mesh = BuildChordMesh();
     NameMesh(mesh, false);

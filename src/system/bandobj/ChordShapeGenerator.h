@@ -6,11 +6,19 @@
 
 class ChordShapeGenerator : public Hmx::Object {
 public:
+    class Edge {
+    public:
+        Edge() {}
+        Edge(unsigned short a, unsigned short b) : mV0(a), mV1(b) {}
+        unsigned short mV0; // 0x0
+        unsigned short mV1; // 0x2
+    };
+
     class CrossSec {
     public:
-        std::vector<int> mEdges; // 0x0
+        std::vector<Edge, unsigned short> mEdges; // 0x0
         std::set<unsigned short> mVerts; // 0x8
-        float mXOffset; // 0x??
+        float mXOffset; // 0x20
     };
 
     ChordShapeGenerator();
@@ -47,6 +55,34 @@ public:
         Symbol,
         Hmx::Color32,
         Hmx::Color32
+    );
+    void GetCrossSection(float, CrossSec &);
+    void ExtendProfile(
+        RndMesh *,
+        std::map<unsigned short, unsigned short> &,
+        const Transform &,
+        const Transform &,
+        float,
+        float,
+        const CrossSec &,
+        Hmx::Color32,
+        Hmx::Color32
+    );
+    void BuildSpan(
+        RndMesh *,
+        std::map<unsigned short, unsigned short> &,
+        int,
+        int,
+        const Transform &,
+        const Transform &,
+        Hmx::Color32,
+        Hmx::Color32
+    );
+    void ConnectVertProfiles(
+        RndMesh *,
+        const std::map<unsigned short, unsigned short> &,
+        const std::map<unsigned short, unsigned short> &,
+        const CrossSec &
     );
     RndMesh *BuildChordMesh(unsigned int, int);
     RndMesh *BuildChordMesh();
