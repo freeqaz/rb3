@@ -8,9 +8,9 @@ struct MemHeapStack {
 };
 
 struct FreeBlock {
-    int mSizeWords;     // 0x0
-    int mTimeStamp;     // 0x4
-    FreeBlock *mNext;   // 0x8
+    int mSizeWords;          // 0x0
+    unsigned int mTimeStamp; // 0x4
+    FreeBlock *mNext;        // 0x8
 
     bool AttemptMerge(FreeBlock *, int);
 };
@@ -140,6 +140,31 @@ void Heap::MoreFreeBlockStats(int &i1, int &i2, int &i3, int &i4) {
 void Heap::ResetMinFreeBlockStats() {
     mBiggestFree = mNumFreeBytes;
     mMinLargest = mLargestFree;
+}
+
+bool FreeBlock::AttemptMerge(FreeBlock *next, int debugLevel) {
+    int thisSize = mSizeWords;
+    if ((int *)this + thisSize == (int *)next) {
+        unsigned int ts = mTimeStamp;
+        if (ts < next->mTimeStamp) {
+            ts = next->mTimeStamp;
+        }
+        int nextSize = next->mSizeWords;
+        FreeBlock *nextNext = next->mNext;
+        mNext = nextNext;
+        mSizeWords = thisSize + nextSize;
+        mTimeStamp = ts;
+        if (debugLevel >= 1) {
+            int *ptr = (int *)next;
+            int *end = ptr + 3;
+            while (ptr < end) {
+                *ptr = 0xDEADDEAD;
+                ptr++;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 void MemPushHeap(int iHeap) {
