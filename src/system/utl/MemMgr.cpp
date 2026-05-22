@@ -142,6 +142,20 @@ void Heap::ResetMinFreeBlockStats() {
     mMinLargest = mLargestFree;
 }
 
+void MemPushHeap(int iHeap) {
+    MemHeapStack &s = ThreadMemStack(true);
+    MILO_ASSERT(iHeap > kNoHeap && iHeap < gNumHeaps, 0x606);
+    MILO_ASSERT(s.mSize + 1 < sizeof(s.mStack) / sizeof(s.mStack[0]), 0x607);
+    s.mStack[s.mSize] = iHeap;
+    s.mSize++;
+}
+
+void MemPopHeap() {
+    MemHeapStack &s = ThreadMemStack(true);
+    MILO_ASSERT(s.mSize > 0, 0x610);
+    s.mSize--;
+}
+
 bool MemDoTempAllocations::enabled;
 
 MemDoTempAllocations::MemDoTempAllocations(bool noTemp, bool reset) {
