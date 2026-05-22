@@ -44,6 +44,7 @@
 #include "utl/TextFileStream.h"
 #include "world/Dir.h"
 #include "utl/Messages.h"
+#include "utl/Messages4.h"
 #include <utility>
 
 MicClientID sNullMicClientID;
@@ -299,6 +300,28 @@ int VocalPlayer::LocalDeployBandEnergy() {
 void VocalPlayer::RemoteUpdateCrowd(float f1) {
     Performer::RemoteUpdateCrowd(f1);
     mBeatMaster->GetAudio()->SetVocalDuckFader(RemoteVocalVolume());
+}
+
+void VocalPlayer::UpdateCrowdMeter(int rating, int phraseIdx) {
+    bool notNet = !IsNet();
+    if (notNet) {
+        float multiplier = 1.0f;
+        float ratingFraction = (float)rating * 0.25f;
+        if (ratingFraction > mCrowd->mRawValue) {
+            multiplier = GetCrowdBoost();
+        }
+        mCrowd->UpdatePhrase(ratingFraction, multiplier);
+        CheckCrowdFailure();
+        HandleType(send_update_crowd_msg);
+    }
+    if (rating >= 4) {
+        BuildHitStreak(phraseIdx, 0);
+        EndMissStreak();
+        Hit();
+    } else {
+        EndHitStreak();
+        BuildMissStreak(phraseIdx);
+    }
 }
 
 float VocalPlayer::RemoteVocalVolume() const {
