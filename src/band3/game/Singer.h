@@ -6,6 +6,7 @@
 #include "synth/MicManagerInterface.h"
 #include "dsp/VibratoDetector.h"
 #include "synth/VoiceBeat.h"
+#include "utl/SongPos.h"
 #include <vector>
 
 class VocalPlayer;
@@ -134,6 +135,9 @@ public:
     void UpdatePitchDeviation(float);
     int GetFrameMatchType();
     float AddToFreestyleDeployment(float);
+    void ResolveAmbiguity();
+    void SetAssignedPart(int, float);
+    void Poll_(float, const SongPos &, float, float, float, float);
 
     float GetFrameMicPitch() const { return mFrameMicPitch; }
     float GetFrameTargetPitch() const { return mFrameTargetPitch; }

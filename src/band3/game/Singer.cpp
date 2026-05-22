@@ -355,3 +355,31 @@ float Singer::AddToFreestyleDeployment(float val) {
     }
     return unk44;
 }
+
+void Singer::ResolveAmbiguity() {
+    for (AmbiguousData *entry = &mAmbiguousData[0];
+         entry != &mAmbiguousData[0] + mAmbiguousData.size(); entry++) {
+        if (!entry->unk8 || entry->unkc == -1)
+            continue;
+        int part1 = entry->unk0;
+        int part2 = entry->unk4;
+        float points1 = mResultsData[part1].unkc;
+        float points2 = mResultsData[part2].unkc;
+        float delta = points1 - points2;
+        float maxPoints = (points1 < points2) ? points2 : points1;
+        if (std::fabs(delta) / maxPoints > 0.1f) {
+            int iWinningPart = (delta > 0.0f) ? part1 : part2;
+            int iLosingPart = (delta < 0.0f) ? part1 : part2;
+            MILO_ASSERT(iWinningPart != iLosingPart, 0x1B4);
+            if (iWinningPart != entry->unkc) {
+                float pts = entry->unk10;
+                mPlayer->SwapAmbiguousPoints(pts, iLosingPart, iWinningPart);
+                mResultsData[iLosingPart].unk0 -= pts;
+                if (mResultsData[iLosingPart].unk0 < 0.0f)
+                    mResultsData[iLosingPart].unk0 = 0.0f;
+                mResultsData[iWinningPart].unk0 += pts;
+            }
+            entry->unkc = -1;
+        }
+    }
+}
