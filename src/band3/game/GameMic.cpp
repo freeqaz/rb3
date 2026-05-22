@@ -1,6 +1,8 @@
 #include "game/GameMic.h"
 #include "obj/Data.h"
+#include "obj/Task.h"
 #include "os/Debug.h"
+#include "os/Timer.h"
 #include "synth/MicNull.h"
 #include "synth/Synth.h"
 #include "utl/FileStream.h"
@@ -105,4 +107,32 @@ void GameMic::SetInputFile(const char *filename) {
 void GameMic::AccessContinuousSamples(const short *&s, int &i) const {
     s = mSamplesContinuous;
     i = unk8034;
+}
+
+void GameMic::Update() {
+    START_AUTO_TIMER("fonix_update");
+    ThreadProcessOneFrame();
+    if (unkc) {
+        float sampleRate = GetDataSampleRate();
+        int maxSamples = mStoredAudio->Size() / 2;
+        int desired = (int)(TheTaskMgr.Seconds(TaskMgr::kRealTime) * sampleRate);
+        int tellSamples = mStoredAudio->Tell() / 2;
+        if (desired < tellSamples) {
+            desired = tellSamples;
+        } else if (desired > maxSamples) {
+            desired = maxSamples;
+        }
+        unk8034 = desired - ((unsigned int)mStoredAudio->Tell() >> 1);
+        if (8192 < unk8034) {
+            unk8034 = 8192;
+        }
+        mStoredAudio->Read(mSamplesContinuous, unk8034 * 2);
+        for (int i = 0; i < unk8034; i++) {
+            mSamplesContinuous[i] =
+                ((mSamplesContinuous[i] >> 8) & 0xFF) | (mSamplesContinuous[i] << 8);
+        }
+    }
+    unk28 = unk1c;
+    unk2c = unk20;
+    unk8 = GetMyMic()->GetType() != 0;
 }
