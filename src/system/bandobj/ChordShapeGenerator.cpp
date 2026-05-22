@@ -1,7 +1,12 @@
 #include "bandobj/ChordShapeGenerator.h"
 #include "beatmatch/RGUtl.h"
+#include "math/Rot.h"
 #include "os/Timer.h"
 #include "utl/Symbols.h"
+#include <cmath>
+#include <math.h>
+
+using std::abs;
 
 INIT_REVS(ChordShapeGenerator);
 
@@ -102,6 +107,56 @@ const Transform &ChordShapeGenerator::SlotXfm(int idx) const {
         MILO_WARN("string index %d out of range", idx);
         return sDefaultTransform;
     }
+}
+
+void ChordShapeGenerator::InterpolateXfm(
+    const Transform &a, const Transform &b, float t, Transform &out
+) {
+    if (t > 0.99f) {
+        out = b;
+        return;
+    }
+    if (t < 0.1f) {
+        out = a;
+        return;
+    }
+    float ax = a.v.x;
+    float az = a.v.z;
+    float bx = b.v.x;
+    float bz = b.v.z;
+    Vector3 eulerA;
+    Vector3 eulerB;
+    MakeEuler(a.m, eulerA);
+    MakeEuler(b.m, eulerB);
+    float rA = eulerA.y;
+    float rB = eulerB.y;
+    MILO_ASSERT(rA != rB, 0x331);
+    MILO_ASSERT((abs(rA) < PI) && (abs(rB) < PI), 0x333);
+    float cosA = (float)cos(rA);
+    float slopeA = -(float)sin(rA) / cosA;
+    float cosB = (float)cos(rB);
+    float slopeB = -(float)sin(rB) / cosB;
+    float interceptA = -(slopeA * ax - az);
+    float midY = (a.v.y + b.v.y) * 0.5f;
+    float isectX = (-(slopeB * bx - bz) - interceptA) / (slopeA - slopeB);
+    float isectZ = slopeA * isectX + interceptA;
+    if (t < 0.5f) {
+        out.v.Set(isectX, midY, isectZ);
+        out.v -= a.v;
+        out.v *= 2.0f * t;
+        out.v += a.v;
+    } else {
+        out.v.Set(isectX, midY, isectZ);
+        out.v -= b.v;
+        out.v *= 2.0f * (1.0f - t);
+        out.v += b.v;
+    }
+    Vector3 midEuler(
+        (eulerA.x + eulerB.x) * 0.5f,
+        (eulerA.y + eulerB.y) * 0.5f,
+        (eulerA.z + eulerB.z) * 0.5f
+    );
+    MakeRotMatrix(midEuler, out.m, true);
 }
 
 bool ChordShapeGenerator::CheckParams() const {
