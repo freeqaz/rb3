@@ -62,8 +62,103 @@ bool RGGemMatcher::FretMatch(
 }
 
 bool RGGemMatcher::FretMatchImpl(
-    const GameGem &, float, float, float, float, bool, bool, RGMatchType
-) const {}
+    const GameGem &gem,
+    float f1,
+    float f2,
+    float f3,
+    float f4,
+    bool b1,
+    bool b2,
+    RGMatchType ty
+) const {
+    bool loose = false;
+    if (gem.Loose()) {
+        loose = true;
+        f1 += 25.0f;
+    }
+    bool isStrum = loose | (gem.GetRGStrumType() != 0);
+
+    int bit;
+    int numSwung = 0;
+    int numChecked = 0;
+    int numMatched = 0;
+    int numFretted = 0;
+    int numFullMatch = 0;
+    int numCloseSwings = 0;
+    int numMissed = 0;
+
+    for (int i = 0; i < 6; i++) {
+        float swing = mStringSwings[i];
+        bool swung = b2 | ((float)fabs((swing + f3) - f2) <= f1);
+        if (b1) {
+            float nonStrum = mStringNonStrum[i];
+            swung = swung | ((float)fabs((nonStrum + f3) - f2) <= f1);
+        }
+        if ((float)fabs(swing - f4) < 68.0f) {
+            numCloseSwings++;
+        }
+        if (gem.GetFret(i) >= 0) {
+            bit = 1 << i;
+            if ((bit & 0x3F) && gem.GetRGNoteType(i) != kRGGhost) {
+                if (gem.GetFret(i) > 0) {
+                    numFretted++;
+                }
+                numChecked++;
+                if (gem.GetRGNoteType(i) == kRGMuted ||
+                    FretHistoryMatch(i, gem.GetFret(i), f4, f1, ty)) {
+                    numMatched++;
+                    if (swung) {
+                        numSwung++;
+                        if (gem.GetFret(i) > 0 || gem.GetRGNoteType(i) == kRGMuted) {
+                            numFullMatch++;
+                        }
+                    }
+                }
+                if ((bit & gem.GetImportantStrings()) &&
+                    !FretHistoryMatch(i, gem.GetFret(i), f4, f1, ty)) {
+                    numMissed++;
+                }
+            }
+        }
+    }
+
+    if (numMissed > 0)
+        return false;
+    if (numChecked == 1) {
+        if (numSwung < 1)
+            return false;
+        if (numCloseSwings > 2 && !isStrum)
+            return false;
+        return true;
+    }
+    if (numChecked == 2) {
+        if (numSwung < 1)
+            return false;
+        if (numMatched != 2)
+            return false;
+        if (numCloseSwings > 3 && !isStrum)
+            return false;
+        return true;
+    }
+    if (numFretted == 0 && numChecked > 1) {
+        if (numSwung < (int)(0.75f * numChecked))
+            return false;
+        if (numCloseSwings > numChecked * 2 && !isStrum)
+            return false;
+        return true;
+    }
+    if (numChecked == 3 && numFretted > 1) {
+        if (numSwung < 2)
+            return false;
+        return numFullMatch >= (int)(0.5f * numFretted);
+    }
+    if (numChecked > 2 && numFretted > 0) {
+        if (numSwung < 3)
+            return false;
+        return numFullMatch >= (int)(0.5f * numFretted);
+    }
+    return false;
+}
 
 RGState *RGGemMatcher::GetState() { return &mState; }
 const RGState *RGGemMatcher::GetState() const { return &mState; }
