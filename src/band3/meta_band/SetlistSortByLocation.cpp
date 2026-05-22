@@ -76,51 +76,52 @@ int LocationCmp::Compare(const SongSortCmp *cmp, SongNodeType nodeType) const {
     case kNodeHeader:
         return mField20 - loc->mField20;
     case kNodeSetlist:
-        if (mField20 != loc->mField20) {
-            return mField20 - loc->mField20;
-        } else {
-            bool thisHasId = mId != 0;
-            bool otherHasId = loc->mId != 0;
-            if (thisHasId != otherHasId) {
-                return loc->mId - mId;
-            } else if (mField24 != loc->mField24) {
+        if (mField20 == loc->mField20) {
+            if ((mId > 0) == (loc->mId > 0)) {
+                if (mField24 == loc->mField24) {
+                    switch (mField20) {
+                    case 0: {
+                        if (loc->mField24 == 2) {
+                            MILO_ASSERT(mOwnerName, 0x8E);
+                            MILO_ASSERT(loc->mOwnerName, 0x8F);
+                            int ownerCmp =
+                                AlphaKeyStrCmp(mOwnerName, loc->mOwnerName, false);
+                            if (ownerCmp != 0)
+                                return ownerCmp;
+                        }
+                        int idCmp = mId - loc->mId;
+                        if (idCmp != 0)
+                            return idCmp;
+                        int cmpCmp = AlphaKeyStrCmp(mCmp, loc->mCmp, false);
+                        if (cmpCmp != 0)
+                            return cmpCmp;
+                        return AlphaKeyStrCmp(
+                            mName.c_str(), loc->mName.c_str(), false
+                        );
+                    }
+                    case 1: {
+                        if (loc->mField24 == 2) {
+                            MILO_ASSERT(mOwnerName, 0xA8);
+                            MILO_ASSERT(loc->mOwnerName, 0xA9);
+                            int ownerCmp =
+                                AlphaKeyStrCmp(mOwnerName, loc->mOwnerName, false);
+                            if (ownerCmp != 0)
+                                return ownerCmp;
+                        }
+                        return AlphaKeyStrCmp(mCmp, loc->mCmp, false);
+                    }
+                    case 2:
+                        return AlphaKeyStrCmp(mCmp, loc->mCmp, false);
+                    default:
+                        MILO_FAIL("Bad SetlistHeaderType in LocationCmp::Compare!");
+                        return 0;
+                    }
+                }
                 return mField24 - loc->mField24;
-            } else {
-                switch (mField20) {
-                case 0: {
-                    if (loc->mField24 == 2) {
-                        MILO_ASSERT(mOwnerName, 0x8E);
-                        MILO_ASSERT(loc->mOwnerName, 0x8F);
-                        int ownerCmp = AlphaKeyStrCmp(mOwnerName, loc->mOwnerName, false);
-                        if (ownerCmp != 0)
-                            return ownerCmp;
-                    }
-                    int idCmp = mId - loc->mId;
-                    if (idCmp != 0)
-                        return idCmp;
-                    int cmpCmp = AlphaKeyStrCmp(mCmp, loc->mCmp, false);
-                    if (cmpCmp != 0)
-                        return cmpCmp;
-                    return AlphaKeyStrCmp(mName.c_str(), loc->mName.c_str(), false);
-                }
-                case 1: {
-                    if (loc->mField24 == 2) {
-                        MILO_ASSERT(mOwnerName, 0xA8);
-                        MILO_ASSERT(loc->mOwnerName, 0xA9);
-                        int ownerCmp = AlphaKeyStrCmp(mOwnerName, loc->mOwnerName, false);
-                        if (ownerCmp != 0)
-                            return ownerCmp;
-                    }
-                    return AlphaKeyStrCmp(mCmp, loc->mCmp, false);
-                }
-                case 2:
-                    return AlphaKeyStrCmp(mCmp, loc->mCmp, false);
-                default:
-                    MILO_FAIL("Bad SetlistHeaderType in LocationCmp::Compare!");
-                    return 0;
-                }
             }
+            return loc->mId - mId;
         }
+        return mField20 - loc->mField20;
     default:
         MILO_FAIL("invalid type of node comparison.\n");
         return 0;
