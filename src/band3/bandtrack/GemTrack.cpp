@@ -9,6 +9,7 @@
 #include "game/BandUser.h"
 #include "game/Game.h"
 #include "game/GameConfig.h"
+#include "game/GamePanel.h"
 #include "game/GemPlayer.h"
 #include "game/SongDB.h"
 #include "game/TrainerPanel.h"
@@ -463,6 +464,71 @@ void GemTrack::DrawBeatLines(int from_tick, int to_tick) {
         }
         beat = next_beat;
     }
+}
+
+void GemTrack::DrawTrackElements(int from_tick, int to_tick) {
+    Player *player = GetPlayer();
+    if (!player)
+        return;
+    DrawBeatLines(from_tick, to_tick);
+    static int res = 0xF0;
+    Transform xfm;
+    for (int tick = res * ((from_tick + res) / res); tick <= to_tick; tick += res) {
+        TickToSeconds(tick);
+        DrawFill(TheSongDB->GetFillInfo(mTrackConfig.TrackNum(), tick), tick, res);
+        int soloStart = 0;
+        int soloEnd = 0;
+        if (TheSongDB->GetPhraseExtents(
+                kSoloPhrase, mTrackConfig.TrackNum(), tick, soloStart, soloEnd
+            )
+            && !player->GetQuarantined() && TheGame->mProperties.mCanSolo) {
+            static Symbol soloMask("guitar_solo_mask.wid");
+            TrackWidget *maskWidget = mGemManager->GetWidgetByName(soloMask);
+            if (tick - res < soloStart || maskWidget->Empty()) {
+                float soloStartSecs = TickToSeconds(soloStart);
+                float soloLen = TickToSeconds(soloEnd) - soloStartSecs;
+                mTrackDir->MakeSecondsXfm(soloStartSecs, xfm);
+                mTrackDir->SecondsToY(soloLen);
+                maskWidget->AddInstance(xfm, soloLen);
+            }
+            static Symbol boundaryWidName("bar_blue_beat.wid");
+            if (tick - res < soloStart) {
+                TrackWidget *w = mGemManager->GetWidgetByName(boundaryWidName);
+                mTrackDir->MakeSecondsXfm(TickToSeconds(soloStart), xfm);
+                w->AddInstance(xfm, 0.0f);
+            }
+            if (tick + res > soloEnd) {
+                TrackWidget *w = mGemManager->GetWidgetByName(boundaryWidName);
+                mTrackDir->MakeSecondsXfm(TickToSeconds(soloEnd), xfm);
+                w->AddInstance(xfm, 0.0f);
+            }
+        }
+        static Symbol finishLine("finish_line.wid");
+        if (tick <= TheSongDB->GetCodaStartTick()
+            && TheSongDB->GetCodaStartTick() < tick + res) {
+            mTrackDir->MakeSecondsXfm(TickToSeconds(TheSongDB->GetCodaStartTick()), xfm);
+            mGemManager->GetWidgetByName(finishLine)->AddInstance(xfm, 0.0f);
+        }
+        if (TheGame->mProperties.mInPracticeMode) {
+            float startMs;
+            float endMs;
+            int firstSection = 0;
+            int lastSection = 0;
+            float dummy;
+            TheGamePanel->mConfig.GetPracticeSections(firstSection, lastSection);
+            TheGamePanel->mConfig.GetSectionBounds(firstSection, startMs, dummy);
+            TheGamePanel->mConfig.GetSectionBounds(lastSection, dummy, endMs);
+            if (startMs < TickToMs(tick + res)) {
+                mTrackDir->MakeSecondsXfm(startMs / 1000.0f, xfm);
+                mGemManager->GetWidgetByName(finishLine)->AddInstance(xfm, 0.0f);
+            }
+            if (endMs < TickToMs(tick + res)) {
+                mTrackDir->MakeSecondsXfm(endMs / 1000.0f, xfm);
+                mGemManager->GetWidgetByName(finishLine)->AddInstance(xfm, 0.0f);
+            }
+        }
+    }
+    mLastTopTick = to_tick;
 }
 
 void GemTrack::Poll(float f) {}
