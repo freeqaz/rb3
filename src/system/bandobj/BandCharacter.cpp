@@ -1580,6 +1580,15 @@ DataNode BandCharacter::OnLoadDircut(DataArray *da) {
     }
 }
 
+DataNode BandCharacter::OnListDrumVenues(DataArray *da) {
+    DataArrayPtr ptr;
+    ptr->Resize(4);
+    for (int i = 0; i < 4; i++) {
+        ptr->Node(i) = Symbol(sDrumVenueMappings[i * 2]);
+    }
+    return DataNode(ptr);
+}
+
 DataNode BandCharacter::OnPlayGroup(DataArray *da) {
     bool b6 = false;
     if (da->Size() > 3)
