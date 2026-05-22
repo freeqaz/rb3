@@ -588,6 +588,65 @@ void GemManager::AdvanceEnd() {
     }
 }
 
+void GemManager::AddChordBracket(Symbol gemType, unsigned int slots, float ms) {
+    if (!mTrackDir)
+        return;
+    if (!mTrackConfig.IsKeyboardTrack())
+        return;
+    if (gemType != invisible) {
+        if (slots == 0)
+            return;
+        if (TheGame->unkdc != -1.0f && TheGame->unkdc > ms)
+            return;
+        int lowest = mTrackConfig.GetMaxSlots();
+        int highest = -1;
+        for (int s = 0; s < mTrackConfig.GetMaxSlots(); s++) {
+            if (slots & (1 << s)) {
+                if (s < lowest)
+                    lowest = s;
+                if (highest < s)
+                    highest = s;
+            }
+        }
+        bool isMiss = gemType == "miss";
+        if (lowest < highest) {
+            Symbol name;
+            int leftBlack = mTrackDir->IsBlackKey(lowest);
+            GetWidgetName(
+                name, leftBlack, Symbol(isMiss ? "bracket_left_miss" : "bracket_left")
+            );
+            if (leftBlack)
+                lowest--;
+            Symbol leftName = name;
+            TrackWidget *wLeft = GetWidgetByName(leftName);
+            RememberChordWidget(wLeft);
+            GetWidgetName(
+                name, 0, Symbol(isMiss ? "bracket_span_miss" : "bracket_span")
+            );
+            Symbol spanName = name;
+            TrackWidget *wSpan = GetWidgetByName(spanName);
+            RememberChordWidget(wSpan);
+            int rightBlack = mTrackDir->IsBlackKey(highest);
+            GetWidgetName(
+                name, rightBlack,
+                Symbol(isMiss ? "bracket_right_miss" : "bracket_right")
+            );
+            if (rightBlack)
+                highest++;
+            Symbol rightName = name;
+            TrackWidget *wRight = GetWidgetByName(rightName);
+            RememberChordWidget(wRight);
+            AddWidgetInstanceImpl(wLeft, lowest, ms);
+            for (int s = lowest + 1; s < highest; s++) {
+                if (!mTrackDir->IsBlackKey(s)) {
+                    AddWidgetInstanceImpl(wSpan, s, ms);
+                }
+            }
+            AddWidgetInstanceImpl(wRight, highest, ms);
+        }
+    }
+}
+
 void GemManager::RememberChordWidget(TrackWidget *w) {
     for (int i = 0; i < unkd8.size(); i++) {
         if (unkd8[i] == w)
