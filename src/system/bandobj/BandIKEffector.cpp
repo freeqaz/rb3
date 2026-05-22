@@ -538,6 +538,16 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     }
 }
 
+float BandIKEffector::GetGroundHeight(RndTransformable *trans) {
+    if (mGround) {
+        return mGround->WorldXfm().v.z;
+    } else if (mMore) {
+        return mMore->GetGroundHeight(trans);
+    } else {
+        return trans->WorldXfm().v.z;
+    }
+}
+
 int BandIKEffector::GetType() {
     if (!mEffector) {
         MILO_NOTIFY_ONCE("%s trying to get type with NULL effector", PathName(this));
