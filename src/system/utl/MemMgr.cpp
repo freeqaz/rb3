@@ -77,6 +77,29 @@ void MemFreeBlockStats(int heapNum, int &a, int &b, int &c, int &d) {
     gHeaps[heapNum].FreeBlockStats(a, b, c, d);
 }
 
+void Heap::InsertFreeBlock(
+    FreeBlock *block, int sizeWords, FreeBlock *prev, FreeBlock *next, int timeStamp
+) {
+    MILO_ASSERT(block == prev || block == next, 0x300);
+    block->mSizeWords = sizeWords;
+    block->mNext = next;
+    block->mTimeStamp = timeStamp;
+    if (prev != nullptr) {
+        prev->mNext = block;
+    } else {
+        mFreeBlockChain = block;
+    }
+}
+
+void MemSetAllowTemp(char *name, bool allow) {
+    int heap = MemFindHeap(name);
+    if (heap >= 0) {
+        gHeaps[heap].mAllowTemp = false;
+    }
+}
+
+bool MemTempAllocationsEnabled() { return false; }
+
 void Heap::FreeBlockStats(int &i1, int &i2, int &totalFree, int &biggest) {
     FreeBlock *block = mFreeBlockChain;
     int idx = 0;
