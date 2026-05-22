@@ -857,6 +857,14 @@ void AccomplishmentProgress::HandleUploadStarted() {
     }
 }
 
+DataNode AccomplishmentProgress::OnMsg(const RockCentralOpCompleteMsg &msg) {
+    bool match = msg.Arg2() == DataNode(kDataInt, unk648);
+    if (msg.Success() && match) {
+        SetHardCoreStatusUpdatePending(false);
+    }
+    return DataNode(1);
+}
+
 BEGIN_HANDLERS(AccomplishmentProgress)
     HANDLE_EXPR(
         get_icon_hardcore_status,
