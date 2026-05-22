@@ -423,6 +423,76 @@ bool StorePanel::ToggleTestOffers() {
 
 void StorePanel::FinishCheckout() {}
 
+void StorePanel::Unload() {
+    TheStoreMetadata.Unload();
+    RELEASE(mPurchaser);
+    RELEASE(mEnum);
+    mStorePreviewMgr->RemoveSink(this);
+    RELEASE(mStorePreviewMgr);
+    for (std::list<NetCacheLoader *>::iterator it = unk54.begin(); it != unk54.end();
+         ++it) {
+        TheNetCacheMgr->DeleteNetCacheLoader(*it);
+    }
+    unk54.clear();
+    DeleteAll(unk38);
+    TheNetCacheMgr->Unload();
+    TheWiiCommerceMgr.DestroyCommerce();
+    *(int *)((char *)&TheWiiCommerceMgr + 0x2114) = 0;
+    UIPanel::Unload();
+}
+
+int StorePanel::UpdateOffers(const std::list<EnumProduct> &list, bool b) {
+    std::vector<StoreOffer *> *offers = b ? &unk40 : &unk38;
+    int result;
+    if (mShowTestOffers) {
+        result = kStoreErrorSuccess;
+    } else if (offers->size() == 0) {
+        FormatString fmt("This metadata contained no offers!\n");
+        TheDebug.Notify(fmt.Str());
+        result = kStoreErrorSignedOut;
+    } else {
+        result = kStoreErrorNoContent;
+    }
+    for (std::vector<StoreOffer *>::iterator it = offers->begin(); it != offers->end();
+         ++it) {
+    }
+    return result;
+}
+
+DataNode StorePanel::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
+    DataArray *data = msg.Data();
+    if (data->Node(2).Int(data) != 0) {
+        mSessionStatus = kSessionCreated;
+    } else {
+        ExitError(TheStoreMetadata.LoadError());
+    }
+    return 1;
+}
+
+void StorePanel::CheckOut(StorePurchaseable *p) {
+    *(char *)((char *)&TheWiiCommerceMgr + 0x4194) = 0;
+}
+
+BEGIN_HANDLERS(StorePanel)
+    HANDLE_EXPR(toggle_test_offers, ToggleTestOffers())
+    HANDLE_EXPR(test_offers, mShowTestOffers)
+    HANDLE_ACTION(load_art, LoadArt(_msg->Str(2), _msg->Obj<UIPanel>(3)))
+    HANDLE_EXPR(album_tex, mAlbumTex)
+    HANDLE_ACTION(cancel_art, CancelArt())
+    HANDLE_ACTION(check_out, CheckOut(_msg->Obj<StorePurchaseable>(2)))
+    HANDLE_ACTION(re_download, CheckOut(_msg->Obj<StorePurchaseable>(2)))
+    HANDLE_ACTION(set_source, SetSource(_msg->Sym(2), _msg->Int(3)))
+    HANDLE_ACTION(set_source_to_backup, SetSourceToBackup())
+    HANDLE_ACTION(exit_error, ExitError((StoreError)_msg->Int(2)))
+    HANDLE_ACTION(finish_checkout, FinishCheckout())
+    HANDLE_MESSAGE(CommerceMgrOpCompleteMsg)
+    HANDLE_ACTION(load_metadata, LoadMetadata())
+    HANDLE_EXPR(is_metadata_loaded, IsMetadataLoaded())
+    HANDLE_ACTION(set_store_mode, SetStoreMode(_msg->Sym(2)))
+    HANDLE_SUPERCLASS(UIPanel)
+    HANDLE_CHECK(0x58f)
+END_HANDLERS
+
 BEGIN_PROPSYNCS(StorePanel)
     SYNC_PROP(current_offer, mCurrentOffer)
     SYNC_PROP(current_offer_upgrade, mCurrentOfferUpgrade)

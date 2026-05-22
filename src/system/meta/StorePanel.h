@@ -4,6 +4,8 @@
 #include "meta/StorePreviewMgr.h"
 #include "ui/UIPanel.h"
 
+class CommerceMgrOpCompleteMsg;
+
 enum SessionStatus {
     kSessionNone = 0,
     kSessionCreating = 1,
@@ -51,6 +53,9 @@ public:
     void ExitError(StoreError);
     bool IsEnumerating() const;
     bool InCheckout() const;
+    void CheckOut(StorePurchaseable *);
+
+    DataNode OnMsg(const CommerceMgrOpCompleteMsg &);
 
     static StorePanel *Instance();
 
