@@ -1745,6 +1745,12 @@ BEGIN_HANDLERS(VocalTrack)
     HANDLE_CHECK(0xE6C)
 END_HANDLERS
 
+bool Performer::IsNet() const { return false; }
+
+bool Player::InTambourinePhrase() const { return false; }
+
+bool VocalPlayer::InTambourinePhrase() const { return mTambourineManager.unk60 > 0; }
+
 VocalTrack::LyricShift::LyricShift(float f1, float f2) : unk0(f2), unk4(f1), unk8(0) {
     if (dumpLyricShifts) {
         MILO_LOG(
