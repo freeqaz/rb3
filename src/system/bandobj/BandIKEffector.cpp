@@ -307,6 +307,35 @@ BEGIN_CUSTOM_PROPSYNC(BandIKEffector::Constraint)
     SYNC_PROP(weight, o.mWeight)
 END_CUSTOM_PROPSYNC
 
+void BandIKEffector::ComputeElbowPullAndQuat(
+    QuatXfm &outQuat, const Transform &shoulderXfm, const Vector3 &elbowTarget
+) {
+    float dx = elbowTarget.x - shoulderXfm.v.x;
+    float dy = elbowTarget.y - shoulderXfm.v.y;
+    float dz = elbowTarget.z - shoulderXfm.v.z;
+
+    Vector3 localElbow;
+    localElbow.x = shoulderXfm.m.x.z * dz + (shoulderXfm.m.x.y * dy + shoulderXfm.m.x.x * dx);
+    localElbow.y = shoulderXfm.m.y.z * dz + (shoulderXfm.m.y.y * dy + shoulderXfm.m.y.x * dx);
+    localElbow.z = shoulderXfm.m.z.z * dz + (shoulderXfm.m.z.y * dy + shoulderXfm.m.z.x * dx);
+
+    RndTransformable *parent = mEffector->TransParent();
+    MakeRotQuat(parent->mLocalXfm.v, localElbow, outQuat.q);
+
+    float armLen = parent->mLocalXfm.v.x;
+    outQuat.v.x = elbowTarget.x - shoulderXfm.v.x;
+    outQuat.v.y = elbowTarget.y - shoulderXfm.v.y;
+    outQuat.v.z = elbowTarget.z - shoulderXfm.v.z;
+
+    float len = (float)sqrt(
+        outQuat.v.x * outQuat.v.x + outQuat.v.y * outQuat.v.y + outQuat.v.z * outQuat.v.z
+    );
+    float scale = 1.0f - armLen / len;
+    outQuat.v.x *= scale;
+    outQuat.v.y *= scale;
+    outQuat.v.z *= scale;
+}
+
 void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     Transform neutralElbow;
     Transform worldShoulder;
