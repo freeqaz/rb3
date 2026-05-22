@@ -419,7 +419,7 @@ void MetaPanel::UpdateMusicMuteState() {
 
 DataNode MetaPanel::OnMsg(const CurrentScreenChangedMsg &msg) {
     UpdateMetaMusic(msg.GetScreen());
-    return 0;
+    return DataNode(kDataUnhandled, 0);
 }
 
 DataNode MetaPanel::OnMsg(const XMPStateChangedMsg &msg) {
