@@ -3,6 +3,8 @@
 #include "os/Debug.h"
 #include "rndobj/Trans.h"
 #include "rndobj/Utl.h"
+#include "math/Vec.h"
+#include "obj/Task.h"
 #include "utl/BinStream.h"
 #include "utl/MakeString.h"
 #include "utl/Symbols.h"
@@ -154,6 +156,196 @@ bool CharKeyHandMidi::IsBlackKey(KeyboardKey key) {
     default:
         return false;
     }
+}
+
+void CharKeyHandMidi::Poll() {
+    if (!mFirstSpot)
+        return;
+    if (!mSecondSpot)
+        return;
+
+    if (unk7c && unk7c->mTeleported) {
+        unk78 = true;
+        if (mIKObject)
+            mIKObject->mResetCurHandTrans = true;
+    }
+
+    if (unk78) {
+        Vector3 firstPos(
+            mFirstSpot->WorldXfm().v.x,
+            mFirstSpot->WorldXfm().v.y,
+            mFirstSpot->WorldXfm().v.z
+        );
+
+        Vector3 keyDir;
+        Subtract(mSecondSpot->WorldXfm().v, firstPos, keyDir);
+        float keyDist = Length(keyDir);
+        Normalize(keyDir, keyDir);
+
+        Vector3 upDir;
+        Normalize(mFirstSpot->WorldXfm().m.z, upDir);
+
+        Vector3 &forward = mFirstSpot->WorldXfm().m.y;
+
+        float halfStep = keyDist / 28.0f;
+        float fullStep = keyDist / 14.0f;
+
+        float negFwdX = forward.x * -1.0f;
+        float negFwdY = forward.y * -1.0f;
+        float negFwdZ = forward.z * -1.0f;
+        float tipX = negFwdX * 1.0f;
+        float tipY = negFwdY * 1.0f;
+        float tipZ = negFwdZ * 1.0f;
+
+        float curX = firstPos.x + upDir.x * -0.4f;
+        float curY = firstPos.y + upDir.y * -0.4f;
+        float curZ = firstPos.z + upDir.z * -0.4f;
+
+        float whiteX = keyDir.x * fullStep;
+        float whiteY = keyDir.y * fullStep;
+        float whiteZ = keyDir.z * fullStep;
+
+        float blackX = upDir.x * 0.5f + (negFwdX * 2.0f + keyDir.x * halfStep);
+        float blackY = upDir.y * 0.5f + (negFwdY * 2.0f + keyDir.y * halfStep);
+        float blackZ = upDir.z * 0.5f + (negFwdZ * 2.0f + keyDir.z * halfStep);
+
+        unk4c[1].Set(curX, curY, curZ);
+        unk54[1].Set(curX + tipX, curY + tipY, curZ + tipZ);
+
+        for (int key = 2; key <= 0x19; key++) {
+            if (IsBlackKey((KeyboardKey)key)) {
+                float px = curX + blackX;
+                float py = curY + blackY;
+                float pz = curZ + blackZ;
+                unk4c[key].Set(px, py, pz);
+                unk54[key].Set(px + tipX, py + tipY, pz + tipZ);
+            } else {
+                curX = curX + whiteX;
+                curY = curY + whiteY;
+                curZ = curZ + whiteZ;
+                unk4c[key].Set(curX, curY, curZ);
+                unk54[key].Set(curX + tipX, curY + tipY, curZ + tipZ);
+            }
+        }
+        unk78 = false;
+    }
+
+    float now = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    if (now < unk88) {
+        for (int i = 0; i < 5; i++) {
+            UnkeyFinger((CharIKFingers::FingerNum)i);
+        }
+        unk5c.clear();
+        unk88 = now;
+        return;
+    }
+    unk88 = now;
+
+    int numKeysDown = unk5c.size();
+    if (numKeysDown > 5) {
+        TheDebug.Notify(MakeString("Too many keyboard keys down in one poll: %d\n", numKeysDown));
+        unk5c.clear();
+        return;
+    }
+
+    if (mIsRightHand) {
+        std::sort(unk5c.begin(), unk5c.end());
+    } else {
+        std::sort(unk5c.begin(), unk5c.end(), std::greater<int>());
+    }
+
+    if (numKeysDown <= 0)
+        return;
+
+    if (unk74 == 5) {
+        switch (numKeysDown) {
+        case 1: {
+            KeyboardKey k0 = unk5c[0];
+            CharIKFingers::FingerNum f =
+                FindPreferredFinger(k0, (KeyboardKey)unk64, (CharIKFingers::FingerNum)unk68);
+            if (f != CharIKFingers::kFingerNone)
+                KeyFinger(f, k0);
+            break;
+        }
+        case 2: {
+            KeyboardKey k0 = unk5c[0];
+            KeyboardKey k1 = unk5c[1];
+            CharIKFingers::FingerNum f0 =
+                FindPreferredFinger(k0, (KeyboardKey)unk64, (CharIKFingers::FingerNum)unk68);
+            if (f0 > CharIKFingers::kFingerMiddle)
+                f0 = CharIKFingers::kFingerMiddle;
+            KeyFinger(f0, k0);
+            KeyFinger(
+                FindPreferredFinger(k1, (KeyboardKey)unk64, (CharIKFingers::FingerNum)unk68), k1
+            );
+            break;
+        }
+        case 3: {
+            KeyboardKey k0 = unk5c[0];
+            KeyboardKey k1 = unk5c[1];
+            KeyboardKey k2 = unk5c[2];
+            KeyFinger(CharIKFingers::kFingerThumb, k0);
+            CharIKFingers::FingerNum f1 =
+                FindPreferredFinger(k1, (KeyboardKey)unk64, (CharIKFingers::FingerNum)unk68);
+            if (f1 == CharIKFingers::kFingerPinky)
+                KeyFinger(CharIKFingers::kFingerRing, k1);
+            else
+                KeyFinger(f1, k1);
+            KeyFinger(
+                FindPreferredFinger(k2, (KeyboardKey)unk64, (CharIKFingers::FingerNum)unk68), k2
+            );
+            break;
+        }
+        case 4:
+            KeyFinger(CharIKFingers::kFingerThumb, unk5c[0]);
+            KeyFinger(CharIKFingers::kFingerIndex, unk5c[1]);
+            KeyFinger(CharIKFingers::kFingerMiddle, unk5c[2]);
+            KeyFinger(CharIKFingers::kFingerPinky, unk5c[3]);
+            break;
+        case 5:
+            KeyFinger(CharIKFingers::kFingerThumb, unk5c[0]);
+            KeyFinger(CharIKFingers::kFingerIndex, unk5c[1]);
+            KeyFinger(CharIKFingers::kFingerMiddle, unk5c[2]);
+            KeyFinger(CharIKFingers::kFingerRing, unk5c[3]);
+            KeyFinger(CharIKFingers::kFingerPinky, unk5c[4]);
+            break;
+        }
+    } else {
+        if (numKeysDown > unk74) {
+            TheDebug.Notify(
+                FormatString("Keyboard fingers: not enough free fingers to play a "
+                              "note, please check the authoring!")
+                    .Str()
+            );
+        }
+        std::vector<CharIKFingers::FingerNum> usedFingers;
+        bool allOk = true;
+        KeyboardKey lastKey = (KeyboardKey)unk64;
+        CharIKFingers::FingerNum lastFinger = (CharIKFingers::FingerNum)unk68;
+        for (int i = 0; i < numKeysDown; i++) {
+            CharIKFingers::FingerNum f =
+                FindPreferredFinger(unk5c[i], lastKey, lastFinger);
+            if (f == CharIKFingers::kFingerNone || unk6c[f] != 0) {
+                allOk = false;
+                break;
+            }
+            if (std::find(usedFingers.begin(), usedFingers.end(), f) != usedFingers.end()) {
+                allOk = false;
+                break;
+            }
+            usedFingers.push_back(f);
+        }
+        if (allOk) {
+            for (int i = 0; i < numKeysDown; i++) {
+                KeyFinger(usedFingers[i], unk5c[i]);
+            }
+        } else {
+            for (int i = 0; i < numKeysDown; i++) {
+                DefaultSelectFinger(unk5c[i]);
+            }
+        }
+    }
+    unk5c.clear();
 }
 
 void CharKeyHandMidi::EndTest() {
