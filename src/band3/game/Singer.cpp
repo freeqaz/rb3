@@ -383,3 +383,31 @@ void Singer::ResolveAmbiguity() {
         }
     }
 }
+
+void Singer::SetAssignedPart(int part, float f2) {
+    mFrameAssignedPart = part;
+    if (mVibratoFrameBonus != 0.0f) {
+        mScoreCaches[part].unk4 += mVibratoFrameBonus;
+        mVibratoFrameBonus = 0.0f;
+    }
+    mScoreHistories[part].BiasLastScore(f2);
+    float assignedPoints = mScoreCaches[part].unk4;
+    float total = mResultsData[part].unk0 + assignedPoints;
+    float cap = mScoreCaches[part].unk8;
+    mResultsData[part].unk0 = std::min(total, cap);
+    mPossibleVibratoPoints.Set(mScoreCaches[part].unk10);
+    for (AmbiguousData *iter = &mAmbiguousData[0];
+         iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
+        if ((iter->unk0 != part && iter->unk4 != part) || iter->unk8)
+            continue;
+        if (iter->unkc == part) {
+            MILO_ASSERT(iter->unk10 >= 0.0f, 0x460);
+            iter->unk10 += assignedPoints;
+        } else if (iter->unkc != -1) {
+            iter->unk8 = true;
+        } else {
+            iter->unk10 = assignedPoints;
+            iter->unkc = part;
+        }
+    }
+}

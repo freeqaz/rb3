@@ -183,7 +183,7 @@ public:
     float unka0;
     int unka4;
     int unka8;
-    DelayLine<int, 100> mPossibleVibratoPoints; // 0xac
+    DelayLine<float, 100> mPossibleVibratoPoints; // 0xac
     VibratoDetector *mVibrato; // 0x240
     float unk244;
     float mVibratoFrameBonus; // 0x248
