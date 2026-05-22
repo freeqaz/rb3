@@ -13,6 +13,7 @@
 #include "meta_band/BandMachineMgr.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
+#include "obj/Msg.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "rndobj/Mesh.h"
@@ -23,6 +24,7 @@
 #include "ui/UIListProvider.h"
 #include "utl/MakeString.h"
 #include "utl/MemMgr.h"
+#include "utl/Messages.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
@@ -68,7 +70,8 @@ public:
 
 class TourDescProvider : public UIListProvider, public Hmx::Object {
 public:
-    TourDescProvider();
+    TourDescProvider(std::vector<DynamicTex *> *texs)
+        : mTexs(texs), mUnearnedMat(0), mEarnedMat(0) {}
     virtual ~TourDescProvider();
     virtual void Text(int, int, UIListLabel *, UILabel *) const;
     virtual RndMat *Mat(int, int, UIListMesh *) const;
@@ -87,7 +90,7 @@ public:
     std::vector<DynamicTex *> *mTexs; // 0x20
     RndMat *mUnearnedMat; // 0x24
     RndMat *mEarnedMat; // 0x28
-    std::vector<Symbol> mTours; // 0x2c
+    std::vector<Symbol VECTOR_SIZE_SMALL> mTours; // 0x2c
 };
 
 inline bool TourDescProvider::IsTourDescAvailable(Symbol s) const {
@@ -123,7 +126,7 @@ public:
     void LoadIcons();
     void Refresh();
     bool IsTourAvailable();
-    Symbol GetInitiallySelectedTour() const;
+    Symbol GetInitiallySelectedTour();
     void ClearInitiallySelectedTour();
     void SelectDefaultTour();
     void SelectTour(Symbol);
@@ -261,6 +264,20 @@ UIComponent::State TourDescProvider::ComponentStateOverride(
     return i_eState;
 }
 
+TourDescProvider::~TourDescProvider() {}
+
+int TourDescProvider::NumData() const { return mTours.size(); }
+
+Symbol TourDescProvider::DataSymbol(int i_iData) const {
+    MILO_ASSERT(0 <= i_iData && i_iData < NumData(), 0x24A);
+    return mTours[i_iData];
+}
+
+void TourDescProvider::InitData(RndDir *i_pDir) {
+    mUnearnedMat = i_pDir->Find<RndMat>("song_disc_dark.mat", false);
+    mEarnedMat = i_pDir->Find<RndMat>("song_disc_light.mat", false);
+}
+
 bool TourDescPanel::IsTourAvailable() {
     MILO_ASSERT(m_pTourDescProvider, 0x2D6);
     Symbol s = GetSelectedTourDesc(0);
@@ -283,6 +300,61 @@ void TourDescPanel::CheatWinTour() {
     Refresh();
 }
 
+
+TourDescPanel::TourDescPanel() : m_pTourDescProvider(0) {}
+
+TourDescPanel::~TourDescPanel() {}
+
+void TourDescPanel::Load() {
+    TexLoadPanel::Load();
+    MILO_ASSERT(!m_pTourDescProvider, 0x279);
+    LoadIcons();
+}
+
+void TourDescPanel::FinishLoad() {
+    TexLoadPanel::FinishLoad();
+    MILO_ASSERT(!m_pTourDescProvider, 0x283);
+    m_pTourDescProvider = new TourDescProvider(&mTexs);
+}
+
+void TourDescPanel::Enter() {
+    UIPanel::Enter();
+    Refresh();
+}
+
+void TourDescPanel::Unload() {
+    TexLoadPanel::Unload();
+    delete m_pTourDescProvider;
+    m_pTourDescProvider = 0;
+}
+
+Symbol TourDescPanel::GetSelectedTourDesc(UIComponent *) {
+    if (GetState() != kUp)
+        return Symbol("");
+    int index = Handle(get_selected_tourdesc_index_msg, true).Int();
+    if (m_pTourDescProvider->NumData() > 0)
+        return m_pTourDescProvider->DataSymbol(index);
+    return Symbol("");
+}
+
+Symbol TourDescPanel::GetInitiallySelectedTour() {
+    return Handle(get_initially_selected_tour_msg, true).Sym();
+}
+
+void TourDescPanel::ClearInitiallySelectedTour() {
+    Handle(clear_initially_selected_tour_msg, true);
+}
+
+void TourDescPanel::SelectDefaultTour() {
+    Symbol s = GetInitiallySelectedTour();
+    ClearInitiallySelectedTour();
+    if (s == gNullStr) {
+        TourProgress *pProgress = TheTour->GetTourProgress();
+        MILO_ASSERT(pProgress, 0x2F8);
+        s = pProgress->GetTourDesc();
+    }
+    SelectTour(s);
+}
 
 BEGIN_HANDLERS(TourDescPanel)
     HANDLE_ACTION(refresh, Refresh())
