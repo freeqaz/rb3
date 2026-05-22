@@ -10,6 +10,8 @@
 #include "utl/Str.h"
 #include <vector>
 
+class BandProfile;
+
 enum SaveLoadMgrStatus {
     kSaveLoadMgrStatus0,
     kSaveLoadMgrStatus_Saving,
@@ -32,6 +34,7 @@ public:
         kS_SaveOverwrite = 0x46,
         kS_SaveNoOverwrite = 0x47,
         kS_SaveNotEnoughSpacePS3 = 0x4A,
+        kS_ManualLoadInit = 0x5A,
         kS_ManualLoadConfirm = 0x60,
         kS_Finish = 0x6F,
     };
@@ -70,9 +73,9 @@ public:
     DataNode OnMsg(const SigninChangedMsg &);
 
 protected:
-    Profile *GetProfile();
-    Profile *GetAutosavableProfile();
-    Profile *GetNewSigninProfile();
+    BandProfile *GetProfile();
+    BandProfile *GetAutosavableProfile();
+    BandProfile *GetNewSigninProfile();
     void SetState(State);
     void UpdateStatus(SaveLoadMgrStatus);
     void Start();

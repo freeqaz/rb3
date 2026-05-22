@@ -6,6 +6,7 @@
 #include "obj/Data.h"
 #include "obj/MessageTimer.h"
 #include "obj/ObjMacros.h"
+#include "meta/MemcardMgr_Wii.h"
 #include "os/Debug.h"
 #include "os/Memcard.h"
 #include "os/User.h"
@@ -75,6 +76,80 @@ void SaveLoadManager::AutoLoad() {
 void SaveLoadManager::ManualDelete() {
     MILO_LOG("Manual Delete has been called\n");
     mRequestFlags |= 1;
+}
+
+Symbol SaveLoadManager::GetDialogOpt3() {
+    Symbol sym(gNullStr);
+    if (mState == kS_SaveNotEnoughSpacePS3) {
+        sym = mc_button_continue_no_save;
+    }
+    return sym;
+}
+
+BandProfile *SaveLoadManager::GetProfile() {
+    return TheProfileMgr.GetProfileForUser(mUser);
+}
+
+bool SaveLoadManager::IsReasonToAutoload() {
+    if (TheMemcardMgr.IsDisableWriting()) {
+        return false;
+    }
+    bool reason = false;
+    if (GetNewSigninProfile() || mInitialLoadNotDone) {
+        reason = true;
+    }
+    return reason;
+}
+
+bool SaveLoadManager::IsAutosaveEnabled(LocalBandUser *user) {
+    Profile *profile = TheProfileMgr.GetProfileForUser(user);
+    if (!profile) {
+        MILO_WARN("Tried to get autosave enabled status without a valid profile.\n");
+        return false;
+    }
+    return profile->IsAutosaveEnabled();
+}
+
+void SaveLoadManager::EnableAutosave(LocalBandUser *user) {
+    Profile *profile = TheProfileMgr.GetProfileForUser(user);
+    if (!profile) {
+        MILO_WARN("Tried to enable autosave without a valid profile.\n");
+        return;
+    }
+    TheMemcardMgr.DisableWriting(false);
+    profile->SetSaveState(kMetaProfileLoaded);
+    ManualSave(user);
+}
+
+void SaveLoadManager::DisableAutosave(LocalBandUser *user) {
+    Profile *profile = TheProfileMgr.GetProfileForUser(user);
+    if (!profile) {
+        MILO_WARN("Tried to disable autosave without a valid profile.\n");
+        return;
+    }
+    bool idle = false;
+    if (mState == kS_Idle && mRequestFlags == 0) {
+        idle = true;
+    }
+    if (!idle) {
+        MILO_WARN("Tried to disable autosave while saveloadmgr is not idle.\n");
+        return;
+    }
+    profile->SetSaveState(kMetaProfileError);
+}
+
+void SaveLoadManager::ManualSave(LocalBandUser *user) {
+    if (mState != kS_Idle) {
+        MILO_WARN(
+            "Attempted to perform a manual save, but saveloadmgr is not idle (state = %d).\n",
+            mState
+        );
+        return;
+    }
+    mUser = user;
+    mLocalUser = user;
+    TheMemcardMgr.AddSink(this);
+    SetState(kS_ManualLoadInit);
 }
 
 #pragma push
