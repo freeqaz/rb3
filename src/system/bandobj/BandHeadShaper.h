@@ -14,6 +14,7 @@ public:
     bool Start(ObjectDir *, Symbol, RndMesh *, SyncMeshCB *, bool);
     void AddDegrees(const char *, int, float *, int);
     void AddFrame(const char *, int, float);
+    void AddFrameHelper(const char *, int, int, float, float &);
     void AddChildBones(RndTransformable *);
     void Reskin();
     void End();

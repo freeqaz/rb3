@@ -236,6 +236,34 @@ void BandHeadShaper::AddChildBones(RndTransformable *t) {
     }
 }
 
+void BandHeadShaper::AddFrameHelper(
+    const char *cc, int i1, int i2, float f, float &fref
+) {
+    int frame;
+    float weight;
+    if (f < 0.5f) {
+        frame = i1 + i2;
+        weight = -(2.0f * f - 1.0f);
+    } else {
+        frame = i1 + i2 + 1;
+        weight = 2.0f * (f - 0.5f);
+    }
+    AddFrame(cc, frame, weight);
+    fref -= weight;
+}
+
+void BandHeadShaper::AddDegrees(const char *cc, int i1, float *degrees, int count) {
+    int base = i1 * (count * 2 + 1);
+    float remainder = 1.0f;
+    int idx = 1;
+    int i = 0;
+    float *p = degrees;
+    for (; i < count; p++, idx += 2, i++) {
+        AddFrameHelper(cc, base, idx, *p, remainder);
+    }
+    AddFrame(cc, base, remainder);
+}
+
 void BandHeadShaper::End() {
     mBones->ScaleAddIdentity();
     mBase->RotateBy(*mBones, mBase->StartBeat());
