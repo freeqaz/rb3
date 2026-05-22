@@ -599,6 +599,32 @@ StoreMarqueeTable::~StoreMarqueeTable() {
         _MemFree(mBuffer);
 }
 
+bool StoreMarqueeTable::Load(const char *cc) {
+    char buf[256];
+    sprintf(buf, "%smarquees", cc);
+    char *dataStart;
+    char *dataEnd;
+    bool ret = StoreLoadPackedFile(
+        buf, true, 0x20000, false, false, &mBuffer, &dataStart, &dataEnd, &mNumMarquees
+    );
+    if (!ret)
+        return ret;
+    unsigned long byteCount = mNumMarquees * 10;
+    int diff = dataEnd - dataStart;
+    if ((unsigned long)diff != byteCount) {
+        MILO_LOG(
+            "Marquee file says is has %d entries, but at %d bytes each that would take %d bytes, and there are %d bytes left in the file.\n",
+            mNumMarquees,
+            10UL,
+            byteCount,
+            diff
+        );
+        mNumMarquees = (unsigned int)diff / 10;
+    }
+    mMarquees = dataStart;
+    return true;
+}
+
 StorePageTable::~StorePageTable() {
     mPageLookup.clear();
     delete[] mPages;

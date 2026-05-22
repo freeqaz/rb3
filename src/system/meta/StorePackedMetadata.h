@@ -15,6 +15,8 @@ public:
     bool Load(const char *);
 
     char *mBuffer; // 0x0
+    char *mMarquees; // 0x4
+    int mNumMarquees; // 0x8
 };
 
 class StorePackedRedemptionOffer {
