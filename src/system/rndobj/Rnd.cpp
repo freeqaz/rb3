@@ -266,7 +266,10 @@ Vector2 &
 Rnd::DrawStringScreen(const char *c, const Vector2 &v, const Hmx::Color &color, bool b4) {
     float fwidth = mWidth;
     float fheight = mHeight;
-    Vector2 &vres = DrawString(c, Vector2(v.x * fwidth, v.y * fheight), color, b4);
+    Vector2 tmp;
+    tmp.y = v.y * fheight;
+    tmp.x = v.x * fwidth;
+    Vector2 &vres = DrawString(c, tmp, color, b4);
     vres.x /= fwidth;
     vres.y /= fheight;
     return vres;
