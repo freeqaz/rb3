@@ -247,6 +247,29 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
     Finalize();
 }
 
+void VocalNoteList::EndPlayerPhrase(int tick, int) {
+    MILO_ASSERT(!mPhrases.empty(), 0x24d);
+    if (mPhrases.back().unkc != -1
+        && tick > mPhrases.back().unk8 + mPhrases.back().unkc + 0x1e0) {
+        MILO_WARN(
+            "%s (%s): confused by vocal phrase overlap around tick %s",
+            mSongData->SongFullPath(),
+            mTrackName,
+            PrintTick(tick)
+        );
+    }
+    int duration = tick - mPhrases.back().unk8;
+    if (duration < 0x1e0) {
+        MILO_WARN(
+            "%s (%s): confused by vocal phrase overlap around tick %s",
+            mSongData->SongFullPath(),
+            mTrackName,
+            PrintTick(tick)
+        );
+    }
+    mPhrases.back().unkc = duration;
+}
+
 void VocalNoteList::AddTambourineGem(int gem) { mTambourineGems.push_back(gem); }
 
 void VocalNoteList::SetFreestyleSections(const std::vector<std::pair<float, float> > &sects
