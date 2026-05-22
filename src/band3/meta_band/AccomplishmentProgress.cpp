@@ -334,6 +334,97 @@ bool AccomplishmentProgress::HasAward(Symbol s) const {
     return mAwards.find(s) != mAwards.end();
 }
 
+void AccomplishmentProgress::UpdateStats(
+    ScoreType type,
+    Difficulty diff,
+    int bandScore,
+    const Stats &stats,
+    Performer *i_pPerformer,
+    Band *i_pBand
+) {
+    MILO_ASSERT(i_pBand, 0x46C);
+    if (type == kScoreHarmony || type == kScoreVocals) {
+        mTotalAwesomes += stats.mHitCount;
+        mTotalDoubleAwesomes += stats.mDoubleHarmonyHit;
+        mTotalTripleAwesomes += stats.mTripleHarmonyHit;
+    } else {
+        mTotalGemsSmashed += stats.mHitCount;
+    }
+    if (type == kScoreGuitar) {
+        mTotalGuitarHopos += stats.mHopoGemsHopoed;
+    }
+    if (type == kScoreBass) {
+        mTotalBassHopos += stats.mHopoGemsHopoed;
+    }
+    if (type == kScoreDrum || type == kScoreRealDrum) {
+        mCareerFills += stats.mFillHitCount;
+    }
+    if (type == kScoreBass) {
+        mTotalUpstrums += stats.mUpstrumCount;
+    }
+    mTotalTimesRevived += stats.mTimesSaved;
+    mTotalSaves += stats.mPlayersSaved;
+    if (type == kScoreVocals || type == kScoreHarmony) {
+        if (stats.m0x5c > mBestPercussionPercent[diff]) {
+            mBestPercussionPercent[diff] = stats.m0x5c;
+        }
+    }
+    if (type == kScoreDrum) {
+        int kickPercent;
+        if (stats.m0x68 != 0) {
+            kickPercent =
+                (int)(100.0f * ((float)stats.m0x6c / (float)stats.m0x68));
+        } else {
+            kickPercent = 0;
+        }
+        if (kickPercent > mBestKickPercent[diff]) {
+            mBestKickPercent[diff] = kickPercent;
+        }
+        mTotalDrumRollCount[diff] += stats.mRollsHitCompletely;
+    }
+    if (type == kScoreRealDrum) {
+        int proKickPercent;
+        if (stats.m0x68 != 0) {
+            proKickPercent =
+                (int)(100.0f * ((float)stats.m0x6c / (float)stats.m0x68));
+        } else {
+            proKickPercent = 0;
+        }
+        if (proKickPercent > mBestProKickPercent[diff]) {
+            mBestProKickPercent[diff] = proKickPercent;
+        }
+        mTotalProDrumRollCount[diff] += stats.mRollsHitCompletely;
+    }
+    if (type == kScoreDrum || type == kScoreRealDrum) {
+        int drumRollPercent;
+        if (stats.mRollCount > 0) {
+            drumRollPercent = (stats.mRollsHitCompletely * 100) / stats.mRollCount;
+        } else {
+            drumRollPercent = 0;
+        }
+        if (drumRollPercent > mBestDrumRollPercent[diff]) {
+            mBestDrumRollPercent[diff] = drumRollPercent;
+        }
+    }
+    if (type == kScoreGuitar) {
+        if (stats.mSoloButtonedSoloPercentage > mBestSoloButtonPercent[diff]) {
+            mBestSoloButtonPercent[diff] = stats.mSoloButtonedSoloPercentage;
+        }
+    }
+    UpdateScoreTypeSpecificStats(type, diff, stats, i_pPerformer, i_pBand);
+    if (type != kScoreBand) {
+        UpdateScoreTypeSpecificStats(
+            kScoreBand, diff, stats, i_pPerformer, i_pBand
+        );
+    }
+    if (bandScore > mBestBandScore) {
+        mBestBandScore = bandScore;
+    }
+    mUploadDirty = true;
+    MILO_ASSERT(mParentProfile, 0x4D2);
+    mParentProfile->MakeDirty();
+}
+
 void AccomplishmentProgress::UpdateScoreTypeSpecificStats(
     ScoreType type,
     Difficulty diff,
