@@ -101,7 +101,7 @@ public:
     void PostRender();
     void Compress(BandCharDesc *);
     void Render(RndTex *, RndMat *);
-    bool FindXfm(RndMesh *, const Vector2 &, Transform &);
+    static bool FindXfm(RndMesh *, const Vector2 &, Transform &);
 
     static void SetRenderToVert(RndMesh::Vert &, const Vector2 &, const Vector2 &);
     DECLARE_REVS;
