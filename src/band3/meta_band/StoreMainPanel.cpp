@@ -34,6 +34,81 @@ void StoreMainPanel::Load() {
     BandStorePanel::Instance()->AddSink(this);
 }
 
+void StoreMainPanel::FinishLoad() {
+    UIPanel::FinishLoad();
+    mNoneTex = mDir->Find<RndTex>("cover_art_none.tex", true);
+    for (int i = 0; i < 6; i++) {
+        RndMat *mat = mDir->Find<RndMat>(MakeString("cover_art_%02i.mat", i + 1), true);
+        mCoverArtMats[i] = mat;
+        mat->SetDiffuseTex(mNoneTex);
+        mat->mShaderVariation = (ShaderVariation)(mat->mShaderVariation | 2);
+    }
+    mLabel1 = mDir->Find<AppLabel>("text_line_1.lbl", true);
+    mLabel2 = mDir->Find<AppLabel>("text_line_2.lbl", true);
+    mLabel3 = mDir->Find<AppLabel>("text_line_3.lbl", true);
+    mScrollAnim = mDir->Find<RndAnimatable>("album_scroll.anim", true);
+    mScrollAnim->Animate(
+        mScrollAnim->EndFrame(), mScrollAnim->EndFrame(), kTaskUISeconds, 0, 0
+    );
+    mCurrentEntry = -1;
+    mLabel1->SetTextToken(gNullStr);
+    mLabel2->SetTextToken(gNullStr);
+    MILO_ASSERT(TypeDef(), 0x57);
+    mDisplayRate = TypeDef()->FindArray(display_rate, true)->Float(1);
+    mCrossfadeDuration = TypeDef()->FindArray(crossfade_duration, true)->Float(1);
+    ParseConfigData();
+}
+
+void StoreMainPanel::Poll() {
+    StoreArtLoaderPanel::Poll();
+    if (mNewReleaseList.size() == 0)
+        return;
+    if (!unk6c) {
+        if (!IsAllArtLoadedOrFailed())
+            return;
+        MILO_ASSERT(mNewReleaseList.size() == mCoverArtTexs.size(), 0x6F);
+        for (int i = 0; i < mNewReleaseList.size(); i++) {
+            RndBitmap *bmp = GetBmp(mNewReleaseList[i].mStrName);
+            if (bmp) {
+                mCoverArtTexs[i]->SetBitmap(*bmp, 0, 0);
+            } else {
+                delete mCoverArtTexs[i];
+                mCoverArtTexs[i] = 0;
+            }
+        }
+        unk6c = true;
+    }
+    if (TheTaskMgr.UISeconds() >= mTimeNextEvent) {
+        int n = mNewReleaseList.size();
+        mCurrentEntry = (mCurrentEntry + 1) % n;
+        for (int i = 0; i < 6; i++) {
+            int idx = (mCurrentEntry + i - 2);
+            if (n != 0) {
+                idx = idx % n;
+                if (idx < 0)
+                    idx += n;
+            } else {
+                idx = 0;
+            }
+            if (i < 2) {
+                RndTex *tex = mCoverArtMats[i + 1]->GetDiffuseTex();
+                mCoverArtMats[i]->SetDiffuseTex(tex ? tex : mNoneTex);
+            } else {
+                RndTex *tex = mCoverArtTexs[idx];
+                mCoverArtMats[i]->SetDiffuseTex(tex ? tex : mNoneTex);
+            }
+        }
+        mScrollAnim->Animate(
+            mScrollAnim->StartFrame(), mScrollAnim->EndFrame(), kTaskUISeconds,
+            mCrossfadeDuration, 0
+        );
+        mLabel1->SetNewReleaseEntryText1(this);
+        mLabel2->SetNewReleaseEntryText2(this);
+        mLabel3->SetNewReleaseEntryText3(this);
+        mTimeNextEvent = mDisplayRate + (mCrossfadeDuration + TheTaskMgr.UISeconds());
+    }
+}
+
 void StoreMainPanel::Unload() {
     for (int i = 0; i < 6; i++) {
         mCoverArtMats[i] = 0;
@@ -53,14 +128,14 @@ void StoreMainPanel::Unload() {
 
 DataNode StoreMainPanel::OnMsg(const MetadataLoadedMsg &msg) {
     if (!msg->Int(3) || !msg->Int(5) || mNewReleaseList.size() != 0)
-        return DataNode(kDataFloat, 6);
+        return DataNode(1);
     MILO_ASSERT_FMT(
         msg->Array(2),
         "NULL data array passed to StoreMainPanel::SetConfigData()\n"
     );
     mConfigData = msg->Array(2);
     ParseConfigData();
-    return DataNode(kDataFloat, 6);
+    return DataNode(1);
 }
 
 void StoreMainPanel::ParseConfigData() {
@@ -84,53 +159,23 @@ void StoreMainPanel::ParseConfigData() {
     mCurrentEntry = -1;
 }
 
-void StoreMainPanel::Poll() {
-    StoreArtLoaderPanel::Poll();
-    if (mNewReleaseList.size() == 0)
-        return;
-    if (!unk6c) {
-        if (!IsAllArtLoadedOrFailed())
-            return;
-        MILO_ASSERT(mNewReleaseList.size() == mCoverArtTexs.size(), 0x6F);
-        for (int i = 0; i < mNewReleaseList.size(); i++) {
-            RndBitmap *bmp = GetBmp(mNewReleaseList[i].mStrName);
-            if (bmp) {
-                mCoverArtTexs[i]->SetBitmap(*bmp, 0, 0);
-            } else {
-                delete mCoverArtTexs[i];
-                mCoverArtTexs[i] = 0;
-            }
-        }
-        unk6c = true;
+void StoreMainPanel::ClearConfigData() {
+    unk6c = false;
+    DeleteAll(mCoverArtTexs);
+    mCoverArtTexs.resize(0);
+    ClearAndShrink(mNewReleaseList);
+}
+
+const StoreMainPanel::NewReleaseEntry *StoreMainPanel::CurrentEntry() const {
+    MILO_ASSERT(mCurrentEntry < mNewReleaseList.size(), 0x134);
+    return &mNewReleaseList[mCurrentEntry];
+}
+
+const char *StoreMainPanel::MarqueePath() const {
+    if (mNewReleaseList.size() && mCurrentEntry >= 0) {
+        return CurrentEntry()->mText4;
     }
-    if (TheTaskMgr.UISeconds() >= mTimeNextEvent) {
-        mCurrentEntry = (mCurrentEntry + 1) % mNewReleaseList.size();
-        for (int i = 0; i < 6; i++) {
-            int idx = (mCurrentEntry + i - 2);
-            if (mNewReleaseList.size() != 0) {
-                idx = idx % (int)mNewReleaseList.size();
-                if (idx < 0)
-                    idx += mNewReleaseList.size();
-            } else {
-                idx = 0;
-            }
-            if (i < 2) {
-                RndTex *tex = mCoverArtMats[i + 1]->GetDiffuseTex();
-                mCoverArtMats[i]->SetDiffuseTex(tex ? tex : mNoneTex);
-            } else {
-                RndTex *tex = mCoverArtTexs[idx];
-                mCoverArtMats[i]->SetDiffuseTex(tex ? tex : mNoneTex);
-            }
-        }
-        mScrollAnim->Animate(
-            mScrollAnim->StartFrame(), mScrollAnim->EndFrame(), kTaskUISeconds,
-            mCrossfadeDuration, 0
-        );
-        mLabel1->SetNewReleaseEntryText1(this);
-        mLabel2->SetNewReleaseEntryText2(this);
-        mLabel3->SetNewReleaseEntryText3(this);
-        mTimeNextEvent = mDisplayRate + (mCrossfadeDuration + TheTaskMgr.UISeconds());
-    }
+    return gNullStr;
 }
 
 BEGIN_HANDLERS(StoreMainPanel)
@@ -159,47 +204,3 @@ void StoreMainPanel::SetType(Symbol type) {
     }
 }
 #pragma pool_data reset
-
-void StoreMainPanel::ClearConfigData() {
-    unk6c = false;
-    DeleteAll(mCoverArtTexs);
-    mCoverArtTexs.resize(0);
-    ClearAndShrink(mNewReleaseList);
-}
-
-const StoreMainPanel::NewReleaseEntry *StoreMainPanel::CurrentEntry() const {
-    MILO_ASSERT(mCurrentEntry < mNewReleaseList.size(), 0x134);
-    return &mNewReleaseList[mCurrentEntry];
-}
-
-const char *StoreMainPanel::MarqueePath() const {
-    if (mNewReleaseList.size() && mCurrentEntry >= 0) {
-        return CurrentEntry()->mText4;
-    }
-    return gNullStr;
-}
-
-void StoreMainPanel::FinishLoad() {
-    UIPanel::FinishLoad();
-    mNoneTex = mDir->Find<RndTex>("cover_art_none.tex", true);
-    for (int i = 0; i < 6; i++) {
-        RndMat *mat = mDir->Find<RndMat>(MakeString("cover_art_%02i.mat", i + 1), true);
-        mCoverArtMats[i] = mat;
-        mat->SetDiffuseTex(mNoneTex);
-        mat->mShaderVariation = (ShaderVariation)(mat->mShaderVariation | 2);
-    }
-    mLabel1 = mDir->Find<AppLabel>("text_line_1.lbl", true);
-    mLabel2 = mDir->Find<AppLabel>("text_line_2.lbl", true);
-    mLabel3 = mDir->Find<AppLabel>("text_line_3.lbl", true);
-    mScrollAnim = mDir->Find<RndAnimatable>("album_scroll.anim", true);
-    mScrollAnim->Animate(
-        mScrollAnim->EndFrame(), mScrollAnim->EndFrame(), kTaskUISeconds, 0, 0
-    );
-    mCurrentEntry = -1;
-    mLabel1->SetTextToken(gNullStr);
-    mLabel2->SetTextToken(gNullStr);
-    MILO_ASSERT(TypeDef(), 0x57);
-    mDisplayRate = TypeDef()->FindArray(display_rate, true)->Float(1);
-    mCrossfadeDuration = TypeDef()->FindArray(crossfade_duration, true)->Float(1);
-    ParseConfigData();
-}
