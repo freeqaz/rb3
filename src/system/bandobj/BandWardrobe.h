@@ -92,6 +92,9 @@ public:
     DataNode OnGetMatchingDude(DataArray *);
     DataNode OnGetCurrentInterests(DataArray *);
     DataNode OnEnableDebugInterests(DataArray *);
+    static int MostImportantHuman(const SlotInfo *);
+    static void InstrumentMatch(int *, const SlotInfo *, int, int &, int &, int &);
+    int FindBestScoringHint(Symbol *, SlotInfo *, int &);
 
     static DataArray *GetRemap(Symbol);
     static DataArray *GetGroupArray(BandCharDesc::CharInstrumentType);

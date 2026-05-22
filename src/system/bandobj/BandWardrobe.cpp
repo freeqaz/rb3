@@ -1079,6 +1079,28 @@ DataNode BandWardrobe::OnSelectExtras(DataArray *da) {
 }
 #pragma pop
 
+DataNode BandWardrobe::OnGetMatchingDude(DataArray *da) {
+    BandCharacter *target = da->Obj<BandCharacter>(2);
+    for (int i = 0; i < 4; i++) {
+        BandCharacter *bc = GetCharacter(i);
+        if (bc) {
+            bool found = false;
+            bool check = false;
+            if (bc && bc->GetDriver() && bc != target)
+                check = true;
+            if (check) {
+                Symbol a = BandCharDesc::GetAnimInstrument(target->mInstrumentType);
+                Symbol b = BandCharDesc::GetAnimInstrument(bc->mInstrumentType);
+                if (b == a)
+                    found = true;
+            }
+            if (found)
+                return DataNode(bc);
+        }
+    }
+    return DataNode((Hmx::Object *)0);
+}
+
 int NodeCmp(const void *a, const void *b) {
     DataNode *na = (DataNode *)a;
     DataNode *nb = (DataNode *)b;
@@ -1096,6 +1118,134 @@ DataNode BandWardrobe::OnSortTargets(DataArray *da) {
     DataArray *arr = da->Array(2);
     qsort(arr->mNodes, arr->Size(), 8, NodeCmp);
     return DataNode(0);
+}
+
+int BandWardrobe::MostImportantHuman(const SlotInfo *info) {
+    int best = -1;
+    for (int i = 0; i < 4; i++) {
+        if (info[i].hint == -1) {
+            if (best != -1) {
+                bool better;
+                if (info[i].human != info[best].human) {
+                    better = info[i].human;
+                } else {
+                    better = info[i].score < info[best].score;
+                }
+                if (!better)
+                    goto next;
+            }
+            best = i;
+        }
+    next:;
+    }
+    return best;
+}
+
+void BandWardrobe::InstrumentMatch(
+    int *scores, const SlotInfo *info, int hint, int &bestScore, int &bestSlot, int &bestHint
+) {
+    for (int i = 0; i < 4; i++) {
+        if (info[i].hint == -1) {
+            BandCharDesc::CharInstrumentType type =
+                BandCharDesc::GetInstrumentFromSym(info[i].inst);
+            MILO_ASSERT(type >= 0 && type < BandCharDesc::kNumInstruments, 0x813);
+            int score = scores[type];
+            bool nonZero = score != 0;
+            bool match = false;
+            if (nonZero) {
+                int diff = score - info[i].human;
+                if (diff < bestScore) {
+                    bestScore = diff;
+                    match = true;
+                }
+            }
+            if (match) {
+                bestSlot = i;
+                bestHint = hint;
+            }
+        }
+    }
+}
+
+int BandWardrobe::FindBestScoringHint(Symbol *hints, SlotInfo *info, int &outSlot) {
+    static const int scores[5][5] = {
+        { 8, 12, 0, 0, 16 },
+        { 14, 10, 0, 0, 16 },
+        { 0, 0, 2, 0, 0 },
+        { 0, 0, 0, 4, 0 },
+        { 16, 16, 0, 0, 6 },
+    };
+    int bestScore = 10000;
+    outSlot = -1;
+    int result = -1;
+    for (int i = 0; i < 4; i++) {
+        Symbol hint = hints[i];
+        if (hint == done)
+            continue;
+        if (hint == "customize") {
+            bool ok;
+            if (bestScore > 0) {
+                bestScore = 0;
+                ok = true;
+            } else {
+                ok = false;
+            }
+            if (!ok)
+                continue;
+            outSlot = HandleType(get_customize_slot_msg).Int();
+            result = i;
+        } else if (strncmp(hint.Str(), "importance", 10) == 0) {
+            int score = hint.Str()[10] - 0x20;
+            bool ok;
+            if (score < bestScore) {
+                bestScore = score;
+                ok = true;
+            } else {
+                ok = false;
+            }
+            if (!ok)
+                continue;
+            outSlot = -1;
+            result = i;
+        } else if (hint.Null()) {
+            int score = i + 0x15;
+            bool ok;
+            if (score < bestScore) {
+                bestScore = score;
+                ok = true;
+            } else {
+                ok = false;
+            }
+            if (!ok)
+                continue;
+            outSlot = -1;
+            result = i;
+        } else if (hint == "slot") {
+            int score = i + 0x15;
+            bool ok;
+            if (score < bestScore) {
+                bestScore = score;
+                ok = true;
+            } else {
+                ok = false;
+            }
+            if (!ok)
+                continue;
+            outSlot = i;
+            result = i;
+        } else {
+            BandCharDesc::CharInstrumentType type =
+                BandCharDesc::GetInstrumentFromSym(hint);
+            if (type == 5) {
+                MILO_FAIL("Bad hint value %s got in here!", hint);
+            } else {
+                InstrumentMatch(
+                    (int *)scores[type], info, i, bestScore, outSlot, result
+                );
+            }
+        }
+    }
+    return result;
 }
 
 BEGIN_PROPSYNCS(BandWardrobe)
