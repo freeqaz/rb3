@@ -41,6 +41,7 @@ public:
     void ResetMinFreeBlockStats();
     void InsertFreeBlock(FreeBlock *, int, FreeBlock *, FreeBlock *, int);
     int AllocSize(int *);
+    int *SplitFromBack(int);
     void FindFreeNeighbors(AllocBlock *, FreeBlock *&, FreeBlock *&);
     void FirstFit(int, int, FreeBlockInfo &);
     void BestFit(int, int, FreeBlockInfo &);
@@ -172,6 +173,19 @@ void Heap::LastFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
             }
         }
     }
+}
+
+int *Heap::SplitFromBack(int n) {
+    FreeBlock *startBlock = (FreeBlock *)mStart;
+    MILO_ASSERT(mSizeWords == startBlock->mSizeWords, 0x2C9);
+    int newSize = mSizeWords - n;
+    if (n == 0 || newSize < 8) {
+        return nullptr;
+    }
+    mSizeWords = newSize;
+    startBlock->mSizeWords = newSize;
+    startBlock->mNext = nullptr;
+    return mStart + mSizeWords;
 }
 
 void Heap::BestFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
