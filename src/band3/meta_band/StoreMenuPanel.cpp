@@ -38,15 +38,16 @@ void StoreMenuPanel::FinishLoad() {
     UIPanel::FinishLoad();
     const DataArray *typeDef = TypeDef();
     MILO_ASSERT(typeDef, 0x2B);
-    static Symbol menu_list("menu_list");
     const char *name = typeDef->FindArray(menu_list, true)->Str(1);
     mList = mDir->Find<BandList>(name, true);
 }
 
 void StoreMenuPanel::Unload() {
     mCurrentMenuIx = -1;
-    for (int i = 0; i < (int)mMenuStack.size(); i++) {
-        delete mMenuStack[i];
+    std::vector<StoreMenuProvider *>::iterator it = mMenuStack.begin();
+    std::vector<StoreMenuProvider *>::iterator e = mMenuStack.end();
+    for (; it != e; ++it) {
+        delete *it;
     }
     mMenuStack.clear();
     mList = nullptr;
