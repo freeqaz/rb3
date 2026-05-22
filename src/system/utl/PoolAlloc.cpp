@@ -1,9 +1,62 @@
 #include "utl/PoolAlloc.h"
+#include "utl/MemMgr.h"
 #include "os/Debug.h"
 #include "os/CritSec.h"
+#include <revolution/os/OSError.h>
+#include <cstdio>
 
 extern CriticalSection *gMemLock;
 extern ChunkAllocator *gChunkAlloc[2];
+
+bool MemTempAllocationsEnabled();
+
+int *ChunkAllocator::RawPoolAlloc(int size) {
+    int alignedSize = size & ~3;
+    mTotalCapacity += size;
+    if ((unsigned int)((char *)mPoolStart + alignedSize) > (unsigned int)mPoolEnd) {
+        if (MemNumHeaps() > 0) {
+            if (mBigHunk == mSmallHunk) {
+                printf(
+                    "PoolAlloc warning: allocating small pool chunk (total: %d)\n",
+                    mTotalCapacity
+                );
+            }
+            MemPushHeap(mHeap);
+        }
+        MemDoTempAllocations tmp(false, false);
+        mPoolStart = (int *)_MemAlloc(mBigHunk, 0);
+        OSReport("PoolAlloc: allocating %d\n", mBigHunk);
+        OSReport("Adding pool hunk %d (%d total size)\n", mNumHunks, mTotalCapacity);
+        int fastHeap = MemFindHeap("fast");
+        if (mNumHunks == 0 && mHeap == fastHeap) {
+            OSReport("fast pool info:\n");
+            int used, blocks, largest, total;
+            MemFreeBlockStats(fastHeap, used, blocks, largest, total);
+            OSReport("mPoolStart = %x largest = %d\n", mPoolStart, total);
+        }
+        if (MemNumHeaps() > 0) {
+            MemPopHeap();
+        }
+        mHunks[mNumHunks].mStart = mPoolStart;
+        mHunks[mNumHunks].mSize = mBigHunk;
+        mNumHunks++;
+        MILO_ASSERT(mNumHunks < MAX_HUNKS, 0xB6);
+        mPoolEnd = (int *)((char *)mPoolStart + (mBigHunk & ~3));
+        mPoolStart = (int *)((char *)mPoolStart + 0x40);
+        mBigHunk = mSmallHunk;
+    }
+    int *ret = mPoolStart;
+    mPoolStart = (int *)((char *)mPoolStart + alignedSize);
+    return ret;
+}
+
+void *ChunkAllocator::operator new(size_t size) {
+    static int _x = MemFindHeap("fast");
+    MemPushHeap(_x);
+    void *mem = _MemAlloc(size, 0);
+    MemPopHeap();
+    return mem;
+}
 
 FixedSizeAlloc::FixedSizeAlloc(int mAllocSizeWords, ChunkAllocator *alloc, int j)
     : mAllocSizeWords(mAllocSizeWords), mFreeList(0), mMaxAllocs(0), mNumChunks(0),

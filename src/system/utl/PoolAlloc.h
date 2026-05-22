@@ -1,18 +1,26 @@
 #ifndef UTL_POOLALLOC_H
 #define UTL_POOLALLOC_H
 
+#include <stddef.h>
+
 #define MAX_FIXED_ALLOCS 0x40
+#define MAX_HUNKS 0x400
 
 // forward declaration
 class FixedSizeAlloc;
 
 class ChunkAllocator {
 public:
+    struct Hunk {
+        int *mStart; // 0x0
+        int mSize; // 0x4
+    };
+
     int mBigHunk; // 0x0
     int mSmallHunk; // 0x4
     int mTotalCapacity; // 0x8
     int unk_0xc; // 0xc
-    int mPoolBuf[0x800]; // 0x10 - 0x200F (embedded pool memory, 8192 bytes)
+    Hunk mHunks[MAX_HUNKS]; // 0x10 - 0x200F (embedded hunk-record table)
     int mNumHunks; // 0x2010
     int *mPoolEnd; // 0x2014
     int *mPoolStart; // 0x2018
@@ -22,7 +30,10 @@ public:
     ChunkAllocator(int, int, int);
     void *Alloc(int);
     void Free(void *, int);
+    int *RawPoolAlloc(int);
     static void UploadDebugStats();
+
+    void *operator new(size_t);
 };
 
 class FixedSizeAlloc {
