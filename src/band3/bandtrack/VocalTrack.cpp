@@ -959,6 +959,60 @@ void VocalTrack::UpdateTambourineGems() {
     }
 }
 
+void VocalTrack::PollLyricAnimations(
+    std::deque<LyricPlate *> &plates, float ms, bool lead
+) {
+    if (mIntroPlaying)
+        return;
+    bool scrolling = IsScrolling();
+    float plateMs;
+    if (scrolling) {
+        plateMs = unk2a8;
+    } else if (lead) {
+        plateMs = unk2ac;
+    } else {
+        plateMs = unk2b0;
+    }
+    while (!plates.empty() && !plates.front()->Empty()
+           && ((scrolling
+                && plates.front()->CurrentEndX(plateMs) < mDir->mTrackLeftX - unk78)
+               || plates.front()->mInvalidateMs < ms)) {
+        LyricPlate *cur = plates.front();
+        if (sDumpLyricPlates) {
+            TheDebug << MakeString(
+                "recycling lyric plate at %.2f sec %s\n",
+                ms / 1000.0f,
+                cur->mText->mText.c_str()
+            );
+            DumpLyricPlates(plates, !cur->mSyllables.empty());
+        }
+        plates.pop_front();
+        cur->Reset();
+        plates.push_back(cur);
+    }
+    if (TheGame->InRollback())
+        ms = unk2a4;
+    FOREACH (it, plates) {
+        LyricPlate *cur = *it;
+        if (cur->Empty())
+            return;
+        float startX = cur->CurrentStartX(plateMs);
+        float endX = cur->CurrentEndX(plateMs);
+        if (endX < mDir->mTrackLeftX) {
+            cur->SetShowing(false);
+        } else if (startX >= mDir->mTrackRightX) {
+            cur->SetShowing(false);
+            return;
+        } else {
+            cur->SetShowing(true);
+        }
+        if (!scrolling) {
+            cur->mPastNow = endX < 2.0f * mStaticDeployMarginX + mDir->mNowBarX;
+        }
+        cur->Poll(ms);
+    }
+}
+
 void VocalTrack::Poll(float f1) {
     bool gamebool = TheGame->InRollback();
     if (f1 < unk2a4 && !gamebool) {
