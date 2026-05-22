@@ -86,6 +86,30 @@ void TourPerformerImpl::CleanupGigData() { mGigData.clear(); }
 
 void TourPerformerImpl::CompleteQuest() {}
 
+void TourPerformerImpl::UpdateGigDataForSong(Symbol song, int stars) {
+    GigData data(0);
+    TourProgress *pProgress = TheTour->GetTourProgress();
+    MILO_ASSERT(pProgress, 0xDC);
+    TourDesc *pTourDesc = TheTour->GetTourDesc(pProgress->GetTourDesc());
+    MILO_ASSERT(pTourDesc, 0xE1);
+    int curGigNum = pProgress->GetCurrentGigNum();
+    data.unk4 = stars;
+    if (stars >= 6)
+        stars = 5;
+    data.unk8 = 0;
+    Quest *pQuest = TheQuestMgr.GetQuest(GetCurrentQuest());
+    if (pQuest) {
+        TrackerManager *pTrackerManager = TheGame->mTrackerManager;
+        MILO_ASSERT(pTrackerManager, 0xF4);
+        data.unk8 = pTrackerManager->GetQuestEarnedStars();
+        if (data.unk8 >= 6)
+            data.unk8 = 5;
+    }
+    data.unkc = stars + data.unk8;
+    data.unk0 = song;
+    mGigData.push_back(data);
+}
+
 void TourPerformerImpl::UpdateCompleteTourStats(TourProgress *i_pProgress) {
     MILO_ASSERT(i_pProgress, 0x10B);
     BandProfile *pf = TheProfileMgr.FindTourProgressOwner(i_pProgress);
