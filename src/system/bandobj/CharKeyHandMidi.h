@@ -33,6 +33,7 @@ public:
     bool KeyFinger(CharIKFingers::FingerNum, KeyboardKey);
     void UnkeyFinger(CharIKFingers::FingerNum);
     CharIKFingers::FingerNum DefaultSelectFinger(KeyboardKey);
+    CharIKFingers::FingerNum FindPreferredFinger(KeyboardKey, KeyboardKey, CharIKFingers::FingerNum);
 
     DataNode OnFingersUp(DataArray *);
     DataNode OnFingersDown(DataArray *);

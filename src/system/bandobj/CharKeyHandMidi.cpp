@@ -18,6 +18,104 @@ CharKeyHandMidi::CharKeyHandMidi()
 
 CharKeyHandMidi::~CharKeyHandMidi() {}
 
+void CharKeyHandMidi::Enter() {
+    for (int i = 0; i < 5; i++) {
+        if (unk6c[i] != 0) {
+            UnkeyFinger((CharIKFingers::FingerNum)i);
+        }
+    }
+    unk5c.clear();
+    RndPollable::Enter();
+}
+
+void CharKeyHandMidi::SetName(const char *name, ObjectDir *dir) {
+    Hmx::Object::SetName(name, dir);
+    unk7c = dynamic_cast<Character *>(dir);
+}
+
+void CharKeyHandMidi::RunTest() {
+    unk78 = true;
+    if (mIKObject) {
+        mIKObject->SetFinger(unk4c[25], unk54[25], CharIKFingers::kFingerPinky);
+        mIKObject->SetFinger(unk4c[13], unk54[13], CharIKFingers::kFingerThumb);
+    }
+}
+
+CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
+    KeyboardKey setToKey, KeyboardKey lastKeyDown, CharIKFingers::FingerNum lastFingerDown
+) {
+    if (setToKey == lastKeyDown)
+        return lastFingerDown;
+    if (lastKeyDown == 0 || lastFingerDown == CharIKFingers::kFingerNone)
+        return CharIKFingers::kFingerMiddle;
+    int distance = abs(setToKey - lastKeyDown);
+    if (setToKey > lastKeyDown) {
+        if (mIsRightHand) {
+            if (lastFingerDown == CharIKFingers::kFingerPinky)
+                return CharIKFingers::kFingerPinky;
+            int finger;
+            if (distance <= 2)
+                finger = lastFingerDown + 1;
+            else if (distance <= 5)
+                finger = lastFingerDown + 2;
+            else if (distance <= 7)
+                finger = lastFingerDown + 3;
+            else
+                return CharIKFingers::kFingerPinky;
+            if (finger > 4)
+                finger = CharIKFingers::kFingerPinky;
+            return (CharIKFingers::FingerNum)finger;
+        } else {
+            if (lastFingerDown == CharIKFingers::kFingerThumb)
+                return CharIKFingers::kFingerThumb;
+            int finger;
+            if (distance <= 2)
+                finger = lastFingerDown - 1;
+            else if (distance <= 5)
+                finger = lastFingerDown - 2;
+            else if (distance <= 7)
+                finger = lastFingerDown - 3;
+            else
+                return CharIKFingers::kFingerThumb;
+            if (finger < 0)
+                finger = CharIKFingers::kFingerThumb;
+            return (CharIKFingers::FingerNum)finger;
+        }
+    } else {
+        if (mIsRightHand) {
+            if (lastFingerDown == CharIKFingers::kFingerThumb)
+                return CharIKFingers::kFingerThumb;
+            int finger;
+            if (distance <= 2)
+                finger = lastFingerDown - 1;
+            else if (distance <= 5)
+                finger = lastFingerDown - 2;
+            else if (distance <= 7)
+                finger = lastFingerDown - 3;
+            else
+                return CharIKFingers::kFingerThumb;
+            if (finger < 0)
+                finger = CharIKFingers::kFingerThumb;
+            return (CharIKFingers::FingerNum)finger;
+        } else {
+            if (lastFingerDown == CharIKFingers::kFingerPinky)
+                return CharIKFingers::kFingerPinky;
+            int finger;
+            if (distance <= 2)
+                finger = lastFingerDown + 1;
+            else if (distance <= 5)
+                finger = lastFingerDown + 2;
+            else if (distance <= 7)
+                finger = lastFingerDown + 3;
+            else
+                return CharIKFingers::kFingerPinky;
+            if (finger > 4)
+                finger = CharIKFingers::kFingerPinky;
+            return (CharIKFingers::FingerNum)finger;
+        }
+    }
+}
+
 void CharKeyHandMidi::EndTest() {
     if (mIKObject) {
         mIKObject->ReleaseFinger(CharIKFingers::kFingerThumb);
