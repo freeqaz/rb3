@@ -116,6 +116,24 @@ CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
     }
 }
 
+bool CharKeyHandMidi::IsBlackKey(KeyboardKey key) {
+    switch (key) {
+    case 2:
+    case 4:
+    case 7:
+    case 9:
+    case 0xb:
+    case 0xe:
+    case 0x10:
+    case 0x13:
+    case 0x15:
+    case 0x17:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void CharKeyHandMidi::EndTest() {
     if (mIKObject) {
         mIKObject->ReleaseFinger(CharIKFingers::kFingerThumb);

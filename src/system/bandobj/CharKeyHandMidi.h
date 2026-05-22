@@ -34,6 +34,7 @@ public:
     void UnkeyFinger(CharIKFingers::FingerNum);
     CharIKFingers::FingerNum DefaultSelectFinger(KeyboardKey);
     CharIKFingers::FingerNum FindPreferredFinger(KeyboardKey, KeyboardKey, CharIKFingers::FingerNum);
+    bool IsBlackKey(KeyboardKey);
 
     DataNode OnFingersUp(DataArray *);
     DataNode OnFingersDown(DataArray *);
