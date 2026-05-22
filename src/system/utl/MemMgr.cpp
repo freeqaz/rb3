@@ -15,6 +15,10 @@ struct FreeBlock {
     bool AttemptMerge(FreeBlock *, int);
 };
 
+struct AllocBlock {
+    unsigned int mHeader; // 0x0
+};
+
 class Heap {
 public:
     enum Strategy {
@@ -29,12 +33,15 @@ public:
     void MoreFreeBlockStats(int &, int &, int &, int &);
     void ResetMinFreeBlockStats();
     void InsertFreeBlock(FreeBlock *, int, FreeBlock *, FreeBlock *, int);
+    int AllocSize(int *);
+    void FindFreeNeighbors(AllocBlock *, FreeBlock *&, FreeBlock *&);
     const char *Name() const { return mName; }
 
     FreeBlock *mFreeBlockChain; // 0x0
-    void *mStart;       // 0x4
+    int *mStart;        // 0x4
     const char *mName;  // 0x8
-    char mPadC[0x10];   // 0xC
+    int mSizeWords;     // 0xC
+    char mPad10[0xC];   // 0x10
     int mStrategy;      // 0x1C
     bool mAllowTemp;    // 0x20
     char mPad21[3];     // 0x21
@@ -95,6 +102,25 @@ void Heap::InsertFreeBlock(
 void MemTerminate() {}
 
 void *MemHeapStartAddr(int heap) { return gHeaps[heap].mStart; }
+
+int Heap::AllocSize(int *mem) {
+    if (mem < mStart || mem >= mStart + mSizeWords) {
+        return 0;
+    }
+    unsigned int header = ((unsigned int *)mem)[-1];
+    return (((header >> 8) - 1) - (header & 0xFF)) * 4;
+}
+
+void Heap::FindFreeNeighbors(AllocBlock *block, FreeBlock *&prev, FreeBlock *&next) {
+    FreeBlock *cur = mFreeBlockChain;
+    FreeBlock *last = nullptr;
+    while (cur != nullptr && cur < (FreeBlock *)block) {
+        last = cur;
+        cur = cur->mNext;
+    }
+    next = cur;
+    prev = last;
+}
 
 void MemSetAllowTemp(char *name, bool allow) {
     int heap = MemFindHeap(name);
