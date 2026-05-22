@@ -1,4 +1,5 @@
 #include "synth/VoiceBeat.h"
+#include "math/Utl.h"
 #include <algorithm>
 
 VoiceBeat::VoiceBeat() {
@@ -55,7 +56,7 @@ int EventTracker::findEarliest(float t, int start) {
     int n = mTimes.size();
     if (n == 0) return -1;
     int last = n - 1;
-    if (start < 0) start = 0;
+    MaxEq(start, 0);
     if (start > last) start = last;
     while (start >= 0 && mTimes[start] >= t) {
         start--;

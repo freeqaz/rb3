@@ -13,6 +13,7 @@
 #include "ui/UIListLabel.h"
 #include "ui/UIListMesh.h"
 #include "ui/UIPanel.h"
+#include "utl/MemMgr.h"
 #include "utl/Messages.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
@@ -24,6 +25,26 @@ namespace stlpmtx_std {
 template <>
 inline Symbol *__rotate<Symbol *>(Symbol *first, Symbol *middle, Symbol *last) {
     return __rotate_aux(first, middle, last, (long *)0, (Symbol *)0);
+}
+
+template <>
+inline void _Temporary_buffer<Symbol *, Symbol>::_M_allocate_buffer() {
+    _M_original_len = _M_len;
+    _M_buffer = 0;
+    if (_M_len > (ptrdiff_t)(INT_MAX / sizeof(Symbol)))
+        _M_len = INT_MAX / sizeof(Symbol);
+    while (_M_len > 0) {
+        _M_buffer = (Symbol *)_MemAlloc(_M_len * sizeof(Symbol), 0);
+        if (_M_buffer)
+            break;
+        _M_len /= 2;
+    }
+}
+
+template <>
+inline _Temporary_buffer<Symbol *, Symbol>::~_Temporary_buffer() {
+    _STLP_STD::_Destroy_Range(_M_buffer, _M_buffer + _M_len);
+    _MemFree(_M_buffer);
 }
 }
 

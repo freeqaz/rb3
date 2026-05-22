@@ -193,7 +193,7 @@ void VocalTrainerPanel::CopyPhrasesImp(
         curPhrase.unk8 = i5;
         curPhrase.unkc += (ivar3 - curPhrase.unk8);
         int tickSum = curPhrase.unk8 + curPhrase.unkc;
-        curPhrase.unk0 = TickToMs(tickSum);
+        curPhrase.unk0 = TickToMs(curPhrase.unk8);
         curPhrase.unk4 = TickToMs(tickSum) - curPhrase.unk0;
         i5 = curPhrase.unk8 + curPhrase.unkc;
         v2.push_back(curPhrase);

@@ -420,8 +420,9 @@ int RndConsole::OnMsg(const KeyboardKeyMsg &msg) {
             mTabLen = mInput->CurrentLine().length();
         if (!mBuffer.empty()) {
             if (mBufPtr == mBuffer.end()) {
-                mBufPtr = mBuffer.begin();
+                mBufPtr = PrevItr(mBuffer.end(), 1);
             }
+            std::list<String>::iterator saved = mBufPtr;
             do {
                 ++mBufPtr;
                 if (mBufPtr == mBuffer.end()) {
@@ -432,7 +433,7 @@ int RndConsole::OnMsg(const KeyboardKeyMsg &msg) {
                     mInput->CurrentLine() = *mBufPtr;
                     break;
                 }
-            } while (mBufPtr != mBuffer.end());
+            } while (mBufPtr != saved);
         }
         MinEq<int>(mCursor, mInput->CurrentLine().length());
     } else if (msg.GetKey() == 0x142) {
@@ -448,12 +449,12 @@ int RndConsole::OnMsg(const KeyboardKeyMsg &msg) {
         mCursor = mInput->CurrentLine().length();
     } else if (msg.GetKey() == 0x143) {
         if (!mBuffer.empty()) {
-            if (mBufPtr != mBuffer.end()) {
+            if (mBufPtr != mBuffer.begin()) {
                 --mBufPtr;
             } else
-                mBufPtr = mBuffer.begin();
-            if (mBufPtr == mBuffer.begin()) {
-                mBufPtr = PrevItr(mBuffer.begin(), 1);
+                mBufPtr = mBuffer.end();
+            if (mBufPtr == mBuffer.end()) {
+                mBufPtr = PrevItr(mBuffer.end(), 1);
             }
             mInput->CurrentLine() = *mBufPtr;
         }

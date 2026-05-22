@@ -15,10 +15,10 @@ BandLeadMeter::BandLeadMeter()
 int BandLeadMeter::GetColor(int i) {
     if (i == 0)
         return 0;
-    else if (i < 0)
-        return 2;
-    else
-        return 1;
+    int color = 2;
+    if (i > 0)
+        color = 1;
+    return color;
 }
 
 void BandLeadMeter::SyncScores() {

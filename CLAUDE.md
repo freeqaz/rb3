@@ -95,16 +95,40 @@ MetroWorks uses a different mangling scheme from MSVC:
 
 RB3 shares the Milo engine with DC3 (Dance Central 3) at `/home/free/code/milohax/dc3-decomp/`. The `src/system/` directory has significant overlap. DC3's decomp is ~87% complete and can be used as reference for engine code.
 
-## Progress
+## Progress & Port Roadmap
 
-Current: ~54% matched (28,140 / 41,333 functions)
+The goal is a **native cross-platform port**, not a 100% match of the Wii binary. Match % is a means to faithful reimplementation, not the end.
 
-Categories:
-- Game Code: 63.6% matched
-- Milo Engine: 64.2% matched
-- Third-Party Libraries: 58.1% matched
-- Networking: 13.8% matched
-- SDK: 12.9% matched
+### Current match (build/SZBE69_B8/report.json)
+
+Overall: **59.58% code / 75.54% functions** (31,163 / 41,254).
+
+| Category | Match % | Funcs |
+|---|---|---|
+| Game Code (`band3/`) | 71.09% | 9,935 / 11,249 |
+| Milo Engine (`system/`) | 69.00% | 18,588 / 20,752 |
+| Third-Party Libraries (`lib/`) | 62.06% | 393 / 543 |
+| SDK (`sdk/`) | 18.91% | 969 / 4,131 |
+| Networking (`network/`) | 16.13% | 1,278 / 4,579 |
+
+### Focus here — the port surface
+
+- **`src/band3/`** — game logic, UI, song handling. The thing being ported.
+- **`src/system/`** except the Wii-specific subdirs below — engine internals (math, char, world, ui, obj, utl, synth, bandobj, meta). Platform-agnostic and reusable.
+
+### Skip / deprioritize — gets replaced in the port
+
+- **`src/sdk/`** — Wii SDK (RVL_SDK, MSL, DWC, NW4R). Replaced wholesale by the host platform's libc / graphics / audio / input APIs. Matching teaches nothing about porting.
+- **`src/system/rndwii/`** — Wii GX renderer. Replaced by an OpenGL/Vulkan/Metal backend.
+- **`src/system/os/`** — Wii OS calls (DVD, threading, NAND, etc.). Platform glue to be replaced.
+- **`src/network/Platform/`** + Wii-specific transport (`WiiIpStack`, `BerkeleySocketDriver`, DWC matchmaking) — replaced by native sockets / modern netcode. Nintendo WFC was shut down in 2014.
+- **`src/lib/`** (zlib, vorbis, speex) — use upstream sources in the port; don't match-grind.
+
+**Game-logic networking** (matchmaking state machines, packet formats, lobby sync) is *conditionally* valuable — only if the port adds online multiplayer. Defer until the port has a singleplayer baseline.
+
+### Picking targets
+
+Prefer high-value areas. Use `/progress` and `scripts/dc3_compare.py` for per-unit gaps; bias toward `band3/` and the platform-agnostic `system/` subdirs.
 
 ## MetroWorks Compiler Notes
 

@@ -608,17 +608,18 @@ bool OutfitConfig::InMilo() {
         bool result = false;
         bool isSameDir = false;
         bool isMiloObj = false;
-        if (n.Type() == kDataObject && Dir()) {
+        DataNode *nPtr = &n;
+        if (nPtr->Type() == kDataObject && Dir()) {
             isMiloObj = true;
         }
         if (isMiloObj) {
-            ObjectDir *castedDir = dynamic_cast<ObjectDir *>(n.GetObj(NULL));
+            ObjectDir *castedDir = dynamic_cast<ObjectDir *>(nPtr->GetObj(NULL));
             if (Dir() == castedDir) {
                 isSameDir = true;
             }
         }
         if (isSameDir) {
-            if (strcmp(Dir()->Name(), "main")) {
+            if (!streq(Dir()->Name(), "main")) {
                 result = true;
             }
         }
@@ -709,7 +710,7 @@ void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
         return;
     }
     for (int i = 0; i < mPieces.size(); i++) {
-        Piece &piece = mPieces[i];
+        const Piece &piece = mPieces[i];
         if (piece.mVert == -1)
             continue;
         if (reskinMesh && !piece.mAttachment) {
@@ -737,8 +738,8 @@ void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
                 }
                 unsigned short packed = piece.unk14[j * 2 + 1];
                 float weights[3];
-                weights[0] = (float)(packed & 0xff) / 127.0f;
-                weights[1] = (float)((packed >> 8) & 0xff) / 127.0f;
+                weights[0] = (float)(packed & 0xff) / 255.0f;
+                weights[1] = (float)((packed >> 8) & 0xff) / 255.0f;
                 weights[2] = 1.0f - weights[0] - weights[1];
                 unsigned short *faceVerts =
                     &headMesh->mGeomOwner->mFaces[faceIdx].v1;
@@ -777,7 +778,7 @@ void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
                             PathName(mPiercing.Owner()),
                             reskinMesh->Name(),
                             i,
-                            dstIdx,
+                            (int)dstIdx,
                             reskinMesh->mGeomOwner->mVerts.size()
                         );
                         break;

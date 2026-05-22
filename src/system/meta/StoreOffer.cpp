@@ -13,6 +13,23 @@ extern "C" const StorePackedRBNOffer *RbnOffer__9StorePageCFi(
 
 DataArray *gStoreOfferDescriptionArray;
 
+void StorePurchaseable::GetContentIndexes(std::vector<unsigned short> &vec, bool b) const {
+    vec.clear();
+    vec.reserve(mPackedData->mNumSongs);
+    for (int i = 0; i < mPackedData->mNumSongs; i++) {
+        StorePackedSong *song = GetPackedSong(i);
+        if (b) {
+            unsigned short push = song->unk10;
+            if (push != 0)
+                vec.push_back(push);
+        } else {
+            unsigned short push = song->unka;
+            vec.push_back(push);
+            vec.push_back(push + 1);
+        }
+    }
+}
+
 namespace {
     bool gSetup;
     const char *LQUOTE = "\"";
@@ -160,23 +177,6 @@ unsigned long long StorePurchaseable::GetTitleId() const {
 
 unsigned long long StorePurchaseable::GetUpgradeTitleId() const {
     return WiiCommerceMgr::MakeDataTitleId(GetPackedSong(0)->GetUpgradeDataTitle());
-}
-
-void StorePurchaseable::GetContentIndexes(std::vector<unsigned short> &vec, bool b) const {
-    vec.clear();
-    vec.reserve(mPackedData->mNumSongs);
-    for (int i = 0; i < mPackedData->mNumSongs; i++) {
-        StorePackedSong *song = GetPackedSong(i);
-        if (b) {
-            unsigned short push = song->unk10;
-            if (push != 0)
-                vec.push_back(push);
-        } else {
-            unsigned short push = song->unka;
-            vec.push_back(push);
-            vec.push_back(push + 1);
-        }
-    }
 }
 
 bool operator==(const StoreOffer *o, Symbol s) { return o->ShortName() == s; }
@@ -404,8 +404,9 @@ const char *StoreOffer::Description() const {
         str += " ";
     }
 
+    int limit = numSongs - 1;
     int i = 0;
-    for (; i < numSongs - 1; i++) {
+    for (; i < limit; i++) {
         StorePackedSong *song = GetPackedSong(i);
         str += LQUOTE;
         str += song->GetName();

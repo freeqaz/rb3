@@ -35,13 +35,14 @@ void NoteVoiceInst::Poll() {
         if (mDurationFramesLeft > 0)
             mDurationFramesLeft--;
         if (mGlideFramesLeft >= 0) {
+            float fine = mFineTune / 100.0f;
             float interped = Interp(
-                mGlideFromNote,
                 mGlideToNote,
+                mGlideFromNote,
                 (float)(mGlideFrames - mGlideFramesLeft--) / (float)mGlideFrames
             );
             mSample->SetBankSpeed(
-                CalcSpeedFromTranspose(mFineTune / 100.0f + (interped - mCenterNote))
+                CalcSpeedFromTranspose(fine + (interped - mCenterNote))
             );
         }
     }

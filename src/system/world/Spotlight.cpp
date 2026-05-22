@@ -419,6 +419,7 @@ void Spotlight::UpdateSlaves() {
     }
 }
 
+#pragma fp_contract off
 void Spotlight::CalculateDirection(RndTransformable *target, Hmx::Matrix3 &mtx) {
     MILO_ASSERT(target, 0x2C3);
     Vector3 v20;
@@ -428,6 +429,7 @@ void Spotlight::CalculateDirection(RndTransformable *target, Hmx::Matrix3 &mtx) 
     Normalize(v2c, v2c);
     MakeRotMatrix(v20, v2c, mtx);
 }
+#pragma fp_contract on
 
 void Spotlight::UpdateSphere() {
     Sphere s48;

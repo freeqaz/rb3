@@ -742,27 +742,25 @@ void UIManager::ToggleLoadTimes() {
 bool UIManager::BlockHandlerDuringTransition(Symbol s, DataArray *da) {
     if (s == KeyboardKeyMsg::Type())
         return true;
-    else if (ButtonDownMsg::Type() != s) {
-        if (ButtonUpMsg::Type() == s) {
-            UIPanel *focus = FocusPanel();
-            if (focus) {
-                DataArray *arr;
-                const DataNode *prop = focus->Property(allowed_transition_actions, false);
-                if (prop)
-                    arr = prop->Array();
-                else
-                    arr = nullptr;
-                if (arr) {
-                    for (int i = 0; i < arr->Size(); i++) {
-                        if (arr->Int(i) == da->Int(4))
-                            return false;
-                    }
+    if (s == ButtonDownMsg::Type() || s == ButtonUpMsg::Type()) {
+        UIPanel *focus = FocusPanel();
+        if (focus) {
+            const DataNode *prop = focus->Property(allowed_transition_actions, false);
+            DataArray *arr;
+            if (prop)
+                arr = prop->Array();
+            else
+                arr = nullptr;
+            if (arr) {
+                for (int i = 0; i < arr->Size(); i++) {
+                    if (arr->Int(i) == da->Int(4))
+                        return false;
                 }
             }
-            return true;
-        } else
-            return false;
+        }
+        return true;
     }
+    return false;
 }
 
 void UIManager::EnableInputPerformanceMode(bool b) {

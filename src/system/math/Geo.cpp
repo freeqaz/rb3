@@ -69,14 +69,15 @@ bool Box::Clamp(Vector3 &vec) {
 void Multiply(const Box &box, float f, Box &out) {
     float miny = box.mMin.y;
     float maxy = box.mMax.y;
+    float rangey = maxy - miny;
     float minz = box.mMin.z;
     float maxz = box.mMax.z;
     float minx = box.mMin.x;
-    float cy = (maxy - miny) * 0.5f + miny;
+    float cy = rangey * 0.5f + miny;
     float maxx = box.mMax.x;
     float cz = (maxz - minz) * 0.5f + minz;
-    float cx = (maxx - minx) * 0.5f + minx;
     float ny = miny - cy;
+    float cx = (maxx - minx) * 0.5f + minx;
     float pz = maxz - cz;
     float py = maxy - cy;
     float nz = minz - cz;
@@ -86,14 +87,20 @@ void Multiply(const Box &box, float f, Box &out) {
     float pzf = pz * f;
     float nxf = nx * f;
     float pxf = px * f;
-    out.mMax.z = cz + pzf;
-    out.mMax.y = cy + pyf;
-    out.mMin.x = cx + nxf;
+    float resMaxZ = cz + pzf;
+    float resMaxY = cy + pyf;
+    float resMinX = cx + nxf;
+    out.mMax.z = resMaxZ;
     float nyf = ny * f;
     float nzf = nz * f;
-    out.mMax.x = cx + pxf;
-    out.mMin.y = cy + nyf;
-    out.mMin.z = cz + nzf;
+    out.mMax.y = resMaxY;
+    float resMaxX = cx + pxf;
+    float resMinY = cy + nyf;
+    out.mMin.x = resMinX;
+    float resMinZ = cz + nzf;
+    out.mMax.x = resMaxX;
+    out.mMin.y = resMinY;
+    out.mMin.z = resMinZ;
 }
 
 void Multiply(const Plane &p, const Transform &t, Plane &out) {
@@ -164,9 +171,12 @@ void Intersect(const Transform &trans, const Plane &plane, Hmx::Ray &ray) {
 }
 
 bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
-    float segDirX = seg.end.x - seg.start.x;
-    float segDirY = seg.end.y - seg.start.y;
-    float segDirZ = seg.end.z - seg.start.z;
+    float startY = seg.start.y;
+    float segDirY = seg.end.y - startY;
+    float startX = seg.start.x;
+    float segDirX = seg.end.x - startX;
+    float startZ = seg.start.z;
+    float segDirZ = seg.end.z - startZ;
 
     float segDirDot = tri.frame.z.x * segDirX + tri.frame.z.y * segDirY + tri.frame.z.z * segDirZ;
 
@@ -944,14 +954,16 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
 
     const Vector2 *lastPoint = &poly.mPoints.back();
     const Vector2 *dirPtr = &ray.dir;
-    float yDiff = lastPoint->y - ray.base.y;
-    float lastDot = dirPtr->x * (lastPoint->x - ray.base.x)
-                  + dirPtr->y * yDiff;
+    float baseY = ray.base.y;
+    float baseX = ray.base.x;
+    float yDiff = lastPoint->y - baseY;
+    float xDiff = lastPoint->x - baseX;
+    float lastDot = xDiff * dirPtr->x + yDiff * dirPtr->y;
 
     Vector2 v;
     for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
         float yDelta = i->y - ray.base.y;
-        float dot = dirPtr->x * (i->x - ray.base.x) + yDelta * dirPtr->y;
+        float dot = (i->x - ray.base.x) * dirPtr->x + yDelta * dirPtr->y;
 
         if (dot >= 0.0f) {
             if (dot > 0.0f && lastDot < 0.0f) {

@@ -104,8 +104,8 @@ bool TambourineManager::GemProcessed(int index) const {
 }
 
 void TambourineManager::LocalTambourineSoloEnd(int pct, int numGems) {
-    int points = 0;
     Symbol awardSym;
+    int points = 0;
     Symbol trackSym = tambourine;
     TheScoring->GetSoloAward(pct, trackSym, points, awardSym);
     int total = points * numGems;

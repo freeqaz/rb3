@@ -397,7 +397,8 @@ void UIListState::Poll(float fArg0) {
     if (mFirstShowing != mTargetShowing) {
         if (-1.0f == mStepTime) {
             mStepTime = fArg0;
-            mCallback->StartScroll(*this, ScrollToTarget(mTargetShowing) > 0 ? 1 : -1, 1);
+            int s1 = ScrollToTarget(mTargetShowing);
+            mCallback->StartScroll(*this, s1 > 0 ? 1 : -1, 1);
         }
         if (fArg0 >= mStepTime + mSpeed) {
             int dir = ScrollToTarget(mTargetShowing) > 0 ? 1 : -1;
@@ -405,16 +406,19 @@ void UIListState::Poll(float fArg0) {
             mCallback->CompleteScroll(*this);
             if (mFirstShowing != mTargetShowing) {
                 mStepTime = fArg0 - (fArg0 - (mStepTime + mSpeed));
+                int s2 = ScrollToTarget(mTargetShowing);
                 mCallback->StartScroll(
-                    *this, ScrollToTarget(mTargetShowing) > 0 ? 1 : -1, 1
+                    *this, s2 > 0 ? 1 : -1, 1
                 );
             } else {
                 mStepTime = -1.0f;
             }
         }
         if (mFirstShowing != mTargetShowing) {
-            if (mSpeed != 0.0f) {
-                mStepPercent = ((fArg0 - mStepTime) / mSpeed) * 1.0f + 0.0f;
+            float zero = 0.0f;
+            if (mSpeed != zero) {
+                float one = 1.0f;
+                mStepPercent = (fArg0 - mStepTime) / mSpeed * one + zero;
                 return;
             }
         }

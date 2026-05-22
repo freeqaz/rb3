@@ -21,7 +21,6 @@ namespace Quazal {
         virtual void EnforceDeclareSysComponentMacro(); // 0x1C
         virtual void TraceImpl(uint) const; // 0x20
         virtual bool BeginInitialization(); // 0x30
-        virtual void DoWork(); // 0x4C
         virtual int GetProtocolType() const = 0; // fix ret type
         virtual void EndPointDisconnected(EndPoint *);
         virtual void FaultDetected(EndPoint *, unsigned int);

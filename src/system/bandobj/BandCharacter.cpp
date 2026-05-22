@@ -238,16 +238,21 @@ CharClipDriver *BandCharacter::PlayMainClip(int i, bool b) {
                         FlagString(mask),
                         PathName(grp)
                     );
-                    invorc = 0;
+                    return 0;
                 } else {
                     if (invorc)
                         clp->SetFlags(clp->Flags() | 0xF);
                     else {
-                        if (IsLoading()) {
-                            int imask = (mask & 0xF) ? 2 : 1;
-                            CharDriver *drv = mDriver;
-                            if (unk454 == drv)
+                        bool hasDriver = AddDriverClipDir();
+                        if (hasDriver) {
+                            int imask = 1;
+                            if ((i & 0xF) == 2)
+                                imask = 2;
+                            CharDriver *drv;
+                            if ((CharDriver *)unk454 == mDriver)
                                 drv = mAddDriver;
+                            else
+                                drv = mDriver;
                             CharClip *stillclip =
                                 drv->ClipDir()->Find<CharClip>("still", false);
                             if (stillclip)
@@ -258,8 +263,8 @@ CharClipDriver *BandCharacter::PlayMainClip(int i, bool b) {
                                 );
                         }
                     }
-                    CharClipDriver *played = unk454->Play(clp, mask, -1.0f, 1e+30f, 0.0f);
-                    if ((mask & 0xF) == 2)
+                    CharClipDriver *played = unk454->Play(clp, i, -1.0f, 1e+30f, 0.0f);
+                    if ((i & 0xF) == 2)
                         mTeleported = true;
                     if (played) {
                         MakeMRU(unk6c0, clp);

@@ -93,9 +93,17 @@ void LightHue::TranslateColor(const Hmx::Color &col, Hmx::Color &res) {
     if (!mKeys.empty()) {
         float maxcol = Max(1.0f, Max(col.red, col.green, col.blue));
         Hmx::Color col30;
-        Multiply(col, 1.0f / maxcol, col30);
-        float vecx, vecy, vecz;
+        float inv = 1.0f / maxcol;
+        float ca = col.alpha;
+        float cb = col.blue;
+        float cg = col.green;
+        float cr = col.red;
+        col30.alpha = ca * inv;
+        col30.blue = cb * inv;
+        col30.green = cg * inv;
+        col30.red = cr * inv;
         float h, s, l;
+        float vecx, vecy, vecz;
         Vector3 vec;
         MakeHSL(col30, h, s, l);
         mKeys.AtFrame(h, vec);
@@ -104,7 +112,14 @@ void LightHue::TranslateColor(const Hmx::Color &col, Hmx::Color &res) {
         vecz = vec.z;
         float clamped = Clamp(0.0f, 1.0f, l * vecz * 2.0f);
         MakeColor(vecx, s * vecy, clamped, res);
-        Multiply(res, maxcol, res);
+        float ra = res.alpha;
+        float rb = res.blue;
+        float rg = res.green;
+        float rr = res.red;
+        res.alpha = ra * maxcol;
+        res.blue = rb * maxcol;
+        res.green = rg * maxcol;
+        res.red = rr * maxcol;
     } else
         res = col;
 }

@@ -93,7 +93,8 @@ DataNode MultiSelectListPanel::OnMsg(const ButtonDownMsg &) {
 
 void MultiSelectListPanel::UnChoose() {
     UIListState& state = mScrollList->GetListState();
-    mScrollList->SetSelected(mStartSection, Min(mStartSection, state.FirstShowing()));
+    int firstShowing = state.FirstShowing();
+    mScrollList->SetSelected(mStartSection, Min(firstShowing, mStartSection));
     mStartSection = -1;
     mSelectionMesh->SetShowing(false);
 }

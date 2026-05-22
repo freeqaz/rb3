@@ -16,6 +16,7 @@ void GameGemList::Clear() { mGems.clear(); }
 
 void GameGemList::CopyFrom(const GameGemList *gList) {
     mGems.clear();
+    mGems.reserve(gList->mGems.size());
     mGems.insert(mGems.begin(), gList->mGems.begin(), gList->mGems.end());
 }
 

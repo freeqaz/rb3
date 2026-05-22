@@ -54,6 +54,10 @@ void UIListSlot::Draw(
         Transform tf78(root->WorldXfm());
         Transform tfa8;
         UIListProvider *prov = liststate.Provider();
+        float mxz = tf78.m.x.z;
+        float myz = tf78.m.y.z;
+        float mzz = tf78.m.z.z;
+        float mvz = tf78.v.z;
         for (int i = 0; i < thesize; i++) {
             const UIListElementDrawState &curdrawstate = drawstate.mElements[i];
             if (curdrawstate.unk0) {
@@ -83,7 +87,14 @@ void UIListSlot::Draw(
                         d10 *= DisabledAlphaScale();
                     prov->PreDraw(curdrawstate.mShowing, curdrawstate.mData, this);
                 }
-                tfa8 = tf78;
+                *(__vec2x32float__ *)&tfa8.m.x.x = *(__vec2x32float__ *)&tf78.m.x.x;
+                tfa8.m.x.z = mxz;
+                *(__vec2x32float__ *)&tfa8.m.y.x = *(__vec2x32float__ *)&tf78.m.y.x;
+                tfa8.m.y.z = myz;
+                *(__vec2x32float__ *)&tfa8.m.z.x = *(__vec2x32float__ *)&tf78.m.z.x;
+                tfa8.m.z.z = mzz;
+                *(__vec2x32float__ *)&tfa8.v.x = *(__vec2x32float__ *)&tf78.v.x;
+                tfa8.v.z = mvz;
                 if (ParentList())
                     ParentList()->AdjustTrans(tfa8, curdrawstate);
                 CalcXfm(ctf, curdrawstate.mPos, tfa8);

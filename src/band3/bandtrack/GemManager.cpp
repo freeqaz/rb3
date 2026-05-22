@@ -585,8 +585,9 @@ void GemManager::Hit(float f1, int i2, int i3) {
         ReleaseHitGems();
     }
     Gem &gem = mGems[i2];
+    unsigned int slots = gem.Slots();
     gem.Hit();
-    mHitGems.push_back(HitGem(f1, i2, gem.Slots()));
+    mHitGems.push_back(HitGem(f1, i2, slots));
     if (mTrackConfig.IsKeyboardTrack()) {
         CheckRemoveChordBracket(i2);
     }

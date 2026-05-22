@@ -87,47 +87,46 @@ void CharPollableSorter::Sort(std::vector<RndPollable *> &polls) {
     }
     if (deps.empty())
         return;
-    else {
-        std::sort(deps.begin(), deps.end(), CharPollableSorter::AlphaSort());
-        std::list<Dep *> depList;
-        for (int i = 0; i < deps.size(); i++)
-            depList.push_back(deps[i]);
-        while (!depList.empty()) {
-            Dep *curDep = depList.back();
-            depList.pop_back();
-            CharPollable *c = dynamic_cast<CharPollable *>(curDep->obj);
-            if (c) {
-                std::list<Hmx::Object *> depList1;
-                std::list<Hmx::Object *> depList2;
-                c->PollDeps(depList1, depList2);
-                AddDeps(curDep, depList1, depList, true);
-                AddDeps(curDep, depList2, depList, false);
-            }
-            RndTransformable *t = dynamic_cast<RndTransformable *>(curDep->obj);
-            if (t) {
-                std::list<Hmx::Object *> tDepList;
-                tDepList.push_back(t->TransParent());
-                AddDeps(curDep, tDepList, depList, true);
-            }
+    std::sort(deps.begin(), deps.end(), CharPollableSorter::AlphaSort());
+    std::list<Dep *> depList;
+    for (int i = 0; i < deps.size(); i++)
+        depList.push_back(deps[i]);
+    while (!depList.empty()) {
+        std::list<Dep *>::iterator depIt = depList.begin();
+        Dep *curDep = *depIt;
+        depList.erase(depIt);
+        CharPollable *c = dynamic_cast<CharPollable *>(curDep->obj);
+        if (c) {
+            std::list<Hmx::Object *> depList1;
+            std::list<Hmx::Object *> depList2;
+            c->PollDeps(depList1, depList2);
+            AddDeps(curDep, depList1, depList, true);
+            AddDeps(curDep, depList2, depList, false);
         }
+        RndTransformable *t = dynamic_cast<RndTransformable *>(curDep->obj);
+        if (t) {
+            std::list<Hmx::Object *> tDepList;
+            tDepList.push_back(t->TransParent());
+            AddDeps(curDep, tDepList, depList, true);
+        }
+    }
 
-        std::list<Dep *> otherDepList;
-        for (int i = 0; i < deps.size(); i++) {
-            Dep *curDep = deps[i];
-            std::list<Dep *>::iterator it = otherDepList.begin();
-            for (; it != otherDepList.end(); ++it) {
-                if (ChangedBy(curDep, *it))
-                    break;
-            }
-            otherDepList.insert(it, curDep);
+    std::list<Dep *> otherDepList;
+    for (int i = 0; i < deps.size(); i++) {
+        Dep *curDep = deps[i];
+        std::list<Dep *>::iterator it = otherDepList.begin();
+        for (; it != otherDepList.end(); ++it) {
+            if (ChangedBy(curDep, *it))
+                break;
         }
+        otherDepList.insert(it, curDep);
+    }
 
-        int idx = 0;
-        for (std::list<Dep *>::iterator it = otherDepList.begin();
-             it != otherDepList.end();
-             ++it) {
-            polls[idx++] = (*it)->poll;
-        }
+    int idx = 0;
+    for (std::list<Dep *>::iterator it = otherDepList.begin();
+         it != otherDepList.end();
+         ++it) {
+        polls[idx++] = (*it)->poll;
     }
 }
 

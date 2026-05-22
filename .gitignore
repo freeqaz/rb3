@@ -49,13 +49,31 @@ ignored/
 # Analysis databases
 cache.db
 decomp.db
+permuter_cache.db
+.objdiff_report_cache
 
 # Analysis output files (large, per-function dumps)
 DeformMesh__*
 LeaveState__*
 SwapResource__*
+AddBoneInternal__*
+DrawShowing__*
+PollFrontLoader__*
+ReadCounts__*
+MD5Transform
+OSSuspendThread
 __ct__*
 function_analysis/
+
+# Source permuter scratch / work files
+.permuter_work_*
+*.permuter.lock
+*.permuter_bak
+
+# Stray build/analysis artifacts (dep files, backups, compiled output)
+*.d
+*.bak
+a.out
 
 # Ghidra project files
 ghidra_projects/
@@ -65,6 +83,7 @@ bin/objdiff-cli
 
 # Claude Code local settings
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .claude/worktrees/
 
 # rust target folders

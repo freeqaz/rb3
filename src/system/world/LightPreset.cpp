@@ -858,13 +858,13 @@ void LightPreset::AnimateSpotFromPreset(
         }
     }
     if (spot->AnimateOrientationFromPreset()) {
-        Hmx::Quat q50(0, 0, 0, 0);
         Hmx::Quat q60;
         if (!(entry.unk8 & 2)) {
             spot->unk286 = false;
             q60.Reset();
         } else {
-            if (entry.unk10 != q50) {
+            bool notZero = entry.unk10.x != 0.0f || entry.unk10.y != 0.0f || entry.unk10.z != 0.0f || entry.unk10.w != 0.0f;
+            if (notZero) {
                 q60 = entry.unk10;
             } else {
                 entry.CalculateDirection(spot, q60);

@@ -1014,6 +1014,205 @@ def cmd_attributed(instrs, symbol, project_dir=None):
                 print(f"      ... and {len(mlist) - 4} more")
 
 
+# ── Compare-ASM mode ────────────────────────────────────────────────────────
+
+def _match_marker(match_type: str) -> str:
+    """Return the single-character marker for a match type."""
+    return {
+        "equal":   "=",
+        "diff_arg": "~",
+        "diff_op":  "!",
+        "insert":   "+",
+        "delete":   "-",
+        "replace":  "X",
+    }.get(match_type, "?")
+
+
+def _fmt_side(side: dict | None, width: int = 36) -> str:
+    """Format one side (target or base) of an instruction, padded to width."""
+    if not side:
+        return "<none>".ljust(width)
+    op = side.get("opcode", "???")
+    args = side.get("args", "")
+    text = f"{op} {args}".rstrip() if args else op
+    return text[:width].ljust(width)
+
+
+def _diff_annotations(ins: dict) -> list[str]:
+    """Collect [reg:rN->rM] and [off:+N] annotations from a diff_arg instruction."""
+    bd = ins.get("diff_breakdown")
+    if not bd:
+        return []
+    parts = []
+    for arg in bd.get("arguments", []):
+        at = arg.get("arg_type", "")
+        tv = arg.get("target", {}).get("value")
+        bv = arg.get("base", {}).get("value")
+        if at == "register" and tv and bv and tv != bv:
+            parts.append(f"[reg:{tv}->{bv}]")
+        elif at == "immediate":
+            if isinstance(tv, (int, float)) and isinstance(bv, (int, float)) and tv != bv:
+                delta = bv - tv
+                parts.append(f"[off:{delta:+d}]")
+    return parts
+
+
+def cmd_compare_asm(instrs):
+    """Side-by-side annotated instruction listing with mismatch markers."""
+    if not instrs:
+        print("No instructions to display.")
+        return
+
+    SIDE_W = 36          # width for each side column
+    EQUAL_HEAD = 2       # leading equal instructions to show in a run
+    EQUAL_TAIL = 2       # trailing equal instructions to show in a run
+
+    # ── Scan for insert/delete cluster boundaries ──
+    #    Build a set of indices that start/end a cluster (gap <= 2)
+    id_clusters = find_clusters(instrs, ("insert", "delete"), gap=2)
+    cluster_starts = set()
+    cluster_ends = set()
+    for cluster in id_clusters:
+        indices = [ins["index"] for _, ins in cluster]
+        cluster_starts.add(min(indices))
+        cluster_ends.add(max(indices))
+
+    # ── Group equal runs for collapsing ──
+    #    We process the list linearly and buffer equal runs.
+    lines = []   # will hold (idx, marker, t_text, b_text, annotations, is_separator)
+
+    def flush_equal_run(run):
+        """Collapse an equal run — show first EQUAL_HEAD + '...' + last EQUAL_TAIL."""
+        if len(run) <= EQUAL_HEAD + EQUAL_TAIL + 1:
+            lines.extend(run)
+        else:
+            lines.extend(run[:EQUAL_HEAD])
+            omit = len(run) - EQUAL_HEAD - EQUAL_TAIL
+            lines.append(("sep", omit))
+            lines.extend(run[EQUAL_HEAD:])
+
+    equal_run = []
+
+    for ins in instrs:
+        idx = ins["index"]
+        mt = ins.get("match_type", "equal")
+        marker = _match_marker(mt)
+        t = ins.get("target")
+        b = ins.get("base")
+
+        # Cluster boundary marker
+        if idx in cluster_starts:
+            # Flush any pending equal run before showing cluster marker
+            if equal_run:
+                flush_equal_run(equal_run)
+                equal_run = []
+
+        ann = _diff_annotations(ins) if mt == "diff_arg" else []
+        entry = (idx, marker, _fmt_side(t, SIDE_W), _fmt_side(b, SIDE_W), ann)
+
+        if mt == "equal":
+            equal_run.append(entry)
+        else:
+            if equal_run:
+                flush_equal_run(equal_run)
+                equal_run = []
+            lines.append(entry)
+
+        if idx in cluster_ends and mt in ("insert", "delete"):
+            # Cluster end — will trigger a visual separator when we later see the next
+            # non-cluster instruction; handled by flush_equal_run on next equal run.
+            pass
+
+    # Flush any trailing equal run
+    if equal_run:
+        flush_equal_run(equal_run)
+
+    # ── Print the listing ──
+    header_tgt = "TARGET".ljust(SIDE_W)
+    header_src = "BASE".ljust(SIDE_W)
+    sep_line = f"  {'─' * 6}  {'─' * SIDE_W}  {'─' * SIDE_W}"
+    print(f"  {'INDEX':6s}  {header_tgt}  {header_src}")
+    print(sep_line)
+
+    # Track cluster membership for boundary markers
+    cluster_idx_set = set()
+    for cluster in id_clusters:
+        for _, ins in cluster:
+            cluster_idx_set.add(ins["index"])
+
+    prev_in_cluster = False
+    for entry in lines:
+        if entry[0] == "sep":
+            _, omit = entry
+            print(f"  {'···':6s}  {'(' + str(omit) + ' equal instructions collapsed)':>{SIDE_W + SIDE_W + 2}}")
+            prev_in_cluster = False
+            continue
+
+        idx, marker, t_text, b_text, ann = entry
+        in_cluster = idx in cluster_idx_set
+
+        # Print cluster boundary separator
+        if in_cluster and not prev_in_cluster:
+            print(f"  {'':6s}  ── cluster ──")
+        elif not in_cluster and prev_in_cluster:
+            print(f"  {'':6s}  ── end cluster ──")
+        prev_in_cluster = in_cluster
+
+        ann_str = " ".join(ann)
+        ann_part = f"  {ann_str}" if ann_str else ""
+        print(f"{marker} {idx:5d}   {t_text}  {b_text}{ann_part}")
+
+    if prev_in_cluster:
+        print(f"  {'':6s}  ── end cluster ──")
+
+    # ── Diagnosis summary ──
+    counts = Counter(ins.get("match_type") for ins in instrs)
+    total = len(instrs)
+    equal_count = counts.get("equal", 0)
+    non_equal = total - equal_count
+
+    reg_swaps, offset_diffs, _, _ = parse_breakdowns(instrs)
+    pair_data = compute_reg_swap_pairs(reg_swaps)
+    delta_hist = compute_offset_histogram(offset_diffs)
+
+    print()
+    print("=" * 70)
+    print("SUMMARY")
+    print("=" * 70)
+    print()
+    match_pct = 100.0 * equal_count / total if total else 0.0
+    print(f"  Total instructions: {total}  |  Equal: {equal_count}  |  "
+          f"Non-equal: {non_equal}  |  Match ~{match_pct:.1f}%")
+    print()
+    print("  Mismatch type counts:")
+    for mt in ("equal", "diff_arg", "diff_op", "insert", "delete", "replace"):
+        c = counts.get(mt, 0)
+        if c or mt == "equal":
+            marker = _match_marker(mt)
+            print(f"    {marker}  {mt:12s}: {c:5d}")
+    print()
+
+    if pair_data:
+        print("  Register swap pairs (target -> base):")
+        for pair, data in sorted(pair_data.items(), key=lambda x: -x[1]["count"]):
+            if data["count"] < 1:
+                continue
+            p0, p1 = pair
+            print(f"    {p0:4s} <-> {p1:<4s}: {data['count']:3d} instructions "
+                  f"(idx {data['first']}-{data['last']})")
+        print()
+
+    if delta_hist:
+        dominant_delta, dominant_count = delta_hist.most_common(1)[0]
+        print(f"  Dominant offset delta: {dominant_delta:+d} "
+              f"({dominant_count} instructions)")
+        if len(delta_hist) > 1:
+            print("  All offset deltas:")
+            for delta, count in delta_hist.most_common(8):
+                print(f"    {delta:+6d}: {count:3d}")
+        print()
+
+
 # ── Symbol invocation ───────────────────────────────────────────────────────
 
 def run_objdiff_for_symbol(symbol, project_dir=None, unit=None):
@@ -1076,6 +1275,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Analysis modes (pick one):
+  --compare-asm Side-by-side target/base listing with mismatch markers
   --diagnose    Root cause analysis: why doesn't this match?
   --attributed  Source-attributed mismatch regions (requires --symbol)
   --clusters    Group insert/delete into contiguous clusters
@@ -1135,6 +1335,9 @@ Filter modes:
         "--unit", type=str, default=None,
         help="Unit name for objdiff disambiguation (e.g. 'default/link_glue')")
     parser.add_argument(
+        "--compare-asm", action="store_true",
+        help="Side-by-side annotated instruction listing with mismatch markers")
+    parser.add_argument(
         "--compare", nargs=2, metavar=("BASELINE_JSON", "CANDIDATE_JSON"),
         help="Compare two objdiff JSON files")
     parser.add_argument(
@@ -1169,6 +1372,9 @@ Filter modes:
         sys.exit(1)
 
     # ── Analysis modes ──
+    if args.compare_asm:
+        cmd_compare_asm(instrs)
+        return
     if args.attributed:
         if not args.symbol:
             parser.error("--attributed requires --symbol")

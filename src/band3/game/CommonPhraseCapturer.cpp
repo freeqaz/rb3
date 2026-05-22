@@ -84,12 +84,12 @@ void CommonPhraseCapturer::LocalHitLastGem(Player *p, int i2, int i3) {
     OneTrackCompletedPhrase(i2, i3);
     if (TheSongDB->IsUnisonPhrase(i2)) {
         ExtendPhraseStates(i2);
-        PhraseState &state = mPhraseStates[i2];
-        if (state.unk0 != 2) {
-            state.unk4 |= 1 << i3;
+        if (mPhraseStates[i2].unk0 != 2) {
+            mPhraseStates[i2].unk4 |= 1 << i3;
+            PhraseState &state = mPhraseStates[i2];
             int trackBits = TheSongDB->GetCommonPhraseTracks(i2);
-            trackBits |= mPhraseStates[i2].unk8;
-            if (trackBits == (trackBits & mDisabledTracks | mPhraseStates[i2].unk4)) {
+            trackBits |= state.unk8;
+            if (trackBits == (trackBits & (mDisabledTracks | mPhraseStates[i2].unk4))) {
                 AllTracksCompletedPhrase(i2);
             }
             GetTrackPanel()->UnisonPlayerSuccess(p);

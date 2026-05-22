@@ -193,7 +193,6 @@ void CharIKFingers::Poll() {
         Invert(mKeyboardRefBone->WorldXfm().m, mtx58);
         Multiply(mHand->WorldXfm().m, mtx58, mtx7c);
         Vector3 v88;
-        Subtract(mKeyboardRefBone->WorldXfm().v, mHand->WorldXfm().v, v88);
         float weight = Weight();
         if (weight < 1.0) {
             if (mOutputTrans) {

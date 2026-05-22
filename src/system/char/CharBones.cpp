@@ -750,9 +750,9 @@ void CharBones::RotateBy(CharBones &dst) const {
     const Bone *src = mBones.begin();
 
     if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Vector3 *ddata = (Vector3 *)dst.mStart;
-        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
         const Bone *src_end = src + mCounts[TYPE_QUAT];
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
@@ -811,12 +811,12 @@ void CharBones::RotateBy(CharBones &dst) const {
     }
 rotate_quat:
     if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
-        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
-        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
-        Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
         const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+        Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
         if (mCompression >= kCompressQuats) {
-            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
+            ByteQuat *sqdata = (ByteQuat *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -826,17 +826,19 @@ rotate_quat:
                     }
                     dquat++;
                 }
-                Hmx::Quat sq;
-                ((ByteQuat *)sqdata)->ToQuat(sq);
+                src++;
+                float sqz = (float)sqdata->z * 0.0078740157f;
+                float sqw = (float)sqdata->w * 0.0078740157f;
+                float sqx = (float)sqdata->x * 0.0078740157f;
+                float sqy = (float)sqdata->y * 0.0078740157f;
                 float dw = dquat->w;
                 float dx = dquat->x;
-                src++;
                 float dz = dquat->z;
                 float dy = dquat->y;
-                dquat->x = -(dy * sq.z - (dw * sq.x + dz * sq.y + dx * sq.w));
-                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
-                dquat->z = -(dx * sq.y - ((dy * sq.x + (dz * sq.w + dw * sq.z))));
-                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
+                dquat->x = -(dy * sqz - (dw * sqx + dz * sqy + dx * sqw));
+                dquat->y = -(dz * sqx - (dw * sqy + dy * sqw + dx * sqz));
+                dquat->z = -(dx * sqy - ((dy * sqx + (dz * sqw + dw * sqz))));
+                dquat->w = -(-(dy * sqy - (dw * sqw - dx * sqx)) - dz * sqz);
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -845,10 +847,10 @@ rotate_quat:
                     return;
                 }
                 dquat++;
-                sqdata += 4;
+                sqdata++;
             }
         } else if (mCompression != kCompressNone) {
-            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
+            ShortQuat *sqdata = (ShortQuat *)(mStart + mOffsets[TYPE_QUAT]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -858,17 +860,19 @@ rotate_quat:
                     }
                     dquat++;
                 }
-                Hmx::Quat sq;
-                ((ShortQuat *)sqdata)->ToQuat(sq);
+                src++;
+                float sqz = (float)sqdata->z * 3.051851e-05f;
+                float sqw = (float)sqdata->w * 3.051851e-05f;
+                float sqx = (float)sqdata->x * 3.051851e-05f;
+                float sqy = (float)sqdata->y * 3.051851e-05f;
                 float dw = dquat->w;
                 float dx = dquat->x;
-                src++;
                 float dz = dquat->z;
                 float dy = dquat->y;
-                dquat->x = -(dy * sq.z - (dw * sq.x + dz * sq.y + dx * sq.w));
-                dquat->y = -(dz * sq.x - (dw * sq.y + dy * sq.w + dx * sq.z));
-                dquat->z = -(dx * sq.y - (dy * sq.x + dz * sq.w + dw * sq.z));
-                dquat->w = -(-(dy * sq.y - (dw * sq.w - dx * sq.x)) - dz * sq.z);
+                dquat->x = -(dy * sqz - (dw * sqx + dz * sqy + dx * sqw));
+                dquat->y = -(dz * sqx - (dw * sqy + dy * sqw + dx * sqz));
+                dquat->z = -(dx * sqy - (dy * sqx + dz * sqw + dw * sqz));
+                dquat->w = -(-(dy * sqy - (dw * sqw - dx * sqx)) - dz * sqz);
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -877,7 +881,7 @@ rotate_quat:
                     return;
                 }
                 dquat++;
-                sqdata += 8;
+                sqdata++;
             }
         } else {
             Hmx::Quat *squat = (Hmx::Quat *)(mStart + mOffsets[TYPE_QUAT]);
@@ -917,9 +921,9 @@ rotate_quat:
     }
 rotate_rot:
     if (mCounts[TYPE_END] > mCounts[TYPE_ROTX]) {
-        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
         const Bone *src_end = mBones.begin() + mCounts[TYPE_END];
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
         float *dfdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
         float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
         if (mCompression != kCompressNone) {

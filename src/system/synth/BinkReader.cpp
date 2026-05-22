@@ -130,14 +130,14 @@ void BinkReader::PollPlay() {
     do {
         if (mSamplesReady > 0) {
             START_AUTO_TIMER("bink_consume");
-            int consumed = mStream->ConsumeData(
+            int iSamplesConsumed = mStream->ConsumeData(
                 (void **)mPCMOffsets, mSamplesReady, mSampleCurrent
             );
-            MILO_ASSERT(consumed <= mSamplesReady, 0xF7);
-            mSampleCurrent += consumed;
-            mSamplesReady -= consumed;
+            MILO_ASSERT(iSamplesConsumed <= mSamplesReady, 0xF7);
+            mSampleCurrent += iSamplesConsumed;
+            mSamplesReady -= iSamplesConsumed;
             for (unsigned char i = 0; i < mBink->NumTracks; i++) {
-                mPCMOffsets[i] += consumed * 2;
+                mPCMOffsets[i] += iSamplesConsumed * 2;
             }
         }
         if (mDecodeTrack == mBink->NumTracks) {
@@ -271,7 +271,7 @@ void BinkReader::Seek(int iSample) {
                 mSamplesJump = maxJump;
             }
         } else {
-            MILO_ASSERT((float)mSamplesJump < kfBinkFreq / kfBinkRate, 0x1EE);
+            MILO_ASSERT(mSamplesJump < (kfBinkFreq / kfBinkRate), 0x1EE);
         }
         MILO_ASSERT(mSamplesJump >= 0, 0x1F0);
         mState = kPlay;

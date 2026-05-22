@@ -49,12 +49,37 @@
 #include "tour/TourCharLocal.h"
 #include "utl/Locale.h"
 #include "utl/MakeString.h"
+#include "utl/MemMgr.h"
 #include "utl/Symbol.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 #include <vector>
+
+namespace stlpmtx_std {
+
+template <>
+inline void _Temporary_buffer<Symbol *, Symbol>::_M_allocate_buffer() {
+    _M_original_len = _M_len;
+    _M_buffer = 0;
+    if (_M_len > (ptrdiff_t)(INT_MAX / sizeof(Symbol)))
+        _M_len = INT_MAX / sizeof(Symbol);
+    while (_M_len > 0) {
+        _M_buffer = (Symbol *)_MemAlloc(_M_len * sizeof(Symbol), 0);
+        if (_M_buffer)
+            break;
+        _M_len /= 2;
+    }
+}
+
+template <>
+inline _Temporary_buffer<Symbol *, Symbol>::~_Temporary_buffer() {
+    _STLP_STD::_Destroy_Range(_M_buffer, _M_buffer + _M_len);
+    _MemFree(_M_buffer);
+}
+
+} // namespace stlpmtx_std
 
 AccomplishmentManager *TheAccomplishmentMgr;
 

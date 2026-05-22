@@ -530,8 +530,9 @@ bool PitchBetween(float pitch, float a, float b, float &out) {
     return false;
 }
 
+static const float kFrameTimeMs = 16.666668f;
+
 float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const {
-    static float kFrameTimeMs = 16.666668f;
     if (fEnd < fBegin) {
         float tmp = fBegin;
         fBegin = fEnd;
@@ -549,9 +550,10 @@ float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const
     if (note.mBeginPitch == note.mEndPitch) {
         // Loop 1: no pitch bend (unpitched or single pitch)
         float threshold = 0.0f;
+        float frameMs = kFrameTimeMs;
         while (fBeginRel < fEndRel) {
             float spC = fEndRel - fBeginRel;
-            float stepMs = std::min(spC, kFrameTimeMs);
+            float stepMs = std::min(frameMs, spC);
             float weight;
             if (fBeginRel < threshold) {
                 weight = threshold;
@@ -565,14 +567,14 @@ float VocalPart::GetNoteSliceWeight(float fBegin, float fEnd, int noteIdx) const
         }
     } else {
         // Loop 2: pitch bend
-        float f22 = 1.0f - (float)pow(4.0 / 7.0, 2.0);
+        float f22 = 1.0f - (float)pow((double)(4.0f / 7.0f), 2.0);
         float zeroThresh = accum;
         float half = 0.5f;
         float two = 2.0f;
         float seventeenFourths = 1.75f;
         while (fBeginRel < fEndRel) {
             float sp8 = fEndRel - fBeginRel;
-            float stepMs = std::min(sp8, kFrameTimeMs);
+            float stepMs = std::min(kFrameTimeMs, sp8);
             float weight;
             if (fBeginRel < zeroThresh) {
                 weight = 1.0f;

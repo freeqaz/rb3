@@ -233,7 +233,11 @@ config.progress_all = False
 
 # Object files
 Matching = True
-Equivalent = config.non_matching
+# Equivalent units have explanatory comments ("regswaps", "debug inlining
+# differs", etc.) — accepted as functionally identical even when not byte-
+# identical. Link them from source so the binary makes more progress toward
+# the native-port goal. The SHA1 `ok` gate is opt-in and stays separate.
+Equivalent = True
 NonMatching = False
 
 config.warn_missing_config = True
