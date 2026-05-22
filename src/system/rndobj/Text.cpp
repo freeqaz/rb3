@@ -621,6 +621,16 @@ void RndText::ComputeCharWidths(float *fp, int i2, const char *cc, Style style) 
 
 DECOMP_FORCEACTIVE(Text, "lineLen >= bestLineLen", "bestWp != -1", "curStyle.brk == false")
 
+// WrapText (still unimplemented) is the only caller of
+// std::vector<Line>::insert(pos, n, x). Force the instantiation so the
+// out-of-line _Vector_impl::_M_fill_insert / _M_fill_insert_aux helpers get
+// emitted from <stl/_vector_sized.c>.
+DECOMP_FORCEBLOCK(
+    Text,
+    (std::vector<RndText::Line> & lines, const RndText::Line &line, int n),
+    lines.insert(lines.end(), n, line);
+)
+
 void RndText::SetText(const char *text) {
     String tmp;
     tmp.reserve(mText.capacity());
