@@ -133,9 +133,7 @@ void RndFlare::DrawShowing() {
         const Transform &camXfm = cam->WorldXfm();
         const Transform &flareXfm = WorldXfm();
         Vector3 dir;
-        dir.z = camXfm.v.z - flareXfm.v.z;
-        dir.y = camXfm.v.y - flareXfm.v.y;
-        dir.x = camXfm.v.x - flareXfm.v.x;
+        Subtract(camXfm.v, flareXfm.v, dir);
         Normalize(dir, dir);
 
         const Transform &flareXfm2 = WorldXfm();
@@ -154,8 +152,7 @@ void RndFlare::DrawShowing() {
     } else {
         int steps = mSteps;
         int newStep = (mStep + mVisible * 2) - 1;
-        if (newStep > steps) {
-        } else {
+        if (newStep <= steps) {
             steps = newStep & ~(newStep >> 31);
         }
         mStep = steps;
