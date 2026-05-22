@@ -863,6 +863,28 @@ void GemTrack::OverrideRangeShift(float f1, float f2) {
     }
 }
 
+void GemTrack::SetEnableSlot(int slot, bool enable) {
+    if (enable)
+        mGemManager->EnableSlot(slot);
+    else
+        mGemManager->DisableSlot(slot);
+    BandUser *pUser = (BandUser *)mTrackConfig.GetBandUser();
+    MILO_ASSERT(pUser, 0x43C);
+    std::vector<GameGem> &gems = (std::vector<GameGem> &)TheSongDB->GetGems(
+        TheGameConfig->GetTrackNum(pUser->mUserGuid)
+    );
+    float cutoff =
+        1000.0f * (TheTaskMgr.Seconds(TaskMgr::kRealTime) + mTrackDir->ViewTimeSeconds());
+    for (std::vector<GameGem>::iterator it = gems.begin(); it != gems.end(); ++it) {
+        if (slot == it->GetSlot() && it->mMs > cutoff) {
+            if (enable)
+                it->unk18 = 0;
+            else
+                it->unk18 = 0x80;
+        }
+    }
+}
+
 BEGIN_HANDLERS(GemTrack)
     HANDLE_ACTION(on_miss_phrase, OnMissPhrase(_msg->Int(2)))
     HANDLE_ACTION(set_bonus_gems, SetBonusGems(_msg->Int(2)))
