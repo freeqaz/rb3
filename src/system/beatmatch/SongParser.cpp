@@ -892,14 +892,16 @@ void SongParser::OnMidiMessageVocals(
     case 0x80: {
         int num80 = data1 - (mPlayerSlot + (mNumDifficulties - 1) * 12 + 60);
         if (0 <= num80 && num80 <= 1) {
-            MILO_WARN(
-                "%s (%s): Vocal phrase %s-%s is past [coda] event at %s",
-                mFilename,
-                mTrackName,
-                PrintTick(mVocalPhraseStartTick),
-                PrintTick(tick),
-                PrintTick(mCodaStartTick)
-            );
+            if (mCodaStartTick != -1 && tick >= mCodaStartTick) {
+                MILO_WARN(
+                    "%s (%s): Vocal phrase %s-%s is past [coda] event at %s",
+                    mFilename,
+                    mTrackName,
+                    PrintTick(mVocalPhraseStartTick),
+                    PrintTick(tick),
+                    PrintTick(mCodaStartTick)
+                );
+            }
             mSink->EndVocalPlayerPhrase(tick, num80);
             mVocalPhraseStartTick = -1;
         } else {
