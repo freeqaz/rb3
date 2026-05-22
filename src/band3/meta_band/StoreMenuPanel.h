@@ -20,7 +20,7 @@ public:
     virtual void Exit();
     virtual void Poll();
 
-    void AddMenu(DataArray *, const char *, int);
+    void AddMenu(DataArray *, const char *);
     DataNode OnBack(const DataArray *);
     DataNode OnMsg(const MetadataLoadedMsg &);
     const char *GetCrumbText() const;

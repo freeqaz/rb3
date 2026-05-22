@@ -100,15 +100,27 @@ const char *StoreMenuPanel::GetCrumbText() const {
     return result;
 }
 
-void StoreMenuPanel::AddMenu(DataArray *data, const char *path, int ix) {
-    StoreMenuProvider *provider = new StoreMenuProvider(data, path);
-    if (mCurrentMenuIx + 1 >= (int)mMenuStack.size()) {
+void StoreMenuPanel::AddMenu(DataArray *data, const char *path) {
+    int next = mCurrentMenuIx + 1;
+    StoreMenuProvider *provider;
+    if (next >= (int)mMenuStack.size()) {
+        provider = new StoreMenuProvider(data, path);
         mMenuStack.push_back(provider);
     } else {
-        mMenuStack[mCurrentMenuIx + 1] = provider;
+        provider = mMenuStack[next];
         provider->SetData(data);
     }
-    SetPendingMenuIx(ix);
+    int numData = provider->NumData();
+    int ix = 0;
+    if (mMenuStack.size() == 1) {
+        if (mStartingHighlightIx < numData)
+            ix = mStartingHighlightIx;
+    }
+    while (!provider->IsActive(ix)) {
+        ix = (ix + 1) % numData;
+    }
+    provider->mIxHighlight = ix;
+    SetPendingMenuIx(next);
 }
 
 DataNode StoreMenuPanel::OnBack(const DataArray *) {
@@ -128,7 +140,7 @@ DataNode StoreMenuPanel::OnMsg(const MetadataLoadedMsg &msg) {
             StorePage *page =
                 TheStoreMetadata.LoadPage(msg->Array(2)->Int(0));
             if (page && !page->mPage->mHasOffers) {
-                AddMenu(msg->Array(2), msg->Str(4), 6);
+                AddMenu(msg->Array(2), msg->Str(4));
             }
         }
     } else {
