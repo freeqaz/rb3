@@ -294,8 +294,9 @@ void MetaPanel::Load() {
     DataArray *cfg = SystemConfig("synth", "metamusic", "metamusic_loop");
     DataArray *loopArr = cfg->Array(PickLoopIndex(cfg->Size()));
     String filename(MakeString("%s", loopArr->Str(0)));
+    float vol = loopArr->Float(1);
     mMusic = new MetaMusic("metamusic");
-    mMusic->Load(filename, loopArr->Float(1), true, true);
+    mMusic->Load(filename, vol, true, true);
     mSongPreview.Init();
     UpdateMusicMuteState();
 }
