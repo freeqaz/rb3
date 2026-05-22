@@ -554,10 +554,11 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
         int startIdx;
         int endIdx;
         if (lastClipped != -1) {
-            if (firstClipped > numPts - lastClipped - 1) {
+            if (firstClipped > (numPts - 1) - lastClipped) {
+                Point *prevPt = &mPoints[firstClipped - 1];
                 Point *pt = &mPoints[firstClipped];
+                float *prevView = &prevPt->unk0;
                 float *curView = &pt->unk0;
-                float *prevView = &pt[-1].unk0;
                 Interp(*(Vector3 *)prevView, *(Vector3 *)curView,
                        (clipDist - prevView[1]) / (curView[1] - prevView[1]),
                        *(Vector3 *)curView);
@@ -565,8 +566,9 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
                 startIdx = 0;
             } else {
                 Point *pt = &mPoints[lastClipped];
+                Point *nextPt = &mPoints[lastClipped + 1];
                 float *curView = &pt->unk0;
-                float *nextView = &pt[1].unk0;
+                float *nextView = &nextPt->unk0;
                 Interp(*(Vector3 *)curView, *(Vector3 *)nextView,
                        (clipDist - curView[1]) / (nextView[1] - curView[1]),
                        *(Vector3 *)curView);
@@ -574,26 +576,24 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
                 startIdx = lastClipped;
             }
         } else {
-            endIdx = numPts - 1;
             startIdx = 0;
+            endIdx = numPts - 1;
         }
         UpdateLine(&mPoints[startIdx], &mPoints[endIdx]);
     } else {
         i = 0;
         while (i < numPts - 1) {
             Point *pt1 = &mPoints[i];
+            Point *pt2 = &mPoints[i + 1];
             float dist1 = (&pt1->unk0)[1];
-            Point *pt2 = pt1 + 1;
             if (dist1 < clipDist) {
                 float dist2 = (&pt2->unk0)[1];
                 if (dist2 < clipDist) {
                     pt2 = pt1;
                 } else {
-                    float d1 = (&pt1->unk0)[1];
-                    Interp(*(Vector3 *)&pt1->unk0, *(Vector3 *)&pt1[1].unk0,
-                           (clipDist - d1) / (dist2 - d1),
+                    Interp(*(Vector3 *)&pt1->unk0, *(Vector3 *)&pt2->unk0,
+                           (clipDist - dist1) / (dist2 - dist1),
                            *(Vector3 *)&pt1->unk0);
-                    pt2 = pt1 + 1;
                 }
             } else {
                 float dist2 = (&pt2->unk0)[1];
@@ -601,7 +601,6 @@ void RndLine::UpdateLine(const Transform &camXfm, float nearPlane) {
                     Interp(*(Vector3 *)&pt2->unk0, *(Vector3 *)&pt1->unk0,
                            (clipDist - dist2) / (dist1 - dist2),
                            *(Vector3 *)&pt2->unk0);
-                    pt2 = pt1 + 1;
                 }
             }
             UpdateLinePair(pt1, pt2);
