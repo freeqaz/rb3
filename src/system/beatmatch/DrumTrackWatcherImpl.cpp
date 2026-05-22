@@ -2,6 +2,7 @@
 #include "beatmatch/GameGem.h"
 #include "beatmatch/SongData.h"
 #include "beatmatch/TrackWatcherParent.h"
+#include <algorithm>
 
 bool gKickAutoplay;
 
@@ -100,6 +101,26 @@ bool DrumTrackWatcherImpl::Swing(int slot, bool b1, bool b2, GemHitFlags flags) 
         OnMiss(now, slot, relevant, mask, kGemHitFlagNone);
     }
     return true;
+}
+
+int DrumTrackWatcherImpl::NextGemAfter(int gem_id, bool timeout) {
+    int slot = mGemList->GetGem(gem_id).GetSlot();
+    int last_tick = mGemList->GetGem(gem_id).GetTick();
+    int num_skips = 0;
+    for (int i = gem_id + 1; i < mGemList->NumGems(); i++) {
+        int tick = mGemList->GetGem(i).GetTick();
+        if (timeout && tick - last_tick > 10) {
+            num_skips++;
+            last_tick = tick;
+            if (num_skips == 2) {
+                int next = gem_id + 1;
+                return std::min(next, mGemList->NumGems() - 1);
+            }
+        }
+        if (mGemList->GetGem(i).GetSlot() == slot)
+            return i;
+    }
+    return -1;
 }
 
 void DrumTrackWatcherImpl::PollHook(float f) { CheckForKickAutoplay(f); }
