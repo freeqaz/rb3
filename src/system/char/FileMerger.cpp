@@ -214,11 +214,19 @@ void FileMerger::LaunchNextLoader() {
     MILO_ASSERT(!mFilesPending.empty(), 0x156);
     MILO_ASSERT(!mCurLoader, 0x157);
     bool b1 = false;
+    bool b2 = false;
     if (Dir()->Loader() && !Dir()->Loader()->IsLoaded()) {
-        if (Dir()->Loader()->GetPos() != kLoadStayBack) {
-            if (Dir()->Loader()->GetPos() != kLoadFrontStayBack)
-                goto next;
+        b2 = true;
+    }
+    if (b2) {
+        int ok = 1;
+        LoaderPos lp = Dir()->Loader()->GetPos();
+        if (lp != kLoadStayBack) {
+            if (lp != kLoadFrontStayBack)
+                ok = 0;
         }
+        if (!ok)
+            goto next;
         b1 = true;
     }
 
