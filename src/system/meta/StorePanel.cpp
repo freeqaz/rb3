@@ -422,3 +422,12 @@ bool StorePanel::ToggleTestOffers() {
 }
 
 void StorePanel::FinishCheckout() {}
+
+BEGIN_PROPSYNCS(StorePanel)
+    SYNC_PROP(current_offer, mCurrentOffer)
+    SYNC_PROP(current_offer_upgrade, mCurrentOfferUpgrade)
+    SYNC_PROP(load_ok, mLoadOK)
+    SYNC_PROP(session_status, (int &)mSessionStatus)
+    SYNC_PROP(store_mode, mStoreMode)
+    SYNC_SUPERCLASS(Hmx::Object)
+END_PROPSYNCS
