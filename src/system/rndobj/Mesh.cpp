@@ -42,6 +42,15 @@ inline void Triangle::Set(const Vector3 &v0, const Vector3 &v1, const Vector3 &v
 PatchVerts gPatchVerts;
 int MESH_REV_SEP_COLOR = 0x25;
 
+Vector3 TransformNormal(const Vector3 &normal, const Hmx::Matrix3 &mat) {
+    Hmx::Matrix3 inv;
+    FastInvert(mat, inv);
+    Transpose(inv, inv);
+    Vector3 result;
+    Multiply(normal, inv, result);
+    return result;
+}
+
 
 DECOMP_FORCEACTIVE(
     Mesh,
