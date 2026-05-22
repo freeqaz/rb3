@@ -34,6 +34,9 @@ public:
 
     void Clear();
     void UpdateStats(ScoreType, Difficulty, int, const Stats &, Performer *, Band *);
+    void UpdateScoreTypeSpecificStats(
+        ScoreType, Difficulty, const Stats &, Performer *, Band *
+    );
     int GetToursPlayed(Symbol) const;
     void UpdateTourPlayedForAllParticipants(Symbol);
     int GetToursGotAllStars(Symbol) const;

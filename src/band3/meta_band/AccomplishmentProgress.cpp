@@ -12,6 +12,9 @@
 #include "meta_band/AccomplishmentGroup.h"
 #include "meta_band/AccomplishmentManager.h"
 #include "meta_band/CampaignLevel.h"
+#include "game/Band.h"
+#include "game/Performer.h"
+#include "game/Stats.h"
 #include "meta_band/MetaPanel.h"
 #include "meta_band/MetaPerformer.h"
 #include "meta_band/PassiveMessenger.h"
@@ -329,6 +332,56 @@ bool AccomplishmentProgress::AddAward(Symbol s1, Symbol s2) {
 
 bool AccomplishmentProgress::HasAward(Symbol s) const {
     return mAwards.find(s) != mAwards.end();
+}
+
+void AccomplishmentProgress::UpdateScoreTypeSpecificStats(
+    ScoreType type,
+    Difficulty diff,
+    const Stats &stats,
+    Performer *i_pPerformer,
+    Band *i_pBand
+) {
+    MILO_ASSERT(i_pBand, 0x420);
+    mTotalOverdriveDeploys[type] += stats.mDeployCount;
+    mTotalOverdriveTime[type] += (int)(0.001f * stats.mTotalOverdriveDurationMs);
+    mTotalOverdrivePhrases[type] += stats.mOverdrivePhrasesCompleted;
+    mTotalUnisonPhrases[type] += stats.mUnisonPhraseCompleted;
+    int overdriveTime = (int)(i_pBand->mMsWithMultiplier / 1000.0f);
+    if (overdriveTime > mMostOverdriveTime[type]) {
+        mMostOverdriveTime[type] = overdriveTime;
+    }
+    if (stats.GetCodaPoints() > 0) {
+        mTotalBREsHit[type]++;
+    }
+    int numStars = i_pPerformer->GetNumStars();
+    if (numStars > mBestStars[type][diff]) {
+        mBestStars[type][diff] = numStars;
+    }
+    if (stats.mSoloPercentage > mBestSolo[type][diff]) {
+        mBestSolo[type][diff] = stats.mSoloPercentage;
+    }
+    int accuracy = (int)(stats.mNotesHitFraction * 100.0f);
+    if (accuracy > mBestAccuracy[type][diff]) {
+        mBestAccuracy[type][diff] = accuracy;
+    }
+    int hoposPercent =
+        (int)(100.0f * ((float)stats.mHopoGemsHopoed / (float)stats.mHopoGemCount));
+    if (hoposPercent > mBestHoposPercent[type][diff]) {
+        mBestHoposPercent[type][diff] = hoposPercent;
+    }
+    int longestStreak = stats.GetLongestStreak();
+    if (longestStreak > mBestStreak[type]) {
+        mBestStreak[type] = longestStreak;
+    }
+    if (stats.mEndGameScore > mBestScore[type]) {
+        mBestScore[type] = stats.mEndGameScore;
+    }
+    if (stats.mDeployCount > mMostOverdriveDeploys[type]) {
+        mMostOverdriveDeploys[type] = stats.mDeployCount;
+    }
+    if (stats.mUnisonPhraseCompleted > mMostUnisonPhrases[type]) {
+        mMostUnisonPhrases[type] = stats.mUnisonPhraseCompleted;
+    }
 }
 
 void AccomplishmentProgress::Poll() {}
