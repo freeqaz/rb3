@@ -595,6 +595,39 @@ void PatchDir::SaveRemote(IntPacker &packer) {
     }
 }
 
+void PatchDir::LoadStickerData() {
+    MILO_ASSERT(mStickerMap.empty(), 0x4A9);
+    DataArray *config = SystemConfig("art_maker", "stickers");
+    for (int i = 1; i < config->Size(); i++) {
+        DataArray *categoryArr = config->Array(i);
+        Symbol category = categoryArr->ForceSym(0);
+        MILO_ASSERT(mStickerMap.find(category) == mStickerMap.end(), 0x4B2);
+        std::vector<PatchSticker *> stickers;
+        for (int j = 2; j < categoryArr->Size(); j++) {
+            PatchSticker *sticker = new PatchSticker();
+            DataArray *stickerArr = categoryArr->Array(j);
+            Symbol sizeX("size_x");
+            sticker->unk18 = stickerArr->FindArray(sizeX, true)->Float(1);
+            Symbol sizeY("size_y");
+            sticker->unk1c = stickerArr->FindArray(sizeY, true)->Float(1);
+            Symbol paletteIndex("palette_index");
+            sticker->unk20 = stickerArr->FindArray(paletteIndex, true)->Int(1);
+            Symbol allowColor("allow_color");
+            sticker->unk24 = stickerArr->FindArray(allowColor, true)->Int(1) != 0;
+            sticker->unk0 = stickerArr->Str(0);
+            Symbol texPath("tex_path");
+            sticker->unkc.Set(
+                FileGetPath(stickerArr->File(), 0),
+                stickerArr->FindArray(texPath, true)->Str(1)
+            );
+            stickers.push_back(sticker);
+        }
+        MILO_ASSERT(!stickers.empty(), 0x4C5);
+        mStickerMap[category] = stickers;
+    }
+    PatchLayer::sStickerOwner = this;
+}
+
 void PatchDir::FakeFill(RndTex *tex) {
     mLayers.clear();
     if (tex)
