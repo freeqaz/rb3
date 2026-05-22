@@ -1,4 +1,5 @@
 #include "game/VocalPart.h"
+#include "game/GameConfig.h"
 #include "game/SongDB.h"
 #include "game/VocalPlayer.h"
 #include "obj/Data.h"
@@ -623,6 +624,125 @@ float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
 
 extern "C" float kInvalidPitch__11VocalPlayer;
 extern "C" VocalNote *NoteAt__13VocalNoteListCFf(const VocalNoteList *, float);
+
+void VocalPart::HandlePhraseEnd(
+    int &o_rRating, float &o_rStartMs, float &o_rEndMs, int &o_rPrevScore, float ms
+) {
+    if (mVocalNoteList) {
+        mPlayer->IsNet();
+        const VocalPhrase *nextPhrase = GetNextPhraseMarker(mThisPhrase);
+        const VocalPhrase *phrase = nextPhrase;
+        float startMs;
+        float endMs;
+        if (nextPhrase
+            != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()) {
+            startMs = nextPhrase->unk0 + nextPhrase->unk4;
+            const VocalPhrase *nextNext = GetNextPhraseMarker(phrase);
+            if (nextNext
+                != mVocalNoteList->mPhrases.data()
+                    + mVocalNoteList->mPhrases.size()) {
+                endMs = nextNext->unk0 + nextNext->unk4;
+            } else {
+                endMs = TheSongDB->GetSongDurationMs();
+            }
+        } else {
+            startMs = TheSongDB->GetSongDurationMs();
+            endMs = startMs;
+        }
+        o_rRating = -1;
+        unk20 = 0.0f;
+        if (mPlayer->ScoringEnabled()
+            && mThisPhrase
+                != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()
+            && mPlayer->GetEnabledState() == kPlayerEnabled
+            && mThisPhrase->unk0 >= mFirstPhraseMsToScore) {
+            float scoreMax = mPhraseScoreMax;
+            if (scoreMax != 0.0f) {
+                int rating = mPlayer->CalculatePhraseRating(mPhraseScore / scoreMax);
+                o_rRating = rating;
+                float denom = mPhraseScoreMax;
+                float mult = mPhraseScorePartMultiplier * (float)mPhraseValue;
+                unk18 += rating;
+                int accPts = (int)(0.5 + (double)((mPhraseScore * mult) / denom));
+                int bandPts = (int)(0.5 + (double)((unk44 * mult) / denom));
+                int odPts = (int)(0.5 + (double)((unk48 * mult) / denom));
+                int total = odPts + (bandPts + accPts);
+                if (total > 0) {
+                    int m1, m2, m3;
+                    mPlayer->GetMultiplier(true, m1, m2, m3);
+                    int indMult = mPlayer->GetIndividualMultiplier();
+                    unk20 = (float)(indMult * total);
+                    if (mPhraseRank == 0) {
+                        mPlayer->AddAccuracyStat(accPts);
+                    } else {
+                        mPlayer->AddHarmonyStat(accPts);
+                    }
+                    mPlayer->AddScoreStreakStat((float)(accPts * (indMult - 1)));
+                    mPlayer->AddOverdriveStat((float)(odPts * indMult));
+                    mPlayer->AddBandContributionStat((float)(bandPts * indMult));
+                    mPlayer->AddPoints(unk20, false, false);
+                }
+            }
+        }
+        VocalNoteList *list = mVocalNoteList;
+        if (phrase != list->mPhrases.data() + list->mPhrases.size()
+            && phrase->unk10 != phrase->unk14) {
+            mSpotlightPhraseID = TheSongDB->GetCommonPhraseID(
+                TheGameConfig->GetTrackNum(mPlayer->GetUserGuid()),
+                list->mNotes[phrase->unk10].mTick
+            );
+        } else {
+            mSpotlightPhraseID = -1;
+        }
+        if (mThisPhrase
+                != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()
+            && mThisPhrase->unk1a) {
+            UpdateMinMaxPitch(phrase);
+        }
+        if (mPlayer->ScoringEnabled() && mPhraseScoreMax > 0.0f) {
+            unk4c += FramePhraseMeterFrac();
+            unk50 += 1;
+        }
+        int prevScore = (int)mPhraseScore;
+        if (mPlayer->ScoringEnabled()) {
+            mPhraseScore = 0.0f;
+            unk44 = 0.0f;
+            unk48 = 0.0f;
+            unk38 = 0.0f;
+        }
+        if (phrase != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()) {
+            if (phrase->unk10 > 0) {
+                const VocalNote &prev = mVocalNoteList->mNotes[phrase->unk10 - 1];
+                if (prev.mMs + prev.mDurationMs > phrase->unk0) {
+                    unk3c -= 1;
+                }
+            }
+            mPhraseScoreMax = CalcPhraseScoreMax(phrase);
+        } else {
+            mPhraseScoreMax = 0.0f;
+        }
+        mThisPhrase = phrase;
+        o_rStartMs = startMs;
+        o_rEndMs = endMs;
+        o_rPrevScore = prevScore;
+    }
+    static bool dump;
+    if (dump) {
+        TheDebug << MakeString("=== HandlePhraseEnd singer %d ms %f\n", mPartIndex, ms);
+        if (mThisPhrase
+            != mVocalNoteList->mPhrases.data() + mVocalNoteList->mPhrases.size()) {
+            MILO_LOG("\tNext Phrase Data:\n");
+            TheDebug << MakeString("\tStart ms: %f\n", mThisPhrase->unk0);
+            TheDebug << MakeString(
+                "\tEnd ms: %f\n", mThisPhrase->unk0 + mThisPhrase->unk4
+            );
+            TheDebug << MakeString("\tBegin Note: %d\n", mThisPhrase->unk10);
+            TheDebug << MakeString("\tEnd Note: %d\n", mThisPhrase->unk14);
+        } else {
+            MILO_LOG("\tEnd Of Song\n");
+        }
+    }
+}
 
 void VocalPart::ScoreSinger(
     float ms, float arg1, float arg2, float arg3, int arg4,
