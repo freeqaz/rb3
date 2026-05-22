@@ -651,7 +651,8 @@ void BandDirector::VenueLoaded(WorldDir *) { mDircuts.clear(); }
 
 void BandDirector::HarvestDircuts() {
     if (mPropAnim && mVenue.Dir()) {
-        mDircuts.resize(0);
+        if (!mDircuts.empty())
+            mDircuts.erase(mDircuts.begin(), mDircuts.end());
         TheBandWardrobe->ClearDircuts();
         mIntroShot = nullptr;
         if (!TheBandWardrobe->DemandLoadSym()) {
