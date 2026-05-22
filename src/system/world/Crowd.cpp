@@ -840,7 +840,8 @@ void WorldCrowd::Poll() {
 void WorldCrowd::Enter() {
     RndPollable::Enter();
     FOREACH (it, mCharacters) {
-        Character *curChar = it->mDef.mChar;
+        CharDef &def = it->mDef;
+        Character *curChar = def.mChar;
         if (curChar) {
             if (curChar->GetPollState() != 2)
                 curChar->Enter();
@@ -851,7 +852,7 @@ void WorldCrowd::Enter() {
                     break;
                 if (i == 0) {
                     for (ObjDirItr<RndMat> objIt(curChar, true); objIt; ++objIt) {
-                        it->mDef.mMats.push_back(objIt);
+                        def.mMats.push_back(objIt);
                     }
                 }
             }
