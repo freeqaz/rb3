@@ -230,10 +230,8 @@ void StreakMeter::SetPitch(float pitch) {
     MakeScale(lm, s);
     e.x = DegreesToRadians(pitch);
     MakeRotMatrix(e, m, true);
-    m.x *= s.x;
-    m.y *= s.y;
-    m.z *= s.z;
-    lm = m;
+    Scale(s, m, m);
+    mLocalXfm.m = m;
     SetDirty();
 }
 
