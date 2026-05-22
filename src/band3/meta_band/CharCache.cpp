@@ -2,12 +2,25 @@
 #include "bandobj/BandCharDesc.h"
 #include "bandobj/BandCharacter.h"
 #include "bandobj/BandWardrobe.h"
+#include "bandobj/PatchDir.h"
+#include "game/BandUser.h"
+#include "game/BandUserMgr.h"
+#include "meta_band/BandProfile.h"
+#include "meta_band/CharData.h"
+#include "meta_band/CustomizePanel.h"
+#include "meta_band/PatchPanel.h"
+#include "meta_band/PrefabMgr.h"
+#include "meta_band/ProfileMgr.h"
 #include "obj/Dir.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
+#include "rndobj/Rnd.h"
+#include "rndobj/Tex.h"
+#include "ui/UIPanel.h"
 #include "utl/FilePath.h"
 #include "utl/Loader.h"
+#include "utl/Messages2.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
@@ -94,4 +107,84 @@ BEGIN_HANDLERS(CharCache)
     HANDLE_CHECK(0xAF)
 END_HANDLERS
 
-DataNode CharCache::OnGetPatchTex(DataArray *arr) {}
+DataNode CharCache::OnGetPatchTex(DataArray *arr) {
+    // The character whose patch texture we are being asked to resolve.
+    BandCharacter *bchar = arr->Obj<BandCharacter>(2);
+    int patchIdx = arr->Int(3);
+    String patchName(arr->Str(4));
+
+    // Map the character back to its band slot so we know which user owns it.
+    int slot = FindSlot(bchar);
+    if (slot == BandWardrobe::kNumTargets) {
+        MILO_WARN(
+            "CharCache: %s has no valid slot and hence no patch", PathName(bchar)
+        );
+        return DataNode(TheRnd->GetNullTexture());
+    }
+
+    BandUser *user = TheBandUserMgr->GetUserFromSlot(slot);
+    if (user && user->HasChar()) {
+        // While the patch panel is up, the in-progress edit lives on that panel
+        // rather than in the profile, so prefer the panel's preview texture.
+        PatchPanel *patchPanel =
+            ObjectDir::Main()->Find<PatchPanel>("patch_panel", true);
+        CustomizePanel *customizePanel =
+            ObjectDir::Main()->Find<CustomizePanel>("customize_panel", true);
+        if (patchPanel->GetState() == UIPanel::kUp) {
+            if (user->IsLocal()) {
+                BandProfile *profile =
+                    TheProfileMgr.GetProfileForUser(user->GetLocalUser());
+                PatchDir *patchDir =
+                    patchPanel->Property("editing_patch")->Obj<PatchDir>();
+                MILO_ASSERT(patchDir, 0xCC);
+                if ((profile && patchIdx == profile->GetPatchIndex(patchDir))
+                    || patchName == customizePanel->mPatchName.c_str()) {
+                    return DataNode(
+                        patchPanel->mDir->Find<RndTex>("patch_preview.tex", true)
+                    );
+                }
+            }
+        }
+
+        // While the patch select panel is up, ask it for the highlighted tex.
+        UIPanel *selectPanel =
+            ObjectDir::Main()->Find<UIPanel>("patch_select_panel", true);
+        if (selectPanel->GetState() == UIPanel::kUp) {
+            if (user->IsLocal()
+                && patchName == customizePanel->mPatchName.c_str()) {
+                return DataNode(
+                    selectPanel->HandleType(highlighted_tex_msg).Obj<RndTex>()
+                );
+            }
+        }
+
+        // Otherwise resolve the patch from the user's character data.
+        CharData *charData = user->GetChar();
+        if (!bchar->mPrefab.Null()) {
+            if (PrefabMgr::GetPrefabMgr()->PrefabIsCustomizable()
+                && PrefabMgr::GetPrefabMgr()->PrefabUsesProfilePatches()
+                && dynamic_cast<PrefabChar *>(charData)) {
+                LocalUser *localUser = dynamic_cast<LocalUser *>(user);
+                if (localUser) {
+                    BandProfile *profile =
+                        TheProfileMgr.GetProfileForUser(localUser);
+                    MILO_ASSERT(profile, 0xEF);
+                    return DataNode(profile->GetTexAtPatchIndex(patchIdx));
+                }
+            }
+            return DataNode((Hmx::Object *)nullptr);
+        }
+        return DataNode(charData->GetTexAtPatchIndex(patchIdx, true));
+    }
+
+    // No active user owns this character: it is a stand-in.
+    if (bchar->mPrefab.Null()) {
+        BandProfile *profile =
+            TheProfileMgr.GetProfileForChar((BandCharDesc *)bchar);
+        if (profile) {
+            return DataNode(profile->GetTexAtPatchIndex(patchIdx));
+        }
+        MILO_WARN("Cannot find Tex for Stand-in");
+    }
+    return DataNode((Hmx::Object *)nullptr);
+}
