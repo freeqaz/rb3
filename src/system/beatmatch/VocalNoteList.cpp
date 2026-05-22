@@ -250,25 +250,27 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
 }
 
 void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
-    for (int i = 0; i < mPhrases.size(); i++) {
-        VocalPhrase &phrase = mPhrases[i];
+    for (int i = 0; i != mPhrases.size(); i++) {
+        VocalPhrase *phrase = &mPhrases[i];
         int prevEnd = 0;
         if (i != 0) {
-            prevEnd = mPhrases[i - 1].unk8 + mPhrases[i - 1].unkc;
+            prevEnd = phrase[-1].unk8 + phrase[-1].unkc;
         }
-        if (i != 0 && phrase.mTambourinePhrase
-            && phrase.unk8 > prevEnd + 0x780) {
+        if (i != 0 && phrase->mTambourinePhrase
+            && phrase->unk8 > prevEnd + 0x780) {
             VocalPhrase newPhrase;
             newPhrase.unk8 = prevEnd;
-            newPhrase.unkc = (phrase.unk8 - prevEnd) - 0x280;
-            newPhrase.mTambourinePhrase = mPhrases[i - 1].mTambourinePhrase;
+            newPhrase.unkc = (phrase->unk8 - prevEnd) - 0x280;
+            newPhrase.mTambourinePhrase = phrase[-1].mTambourinePhrase;
             mPhrases.insert(mPhrases.begin() + i, newPhrase);
             i--;
         } else {
-            phrase.unkc = phrase.unkc + (phrase.unk8 - prevEnd);
-            phrase.unk8 = prevEnd;
-            phrase.unk0 = tmap.TickToTime(prevEnd);
-            phrase.unk4 = tmap.TickToTime(phrase.unk8 + phrase.unkc) - phrase.unk0;
+            phrase->unkc = phrase->unkc + (phrase->unk8 - prevEnd);
+            phrase->unk8 = prevEnd;
+            float startTime = tmap.TickToTime(prevEnd);
+            float endTime = tmap.TickToTime(phrase->unk8 + phrase->unkc);
+            phrase->unk0 = startTime;
+            phrase->unk4 = endTime - startTime;
         }
     }
 }
@@ -446,32 +448,36 @@ VocalNote *VocalNoteList::NextNote(float ms) const {
 }
 
 const VocalNote *VocalNoteList::NoteAt(float ms) const {
-    std::vector<VocalNote>::const_iterator it =
+    const VocalNote *it =
         std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
     if (it == mNotes.begin())
         return NULL;
-    MILO_ASSERT(it[-1].GetMs() <= ms, 0x22f);
-    if (ms <= it[-1].GetMs() + it[-1].GetDurationMs())
-        return &it[-1];
+    --it;
+    MILO_ASSERT(it->GetMs() <= ms, 0x22f);
+    if (ms <= it->GetMs() + it->GetDurationMs())
+        return it;
     return NULL;
 }
 
 float VocalNoteList::PitchAt(float ms) const {
-    std::vector<VocalNote>::const_iterator it =
+    const VocalNote *it =
         std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
     if (it == mNotes.begin())
         return 0.0f;
-    const VocalNote &note = it[-1];
-    MILO_ASSERT(note.GetMs() <= ms, 0x1ff);
-    if (ms > note.GetMs() + note.GetDurationMs())
-        return 0.0f;
-    if (note.StartPitch() == note.EndPitch())
-        return (float)note.StartPitch();
-    float clamped = Min<float>(ms, note.GetMs() + note.GetDurationMs());
-    float fraction =
-        Max<float>(0.0f, clamped - note.GetMs()) / note.GetDurationMs();
-    return fraction * (float)note.EndPitch()
-        + (1.0f - fraction) * (float)note.StartPitch();
+    --it;
+    MILO_ASSERT(it->GetMs() <= ms, 0x1ff);
+    float noteMs = it->GetMs();
+    float noteDur = it->GetDurationMs();
+    if (ms <= noteMs + noteDur) {
+        if (it->EndPitch() == it->StartPitch())
+            return (float)it->StartPitch();
+        float fraction =
+            Max<float>(0.0f, Min<float>(ms, noteMs + noteDur) - noteMs)
+            / noteDur;
+        return (1.0f - fraction) * (float)it->StartPitch()
+            + fraction * (float)it->EndPitch();
+    }
+    return 0.0f;
 }
 
 int VocalNoteList::GetNumPracticePhrases(const std::vector<VocalPhrase> &phrases) const {
