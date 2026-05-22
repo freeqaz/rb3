@@ -110,6 +110,7 @@ public:
     void StartPlayerPhrase(int, int);
     void EndPlayerPhrase(int, int);
     VocalNote *NextNote(float) const;
+    float PitchAt(float) const;
     void CapLastFreestyleSection(float);
     void GetPracticePhrases(std::vector<VocalPhrase> &, int, int) const;
     int GetNumPracticePhrases(const std::vector<VocalPhrase> &) const;

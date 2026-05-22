@@ -384,6 +384,94 @@ void Singer::ResolveAmbiguity() {
     }
 }
 
+static int sMinVibratoFrames = 0;
+static float sMaxVibratoFrameBonus = 20.0f;
+
+void Singer::Poll_(float ms, const SongPos &, float micPitch, float micEnergy, float, float) {
+    bool isLocal = mPlayer->IsLocal();
+
+    if (micPitch != 0.0f) {
+        micPitch -= unk54;
+    }
+    unk64 = 0.9f * (unk64 - micEnergy) + micEnergy;
+
+    if ((!isLocal || mAutoplayPart != -1) && !mPlayer->AtLastPhrase()) {
+        mPlayer->CurrentPhrase();
+        int phraseIdx = -1;
+        if (!isLocal) {
+            phraseIdx = 0;
+        } else if (mAutoplayPart >= 0) {
+            if (mAutoplayPart < mPlayer->NumVocalParts() && !mPlayer->IgnorePhrase()) {
+                phraseIdx = mAutoplayPart;
+            }
+        }
+        if (phraseIdx != -1) {
+            micPitch = mPlayer->mVocalParts[phraseIdx]->mVocalNoteList->PitchAt(ms);
+        } else {
+            micPitch = 0.0f;
+        }
+        micEnergy = 0.0f;
+        if (micEnergy != micPitch) {
+            if ((mAutoplayPart != -1 || mIsSinging != 0) && !mPlayer->AtLastPhrase()) {
+                float t = ms / 1000.0f;
+                micPitch += mDetune;
+                micEnergy = 1.0f;
+                micPitch += mAutoplayVariationMagnitude *
+                                (float)sin(6.2831f * t + 0.5f * (3.1415f * (float)mSingerIndex)) +
+                            mAutoplayOffset;
+            } else {
+                micEnergy = 0.0f;
+                micPitch = micEnergy;
+            }
+        } else if (mIsSinging != 0) {
+            micEnergy = 1.0f;
+        }
+    }
+
+    if (mPlayer->mEnabledState != kPlayerEnabled) {
+        micPitch = 0.0f;
+        micEnergy = micPitch;
+    }
+
+    if (isLocal) {
+        mTambourineDetector.CheckForSwing(ms, micEnergy);
+    }
+
+    if (isLocal && mPlayer->AtLastPhrase()) {
+        DetectScream(ms, micPitch, micEnergy);
+        mFrameMicPitch = micPitch;
+        unk60 = micEnergy;
+        mFrameTargetPitch = 0.0f;
+        unk6c = 0.0f;
+        return;
+    }
+
+    int frames = mVibrato->Analyze(micPitch);
+    if (frames != 0) {
+        if (frames < sMinVibratoFrames) {
+            frames = sMinVibratoFrames;
+        } else if (frames > 100) {
+            frames = 100;
+        }
+        for (int i = 0; i < frames; i++) {
+            unk244 += mPossibleVibratoPoints[i];
+        }
+    }
+
+    float bonus = std::min(unk244, sMaxVibratoFrameBonus);
+    mVibratoFrameBonus = bonus;
+    mFrameMicPitch = micPitch;
+    unk244 -= bonus;
+    unk60 = micEnergy;
+    unk2c = ms;
+
+    VocalFrameSpewData *spew = mPlayer->mFrameSpewData;
+    if (spew) {
+        spew->mSingerData[mSingerIndex].unk0 = micPitch;
+        spew->mSingerData[mSingerIndex].unk4 = unk60;
+    }
+}
+
 void Singer::SetAssignedPart(int part, float f2) {
     mFrameAssignedPart = part;
     if (mVibratoFrameBonus != 0.0f) {

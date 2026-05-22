@@ -165,7 +165,7 @@ public:
     float unk48;
     float mScreamEnergyThreshold; // 0x4c
     float unk50;
-    int unk54;
+    float unk54;
     int unk58;
     float mFrameMicPitch; // 0x5c
     float unk60;
