@@ -368,9 +368,10 @@ int MetaPanel::PickLoopIndex(int numLoops) {
         int count = 0;
         for (int i = 0; i < prevSize; i++) {
             if (mRecentIndices[i] == idx)
-                count++;
+                break;
+            count++;
         }
-        if (count != prevSize)
+        if (count == prevSize)
             break;
     }
     mRecentIndices[unk58++] = idx;
