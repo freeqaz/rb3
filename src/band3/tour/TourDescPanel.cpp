@@ -200,16 +200,25 @@ void TourDescProvider::Text(
     Symbol s = DataSymbol(iData);
     TourDesc *pTourDesc = TheTour->GetTourDesc(s);
     MILO_ASSERT(pTourDesc, 0x60);
-    bool bSelected = TheTour->GetTourProgress()->GetTourDesc() == s;
+    TourProgress *pProgress = TheTour->GetTourProgress();
+    MILO_ASSERT(pProgress, 0x63);
+    bool bSelected = pProgress->GetTourDesc() == s;
     bool bAvailable = MetaPanel::sUnlockAll ? true : IsTourDescAvailable(s);
     if (i_pSlot->Matches("name")) {
-        i_pLabel->SetTextToken(bAvailable ? s : Symbol(gNullStr));
+        if (bAvailable)
+            i_pLabel->SetTextToken(s);
+        else
+            i_pLabel->SetTextToken(Symbol(gNullStr));
     } else if (i_pSlot->Matches("inprogress")) {
-        i_pLabel->SetTextToken(
-            (bAvailable && bSelected) ? tour_inprogress : Symbol(gNullStr)
-        );
+        if (bAvailable && bSelected)
+            i_pLabel->SetTextToken(tour_inprogress);
+        else
+            i_pLabel->SetTextToken(Symbol(gNullStr));
     } else if (i_pSlot->Matches("locked")) {
-        i_pLabel->SetTextToken(!bAvailable ? tour_locked : Symbol(gNullStr));
+        if (!bAvailable)
+            i_pLabel->SetTextToken(tour_locked);
+        else
+            i_pLabel->SetTextToken(Symbol(gNullStr));
     } else if (i_pSlot->Matches("numsongs")) {
         if (bAvailable && !bSelected) {
             i_pLabel->SetTokenFmt(tour_desc_songcount, pTourDesc->GetNumSongs());
