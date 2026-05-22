@@ -178,6 +178,93 @@ void GemTrack::UpdateShiftsToTick(int tick) {
     }
 }
 
+void GemTrack::CheckShifts(float ms, int topTick) {
+    int tickOffset = 0;
+    int nowTick = MsToTick(ms);
+    if (TheGame->InTrainer()) {
+        nowTick = GetLoopTick(nowTick, tickOffset);
+        mCurrentRangeShift = mRangeShifts.begin();
+    }
+    float newRange = -1.0f;
+    float newOffset = -1.0f;
+    while (mCurrentRangeShift != mRangeShifts.end()
+           && mCurrentRangeShift->unk4 < nowTick) {
+        newRange = mCurrentRangeShift->unk14;
+        newOffset = mCurrentRangeShift->unkc;
+        mCurrentRangeShift++;
+        if (mCurrentRangeShift != mRangeShifts.end())
+            mCurrentRangeShift->unk18 = false;
+    }
+    if (mCurrentRangeShift != mRangeShifts.end()) {
+        RangeShift &shift = *mCurrentRangeShift;
+        if (shift.unk0 + tickOffset < topTick && !shift.unk18) {
+            shift.unk18 = true;
+            int delta = (int)(shift.unkc - mOffset);
+            int clamped;
+            if (delta > 5) {
+                clamped = 5;
+            } else if (delta < -5) {
+                clamped = -5;
+            } else {
+                clamped = delta;
+            }
+            float secs = TickToSeconds((float)(shift.unk0 + tickOffset));
+            int key;
+            int frame;
+            if (clamped >= 0) {
+                key = WhiteKeyToSemitone(2);
+                shift.unk20 = -5;
+                frame = -(5 - clamped);
+            } else {
+                key = WhiteKeyToSemitone((int)mRange - 3);
+                frame = clamped + 5;
+                shift.unk20 = 5;
+            }
+            MinEq(key, 24);
+            mUpcomingShiftMaskAnim->SetFrame((float)frame, 1.0f);
+            Transform xfm;
+            mTrackDir->MakeWidgetXfm(key, secs, xfm);
+            TrackWidget *widget =
+                mGemManager->GetWidgetByName("keys_upcoming_shift.wid");
+            widget->Clear();
+            widget->AddInstance(xfm, 0.0f);
+            shift.unk1c = frame;
+        }
+        if (shift.unk0 < nowTick) {
+            if (shift.unk10 < 0.0f) {
+                if (newRange > 0.0f) {
+                    shift.unk10 = newRange;
+                    shift.unk8 = newOffset;
+                } else {
+                    shift.unk10 = mTrackDir->GetKeyRange();
+                    shift.unk8 = mTrackDir->GetKeyOffset();
+                }
+            }
+            float frac = (float)(nowTick - shift.unk0)
+                / (float)(shift.unk4 - shift.unk0);
+            newRange = frac * (shift.unk14 - shift.unk10) + shift.unk10;
+            newOffset = frac * (shift.unkc - shift.unk8) + shift.unk8;
+            mUpcomingShiftMaskAnim->SetFrame(
+                frac * (float)(shift.unk20 - shift.unk1c) + (float)shift.unk1c,
+                1.0f
+            );
+        }
+    }
+    if (newRange > 0.0f) {
+        float t = 15.0f - newRange;
+        if (t < newOffset)
+            newOffset = t;
+        if (newRange != mRange) {
+            mTrackDir->SetDisplayRange(newRange);
+            mRange = newRange;
+        }
+        if (newOffset != mOffset) {
+            mTrackDir->SetDisplayOffset(newOffset, false);
+            mOffset = newOffset;
+        }
+    }
+}
+
 void GemTrack::UpdateLeftyFlip() {
     bool lefty = false;
     GameplayOptions *options =

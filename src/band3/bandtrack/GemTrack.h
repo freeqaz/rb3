@@ -61,6 +61,7 @@ public:
     void ApplyShiftImmediately(const RangeShift &);
     void ResetFills(bool);
     void UpdateShiftsToTick(int);
+    void CheckShifts(float, int);
     void UpdateFills();
     void ChangeDifficulty(Difficulty, int);
     void DropIn(int);
