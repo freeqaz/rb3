@@ -138,6 +138,8 @@ void RndMeshDeform::SetMesh(RndMesh *mesh) {
     mVerts.Clear();
 }
 
+void RndMeshDeform::SetNumBones(int n) { mBones.resize(n); }
+
 void operator>>(BinStream &bs, RndMeshDeform::BoneDesc &desc) {
     bs >> desc.mBone;
     bs >> desc.unk14 >> desc.unk54;
