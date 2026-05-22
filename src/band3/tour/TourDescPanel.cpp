@@ -57,16 +57,20 @@ inline _Temporary_buffer<Symbol *, Symbol>::~_Temporary_buffer() {
 
 class TourDescCmp {
 public:
-    TourDescCmp(const Tour *tour) : mTour(tour) {}
-    bool operator()(Symbol s1, Symbol s2) const {
-        TourDesc *pLHS = mTour->GetTourDesc(s1);
-        MILO_ASSERT(pLHS, 0x2D);
-        TourDesc *pRHS = mTour->GetTourDesc(s2);
-        MILO_ASSERT(pRHS, 0x30);
-        return pLHS->GetIndex() < pRHS->GetIndex();
-    }
+    TourDescCmp(const Tour *tour);
+    bool operator()(Symbol s1, Symbol s2) const;
     const Tour *mTour; // 0x0
 };
+
+TourDescCmp::TourDescCmp(const Tour *tour) : mTour(tour) {}
+
+bool TourDescCmp::operator()(Symbol s1, Symbol s2) const {
+    TourDesc *pLHSTourDesc = mTour->GetTourDesc(s1);
+    MILO_ASSERT(pLHSTourDesc, 0x2D);
+    TourDesc *pRHSTourDesc = mTour->GetTourDesc(s2);
+    MILO_ASSERT(pRHSTourDesc, 0x30);
+    return pLHSTourDesc->GetIndex() < pRHSTourDesc->GetIndex();
+}
 
 class TourDescProvider : public UIListProvider, public Hmx::Object {
 public:
