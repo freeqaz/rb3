@@ -621,6 +621,58 @@ float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
     return result;
 }
 
+extern "C" float kInvalidPitch__11VocalPlayer;
+extern "C" VocalNote *NoteAt__13VocalNoteListCFf(const VocalNoteList *, float);
+
+void VocalPart::ScoreSinger(
+    float ms, float arg1, float arg2, float arg3, int arg4,
+    TalkyMatcher *i_pTalkyMatcher, VocalScoreCache &o_rCache, int &o_rNote,
+    float &o_rPitchDiff
+) {
+    MILO_ASSERT(o_rCache.GetHitPercentage() == 0.0f, 0x2C3);
+    o_rCache.unk8 = Min(mPhraseScoreMax, unk38);
+    o_rPitchDiff = kInvalidPitch__11VocalPlayer;
+    if (arg1 == 0.0f && NoteAt__13VocalNoteListCFf(mVocalNoteList, ms) == 0) {
+        o_rCache.unk0 = 1.0f;
+        o_rNote = arg4;
+        return;
+    }
+    int beginNote = -1;
+    int endNote = -1;
+    float bestPitch = 0.0f;
+    float pitch = arg1;
+    int octaves = arg4;
+    GetNoteRange(ms, beginNote, endNote);
+    float sloppyArg;
+    bool talkyHit;
+    int noteMatched;
+    float score = GetBestHit(
+        ms, beginNote, endNote, i_pTalkyMatcher, pitch, arg3, octaves, noteMatched,
+        bestPitch, sloppyArg, talkyHit
+    );
+    o_rNote = octaves;
+    if (noteMatched != -1) {
+        float diff = (float)fmod(arg1 - bestPitch, 12.0);
+        o_rPitchDiff = diff;
+        if (diff > 6.0f) {
+            o_rPitchDiff = diff - 12.0f;
+        } else if (diff < -6.0f) {
+            o_rPitchDiff = diff + 12.0f;
+        }
+        if (mVocalNoteList->mNotes[noteMatched].mUnpitchedNote) {
+            unk98 = 1;
+        } else {
+            unk98 = 0;
+        }
+    }
+    o_rCache.unk0 = score;
+    o_rCache.unk14 = bestPitch;
+    o_rCache.unk18 = sloppyArg;
+    o_rCache.unk1c = octaves;
+    o_rCache.unk20 = talkyHit;
+    CalculateScore(ms, noteMatched, score, o_rCache);
+}
+
 float VocalPart::GetBestHit(
     float ms, int beginNote, int endNote, TalkyMatcher *i_pTalkyMatcher,
     float &io_rPitch, float arg5, int &o_rOctaves, int &noteMatched,

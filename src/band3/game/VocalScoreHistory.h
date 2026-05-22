@@ -8,6 +8,8 @@ public:
           unk21(0), unk22(0), unk24(0) {}
     ~VocalScoreCache() {}
 
+    float GetHitPercentage() const { return unk0; }
+
     float unk0;
     float unk4;
     float unk8;

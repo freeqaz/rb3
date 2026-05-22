@@ -59,6 +59,10 @@ public:
         float, int, int, TalkyMatcher *, float &, float, int &, int &, float &,
         float &, bool &
     );
+    void ScoreSinger(
+        float, float, float, float, int, TalkyMatcher *, VocalScoreCache &, int &,
+        float &
+    );
     float GetSloppyPitch(float, int, float, float &) const;
     bool CouldScoreAgainstPart(float, TalkyMatcher *, float, float, float &);
     void AddPhrasePoints(float);
