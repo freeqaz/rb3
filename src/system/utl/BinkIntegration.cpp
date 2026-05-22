@@ -125,21 +125,19 @@ bool BinkFileOpen(BINKIO *bink, const char *cc, unsigned int ui) {
      | ((i) >> 24) & 0xff)
 
 unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int length) {
-    BINKENCRYPTIONHEADER *encHeader = &((BINKFILE *)bink->iodata)->mEncryptionHeader;
     File *file = ((BINKFILE *)bink->iodata)->pFile;
+    BINKENCRYPTIONHEADER *encHeader = &((BINKFILE *)bink->iodata)->mEncryptionHeader;
     // check if we've read a file header before
     if (encHeader->mSignature == 0) {
         // read the header
         unsigned int encread = file->Read(encHeader, sizeof(BINKENCRYPTIONHEADER));
         // byteswap mSignature through mMagicB from bad endian to big endian
         intelendian(encHeader, 0x14);
-        // byteswap mNonce (each 32-bit word independently)
-        unsigned int *nonce = (unsigned int *)encHeader->mNonce;
-        unsigned int n0 = nonce[0], n1 = nonce[1], n2 = nonce[2], n3 = nonce[3];
-        nonce[0] = BSWAP(n0);
-        nonce[1] = BSWAP(n1);
-        nonce[2] = BSWAP(n2);
-        nonce[3] = BSWAP(n3);
+        // byteswap mNonce (each 64-bit word independently)
+        unsigned long long n0 = encHeader->mNonce[0];
+        unsigned long long n1 = encHeader->mNonce[1];
+        encHeader->mNonce[0] = EndianSwap(n0);
+        encHeader->mNonce[1] = EndianSwap(n1);
         // check if the header is BIKE
         int whatever = encHeader->mSignature - 0x45420000; // 'BI--'
         if (whatever == 0x494B) { // '--KE'
