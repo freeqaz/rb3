@@ -1574,6 +1574,37 @@ void BandCharacter::GameOver() {
     }
 }
 
+DataNode BandCharacter::ListAnimGroups(int mask) {
+    BandCharDesc::CharInstrumentType instType =
+        BandCharDesc::GetInstrumentFromSym(mInstrumentType);
+    if (instType >= BandCharDesc::kNumInstruments) {
+        DataArray *arr = new DataArray(1);
+        arr->Node(0) = Symbol();
+        DataNode ret(arr, kDataArray);
+        arr->Release();
+        return DataNode(ret);
+    }
+    DataArray *groups = BandWardrobe::GetGroupArray(instType);
+    int count = 1;
+    for (int i = 0; i < groups->Size(); i++) {
+        int flags = groups->Array(i)->Int(1) & mask;
+        if ((mask & 0xFF) == (flags & 0xFF) && (flags & 0x3F00))
+            count++;
+    }
+    DataArray *result = new DataArray(count);
+    int idx = 1;
+    result->Node(0) = Symbol();
+    for (int i = 0; i < groups->Size(); i++) {
+        int flags = groups->Array(i)->Int(1) & mask;
+        if ((mask & 0xFF) == (flags & 0xFF) && (flags & 0x3F00)) {
+            result->Node(idx++) = groups->Array(i)->Sym(0);
+        }
+    }
+    DataNode ret(result, kDataArray);
+    result->Release();
+    return DataNode(ret);
+}
+
 DataNode BandCharacter::OnListDircuts() {
     int mask = 0x3E00;
     if (mGender == "female") {
