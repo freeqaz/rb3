@@ -31,6 +31,8 @@
 #include "rndobj/Anim.h"
 #include "rndobj/Group.h"
 #include "rndobj/Mesh.h"
+#include "rndobj/MultiMesh.h"
+#include "rndobj/PropAnim.h"
 #include "synth/MicManagerInterface.h"
 #include "utl/Std.h"
 #include "utl/Symbols.h"
@@ -924,6 +926,37 @@ void VocalTrack::DumpLyricPlates(std::deque<LyricPlate *> &plates, bool lead) {
         idx++;
     }
     MILO_LOG("\n");
+}
+
+void VocalTrack::UpdateTambourineGems() {
+    if (!mPlayer)
+        return;
+    RndMultiMesh *mesh = mDir->Find<RndMultiMesh>("tambourine_gems.mm", true);
+    if (!mesh)
+        return;
+    mesh->mInstances.clear();
+    std::deque<TambourineGem *> &gems = mTambourineGemPool->mUsedGems;
+    if (gems.size() == 0) {
+        mDir->Find<RndPropAnim>("tambourine_preview.anim", true)->SetFrame(0.0f, 1.0f);
+        return;
+    }
+    Transform t = mDir->mTambourineSmasher->LocalXfm();
+    Multiply(t, mDir->mPitchBottomTrans->LocalXfm(), t);
+    const VocalPhrase *cur = mPlayer->CurrentPhrase();
+    mPlayer->GetNextPhraseMarker(cur);
+    GetVocalNoteList(0);
+    for (int i = 0; i != gems.size(); i++) {
+        TambourineGem *gem = gems[i];
+        int hit = gem->unk8;
+        if (hit == 0) {
+            t.v.x = unk78 * (gems[i]->unk0 / unk74);
+            Transform worldXfm;
+            Multiply(t, mDir->mScroller->WorldXfm(), worldXfm);
+            if (hit == 0) {
+                mesh->mInstances.push_back(RndMultiMesh::Instance(worldXfm));
+            }
+        }
+    }
 }
 
 void VocalTrack::Poll(float f1) {
