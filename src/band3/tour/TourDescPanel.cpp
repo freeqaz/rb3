@@ -270,9 +270,9 @@ UIComponent::State TourDescProvider::ComponentStateOverride(
 
 TourDescProvider::~TourDescProvider() {}
 
-int TourDescProvider::NumData() const { return mTours.size(); }
+inline int TourDescProvider::NumData() const { return mTours.size(); }
 
-Symbol TourDescProvider::DataSymbol(int i_iData) const {
+inline Symbol TourDescProvider::DataSymbol(int i_iData) const {
     MILO_ASSERT(0 <= i_iData && i_iData < NumData(), 0x24A);
     return mTours[i_iData];
 }
