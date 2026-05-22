@@ -212,6 +212,33 @@ void BandPatchMesh::WorkVerts::AddFace(int i, MeshVert *mv) {
     TryAddFace(i, 3);
 }
 
+void BandPatchMesh::WorkVerts::AddEdge(
+    BandPatchMesh::MeshVert *mv0, BandPatchMesh::MeshVert *mv1
+) {
+    int target = mv1->unk28;
+    for (int idx = mv0->unk28; idx != -1; idx = mMeshVerts[idx]->unk2c) {
+        MeshVert *mv = mMeshVerts[idx];
+        unsigned short *faceidxptr = (unsigned short *)((char *)mv + 0x32);
+        for (int i = 0; i < mv->unk30; i++) {
+            int faceidx = faceidxptr[i];
+            if (unk28[faceidx].mFlags == -1) {
+                RndMesh *mesh = mMesh;
+                RndMesh::Face &face = mesh->Faces()[faceidx];
+                if (idx == face[0]) {
+                    if (mMeshVerts[face[1]]->unk28 == target)
+                        TryAddFace(faceidx, 0);
+                } else if (idx == face[1]) {
+                    if (mMeshVerts[face[2]]->unk28 == target)
+                        TryAddFace(faceidx, 1);
+                } else if (idx == face[2]) {
+                    if (mMeshVerts[face[0]]->unk28 == target)
+                        TryAddFace(faceidx, 2);
+                }
+            }
+        }
+    }
+}
+
 void BandPatchMesh::WorkVerts::SpreadEdges(int i) {
     MeshVert *meshverts[3];
     RndMesh::Face &curface = mMesh->Faces()[unk20[i]];
