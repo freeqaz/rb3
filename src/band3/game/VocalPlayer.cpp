@@ -923,6 +923,34 @@ bool VocalPlayer::InFreestyleSection() const {
     return false;
 }
 
+bool VocalPlayer::GetFreestyleDeploymentRequiredMs(float &o_rMs) const {
+    float minDuration = -1.0f;
+    bool found = false;
+    FOREACH (it, mVocalParts) {
+        VocalPart *cur = *it;
+        if (cur->InFreestyleSection()) {
+            float dur = cur->GetFreestyleSectionDurationMs();
+            if (minDuration == -1.0f || dur < minDuration) {
+                minDuration = dur;
+            }
+            found = true;
+        }
+    }
+    if (!found || minDuration == 0.0f)
+        return false;
+    int idx = -1;
+    for (int i = 0; i < mFreestyleDeploymentTimes->Size(); i++) {
+        if (minDuration >= mFreestyleMinDurations->Float(i)) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx == -1)
+        return false;
+    o_rMs = mFreestyleDeploymentTimes->Float(idx);
+    return true;
+}
+
 void VocalPlayer::ChangeDifficulty(Difficulty diff) {
     Player::ChangeDifficulty(diff);
     TheSongDB->ChangeDifficulty(mTrackNum, diff);
