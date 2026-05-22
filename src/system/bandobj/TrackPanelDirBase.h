@@ -47,12 +47,12 @@ public:
     virtual void UnisonEnd() {}
     virtual void UnisonSucceed() {}
     virtual EndingBonus *GetEndingBonus() { return nullptr; }
-    virtual BandCrowdMeter *GetCrowdMeter(); // ptr
+    virtual BandCrowdMeter *GetCrowdMeter() { return 0; }
     virtual void SetupApplauseMeter(
         int, const char *, const char *, RndDir *, RndDir *, bool, Symbol
     ) {}
-    virtual void DisablePlayer(int, bool);
-    virtual void EnablePlayer(int);
+    virtual void DisablePlayer(int, bool) {}
+    virtual void EnablePlayer(int) {}
     virtual void FadeBotbBandNames(bool) {}
     virtual void CleanUpChordMeshes() {}
     virtual void SetApplauseMeterScale(int, int) {}

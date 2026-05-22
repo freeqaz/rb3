@@ -758,6 +758,33 @@ bool GemManager::OnMissPhrase(int i1) {
     return ret;
 }
 
+void GemManager::CheckRemoveChordBracket(int gemId) {
+    const GameGem &gem = mGems[gemId].GetGameGem();
+    int chordTick = gem.GetTick();
+    int start = gemId;
+    while (start >= 0 && chordTick == mGems[start].GetGameGem().GetTick()) {
+        start--;
+    }
+    int end = gemId;
+    while (end < mGems.size() && chordTick == mGems[end].GetGameGem().GetTick()) {
+        end++;
+    }
+    bool allHit = true;
+    GemStatus *gemStatus =
+        ((GemPlayer *)mTrackConfig.GetBandUser()->GetPlayer())->mGemStatus;
+    for (int i = start + 1; i < end; i++) {
+        if (i != gemId) {
+            allHit = allHit & (bool)gemStatus->GetHit(i);
+        }
+    }
+    if (allHit) {
+        float ms = gem.GetMs() / 1000.0f;
+        for (int i = 0; i < unkd8.size(); i++) {
+            unkd8[i]->RemoveAt(ms);
+        }
+    }
+}
+
 bool GemManager::IsSpotlightGem(int gemId, bool &outUnison) {
     if (!TheGame->AllowOverdrivePhrases()) {
         return false;

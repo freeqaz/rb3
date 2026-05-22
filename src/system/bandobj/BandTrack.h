@@ -44,7 +44,10 @@ public:
         MILO_ASSERT(0, 0x8A);
         return 0;
     }
-    virtual ObjectDir *ThisDir() const; // fix ptr
+    virtual ObjectDir *ThisDir() const {
+        MILO_ASSERT(0, 0x8B);
+        return 0;
+    }
     virtual GemTrackDir *AsGemTrackDir() { return 0; }
     virtual VocalTrackDir *AsVocalTrackDir() { return 0; }
     virtual RndDir *AsRndDir();

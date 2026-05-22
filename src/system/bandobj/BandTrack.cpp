@@ -110,6 +110,11 @@ void BandTrack::Init(Hmx::Object *o) {
     Reset();
 }
 
+void BandTrack::SendTrackerDisplayMessage(const Message &msg) const {
+    if (mStarPowerMeter)
+        mStarPowerMeter->HandleType(msg);
+}
+
 void BandTrack::ResetStreakMeter() {
     if (mStreakMeter) {
         mStreakMeter->Reset();
@@ -307,6 +312,145 @@ void BandTrack::SetMaxMultiplier(int mult) {
     unk14 = mult;
     if (mStreakMeter)
         mStreakMeter->mMaxMultiplier = mult;
+}
+
+void BandTrack::SetStreak(int i1, int multiplier, int i3, bool b) {
+    if (SetMultiplier(multiplier) || b) {
+        if (multiplier >= 6) {
+            MILO_ASSERT(
+                mTrackInstrument == kInstBass || mTrackInstrument == kInstRealBass, 0x1DE
+            );
+            SuperStreak(true, b);
+        } else if (multiplier >= 4) {
+            if (mTrackInstrument != kInstBass && mTrackInstrument != kInstRealBass)
+                PeakState(true, b);
+        } else if (multiplier == 1) {
+            if (mStreakMeter)
+                mStreakMeter->BreakStreak(!b);
+            PeakState(false, b);
+            SuperStreak(false, b);
+        }
+    }
+}
+
+void BandTrack::RefreshStreakMeter(int i1, int i2, int i3) {
+    if (mStreakMeter) {
+        mStreakMeter->SetBandMultiplier(1);
+        SetStreak(i1, i2, i3, true);
+    }
+}
+
+void BandTrack::RefreshOverdrive(float energy, bool b) {
+    if (mStarPowerMeter && !unk1b) {
+        OverdriveMeter::State state = OverdriveMeter::kFilling;
+        if (b)
+            state = OverdriveMeter::kReady;
+        float delay = 0.0f;
+        if (state == OverdriveMeter::kReady) {
+            delay = dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())
+                        ->GetPulseAnimStartDelay(true);
+        }
+        mStarPowerMeter->SetEnergy(energy, state, mInstrument, delay, true);
+        if (mParent)
+            mParent->SetCanDeploy(b);
+    }
+}
+
+void BandTrack::Deploy() {
+    if (mDeployTrig)
+        mDeployTrig->Trigger();
+    BandCrowdMeter *meter = GetCrowdMeter();
+    if (meter)
+        meter->Deploy(mTrackIdx);
+    if (mStreakMeter)
+        mStreakMeter->Overdrive();
+    if (mParent)
+        mParent->SetCanDeploy(false);
+    unk18 = true;
+}
+
+void BandTrack::StopDeploy() {
+    if (mStopDeployTrig)
+        mStopDeployTrig->Trigger();
+    BandCrowdMeter *meter = GetCrowdMeter();
+    if (meter && mTrackIdx > -1)
+        meter->StopDeploy(mTrackIdx);
+    if (mStreakMeter) {
+        if (mParent && mParent->HasPlayer())
+            mStreakMeter->SetBandMultiplier(mParent->GetBandMultiplier());
+        mStreakMeter->EndOverdrive();
+    }
+    unk18 = false;
+}
+
+void BandTrack::EnterCoda() {
+    EventTrigger *trig = ThisDir()->Find<EventTrigger>("enter_coda.trig", false);
+    if (trig)
+        trig->Trigger();
+    if (mPlayerIntro)
+        mPlayerIntro->HandleType(reset_msg);
+    if (mFailedFeedback)
+        mFailedFeedback->HandleType(reset_msg);
+    if (mStarPowerMeter)
+        mStarPowerMeter->SetShowing(false);
+    if (mStreakMeter)
+        mStreakMeter->SetShowing(false);
+}
+
+void BandTrack::CodaFail(bool guilty) {
+    SpotlightFail(guilty);
+    if (guilty)
+        PopupHelp("rock_ending", false);
+}
+
+void BandTrack::CodaSuccess() {
+    TrackPanelDirBase *tpd = dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir());
+    if (tpd)
+        tpd->CodaSuccess();
+    EventTrigger *trig = ThisDir()->Find<EventTrigger>("bre_success.trig", false);
+    if (trig)
+        trig->Trigger();
+    PopupHelp("rock_ending", false);
+}
+
+void BandTrack::EnablePlayer() {
+    if (mDisabled) {
+        delete unkf0;
+        EventTrigger *trig = ThisDir()->Find<EventTrigger>("bfb_reset.trig", false);
+        if (trig)
+            trig->Trigger();
+        mDisabled = false;
+        if (dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())) {
+            int idx = mTrackIdx;
+            dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())->EnablePlayer(idx);
+        }
+    }
+}
+
+void BandTrack::SoloStart() {
+    if (!unk1e && !mSoloDisplay) {
+        if (mPlayerFeedback)
+            mPlayerFeedback->HandleType(start_solo_msg);
+        EventTrigger *trig =
+            ThisDir()->Find<EventTrigger>("guitar_solo_start.trig", false);
+        if (trig)
+            trig->Trigger();
+    }
+}
+
+void BandTrack::SetPerformanceMode(bool b) {
+    if (mParent && mPopupObject) {
+        mPopupObject->SetProperty(
+            "popup_help_disabled",
+            DataNode(mParent->ShouldDisablePopupHelp() || unk1e)
+        );
+    }
+    unk1e = b;
+}
+
+void BandTrack::CombineStreakMultipliers(bool b) {
+    if (mStreakMeter)
+        mStreakMeter->CombineMultipliers(b);
 }
 
 void BandTrack::SetupPlayerIntro() {
