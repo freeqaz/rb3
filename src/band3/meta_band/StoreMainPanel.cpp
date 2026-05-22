@@ -20,7 +20,12 @@ DECOMP_FORCEFUNC(StoreMainPanel, StoreMetadataManager, GetString(0))
 
 StoreMainPanel::StoreMainPanel()
     : mConfigData(0), mTimeNextEvent(TheTaskMgr.UISeconds()), mCurrentEntry(-1),
-      mDisplayRate(2.0f), mCrossfadeDuration(0.5f) {}
+      mDisplayRate(2.0f), mCrossfadeDuration(0.5f), unk6c(false), mNoneTex(0),
+      mScrollAnim(0), mLabel1(0), mLabel2(0), mLabel3(0) {
+    for (int i = 0; i < 6; i++) {
+        mCoverArtMats[i] = 0;
+    }
+}
 
 StoreMainPanel::~StoreMainPanel() { ClearConfigData(); }
 
@@ -47,14 +52,14 @@ void StoreMainPanel::Unload() {
 }
 
 DataNode StoreMainPanel::OnMsg(const MetadataLoadedMsg &msg) {
-    if (msg->Int(3) && msg->Int(5) && mNewReleaseList.size() == 0) {
-        MILO_ASSERT_FMT(
-            msg->Array(2),
-            "NULL data array passed to StoreMainPanel::SetConfigData()\n"
-        );
-        mConfigData = msg->Array(2);
-        ParseConfigData();
-    }
+    if (!msg->Int(3) || !msg->Int(5) || mNewReleaseList.size() != 0)
+        return DataNode(kDataFloat, 6);
+    MILO_ASSERT_FMT(
+        msg->Array(2),
+        "NULL data array passed to StoreMainPanel::SetConfigData()\n"
+    );
+    mConfigData = msg->Array(2);
+    ParseConfigData();
     return DataNode(kDataFloat, 6);
 }
 
@@ -70,7 +75,7 @@ void StoreMainPanel::ParseConfigData() {
         entry.mText1 = TheStoreMetadata.GetString(marquee[2]);
         entry.mText2 = TheStoreMetadata.GetString(marquee[3]);
         entry.mText3 = TheStoreMetadata.GetString(marquee[0]);
-        entry.mText4 = MakeString("%i", marquee[4]);
+        entry.mText4 = MakeString("%d", marquee[4]);
         EnsureArtLoader(entry.mStrName);
         mNewReleaseList.push_back(entry);
         mCoverArtTexs.push_back(Hmx::Object::New<RndTex>());
