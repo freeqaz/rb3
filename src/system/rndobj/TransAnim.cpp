@@ -172,22 +172,22 @@ float RndTransAnim::StartFrame() {
 
 // matches in retail with the right inline settings: https://decomp.me/scratch/vtXKh
 void RndTransAnim::MakeTransform(float frame, Transform &tf, bool whole, float blend) {
-    float f5 = frame;
     if (mKeysOwner != this) {
         mKeysOwner->MakeTransform(frame, tf, whole, blend);
     } else {
         Vector3 v4c;
+        float f5 = frame;
         if (!mTransKeys.empty()) {
-            Vector3 v58(0, 0, 0);
+            float ox = 0.0f, oy = 0.0f, oz = 0.0f;
             if (mRepeatTrans) {
                 int iac;
-                float &backFrame = mTransKeys.back().frame;
-                float &frontFrame = mTransKeys.front().frame;
-                f5 = Limit(frontFrame, backFrame, frame, iac);
-                Vector3 &frontVec = mTransKeys.front().value;
-                Vector3 &backVec = mTransKeys.back().value;
-                Subtract(backVec, frontVec, v58);
-                v58 *= iac;
+                Key<Vector3> &frontKey = mTransKeys.front();
+                Key<Vector3> &backKey = mTransKeys.back();
+                f5 = Limit(frontKey.frame, backKey.frame, frame, iac);
+                float fiac = (float)iac;
+                ox = (backKey.value.x - frontKey.value.x) * fiac;
+                oy = (backKey.value.y - frontKey.value.y) * fiac;
+                oz = (backKey.value.z - frontKey.value.z) * fiac;
             }
             if (blend != 1.0f) {
                 Vector3 v64;
@@ -195,7 +195,9 @@ void RndTransAnim::MakeTransform(float frame, Transform &tf, bool whole, float b
                     mTransKeys, mTransSpline, f5, v64, mFollowPath ? &v4c : nullptr
                 );
                 if (mRepeatTrans) {
-                    ::Add(v64, v58, v64);
+                    v64.x += ox;
+                    v64.y += oy;
+                    v64.z += oz;
                 }
                 Interp(tf.v, v64, blend, tf.v);
             } else {
@@ -203,7 +205,9 @@ void RndTransAnim::MakeTransform(float frame, Transform &tf, bool whole, float b
                     mTransKeys, mTransSpline, f5, tf.v, mFollowPath ? &v4c : nullptr
                 );
                 if (mRepeatTrans) {
-                    ::Add(tf.v, v58, tf.v);
+                    tf.v.x += ox;
+                    tf.v.y += oy;
+                    tf.v.z += oz;
                 }
             }
         } else if (whole) {
