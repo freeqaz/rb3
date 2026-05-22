@@ -232,6 +232,28 @@ bool StoreSongTable::Load(const char *cc) {
     }
 }
 
+bool StorePackedOfferBase::IsVariousArtist() const {
+    if (mNumSongs < 2)
+        return false;
+    unsigned int isRbn = mIsRBN;
+    StorePackedSong *first;
+    if (isRbn)
+        first = &TheStoreMetadata.mSongTable->mSongs[((StorePackedRBNOffer *)this)->mSongs[0]];
+    else
+        first = &TheStoreMetadata.mSongTable->mSongs[((StorePackedOffer *)this)->mSongs[0]];
+    unsigned short artist = first->mArtistIndex;
+    for (int i = 1; i < mNumSongs; i++) {
+        StorePackedSong *song;
+        if (isRbn)
+            song = &TheStoreMetadata.mSongTable->mSongs[((StorePackedRBNOffer *)this)->mSongs[i]];
+        else
+            song = &TheStoreMetadata.mSongTable->mSongs[((StorePackedOffer *)this)->mSongs[i]];
+        if (song->mArtistIndex != artist)
+            return true;
+    }
+    return false;
+}
+
 String StorePackedOfferBase::GetOfferId() const {
     String ret;
     ret.reserve(0x11);
@@ -433,8 +455,8 @@ bool StoreRedemptionsTable::Load(const char *cc) {
         );
         numEntries = diff / 6;
     }
-    unsigned short *idxPtr = (unsigned short *)dataStart;
     int numValid = 0;
+    unsigned short *idxPtr = (unsigned short *)dataStart;
     StorePackedRedemptionOffer *offer = (StorePackedRedemptionOffer *)dataStart;
     unsigned short *validIndices = (unsigned short *)dataStart;
     for (int i = 0; i < numEntries; i++) {
