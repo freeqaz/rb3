@@ -81,7 +81,7 @@ void LightPresetManager::Poll() {
         }
     }
     if (pnew) {
-        float time = TheTaskMgr.Time(pprev->Units());
+        float time = TheTaskMgr.Time(pnew->Units());
         float fpu = pnew->FramesPerUnit();
         float max = Max(0.0f, (time - u30) * fpu);
         if (pprev && pprev != pnew) {
