@@ -1755,6 +1755,80 @@ void ReplaceRefs(Hmx::Object *mine, Hmx::Object *theirs) {
     }
 }
 
+extern Symbol AmbientOcclusion;
+extern Symbol CharWeightSetter;
+
+MergeFilter::Action
+BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
+    static Symbol meshName("Mesh");
+    if (o2 == mInstDir) {
+        mInstDir->CopyBoundingSphere(dynamic_cast<Character *>(o1));
+        mInstDir->RepointSphereBase(this);
+    }
+    if (!o2 && o1->ClassName() == AmbientOcclusion)
+        return kIgnore;
+    if (!o2 && o1->ClassName() == CharWeightSetter)
+        return kKeep;
+    if (o1->ClassName() == "OutfitConfig") {
+        if (o2) {
+            MILO_NOTIFY_ONCE("%s is being merged into", PathName(o2));
+        }
+        unk630.push_back(dynamic_cast<OutfitConfig *>(o1));
+    }
+    ObjectDir *od = o1->Dir();
+    if (od == sCharSharedDir) {
+        Hmx::Object *found = Find<Hmx::Object>(o1->Name(), false);
+        ReplaceRefs(o1, found);
+        return kIgnore;
+    }
+    if (od == sInstrumentDir || od == sInstResourceDir) {
+        RndTransformable *rt = dynamic_cast<RndTransformable *>(o1);
+        if (rt) {
+            RndTransformable *found = Find<RndTransformable>(o1->Name(), false);
+            if (found) {
+                if (rt->TransParent()) {
+                    RndTransformable *par =
+                        dynamic_cast<RndTransformable *>(rt->TransParent());
+                    found->SetLocalXfm(par->LocalXfm());
+                }
+                ReplaceRefs(o1, found);
+            }
+            return kIgnore;
+        }
+    }
+    if (od == sOutfitDir || od == sResourceDir || od == sToDir) {
+        if (od == sBoneMergeDir) {
+            RndTransformable *rt = dynamic_cast<RndTransformable *>(o1);
+            if (rt) {
+                Hmx::Object *found = FindObject(o1->Name(), false);
+                if (found)
+                    ReplaceRefs(o1, found);
+            }
+        }
+        return kIgnore;
+    }
+    if (strnicmp(o1->Name(), "bone_", 5) == 0) {
+        RndTransformable *rt = dynamic_cast<RndTransformable *>(o1);
+        if (rt && rt->TransParent()) {
+            if (strnicmp(rt->TransParent()->Name(), "bone_", 5) == 0)
+                return kMerge;
+            if (strnicmp(rt->TransParent()->TransParent()->Name(), "exo_", 4) == 0)
+                return kMerge;
+        }
+        return kKeep;
+    }
+    Action action = mFileMerger->MergeAction(o1, o2, dir);
+    if (sDrawOrder != -1.0f && o1->ClassName() == meshName) {
+        RndMesh *mesh = dynamic_cast<RndMesh *>(o1);
+        if (mesh->GetOrder() == 0.0f)
+            mesh->SetOrder(5.0f + sDrawOrder);
+    }
+    if (!o2 && dir != this && action <= kReplace) {
+        AddObject(o1);
+    }
+    return action;
+}
+
 MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *) {
     return DefaultSubdirAction(o1, (Subdirs)mFileMerger->mFilesPending.front()->mSubdirs);
 }
