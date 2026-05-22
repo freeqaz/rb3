@@ -188,7 +188,7 @@ RndCam *CamShot::GetCam() {
 }
 #pragma pop
 
-// matches on retail
+#pragma pool_data off
 void CamShot::SetFrame(float frame, float blend) {
     START_AUTO_TIMER("camera");
     if (unk120p1)
@@ -242,6 +242,7 @@ void CamShot::SetFrame(float frame, float blend) {
     }
     unk120p1 = false;
 }
+#pragma pool_data reset
 
 float CamShot::EndFrame() { return mDuration; }
 
@@ -1029,7 +1030,7 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
                 fvar1 = -1.0f;
                 break;
             default:
-                MILO_WARN("Invalid mBlendEaseMode: %d", mBlendEaseMode);
+                MILO_WARN("Invalid mBlendEaseMode: %d\n", mBlendEaseMode);
                 break;
             }
         }
@@ -1147,6 +1148,12 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
     cam->SetLocalXfm(tf130);
 }
 #pragma pop
+
+void Transform::LookAt(const Vector3 &target, const Vector3 &up) {
+    Subtract(target, v, m.y);
+    m.z = up;
+    Normalize(m, m);
+}
 
 void CamShotFrame::UpdateTarget() const {
     CamShotFrame *usable = const_cast<CamShotFrame *>(this);
@@ -1391,10 +1398,11 @@ void CamShotCrowd::AddCrowdChars(
             int i64 = 0;
             for (; it != Crowd()->mCharacters.end(); ++it, ++i64) {
                 int i68 = 0;
-                std::list<RndMultiMesh::Instance> &insts = it->mMMesh->mInstances;
-                for (std::list<RndMultiMesh::Instance>::iterator instIt = insts.begin();
-                     instIt != insts.end();
-                     ++instIt, ++i68) {
+                std::list<RndMultiMesh::Instance>::iterator instIt =
+                    it->mMMesh->mInstances.begin();
+                std::list<RndMultiMesh::Instance>::iterator instEnd =
+                    it->mMMesh->mInstances.end();
+                for (; instIt != instEnd; ++instIt, ++i68) {
                     unk10.push_back(std::make_pair(i64, i68));
                 }
             }
