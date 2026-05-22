@@ -110,10 +110,9 @@ void UIListSubListElement::Fill(const UIListProvider &prov, int i, int j) {
     if (theProvider) {
         mList->SetProvider(theProvider);
         if (0 <= UIListSubList::sNextFillSelection) {
-            mList->SetSelected(
-                Clamp(0, theProvider->NumData() - 1, UIListSubList::sNextFillSelection),
-                -1
-            );
+            int sel = UIListSubList::sNextFillSelection;
+            int max = theProvider->NumData() - 1;
+            mList->SetSelected(sel > max ? max : (sel < 0 ? 0 : sel), -1);
             UIListSubList::sNextFillSelection = -1;
         }
     }
