@@ -1,6 +1,7 @@
 #include "bandobj/BandCharDesc.h"
 #include "BandCharDesc.h"
 #include "bandobj/BandHeadShaper.h"
+#include "math/Mtx.h"
 #include "obj/DataFunc.h"
 #include "obj/Utl.h"
 #include "utl/Symbols.h"
@@ -854,6 +855,121 @@ void BandCharDesc::CopyCharDesc(const BandCharDesc *desc) {
             mPatches[i] = desc->mPatches[i];
             SetChanged(1);
         }
+    }
+}
+
+namespace {
+    struct DeformVert {
+        float mPosX;
+        float mPosY;
+        float mWeights[6];
+    };
+    struct DeformTri {
+        DeformVert *mVerts[3];
+    };
+}
+
+static float sWeightRange[2] = { 0.0f, 1.0f };
+static float sMuscleRange[2] = { 0.0f, 1.0f };
+
+void BandCharDesc::ComputeDeformWeights(float *out) const {
+    DeformVert verts[9] = {
+        { 0.0f, 0.0f, { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f } },
+        { 0.5f, 0.0f, { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f } },
+        { 1.0f, 0.0f, { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+        { 0.0f, 0.5f, { 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.5f } },
+        { 0.5f, 0.5f, { 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f } },
+        { 1.0f, 0.5f, { 0.0f, 0.5f, 0.5f, 0.0f, 0.0f, 0.0f } },
+        { 0.0f, 1.0f, { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f } },
+        { 0.5f, 1.0f, { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+        { 1.0f, 1.0f, { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f } },
+    };
+    DeformTri tris[8] = {
+        { { &verts[0], &verts[1], &verts[3] } },
+        { { &verts[1], &verts[4], &verts[3] } },
+        { { &verts[1], &verts[5], &verts[4] } },
+        { { &verts[1], &verts[2], &verts[5] } },
+        { { &verts[3], &verts[7], &verts[6] } },
+        { { &verts[3], &verts[4], &verts[7] } },
+        { { &verts[4], &verts[5], &verts[7] } },
+        { { &verts[5], &verts[8], &verts[7] } },
+    };
+
+    float heightWeights[3];
+    if (mHeight < 0.5f) {
+        float t = 2.0f * mHeight;
+        heightWeights[1] = 0.0f;
+        heightWeights[0] = t;
+        heightWeights[2] = 1.0f - t;
+    } else {
+        float t = -(2.0f * mHeight - 2.0f);
+        heightWeights[2] = 0.0f;
+        heightWeights[0] = t;
+        heightWeights[1] = 1.0f - t;
+    }
+
+    float weight = mWeight;
+    float muscle = mMuscle;
+    if (mWeight < sWeightRange[0])
+        weight = sWeightRange[0];
+    else if (mWeight > sWeightRange[1])
+        weight = sWeightRange[1];
+    if (muscle < sMuscleRange[0])
+        muscle = sMuscleRange[0];
+    else if (muscle > sMuscleRange[1])
+        muscle = sMuscleRange[1];
+
+    DeformTri *from = NULL;
+    DeformTri *to = NULL;
+    DeformTri *tri = tris;
+    for (int i = 0; i < 8; i++, tri++) {
+        DeformVert *prev = tri->mVerts[2];
+        DeformVert **vp = tri->mVerts;
+        float sign = 0.0f;
+        int hit = 0;
+        for (int j = 3; j != 0;) {
+            DeformVert *cur = *vp;
+            float ex = cur->mPosX - prev->mPosX;
+            float ey = cur->mPosY - prev->mPosY;
+            float px = weight - prev->mPosX;
+            float py = muscle - prev->mPosY;
+            float cross = ex * py - ey * px;
+            if (sign == 0.0f) {
+                sign = cross;
+            } else if (sign * cross < 0.0f) {
+                hit = 0;
+                break;
+            }
+            prev = cur;
+            vp++;
+            if (--j == 0)
+                hit = 1;
+        }
+        if (hit) {
+            from = &tris[i];
+            break;
+        }
+    }
+    MILO_ASSERT(from != to, 0x3F3);
+
+    Hmx::Matrix3 mtx;
+    mtx.x.Set(from->mVerts[0]->mPosX, from->mVerts[0]->mPosY, 1.0f);
+    mtx.y.Set(from->mVerts[1]->mPosX, from->mVerts[1]->mPosY, 1.0f);
+    mtx.z.Set(from->mVerts[2]->mPosX, from->mVerts[2]->mPosY, 1.0f);
+    Invert(mtx, mtx);
+
+    Vector3 point(weight, muscle, 1.0f);
+    Vector3 bary;
+    Multiply(point, mtx, bary);
+
+    for (int k = 0; k < 6; k++) {
+        float w1 = from->mVerts[1]->mWeights[k];
+        float w0 = from->mVerts[0]->mWeights[k];
+        float w2 = from->mVerts[2]->mWeights[k];
+        float blend = w2 * bary.z + (w0 * bary.x + w1 * bary.y);
+        out[k * 3 + 0] = blend * heightWeights[0];
+        out[k * 3 + 1] = blend * heightWeights[1];
+        out[k * 3 + 2] = blend * heightWeights[2];
     }
 }
 
