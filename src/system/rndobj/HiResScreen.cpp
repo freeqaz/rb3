@@ -129,13 +129,17 @@ void HiResScreen::BmpCache::SetPixelColor(
     unsigned int oldPixel = *(unsigned int *)bufPtr;
     if (newPixel != oldPixel) {
         *(unsigned int *)bufPtr = newPixel;
-        if (offset < mDirtyStart) {
-            mDirtyStart = offset;
+        unsigned int dirtyStart = mDirtyStart;
+        if (offset < dirtyStart) {
+            dirtyStart = offset;
         }
+        unsigned int dirtyEnd = mDirtyEnd;
         unsigned int endOff = offset + 4;
-        if (mDirtyEnd < endOff) {
-            mDirtyEnd = endOff;
+        mDirtyStart = dirtyStart;
+        if (dirtyEnd < endOff) {
+            dirtyEnd = endOff;
         }
+        mDirtyEnd = dirtyEnd;
     }
 }
 
