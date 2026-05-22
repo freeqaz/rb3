@@ -1077,8 +1077,8 @@ DataNode BandWardrobe::OnEnterVignette(DataArray *da) {
                 }
             }
             int slot;
-            for (int idx = FindBestScoringHint(hints, info, slot); idx != -1;
-                 idx = FindBestScoringHint(hints, info, slot)) {
+            int idx;
+            while ((idx = FindBestScoringHint(hints, info, slot)) != -1) {
                 if (slot == -1)
                     slot = MostImportantHuman(info);
                 hints[idx] = Symbol("done");
