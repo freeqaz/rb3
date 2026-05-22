@@ -1560,8 +1560,8 @@ void MusicLibrary::RefreshNetSetlists() {
     RebuildAndSortSetlists();
 }
 
-bool MusicLibrary::FilterSetlist(WiiFriendList *friends, NetSavedSetlist *setlist) const {
-    switch (setlist->GetType()) {
+bool MusicLibrary::FilterSetlist(WiiFriendList *friends, NetSavedSetlist *pSetlist) const {
+    switch (pSetlist->GetType()) {
     case SavedSetlist::kSetlistLocal:
     case SavedSetlist::kSetlistInternal:
         MILO_ASSERT(0 && "Net setlist contains unusual setlist type", 0x97D);
@@ -1575,7 +1575,7 @@ bool MusicLibrary::FilterSetlist(WiiFriendList *friends, NetSavedSetlist *setlis
     }
     if (ThePlatformMgr.IsOnlineRestricted())
         return false;
-    const char *owner = setlist->GetOwner();
+    const char *owner = pSetlist->GetOwner();
     const char *name = Localize(wii_friends_default_setlist_name, nullptr);
     const char *desc = Localize(wii_friends_default_setlist_description, nullptr);
     int numFriends = friends->mFriends.size();
@@ -1602,7 +1602,7 @@ bool MusicLibrary::FilterSetlist(WiiFriendList *friends, NetSavedSetlist *setlis
     } else {
         setlistName = MakeString(name, owner);
     }
-    setlist->SetTitle(setlistName);
+    pSetlist->SetTitle(setlistName);
     const char *setlistDesc;
     if (TheWiiFriendsProvider.IsPossessiveSuffixNeeded(desc)) {
         setlistDesc = MakeString(
@@ -1611,19 +1611,14 @@ bool MusicLibrary::FilterSetlist(WiiFriendList *friends, NetSavedSetlist *setlis
     } else {
         setlistDesc = MakeString(desc, owner);
     }
-    setlist->SetDescription(setlistDesc);
+    pSetlist->SetDescription(setlistDesc);
     MILO_ASSERT(
-        setlist->GetArtTex() == NULL
+        pSetlist->GetArtTex() == NULL
             && "NetSaveSestlist has texture?  Tell Ian S.",
         0x9CF
     );
     return true;
 }
-
-DECOMP_FORCEACTIVE(
-    MusicLibrary,
-    "pSetlist->GetArtTex() == NULL && \"NetSaveSestlist has texture?  Tell Ian S.\""
-)
 
 void SavedSetlist::SetTitle(const char *title) { mTitle = title; }
 void SavedSetlist::SetDescription(const char *desc) { mDescription = desc; }
