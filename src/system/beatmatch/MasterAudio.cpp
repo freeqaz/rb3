@@ -190,7 +190,7 @@ typedef void (MasterAudio::*ChannelSetupFunc)(int, MasterAudio::ExtraTrackInfo &
 void MasterAudio::SetupTracks(SongInfo *info, PlayerTrackConfigList *pList) {
     MILO_ASSERT(pList, 0x1F4);
     const std::vector<TrackChannels> &chans = info->GetTracks();
-    for (int i = 0; i < chans.size(); i++) {
+    for (int i = 0, j = 0; i < chans.size(); i++) {
         SongInfoAudioType curAudioType = chans[i].mAudioType;
         const std::vector<int> &curChannels = chans[i].mChannels;
         if (!curChannels.empty()) {
@@ -199,19 +199,20 @@ void MasterAudio::SetupTracks(SongInfo *info, PlayerTrackConfigList *pList) {
             mTrackData.mTrackData.push_back(new TrackData(
                 mSubmixes,
                 curChannels,
-                mSongData->TrackHasIndependentSlots(i),
+                mSongData->TrackHasIndependentSlots(j),
                 extraInfo.mVocal
             ));
 
             ChannelSetupFunc func = extraInfo.mPlayable
                 ? &MasterAudio::SetupTrackChannel_
                 : &MasterAudio::SetupBackgroundChannel_;
-            for (int j = 0; j < curChannels.size(); j++) {
-                (this->*func)(curChannels[j], extraInfo);
+            for (int k = 0; k < curChannels.size(); k++) {
+                (this->*func)(curChannels[k], extraInfo);
             }
             if (extraInfo.mVocal) {
-                SetNonmutable(AudioTrackNum(i));
+                SetNonmutable(AudioTrackNum(j));
             }
+            j++;
         }
     }
     if (pList->UseVocalHarmony()) {
