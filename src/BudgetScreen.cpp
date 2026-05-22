@@ -310,6 +310,16 @@ inline float GetLastTimerMs(const char *name) {
     return AutoTimer::GetTimer(name)->GetLastMs();
 }
 
+Symbol end_test("end_test");
+Symbol next_test("next_test");
+
+BEGIN_HANDLERS(BudgetScreen)
+    HANDLE_ACTION(end_test, EndTest())
+    HANDLE_ACTION(next_test, NextTest())
+    HANDLE_SUPERCLASS(UIScreen)
+    HANDLE_CHECK(663)
+END_HANDLERS
+
 void BudgetScreen::Poll() {
     UIScreen::Poll();
     START_AUTO_TIMER("budget_screen_poll");
