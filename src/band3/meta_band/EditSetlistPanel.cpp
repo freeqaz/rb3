@@ -9,6 +9,7 @@
 #include "net_band/RockCentral.h"
 #include "net_band/RockCentralMsgs.h"
 #include "obj/Data.h"
+#include "obj/Msg.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
@@ -19,6 +20,7 @@
 #include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
+#include "utl/Messages4.h"
 #include "utl/Symbols4.h"
 #include "utl/UTF8.h"
 
@@ -364,6 +366,25 @@ void EditSetlistPanel::SetEditState(EditState s) {
             MILO_FAIL("Bad edit state %i!");
             break;
         }
+    }
+}
+
+void EditSetlistPanel::SetUIState(UIState state) {
+    switch (state) {
+    case 0: {
+        static Message msg(set_edit_state, 0);
+        msg[0] = unk9c == 2;
+        HandleType(msg);
+        break;
+    }
+    case 1:
+        HandleType(set_wait_state_msg);
+        break;
+    case 2:
+        HandleType(set_message_state_msg);
+        break;
+    default:
+        MILO_FAIL("Bad ui state %i!");
     }
 }
 
