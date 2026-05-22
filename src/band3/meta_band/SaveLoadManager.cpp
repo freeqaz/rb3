@@ -86,6 +86,12 @@ void SaveLoadManager::Init() {
     TheSaveLoadMgr = new SaveLoadManager();
 }
 
+void SaveLoadManager::UpdateStatus(SaveLoadMgrStatus status) {
+    static SaveLoadMgrStatusUpdateMsg msg(-1);
+    msg[0] = (int)status;
+    Export(msg, true);
+}
+
 bool SaveLoadManager::IsReasonToAutosave(bool fromAutoSaveNow) {
     bool songCache = false;
     if (TheSongMgr.SongCacheNeedsWrite() && !unk68) {
