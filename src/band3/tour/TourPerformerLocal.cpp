@@ -409,24 +409,25 @@ void TourPerformerLocal::InitializeNextGig() {
             mMetaPerformer->SetSyncDirty(-1, true);
         }
     } else {
-        Symbol chosenQuest = gNullStr;
+        Symbol symQuest = gNullStr;
         Symbol tourDescSym = pProgress->GetTourDesc();
         TourDesc *pTourDesc = TheTour->GetTourDesc(tourDescSym);
+        if (!pTourDesc) return;
         MILO_ASSERT(pTourDesc, 0x2be);
         int currentGigNum = pProgress->GetCurrentGigNum();
         if (pTourDesc->HasSpecificQuest(currentGigNum)) {
-            chosenQuest = pTourDesc->GetSpecificQuestForGigNum(currentGigNum);
+            symQuest = pTourDesc->GetSpecificQuestForGigNum(currentGigNum);
         } else if (pTourDesc->HasQuestTier(currentGigNum)) {
             int tier = pTourDesc->GetQuestTierForGigNum(currentGigNum);
-            chosenQuest = ChooseRandomQuestForGroupAndTier(Symbol(""), tier);
+            symQuest = ChooseRandomQuestForGroupAndTier(Symbol(""), tier);
         } else if (pTourDesc->HasQuestGroup(currentGigNum)) {
             Symbol group = pTourDesc->GetQuestGroupForGigNum(currentGigNum);
-            chosenQuest = ChooseRandomQuestForGroupAndTier(group, -1);
+            symQuest = ChooseRandomQuestForGroupAndTier(group, -1);
         } else {
             MILO_ASSERT(false, 0x2d1);
         }
-        MILO_ASSERT(chosenQuest != gNullStr, 0x2d4);
-        pProgress->SetCurrentQuest(chosenQuest);
+        MILO_ASSERT(symQuest != gNullStr, 0x2d4);
+        pProgress->SetCurrentQuest(symQuest);
         ChooseQuestFilters();
         mMetaPerformer->SetSyncDirty(-1, true);
     }
