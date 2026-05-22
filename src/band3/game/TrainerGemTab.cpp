@@ -220,20 +220,59 @@ void TrainerGemTab::DrawStartFinish() {
 }
 
 void TrainerGemTab::DrawExtraTails() {
-    unsigned long off = 0;
-    for (unsigned long i = 0; i < unk130.size(); i++, off += 0x38) {
+    for (unsigned long i = 0; i < unk130.size(); i++) {
+        const ExtraTail &tail = unk130[i];
         RndMesh *mesh;
-        // ExtraTail layout: Transform (0x0..0x2F), int slot (0x30), bool isSustainCyan (0x34)
-        if (*(bool *)((char *)&unk130[0] + off + 0x34)) {
+        if (tail.mIsRGChord) {
             mesh = mGemSustainCyan;
         } else {
-            mesh = mTails[SlotToGemIndex(*(int *)((char *)&unk130[0] + off + 0x30))];
+            mesh = mTails[SlotToGemIndex(tail.mSlot)];
         }
         mesh->SetShowing(true);
-        mesh->SetWorldXfm(*(Transform *)((char *)&unk130[0] + off));
+        mesh->SetWorldXfm(tail.mXfm);
         mesh->Draw();
         mesh->SetShowing(false);
     }
+}
+
+void TrainerGemTab::Draw(int i) {
+    if (!mGemTab)
+        return;
+    if (unk4c.empty())
+        return;
+    if (!mGems[0])
+        return;
+    unk130.resize(0);
+    mGemTab->SetShowing(true);
+    switch (unk48) {
+    case 1:
+        Render(unk54->GetStartTick(), unk54->GetEndTick(), 2.5f, 7.5f, i);
+        DrawStartFinish();
+        break;
+    case 2:
+        Render(unk54->GetStartTick(), unk54->GetEndTick(), 0.0f, 10.0f, i);
+        DrawStartFinish();
+        break;
+    case 4: {
+        Transform xfm = mGemTab->WorldXfm();
+        Transform orig = xfm;
+        int half = (unk54->GetEndTick() - unk54->GetStartTick()) / 2;
+        xfm.v.z -= 60.0f;
+        mGemTab->SetWorldXfm(xfm);
+        Render(unk54->GetStartTick(), unk54->GetStartTick() + half, 0.0f, 10.0f, i);
+        mStartLabel->SetShowing(true);
+        mStartLabel->Draw();
+        xfm.v.z += 30.0f;
+        mGemTab->SetWorldXfm(xfm);
+        Render(unk54->GetStartTick() + half, unk54->GetEndTick(), 0.0f, 10.0f, i);
+        DrawExtraTails();
+        mFinishLabel->SetShowing(true);
+        mFinishLabel->Draw();
+        mGemTab->SetWorldXfm(orig);
+        break;
+    }
+    }
+    mGemTab->SetShowing(false);
 }
 
 void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY, int) {
@@ -277,6 +316,70 @@ void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY,
                 }
             }
             DrawTails(gem, startTick, endTick, startY, endY);
+        }
+    }
+}
+
+void TrainerGemTab::DrawTails(
+    const GameGem &gem, int startTick, int endTick, float startY, float endY
+) {
+    if (gem.IgnoreDuration())
+        return;
+    unsigned int slots = gem.GetSlots();
+    for (int slot = 0; slot < mLanes; slot++) {
+        if (slots & (1 << slot)) {
+            mVerticalTrans->SetFrame(
+                (float)(gem.GetTick() - startTick) / (float)(endTick - startTick) *
+                        (endY - startY) +
+                    startY,
+                1.0f
+            );
+            RndMesh *tail;
+            if (gem.IsRealGuitarChord()) {
+                tail = mGemSustainCyan;
+            } else {
+                tail = mTails[SlotToGemIndex(slot)];
+            }
+            MILO_ASSERT(tail, 0x1BE);
+            if (!mInstLanes[GetLane(slot)])
+                continue;
+            tail->SetShowing(true);
+            Transform &cur = tail->WorldXfm();
+            Transform orig = cur;
+            Transform xfm = cur;
+            xfm.v.x = mInstLanes[GetLane(slot)]->WorldXfm().v.x;
+            float scale = 2.5f * ((float)gem.GetDurationTicks() / 480.0f);
+            float endZ = xfm.v.z + 10.0f * scale;
+            if (endZ > unk12c) {
+                float overhang = 0.1f * (endZ - unk12c);
+                float drawScale = scale - overhang;
+                xfm.m.y.x *= drawScale;
+                xfm.m.y.y *= drawScale;
+                xfm.m.y.z *= drawScale;
+                tail->SetWorldXfm(xfm);
+                tail->Draw();
+                tail->SetWorldXfm(orig);
+                mVerticalTrans->SetFrame(0.0f, 1.0f);
+                ExtraTail extra;
+                extra.mIsRGChord = gem.IsRealGuitarChord();
+                extra.mSlot = slot;
+                Transform &tw = tail->WorldXfm();
+                extra.mXfm.m.x = tw.m.x;
+                extra.mXfm.m.y.x = tw.m.y.x * overhang;
+                extra.mXfm.m.y.y = tw.m.y.y * overhang;
+                extra.mXfm.m.y.z = tw.m.y.z * overhang;
+                extra.mXfm.m.z = tw.m.z;
+                extra.mXfm.v = tw.v;
+                extra.mXfm.v.x = 100.0f + mInstLanes[GetLane(slot)]->WorldXfm().v.x;
+                unk130.push_back(extra);
+            } else {
+                xfm.m.y.x *= scale;
+                xfm.m.y.y *= scale;
+                xfm.m.y.z *= scale;
+                tail->SetWorldXfm(xfm);
+                tail->Draw();
+            }
+            tail->SetShowing(false);
         }
     }
 }

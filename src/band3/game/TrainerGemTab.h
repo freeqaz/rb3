@@ -17,7 +17,9 @@ public:
     // size 0x38
     class ExtraTail {
     public:
-        char filler[0x38];
+        Transform mXfm; // 0x0
+        int mSlot; // 0x30
+        bool mIsRGChord; // 0x34
     };
 
     TrainerGemTab();
@@ -43,7 +45,7 @@ public:
     RndGroup *mDrawOrderGroup; // 0x44
     int unk48;
     std::vector<GameGem> unk4c;
-    int unk54;
+    const TrainerSection *unk54;
     RndMesh *mGems[9]; // 0x58
     RndMesh *mTails[5]; // 0x7c
     int unk90;
