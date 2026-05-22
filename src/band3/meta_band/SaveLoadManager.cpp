@@ -7,6 +7,8 @@
 #include "obj/MessageTimer.h"
 #include "obj/ObjMacros.h"
 #include "meta/MemcardMgr_Wii.h"
+#include "meta/WiiProfileMgr.h"
+#include "meta_band/BandSongMgr.h"
 #include "net_band/EntityUploader.h"
 #include "os/Debug.h"
 #include "os/Memcard.h"
@@ -82,6 +84,29 @@ void SaveLoadManager::ManualDelete() {
 void SaveLoadManager::Init() {
     MILO_ASSERT(!TheSaveLoadMgr, 0x57);
     TheSaveLoadMgr = new SaveLoadManager();
+}
+
+bool SaveLoadManager::IsReasonToAutosave(bool fromAutoSaveNow) {
+    bool songCache = false;
+    if (TheSongMgr.SongCacheNeedsWrite() && !unk68) {
+        songCache = true;
+    }
+    if (songCache) {
+        return true;
+    }
+    if (TheMemcardMgr.IsDisableWriting()) {
+        return false;
+    }
+    if (GetAutosavableProfile()) {
+        return true;
+    }
+    if (IsReasonToUpload() && !fromAutoSaveNow) {
+        return true;
+    }
+    if (TheProfileMgr.GlobalOptionsNeedsSave()) {
+        return true;
+    }
+    return TheWiiProfileMgr.NeedsSave();
 }
 
 void SaveLoadManager::AutoSaveNow() {
