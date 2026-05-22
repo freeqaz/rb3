@@ -600,7 +600,10 @@ void Spotlight::DrawShowing() {
     }
     if (TheRnd->DrawMode() == 0) {
         SpotlightDrawer::DrawLight(this);
-    } else if (unk286) {
+        return;
+    }
+    if (!unk286) return;
+    {
         UpdateTransforms();
         Hmx::Color c48(Color());
         Multiply(c48, Intensity(), c48);
