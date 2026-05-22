@@ -42,6 +42,7 @@ public:
     void InsertFreeBlock(FreeBlock *, int, FreeBlock *, FreeBlock *, int);
     int AllocSize(int *);
     int *SplitFromBack(int);
+    bool Free(int *);
     void FindFreeNeighbors(AllocBlock *, FreeBlock *&, FreeBlock *&);
     void FirstFit(int, int, FreeBlockInfo &);
     void BestFit(int, int, FreeBlockInfo &);
@@ -54,7 +55,8 @@ public:
     int *mStart;        // 0x4
     const char *mName;  // 0x8
     int mSizeWords;     // 0xC
-    char mPad10[0xC];   // 0x10
+    char mPad10[8];     // 0x10
+    int mDebugLevel;    // 0x18
     int mStrategy;      // 0x1C
     bool mAllowTemp;    // 0x20
     char mPad21[3];     // 0x21
@@ -197,6 +199,39 @@ int *Heap::SplitFromBack(int n) {
     startBlock->mSizeWords = newSize;
     startBlock->mNext = nullptr;
     return mStart + mSizeWords;
+}
+
+namespace {
+    unsigned int gTimeStamp;
+}
+
+bool Heap::Free(int *mem) {
+    if (mem < mStart || mem >= mStart + mSizeWords) {
+        return false;
+    }
+    FreeBlock *prev = nullptr;
+    FreeBlock *next = nullptr;
+    AllocBlock *allocBlock = (AllocBlock *)(mem - 1);
+    FindFreeNeighbors(allocBlock, prev, next);
+    unsigned int header = allocBlock->mHeader;
+    unsigned int timeStamp = gTimeStamp;
+    FreeBlock *block = (FreeBlock *)((int *)allocBlock - (header & 0xFF));
+    gTimeStamp = timeStamp + 1;
+    InsertFreeBlock(block, header >> 8, prev, next, timeStamp);
+    if (mDebugLevel >= 1) {
+        int *fillEnd = (int *)block + block->mSizeWords;
+        int *fillStart = (int *)block + 3;
+        for (int *p = fillStart; p < fillEnd; p++) {
+            *p = 0xDEADDEAD;
+        }
+    }
+    if (next != nullptr) {
+        block->AttemptMerge(next, mDebugLevel);
+    }
+    if (prev != nullptr) {
+        prev->AttemptMerge(block, mDebugLevel);
+    }
+    return true;
 }
 
 void Heap::BestFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
