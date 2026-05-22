@@ -157,7 +157,7 @@ void SongData::Load(
     mNumDifficulties = numDifficulties;
     mDetailedGrid = false;
     mHopoThreshold = mSongInfo->GetHopoThreshold();
-    mKeyboardRangeSections.resize(mNumDifficulties);
+    mKeyboardRangeSections.resize(numDifficulties);
     MILO_ASSERT(mTempoMap == NULL, 0xF5);
     MILO_ASSERT(mTuningOffsetList == NULL, 0xF6);
     MILO_ASSERT(mMeasureMap == NULL, 0xF7);
