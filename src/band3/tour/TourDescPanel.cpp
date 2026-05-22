@@ -1,8 +1,12 @@
 #include "tour/Tour.h"
 #include "tour/TourDesc.h"
 #include "tour/TourProgress.h"
+#include "meta_band/AccomplishmentManager.h"
+#include "meta_band/AccomplishmentProgress.h"
+#include "meta_band/BandProfile.h"
 #include "meta_band/Campaign.h"
 #include "meta_band/CampaignLevel.h"
+#include "game/BandUser.h"
 #include "meta_band/MetaPanel.h"
 #include "meta_band/SessionMgr.h"
 #include "meta_band/TexLoadPanel.h"
@@ -94,9 +98,8 @@ inline bool TourDescProvider::IsTourDescAvailable(Symbol s) const {
         Symbol level = pTourDesc->GetRequiredCampaignLevel();
         BandMachineMgr *pMachineMgr = TheSessionMgr->GetMachineMgr();
         MILO_ASSERT(pMachineMgr, 0x230);
-        if (!TheCampaign->HasScoreReachedCampaignLevel(
-                pMachineMgr->GetLeaderPrimaryMetaScore(), level
-            ))
+        int score = pMachineMgr->GetLeaderPrimaryMetaScore();
+        if (!TheCampaign->HasScoreReachedCampaignLevel(score, level))
             return false;
     }
     return true;
@@ -125,7 +128,7 @@ public:
     void SelectDefaultTour();
     void SelectTour(Symbol);
     void CheatWinTour();
-    TourDescProvider *mProvider; // 0x4c
+    TourDescProvider *m_pTourDescProvider; // 0x4c
 };
 
 void TourDescPanel::Refresh() {
@@ -234,7 +237,7 @@ void TourDescPanel::SelectTour(Symbol s) {
     int index = 0;
     if (s != "") {
         index = 0;
-        std::vector<Symbol> &tours = mProvider->mTours;
+        std::vector<Symbol> &tours = m_pTourDescProvider->mTours;
         std::vector<Symbol>::iterator it = tours.begin();
         for (; it != tours.end(); ++it, ++index) {
             if (s == *it)
@@ -246,6 +249,38 @@ void TourDescPanel::SelectTour(Symbol s) {
     UIList *pList = Dir()->Find<UIList>("pTourList", true);
     MILO_ASSERT(pList, 0x30B);
     pList->SetSelected(index, -1);
+}
+
+UIComponent::State TourDescProvider::ComponentStateOverride(
+    int iCol, int iData, UIComponent::State i_eState
+) const {
+    Symbol s = DataSymbol(iData);
+    bool bAvailable = MetaPanel::sUnlockAll ? true : IsTourDescAvailable(s);
+    if (!bAvailable)
+        i_eState = UIComponent::kDisabled;
+    return i_eState;
+}
+
+bool TourDescPanel::IsTourAvailable() {
+    MILO_ASSERT(m_pTourDescProvider, 0x2D6);
+    Symbol s = GetSelectedTourDesc(0);
+    return MetaPanel::sUnlockAll ? true : m_pTourDescProvider->IsTourDescAvailable(s);
+}
+
+void TourDescPanel::CheatWinTour() {
+    Symbol s = GetSelectedTourDesc(0);
+    TourDesc *pTourDesc = TheTour->GetTourDesc(s);
+    MILO_ASSERT(pTourDesc, 0x318);
+    LocalBandUser *pUser = TheTour->GetUser();
+    MILO_ASSERT(pUser, 0x31B);
+    BandProfile *pProfile = TheTour->GetProfile();
+    MILO_ASSERT(pProfile, 0x31E);
+    AccomplishmentProgress &progress = pProfile->AccessAccomplishmentProgress();
+    progress.SetToursPlayed(s, progress.GetToursPlayed(s) + 1);
+    progress.SetMostStars(s, pTourDesc->GetNumStarsPossibleForTour());
+    progress.SetToursGotAllStars(s, progress.GetToursGotAllStars(s) + 1);
+    TheAccomplishmentMgr->CheckForFinishedTourAccomplishmentsForUser(pUser);
+    Refresh();
 }
 
 BEGIN_HANDLERS(TourDescPanel)
