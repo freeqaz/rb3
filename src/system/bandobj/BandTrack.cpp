@@ -639,6 +639,62 @@ void BandTrack::SavePlayer() {
     }
 }
 
+void BandTrack::DisablePlayer(int i) {
+    bool disconnected;
+    if (mParent)
+        disconnected = mParent->PlayerDisconnected();
+    else
+        disconnected = false;
+    if (mDisabled && disconnected && mFailedFeedback) {
+        mFailedFeedback->HandleType(reset_msg);
+        unkd8 = new MessageTask(mFailedFeedback, disconnected_msg);
+        TheTaskMgr.Start(unkd8, kTaskSeconds, 0.0f);
+    }
+    if (mDisabled && !disconnected) {
+        if (!mParent)
+            return;
+        if (!mParent->FailedAtStart())
+            return;
+    }
+    EventTrigger *trig = ThisDir()->Find<EventTrigger>("bfb_failed.trig", false);
+    if (trig)
+        trig->Trigger();
+    if (mPlayerFeedback) {
+        mPlayerFeedback->HandleType(reset_msg);
+        SendTrackerDisplayMessage(disable_msg);
+    }
+    ResetPopup();
+    mDisabled = true;
+    if (mParent)
+        mParent->SetGemsEnabled(-1.0f);
+    if (dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())) {
+        bool atStart = mParent && mParent->PlayerDisconnectedAtStart();
+        int idx = mTrackIdx;
+        dynamic_cast<TrackPanelDirBase *>(ThisDir()->Dir())->DisablePlayer(idx, atStart);
+    }
+    static Message failed("failed_task", DataNode(0), DataNode(0));
+    failed[0] = disconnected;
+    failed[1] = i;
+    unkf0 = new MessageTask(ThisDir(), failed);
+    TheTaskMgr.Start(unkf0, kTaskSeconds, 1.0f);
+}
+
+void BandTrack::FailedTask(bool b, int i) {
+    if (!mFailedFeedback)
+        return;
+    if (mPlayerIntro && mTrackInstrument != kInstVocals && mParent
+        && mParent->HasLocalPlayer()) {
+        mPlayerIntro->Handle(icon_show_msg, true);
+    }
+    if (b) {
+        mFailedFeedback->Handle(disconnected_msg, true);
+    } else {
+        static Message failed("failed", DataNode(0));
+        failed[0] = i;
+        mFailedFeedback->Handle(failed, true);
+    }
+}
+
 void BandTrack::SetTourMomentGoalText(const char *top, const char *bottom) {
     MILO_ASSERT(top, 0x4E8);
     MILO_ASSERT(bottom, 0x4E9);
