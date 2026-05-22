@@ -1495,6 +1495,31 @@ void VocalTrack::BuildScrollingDeployZone(
     mNoteTube->BakePlates();
 }
 
+void VocalTrack::BuildScrollingDeployZones(float ms) {
+    int codaTick = TheSongDB->GetCodaStartTick();
+    int numParts = std::min(2, (int)mPlayer->mVocalParts.size());
+    int *deployIdx = &mNextDeployZone[0];
+    for (int part = 0; part < numParts; deployIdx++, part++) {
+        VocalNoteList *notes = GetVocalNoteList(part);
+        while (*deployIdx < notes->mFreestyleSections.size()
+               && notes->mFreestyleSections[*deployIdx].first < ms) {
+            const std::pair<float, float> &section =
+                notes->mFreestyleSections[*deployIdx];
+            float codaMs;
+            if (codaTick != -1 && section.first < (codaMs = TickToMs(codaTick))
+                && codaMs < section.second) {
+                std::pair<float, float> firstHalf(section.first, codaMs);
+                std::pair<float, float> secondHalf(codaMs, section.second);
+                BuildScrollingDeployZone(part, firstHalf);
+                BuildScrollingDeployZone(part, secondHalf);
+            } else {
+                BuildScrollingDeployZone(part, section);
+            }
+            (*deployIdx)++;
+        }
+    }
+}
+
 void VocalTrack::PrepareNoteTubes(
     float windowDurationMs, int startNote, int &endNote, int line
 ) {
