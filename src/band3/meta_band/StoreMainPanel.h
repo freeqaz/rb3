@@ -38,7 +38,7 @@ public:
     const NewReleaseEntry *CurrentEntry() const;
     const char *MarqueePath() const;
 
-    int unk40; // 0x40
+    DataArray *mConfigData; // 0x40
     float mTimeNextEvent; // 0x44
     int mCurrentEntry; // 0x48
     float mDisplayRate; // 0x4c
