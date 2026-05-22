@@ -1,6 +1,7 @@
 #include "bandobj/FingerShape.h"
 #include "os/Debug.h"
 #include "beatmatch/RGUtl.h"
+#include <algorithm>
 
 FingerShape::FingerShape(RndDir *dir)
     : mLastState(new RGState()), mFretNumberShowAnim(0), mFretNumberPositionAnim(0),
@@ -79,6 +80,16 @@ void FingerShape::Update(const RGState &state, bool b1, bool b2) {
         }
         UpdateFretNumber(state, b1);
         *mLastState = state;
+    }
+}
+
+void FingerShape::UpdateLeftyFlip(bool lefty) {
+    if (lefty != mLefty) {
+        std::reverse(mFretHeightAnims.begin(), mFretHeightAnims.end());
+        std::reverse(mContourHeightAnims.begin(), mContourHeightAnims.end());
+        std::reverse(mContourAngleAnims.begin(), mContourAngleAnims.end());
+        Update(*mLastState, false, true);
+        mLefty = lefty;
     }
 }
 
