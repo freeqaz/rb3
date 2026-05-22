@@ -10,6 +10,8 @@
 #include <vector>
 
 class Distribution {
+    friend class BudgetScreen;
+
 private:
     float mRes;
     float mMin;

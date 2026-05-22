@@ -415,5 +415,52 @@ void BudgetScreen::Poll() {
     }
 }
 
+void BudgetScreen::EndTest() {
+    MILO_ASSERT(mTestPanel->GetState() == UIPanel::kUnloaded, 415);
+
+    int mainRam = (HeapFreeSize("main") - gMainFree) / 1024;
+
+    if (gUseSsv) {
+        *mLog
+            << "Category;Test;CPU (99th pctile);GPU (99th pctile);CPU Overhead;"
+            << "GPU Overhead;CPU Min;CPU Mean;CPU Max;GPU Min;GPU Mean;GPU Max;"
+            << "Main RAM";
+        *mLog << "\n";
+        *mLog << "Summary";
+
+        *mLog << ";" << mTests->Array(mTestIdx)->Str(0);
+        *mLog << ";" << mCpuDist.Pctile(0.99f);
+        *mLog << ";" << mGsDist.Pctile(0.99f);
+        *mLog << ";" << mNullCpu;
+        *mLog << ";" << mNullGs;
+
+        *mLog << ";" << mCpuDist.mMin;
+        *mLog << ";" << (mCpuDist.mCount != 0 ? mCpuDist.mTotal / mCpuDist.mCount : 0.f);
+        *mLog << ";" << mCpuDist.mMax;
+        *mLog << ";" << mGsDist.mMin;
+        *mLog << ";" << (mGsDist.mCount != 0 ? mGsDist.mTotal / mGsDist.mCount : 0.f);
+        *mLog << ";" << mGsDist.mMax;
+        *mLog << ";" << mainRam;
+        *mLog << "\n\n";
+
+        *mLog << "Category;Range (ms);Frames;Percentile\n";
+
+        const char *testName = mTests->Array(mTestIdx)->Str(0);
+        mCpuDist.Report(*mLog, String(testName) += " (CPU distribution)");
+        mGsDist.Report(*mLog, String(testName) += " (GS distribution)");
+        mHudDist.Report(*mLog, String(testName) += " (HUD/Track CPU distribution)");
+        mEtcDist.Report(*mLog, String(testName) += " (Game Etc. CPU distribution)");
+        *mLog << "\n";
+    } else {
+        *mLog << "Main RAM: " << mainRam << "\n";
+        *mLog << "END TEST\n\n";
+    }
+
+    mLog->mFile.Flush();
+
+    UIScreen *startScreen = ObjectDir::Main()->Find<UIScreen>("start_budget", true);
+    TheUI.GotoScreen(startScreen, false, false);
+}
+
 // Must be down here to avoid data pooling in Poll
 int gMainFree;
