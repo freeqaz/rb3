@@ -203,7 +203,9 @@ FunctionSortNode *SetlistSortByLocation::NewFunctionNode(Symbol sym) const {
     LocationCmp *cmp = new LocationCmp(
         SavedSetlist::kBattleHarmonix, gNullStr, gNullStr, 0, gNullStr
     );
-    return new FunctionSortNode(cmp, false, sym, gNullStr, "", "");
+    return new FunctionSortNode(
+        cmp, false, sym, gNullStr, (const char *)0, (const char *)0
+    );
 }
 
 SubheaderSortNode *SetlistSort::NewSubheaderNode(SetlistSortNode *node) const {
