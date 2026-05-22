@@ -105,15 +105,15 @@ const char *StoreMenuPanel::GetCrumbText() const {
 void StoreMenuPanel::AddMenu(DataArray *data, const char *path) {
     int next = mCurrentMenuIx + 1;
     StoreMenuProvider *provider;
-    if (next >= (int)mMenuStack.size()) {
+    if (next >= mMenuStack.size()) {
         provider = new StoreMenuProvider(data, path);
         mMenuStack.push_back(provider);
     } else {
         provider = mMenuStack[next];
         provider->SetData(data);
     }
-    int numData = provider->NumData();
     int ix = 0;
+    int numData = provider->NumData();
     if (mMenuStack.size() == 1) {
         if (mStartingHighlightIx < numData)
             ix = mStartingHighlightIx;
@@ -156,7 +156,7 @@ BEGIN_HANDLERS(StoreMenuPanel)
     HANDLE(back, OnBack)
     HANDLE_ACTION(reset_last_menu, SetPendingMenuIx(mCurrentMenuIx - 1))
     HANDLE_ACTION(set_menu_waiting, SetPendingMenuIx(-1))
-    HANDLE_EXPR(get_menu_waiting, mPendingMenuIx != -1)
+    HANDLE_EXPR(get_menu_waiting, mPendingMenuIx + 1 == 0)
     HANDLE_MESSAGE(MetadataLoadedMsg)
     HANDLE_SUPERCLASS(UIPanel)
     HANDLE_CHECK(0x104)
