@@ -514,6 +514,50 @@ void GemManager::PollVisibleGems(float f1, float f2) {
     }
 }
 
+Symbol GemManager::GetTypeForGem(int gemId) {
+    FillLogic fillLogic = TheGame->GetFillLogic();
+    const GameGem &gem = TheSongDB->GetGems(mTrackConfig.TrackNum())[gemId];
+    int gemTick = gem.GetTick();
+    GemPlayer *player = (GemPlayer *)mTrackConfig.GetBandUser()->GetPlayer();
+    if (player) {
+        GemStatus *gemStatus = player->mGemStatus;
+        if (gemStatus->GetSize() > gemId) {
+            if (gemStatus->GetIgnored(gemId) || gemStatus->Get0x40(gemId)) {
+                return invisible;
+            }
+        }
+    }
+    if (unkb8 && IsInFill(gemTick)) {
+        return invisible;
+    }
+    if ((unsigned int)(fillLogic - 1) <= 1U && IsEndOfFill(gemTick)) {
+        switch (fillLogic) {
+        case kFillsDeployGemAndDim:
+            return dim;
+        case kFillsDeployGemAndInvisible:
+            return invisible;
+        }
+    } else {
+        if (mGemsEnabledStart < 0.0f || mGemsEnabledStart > gem.GetMs()) {
+            return invisible;
+        }
+        bool isUnison;
+        if (!InMissedPhrase(gemId) && IsSpotlightGem(gemId, isUnison)) {
+            return isUnison ? unison : star;
+        }
+        if (gem.IsRealGuitar()) {
+            if (gem.IsRealGuitarChord()) {
+                if (mGems[gemId].unk_0x67_0) {
+                    return repeat;
+                }
+            } else if (mGems[gemId].unk_0x67_1) {
+                return section;
+            }
+        }
+    }
+    return normal;
+}
+
 void GemManager::AdvanceBegin() {
     mGems[mBegin].RemoveRep();
     mBegin++;
@@ -712,6 +756,46 @@ bool GemManager::OnMissPhrase(int i1) {
         }
     }
     return ret;
+}
+
+bool GemManager::IsSpotlightGem(int gemId, bool &outUnison) {
+    if (!TheGame->AllowOverdrivePhrases()) {
+        return false;
+    }
+    int phraseId = TheSongDB->GetPhraseID(mTrackConfig.TrackNum(), gemId);
+    MILO_ASSERT(phraseId >= -1, 0xA04);
+    if (phraseId != -1) {
+        bool inFutureLoop = false;
+        Band *band = mTrackConfig.GetBandUser()->GetPlayer()->mBand;
+        if (TheGame->InTrainer() && TheGemTrainerPanel->IsGemInFutureLoop(gemId)) {
+            inFutureLoop = true;
+        }
+        if (inFutureLoop ||
+            !band->mCommonPhraseCapturer->DidTrackFail(
+                phraseId, mTrackConfig.TrackNum()
+            )) {
+            outUnison = TheSongDB->IsUnisonPhrase(phraseId);
+            return true;
+        }
+    }
+    return false;
+}
+
+void GemManager::UpdateGemStates() {
+    GemPlayer *player = (GemPlayer *)mTrackConfig.GetBandUser()->GetPlayer();
+    if (player) {
+        GemStatus *gemStatus = player->GetGemStatus();
+        MILO_ASSERT(gemStatus, 0x9B1);
+        if (gemStatus->GetSize() > 0) {
+            MILO_ASSERT(gemStatus->GetSize() == mGems.size(), 0x9BA);
+            for (int i = mBegin; i < mEnd; i++) {
+                if (!gemStatus->GetHit(i) && !gemStatus->Get0x2(i)
+                    && !gemStatus->Get0x4(i)) {
+                    mGems[i].SetType(GetTypeForGem(i));
+                }
+            }
+        }
+    }
 }
 
 bool GemManager::InMissedPhrase(int gemId) {
