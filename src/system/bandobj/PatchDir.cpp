@@ -1,4 +1,5 @@
 #include "bandobj/PatchDir.h"
+#include "math/Rand.h"
 #include "rndobj/Mat.h"
 #include "rndwii/Rnd.h"
 #include "ui/UI.h"
@@ -591,6 +592,33 @@ void PatchDir::SaveRemote(IntPacker &packer) {
         if (!mLayers[i].mStickerCategory.Null()) {
             mLayers[i].SavePacked(packer);
         }
+    }
+}
+
+void PatchDir::FakeFill(RndTex *tex) {
+    mLayers.clear();
+    if (tex)
+        CacheRenderedTex(tex, false);
+    for (int i = 0; i < 50; i++) {
+        PatchLayer layer;
+        Symbol category =
+            PatchLayer::sCategoryNames[RandomInt(0, PatchLayer::sCategoryNames.size())];
+        layer.mStickerCategory = category;
+        int numStickers = SystemConfig("art_maker", "stickers", category)->Size() - 2;
+        layer.mStickerIdx = RandomInt(0, numStickers);
+        MILO_ASSERT(layer.mStickerIdx < numStickers, 0x51E);
+        layer.mColorIdx = RandomInt(0, PatchLayer::sColorPalette->NumColors());
+        if (RandomInt(0, 2))
+            layer.FlipX();
+        if (RandomInt(0, 2))
+            layer.FlipY();
+        layer.SetDeformFrame(RandomFloat(0.0f, 50.0f));
+        layer.SetRotation(RandomFloat(0.0f, 360.0f));
+        layer.SetScaleX(RandomFloat(0.25f, 2.0f));
+        layer.SetScaleY(RandomFloat(0.25f, 2.0f));
+        Vector3 pos(RandomFloat(-250.0f, 250.0f), 0.0f, RandomFloat(-200.0f, 200.0f));
+        layer.SetPosition(pos);
+        mLayers.push_back(layer);
     }
 }
 
