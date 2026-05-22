@@ -1926,6 +1926,54 @@ DataNode BandCharacter::OnSetFileMerger(DataArray *da) {
     return DataNode(0);
 }
 
+void BandCharacter::SaveBoneAndChildren(RndTransformable *bone) {
+    if (strncmp(bone->Name(), "bone_", 5) == 0) {
+        BoneState state;
+        state.mBone = bone;
+        state.mXfm = bone->WorldXfm();
+        unk6e4.push_back(state);
+        for (std::vector<RndTransformable *>::const_iterator it =
+                 bone->TransChildren().begin();
+             it != bone->TransChildren().end();
+             ++it) {
+            SaveBoneAndChildren(*it);
+        }
+    }
+}
+
+DataNode BandCharacter::OnPortraitBegin(DataArray *da) {
+    EnableBlinks(false, true);
+    BoneState state;
+    state.mBone = this;
+    state.mXfm = mLocalXfm;
+    unk6e4.push_front(state);
+    RndTransformable *bone = Find<RndTransformable>("bone_pelvis", true);
+    SaveBoneAndChildren(bone);
+    strcpy(unk6f4, mGroupName);
+    unk6ec = Hmx::Object::New<CharDriver>();
+    unk6ec->Transfer(*mDriver);
+    unk6f0 = mPlayFlags;
+    return DataNode(0);
+}
+
+DataNode BandCharacter::OnPortraitEnd(DataArray *da) {
+    EnableBlinks(true, false);
+    mLocalXfm = unk6e4.front().mXfm;
+    SetDirty();
+    unk6e4.pop_front();
+    for (std::list<BoneState>::iterator it = unk6e4.begin(); it != unk6e4.end();
+         ++it) {
+        it->mBone->SetWorldXfm(it->mXfm);
+    }
+    unk6e4.clear();
+    strcpy(mGroupName, unk6f4);
+    mDriver->Transfer(*unk6ec);
+    delete unk6ec;
+    unk6ec = 0;
+    mPlayFlags = unk6f0;
+    return DataNode(0);
+}
+
 BEGIN_PROPSYNCS(BandCharacter)
     SYNC_PROP(tempo, mTempo)
     SYNC_PROP(genre, mGenre)

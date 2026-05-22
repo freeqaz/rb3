@@ -31,6 +31,8 @@ class BandCharacter : public Character,
 public:
     class BoneState {
     public:
+        RndTransformable *mBone;
+        Transform mXfm;
     };
 
     BandCharacter();
@@ -112,6 +114,7 @@ public:
     void PlayFaceClip();
     void UpdateOverlay();
     void SetDircuts();
+    void SaveBoneAndChildren(RndTransformable *);
     CharClipDriver *PlayMainClip(int, bool);
     Symbol InstrumentType() const { return mInstrumentType; }
     bool AddDriverClipDir() { return mAddDriver && mAddDriver->ClipDir(); }
@@ -205,8 +208,9 @@ public:
     float unk6d8; // 0x6d8
     std::list<int> mCompressedTextureIDs; // 0x6dc
     std::list<BoneState> unk6e4; // 0x6e4
-    int unk6ec; // 0x6ec
-    char filler2[0x44];
+    CharDriver *unk6ec; // 0x6ec
+    int unk6f0; // 0x6f0
+    char unk6f4[64]; // 0x6f4
     Waypoint *unk734; // 0x734
     unsigned int unk738; // 0x738
     ObjPtrList<RndMesh, ObjectDir> unk73c; // 0x73c
