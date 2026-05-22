@@ -109,7 +109,7 @@ void SynthEmitter::Poll() {
             } else {
                 mInst->SetVolume(mVolInner);
             }
-            mInst->SetTranspose(atan2f(v80.x, v80.y) * 1.2732395f);
+            mInst->SetPan(2.0f - atan2f(v80.x, v80.y) * 1.2732395f);
             if (needStart) {
                 mInst->Start();
             }
