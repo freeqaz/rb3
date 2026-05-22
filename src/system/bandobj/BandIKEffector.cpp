@@ -538,6 +538,46 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     }
 }
 
+float BandIKEffector::ApplyConstraints(
+    QuatXfm &q, const Transform &tf, BandIKEffector *root
+) {
+    float totalWeight = 0.0f;
+    for (int i = 0; i < mConstraints.size(); i++) {
+        Constraint &c = mConstraints[i];
+        if (c.mTarget) {
+            if (c.mWeight <= 0.0f) {
+                const Transform &world = c.mTarget->WorldXfm();
+                q.v = world.v;
+                q.q.Set(world.m);
+                return 1.0f;
+            }
+            Transform neutral;
+            NeutralWorldXfm(c.mTarget, neutral);
+            Normalize(neutral.m, neutral.m);
+            Transform tpose;
+            Transpose(neutral, tpose);
+            Transform local;
+            Multiply(tf, tpose, local);
+            float lensq = LengthSquared(local.v);
+            float clamped = Max(lensq, 0.001f);
+            float w = 144.0f * c.mWeight / clamped;
+            totalWeight += w;
+            Transform targetWorld = c.mTarget->WorldXfm();
+            Normalize(targetWorld.m, targetWorld.m);
+            Multiply(local, targetWorld, local);
+            QuatXfm newQ;
+            newQ.v = local.v;
+            newQ.q.Set(local.m);
+            ScaleAdd(q.v, newQ.v, w, q.v);
+            ScaleAddEq(q.q, newQ.q, w);
+        }
+    }
+    if (mMore) {
+        totalWeight += mMore->ApplyConstraints(q, tf, root);
+    }
+    return totalWeight;
+}
+
 float BandIKEffector::GetGroundHeight(RndTransformable *trans) {
     if (mGround) {
         return mGround->WorldXfm().v.z;
