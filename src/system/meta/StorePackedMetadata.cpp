@@ -458,6 +458,27 @@ bool StoreRedemptionsTable::Load(const char *cc) {
     return true;
 }
 
+void StoreRedemptionsTable::AddRedeemedOffer(const char *cc) {
+    int index;
+    bool isRbn;
+    bool isUpgrade;
+    bool found = TheStoreMetadata.FindOffer(cc, &index, &isRbn, &isUpgrade);
+    if (!found || isUpgrade) {
+        MILO_LOG("Redemption offer %s not found in store metadata.\n", cc);
+        return;
+    }
+    StorePackedOffer *offer;
+    if (isRbn)
+        offer = (StorePackedOffer *)TheStoreMetadata.mRbnOfferTable->mOffers[index];
+    else
+        offer = TheStoreMetadata.mOfferTable->mOffers[index];
+    for (iterator it = begin(); it != end(); ++it) {
+        if (*it == offer)
+            return;
+    }
+    push_back(offer);
+}
+
 Symbol StorePackedPage::DefaultSort() const {
     switch (mDefaultSort) {
     case 1:
@@ -795,6 +816,48 @@ const StorePackedOfferBase *StoreMetadataManager::GetOffer(unsigned short key) c
             return table->mOffers[key];
     }
     return NULL;
+}
+
+bool StoreMetadataManager::FindOffer(
+    const char *id, int *outIndex, bool *outIsRbn, bool *outIsUpgrade
+) const {
+    StoreOfferTable *offerTable = mOfferTable;
+    for (int i = 0; i < offerTable->mNumOffers; i++) {
+        StorePackedOffer *offer = offerTable->mOffers[i];
+        bool idMatch = strncmp(offer->mId, id, 16) == 0;
+        if (idMatch) {
+            *outIndex = i;
+            *outIsRbn = false;
+            *outIsUpgrade = false;
+            return true;
+        }
+        bool upgradeMatch = strncmp(offer->mUpgradeId, id, 16) == 0;
+        if (upgradeMatch) {
+            *outIndex = i;
+            *outIsRbn = false;
+            *outIsUpgrade = true;
+            return true;
+        }
+    }
+    StoreRbnOfferTable *rbnTable = mRbnOfferTable;
+    for (int i = 0; i < rbnTable->mNumOffers; i++) {
+        StorePackedRBNOffer *offer = rbnTable->mOffers[i];
+        bool idMatch = strncmp(offer->mId, id, 16) == 0;
+        if (idMatch) {
+            *outIndex = i;
+            *outIsRbn = true;
+            *outIsUpgrade = false;
+            return true;
+        }
+        bool upgradeMatch = strncmp(offer->mUpgradeId, id, 16) == 0;
+        if (upgradeMatch) {
+            *outIndex = i;
+            *outIsRbn = true;
+            *outIsUpgrade = true;
+            return true;
+        }
+    }
+    return false;
 }
 
 bool StoreMetadataManager::Poll() {

@@ -31,6 +31,7 @@ class StoreRedemptionsTable : public std::vector<StorePackedOffer *> {
 public:
     StoreRedemptionsTable() {}
     bool Load(const char *);
+    void AddRedeemedOffer(const char *);
 };
 
 #pragma push
@@ -194,7 +195,7 @@ public:
     int GetContentFileSize(unsigned long long, unsigned short);
     void MarkDeleted(unsigned long long, unsigned short);
     void AddOldMetadataIndex(unsigned long long, unsigned short);
-    const StorePackedOfferBase *FindOffer(const char *, int *, bool *, bool *) const;
+    bool FindOffer(const char *, int *, bool *, bool *) const;
     void AddSetlistOffer(int);
     void ClearSetlistOffers();
 
