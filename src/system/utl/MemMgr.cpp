@@ -215,6 +215,18 @@ MemDoTempAllocations::~MemDoTempAllocations() {
     enabled = mOld == 2;
 }
 
+void MemMoreFreeBlockStats(int heapNum, int &a, int &b, int &c, int &d) {
+    CritSecTracker tracker(gMemLock);
+    MILO_ASSERT(heapNum < 0x10, 0x29b);
+    gHeaps[heapNum].MoreFreeBlockStats(a, b, c, d);
+}
+
+void MemResetMinFreeBlockStats(int heapNum) {
+    CritSecTracker tracker(gMemLock);
+    MILO_ASSERT(heapNum < 0x10, 0x2a3);
+    gHeaps[heapNum].ResetMinFreeBlockStats();
+}
+
 void *MemResizeElem(void *&mem, int &totalSize, void *cutPoint, int cutLength, int insertLength, const char *name) {
     void *old = mem;
     int suffixSize = 0;
