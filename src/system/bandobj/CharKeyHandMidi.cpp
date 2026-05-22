@@ -1,10 +1,14 @@
 #include "bandobj/CharKeyHandMidi.h"
+#include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "rndobj/Trans.h"
 #include "rndobj/Utl.h"
+#include "utl/BinStream.h"
 #include "utl/MakeString.h"
 #include "utl/Symbols.h"
 #include <algorithm>
+
+INIT_REVS(CharKeyHandMidi);
 
 CharKeyHandMidi::CharKeyHandMidi()
     : mIKObject(this, 0), mFirstSpot(this, 0), mSecondSpot(this, 0),
@@ -223,6 +227,18 @@ void CharKeyHandMidi::UnkeyFinger(CharIKFingers::FingerNum finger) {
     unk6c[finger] = 0;
     unk74++;
 }
+
+BEGIN_LOADS(CharKeyHandMidi)
+    LOAD_REVS(bs)
+    ASSERT_REVS(2, 0)
+    LOAD_SUPERCLASS(Hmx::Object)
+    LOAD_SUPERCLASS(CharWeightable)
+    bs >> mIKObject;
+    bs >> mFirstSpot;
+    bs >> mSecondSpot;
+    if (gRev > 1)
+        bs >> mIsRightHand;
+END_LOADS
 
 BEGIN_HANDLERS(CharKeyHandMidi)
     HANDLE(fingers_up, OnFingersUp)
