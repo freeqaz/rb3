@@ -44,6 +44,10 @@
 
 DECOMP_FORCEACTIVE(AppLabel, "%s) %s")
 
+AppLabel::~AppLabel() {}
+
+bool UILabel::CanHaveFocus() { return false; }
+
 void AppLabel::SetLeaderboardName(const LeaderboardRow &lb) {
     if (lb.mUnnamedBand) {
         DataNode word = band_default_name;
