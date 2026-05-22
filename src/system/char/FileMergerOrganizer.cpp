@@ -33,30 +33,28 @@ bool FileMergerSort(const FileMerger::Merger *m1, const FileMerger::Merger *m2) 
         m1data.unk4 = false;
     }
 
-    int aPriority = m1data.priority;
-    int bPriority = m2data.priority;
-    bool aUnk4 = m1data.unk4;
-    bool bUnk4 = m2data.unk4;
+    CatData &aData = m1data;
+    CatData &bData = m2data;
 
     if (m1->loading.empty()) {
-        aPriority -= gNextCatPriority;
-        MILO_ASSERT(aPriority < 0, 0x5B);
+        aData.priority -= gNextCatPriority;
+        MILO_ASSERT(aData.priority < 0, 0x5B);
     }
     if (m2->loading.empty()) {
-        bPriority -= gNextCatPriority;
-        MILO_ASSERT(bPriority < 0, 0x60);
+        bData.priority -= gNextCatPriority;
+        MILO_ASSERT(bData.priority < 0, 0x60);
     }
-    if (aUnk4 && bUnk4) {
+    if (aData.unk4 && bData.unk4) {
         bool female1 = strstr(m1->loading.c_str(), "female") != 0;
         bool female2 = strstr(m2->loading.c_str(), "female") != 0;
         if (female1 != female2) {
             return gGenderChirality ^ (female1 > female2);
         }
     }
-    if (aPriority == bPriority) {
+    if (aData.priority == bData.priority) {
         return strcmp(m1->loading.c_str(), m2->loading.c_str()) < 0;
     } else
-        return aPriority < bPriority;
+        return aData.priority < bData.priority;
 }
 
 FileMerger::Merger *FileMergerOrganizer::FrontInactiveMerger(OrganizedFileMerger *ofm) {
@@ -201,9 +199,7 @@ void FileMergerOrganizer::FailedLoading(Loader *l) {
     Dispatch(org);
     MILO_ASSERT(org->merger->mCurLoader == NULL, 0x178);
     org->state = (OrganizedState)0;
-    if (oldOrg == org)
-        oldOrg = nullptr;
-    mActiveOrg = oldOrg;
+    mActiveOrg = (oldOrg == org) ? nullptr : oldOrg;
     if (!mActiveOrg && !mStartOrg) {
         for (std::list<OrganizedFileMerger>::iterator it = unk20.begin();
              it != unk20.end();
