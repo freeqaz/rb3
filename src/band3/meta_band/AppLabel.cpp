@@ -575,53 +575,60 @@ void AppLabel::SetRawStoreShortcut(int i) {
 }
 
 void AppLabel::SetPitch(int pitch, int chrom) {
-    char buf[3];
-    int p = pitch % 12;
+    pitch = pitch % 12;
     int c;
-    if (chrom >= 2) {
+    if (chrom > 1) {
         c = 1;
     } else if (chrom < -1) {
         c = -1;
     } else {
         c = chrom;
     }
-    if (p == 1 || p == 6 || p == 8) {
+    switch (pitch) {
+    case 1:
+    case 6:
+    case 8:
         if (c == 0)
             c = 1;
-        p -= c;
-    } else if (p == 3 || p == 10) {
+        pitch -= c;
+        break;
+    case 3:
+    case 10:
         if (c == 0)
             c = -1;
-        p -= c;
-    } else {
+        pitch -= c;
+        break;
+    default:
         c = 0;
+        break;
     }
-    buf[1] = 0;
-    buf[0] = 0;
-    buf[2] = 0;
-    if (p == 0) {
-        buf[1] = 0;
+    char buf[3];
+    memset(buf, 0, sizeof(buf));
+    switch (pitch) {
+    case 0:
         buf[0] = 'C';
-    } else if (p == 2) {
-        buf[1] = 0;
+        break;
+    case 2:
         buf[0] = 'D';
-    } else if (p == 4) {
-        buf[1] = 0;
+        break;
+    case 4:
         buf[0] = 'E';
-    } else if (p == 5) {
-        buf[1] = 0;
+        break;
+    case 5:
         buf[0] = 'F';
-    } else if (p == 7) {
-        buf[1] = 0;
+        break;
+    case 7:
         buf[0] = 'G';
-    } else if (p == 9) {
-        buf[1] = 0;
+        break;
+    case 9:
         buf[0] = 'A';
-    } else if (p == 11) {
-        buf[1] = 0;
+        break;
+    case 11:
         buf[0] = 'B';
-    } else {
-        MILO_FAIL("pitch %d doesn't map to a white key", p);
+        break;
+    default:
+        MILO_FAIL("pitch %d doesn't map to a white key", pitch);
+        break;
     }
     if (c == 1) {
         buf[1] = '#';
