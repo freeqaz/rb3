@@ -621,6 +621,72 @@ float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
     return result;
 }
 
+float VocalPart::ScoreNote(
+    float ms, int noteIdx, float &pitch, int &octavesOut, float &sloppyPitchOut,
+    float &arg5
+) const {
+    float sloppyPitch = GetSloppyPitch(ms, noteIdx, pitch, arg5);
+    sloppyPitchOut = sloppyPitch;
+    float diff = sloppyPitch - pitch;
+    float absDiff = fabs(diff);
+    float pitchClassDist = (float)fmod(absDiff, 12.0);
+    pitchClassDist = Min(pitchClassDist, 12.0f - pitchClassDist);
+    if (pitchClassDist <= 2.5f) {
+        int octaves =
+            (int)(0.5f + absDiff / 12.0f) * ((diff > 0.0f) ? 1 : -1);
+        octavesOut = octaves;
+        pitch += 12.0f * (float)octaves;
+        diff = pitchClassDist;
+    }
+    float score = 0.0f;
+    if (fabs(diff) <= mPitchMaximumDistance) {
+        score = (float)exp(-(diff * diff) / mPitchSigma);
+        if (score < 0.01f)
+            score = 0.0f;
+    }
+    if (GetNoteSliceWeight(unk54, ms, noteIdx) == 0.0f)
+        score = 0.0f;
+    return score;
+}
+
+void VocalPart::CalculateScore(
+    float ms, int noteIdx, float mult, VocalScoreCache &cache
+) const {
+    if (noteIdx == -1)
+        return;
+    float sliceWeight = GetNoteSliceWeight(unk54, ms, noteIdx);
+    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+    float noteMult;
+    if (!note.mUnpitchedNote) {
+        noteMult = mPitchHitMultiplier;
+    } else if (note.mUnpitchedEasy) {
+        noteMult = mNonPitchHitMultiplier * mNonPitchEasyMultiplier;
+    } else {
+        noteMult = mNonPitchHitMultiplier;
+    }
+    if (note.mDurationMs < mShortNoteThresh)
+        noteMult *= mShortNoteMult;
+    float framePoints = noteMult * (mult * sliceWeight);
+    VocalFrameSpewData *spew = mPlayer->mFrameSpewData;
+    if (spew) {
+        spew->mPartData[mPartIndex].unk4 = framePoints;
+        spew->mPartData[mPartIndex].unk8 = unk38;
+        spew->mPartData[mPartIndex].unkc = mult;
+        spew->mPartData[mPartIndex].unk10 = sliceWeight;
+        spew->mPartData[mPartIndex].unk14 = noteMult;
+    }
+    cache.unkc = framePoints;
+    if (mPhraseScore + framePoints > unk38)
+        framePoints = unk38 - mPhraseScore;
+    cache.unk4 = framePoints;
+    float capped =
+        Min(Min(mPhraseScoreMax, unk38), sliceWeight * noteMult + mPhraseScore);
+    float delta = capped - mPhraseScore;
+    if (delta < 0.0f)
+        delta = 0.0f;
+    cache.unk10 = delta;
+}
+
 void VocalPart::GetNoteRange(float ms, int &startOut, int &endOut) {
     float slop = mSlop;
     float lower = ms - slop;

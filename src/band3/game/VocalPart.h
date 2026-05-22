@@ -53,6 +53,8 @@ public:
     void ResetScoring();
     float CalcPhraseScoreMax(const VocalPhrase *const &) const;
     void AddScore(const VocalScoreCache &);
+    void CalculateScore(float, int, float, VocalScoreCache &) const;
+    float ScoreNote(float, int, float &, int &, float &, float &) const;
     float GetSloppyPitch(float, int, float, float &) const;
     bool CouldScoreAgainstPart(float, TalkyMatcher *, float, float, float &);
     void AddPhrasePoints(float);
