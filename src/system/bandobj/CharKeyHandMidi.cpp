@@ -1,5 +1,7 @@
 #include "bandobj/CharKeyHandMidi.h"
 #include "os/Debug.h"
+#include "rndobj/Trans.h"
+#include "rndobj/Utl.h"
 #include "utl/MakeString.h"
 #include "utl/Symbols.h"
 #include <algorithm>
@@ -112,6 +114,22 @@ CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
             if (finger > 4)
                 finger = CharIKFingers::kFingerPinky;
             return (CharIKFingers::FingerNum)finger;
+        }
+    }
+}
+
+void CharKeyHandMidi::Highlight() {
+    if (mFirstSpot && mSecondSpot) {
+        UtilDrawSphere(mFirstSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
+        UtilDrawSphere(mSecondSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
+        for (int key = 1; key <= 0x19; key++) {
+            if (IsBlackKey((KeyboardKey)key)) {
+                UtilDrawSphere(unk4c[key], 0.15f, Hmx::Color(0.0f, 1.0f, 0.0f));
+                UtilDrawSphere(unk54[key], 0.15f, Hmx::Color(1.0f, 1.0f, 0.0f));
+            } else {
+                UtilDrawSphere(unk4c[key], 0.15f, Hmx::Color(0.0f, 0.0f, 1.0f));
+                UtilDrawSphere(unk54[key], 0.15f, Hmx::Color(1.0f, 0.0f, 1.0f));
+            }
         }
     }
 }
