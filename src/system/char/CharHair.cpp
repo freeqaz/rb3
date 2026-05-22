@@ -515,15 +515,15 @@ void CharHair::SimulateInternal(float f) {
                     Point &modPoint = modStrand.Points()[j];
                     Subtract(thisPoint.pos, modPoint.pos, vRes);
                     float lensq = LengthSquared(vRes);
-                    float sidelen = thisPoint.sideLength - mMinSlack;
-                    float sidelensq = sidelen * sidelen;
+                    float sidelensq = thisPoint.sideLength - mMinSlack;
+                    sidelensq *= sidelensq;
                     if (lensq < sidelensq) {
                         vRes *= (sidelensq / (sidelensq + lensq) - 0.5f);
                         thisPoint.pos += vRes;
                         modPoint.force -= vRes;
                     } else {
                         float maxslacklensq = thisPoint.sideLength + mMaxSlack;
-                        maxslacklensq = maxslacklensq * maxslacklensq;
+                        maxslacklensq *= maxslacklensq;
                         if (lensq > maxslacklensq) {
                             vRes *= (maxslacklensq / (maxslacklensq + lensq) - 0.5f);
                             thisPoint.pos += vRes;
