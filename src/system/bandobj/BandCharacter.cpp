@@ -1639,6 +1639,32 @@ DataNode BandCharacter::OnLoadDircut(DataArray *da) {
     }
 }
 
+DataNode BandCharacter::OnPostMerge(DataArray *da) {
+    Symbol category = da->Sym(2);
+    ObjectDir *dir = da->Obj<ObjectDir>(3);
+    bool noTextures = da->Int(4) != 0;
+    while (unk630.size() != 0) {
+        OutfitConfig *cfg = unk630.front();
+        unk630.pop_front();
+        SyncOutfitConfig(cfg);
+        cfg->Recompose();
+        if (!mInCloset)
+            cfg->CompressTextures();
+    }
+    RndTransformable *bone = Find<RndTransformable>("bone_guitar_lh_mod.mesh", false);
+    if (bone)
+        bone->ResetLocalXfm();
+    unk680 = mInstDir->Find<RndMesh>("mic_stand.mesh", false);
+    unk68c = Find<RndMesh>("drum_L-stick.mesh", false);
+    unk698 = Find<RndMesh>("drum_R-stick.mesh", false);
+    unk6a4 = Find<RndMesh>("guitar_pick.mesh", false);
+    if (!mFileMerger->mLoadingLoad
+        && (noTextures || (mFileMerger->mAsyncLoad && !unk6bd))) {
+        SyncObjects();
+    }
+    return DataNode(0);
+}
+
 DataNode BandCharacter::OnListDrumVenues(DataArray *da) {
     DataArrayPtr ptr;
     ptr->Resize(4);
@@ -2036,7 +2062,7 @@ DataNode BandCharacter::OnPortraitEnd(DataArray *da) {
 DataNode BandCharacter::OnHideCategories(DataArray *da) {
     if (!mFileMerger)
         return DataNode(0);
-    static Symbol rm("RndMesh");
+    static Symbol rm("Mesh");
     for (int i = 2; i < da->Size(); i++) {
         FileMerger::Merger *merger = mFileMerger->FindMerger(da->Sym(i), true);
         for (ObjPtrList<Hmx::Object, ObjectDir>::iterator it =
