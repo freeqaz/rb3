@@ -536,6 +536,37 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     }
 }
 
+void BandIKEffector::IKElbow(const Vector3 &hand) {
+    RndTransformable *elbow;
+    RndTransformable *shoulder;
+    float aaPlusbb;
+    float inv2ab;
+    float aPlusb;
+    if (!MeasureLengths(elbow, shoulder, inv2ab, aaPlusbb, aPlusb))
+        return;
+
+    Transform shoulderXfm;
+    shoulderXfm = shoulder->WorldXfm();
+
+    QuatXfm quat;
+    Transform elbowXfm;
+    ComputeHandPullAndQuat(
+        quat, elbowXfm, shoulderXfm, hand, inv2ab, aaPlusbb, aPlusb
+    );
+
+    Hmx::Matrix3 m;
+    MakeRotMatrix(quat.q, m);
+    Multiply(m, shoulderXfm.m, shoulderXfm.m);
+    shoulderXfm.v.x += quat.v.x;
+    shoulderXfm.v.y += quat.v.y;
+    shoulderXfm.v.z += quat.v.z;
+    shoulder->SetWorldXfm(shoulderXfm);
+
+    Transform elbowOut;
+    Multiply(elbowXfm, shoulderXfm, elbowOut);
+    elbow->SetWorldXfm(elbowOut);
+}
+
 BEGIN_PROPSYNCS(BandIKEffector)
     SYNC_PROP(effector, mEffector)
     SYNC_PROP(ground, mGround)
