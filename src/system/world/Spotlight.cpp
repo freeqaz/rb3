@@ -367,7 +367,7 @@ void Spotlight::Poll() {
     Hmx::Matrix3 m38;
     if (!unk28c) {
         RndTransformable *target = ResolveTarget();
-        if (!target || (!unk289 && target->WorldXfm().v == unk268)) {
+        if (!target || (!LOADMGR_EDITMODE && !unk289 && target->WorldXfm().v == unk268)) {
             if (!target && !mAnimateOrientationFromPreset && !DoFloorSpot()) {
                 UpdateTransforms();
                 return;
