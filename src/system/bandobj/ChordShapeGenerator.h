@@ -116,7 +116,7 @@ public:
     ObjPtr<RndTransformable, ObjectDir> mString5; // 0xa8
     std::vector<float> mFretHeights; // 0xb4
     std::vector<float> mGradeDistances; // 0xbc
-    RndMesh *unkc4; // 0xc4
+    RndMesh *mSource; // 0xc4
     float unkc8; // 0xc8
     float unkcc; // 0xcc
     float unkd0; // 0xd0

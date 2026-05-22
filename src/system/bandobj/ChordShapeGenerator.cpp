@@ -16,7 +16,7 @@ ChordShapeGenerator::ChordShapeGenerator()
     : mFingerSrcMesh(this, 0), mChordSrcMesh(this, 0), mBaseXSection(this, 0),
       mContourXSection(this, 0), mBaseHeight(this, 0), mNumSlots(6), mString0(this, 0),
       mString1(this, 0), mString2(this, 0), mString3(this, 0), mString4(this, 0),
-      mString5(this, 0), unkc4(0), unkc8(-1.0f), unkcc(1.0f), unkd0(0.2f) {
+      mString5(this, 0), mSource(0), unkc8(-1.0f), unkcc(1.0f), unkd0(0.2f) {
     mFretHeights.resize(7);
     for (int i = 0; i < 7; i++)
         mFretHeights[i] = 1.0f;
@@ -288,7 +288,7 @@ void ChordShapeGenerator::BuildContourCap(
     Hmx::Color32 col2
 ) {
     MILO_ASSERT(connectingVerts.size(), 0x24B);
-    RndMesh::VertVector &srcVerts = unkc4->Verts();
+    RndMesh::VertVector &srcVerts = mSource->Verts();
     std::map<unsigned short, unsigned short> capMap;
     for (int i = 0; i < srcVerts.size(); i++) {
         float sx = srcVerts[i].pos.x;
@@ -353,7 +353,7 @@ void ChordShapeGenerator::BuildContourCap(
     );
     capMap.insert(connectingVerts.begin(), connectingVerts.end());
     capMap.insert(endVerts.begin(), endVerts.end());
-    std::vector<RndMesh::Face> &srcFaces = unkc4->Faces();
+    std::vector<RndMesh::Face> &srcFaces = mSource->Faces();
     std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
     for (unsigned int i = 0; i < srcFaces.size(); i++) {
         const RndMesh::Face &f = srcFaces[i];
@@ -384,6 +384,47 @@ void ChordShapeGenerator::BuildContourCap(
     connectingVerts.swap(endVerts);
 }
 #pragma pop
+
+void ChordShapeGenerator::GetCrossSection(float xOffset, CrossSec &cs) {
+    MILO_ASSERT(mSource, 0x17C);
+    cs.mEdges.clear();
+    cs.mVerts.clear();
+    cs.mXOffset = xOffset;
+    std::vector<RndMesh::Face> faces(mSource->Faces());
+    RndMesh::VertVector &verts = mSource->Verts();
+    float lo = xOffset - 0.1f;
+    float hi = xOffset + 0.1f;
+    for (unsigned int i = 0; i < faces.size(); i++) {
+        RndMesh::Face &f = faces[i];
+        bool outOfBand = false;
+        int outsideVert = -1;
+        for (int j = 0; j < 3; j++) {
+            float x = verts[f[j]].pos.x;
+            if (x < lo) {
+                outOfBand = true;
+                break;
+            } else if (x > hi) {
+                if (outsideVert != -1) {
+                    outOfBand = true;
+                    break;
+                }
+                outsideVert = f[j];
+            }
+        }
+        if (!outOfBand && outsideVert != -1) {
+            Edge edge;
+            for (int j = 0; j < 3; j++) {
+                if (f[j] == outsideVert) {
+                    edge.mV0 = f[(j + 1) % 3];
+                    edge.mV1 = f[(j + 2) % 3];
+                }
+            }
+            cs.mEdges.push_back(edge);
+            cs.mVerts.insert(edge.mV0);
+            cs.mVerts.insert(edge.mV1);
+        }
+    }
+}
 
 void ChordShapeGenerator::ExtendProfile(
     RndMesh *mesh,
