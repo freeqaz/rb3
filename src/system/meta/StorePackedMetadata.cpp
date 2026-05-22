@@ -421,8 +421,8 @@ bool StoreRedemptionsTable::Load(const char *cc) {
     );
     if (!ret)
         return ret;
-    int byteCount = numEntries * 6;
-    int diff = dataEnd - dataStart;
+    unsigned long byteCount = numEntries * 6UL;
+    unsigned int diff = (unsigned int)(dataEnd - dataStart);
     if (diff != byteCount) {
         MILO_LOG(
             "Redemption file says is has %d entries, but at %d bytes each that would take %d bytes, and there are %d bytes left in the file.\n",
@@ -433,9 +433,10 @@ bool StoreRedemptionsTable::Load(const char *cc) {
         );
         numEntries = diff / 6;
     }
+    int numValid = 0;
+    unsigned short *idxPtr = (unsigned short *)dataStart;
     StorePackedRedemptionOffer *offer = (StorePackedRedemptionOffer *)dataStart;
     unsigned short *validIndices = (unsigned short *)dataStart;
-    int numValid = 0;
     for (int i = 0; i < numEntries; i++) {
         offer->EndianFix();
         if (CheckOtherTitlesExistence(offer->mTitleId)) {
@@ -446,9 +447,8 @@ bool StoreRedemptionsTable::Load(const char *cc) {
         offer = (StorePackedRedemptionOffer *)((char *)offer + 6);
     }
     reserve(numValid);
-    unsigned short *idxPtr = (unsigned short *)dataStart;
     for (int i = 0; i < numValid; i++) {
-        unsigned short idx = *idxPtr;
+        int idx = *idxPtr;
         if (idx < TheStoreMetadata.mOfferTable->mNumOffers) {
             push_back(TheStoreMetadata.mOfferTable->mOffers[idx]);
         }
@@ -788,6 +788,64 @@ StoreError StoreMetadataManager::LoadError() const {
 
 bool StoreMetadataManager::LoadingFailed() const {
     return mLoadingState == 11;
+}
+
+int StoreMetadataManager::GetContentStateFlags(unsigned long long key, unsigned short idx) {
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
+    StoreTitleContentState *state;
+    if (it == unk58.end()) {
+        state = (StoreTitleContentState *)operator new(0x1000);
+        if (state) memset(state, 0, 0x1000);
+        unk58[key] = state;
+    } else {
+        state = (*it).second;
+    }
+    return ((unsigned char *)state)[idx << 3];
+}
+
+int StoreMetadataManager::GetContentFileSize(unsigned long long key, unsigned short idx) {
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
+    StoreTitleContentState *state;
+    if (it == unk58.end()) {
+        state = (StoreTitleContentState *)operator new(0x1000);
+        if (state) memset(state, 0, 0x1000);
+        unk58[key] = state;
+    } else {
+        state = (*it).second;
+    }
+    return *(int *)((char *)state + (idx << 3) + 4);
+}
+
+void StoreMetadataManager::MarkDeleted(unsigned long long key, unsigned short idx) {
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
+    StoreTitleContentState *state;
+    if (it == unk58.end()) {
+        state = (StoreTitleContentState *)operator new(0x1000);
+        if (state) memset(state, 0, 0x1000);
+        unk58[key] = state;
+    } else {
+        state = (*it).second;
+    }
+    unsigned char *p = (unsigned char *)state + (idx << 3);
+    if (p) {
+        *p &= ~1;
+        mFlags |= 0x40;
+    }
+}
+
+void StoreMetadataManager::AddOldMetadataIndex(unsigned long long key, unsigned short idx) {
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
+    StoreTitleContentState *state;
+    if (it == unk58.end()) {
+        state = (StoreTitleContentState *)operator new(0x1000);
+        if (state) memset(state, 0, 0x1000);
+        unk58[key] = state;
+    } else {
+        state = (*it).second;
+    }
+    if (((unsigned char *)state)[idx << 3] & 1) {
+        unk98.push_back(std::pair<unsigned long long, unsigned short>(key, idx));
+    }
 }
 
 void StoreMetadataManager::AddSetlistOffer(int offer) {
