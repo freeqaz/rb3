@@ -383,7 +383,7 @@ int OwnedSongSortNode::GetTotalScore() { return mSongRecord->GetScore(); }
 int OwnedSongSortNode::GetTotalStars(bool b) {
     int stars = mSongRecord->mStars[mSongRecord->mActiveScoreType];
     int cap = (b != 0) + 5;
-    return cap < stars ? cap : stars;
+    return cap >= stars ? stars : cap;
 }
 
 int OwnedSongSortNode::GetPotentialStars() {
