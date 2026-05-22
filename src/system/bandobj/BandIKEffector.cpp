@@ -536,6 +536,41 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     }
 }
 
+void BandIKEffector::PollDeps(
+    std::list<Hmx::Object *> &changedBy, std::list<Hmx::Object *> &change
+) {
+    change.push_back(mEffector);
+    changedBy.push_back(mEffector);
+    for (ObjVector<Constraint>::iterator it = mConstraints.begin();
+         it != mConstraints.end();
+         ++it) {
+        change.push_back(it->mFinger);
+        changedBy.push_back(it->mFinger);
+        changedBy.push_back(it->mTarget);
+    }
+    if (mMore) {
+        for (ObjVector<Constraint>::iterator it = mMore->mConstraints.begin();
+             it != mMore->mConstraints.end();
+             ++it) {
+            change.push_back(it->mFinger);
+            changedBy.push_back(it->mFinger);
+            changedBy.push_back(it->mTarget);
+        }
+    }
+    if (GetType() - 2U <= 1) {
+        RndTransformable *parent = mEffector->TransParent();
+        if (parent) {
+            change.push_back(parent);
+            changedBy.push_back(parent);
+            RndTransformable *grandparent = parent->TransParent();
+            if (grandparent) {
+                change.push_back(grandparent);
+                changedBy.push_back(grandparent);
+            }
+        }
+    }
+}
+
 void BandIKEffector::IKElbow(const Vector3 &hand) {
     RndTransformable *elbow;
     RndTransformable *shoulder;
