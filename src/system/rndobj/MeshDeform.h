@@ -15,13 +15,14 @@ class RndMeshDeform : public Hmx::Object {
 public:
     class VertArray {
     public:
+        enum { kMaxWeights = 0x40 };
         VertArray(RndMeshDeform *);
         ~VertArray();
         void Clear();
         int NumVerts();
         void *FindVert(int);
         void CopyVert(int, int, VertArray &);
-        void AppendWeights(int, int *, float *);
+        int AppendWeights(int, int *, float *);
         void SetSize(int);
         void Copy(const VertArray &);
         void Load(BinStream &);

@@ -53,6 +53,56 @@ void RndMeshDeform::VertArray::Load(BinStream &bs) {
     bs.Read(mData, mSize);
 }
 
+extern void *
+MemResizeElem(void *&, int &, void *, int, int, const char *);
+
+int RndMeshDeform::VertArray::AppendWeights(int num, int *boneIndices, float *weights) {
+    MILO_ASSERT(num < VertArray::kMaxWeights, 0x5F);
+    float sum = 0.0f;
+    int numVerts = NumVerts();
+    for (int i = 0; i < num; i++) {
+        for (int j = i + 1; j < num; j++) {
+            if (boneIndices[j] == boneIndices[i]) {
+                weights[i] += weights[j];
+                num--;
+                boneIndices[j] = boneIndices[num];
+                weights[j] = weights[num];
+                j--;
+            }
+        }
+        float w = weights[i];
+        if (w <= 0.0f) {
+            TheDebug.Notify(MakeString(
+                "%s vert %d has negative weight %g on bone, won't export",
+                PathName(mParent), numVerts, w));
+            weights[i] = 0.0f;
+        }
+        sum += weights[i];
+    }
+    if (sum > 0.0f) {
+        for (int i = 0; i < num; i++) {
+            weights[i] /= sum;
+        }
+    } else {
+        TheDebug.Notify(MakeString(
+            "%s vert %d weights sum to %g, check the skinning",
+            PathName(mParent), numVerts, sum));
+    }
+    u8 *elem = (u8 *)MemResizeElem(
+        mData, mSize, (char *)mData + mSize, 0, num * 2 + 1, "RndMeshDeform");
+    *elem = num;
+    for (int i = 0; i < num; i++) {
+        elem[i * 2 + 1] = boneIndices[i];
+        float w = weights[i];
+        if (w > 1.0f)
+            w = 1.0f;
+        else if (w < 0.0f)
+            w = 0.0f;
+        elem[i * 2 + 2] = 255.0f * w + 0.5f;
+    }
+    return numVerts;
+}
+
 RndMeshDeform::RndMeshDeform()
     : mMesh(this, 0), mBones(this), mVerts(this), mSkipInverse(0), mDeformed(0) {}
 
