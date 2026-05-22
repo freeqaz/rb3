@@ -9,6 +9,7 @@
 #include "decomp.h"
 #include "game/BandUserMgr.h"
 #include "game/Game.h"
+#include "game/GamePanel.h"
 #include "game/Player.h"
 #include "game/Scoring.h"
 #include "meta_band/MetaPerformer.h"
@@ -756,6 +757,22 @@ bool TrackPanel::SlotReservedForVocals(int slot) const {
 }
 
 bool TrackPanel::GameResumedNoScore() const { return TheGame->ResumedNoScore(); }
+
+bool TrackPanel::IsGameOver() const { return TheGamePanel->IsGameOver(); }
+
+int TrackPanel::GetGameExcitement() const { return TheGame->GetCrowdExcitement(); }
+
+bool TrackPanel::ShouldUpdateScrollSpeed() const { return !TheGame->InDrumTrainer(); }
+
+void TrackPanel::PushCrowdReaction(bool react) {
+    BeatMaster *master = TheGame->mMaster;
+    if (master) {
+        MasterAudio *audio = master->GetAudio();
+        if (audio && TheGame->mProperties.mCrowdReacts) {
+            audio->SetCrowdFader(react ? 0.0f : -96.0f);
+        }
+    }
+}
 
 BEGIN_HANDLERS(TrackPanel)
     HANDLE_ACTION(set_smasher_glowing, SetSmasherGlowing(_msg->Int(2), _msg->Int(3)))
