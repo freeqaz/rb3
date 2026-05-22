@@ -30,6 +30,9 @@ public:
     int GetLane(int) const;
     void DrawStartFinish();
     void DrawExtraTails();
+    void Render(int, int, float, float, int);
+    void DrawTails(const GameGem &, int, int, float, float);
+    void DrawRealGuitarChord(const GameGem &);
 
     RndDir *mGemTab; // 0x0
     TrackType mTrackType; // 0x4

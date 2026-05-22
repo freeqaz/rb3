@@ -5,6 +5,7 @@
 #include "rndobj/Anim.h"
 #include "rndobj/Group.h"
 #include "rndobj/Mesh.h"
+#include "game/GameMode.h"
 
 // fn_801703DC
 TrainerGemTab::TrainerGemTab()
@@ -232,6 +233,51 @@ void TrainerGemTab::DrawExtraTails() {
         mesh->SetWorldXfm(*(Transform *)((char *)&unk130[0] + off));
         mesh->Draw();
         mesh->SetShowing(false);
+    }
+}
+
+void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY, int) {
+    mTrackGroup->SetShowing(true);
+    mTrackGroup->DrawShowing();
+    mTrackGroup->SetShowing(false);
+    for (unsigned int i = 0; i < unk4c.size(); i++) {
+        const GameGem &gem = unk4c[i];
+        int tick = gem.GetTick();
+        if (tick >= startTick && tick < endTick) {
+            float y = ((float)(tick - startTick) / (float)(endTick - startTick)) *
+                    (endY - startY) +
+                startY;
+            mVerticalTrans->SetFrame(y, 1.0f);
+            if (gem.IsRealGuitarChord()) {
+                DrawRealGuitarChord(gem);
+            } else {
+                unsigned int slots = gem.GetSlots();
+                for (int slot = 0; slot < mLanes; slot++) {
+                    int gemIndex = SlotToGemIndex(slot);
+                    if ((slots & (1 << slot)) && mGems[SlotToGemIndex(slot)]) {
+                        int lane = GetLane(slot);
+                        if (mTrackType == kTrackDrum) {
+                            if (TheGameMode->Property("force_use_cymbals", true)->Int() &&
+                                gem.IsCymbal()) {
+                                gemIndex = lane + 4;
+                            } else {
+                                gemIndex = lane;
+                            }
+                        }
+                        if (mInstLanes[lane]) {
+                            Vector3 pos;
+                            pos = mGems[gemIndex]->WorldXfm().v;
+                            pos.x = mInstLanes[lane]->WorldXfm().v.x;
+                            mGems[gemIndex]->SetWorldPos(pos);
+                        }
+                        mGems[gemIndex]->SetShowing(true);
+                        mGems[gemIndex]->Draw();
+                        mGems[gemIndex]->SetShowing(false);
+                    }
+                }
+            }
+            DrawTails(gem, startTick, endTick, startY, endY);
+        }
     }
 }
 
