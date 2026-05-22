@@ -2187,6 +2187,23 @@ bool SongParser::HandleRGRollStart(int tick, unsigned char pitch, unsigned char 
         return false;
 }
 
+bool SongParser::HandleRGTrillStop(int tick, unsigned char pitch) {
+    if (pitch != 127)
+        return false;
+    if (!CheckTrillMarker(pitch, false))
+        return false;
+    MILO_ASSERT(mTrillInProgress != -1, 0xDEA);
+    for (int i = 0; i < mNumDifficulties; i++) {
+        if (mTrillMask & (1 << i)) {
+            mSink->AddRGTrill(mTrack, i, mRGTrillArray[i], mTrillInProgress, tick);
+        }
+    }
+    mTrillInProgress = -1;
+    mRGTrillArray.clear();
+    mRGTrillArray.resize(mNumDifficulties);
+    return true;
+}
+
 int SongParser::RGGetDifficultyLevel(unsigned char pitch) {
     if (pitch < 24)
         return -1;
