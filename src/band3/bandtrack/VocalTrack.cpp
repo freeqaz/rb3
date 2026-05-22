@@ -1438,6 +1438,134 @@ void VocalTrack::BuildScrollingDeployZone(
     mNoteTube->BakePlates();
 }
 
+void VocalTrack::PrepareNoteTubes(
+    float windowDurationMs, int startNote, int &endNote, int line
+) {
+    static bool sDump;
+    int curNote = startNote;
+    VocalNoteList *notes = GetVocalNoteList(line);
+    float alpha = 1.0f;
+    if (!mPlayer->GetEnabledStateAt(1.0f)) {
+        int dimPart = mDir->unk6c4;
+        if (dimPart != -1 && dimPart != line) {
+            alpha = mDir->mHiddenPartAlpha;
+        }
+    }
+    if (curNote < endNote) {
+        while (curNote < endNote) {
+            VocalNote &firstNote = notes->mNotes[curNote];
+            if (mPlayer && mPlayer->GetEnabledStateAt(firstNote.mMs)) {
+                curNote++;
+            } else {
+                int phraseID = TheSongDB->GetCommonPhraseID(
+                    mTrackConfig.TrackNum(), firstNote.mTick
+                );
+                bool spotlight = phraseID != -1;
+                int combineNote = curNote + 1;
+                VocalNote *cur = &firstNote;
+                while (combineNote != notes->mNotes.size()) {
+                    VocalNote &next = notes->mNotes[combineNote];
+                    if (cur->mTick + cur->mDurationTicks - next.mTick == 0
+                        && cur->mEndPitch == next.mBeginPitch
+                        && (!mPlayer
+                            || !mPlayer->GetEnabledStateAt(firstNote.mMs))) {
+                        cur = &next;
+                        combineNote++;
+                    } else {
+                        break;
+                    }
+                }
+                float pitchRange = mDir->mLastMax - mDir->mLastMin;
+                float zPerPitch = mDir->mPitchWindowHeight / pitchRange;
+                ConfigNoteTube(
+                    firstNote.mUnpitchedNote == 0,
+                    combineNote - curNote + 1,
+                    line,
+                    false,
+                    alpha
+                );
+                HookupTubePlates(mNoteTube);
+                mNoteTube->unk_0x2C = spotlight;
+                if (firstNote.mUnpitchedNote) {
+                    mNoteTube->unk_0x30 = mDir->mPitchWindowHeight * 0.5f;
+                } else {
+                    mNoteTube->unk_0x34 = zPerPitch;
+                    mNoteTube->unk_0x30 = 5.0f * zPerPitch;
+                    float lo = mDir->unk6d8;
+                    int glow = (int)((pitchRange - lo)
+                                     / ((mDir->unk6dc - lo) * 0.25f));
+                    int level;
+                    if (glow > 3) {
+                        level = 3;
+                    } else {
+                        level = glow & ~(glow >> 31);
+                    }
+                    mNoteTube->SetGlowLevel(level);
+                }
+                if (sDump) {
+                    TheDebug << MakeString(
+                        "LINE %d NOTE %d TIME %.2f PITCHES ",
+                        line,
+                        curNote,
+                        firstNote.mMs / 1000.0f
+                    );
+                }
+                float runX = 0.0f;
+                float prevX = -FLT_MAX;
+                int pointIdx = 0;
+                if (curNote != combineNote) {
+                    while (curNote != combineNote) {
+                        VocalNote &note = notes->mNotes[curNote];
+                        bool unpitched = note.mUnpitchedNote;
+                        int beginPitch = note.mBeginPitch;
+                        float z = (mDir->mPitchTopZ + mDir->mPitchBottomZ) * 0.5f;
+                        if (!unpitched) {
+                            z = (float)(beginPitch - 60) * zPerPitch;
+                        }
+                        if (sDump) {
+                            if (unpitched) {
+                                TheDebug << MakeString("UNPITCHED ");
+                            }
+                            TheDebug << MakeString(
+                                "tube pitch to z: %d -> %1.2f\n", beginPitch, z
+                            );
+                        }
+                        float x = unk78 * (runX / windowDurationMs);
+                        if (note.mUnpitchedNote == 0 && pointIdx == 0) {
+                            x += 0.75f * zPerPitch;
+                        }
+                        float minX = 0.01f + prevX;
+                        if (minX >= x)
+                            x = minX;
+                        mNoteTube->SetPointPos(pointIdx, Vector3(x, 0, z));
+                        prevX = x;
+                        pointIdx++;
+                        runX += note.mDurationMs;
+                        curNote++;
+                    }
+                }
+                VocalNote &lastNote = notes->mNotes[curNote - 1];
+                float lastZ = (mDir->mPitchTopZ + mDir->mPitchBottomZ) * 0.5f;
+                if (!lastNote.mUnpitchedNote) {
+                    lastZ = zPerPitch * (float)(lastNote.mEndPitch - 60);
+                }
+                float lastX = unk78 * (runX / windowDurationMs);
+                if (!lastNote.mUnpitchedNote) {
+                    float minX = -(0.75f * zPerPitch - lastX);
+                    float prevMin = 0.01f + prevX;
+                    if (prevMin >= minX)
+                        minX = prevMin;
+                    lastX = minX;
+                }
+                mNoteTube->SetPointPos(pointIdx, Vector3(lastX, 0, lastZ));
+                mNoteTube->mXPos = unk78 * (firstNote.mMs / windowDurationMs);
+                mNoteTube->CreateMeshes();
+            }
+        }
+        endNote = curNote;
+    }
+}
+
 void VocalTrack::ProcessStaticLyrics(
     bool b1,
     Lyric *l2,

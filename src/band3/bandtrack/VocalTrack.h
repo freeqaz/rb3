@@ -141,6 +141,7 @@ public:
     void
     BuildStaticDeployZone(int, const std::pair<float, float> &, float, float &, std::deque<LyricShift> &);
     void BuildScrollingDeployZone(int, const std::pair<float, float> &);
+    void PrepareNoteTubes(float, int, int &, int);
     void
     ProcessStaticLyrics(bool, Lyric *, float &, float &, Lyric *&, Lyric *&, float &, bool, LyricPlate *);
 
