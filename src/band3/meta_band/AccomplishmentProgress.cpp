@@ -24,6 +24,8 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols4.h"
 
+DataNode RockCentralOpCompleteMsg::Arg2() const { return mData->Node(4); }
+
 GamerAwardStatus::GamerAwardStatus() : unk8(-1), unkc(0), unk10(0) {
     mSaveSizeMethod = &SaveSize;
 }
