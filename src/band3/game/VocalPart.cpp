@@ -621,6 +621,67 @@ float VocalPart::CalcPhraseScoreMax(const VocalPhrase *const &phrase) const {
     return result;
 }
 
+float VocalPart::GetBestHit(
+    float ms, int beginNote, int endNote, TalkyMatcher *i_pTalkyMatcher,
+    float &io_rPitch, float arg5, int &o_rOctaves, int &noteMatched,
+    float &o_rArg8, float &o_rArg9, bool &o_rTalkyHit
+) {
+    noteMatched = -1;
+    float bestScore = 0.0f;
+    float savedPitch = io_rPitch;
+    int foundTalky = 0;
+    o_rTalkyHit = false;
+    for (int i = beginNote; i < endNote; i++) {
+        const VocalNote &note = mVocalNoteList->mNotes[i];
+        if (note.mUnpitchedNote) {
+            MILO_ASSERT(i_pTalkyMatcher, 0x46D);
+            bool vb1 = i_pTalkyMatcher->mVoiceBeat.unk1;
+            bool vb0 = i_pTalkyMatcher->mVoiceBeat.unk0;
+            bool overEnergy =
+                i_pTalkyMatcher->mVoiceBeat.unk4 > mTalkyEnergyThreshold;
+            float score = 1.0f;
+            if (mPlayer->IsAutoplay() || (vb1 && !vb0 && overEnergy)) {
+                if (foundTalky) {
+                    MILO_ASSERT(noteMatched != -1, 0x486);
+                    const VocalNote &best = mVocalNoteList->mNotes[noteMatched];
+                    const VocalNote &cur = mVocalNoteList->mNotes[i];
+                    if (fabs((best.mMs + best.mDurationMs) - ms)
+                        < fabs(cur.mMs - ms)) {
+                        score = 0.0f;
+                    }
+                }
+                if (score >= bestScore) {
+                    io_rPitch = savedPitch;
+                    bestScore = score;
+                    foundTalky = 1;
+                    noteMatched = i;
+                    o_rArg8 = -1.0f;
+                    o_rOctaves = 0;
+                    o_rArg9 = ms;
+                    o_rTalkyHit = true;
+                }
+            }
+        } else if (0.0f != io_rPitch) {
+            float pitch = savedPitch;
+            int octaves = o_rOctaves;
+            float sloppyPitch;
+            float spArg5;
+            float score = ScoreNote(ms, i, pitch, octaves, sloppyPitch, spArg5);
+            if (score >= bestScore || (score > 0.0f && foundTalky)) {
+                bestScore = score;
+                io_rPitch = pitch;
+                foundTalky = 0;
+                noteMatched = i;
+                o_rArg8 = sloppyPitch;
+                o_rOctaves = octaves;
+                o_rArg9 = spArg5;
+                o_rTalkyHit = false;
+            }
+        }
+    }
+    return bestScore;
+}
+
 float VocalPart::ScoreNote(
     float ms, int noteIdx, float &pitch, int &octavesOut, float &sloppyPitchOut,
     float &arg5

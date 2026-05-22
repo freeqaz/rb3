@@ -55,6 +55,10 @@ public:
     void AddScore(const VocalScoreCache &);
     void CalculateScore(float, int, float, VocalScoreCache &) const;
     float ScoreNote(float, int, float &, int &, float &, float &) const;
+    float GetBestHit(
+        float, int, int, TalkyMatcher *, float &, float, int &, int &, float &,
+        float &, bool &
+    );
     float GetSloppyPitch(float, int, float, float &) const;
     bool CouldScoreAgainstPart(float, TalkyMatcher *, float, float, float &);
     void AddPhrasePoints(float);
