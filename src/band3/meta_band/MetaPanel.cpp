@@ -384,15 +384,18 @@ void MetaPanel::UpdatePostProc() {
     RndPostProc *found = 0;
     UIScreen *screen = TheUI.BottomScreen();
     if (screen) {
-        std::vector<PanelRef>::iterator it = screen->mPanelList.begin();
-        std::vector<PanelRef>::iterator end = screen->mPanelList.end();
-        for (; it != end; ++it) {
-            bool active = it->mActive && it->mPanel->TypeDef();
-            const DataNode *prop = 0;
+        for (std::vector<PanelRef>::iterator it = screen->mPanelList.begin();
+             it != screen->mPanelList.end();
+             ++it) {
+            bool hasProp = false;
+            const DataNode *prop;
+            bool active = it->mActive && it->mPanel->LoadedDir();
             if (active) {
-                prop = it->mPanel->Property(postprocess, false);
+                prop = it->mPanel->LoadedDir()->Property(postprocess, false);
+                if (prop)
+                    hasProp = true;
             }
-            if (prop) {
+            if (hasProp) {
                 RndPostProc *pp = dynamic_cast<RndPostProc *>(prop->GetObj());
                 if (pp)
                     found = pp;
