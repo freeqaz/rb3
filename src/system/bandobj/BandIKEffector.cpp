@@ -338,6 +338,63 @@ void BandIKEffector::ComputeElbowPullAndQuat(
     outQuat.v.z *= scale;
 }
 
+void BandIKEffector::ComputeHandPullAndQuat(
+    QuatXfm &outQuat,
+    Transform &outElbowXfm,
+    const Transform &shoulderXfm,
+    const Vector3 &handTarget,
+    float inv2ab,
+    float aaPlusbb,
+    float aPlusb
+) {
+    float dy = handTarget.y - shoulderXfm.v.y;
+    float maxReach = aPlusb * 0.99f;
+    float dx = handTarget.x - shoulderXfm.v.x;
+    float dz = handTarget.z - shoulderXfm.v.z;
+    float maxReachSq = maxReach * maxReach;
+    outQuat.v.x = dx;
+    outQuat.v.y = dy;
+    float distSq = dz * dz + (dx * dx + dy * dy);
+    outQuat.v.z = dz;
+
+    if (distSq > maxReachSq && GetType() == 3) {
+        float factor = 1.0f - maxReach / (float)sqrt(distSq);
+        outQuat.v.x *= factor;
+        outQuat.v.y *= factor;
+        outQuat.v.z *= factor;
+        distSq = maxReachSq;
+    } else {
+        outQuat.v.z = 0.0f;
+        outQuat.v.y = 0.0f;
+        outQuat.v.x = 0.0f;
+    }
+
+    float cosAngle = inv2ab * (distSq - aaPlusbb);
+    if (cosAngle < -1.0f)
+        cosAngle = -1.0f;
+    if (cosAngle > 1.0f)
+        cosAngle = 1.0f;
+    float sinAngle = -(float)sqrt(1.0f - cosAngle * cosAngle);
+
+    RndTransformable *parent = mEffector->TransParent();
+    outElbowXfm.v = parent->mLocalXfm.v;
+    outElbowXfm.m.x.x = cosAngle;
+    outElbowXfm.m.x.y = sinAngle;
+    outElbowXfm.m.x.z = 0.0f;
+    outElbowXfm.m.y.x = -sinAngle;
+    outElbowXfm.m.y.y = cosAngle;
+    outElbowXfm.m.y.z = 0.0f;
+    outElbowXfm.m.z.x = 0.0f;
+    outElbowXfm.m.z.y = 0.0f;
+    outElbowXfm.m.z.z = 1.0f;
+
+    Vector3 localTarget;
+    MultiplyTranspose(handTarget, shoulderXfm, localTarget);
+    Vector3 localDir;
+    Multiply(mEffector->mLocalXfm.v, outElbowXfm, localDir);
+    MakeRotQuat(localDir, localTarget, outQuat.q);
+}
+
 void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
     Transform neutralElbow;
     Transform worldShoulder;
