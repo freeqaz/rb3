@@ -260,6 +260,36 @@ void BandHeadShaper::AddChildBones(RndTransformable *t) {
     }
 }
 
+void BandHeadShaper::AddFrame(const char *cc, int frame, float weight) {
+    BandFaceDeform *df =
+        mAnim->Dir()->Find<BandFaceDeform>(MakeString("%s.fdm", cc), false);
+    if (df && !mBonesOnly) {
+        int fi = frame + 1;
+        if ((unsigned int)fi < (unsigned short)df->mFrames.size()) {
+            BandFaceDeform::DeltaArray &da = df->mFrames[fi];
+            for (Delta *d = (Delta *)da.begin(); d < da.end();
+                 d = (Delta *)d->next()) {
+                signed char *bytes = (signed char *)d + 4;
+                for (int j = 0; j < d->num; j++) {
+                    int vi = (*mMapping)[j + d->unk0];
+                    float dx = 0.015748031f * (float)bytes[0];
+                    float dy = 0.015748031f * (float)bytes[1];
+                    float dz = 0.015748031f * (float)bytes[2];
+                    RndMesh::Vert &v = mDst->Verts()[vi];
+                    v.pos.x += dx * weight;
+                    v.pos.y += dy * weight;
+                    v.pos.z += dz * weight;
+                    bytes += 3;
+                }
+            }
+        }
+    }
+    CharClip *clip = mAnim->Dir()->Find<CharClip>(cc, false);
+    if (clip) {
+        clip->ScaleAdd(*mBones, weight, clip->FrameToBeat(frame + 1), 0.0f);
+    }
+}
+
 void BandHeadShaper::AddFrameHelper(
     const char *cc, int i1, int i2, float f, float &fref
 ) {
