@@ -1370,6 +1370,42 @@ bool VocalTrack::IdenticalLyric(const VocalNote &n1, const VocalNote &n2) const 
     }
 }
 
+// VocalNote::PlayableBy(int) const is declared in beatmatch/VocalNote.h in the
+// real source; forward-declared here to avoid editing an out-of-scope header.
+extern "C" bool PlayableBy__9VocalNoteCFi(const VocalNote *, int);
+
+Lyric *VocalTrack::CreateLyric(
+    const VocalNote *&note,
+    const std::vector<VocalNote> &notes,
+    bool b3,
+    bool checkPlayable,
+    bool b5
+) {
+    const VocalNote *firstNote = note;
+    if (checkPlayable
+        && !PlayableBy__9VocalNoteCFi(firstNote, mPlayer->GetSlot())) {
+        return NULL;
+    }
+    if (mPlayer && mPlayer->GetEnabledStateAt(firstNote->mMs)) {
+        return NULL;
+    }
+    String text(firstNote->mText);
+    bool wordEnd = false;
+    UpdateSyllableText(text, !IsScrolling(), wordEnd);
+    Lyric *lyric = new Lyric(firstNote, b3, text, wordEnd);
+    const VocalNote *cur = note + 1;
+    while (cur != &notes[0] + notes.size()) {
+        if (!cur->mBends)
+            break;
+        lyric->mVocalNotes.push_back(cur);
+        float endMs = cur->mMs + cur->mDurationMs;
+        lyric->mEndMs = Max(lyric->mEndMs, endMs);
+        cur++;
+        note = note + 1;
+    }
+    return lyric;
+}
+
 void VocalTrack::BuildStaticDeployZone(
     int i1,
     const std::pair<float, float> &fpair,

@@ -144,6 +144,7 @@ public:
     void PrepareNoteTubes(float, int, int &, int);
     void
     ProcessStaticLyrics(bool, Lyric *, float &, float &, Lyric *&, Lyric *&, float &, bool, LyricPlate *);
+    Lyric *CreateLyric(const VocalNote *&, const std::vector<VocalNote> &, bool, bool, bool);
 
     VocalTrackDir *GetVocalTrackDir() const { return mDir; }
 
