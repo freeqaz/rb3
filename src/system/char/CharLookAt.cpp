@@ -85,10 +85,11 @@ void CharLookAt::Poll() {
                 vf0.z = 0;
                 float times = (vf0 * vfc);
                 float clamped = Clamp(-1.0f, 1.0f, times / (Length(vf0) * Length(vfc)));
+                float acosDeg = (float)std::acos(clamped) * RAD2DEG;
                 float clamped2 = Clamp(
                     0.0f,
                     1.0f,
-                    mMaxWeightYaw - (std::acos(clamped) / (mMaxWeightYaw - mMinWeightYaw))
+                    (mMaxWeightYaw - acosDeg) / (mMaxWeightYaw - mMinWeightYaw)
                 );
                 float loc13c = (clamped2 - unk78) / deltasecs;
                 if (MinEq(loc13c, mWeightYawSpeed)) {
@@ -106,7 +107,7 @@ void CharLookAt::Poll() {
                     Subtract(srcTrans->WorldXfm().m.y, vec80, v108);
                     float v108sq = LengthSquared(v108);
                     float srcrad = mSourceRadius * DEG2RAD;
-                    if (srcrad * srcrad < v108sq) {
+                    if (v108sq > srcrad * srcrad) {
                         v108 *= srcrad / std::sqrt(v108sq);
                     }
                 }
@@ -173,12 +174,12 @@ void CharLookAt::Poll() {
                 }
                 static DataNode &disable = DataVariable("cheat.disable_eye_jitter");
                 if (mEnableJitter && !sDisableJitter && !disable && deltasecs > 0.0f) {
+                    float yawRand = RandomFloat(-mYawJitterLimit, mYawJitterLimit);
+                    float pitchRand = RandomFloat(-mPitchJitterLimit, mPitchJitterLimit);
                     ve4.Set(
-                        ve4[0]
-                            + RandomFloat(-mPitchJitterLimit, mPitchJitterLimit)
-                                * DEG2RAD,
+                        ve4[0] + pitchRand * DEG2RAD,
                         ve4[1],
-                        ve4[2] + RandomFloat(-mYawJitterLimit, mYawJitterLimit) * DEG2RAD
+                        ve4[2] + yawRand * DEG2RAD
                     );
                 }
                 if (mSourceRadius > 0.0f) {
