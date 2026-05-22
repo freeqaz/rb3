@@ -177,7 +177,7 @@ PatchSticker *PatchLayer::GetSticker(bool b) const {
         return sStickerOwner->GetSticker(mStickerCategory, mStickerIdx, b);
 }
 
-bool PatchLayer::HasSticker() const { return !mStickerCategory.Null(); }
+inline bool PatchLayer::HasSticker() const { return !mStickerCategory.Null(); }
 
 void PatchLayer::SelectFX() { unk28 = TheTaskMgr.UISeconds() + 0.5f; }
 
@@ -590,6 +590,31 @@ void PatchDir::SaveRemote(IntPacker &packer) {
         packer.AddBool(!mLayers[i].mStickerCategory.Null());
         if (!mLayers[i].mStickerCategory.Null()) {
             mLayers[i].SavePacked(packer);
+        }
+    }
+}
+
+void PatchDir::LoadRemote(IntPacker &packer) {
+    unsigned char numLayers = packer.ExtractU(8);
+    mLayers.resize(numLayers);
+    for (unsigned int i = 0; i < numLayers; i++) {
+        if (packer.ExtractBool()) {
+            mLayers[i].LoadPacked(packer);
+        }
+    }
+    int destIndex = 0;
+    while (destIndex < numLayers && !mLayers[destIndex].mStickerCategory.Null()) {
+        destIndex++;
+    }
+    for (int srcIndex = destIndex + 1; srcIndex < numLayers; srcIndex++) {
+        if (!mLayers[srcIndex].mStickerCategory.Null()) {
+            MILO_ASSERT(destIndex < numLayers, 0x3CD);
+            MILO_ASSERT(!mLayers[destIndex].HasSticker(), 0x3CE);
+            mLayers[destIndex] = mLayers[srcIndex];
+            mLayers[srcIndex].Reset();
+            mLayers[srcIndex].mStickerCategory = gNullStr;
+            mLayers[srcIndex].mStickerIdx = 0;
+            destIndex++;
         }
     }
 }
