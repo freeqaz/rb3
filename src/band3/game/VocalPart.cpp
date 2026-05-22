@@ -258,15 +258,17 @@ float VocalPart::GetSloppyPitch(float ms, int noteIdx, float pitch, float &outPi
         float diffHi = fabs(modPitch - modHi);
         float diffLo = fabs(modPitch - modLo);
         if (diffHi < diffLo) {
-            float spHi = ms + mSlop;
             float spEnd = note.mMs + note.mDurationMs;
-            outPitch = Min(spHi, spEnd);
+            float spHi = ms + mSlop;
+            const float *p = (spHi <= spEnd) ? &spHi : &spEnd;
+            outPitch = *p;
             return pitchHi;
         }
         if (diffHi > diffLo) {
             float spMs = note.mMs;
             float spLo = ms - mSlop;
-            outPitch = Max(spMs, spLo);
+            const float *p = (spLo <= spMs) ? &spMs : &spLo;
+            outPitch = *p;
             return pitchLo;
         }
         float noteMs = note.mMs;
