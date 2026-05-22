@@ -1164,6 +1164,34 @@ void BandCharacter::PlayGroup(
     }
 }
 
+CharClipDriver *
+BandCharacter::SetState(const char *cc, int playFlags, int mask, bool b4, bool b5) {
+    if (!streq(mGroupName, cc)) {
+        strcpy(mGroupName, cc);
+        b4 = true;
+    }
+    mPlayFlags = playFlags;
+    CharDriver *oldDriver = unk454;
+    if (AddDriverClipDir() && streq(mGroupName, "realtime_idle")
+        && (mPlayFlags & 0x38000)) {
+        unk454 = mAddDriver;
+    } else {
+        unk454 = mDriver;
+    }
+    if (!b4 && unk454) {
+        CharClip *clip = unk454->FirstPlayingClip();
+        b4 = true;
+        bool rej = unk454 != oldDriver || !clip;
+        if (!rej) {
+            if ((mPlayFlags & clip->Flags()) == mPlayFlags)
+                b4 = false;
+        }
+    }
+    if (b4)
+        return PlayMainClip(mask, b5);
+    return 0;
+}
+
 CharLipSyncDriver *BandCharacter::GetLipSyncDriver() {
     return Find<CharLipSyncDriver>("song.lipdrv", false);
 }
