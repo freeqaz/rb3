@@ -415,3 +415,23 @@ bool TrainerChallenge::Success() { return Handle(success_msg, true).Int(); }
 Symbol TrainerChallenge::GetRestrictionToken() {
     return Handle(restriction_token_msg, true).Sym();
 }
+
+int GetLoopTick(int tick, int &tickOffset) {
+    tickOffset = 0;
+    if (!TheGame->InTrainer() || !TheTrainerPanel) {
+        return tick;
+    }
+    int start = TheTrainerPanel->GetCurrentStartTick();
+    int end = TheTrainerPanel->GetCurrentEndTick();
+    if (tick < end || start == end) {
+        return tick;
+    }
+    int loopTick = start + (tick - start) % (end - start);
+    tickOffset = tick - loopTick;
+    return loopTick;
+}
+
+int GetLoopTick(int tick) {
+    int tickOffset;
+    return GetLoopTick(tick, tickOffset);
+}
