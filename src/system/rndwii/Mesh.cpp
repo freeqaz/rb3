@@ -101,7 +101,7 @@ void DisplayList::End() {
     MILO_ASSERT(!mSize && !mData, 175);
     static int _x = MemFindHeap("main");
     MemPushHeap(_x);
-    u32 tmp_a = ((u32)sTemp - (u32)sCurr);
+    u32 tmp_a = ((u32)sCurr - (u32)sTemp);
     u32 tmp_b = (tmp_a + 31) & 0xFFFFFFE0;
     mSize = tmp_b;
     mData = _MemAlloc(tmp_b, 0x20);
