@@ -250,14 +250,17 @@ void RndParticleSys::SetPersistentPool(int i1, Type ty) {
             mPersistentParticles = new RndFancyParticle[i1];
             RndFancyParticle *fp = (RndFancyParticle *)mPersistentParticles;
             for (int i = 0; i != i1; i++) {
-                (fp++)->next = fp;
+                p = fp;
+                fp++;
+                p->next = fp;
             }
-            p = fp;
         } else {
             mPersistentParticles = new RndParticle[i1];
-            p = (RndParticle *)mPersistentParticles;
+            RndParticle *pp = (RndParticle *)mPersistentParticles;
             for (int i = 0; i != i1; i++) {
-                (p++)->next = p;
+                p = pp;
+                pp++;
+                p->next = pp;
             }
         }
         p->next = nullptr;
