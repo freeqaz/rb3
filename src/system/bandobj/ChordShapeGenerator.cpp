@@ -693,12 +693,12 @@ void ChordShapeGenerator::ConnectVertProfiles(
     unsigned int numVerts = crossSec.mVerts.size();
     MILO_ASSERT(leftMap.size() == numVerts && rightMap.size() == numVerts, 0x393);
     unsigned int numNewFaces = crossSec.mEdges.size() * 2;
-    std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
-    if (faceIt + numNewFaces > meshFaces.size()) {
-        unsigned int newsize = meshFaces.size() * 2;
+    if (faceIt + numNewFaces > mesh->Faces().size()) {
+        unsigned int newsize = mesh->Faces().size() * 2;
         MILO_LOG("RG: too few faces for chord shape - increasing to %d", newsize);
-        meshFaces.resize(newsize, RndMesh::Face());
+        mesh->Faces().resize(newsize, RndMesh::Face());
     }
+    std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
     std::vector<Edge>::const_iterator it = crossSec.mEdges.begin();
     std::vector<Edge>::const_iterator end = crossSec.mEdges.end();
     for (; it != end; ++it) {
