@@ -879,8 +879,7 @@ void RndScaleObject(Hmx::Object *o, float f1, float f2) {
     RndMorph *morph = dynamic_cast<RndMorph *>(o);
     if (morph) {
         for (int i = 0; i < morph->NumPoses(); i++) {
-            morph->PoseAt(i);
-            // scaleframe
+            ScaleFrame(morph->PoseAt(i).weights, f2);
         }
         return;
     }
