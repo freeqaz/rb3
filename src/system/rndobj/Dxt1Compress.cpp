@@ -100,29 +100,18 @@ public:
 // + (i / tileW) * tileBytes plus equivalent for j.
 // ---------------------------------------------------------------------------
 int Dxt1Compress::PixelOffset(int i, int j, int width, int height, int bpp_in_other_dim, int bpp) {
+    (void)height;
     int tileH = 4;
-    if (bpp == 4) {
-        tileH = 8;
-    }
+    if (bpp == 4) tileH = 8;
     int tileW = 4;
-    if (bpp < 16) {
-        tileW = 8;
-    }
-    // shift = 2 if bpp==32 else 3; produced via cntlzw(bpp-32) trick.
+    if (bpp < 16) tileW = 8;
     int shift = ((bpp - 32) == 0 ? 1 : 0) + 1;
-    int tilesPerRow = width / tileH;
-    int tilesPerCol = height / tileW;
-    (void)tilesPerCol;
-    int jTile = j / tileW;
-    int iTile = i / tileH;
-    int xInTile = i - iTile * tileH;
-    int yInTile = j - jTile * tileW;
-    int tileBytes = tileH * tileW * shift;
-    int tileIdx = iTile + jTile * tilesPerRow;
-    int linearByte = tileIdx * tileBytes + yInTile * tileW + xInTile;
-    int row = linearByte / (j * shift);
-    int col = linearByte - row * (j * shift);
-    return row * bpp_in_other_dim + ((col * bpp) >> shift);
+    int rowMod = ((i / tileW) + ((width / tileW) * (j / tileH))) * (tileH * tileW * shift) + (i % tileW);
+    int colInTile = tileW * (j % tileH);
+    int divisor = width * shift;
+    int row = (unsigned)(colInTile + rowMod) / (unsigned)divisor;
+    int rem = (colInTile + rowMod) - row * divisor;
+    return row * bpp_in_other_dim + ((rem * bpp) >> (shift + 2));
 }
 
 // ---------------------------------------------------------------------------
@@ -553,15 +542,15 @@ void Dxt1Compress::encodedxt5alpha(
     int numxpixels,
     int numypixels
 ) {
-    unsigned char alphabase[2], alphause[2];
     short alphatest[2];
+    short alphadist;
+    unsigned char alphabase[2], alphause[2];
     unsigned int alphablockerror1, alphablockerror2, alphablockerror3;
-    int i, j;
+    unsigned char i, j;
     unsigned char aindex, acutValues[7];
     unsigned char alphaenc1[16], alphaenc2[16], alphaenc3[16];
     int alphaabsmin = 0;
     int alphaabsmax = 0;
-    short alphadist;
 
     alphatest[0] = 0;
     alphatest[1] = 0;
