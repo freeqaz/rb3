@@ -100,17 +100,27 @@ public:
 // + (i / tileW) * tileBytes plus equivalent for j.
 // ---------------------------------------------------------------------------
 int Dxt1Compress::PixelOffset(int i, int j, int width, int height, int bpp_in_other_dim, int bpp) {
+    int tileH, tileW, shift;
+    int rowTiles, yTile, iTile, tileSize, tileIdx, tileBytes;
+    int xInTile, yInTile, linear, divisor, row, rem;
     (void)height;
-    int tileH = 4;
+    tileH = 4;
     if (bpp == 4) tileH = 8;
-    int tileW = 4;
+    tileW = 4;
     if (bpp < 16) tileW = 8;
-    int shift = ((bpp - 32) == 0 ? 1 : 0) + 1;
-    int rowMod = ((i / tileW) + ((width / tileW) * (j / tileH))) * (tileH * tileW * shift) + (i % tileW);
-    int colInTile = tileW * (j % tileH);
-    int divisor = width * shift;
-    int row = (unsigned)(colInTile + rowMod) / (unsigned)divisor;
-    int rem = (colInTile + rowMod) - row * divisor;
+    shift = ((bpp - 32) == 0 ? 1 : 0) + 1;
+    rowTiles = width / tileW;
+    yTile = j / tileH;
+    iTile = i / tileW;
+    tileSize = tileH * tileW;
+    tileIdx = iTile + rowTiles * yTile;
+    tileBytes = tileSize * shift;
+    xInTile = i - iTile * tileW;
+    yInTile = j - yTile * tileH;
+    linear = tileW * yInTile + tileIdx * tileBytes + xInTile;
+    divisor = width * shift;
+    row = (unsigned)linear / (unsigned)divisor;
+    rem = linear - row * divisor;
     return row * bpp_in_other_dim + ((rem * bpp) >> (shift + 2));
 }
 
