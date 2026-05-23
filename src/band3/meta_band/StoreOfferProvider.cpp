@@ -149,10 +149,48 @@ void StoreOfferProvider::ClearList() {
 }
 
 const StoreOffer *StoreOfferProvider::FindPack(const StoreOffer *o) const {
+    MILO_ASSERT(o->OfferType() == "song", 0x153);
+    for (std::vector<StoreOffer *>::iterator it = mOffers->begin();
+         it != mOffers->end();
+         ++it) {
+        StoreOffer *cand = *it;
+        if (cand->OfferType() == pack && cand->HasSong(o)) {
+            return cand;
+        }
+    }
+    if (mPacks) {
+        for (std::vector<StoreOffer *>::iterator it = mPacks->begin();
+             it != mPacks->end();
+             ++it) {
+            StoreOffer *cand = *it;
+            if (cand->OfferType() == pack && cand->HasSong(o)) {
+                return cand;
+            }
+        }
+    }
     return NULL;
 }
 
 const StoreOffer *StoreOfferProvider::FindAlbum(const StoreOffer *o) const {
+    MILO_ASSERT(o->OfferType() == "song", 0x16e);
+    for (std::vector<StoreOffer *>::iterator it = mOffers->begin();
+         it != mOffers->end();
+         ++it) {
+        StoreOffer *cand = *it;
+        if (cand->OfferType() == album && cand->HasSong(o)) {
+            return cand;
+        }
+    }
+    if (mPacks) {
+        for (std::vector<StoreOffer *>::iterator it = mPacks->begin();
+             it != mPacks->end();
+             ++it) {
+            StoreOffer *cand = *it;
+            if (cand->OfferType() == album && cand->HasSong(o)) {
+                return cand;
+            }
+        }
+    }
     return NULL;
 }
 
