@@ -1438,7 +1438,7 @@ bool ShouldStrip(RndTransformable *trans) {
 
 void ConvertBonesToTranses(class ObjectDir *dir, bool b) {
     std::list<RndMesh *> meshes;
-    for (ObjDirItr<RndMesh> it(dir, true); it != 0; ++it) {
+    for (ObjDirItr<RndMesh> it(dir, false); it != 0; ++it) {
         RndTransformable *itTrans = it;
         if (ShouldStrip(itTrans)) {
             meshes.push_back(it);
