@@ -4,6 +4,7 @@
 #include "game/BandUser.h"
 #include "game/Defines.h"
 #include "game/Scoring.h"
+#include "meta/Sorting.h"
 #include "meta_band/AppLabel.h"
 #include "meta_band/BandProfile.h"
 #include "meta_band/BandSongMgr.h"
@@ -76,6 +77,7 @@ void HeaderViewSetting::SelectOption(int) {
 
 bool SortViewSetting::IsActive(int idx) const {
     if (idx == 4) {
+        bool ok = false;
         bool signedIn = false;
         if (TheProfileMgr.HasPrimaryProfile()) {
             BandProfile *prof = TheProfileMgr.GetPrimaryProfile();
@@ -84,7 +86,6 @@ bool SortViewSetting::IsActive(int idx) const {
                 signedIn = true;
             }
         }
-        bool ok = false;
         if (signedIn && TheRockCentral.IsOnline()) {
             ok = true;
         }
@@ -143,7 +144,7 @@ void ScoreTypeViewSetting::Refresh() {
 }
 
 bool ScoreTypeViewSetting::IsValid() const {
-    return mScoreType != kNumScoreTypes;
+    return mScoreType != kScoreBand;
 }
 
 void ScoreTypeViewSetting::SelectOption(int idx) {
@@ -202,7 +203,7 @@ void FilterViewSetting::SelectOption(int idx) {
 }
 
 bool FilterViewSetting::CompareFilters(const Filter &a, const Filter &b) {
-    return a.mCount > b.mCount;
+    return AlphaKeyStrCmp(a.mSym.Str(), b.mSym.Str(), true) < 0;
 }
 
 Symbol FilterViewSetting::FilterTypeToSym(FilterType ft) {
@@ -217,7 +218,7 @@ Symbol FilterViewSetting::FilterTypeToSym(FilterType ft) {
     case 7: return filter_setting_pro_guitar;
     case 8: return filter_setting_keys;
     default:
-        MILO_FAIL(MakeString("no symbol for FilterType %i", ft));
+        MILO_FAIL("no symbol for FilterType %i", ft);
         return gNullStr;
     }
 }
@@ -258,7 +259,23 @@ int ViewSettingsProvider::SelectSetting(int idx) {
 }
 
 bool ViewSettingsProvider::IsActive(int idx) const {
-    return mSettings[idx]->IsValid();
+    return !mSettings[idx]->IsHeader();
+}
+
+void ViewSettingsProvider::Text(int, int row, UIListLabel *slot, UILabel *label)
+    const {
+    ViewSetting *setting = mSettings[row];
+    if (slot->Matches("header") && setting->IsHeader()) {
+        label->SetTextToken(setting->GetName());
+    } else if (slot->Matches("name") && !setting->IsHeader()) {
+        label->SetTextToken(setting->GetName());
+    } else if (slot->Matches("status") && !setting->IsHeader()) {
+        AppLabel *al = dynamic_cast<AppLabel *>(label);
+        MILO_ASSERT(al, 0x1e2);
+        al->SetViewSettingStatus(setting);
+    } else {
+        label->SetTextToken(gNullStr);
+    }
 }
 
 RndMat *ViewSettingsProvider::Mat(int, int row, UIListMesh *) const {
