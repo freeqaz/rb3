@@ -2,6 +2,10 @@
 #include "os/Debug.h"
 #include <cstring>
 
+extern "C" void *WiiMalloc(int);
+extern "C" void WiiFree(void *);
+int GetFreeSystemMemory();
+
 struct MemHeapStack {
     int mStack[16]; // 0x0
     int mSize;      // 0x40
@@ -533,4 +537,74 @@ void *MemResizeElem(void *&mem, int &totalSize, void *cutPoint, int cutLength, i
         _MemFree(old);
     }
     return (char *)mem + prefixSize;
+}
+
+// Global new/delete operators - direct branches to _MemAlloc/_MemFree.
+void *operator new(size_t size) throw(std::bad_alloc) { return _MemAlloc(size, 0); }
+void *operator new[](size_t size) throw(std::bad_alloc) { return _MemAlloc(size, 0); }
+void operator delete(void *v) throw() { _MemFree(v); }
+void operator delete[](void *v) throw() { _MemFree(v); }
+
+void PublicMemFree(void *v) { _MemFree(v); }
+
+// Pool/heap dispatcher allocators. Threshold: 0x80 for the regular variant,
+// 0x100 for the STL variant.
+void *_MemOrPoolAlloc(int size, PoolType type) {
+    if (size == 0) return nullptr;
+    if (size > 0x80) return _MemAlloc(size, 0);
+    return _PoolAlloc(size, size, type);
+}
+
+void _MemOrPoolFree(int size, PoolType type, void *mem) {
+    if (mem == nullptr) return;
+    if (size > 0x80) {
+        _MemFree(mem);
+    } else {
+        _PoolFree(size, type, mem);
+    }
+}
+
+void *_MemOrPoolAllocSTL(int size, PoolType type) {
+    if (size == 0) return nullptr;
+    if (size > 0x100) return _MemAlloc(size, 0);
+    return _PoolAlloc(size, size, type);
+}
+
+void _MemOrPoolFreeSTL(int size, PoolType type, void *mem) {
+    if (mem == nullptr) return;
+    if (size > 0x100) {
+        _MemFree(mem);
+    } else {
+        _PoolFree(size, type, mem);
+    }
+}
+
+// MemHandle - opaque handle for relocatable allocations. mAlloc points to a
+// small header (MemHandleAlloc) followed by user data at +0x10.
+MemHandle::MemHandle(void *alloc) {
+    mAlloc = (MemHandleAlloc *)alloc;
+    mAlloc->mBack = this;
+    mAlloc->mLockCount = 0;
+}
+
+void *MemHandle::Lock() {
+    ++mAlloc->mLockCount;
+    return (char *)mAlloc + 0x10;
+}
+
+int GetFreeSystemMemory() {
+    int low = 0;
+    int high = 0x40000000;
+    int mid;
+    do {
+        mid = (high + low) / 2;
+        void *ptr = WiiMalloc(mid);
+        if (ptr != nullptr) {
+            low = mid;
+            WiiFree(ptr);
+        } else {
+            high = mid;
+        }
+    } while (low + 1 < high);
+    return low;
 }

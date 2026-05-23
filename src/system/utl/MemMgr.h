@@ -18,11 +18,18 @@ public:
     static bool enabled;
 };
 
+struct MemHandleAlloc {
+    class MemHandle *mBack; // 0x0
+    int mLockCount;         // 0x4
+};
+
 class MemHandle {
 public:
     MemHandle(void *);
     void *Lock();
     void Unlock();
+
+    MemHandleAlloc *mAlloc;
 };
 
 MemHandle *_MemAllocH(int);
