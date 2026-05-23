@@ -895,22 +895,20 @@ void RndScaleObject(Hmx::Object *o, float f1, float f2) {
     }
     RndParticleSys *partsys = dynamic_cast<RndParticleSys *>(o);
     if (partsys) {
-        partsys->SetBubbleSize(partsys->mBubbleSize.x * f1, partsys->mBubbleSize.y * f1);
+        partsys->SetBubbleSize(f1 * partsys->mBubbleSize.x, f1 * partsys->mBubbleSize.y);
         partsys->SetBubblePeriod(
-            partsys->mBubblePeriod.x * f1, partsys->mBubblePeriod.y * f1
+            f1 * partsys->mBubblePeriod.x, f1 * partsys->mBubblePeriod.y
         );
-        partsys->SetLife(partsys->mLife.x * f1, partsys->mLife.y * f1);
+        partsys->SetLife(f1 * partsys->mLife.x, f1 * partsys->mLife.y);
         partsys->SetEmitRate(partsys->mEmitRate.x / f1, partsys->mEmitRate.y / f1);
         Vector3 vb0 = partsys->mForceDir;
         vb0 *= (f1 / f2) / f2;
         partsys->SetForceDir(vb0);
-        Vector3 box1, box2;
-        Scale(partsys->mBoxExtent1, f1, box1);
-        Scale(partsys->mBoxExtent2, f1, box2);
-        partsys->SetBoxExtent(box1, box2);
+        Scale(partsys->mBoxExtent1, f1, partsys->mBoxExtent1);
+        Scale(partsys->mBoxExtent2, f1, partsys->mBoxExtent2);
         partsys->SetSpeed((partsys->mSpeed.x * f1) / f2, (partsys->mSpeed.y * f1) / f2);
-        partsys->SetStartSize(partsys->mStartSize.x * f1, partsys->mStartSize.y * f1);
-        partsys->SetDeltaSize(partsys->mDeltaSize.x * f1, partsys->mDeltaSize.y * f1);
+        partsys->SetStartSize(f1 * partsys->mStartSize.x, f1 * partsys->mStartSize.y);
+        partsys->SetDeltaSize(f1 * partsys->mDeltaSize.x, f1 * partsys->mDeltaSize.y);
         return;
     }
     RndParticleSysAnim *partsysanim = dynamic_cast<RndParticleSysAnim *>(o);
