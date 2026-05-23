@@ -63,7 +63,9 @@ public:
     int *mStart;        // 0x4
     const char *mName;  // 0x8
     int mSizeWords;     // 0xC
-    char mPad10[8];     // 0x10
+    int mHeapNum;       // 0x10
+    bool mUseHeapAlign; // 0x14
+    char mPad15[3];     // 0x15
     int mDebugLevel;    // 0x18
     int mStrategy;      // 0x1C
     bool mAllowTemp;    // 0x20
@@ -662,6 +664,13 @@ void *_MemAllocOrRSOBuf(int size, int align) {
 
 extern "C" void *WiiAllocHeapAlign(int *, int, int);
 
+void *_MemAllocTemp(int size, int align) {
+    CritSecTracker tracker(gMemLock);
+    MemDoTempAllocations temp(true, false);
+    return _MemAlloc(size, align);
+}
+
+
 void AddHeap(const char *name, int heapNum, int sizeBytes, bool useHeapAlign, int region,
              Heap::Strategy strategy, int debugLevel, bool allowTemp) {
     int actualSize = sizeBytes;
@@ -686,6 +695,38 @@ void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
     MILO_ASSERT_FMT(mem, "Unable to split heap \"%s\"", name);
     gHeaps[newHeapNum].Init(name, newHeapNum, mem, sizeWords, useHeapAlign, strategy,
                             debugLevel, allowTemp);
+}
+
+void Heap::Init(const char *name, int heapNum, int *start, int sizeWords,
+                bool useHeapAlign, Strategy strategy, int debugLevel, bool allowTemp) {
+    MILO_ASSERT_FMT(start, "size %d for heap %s", sizeWords * 4, name);
+    int *aligned = (int *)(((unsigned int)((char *)start - 4)) & ~0xF);
+    int *newStart = aligned + 4; // +0x10 bytes
+    int padWords = newStart - start;
+    int newSizeWords = sizeWords - padWords;
+    mName = name;
+    mHeapNum = heapNum;
+    mUseHeapAlign = useHeapAlign;
+    mStrategy = strategy;
+    mDebugLevel = debugLevel;
+    mAllowTemp = allowTemp;
+    mSizeWords = newSizeWords;
+    mStart = newStart;
+    unsigned int ts = gTimeStamp;
+    gTimeStamp = ts + 1;
+    InsertFreeBlock((FreeBlock *)newStart, newSizeWords, nullptr, nullptr, ts);
+    mNumFreeBytes = newSizeWords << 2;
+    mBiggestFree = mNumFreeBytes;
+    mLargestFree = mNumFreeBytes;
+    mMinLargest = mNumFreeBytes;
+    if (mDebugLevel >= 1) {
+        FreeBlock *block = mFreeBlockChain;
+        int *fillStart = (int *)block + 3;
+        int *fillEnd = (int *)block + block->mSizeWords;
+        for (int *p = fillStart; p < fillEnd; p++) {
+            *p = 0xDEADDEAD;
+        }
+    }
 }
 
 int GetFreeSystemMemory() {
