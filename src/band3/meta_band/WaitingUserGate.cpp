@@ -1,7 +1,242 @@
-// WaitingUserGate: gating/sync for waiting users (lobby flow).
-//
-// Stub source file — implementations live in the dtk-extracted object until
-// they are decompiled here. The link still pulls symbols from
-// build/SZBE69_B8/obj/band3/meta_band/WaitingUserGate.o because this unit's
-// objects.json status is NonMatching (obj.completed = False), so this .cpp
-// only feeds objdiff/report.json comparison, not the final DOL.
+#include "WaitingUserGate.h"
+#include "BandUI.h"
+#include "LockStepMgr.h"
+#include "SessionMgr.h"
+#include "UIEvent.h"
+#include "UIEventMgr.h"
+#include "game/BandUser.h"
+#include "game/BandUserMgr.h"
+#include "game/GameMode.h"
+#include "meta_band/LockMessages.h"
+#include "net/NetMessage.h"
+#include "net/NetSession.h"
+#include "obj/Data.h"
+#include "obj/ObjMacros.h"
+#include "ui/UIScreen.h"
+#include "utl/BinStream.h"
+#include "utl/HxGuid.h"
+#include <vector>
+
+// EnterFlowMsg: tells a remote machine to transition to a particular UI flow.
+class EnterFlowMsg : public NetMessage {
+public:
+    EnterFlowMsg() : mFlow(kUIFlowType_None), mMode() {}
+    EnterFlowMsg(UIFlowType flow, Symbol mode) : mFlow(flow), mMode(mode) {}
+    virtual ~EnterFlowMsg() {}
+    virtual void Save(BinStream &) const;
+    virtual void Load(BinStream &);
+    virtual void Dispatch();
+    NETMSG_BYTECODE(EnterFlowMsg);
+    NETMSG_NAME(EnterFlowMsg);
+    NETMSG_NEWNETMSG(EnterFlowMsg);
+
+    UIFlowType mFlow; // 0x4
+    Symbol mMode; // 0x8
+};
+
+namespace {
+    class OpenGateData : public virtual Hmx::Object, public LockData {
+    public:
+        OpenGateData() {}
+        virtual ~OpenGateData() {}
+        virtual void Save(BinStream &) const;
+        virtual void Load(BinStream &);
+
+        void GetWaitingUsers(std::vector<BandUser *, unsigned short> &) const;
+        void GetCurrentScreenState(std::vector<UIScreen *, unsigned short> &) const;
+
+        std::vector<UserGuid, unsigned short> mWaitingUsers; // 0x8
+        std::vector<UIScreen *, unsigned short> mCurrentScreenState; // 0x10
+    };
+
+    class OpenWaitingGateMsg : public StartLockMsg {
+    public:
+        OpenWaitingGateMsg() {}
+        virtual ~OpenWaitingGateMsg() {}
+        virtual void Save(BinStream &) const;
+        virtual void Load(BinStream &);
+        virtual LockData *GetLockData() { return &mData; }
+        NETMSG_BYTECODE(OpenWaitingGateMsg);
+        NETMSG_NAME(OpenWaitingGateMsg);
+        NETMSG_NEWNETMSG(OpenWaitingGateMsg);
+
+        OpenGateData mData; // 0x14
+    };
+}
+
+// JoinEntryPointEvent: extends NonDestructiveTransitionEvent to remember which
+// flow type to mark as joined when dismissed.
+class JoinEntryPointEvent : public NonDestructiveTransitionEvent {
+public:
+    JoinEntryPointEvent(NetSync *ns, const std::vector<UIScreen *> &dst, UIFlowType flow)
+        : NonDestructiveTransitionEvent(ns, dst), mFlow(flow) {}
+    virtual ~JoinEntryPointEvent() {}
+    virtual void OnDismiss();
+
+    UIFlowType mFlow; // 0x1C
+};
+
+// --- EnterFlowMsg ---------------------------------------------------------
+
+void EnterFlowMsg::Save(BinStream &bs) const {
+    unsigned char b = (unsigned char)mFlow;
+    bs.Write(&b, 1);
+    bs << mMode;
+}
+
+void EnterFlowMsg::Load(BinStream &bs) {
+    unsigned char b;
+    bs.Read(&b, 1);
+    mFlow = (UIFlowType)b;
+    bs >> mMode;
+}
+
+void EnterFlowMsg::Dispatch() {
+    if ((int)mFlow != TheBandUI.GetCurrentFlowType()) {
+        TheGameMode->SetMode(mMode);
+        UIScreen *entry = TheBandUI.GetJoinEntryPointForFlowType(mFlow);
+        if (entry) {
+            std::vector<UIScreen *, unsigned short> dst;
+            dst.push_back(entry);
+            JoinEntryPointEvent *ev = new JoinEntryPointEvent(
+                TheNetSync, *(std::vector<UIScreen *> *)&dst, mFlow
+            );
+            TheUIEventMgr->TriggerEvent(ev);
+        }
+    }
+}
+
+NetMessage *EnterFlowMsg::NewNetMessage() { return new EnterFlowMsg(); }
+
+// --- OpenGateData ---------------------------------------------------------
+
+void OpenGateData::Save(BinStream &bs) const {
+    bs << mWaitingUsers;
+    unsigned char n = (unsigned char)mCurrentScreenState.size();
+    bs.Write(&n, 1);
+    for (int i = 0; i < n; i++) {
+        String name(mCurrentScreenState[i]->Name());
+        bs << name;
+    }
+}
+
+void OpenGateData::Load(BinStream &bs) {
+    bs >> mWaitingUsers;
+    unsigned char n;
+    bs.Read(&n, 1);
+    for (int i = 0; i < n; i++) {
+        String name;
+        bs >> name;
+        UIScreen *screen = ObjectDir::Main()->Find<UIScreen>(name.c_str(), true);
+        mCurrentScreenState.push_back(screen);
+    }
+}
+
+void OpenGateData::GetWaitingUsers(
+    std::vector<BandUser *, unsigned short> &out
+) const {
+    for (unsigned short i = 0; i < mWaitingUsers.size(); i++) {
+        out.push_back(TheBandUserMgr->GetBandUser(mWaitingUsers[i], true));
+    }
+}
+
+void OpenGateData::GetCurrentScreenState(
+    std::vector<UIScreen *, unsigned short> &out
+) const {
+    out = mCurrentScreenState;
+}
+
+// --- OpenWaitingGateMsg ---------------------------------------------------
+
+void OpenWaitingGateMsg::Save(BinStream &bs) const {
+    StartLockMsg::Save(bs);
+    mData.Save(bs);
+}
+
+void OpenWaitingGateMsg::Load(BinStream &bs) {
+    StartLockMsg::Load(bs);
+    mData.Load(bs);
+}
+
+NetMessage *OpenWaitingGateMsg::NewNetMessage() { return new OpenWaitingGateMsg(); }
+
+// --- WaitingUserGate ------------------------------------------------------
+
+WaitingUserGate::WaitingUserGate() {
+    mLockStepMgr = new LockStepMgr("waiting_room_lock", this);
+    if (TheSessionMgr) {
+        TheSessionMgr->AddSink(this, ProcessedJoinRequestMsg::Type());
+    }
+}
+
+WaitingUserGate::~WaitingUserGate() {
+    if (TheSessionMgr) {
+        TheSessionMgr->RemoveSink(this, ProcessedJoinRequestMsg::Type());
+    }
+    delete mLockStepMgr;
+}
+
+void WaitingUserGate::Init() {
+    TheNetMessageFactory.RegisterNetMessage("EnterFlowMsg", EnterFlowMsg::NewNetMessage);
+    TheNetMessageFactory.RegisterNetMessage(
+        "OpenWaitingGateMsg", OpenWaitingGateMsg::NewNetMessage
+    );
+}
+
+void WaitingUserGate::Poll() {}
+
+DataNode WaitingUserGate::OnMsg(const LockStepCompleteMsg &) {
+    TheNetSync->Enable();
+    TheBandUI.GetOvershell()->SetBlockAllInput(false);
+    return 1;
+}
+
+DataNode WaitingUserGate::OnMsg(const ProcessedJoinRequestMsg &) {
+    UIFlowType flow = TheBandUI.GetCurrentFlowType();
+    std::vector<RemoteBandUser *, unsigned short> waiting;
+    TheSessionMgr->GetWaitingUsers(*(std::vector<RemoteBandUser *> *)&waiting);
+    EnterFlowMsg msg(flow, TheGameMode->GetMode());
+    TheSessionMgr->SendMsg(
+        *(std::vector<RemoteBandUser *> *)&waiting, msg, kReliable
+    );
+    TheSessionMgr->ClearWaitingUsers();
+    return 1;
+}
+
+DataNode WaitingUserGate::OnMsg(const LockStepStartMsg &msg) {
+    TheBandUI.GetOvershell()->SetBlockAllInput(true);
+    LockData *ld = msg.GetLockData();
+    OpenGateData *gd = dynamic_cast<OpenGateData *>(ld);
+    std::vector<BandUser *, unsigned short> waiting;
+    gd->GetWaitingUsers(waiting);
+    bool anyLocal = false;
+    for (unsigned short i = 0; i < waiting.size(); i++) {
+        if (waiting[i]->IsLocal()) {
+            anyLocal = true;
+            break;
+        }
+    }
+    if (anyLocal) {
+        std::vector<UIScreen *, unsigned short> dst;
+        gd->GetCurrentScreenState(dst);
+        NonDestructiveTransitionEvent *ev = new NonDestructiveTransitionEvent(
+            TheNetSync, *(std::vector<UIScreen *> *)&dst
+        );
+        TheUIEventMgr->TriggerEvent(ev);
+    } else {
+        mLockStepMgr->RespondToLock(true);
+    }
+    return 1;
+}
+
+BEGIN_HANDLERS(WaitingUserGate)
+    HANDLE_MESSAGE(LockStepStartMsg)
+    HANDLE_MESSAGE(LockStepCompleteMsg)
+    HANDLE_MESSAGE(ProcessedJoinRequestMsg)
+    HANDLE_SUPERCLASS(Hmx::Object)
+    HANDLE_CHECK(0x55)
+END_HANDLERS
+
+// --- JoinEntryPointEvent --------------------------------------------------
+
+void JoinEntryPointEvent::OnDismiss() { TheBandUI.TriggerOnFinishedJoin(mFlow); }
