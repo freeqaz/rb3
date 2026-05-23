@@ -20,16 +20,16 @@ public:
             : mOffer(0),
               mGroupHeading(),
               mShortcut(),
-              mIsHeader(true),
+              mLocalize(true),
               mIsCover(false),
-              mLocalize(true) {}
+              mActive(true) {}
 
         StoreOffer *mOffer; // 0x0
         Symbol mGroupHeading; // 0x4
         Symbol mShortcut; // 0x8
-        bool mIsHeader; // 0xc
+        bool mLocalize; // 0xc
         bool mIsCover; // 0xd
-        bool mLocalize; // 0xe
+        bool mActive; // 0xe
     };
 
     StoreOfferProvider(
