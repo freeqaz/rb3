@@ -1010,10 +1010,11 @@ DataNode WorldCrowd::OnIterateFrac(DataArray *da) {
     float charsPerWeight = (float)count / totalWeight;
     int charIdx = 0;
     for (int i = 2; i < ((const DataArray *)da)->Size(); i++) {
-        DataArray *sub = ((const DataArray *)da)->Node(i).Array(da);
+        const DataArray *sub = ((const DataArray *)da)->Node(i).Array(da);
         threshold += charsPerWeight * sub->Node(0).Float(sub);
+        DataArray *script = (DataArray *)sub;
         while ((float)charIdx < threshold) {
-            sub->ExecuteScript(1, chars[charIdx], 0, 1);
+            script->ExecuteScript(1, chars[charIdx], 0, 1);
             charIdx++;
         }
     }
