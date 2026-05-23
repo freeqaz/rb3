@@ -347,6 +347,26 @@ void ViewSettingsProvider::InitData(RndDir *dir) {
     }
 }
 
+BEGIN_HANDLERS(ViewSettingsProvider)
+    HANDLE_ACTION(select_setting_option, mActiveSetting->SelectOption(_msg->Int(2)))
+    HANDLE_ACTION(
+        set_to_setting_options,
+        dynamic_cast<UIList *>(_msg->GetObj(2))->SetProvider(mActiveSetting)
+    )
+    HANDLE_EXPR(select_setting, SelectSetting(_msg->Int(2)))
+    HANDLE_ACTION(
+        set_view_setting_to_label,
+        dynamic_cast<AppLabel *>(_msg->GetObj(2))->SetViewSetting(mActiveSetting)
+    )
+    HANDLE_EXPR(can_select_multiple_options, mActiveSetting->CanSelectMultiple())
+    HANDLE_ACTION(refresh_all_settings, RefreshAllSettings())
+    HANDLE_ACTION(reset_all_settings, ResetAllSettings())
+    HANDLE_ACTION(reset_active_setting, ResetActiveSetting())
+    HANDLE_EXPR(starting_option, mActiveSetting->StartingOption())
+    HANDLE_SUPERCLASS(Hmx::Object)
+    HANDLE_CHECK(0x280)
+END_HANDLERS
+
 UIColor *ViewSettingsProvider::SlotColorOverride(
     int, int row, UIListWidget *, UIColor *c
 ) const {
