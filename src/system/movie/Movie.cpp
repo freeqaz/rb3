@@ -130,11 +130,33 @@ void Movie::Impl::UnlockThread() {
 }
 
 bool Movie::Impl::IsOpen() const {
-    MILO_ASSERT(mThreadId == (unsigned int)CurrentThreadId() || (mThreadId == kNoThread && MainThread()), 0x159);
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x159);
     return mBink != 0;
 }
 
 bool Movie::Impl::IsLoading() const {
-    MILO_ASSERT(mThreadId == (unsigned int)CurrentThreadId() || (mThreadId == kNoThread && MainThread()), 0x160);
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x160);
     return mLoader != NULL || mLoader2 != NULL;
 }
