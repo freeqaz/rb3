@@ -250,39 +250,44 @@ void StoreOfferProvider::Text(int i, int pos, UIListLabel *listLabel, UILabel *l
                 return;
             }
         } else if (slot->Matches("purchased")) {
-            if (!(offer->mOfferState && (offer->mOfferState->mFlags & 1)) && !offer->InLibrary() &&
-                !offer->IsCompletelyUnavailable()) {
-                appLabel->SetTextToken(store_unavailable);
-                return;
-            }
-        } else if (slot->Matches("bso")) {
             BandStoreOffer *bso = dynamic_cast<BandStoreOffer *>(offer);
             MILO_ASSERT(bso, 0x7c);
             bool isPurchased = bso->IsPurchased();
             bool inLibrary = bso->InLibrary();
-            int flags = 0;
-            if (bso->mOfferState && (bso->mOfferState->mFlags & 1)) {
-                flags = 1;
-            }
-            bool upgradeAvailable = bso->mUpgradeAvailable;
+            bool isDownloaded =
+                offer->mOfferState && (offer->mOfferState->mFlags & 2);
+            bool upgradeAvail = bso->mUpgradeAvailable;
             if (!inLibrary) {
-                if (isPurchased) {
-                    if (upgradeAvailable && !flags && !isPurchased) {
-                        appLabel->SetTextToken(store_upgrade_available);
-                        return;
-                    }
-                }
-                if (flags) {
-                    if (bso->mOfferState->mFlags & 2) {
-                        appLabel->SetTextToken(store_downloaded);
-                    } else {
-                        appLabel->SetTextToken(store_purchased);
+                if (isDownloaded) {
+                    if (offer->mOfferState->mFlags & 2) {
+                        appLabel->SetTextToken(store_upgrade_in_library);
                     }
                     return;
                 }
-                appLabel->SetTextToken(store_in_library);
+                if (isPurchased) {
+                    appLabel->SetTextToken(store_upgrade_purchased);
+                    return;
+                }
+                appLabel->SetTextToken(store_upgrade_available);
                 return;
             }
+            if (!isPurchased && !upgradeAvail) {
+                return;
+            }
+            if (upgradeAvail) {
+                appLabel->SetTextToken(store_upgrade_available);
+                return;
+            }
+            if (isPurchased) {
+                if (offer->mOfferState->mFlags & 2) {
+                    appLabel->SetTextToken(store_downloaded);
+                } else {
+                    appLabel->SetTextToken(store_purchased);
+                }
+                return;
+            }
+            appLabel->SetTextToken(store_in_library);
+            return;
         }
     } else {
         if (e->mActive == 0) {
