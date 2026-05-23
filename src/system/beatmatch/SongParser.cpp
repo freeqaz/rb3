@@ -719,7 +719,7 @@ void SongParser::OnGemEnd(int tick, unsigned char pitch) {
                 if (mRollInProgress != -1 && abs(mRollInProgress - infotick) < 10
                         && mRollMask & (1 << num) && !mDrumStyleGems
                     || slot != 0) {
-                    mRollSlotsArray.front() |= geminfo.slots;
+                    mRollSlotsArray[num] |= geminfo.slots;
                 }
                 if (mTrillInProgress != -1 && mTrillMask & (1 << num)) {
                     MILO_ASSERT(!mTrillSlotsArray.empty(), 0x46A);
