@@ -135,13 +135,11 @@ int SortViewSetting::StartingOption() const {
 void ScoreTypeViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
     const {
     if (slot->Matches("cd")) {
-        Symbol sym;
         if (idx == 0) {
-            sym = ScoreTypeToSym(GetBaseScoreType());
+            label->SetTextToken(ScoreTypeToSym(GetBaseScoreType()));
         } else {
-            sym = ScoreTypeToSym(GetAlternateScoreType());
+            label->SetTextToken(ScoreTypeToSym(GetAlternateScoreType()));
         }
-        label->SetTextToken(sym);
     } else {
         label->SetTextToken(gNullStr);
     }
@@ -249,7 +247,7 @@ const char *FilterViewSetting::GetCurrentStatus() const {
     if (!result.c_str()[0]) {
         return Localize(filter_none, nullptr);
     }
-    return MakeString("%s", result.c_str());
+    return MakeString(result.c_str());
 }
 
 void FilterViewSetting::Reset() {
