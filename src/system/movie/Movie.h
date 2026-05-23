@@ -31,7 +31,7 @@ public:
         bool Poll();
         void SetWidthHeight(int, int);
         void SetAspect(float);
-        void SetTimeCallback(float (*)());
+        float (*SetTimeCallback(float (*)()))();
         void Begin(const char *, float, bool, bool, bool, bool, int, BinStream *);
         void Terminate();
         void MovieClose();
@@ -53,11 +53,15 @@ public:
         bool mUnk26; // 0x26
         char pad27[1];
         float mAspect; // 0x28
-        char pad2C[0x18]; // 0x2C
+        char pad2C[0x10]; // 0x2C
+        int mWidth; // 0x3C
+        int mHeight; // 0x40
         bool mPaused; // 0x44
         char pad45[3];
         char mTimerPad[0x30]; // 0x48 Timer
-        char pad78[0x3C];
+        char pad78[0x30];
+        float (*mTimeCallback)(); // 0xA8
+        char padAC[8];
         int mBinkHandle; // 0xB4
         char padB8[0x18];
         bool mUnkD0; // 0xD0
@@ -81,7 +85,7 @@ public:
     void SetPaused(bool);
     void Draw();
     void SetWidthHeight(int, int);
-    void SetTimeCallback(float (*)());
+    float (*SetTimeCallback(float (*)()))();
     bool IsLoading() const;
     bool IsOpen() const;
     bool CheckOpen(bool);

@@ -111,7 +111,7 @@ void Movie::SetPaused(bool b) { mImpl->SetPaused(b); }
 bool Movie::Paused() const { return mImpl->Paused(); }
 bool Movie::Ready() const { return mImpl->Ready(); }
 void Movie::SetAspect(float f) { mImpl->SetAspect(f); }
-void Movie::SetTimeCallback(float (*cb)()) { mImpl->SetTimeCallback(cb); }
+float (*Movie::SetTimeCallback(float (*cb)()))() { return mImpl->SetTimeCallback(cb); }
 void Movie::SetWidthHeight(int w, int h) { mImpl->SetWidthHeight(w, h); }
 void Movie::Validate() {}
 
@@ -143,6 +143,41 @@ bool Movie::Impl::IsOpen() const {
     }
     MILO_ASSERT(ok, 0x159);
     return mBink != 0;
+}
+
+float (*Movie::Impl::SetTimeCallback(float (*cb)()))() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x3B2);
+    float (*old)() = mTimeCallback;
+    mTimeCallback = cb;
+    return old;
+}
+
+void Movie::Impl::SetWidthHeight(int w, int h) {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x555);
+    mWidth = w;
+    mHeight = h;
 }
 
 void Movie::Impl::Terminate() {
