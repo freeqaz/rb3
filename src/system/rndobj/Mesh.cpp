@@ -879,7 +879,7 @@ void RndMesh::CopyGeometry(const RndMesh *mesh, bool b) {
     if (b)
         SetVolume(mesh->mGeomOwner->mVolume);
     mBones = mesh->mBones;
-    ClearAndShrink(mStriperResults);
+    std::vector<STRIPERRESULT>().swap(mStriperResults);
     if (mesh->mStriperResults.size() != 0) {
         MemDoTempAllocations m(true, false);
         mStriperResults.resize(mesh->mStriperResults.size());
@@ -1110,8 +1110,8 @@ void RndMesh::SetKeepMeshData(bool keep) {
         mKeepMeshData = keep;
         if (!mKeepMeshData) {
             mVerts.clear();
-            ClearAndShrink(mFaces);
-            ClearAndShrink(mPatches);
+            std::vector<Face>().swap(mFaces);
+            std::vector<unsigned char>().swap(mPatches);
         }
     }
 }
