@@ -116,6 +116,94 @@ struct SortByWorkVertZ {
     }
 };
 
+// Explicit specializations to avoid bool materialization in comparison loops,
+// so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
+namespace stlpmtx_std {
+
+template <>
+BandPatchMesh::MeshVert **
+__unguarded_partition<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVert *, SortByWorkVertZ>(
+    BandPatchMesh::MeshVert **__first,
+    BandPatchMesh::MeshVert **__last,
+    BandPatchMesh::MeshVert *__pivot,
+    SortByWorkVertZ
+) {
+    for (;;) {
+        while ((*__first)->mVert->pos.z < __pivot->mVert->pos.z)
+            ++__first;
+        --__last;
+        while (__pivot->mVert->pos.z < (*__last)->mVert->pos.z)
+            --__last;
+        if (!(__first < __last))
+            return __first;
+        iter_swap(__first, __last);
+        ++__first;
+    }
+}
+
+template <>
+void __unguarded_linear_insert<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVert *, SortByWorkVertZ>(
+    BandPatchMesh::MeshVert **__last,
+    BandPatchMesh::MeshVert *__val,
+    SortByWorkVertZ
+) {
+    BandPatchMesh::MeshVert **__next = __last;
+    --__next;
+    while (__val->mVert->pos.z < (*__next)->mVert->pos.z) {
+        *__last = *__next;
+        __last = __next;
+        --__next;
+    }
+    *__last = __val;
+}
+
+template <>
+void __introsort_loop<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVert *, long, SortByWorkVertZ>(
+    BandPatchMesh::MeshVert **__first,
+    BandPatchMesh::MeshVert **__last,
+    BandPatchMesh::MeshVert **,
+    long __depth_limit,
+    SortByWorkVertZ __comp
+) {
+    while (__last - __first > 16) {
+        if (__depth_limit == 0) {
+            partial_sort(__first, __last, __last, __comp);
+            return;
+        }
+        ptrdiff_t __len = __last - __first;
+        BandPatchMesh::MeshVert *__a = *__first;
+        --__depth_limit;
+        BandPatchMesh::MeshVert **__mid = __first + __len / 2;
+        BandPatchMesh::MeshVert *__b = *__mid;
+        BandPatchMesh::MeshVert **__pivot_ptr;
+        float a_z = __a->mVert->pos.z;
+        float b_z = __b->mVert->pos.z;
+        if (a_z < b_z) {
+            float c_z = (*(__last - 1))->mVert->pos.z;
+            if (b_z < c_z)
+                __pivot_ptr = __mid;
+            else if (a_z < c_z)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __first;
+        } else {
+            float c_z = (*(__last - 1))->mVert->pos.z;
+            if (a_z < c_z)
+                __pivot_ptr = __first;
+            else if (b_z < c_z)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __mid;
+        }
+        BandPatchMesh::MeshVert **__cut =
+            __unguarded_partition(__first, __last, *__pivot_ptr, __comp);
+        __introsort_loop(__cut, __last, (BandPatchMesh::MeshVert **)0, __depth_limit, __comp);
+        __last = __cut;
+    }
+}
+
+} // namespace stlpmtx_std
+
 BandPatchMesh::WorkVerts::WorkVerts(RndMesh *mesh, const Vector2 &v2)
     : unkc(0), mMesh(mesh), unk34(v2), unk3c((1.0f / v2.x), (1.0f / v2.y)) {
     unk0 = 0;
@@ -188,8 +276,9 @@ void BandPatchMesh::WorkVerts::SetMeshVerts() {
             int prev = vi;
             for (int j = i + 1; j < unk18.size(); j++) {
                 RndMesh::Vert *v2 = unk18[j];
-                if (v1->pos.x != v2->pos.x || v1->pos.y != v2->pos.y
-                    || v1->pos.z != v2->pos.z)
+                bool diff = v1->pos.x != v2->pos.x || v1->pos.y != v2->pos.y
+                    || v1->pos.z != v2->pos.z;
+                if (diff)
                     break;
                 int vi2 = v2 - base;
                 mMeshVerts[vi2]->unk28 = vi;
