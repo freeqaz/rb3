@@ -670,6 +670,26 @@ void *_MemAllocTemp(int size, int align) {
     return _MemAlloc(size, align);
 }
 
+extern char gZeroAllocBuf[0x20];
+extern bool gInsideMemFunc;
+
+void _MemFree(void *mem) {
+    if (mem == nullptr) return;
+    if (mem == gZeroAllocBuf) return;
+    if (mem == g_pRSOReserveBuf) return;
+    CritSecTracker tracker(gMemLock);
+    MILO_ASSERT(!gInsideMemFunc, 0x9b7);
+    gInsideMemFunc = true;
+    int i;
+    for (i = 0; i < gNumHeaps; i++) {
+        if (gHeaps[i].Free((int *)mem)) break;
+    }
+    if (i == gNumHeaps) {
+        WiiFree(mem);
+    }
+    gInsideMemFunc = false;
+}
+
 
 void AddHeap(const char *name, int heapNum, int sizeBytes, bool useHeapAlign, int region,
              Heap::Strategy strategy, int debugLevel, bool allowTemp) {
