@@ -3,8 +3,10 @@
 #include "obj/Data.h"
 #include "obj/DataFunc.h"
 #include "obj/ObjMacros.h"
+#include "obj/Task.h"
 #include "os/CritSec.h"
 #include "os/Debug.h"
+#include "os/OSFuncs.h"
 #include "os/System.h"
 #include "os/Timer.h"
 #include "utl/MemMgr.h"
@@ -12,7 +14,7 @@
 #include <vector>
 
 extern "C" {
-    void BinkSetMemory(void *(*)(unsigned int), void (*)(void *), void *(*)(unsigned int));
+    void BinkSetMemory(void *(*)(unsigned int), void (*)(void *));
 }
 
 int gBinkCore0 = -1;
@@ -55,7 +57,7 @@ void Movie::Impl::Init() {
         sActiveMovies.reserve(0x10);
         REGISTER_OBJ_FACTORY(TexMovie)
         TheDebug.AddExitCallback(Movie::Terminate);
-        BinkSetMemory(RadAlloc, RadFree, RadAlloc);
+        BinkSetMemory(RadAlloc, RadFree);
         Movie::Impl::PlatformInit();
         gInitialized = true;
     }
@@ -104,4 +106,13 @@ int Movie::GetFrame() const { return mImpl->GetFrame(); }
 float Movie::MsPerFrame() const { return mImpl->MsPerFrame(); }
 int Movie::NumFrames() const { return mImpl->NumFrames(); }
 void Movie::SetPaused(bool b) { mImpl->SetPaused(b); }
+bool Movie::Paused() const { return mImpl->Paused(); }
+bool Movie::Ready() const { return mImpl->Ready(); }
+void Movie::SetAspect(float f) { mImpl->SetAspect(f); }
+void Movie::SetTimeCallback(float (*cb)()) { mImpl->SetTimeCallback(cb); }
+void Movie::SetWidthHeight(int w, int h) { mImpl->SetWidthHeight(w, h); }
 void Movie::Validate() {}
+
+float TaskMgrDeltaSeconds() { return TheTaskMgr.DeltaSeconds(); }
+
+void Movie::Impl::SetAspect(float f) { mAspect = f; }

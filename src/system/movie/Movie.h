@@ -8,6 +8,8 @@ class Movie {
 public:
     class Impl {
     public:
+        class MovieLoader;
+
         Impl();
         ~Impl();
         static void Init();
@@ -22,17 +24,45 @@ public:
         int GetFrame() const;
         float MsPerFrame() const;
         int NumFrames() const;
-        bool Paused() const;
+        bool Paused() const { return mPaused; }
         void SetPaused(bool);
         bool Ready() const;
         void Draw();
         bool Poll();
         void SetWidthHeight(int, int);
         void SetAspect(float);
+        void SetTimeCallback(float (*)());
         void Begin(const char *, float, bool, bool, bool, bool, int, BinStream *);
         void Terminate();
 
-        char mPad[0xe0]; // size from target binary
+        // Layout reverse-engineered from compiled binary (m2c struct dump).
+        MovieLoader *mLoader; // 0x00
+        MovieLoader *mLoader2; // 0x04
+        char mFilenamePad[0xC]; // 0x08 (String)
+        const char *mPath; // 0x10 (placeholder)
+        int mPreloadLen; // 0x14
+        bool mPreloadFlag; // 0x18
+        char pad19[3];
+        int mUnk1C; // 0x1C
+        char pad20[4];
+        bool mUnk24; // 0x24
+        bool mUnk25; // 0x25
+        bool mUnk26; // 0x26
+        char pad27[1];
+        float mAspect; // 0x28
+        char pad2C[0x18]; // 0x2C
+        bool mPaused; // 0x44
+        char pad45[3];
+        char mTimerPad[0x30]; // 0x48 Timer
+        char pad78[0x3C];
+        int mBinkHandle; // 0xB4
+        char padB8[0x18];
+        bool mUnkD0; // 0xD0
+        char padD1[1];
+        bool mUnkD2; // 0xD2
+        char padD3[1];
+        unsigned int mThreadId; // 0xD4
+        int mForceTrack; // 0xD8
     };
 
     Movie();
@@ -47,6 +77,7 @@ public:
     void SetPaused(bool);
     void Draw();
     void SetWidthHeight(int, int);
+    void SetTimeCallback(float (*)());
     bool IsLoading() const;
     bool IsOpen() const;
     bool CheckOpen(bool);
