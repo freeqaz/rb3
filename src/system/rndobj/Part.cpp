@@ -204,11 +204,11 @@ void ParticleCommonPool::InitPool() {
     int size = ParticlePoolSize();
     mPoolParticles = new RndFancyParticle[size];
     for (int i = 0; i < size - 1; i++) {
-        mPoolParticles[i].prev = nullptr;
-        mPoolParticles[i].next = &mPoolParticles[i + 1];
+        ((RndFancyParticle *)mPoolParticles)[i].prev = nullptr;
+        ((RndFancyParticle *)mPoolParticles)[i].next = &((RndFancyParticle *)mPoolParticles)[i + 1];
     }
-    mPoolParticles[size - 1].prev = nullptr;
-    mPoolParticles[size - 1].next = nullptr;
+    ((RndFancyParticle *)mPoolParticles)[size - 1].prev = nullptr;
+    ((RndFancyParticle *)mPoolParticles)[size - 1].next = nullptr;
     mPoolFreeParticles = mPoolParticles;
 }
 
