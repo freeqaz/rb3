@@ -766,9 +766,11 @@ void RndScaleObject(Hmx::Object *o, float f1, float f2) {
     }
     RndTransformable *trans = dynamic_cast<RndTransformable *>(o);
     if (trans) {
-        Vector3 vec;
-        Scale(trans->mLocalXfm.v, f1, vec);
-        trans->SetLocalPos(vec);
+        trans->SetLocalPos(
+            trans->mLocalXfm.v.x * f1,
+            trans->mLocalXfm.v.y * f1,
+            trans->mLocalXfm.v.z * f1
+        );
     }
     RndCam *cam = dynamic_cast<RndCam *>(o);
     if (cam) {
