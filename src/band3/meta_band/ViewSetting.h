@@ -36,7 +36,7 @@ public:
     // UIListProvider overrides
     virtual void Text(int, int, UIListLabel *, UILabel *) const;
     virtual RndMat *Mat(int, int, UIListMesh *) const;
-    virtual void Custom(int, int, UIListCustom *, Hmx::Object *) const {}
+    virtual void Custom(int, int, UIListCustom *, Hmx::Object *) const;
     virtual int NumData() const = 0;
     virtual bool IsActive(int) const;
     virtual void InitData(RndDir *);

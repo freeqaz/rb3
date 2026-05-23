@@ -1,6 +1,7 @@
 #include "meta_band/ViewSetting.h"
 
 #include "bandobj/BandLabel.h"
+#include "bandobj/CheckboxDisplay.h"
 #include "game/BandUser.h"
 #include "game/Defines.h"
 #include "game/Scoring.h"
@@ -18,6 +19,7 @@
 #include "os/Debug.h"
 #include "os/PlatformMgr.h"
 #include "rndobj/Dir.h"
+#include "rndobj/Draw.h"
 #include "rndobj/Mat.h"
 #include "ui/UIColor.h"
 #include "ui/UIList.h"
@@ -49,7 +51,18 @@ RndMat *ViewSetting::Mat(int, int row, UIListMesh *) const {
 
 bool ViewSetting::IsActive(int) const { return true; }
 
-void ViewSetting::InitData(RndDir *) {}
+void ViewSetting::Custom(int, int, UIListCustom *, Hmx::Object *obj) const {
+    RndDrawable *drawable = dynamic_cast<RndDrawable *>(obj);
+    MILO_ASSERT(drawable, 0x2a);
+    drawable->SetShowing(false);
+}
+
+void ViewSetting::InitData(RndDir *dir) {
+    if (dir) {
+        mEvenMat = dir->Find<RndMat>("bg_even.mat", false);
+        mOddMat = dir->Find<RndMat>("bg_odd.mat", false);
+    }
+}
 
 bool ViewSetting::CanSelectMultiple() const { return false; }
 
@@ -252,6 +265,33 @@ void FilterViewSetting::SelectOption(int idx) {
     TheMusicLibrary->ToggleFilter(mFilterType, f.mSym);
 }
 
+void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
+    const {
+    if (slot->Matches("cd")) {
+        label->SetTextToken(mFilters[idx].mSym);
+    } else {
+        int count = mFilters[idx].mCount;
+        Symbol fmt = (count == 1) ? song_select_song : song_select_songs;
+        DataNode num(LocalizeSeparatedInt(count));
+        DataNode word(fmt);
+        DataArray *da = new DataArray(2);
+        da->Node(0) = num;
+        da->Node(1) = word;
+        label->SetTokenFmt(da);
+        da->Release();
+    }
+}
+
+void FilterViewSetting::Custom(int, int idx, UIListCustom *, Hmx::Object *obj)
+    const {
+    CheckboxDisplay *cb = dynamic_cast<CheckboxDisplay *>(obj);
+    MILO_ASSERT(cb, 0x9d);
+    cb->SetShowing(true);
+    SongSortMgr::SongFilter &filter = TheMusicLibrary->GetFilter();
+    MILO_ASSERT(&filter, 0xa1);
+    cb->SetChecked(filter.HasFilter(mFilterType, mFilters[idx].mSym));
+}
+
 bool FilterViewSetting::CompareFilters(const Filter &a, const Filter &b) {
     return AlphaKeyStrCmp(a.mSym.Str(), b.mSym.Str(), true) < 0;
 }
@@ -278,6 +318,25 @@ Symbol FilterViewSetting::FilterTypeToSym(FilterType ft) {
 // ------------------------------------------------------------------
 
 int ViewSettingsProvider::NumData() const { return mSettings.size(); }
+
+void ViewSettingsProvider::InitData(RndDir *dir) {
+    if (dir) {
+        mDisabledColor = dir->Find<UIColor>("disabled.color", true);
+        mHeaderMat = dir->Find<RndMat>("header.mat", false);
+        mEvenMat = dir->Find<RndMat>("bg_even.mat", false);
+        mOddMat = dir->Find<RndMat>("bg_odd.mat", false);
+    }
+}
+
+UIColor *ViewSettingsProvider::SlotColorOverride(
+    int, int row, UIListWidget *, UIColor *c
+) const {
+    if (!mSettings[row]->IsValid() && !mSettings[row]->IsHeader()
+        && mDisabledColor) {
+        return mDisabledColor;
+    }
+    return c;
+}
 
 void ViewSettingsProvider::ResetActiveSetting() {
     mActiveSetting->Reset();
