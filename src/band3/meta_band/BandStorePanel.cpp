@@ -129,8 +129,7 @@ DataNode BandStorePanel::OnMsg(const LocalUserLeftMsg &) {
 DataNode BandStorePanel::OnMsg(const MetadataLoadedMsg &msg) {
     DataArray *data = msg->Array(2);
     String path(msg->Str(4));
-    Symbol s("metadata");
-    DataArray *found = data->FindArray(s, false);
+    DataArray *found = data->FindArray(Symbol("metadata"), false);
     if (found) {
         // PopulateOffers + EnumerateOffers (msg fields 5 and 6 control flow)
         PopulateOffers(found, msg->Int(6) != 0);
@@ -211,12 +210,13 @@ void BandStorePanel::Request(const String &path, bool extra) {
             TheUI.Handle(update_loading_status_msg, false);
         }
     } else {
-        // ID-based request (page lookup from metadata table) - dispatch
-        // MetadataLoadedMsg with the page ID; subscribers populate the offers
-        // themselves.
+        // ID-based request (page lookup from metadata table). The full
+        // implementation also dispatches a static MetadataLoadedMsg with
+        // the page's offer index; the simplified form here covers the
+        // tail steps shared with the message handler.
         StorePage *page = TheStoreMetadata.LoadPage((unsigned short)id);
         if (page) {
-            mSort = Symbol("by_song_first_letter");
+            mSort = page->mPage->DefaultSort();
         } else {
             mSort = Symbol("by_artist");
         }
