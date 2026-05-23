@@ -749,10 +749,9 @@ void ChordShapeGenerator::BuildSpan(
     float gradeDist = mGradeDistances[abs(fretB - fretA)];
     float frac0 = (1.0f - gradeDist) * 0.5f;
     float frac1 = (1.0f + gradeDist) * 0.5f;
-    float heightA = mFretHeights[fretA];
     ExtendProfile(
-        mesh, connectingVerts, tfA, tfB, frac0, heightA, sec1, Hmx::Color32(col1),
-        Hmx::Color32(col2)
+        mesh, connectingVerts, tfA, tfB, frac0, mFretHeights[fretA], sec1,
+        Hmx::Color32(col1), Hmx::Color32(col2)
     );
     ExtendProfile(
         mesh, connectingVerts, tfA, tfB, frac0 + 0.05f,
