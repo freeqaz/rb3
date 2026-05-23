@@ -1640,7 +1640,7 @@ bool SongParser::CheckKeyboardRangeMarker(int tick, int pitch, bool b) {
 void SongParser::ParseText(int tick, const char *text) {
     if (strneq(text, "mix", 3)) {
         const char *t4 = text + 4;
-        if ((signed char)(text[4] - 0x30) >= 10) {
+        if ((unsigned char)(text[4] - 0x30) > 9) {
             MILO_WARN(
                 "%s (%s): improperly formatted mix event '[%s' at %s",
                 mFilename,
