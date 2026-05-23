@@ -227,7 +227,7 @@ void ChordShapeGenerator::DumpChordGenData() {
 }
 
 void ChordShapeGenerator::NameMesh(RndMesh *mesh, bool lefty) {
-    MILO_ASSERT(mesh && Dir(), 0x39D);
+    MILO_ASSERT(mesh && Dir(), 0x3CF);
     const char *name = lefty ? "chord_L" : "chord";
     for (int i = 0; i < mNumSlots; i++) {
         name = MakeString("%s_%d", name, mStringFrets[i]);
@@ -245,8 +245,7 @@ void ChordShapeGenerator::NameMesh(RndMesh *mesh, bool lefty) {
     Dir()->SyncObjects();
     Hmx::Object *milo = ObjectDir::Main()->FindObject("milo", false);
     if (milo) {
-        Message msg(update_objects);
-        milo->Handle(msg.mData, true);
+        milo->Handle(Message("update_objects"), true);
     }
 }
 
