@@ -974,7 +974,7 @@ void SongParser::StartVocalNote(int tick, unsigned char data, const char *lyric)
                     );
                 }
             }
-            mCurVocalNote.SetNoteTime(tickms, tick);
+            mCurVocalNote.SetNoteTime(ticktime, tick);
             if (data != 0) {
                 if (mLyricPitchSet) {
                     MILO_WARN(
@@ -1016,9 +1016,9 @@ void SongParser::StartVocalNote(int tick, unsigned char data, const char *lyric)
                 mLyricBends = ParseAndStripLyricText(lyric, mCurVocalNote);
             }
             if (mLyricPitchSet && mLyricTextSet && mLyricBends) {
-                float ms_sum = mPrevVocalNote.GetMs() + mPrevVocalNote.GetDurationMs();
-                unsigned short ticks = mPrevVocalNote.GetDurationTicks();
                 int prevticks = mPrevVocalNote.GetTick();
+                unsigned short ticks = mPrevVocalNote.GetDurationTicks();
+                float ms_sum = mPrevVocalNote.GetMs() + mPrevVocalNote.GetDurationMs();
                 int curticks = mCurVocalNote.GetTick();
                 if (prevticks + ticks < curticks) {
                     VocalNote note(mPrevVocalNote);
