@@ -23,18 +23,18 @@ void AppMiniLeaderboardDisplay::Init() {
 }
 
 AppMiniLeaderboardDisplay::AppMiniLeaderboardDisplay()
-    : mStatus(kLeaderboardUnloaded), mUIList(nullptr), mLeaderboard(nullptr),
+    : mStatus(kLeaderboardUnloaded), mLeaderboardList(nullptr), mLeaderboard(nullptr),
       mSongID(0), mScoreType((ScoreType)2), mUpdateTime(0.0f) {}
 
 AppMiniLeaderboardDisplay::~AppMiniLeaderboardDisplay() {
-    if (mUIList) {
-        mUIList->SetProvider(mUIList);
+    if (mLeaderboardList) {
+        mLeaderboardList->SetProvider(mLeaderboardList);
     }
     if (mLeaderboard) {
         delete mLeaderboard;
     }
-    MILO_ASSERT(mUIList, 0x63);
-    mUIList->SetProvider(mUIList);
+    MILO_ASSERT(mLeaderboardList, 0x63);
+    mLeaderboardList->SetProvider(mLeaderboardList);
 }
 
 void AppMiniLeaderboardDisplay::Poll() {
@@ -67,8 +67,8 @@ void AppMiniLeaderboardDisplay::SetLeaderboardStatus(LeaderboardStatus status) {
     if (mPendingGroup) {
         mPendingGroup->SetShowing(status == kLeaderboardLoading);
     }
-    MILO_ASSERT(mUIList, 0x9e);
-    mUIList->SetShowing(mStatus == kLeaderboardReady);
+    MILO_ASSERT(mLeaderboardList, 0x9e);
+    mLeaderboardList->SetShowing(mStatus == kLeaderboardReady);
     switch (mStatus) {
     case kLeaderboardError:
     case kLeaderboardUnloaded:
@@ -86,18 +86,18 @@ void AppMiniLeaderboardDisplay::SetLeaderboardStatus(LeaderboardStatus status) {
 void AppMiniLeaderboardDisplay::UpdateLeaderboardOnline(int songID) {
     SetLeaderboardStatus(kLeaderboardLoading);
     BandProfile *p = TheProfileMgr.GetPrimaryProfile();
-    if (mUIList)
-        mUIList->SetProvider(nullptr);
+    if (mLeaderboardList)
+        mLeaderboardList->SetProvider(nullptr);
     if (mLeaderboard) {
         mLeaderboard->CancelEnumerate();
     }
     mLeaderboard = nullptr;
     if (p) {
-        MILO_ASSERT(mUIList, 0xc9);
+        MILO_ASSERT(mLeaderboardList, 0xc9);
         PlayerMiniLeaderboard *lb =
-            new PlayerMiniLeaderboard(p, this, mScoreType, mSongID, mUIList->NumDisplay());
+            new PlayerMiniLeaderboard(p, this, mScoreType, mSongID, mLeaderboardList->NumDisplay());
         mLeaderboard = lb;
-        mUIList->SetProvider(lb);
+        mLeaderboardList->SetProvider(lb);
         lb->StartEnumerate();
     } else {
         Update();
@@ -136,20 +136,21 @@ int AppMiniLeaderboardDisplay::UpdateLeaderboard(int songID, ScoreType scoreType
 bool AppMiniLeaderboardDisplay::IsReady() { return mStatus == kLeaderboardReady; }
 
 bool AppMiniLeaderboardDisplay::HasRows() {
+    bool result = false;
     if (mLeaderboard && mLeaderboard->NumData()) {
-        return true;
+        result = true;
     }
-    return false;
+    return result;
 }
 
 void AppMiniLeaderboardDisplay::ResultSuccess(bool, bool, bool) {
-    MILO_ASSERT(mUIList, 0x118);
-    mUIList->Refresh(false);
+    MILO_ASSERT(mLeaderboardList, 0x118);
+    mLeaderboardList->Refresh(false);
     int selfRow = mLeaderboard->GetSelfRow();
     if (selfRow >= 0) {
-        mUIList->SetSelected(selfRow, -1);
+        mLeaderboardList->SetSelected(selfRow, -1);
     } else {
-        mUIList->SetSelected(0, -1);
+        mLeaderboardList->SetSelected(0, -1);
     }
     SetLeaderboardStatus(kLeaderboardReady);
 }
@@ -160,30 +161,28 @@ void AppMiniLeaderboardDisplay::ResultFailure() {
 
 void AppMiniLeaderboardDisplay::Update() {
     UIComponent::Update();
-    DataArray *typeDef = const_cast<DataArray *>(TypeDef());
-    MILO_ASSERT(typeDef, 0x132);
+    DataArray *t = const_cast<DataArray *>(TypeDef());
+    MILO_ASSERT(t, 0x132);
     ObjectDir *dir = mResource->Dir();
     MILO_ASSERT(dir, 0x135);
-    mUIList = dynamic_cast<BandList *>(
-        dir->FindObject(typeDef->FindArray(leaderboard, true)->Str(1), false)
-    );
+    mLeaderboardList = dir->Find<BandList>(t->FindArray(leaderboard, true)->Str(1), true);
     mTitleLabel = dynamic_cast<AppLabel *>(
-        dir->FindObject(typeDef->FindArray(title_label, true)->Str(1), false)
+        dir->FindObject(t->FindArray(title_label, true)->Str(1), false)
     );
     mIconsLabel = dynamic_cast<AppLabel *>(
-        dir->FindObject(typeDef->FindArray(icons_label, true)->Str(1), false)
+        dir->FindObject(t->FindArray(icons_label, true)->Str(1), false)
     );
     mResetTrigger = dynamic_cast<EventTrigger *>(
-        dir->FindObject(typeDef->FindArray(reset_trigger, true)->Str(1), false)
+        dir->FindObject(t->FindArray(reset_trigger, true)->Str(1), false)
     );
     mFadeInTrigger = dynamic_cast<EventTrigger *>(
-        dir->FindObject(typeDef->FindArray(fade_in_trigger, true)->Str(1), false)
+        dir->FindObject(t->FindArray(fade_in_trigger, true)->Str(1), false)
     );
     mFadeOutTrigger = dynamic_cast<EventTrigger *>(
-        dir->FindObject(typeDef->FindArray(fade_out_trigger, true)->Str(1), false)
+        dir->FindObject(t->FindArray(fade_out_trigger, true)->Str(1), false)
     );
     mPendingGroup = dynamic_cast<RndGroup *>(
-        dir->FindObject(typeDef->FindArray(pending_group, true)->Str(1), false)
+        dir->FindObject(t->FindArray(pending_group, true)->Str(1), false)
     );
     if (mResetTrigger) {
         mResetTrigger->Trigger();

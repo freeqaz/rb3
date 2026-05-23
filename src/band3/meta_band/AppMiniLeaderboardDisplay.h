@@ -59,7 +59,7 @@ public:
     LeaderboardStatus mStatus; // 0x114
     AppLabel *mTitleLabel; // 0x118
     AppLabel *mIconsLabel; // 0x11c
-    UIList *mUIList; // 0x120
+    UIList *mLeaderboardList; // 0x120
     RndGroup *mPendingGroup; // 0x124
     EventTrigger *mResetTrigger; // 0x128
     EventTrigger *mFadeInTrigger; // 0x12c
