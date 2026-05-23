@@ -36,7 +36,9 @@ void StoreOfferContentsProvider::Text(
     if (slot->Matches("name")) {
         appLabel->SetTextToken(mElements[col]->mSong->GetName());
     } else if (slot->Matches("downloaded")) {
-        if (IsActive(col)) {
+        bool isDownloaded = IsActive(col);
+        if (mListType == kListPurchase) isDownloaded = !isDownloaded;
+        if (isDownloaded) {
             appLabel->SetIcon('0');
         } else {
             appLabel->SetTextToken(gNullStr);
@@ -68,20 +70,21 @@ Symbol StoreOfferContentsProvider::DataSymbol(int) const {
 }
 
 bool StoreOfferContentsProvider::IsActive(int idx) const {
+    bool ret = true;
     Element *element = mElements[idx];
     if (mListType == kListDownload) {
-        unsigned int contentIdx = (element->mSong->unka);
+        unsigned int contentIdx = element->mSong->unka;
         int flagsA = TheStoreMetadata.GetContentStateFlags(
             element->mSong->DataTitle(), (unsigned short)(contentIdx + 1)
         );
         int flagsB = TheStoreMetadata.GetContentStateFlags(
             element->mSong->DataTitle(), contentIdx
         );
-        return (flagsA | flagsB) & 1;
+        ret = (flagsA | flagsB) & 1;
     } else if (mListType == kListPurchase) {
-        return !(TheStoreMetadata.SongStateFlags(element->mSong) & 1);
+        ret = !(TheStoreMetadata.SongStateFlags(element->mSong) & 1);
     }
-    return true;
+    return ret;
 }
 
 int StoreOfferContentsProvider::NumData() const { return mElements.size(); }
@@ -137,14 +140,14 @@ void StoreOfferContentsProvider::ToggleChecked(int idx) {
 
 void StoreOfferContentsProvider::ToggleAllChecked() {
     bool newState = !AllChecked();
-    for (int i = 0; i < (int)mElements.size(); i++) {
+    for (unsigned int i = 0; i < mElements.size(); i++) {
         SetChecked(i, newState);
     }
 }
 
 void StoreOfferContentsProvider::AcceptCurChecked() {
     std::vector<unsigned short VECTOR_SIZE_SMALL> contentUnits;
-    for (int i = 0; i < (int)mElements.size(); i++) {
+    for (unsigned int i = 0; i < mElements.size(); i++) {
         Element *element = mElements[i];
         if (element->mChecked) {
             unsigned short base = (unsigned short)element->mSong->unka;
@@ -170,7 +173,7 @@ void StoreOfferContentsProvider::SpecifyFirstSongContents() {
 void StoreOfferContentsProvider::SpecifyNextSongContents() {
     std::vector<unsigned short VECTOR_SIZE_SMALL> contentUnits;
     bool found = false;
-    while (mCurrentSongIndex < (int)mElements.size() && !found) {
+    while ((unsigned int)mCurrentSongIndex < mElements.size() && !found) {
         Element *element = mElements[mCurrentSongIndex];
         if (element->mChecked) {
             unsigned short base = (unsigned short)element->mSong->unka;
@@ -187,7 +190,7 @@ void StoreOfferContentsProvider::SpecifyNextSongContents() {
 }
 
 bool StoreOfferContentsProvider::AnyChecked() {
-    for (int i = 0; i < (int)mElements.size(); i++) {
+    for (unsigned int i = 0; i < mElements.size(); i++) {
         if (IsActive(i) && mElements[i]->mChecked)
             return true;
     }
@@ -195,7 +198,7 @@ bool StoreOfferContentsProvider::AnyChecked() {
 }
 
 bool StoreOfferContentsProvider::AllChecked() {
-    for (int i = 0; i < (int)mElements.size(); i++) {
+    for (unsigned int i = 0; i < mElements.size(); i++) {
         if (IsActive(i) && !mElements[i]->mChecked)
             return false;
     }
@@ -204,7 +207,7 @@ bool StoreOfferContentsProvider::AllChecked() {
 
 int StoreOfferContentsProvider::NumChecked() {
     int count = 0;
-    for (int i = 0; i < (int)mElements.size(); i++) {
+    for (unsigned int i = 0; i < mElements.size(); i++) {
         if (IsActive(i) && mElements[i]->mChecked)
             count++;
     }

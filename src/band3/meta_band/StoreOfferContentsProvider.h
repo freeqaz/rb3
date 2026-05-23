@@ -34,8 +34,8 @@ public:
     virtual RndMat *Mat(int, int, UIListMesh *) const;
     virtual void Custom(int, int, UIListCustom *, Hmx::Object *) const;
     virtual Symbol DataSymbol(int) const;
-    virtual int NumData() const;
     virtual bool IsActive(int) const;
+    virtual int NumData() const;
 
     void BuildList(StoreOffer *, ListType);
     void ClearList();
