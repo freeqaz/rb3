@@ -882,11 +882,11 @@ void RndMesh::CopyGeometry(const RndMesh *mesh, bool b) {
         SetVolume(mesh->mGeomOwner->mVolume);
     mBones = mesh->mBones;
     ClearAndShrink(mStriperResults);
-    if (mStriperResults.size() != 0) {
+    if (mesh->mStriperResults.size() != 0) {
         MemDoTempAllocations m(true, false);
-        mStriperResults.resize(mStriperResults.size());
+        mStriperResults.resize(mesh->mStriperResults.size());
         int i = 0;
-        int stripersize = mStriperResults.size();
+        int stripersize = mesh->mStriperResults.size();
         for (; i < stripersize; i++) {
             mStriperResults[i] = mesh->mStriperResults[i];
         }
