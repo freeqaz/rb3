@@ -41,7 +41,7 @@ void StoreMenuProvider::SetData(DataArray *data) {
     if (data == NULL)
         return;
     if (data->Node(0).Type() == kDataInt) {
-        unsigned short pageId = data->Node(0).Int(data);
+        int pageId = ((const DataArray *)data)->Node(0).Int(data);
         mIxHighlight = 0;
         StorePage *page = TheStoreMetadata.LoadPage(pageId);
         if (page == NULL) {
@@ -52,7 +52,9 @@ void StoreMenuProvider::SetData(DataArray *data) {
             return;
         }
         mPage = page;
-        mTitle = TheStoreMetadata.GetString(page->mPage->unk0);
+        mTitle = *(unsigned short *)&page->mPage->unk0 != 0
+            ? TheStoreMetadata.GetString(*(unsigned short *)&page->mPage->unk0)
+            : gNullStr;
     } else {
         mTitle = StoreMenuProviderGetTitleFromData(data);
         if (data->FindArray(offers, false)) {
@@ -70,11 +72,10 @@ bool StoreMenuProvider::IsActive(int i) const {
         return true;
     }
     StorePackedSubMenu *submenu = mPage->Submenu(i);
-    if (submenu == NULL) {
-        return false;
-    }
-    if (submenu->unk6 == 0 || TheRockCentral.mState == 2) {
-        return (short)submenu->unk4 != 0;
+    if (submenu != NULL) {
+        if (submenu->unk6 == 0 || TheRockCentral.mState == 2) {
+            return *(short *)&submenu->unk4 != 0;
+        }
     }
     return false;
 }
@@ -82,24 +83,27 @@ bool StoreMenuProvider::IsActive(int i) const {
 void StoreMenuProvider::Text(int, int i, UIListLabel *slot, UILabel *label) const {
     if (slot->Matches("filter")) {
         if (mPage->mPage->mHasOffers) {
-            label->SetTextToken(Symbol(mPage->BaseOffer(i)->GetName()));
+            label->SetTextToken(mPage->BaseOffer(i)->GetName());
             return;
         }
         StorePackedSubMenu *submenu = mPage->Submenu(i);
         if (submenu) {
-            label->SetTextToken(Symbol(TheStoreMetadata.GetString(submenu->unk2)));
+            label->SetTextToken(TheStoreMetadata.GetString(submenu->unk2));
             return;
         }
     } else if (slot->Matches("count")) {
         if (!mPage->mPage->mHasOffers) {
             StorePackedSubMenu *submenu = mPage->Submenu(i);
-            if (submenu && (short)submenu->unk4 >= 0) {
-                label->SetInt(submenu->unk4, true);
-                return;
+            if (submenu) {
+                short count = *(short *)&submenu->unk4;
+                if (count >= 0) {
+                    label->SetInt(count, true);
+                    return;
+                }
             }
         }
     }
-    label->SetTextToken(Symbol(gNullStr));
+    label->SetTextToken(gNullStr);
 }
 
 const char *StoreMenuProvider::GetTitle() { return mTitle.c_str(); }

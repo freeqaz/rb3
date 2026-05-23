@@ -63,7 +63,7 @@ int BandStorePanel::StoreUser() const {
     LocalBandUser *l = TheInputMgr->GetUser()
         ? TheInputMgr->GetUser()->GetLocalBandUser()
         : 0;
-    return l ? (int)((LocalUser *)l) : 0;
+    return (int)(LocalUser *)l;
 }
 
 StoreOffer *BandStorePanel::MakeNewOffer(const StorePackedOfferBase *base, bool isRbn) {
@@ -110,12 +110,11 @@ void BandStorePanel::Unload() {
 
 void BandStorePanel::Enter() {
     StorePanel::Enter();
-    StoreUser();
-    LocalBandUser *bu = dynamic_cast<LocalBandUser *>(TheInputMgr->GetUser());
-    if (bu && !bu->IsSignedIn()) {
-        ExitError(kStoreErrorSignedOut);
+    LocalUser *u = dynamic_cast<LocalUser *>((LocalBandUser *)StoreUser());
+    if (u && !u->IsSignedIn()) {
+        ExitError(kStoreErrorStoreServer);
     }
-    TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type(), gNullStr, kHandle);
+    TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type());
 }
 
 void BandStorePanel::Exit() {
@@ -124,19 +123,20 @@ void BandStorePanel::Exit() {
 }
 
 DataNode BandStorePanel::OnMsg(const LocalUserLeftMsg &) {
-    return DataNode(kDataFloat, 6);
+    return DataNode(1);
 }
 
 DataNode BandStorePanel::OnMsg(const MetadataLoadedMsg &msg) {
     DataArray *data = msg->Array(2);
     String path(msg->Str(4));
-    DataArray *found = data->FindArray(Symbol("metadata"), false);
+    Symbol s("metadata");
+    DataArray *found = data->FindArray(s, false);
     if (found) {
         // PopulateOffers + EnumerateOffers (msg fields 5 and 6 control flow)
         PopulateOffers(found, msg->Int(6) != 0);
         EnumerateOffers(msg->Int(6) != 0);
     }
-    return DataNode(kDataFloat, 6);
+    return DataNode(1);
 }
 
 Symbol BandStorePanel::SortName() {
@@ -181,7 +181,8 @@ void BandStoreShortcutProvider::Text(int i, int j, UIListLabel *listlabel, UILab
 }
 
 void BandStorePanel::LoadArt(const char *path, UIPanel *callback) {
-    String full(GetRequestPrefix());
+    ObjectDir::Main()->Find<BandStorePanel>("store_panel", true);
+    String full("dlc_store");
     full += path;
     StorePanel::LoadArt(full.c_str(), callback);
 }
@@ -235,13 +236,13 @@ void BandStorePanel::ExitStore(StoreError err) const {
 }
 
 BEGIN_HANDLERS(BandStorePanel)
-    HANDLE_EXPR(get_request_prefix, GetRequestPrefix())
+    HANDLE_EXPR(get_request_prefix, "dlc_store")
     HANDLE_ACTION(request, Request(String(_msg->Str(2)), _msg->Int(3)))
     HANDLE_ACTION(request_prev_chunk,
                   (Request(String(mPrevChunkPath.c_str()), true), mStartBrowserAtBottom = true))
     HANDLE_ACTION(request_next_chunk, Request(String(mNextChunkPath.c_str()), true))
     HANDLE_EXPR(should_start_browser_at_bottom, mStartBrowserAtBottom)
-    HANDLE_EXPR(request_in_progress, mMetadataLoader != 0 || !((TheStoreMetadata.mFlags >> 3) & 1))
+    HANDLE_EXPR(request_in_progress, mMetadataLoader != 0 || !(TheStoreMetadata.mFlags & 8))
     HANDLE_EXPR(num_offers, (int)unk38.size())
     HANDLE_EXPR(lone_offer, GetLoneOffer(false))
     HANDLE_EXPR(num_extra_offers, (int)unk40.size())
