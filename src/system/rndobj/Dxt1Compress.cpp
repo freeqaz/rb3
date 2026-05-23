@@ -476,7 +476,7 @@ void Dxt1Compress::encodedxtcolorblockfaster(
 ) {
     unsigned char *bestcolor[2];
     unsigned char basecolors[2][3];
-    int i, j;
+    unsigned char i, j;
     unsigned int lowcv, highcv, testcv;
     int haveAlpha = 0;
 
