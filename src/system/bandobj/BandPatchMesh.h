@@ -48,6 +48,7 @@ public:
         Vector2 unk1c; // 0x1c
         unsigned short unk24; // 0x24
         unsigned char unk26;
+        unsigned char unk27;
         int unk28;
         int unk2c;
         unsigned short unk30;
