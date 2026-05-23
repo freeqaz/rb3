@@ -1,11 +1,14 @@
 #include "utl/MemMgr.h"
 #include "os/Debug.h"
+#include "os/Timer.h"
 #include "obj/Data.h"
 #include <cstring>
 
 extern "C" void *WiiMalloc(int);
 extern "C" void WiiFree(void *);
 int GetFreeSystemMemory();
+
+struct OSThread;
 
 struct MemHeapStack {
     int mStack[16]; // 0x0
@@ -76,15 +79,39 @@ public:
     int mMinLargest;    // 0x30
 };
 
-extern int gDefaultHeap;
-extern Heap gHeaps[16];
-int gNumHeaps;
-static bool gMemInited;
-extern int gSingleHeap;
+// -----------------------------------------------------------------------------
+// Globals (declared in source-order to reproduce the binary's BSS layout)
+// -----------------------------------------------------------------------------
+int gDefaultHeap;       // .data:0x80BBCEF0
+
+namespace MemMgr {
+    OSThread *gThreadIds[16];  // .bss:0x80D0D828
+    int gCurThread;            // .bss:0x80D0D868
+    int gNumThreads;           // .bss:0x80D0D86C
+}
 
 namespace {
-    unsigned int gTimeStamp;
+    int kTinyHeap;             // .bss:0x80D0D870
+    int kFastHeap;             // .bss:0x80D0D874
+    unsigned int gTimeStamp;   // .bss:0x80D0D878
+    bool gMemInited;           // .sbss:0x80C7A368
 }
+
+Heap gHeaps[16];           // .bss:0x80D0D880
+int gNumHeaps;             // .bss:0x80D0DBC0
+MemHeapStack gThreadBuf[16]; // .bss:0x80D0DBC8
+MemHeapStack gNullMemStack;  // .bss:0x80D0E008
+int gSingleHeap;           // .bss:0x80D0E04C
+CriticalSection *gMemLock;    // .bss:0x80D0E050
+CriticalSection *gMemStackLock; // .bss:0x80D0E054
+static CriticalSection sMemLock;       // .bss:0x80D0E064 (preceded by guard @0x80D0E058)
+static CriticalSection sMemStackLock;  // .bss:0x80D0E08C (preceded by guard @0x80D0E080)
+Timer gMemAllocTimer;      // .bss:0x80D0E0B0
+
+bool gInsideMemFunc;       // .sbss:0x80C7A369
+
+const char *kMemAssertStr = "Heap: %s File: %s Line: %d Error: %s\n";
+volatile int gCheckConsistencyish;
 
 int MemNumHeaps() { return gNumHeaps; }
 
@@ -671,7 +698,6 @@ void *_MemAllocTemp(int size, int align) {
 }
 
 extern char gZeroAllocBuf[0x20];
-extern bool gInsideMemFunc;
 
 extern OSThread *gMainThreadID;
 
@@ -810,7 +836,6 @@ DataNode ResetHWM(DataArray *) {
 }
 
 extern "C" void OSReport(const char *, ...);
-extern volatile int gCheckConsistencyish;
 
 DataNode CycleMemConsistencyCheck(DataArray *) {
     gCheckConsistencyish = gCheckConsistencyish - 1;
@@ -825,5 +850,53 @@ void MemCheckConsistency(const char *file, int line) {
     CritSecTracker tracker(gMemLock);
     for (int i = 0; i < gNumHeaps; i++) {
         gHeaps[i].CheckConsistency(file, line);
+    }
+}
+
+// ChunkAllocator pool table used by MemPrintOverview.
+class ChunkAllocator;
+extern ChunkAllocator *gChunkAlloc[2];
+
+// Forward declarations for MakeString templates used here. Including
+// MakeString.h would drag in Symbol.h; only need the templates.
+#include "utl/MakeString.h"
+#include "utl/TextStream.h"
+
+void MemPrintOverview(int heapIdx, TextStream &stream) {
+    int totalFree = 0;
+    int minTotalFree = 0;
+    int i;
+    for (i = 0; i < gNumHeaps; i++) {
+        if (heapIdx == kNoHeap || heapIdx == i) {
+            int numFreeBytes, leftFrag, rightFrag, biggestFree;
+            int mNumFreeBytes, mLargestFree, mBiggestFree, mMinLargest;
+            MemFreeBlockStats(i, leftFrag, rightFrag, numFreeBytes, biggestFree);
+            MemMoreFreeBlockStats(i, mNumFreeBytes, mLargestFree, mBiggestFree, mMinLargest);
+            stream << MakeString(
+                " [%5s] free:%5d big:%5d lfrag:%4d rfrag:%3d minfree:%5d minbig:%5d size:%6d\n",
+                MemHeapName(i), numFreeBytes >> 10, biggestFree >> 10, leftFrag, rightFrag,
+                mBiggestFree >> 10, mMinLargest >> 10, gHeaps[i].mSizeWords >> 8
+            );
+            totalFree += numFreeBytes;
+            minTotalFree += mBiggestFree;
+        }
+    }
+    MILO_ASSERT(minTotalFree <= totalFree, 0xAC8);
+    stream << MakeString(
+        "totalFree: %7d minTotalFree: %7d, totalFree(64): %7d minTotalFree(64): %7d\n",
+        totalFree >> 10, minTotalFree >> 10,
+        (totalFree >> 10) - 0x10000, (minTotalFree >> 10) - 0x10000
+    );
+    for (i = 0; i < 2; i++) {
+        ChunkAllocator *ca = gChunkAlloc[i];
+        if (ca != nullptr) {
+            stream << MakeString(
+                " [%5s pool] free:%7d TotalChunksSize:%7d NumHunks:%d\n",
+                MemHeapName(*(int *)((char *)ca + 0x201c)),
+                (*(int **)((char *)ca + 0x2014) - *(int **)((char *)ca + 0x2018)) >> 8,
+                *(int *)((char *)ca + 0x8) >> 10,
+                *(int *)((char *)ca + 0x2010)
+            );
+        }
     }
 }
