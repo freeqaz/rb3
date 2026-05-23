@@ -180,36 +180,30 @@ DataNode TokenRedemptionPanel::OnMsg(const ButtonDownMsg &msg) {
 DataNode TokenRedemptionPanel::OnMsg(const RockCentralOpCompleteMsg &msg) {
     static Message token_msg("token_redemption_msg", gNullStr);
     int state = mRedemptionState;
-    if (state != 2 && state != 5) {
+    if (state != kRequestingOffers && state != kRequestingPreviousOffers) {
         return 1;
     }
-    Symbol errSym =
-        (state == 5) ? token_error_no_previous_offers : token_redemption_error;
-    if (!msg.Success()) {
-        if (mRedemptionState == 5) {
-            LocalBandUser *u =
-                TheInputMgr->GetUser() ? TheInputMgr->GetUser()->GetLocalBandUser() : NULL;
-            mRedemptionState = 6;
-            EnumerateOffers(u);
-            return 1;
-        }
-        token_msg[0] = errSym;
-    } else {
-        mResultList.Update(NULL);
-        if (mResultList.mDataResultList.empty() && mRedemptionState == 5) {
-            LocalBandUser *u =
-                TheInputMgr->GetUser() ? TheInputMgr->GetUser()->GetLocalBandUser() : NULL;
-            mRedemptionState = 6;
-            EnumerateOffers(u);
-            return 1;
-        }
+    Symbol errSym = (state == kRequestingPreviousOffers)
+        ? token_error_no_previous_offers
+        : token_redemption_error;
+    if (msg.Success()) {
         DataNode statusNode(0);
+        mResultList.Update(NULL);
+        if (mResultList.mDataResultList.empty()
+            && mRedemptionState == kRequestingPreviousOffers) {
+            LocalBandUser *u = TheInputMgr->GetUser()
+                ? TheInputMgr->GetUser()->GetLocalBandUser()
+                : NULL;
+            mRedemptionState = kEnumeratingPreviousOffers;
+            EnumerateOffers(u);
+            return 1;
+        }
         mResultList.GetDataResult(0)->GetDataResultValue(String("status"), statusNode);
         int status = statusNode.Int(NULL);
         switch (status) {
         case 0xA0002:
             MILO_ASSERT(mRedemptionState == kRequestingPreviousOffers, 0x1D1);
-            mRedemptionState = 6;
+            mRedemptionState = kEnumeratingPreviousOffers;
             {
                 LocalBandUser *u = TheInputMgr->GetUser()
                     ? TheInputMgr->GetUser()->GetLocalBandUser()
@@ -220,7 +214,7 @@ DataNode TokenRedemptionPanel::OnMsg(const RockCentralOpCompleteMsg &msg) {
         case 0xA0005:
         case 0xA0007:
             MILO_ASSERT(mRedemptionState == kRequestingOffers, 0x1DF);
-            mRedemptionState = 3;
+            mRedemptionState = kEnumeratingOffers;
             {
                 LocalBandUser *u = TheInputMgr->GetUser()
                     ? TheInputMgr->GetUser()->GetLocalBandUser()
@@ -261,8 +255,18 @@ DataNode TokenRedemptionPanel::OnMsg(const RockCentralOpCompleteMsg &msg) {
             token_msg[0] = errSym;
             break;
         }
+    } else {
+        if (mRedemptionState == kRequestingPreviousOffers) {
+            LocalBandUser *u = TheInputMgr->GetUser()
+                ? TheInputMgr->GetUser()->GetLocalBandUser()
+                : NULL;
+            mRedemptionState = kEnumeratingPreviousOffers;
+            EnumerateOffers(u);
+            return 1;
+        }
+        token_msg[0] = errSym;
     }
-    mRedemptionState = 0;
+    mRedemptionState = kIdle;
     HandleType(token_msg);
     return 1;
 }
