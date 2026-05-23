@@ -1,5 +1,6 @@
 #include "utl/MemMgr.h"
 #include "os/Debug.h"
+#include "obj/Data.h"
 #include <cstring>
 
 extern "C" void *WiiMalloc(int);
@@ -607,4 +608,38 @@ int GetFreeSystemMemory() {
         }
     } while (low + 1 < high);
     return low;
+}
+
+int MemAllocSize(void *mem) {
+    CritSecTracker tracker(gMemLock);
+    if (mem == nullptr) return 0;
+    for (int i = 0; i < gNumHeaps; i++) {
+        int size = gHeaps[i].AllocSize((int *)mem);
+        if (size != 0) {
+            return size;
+        }
+    }
+    MILO_FAIL("Can't determine size of allocation.");
+    return 0;
+}
+
+void MemResetMinFreeBlockStats(int);
+
+DataNode ResetHWM(DataArray *) {
+    for (int i = 0; i < gNumHeaps; i++) {
+        MemResetMinFreeBlockStats(i);
+    }
+    return DataNode(0);
+}
+
+extern "C" void OSReport(const char *, ...);
+extern volatile int gCheckConsistencyish;
+
+DataNode CycleMemConsistencyCheck(DataArray *) {
+    gCheckConsistencyish = gCheckConsistencyish - 1;
+    if (gCheckConsistencyish < 0) {
+        gCheckConsistencyish = gCheckConsistencyish + 8;
+    }
+    OSReport("gCheckConsistencyish %d", gCheckConsistencyish);
+    return DataNode(0);
 }
