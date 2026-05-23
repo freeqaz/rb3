@@ -2,6 +2,7 @@
 #include "game/Defines.h"
 #include "meta_band/SongSortMgr.h"
 #include "obj/Object.h"
+#include "os/Debug.h"
 #include "ui/UIListProvider.h"
 #include "utl/Symbol.h"
 #include <map>
@@ -69,7 +70,7 @@ public:
     virtual const char *GetCurrentStatus() const { return gNullStr; }
     virtual void Reset() {}
     virtual bool IsHeader() const { return true; }
-    virtual void SelectOption(int);
+    virtual void SelectOption(int) { MILO_ASSERT(false, 0x91); }
 };
 
 // Setting that toggles the active song-sort.

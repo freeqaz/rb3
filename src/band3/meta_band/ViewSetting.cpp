@@ -81,9 +81,6 @@ int ViewSetting::StartingOption() const { return 0; }
 // HeaderViewSetting
 // ------------------------------------------------------------------
 
-void HeaderViewSetting::SelectOption(int) {
-    TheDebugFailer << MakeString(kAssertStr, __FUNCTION__, 0x91, __FUNCTION__);
-}
 
 // ------------------------------------------------------------------
 // SortViewSetting
