@@ -508,13 +508,14 @@ void ChordShapeGenerator::AddVertProfile(
     std::map<unsigned short, unsigned short> &newVertMap,
     Hmx::Color32 col
 ) {
+    newVertMap.clear();
     int numNewVerts = secSrc.mVerts.size();
-    RndMesh::VertVector &meshVerts = mesh->Verts();
-    if (vertIt + numNewVerts > (int)meshVerts.size()) {
-        unsigned int newsize = meshVerts.size() * 2;
+    if (numNewVerts + vertIt > (int)mesh->Verts().size()) {
+        unsigned int newsize = mesh->Verts().size() * 2;
         MILO_LOG("RG: too few verts for chord shape - increasing to %d", newsize);
-        meshVerts.resize(newsize, true);
+        mesh->Verts().resize(newsize, true);
     }
+    RndMesh::VertVector &meshVerts = mesh->Verts();
     RndMesh::VertVector &srcVerts = mSource->Verts();
     std::set<unsigned short>::const_iterator it = secSrc.mVerts.begin();
     std::set<unsigned short>::const_iterator end = secSrc.mVerts.end();
@@ -623,10 +624,10 @@ void ChordShapeGenerator::GetCrossSection(float xOffset, CrossSec &cs) {
     cs.mEdges.clear();
     cs.mVerts.clear();
     cs.mXOffset = xOffset;
-    std::vector<RndMesh::Face> faces(mSource->Faces());
     RndMesh::VertVector &verts = mSource->Verts();
-    float lo = xOffset - 0.1f;
+    std::vector<RndMesh::Face, unsigned short> faces(mSource->Faces());
     float hi = xOffset + 0.1f;
+    float lo = xOffset - 0.1f;
     for (unsigned int i = 0; i < faces.size(); i++) {
         RndMesh::Face &f = faces[i];
         bool outOfBand = false;
@@ -674,10 +675,10 @@ void ChordShapeGenerator::ExtendProfile(
     Transform interp;
     InterpolateXfm(tfA, tfB, t, interp);
     Hmx::Color32 col;
-    col.a = col1.a + (int)(t * (col2.a - col1.a));
-    col.b = col1.b + (int)(t * (col2.b - col1.b));
     col.g = col1.g + (int)(t * (col2.g - col1.g));
     col.r = col1.r + (int)(t * (col2.r - col1.r));
+    col.a = col1.a + (int)(t * (col2.a - col1.a));
+    col.b = col1.b + (int)(t * (col2.b - col1.b));
     AddVertProfile(mesh, interp, fretHeight, crossSec, profileVerts, Hmx::Color32(col));
     ConnectVertProfiles(mesh, connectingVerts, profileVerts, crossSec);
     connectingVerts.swap(profileVerts);
@@ -691,7 +692,7 @@ void ChordShapeGenerator::ConnectVertProfiles(
 ) {
     unsigned int numVerts = crossSec.mVerts.size();
     MILO_ASSERT(leftMap.size() == numVerts && rightMap.size() == numVerts, 0x393);
-    int numNewFaces = crossSec.mEdges.size() * 2;
+    unsigned int numNewFaces = crossSec.mEdges.size() * 2;
     std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
     if (faceIt + numNewFaces > meshFaces.size()) {
         unsigned int newsize = meshFaces.size() * 2;
