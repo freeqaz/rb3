@@ -914,7 +914,7 @@ void RndScaleObject(Hmx::Object *o, float f1, float f2) {
             partsys->mBoxExtent2.y * f1,
             partsys->mBoxExtent2.z * f1
         );
-        partsys->SetSpeed((partsys->mSpeed.x * f1) / f2, (partsys->mSpeed.y * f1) / f2);
+        partsys->SetSpeed((f1 * partsys->mSpeed.x) / f2, (f1 * partsys->mSpeed.y) / f2);
         partsys->SetStartSize(f1 * partsys->mStartSize.x, f1 * partsys->mStartSize.y);
         partsys->SetDeltaSize(f1 * partsys->mDeltaSize.x, f1 * partsys->mDeltaSize.y);
         return;
