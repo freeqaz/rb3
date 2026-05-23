@@ -702,10 +702,10 @@ void SongParser::OnGemEnd(int tick, unsigned char pitch) {
                 float ticktime = GetTempoMap()->TickToTime(tick);
                 geminfo.track = mTrack;
                 geminfo.ms = GetTempoMap()->TickToTime(infotick);
-                geminfo.tick = infotick;
+                geminfo.duration_ticks = tick - infotick;
                 bool ignore = false;
                 geminfo.duration_ms = ticktime - geminfo.ms;
-                geminfo.duration_ticks = tick - infotick;
+                geminfo.tick = infotick;
                 if (mIgnoreGemDurations || geminfo.duration_ticks <= 160)
                     ignore = true;
                 geminfo.ignore_duration = ignore;
