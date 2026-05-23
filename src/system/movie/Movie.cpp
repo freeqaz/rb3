@@ -52,9 +52,9 @@ Movie::~Movie() {
 void Movie::Impl::Init() {
     CriticalSection *cs = &gMovieCrit;
     if (cs) cs->Enter();
-    DataArray *cfg = SystemConfig(Symbol("movie"));
-    cfg->FindData(Symbol("bink_core0"), gBinkCore0, true);
-    cfg->FindData(Symbol("bink_core1"), gBinkCore1, true);
+    DataArray *cfg = SystemConfig("movie");
+    cfg->FindData("bink_core0", gBinkCore0, true);
+    cfg->FindData("bink_core1", gBinkCore1, true);
     if (!gInitialized) {
         sActiveMovies.reserve(0x10);
         REGISTER_OBJ_FACTORY(TexMovie)
@@ -63,7 +63,7 @@ void Movie::Impl::Init() {
         Movie::Impl::PlatformInit();
         gInitialized = true;
     }
-    DataRegisterFunc(Symbol("set_bink_track"), OnMovieSetTrack);
+    DataRegisterFunc("set_bink_track", OnMovieSetTrack);
     if (cs) cs->Exit();
 }
 
