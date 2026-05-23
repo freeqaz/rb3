@@ -20,7 +20,7 @@
 // EnterFlowMsg: tells a remote machine to transition to a particular UI flow.
 class EnterFlowMsg : public NetMessage {
 public:
-    EnterFlowMsg() : mFlow(kUIFlowType_None), mMode() {}
+    EnterFlowMsg() {}
     EnterFlowMsg(UIFlowType flow, Symbol mode) : mFlow(flow), mMode(mode) {}
     virtual ~EnterFlowMsg() {}
     virtual void Save(BinStream &) const;
@@ -35,11 +35,11 @@ public:
 };
 
 namespace {
-    class OpenGateData : public virtual Hmx::Object, public LockData {
+    class OpenGateData : public LockData {
     public:
         OpenGateData() {}
         virtual ~OpenGateData() {}
-        virtual void Save(BinStream &) const;
+        void Save(BinStream &) const;
         virtual void Load(BinStream &);
 
         void GetWaitingUsers(std::vector<BandUser *, unsigned short> &) const;
@@ -112,8 +112,9 @@ NetMessage *EnterFlowMsg::NewNetMessage() { return new EnterFlowMsg(); }
 
 void OpenGateData::Save(BinStream &bs) const {
     bs << mWaitingUsers;
-    unsigned char n = (unsigned char)mCurrentScreenState.size();
-    bs.Write(&n, 1);
+    int n = (unsigned char)mCurrentScreenState.size();
+    unsigned char nb = (unsigned char)n;
+    bs.Write(&nb, 1);
     for (int i = 0; i < n; i++) {
         String name(mCurrentScreenState[i]->Name());
         bs << name;
@@ -173,7 +174,6 @@ WaitingUserGate::~WaitingUserGate() {
     if (TheSessionMgr) {
         TheSessionMgr->RemoveSink(this, ProcessedJoinRequestMsg::Type());
     }
-    delete mLockStepMgr;
 }
 
 void WaitingUserGate::Init() {
@@ -209,10 +209,10 @@ DataNode WaitingUserGate::OnMsg(const LockStepStartMsg &msg) {
     OpenGateData *gd = dynamic_cast<OpenGateData *>(ld);
     std::vector<BandUser *, unsigned short> waiting;
     gd->GetWaitingUsers(waiting);
-    bool anyLocal = false;
-    for (unsigned short i = 0; i < waiting.size(); i++) {
+    int anyLocal = 0;
+    for (int i = 0; (unsigned int)i < waiting.size(); i++) {
         if (waiting[i]->IsLocal()) {
-            anyLocal = true;
+            anyLocal = 1;
             break;
         }
     }
