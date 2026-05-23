@@ -116,3 +116,13 @@ void Movie::Validate() {}
 float TaskMgrDeltaSeconds() { return TheTaskMgr.DeltaSeconds(); }
 
 void Movie::Impl::SetAspect(float f) { mAspect = f; }
+
+void Movie::Impl::LockThread() {
+    MILO_ASSERT(mThreadId == 0, 0x5C2);
+    mThreadId = (unsigned int)OSGetCurrentThread();
+}
+
+void Movie::Impl::UnlockThread() {
+    MILO_ASSERT(mThreadId == (unsigned int)CurrentThreadId(), 0x5BD);
+    mThreadId = 0;
+}
