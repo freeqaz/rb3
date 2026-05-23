@@ -131,7 +131,7 @@ void CharClip::Transitions::AddNode(CharClip *clip, const CharGraphNode &node) {
     int size = resized->size;
     int i = 0;
     for (; i < size; i++) {
-        if (node.curBeat < resized->nodes[i].curBeat)
+        if (resized->nodes[i].curBeat > node.curBeat)
             break;
     }
     for (int j = size; j > i; j--) {
