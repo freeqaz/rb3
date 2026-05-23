@@ -603,9 +603,7 @@ void RndMesh::PreLoad(BinStream &bs) {
         bs >> v;
     }
     if (gRev < 0xF) {
-        Sphere s;
-        bs >> s;
-        SetSphere(s);
+        bs >> mSphere;
     }
     if (gRev >= 5 && gRev <= 7) {
         bool b;
