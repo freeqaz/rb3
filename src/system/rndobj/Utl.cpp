@@ -904,16 +904,16 @@ void RndScaleObject(Hmx::Object *o, float f1, float f2) {
         partsys->SetLife(f1 * partsys->mLife.x, f1 * partsys->mLife.y);
         partsys->SetEmitRate(partsys->mEmitRate.x / f1, partsys->mEmitRate.y / f1);
         Scale(partsys->mForceDir, (f1 / f2) / f2, partsys->mForceDir);
-        partsys->mBoxExtent1.Set(
-            partsys->mBoxExtent1.x * f1,
-            partsys->mBoxExtent1.y * f1,
-            partsys->mBoxExtent1.z * f1
-        );
-        partsys->mBoxExtent2.Set(
-            partsys->mBoxExtent2.x * f1,
-            partsys->mBoxExtent2.y * f1,
-            partsys->mBoxExtent2.z * f1
-        );
+        {
+            float bx1 = partsys->mBoxExtent1.x * f1;
+            float bz1 = partsys->mBoxExtent1.z * f1;
+            float by1 = partsys->mBoxExtent1.y * f1;
+            float by2 = partsys->mBoxExtent2.y * f1;
+            float bx2 = partsys->mBoxExtent2.x * f1;
+            float bz2 = partsys->mBoxExtent2.z * f1;
+            partsys->mBoxExtent1.Set(bx1, by1, bz1);
+            partsys->mBoxExtent2.Set(bx2, by2, bz2);
+        }
         partsys->SetSpeed((f1 * partsys->mSpeed.x) / f2, (f1 * partsys->mSpeed.y) / f2);
         partsys->SetStartSize(f1 * partsys->mStartSize.x, f1 * partsys->mStartSize.y);
         partsys->SetDeltaSize(f1 * partsys->mDeltaSize.x, f1 * partsys->mDeltaSize.y);
