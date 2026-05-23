@@ -145,6 +145,22 @@ bool Movie::Impl::IsOpen() const {
     return mBink != 0;
 }
 
+void Movie::Impl::Terminate() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x4D7);
+    if (mBink != 0) MovieClose();
+}
+
 bool Movie::Impl::IsLoading() const {
     bool ok = true;
     if (mThreadId != (unsigned int)OSGetCurrentThread()) {

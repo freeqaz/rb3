@@ -34,6 +34,10 @@ public:
         void SetTimeCallback(float (*)());
         void Begin(const char *, float, bool, bool, bool, bool, int, BinStream *);
         void Terminate();
+        void MovieClose();
+        int MovieOpen(const char *, unsigned int);
+        bool PlatformCacheFile(const char *);
+        int NextFrame();
 
         // Layout reverse-engineered from compiled binary (m2c struct dump).
         MovieLoader *mLoader; // 0x00
