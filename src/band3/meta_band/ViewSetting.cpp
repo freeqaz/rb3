@@ -39,8 +39,17 @@
 // ViewSetting (base)
 // ------------------------------------------------------------------
 
-void ViewSetting::Text(int, int, UIListLabel *, UILabel *label) const {
-    label->SetTextToken(gNullStr);
+void ViewSetting::InitData(RndDir *dir) {
+    if (dir) {
+        mEvenMat = dir->Find<RndMat>("bg_even.mat", false);
+        mOddMat = dir->Find<RndMat>("bg_odd.mat", false);
+    }
+}
+
+void ViewSetting::Custom(int, int, UIListCustom *, Hmx::Object *obj) const {
+    RndDrawable *d = dynamic_cast<RndDrawable *>(obj);
+    MILO_ASSERT(d, 0x2a);
+    d->SetShowing(false);
 }
 
 RndMat *ViewSetting::Mat(int, int row, UIListMesh *) const {
@@ -50,20 +59,11 @@ RndMat *ViewSetting::Mat(int, int row, UIListMesh *) const {
     return mEvenMat;
 }
 
+void ViewSetting::Text(int, int, UIListLabel *, UILabel *label) const {
+    label->SetTextToken(gNullStr);
+}
+
 bool ViewSetting::IsActive(int) const { return true; }
-
-void ViewSetting::Custom(int, int, UIListCustom *, Hmx::Object *obj) const {
-    RndDrawable *drawable = dynamic_cast<RndDrawable *>(obj);
-    MILO_ASSERT(drawable, 0x2a);
-    drawable->SetShowing(false);
-}
-
-void ViewSetting::InitData(RndDir *dir) {
-    if (dir) {
-        mEvenMat = dir->Find<RndMat>("bg_even.mat", false);
-        mOddMat = dir->Find<RndMat>("bg_odd.mat", false);
-    }
-}
 
 bool ViewSetting::CanSelectMultiple() const { return false; }
 
