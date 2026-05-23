@@ -27,13 +27,7 @@ StoreOfferProvider::StoreOfferProvider(
       mGroupBgMat(NULL),
       mSongBgMat(NULL) {}
 
-StoreOfferProvider::~StoreOfferProvider() {
-    ClearList();
-    if (mShortcuts) {
-        mShortcuts->Release();
-        mShortcuts = NULL;
-    }
-}
+StoreOfferProvider::~StoreOfferProvider() { ClearList(); }
 
 int StoreOfferProvider::NumData() const { return mElements.size(); }
 
@@ -136,9 +130,9 @@ int StoreOfferProvider::PosToPrevGroupPos(int pos) {
 }
 
 void StoreOfferProvider::ClearList() {
-    for (std::vector<Element *>::iterator it = mElements.begin();
-         it != mElements.end();
-         ++it) {
+    Element **start = &mElements[0];
+    Element **end = start + mElements.size();
+    for (Element **it = start; it != end; ++it) {
         delete *it;
     }
     mElements.clear();
