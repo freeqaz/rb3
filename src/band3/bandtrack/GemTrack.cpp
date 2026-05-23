@@ -556,6 +556,8 @@ void GemTrack::DrawBeatLines(int from_tick, int to_tick) {
 }
 #pragma pop
 
+#pragma push
+#pragma pool_data off
 void GemTrack::DrawTrackElements(int from_tick, int to_tick) {
     Player *player = GetPlayer();
     if (!player)
@@ -620,6 +622,7 @@ void GemTrack::DrawTrackElements(int from_tick, int to_tick) {
     }
     mLastTopTick = to_tick;
 }
+#pragma pop
 
 void GemTrack::Poll(float f) {}
 
