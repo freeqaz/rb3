@@ -2187,6 +2187,20 @@ bool SongParser::HandleRGRollStart(int tick, unsigned char pitch, unsigned char 
         return false;
 }
 
+bool SongParser::HandleRGTrillStart(int tick, unsigned char pitch, unsigned char data) {
+    if (pitch == 127) {
+        mTrillInProgress = tick;
+        mTrillMask = 0;
+        for (int i = 0; i < 4; i++) {
+            if (mTrillIntervals->Int(i) > 0 && (i != 2 || data <= 0x32)) {
+                mTrillMask |= 1 << i;
+            }
+        }
+        return true;
+    } else
+        return false;
+}
+
 bool SongParser::HandleRGTrillStop(int tick, unsigned char pitch) {
     if (pitch != 127)
         return false;
