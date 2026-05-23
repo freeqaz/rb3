@@ -23,20 +23,23 @@ void AppMiniLeaderboardDisplay::Init() {
 }
 
 AppMiniLeaderboardDisplay::AppMiniLeaderboardDisplay()
-    : mStatus(kLeaderboardSuccess), mUIList(nullptr), mLeaderboard(nullptr),
+    : mStatus(kLeaderboardUnloaded), mUIList(nullptr), mLeaderboard(nullptr),
       mSongID(0), mScoreType((ScoreType)2), mUpdateTime(0.0f) {}
 
 AppMiniLeaderboardDisplay::~AppMiniLeaderboardDisplay() {
+    if (mUIList) {
+        mUIList->SetProvider(mUIList);
+    }
     if (mLeaderboard) {
         delete mLeaderboard;
     }
     MILO_ASSERT(mUIList, 0x63);
-    mUIList->SetProvider(nullptr);
+    mUIList->SetProvider(mUIList);
 }
 
 void AppMiniLeaderboardDisplay::Poll() {
     UIComponent::Poll();
-    if (mSongID != 0 && mStatus == kLeaderboardSuccess) {
+    if (mSongID != 0 && mStatus == kLeaderboardUnloaded) {
         float t = TheTaskMgr.UISeconds();
         if (mUpdateTime > t) {
             mUpdateTime = t;
@@ -61,17 +64,22 @@ void AppMiniLeaderboardDisplay::SetLeaderboardStatus(LeaderboardStatus status) {
     if (status == mStatus)
         return;
     mStatus = status;
-    if (mLeaderboard) {
-        mLeaderboard->mHasStats = (status == kLeaderboardLoading);
+    if (mPendingGroup) {
+        mPendingGroup->SetShowing(status == kLeaderboardLoading);
     }
     MILO_ASSERT(mUIList, 0x9e);
-    mUIList->SetShowing(mStatus == kLeaderboardSuccess);
-    if (mStatus == kLeaderboardSuccess || mStatus == kLeaderboardError) {
+    mUIList->SetShowing(mStatus == kLeaderboardReady);
+    switch (mStatus) {
+    case kLeaderboardError:
+    case kLeaderboardUnloaded:
         if (mFadeOutTrigger)
             mFadeOutTrigger->Trigger();
-    } else {
+        break;
+    case kLeaderboardReady:
+    case kLeaderboardLoading:
         if (mFadeInTrigger)
             mFadeInTrigger->Trigger();
+        break;
     }
 }
 
@@ -120,12 +128,12 @@ int AppMiniLeaderboardDisplay::UpdateLeaderboard(int songID, ScoreType scoreType
         return 1;
     CancelOldServerRequest();
     mScoreType = scoreType;
-    SetLeaderboardStatus(kLeaderboardSuccess);
+    SetLeaderboardStatus(kLeaderboardUnloaded);
     mUpdateTime = TheTaskMgr.UISeconds();
     return 1;
 }
 
-bool AppMiniLeaderboardDisplay::IsReady() { return mStatus == kLeaderboardLoading; }
+bool AppMiniLeaderboardDisplay::IsReady() { return mStatus == kLeaderboardReady; }
 
 bool AppMiniLeaderboardDisplay::HasRows() {
     if (mLeaderboard && mLeaderboard->NumData()) {
@@ -143,7 +151,7 @@ void AppMiniLeaderboardDisplay::ResultSuccess(bool, bool, bool) {
     } else {
         mUIList->SetSelected(0, -1);
     }
-    SetLeaderboardStatus(kLeaderboardEmpty);
+    SetLeaderboardStatus(kLeaderboardReady);
 }
 
 void AppMiniLeaderboardDisplay::ResultFailure() {

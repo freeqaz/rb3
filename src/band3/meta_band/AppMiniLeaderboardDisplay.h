@@ -10,8 +10,8 @@
 #include "ui/UIList.h"
 
 enum LeaderboardStatus {
-    kLeaderboardSuccess = 0,
-    kLeaderboardEmpty = 1,
+    kLeaderboardUnloaded = 0,
+    kLeaderboardReady = 1,
     kLeaderboardLoading = 2,
     kLeaderboardError = 3
 };
