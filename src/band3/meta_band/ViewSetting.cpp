@@ -410,6 +410,63 @@ void ViewSettingsProvider::ResetAllSettings() {
     }
 }
 
+void ViewSettingsProvider::BuildFilters(Symbol s) {
+    std::vector<int> validSongs;
+    std::map<Symbol, int> *filterMaps[9];
+    for (int i = 0; i < 9; i++) {
+        filterMaps[i] = new std::map<Symbol, int>();
+    }
+    SongSortMgr::SongFilter &filter = TheMusicLibrary->GetFilter();
+    for (int ft = 0; ft < 9; ft++) {
+        const std::set<Symbol> &fset = filter.GetFilterSet((FilterType)ft);
+        for (std::set<Symbol>::const_iterator it = fset.begin();
+             it != fset.end();
+             ++it) {
+            (*filterMaps[ft])[*it] = 0;
+        }
+    }
+    Symbol filterSyms[9];
+    for (int i = 0; i < 9; i++) {
+        filterSyms[i] = gNullStr;
+    }
+    TheSongMgr.GetRankedSongs(validSongs, true, true);
+    for (std::vector<int>::iterator it = validSongs.begin();
+         it != validSongs.end();
+         ++it) {
+        BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(*it);
+        int rankTier = TheSongMgr.RankTier(data->Rank(s), s);
+        filterSyms[0] = data->Genre();
+        filterSyms[1] = data->Decade();
+        filterSyms[6] = TheSongMgr.RankTierToken(rankTier);
+        filterSyms[7] = data->LengthSym();
+        filterSyms[8] = data->RatingSym();
+        filterSyms[5] = data->SourceSym();
+        filterSyms[4] = data->VocalPartsSym();
+        filterSyms[3] = data->HasProGuitarSym();
+        filterSyms[2] = data->HasKeysSym();
+        for (int ft = 0; ft < 9; ft++) {
+            bool skip = false;
+            if (ft == 6 && data->Rank(s) == 0.0f) {
+                skip = true;
+            }
+            if (!skip) {
+                (*filterMaps[ft])[filterSyms[ft]] += 1;
+            }
+        }
+    }
+    for (std::vector<ViewSetting *>::iterator it = mSettings.begin();
+         it != mSettings.end();
+         ++it) {
+        FilterViewSetting *fvs = dynamic_cast<FilterViewSetting *>(*it);
+        if (fvs) {
+            fvs->SetFilterData(*filterMaps[fvs->mFilterType]);
+        }
+    }
+    for (int i = 0; i < 9; i++) {
+        delete filterMaps[i];
+    }
+}
+
 int ViewSettingsProvider::SelectSetting(int idx) {
     ViewSetting *setting = mSettings[idx];
     if (setting->IsValid()) {

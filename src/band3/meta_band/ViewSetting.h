@@ -112,6 +112,7 @@ protected:
 // Setting that toggles individual entries within one filter category
 // (genre, decade, difficulty, etc.).
 class FilterViewSetting : public ViewSetting {
+    friend class ViewSettingsProvider;
 public:
     struct Filter {
         Symbol mSym; // 0x0
