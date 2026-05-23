@@ -522,6 +522,8 @@ void GemTrack::DrawBeatLine(Symbol s1, int i2, int i3, bool b4) {
     }
 }
 
+#pragma push
+#pragma pool_data off
 void GemTrack::DrawBeatLines(int from_tick, int to_tick) {
     static Symbol downbeat_line("bar_measure.wid");
     static Symbol beat_line("bar_beat.wid");
@@ -540,8 +542,8 @@ void GemTrack::DrawBeatLines(int from_tick, int to_tick) {
                 DrawBeatLine(beat_line, beat, beat_tick, false);
             }
         }
-        int next_beat = beat + 1;
         int sub_tick = beat_tick + subdivision;
+        int next_beat = beat + 1;
         beat_tick = BeatToTick((float)next_beat);
         while (sub_tick < beat_tick && sub_tick < to_tick) {
             if (sub_tick >= from_tick) {
@@ -552,6 +554,7 @@ void GemTrack::DrawBeatLines(int from_tick, int to_tick) {
         beat = next_beat;
     }
 }
+#pragma pop
 
 void GemTrack::DrawTrackElements(int from_tick, int to_tick) {
     Player *player = GetPlayer();
