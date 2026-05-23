@@ -63,6 +63,8 @@ const char *MemHeapName(int);
 void MemFreeBlockStats(int, int &, int &, int &, int &);
 void *MemTruncate(void *, int);
 void MemSetAllowTemp(char *, bool);
+void MemCheckConsistency(const char *, int);
+int MemAllocSize(void *);
 
 class MemTempHeap {
 public:

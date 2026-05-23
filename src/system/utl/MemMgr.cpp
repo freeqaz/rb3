@@ -55,6 +55,7 @@ public:
     void BestLastFit(int, int, FreeBlockInfo &);
     void LRUFit(int, int, FreeBlockInfo &);
     void LastFit(int, int, FreeBlockInfo &);
+    void CheckConsistency(const char *, int);
     const char *Name() const { return mName; }
 
     FreeBlock *mFreeBlockChain; // 0x0
@@ -593,6 +594,57 @@ void *MemHandle::Lock() {
     return (char *)mAlloc + 0x10;
 }
 
+void MemHandle::Unlock() {
+    MILO_ASSERT(mAlloc->mBack == this, 0xb1c);
+    MILO_ASSERT(mAlloc->mLockCount > 0, 0xb1d);
+    --mAlloc->mLockCount;
+}
+
+void MemFreeH(MemHandle *h) {
+    // Only valid from main thread
+    extern OSThread *gMainThreadID;
+    MILO_ASSERT(gMainThreadID == nullptr || gMainThreadID == OSGetCurrentThread(), 0xb42);
+    if (h != nullptr) {
+        MILO_ASSERT(h->mAlloc->mLockCount == 0, 0xb47);
+        _MemFree(h->mAlloc);
+        _PoolFree(sizeof(MemHandle), MainPool, h);
+    }
+}
+
+void *MemTruncate(void *mem, int newSize) {
+    CritSecTracker tracker(gMemLock);
+    if (mem == nullptr) return nullptr;
+    if (newSize == 0) {
+        _MemFree(mem);
+        return nullptr;
+    }
+    int outWords;
+    int sizeWords = (newSize + 3) >> 2;
+    int i;
+    for (i = 0; i < gNumHeaps; i++) {
+        if (gHeaps[i].Truncate((int *)mem, sizeWords, outWords) != nullptr) break;
+    }
+    void *result = mem;
+    if (i == gNumHeaps) {
+        result = realloc(mem, newSize);
+        outWords = sizeWords;
+    }
+    return result;
+}
+
+void *_MemRealloc(void *mem, int newSize, int align) {
+    CritSecTracker tracker(gMemLock);
+    if (gNumHeaps != 0) {
+        int oldSize = MemAllocSize(mem);
+        void *dst = _MemAlloc(newSize, align);
+        int copySize = newSize < oldSize ? newSize : oldSize;
+        memcpy(dst, mem, copySize);
+        _MemFree(mem);
+        return dst;
+    }
+    return realloc(mem, newSize);
+}
+
 int GetFreeSystemMemory() {
     int low = 0;
     int high = 0x40000000;
@@ -642,4 +694,11 @@ DataNode CycleMemConsistencyCheck(DataArray *) {
     }
     OSReport("gCheckConsistencyish %d", gCheckConsistencyish);
     return DataNode(0);
+}
+
+void MemCheckConsistency(const char *file, int line) {
+    CritSecTracker tracker(gMemLock);
+    for (int i = 0; i < gNumHeaps; i++) {
+        gHeaps[i].CheckConsistency(file, line);
+    }
 }
