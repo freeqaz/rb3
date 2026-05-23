@@ -872,7 +872,7 @@ void WorldCrowd::Exit() {
 void WorldCrowd::Mats(std::list<RndMat *> &mats, bool additive) {
     if (additive) {
         MatShaderOptions opts;
-        int shaderTypes[2] = {0xd, 0x13};
+        unsigned short shaderTypes[2] = {0xd, 0x13};
 
         opts.pack |= 0x20;
 
