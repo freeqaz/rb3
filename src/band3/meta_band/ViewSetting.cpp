@@ -6,6 +6,7 @@
 #include "game/Defines.h"
 #include "game/Scoring.h"
 #include "meta/Sorting.h"
+#include <algorithm>
 #include "meta_band/AppLabel.h"
 #include "meta_band/BandProfile.h"
 #include "meta_band/BandSongMgr.h"
@@ -261,6 +262,18 @@ bool FilterViewSetting::IsValid() const {
 void FilterViewSetting::SelectOption(int idx) {
     Filter &f = mFilters[idx];
     TheMusicLibrary->ToggleFilter(mFilterType, f.mSym);
+}
+
+void FilterViewSetting::SetFilterData(const std::map<Symbol, int> &m) {
+    mFilters.clear();
+    Filter f;
+    for (std::map<Symbol, int>::const_iterator it = m.begin(); it != m.end();
+         ++it) {
+        f.mSym = it->first;
+        f.mCount = it->second;
+        mFilters.push_back(f);
+    }
+    std::sort(mFilters.begin(), mFilters.end(), CompareFilters);
 }
 
 void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
