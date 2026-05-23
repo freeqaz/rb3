@@ -1290,7 +1290,7 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
                     float dist = bouncePlane.a * p->pos.x
                         + bouncePlane.b * p->pos.y
                         + bouncePlane.c * p->pos.z + bouncePlane.d;
-                    if (dist < 0.0f) {
+                    if (!(dist >= 0.0f)) {
                         float vy = p->vel.y;
                         float vx = p->vel.x;
                         float velDotN = vy * bouncePlane.b + vx * bouncePlane.a;
