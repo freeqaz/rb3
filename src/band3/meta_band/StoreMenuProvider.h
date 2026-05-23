@@ -5,25 +5,27 @@
 
 class DataArray;
 class StorePage;
-class RndTex;
+class UIListLabel;
+class UILabel;
 
 class StoreMenuProvider : public UIListProvider, public Hmx::Object {
 public:
     StoreMenuProvider(DataArray *, const char *);
     virtual ~StoreMenuProvider();
+    virtual void Text(int, int, UIListLabel *, UILabel *) const;
+    virtual int NumData() const;
+    virtual bool IsActive(int) const;
     virtual DataNode Handle(DataArray *, bool);
 
     void SetData(DataArray *);
-    virtual int NumData() const;
-    virtual bool IsActive(int) const;
-    virtual void Text(int, int, class UIListLabel *, class UILabel *) const;
     const char *GetTitle();
+    const char *GetFileName(int);
 
     int mIxHighlight; // 0x20
-    String mPathBase; // 0x24 (String = 8 bytes)
-    StorePage *mPage; // 0x2c
-    RndTex *mBanner; // 0x30
-    int unk34;
-    int unk38;
-    int unk3c;
-}; // 0x44
+    String mPath; // 0x24
+    StorePage *mPage; // 0x30
+    String mTitle; // 0x34
+    int mUnk40; // 0x40
+};
+
+const char *StoreMenuProviderGetTitleFromData(DataArray *);
