@@ -1,7 +1,275 @@
-// BandStorePanel: in-game store panel UI.
-//
-// Stub source file — implementations live in the dtk-extracted object until
-// they are decompiled here. The link still pulls symbols from
-// build/SZBE69_B8/obj/band3/meta_band/BandStorePanel.o because this unit's
-// objects.json status is NonMatching (obj.completed = False), so this .cpp
-// only feeds objdiff/report.json comparison, not the final DOL.
+#include "meta_band/BandStorePanel.h"
+#include "meta_band/BandSongMetadata.h"
+#include "meta_band/BandSongMgr.h"
+#include "meta_band/BandStoreOffer.h"
+#include "meta_band/InputMgr.h"
+#include "meta_band/SessionMgr.h"
+#include "meta_band/StoreOfferContentsProvider.h"
+#include "meta_band/StoreOfferProvider.h"
+#include "meta_band/UIEventMgr.h"
+#include "meta_band/AppLabel.h"
+#include "game/BandUser.h"
+#include "meta/StorePackedMetadata.h"
+#include "obj/Dir.h"
+#include "obj/Msg.h"
+#include "obj/ObjMacros.h"
+#include "os/CommerceMgr_Wii.h"
+#include "os/Debug.h"
+#include "os/PlatformMgr.h"
+#include "ui/UI.h"
+#include "ui/UIList.h"
+#include "ui/UIListLabel.h"
+#include "ui/UIListProvider.h"
+#include "utl/MakeString.h"
+#include "utl/Messages.h"
+#include "utl/Messages4.h"
+#include "utl/NetCacheMgr.h"
+#include "utl/NetLoader.h"
+#include "utl/Std.h"
+#include "utl/Symbols.h"
+#include "utl/Symbols2.h"
+#include "utl/Symbols3.h"
+#include "utl/Symbols4.h"
+
+BandStorePanel::BandStorePanel()
+    : mMetadataLoader(0), mLastRequestExtra(0), mOfferProvider(0),
+      mOfferContentsProvider(0), mSort(gNullStr), mStartBrowserAtBottom(0),
+      mUserCanDoInput(0), mShortcutProvider(0) {
+    mOfferProvider = new StoreOfferProvider(&unk38, &unk40);
+    mOfferContentsProvider = new StoreOfferContentsProvider();
+}
+
+BandStorePanel::~BandStorePanel() {
+    TheStoreMetadata.Unload();
+    RELEASE(mOfferProvider);
+}
+
+BandStorePanel *BandStorePanel::Instance() {
+    return ObjectDir::Main()->Find<BandStorePanel>("store_panel", true);
+}
+
+bool BandStorePanel::IsSongInLibrary(const int &id) const {
+    return TheSongMgr.HasSong(id);
+}
+
+const char *BandStorePanel::GetIndexFile() const {
+    return MakeString("init");
+}
+
+const char *BandStorePanel::GetRequestPrefix() const {
+    return "dlc_store";
+}
+
+int BandStorePanel::StoreUser() const {
+    BandUser *u = TheInputMgr->GetUser();
+    LocalUser *local = u->GetLocalUser();
+    if (!local)
+        return 0;
+    return (int)local;
+}
+
+StoreOffer *BandStorePanel::MakeNewOffer(const StorePackedOfferBase *base, bool isRbn) {
+    return new BandStoreOffer(base, &TheSongMgr, isRbn);
+}
+
+StoreOffer *BandStorePanel::FindOffer(Symbol s) const {
+    for (std::vector<StoreOffer *>::const_iterator it = unk38.begin();
+         it != unk38.end(); ++it) {
+        if ((*it)->ShortName() == s)
+            return *it;
+    }
+    for (std::vector<StoreOffer *>::const_iterator it = unk48.begin();
+         it != unk48.end(); ++it) {
+        if ((*it)->ShortName() == s)
+            return *it;
+    }
+    return 0;
+}
+
+StoreOffer *BandStorePanel::GetLoneOffer(bool extras) const {
+    if (!extras) {
+        MILO_ASSERT(unk38.size() == 1, 0xAA);
+        return unk38[0];
+    }
+    MILO_ASSERT(!unk40.empty(), 0xAF);
+    return unk40[0];
+}
+
+bool BandStorePanel::IsLoaded() const {
+    return StorePanel::IsLoaded() || !mLoadOK;
+}
+
+void BandStorePanel::Unload() {
+    mLastRequest = "";
+    delete mMetadataLoader;
+    mMetadataLoader = 0;
+    RELEASE(mShortcutProvider);
+    StorePanel::Unload();
+}
+
+void BandStorePanel::Enter() {
+    StorePanel::Enter();
+    SetType(StaticClassName());
+    LocalBandUser *bu = dynamic_cast<LocalBandUser *>(TheInputMgr->GetUser());
+    if (bu && !bu->IsSignedIn()) {
+        ExitError(kStoreErrorSignedOut);
+    }
+    TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type(), gNullStr, kHandle);
+}
+
+void BandStorePanel::Exit() {
+    TheSessionMgr->RemoveSink(this, LocalUserLeftMsg::Type());
+    StorePanel::Exit();
+}
+
+DataNode BandStorePanel::OnMsg(const LocalUserLeftMsg &) {
+    return DataNode(kDataFloat, 6);
+}
+
+DataNode BandStorePanel::OnMsg(const MetadataLoadedMsg &msg) {
+    DataArray *data = msg->Array(2);
+    String path(msg->Str(4));
+    DataArray *found = data->FindArray(Symbol("metadata"), false);
+    if (found) {
+        // PopulateOffers + EnumerateOffers (msg fields 5 and 6 control flow)
+        PopulateOffers(found, msg->Int(6) != 0);
+        EnumerateOffers(msg->Int(6) != 0);
+    }
+    return DataNode(kDataFloat, 6);
+}
+
+Symbol BandStorePanel::SortName() {
+    if (mSort == gNullStr) {
+        return Symbol("by_song_first_letter");
+    }
+    return mSort;
+}
+
+const char *BandStorePanel::ShortcutTextAtData(int i) {
+    MILO_ASSERT(mShortcutProvider, 0x24A);
+    DataNode &n = mShortcutProvider->mData->Node(i + mShortcutProvider->mOffset);
+    MILO_ASSERT(n.Type() == kDataString, 0x3A);
+    return n.Str(0);
+}
+
+void BandStorePanel::SetShortcutData(DataArray *arr) {
+    if (mShortcutProvider) {
+        mShortcutProvider->SetData(arr);
+    } else {
+        mShortcutProvider = new BandStoreShortcutProvider(arr);
+    }
+}
+
+void BandStorePanel::ApplyShortcutProvider(UIList *list) {
+    MILO_ASSERT(mShortcutProvider, 0x258);
+    list->SetProvider(mShortcutProvider);
+}
+
+void BandStoreShortcutProvider::Text(int i, int j, UIListLabel *listlabel, UILabel *label) const {
+    if (mData->Node(j + mOffset).Type() == kDataString) {
+        AppLabel *al = dynamic_cast<AppLabel *>(label);
+        MILO_ASSERT(al, 0x30);
+        al->SetRawStoreShortcut(j);
+    } else {
+        DataProvider::Text(i, j, listlabel, label);
+    }
+}
+
+void BandStorePanel::LoadArt(const char *path, UIPanel *callback) {
+    String full(GetRequestPrefix());
+    full += path;
+    StorePanel::LoadArt(full.c_str(), callback);
+}
+
+void BandStorePanel::Request(const String &path, bool extra) {
+    int id = atoi(path.c_str());
+    if (id == 0) {
+        // Path-based request (album art download / config files)
+        if (mLoadOK) {
+            if (TheNetCacheMgr->GetHasFailed()) {
+                HandleNetCacheMgrFailure();
+                return;
+            }
+            MILO_ASSERT(mLastRequest.empty(), 0x1B4);
+            MILO_ASSERT(TheNetCacheMgr->IsReady(), 0x1B5);
+            MILO_ASSERT(!mMetadataLoader, 0x1B6);
+            mLastRequest = path;
+            mLastRequestExtra = extra;
+            String url("dlc_store");
+            url += MakeString(
+                "/%s%s", PlatformRegionToSymbol(ThePlatformMgr.GetRegion()), path
+            );
+            // (skip platform-specific PID suffix in port-friendly build)
+            mMetadataLoader = new DataNetLoader(url);
+            mStartBrowserAtBottom = false;
+            TheUI.Handle(update_loading_status_msg, false);
+        }
+    } else {
+        // ID-based request (page lookup from metadata table) - dispatch
+        // MetadataLoadedMsg with the page ID; subscribers populate the offers
+        // themselves.
+        StorePage *page = TheStoreMetadata.LoadPage((unsigned short)id);
+        if (page) {
+            mSort = Symbol("by_song_first_letter");
+        } else {
+            mSort = Symbol("by_artist");
+        }
+        mPrevChunkPath = gNullStr;
+        mNextChunkPath = gNullStr;
+        mStartBrowserAtBottom = false;
+        TheUI.Handle(update_loading_status_msg, false);
+    }
+}
+
+void BandStorePanel::ExitStore(StoreError err) const {
+    if (!TheUIEventMgr->HasActiveTransitionEvent()) {
+        static Message msg("store_panel", DataNode(0), DataNode(-1));
+        msg[0] = DataNode((int)err);
+        TheUIEventMgr->TriggerEvent(store_load_failed, msg.mData);
+    }
+}
+
+BEGIN_HANDLERS(BandStorePanel)
+    HANDLE_EXPR(get_request_prefix, GetRequestPrefix())
+    HANDLE_ACTION(request, Request(String(_msg->Str(2)), _msg->Int(3)))
+    HANDLE_ACTION(request_prev_chunk,
+                  (Request(String(mPrevChunkPath.c_str()), true), mStartBrowserAtBottom = true))
+    HANDLE_ACTION(request_next_chunk, Request(String(mNextChunkPath.c_str()), true))
+    HANDLE_EXPR(should_start_browser_at_bottom, mStartBrowserAtBottom)
+    HANDLE_EXPR(request_in_progress, mMetadataLoader != 0 || !((TheStoreMetadata.mFlags >> 3) & 1))
+    HANDLE_EXPR(num_offers, (int)unk38.size())
+    HANDLE_EXPR(lone_offer, GetLoneOffer(false))
+    HANDLE_EXPR(num_extra_offers, (int)unk40.size())
+    HANDLE_EXPR(first_extra_offer, GetLoneOffer(true))
+    HANDLE_EXPR(offer_provider, mOfferProvider)
+    HANDLE_EXPR(offer_contents_provider, mOfferContentsProvider)
+    HANDLE_EXPR(
+        user_can_do_input,
+        mUserCanDoInput == 0 && IsLoaded() && !IsEnumerating() && mLastRequest.empty()
+            && (TheWiiCommerceMgr.mCommerceAsyncOpId == -1
+                || TheWiiCommerceMgr.mCommerceAsyncName == 8)
+    )
+    HANDLE_ACTION(set_shortcut_data, SetShortcutData(_msg->Array(2)))
+    HANDLE_ACTION(apply_shortcut_provider, ApplyShortcutProvider(_msg->Obj<UIList>(2)))
+    HANDLE_MESSAGE(LocalUserLeftMsg)
+    HANDLE_EXPR(sort_name, SortName())
+    HANDLE_MESSAGE(MetadataLoadedMsg)
+    HANDLE_SUPERCLASS(StorePanel)
+    HANDLE_CHECK(0x2B0)
+END_HANDLERS
+
+BEGIN_PROPSYNCS(BandStorePanel)
+    if (sym == waiting) {
+        if (_op == kPropGet) {
+            _val = DataNode(mUserCanDoInput);
+        } else {
+            mUserCanDoInput = _val.Int(0) != 0;
+        }
+        return true;
+    }
+    SYNC_SUPERCLASS(StorePanel)
+END_PROPSYNCS
+
+void BandStorePanel::Poll() {
+    StorePanel::Poll();
+}
