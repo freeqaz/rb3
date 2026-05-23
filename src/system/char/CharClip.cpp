@@ -861,7 +861,7 @@ BEGIN_LOADS(CharClip)
     } else {
         CharBonesSamples::SetVer(gRev);
         mFull.LoadHeader(bs);
-        mOne.Load(bs);
+        mOne.LoadHeader(bs);
         if (gRev > 7) {
             CharBonesSamples samps;
             samps.LoadHeader(bs);
@@ -875,16 +875,15 @@ BEGIN_LOADS(CharClip)
     if (gRev > 0x11)
         bs >> mBeatTrack;
     else {
+        Key<float> tmp;
         if (NumFrames() > 1) {
             mBeatTrack.resize(2);
-            Key<float> &key0 = mBeatTrack[0];
-            key0 = Key<float>(key0.value, 0);
-            Key<float> &key1 = mBeatTrack[1];
-            key1 = Key<float>(key1.value, NumFrames() - 1);
+            mBeatTrack[0] = tmp;
+            tmp.frame = NumFrames() - 1;
+            mBeatTrack[1] = tmp;
         } else {
             mBeatTrack.resize(1);
-            Key<float> &key0 = mBeatTrack[0];
-            key0 = Key<float>(key0.value, 0);
+            mBeatTrack[0] = tmp;
         }
         if (gRev < 0x11) {
             float oldFPS = mFramesPerSec;
