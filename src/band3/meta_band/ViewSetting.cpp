@@ -106,7 +106,7 @@ bool SortViewSetting::IsActive(int idx) const {
 }
 
 void SortViewSetting::Text(int, int row, UIListLabel *slot, UILabel *label) const {
-    if (slot->Matches("cd")) {
+    if (slot->Matches("name")) {
         Symbol s = TheSongSortMgr->GetSort((SongSortType)row)->GetName();
         label->SetTextToken(s);
     } else {
@@ -132,7 +132,7 @@ int SortViewSetting::StartingOption() const {
 
 void ScoreTypeViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
     const {
-    if (slot->Matches("cd")) {
+    if (slot->Matches("name")) {
         if (idx == 0) {
             label->SetTextToken(ScoreTypeToSym(GetBaseScoreType()));
         } else {
@@ -238,7 +238,7 @@ const char *FilterViewSetting::GetCurrentStatus() const {
          it != filterSet.end();
          ++it) {
         if (result.c_str()[0]) {
-            result += ", ";
+            result += "/";
         }
         result += Localize(*it, nullptr);
     }
@@ -275,7 +275,7 @@ void FilterViewSetting::SetFilterData(const std::map<Symbol, int> &m) {
 
 void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
     const {
-    if (slot->Matches("cd")) {
+    if (slot->Matches("name")) {
         label->SetTextToken(mFilters[idx].mSym);
     } else {
         int count = mFilters[idx].mCount;
