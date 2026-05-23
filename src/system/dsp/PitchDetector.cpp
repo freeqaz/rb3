@@ -4,23 +4,6 @@
 #include "utl/MemMgr.h"
 #include <string.h>
 
-// 5-tap IIR low-pass filter coefficients used by the decimator
-static const float kLPFBCoeffs[5] = {
-    0.046581834f, // 0x3D3ECDD1
-    0.186327335f, // 0x3E3ECD4B
-    0.279491007f, // 0x3E8F1AA0
-    0.186327335f, // 0x3E3ECD4B
-    0.046581834f, // 0x3D3ECDD1
-};
-
-static const float kLPFACoeffs[5] = {
-    1.0f, // 0x3F800000
-    -0.781814635f, // 0xBF4837B5
-    0.680165708f, // 0x3F2E132B
-    -0.182484567f, // 0xBE3B1077
-    0.030120272f, // 0x3CF6BC1F
-};
-
 PitchDetector::PitchDetector(int sampleRate) {
     mSamplesPerSec = 0;
     unk14 = 0;
@@ -36,7 +19,13 @@ PitchDetector::PitchDetector(int sampleRate) {
     unk48 = 0.0f;
     unk4C = -1.0f;
     SetSampleRate(sampleRate);
-    mFilter = new IIR4PoleFilter((float *)kLPFBCoeffs, (float *)kLPFACoeffs);
+    float b[5] = {
+        0.046581834f, 0.186327335f, 0.279491007f, 0.186327335f, 0.046581834f
+    };
+    float a[5] = {
+        1.0f, -0.781814635f, 0.680165708f, -0.182484567f, 0.030120272f
+    };
+    mFilter = new IIR4PoleFilter(b, a);
 }
 
 PitchDetector::~PitchDetector() {
