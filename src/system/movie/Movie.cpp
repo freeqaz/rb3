@@ -20,6 +20,8 @@ extern "C" {
 int gBinkCore0 = -1;
 int gBinkCore1 = -1;
 
+static const unsigned int kNoThread = 0;
+
 std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
 
 namespace {
@@ -125,4 +127,14 @@ void Movie::Impl::LockThread() {
 void Movie::Impl::UnlockThread() {
     MILO_ASSERT(mThreadId == (unsigned int)CurrentThreadId(), 0x5BD);
     mThreadId = 0;
+}
+
+bool Movie::Impl::IsOpen() const {
+    MILO_ASSERT(mThreadId == (unsigned int)CurrentThreadId() || (mThreadId == kNoThread && MainThread()), 0x159);
+    return mBink != 0;
+}
+
+bool Movie::Impl::IsLoading() const {
+    MILO_ASSERT(mThreadId == (unsigned int)CurrentThreadId() || (mThreadId == kNoThread && MainThread()), 0x160);
+    return mLoader != NULL || mLoader2 != NULL;
 }

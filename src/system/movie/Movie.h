@@ -38,9 +38,8 @@ public:
         // Layout reverse-engineered from compiled binary (m2c struct dump).
         MovieLoader *mLoader; // 0x00
         MovieLoader *mLoader2; // 0x04
-        char mFilenamePad[0xC]; // 0x08 (String)
-        const char *mPath; // 0x10 (placeholder)
-        int mPreloadLen; // 0x14
+        char mFilenamePad[0xC]; // 0x08 (String, 12 bytes)
+        int mBink; // 0x14 (bink handle)
         bool mPreloadFlag; // 0x18
         char pad19[3];
         int mUnk1C; // 0x1C
@@ -62,7 +61,8 @@ public:
         bool mUnkD2; // 0xD2
         char padD3[1];
         unsigned int mThreadId; // 0xD4
-        int mForceTrack; // 0xD8
+        char padD8[4]; // 0xD8
+        int mForceTrack; // 0xDC
     };
 
     Movie();
