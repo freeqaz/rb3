@@ -542,7 +542,7 @@ void ChordShapeGenerator::BuildEndCap(
     Symbol orient,
     Hmx::Color32 col
 ) {
-    bool contour = orient == right;
+    bool contour = mFret > 0;
     if (orient == right) {
         unsigned int expectedVerts =
             contour ? sec1.mVerts.size() : sec2.mVerts.size();
