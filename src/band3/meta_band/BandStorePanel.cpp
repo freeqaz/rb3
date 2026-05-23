@@ -32,16 +32,15 @@
 #include "utl/Symbols4.h"
 
 BandStorePanel::BandStorePanel()
-    : mMetadataLoader(0), mLastRequestExtra(0), mOfferProvider(0),
-      mOfferContentsProvider(0), mSort(gNullStr), mStartBrowserAtBottom(0),
-      mUserCanDoInput(0), mShortcutProvider(0) {
-    mOfferProvider = new StoreOfferProvider(&unk38, &unk40);
+    : mMetadataLoader(0), mLastRequestExtra(0), mSort(gNullStr),
+      mStartBrowserAtBottom(0), mUserCanDoInput(0), mShortcutProvider(0) {
+    mOfferProvider = new StoreOfferProvider(&unk38, &unk48);
     mOfferContentsProvider = new StoreOfferContentsProvider();
 }
 
 BandStorePanel::~BandStorePanel() {
-    TheStoreMetadata.Unload();
-    RELEASE(mOfferProvider);
+    delete mOfferProvider;
+    delete mOfferContentsProvider;
 }
 
 BandStorePanel *BandStorePanel::Instance() {
@@ -53,7 +52,7 @@ bool BandStorePanel::IsSongInLibrary(const int &id) const {
 }
 
 const char *BandStorePanel::GetIndexFile() const {
-    return MakeString("init");
+    return MakeString("%d", TheStoreMetadata.mVersion->mBuildNumber);
 }
 
 const char *BandStorePanel::GetRequestPrefix() const {
@@ -75,13 +74,15 @@ StoreOffer *BandStorePanel::MakeNewOffer(const StorePackedOfferBase *base, bool 
 StoreOffer *BandStorePanel::FindOffer(Symbol s) const {
     for (std::vector<StoreOffer *>::const_iterator it = unk38.begin();
          it != unk38.end(); ++it) {
-        if ((*it)->ShortName() == s)
-            return *it;
+        StoreOffer *o = *it;
+        if (o->ShortName() == s)
+            return o;
     }
     for (std::vector<StoreOffer *>::const_iterator it = unk48.begin();
          it != unk48.end(); ++it) {
-        if ((*it)->ShortName() == s)
-            return *it;
+        StoreOffer *o = *it;
+        if (o->ShortName() == s)
+            return o;
     }
     return 0;
 }
@@ -100,10 +101,11 @@ bool BandStorePanel::IsLoaded() const {
 }
 
 void BandStorePanel::Unload() {
-    mLastRequest = "";
+    mLastRequest.erase();
     delete mMetadataLoader;
     mMetadataLoader = 0;
-    RELEASE(mShortcutProvider);
+    delete mShortcutProvider;
+    mShortcutProvider = 0;
     StorePanel::Unload();
 }
 
