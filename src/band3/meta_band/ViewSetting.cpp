@@ -315,6 +315,18 @@ Symbol FilterViewSetting::FilterTypeToSym(FilterType ft) {
 // ViewSettingsProvider
 // ------------------------------------------------------------------
 
+ViewSettingsProvider::ViewSettingsProvider() : mActiveSetting(nullptr),
+    mDisabledColor(nullptr), mHeaderMat(nullptr), mEvenMat(nullptr),
+    mOddMat(nullptr) {
+    mSettings.push_back(new HeaderViewSetting(options));
+    mSettings.push_back(new SortViewSetting());
+    mSettings.push_back(new ScoreTypeViewSetting("visible_scores", kScoreBand));
+    mSettings.push_back(new HeaderViewSetting(filters));
+    for (int i = 0; i < kNumFilterTypes - 2; i++) {
+        mSettings.push_back(new FilterViewSetting((FilterType)i));
+    }
+}
+
 ViewSettingsProvider::~ViewSettingsProvider() {
     std::vector<ViewSetting *>::iterator it = mSettings.begin();
     std::vector<ViewSetting *>::iterator end = mSettings.end();
