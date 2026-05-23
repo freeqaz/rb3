@@ -47,11 +47,10 @@ void TransformNoScale::SetRot(const Hmx::Matrix3 &m) {
 }
 
 Hmx::Quat &TransformNoScale::GetRot(Hmx::Quat &qout) const {
-    short qw = q.w, qz = q.z, qy = q.y, qx = q.x;
-    qout.w = qw * 0.000030518509f;
-    qout.z = qz * 0.000030518509f;
-    qout.y = qy * 0.000030518509f;
-    qout.x = qx * 0.000030518509f;
+    qout.w = q.w * 0.000030518509f;
+    qout.z = q.z * 0.000030518509f;
+    qout.y = q.y * 0.000030518509f;
+    qout.x = q.x * 0.000030518509f;
     return qout;
 }
 
