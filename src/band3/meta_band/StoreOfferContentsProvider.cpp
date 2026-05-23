@@ -43,7 +43,7 @@ void StoreOfferContentsProvider::Text(
             appLabel->SetTextToken(gNullStr);
         }
     } else {
-        label->SetTextToken(gNullStr);
+        appLabel->SetTextToken(gNullStr);
     }
 }
 
