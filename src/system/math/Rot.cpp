@@ -141,13 +141,15 @@ void Hmx::Quat::Set(const Vector3 &v, float f) {
 }
 
 void MakeEuler(const Hmx::Matrix3 &m, Vector3 &v) {
-    if (fabsf(m.y.z) > 0.99999988f) {
-        if (m.y.z > 0) {
+    float yz = m.y.z;
+    if (fabsf(yz) > 0.99999988f) {
+        if (yz > 0) {
             v.x = PI / 2;
         } else {
             v.x = -PI / 2;
         }
-        v.z = std::atan2(m.x.y, m.x.x);
+        float xy = m.x.y;
+        v.z = std::atan2(xy, m.x.x);
         v.y = 0;
     } else {
         v.z = std::atan2(-m.y.x, m.y.y);
@@ -380,7 +382,19 @@ void MakeRotMatrix(const Vector3 &v, Hmx::Matrix3 &mtx, bool lookup) {
 void MakeRotMatrix(const Vector3 &v1, const Vector3 &v2, Hmx::Matrix3 &mtx) {
     mtx.y = v1;
     Normalize(mtx.y, mtx.y);
-    Cross(mtx.y, v2, mtx.x);
+    float y1 = mtx.y.y;
+    float z2 = v2.z;
+    float x2 = v2.x;
+    float z1 = mtx.y.z;
+    float y2 = v2.y;
+    float x1 = mtx.y.x;
+    float yz = y1 * z2;
+    float yx = y1 * x2;
+    float zx = z1 * x2;
+    float zy = z1 * y2;
+    float xy = x1 * y2;
+    float xz = x1 * z2;
+    mtx.x.Set(yz - zy, zx - xz, xy - yx);
     Normalize(mtx.x, mtx.x);
     Cross(mtx.x, mtx.y, mtx.z);
 }
