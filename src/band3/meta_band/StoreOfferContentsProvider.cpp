@@ -21,8 +21,7 @@
 #include <vector>
 
 StoreOfferContentsProvider::StoreOfferContentsProvider()
-    : mOffer(0), mElements(), mCurrentSongIndex(0), mSpecifiedCount(0),
-      unk38(0), unk3c(false) {}
+    : mElements(), mListType(kListPurchase), unk38(0), unk3c(false) {}
 
 StoreOfferContentsProvider::~StoreOfferContentsProvider() { ClearList(); }
 
@@ -117,9 +116,11 @@ void StoreOfferContentsProvider::BuildList(StoreOffer *offer, ListType type) {
 }
 
 void StoreOfferContentsProvider::ClearList() {
-    for (std::vector<Element * VECTOR_SIZE_SMALL>::iterator it = mElements.begin();
-         it != mElements.end(); ++it) {
-        delete *it;
+    Element **start = mElements.begin();
+    Element **end = mElements.end();
+    while (start != end) {
+        delete *start;
+        ++start;
     }
     mElements.clear();
 }
