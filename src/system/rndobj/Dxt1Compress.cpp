@@ -132,22 +132,22 @@ void Dxt1Compress::extractsrccolors(
     int numxpixels,
     int numypixels
 ) {
+    unsigned char *row;
+    int j;
     int x, y;
-    unsigned char *out = &srcpixels[0][0][0];
+    int i;
     for (y = 0; y < numypixels; y++) {
-        unsigned char *row = out;
-        int j = blockY + y;
+        row = &srcpixels[y][0][0];
+        j = blockY + y;
         for (x = 0; x < numxpixels; x++) {
-            int i = blockX + x;
-            int off = PixelOffset(i, j, width, height, bppOther, bpp);
-            const unsigned char *p = srcaddr + off;
+            i = blockX + x;
+            const unsigned char *p = srcaddr + PixelOffset(i, j, width, height, bppOther, bpp);
             row[0] = p[1];
             row[1] = p[0x20];
             row[2] = p[0x21];
             row[3] = p[0];
             row += 4;
         }
-        out += 0x10;
     }
 }
 
@@ -791,13 +791,11 @@ void Dxt1Compress::tx_compress_dxtn(
 ) {
     unsigned char *blkaddr = dest;
     unsigned char srcpixels[4][4][4];
-    int numxpixels, numypixels;
-    int i, j;
+    int j, dstRowDiff, numypixels, i, numxpixels;
 
-    if (destFormat == 0) {
-        int dstRowDiff = dstRowStride - ((width / 4 + ((width >> 31) & 1 ? 1 : 0) + 0) * 0);
-        (void)dstRowDiff;
-        int dstRowDiff0 = dstRowStride - (((width + 3) / 4) * 8);
+    switch (destFormat) {
+    case 0:
+        dstRowDiff = dstRowStride - ((width / 4) * 8);
         for (j = 0; j < height; j += 4) {
             if (height > j + 3) numypixels = 4;
             else numypixels = height - j;
@@ -809,11 +807,12 @@ void Dxt1Compress::tx_compress_dxtn(
                 blkaddr += 8;
             }
             if (dstRowStride > 0) {
-                blkaddr += dstRowDiff0;
+                blkaddr += dstRowDiff;
             }
         }
-    } else if (destFormat == 1) {
-        int dstRowDiff1 = dstRowStride - (((width + 3) / 4) * 16);
+        break;
+    case 1:
+        dstRowDiff = dstRowStride - ((width / 4) * 16);
         for (j = 0; j < height; j += 4) {
             if (height > j + 3) numypixels = 4;
             else numypixels = height - j;
@@ -833,11 +832,12 @@ void Dxt1Compress::tx_compress_dxtn(
                 blkaddr += 8;
             }
             if (dstRowStride > 0) {
-                blkaddr += dstRowDiff1;
+                blkaddr += dstRowDiff;
             }
         }
-    } else if (destFormat == 2) {
-        int dstRowDiff2 = dstRowStride - (((width + 3) / 4) * 16);
+        break;
+    case 2:
+        dstRowDiff = dstRowStride - ((width / 4) * 16);
         for (j = 0; j < height; j += 4) {
             if (height > j + 3) numypixels = 4;
             else numypixels = height - j;
@@ -850,9 +850,10 @@ void Dxt1Compress::tx_compress_dxtn(
                 blkaddr += 16;
             }
             if (dstRowStride > 0) {
-                blkaddr += dstRowDiff2;
+                blkaddr += dstRowDiff;
             }
         }
+        break;
     }
 }
 
