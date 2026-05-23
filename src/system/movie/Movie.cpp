@@ -180,6 +180,51 @@ void Movie::Impl::SetWidthHeight(int w, int h) {
     mHeight = h;
 }
 
+int Movie::Impl::NextFrame() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x2D0);
+    extern void BinkNextFrame(HBINK);
+    BinkNextFrame(mBink);
+    return 0;
+}
+
+int Movie::Impl::GetFrame() const {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x626);
+    int frame;
+    if (mBink != NULL) {
+        unsigned int fn = mBink->FrameNum;
+        if (fn == 1) {
+            frame = mBink->Frames;
+        } else {
+            frame = (int)(fn - 1);
+        }
+    } else {
+        frame = 0;
+    }
+    return frame;
+}
+
 int Movie::Impl::NumFrames() const {
     bool ok = true;
     if (mThreadId != (unsigned int)OSGetCurrentThread()) {
