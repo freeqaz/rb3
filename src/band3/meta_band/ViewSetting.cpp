@@ -315,6 +315,15 @@ Symbol FilterViewSetting::FilterTypeToSym(FilterType ft) {
 // ViewSettingsProvider
 // ------------------------------------------------------------------
 
+ViewSettingsProvider::~ViewSettingsProvider() {
+    std::vector<ViewSetting *>::iterator it = mSettings.begin();
+    std::vector<ViewSetting *>::iterator end = mSettings.end();
+    for (; it != end; ++it) {
+        delete *it;
+    }
+    mSettings.clear();
+}
+
 int ViewSettingsProvider::NumData() const { return mSettings.size(); }
 
 void ViewSettingsProvider::InitData(RndDir *dir) {

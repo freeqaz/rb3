@@ -145,7 +145,7 @@ protected:
 class ViewSettingsProvider : public UIListProvider, public Hmx::Object {
 public:
     ViewSettingsProvider();
-    virtual ~ViewSettingsProvider() {}
+    virtual ~ViewSettingsProvider();
 
     // UIListProvider overrides
     virtual void Text(int, int, UIListLabel *, UILabel *) const;
