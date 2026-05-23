@@ -4,6 +4,17 @@
 #include <list>
 #include <vector>
 
+// Minimal Bink handle stub for matching the Wii target.
+struct HBINK_t {
+    char pad0[0x8];
+    unsigned int Frames; // 0x08 (NumFrames)
+    unsigned int FrameNum; // 0x0C (1-based current frame)
+    char pad10[0x4];
+    unsigned int FrameRate; // 0x14
+    unsigned int FrameRateDiv; // 0x18
+};
+typedef HBINK_t *HBINK;
+
 class Movie {
 public:
     class Impl {
@@ -43,7 +54,7 @@ public:
         MovieLoader *mLoader; // 0x00
         MovieLoader *mLoader2; // 0x04
         char mFilenamePad[0xC]; // 0x08 (String, 12 bytes)
-        int mBink; // 0x14 (bink handle)
+        HBINK mBink; // 0x14 (bink handle)
         bool mPreloadFlag; // 0x18
         char pad19[3];
         int mUnk1C; // 0x1C
