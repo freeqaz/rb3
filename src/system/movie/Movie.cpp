@@ -109,6 +109,10 @@ float Movie::MsPerFrame() const { return mImpl->MsPerFrame(); }
 int Movie::NumFrames() const { return mImpl->NumFrames(); }
 void Movie::SetPaused(bool b) { mImpl->SetPaused(b); }
 bool Movie::Paused() const { return mImpl->Paused(); }
+void Movie::Begin(const char *file, float aspect, bool b1, bool b2, bool b3, bool b4, int i, BinStream *bs) {
+    MILO_ASSERT(gInitialized, 0x65A);
+    mImpl->Begin(file, aspect, b1, b2, b3, b4, i, bs);
+}
 bool Movie::Ready() const { return mImpl->Ready(); }
 void Movie::SetAspect(float f) { mImpl->SetAspect(f); }
 float (*Movie::SetTimeCallback(float (*cb)()))() { return mImpl->SetTimeCallback(cb); }
