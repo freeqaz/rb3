@@ -79,7 +79,7 @@ bool StoreOfferContentsProvider::IsActive(int idx) const {
         int flagsB = TheStoreMetadata.GetContentStateFlags(
             element->mSong->DataTitle(), contentIdx
         );
-        ret = (flagsA | flagsB) & 1;
+        ret = (flagsB | flagsA) & 1;
     } else if (mListType == kListPurchase) {
         ret = !(TheStoreMetadata.SongStateFlags(element->mSong) & 1);
     }
