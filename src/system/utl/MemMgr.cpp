@@ -56,6 +56,7 @@ public:
     void LRUFit(int, int, FreeBlockInfo &);
     void LastFit(int, int, FreeBlockInfo &);
     void CheckConsistency(const char *, int);
+    void Init(const char *, int, int *, int, bool, Strategy, int, bool);
     const char *Name() const { return mName; }
 
     FreeBlock *mFreeBlockChain; // 0x0
@@ -643,6 +644,48 @@ void *_MemRealloc(void *mem, int newSize, int align) {
         return dst;
     }
     return realloc(mem, newSize);
+}
+
+extern unsigned char *g_pRSOReserveBuf;
+
+// On first request of exactly kRSOBufferSize (0x10EC00 bytes), return the
+// pre-reserved RSO buffer. Subsequent calls fall through to _MemAlloc.
+void *_MemAllocOrRSOBuf(int size, int align) {
+    static bool RSOBufUsed = false;
+    if (!RSOBufUsed && size == 0x10EC00) {
+        RSOBufUsed = true;
+        MILO_ASSERT(g_pRSOReserveBuf, 0x846);
+        return g_pRSOReserveBuf;
+    }
+    return _MemAlloc(size, align);
+}
+
+extern "C" void *WiiAllocHeapAlign(int *, int, int);
+
+void AddHeap(const char *name, int heapNum, int sizeBytes, bool useHeapAlign, int region,
+             Heap::Strategy strategy, int debugLevel, bool allowTemp) {
+    int actualSize = sizeBytes;
+    int *mem = (int *)WiiAllocHeapAlign(&actualSize, region, useHeapAlign ? 0x20 : -0x20);
+    if (mem == nullptr) {
+        int available = GetFreeSystemMemory();
+        mem = (int *)WiiMalloc(available);
+        MILO_ASSERT(mem, 0x7f5);
+        if (available < actualSize) {
+            OSReport("not enough memory for heap \"%s\". Available: %d\n", name, available);
+        }
+        actualSize = available;
+    }
+    gHeaps[heapNum].Init(name, heapNum, mem, actualSize >> 2, useHeapAlign, strategy,
+                         debugLevel, allowTemp);
+}
+
+void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
+               bool useHeapAlign, Heap::Strategy strategy, int debugLevel, bool allowTemp) {
+    int sizeWords = sizeBytes >> 2;
+    int *mem = gHeaps[srcHeap].SplitFromBack(sizeWords);
+    MILO_ASSERT_FMT(mem, "Unable to split heap \"%s\"", name);
+    gHeaps[newHeapNum].Init(name, newHeapNum, mem, sizeWords, useHeapAlign, strategy,
+                            debugLevel, allowTemp);
 }
 
 int GetFreeSystemMemory() {
