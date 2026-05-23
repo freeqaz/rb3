@@ -12,6 +12,9 @@ public:
     enum RedemptionState {
         kIdle = 0,
         kRequestingOffers = 2,
+        kEnumeratingOffers = 3,
+        kRequestingPreviousOffers = 5,
+        kEnumeratingPreviousOffers = 6,
         kPurchasing = 7,
         kReportingPurchase = 8
     };

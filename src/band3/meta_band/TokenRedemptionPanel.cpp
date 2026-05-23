@@ -3,6 +3,8 @@
 #include "game/BandUser.h"
 #include "meta/StorePackedMetadata.h"
 #include "meta_band/AppLabel.h"
+#include "meta_band/InputMgr.h"
+#include "net/Net.h"
 #include "net/Server.h"
 #include "net_band/RockCentral.h"
 #include "net_band/RockCentralMsgs.h"
@@ -153,6 +155,116 @@ void TokenRedemptionPanel::EnumerateOffers(LocalBandUser *user) {
     MILO_ASSERT(!mEnumeration, 0x14A);
     mEnumeration = new WiiEnumeration(count);
     mEnumeration->Start();
+}
+
+void TokenRedemptionPanel::ShowPurchaseUIForOffer(int ix, LocalBandUser *user) {
+    MILO_ASSERT(mRedemptionState == kIdle, 0x15A);
+    MILO_ASSERT(mListData.size() > ix, 0x15B);
+    MILO_ASSERT(!mPurchaser, 0x15C);
+    MILO_ASSERT(user, 0x15F);
+    Server *server = TheNet.GetServer();
+    if (server && server->IsConnected()) {
+        server->GetPlayerID(user->GetPadNum());
+    }
+    mPurchaser = NULL;
+    mRedemptionState = kReportingPurchase;
+}
+
+DataNode TokenRedemptionPanel::OnMsg(const ButtonDownMsg &msg) {
+    if (mRedemptionState == kIdle) {
+        return DataNode(kDataUnhandled, 0);
+    }
+    return 1;
+}
+
+DataNode TokenRedemptionPanel::OnMsg(const RockCentralOpCompleteMsg &msg) {
+    static Message token_msg("token_redemption_msg", gNullStr);
+    int state = mRedemptionState;
+    if (state != 2 && state != 5) {
+        return 1;
+    }
+    Symbol errSym =
+        (state == 5) ? token_error_no_previous_offers : token_redemption_error;
+    if (!msg.Success()) {
+        if (mRedemptionState == 5) {
+            LocalBandUser *u =
+                TheInputMgr->GetUser() ? TheInputMgr->GetUser()->GetLocalBandUser() : NULL;
+            mRedemptionState = 6;
+            EnumerateOffers(u);
+            return 1;
+        }
+        token_msg[0] = errSym;
+    } else {
+        mResultList.Update(NULL);
+        if (mResultList.mDataResultList.empty() && mRedemptionState == 5) {
+            LocalBandUser *u =
+                TheInputMgr->GetUser() ? TheInputMgr->GetUser()->GetLocalBandUser() : NULL;
+            mRedemptionState = 6;
+            EnumerateOffers(u);
+            return 1;
+        }
+        DataNode statusNode(0);
+        mResultList.GetDataResult(0)->GetDataResultValue(String("status"), statusNode);
+        int status = statusNode.Int(NULL);
+        switch (status) {
+        case 0xA0002:
+            MILO_ASSERT(mRedemptionState == kRequestingPreviousOffers, 0x1D1);
+            mRedemptionState = 6;
+            {
+                LocalBandUser *u = TheInputMgr->GetUser()
+                    ? TheInputMgr->GetUser()->GetLocalBandUser()
+                    : NULL;
+                EnumerateOffers(u);
+            }
+            return 1;
+        case 0xA0005:
+        case 0xA0007:
+            MILO_ASSERT(mRedemptionState == kRequestingOffers, 0x1DF);
+            mRedemptionState = 3;
+            {
+                LocalBandUser *u = TheInputMgr->GetUser()
+                    ? TheInputMgr->GetUser()->GetLocalBandUser()
+                    : NULL;
+                EnumerateOffers(u);
+            }
+            return 1;
+        case 0xA0006:
+            MILO_ASSERT(mRedemptionState == kReportingPurchase, 0x1EA);
+            token_msg[0] = token_redemption_purchased;
+            break;
+        case 0x800A0003:
+            MILO_ASSERT(mRedemptionState == kRequestingOffers, 0x1F1);
+            mResultList.Clear();
+            token_msg[0] = token_redemption_not_found;
+            break;
+        case 0x800A0005:
+            MILO_ASSERT(mRedemptionState == kRequestingOffers, 0x1F7);
+            mResultList.Clear();
+            token_msg[0] = token_redemption_other_player;
+            break;
+        case 0x800A0008:
+            MILO_ASSERT(mRedemptionState == kRequestingOffers, 0x1FD);
+            mResultList.Clear();
+            token_msg[0] = token_redemption_too_late;
+            break;
+        case 0x800A0009:
+            MILO_ASSERT(mRedemptionState == kRequestingOffers, 0x203);
+            mResultList.Clear();
+            token_msg[0] = token_redemption_too_early;
+            break;
+        case 0x800A000B:
+            MILO_ASSERT(mRedemptionState == kRequestingOffers, 0x209);
+            mResultList.Clear();
+            token_msg[0] = token_redemption_wrong_platform;
+            break;
+        default:
+            token_msg[0] = errSym;
+            break;
+        }
+    }
+    mRedemptionState = 0;
+    HandleType(token_msg);
+    return 1;
 }
 
 BEGIN_HANDLERS(TokenRedemptionPanel)
