@@ -673,6 +673,27 @@ void *_MemAllocTemp(int size, int align) {
 extern char gZeroAllocBuf[0x20];
 extern bool gInsideMemFunc;
 
+extern OSThread *gMainThreadID;
+
+MemHandle *_MemAllocH(int size) {
+    bool isMain = true;
+    if (gMainThreadID != nullptr && gMainThreadID != OSGetCurrentThread()) {
+        isMain = false;
+    }
+    MILO_ASSERT(isMain, 0xb23);
+    int heapNum = GetCurrentHeapNum();
+    Heap *heap = (heapNum > -1) ? &gHeaps[heapNum] : nullptr;
+    bool ok = (heap != nullptr) && heap->mUseHeapAlign;
+    MILO_ASSERT(ok, 0xb27);
+    // Allocate (size aligned up to 16 + 0x20 header)
+    void *data = _MemAlloc(((size - 1) & ~0xF) + 0x20, 0x10);
+    MemHandle *h = (MemHandle *)_PoolAlloc(sizeof(MemHandle), sizeof(MemHandle), MainPool);
+    if (h != nullptr) {
+        new (h) MemHandle(data);
+    }
+    return h;
+}
+
 void _MemFree(void *mem) {
     if (mem == nullptr) return;
     if (mem == gZeroAllocBuf) return;
