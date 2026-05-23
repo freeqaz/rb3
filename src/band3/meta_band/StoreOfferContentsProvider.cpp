@@ -1,7 +1,228 @@
-// StoreOfferContentsProvider: provider for store offer contents records.
-//
-// Stub source file — implementations live in the dtk-extracted object until
-// they are decompiled here. The link still pulls symbols from
-// build/SZBE69_B8/obj/band3/meta_band/StoreOfferContentsProvider.o because
-// this unit's objects.json status is NonMatching (obj.completed = False),
-// so this .cpp only feeds objdiff/report.json comparison, not the final DOL.
+#include "meta_band/StoreOfferContentsProvider.h"
+#include "meta_band/AppLabel.h"
+#include "meta/StoreOffer.h"
+#include "meta/StorePackedMetadata.h"
+#include "bandobj/CheckboxDisplay.h"
+#include "obj/Data.h"
+#include "obj/ObjMacros.h"
+#include "os/CommerceMgr_Wii.h"
+#include "os/Debug.h"
+#include "ui/UILabel.h"
+#include "ui/UIListLabel.h"
+#include "ui/UIListCustom.h"
+#include "ui/UIListMesh.h"
+#include "ui/UIListSlot.h"
+#include "utl/Symbol.h"
+#include "utl/Symbols.h"
+#include "utl/Symbols2.h"
+#include "utl/Symbols3.h"
+#include "utl/Symbols4.h"
+#include "utl/VectorSizeDefs.h"
+#include <vector>
+
+StoreOfferContentsProvider::StoreOfferContentsProvider()
+    : mOffer(0), mElements(), mCurrentSongIndex(0), mSpecifiedCount(0),
+      unk38(0), unk3c(false) {}
+
+StoreOfferContentsProvider::~StoreOfferContentsProvider() { ClearList(); }
+
+void StoreOfferContentsProvider::InitData(RndDir *) {}
+
+void StoreOfferContentsProvider::Text(
+    int, int col, UIListLabel *slot, UILabel *label
+) const {
+    AppLabel *appLabel = dynamic_cast<AppLabel *>(label);
+    MILO_ASSERT(appLabel, 0x36);
+    if (slot->Matches("name")) {
+        appLabel->SetTextToken(mElements[col]->mSong->GetName());
+    } else if (slot->Matches("downloaded")) {
+        if (IsActive(col)) {
+            appLabel->SetIcon('0');
+        } else {
+            appLabel->SetTextToken(gNullStr);
+        }
+    } else {
+        label->SetTextToken(gNullStr);
+    }
+}
+
+RndMat *
+StoreOfferContentsProvider::Mat(int, int, UIListMesh *mesh) const {
+    return mesh->DefaultMat();
+}
+
+void StoreOfferContentsProvider::Custom(
+    int, int col, UIListCustom *slot, Hmx::Object *obj
+) const {
+    MILO_ASSERT(slot, 0x5B);
+    Element *element = mElements[col];
+    if (slot->Matches("check")) {
+        CheckboxDisplay *cd = dynamic_cast<CheckboxDisplay *>(obj);
+        MILO_ASSERT(cd, 0x62);
+        cd->SetChecked(element->mChecked);
+    }
+}
+
+Symbol StoreOfferContentsProvider::DataSymbol(int) const {
+    return Symbol(gNullStr);
+}
+
+bool StoreOfferContentsProvider::IsActive(int idx) const {
+    Element *element = mElements[idx];
+    if (mListType == kListDownload) {
+        unsigned int contentIdx = (element->mSong->unka);
+        int flagsA = TheStoreMetadata.GetContentStateFlags(
+            element->mSong->DataTitle(), (unsigned short)(contentIdx + 1)
+        );
+        int flagsB = TheStoreMetadata.GetContentStateFlags(
+            element->mSong->DataTitle(), contentIdx
+        );
+        return (flagsA | flagsB) & 1;
+    } else if (mListType == kListPurchase) {
+        return !(TheStoreMetadata.SongStateFlags(element->mSong) & 1);
+    }
+    return true;
+}
+
+int StoreOfferContentsProvider::NumData() const { return mElements.size(); }
+
+void StoreOfferContentsProvider::BuildList(StoreOffer *offer, ListType type) {
+    ClearList();
+    MILO_ASSERT(offer, 0x95);
+    mOffer = offer;
+    mListType = type;
+    for (int i = 0; i < offer->NumSongs(); i++) {
+        StorePackedSong *song;
+        if (offer->mPackedData->mIsRBN) {
+            song = &TheStoreMetadata.mSongTable
+                        ->mSongs[offer->mPackedRbnOffer->mSongs[i]];
+        } else {
+            song = &TheStoreMetadata.mSongTable
+                        ->mSongs[offer->mPackedOffer->mSongs[i]];
+        }
+        Element *element = new Element;
+        if (element) {
+            element->mSong = song;
+            element->mChecked = false;
+        }
+        mElements.push_back(element);
+    }
+    mCurrentSongIndex = 0;
+    unk3c = false;
+    mSpecifiedCount = 0;
+    unk38 = 0;
+}
+
+void StoreOfferContentsProvider::ClearList() {
+    for (std::vector<Element * VECTOR_SIZE_SMALL>::iterator it = mElements.begin();
+         it != mElements.end(); ++it) {
+        delete *it;
+    }
+    mElements.clear();
+}
+
+void StoreOfferContentsProvider::SetChecked(int idx, bool checked) {
+    if (IsActive(idx)) {
+        Element *element = mElements[idx];
+        MILO_ASSERT(element, 0xB2);
+        element->mChecked = checked;
+    }
+}
+
+void StoreOfferContentsProvider::ToggleChecked(int idx) {
+    Element *element = mElements[idx];
+    MILO_ASSERT(element, 0xBB);
+    SetChecked(idx, !element->mChecked);
+}
+
+void StoreOfferContentsProvider::ToggleAllChecked() {
+    bool newState = !AllChecked();
+    for (int i = 0; i < (int)mElements.size(); i++) {
+        SetChecked(i, newState);
+    }
+}
+
+void StoreOfferContentsProvider::AcceptCurChecked() {
+    std::vector<unsigned short VECTOR_SIZE_SMALL> contentUnits;
+    for (int i = 0; i < (int)mElements.size(); i++) {
+        Element *element = mElements[i];
+        if (element->mChecked) {
+            unsigned short base = (unsigned short)element->mSong->unka;
+            contentUnits.push_back(base);
+            contentUnits.push_back((unsigned short)(base + 1));
+        }
+    }
+    TheWiiCommerceMgr.SpecifyContentUnits(contentUnits);
+}
+
+void StoreOfferContentsProvider::RefreshBlocks() {
+    TheWiiCommerceMgr.InitPreDownload();
+    AcceptCurChecked();
+    TheWiiCommerceMgr.SpecifyOffer(mOffer);
+}
+
+void StoreOfferContentsProvider::SpecifyFirstSongContents() {
+    mCurrentSongIndex = 0;
+    mSpecifiedCount = 0;
+    SpecifyNextSongContents();
+}
+
+void StoreOfferContentsProvider::SpecifyNextSongContents() {
+    std::vector<unsigned short VECTOR_SIZE_SMALL> contentUnits;
+    bool found = false;
+    while (mCurrentSongIndex < (int)mElements.size() && !found) {
+        Element *element = mElements[mCurrentSongIndex];
+        if (element->mChecked) {
+            unsigned short base = (unsigned short)element->mSong->unka;
+            contentUnits.push_back(base);
+            contentUnits.push_back((unsigned short)(base + 1));
+            found = true;
+        }
+        mCurrentSongIndex++;
+    }
+    if (found) {
+        mSpecifiedCount++;
+        TheWiiCommerceMgr.SpecifyContentUnits(contentUnits);
+    }
+}
+
+bool StoreOfferContentsProvider::AnyChecked() {
+    for (int i = 0; i < (int)mElements.size(); i++) {
+        if (IsActive(i) && mElements[i]->mChecked)
+            return true;
+    }
+    return false;
+}
+
+bool StoreOfferContentsProvider::AllChecked() {
+    for (int i = 0; i < (int)mElements.size(); i++) {
+        if (IsActive(i) && !mElements[i]->mChecked)
+            return false;
+    }
+    return true;
+}
+
+int StoreOfferContentsProvider::NumChecked() {
+    int count = 0;
+    for (int i = 0; i < (int)mElements.size(); i++) {
+        if (IsActive(i) && mElements[i]->mChecked)
+            count++;
+    }
+    return count;
+}
+
+BEGIN_HANDLERS(StoreOfferContentsProvider)
+    HANDLE_ACTION(build_list, BuildList(dynamic_cast<StoreOffer *>(_msg->GetObj(2)), (ListType)_msg->Int(3)))
+    HANDLE_ACTION(clear_list, ClearList())
+    HANDLE_ACTION(toggle_checked, ToggleChecked(_msg->Int(2)))
+    HANDLE_ACTION(toggle_all_checked, ToggleAllChecked())
+    HANDLE_EXPR(any_checked, AnyChecked())
+    HANDLE_EXPR(num_checked, NumChecked())
+    HANDLE_EXPR(get_current_song_index, mSpecifiedCount)
+    HANDLE_ACTION(accept_cur_checked, AcceptCurChecked())
+    HANDLE_ACTION(refresh_blocks, RefreshBlocks())
+    HANDLE_EXPR(specify_next_song_contents, (SpecifyNextSongContents(), 0))
+    HANDLE_EXPR(specify_first_song_contents, (SpecifyFirstSongContents(), 0))
+    HANDLE_SUPERCLASS(Hmx::Object)
+    HANDLE_CHECK(0x148)
+END_HANDLERS
