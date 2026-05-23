@@ -2,16 +2,32 @@
 #include "dsp/IIRFilter.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
+#include "utl/MakeString.h"
 #include "utl/MemMgr.h"
 #include "utl/Symbol.h"
 #include <math.h>
 #include <string.h>
 
-// dtk-extracted helpers in SndAnalysis.cpp / this TU
+// dtk-extracted helpers in SndAnalysis.cpp
 float ShiftedDotProduct(const float *buf, int len, float *out, bool extra);
 int FindCCPeak(const float *autocorr, const float *peaks, int len, int minPeriod);
 float RefinePeriod2(const float *buf, const float *autocorr, const float *peaks, int len, int period);
-void dump(float *data, int len);
+
+void dump(float *data, int len) {
+    const char *space = " ";
+    for (int i = 0; i < len; i++) {
+        int j = 0;
+        int n = (int)(data[i] / 700.0f) + 30;
+        if (n > 0) {
+            do {
+                FormatString fs(space);
+                TheDebug << fs.Str();
+                j++;
+            } while (j < n);
+        }
+        TheDebug << MakeString("* %d\n", i);
+    }
+}
 
 PitchDetector::PitchDetector(int sampleRate) {
     mSamplesPerSec = 0;
@@ -83,24 +99,23 @@ void PitchDetector::AnalyzeBlock(
     static DataNode &PD_GATE_RATIO = DataVariable("PD_GATE_RATIO");
     static DataNode &PD_FLOOR_SECONDS = DataVariable("PD_FLOOR_SECONDS");
     static DataNode &PD_FIXED_GAIN = DataVariable("PD_FIXED_GAIN");
+    static float kPropFilter = 0.3f;
     static int sDump = 0;
 
-    int overlap = mFrameSize - (mIdx - (mIdx / mFrameSize) * mFrameSize) - numSamples;
-    int dec_size = (overlap - 1) / mFrameSize + 1;
-    if (overlap == 0 || numSamples == (overlap - (overlap - 1) / mFrameSize * mFrameSize)) {
+    int offset = (mDecimRate - mIdx) - (mDecimRate - mIdx) / mDecimRate * mDecimRate;
+    int dec_size = (numSamples - offset - 1) / mDecimRate + 1;
+    if (numSamples == 0 || numSamples == offset) {
         dec_size = 0;
     }
 
     float lastVal = 0.0f;
     int ixDecim = 0;
-    int begIxDecim = 0;
     if (dec_size > 0 && dec_size < mFrameSize) {
         int keep = mFrameSize - dec_size;
         memcpy(mDecimBuf, mDecimBuf + dec_size, keep * 4);
         lastVal = mCorrBuf[dec_size - 1];
-        int i = 0;
         if (keep > 0) {
-            for (; i < keep; i++) {
+            for (int i = 0; i < keep; i++) {
                 mCorrBuf[i] = mCorrBuf[i + dec_size] - lastVal;
             }
         }
@@ -114,12 +129,12 @@ void PitchDetector::AnalyzeBlock(
         numSamples -= extra;
         samples += extra * 2;
     }
+    int begIxDecim = ixDecim;
 
     mFilter->Begin();
     begIxDecim = ixDecim;
     float decimAccum = gain * mFilter->FilterSlow((float)samples[0]);
     int sampleIdx = 0;
-    static float kPropFilter = 0.3f;
     int decimWriteIdx = ixDecim * 4;
     while (sampleIdx < numSamples) {
         float filtered = mFilter->FilterSlow((float)samples[0]) * gain;
