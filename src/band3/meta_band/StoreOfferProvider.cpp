@@ -16,6 +16,8 @@
 #include "utl/Symbols.h"
 #include "utl/Symbols4.h"
 
+extern bool operator==(const StoreOffer *o, Symbol s);
+
 StoreOfferProvider::StoreOfferProvider(
     std::vector<StoreOffer *> *offers, std::vector<StoreOffer *> *packs
 )
@@ -188,7 +190,19 @@ const StoreOffer *StoreOfferProvider::FindAlbum(const StoreOffer *o) const {
     return NULL;
 }
 
-StoreOffer *StoreOfferProvider::FindOffer(Symbol s) const { return NULL; }
+StoreOffer *StoreOfferProvider::FindOffer(Symbol s) const {
+    std::vector<StoreOffer *>::iterator it =
+        std::find(mOffers->begin(), mOffers->end(), s);
+    if (it == mOffers->end()) {
+        if (!mPacks)
+            return NULL;
+        it = std::find(mPacks->begin(), mPacks->end(), s);
+        if (it == mPacks->end())
+            return NULL;
+        return *it;
+    }
+    return *it;
+}
 
 void StoreOfferProvider::BuildList(DataArray *) {}
 
