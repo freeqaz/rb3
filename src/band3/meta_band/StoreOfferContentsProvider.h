@@ -44,8 +44,8 @@ public:
     void ToggleAllChecked();
     void AcceptCurChecked();
     void RefreshBlocks();
-    void SpecifyFirstSongContents();
-    void SpecifyNextSongContents();
+    bool SpecifyFirstSongContents();
+    bool SpecifyNextSongContents();
     bool AnyChecked();
     bool AllChecked();
     int NumChecked();

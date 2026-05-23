@@ -93,14 +93,14 @@ void StoreOfferContentsProvider::BuildList(StoreOffer *offer, ListType type) {
     MILO_ASSERT(offer, 0x95);
     mOffer = offer;
     mListType = type;
-    for (int i = 0; i < offer->NumSongs(); i++) {
+    for (int i = 0; i < mOffer->NumSongs(); i++) {
         StorePackedSong *song;
-        if (offer->mPackedData->mIsRBN) {
+        if (mOffer->mPackedData->mIsRBN) {
             song = &TheStoreMetadata.mSongTable
-                        ->mSongs[offer->mPackedRbnOffer->mSongs[i]];
+                        ->mSongs[mOffer->mPackedRbnOffer->mSongs[i]];
         } else {
             song = &TheStoreMetadata.mSongTable
-                        ->mSongs[offer->mPackedOffer->mSongs[i]];
+                        ->mSongs[mOffer->mPackedOffer->mSongs[i]];
         }
         Element *element = new Element;
         if (element) {
@@ -165,13 +165,13 @@ void StoreOfferContentsProvider::RefreshBlocks() {
     TheWiiCommerceMgr.SpecifyOffer(mOffer);
 }
 
-void StoreOfferContentsProvider::SpecifyFirstSongContents() {
+bool StoreOfferContentsProvider::SpecifyFirstSongContents() {
     mCurrentSongIndex = 0;
     mSpecifiedCount = 0;
-    SpecifyNextSongContents();
+    return SpecifyNextSongContents();
 }
 
-void StoreOfferContentsProvider::SpecifyNextSongContents() {
+bool StoreOfferContentsProvider::SpecifyNextSongContents() {
     std::vector<unsigned short VECTOR_SIZE_SMALL> contentUnits;
     bool found = false;
     while ((unsigned int)mCurrentSongIndex < mElements.size() && !found) {
@@ -188,6 +188,7 @@ void StoreOfferContentsProvider::SpecifyNextSongContents() {
         mSpecifiedCount++;
         TheWiiCommerceMgr.SpecifyContentUnits(contentUnits);
     }
+    return found;
 }
 
 bool StoreOfferContentsProvider::AnyChecked() {
@@ -225,8 +226,8 @@ BEGIN_HANDLERS(StoreOfferContentsProvider)
     HANDLE_EXPR(get_current_song_index, mSpecifiedCount)
     HANDLE_ACTION(accept_cur_checked, AcceptCurChecked())
     HANDLE_ACTION(refresh_blocks, RefreshBlocks())
-    HANDLE_EXPR(specify_next_song_contents, (SpecifyNextSongContents(), 0))
-    HANDLE_EXPR(specify_first_song_contents, (SpecifyFirstSongContents(), 0))
+    HANDLE_EXPR(specify_next_song_contents, SpecifyNextSongContents())
+    HANDLE_EXPR(specify_first_song_contents, SpecifyFirstSongContents())
     HANDLE_SUPERCLASS(Hmx::Object)
     HANDLE_CHECK(0x148)
 END_HANDLERS
