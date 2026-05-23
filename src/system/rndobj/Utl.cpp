@@ -1280,7 +1280,7 @@ void TestTexturePaths(class ObjectDir *dir) {
     if (dir->Loader()) {
         const char *fpstr = dir->Loader()->mFile.c_str();
         bool ng = strstr(fpstr, "/ng/") != 0;
-        for (ObjDirItr<RndTex> it(dir, true); it != 0; ++it) {
+        for (ObjDirItr<RndTex> it(dir, false); it != 0; ++it) {
             const char *texStr = it->mFilepath.c_str();
             if (!ng && strstr(texStr, "/ng/") != 0) {
                 MILO_WARN("og %s has ng texture %s", fpstr, texStr);
