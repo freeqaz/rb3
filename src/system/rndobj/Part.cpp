@@ -1548,16 +1548,17 @@ END_HANDLERS
 #pragma pop
 
 DataNode RndParticleSys::OnSetStartColor(const DataArray *da) {
-    DataArray *arr2 = da->Array(3);
+    DataArray *arr2;
     DataArray *arr1 = da->Array(2);
-    float a1a = arr1->Float(3);
-    float a1b = arr1->Float(2);
-    float a1g = arr1->Float(1);
-    float a1r = arr1->Float(0);
+    arr2 = da->Array(3);
     float a2a = arr2->Float(3);
     float a2b = arr2->Float(2);
     float a2g = arr2->Float(1);
     float a2r = arr2->Float(0);
+    float a1a = arr1->Float(3);
+    float a1b = arr1->Float(2);
+    float a1g = arr1->Float(1);
+    float a1r = arr1->Float(0);
     mStartColorLow.Set(a1r, a1g, a1b, a1a);
     mStartColorHigh.Set(a2r, a2g, a2b, a2a);
     return 0;
@@ -1576,16 +1577,17 @@ DataNode RndParticleSys::OnSetStartColorInt(const DataArray *da) {
 }
 
 DataNode RndParticleSys::OnSetEndColor(const DataArray *da) {
-    DataArray *arr2 = da->Array(3);
+    DataArray *arr2;
     DataArray *arr1 = da->Array(2);
-    float a1a = arr1->Float(3);
-    float a1b = arr1->Float(2);
-    float a1g = arr1->Float(1);
-    float a1r = arr1->Float(0);
+    arr2 = da->Array(3);
     float a2a = arr2->Float(3);
     float a2b = arr2->Float(2);
     float a2g = arr2->Float(1);
     float a2r = arr2->Float(0);
+    float a1a = arr1->Float(3);
+    float a1b = arr1->Float(2);
+    float a1g = arr1->Float(1);
+    float a1r = arr1->Float(0);
     mEndColorLow.Set(a1r, a1g, a1b, a1a);
     mEndColorHigh.Set(a2r, a2g, a2b, a2a);
     return 0;
