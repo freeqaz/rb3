@@ -564,19 +564,19 @@ void Spotlight::UpdateFloorSpotTransform(const Transform &tf) {
     if (DoFloorSpot()) {
         float f1 = GetFloorSpotTarget()->WorldXfm().v.z;
         Vector3 vac(tf.m.y);
-        if (vac.x != 0) {
-            float absed = std::fabs(((f1 - tf.v.z) / vac.x) / (f1 - tf.v.z));
+        if (vac.z != 0) {
+            float absed = std::fabs(((f1 - tf.v.z) / vac.z) / (f1 - tf.v.z));
             vac = tf.m.y;
-            float curx = vac.x;
-            vac.x = 0;
+            float curz = vac.z;
+            vac.z = 0;
             Hmx::Matrix3 m70;
-            if (curx > -0.9999999f && curx < 0.9999999f)
+            if (curz > -0.9999999f && curz < 0.9999999f)
                 MakeRotMatrix(vac, Vector3(0.0f, 0.0f, 1.0f), m70);
             else
                 m70.Identity();
             vac.Set(mSpotScale, mSpotScale * absed, 1.0f);
             Scale(vac, m70, m70);
-            float scalar = (f1 + mSpotHeight - tf.v.z) / curx;
+            float scalar = (f1 + mSpotHeight - tf.v.z) / curz;
             vac = tf.m.y;
             vac *= scalar;
             ::Add(vac, tf.v, vac);
