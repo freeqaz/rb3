@@ -45,21 +45,21 @@ bool StoreOfferProvider::IsActive(int i) const {
     if (mElements.size() < 1)
         return false;
     Element *e = mElements[i];
-    if (e->mOffer != NULL)
-        return true;
-    if (e->mLocalize)
-        return true;
-    return false;
+    bool result = false;
+    if (e->mOffer != NULL || e->mLocalize) {
+        result = true;
+    }
+    return result;
 }
 
 Symbol StoreOfferProvider::DataSymbol(int i) const {
-    if (mElements.size() == 0)
-        return gNullStr;
-    Element *e = mElements[i];
-    if (e->mOffer) {
-        return e->mOffer->ShortName();
-    } else if (e->mLocalize) {
-        return e->mGroupHeading;
+    if (mElements.size() != 0) {
+        Element *e = mElements[i];
+        if (e->mOffer) {
+            return e->mOffer->ShortName();
+        } else if (e->mLocalize) {
+            return e->mGroupHeading;
+        }
     }
     return gNullStr;
 }
@@ -87,13 +87,11 @@ void StoreOfferProvider::InitData(RndDir *dir) {
 }
 
 Symbol StoreOfferProvider::PosToShortcut(int pos) {
-    Element **end = &mElements[pos] + 1;
-    Element **it = end;
     Element **start = &mElements[0];
+    Element **it = &mElements[pos];
     while (it >= start) {
-        Element *e = *it;
-        if (e->mShortcut != gNullStr) {
-            return e->mShortcut;
+        if ((*it)->mShortcut.Str() != gNullStr) {
+            return (*it)->mShortcut;
         }
         --it;
     }
@@ -102,8 +100,8 @@ Symbol StoreOfferProvider::PosToShortcut(int pos) {
 }
 
 int StoreOfferProvider::ShortcutToPos(Symbol s) {
-    int n = mElements.size();
-    for (int i = 0; i < n; i++) {
+    unsigned int n = mElements.size();
+    for (unsigned int i = 0; i < n; i++) {
         if (mElements[i]->mShortcut == s) {
             return i;
         }
@@ -113,9 +111,9 @@ int StoreOfferProvider::ShortcutToPos(Symbol s) {
 }
 
 int StoreOfferProvider::PosToNextGroupPos(int pos) {
-    int n = mElements.size();
-    for (int i = pos + 1; i < n; i++) {
-        if (mElements[i]->mGroupHeading != gNullStr) {
+    unsigned int n = mElements.size();
+    for (unsigned int i = pos + 1; i < n; i++) {
+        if (mElements[i]->mGroupHeading.Str() != gNullStr) {
             return i;
         }
     }
@@ -124,13 +122,13 @@ int StoreOfferProvider::PosToNextGroupPos(int pos) {
 
 int StoreOfferProvider::PosToPrevGroupPos(int pos) {
     for (int i = pos - 2; i >= 0; i--) {
-        if (mElements[i]->mGroupHeading != gNullStr) {
+        if (mElements[i]->mGroupHeading.Str() != gNullStr) {
             return i;
         }
     }
     int n = mElements.size();
     for (int i = n - 1; i > pos; i--) {
-        if (mElements[i]->mGroupHeading != gNullStr) {
+        if (mElements[i]->mGroupHeading.Str() != gNullStr) {
             return i;
         }
     }

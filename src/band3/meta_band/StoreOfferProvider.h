@@ -17,12 +17,19 @@ public:
     class Element {
     public:
         Element()
-            : mOffer(0), mGroupHeading(), mShortcut(), mLocalize(true) {}
+            : mOffer(0),
+              mGroupHeading(),
+              mShortcut(),
+              mIsHeader(true),
+              mIsCover(false),
+              mLocalize(true) {}
 
         StoreOffer *mOffer; // 0x0
         Symbol mGroupHeading; // 0x4
         Symbol mShortcut; // 0x8
-        bool mLocalize; // 0xc
+        bool mIsHeader; // 0xc
+        bool mIsCover; // 0xd
+        bool mLocalize; // 0xe
     };
 
     StoreOfferProvider(
