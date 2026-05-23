@@ -349,8 +349,10 @@ void Synth::DrawMeterScale(float &y) {
 }
 
 float Synth::UpdateOverlay(RndOverlay *, float y) {
+    float yPos = y;
+    yPos += 0.265f;
     Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
-    float yPos = (float)TheRnd->Width() * (y + 0.265f);
+    yPos = (float)TheRnd->Height() * yPos;
     if (unk64) {
         DrawMeterScale(yPos);
         DrawMeter(yPos, ((Stream *)unk64)->Faders()->GetVal(), 0.0f, "stream");
@@ -375,19 +377,24 @@ float Synth::UpdateOverlay(RndOverlay *, float y) {
         DrawMeter(yPos, rms, peakHold, mLevelData[i].mName.c_str());
     }
     char buf[64];
-    sprintf(buf, "Total active Sequences: %d", SynthPollable::sPollables.size());
+    int count = 0;
+    std::list<SynthPollable *>::iterator it = SynthPollable::sPollables.begin();
+    for (std::list<SynthPollable *>::iterator it2 = it;
+         it2 != SynthPollable::sPollables.end();
+         ++it2) {
+        ++count;
+    }
+    sprintf(buf, "Total active Sequences: %d", count);
     TheRnd->DrawString(buf, Vector2(100.0f, yPos), white, true);
     yPos += 12.0f;
-    for (std::list<SynthPollable *>::iterator it = SynthPollable::sPollables.begin();
-         it != SynthPollable::sPollables.end();
-         ++it) {
+    for (; it != SynthPollable::sPollables.end(); ++it) {
         const char *name = (*it)->GetSoundDisplayName();
         if (*name != '\0') {
             TheRnd->DrawString(name, Vector2(100.0f, yPos), white, true);
             yPos += 12.0f;
         }
     }
-    return yPos / (float)TheRnd->Width();
+    return yPos / (float)TheRnd->Height();
 }
 
 DataNode Synth::OnStartMic(const DataArray *a) {
