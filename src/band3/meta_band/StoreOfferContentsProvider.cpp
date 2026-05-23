@@ -109,10 +109,10 @@ void StoreOfferContentsProvider::BuildList(StoreOffer *offer, ListType type) {
         }
         mElements.push_back(element);
     }
-    mCurrentSongIndex = 0;
-    unk3c = false;
-    mSpecifiedCount = 0;
     unk38 = 0;
+    unk3c = false;
+    mCurrentSongIndex = 0;
+    mSpecifiedCount = 0;
 }
 
 void StoreOfferContentsProvider::ClearList() {
