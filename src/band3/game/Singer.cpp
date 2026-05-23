@@ -472,6 +472,78 @@ void Singer::Poll_(float ms, const SongPos &, float micPitch, float micEnergy, f
     }
 }
 
+void Singer::Poll(float ms, const SongPos &pos, float f3, float f4) {
+    GameMic *mic = TheGameMicManager->GetMic(mMicClientID);
+    if (mic && mic->GetMyMic()->IsRunning()) {
+        mic->Update();
+        Poll_(ms, pos, mic->unk2c, mic->unk28, f3, f4);
+    } else {
+        Poll_(ms, pos, 0.0f, 0.0f, f3, f4);
+    }
+    ProcessTalkyData();
+    mFrameAssignedPart = -1;
+    unk74 = 0.0f;
+    for (std::vector<VocalScoreCache>::iterator it = mScoreCaches.begin();
+         it != mScoreCaches.end(); ++it) {
+        it->unk0 = 0.0f;
+        it->unk4 = 0.0f;
+        it->unk8 = 0.0f;
+        it->unkc = 0.0f;
+        it->unk10 = 0.0f;
+        it->unk14 = 0.0f;
+        it->unk1c = 0;
+        it->unk20 = false;
+        it->unk21 = false;
+        it->unk22 = false;
+        it->unk24 = 0.0f;
+    }
+}
+
+void Singer::AddAmbiguousPart(int i_iPart1, int i_iPart2) {
+    MILO_ASSERT(i_iPart1 < i_iPart2, 0x13E);
+    bool bFound = false;
+    for (AmbiguousData *iter = &mAmbiguousData[0];
+         iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
+        if (iter->unk0 == i_iPart1 || iter->unk0 == i_iPart2) {
+            bFound = true;
+            break;
+        }
+    }
+    if (!bFound) {
+        AmbiguousData entry;
+        entry.unk0 = i_iPart1;
+        entry.unk4 = i_iPart2;
+        entry.unk8 = false;
+        entry.unkc = -1;
+        entry.unk10 = -1.0f;
+        mAmbiguousData.push_back(entry);
+    }
+}
+
+void Singer::DisableAmbiguousPart(int i_iPart1, int i_iPart2) {
+    if (mAmbiguousData.size() != 0) {
+        MILO_ASSERT(i_iPart1 < i_iPart2, 0x16C);
+        for (AmbiguousData *iter = &mAmbiguousData[0];
+             iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
+            bool match = false;
+            if (iter->unk0 == i_iPart1 && iter->unk4 == i_iPart2) {
+                match = true;
+            }
+            if (match) {
+                if (!iter->unk8) {
+                    iter->unk8 = true;
+                }
+                return;
+            }
+        }
+    }
+}
+
+void Singer::GetPitchDeviation(float &mean, float &dev) const {
+    mean = unk29c;
+    dev = unk2a0;
+}
+
 void Singer::SetAssignedPart(int part, float f2) {
     mFrameAssignedPart = part;
     if (mVibratoFrameBonus != 0.0f) {

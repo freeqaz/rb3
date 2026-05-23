@@ -137,7 +137,10 @@ public:
     float AddToFreestyleDeployment(float);
     void ResolveAmbiguity();
     void SetAssignedPart(int, float);
+    void Poll(float, const SongPos &, float, float);
     void Poll_(float, const SongPos &, float, float, float, float);
+    void AddAmbiguousPart(int, int);
+    void DisableAmbiguousPart(int, int);
 
     float GetFrameMicPitch() const { return mFrameMicPitch; }
     float GetFrameTargetPitch() const { return mFrameTargetPitch; }
