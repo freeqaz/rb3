@@ -86,21 +86,18 @@ void AppMiniLeaderboardDisplay::SetLeaderboardStatus(LeaderboardStatus status) {
 void AppMiniLeaderboardDisplay::UpdateLeaderboardOnline(int songID) {
     SetLeaderboardStatus(kLeaderboardLoading);
     BandProfile *p = TheProfileMgr.GetPrimaryProfile();
-    if (mLeaderboardList)
-        mLeaderboardList->SetProvider(nullptr);
-    if (mLeaderboard) {
-        mLeaderboard->CancelEnumerate();
-    }
+    mLeaderboardList->SetProvider(mLeaderboardList);
+    delete mLeaderboard;
     mLeaderboard = nullptr;
     if (p) {
         MILO_ASSERT(mLeaderboardList, 0xc9);
-        PlayerMiniLeaderboard *lb =
-            new PlayerMiniLeaderboard(p, this, mScoreType, mSongID, mLeaderboardList->NumDisplay());
-        mLeaderboard = lb;
-        mLeaderboardList->SetProvider(lb);
-        lb->StartEnumerate();
+        mLeaderboard = new PlayerMiniLeaderboard(
+            p, this, mScoreType, mSongID, mLeaderboardList->NumDisplay()
+        );
+        mLeaderboardList->SetProvider(mLeaderboard);
+        mLeaderboard->StartEnumerate();
     } else {
-        Update();
+        ResultFailure();
     }
 }
 
@@ -215,7 +212,7 @@ void PlayerMiniLeaderboard::EnumerateFromID() {
     std::vector<int> ids;
     GetPlayerIds(ids);
     TheRockCentral.GetLeaderboardByPlayer(
-        ids, 0, mScoreType, kSong, ModeToLeaderboardMode(mMode), sPageSize,
+        ids, mSongID, mScoreType, kSong, (LeaderboardMode)kFriends, mNotesPct,
         mDataResultList, this
     );
 }
