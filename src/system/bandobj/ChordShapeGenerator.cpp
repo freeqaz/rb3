@@ -674,7 +674,7 @@ void ChordShapeGenerator::ExtendProfile(
     std::map<unsigned short, unsigned short> profileVerts;
     Transform interp;
     InterpolateXfm(tfA, tfB, t, interp);
-    Hmx::Color32 col;
+    Hmx::Color32 col(col1);
     col.g = col1.g + (int)(t * (col2.g - col1.g));
     col.r = col1.r + (int)(t * (col2.r - col1.r));
     col.a = col1.a + (int)(t * (col2.a - col1.a));
