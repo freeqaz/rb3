@@ -903,11 +903,17 @@ void RndScaleObject(Hmx::Object *o, float f1, float f2) {
         );
         partsys->SetLife(f1 * partsys->mLife.x, f1 * partsys->mLife.y);
         partsys->SetEmitRate(partsys->mEmitRate.x / f1, partsys->mEmitRate.y / f1);
-        Vector3 vb0 = partsys->mForceDir;
-        vb0 *= (f1 / f2) / f2;
-        partsys->SetForceDir(vb0);
-        Scale(partsys->mBoxExtent1, f1, partsys->mBoxExtent1);
-        Scale(partsys->mBoxExtent2, f1, partsys->mBoxExtent2);
+        Scale(partsys->mForceDir, (f1 / f2) / f2, partsys->mForceDir);
+        partsys->mBoxExtent1.Set(
+            partsys->mBoxExtent1.x * f1,
+            partsys->mBoxExtent1.y * f1,
+            partsys->mBoxExtent1.z * f1
+        );
+        partsys->mBoxExtent2.Set(
+            partsys->mBoxExtent2.x * f1,
+            partsys->mBoxExtent2.y * f1,
+            partsys->mBoxExtent2.z * f1
+        );
         partsys->SetSpeed((partsys->mSpeed.x * f1) / f2, (partsys->mSpeed.y * f1) / f2);
         partsys->SetStartSize(f1 * partsys->mStartSize.x, f1 * partsys->mStartSize.y);
         partsys->SetDeltaSize(f1 * partsys->mDeltaSize.x, f1 * partsys->mDeltaSize.y);
