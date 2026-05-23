@@ -60,11 +60,10 @@ const char *BandStorePanel::GetRequestPrefix() const {
 }
 
 int BandStorePanel::StoreUser() const {
-    BandUser *u = TheInputMgr->GetUser();
-    LocalUser *local = u->GetLocalUser();
-    if (!local)
-        return 0;
-    return (int)local;
+    LocalBandUser *l = TheInputMgr->GetUser()
+        ? TheInputMgr->GetUser()->GetLocalBandUser()
+        : 0;
+    return l ? (int)((LocalUser *)l) : 0;
 }
 
 StoreOffer *BandStorePanel::MakeNewOffer(const StorePackedOfferBase *base, bool isRbn) {
@@ -111,7 +110,7 @@ void BandStorePanel::Unload() {
 
 void BandStorePanel::Enter() {
     StorePanel::Enter();
-    SetType(StaticClassName());
+    StoreUser();
     LocalBandUser *bu = dynamic_cast<LocalBandUser *>(TheInputMgr->GetUser());
     if (bu && !bu->IsSignedIn()) {
         ExitError(kStoreErrorSignedOut);
@@ -147,11 +146,15 @@ Symbol BandStorePanel::SortName() {
     return mSort;
 }
 
-const char *BandStorePanel::ShortcutTextAtData(int i) {
-    MILO_ASSERT(mShortcutProvider, 0x24A);
-    DataNode &n = mShortcutProvider->mData->Node(i + mShortcutProvider->mOffset);
+inline const char *BandStoreShortcutProvider::RawTextAtData(int i) const {
+    DataNode &n = mData->Node(i + mOffset);
     MILO_ASSERT(n.Type() == kDataString, 0x3A);
     return n.Str(0);
+}
+
+const char *BandStorePanel::ShortcutTextAtData(int i) {
+    MILO_ASSERT(mShortcutProvider, 0x24A);
+    return mShortcutProvider->RawTextAtData(i);
 }
 
 void BandStorePanel::SetShortcutData(DataArray *arr) {
@@ -168,7 +171,7 @@ void BandStorePanel::ApplyShortcutProvider(UIList *list) {
 }
 
 void BandStoreShortcutProvider::Text(int i, int j, UIListLabel *listlabel, UILabel *label) const {
-    if (mData->Node(j + mOffset).Type() == kDataString) {
+    if (mData->Node(j + mOffset).Evaluate().Type() == kDataString) {
         AppLabel *al = dynamic_cast<AppLabel *>(label);
         MILO_ASSERT(al, 0x30);
         al->SetRawStoreShortcut(j);
@@ -225,7 +228,7 @@ void BandStorePanel::Request(const String &path, bool extra) {
 
 void BandStorePanel::ExitStore(StoreError err) const {
     if (!TheUIEventMgr->HasActiveTransitionEvent()) {
-        static Message msg("store_panel", DataNode(0), DataNode(-1));
+        static Message msg("init", DataNode(-1));
         msg[0] = DataNode((int)err);
         TheUIEventMgr->TriggerEvent(store_load_failed, msg.mData);
     }
@@ -261,17 +264,34 @@ BEGIN_HANDLERS(BandStorePanel)
 END_HANDLERS
 
 BEGIN_PROPSYNCS(BandStorePanel)
-    if (sym == waiting) {
-        if (_op == kPropGet) {
-            _val = DataNode(mUserCanDoInput);
-        } else {
-            mUserCanDoInput = _val.Int(0) != 0;
-        }
-        return true;
-    }
+    SYNC_PROP(waiting, mUserCanDoInput)
     SYNC_SUPERCLASS(StorePanel)
 END_PROPSYNCS
 
 void BandStorePanel::Poll() {
     StorePanel::Poll();
+}
+
+int BandStorePanel::UpdateOffers(const std::list<EnumProduct> &list, bool b) {
+    return StorePanel::UpdateOffers(list, b);
+}
+
+Symbol DataProvider::DataSymbol(int i) const {
+    DataNode &n = mData->Node(i + mOffset);
+    if (n.Type() == kDataArray) {
+        return n.Array()->Sym(0);
+    } else {
+        return n.ForceSym();
+    }
+}
+
+bool DataProvider::IsActive(int i) const {
+    return std::find(mDisabled.begin(), mDisabled.end(), DataSymbol(i)) == mDisabled.end();
+}
+
+UIListWidgetState
+DataProvider::ElementStateOverride(int, int i, UIListWidgetState s) const {
+    return std::find(mDimmed.begin(), mDimmed.end(), DataSymbol(i)) != mDimmed.end()
+        ? kUIListWidgetInactive
+        : s;
 }

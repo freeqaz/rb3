@@ -17,6 +17,7 @@ public:
         : DataProvider(arr, 0, false, false, 0) {}
     virtual ~BandStoreShortcutProvider() {}
     virtual void Text(int, int, UIListLabel *, UILabel *) const;
+    inline const char *RawTextAtData(int i) const;
 };
 
 class BandStorePanel : public StorePanel, public MsgSource {
@@ -41,7 +42,7 @@ public:
     virtual StoreOffer *FindOffer(Symbol) const;
     virtual bool EnumerateSubsetOfOfferIDs() const { return true; }
     virtual void LoadArt(const char *, UIPanel *);
-    virtual int UpdateOffers(const std::list<EnumProduct> &, bool) { return 0; }
+    virtual int UpdateOffers(const std::list<EnumProduct> &, bool);
     virtual void StoreUserProfileSwappedToUser(LocalUser *) {}
 
     DataNode OnMsg(const MetadataLoadedMsg &);
