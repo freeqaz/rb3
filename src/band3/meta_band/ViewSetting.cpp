@@ -68,7 +68,7 @@ int ViewSetting::StartingOption() const { return 0; }
 // ------------------------------------------------------------------
 
 void HeaderViewSetting::SelectOption(int) {
-    MILO_ASSERT(false, 0x91);
+    TheDebugFailer << MakeString(kAssertStr, __FUNCTION__, 0x91, __FUNCTION__);
 }
 
 // ------------------------------------------------------------------
@@ -161,6 +161,56 @@ void ScoreTypeViewSetting::SelectOption(int idx) {
 int ScoreTypeViewSetting::StartingOption() const {
     ScoreType base = GetBaseScoreType();
     return mScoreType != base;
+}
+
+ScoreType ScoreTypeViewSetting::GetBaseScoreType() const {
+    switch (mScoreType) {
+    case kScoreBand:
+        return kScoreBand;
+    case kScoreBass:
+    case kScoreGuitar:
+        return kScoreGuitar;
+    case kScoreDrum:
+    case kScoreRealDrum:
+        return kScoreDrum;
+    case kScoreVocals:
+    case kScoreHarmony:
+        return kScoreVocals;
+    case kScoreKeys:
+    case kScoreRealKeys:
+        return kScoreKeys;
+    case kScoreRealGuitar:
+    case kScoreRealBass:
+        return kScoreRealGuitar;
+    default:
+        MILO_FAIL("Bad ScoreType in ScoreTypeViewSetting::GetBaseScoreType!");
+        return kNumScoreTypes;
+    }
+}
+
+ScoreType ScoreTypeViewSetting::GetAlternateScoreType() const {
+    switch (mScoreType) {
+    case kScoreBand:
+        return kScoreBand;
+    case kScoreBass:
+    case kScoreGuitar:
+        return kScoreBass;
+    case kScoreDrum:
+    case kScoreRealDrum:
+        return kScoreRealDrum;
+    case kScoreVocals:
+    case kScoreHarmony:
+        return kScoreHarmony;
+    case kScoreKeys:
+    case kScoreRealKeys:
+        return kScoreRealKeys;
+    case kScoreRealGuitar:
+    case kScoreRealBass:
+        return kScoreRealBass;
+    default:
+        MILO_FAIL("Bad ScoreType in ScoreTypeViewSetting::GetAlternateScoreType!");
+        return kNumScoreTypes;
+    }
 }
 
 // ------------------------------------------------------------------
