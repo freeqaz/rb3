@@ -205,7 +205,8 @@ void BandStorePanel::Request(const String &path, bool extra) {
             mLastRequest = path;
             mLastRequestExtra = extra;
             String url("dlc_store");
-            url += MakeString("/%s%s", PlatformRegionToSymbol(ThePlatformMgr.GetRegion()), path);
+            Symbol region = PlatformRegionToSymbol(ThePlatformMgr.GetRegion());
+            url += MakeString("/%s%s", region, path);
             Server *server = TheNet.GetServer();
             if (server && server->IsConnected()) {
                 url += MakeString("?pid=%u", server->GetMasterProfileID());
@@ -217,6 +218,7 @@ void BandStorePanel::Request(const String &path, bool extra) {
     } else {
         // ID-based request: dispatch a static MetadataLoadedMsg, then
         // populate/enumerate offers and update chunk navigation paths.
+        unsigned short buildNum = TheStoreMetadata.mVersion->mBuildNumber;
         static DataArray *metadata = 0;
         if (!metadata) {
             metadata = new DataArray(1);
@@ -228,7 +230,7 @@ void BandStorePanel::Request(const String &path, bool extra) {
             DataNode(metadata, kDataArray),
             DataNode(1),
             DataNode(gNullStr),
-            DataNode((int)(TheStoreMetadata.mVersion->mBuildNumber == (unsigned short)id)),
+            DataNode((int)(buildNum == id)),
             DataNode(0)
         );
         msg[2] = DataNode(path);
