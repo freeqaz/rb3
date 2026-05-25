@@ -808,6 +808,14 @@ void OutfitConfig::ApplyAO(SyncMeshCB *mesh) {
     }
 }
 
+void OutfitConfig::ListDrawChildren(std::list<RndDrawable *> &list) {
+    for (int i = 0; i < mPatches.size(); i++) {
+        mPatches[i].ListDrawChildren(list);
+    }
+    list.push_back(mTexBlender);
+    list.push_back(mWrinkleBlender);
+}
+
 BEGIN_HANDLERS(OutfitConfig)
     HANDLE_ACTION(recompose, Recompose())
     HANDLE_ACTION(randomize_colors, Randomize())
