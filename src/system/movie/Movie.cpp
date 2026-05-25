@@ -46,6 +46,16 @@ int gBinkCore1 = -1;
 
 static const unsigned int kNoThread = 0;
 
+// MILO_ASSERT stringifies #cond verbatim. mThreadId is unsigned int but
+// ::CurrentThreadId() returns OSThread*, so we wrap the call to insert the
+// cast at evaluation time while keeping the source text clean for #cond.
+#define CurrentThreadId() ((unsigned int) ::CurrentThreadId())
+// Same idea: the on-thread check matches across many functions when written as
+// a single assertion with its full expression in #cond, instead of expanded
+// imperatively. The wrapper compiles to the same logic as MainThread() &&
+// matching-thread short-circuit.
+#define ASSERT_MOVIE_THREAD(line) MILO_ASSERT(mThreadId == CurrentThreadId() || (mThreadId == kNoThread && MainThread()), line)
+
 std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
 Movie::Impl *Movie::Impl::sAsyncMovie;
 int Movie::Impl::sActivePending;
@@ -173,79 +183,35 @@ float TaskMgrDeltaSeconds() { return TheTaskMgr.DeltaSeconds(); }
 void Movie::Impl::SetAspect(float f) { mAspect = f; }
 
 void Movie::Impl::LockThread() {
-    MILO_ASSERT(mThreadId == 0, 0x5C2);
+    MILO_ASSERT(mThreadId == kNoThread, 0x5C2);
     mThreadId = (unsigned int)OSGetCurrentThread();
 }
 
 void Movie::Impl::UnlockThread() {
-    MILO_ASSERT(mThreadId == (unsigned int)CurrentThreadId(), 0x5BD);
+    MILO_ASSERT(mThreadId == CurrentThreadId(), 0x5BD);
     mThreadId = 0;
 }
 
 bool Movie::Impl::IsOpen() const {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x159);
+    ASSERT_MOVIE_THREAD(0x159);
     return mBink != 0;
 }
 
 float (*Movie::Impl::SetTimeCallback(float (*cb)()))() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x3B2);
+    ASSERT_MOVIE_THREAD(0x3B2);
     float (*old)() = mTimeCallback;
     mTimeCallback = cb;
     return old;
 }
 
 void Movie::Impl::SetWidthHeight(int w, int h) {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x555);
+    ASSERT_MOVIE_THREAD(0x555);
     mWidth = w;
     mHeight = h;
 }
 
 float Movie::Impl::MsPerFrame() const {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x634);
+    ASSERT_MOVIE_THREAD(0x634);
     float ms;
     if (mBink != NULL) {
         ms = 1000.0f * (float)mBink->FrameRateDiv / (float)mBink->FrameRate;
@@ -256,34 +222,12 @@ float Movie::Impl::MsPerFrame() const {
 }
 
 void Movie::Impl::NextFrame() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x2D0);
+    ASSERT_MOVIE_THREAD(0x2D0);
     BinkNextFrame(mBink);
 }
 
 int Movie::Impl::GetFrame() const {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x626);
+    ASSERT_MOVIE_THREAD(0x626);
     int frame;
     if (mBink != NULL) {
         unsigned int fn = mBink->FrameNum;
@@ -299,50 +243,17 @@ int Movie::Impl::GetFrame() const {
 }
 
 int Movie::Impl::NumFrames() const {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x63F);
+    ASSERT_MOVIE_THREAD(0x63F);
     return mBink ? mBink->Frames : 0;
 }
 
 void Movie::Impl::Terminate() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x4D7);
+    ASSERT_MOVIE_THREAD(0x4D7);
     if (mBink != 0) MovieClose();
 }
 
 bool Movie::Impl::IsLoading() const {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x160);
+    ASSERT_MOVIE_THREAD(0x160);
     return mLoader != NULL || mLoader2 != NULL;
 }
 
@@ -362,50 +273,17 @@ Movie::Impl::Impl()
         mTimeCallback = TaskMgrDeltaSeconds;
     }
     // Check that we're on the appropriate thread
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x1C8);
+    ASSERT_MOVIE_THREAD(0x1C8);
 }
 
 Movie::Impl::~Impl() {
     if (this == 0) return;
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x1CD);
+    ASSERT_MOVIE_THREAD(0x1CD);
     End();
 }
 
 bool Movie::Impl::Ready() const {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x1D5);
+    ASSERT_MOVIE_THREAD(0x1D5);
     if (mLoader != 0) {
         return mLoader->IsLoaded();
     } else if (mLoader2 != 0) {
@@ -463,18 +341,7 @@ void Movie::Impl::MovieLoader::LoadFile() {
 void Movie::Impl::MovieLoader::DoneLoading() {}
 
 void Movie::Impl::BeginFrame() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x370);
+    ASSERT_MOVIE_THREAD(0x370);
     sAsyncMovie = this;
     mMidFrame = true;
     MovieInternalBuffers *bufs = mMovieBuffers;
@@ -483,18 +350,7 @@ void Movie::Impl::BeginFrame() {
 }
 
 void Movie::Impl::EndFrame() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x38F);
+    ASSERT_MOVIE_THREAD(0x38F);
     if (mMidFrame) {
         sAsyncMovie = NULL;
         mMidFrame = false;
@@ -508,18 +364,7 @@ void Movie::Impl::EndFrame() {
 }
 
 void Movie::Impl::End() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x498);
+    ASSERT_MOVIE_THREAD(0x498);
     if (mLoading) {
         mLoading = false;
         SharedFinishOpen(false);
@@ -568,18 +413,7 @@ void Movie::Impl::End() {
 }
 
 void Movie::Impl::MovieClose() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x19A);
+    ASSERT_MOVIE_THREAD(0x19A);
     for (std::list<Movie::Impl *>::iterator it = Movie::openMovieFiles.begin();
          it != Movie::openMovieFiles.end();
          ++it) {
@@ -621,21 +455,10 @@ void Movie::Impl::SharedFinishOpen(bool unpause) {
 }
 
 void Movie::Impl::SetRect() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x24C);
+    ASSERT_MOVIE_THREAD(0x24C);
     float screenW = mWidth != 0 ? (float)mWidth : (float)TheRnd->Width();
     float screenH = mHeight != 0 ? (float)mHeight : (float)TheRnd->Height();
-    MILO_ASSERT(mAspect != 0.0f, 0x252);
+    MILO_ASSERT(mAspect, 0x252);
     float w, h;
     if (mStretchToFit) {
         h = screenW;
@@ -671,18 +494,7 @@ void Movie::Impl::Begin(
     int forceTrack,
     BinStream *stream
 ) {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x200);
+    ASSERT_MOVIE_THREAD(0x200);
     if (TheLoadMgr.mPlatform == 0) return;
     mFilename = FileMakePath(FileRoot(), file, NULL);
     if (!UsingCD()) {
@@ -722,18 +534,7 @@ void Movie::Impl::Begin(
 }
 
 int Movie::Impl::MovieOpen(const char *file, unsigned int flags) {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x167);
+    ASSERT_MOVIE_THREAD(0x167);
     MILO_ASSERT(!mBink, 0x169);
     mPaused = false;
     if (gInitialized) {
@@ -801,18 +602,7 @@ bool Movie::Impl::CheckOpen(bool b) {
 }
 
 void Movie::Impl::FinishOpen() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x2AC);
+    ASSERT_MOVIE_THREAD(0x2AC);
     if (mBink == NULL) {
         MILO_WARN("BinkOpen '%s' error: %s\n", mFilename, BinkGetError());
         return;
@@ -841,18 +631,7 @@ void Movie::Impl::FinishOpen() {
 }
 
 void Movie::Impl::DiscContentionCheck(Loader *loader) {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x59);
+    ASSERT_MOVIE_THREAD(0x59);
     for (std::list<Loader *>::iterator it = TheLoadMgr.mLoading.begin();
          it != TheLoadMgr.mLoading.end();
          ++it) {
@@ -864,18 +643,7 @@ void Movie::Impl::DiscContentionCheck(Loader *loader) {
 }
 
 void Movie::Impl::DoFrame() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x342);
+    ASSERT_MOVIE_THREAD(0x342);
     if (!mPreloadFlag) {
         TheBlockMgr.MarkDiscRead();
     }
@@ -902,18 +670,7 @@ void Movie::Impl::DoFrame() {
 }
 
 void Movie::Impl::DiscContentionPublish() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x68);
+    ASSERT_MOVIE_THREAD(0x68);
     bool first = true;
     int count = 0;
     String list;
@@ -932,18 +689,7 @@ void Movie::Impl::DiscContentionPublish() {
 }
 
 bool Movie::Impl::Poll() {
-    bool ok = true;
-    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
-        unsigned int tid = mThreadId;
-        bool b = false;
-        if (tid == kNoThread) {
-            bool main = true;
-            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
-            if (main) b = true;
-        }
-        if (!b) ok = false;
-    }
-    MILO_ASSERT(ok, 0x424);
+    ASSERT_MOVIE_THREAD(0x424);
     if (sAsyncMovie != NULL && sAsyncMovie != this) {
         return sAsyncMovie->Poll();
     }
