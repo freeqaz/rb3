@@ -1,7 +1,9 @@
 #include "bandobj/BandHeadShaper.h"
 #include "bandobj/BandFaceDeform.h"
+#include "char/CharUtl.h"
 #include "os/Debug.h"
 #include "utl/Symbols.h"
+#include <list>
 
 int BandHeadShaper::sChinNum;
 int BandHeadShaper::sEyeNum;
@@ -317,6 +319,40 @@ void BandHeadShaper::AddDegrees(const char *cc, int i1, float *degrees, int coun
         AddFrameHelper(cc, base, idx, *p, remainder);
     }
     AddFrame(cc, base, remainder);
+}
+
+void BandHeadShaper::Reskin() {
+    if (mBonesOnly)
+        return;
+    RndTransformable *topTrans =
+        dynamic_cast<RndTransformable *>(mBones->Dir());
+    std::list<CharBones::Bone> bones;
+    mBase->ListBones(bones);
+    for (std::list<CharBones::Bone>::iterator it = bones.begin(); it != bones.end();
+         ++it) {
+        AddChildBones(CharUtlFindBoneTrans(it->name.Str(), mBones->Dir()));
+    }
+    for (int i = 0; i < unk18.size(); i++) {
+        RndTransformable *bone = unk18[i];
+        const std::vector<ObjRef *> &refs = bone->Refs();
+        for (std::vector<ObjRef *>::const_iterator rit = refs.end();
+             rit != refs.begin();) {
+            --rit;
+            RndMesh *mesh = dynamic_cast<RndMesh *>((*rit)->RefOwner());
+            if (!mesh)
+                continue;
+            bool isHead = strcmp(mesh->Name(), "head.mesh") == 0;
+            if (!isHead)
+                continue;
+            TestMesh(mesh, topTrans);
+            for (int j = 0; j < mesh->NumBones(); j++) {
+                if (mesh->BoneTransAt(j) == bone) {
+                    mesh->SetBone(j, bone, true);
+                }
+            }
+        }
+        bone->SetDirty();
+    }
 }
 
 void BandHeadShaper::End() {
