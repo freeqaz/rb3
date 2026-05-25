@@ -633,7 +633,78 @@ void StoreOfferState::UpdateFlags(
 
 void StoreMetadataManager::UpdateOfferOwnership() {
     for (int i = 0; i < mOfferTable->mNumOffers; i++) {
+        StorePackedOffer *offer = mOfferTable->mOffers[i];
+        StoreOfferState *state = &mOfferTable->mBufferNewRelease[i];
+        int andFlags = 0xFF;
+        int orFlags = 0;
+        bool allDownloaded = false;
+        for (int j = 0; j < offer->mNumSongs; j++) {
+            StorePackedSong *song = &mSongTable->mSongs[offer->mSongs[j]];
+            int sflags = SongStateFlags(song);
+            andFlags &= sflags;
+            orFlags |= sflags;
+            if (!allDownloaded) {
+                unsigned long long dataTitle = WiiCommerceMgr::MakeDataTitleId(&song->unk6);
+                std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(dataTitle);
+                StoreTitleContentState *titleState;
+                if (it == unk58.end()) {
+                    titleState = (StoreTitleContentState *)operator new(0x1000);
+                    if (titleState) memset(titleState, 0, 0x1000);
+                    unk58[dataTitle] = titleState;
+                } else {
+                    titleState = (*it).second;
+                }
+                unsigned short rawA = *(unsigned short *)((char *)song + 0xa);
+                unsigned short unka = song->unka;
+                allDownloaded = true;
+                if (!(((unsigned char *)titleState)[(rawA >> 4) & 0xFF8] & 1)
+                    && !(((unsigned char *)titleState)[(unka << 3) + 8] & 1)) {
+                    allDownloaded = false;
+                }
+            }
+        }
+        state->UpdateFlags(offer, andFlags, orFlags);
+        if (allDownloaded) state->mFlags |= 4;
+        if (gDebugMakeAllSongsAvailable) state->mFlags |= 0x40;
+        if (gDebugDontRelyOnCommerceServer) state->mPrice = 0x141;
     }
+    for (int i = 0; i < mRbnOfferTable->mNumOffers; i++) {
+        StorePackedRBNOffer *offer = mRbnOfferTable->mOffers[i];
+        StoreOfferState *state = &mRbnOfferTable->mBufferNewRelease[i];
+        int andFlags = 0xFF;
+        int orFlags = 0;
+        bool allDownloaded = false;
+        for (int j = 0; j < offer->mNumSongs; j++) {
+            StorePackedSong *song = &mSongTable->mSongs[offer->mSongs[j]];
+            int sflags = SongStateFlags(song);
+            andFlags &= sflags;
+            orFlags |= sflags;
+            if (!allDownloaded) {
+                unsigned long long dataTitle = WiiCommerceMgr::MakeDataTitleId(&song->unk6);
+                std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(dataTitle);
+                StoreTitleContentState *titleState;
+                if (it == unk58.end()) {
+                    titleState = (StoreTitleContentState *)operator new(0x1000);
+                    if (titleState) memset(titleState, 0, 0x1000);
+                    unk58[dataTitle] = titleState;
+                } else {
+                    titleState = (*it).second;
+                }
+                unsigned short rawA = *(unsigned short *)((char *)song + 0xa);
+                unsigned short unka = song->unka;
+                allDownloaded = true;
+                if (!(((unsigned char *)titleState)[(rawA >> 4) & 0xFF8] & 1)
+                    && !(((unsigned char *)titleState)[(unka << 3) + 8] & 1)) {
+                    allDownloaded = false;
+                }
+            }
+        }
+        state->UpdateFlags(offer, andFlags, orFlags);
+        if (allDownloaded) state->mFlags |= 4;
+        if (gDebugMakeAllSongsAvailable) state->mFlags |= 0x40;
+        if (gDebugDontRelyOnCommerceServer) state->mPrice = 0x7B;
+    }
+    mFlags &= ~0x40;
 }
 
 void StoreMetadataManager::MarkDownloaded(unsigned long long key, unsigned short idx) {
