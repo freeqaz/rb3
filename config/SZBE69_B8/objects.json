@@ -1236,7 +1236,7 @@
             "system/char/Waypoint.cpp": "NonMatching",
             "system/dsp/IIRFilter.cpp": "NonMatching",
             "system/dsp/PitchDetector.cpp": "NonMatching",
-            "system/dsp/SndAnalysis.cpp": "MISSING",
+            "system/dsp/SndAnalysis.cpp": "NonMatching",
             "system/dsp/VibratoDetector.cpp": "NonMatching",
             "system/math/strips/Adjacency.cpp": "Matching",
             "system/math/strips/CustomArray.cpp": "Matching",
