@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Rank partial-match functions whose target asm references @STRING@OtherMethod
+# symbols (= candidates for the qualified-inline-call fix).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "${SCRIPT_DIR}/../tools/find_qualified_call_candidates.py" "$@"
