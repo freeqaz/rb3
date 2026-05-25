@@ -1844,9 +1844,11 @@ void GemPlayer::FillInProgress(int i1, int slot) {
                 slot = 0;
                 f1 *= 5.0f;
             }
+            float diff = ms - mLastCodaSwing[slot];
+            int oldPts = mCodaPoints;
             int i2 =
-                (f1 * std::min(mCodaMashPeriod, ms - mLastCodaSwing[slot])) / 1000.0f;
-            mCodaPoints += i2;
+                (f1 * std::min(mCodaMashPeriod, diff)) / 1000.0f;
+            mCodaPoints = oldPts + i2;
             mLastCodaSwing[slot] = ms;
         }
         static Message msg("send_coda_hit", 0, 0);
