@@ -137,16 +137,17 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         uvX1 -= 0.0078125f;
         uvX0 += 0.0078125f;
 
+        float xStart = (0.015625f + (baseX + mPoints[0].x)) - 2.0f * unk_0x30;
         SetMeshVert(
             verts[vertStart],
-            (0.015625f + (baseX + mPoints[0].x)) - 2.0f * unk_0x30,
+            xStart,
             unk_0x30 + mPoints[0].z,
             uvX1,
             uvY1
         );
         SetMeshVert(
             verts[vertStart + 1],
-            (0.015625f + (baseX + mPoints[0].x)) - 2.0f * unk_0x30,
+            xStart,
             mPoints[0].z - unk_0x30,
             uvX1,
             uvY0
@@ -158,12 +159,12 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
             float px = mPoints[i].x;
             float pz = mPoints[i].z;
             if (i % 2) {
-                if (i >= numPoints - 1) {
-                    halfWidth = 0.0f;
-                } else {
+                if (i < numPoints - 1) {
                     float angle =
                         atan((mPoints[i + 1].z - pz) / (mPoints[i + 1].x - px));
-                    halfWidth = unk_0x30 * tan(angle * 0.5f);
+                    halfWidth = unk_0x30 * (float)tan(angle * 0.5f);
+                } else {
+                    halfWidth = 0.0f;
                 }
             }
             SetMeshVert(
@@ -213,7 +214,7 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
             }
         }
     } else if (unk_0x24) {
-        static const float kMaxQuadSize = 5.0f;
+        static float kMaxQuadSize = 5.0f;
         float length = mPoints[1].x - mPoints[0].x;
         float uvScale = length / (16.0f * unk_0x30);
         int numColumns = 1;
@@ -361,7 +362,8 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         }
     }
 
-    plate->mWidthX = Max(plate->mWidthX, mEndX);
+    float widthX = plate->mWidthX;
+    plate->mWidthX = std::max(widthX, mEndX);
     mEndX = 0.0f;
 }
 
