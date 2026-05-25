@@ -47,6 +47,8 @@ const char *FlagString(int flags) {
     char *strptr = str;
     int i5 = 0;
     int i1;
+    // CW loop-rotation idiom: `goto check; body: ...; check: cond -> body;` is the asm-literal
+    // shape MWCC emits. Structured while() regresses match (see opt-in bare_label_loop_to_while).
     goto loop_check;
 loop_body:
     if (flags & i1) {

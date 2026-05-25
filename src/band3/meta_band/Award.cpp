@@ -36,6 +36,8 @@ void Award::Configure(DataArray *i_pConfig) {
                 entry.m_symAward = pAwardEntryArray->Node(1).Sym();
             else
                 entry.m_symAward = gNullStr;
+            // goto-into-else folds the asset-success path into the non-asset push tail;
+            // duplicating the push regresses match (see common_tail_goto_to_duplicate, opt-in).
             if (entry.m_symAwardCategory == asset) {
                 numAssets++;
                 if (numAssets <= 8) {

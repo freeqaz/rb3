@@ -77,6 +77,9 @@ inline bool StreamReceiver::Ready() { return mState != kInit; }
 
 void StreamReceiver::Play() {
     MILO_ASSERT(Ready(), 0x91);
+    // Cross-case fall-through via goto: kStopped does PauseImpl then joins the default
+    // case at the `play:` label. Rewriting as duplicated tail or restructured switch
+    // changes the jump-table layout and breaks the match.
     switch (mState) {
     case kPlaying:
         break;

@@ -517,6 +517,8 @@ void SingerStats::Finalize() {
 }
 
 void SingerStats::SetPartPercentage(int part, float percentage) {
+    // Inlined STL std::find_if Duff's device: unrolled 4-at-a-time loop + switch tail; the 7
+    // gotos to `done:` are the literal MWCC codegen — any restructuring breaks the match.
     std::pair<int, float> *first = &unk0[0];
     std::pair<int, float> *last = first + unk0.size();
     int count = (int)(last - first) >> 2;

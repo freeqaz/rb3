@@ -211,6 +211,7 @@ void RGTrainerPanel::HandleChordLegend(bool b) {
                         stepproganim->SetFrame(19.0f, 1);
                         mDir->Find<Sfx>("fret_success.cue", true)->Play(0, 0, 0);
                     } else {
+                        // goto folds the (HighString>=0) and (HighString<0 && Fret) branches into one tail-call; rewrite regresses match.
                         if (cur.mHighString < 0) {
                             if (mMatcher.GetState()->GetFret(cur.mLowString)) {
                                 goto lol;

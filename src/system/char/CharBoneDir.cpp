@@ -194,6 +194,8 @@ void CharBoneDir::MergeCharacter(const FilePath &fp) {
 
         while (!tlist60.empty()) {
             RndTransformable *parent = tlist60.front()->TransParent();
+            // goto-to-pop skips the parent-rename block when the name matches neither prefix;
+            // structured rewrite (merged !bone_ && !exo_) shifts branch polarity.
             if (parent) {
                 Hmx::Object &parentObj = *parent;
                 const char *parentName = parentObj.Name();

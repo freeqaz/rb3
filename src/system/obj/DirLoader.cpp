@@ -247,6 +247,10 @@ void DirLoader::PollLoading() {
 }
 
 // this is...better than before? i guess?
+// 15 `goto ret;` rungs implement an early-exit ladder over decreasing revs. Each one is the
+// MWCC asm-literal "skip the rest" branch. Restructuring to else-if chain or table-lookup
+// reorders the comparisons and breaks the match (also: `return sym;` inside the if-body
+// branches must stay `return`, not `goto ret;` — the asm distinguishes them).
 Symbol DirLoader::FixClassName(Symbol sym) {
     if (mRev >= 0x1C)
         goto ret;

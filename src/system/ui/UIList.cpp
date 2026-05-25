@@ -748,6 +748,9 @@ DataNode UIList::OnMsg(const ButtonDownMsg &msg) {
 
         int scrollDir = ScrollDirection(msg, cntType, o == 0, gridspan);
         if (scrollDir != 0) {
+            // The two `goto skip_body;` short-circuit the case-1 fallthrough into case -1:
+            // when scrollDir==1 takes the fallthrough but isn't really -1, we must skip the
+            // body; same when at a row-boundary. Restructuring loses the fallthrough shape.
             if (gridspan != 1) {
                 switch (scrollDir) {
                     case 1:

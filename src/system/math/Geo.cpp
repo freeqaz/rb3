@@ -292,6 +292,8 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
         }
     } else {
         // start on negative (right) side: first half → right, second half → left
+        // goto-done_neg skips the BSP recursion when there's no right child;
+        // structured rewrite via early-set + nested if changes plane-copy ordering.
         if (!n->right) {
             t = 0.0f;
             goto done_neg;

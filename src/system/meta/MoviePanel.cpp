@@ -167,6 +167,8 @@ void MoviePanel::Poll() {
             if (mSubtitles->Size() > mCurrentSubtitleIndex + 1) {
                 thisarr = mSubtitles->Array(mCurrentSubtitleIndex + 1);
             }
+            // goto-lol skips the clear-subtitle branch when an advance happened;
+            // rewrite via else-if changes the cmpw/bge layout downstream.
             if (thisarr) {
                 if (thisarr->Int(0) <= frame) {
                     mSubtitleLabel->SetSubtitle(thisarr);

@@ -709,6 +709,8 @@ void OvershellPanel::ResolveSlotStates() {
                            && mSlots[i]->InOverrideFlow(kOverrideFlow_SongSettings)) {
                     mSlots[i]->EndOverrideFlow(kOverrideFlow_SongSettings, true);
                 } else if (curSlot->GetState()->GetStateID() < 200) {
+                    // goto-into-else folds the "guest" branch tail and the "loaded-unlocked
+                    // non-guest" branch tail into one block; rewrite regresses match.
                     if (!TheWiiProfileMgr.IsPadAGuest(curLocalUser->GetPadNum())) {
                         int padIdx =
                             TheWiiProfileMgr.GetIndexForPad(curLocalUser->GetPadNum());

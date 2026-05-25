@@ -506,6 +506,7 @@ void SongDB::SetupPhrasesForTrack(
         unsigned char state = 0;
         if (phraseIdx < extents.size()) {
             if (gemTick >= extents[phraseIdx].unk0) {
+                // goto skips the 0x1 bit set while still entering the 0x2 set; rewrite with merged conds shifts branch polarity.
                 if (gemIdx != 0) {
                     bool prevInPhrase = gemStates.size() > (unsigned)(gemIdx - 1)
                         && (gemStates[gemIdx - 1] & 0x2);

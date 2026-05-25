@@ -282,6 +282,9 @@ DataNode SessionMgr::OnMsg(const SigninChangedMsg &msg) {
         }
         std::vector<LocalUser *> localusers;
         GetLocalUserListImpl(localusers);
+        // do/while loops on the "until everyone is signed in" invariant; `goto next`
+        // exits the loop and `goto end` skips the privilege-check pass when the outer
+        // session is disabled. Rewriting to structured form changes branch layout.
         do {
             std::vector<LocalUser *> localusers2;
             GetLocalUserListImpl(localusers2);

@@ -130,6 +130,8 @@ void TypeProps::Save(BinStream &d, Hmx::Object *ref) {
             const DataArray *def = ref->TypeDef();
             if (def) {
                 int i = 0;
+                // Two `goto next;` skip the ClearKeyValue branch — one for each "compatible"
+                // outcome; merging into a single condition changes branch polarity.
                 while (mMap && i < mMap->Size()) {
                     DataArray *theArr = def->FindArray(mMap->Sym(i), false);
                     if (theArr) {

@@ -605,6 +605,9 @@ void RandomGroupSeqInst::Stop() {
 bool RandomGroupSeqInst::IsRunning() { return mIt != mSeqs.end(); }
 
 void RandomGroupSeqInst::Poll() {
+    // Bare-label rotated loop (no `do` keyword): `goto check; loop: ...; check: cond -> loop;`
+    // The match shows as 4-byte size because the function compiles to a tail-call/skip ladder;
+    // any structured rewrite (while/for) regresses match.
     goto check;
 loop:
     mIt++;

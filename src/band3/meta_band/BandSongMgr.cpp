@@ -836,6 +836,7 @@ int BandSongMgr::NumRankedSongs(TrackType ty, bool b2, Symbol s3) const {
     FOREACH (it, songs) {
         BandSongMetadata *data = (BandSongMetadata *)Data(*it);
         MILO_ASSERT(data, 0x5F3);
+        // goto-into-else lets both filter branches share the `checkSym` tail; rewrite breaks match.
         if (b2) {
             if (!data->HasVocalHarmony())
                 continue;
