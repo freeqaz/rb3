@@ -96,7 +96,7 @@ int FindCCPeak(const float *dp_data, const float *ss_data, int vlen, int startPe
     }
 
     for (int i = 0; i < num_peaks; i++) {
-        static float bonus_exp = (float)(log((float)boost_val / 100.0) / log(0.5));
+        static float bonus_exp = (float)log((float)boost_val / 100.0f) / (float)log(0.5);
         goodness[i] = cors[i] * (float)pow((float)peaks[i], bonus_exp);
     }
 

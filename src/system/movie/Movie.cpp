@@ -410,6 +410,13 @@ bool Movie::Impl::Ready() const {
     }
 }
 
+Movie::Impl::MovieLoader::MovieLoader(const FilePath &fp, Movie::Impl *impl)
+    : Loader(fp, kLoadFront), mFile(NULL), mOpenState(&MovieLoader::OpenFile), mImpl(impl) {}
+
+Movie::Impl::MovieLoader::~MovieLoader() {
+    delete mFile;
+}
+
 bool Movie::Impl::MovieLoader::IsLoaded() const {
     return mOpenState == &MovieLoader::DoneLoading;
 }
@@ -419,7 +426,6 @@ const char *Movie::Impl::MovieLoader::StateName() const {
 }
 
 void Movie::Impl::MovieLoader::PollLoading() {
-    (this->*mOpenState)();
     while (!TheLoadMgr.CheckSplit()) {
         Loader *front = TheLoadMgr.GetFirstLoading();
         bool atFront;
@@ -483,7 +489,6 @@ void Movie::Impl::EndFrame() {
     }
 }
 
-// TODO: full implementation. Stub so ~Impl can link.
 void Movie::Impl::End() {
     bool ok = true;
     if (mThreadId != (unsigned int)OSGetCurrentThread()) {
@@ -501,6 +506,47 @@ void Movie::Impl::End() {
         mLoading = false;
         SharedFinishOpen(false);
     }
+    for (std::vector<Impl *>::iterator it = sActiveMovies.begin();
+         it != sActiveMovies.end();
+         ++it) {
+        if (*it == this) {
+            sActiveMovies.erase(it);
+            break;
+        }
+    }
+    if (mPreloadBuf == NULL) {
+        DataArray *videos = SystemConfig()->FindArray(Symbol("videos"), false);
+        if (videos != NULL) {
+            DataArray *stream_end = videos->FindArray(Symbol("stream_end"), false);
+            if (stream_end != NULL) {
+                stream_end->ExecuteScript(1, NULL, NULL, 1);
+            }
+        }
+        DiscContentionPublish();
+    }
+    if (mBink != NULL) {
+        MovieClose();
+    }
+    if (mLoader != NULL) {
+        delete mLoader;
+    }
+    mLoader = NULL;
+    if (mLoader2 != NULL) {
+        delete mLoader2;
+    }
+    mLoader2 = NULL;
+    if (mPreloadBuf != NULL) {
+        _MemFree(mPreloadBuf);
+        mPreloadBuf = NULL;
+    }
+    if (mMovieBuffers != NULL) {
+        mMovieBuffers->mPendingBlits--;
+        if (mMovieBuffers->mPendingBlits == 0) {
+            delete mMovieBuffers;
+        }
+        mMovieBuffers = NULL;
+    }
+    mThreadId = (unsigned int)gMainThreadID;
 }
 
 void Movie::Impl::MovieClose() {

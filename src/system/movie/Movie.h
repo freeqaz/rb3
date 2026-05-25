@@ -5,6 +5,7 @@
 #include "utl/FilePath.h"
 #include "utl/Loader.h"
 #include "utl/Str.h"
+#include "os/File.h"
 #include "os/Timer.h"
 #include <list>
 #include <map>
@@ -39,10 +40,8 @@ public:
 
             typedef void (MovieLoader::*StateFunc)();
 
-            int mState; // 0x18 (state index)
-            StateFunc mOpenState; // 0x1C
-            StateFunc mLoadState; // 0x20
-            StateFunc mDoneState; // 0x24
+            File *mFile; // 0x18 (open file handle)
+            StateFunc mOpenState; // 0x1C (12 bytes: fn_ptr_word0, adj=-1, fn_ptr)
             char mBuffer[0x20]; // 0x28 (read buffer)
             Movie::Impl *mImpl; // 0x48
         };
