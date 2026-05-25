@@ -146,3 +146,37 @@ void BoxMapLighting::ApplyLight(
     }
 }
 
+void BoxMapLighting::ApplyLight(
+    Hmx::Color *color, const BoxLightArray<LightParams_Spot, 50> &arr,
+    const Vector3 &viewPos
+) const {
+    static const float kColorEpsilon = 0.003921569f;
+    for (unsigned int i = 0; i < arr.NumElements(); i++) {
+        const LightParams_Spot &light = arr[i];
+        if (light.mColor.red + light.mColor.green + light.mColor.blue >= kColorEpsilon) {
+            float dx = viewPos.x - light.unk1c.x;
+            float dy = viewPos.y - light.unk1c.y;
+            float dz = viewPos.z - light.unk1c.z;
+            float distSq = dx * dx + dy * dy + dz * dz;
+            float invDist = 1.0f / std::sqrt(distSq);
+            float nx = dx * invDist;
+            float ny = dy * invDist;
+            float nz = dz * invDist;
+            float distNorm = distSq * invDist * light.unk30 - light.unk34;
+            float coneDot = nx * light.unk0.x + ny * light.unk0.y + nz * light.unk0.z;
+            float distClamped = Min(1.0f, distNorm);
+            float coneClamped = Min(1.0f, coneDot) - light.unk28;
+            float distAtten = Max(0.0f, 1.0f - distClamped);
+            float coneAtten = Max(0.0f, coneClamped);
+            float atten = distAtten * coneAtten * light.unk2c;
+            LightParams_Directional dl;
+            dl.mDirection.x = -nx;
+            dl.mDirection.y = -ny;
+            dl.mDirection.z = -nz;
+            dl.mColor.red = atten * light.mColor.red;
+            dl.mColor.green = atten * light.mColor.green;
+            dl.mColor.blue = atten * light.mColor.blue;
+            ApplyLight(color, dl);
+        }
+    }
+}
