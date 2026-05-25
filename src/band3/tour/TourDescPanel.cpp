@@ -310,8 +310,8 @@ void TourDescProvider::UpdateExtendedText(int, int iData, UILabel *i_pLabel) con
     MILO_ASSERT(pTourDesc, 0x104);
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0x109);
-    bool bPlayed = pProgress->GetToursPlayed(s) != 0
-        || pProgress->GetTourMostStars(s) > 0;
+    bool bPlayed = pProgress->GetToursPlayed(s) != 0;
+    bPlayed = bPlayed || pProgress->GetTourMostStars(s) > 0;
     const char *pName = i_pLabel->Name();
     if (strcmp(pName, "tour_bronze.lbl") == 0) {
         i_pLabel->SetTokenFmt(
