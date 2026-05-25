@@ -148,7 +148,7 @@ void CharLookAt::Poll() {
                         ve4.Set(mBounds.mMin.x, mBounds.mMin.y, mBounds.mMin.z);
                         break;
                     case 1:
-                        ve4.Set(0.0f, mBounds.mMin.z, mBounds.mMax.x);
+                        ve4.Set(0.0f, mBounds.mMin.y, mBounds.mMin.z);
                         break;
                     case 2:
                         ve4.Set(mBounds.mMax.x, mBounds.mMin.y, mBounds.mMin.z);
