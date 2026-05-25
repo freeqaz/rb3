@@ -1,17 +1,23 @@
 #include "tour/QuestFilterPanel.h"
 #include "game/NetGameMsgs.h"
 #include "meta_band/AccomplishmentManager.h"
+#include "meta_band/AppLabel.h"
 #include "meta_band/TexLoadPanel.h"
 #include "net/NetSession.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
+#include "tour/FixedSetlist.h"
 #include "tour/QuestManager.h"
 #include "tour/Tour.h"
+#include "tour/TourDesc.h"
 #include "tour/TourPerformer.h"
 #include "tour/TourPerformerLocal.h"
 #include "tour/TourProgress.h"
 #include "ui/UIList.h"
+#include "ui/UIListLabel.h"
+#include "ui/UIListMesh.h"
 #include "ui/UIPanel.h"
+#include "utl/MakeString.h"
 #include "utl/Messages.h"
 #include "utl/Messages2.h"
 #include "utl/Messages4.h"
@@ -50,6 +56,132 @@ inline Symbol QuestFilterProvider::DataSymbol(int i_iData) const {
 String QuestFilterProvider::GetFilterName(int i_iData) const {
     MILO_ASSERT_RANGE(i_iData, 0, NumData(), 0xC6);
     return TheTour->GetFilterName(DataSymbol(i_iData));
+}
+
+inline void QuestFilterProvider::UpdateSongLabel(
+    UILabel *pAppLabel, Symbol sFilter, TourSetlistType eType, int iSongNum
+) const {
+    int iNumSongs = m_rProgress.GetNumSongsForCurrentGig();
+    if (eType == kTourSetlist_Random) {
+        pAppLabel->SetTokenFmt(setlist_song_fmt, iSongNum, tour_random_song);
+    } else if (eType == kTourSetlist_Custom) {
+        pAppLabel->SetTokenFmt(setlist_song_fmt, iSongNum, tour_custom_song);
+    } else if (eType == kTourSetlist_Fixed) {
+        FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sFilter);
+        MILO_ASSERT_FMT(pFixedSetlist, "Invalid fixed set list: %s", sFilter);
+        MILO_ASSERT(pFixedSetlist->GetNumSongs() == iNumSongs, 0x58);
+        Symbol s = pFixedSetlist->GetSongName(iSongNum - 1);
+        AppLabel *pLabel = dynamic_cast<AppLabel *>(pAppLabel);
+        MILO_ASSERT(pLabel, 0x5C);
+        pLabel->SetSongAndArtistNameFromSymbol(s, iSongNum);
+    } else {
+        MILO_FAIL("Invalid setlist type, Filter = %s", sFilter);
+    }
+}
+
+void QuestFilterProvider::Text(
+    int, int iData, UIListLabel *i_pSlot, UILabel *i_pLabel
+) const {
+    MILO_ASSERT(iData < NumData(), 0x67);
+    Symbol sFilter = DataSymbol(iData);
+    TourSetlistType eType;
+    TourProgress *pProg = TheTour->GetTourProgress();
+    if (pProg) {
+        TourDesc *pTourDesc = TheTour->GetTourDesc(pProg->GetTourDesc());
+        if (pTourDesc) {
+            Symbol gigtype =
+                pTourDesc->GetSetlistTypeForGigNum(pProg->GetCurrentGigNum(), iData);
+            if (gigtype == random)
+                eType = kTourSetlist_Random;
+            else if (gigtype == custom)
+                eType = kTourSetlist_Custom;
+            else
+                goto useFixed;
+        } else {
+            goto useFixed;
+        }
+    } else {
+useFixed:
+        eType = kTourSetlist_Fixed;
+    }
+    if (i_pSlot->Matches("name")) {
+        if (eType == kTourSetlist_Random) {
+            i_pLabel->SetTokenFmt(tour_setlist_random, GetFilterName(iData));
+        } else if (eType == kTourSetlist_Custom) {
+            i_pLabel->SetTokenFmt(tour_setlist_custom, GetFilterName(iData));
+        } else if (eType == kTourSetlist_Fixed) {
+            i_pLabel->SetTokenFmt(tour_setlist_fixed, GetFilterName(iData));
+        } else {
+            MILO_ASSERT(false, 0x7E);
+        }
+    } else if (i_pSlot->Matches("song1")) {
+        if (m_rProgress.GetNumSongsForCurrentGig() <= 0) {
+            i_pLabel->SetTextToken(Symbol(gNullStr));
+        } else {
+            UpdateSongLabel(i_pLabel, sFilter, eType, 1);
+        }
+    } else if (i_pSlot->Matches("song2")) {
+        if (m_rProgress.GetNumSongsForCurrentGig() <= 1) {
+            i_pLabel->SetTextToken(Symbol(gNullStr));
+        } else {
+            UpdateSongLabel(i_pLabel, sFilter, eType, 2);
+        }
+    } else if (i_pSlot->Matches("song3")) {
+        if (m_rProgress.GetNumSongsForCurrentGig() <= 2) {
+            i_pLabel->SetTextToken(Symbol(gNullStr));
+        } else {
+            UpdateSongLabel(i_pLabel, sFilter, eType, 3);
+        }
+    } else {
+        i_pLabel->SetTextToken(Symbol(i_pSlot->GetDefaultText()));
+    }
+}
+
+RndMat *QuestFilterProvider::Mat(int, int iData, UIListMesh *i_pSlot) const {
+    MILO_ASSERT(iData < NumData(), 0x95);
+    DataSymbol(iData);
+    TourSetlistType eType;
+    TourProgress *pProg = TheTour->GetTourProgress();
+    if (pProg) {
+        TourDesc *pTourDesc = TheTour->GetTourDesc(pProg->GetTourDesc());
+        if (pTourDesc) {
+            Symbol gigtype =
+                pTourDesc->GetSetlistTypeForGigNum(pProg->GetCurrentGigNum(), iData);
+            if (gigtype == random)
+                eType = kTourSetlist_Random;
+            else if (gigtype == custom)
+                eType = kTourSetlist_Custom;
+            else
+                goto useFixedMat;
+        } else {
+            goto useFixedMat;
+        }
+    } else {
+useFixedMat:
+        eType = kTourSetlist_Fixed;
+    }
+    if (i_pSlot->Matches("icon")) {
+        String str;
+        switch (eType) {
+        case kTourSetlist_Random:
+            str = "setlist_random";
+            break;
+        case kTourSetlist_Custom:
+            str = "setlist_custom";
+            break;
+        case kTourSetlist_Fixed:
+            str = "setlist_fixed";
+            break;
+        default:
+            MILO_ASSERT(false, 0xAF);
+        }
+        std::vector<DynamicTex *>::const_iterator it =
+            std::find(m_rIcons.begin(), m_rIcons.end(), str);
+        if (it != m_rIcons.end())
+            return (*it)->mMat;
+        return i_pSlot->DefaultMat();
+    }
+    return i_pSlot->DefaultMat();
 }
 
 TourSetlistType QuestFilterPanel::GetSelectedSetlistType() {

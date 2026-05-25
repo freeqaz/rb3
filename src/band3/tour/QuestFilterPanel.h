@@ -19,6 +19,7 @@ public:
     virtual UIComponent::State
     ComponentStateOverride(int, int, UIComponent::State s) const;
 
+    void UpdateSongLabel(UILabel *, Symbol, TourSetlistType, int) const;
     String GetFilterName(int) const;
 
     void Update() {
