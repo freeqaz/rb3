@@ -36,33 +36,113 @@ StoreOfferProvider::StoreOfferProvider(
 
 StoreOfferProvider::~StoreOfferProvider() { ClearList(); }
 
-int StoreOfferProvider::NumData() const { return mElements.size(); }
-
-StoreOfferProvider::Element *StoreOfferProvider::GetElementAtIndex(int i) const {
-    return mElements[i];
+void StoreOfferProvider::InitData(RndDir *dir) {
+    mAlbumBgMat = dir->Find<RndMat>("album.mat", true);
+    mGroupBgMat = dir->Find<RndMat>("group.mat", true);
+    mSongBgMat = dir->Find<RndMat>("song.mat", true);
 }
 
-bool StoreOfferProvider::IsActive(int i) const {
-    if (mElements.size() < 1)
-        return false;
-    Element *e = mElements[i];
-    bool result = false;
-    if (e->mOffer != NULL || e->mActive) {
-        result = true;
+void StoreOfferProvider::Text(int i, int pos, UIListLabel *listLabel, UILabel *label)
+    const {
+    AppLabel *appLabel = dynamic_cast<AppLabel *>(label);
+    MILO_ASSERT(appLabel, 0x36);
+
+    if (mElements.size() < 1) {
+        appLabel->SetTextToken(gNullStr);
+        return;
     }
-    return result;
-}
 
-Symbol StoreOfferProvider::DataSymbol(int i) const {
-    if (mElements.size() != 0) {
-        Element *e = mElements[i];
-        if (e->mOffer) {
-            return e->mOffer->ShortName();
-        } else if (e->mActive) {
-            return e->mGroupHeading;
+    Element *e = mElements[pos];
+    StoreOffer *offer = e->mOffer;
+    UIListSlot *slot = (UIListSlot *)listLabel;
+    if (offer) {
+        if (slot->Matches("album")) {
+            if (offer->OfferType() == album || offer->OfferType() == pack) {
+                appLabel->SetOfferName(offer);
+                return;
+            }
+        } else if (slot->Matches("song")) {
+            if (offer->OfferType() == song) {
+                appLabel->SetOfferName(offer);
+                return;
+            }
+        } else if (slot->Matches("rbn_icon")) {
+            if (offer->mPackedData->mIsRBN) {
+                label->SetIcon(0x55);
+                return;
+            }
+        } else if (slot->Matches("cost")) {
+            if (!(offer->mOfferState && (offer->mOfferState->mFlags & 1)) && !offer->InLibrary() &&
+                !offer->IsCompletelyUnavailable()) {
+                appLabel->SetOfferCost(offer);
+                return;
+            }
+        } else if (slot->Matches("new")) {
+            if (!(offer->mOfferState && (offer->mOfferState->mFlags & 1)) && !offer->InLibrary() &&
+                offer->IsNewRelease() && !offer->IsCompletelyUnavailable()) {
+                appLabel->SetTextToken(store_new);
+                return;
+            }
+        } else if (slot->Matches("purchased")) {
+            BandStoreOffer *bso = dynamic_cast<BandStoreOffer *>(offer);
+            MILO_ASSERT(bso, 0x7c);
+            bool isPurchased = bso->IsPurchased();
+            bool inLibrary = bso->InLibrary();
+            bool isDownloaded =
+                offer->mOfferState && (offer->mOfferState->mFlags & 2);
+            bool upgradeAvail = bso->mUpgradeAvailable;
+            if (!inLibrary) {
+                if (isDownloaded) {
+                    if (offer->mOfferState->mFlags & 2) {
+                        appLabel->SetTextToken(store_upgrade_in_library);
+                    }
+                    return;
+                }
+                if (isPurchased) {
+                    appLabel->SetTextToken(store_upgrade_purchased);
+                    return;
+                }
+                appLabel->SetTextToken(store_upgrade_available);
+                return;
+            }
+            if (!isPurchased && !upgradeAvail) {
+                return;
+            }
+            if (upgradeAvail) {
+                appLabel->SetTextToken(store_upgrade_available);
+                return;
+            }
+            if (isPurchased) {
+                if (offer->mOfferState->mFlags & 2) {
+                    appLabel->SetTextToken(store_downloaded);
+                } else {
+                    appLabel->SetTextToken(store_purchased);
+                }
+                return;
+            }
+            appLabel->SetTextToken(store_in_library);
+            return;
+        }
+    } else {
+        if (e->mActive == 0) {
+            if (slot->Matches("group") && e->mIsCover == 0) {
+                appLabel->SetStoreGroupName(this, pos);
+                return;
+            } else if (slot->Matches("famousby") && e->mIsCover != 0) {
+                appLabel->SetTextToken(store_famous_by);
+                return;
+            } else if (slot->Matches("famousby_group") && e->mIsCover != 0) {
+                appLabel->SetStoreGroupName(this, pos);
+                return;
+            }
+        } else {
+            if (slot->Matches("group_center") && e->mActive != 0) {
+                appLabel->SetStoreGroupName(this, pos);
+                return;
+            }
         }
     }
-    return gNullStr;
+    appLabel->SetTextToken(gNullStr);
 }
 
 RndMat *StoreOfferProvider::Mat(int i, int j, UIListMesh *mesh) const {
@@ -81,10 +161,87 @@ RndMat *StoreOfferProvider::Mat(int i, int j, UIListMesh *mesh) const {
     return mesh->DefaultMat();
 }
 
-void StoreOfferProvider::InitData(RndDir *dir) {
-    mAlbumBgMat = dir->Find<RndMat>("album.mat", true);
-    mGroupBgMat = dir->Find<RndMat>("group.mat", true);
-    mSongBgMat = dir->Find<RndMat>("song.mat", true);
+Symbol StoreOfferProvider::DataSymbol(int i) const {
+    if (mElements.size() != 0) {
+        Element *e = mElements[i];
+        if (e->mOffer) {
+            return e->mOffer->ShortName();
+        } else if (e->mActive) {
+            return e->mGroupHeading;
+        }
+    }
+    return gNullStr;
+}
+
+bool StoreOfferProvider::IsActive(int i) const {
+    if (mElements.size() < 1)
+        return false;
+    Element *e = mElements[i];
+    bool result = false;
+    if (e->mOffer != NULL || e->mActive) {
+        result = true;
+    }
+    return result;
+}
+
+StoreOffer *StoreOfferProvider::FindOffer(Symbol s) const {
+    std::vector<StoreOffer *>::iterator it =
+        std::find(mOffers->begin(), mOffers->end(), s);
+    if (it == mOffers->end()) {
+        if (!mPacks)
+            return NULL;
+        it = std::find(mPacks->begin(), mPacks->end(), s);
+        if (it == mPacks->end())
+            return NULL;
+        return *it;
+    }
+    return *it;
+}
+
+const StoreOffer *StoreOfferProvider::FindPack(const StoreOffer *song) const {
+    MILO_ASSERT(song->OfferType() == "song", 0x153);
+    for (std::vector<StoreOffer *>::iterator it = mOffers->begin();
+         it != mOffers->end();
+         ++it) {
+        StoreOffer *cand = *it;
+        if (cand->OfferType() == pack && cand->HasSong(song)) {
+            return cand;
+        }
+    }
+    if (mPacks) {
+        for (std::vector<StoreOffer *>::iterator it = mPacks->begin();
+             it != mPacks->end();
+             ++it) {
+            StoreOffer *cand = *it;
+            if (cand->OfferType() == pack && cand->HasSong(song)) {
+                return cand;
+            }
+        }
+    }
+    return NULL;
+}
+
+const StoreOffer *StoreOfferProvider::FindAlbum(const StoreOffer *song) const {
+    MILO_ASSERT(song->OfferType() == "song", 0x169);
+    for (std::vector<StoreOffer *>::iterator it = mOffers->begin();
+         it != mOffers->end();
+         ++it) {
+        StoreOffer *cand = *it;
+        if (cand->OfferType() == album && cand->HasSong(song)) {
+            return cand;
+        }
+    }
+    if (mPacks) {
+        for (std::vector<StoreOffer *>::iterator it = mPacks->begin();
+             it != mPacks->end();
+             ++it) {
+            StoreOffer *cand = *it;
+            if (cand->OfferType() == album && cand->HasSong(song)) {
+                return cand;
+            }
+        }
+    }
+    return NULL;
 }
 
 Symbol StoreOfferProvider::PosToShortcut(int pos) {
@@ -137,77 +294,8 @@ int StoreOfferProvider::PosToPrevGroupPos(int pos) {
     return 0;
 }
 
-void StoreOfferProvider::ClearList() {
-    Element **start = &mElements[0];
-    Element **end = start + mElements.size();
-    for (Element **it = start; it != end; ++it) {
-        delete *it;
-    }
-    mElements.clear();
-    if (mShortcuts) {
-        mShortcuts->Release();
-        mShortcuts = NULL;
-    }
-}
-
-const StoreOffer *StoreOfferProvider::FindPack(const StoreOffer *o) const {
-    MILO_ASSERT(o->OfferType() == "song", 0x153);
-    for (std::vector<StoreOffer *>::iterator it = mOffers->begin();
-         it != mOffers->end();
-         ++it) {
-        StoreOffer *cand = *it;
-        if (cand->OfferType() == pack && cand->HasSong(o)) {
-            return cand;
-        }
-    }
-    if (mPacks) {
-        for (std::vector<StoreOffer *>::iterator it = mPacks->begin();
-             it != mPacks->end();
-             ++it) {
-            StoreOffer *cand = *it;
-            if (cand->OfferType() == pack && cand->HasSong(o)) {
-                return cand;
-            }
-        }
-    }
-    return NULL;
-}
-
-const StoreOffer *StoreOfferProvider::FindAlbum(const StoreOffer *o) const {
-    MILO_ASSERT(o->OfferType() == "song", 0x16e);
-    for (std::vector<StoreOffer *>::iterator it = mOffers->begin();
-         it != mOffers->end();
-         ++it) {
-        StoreOffer *cand = *it;
-        if (cand->OfferType() == album && cand->HasSong(o)) {
-            return cand;
-        }
-    }
-    if (mPacks) {
-        for (std::vector<StoreOffer *>::iterator it = mPacks->begin();
-             it != mPacks->end();
-             ++it) {
-            StoreOffer *cand = *it;
-            if (cand->OfferType() == album && cand->HasSong(o)) {
-                return cand;
-            }
-        }
-    }
-    return NULL;
-}
-
-StoreOffer *StoreOfferProvider::FindOffer(Symbol s) const {
-    std::vector<StoreOffer *>::iterator it =
-        std::find(mOffers->begin(), mOffers->end(), s);
-    if (it == mOffers->end()) {
-        if (!mPacks)
-            return NULL;
-        it = std::find(mPacks->begin(), mPacks->end(), s);
-        if (it == mPacks->end())
-            return NULL;
-        return *it;
-    }
-    return *it;
+StoreOfferProvider::Element *StoreOfferProvider::GetElementAtIndex(int i) const {
+    return mElements[i];
 }
 
 // Field offsets in BandStorePanel are protected; access via byte offsets.
@@ -325,107 +413,17 @@ void StoreOfferProvider::BuildList(DataArray *grouping) {
     }
 }
 
-void StoreOfferProvider::Text(int i, int pos, UIListLabel *listLabel, UILabel *label)
-    const {
-    AppLabel *appLabel = dynamic_cast<AppLabel *>(label);
-    MILO_ASSERT(appLabel, 0x36);
-
-    if (mElements.size() < 1) {
-        appLabel->SetTextToken(gNullStr);
-        return;
+void StoreOfferProvider::ClearList() {
+    Element **start = &mElements[0];
+    Element **end = start + mElements.size();
+    for (Element **it = start; it != end; ++it) {
+        delete *it;
     }
-
-    Element *e = mElements[pos];
-    StoreOffer *offer = e->mOffer;
-    UIListSlot *slot = (UIListSlot *)listLabel;
-    if (offer) {
-        if (slot->Matches("album")) {
-            if (offer->OfferType() == album || offer->OfferType() == pack) {
-                appLabel->SetOfferName(offer);
-                return;
-            }
-        } else if (slot->Matches("song")) {
-            if (offer->OfferType() == song) {
-                appLabel->SetOfferName(offer);
-                return;
-            }
-        } else if (slot->Matches("rbn_icon")) {
-            if (offer->mPackedData->mIsRBN) {
-                label->SetIcon(0x55);
-                return;
-            }
-        } else if (slot->Matches("cost")) {
-            if (!(offer->mOfferState && (offer->mOfferState->mFlags & 1)) && !offer->InLibrary() &&
-                !offer->IsCompletelyUnavailable()) {
-                appLabel->SetOfferCost(offer);
-                return;
-            }
-        } else if (slot->Matches("new")) {
-            if (!(offer->mOfferState && (offer->mOfferState->mFlags & 1)) && !offer->InLibrary() &&
-                offer->IsNewRelease() && !offer->IsCompletelyUnavailable()) {
-                appLabel->SetTextToken(store_new);
-                return;
-            }
-        } else if (slot->Matches("purchased")) {
-            BandStoreOffer *bso = dynamic_cast<BandStoreOffer *>(offer);
-            MILO_ASSERT(bso, 0x7c);
-            bool isPurchased = bso->IsPurchased();
-            bool inLibrary = bso->InLibrary();
-            bool isDownloaded =
-                offer->mOfferState && (offer->mOfferState->mFlags & 2);
-            bool upgradeAvail = bso->mUpgradeAvailable;
-            if (!inLibrary) {
-                if (isDownloaded) {
-                    if (offer->mOfferState->mFlags & 2) {
-                        appLabel->SetTextToken(store_upgrade_in_library);
-                    }
-                    return;
-                }
-                if (isPurchased) {
-                    appLabel->SetTextToken(store_upgrade_purchased);
-                    return;
-                }
-                appLabel->SetTextToken(store_upgrade_available);
-                return;
-            }
-            if (!isPurchased && !upgradeAvail) {
-                return;
-            }
-            if (upgradeAvail) {
-                appLabel->SetTextToken(store_upgrade_available);
-                return;
-            }
-            if (isPurchased) {
-                if (offer->mOfferState->mFlags & 2) {
-                    appLabel->SetTextToken(store_downloaded);
-                } else {
-                    appLabel->SetTextToken(store_purchased);
-                }
-                return;
-            }
-            appLabel->SetTextToken(store_in_library);
-            return;
-        }
-    } else {
-        if (e->mActive == 0) {
-            if (slot->Matches("group") && e->mIsCover == 0) {
-                appLabel->SetStoreGroupName(this, pos);
-                return;
-            } else if (slot->Matches("famousby") && e->mIsCover != 0) {
-                appLabel->SetTextToken(store_famous_by);
-                return;
-            } else if (slot->Matches("famousby_group") && e->mIsCover != 0) {
-                appLabel->SetStoreGroupName(this, pos);
-                return;
-            }
-        } else {
-            if (slot->Matches("group_center") && e->mActive != 0) {
-                appLabel->SetStoreGroupName(this, pos);
-                return;
-            }
-        }
+    mElements.clear();
+    if (mShortcuts) {
+        mShortcuts->Release();
+        mShortcuts = NULL;
     }
-    appLabel->SetTextToken(gNullStr);
 }
 
 BEGIN_HANDLERS(StoreOfferProvider)
@@ -455,3 +453,5 @@ BEGIN_HANDLERS(StoreOfferProvider)
     HANDLE_SUPERCLASS(Hmx::Object)
     HANDLE_CHECK(0x2B2)
 END_HANDLERS
+
+int StoreOfferProvider::NumData() const { return mElements.size(); }
