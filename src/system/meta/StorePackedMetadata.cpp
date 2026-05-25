@@ -6,6 +6,8 @@
 #include <set>
 #include "obj/ObjMacros.h"
 #include "utl/Compress.h"
+#include "utl/Loader.h"
+#include "utl/Locale.h"
 #include "utl/MemMgr.h"
 #include "utl/Symbols2.h"
 #include "sdk/RVL_SDK/revolution/cnt/cnt.h"
