@@ -167,6 +167,11 @@ NetMessage *OpenWaitingGateMsg::NewNetMessage() { return new OpenWaitingGateMsg(
 
 // --- WaitingUserGate ------------------------------------------------------
 
+void WaitingUserGate::Init() {
+    EnterFlowMsg::Register();
+    OpenWaitingGateMsg::Register();
+}
+
 WaitingUserGate::WaitingUserGate() {
     mLockStepMgr = new LockStepMgr("waiting_room_lock", this);
     if (TheSessionMgr) {
@@ -178,13 +183,6 @@ WaitingUserGate::~WaitingUserGate() {
     if (TheSessionMgr) {
         TheSessionMgr->RemoveSink(this, ProcessedJoinRequestMsg::Type());
     }
-}
-
-void WaitingUserGate::Init() {
-    TheNetMessageFactory.RegisterNetMessage("EnterFlowMsg", EnterFlowMsg::NewNetMessage);
-    TheNetMessageFactory.RegisterNetMessage(
-        "OpenWaitingGateMsg", OpenWaitingGateMsg::NewNetMessage
-    );
 }
 
 void WaitingUserGate::Poll() {}
