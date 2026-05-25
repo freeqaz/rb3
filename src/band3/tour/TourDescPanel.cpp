@@ -363,32 +363,38 @@ RndMat *TourDescProvider::Mat(int, int iData, UIListMesh *i_pSlot) const {
     bPlayed = bPlayed || pProgress->GetTourMostStars(s) > 0;
     (void)bPlayed;
     if (i_pSlot->Matches("bronze")) {
-        if (!bSelected && TheTour->HasBronzeMedal(s)) {
-            String str("tourprize_bronze");
-            std::vector<DynamicTex *>::iterator it =
-                std::find(mTexs->begin(), mTexs->end(), str);
-            RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
-            return pMat;
+        if (!bSelected) {
+            if (TheTour->HasBronzeMedal(s)) {
+                String str("tourprize_bronze");
+                std::vector<DynamicTex *>::iterator it =
+                    std::find(mTexs->begin(), mTexs->end(), str);
+                RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
+                return pMat;
+            }
         }
         return 0;
     }
     if (i_pSlot->Matches("silver")) {
-        if (!bSelected && TheTour->HasSilverMedal(s)) {
-            String str("tourprize_silver");
-            std::vector<DynamicTex *>::iterator it =
-                std::find(mTexs->begin(), mTexs->end(), str);
-            RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
-            return pMat;
+        if (!bSelected) {
+            if (TheTour->HasSilverMedal(s)) {
+                String str("tourprize_silver");
+                std::vector<DynamicTex *>::iterator it =
+                    std::find(mTexs->begin(), mTexs->end(), str);
+                RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
+                return pMat;
+            }
         }
         return 0;
     }
     if (i_pSlot->Matches("gold")) {
-        if (!bSelected && TheTour->HasGoldMedal(s)) {
-            String str("tourprize_gold");
-            std::vector<DynamicTex *>::iterator it =
-                std::find(mTexs->begin(), mTexs->end(), str);
-            RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
-            return pMat;
+        if (!bSelected) {
+            if (TheTour->HasGoldMedal(s)) {
+                String str("tourprize_gold");
+                std::vector<DynamicTex *>::iterator it =
+                    std::find(mTexs->begin(), mTexs->end(), str);
+                RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
+                return pMat;
+            }
         }
         return 0;
     }
