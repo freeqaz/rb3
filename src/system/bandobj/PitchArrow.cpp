@@ -191,7 +191,7 @@ void PitchArrow::SetColorFade(float f) {
         else if (clamped < lo) final = lo;
         else final = clamped;
         mColorFade = final;
-        mColorFadeAnim->SetFrame(final, 1.0f);
+        mColorFadeAnim->SetFrame(mColorFade, 1.0f);
     }
 }
 
