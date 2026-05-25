@@ -183,7 +183,6 @@ void InlineHelp::DrawShowing() {
         Vector3 angles(DegreesToRadians(sLabelRot), 0.0f, 0.0f);
         Hmx::Matrix3 rotMtx;
         MakeRotMatrix(angles, rotMtx, true);
-        Multiply(offsetXfm.v, rotMtx, rotXfm.v);
         Multiply(offsetXfm.m, rotMtx, rotXfm.m);
     } else {
         rotXfm.m.Identity();
