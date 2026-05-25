@@ -377,6 +377,21 @@ void SaveLoadManager::Poll() {
             SetState((State)0x54);
         }
         break;
+    case (State)0x68:
+    case kS_Finish:
+        if (unk69) return;
+        if (mCache != NULL) {
+            if (!mCache->IsDone()) return;
+            TheCacheMgr->UnmountAsync(&mCache, NULL);
+        } else {
+            if (!TheCacheMgr->IsDone()) return;
+            if (mState == (State)0x6d) {
+                SetState((State)0x6e);
+            } else {
+                SetState(kS_Idle);
+            }
+        }
+        break;
     default:
         break;
     }
