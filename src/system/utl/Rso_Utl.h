@@ -21,5 +21,9 @@ bool RsoInit2HelperNoAlloc(
     struct RSOObjectHeader **module, const char *moduleName, unsigned char **bss,
     unsigned long **code, RsoResolvedFunc resolvedModule
 );
+void RsoTerminate2Helper(
+    struct RSOObjectHeader *module, unsigned char *bss, unsigned long *code,
+    void (*unresolvedModule)()
+);
 
 #endif // UTL_RSOUTL_H

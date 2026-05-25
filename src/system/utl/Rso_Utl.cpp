@@ -16,7 +16,10 @@ int RSOIsImportSymbolResolved(void *, int);
 int RSOGetNumImportSymbols(void *);
 const char *RSOGetImportSymbolName(void *, int);
 void *WiiAllocHeapAlign(int *size, int membank, unsigned int align);
+void WiiFree(void *);
 }
+
+void *MemHeapStartAddr(int heap);
 
 #define MAX_RSO_INITERS 8
 #define kRSOBufferSize 0x10EC00
@@ -184,6 +187,32 @@ void RsoTerminate2HelperNoFree(
     (*(void (**)())((char *)module + 0x28))();
     RSOUnLinkList(module);
     unresolvedModule();
+}
+
+void RsoTerminate2Helper(
+    struct RSOObjectHeader *module, unsigned char *bss, unsigned long *code,
+    void (*unresolvedModule)()
+) {
+    (*(void (**)())((char *)module + 0x28))();
+    RSOUnLinkList(module);
+    unresolvedModule();
+    if (bss >= (unsigned char *)MemHeapStartAddr(MemFindHeap("main"))) {
+        _MemFree(bss);
+    } else {
+        WiiFree(bss);
+    }
+    if ((unsigned char *)module >= (unsigned char *)MemHeapStartAddr(MemFindHeap("main"))) {
+        _MemFree(module);
+    } else {
+        WiiFree(module);
+    }
+    if (code != NULL) {
+        if ((unsigned char *)code >= (unsigned char *)MemHeapStartAddr(MemFindHeap("main"))) {
+            _MemFree(code);
+        } else {
+            WiiFree(code);
+        }
+    }
 }
 
 #pragma push
