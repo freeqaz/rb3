@@ -593,7 +593,7 @@ void Spotlight::DrawShowing() {
     if (LightCanSort() && mLightCanMesh) {
         mLightCanMesh->SetWorldXfm(mLightCanXfm);
         Sphere s(mLightCanMesh->mSphere);
-        if (s.GetRadius() > 0) {
+        if (s.GetRadius() >= 1) {
             Multiply(s, mLightCanXfm, s);
             if (!RndCam::sCurrent->CompareSphereToWorld(s)) {
                 mLightCanMesh->DrawShowing();
@@ -634,7 +634,7 @@ void Spotlight::DrawShowing() {
                 if (theChar) {
                     Vector3 v58 = theChar->WorldXfm().v;
                     v58.z += 3.0f;
-                    Plane p68(v58, Vector3(0, 0, 1));
+                    Plane p68(v58, Vector3(0.0f, 0, 1));
                     theChar->DrawShadow(WorldXfm(), p68);
                 }
             }
