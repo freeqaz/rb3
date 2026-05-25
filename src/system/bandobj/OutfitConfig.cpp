@@ -10,6 +10,7 @@
 #include "rndobj/Rnd.h"
 #include "rndobj/Utl.h"
 #include "rndwii/Tex.h"
+#include "utl/Loader.h"
 #include "utl/Symbols.h"
 #include <revolution/gx/GXMisc.h>
 
@@ -833,6 +834,110 @@ void OutfitConfig::ApplyAO(SyncMeshCB *mesh) {
     }
     for (int i = 0; i < mPiercings.size(); i++) {
         mPiercings[i].Deform(mesh);
+    }
+}
+
+void OutfitConfig::DrawPreClear() {
+    if (mTexBlender && mTexBlender->unk9p6) {
+        mTexBlender->DrawShowing();
+    }
+    if (mPermaProject && TheLoadMgr.EditMode()) {
+        for (int i = 0; i < mPatches.size(); i++) {
+            if (mPatches[i].ReProject())
+                Recompose();
+        }
+    }
+    BandCharDesc *desc = NULL;
+    if (unk3c == 1 || unk38 != 0) {
+        desc = FindBandCharDesc();
+    }
+    if (unk38 != 0) {
+        if (InMilo()) {
+            PoseBones();
+            SetSkinTextures();
+        }
+        if (unk3c != 2) {
+            int dirty = unk38;
+            if (dirty != -1) {
+                for (ObjVector<BandPatchMesh>::iterator pit = mPatches.begin();
+                     pit != mPatches.end();
+                     ++pit) {
+                    if (unk38 & pit->mCategory) {
+                        for (ObjVector<BandPatchMesh::MeshPair>::iterator mp =
+                                 pit->mMeshes.begin();
+                             mp != pit->mMeshes.end();
+                             ++mp) {
+                            MILO_ASSERT(mp->mesh, 0x725);
+                            for (ObjVector<BandPatchMesh>::iterator other =
+                                     mPatches.begin();
+                                 other != mPatches.end();
+                                 ++other) {
+                                if (other != pit) {
+                                    for (ObjVector<BandPatchMesh::MeshPair>::iterator omp =
+                                             other->mMeshes.begin();
+                                         omp != other->mMeshes.end();
+                                         ++omp) {
+                                        if (mp->mesh->mMat == omp->mesh->mMat) {
+                                            dirty |= other->mCategory;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for (ObjVector<MatSwap>::iterator it = mMats.begin(); it != mMats.end();
+                 ++it) {
+                it->SwapResource();
+            }
+            for (int i = 0; i < mPatches.size(); i++) {
+                mPatches[i].PreRender(desc, dirty);
+            }
+            for (ObjVector<MatSwap>::iterator it = mMats.begin(); it != mMats.end();
+                 ++it) {
+                if (!it->mTwoColor) {
+                    it->Compose(mColors, mPatches, unk38);
+                }
+            }
+            for (ObjVector<MatSwap>::iterator it = mMats.begin(); it != mMats.end();
+                 ++it) {
+                if (it->mTwoColor) {
+                    it->Compose(mColors, mPatches, unk38);
+                }
+            }
+            for (int i = 0; i < mPatches.size(); i++) {
+                mPatches[i].PostRender();
+            }
+        }
+        if (mBandLogo) {
+            RndTex *logoTex = desc->GetBandLogo();
+            if (!logoTex)
+                logoTex = TheRnd->mDefaultTex[Rnd::kDefaultTex_White];
+            mBandLogo->SetDiffuseTex(logoTex);
+        }
+        unk38 = 0;
+    }
+    if (unk3c == 1) {
+        for (ObjVector<MatSwap>::iterator it = mMats.begin(); it != mMats.end();
+             ++it) {
+            it->Compress(desc);
+        }
+        BandCharDesc *desc2 = FindBandCharDesc();
+        for (int i = 0; i < mPatches.size(); i++) {
+            mPatches[i].Compress(desc2);
+        }
+        if (mTexBlender) {
+            RndTex *blendDest = mTexBlender->mOutputTextures;
+            if (blendDest
+                && (blendDest->GetType() & RndTex::kRenderedNoZ) == RndTex::kRenderedNoZ) {
+                desc2->Compress(blendDest, false);
+            }
+        }
+        unk3c = 2;
+    }
+    if (mWrinkleBlender) {
+        mWrinkleBlender->DrawShowing();
     }
 }
 
