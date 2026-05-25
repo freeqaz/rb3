@@ -493,8 +493,7 @@ void BudgetScreen::NextTest() {
         Symbol endSym("end");
         mRecordEndTick = test->FindArray(endSym, true)->Int(1);
 
-        Symbol sevenPlayerSym("seven_player_mode");
-        DataArray *sevenArr = test->FindArray(sevenPlayerSym, false);
+        DataArray *sevenArr = test->FindArray(Symbol("seven_player_mode"), false);
         bool sevenPlayerMode = sevenArr && sevenArr->Int(1) != 0;
 
         if (sevenPlayerMode) {
@@ -504,10 +503,7 @@ void BudgetScreen::NextTest() {
             TheModifierMgr->DisableAutoVocals();
         }
 
-        std::vector<Symbol> songs;
-
-        Symbol playersSym("players");
-        DataArray *players = test->FindArray(playersSym, true);
+        DataArray *players = test->FindArray(Symbol("players"), true);
         for (int i = 1; i < players->Size(); i++) {
             LocalBandUser *user = TheBandUserMgr->GetUserFromPad(i - 1);
             TheSessionMgr->AddLocalUser(user);
@@ -517,8 +513,7 @@ void BudgetScreen::NextTest() {
             user->SetDifficulty(kDifficultyExpert);
 
             if (user->GetTrackType() == kTrackDrum) {
-                Symbol proDrumSym("pro_drums");
-                DataArray *proDrumArr = test->FindArray(proDrumSym, false);
+                DataArray *proDrumArr = test->FindArray(Symbol("pro_drums"), false);
                 bool proDrums = proDrumArr && proDrumArr->Int(1) != 0;
                 if (proDrums) {
                     user->SetPreferredScoreType(kScoreRealDrum);
@@ -530,6 +525,7 @@ void BudgetScreen::NextTest() {
             }
         }
 
+        std::vector<Symbol> songs;
         Symbol songSym("song");
         Symbol songName = test->FindArray(songSym, true)->Sym(1);
         songs.push_back(songName);
@@ -537,8 +533,7 @@ void BudgetScreen::NextTest() {
 
         TheGameConfig->AutoAssignMissingSlots();
 
-        Symbol preInitSym("pre_init");
-        DataArray *preInit = test->FindArray(preInitSym, false);
+        DataArray *preInit = test->FindArray(Symbol("pre_init"), false);
         if (preInit) {
             preInit->ExecuteScript(1, nullptr, nullptr, 1);
         }
