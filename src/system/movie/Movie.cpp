@@ -2,6 +2,8 @@
 #include "movie/TexMovie.h"
 #include "obj/Data.h"
 #include "obj/DataFunc.h"
+#include "obj/Dir.h"
+#include "obj/Msg.h"
 #include "obj/ObjMacros.h"
 #include "obj/Task.h"
 #include "os/BlockMgr.h"
@@ -872,6 +874,62 @@ void Movie::Impl::DiscContentionPublish() {
             mDiscContentionMap.clear();
         }
     }
+}
+
+bool Movie::Impl::Poll() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x424);
+    if (sAsyncMovie != NULL && sAsyncMovie != this) {
+        return sAsyncMovie->Poll();
+    }
+    if (CheckOpen(true)) {
+        return true;
+    }
+    if (mBink == NULL) return false;
+    if (!mPaused) {
+        float ms = mPollTimer.SplitMs();
+        mPollTimer.Restart();
+        if (ms > 49.0f) {
+            String fn(mFilename);
+            float bms = mFrameTimer.SplitMs();
+            const char *msg = MakeString("GLITCH: %g ms (%g ms bink), %s\n", ms, bms, fn);
+            static DataNode &notify_level = DataVariable("notify_level");
+            if (notify_level.Int(NULL) == 0) {
+                TheDebug << MakeString("%s\n", msg);
+            } else {
+                static Hmx::Object *cd = ObjectDir::Main()->Find<Hmx::Object>("cheat_display", true);
+                static Message show(Symbol("show"), DataNode(""));
+                show[0] = DataNode(msg);
+                cd->Handle(show, false);
+            }
+        }
+        DiscContentionCheck(NULL);
+    }
+    if (mTimeCallback != NULL && sAsyncMovie == NULL) {
+        float dt = mTimeCallback();
+        SetPaused(dt == 0.0f);
+    }
+    mFrameTimer.Restart();
+    if (BinkWait(mBink) == 0) {
+        DoFrame();
+        while (BinkShouldSkip(mBink)) {
+            DoFrame();
+        }
+    }
+    mFrameTimer.SplitMs();
+    if (mBink->ReadError != 0) return false;
+    if (!mLoop && mBink->FrameNum == mBink->Frames) return false;
+    return true;
 }
 
 void Movie::Impl::SetPaused(bool b) {
