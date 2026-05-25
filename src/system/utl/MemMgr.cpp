@@ -61,6 +61,7 @@ public:
     void LastFit(int, int, FreeBlockInfo &);
     void CheckConsistency(const char *, int);
     void Init(const char *, int, int *, int, bool, Strategy, int, bool);
+    int *Alloc(int, int, int &);
     const char *Name() const { return mName; }
 
     FreeBlock *mFreeBlockChain; // 0x0
@@ -229,6 +230,8 @@ int MemFindAddrHeap(void *addr) {
 }
 
 void *MemHeapStartAddr(int heap) { return gHeaps[heap].mStart; }
+
+extern OSThread *gMainThreadID;
 
 int Heap::AllocSize(int *mem) {
     if (mem < mStart || mem >= mStart + mSizeWords) {
@@ -437,6 +440,126 @@ void Heap::BestLastFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
             }
         }
     }
+}
+
+int *Heap::Alloc(int sizeWords, int alignShift, int &actualSize) {
+    FreeBlockInfo info;
+    info.mBlock = nullptr;
+    info.mPrev = nullptr;
+    info.mBlockSize = 0x7FFFFFFF;
+    info.mPadWords = 0x7FFFFFFF;
+    switch (mStrategy) {
+    case kFirstFit:
+        FirstFit(sizeWords, alignShift, info);
+        break;
+    case kBestFit:
+        BestFit(sizeWords, alignShift, info);
+        break;
+    case kBestLastFit:
+        BestLastFit(sizeWords, alignShift, info);
+        break;
+    case kLRUFit:
+        LRUFit(sizeWords, alignShift, info);
+        break;
+    case kLastFit:
+        LastFit(sizeWords, alignShift, info);
+        break;
+    default:
+        MILO_ASSERT(0, 0x432);
+        break;
+    }
+    FreeBlock *block = info.mBlock;
+    if (block == nullptr) {
+        int leftFrag, rightFrag, totalFree, biggest;
+        FreeBlockStats(leftFrag, rightFrag, totalFree, biggest);
+        bool isMain = true;
+        if (gMainThreadID != nullptr && gMainThreadID != OSGetCurrentThread()) {
+            isMain = false;
+        }
+        if (!isMain) {
+            gInsideMemFunc = false;
+            gMemLock->Abandon();
+        }
+        return nullptr;
+    }
+    // Split off left padding if any
+    if (info.mPadWords > 8) {
+        FreeBlock *newBlock = (FreeBlock *)((int *)block + info.mPadWords);
+        info.mBlock = newBlock;
+        int newSize = info.mBlockSize - info.mPadWords;
+        info.mBlockSize = newSize;
+        newBlock->mSizeWords = newSize;
+        newBlock->mNext = block->mNext;
+        newBlock->mTimeStamp = block->mTimeStamp;
+        InsertFreeBlock(block, info.mPadWords, info.mPrev, newBlock, newBlock->mTimeStamp);
+        info.mPadWords = 0;
+        info.mPrev = block;
+    }
+    int allocWords = sizeWords + info.mPadWords;
+    int leftoverWords = info.mBlockSize - allocWords;
+    if (leftoverWords > 8) {
+        InsertFreeBlock(
+            (FreeBlock *)((int *)info.mBlock + allocWords), leftoverWords, info.mPrev,
+            info.mBlock->mNext, info.mBlock->mTimeStamp
+        );
+    } else {
+        allocWords = info.mBlockSize;
+        if (info.mPrev == nullptr) {
+            mFreeBlockChain = info.mBlock->mNext;
+        } else {
+            info.mPrev->mNext = info.mBlock->mNext;
+        }
+    }
+    int padW = info.mPadWords;
+    AllocBlock *allocBlock = (AllocBlock *)((int *)info.mBlock + padW);
+    unsigned int newHeader = allocBlock->mHeader;
+    newHeader = (newHeader & ~0xFFu) | ((unsigned int)padW & 0xFFu);
+    newHeader = (newHeader & 0xFFu) | ((unsigned int)allocWords << 8);
+    allocBlock->mHeader = newHeader;
+    int *zeroEnd = (int *)allocBlock;
+    int *zeroStart = zeroEnd - (newHeader & 0xFF);
+    while (zeroStart != zeroEnd) {
+        *zeroStart = 0;
+        zeroStart++;
+    }
+    if (mDebugLevel >= 1) {
+        unsigned int hdr = allocBlock->mHeader;
+        int *fillStart = (int *)allocBlock + 1;
+        int *fillEnd = (int *)allocBlock - (hdr & 0xFF) + (hdr >> 8);
+        if (fillStart < fillEnd) {
+            int *p = fillStart;
+            int *bulkEnd = fillEnd - 8;
+            int byteSize = (int)((char *)fillEnd - (char *)p);
+            int bytePlus3 = byteSize + 3;
+            if ((bytePlus3 / 4) > 8) {
+                bool valid = false;
+                if (p <= fillEnd) {
+                    bool ok = true;
+                    if (!(byteSize & 0x80000000) && (bytePlus3 & 0x80000000)) {
+                        ok = false;
+                    }
+                    if (ok) valid = true;
+                }
+                if (valid && p < bulkEnd) {
+                    do {
+                        p[0] = 0xABCDABCD; p[1] = 0xABCDABCD;
+                        p[2] = 0xABCDABCD; p[3] = 0xABCDABCD;
+                        p[4] = 0xABCDABCD; p[5] = 0xABCDABCD;
+                        p[6] = 0xABCDABCD; p[7] = 0xABCDABCD;
+                        p += 8;
+                    } while (p < bulkEnd);
+                }
+            }
+            if (p < fillEnd) {
+                do {
+                    *p = 0xABCDABCD;
+                    p++;
+                } while (p < fillEnd);
+            }
+        }
+    }
+    actualSize = allocBlock->mHeader >> 8;
+    return (int *)allocBlock + 1;
 }
 
 void Heap::LRUFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
