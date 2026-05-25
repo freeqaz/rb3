@@ -34,9 +34,9 @@ Then either: (a) extract inline expressions to a local (when base has the long s
 
 Same family as [format-string tweaks shift string pool](fixable-operators.md) and `MakeString("literal")` opening a FormatString slot.
 
-**When to apply:** TU has a long 95-99% tail AND `run_diff_inspect` reports the SAME `-N`/`+N` rodata/sdata relocation offset on multiple functions. That uniform byte delta IS the pool-shift signature. Without it, the partials are permuter-class — assert-count alone is a poor predictor (zero wins on `PatchDir.cpp` and `AccomplishmentPanel.cpp` despite high audit scores).
+**When to apply:** TU has a long 95-99% tail AND multiple functions share the SAME `@stringBase`/`@sda`/`@sda2` byte delta. That uniform delta IS the pool-shift signature. Without it the partials are permuter-class — assert-count alone is a poor predictor.
 
-**Find candidates:** `grep -nE 'MILO_ASSERT' src/path/Foo.cpp` — list every distinct condition text; diff against target.o strings to spot the asymmetric one.
+**Find candidates:** `python3 scripts/find_pool_shift.py [--filter PATH]` — walks `report.json`, runs objdiff with `--include-instructions` per partial, extracts Signed-arg diffs on pool-symbol instructions, groups by TU + delta. Ranks TUs where ≥3 functions share one delta. Per-TU output gives the exact byte delta to chase. (Latest scan: `docs/decomp/pool-shift-scan-2026-05-25.json`.)
 
 ## __declspec(noinline) to Defeat IPA Inlining
 

@@ -1,0 +1,715 @@
+[
+  {
+    "unit": "main/system/bandobj/BandCharacter",
+    "delta": -8,
+    "function_count": 31,
+    "total_instruction_hits": 121,
+    "functions": [
+      "PlayFaceClip__13BandCharacterFv",
+      "MakeMRU__13BandCharacterFP13BandCharacterP8CharClip",
+      "PlayMainClip__13BandCharacterFib",
+      "ValidateInterest__13BandCharacterFP12CharInterestP9ObjectDir",
+      "AllowOverride__13BandCharacterFPCc",
+      "FlagString__13BandCharacterFi",
+      "UpdateOverlay__13BandCharacterFv",
+      "Poll__13BandCharacterFv",
+      "SyncObjects__13BandCharacterFv",
+      "Save__13BandCharacterFR9BinStream",
+      "DrawShowing__13BandCharacterFv",
+      "SetTempoGenreVenue__13BandCharacterF6Symbol6SymbolPCc",
+      "PreLoad__13BandCharacterFR9BinStream",
+      "StartLoad__13BandCharacterFbbb",
+      "SyncOutfitConfig__13BandCharacterFP12OutfitConfig",
+      "DeformHead__13BandCharacterFP10SyncMeshCB",
+      "AddObject__13BandCharacterFPQ23Hmx6Object",
+      "GetLipSyncDriver__13BandCharacterFv",
+      "AddDircut__13BandCharacterF6Symbol6Symboli",
+      "SetDircuts__13BandCharacterFv",
+      "SetContext__13BandCharacterF6Symbol",
+      "AddDircut__13BandCharacterFRC8FilePath",
+      "SetVisemes__13BandCharacterFv",
+      "GetOutfitConfig__13BandCharacterFPCc",
+      "GetPatchTex__13BandCharacterFRQ212BandCharDesc5Patch",
+      "SetLipSync__13BandCharacterFP11CharLipSync",
+      "TextureCompressed__13BandCharacterFi",
+      "SetSongOwner__13BandCharacterFP17CharLipSyncDriver",
+      "GameOver__13BandCharacterFv",
+      "ReplaceRefs__FPQ23Hmx6ObjectPQ23Hmx6Object",
+      "SavePrefabFromCloset__13BandCharacterFv"
+    ]
+  },
+  {
+    "unit": "main/system/movie/Movie",
+    "delta": -149,
+    "function_count": 19,
+    "total_instruction_hits": 19,
+    "functions": [
+      "IsOpen__Q25Movie4ImplCFv",
+      "IsLoading__Q25Movie4ImplCFv",
+      "MovieClose__Q25Movie4ImplFv",
+      "__ct__Q25Movie4ImplFv",
+      "__dt__Q25Movie4ImplFv",
+      "Ready__Q25Movie4ImplCFv",
+      "SetRect__Q25Movie4ImplFv",
+      "FinishOpen__Q25Movie4ImplFv",
+      "NextFrame__Q25Movie4ImplFv",
+      "DoFrame__Q25Movie4ImplFv",
+      "BeginFrame__Q25Movie4ImplFv",
+      "SetTimeCallback__Q25Movie4ImplFPFv_f",
+      "EndFrame__Q25Movie4ImplFv",
+      "End__Q25Movie4ImplFv",
+      "SetWidthHeight__Q25Movie4ImplFii",
+      "Terminate__Q25Movie4ImplFv",
+      "MsPerFrame__Q25Movie4ImplCFv",
+      "GetFrame__Q25Movie4ImplCFv",
+      "NumFrames__Q25Movie4ImplCFv"
+    ]
+  },
+  {
+    "unit": "main/band3/tour/Tour",
+    "delta": -10,
+    "function_count": 15,
+    "total_instruction_hits": 17,
+    "functions": [
+      "UseUsersProgress__4TourFv",
+      "ResetTourData__4TourFP11BandProfile",
+      "IsUnderway__4TourCFP11BandProfile",
+      "GetSilverMedalGoalInCurrentTour__4TourCFv",
+      "GetBronzeMedalGoalInCurrentTour__4TourCFv",
+      "GetGoldMedalGoalInCurrentTour__4TourCFv",
+      "HasSilverMedalInCurrentTour__4TourCFv",
+      "HasBronzeMedalInCurrentTour__4TourCFv",
+      "HasGoldMedalInCurrentTour__4TourCFv",
+      "HasBronzeMedal__4TourCF6Symbol",
+      "HasSilverMedal__4TourCF6Symbol",
+      "HasGoldMedal__4TourCF6Symbol",
+      "GetBronzeGoalIcon__4TourFv",
+      "GetSilverGoalIcon__4TourFv",
+      "GetGoldGoalIcon__4TourFv"
+    ]
+  },
+  {
+    "unit": "main/system/beatmatch/MasterAudio",
+    "delta": -6,
+    "function_count": 12,
+    "total_instruction_hits": 29,
+    "functions": [
+      "SetupTrackChannel__11MasterAudioFibfbb",
+      "SetupBackgroundChannel__11MasterAudioFibfbb",
+      "Play__11MasterAudioFv",
+      "SetTrackMuteFader__11MasterAudioF13AudioTrackNumiff",
+      "SetRemoteTrack__11MasterAudioFi",
+      "SetFX__11MasterAudioF13AudioTrackNum6FXCoreb",
+      "FadeOutDrums__11MasterAudioFi",
+      "RestoreDrums__11MasterAudioFi",
+      "__ct__11ChannelDataFP6Streamiff6FXCore",
+      "PrintFaders__11MasterAudioFv",
+      "SetMapping__9TrackDataFPCc",
+      "GetSucceeding__9TrackDataCFi"
+    ]
+  },
+  {
+    "unit": "main/band3/tour/QuestFilterPanel",
+    "delta": 76,
+    "function_count": 12,
+    "total_instruction_hits": 22,
+    "functions": [
+      "Load__16QuestFilterPanelFv",
+      "Enter__16QuestFilterPanelFv",
+      "Refresh__16QuestFilterPanelFv",
+      "GetBackScreen__16QuestFilterPanelFv",
+      "GetSongSelectScreen__16QuestFilterPanelFv",
+      "HandleFilterSelected__16QuestFilterPanelFv",
+      "GetDiffSelectScreen__16QuestFilterPanelFv",
+      "GetGigFilter__16QuestFilterPanelFv",
+      "AreCurrentFiltersValid__16QuestFilterPanelFv",
+      "CheatCycleSetlist__16QuestFilterPanelFv",
+      "CheatCycleChallenge__16QuestFilterPanelFv",
+      "CheatWinQuest__16QuestFilterPanelFv"
+    ]
+  },
+  {
+    "unit": "main/system/world/SpotlightDrawer",
+    "delta": -5,
+    "function_count": 12,
+    "total_instruction_hits": 15,
+    "functions": [
+      "ApplyLightingApprox__15SpotlightDrawerCFR14BoxMapLightingf",
+      "DrawWorld__15SpotlightDrawerFv",
+      "DrawShowing__15SpotlightDrawerFv",
+      "DrawShadow__15SpotlightDrawerFv",
+      "DrawAdditional__15SpotlightDrawerFPQ215SpotlightDrawer14SpotlightEntryRCPQ215SpotlightDrawer14SpotlightEntry",
+      "DrawLenses__15SpotlightDrawerFPQ215SpotlightDrawer14SpotlightEntryRCPQ215SpotlightDrawer14SpotlightEntry",
+      "DrawBeams__15SpotlightDrawerFPQ215SpotlightDrawer14SpotlightEntryRCPQ215SpotlightDrawer14SpotlightEntry",
+      "Save__15SpotlightDrawerFR9BinStream",
+      "Load__15SpotlightDrawerFR9BinStream",
+      "Load__14SpotDrawParamsFR9BinStreami",
+      "DrawFlares__15SpotlightDrawerFPQ215SpotlightDrawer14SpotlightEntryRCPQ215SpotlightDrawer14SpotlightEntry",
+      "__ct__14SpotDrawParamsFP15SpotlightDrawer"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/AccomplishmentPanel",
+    "delta": 6,
+    "function_count": 10,
+    "total_instruction_hits": 19,
+    "functions": [
+      "GetNumCompleted__19AccomplishmentPanelFv",
+      "SetRandomUnplayedSong__19AccomplishmentPanelFv",
+      "GetTotalAccomplishments__19AccomplishmentPanelFv",
+      "SetSelectedGoal__19AccomplishmentPanelF6Symbol",
+      "LaunchGoal__19AccomplishmentPanelFP13LocalBandUser",
+      "LaunchSelectedEntry__19AccomplishmentPanelFP13LocalBandUser",
+      "SetSelectedCategory__19AccomplishmentPanelF6Symbol",
+      "FakeEarnSelectedGroup__19AccomplishmentPanelFv",
+      "FakeEarnSelectedGoal__19AccomplishmentPanelFv",
+      "FakeEarnSelectedCategory__19AccomplishmentPanelFv"
+    ]
+  },
+  {
+    "unit": "main/system/world/LightPreset",
+    "delta": -77,
+    "function_count": 10,
+    "total_instruction_hits": 18,
+    "functions": [
+      "Animate__11LightPresetFf",
+      "OnSetKeyframe__11LightPresetFP9DataArray",
+      "LoadP9__Q211LightPreset8KeyframeFR9BinStream",
+      "Load__Q211LightPreset8KeyframeFR9BinStream",
+      "GetName__FP11LightPresetiQ211LightPreset12PresetObject",
+      "GetObjName<8RndLight>__FRCQ211stlpmtx_std63vector<P8RndLight,Us,Q211stlpmtx_std24StlNodeAlloc<P8RndLight>>i_PCc",
+      "GetObjName<10RndEnviron>__FRCQ211stlpmtx_std69vector<P10RndEnviron,Us,Q211stlpmtx_std27StlNodeAlloc<P10RndEnviron>>i_PCc",
+      "GetObjName<15SpotlightDrawer>__FRCQ211stlpmtx_std79vector<P15SpotlightDrawer,Us,Q211stlpmtx_std32StlNodeAlloc<P15SpotlightDrawer>>i_PCc",
+      "GetObjName<9Spotlight>__FRCQ211stlpmtx_std65vector<P9Spotlight,Us,Q211stlpmtx_std25StlNodeAlloc<P9Spotlight>>i_PCc",
+      "PropSync<Q211LightPreset8Keyframe,Us>__FR38ObjVector<Q211LightPreset8Keyframe,Us>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/system/char/CharEyes",
+    "delta": -49,
+    "function_count": 9,
+    "total_instruction_hits": 32,
+    "functions": [
+      "Save__8CharEyesFR9BinStream",
+      "Load__8CharEyesFR9BinStream",
+      "PropSync<10CharLookAt>__FR36ObjOwnerPtr<10CharLookAt,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<12CharInterest>__FR38ObjOwnerPtr<12CharInterest,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<13CharFaceServo>__FR34ObjPtr<13CharFaceServo,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<10CharLookAt>__FR31ObjPtr<10CharLookAt,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<16CharWeightSetter>__FR37ObjPtr<16CharWeightSetter,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "SyncProperty__8CharEyesFR8DataNodeP9DataArrayi6PropOp",
+      "PropSync<Q28CharEyes17CharInterestState,Us>__FR44ObjVector<Q28CharEyes17CharInterestState,Us>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/SaveLoadManager",
+    "delta": -31,
+    "function_count": 9,
+    "total_instruction_hits": 16,
+    "functions": [
+      "Init__15SaveLoadManagerFv",
+      "GetNewSigninProfile__15SaveLoadManagerFv",
+      "GetAutosavableProfile__15SaveLoadManagerFv",
+      "StartSaveAction__15SaveLoadManagerFb",
+      "OnMsg__15SaveLoadManagerFRC15DeviceChosenMsg",
+      "OnMsg__15SaveLoadManagerFRC17NoDeviceChosenMsg",
+      "OnMsg__15SaveLoadManagerFRC24RockCentralOpCompleteMsg",
+      "OnMsg__15SaveLoadManagerFRC17ProfileSwappedMsg",
+      "GetDialogMsg__15SaveLoadManagerFv"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/PatchDir",
+    "delta": 6,
+    "function_count": 9,
+    "total_instruction_hits": 16,
+    "functions": [
+      "SavePacked__10PatchLayerCFR9IntPacker",
+      "SetDeformFrame__10PatchLayerFf",
+      "SetScaleY__10PatchLayerFf",
+      "SetScaleX__10PatchLayerFf",
+      "SetRotation__10PatchLayerFf",
+      "__rs__FR9BinStreamR10PatchLayer",
+      "Load__8PatchDirFR9BinStream",
+      "SaveRemote__8PatchDirFR9BinStream",
+      "LoadRemote__8PatchDirFR9BinStream"
+    ]
+  },
+  {
+    "unit": "main/system/rndobj/Text",
+    "delta": -15,
+    "function_count": 8,
+    "total_instruction_hits": 32,
+    "functions": [
+      "Load__7RndTextFR9BinStream",
+      "ParseMarkup__7RndTextCFPCcPQ27RndText5Styleff",
+      "SetText__7RndTextFPCc",
+      "UpdateMesh__7RndTextFP7RndFont",
+      "AddLineUTF8__7RndTextFRC6StringRC9TransformRCQ27RndText5StylePfPbi",
+      "ApplyLineText__7RndTextFRC6StringRCQ27RndText5StyleRfRQ27RndText4LineiiPb",
+      "UpdateLineColor__7RndTextFUiRCQ23Hmx7Color32Pb",
+      "WrapText__7RndTextFPCcRCQ27RndText5StyleRQ211stlpmtx_std73vector<Q27RndText4Line,Us,Q211stlpmtx_std29StlNodeAlloc<Q27RndText4Line>>"
+    ]
+  },
+  {
+    "unit": "main/band3/game/VocalPlayer",
+    "delta": 3,
+    "function_count": 8,
+    "total_instruction_hits": 9,
+    "functions": [
+      "UpdateMicDisplay__11VocalPlayerFv",
+      "AllowPitchCorrection__11VocalPlayerCFv",
+      "AllowWarningState__11VocalPlayerCFv",
+      "OnMsg__11VocalPlayerFRC13ButtonDownMsg",
+      "GetHitPercentage__11VocalPlayerFi",
+      "GetBestPercentage__11VocalPlayerFi",
+      "ToggleOverlay__11VocalPlayerFv",
+      "EnablePartScoring__11VocalPlayerFib"
+    ]
+  },
+  {
+    "unit": "main/band3/tour/Tour",
+    "delta": 7,
+    "function_count": 7,
+    "total_instruction_hits": 8,
+    "functions": [
+      "HasAnnouncement__4TourCFv",
+      "GetGigFlavor__4TourCFv",
+      "GetTourGigGuideMap__4TourCFv",
+      "GetAnnouncement__4TourCFv",
+      "GetConclusionText__4TourCFv",
+      "GetMapScreen__4TourCFv",
+      "GetProgressOwnerName__4TourFv"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/SongUpgradeMgr",
+    "delta": 6,
+    "function_count": 6,
+    "total_instruction_hits": 13,
+    "functions": [
+      "UpgradeData__14SongUpgradeMgrCFi",
+      "ContentPattern__14SongUpgradeMgrFv",
+      "ContentLoaded__14SongUpgradeMgrFP6Loader11ContentLocT6Symbol",
+      "MarkAvailable__14SongUpgradeMgrFi6Symbol",
+      "ClearFromCache__14SongUpgradeMgrF6Symbol",
+      "AddUpgradeData__14SongUpgradeMgrFP9DataArrayP10DataLoader11ContentLocT6Symbol"
+    ]
+  },
+  {
+    "unit": "main/band3/game/VocalPlayer",
+    "delta": -4,
+    "function_count": 6,
+    "total_instruction_hits": 12,
+    "functions": [
+      "PackFloats__11VocalPlayerCFRCQ211stlpmtx_std45vector<f,Us,Q211stlpmtx_std15StlNodeAlloc<f>>ff",
+      "PackBools__11VocalPlayerCFRCQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>",
+      "UnpackBools__11VocalPlayerCFiRQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>",
+      "LocalScorePhrase__11VocalPlayerFiRCQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>b",
+      "HandlePhraseEnd__11VocalPlayerFf",
+      "SendVocalState__11VocalPlayerFf"
+    ]
+  },
+  {
+    "unit": "main/system/char/CharLipSync",
+    "delta": -10,
+    "function_count": 6,
+    "total_instruction_hits": 12,
+    "functions": [
+      "Set__Q211CharLipSync8PlayBackFP11CharLipSyncP9ObjectDir",
+      "Save__11CharLipSyncFR9BinStream",
+      "Load__11CharLipSyncFR9BinStream",
+      "Parse__11CharLipSyncFP9DataArray",
+      "SyncProperty__11CharLipSyncFR8DataNodeP9DataArrayi6PropOp",
+      "PropSync<6String,Us>__FRQ211stlpmtx_std57vector<6String,Us,Q211stlpmtx_std21StlNodeAlloc<6String>>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/band3/bandtrack/VocalTrack",
+    "delta": -132,
+    "function_count": 6,
+    "total_instruction_hits": 10,
+    "functions": [
+      "IncrementVolume__10VocalTrackFi",
+      "OnGetDisplayMode__10VocalTrackFPC9DataArray",
+      "OnSetDisplayMode__10VocalTrackFPC9DataArray",
+      "__ct__Q210VocalTrack10LyricShiftFffb",
+      "__ct__Q210VocalTrack10LyricShiftFff",
+      "GetNumVocalParts__10VocalTrackFv"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/NoteTube",
+    "delta": -16,
+    "function_count": 6,
+    "total_instruction_hits": 9,
+    "functions": [
+      "LookupPitchedUVCoordinates__8NoteTubeFRfRfRfRfb",
+      "AllocateVerts__9TubePlateFib",
+      "AllocateFaces__9TubePlateFib",
+      "GetMatName__9TubePlateFv",
+      "_M_throw_length_error__Q211stlpmtx_std65_Vector_base<7Vector3,Us,Q211stlpmtx_std22StlNodeAlloc<7Vector3>>CFv",
+      "Bake__9TubePlateFv"
+    ]
+  },
+  {
+    "unit": "main/band3/tour/Tour",
+    "delta": 1,
+    "function_count": 6,
+    "total_instruction_hits": 8,
+    "functions": [
+      "HasGigSpecificIntro__4TourCFv",
+      "HasGigSpecificOutro__4TourCFv",
+      "GetGigSpecificIntro__4TourCFv",
+      "GetGigSpecificOutro__4TourCFv",
+      "UpdateFinishedMedalLabel__4TourFP7UILabel",
+      "UpdateNextMedalLabel__4TourFP7UILabel"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/BandPatchMesh",
+    "delta": 67,
+    "function_count": 5,
+    "total_instruction_hits": 15,
+    "functions": [
+      "SetMeshVertAndTwins__Q213BandPatchMesh9WorkVertsFiPQ213BandPatchMesh8MeshVert",
+      "AddMeshVertAndTwins__Q213BandPatchMesh9WorkVertsFiPQ213BandPatchMesh8MeshVert",
+      "SetVertsAndFaces__Q213BandPatchMesh9WorkVertsFP7RndMeshb",
+      "CopyDeformWeights__Q213BandPatchMesh9WorkVertsFP13RndMeshDeformP13RndMeshDeform",
+      "PatchName__Q213BandPatchMesh8MeshPairCFv"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/OutfitConfig",
+    "delta": 50,
+    "function_count": 5,
+    "total_instruction_hits": 10,
+    "functions": [
+      "PropSync<26ObjPtr<6RndTex,9ObjectDir>,Us>__FR42ObjVector<26ObjPtr<6RndTex,9ObjectDir>,Us>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<i,Us>__FRQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<Q212OutfitConfig7Overlay,Us>__FR38ObjVector<Q212OutfitConfig7Overlay,Us>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<13RndTexBlender>__FR34ObjPtr<13RndTexBlender,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<Q312OutfitConfig6MeshAO4Seam,Us>__FRQ211stlpmtx_std99vector<Q312OutfitConfig6MeshAO4Seam,Us,Q211stlpmtx_std42StlNodeAlloc<Q312OutfitConfig6MeshAO4Seam>>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/AppLabel",
+    "delta": -150,
+    "function_count": 5,
+    "total_instruction_hits": 6,
+    "functions": [
+      "SetNewReleaseEntryText1__8AppLabelFPC14StoreMainPanel",
+      "SetNewReleaseEntryText2__8AppLabelFPC14StoreMainPanel",
+      "SetNewReleaseEntryText3__8AppLabelFPC14StoreMainPanel",
+      "SetSectionName__8AppLabelFRC15PracticeSection",
+      "SetTokenRedemptionString__8AppLabelFPC20TokenRedemptionPaneli"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/AccomplishmentProgress",
+    "delta": -28,
+    "function_count": 5,
+    "total_instruction_hits": 5,
+    "functions": [
+      "GetFirstNewAward__22AccomplishmentProgressCFv",
+      "GetFirstNewRewardVignette__22AccomplishmentProgressCFv",
+      "ClearFirstNewRewardVignette__22AccomplishmentProgressFv",
+      "GetFirstNewAwardReason__22AccomplishmentProgressCFv",
+      "ClearFirstNewAward__22AccomplishmentProgressFv"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/BandCharacter",
+    "delta": -102,
+    "function_count": 4,
+    "total_instruction_hits": 42,
+    "functions": [
+      "Filter__13BandCharacterFPQ23Hmx6ObjectPQ23Hmx6ObjectP9ObjectDir",
+      "OnInstallFilter__13BandCharacterFP9DataArray",
+      "SaveBoneAndChildren__13BandCharacterFP16RndTransformable",
+      "OnSetFileMerger__13BandCharacterFP9DataArray"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/GemTrackDir",
+    "delta": 69,
+    "function_count": 4,
+    "total_instruction_hits": 8,
+    "functions": [
+      "PropSync<8RndGroup>__FR28ObjPtr<8RndGroup,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "AddChordRepImpl__11GemTrackDirFP7RndMeshP11TrackWidgetP11TrackWidgetP11TrackWidgetfRCQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>6String",
+      "PropSync<12EventTrigger>__FR33ObjPtr<12EventTrigger,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<6RndCam>__FR26ObjPtr<6RndCam,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/system/char/CharLipSyncDriver",
+    "delta": -12,
+    "function_count": 4,
+    "total_instruction_hits": 8,
+    "functions": [
+      "Save__17CharLipSyncDriverFR9BinStream",
+      "PropSync<10CharDriver>__FR31ObjPtr<10CharDriver,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<9ObjectDir>__FR29ObjPtr<9ObjectDir,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<17CharLipSyncDriver>__FR38ObjPtr<17CharLipSyncDriver,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/system/meta/StorePanel",
+    "delta": -44,
+    "function_count": 4,
+    "total_instruction_hits": 8,
+    "functions": [
+      "HandleNetCacheMgrFailure__10StorePanelFv",
+      "LoadMetadata__10StorePanelFv",
+      "Poll__10StorePanelFv",
+      "Instance__10StorePanelFv"
+    ]
+  },
+  {
+    "unit": "main/band3/game/BandUserMgr",
+    "delta": -5,
+    "function_count": 4,
+    "total_instruction_hits": 7,
+    "functions": [
+      "GetUserFromPad__11BandUserMgrFi",
+      "DebugGetControllerTypeOverride__11BandUserMgrFi",
+      "DebugSetControllerTypeOverride__11BandUserMgrFi14ControllerType",
+      "GetUserWithChar__11BandUserMgrFPC8CharData"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/ViewSetting",
+    "delta": -5,
+    "function_count": 4,
+    "total_instruction_hits": 4,
+    "functions": [
+      "Refresh__20ScoreTypeViewSettingFv",
+      "FilterTypeToSym__17FilterViewSettingF10FilterType",
+      "GetBaseScoreType__20ScoreTypeViewSettingCFv",
+      "GetAlternateScoreType__20ScoreTypeViewSettingCFv"
+    ]
+  },
+  {
+    "unit": "main/system/utl/NetCacheMgr",
+    "delta": 10,
+    "function_count": 4,
+    "total_instruction_hits": 4,
+    "functions": [
+      "NeedsToDownload__12NetLoaderRefFv",
+      "Poll__12NetLoaderRefFv",
+      "IsDownloading__12NetLoaderRefFv",
+      "IsSafeToDelete__12NetLoaderRefFv"
+    ]
+  },
+  {
+    "unit": "main/system/meta/StorePackedMetadata",
+    "delta": -1621,
+    "function_count": 4,
+    "total_instruction_hits": 4,
+    "functions": [
+      "GetArtPath__16StorePackedOfferCFv",
+      "GetArtPath__19StorePackedRBNOfferCFv",
+      "GetPreviewPath__16StorePackedOfferCFv",
+      "GetPreviewPath__19StorePackedRBNOfferCFv"
+    ]
+  },
+  {
+    "unit": "main/band3/tour/Tour",
+    "delta": -157,
+    "function_count": 3,
+    "total_instruction_hits": 7,
+    "functions": [
+      "GetTourStatusForStarCount__4TourCFii",
+      "GetStarsForTourStatus__4TourCF6Symbol",
+      "LaunchQuestFilter__4TourFi6Symbol6Symbol6Symbol15TourSetlistType6Symbol6Symbol6Symbol"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/BandPatchMesh",
+    "delta": 131,
+    "function_count": 3,
+    "total_instruction_hits": 7,
+    "functions": [
+      "ConstructQuad__13BandPatchMeshFP6RndTex",
+      "AddMappingPatch__13BandPatchMeshFRQ213BandPatchMesh8MeshPairP7RndMesh",
+      "Construct__13BandPatchMeshFRQ213BandPatchMesh8MeshPairP6RndTexbbPQ213BandPatchMesh9WorkVerts"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/ChordShapeGenerator",
+    "delta": -71,
+    "function_count": 3,
+    "total_instruction_hits": 7,
+    "functions": [
+      "BuildEndCap__19ChordShapeGeneratorFP7RndMeshRQ211stlpmtx_std96map<Us,Us,Q211stlpmtx_std8less<Us>,Q211stlpmtx_std43StlNodeAlloc<Q211stlpmtx_std12pair<CUs,Us>>>iRC9Transform6SymbolQ23Hmx7Color32",
+      "BuildContourCap__19ChordShapeGeneratorFP7RndMeshRQ211stlpmtx_std96map<Us,Us,Q211stlpmtx_std8less<Us>,Q211stlpmtx_std43StlNodeAlloc<Q211stlpmtx_std12pair<CUs,Us>>>iRC9TransformRC9Transform6SymbolQ23Hmx7Color32Q23Hmx7Color32",
+      "AddVertProfile__19ChordShapeGeneratorFP7RndMeshRC9TransformfRCQ219ChordShapeGenerator8CrossSecRQ211stlpmtx_std96map<Us,Us,Q211stlpmtx_std8less<Us>,Q211stlpmtx_std43StlNodeAlloc<Q211stlpmtx_std12pair<CUs,Us>>>Q23Hmx7Color32"
+    ]
+  },
+  {
+    "unit": "main/system/beatmatch/SongParser",
+    "delta": -6,
+    "function_count": 3,
+    "total_instruction_hits": 7,
+    "functions": [
+      "_M_throw_length_error__Q211stlpmtx_std107_Vector_base<Q210SongParser13GemInProgress,Us,Q211stlpmtx_std43StlNodeAlloc<Q210SongParser13GemInProgress>>CFv",
+      "HandleRGChordMarkupStop__10SongParserFiUc",
+      "HandleRGGemStop__10SongParserFiRQ210SongParser14DifficultyInfoUci"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/BandIKEffector",
+    "delta": 189,
+    "function_count": 3,
+    "total_instruction_hits": 6,
+    "functions": [
+      "Load__14BandIKEffectorFR9BinStream",
+      "PropSync<16RndTransformable>__FR37ObjPtr<16RndTransformable,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<14BandIKEffector>__FR35ObjPtr<14BandIKEffector,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/LayerDir",
+    "delta": 20,
+    "function_count": 3,
+    "total_instruction_hits": 6,
+    "functions": [
+      "PropSync<8FilePath,Us>__FRQ211stlpmtx_std61vector<8FilePath,Us,Q211stlpmtx_std23StlNodeAlloc<8FilePath>>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<Q23Hmx6Object>__FR32ObjPtr<Q23Hmx6Object,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<6RndDir>__FR26ObjPtr<6RndDir,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/system/char/CharCuff",
+    "delta": -17,
+    "function_count": 3,
+    "total_instruction_hits": 6,
+    "functions": [
+      "Save__8CharCuffFR9BinStream",
+      "Load__8CharCuffFR9BinStream",
+      "DeformMesh__8CharCuffFP7RndMeshiP10SyncMeshCB"
+    ]
+  },
+  {
+    "unit": "main/system/movie/Movie",
+    "delta": 116,
+    "function_count": 3,
+    "total_instruction_hits": 6,
+    "functions": [
+      "Init__Q25Movie4ImplFv",
+      "Poll__5MovieFv",
+      "Draw__5MovieFv"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/BandStorePanel",
+    "delta": -8,
+    "function_count": 3,
+    "total_instruction_hits": 5,
+    "functions": [
+      "GetLoneOffer__14BandStorePanelCFb",
+      "ShortcutTextAtData__14BandStorePanelFi",
+      "ApplyShortcutProvider__14BandStorePanelFP6UIList"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/SaveLoadManager",
+    "delta": 383,
+    "function_count": 3,
+    "total_instruction_hits": 4,
+    "functions": [
+      "IsAutosaveEnabled__15SaveLoadManagerFP13LocalBandUser",
+      "DisableAutosave__15SaveLoadManagerFP13LocalBandUser",
+      "EnableAutosave__15SaveLoadManagerFP13LocalBandUser"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/BandTrack",
+    "delta": 288,
+    "function_count": 3,
+    "total_instruction_hits": 4,
+    "functions": [
+      "EnterCoda__9BandTrackFv",
+      "CodaFail__9BandTrackFb",
+      "CodaSuccess__9BandTrackFv"
+    ]
+  },
+  {
+    "unit": "main/system/meta/StorePackedMetadata",
+    "delta": 145,
+    "function_count": 3,
+    "total_instruction_hits": 4,
+    "functions": [
+      "Load__16StoreStringTableFPCc",
+      "GetDataTitle__15StorePackedSongCFv",
+      "GetUpgradeDataTitle__15StorePackedSongCFv"
+    ]
+  },
+  {
+    "unit": "main/system/meta/StorePackedMetadata",
+    "delta": 663,
+    "function_count": 3,
+    "total_instruction_hits": 4,
+    "functions": [
+      "CheckOtherTitlesExistence__FPCc",
+      "Load__21StoreRedemptionsTableFPCc",
+      "AddRedeemedOffer__21StoreRedemptionsTableFPCc"
+    ]
+  },
+  {
+    "unit": "main/band3/bandtrack/GemManager",
+    "delta": -13,
+    "function_count": 3,
+    "total_instruction_hits": 3,
+    "functions": [
+      "_M_throw_length_error__Q211stlpmtx_std51_Vector_base<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>CFv",
+      "_M_throw_length_error__Q211stlpmtx_std57_Vector_base<3Gem,Us,Q211stlpmtx_std18StlNodeAlloc<3Gem>>CFv",
+      "_M_throw_length_error__Q211stlpmtx_std53_Vector_base<Pv,Us,Q211stlpmtx_std16StlNodeAlloc<Pv>>CFv"
+    ]
+  },
+  {
+    "unit": "main/band3/meta_band/BandStorePanel",
+    "delta": 106,
+    "function_count": 3,
+    "total_instruction_hits": 3,
+    "functions": [
+      "GetRequestPrefix__14BandStorePanelCFv",
+      "LoadArt__14BandStorePanelFPCcP7UIPanel",
+      "Handle__14BandStorePanelFP9DataArrayb"
+    ]
+  },
+  {
+    "unit": "main/band3/tour/Tour",
+    "delta": -30,
+    "function_count": 3,
+    "total_instruction_hits": 3,
+    "functions": [
+      "ChooseRandomSongsForQuestFilter__4TourFi6Symbol6Symbolb",
+      "CreateAndSubmitMusicLibraryTask__4TourFi6Symbol6Symbol6Symbol6Symbolb",
+      "GetFilterName__4TourCF6Symbol"
+    ]
+  },
+  {
+    "unit": "main/system/utl/MemMgr",
+    "delta": 42,
+    "function_count": 3,
+    "total_instruction_hits": 3,
+    "functions": [
+      "MemMoreFreeBlockStats__FiRiRiRiRi",
+      "MemFreeBlockStats__FiRiRiRiRi",
+      "MemResetMinFreeBlockStats__Fi"
+    ]
+  },
+  {
+    "unit": "main/system/meta/MemcardMgr_Wii",
+    "delta": 28,
+    "function_count": 3,
+    "total_instruction_hits": 3,
+    "functions": [
+      "SetDevice__10MemcardMgrFUi",
+      "SelectDevice__10MemcardMgrFP7ProfilebPQ23Hmx6Objecti",
+      "OnSearchForDevice__10MemcardMgrFP7Profile"
+    ]
+  }
+]
