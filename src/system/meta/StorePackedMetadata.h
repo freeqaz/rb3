@@ -242,8 +242,7 @@ public:
     int unk80; // 0x80 - yet another buffer
     // end struct
     int mErrorMsg; // 0x84
-    int unk88;
-    int unk8c;
+    unsigned long long unk88; // 0x88 (ull, accessed as *(unsigned long long*)&unk88)
     unsigned short unk90;
     int unk94;
     std::list<std::pair<unsigned long long, unsigned short> > unk98;

@@ -34,25 +34,7 @@ extern "C" {
 }
 
 extern "C" int EC_GetProgress(long opId, ECProgress *progress);
-
-int DebugWaitAsyncOp(long opId) {
-    ECProgress progress;
-    int result = -0xfa9;
-    while (result == -0xfa9) {
-        Timer::Sleep(10);
-        result = EC_GetProgress(opId, &progress);
-    }
-    TheDebug << MakeString(
-        "async op %d done: %d err: %d",
-        progress.operation,
-        (long)progress.status,
-        progress.errCode
-    );
-    int ret = 0;
-    if (result == 0 && progress.errCode == 0)
-        ret = 1;
-    return ret;
-}
+int DebugWaitAsyncOp(long opId);
 
 void UpdateOfferStateFromEc(
     StoreOfferState *, const char *, int,
@@ -64,7 +46,20 @@ std::vector<int> StoreMetadataManager::mSetlistOffers;
 bool gDebugMakeAllSongsAvailable;
 bool gDebugDontRelyOnCommerceServer;
 int gStoreUseCompressedFiles;
-const char *gStoreMetadataManagerLoadStepName[12];
+const char *gStoreMetadataManagerLoadStepName[12] = {
+    "None",
+    "Init",
+    "WaitForConnect",
+    "FastEnumerate",
+    "FindIndex",
+    "ComputeRequiredSpace",
+    "UpdateTitle",
+    "DeleteOldIndex",
+    "PurchaseIndex",
+    "DownloadIndex",
+    "LoadIndex",
+    "Error",
+};
 
 class StoreIndexFileReader : public File {
 public:
@@ -171,26 +166,26 @@ bool StoreLoadPackedFile(
         file = NewFile(filename, 2);
     }
     if (file == NULL) {
-        MILO_LOG("Store: file %s is missing\n", filename);
+        TheDebug.Notify(MakeString("Store: file %s is missing\n", filename));
         return false;
     }
     int fileSize = file->Size();
     int alignedSize = (fileSize + 0x1F) & ~0x1F;
     if (fileSize > maxSize) {
-        MILO_LOG("Store: file %s is over budget (%d > %d)\n", filename, fileSize, maxSize);
+        TheDebug.Notify(MakeString("Store: file %s is over budget (%d > %d)\n", filename, fileSize, maxSize));
         delete file;
         return false;
     }
     if (compressed && gStoreUseCompressedFiles) {
         char *rawBuf = (char *)_MemAllocTemp(alignedSize, 0x20);
         if (rawBuf == NULL) {
-            MILO_LOG("Store: Failed to allocated %d byte buffer for store file %s.\n", fileSize, filename);
+            TheDebug.Notify(MakeString("Store: Failed to allocated %d byte buffer for store file %s.\n", fileSize, filename));
             delete file;
             return false;
         }
         char *decompBuf = (char *)_MemAllocTemp(maxSize, 0x20);
         if (decompBuf == NULL) {
-            MILO_LOG("Store: Failed to allocated %d byte buffer for decompressing store file %s.\n", maxSize, filename);
+            TheDebug.Notify(MakeString("Store: Failed to allocated %d byte buffer for decompressing store file %s.\n", maxSize, filename));
             _MemFree(rawBuf);
             delete file;
             return false;
@@ -208,7 +203,7 @@ bool StoreLoadPackedFile(
     } else {
         *outBuf = (char *)_MemAlloc(alignedSize, 0x20);
         if (*outBuf == NULL) {
-            MILO_LOG("Store: Failed to allocated %d byte buffer for store file %s.\n", alignedSize, filename);
+            TheDebug.Notify(MakeString("Store: Failed to allocated %d byte buffer for store file %s.\n", alignedSize, filename));
             delete file;
             return false;
         }
@@ -908,7 +903,6 @@ void StoreMetadataManager::Unload() {
     unk74 = 0;
     SetLoadingState(0);
     mFlags &= ~0x1C;
-    unk8c = 0;
     unk88 = 0;
     unk90 = 0;
     unk94 = 0;
@@ -1538,6 +1532,25 @@ void StoreMetadataManager::UpdateAvailability() {
         }
     }
     UpdateOfferOwnership();
+}
+
+int DebugWaitAsyncOp(long opId) {
+    ECProgress progress;
+    int result = -0xfa9;
+    while (result == -0xfa9) {
+        Timer::Sleep(10);
+        result = EC_GetProgress(opId, &progress);
+    }
+    TheDebug << MakeString(
+        "async op %d done: %d err: %d",
+        progress.operation,
+        (long)progress.status,
+        progress.errCode
+    );
+    int ret = 0;
+    if (result == 0 && progress.errCode == 0)
+        ret = 1;
+    return ret;
 }
 
 void StoreMetadataManager::DebugPurchase() {
