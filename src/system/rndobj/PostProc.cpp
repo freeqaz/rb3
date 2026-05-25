@@ -523,55 +523,75 @@ void RndPostProc::Interp(const RndPostProc *from, const RndPostProc *to, float p
 
     ::Interp(from->mBlendVec, to->mBlendVec, pct, mBlendVec);
 
-    ::Interp(from->mTrailDuration, to->mTrailDuration, pct, mTrailDuration);
-    ::Interp(from->mTrailThreshold, to->mTrailThreshold, pct, mTrailThreshold);
+    { float _a = from->mTrailDuration; mTrailDuration = pct * (to->mTrailDuration - _a) + _a; }
+    { float _a = from->mTrailThreshold; mTrailThreshold = pct * (to->mTrailThreshold - _a) + _a; }
 
     float noisePct = pct;
     if (from != to && from->mNoiseMidtone != to->mNoiseMidtone
         && from->mNoiseIntensity != 0.0f && to->mNoiseIntensity != 0.0f) {
         noisePct = 1.0f;
     }
-    ::Interp(from->mNoiseBaseScale, to->mNoiseBaseScale, noisePct, mNoiseBaseScale);
-    ::Interp(from->mNoiseTopScale, to->mNoiseTopScale, noisePct, mNoiseTopScale);
-    ::Interp(from->mNoiseIntensity, to->mNoiseIntensity, noisePct, mNoiseIntensity);
+    {
+        float _ay = from->mNoiseBaseScale.y, _ax = from->mNoiseBaseScale.x;
+        float _ty = to->mNoiseBaseScale.y, _tx = to->mNoiseBaseScale.x;
+        mNoiseBaseScale.y = noisePct * (_ty - _ay) + _ay;
+        mNoiseBaseScale.x = noisePct * (_tx - _ax) + _ax;
+    }
+    { float _a = from->mNoiseTopScale; mNoiseTopScale = noisePct * (to->mNoiseTopScale - _a) + _a; }
+    { float _a = from->mNoiseIntensity; mNoiseIntensity = noisePct * (to->mNoiseIntensity - _a) + _a; }
 
-    ::Interp(from->mKaleidoscopeComplexity, to->mKaleidoscopeComplexity, pct, mKaleidoscopeComplexity);
-    ::Interp(from->mKaleidoscopeSize, to->mKaleidoscopeSize, pct, mKaleidoscopeSize);
-    ::Interp(from->mKaleidoscopeAngle, to->mKaleidoscopeAngle, pct, mKaleidoscopeAngle);
-    ::Interp(from->mKaleidoscopeRadius, to->mKaleidoscopeRadius, pct, mKaleidoscopeRadius);
+    { float _a = from->mKaleidoscopeComplexity; mKaleidoscopeComplexity = pct * (to->mKaleidoscopeComplexity - _a) + _a; }
+    { float _a = from->mKaleidoscopeSize; mKaleidoscopeSize = pct * (to->mKaleidoscopeSize - _a) + _a; }
+    { float _a = from->mKaleidoscopeAngle; mKaleidoscopeAngle = pct * (to->mKaleidoscopeAngle - _a) + _a; }
+    { float _a = from->mKaleidoscopeRadius; mKaleidoscopeRadius = pct * (to->mKaleidoscopeRadius - _a) + _a; }
     mKaleidoscopeFlipUVs = pct >= 1.0f ? to->mKaleidoscopeFlipUVs : from->mKaleidoscopeFlipUVs;
 
-    ::Interp(from->mEmulateFPS, to->mEmulateFPS, pct, mEmulateFPS);
+    { float _a = from->mEmulateFPS; mEmulateFPS = pct * (to->mEmulateFPS - _a) + _a; }
 
-    ::Interp(from->mPosterLevels, to->mPosterLevels, pct, mPosterLevels);
-    ::Interp(from->mPosterMin, to->mPosterMin, pct, mPosterMin);
+    { float _a = from->mPosterLevels; mPosterLevels = pct * (to->mPosterLevels - _a) + _a; }
+    { float _a = from->mPosterMin; mPosterMin = pct * (to->mPosterMin - _a) + _a; }
 
-    ::Interp(from->mColorModulation, to->mColorModulation, pct, mColorModulation);
+    { float _a = from->mColorModulation; mColorModulation = pct * (to->mColorModulation - _a) + _a; }
 
-    ::Interp(from->mColorXfm.mBrightness, to->mColorXfm.mBrightness, pct, mColorXfm.mBrightness);
-    ::Interp(from->mColorXfm.mHue, to->mColorXfm.mHue, pct, mColorXfm.mHue);
-    ::Interp(from->mColorXfm.mSaturation, to->mColorXfm.mSaturation, pct, mColorXfm.mSaturation);
-    ::Interp(from->mColorXfm.mLightness, to->mColorXfm.mLightness, pct, mColorXfm.mLightness);
-    ::Interp(from->mColorXfm.mContrast, to->mColorXfm.mContrast, pct, mColorXfm.mContrast);
+    { float _a = from->mColorXfm.mBrightness; mColorXfm.mBrightness = pct * (to->mColorXfm.mBrightness - _a) + _a; }
+    { float _a = from->mColorXfm.mHue; mColorXfm.mHue = pct * (to->mColorXfm.mHue - _a) + _a; }
+    { float _a = from->mColorXfm.mSaturation; mColorXfm.mSaturation = pct * (to->mColorXfm.mSaturation - _a) + _a; }
+    { float _a = from->mColorXfm.mLightness; mColorXfm.mLightness = pct * (to->mColorXfm.mLightness - _a) + _a; }
+    { float _a = from->mColorXfm.mContrast; mColorXfm.mContrast = pct * (to->mColorXfm.mContrast - _a) + _a; }
     ::Interp(from->mColorXfm.mLevelInLo, to->mColorXfm.mLevelInLo, pct, mColorXfm.mLevelInLo);
     ::Interp(from->mColorXfm.mLevelInHi, to->mColorXfm.mLevelInHi, pct, mColorXfm.mLevelInHi);
     ::Interp(from->mColorXfm.mLevelOutLo, to->mColorXfm.mLevelOutLo, pct, mColorXfm.mLevelOutLo);
     ::Interp(from->mColorXfm.mLevelOutHi, to->mColorXfm.mLevelOutHi, pct, mColorXfm.mLevelOutHi);
     mColorXfm.AdjustColorXfm();
 
-    ::Interp(from->mGradientMapOpacity, to->mGradientMapOpacity, pct, mGradientMapOpacity);
-    ::Interp(from->mGradientMapIndex, to->mGradientMapIndex, pct, mGradientMapIndex);
-    ::Interp(from->mGradientMapStart, to->mGradientMapStart, pct, mGradientMapStart);
-    ::Interp(from->mGradientMapEnd, to->mGradientMapEnd, pct, mGradientMapEnd);
+    { float _a = from->mGradientMapOpacity; mGradientMapOpacity = pct * (to->mGradientMapOpacity - _a) + _a; }
+    { float _a = from->mGradientMapIndex; mGradientMapIndex = pct * (to->mGradientMapIndex - _a) + _a; }
+    { float _a = from->mGradientMapStart; mGradientMapStart = pct * (to->mGradientMapStart - _a) + _a; }
+    { float _a = from->mGradientMapEnd; mGradientMapEnd = pct * (to->mGradientMapEnd - _a) + _a; }
 
-    ::Interp(from->mRefractDist, to->mRefractDist, pct, mRefractDist);
-    ::Interp(from->mRefractScale, to->mRefractScale, pct, mRefractScale);
-    ::Interp(from->mRefractPanning, to->mRefractPanning, pct, mRefractPanning);
-    ::Interp(from->mRefractVelocity, to->mRefractVelocity, pct, mRefractVelocity);
-    ::Interp(from->mRefractAngle, to->mRefractAngle, pct, mRefractAngle);
+    { float _a = from->mRefractDist; mRefractDist = pct * (to->mRefractDist - _a) + _a; }
+    {
+        float _ay = from->mRefractScale.y, _ty = to->mRefractScale.y;
+        float _ax = from->mRefractScale.x, _tx = to->mRefractScale.x;
+        mRefractScale.x = pct * (_tx - _ax) + _ax;
+        mRefractScale.y = pct * (_ty - _ay) + _ay;
+    }
+    {
+        float _ay = from->mRefractPanning.y, _ty = to->mRefractPanning.y;
+        float _ax = from->mRefractPanning.x, _tx = to->mRefractPanning.x;
+        mRefractPanning.x = pct * (_tx - _ax) + _ax;
+        mRefractPanning.y = pct * (_ty - _ay) + _ay;
+    }
+    {
+        float _ay = from->mRefractVelocity.y, _ty = to->mRefractVelocity.y;
+        float _ax = from->mRefractVelocity.x, _tx = to->mRefractVelocity.x;
+        mRefractVelocity.x = pct * (_tx - _ax) + _ax;
+        mRefractVelocity.y = pct * (_ty - _ay) + _ay;
+    }
+    { float _a = from->mRefractAngle; mRefractAngle = pct * (to->mRefractAngle - _a) + _a; }
 
-    if (TheBandDirector->IsMusicVideo()) {
-        ::Interp(from->mMotionBlurBlend, to->mMotionBlurBlend, pct, mMotionBlurBlend);
+    if (!TheBandDirector->IsMusicVideo()) {
+        { float _a = from->mMotionBlurBlend; mMotionBlurBlend = pct * (to->mMotionBlurBlend - _a) + _a; }
         ::Interp(from->mMotionBlurWeight, to->mMotionBlurWeight, pct, mMotionBlurWeight);
     }
 
@@ -579,13 +599,23 @@ void RndPostProc::Interp(const RndPostProc *from, const RndPostProc *to, float p
         mMotionBlurBlend = sMotionBlurBlendAmount;
     }
 
-    ::Interp(from->mChromaticAberrationOffset, to->mChromaticAberrationOffset, pct, mChromaticAberrationOffset);
+    { float _a = from->mChromaticAberrationOffset; mChromaticAberrationOffset = pct * (to->mChromaticAberrationOffset - _a) + _a; }
 
     ::Interp(from->mVignetteColor, to->mVignetteColor, pct, mVignetteColor);
-    ::Interp(from->mVignetteIntensity, to->mVignetteIntensity, pct, mVignetteIntensity);
+    { float _a = from->mVignetteIntensity; mVignetteIntensity = pct * (to->mVignetteIntensity - _a) + _a; }
 
-    ::Interp(from->mFlickerTimeBounds, to->mFlickerTimeBounds, pct, mFlickerTimeBounds);
-    ::Interp(from->mFlickerModBounds, to->mFlickerModBounds, pct, mFlickerModBounds);
+    {
+        float _ay = from->mFlickerTimeBounds.y, _ax = from->mFlickerTimeBounds.x;
+        float _ty = to->mFlickerTimeBounds.y, _tx = to->mFlickerTimeBounds.x;
+        mFlickerTimeBounds.x = pct * (_tx - _ax) + _ax;
+        mFlickerTimeBounds.y = pct * (_ty - _ay) + _ay;
+    }
+    {
+        float _ay = from->mFlickerModBounds.y, _ax = from->mFlickerModBounds.x;
+        float _ty = to->mFlickerModBounds.y, _tx = to->mFlickerModBounds.x;
+        mFlickerModBounds.x = pct * (_tx - _ax) + _ax;
+        mFlickerModBounds.y = pct * (_ty - _ay) + _ay;
+    }
 
     if (from->mHallOfTimeRate != 0.0f) {
         mHallOfTimeType = from->mHallOfTimeType;
