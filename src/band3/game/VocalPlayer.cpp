@@ -783,7 +783,8 @@ void VocalPlayer::UpdateMicDisplay() {
         bool noLongerHasMic1 = noMic1 && hadMic1;
         bool noLongerHasMic2 = noMic2 && hadMic2;
         bool b15 = numMics == 0 || noLongerHasMic0 || noLongerHasMic1 || noLongerHasMic2;
-        if (!(b15 & GetUser()->IsLocal())) {
+        bool combined = b15 & GetUser()->IsLocal();
+        if (!combined) {
             pTrackDir->ShowMicDisplay(false);
         } else {
             if (mVocalParts.size() == 1) {
