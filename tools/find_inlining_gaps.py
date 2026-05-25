@@ -244,14 +244,98 @@ def find_qualified_call_rows(args, report: dict, unit_map: dict[str, str]) -> li
     return rows
 
 
+# Helpers that masquerade as "noise" — these are always inlined by the
+# compiler (smart-pointer ops, simple accessors). Flagging mismatches on
+# these would drown real signal. Detected by mangled-name prefix.
+_BL_NOISE_PREFIXES = (
+    "__rf__",   # operator-> on smart pointers
+    "__cl__",   # operator()
+    "__as__",   # operator=
+    "__ne__",   # operator!=
+    "__eq__",   # operator==
+)
+# Compiler-emitted save/restore helpers: not user code, frame-size driven.
+_BL_NOISE_EXACT = {
+    *(f"_savegpr_{i}" for i in range(14, 32)),
+    *(f"_restgpr_{i}" for i in range(14, 32)),
+    *(f"_savefpr_{i}" for i in range(14, 32)),
+    *(f"_restfpr_{i}" for i in range(14, 32)),
+}
+
+
+def _bl_multiset(bls: list[str]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for b in bls:
+        if b in _BL_NOISE_EXACT:
+            continue
+        if any(b.startswith(p) for p in _BL_NOISE_PREFIXES):
+            continue
+        out[b] = out.get(b, 0) + 1
+    return out
+
+
+def _bl_diff(target_bls: list[str], base_bls: list[str]
+             ) -> tuple[dict[str, int], dict[str, int]]:
+    """Return (only_in_target_with_count, only_in_base_with_count) — counts
+    are how many extra calls one side has beyond the other."""
+    tc = _bl_multiset(target_bls)
+    bc = _bl_multiset(base_bls)
+    only_target = {k: tc[k] - bc.get(k, 0) for k in tc if tc[k] > bc.get(k, 0)}
+    only_base = {k: bc[k] - tc.get(k, 0) for k in bc if bc[k] > tc.get(k, 0)}
+    return only_target, only_base
+
+
+def _bl_rows(args, report: dict, unit_map: dict[str, str],
+             which: str) -> list[dict]:
+    """Common impl for both bl modes. `which` is 'missing-inline' (extra bls
+    on our side; target inlines) or 'missing-noinline' (extra bls on target
+    side; ours inlines)."""
+    rows = []
+    for md, _asm, wanted in iter_wanted(args, report):
+        sp = md["source_path"]
+        objdiff_unit = unit_map.get(sp)
+        if not objdiff_unit:
+            continue
+        for fn_mangled, info in wanted.items():
+            d = per_fn_objdiff(objdiff_unit, fn_mangled)
+            if d is None:
+                continue
+            _, target_bls = extract_side_symbols(d, "target")
+            _, base_bls = extract_side_symbols(d, "base")
+            only_t, only_b = _bl_diff(target_bls, base_bls)
+            extra = only_b if which == "missing-inline" else only_t
+            if not extra:
+                continue
+            annotated = [{"ref": k, "extra_count": v}
+                         for k, v in sorted(extra.items())]
+            strong = len(annotated)
+            if args.strict and strong == 0:
+                continue
+            rows.append({
+                "mode": which,
+                "unit": sp,
+                "fn": fn_mangled,
+                "demangled": info["demangled"],
+                "match": info["match"],
+                "size": info["size"],
+                "refs": annotated,
+                "strong_count": strong,
+            })
+    return rows
+
+
 def find_missing_inline_rows(args, report: dict, unit_map: dict[str, str]) -> list[dict]:
-    """Phase 2 stub: target inlines, ours has `bl X`."""
-    return []
+    """Mode: missing-inline. Ours has `bl X` calls that target doesn't —
+    target inlines X but ours calls it out-of-line. Fix: declare X `inline`
+    in its header. See feedback_inline_container_methods.md."""
+    return _bl_rows(args, report, unit_map, "missing-inline")
 
 
 def find_missing_noinline_rows(args, report: dict, unit_map: dict[str, str]) -> list[dict]:
-    """Phase 2 stub: target has `bl X`, ours inlines."""
-    return []
+    """Mode: missing-noinline. Target has `bl X` calls that ours doesn't —
+    ours inlines X but target calls it out-of-line. Fix: __declspec(noinline)
+    on X (or strip inline). See feedback_cw_noinline_pattern.md."""
+    return _bl_rows(args, report, unit_map, "missing-noinline")
 
 
 MODE_FUNCS = {
@@ -319,9 +403,14 @@ def main(argv: list[str]) -> int:
         print(f"{r['match']:6.2f}%  {r['size']:>5}b  {tag}  {r['unit']}")
         print(f"        fn: {r['demangled'] or r['fn']}")
         for ann in r["refs"]:
-            v = ann.get("in_ours_fn")
-            mark = "MISSING" if v is False else ("in-fn" if v is True else "unknown")
-            print(f"        {mark:>7}  {ann['ref']}")
+            if "extra_count" in ann:
+                # bl-mode row: how many extra bls one side has
+                side = "ours" if r["mode"] == "missing-inline" else "target"
+                print(f"        +{ann['extra_count']} bl in {side}  {ann['ref']}")
+            else:
+                v = ann.get("in_ours_fn")
+                mark = "MISSING" if v is False else ("in-fn" if v is True else "unknown")
+                print(f"        {mark:>7}  {ann['ref']}")
         print()
     return 0
 
