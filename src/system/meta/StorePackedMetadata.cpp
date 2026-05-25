@@ -1133,13 +1133,14 @@ extern "C" {
     int EC_PurchaseDataTitle(unsigned long long, long, int);
     int EC_SetParameter_pcpw(const char *, const char *);
     int EC_GetCachedBalance(int *);
-    // EC_DeleteContents is declared in sdk/RVL_SDK/revolution/ec/ec.h (3 params)
     int CheckRequestedDownloadSize__14WiiCommerceMgrFv(WiiCommerceMgr *);
-    void CM_CNTSDGetUserAvailableAreaRSO(unsigned long *, unsigned long *, unsigned long *, unsigned long *);
-    int CM_CNTSDCachePopRSO(long);
-    void CM_CNTSDDeleteBackupRSO(unsigned long long, unsigned short);
     extern char gUsersPIN[];
 }
+
+// C++ mangled - use namespace-less names so the compiler mangles them naturally.
+void CM_CNTSDGetUserAvailableAreaRSO(unsigned long *, unsigned long *, unsigned long *, unsigned long *);
+int CM_CNTSDCachePopRSO(long);
+void CM_CNTSDDeleteBackupRSO(unsigned long long, unsigned short);
 
 void StoreMetadataManager::SetLoadingState(int state) {
     if (mLoadingState == state) return;

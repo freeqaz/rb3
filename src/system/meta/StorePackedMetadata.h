@@ -50,6 +50,7 @@ public:
 #pragma pack(1)
 class StoreVersionHeader {
 public:
+    StoreVersionHeader() : mVersion(1), mBuildNumber(0), mCompressed(0) {}
     bool LoadFile(const char *);
 
     unsigned char mVersion; // 0x0
