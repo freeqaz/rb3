@@ -1378,9 +1378,9 @@ void SaveLoadManager::HandleEventResponse(LocalUser *localUser, int choiceIdx) {
     case (State)0x61:
         SetState((State)0x42);
         break;
+    default:
     case (State)0x66:
     case (State)0x67:
-    default:
         MILO_FAIL(
             "Unhandled UIComponentSelectDoneMsg from choice index %i in state %d and mode %d\n",
             (int)choiceIdx, (int)mState, (int)mMode

@@ -628,6 +628,7 @@ void GemTrack::DrawTrackElements(int from_tick, int to_tick) {
 void GemTrack::Poll(float f) {
     int topTick;
     int bottomTick;
+    int kbd;
     Player *player = GetPlayer();
     if (player) {
         Track::Poll(f);
@@ -658,7 +659,7 @@ void GemTrack::Poll(float f) {
                 mUpdateShifting = false;
                 sUpdateShifting = false;
             }
-            int kbd = mTrackConfig.IsKeyboardTrack();
+            kbd = (int)mTrackConfig.IsKeyboardTrack();
             bool shifting = kbd & ((GemTrackDir *)kbd)->KeyShifting();
             if (shifting) {
                 CheckShifts(f, topTick);

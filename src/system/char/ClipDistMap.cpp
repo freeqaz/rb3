@@ -116,6 +116,52 @@ void ClipDistMap::Array2d::Resize(int w, int h) {
     mData = (float *)new uint[h * w];
 }
 
+void ClipDistMap::GenerateDistEntry(
+    CharBonesMeshes &meshes,
+    DistEntry &entry,
+    float beat,
+    CharClip *clip,
+    const std::vector<RndTransformable *> &transes
+) {
+    if (entry.bones.size() != 0)
+        return;
+
+    entry.beat = beat;
+
+    float quarterBlend = mBlendWidth * 0.25f;
+    float facingBeat = entry.beat + 0.5f * quarterBlend;
+    void *channel = clip->GetChannel("bone_facing.rotz");
+    for (int k = 0; k < 4; k++) {
+        entry.facing[k] = 0.0f;
+        if (channel != NULL) {
+            clip->EvaluateChannel(&entry.facing[k], channel, facingBeat);
+        }
+        entry.facing[k] = LimitAng(entry.facing[k]);
+        facingBeat += quarterBlend;
+    }
+
+    entry.bones.resize(mNumSamples * transes.size());
+    float step = mBlendWidth / (float)mNumSamples;
+    float sampleBeat = entry.beat + 0.5f * step;
+
+    int totalIdx = 0;
+    for (int sample = 0; sample < mNumSamples; sample++) {
+        CharUtlResetTransform(clip->GetResource());
+        meshes.Zero();
+        clip->ScaleAdd(meshes, sampleBeat, 1.0f, 0.0f);
+        meshes.PoseMeshes();
+        for (unsigned int t = 0; t < transes.size(); t++) {
+            Transform &xfm = transes[t]->WorldXfm();
+            Vector3 &bone = entry.bones[totalIdx];
+            bone.x = xfm.v.x;
+            bone.y = xfm.v.y;
+            bone.z = xfm.v.z;
+            totalIdx++;
+        }
+        sampleBeat += step;
+    }
+}
+
 DECOMP_FORCEACTIVE(ClipDistMap, "bone_facing.rotz")
 
 #pragma push

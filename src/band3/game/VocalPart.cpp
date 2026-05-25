@@ -811,7 +811,7 @@ void VocalPart::ScoreSinger(
     float &o_rPitchDiff
 ) {
     MILO_ASSERT(o_rCache.GetHitPercentage() == 0.0f, 0x2C3);
-    o_rCache.unk8 = Min(mPhraseScoreMax, unk38);
+    o_rCache.unk8 = Min(unk38, mPhraseScoreMax);
     o_rPitchDiff = kInvalidPitch__11VocalPlayer;
     if (arg1 == 0.0f && NoteAt__13VocalNoteListCFf(mVocalNoteList, ms) == 0) {
         o_rCache.unk0 = 1.0f;
@@ -820,13 +820,13 @@ void VocalPart::ScoreSinger(
     }
     int beginNote = -1;
     int endNote = -1;
+    int noteMatched;
     float bestPitch = 0.0f;
     float pitch = arg1;
     int octaves = arg4;
-    GetNoteRange(ms, beginNote, endNote);
     float sloppyArg;
     bool talkyHit;
-    int noteMatched;
+    GetNoteRange(ms, beginNote, endNote);
     float score = GetBestHit(
         ms, beginNote, endNote, i_pTalkyMatcher, pitch, arg3, octaves, noteMatched,
         bestPitch, sloppyArg, talkyHit

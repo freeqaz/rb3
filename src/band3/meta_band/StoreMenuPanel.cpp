@@ -88,8 +88,8 @@ void StoreMenuPanel::Poll() {
 }
 
 const char *StoreMenuPanel::GetCrumbText() const {
-    const char *result = "";
     int limit = mCurrentMenuIx + 1;
+    const char *result = "";
     for (int i = 1; i < limit; i++) {
         const char *title = mMenuStack[i]->GetTitle();
         if (gNullStr != title && strlen(title) != 0) {

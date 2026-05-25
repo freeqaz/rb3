@@ -373,7 +373,7 @@ void BandTrack::StopDeploy() {
     if (mStopDeployTrig)
         mStopDeployTrig->Trigger();
     BandCrowdMeter *meter = GetCrowdMeter();
-    if (meter && mTrackIdx > -1)
+    if (meter && mTrackIdx >= 0)
         meter->StopDeploy(mTrackIdx);
     if (mStreakMeter) {
         if (mParent && mParent->HasPlayer())

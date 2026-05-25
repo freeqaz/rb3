@@ -83,6 +83,13 @@ static DataNode OnMovieSetTrack(DataArray *arr) {
 
 std::list<Movie::Impl *> Movie::openMovieFiles;
 
+float gsw;
+float gsh;
+float gmw;
+float gmh;
+float gdw;
+float gdh;
+
 Movie::Movie() {
     mImpl = new Movie::Impl();
     MILO_ASSERT(mImpl, 0x647);
@@ -249,7 +256,7 @@ float Movie::Impl::MsPerFrame() const {
     return ms;
 }
 
-int Movie::Impl::NextFrame() {
+void Movie::Impl::NextFrame() {
     bool ok = true;
     if (mThreadId != (unsigned int)OSGetCurrentThread()) {
         unsigned int tid = mThreadId;
@@ -263,7 +270,6 @@ int Movie::Impl::NextFrame() {
     }
     MILO_ASSERT(ok, 0x2D0);
     BinkNextFrame(mBink);
-    return 0;
 }
 
 int Movie::Impl::GetFrame() const {
@@ -386,9 +392,6 @@ Movie::Impl::~Impl() {
     }
     MILO_ASSERT(ok, 0x1CD);
     End();
-    if (mDiscContentionMap.size() != 0) {
-        mDiscContentionMap.clear();
-    }
 }
 
 bool Movie::Impl::Ready() const {
@@ -429,8 +432,9 @@ const char *Movie::Impl::MovieLoader::StateName() const {
 }
 
 void Movie::Impl::MovieLoader::PollLoading() {
-    while (!TheLoadMgr.CheckSplit()) {
+    while (true) {
         (this->*mOpenState)();
+        if (TheLoadMgr.CheckSplit()) return;
         Loader *front = TheLoadMgr.GetFirstLoading();
         bool atFront;
         if (front == 0) {
@@ -605,7 +609,7 @@ void Movie::Impl::SharedFinishOpen(bool unpause) {
     if (sActivePending <= 0) {
         std::vector<Impl *> readyMovies;
         std::vector<BINK *> readyBinks;
-        for (int i = 0; i < (int)sActiveMovies.size(); i++) {
+        for (int i = 0; i < sActiveMovies.size(); i++) {
             Impl *cur = sActiveMovies[i];
             if (cur->mMovieBuffers == NULL) {
                 readyMovies.push_back(cur);
@@ -615,7 +619,7 @@ void Movie::Impl::SharedFinishOpen(bool unpause) {
         MovieInternalBuffers *buffers = MovieInternalBuffers::New(readyBinks);
         if (buffers != NULL) {
             buffers->mPendingBlits = readyMovies.size();
-            for (int i = 0; i < (int)readyMovies.size(); i++) {
+            for (int i = 0; i < readyMovies.size(); i++) {
                 Impl *cur = readyMovies[i];
                 cur->mMovieBuffers = buffers;
                 cur->FinishOpen();
@@ -660,6 +664,12 @@ void Movie::Impl::SetRect() {
     mRectY1 = -dy;
     mRectX2 = h - dx;
     mRectY2 = w - dy;
+    gsw = screenW;
+    gsh = screenH;
+    gmw = h;
+    gmh = w;
+    gdw = dx;
+    gdh = dy;
 }
 
 void Movie::Impl::Begin(
@@ -755,47 +765,48 @@ int Movie::Impl::MovieOpen(const char *file, unsigned int flags) {
         if (mBink != NULL) {
             openMovieFiles.push_back(this);
         } else {
-            String fn = mFilename;
-            MILO_WARN("BinkOpen '%s' error: %s\n", fn, BinkGetError());
+            MILO_WARN("BinkOpen '%s' error: %s\n", mFilename, BinkGetError());
         }
     }
     return 0;
 }
 
 bool Movie::Impl::CheckOpen(bool b) {
-    if (!mLoading) return false;
-    if (mLoader != NULL) {
-        MILO_ASSERT(!mPreloadBuf, 0x3CB);
-        if (!mLoader->IsLoaded()) return true;
-        mLoading = false;
-        mPreloadBuf = (char *)((FileLoader *)mLoader)->GetBuffer(NULL);
-        mPreloadBufLen = ((FileLoader *)mLoader)->GetSize();
-        if (mLoader != NULL) delete mLoader;
-        mLoader = NULL;
-        if (mPreloadBuf == NULL) {
+    if (mLoading) {
+        if (mLoader != NULL) {
+            MILO_ASSERT(!mPreloadBuf, 0x3CB);
+            if (!mLoader->IsLoaded()) return true;
+            mLoading = false;
+            mPreloadBuf = (char *)((FileLoader *)mLoader)->GetBuffer(NULL);
+            mPreloadBufLen = ((FileLoader *)mLoader)->GetSize();
+            if (mLoader != NULL) delete mLoader;
+            mLoader = NULL;
+            if (mPreloadBuf == NULL) {
+                SharedFinishOpen(b);
+                End();
+                return false;
+            }
+            if (strncmp(mPreloadBuf, "BIKi", 4) == 0) {
+                EndianSwapBuffer(mPreloadBuf, mPreloadBufLen);
+            }
+            MovieOpen(mPreloadBuf, 0x4000400);
             SharedFinishOpen(b);
-            End();
-            return false;
-        }
-        if (strncmp(mPreloadBuf, "BIKi", 4) == 0) {
-            EndianSwapBuffer(mPreloadBuf, mPreloadBufLen);
-        }
-        MovieOpen(mPreloadBuf, 0x4000400);
-        SharedFinishOpen(b);
-    } else if (mLoader2 != NULL) {
-        if (mBink != NULL) return false;
-        if (!mLoader2->IsLoaded()) return true;
-        mLoading = false;
-        DataArray *videos = SystemConfig()->FindArray(Symbol("videos"), false);
-        if (videos != NULL) {
-            DataArray *stream_begin = videos->FindArray(Symbol("stream_begin"), false);
-            if (stream_begin != NULL) {
-                stream_begin->ExecuteScript(1, NULL, NULL, 1);
+        } else if (mLoader2 != NULL) {
+            if (mBink == NULL) {
+                if (!mLoader2->IsLoaded()) return true;
+                mLoading = false;
+                DataArray *videos = SystemConfig()->FindArray(Symbol("videos"), false);
+                if (videos != NULL) {
+                    DataArray *stream_begin = videos->FindArray(Symbol("stream_begin"), false);
+                    if (stream_begin != NULL) {
+                        stream_begin->ExecuteScript(1, NULL, NULL, 1);
+                    }
+                }
+                UsingCD();
+                MovieOpen(mFilename.c_str(), 0x2000400);
+                SharedFinishOpen(b);
             }
         }
-        UsingCD();
-        MovieOpen(mFilename.c_str(), 0x2000400);
-        SharedFinishOpen(b);
     }
     return false;
 }
@@ -817,7 +828,7 @@ void Movie::Impl::FinishOpen() {
         MILO_WARN("BinkOpen '%s' error: %s\n", mFilename, BinkGetError());
         return;
     }
-    mSoundEnabled = mSoundEnabled || (mMovieBuffers->mPendingBlits > 1);
+    mSoundEnabled = mSoundEnabled | (mMovieBuffers->mPendingBlits > 1);
     BinkSetSoundOnOff(mBink, !mSoundEnabled);
     BINKSUMMARY summary;
     BinkGetSummary(mBink, &summary);
@@ -825,8 +836,8 @@ void Movie::Impl::FinishOpen() {
     unsigned int wMod = summary.Width & 0xF;
     unsigned int hMod = summary.Height & 0xF;
     if (wMod != 0 || hMod != 0) {
-        unsigned int padW = wMod != 0 ? summary.Width + (0x10 - wMod) : summary.Width;
-        unsigned int padH = hMod != 0 ? summary.Height + (0x10 - hMod) : summary.Height;
+        unsigned int padW = summary.Width + (wMod != 0 ? (0x10 - wMod) : 0u);
+        unsigned int padH = summary.Height + (hMod != 0 ? (0x10 - hMod) : 0u);
         MILO_FAIL(
             "Bink movie %s must have multiples of 16 for its width and height.\nTry changing from %d x %d to %d x %d.\n",
             mFilename.c_str(),
@@ -881,8 +892,9 @@ void Movie::Impl::DoFrame() {
     }
     if (mTimeCallback != NULL) {
         float dt = mTimeCallback();
-        if (dt == 0.0f) {
-            SetPaused(true);
+        bool atZ = (dt == 0.0f);
+        if (atZ) {
+            SetPaused(atZ);
             return;
         }
     }
@@ -913,9 +925,9 @@ void Movie::Impl::DiscContentionPublish() {
         if (!b) ok = false;
     }
     MILO_ASSERT(ok, 0x68);
-    String list;
-    int count = 0;
     bool first = true;
+    int count = 0;
+    String list;
     for (std::map<void *, String>::iterator it = mDiscContentionMap.begin();
          it != mDiscContentionMap.end();
          ++it) {
@@ -925,10 +937,8 @@ void Movie::Impl::DiscContentionPublish() {
         count++;
     }
     if (count != 0) {
-        MILO_LOG("Streaming Bink Thrashed with %d files: (%s)\n", count, list);
-        if (!mDiscContentionMap.empty()) {
-            mDiscContentionMap.clear();
-        }
+        TheDebug.Notify(MakeString("Streaming Bink Thrashed with %d files: (%s)\n", count, list));
+        mDiscContentionMap.clear();
     }
 }
 

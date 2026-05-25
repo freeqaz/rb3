@@ -654,8 +654,8 @@ bool StorePageTable::Load(const char *cc) {
     );
     if (!ret)
         return ret;
-    mNumPages = 0;
     char **offsets = (char **)dataStart;
+    mNumPages = 0;
     for (int i = 0; i < mNumOffsets; i++) {
         if (offsets[i] != NULL)
             mNumPages++;
@@ -859,7 +859,9 @@ bool StoreMarqueeTable::Load(const char *cc) {
 
 StorePageTable::~StorePageTable() {
     mPageLookup.clear();
-    delete[] mPages;
+    if (mPages) {
+        delete[] mPages;
+    }
     if (mBuffer)
         _MemFree(mBuffer);
 }
@@ -964,9 +966,9 @@ void StorePackedRanks::EndianFix() {
 void StorePackedPage::EndianFix() {
     unsigned char *b = (unsigned char *)this;
     unsigned char b6 = b[6];
+    unsigned char b7 = b[7];
     mHasOffers = b6 >> 4;
     mDefaultSort = b6;
-    unsigned char b7 = b[7];
     unk6p0 = b7 >> 4;
     unk6p1 = b7;
 }
@@ -986,10 +988,11 @@ bool StoreVersionHeader::LoadFile(const char *cc) {
         return false;
     unsigned char *data = (unsigned char *)buffer;
     mVersion = data[0];
-    unsigned int hi = data[1] << 8;
-    mBuildNumber = hi | data[2];
+    unsigned int build = data[2];
+    build |= (unsigned int)data[1] << 8;
+    mBuildNumber = build;
     mCompressed = data[3];
-    gStoreUseCompressedFiles = data[3];
+    gStoreUseCompressedFiles = mCompressed;
     return true;
 }
 
@@ -1230,6 +1233,8 @@ void StoreMetadataManager::SetLoadingState(int state) {
         if (RequestStoreIndex__14WiiCommerceMgrFPQ23Hmx6Object(&TheWiiCommerceMgr, NULL) == 0) {
             mErrorMsg = 2;
             SetLoadingState(11);
+        } else {
+            SetLoadingState(5);
         }
         return;
     }
@@ -1332,8 +1337,8 @@ void StoreContentStateCache::PollUpdate() {
 void StoreContentStateCache::UpdateContentStateFromFastEnum() {
     if (TheWiiCommerceMgr.unk2110 != 0) {
         unsigned long long titleId = TheWiiCommerceMgr.mTitleIds[mIndexInConfig];
-        std::map<unsigned long long, StoreTitleContentState *>::iterator it = find(titleId);
         StoreTitleContentState *state;
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it = find(titleId);
         if (it == end()) {
             state = (StoreTitleContentState *)operator new(0x1000);
             if (state) memset(state, 0, 0x1000);
@@ -1341,25 +1346,23 @@ void StoreContentStateCache::UpdateContentStateFromFastEnum() {
         } else {
             state = (*it).second;
         }
-        unsigned char *base = (unsigned char *)state;
         char *catalog = (char *)&TheWiiCommerceMgr + 0x110;
         for (unsigned long i = 0; i < TheWiiCommerceMgr.unk2110; i++) {
             unsigned short slot = *(unsigned short *)(catalog + 4);
-            unsigned char *entry = base + (slot << 3);
-            unsigned char flag0 = ((unsigned char *)catalog)[0];
+            unsigned char *entry = (unsigned char *)state + (slot << 3);
             *entry = 0;
-            if (flag0 & 1) {
+            if (*(unsigned int *)catalog & 1) {
                 *entry |= 1;
-            } else if (TheWiiContentMgr.Contains(titleId, *(int *)(catalog + 4))) {
+            } else if (TheWiiContentMgr.Contains(titleId, slot)) {
                 *entry |= 1;
             }
-            if (flag0 & 2) *entry |= 2;
+            if (*(unsigned int *)catalog & 2) *entry |= 2;
             *entry |= 4;
             *(int *)(entry + 4) = *(int *)(catalog + 0xC);
             catalog += 0x10;
         }
     }
-    mTitleIdx += 1;
+    mIndexInConfig += 1;
 }
 
 void StoreMetadataManager::MarkPurchased(ECContentCatalogInfo *info) {
@@ -1386,8 +1389,8 @@ void StoreMetadataManager::MarkPurchased(ECContentCatalogInfo *info) {
 int StoreMetadataManager::SongStateFlags(const StorePackedSong *song) {
     unsigned long long dataTitle =
         WiiCommerceMgr::MakeDataTitleId(&song->unk6);
-    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(dataTitle);
     StoreTitleContentState *state;
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(dataTitle);
     if (it == unk58.end()) {
         state = (StoreTitleContentState *)operator new(0x1000);
         if (state) memset(state, 0, 0x1000);
@@ -1396,16 +1399,17 @@ int StoreMetadataManager::SongStateFlags(const StorePackedSong *song) {
         state = (*it).second;
     }
     unsigned short rawA = *(unsigned short *)((char *)song + 0xa);
-    unsigned short unka = song->unka;
+    char unkc = song->unkc;
+    unsigned short unka = (rawA >> 7) & 0x1FF;
     unsigned char flags =
         ((unsigned char *)state)[(rawA >> 4) & 0xFF8]
-        & ((unsigned char *)state)[(unka << 3) + 8];
-    if (song->unkc != 0) {
+        & ((unsigned char *)state)[(unka + 1) * 8];
+    if (unkc != 0) {
         unsigned short upgradeIdx = song->unk10;
         unsigned long long upgradeTitle =
             WiiCommerceMgr::MakeDataTitleId(&song->unkc);
-        std::map<unsigned long long, StoreTitleContentState *>::iterator it2 = unk58.find(upgradeTitle);
         StoreTitleContentState *state2;
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it2 = unk58.find(upgradeTitle);
         if (it2 == unk58.end()) {
             state2 = (StoreTitleContentState *)operator new(0x1000);
             if (state2) memset(state2, 0, 0x1000);
@@ -1424,13 +1428,13 @@ void StoreMetadataManager::UpdateOfferPrices() {
     for (unsigned long i = 0; i < TheWiiCommerceMgr.mNumCatalogInfos; i++) {
         ECContentCatalogInfo *info = &TheWiiCommerceMgr.mCatalogInfos[i];
         if (info->licensePricings == NULL) {
-            TheDebug << MakeString(
+            TheDebug.Notify(MakeString(
                 "Store: ECContentCatalogInfo %d has null licensePricings",
                 (int)i
-            );
+            ));
             continue;
         }
-        int newPrice = (int)atoi((const char *)&info->licensePricings->price);
+        int newPrice = (int)atoi((const char *)info->licensePricings + 4);
         const char *offerId = GetAttributeStr(info, "offer_id");
         if (offerId == NULL) continue;
         int idx;
@@ -1450,17 +1454,17 @@ void StoreMetadataManager::UpdateOfferPrices() {
                 }
                 unsigned long long expected =
                     WiiCommerceMgr::MakeDataTitleId(&firstSong->unkc);
-                unsigned short expectedIdx = (firstSong->unk10 >> 7) & 0x1FF;
+                unsigned short expectedIdx = firstSong->unk10;
                 if (info->titleId == expected && info->nIndexes == 1
                     && *info->indexes == expectedIdx) {
-                    mRbnOfferTable->mBufferNewRelease[idx].mPrice =
+                    mRbnOfferTable->mBufferNewRelease[idx].unk2 =
                         (unsigned short)newPrice;
                 } else {
-                    TheDebug << MakeString(
+                    TheDebug.Notify(MakeString(
                         "Store: upgrade offer %s says upgrade is at %llx %d, but store index data says %llx %d",
                         offerId, info->titleId, *info->indexes,
                         expected, expectedIdx
-                    );
+                    ));
                 }
             } else {
                 UpdateOfferStateFromEc(
@@ -1480,17 +1484,17 @@ void StoreMetadataManager::UpdateOfferPrices() {
             }
             unsigned long long expected =
                 WiiCommerceMgr::MakeDataTitleId(&firstSong->unkc);
-            unsigned short expectedIdx = (firstSong->unk10 >> 7) & 0x1FF;
+            unsigned short expectedIdx = firstSong->unk10;
             if (info->titleId == expected && info->nIndexes == 1
                 && *info->indexes == expectedIdx) {
-                mOfferTable->mBufferNewRelease[idx].mPrice =
+                mOfferTable->mBufferNewRelease[idx].unk2 =
                     (unsigned short)newPrice;
             } else {
-                TheDebug << MakeString(
+                TheDebug.Notify(MakeString(
                     "Store: upgrade offer %s says upgrade is at %llx %d, but store index data says %llx %d",
                     offerId, info->titleId, *info->indexes,
                     expected, expectedIdx
-                );
+                ));
             }
         } else {
             UpdateOfferStateFromEc(
@@ -1499,9 +1503,11 @@ void StoreMetadataManager::UpdateOfferPrices() {
             );
         }
     }
-    mFlags &= ~0x10;
     if (*(unsigned int *)((char *)&TheWiiCommerceMgr + 0x211C)
         != *(unsigned int *)((char *)&TheWiiCommerceMgr + 0x2118)) {
+        mFlags &= ~0x10;
+    } else {
+        mFlags &= ~0x10;
         if (TheWiiCommerceMgr.RequestOffers(this) != 0) {
             mFlags |= 0x10;
         }
@@ -1512,8 +1518,8 @@ void StoreMetadataManager::UpdateAvailability() {
     if (!(mFlags & 8)) return;
     for (unsigned long i = 0; i < TheWiiCommerceMgr.mTitleIdsNum; i++) {
         unsigned long long titleId = TheWiiCommerceMgr.mTitleIds[i];
-        std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
         StoreTitleContentState *state;
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
         if (it == unk58.end()) {
             state = (StoreTitleContentState *)operator new(0x1000);
             if (state) memset(state, 0, 0x1000);
@@ -1575,22 +1581,14 @@ void StoreMetadataManager::DebugPurchase() {
 
 StorePage *StoreMetadataManager::LoadDynamicPage(DataArray *arr) {
     if (unk7c == 0) {
-        StorePackedPage *page = (StorePackedPage *)operator new(9);
-        unk7c = (int)page;
-        ((unsigned short *)page)[0] = 0xFFFF;
-        ((unsigned short *)page)[1] = 0;
-        ((unsigned short *)page)[2] = 0;
-        // bitfield init at offset 6
-        unsigned short b6 = ((unsigned short *)page)[3];
-        b6 = (b6 & 0xFFFF00FF);
-        ((unsigned short *)page)[3] = b6;
-        b6 = ((unsigned short *)page)[3];
-        b6 = (b6 & ~0xF0) | 0x20;
-        ((unsigned short *)page)[3] = b6;
-        b6 = ((unsigned short *)page)[3];
-        b6 = b6 | 8;
-        ((unsigned short *)page)[3] = b6;
-        ((unsigned char *)page)[8] = 0;
+        unk7c = (int)operator new(9);
+        ((unsigned short *)unk7c)[0] = 0xFFFF;
+        ((unsigned short *)unk7c)[1] = 0;
+        ((unsigned short *)unk7c)[2] = 0;
+        ((unsigned short *)unk7c)[3] &= 0x00FF;
+        ((StorePackedPage *)unk7c)->mDefaultSort = 2;
+        ((StorePackedPage *)unk7c)->mHasOffers = 1;
+        ((StorePackedPage *)unk7c)->mNumOffers = 0;
     }
     if (arr == NULL) {
         return (StorePage *)&unk78;
@@ -1740,14 +1738,12 @@ void StoreMetadataManager::PollLoading() {
         if (TheWiiContentMgr.mMode == 0) {
             int rcpop = CM_CNTSDCachePopRSO(-1);
             if (rcpop != 0) {
-                FormatString fmt("Store: delete index by popping tmpcache failed: %d\n");
-                TheDebug.Fail(MakeString(fmt.Str(), rcpop));
+                TheDebug.Fail(MakeString("Store: delete index by popping tmpcache failed: %d\n", (long)rcpop));
             }
         }
         int rcdel = EC_DeleteContents(*(unsigned long long *)&unk88, &unk90, 1);
         if (rcdel != 0 && TheWiiContentMgr.mMode != 0) {
-            FormatString fmt("Store: delete index by EC_DeleteContents failed: %d\n");
-            TheDebug.Fail(MakeString(fmt.Str(), rcdel));
+            TheDebug.Fail(MakeString("Store: delete index by EC_DeleteContents failed: %d\n", (long)rcdel));
         }
         CM_CNTSDDeleteBackupRSO(*(unsigned long long *)&unk88, unk90);
         mFlags |= 8;
@@ -1786,7 +1782,7 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
             }
             SetLoadingState(0xB);
             if (mFlags & 0x10) {
-                StorePanel::Instance()->HandleType(msg.Data());
+                ((Hmx::Object *)StorePanel::Instance())->HandleType(msg.Data());
             }
         }
     } else if (mFlags & 0x10) {
@@ -1797,7 +1793,7 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
             ((StoreContentStateCache *)&unk58)->UpdateContentStateFromFastEnum();
             break;
         case 4: {
-            unsigned long a = 0, b = 0, c = 0, d = 0;
+            unsigned long a, b, c, d;
             CM_CNTSDGetUserAvailableAreaRSO(&a, &b, &c, &d);
             TheDebug << MakeString(
                 "CNTSDGetUserAvailableArea(%d, %d, %d, %d);\n", a, b, c, d
@@ -1813,8 +1809,8 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
         case 8: {
             unsigned long long titleId = *(unsigned long long *)&unk88;
             unsigned short idx = unk90;
-            std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
             StoreTitleContentState *state;
+            std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
             if (it == unk58.end()) {
                 state = (StoreTitleContentState *)operator new(0x1000);
                 if (state) memset(state, 0, 0x1000);
@@ -1851,8 +1847,8 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
         case 9: {
             unsigned long long titleId = *(unsigned long long *)&unk88;
             unsigned short idx = unk90;
-            std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
             StoreTitleContentState *state;
+            std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
             if (it == unk58.end()) {
                 state = (StoreTitleContentState *)operator new(0x1000);
                 if (state) memset(state, 0, 0x1000);
@@ -2038,16 +2034,15 @@ void DebugPrint(ECContentCatalogInfo *) {}
 
 bool StoreSingleStringTable::LoadFile(const char *filename) {
     char *dataStart, *dataEnd;
-    bool ret = StoreLoadPackedFile(
+    if (!StoreLoadPackedFile(
         filename, true, 0x20000, true, true, &mBuffer, &dataStart, &dataEnd, (int *)this
-    );
-    if (!ret)
+    ))
         return false;
     mStrings = (char **)dataStart;
     char *strData = dataStart + mNumStrings * 4;
     int remaining = (int)(dataEnd - strData);
     int estCount = (remaining + (remaining >> 31 & 1)) >> 1;
-    if (estCount < mNumStrings) {
+    if (mNumStrings > estCount) {
         TheDebug << MakeString(
             "%d strings, but based on the data size, there can only be %d.\n",
             mNumStrings,
@@ -2146,17 +2141,16 @@ const char *StorePackedOfferBase::GetArtist() const {
         firstSong =
             &TheStoreMetadata.mSongTable->mSongs[((const StorePackedOffer *)this)->mSongs[0]];
     unsigned short artistIdx = firstSong->mArtistIndex;
-    const StorePackedOffer *asOffer = (const StorePackedOffer *)this;
+    const StorePackedOffer *asOffer = (const StorePackedOffer *)((char *)this + 2);
     for (int i = 1; i < mNumSongs; i++) {
         StorePackedSong *song;
         if (isRbn)
             song = &TheStoreMetadata.mSongTable->mSongs
-                [((const StorePackedRBNOffer *)asOffer)->mSongs[i]];
+                [((const StorePackedRBNOffer *)asOffer)->mSongs[0]];
         else
-            song = &TheStoreMetadata.mSongTable->mSongs[asOffer->mSongs[i]];
+            song = &TheStoreMetadata.mSongTable->mSongs[asOffer->mSongs[0]];
         if (song->mArtistIndex != artistIdx) {
-            bool unused = false;
-            return Localize(store_various_artists, &unused);
+            return Localize(store_various_artists, NULL);
         }
         asOffer = (const StorePackedOffer *)((char *)asOffer + 2);
     }

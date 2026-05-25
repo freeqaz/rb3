@@ -18,6 +18,7 @@ This index mirrors the structure of [DC3's pattern catalog](../../../../dc3-deco
 | [fixable-macros.md](fixable-macros.md) | `#pragma pool_data`, `#pragma dont_inline`, static `Message` guards, `__declspec(noinline)`, per-file `#pragma ipa on`, TU-local conditional inline macros, `_Temporary_buffer<T*, T>` allocator specialization (sort-template cascade unlock), comparator template specialization for `__introsort_loop` / heap sorts |
 | [fixable-struct-layout.md](fixable-struct-layout.md) | `virtual` vs non-`virtual` vtable layout; redundant virtual override declaration (link-time undefined symbol) |
 | [fixable-copy-ctor.md](fixable-copy-ctor.md) | Explicit copy constructor blocks small-struct return ABI; TU-local inline `Hmx::Object` copy ctor; member function pointer to force out-of-line emission |
+| [paired-single-boxmap-lighting.md](paired-single-boxmap-lighting.md) | `BoxMapLighting::ApplyLight` spot kernel, `__vec2x32float__` limits, Gekko paired-single instructions that are not expressible through pure C++ |
 | [verifiable-icf.md](verifiable-icf.md) | Linker ICF risks — verify before treating as unfixable |
 | [quazal-ddl-pattern.md](quazal-ddl-pattern.md) | `_DDL_X::Extract`/`::Add` are static members — porting MISSING Quazal DDL units to Matching |
 | [wave-session-2026-05-18.md](wave-session-2026-05-18.md) | Session notes — param-slot reuse, `bool`→`int` returns, double-precision lowering, .cpp ordering controls inlining, MemcardMgr bitfield+dead-null pattern, header-edit blockers |

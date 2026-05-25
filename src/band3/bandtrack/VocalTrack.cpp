@@ -170,7 +170,7 @@ void VocalTrack::UpdateTubePlates(
 }
 
 void VocalTrack::UpdateAllTubePlates(float f1) {
-    if (!mPlayer->IsNet()) {
+    if (!mPlayer->InTambourinePhrase()) {
         for (int i = 0; i < 3; i++) {
             UpdateTubePlates(mFrontTubePlates[i], f1, unk2a8, false);
             UpdateTubePlates(mBackTubePlates[i], f1, unk2a8, false);
@@ -1093,7 +1093,9 @@ void VocalTrack::UpdateScrolling(float ms) {
     static bool dumpDeployVectors;
     static bool warnOnMarkerCreation;
 
-    if (!mPlayer || mPlayer->IsNet())
+    if (!mPlayer)
+        return;
+    if (mPlayer->IsNet())
         return;
     if (ms < 0.0f)
         return;
@@ -1108,7 +1110,7 @@ void VocalTrack::UpdateScrolling(float ms) {
             return;
     }
 
-    float sectionStart = -FLT_MAX;
+    float sectionStart = FLT_MAX;
     float sectionEnd = -FLT_MAX;
     bool sectionOnly = mPlayer->SongSectionOnly(sectionStart, sectionEnd);
     if (sectionOnly && sectionEnd < lookAhead) {
@@ -1220,9 +1222,10 @@ void VocalTrack::UpdateScrolling(float ms) {
     if (rangeDelta > 0.1f) {
         for (int p = 0; p < 3; p++) {
             mNextScrollNote[p] = 0;
-            if (p < 2)
+            if (p < 2) {
                 mNextDeployZone[p] = 0;
-            mCurLyricPhrase[p < 2 ? p : 0] = 0;
+                mCurLyricPhrase[p] = 0;
+            }
         }
         ResetAllTubePlates();
         ClearLyrics();
@@ -1279,7 +1282,7 @@ void VocalTrack::UpdateScrolling(float ms) {
         }
     }
 
-    if (!mPlayer->InTambourinePhrase()) {
+    if (!mPlayer->IsNet()) {
         std::deque<TambourineGem *> &usedGems = mTambourineGemPool->mUsedGems;
         float oldTime = ms - 250.0f;
         while (!usedGems.empty() && usedGems.front()->unk0 < oldTime) {
@@ -1779,21 +1782,21 @@ void VocalTrack::UpdateScrolling(float ms) {
                         lead ? mLeadLyricShifts : mHarmonyLyricShifts;
                     if (prevBakedLyric && prevBakedLyric->mChunkEnd) {
                         float shiftStart = prevBakedLyric->mEndMs;
-                        float earlyShift =
-                            (lyric->mActiveMs - mLyricShiftMs)
-                            - mLyricShiftAnticipationMs;
-                        float shiftX =
-                            (mStaticDeployMarginX - prevBakedLyric->mBeginPos.x)
-                            - prevBakedLyric->Width();
+                        float prevWidth = prevBakedLyric->Width();
+                        float earlyBase = lyric->mActiveMs - mLyricShiftMs;
+                        float shiftBase =
+                            mStaticDeployMarginX - prevBakedLyric->mBeginPos.x;
+                        float earlyShift = earlyBase - mLyricShiftAnticipationMs;
+                        float shiftX = shiftBase - prevWidth;
                         if (earlyShift < shiftStart)
                             shiftStart = earlyShift;
                         float minHighlight =
                             prevBakedLyric->mActiveMs + mMinLyricHighlightMs;
-                        float prevEnd = prevBakedLyric->mEndMs;
-                        if (minHighlight < prevEnd)
-                            prevEnd = minHighlight;
-                        if (shiftStart < prevEnd)
-                            shiftStart = prevEnd;
+                        float *prevEnd = &prevBakedLyric->mEndMs;
+                        if (minHighlight < prevBakedLyric->mEndMs)
+                            prevEnd = &minHighlight;
+                        if (shiftStart < *prevEnd)
+                            shiftStart = *prevEnd;
                         bool fast = false;
                         float preview = lyric->mActiveMs - shiftStart;
                         if ((preview - mLyricShiftMs)
@@ -1811,70 +1814,74 @@ void VocalTrack::UpdateScrolling(float ms) {
                         }
                         shifts.push_back(LyricShift(shiftStart, shiftX, fast));
                     }
-                    while (lyric->mDeployIdx > -1
-                           && *curDeployPtr < freestyles.size()
-                           && *curDeployPtr <= lyric->mDeployIdx) {
-                        int deployDelta = lyric->mDeployIdx - *curDeployPtr;
-                        std::pair<float, float> &freestyle =
-                            freestyles[*curDeployPtr];
-                        ConfigNoteTube(false, 2, phrasePart, true, 1.0f);
-                        HookupTubePlates(mNoteTube);
-                        float tubeEndX = lyric->mBeginPos.x
-                            - (2.0f * mStaticDeployMarginX);
-                        float tubeX = (lyric->mBeginPos.x
-                                       - mStaticDeployZoneXSize)
-                            - mStaticDeployMarginX;
-                        for (int i = 0; i < deployDelta; i++) {
-                            float space =
-                                mStaticDeployZoneXSize + mStaticDeployBufferX;
-                            tubeX -= space;
-                            tubeEndX -= space;
-                        }
-                        if (deployDelta) {
-                            float nextStart = freestyle.second + mLyricShiftMs;
-                            if ((*curDeployPtr + 1) < freestyles.size()
-                                && freestyles[*curDeployPtr + 1].first < nextStart) {
-                                nextStart = freestyles[*curDeployPtr + 1].first;
+                    if (*curDeployPtr < freestyles.size()
+                        && lyric->mDeployIdx > -1) {
+                        while (*curDeployPtr <= lyric->mDeployIdx) {
+                            int deployDelta = lyric->mDeployIdx - *curDeployPtr;
+                            std::pair<float, float> &freestyle =
+                                freestyles[*curDeployPtr];
+                            ConfigNoteTube(false, 2, phrasePart, true, 1.0f);
+                            HookupTubePlates(mNoteTube);
+                            float tubeEndX = lyric->mBeginPos.x
+                                - (2.0f * mStaticDeployMarginX);
+                            float tubeX = (lyric->mBeginPos.x
+                                           - mStaticDeployZoneXSize)
+                                - mStaticDeployMarginX;
+                            for (int i = 0; i < deployDelta; i++) {
+                                float space =
+                                    mStaticDeployZoneXSize + mStaticDeployBufferX;
+                                tubeX -= space;
+                                tubeEndX -= space;
                             }
-                            shifts.push_back(
-                                LyricShift(
-                                    nextStart,
-                                    -tubeEndX - mStaticDeployBufferX
-                                )
+                            if (deployDelta) {
+                                float nextStart = freestyle.second + mLyricShiftMs;
+                                if ((*curDeployPtr + 1) < freestyles.size()
+                                    && freestyles[*curDeployPtr + 1].first < nextStart) {
+                                    nextStart = freestyles[*curDeployPtr + 1].first;
+                                }
+                                shifts.push_back(
+                                    LyricShift(
+                                        nextStart,
+                                        -tubeEndX - mStaticDeployBufferX
+                                    )
+                                );
+                            } else {
+                                shifts.push_back(
+                                    LyricShift(freestyle.second, -tubeEndX)
+                                );
+                            }
+                            bool inCoda = TheSongDB->IsInCoda(
+                                MsToTickInt(freestyle.second)
                             );
-                        } else {
-                            shifts.push_back(
-                                LyricShift(freestyle.second, -tubeEndX)
+                            float z;
+                            RndGroup *parent;
+                            float height;
+                            if (part == 0) {
+                                z = (mDir->mTrackBottomZ + mDir->mPitchBottomZ)
+                                    * 0.5f;
+                                parent = inCoda ? mDir->mLeadBREGrp
+                                                : mDir->mLeadLyricScrollGroup;
+                                height = mDir->mLeadLyricHeight * 0.5f;
+                            } else {
+                                z = (mDir->mTrackTopZ + mDir->mPitchTopZ) * 0.5f;
+                                parent = inCoda ? mDir->mHarmonyBREGrp
+                                                : mDir->mHarmonyLyricScrollGroup;
+                                height = mDir->mHarmLyricHeight * 0.5f;
+                            }
+                            mNoteTube->SetPointPos(0, Vector3(0.0f, 0.0f, z));
+                            mNoteTube->SetPointPos(
+                                1, Vector3(tubeEndX - tubeX, 0.0f, z)
                             );
+                            mNoteTube->unk_0x30 = height;
+                            mNoteTube->SetBackParent(parent);
+                            mNoteTube->SetXPos(tubeX);
+                            mNoteTube->CreateMeshes();
+                            mNoteTube->SetDeployTiming(
+                                freestyle.first, freestyle.second
+                            );
+                            mNoteTube->BakePlates();
+                            (*curDeployPtr)++;
                         }
-                        bool inCoda =
-                            TheSongDB->IsInCoda(MsToTickInt(freestyle.second));
-                        float z;
-                        RndGroup *parent;
-                        float height;
-                        if (part == 0) {
-                            z = (mDir->mTrackBottomZ + mDir->mPitchBottomZ)
-                                * 0.5f;
-                            parent = inCoda ? mDir->mLeadBREGrp
-                                            : mDir->mLeadLyricScrollGroup;
-                            height = mDir->mLeadLyricHeight * 0.5f;
-                        } else {
-                            z = (mDir->mTrackTopZ + mDir->mPitchTopZ) * 0.5f;
-                            parent = inCoda ? mDir->mHarmonyBREGrp
-                                            : mDir->mHarmonyLyricScrollGroup;
-                            height = mDir->mHarmLyricHeight * 0.5f;
-                        }
-                        mNoteTube->SetPointPos(0, Vector3(0.0f, 0.0f, z));
-                        mNoteTube->SetPointPos(
-                            1, Vector3(tubeEndX - tubeX, 0.0f, z)
-                        );
-                        mNoteTube->unk_0x30 = height;
-                        mNoteTube->SetBackParent(parent);
-                        mNoteTube->SetXPos(tubeX);
-                        mNoteTube->CreateMeshes();
-                        mNoteTube->SetDeployTiming(freestyle.first, freestyle.second);
-                        mNoteTube->BakePlates();
-                        (*curDeployPtr)++;
                     }
                 }
                 prevBakedLyric = lyric;
@@ -1893,7 +1900,7 @@ void VocalTrack::UpdateScrolling(float ms) {
             }
         }
 
-        if (staticLyrics && *curPhPtr == (int)lyricPhrases.size()
+        if (staticLyrics && (int)lyricPhrases.size() == *curPhPtr
             && *curDeployPtr < freestyles.size()) {
             std::deque<LyricShift> &shifts =
                 lead ? mLeadLyricShifts : mHarmonyLyricShifts;

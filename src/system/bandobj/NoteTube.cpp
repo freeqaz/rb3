@@ -319,6 +319,7 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         );
 
         float x1 = baseX + mPoints[1].x;
+        float x1High = 0.05f + x1;
         SetMeshVert(
             verts[vertStart + 4],
             x1 - 0.05f,
@@ -335,14 +336,14 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         );
         SetMeshVert(
             verts[vertStart + 6],
-            0.05f + x1,
+            x1High,
             unk_0x30 + mPoints[1].z,
             1.0f,
             0.0f
         );
         SetMeshVert(
             verts[vertStart + 7],
-            0.05f + x1,
+            x1High,
             mPoints[1].z - unk_0x30,
             1.0f,
             1.0f

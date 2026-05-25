@@ -20,7 +20,9 @@ struct MovieInternalBuffers {
     int mPendingBlits; // 0x1DC (incremented on async submit, decremented on completion)
     int mNextFrameIdx; // 0x1E0
 
-    // Defined in Movie_Wii.cpp. Takes vector by value (BinkRegisterFrameBuffers-friendly).
+    // Defined in Movie_Wii.cpp.
+    MovieInternalBuffers();
+    ~MovieInternalBuffers();
     static MovieInternalBuffers *New(std::vector<BINK *>);
 };
 
@@ -79,7 +81,7 @@ public:
         void MovieClose();
         int MovieOpen(const char *, unsigned int);
         bool PlatformCacheFile(const char *);
-        int NextFrame();
+        void NextFrame();
         void DiscContentionCheck(Loader *);
         void DiscContentionPublish();
         void SharedFinishOpen(bool);
@@ -104,8 +106,8 @@ public:
         char pad27[1];
         float mAspect; // 0x28
         float mRectX1; // 0x2C
-        float mRectX2; // 0x30
-        float mRectY1; // 0x34
+        float mRectY1; // 0x30
+        float mRectX2; // 0x34
         float mRectY2; // 0x38
         int mWidth; // 0x3C
         int mHeight; // 0x40

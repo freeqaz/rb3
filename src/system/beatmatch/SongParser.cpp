@@ -1957,14 +1957,14 @@ bool SongParser::HandleRGRootNote(unsigned char uc) {
 bool SongParser::HandleRGGemStop(
     int tick, DifficultyInfo &info, unsigned char uc1, int difflevel
 ) {
-    bool b1 = (uc1 + 0xE8 & 0xFF) > 5;
-    if (b1)
+    bool outOfRange = ((unsigned char)(uc1 + 0xE8)) > 5U;
+    if (outOfRange)
         return false;
     else {
-        bool b2 = true;
-        if (!b1) {
-            unsigned char stringnum = uc1 - 24;
-            if (info.mRGGemsInfo[0].mGem.mTick == -1) {
+        bool allStringsEnded = true;
+        if (!outOfRange) {
+            int stringnum = uc1 - 24;
+            if (info.mRGGemsInfo[stringnum].mGem.mTick == -1) {
                 MILO_WARN(
                     "%s (%s): RG Gem on string %d ended but never started at tick %s",
                     mFilename,
@@ -1974,7 +1974,334 @@ bool SongParser::HandleRGGemStop(
                 );
                 return true;
             }
+            info.mRGGemsInfo[stringnum].unk18 = tick;
+
+            if (info.mRGGemsInfo[0].mGem.mTick != -1 && info.mRGGemsInfo[0].unk18 == -1)
+                allStringsEnded = false;
+            if (info.mRGGemsInfo[1].mGem.mTick != -1 && info.mRGGemsInfo[1].unk18 == -1)
+                allStringsEnded = false;
+            if (info.mRGGemsInfo[2].mGem.mTick != -1 && info.mRGGemsInfo[2].unk18 == -1)
+                allStringsEnded = false;
+            if (info.mRGGemsInfo[3].mGem.mTick != -1 && info.mRGGemsInfo[3].unk18 == -1)
+                allStringsEnded = false;
+            if (info.mRGGemsInfo[4].mGem.mTick != -1 && info.mRGGemsInfo[4].unk18 == -1)
+                allStringsEnded = false;
+            if (info.mRGGemsInfo[5].mGem.mTick != -1 && info.mRGGemsInfo[5].unk18 == -1)
+                allStringsEnded = false;
+
+            if (allStringsEnded) {
+                int firstEndTick = -1;
+                SongParser::RGGemInfo *cur = &info.mRGGemsInfo[0];
+                int nStr = 6;
+                do {
+                    if (cur->mGem.mTick != -1) {
+                        if (firstEndTick == -1) {
+                            firstEndTick = cur->unk18;
+                        } else if (firstEndTick != cur->unk18) {
+                            MILO_WARN(
+                                "%s (%s): Real Guitar Chord does not end on the same note at %s",
+                                mFilename,
+                                mTrackName,
+                                PrintTick(tick)
+                            );
+                            return true;
+                        }
+                    }
+                    cur++;
+                    nStr--;
+                } while (nStr != 0);
+            }
         }
+
+        if (allStringsEnded) {
+            // Find the start tick
+            int on_tick = -1;
+            if (info.mRGGemsInfo[0].mGem.mTick != -1)
+                on_tick = info.mRGGemsInfo[0].mGem.mTick;
+            if (info.mRGGemsInfo[1].mGem.mTick != -1)
+                on_tick = info.mRGGemsInfo[1].mGem.mTick;
+            if (info.mRGGemsInfo[2].mGem.mTick != -1)
+                on_tick = info.mRGGemsInfo[2].mGem.mTick;
+            if (info.mRGGemsInfo[3].mGem.mTick != -1)
+                on_tick = info.mRGGemsInfo[3].mGem.mTick;
+            if (info.mRGGemsInfo[4].mGem.mTick != -1)
+                on_tick = info.mRGGemsInfo[4].mGem.mTick;
+            if (info.mRGGemsInfo[5].mGem.mTick != -1)
+                on_tick = info.mRGGemsInfo[5].mGem.mTick;
+
+            MILO_ASSERT(on_tick != -1, 0xBB2);
+
+            // Build the output RGGemInfo
+            ::RGGemInfo geminfo;
+            float off_time = GetTempoMap()->TickToTime((float)tick);
+            float on_time = GetTempoMap()->TickToTime((float)on_tick);
+            geminfo.track = mTrack;
+            geminfo.ms = on_time;
+            int duration_ticks = tick - on_tick;
+            geminfo.duration_ms = off_time - on_time;
+            geminfo.duration_ticks = duration_ticks;
+            bool ignDur = false;
+            if (mIgnoreGemDurations || duration_ticks <= 160)
+                ignDur = true;
+            geminfo.ignore_duration = ignDur;
+            geminfo.tick = on_tick;
+            geminfo.no_strum = GetNoStrumState(on_tick, info);
+
+            bool inChordNaming =
+                (on_tick < mRGChordNamingStartTick || on_tick >= mRGChordNamingEndTick);
+            geminfo.show_chord_names = inChordNaming;
+
+            bool inSlashes =
+                (on_tick >= mRGSlashesStartTick && on_tick < mRGSlashesEndTick);
+            geminfo.show_slashes = inSlashes;
+
+            bool inLooseStrum =
+                (on_tick >= info.mRGLooseStrumStartTick && on_tick < info.mRGLooseStrumEndTick);
+            geminfo.loose = inLooseStrum;
+
+            bool inChordNums =
+                (on_tick >= info.mRGChordNumsStartTick && on_tick < info.mRGChordNumsEndTick);
+            geminfo.show_chord_nums = inChordNums;
+
+            bool inSlide =
+                (on_tick >= info.mRGLeftHandSlideStartTick && on_tick < info.mRGLeftHandSlideEndTick);
+            geminfo.left_hand_slide = inSlide;
+
+            bool inReverseSlide =
+                (on_tick >= mRGEnharmonicStartTick && on_tick < mRGEnharmonicEndTick);
+            geminfo.reverse_slide = inReverseSlide;
+
+            geminfo.enharmonic = info.mRGFlipSlideDirection;
+
+            int distFromChordText = on_tick - info.mRGChordTextTick;
+            int distSign = distFromChordText >> 31;
+            if ((distSign ^ distFromChordText) - distSign < 10) {
+                strcpy(&geminfo.chord_name, info.mRGChordText);
+            } else {
+                geminfo.chord_name = 0;
+            }
+
+            // Compute hand position if not set
+            bool didComputeHandPos = false;
+            if (mRGHandPos < 0) {
+                mRGHandPos = 25;
+                didComputeHandPos = true;
+                SongParser::RGGemInfo *s = &info.mRGGemsInfo[0];
+                int itr = 2;
+                do {
+                    if (s[0].mGem.mTick != -1 && s[0].mFret != 0) {
+                        if (s[0].mFret < mRGHandPos)
+                            mRGHandPos = s[0].mFret;
+                    }
+                    if (s[1].mGem.mTick != -1 && s[1].mFret != 0) {
+                        if (s[1].mFret < mRGHandPos)
+                            mRGHandPos = s[1].mFret;
+                    }
+                    if (s[2].mGem.mTick != -1 && s[2].mFret != 0) {
+                        if (s[2].mFret < mRGHandPos)
+                            mRGHandPos = s[2].mFret;
+                    }
+                    s += 3;
+                    itr--;
+                } while (itr != 0);
+                if (mRGHandPos < 0)
+                    mRGHandPos = 0;
+            }
+
+            // Fill frets and note_types per string
+            NoStrumState noStrum = geminfo.no_strum;
+            {
+                SongParser::RGGemInfo *src = &info.mRGGemsInfo[0];
+                unsigned int si = 0;
+                do {
+                    if (src->mGem.mTick != -1) {
+                        geminfo.frets[si] = (char)src->mFret;
+                        geminfo.note_types[si] = (RGNoteType)src->mChannel;
+                        char fret = geminfo.frets[si];
+                        int handPos = mRGHandPos;
+                        if ((signed char)fret - handPos > 15) {
+                            MILO_WARN(
+                                "%s (%s): fret is too far away from left hand position on gem at %s",
+                                mFilename,
+                                mTrackName,
+                                PrintTick(tick)
+                            );
+                            geminfo.frets[si] = (char)mRGHandPos;
+                        } else if ((signed char)fret < handPos && (signed char)fret != 0) {
+                            MILO_WARN(
+                                "%s (%s): fret is less than left hand position on gem at %s",
+                                mFilename,
+                                mTrackName,
+                                PrintTick(tick)
+                            );
+                            geminfo.frets[si] = (char)mRGHandPos;
+                        }
+                        if (src->mChannel == 4) {
+                            noStrum = kStrumForceOff;
+                        }
+                    } else {
+                        geminfo.frets[si] = (char)-1;
+                        geminfo.note_types[si] = kRGNormal;
+                    }
+                    si++;
+                    src++;
+                } while (si < 6U);
+            }
+            geminfo.no_strum = noStrum;
+
+            if (didComputeHandPos)
+                mRGHandPos = -1;
+
+            // Strum type from area strum
+            if (on_tick >= info.mRGAreaStrumStartTick && on_tick <= info.mRGAreaStrumEndTick) {
+                geminfo.strum_type = info.mRGAreaStrumType;
+            } else {
+                geminfo.strum_type = kRGNoStrum;
+            }
+
+            // Hand position validation
+            if (mRGHandPos < 0) {
+                MILO_WARN(
+                    "%s (%s): No left hand position set for gem at %s",
+                    mFilename,
+                    mTrackName,
+                    PrintTick(tick)
+                );
+                char minFret = 0x7F;
+                for (int i = 0; i < 6; i++) {
+                    char f = geminfo.frets[i];
+                    if ((signed char)f >= 0 && f < minFret)
+                        minFret = f;
+                }
+                geminfo.hand_position = (unsigned char)minFret;
+            } else {
+                geminfo.hand_position = (unsigned char)mRGHandPos;
+            }
+
+            // Count active strings
+            int numActive = 0;
+            for (int i = 0; i < 6; i++) {
+                if ((signed char)geminfo.frets[i] >= 0)
+                    numActive++;
+            }
+
+            if (numActive > 1) {
+                if (mRGRootNote < 0) {
+                    MILO_WARN(
+                        "%s (%s): No root note set for chord gem at %s",
+                        mFilename,
+                        mTrackName,
+                        PrintTick(tick)
+                    );
+                } else {
+                    geminfo.root_note = (unsigned char)mRGRootNote;
+                }
+            }
+
+            // OD phrase tracking
+            if (mSoloPhraseInProgress != -1 && on_tick >= mSoloPhraseInProgress) {
+                mSoloGemDifficultyMask |= 1 << difflevel;
+            }
+
+            // Roll tracking
+            float rollInterval = GetRollIntervalMs(mRollIntervals, mTrackType, difflevel, false);
+            if (mRollInProgress != -1 && abs(mRollInProgress - on_tick) < 10
+                    && mRollIntervals != NULL && rollInterval > 0.0f
+                    && (mRollMask & (1 << difflevel))) {
+                for (int i = 0; i < 6; i++) {
+                    mRGRollArray[difflevel].mString[i] = (int)(signed char)geminfo.frets[i];
+                }
+            }
+
+            // Trill tracking
+            if (mTrillInProgress != -1 && (mTrillMask & (1 << difflevel))) {
+                MILO_ASSERT(!mRGTrillArray.empty(), 0xC43);
+                RGTrill &trill = mRGTrillArray[difflevel];
+                if (trill.mString == -1) {
+                    if (abs(mTrillInProgress - on_tick) < 10) {
+                        int firstStr = -1;
+                        for (int i = 0; i < 6; i++) {
+                            if ((signed char)geminfo.frets[i] != -1) {
+                                if (firstStr == -1) {
+                                    firstStr = i;
+                                } else {
+                                    MILO_WARN(
+                                        "%s (%s): trill start at %s has a gem with multiple strings.",
+                                        mFilename,
+                                        mTrackName,
+                                        PrintTick(mTrillInProgress)
+                                    );
+                                }
+                            }
+                        }
+                        trill.mString = firstStr;
+                        trill.mFrets[0] = (int)(signed char)geminfo.frets[firstStr];
+                    } else {
+                        MILO_WARN(
+                            "%s (%s): RG Gem on string %d ended but never started at tick %s",
+                            mFilename,
+                            mTrackName,
+                            PrintTick(mTrillInProgress)
+                        );
+                    }
+                } else if (trill.mFrets[1] == -1) {
+                    char fretAtStr = geminfo.frets[trill.mString];
+                    if ((signed char)fretAtStr != -1) {
+                        trill.mFrets[1] = (int)(signed char)fretAtStr;
+                    } else {
+                        MILO_WARN(
+                            "%s (%s): second trill gem at %s is not on the correct string.",
+                            mFilename,
+                            mTrackName,
+                            PrintTick(mTrillInProgress)
+                        );
+                    }
+                }
+            }
+
+            // Submit gem then reset DifficultyInfo
+            mSink->AddRGGem(difflevel, geminfo);
+
+            // Reset all 6 RGGemInfo entries directly (no constructor call)
+            info.mRGGemsInfo[0].mGem.mTick = -1;
+            info.mRGGemsInfo[0].mGem.mPlayers = 0;
+            info.mRGGemsInfo[0].mGem.mCymbalSlots = 28;
+            info.mRGGemsInfo[0].mFret = 0;
+            info.mRGGemsInfo[0].mChannel = 0;
+            info.mRGGemsInfo[0].unk18 = -1;
+            info.mRGGemsInfo[1].mGem.mTick = -1;
+            info.mRGGemsInfo[1].mGem.mPlayers = 0;
+            info.mRGGemsInfo[1].mGem.mCymbalSlots = 28;
+            info.mRGGemsInfo[1].mFret = 0;
+            info.mRGGemsInfo[1].mChannel = 0;
+            info.mRGGemsInfo[1].unk18 = -1;
+            info.mRGGemsInfo[2].mGem.mTick = -1;
+            info.mRGGemsInfo[2].mGem.mPlayers = 0;
+            info.mRGGemsInfo[2].mGem.mCymbalSlots = 28;
+            info.mRGGemsInfo[2].mFret = 0;
+            info.mRGGemsInfo[2].mChannel = 0;
+            info.mRGGemsInfo[2].unk18 = -1;
+            info.mRGGemsInfo[3].mGem.mTick = -1;
+            info.mRGGemsInfo[3].mGem.mPlayers = 0;
+            info.mRGGemsInfo[3].mGem.mCymbalSlots = 28;
+            info.mRGGemsInfo[3].mFret = 0;
+            info.mRGGemsInfo[3].mChannel = 0;
+            info.mRGGemsInfo[3].unk18 = -1;
+            info.mRGGemsInfo[4].mGem.mTick = -1;
+            info.mRGGemsInfo[4].mGem.mPlayers = 0;
+            info.mRGGemsInfo[4].mGem.mCymbalSlots = 28;
+            info.mRGGemsInfo[4].mFret = 0;
+            info.mRGGemsInfo[4].mChannel = 0;
+            info.mRGGemsInfo[4].unk18 = -1;
+            info.mRGGemsInfo[5].mGem.mTick = -1;
+            info.mRGGemsInfo[5].mGem.mPlayers = 0;
+            info.mRGGemsInfo[5].mGem.mCymbalSlots = 28;
+            info.mRGGemsInfo[5].mFret = 0;
+            info.mRGGemsInfo[5].mChannel = 0;
+            info.mRGGemsInfo[5].unk18 = -1;
+            info.mRGAreaStrumType = kRGNoStrum;
+        }
+        return true;
     }
 }
 

@@ -470,7 +470,7 @@ void Singer::Poll_(float ms, const SongPos &, float micPitch, float micEnergy, f
 
     VocalFrameSpewData *spew = mPlayer->mFrameSpewData;
     if (spew) {
-        spew->mSingerData[mSingerIndex].unk0 = micPitch;
+        spew->mSingerData[mSingerIndex].unk0 = mFrameMicPitch;
         spew->mSingerData[mSingerIndex].unk4 = unk60;
     }
 }

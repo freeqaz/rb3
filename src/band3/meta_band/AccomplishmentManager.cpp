@@ -1252,9 +1252,9 @@ void AccomplishmentManager::HandleSetlistCompletedForUser(
 ) {
     BandProfile *pProfile = TheProfileMgr.GetProfileForUser(u);
     MILO_ASSERT(pProfile, 0x770);
-    MetaPerformer *pMeta = MetaPerformer::Current();
-    MILO_ASSERT(pMeta, 0x773);
-    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    MetaPerformer *pPerformer = MetaPerformer::Current();
+    MILO_ASSERT(pPerformer, 0x773);
+    ScoreType scoreType = (ScoreType)pPerformer->GetScoreTypeForUser(u);
     Difficulty userDiff = (Difficulty)u->GetDifficulty();
     if (b) {
         EarnAccomplishmentForProfile(pProfile, acc_hmxrecommends);
@@ -1292,18 +1292,18 @@ void AccomplishmentManager::CheckForOneShotAccomplishments(
 ) {
     BandProfile *pProfile = TheProfileMgr.GetProfileForUser(u);
     MILO_ASSERT(pProfile, 0x7D0);
-    Performer *pPerformer = u->mPlayer;
-    if (!pPerformer) {
+    Performer *pPlayer = u->mPlayer;
+    if (!pPlayer) {
         MILO_WARN("No player found while trying to update song status flags.");
         return;
     }
-    Band *pBand = pPerformer->mBand;
+    Band *pBand = pPlayer->mBand;
     MILO_ASSERT(pBand, 0x7DC);
     Performer *pBandPerformer = pBand->MainPerformer();
     MILO_ASSERT(pBandPerformer, 0x7DF);
-    MetaPerformer *pMeta = MetaPerformer::Current();
-    MILO_ASSERT(pMeta, 0x7E2);
-    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    MetaPerformer *pPerformer = MetaPerformer::Current();
+    MILO_ASSERT(pPerformer, 0x7E2);
+    ScoreType scoreType = (ScoreType)pPerformer->GetScoreTypeForUser(u);
     Difficulty userDiff = (Difficulty)u->GetDifficulty();
     AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
     for (std::map<Symbol, Accomplishment *>::iterator it = mAccomplishments.begin();
@@ -1321,7 +1321,7 @@ void AccomplishmentManager::CheckForOneShotAccomplishments(
                 MILO_ASSERT(pOneShotAccomplishment, 0x806);
                 int numPlayers = pBand->NumActivePlayers();
                 if (pOneShotAccomplishment->AreOneShotConditionsMet(
-                        scoreType, userDiff, pPerformer, s, numPlayers
+                        scoreType, userDiff, pPlayer, s, numPlayers
                     )) {
                     EarnAccomplishment(u, key);
                 } else if (pOneShotAccomplishment->AreOneShotConditionsMet(
@@ -1337,22 +1337,22 @@ void AccomplishmentManager::CheckForOneShotAccomplishments(
 void AccomplishmentManager::UpdateMiscellaneousSongDataForUser(Symbol s, LocalBandUser *u) {
     BandProfile *pProfile = TheProfileMgr.GetProfileForUser(u);
     MILO_ASSERT(pProfile, 0x85B);
-    Performer *pPerformer = u->mPlayer;
-    if (!pPerformer) {
+    Performer *pPlayer = u->mPlayer;
+    if (!pPlayer) {
         MILO_WARN("No player found while trying to update song status flags.");
         return;
     }
-    MetaPerformer *pMeta = MetaPerformer::Current();
-    MILO_ASSERT(pMeta, 0x866);
-    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    MetaPerformer *pPerformer = MetaPerformer::Current();
+    MILO_ASSERT(pPerformer, 0x866);
+    ScoreType scoreType = (ScoreType)pPerformer->GetScoreTypeForUser(u);
     Difficulty diff = (Difficulty)u->GetDifficulty();
-    Band *pBand = pPerformer->mBand;
+    Band *pBand = pPlayer->mBand;
     MILO_ASSERT(pBand, 0x86C);
     Performer *pBandPerformer = pBand->MainPerformer();
     MILO_ASSERT(pBandPerformer, 0x86E);
     int score = pBandPerformer->GetScore();
     AccomplishmentProgress &prog = pProfile->AccessAccomplishmentProgress();
-    prog.UpdateStats(scoreType, diff, score, pPerformer->mStats, pPerformer, pBand);
+    prog.UpdateStats(scoreType, diff, score, pPlayer->mStats, pPlayer, pBand);
     int total = prog.GetTotalSongsPlayed();
     prog.SetTotalSongsPlayed(total + 1);
     if (TheGameMode->InMode("tour")) {
@@ -1369,20 +1369,20 @@ void AccomplishmentManager::UpdateSongStatusFlagsForUser(
     MILO_ASSERT(pProfile, 0x889);
     SongStatusMgr *pSongStatusMgr = pProfile->GetSongStatusMgr();
     MILO_ASSERT(pSongStatusMgr, 0x88C);
-    Performer *pPerformer = u->mPlayer;
-    if (!pPerformer) {
+    Performer *pPlayer = u->mPlayer;
+    if (!pPlayer) {
         MILO_WARN("No player found while trying to update song status flags.");
         return;
     }
-    Band *pBand = pPerformer->mBand;
+    Band *pBand = pPlayer->mBand;
     MILO_ASSERT(pBand, 0x898);
     Performer *pBandPerformer = pBand->MainPerformer();
     MILO_ASSERT(pBandPerformer, 0x89B);
-    MetaPerformer *pMeta = MetaPerformer::Current();
-    MILO_ASSERT(pMeta, 0x89E);
-    ScoreType scoreType = (ScoreType)pMeta->GetScoreTypeForUser(u);
+    MetaPerformer *pPerformer = MetaPerformer::Current();
+    MILO_ASSERT(pPerformer, 0x89E);
+    ScoreType scoreType = (ScoreType)pPerformer->GetScoreTypeForUser(u);
     Difficulty userDiff = (Difficulty)u->GetDifficulty();
-    UpdateSongStatusFlagsForPerformer(pPerformer, pSongStatusMgr, s, scoreType, userDiff);
+    UpdateSongStatusFlagsForPerformer(pPlayer, pSongStatusMgr, s, scoreType, userDiff);
     UpdateSongStatusFlagsForPerformer(pBandPerformer, pSongStatusMgr, s, (ScoreType)0xA, diff);
 }
 
@@ -1702,7 +1702,8 @@ Symbol AccomplishmentManager::GetFirstUnfinishedAccomplishmentEntry(
     BandProfile *i_pProfile, Symbol s
 ) {
     MILO_ASSERT(i_pProfile, 0xA88);
-    MILO_ASSERT(MetaPerformer::Current(), 0xA8B);
+    MetaPerformer *pPerformer = MetaPerformer::Current();
+    MILO_ASSERT(pPerformer, 0xA8B);
     Accomplishment *pAccomplishment = TheAccomplishmentMgr->GetAccomplishment(s);
     MILO_ASSERT(pAccomplishment, 0xA8E);
     std::vector<Symbol> vUnused;

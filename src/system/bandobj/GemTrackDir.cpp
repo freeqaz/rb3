@@ -972,7 +972,7 @@ int WhiteKeyToSemitone(int whiteKey) {
 int SemitoneToWhiteKey(int semitone) {
     MILO_ASSERT(semitone > -1, 0x57D);
     int whiteKey = 0;
-    while (semitone >= kNumSemitones) {
+    while (semitone > kNoteB) {
         semitone -= kNumSemitones;
         whiteKey += kNumWhiteKeys;
     }

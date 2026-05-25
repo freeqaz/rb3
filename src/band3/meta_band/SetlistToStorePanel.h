@@ -5,7 +5,7 @@
 
 class SetlistToStorePanel : public UIPanel {
 public:
-    SetlistToStorePanel() {}
+    SetlistToStorePanel() : mAllMetadata(nullptr) {}
     OBJ_CLASSNAME(SetlistToStorePanel);
     OBJ_SET_TYPE(SetlistToStorePanel);
     NEW_OBJ(SetlistToStorePanel);

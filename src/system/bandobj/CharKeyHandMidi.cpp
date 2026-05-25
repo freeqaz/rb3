@@ -125,17 +125,20 @@ CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
 }
 
 void CharKeyHandMidi::Highlight() {
-    if (mFirstSpot && mSecondSpot) {
-        UtilDrawSphere(mFirstSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
-        UtilDrawSphere(mSecondSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
-        for (int key = 1; key <= 0x19; key++) {
-            if (IsBlackKey((KeyboardKey)key)) {
-                UtilDrawSphere(unk4c[key], 0.15f, Hmx::Color(0.0f, 1.0f, 0.0f));
-                UtilDrawSphere(unk54[key], 0.15f, Hmx::Color(1.0f, 1.0f, 0.0f));
-            } else {
-                UtilDrawSphere(unk4c[key], 0.15f, Hmx::Color(0.0f, 0.0f, 1.0f));
-                UtilDrawSphere(unk54[key], 0.15f, Hmx::Color(1.0f, 0.0f, 1.0f));
-            }
+    if (mFirstSpot) {
+        if (mSecondSpot) goto draw;
+    }
+    return;
+draw:
+    UtilDrawSphere(mFirstSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
+    UtilDrawSphere(mSecondSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
+    for (int key = 1; key <= 0x19; key++) {
+        if (IsBlackKey((KeyboardKey)key)) {
+            UtilDrawSphere(unk4c[key], 0.15f, Hmx::Color(0.0f, 1.0f, 0.0f));
+            UtilDrawSphere(unk54[key], 0.15f, Hmx::Color(1.0f, 1.0f, 0.0f));
+        } else {
+            UtilDrawSphere(unk4c[key], 0.15f, Hmx::Color(0.0f, 0.0f, 1.0f));
+            UtilDrawSphere(unk54[key], 0.15f, Hmx::Color(1.0f, 0.0f, 1.0f));
         }
     }
 }
