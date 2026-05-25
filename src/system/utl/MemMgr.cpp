@@ -880,6 +880,124 @@ void *_MemAllocTemp(int size, int align) {
     return _MemAlloc(size, align);
 }
 
+void MemInit();
+extern char gZeroAllocBuf[0x20];
+extern int gUnknownAllocCount;
+extern int gUnknownAllocBytes;
+
+void *_MemAlloc(int size, int align) {
+    if (!gMemInited) {
+        MemInit();
+    }
+    AutoTimer autoTimer(&gMemAllocTimer, 0.0f, nullptr, nullptr);
+    MILO_ASSERT(size >= 0, 0x86d);
+    if (size == 0) {
+        return gZeroAllocBuf;
+    }
+    CritSecTracker tracker(gMemLock);
+    int currentHeap = GetCurrentHeapNum();
+    if (kFastHeap != currentHeap) {
+        int tinyHeap = kTinyHeap;
+        if (tinyHeap != GetCurrentHeapNum() && size < 0x400) {
+            MemPushHeap(tinyHeap);
+            void *result = _MemAlloc(size, align);
+            MemPopHeap();
+            return result;
+        }
+    }
+    int heapNum = GetCurrentHeapNum();
+    Heap *heap = (heapNum > -1) ? &gHeaps[heapNum] : nullptr;
+    MILO_ASSERT(heap, 0x89d);
+    if (heap != nullptr && heap->mStrategy == 2 && heap->mAllowTemp == 0) {
+        int pushCount = 0;
+        MemHeapStack &stack = ThreadMemStack(true);
+        while (heap != nullptr && stack.mSize > 0) {
+            pushCount++;
+            stack.mSize--;
+            int h = GetCurrentHeapNum();
+            heap = (h > -1) ? &gHeaps[h] : nullptr;
+            if (heap->mAllowTemp != 0) break;
+        }
+        bool oldAllowTemp = heap->mAllowTemp;
+        heap->mAllowTemp = true;
+        int oldStrategy = heap->mStrategy;
+        heap->mStrategy = 2;
+        void *result = _MemAlloc(size, align);
+        heap->mStrategy = oldStrategy;
+        heap->mAllowTemp = oldAllowTemp;
+        stack.mSize += pushCount;
+        return result;
+    }
+    if (heap == nullptr) {
+        void *result = WiiMalloc(size);
+        gUnknownAllocBytes += size;
+        gUnknownAllocCount += 1;
+        return result;
+    }
+    MILO_ASSERT(!gInsideMemFunc, 0x90a);
+    gInsideMemFunc = true;
+    int sizeWords = ((size + 3) >> 2) + 1;
+    if ((unsigned int)sizeWords < 3) {
+        sizeWords = 3;
+    }
+    int alignShift;
+    if (align == 0) {
+        alignShift = 0;
+    } else {
+        int bitCount = 0;
+        int hasLowBit = 0;
+        while (align > 1) {
+            if (align & 1) {
+                hasLowBit = 1;
+            }
+            align >>= 1;
+            bitCount++;
+        }
+        int sum = bitCount + hasLowBit - 2;
+        alignShift = sum & (-sum & ~sum) >> 31;
+    }
+    int actualSize;
+    void *mem = heap->Alloc(sizeWords, alignShift, actualSize);
+    if (mem == nullptr) {
+        Heap *fastHeap = &gHeaps[kFastHeap];
+        if (heap != fastHeap && size < 0x400) {
+            int saved = fastHeap->mStrategy;
+            fastHeap->mStrategy = heap->mStrategy;
+            mem = fastHeap->Alloc(sizeWords, alignShift, actualSize);
+            fastHeap->mStrategy = saved;
+        }
+        Heap *p = &gHeaps[0];
+        Heap *base = p;
+        while (mem == nullptr && p < base + gNumHeaps) {
+            if (p != heap) {
+                int saved = p->mStrategy;
+                p->mStrategy = heap->mStrategy;
+                mem = p->Alloc(sizeWords, alignShift, actualSize);
+                p->mStrategy = saved;
+            }
+            p += 1;
+        }
+        if (mem == nullptr) {
+            int leftFrag1 = 0, rightFrag1 = 0, biggest1 = 0, total1 = 0;
+            int leftFrag2 = 0, rightFrag2 = 0, biggest2 = 0, total2 = 0;
+            MemFreeBlockStats(0, leftFrag1, rightFrag1, biggest1, total1);
+            MemFreeBlockStats(1, leftFrag2, rightFrag2, biggest2, total2);
+            MILO_FAIL(
+                "I tried all the heaps to get %d bytes, it was not available.\n"
+                "main: free(%d) biggest(%d) lfrag(%d) rfrag(%d)\n"
+                "fast: free(%d) biggest(%d) lfrag(%d) rfrag(%d)\n",
+                size, biggest1, total1, leftFrag1, rightFrag1,
+                biggest2, total2, leftFrag2, rightFrag2
+            );
+            return nullptr;
+        }
+    }
+    gInsideMemFunc = false;
+    MILO_ASSERT(mem, 0x98a);
+    MILO_ASSERT(mem != (void *)0x01000000, 0x98b);
+    return mem;
+}
+
 extern char gZeroAllocBuf[0x20];
 
 extern OSThread *gMainThreadID;
