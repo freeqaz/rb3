@@ -391,6 +391,39 @@ void SaveLoadManager::Poll() {
             }
         }
         break;
+    case (State)0x3B:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                unk7c = 2;
+                int sz = mCacheID->GetDeviceID();
+                unk78 = sz;
+                TheCacheMgr->AddCacheID(mCacheID, Symbol(unk4c.c_str()));
+                SetState((State)0x3d);
+            } else if (result == kCache_ErrorUserCancel) {
+                unk7c = 1;
+                SetState((State)0x3a);
+            } else {
+                SetState((State)0x40);
+            }
+        }
+        break;
+    case (State)0x3D:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                SetState((State)0x3e);
+            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x3a);
+            } else {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x40);
+            }
+        }
+        break;
     case (State)0x32:
         if (!TheCacheMgr->IsDone()) return;
         if (TheCacheMgr->GetLastResult() == kCache_NoError) {
