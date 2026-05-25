@@ -417,20 +417,21 @@ void BandList::StartPulseAnim(int idx) {
     mFrames[idx] = start;
 }
 
+#pragma fp_contract off
 void BandList::UpdatePulseAnim(int i, Transform &tf) {
     if (mAnimStates[i] == kIn) {
         mStartTimes[i];
         float f5 = TheTaskMgr.UISeconds();
         float f6 = mPulseAnim->StartFrame();
         float f7 = mPulseAnim->EndFrame();
-        float f8 = mPulseAnim->FramesPerUnit();
-        f5 = f6 + (f5 - mStartTimes[i]) * f8;
+        f5 = f6 + mPulseAnim->FramesPerUnit() * (f5 - mStartTimes[i]);
         if (f5 > f7)
             f5 = ModRange(f6, f7, f5);
         mFrames[i] = f5;
         mPulseAnim->MakeTransform(f5, tf, true, 1.0f);
     }
 }
+#pragma fp_contract on
 
 void BandList::Reveal() {
     mBandListState = kReveal;
