@@ -361,10 +361,469 @@ float VocalPlayer::RemoteVocalVolume() const {
         return 1.0f - ret / 0.33f;
 }
 
-void VocalPlayer::Poll(float, const SongPos &) {
-    MILO_WARN("j != i");
-    MILO_WARN("pTrack");
-    MILO_WARN("mFrameSpewData");
+void VocalPlayer::Poll(float ms, const SongPos &pos) {
+    if (mGameOver)
+        return;
+    if (!mTrack || (TheGame && TheGame->mIsPaused)) {
+        Player::Poll(ms, pos);
+        return;
+    }
+
+    VocalFrameSpewData *spewData = mFrameSpewData;
+    float fCompMS = GetCompensatedTime(ms);
+
+    // Update frame spew data if active
+    if (spewData) {
+        spewData->mMs = 0.0f;
+        spewData->mCompMs = 0.0f;
+
+        // Resize singer data to match singer count
+        int singerCount = (int)mSingers.size();
+        if ((int)spewData->mSingerData.size() < singerCount) {
+            VocalFrameSpewData::VocalFrameSingerData defSinger;
+            spewData->mSingerData.resize(singerCount, defSinger);
+        } else {
+            while ((int)spewData->mSingerData.size() > singerCount) {
+                spewData->mSingerData.pop_back();
+            }
+        }
+
+        // Resize part data to match part count
+        int partCount = (int)mVocalParts.size();
+        if ((int)spewData->mPartData.size() < partCount) {
+            VocalFrameSpewData::VocalFramePartData defPart;
+            spewData->mPartData.resize(partCount, defPart);
+        } else {
+            while ((int)spewData->mPartData.size() > partCount) {
+                spewData->mPartData.pop_back();
+            }
+        }
+
+        spewData->mMs = ms;
+        spewData->mCompMs = fCompMS;
+    }
+
+    // Reset vocal overlay
+    if (mVocalOverlay) {
+        mVocalOverlay->Reset((int)mSingers.size());
+    }
+
+    // Determine section scoring state
+    float fSectionBeginMs = 0.0f;
+    float fSectionEndMs = 0.0f;
+    bool bWasInFreestyleSection = InFreestyleSection();
+    float frameMinPitch = 10000.0f;
+    float frameMaxPitch = 0.0f;
+
+    bool bInSection = false;
+    if (SongSectionOnly(fSectionBeginMs, fSectionEndMs)) {
+        if (fCompMS > (100.0f + fSectionBeginMs) && fCompMS < (100.0f + fSectionEndMs)) {
+            bInSection = true;
+        }
+        mScoringEnabled = bInSection;
+    } else {
+        mScoringEnabled = true;
+    }
+
+    // Allocate temp vectors for parts/singers that are scoring
+    std::vector<VocalPart *> partsArray;
+    partsArray.reserve(mVocalParts.size());
+    std::vector<Singer *> singersArray;
+    singersArray.reserve(mSingers.size());
+
+    float var_f24 = 0.0f;
+    int iMaximumFreestyleDeploymentSinger = -1;
+    VocalPart *pUnpitchedPart = 0;
+
+    // Poll tambourine manager
+    mTambourineManager.Poll(fCompMS);
+
+    // Poll each vocal part and build partsArray
+    bool bSomePitched = true;
+    bool bSomeUnpitched = false;
+    FOREACH (it, mVocalParts) {
+        VocalPart *pPart = *it;
+        pPart->Poll(fCompMS, pos);
+        pPart->ClearSingerCandidates();
+
+        int dimState = pPart->unk98;
+        bSomePitched = bSomePitched | (dimState == 0);
+        bSomeUnpitched = bSomeUnpitched | ((dimState - 1) == 0);
+
+        VocalNote *pNote = (VocalNote *)pPart->mVocalNoteList->NoteAt(fCompMS);
+        if (pNote && pNote->mUnpitchedNote && !pUnpitchedPart) {
+            pUnpitchedPart = pPart;
+        }
+
+        bool bCanScore = false;
+        if (mScoringEnabled && !InRollback()) {
+            bCanScore = true;
+        }
+
+        if (bCanScore && pPart->NearNote(fCompMS) && pPart->ScoringEnabled()) {
+            float fPitchAtTime = pPart->mVocalNoteList->PitchAt(fCompMS);
+            if (0.0f != fPitchAtTime) {
+                if (fPitchAtTime < frameMinPitch) frameMinPitch = fPitchAtTime;
+                if (frameMaxPitch < fPitchAtTime) frameMaxPitch = fPitchAtTime;
+            }
+            partsArray.push_back(pPart);
+        }
+    }
+
+    // Check if freestyle section changed (for deploy clearing)
+    bool bWasFreestyle = bWasInFreestyleSection;
+    bool bIsFreestyle = InFreestyleSection();
+    bool bChangedFreestyle = (bWasFreestyle != bIsFreestyle) && !bIsFreestyle;
+    (void)bChangedFreestyle;
+
+    // Get pitch offset from song DB and update tuning
+    float pitchOffset = TheSongDB->GetPitchOffsetForTick((int)MsToTick(ms));
+    bool pitchOffsetValid = (pitchOffset >= -100.0f) && (pitchOffset <= 100.0f);
+    if (pitchOffsetValid) {
+        mTuningOffset = 0.00109659603f * pitchOffset;
+    }
+
+    // Build singer pitch tracker
+    std::vector<float> singerPitches;
+    singerPitches.resize(mSingers.size(), 0.0f);
+
+    // Poll each singer and score
+    FOREACH (sIt, mSingers) {
+        Singer *pSinger = *sIt;
+        pSinger->unk54 = mTuningOffset;
+        pSinger->SetMicProcessing(bSomePitched, bSomeUnpitched);
+        pSinger->Poll(fCompMS, pos, frameMinPitch, frameMaxPitch);
+
+        // Clear freestyle deployment if section ended
+        if (bChangedFreestyle && !InFreestyleSection()) {
+            pSinger->ClearFreestyleDeployment();
+        }
+
+        singerPitches[pSinger->mSingerIndex] = pSinger->mFrameMicPitch;
+
+        if (mVocalOverlay) {
+            mVocalOverlay->AppendSingerPitch(pSinger->mSingerIndex, pSinger->mFrameMicPitch);
+        }
+        singersArray.push_back(pSinger);
+
+        // Score singer against each part
+        float var_f22 = 1000.0f;
+        FOREACH (pIt, mVocalParts) {
+            VocalPart *pPart = *pIt;
+            bool bScoringAllowed = false;
+            if (mScoringEnabled && !InRollback()) {
+                bScoringAllowed = true;
+            }
+
+            if (bScoringAllowed && pPart->ScoringEnabled()) {
+                VocalScoreCache &cache = pSinger->AccessScoreCache(pPart->mPartIndex);
+                float fEnergy = pSinger->unk60;
+                int iRating = 0;
+                float fDev = 0.0f;
+                pPart->ScoreSinger(
+                    fCompMS,
+                    pSinger->mFrameMicPitch,
+                    fEnergy,
+                    fEnergy - pSinger->unk64,
+                    pSinger->mOctaveOffset,
+                    pSinger->mTalkyMatcher,
+                    cache,
+                    iRating,
+                    fDev
+                );
+                if (1000.0f != fDev && fabsf(fDev) < fabsf(var_f22)) {
+                    var_f22 = fDev;
+                }
+
+                float fScore = cache.unk0;
+                if (cache.unk20) {
+                    fScore *= mNonpitchStickiness;
+                }
+                pSinger->AppendToScoreHistory(fCompMS, pPart->mPartIndex, fScore, iRating);
+            }
+        }
+        if (1000.0f != var_f22) {
+            pSinger->UpdatePitchDeviation(var_f22);
+        }
+
+        // Check ambiguity between pairs of parts
+        for (int i = 0; i < (int)mVocalParts.size() - 1; i++) {
+            VocalPart *pPartA = mVocalParts[i];
+            if (pPartA->PhraseHasUnpitchedNotes()) continue;
+            VocalScoreCache &cacheA = pSinger->AccessScoreCache(i);
+            float fScoreA = cacheA.unk0;
+
+            for (int j = i + 1; j < (int)mVocalParts.size(); j++) {
+                MILO_ASSERT(j != i, 0x3FA);
+                VocalPart *pPartB = mVocalParts[j];
+                if (pPartB->PhraseHasUnpitchedNotes()) continue;
+                VocalScoreCache &cacheB = pSinger->AccessScoreCache(j);
+                float fScoreB = cacheB.unk0;
+
+                bool aIsZero = (0.0f == fScoreA);
+                bool bIsZero = (0.0f == fScoreB);
+                if (aIsZero && bIsZero) continue;
+
+                if (fabsf(fScoreA - fScoreB) < 0.00001f) {
+                    if (0.0f != cacheA.unkc || 0.0f != cacheB.unkc) {
+                        pSinger->AddAmbiguousPart(i, j);
+                    }
+                } else {
+                    pSinger->DisableAmbiguousPart(i, j);
+                }
+            }
+        }
+
+        // Find best part for this singer
+        VocalPart *pBestPart = 0;
+        float fBestPitchDistance = 0.0f;
+        float fBestScore = 0.0f;
+        FindBestPart(
+            pSinger->mFrameMicPitch,
+            fCompMS,
+            partsArray,
+            pSinger,
+            pBestPart,
+            fBestPitchDistance,
+            fBestScore
+        );
+        if (pBestPart) {
+            pBestPart->AddSingerCandidate(pSinger, fBestPitchDistance);
+            if (mVocalOverlay) {
+                mVocalOverlay->AddPossiblePart(pSinger->mSingerIndex, pBestPart);
+            }
+        }
+
+        // Assign best singer candidate for each part
+        FOREACH (pIt2, mVocalParts) {
+            VocalPart *pPart = *pIt2;
+            Singer *pBestSinger = pPart->GetBestSingerCandidate();
+            if (pBestSinger) {
+                pBestSinger->SetAssignedPart(pPart->mPartIndex, fBestPitchDistance);
+            }
+        }
+    }
+
+    if (mVocalOverlay) {
+        mVocalOverlay->EqualizeSingerStrings();
+    }
+
+    // Finalize octave offsets and assigned parts for each singer
+    static bool bDoCorrect = true;
+    const float kSemitone = 12.0f;
+    const float kHalfSemitone = 0.5f;
+
+    FOREACH (sIt2, mSingers) {
+        Singer *pSinger = *sIt2;
+        pSinger->AllScoresAreIn(*(std::vector<int> *)&singerPitches);
+        pSinger->ResolveAmbiguity();
+        int iOctaveOffset = 0;
+        float fFramePitch = pSinger->mFrameMicPitch;
+
+        if (0.0f != pSinger->unk74) {
+            pSinger->ClearFreestyleDeployment();
+        }
+
+        if (pSinger->mFrameAssignedPart != -1) {
+            VocalPart *pPart = mVocalParts[pSinger->mFrameAssignedPart];
+            VocalScoreCache &cache = pSinger->AccessScoreCache(pPart->mPartIndex);
+            pPart->AddScore(cache);
+            pSinger->unk6c = cache.unk0;
+
+            if (mFrameSpewData) {
+                mFrameSpewData->mSingerData[pSinger->mSingerIndex].unk8 =
+                    (int)pSinger->mFrameAssignedPart;
+            }
+
+            if (0.0f != pSinger->mFrameMicPitch) {
+                iOctaveOffset =
+                    pSinger->AccessScoreHistory(pPart->mPartIndex).GetOctaveOffset();
+            }
+        } else {
+            float fOld = pSinger->mFrameMicPitch;
+            iOctaveOffset = pSinger->mOctaveOffset;
+            if (0.0f != fOld) {
+                float fPrev = pSinger->unk74;
+                if (0.0f != fPrev) {
+                    float diff = fPrev - fOld;
+                    float absDiff = fabsf(diff);
+                    float mod = (float)fmod(absDiff, 12.0);
+                    float alt = kSemitone - mod;
+                    if (mod < alt) {
+                        // keep mod
+                    } else {
+                        mod = alt;
+                    }
+                    if (mod == kHalfSemitone) {
+                        int sign = (diff > 0.0f) ? 1 : -1;
+                        iOctaveOffset = (int)(kHalfSemitone + absDiff / kSemitone) * sign;
+                    }
+                }
+            }
+            pSinger->unk6c = 0.0f;
+            pSinger->mFrameTargetPitch = 0.0f;
+
+            if (!IsDeployingBandEnergy() && InFreestyleSection()) {
+                float fDeployAmt = pSinger->AddToFreestyleDeployment(fCompMS);
+                if (fDeployAmt > var_f24) {
+                    var_f24 = fDeployAmt;
+                    iMaximumFreestyleDeploymentSinger = pSinger->mSingerIndex;
+                }
+            }
+        }
+
+        if (0.0f != pSinger->mFrameMicPitch) {
+            MILO_ASSERT(mTrack, 0x501);
+            float fAdjusted = (kSemitone * (float)iOctaveOffset) + pSinger->mFrameMicPitch;
+            float fBottom = mTrack->GetBottomDisplayPitch() - mTrackWrappingMargin;
+            float fTop = mTrackWrappingMargin + mTrack->GetTopDisplayPitch();
+            if ((fBottom > 0.0f) && (fAdjusted < fBottom)) {
+                iOctaveOffset += (int)((fBottom - fAdjusted) / kSemitone) + 1;
+            } else if ((fTop > 0.0f) && (fAdjusted > fTop)) {
+                iOctaveOffset += (int)((fTop - fAdjusted) / kSemitone) - 1;
+            } else {
+                int iSudden = pSinger->SuddenOctaveShift(fFramePitch);
+                if (iSudden && bDoCorrect) {
+                    iOctaveOffset -= iSudden;
+                }
+            }
+        }
+
+        if (0.0f != pSinger->mFrameMicPitch) {
+            pSinger->SetFrameMicPitch(
+                (kSemitone * (float)iOctaveOffset) + pSinger->mFrameMicPitch
+            );
+        }
+        pSinger->SetOctaveOffset(iOctaveOffset);
+
+        if (mVocalOverlay) {
+            mVocalOverlay->AppendAssignedPart(pSinger, mVocalParts);
+        }
+
+        pSinger->UpdatePitchHistory(fFramePitch);
+
+        if (mVocalOverlay) {
+            mVocalOverlay->AppendEnergy(pSinger->mSingerIndex, pSinger->unk60, fCompMS);
+        }
+        if (mVocalOverlay) {
+            TalkyMatcher *pTalky = pSinger->mTalkyMatcher;
+            mVocalOverlay->AppendTalkyData(
+                pSinger->mSingerIndex,
+                pTalky->mVoiceBeat.unk1,
+                pTalky->mVoiceBeat.unk0,
+                pTalky->mVoiceBeat.unk4
+            );
+        }
+        if (mVocalOverlay) {
+            mVocalOverlay->AppendDeploymentTime(pSinger->mSingerIndex, pSinger->unk44);
+        }
+    }
+
+    if (mVocalOverlay) {
+        mVocalOverlay->AppendDeploymentMarker(mLastDeploymentSinger);
+    }
+
+    // AfterPoll each part
+    FOREACH (pIt3, mVocalParts) {
+        VocalPart *pPart = *pIt3;
+        pPart->AfterPoll(fCompMS);
+        if (mFrameSpewData) {
+            mFrameSpewData->mPartData[pPart->mPartIndex].unk18 = (int)pPart->mPhraseScore;
+            mFrameSpewData->mPartData[pPart->mPartIndex].unk1c =
+                (int)pPart->mPhraseScoreMax;
+        }
+    }
+
+    if (!IsDeployingBandEnergy()) {
+        SendVocalState(fCompMS);
+    }
+
+    if (mVocalParts[0]->AtPhraseEnd(fCompMS)) {
+        HandlePhraseEnd(fCompMS);
+    }
+
+    float fRequiredMs = 0.0f;
+    if (GetFreestyleDeploymentRequiredMs(fRequiredMs) && var_f24 > fRequiredMs) {
+        LocalDeployBandEnergy();
+        mLastDeploymentSinger = iMaximumFreestyleDeploymentSinger;
+    }
+
+    if (mVocalOverlay) {
+        mVocalOverlay->AppendPartData(mVocalParts);
+    }
+    if (mVocalOverlay) {
+        mVocalOverlay->AppendPhraseMeter(FrameOverallPhraseMeterFrac());
+    }
+    if (mVocalOverlay) {
+        mVocalOverlay->FinalizeDisplayString();
+    }
+
+    // Chat handling
+    bool bCanChat = false;
+    if (!TheNetSession->IsLocal() && PressingToTalk()) {
+        bCanChat = true;
+    }
+    if (mCouldChat != bCanChat) {
+        SendCanChat(bCanChat);
+        mCouldChat = bCanChat;
+    }
+
+    // Mic/pitch correction
+    TheGameMicManager->SetOverdriveEffectEnable(IsDeployingBandEnergy());
+    if (IsDeployingBandEnergy()) {
+        TheGameMicManager->Poll(
+            (float)TheTempoMap->GetTempoInMicroseconds((int)pos.mTotalTick)
+        );
+    }
+
+    bool bSolo = ((int)mVocalParts.size() - 1) == 0;
+    if (TheGameMicManager->GetMicCount() == 1 && bSolo) {
+        Singer *pFirstSinger = mSingers[0];
+        float fHitPct = pFirstSinger->AccessScoreCache(0).unk14;
+        float fAdjusted = fHitPct + (mTuningOffset / 100.0f);
+        if (0.0f == fHitPct) {
+            fAdjusted = 0.0f;
+        }
+        bool bEnable = (fAdjusted != 0.0f);
+        TheGameMicManager->SetPitchCorrectionTarget(
+            bEnable, false,
+            mSynapseProximitySolo, mSynapseFocusSolo,
+            fAdjusted, 0.0f, 0.0f
+        );
+    } else {
+        TheGameMicManager->SetPitchCorrectionTarget(
+            false, false,
+            mSynapseProximitySolo, mSynapseFocusSolo,
+            0.0f, 0.0f, 0.0f
+        );
+    }
+
+    Player::Poll(ms, pos);
+
+    // Frame spew output to stream
+    if (mFrameSpewStream) {
+        MILO_ASSERT(mFrameSpewData, 0x5CC);
+        VocalFrameSpewData *spew = mFrameSpewData;
+        TextFileStream *ts = mFrameSpewStream;
+        *ts << spew->mMs << "\t";
+        *ts << spew->mCompMs << "\t";
+        for (int i = 0; i < (int)spew->mSingerData.size(); i++) {
+            *ts << spew->mSingerData[i].unk0 << "\t";
+            *ts << spew->mSingerData[i].unk4 << "\t";
+            *ts << spew->mSingerData[i].unk8 << "\t";
+        }
+        for (int i = 0; i < (int)spew->mPartData.size(); i++) {
+            *ts << spew->mPartData[i].unk0 << "\t";
+            *ts << spew->mPartData[i].unk4 << "\t";
+            *ts << spew->mPartData[i].unk8 << "\t";
+            *ts << spew->mPartData[i].unkc << "\t";
+            *ts << spew->mPartData[i].unk10 << "\t";
+            *ts << spew->mPartData[i].unk14 << "\t";
+            *ts << spew->mPartData[i].unk18 << "\t";
+            *ts << spew->mPartData[i].unk1c << "\t";
+        }
+        *ts << "\n";
+    }
 }
 
 bool VocalPlayer::FindBestPart(
@@ -662,12 +1121,11 @@ void VocalPlayer::LocalScorePhrase(
 ) {
     if (mTrack) {
         int iActivePartCount = 0;
-        unsigned int sz = i_rNewPhraseActiveParts.size();
         for (std::vector<int>::const_iterator it = i_rNewPhraseActiveParts.begin();
              it != i_rNewPhraseActiveParts.end(); ++it) {
             iActivePartCount += *it;
         }
-        MILO_ASSERT(( 0) <= ( iActivePartCount) && ( iActivePartCount) <= ( sz), 0x855);
+        MILO_ASSERT(( 0) <= ( iActivePartCount) && ( iActivePartCount) <= ( i_rNewPhraseActiveParts.size()), 0x855);
         VocalTrackDir *dir = mTrack->GetVocalTrackDir();
         dir->ShowPhraseFeedback(i1, -1, -1, IsDeployingBandEnergy());
         dir->UpdateVocalMeters(
@@ -952,31 +1410,33 @@ bool VocalPlayer::InFreestyleSection() const {
     return false;
 }
 
-bool VocalPlayer::GetFreestyleDeploymentRequiredMs(float &o_rMs) const {
+bool VocalPlayer::GetFreestyleDeploymentRequiredMs(float &out) const {
     float minDuration = -1.0f;
     bool found = false;
     FOREACH (it, mVocalParts) {
-        VocalPart *cur = *it;
-        if (cur->InFreestyleSection()) {
-            float dur = cur->GetFreestyleSectionDurationMs();
-            if (minDuration == -1.0f || dur < minDuration) {
-                minDuration = dur;
+        VocalPart *part = *it;
+        if (part->InFreestyleSection()) {
+            float duration = part->GetFreestyleSectionDurationMs();
+            if (minDuration == -1.0f || duration < minDuration) {
+                minDuration = duration;
             }
             found = true;
         }
     }
-    if (!found || minDuration == 0.0f)
+    if (!found || minDuration == 0.0f) {
         return false;
-    int idx = -1;
+    }
+    int matchIdx = -1;
     for (int i = 0; i < mFreestyleDeploymentTimes->Size(); i++) {
         if (minDuration >= mFreestyleMinDurations->Float(i)) {
-            idx = i;
+            matchIdx = i;
             break;
         }
     }
-    if (idx == -1)
+    if (matchIdx == -1) {
         return false;
-    o_rMs = mFreestyleDeploymentTimes->Float(idx);
+    }
+    out = mFreestyleDeploymentTimes->Float(matchIdx);
     return true;
 }
 
