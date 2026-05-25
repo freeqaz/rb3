@@ -1305,7 +1305,8 @@ int BandCharacter::GetShotFlags(Symbol s) {
     else {
         DataArray *arr = BandWardrobe::GetGroupArray(ty);
         for (int i = 0; i < arr->Size(); i++) {
-            if (arr->Array(i)->Sym(0) == s) {
+            bool symEq = (strcmp(arr->Array(i)->Sym(0).mStr, s.mStr) == 0);
+            if (symEq) {
                 return arr->Array(i)->Int(1);
             }
         }
