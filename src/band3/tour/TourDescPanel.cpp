@@ -92,7 +92,7 @@ public:
     ComponentStateOverride(int, int, UIComponent::State) const;
 
     inline bool IsTourDescAvailable(Symbol) const;
-    void UpdateList();
+    inline void UpdateList();
 
     std::vector<DynamicTex *> *mTexs; // 0x20
     RndMat *mUnearnedMat; // 0x24
@@ -141,9 +141,32 @@ public:
     TourDescProvider *m_pTourDescProvider; // 0x4c
 };
 
+inline void TourDescProvider::UpdateList() {
+    MILO_ASSERT(TheTour, 0x49);
+    mTours.clear();
+    for (std::map<Symbol, TourDesc *>::const_iterator it =
+             TheTour->m_mapTourDesc.begin();
+         it != TheTour->m_mapTourDesc.end();
+         ++it) {
+        mTours.push_back(it->first);
+    }
+}
+
 void TourDescPanel::Refresh() {
-    std::vector<Symbol> descs;
-    std::stable_sort(descs.begin(), descs.end(), TourDescCmp(TheTour));
+    TourProgress *pProgress = TheTour->GetTourProgress();
+    MILO_ASSERT(pProgress, 0x2C7);
+    MILO_ASSERT(m_pTourDescProvider, 0x2C9);
+    m_pTourDescProvider->UpdateList();
+    TourDescCmp cmp(TheTour);
+    std::stable_sort(
+        m_pTourDescProvider->mTours.begin(),
+        m_pTourDescProvider->mTours.end(),
+        cmp
+    );
+    static Message cUpdateFilterProviderMsg("update_tourdesc_provider", 0);
+    cUpdateFilterProviderMsg[0] = m_pTourDescProvider;
+    Handle(cUpdateFilterProviderMsg, true);
+    SelectDefaultTour();
 }
 
 void TourDescPanel::LoadIcons() {
@@ -165,26 +188,34 @@ void TourDescPanel::LoadIcons() {
         true,
         false
     );
-    for (std::map<Symbol, TourDesc *>::const_iterator it =
-             TheTour->m_mapTourDesc.begin();
-         it != TheTour->m_mapTourDesc.end();
-         ++it) {
-        TourDesc *pTourDesc = (*it).second;
-        Symbol s = (*it).first;
-        MILO_ASSERT(pTourDesc, 0x2A7);
-        AddTex(pTourDesc->GetArt(), s.Str(), true, false);
-        AddTex(pTourDesc->GetGrayArt(), MakeString("%s_gray", s.Str()), true, false);
+    {
+        std::map<Symbol, TourDesc *>::const_iterator end =
+            TheTour->m_mapTourDesc.end();
+        for (std::map<Symbol, TourDesc *>::const_iterator it =
+                 TheTour->m_mapTourDesc.begin();
+             it != end;
+             ++it) {
+            TourDesc *pTourDesc = (*it).second;
+            Symbol s = (*it).first;
+            MILO_ASSERT(pTourDesc, 0x2A7);
+            AddTex(pTourDesc->GetArt(), s.Str(), true, false);
+            AddTex(pTourDesc->GetGrayArt(), MakeString("%s_gray", s.Str()), true, false);
+        }
     }
-    for (std::map<Symbol, CampaignLevel *>::const_iterator it =
-             TheCampaign->m_mapCampaignLevels.begin();
-         it != TheCampaign->m_mapCampaignLevels.end();
-         ++it) {
-        CampaignLevel *pLevel = (*it).second;
-        Symbol s = (*it).first;
-        MILO_ASSERT(pLevel, 0x2B9);
-        String iconArt = pLevel->GetIconArt();
-        if (pLevel->IsMajorLevel())
-            AddTex(iconArt.c_str(), s.Str(), true, false);
+    {
+        std::map<Symbol, CampaignLevel *>::const_iterator end =
+            TheCampaign->m_mapCampaignLevels.end();
+        for (std::map<Symbol, CampaignLevel *>::const_iterator it =
+                 TheCampaign->m_mapCampaignLevels.begin();
+             it != end;
+             ++it) {
+            CampaignLevel *pLevel = (*it).second;
+            Symbol s = (*it).first;
+            MILO_ASSERT(pLevel, 0x2B9);
+            String iconArt = pLevel->GetIconArt();
+            if (pLevel->IsMajorLevel())
+                AddTex(iconArt.c_str(), s.Str(), true, false);
+        }
     }
 }
 
@@ -310,8 +341,8 @@ void TourDescProvider::UpdateExtendedText(int, int iData, UILabel *i_pLabel) con
     MILO_ASSERT(pTourDesc, 0x104);
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0x109);
-    bool bPlayed = pProgress->GetToursPlayed(s) != 0;
-    bPlayed = bPlayed || pProgress->GetTourMostStars(s) > 0;
+    bool bPlayed = pProgress->GetToursPlayed(s) != 0
+        || pProgress->GetTourMostStars(s) > 0;
     const char *pName = i_pLabel->Name();
     if (strcmp(pName, "tour_bronze.lbl") == 0) {
         i_pLabel->SetTokenFmt(

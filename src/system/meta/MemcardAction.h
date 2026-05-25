@@ -3,12 +3,16 @@
 class Profile;
 
 class MemcardAction {
+public:
     MemcardAction(Profile *);
     virtual ~MemcardAction() {}
     virtual void PreAction() = 0;
     virtual void Action() = 0;
     virtual void PostAction() = 0;
 
+    void SetBuffer(char *, int);
+
+protected:
     int unk_04;
     char *mBuf;
     int mBufLen;
@@ -17,6 +21,4 @@ class MemcardAction {
     int unk_18;
     int unk_1c;
     int unk_20;
-
-    void SetBuffer(char *, int);
 };

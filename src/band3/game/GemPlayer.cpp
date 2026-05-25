@@ -2424,6 +2424,21 @@ bool GemPlayer::AllCodaGemsHit() const {
     return false;
 }
 
+int GemPlayer::GetCodaFreestyleExtents(Extent &extent) const {
+    int codaStartTick = TheSongDB->GetCodaStartTick();
+    if (codaStartTick == -1)
+        return false;
+    DrumFillInfo *fillInfo = TheSongDB->GetData()->GetDrumFillInfo(mTrackNum);
+    if (fillInfo->mFills.empty())
+        return false;
+    int lastStart = fillInfo->mFills.back().start;
+    if (lastStart < codaStartTick)
+        return false;
+    extent.unk0 = lastStart;
+    extent.unk4 = fillInfo->mFills.back().end;
+    return true;
+}
+
 void GemPlayer::CodaHit(float f1, int i2) {
     if (IsLocal()) {
         mBand->DealWithCodaGem(this, i2, true, AllCodaGemsHit());

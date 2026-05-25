@@ -1,6 +1,7 @@
 #pragma once
 #include "bandobj/BandTrack.h"
 #include "bandobj/PitchArrow.h"
+#include "math/Color.h"
 #include "rndobj/Dir.h"
 #include "rndobj/Group.h"
 #include "rndobj/Text.h"
@@ -55,6 +56,8 @@ public:
     void UpdateTubeStyle();
     void ConfigPanels();
     PitchArrow *GetPitchArrow(int);
+    Hmx::Color GetLyricColor(int) const;
+    float GetLyricAlpha(int) const;
     float PitchToZ(float, bool) const;
     void Tambourine(Symbol);
     void TambourineNote();

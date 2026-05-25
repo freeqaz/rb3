@@ -1,4 +1,5 @@
 #pragma once
+#include "meta/MemcardAction.h"
 #include "meta/Profile.h"
 #include "obj/Msg.h"
 #include "os/ThreadCall.h"
@@ -21,6 +22,7 @@ public:
     void DisableWriting(bool);
     bool IsDisableWriting() const;
     bool IsWriteMode() const;
+    void OnSaveGame(Profile *, MemcardAction *, int);
 
     void SaveLoadAllComplete();
 

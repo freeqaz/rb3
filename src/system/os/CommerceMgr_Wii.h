@@ -3,7 +3,31 @@
 #include "revolution/ec/ec.h"
 #include "utl/Str.h"
 #include "utl/VectorSizeDefs.h"
+#include <map>
 #include <vector>
+
+struct ECLicensePricing {
+    unsigned long long titleId; // 0x0
+    unsigned long price;        // 0x8
+    unsigned long nIndexes;     // 0xc
+    unsigned short *indexes;    // 0x10
+};
+
+struct ECContentCatalogInfo {
+    unsigned long long titleId;         // 0x0
+    void *ratings;                      // 0x8
+    unsigned long nRatings;             // 0xc
+    ECLicensePricing *licensePricings;  // 0x10
+    unsigned long nLicensePricings;     // 0x14
+    void *attributes;                   // 0x18
+    unsigned long nAttributes;          // 0x1c
+    long isTitleIncluded;               // 0x20
+    unsigned short *indexes;            // 0x24
+    unsigned long nIndexes;             // 0x28
+};
+
+const char *GetAttributeStr(const ECContentCatalogInfo *, const char *);
+void DebugPrint(ECContentCatalogInfo *);
 
 class WiiCommerceMgr : public MsgSource {
 public:
@@ -38,6 +62,12 @@ public:
     void SpecifyContentUnits(
         const std::vector<unsigned short VECTOR_SIZE_SMALL> &
     );
+    void QueryOffers(
+        unsigned long long titleId,
+        std::map<unsigned long, bool> *outMap,
+        Hmx::Object *callback
+    );
+    bool RequestOffers(Hmx::Object *callback);
 
     static unsigned long long MakeDataTitleId(const char *);
 
@@ -66,7 +96,9 @@ public:
     char unkF5; // f5
     char unkF6[0x2110 - 0xf6]; // padding
     int unk2110; // 2110
-    char unk2114[0x2128 - 0x2114]; // padding to ECTitleInfo
+    char unk2114[0x2120 - 0x2114]; // padding
+    ECContentCatalogInfo *mCatalogInfos; // 0x2120
+    unsigned long mNumCatalogInfos; // 0x2124
     ECTitleInfo mTitleInfo; // 0x2128, sizeof = 0x28
     char unk2150; // 2150
     char unk2151; // 2151

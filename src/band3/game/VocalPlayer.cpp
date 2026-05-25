@@ -42,6 +42,7 @@
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 #include "utl/TextFileStream.h"
+#include "utl/TimeConversion.h"
 #include "world/Dir.h"
 #include "utl/Messages.h"
 #include "utl/Messages4.h"
@@ -287,6 +288,32 @@ float VocalPlayer::GetNotesHitFraction(bool *bptr) const {
 
 Symbol VocalPlayer::GetStarRating() const {
     return TheScoring->GetStarRating(GetNumStars());
+}
+
+void VocalPlayer::LocalSetEnabledState(EnabledState state, int i1, BandUser *user, bool b1) {
+    Player::LocalSetEnabledState(state, i1, user, b1);
+    if (state == kPlayerEnabled || state == kPlayerDisabled || state == kPlayerDisconnected) {
+        int tick = (int)MsToTick(GetSongMs());
+        bool enabled = (state == kPlayerEnabled);
+        mCommonPhraseCapturer->Enabled(this, mTrackNum, tick, enabled);
+    } else if ((unsigned)(state - kPlayerBeingSaved) <= 1U) {
+        std::vector<VocalPhrase> &phrases = mVocalParts[0]->mVocalNoteList->mPhrases;
+        for (std::vector<VocalPhrase>::iterator it = phrases.begin(); it != phrases.end(); ++it) {
+            if (mEnableMs <= it->unk0) {
+            mEnableMs = it->unk0;
+            FOREACH (vp, mVocalParts) {
+                (*vp)->SetFirstPhraseMsToScore(it->unk0);
+            }
+            break;
+            }
+        }
+        if (mTrack) {
+            mTrack->RebuildHUD();
+        }
+    }
+    bool vocalState = ((unsigned)state <= (unsigned)kPlayerDisconnected) &&
+                      ((1 << state) & 0x19) != 0;
+    mBeatMaster->GetAudio()->SetVocalState(vocalState);
 }
 
 int VocalPlayer::LocalDeployBandEnergy() {
@@ -1123,6 +1150,50 @@ float VocalPlayer::GetPracticeHitPercentage(int p, int i2, int i3) {
         return f7;
     } else
         return mVocalParts[p]->GetPartHitPercentage(phrases, i2, i3);
+}
+
+float VocalPlayer::GetNumPhrases(int startTick, int endTick, int isolatedPart) {
+    std::vector<VocalPhrase> phraseVec;
+    mVocalParts[0]->mVocalNoteList->GetPracticePhrases2(phraseVec, startTick, endTick);
+    int startPart = 0;
+    int endPart = 0;
+    if (isolatedPart < 0) {
+        endPart = 2;
+    } else if (isolatedPart != 0) {
+        startPart = endPart = isolatedPart;
+    }
+    int count = 0;
+    unsigned int phraseIdx = 0;
+    int byteOffset = 0;
+    while (phraseIdx < phraseVec.size()) {
+        VocalPhrase *phrase = (VocalPhrase *)((char *)&phraseVec[0] + byteOffset);
+        int clampedStart = phrase->unk8;
+        if (clampedStart < startTick) clampedStart = startTick;
+        int clampedEnd = phrase->unk8 + phrase->unkc;
+        if (endTick < clampedEnd) clampedEnd = endTick;
+        int part = startPart;
+        int found = 0;
+        while (part <= endPart && !found) {
+            if (part == 0) {
+                if (phrase->unk10 != phrase->unk14) {
+                    found = 1;
+                    count++;
+                }
+            } else {
+                VocalNoteList *vnl = TheSongDB->GetVocalNoteList(part);
+                if (vnl != NULL && vnl->HasNoteInRange(clampedStart, clampedEnd) != -1) {
+                    if (part != 0 || phrase->unk10 != phrase->unk14) {
+                        found = 1;
+                        count++;
+                    }
+                }
+            }
+            part++;
+        }
+        phraseIdx++;
+        byteOffset += 0x38;
+    }
+    return (float)count;
 }
 
 float VocalPlayer::GetBestPercentage(int p) {

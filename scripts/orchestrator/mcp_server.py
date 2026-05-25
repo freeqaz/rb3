@@ -321,6 +321,40 @@ class DecompMCPServer:
                     },
                 ),
                 Tool(
+                    name="batch_objdiff",
+                    description=(
+                        "Diff many symbols against the target binary in one shot. "
+                        "Runs ninja-locked ONCE (via the first symbol's --build), "
+                        "then issues per-symbol diff queries against the already-built "
+                        "object files. Each entry is deterministically classified as "
+                        "COSMETIC | REAL_DIFF | BORDERLINE so the caller can promote "
+                        "COSMETIC verdicts without an LLM judgment.\n\n"
+                        "Use this for verification-sweep workflows where you have a "
+                        "list of candidate symbols at >=95% fuzzy match. Far cheaper "
+                        "than N×run_objdiff because the build cost is amortized."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "symbols": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Mangled function symbols (1..N).",
+                            },
+                            "units": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Optional per-symbol unit names (aligned with symbols[]).",
+                            },
+                            "project_dir": {
+                                "type": "string",
+                                "description": "Project directory (defaults to repo root).",
+                            },
+                        },
+                        "required": ["symbols"],
+                    },
+                ),
+                Tool(
                     name="mark_patch_result",
                     description="Mark a queued patch as applied, failed, or skipped.",
                     inputSchema={
@@ -375,6 +409,8 @@ class DecompMCPServer:
                 return await self._get_attempts(arguments)
             elif name == "run_objdiff":
                 return await self._run_objdiff(arguments)
+            elif name == "batch_objdiff":
+                return await self._batch_objdiff(arguments)
             elif name == "run_diff_inspect":
                 return await self._run_diff_inspect(arguments)
             elif name == "mark_patch_result":
@@ -871,6 +907,127 @@ Read in chunks of 200 lines.
             return [TextContent(type="text", text="Error: objdiff timed out after 5 minutes.")]
         except Exception as e:
             return [TextContent(type="text", text=f"Error running objdiff: {e}")]
+
+    async def _batch_objdiff(self, args: dict) -> list[TextContent]:
+        """Build once, diff many. Classify each as COSMETIC|REAL_DIFF|BORDERLINE."""
+        symbols = args.get("symbols", [])
+        units = args.get("units") or []
+        project_dir_arg = args.get("project_dir")
+
+        if not symbols or not isinstance(symbols, list):
+            return [TextContent(type="text", text="Error: 'symbols' must be a non-empty array.")]
+
+        if project_dir_arg:
+            project_dir = Path(project_dir_arg)
+            if not project_dir.exists():
+                return [TextContent(
+                    type="text",
+                    text=f"Error: project_dir does not exist: {project_dir}",
+                )]
+        elif os.environ.get("REPO_ROOT"):
+            project_dir = Path(os.environ["REPO_ROOT"])
+        else:
+            project_dir = self.project_root
+
+        objdiff_cli = project_dir / "bin" / "objdiff-cli"
+        if not objdiff_cli.exists():
+            which_result = subprocess.run(
+                ["which", "objdiff-cli"], capture_output=True, text=True
+            )
+            if which_result.returncode == 0:
+                objdiff_cli = Path(which_result.stdout.strip())
+            else:
+                return [TextContent(
+                    type="text",
+                    text="Error: objdiff-cli not found in project bin/ or system PATH",
+                )]
+
+        # Import the classifier lazily so the server can still start if the
+        # diff_inspect dependency is broken.
+        try:
+            from orchestrator.classify_equivalent import classify
+        except ImportError as e:
+            return [TextContent(
+                type="text",
+                text=f"Error: cannot import classifier: {e}",
+            )]
+
+        def _diff_one(symbol: str, unit: str | None, do_build: bool) -> dict:
+            cmd = [
+                str(objdiff_cli),
+                "diff",
+                "-p", str(project_dir),
+                symbol,
+                "--verdict",
+                "--include-instructions",
+            ]
+            if unit:
+                cmd.extend(["-u", unit])
+            if do_build:
+                cmd.append("--build")
+            cmd.extend(["-f", "json"])
+            r = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=300,
+                cwd=str(project_dir),
+            )
+            out = r.stdout
+            start = out.find("{")
+            if start < 0:
+                return {"error": "no JSON output", "stderr": _filter_build_output(r.stderr)}
+            try:
+                return json.loads(out[start:])
+            except json.JSONDecodeError as e:
+                return {"error": f"json decode: {e}"}
+
+        results = []
+        # First symbol: do the build. Subsequent: skip the build flag — the
+        # ninja-locked acquisition has already happened and the .o files
+        # are current.
+        for i, sym in enumerate(symbols):
+            unit = units[i] if i < len(units) else None
+            data = _diff_one(sym, unit, do_build=(i == 0))
+            entry = {
+                "symbol": sym,
+                "unit": unit,
+            }
+            if "error" in data:
+                entry.update({"error": data["error"]})
+                if data.get("stderr"):
+                    entry["stderr"] = data["stderr"][:400]
+                entry["classification"] = "ERROR"
+                results.append(entry)
+                continue
+            entry["fuzzy_pct"] = round(data.get("fuzzy_match_percent", 0.0), 2)
+            entry["raw_pct"] = round(data.get("raw_match_percent", 0.0), 2)
+            entry["verdict"] = (data.get("verdict") or {}).get("classification", "")
+            cls = classify(data)
+            entry["classification"] = cls.label
+            entry["rationale"] = cls.rationale
+            results.append(entry)
+
+        # Summary header + table.
+        from collections import Counter
+        labels = Counter(r["classification"] for r in results)
+        lines = [
+            f"Batch objdiff: {len(results)} symbol(s) — "
+            + ", ".join(f"{k}={v}" for k, v in labels.most_common())
+        ]
+        lines.append("")
+        lines.append(
+            f"{'verdict':<14}  {'fuzzy':>7}  {'raw':>7}  classification  symbol"
+        )
+        lines.append("-" * 90)
+        for r in results:
+            fmt_fuzzy = f"{r.get('fuzzy_pct', 0):.1f}%" if "fuzzy_pct" in r else "    -"
+            fmt_raw = f"{r.get('raw_pct', 0):.1f}%" if "raw_pct" in r else "    -"
+            lines.append(
+                f"{r.get('verdict', '?'):<14}  {fmt_fuzzy:>7}  {fmt_raw:>7}  "
+                f"{r['classification']:<13}   {r['symbol']}"
+            )
+        lines.append("")
+        lines.append("# JSON")
+        lines.append(json.dumps(results, indent=2))
+        return [TextContent(type="text", text="\n".join(lines))]
 
     async def _run_diff_inspect(self, args: dict) -> list[TextContent]:
         """Handle run_diff_inspect tool call."""

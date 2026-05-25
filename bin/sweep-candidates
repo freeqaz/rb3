@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Rank decomp promotion candidates by tier.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "${SCRIPT_DIR}/../tools/sweep_candidates.py" "$@"

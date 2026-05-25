@@ -22,8 +22,8 @@ Gem::Gem(
       mArrhythmicDurationSeconds(0), unk_0x40(0), unk_0x44(0), unk_0x48(0),
       mChordLabel(""), unk_0x58(-1), mFirstFret(-1), mFirstFretString(-1), mFretPos(0),
       mKeyFingerNumber(-1), mHit(0), mMissed(0), mReleased(0), mHopo(hopo), mInvisible(0),
-      mBeard(beardTick != -1), mInArrhythmic(0), unk_0x66_7(0), unk_0x67_0(0), unk_0x67_1(0),
-      unk_0x67_2(0), unk_0x67_3(0), unk_0x67_4(0) {
+      mBeard(beardTick != -1), mInArrhythmic(0), mIsCymbalLane(0), mIsRepeatChord(0), mInArpeggio(0),
+      mSuppressChordLabel(0), mSuppressFretLabel(0), mSlideUp(0) {
     InitChordInfo(i2, b2);
 }
 
@@ -45,12 +45,12 @@ Gem &Gem::operator=(const Gem &g) {
     mArrhythmicDurationSeconds = g.mArrhythmicDurationSeconds;
     unk_0x58 = g.unk_0x58;
     unk_0x40 = g.unk_0x40;
-    unk_0x66_7 = g.unk_0x66_7;
+    mIsCymbalLane = g.mIsCymbalLane;
     unk_0x44 = g.unk_0x44;
     mFirstFret = g.mFirstFret;
     mFirstFretString = g.mFirstFretString;
-    unk_0x67_0 = g.unk_0x67_0;
-    unk_0x67_1 = g.unk_0x67_1;
+    mIsRepeatChord = g.mIsRepeatChord;
+    mInArpeggio = g.mInArpeggio;
     mKeyFingerNumber = g.mKeyFingerNumber;
     return (Gem &)g;
 }
@@ -104,7 +104,7 @@ void Gem::AddRep(
                 Tail::SlideInfo info;
                 if (mGameGem.LeftHandSlide()) {
                     info.unk0 = true;
-                    if (unk_0x67_4) {
+                    if (mSlideUp) {
                         info.unk8 = startOffset;
                         info.unk4 = -startOffset;
                     } else {
@@ -126,7 +126,7 @@ void Gem::AddRep(
 #pragma push
 #pragma force_active on
 inline bool Gem::UseRGChordStyle() const {
-    return mGameGem.IsRealGuitarChord() || unk_0x67_1 || mGameGem.IsMuted();
+    return mGameGem.IsRealGuitarChord() || mInArpeggio || mGameGem.IsMuted();
 }
 #pragma pop
 
@@ -260,7 +260,7 @@ void Gem::AddChordInstance(Symbol s1) {
                 mGemManager->mTrackDir->Name()
             );
 
-        if (!unk_0x67_3 && mFirstFretString != -1) {
+        if (!mSuppressFretLabel && mFirstFretString != -1) {
             Symbol s68;
             if (mGemManager->GetChordWidgetName(s1, chord_fret, s68)) {
                 w60 = mGemManager->GetWidgetByName(s68);
@@ -274,7 +274,7 @@ void Gem::AddChordInstance(Symbol s1) {
                 );
         }
 
-        if (!unk_0x67_2 && !unk_0x67_0 && !mChordLabel.empty()) {
+        if (!mSuppressChordLabel && !mIsRepeatChord && !mChordLabel.empty()) {
             Symbol s6c;
             if (mGemManager->GetChordWidgetName(s1, chord_label, s6c)) {
                 w10 = mGemManager->GetWidgetByName(s6c);

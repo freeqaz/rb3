@@ -457,9 +457,9 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
     register float *_row1 = row1;
     register float *_row2 = row2;
     register psq _f0, _f1, _f2, _f3, _f4, _f5, _f6, _f7, _f8, _f9, _f10, _f11, _f12;
-    asm { cmplw cr1, _b, _out }
+    asm { cmplw _b, _out }
     asm volatile {
-        beq cr1, alias_path
+        beq alias_path
         // non-alias path
         psq_l  _f4, 0x4(_a),  0, 0
         psq_l  _f3, 0x18(_b), 0, 0

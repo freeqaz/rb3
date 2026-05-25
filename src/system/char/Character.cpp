@@ -356,7 +356,8 @@ void Character::UpdateSphere() {
 }
 
 void Character::CalcBoundingSphere() {
-    Transform tf50(mLocalXfm);
+    const Transform &localXfm = mLocalXfm;
+    Transform tf50(localXfm);
     DirtyLocalXfm().Reset();
     mBounding.Zero();
     static const char *boneNames[5] = { "bone_head.mesh",

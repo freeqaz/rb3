@@ -2,87 +2,79 @@
 name: progress
 description: Get decomp progress summary. Shows match statistics from the build report, per-category breakdowns, and identifies areas with the most remaining work. Use to check overall project status or find targets for decomp work.
 argument-hint: ""
-allowed-tools: Bash(ninja *), Bash(python3 *), Bash(jq *), Read, Grep, Glob
+allowed-tools: Bash(tools/ninja-locked *), Bash(ninja *), Bash(python3 *), Bash(jq *), Read, Grep, Glob
 ---
 
 # Progress Skill
 
-Show RB3 decomp progress statistics.
+Show RB3 decomp progress. Categories come from `report.json` itself (driven by `configure.py`'s per-object `progress_category` — see `configure.py`'s Wii-only override).
 
 ## Steps
 
-1. **Build and generate the report** (ensures report.json is up to date):
+1. **Refresh the report** (serialized via flock):
    ```bash
-   ninja build/SZBE69_B8/report.json
+   tools/ninja-locked build/SZBE69_B8/report.json
    ```
 
-2. **Show the progress summary:**
+2. **Show per-category summary, then port-scope rollup:**
    ```bash
    python3 -c "
    import json
    from pathlib import Path
-   from collections import defaultdict
 
-   report = json.loads(Path('build/SZBE69_B8/report.json').read_text())
-   units = report.get('units', [])
+   data = json.loads(Path('build/SZBE69_B8/report.json').read_text())
+   cats = data.get('categories', [])
 
-   total = complete = fuzzy_total = fuzzy_matched = 0
-   cats = defaultdict(lambda: {'total': 0, 'complete': 0, 'fuzzy_t': 0, 'fuzzy_m': 0})
+   print(f'{\"Cat ID\":<12} {\"Name\":<32} {\"Fn done/total\":<15} {\"Fn%\":<7} {\"Fuzzy%\":<8} {\"Linked%\":<8} {\"Remain B\":>10}')
+   print('-' * 100)
+   for c in cats:
+       m = c.get('measures', {})
+       f_done = m.get('matched_functions', 0)
+       f_tot  = m.get('total_functions', 0)
+       fpct   = m.get('matched_functions_percent', 0)
+       fuzzy  = m.get('fuzzy_match_percent', 0)
+       linked = m.get('matched_code_percent', 0)
+       b_tot  = int(m.get('total_code', 0))
+       b_done = int(m.get('matched_code', 0))
+       remain = b_tot - b_done
+       print(f'  {c[\"id\"]:<10} {c[\"name\"]:<32} {f_done:>5}/{f_tot:<5}   {fpct:>5.1f}% {fuzzy:>6.2f}%  {linked:>5.1f}%  {remain:>10,}')
 
-   for u in units:
-       name = u.get('name', '')
-       # Categorize by top-level directory
-       if 'band3/' in name: cat = 'Game Code'
-       elif 'system/' in name: cat = 'Milo Engine'
-       elif 'lib/' in name: cat = 'Libraries'
-       elif 'network/' in name: cat = 'Networking'
-       elif 'sdk/' in name: cat = 'SDK'
-       else: cat = 'Other'
-
-       for sec in u.get('sections', []):
-           for fn in sec.get('functions', []):
-               sz = fn.get('size', 0)
-               mp = fn.get('fuzzy_match_percent', 0.0)
-               total += 1
-               fuzzy_total += sz
-               fuzzy_matched += int(sz * mp / 100.0)
-               cats[cat]['total'] += 1
-               cats[cat]['fuzzy_t'] += sz
-               cats[cat]['fuzzy_m'] += int(sz * mp / 100.0)
-               if mp == 100.0:
-                   complete += 1
-                   cats[cat]['complete'] += 1
-
-   print(f'=== RB3 Decomp Progress ===')
-   print(f'Functions: {complete:,} / {total:,} ({100*complete/total:.1f}% complete)')
-   print(f'Code: {fuzzy_matched:,} / {fuzzy_total:,} bytes ({100*fuzzy_matched/fuzzy_total:.1f}% matched)')
+   # In-scope rollup: game + engine (the port surface). Wii-only is excluded
+   # because it gets replaced in the native port.
+   IN_SCOPE = ('game', 'engine')
+   ic = {'fn_done':0,'fn_tot':0,'b_done':0,'b_tot':0,'fuzzy_b':0.0}
+   for c in cats:
+       if c['id'] not in IN_SCOPE: continue
+       m = c['measures']
+       ic['fn_done'] += m['matched_functions']
+       ic['fn_tot']  += m['total_functions']
+       ic['b_done']  += int(m['matched_code'])
+       ic['b_tot']   += int(m['total_code'])
+       ic['fuzzy_b'] += int(m['total_code']) * m['fuzzy_match_percent'] / 100.0
    print()
-   print(f'{\"Category\":<16} {\"Complete\":<12} {\"Total\":<10} {\"Match%\":<8}')
-   print('-' * 50)
-   for cat in ['Game Code', 'Milo Engine', 'Libraries', 'Networking', 'SDK', 'Other']:
-       c = cats[cat]
-       if c['total'] > 0:
-           pct = 100*c['fuzzy_m']/c['fuzzy_t'] if c['fuzzy_t'] else 0
-           print(f'{cat:<16} {c[\"complete\"]:>5} / {c[\"total\"]:<5} {pct:>6.1f}%')
+   print(f'IN-SCOPE TOTAL (game + engine, port surface):')
+   print(f'  Fns matched: {ic[\"fn_done\"]:,} / {ic[\"fn_tot\"]:,} ({100*ic[\"fn_done\"]/ic[\"fn_tot\"]:.2f}%)')
+   print(f'  Bytes fuzzy: {100*ic[\"fuzzy_b\"]/ic[\"b_tot\"]:.2f}%   linked-100%: {100*ic[\"b_done\"]/ic[\"b_tot\"]:.2f}%   remain: {ic[\"b_tot\"]-ic[\"b_done\"]:,} B')
    "
    ```
 
-3. **Present the results** with overall counts and category breakdown.
+3. **Present the results.** Categories of interest:
+   - `game` / `engine` — the port surface (what we care about reaching 100%).
+   - `game_wii` / `engine_wii` — Wii-only platform glue (rndwii, os, synthwii, usbwii, `*_Wii.cpp`, `band3/meta_band/Wii*`). Replaced in the native port; lower priority.
+   - `network` / `sdk` / `lib` — out of scope per CLAUDE.md (replaced by host platform / modern netcode).
 
 ## Finding Work Targets
 
-To find units with the most remaining work:
 ```bash
+# Units with the most remaining work in the engine
 python3 scripts/dc3_compare.py --units --filter system/
-```
 
-To find functions where DC3 is at 100% but RB3 is not (porting opportunities):
-```bash
+# Functions where DC3 is at 100% but RB3 is not (porting opportunities)
 python3 scripts/dc3_compare.py --filter system/char/ --sort rb3
 ```
 
 ## Tips
 
-- The report.json is generated by `ninja` as part of the build process
-- Use `scripts/dc3_compare.py` to find porting opportunities from DC3
-- Current project status: ~54% matched overall
+- Use `tools/ninja-locked`, not bare `ninja` — concurrent agents share the build dir.
+- The report.json is regenerated as part of the build via objdiff-cli.
+- If categories look stale, delete `build/SZBE69_B8/report.cache` and rebuild.

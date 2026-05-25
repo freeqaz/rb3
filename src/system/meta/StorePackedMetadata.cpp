@@ -11,6 +11,8 @@
 #include "utl/Symbols2.h"
 #include "sdk/RVL_SDK/revolution/cnt/cnt.h"
 #include "sdk/RVL_SDK/revolution/nand/nand.h"
+#include "os/Timer.h"
+#include "sdk/ec/csup.h"
 
 extern "C" int NANDGetStatus(const char *, NANDStatus *);
 
@@ -31,7 +33,27 @@ extern "C" {
     int EC_DownloadContents(unsigned long long titleId, unsigned short *contents, int numContents);
 }
 
-int DebugWaitAsyncOp(long opId);
+extern "C" int EC_GetProgress(long opId, ECProgress *progress);
+
+int DebugWaitAsyncOp(long opId) {
+    ECProgress progress;
+    int result = -0xfa9;
+    while (result == -0xfa9) {
+        Timer::Sleep(10);
+        result = EC_GetProgress(opId, &progress);
+    }
+    TheDebug << MakeString(
+        "async op %d done: %d err: %d",
+        progress.operation,
+        (long)progress.status,
+        progress.errCode
+    );
+    int ret = 0;
+    if (result == 0 && progress.errCode == 0)
+        ret = 1;
+    return ret;
+}
+
 void UpdateOfferStateFromEc(
     StoreOfferState *, const char *, int,
     const ECContentCatalogInfo *, const StorePackedOfferBase *
@@ -1437,7 +1459,7 @@ void StoreMetadataManager::UpdateOfferPrices() {
                     TheDebug << MakeString(
                         "Store: upgrade offer %s says upgrade is at %llx %d, but store index data says %llx %d",
                         offerId, info->titleId, *info->indexes,
-                        expected, (int)expectedIdx
+                        expected, expectedIdx
                     );
                 }
             } else {
@@ -1467,7 +1489,7 @@ void StoreMetadataManager::UpdateOfferPrices() {
                 TheDebug << MakeString(
                     "Store: upgrade offer %s says upgrade is at %llx %d, but store index data says %llx %d",
                     offerId, info->titleId, *info->indexes,
-                    expected, (int)expectedIdx
+                    expected, expectedIdx
                 );
             }
         } else {
@@ -2152,12 +2174,12 @@ const char *StorePackedOfferBase::GetAlbumName() const {
 }
 
 const char *StorePackedOffer::GetArtPath() const {
-    if (mArtIndex == 0) {
-        return gNullStr;
+    if (mArtIndex != 0) {
+        const char *artStr = TheStoreMetadata.GetString(mArtIndex);
+        Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+        return MakeString("/preview_art/%s_nomip.png_%s", artStr, plat);
     }
-    const char *artStr = TheStoreMetadata.GetString(mArtIndex);
-    Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
-    return MakeString("/preview_art/%s_nomip.png_%s", artStr, plat);
+    return gNullStr;
 }
 
 const char *StorePackedRBNOffer::GetArtPath() const {
@@ -2168,12 +2190,13 @@ const char *StorePackedRBNOffer::GetArtPath() const {
 }
 
 const char *StorePackedOffer::GetPreviewPath() const {
-    if (OfferType() != kStoreOfferSong)
-        return gNullStr;
-    unsigned short songIdx = mSongs[0];
-    StorePackedSong *song = &TheStoreMetadata.mSongTable->mSongs[songIdx];
-    const char *shortName = TheStoreMetadata.GetString(song->unk4);
-    return MakeString("/preview_audio/%s_prev.bik", shortName);
+    if (OfferType() == kStoreOfferSong) {
+        unsigned short songIdx = mSongs[0];
+        StorePackedSong *song = &TheStoreMetadata.mSongTable->mSongs[songIdx];
+        const char *shortName = TheStoreMetadata.GetString(song->unk4);
+        return MakeString("/preview_audio/%s_prev.bik", shortName);
+    }
+    return gNullStr;
 }
 
 const char *StorePackedRBNOffer::GetPreviewPath() const {

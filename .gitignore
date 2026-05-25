@@ -49,6 +49,8 @@ ignored/
 # Analysis databases
 cache.db
 decomp.db
+decomp.db-shm
+decomp.db-wal
 permuter_cache.db
 .objdiff_report_cache
 
@@ -73,6 +75,7 @@ function_analysis/
 # Stray build/analysis artifacts (dep files, backups, compiled output)
 *.d
 *.bak
+*.bak[0-9]
 a.out
 
 # Ghidra project files

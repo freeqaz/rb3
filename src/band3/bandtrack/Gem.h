@@ -42,7 +42,7 @@ public:
     void GetChordFretLabelInfo(String &, int &) const;
 
     bool CompareBounds() { return mEnd > mStart ? true : false; }
-    bool Check66B0() const { return unk_0x66_7; }
+    bool Check66B0() const { return mIsCymbalLane; }
     const GameGem &GetGameGem() const { return mGameGem; }
     unsigned int Slots() const { return mSlots; }
     bool Released() const { return mReleased; }
@@ -74,7 +74,14 @@ public:
     bool mInvisible : 1;
     bool mBeard : 1;
     bool mInArrhythmic : 1;
-    bool unk_0x66_7 : 1; // cymbal?
-    bool unk_0x67_0 : 1, unk_0x67_1 : 1, unk_0x67_2 : 1, unk_0x67_3 : 1, unk_0x67_4 : 1,
-        unk_0x67_5 : 1, unk_0x67_6 : 1, unk_0x67_7 : 1;
+    bool mIsCymbalLane : 1; // 0x66 bit 0 — gem is on a game-cymbal lane (was unk_0x66_7)
+    // byte 0x67 bitfield (MSB-first declaration order; first declared = bit 7)
+    bool mIsRepeatChord : 1; // 0x67 bit 7 — RG repeated chord (shows repeat indicator)
+    bool mInArpeggio : 1;    // 0x67 bit 6 — gem is inside an arpeggio phrase (shows section indicator)
+    bool mSuppressChordLabel : 1; // 0x67 bit 5 — hide chord label (arpeggio context)
+    bool mSuppressFretLabel : 1;  // 0x67 bit 4 — hide fret label (arpeggio context)
+    bool mSlideUp : 1;       // 0x67 bit 3 — left-hand slide direction (true=up, false=down)
+    bool unk_0x67_5 : 1;     // 0x67 bit 2
+    bool unk_0x67_6 : 1;     // 0x67 bit 1
+    bool unk_0x67_7 : 1;     // 0x67 bit 0
 };

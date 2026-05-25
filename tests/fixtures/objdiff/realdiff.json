@@ -1,0 +1,13 @@
+{
+  "fuzzy_match_percent": 97.5,
+  "raw_match_percent": 95.0,
+  "verdict": {"classification": "LikelyFixable"},
+  "instructions": [
+    {"index": 12, "match_type": "diff_op",
+     "target": {"opcode": "cmpw", "args": "r3, r4"},
+     "base": {"opcode": "cmplw", "args": "r3, r4"}},
+    {"index": 13, "match_type": "diff_op",
+     "target": {"opcode": "ble", "args": "0x100"},
+     "base": {"opcode": "beq", "args": "0x100"}}
+  ]
+}

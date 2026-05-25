@@ -94,94 +94,6 @@ void GemManager::InitRGTuning(BandUser *bandUser) {
     }
 }
 
-void GemManager::UpdateLeftyFlip(bool poll) {
-    ClearGems(true);
-    Player *player = mTrackConfig.GetBandUser()->GetPlayer();
-    if (player) {
-        GemStatus *gemStatus = ((GemPlayer *)player)->mGemStatus;
-        MILO_ASSERT(gemStatus, 0x5B1);
-        if (gemStatus->GetSize() > 0) {
-            MILO_ASSERT(gemStatus->GetSize() == mGems.size(), 0x5BA);
-            while (mBegin < mGems.size() && gemStatus->Get0xD(mBegin)) {
-                AdvanceBegin();
-            }
-        }
-    }
-    RndText::Alignment alignment =
-        mTrackConfig.IsLefty() ? RndText::kBottomLeft : RndText::kBottomRight;
-    TrackWidget *chordLabelWidget =
-        mTrackDir->Find<TrackWidget>("chord_label.wid", false);
-    chordLabelWidget->SetTextAlignment(alignment);
-    Symbol type = mTrackConfig.Type();
-    if (type != real_keys) {
-        RndDir *smasher = mTrackDir->SmasherPlate();
-        if (smasher) {
-            bool isKeys = mTrackConfig.GetBandUser()->GetControllerType() == kControllerKeys;
-            static Message msg("set_lefty", 0);
-            msg[0] = mTrackConfig.UseLeftyGems() && !isKeys;
-            smasher->Handle(msg, true);
-        }
-    }
-    UpdateSlotPositions();
-    if (type == "drum") {
-        if (mTrackConfig.UseLeftyGems()) {
-            type = Symbol("drum_lefty");
-        }
-        Symbol widgetName;
-        float crashY = 0.0f;
-        float beardY = 0.0f;
-        if (mGemData) {
-            if (GetWidgetName(widgetName, 4, crash)) {
-                TrackWidget *w = GetWidgetByName(widgetName);
-                if (!w->Empty()) {
-                    crashY = w->GetFirstInstanceY();
-                    w->Clear();
-                }
-            }
-            if (GetWidgetName(widgetName, 4, crash_cymbal)) {
-                TrackWidget *w = GetWidgetByName(widgetName);
-                if (!w->Empty()) {
-                    crashY = w->GetFirstInstanceY();
-                    w->Clear();
-                }
-            }
-            if (GetWidgetName(widgetName, 4, beard)) {
-                TrackWidget *w = GetWidgetByName(widgetName);
-                if (!w->Empty()) {
-                    beardY = w->GetFirstInstanceY();
-                    w->Clear();
-                }
-            }
-        }
-        mGemData = mConfig->FindArray(Symbol("gem"), Symbol("gems"), type);
-        Symbol *cymbalSym =
-            (mTrackConfig.GetGameCymbalLanes() & 0x10) ? &crash_cymbal : &crash;
-        if ((double)crashY != 0.0 && GetWidgetName(widgetName, 4, *cymbalSym)) {
-            TrackWidget *w = GetWidgetByName(widgetName);
-            Transform xfm1;
-            mTrackDir->MakeSlotXfm(4, xfm1);
-            xfm1.v.y = crashY;
-            w->AddInstance(xfm1, 0.0f);
-        }
-        if ((double)beardY != 0.0 && GetWidgetName(widgetName, 4, beard)) {
-            TrackWidget *w = GetWidgetByName(widgetName);
-            Transform xfm2;
-            mTrackDir->MakeSlotXfm(4, xfm2);
-            xfm2.v.y = beardY;
-            w->AddInstance(xfm2, 0.0f);
-        }
-    } else {
-        mGemData = mConfig->FindArray(Symbol("gem"), Symbol("gems"), type);
-    }
-    UpdateGemStates();
-    float gameMs = TheGame->mLastPollMs;
-    ResetArpeggios(gameMs);
-    if (poll) {
-        PlayerState state;
-        PollHelper(gameMs, state);
-    }
-}
-
 void GemManager::DrawTrackMasks(int i1, int i2) {
     for (int i = i2 != -1 ? i2 : i1; i <= i1; i += 0xf0) {
         if (i > unk10c) {
@@ -269,6 +181,9 @@ void GemManager::DrawTrackMasks(int i1, int i2) {
     }
 }
 
+ArpeggioShapePool *TrackDir::GetArpeggioShapePool() { return nullptr; }
+float TrackDir::GetCurrentChordLabelPosOffset() const { return 0; }
+
 void GemManager::ClearArpeggios() {
     ArpeggioShapePool *pool = mTrackDir->GetArpeggioShapePool();
     while (!mActiveArpeggios.empty()) {
@@ -337,369 +252,6 @@ void GemManager::ClearTrackMasks() {
         unk10c = 0;
     }
 }
-
-void GemManager::SetupGems(int startTick) {
-    Symbol song = MetaPerformer::Current()->Song();
-    if (song == gNullStr)
-        return;
-
-    BandSongMetadata *metadata = (BandSongMetadata *)TheSongMgr.Data(
-        TheSongMgr.GetSongIDFromShortName(song, true)
-    );
-    int songKey = metadata->SongKey();
-    BandUser *bandUser = const_cast<BandUser *>(mTrackConfig.GetBandUser());
-    int trackNum = mTrackConfig.TrackNum();
-    const std::vector<GameGem> &gems = TheSongDB->GetGems(trackNum);
-    TheSongDB->GetSongDurationMs();
-    InitRGTuning(bandUser);
-    bool tonalityNonZero = metadata->SongTonality() != 0;
-
-    float sectionStart = 0.0f;
-    float sectionEnd = 0.0f;
-    if (TheGame->mProperties.mHasSongSections) {
-        ClearGems(false);
-        int s1, s2;
-        TheGameConfig->GetPracticeSections(s1, s2);
-        float unused;
-        TheGameConfig->GetSectionBounds(s1, sectionStart, unused);
-        TheGameConfig->GetSectionBounds(s2, unused, sectionEnd);
-    }
-
-    mHitGems.clear();
-    mMissedPhrases.clear();
-    mGems.clear();
-    mGems.reserve(gems.size());
-    mArpeggioPhrases.clear();
-    bandUser->GetSlot();
-    int hasSongSections = TheGame->mProperties.mHasSongSections;
-    unsigned int gameCymbalLanes = mTrackConfig.GetGameCymbalLanes();
-
-    bool inTrill = false;
-    std::pair<int, int> trillSlots;
-    trillSlots.first = 0;
-    trillSlots.second = 0;
-    int nextSlotForTrill = -1;
-    int lastArpeggioEndTick = -1;
-    int nextFretForTrill = -1;
-    int trillString = -1;
-    int arrhythmicEndTick = -1;
-    unk130 = -1;
-    mNextArpeggioPhrase = 0;
-    ClearArpeggios();
-    ClearTrackMasks();
-
-    int repeatedChordGemId = -1;
-    int repeatedChordStartTick = -1;
-    int repeatedChordEndTick = -1;
-    mTrackDir->ClearChordMeshRefCounts();
-
-    bool anyRGChord = false;
-    bool anyRG = false;
-
-    for (unsigned int i = 0; i < gems.size(); i++) {
-        const GameGem &gem = gems[i];
-        float startMs = gem.mMs;
-        bool noTail = false;
-        if (gem.mIgnoreDuration && !gem.LeftHandSlide()) {
-            noTail = true;
-        }
-        float endMs;
-        if (noTail) {
-            endMs = startMs;
-        } else {
-            endMs = startMs + gem.mDurationMs;
-        }
-
-        unsigned int slots = 0;
-        int gemTick = gem.mTick;
-        bool isHopo = false;
-        bool isInFill = false;
-        if (((unkb8 && bandUser->GetTrackType() != 0) ||
-             TheSongDB->IsInCoda(gemTick)) &&
-            TheGame->mProperties.mEnableCoda) {
-            isInFill = true;
-        }
-        if (!isInFill ||
-            !TheSongDB->GetFillInfo(trackNum, gemTick)->FillAt(gem.mTick, false)) {
-            slots = gem.mSlots;
-            if (gem.mForceStrum && ((int)i >= 1 || gem.IsRealGuitar())) {
-                isHopo = true;
-            }
-            if (!TheGame->mProperties.mInPracticeMode &&
-                !TheGame->mProperties.mInTrainer && gem.mTick < startTick) {
-                slots = 0;
-            }
-            if (hasSongSections &&
-                !(startMs >= sectionStart && endMs < sectionEnd)) {
-                slots = 0;
-            }
-        }
-
-        Gem newGem(gem, slots, startMs / 1000.0f, endMs / 1000.0f, isHopo, -1, songKey, tonalityNonZero);
-        newGem.mGemManager = this;
-
-        if (gem.mIsCymbal) {
-            int slotIdx = gem.GetSlot();
-            if ((1U << slotIdx) & gameCymbalLanes) {
-                newGem.unk_0x66_7 = true;
-            }
-        }
-
-        if (slots != 0) {
-            SongData *songData = TheSongDB->GetData();
-            MILO_ASSERT(songData, 0x39F);
-            bool inArrhythmic = false;
-            int otherSlot = -1;
-            unsigned int rollSlots = 0;
-            bool justStartedArrhythmic = false;
-            if (RollStartsAt(trackNum, gem, otherSlot, rollSlots)) {
-                arrhythmicEndTick = otherSlot;
-                inArrhythmic = !mTrackConfig.IsKeyboardTrack();
-                justStartedArrhythmic = true;
-                if (mTrackConfig.IsDrumTrack()) {
-                    if (rollSlots != gem.mSlots) {
-                        unsigned int diff = rollSlots & ~gem.mSlots;
-                        nextSlotForTrill = -1;
-                        while (diff) {
-                            diff >>= 1;
-                            nextSlotForTrill++;
-                        }
-                        MILO_ASSERT(nextSlotForTrill >= 0, 0x3C6);
-                    }
-                }
-            } else if (TrillStartsAt(trackNum, gem, otherSlot)) {
-                inArrhythmic = true;
-                justStartedArrhythmic = true;
-                if (gem.IsRealGuitar()) {
-                    RGTrill trill;
-                    songData->GetRGTrillAtTick(trackNum, GetLoopTick(gem.mTick), trill);
-                    nextFretForTrill = trill.mFrets[0];
-                    if (gem.GetFret() == trill.mFrets[0]) {
-                        nextFretForTrill = trill.mFrets[1];
-                    }
-                    trillString = gem.GetLowestString();
-                } else {
-                    songData->GetTrillSlotsAtTick(trackNum, GetLoopTick(gem.mTick), trillSlots);
-                    int slotIdx = gem.GetSlot();
-                    nextSlotForTrill = trillSlots.first;
-                    if (slotIdx == nextSlotForTrill) {
-                        nextSlotForTrill = trillSlots.second;
-                    }
-                }
-                arrhythmicEndTick = otherSlot;
-                MILO_ASSERT(inTrill == false, 0x3EE);
-                inTrill = true;
-            } else if (nextSlotForTrill != -1) {
-                int slotIdx = gem.GetSlot();
-                if (nextSlotForTrill != slotIdx) {
-                    MILO_WARN(
-                        "Trill at %0.1f ms. doesn't have alternating slots. Check for earlier notifies!",
-                        startMs
-                    );
-                }
-                MILO_ASSERT(arrhythmicEndTick > gem.mTick, 0x3FA);
-                inArrhythmic = true;
-                justStartedArrhythmic = true;
-                nextSlotForTrill = -1;
-            } else if (nextFretForTrill != -1) {
-                if (arrhythmicEndTick <= gem.mTick) {
-                    MILO_WARN(
-                        "Trill ending at %0.1f ms. doesn't have a second note to trill to.",
-                        TickToMs((float)arrhythmicEndTick)
-                    );
-                    nextFretForTrill = -1;
-                } else {
-                    MILO_ASSERT(trillString == (int)gem.GetLowestString(), 0x40D);
-                    nextFretForTrill = -1;
-                    justStartedArrhythmic = true;
-                }
-            } else if (gem.mTick < arrhythmicEndTick) {
-                justStartedArrhythmic = true;
-            }
-
-            if (inArrhythmic) {
-                float gemStartMs = gem.mMs;
-                float arrhythmicEndMs = TickToMs((float)arrhythmicEndTick);
-                MILO_ASSERT(gemStartMs >= 0.0f, 0x421);
-                MILO_ASSERT(arrhythmicEndMs > gemStartMs, 0x422);
-                newGem.mArrhythmicDurationSeconds = (arrhythmicEndMs - gemStartMs) / 1000.0f;
-            }
-            if (justStartedArrhythmic && mTrackConfig.IsKeyboardTrack() && !inTrill) {
-                newGem.unk_0x67_1 = true;
-            }
-            if (inTrill && i < gems.size() - 1) {
-                MILO_ASSERT(arrhythmicEndTick > -1, 0x434);
-                if (gems[i + 1].mTick > arrhythmicEndTick) {
-                    inTrill = false;
-                    arrhythmicEndTick = -1;
-                }
-            }
-        }
-
-        if (gem.IsRealGuitarChord() && slots != 0) {
-            if (mTrackDir != NULL) {
-                int chordA = newGem.unk_0x44;
-                int chordB = newGem.unk_0x48;
-                bool chordAOk = false;
-                if (mTrackDir->PrepareChordMesh(chordA) != 0 || anyRGChord) {
-                    chordAOk = true;
-                }
-                anyRGChord = chordAOk;
-                if (chordB != chordA) {
-                    anyRGChord = false;
-                    if (mTrackDir->PrepareChordMesh(chordB) != 0 || chordAOk) {
-                        anyRGChord = true;
-                    }
-                }
-            } else {
-                MILO_WARN("No track dir in setup gems, so chord meshes can't be built");
-            }
-        }
-        if (gem.IsRealGuitar()) {
-            anyRG = true;
-        }
-
-        int phraseStart = -1;
-        int phraseEnd = -1;
-        if (gem.IsRealGuitar() && slots != 0) {
-            if (gem.mTick < lastArpeggioEndTick) {
-                MILO_ASSERT(mArpeggioPhrases.size() != 0, 0x476);
-                ArpeggioPhrase &lastPhrase = mArpeggioPhrases.back();
-                MILO_ASSERT(lastPhrase.mEndTick == lastArpeggioEndTick, 0x47A);
-                bool matches = true;
-                const GameGem &prevGem = gems[lastPhrase.mGemId];
-                for (unsigned int s = 0; s < 6; s++) {
-                    signed char curFret = gem.GetFret(s);
-                    signed char prevFret = prevGem.GetFret(s);
-                    if (curFret != -1 && curFret != prevFret) {
-                        matches = false;
-                        break;
-                    }
-                }
-                if (matches) {
-                    if (gem.IsRealGuitarChord()) {
-                        newGem.unk_0x67_2 = true;
-                        newGem.unk_0x67_4 = true;
-                    }
-                    newGem.unk_0x67_1 = true;
-                }
-            } else {
-                int searchTick = gem.mTick;
-                if (gem.mTick == lastArpeggioEndTick) {
-                    searchTick = gem.mTick + 1;
-                }
-                if (TheSongDB->GetPhraseExtents(
-                        (BeatmatchPhraseType)4, trackNum, searchTick, phraseStart, phraseEnd
-                    )) {
-                    if (!newGem.unk_0x44) {
-                        MILO_WARN(
-                            "Ignoring invalid arpeggio phrase at %s; must begin with a chord",
-                            TickFormat(phraseStart, *TheSongDB->GetData()->GetMeasureMap())
-                        );
-                    } else {
-                        EndRepeatedChordPhrase(repeatedChordStartTick, repeatedChordEndTick, repeatedChordGemId);
-                        if (TheTrainerPanel && TheGame->mProperties.mInTrainer) {
-                            int loopTick = GetLoopTick(phraseStart);
-                            int offset = loopTick - TheTrainerPanel->GetCurrentStartTick();
-                            int adjustedEnd =
-                                phraseStart - offset +
-                                TheTrainerPanel->GetLoopTicks(TheTrainerPanel->GetCurrSection());
-                            if (adjustedEnd < phraseEnd) {
-                                phraseEnd = adjustedEnd;
-                            }
-                        }
-                        ArpeggioPhrase phrase(phraseStart, phraseEnd, i);
-                        mArpeggioPhrases.push_back(phrase);
-                        lastArpeggioEndTick = phraseEnd;
-                        newGem.unk_0x67_4 = true;
-                        newGem.unk_0x67_5 = true;
-                        newGem.unk_0x67_6 = true;
-                    }
-                }
-            }
-        }
-
-        bool isImmediate = false;
-        if (i > 0) {
-            const GameGem &prevGem = gems[i - 1];
-            isImmediate = gem.mMs <
-                (1000.0f * mTrackDir->ViewTimeSeconds()) + (prevGem.mMs + (float)prevGem.mDurationMs);
-        }
-        int rgChordID = gem.GetRGChordID();
-        if ((unsigned int)rgChordID == unk130 && gem.IsRealGuitarChord() && isImmediate) {
-            newGem.unk_0x67_7 = true;
-            if (!gem.IsMuted() && gem.mTick >= lastArpeggioEndTick) {
-                int endTick = gem.mTick;
-                if (!(gem.mIgnoreDuration || gem.LeftHandSlide())) {
-                    endTick += gem.mDurationTicks;
-                }
-                repeatedChordEndTick = endTick;
-                newGem.unk_0x67_5 = true;
-            }
-        } else {
-            EndRepeatedChordPhrase(repeatedChordStartTick, repeatedChordEndTick, repeatedChordGemId);
-            if (gem.IsRealGuitarChord() && !gem.IsMuted()) {
-                unk130 = rgChordID;
-            } else {
-                unk130 = -1;
-            }
-            if (gem.IsRealGuitarChord() && !gem.IsMuted() && gem.mTick >= lastArpeggioEndTick) {
-                repeatedChordGemId = i;
-                repeatedChordStartTick = gem.mTick;
-                int endTick = gem.mTick;
-                if (!(gem.mIgnoreDuration || gem.LeftHandSlide())) {
-                    endTick += gem.mDurationTicks;
-                }
-                repeatedChordEndTick = endTick;
-                newGem.unk_0x67_5 = true;
-            }
-        }
-        if (i == gems.size() - 1) {
-            EndRepeatedChordPhrase(repeatedChordStartTick, repeatedChordEndTick, repeatedChordGemId);
-        }
-
-        if (gem.LeftHandSlide()) {
-            bool hasNext = false;
-            signed char curFret = gem.GetFret(gem.GetLowestString());
-            if (i < gems.size() - 1) {
-                const GameGem &nextGem = gems[i + 1];
-                hasNext = nextGem.mTick - (gem.mTick + gem.mDurationTicks) < 0x78;
-                if (hasNext && gem.mSlots == nextGem.mSlots && nextGem.mForceStrum) {
-                    newGem.mTailStart = nextGem.mMs / 1000.0f;
-                }
-                if (hasNext) {
-                    signed char nextFret = nextGem.GetFret(nextGem.GetLowestString());
-                    newGem.unk_0x67_3 = (nextFret > curFret);
-                }
-            }
-            if (!hasNext) {
-                newGem.unk_0x67_3 = (curFret > 7);
-            }
-            if (gem.ReverseSlide()) {
-                newGem.unk_0x67_3 = !newGem.unk_0x67_3;
-            }
-        }
-
-        mGems.push_back(newGem);
-    }
-
-    mTrackDir->DeleteUnusedChordMeshes();
-    if (anyRGChord) {
-        mTrackDir->SyncObjects();
-    } else if (anyRG) {
-        mTrackDir->SyncFingerFeedback();
-    }
-
-    mEnd = 0;
-    mBegin = 0;
-    if (TheGame->mProperties.mHasSongSections) {
-        TheSongDB->EnableGems(trackNum, sectionStart, sectionEnd);
-    }
-    SetupRealGuitarFretPos();
-    SetupRealGuitarImportantStrings();
-    SetupRealGuitarAreaStrumSections();
-}
-
 void GemManager::SetupRealGuitarFretPos() {
     const BandUser *bandUser = mTrackConfig.GetBandUser();
     bool isRG = bandUser->GetTrack()->GetType() == real_guitar;
@@ -880,6 +432,402 @@ void GemManager::SetupRealGuitarImportantStrings() {
     }
 }
 
+void GemManager::SetupRealGuitarAreaStrumSections() {
+    const std::vector<GameGem> &gems =
+        TheSongDB->GetGems(mTrackConfig.TrackNum());
+    for (int i = 0; i < gems.size();) {
+        const GameGem &gem = gems[i];
+        if (gem.GetRGStrumType() == 0) {
+            i++;
+        } else {
+            mGems[i].mIsRepeatChord = false;
+            for (int j = i - 1; j >= 0; j--) {
+                if ((unsigned int)gems[j].GetRGChordID()
+                    != (unsigned int)gem.GetRGChordID()) {
+                    break;
+                }
+                mGems[j].mIsRepeatChord = false;
+            }
+            for (i++; i < gems.size(); i++) {
+                if ((unsigned int)gems[i].GetRGChordID()
+                    != (unsigned int)gem.GetRGChordID()) {
+                    break;
+                }
+                mGems[i].mIsRepeatChord = false;
+            }
+        }
+    }
+}
+
+
+void GemManager::SetupGems(int startTick) {
+    Symbol song = MetaPerformer::Current()->Song();
+    if (song == gNullStr)
+        return;
+
+    BandSongMetadata *metadata = (BandSongMetadata *)TheSongMgr.Data(
+        TheSongMgr.GetSongIDFromShortName(song, true)
+    );
+    int songKey = metadata->SongKey();
+    BandUser *bandUser = const_cast<BandUser *>(mTrackConfig.GetBandUser());
+    int trackNum = mTrackConfig.TrackNum();
+    const std::vector<GameGem> &gems = TheSongDB->GetGems(trackNum);
+    TheSongDB->GetSongDurationMs();
+    InitRGTuning(bandUser);
+    bool tonalityNonZero = metadata->SongTonality() != 0;
+
+    float sectionStart = 0.0f;
+    float sectionEnd = 0.0f;
+    if (TheGame->mProperties.mHasSongSections) {
+        ClearGems(false);
+        int s1, s2;
+        TheGameConfig->GetPracticeSections(s1, s2);
+        float unused;
+        TheGameConfig->GetSectionBounds(s1, sectionStart, unused);
+        TheGameConfig->GetSectionBounds(s2, unused, sectionEnd);
+    }
+
+    mHitGems.clear();
+    mMissedPhrases.clear();
+    mGems.clear();
+    mGems.reserve(gems.size());
+    mArpeggioPhrases.clear();
+    bandUser->GetSlot();
+    int hasSongSections = TheGame->mProperties.mHasSongSections;
+    unsigned int gameCymbalLanes = mTrackConfig.GetGameCymbalLanes();
+
+    bool inTrill = false;
+    std::pair<int, int> trillSlots;
+    trillSlots.first = 0;
+    trillSlots.second = 0;
+    int nextSlotForTrill = -1;
+    int lastArpeggioEndTick = -1;
+    int nextFretForTrill = -1;
+    int trillString = -1;
+    int arrhythmicEndTick = -1;
+    unk130 = -1;
+    mNextArpeggioPhrase = 0;
+    ClearArpeggios();
+    ClearTrackMasks();
+
+    int repeatedChordGemId = -1;
+    int repeatedChordStartTick = -1;
+    int repeatedChordEndTick = -1;
+    mTrackDir->ClearChordMeshRefCounts();
+
+    bool anyRGChord = false;
+    bool anyRG = false;
+
+    for (unsigned int i = 0; i < gems.size(); i++) {
+        const GameGem &gem = gems[i];
+        float startMs = gem.mMs;
+        bool noTail = false;
+        if (gem.mIgnoreDuration && !gem.LeftHandSlide()) {
+            noTail = true;
+        }
+        float endMs;
+        if (noTail) {
+            endMs = startMs;
+        } else {
+            endMs = startMs + gem.mDurationMs;
+        }
+
+        unsigned int slots = 0;
+        int gemTick = gem.mTick;
+        bool isHopo = false;
+        bool isInFill = false;
+        if (((unkb8 && bandUser->GetTrackType() != 0) ||
+             TheSongDB->IsInCoda(gemTick)) &&
+            TheGame->mProperties.mEnableCoda) {
+            isInFill = true;
+        }
+        if (!isInFill ||
+            !TheSongDB->GetFillInfo(trackNum, gemTick)->FillAt(gem.mTick, false)) {
+            slots = gem.mSlots;
+            if (gem.mForceStrum && ((int)i >= 1 || gem.IsRealGuitar())) {
+                isHopo = true;
+            }
+            if (!TheGame->mProperties.mInPracticeMode &&
+                !TheGame->mProperties.mInTrainer && gem.mTick < startTick) {
+                slots = 0;
+            }
+            if (hasSongSections &&
+                !(startMs >= sectionStart && endMs < sectionEnd)) {
+                slots = 0;
+            }
+        }
+
+        Gem newGem(gem, slots, startMs / 1000.0f, endMs / 1000.0f, isHopo, -1, songKey, tonalityNonZero);
+        newGem.mGemManager = this;
+
+        if (gem.mIsCymbal) {
+            int slotIdx = gem.GetSlot();
+            if ((1U << slotIdx) & gameCymbalLanes) {
+                newGem.mIsCymbalLane = true;
+            }
+        }
+
+        if (slots != 0) {
+            SongData *songData = TheSongDB->GetData();
+            MILO_ASSERT(songData, 0x39F);
+            bool inArrhythmic = false;
+            int otherSlot = -1;
+            unsigned int rollSlots = 0;
+            bool justStartedArrhythmic = false;
+            if (RollStartsAt(trackNum, gem, otherSlot, rollSlots)) {
+                arrhythmicEndTick = otherSlot;
+                inArrhythmic = !mTrackConfig.IsKeyboardTrack();
+                justStartedArrhythmic = true;
+                if (mTrackConfig.IsDrumTrack()) {
+                    if (rollSlots != gem.mSlots) {
+                        unsigned int diff = rollSlots & ~gem.mSlots;
+                        int otherSlot = -1;
+                        while (diff) {
+                            diff >>= 1;
+                            otherSlot++;
+                        }
+                        MILO_ASSERT(otherSlot >= 0, 0x3C6);
+                        nextSlotForTrill = otherSlot;
+                    }
+                }
+            } else if (TrillStartsAt(trackNum, gem, otherSlot)) {
+                inArrhythmic = true;
+                justStartedArrhythmic = true;
+                if (gem.IsRealGuitar()) {
+                    RGTrill trill;
+                    songData->GetRGTrillAtTick(trackNum, GetLoopTick(gem.mTick), trill);
+                    nextFretForTrill = trill.mFrets[0];
+                    if (gem.GetFret() == trill.mFrets[0]) {
+                        nextFretForTrill = trill.mFrets[1];
+                    }
+                    trillString = gem.GetLowestString();
+                } else {
+                    songData->GetTrillSlotsAtTick(trackNum, GetLoopTick(gem.mTick), trillSlots);
+                    int slotIdx = gem.GetSlot();
+                    nextSlotForTrill = trillSlots.first;
+                    if (slotIdx == nextSlotForTrill) {
+                        nextSlotForTrill = trillSlots.second;
+                    }
+                }
+                arrhythmicEndTick = otherSlot;
+                MILO_ASSERT(inTrill == false, 0x3EE);
+                inTrill = true;
+            } else if (nextSlotForTrill != -1) {
+                int slotIdx = gem.GetSlot();
+                if (nextSlotForTrill != slotIdx) {
+                    MILO_WARN(
+                        "Trill at %0.1f ms. doesn't have alternating slots. Check for earlier notifies!",
+                        startMs
+                    );
+                }
+                MILO_ASSERT(arrhythmicEndTick > gem.GetTick(), 0x3FA);
+                inArrhythmic = true;
+                justStartedArrhythmic = true;
+                nextSlotForTrill = -1;
+            } else if (nextFretForTrill != -1) {
+                if (arrhythmicEndTick <= gem.mTick) {
+                    MILO_WARN(
+                        "Trill ending at %0.1f ms. doesn't have a second note to trill to.",
+                        TickToMs((float)arrhythmicEndTick)
+                    );
+                    nextFretForTrill = -1;
+                } else {
+                    MILO_ASSERT(trillString == gem.GetLowestString(), 0x40D);
+                    nextFretForTrill = -1;
+                    justStartedArrhythmic = true;
+                }
+            } else if (gem.mTick < arrhythmicEndTick) {
+                justStartedArrhythmic = true;
+            }
+
+            if (inArrhythmic) {
+                float fStartTimeMs = gem.mMs;
+                float fEndTimeMs = TickToMs((float)arrhythmicEndTick);
+                MILO_ASSERT(fStartTimeMs >= 0.0f, 0x421);
+                MILO_ASSERT(fEndTimeMs > fStartTimeMs, 0x422);
+                newGem.mArrhythmicDurationSeconds = (fEndTimeMs - fStartTimeMs) / 1000.0f;
+            }
+            if (justStartedArrhythmic && mTrackConfig.IsKeyboardTrack() && !inTrill) {
+                newGem.mInArrhythmic = true;
+            }
+            if (inTrill && i < gems.size() - 1) {
+                MILO_ASSERT(arrhythmicEndTick > -1, 0x434);
+                if (gems[i + 1].mTick > arrhythmicEndTick) {
+                    inTrill = false;
+                    arrhythmicEndTick = -1;
+                }
+            }
+        }
+
+        if (gem.IsRealGuitarChord() && slots != 0) {
+            if (mTrackDir != NULL) {
+                int chordA = newGem.unk_0x44;
+                int chordB = newGem.unk_0x48;
+                bool chordAOk = false;
+                if (mTrackDir->PrepareChordMesh(chordA) != 0 || anyRGChord) {
+                    chordAOk = true;
+                }
+                anyRGChord = chordAOk;
+                if (chordB != chordA) {
+                    anyRGChord = false;
+                    if (mTrackDir->PrepareChordMesh(chordB) != 0 || chordAOk) {
+                        anyRGChord = true;
+                    }
+                }
+            } else {
+                MILO_WARN("No track dir in setup gems, so chord meshes can't be built");
+            }
+        }
+        if (gem.IsRealGuitar()) {
+            anyRG = true;
+        }
+
+        int phraseStart = -1;
+        int phraseEnd = -1;
+        if (gem.IsRealGuitar() && slots != 0) {
+            if (gem.mTick < lastArpeggioEndTick) {
+                MILO_ASSERT(!mArpeggioPhrases.empty(), 0x476);
+                ArpeggioPhrase &phrase = mArpeggioPhrases.back();
+                MILO_ASSERT(phrase.mEndTick == lastArpeggioEndTick, 0x47A);
+                bool matches = true;
+                const GameGem &prevGem = gems[phrase.mGemId];
+                for (int s = 0; s < 6; s++) {
+                    signed char curFret = gem.GetFret(s);
+                    signed char prevFret = prevGem.GetFret(s);
+                    if (curFret != -1 && curFret != prevFret) {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (matches) {
+                    if (gem.IsRealGuitarChord()) {
+                        newGem.mIsRepeatChord = true;
+                        newGem.mSuppressChordLabel = true;
+                    }
+                    newGem.mInArpeggio = true;
+                }
+            } else {
+                int searchTick = gem.mTick;
+                if (gem.mTick == lastArpeggioEndTick) {
+                    searchTick = gem.mTick + 1;
+                }
+                if (TheSongDB->GetPhraseExtents(
+                        (BeatmatchPhraseType)4, trackNum, searchTick, phraseStart, phraseEnd
+                    )) {
+                    if (!newGem.unk_0x44) {
+                        MILO_WARN(
+                            "Ignoring invalid arpeggio phrase at %s; must begin with a chord",
+                            TickFormat(phraseStart, *TheSongDB->GetData()->GetMeasureMap())
+                        );
+                    } else {
+                        EndRepeatedChordPhrase(repeatedChordStartTick, repeatedChordEndTick, repeatedChordGemId);
+                        if (TheTrainerPanel && TheGame->mProperties.mInTrainer) {
+                            int loopTick = GetLoopTick(phraseStart);
+                            int offset = loopTick - TheTrainerPanel->GetCurrentStartTick();
+                            int adjustedEnd =
+                                phraseStart - offset +
+                                TheTrainerPanel->GetLoopTicks(TheTrainerPanel->GetCurrSection());
+                            if (adjustedEnd < phraseEnd) {
+                                phraseEnd = adjustedEnd;
+                            }
+                        }
+                        ArpeggioPhrase phrase(phraseStart, phraseEnd, i);
+                        mArpeggioPhrases.push_back(phrase);
+                        lastArpeggioEndTick = phraseEnd;
+                        newGem.mSuppressFretLabel = true;
+                        newGem.mSuppressChordLabel = true;
+                        newGem.mInArpeggio = true;
+                    }
+                }
+            }
+        }
+
+        bool isImmediate = false;
+        if (i > 0) {
+            const GameGem &prevGem = gems[i - 1];
+            isImmediate = gem.mMs <
+                (1000.0f * mTrackDir->ViewTimeSeconds()) + (prevGem.mMs + (float)prevGem.mDurationMs);
+        }
+        int rgChordID = gem.GetRGChordID();
+        if (rgChordID == unk130 && gem.IsRealGuitarChord() && isImmediate) {
+            newGem.mIsRepeatChord = true;
+            if (!gem.IsMuted() && gem.mTick >= lastArpeggioEndTick) {
+                int endTick = gem.mTick;
+                if (!(gem.mIgnoreDuration || gem.LeftHandSlide())) {
+                    endTick += gem.mDurationTicks;
+                }
+                repeatedChordEndTick = endTick;
+                newGem.mSuppressChordLabel = true;
+            }
+        } else {
+            EndRepeatedChordPhrase(repeatedChordStartTick, repeatedChordEndTick, repeatedChordGemId);
+            if (gem.IsRealGuitarChord() && !gem.IsMuted()) {
+                unk130 = rgChordID;
+            } else {
+                unk130 = -1;
+            }
+            if (gem.IsRealGuitarChord() && !gem.IsMuted() && gem.mTick >= lastArpeggioEndTick) {
+                repeatedChordGemId = i;
+                repeatedChordStartTick = gem.mTick;
+                int endTick = gem.mTick;
+                if (!(gem.mIgnoreDuration || gem.LeftHandSlide())) {
+                    endTick += gem.mDurationTicks;
+                }
+                repeatedChordEndTick = endTick;
+                newGem.mSuppressChordLabel = true;
+            }
+        }
+        if (i == gems.size() - 1) {
+            EndRepeatedChordPhrase(repeatedChordStartTick, repeatedChordEndTick, repeatedChordGemId);
+        }
+
+        if (gem.LeftHandSlide()) {
+            bool hasNext = false;
+            signed char curFret = gem.GetFret(gem.GetLowestString());
+            if (i < gems.size() - 1) {
+                const GameGem &nextGem = gems[i + 1];
+                hasNext = nextGem.mTick - (gem.mTick + gem.mDurationTicks) < 0x78;
+                if (hasNext && gem.mSlots == nextGem.mSlots && nextGem.mForceStrum) {
+                    newGem.mTailStart = nextGem.mMs / 1000.0f;
+                }
+                if (hasNext) {
+                    signed char nextFret = nextGem.GetFret(nextGem.GetLowestString());
+                    newGem.mSlideUp = (nextFret > curFret);
+                }
+            }
+            if (!hasNext) {
+                newGem.mSlideUp = (curFret > 7);
+            }
+            if (gem.ReverseSlide()) {
+                newGem.mSlideUp = !newGem.mSlideUp;
+            }
+        }
+
+        mGems.push_back(newGem);
+    }
+
+    mTrackDir->DeleteUnusedChordMeshes();
+    if (anyRGChord) {
+        mTrackDir->SyncObjects();
+    } else if (anyRG) {
+        mTrackDir->SyncFingerFeedback();
+    }
+
+    mEnd = 0;
+    mBegin = 0;
+    if (TheGame->mProperties.mHasSongSections) {
+        TheSongDB->EnableGems(trackNum, sectionStart, sectionEnd);
+    }
+    SetupRealGuitarFretPos();
+    SetupRealGuitarImportantStrings();
+    SetupRealGuitarAreaStrumSections();
+}
+
+void TrackDir::ClearChordMeshRefCounts() {}
+int TrackDir::PrepareChordMesh(unsigned int) { return 0; }
+void TrackDir::DeleteUnusedChordMeshes() {}
+void TrackDir::SyncFingerFeedback() {}
+
 void GemManager::EndRepeatedChordPhrase(
     int &repeatedChordStartTick, int &repeatedChordEndTick, int &i3
 ) {
@@ -928,6 +876,94 @@ bool GemManager::TrillStartsAt(int i1, const GameGem &gem, int &iref) const {
 void GemManager::SetGemsEnabled(float f) {
     mGemsEnabledStart = f;
     UpdateGemStates();
+}
+
+void GemManager::UpdateLeftyFlip(bool poll) {
+    ClearGems(true);
+    Player *player = mTrackConfig.GetBandUser()->GetPlayer();
+    if (player) {
+        GemStatus *gemStatus = ((GemPlayer *)player)->mGemStatus;
+        MILO_ASSERT(gemStatus, 0x5B1);
+        if (gemStatus->GetSize() > 0) {
+            MILO_ASSERT(gemStatus->GetSize() == mGems.size(), 0x5BA);
+            while (mBegin < mGems.size() && gemStatus->Get0xD(mBegin)) {
+                AdvanceBegin();
+            }
+        }
+    }
+    RndText::Alignment alignment =
+        mTrackConfig.IsLefty() ? RndText::kBottomLeft : RndText::kBottomRight;
+    TrackWidget *chordLabelWidget =
+        mTrackDir->Find<TrackWidget>("chord_label.wid", true);
+    chordLabelWidget->SetTextAlignment(alignment);
+    Symbol type = mTrackConfig.Type();
+    if (type != real_keys) {
+        RndDir *smasher = mTrackDir->SmasherPlate();
+        if (smasher) {
+            bool isKeys = mTrackConfig.GetBandUser()->GetControllerType() == kControllerKeys;
+            static Message msg("set_lefty", 0);
+            msg[0] = mTrackConfig.UseLeftyGems() && !isKeys;
+            smasher->Handle(msg, true);
+        }
+    }
+    UpdateSlotPositions();
+    if (type == "drum") {
+        if (mTrackConfig.UseLeftyGems()) {
+            type = Symbol("drum_lefty");
+        }
+        Symbol widgetName;
+        float crashY = 0.0f;
+        float beardY = 0.0f;
+        if (mGemData) {
+            if (GetWidgetName(widgetName, 4, crash)) {
+                TrackWidget *w = GetWidgetByName(widgetName);
+                if (!w->Empty()) {
+                    crashY = w->GetFirstInstanceY();
+                    w->Clear();
+                }
+            }
+            if (GetWidgetName(widgetName, 4, crash_cymbal)) {
+                TrackWidget *w = GetWidgetByName(widgetName);
+                if (!w->Empty()) {
+                    crashY = w->GetFirstInstanceY();
+                    w->Clear();
+                }
+            }
+            if (GetWidgetName(widgetName, 4, beard)) {
+                TrackWidget *w = GetWidgetByName(widgetName);
+                if (!w->Empty()) {
+                    beardY = w->GetFirstInstanceY();
+                    w->Clear();
+                }
+            }
+        }
+        mGemData = mConfig->FindArray(Symbol("gem"), Symbol("gems"), type);
+        Symbol cymbalSym =
+            (mTrackConfig.GetGameCymbalLanes() & 0x10) ? crash_cymbal : crash;
+        if ((double)crashY != 0.0 && GetWidgetName(widgetName, 4, cymbalSym)) {
+            TrackWidget *w = GetWidgetByName(widgetName);
+            Transform xfm1;
+            mTrackDir->MakeSlotXfm(4, xfm1);
+            xfm1.v.y = crashY;
+            w->AddInstance(xfm1, 0.0f);
+        }
+        if ((double)beardY != 0.0 && GetWidgetName(widgetName, 4, beard)) {
+            TrackWidget *w = GetWidgetByName(widgetName);
+            Transform xfm2;
+            mTrackDir->MakeSlotXfm(4, xfm2);
+            xfm2.v.y = beardY;
+            w->AddInstance(xfm2, 0.0f);
+        }
+    } else {
+        mGemData = mConfig->FindArray(Symbol("gem"), Symbol("gems"), type);
+    }
+    UpdateGemStates();
+    float gameMs = TheGame->mLastPollMs;
+    ResetArpeggios(gameMs);
+    if (poll) {
+        PlayerState state;
+        PollHelper(gameMs, state);
+    }
 }
 
 void GemManager::UpdateSlotPositions() {
@@ -998,10 +1034,10 @@ Symbol GemManager::GetTypeForGem(int gemId) {
         }
         if (gem.IsRealGuitar()) {
             if (gem.IsRealGuitarChord()) {
-                if (mGems[gemId].unk_0x67_0) {
+                if (mGems[gemId].mIsRepeatChord) {
                     return repeat;
                 }
-            } else if (mGems[gemId].unk_0x67_1) {
+            } else if (mGems[gemId].mInArpeggio) {
                 return section;
             }
         }
@@ -1268,33 +1304,6 @@ bool GemManager::OnMissPhrase(int i1) {
     return ret;
 }
 
-void GemManager::SetupRealGuitarAreaStrumSections() {
-    const std::vector<GameGem> &gems =
-        TheSongDB->GetGems(mTrackConfig.TrackNum());
-    for (int i = 0; i < gems.size();) {
-        const GameGem &gem = gems[i];
-        if (gem.GetRGStrumType() == 0) {
-            i++;
-        } else {
-            mGems[i].unk_0x67_0 = false;
-            for (int j = i - 1; j >= 0; j--) {
-                if ((unsigned int)gems[j].GetRGChordID()
-                    != (unsigned int)gem.GetRGChordID()) {
-                    break;
-                }
-                mGems[j].unk_0x67_0 = false;
-            }
-            for (i++; i < gems.size(); i++) {
-                if ((unsigned int)gems[i].GetRGChordID()
-                    != (unsigned int)gem.GetRGChordID()) {
-                    break;
-                }
-                mGems[i].unk_0x67_0 = false;
-            }
-        }
-    }
-}
-
 void GemManager::CheckRemoveChordBracket(int gemId) {
     const GameGem &gem = mGems[gemId].GetGameGem();
     int chordTick = gem.GetTick();
@@ -1326,9 +1335,9 @@ bool GemManager::IsSpotlightGem(int gemId, bool &outUnison) {
     if (!TheGame->AllowOverdrivePhrases()) {
         return false;
     }
-    int phraseId = TheSongDB->GetPhraseID(mTrackConfig.TrackNum(), gemId);
-    MILO_ASSERT(phraseId >= -1, 0xA04);
-    if (phraseId != -1) {
+    int phrase_id = TheSongDB->GetPhraseID(mTrackConfig.TrackNum(), gemId);
+    MILO_ASSERT(phrase_id >= -1, 0xA04);
+    if (phrase_id != -1) {
         bool inFutureLoop = false;
         Band *band = mTrackConfig.GetBandUser()->GetPlayer()->mBand;
         if (TheGame->InTrainer() && TheGemTrainerPanel->IsGemInFutureLoop(gemId)) {
@@ -1336,9 +1345,9 @@ bool GemManager::IsSpotlightGem(int gemId, bool &outUnison) {
         }
         if (inFutureLoop ||
             !band->mCommonPhraseCapturer->DidTrackFail(
-                phraseId, mTrackConfig.TrackNum()
+                phrase_id, mTrackConfig.TrackNum()
             )) {
-            outUnison = TheSongDB->IsUnisonPhrase(phraseId);
+            outUnison = TheSongDB->IsUnisonPhrase(phrase_id);
             return true;
         }
     }
@@ -1575,11 +1584,6 @@ void GemManager::UpdateEnabledSlots() {
 #pragma force_active on
 inline int GemManager::GetMaxSlots() const { return mTrackConfig.GetMaxSlots(); }
 #pragma pop
-
-void TrackDir::ClearChordMeshRefCounts() {}
-int TrackDir::PrepareChordMesh(unsigned int) { return 0; }
-void TrackDir::DeleteUnusedChordMeshes() {}
-void TrackDir::SyncFingerFeedback() {}
 
 #line 87 "TrackDir.h"
 RndDir *TrackDir::SmasherPlate() {

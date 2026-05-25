@@ -36,7 +36,7 @@ public:
     virtual RndDir *SmasherPlate();
     virtual float GetFretPosOffset(int) const { return 0; }
     virtual int GetNumFretPosOffsets() const { return 0; }
-    virtual float GetCurrentChordLabelPosOffset() const { return 0; }
+    virtual float GetCurrentChordLabelPosOffset() const;
     virtual int PrepareChordMesh(unsigned int);
     virtual RndMesh *GetChordMesh(unsigned int, bool) { return nullptr; }
     virtual void SetUnisonProgress(float) {}
@@ -53,7 +53,7 @@ public:
     ) {
         MILO_ASSERT(0, 0x68);
     }
-    virtual ArpeggioShapePool *GetArpeggioShapePool() { return nullptr; }
+    virtual ArpeggioShapePool *GetArpeggioShapePool();
     virtual bool IsBlackKey(int) const;
     virtual void KeyMissLeft() {}
     virtual void KeyMissRight() {}

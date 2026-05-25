@@ -85,6 +85,7 @@ public:
     String GetOfferId() const;
     String GetUpgradeId() const;
     bool IsVariousArtist() const;
+    void EndianFixBase();
 
     // 0x0
     unsigned char mIsRBN : 1;

@@ -1,8 +1,10 @@
 {
     "progress_categories": {
         "game": "Game Code",
+        "game_wii": "Game Code (Wii-only)",
         "network": "Networking Code",
         "engine": "Milo Engine Code",
+        "engine_wii": "Milo Engine Code (Wii-only)",
         "lib": "Third-Party Libraries",
         "sdk": "SDK Code"
     },

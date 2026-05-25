@@ -105,7 +105,7 @@ public:
     virtual void AddKeyboardRangeShift(int, int, float, int, int);
     virtual SongPos CalcSongPos(float);
     virtual TempoMap *GetTempoMap() const { return mTempoMap; }
-    virtual BeatMap *GetBeatMap() const;
+    virtual BeatMap *GetBeatMap() const { return mBeatMap; }
     virtual MeasureMap *GetMeasureMap() const { return mMeasureMap; }
     virtual void SetTrack(Symbol);
     virtual bool GetGem(int, int &, int &, int &);

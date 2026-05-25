@@ -141,10 +141,10 @@ void CharClipDisplay::DrawTrack() {
     Hmx::Color green(0.0f, 1.0f, 0.0f, 1.0f);
     Hmx::Color black(0.0f, 0.0f, 0.0f, 1.0f);
 
-    float startBeat = (unkc - unk4 >= 0.0f) ? unkc : unk4;
-    float endBeat = (unk10 - unk8 >= 0.0f) ? unk8 : unk10;
-
     float drawY = unk18;
+    float startBeat = (unkc >= unk4) ? unkc : unk4;
+    float endBeat = (unk10 >= unk8) ? unk8 : unk10;
+
     float halfEm = sEm * 0.5f;
     float nameY = -(halfEm - drawY);
 
@@ -232,7 +232,7 @@ void CharClipDisplay::DrawTrack() {
                     = CharBones::ChannelName(data->Name(), CharBones::TYPE_POS);
                 void *channel = unk0->GetChannel(channelName);
                 Vector3 channelData;
-                Hmx::Color ikColor(0.0f, 0.0f, 0.0f, 1.0f);
+                Hmx::Color ikColor(1.0f, 0.0f, 0.0f, 1.0f);
                 Hmx::Rect ikRect(0.0f, drawY, 1.0f, 1.0f);
                 int firstFrame = (int)(float)std::ceil(unk0->BeatToFrame(startBeat));
                 int lastFrame = (int)(float)std::floor(unk0->BeatToFrame(endBeat));

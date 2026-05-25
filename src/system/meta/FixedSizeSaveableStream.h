@@ -20,7 +20,7 @@ public:
     float ReadFloat();
     void SetSymbolID(Symbol, int);
     void SaveTable();
-    int GetSymbolTableSize(int);
+    static int GetSymbolTableSize(int);
     void LoadTable(int);
 
     std::map<Symbol, int> &GetSymbolToIDMap();

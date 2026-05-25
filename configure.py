@@ -292,6 +292,34 @@ for (lib, lib_config) in objects.items():
         **lib_config
     })
 
+# Reassign progress_category for Wii-only sources, so the report can track
+# the platform-replaceable surface (rndwii, os, synthwii, usbwii, *_Wii.cpp,
+# meta_band/Wii*) separately from cross-platform game/engine code.
+def _is_wii_only(path: str) -> bool:
+    p = path.replace("\\", "/")
+    if "/rndwii/" in p or "/synthwii/" in p or "/usbwii/" in p:
+        return True
+    if p.startswith("system/os/") or "/system/os/" in p:
+        return True
+    base = p.rsplit("/", 1)[-1]
+    if base.endswith("_Wii.cpp") or base.endswith("_wii.cpp"):
+        return True
+    # band3/meta_band/Wii*.cpp — Wii-only friends/profile/store providers
+    if p.startswith("band3/meta_band/Wii") or "/band3/meta_band/Wii" in p:
+        return True
+    return False
+
+_WII_OVERRIDE = {"game": "game_wii", "engine": "engine_wii"}
+for lib in libs:
+    base_cat = lib.get("progress_category")
+    for obj in lib["objects"]:
+        path = obj.name
+        if not _is_wii_only(path):
+            continue
+        cur = obj.options.get("progress_category") or base_cat
+        if cur in _WII_OVERRIDE:
+            obj.options["progress_category"] = _WII_OVERRIDE[cur]
+
 config.libs = libs
 
 # def link_order_callback(module_id: int, objects: List[str]) -> List[str]:

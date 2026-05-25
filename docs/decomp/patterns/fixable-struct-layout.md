@@ -42,6 +42,8 @@ The original game's `Derived` did NOT override `Foo` — its vtable slot inherit
 
 **Distinct from** multiply-defined globals (file-local sentinel needs `static`) and key-function vtable placement (covered in the linking-sweep memory note).
 
+**Tooling:** `bin/lint-link-issues` statically detects this pattern (and the multiply-defined globals one) against the band_r_wii.map symbol table. Run it before promoting a TU to `Matching`/`Equivalent`. Underlying primitive: `tools/mwcc_symbols.py find <Class> <Method>` queries the map for override symbols across const/non-const, namespace-nested, and template-instantiated variants.
+
 ## See Also
 
 - [fixable-copy-ctor.md](fixable-copy-ctor.md) — explicit copy constructor disables small-struct register-return ABI

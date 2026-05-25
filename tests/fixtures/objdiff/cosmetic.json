@@ -1,0 +1,19 @@
+{
+  "fuzzy_match_percent": 100.0,
+  "raw_match_percent": 99.5,
+  "verdict": {"classification": "AtLimit"},
+  "instructions": [
+    {"index": 5, "match_type": "diff_arg",
+     "target": {"opcode": "mr", "args": "r5, r3"},
+     "base": {"opcode": "mr", "args": "r7, r3"},
+     "diff_breakdown": {"arguments": [
+        {"arg_type": "register", "target": {"value": "r5"}, "base": {"value": "r7"}}
+     ]}},
+    {"index": 8, "match_type": "diff_arg",
+     "target": {"opcode": "lwz", "args": "r3, 0xC(r4)"},
+     "base": {"opcode": "lwz", "args": "r3, 0x10(r4)"},
+     "diff_breakdown": {"arguments": [
+        {"arg_type": "immediate", "target": {"value": 12}, "base": {"value": 16}}
+     ]}}
+  ]
+}

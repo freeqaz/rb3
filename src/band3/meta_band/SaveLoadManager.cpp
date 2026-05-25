@@ -1,6 +1,8 @@
 #include "SaveLoadManager.h"
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
+#include "meta/FixedSizeSaveable.h"
+#include "meta/FixedSizeSaveableStream.h"
 #include "meta/MemcardMgr_Wii.h"
 #include "meta/Profile.h"
 #include "meta/WiiProfileMgr.h"
@@ -8,6 +10,7 @@
 #include "meta_band/BandSongMgr.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/UIEventMgr.h"
+#include "utl/MakeString.h"
 #include "net_band/EntityUploader.h"
 #include "net_band/RockCentral.h"
 #include "net_band/RockCentralMsgs.h"
@@ -25,7 +28,16 @@
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
-class SaveMemcardAction;
+class SaveMemcardAction : public MemcardAction {
+public:
+    SaveMemcardAction(std::vector<BandProfile *, unsigned short> *);
+    virtual ~SaveMemcardAction();
+    virtual void PreAction();
+    virtual void Action();
+    virtual void PostAction();
+    int unk24;
+    int unk28;
+};
 
 SaveLoadManager *TheSaveLoadMgr;
 
@@ -933,7 +945,14 @@ void SaveLoadManager::ManualSave(LocalBandUser *user) {
 }
 
 void SaveLoadManager::PrintoutSaveSizeInfo() {
-    MILO_LOG("Save size info: TODO\n");
+    FixedSizeSaveable::EnablePrintouts(true);
+    FormatString fmt("SAVESIZE\n");
+    TheDebug << fmt.Str();
+    int profileSize = BandProfile::SaveSize(0x97);
+    int symbolSize = FixedSizeSaveableStream::GetSymbolTableSize(0x97);
+    TheDebug << MakeString<int>("Symbol Table Size = %i\n", symbolSize);
+    int wiiSize = WiiProfileMgr::SaveSize(0x97);
+    TheDebug << MakeString<int>("SAVESIZE TOTAL = %i \n", wiiSize + (symbolSize + profileSize));
 }
 
 bool SaveLoadManager::IsReasonToUpload() {
@@ -949,20 +968,17 @@ void SaveLoadManager::StartSaveAction(bool b) {
     mTimer.Restart();
     bool isOverwrite = (mState == kS_SaveOverwrite || mState == kS_SaveNoOverwrite);
     MILO_ASSERT(isOverwrite, 0x9c9);
-    for (int i = 0; i < (int)mSaveProfiles.size(); i++) {
-        TheWiiProfileMgr.SetLocked(mSaveProfiles[i], true);
+    for (BandProfile **p = (BandProfile **)mUploadProfiles.begin(); p != (BandProfile **)mUploadProfiles.end(); p++) {
+        TheWiiProfileMgr.SetLocked(*p, true);
     }
     unk69 = true;
     if (mAction) {
         delete mAction;
-        mAction = NULL;
     }
-    mAction = (MemcardAction *)operator new(0x2c);
-    if (mAction) {
-        // SaveMemcardAction::SaveMemcardAction(&mSaveProfiles)
-    }
+    mAction = NULL;
+    mAction = new SaveMemcardAction(&mUploadProfiles);
     TheMemcardMgr.AddSink(this);
-    // TODO: TheMemcardMgr.OnSaveGame(NULL, mAction, b); — method missing from MemcardMgr_Wii.h
+    TheMemcardMgr.OnSaveGame(NULL, mAction, b);
 }
 
 DataNode SaveLoadManager::OnMsg(const DeviceChosenMsg &msg) {

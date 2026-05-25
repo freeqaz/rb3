@@ -137,6 +137,7 @@ public:
     WiiContent *ContentOf(Symbol);
     CNTHandle *GetChannelContentHandle();
     CNTHandle *ContentHandleOf(Symbol);
+    bool Contains(unsigned long long titleId, int contentIndex) const;
 
     void *mSDBuffer; // 68
     int mMode; // 6c
