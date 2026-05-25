@@ -880,10 +880,108 @@ void *_MemAllocTemp(int size, int align) {
     return _MemAlloc(size, align);
 }
 
-void MemInit();
+struct HeapDesc {
+    const char *mName;
+    int mKind;       // 1 = AddHeap, 2 = SplitHeap
+    int mSizeBytes;
+    int mDebugLevel;
+    bool mUseHeapAlign;
+    bool mAllowTemp;
+    char mPad12[2];
+    int mStrategy;
+};
+
+extern HeapDesc gHeapData[4];
 extern char gZeroAllocBuf[0x20];
 extern int gUnknownAllocCount;
 extern int gUnknownAllocBytes;
+
+void AddHeap(const char *name, int heapNum, int sizeBytes, bool useHeapAlign, int region,
+             Heap::Strategy strategy, int debugLevel, bool allowTemp);
+void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
+               bool useHeapAlign, Heap::Strategy strategy, int debugLevel, bool allowTemp);
+
+void MemInit() {
+    if (gMemInited) return;
+    gMemInited = true;
+    gInsideMemFunc = true;
+    gMemLock = &sMemLock;
+    gMemStackLock = &sMemStackLock;
+    gMemLock->Enter();
+    int *tmpBuf = (int *)WiiMalloc(0x10000);
+    int numHeaps;
+    if (gSingleHeap != 0) {
+        numHeaps = 1;
+    } else {
+        numHeaps = 4;
+    }
+    gNumHeaps = numHeaps;
+    MILO_ASSERT(numHeaps < 0x10, 0x704);
+    int totalCombinedBytes = 0;
+    int singleHeapSplitAccum = 0;
+    int idx = 3;
+    HeapDesc *desc = &gHeapData[3];
+    Heap *heap = &gHeaps[3]; // unused; placeholder for asm pattern
+    do {
+        const char *name = desc->mName;
+        int sizeBytes = desc->mSizeBytes;
+        bool useHeapAlign = desc->mUseHeapAlign;
+        int kind = desc->mKind;
+        bool allowTemp = desc->mAllowTemp;
+        int debugLevel = desc->mDebugLevel;
+        int strategy = desc->mStrategy;
+        if (gSingleHeap != 0) {
+            totalCombinedBytes += sizeBytes;
+            if (idx == 0) {
+                AddHeap(name, idx, totalCombinedBytes, useHeapAlign, kind,
+                        (Heap::Strategy)strategy, debugLevel, allowTemp);
+            }
+        } else if (kind != 2) {
+            if (idx == 0) {
+                sizeBytes += singleHeapSplitAccum;
+            }
+            AddHeap(name, idx, sizeBytes, useHeapAlign, kind,
+                    (Heap::Strategy)strategy, debugLevel, allowTemp);
+            if (idx > 0) {
+                singleHeapSplitAccum += sizeBytes - (gHeaps[idx].mSizeWords * 4);
+            }
+        }
+        idx--;
+        desc--;
+        (void)heap;
+    } while (idx >= 0);
+    kTinyHeap = MemFindHeap("tiny");
+    kFastHeap = MemFindHeap("fast");
+    WiiFree(tmpBuf);
+    gDefaultHeap = 0;
+    int splitSrc = -1;
+    int i = 0;
+    HeapDesc *desc2 = &gHeapData[0];
+    do {
+        const char *name = desc2->mName;
+        int sizeBytes = desc2->mSizeBytes;
+        bool useHeapAlign = desc2->mUseHeapAlign;
+        int kind = desc2->mKind;
+        bool allowTemp = desc2->mAllowTemp;
+        int debugLevel = desc2->mDebugLevel;
+        int strategy = desc2->mStrategy;
+        if (splitSrc < 0 && kind == 1) {
+            splitSrc = i;
+        }
+        if (kind == 2) {
+            if (splitSrc < 0) {
+                FormatString fs("How can we not have a region 1 heap yet?\n");
+                TheDebugFailer << fs.Str();
+            }
+            SplitHeap(splitSrc, name, i, sizeBytes, useHeapAlign,
+                      (Heap::Strategy)strategy, debugLevel, allowTemp);
+        }
+        i++;
+        desc2++;
+    } while (i < 4);
+    gInsideMemFunc = false;
+    gMemLock->Exit();
+}
 
 void *_MemAlloc(int size, int align) {
     if (!gMemInited) {
