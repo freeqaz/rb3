@@ -158,6 +158,7 @@ bool CharKeyHandMidi::IsBlackKey(KeyboardKey key) {
     }
 }
 
+#pragma fp_contract off
 void CharKeyHandMidi::Poll() {
     if (!mFirstSpot)
         return;
@@ -171,11 +172,8 @@ void CharKeyHandMidi::Poll() {
     }
 
     if (unk78) {
-        Vector3 firstPos(
-            mFirstSpot->WorldXfm().v.x,
-            mFirstSpot->WorldXfm().v.y,
-            mFirstSpot->WorldXfm().v.z
-        );
+        Transform &firstXfm = mFirstSpot->WorldXfm();
+        Vector3 firstPos(firstXfm.v.x, firstXfm.v.y, firstXfm.v.z);
 
         Vector3 keyDir;
         Subtract(mSecondSpot->WorldXfm().v, firstPos, keyDir);
@@ -347,6 +345,7 @@ void CharKeyHandMidi::Poll() {
     }
     unk5c.clear();
 }
+#pragma fp_contract on
 
 void CharKeyHandMidi::EndTest() {
     if (mIKObject) {
