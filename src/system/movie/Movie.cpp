@@ -14,6 +14,7 @@
 #include "os/OSFuncs.h"
 #include "os/System.h"
 #include "os/Timer.h"
+#include "rndobj/Rnd.h"
 #include "utl/BinkIntegration.h"
 #include "utl/Loader.h"
 #include "utl/MemMgr.h"
@@ -604,7 +605,40 @@ void Movie::Impl::SharedFinishOpen(bool unpause) {
     }
 }
 
-void Movie::Impl::SetRect() {}
+void Movie::Impl::SetRect() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x24C);
+    float screenW = mWidth != 0 ? (float)mWidth : (float)TheRnd->Width();
+    float screenH = mHeight != 0 ? (float)mHeight : (float)TheRnd->Height();
+    MILO_ASSERT(mAspect != 0.0f, 0x252);
+    float w, h;
+    if (mStretchToFit) {
+        h = screenW;
+        w = screenW * mAspect;
+    } else {
+        w = screenH;
+        h = screenH / mAspect;
+        if (mWidth == 0 && TheRnd->mAspect == Rnd::kWidescreen) {
+            h /= 1.3333334f;
+        }
+    }
+    float dx = (h - screenW) * 0.5f;
+    float dy = (w - screenH) * 0.5f;
+    mRectX1 = -dx;
+    mRectY1 = -dy;
+    mRectX2 = h - dx;
+    mRectY2 = w - dy;
+}
 
 void Movie::Impl::Begin(
     const char *file,
