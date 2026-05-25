@@ -1146,6 +1146,14 @@ int SongData::TrackNamed(Symbol name) const {
     return -1;
 }
 
+int SongData::GetTrackTypes() const {
+    int types = 0;
+    for (int i = 0; i < mTrackInfos.size(); i++) {
+        types |= 1 << mTrackInfos[i]->mType;
+    }
+    return types;
+}
+
 DrumFillInfo *SongData::GetDrumFillInfo(int idx) { return mFills[idx]; }
 
 FillInfo *SongData::GetFillInfo(int idx) { return mFills[idx]; }
