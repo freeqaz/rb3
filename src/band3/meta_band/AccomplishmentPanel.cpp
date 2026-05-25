@@ -1057,6 +1057,21 @@ void AccomplishmentPanel::SetRandomUnplayedSong() {
     );
 }
 
+void AccomplishmentPanel::BuildSelectedEntrySetList() {
+    Symbol entry = GetSelectedDetailsEntry();
+    if (entry == goal_filtersong_unknown) {
+        SetRandomUnplayedSong();
+        return;
+    }
+    std::vector<Symbol> vSongs;
+    vSongs.push_back(entry);
+    std::vector<Symbol>::iterator vSongsEnd = vSongs.end();
+    MILO_ASSERT(std::find( vSongs.begin(), vSongsEnd, gNullStr ) == vSongsEnd, 0x8F4);
+    MetaPerformer *pPerformer = MetaPerformer::Current();
+    MILO_ASSERT(pPerformer, 0x8F6);
+    pPerformer->SetSongs(vSongs);
+}
+
 bool AccomplishmentPanel::CanLaunchSelectedEntry() const {
     Symbol selacc = SelectedAccomplishment();
     Accomplishment *acc = TheAccomplishmentMgr->GetAccomplishment(selacc);
