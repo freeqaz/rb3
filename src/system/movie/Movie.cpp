@@ -497,3 +497,61 @@ void Movie::Impl::End() {
         SharedFinishOpen(false);
     }
 }
+
+void Movie::Impl::MovieClose() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x19A);
+    for (std::list<Movie::Impl *>::iterator it = Movie::openMovieFiles.begin();
+         it != Movie::openMovieFiles.end();
+         ++it) {
+        if (*it == this) {
+            Movie::openMovieFiles.erase(it);
+            break;
+        }
+    }
+    BinkClose(mBink);
+    mBink = NULL;
+}
+
+// TODO: full implementation. Stubs so SetPaused can link.
+void Movie::Impl::SharedFinishOpen(bool) {}
+int Movie::Impl::MovieOpen(const char *, unsigned int) { return 0; }
+void Movie::Impl::FinishOpen() {}
+
+void Movie::Impl::SetPaused(bool b) {
+    if (mTimeCallback != NULL) {
+        float dt = mTimeCallback();
+        if (dt == 0.0f) {
+            b = true;
+        }
+    }
+    if (mPaused == b) return;
+    if (mBink == NULL) return;
+    if (mMovieBuffers->mPendingBlits > 1 && sAsyncMovie != NULL && !b) {
+        sNextMovie = this;
+        return;
+    }
+    if (!b) LockThread();
+    if (!b && mPreloadBuf != NULL && mTimeCallback != NULL) {
+        MovieClose();
+        MovieOpen(mPreloadBuf, 0x4000400);
+        BINKFRAMEBUFFERS info;
+        BinkGetFrameBuffersInfo(mBink, &info);
+        BinkRegisterFrameBuffers(mBink, &mMovieBuffers->mBuffers);
+        mPaused = true;
+        FinishOpen();
+    }
+    BinkPause(mBink, b);
+    mPaused = b;
+    if (b) UnlockThread();
+}
