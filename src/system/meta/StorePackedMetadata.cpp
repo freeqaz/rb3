@@ -1089,3 +1089,87 @@ StorePackedSubMenu *StorePage::Submenu(int idx) const {
         return NULL;
     return &mSubmenus[idx];
 }
+
+void UpdateOfferStateFromEc(
+    StoreOfferState *state, const char *offerName, int newPrice,
+    const ECContentCatalogInfo *info, const StorePackedOfferBase *offerBase
+) {
+    StorePackedSong *firstSong;
+    if (offerBase->mIsRBN) {
+        firstSong = &TheStoreMetadata.mSongTable->mSongs
+            [((const StorePackedRBNOffer *)offerBase)->mSongs[0]];
+    } else {
+        firstSong = &TheStoreMetadata.mSongTable->mSongs
+            [((const StorePackedOffer *)offerBase)->mSongs[0]];
+    }
+    unsigned long long expected = WiiCommerceMgr::MakeDataTitleId(&firstSong->unk6);
+    if (info->titleId != expected) {
+        TheDebug << MakeString(
+            "Store: offer %s from ecommerce says titleid %llx but store index data says %llx\n",
+            offerName,
+            info->titleId,
+            expected
+        );
+        return;
+    }
+    unsigned long ecCount = info->nIndexes;
+    unsigned long indexCount = (unsigned long)(offerBase->mNumSongs * 2);
+    if (ecCount != indexCount) {
+        TheDebug << MakeString(
+            "Store: offer %s from ecommerce says there are %d contents but store index data says %d\n",
+            offerName,
+            ecCount,
+            (int)indexCount
+        );
+        return;
+    }
+    std::vector<unsigned short VECTOR_SIZE_SMALL> ecContents;
+    std::vector<unsigned short VECTOR_SIZE_SMALL> expectedContents;
+    for (unsigned long i = 0; i < info->nIndexes; i++) {
+        ecContents.push_back(info->indexes[i]);
+    }
+    for (int j = 0; j < offerBase->mNumSongs; j++) {
+        StorePackedSong *song;
+        if (offerBase->mIsRBN) {
+            song = &TheStoreMetadata.mSongTable->mSongs
+                [((const StorePackedRBNOffer *)offerBase)->mSongs[j]];
+        } else {
+            song = &TheStoreMetadata.mSongTable->mSongs
+                [((const StorePackedOffer *)offerBase)->mSongs[j]];
+        }
+        unsigned short base = song->unka;
+        expectedContents.push_back(base);
+        expectedContents.push_back((unsigned short)(base + 1));
+    }
+    std::sort(ecContents.begin(), ecContents.end());
+    std::sort(expectedContents.begin(), expectedContents.end());
+    bool match = true;
+    for (unsigned long k = 0; k < info->nIndexes; k++) {
+        if (ecContents[k] != expectedContents[k])
+            match = false;
+    }
+    if (match) {
+        state->mPrice = (unsigned short)newPrice;
+        const char *priceStr = GetAttributeStr(info, "MaxUserFileSize");
+        int parsed;
+        if (priceStr)
+            parsed = strtoul(priceStr, NULL, 10);
+        else
+            parsed = 0;
+        state->unk8 = parsed;
+        state->mFlags |= 0x40;
+    } else {
+        TheDebug << MakeString(
+            "Store: for offer %s, ecommerce lists content units [", offerName
+        );
+        int i;
+        for (i = 0; (unsigned long)i < info->nIndexes - 1; i++) {
+            TheDebug << MakeString("%d, ", ecContents[i]);
+        }
+        TheDebug << MakeString("%d] but store index lists [", ecContents[i]);
+        for (i = 0; (unsigned long)i < info->nIndexes - 1; i++) {
+            TheDebug << MakeString("%d, ", expectedContents[i]);
+        }
+        TheDebug << MakeString("%d]\n", expectedContents[i]);
+    }
+}

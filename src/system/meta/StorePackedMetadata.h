@@ -3,8 +3,10 @@
 #include "obj/Msg.h"
 #include "meta/StoreEnumeration.h"
 #include "meta/StoreOffer.h"
+#include <map>
 
 class StoreTitleContentState;
+struct ECContentCatalogInfo;
 
 DECLARE_MESSAGE(CommerceMgrOpCompleteMsg, "commerce_mgr_op_complete")
 END_MESSAGE
