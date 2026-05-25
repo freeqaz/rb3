@@ -126,59 +126,6 @@ struct SortByPointer {
 // so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
 namespace stlpmtx_std {
 
-// --- SortByPointer specializations ---
-
-template <>
-void __unguarded_linear_insert<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVert *, SortByPointer>(
-    BandPatchMesh::MeshVert **__last,
-    BandPatchMesh::MeshVert *__val,
-    SortByPointer
-) {
-    BandPatchMesh::MeshVert **__next = __last;
-    --__next;
-    while (__val->mVert < (*__next)->mVert) {
-        BandPatchMesh::MeshVert *__tmp = *__next;
-        *__last = __tmp;
-        __last = __next;
-        --__next;
-    }
-    *__last = __val;
-}
-
-template <>
-void __adjust_heap<BandPatchMesh::MeshVert **, long, BandPatchMesh::MeshVert *, SortByPointer>(
-    BandPatchMesh::MeshVert **__first,
-    long __holeIndex,
-    long __len,
-    BandPatchMesh::MeshVert *__val,
-    SortByPointer
-) {
-    long __topIndex = __holeIndex;
-    long __secondChild = 2 * __holeIndex + 2;
-    while (__secondChild < __len) {
-        if ((*(__first + __secondChild))->mVert < (*(__first + (__secondChild - 1)))->mVert)
-            __secondChild--;
-        *(__first + __holeIndex) = *(__first + __secondChild);
-        __holeIndex = __secondChild;
-        __secondChild = 2 * (__secondChild + 1);
-    }
-    if (__secondChild == __len) {
-        *(__first + __holeIndex) = *(__first + (__secondChild - 1));
-        __holeIndex = __secondChild - 1;
-    }
-    // inline __push_heap with SortByPointer comparator
-    long __parent = (__holeIndex - 1) / 2;
-    while (
-        __holeIndex > __topIndex
-        && (*(__first + __parent))->mVert < __val->mVert
-    ) {
-        *(__first + __holeIndex) = *(__first + __parent);
-        __holeIndex = __parent;
-        __parent = (__holeIndex - 1) / 2;
-    }
-    *(__first + __holeIndex) = __val;
-}
-
 // --- SortByWorkVertZ specializations ---
 
 template <>
@@ -548,6 +495,64 @@ void BandPatchMesh::WorkVerts::Project() {
         SpreadEdges(i);
 }
 
+// SortByPointer specializations in a second namespace block so that the struct
+// is defined at its original source location, preserving IPA register decisions
+// for the already-100% SortByWorkVertZ functions above.
+namespace stlpmtx_std {
+
+template <>
+void __unguarded_linear_insert<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVert *, SortByPointer>(
+    BandPatchMesh::MeshVert **__last,
+    BandPatchMesh::MeshVert *__val,
+    SortByPointer
+) {
+    BandPatchMesh::MeshVert **__next = __last;
+    --__next;
+    while (__val->mVert < (*__next)->mVert) {
+        BandPatchMesh::MeshVert *__tmp = *__next;
+        *__last = __tmp;
+        __last = __next;
+        --__next;
+    }
+    *__last = __val;
+}
+
+template <>
+void __adjust_heap<BandPatchMesh::MeshVert **, long, BandPatchMesh::MeshVert *, SortByPointer>(
+    BandPatchMesh::MeshVert **__first,
+    long __holeIndex,
+    long __len,
+    BandPatchMesh::MeshVert *__val,
+    SortByPointer
+) {
+    long __topIndex = __holeIndex;
+    long __secondChild = 2 * __holeIndex + 2;
+    while (__secondChild < __len) {
+        if ((*(__first + __secondChild))->mVert < (*(__first + (__secondChild - 1)))->mVert)
+            __secondChild--;
+        *(__first + __holeIndex) = *(__first + __secondChild);
+        __holeIndex = __secondChild;
+        __secondChild = 2 * (__secondChild + 1);
+    }
+    if (__secondChild == __len) {
+        *(__first + __holeIndex) = *(__first + (__secondChild - 1));
+        __holeIndex = __secondChild - 1;
+    }
+    // inline __push_heap with SortByPointer comparator
+    long __parent = (__holeIndex - 1) / 2;
+    while (
+        __holeIndex > __topIndex
+        && (*(__first + __parent))->mVert < __val->mVert
+    ) {
+        *(__first + __holeIndex) = *(__first + __parent);
+        __holeIndex = __parent;
+        __parent = (__holeIndex - 1) / 2;
+    }
+    *(__first + __holeIndex) = __val;
+}
+
+} // namespace stlpmtx_std
+
 void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
     std::sort(unk10.begin(), unk10.end(), SortByPointer());
     for (int i = 0; i < unk10.size(); i++) {
@@ -587,6 +592,103 @@ void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
             mesh->Faces()[i][j] = mMeshVerts[myface[j]]->unk24;
         }
     }
+}
+
+void BandPatchMesh::WorkVerts::ExtendTwin(
+    const BandPatchMesh::MeshVert *mv, Vector2 &outDir, Vector2 &outUv
+) {
+    if (mv->unk27 == 0)
+        return;
+    const MeshVert *prevTwin = mv;
+    const MeshVert *prevOther = mv;
+    const MeshVert *anchor = mv;
+    const MeshVert *iter = mv;
+    float accumX = 0.0f;
+    float accumY = 0.0f;
+    unsigned short *facePtr = (unsigned short *)((char *)iter + 0x32);
+    for (int i = 0; i < mv->unk30; i++) {
+        unsigned short faceIdx = facePtr[i];
+        if (unk28[faceIdx].mFlags == 4) {
+            RndMesh::Face &face = mMesh->Faces()[faceIdx];
+            MeshVert *v0 = mMeshVerts[face.v2];
+            MeshVert *next = mMeshVerts[face.v3];
+            unsigned short *vptr = (unsigned short *)&face;
+            for (int j = 0; j < 3; j++) {
+                MeshVert *curr = mMeshVerts[vptr[j]];
+                if (next == mv) {
+                    if (curr->unk27 != 0) {
+                        float dx = (curr->mVert->uv.x - next->mVert->uv.x) * unk44.x;
+                        float dy = (curr->mVert->uv.y - next->mVert->uv.y) * unk44.y;
+                        float len = std::sqrt(dx * dx + dy * dy);
+                        float inv = 1.0f / len;
+                        accumY = dy;
+                        accumX = dx;
+                        outDir.x += dx * inv;
+                        outDir.y += dy * inv;
+                        prevTwin = next;
+                        prevOther = v0;
+                        anchor = curr;
+                    }
+                } else if (curr == mv) {
+                    if (next->unk27 != 0) {
+                        float dx = (curr->mVert->uv.x - next->mVert->uv.x) * unk44.x;
+                        float dy = (curr->mVert->uv.y - next->mVert->uv.y) * unk44.y;
+                        float len = std::sqrt(dx * dx + dy * dy);
+                        float inv = 1.0f / len;
+                        accumY = dy;
+                        accumX = dx;
+                        outDir.x += dx * inv;
+                        outDir.y += dy * inv;
+                        prevTwin = next;
+                        prevOther = v0;
+                        anchor = next;
+                    }
+                }
+                v0 = next;
+                next = curr;
+            }
+        }
+    }
+    if (prevTwin == prevOther)
+        return;
+    float dxOther = prevOther->mVert->uv.x - prevTwin->mVert->uv.x;
+    float dyOther = prevOther->mVert->uv.y - prevTwin->mVert->uv.y;
+    float cross = accumX * dyOther - accumY * dxOther;
+    float sign;
+    if (cross >= 0.0f)
+        sign = 1.0f;
+    else
+        sign = -1.0f;
+    float ox = outDir.x;
+    float oy = outDir.y;
+    float invLen = sign / std::sqrt(ox * ox + oy * oy);
+    float newX = -oy * invLen * unk4c.x;
+    float newY = ox * invLen * unk4c.y;
+    outDir.x = newX;
+    outDir.y = newY;
+    float ax = mv->mVert->uv.y - prevOther->mVert->uv.y;
+    float ay = mv->mVert->uv.x - prevOther->mVert->uv.x;
+    float bx = mv->mVert->uv.y - anchor->mVert->uv.y;
+    float by = mv->mVert->uv.x - anchor->mVert->uv.x;
+    float det = ay * bx - ax * by;
+    if (std::fabs(det) < 1e-15f) {
+        outUv.x = 0.0f;
+        outUv.y = 0.0f;
+        return;
+    }
+    float invDet = 1.0f / det;
+    float m00 = ay * invDet;
+    float m11 = -ax * invDet;
+    float m01 = bx * invDet;
+    float m10 = -by * invDet;
+    float tu = mv->unk1c.x - prevOther->unk1c.x;
+    float tv = mv->unk1c.y - prevOther->unk1c.y;
+    float au = mv->unk1c.x - anchor->unk1c.x;
+    float av = mv->unk1c.y - anchor->unk1c.y;
+    float resX = outDir.x * m01 + outDir.y * m00;
+    float resY = outDir.x * m10 + outDir.y * m11;
+    outUv.x = resY * av + resX * tv;
+    outUv.y = resY * au + resX * tu;
 }
 
 bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
