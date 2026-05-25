@@ -1656,7 +1656,8 @@ Symbol AccomplishmentManager::GetNameForFirstNewRewardVignette() const {
         return prog.GetFirstNewRewardVignette();
     else {
         MILO_ASSERT(false, 0xA3B);
-        return "";
+        Symbol ret = "";
+        return ret;
     }
 }
 
