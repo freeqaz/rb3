@@ -601,6 +601,21 @@ bool BandPatchMesh::ReProject() {
     return mRenderTo;
 }
 
+void BandPatchMesh::PostRender() {
+    for (ObjVector<MeshPair>::iterator mp = mMeshes.begin(); mp != mMeshes.end();
+         ++mp) {
+        for (ObjVector<MeshPair::PatchPair>::iterator pp = mp->patches.begin();
+             pp != mp->patches.end();
+             ++pp) {
+            RndMesh *patch = pp->mPatch;
+            if (patch && !patch->Dir()) {
+                delete patch;
+            }
+        }
+        mp->patches.clear();
+    }
+}
+
 void BandPatchMesh::PreRender(BandCharDesc *desc, int iii) {
     if (mCategory == 0 || (iii & mCategory)) {
         for (ObjVector<MeshPair>::iterator mp = mMeshes.begin(); mp != mMeshes.end();
