@@ -211,10 +211,11 @@ const VocalScoreCache &Singer::AccessScoreCache(int idx) const {
 
 void Singer::AllScoresAreIn(const std::vector<int> &scores) {
     MILO_ASSERT(mResultsData.size() == mScoreCaches.size(), 0x4B6);
-    for (int i = 0; i < (int)mResultsData.size(); i++) {
-        float sum = mResultsData[i].unk10 + mScoreCaches[i].unk4;
+    for (int i = 0; (unsigned)i < mResultsData.size(); i++) {
+        float cacheUnk4 = mScoreCaches[i].unk4;
+        float sum = mResultsData[i].unk10 + cacheUnk4;
         float cacheUnk8 = mScoreCaches[i].unk8;
-        mResultsData[i].unk10 = (cacheUnk8 < sum) ? cacheUnk8 : sum;
+        mResultsData[i].unk10 = std::min(cacheUnk8, sum);
         mResultsData[i].unk14 += mScoreCaches[i].unkc;
         mResultsData[i].unkc += mScoreCaches[i].unk0;
     }
@@ -300,19 +301,21 @@ void Singer::UpdatePitchHistory(float pitch) {
 }
 
 int Singer::SuddenOctaveShift(float pitch) const {
-    if (unka8 < 1) return 0;
-    if (!(pitch > 0.0f)) return 0;
-    int sign;
-    if (pitch > unka0) sign = 1;
-    else sign = -1;
     int shift = 0;
-    float step = 12.0f * (float)sign;
-    while (true) {
-        float diff = pitch - unka0;
-        if (!(diff > 0.0f)) diff = -diff;
-        if (!(diff > 10.0f)) break;
-        pitch -= step;
-        shift += sign;
+    if (unka8 >= 1) {
+        if (pitch > 0.0f) {
+            int sign;
+            if (pitch > unka0) sign = 1;
+            else sign = -1;
+            float step = 12.0f * (float)sign;
+            do {
+                float diff = pitch - unka0;
+                if (!(diff > 0.0f)) diff = -diff;
+                if (!(diff > 10.0f)) break;
+                pitch -= step;
+                shift += sign;
+            } while (true);
+        }
     }
     return shift;
 }
@@ -552,10 +555,12 @@ void Singer::SetAssignedPart(int part, float f2) {
     }
     mScoreHistories[part].BiasLastScore(f2);
     float assignedPoints = mScoreCaches[part].unk4;
-    float total = mResultsData[part].unk0 + assignedPoints;
+    float unk0 = mResultsData[part].unk0;
     float cap = mScoreCaches[part].unk8;
+    float total = unk0 + assignedPoints;
     mResultsData[part].unk0 = std::min(total, cap);
-    mPossibleVibratoPoints.Set(mScoreCaches[part].unk10);
+    float vibPts = mScoreCaches[part].unk10;
+    mPossibleVibratoPoints.Set(vibPts);
     for (AmbiguousData *iter = &mAmbiguousData[0];
          iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
         if ((iter->unk0 != part && iter->unk4 != part) || iter->unk8)
