@@ -832,6 +832,120 @@ void BandPatchMesh::PostRender() {
     }
 }
 
+void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm) {
+    Vector2 scale(1.0f / Length(xfm.m.x), -0.5f / Length(xfm.m.y));
+    Vector3 segStart = xfm.v;
+    Vector3 segEnd;
+    segEnd.x = xfm.m.z.x * -100.0f + xfm.v.x;
+    segEnd.y = xfm.m.z.y * -100.0f + xfm.v.y;
+    segEnd.z = xfm.m.z.z * -100.0f + xfm.v.z;
+    MILO_ASSERT(mMeshes.size() < 64, 0x60A);
+    int meshIndices[64];
+    int meshCount = mMeshes.size();
+    for (int i = 0; i < meshCount; i++) {
+        meshIndices[i] = i;
+    }
+    RndMesh::sRawCollide = true;
+    int hitMeshIdx = -1;
+    int hitFaceIdx = 0;
+    Vector3 hitPoint;
+    hitPoint.x = segEnd.x;
+    hitPoint.y = segEnd.y;
+    hitPoint.z = segEnd.z;
+    Segment seg;
+    seg.start = segStart;
+    seg.end = segEnd;
+    for (int i = 0; i < mMeshes.size(); i++) {
+        RndMesh *mesh = mMeshes[i].mesh;
+        if (mesh && !mesh->GetKeepMeshData()) {
+            MILO_WARN(
+                "%s patch trying to collide against mesh with no keep_mesh_data",
+                PathName(mesh)
+            );
+        }
+        if (mesh) {
+            float t;
+            Plane plane;
+            if (mesh->CollideShowing(seg, t, plane)) {
+                hitMeshIdx = i;
+                hitFaceIdx = RndMesh::sLastCollide;
+                if (t == 0.0f) {
+                    hitPoint = segStart;
+                } else if (t != 1.0f) {
+                    hitPoint.x = t * (segEnd.x - segStart.x) + segStart.x;
+                    hitPoint.y = t * (segEnd.y - segStart.y) + segStart.y;
+                    hitPoint.z = t * (segEnd.z - segStart.z) + segStart.z;
+                }
+            }
+        }
+    }
+    RndMesh::sRawCollide = false;
+    if (hitMeshIdx == -1)
+        return;
+    meshCount--;
+    int tmpIdx = meshIndices[meshCount];
+    meshIndices[meshCount] = meshIndices[hitMeshIdx];
+    meshIndices[hitMeshIdx] = tmpIdx;
+    MeshPair *hitPair = &mMeshes[hitMeshIdx];
+    WorkVerts *firstWV = new WorkVerts(hitPair->mesh, scale);
+    firstWV->SetMeshVerts();
+    RndMesh::Vert seedVert;
+    seedVert.pos = hitPoint;
+    seedVert.norm.x = xfm.m.z.x;
+    seedVert.norm.y = xfm.m.z.y;
+    seedVert.norm.z = xfm.m.z.z;
+    seedVert.uv.Set(0.5f, 0.5f);
+    seedVert.color.Clear();
+    for (int i = 0; i < 4; i++) {
+        seedVert.boneIndices[i] = 0;
+    }
+    MeshVert seedMV;
+    seedMV.SetVert(&seedVert);
+    seedMV.unk4 = xfm.m.x;
+    seedMV.unk10 = xfm.m.y;
+    seedMV.unk1c.Set(0.5f, 0.5f);
+    seedMV.Normalize(1);
+    firstWV->AddFace(hitFaceIdx, &seedMV);
+    firstWV->Project();
+    firstWV->SortWorkVertsByZ();
+    MeshPair *meshPairs[64];
+    WorkVerts *workVerts[64];
+    meshPairs[0] = hitPair;
+    workVerts[0] = firstWV;
+    int wvCount = 1;
+    int j = 0;
+    while (meshCount > j) {
+        MeshPair *cur = &mMeshes[meshIndices[j]];
+        if (cur->mesh != NULL) {
+            WorkVerts *wv = new WorkVerts(cur->mesh, scale);
+            int k = 0;
+            while (k < wvCount) {
+                if (wv->SetSameVerts(workVerts[k])) {
+                    wv->Project();
+                    wv->SortWorkVertsByZ();
+                    meshCount--;
+                    workVerts[wvCount] = wv;
+                    wvCount++;
+                    meshPairs[wvCount - 1] = cur;
+                    int swap = meshIndices[meshCount];
+                    meshIndices[j] = swap;
+                    j--;
+                    break;
+                }
+                k++;
+            }
+            if (wv->mMeshVerts.empty()) {
+                delete wv;
+            }
+        }
+        j++;
+    }
+    for (int i = 0; i < wvCount; i++) {
+        Construct(*meshPairs[i], tex, false, perm, workVerts[i]);
+        delete workVerts[i];
+    }
+}
+
 void BandPatchMesh::PreRender(BandCharDesc *desc, int iii) {
     if (mCategory == 0 || (iii & mCategory)) {
         for (ObjVector<MeshPair>::iterator mp = mMeshes.begin(); mp != mMeshes.end();
