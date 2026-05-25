@@ -136,7 +136,7 @@ protected:
     LocalUser *mLocalUser; // 0x30
     std::vector<Profile *, unsigned short> mUploadProfiles; // 0x34
     std::vector<Profile *, unsigned short> mSaveProfiles; // 0x3c
-    DataArray *unk44; // 0x44
+    DataArrayPtr unk44; // 0x44
     int unk48; // 0x48
     String unk4c; // 0x4c
     CacheID *mCacheID; // 0x58

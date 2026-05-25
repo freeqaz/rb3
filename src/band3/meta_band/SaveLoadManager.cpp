@@ -32,7 +32,7 @@ SaveLoadManager *TheSaveLoadMgr;
 SaveLoadManager::SaveLoadManager()
     : mActivated(false), mInitialLoadNotDone(true), mState(kS_Idle),
       mStateAtSelectStart(kS_Idle), mUser(NULL), mLocalUser(NULL),
-      unk44(new DataArray(0)), unk48(0), mCacheID(NULL), mCache(NULL),
+      unk44(), unk48(0), mCacheID(NULL), mCache(NULL),
       mData(NULL), unk64(0), unk68(false), unk69(false), unk6c(0), unk70(0),
       mRequestFlags(0), unk78(0), unk7c(0), mAction(NULL) {
     mSaveProfiles.reserve(4);
@@ -44,7 +44,6 @@ SaveLoadManager::SaveLoadManager()
 SaveLoadManager::~SaveLoadManager() {
     ThePlatformMgr.RemoveSink(this, SigninChangedMsg::Type());
     RELEASE(mAction);
-    unk44->Release();
 }
 
 bool SaveLoadManager::IsInitialLoadDone() const { return !mInitialLoadNotDone; }
@@ -809,17 +808,17 @@ DataNode SaveLoadManager::GetDialogMsg() {
         return DataArrayPtr(mc_autosave_disabled, DataArrayPtr());
     case (State)0x48:
         return DataArrayPtr(mc_save_confirm_overwrite, DataArrayPtr());
-    case (State)0x49: {
-        int sz = -TheMemcardMgr.GetSizeNeeded();
-        if (sz <= 0) {
+    case (State)0x49:
+        if (TheMemcardMgr.GetSizeNeeded() > 0) {
+            int sz = TheMemcardMgr.GetSizeNeeded();
+            if (!TheCacheMgr || !TheCacheMgr->IsDone() ||
+                TheCacheMgr->GetLastResult() != kCache_NoError) {
+                sz += 0x10;
+            }
+            return DataArrayPtr(mc_save_not_enough_space_fmt, DataArrayPtr(), sz);
+        } else {
             return DataArrayPtr(mc_save_not_enough_space, DataArrayPtr());
         }
-        if (!TheCacheMgr || !TheCacheMgr->IsDone() ||
-            TheCacheMgr->GetLastResult() != kCache_NoError) {
-            sz += 0x10;
-        }
-        return DataArrayPtr(mc_save_not_enough_space_fmt, DataArrayPtr(), sz);
-    }
     case (State)0x4C:
         return DataArrayPtr(
             mc_save_device_missing_fmt, DataArrayPtr(), profileName, playerNum
