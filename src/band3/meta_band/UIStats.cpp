@@ -1,10 +1,24 @@
 #include "meta_band/UIStats.h"
+#include "game/BandUser.h"
+#include "game/BandUserMgr.h"
+#include "game/Defines.h"
+#include "game/GameMode.h"
+#include "net/Net.h"
+#include "net/Server.h"
 #include "obj/Data.h"
+#include "obj/Msg.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "os/JoypadMsgs.h"
+#include "os/PlatformMgr.h"
 #include "os/System.h"
+#include "utl/Compress.h"
+#include "utl/DataPointMgr.h"
+#include "utl/MakeString.h"
 #include "utl/MemMgr.h"
+#include "utl/Str.h"
+#include "utl/Symbols3.h"
+#include <string.h>
 
 UIStats gUIStats;
 UIStats *TheUIStats = &gUIStats;
@@ -13,48 +27,222 @@ UIStats::UIStats() {}
 
 void UIStats::Init() {
     void *mem = _MemAlloc(0x10000, 0);
-    unkb0 = mem;
-    unkb4 = mem;
-    unkb8 = 0;
-    unka8 = 0;
-    unk1c = false;
-    unkac = SystemMs();
+    mPadLogBuffer = mem;
+    mPadLogWritePtr = mem;
+    mPadLogCount = 0;
+    mLastDroppedScreen = 0;
+    mPublishingPad = false;
+    mLastPublishTime = SystemMs();
 }
 
 void UIStats::Terminate() {
-    if (unkb0) {
-        _MemFree(unkb0);
-        unkb0 = 0;
+    if (mPadLogBuffer) {
+        _MemFree(mPadLogBuffer);
+        mPadLogBuffer = 0;
     }
-    unkb4 = 0;
+    mPadLogWritePtr = 0;
 }
 
 void UIStats::Poll() {}
 
 void UIStats::DropScreen(UIScreen *screen) {
-    unkb4 = unkb0;
-    unkb8 = 0;
-    unka8++;
+    mPadLogWritePtr = mPadLogBuffer;
+    mPadLogCount = 0;
+    mLastDroppedScreen++;
 }
 
-void UIStats::MaybePublish(UIScreen *from) {}
+void UIStats::MaybePublish(UIScreen *from) {
+    if (!from) return;
+    mLastPublishTime = SystemMs();
+    MILO_ASSERT(from, 0x48);
+
+    Server *server = TheNet.mServer;
+    const DataArray *gather = from->TypeDef()->FindArray(gather_uistats, false);
+    if (!server->IsConnected()
+        || (gather && gather->Node(1).Int(gather) == 0)) {
+        if (!server->IsConnected()) {
+            mPublishingPad = false;
+        }
+        DropScreen(from);
+        return;
+    }
+
+    if (!mPublishingPad) {
+        mLastMode = Symbol("");
+        for (int i = 0; i < 4; i++) {
+            mLastWasParticipating[i] = 0;
+            OnlineID id1;
+            mLastPadID[i] = id1;
+            mLastBreedString[i] = "00";
+            OnlineID id2;
+            mLastRemoteID[i] = id2;
+            mLastControllerType[i] = kControllerNone;
+        }
+    }
+    mPublishingPad = true;
+
+    DataPoint screenExit("stats/screen_exit");
+    DataPoint padUser("stats/pad_user");
+
+    screenExit.AddPair("name", DataNode(from->Name()));
+    padUser.AddPair("name", DataNode(from->Name()));
+
+    Symbol curMode = TheGameMode->mMode;
+    if (curMode != mLastMode) {
+        screenExit.AddPair("mode", DataNode(curMode));
+        mLastMode = curMode;
+    }
+
+    if (mPadLogCount != 0) {
+        int compressedSize = 0x10100;
+        unsigned char stackbuf[0x10100];
+        unsigned char *compressed = stackbuf;
+        unsigned char *buf = stackbuf + 0x100;
+        unsigned char *write = (unsigned char *)mPadLogWritePtr;
+        unsigned char *base = (unsigned char *)mPadLogBuffer;
+        unsigned int writeOff = (unsigned int)(write - base);
+        int size = 0x10000;
+        if (write == base || (unsigned int)mPadLogCount < 0x4000) {
+            if ((unsigned int)mPadLogCount < 0x4000) size = writeOff;
+            memcpy(buf, base, size);
+        } else {
+            int tail = 0x10000 - writeOff;
+            memcpy(buf + tail, base, writeOff);
+            memcpy(buf, mPadLogWritePtr, tail);
+        }
+        if ((unsigned int)mPadLogCount >= 0x1A) {
+            CompressMem(buf, size, compressed, compressedSize, 0);
+        } else {
+            memmove(compressed, buf, size);
+            compressedSize = size;
+        }
+
+        String hex(MakeString("%x:", (unsigned int)mPadLogCount));
+        int prefixLen = strlen(hex.c_str());
+        hex.resize(prefixLen + (compressedSize * 2));
+        unsigned char *src = compressed;
+        char *dst = (char *)hex.c_str() + prefixLen;
+        for (int i = 0; i < compressedSize; i++) {
+            unsigned char b = *src;
+            unsigned int hi = (b >> 4) & 0xF;
+            if (hi > 9) {
+                dst[0] = (char)(hi + 0x57);
+            } else {
+                dst[0] = (char)(hi + 0x30);
+            }
+            unsigned int lo = b & 0xF;
+            if (lo > 9) {
+                dst[1] = (char)(lo + 0x57);
+            } else {
+                dst[1] = (char)(lo + 0x30);
+            }
+            dst += 2;
+            src += 1;
+        }
+        *dst = 0;
+        screenExit.AddPair("padlog", DataNode(hex));
+        mPadLogWritePtr = mPadLogBuffer;
+        mPadLogCount = 0;
+    }
+
+    std::vector<BandUser *> users = TheBandUserMgr->GetBandUsers();
+    int remoteCount = 0;
+    for (std::vector<BandUser *>::iterator it = users.begin(); it != users.end(); ++it) {
+        BandUser *user = *it;
+        int participating = user->IsParticipating();
+        if (user->IsLocal()) {
+            int padNum = user->GetLocalBandUser()->GetPadNum();
+            const char *breed = JoypadGetBreedString(padNum);
+            if (mLastBreedString[padNum] != breed) {
+                screenExit.AddPair(
+                    MakeString("pad_%d", padNum), DataNode(breed)
+                );
+                padUser.AddPair(
+                    MakeString("pad_%d", padNum), DataNode(breed)
+                );
+                mLastBreedString[padNum] = breed;
+            }
+
+            OnlineID id;
+            if (participating) {
+                ThePlatformMgr.GetOnlineID(padNum, &id);
+            }
+            if (participating != mLastWasParticipating[padNum]
+                || !(id == mLastPadID[padNum])) {
+                const char *key = MakeString("local_user_%d", padNum);
+                screenExit.AddPair(key, DataNode(participating ? id.ToString() : "null"));
+                padUser.AddPair(key, DataNode(participating ? id.ToString() : "null"));
+                mLastWasParticipating[padNum] = (unsigned char)participating;
+                mLastPadID[padNum] = id;
+            }
+        } else {
+#define DIM(arr) (sizeof(arr) / sizeof(arr[0]))
+            MILO_ASSERT(remoteCount < DIM(mLastRemoteID), 0xEC);
+#undef DIM
+            user->Reset();
+            int controllerType = kControllerNone;
+            OnlineID id;
+            if (participating) {
+                controllerType = user->GetControllerType();
+                id = *(OnlineID *)((char *)user + 0x1c);
+            }
+            if (controllerType != mLastControllerType[remoteCount]
+                || !(id == mLastRemoteID[remoteCount])) {
+                String key(MakeString("remote_user_%d", remoteCount));
+                Symbol ctySym = ControllerTypeToSym((ControllerType)controllerType);
+                String val(MakeString("%s:%s", ctySym, id.ToString()));
+                screenExit.AddPair(key.c_str(), DataNode(val));
+                padUser.AddPair(key.c_str(), DataNode(val));
+                mLastRemoteID[remoteCount] = id;
+                mLastControllerType[remoteCount] = controllerType;
+            }
+            remoteCount++;
+        }
+    }
+
+    static Message msg("exit_stats", DataNode(new DataArray(0), kDataArray));
+    from->HandleType(msg.mData);
+    DataArray *rslt = msg[0].Array(NULL);
+    MILO_ASSERT((rslt->Size() % 2) == 0, 0x10D);
+    int pairs = rslt->Size() / 2;
+    for (int i = 0; i < pairs; i++) {
+        screenExit.AddPair(rslt->Node(i * 2).Str(rslt), rslt->Node(i * 2 + 1));
+    }
+    rslt->Resize(0);
+
+    if (padUser.mNameValPairs.size() > 1) {
+        if (mLastDroppedScreen) {
+            padUser.AddPair("dropped_screens", DataNode(mLastDroppedScreen));
+        }
+        TheDataPointMgr.RecordDataPoint(padUser, 1);
+    }
+    if (screenExit.mNameValPairs.size() == 1) {
+        DropScreen(from);
+    } else {
+        if (mLastDroppedScreen) {
+            screenExit.AddPair("dropped_screens", DataNode(mLastDroppedScreen));
+            mLastDroppedScreen = NULL;
+        }
+        TheDataPointMgr.RecordDataPoint(screenExit, 1);
+    }
+}
 
 void UIStats::EventLog(unsigned int pad, unsigned int but, unsigned int state) {
     MILO_ASSERT(but < 32, 0x139);
     MILO_ASSERT(pad < 8, 0x13B);
     MILO_ASSERT(state < 2, 0x13D);
     int now = SystemMs();
-    unsigned int elapsed = (unsigned int)(now - unkac) >> 4;
+    unsigned int elapsed = (unsigned int)(now - mLastPublishTime) >> 4;
     if (elapsed > 0x7FFFFF) elapsed = 0x7FFFFF;
     unsigned int packed = (elapsed | ((but << 23) & 0x0F800000)) | (((pad << 28) & 0x70000000) | (state << 31));
-    *(unsigned int *)unkb4 = (unsigned short)packed;
-    int count = unkb8 + 1;
-    unkb8 = count;
-    unkb4 = (char *)unkb4 + 4;
-    if ((unkb8 & 0x3FFF) == 0) {
-        unkb4 = unkb0;
+    *(unsigned int *)mPadLogWritePtr = (unsigned short)packed;
+    int count = mPadLogCount + 1;
+    mPadLogCount = count;
+    mPadLogWritePtr = (char *)mPadLogWritePtr + 4;
+    if ((mPadLogCount & 0x3FFF) == 0) {
+        mPadLogWritePtr = mPadLogBuffer;
     }
-    unkac = now;
+    mLastPublishTime = now;
 }
 
 DataNode UIStats::OnMsg(const ButtonDownMsg &msg) {

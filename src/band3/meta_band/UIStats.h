@@ -26,21 +26,18 @@ public:
     DataNode OnMsg(const UIComponentFocusChangeMsg &);
     DataNode OnMsg(const UIScreenChangeMsg &);
 
-    bool unk1c; // 0x1c
-    Symbol unk20; // 0x20
-    int unk24; // 0x24
-    OnlineID unk28[4]; // 0x28
-    String unk48[4]; // 0x48
-    OnlineID unk78[4]; // 0x78
-    int unk98;
-    int unk9c;
-    int unka0;
-    int unka4;
-    int unka8;
-    int unkac;
-    void *unkb0;
-    void *unkb4;
-    int unkb8;
+    bool mPublishingPad; // 0x1c
+    Symbol mLastMode; // 0x20
+    unsigned char mLastWasParticipating[4]; // 0x24
+    OnlineID mLastPadID[4]; // 0x28
+    String mLastBreedString[4]; // 0x48
+    OnlineID mLastRemoteID[4]; // 0x78
+    int mLastControllerType[4]; // 0x98
+    int mLastDroppedScreen; // 0xa8
+    int mLastPublishTime; // 0xac
+    void *mPadLogBuffer; // 0xb0
+    void *mPadLogWritePtr; // 0xb4
+    int mPadLogCount; // 0xb8
 };
 
 extern UIStats gUIStats;
