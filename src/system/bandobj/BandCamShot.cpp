@@ -439,8 +439,10 @@ void BandCamShot::SetFrame(float frame, float blend) {
         SetPreFrame(frame, blend);
     }
     float origFrame = frame;
-    if (!ShouldSetNextShot(frame)) {
-        frame = frame - (unk15c + Duration());
+    float dur = Duration();
+    bool skip = frame < dur || mNextShots.empty();
+    if (!skip) {
+        frame = frame - (unk15c + dur);
     }
     if (CheckShotOver(origFrame)) {
         SetShotOver();
