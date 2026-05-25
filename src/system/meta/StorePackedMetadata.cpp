@@ -1101,6 +1101,153 @@ StorePackedSubMenu *StorePage::Submenu(int idx) const {
     return &mSubmenus[idx];
 }
 
+// Out-of-line WiiCommerceMgr helpers used below that are not yet declared in
+// os/CommerceMgr_Wii.h. Forward-declared here as plain C symbols using the
+// MetroWerks-mangled names so the call sites still link against the existing
+// object code.
+extern "C" {
+    int RequestStoreIndex__14WiiCommerceMgrFPQ23Hmx6Object(WiiCommerceMgr *, Hmx::Object *);
+    int RequestSpecifiedResourceRequirements__14WiiCommerceMgrFQ214WiiCommerceMgr19RequestResourceTypeUxPQ23Hmx6Object(
+        WiiCommerceMgr *, int, unsigned long long, Hmx::Object *
+    );
+    int UpdateTitle__14WiiCommerceMgrFUx(WiiCommerceMgr *, unsigned long long);
+    int DownloadIndexContentUnit__14WiiCommerceMgrFUxiPQ23Hmx6Object(
+        WiiCommerceMgr *, unsigned long long, int, Hmx::Object *
+    );
+    void WaitAsyncOp__14WiiCommerceMgrFlQ214WiiCommerceMgr21LastCommerceOperation(
+        WiiCommerceMgr *, long, int
+    );
+    int EC_PurchaseDataTitle(unsigned long long, long, int);
+    int EC_SetParameter_pcpw(const char *, const char *);
+    extern char gUsersPIN[];
+}
+
+void StoreMetadataManager::SetLoadingState(int state) {
+    if (mLoadingState == state) return;
+    mLoadingState = state;
+    if ((unsigned int)state > 11) return;
+    switch (state) {
+    case 0:
+        mFlags &= ~4;
+        return;
+    case 1: {
+        if (TheWiiCommerceMgr.InitCommerce(NULL) == 0) {
+            SetLoadingState(11);
+        } else {
+            mFlags |= 2;
+            SetLoadingState(2);
+        }
+        return;
+    }
+    case 2:
+    case 3:
+        return;
+    case 4: {
+        if (RequestStoreIndex__14WiiCommerceMgrFPQ23Hmx6Object(&TheWiiCommerceMgr, NULL) == 0) {
+            mErrorMsg = 2;
+            SetLoadingState(11);
+        }
+        return;
+    }
+    case 5: {
+        std::vector<unsigned short VECTOR_SIZE_SMALL> units;
+        units.push_back(unk90);
+        TheWiiCommerceMgr.SpecifyContentUnits(units);
+        RequestSpecifiedResourceRequirements__14WiiCommerceMgrFQ214WiiCommerceMgr19RequestResourceTypeUxPQ23Hmx6Object(
+            &TheWiiCommerceMgr, 1, *(unsigned long long *)&unk88, NULL
+        );
+        return;
+    }
+    case 6: {
+        if (UpdateTitle__14WiiCommerceMgrFUx(&TheWiiCommerceMgr, *(unsigned long long *)&unk88) == 0) {
+            mErrorMsg = 2;
+            SetLoadingState(11);
+        }
+        return;
+    }
+    case 7:
+        SetLoadingState(5);
+        return;
+    case 8: {
+        StoreTitleContentState *titleState;
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it =
+            unk58.find(*(unsigned long long *)&unk88);
+        if (it == unk58.end()) {
+            titleState = (StoreTitleContentState *)operator new(0x1000);
+            if (titleState) memset(titleState, 0, 0x1000);
+            unk58[*(unsigned long long *)&unk88] = titleState;
+        } else {
+            titleState = it->second;
+        }
+        unsigned char st = ((unsigned char *)titleState)[unk90 << 3] & 2;
+        if (st == 2) {
+            SetLoadingState(6);
+        } else {
+            if (TheWiiCommerceMgr.unkF2) {
+                EC_SetParameter("PCPW", gUsersPIN);
+            }
+            long opId = EC_PurchaseDataTitle(*(unsigned long long *)&unk88, unk94, 0);
+            if (opId < 0) {
+                mErrorMsg = 2;
+                SetLoadingState(11);
+            } else {
+                WaitAsyncOp__14WiiCommerceMgrFlQ214WiiCommerceMgr21LastCommerceOperation(
+                    &TheWiiCommerceMgr, opId, 6
+                );
+            }
+        }
+        return;
+    }
+    case 9: {
+        StoreTitleContentState *titleState;
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it =
+            unk58.find(*(unsigned long long *)&unk88);
+        if (it == unk58.end()) {
+            titleState = (StoreTitleContentState *)operator new(0x1000);
+            if (titleState) memset(titleState, 0, 0x1000);
+            unk58[*(unsigned long long *)&unk88] = titleState;
+        } else {
+            titleState = it->second;
+        }
+        if (((unsigned char *)titleState)[unk90 << 3] & 1) {
+            SetLoadingState(10);
+        } else {
+            if (DownloadIndexContentUnit__14WiiCommerceMgrFUxiPQ23Hmx6Object(
+                    &TheWiiCommerceMgr, *(unsigned long long *)&unk88, unk90, NULL
+                ) == 0) {
+                mErrorMsg = 2;
+                SetLoadingState(11);
+            }
+        }
+        return;
+    }
+    case 10:
+        return;
+    case 11:
+        mFlags &= ~0x1C;
+        return;
+    }
+}
+
+void StoreMetadataManager::PollLoading() {
+    // Implementation deferred: the real function reads CNT cache info, loads
+    // the store metadata files (StoreVersionHeader, StoreStringTable,
+    // StoreSongTable, StoreOfferTable, StoreRbnOfferTable, etc.), and steps
+    // through the SetLoadingState machine. Like SetLoadingState above it
+    // relies on a number of WiiCommerceMgr / WiiContentMgr members that are
+    // not yet declared in their headers (RequestStoreIndex,
+    // contentInitHandleTitleNAND, CNTOpenDir helpers, etc.).
+}
+
+DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
+    // Implementation deferred: dispatches commerce manager op completion
+    // notifications (kConnect, kListTitleContents, etc.) into the loading
+    // state machine. Requires CheckRequestedDownloadSize and
+    // CM_CNTSDGetUserAvailableAreaRSO helpers not yet declared in
+    // os/CommerceMgr_Wii.h.
+    return DataNode(0);
+}
+
 void StoreMetadataManager::DebugDownload() {
     int useCntCache = (TheWiiContentMgr.mMode == 0) ? 1 : 0;
     std::set<unsigned long long> downloadedTitles;
