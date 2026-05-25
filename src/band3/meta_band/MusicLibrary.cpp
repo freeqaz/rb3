@@ -796,26 +796,26 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
 }
 
 bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
-    SongMetadata *metadata = TheSongMgr.Data(songID);
-    MILO_ASSERT(metadata, 0x4a2);
-    if (!metadata->IsVersionOK()) {
+    SongMetadata *data = TheSongMgr.Data(songID);
+    MILO_ASSERT(data, 0x4a2);
+    if (!data->IsVersionOK()) {
         if (!b3)
             TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_version_screen", true));
         return false;
     }
-    if (TheSongMgr.IsDemo(metadata->ID())) {
+    if (TheSongMgr.IsDemo(data->ID())) {
         if (!TheGameMode->Property(Symbol("demos_allowed"), true)->Int(nullptr)) {
             if (!b3)
                 TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_mode_screen", true));
             return false;
         }
     }
-    if (TheSongMgr.IsDemo(metadata->ID()) && !TheSessionMgr->IsLocal()) {
+    if (TheSongMgr.IsDemo(data->ID()) && !TheSessionMgr->IsLocal()) {
         if (!b3)
             TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("demo_online_screen", true));
         return false;
     }
-    if (TheSongMgr.IsDemo(metadata->ID())) {
+    if (TheSongMgr.IsDemo(data->ID())) {
         bool demoNotAllowed = false;
         if (unk12d) {
             if (!SongSortMgr::IsSetlistSort(unkdc))
@@ -827,7 +827,7 @@ bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
             return false;
         }
     }
-    if (TheSongMgr.IsRestricted(metadata->ID())) {
+    if (TheSongMgr.IsRestricted(data->ID())) {
         if (!b3)
             TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("content_restricted_screen", true));
         return false;
