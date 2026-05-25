@@ -419,7 +419,7 @@ void VocalPlayer::SendVocalState(float f1) {
             -1, 1, (cur->mFrameMicPitch - cur->mFrameTargetPitch) / mMaxDetune
         );
         moreFsToPack[cur->GetSingerIndex()] = f9;
-        boolsToPack[cur->GetSingerIndex()] = f10 == 0;
+        boolsToPack[cur->GetSingerIndex()] = f10 != 0;
     }
     int packedFs2 = PackFloats(moreFsToPack, -1, 1);
     int packedBs = PackBools(boolsToPack);
