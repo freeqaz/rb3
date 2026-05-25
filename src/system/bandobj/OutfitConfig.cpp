@@ -276,11 +276,11 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
     OutfitConfig *cfg = dir2->Find<OutfitConfig>("skin.cfg", false);
     Symbol gender = desc->mGender;
     for (int i = 0; i < 5; i++) {
-        const char *curtexname = skinMats[i * 2];
+        const char *partname = skinMats[i * 2 + 1];
         RndMat *curmat = dir1->Find<RndMat>(skinMats[i * 2], false);
         if (curmat) {
             RndTex *curtex = dir1->Find<RndTex>(
-                MakeString("%s_%s_diff.tex", gender, curtexname), false
+                MakeString("%s_%s_diff.tex", gender, partname), false
             );
             if (curtex) {
                 if (cfg) {
@@ -291,13 +291,13 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
                         MatSwap &curswap = cfg->mMats[idx];
                         curswap.mTwoColorDiffuse = curtex;
                         RndTex *interptex = dir1->Find<RndTex>(
-                            MakeString("%s_%s_interp_gw.tex", gender, curtexname), false
+                            MakeString("%s_%s_interp_gw.tex", gender, partname), false
                         );
                         if (interptex)
                             curswap.mTwoColorInterp = interptex;
                     }
                     RndTex *difftex = dir2->Find<RndTex>(
-                        MakeString("%s_skin_diffuse_output.tex", curtexname), false
+                        MakeString("%s_skin_diffuse_output.tex", partname), false
                     );
                     if (difftex)
                         curmat->SetDiffuseTex(difftex);
