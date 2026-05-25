@@ -112,7 +112,7 @@ void VocalTrack::UpdateTubePlates(
         cur->Reset();
         deque.push_back(cur);
     }
-    float fvar1 = TheGame->InTrainer() ? unk2a4 : f2; // fix game bool being checked
+    float fvar1 = TheGame->InRollback() ? unk2a4 : f2;
     FOREACH (it, deque) {
         TubePlate *cur = *it;
         if (cur->CurrentEndX(f3) < mDir->mTrackLeftX) {
