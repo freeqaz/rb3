@@ -946,6 +946,140 @@ void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm)
     }
 }
 
+bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
+    MILO_ASSERT(mesh->GeomOwner(), 0x6C5);
+    if (mesh->Verts().size() == 0 || mesh->Faces().size() == 0) {
+        TheDebug.Notify(
+            FormatString("Patches can't project onto %s, has no verts or faces!").Str()
+        );
+        return false;
+    }
+    int numFaces = mesh->Faces().size();
+    unsigned short *faceBase = (unsigned short *)&mesh->Faces()[0];
+    unsigned short *endFace = faceBase + numFaces * 3;
+    unsigned short *foundFace = endFace;
+    {
+        unsigned short *facePtr = faceBase;
+        float zero = 0.0f;
+        while (facePtr != endFace) {
+            unsigned short lastIdx = facePtr[2];
+            RndMesh::Vert *v0 = &mesh->Verts(lastIdx);
+            int matched = 0;
+            float firstSign = 0.0f;
+            unsigned short *iter = facePtr;
+            for (int j = 0; j < 3; j++) {
+                unsigned short curIdx = iter[0];
+                RndMesh::Vert *v1 = &mesh->Verts(curIdx);
+                float dx = uv.x - v0->uv.x;
+                float dy = uv.y - v0->uv.y;
+                float ex = v1->uv.x - v0->uv.x;
+                float ey = v1->uv.y - v0->uv.y;
+                float cross = dx * ey - dy * ex;
+                if (zero == firstSign) {
+                    firstSign = cross;
+                }
+                if (cross * firstSign < zero)
+                    break;
+                matched++;
+                v0 = v1;
+                iter++;
+            }
+            if (matched == 3) {
+                foundFace = facePtr;
+                break;
+            }
+            facePtr += 3;
+        }
+    }
+    if (foundFace == endFace) {
+        float minDistSq = 1e30f;
+        unsigned short *facePtr = faceBase;
+        while (facePtr != endFace) {
+            unsigned short lastIdx = facePtr[2];
+            RndMesh::Vert *v0 = &mesh->Verts(lastIdx);
+            unsigned short *iter = facePtr;
+            for (int j = 0; j < 3; j++) {
+                unsigned short curIdx = iter[0];
+                RndMesh::Vert *v1 = &mesh->Verts(curIdx);
+                float ex = v1->uv.x - v0->uv.x;
+                float ey = v1->uv.y - v0->uv.y;
+                float px = uv.x - v0->uv.x;
+                float py = uv.y - v0->uv.y;
+                float t = (px * ex + py * ey) / (ex * ex + ey * ey);
+                if (t < 0.0f)
+                    t = 0.0f;
+                else if (t > 1.0f)
+                    t = 1.0f;
+                float closestX = v0->uv.x + ex * t;
+                float closestY = v0->uv.y + ey * t;
+                float ddx = closestX - uv.x;
+                float ddy = closestY - uv.y;
+                float distSq = ddx * ddx + ddy * ddy;
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    foundFace = facePtr;
+                }
+                v0 = v1;
+                iter++;
+            }
+            facePtr += 3;
+        }
+    }
+    RndMesh::Vert *triVerts[3];
+    for (int i = 0; i < 3; i++) {
+        triVerts[i] = &mesh->Verts(foundFace[i]);
+    }
+    Hmx::Matrix3 uvMat;
+    uvMat.x.x = triVerts[0]->uv.x;
+    uvMat.x.y = triVerts[0]->uv.y;
+    uvMat.x.z = 1.0f;
+    uvMat.y.x = triVerts[1]->uv.x;
+    uvMat.y.y = triVerts[1]->uv.y;
+    uvMat.y.z = 1.0f;
+    uvMat.z.x = triVerts[2]->uv.x;
+    uvMat.z.y = triVerts[2]->uv.y;
+    uvMat.z.z = 1.0f;
+    Hmx::Matrix3 posMat;
+    posMat.x = triVerts[0]->pos;
+    posMat.y = triVerts[1]->pos;
+    posMat.z = triVerts[2]->pos;
+    Hmx::Matrix3 normMat;
+    normMat.x = triVerts[0]->norm;
+    normMat.y = triVerts[1]->norm;
+    normMat.z = triVerts[2]->norm;
+    Invert(uvMat, uvMat);
+    Hmx::Matrix3 posOut;
+    Multiply(uvMat, posMat, posOut);
+    Hmx::Matrix3 normOut;
+    Multiply(uvMat, normMat, normOut);
+    Vector3 rowX(posOut.x);
+    Vector3 rowY(posOut.y);
+    float invRowX = 1.0f / Length(rowX);
+    float invRowY = 1.0f / Length(rowY);
+    RndMesh::Vert centerVert;
+    centerVert.pos.Set(uv.x, uv.y, 1.0f);
+    centerVert.norm.Set(0, 0, 0);
+    Multiply(posMat, centerVert.pos, centerVert.pos);
+    Multiply(normMat, centerVert.pos, centerVert.norm);
+    MeshVert centerMV;
+    centerMV.SetVert(&centerVert);
+    centerMV.unk4 = posOut.x;
+    centerMV.unk10 = posOut.y;
+    centerMV.unk4.x *= -1.0f;
+    centerMV.unk4.y *= -1.0f;
+    centerMV.unk4.z *= -1.0f;
+    centerMV.Normalize(1);
+    float scaleX = 0.5f * invRowX;
+    float scaleY = 0.5f * invRowY;
+    xfm.m.x.x = centerMV.unk4.x * scaleX;
+    xfm.m.x.y = centerMV.unk4.y * scaleX;
+    xfm.m.x.z = centerMV.unk4.z * scaleX;
+    xfm.m.y.x = centerMV.unk10.x * scaleY;
+    xfm.m.y.y = centerMV.unk10.y * scaleY;
+    xfm.m.y.z = centerMV.unk10.z * scaleY;
+    return true;
+}
+
 void BandPatchMesh::PreRender(BandCharDesc *desc, int iii) {
     if (mCategory == 0 || (iii & mCategory)) {
         for (ObjVector<MeshPair>::iterator mp = mMeshes.begin(); mp != mMeshes.end();
