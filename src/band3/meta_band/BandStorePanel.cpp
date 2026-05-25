@@ -274,6 +274,69 @@ END_PROPSYNCS
 
 void BandStorePanel::Poll() {
     StorePanel::Poll();
+    if (mMetadataLoader && !mLastRequest.empty()) {
+        mMetadataLoader->PollLoading();
+        if (mMetadataLoader->IsLoaded()) {
+            DataArray *metadata = mMetadataLoader->unk_0x4;
+            if (metadata->Size()) {
+                metadata->AddRef();
+                MILO_ASSERT(metadata, 0x11C);
+                const char *nullStr = gNullStr;
+                static Message msg(
+                    MetadataLoadedMsg::Type(),
+                    DataNode(metadata, kDataArray),
+                    DataNode(1),
+                    DataNode(nullStr),
+                    DataNode(0),
+                    DataNode(0)
+                );
+                msg[0] = DataNode(metadata, kDataArray);
+                msg[2] = DataNode(mLastRequest.c_str());
+                msg[3] = DataNode(
+                    (int)(mLastRequest
+                          == MakeString("%d", TheStoreMetadata.mVersion->mBuildNumber))
+                );
+                msg[4] = DataNode((int)!mLastRequestExtra);
+                String path(mLastRequest);
+                mLastRequest.erase();
+                delete mMetadataLoader;
+                mMetadataLoader = 0;
+                Export(msg.mData, true);
+                Handle(msg.mData, true);
+                metadata->Release();
+                return;
+            }
+        }
+        if (mMetadataLoader->HasFailed()) {
+            TheDebug.Notify(
+                MakeString("Request for %s failed.\n", mLastRequest.c_str())
+            );
+            DataArray *empty = new DataArray(0);
+            {
+                Message msg(
+                    MetadataLoadedMsg::Type(),
+                    DataNode(empty, kDataArray),
+                    DataNode(0),
+                    DataNode(gNullStr),
+                    DataNode(0),
+                    DataNode(0)
+                );
+                msg[2] = DataNode(mLastRequest.c_str());
+                msg[3] = DataNode(
+                    (int)(mLastRequest
+                          == MakeString("%d", TheStoreMetadata.mVersion->mBuildNumber))
+                );
+                msg[4] = DataNode((int)!mLastRequestExtra);
+                mLastRequest.erase();
+                if (mMetadataLoader) {
+                    delete mMetadataLoader;
+                    mMetadataLoader = 0;
+                }
+                Export(msg.mData, true);
+            }
+            empty->Release();
+        }
+    }
 }
 
 int BandStorePanel::UpdateOffers(const std::list<EnumProduct> &list, bool b) {
