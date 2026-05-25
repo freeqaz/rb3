@@ -14,6 +14,7 @@
 #include "os/Memcard.h"
 #include "os/PlatformMgr.h"
 #include "os/User.h"
+#include "utl/BufStream.h"
 #include "utl/CacheMgr.h"
 #include "utl/MemMgr.h"
 #include "utl/Symbols2.h"
@@ -289,6 +290,44 @@ void SaveLoadManager::Poll() {
         } else {
             SetState((State)0x25);
         }
+        break;
+    case (State)0x1E:
+        if (!mCache->IsDone()) return;
+        {
+            CacheResult result = mCache->GetLastResult();
+            if (result == kCache_NoError) {
+                SetState((State)0x1f);
+            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                SetState((State)0x16);
+            } else {
+                SetState((State)0x25);
+            }
+        }
+        break;
+    case (State)0x1F:
+        if (!mCache->IsDone()) return;
+        if (mCache->GetLastResult() == kCache_NoError) {
+            BufStream stream(mData, unk64, true);
+            TheSongMgr.LoadCachedSongInfo(stream);
+            SetState((State)0x22);
+        } else {
+            SetState((State)0x25);
+        }
+        break;
+    case (State)0x21:
+        if (!mCache->IsDone()) return;
+        unk70 = (int)mCache->GetLastResult();
+        SetState((State)0x23);
+        break;
+    case (State)0x33:
+        if (!mCache->IsDone()) return;
+        unk70 = (int)mCache->GetLastResult();
+        SetState((State)0x35);
+        break;
+    case (State)0x3E:
+        if (!mCache->IsDone()) return;
+        unk70 = (int)mCache->GetLastResult();
+        SetState((State)0x3f);
         break;
     case (State)0x32:
         if (!TheCacheMgr->IsDone()) return;
