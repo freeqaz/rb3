@@ -257,6 +257,151 @@ void EditSetlistPanel::DoneEditing() {
     }
 }
 
+void EditSetlistPanel::MessageOK() {
+    switch (mEditState) {
+    case 7:
+        switch (unk9c) {
+        case 0:
+            TheMusicLibrary->RebuildAndSortSetlists();
+            TheMusicLibrary->SetSavedSetlistHighlight(mEditingSetlist);
+            TheMusicLibrary->SetSort((SongSortType)8);
+            HandleType(leave_setlist_msg);
+            break;
+        case 1:
+            TheMusicLibrary->RebuildAndSortSetlists();
+            HandleType(leave_setlist_msg);
+            break;
+        case 2:
+            TheMusicLibrary->RefreshNetSetlists();
+            TheMusicLibrary->SetSort((SongSortType)8);
+            HandleType(leave_setlist_msg);
+            break;
+        default:
+            MILO_FAIL("Bad mode %i!");
+            break;
+        }
+        break;
+    case 8:
+        switch (unka4) {
+        case 0:
+        case 1:
+        case 6:
+            HandleType(goto_create_dialog_msg);
+            break;
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 7:
+            SetEditState((EditState)3);
+            break;
+        default:
+            MILO_FAIL("Bad fail reason %i!");
+            break;
+        }
+        break;
+    default:
+        MILO_FAIL("In bad EditState %i in MessageOK!", mEditState);
+        break;
+    }
+}
+
+DataNode EditSetlistPanel::OnMsg(const RockCentralOpCompleteMsg &msg) {
+    switch (mEditState) {
+    case 1:
+        if (!msg.Success()) {
+            FailWithReason((FailureReason)6);
+        } else {
+            DataNode statusNode(0);
+            unk68.Update(NULL);
+            unk68.GetDataResult(0)->GetDataResultValue(String("success"), statusNode);
+            switch (statusNode.Int(NULL)) {
+            case 0:
+                SetEditState((EditState)3);
+                break;
+            case 22:
+                FailWithReason((FailureReason)0);
+                break;
+            default:
+                MILO_FAIL(
+                    "Bad retcode %i while checking battle limits!",
+                    statusNode.Int(NULL)
+                );
+                break;
+            }
+        }
+        break;
+    case 5: {
+        bool noMatch = true;
+        bool failed = true;
+        if (msg.Success() && msg.Arg1() == 12) {
+            noMatch = false;
+        }
+        if (!noMatch) {
+            DataNode arg2 = msg.Arg2();
+            if (arg2.Int(NULL) > 0) {
+                failed = false;
+            }
+        }
+        if (failed) {
+            FailWithReason((FailureReason)7);
+        } else {
+            unk84 = msg.Arg2().Int(NULL);
+            SetEditState((EditState)6);
+        }
+        break;
+    }
+    case 6:
+        if (!msg.Success()) {
+            FailWithReason((FailureReason)7);
+        } else {
+            DataNode statusNode(0);
+            unk68.Update(NULL);
+            unk68.GetDataResult(0)->GetDataResultValue(String("success"), statusNode);
+            switch (statusNode.Int(NULL)) {
+            case 0:
+                unk68.GetDataResult(0)->GetDataResultValue(String("battle_id"), statusNode);
+                unk80 = statusNode.Int(NULL);
+                SetEditState((EditState)7);
+                break;
+            case 15:
+                FailWithReason((FailureReason)4);
+                break;
+            case 16:
+                FailWithReason((FailureReason)5);
+                break;
+            default:
+                MILO_FAIL(
+                    "Bad retcode %i while submitting battle!", statusNode.Int(NULL)
+                );
+                break;
+            }
+        }
+        break;
+    default:
+        MILO_FAIL("In bad EditState %i with RockCentralOpCompleteMsg!", mEditState);
+        break;
+    }
+    return DataNode(1);
+}
+
+DataNode EditSetlistPanel::OnMsg(const DWCProfanityResultMsg &msg) {
+    if (mEditState == kCheckingProfanity && unk98) {
+        unk98 = false;
+        MILO_ASSERT(unk94, 0x252);
+        if (msg.Success()) {
+            bool b1 = !unk94[0];
+            bool b2 = !unk94[1];
+            CleanupStringVerify();
+            VerifyStringsComplete(b1, b2);
+        } else {
+            CleanupStringVerify();
+            FailWithReason((FailureReason)7);
+        }
+    }
+    return DataNode(1);
+}
+
 void EditSetlistPanel::VerifyStrings(const char *name, const char *desc) {
     unk90 = new unsigned short *[2];
     unsigned short *us = new unsigned short[strlen(name) + 1];
@@ -285,28 +430,6 @@ void EditSetlistPanel::VerifyStringsComplete(bool b1, bool b2) {
         } else
             SetEditState((EditState)6);
     }
-}
-
-void EditSetlistPanel::FailWithReason(FailureReason r) {
-    unka4 = r;
-    SetEditState((EditState)8);
-}
-
-DataNode EditSetlistPanel::OnMsg(const DWCProfanityResultMsg &msg) {
-    if (mEditState == kCheckingProfanity && unk98) {
-        unk98 = false;
-        MILO_ASSERT(unk94, 0x252);
-        if (msg.Success()) {
-            bool b1 = !unk94[0];
-            bool b2 = !unk94[1];
-            CleanupStringVerify();
-            VerifyStringsComplete(b1, b2);
-        } else {
-            CleanupStringVerify();
-            FailWithReason((FailureReason)7);
-        }
-    }
-    return DataNode(1);
 }
 
 void EditSetlistPanel::SetEditState(EditState s) {
@@ -388,6 +511,11 @@ void EditSetlistPanel::SetUIState(UIState state) {
     }
 }
 
+void EditSetlistPanel::FailWithReason(FailureReason r) {
+    unka4 = r;
+    SetEditState((EditState)8);
+}
+
 int EditSetlistPanel::SymToDayCount(Symbol s) {
     DataArray *a = Property(expiration_data, true)->Array();
     return a->FindInt(s);
@@ -415,55 +543,6 @@ Symbol EditSetlistPanel::DayCountToSym(int days) {
     }
     MILO_FAIL("No matching sym for %i days in EditSetlistPanel::DayCountToSym", days);
     return gNullStr;
-}
-
-void EditSetlistPanel::MessageOK() {
-    switch (mEditState) {
-    case 7:
-        switch (unk9c) {
-        case 0:
-            TheMusicLibrary->RebuildAndSortSetlists();
-            TheMusicLibrary->SetSavedSetlistHighlight(mEditingSetlist);
-            TheMusicLibrary->SetSort((SongSortType)8);
-            HandleType(leave_setlist_msg);
-            break;
-        case 1:
-            TheMusicLibrary->RebuildAndSortSetlists();
-            HandleType(leave_setlist_msg);
-            break;
-        case 2:
-            TheMusicLibrary->RefreshNetSetlists();
-            TheMusicLibrary->SetSort((SongSortType)8);
-            HandleType(leave_setlist_msg);
-            break;
-        default:
-            MILO_FAIL("Bad mode %i!");
-            break;
-        }
-        break;
-    case 8:
-        switch (unka4) {
-        case 0:
-        case 1:
-        case 6:
-            HandleType(goto_create_dialog_msg);
-            break;
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 7:
-            SetEditState((EditState)3);
-            break;
-        default:
-            MILO_FAIL("Bad fail reason %i!");
-            break;
-        }
-        break;
-    default:
-        MILO_FAIL("In bad EditState %i in MessageOK!", mEditState);
-        break;
-    }
 }
 
 #pragma push
