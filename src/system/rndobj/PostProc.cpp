@@ -590,9 +590,12 @@ void RndPostProc::Interp(const RndPostProc *from, const RndPostProc *to, float p
     }
     { float _a = from->mRefractAngle; mRefractAngle = pct * (to->mRefractAngle - _a) + _a; }
 
-    if (!TheBandDirector->IsMusicVideo()) {
-        { float _a = from->mMotionBlurBlend; mMotionBlurBlend = pct * (to->mMotionBlurBlend - _a) + _a; }
-        ::Interp(from->mMotionBlurWeight, to->mMotionBlurWeight, pct, mMotionBlurWeight);
+    {
+        bool notMV = !TheBandDirector->IsMusicVideo();
+        if (notMV) {
+            { float _a = from->mMotionBlurBlend; mMotionBlurBlend = pct * (to->mMotionBlurBlend - _a) + _a; }
+            ::Interp(from->mMotionBlurWeight, to->mMotionBlurWeight, pct, mMotionBlurWeight);
+        }
     }
 
     if (pct == 0.0f) {
