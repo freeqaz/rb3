@@ -555,14 +555,12 @@ void ChordShapeGenerator::BuildEndCap(
             Hmx::Color32(col)
         );
     }
+    std::map<unsigned short, unsigned short> capMap;
     RndMesh::VertVector &srcVerts = mSource->Verts();
     RndMesh::VertVector &meshVerts = mesh->Verts();
-    std::map<unsigned short, unsigned short> capMap;
-    float band = contour ? (unkcc) : (unkc8);
     for (int i = 0; i < (int)srcVerts.size(); i++) {
         float sx = srcVerts[i].pos.x;
-        bool inBand = contour ? (sx < band) : (sx > band);
-        if (inBand) {
+        if (contour ? (sx < unkcc + 0.1f) : (sx > unkc8 - 0.1f)) {
             capMap[i] = vertIt++;
         }
     }
