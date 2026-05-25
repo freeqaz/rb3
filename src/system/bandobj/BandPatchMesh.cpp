@@ -835,27 +835,24 @@ void BandPatchMesh::PostRender() {
 
 void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm) {
     Vector2 scale(1.0f / Length(xfm.m.x), -0.5f / Length(xfm.m.y));
-    Vector3 segStart = xfm.v;
-    Vector3 segEnd;
-    segEnd.x = xfm.m.z.x * -100.0f + xfm.v.x;
-    segEnd.y = xfm.m.z.y * -100.0f + xfm.v.y;
-    segEnd.z = xfm.m.z.z * -100.0f + xfm.v.z;
+    Segment seg;
+    seg.start = xfm.v;
+    seg.end.x = xfm.m.z.x * -100.0f + xfm.v.x;
+    seg.end.y = xfm.m.z.y * -100.0f + xfm.v.y;
+    seg.end.z = xfm.m.z.z * -100.0f + xfm.v.z;
     MILO_ASSERT(mMeshes.size() < 64, 0x60A);
     int meshIndices[64];
-    int meshCount = mMeshes.size();
-    for (int i = 0; i < meshCount; i++) {
-        meshIndices[i] = i;
+    unsigned int meshCount = mMeshes.size();
+    {
+        int *p = meshIndices;
+        int n = 0;
+        for (unsigned int k = meshCount; k != 0; k--) {
+            *p++ = n++;
+        }
     }
     RndMesh::sRawCollide = true;
     int hitMeshIdx = -1;
     int hitFaceIdx = 0;
-    Vector3 hitPoint;
-    hitPoint.x = segEnd.x;
-    hitPoint.y = segEnd.y;
-    hitPoint.z = segEnd.z;
-    Segment seg;
-    seg.start = segStart;
-    seg.end = segEnd;
     for (int i = 0; i < mMeshes.size(); i++) {
         RndMesh *mesh = mMeshes[i].mesh;
         if (mesh && !mesh->GetKeepMeshData()) {
@@ -871,11 +868,11 @@ void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm)
                 hitMeshIdx = i;
                 hitFaceIdx = RndMesh::sLastCollide;
                 if (t == 0.0f) {
-                    hitPoint = segStart;
+                    seg.end = seg.start;
                 } else if (t != 1.0f) {
-                    hitPoint.x = t * (segEnd.x - segStart.x) + segStart.x;
-                    hitPoint.y = t * (segEnd.y - segStart.y) + segStart.y;
-                    hitPoint.z = t * (segEnd.z - segStart.z) + segStart.z;
+                    seg.end.x = t * (seg.end.x - seg.start.x) + seg.start.x;
+                    seg.end.y = t * (seg.end.y - seg.start.y) + seg.start.y;
+                    seg.end.z = t * (seg.end.z - seg.start.z) + seg.start.z;
                 }
             }
         }
@@ -891,16 +888,12 @@ void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm)
     WorkVerts *firstWV = new WorkVerts(hitPair->mesh, scale);
     firstWV->SetMeshVerts();
     RndMesh::Vert seedVert;
-    seedVert.pos = hitPoint;
+    MeshVert seedMV;
+    seedVert.pos = seg.end;
     seedVert.norm.x = xfm.m.z.x;
     seedVert.norm.y = xfm.m.z.y;
     seedVert.norm.z = xfm.m.z.z;
     seedVert.uv.Set(0.5f, 0.5f);
-    seedVert.color.Clear();
-    for (int i = 0; i < 4; i++) {
-        seedVert.boneIndices[i] = 0;
-    }
-    MeshVert seedMV;
     seedMV.SetVert(&seedVert);
     seedMV.unk4 = xfm.m.x;
     seedMV.unk10 = xfm.m.y;
