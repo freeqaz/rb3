@@ -654,6 +654,13 @@ void CharHair::SimulateInternal(float f) {
 }
 #pragma pop
 
+float RecipSqrtAccurate(float x) {
+    float est = 1.0f / (float)sqrt(x);
+    return 0.5f * est * (3.0f - est * (x * est));
+}
+
+const Vector3 &CharCollide::Axis() const { return unk194; }
+
 void CharHair::SimulateZeroTime() {
     if (mSimulate) {
         for (int i = 0; i < mStrands.size(); i++) {
