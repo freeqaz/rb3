@@ -35,6 +35,8 @@ void Spotlight::CalculateDirection(RndTransformable *t, Hmx::Matrix3 &m) {
 
 The `off` directive disables the fusion specifically for the enclosed function while leaving surrounding TU code unaffected.
 
+**Precondition:** target must have **zero** `fmsubs`/`fmadds` in the function. `off` strips fusion uniformly — if target uses fusion in any slot, the pragma regresses. Verified 2026-05-25: `math/Rot::RotateAboutZ` 90.3% → 69.7% from a blind apply.
+
 **Examples:**
 - `Spotlight::CalculateDirection` 88.1% → 93.4%.
 - `MakeRotMatrix(Vec3, Vec3, Matrix3)` 87.6% → 94.0% via manual 6-product Cross expansion (`yz, yx, zx, zy, xy, xz`) + a `0.0f` load between the muls and subtractions as a scheduling barrier (the `0.0f` is consumed by the subsequent `Normalize` zero-check).

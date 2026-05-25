@@ -129,6 +129,22 @@ The 767 functions at 99.9–100% are almost certainly LINKED/ICF artifacts. Most
 9. **Phase 3B** (header container inlines) — **needs user approval**; high yield but high risk.
 10. **Phase 4** (LINKED audit) — background cleanup, anytime.
 
+## Future scope expansion
+
+### Network (Quazal) container header sweep — deferred
+
+`src/network/Platform/qChain.h` + sister containers cascade widely *within* `src/network/`. Memory shows past wins (`qChain` dtor 42→99%, a `Key` ctor 41→100%) from adding inline bodies. **Currently skipped** under the native-port scope filter (Nintendo WFC was shut down 2014; networking gets replaced wholesale). Revisit if/when online multiplayer is added back to the port roadmap — would be a high-cascade single-header edit with significant `src/network/Core/`, `src/network/Plugins/`, `src/network/Protocol/` impact. Use a dedicated worktree given the A/B-rebuild burden.
+
+## First wave outcomes (2026-05-25)
+
+7-agent wave: 1 win (`TourPerformerLocal::GetRandomQuestFilter` 98.2→100% via nested-if split) / 6 no-ops. Lessons:
+- **Phase 1B (fp_contract)**: 0/3 — needs target-has-zero-fmsubs precondition (added to fixable-fsel-fma.md). Documented past wins were specific finds, not a sweep target.
+- **Phase 1D (ObjPtr.mPtr)**: 0/1 — only helps for short method chains, not large-loop fns where callee-saved regs are saturated. Reattempting on simpler fns may yield.
+- **Phase 2A (streq)**: 1/2 — narrow population; the win came from an unrelated `&&` split the agent noticed mid-sweep.
+- **Phase 3A (DC3 cross-ref, PropKeys)**: 0/1 — all 15 partials confirmed permuter-class. PropKeys is at-limit until permuter run.
+
+**Rebalance**: future waves should weight DC3 cross-ref on *new* TUs (PropKeys exhausted) and large-fn structural rewrites over narrow codegen-rule sweeps. Conversion rates: Phase 1B/1D/2A appear closer to 10-20%, not the 30-50% historical wave average.
+
 ## Anti-patterns / do-not-retry
 
 Logged from today's sweep so future agents skip:
