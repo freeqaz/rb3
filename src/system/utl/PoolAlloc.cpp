@@ -1,7 +1,9 @@
 #include "utl/PoolAlloc.h"
 #include "utl/MemMgr.h"
+#include "utl/DataPointMgr.h"
 #include "os/Debug.h"
 #include "os/CritSec.h"
+#include "os/System.h"
 #include <revolution/os/OSError.h>
 #include <cstdio>
 
@@ -9,6 +11,7 @@ extern CriticalSection *gMemLock;
 extern ChunkAllocator *gChunkAlloc[2];
 
 bool MemTempAllocationsEnabled();
+void InitDefaultHeap();
 
 int *ChunkAllocator::RawPoolAlloc(int size) {
     int alignedSize = size & ~3;
@@ -77,6 +80,12 @@ void FixedSizeAlloc::Free(void *v) {
     mNumAllocs--;
 }
 
+FixedSizeAlloc::~FixedSizeAlloc() {}
+
+void *FixedSizeAlloc::RawAlloc(int size) {
+    return mAlloc->RawPoolAlloc(size);
+}
+
 void FixedSizeAlloc::Refill() {
     MILO_ASSERT(mFreeList == 0, 0x10a);
     int allocSize = mAllocSizeWords * mNodesPerChunk;
@@ -92,6 +101,18 @@ void FixedSizeAlloc::Refill() {
     *cur = 0;
 }
 
+ChunkAllocator::ChunkAllocator(int heap, int bigHunk, int smallHunk)
+    : mBigHunk(bigHunk), mSmallHunk(smallHunk), mTotalCapacity(0), mPeakCapacity(0),
+      mNumHunks(0), mPoolEnd(0), mPoolStart(0), mHeap(heap) {
+    InitDefaultHeap();
+    static int fastHeap = MemFindHeap("fast");
+    MemPushHeap(fastHeap);
+    for (int i = 0; i < MAX_FIXED_ALLOCS; i++) {
+        mAllocs[i] = new FixedSizeAlloc(i + 1, this, 20);
+    }
+    MemPopHeap();
+}
+
 void *ChunkAllocator::Alloc(int i) {
     int fixedSizeIndex = (i - 1) >> 2;
     MILO_ASSERT_FMT(fixedSizeIndex < MAX_FIXED_ALLOCS, "fixedSizeIndex (%d) < MAX_FIXED_ALLOCS (%d)\n", fixedSizeIndex, MAX_FIXED_ALLOCS);
@@ -103,6 +124,39 @@ void ChunkAllocator::Free(void *v, int i) {
     MILO_ASSERT(fixedSizeIndex < MAX_FIXED_ALLOCS, 0x16D);
     MILO_ASSERT(mAllocs[fixedSizeIndex], 0x16E);
     mAllocs[fixedSizeIndex]->Free(v);
+}
+
+void ChunkAllocator::UploadDebugStats() {
+    if (UsingCD()) {
+        for (int i = 0; i < 2; i++) {
+            ChunkAllocator *alloc = gChunkAlloc[i];
+            if (alloc) {
+                int total = alloc->mTotalCapacity;
+                if (total > alloc->mPeakCapacity) {
+                    alloc->mPeakCapacity = total;
+                    SendDataPoint("debug/pool", "TotalChunkSize", gChunkAlloc[i]->mPeakCapacity);
+                }
+            }
+        }
+    }
+}
+
+bool AddrIsInPool(void *addr, PoolType pool) {
+    for (int i = 0; i < 2; i++) {
+        if (gChunkAlloc[i]) {
+            ChunkAllocator::Hunk *hunks = gChunkAlloc[i]->mHunks;
+            int n = gChunkAlloc[i]->mNumHunks;
+            for (int j = 0; j < n; j++) {
+                unsigned int start = (unsigned int)hunks->mStart;
+                unsigned int end = start + hunks->mSize;
+                if ((unsigned int)addr >= start && (unsigned int)addr <= end) {
+                    return true;
+                }
+                hunks++;
+            }
+        }
+    }
+    return false;
 }
 
 void *_PoolAlloc(int classSize, int reqSize, PoolType pool) {

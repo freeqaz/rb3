@@ -24,7 +24,7 @@ public:
     int mBigHunk; // 0x0
     int mSmallHunk; // 0x4
     int mTotalCapacity; // 0x8
-    int unk_0xc; // 0xc
+    int mPeakCapacity; // 0xc
     Hunk mHunks[MAX_HUNKS]; // 0x10 - 0x200F (embedded hunk-record table)
     int mNumHunks; // 0x2010
     int *mPoolEnd; // 0x2014
@@ -32,7 +32,7 @@ public:
     int mHeap; // 0x201c
     FixedSizeAlloc *mAllocs[MAX_FIXED_ALLOCS]; // 0x2020
 
-    ChunkAllocator(int, int, int);
+    ChunkAllocator(int heap, int bigHunk, int smallHunk);
     void *Alloc(int);
     void Free(void *, int);
     int *RawPoolAlloc(int);
