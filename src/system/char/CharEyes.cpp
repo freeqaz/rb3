@@ -542,43 +542,45 @@ void CharEyes::NextLook() {
         }
     } else {
         const Vector3 &lastFacing = unka4;
-        float dx = (facingDir.x - lastFacing.x) * 45.0f;
-        float dy = (facingDir.y - lastFacing.y) * 45.0f;
-        float dz = (facingDir.z - lastFacing.z) * 45.0f;
+        Vector3 extrap(
+            (facingDir.x - lastFacing.x) * 45.0f,
+            (facingDir.y - lastFacing.y) * 45.0f,
+            (facingDir.z - lastFacing.z) * 45.0f
+        );
 
-        float extrapMag = std::sqrt(dy * dy + (dx * dx + dz * dz));
+        float extrapMag = Length(extrap);
         float maxExtrap = std::tan(mMaxExtrapolation * 0.017453292f);
 
         if (extrapMag > maxExtrap) {
             float scale = maxExtrap / extrapMag;
-            dx = scale * dx;
-            dy = dy * scale;
-            dz = dz * scale;
+            extrap.x = scale * extrap.x;
+            extrap.y = extrap.y * scale;
+            extrap.z = extrap.z * scale;
         }
 
-        float newFacingX = facingDir.x + dx;
-        float newFacingY = dy + facingDir.y;
-        float newFacingZ = dz + facingDir.z;
+        Vector3 newFacing(
+            facingDir.x + extrap.x,
+            extrap.y + facingDir.y,
+            extrap.z + facingDir.z
+        );
 
         float dist = RandomFloat(20.0f, 100.0f);
         dist *= 12.0f;
 
-        float projX = dist * newFacingX;
-        float projY = newFacingY * dist;
-        float projZ = newFacingZ * dist;
+        Vector3 proj(dist * newFacing.x, newFacing.y * dist, newFacing.z * dist);
 
-        unk58.x = headXfm.v.x + projX;
-        unk58.y = projY + headXfm.v.y;
-        unk58.z = headXfm.v.z + projZ;
+        unk58.x = headXfm.v.x + proj.x;
+        unk58.y = proj.y + headXfm.v.y;
+        unk58.z = headXfm.v.z + proj.z;
 
         RndTransformable *dirTrans = dynamic_cast<RndTransformable *>(Dir());
         if (dirTrans) {
             const Vector3 &dirPos = dirTrans->WorldXfm().v;
             if (unk58.z < dirPos.z) {
                 float scale = (dirPos.z - headXfm.v.z) / (unk58.z - headXfm.v.z);
-                float sx = projX * scale;
-                float sy = projY * scale;
-                float sz = projZ * scale;
+                float sx = proj.x * scale;
+                float sy = proj.y * scale;
+                float sz = proj.z * scale;
                 unk58.x = headXfm.v.x + sx;
                 unk58.y = sy + headXfm.v.y;
                 unk58.z = headXfm.v.z + sz;
