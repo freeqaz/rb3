@@ -2014,20 +2014,21 @@ bool SongParser::HandleRGGemStop(
         }
 
         if (allStringsEnded) {
-            // Find the start tick
+            // Find the start tick (last-wins among active strings)
             int on_tick = -1;
-            if (info.mRGGemsInfo[0].mGem.mTick != -1)
-                on_tick = info.mRGGemsInfo[0].mGem.mTick;
-            if (info.mRGGemsInfo[1].mGem.mTick != -1)
-                on_tick = info.mRGGemsInfo[1].mGem.mTick;
-            if (info.mRGGemsInfo[2].mGem.mTick != -1)
-                on_tick = info.mRGGemsInfo[2].mGem.mTick;
-            if (info.mRGGemsInfo[3].mGem.mTick != -1)
-                on_tick = info.mRGGemsInfo[3].mGem.mTick;
-            if (info.mRGGemsInfo[4].mGem.mTick != -1)
-                on_tick = info.mRGGemsInfo[4].mGem.mTick;
-            if (info.mRGGemsInfo[5].mGem.mTick != -1)
-                on_tick = info.mRGGemsInfo[5].mGem.mTick;
+            int t;
+            t = info.mRGGemsInfo[0].mGem.mTick;
+            if (t != -1) on_tick = t;
+            t = info.mRGGemsInfo[1].mGem.mTick;
+            if (t != -1) on_tick = t;
+            t = info.mRGGemsInfo[2].mGem.mTick;
+            if (t != -1) on_tick = t;
+            t = info.mRGGemsInfo[3].mGem.mTick;
+            if (t != -1) on_tick = t;
+            t = info.mRGGemsInfo[4].mGem.mTick;
+            if (t != -1) on_tick = t;
+            t = info.mRGGemsInfo[5].mGem.mTick;
+            if (t != -1) on_tick = t;
 
             MILO_ASSERT(on_tick != -1, 0xBB2);
 
@@ -2051,6 +2052,10 @@ bool SongParser::HandleRGGemStop(
                 (on_tick < mRGChordNamingStartTick || on_tick >= mRGChordNamingEndTick);
             geminfo.show_chord_names = inChordNaming;
 
+            bool inEnharmonic =
+                (on_tick >= mRGEnharmonicStartTick && on_tick < mRGEnharmonicEndTick);
+            geminfo.enharmonic = inEnharmonic;
+
             bool inSlashes =
                 (on_tick >= mRGSlashesStartTick && on_tick < mRGSlashesEndTick);
             geminfo.show_slashes = inSlashes;
@@ -2067,11 +2072,7 @@ bool SongParser::HandleRGGemStop(
                 (on_tick >= info.mRGLeftHandSlideStartTick && on_tick < info.mRGLeftHandSlideEndTick);
             geminfo.left_hand_slide = inSlide;
 
-            bool inReverseSlide =
-                (on_tick >= mRGEnharmonicStartTick && on_tick < mRGEnharmonicEndTick);
-            geminfo.reverse_slide = inReverseSlide;
-
-            geminfo.enharmonic = info.mRGFlipSlideDirection;
+            geminfo.reverse_slide = info.mRGFlipSlideDirection;
 
             int distFromChordText = on_tick - info.mRGChordTextTick;
             int distSign = distFromChordText >> 31;
@@ -2109,7 +2110,6 @@ bool SongParser::HandleRGGemStop(
             }
 
             // Fill frets and note_types per string
-            NoStrumState noStrum = geminfo.no_strum;
             {
                 SongParser::RGGemInfo *src = &info.mRGGemsInfo[0];
                 unsigned int si = 0;
@@ -2137,7 +2137,7 @@ bool SongParser::HandleRGGemStop(
                             geminfo.frets[si] = (char)mRGHandPos;
                         }
                         if (src->mChannel == 4) {
-                            noStrum = kStrumForceOff;
+                            geminfo.no_strum = kStrumForceOff;
                         }
                     } else {
                         geminfo.frets[si] = (char)-1;
@@ -2147,7 +2147,6 @@ bool SongParser::HandleRGGemStop(
                     src++;
                 } while (si < 6U);
             }
-            geminfo.no_strum = noStrum;
 
             if (didComputeHandPos)
                 mRGHandPos = -1;
