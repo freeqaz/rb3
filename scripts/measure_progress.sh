@@ -162,14 +162,29 @@ else
 
     # --- Ensure build tools and compilers are available ---
     # RB3 downloads tools into build/tools/ and build/compilers/ via download_tool.py.
-    # Symlink from the main repo to avoid re-downloading in the worktree.
-    mkdir -p "${WORKTREE}/build"
-    for dir in tools compilers; do
-        if [[ -d "${MAIN_REPO}/build/${dir}" && ! -e "${WORKTREE}/build/${dir}" ]]; then
-            ln -sf "${MAIN_REPO}/build/${dir}" "${WORKTREE}/build/${dir}"
-            echo "Symlinked build/${dir}"
-        fi
-    done
+    # Use the main repo's copies, but COPY individual tools (not symlink the dir)
+    # so ninja can overwrite a version-mismatched tool in the worktree without
+    # hitting ETXTBSY on the main repo's binary if it's in use by another agent.
+    mkdir -p "${WORKTREE}/build/tools" "${WORKTREE}/build/compilers"
+    if [[ -d "${MAIN_REPO}/build/tools" ]]; then
+        for tool in "${MAIN_REPO}/build/tools"/*; do
+            dest="${WORKTREE}/build/tools/$(basename "$tool")"
+            if [[ ! -e "$dest" ]]; then
+                if [[ -d "$tool" ]]; then
+                    ln -sf "$tool" "$dest"
+                else
+                    cp -p "$tool" "$dest"
+                fi
+            fi
+        done
+    fi
+    # Compilers are large; safe to share via symlink (never written by build).
+    if [[ -d "${MAIN_REPO}/build/compilers" ]]; then
+        for comp in "${MAIN_REPO}/build/compilers"/*; do
+            dest="${WORKTREE}/build/compilers/$(basename "$comp")"
+            [[ -e "$dest" ]] || ln -sf "$comp" "$dest"
+        done
+    fi
 
     # --- Extract configure args from main repo ---
     CONFIGURE_ARGS=()

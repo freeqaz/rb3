@@ -1,0 +1,182 @@
+
+===============================================================
+  REGRESSION CHECK PLAN
+===============================================================
+  24h: b7b7cda8 — decomp: TokenRedemptionPanel::OnMsg(RockCentralOpCompleteMsg) 83.0% -> 99.95%
+  72h: a55745ca — decomp: AppLabel::SetFromScoreDisplayData 81% -> 92%, MakeString<PCc,PCc,PCc,PCc> 0% -> 100%
+
+
+===============================================================
+  Window: 24h    Baseline: b7b7cda8
+  decomp: TokenRedemptionPanel::OnMsg(RockCentralOpCompleteMsg) 83.0% -> 99.95%
+===============================================================
+Measuring progress: b7b7cda8 (baseline) -> working tree (current)
+No cached baseline for b7b7cda8, building...
+Using worktree: /tmp/claude/rb3-measure-progress
+Creating worktree at /tmp/claude/rb3-measure-progress...
+Resetting worktree to baseline b7b7cda8...
+Restored orig/ symlink
+Restored scripts/ symlink
+Using configure args: --version SZBE69_B8 --map --objdiff /home/free/code/milohax/objdiff/target/release/objdiff-cli
+Generating baseline split config (dtk dol split)...
+Reconfiguring baseline...
+Building baseline report (this may take a moment)...
+[451/1283] MWCC build/SZBE69_B8/src/band3/net_band/RockBandDDF_Wii.o
+[452/1283] MWCC build/SZBE69_B8/src/band3/tour/TourWeightManager.o
+[453/1283] MWCC build/SZBE69_B8/src/band3/meta_band/UploadErrorMgr.o
+[454/1283] MWCC build/SZBE69_B8/src/band3/meta_band/UIEventMgr.o
+[455/1283] MWCC build/SZBE69_B8/src/band3/tour/TourSavable.o
+[456/1283] MWCC build/SZBE69_B8/src/band3/net_band/DataResults.o
+### mwcceppc.exe Compiler:
+#    File: src\band3\net_band\DataResults.cpp
+# -------------------------------------------
+#      58:                     switch (jsonAsStr[k]) { 
+# Warning:                     ^^^^^^
+#   (10211) illegal jump past 'jStr' declaration/initializer
+### mwcceppc.exe Compiler:
+#      58:                     switch (jsonAsStr[k]) { 
+# Warning:                     ^^^^^^
+#   (10211) illegal jump past 'jFloat' declaration/initializer
+### mwcceppc.exe Compiler:
+#      58:                     switch (jsonAsStr[k]) { 
+# Warning:                     ^^^^^^
+#   (10211) illegal jump past 'jInt' declaration/initializer
+[457/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBTestDDL_Wii.o
+[458/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBBinaryBufferDDL_Wii.o
+[459/1283] MWCC build/SZBE69_B8/src/system/math/Sqrt_Wii.o
+[460/1283] MWCC build/SZBE69_B8/src/system/math/Sort.o
+[461/1283] MWCC build/SZBE69_B8/src/band3/meta_band/WaitingUserGate.o
+[462/1283] MWCC build/SZBE69_B8/src/band3/meta_band/Utl.o
+[463/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBDataDDL_Wii.o
+[464/1283] MWCC build/SZBE69_B8/src/band3/tour/TourBand.o
+[465/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBBinaryDataDDL_Wii.o
+[466/1283] MWCC build/SZBE69_B8/src/system/math/Rand2.o
+[467/1283] MWCC build/SZBE69_B8/src/system/math/strips/Adjacency.o
+[468/1283] MWCC build/SZBE69_B8/src/band3/tour/FixedSetlist.o
+[469/1283] MWCC build/SZBE69_B8/src/system/math/Primes.o
+[470/1283] MWCC build/SZBE69_B8/src/system/math/Rand.o
+[471/1283] MWCC build/SZBE69_B8/src/system/math/strips/CustomArray.o
+[472/1283] MWCC build/SZBE69_B8/src/system/math/Interp.o
+[473/1283] MWCC build/SZBE69_B8/src/system/math/Color.o
+[474/1283] MWCC build/SZBE69_B8/src/system/math/SHA1.o
+[475/1283] MWCC build/SZBE69_B8/src/band3/tour/GigFilter.o
+[476/1283] MWCC build/SZBE69_B8/src/system/math/FileChecksum.o
+[477/1283] MWCC build/SZBE69_B8/src/system/math/strips/RevisitedRadix.o
+[478/1283] MWCC build/SZBE69_B8/src/band3/tour/QuestJournal.o
+[479/1283] MWCC build/SZBE69_B8/src/system/math/Rot.o
+[480/1283] MWCC build/SZBE69_B8/src/system/math/Geo.o
+[481/1283] MWCC build/SZBE69_B8/src/band3/net_band/EntityUploader_Wii.o
+### mwcceppc.exe Compiler:
+#    File: src\band3\net_band\EntityUploader_Wii.cpp
+# --------------------------------------------------
+#     281:                             switch (opType) { 
+# Warning:                             ^^^^^^
+#   (10211) illegal jump past 'setlist' declaration/initializer
+### mwcceppc.exe Compiler:
+#     281:                             switch (opType) { 
+# Warning:                             ^^^^^^
+#   (10211) illegal jump past 'band' declaration/initializer
+[482/1283] MWCC build/SZBE69_B8/src/band3/meta_band/ViewSetting.o
+[483/1283] MWCC build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.o
+FAILED: [code=2] build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.o 
+build/tools/wibo build/compilers/Wii/1.3/mwcceppc.exe -i src/system/stlport -i src/sdk/PowerPC_EABI_Support/MSL/MSL_C -i src/sdk/PowerPC_EABI_Support/MSL -i src/sdk -i src/sdk/RVL_SDK -i src/libs -i src/system/speex/include -i src -i src/network -i src/system -i src/band3 -nodefaults -nosyspath -gccinc -maxerrors 1 -nowraplines -proc gekko -align powerpc -enum int -fp hardware -pragma "cats off" -pragma "warning off (10184)" -pragma "warn_notinlined off" -pragma "warn_filenamecaps on" -pragma "warn_filenamecaps_system on" -RTTI on -Cpp_exceptions off -d MILO_DEBUG -d HX_WII -d MATCHING -d VERSION_SZBE69_B8 -d BUILD_VERSION=1 -d VERSION_SZBE69_B8 -DNDEBUG=1 -sdata 2 -sdata2 2 -str reuse,pool -fp_contract on -pragma "merge_float_consts on" -O4,p -inline noauto -ipa file -lang=c++ -MMD -c src/band3/meta_band/StoreOfferContentsProvider.cpp -o build/SZBE69_B8/src/band3/meta_band && "/home/free/code/milohax/dc3-decomp/venv/bin/python3" tools/transform_dep.py build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.d build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.d
+### mwcceppc.exe Compiler:
+
+User break, cancelled...
+#    File: src\band3\meta_band\StoreOfferContentsProvider.cpp
+# -----------------------------------------------------------
+#     159:     TheWiiCommerceMgr.SpecifyContentUnits(contentUnits); 
+#   Error:                       ^^^^^^^^^^^^^^^^^^^
+#   (10140) undefined identifier 'SpecifyContentUnits'
+#   Too many errors printed, aborting program
+[484/1283] MWCC build/SZBE69_B8/src/system/math/strips/Striper.o
+[485/1283] MWCC build/SZBE69_B8/src/system/math/Decibels.o
+[486/1283] MWCC build/SZBE69_B8/src/system/math/Key.o
+[487/1283] MWCC build/SZBE69_B8/src/system/math/StreamChecksum.o
+[488/1283] MWCC build/SZBE69_B8/src/band3/tour/QuestManager.o
+[489/1283] MWCC build/SZBE69_B8/src/system/math/Trig.o
+[490/1283] MWCC build/SZBE69_B8/src/system/math/Vec.o
+[491/1283] MWCC build/SZBE69_B8/src/system/os/ArkFile.o
+[492/1283] MWCC build/SZBE69_B8/src/system/os/AsyncFile.o
+[493/1283] MWCC build/SZBE69_B8/src/system/os/AsyncFileCNT.o
+[494/1283] MWCC build/SZBE69_B8/src/system/os/AppChild.o
+[495/1283] MWCC build/SZBE69_B8/src/system/os/AsyncTask.o
+[496/1283] MWCC build/SZBE69_B8/src/system/os/AsyncFileHolmes.o
+[497/1283] MWCC build/SZBE69_B8/src/band3/tour/TourDesc.o
+[498/1283] MWCC build/SZBE69_B8/src/system/os/Archive.o
+[499/1283] MWCC build/SZBE69_B8/src/system/os/BlockMgr.o
+[500/1283] MWCC build/SZBE69_B8/src/band3/tour/Tour.o
+[501/1283] MWCC build/SZBE69_B8/src/band3/tour/QuestFilterPanel.o
+[502/1283] MWCC build/SZBE69_B8/src/band3/tour/TourChallengeResultsPanel.o
+[503/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPerformerRemote.o
+[504/1283] MWCC build/SZBE69_B8/src/band3/net_band/ContextWrapper.o
+[505/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPerformer.o
+[506/1283] MWCC build/SZBE69_B8/src/band3/tour/TourProgress.o
+[507/1283] MWCC build/SZBE69_B8/src/band3/tour/TourDescPanel.o
+[508/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPerformerLocal.o
+[509/1283] MWCC build/SZBE69_B8/src/band3/tour/TourReward.o
+[510/1283] MWCC build/SZBE69_B8/src/band3/net_band/RockCentralJobs.o
+[511/1283] MWCC build/SZBE69_B8/src/band3/net_band/EntityUploader.o
+[512/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPropertyCollection.o
+[513/1283] MWCC build/SZBE69_B8/src/band3/net_band/RockCentral.o
+[514/1283] MWCC build/SZBE69_B8/src/band3/meta_band/NextSongPanel.o
+ninja: build stopped: subcommand failed.
+
+Removing temporary worktree...
+Error: measure_progress.sh failed for window 24h (b7b7cda8)
+
+===============================================================
+  Window: 72h    Baseline: a55745ca
+  decomp: AppLabel::SetFromScoreDisplayData 81% -> 92%, MakeString<PCc,PCc,PCc,PCc> 0% -> 100%
+===============================================================
+Measuring progress: a55745ca (baseline) -> working tree (current)
+No cached baseline for a55745ca, building...
+Using worktree: /tmp/claude/rb3-measure-progress
+Creating worktree at /tmp/claude/rb3-measure-progress...
+Resetting worktree to baseline a55745ca...
+Restored orig/ symlink
+Restored scripts/ symlink
+Using configure args: --version SZBE69_B8 --map --objdiff /home/free/code/milohax/objdiff/target/release/objdiff-cli
+Generating baseline split config (dtk dol split)...
+Reconfiguring baseline...
+Building baseline report (this may take a moment)...
+ INFO Writing to build/SZBE69_B8/report.json
+Cached baseline report -> /home/free/code/milohax/rb3/build/SZBE69_B8/baselines/a55745ca0d54ff05923a74e3ce156a07d2d7be4f.json
+
+
+Overall fuzzy: 78.55% -> 80.70% (+2.15%)
+Subsystems changed: 1, +6 matched functions
+
+| Subsystem  | Baseline | Current | Change | Size   |
+|------------|----------|---------|--------|--------|
+| system/dsp |   94.26% |  86.11% | -8.15% | 7.3 KB |
+
+Regressions (17 functions, showing top 17):
+
+| Function                                                     | Unit                           | Base   | Curr  | Change | Size |
+|--------------------------------------------------------------|--------------------------------|--------|-------|--------|------|
+| StoreLoadPackedFile(const char*, bool, int, bool, bool, c... | ...em/meta/StorePackedMetadata | 100.0% | 59.1% | -40.8% | 1144 |
+| InterpTangent(const Vector3&, const Vector3&, const Vecto... | system/math/Key                |  67.9% | 40.9% | -27.0% |  244 |
+| Movie::Terminate()                                           | system/movie/Movie             |  95.1% | 76.4% | -18.7% |  156 |
+| CharIKFingers::Poll()                                        | system/char/CharIKFingers      |  86.0% | 79.2% |  -6.9% | 1792 |
+| Tour::InitializeMusicLibraryTaskForArtist(MusicLibrary::M... | band3/tour/Tour                |  99.8% | 94.1% |  -5.8% | 1272 |
+| Rnd::DrawTimers(float)                                       | system/rndobj/Rnd              |  77.2% | 71.7% |  -5.5% | 1428 |
+| BandPatchMesh::PreRender(BandCharDesc*, int)                 | system/bandobj/BandPatchMesh   |  92.0% | 86.7% |  -5.3% | 1444 |
+| CharHair::SimulateZeroTime()                                 | system/char/CharHair           |  80.1% | 76.9% |  -3.2% | 1232 |
+| Spotlight::UpdateTransforms()                                | system/world/Spotlight         |  79.9% | 76.9% |  -3.0% | 2392 |
+| CharBonesSamples::Relativize(CharClip*)                      | system/char/CharBonesSamples   |  83.8% | 80.8% |  -3.0% | 4188 |
+| LayerProvider::Handle(DataArray*, bool)                      | band3/meta_band/PatchPanel     |  97.0% | 94.1% |  -2.9% | 2604 |
+| PatchSticker::FinishLoad()                                   | system/bandobj/PatchDir        |  99.8% | 97.1% |  -2.7% |  848 |
+| LayerProvider::Mat(int, int, UIListMesh*) const              | band3/meta_band/PatchPanel     |  94.5% | 91.9% |  -2.6% | 1416 |
+| TrackWatcherImpl::ClosestUnplayedGem(float, int)             | .../beatmatch/TrackWatcherImpl | 100.0% | 97.5% |  -2.5% |  336 |
+| CharIKFingers::CalculateHandDest(int, int)                   | system/char/CharIKFingers      |  78.6% | 76.1% |  -2.4% | 3628 |
+| ManageBandPanel::RefreshAll()                                | ...3/meta_band/ManageBandPanel |  97.0% | 95.4% |  -1.7% | 1200 |
+| PatchDir::LoadRemote(IntPacker&)                             | system/bandobj/PatchDir        | 100.0% | 99.0% |  -1.0% |  884 |
+
+Summary: 17 regressions (25.6 KB affected), 0 improvements (0 B affected)
+
+Removing temporary worktree...
+
+===============================================================
+  Done. Baselines cached in build/SZBE69_B8/baselines/
+===============================================================

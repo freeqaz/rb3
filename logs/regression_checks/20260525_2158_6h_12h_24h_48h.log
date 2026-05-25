@@ -1,0 +1,240 @@
+Window 48h: resolves to b7b7cda8 — same as 24h, skipping rebuild
+
+===============================================================
+  REGRESSION CHECK PLAN
+===============================================================
+  6h: 738c833e — decomp: VocalTrackDir::GetLyricColor 0% -> 98.9%, GetLyricAlpha, PitchToZ 0% -> 100%
+  12h: bc1dc8e3 — decomp: AccomplishmentProgress::SaveSize 96.8% -> 99.5%
+  24h: b7b7cda8 — decomp: TokenRedemptionPanel::OnMsg(RockCentralOpCompleteMsg) 83.0% -> 99.95%
+  48h: b7b7cda8 — decomp: TokenRedemptionPanel::OnMsg(RockCentralOpCompleteMsg) 83.0% -> 99.95% (duplicate of earlier window)
+
+
+===============================================================
+  Window: 6h    Baseline: 738c833e
+  decomp: VocalTrackDir::GetLyricColor 0% -> 98.9%, GetLyricAlpha, PitchToZ 0% -> 100%
+===============================================================
+Measuring progress: 738c833e (baseline) -> working tree (current)
+No cached baseline for 738c833e, building...
+Using worktree: /tmp/claude/rb3-measure-progress
+Creating worktree at /tmp/claude/rb3-measure-progress...
+Resetting worktree to baseline 738c833e...
+Restored orig/ symlink
+Restored scripts/ symlink
+Symlinked build/tools
+Symlinked build/compilers
+Using configure args: --version SZBE69_B8 --map --objdiff /home/free/code/milohax/objdiff/target/release/objdiff-cli
+Generating baseline split config (dtk dol split)...
+Reconfiguring baseline...
+Building baseline report (this may take a moment)...
+ INFO Writing to build/SZBE69_B8/report.json
+Cached baseline report -> /home/free/code/milohax/rb3/build/SZBE69_B8/baselines/738c833e6fba290d6469f414feeb618de5aa7baa.json
+
+
+Overall fuzzy: 80.52% -> 80.69% (+0.18%)
+Subsystems changed: 2, +0 matched functions
+
+| Subsystem    | Baseline | Current | Change | Size     |
+|--------------|----------|---------|--------|----------|
+| system/world |   99.15% |  99.14% | -0.01% | 489.6 KB |
+| system/math  |   97.99% |  97.50% | -0.49% |  61.5 KB |
+
+Regressions (19 functions, showing top 19):
+
+| Function                                                     | Unit                           | Base   | Curr  | Change  | Size |
+|--------------------------------------------------------------|--------------------------------|--------|-------|---------|------|
+| __sinit_\Color_cpp                                           | system/math/Color              | 100.0% |  0.0% | -100.0% |   88 |
+| @unnamed@Movie_cpp@::RadAlloc(unsigned int)                  | system/movie/Movie             | 100.0% |  0.0% | -100.0% |    8 |
+| @unnamed@Movie_cpp@::RadFree(void*)                          | system/movie/Movie             | 100.0% |  0.0% | -100.0% |    4 |
+| __sinit_\Movie_cpp                                           | system/movie/Movie             | 100.0% |  0.0% | -100.0% |  160 |
+| @unnamed@Movie_cpp@::EndianSwapBuffer(void*, int)            | system/movie/Movie             | 100.0% |  0.0% | -100.0% |  132 |
+| ClipDistMap::ClipDistMap(CharClip*, CharClip*, float, flo... | system/char/ClipDistMap        |  86.8% | 30.5% |  -56.3% |  404 |
+| MakeColor(float, float, float, Hmx::Color&)                  | system/math/Color              |  85.1% | 49.9% |  -35.2% |  348 |
+| InterpTangent(const Vector3&, const Vector3&, const Vecto... | system/math/Key                |  67.9% | 40.9% |  -27.0% |  244 |
+| Movie::Terminate()                                           | system/movie/Movie             |  95.1% | 76.4% |  -18.7% |  156 |
+| MakeRotQuat(const Vector3&, const Vector3&, Hmx::Quat&)      | system/math/Rot                |  85.5% | 74.2% |  -11.3% |  408 |
+| Tour::InitializeMusicLibraryTaskForArtist(MusicLibrary::M... | band3/tour/Tour                |  99.8% | 94.1% |   -5.8% | 1272 |
+| Rnd::DrawTimers(float)                                       | system/rndobj/Rnd              |  77.2% | 71.7% |   -5.5% | 1428 |
+| LightHue::TranslateColor(const Hmx::Color&, Hmx::Color&)     | system/world/LightHue          |  87.4% | 83.2% |   -4.2% | 1004 |
+| PatchSticker::FinishLoad()                                   | system/bandobj/PatchDir        |  99.8% | 97.1% |   -2.7% |  848 |
+| VocalPlayer::LocalScorePhrase(int, const stlpmtx_std::vec... | band3/game/VocalPlayer         | 100.0% | 97.4% |   -2.6% |  372 |
+| TrackWatcherImpl::ClosestUnplayedGem(float, int)             | .../beatmatch/TrackWatcherImpl | 100.0% | 97.5% |   -2.5% |  336 |
+| CacheWav(const char*, CacheResourceResult&)                  | system/synth/Utl               |  92.6% | 91.4% |   -1.2% |  392 |
+| UIListState::SetSelectedSimulateScroll(int)                  | system/ui/UIListState          |  90.6% | 89.4% |   -1.2% |  392 |
+| Movie::Impl::SetPaused(bool)                                 | system/movie/Movie             |  98.6% | 97.8% |   -0.8% |  324 |
+
+Summary: 19 regressions (8.1 KB affected), 0 improvements (0 B affected)
+
+Removing temporary worktree...
+
+===============================================================
+  Window: 12h    Baseline: bc1dc8e3
+  decomp: AccomplishmentProgress::SaveSize 96.8% -> 99.5%
+===============================================================
+Measuring progress: bc1dc8e3 (baseline) -> working tree (current)
+No cached baseline for bc1dc8e3, building...
+Using worktree: /tmp/claude/rb3-measure-progress
+Creating worktree at /tmp/claude/rb3-measure-progress...
+Resetting worktree to baseline bc1dc8e3...
+Restored orig/ symlink
+Restored scripts/ symlink
+Symlinked build/tools
+Symlinked build/compilers
+Using configure args: --version SZBE69_B8 --map --objdiff /home/free/code/milohax/objdiff/target/release/objdiff-cli
+Generating baseline split config (dtk dol split)...
+Reconfiguring baseline...
+Building baseline report (this may take a moment)...
+[441/1283] MWCC build/SZBE69_B8/src/band3/meta_band/UGCPurchasePanel.o
+[442/1283] MWCC build/SZBE69_B8/src/band3/meta_band/StoreMenuProvider.o
+[443/1283] MWCC build/SZBE69_B8/src/band3/tour/TourProperty.o
+[444/1283] MWCC build/SZBE69_B8/src/band3/tour/TourCharRemote.o
+[445/1283] MWCC build/SZBE69_B8/src/band3/meta_band/WiiBufStreamMgr.o
+[446/1283] MWCC build/SZBE69_B8/src/band3/meta_band/StoreOfferProvider.o
+[447/1283] MWCC build/SZBE69_B8/src/band3/meta_band/UIEvent.o
+[448/1283] MWCC build/SZBE69_B8/src/band3/meta_band/TokenRedemptionPanel.o
+[449/1283] MWCC build/SZBE69_B8/src/band3/tour/TourQuestGameRules.o
+[450/1283] MWCC build/SZBE69_B8/src/band3/meta_band/UIEventMgr.o
+[451/1283] MWCC build/SZBE69_B8/src/band3/meta_band/UploadErrorMgr.o
+[452/1283] MWCC build/SZBE69_B8/src/band3/tour/TourCharLocal.o
+[453/1283] MWCC build/SZBE69_B8/src/band3/meta_band/Utl.o
+[454/1283] MWCC build/SZBE69_B8/src/band3/net_band/RockBandDDF_Wii.o
+[455/1283] MWCC build/SZBE69_B8/src/band3/tour/TourWeightManager.o
+[456/1283] MWCC build/SZBE69_B8/src/system/math/Sqrt_Wii.o
+[457/1283] MWCC build/SZBE69_B8/src/band3/tour/TourSavable.o
+[458/1283] MWCC build/SZBE69_B8/src/band3/net_band/DataResults.o
+### mwcceppc.exe Compiler:
+#    File: src\band3\net_band\DataResults.cpp
+# -------------------------------------------
+#      58:                     switch (jsonAsStr[k]) { 
+# Warning:                     ^^^^^^
+#   (10211) illegal jump past 'jStr' declaration/initializer
+### mwcceppc.exe Compiler:
+#      58:                     switch (jsonAsStr[k]) { 
+# Warning:                     ^^^^^^
+#   (10211) illegal jump past 'jFloat' declaration/initializer
+### mwcceppc.exe Compiler:
+#      58:                     switch (jsonAsStr[k]) { 
+# Warning:                     ^^^^^^
+#   (10211) illegal jump past 'jInt' declaration/initializer
+[459/1283] MWCC build/SZBE69_B8/src/system/math/Sort.o
+[460/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBBinaryBufferDDL_Wii.o
+[461/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBTestDDL_Wii.o
+[462/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBDataDDL_Wii.o
+[463/1283] MWCC build/SZBE69_B8/src/band3/net_band/RBBinaryDataDDL_Wii.o
+[464/1283] MWCC build/SZBE69_B8/src/system/math/Rand2.o
+[465/1283] MWCC build/SZBE69_B8/src/system/math/strips/Adjacency.o
+[466/1283] MWCC build/SZBE69_B8/src/system/math/Color.o
+[467/1283] MWCC build/SZBE69_B8/src/system/math/SHA1.o
+[468/1283] MWCC build/SZBE69_B8/src/system/math/Rand.o
+[469/1283] MWCC build/SZBE69_B8/src/system/math/strips/CustomArray.o
+[470/1283] MWCC build/SZBE69_B8/src/band3/meta_band/WaitingUserGate.o
+[471/1283] MWCC build/SZBE69_B8/src/system/math/FileChecksum.o
+[472/1283] MWCC build/SZBE69_B8/src/system/math/Primes.o
+[473/1283] MWCC build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.o
+FAILED: [code=2] build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.o 
+build/tools/wibo build/compilers/Wii/1.3/mwcceppc.exe -i src/system/stlport -i src/sdk/PowerPC_EABI_Support/MSL/MSL_C -i src/sdk/PowerPC_EABI_Support/MSL -i src/sdk -i src/sdk/RVL_SDK -i src/libs -i src/system/speex/include -i src -i src/network -i src/system -i src/band3 -nodefaults -nosyspath -gccinc -maxerrors 1 -nowraplines -proc gekko -align powerpc -enum int -fp hardware -pragma "cats off" -pragma "warning off (10184)" -pragma "warn_notinlined off" -pragma "warn_filenamecaps on" -pragma "warn_filenamecaps_system on" -RTTI on -Cpp_exceptions off -d MILO_DEBUG -d HX_WII -d MATCHING -d VERSION_SZBE69_B8 -d BUILD_VERSION=1 -d VERSION_SZBE69_B8 -DNDEBUG=1 -sdata 2 -sdata2 2 -str reuse,pool -fp_contract on -pragma "merge_float_consts on" -O4,p -inline noauto -ipa file -lang=c++ -MMD -c src/band3/meta_band/StoreOfferContentsProvider.cpp -o build/SZBE69_B8/src/band3/meta_band && "/home/free/code/milohax/dc3-decomp/venv/bin/python3" tools/transform_dep.py build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.d build/SZBE69_B8/src/band3/meta_band/StoreOfferContentsProvider.d
+### mwcceppc.exe Compiler:
+
+User break, cancelled...
+#    File: src\band3\meta_band\StoreOfferContentsProvider.cpp
+# -----------------------------------------------------------
+#     159:     TheWiiCommerceMgr.SpecifyContentUnits(contentUnits); 
+#   Error:                       ^^^^^^^^^^^^^^^^^^^
+#   (10140) undefined identifier 'SpecifyContentUnits'
+#   Too many errors printed, aborting program
+[474/1283] MWCC build/SZBE69_B8/src/system/math/Interp.o
+[475/1283] MWCC build/SZBE69_B8/src/band3/tour/TourBand.o
+[476/1283] MWCC build/SZBE69_B8/src/band3/meta_band/ViewSetting.o
+[477/1283] MWCC build/SZBE69_B8/src/system/math/Decibels.o
+[478/1283] MWCC build/SZBE69_B8/src/system/math/Geo.o
+[479/1283] MWCC build/SZBE69_B8/src/system/math/strips/RevisitedRadix.o
+[480/1283] MWCC build/SZBE69_B8/src/system/math/Rot.o
+[481/1283] MWCC build/SZBE69_B8/src/band3/net_band/EntityUploader_Wii.o
+### mwcceppc.exe Compiler:
+#    File: src\band3\net_band\EntityUploader_Wii.cpp
+# --------------------------------------------------
+#     281:                             switch (opType) { 
+# Warning:                             ^^^^^^
+#   (10211) illegal jump past 'setlist' declaration/initializer
+### mwcceppc.exe Compiler:
+#     281:                             switch (opType) { 
+# Warning:                             ^^^^^^
+#   (10211) illegal jump past 'band' declaration/initializer
+[482/1283] MWCC build/SZBE69_B8/src/band3/tour/QuestJournal.o
+[483/1283] MWCC build/SZBE69_B8/src/system/math/strips/Striper.o
+[484/1283] MWCC build/SZBE69_B8/src/band3/tour/QuestManager.o
+[485/1283] MWCC build/SZBE69_B8/src/band3/tour/TourDesc.o
+[486/1283] MWCC build/SZBE69_B8/src/band3/tour/FixedSetlist.o
+[487/1283] MWCC build/SZBE69_B8/src/system/math/StreamChecksum.o
+[488/1283] MWCC build/SZBE69_B8/src/system/math/Trig.o
+[489/1283] MWCC build/SZBE69_B8/src/band3/tour/GigFilter.o
+[490/1283] MWCC build/SZBE69_B8/src/band3/tour/QuestFilterPanel.o
+[491/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPerformer.o
+[492/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPerformerRemote.o
+[493/1283] MWCC build/SZBE69_B8/src/band3/net_band/ContextWrapper.o
+[494/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPropertyCollection.o
+[495/1283] MWCC build/SZBE69_B8/src/band3/tour/TourChallengeResultsPanel.o
+[496/1283] MWCC build/SZBE69_B8/src/band3/tour/Tour.o
+[497/1283] MWCC build/SZBE69_B8/src/band3/tour/TourPerformerLocal.o
+[498/1283] MWCC build/SZBE69_B8/src/band3/tour/TourDescPanel.o
+[499/1283] MWCC build/SZBE69_B8/src/band3/net_band/EntityUploader.o
+[500/1283] MWCC build/SZBE69_B8/src/band3/tour/TourReward.o
+[501/1283] MWCC build/SZBE69_B8/src/band3/tour/TourProgress.o
+[502/1283] MWCC build/SZBE69_B8/src/band3/net_band/RockCentralJobs.o
+[503/1283] MWCC build/SZBE69_B8/src/band3/net_band/RockCentral.o
+[504/1283] MWCC build/SZBE69_B8/src/band3/meta_band/NextSongPanel.o
+ninja: build stopped: subcommand failed.
+
+Removing temporary worktree...
+Error: measure_progress.sh failed for window 12h (bc1dc8e3)
+
+===============================================================
+  Window: 24h    Baseline: b7b7cda8
+  decomp: TokenRedemptionPanel::OnMsg(RockCentralOpCompleteMsg) 83.0% -> 99.95%
+===============================================================
+Measuring progress: b7b7cda8 (baseline) -> working tree (current)
+No cached baseline for b7b7cda8, building...
+Using worktree: /tmp/claude/rb3-measure-progress
+Creating worktree at /tmp/claude/rb3-measure-progress...
+Resetting worktree to baseline b7b7cda8...
+Restored orig/ symlink
+Restored scripts/ symlink
+Symlinked build/tools
+Symlinked build/compilers
+Using configure args: --version SZBE69_B8 --map --objdiff /home/free/code/milohax/objdiff/target/release/objdiff-cli
+Generating baseline split config (dtk dol split)...
+Reconfiguring baseline...
+Building baseline report (this may take a moment)...
+ninja: Entering directory `/tmp/claude/rb3-measure-progress'
+[1/3] TOOL build/tools/dtk
+Downloading https://github.com/encounter/decomp-toolkit/releases/download/v1.3.0/dtk-linux-x86_64 to build/tools/dtk
+[2/3] SPLIT config/SZBE69_B8/config.yml
+ INFO Loading config/SZBE69_B8/config.yml
+ INFO Loading and analyzing 1 module (using 1 thread)
+ INFO module{name=main}: Loading orig/SZBE69_B8/files/band_r_wii.sel    
+ INFO Initial analysis completed in 1.261s (found 41253 functions)
+ INFO Rebuilding relocations and splitting
+ INFO Splitting completed in 2.608s (wrote 1876 objects)
+ INFO Total time: 3.872s
+[3/3] RUN configure.py
+[1/1283] TOOL build/tools/wibo
+FAILED: [code=1] build/tools/wibo 
+"/home/free/code/milohax/dc3-decomp/venv/bin/python3" tools/download_tool.py wibo build/tools/wibo --tag 0.6.16
+Downloading https://github.com/decompals/wibo/releases/download/0.6.16/wibo to build/tools/wibo
+Traceback (most recent call last):
+  File "/tmp/claude/rb3-measure-progress/tools/download_tool.py", line 139, in <module>
+    main()
+  File "/tmp/claude/rb3-measure-progress/tools/download_tool.py", line 124, in main
+    download(url, response, output)
+  File "/tmp/claude/rb3-measure-progress/tools/download_tool.py", line 105, in download
+    with open(output, "wb") as f:
+OSError: [Errno 26] Text file busy: 'build/tools/wibo'
+[2/1283] TOOL build/compilers
+Downloading https://files.decomp.dev/compilers_20240706.zip to build/compilers
+ninja: build stopped: subcommand failed.
+
+Removing temporary worktree...
+Error: measure_progress.sh failed for window 24h (b7b7cda8)
+
+===============================================================
+  Done. Baselines cached in build/SZBE69_B8/baselines/
+===============================================================
