@@ -47,6 +47,10 @@ void LayerDir::DrawShowing() {
 
 RndCam *LayerDir::CamOverride() { return mUseFreeCam ? 0 : sCam; }
 
+DECOMP_FORCEBLOCK(LayerDir, (BinStream &bs, const ObjPtr<Hmx::Object, ObjectDir> &p),
+    bs << p;
+)
+
 BinStream &operator>>(BinStream &bs, LayerDir::Layer &layer) {
     bs >> layer.mName;
     layer.mMat.Load(bs, false, 0);
