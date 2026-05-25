@@ -555,9 +555,7 @@ RndMesh *VocalTrack::CreateMarker(Symbol s1, float f2, bool warn) {
     mesh->SetTransParent(found->TransParent(), false);
     mesh->SetLocalXfm(found->mLocalXfm);
     mesh->SetTransParent(mDir->mScroller, true);
-    Vector3 v18 = mesh->mLocalXfm.v;
-    v18.x = unk78 * (f2 / unk74);
-    mesh->SetLocalPos(v18);
+    mesh->SetLocalPos(unk78 * (f2 / unk74), mesh->mLocalXfm.v.y, mesh->mLocalXfm.v.z);
     unk1c8->AddObject(mesh);
     unk1a0.push_back(std::make_pair(mesh, f2));
     return mesh;
