@@ -417,6 +417,55 @@ Symbol EditSetlistPanel::DayCountToSym(int days) {
     return gNullStr;
 }
 
+void EditSetlistPanel::MessageOK() {
+    switch (mEditState) {
+    case 7:
+        switch (unk9c) {
+        case 0:
+            TheMusicLibrary->RebuildAndSortSetlists();
+            TheMusicLibrary->SetSavedSetlistHighlight(mEditingSetlist);
+            TheMusicLibrary->SetSort((SongSortType)8);
+            HandleType(leave_setlist_msg);
+            break;
+        case 1:
+            TheMusicLibrary->RebuildAndSortSetlists();
+            HandleType(leave_setlist_msg);
+            break;
+        case 2:
+            TheMusicLibrary->RefreshNetSetlists();
+            TheMusicLibrary->SetSort((SongSortType)8);
+            HandleType(leave_setlist_msg);
+            break;
+        default:
+            MILO_FAIL("Bad mode %i!");
+            break;
+        }
+        break;
+    case 8:
+        switch (unka4) {
+        case 0:
+        case 1:
+        case 6:
+            HandleType(goto_create_dialog_msg);
+            break;
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 7:
+            SetEditState((EditState)3);
+            break;
+        default:
+            MILO_FAIL("Bad fail reason %i!");
+            break;
+        }
+        break;
+    default:
+        MILO_FAIL("In bad EditState %i in MessageOK!", mEditState);
+        break;
+    }
+}
+
 #pragma push
 #pragma dont_inline on
 BEGIN_HANDLERS(EditSetlistPanel)
