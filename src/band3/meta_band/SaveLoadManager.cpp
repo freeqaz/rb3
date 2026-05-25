@@ -180,6 +180,54 @@ void SaveLoadManager::Poll() {
         if (ThePlatformMgr.mGuideShowing) return;
         SetState((State)0x3b);
         break;
+    case (State)0x14:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            unk70 = (int)result;
+            if (result == kCache_NoError) {
+                TheCacheMgr->AddCacheID(mCacheID, Symbol(unk4c.c_str()));
+                SetState((State)0x1b);
+            } else if (result == kCache_ErrorCacheNotFound) {
+                SetState((State)0x15);
+            } else {
+                SetState((State)0x25);
+            }
+        }
+        break;
+    case (State)0x19:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                unk7c = 2;
+                int sz = mCacheID->GetDeviceID();
+                unk78 = sz;
+                TheCacheMgr->AddCacheID(mCacheID, Symbol(unk4c.c_str()));
+                SetState((State)0x20);
+            } else if (result == kCache_ErrorUserCancel) {
+                unk7c = 1;
+                SetState((State)0x17);
+            } else {
+                SetState((State)0x25);
+            }
+        }
+        break;
+    case (State)0x1B:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                SetState((State)0x1e);
+            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                SetState((State)0x16);
+            } else if (result == kCache_ErrorCorrupt) {
+                SetState((State)0x1c);
+            } else {
+                SetState((State)0x25);
+            }
+        }
+        break;
     case (State)0x54:
         if (TheSongMgr.IsSongCacheWriteDone()) {
             SetState((State)0x54);
