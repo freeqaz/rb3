@@ -9,6 +9,85 @@ namespace stlpmtx_std {
 template <>
 inline less<GameGem> __less<GameGem>(GameGem*) { return less<GameGem>(); }
 
+template <>
+GameGem *
+__unguarded_partition<GameGem *, GameGem, less<GameGem> >(
+    GameGem *__first,
+    GameGem *__last,
+    GameGem __pivot,
+    less<GameGem>
+) {
+    for (;;) {
+        while (__first->mMs < __pivot.mMs)
+            ++__first;
+        --__last;
+        while (__pivot.mMs < __last->mMs)
+            --__last;
+        if (!(__first < __last))
+            return __first;
+        iter_swap(__first, __last);
+        ++__first;
+    }
+}
+
+template <>
+void __unguarded_linear_insert<GameGem *, GameGem, less<GameGem> >(
+    GameGem *__last,
+    GameGem __val,
+    less<GameGem>
+) {
+    GameGem *__next = __last;
+    --__next;
+    while (__val.mMs < __next->mMs) {
+        *__last = *__next;
+        __last = __next;
+        --__next;
+    }
+    *__last = __val;
+}
+
+template <>
+void __introsort_loop<GameGem *, GameGem, long, less<GameGem> >(
+    GameGem *__first,
+    GameGem *__last,
+    GameGem *,
+    long __depth_limit,
+    less<GameGem> __comp
+) {
+    while (__last - __first > 16) {
+        if (__depth_limit == 0) {
+            partial_sort(__first, __last, __last, __comp);
+            return;
+        }
+        ptrdiff_t __len = __last - __first;
+        float __a = __first->mMs;
+        --__depth_limit;
+        GameGem *__mid = __first + __len / 2;
+        float __b = __mid->mMs;
+        GameGem *__pivot_ptr;
+        if (__a < __b) {
+            float __c = (__last - 1)->mMs;
+            if (__b < __c)
+                __pivot_ptr = __mid;
+            else if (__a < __c)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __first;
+        } else {
+            float __c = (__last - 1)->mMs;
+            if (__a < __c)
+                __pivot_ptr = __first;
+            else if (__b < __c)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __mid;
+        }
+        GameGem *__cut = __unguarded_partition(__first, __last, *__pivot_ptr, __comp);
+        __introsort_loop(__cut, __last, (GameGem *)0, __depth_limit, __comp);
+        __last = __cut;
+    }
+}
+
 } // namespace stlpmtx_std
 
 bool GameGemTickCmp(const GameGem &gem, int tick);
