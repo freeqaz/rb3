@@ -158,13 +158,14 @@ void Movie::Terminate() {
         cs->Enter();
     std::list<Movie::Impl *>::iterator sentinel = openMovieFiles.end();
     int count;
-    while (true) {
+    goto check;
+    do {
+        openMovieFiles.back()->Terminate();
+    check:
         count = 0;
         for (std::list<Movie::Impl *>::iterator it = openMovieFiles.begin(); it != sentinel; ++it)
             count++;
-        if (!(count != 0)) break;
-        openMovieFiles.back()->Terminate();
-    }
+    } while (count != 0);
     gInitialized = false;
     if (cs)
         cs->Exit();
