@@ -13,8 +13,7 @@ enum LocaleNumber {
     LocalePlural = 1,
 };
 
-class LocaleChunkSort {
-public:
+namespace LocaleChunkSort {
     struct OrderedLocaleChunk {
         OrderedLocaleChunk() : node1(0), node2(0), node3(0) {}
         DataNode node1;
@@ -22,8 +21,11 @@ public:
         DataNode node3;
     };
 
-    static void Sort(OrderedLocaleChunk *, int);
-};
+    void Sort(OrderedLocaleChunk *, int);
+
+    template <int N>
+    int FastSort(const void *a, const void *b);
+}
 
 class Locale {
 public:

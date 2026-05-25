@@ -18,6 +18,26 @@ int gDbgLocaleNumEntries;
 int gDbgLocaleStringsSize;
 bool Locale::sVerboseNotify;
 
+namespace LocaleChunkSort {
+template <int N>
+int FastSort(const void *a, const void *b) {
+    int i = 0;
+    do {
+        if (*(int *)a < *(int *)b) return -1;
+        if (*(int *)a > *(int *)b) return 1;
+        i++;
+        a = (const char *)a + 8;
+        b = (const char *)b + 8;
+    } while (i < N);
+    return 0;
+}
+template int FastSort<3>(const void *, const void *);
+
+void Sort(OrderedLocaleChunk *chunks, int count) {
+    qsort(chunks, count, sizeof(OrderedLocaleChunk), FastSort<3>);
+}
+}
+
 DataNode DataSetLocaleVerboseNotify(DataArray *arr) {
     SetLocaleVerboseNotify(arr->Int(1));
     return 0;
