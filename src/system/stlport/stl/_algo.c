@@ -475,7 +475,7 @@ __rotate_aux(_RandomAccessIter __first, _RandomAccessIter __middle, _RandomAcces
 }
 
 template <class _ForwardIter>
-_ForwardIter 
+inline _ForwardIter
 __rotate(_ForwardIter __first, _ForwardIter __middle, _ForwardIter __last) {
   _STLP_DEBUG_CHECK(__check_range(__first, __middle))
   _STLP_DEBUG_CHECK(__check_range(__middle, __last))
