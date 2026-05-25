@@ -804,7 +804,8 @@ RndDrawable *BandCharacter::CollideShowing(const Segment &s, float &f, Plane &pl
 
 void BandCharacter::DrawShowing() {
     if (!unk6bd || !IsLoading()) {
-        if (DataVariable("bandcharacter.show_spheres").Int()) {
+        auto _tmp0 = DataVariable("bandcharacter.show_spheres").Int();
+        if (_tmp0) {
             Sphere debugSphere(Vector3(0.0f, 0.0f, 5.0f), 45.0f);
             Multiply(debugSphere, mSphereBase->WorldXfm(), debugSphere);
             Hmx::Color red(1.0f, 0.0f, 0.0f, 1.0f);
@@ -830,8 +831,8 @@ void BandCharacter::DrawShowing() {
             float depth = RndCam::sCurrent->WorldToScreen(headPos, screenPos);
             if (depth > 0.0f) {
                 const char *dirName = Name();
-                int charPos = dirName[strlen(dirName) - 1] - '0';
                 BandWardrobe::TargetNames *targetNames;
+                int charPos = dirName[strlen(dirName) - 1] - '0';
                 if (InVignetteOrCloset()) {
                     targetNames = &TheBandWardrobe->mVignetteNames;
                 } else {
