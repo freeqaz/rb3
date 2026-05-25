@@ -47,7 +47,7 @@ SaveLoadManager::SaveLoadManager()
     : mActivated(false), mInitialLoadNotDone(true), mState(kS_Idle),
       mStateAtSelectStart(kS_Idle), mUser(NULL), mLocalUser(NULL),
       unk44(), unk48(0), mCacheID(NULL), mCache(NULL),
-      mData(NULL), unk64(0), unk68(false), unk69(false), unk6c(0), unk70(0),
+      mData(NULL), unk64(0), unk68(false), mWaiting(false), unk6c(0), unk70(0),
       mRequestFlags(0), unk78(0), unk7c(0), mAction(NULL) {
     mSaveProfiles.reserve(4);
     mUploadProfiles.reserve(4);
@@ -116,14 +116,14 @@ void SaveLoadManager::AutoLoad() {
     }
 }
 
-void SaveLoadManager::ManualDelete() {
-    MILO_LOG("Manual Delete has been called\n");
-    mRequestFlags |= 1;
-}
-
 void SaveLoadManager::Init() {
     MILO_ASSERT(!TheSaveLoadMgr, 0x57);
     TheSaveLoadMgr = new SaveLoadManager();
+}
+
+void SaveLoadManager::ManualDelete() {
+    MILO_LOG("Manual Delete has been called\n");
+    mRequestFlags |= 1;
 }
 
 void SaveLoadManager::Poll() {
@@ -184,13 +184,13 @@ void SaveLoadManager::Poll() {
             SetState((State)0x51);
             break;
         default:
-            MILO_LOG("Unknown SaveLoadMode: %d\n", mMode);
+            MILO_LOG("SaveLoadManager startup bad mode: %d\n", mMode);
             SetState((State)0x6e);
             break;
         }
         break;
     case (State)0x4:
-        if (unk69) return;
+        if (mWaiting) return;
         switch (unk6c) {
         case 7:
             SetState((State)0xb);
@@ -492,7 +492,7 @@ void SaveLoadManager::Poll() {
         break;
     case (State)0x68:
     case kS_Finish:
-        if (unk69) return;
+        if (mWaiting) return;
         if (mCache != NULL) {
             if (!mCache->IsDone()) return;
             TheCacheMgr->UnmountAsync(&mCache, NULL);
@@ -953,8 +953,7 @@ void SaveLoadManager::PrintoutSaveSizeInfo() {
     int profileSize = BandProfile::SaveSize(0x97);
     int symbolSize = FixedSizeSaveableStream::GetSymbolTableSize(0x97);
     TheDebug << MakeString<int>("Symbol Table Size = %i\n", symbolSize);
-    int wiiSize = WiiProfileMgr::SaveSize(0x97);
-    TheDebug << MakeString<int>("SAVESIZE TOTAL = %i \n", (symbolSize + profileSize) + wiiSize);
+    TheDebug << MakeString<int>("SAVESIZE TOTAL = %i \n", WiiProfileMgr::SaveSize(0x97) + (symbolSize + profileSize));
 }
 
 bool SaveLoadManager::IsReasonToUpload() {
@@ -969,12 +968,11 @@ bool SaveLoadManager::IsReasonToUpload() {
 void SaveLoadManager::StartSaveAction(bool b) {
     UpdateStatus(kSaveLoadMgrStatus_Saving);
     mTimer.Restart();
-    bool isOverwrite = (mState == kS_SaveOverwrite || mState == kS_SaveNoOverwrite);
-    MILO_ASSERT(isOverwrite, 0x9c9);
+    MILO_ASSERT(mState == kS_SaveOverwrite || mState == kS_SaveNoOverwrite, 0x9c9);
     for (BandProfile **p = (BandProfile **)mUploadProfiles.begin(); p != (BandProfile **)mUploadProfiles.end(); p++) {
         TheWiiProfileMgr.SetLocked(*p, true);
     }
-    unk69 = true;
+    mWaiting = true;
     delete mAction;
     mAction = NULL;
     mAction = new SaveMemcardAction(&mUploadProfiles);
@@ -983,8 +981,8 @@ void SaveLoadManager::StartSaveAction(bool b) {
 }
 
 DataNode SaveLoadManager::OnMsg(const DeviceChosenMsg &msg) {
-    MILO_ASSERT(unk69, 0xa41);
-    unk69 = false;
+    MILO_ASSERT(mWaiting, 0xa41);
+    mWaiting = false;
     TheMemcardMgr.RemoveSink(this);
     switch (mState) {
     case kS_AutoloadSetDevice:
@@ -1010,7 +1008,7 @@ DataNode SaveLoadManager::OnMsg(const DeviceChosenMsg &msg) {
         break;
     default:
         MILO_FAIL(
-            "Unhandled DeviceChosenMsg in state %d and mode %d", (int)mState, (int)mMode
+            "Unhandled DeviceChosenMsg in state %d and mode %d\n", (int)mState, (int)mMode
         );
         break;
     }
@@ -1018,8 +1016,8 @@ DataNode SaveLoadManager::OnMsg(const DeviceChosenMsg &msg) {
 }
 
 DataNode SaveLoadManager::OnMsg(const NoDeviceChosenMsg &) {
-    MILO_ASSERT(unk69, 0xa73);
-    unk69 = false;
+    MILO_ASSERT(mWaiting, 0xa73);
+    mWaiting = false;
     TheMemcardMgr.RemoveSink(this);
     switch (mState) {
     case kS_AutoloadSetDevice:
@@ -1046,7 +1044,7 @@ DataNode SaveLoadManager::OnMsg(const NoDeviceChosenMsg &) {
         break;
     default:
         MILO_FAIL(
-            "Unhandled NoDeviceChosenMsg in state %d and mode %d",
+            "Unhandled NoDeviceChosenMsg in state %d and mode %d\n",
             (int)mState,
             (int)mMode
         );
@@ -1060,8 +1058,8 @@ void MCResultMsg::PrintExtra(TextStream &ts) const {
 }
 
 DataNode SaveLoadManager::OnMsg(const MCResultMsg &msg) {
-    MILO_ASSERT(unk69, 0xaa3);
-    unk69 = false;
+    MILO_ASSERT(mWaiting, 0xaa3);
+    mWaiting = false;
     TheMemcardMgr.RemoveSink(this);
     MCResult res = (MCResult)msg.mData->Int(2);
     switch (mState) {
@@ -1165,21 +1163,21 @@ DataNode SaveLoadManager::OnMsg(const MCResultMsg &msg) {
     case kS_Finish:
         break;
     default:
-        MILO_FAIL("SaveLoadManager::MCResultMsg in wrong state/mode %d %d", (int)mState, (int)mMode);
+        MILO_FAIL("Unhandled MCResultMsg in state %d and mode %d\n", (int)mState, (int)mMode);
         break;
     }
     return DataNode(0);
 }
 
 DataNode SaveLoadManager::OnMsg(const RockCentralOpCompleteMsg &) {
-    MILO_ASSERT(unk69, 0xb55);
-    unk69 = false;
+    MILO_ASSERT(mWaiting, 0xb55);
+    mWaiting = false;
     if ((unsigned int)(mState - 0x6D) <= 2) {
         // Done/LoadComplete/Finish states - do nothing
     } else if (mState == (State)0x58) {
         SetState((State)0x57);
     } else {
-        MILO_FAIL("Unexpected RockCentralOpCompleteMsg state");
+        MILO_FAIL("Unhandled RockCentralOpCompleteMsg\n");
     }
     return DataNode(0);
 }
@@ -1265,23 +1263,23 @@ DataNode SaveLoadManager::OnMsg(const SigninChangedMsg &) {
 }
 
 DataNode SaveLoadManager::OnMsg(const ProfileSwappedMsg &msg) {
-    LocalUser *user1 = msg.GetUser1();
-    MILO_ASSERT(user1, 0xbcc);
-    MILO_ASSERT(user1->GetLocalUser(), 0xbcd);
-    LocalBandUser *bandUser1 = BandUserMgr::GetLocalBandUser(user1);
-    MILO_ASSERT(bandUser1, 0xbcf);
-    LocalUser *user2 = msg.GetUser2();
-    MILO_ASSERT(user2, 0xbd1);
-    MILO_ASSERT(user2->GetLocalUser(), 0xbd2);
-    LocalBandUser *bandUser2 = BandUserMgr::GetLocalBandUser(user2);
-    MILO_ASSERT(bandUser2, 0xbd4);
+    LocalUser *pUser1 = msg.GetUser1();
+    MILO_ASSERT(pUser1, 0xbcc);
+    MILO_ASSERT(pUser1->IsLocal(), 0xbcd);
+    LocalBandUser *pLocalUser1 = BandUserMgr::GetLocalBandUser(pUser1);
+    MILO_ASSERT(pLocalUser1, 0xbcf);
+    LocalUser *pUser2 = msg.GetUser2();
+    MILO_ASSERT(pUser2, 0xbd1);
+    MILO_ASSERT(pUser2->IsLocal(), 0xbd2);
+    LocalBandUser *pLocalUser2 = BandUserMgr::GetLocalBandUser(pUser2);
+    MILO_ASSERT(pLocalUser2, 0xbd4);
     if (mUser != NULL) {
-        if (mUser == bandUser1) mUser = bandUser2;
-        else if (mUser == bandUser2) mUser = bandUser1;
+        if (mUser == pLocalUser1) mUser = pLocalUser2;
+        else if (mUser == pLocalUser2) mUser = pLocalUser1;
     }
     if (mLocalUser != NULL) {
-        if (mLocalUser == user1) mLocalUser = user2;
-        else if (mLocalUser == user2) mLocalUser = user1;
+        if (mLocalUser == pUser1) mLocalUser = pUser2;
+        else if (mLocalUser == pUser2) mLocalUser = pUser1;
     }
     return DataNode(1);
 }
