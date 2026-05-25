@@ -1,12 +1,16 @@
 #include "meta_band/ShellInputInterceptor.h"
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
+#include "meta_band/GameplayOptions.h"
+#include "meta_band/ModifierMgr.h"
 #include "obj/Data.h"
 #include "obj/ObjMacros.h"
 #include "os/Debug.h"
 #include "os/Joypad.h"
 #include "os/JoypadMsgs.h"
 #include "ui/UI.h"
+#include "utl/Symbols.h"
+#include "utl/Symbols4.h"
 
 ShellInputInterceptor::ShellInputInterceptor(BandUserMgr *mgr)
     : mBandUserMgr(mgr), mButtonDownSwitch(1), mButtonUpSwitch(1) {
@@ -56,6 +60,48 @@ DataNode ShellInputInterceptor::OnMsg(const ButtonUpMsg &msg) {
         }
     }
     return DataNode(kDataUnhandled, 0);
+}
+
+JoypadAction
+ShellInputInterceptor::FilterAction(LocalBandUser *pUser, JoypadAction action) {
+    int padNum = pUser->GetPadNum();
+    Symbol type = JoypadControllerTypePadNum(padNum);
+    if (type == none)
+        return action;
+    JoypadData *data = JoypadGetPadData(padNum);
+    if (data->mIsDrum) {
+        int padShift = JoypadTypePadShiftButton(type);
+        int cymbalShift = JoypadTypeCymbalShiftButton(type);
+        if (!TheModifierMgr->IsModifierActive(mod_drum_surface_navigation)) {
+            if ((data->mButtons & (1 << padShift))
+                || (data->mButtons & (1 << cymbalShift))) {
+                return kAction_None;
+            }
+        } else if ((data->mButtons & (1 << padShift))
+                   || (data->mButtons & (1 << cymbalShift))) {
+            switch (action) {
+            case kAction_Option:
+                return kAction_Down;
+            case kAction_WiiHomeMenu:
+                return kAction_Up;
+            }
+        }
+    }
+    if (JoypadTypeHasLeftyFlip(type)) {
+        GameplayOptions *opts = pUser->GetGameplayOptions();
+        MILO_ASSERT(opts, 0x98);
+        if (opts->GetLefty()) {
+            if (action == kAction_Up)
+                return kAction_Down;
+            if (action == kAction_Down)
+                return kAction_Up;
+            if (action == kAction_Left)
+                return kAction_Right;
+            if (action == kAction_Right)
+                return kAction_Left;
+        }
+    }
+    return action;
 }
 
 bool ShellInputInterceptor::IsDoubleStrum(LocalBandUser *pUser, int button) {
