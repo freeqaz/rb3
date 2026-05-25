@@ -794,21 +794,18 @@ bool RndBitmap::LoadDIB(BinStream *bs, unsigned int offbits) {
         unsigned int palCount = (unsigned int)paletteBytes >> 2;
         if ((paletteBytes -= 4) >= 0) {
             unsigned int blocks = palCount >> 3;
+            int t;
             if (blocks != 0) {
-                unsigned char *palPtr = (unsigned char *)palette + paletteBytes;
                 do {
-                    blocks--;
-                    paletteBytes -= 32;
-                    palPtr[3] = 0xFF;
-                    palPtr[-1] = 0xFF;
-                    palPtr[-5] = 0xFF;
-                    palPtr[-9] = 0xFF;
-                    palPtr[-13] = 0xFF;
-                    palPtr[-17] = 0xFF;
-                    palPtr[-21] = 0xFF;
-                    palPtr[-25] = 0xFF;
-                    palPtr -= 32;
-                } while (blocks != 0);
+                    t = paletteBytes - 4; ((unsigned char *)palette + paletteBytes)[3] = 0xFF;
+                    paletteBytes = t - 4; ((unsigned char *)palette + t)[3] = 0xFF;
+                    t = paletteBytes - 4; ((unsigned char *)palette + paletteBytes)[3] = 0xFF;
+                    paletteBytes = t - 4; ((unsigned char *)palette + t)[3] = 0xFF;
+                    t = paletteBytes - 4; ((unsigned char *)palette + paletteBytes)[3] = 0xFF;
+                    paletteBytes = t - 4; ((unsigned char *)palette + t)[3] = 0xFF;
+                    t = paletteBytes - 4; ((unsigned char *)palette + paletteBytes)[3] = 0xFF;
+                    paletteBytes = t - 4; ((unsigned char *)palette + t)[3] = 0xFF;
+                } while (--blocks != 0);
                 palCount &= 7;
                 if (palCount == 0) goto palette_done;
             }
