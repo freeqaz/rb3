@@ -142,11 +142,11 @@ void CharClipDisplay::DrawTrack() {
     Hmx::Color black(0.0f, 0.0f, 0.0f, 1.0f);
 
     float drawY = unk18;
-    float startBeat = (unkc >= unk4) ? unkc : unk4;
-    float endBeat = (unk10 >= unk8) ? unk8 : unk10;
-
-    float halfEm = sEm * 0.5f;
-    float nameY = -(halfEm - drawY);
+    float startBeat = unk4;
+    float nameY = -(sEm * 0.5f - drawY);
+    if (unkc >= unk4) startBeat = unkc;
+    float endBeat = unk8;
+    if (unk10 < unk8) endBeat = unk10;
 
     float startX = GetX(startBeat);
     float endX = GetX(endBeat);
@@ -207,17 +207,9 @@ void CharClipDisplay::DrawTrack() {
         CharIKFoot *rightIk = sDir->Find<CharIKFoot>("right.ikfoot", false);
 
         if (leftIk == NULL) {
-            if (rightIk == NULL) {
-                Hmx::Rect sampleRect(0.0f, drawY + 1.0f, 1.0f, 1.0f);
-                float frac;
-                int startSample = unk0->BeatToSample(startBeat, &frac);
-                int endSample = unk0->BeatToSample(endBeat, &frac);
-                for (; startSample <= endSample; startSample++) {
-                    float sampleBeat = unk0->SampleToBeat(startSample);
-                    sampleRect.x = GetX(sampleBeat);
-                    TheRnd->DrawRect(sampleRect, black, NULL, NULL, NULL);
-                }
-            } else {
+            if (rightIk == NULL)
+                goto sampleDraw;
+            else {
                 RndTransformable *data = rightIk->mData;
                 goto drawIKData;
             }
@@ -253,7 +245,21 @@ void CharClipDisplay::DrawTrack() {
                     }
                 }
             }
+            goto afterSampleDraw;
         }
+    sampleDraw:
+        {
+            Hmx::Rect sampleRect(0.0f, drawY + 1.0f, 1.0f, 1.0f);
+            float frac;
+            int startSample = unk0->BeatToSample(startBeat, &frac);
+            int endSample = unk0->BeatToSample(endBeat, &frac);
+            for (; startSample <= endSample; startSample++) {
+                float sampleBeat = unk0->SampleToBeat(startSample);
+                sampleRect.x = GetX(sampleBeat);
+                TheRnd->DrawRect(sampleRect, black, NULL, NULL, NULL);
+            }
+        }
+    afterSampleDraw:
 
         DrawBeatString(firstBeat, green);
         DrawBeatString(lastBeat, green);
