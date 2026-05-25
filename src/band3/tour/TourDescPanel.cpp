@@ -216,9 +216,8 @@ void TourDescProvider::UpdateExtendedCustom(int, int iData, Hmx::Object *i_pObj)
     if (strcmp(pName, "total.sd") == 0) {
         StarDisplay *pStarDisplay = dynamic_cast<StarDisplay *>(i_pObj);
         MILO_ASSERT(pStarDisplay, 0x170);
-        bool bPlayed = pProgress->GetToursPlayed(s) != 0
-            || pProgress->GetTourMostStars(s) > 0;
-        (void)bPlayed;
+        if (pProgress->GetToursPlayed(s) == 0)
+            pProgress->GetTourMostStars(s);
         int iStars = pProgress->GetTourMostStars(s);
         pStarDisplay->SetValues(iStars, iStars);
         pStarDisplay->SetShowDenominator(false);
@@ -360,17 +359,16 @@ RndMat *TourDescProvider::Mat(int, int iData, UIListMesh *i_pSlot) const {
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0xB2);
     bool bSelected = pProgress->GetTourDesc() == s;
-    bool bPlayed = pProgress->GetToursPlayed(s) != 0
-        || pProgress->GetTourMostStars(s) > 0;
+    bool bPlayed = pProgress->GetToursPlayed(s) != 0;
+    bPlayed = bPlayed || pProgress->GetTourMostStars(s) > 0;
     (void)bPlayed;
     if (i_pSlot->Matches("bronze")) {
         if (!bSelected && TheTour->HasBronzeMedal(s)) {
             String str("tourprize_bronze");
             std::vector<DynamicTex *>::iterator it =
                 std::find(mTexs->begin(), mTexs->end(), str);
-            if (it != mTexs->end())
-                return (*it)->mMat;
-            return 0;
+            RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
+            return pMat;
         }
         return 0;
     }
@@ -379,9 +377,8 @@ RndMat *TourDescProvider::Mat(int, int iData, UIListMesh *i_pSlot) const {
             String str("tourprize_silver");
             std::vector<DynamicTex *>::iterator it =
                 std::find(mTexs->begin(), mTexs->end(), str);
-            if (it != mTexs->end())
-                return (*it)->mMat;
-            return 0;
+            RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
+            return pMat;
         }
         return 0;
     }
@@ -390,9 +387,8 @@ RndMat *TourDescProvider::Mat(int, int iData, UIListMesh *i_pSlot) const {
             String str("tourprize_gold");
             std::vector<DynamicTex *>::iterator it =
                 std::find(mTexs->begin(), mTexs->end(), str);
-            if (it != mTexs->end())
-                return (*it)->mMat;
-            return 0;
+            RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
+            return pMat;
         }
         return 0;
     }
@@ -404,12 +400,11 @@ RndMat *TourDescProvider::Mat(int, int iData, UIListMesh *i_pSlot) const {
     if (i_pSlot->Matches("vehicle")) {
         TourDesc *pTourDesc = TheTour->GetTourDesc(s);
         MILO_ASSERT(pTourDesc, 0xF3);
-        String str(pTourDesc->GetRequiredCampaignLevel());
+        String str(pTourDesc->GetRequiredCampaignLevel().Str());
         std::vector<DynamicTex *>::iterator it =
             std::find(mTexs->begin(), mTexs->end(), str);
-        if (it != mTexs->end())
-            return (*it)->mMat;
-        return 0;
+        RndMat *pMat = (it != mTexs->end()) ? (*it)->mMat : (RndMat *)0;
+        return pMat;
     }
     return i_pSlot->DefaultMat();
 }
