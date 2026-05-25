@@ -863,6 +863,106 @@ void OvershellPanel::ResolveSignInWaitStates() {
     }
 }
 
+void OvershellPanel::ResolvePartWaitStates() {
+    std::vector<LocalBandUser *> localUsers;
+    mBandUserMgr->GetLocalParticipants(localUsers);
+    for (int i = 0; i < localUsers.size(); i++) {
+        BandUser *user = localUsers[i];
+        if (user->GetOvershellState() == kState_ChoosePartWait) {
+            std::vector<BandUser *> participants;
+            mBandUserMgr->GetParticipatingBandUsers(participants);
+            std::vector<BandUser *> priorityUsers;
+            bool allWaiting = true;
+            bool needsResolve = false;
+            for (int j = 0; j < participants.size(); j++) {
+                BandUser *other = participants[j];
+                if (other == user)
+                    continue;
+                if (!IsRepresentativePartPlayableByController(
+                        user->GetTrackType(), other->GetControllerType()
+                    ))
+                    continue;
+                if (!FindSlotForUser(other)->GetState()->IsPartUnresolved()) {
+                    if (RepresentSamePart(user->GetTrackType(), other->GetTrackType())) {
+                        needsResolve = true;
+                        break;
+                    }
+                } else {
+                    bool otherHasPriority = ControllerHasRepresentativePartPriority(
+                        other->GetControllerType(), user->GetTrackType()
+                    );
+                    bool userHasPriority = ControllerHasRepresentativePartPriority(
+                        user->GetControllerType(), user->GetTrackType()
+                    );
+                    if (userHasPriority && !otherHasPriority)
+                        continue;
+                    if (other->GetOvershellState() == kState_ChoosePartWait
+                        && RepresentSamePart(
+                            user->GetTrackType(), other->GetTrackType()
+                        )) {
+                        if (otherHasPriority && !userHasPriority) {
+                            needsResolve = true;
+                            break;
+                        }
+                    }
+                    priorityUsers.push_back(other);
+                    if (other->GetOvershellState() != kState_ChoosePartWait)
+                        allWaiting = false;
+                }
+            }
+            if (needsResolve) {
+                std::vector<TrackType> playableTracks;
+                GetTracksPlayableByController(
+                    user->GetControllerType(), playableTracks, this
+                );
+                std::vector<BandUser *> allUsers;
+                mBandUserMgr->GetParticipatingBandUsers(allUsers);
+                for (int k = 0; k < allUsers.size(); k++) {
+                    if (!GetSlot(allUsers[k])->GetState()->IsPartUnresolved()) {
+                        for (std::vector<TrackType>::iterator it = playableTracks.begin();
+                             it != playableTracks.end();) {
+                            if (RepresentSamePart(*it, allUsers[k]->GetTrackType())) {
+                                it = playableTracks.erase(it);
+                            } else {
+                                ++it;
+                            }
+                        }
+                    }
+                }
+                MILO_ASSERT(!playableTracks.empty(), 0x28D);
+                if (playableTracks.size() == 1) {
+                    user->SetTrackType(playableTracks[0]);
+                } else {
+                    user->SetTrackType(kNumTrackTypes);
+                    user->SetOvershellSlotState(kState_ChoosePart);
+                }
+                UpdateAll();
+            } else if (allWaiting) {
+                mPartResolver.Seed(mPartResolverSeed);
+                std::vector<BandUser *> resolvingUsers;
+                for (int s = 0; s < mSlots.size(); s++) {
+                    BandUser *slotUser = mSlots[s]->GetUser();
+                    if (slotUser) {
+                        if (slotUser == user
+                            || std::find(
+                                   priorityUsers.begin(), priorityUsers.end(), slotUser
+                               ) != priorityUsers.end()) {
+                            resolvingUsers.push_back(slotUser);
+                        }
+                    }
+                }
+                MILO_ASSERT(!resolvingUsers.empty(), 0x2B1);
+                BandUser *picked =
+                    resolvingUsers[mPartResolver.Int(0, resolvingUsers.size())];
+                if (picked->IsLocal()) {
+                    picked->SetOvershellSlotState(kState_ChoosePartWarn);
+                    UpdateAll();
+                }
+            }
+        }
+    }
+}
+
 void OvershellPanel::ResolveAutoSignInStates() {
     for (int i = 0; i < mSlots.size(); i++) {
         OvershellSlot *curSlot = mSlots[i];
