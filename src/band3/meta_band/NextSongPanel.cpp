@@ -6,7 +6,9 @@
 #include "game/BandUserMgr.h"
 #include "game/Defines.h"
 #include "game/Game.h"
+#include "game/NetGameMsgs.h"
 #include "game/Player.h"
+#include "net/NetSession.h"
 #include "meta_band/AccomplishmentManager.h"
 #include "meta_band/AppLabel.h"
 #include "meta_band/BandProfile.h"
@@ -245,6 +247,20 @@ void NextSongPanel::UpdateScrollArrows(int i, bool b) {
 void NextSongPanel::SetScrollExpandedDetails(int i, int j) {
     unk70[i] = j;
     UpdateScrollArrows(i, false);
+}
+
+void NextSongPanel::ScrollExpandedDetails(int slot, int delta, bool force) {
+    int page = unk70[slot];
+    if (delta > 0 && page < GetMaxScrollPage(slot)) {
+        unk70[slot] = page + 1;
+    } else if (delta < 0 && page > 0) {
+        unk70[slot] = page - 1;
+    }
+    UpdateScrollArrows(slot, force);
+    if (TheNetSession) {
+        SongResultsScrollMsg msg(slot, unk70[slot]);
+        TheNetSession->SendMsgToAll(msg, kReliable);
+    }
 }
 
 void NextSongPanel::FillExpandedDetails(int slot) {
