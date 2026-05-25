@@ -140,7 +140,7 @@ void BandDirector::Enter() {
         mDisablePicking = 0;
         mNextShot = 0;
         static Message allowMsg("allow_intro_shot", 0);
-        int handled = HandleType(allowMsg).Int();
+        bool handled = HandleType(allowMsg).Int();
         if (handled && !mIntroShot)
             PickIntroShot();
         if (handled && mIntroShot) {
