@@ -6,14 +6,16 @@
 #include <set>
 #include "obj/ObjMacros.h"
 #include "utl/Compress.h"
-#include "utl/Loader.h"
-#include "utl/Locale.h"
 #include "utl/MemMgr.h"
+#include "utl/Symbols.h"
 #include "utl/Symbols2.h"
 #include "sdk/RVL_SDK/revolution/cnt/cnt.h"
 #include "sdk/RVL_SDK/revolution/nand/nand.h"
 
 extern "C" int NANDGetStatus(const char *, NANDStatus *);
+
+// LoadMgr / TheLoadMgr defined transitively via the includes above.
+const char *Localize(Symbol, bool *);
 
 void CM_CNTSDCacheClearRSO();
 int CM_CNTSDCachePushDeleteContentRSO(unsigned long, unsigned long long, unsigned short, ...);
@@ -300,7 +302,7 @@ StoreOfferTable::~StoreOfferTable() {
 
 #define BYTES_PER_OFFER 69UL
 
-struct test {
+struct OfferLoadCtx {
     StorePackedOffer **n;
     StorePackedOffer **b[4];
 };
@@ -308,7 +310,7 @@ struct test {
 bool StoreOfferTable::Load(const char *cc) {
     char buf[256];
     sprintf(buf, "%soffers", cc);
-    test t;
+    OfferLoadCtx ctx;
     StorePackedOffer **loc130;
     bool ret = StoreLoadPackedFile(
         buf,
@@ -317,14 +319,14 @@ bool StoreOfferTable::Load(const char *cc) {
         true,
         true,
         &mBuffer,
-        (char **)&t.n,
+        (char **)&ctx.n,
         (char **)&loc130,
         &mNumOffers
     );
     if (!ret)
         return ret;
     else {
-        int diff = (int)loc130 - (int)t.n;
+        int diff = (int)loc130 - (int)ctx.n;
         int actualNumOffers = diff / BYTES_PER_OFFER;
         if (actualNumOffers < mNumOffers) {
             MILO_LOG(
@@ -335,19 +337,19 @@ bool StoreOfferTable::Load(const char *cc) {
                 mNumOffers
             );
         }
-        mOffers = t.n;
+        mOffers = ctx.n;
         void *buf = new StoreOfferState[mNumOffers];
         mBufferNewRelease = (StoreOfferState *)buf;
         memset(buf, 0, mNumOffers * sizeof(StoreOfferState));
 
-        t.n += mNumOffers;
-        t.b[0] = 0;
-        t.b[1] = 0;
-        t.b[2] = 0;
+        ctx.n += mNumOffers;
+        ctx.b[0] = 0;
+        ctx.b[1] = 0;
+        ctx.b[2] = 0;
         for (int i = 0; i < mNumOffers; i++) {
             StorePackedOffer *curOffer = mOffers[i];
             curOffer->EndianFix();
-            (((char **)&t.b[0])[curOffer->OfferType()])++;
+            (((char **)&ctx.b[0])[curOffer->OfferType()])++;
         }
         return true;
     }
@@ -1412,4 +1414,196 @@ void UpdateOfferStateFromEc(
         }
         TheDebug << MakeString("%d]\n", expectedContents[i]);
     }
+}
+
+void DebugPrint(ECContentCatalogInfo *) {}
+
+bool StoreSingleStringTable::LoadFile(const char *filename) {
+    char *dataStart, *dataEnd;
+    bool ret = StoreLoadPackedFile(
+        filename, true, 0x20000, true, true, &mBuffer, &dataStart, &dataEnd, (int *)this
+    );
+    if (!ret)
+        return false;
+    mStrings = (char **)dataStart;
+    char *strData = dataStart + mNumStrings * 4;
+    int remaining = (int)(dataEnd - strData);
+    int estCount = (remaining + (remaining >> 31 & 1)) >> 1;
+    if (estCount < mNumStrings) {
+        TheDebug << MakeString(
+            "%d strings, but based on the data size, there can only be %d.\n",
+            mNumStrings,
+            estCount
+        );
+        mNumStrings = estCount;
+    }
+    int nullCount = 0;
+    for (char *p = strData; p < dataEnd; p++) {
+        if ((signed char)*p == 0)
+            nullCount++;
+    }
+    if (nullCount != mNumStrings) {
+        TheDebug << MakeString(
+            "There are %d null terminators, should have %d.\n", nullCount, mNumStrings
+        );
+    }
+    int i = 0;
+    int iOff = 0;
+    char *cur = strData;
+    for (; i < mNumStrings && cur < dataEnd; ) {
+        if (mStrings[i] != cur) {
+            FormatString fmt("String %d does not match up\n");
+            TheDebug << fmt.Str();
+        }
+        while (cur < dataEnd && (signed char)*cur != 0)
+            cur++;
+        if (cur < dataEnd) cur++;
+        iOff += 4;
+        i++;
+    }
+    return true;
+}
+
+void StorePackedSong::EndianFix() {
+    // Reconstruct 9-bit bitfield unka from bytes 0xa-0xb
+    unsigned char byteA = ((unsigned char *)this)[0xa];
+    unsigned char byteB = ((unsigned char *)this)[0xb];
+    int valA = ((byteA & 1) << 8) | byteB;
+    unsigned short *pA = (unsigned short *)((char *)this + 0xa);
+    *pA = (*pA & ~0xFF80) | ((valA << 7) & 0xFF80);
+
+    // Reconstruct 9-bit bitfield unk10 from bytes 0x10-0x11
+    // First fix up bit 6 of byte 0x10 (from bit 1 of the original byte)
+    unsigned char byte10 = ((unsigned char *)this)[0x10];
+    unsigned short *p10 = (unsigned short *)((char *)this + 0x10);
+    *p10 = (*p10 & ~0x40) | ((byte10 << 5) & 0x40);
+
+    byte10 = ((unsigned char *)this)[0x10];
+    unsigned char byte11 = ((unsigned char *)this)[0x11];
+    int val10 = ((byte10 & 1) << 8) | byte11;
+    *p10 = (*p10 & ~0xFF80) | ((val10 << 7) & 0xFF80);
+
+    mOfferIndex -= 1;
+    unk18 -= 1;
+    unk1a -= 1;
+}
+
+void StorePackedOfferBase::EndianFixBase() {
+    unsigned char b0 = ((unsigned char *)this)[0x0];
+    unsigned char b1 = ((unsigned char *)this)[0x1];
+    unsigned char b3f = ((unsigned char *)this)[0x3f];
+    unsigned char b40 = ((unsigned char *)this)[0x40];
+    unsigned char b41 = ((unsigned char *)this)[0x41];
+
+    unsigned char n0 = b0;
+    n0 = (n0 & ~0x60) | ((b0 << 5) & 0x60);
+    n0 = (n0 & ~0x1C) | ((((int)(b0 & 0x1F) >> 2) << 2) & 0x1C);
+    n0 = (n0 & ~2) | ((((int)(b0 & 0x3F) >> 5) << 1) & 2);
+    ((unsigned char *)this)[0x0] = n0;
+
+    unsigned char n1 = b1;
+    n1 = (n1 & ~0xF8) | ((b1 << 3) & 0xF8);
+    n1 = (n1 & ~4) | ((((int)(b1 & 0x3F) >> 5) << 2) & 4);
+    n1 = (n1 & ~3) | (((int)b1 >> 6) & 3);
+    ((unsigned char *)this)[0x1] = n1;
+
+    unsigned short s3f = *(unsigned short *)((char *)this + 0x3f);
+    int inner = (b40 & 0xF) | ((((((int)(b40 >> 4) & 0xF) | ((b3f << 4) & 0xF0)) << 4) & 0xFF0));
+    s3f = (unsigned short)((s3f & ~0xFFF0) | ((inner << 4) & 0xFFF0));
+    s3f = (unsigned short)((s3f & ~0xF) | (((int)b3f >> 4) & 0xF));
+    *(unsigned short *)((char *)this + 0x3f) = s3f;
+
+    ((unsigned char *)this)[0x41] = (b41 & ~0xF8) | ((b41 << 3) & 0xF8);
+
+    mRanks.EndianFix();
+}
+
+void StorePackedOffer::EndianFix() {
+    EndianFixBase();
+    unsigned char b0 = ((unsigned char *)this)[0x0];
+    ((unsigned char *)this)[0x0] = b0 & ~0x80;  // clear mIsRBN bit
+    for (int i = 0; i < mNumSongs; i++) {
+        mSongs[i] -= 1;
+    }
+}
+
+void StorePackedRBNOffer::EndianFix() {
+    EndianFixBase();
+    unsigned char b0 = ((unsigned char *)this)[0x0];
+    ((unsigned char *)this)[0x0] = b0 | 0x80;   // set mIsRBN bit
+    for (int i = 0; i < mNumSongs; i++) {
+        mSongs[i] -= 1;
+    }
+}
+
+const char *StorePackedOfferBase::GetArtist() const {
+    if (mArtistIndex != 0) {
+        return TheStoreMetadata.GetString(mArtistIndex);
+    }
+    unsigned char isRbn = mIsRBN;
+    StorePackedSong *firstSong;
+    if (isRbn)
+        firstSong =
+            &TheStoreMetadata.mSongTable->mSongs[((const StorePackedRBNOffer *)this)->mSongs[0]];
+    else
+        firstSong =
+            &TheStoreMetadata.mSongTable->mSongs[((const StorePackedOffer *)this)->mSongs[0]];
+    unsigned short artistIdx = firstSong->mArtistIndex;
+    const StorePackedOffer *asOffer = (const StorePackedOffer *)this;
+    for (int i = 1; i < mNumSongs; i++) {
+        StorePackedSong *song;
+        if (isRbn)
+            song = &TheStoreMetadata.mSongTable->mSongs
+                [((const StorePackedRBNOffer *)asOffer)->mSongs[i]];
+        else
+            song = &TheStoreMetadata.mSongTable->mSongs[asOffer->mSongs[i]];
+        if (song->mArtistIndex != artistIdx) {
+            bool unused = false;
+            return Localize(store_various_artists, &unused);
+        }
+        asOffer = (const StorePackedOffer *)((char *)asOffer + 2);
+    }
+    return TheStoreMetadata.GetString(artistIdx);
+}
+
+const char *StorePackedOfferBase::GetAlbumName() const {
+    if (mAlbumIndex != 0) {
+        return TheStoreMetadata.GetString(mAlbumIndex);
+    }
+    if (OfferType() == kStoreOfferAlbum) {
+        return TheStoreMetadata.GetString(mNameIndex);
+    }
+    return "";
+}
+
+const char *StorePackedOffer::GetArtPath() const {
+    if (mArtIndex == 0) {
+        return gNullStr;
+    }
+    const char *artStr = TheStoreMetadata.GetString(mArtIndex);
+    Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+    return MakeString("/preview_art/%s_nomip.png_%s", artStr, plat);
+}
+
+const char *StorePackedRBNOffer::GetArtPath() const {
+    unsigned short songIdx = mSongs[0];
+    StorePackedSong *song = &TheStoreMetadata.mSongTable->mSongs[songIdx];
+    Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+    return MakeString("/album_art/UGC_%d_keep.png_%s", song->mSongID, plat);
+}
+
+const char *StorePackedOffer::GetPreviewPath() const {
+    if (OfferType() != kStoreOfferSong)
+        return gNullStr;
+    unsigned short songIdx = mSongs[0];
+    StorePackedSong *song = &TheStoreMetadata.mSongTable->mSongs[songIdx];
+    const char *shortName = TheStoreMetadata.GetString(song->unk4);
+    return MakeString("/preview_audio/%s_prev.bik", shortName);
+}
+
+const char *StorePackedRBNOffer::GetPreviewPath() const {
+    unsigned short songIdx = mSongs[0];
+    StorePackedSong *song = &TheStoreMetadata.mSongTable->mSongs[songIdx];
+    const char *shortName = TheStoreMetadata.GetString(song->unk4);
+    return MakeString("/audio_prev/UGC_%s_prev.bik", shortName);
 }

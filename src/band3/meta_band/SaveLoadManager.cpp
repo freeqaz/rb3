@@ -1,15 +1,19 @@
 #include "SaveLoadManager.h"
 #include "game/BandUser.h"
+#include "game/BandUserMgr.h"
+#include "meta/MemcardMgr_Wii.h"
 #include "meta/Profile.h"
+#include "meta/WiiProfileMgr.h"
+#include "meta_band/BandProfile.h"
+#include "meta_band/BandSongMgr.h"
 #include "meta_band/ProfileMgr.h"
+#include "meta_band/UIEventMgr.h"
+#include "net_band/EntityUploader.h"
+#include "net_band/RockCentral.h"
 #include "net_band/RockCentralMsgs.h"
 #include "obj/Data.h"
 #include "obj/MessageTimer.h"
 #include "obj/ObjMacros.h"
-#include "meta/MemcardMgr_Wii.h"
-#include "meta/WiiProfileMgr.h"
-#include "meta_band/BandSongMgr.h"
-#include "net_band/EntityUploader.h"
 #include "os/Debug.h"
 #include "os/Memcard.h"
 #include "os/PlatformMgr.h"
@@ -21,15 +25,16 @@
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
+class SaveMemcardAction;
+
 SaveLoadManager *TheSaveLoadMgr;
 
 SaveLoadManager::SaveLoadManager()
-    : mActivated(false), mInitialLoadNotDone(true), mMode(kMode_AutoLoad),
-      mState(kS_Idle), mStateAtSelectStart(kS_Idle), mUser(NULL), mLocalUser(NULL),
-      unk44(NULL), unk48(0), unk4c(), mCacheID(NULL), mCache(NULL), mData(NULL),
-      unk64(0), unk68(false), unk69(false), unk6c(0), unk70(0), mRequestFlags(0),
-      unk78(0), unk7c(0), mAction(NULL) {
-    unk44 = new DataArray(0);
+    : mActivated(false), mInitialLoadNotDone(true), mState(kS_Idle),
+      mStateAtSelectStart(kS_Idle), mUser(NULL), mLocalUser(NULL),
+      unk44(new DataArray(0)), unk48(0), mCacheID(NULL), mCache(NULL),
+      mData(NULL), unk64(0), unk68(false), unk69(false), unk6c(0), unk70(0),
+      mRequestFlags(0), unk78(0), unk7c(0), mAction(NULL) {
     mSaveProfiles.reserve(4);
     mUploadProfiles.reserve(4);
     SetName("saveload_mgr", ObjectDir::sMainDir);
@@ -38,8 +43,9 @@ SaveLoadManager::SaveLoadManager()
 
 SaveLoadManager::~SaveLoadManager() {
     ThePlatformMgr.RemoveSink(this, SigninChangedMsg::Type());
+    RELEASE(mAction);
     unk4c.~String();
-    RELEASE(unk44);
+    unk44->Release();
 }
 
 bool SaveLoadManager::IsInitialLoadDone() const { return !mInitialLoadNotDone; }
@@ -507,9 +513,8 @@ void SaveLoadManager::SetState(State newState) {
     case 0x47:
     case 0x64:
     case 0x6d:
-        // Note: original frees mAction via virtual delete; MemcardAction
-        // dtor is private in our header, so we leave the slot null instead.
         if (newState != (State)0x6d) {
+            delete mAction;
             mAction = NULL;
         }
         break;
@@ -620,6 +625,114 @@ void SaveLoadManager::AutoSaveNow() {
     }
 }
 
+BandProfile *SaveLoadManager::GetNewSigninProfile() {
+    std::vector<BandProfile *> profiles = TheProfileMgr.GetNewlySignedInProfiles();
+    if (!profiles.empty()) {
+        BandProfile *pProfile = profiles[0];
+        MILO_ASSERT(pProfile, 0x484);
+        return pProfile;
+    }
+    return NULL;
+}
+
+BandProfile *SaveLoadManager::GetAutosavableProfile() {
+    std::vector<BandProfile *> profiles = TheProfileMgr.GetShouldAutosaveProfiles();
+    if (!profiles.empty()) {
+        BandProfile *pProfile = profiles[0];
+        MILO_ASSERT(pProfile, 0x494);
+        return pProfile;
+    }
+    return NULL;
+}
+
+Symbol SaveLoadManager::GetDialogOpt1() {
+    Symbol sym(gNullStr);
+    switch (mState) {
+    case kS_AutoloadNoSaveFound_Msg:
+        sym = mc_button_create_data;
+        break;
+    case kS_AutoloadMultipleSavesFound:
+    case kS_AutoloadDeviceMissing:
+    case kS_SaveDeviceInvalid:
+    case kS_ManualSaveNoDevice:
+    case kS_ManualLoadNoDevice:
+        sym = mc_button_choose_device;
+        break;
+    case kS_AutoloadNotOwner:
+    case kS_AutoloadCorrupt:
+    case kS_AutoloadObsolete:
+    case kS_AutoloadFuture:
+    case kS_SaveOverwrite:
+        sym = mc_button_overwrite;
+        break;
+    case kS_SongCacheCreateNotFound_Msg:
+    case kS_SongCacheCreateMissing_Msg:
+        sym = song_info_cache_button_create;
+        break;
+    case kS_SongCacheCreateCorrupt:
+        sym = song_info_cache_button_corrupt_overwrite;
+        break;
+    case kS_GlobalCreateNotFound_Msg:
+    case kS_GlobalCreateMissing_Msg:
+    case kS_GlobalOptionsMissing_Msg:
+        sym = global_options_button_create;
+        break;
+    case kS_GlobalCreateCorrupt:
+        sym = global_options_button_corrupt_overwrite;
+        break;
+    case kS_ManualLoadConfirmUnsaved:
+        sym = mc_button_continue;
+        break;
+    case kS_ManualLoadConfirm:
+        sym = mc_button_yes;
+        break;
+    default:
+        break;
+    }
+    return sym;
+}
+
+Symbol SaveLoadManager::GetDialogOpt2() {
+    Symbol sym(gNullStr);
+    switch (mState) {
+    case kS_AutoloadNoSaveFound_Msg:
+    case kS_AutoloadMultipleSavesFound:
+    case kS_AutoloadDeviceMissing:
+    case kS_SaveOverwrite:
+    case kS_ManualSaveNoDevice:
+    case kS_ManualLoadConfirmUnsaved:
+    case kS_ManualLoadNoDevice:
+        sym = mc_button_cancel;
+        break;
+    case kS_AutoloadNotOwner:
+    case kS_AutoloadCorrupt:
+    case kS_AutoloadObsolete:
+    case kS_AutoloadFuture:
+        sym = mc_button_continue_no_save;
+        break;
+    case kS_SongCacheCreateNotFound_Msg:
+    case kS_SongCacheCreateMissing_Msg:
+    case kS_SongCacheCreateCorrupt:
+        sym = song_info_cache_button_cancel;
+        break;
+    case kS_GlobalCreateNotFound_Msg:
+    case kS_GlobalCreateMissing_Msg:
+    case kS_GlobalCreateCorrupt:
+    case kS_GlobalOptionsMissing_Msg:
+        sym = global_options_button_cancel;
+        break;
+    case kS_SaveDeviceInvalid:
+        sym = mc_button_disable_autosave;
+        break;
+    case kS_ManualLoadConfirm:
+        sym = mc_button_no;
+        break;
+    default:
+        break;
+    }
+    return sym;
+}
+
 DataNode SaveLoadManager::GetDialogMsg() {
     // Note: real impl has ~90+ state cases each constructing a DataArray
     // with (fmt_symbol, profile_name, owner_id, status_code). This stub
@@ -699,6 +812,183 @@ void SaveLoadManager::ManualSave(LocalBandUser *user) {
     mLocalUser = user;
     TheMemcardMgr.AddSink(this);
     SetState(kS_ManualLoadInit);
+}
+
+void SaveLoadManager::PrintoutSaveSizeInfo() {
+    MILO_LOG("Save size info: TODO\n");
+}
+
+bool SaveLoadManager::IsReasonToUpload() {
+    DataNode &var = DataVariable(saveload_skip_upload);
+    bool skipUpload = var.Int(NULL) != 0;
+    if (skipUpload) return false;
+    if (!TheProfileMgr.NeedsUpload()) return false;
+    return false;
+}
+
+void SaveLoadManager::StartSaveAction(bool b) {
+    UpdateStatus(kSaveLoadMgrStatus_Saving);
+    mTimer.Restart();
+    bool isOverwrite = (mState == kS_SaveOverwrite || mState == kS_SaveNoOverwrite);
+    MILO_ASSERT(isOverwrite, 0x9c9);
+    for (int i = 0; i < (int)mSaveProfiles.size(); i++) {
+        TheWiiProfileMgr.SetLocked(mSaveProfiles[i], true);
+    }
+    unk69 = true;
+    if (mAction) {
+        delete mAction;
+        mAction = NULL;
+    }
+    mAction = (MemcardAction *)operator new(0x2c);
+    if (mAction) {
+        // SaveMemcardAction::SaveMemcardAction(&mSaveProfiles)
+    }
+    TheMemcardMgr.AddSink(this);
+    // TODO: TheMemcardMgr.OnSaveGame(NULL, mAction, b); — method missing from MemcardMgr_Wii.h
+}
+
+DataNode SaveLoadManager::OnMsg(const DeviceChosenMsg &msg) {
+    MILO_ASSERT(unk69, 0xa41);
+    unk69 = false;
+    TheMemcardMgr.RemoveSink(this);
+    switch (mState) {
+    case kS_AutoloadSetDevice:
+    case kS_AutoloadSelectDevice2:
+    case kS_AutoloadSelectDevice3:
+    case kS_AutoloadStartLoad2:
+        unk78 = msg.Device();
+        SetState(kS_AutoloadStartLoad);
+        break;
+    case kS_GlobalCreateMissing_Msg:
+        SetState(kS_SaveNoOverwrite);
+        break;
+    case kS_ManualSaveNoDevice:
+        unk78 = msg.Device();
+        SetState(kS_SaveChooseDeviceInvalid);
+        break;
+    case kS_ManualSaveChooseDevice:
+        SetState(kS_ManualLoadChooseDevice);
+        break;
+    case kS_Done:
+    case kS_LoadComplete:
+    case kS_Finish:
+        break;
+    default:
+        MILO_FAIL(
+            "Unhandled DeviceChosenMsg in state %d and mode %d", (int)mState, (int)mMode
+        );
+        break;
+    }
+    return DataNode(0);
+}
+
+DataNode SaveLoadManager::OnMsg(const NoDeviceChosenMsg &) {
+    MILO_ASSERT(unk69, 0xa73);
+    unk69 = false;
+    TheMemcardMgr.RemoveSink(this);
+    switch (mState) {
+    case kS_AutoloadSetDevice:
+        SetState(kS_AutoloadNoSaveFound_Msg);
+        break;
+    case kS_AutoloadSelectDevice3:
+        SetState(kS_AutoloadMultipleSavesFound);
+        break;
+    case kS_AutoloadStartLoad2:
+        SetState(kS_AutoloadNotOwner);
+        break;
+    case kS_GlobalCreateMissing_Msg:
+        SetState(kS_GlobalCreateNotFound_Msg);
+        break;
+    case kS_ManualSaveNoDevice:
+        SetState(kS_ManualLoadNoDevice);
+        break;
+    case kS_ManualSaveChooseDevice:
+        SetState(kS_GlobalOptionsMissing_Msg);
+        break;
+    case kS_Done:
+    case kS_LoadComplete:
+    case kS_Finish:
+        break;
+    default:
+        MILO_FAIL(
+            "Unhandled NoDeviceChosenMsg in state %d and mode %d",
+            (int)mState,
+            (int)mMode
+        );
+        break;
+    }
+    return DataNode(0);
+}
+
+DataNode SaveLoadManager::OnMsg(const MCResultMsg &msg) {
+    MILO_ASSERT(unk69, 0xaa3);
+    unk69 = false;
+    TheMemcardMgr.RemoveSink(this);
+    MCResult res = (MCResult)msg.mData->Int(2);
+    // State machine handled elsewhere (big switch table in target)
+    (void)res;
+    return DataNode(0);
+}
+
+DataNode SaveLoadManager::OnMsg(const RockCentralOpCompleteMsg &) {
+    MILO_ASSERT(unk69, 0xb55);
+    unk69 = false;
+    if ((unsigned int)(mState - 0x6D) <= 2) {
+        // Done/LoadComplete/Finish states - do nothing
+    } else if (mState == (State)0x58) {
+        SetState((State)0x57);
+    } else {
+        MILO_FAIL("Unexpected RockCentralOpCompleteMsg state");
+    }
+    return DataNode(0);
+}
+
+DataNode SaveLoadManager::OnMsg(const SigninChangedMsg &) {
+    // Complex state machine with jump table - stub
+    return DataNode(0);
+}
+
+DataNode SaveLoadManager::OnMsg(const ProfileSwappedMsg &msg) {
+    LocalUser *user1 = msg.GetUser1();
+    MILO_ASSERT(user1, 0xbcc);
+    MILO_ASSERT(user1->GetLocalUser(), 0xbcd);
+    LocalBandUser *bandUser1 = BandUserMgr::GetLocalBandUser(user1);
+    MILO_ASSERT(bandUser1, 0xbcf);
+    LocalUser *user2 = msg.GetUser2();
+    MILO_ASSERT(user2, 0xbd1);
+    MILO_ASSERT(user2->GetLocalUser(), 0xbd2);
+    LocalBandUser *bandUser2 = BandUserMgr::GetLocalBandUser(user2);
+    MILO_ASSERT(bandUser2, 0xbd4);
+    if (mUser != NULL) {
+        if (mUser == bandUser1) mUser = bandUser2;
+        else if (mUser == bandUser2) mUser = bandUser1;
+    }
+    if (mLocalUser != NULL) {
+        if (mLocalUser == user1) mLocalUser = user2;
+        else if (mLocalUser == user2) mLocalUser = user1;
+    }
+    return DataNode(1);
+}
+
+void SaveLoadManager::HandleEventResponse(LocalUser *localUser, int choiceIdx) {
+    State start = mStateAtSelectStart;
+    mStateAtSelectStart = kS_Idle;
+    if (start != mState) {
+        MILO_WARN(
+            "HandleEventResponse: state mismatch: expected %d, was %d",
+            (int)start,
+            (int)mState
+        );
+        return;
+    }
+    if ((unsigned int)(choiceIdx - 1) > 2U) {
+        MILO_FAIL("HandleEventResponse: bad choice %d", choiceIdx);
+        return;
+    }
+    mLocalUser = localUser;
+    bool isFirst = (choiceIdx == 1);
+    // Complex jump table dispatch on mState - stub
+    (void)isFirst;
 }
 
 #pragma push
