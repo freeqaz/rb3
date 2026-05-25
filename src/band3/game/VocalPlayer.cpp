@@ -408,13 +408,21 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         mVocalOverlay->Reset((int)mSingers.size());
     }
 
+    // Declaration order matches target register allocation
+    float frameMinPitch = 9985.578125f;
+    float frameMaxPitch = 0.0f;
+    bool bWasInFreestyleSection = InFreestyleSection();
+
+    // scoredPartIndices initialized before SongSectionOnly, reserve mVocalParts.size()
+    std::vector<int> scoredPartIndices;
+    scoredPartIndices.reserve(mVocalParts.size());
+
+    float var_f24 = 0.0f;
+    int iMaximumFreestyleDeploymentSinger = -1;
+
     // Determine section scoring state
     float fSectionBeginMs = 0.0f;
     float fSectionEndMs = 0.0f;
-    bool bWasInFreestyleSection = InFreestyleSection();
-    float frameMinPitch = 10000.0f;
-    float frameMaxPitch = 0.0f;
-
     bool bInSection = false;
     if (SongSectionOnly(fSectionBeginMs, fSectionEndMs)) {
         if (fCompMS > (100.0f + fSectionBeginMs) && fCompMS < (100.0f + fSectionEndMs)) {
@@ -431,8 +439,6 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     std::vector<Singer *> singersArray;
     singersArray.reserve(mSingers.size());
 
-    float var_f24 = 0.0f;
-    int iMaximumFreestyleDeploymentSinger = -1;
     VocalPart *pUnpitchedPart = 0;
 
     // Poll tambourine manager
@@ -471,14 +477,13 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     }
 
     // Check if freestyle section changed (for deploy clearing)
-    bool bWasFreestyle = bWasInFreestyleSection;
     bool bIsFreestyle = InFreestyleSection();
-    bool bChangedFreestyle = (bWasFreestyle != bIsFreestyle) && !bIsFreestyle;
+    bool bChangedFreestyle = (bWasInFreestyleSection != bIsFreestyle);
     (void)bChangedFreestyle;
 
     // Get pitch offset from song DB and update tuning
     float pitchOffset = TheSongDB->GetPitchOffsetForTick((int)MsToTick(ms));
-    bool pitchOffsetValid = (pitchOffset >= -100.0f) && (pitchOffset <= 100.0f);
+    bool pitchOffsetValid = (pitchOffset >= -50.0f) && (pitchOffset <= 50.0f);
     if (pitchOffsetValid) {
         mTuningOffset = 0.00109659603f * pitchOffset;
     }
@@ -589,17 +594,20 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         );
         if (pBestPart) {
             pBestPart->AddSingerCandidate(pSinger, fBestPitchDistance);
+            pSinger->unk74 = fBestScore;
             if (mVocalOverlay) {
                 mVocalOverlay->AddPossiblePart(pSinger->mSingerIndex, pBestPart);
             }
         }
 
-        // Assign best singer candidate for each part
-        FOREACH (pIt2, mVocalParts) {
+        // Assign best singer candidate for each part, build scoredPartIndices
+        FOREACH (pIt2, partsArray) {
             VocalPart *pPart = *pIt2;
             Singer *pBestSinger = pPart->GetBestSingerCandidate();
             if (pBestSinger) {
-                pBestSinger->SetAssignedPart(pPart->mPartIndex, fBestPitchDistance);
+                pBestSinger->SetAssignedPart(pPart->mPartIndex, mVocalPartBias);
+                pBestSinger->mFrameTargetPitch = pBestSinger->unk74;
+                scoredPartIndices.push_back(pPart->mPartIndex);
             }
         }
     }
@@ -615,7 +623,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
 
     FOREACH (sIt2, mSingers) {
         Singer *pSinger = *sIt2;
-        pSinger->AllScoresAreIn(*(std::vector<int> *)&singerPitches);
+        pSinger->AllScoresAreIn(scoredPartIndices);
         pSinger->ResolveAmbiguity();
         int iOctaveOffset = 0;
         float fFramePitch = pSinger->mFrameMicPitch;
