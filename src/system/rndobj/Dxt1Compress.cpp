@@ -189,8 +189,8 @@ void Dxt1Compress::fancybasecolorsearch(
     pixerrorcolorbest[1] = 0;
     pixerrorcolorbest[2] = 0;
 
-    if (((bestcolor[0][0] & 0xf8) << 8 | (bestcolor[0][1] & 0xfc) << 3 | bestcolor[0][2] >> 3) <
-        ((bestcolor[1][0] & 0xf8) << 8 | (bestcolor[1][1] & 0xfc) << 3 | bestcolor[1][2] >> 3)) {
+    if (((bestcolor[1][0] & 0xf8) << 8 | (bestcolor[1][1] & 0xfc) << 3 | bestcolor[1][2] >> 3) >
+        ((bestcolor[0][0] & 0xf8) << 8 | (bestcolor[0][1] & 0xfc) << 3 | bestcolor[0][2] >> 3)) {
         testcolor[0][0] = bestcolor[0][0];
         testcolor[0][1] = bestcolor[0][1];
         testcolor[0][2] = bestcolor[0][2];
@@ -288,7 +288,8 @@ void Dxt1Compress::fancybasecolorsearch(
         }
     }
 
-    if ((abs(testcolor[0][0] - testcolor[1][0]) < 8) &&
+    auto _tmp0 = abs(testcolor[0][0] - testcolor[1][0]);
+    if ((_tmp0 < 8) &&
         (abs(testcolor[0][1] - testcolor[1][1]) < 4) &&
         (abs(testcolor[0][2] - testcolor[1][2]) < 8)) {
         unsigned char coldiffred, coldiffgreen, coldiffblue, coldiffmax, factor;
