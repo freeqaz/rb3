@@ -3,12 +3,25 @@
 #include "os/Debug.h"
 #include "revolution/os/OSError.h"
 #include "utl/MakeString.h"
+#include "utl/MemMgr.h"
 #include <cstddef>
 #include <cstring>
+
+extern "C" {
+int RSOGetFarCodeSize(void *, void *);
+int RSOLinkFar(void *, void *, unsigned long *);
+int RSOLinkJump(void *, void *, void *);
+int RSOIsImportSymbolResolvedAll(void *);
+int RSOIsImportSymbolResolved(void *, int);
+int RSOGetNumImportSymbols(void *);
+const char *RSOGetImportSymbolName(void *, int);
+void *WiiAllocHeapAlign(int *size, int membank, unsigned int align);
+}
 
 #define MAX_RSO_INITERS 8
 #define kRSOBufferSize 0x10EC00
 #define kDefaultRSOBufferSize 0x89460
+#define kPostProcBufferSize 0x10EC00
 
 RsoInitFunc gRsoIniters[MAX_RSO_INITERS];
 RsoDeinitFunc gRsoDeiniters[MAX_RSO_INITERS];
@@ -138,7 +151,7 @@ bool RsoInitDefaults() {
 }
 
 void RsoPostTerminate() {
-    MILO_ASSERT(g_pRSOReserveBuf != NULL, 249);
+    MILO_ASSERT(g_pRSOReserveBuf && kRSOBufferSize && (kRSOBufferSize >= kPostProcBufferSize), 249);
     memset(g_pRSOReserveBuf, 0, kRSOBufferSize);
 }
 
@@ -171,4 +184,92 @@ void RsoTerminate2HelperNoFree(
     (*(void (**)())((char *)module + 0x28))();
     RSOUnLinkList(module);
     unresolvedModule();
+}
+
+#pragma push
+#pragma pool_data off
+bool RsoInit2Helper(
+    struct RSOObjectHeader **module, const char *moduleName, unsigned char **bss,
+    unsigned long **code, RsoResolvedFunc resolvedModule
+) {
+    *module = (struct RSOObjectHeader *)RsoLoad(moduleName, bss, DefaultRsoMemAlloc2);
+    if (*module == NULL) {
+        return false;
+    }
+    int codeSize = RSOGetFarCodeSize(*module, staticRso);
+    if (codeSize <= 0) {
+        MILO_FAIL("RSO: no code loaded for %s\n", moduleName);
+        return false;
+    }
+    if (MemNumHeaps() > 0) {
+        static int _x = MemFindHeap("main");
+        MemPushHeap(_x);
+        *code = (unsigned long *)DefaultRsoMemAlloc2(codeSize);
+        MemPopHeap();
+    } else {
+        *code = (unsigned long *)WiiAllocHeapAlign(&codeSize, 1, 4);
+    }
+    int res = RSOLinkFar(*module, staticRso, *code);
+    if (res < 0) {
+        MILO_FAIL("RSO: %s: RSOLinkFar returned %d\n", moduleName, res);
+    }
+    if (RSOLinkJump(*module, staticRso, g_jumpCodeBuffer) == -1) {
+        MILO_WARN("RSO: %s: RSOLinkJump failed\n", moduleName);
+    }
+    if (RSOIsImportSymbolResolvedAll(*module) == 0) {
+        FormatString fs("Missing symbols:\n");
+        TheDebug << fs.Str();
+        void *importTable = (char *)*module + 0x4c;
+        int numImports = RSOGetNumImportSymbols(importTable);
+        for (int i = 0; i < numImports; i++) {
+            if (RSOIsImportSymbolResolved(*module, i) == 0) {
+                TheDebug << MakeString("  %s\n", RSOGetImportSymbolName(importTable, i));
+            }
+        }
+        MILO_WARN("RSO: %s: Not resolved.\n", moduleName);
+        return false;
+    }
+    (*(void (**)())((char *)*module + 0x24))();
+    resolvedModule(*module);
+    return true;
+}
+#pragma pop
+
+bool RsoInit2HelperNoAlloc(
+    struct RSOObjectHeader **module, const char *moduleName, unsigned char **bss,
+    unsigned long **code, RsoResolvedFunc resolvedModule
+) {
+    *module = (struct RSOObjectHeader *)RsoLoad(moduleName, bss, RsoMemAlloc2Fake);
+    if (*module == NULL) {
+        return false;
+    }
+    int codeSize = RSOGetFarCodeSize(*module, staticRso);
+    if (codeSize <= 0) {
+        MILO_FAIL("RSO: no code loaded for %s\n", moduleName);
+        return false;
+    }
+    *code = (unsigned long *)RsoMemAlloc2Fake(codeSize);
+    int res = RSOLinkFar(*module, staticRso, *code);
+    if (res < 0) {
+        MILO_FAIL("RSO: %s: RSOLinkFar returned %d\n", moduleName, res);
+    }
+    if (RSOLinkJump(*module, staticRso, g_jumpCodeBuffer) == -1) {
+        MILO_WARN("RSO: %s: RSOLinkJump failed\n", moduleName);
+    }
+    if (RSOIsImportSymbolResolvedAll(*module) == 0) {
+        FormatString fs("Missing symbols:\n");
+        TheDebug << fs.Str();
+        void *importTable = (char *)*module + 0x4c;
+        int numImports = RSOGetNumImportSymbols(importTable);
+        for (int i = 0; i < numImports; i++) {
+            if (RSOIsImportSymbolResolved(*module, i) == 0) {
+                TheDebug << MakeString("  %s\n", RSOGetImportSymbolName(importTable, i));
+            }
+        }
+        MILO_WARN("RSO: %s: Not resolved.\n", moduleName);
+        return false;
+    }
+    (*(void (**)())((char *)*module + 0x24))();
+    resolvedModule(*module);
+    return true;
 }
