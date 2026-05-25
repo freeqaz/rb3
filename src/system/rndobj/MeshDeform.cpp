@@ -146,6 +146,19 @@ void RndMeshDeform::CopyWeights(int to, int from, RndMeshDeform *fromMd) {
     mVerts.CopyVert(to, from, fromMd ? fromMd->mVerts : mVerts);
 }
 
+RndMeshDeform *RndMeshDeform::FindDeform(RndMesh *m) {
+    std::vector<ObjRef *>::const_reverse_iterator rit = m->Refs().rbegin();
+    std::vector<ObjRef *>::const_reverse_iterator ritEnd = m->Refs().rend();
+    for (; rit != ritEnd; ++rit) {
+        RndMeshDeform *md = dynamic_cast<RndMeshDeform *>((*rit)->RefOwner());
+        if (md) {
+            MILO_ASSERT(md->Mesh() == m, 0x125);
+            return md;
+        }
+    }
+    return NULL;
+}
+
 bool RndMeshDeform::IsExoBone(RndTransformable *t) {
     if (!t) return false;
     return strnicmp("exo_", ((const char **)((void **)(*(void ***)t))[0])[3], 4) == 0;
