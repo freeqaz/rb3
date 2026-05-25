@@ -22,7 +22,8 @@ void CharSleeve::Poll() {
     if (mSleeve && mSleeve->TransParent()) {
         float deltasecs = TheTaskMgr.DeltaSeconds();
         float dvar12 = deltasecs * 60.0f;
-        float gravity_z = mGravity * (deltasecs * (dvar12 * -3.858268f));
+        float dv2 = deltasecs * dvar12;
+        float gravity_z = mGravity * (dv2 * -3.858268f);
         float powed = 1.0f - std::pow(1.0f - mStiffness, dvar12 * dvar12);
         RndTransformable *sleeveparent = mSleeve->TransParent();
         float absed = std::fabs(mSleeve->mLocalXfm.v.z);
@@ -31,8 +32,9 @@ void CharSleeve::Poll() {
             mPos = mSleeve->WorldXfm().v;
             Vector3 v9c(0.0f, 0.0f, -(absed + mPosLength));
             float dotted = Dot(v9c, sleeveparent->WorldXfm().m.x);
+            float dotted_orig = dotted;
             ClampEq(dotted, -mRange, mRange);
-            ScaleAddEq(v9c, sleeveparent->WorldXfm().m.x, dotted);
+            ScaleAddEq(v9c, sleeveparent->WorldXfm().m.x, dotted - dotted_orig);
             mPos += v9c;
             Vector3 va8;
             ScaleAdd(
