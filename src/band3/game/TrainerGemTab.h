@@ -51,11 +51,16 @@ public:
     int unk90;
     RndGroup *mTrackGroup; // 0x94
     RndTransformable *mInstLanes[25]; // 0x98 - 0xf8, inclusive
-    RndMesh *mGemChord2Lane; // 0xfc
-    RndMesh *mGemChord3Lane; // 0x100
-    RndMesh *mGemChord4Lane; // 0x104
-    RndMesh *mGemChord5Lane; // 0x108
-    RndMesh *mGemChord6Lane; // 0x10c
+    union {
+        struct {
+            RndMesh *mGemChord2Lane; // 0xfc
+            RndMesh *mGemChord3Lane; // 0x100
+            RndMesh *mGemChord4Lane; // 0x104
+            RndMesh *mGemChord5Lane; // 0x108
+            RndMesh *mGemChord6Lane; // 0x10c
+        };
+        RndMesh *mGemChordLanes[5]; // 0xfc
+    };
     RndMesh *mGemSustainCyan; // 0x110
     BandLabel *mNumLabels[4]; // 0x114, 0x118, 0x11c, 0x120
     BandLabel *mStartLabel; // 0x124

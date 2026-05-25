@@ -322,6 +322,22 @@ void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY,
     }
 }
 
+void TrainerGemTab::DrawRealGuitarChord(const GameGem &gem) {
+    int lowest = gem.GetLowestString();
+    int highest = gem.GetHighestString();
+    int idx = highest - lowest - 1;
+    Vector3 pos = mGemChordLanes[idx]->WorldXfm().v;
+    if (mLefty) {
+        pos.x = mInstLanes[GetLane(highest)]->WorldXfm().v.x;
+    } else {
+        pos.x = mInstLanes[GetLane(lowest)]->WorldXfm().v.x;
+    }
+    mGemChordLanes[idx]->SetWorldPos(pos);
+    mGemChordLanes[idx]->SetShowing(true);
+    mGemChordLanes[idx]->Draw();
+    mGemChordLanes[idx]->SetShowing(false);
+}
+
 void TrainerGemTab::DrawTails(
     const GameGem &gem, int startTick, int endTick, float startY, float endY
 ) {
