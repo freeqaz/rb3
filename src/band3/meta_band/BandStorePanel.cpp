@@ -230,7 +230,7 @@ void BandStorePanel::Request(const String &path, bool extra) {
             DataNode(metadata, kDataArray),
             DataNode(1),
             DataNode(gNullStr),
-            DataNode((int)(buildNum == id)),
+            DataNode((int)(id == buildNum)),
             DataNode(0)
         );
         msg[2] = DataNode(path);
@@ -248,12 +248,12 @@ void BandStorePanel::Request(const String &path, bool extra) {
         }
         page = TheStoreMetadata.LoadPage((unsigned short)id);
         unsigned short nextId = *(unsigned short *)((char *)page->mPage + 4);
-        unsigned short prevId = *(unsigned short *)((char *)page->mPage + 2);
         if (nextId != 0) {
             mNextChunkPath = MakeString("%d", nextId);
         } else {
             mNextChunkPath = gNullStr;
         }
+        unsigned short prevId = *(unsigned short *)((char *)page->mPage + 2);
         if (prevId != 0) {
             mPrevChunkPath = MakeString("%d", prevId);
         } else {
