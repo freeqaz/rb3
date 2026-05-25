@@ -229,6 +229,7 @@ void SaveLoadManager::Poll() {
             } else if (result == kCache_ErrorCacheNotFound) {
                 SetState((State)0x15);
             } else {
+                MILO_LOG("SaveLoadManager - CacheMgr search returned error %d\n", (int)result);
                 SetState((State)0x25);
             }
         }
@@ -247,6 +248,7 @@ void SaveLoadManager::Poll() {
                 unk7c = 1;
                 SetState((State)0x17);
             } else {
+                MILO_FAIL("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result);
                 SetState((State)0x25);
             }
         }
@@ -262,6 +264,7 @@ void SaveLoadManager::Poll() {
             } else if (result == kCache_ErrorCorrupt) {
                 SetState((State)0x1c);
             } else {
+                MILO_FAIL("SaveLoadManager - kS_SongCacheCreateMountRead unhandled error %d\n", (int)result);
                 SetState((State)0x25);
             }
         }
@@ -485,12 +488,12 @@ void SaveLoadManager::Poll() {
         }
         SetState((State)0x41);
         break;
-    case (State)0x54:
+    case (State)0x52:
         if (TheSongMgr.IsSongCacheWriteDone()) {
             SetState((State)0x54);
         }
         break;
-    case (State)0x68:
+    case kS_Done:
     case kS_Finish:
         if (mWaiting) return;
         if (mCache != NULL) {
@@ -1051,10 +1054,6 @@ DataNode SaveLoadManager::OnMsg(const NoDeviceChosenMsg &) {
         break;
     }
     return DataNode(0);
-}
-
-void MCResultMsg::PrintExtra(TextStream &ts) const {
-    ts << "res:" << mData->Int(2);
 }
 
 DataNode SaveLoadManager::OnMsg(const MCResultMsg &msg) {

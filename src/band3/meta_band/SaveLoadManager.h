@@ -144,7 +144,7 @@ protected:
     void *mData; // 0x60
     int unk64; // 0x64
     bool unk68; // 0x68
-    bool unk69; // 0x69
+    bool mWaiting; // 0x69
     int unk6c; // 0x6c
     int unk70; // 0x70
     int mRequestFlags; // 0x74
