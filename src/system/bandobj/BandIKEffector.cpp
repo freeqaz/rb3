@@ -374,7 +374,8 @@ void BandIKEffector::ComputeHandPullAndQuat(
         cosAngle = -1.0f;
     if (cosAngle > 1.0f)
         cosAngle = 1.0f;
-    float sinAngle = -(float)sqrt(1.0f - cosAngle * cosAngle);
+    float cosSq = cosAngle * cosAngle;
+    float sinAngle = -(float)sqrt(1.0f - cosSq);
 
     RndTransformable *parent = mEffector->TransParent();
     outElbowXfm.v = parent->mLocalXfm.v;
