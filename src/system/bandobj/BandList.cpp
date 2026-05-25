@@ -353,11 +353,13 @@ void BandList::StartFocusAnim(int i, BandList::AnimState astate) {
     bool b = false;
     if (curastate == kGoingOut || curastate == kOut)
         b = true;
-    if (b)
+    if (!b)
+        f9 = f10;
+    if (curastate == kOut || curastate == kIn) {
         f10 = f9;
-    if (curastate != kOut && curastate != kIn) {
+    } else {
         curframe = mFrames[i];
-        float f11 = Abs(f10 - curframe);
+        float f11 = Abs(f9 - curframe);
         f8 = (f8 - (f11 / mFocusAnim->FramesPerUnit()));
         f10 = curframe;
     }
