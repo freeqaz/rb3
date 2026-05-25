@@ -96,6 +96,24 @@ void SongSelectPanel::ResultSuccess(bool b1, bool b2, bool b3) {
 
 void SongSelectPanel::ResultFailure() { HandleType(lb_failure_msg); }
 
+void SongSelectPanel::Poll() {
+    HeldButtonPanel::Poll();
+    if (mLeaderboard)
+        mLeaderboard->Poll();
+    if (unk58 >= 0.0f && GetState() == kUp) {
+        float diff = TheTaskMgr.UISeconds() - unk58;
+        if (!unk54 && diff > unk4c && unk48->IsReady() && unk48->HasRows()) {
+            unk58 = TheTaskMgr.UISeconds();
+            static Message msg(set_mini_leaderboard_showing, 0);
+            unk54 = true;
+            msg[0] = 1;
+            HandleType(msg);
+        } else if (unk54 && diff > unk50) {
+            RestartLeaderboardTimer();
+        }
+    }
+}
+
 void SongSelectPanel::RestartLeaderboardTimer() {
     unk58 = TheTaskMgr.UISeconds();
     static Message msg(set_mini_leaderboard_showing, 0);
