@@ -526,7 +526,47 @@ void Movie::Impl::MovieClose() {
 // TODO: full implementation. Stubs so SetPaused can link.
 void Movie::Impl::SharedFinishOpen(bool) {}
 int Movie::Impl::MovieOpen(const char *, unsigned int) { return 0; }
-void Movie::Impl::FinishOpen() {}
+void Movie::Impl::SetRect() {}
+
+void Movie::Impl::FinishOpen() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x2AC);
+    if (mBink == NULL) {
+        MILO_WARN("BinkOpen '%s' error: %s\n", mFilename, BinkGetError());
+        return;
+    }
+    mSoundEnabled = mSoundEnabled || (mMovieBuffers->mPendingBlits > 1);
+    BinkSetSoundOnOff(mBink, !mSoundEnabled);
+    BINKSUMMARY summary;
+    BinkGetSummary(mBink, &summary);
+    mAspect = (float)(unsigned int)summary.Width / (float)(unsigned int)summary.Height;
+    unsigned int wMod = summary.Width & 0xF;
+    unsigned int hMod = summary.Height & 0xF;
+    if (wMod != 0 || hMod != 0) {
+        unsigned int padW = wMod != 0 ? summary.Width + (0x10 - wMod) : summary.Width;
+        unsigned int padH = hMod != 0 ? summary.Height + (0x10 - hMod) : summary.Height;
+        MILO_FAIL(
+            "Bink movie %s must have multiples of 16 for its width and height.\nTry changing from %d x %d to %d x %d.\n",
+            mFilename.c_str(),
+            summary.Width,
+            summary.Height,
+            padW,
+            padH
+        );
+    }
+    SetRect();
+    SetPaused(true);
+}
 
 void Movie::Impl::DiscContentionCheck(Loader *loader) {
     bool ok = true;
