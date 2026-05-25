@@ -334,13 +334,9 @@ bool Movie::Impl::IsLoading() const {
 
 Movie::Impl::Impl()
     : mLoader(0), mLoader2(0), mFilename(), mBink(0), mPreloadFlag(false),
-      mPreloadBuf(0), mPreloadBufLen(0), mLoop(false), mSoundEnabled(false),
-      mStretchToFit(false), mAspect(0.0f), mRectX1(0.0f), mRectX2(0.0f),
-      mRectY1(0.0f), mRectY2(0.0f), mWidth(0), mHeight(0), mPaused(false),
-      mTimeCallback(0), mCurFrame(0), mNextFrame(0),
-      mBinkHandle(kNoHandle), mLoading(false), mMidFrame(false),
-      mThreadId((unsigned int)gMainThreadID), mForceTrack(0),
-      mMovieBuffers(0) {
+      mPreloadBuf(0), mPreloadBufLen(0), mWidth(0), mHeight(0), mPaused(false),
+      mTimeCallback(0), mBinkHandle(kNoHandle), mLoading(false), mMidFrame(false),
+      mThreadId((unsigned int)gMainThreadID), mMovieBuffers(0) {
     // Set time callback if is_timed_movie is configured
     DataArray *cfg = SystemConfig(movie, is_timed_movie);
     DataNode result = cfg->ExecuteScript(1, 0, 0, 1);
@@ -525,8 +521,47 @@ void Movie::Impl::MovieClose() {
 
 // TODO: full implementation. Stubs so SetPaused can link.
 void Movie::Impl::SharedFinishOpen(bool) {}
-int Movie::Impl::MovieOpen(const char *, unsigned int) { return 0; }
 void Movie::Impl::SetRect() {}
+
+int Movie::Impl::MovieOpen(const char *file, unsigned int flags) {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x167);
+    MILO_ASSERT(!mBink, 0x169);
+    mPaused = false;
+    if (gInitialized) {
+        BinkInit();
+        if (mForceTrack != 0) {
+            if (gForceTrack != 0) mForceTrack = gForceTrack;
+            MILO_LOG("localization track %d\n", mForceTrack);
+            int track = mForceTrack - 1;
+            BinkSetSoundTrack(1, &track);
+            flags |= 0x4000;
+        }
+        if ((flags & 0x4000000) == 0) {
+            AutoSlowFrame asf("BinkOpen");
+            mBink = BinkOpen(file, flags);
+        } else {
+            mBink = BinkOpen(file, flags);
+        }
+        if (mBink != NULL) {
+            openMovieFiles.push_back(this);
+        } else {
+            String fn = mFilename;
+            MILO_WARN("BinkOpen '%s' error: %s\n", fn, BinkGetError());
+        }
+    }
+    return 0;
+}
 
 bool Movie::Impl::CheckOpen(bool b) {
     if (!mLoading) return false;
