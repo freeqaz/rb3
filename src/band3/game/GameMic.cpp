@@ -1,4 +1,5 @@
 #include "game/GameMic.h"
+#include "decomp.h"
 #include "math/Utl.h"
 #include "obj/Data.h"
 #include "obj/Task.h"
@@ -25,6 +26,8 @@ extern "C" void AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf(
 );
 
 bool gIdxTaken[6];
+
+DECOMP_FORCEBLOCK(GameMic, (Mic *m), { void (Mic::*mfp)(bool) = &Mic::SetMute; (void)mfp; (void)m; })
 
 GameMic::GameMic(int id)
     : mMicID(id), unk8(1), unk9(1), mWriteWav(0), unkc(0), mStoredAudio(0), mDetector(0),

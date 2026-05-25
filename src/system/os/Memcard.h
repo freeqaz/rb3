@@ -110,4 +110,5 @@ END_MESSAGE
 
 DECLARE_MESSAGE(MCResultMsg, "mc_result")
 MCResultMsg(int i) : Message(Type(), i) {}
+virtual void PrintExtra(TextStream &) const;
 END_MESSAGE

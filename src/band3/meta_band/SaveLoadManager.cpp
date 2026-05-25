@@ -11,6 +11,8 @@
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/UIEventMgr.h"
 #include "utl/MakeString.h"
+#include "net/Net.h"
+#include "net/Server.h"
 #include "net_band/EntityUploader.h"
 #include "net_band/RockCentral.h"
 #include "net_band/RockCentralMsgs.h"
@@ -952,15 +954,16 @@ void SaveLoadManager::PrintoutSaveSizeInfo() {
     int symbolSize = FixedSizeSaveableStream::GetSymbolTableSize(0x97);
     TheDebug << MakeString<int>("Symbol Table Size = %i\n", symbolSize);
     int wiiSize = WiiProfileMgr::SaveSize(0x97);
-    TheDebug << MakeString<int>("SAVESIZE TOTAL = %i \n", wiiSize + (symbolSize + profileSize));
+    TheDebug << MakeString<int>("SAVESIZE TOTAL = %i \n", (symbolSize + profileSize) + wiiSize);
 }
 
 bool SaveLoadManager::IsReasonToUpload() {
     DataNode &var = DataVariable(saveload_skip_upload);
-    bool skipUpload = var.Int(NULL) != 0;
-    if (skipUpload) return false;
-    if (!TheProfileMgr.NeedsUpload()) return false;
-    return false;
+    int skipUpload = var.Int(NULL) != 0;
+    bool isConnected = TheNet.mServer->IsConnected();
+    bool needsUpload = TheProfileMgr.NeedsUpload();
+    bool allUnlocked = TheProfileMgr.mAllUnlocked;
+    return !skipUpload && !allUnlocked && isConnected && needsUpload;
 }
 
 void SaveLoadManager::StartSaveAction(bool b) {
@@ -972,9 +975,7 @@ void SaveLoadManager::StartSaveAction(bool b) {
         TheWiiProfileMgr.SetLocked(*p, true);
     }
     unk69 = true;
-    if (mAction) {
-        delete mAction;
-    }
+    delete mAction;
     mAction = NULL;
     mAction = new SaveMemcardAction(&mUploadProfiles);
     TheMemcardMgr.AddSink(this);
@@ -1054,13 +1055,119 @@ DataNode SaveLoadManager::OnMsg(const NoDeviceChosenMsg &) {
     return DataNode(0);
 }
 
+void MCResultMsg::PrintExtra(TextStream &ts) const {
+    ts << "res:" << mData->Int(2);
+}
+
 DataNode SaveLoadManager::OnMsg(const MCResultMsg &msg) {
     MILO_ASSERT(unk69, 0xaa3);
     unk69 = false;
     TheMemcardMgr.RemoveSink(this);
     MCResult res = (MCResult)msg.mData->Int(2);
-    // State machine handled elsewhere (big switch table in target)
-    (void)res;
+    switch (mState) {
+    case (State)0x4:
+        unk6c = res;
+        break;
+    case kS_AutoloadStartLoad: {
+        (void)mTimer.Stop();
+        switch (res) {
+        case kMCNoCard:
+            SetState(kS_AutoloadNotOwner);
+            break;
+        case kMCCorrupt:
+            SetState(kS_AutoloadCorrupt);
+            break;
+        case kMCNotOwner:
+            SetState(kS_AutoloadObsolete);
+            break;
+        case kMCNotEnoughSpace:
+        case kMCFileNotFound:
+            SetState(kS_SaveOverwrite);
+            break;
+        case kMCObsoleteVersion:
+            SetState(kS_AutoloadFuture);
+            break;
+        case kMCNewerVersion:
+            SetState(kS_AutoloadFuture2);
+            break;
+        case kMCNoError:
+            unk6c = res;
+            SetState((State)0x43);
+            break;
+        default:
+            SetState(kS_SaveFailed);
+            break;
+        }
+        break;
+    }
+    case kS_SaveChooseDeviceInvalid: // 0x45
+        switch (res) {
+        case kMCNoCard:
+            SetState(kS_GlobalCreateNotFound_Msg);
+            break;
+        case kMCNoError:
+        case kMCFileExists:
+        case kMCCorrupt:
+        case kMCNotOwner:
+            SetState(kS_SaveDeviceInvalid);
+            break;
+        case kMCFileNotFound:
+        case kMCNotEnoughSpace:
+            SetState(kS_SaveOverwrite);
+            break;
+        default:
+            SetState(kS_GlobalCreateCorrupt);
+            break;
+        }
+        break;
+    case kS_SaveOverwrite: // 0x46
+    case kS_SaveNoOverwrite: // 0x47
+        unk6c = res;
+        break;
+    case kS_ManualLoadChooseDevice: // 0x64
+        switch (res) {
+        case kMCNoCard:
+            SetState((State)0x63);
+            break;
+        case kMCFileNotFound:
+            SetState((State)0x65);
+            break;
+        case kMCCorrupt:
+            SetState((State)0x66);
+            break;
+        case kMCNotOwner:
+            SetState((State)0x67);
+            break;
+        case kMCObsoleteVersion:
+            SetState(kS_AutoloadFuture);
+            break;
+        case kMCNewerVersion:
+            SetState(kS_AutoloadFuture2);
+            break;
+        case kMCNoError:
+            unk6c = res;
+            SetState((State)0x43);
+            break;
+        default:
+            SetState(kS_SaveFailed);
+            break;
+        }
+        break;
+    case (State)0x6a:
+        if (res == kMCNoError || res == kMCFileNotFound) {
+            SetState((State)0x6b);
+        } else {
+            SetState((State)0x6c);
+        }
+        break;
+    case kS_Done:
+    case kS_LoadComplete:
+    case kS_Finish:
+        break;
+    default:
+        MILO_FAIL("SaveLoadManager::MCResultMsg in wrong state/mode %d %d", (int)mState, (int)mMode);
+        break;
+    }
     return DataNode(0);
 }
 
@@ -1078,7 +1185,82 @@ DataNode SaveLoadManager::OnMsg(const RockCentralOpCompleteMsg &) {
 }
 
 DataNode SaveLoadManager::OnMsg(const SigninChangedMsg &) {
-    // Complex state machine with jump table - stub
+    switch (mState) {
+    case kS_AutoloadNoSaveFound_Msg:
+    case kS_AutoloadMultipleSavesFound:
+    case kS_AutoloadNotOwner:
+    case kS_AutoloadCorrupt:
+    case kS_AutoloadObsolete:
+    case kS_AutoloadFuture:
+    case kS_AutoloadFuture2:
+    case (State)0x17:
+    case (State)0x18:
+    case (State)0x1c:
+    case (State)0x29:
+    case (State)0x2a:
+    case (State)0x2f:
+    case (State)0x3a:
+    case (State)0x42:
+    case kS_SaveDeviceInvalid:
+    case (State)0x49:
+    case kS_SaveNotEnoughSpacePS3:
+    case kS_GlobalCreateNotFound_Msg:
+    case kS_GlobalCreateCorrupt:
+    case (State)0x4f:
+    case kS_SaveFailed:
+    case kS_ManualLoadNoDevice:
+    case kS_ManualLoadConfirm_Yes:
+    case kS_ManualLoadConfirm:
+    case kS_GlobalOptionsMissing_Msg:
+    case (State)0x63:
+    case (State)0x65:
+    case (State)0x66:
+    case (State)0x67:
+        if (!mUser)
+            break;
+        if (ThePlatformMgr.HasUserSigninChanged(mUser)) {
+            bool dismissed = false;
+            if (TheUIEventMgr->HasActiveDialogEvent()) {
+                if (TheUIEventMgr->CurrentDialogEvent() == saveload_dialog_event) {
+                    dismissed = true;
+                }
+            }
+            if (dismissed) {
+                TheUIEventMgr->DismissDialogEvent();
+            } else {
+                int padNum = mUser ? mUser->GetPadNum() : -1;
+                TheDebug.Notify(MakeString<int, State>(
+                    "Expected active dialog event during signin change on pad %d while in state %d.\n",
+                    padNum, mState
+                ));
+            }
+            SetState(kS_LoadComplete);
+        }
+        break;
+    case kS_AutoloadStartLoad:
+    case kS_SaveOverwrite:
+    case kS_SaveNoOverwrite:
+    case kS_ManualLoadChooseDevice:
+        SetState(kS_Done);
+        break;
+    default:
+        if (!mUser)
+            break;
+        if (ThePlatformMgr.HasUserSigninChanged(mUser)) {
+            int padNum = mUser ? mUser->GetPadNum() : -1;
+            TheDebug.Notify(MakeString<int, State>(
+                "Expected active dialog event during signin change on pad %d while in state %d.\n",
+                padNum, mState
+            ));
+            SetState(kS_Done);
+        }
+        break;
+    case kS_Idle:
+    case kS_Done:
+    case kS_LoadComplete:
+    case kS_Finish:
+        break;
+    }
     return DataNode(0);
 }
 
@@ -1106,23 +1288,105 @@ DataNode SaveLoadManager::OnMsg(const ProfileSwappedMsg &msg) {
 
 void SaveLoadManager::HandleEventResponse(LocalUser *localUser, int choiceIdx) {
     State start = mStateAtSelectStart;
+    State state = mState;
     mStateAtSelectStart = kS_Idle;
-    if (start != mState) {
+    if (start != state) {
         MILO_WARN(
-            "HandleEventResponse: state mismatch: expected %d, was %d",
-            (int)start,
-            (int)mState
+            "States changed between UIComponentSelectMsg (%d) and UIComponentSelectDoneMsg (%d).\n",
+            start,
+            state
         );
         return;
     }
     if ((unsigned int)(choiceIdx - 1) > 2U) {
-        MILO_FAIL("HandleEventResponse: bad choice %d", choiceIdx);
+        MILO_FAIL("Bad choice index %i\n", choiceIdx);
         return;
     }
     mLocalUser = localUser;
-    bool isFirst = (choiceIdx == 1);
-    // Complex jump table dispatch on mState - stub
-    (void)isFirst;
+    int isFirst = (choiceIdx == 1);
+    switch (mState) {
+    case kS_AutoloadNoSaveFound_Msg: // 0x6
+        if (choiceIdx == 1) {
+            if (unk7c == 2) {
+                SetState(kS_AutoloadSelectDevice2);
+            } else {
+                SetState(kS_AutoloadSetDevice);
+            }
+        } else {
+            SetState((State)0x42);
+        }
+        break;
+    case (State)0x7:
+        SetState(isFirst ? kS_AutoloadSelectDevice3 : (State)0x42);
+        break;
+    case kS_AutoloadNotOwner: // 0xc
+        SetState(isFirst ? kS_AutoloadStartLoad2 : (State)0x42);
+        break;
+    case kS_SaveChooseDevice: // 0x4b
+        SetState(isFirst ? kS_GlobalCreateMissing_Msg : (State)0x42);
+        break;
+    case kS_AutoloadCorrupt: // 0xe
+    case kS_AutoloadObsolete: // 0xf
+    case kS_AutoloadFuture: // 0x10
+    case kS_AutoloadFuture2: // 0x11
+    case kS_SaveNoOverwrite: // 0x47
+        SetState(isFirst ? kS_SaveOverwrite : (State)0x42);
+        break;
+    case (State)0x17:
+    case (State)0x18:
+        SetState(isFirst ? (State)0x19 : (State)0x24);
+        break;
+    case (State)0x1c:
+        SetState(isFirst ? (State)0x1d : (State)0x24);
+        break;
+    case (State)0x29:
+    case (State)0x2a:
+        SetState(isFirst ? (State)0x2b : (State)0x36);
+        break;
+    case (State)0x2f:
+        SetState(isFirst ? (State)0x30 : (State)0x36);
+        break;
+    case (State)0x39:
+        SetState(isFirst ? (State)0x3b : (State)0x40);
+        break;
+    case kS_GlobalCreateNotFound_Msg: // 0x4d
+    case kS_GlobalCreateMissing_Msg: // 0x4e
+    case (State)0x4f:
+    case (State)0x63:
+    case kS_ManualLoadChooseDevice: // 0x64
+    case (State)0x65:
+        SetState((State)0x42);
+        break;
+    case (State)0x41:
+    case kS_SaveDeviceInvalid: // 0x48
+        SaveLoadErrorSetState();
+        break;
+    case kS_ManualLoadInit: // 0x5a
+        SetState(isFirst ? kS_ManualSaveNoDevice : (State)0x42);
+        break;
+    case kS_ManualLoadStartLoad: // 0x5d
+    case kS_ManualLoadConfirmUnsaved: // 0x5e
+        if (choiceIdx == 1) {
+            SetState(kS_ManualLoadChooseDevice);
+        } else {
+            SetState((State)0x44);
+        }
+        break;
+    case kS_ManualLoadConfirm: // 0x60
+        SetState(isFirst ? kS_ManualSaveChooseDevice : (State)0x42);
+        break;
+    case (State)0x61:
+        SetState((State)0x42);
+        break;
+    case (State)0x66:
+    case (State)0x67:
+    default:
+        MILO_FAIL(
+            "Unhandled UIComponentSelectDoneMsg from choice index %i in state %d and mode %d\n",
+            (int)choiceIdx, (int)mState, (int)mMode
+        );
+        break;
+    }
 }
 
 #pragma push
