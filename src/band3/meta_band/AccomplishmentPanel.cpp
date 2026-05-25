@@ -527,8 +527,7 @@ void AccomplishmentPanel::FillSetlistWithAccomplishmentSongs(Symbol s, int i) {
         }
     }
     MILO_ASSERT(!vSongs.empty(), 0x5AA);
-    std::vector<Symbol>::iterator vSongsEnd = vSongs.end();
-    MILO_ASSERT(std::find( vSongs.begin(), vSongsEnd, gNullStr ) == vSongsEnd, 0x5AB);
+    MILO_ASSERT(std::find( vSongs.begin(), vSongs.end(), gNullStr ) == vSongs.end(), 0x5AB);
     pPerformer->SetSongs(vSongs);
 }
 
@@ -1069,8 +1068,7 @@ void AccomplishmentPanel::BuildSelectedEntrySetList() {
     }
     std::vector<Symbol> vSongs;
     vSongs.push_back(entry);
-    std::vector<Symbol>::iterator vSongsEnd = vSongs.end();
-    MILO_ASSERT(std::find( vSongs.begin(), vSongsEnd, gNullStr ) == vSongsEnd, 0x8F4);
+    MILO_ASSERT(std::find( vSongs.begin(), vSongs.end(), gNullStr ) == vSongs.end(), 0x8F4);
     MetaPerformer *pPerformer = MetaPerformer::Current();
     MILO_ASSERT(pPerformer, 0x8F6);
     pPerformer->SetSongs(vSongs);
