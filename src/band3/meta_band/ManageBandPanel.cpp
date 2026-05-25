@@ -87,11 +87,11 @@ void ManageBandPanel::RefreshAll() {
         mCharProvider->Reload(pLocalUser);
         mStandInProvider->Reload(mProfile);
 
+        mHistoryProvider->unk20 = Property(reward_vignettes, true)->Array(NULL);
         VignetteViewerProvider *histProv = mHistoryProvider;
-        histProv->unk20 = Property(reward_vignettes, true)->Array(NULL);
         AccomplishmentProgress &accProgress = mProfile->AccessAccomplishmentProgress();
-        std::set<Symbol> &accomplishedVignettes = accProgress.unkb0;
         std::list<Symbol> &newRewardVignettes = accProgress.mNewRewardVignettes;
+        std::set<Symbol> &accomplishedVignettes = accProgress.unkb0;
         int numVignettes = histProv->unk20->Size();
 
         histProv->mEntries.clear();
@@ -108,9 +108,15 @@ void ManageBandPanel::RefreshAll() {
 
             if (isAccomplished) {
                 std::list<Symbol>::iterator it = newRewardVignettes.begin();
-                while (it != newRewardVignettes.end() && *it != accName) {
-                    ++it;
-                }
+                bool keepSearching;
+                do {
+                    keepSearching = false;
+                    if (it != newRewardVignettes.end() && *it != accName) {
+                        keepSearching = true;
+                    }
+                    if (keepSearching)
+                        ++it;
+                } while (keepSearching);
                 isAccomplished = it == newRewardVignettes.end();
             }
 
