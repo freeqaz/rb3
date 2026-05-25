@@ -91,6 +91,31 @@ void NextSongPanel::FinishLoad() {
     }
 }
 
+void NextSongPanel::Poll() {
+    UIPanel::Poll();
+    for (int i = 0; i < 4; i++) {
+        float pageSize = mDetailsPageSize;
+        if (mDetailsHeight[i] <= pageSize)
+            continue;
+        float target = pageSize * unk70[i];
+        Transform xfm(mScrollGroups[i]->LocalXfm());
+        if (!unk98) {
+            xfm.v.z = target;
+        } else if (xfm.v.z < target) {
+            GetMaxScrollPage(i);
+            xfm.v.z += mDetailsScrollStep * TheTaskMgr.DeltaUISeconds() * 30.0f;
+            if (xfm.v.z > target)
+                xfm.v.z = target;
+        } else if (xfm.v.z > target) {
+            xfm.v.z -= mDetailsScrollStep * TheTaskMgr.DeltaUISeconds() * 30.0f;
+            if (xfm.v.z < target)
+                xfm.v.z = target;
+        }
+        mScrollGroups[i]->SetLocalXfm(xfm);
+    }
+    unk98 = true;
+}
+
 int NextSongPanel::GetMaxScrollPage(int i) {
     return mDetailsHeight[i] / mDetailsPageSize;
 }
