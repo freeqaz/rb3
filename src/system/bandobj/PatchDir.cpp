@@ -178,7 +178,7 @@ PatchSticker *PatchLayer::GetSticker(bool b) const {
         return sStickerOwner->GetSticker(mStickerCategory, mStickerIdx, b);
 }
 
-inline bool PatchLayer::HasSticker() const { return !mStickerCategory.Null(); }
+bool PatchLayer::HasSticker() const { return !mStickerCategory.Null(); }
 
 void PatchLayer::SelectFX() { unk28 = TheTaskMgr.UISeconds() + 0.5f; }
 
