@@ -1994,17 +1994,21 @@ bool SongParser::HandleRGGemStop(
                 SongParser::RGGemInfo *cur = &info.mRGGemsInfo[0];
                 int nStr = 6;
                 do {
-                    if (cur->mGem.mTick != -1) {
-                        if (firstEndTick == -1) {
+                    if (firstEndTick == -1) {
+                        if (cur->mGem.mTick != -1) {
                             firstEndTick = cur->unk18;
-                        } else if (firstEndTick != cur->unk18) {
-                            MILO_WARN(
-                                "%s (%s): Real Guitar Chord does not end on the same note at %s",
-                                mFilename,
-                                mTrackName,
-                                PrintTick(tick)
-                            );
-                            return true;
+                        }
+                    } else {
+                        if (cur->mGem.mTick != -1) {
+                            if (firstEndTick != cur->unk18) {
+                                MILO_WARN(
+                                    "%s (%s): Real Guitar Chord does not end on the same note at %s",
+                                    mFilename,
+                                    mTrackName,
+                                    PrintTick(tick)
+                                );
+                                return true;
+                            }
                         }
                     }
                     cur++;
@@ -2016,19 +2020,12 @@ bool SongParser::HandleRGGemStop(
         if (allStringsEnded) {
             // Find the start tick (last-wins among active strings)
             int on_tick = -1;
-            int t;
-            t = info.mRGGemsInfo[0].mGem.mTick;
-            if (t != -1) on_tick = t;
-            t = info.mRGGemsInfo[1].mGem.mTick;
-            if (t != -1) on_tick = t;
-            t = info.mRGGemsInfo[2].mGem.mTick;
-            if (t != -1) on_tick = t;
-            t = info.mRGGemsInfo[3].mGem.mTick;
-            if (t != -1) on_tick = t;
-            t = info.mRGGemsInfo[4].mGem.mTick;
-            if (t != -1) on_tick = t;
-            t = info.mRGGemsInfo[5].mGem.mTick;
-            if (t != -1) on_tick = t;
+            if (info.mRGGemsInfo[0].mGem.mTick != -1) on_tick = info.mRGGemsInfo[0].mGem.mTick;
+            if (info.mRGGemsInfo[1].mGem.mTick != -1) on_tick = info.mRGGemsInfo[1].mGem.mTick;
+            if (info.mRGGemsInfo[2].mGem.mTick != -1) on_tick = info.mRGGemsInfo[2].mGem.mTick;
+            if (info.mRGGemsInfo[3].mGem.mTick != -1) on_tick = info.mRGGemsInfo[3].mGem.mTick;
+            if (info.mRGGemsInfo[4].mGem.mTick != -1) on_tick = info.mRGGemsInfo[4].mGem.mTick;
+            if (info.mRGGemsInfo[5].mGem.mTick != -1) on_tick = info.mRGGemsInfo[5].mGem.mTick;
 
             MILO_ASSERT(on_tick != -1, 0xBB2);
 
@@ -2186,7 +2183,7 @@ bool SongParser::HandleRGGemStop(
 
             if (numActive > 1) {
                 if (mRGRootNote < 0) {
-                    if (!geminfo.show_chord_names) {
+                    if (geminfo.show_chord_names) {
                         MILO_WARN(
                             "%s (%s): No root note set for chord gem at %s",
                             mFilename,
