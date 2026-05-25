@@ -593,6 +593,10 @@ void TrackPanel::Poll() {
     unk84++;
 }
 
+int Performer::GetAccumulatedScore() const { return GetScore(); }
+
+int Performer::CodaScore() const { return 0; }
+
 void TrackPanel::Draw() {
     START_AUTO_TIMER("hud_track_draw");
     if (unk5c)
