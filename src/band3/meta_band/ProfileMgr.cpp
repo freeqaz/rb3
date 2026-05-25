@@ -105,6 +105,8 @@ void ProfileMgr::Init() {
 
 DECOMP_FORCEACTIVE(ProfileMgr, "signin_changed")
 
+DECOMP_FORCEBLOCK(ProfileMgr, (Profile *p), { bool (Profile::*mfp)() const = &Profile::HasCheated; (void)mfp; (void)p; })
+
 void ProfileMgr::Poll() {
     FOREACH (it, mProfiles) {
         (*it)->Poll();
