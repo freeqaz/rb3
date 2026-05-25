@@ -13,7 +13,7 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
     register const Hmx::Matrix3 *_a = &a;
     register const Hmx::Matrix3 *_b = &b;
     register Hmx::Matrix3 *_out = &out;
-    float row0[3], row1[3], row2[3];
+    float row2[3], row1[3], row0[3];
     register psq _f0, _f1, _f2, _f3, _f4, _f5, _f6, _f7, _f8, _f9, _f10, _f11, _f12;
     asm { cmplw cr1, _b, _out }
     asm volatile {
