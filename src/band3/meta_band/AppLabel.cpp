@@ -638,7 +638,8 @@ void AppLabel::SetPitch(int pitch, int chrom) {
         break;
     }
     char buf[3];
-    memset(buf, 0, sizeof(buf));
+    *(short *)buf = 0;
+    buf[2] = 0;
     switch (pitch) {
     case 0:
         buf[0] = 'C';
