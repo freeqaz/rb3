@@ -12,7 +12,9 @@
 #include "net_band/EntityUploader.h"
 #include "os/Debug.h"
 #include "os/Memcard.h"
+#include "os/PlatformMgr.h"
 #include "os/User.h"
+#include "utl/CacheMgr.h"
 #include "utl/MemMgr.h"
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
@@ -84,6 +86,45 @@ void SaveLoadManager::ManualDelete() {
 void SaveLoadManager::Init() {
     MILO_ASSERT(!TheSaveLoadMgr, 0x57);
     TheSaveLoadMgr = new SaveLoadManager();
+}
+
+void SaveLoadManager::Poll() {
+    if (!mActivated) return;
+    if (mState == kS_Idle) {
+        int flags = mRequestFlags;
+        if (flags & 8) {
+            mMode = kMode_ManualLoad;
+            Start();
+            mRequestFlags &= ~8;
+            return;
+        }
+        if (flags & 1) {
+            mMode = kMode_ManualDelete;
+            Start();
+            mRequestFlags &= ~1;
+            return;
+        }
+        if (flags & 4) {
+            mMode = kMode_AutoSave;
+            Start();
+            mRequestFlags &= ~4;
+            return;
+        }
+        if (flags & 2) {
+            if (IsReasonToAutosave(true)) {
+                mMode = kMode_AutoSave;
+                Start();
+                return;
+            }
+            mMode = kMode_AutoLoad;
+            Start();
+            mRequestFlags &= ~2;
+            return;
+        }
+        TheProfileMgr.PurgeOldData();
+        AutoLoad();
+        return;
+    }
 }
 
 void SaveLoadManager::SaveLoadErrorSetState() {
