@@ -434,9 +434,7 @@ void BandDirector::PlayNextShot() {
                     + oldnextshot->GetTotalDurationSeconds();
             } else {
                 bool b2 = false;
-                bool b1 = false;
-                if (unke0 == -1000.0f && mCurShot)
-                    b1 = true;
+                bool b1 = (unke0 == -1000.0f && mCurShot) ? true : false;
                 if (b1) {
                     b1 = true;
                     if (!DirectedCut(mCurShot->Category())) {
@@ -453,8 +451,9 @@ void BandDirector::PlayNextShot() {
             }
         }
         mCurShot = oldnextshot;
+        BandCamShot *curshot = mCurShot;
         WorldDir *wdir = GetWorld();
-        wdir->mCameraManager.ForceCameraShot(mCurShot);
+        wdir->mCameraManager.ForceCameraShot(curshot);
         if (mCurWorld)
             mCurWorld->Handle(cam_cut_msg, false);
     }
@@ -864,12 +863,10 @@ DataNode BandDirector::OnMidiShotCategory(DataArray *da) {
             bits = 3;
         }
     }
-    if ((mask & 0x10) == 0) {
-        if ((bits != 2) || ((mask & 2) == 0))
-            goto lol;
+    if (((mask & 0x10) != 0) || (!((bits != 2) || ((mask & 2) == 0)))) {
+        fls[3] = 0.0f;
     }
-    fls[3] = 0.0f;
-lol:
+
     if ((mask & 0x20) || bits == 4) {
         bits = 4;
         mask |= 0x2F;

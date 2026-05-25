@@ -61,7 +61,7 @@ void FadePanel::Poll() {
 
 void FadePanel::Draw() {
     UIPanel::Draw();
-    static Hmx::Rect screen_rect(0, 0, TheRnd->mWidth, TheRnd->mHeight);
+    static Hmx::Rect screen_rect(0.0f, 0.0f, (float)TheRnd->mWidth, (float)TheRnd->mHeight);
     if (unk_0x38) {
         mColor.alpha = unk_0x84;
         TheRnd->DrawRect(screen_rect, mColor, NULL, NULL, NULL);

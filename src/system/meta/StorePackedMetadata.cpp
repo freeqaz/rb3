@@ -108,7 +108,7 @@ inline void StoreIndexFileReader::Init(unsigned long long titleId, unsigned shor
     if (rc != 0) {
         TheDebug << MakeString(
             "Store: error in contentInitHandleTitleNAND: %d, redownloading\n",
-            rc
+            (long)rc
         );
         std::map<unsigned long long, StoreTitleContentState *>::iterator it =
             TheStoreMetadata.unk58.find(titleId);
@@ -1005,8 +1005,8 @@ bool StoreMetadataManager::LoadingFailed() const {
 }
 
 int StoreMetadataManager::GetContentStateFlags(unsigned long long key, unsigned short idx) {
-    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
     StoreTitleContentState *state;
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
     if (it == unk58.end()) {
         state = (StoreTitleContentState *)operator new(0x1000);
         if (state) memset(state, 0, 0x1000);
@@ -1018,8 +1018,8 @@ int StoreMetadataManager::GetContentStateFlags(unsigned long long key, unsigned 
 }
 
 int StoreMetadataManager::GetContentFileSize(unsigned long long key, unsigned short idx) {
-    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
     StoreTitleContentState *state;
+    std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(key);
     if (it == unk58.end()) {
         state = (StoreTitleContentState *)operator new(0x1000);
         if (state) memset(state, 0, 0x1000);
@@ -1551,8 +1551,8 @@ void StoreMetadataManager::DebugPurchase() {
         for (unsigned long j = 0; j < TheWiiCommerceMgr.mNumCatalogInfos; j++) {
             ECContentCatalogInfo *info = &TheWiiCommerceMgr.mCatalogInfos[j];
             if (info->licensePricings == NULL) continue;
-            int price = (int)atoi((const char *)&info->licensePricings->price);
             const char *offerIdAttr = GetAttributeStr(info, "offer_id");
+            int price = (int)strtol((const char *)info->licensePricings + 4, 0, 10);
             if (price > balance) {
                 FormatString fmt("DebugPurchase: out of money\n");
                 TheDebug << fmt.Str();
@@ -1650,14 +1650,12 @@ void StoreMetadataManager::PollLoading() {
     }
     case 10:
         if (mVersion == NULL) {
-            int ok = 0;
+            int ok;
             if (!(mFlags & 1)) {
                 StoreIndexFileReader::Init(
                     *(unsigned long long *)&unk88, unk90
                 );
-                if (StoreIndexFileReader::mMetaDataCntHandleInited) {
-                    ok = 1;
-                }
+                ok = StoreIndexFileReader::mMetaDataCntHandleInited;
             } else {
                 ok = 1;
             }
@@ -1758,7 +1756,7 @@ void StoreMetadataManager::PollLoading() {
 }
 
 DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
-    DataArray *data = msg.Data();
+    const DataArray *data = msg.Data();
     if (data->Node(2).Int(data) == 0) {
         if (mLoadingState == 3) {
             DataArray *cfg = SystemConfig("store", "title_starting_indices");

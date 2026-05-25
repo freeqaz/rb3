@@ -270,7 +270,8 @@ Symbol TourPerformerLocal::GetRandomFixedSetlist(
             FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sym);
             MILO_ASSERT(pFixedSetlist, 0x1b8);
             if (pFixedSetlist->GetGroup() == i_symFixedSetlistGroup) {
-                if (pFixedSetlist->GetNumSongs() == i_iNumSongs) {
+                int numSongs = pFixedSetlist->GetNumSongs();
+                if (numSongs == i_iNumSongs) {
                     totalWeight += pFixedSetlist->GetWeight();
                     validSetlists.push_back(sym);
                 }

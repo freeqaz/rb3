@@ -125,11 +125,10 @@ CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
 }
 
 void CharKeyHandMidi::Highlight() {
-    if (mFirstSpot) {
-        if (mSecondSpot) goto draw;
+    if ((!mFirstSpot) || (!mSecondSpot)) {
+        return;
     }
-    return;
-draw:
+
     UtilDrawSphere(mFirstSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
     UtilDrawSphere(mSecondSpot->WorldXfm().v, 1.0f, Hmx::Color(1.0f, 1.0f, 1.0f));
     for (int key = 1; key <= 0x19; key++) {

@@ -130,16 +130,15 @@ float CharInterest::ComputeScore(
     int m = 0;
     if ((catFlags & i) == catFlags && catFlags != 0)
         m = 1;
-    if (m != 0)
-        goto done;
-    {
+    if (m == 0) {
+        {
         int bc = 0;
         if (b && catFlags == 0)
-            bc = 1;
+        bc = 1;
         if (bc == 0)
-            r = 0;
+        r = 0;
+        }
     }
-done:
     if (r == 0)
         return -1.0f;
     Vector3 v7c(WorldXfm().v);

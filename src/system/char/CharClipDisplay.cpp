@@ -166,119 +166,116 @@ void CharClipDisplay::DrawTrack() {
         } while (beat <= lastBeat);
     }
 
-    if (unk0 == NULL)
-        goto drawName;
-
-    {
+    if (unk0 != NULL) {
+        {
         bool firstEvent = true;
         int idx = 0;
         float eventLabelOffset = 10.0f;
         if (unk0->NumBeatEvents() != 0) {
-            float eventAlpha = 0.2f;
-            do {
-                const CharClip::BeatEvent &ev = unk0->mBeatEvents[idx];
-                float eventX = GetX(ev.beat);
-                float halfEmVal = sEm * 0.5f;
-                Hmx::Rect eventRect(eventX, drawY - halfEmVal, halfEmVal, 1.0f);
-                Hmx::Color eventColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
-                TheRnd->DrawRect(eventRect, eventColor, NULL, NULL, NULL);
+        float eventAlpha = 0.2f;
+        do {
+        const CharClip::BeatEvent &ev = unk0->mBeatEvents[idx];
+        float eventX = GetX(ev.beat);
+        float halfEmVal = sEm * 0.5f;
+        Hmx::Rect eventRect(eventX, drawY - halfEmVal, halfEmVal, 1.0f);
+        Hmx::Color eventColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
+        TheRnd->DrawRect(eventRect, eventColor, NULL, NULL, NULL);
 
-                if (firstEvent
-                    && (ev.beat > unk1c
-                        || (idx == 0
-                            && unk1c > unk0->mBeatEvents.back().beat))) {
-                    Hmx::Color eventLabelColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
-                    firstEvent = false;
-                    float labelY = drawY - (halfEmVal + eventLabelOffset);
-                    TheRnd->DrawString(
-                        ev.event.Str(),
-                        Vector2(eventX, labelY),
-                        eventLabelColor,
-                        true
-                    );
-                }
-                idx += 1;
-            } while ((unsigned int)idx < (unsigned int)unk0->NumBeatEvents());
+        if (firstEvent
+        && (ev.beat > unk1c
+        || (idx == 0
+        && unk1c > unk0->mBeatEvents.back().beat))) {
+        Hmx::Color eventLabelColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
+        firstEvent = false;
+        float labelY = drawY - (halfEmVal + eventLabelOffset);
+        TheRnd->DrawString(
+        ev.event.Str(),
+        Vector2(eventX, labelY),
+        eventLabelColor,
+        true
+        );
         }
-    }
+        idx += 1;
+        } while ((unsigned int)idx < (unsigned int)unk0->NumBeatEvents());
+        }
+        }
 
-    {
+        {
         CharIKFoot *leftIk = sDir->Find<CharIKFoot>("left.ikfoot", false);
         CharIKFoot *rightIk = sDir->Find<CharIKFoot>("right.ikfoot", false);
 
         if (leftIk == NULL) {
-            if (rightIk == NULL)
-                goto sampleDraw;
-            else {
-                RndTransformable *data = rightIk->mData;
-                goto drawIKData;
-            }
+        if (rightIk == NULL)
+        goto sampleDraw;
+        else {
+        RndTransformable *data = rightIk->mData;
+        goto drawIKData;
+        }
         } else {
-            MILO_ASSERT(
-                !rightIk || !leftIk || (rightIk->mData == leftIk->mData), 0xCB
-            );
-            RndTransformable *data = leftIk->mData;
+        MILO_ASSERT(
+        !rightIk || !leftIk || (rightIk->mData == leftIk->mData), 0xCB
+        );
+        RndTransformable *data = leftIk->mData;
         drawIKData:
-            if (data != NULL) {
-                Symbol channelName
-                    = CharBones::ChannelName(data->Name(), CharBones::TYPE_POS);
-                void *channel = unk0->GetChannel(channelName);
-                Vector3 channelData;
-                Hmx::Color ikColor(1.0f, 0.0f, 0.0f, 1.0f);
-                Hmx::Rect ikRect(0.0f, drawY, 1.0f, 1.0f);
-                int firstFrame = (int)(float)std::ceil(unk0->BeatToFrame(startBeat));
-                int lastFrame = (int)(float)std::floor(unk0->BeatToFrame(endBeat));
-                for (int frame = firstFrame; frame <= lastFrame; frame++) {
-                    float frameBeat = unk0->FrameToBeat((float)frame);
-                    unk0->EvaluateChannel(&channelData, channel, frameBeat);
-                    if (leftIk != NULL
-                        && channelData[leftIk->mDataIndex] > 0.0f) {
-                        ikRect.x = GetX(frameBeat);
-                        TheRnd->DrawRect(ikRect, ikColor, NULL, NULL, NULL);
-                    }
-                    if (rightIk != NULL
-                        && channelData[rightIk->mDataIndex] > 0.0f) {
-                        ikRect.x = GetX(frameBeat);
-                        ikRect.y += 2.0f;
-                        TheRnd->DrawRect(ikRect, ikColor, NULL, NULL, NULL);
-                        ikRect.y -= 2.0f;
-                    }
-                }
-            }
-            goto afterSampleDraw;
+        if (data != NULL) {
+        Symbol channelName
+        = CharBones::ChannelName(data->Name(), CharBones::TYPE_POS);
+        void *channel = unk0->GetChannel(channelName);
+        Vector3 channelData;
+        Hmx::Color ikColor(1.0f, 0.0f, 0.0f, 1.0f);
+        Hmx::Rect ikRect(0.0f, drawY, 1.0f, 1.0f);
+        int firstFrame = (int)(float)std::ceil(unk0->BeatToFrame(startBeat));
+        int lastFrame = (int)(float)std::floor(unk0->BeatToFrame(endBeat));
+        for (int frame = firstFrame; frame <= lastFrame; frame++) {
+        float frameBeat = unk0->FrameToBeat((float)frame);
+        unk0->EvaluateChannel(&channelData, channel, frameBeat);
+        if (leftIk != NULL
+        && channelData[leftIk->mDataIndex] > 0.0f) {
+        ikRect.x = GetX(frameBeat);
+        TheRnd->DrawRect(ikRect, ikColor, NULL, NULL, NULL);
         }
-    sampleDraw:
+        if (rightIk != NULL
+        && channelData[rightIk->mDataIndex] > 0.0f) {
+        ikRect.x = GetX(frameBeat);
+        ikRect.y += 2.0f;
+        TheRnd->DrawRect(ikRect, ikColor, NULL, NULL, NULL);
+        ikRect.y -= 2.0f;
+        }
+        }
+        }
+        goto afterSampleDraw;
+        }
+        sampleDraw:
         {
-            Hmx::Rect sampleRect(0.0f, drawY + 1.0f, 1.0f, 1.0f);
-            float frac;
-            int startSample = unk0->BeatToSample(startBeat, &frac);
-            int endSample = unk0->BeatToSample(endBeat, &frac);
-            for (; startSample <= endSample; startSample++) {
-                float sampleBeat = unk0->SampleToBeat(startSample);
-                sampleRect.x = GetX(sampleBeat);
-                TheRnd->DrawRect(sampleRect, black, NULL, NULL, NULL);
-            }
+        Hmx::Rect sampleRect(0.0f, drawY + 1.0f, 1.0f, 1.0f);
+        float frac;
+        int startSample = unk0->BeatToSample(startBeat, &frac);
+        int endSample = unk0->BeatToSample(endBeat, &frac);
+        for (; startSample <= endSample; startSample++) {
+        float sampleBeat = unk0->SampleToBeat(startSample);
+        sampleRect.x = GetX(sampleBeat);
+        TheRnd->DrawRect(sampleRect, black, NULL, NULL, NULL);
         }
-    afterSampleDraw:
+        }
+        afterSampleDraw:
 
         DrawBeatString(firstBeat, green);
         DrawBeatString(lastBeat, green);
 
         {
-            float labelX = -((sEm * 2.0f) - (sEm * 3.0f + unk64 + unk14));
-            Vector2 startPos(labelX, nameY);
-            TheRnd->DrawString(MakeString("%.1f", unk4), startPos, white, true);
+        float labelX = -((sEm * 2.0f) - (sEm * 3.0f + unk64 + unk14));
+        Vector2 startPos(labelX, nameY);
+        TheRnd->DrawString(MakeString("%.1f", unk4), startPos, white, true);
         }
 
         {
-            float screenWidth = (float)TheRnd->Width();
-            float labelX = -(sEm * 3.0f - screenWidth);
-            Vector2 endPos(labelX, nameY);
-            TheRnd->DrawString(MakeString("%.1f", unk8), endPos, white, true);
+        float screenWidth = (float)TheRnd->Width();
+        float labelX = -(sEm * 3.0f - screenWidth);
+        Vector2 endPos(labelX, nameY);
+        TheRnd->DrawString(MakeString("%.1f", unk8), endPos, white, true);
+        }
         }
     }
-
-drawName:
     {
         Hmx::Color nameColor(1.0f, 1.0f, 1.0f, 1.0f);
         Vector2 namePos(unk64 + sEm, nameY);

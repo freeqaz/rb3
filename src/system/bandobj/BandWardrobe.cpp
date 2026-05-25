@@ -1270,11 +1270,11 @@ int BandWardrobe::MostImportantHuman(const SlotInfo *info) {
                     better = info[i].score < info[best].score;
                 }
                 if (!better)
-                    goto next;
+                    continue;
             }
             best = i;
         }
-    next:;
+    
     }
     return best;
 }

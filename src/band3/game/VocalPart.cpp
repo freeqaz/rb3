@@ -429,8 +429,8 @@ void VocalPart::UpdateMinMaxPitch(const VocalPhrase *const &phraseRef) {
         return;
     }
     if (unka4 == unka8) {
-        unka4 = unka4 - 5.0f;
-        unka8 = unka8 + 5.0f;
+        unka4 -= 5.0f;
+        unka8 += 5.0f;
     }
 }
 

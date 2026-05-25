@@ -130,10 +130,10 @@ extern "C" void
 AddRedeemedOffer__21StoreRedemptionsTableFPCc(StoreRedemptionsTable *, const char *);
 
 void TokenRedemptionPanel::EnumerateOffers(LocalBandUser *user) {
-    std::list<DataResult> &list = mResultList.mDataResultList;
+    std::list<DataResult> &dataList = mResultList.mDataResultList;
     DataNode node(0);
-    std::list<DataResult>::iterator end = list.end();
-    std::list<DataResult>::iterator it = list.begin();
+    std::list<DataResult>::iterator end = dataList.end();
+    std::list<DataResult>::iterator it = dataList.begin();
     for (; it != end; ++it) {
         it->GetDataResultValue(String("offer"), node);
         AddRedeemedOffer__21StoreRedemptionsTableFPCc(

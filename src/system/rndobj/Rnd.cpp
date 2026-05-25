@@ -749,6 +749,8 @@ void Rnd::CompressTextureCancel(CompressTextureCallback *cb) {
 Hmx::Object *sTexture;
 bool sCompressDone;
 
+#pragma push
+#pragma pool_data off
 float Rnd::DrawTimers(float f) {
     static DataArray *timerScript;
     if (!timerScript) {
@@ -870,6 +872,7 @@ float Rnd::DrawTimers(float f) {
 
     return pos.y;
 }
+#pragma pop
 
 #pragma push
 #pragma auto_inline on

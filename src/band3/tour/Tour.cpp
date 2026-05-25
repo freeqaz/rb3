@@ -30,6 +30,8 @@
 #include "ui/UILabel.h"
 #include "ui/UIScreen.h"
 
+#pragma pool_data off
+
 class MusicLibraryTaskMsg : public NetMessage {
 public:
     MusicLibraryTaskMsg(MusicLibrary::MusicLibraryTask &);

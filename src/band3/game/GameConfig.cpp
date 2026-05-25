@@ -171,26 +171,23 @@ void GameConfig::AssignTracks() {
         }
     }
     if (!b11) {
-        bool first = TheModifierMgr->IsModifierActive(mod_auto_vocals)
-                   & TheGame->mProperties.mAllowAutoVocals;
+        bool mod_active = TheModifierMgr->IsModifierActive(mod_auto_vocals);
+        bool first = mod_active & TheGame->mProperties.mAllowAutoVocals;
         MetaPerformer *pPerformer = MetaPerformer::Current();
         MILO_ASSERT(pPerformer, 0x13A);
         bool bigbool = first & pPerformer->PartPlaysInSong("vocals");
         mPlayerTrackConfigList->SetAutoVocals(bigbool);
         if (bigbool) {
             NullLocalBandUser *user = TheBandUserMgr->GetNullUser();
-            if (user) {
-                BandUser *bu = user;
-                MetaPerformer *pPerformer = MetaPerformer::Current();
-                MILO_ASSERT(pPerformer, 0x145);
-                mPlayerTrackConfigList->SetUseVocalHarmony(pPerformer->SongAllowsVocalHarmony(
-                ));
-                bu->SetTrackType(kTrackVocals);
-                bu->SetDifficulty(kDifficultyMedium);
-                mPlayerTrackConfigList->AddConfig(
-                    bu->GetUserGuid(), bu->GetTrackType(), bu->GetDifficulty(), -1, false
-                );
-            }
+            BandUser *bu = user;
+            MetaPerformer *pPerformer = MetaPerformer::Current();
+            MILO_ASSERT(pPerformer, 0x145);
+            mPlayerTrackConfigList->SetUseVocalHarmony(pPerformer->SongAllowsVocalHarmony());
+            bu->SetTrackType(kTrackVocals);
+            bu->SetDifficulty(kDifficultyMedium);
+            mPlayerTrackConfigList->AddConfig(
+                bu->GetUserGuid(), bu->GetTrackType(), bu->GetDifficulty(), -1, false
+            );
         }
     }
 }

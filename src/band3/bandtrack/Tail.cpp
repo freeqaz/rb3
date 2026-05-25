@@ -251,11 +251,11 @@ void Tail::UpdateVerts(float alpha, bool active) {
         baseOfs += mInterpolator.Eval(yWorld);
     }
 
-    float kOne = 1.0f;
+    float zScale = 1.0f;
     for (RndMesh::Vert *src = tailBegin; src != tailEnd; ++src, ++out) {
         out->pos.y = 0;
         out->pos.x = scaleX * (src->pos.x + baseOfs);
-        out->pos.z = src->pos.z * kOne;
+        out->pos.z = src->pos.z * zScale;
         out->uv.x = src->uv.x;
         out->uv.y = src->uv.y;
     }
@@ -275,7 +275,7 @@ void Tail::UpdateVerts(float alpha, bool active) {
         for (RndMesh::Vert *src = tailBegin; src != tailEnd; ++src, ++out) {
             out->pos.y = curY;
             out->pos.x = scaleX * (src->pos.x + ofs);
-            out->pos.z = src->pos.z * kOne;
+            out->pos.z = src->pos.z * zScale;
             out->uv.x = src->uv.x;
             out->uv.y = src->uv.y;
         }
@@ -301,7 +301,7 @@ void Tail::UpdateVerts(float alpha, bool active) {
         for (; csrc != cend; ++csrc, ++out) {
             out->pos.y = curY;
             out->pos.x = scaleX * (csrc->pos.x + ofs);
-            out->pos.z = csrc->pos.z * kOne;
+            out->pos.z = csrc->pos.z * zScale;
             out->uv.x = csrc->uv.x;
             out->uv.y = csrc->uv.y;
         }

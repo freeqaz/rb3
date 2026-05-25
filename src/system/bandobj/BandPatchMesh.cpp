@@ -1262,18 +1262,8 @@ void BandPatchMesh::Construct(
         patchpair.mPatch->Verts().resize(4, true);
         patchpair.mPatch->Faces().resize(2);
         for (int i = 0; i < 4; i++) {
-            float x, y;
-            if (i < 2)
-                y = 1.0f;
-            else
-                y = 0;
-            bool b13 = false;
-            if (i == 1 || i == 2)
-                b13 = true;
-            if (b13)
-                x = 1.0f;
-            else
-                x = 0;
+            float y = (i < 2) ? 1.0f : 0.0f;
+            float x = (i == 1 || i == 2) ? 1.0f : 0.0f;
             Vector2 v30(y, x);
             SetRenderToVert(patchpair.mPatch->Verts(i), v30, v30);
         }

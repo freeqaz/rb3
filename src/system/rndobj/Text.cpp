@@ -682,13 +682,13 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
 
     // Main DP wrap algorithm.
     WrapPoint stackBuf[256];
-    WrapPoint *wps;
-    if (numChars + 1 > 256) {
+    WrapPoint *wps = stackBuf;
+    if (numChars > 256) {
         wps = new WrapPoint[numChars + 1];
-    } else {
-        wps = stackBuf;
     }
-    memset(wps, 0, (numChars + 1) * sizeof(WrapPoint));
+    memset(wps, 0, numChars * sizeof(WrapPoint));
+
+    Style curStyle = style;
 
     wps[0].byteIdx = 0;
     wps[0].charIdx = 0;
@@ -696,14 +696,13 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
     wps[0].bestPrevIdx = -1;
     wps[0].nextIdx = -1;
     wps[0].bestLineLen = 0.0f;
-    wps[0].style = style;
+    wps[0].style = curStyle;
     wps[0].isLineEnd = true;
     wps[0].isHardBreak = true;
 
     float minW = mWrapWidth * 0.7f;
     float goodW = mWrapWidth * 0.95f;
 
-    Style curStyle = style;
     bool activeMarkup = curStyle.brk;
     int numWp = 1;
     const char *cur = text;
@@ -899,24 +898,22 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
     // post-space positions, so no leading-whitespace strip is needed. Trailing
     // whitespace (space/tab/newline) is trimmed off ce.
     {
-        Line tmpLine;
         WrapPoint *wp = &wps[0];
         while (wp->nextIdx != -1) {
             WrapPoint *ne = &wps[wp->nextIdx];
-            const char *cs = text + wp->byteIdx;
-            const char *ce = text + ne->byteIdx;
-            while (ce > cs) {
-                char p = *(ce - 1);
-                if (p != ' ' && p != '\n' && p != '\t')
-                    break;
-                ce--;
-            }
+            Line tmpLine;
             tmpLine.lineStyle = wp->style;
-            tmpLine.unk18 = cs;
-            tmpLine.unk1c = ce;
+            tmpLine.unk18 = text + wp->byteIdx;
+            tmpLine.unk1c = text + ne->byteIdx;
             tmpLine.startIdx = wp->charIdx;
             tmpLine.endIdx = ne->charIdx;
             tmpLine.unk58 = ne->bestLineLen;
+            while (tmpLine.unk1c > tmpLine.unk18) {
+                char p = tmpLine.unk1c[-1];
+                if (p != ' ' && p != '\n' && p != '\t')
+                    break;
+                --tmpLine.unk1c;
+            }
             lines.push_back(tmpLine);
             wp = ne;
         }

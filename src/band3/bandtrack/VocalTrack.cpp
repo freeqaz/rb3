@@ -1161,7 +1161,7 @@ void VocalTrack::UpdateScrolling(float ms) {
     while (true) {
         int tick = (int)BeatToTick((float)beat);
         float beatMs = TickToMs((float)tick);
-        if (beat < 0) {
+        if (beatMs < buildAhead) {
             beat++;
             continue;
         }
@@ -1196,13 +1196,13 @@ void VocalTrack::UpdateScrolling(float ms) {
     unk104 = phraseIdx;
 
     float oldRange = mDir->mLastMax - mDir->mLastMin;
-    while (!mRangeShifts.empty()
+    while (mRangeShifts.size() != 0
            && mRangeShifts.front().unk0 < ms - mRangeShifts.front().unk4) {
         RangeShift &rs = mRangeShifts.front();
         mDir->SetRange(rs.unk8, rs.unkc, unk208, false);
         mRangeShifts.pop_front();
     }
-    if (!mRangeShifts.empty()) {
+    if (mRangeShifts.size() != 0) {
         RangeShift &rs = mRangeShifts.front();
         if (rs.unk0 < ms) {
             float t = (ms - rs.unk0) / rs.unk4;
@@ -1241,7 +1241,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                 : mDir->mHarmonyLyricScroller.Ptr();
             float &xPos = (side == 0) ? unk294 : unk298;
             float &shiftedX = (side == 0) ? unk2ac : unk2b0;
-            while (!shifts.empty()) {
+            while (shifts.size() != 0) {
                 LyricShift &shift = shifts.front();
                 float window = shift.unk8 ? mLyricShiftQuickMs : mLyricShiftMs;
                 if (shift.unk4 >= (lyricMs - window))
@@ -1260,7 +1260,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                 }
                 shifts.pop_front();
             }
-            if (!shifts.empty()) {
+            if (shifts.size() != 0) {
                 LyricShift &shift = shifts.front();
                 float window = shift.unk8 ? mLyricShiftQuickMs : mLyricShiftMs;
                 if (shift.unk4 < lyricMs) {
@@ -1352,17 +1352,18 @@ void VocalTrack::UpdateScrolling(float ms) {
         bool lead = (part == 0);
 
         RndGroup *grp = lead
-            ? mDir->Find<RndGroup>("lyrics.grp", false)
-            : mDir->Find<RndGroup>("lyrics_harmony.grp", false);
+            ? mDir->Find<RndGroup>("lyrics.grp", true)
+            : mDir->Find<RndGroup>("lyrics_harmony.grp", true);
         bool staticLyrics = !IsScrolling();
         VocalNoteList *altNotes =
             (!lead && isolated < 1) ? GetVocalNoteList(2) : NULL;
         std::vector<std::pair<float, float> > &freestyles =
             notes->mFreestyleSections;
-        RndTransformable *scroller = !staticLyrics
-            ? mDir->mScroller.Ptr()
-            : (lead ? mDir->mLeadLyricScroller.Ptr()
-                    : mDir->mHarmonyLyricScroller.Ptr());
+        ObjPtr<RndTransformable> *scrollerPtr = !staticLyrics
+            ? &mDir->mScroller
+            : (lead ? &mDir->mLeadLyricScroller
+                    : &mDir->mHarmonyLyricScroller);
+        RndTransformable *scroller = scrollerPtr->Ptr();
 
         int *itPPtr = lead ? &unkf4 : (part == 1 ? &unkf8 : &unkfc);
         VocalNote *itT = &notes->mNotes[*itPPtr];
@@ -1486,17 +1487,19 @@ void VocalTrack::UpdateScrolling(float ms) {
                     while (curAlt != altEnd && curAlt->mMs < itT->mMs
                            && !(curAlt->mMs > phEndMs)) {
                         if (!curAlt->mBends && curAlt->mAllowCombine) {
-                            bool skipLyric = false;
                             if (itT->mAllowCombine && IdenticalLyric(*curAlt, *itT)) {
-                                skipLyric = true;
+                                if (dumpLyrics) {
+                                    TheDebug << MakeString(
+                                        "Skipping redundant lyric \"%s\" @ %d\n",
+                                        curAlt->mText.c_str(),
+                                        curAlt->mTick
+                                    );
+                                }
                             } else if (latest && latest->mVocalNotes.size()
                                        && IdenticalLyric(
                                            *curAlt,
                                            *latest->mVocalNotes[0]
                                        )) {
-                                skipLyric = true;
-                            }
-                            if (skipLyric) {
                                 if (dumpLyrics) {
                                     TheDebug << MakeString(
                                         "Skipping redundant lyric \"%s\" @ %d\n",
@@ -1602,12 +1605,8 @@ void VocalTrack::UpdateScrolling(float ms) {
                 VocalNote *curAlt = altIt;
                 while (curAlt != altEnd && !(curAlt->mMs > phEndMs)) {
                     if (!curAlt->mBends && curAlt->mAllowCombine) {
-                        bool skipLyric = false;
                         if (latest && latest->mVocalNotes.size()
                             && IdenticalLyric(*curAlt, *latest->mVocalNotes[0])) {
-                            skipLyric = true;
-                        }
-                        if (skipLyric) {
                             if (dumpLyrics) {
                                 TheDebug << MakeString(
                                     "Skipping redundant lyric \"%s\" @ %d\n",
@@ -1665,7 +1664,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                 unkfc = (int)(altIt - &altNotes->mNotes[0]);
             }
 
-            if (staticLyrics && !plates.empty()) {
+            if (staticLyrics && plates.size() != 0) {
                 Lyric *latestNow = plate->LatestLyric();
                 if (latestNow)
                     latestNow->SetChunkEnd(true);
@@ -1920,6 +1919,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                     ((*curDeployPtr + 1) < freestyles.size())
                         ? freestyles[*curDeployPtr + 1].first
                         : -1.0f;
+                bool didSplit = false;
                 if (codaTick != -1) {
                     float codaMs = TickToMs((float)codaTick);
                     if (section.first < codaMs && codaMs < section.second) {
@@ -1935,12 +1935,10 @@ void VocalTrack::UpdateScrolling(float ms) {
                         BuildStaticDeployZone(
                             phrasePart, afterCoda, nextStart, lastLyricX, shifts
                         );
-                    } else {
-                        BuildStaticDeployZone(
-                            phrasePart, section, nextStart, lastLyricX, shifts
-                        );
+                        didSplit = true;
                     }
-                } else {
+                }
+                if (!didSplit) {
                     BuildStaticDeployZone(
                         phrasePart, section, nextStart, lastLyricX, shifts
                     );

@@ -1201,45 +1201,35 @@ void OvershellSlot::UpdateState() {
             ShowState(kState_SignInSonyPrivilegeDenial);
         }
         if (mState->GetStateID() == kState_EnterCharCreator) {
-            if (mSessionMgr->IsLocal()) {
-                if (!TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))
-                    goto next17;
+            if ((!mSessionMgr->IsLocal()) || (TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))) {
+                ShowState(kState_CharCreatorDenial);
             }
-            ShowState(kState_CharCreatorDenial);
         }
-    next17:
+    
         if (mState->GetStateID() == kState_EnterCalibration) {
-            if (mSessionMgr->IsLocal()) {
-                if (!TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))
-                    goto next3b;
+            if ((!mSessionMgr->IsLocal()) || (TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))) {
+                ShowState(kState_CalibrationDenial);
             }
-            ShowState(kState_CalibrationDenial);
         }
-    next3b:
+    
         if (mState->GetStateID() == kState_EnterCredits) {
-            if (mSessionMgr->IsLocal()) {
-                if (!TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))
-                    goto nextc9;
+            if ((!mSessionMgr->IsLocal()) || (TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))) {
+                ShowState(kState_CreditsDenial);
             }
-            ShowState(kState_CreditsDenial);
         }
-    nextc9:
+    
         if (mState->GetStateID() == kState_EnterWiiProfile) {
-            if (mSessionMgr->IsLocal()) {
-                if (!TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))
-                    goto nextcc;
+            if ((!mSessionMgr->IsLocal()) || (TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))) {
+                ShowState(kState_WiiProfileDenial);
             }
-            ShowState(kState_WiiProfileDenial);
         }
-    nextcc:
+    
         if (mState->GetStateID() == kState_RegisterWiiProfile) {
-            if (mSessionMgr->IsLocal()) {
-                if (!TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))
-                    goto next13;
+            if ((!mSessionMgr->IsLocal()) || (TheUIEventMgr->HasTransitionEvent("go_to_wiiprofilecreator"))) {
+                ShowState(kState_RegisterWiiProfileDenial);
             }
-            ShowState(kState_RegisterWiiProfileDenial);
         }
-    next13:
+    
         if (mState->GetStateID() == kState_SignInToRegister
             && localUser->HasOnlinePrivilege()
             && !mBandUserMgr->AllLocalUsersInSessionAreGuests()) {

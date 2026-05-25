@@ -22,6 +22,10 @@ public:
         MILO_ASSERT(idx >=0 && idx < size, 0x39);
         return mData[((mCur + N) - idx) % N];
     }
+    T &operator[](int idx) {
+        MILO_ASSERT(idx >=0 && idx < size, 0x39);
+        return mData[((mCur + N) - idx) % N];
+    }
 
     T mData[N];
     int mCur;

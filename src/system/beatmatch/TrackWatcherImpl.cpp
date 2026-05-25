@@ -286,12 +286,11 @@ int TrackWatcherImpl::ClosestUnplayedGem(float ms, int slot) {
     if (Playable(idx)) {
         GameGem &gemgem = mGemList->GetGem(idx);
         if (!gemgem.GetPlayed())
-            goto oh;
+            return idx;
     }
     if (idx + 1 < mGemList->NumGems())
         return idx + 1;
-oh:
-    return idx;
+return idx;
 }
 
 bool TrackWatcherImpl::InSlopWindow(float f1, float f2) const {
@@ -385,22 +384,20 @@ bool TrackWatcherImpl::GetNextRoll(int i, unsigned int &roll, int &endTick) cons
 }
 
 void TrackWatcherImpl::CheckForRolls(float ms, int tick) {
-    if (mRollEndTick == -1 || tick <= mRollEndTick) {
-        if (tick == mSongData->GetTempoMap()->GetLoopTick(tick))
-            goto ok;
+    if ((!(mRollEndTick == -1 || tick <= mRollEndTick)) || (tick != mSongData->GetTempoMap()->GetLoopTick(tick))) {
+        MILO_ASSERT(mSongData, 0x2C5);
+            unsigned int ui28;
+            if (GetNextRoll(tick, ui28, mRollEndTick)) {
+                bool bits = GameGem::CountBitsInSlotType(ui28) > 1;
+                int diff = mSongData->TrackDiffAt(Track());
+                TrackType ty = mSongData->TrackTypeAt(Track());
+                MILO_ASSERT(mRollIntervalsConfig, 0x2D0);
+                mRollIntervalMs = GetRollIntervalMs(mRollIntervalsConfig, ty, diff, bits);
+            } else {
+                mRollEndTick = -1;
+            }
     }
-    MILO_ASSERT(mSongData, 0x2C5);
-    unsigned int ui28;
-    if (GetNextRoll(tick, ui28, mRollEndTick)) {
-        bool bits = GameGem::CountBitsInSlotType(ui28) > 1;
-        int diff = mSongData->TrackDiffAt(Track());
-        TrackType ty = mSongData->TrackTypeAt(Track());
-        MILO_ASSERT(mRollIntervalsConfig, 0x2D0);
-        mRollIntervalMs = GetRollIntervalMs(mRollIntervalsConfig, ty, diff, bits);
-    } else {
-        mRollEndTick = -1;
-    }
-ok:
+
     if (mRollActiveSlots != 0) {
         for (int i = 0; i < mRollSlotsLastSwingMs.size(); i++) {
             int mask = 1 << i;

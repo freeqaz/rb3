@@ -311,17 +311,16 @@ bool ClipDistMap::LocalMin(int col, int row) {
     if (val == kHugeFloat) {
         return false;
     }
-    if (mBeatAlign == 0.0f || !BeatAligned(col, row)) {
-        goto nested_loop;
+    if ((!(mBeatAlign == 0.0f || !BeatAligned(col, row)))) {
+        if (col - 1 >= 0 && row - 1 >= 0 && mDists(col - 1, row - 1) < val) {
+                return false;
+            }
+            if (col + 1 < width && row + 1 < mDists.mHeight && mDists(col + 1, row + 1) < val) {
+                return false;
+            }
+            return true;
     }
-    if (col - 1 >= 0 && row - 1 >= 0 && mDists(col - 1, row - 1) < val) {
-        return false;
-    }
-    if (col + 1 < width && row + 1 < mDists.mHeight && mDists(col + 1, row + 1) < val) {
-        return false;
-    }
-    return true;
-nested_loop:
+
     for (int c = col - 1; c < col + 2; c++) {
         for (int r = row - 1; r < row + 2; r++) {
             if ((c != col || r != row) && c >= 0 && c < width && r >= 0 &&

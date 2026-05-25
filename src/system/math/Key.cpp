@@ -57,29 +57,23 @@ void InterpTangent(
     Vector3 &vout
 ) {
     float fsq = f * f;
-    float fsq3 = 3.0f * fsq;
-    float f4 = 4.0f * f;
-    float fsq6 = 6.0f * fsq;
-    float f6 = 6.0f * f;
-    float bsub = fsq3 - f4;
-    float a = fsq6 - f6;
-    float b = 1.0f + bsub;
-    float negFsq6 = -6.0f * fsq;
-    float c = negFsq6 + f6;
-    float d = fsq3 - 2.0f * f;
+    float f6 = f * 6.0f;
+    float fsq3 = fsq * 3.0f;
+    float f4 = f * 4.0f;
 
-    float zz = v1.z * a;
-    float yy = v1.y * a;
-    float xx = v1.x * a;
-    zz += v2.z * b;
-    yy += v2.y * b;
-    xx += v2.x * b;
-    zz += v3.z * c;
-    yy += v3.y * c;
-    xx += v3.x * c;
-    vout.z = zz + v4.z * d;
-    vout.y = yy + v4.y * d;
-    vout.x = xx + v4.x * d;
+    float a = fsq * 6.0f - f6;
+    float b = fsq3 - f4 + 1.0f;
+    float c = f6 - fsq * 6.0f;
+    float d = fsq3 - f * 2.0f;
+
+    Scale(v1, a, vout);
+    Vector3 vtmp;
+    Scale(v2, b, vtmp);
+    Add(vout, vtmp, vout);
+    Scale(v3, c, vtmp);
+    Add(vout, vtmp, vout);
+    Scale(v4, d, vtmp);
+    Add(vout, vtmp, vout);
 }
 
 // fn_802E36D4 - InterpVector(const Keys<Vector3, Vector3>&, const Key<Vector3>*, const

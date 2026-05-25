@@ -7,8 +7,12 @@ The target binary is a debug build (Bank 8, version SZBE69_B8). Build 100901_A.
 ## Key Commands
 
 ```bash
-ninja                              # Build and regenerate report.json
-ninja build/SZBE69_B8/report.json  # Build + generate progress report
+# Always build via tools/ninja-locked, NOT bare `ninja`. It flock-serializes
+# builds; concurrent bare `ninja` runs corrupt .ninja_log/.ninja_deps and can
+# hang in an infinite SPLIT->configure loop. (objdiff-cli uses it automatically
+# via objdiff.json's custom_make.)
+tools/ninja-locked                              # Build and regenerate report.json
+tools/ninja-locked build/SZBE69_B8/report.json  # Build + generate progress report
 
 # Diff a specific function
 build/tools/objdiff-cli diff -u "main/App" "AppInit__Fv" --format json-pretty -o /dev/stdout

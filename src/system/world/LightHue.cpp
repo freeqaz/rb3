@@ -61,7 +61,7 @@ void LightHue::Sync() {
             RndBitmap bmap;
             BufStream bs(buffer, ibuf, true);
             if (bmap.LoadBmp(&bs)) {
-                mKeys.resize(bmap.Width());
+                mKeys.resize(bmap.Width(), Key<Vector3>());
                 for (int i = 0; i < bmap.Width(); i++) {
                     unsigned char r, g, b, a;
                     bmap.PixelColor(i, 0, r, g, b, a);
@@ -74,14 +74,10 @@ void LightHue::Sync() {
                         s,
                         l
                     );
-                    Key<Vector3> &curKey = mKeys[i];
-                    curKey.frame = (float)i / (float)bmap.Width();
-                    float &x = mKeys[i].value.x;
-                    x = h;
-                    float &y = mKeys[i].value.y;
-                    y = s;
-                    float &z = mKeys[i].value.z;
-                    z = l;
+                    mKeys[i].frame = (float)i / (float)bmap.Width();
+                    mKeys[i].value.x = h;
+                    mKeys[i].value.y = s;
+                    mKeys[i].value.z = l;
                 }
             }
             _MemFree(buffer);

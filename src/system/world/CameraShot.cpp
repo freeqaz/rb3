@@ -1105,13 +1105,11 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
         ::Interp(MinBlur(), frame.MinBlur(), d11, f210);
         ::Interp(mFocusBlurMultiplier, frame.mFocusBlurMultiplier, d11, f208);
         float d9 = 0;
-        float d10;
+        float d10 = d9;
         if (focus) {
             d10 = Distance(focus->WorldXfm().v, tf130.v);
-        } else {
-            d10 = d9;
-            if (hasTarget)
-                d10 = Distance(mLastTargetPos, tf130.v);
+        } else if (hasTarget) {
+            d10 = Distance(mLastTargetPos, tf130.v);
         }
         if (towardFocus) {
             d9 = Distance(towardFocus->WorldXfm().v, tf130.v);
@@ -1128,7 +1126,7 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
             d9 = d10;
         }
         float interp9 = ::Interp(d10, d9, d11);
-        TheDOFProc->Set(cam, f208 * d9 + d9, f204, f20c, f210);
+        TheDOFProc->Set(cam, f208 * interp9 + interp9, f204, f20c, f210);
     } else
         TheDOFProc->UnSet();
     float f214, f218;

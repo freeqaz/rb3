@@ -125,14 +125,13 @@ void Movie::Terminate() {
         cs->Enter();
     std::list<Movie::Impl *>::iterator sentinel = openMovieFiles.end();
     int count;
-    goto check;
-    do {
-        openMovieFiles.back()->Terminate();
-    check:
+    while (true) {
         count = 0;
         for (std::list<Movie::Impl *>::iterator it = openMovieFiles.begin(); it != sentinel; ++it)
             count++;
-    } while (count != 0);
+        if (!(count != 0)) break;
+        openMovieFiles.back()->Terminate();
+    }
     gInitialized = false;
     if (cs)
         cs->Exit();
@@ -417,7 +416,7 @@ bool Movie::Impl::Ready() const {
 }
 
 Movie::Impl::MovieLoader::MovieLoader(const FilePath &fp, Movie::Impl *impl)
-    : Loader(fp, kLoadFront), mFile(NULL), mOpenState(&MovieLoader::OpenFile), mImpl(impl) {}
+    : Loader(fp, kLoadStayBack), mFile(NULL), mOpenState(&MovieLoader::OpenFile), mImpl(impl) {}
 
 Movie::Impl::MovieLoader::~MovieLoader() {
     delete mFile;
@@ -432,18 +431,8 @@ const char *Movie::Impl::MovieLoader::StateName() const {
 }
 
 void Movie::Impl::MovieLoader::PollLoading() {
-    while (true) {
+    while (!TheLoadMgr.CheckSplit() && TheLoadMgr.GetFirstLoading() == this && !IsLoaded()) {
         (this->*mOpenState)();
-        if (TheLoadMgr.CheckSplit()) return;
-        Loader *front = TheLoadMgr.GetFirstLoading();
-        bool atFront;
-        if (front == 0) {
-            atFront = (this == 0);
-        } else {
-            atFront = (front == this);
-        }
-        if (!atFront) return;
-        if (IsLoaded()) return;
     }
 }
 
@@ -836,8 +825,8 @@ void Movie::Impl::FinishOpen() {
     unsigned int wMod = summary.Width & 0xF;
     unsigned int hMod = summary.Height & 0xF;
     if (wMod != 0 || hMod != 0) {
-        unsigned int padW = summary.Width + (wMod != 0 ? (0x10 - wMod) : 0u);
         unsigned int padH = summary.Height + (hMod != 0 ? (0x10 - hMod) : 0u);
+        unsigned int padW = summary.Width + (wMod != 0 ? (0x10 - wMod) : 0u);
         MILO_FAIL(
             "Bink movie %s must have multiples of 16 for its width and height.\nTry changing from %d x %d to %d x %d.\n",
             mFilename.c_str(),

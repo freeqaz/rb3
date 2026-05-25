@@ -62,11 +62,7 @@ void PatchSticker::FinishLoad() {
         RndBitmap *cur = &other;
         {
             RndBitmap *next;
-            goto mip_check;
-            do {
-                prev = cur;
-                cur = next;
-            mip_check:
+            while (true) {
                 next = cur->mMip;
                 if (!next)
                     break;
@@ -75,7 +71,10 @@ void PatchSticker::FinishLoad() {
                     minDim = next->mHeight;
                 if (minDim < 0x40)
                     break;
-            } while (true);
+                if (!(true)) break;
+                prev = cur;
+                cur = next;
+            }
         }
         if (prev)
             prev->DetachMip();

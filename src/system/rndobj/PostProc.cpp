@@ -260,14 +260,15 @@ void RndPostProc::LoadRev(BinStream &bs, int rev) {
         } else {
             Hmx::Color c;
             bs >> c;
-            float minVal = c.red;
+            float red = c.red;
+            float minVal = red;
             if (minVal > c.green)
                 minVal = c.green;
             if (minVal > c.blue)
                 minVal = c.blue;
             if (minVal < 4.0f) {
                 float range = 4.0f - minVal;
-                c.red = (4.0f - c.red) / range;
+                c.red = (4.0f - red) / range;
                 c.green = (4.0f - c.green) / range;
                 c.blue = (4.0f - c.blue) / range;
                 mBloomThreshold = c.alpha;
@@ -293,9 +294,9 @@ void RndPostProc::LoadRev(BinStream &bs, int rev) {
     }
     if (rev > 6) {
         if (rev < 0x12) {
-            bs >> mColorXfm.mColorXfm.m.x >> mColorXfm.mColorXfm.m.y
-                >> mColorXfm.mColorXfm.m.z;
-            bs >> mColorXfm.mColorXfm.v;
+            Transform *ptxfm = &mColorXfm.mColorXfm;
+            bs >> ptxfm->m.x >> ptxfm->m.y >> ptxfm->m.z;
+            bs >> ptxfm->v;
         } else {
             if (!mColorXfm.Load(bs)) {
                 MILO_FAIL("%s can't load new %s version", PathName(this), ClassName());
@@ -382,14 +383,16 @@ void RndPostProc::LoadRev(BinStream &bs, int rev) {
         }
     }
     if (rev > 0x16) {
-        bs >> mGradientMap >> mGradientMapOpacity >> mGradientMapIndex
+        bs >> mGradientMap;
+        bs >> mGradientMapOpacity >> mGradientMapIndex
             >> mGradientMapStart >> mGradientMapEnd;
     }
     if (rev < 0x18) {
         mBloomThreshold *= 4.0f;
     }
     if (rev > 0x18) {
-        bs >> mRefractMap >> mRefractDist >> mRefractScale >> mRefractPanning
+        bs >> mRefractMap;
+        bs >> mRefractDist >> mRefractScale >> mRefractPanning
             >> mRefractAngle;
         if (rev > 0x1B) {
             bs >> mRefractVelocity;

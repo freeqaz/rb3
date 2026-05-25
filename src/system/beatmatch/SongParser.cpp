@@ -2085,10 +2085,10 @@ bool SongParser::HandleRGGemStop(
             // Compute hand position if not set
             bool didComputeHandPos = false;
             if (mRGHandPos < 0) {
-                mRGHandPos = 25;
-                didComputeHandPos = true;
                 SongParser::RGGemInfo *s = &info.mRGGemsInfo[0];
                 int itr = 2;
+                mRGHandPos = 25;
+                didComputeHandPos = true;
                 do {
                     if (s[0].mGem.mTick != -1 && s[0].mFret != 0) {
                         if (s[0].mFret < mRGHandPos)

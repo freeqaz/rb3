@@ -73,15 +73,13 @@ void UIListArrow::Draw(
 void UIListArrow::StartScroll(int i, bool) { // holy fakematch
     if (mScrollAnim == NULL)
         return;
-    if (i < 0) {
-        if (!mPosition)
-            goto a;
+    if ((i >= 0) || (mPosition)) {
+        if (0 >= i)
+                return;
+            if (mPosition != 1)
+                return;
     }
-    if (0 >= i)
-        return;
-    if (mPosition != 1)
-        return;
-a:
+
     mScrollAnim->Animate(0, false, 0);
 }
 

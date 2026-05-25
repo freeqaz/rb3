@@ -10,6 +10,7 @@
 #include "meta_band/AppLabel.h"
 #include "game/BandUser.h"
 #include "meta/StorePackedMetadata.h"
+#include "net/Net.h"
 #include "obj/Dir.h"
 #include "obj/Msg.h"
 #include "obj/ObjMacros.h"
@@ -204,27 +205,58 @@ void BandStorePanel::Request(const String &path, bool extra) {
             mLastRequest = path;
             mLastRequestExtra = extra;
             String url("dlc_store");
-            url += MakeString(
-                "/%s%s", PlatformRegionToSymbol(ThePlatformMgr.GetRegion()), path
-            );
-            // (skip platform-specific PID suffix in port-friendly build)
+            url += MakeString("/%s%s", PlatformRegionToSymbol(ThePlatformMgr.GetRegion()), path);
+            Server *server = TheNet.GetServer();
+            if (server && server->IsConnected()) {
+                url += MakeString("?pid=%u", server->GetMasterProfileID());
+            }
             mMetadataLoader = new DataNetLoader(url);
             mStartBrowserAtBottom = false;
             TheUI.Handle(update_loading_status_msg, false);
         }
     } else {
-        // ID-based request (page lookup from metadata table). The full
-        // implementation also dispatches a static MetadataLoadedMsg with
-        // the page's offer index; the simplified form here covers the
-        // tail steps shared with the message handler.
+        // ID-based request: dispatch a static MetadataLoadedMsg, then
+        // populate/enumerate offers and update chunk navigation paths.
+        static DataArray *metadata = 0;
+        if (!metadata) {
+            metadata = new DataArray(1);
+        }
+        metadata->AddRef();
+        metadata->Node(0) = DataNode(id);
+        static Message msg(
+            MetadataLoadedMsg::Type(),
+            DataNode(metadata, kDataArray),
+            DataNode(1),
+            DataNode(gNullStr),
+            DataNode((int)(TheStoreMetadata.mVersion->mBuildNumber == (unsigned short)id)),
+            DataNode(0)
+        );
+        msg[2] = DataNode(path);
+        msg[3] = DataNode(0);
+        msg[4] = DataNode(0);
+        Export(msg.mData, true);
+        bool notExtra = extra == 0;
+        PopulateOffers(metadata, notExtra);
+        EnumerateOffers(notExtra);
         StorePage *page = TheStoreMetadata.LoadPage((unsigned short)id);
         if (page) {
             mSort = page->mPage->DefaultSort();
         } else {
             mSort = Symbol("by_artist");
         }
-        mPrevChunkPath = gNullStr;
-        mNextChunkPath = gNullStr;
+        page = TheStoreMetadata.LoadPage((unsigned short)id);
+        unsigned short nextId = *(unsigned short *)((char *)page->mPage + 4);
+        unsigned short prevId = *(unsigned short *)((char *)page->mPage + 2);
+        if (nextId != 0) {
+            mNextChunkPath = MakeString("%d", nextId);
+        } else {
+            mNextChunkPath = gNullStr;
+        }
+        if (prevId != 0) {
+            mPrevChunkPath = MakeString("%d", prevId);
+        } else {
+            mPrevChunkPath = gNullStr;
+        }
         mStartBrowserAtBottom = false;
         TheUI.Handle(update_loading_status_msg, false);
     }

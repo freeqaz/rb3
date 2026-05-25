@@ -369,8 +369,10 @@ BEGIN_COPYS(RndParticleSys)
         if (!mPreserveParticles) {
             SetPool(f->mMaxParticles, f->mType);
         }
-        RndTransformable *parent = f->mRelativeParent;
-        if ((Hmx::Object *)f == (Hmx::Object *)parent)
+        RndTransformable *parent;
+        if (f->mRelativeParent != (Hmx::Object *)f)
+            parent = f->mRelativeParent;
+        else
             parent = this;
         SetRelativeMotion(f->mRelativeMotion, parent);
         SetSubSamples(f->mSubSamples);

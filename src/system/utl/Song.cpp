@@ -128,13 +128,16 @@ void Song::SetFrame(float frame, float blend) {
     if (mHxMaster) {
         paused = !mHxMaster->GetHxAudio()->Paused();
     }
-    if (paused && (frame > unk5c.y || frame < unk5c.x)) {
-        if (frame > unk5c.y) {
-            frame -= unk5c.y - unk5c.x;
-        } else {
-            frame = unk5c.x;
+    if (paused) {
+        float loopEnd = unk5c.y;
+        if (frame > loopEnd || frame < unk5c.x) {
+            if (frame > loopEnd) {
+                frame -= loopEnd - unk5c.x;
+            } else {
+                frame = unk5c.x;
+            }
+            SetStateDirty(true);
         }
-        SetStateDirty(true);
     }
     frame = Clamp(StartFrame(), EndFrame(), frame);
     RndAnimatable::SetFrame(frame, blend);

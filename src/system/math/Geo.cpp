@@ -235,8 +235,12 @@ bool Intersect(const Vector3 &v, const BSPNode *n) {
 bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
     MILO_ASSERT(n, 0x4ba);
 
-    float startDot = n->plane.Dot(seg.start);
-    float endDot = n->plane.Dot(seg.end);
+    float pb = n->plane.b;
+    float pa = n->plane.a;
+    float pc = n->plane.c;
+    float pd = n->plane.d;
+    float startDot = pa * seg.start.x + pb * seg.start.y + pc * seg.start.z + pd;
+    float endDot = pa * seg.end.x + pb * seg.end.y + pc * seg.end.z + pd;
 
     if (startDot >= 0.0f && endDot >= 0.0f) {
         if (!n->left)
@@ -254,7 +258,7 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
 
     float t2 = 0.0f;
     float denom = startDot - endDot;
-    if (denom == 0.0f)
+    if (!denom)
         return false;
 
     float frac = startDot / denom;
@@ -280,7 +284,7 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
                 return false;
             }
         }
-        if (t2 == 0.0f && t != 0.0f) {
+        if (!t2 && t) {
             p.a = n->plane.a;
             p.b = n->plane.b;
             p.c = n->plane.c;
@@ -302,15 +306,15 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
             }
         }
     done_neg:
-        if (t2 == 0.0f && t != 0.0f) {
+        if (!t2 && t) {
             float nd = n->plane.d;
             float nc = n->plane.c;
             float nb = n->plane.b;
             float na = n->plane.a;
-            p.d = -nd;
             p.c = -nc;
-            p.b = -nb;
             p.a = -na;
+            p.b = -nb;
+            p.d = -nd;
         }
     }
     return true;

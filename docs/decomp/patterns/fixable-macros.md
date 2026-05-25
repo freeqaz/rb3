@@ -16,6 +16,28 @@ Controls whether CW inlines functions within the pragma scope. Be careful — `d
 
 Function-local `static Message msg(...)` generates guard variables (`_GUARD_FuncName@msg`). These add initialization checks on every call. The guard pattern must match between source and target.
 
+## MILO_ASSERT `#cond` Stringification → Pool Shift
+
+**Rule:** `MILO_ASSERT(cond, line)` stringifies `cond` (Debug.h:86) — each unique condition text is a distinct TU-pool slot; reorderings cascade into register allocation. Diff target vs base string tables to find which direction the fix goes.
+
+**Method (bidirectional — direction must be diffed first):**
+```bash
+mwccppc-nm -s target.o | grep '@'        # or: strings build/.../obj/foo.o
+mwccppc-nm -s base.o   | grep '@'
+diff
+```
+Then either: (a) extract inline expressions to a local (when base has the long string, target has the short one), or (b) restore inline form (when target has the long string, base over-extracted). When extracting, name the local to match simple-name conditions already pooled by other asserts in the TU.
+
+**Why:**
+- `AccomplishmentManager.cpp` — renamed `pMeta` → `pPerformer` and extracted `MILO_ASSERT(MetaPerformer::Current(), 0xA8B)` into a local: 9 fns → 100%, 95-99% band 21 → 12.
+- `VocalPlayer.cpp` (counter-direction) — `LocalScorePhrase` had `unsigned int sz = i_rNewPhraseActiveParts.size(); MILO_ASSERT(sz, …)`; target had the `.size()` inline. Restoring inline form was a 26-byte shorter→longer pool string, undoing a -28 byte pool shift; cascaded 9 functions to 100% in one edit.
+
+Same family as [format-string tweaks shift string pool](fixable-operators.md) and `MakeString("literal")` opening a FormatString slot.
+
+**When to apply:** TU has a long 95-99% tail AND `run_diff_inspect` reports the SAME `-N`/`+N` rodata/sdata relocation offset on multiple functions. That uniform byte delta IS the pool-shift signature. Without it, the partials are permuter-class — assert-count alone is a poor predictor (zero wins on `PatchDir.cpp` and `AccomplishmentPanel.cpp` despite high audit scores).
+
+**Find candidates:** `grep -nE 'MILO_ASSERT' src/path/Foo.cpp` — list every distinct condition text; diff against target.o strings to spot the asymmetric one.
+
 ## __declspec(noinline) to Defeat IPA Inlining
 
 When `-ipa file` causes CW to inline a helper that the target left as a `bl` call, mark the helper with `__declspec(noinline)`.

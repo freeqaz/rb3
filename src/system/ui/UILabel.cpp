@@ -670,10 +670,10 @@ void UILabel::FitText() {
     RndTextUpdateDeferrer deferrer(mText);
     if (mFitType == kFitStretch) {
         float linewidth = mText->MaxLineWidth();
-        if (linewidth != 0) {
-            float xscale = mWidth / linewidth;
+        if (linewidth) {
             Transform tf;
             tf.Reset();
+            float xscale = mWidth / linewidth;
             float f1, f2;
             mText->GetVerticalBounds(f1, f2);
             float fabs = std::fabs(f2 - f1);
@@ -697,7 +697,7 @@ void UILabel::FitText() {
         while (true) {
             if (size < 0.0f) { size = 0.0f; break; }
             mText->GetStringDimensions(sp14, sp10, lines, text, size);
-            if ((mWidth != 0.0f && sp14 > mWidth) || (mHeight != 0.0f && sp10 > mHeight)) {
+            if ((mWidth && sp14 > mWidth) || (mHeight && sp10 > mHeight)) {
                 size -= 0.2f;
                 continue;
             }

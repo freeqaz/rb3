@@ -879,7 +879,10 @@ void RndMesh::CopyGeometry(const RndMesh *mesh, bool b) {
     if (b)
         SetVolume(mesh->mGeomOwner->mVolume);
     mBones = mesh->mBones;
-    std::vector<STRIPERRESULT>().swap(mStriperResults);
+    {
+        std::vector<STRIPERRESULT> temp;
+        temp.swap(mStriperResults);
+    }
     if (mesh->mStriperResults.size() != 0) {
         MemDoTempAllocations m(true, false);
         mStriperResults.resize(mesh->mStriperResults.size());
@@ -1057,8 +1060,8 @@ Vector3 RndMesh::SkinVertex(const RndMesh::Vert &vert, Vector3 *vptr) {
         if (!b1) {
             MILO_WARN(
                 "This mesh (%s // %s) cannot be skinned properly because it has an invalid, unweighted transform",
-                ((Hmx::Object *)this)->Name(),
-                ((Hmx::Object *)this)->Dir()->GetPathName()
+                ((Hmx::Object *)this)->Dir()->GetPathName(),
+                ((Hmx::Object *)this)->Name()
             );
             *vptr = vert.norm;
             ret = vert.pos;

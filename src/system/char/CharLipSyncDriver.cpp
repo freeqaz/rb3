@@ -116,88 +116,87 @@ void CharLipSyncDriver::Poll() {
         mBones->ScaleAdd(mTestClip, mTestWeight, mTestClip->StartBeat(), 0.0f);
         return;
     }
-    if (!mLipSync)
-        goto applyBlinks;
-    {
+    if (mLipSync) {
+        {
         float weight = Weight();
         if (mOverrideClip && !mApplyOverrideAdditively) {
-            if (mOverrideWeight > 0.0f) {
-                weight *= 1.0f - mOverrideWeight;
-            }
+        if (mOverrideWeight > 0.0f) {
+        weight *= 1.0f - mOverrideWeight;
+        }
         }
         if (mSongPlayer && mOverrideClip && mOverrideWeight > 0.0f) {
-            ScaleAddViseme(mOverrideClip, mOverrideWeight);
+        ScaleAddViseme(mOverrideClip, mOverrideWeight);
         }
         if (weight == 0.0)
-            return;
+        return;
         if (mSongPlayer) {
-            float songTime = TheTaskMgr.Seconds(TaskMgr::kRealTime) + mSongOffset;
-            if (mLoop) {
-                float duration = mSongPlayer->mLipSync->Duration() - 0.001f;
-                if (duration == 0.0f) {
-                    songTime = 0.0f;
-                } else {
-                    songTime = std::fmod(songTime, duration);
-                    if (songTime < 0.0f)
-                        songTime += duration;
-                }
-            }
-            if (mAlternateDriver)
-                songTime = mAlternateDriver->TopClipFrame();
-            mSongPlayer->Poll(songTime);
-            CharLipSync::PlayBack *pb = mSongPlayer;
-            unsigned int count = pb->mWeights.size();
-            for (unsigned int i = 0; i < count; i++) {
-                CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
-                float curWeight = w.unk14;
-                if (curWeight != 0.0f) {
-                    CharClip *clip = w.unk0;
-                    if (clip != mBlinkClip) {
-                        if (mSongOwner)
-                            curWeight = 0.0f;
-                        else
-                            curWeight *= weight;
-                    }
-                    if (clip && curWeight != 0.0f) {
-                        ScaleAddViseme(clip, curWeight);
-                    }
-                }
-            }
+        float songTime = TheTaskMgr.Seconds(TaskMgr::kRealTime) + mSongOffset;
+        if (mLoop) {
+        float duration = mSongPlayer->mLipSync->Duration() - 0.001f;
+        if (duration == 0.0f) {
+        songTime = 0.0f;
+        } else {
+        songTime = std::fmod(songTime, duration);
+        if (songTime < 0.0f)
+        songTime += duration;
+        }
+        }
+        if (mAlternateDriver)
+        songTime = mAlternateDriver->TopClipFrame();
+        mSongPlayer->Poll(songTime);
+        CharLipSync::PlayBack *pb = mSongPlayer;
+        unsigned int count = pb->mWeights.size();
+        for (unsigned int i = 0; i < count; i++) {
+        CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
+        float curWeight = w.unk14;
+        if (curWeight != 0.0f) {
+        CharClip *clip = w.unk0;
+        if (clip != mBlinkClip) {
+        if (mSongOwner)
+        curWeight = 0.0f;
+        else
+        curWeight *= weight;
+        }
+        if (clip && curWeight != 0.0f) {
+        ScaleAddViseme(clip, curWeight);
+        }
+        }
+        }
         }
         if (mSongOwner && mSongOwner->mSongPlayer) {
-            float songTime = TheTaskMgr.Seconds(TaskMgr::kRealTime) + mSongOwner->mSongOffset;
-            if (mLoop) {
-                float duration = mSongOwner->mSongPlayer->mLipSync->Duration() - 0.001f;
-                if (duration == 0.0f) {
-                    songTime = 0.0f;
-                } else {
-                    songTime = std::fmod(songTime, duration);
-                    if (songTime < 0.0f)
-                        songTime += duration;
-                }
-            }
-            mSongOwner->mSongPlayer->Poll(songTime);
-            CharLipSync::PlayBack *pb = mSongOwner->mSongPlayer;
-            unsigned int count = pb->mWeights.size();
-            for (unsigned int i = 0; i < count; i++) {
-                CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
-                float curWeight = weight * w.unk14;
-                CharClip *clip = w.unk0;
-                if (curWeight != 0.0f && clip && clip != mSongOwner->mBlinkClip) {
-                    CharClip *remapped = dynamic_cast<CharClip *>(mClips->FindObject(clip->Name(), false));
-                    if (!remapped) {
-                        MILO_FAIL(
-                            kNotObjectMsg,
-                            clip->Name(),
-                            PathName(mClips) ? PathName(mClips) : "**no file**"
-                        );
-                    }
-                    ScaleAddViseme(remapped, curWeight);
-                }
-            }
+        float songTime = TheTaskMgr.Seconds(TaskMgr::kRealTime) + mSongOwner->mSongOffset;
+        if (mLoop) {
+        float duration = mSongOwner->mSongPlayer->mLipSync->Duration() - 0.001f;
+        if (duration == 0.0f) {
+        songTime = 0.0f;
+        } else {
+        songTime = std::fmod(songTime, duration);
+        if (songTime < 0.0f)
+        songTime += duration;
+        }
+        }
+        mSongOwner->mSongPlayer->Poll(songTime);
+        CharLipSync::PlayBack *pb = mSongOwner->mSongPlayer;
+        unsigned int count = pb->mWeights.size();
+        for (unsigned int i = 0; i < count; i++) {
+        CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
+        float curWeight = weight * w.unk14;
+        CharClip *clip = w.unk0;
+        if (curWeight != 0.0f && clip && clip != mSongOwner->mBlinkClip) {
+        CharClip *remapped = dynamic_cast<CharClip *>(mClips->FindObject(clip->Name(), false));
+        if (!remapped) {
+        MILO_FAIL(
+        kNotObjectMsg,
+        clip->Name(),
+        PathName(mClips) ? PathName(mClips) : "**no file**"
+        );
+        }
+        ScaleAddViseme(remapped, curWeight);
+        }
+        }
+        }
         }
     }
-applyBlinks:
     {
         CharFaceServo *servo = dynamic_cast<CharFaceServo *>(mBones.Ptr());
         if (servo)
