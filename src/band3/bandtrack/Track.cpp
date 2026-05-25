@@ -83,6 +83,8 @@ void Track::Poll(float f) {
     }
 }
 
+bool Player::AllowWarningState() const { return true; }
+
 const User *Track::GetUser() const { return mTrackConfig.GetBandUser(); }
 
 const BandUser *Track::GetBandUser() const { return mTrackConfig.GetBandUser(); }
@@ -218,6 +220,10 @@ void Track::DTSPopup(bool show) const {
     }
 }
 
+bool Player::InFill() const { return false; }
+
+bool Player::InFreestyleSection() const { return false; }
+
 bool Track::HasNetPlayer() const {
     Player *player = mTrackConfig.GetBandUser()->GetPlayer();
     if (player)
@@ -292,6 +298,10 @@ bool Track::IsDeployingOverdrive() const {
 }
 
 bool Track::IsNoFailActive() const { return MetaPerformer::Current()->IsNoFailActive(); }
+
+bool Track::IsGameOver() const { return TheGamePanel->IsGameOver(); }
+
+bool Track::IsGamePaused() const { return TheGame->IsPaused(); }
 
 void Track::SetUserNameLabel(ObjectDir *dir, const char *labelName) {
     MILO_ASSERT(dir && labelName, 0x177);
