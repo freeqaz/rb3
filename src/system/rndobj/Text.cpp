@@ -458,6 +458,7 @@ RndText::RndText()
       mFixedLength(0), mDeferUpdate(0), unk124b4(0), unk124b4p1(0), unk128(0), unk12c(0),
       unk130(0) {
     mTextMarkup = false;
+    unkbp4 = false;
     unkbp5 = false;
     unkbp6 = false;
     unkbp7 = false;
