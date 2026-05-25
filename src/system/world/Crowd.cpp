@@ -673,14 +673,12 @@ BEGIN_LOADS(WorldCrowd)
                         bs >> xfmList;
                         it->mMMesh->mInstances.clear();
                         FOREACH (transIt, xfmList) {
-                            std::list<RndMultiMesh::Instance> &instances =
-                                it->mMMesh->mInstances;
-                            instances.push_back(RndMultiMesh::Instance(*transIt));
+                            it->mMMesh->mInstances.push_back(RndMultiMesh::Instance(*transIt));
                         }
                     } else if (gRev < 0xB) {
                         bs >> oldmmiList;
                         FOREACH (mmiIt, oldmmiList) {
-                            OldMMInst &old = *mmiIt;
+                            const OldMMInst &old = *mmiIt;
                             std::list<RndMultiMesh::Instance> &instances =
                                 it->mMMesh->mInstances;
                             instances.push_back(RndMultiMesh::Instance(old.mOldXfm));
