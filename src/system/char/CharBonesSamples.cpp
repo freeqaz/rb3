@@ -19,6 +19,7 @@ DECOMP_FORCEACTIVE(
     "CharBonesSamples are already compressed, can't remove bones."
 )
 
+#pragma pool_data off
 int CharBonesSamples::FracToSample(float *frac) const {
     if (mNumSamples < 2) {
         *frac = 0.0f;
@@ -58,6 +59,7 @@ int CharBonesSamples::FracToSample(float *frac) const {
     }
     return sampleIdx;
 }
+#pragma pool_data reset
 
 CharBonesSamples::CharBonesSamples() : mNumSamples(0), mPreviewSample(0), mRawData(0) {}
 
