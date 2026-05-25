@@ -2034,8 +2034,8 @@ bool SongParser::HandleRGGemStop(
             // Build the output RGGemInfo
             ::RGGemInfo geminfo;
             float off_time = GetTempoMap()->TickToTime((float)tick);
-            float on_time = GetTempoMap()->TickToTime((float)on_tick);
             geminfo.track = mTrack;
+            float on_time = GetTempoMap()->TickToTime((float)on_tick);
             geminfo.ms = on_time;
             int duration_ticks = tick - on_tick;
             geminfo.duration_ms = off_time - on_time;
@@ -2187,12 +2187,15 @@ bool SongParser::HandleRGGemStop(
 
             if (numActive > 1) {
                 if (mRGRootNote < 0) {
-                    MILO_WARN(
-                        "%s (%s): No root note set for chord gem at %s",
-                        mFilename,
-                        mTrackName,
-                        PrintTick(tick)
-                    );
+                    if (!geminfo.show_chord_names) {
+                        MILO_WARN(
+                            "%s (%s): No root note set for chord gem at %s",
+                            mFilename,
+                            mTrackName,
+                            PrintTick(tick)
+                        );
+                    }
+                    geminfo.root_note = 0;
                 } else {
                     geminfo.root_note = (unsigned char)mRGRootNote;
                 }
