@@ -187,15 +187,17 @@ void MasterAudio::SetupChannels(SongInfo *info) {
 
 typedef void (MasterAudio::*ChannelSetupFunc)(int, MasterAudio::ExtraTrackInfo &);
 
-void MasterAudio::SetupTracks(SongInfo *info, PlayerTrackConfigList *pList) {
-    MILO_ASSERT(pList, 0x1F4);
+void MasterAudio::SetupTracks(
+    SongInfo *info, PlayerTrackConfigList *player_track_config_list
+) {
+    MILO_ASSERT(player_track_config_list, 0x1F4);
     const std::vector<TrackChannels> &chans = info->GetTracks();
     for (int i = 0, j = 0; i < chans.size(); i++) {
         SongInfoAudioType curAudioType = chans[i].mAudioType;
         const std::vector<int> &curChannels = chans[i].mChannels;
         if (!curChannels.empty()) {
             ExtraTrackInfo extraInfo;
-            GetExtraTrackInfo(pList, curAudioType, extraInfo);
+            GetExtraTrackInfo(player_track_config_list, curAudioType, extraInfo);
             mTrackData.mTrackData.push_back(new TrackData(
                 mSubmixes,
                 curChannels,
@@ -215,7 +217,7 @@ void MasterAudio::SetupTracks(SongInfo *info, PlayerTrackConfigList *pList) {
             j++;
         }
     }
-    if (pList->UseVocalHarmony()) {
+    if (player_track_config_list->UseVocalHarmony()) {
         int numVoxParts = info->GetNumVocalParts();
         for (int i = 1; i < numVoxParts; i++) {
             mTrackData.mTrackData.push_back(new TrackData());
