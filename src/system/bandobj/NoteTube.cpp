@@ -120,8 +120,10 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         plate->mBeginX = mXPos;
 
     float baseX = mXPos - mesh->LocalXfm().v.x;
-    int vertStart = mesh->Verts().size();
-    int faceStart = mesh->Faces().size();
+    RndMesh::VertVector &verts = mesh->Verts();
+    std::vector<RndMesh::Face> &faces = mesh->Faces();
+    int vertStart = verts.size();
+    int faceStart = faces.size();
     int numPoints = mPoints.size();
 
     if (mPitched) {
@@ -135,7 +137,6 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         uvX1 -= 0.0078125f;
         uvX0 += 0.0078125f;
 
-        RndMesh::VertVector &verts = mesh->Verts();
         SetMeshVert(
             verts[vertStart],
             (0.015625f + (baseX + mPoints[0].x)) - 2.0f * unk_0x30,
@@ -202,11 +203,11 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         plate->AllocateFaces(numFaces, warnOnReallocate);
         for (int i = 0; i < numFaces; i++) {
             if (i % 2) {
-                mesh->Faces()[faceStart + i].Set(
+                faces[faceStart + i].Set(
                     vertStart + i + 2, vertStart + i + 1, vertStart + i
                 );
             } else {
-                mesh->Faces()[faceStart + i].Set(
+                faces[faceStart + i].Set(
                     vertStart + i, vertStart + i + 1, vertStart + i + 2
                 );
             }
@@ -222,7 +223,6 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         int numVerts = (numColumns + 1) * 2;
         plate->AllocateVerts(numVerts, warnOnReallocate);
 
-        RndMesh::VertVector &verts = mesh->Verts();
         SetMeshVert(
             verts[vertStart],
             baseX + mPoints[0].x,
@@ -279,11 +279,11 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         plate->AllocateFaces(numFaces, warnOnReallocate);
         for (int i = 0; i < numFaces; i++) {
             if (i % 2) {
-                mesh->Faces()[faceStart + i].Set(
+                faces[faceStart + i].Set(
                     vertStart + i + 2, vertStart + i + 1, vertStart + i
                 );
             } else {
-                mesh->Faces()[faceStart + i].Set(
+                faces[faceStart + i].Set(
                     vertStart + i, vertStart + i + 1, vertStart + i + 2
                 );
             }
@@ -291,7 +291,6 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
     } else {
         plate->AllocateVerts(8, warnOnReallocate);
 
-        RndMesh::VertVector &verts = mesh->Verts();
         float x0 = baseX + mPoints[0].x;
         SetMeshVert(
             verts[vertStart], x0 - 0.05f, unk_0x30 + mPoints[0].z, 0.0f, 0.0f
@@ -351,11 +350,11 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         plate->AllocateFaces(6, warnOnReallocate);
         for (int i = 0; i < 6; i++) {
             if (i % 2) {
-                mesh->Faces()[faceStart + i].Set(
+                faces[faceStart + i].Set(
                     vertStart + i + 2, vertStart + i + 1, vertStart + i
                 );
             } else {
-                mesh->Faces()[faceStart + i].Set(
+                faces[faceStart + i].Set(
                     vertStart + i, vertStart + i + 1, vertStart + i + 2
                 );
             }
