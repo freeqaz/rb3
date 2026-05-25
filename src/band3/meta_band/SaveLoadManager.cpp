@@ -816,9 +816,8 @@ DataNode SaveLoadManager::GetDialogMsg() {
                 sz += 0x10;
             }
             return DataArrayPtr(mc_save_not_enough_space_fmt, DataArrayPtr(), sz);
-        } else {
-            return DataArrayPtr(mc_save_not_enough_space, DataArrayPtr());
         }
+        return DataArrayPtr(mc_save_not_enough_space, DataArrayPtr());
     case (State)0x4C:
         return DataArrayPtr(
             mc_save_device_missing_fmt, DataArrayPtr(), profileName, playerNum
