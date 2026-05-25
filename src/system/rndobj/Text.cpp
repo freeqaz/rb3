@@ -622,8 +622,8 @@ void RndText::ComputeCharWidths(float *fp, int i2, const char *cc, Style style) 
 
 DECOMP_FORCEACTIVE(Text, "lineLen >= bestLineLen", "bestWp != -1", "curStyle.brk == false")
 
-namespace {
 struct WrapPoint {
+    WrapPoint() : style() {}
     int byteIdx;        // 0x00
     int charIdx;        // 0x04
     int cost;           // 0x08
@@ -634,7 +634,6 @@ struct WrapPoint {
     bool isLineEnd;     // 0x30
     bool isHardBreak;   // 0x31
 };
-}
 
 void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &lines) {
     lines.erase(lines.begin(), lines.end());
