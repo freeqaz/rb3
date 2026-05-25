@@ -340,8 +340,7 @@ void BandCamShot::StartAnim() {
             Character *charObj = dynamic_cast<Character *>(cache->unk4);
             if (charObj) {
                 MILO_ASSERT(numChars < 32, 0x231);
-                chars[numChars] = charObj;
-                numChars++;
+                chars[numChars++] = charObj;
                 charObj->mSelfShadow = cur.mSelfShadow;
                 charObj->SetMinLod(cur.mForceLod);
                 charObj->SetShowing(!cur.mHide);
