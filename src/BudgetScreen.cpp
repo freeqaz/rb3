@@ -6,9 +6,26 @@
 #include "system/utl/Option.h"
 #include "system/rndobj/Rnd.h"
 #include "system/synth/StandardStream.h"
+#include "system/utl/MemMgr.h"
+#include "system/utl/SysTest.h"
+#include "system/obj/PropSync_p.h"
+#include "system/obj/Msg.h"
+#include "system/utl/BinStream.h"
+#include "system/utl/MakeString.h"
 
 #include "band3/game/SongDB.h"
 #include "band3/meta_band/BandSongMgr.h"
+#include "band3/meta_band/SessionMgr.h"
+#include "band3/meta_band/MetaPerformer.h"
+#include "band3/meta_band/ModifierMgr.h"
+#include "band3/meta_band/ProfileMgr.h"
+#include "band3/game/BandUserMgr.h"
+#include "band3/game/BandUser.h"
+#include "band3/game/GameConfig.h"
+#include "band3/game/Defines.h"
+#include "network/net/Net.h"
+
+#include "system/utl/Symbols2.h"
 
 #include <algorithm>
 #include "decomp.h"
@@ -310,16 +327,6 @@ inline float GetLastTimerMs(const char *name) {
     return AutoTimer::GetTimer(name)->GetLastMs();
 }
 
-Symbol end_test("end_test");
-Symbol next_test("next_test");
-
-BEGIN_HANDLERS(BudgetScreen)
-    HANDLE_ACTION(end_test, EndTest())
-    HANDLE_ACTION(next_test, NextTest())
-    HANDLE_SUPERCLASS(UIScreen)
-    HANDLE_CHECK(663)
-END_HANDLERS
-
 void BudgetScreen::Poll() {
     UIScreen::Poll();
     START_AUTO_TIMER("budget_screen_poll");
@@ -446,10 +453,14 @@ void BudgetScreen::EndTest() {
         *mLog << "Category;Range (ms);Frames;Percentile\n";
 
         const char *testName = mTests->Array(mTestIdx)->Str(0);
-        mCpuDist.Report(*mLog, String(testName) += " (CPU distribution)");
-        mGsDist.Report(*mLog, String(testName) += " (GS distribution)");
-        mHudDist.Report(*mLog, String(testName) += " (HUD/Track CPU distribution)");
-        mEtcDist.Report(*mLog, String(testName) += " (Game Etc. CPU distribution)");
+        String cpuStr(testName); cpuStr += " (CPU distribution)";
+        mCpuDist.Report(*mLog, cpuStr);
+        String gsStr(testName); gsStr += " (GS distribution)";
+        mGsDist.Report(*mLog, gsStr);
+        String hudStr(testName); hudStr += " (HUD/Track CPU distribution)";
+        mHudDist.Report(*mLog, hudStr);
+        String etcStr(testName); etcStr += " (Game Etc. CPU distribution)";
+        mEtcDist.Report(*mLog, etcStr);
         *mLog << "\n";
     } else {
         *mLog << "Main RAM: " << mainRam << "\n";
@@ -462,5 +473,144 @@ void BudgetScreen::EndTest() {
     TheUI.GotoScreen(startScreen, false, false);
 }
 
+void BudgetScreen::NextTest() {
+    mTestIdx++;
+    if (mTestIdx < mTests->Size()) {
+        DataArray *test = mTests->Array(mTestIdx);
+
+        if (mWorstOnly) {
+            Symbol worst("worst");
+            if (test->FindArray(worst, true)->Int(1) == 0) {
+                NextTest();
+            }
+        }
+
+        TheNet.GetNetSession()->Clear();
+
+        Symbol startSym("start");
+        mRecordStartTick = test->FindArray(startSym, true)->Int(1);
+
+        Symbol endSym("end");
+        mRecordEndTick = test->FindArray(endSym, true)->Int(1);
+
+        Symbol sevenPlayerSym("seven_player_mode");
+        DataArray *sevenArr = test->FindArray(sevenPlayerSym, false);
+        bool sevenPlayerMode = sevenArr && sevenArr->Int(1) != 0;
+
+        if (sevenPlayerMode) {
+            static Message msg(enable_auto_vocals);
+            TheModifierMgr->Handle(msg.mData, true);
+        } else {
+            TheModifierMgr->DisableAutoVocals();
+        }
+
+        std::vector<Symbol> songs;
+
+        Symbol playersSym("players");
+        DataArray *players = test->FindArray(playersSym, true);
+        for (int i = 1; i < players->Size(); i++) {
+            LocalBandUser *user = TheBandUserMgr->GetUserFromPad(i - 1);
+            TheSessionMgr->AddLocalUser(user);
+            Symbol trackSym = players->Sym(i);
+            user->SetTrackType(trackSym);
+            user->SetControllerType(TrackTypeToControllerType(user->GetTrackType()));
+            user->SetDifficulty(kDifficultyExpert);
+
+            if (user->GetTrackType() == kTrackDrum) {
+                Symbol proDrumSym("pro_drums");
+                DataArray *proDrumArr = test->FindArray(proDrumSym, false);
+                bool proDrums = proDrumArr && proDrumArr->Int(1) != 0;
+                if (proDrums) {
+                    user->SetPreferredScoreType(kScoreRealDrum);
+                    TheProfileMgr.SetCymbalConfiguration(0x1C);
+                } else {
+                    user->SetPreferredScoreType(kScoreDrum);
+                    TheProfileMgr.SetCymbalConfiguration(0);
+                }
+            }
+        }
+
+        Symbol songSym("song");
+        Symbol songName = test->FindArray(songSym, true)->Sym(1);
+        songs.push_back(songName);
+        MetaPerformer::Current()->SetSongs(songs);
+
+        TheGameConfig->AutoAssignMissingSlots();
+
+        Symbol preInitSym("pre_init");
+        DataArray *preInit = test->FindArray(preInitSym, false);
+        if (preInit) {
+            preInit->ExecuteScript(1, nullptr, nullptr, 1);
+        }
+    } else {
+        if (gUseSsv) {
+            Symbol columnInfoSym("column_info");
+            LogColumnInfo(mLog, SystemConfig(columnInfoSym), true);
+            *mLog << "Category;CategoryName;AlwaysShow\n";
+            *mLog << "category_info;Summary;1\n";
+            for (int i = 1; i < mTests->Size(); i++) {
+                const char *testName = mTests->Array(i)->Str(0);
+                String cpuName(testName);
+                cpuName += " (CPU distribution)";
+                *mLog << "category_info;";
+                *mLog << cpuName;
+                *mLog << ";0\n";
+                String gsName(testName);
+                gsName += " (GS distribution)";
+                *mLog << "category_info;";
+                *mLog << gsName;
+                *mLog << ";0\n";
+            }
+        } else {
+            *mLog << "\nWORST CASE 99th PCTILES:\n";
+            *mLog << "   CPU: ";
+            *mLog << mWorstCpuName;
+            *mLog << " @ ";
+            *mLog << mWorstCpuPctile;
+            *mLog << " ms/frame\n";
+            *mLog << "   GS: ";
+            *mLog << mWorstGsName;
+            *mLog << " @ ";
+            *mLog << mWorstGsPctile;
+            *mLog << " ms/frame\n";
+        }
+        *mLog << "\nDone\n";
+        mLog->mFile.Flush();
+        delete mLog;
+        FormatString msg("TestIsFinishedNow\n");
+        TheDebug << msg.Str();
+        TheDebug.Exit(0, true);
+    }
+}
+
 // Must be down here to avoid data pooling in Poll
 int gMainFree;
+
+int BudgetScreen::HeapFreeSize(const char *name) {
+    int total = 0;
+    for (int i = 0; i < MemNumHeaps(); i++) {
+        if (streq(MemHeapName(i), name)) {
+            int a, b, free, d;
+            MemFreeBlockStats(i, a, b, free, d);
+            total += free;
+        }
+    }
+    return total;
+}
+
+Symbol end_test("end_test");
+Symbol next_test("next_test");
+
+BEGIN_HANDLERS(BudgetScreen)
+    HANDLE_ACTION(end_test, EndTest())
+    HANDLE_ACTION(next_test, NextTest())
+    HANDLE_SUPERCLASS(UIScreen)
+    HANDLE_CHECK(663)
+END_HANDLERS
+
+BEGIN_PROPSYNCS(BudgetScreen)
+    SYNC_PROP(test_panel, mTestPanel)
+    SYNC_SUPERCLASS(Hmx::Object)
+END_PROPSYNCS
+
+void Hmx::Object::PreLoad(BinStream &bs) { Load(bs); }
