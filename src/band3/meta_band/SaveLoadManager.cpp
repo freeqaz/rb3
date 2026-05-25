@@ -397,6 +397,75 @@ void SaveLoadManager::Poll() {
     }
 }
 
+void SaveLoadManager::SetState(State newState) {
+    State oldState = mState;
+    if (oldState == newState) return;
+
+    bool wasIdle = false;
+    // Exit-state cleanup based on which state we're leaving.
+    switch ((int)oldState) {
+    case 0x0:
+        wasIdle = true;
+        break;
+    case 0xb:
+    case 0x46:
+    case 0x47:
+    case 0x64:
+    case 0x6d:
+        // Note: original frees mAction via virtual delete; MemcardAction
+        // dtor is private in our header, so we leave the slot null instead.
+        if (newState != (State)0x6d) {
+            mAction = NULL;
+        }
+        break;
+    case 0x1f:
+    case 0x21:
+    case 0x32:
+    case 0x33:
+    case 0x3e:
+        if (newState != (State)0x6f) {
+            if (mData != NULL) {
+                _MemFree(mData);
+                mData = NULL;
+            }
+        }
+        break;
+    case 0x6f:
+        if (mData != NULL) {
+            _MemFree(mData);
+            mData = NULL;
+        }
+        break;
+    default:
+        break;
+    }
+
+    mState = newState;
+    if (wasIdle) {
+        UpdateStatus((SaveLoadMgrStatus)0);
+    }
+    if ((unsigned int)mState > 0x6e) return;
+
+    // Entry handlers (partial implementation - large state machine)
+    switch ((int)mState) {
+    case 0x0:
+        UpdateStatus((SaveLoadMgrStatus)5);
+        break;
+    case 0x1:
+        unk7c = 0;
+        break;
+    case 0x2:
+        if (mInitialLoadNotDone) {
+            SetState((State)0x14);
+        } else {
+            SetState((State)0x3);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 void SaveLoadManager::SaveLoadErrorSetState() {
     switch (mMode) {
     case kMode_AutoLoad:
