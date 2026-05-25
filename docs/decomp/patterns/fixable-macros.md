@@ -31,6 +31,8 @@ Then either: (a) extract inline expressions to a local (when base has the long s
 **Why:**
 - `AccomplishmentManager.cpp` — renamed `pMeta` → `pPerformer` and extracted `MILO_ASSERT(MetaPerformer::Current(), 0xA8B)` into a local: 9 fns → 100%, 95-99% band 21 → 12.
 - `VocalPlayer.cpp` (counter-direction) — `LocalScorePhrase` had `unsigned int sz = i_rNewPhraseActiveParts.size(); MILO_ASSERT(sz, …)`; target had the `.size()` inline. Restoring inline form was a 26-byte shorter→longer pool string, undoing a -28 byte pool shift; cascaded 9 functions to 100% in one edit.
+- `Tour.cpp` (function-order matters) — fixing the -10 delta required BOTH renaming `performer` → `pPerformer` AND moving `InitializeTour` from before `UseUsersProgress` to after `IsUnderway`. Pool entries are ordered by emission order, so function-definition order in the .cpp controls where each assert string lands. +16 fns to 100% in one commit.
+- `BandCharacter.cpp` (string tail-merge variant) — `DataVariable("no_anim")` allocated a standalone 8-byte pool slot. Target binary referenced the same string as a SUBSTRING of an existing `DECOMP_FORCEACTIVE`'d `"BandCharacter.no_anim"` via `+ 14` offset. Fix: `DataVariable("BandCharacter.no_anim" + 14)`. +25 fns to 100% in one line.
 
 Same family as [format-string tweaks shift string pool](fixable-operators.md) and `MakeString("literal")` opening a FormatString slot.
 
