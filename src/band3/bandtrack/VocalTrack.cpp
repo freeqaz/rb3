@@ -650,7 +650,8 @@ void VocalTrack::UpdateVocalStyle() {
         BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(
             TheSongMgr.GetSongIDFromShortName(MetaPerformer::Current()->Song(), true)
         );
-        unk74 = data->ScrollSpeed() * (unk78 / 16.8f);
+        // target compiled with ScrollSpeed returning double; cast forces frsp
+        unk74 = (float)(double)data->ScrollSpeed() * (unk78 / 16.8f);
         mDir->Find<RndAnimatable>("tambourine_preview.anim", true)->SetFrame(0, 1);
         RebuildHUD();
     }
