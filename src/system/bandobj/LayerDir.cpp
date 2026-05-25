@@ -148,7 +148,7 @@ DataNode LayerDir::RandomizeColors(DataArray *) {
         Hmx::Object *palette = it->mColorPalette;
         if (palette && it->mAllowColor) {
             int idx = RandomInt(0, palette->Property(Symbol("colors"), true)->Array()->Size());
-            DataArray *arr = palette->Property(Symbol("colors"), true)->Array();
+            const DataArray *arr = palette->Property(Symbol("colors"), true)->Array();
             int packed = arr->Node(idx).Int(arr);
             it->mColor.Unpack(packed);
             RefreshLayer(*it, false);
@@ -167,14 +167,15 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
                         DataArray *arr =
                             palette->Property(Symbol("colors"), true)->Array();
                         if (arr->Size() > layer.mColorIdx) {
-                            DataArray *arr2 =
+                            const DataArray *arr2 =
                                 palette->Property(Symbol("colors"), true)->Array();
                             int packed = arr2->Node(layer.mColorIdx).Int(arr2);
                             layer.mColor.Unpack(packed);
                         }
                     }
                 }
-                layer.mMat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
+                Hmx::Object *mat = layer.mMat;
+                mat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
             }
             if (layer.mAllowAlpha) {
                 float a = layer.mAlpha * (layer.mAlphaMax - layer.mAlphaMin)
