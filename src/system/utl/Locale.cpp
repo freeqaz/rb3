@@ -1,4 +1,5 @@
 #include "utl/Locale.h"
+#include "decomp.h"
 #include "obj/DataFile.h"
 #include "obj/DataFunc.h"
 #include "os/Debug.h"
@@ -7,6 +8,8 @@
 #include "utl/MakeString.h"
 #include "utl/Str.h"
 #include "utl/Symbols.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 const char *Locale::sIgnoreMissingText;
@@ -191,10 +194,69 @@ bool Locale::FindDataIndex(Symbol s, int &idx, bool fail) const {
     return false;
 }
 
-char gLocalizeSepBuf[4][0x32];
-int gLocalizeSepIdx;
-static char gFloatBufs[4][0x32];
-static int gNextFloatBuf;
+const char *Localize(Symbol token, bool *notify) {
+    bool localized;
+    const char *textStr = TheLocale.Localize(token, false);
+    localized = textStr != 0;
+    if (!localized) {
+        textStr = token.mStr;
+        Locale::sIgnoreMissingText = textStr;
+        if (Locale::sVerboseNotify != 0) {
+            MILO_WARN("\"%s\" needs localization", token);
+        }
+    }
+    if (notify)
+        *notify = localized;
+    return textStr;
+}
+
+DECOMP_FORCEACTIVE(Locale, "locale_mmsshh")
+
+char gSepIntBufs[4][0x32];
+int gNextSepIntBuf;
+char gFloatBufs[4][0x32];
+int gNextFloatBuf;
+
+const char *LocalizeSeparatedInt(int num) {
+    char digit[2];
+    bool success = false;
+    const char *sep = Localize(locale_separator, &success);
+    if (!success) {
+        sep = ",";
+    }
+    bool isNullSep = !strcmp(sep, gNullStr);
+    if (isNullSep) {
+        return MakeString("%i", num);
+    }
+    int sepLen = strlen(sep);
+    char *text = gSepIntBufs[gNextSepIntBuf];
+    int offset = 0x31;
+    text[0x31] = '\0';
+    bool less_than_zero = num < 0;
+    if (less_than_zero) {
+        num = abs(num);
+    }
+    int digitCount = 0;
+    while (digitCount == 0 || num > 0) {
+        if (digitCount % 3 == 0 && digitCount > 0) {
+            for (int j = sepLen - 1; j >= 0; j--) {
+                text[--offset] = sep[j];
+            }
+        }
+        snprintf(digit, 2, "%d", num % 10);
+        offset--;
+        text[offset] = digit[0];
+        digitCount++;
+        num = num / 10;
+    }
+    if (less_than_zero) {
+        offset--;
+        text[offset] = '-';
+    }
+    const char *result = &text[offset];
+    gNextSepIntBuf = (gNextSepIntBuf + 1) % 4;
+    return result;
+}
 
 const char *LocalizeFloat(const char *fmt, float num) {
     const char *str = MakeString(fmt, num);
@@ -230,20 +292,4 @@ void SyncReloadLocale() {
     }
     TheLocale.Terminate();
     TheLocale.Init();
-}
-
-const char *Localize(Symbol token, bool *notify) {
-    bool localized;
-    const char *textStr = TheLocale.Localize(token, false);
-    localized = textStr != 0;
-    if (!localized) {
-        textStr = token.mStr;
-        Locale::sIgnoreMissingText = textStr;
-        if (Locale::sVerboseNotify != 0) {
-            MILO_WARN("\"%s\" needs localization", token);
-        }
-    }
-    if (notify)
-        *notify = localized;
-    return textStr;
 }
