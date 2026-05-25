@@ -402,7 +402,7 @@ void ChordShapeGenerator::BuildContourCap(
     Hmx::Color32 col2
 ) {
     MILO_ASSERT(connectingVerts.size(), 0x24B);
-    RndMesh::VertVector &srcVerts = mSource->Verts();
+    const RndMesh::VertVector &srcVerts = mSource->Verts();
     std::map<unsigned short, unsigned short> capMap;
     for (int i = 0; i < srcVerts.size(); i++) {
         float sx = srcVerts[i].pos.x;
