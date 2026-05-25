@@ -528,6 +528,44 @@ void Movie::Impl::SharedFinishOpen(bool) {}
 int Movie::Impl::MovieOpen(const char *, unsigned int) { return 0; }
 void Movie::Impl::SetRect() {}
 
+bool Movie::Impl::CheckOpen(bool b) {
+    if (!mLoading) return false;
+    if (mLoader != NULL) {
+        MILO_ASSERT(!mPreloadBuf, 0x3CB);
+        if (!mLoader->IsLoaded()) return true;
+        mLoading = false;
+        mPreloadBuf = (char *)((FileLoader *)mLoader)->GetBuffer(NULL);
+        mPreloadBufLen = ((FileLoader *)mLoader)->GetSize();
+        if (mLoader != NULL) delete mLoader;
+        mLoader = NULL;
+        if (mPreloadBuf == NULL) {
+            SharedFinishOpen(b);
+            End();
+            return false;
+        }
+        if (strncmp(mPreloadBuf, "BIKi", 4) == 0) {
+            EndianSwapBuffer(mPreloadBuf, mPreloadBufLen);
+        }
+        MovieOpen(mPreloadBuf, 0x4000400);
+        SharedFinishOpen(b);
+    } else if (mLoader2 != NULL) {
+        if (mBink != NULL) return false;
+        if (!mLoader2->IsLoaded()) return true;
+        mLoading = false;
+        DataArray *videos = SystemConfig()->FindArray(Symbol("videos"), false);
+        if (videos != NULL) {
+            DataArray *stream_begin = videos->FindArray(Symbol("stream_begin"), false);
+            if (stream_begin != NULL) {
+                stream_begin->ExecuteScript(1, NULL, NULL, 1);
+            }
+        }
+        UsingCD();
+        MovieOpen(mFilename.c_str(), 0x2000400);
+        SharedFinishOpen(b);
+    }
+    return false;
+}
+
 void Movie::Impl::FinishOpen() {
     bool ok = true;
     if (mThreadId != (unsigned int)OSGetCurrentThread()) {
