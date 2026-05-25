@@ -589,8 +589,8 @@ float segmentLength(int i1, int i2, int i3, int i4, float *f5, const char *c6) {
 }
 
 void RndText::ComputeCharWidths(float *fp, int i2, const char *cc, Style style) {
-    float size = style.size;
     float f3 = style.zOffset;
+    float size = style.size;
     unsigned short u7 = 0;
     for (int i = 0; i < i2; i++) {
         if (*cc == '<' && mTextMarkup) {
@@ -606,9 +606,9 @@ void RndText::ComputeCharWidths(float *fp, int i2, const char *cc, Style style) 
             RndFont *i4 = SupportChar(us68, style.font);
             if (i4) {
                 float f9 = i4->CharAdvance(u7, us68);
-                u7 = us68;
                 float fVal = style.size * f9;
                 fp[i] = fVal;
+                u7 = us68;
                 if (fVal < 0)
                     fp[i] = 0;
                 unsigned int key = (unsigned int)i4;
@@ -638,8 +638,8 @@ struct WrapPoint {
 void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &lines) {
     lines.erase(lines.begin(), lines.end());
 
-    int textLen = text ? strlen(text) : 0;
     int numChars = text ? UTF8StrLen(text) : 0;
+    int textLen = text ? strlen(text) : 0;
 
     if (style.font == nullptr || textLen == 0) {
         Line emptyLine;
@@ -659,8 +659,7 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
     }
 
     float *charWidths = (float *)__alloca(numChars * sizeof(float));
-    Style runStyle = style;
-    ComputeCharWidths(charWidths, numChars, text, runStyle);
+    ComputeCharWidths(charWidths, numChars, text, style);
 
     if (mWrapWidth == 0.0f) {
         Line emptyLine;
@@ -680,8 +679,8 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
         return;
     }
 
-    // Main DP wrap algorithm.
     WrapPoint stackBuf[256];
+    // Main DP wrap algorithm.
     WrapPoint *wps = stackBuf;
     if (numChars > 256) {
         wps = new WrapPoint[numChars + 1];
@@ -700,15 +699,15 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
     wps[0].isLineEnd = true;
     wps[0].isHardBreak = true;
 
+    int charCount = 0;
+    const char *cur = text;
+
     float minW = mWrapWidth * 0.7f;
     float goodW = mWrapWidth * 0.95f;
-
-    bool activeMarkup = curStyle.brk;
-    int numWp = 1;
-    const char *cur = text;
     unsigned short curChar;
+    int numWp = 1;
+    bool activeMarkup = curStyle.brk;
     int curCharLen = DecodeUTF8(curChar, cur);
-    int charCount = 0;
 
     while (curChar != 0) {
         while (curChar != 0 && curChar != '\n') {
