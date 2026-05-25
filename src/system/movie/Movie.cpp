@@ -338,9 +338,12 @@ Movie::Impl::Impl()
       mTimeCallback(0), mBinkHandle(kNoHandle), mLoading(false), mMidFrame(false),
       mThreadId((unsigned int)gMainThreadID), mMovieBuffers(0) {
     // Set time callback if is_timed_movie is configured
-    DataArray *cfg = SystemConfig(movie, is_timed_movie);
-    DataNode result = cfg->ExecuteScript(1, 0, 0, 1);
-    bool timed = result != DataNode(0);
+    bool timed;
+    {
+        DataArray *cfg = SystemConfig(movie, is_timed_movie);
+        DataNode result = cfg->ExecuteScript(1, 0, 0, 1);
+        timed = result != DataNode(0);
+    }
     if (timed) {
         mTimeCallback = TaskMgrDeltaSeconds;
     }
@@ -522,6 +525,66 @@ void Movie::Impl::MovieClose() {
 // TODO: full implementation. Stubs so SetPaused can link.
 void Movie::Impl::SharedFinishOpen(bool) {}
 void Movie::Impl::SetRect() {}
+
+void Movie::Impl::Begin(
+    const char *file,
+    float aspect,
+    bool soundEnabled,
+    bool loop,
+    bool preload,
+    bool stretchToFit,
+    int forceTrack,
+    BinStream *stream
+) {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x200);
+    if (TheLoadMgr.mPlatform == 0) return;
+    mFilename = FileMakePath(FileRoot(), file, NULL);
+    if (!UsingCD()) {
+        FileQualifiedFilename(mFilename, mFilename.c_str());
+    }
+    mPreloadFlag = preload;
+    if (!PlatformCacheFile(file)) return;
+    mLoop = loop;
+    mSoundEnabled = soundEnabled;
+    mStretchToFit = stretchToFit;
+    mForceTrack = forceTrack;
+    mAspect = 0.0f;
+    mBinkHandle = kNoHandle;
+    mIsCachedStream = false;
+    mPollTimer.Reset();
+    MILO_ASSERT(!mLoader, 0x21D);
+    MILO_ASSERT(!mBink, 0x21E);
+    MILO_ASSERT(!mPreloadBuf, 0x21F);
+    if (preload) {
+        const char *fn = mFilename.c_str();
+        FilePath fp(fn);
+        mLoader = (MovieLoader *)new FileLoader(
+            fp, fn, kLoadFront, 0, false, stream != NULL, stream
+        );
+    } else {
+        const char *fn = mFilename.c_str();
+        FilePath fp(fn);
+        mLoader2 = new MovieLoader(fp, this);
+    }
+    sActiveMovies.push_back(this);
+    sActivePending++;
+    if (sActivePending > 1 && !preload) {
+        String localFn = mFilename;
+        MILO_WARN("%s, multiple movies must be preloaded", localFn);
+    }
+    mLoading = true;
+}
 
 int Movie::Impl::MovieOpen(const char *file, unsigned int flags) {
     bool ok = true;
