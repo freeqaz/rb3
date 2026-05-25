@@ -950,7 +950,8 @@ void OutfitConfig::Mats(std::list<RndMat *> &list, bool allocTempMats) {
             MemDoTempAllocations m(true, false);
             refs = it->mResourceMat->Refs();
         }
-        for (std::vector<ObjRef *>::iterator rit = refs.end(); rit != refs.begin();) {
+        std::vector<ObjRef *>::iterator rbegin = refs.begin();
+        for (std::vector<ObjRef *>::iterator rit = refs.end(); rit != rbegin;) {
             ObjRef *cur = *--rit;
             RndMesh *mesh = dynamic_cast<RndMesh *>(cur->RefOwner());
             if (mesh) {
