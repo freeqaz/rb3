@@ -25,6 +25,12 @@ TheDOFProc->Set(BlurDepth(), MaxBlur(), MinBlur());
 
 **Example:** In `CharIKFingers`, `.Set(0.3f, -6.0f, 0.4f)` instead of `= Vector3(...)` fixed the stack layout.
 
+## `memset`/`memcpy` on Tiny Buffers → Typed Stores
+
+`memset(buf, 0, N)` or `memcpy(&dst, &src, sizeof(T))` on small (≤16B) stack buffers emits a `bl memset`/`bl memcpy` call. When the target uses inline `sth`/`stb`/`psq_st` stores instead, replace with typed C: `*(short*)buf = 0; buf[2] = 0;` or `T dst = src;`.
+
+**Wins:** `AppLabel::SetPitch` 87.7→95.6% (memset on 3-byte buf); `UtilDrawCigar` 60.6→64.7% (memcpy of 0x40-byte Transform).
+
 ## std::max with Literal First Arg Creates Anonymous Static
 
 `std::max(0.0f, expr)` with the literal as the first `const float&` argument causes CW to allocate an anonymous static for the literal and generate a pointer-select pattern (compare, then load via pointer to either the static or a stack spill).
