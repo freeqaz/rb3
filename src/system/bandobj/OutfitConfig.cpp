@@ -868,6 +868,7 @@ void OutfitConfig::DrawPreClear() {
                              mp != pit->mMeshes.end();
                              ++mp) {
                             MILO_ASSERT(mp->mesh, 0x725);
+                            RndMat *mpMat = mp->mesh->mMat;
                             for (ObjVector<BandPatchMesh>::iterator other =
                                      mPatches.begin();
                                  other != mPatches.end();
@@ -877,7 +878,7 @@ void OutfitConfig::DrawPreClear() {
                                              other->mMeshes.begin();
                                          omp != other->mMeshes.end();
                                          ++omp) {
-                                        if (mp->mesh->mMat == omp->mesh->mMat) {
+                                        if (mpMat == omp->mesh->mMat) {
                                             dirty |= other->mCategory;
                                         }
                                     }
