@@ -986,9 +986,7 @@ void RndMesh::OnSync(int flags) {
         std::vector<Face> faces;
         Vector3 v40(0, 0, 0);
         int i4 = 0;
-        while (true) {
-            if (mFaces.empty())
-                break;
+        do {
             std::vector<Face>::iterator faceIt = mFaces.begin();
             std::vector<Face>::iterator bestFaceIt = mFaces.begin();
             int u5 = 4;
@@ -1029,9 +1027,7 @@ void RndMesh::OnSync(int flags) {
             faces.push_back(*faceIt);
             mFaces.erase(faceIt);
             i4++;
-            if (mFaces.empty())
-                break;
-        }
+        } while (!mFaces.empty());
         mPatches.push_back(i4);
         mFaces.swap(faces);
     }
