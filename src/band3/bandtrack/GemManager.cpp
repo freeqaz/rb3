@@ -753,7 +753,11 @@ void GemManager::SetupGems(int startTick) {
             newGem.mIsRepeatChord = true;
             if (!gem.IsMuted() && gem.mTick >= lastArpeggioEndTick) {
                 int endTick = gem.mTick;
-                if (!(gem.mIgnoreDuration || gem.LeftHandSlide())) {
+                bool skipDuration = false;
+                if (gem.mIgnoreDuration || gem.LeftHandSlide()) {
+                    skipDuration = true;
+                }
+                if (!skipDuration) {
                     endTick += gem.mDurationTicks;
                 }
                 repeatedChordEndTick = endTick;
@@ -770,7 +774,11 @@ void GemManager::SetupGems(int startTick) {
                 repeatedChordGemId = i;
                 repeatedChordStartTick = gem.mTick;
                 int endTick = gem.mTick;
-                if (!(gem.mIgnoreDuration || gem.LeftHandSlide())) {
+                bool skipDuration = false;
+                if (gem.mIgnoreDuration || gem.LeftHandSlide()) {
+                    skipDuration = true;
+                }
+                if (!skipDuration) {
                     endTick += gem.mDurationTicks;
                 }
                 repeatedChordEndTick = endTick;
@@ -786,8 +794,13 @@ void GemManager::SetupGems(int startTick) {
             signed char curFret = gem.GetFret(gem.GetLowestString());
             if (i < gems.size() - 1) {
                 const GameGem &nextGem = gems[i + 1];
-                hasNext = nextGem.mTick - (gem.mTick + gem.mDurationTicks) < 0x78;
-                if (hasNext && gem.mSlots == nextGem.mSlots && nextGem.mForceStrum) {
+                bool tailFlag = false;
+                hasNext = nextGem.mTick - (gem.mTick + gem.mDurationTicks) <= 0x78;
+                bool slotsEqual = ((gem.mSlots - nextGem.mSlots) == 0);
+                if (hasNext && slotsEqual && nextGem.mForceStrum) {
+                    tailFlag = true;
+                }
+                if (tailFlag) {
                     newGem.mTailStart = nextGem.mMs / 1000.0f;
                 }
                 if (hasNext) {
@@ -796,7 +809,7 @@ void GemManager::SetupGems(int startTick) {
                 }
             }
             if (!hasNext) {
-                newGem.mSlideUp = (curFret > 7);
+                newGem.mSlideUp = (curFret <= 7);
             }
             if (gem.ReverseSlide()) {
                 newGem.mSlideUp = !newGem.mSlideUp;
@@ -1289,7 +1302,7 @@ bool GemManager::OnMissPhrase(int i1) {
         int i2 = MsToTickInt(TheTaskMgr.Seconds(TaskMgr::kRealTime) * 1000.0f);
         if (!mMissedPhrases.empty()) {
             Extent &back = mMissedPhrases.back();
-            ret = back.unk4 != ext18.unk4;
+            ret = ext18.unk4 != back.unk4;
             if (ret) {
                 mMissedPhrases.push_back(Extent(i2, ext18.unk4));
             }
@@ -1338,15 +1351,14 @@ bool GemManager::IsSpotlightGem(int gemId, bool &outUnison) {
     int phrase_id = TheSongDB->GetPhraseID(mTrackConfig.TrackNum(), gemId);
     MILO_ASSERT(phrase_id >= -1, 0xA04);
     if (phrase_id != -1) {
-        bool inFutureLoop = false;
         Band *band = mTrackConfig.GetBandUser()->GetPlayer()->mBand;
+        bool inFutureLoop = false;
         if (TheGame->InTrainer() && TheGemTrainerPanel->IsGemInFutureLoop(gemId)) {
             inFutureLoop = true;
         }
+        CommonPhraseCapturer *capturer = band->mCommonPhraseCapturer;
         if (inFutureLoop ||
-            !band->mCommonPhraseCapturer->DidTrackFail(
-                phrase_id, mTrackConfig.TrackNum()
-            )) {
+            !capturer->DidTrackFail(phrase_id, mTrackConfig.TrackNum())) {
             outUnison = TheSongDB->IsUnisonPhrase(phrase_id);
             return true;
         }
@@ -1430,10 +1442,10 @@ void GemManager::PollHelper(float ms, const PlayerState &state) {
     }
     if (state.whammyActive) {
         float up = unkc4 + 0.1f;
-        unkc4 = std::min(up, 1.0f);
+        unkc4 = std::min(1.0f, up);
     } else {
         float down = unkc4 - 0.1f;
-        unkc4 = std::max(down, 0.0f);
+        unkc4 = std::max(0.0f, down);
     }
     DrawTrackMasks(MsToTickInt(top * 1000.0f), -1);
     UpdateArpeggios(ms, false);
