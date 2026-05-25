@@ -1014,6 +1014,33 @@ void VocalTrackDir::SetRange(float min, float max, int tonic, bool b) {
     }
 }
 
+Hmx::Color VocalTrackDir::GetLyricColor(int idx) const {
+    if ((idx & 3) == 0 && (idx & 8) == 0) {
+        return Hmx::Color(0, 0, 0);
+    }
+    return mLyricColorMap.find(idx & 0x1f)->second;
+}
+
+float VocalTrackDir::GetLyricAlpha(int idx) const {
+    if ((idx & 3) == 0 && (idx & 8) == 0) {
+        return 0.0f;
+    }
+    return mLyricAlphaMap.find(idx & 0xb)->second;
+}
+
+float VocalTrackDir::PitchToZ(float pitch, bool clamp) const {
+    float ratio = (pitch - mLastMin) / (mLastMax - mLastMin);
+    if (clamp) {
+        if (ratio > 1.0f) ratio = 1.0f;
+        else if (ratio < 0.0f) ratio = 0.0f;
+    } else {
+        while (ratio > 1.0f) ratio -= 1.0f;
+        while (ratio < 0.0f) ratio += 1.0f;
+    }
+    float bottom = mPitchBottomZ;
+    return ratio * (mPitchTopZ - bottom) + bottom;
+}
+
 void VocalTrackDir::UpdateTubeStyle() {
     if (mTubeStyle) {
         if (!mSpotlightMat)
