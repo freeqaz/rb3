@@ -213,3 +213,26 @@ int parts = (...) ? *partsPtr : *otherPtr;
 ```
 
 **Example:** `VocalTrackDir::ShowPhraseFeedback` 84.7% → 100%.
+
+## deque<T>.empty() → deque<T>.size() != 0
+
+When the target asm has a cluster of TARGET-ONLY deletes containing one of these signatures around a deque call site (or `while(!d.empty())` body), the target inlines `_M_finish - _M_start` (iterator subtraction) for `.size()`, while we inlined `_M_cur ==` (one `cmpw`) for `.empty()`. Rewrite to match:
+
+| sizeof(T) | Signature in TGT-only deletes | Example deque |
+|---|---|---|
+| Power-of-2 (4, 8, 16) | `subf + srawi + addze` | `deque<T*>`, `deque<LyricPlate*>` |
+| Non-power-of-2 (12, 24) | `mulhw + srawi + srwi + add` | `deque<LyricShift>` (12), `deque<RangeShift>` (24) |
+
+Rewrite:
+
+```cpp
+// matches MWCC iterator ==:
+while (!d.empty()) { ... d.pop_front(); }
+
+// matches MWCC iterator subtraction:
+while (d.size() != 0) { ... d.pop_front(); }
+```
+
+**Example:** `VocalTrack::UpdateScrolling` 73.1% → 79.1% via 5 swap sites on `deque<RangeShift>`, `deque<LyricShift>`, `deque<LyricPlate*>`. Try one site at a time. Never apply inside `MILO_ASSERT(...)` — regressed in testing. `deque<TambourineGem*>` also regressed (some pointer-deques don't benefit even when the signature matches).
+
+The permuter `empty_size_swap` pattern (`scripts/permuter/patterns/empty_size_swap.py`) auto-detects all three signatures: `divw/divwu/mulli` in `diff_ops` and the clustered `subf+srawi` / `mulhw+srawi` in TGT-only-delete or BASE-only-insert groups.
