@@ -150,7 +150,7 @@ void StoreMainPanel::ParseConfigData() {
         entry.mText1 = TheStoreMetadata.GetString(marquee[2]);
         entry.mText2 = TheStoreMetadata.GetString(marquee[3]);
         entry.mText3 = TheStoreMetadata.GetString(marquee[0]);
-        entry.mText4 = MakeString("%d", marquee[4]);
+        entry.mText4 = MakeString("%d", (int)marquee[4]);
         EnsureArtLoader(entry.mStrName);
         mNewReleaseList.push_back(entry);
         mCoverArtTexs.push_back(Hmx::Object::New<RndTex>());

@@ -481,7 +481,7 @@ void ChordShapeGenerator::BuildContourCap(
         if (maxX > unkcc + 0.1f) continue;
         if (faceIt >= meshFaces.size()) {
             unsigned int newsize = meshFaces.size() * 2;
-            MILO_LOG("RG: too few faces for chord shape - increasing to %d", newsize);
+            MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
             meshFaces.resize(newsize, RndMesh::Face());
         }
         RndMesh::Face &mf = meshFaces[faceIt++];
@@ -599,7 +599,7 @@ void ChordShapeGenerator::BuildEndCap(
         }
         if (faceIt >= meshFaces.size()) {
             unsigned int newsize = meshFaces.size() * 2;
-            MILO_LOG("RG: too few faces for chord shape - increasing to %d", newsize);
+            MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
             meshFaces.resize(newsize, RndMesh::Face());
         }
         RndMesh::Face &mf = meshFaces[faceIt++];
@@ -692,7 +692,7 @@ void ChordShapeGenerator::ConnectVertProfiles(
     unsigned int numNewFaces = crossSec.mEdges.size() * 2;
     if (faceIt + numNewFaces > mesh->Faces().size()) {
         unsigned int newsize = mesh->Faces().size() * 2;
-        MILO_LOG("RG: too few faces for chord shape - increasing to %d", newsize);
+        MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
         mesh->Faces().resize(newsize, RndMesh::Face());
     }
     std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
