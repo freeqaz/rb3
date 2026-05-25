@@ -243,16 +243,17 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         for (int i = 1; i < numColumns; i++) {
             float offset = (float)i * kMaxQuadSize;
             float u = (uvScale * offset) / length;
+            float xOff = offset + (baseX + mPoints[0].x);
             SetMeshVert(
                 verts[vertIdx],
-                offset + (baseX + mPoints[0].x),
+                xOff,
                 unk_0x30 + mPoints[0].z,
                 u,
                 0.0f
             );
             SetMeshVert(
                 verts[vertIdx + 1],
-                offset + (baseX + mPoints[0].x),
+                xOff,
                 mPoints[0].z - unk_0x30,
                 u,
                 1.0f
@@ -293,6 +294,7 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         plate->AllocateVerts(8, warnOnReallocate);
 
         float x0 = baseX + mPoints[0].x;
+        float x0High = 0.05f + x0;
         SetMeshVert(
             verts[vertStart], x0 - 0.05f, unk_0x30 + mPoints[0].z, 0.0f, 0.0f
         );
@@ -305,14 +307,14 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         );
         SetMeshVert(
             verts[vertStart + 2],
-            0.05f + x0,
+            x0High,
             unk_0x30 + mPoints[0].z,
             0.015625f,
             0.0f
         );
         SetMeshVert(
             verts[vertStart + 3],
-            0.05f + x0,
+            x0High,
             mPoints[0].z - unk_0x30,
             0.015625f,
             1.0f
