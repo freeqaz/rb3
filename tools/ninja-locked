@@ -15,4 +15,33 @@ if ! flock -n 9; then
     echo "ninja-locked: another build is running; waiting for the lock..." >&2
     flock 9
 fi
-exec ninja "$@"
+
+# Skip the post-build progress print for ninja subtools / help / version
+# queries — those aren't builds and the report file may be stale or absent.
+skip_progress=0
+for arg in "$@"; do
+    case "$arg" in
+        -t|--help|-h|--version) skip_progress=1 ;;
+    esac
+done
+
+progress_json="$REPO/build/SZBE69_B8/progress.json"
+before=""
+if [ "$skip_progress" -eq 0 ] && [ -f "$progress_json" ]; then
+    before=$(stat -c %Y "$progress_json" 2>/dev/null)
+fi
+
+ninja "$@"
+status=$?
+
+# Ninja runs the `progress` rule (which prints the summary) only when its
+# inputs changed. On a no-op build that rule is skipped, so print the
+# summary here so every successful invocation shows the current %.
+if [ "$status" -eq 0 ] && [ "$skip_progress" -eq 0 ] && [ -f "$progress_json" ]; then
+    after=$(stat -c %Y "$progress_json" 2>/dev/null)
+    if [ "$before" = "$after" ]; then
+        (cd "$REPO" && python3 configure.py progress) || true
+    fi
+fi
+
+exit "$status"
