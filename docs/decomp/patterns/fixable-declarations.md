@@ -113,3 +113,103 @@ When a container's dtor or accessor matches ~40-50% and the diff shows an out-of
 - `qVector<T>(size_type n, const T& val)` ctor + explicit default ctor in `qStd.h` → `Quazal::Key::Key` 41.3% → 100%.
 
 When `__dt__` or `__ct__` for a container-using type matches in the 40-50% range, check whether the helper container method is currently out-of-line.
+
+## `ObjPtr<T>::mPtr` Direct Member Access
+
+`ObjPtr<T>::operator T*()` is an inline accessor. Each call site materializes a separate load — including repeated calls inside one if-condition. The compiler can't CSE them because the accessor is treated as a fresh function-call shape. Using `.mPtr` directly reuses one load and keeps the value in a single register:
+
+```cpp
+// Two loads of unkd4 — second one forces a reload + r4↔r5 swap cascade:
+if (unkd4 && unke0 > i) return false;
+bool temp = interest != unkd4;
+
+// One load — matches:
+if (unkd4.mPtr && unke0 > i) return false;
+bool temp = interest != unkd4.mPtr;
+```
+
+**Example:** `CharEyes::SetFocusInterest` 90.8% → 100% via this single pattern.
+
+A related shape applies to DataNode dispatch — extracting the `&node` address into a local pointer forces all subsequent vtable accesses to thread through that one pointer in r3 instead of recomputing the DataNode address per call:
+
+```cpp
+// Multiple vtable chains through &n:
+DataNode &n = ...;
+if (n.Type() == kDataObject && n.GetObj() != nullptr) ...
+
+// Single threaded pointer through nPtr:
+DataNode *nPtr = &n;
+if (nPtr->Type() == kDataObject && nPtr->GetObj() != nullptr) ...
+```
+
+**Example:** `OutfitConfig::InMilo` 94.2% → 99.5% (combined with `!streq()` change).
+
+## Struct Copy → Individual Field Access
+
+A `Foo f = container.front()` struct copy inflates the stack frame AND prevents CSE of the underlying container's data pointer. Replacing with field-at-a-time access lets CW share one load and use callee-saved registers directly:
+
+```cpp
+// 0x60+ frame, struct on stack:
+ScreenParams sp = mScreens.front();
+FilePath fp(FilePath::sRoot.c_str(), sp.fname);
+SomeCall(sp.msecs);
+
+// 0x40 frame, fields in callee-saved regs:
+const char *fname = mScreens.front().fname;
+int msecs = mScreens.front().msecs;
+FilePath fp(fname);
+SomeCall(msecs);
+```
+
+**Example:** `Splash::PrepareNext` 87.1% → 99.5%.
+
+## Pre-Declare Heavy Temp BEFORE a Function Call to Force Callee-Saved
+
+When the target uses one MORE callee-saved register than ours, the difference is usually a temp value that the target spans across a function call (forcing CW to allocate a new callee-saved register), while ours computes it after (volatile only). Pre-declaring the temp before the call forces the span:
+
+```cpp
+// 6 callee-saved (r26-r31) — mismatches target's 7:
+const Gem &gem = gems[i];
+gem.Hit(...);
+unsigned int slots = gem.Slots();  // computed AFTER, stays volatile
+
+// 7 callee-saved — adds r25:
+const Gem &gem = gems[i];
+unsigned int slots = gem.Slots();  // spans across the next call
+gem.Hit(..., slots);
+```
+
+**Example:** `GemManager::Hit` 87.2% → 89.6%.
+
+## Pre-Loop Iterator Hoist Avoids `.end()` Reload
+
+When the diff shows extra `lwz` reloads of `vector::_M_data` inside the loop body, the target loaded `data` once and computes `end` as `data + size()`. Reproduce by declaring the begin iterator before the loop:
+
+```cpp
+// One reload per iteration:
+while (it != mGems.end()) { ... }
+
+// Single load, end computed from cached begin:
+std::vector<GameGem>::const_iterator gemBase = pGemList->mGems.begin();
+while (it != gemBase + pGemList->mGems.size()) { ... }
+```
+
+**Example:** `TrackerUtils::CountGemsInSong` 93.6% → 98.3%.
+
+## Pointer-Select After Function Call
+
+When the target uses a pointer-select idiom (`addi r4, r1, 0x14` / cond / `addi r4, r1, 0x10` / `lwz r3, 0(r4)`) instead of materializing each branch's value separately, the source must declare the helper pointer AFTER the function call so it stays volatile (not callee-saved):
+
+```cpp
+// pointer declared first — spans the call, allocated to callee-saved r26, frame inflates:
+int *partsPtr = &n;
+NumSingers();
+int parts = (...) ? *partsPtr : *otherPtr;
+
+// pointer declared after — stays volatile r4, matches target's pointer-select:
+NumSingers();
+int *partsPtr = &n;
+int parts = (...) ? *partsPtr : *otherPtr;
+```
+
+**Example:** `VocalTrackDir::ShowPhraseFeedback` 84.7% → 100%.

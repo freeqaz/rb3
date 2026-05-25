@@ -44,6 +44,7 @@ void CharIKHead::Poll() {
             float f10 = Min(lenec, mTargetRadius * weight);
             ScaleAddEq(vf8, vec, f10 / lenec);
         }
+        mDebugTarget = vf8;
         Interp(mPoints[0].unk0->WorldXfm().v, vf8, weight, vf8);
         Vector3 v104;
         Subtract(vf8, mSpine->TransParent()->WorldXfm().v, v104);
@@ -60,6 +61,7 @@ void CharIKHead::Poll() {
         for (int i = 0; i < mPoints.size(); i++) {
             Point &curPt = mPoints[i];
             ScaleAdd(curPt.unk0->WorldXfm().v, v104, curPt.unk1c, curPt.unkc);
+            curPt.unk20 = curPt.unkc;
         }
         Vector3 v110(0, 0, 0);
         for (int i = 1; i < mPoints.size(); i++) {

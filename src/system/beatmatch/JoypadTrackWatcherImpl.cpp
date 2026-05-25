@@ -47,11 +47,11 @@ bool JoypadTrackWatcherImpl::Swing(int i1, bool b1, bool b2, GemHitFlags flags) 
         int i60 = 0;
         int i9 = mSongData->GetTempoMap()->GetLoopTick(f6, i60);
         if (mSongData->GetRollingSlotsAtTick(Track(), i9)) {
-            unsigned int i68;
             int i64 = 0;
+            unsigned int i68;
             mSongData->GetNextRoll(Track(), i9, i68, i64);
             bvar2 = true;
-            float f16 = GetRollIntervalMs(
+            float loopThreshold = now + mSyncOffset + GetRollIntervalMs(
                 mRollIntervalsConfig,
                 mSongData->TrackTypeAt(Track()),
                 mSongData->TrackDiffAt(Track()),
@@ -59,7 +59,7 @@ bool JoypadTrackWatcherImpl::Swing(int i1, bool b1, bool b2, GemHitFlags flags) 
             );
             for (int i = unplayedGem; i < mGemList->NumGems(); i++) {
                 GameGem &curGem = mGemList->GetGem(i);
-                if (curGem.mMs >= now + mSyncOffset + f16
+                if (curGem.mMs >= loopThreshold
                     || curGem.GetTick() >= i64 + i60)
                     break;
                 mGemList->GetGem(i).SetUnk10B1(true);
@@ -81,7 +81,7 @@ bool JoypadTrackWatcherImpl::Swing(int i1, bool b1, bool b2, GemHitFlags flags) 
                 if (i1 == gem5.GetSlot() || i1 == -1 || bvar2) {
                     OnHit(now, i1, unplayedGem, gem5.GetSlots(), flags);
                 } else {
-                    OnMiss(now, i1, unplayedGem, 0, flags);
+                    OnMiss(now, i1, unplayedGem, 0, kGemHitFlagNone);
                 }
             }
 
@@ -101,9 +101,9 @@ bool JoypadTrackWatcherImpl::Swing(int i1, bool b1, bool b2, GemHitFlags flags) 
                 }
             }
         } else if (!bvar2)
-            OnMiss(now, mChordLastSlot, unplayedGem, 0, kGemHitFlagNone);
+            OnMiss(now, i1, unplayedGem, 0, kGemHitFlagNone);
     } else if (!bvar2)
-        OnMiss(now, mChordLastSlot, unplayedGem, 0, kGemHitFlagNone);
+        OnMiss(now, i1, unplayedGem, 0, kGemHitFlagNone);
     return true;
 }
 

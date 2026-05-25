@@ -189,8 +189,8 @@ DataNode TokenRedemptionPanel::OnMsg(const RockCentralOpCompleteMsg &msg) {
     if (msg.Success()) {
         DataNode statusNode(0);
         mResultList.Update(NULL);
-        if (mResultList.mDataResultList.empty()
-            && mRedemptionState == kRequestingPreviousOffers) {
+        if (mRedemptionState == kRequestingPreviousOffers
+            && mResultList.mDataResultList.empty()) {
             LocalBandUser *u = TheInputMgr->GetUser()
                 ? TheInputMgr->GetUser()->GetLocalBandUser()
                 : NULL;

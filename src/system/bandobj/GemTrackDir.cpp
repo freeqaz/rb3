@@ -874,7 +874,7 @@ void GemTrackDir::SetDisplayOffset(float offset, bool force) {
     unk654->SetFrame(offset, 1.0f);
     mKeysShiftAnim->SetFrame(offset, 1.0f);
     int startSemitone = WhiteKeyToSemitone(Round(offset));
-    int endSemitone = Min(WhiteKeyToSemitone(Round(offset + mKeyRange - 1.0f)), 24);
+    int endSemitone = Min(24, WhiteKeyToSemitone(Round(offset + mKeyRange - 1.0f)));
     if (startSemitone > 0 && IsBlackKey(startSemitone - 1))
         startSemitone--;
     if (endSemitone < 24 && IsBlackKey(endSemitone + 1))

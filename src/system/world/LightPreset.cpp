@@ -426,73 +426,76 @@ void LightPreset::SetFrameEx(float frame, float blend, bool b) {
     if (frame == 0 && LOADMGR_EDITMODE) {
         SyncNewSpotlights();
     }
-    if (!mKeyframes.empty()) {
-        Keyframe *kf5;
-        float f74 = 1.0f;
-        Keyframe *kf7 = nullptr;
-        if (mManual) {
-            kf5 = &mKeyframes[mManualFrame];
-            while (!sManualEvents.empty() && sManualEvents.front().second <= mStartBeat) {
-                sManualEvents.pop_front();
-            }
-            if (!sManualEvents.empty()) {
-                float f1 = kf5->mFadeOutTime;
-                float sec = sManualEvents.front().second;
-                float beat = TheTaskMgr.Beat();
-                if (sec - f1 / 480.0f <= beat) {
-                    AdvanceManual(sManualEvents.front().first);
+    if (mKeyframes.empty())
+        return;
+    Keyframe *kf5;
+    float f74 = 1.0f;
+    Keyframe *kf7 = nullptr;
+    if (mManual) {
+        kf5 = &mKeyframes[mManualFrame];
+        while (!sManualEvents.empty() && sManualEvents.front().second <= mStartBeat) {
+            sManualEvents.pop_front();
+        }
+        if (!sManualEvents.empty()) {
+            float sec = sManualEvents.front().second;
+            float fadeDiv = kf5->mFadeOutTime / 480.0f;
+            float beat = TheTaskMgr.Beat();
+            if (sec - fadeDiv <= beat) {
+                AdvanceManual(sManualEvents.front().first);
+                beat = TheTaskMgr.Beat();
+                if (sec > beat) {
                     beat = TheTaskMgr.Beat();
-                    if (sec > beat) {
-                        beat = TheTaskMgr.Beat();
-                        mManualFadeTime = (sec - beat) * 480.0f;
-                    } else {
-                        mManualFadeTime = 0;
-                    }
-                    sManualEvents.pop_front();
-                    kf5 = &mKeyframes[mManualFrame];
+                    mManualFadeTime = (sec - beat) * 480.0f;
+                } else {
+                    mManualFadeTime = 0;
                 }
-            }
-
-            if (mLastManualFrame != -1) {
-                kf7 = &mKeyframes[mLastManualFrame];
-                if (mManualFadeTime > 0) {
-                    f74 = Min((frame - mManualFrameStart) / mManualFadeTime, 1.0f);
-                    f74 = Max(0.0f, f74);
-                } else
-                    f74 = 0;
-            }
-
-        } else {
-            int i78, i7c;
-            GetKey(frame, i78, i7c, f74);
-            kf5 = &mKeyframes[i7c];
-            if (i78 != -1) {
-                kf7 = &mKeyframes[i78];
+                sManualEvents.pop_front();
+                kf5 = &mKeyframes[mManualFrame];
             }
         }
 
-        bool b2 = false;
-        Keyframe *last = mLastKeyframe;
-        if (kf5 == last && mLastBlend == f74)
-            b2 = true;
-        if (!b2) {
-            ApplyState(*kf5);
-            if (kf7) {
-                AnimateState(*kf7, *kf5, 1.0f - f74);
-            }
-            mLastKeyframe = kf5;
-            mLastBlend = f74;
+        if (mLastManualFrame != -1) {
+            kf7 = &mKeyframes[mLastManualFrame];
+            float frameDiff = frame - mManualFrameStart;
+            float ft = mManualFadeTime;
+            if (ft > 0) {
+                f74 = Min(frameDiff / ft, 1.0f);
+                f74 = Max(0.0f, f74);
+            } else
+                f74 = 0;
         }
-        if (!b2 || !b) {
-            Animate(blend);
+
+    } else {
+        int i78, i7c;
+        GetKey(frame, i78, i7c, f74);
+        kf5 = &mKeyframes[i7c];
+        if (i78 != -1) {
+            kf7 = &mKeyframes[i78];
         }
-        if (kf5 != last) {
-            FOREACH (it, mLastKeyframe->mTriggers) {
-                (*it)->Trigger();
-            }
-        }
-        Handle(on_set_frame_msg, false);
     }
+
+    Keyframe *last = mLastKeyframe;
+    bool kfChanged = last != kf5;
+    bool b2 = false;
+    if (!kfChanged && mLastBlend == f74)
+        b2 = true;
+    if (!b2) {
+        ApplyState(*kf5);
+        if (kf7) {
+            AnimateState(*kf7, *kf5, 1.0f - f74);
+        }
+        mLastKeyframe = kf5;
+        mLastBlend = f74;
+    }
+    if (!b2 || !b) {
+        Animate(blend);
+    }
+    if (kfChanged) {
+        FOREACH (it, mLastKeyframe->mTriggers) {
+            (*it)->Trigger();
+        }
+    }
+    Handle(on_set_frame_msg, false);
 }
 
 void LightPreset::OnKeyframeCmd(LightPreset::KeyframeCmd cmd) {

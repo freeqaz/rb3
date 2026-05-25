@@ -174,7 +174,7 @@ void AssetProvider::UpdateExtendedText(int, int i_iData, UILabel *label) const {
             if (WiiRnd::mShowAssetName) {
                 label->SetTextToken(pAsset->GetHint());
             } else if (assets.HasAsset(sym)) {
-                label->SetTextToken(pAsset->GetHint());
+                label->SetTextToken(pAsset->GetDescription());
             } else {
                 MILO_ASSERT(TheAccomplishmentMgr, 0x14B);
                 TheAccomplishmentMgr->UpdateAssetHintLabel(pAsset->GetName(), label);

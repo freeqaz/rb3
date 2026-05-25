@@ -137,6 +137,7 @@ bool TourPerformerLocal::InqSongsInFilterData(
     std::map<Symbol, int> &o_rSongsWithArtist
 ) {
     MILO_ASSERT(o_rSongsInFilter.empty(), 0xdf);
+    int iHighArtistCount = 0;
     GigFilter *pSecondaryFilter = nullptr;
     if (i_symFilter != gNullStr) {
         pSecondaryFilter = TheQuestMgr.GetQuestFilter(i_symFilter);
@@ -145,8 +146,7 @@ bool TourPerformerLocal::InqSongsInFilterData(
     std::vector<int> cSongs;
     std::vector<int> cEmptySongs;
     TheSongMgr.GetValidSongs(cSongs, *TheBandUserMgr, cEmptySongs, -1.0f, -1.0f, true, true);
-    int iHighArtistCount = 0;
-    for (std::vector<int>::iterator it = cSongs.begin(); it != cSongs.end(); ++it) {
+    for (std::vector<int>::iterator it = cEmptySongs.begin(); it != cEmptySongs.end(); ++it) {
         int songID = *it;
         if (pSecondaryFilter) {
             if (!TheSongSortMgr->DoesSongMatchFilter(songID, &pSecondaryFilter->GetFilter(), pSecondaryFilter->GetFilteredPartSym())) {
@@ -158,7 +158,8 @@ bool TourPerformerLocal::InqSongsInFilterData(
              ++fit) {
             Symbol filterSym = fit->first;
             if (strncmp("tour", filterSym.Str(), 4) == 0) {
-                FormatString fmt("filter_artist_%s");
+                const char *fmtStr = "filter_artist_%s";
+                FormatString fmt(fmtStr);
                 TheDebug.Notify(fmt.Str());
                 continue;
             }

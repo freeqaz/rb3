@@ -178,8 +178,9 @@ void GameMic::Update() {
     ThreadProcessOneFrame();
     if (unkc) {
         float sampleRate = GetDataSampleRate();
-        int maxSamples = mStoredAudio->Size() / 2;
+        int maxSamples;
         int desired = (int)(TheTaskMgr.Seconds(TaskMgr::kRealTime) * sampleRate);
+        maxSamples = mStoredAudio->Size() / 2;
         int tellSamples = mStoredAudio->Tell() / 2;
         if (desired < tellSamples) {
             desired = tellSamples;
@@ -187,16 +188,14 @@ void GameMic::Update() {
             desired = maxSamples;
         }
         unk8034 = desired - ((unsigned int)mStoredAudio->Tell() >> 1);
-        if (8192 < unk8034) {
-            unk8034 = 8192;
-        }
+        MinEq(unk8034, 8192);
         mStoredAudio->Read(mSamplesContinuous, unk8034 * 2);
         for (int i = 0; i < unk8034; i++) {
             mSamplesContinuous[i] =
-                ((mSamplesContinuous[i] >> 8) & 0xFF) | (mSamplesContinuous[i] << 8);
+                (mSamplesContinuous[i] << 8) | ((mSamplesContinuous[i] >> 8) & 0xFF);
         }
     }
     unk28 = unk1c;
     unk2c = unk20;
-    unk8 = GetMyMic()->GetType() != 0;
+    unk8 = GetMyMic()->GetType() != 1;
 }

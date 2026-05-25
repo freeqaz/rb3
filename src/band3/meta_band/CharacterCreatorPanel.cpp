@@ -533,7 +533,10 @@ void CharacterCreatorPanel::ModifyFeature(Symbol s, float f) {
         DataArrayPtr ptr(head, s);
         float prop = mPreviewDesc->Property(ptr, true)->Float();
         float newfloat = prop + f;
-        ClampEq(newfloat, 0.0f, 1.0f);
+        if (newfloat < 0.0f)
+            newfloat = 0.0f;
+        else if (newfloat > 1.0f)
+            newfloat = 1.0f;
         if (newfloat != prop) {
             mPreviewDesc->SetProperty(ptr, newfloat);
             mClosetMgr->PreviewCharacter(true, false);

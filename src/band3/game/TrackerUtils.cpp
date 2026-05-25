@@ -1,6 +1,9 @@
 #include "game/TrackerUtils.h"
+#include "game/GemPlayer.h"
 #include "game/SongDB.h"
 #include "game/TrackerSource.h"
+#include "beatmatch/GameGemList.h"
+#include "beatmatch/VocalNote.h"
 #include "math/Utl.h"
 #include "obj/Data.h"
 #include "os/Debug.h"
@@ -98,6 +101,104 @@ bool TrackerSectionManager::TickInSection(int tick, int section) const {
 
 bool TrackerSectionManager::TickAfterSection(int tick, int section) const {
     return tick > mSections[section].mEndTick;
+}
+
+int TrackerSectionManager::CountGemsInSection(const Player *iPlayer, int iSection)
+    const {
+    const Section &sect = mSections[iSection];
+    int startTick = sect.mStartTick;
+    int endTick = sect.mEndTick;
+    if (iPlayer->GetTrackType() == kTrackVocals) {
+        VocalNoteList *pNoteList = TheSongDB->GetVocalNoteList(0);
+        MILO_ASSERT(pNoteList, 224);
+        std::vector<VocalPhrase> phrases;
+        pNoteList->GetPracticePhrases(phrases, startTick, endTick);
+        int count = 0;
+        for (std::vector<VocalPhrase>::iterator it = phrases.begin();
+             it != phrases.end(); ++it) {
+            if (it->unk8 + it->unkc < endTick && it->unk14 > it->unk10) {
+                count++;
+            }
+        }
+        return count;
+    } else {
+        int startGemID;
+        int endGemID;
+        if (GetGemIDsForRange(iPlayer, startTick, endTick, startGemID, endGemID)) {
+            return endGemID - startGemID + 1;
+        }
+        return 0;
+    }
+}
+
+void TrackerSectionManager::GetGemStatsInRange(
+    const Player *iPlayer, int iStartTick, int iEndTick, int &oNumHit,
+    int &oNumMissed
+) const {
+    if (iPlayer->GetTrackType() == kTrackVocals) {
+        oNumMissed = 0;
+        oNumHit = 0;
+        return;
+    }
+    int startGemID;
+    int endGemID;
+    if (!GetGemIDsForRange(iPlayer, iStartTick, iEndTick, startGemID, endGemID)) {
+        oNumMissed = 0;
+        oNumHit = 0;
+        return;
+    }
+    oNumMissed = 0;
+    oNumHit = 0;
+    TheSongDB->GetGemList(iPlayer->mTrackNum);
+    const GemPlayer *pGemPlayer = dynamic_cast<const GemPlayer *>(iPlayer);
+    MILO_ASSERT(pGemPlayer, 285);
+    GemStatus *pGemStatus = pGemPlayer->GetGemStatus();
+    MILO_ASSERT(pGemStatus, 287);
+    for (int i = startGemID; i <= endGemID; i++) {
+        if (pGemStatus->GetHit(i)) {
+            oNumHit++;
+        } else if (pGemStatus->GetIgnored(i)) {
+            oNumMissed++;
+        }
+    }
+}
+
+int TrackerSectionManager::GetGemIDsForRange(
+    const Player *iPlayer, int iStartTick, int iEndTick, int &oStartGemID,
+    int &oEndGemID
+) const {
+    MILO_ASSERT(iPlayer->GetTrackType() != kTrackVocals, 309);
+    const GameGemList *pGems = TheSongDB->GetGemList(iPlayer->mTrackNum);
+    if (pGems->NumGems() == 0) {
+        oEndGemID = -1;
+        oStartGemID = -1;
+        return 0;
+    }
+    oStartGemID = pGems->ClosestMarkerIdxAtOrAfterTick(iStartTick);
+    if (oStartGemID == -1) {
+        oEndGemID = -1;
+        oStartGemID = -1;
+        return 0;
+    }
+    if (pGems->GetGem(oStartGemID).mTick >= iEndTick) {
+        oEndGemID = -1;
+        oStartGemID = -1;
+        return 0;
+    }
+    oEndGemID = pGems->ClosestMarkerIdxAtOrAfterTick(iEndTick);
+    if (oEndGemID == -1) {
+        oEndGemID = pGems->NumGems() - 1;
+    }
+    while (oEndGemID >= 0 && pGems->GetGem(oEndGemID).mTick >= iEndTick) {
+        oEndGemID--;
+    }
+    if (oEndGemID == -1) {
+        oEndGemID = -1;
+        oStartGemID = -1;
+        return 0;
+    }
+    MILO_ASSERT(oEndGemID >= oStartGemID, 354);
+    return 1;
 }
 
 void TrackerSectionManager::GatherSections() {

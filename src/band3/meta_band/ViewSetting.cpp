@@ -86,6 +86,10 @@ int ViewSetting::StartingOption() const { return 0; }
 // SortViewSetting
 // ------------------------------------------------------------------
 
+const char *SortViewSetting::GetCurrentStatus() const {
+    return Localize(TheMusicLibrary->GetCurrentSortName(true), nullptr);
+}
+
 bool SortViewSetting::IsActive(int idx) const {
     if (idx == 4) {
         bool ok = false;
@@ -114,10 +118,6 @@ void SortViewSetting::Text(int, int row, UIListLabel *slot, UILabel *label) cons
     }
 }
 
-const char *SortViewSetting::GetCurrentStatus() const {
-    return Localize(TheMusicLibrary->GetCurrentSortName(true), nullptr);
-}
-
 void SortViewSetting::SelectOption(int idx) {
     TheMusicLibrary->SetSort((SongSortType)idx);
 }
@@ -127,21 +127,107 @@ int SortViewSetting::StartingOption() const {
 }
 
 // ------------------------------------------------------------------
-// ScoreTypeViewSetting
+// FilterViewSetting
 // ------------------------------------------------------------------
 
-void ScoreTypeViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
+void FilterViewSetting::SetFilterData(const std::map<Symbol, int> &m) {
+    mFilters.clear();
+    Filter f;
+    for (std::map<Symbol, int>::const_iterator it = m.begin(); it != m.end();
+         ++it) {
+        f.mSym = it->first;
+        f.mCount = it->second;
+        mFilters.push_back(f);
+    }
+    std::sort(mFilters.begin(), mFilters.end(), CompareFilters);
+}
+
+const char *FilterViewSetting::GetCurrentStatus() const {
+    String result;
+    SongSortMgr::SongFilter &filter = TheMusicLibrary->GetFilter();
+    const std::set<Symbol> &filterSet = filter.GetFilterSet(mFilterType);
+    for (std::set<Symbol>::const_iterator it = filterSet.begin();
+         it != filterSet.end();
+         ++it) {
+        if (result.c_str()[0]) {
+            result += "/";
+        }
+        result += Localize(*it, nullptr);
+    }
+    if (!result.c_str()[0]) {
+        return Localize(filter_none, nullptr);
+    }
+    return MakeString(result.c_str());
+}
+
+void FilterViewSetting::Reset() {
+    TheMusicLibrary->ResetFilter(mFilterType);
+}
+
+bool FilterViewSetting::IsValid() const {
+    return !TheMusicLibrary->GetFilterLocked();
+}
+
+void FilterViewSetting::Custom(int, int idx, UIListCustom *, Hmx::Object *obj)
+    const {
+    CheckboxDisplay *cb = dynamic_cast<CheckboxDisplay *>(obj);
+    MILO_ASSERT(cb, 0x9d);
+    cb->SetShowing(true);
+    SongSortMgr::SongFilter &filter = TheMusicLibrary->GetFilter();
+    MILO_ASSERT(&filter, 0xa1);
+    cb->SetChecked(filter.HasFilter(mFilterType, mFilters[idx].mSym));
+}
+
+int FilterViewSetting::NumData() const { return mFilters.size(); }
+
+void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
     const {
     if (slot->Matches("name")) {
-        if (idx == 0) {
-            label->SetTextToken(ScoreTypeToSym(GetBaseScoreType()));
-        } else {
-            label->SetTextToken(ScoreTypeToSym(GetAlternateScoreType()));
-        }
+        label->SetTextToken(mFilters[idx].mSym);
     } else {
-        label->SetTextToken(gNullStr);
+        int count = mFilters[idx].mCount;
+        Symbol fmt = (count == 1) ? song_select_song : song_select_songs;
+        DataNode num(LocalizeSeparatedInt(count));
+        DataNode word(fmt);
+        DataArray *da = new DataArray(2);
+        da->Node(0) = num;
+        da->Node(1) = word;
+        label->SetTokenFmt(da);
+        da->Release();
     }
 }
+
+void FilterViewSetting::SelectOption(int idx) {
+    Filter &f = mFilters[idx];
+    TheMusicLibrary->ToggleFilter(mFilterType, f.mSym);
+}
+
+bool FilterViewSetting::CompareFilters(const Filter &a, const Filter &b) {
+    return AlphaKeyStrCmp(a.mSym.Str(), b.mSym.Str(), true) < 0;
+}
+
+Symbol FilterViewSetting::FilterTypeToSym(FilterType ft) {
+    switch (ft) {
+    case kFilterGenre: return filter_setting_genres;
+    case kFilterDecade: return filter_setting_decades;
+    case kFilterDifficulty: return filter_setting_difficulties;
+    case kFilterLength: return filter_setting_lengths;
+    case kFilterRating: return filter_setting_ratings;
+    case kFilterSource: return filter_setting_sources;
+    case kFilterVocalParts: return filter_setting_vocal_parts;
+    case 7: return filter_setting_pro_guitar;
+    case 8: return filter_setting_keys;
+    default:
+        MILO_FAIL("no symbol for FilterType %i", ft);
+        return gNullStr;
+    }
+}
+
+bool FilterViewSetting::CanSelectMultiple() const { return true; }
+
+// ------------------------------------------------------------------
+// ScoreTypeViewSetting
+// ------------------------------------------------------------------
 
 const char *ScoreTypeViewSetting::GetCurrentStatus() const {
     return Localize(ScoreTypeToSym((ScoreType)mScoreType), nullptr);
@@ -154,6 +240,19 @@ void ScoreTypeViewSetting::Refresh() {
 
 bool ScoreTypeViewSetting::IsValid() const {
     return mScoreType != kScoreBand;
+}
+
+void ScoreTypeViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
+    const {
+    if (slot->Matches("name")) {
+        if (idx == 0) {
+            label->SetTextToken(ScoreTypeToSym(GetBaseScoreType()));
+        } else {
+            label->SetTextToken(ScoreTypeToSym(GetAlternateScoreType()));
+        }
+    } else {
+        label->SetTextToken(gNullStr);
+    }
 }
 
 void ScoreTypeViewSetting::SelectOption(int idx) {
@@ -223,105 +322,6 @@ ScoreType ScoreTypeViewSetting::GetAlternateScoreType() const {
 }
 
 // ------------------------------------------------------------------
-// FilterViewSetting
-// ------------------------------------------------------------------
-
-int FilterViewSetting::NumData() const { return mFilters.size(); }
-
-bool FilterViewSetting::CanSelectMultiple() const { return true; }
-
-const char *FilterViewSetting::GetCurrentStatus() const {
-    String result;
-    SongSortMgr::SongFilter &filter = TheMusicLibrary->GetFilter();
-    const std::set<Symbol> &filterSet = filter.GetFilterSet(mFilterType);
-    for (std::set<Symbol>::const_iterator it = filterSet.begin();
-         it != filterSet.end();
-         ++it) {
-        if (result.c_str()[0]) {
-            result += "/";
-        }
-        result += Localize(*it, nullptr);
-    }
-    if (!result.c_str()[0]) {
-        return Localize(filter_none, nullptr);
-    }
-    return MakeString(result.c_str());
-}
-
-void FilterViewSetting::Reset() {
-    TheMusicLibrary->ResetFilter(mFilterType);
-}
-
-bool FilterViewSetting::IsValid() const {
-    return !TheMusicLibrary->GetFilterLocked();
-}
-
-void FilterViewSetting::SelectOption(int idx) {
-    Filter &f = mFilters[idx];
-    TheMusicLibrary->ToggleFilter(mFilterType, f.mSym);
-}
-
-void FilterViewSetting::SetFilterData(const std::map<Symbol, int> &m) {
-    mFilters.clear();
-    Filter f;
-    for (std::map<Symbol, int>::const_iterator it = m.begin(); it != m.end();
-         ++it) {
-        f.mSym = it->first;
-        f.mCount = it->second;
-        mFilters.push_back(f);
-    }
-    std::sort(mFilters.begin(), mFilters.end(), CompareFilters);
-}
-
-void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
-    const {
-    if (slot->Matches("name")) {
-        label->SetTextToken(mFilters[idx].mSym);
-    } else {
-        int count = mFilters[idx].mCount;
-        Symbol fmt = (count == 1) ? song_select_song : song_select_songs;
-        DataNode num(LocalizeSeparatedInt(count));
-        DataNode word(fmt);
-        DataArray *da = new DataArray(2);
-        da->Node(0) = num;
-        da->Node(1) = word;
-        label->SetTokenFmt(da);
-        da->Release();
-    }
-}
-
-void FilterViewSetting::Custom(int, int idx, UIListCustom *, Hmx::Object *obj)
-    const {
-    CheckboxDisplay *cb = dynamic_cast<CheckboxDisplay *>(obj);
-    MILO_ASSERT(cb, 0x9d);
-    cb->SetShowing(true);
-    SongSortMgr::SongFilter &filter = TheMusicLibrary->GetFilter();
-    MILO_ASSERT(&filter, 0xa1);
-    cb->SetChecked(filter.HasFilter(mFilterType, mFilters[idx].mSym));
-}
-
-bool FilterViewSetting::CompareFilters(const Filter &a, const Filter &b) {
-    return AlphaKeyStrCmp(a.mSym.Str(), b.mSym.Str(), true) < 0;
-}
-
-Symbol FilterViewSetting::FilterTypeToSym(FilterType ft) {
-    switch (ft) {
-    case kFilterGenre: return filter_setting_genres;
-    case kFilterDecade: return filter_setting_decades;
-    case kFilterDifficulty: return filter_setting_difficulties;
-    case kFilterLength: return filter_setting_lengths;
-    case kFilterRating: return filter_setting_ratings;
-    case kFilterSource: return filter_setting_sources;
-    case kFilterVocalParts: return filter_setting_vocal_parts;
-    case 7: return filter_setting_pro_guitar;
-    case 8: return filter_setting_keys;
-    default:
-        MILO_FAIL("no symbol for FilterType %i", ft);
-        return gNullStr;
-    }
-}
-
-// ------------------------------------------------------------------
 // ViewSettingsProvider
 // ------------------------------------------------------------------
 
@@ -346,8 +346,6 @@ ViewSettingsProvider::~ViewSettingsProvider() {
     mSettings.clear();
 }
 
-int ViewSettingsProvider::NumData() const { return mSettings.size(); }
-
 void ViewSettingsProvider::InitData(RndDir *dir) {
     if (dir) {
         mDisabledColor = dir->Find<UIColor>("disabled.color", true);
@@ -357,25 +355,34 @@ void ViewSettingsProvider::InitData(RndDir *dir) {
     }
 }
 
-BEGIN_HANDLERS(ViewSettingsProvider)
-    HANDLE_ACTION(select_setting_option, mActiveSetting->SelectOption(_msg->Int(2)))
-    HANDLE_ACTION(
-        set_to_setting_options,
-        dynamic_cast<UIList *>(_msg->GetObj(2))->SetProvider(mActiveSetting)
-    )
-    HANDLE_EXPR(select_setting, SelectSetting(_msg->Int(2)))
-    HANDLE_ACTION(
-        set_view_setting_to_label,
-        dynamic_cast<AppLabel *>(_msg->GetObj(2))->SetViewSetting(mActiveSetting)
-    )
-    HANDLE_EXPR(can_select_multiple_options, mActiveSetting->CanSelectMultiple())
-    HANDLE_ACTION(refresh_all_settings, RefreshAllSettings())
-    HANDLE_ACTION(reset_all_settings, ResetAllSettings())
-    HANDLE_ACTION(reset_active_setting, ResetActiveSetting())
-    HANDLE_EXPR(starting_option, mActiveSetting->StartingOption())
-    HANDLE_SUPERCLASS(Hmx::Object)
-    HANDLE_CHECK(0x280)
-END_HANDLERS
+int ViewSettingsProvider::NumData() const { return mSettings.size(); }
+
+RndMat *ViewSettingsProvider::Mat(int, int row, UIListMesh *) const {
+    ViewSetting *setting = mSettings[row];
+    if (setting->IsHeader()) {
+        return mHeaderMat;
+    }
+    if (row % 2 != 0) {
+        return mOddMat;
+    }
+    return mEvenMat;
+}
+
+void ViewSettingsProvider::Text(int, int row, UIListLabel *slot, UILabel *label)
+    const {
+    ViewSetting *setting = mSettings[row];
+    if (slot->Matches("header") && setting->IsHeader()) {
+        label->SetTextToken(setting->GetName());
+    } else if (slot->Matches("name") && !setting->IsHeader()) {
+        label->SetTextToken(setting->GetName());
+    } else if (slot->Matches("status") && !setting->IsHeader()) {
+        AppLabel *al = dynamic_cast<AppLabel *>(label);
+        MILO_ASSERT(al, 0x1e2);
+        al->SetViewSettingStatus(setting);
+    } else {
+        label->SetTextToken(gNullStr);
+    }
+}
 
 UIColor *ViewSettingsProvider::SlotColorOverride(
     int, int row, UIListWidget *, UIColor *c
@@ -387,24 +394,17 @@ UIColor *ViewSettingsProvider::SlotColorOverride(
     return c;
 }
 
-void ViewSettingsProvider::ResetActiveSetting() {
-    mActiveSetting->Reset();
+bool ViewSettingsProvider::IsActive(int idx) const {
+    return !mSettings[idx]->IsHeader();
 }
 
-void ViewSettingsProvider::RefreshAllSettings() {
-    for (std::vector<ViewSetting *>::iterator it = mSettings.begin();
-         it != mSettings.end();
-         ++it) {
-        (*it)->Refresh();
+int ViewSettingsProvider::SelectSetting(int idx) {
+    ViewSetting *setting = mSettings[idx];
+    if (setting->IsValid()) {
+        mActiveSetting = mSettings[idx];
+        return 1;
     }
-}
-
-void ViewSettingsProvider::ResetAllSettings() {
-    for (std::vector<ViewSetting *>::iterator it = mSettings.begin();
-         it != mSettings.end();
-         ++it) {
-        (*it)->Reset();
-    }
+    return 0;
 }
 
 void ViewSettingsProvider::BuildFilters(Symbol s) {
@@ -464,42 +464,42 @@ void ViewSettingsProvider::BuildFilters(Symbol s) {
     }
 }
 
-int ViewSettingsProvider::SelectSetting(int idx) {
-    ViewSetting *setting = mSettings[idx];
-    if (setting->IsValid()) {
-        mActiveSetting = mSettings[idx];
-        return 1;
-    }
-    return 0;
-}
-
-bool ViewSettingsProvider::IsActive(int idx) const {
-    return !mSettings[idx]->IsHeader();
-}
-
-void ViewSettingsProvider::Text(int, int row, UIListLabel *slot, UILabel *label)
-    const {
-    ViewSetting *setting = mSettings[row];
-    if (slot->Matches("header") && setting->IsHeader()) {
-        label->SetTextToken(setting->GetName());
-    } else if (slot->Matches("name") && !setting->IsHeader()) {
-        label->SetTextToken(setting->GetName());
-    } else if (slot->Matches("status") && !setting->IsHeader()) {
-        AppLabel *al = dynamic_cast<AppLabel *>(label);
-        MILO_ASSERT(al, 0x1e2);
-        al->SetViewSettingStatus(setting);
-    } else {
-        label->SetTextToken(gNullStr);
+void ViewSettingsProvider::RefreshAllSettings() {
+    for (std::vector<ViewSetting *>::iterator it = mSettings.begin();
+         it != mSettings.end();
+         ++it) {
+        (*it)->Refresh();
     }
 }
 
-RndMat *ViewSettingsProvider::Mat(int, int row, UIListMesh *) const {
-    ViewSetting *setting = mSettings[row];
-    if (setting->IsHeader()) {
-        return mHeaderMat;
+void ViewSettingsProvider::ResetAllSettings() {
+    for (std::vector<ViewSetting *>::iterator it = mSettings.begin();
+         it != mSettings.end();
+         ++it) {
+        (*it)->Reset();
     }
-    if (row % 2 != 0) {
-        return mOddMat;
-    }
-    return mEvenMat;
 }
+
+void ViewSettingsProvider::ResetActiveSetting() {
+    mActiveSetting->Reset();
+}
+
+BEGIN_HANDLERS(ViewSettingsProvider)
+    HANDLE_ACTION(select_setting_option, mActiveSetting->SelectOption(_msg->Int(2)))
+    HANDLE_ACTION(
+        set_to_setting_options,
+        dynamic_cast<UIList *>(_msg->GetObj(2))->SetProvider(mActiveSetting)
+    )
+    HANDLE_EXPR(select_setting, SelectSetting(_msg->Int(2)))
+    HANDLE_ACTION(
+        set_view_setting_to_label,
+        dynamic_cast<AppLabel *>(_msg->GetObj(2))->SetViewSetting(mActiveSetting)
+    )
+    HANDLE_EXPR(can_select_multiple_options, mActiveSetting->CanSelectMultiple())
+    HANDLE_ACTION(refresh_all_settings, RefreshAllSettings())
+    HANDLE_ACTION(reset_all_settings, ResetAllSettings())
+    HANDLE_ACTION(reset_active_setting, ResetActiveSetting())
+    HANDLE_EXPR(starting_option, mActiveSetting->StartingOption())
+    HANDLE_SUPERCLASS(Hmx::Object)
+    HANDLE_CHECK(0x280)
+END_HANDLERS

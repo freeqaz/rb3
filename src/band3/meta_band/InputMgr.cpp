@@ -144,7 +144,7 @@ bool InputMgr::AllowRemoteExit() const {
         if (mUser == NULL) {
             if (hasRemoteUsers && notLocal) return true;
             if (!IsLeaderLocal()) return true;
-        } else {
+        } else if (mUser) {
             if (!mUser->IsLocal()) return true;
         }
     }

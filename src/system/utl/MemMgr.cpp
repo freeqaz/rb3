@@ -2,6 +2,7 @@
 #include "os/Debug.h"
 #include "os/Timer.h"
 #include "obj/Data.h"
+#include "decomp.h"
 #include <cstring>
 
 extern "C" void *WiiMalloc(int);
@@ -82,7 +83,10 @@ public:
 // -----------------------------------------------------------------------------
 // Globals (declared in source-order to reproduce the binary's BSS layout)
 // -----------------------------------------------------------------------------
-int gDefaultHeap;       // .data:0x80BBCEF0
+// gDefaultHeap lives in .data at 0x80BBCEF0 in the target binary. We keep it
+// as an extern here so MWCC doesn't allocate BSS space for it; the actual
+// definition will be supplied when MemInit's static-init code is decompiled.
+extern int gDefaultHeap;
 
 namespace MemMgr {
     OSThread *gThreadIds[16];  // .bss:0x80D0D828
@@ -96,6 +100,10 @@ namespace {
     unsigned int gTimeStamp;   // .bss:0x80D0D878
     bool gMemInited;           // .sbss:0x80C7A368
 }
+
+// Force MWCC to keep unreferenced anon-namespace ints. These are read by
+// MemInit (currently unimplemented) so they would otherwise be stripped.
+DECOMP_FORCEACTIVE(MemMgr, kTinyHeap, kFastHeap);
 
 Heap gHeaps[16];           // .bss:0x80D0D880
 int gNumHeaps;             // .bss:0x80D0DBC0
@@ -120,7 +128,59 @@ const char *MemHeapName(int heap) {
     return gHeaps[heap].Name();
 }
 
-static MemHeapStack &ThreadMemStack(bool);
+// Forward decls used in this TU.
+namespace MemMgr {
+    // Helper: always-true validator for thread ids. Inlines to a no-op,
+    // so the search loop body collapses to just incrementing the counter.
+    inline bool ValidateThreadId(OSThread *) { return true; }
+}
+
+MemHeapStack &ThreadMemStack(bool createIfMissing) {
+    CriticalSection *lock = gMemStackLock;
+    if (lock != nullptr) {
+        lock->Enter();
+    }
+    if (MemMgr::gNumThreads == 0) {
+        MemMgr::gThreadIds[0] = OSGetCurrentThread();
+        MemMgr::gNumThreads = 1;
+    } else {
+        OSThread *current = OSGetCurrentThread();
+        if (MemMgr::gThreadIds[MemMgr::gCurThread] != current) {
+            int idx = 0;
+            OSThread **slot = MemMgr::gThreadIds;
+            while (idx < MemMgr::gNumThreads) {
+                if (*slot == OSGetCurrentThread()) break;
+                slot++;
+                idx++;
+            }
+            if (createIfMissing == 0) {
+                MemHeapStack &nullStack = gNullMemStack;
+                if (lock != nullptr) {
+                    lock->Exit();
+                }
+                return nullStack;
+            }
+            if (idx == MemMgr::gNumThreads) {
+                int cur;
+                for (cur = 0; cur < MemMgr::gNumThreads; cur++) {
+                    if (!MemMgr::ValidateThreadId(MemMgr::gThreadIds[cur])) break;
+                }
+                if (cur == MemMgr::gNumThreads) {
+                    MILO_ASSERT(MemMgr::gNumThreads < 0x10, 0x264);
+                    MemMgr::gThreadIds[cur] = OSGetCurrentThread();
+                    MemMgr::gNumThreads++;
+                }
+                idx = cur;
+            }
+            MemMgr::gCurThread = idx;
+        }
+    }
+    MemHeapStack &result = gThreadBuf[MemMgr::gCurThread];
+    if (lock != nullptr) {
+        lock->Exit();
+    }
+    return result;
+}
 
 int GetCurrentHeapNum() {
     MemHeapStack &stack = ThreadMemStack(false);

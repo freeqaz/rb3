@@ -278,13 +278,15 @@ void TrainerGemTab::Draw(int i) {
 void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY, int) {
     mTrackGroup->SetShowing(true);
     mTrackGroup->DrawShowing();
+    float yRange = endY - startY;
+    float tickRange = (float)endTick - (float)startTick;
     mTrackGroup->SetShowing(false);
     for (unsigned int i = 0; i < unk4c.size(); i++) {
         const GameGem &gem = unk4c[i];
         int tick = gem.GetTick();
         if (tick >= startTick && tick < endTick) {
-            float y = ((float)(tick - startTick) / (float)(endTick - startTick)) *
-                    (endY - startY) +
+            float y = (((float)tick - (float)startTick) / tickRange) *
+                    yRange +
                 startY;
             mVerticalTrans->SetFrame(y, 1.0f);
             if (gem.IsRealGuitarChord()) {
@@ -293,7 +295,7 @@ void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY,
                 unsigned int slots = gem.GetSlots();
                 for (int slot = 0; slot < mLanes; slot++) {
                     int gemIndex = SlotToGemIndex(slot);
-                    if ((slots & (1 << slot)) && mGems[SlotToGemIndex(slot)]) {
+                    if ((slots & (1 << slot)) && mGems[gemIndex]) {
                         int lane = GetLane(slot);
                         if (mTrackType == kTrackDrum) {
                             if (TheGameMode->Property("force_use_cymbals", true)->Int() &&
@@ -323,15 +325,18 @@ void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY,
 void TrainerGemTab::DrawTails(
     const GameGem &gem, int startTick, int endTick, float startY, float endY
 ) {
+    float fStartY = startY;
     if (gem.IgnoreDuration())
         return;
+    float yRange = endY - fStartY;
+    float tickRange = (float)endTick - (float)startTick;
     unsigned int slots = gem.GetSlots();
     for (int slot = 0; slot < mLanes; slot++) {
         if (slots & (1 << slot)) {
             mVerticalTrans->SetFrame(
-                (float)(gem.GetTick() - startTick) / (float)(endTick - startTick) *
-                        (endY - startY) +
-                    startY,
+                ((float)gem.GetTick() - (float)startTick) / tickRange *
+                        yRange +
+                    fStartY,
                 1.0f
             );
             RndMesh *tail;

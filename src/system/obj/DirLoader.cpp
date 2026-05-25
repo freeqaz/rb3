@@ -21,7 +21,6 @@
 #include "decomp.h"
 
 class ObjectDir *DirLoader::sTopSaveDir;
-bool gHostCached;
 bool DirLoader::sPrintTimes = false;
 bool DirLoader::sCacheMode = false;
 int DirLoader::mbTrackObjMem;

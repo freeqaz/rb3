@@ -26,7 +26,6 @@ public:
     DataResultList();
     virtual ~DataResultList();
     virtual void Update(Message *);
-    virtual void SetWrapper(ContextWrapper *);
 
     void Clear();
     void Print(TextStream &);

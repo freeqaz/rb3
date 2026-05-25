@@ -1282,8 +1282,9 @@ void CamShotFrame::BuildTransform(RndCam *cam, Transform &tf, bool b3) const {
 
     if (b3) {
         if (HasTargets()) {
+            float tvx = tf.v.x;
             tf.m.y.Set(
-                mLastTargetPos.x - tf.v.x,
+                mLastTargetPos.x - tvx,
                 mLastTargetPos.y - tf.v.y,
                 mLastTargetPos.z - tf.v.z
             );

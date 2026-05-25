@@ -217,7 +217,7 @@ void Tail::UpdateVerts(float alpha, bool active) {
     float sectionLen = mTemplate.GetTailSectionLength(tailType);
     float clamped = Clamp<float>(0, mTemplate.kTailMaxLength, unk4ec);
     float capLen = Clamp<float>(0, mTemplate.mTailSectionLength[0], clamped);
-    int capInc = (capLen > 0) ? 1 : 0;
+    int capInc = capLen > 0;
     float midLen = clamped - capLen;
     int midSections = 0;
     float midStart = 0;
@@ -230,18 +230,18 @@ void Tail::UpdateVerts(float alpha, bool active) {
 
     GemRepTemplate &templ = mTemplate;
     int vertCount = templ.GetRequiredVertCount(used_sections);
-    RndMesh::VertVector &verts = mTailGeomOwner->Verts();
     bool resized = false;
+    RndMesh::VertVector &verts = mTailGeomOwner->Verts();
     if (vertCount != verts.size()) {
         verts.resize(vertCount, true);
         resized = true;
     }
 
-    RndMesh::Vert *out = verts.begin();
     RndMesh::Vert *tailBegin = &templ.mTailVerts[0];
+    RndMesh::Vert *out = verts.begin();
     RndMesh::Vert *tailEnd = &templ.mTailVerts[templ.mTailVerts.size()];
-    float curY = 0;
     float yWorld = unk10;
+    float curY = 0;
 
     float baseOfs = 0;
     if (active) {
@@ -251,10 +251,11 @@ void Tail::UpdateVerts(float alpha, bool active) {
         baseOfs += mInterpolator.Eval(yWorld);
     }
 
+    float kOne = 1.0f;
     for (RndMesh::Vert *src = tailBegin; src != tailEnd; ++src, ++out) {
         out->pos.y = 0;
         out->pos.x = scaleX * (src->pos.x + baseOfs);
-        out->pos.z = src->pos.z * 1.0f;
+        out->pos.z = src->pos.z * kOne;
         out->uv.x = src->uv.x;
         out->uv.y = src->uv.y;
     }
@@ -262,11 +263,10 @@ void Tail::UpdateVerts(float alpha, bool active) {
     curY += midStart;
     yWorld += midStart;
 
-    for (int i = 0; i < midSections; i++) {
+    for (int i = 0; i < midSections; ) {
         float ofs = 0;
         if (active) {
             int idx = (int) (0.5f * curY);
-            MILO_ASSERT(idx >= 0 && idx <= 0x12B, 0x39);
             ofs += mWhammy[idx];
         }
         if (mSlideInfo.unk0) {
@@ -275,11 +275,12 @@ void Tail::UpdateVerts(float alpha, bool active) {
         for (RndMesh::Vert *src = tailBegin; src != tailEnd; ++src, ++out) {
             out->pos.y = curY;
             out->pos.x = scaleX * (src->pos.x + ofs);
-            out->pos.z = src->pos.z * 1.0f;
+            out->pos.z = src->pos.z * kOne;
             out->uv.x = src->uv.x;
             out->uv.y = src->uv.y;
         }
-        if (i + 1 == midSections) break;
+        ++i;
+        if (i == midSections) break;
         curY += sectionLen;
         yWorld += sectionLen;
     }
@@ -290,7 +291,6 @@ void Tail::UpdateVerts(float alpha, bool active) {
         float ofs = 0;
         if (active) {
             int idx = (int) (0.5f * curY);
-            MILO_ASSERT(idx >= 0 && idx <= 0x12B, 0x39);
             ofs += mWhammy[idx];
         }
         if (mSlideInfo.unk0) {
@@ -301,7 +301,7 @@ void Tail::UpdateVerts(float alpha, bool active) {
         for (; csrc != cend; ++csrc, ++out) {
             out->pos.y = curY;
             out->pos.x = scaleX * (csrc->pos.x + ofs);
-            out->pos.z = csrc->pos.z * 1.0f;
+            out->pos.z = csrc->pos.z * kOne;
             out->uv.x = csrc->uv.x;
             out->uv.y = csrc->uv.y;
         }

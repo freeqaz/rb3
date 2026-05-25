@@ -373,15 +373,16 @@ bool VocalNoteList::IsIllegalFreestyleSection(
 void VocalNoteList::GenerateLegalFreestyleSections(
     std::vector<std::pair<float, float> > &out
 ) const {
-    float pad = mFreestylePad->Float(0);
     float sectionStart = 0.0f;
+    float pad = mFreestylePad->Float(0);
     for (const VocalNote *note = mNotes.data();
          note != mNotes.data() + mNotes.size();
          ++note) {
         if (note->IsUnpitched()) {
             float sectionEnd = note->GetMs() - pad;
-            if (sectionEnd - sectionStart > 0.0f) {
-                out.push_back(std::make_pair(sectionStart, sectionEnd));
+            std::pair<float, float> p(sectionStart, sectionEnd);
+            if (p.second - p.first > 0.0f) {
+                out.push_back(p);
             }
             sectionStart = pad + note->EndMs();
         }

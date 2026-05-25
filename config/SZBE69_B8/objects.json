@@ -60,7 +60,10 @@
                 "status": "Equivalent",
                 "comment": "all funcs match (code byte gap is at-limit noise, 94.19%)"
             },
-            "band3/game/FreestylePanel.cpp": "NonMatching",
+            "band3/game/FreestylePanel.cpp": {
+                "status": "Equivalent",
+                "comment": "Poll fixed to 100% (condition inversion to early-return + while-loop restructure)"
+            },
             "band3/game/FretHand.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (offset folding addi+lwz vs lwz, same effective address)"
@@ -99,7 +102,10 @@
             "band3/game/Performer.cpp": "NonMatching",
             "band3/game/Player.cpp": "NonMatching",
             "band3/game/PlayerBehavior.cpp": "Matching",
-            "band3/game/PracticePanel.cpp": "NonMatching",
+            "band3/game/PracticePanel.cpp": {
+                "status": "Equivalent",
+                "comment": "Poll 98.4% (declaration order fix); RTTI regswap + floatBase reloc AtLimit"
+            },
             "band3/game/PracticeSectionProvider.cpp": "NonMatching",
             "band3/game/PresenceMgr.cpp": "NonMatching",
             "band3/game/RealGuitarGemPlayer.cpp": "Matching",
@@ -218,8 +224,8 @@
             "band3/meta_band/BandStorePanel.cpp": "NonMatching",
             "band3/meta_band/BandStoreUIPanel.cpp": "NonMatching",
             "band3/meta_band/BandUI.cpp": {
-                "status": "LinkIssues",
-                "comment": "funcs AtLimit but instantiates NetPushScreenMsg/NetPopScreenMsg -> vtable references undefined StartTransitionMsg::Dispatch() (only in UITransitionNetMsgs.o blob)"
+                "status": "Equivalent",
+                "comment": "all funcs AtLimit; StartTransitionMsg::Dispatch redundant decl removed from header"
             },
             "band3/meta_band/CalibrationPanel.cpp": "NonMatching",
             "band3/meta_band/Campaign.cpp": {
@@ -252,7 +258,10 @@
                 "comment": "cosmetic (r3/r4 register swaps)"
             },
             "band3/meta_band/CharSync.cpp": "Matching",
-            "band3/meta_band/CharacterCreatorPanel.cpp": "NonMatching",
+            "band3/meta_band/CharacterCreatorPanel.cpp": {
+                "status": "Equivalent",
+                "comment": "ModifyFeature 97.8% AtLimit (f2/f3 IPA FPR allocation cascades to 2 extra constant loads)"
+            },
             "band3/meta_band/ChooseColorPanel.cpp": "Matching",
             "band3/meta_band/ClosetMgr.cpp": "LinkIssues",
             "band3/meta_band/ClosetPanel.cpp": "LinkIssues",
@@ -280,7 +289,10 @@
                 "status": "Equivalent",
                 "comment": "SetSetlist 100% normalized (string-pool offset only)"
             },
-            "band3/meta_band/InputMgr.cpp": "NonMatching",
+            "band3/meta_band/InputMgr.cpp": {
+                "status": "Equivalent",
+                "comment": "AllowRemoteExit now 100% (was stale 98.5% in report)"
+            },
             "band3/meta_band/Instarank.cpp": "Matching",
             "band3/meta_band/InstrumentFinishProvider.cpp": "Matching",
             "band3/meta_band/InterstitialMgr.cpp": "Matching",
@@ -300,7 +312,10 @@
             "band3/meta_band/MainHubMessageProvider.cpp": "Matching",
             "band3/meta_band/MainHubPanel.cpp": "NonMatching",
             "band3/meta_band/MakeupProvider.cpp": "Matching",
-            "band3/meta_band/ManageBandPanel.cpp": "NonMatching",
+            "band3/meta_band/ManageBandPanel.cpp": {
+                "status": "Equivalent",
+                "comment": "RefreshAll 95.4% (do-while -> while fix); regswap + IPA scheduling AtLimit"
+            },
             "band3/meta_band/Matchmaker.cpp": {
                 "status": "Equivalent",
                 "comment": "SetQuickFindingMode 100% normalized (__FUNCTION__ pool offset swap)"
@@ -432,7 +447,10 @@
             "band3/meta_band/WiiFriendsProvider.cpp": "MISSING",
             "band3/meta_band/WiiProfilePanel.cpp": "MISSING",
             "band3/net_band/ContextWrapper.cpp": "Matching",
-            "band3/net_band/DataResults.cpp": "NonMatching",
+            "band3/net_band/DataResults.cpp": {
+                "status": "Equivalent",
+                "comment": "Update fixed to 100% (3 real logic bugs in JSON array indexing fixed: wrong field-names array, wrong type-string switch, wrong data-row iteration)"
+            },
             "band3/net_band/EntityUploader_Wii.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (volatile register swaps)"
@@ -446,7 +464,10 @@
             "band3/net_band/RockCentral.cpp": "NonMatching",
             "band3/net_band/RockCentralJobs.cpp": "Matching",
             "band3/tour/FixedSetlist.cpp": "Matching",
-            "band3/tour/GigFilter.cpp": "NonMatching",
+            "band3/tour/GigFilter.cpp": {
+                "status": "Equivalent",
+                "comment": "InitializeMusicLibraryTask fixed to 99.8% AtLimit (assignment order + reference local)"
+            },
             "band3/tour/Quest.cpp": "Matching",
             "band3/tour/QuestFilterPanel.cpp": "NonMatching",
             "band3/tour/QuestJournal.cpp": "Matching",
@@ -955,7 +976,10 @@
                 "status": "Equivalent",
                 "comment": "all funcs match (code byte gap is at-limit noise, 94.96%)"
             },
-            "system/bandobj/BandCrowdMeter.cpp": "NonMatching",
+            "system/bandobj/BandCrowdMeter.cpp": {
+                "status": "Equivalent",
+                "comment": "Poll 96.1% AtLimit (IPA scheduling, FMA fusion, regswap)"
+            },
             "system/bandobj/BandDirector.cpp": {
                 "status": "NonMatching",
                 "extra_cflags": [
@@ -976,7 +1000,10 @@
             "system/bandobj/BandLeadMeter.cpp": "Matching",
             "system/bandobj/BandList.cpp": "NonMatching",
             "system/bandobj/BandPatchMesh.cpp": "NonMatching",
-            "system/bandobj/BandRetargetVignette.cpp": "NonMatching",
+            "system/bandobj/BandRetargetVignette.cpp": {
+                "status": "Equivalent",
+                "comment": "EnterDir fixed to 99.7% AtLimit (hoisted const_cast to single local)"
+            },
             "system/bandobj/BandScoreboard.cpp": "NonMatching",
             "system/bandobj/BandSong.cpp": "Matching",
             "system/bandobj/BandSongPref.cpp": "Matching",
@@ -1048,7 +1075,10 @@
             "system/beatmatch/BeatMatcher.cpp": "NonMatching",
             "system/beatmatch/ButtonGuitarController.cpp": "Matching",
             "system/beatmatch/DrumFillTrackWatcherImpl.cpp": "Matching",
-            "system/beatmatch/DrumMap.cpp": "NonMatching",
+            "system/beatmatch/DrumMap.cpp": {
+                "status": "Equivalent",
+                "comment": "UpdateLanes 99.6% raw / 100% normalized (r6/r8 AtLimit register swap)"
+            },
             "system/beatmatch/DrumMixDB.cpp": "NonMatching",
             "system/beatmatch/DrumPlayer.cpp": "Matching",
             "system/beatmatch/DrumTrackWatcherImpl.cpp": "NonMatching",
@@ -1061,7 +1091,10 @@
             "system/beatmatch/JoypadController.cpp": "NonMatching",
             "system/beatmatch/JoypadGuitarController.cpp": "Equivalent",
             "system/beatmatch/JoypadMidiController.cpp": "Matching",
-            "system/beatmatch/JoypadTrackWatcherImpl.cpp": "NonMatching",
+            "system/beatmatch/JoypadTrackWatcherImpl.cpp": {
+                "status": "Equivalent",
+                "comment": "Swing fixed to 98.0% AtLimit (3 real bugs fixed: OnMiss args; r24/r25 regswap remains)"
+            },
             "system/beatmatch/KeyboardController.cpp": "Matching",
             "system/beatmatch/KeyboardTrackWatcherImpl.cpp": "NonMatching",
             "system/beatmatch/MasterAudio.cpp": "NonMatching",
@@ -1116,7 +1149,10 @@
             "system/char/CharClipDriver.cpp": "NonMatching",
             "system/char/CharClipGroup.cpp": "NonMatching",
             "system/char/CharClipSet.cpp": "Equivalent",
-            "system/char/CharCollide.cpp": "NonMatching",
+            "system/char/CharCollide.cpp": {
+                "status": "Equivalent",
+                "comment": "Deform 95.2% AtLimit (callee-saved FPR f27/f28 swap cascades to Newton-Raphson constant-pool reload)"
+            },
             "system/char/CharCuff.cpp": "NonMatching",
             "system/char/CharDriver.cpp": "NonMatching",
             "system/char/CharDriverMidi.cpp": "NonMatching",
@@ -1715,7 +1751,10 @@
                 ]
             },
             "system/utl/StringTable.cpp": "Matching",
-            "system/utl/SuperFormatString.cpp": "NonMatching",
+            "system/utl/SuperFormatString.cpp": {
+                "status": "Equivalent",
+                "comment": "ctor 97.5% (baseTempFmt fix); CW code-motion AtLimit"
+            },
             "system/utl/Symbol.cpp": "Equivalent",
             "system/utl/Symbols.cpp": "Matching",
             "system/utl/Symbols2.cpp": "Matching",

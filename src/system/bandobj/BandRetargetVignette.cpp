@@ -71,9 +71,10 @@ void BandRetargetVignette::EnterDir() const {
         pgroups.push_back(grp);
     }
     psorter.Sort(pgroups);
-    const_cast<BandRetargetVignette *>(this)->mEffectors.clear();
+    BandRetargetVignette *ncThis = const_cast<BandRetargetVignette *>(this);
+    ncThis->mEffectors.clear();
     for (int i = 0; i < pgroups.size(); i++) {
-        const_cast<BandRetargetVignette *>(this)->mEffectors.push_back(
+        ncThis->mEffectors.push_back(
             String(pgroups[i]->Dir()->Name())
         );
     }
@@ -81,7 +82,7 @@ void BandRetargetVignette::EnterDir() const {
     for (ObjDirItr<BandIKEffector> it(Dir(), true); it; ++it) {
         const char *itName = it->Name();
         if (strncmp("player", itName, 6) != 0) {
-            const_cast<BandRetargetVignette *>(this)->mEffectors.push_back(String(itName));
+            ncThis->mEffectors.push_back(String(itName));
         }
     }
 }

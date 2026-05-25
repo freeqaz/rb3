@@ -24,6 +24,20 @@ public:
               mIsCover(false),
               mActive(true) {}
 
+        Element(
+            StoreOffer *offer,
+            Symbol groupHeading,
+            bool localize,
+            bool isCover,
+            bool active
+        )
+            : mOffer(offer),
+              mGroupHeading(groupHeading),
+              mShortcut(gNullStr),
+              mLocalize(localize),
+              mIsCover(isCover),
+              mActive(active) {}
+
         StoreOffer *mOffer; // 0x0
         Symbol mGroupHeading; // 0x4
         Symbol mShortcut; // 0x8

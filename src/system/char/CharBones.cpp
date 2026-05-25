@@ -750,10 +750,10 @@ void CharBones::RotateBy(CharBones &dst) const {
     const Bone *src = mBones.begin();
 
     if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
+        const Bone *src_end = src + mCounts[TYPE_QUAT];
+        Vector3 *ddata = (Vector3 *)dst.mStart;
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
-        Vector3 *ddata = (Vector3 *)dst.mStart;
-        const Bone *src_end = src + mCounts[TYPE_QUAT];
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
@@ -827,18 +827,18 @@ rotate_quat:
                     dquat++;
                 }
                 src++;
-                float sqz = (float)sqdata->z * 0.0078740157f;
+                float dw = dquat->w;
                 float sqw = (float)sqdata->w * 0.0078740157f;
+                float sqz = (float)sqdata->z * 0.0078740157f;
+                float dx = dquat->x;
+                float dy = dquat->y;
+                float dz = dquat->z;
                 float sqx = (float)sqdata->x * 0.0078740157f;
                 float sqy = (float)sqdata->y * 0.0078740157f;
-                float dw = dquat->w;
-                float dx = dquat->x;
-                float dz = dquat->z;
-                float dy = dquat->y;
-                dquat->x = -(dy * sqz - (dw * sqx + dz * sqy + dx * sqw));
-                dquat->y = -(dz * sqx - (dw * sqy + dy * sqw + dx * sqz));
-                dquat->z = -(dx * sqy - ((dy * sqx + (dz * sqw + dw * sqz))));
-                dquat->w = -(-(dy * sqy - (dw * sqw - dx * sqx)) - dz * sqz);
+                dquat->x = -(sqz * dy - (sqy * dz + (sqw * dx + sqx * dw)));
+                dquat->y = -(sqx * dz - (sqz * dx + (sqw * dy + sqy * dw)));
+                dquat->z = -(sqy * dx - (sqx * dy + (sqw * dz + sqz * dw)));
+                dquat->w = -(sqz * dz - -(sqy * dy - (sqw * dw - sqx * dx)));
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -861,18 +861,18 @@ rotate_quat:
                     dquat++;
                 }
                 src++;
+                float dw = dquat->w;
                 float sqz = (float)sqdata->z * 3.051851e-05f;
                 float sqw = (float)sqdata->w * 3.051851e-05f;
-                float sqx = (float)sqdata->x * 3.051851e-05f;
-                float sqy = (float)sqdata->y * 3.051851e-05f;
-                float dw = dquat->w;
                 float dx = dquat->x;
-                float dz = dquat->z;
+                float sqx = (float)sqdata->x * 3.051851e-05f;
                 float dy = dquat->y;
-                dquat->x = -(dy * sqz - (dw * sqx + dz * sqy + dx * sqw));
-                dquat->y = -(dz * sqx - (dw * sqy + dy * sqw + dx * sqz));
-                dquat->z = -(dx * sqy - (dy * sqx + dz * sqw + dw * sqz));
-                dquat->w = -(-(dy * sqy - (dw * sqw - dx * sqx)) - dz * sqz);
+                float dz = dquat->z;
+                float sqy = (float)sqdata->y * 3.051851e-05f;
+                dquat->x = -(sqz * dy - (sqy * dz + (sqw * dx + sqx * dw)));
+                dquat->y = -(sqx * dz - (sqz * dx + (sqw * dy + sqy * dw)));
+                dquat->z = -(sqy * dx - (sqx * dy + (sqw * dz + sqz * dw)));
+                dquat->w = -(sqz * dz - -(sqy * dy - (sqw * dw - sqx * dx)));
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -894,19 +894,19 @@ rotate_quat:
                     }
                     dquat++;
                 }
-                float sy = squat->y;
-                src++;
-                float sz = squat->z;
-                float dw = dquat->w;
                 float sx = squat->x;
+                src++;
+                float dw = dquat->w;
+                float sy = squat->y;
                 float dx = dquat->x;
                 float sw = squat->w;
-                float dz = dquat->z;
                 float dy = dquat->y;
-                dquat->x = -(dy * sz - (sy * dz + sx * dw + dx * sw));
-                dquat->y = -(sx * dz - (dy * sw + dx * sz + sy * dw));
-                dquat->z = -(sy * dx - (dy * sx + sw * dz + dw * sz));
-                dquat->w = -(dz * sz - -(dy * sy - (dw * sw - sx * dx)));
+                float sz = squat->z;
+                float dz = dquat->z;
+                dquat->x = -(sz * dy - (sy * dz + (sw * dx + sx * dw)));
+                dquat->y = -(sx * dz - (sz * dx + (sw * dy + sy * dw)));
+                dquat->z = -(sy * dx - (sx * dy + (sw * dz + sz * dw)));
+                dquat->w = -(sz * dz - -(sy * dy - (sw * dw - sx * dx)));
                 if (src == src_end)
                     goto rotate_rot;
                 db++;
@@ -925,8 +925,8 @@ rotate_rot:
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
         float *dfdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
-        float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
         if (mCompression != kCompressNone) {
+            float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -949,6 +949,7 @@ rotate_rot:
                 sfdata = (float *)((char *)sfdata + 2);
             }
         } else {
+            float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -981,14 +982,15 @@ void CharBones::RotateTo(CharBones &dst, float f) const {
 
     if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
         const Bone *src_end = src + mCounts[TYPE_QUAT];
-        Vector3 *ddata = (Vector3 *)dst.mStart;
-        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Vector3 *ddata = (Vector3 *)dst.mStart;
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
-                float fsz = (float)sdata[2];
-                float fsy = (float)sdata[1];
+                float fsz = (float)sdata[2] * 3.051851e-05f * 1300.0f;
+                float fsy = (float)sdata[1] * 3.051851e-05f * 1300.0f;
+                float fsx = (float)sdata[0] * 3.051851e-05f * 1300.0f;
                 while (db->name != src->name) {
                     db++;
                     if (db >= db_end) {
@@ -998,9 +1000,9 @@ void CharBones::RotateTo(CharBones &dst, float f) const {
                     ddata++;
                 }
                 src++;
-                ddata->x += (float)sdata[0] * 0.039674062f * f;
-                ddata->y += fsy * 0.039674062f * f;
-                ddata->z += fsz * 0.039674062f * f;
+                ddata->x += fsx * f;
+                ddata->y += fsy * f;
+                ddata->z += fsz * f;
                 if (src == src_end)
                     goto rotateto_quat;
                 db++;
@@ -1041,11 +1043,12 @@ void CharBones::RotateTo(CharBones &dst, float f) const {
 rotateto_quat:
     if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
         const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
-        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
         Hmx::Quat *dquat = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
         if (mCompression >= kCompressQuats) {
-            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
+            ByteQuat *sqdata = (ByteQuat *)(mStart + mOffsets[TYPE_QUAT]);
+            float one_minus_f = 1.0f - f;
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -1055,25 +1058,28 @@ rotateto_quat:
                     }
                     dquat++;
                 }
-                Hmx::Quat sq;
-                ((ByteQuat *)sqdata)->ToQuat(sq);
-                float sx = sq.x * f;
-                float sy = sq.y * f;
-                sq.z *= f;
-                if (sq.w < 0.0f) {
-                    sq.w = sq.w * f - (1.0f - f);
+                float sqw = (float)sqdata->w * 0.0078740157f;
+                float sqx = (float)sqdata->x * 0.0078740157f;
+                float sqy = (float)sqdata->y * 0.0078740157f;
+                float sqz = (float)sqdata->z * 0.0078740157f;
+                float sx = sqx * f;
+                float sy = sqy * f;
+                float sz = sqz * f;
+                float sw;
+                if (sqw < 0.0f) {
+                    sw = sqw * f - one_minus_f;
                 } else {
-                    sq.w = sq.w * f + (1.0f - f);
+                    sw = sqw * f + one_minus_f;
                 }
                 float dx = dquat->x;
                 src++;
-                float dz = dquat->z;
-                float dw = dquat->w;
                 float dy = dquat->y;
-                dquat->x = -(dz * sy - (dw * sx + dy * sq.z + dx * sq.w));
-                dquat->y = -(dx * sq.z - ((dz * sx + (dy * sq.w + dw * sy))));
-                dquat->z = -(dy * sx - (dw * sq.z + dz * sq.w + dx * sy));
-                dquat->w = -(dz * sq.z - -(dy * sy - (dw * sq.w - dx * sx)));
+                float dw = dquat->w;
+                float dz = dquat->z;
+                dquat->x = -(dz * sy - (dw * sx + dy * sz + dx * sw));
+                dquat->y = -(dx * sz - ((dz * sx + (dy * sw + dw * sy))));
+                dquat->z = -(dy * sx - (dw * sz + dz * sw + dx * sy));
+                dquat->w = -(dz * sz - -(dy * sy - (dw * sw - dx * sx)));
                 if (src == src_end)
                     goto rotateto_rot;
                 db++;
@@ -1082,10 +1088,11 @@ rotateto_quat:
                     return;
                 }
                 dquat++;
-                sqdata += 4;
+                sqdata++;
             }
         } else if (mCompression != kCompressNone) {
-            char *sqdata = (char *)(mStart + mOffsets[TYPE_QUAT]);
+            ShortQuat *sqdata = (ShortQuat *)(mStart + mOffsets[TYPE_QUAT]);
+            float one_minus_f = 1.0f - f;
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -1095,25 +1102,28 @@ rotateto_quat:
                     }
                     dquat++;
                 }
-                Hmx::Quat sq;
-                ((ShortQuat *)sqdata)->ToQuat(sq);
-                float sx = sq.x * f;
-                float sy = sq.y * f;
-                sq.z *= f;
-                if (sq.w < 0.0f) {
-                    sq.w = sq.w * f - (1.0f - f);
+                float sqw = (float)sqdata->w * 3.051851e-05f;
+                float sqx = (float)sqdata->x * 3.051851e-05f;
+                float sqy = (float)sqdata->y * 3.051851e-05f;
+                float sqz = (float)sqdata->z * 3.051851e-05f;
+                float sx = sqx * f;
+                float sy = sqy * f;
+                float sz = sqz * f;
+                float sw;
+                if (sqw < 0.0f) {
+                    sw = sqw * f - one_minus_f;
                 } else {
-                    sq.w = sq.w * f + (1.0f - f);
+                    sw = sqw * f + one_minus_f;
                 }
                 float dx = dquat->x;
                 src++;
-                float dz = dquat->z;
-                float dw = dquat->w;
                 float dy = dquat->y;
-                dquat->x = -(dz * sy - (dw * sx + dy * sq.z + dx * sq.w));
-                dquat->y = -(dx * sq.z - (sy * dw + dy * sq.w + dz * sx));
-                dquat->z = -(dy * sx - (sq.z * dw + dz * sq.w + dx * sy));
-                dquat->w = -(dz * sq.z - -(dy * sy - (dx * sx - sq.w * dw)));
+                float dw = dquat->w;
+                float dz = dquat->z;
+                dquat->x = -(dz * sy - (dw * sx + dy * sz + dx * sw));
+                dquat->y = -(dx * sz - ((dz * sx + (dy * sw + dw * sy))));
+                dquat->z = -(dy * sx - (dw * sz + dz * sw + dx * sy));
+                dquat->w = -(dz * sz - -(dy * sy - (dw * sw - dx * sx)));
                 if (src == src_end)
                     goto rotateto_rot;
                 db++;
@@ -1122,10 +1132,11 @@ rotateto_quat:
                     return;
                 }
                 dquat++;
-                sqdata += 8;
+                sqdata++;
             }
         } else {
             Hmx::Quat *squat = (Hmx::Quat *)(mStart + mOffsets[TYPE_QUAT]);
+            float one_minus_f = 1.0f - f;
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -1136,19 +1147,19 @@ rotateto_quat:
                     dquat++;
                 }
                 float sw = squat->w * f;
-                float sx = f * squat->x;
-                float sy = squat->y * f;
                 float sz = f * squat->z;
+                float sy = squat->y * f;
+                float sx = f * squat->x;
                 if (squat->w < 0.0f) {
-                    sw = sw - (1.0f - f);
+                    sw = sw - one_minus_f;
                 } else {
-                    sw = (1.0f - f) + sw;
+                    sw = one_minus_f + sw;
                 }
                 float dx = dquat->x;
                 src++;
-                float dz = dquat->z;
-                float dw = dquat->w;
                 float dy = dquat->y;
+                float dw = dquat->w;
+                float dz = dquat->z;
                 dquat->x = -(sy * dz - (sw * dx + sz * dy + sx * dw));
                 dquat->y = -(sz * dx - (sw * dy + sx * dz + sy * dw));
                 dquat->z = -(sx * dy - (sw * dz + sy * dx + sz * dw));
@@ -1171,8 +1182,9 @@ rotateto_rot:
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_ROTX];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_END];
         float *dfdata = (float *)(dst.mStart + dst.mOffsets[TYPE_ROTX]);
-        float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
         if (mCompression != kCompressNone) {
+            float sf = f * 0.0006103515625f;
+            short *sfdata = (short *)(mStart + mOffsets[TYPE_ROTX]);
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -1183,7 +1195,7 @@ rotateto_rot:
                     dfdata++;
                 }
                 src++;
-                *dfdata += (float)*(short *)sfdata * (f * 0.0006103515625f);
+                *dfdata += (float)*sfdata * sf;
                 if (src == src_end)
                     return;
                 db++;
@@ -1192,9 +1204,10 @@ rotateto_rot:
                     return;
                 }
                 dfdata++;
-                sfdata = (float *)((char *)sfdata + 2);
+                sfdata++;
             }
         } else {
+            float *sfdata = (float *)(mStart + mOffsets[TYPE_ROTX]);
             while (true) {
                 while (db->name != src->name) {
                     db++;

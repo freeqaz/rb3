@@ -919,21 +919,22 @@ float VocalPart::ScoreNote(
     float ms, int noteIdx, float &pitch, int &octavesOut, float &sloppyPitchOut,
     float &arg5
 ) const {
-    float sloppyPitch = GetSloppyPitch(ms, noteIdx, pitch, arg5);
-    sloppyPitchOut = sloppyPitch;
-    float diff = sloppyPitch - pitch;
-    float absDiff = fabs(diff);
+    sloppyPitchOut = GetSloppyPitch(ms, noteIdx, pitch, arg5);
+    float diff = (float)sloppyPitchOut - pitch;
+    float absDiff = (float)fabs(diff);
     float pitchClassDist = (float)fmod(absDiff, 12.0);
     pitchClassDist = Min(pitchClassDist, 12.0f - pitchClassDist);
     if (pitchClassDist <= 2.5f) {
-        int octaves =
-            (int)(0.5f + absDiff / 12.0f) * ((diff > 0.0f) ? 1 : -1);
+        float fMagnitude = 0.5f + absDiff / 12.0f;
+        int mag = (int)fMagnitude;
+        int sign = (diff > 0.0f) ? 1 : -1;
+        int octaves = mag * sign;
+        diff = pitchClassDist;
         octavesOut = octaves;
         pitch += 12.0f * (float)octaves;
-        diff = pitchClassDist;
     }
     float score = 0.0f;
-    if (fabs(diff) <= mPitchMaximumDistance) {
+    if ((float)fabs(diff) <= mPitchMaximumDistance) {
         score = (float)exp(-(diff * diff) / mPitchSigma);
         if (score < 0.01f)
             score = 0.0f;

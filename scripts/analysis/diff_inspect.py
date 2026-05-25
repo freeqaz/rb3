@@ -1144,7 +1144,7 @@ def cmd_compare_asm(instrs):
     for entry in lines:
         if entry[0] == "sep":
             _, omit = entry
-            print(f"  {'···':6s}  {'(' + str(omit) + ' equal instructions collapsed)':>{SIDE_W + SIDE_W + 2}}")
+            print(f"  {'···':6s}  ... ({omit} equal instructions collapsed)")
             prev_in_cluster = False
             continue
 

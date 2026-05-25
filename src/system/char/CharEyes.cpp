@@ -707,7 +707,7 @@ void CharEyes::Poll() {
 
     float camWeight = TheTaskMgr.DeltaSeconds();
     if (camWeight < 0.0f) {
-        Exit();
+        Enter();
         return;
     }
 
@@ -739,10 +739,9 @@ void CharEyes::Poll() {
     unkc0 = blinkWeight;
 
     const Transform &headXfm = head->WorldXfm();
-    const Vector3 &headPos = headXfm.v;
 
     Vector3 targetDir;
-    Subtract(unk58, headPos, targetDir);
+    Subtract(unk58, headXfm.v, targetDir);
     Normalize(targetDir, targetDir);
 
     Vector3 facingDir(headXfm.m.y);
@@ -765,7 +764,7 @@ void CharEyes::Poll() {
         if (unkb4 <= maxLookTime && !unke4
             && (!unkd4 || interest == (CharInterest *)unkd4
                 || ((unkb4 <= 0.4f
-                     || !unkd4->IsWithinViewCone(headPos, facingDir))
+                     || !unkd4->IsWithinViewCone(headXfm.v, facingDir))
                     && !IsHeadIKWeightIncreasing()))
             && (!unk15c || unkb4 <= 0.25f)) {
             if (unkb4 <= minLookTime)
@@ -789,11 +788,11 @@ storeState:
     unkb0 = cang;
     unka4 = facingDir;
 
-    float headLookWeight = 0.0f;
     if (mHeadLookAt) {
-        headLookWeight = mHeadLookAt->Weight();
+        unkf4 = mHeadLookAt->Weight();
+    } else {
+        unkf4 = 0.0f;
     }
-    unkf4 = headLookWeight;
 
     DartUpdate();
 
@@ -801,7 +800,7 @@ storeState:
         if (!unk13c) {
             unk58 = unkc8->WorldXfm().v;
         }
-        EnforceMinimumTargetDistance(headPos, unk58, unk58);
+        EnforceMinimumTargetDistance(headXfm.v, unk58, unk58);
     }
 
     RndTransformable *eyeTarget = GetTarget();
@@ -811,13 +810,12 @@ storeState:
         Transform camXfm;
         Transform xfm;
         if (camWeight > 0.0f) {
-            RndCam *cam = 0;
-            if (TheWorld)
-                cam = TheWorld->GetCam();
-            if (!cam)
-                cam = RndCam::Current();
-            if (!cam)
+            RndCam *cam;
+            do {
+                if (TheWorld && (cam = TheWorld->GetCam())) break;
+                if ((cam = RndCam::Current())) break;
                 cam = TheRnd->DefaultCam();
+            } while(false);
             if (cam) {
                 camXfm = eyeTarget->WorldXfm();
                 Interp(camXfm.v, cam->WorldXfm().v, camWeight, camXfm.v);
@@ -829,7 +827,7 @@ storeState:
                 localTarget.x += unk130.x;
                 localTarget.y += unk130.y;
                 localTarget.z += unk130.z;
-                EnforceMinimumTargetDistance(headPos, localTarget, localTarget);
+                EnforceMinimumTargetDistance(headXfm.v, localTarget, localTarget);
             }
             xfm = eyeTarget->WorldXfm();
             Interp(xfm.v, localTarget, weight, xfm.v);

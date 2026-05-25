@@ -1,6 +1,7 @@
 #pragma once
 #include "obj/Msg.h"
 #include "revolution/ec/ec.h"
+#include "utl/Str.h"
 #include "utl/VectorSizeDefs.h"
 #include <vector>
 
@@ -32,6 +33,11 @@ public:
     void GetTitleInfo();
     void MarkChanged(bool);
     bool SetParentalControlPin(String pin);
+    void InitPreDownload();
+    void SpecifyOffer(class StorePurchaseable *);
+    void SpecifyContentUnits(
+        const std::vector<unsigned short VECTOR_SIZE_SMALL> &
+    );
 
     static unsigned long long MakeDataTitleId(const char *);
 

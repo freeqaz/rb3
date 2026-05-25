@@ -24,8 +24,11 @@ bool DrumMap::LaneOff(int tick, int i2) {
 
 void DrumMap::UpdateLanes(int tick, int newLaneMask) {
     mCurrentLanes = newLaneMask;
-    if (!mLanes.mInfos.empty() && tick == mLanes.mInfos.back().mTick) {
-        mLanes.mInfos.back().mInfo = newLaneMask;
-    } else
-        mLanes.AddInfo(tick, newLaneMask);
+    bool empty = mLanes.mInfos.empty();
+    unsigned short size = mLanes.mInfos.size();
+    if (!empty && tick == (mLanes.mInfos.begin() + size - 1)->mTick) {
+        (mLanes.mInfos.begin() + size - 1)->mInfo = newLaneMask;
+    } else if (empty || mLanes.mInfos.back().mTick <= tick) {
+        mLanes.mInfos.push_back(TickedInfo<int>(tick, newLaneMask));
+    }
 }

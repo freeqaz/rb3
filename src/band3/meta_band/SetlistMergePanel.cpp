@@ -153,7 +153,7 @@ DataNode SetlistMergePanel::OnMsg(const ReleasingLockStepMsg &msg) {
     for (int i = 0; i < numSetlists; i++) {
         std::vector<int> &songs = mSetlists[i].first;
         int targetSize = mSetlists[i].second * 100 / totalUsers;
-        if ((int)songs.size() > targetSize) {
+        if (songs.size() > (unsigned int)targetSize) {
             songs.resize(targetSize);
         }
     }
@@ -162,7 +162,7 @@ DataNode SetlistMergePanel::OnMsg(const ReleasingLockStepMsg &msg) {
         MILO_ASSERT(!mSetlists.empty(), 0xDC);
         int targetSize = mSetlists[0].first.size();
         for (int i = 0; i < numSetlists; i++) {
-            MILO_ASSERT(targetSize == (int)mSetlists[i].first.size(), 0xE4);
+            MILO_ASSERT((unsigned int)targetSize == mSetlists[i].first.size(), 0xE4);
         }
         for (int i = 0; i < targetSize; i++) {
             int pick = RandomInt(0, numSetlists);
@@ -181,7 +181,7 @@ DataNode SetlistMergePanel::OnMsg(const ReleasingLockStepMsg &msg) {
         for (int i = 0; i < numSetlists; i++) {
             targetSize += mSetlists[i].first.size();
         }
-        MILO_ASSERT(targetSize == (int)mergedSetlist.size(), 0x107);
+        MILO_ASSERT((unsigned int)targetSize == mergedSetlist.size(), 0x107);
     }
     SendSongsToMetaPerformer(mergedSetlist);
     return 1;
@@ -204,10 +204,13 @@ void SetlistMergePanel::SendSongsToMetaPerformer(const std::vector<int> &songs) 
         if (current->IsBattle()) {
             BattleSavedSetlist *bss = dynamic_cast<BattleSavedSetlist *>(current);
             MILO_ASSERT(bss, 0x12F);
+            bool archived = true;
             SavedSetlist::SetlistType type = bss->mSetlistType;
-            bool notArchived = (type != SavedSetlist::kBattleHarmonixArchived
-                                && type != SavedSetlist::kBattleFriendArchived);
-            if (notArchived) {
+            if (type != SavedSetlist::kBattleHarmonixArchived
+                && type != SavedSetlist::kBattleFriendArchived) {
+                archived = false;
+            }
+            if (!archived) {
                 MetaPerformer::Current()->SetBattle(bss);
                 return;
             }

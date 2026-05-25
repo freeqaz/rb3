@@ -175,8 +175,8 @@ void RndTransAnim::MakeTransform(float frame, Transform &tf, bool whole, float b
     if (mKeysOwner != this) {
         mKeysOwner->MakeTransform(frame, tf, whole, blend);
     } else {
-        Vector3 v4c;
         float f5 = frame;
+        Vector3 v4c;
         if (!mTransKeys.empty()) {
             float ox = 0.0f, oy = 0.0f, oz = 0.0f;
             if (mRepeatTrans) {
@@ -184,10 +184,13 @@ void RndTransAnim::MakeTransform(float frame, Transform &tf, bool whole, float b
                 Key<Vector3> &frontKey = mTransKeys.front();
                 Key<Vector3> &backKey = mTransKeys.back();
                 f5 = Limit(frontKey.frame, backKey.frame, frame, iac);
+                ox = backKey.value.x - frontKey.value.x;
+                oy = backKey.value.y - frontKey.value.y;
+                oz = backKey.value.z - frontKey.value.z;
                 float fiac = (float)iac;
-                ox = (backKey.value.x - frontKey.value.x) * fiac;
-                oy = (backKey.value.y - frontKey.value.y) * fiac;
-                oz = (backKey.value.z - frontKey.value.z) * fiac;
+                ox *= fiac;
+                oy *= fiac;
+                oz *= fiac;
             }
             if (blend != 1.0f) {
                 Vector3 v64;
@@ -195,9 +198,9 @@ void RndTransAnim::MakeTransform(float frame, Transform &tf, bool whole, float b
                     mTransKeys, mTransSpline, f5, v64, mFollowPath ? &v4c : nullptr
                 );
                 if (mRepeatTrans) {
-                    v64.x += ox;
-                    v64.y += oy;
                     v64.z += oz;
+                    v64.y += oy;
+                    v64.x += ox;
                 }
                 Interp(tf.v, v64, blend, tf.v);
             } else {
@@ -205,20 +208,20 @@ void RndTransAnim::MakeTransform(float frame, Transform &tf, bool whole, float b
                     mTransKeys, mTransSpline, f5, tf.v, mFollowPath ? &v4c : nullptr
                 );
                 if (mRepeatTrans) {
-                    tf.v.x += ox;
-                    tf.v.y += oy;
                     tf.v.z += oz;
+                    tf.v.y += oy;
+                    tf.v.x += ox;
                 }
             }
         } else if (whole) {
             tf.v.Zero();
         }
         Vector3 v70;
+        const Key<Hmx::Quat> *prev = 0;
+        const Key<Hmx::Quat> *next = 0;
+        float ref = 0;
         if (!mRotKeys.empty()) {
             Hmx::Quat q80;
-            const Key<Hmx::Quat> *prev;
-            const Key<Hmx::Quat> *next;
-            float ref = 0;
             mRotKeys.AtFrame(f5, prev, next, ref);
             if (mRotSpline)
                 QuatSpline(mRotKeys, prev, next, ref, q80);

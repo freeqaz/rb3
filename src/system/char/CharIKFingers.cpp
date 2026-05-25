@@ -393,22 +393,20 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
                 Multiply(finger.mFinger02->mLocalXfm, tfa8, tfd8);
                 Multiply(finger.mFinger03->mLocalXfm, tfd8, tf108);
                 Multiply(finger.mFingertip->mLocalXfm, tf108, tf138);
-                Vector3 v1e4;
-                if (Distance(tf138.v, finger.unk8) < Distance(tf138.v, finger.unk14)) {
-                    v1e4 = finger.unk8;
-                } else
-                    v1e4 = finger.unk14;
+                const Vector3 &v1e4 =
+                    (Distance(tf138.v, finger.unk8) < Distance(tf138.v, finger.unk14))
+                        ? finger.unk8
+                        : finger.unk14;
 
+                Vector3 v220;
+                Subtract(v1e4, tfa8.v, v220);
                 Vector3 v1fc = tfa8.m.x;
                 Vector3 v208 = tfa8.m.z;
-                Vector3 v214 = tfa8.v;
-                Vector3 v220;
-                Subtract(v1e4, v214, v220);
 
                 float len5 = Length(finger.mFinger02->mLocalXfm.v);
                 float len6 = Length(finger.mFingertip->mLocalXfm.v);
-                float len7 = Length(finger.mFinger03->mLocalXfm.v);
                 float len8 = Length(v220);
+                float len7 = Length(finger.mFinger03->mLocalXfm.v);
                 float f9 = std::acos(
                     -((len8 - len7) * (len8 - len7) - (len5 * len5 + len6 * len6))
                     / (len5 * 2.0f * len6)
@@ -421,7 +419,8 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
                 }
                 finger.unk50 = PI - f5;
                 finger.unk54 = PI - f5;
-                Hmx::Quat q230(v208, -(f5 * 2.0f - 2 * PI));
+                Hmx::Quat q230;
+                q230.Set(v208, (2.0f * PI - 2.0f * f5) * 0.5f);
                 Multiply(v1fc, q230, v1fc);
                 Hmx::Quat q240;
                 MakeRotQuat(v1fc, v220, q240);

@@ -385,12 +385,12 @@ float Synth::UpdateOverlay(RndOverlay *, float y) {
         ++count;
     }
     sprintf(buf, "Total active Sequences: %d", count);
-    TheRnd->DrawString(buf, Vector2(100.0f, yPos), white, true);
+    TheRnd->DrawString(buf, Vector2(100, yPos), white, true);
     yPos += 12.0f;
     for (; it != SynthPollable::sPollables.end(); ++it) {
         const char *name = (*it)->GetSoundDisplayName();
         if (*name != '\0') {
-            TheRnd->DrawString(name, Vector2(100.0f, yPos), white, true);
+            TheRnd->DrawString(name, Vector2(100, yPos), white, true);
             yPos += 12.0f;
         }
     }

@@ -43,8 +43,7 @@ LessonMgr::LessonMgr() {
                 Symbol sym0 = pLesson->Sym(0);
                 Symbol sym1 = pLesson->Sym(1);
                 TrackType ty = GetTrackTypeFromTrainer(sym);
-                Lesson *lesson = GetLesson(sym0);
-                if (!lesson) {
+                if (!HasLesson(sym0)) {
                     mLessonsMap[sym0] = new Lesson(sym, symcat, sym0, sym1, ty);
                     symvec2->push_back(sym0);
                 } else

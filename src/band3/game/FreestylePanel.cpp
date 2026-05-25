@@ -52,20 +52,20 @@ void FreestylePanel::Exit() {
 
 void FreestylePanel::Poll() {
     UIPanel::Poll();
-    if (TheUI.FocusPanel() == this && mUser && mController && !mFreestylePaused) {
-        mController->SetSecondPedalHiHat(TheProfileMgr.GetSecondPedalHiHat());
-        if (mMetronome->Enabled()) {
-            unk48 -= TheTaskMgr.DeltaUISeconds();
-            if (unk48 < 0) {
-                mMetronome->PlayBeat(unk4c);
-                unk4c = (unk4c + 1) % 4;
-                do {
-                    unk48 += unk44;
-                } while (unk48 < 0);
+    if (TheUI.FocusPanel() != this || !mUser || !mController || mFreestylePaused)
+        return;
+    mController->SetSecondPedalHiHat(TheProfileMgr.GetSecondPedalHiHat());
+    if (mMetronome->Enabled()) {
+        unk48 -= TheTaskMgr.DeltaUISeconds();
+        if (unk48 < 0) {
+            mMetronome->PlayBeat(unk4c);
+            unk4c = (unk4c + 1) % 4;
+            while (unk48 < 0) {
+                unk48 += unk44;
             }
         }
-        HandleSolo();
     }
+    HandleSolo();
 }
 
 void FreestylePanel::HandleSolo() {

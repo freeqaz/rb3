@@ -584,12 +584,15 @@ void VocalTrackDir::SetStreakPct(float f) {
 void VocalTrackDir::SetEnableVocalsOptions(bool) {}
 
 void VocalTrackDir::ShowPhraseFeedback(int i1, int i2, int i3, bool b) {
-    int parts = mStreakMeter->NumActiveParts();
+    int n = mStreakMeter->NumActiveParts();
     if (BandTrack::mParent) {
         int singers = BandTrack::mParent->NumSingers();
-        if (singers < parts)
-            parts = singers;
+        int *partsPtr = &n;
+        if (singers < n)
+            partsPtr = &singers;
+        n = *partsPtr;
     }
+    int parts = n;
     int i_sum = 0;
     if (i1 == 4)
         i_sum = 1;
@@ -598,7 +601,7 @@ void VocalTrackDir::ShowPhraseFeedback(int i1, int i2, int i3, bool b) {
     if (i3 == 4)
         i_sum++;
     if (mLeadPhraseFeedbackBottomLbl) {
-        if (parts > 3 && i_sum == parts)
+        if (parts > 1 && i_sum == parts)
             mLeadPhraseFeedbackBottomLbl->SetTextToken(perfect_harmony);
         else
             mLeadPhraseFeedbackBottomLbl->SetTextToken(GetRating(i1));
@@ -887,53 +890,74 @@ void VocalTrackDir::ApplyArrowStyle(Hmx::Object *o) {
 }
 
 void VocalTrackDir::ApplyFontStyle(Hmx::Object *o) {
-    Hmx::Color c20(1.0f, 1.0f, 1.0f, 1.0f);
-    Hmx::Color c30(1.0f, 1.0f, 1.0f, 0.75f);
-    Hmx::Color c40(1.0f, 1.0f, 1.0f, 1.0f);
-    Hmx::Color c50(1.0f, 1.0f, 1.0f, 0.75f);
+    float r20 = 1.0f, g20 = 1.0f, b20 = 1.0f, a20 = 1.0f;
+    float r30 = 1.0f, g30 = 1.0f, b30 = 1.0f, a30 = 0.75f;
+    float r40 = 1.0f, g40 = 1.0f, b40 = 1.0f, a40 = 1.0f;
+    float r50 = 1.0f, g50 = 1.0f, b50 = 1.0f, a50 = 0.75f;
 
     if (mLeadText) {
         mLeadText->SetShowing(false);
-        c20 = mLeadText->mStyle.color;
+        int packed20 = (int)mLeadText->mStyle.color.color;
+        r20 = (float)(packed20 & 0xFF) / 255.0f;
+        g20 = (float)((packed20 >> 8) & 0xFF) / 255.0f;
+        b20 = (float)((packed20 >> 16) & 0xFF) / 255.0f;
+        a20 = (float)(int)((unsigned)packed20 >> 24) / 255.0f;
     }
     if (mHarmText) {
         mHarmText->SetShowing(false);
-        c30 = mHarmText->mStyle.color;
+        int packed30 = (int)mHarmText->mStyle.color.color;
+        r30 = (float)(packed30 & 0xFF) / 255.0f;
+        g30 = (float)((packed30 >> 8) & 0xFF) / 255.0f;
+        b30 = (float)((packed30 >> 16) & 0xFF) / 255.0f;
+        a30 = (float)(int)((unsigned)packed30 >> 24) / 255.0f;
     }
     if (mLeadPhonemeText) {
         mLeadPhonemeText->SetShowing(false);
-        c40 = mLeadPhonemeText->mStyle.color;
+        int packed40 = (int)mLeadPhonemeText->mStyle.color.color;
+        r40 = (float)(packed40 & 0xFF) / 255.0f;
+        g40 = (float)((packed40 >> 8) & 0xFF) / 255.0f;
+        b40 = (float)((packed40 >> 16) & 0xFF) / 255.0f;
+        a40 = (float)(int)((unsigned)packed40 >> 24) / 255.0f;
     }
     if (mHarmPhonemeText) {
         mHarmPhonemeText->SetShowing(false);
-        c50 = mHarmPhonemeText->mStyle.color;
+        int packed50 = (int)mHarmPhonemeText->mStyle.color.color;
+        r50 = (float)(packed50 & 0xFF) / 255.0f;
+        g50 = (float)((packed50 >> 8) & 0xFF) / 255.0f;
+        b50 = (float)((packed50 >> 16) & 0xFF) / 255.0f;
+        a50 = (float)(int)((unsigned)packed50 >> 24) / 255.0f;
     }
 
-    if (o && o->Type() == font_style) {
+    int type_matched = 0;
+    if (o) {
+        if (o->Type() == font_style)
+            type_matched = 1;
+    }
+    if (type_matched) {
         Hmx::Object *miloObj = ObjectDir::sMainDir->FindObject("milo", false);
-        bool objexists = miloObj;
+        bool objexists = (miloObj != 0);
         if (o->Property(lead_text, true)->NotNull()) {
             mLeadText = o->Property(lead_text, true)->Obj<RndText>();
             mLeadText->SetShowing(objexists);
-            mLeadText->SetColor(Hmx::Color32(c20));
+            mLeadText->SetColor(Hmx::Color32(r20, g20, b20, a20));
         } else
             mLeadText = 0;
         if (o->Property(harmony_text, true)->NotNull()) {
             mHarmText = o->Property(harmony_text, true)->Obj<RndText>();
             mHarmText->SetShowing(objexists);
-            mHarmText->SetColor(c30);
+            mHarmText->SetColor(Hmx::Color32(r30, g30, b30, a30));
         } else
             mHarmText = 0;
         if (o->Property(lead_phoneme_text, true)->NotNull()) {
             mLeadPhonemeText = o->Property(lead_phoneme_text, true)->Obj<RndText>();
             mLeadPhonemeText->SetShowing(objexists);
-            mLeadPhonemeText->SetColor(c40);
+            mLeadPhonemeText->SetColor(Hmx::Color32(r40, g40, b40, a40));
         } else
             mLeadPhonemeText = mLeadText;
         if (o->Property(harmony_phoneme_text, true)->NotNull()) {
             mHarmPhonemeText = o->Property(harmony_phoneme_text, true)->Obj<RndText>();
             mHarmPhonemeText->SetShowing(objexists);
-            mHarmPhonemeText->SetColor(c50);
+            mHarmPhonemeText->SetColor(Hmx::Color32(r50, g50, b50, a50));
         } else
             mHarmPhonemeText = mHarmText;
     }
@@ -1055,19 +1079,22 @@ void VocalTrackDir::UpdateTubeStyle() {
 }
 
 DataNode VocalTrackDir::OnSetLyricColor(const DataArray *da) {
-    Hmx::Color c20(0, 0, 0, da->Float(4));
+    float alpha = da->Float(4);
     Symbol sym(da->Sym(3));
-    c20.Unpack(da->Int(2));
+    int packed = da->Int(2);
+    float red = (float)(packed & 255) / 255.0f;
+    float green = (float)((packed >> 8) & 255) / 255.0f;
+    float blue = (float)((packed >> 16) & 255) / 255.0f;
     if (sym == lead) {
         if (mLeadText)
-            mLeadText->SetColor(Hmx::Color32(c20));
+            mLeadText->SetColor(Hmx::Color32(red, green, blue, alpha));
         if (mLeadPhonemeText)
-            mLeadPhonemeText->SetColor(Hmx::Color32(c20));
+            mLeadPhonemeText->SetColor(Hmx::Color32(red, green, blue, alpha));
     } else if (sym == harmony) {
         if (mHarmText)
-            mHarmText->SetColor(Hmx::Color32(c20));
+            mHarmText->SetColor(Hmx::Color32(red, green, blue, alpha));
         if (mHarmPhonemeText)
-            mHarmPhonemeText->SetColor(Hmx::Color32(c20));
+            mHarmPhonemeText->SetColor(Hmx::Color32(red, green, blue, alpha));
     }
     return DataNode(0);
 }

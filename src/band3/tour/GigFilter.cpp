@@ -44,8 +44,9 @@ Symbol GigFilter::GetFilteredPartSym() const { return mFilteredPartSym; }
 void GigFilter::InitializeMusicLibraryTask(
     MusicLibrary::MusicLibraryTask &task, int size, Symbol s
 ) const {
-    task.filter = mFilter;
     task.maxSetlistSize = size;
+    const SongSortMgr::SongFilter &myFilter = mFilter;
+    task.filter = myFilter;
     task.partSym = mFilteredPartSym;
     if (s != gNullStr) {
         GigFilter *pSecondaryFilter = TheQuestMgr.GetQuestFilter(s);

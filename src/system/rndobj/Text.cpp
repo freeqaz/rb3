@@ -593,12 +593,11 @@ void RndText::ComputeCharWidths(float *fp, int i2, const char *cc, Style style) 
     for (int i = 0; i < i2; i++) {
         if (*cc == '<' && mTextMarkup) {
             const char *parsed = ParseMarkup(cc, &style, size, f3);
-            int parseDiff = parsed - cc;
-            for (int n = 0; n < parseDiff; n++) {
+            while (cc != parsed) {
                 fp[i++] = 0;
+                cc++;
             }
             i--;
-            cc = parsed;
         } else {
             unsigned short us68;
             int i6 = DecodeUTF8(us68, cc);

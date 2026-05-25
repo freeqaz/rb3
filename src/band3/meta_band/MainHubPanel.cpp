@@ -169,7 +169,7 @@ void MainHubPanel::ReloadMessages() {
         user = TheBandUserMgr->GetUserFromPad(profile->GetPadNum());
     }
     if (profile) {
-        if (!user) return;
+        if (user) {
         if (TheServer.GetPlayerID(profile->GetPadNum())) {
             TrackType ty = user->GetTrackType();
             if (ty - 10U <= 2) {
@@ -188,6 +188,7 @@ void MainHubPanel::ReloadMessages() {
                 unkc0 = sty;
                 TheRockCentral.GetTickerInfo(profile, sty, mLabelUpdateResults, this);
             }
+        }
         }
     }
 }

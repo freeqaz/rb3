@@ -15,7 +15,7 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
     register const Hmx::Matrix3 *_a = &a;
     register const Hmx::Matrix3 *_b = &b;
     register Hmx::Matrix3 *_out = &out;
-    float row0[3], row1[3], row2[3];
+    float row2[3], row1[3], row0[3];
     register psq _f0, _f1, _f2, _f3, _f4, _f5, _f6, _f7, _f8, _f9, _f10, _f11, _f12;
     asm { cmplw _b, _out }
     asm volatile {
@@ -675,119 +675,118 @@ void BandIKEffector::Poll() {
     RndTransformable *effector = mEffector;
     if (!effector)
         return;
-    if (weight == 0.0f)
-        return;
+    if (weight != 0.0f) {
+        Transform neutral;
+        NeutralWorldXfm(effector, neutral);
+        Normalize(neutral.m, neutral.m);
 
-    Transform neutral;
-    NeutralWorldXfm(effector, neutral);
-    Normalize(neutral.m, neutral.m);
+        QuatXfm neutralQ;
+        neutralQ.v = neutral.v;
+        neutralQ.q.Set(neutral.m);
 
-    QuatXfm neutralQ;
-    neutralQ.v = neutral.v;
-    neutralQ.q.Set(neutral.m);
+        QuatXfm q;
+        q.v.x = 0.0f;
+        q.v.y = 0.0f;
+        q.v.z = 0.0f;
+        q.q.x = 0.0f;
+        q.q.y = 0.0f;
+        q.q.z = 0.0f;
+        q.q.w = 0.0f;
+        float totalWeight = ApplyConstraints(q, neutral, this);
 
-    QuatXfm q;
-    q.v.x = 0.0f;
-    q.v.y = 0.0f;
-    q.v.z = 0.0f;
-    q.q.x = 0.0f;
-    q.q.y = 0.0f;
-    q.q.z = 0.0f;
-    q.q.w = 0.0f;
-    float totalWeight = ApplyConstraints(q, neutral, this);
+        if (type == 3 && mElbow) {
+            DoFancyElbow(q, totalWeight);
+            return;
+        }
 
-    if (type == 3 && mElbow) {
-        DoFancyElbow(q, totalWeight);
-        return;
-    }
+        if (weight != 1.0f) {
+            MILO_ASSERT(weight == 1, 0x139);
+        }
 
-    if (weight != 1.0f) {
-        MILO_ASSERT(weight == 1, 0x139);
-    }
-
-    Transform finalXfm;
-    if (totalWeight < 1.0f) {
-        if (totalWeight != 0.0f || type != 0) {
-            QuatXfm effQ;
-            const Transform &effWorld = mEffector->WorldXfm();
-            effQ.v = effWorld.v;
-            effQ.q.Set(effWorld.m);
-            if (type - 1U <= 1) {
-                RndTransformable *ground = unk64;
-                float groundHeight = GetGroundHeight(ground);
-                if (type == 1) {
-                    RndTransformable *knee =
-                        CharUtlFindBoneTrans("bone_L-knee", Dir());
-                    RndTransformable *ankle =
-                        CharUtlFindBoneTrans("bone_L-ankle", Dir());
-                    if (knee && ankle) {
-                        SetDeformClip(unk64);
-                        Vector3 localPos;
-                        NeutralLocalPos(ankle, localPos);
-                        float ankleLen = localPos.x;
-                        NeutralLocalPos(knee, localPos);
-                        float kneeLen = localPos.x;
-                        float lowerBound = kneeLen * 0.3f + ankleLen;
-                        float worldHeight =
-                            ankle->mLocalXfm.v.x + knee->mLocalXfm.v.x;
-                        float heightDelta = effQ.v.z - groundHeight;
-                        float blend = (heightDelta - lowerBound)
-                            / ((kneeLen * 0.8f + ankleLen) - lowerBound);
+        Transform finalXfm;
+        if (totalWeight < 1.0f) {
+            if (totalWeight != 0.0f || type != 0) {
+                QuatXfm effQ;
+                const Transform &effWorld = mEffector->WorldXfm();
+                effQ.v = effWorld.v;
+                effQ.q.Set(effWorld.m);
+                if (type - 1U <= 1) {
+                    RndTransformable *ground = unk64;
+                    float groundHeight = GetGroundHeight(ground);
+                    if (type == 1) {
+                        RndTransformable *knee =
+                            CharUtlFindBoneTrans("bone_L-knee", Dir());
+                        RndTransformable *ankle =
+                            CharUtlFindBoneTrans("bone_L-ankle", Dir());
+                        if (knee && ankle) {
+                            SetDeformClip(unk64);
+                            Vector3 localPos;
+                            NeutralLocalPos(ankle, localPos);
+                            float ankleLen = localPos.x;
+                            NeutralLocalPos(knee, localPos);
+                            float kneeLen = localPos.x;
+                            float lowerBound = kneeLen * 0.3f + ankleLen;
+                            float worldHeight =
+                                ankle->mLocalXfm.v.x + knee->mLocalXfm.v.x;
+                            float heightDelta = effQ.v.z - groundHeight;
+                            float blend = (heightDelta - lowerBound)
+                                / ((kneeLen * 0.8f + ankleLen) - lowerBound);
+                            if (blend < 0.0f)
+                                blend = 0.0f;
+                            else if (blend > 1.0f)
+                                blend = 1.0f;
+                            float ratio =
+                                worldHeight / (kneeLen + ankleLen);
+                            effQ.v.z = heightDelta
+                                    * (blend * (ratio - 1.0f) + 1.0f)
+                                + groundHeight;
+                        }
+                    } else if (type == 2) {
+                        float blend =
+                            ((neutralQ.v.z - groundHeight) - 5.0f) / 11.0f;
                         if (blend < 0.0f)
                             blend = 0.0f;
                         else if (blend > 1.0f)
                             blend = 1.0f;
-                        float ratio =
-                            worldHeight / (kneeLen + ankleLen);
-                        effQ.v.z = heightDelta
-                                * (blend * (ratio - 1.0f) + 1.0f)
-                            + groundHeight;
+                        if (blend == 0.0f) {
+                            effQ.v = neutralQ.v;
+                        } else if (blend == 1.0f) {
+                        } else {
+                            effQ.v.z =
+                                blend * (effQ.v.z - neutralQ.v.z) + neutralQ.v.z;
+                            effQ.v.y =
+                                blend * (effQ.v.y - neutralQ.v.y) + neutralQ.v.y;
+                            effQ.v.x =
+                                blend * (effQ.v.x - neutralQ.v.x) + neutralQ.v.x;
+                        }
+                        Interp(neutralQ.q, effQ.q, blend, effQ.q);
                     }
-                } else if (type == 2) {
-                    float blend =
-                        ((neutralQ.v.z - groundHeight) - 5.0f) / 11.0f;
-                    if (blend < 0.0f)
-                        blend = 0.0f;
-                    else if (blend > 1.0f)
-                        blend = 1.0f;
-                    if (blend == 0.0f) {
-                        effQ.v = neutralQ.v;
-                    } else if (blend == 1.0f) {
-                    } else {
-                        effQ.v.z =
-                            blend * (effQ.v.z - neutralQ.v.z) + neutralQ.v.z;
-                        effQ.v.y =
-                            blend * (effQ.v.y - neutralQ.v.y) + neutralQ.v.y;
-                        effQ.v.x =
-                            blend * (effQ.v.x - neutralQ.v.x) + neutralQ.v.x;
-                    }
-                    Interp(neutralQ.q, effQ.q, blend, effQ.q);
                 }
+                float remaining = 1.0f - totalWeight;
+                q.v.x += effQ.v.x * remaining;
+                q.v.y += effQ.v.y * remaining;
+                q.v.z += effQ.v.z * remaining;
+                ScaleAddEq(q.q, effQ.q, remaining);
+                totalWeight += remaining;
+            } else {
+                return;
             }
-            float remaining = 1.0f - totalWeight;
-            q.v.x += effQ.v.x * remaining;
-            q.v.y += effQ.v.y * remaining;
-            q.v.z += effQ.v.z * remaining;
-            ScaleAddEq(q.q, effQ.q, remaining);
-            totalWeight += remaining;
-        } else {
-            return;
         }
+
+        float invWeight = 1.0f / totalWeight;
+        q.v.x *= invWeight;
+        q.v.y *= invWeight;
+        q.v.z *= invWeight;
+        Normalize(q.q, q.q);
+
+        if (type - 2U <= 1) {
+            IKElbow(q.v);
+        }
+
+        finalXfm.v = q.v;
+        MakeRotMatrix(q.q, finalXfm.m);
+        mEffector->SetWorldXfm(finalXfm);
     }
-
-    float invWeight = 1.0f / totalWeight;
-    q.v.x *= invWeight;
-    q.v.y *= invWeight;
-    q.v.z *= invWeight;
-    Normalize(q.q, q.q);
-
-    if (type - 2U <= 1) {
-        IKElbow(q.v);
-    }
-
-    finalXfm.v = q.v;
-    MakeRotMatrix(q.q, finalXfm.m);
-    mEffector->SetWorldXfm(finalXfm);
 }
 
 float BandIKEffector::ApplyPosConstraints(

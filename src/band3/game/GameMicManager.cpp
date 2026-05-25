@@ -16,7 +16,7 @@
 #include <cstddef>
 
 GameMicManager *TheGameMicManager;
-MicClientID sNullMicClientID(-1, -1);
+static MicClientID sNullMicClientID(-1, -1);
 
 void GameMicManager::Init() {
     MILO_ASSERT(TheGameMicManager == NULL, 0x28);

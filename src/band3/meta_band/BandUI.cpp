@@ -40,7 +40,7 @@
 #include "ui/UIScreen.h"
 #include "utl/Symbols.h"
 
-MicClientID sNullMicClientID;
+static MicClientID sNullMicClientID;
 BandUI TheBandUI;
 UIManager &TheUI = TheBandUI;
 

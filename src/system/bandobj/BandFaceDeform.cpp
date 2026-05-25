@@ -36,6 +36,7 @@ DECOMP_FORCEACTIVE(BandFaceDeform, "")
 extern void *
 MemResizeElem(void *&, int &, void *, int, int, const char *);
 
+#pragma pool_data off
 void BandFaceDeform::DeltaArray::AppendDeltas(
     const std::vector<Vector3> &pos, const std::vector<Vector3> &base
 ) {
@@ -239,6 +240,7 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
         maxDelta
     );
 }
+#pragma pool_data reset
 
 void BandFaceDeform::DeltaArray::SetSize(int i) {
     if (mSize != i) {

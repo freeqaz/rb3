@@ -198,8 +198,8 @@ void HiResScreen::GetBorderForTile(
 void HiResScreen::CurrentTileRect(
     const Hmx::Rect &inRect, Hmx::Rect &outTileRect, Hmx::Rect &outAccumRect
 ) const {
-    int tiling = mTiling;
     int tile = mCurrTile;
+    int tiling = mTiling;
     int tileY = tile / tiling;
     int tileX = tile % tiling;
     float invTiling = 1.0f / (float)tiling;

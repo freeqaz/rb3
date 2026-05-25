@@ -230,6 +230,8 @@ extern "C" void SetTimeCallback__5MovieFPFv_f(Movie *, float (*)(void));
 
 int Splash::PrepareNext() {
     MemDoTempAllocations mdta(true, false);
+    int msecs;
+    const char *fname;
     CriticalSection *cs = &unk_0xD4;
     if (cs)
         cs->Enter();
@@ -238,21 +240,22 @@ int Splash::PrepareNext() {
             cs->Exit();
         return 0;
     }
-    ScreenParams sp = mScreens.front();
+    fname = mScreens.front().fname;
+    msecs = mScreens.front().msecs;
     if (cs)
         cs->Exit();
-    FilePath fp(FilePath::sRoot.c_str(), sp.fname);
-    RndDir *d =
-        dynamic_cast<RndDir *>(DirLoader::LoadObjects(fp, NULL, NULL));
+    FilePath fp(fname);
+    RndDir *d = dynamic_cast<RndDir *>(DirLoader::LoadObjects(fp, NULL, NULL));
     TexMovie *tm = d->Find<TexMovie>(kSplashMovie, false);
     if (tm != NULL) {
-        SetTimeCallback__5MovieFPFv_f(&tm->mMovie, NULL);
-        tm->mMovie.CheckOpen(false);
+        Movie *mov = &tm->mMovie;
+        SetTimeCallback__5MovieFPFv_f(mov, NULL);
+        mov->CheckOpen(false);
     }
     MILO_ASSERT(d, 408);
     PreparedScreenParams psp;
     psp.unk_0x0 = d;
-    psp.unk_0x4 = sp.msecs;
+    psp.unk_0x4 = msecs;
     cs = &unk_0xD4;
     if (cs)
         cs->Enter();
@@ -450,11 +453,11 @@ int Splash::Show() {
             tm->mShowing = true;
             mov.SetPaused(false);
             mSplashTime = (int)ceilf(mov.MsPerFrame() * (float)mov.NumFrames()) * 2;
-            if (TheRnd->mAspect != Rnd::kWidescreen)
-                TheRnd->SetAspect(Rnd::kRegular);
         } else {
             return ShowNext();
         }
+        if (TheRnd->mAspect != Rnd::kWidescreen)
+            TheRnd->SetAspect(Rnd::kRegular);
     } else {
         mSplashTime = msecs;
         if (TheRnd->mAspect != Rnd::kWidescreen)

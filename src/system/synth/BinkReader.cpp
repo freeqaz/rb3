@@ -124,12 +124,18 @@ void BinkReader::PollInitStream() {
     gTempLastDecodeSize = -1;
 }
 
+#pragma pool_data off
 void BinkReader::PollPlay() {
+    unsigned int lastTrackBytes;
+    int budget;
     int outerIter = 0;
     int innerCount = 0;
     do {
         if (mSamplesReady > 0) {
-            START_AUTO_TIMER("bink_consume");
+            {
+                static Timer *_t = AutoTimer::GetTimer("bink_consume");
+                if (_t) _t->Start();
+            }
             int iSamplesConsumed = mStream->ConsumeData(
                 (void **)mPCMOffsets, mSamplesReady, mSampleCurrent
             );
@@ -139,20 +145,24 @@ void BinkReader::PollPlay() {
             for (unsigned char i = 0; i < mBink->NumTracks; i++) {
                 mPCMOffsets[i] += iSamplesConsumed * 2;
             }
-        }
-        if (mDecodeTrack == mBink->NumTracks) {
-            START_AUTO_TIMER("bink_read");
-            mState = (mBink->FrameNum == mBink->Frames) ? kDone : kPlay;
-            if (mState == kPlay) {
-                BinkNextFrame(mBink);
+            {
+                static Timer *_t = AutoTimer::GetTimer("bink_consume");
+                if (_t) _t->Stop();
             }
-            mDecodeTrack = 0;
+            if (mDecodeTrack == mBink->NumTracks) {
+                START_AUTO_TIMER("bink_read");
+                mState = (mBink->FrameNum == mBink->Frames) ? kDone : kPlay;
+                if (mState == kPlay) {
+                    BinkNextFrame(mBink);
+                }
+                mDecodeTrack = 0;
+            }
         }
-        if (mSamplesReady > 0) break;
-        unsigned int lastTrackBytes;
-        {
-            START_AUTO_TIMER("bink_decode");
-            int budget;
+        if (mSamplesReady <= 0) {
+            {
+                static Timer *_t = AutoTimer::GetTimer("bink_decode");
+                if (_t) _t->Start();
+            }
             lastTrackBytes = 0;
             if (gDebugFullQuota) {
                 budget = mBink->NumTracks;
@@ -187,21 +197,26 @@ void BinkReader::PollPlay() {
                     mPCMBuffers[mDecodeTrack] + mSamplesJump * 2;
                 mDecodeTrack++;
             }
-        }
-        {
-            START_AUTO_TIMER("bink_read");
-            mSamplesReady = (int)(lastTrackBytes >> 1) - mSamplesJump;
-            mSampleCurrent += mSamplesJump;
-            mSamplesJump = 0;
-            mState = (mBink->FrameNum == mBink->Frames) ? kDone : kPlay;
-            if (innerCount > 0 && mState == kPlay) {
-                BinkNextFrame(mBink);
-                mDecodeTrack = 0;
+            {
+                static Timer *_t = AutoTimer::GetTimer("bink_decode");
+                if (_t) _t->Stop();
+            }
+            if (mDecodeTrack == mBink->NumTracks) {
+                START_AUTO_TIMER("bink_read");
+                mSamplesReady = (int)(lastTrackBytes >> 1) - mSamplesJump;
+                mSampleCurrent += mSamplesJump;
+                mSamplesJump = 0;
+                mState = (mBink->FrameNum == mBink->Frames) ? kDone : kPlay;
+                if (innerCount > 0 && mState == kPlay) {
+                    BinkNextFrame(mBink);
+                    mDecodeTrack = 0;
+                }
             }
         }
         outerIter++;
     } while (innerCount > 0 && outerIter < 3);
 }
+#pragma pool_data reset
 
 void BinkReader::Poll(float) {
     START_AUTO_TIMER("bink_audio");

@@ -247,13 +247,14 @@ void TourDescPanel::SelectTour(Symbol s) {
         std::vector<Symbol> &tours = m_pTourDescProvider->mTours;
         std::vector<Symbol>::iterator it = tours.begin();
         for (; it != tours.end(); ++it, ++index) {
-            if (s == *it)
-                break;
+            if (it->mStr != s.mStr)
+                continue;
+            goto lFound;
         }
-        if (it == tours.end())
-            index = 0;
+        index = 0;
+        lFound:;
     }
-    UIList *pList = Dir()->Find<UIList>("pTourList", true);
+    UIList *pList = mDir->Find<UIList>("pTourList", true);
     MILO_ASSERT(pList, 0x30B);
     pList->SetSelected(index, -1);
 }

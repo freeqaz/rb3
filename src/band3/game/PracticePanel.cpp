@@ -186,8 +186,8 @@ void PracticePanel::Poll() {
                         GemPlayer *gp = dynamic_cast<GemPlayer *>(players[0]);
                         if (gp) {
                             BeatMatchController *cnt = gp->GetController();
-                            Symbol cntSym = TheGameConfig->GetController(gp->GetUser());
                             bool needsReset = true;
+                            Symbol cntSym = TheGameConfig->GetController(gp->GetUser());
                             if (cntSym == keys && cntSym == gp->GetControllerType())
                                 needsReset = false;
                             if (needsReset) {

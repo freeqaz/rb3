@@ -39,23 +39,25 @@ void DataResultList::Update(Message *msg) {
             tmpJsonObject = jc.GetElement(tmpJsonArray, 1);
             MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_String, 0x52);
             String jsonStr1 = tmpJsonObject->GetObjectAsString();
-            int nNumFields = jsonStr1.length();
+            uint nNumFields = jsonStr1.length();
             tmpJsonObject = jc.GetElement(tmpJsonArray, 2);
             MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Array, 0x58);
             JsonArray *jsonFieldNames = (JsonArray *)tmpJsonObject;
             MILO_ASSERT(jsonFieldNames->GetSize() == nNumFields, 0x5A);
             tmpJsonObject = jc.GetElement(tmpJsonArray, 3);
             MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Array, 0x5E);
-            int size = jsonFieldNames->GetSize();
+            JsonArray *jsonDataArray = (JsonArray *)tmpJsonObject;
+            int size = jsonDataArray->GetSize();
             for (uint j = 0; j < size; j++) {
-                tmpJsonObject = jc.GetElement(tmpJsonArray, j);
+                tmpJsonObject = jc.GetElement(jsonDataArray, j);
                 MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Array, 0x65);
+                JsonArray *currentRow = (JsonArray *)tmpJsonObject;
                 DataResult res;
                 res.mUrl = jsonAsStr;
                 for (uint k = 0; k < nNumFields; k++) {
                     DataNode ne0;
-                    tmpJsonObject = jc.GetElement(tmpJsonArray, k);
-                    switch (jsonAsStr[k]) {
+                    tmpJsonObject = jc.GetElement(currentRow, k);
+                    switch (jsonStr1[k]) {
                     case 'd':
                         MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Int, 0x74);
                         JsonInt *jInt = (JsonInt *)tmpJsonObject;
@@ -75,7 +77,7 @@ void DataResultList::Update(Message *msg) {
                         MILO_FAIL("Unsupported type!");
                         break;
                     }
-                    tmpJsonObject = jc.GetElement(tmpJsonArray, k);
+                    tmpJsonObject = jc.GetElement(jsonFieldNames, k);
                     MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_String, 0x88);
                     String pairStr = tmpJsonObject->GetObjectAsString();
                     res.mDataMap.insert(std::make_pair(pairStr, ne0));

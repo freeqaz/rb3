@@ -20,8 +20,8 @@ SuperFormatString::SuperFormatString(const char *cc, const DataArray *da, bool b
         int i13 = 0;
         char *paramPos = param;
         char *phInfoPos = phInfo;
-        char *baseTempFmt = tempFmt;
         char *tempFmtPos = tempFmt;
+        char *baseTempFmt = tempFmt + BUF_SIZE;
         for (const char *p = cc; *p != 0; p++) {
             switch (i13) {
             case 0:

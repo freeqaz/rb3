@@ -1775,29 +1775,27 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
         }
         unk630.push_back(dynamic_cast<OutfitConfig *>(o1));
     }
-    ObjectDir *od = o1->Dir();
-    if (od == sCharSharedDir) {
-        Hmx::Object *found = Find<Hmx::Object>(o1->Name(), false);
-        ReplaceRefs(o1, found);
+    if (o1->Dir() == sCharSharedDir) {
+        Hmx::Object *mine = Find<Hmx::Object>(o1->Name(), true);
+        MILO_ASSERT(mine->Dir() == this, 0xAB8);
+        ReplaceRefs(o1, mine);
         return kIgnore;
     }
-    if (od == sInstrumentDir || od == sInstResourceDir) {
+    if (o1->Dir() == sInstrumentDir || o1->Dir() == sInstResourceDir) {
         RndTransformable *rt = dynamic_cast<RndTransformable *>(o1);
         if (rt) {
-            RndTransformable *found = Find<RndTransformable>(o1->Name(), false);
+            Hmx::Object *found = FindObject(o1->Name(), false);
             if (found) {
                 if (rt->TransParent()) {
-                    RndTransformable *par =
-                        dynamic_cast<RndTransformable *>(rt->TransParent());
-                    found->SetLocalXfm(par->LocalXfm());
+                    dynamic_cast<RndTransformable *>(found)->SetLocalXfm(rt->LocalXfm());
                 }
                 ReplaceRefs(o1, found);
+                return kIgnore;
             }
-            return kIgnore;
         }
     }
-    if (od == sOutfitDir || od == sResourceDir || od == sToDir) {
-        if (od == sBoneMergeDir) {
+    if (!(o1->Dir() == sOutfitDir || o1->Dir() == sResourceDir || o1->Dir() == sToDir)) {
+        if (o1->Dir() == sBoneMergeDir) {
             RndTransformable *rt = dynamic_cast<RndTransformable *>(o1);
             if (rt) {
                 Hmx::Object *found = FindObject(o1->Name(), false);
@@ -1809,13 +1807,13 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
     }
     if (strnicmp(o1->Name(), "bone_", 5) == 0) {
         RndTransformable *rt = dynamic_cast<RndTransformable *>(o1);
-        if (rt && rt->TransParent()) {
-            if (strnicmp(rt->TransParent()->Name(), "bone_", 5) == 0)
-                return kMerge;
-            if (strnicmp(rt->TransParent()->TransParent()->Name(), "exo_", 4) == 0)
-                return kMerge;
+        if (rt) {
+            if (rt->TransParent()) {
+                if (strnicmp(rt->TransParent()->Name(), "bone_", 5) == 0 || strnicmp(rt->TransParent()->Name(), "exo_", 4) == 0)
+                    return kMerge;
+            }
+            return kKeep;
         }
-        return kKeep;
     }
     Action action = mFileMerger->MergeAction(o1, o2, dir);
     if (sDrawOrder != -1.0f && o1->ClassName() == meshName) {

@@ -9,7 +9,6 @@ public:
     virtual ~StartTransitionMsg() {}
     virtual void Save(BinStream &) const;
     virtual void Load(BinStream &);
-    virtual void Dispatch();
     virtual LockData *GetLockData();
 
     UIScreen *GetScreen() const;

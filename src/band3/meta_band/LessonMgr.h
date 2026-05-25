@@ -23,6 +23,7 @@ public:
     virtual ~LessonMgr();
 
     Lesson *GetLesson(Symbol) const;
+    bool HasLesson(Symbol s) const { return GetLesson(s) != nullptr; }
     TrackType GetTrackTypeFromTrainer(Symbol);
     std::vector<Symbol> *GetLessonsFromCategory(Symbol) const;
     std::vector<Symbol> *GetCategoriesFromTrainer(Symbol) const;
