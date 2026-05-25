@@ -13,6 +13,7 @@ public:
     class Point {
     public:
         Point(Hmx::Object *o) : unk0(o), unkc(0, 0, 0), unk18(0), unk1c(0) {}
+        Point(const Point &o) : unk0(o.unk0), unkc(o.unkc), unk18(o.unk18), unk1c(o.unk1c) {}
 
         ObjPtr<RndTransformable> unk0; // 0x0
         Vector3 unkc; // 0xc
