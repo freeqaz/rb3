@@ -14,6 +14,7 @@
 #include "meta_band/MetaPerformer.h"
 #include "game/TrainerPanel.h"
 #include "game/GemTrainerPanel.h"
+#include "game/GameConfig.h"
 #include "game/PracticePanel.h"
 #include "game/RGTrainerPanel.h"
 #include "game/GemPlayer.h"
@@ -345,7 +346,7 @@ void GemManager::SetupGems(int startTick) {
         TheSongMgr.GetSongIDFromShortName(song, true)
     );
     int songKey = metadata->SongKey();
-    BandUser *bandUser = mTrackConfig.GetBandUser();
+    BandUser *bandUser = const_cast<BandUser *>(mTrackConfig.GetBandUser());
     int trackNum = mTrackConfig.TrackNum();
     const std::vector<GameGem> &gems = TheSongDB->GetGems(trackNum);
     TheSongDB->GetSongDurationMs();
@@ -364,12 +365,12 @@ void GemManager::SetupGems(int startTick) {
     }
 
     mHitGems.clear();
-    mDisabledSlotsList.clear();
+    mMissedPhrases.clear();
     mGems.clear();
     mGems.reserve(gems.size());
     mArpeggioPhrases.clear();
     bandUser->GetSlot();
-    bool hasSongSections = TheGame->mProperties.mHasSongSections;
+    int hasSongSections = TheGame->mProperties.mHasSongSections;
     unsigned int gameCymbalLanes = mTrackConfig.GetGameCymbalLanes();
 
     bool inTrill = false;
@@ -380,7 +381,7 @@ void GemManager::SetupGems(int startTick) {
     int trillString = -1;
     int arrhythmicEndTick = -1;
     unk130 = -1;
-    unk118 = 0;
+    mNextArpeggioPhrase = 0;
     ClearArpeggios();
     ClearTrackMasks();
 
