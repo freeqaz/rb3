@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Detect inlining-gap candidates between target asm and our compiled .o.
+# Modes: qualified-call, missing-inline, missing-noinline, all (default).
+# See: feedback_qualified_inline_call.md
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "${SCRIPT_DIR}/../tools/find_inlining_gaps.py" "$@"

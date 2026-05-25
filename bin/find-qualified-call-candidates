@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Rank partial-match functions whose target asm references @STRING@OtherMethod
-# symbols (= candidates for the qualified-inline-call fix).
+# Back-compat alias: run find-inlining-gaps with --mode qualified-call.
+# Prefer `bin/find-inlining-gaps --mode qualified-call` (or no --mode) for
+# new use.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "${SCRIPT_DIR}/../tools/find_qualified_call_candidates.py" "$@"
+exec python3 "${SCRIPT_DIR}/../tools/find_inlining_gaps.py" --mode qualified-call "$@"
