@@ -620,6 +620,13 @@ void SaveLoadManager::AutoSaveNow() {
     }
 }
 
+DataNode SaveLoadManager::GetDialogMsg() {
+    // Note: real impl has ~90+ state cases each constructing a DataArray
+    // with (fmt_symbol, profile_name, owner_id, status_code). This stub
+    // returns a null node for unsupported states.
+    return DataNode(0);
+}
+
 Symbol SaveLoadManager::GetDialogOpt3() {
     Symbol sym(gNullStr);
     if (mState == kS_SaveNotEnoughSpacePS3) {
