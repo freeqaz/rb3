@@ -110,8 +110,11 @@ void BandStorePanel::Unload() {
 
 void BandStorePanel::Enter() {
     StorePanel::Enter();
-    LocalUser *u = dynamic_cast<LocalUser *>((LocalBandUser *)StoreUser());
-    if (u && !u->IsSignedIn()) {
+    // Cross-cast via (BandUser*) defeats MWCC's inlined virtual-base
+    // resolution and forces emission of an actual __dynamic_cast call,
+    // matching the target's codegen. Runtime behavior is identical.
+    LocalUser *u = dynamic_cast<LocalUser *>((BandUser *)(LocalBandUser *)StoreUser());
+    if (u && !u->IsJoypadConnected()) {
         ExitError(kStoreErrorStoreServer);
     }
     TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type());
