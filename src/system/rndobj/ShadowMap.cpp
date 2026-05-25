@@ -17,6 +17,7 @@ void RndShadowMap::EndShadow() {
     TheRnd->SetShadowMap(0, 0, 0);
 }
 
+#pragma fp_contract off
 bool RndShadowMap::PrepShadow(RndDrawable *draw, RndEnviron *env) {
     if (GetGfxMode() != kNewGfx) return false;
     if (sLightCam == NULL || sShadowTex == NULL) return false;
@@ -78,16 +79,18 @@ found:
     sLightCam->Select();
 
     Mode oldMode = TheRnd->DrawMode();
-    TheRnd->SetDrawMode(kDrawExtrude);
+    TheRnd->SetDrawMode(kDrawShadowDepth);
     draw->DrawShowing();
     TheRnd->SetDrawMode(oldMode);
 
     curCam->Select();
 
     static Hmx::Color defaultColor(0.0f, 0.0f, 0.0f, 0.0f);
-    const Hmx::Color *shadowColor = &defaultColor;
+    const Hmx::Color *shadowColor;
     if (light->GetType() == RndLight::kFloorSpot) {
         shadowColor = &light->GetColor();
+    } else {
+        shadowColor = &defaultColor;
     }
 
     Hmx::Color invertedColor = *shadowColor;
@@ -98,3 +101,4 @@ found:
     TheRnd->SetShadowMap(sShadowTex, sLightCam, &invertedColor);
     return true;
 }
+#pragma fp_contract on
