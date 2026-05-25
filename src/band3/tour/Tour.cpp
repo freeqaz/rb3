@@ -236,21 +236,6 @@ void Tour::ClearPerformer() {
     }
 }
 
-void Tour::InitializeTour() {
-    ClearPerformer();
-    TheGameMode->SetMode(tour);
-    if (TheSessionMgr->IsLeaderLocal()) {
-        m_pTourPerformer = new TourPerformerLocal(mBandUserMgr);
-        MetaPerformer *performer = MetaPerformer::Current();
-        MILO_ASSERT(performer, 0x192);
-        UseUsersProgress();
-        performer->SetSyncDirty(0xFFFFFFFF, true);
-    } else {
-        m_pTourPerformer = new TourPerformerRemote(mBandUserMgr);
-        m_pTourProgress = new TourProgress();
-    }
-}
-
 void Tour::UseUsersProgress() {
     MILO_ASSERT(m_pProfile, 0x173);
     m_pTourProgress = m_pProfile->GetTourProgress();
@@ -268,6 +253,21 @@ bool Tour::IsUnderway(BandProfile *i_pProfile) const {
     TourProgress *pProgress = i_pProfile->GetTourProgress();
     MILO_ASSERT(pProgress, 0x1A9);
     return pProgress->IsOnTour();
+}
+
+void Tour::InitializeTour() {
+    ClearPerformer();
+    TheGameMode->SetMode(tour);
+    if (TheSessionMgr->IsLeaderLocal()) {
+        m_pTourPerformer = new TourPerformerLocal(mBandUserMgr);
+        MetaPerformer *pPerformer = MetaPerformer::Current();
+        MILO_ASSERT(pPerformer, 0x192);
+        UseUsersProgress();
+        pPerformer->SetSyncDirty(0xFFFFFFFF, true);
+    } else {
+        m_pTourPerformer = new TourPerformerRemote(mBandUserMgr);
+        m_pTourProgress = new TourProgress();
+    }
 }
 
 bool Tour::HasGigSpecificIntro() const {
