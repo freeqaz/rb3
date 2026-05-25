@@ -109,8 +109,9 @@ void GemManager::UpdateLeftyFlip(bool poll) {
     }
     RndText::Alignment alignment =
         mTrackConfig.IsLefty() ? RndText::kBottomLeft : RndText::kBottomRight;
-    mTrackDir->Find<TrackWidget>("chord_label.wid", false)
-        ->SetTextAlignment(alignment);
+    TrackWidget *chordLabelWidget =
+        mTrackDir->Find<TrackWidget>("chord_label.wid", false);
+    chordLabelWidget->SetTextAlignment(alignment);
     Symbol type = mTrackConfig.Type();
     if (type != real_keys) {
         RndDir *smasher = mTrackDir->SmasherPlate();
@@ -374,7 +375,9 @@ void GemManager::SetupGems(int startTick) {
     unsigned int gameCymbalLanes = mTrackConfig.GetGameCymbalLanes();
 
     bool inTrill = false;
-    std::pair<int, int> trillSlots(0, 0);
+    std::pair<int, int> trillSlots;
+    trillSlots.first = 0;
+    trillSlots.second = 0;
     int nextSlotForTrill = -1;
     int lastArpeggioEndTick = -1;
     int nextFretForTrill = -1;
@@ -411,7 +414,7 @@ void GemManager::SetupGems(int startTick) {
         int gemTick = gem.mTick;
         bool isHopo = false;
         bool isInFill = false;
-        if (((unkb8 && bandUser->GetTrack()->GetType() != 0) ||
+        if (((unkb8 && bandUser->GetTrackType() != 0) ||
              TheSongDB->IsInCoda(gemTick)) &&
             TheGame->mProperties.mEnableCoda) {
             isInFill = true;
@@ -537,14 +540,16 @@ void GemManager::SetupGems(int startTick) {
             if (mTrackDir != NULL) {
                 int chordA = newGem.unk_0x44;
                 int chordB = newGem.unk_0x48;
-                bool prepared = false;
-                if (mTrackDir->PrepareChordMesh(chordA) || anyRGChord) {
-                    prepared = true;
+                bool chordAOk = false;
+                if (mTrackDir->PrepareChordMesh(chordA) != 0 || anyRGChord) {
+                    chordAOk = true;
                 }
-                anyRGChord = prepared;
-                if (chordB != chordA &&
-                    (mTrackDir->PrepareChordMesh(chordB) || prepared)) {
-                    anyRGChord = true;
+                anyRGChord = chordAOk;
+                if (chordB != chordA) {
+                    anyRGChord = false;
+                    if (mTrackDir->PrepareChordMesh(chordB) != 0 || chordAOk) {
+                        anyRGChord = true;
+                    }
                 }
             } else {
                 MILO_WARN("No track dir in setup gems, so chord meshes can't be built");
