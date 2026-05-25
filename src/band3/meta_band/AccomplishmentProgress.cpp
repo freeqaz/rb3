@@ -573,7 +573,8 @@ int AccomplishmentProgress::SaveSize(int i) {
     int size = 0x2c9e;
     if (i >= 0x91)
         size = 0x2cbe;
-    size += (GamerAwardStatus::SaveSize(i) * 0x32) + 0x2bd;
+    size += 0x2b9;
+    size += (GamerAwardStatus::SaveSize(i) * 0x32) + 4;
     REPORT_SIZE("AccomplishmentProgress", size);
 }
 
