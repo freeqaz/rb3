@@ -77,6 +77,48 @@ CNTHandle StoreIndexFileReader::mMetaDataCntHandle;
 bool StoreIndexFileReader::mMetaDataCntHandleInited;
 
 int StoreIndexFileReader::Read(void *buf, int len) { return CNTRead(&mFileInfo, buf, len); }
+
+inline void StoreIndexFileReader::Init(unsigned long long titleId, unsigned short idx) {
+    int rc = (int)contentInitHandleTitleNAND(
+        titleId, idx,
+        (void *)&StoreIndexFileReader::mMetaDataCntHandle, &gCNTAllocator
+    );
+    if (rc != 0) {
+        TheDebug << MakeString(
+            "Store: error in contentInitHandleTitleNAND: %d, redownloading\n",
+            rc
+        );
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it =
+            TheStoreMetadata.unk58.find(titleId);
+        StoreTitleContentState *state;
+        if (it == TheStoreMetadata.unk58.end()) {
+            state = (StoreTitleContentState *)operator new(0x1000);
+            if (state) memset(state, 0, 0x1000);
+            TheStoreMetadata.unk58[titleId] = state;
+        } else {
+            state = (*it).second;
+        }
+        ((unsigned char *)state)[(idx << 3) & 0x7FFF8] &= ~1;
+        TheStoreMetadata.SetLoadingState(9);
+    } else {
+        StoreIndexFileReader::mMetaDataCntHandleInited = true;
+        CNTDir dirBuf;
+        CNTOpenDir(
+            &StoreIndexFileReader::mMetaDataCntHandle, "/", &dirBuf
+        );
+        CNTDirEntry nameBuf;
+        while (CNTReadDir(&dirBuf, &nameBuf) != 0) {
+            char *namep = (char *)&nameBuf;
+            char *vp = strstr(namep, "version");
+            if (vp != NULL) {
+                *vp = 0;
+                TheStoreMetadata.mBasePath = namep;
+                *vp = 'v';
+            }
+        }
+        CNTCloseDir(&dirBuf);
+    }
+}
 bool StoreIndexFileReader::ReadAsync(void *, int) { return false; }
 int StoreIndexFileReader::Write(const void *, int) { return 0; }
 int StoreIndexFileReader::Seek(int, int) { return 0; }
@@ -1377,7 +1419,7 @@ void StoreMetadataManager::UpdateOfferPrices() {
             if (isUpgrade) {
                 StorePackedRBNOffer *off = mRbnOfferTable->mOffers[idx];
                 StorePackedSong *firstSong;
-                if (((unsigned char *)off)[0] >> 7 & 1) {
+                if (off->mIsRBN) {
                     firstSong = &TheStoreMetadata.mSongTable->mSongs[off->mSongs[0]];
                 } else {
                     firstSong = &TheStoreMetadata.mSongTable->mSongs[
@@ -1407,7 +1449,7 @@ void StoreMetadataManager::UpdateOfferPrices() {
         } else if (isUpgrade) {
             StorePackedOffer *off = mOfferTable->mOffers[idx];
             StorePackedSong *firstSong;
-            if (((unsigned char *)off)[0] >> 7 & 1) {
+            if (off->mIsRBN) {
                 firstSong = &TheStoreMetadata.mSongTable->mSongs[
                     ((StorePackedRBNOffer *)off)->mSongs[0]
                 ];
@@ -1436,7 +1478,8 @@ void StoreMetadataManager::UpdateOfferPrices() {
         }
     }
     mFlags &= ~0x10;
-    if (TheWiiCommerceMgr.mTitleIdsNum != TheWiiCommerceMgr.mAttributesNum) {
+    if (*(unsigned int *)((char *)&TheWiiCommerceMgr + 0x211C)
+        != *(unsigned int *)((char *)&TheWiiCommerceMgr + 0x2118)) {
         if (TheWiiCommerceMgr.RequestOffers(this) != 0) {
             mFlags |= 0x10;
         }
@@ -1589,46 +1632,10 @@ void StoreMetadataManager::PollLoading() {
         if (mVersion == NULL) {
             int ok = 0;
             if (!(mFlags & 1)) {
-                unsigned short idx = unk90;
-                unsigned long long titleId = *(unsigned long long *)&unk88;
-                int rc = (int)contentInitHandleTitleNAND(
-                    titleId, (unsigned int)idx,
-                    (void *)&StoreIndexFileReader::mMetaDataCntHandle, &gCNTAllocator
+                StoreIndexFileReader::Init(
+                    *(unsigned long long *)&unk88, unk90
                 );
-                if (rc != 0) {
-                    TheDebug << MakeString(
-                        "Store: error in contentInitHandleTitleNAND: %d, redownloading\n",
-                        rc
-                    );
-                    std::map<unsigned long long, StoreTitleContentState *>::iterator it =
-                        TheStoreMetadata.unk58.find(titleId);
-                    StoreTitleContentState *state;
-                    if (it == TheStoreMetadata.unk58.end()) {
-                        state = (StoreTitleContentState *)operator new(0x1000);
-                        if (state) memset(state, 0, 0x1000);
-                        TheStoreMetadata.unk58[titleId] = state;
-                    } else {
-                        state = (*it).second;
-                    }
-                    ((unsigned char *)state)[(idx << 3) & 0x7FFF8] &= ~1;
-                    TheStoreMetadata.SetLoadingState(9);
-                } else {
-                    StoreIndexFileReader::mMetaDataCntHandleInited = true;
-                    CNTDir dirBuf;
-                    CNTOpenDir(
-                        &StoreIndexFileReader::mMetaDataCntHandle, "/", &dirBuf
-                    );
-                    CNTDirEntry nameBuf;
-                    while (CNTReadDir(&dirBuf, &nameBuf) != 0) {
-                        char *namep = (char *)&nameBuf;
-                        char *vp = strstr(namep, "version");
-                        if (vp != NULL) {
-                            *vp = 0;
-                            TheStoreMetadata.mBasePath = namep;
-                            *vp = 'v';
-                        }
-                    }
-                    CNTCloseDir(&dirBuf);
+                if (StoreIndexFileReader::mMetaDataCntHandleInited) {
                     ok = 1;
                 }
             } else {
@@ -1804,24 +1811,19 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
         case 5: {
             mContentSize = 0;
             int rc = CheckRequestedDownloadSize__14WiiCommerceMgrFv(&TheWiiCommerceMgr);
-            switch (rc) {
-            case 0:
+            if (rc == 0) {
                 SetLoadingState(8);
                 break;
-            case 4:
+            }
+            if (rc == 4) {
                 mContentSize = *(int *)((char *)&TheWiiCommerceMgr + 0x4190);
                 mErrorMsg = 0x69;
-                SetLoadingState(0xB);
-                break;
-            case 5:
+            } else if (rc == 5) {
                 mErrorMsg = 0x68;
-                SetLoadingState(0xB);
-                break;
-            default:
+            } else {
                 mErrorMsg = 0x64;
-                SetLoadingState(0xB);
-                break;
             }
+            SetLoadingState(0xB);
             break;
         }
         case 9: {
