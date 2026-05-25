@@ -329,6 +329,68 @@ void SaveLoadManager::Poll() {
         unk70 = (int)mCache->GetLastResult();
         SetState((State)0x3f);
         break;
+    case (State)0x27:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            unk70 = (int)result;
+            if (result == kCache_NoError) {
+                SetState((State)0x2e);
+            } else if (result == kCache_ErrorCacheNotFound) {
+                switch (unk7c) {
+                case 0:
+                    SetState((State)0x2b);
+                    break;
+                case 2:
+                    SetState((State)0x2c);
+                    break;
+                default:
+                    SetState((State)0x29);
+                    break;
+                }
+            } else {
+                SetState((State)0x37);
+            }
+        }
+        break;
+    case (State)0x2E:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                SetState((State)0x32);
+            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                SetState((State)0x28);
+            } else if (result == kCache_ErrorCorrupt) {
+                SetState((State)0x2f);
+            } else {
+                SetState((State)0x37);
+            }
+        }
+        break;
+    case (State)0x30:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        SetState((State)0x31);
+        break;
+    case (State)0x31:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                SetState((State)0x33);
+            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x28);
+            } else if (result == kCache_ErrorCorrupt) {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x2f);
+            } else {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x37);
+            }
+        }
+        break;
     case (State)0x32:
         if (!TheCacheMgr->IsDone()) return;
         if (TheCacheMgr->GetLastResult() == kCache_NoError) {
