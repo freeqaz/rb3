@@ -55,16 +55,22 @@ namespace {
 
     void *RadAlloc(unsigned int size) { return _MemAlloc(size, 0x80); }
     void RadFree(void *p) { _MemFree(p); }
-    static void EndianSwapBuffer(void *buf, int len) {
-        MILO_ASSERT((len & 3) == 0, 0xae);
-        unsigned int *p = (unsigned int *)buf;
-        unsigned int *end = p + (len / 4);
+
+#pragma push
+#pragma dont_inline on
+    static void EndianSwapBuffer(void *buf, int size) {
+        if ((size & 3) != 0) {
+            TheDebug.Fail(MakeString(kAssertStr, "Movie.cpp", 0xae, "size % sizeof(uint32) == 0"));
+        }
+        char *p = (char *)buf;
+        char *end = p + size;
         while (p < end) {
-            unsigned int *cur = p;
-            p++;
+            unsigned int *cur = (unsigned int *)p;
+            p += 4;
             EndianSwapEq(*cur);
         }
     }
+#pragma pop
 }
 
 static DataNode OnMovieSetTrack(DataArray *arr) {
