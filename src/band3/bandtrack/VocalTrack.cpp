@@ -1093,7 +1093,7 @@ void VocalTrack::UpdateScrolling(float ms) {
     static bool dumpDeployVectors;
     static bool warnOnMarkerCreation;
 
-    if (!mPlayer || mPlayer->IsGameOver())
+    if (!mPlayer || mPlayer->IsNet())
         return;
     if (ms < 0.0f)
         return;
@@ -1115,7 +1115,7 @@ void VocalTrack::UpdateScrolling(float ms) {
         lookAhead = sectionEnd;
     }
 
-    if (!mPlayer->IsNet()) {
+    if (!mPlayer->InTambourinePhrase()) {
         for (int part = 0; part < mPlayer->NumVocalParts(); part++) {
             VocalNoteList *notes = GetVocalNoteList(part);
             if (!notes)
@@ -1218,12 +1218,13 @@ void VocalTrack::UpdateScrolling(float ms) {
     if (rangeDelta < 0.0f)
         rangeDelta = -rangeDelta;
     if (rangeDelta > 0.1f) {
-        for (int p = 0; p < 3; p++) {
-            mNextScrollNote[p] = 0;
-            if (p < 2)
-                mNextDeployZone[p] = 0;
-            mCurLyricPhrase[p < 2 ? p : 0] = 0;
-        }
+        mNextScrollNote[0] = 0;
+        mNextDeployZone[0] = 0;
+        mCurLyricPhrase[0] = 0;
+        mNextScrollNote[1] = 0;
+        mNextDeployZone[1] = 0;
+        mCurLyricPhrase[1] = 0;
+        mNextScrollNote[2] = 0;
         ResetAllTubePlates();
         ClearLyrics();
     }
@@ -1344,19 +1345,18 @@ void VocalTrack::UpdateScrolling(float ms) {
         if (!wantLyrics)
             continue;
 
+        VocalNoteList *phraseNotes = (part != 2) ? notes : GetVocalNoteList(1);
+        std::vector<VocalPhrase> &lyricPhrases = phraseNotes->mLyricPhrases;
         bool lead = (part == 0);
-        std::vector<VocalPhrase> &lyricPhrases =
-            (part != 2) ? notes->mLyricPhrases
-                        : GetVocalNoteList(1)->mLyricPhrases;
-        VocalNoteList *altNotes =
-            (!lead && isolated < 1) ? GetVocalNoteList(2) : NULL;
-        std::vector<std::pair<float, float> > &freestyles =
-            notes->mFreestyleSections;
 
         RndGroup *grp = lead
             ? mDir->Find<RndGroup>("lyrics.grp", false)
             : mDir->Find<RndGroup>("lyrics_harmony.grp", false);
         bool staticLyrics = !IsScrolling();
+        VocalNoteList *altNotes =
+            (!lead && isolated < 1) ? GetVocalNoteList(2) : NULL;
+        std::vector<std::pair<float, float> > &freestyles =
+            notes->mFreestyleSections;
         RndTransformable *scroller = !staticLyrics
             ? mDir->mScroller.Ptr()
             : (lead ? mDir->mLeadLyricScroller.Ptr()
@@ -1393,7 +1393,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                     freestyles[i].second / 1000.0f
                 );
             }
-            TheDebug << "--------\n";
+            TheDebug << MakeString("--------\n");
         }
 
         int phrasePart = part < 1 ? part : 1;
@@ -1943,358 +1943,6 @@ void VocalTrack::UpdateScrolling(float ms) {
             }
         }
 
-        (void)scroller;
-        (void)grp;
-        (void)curDeploy;
-        (void)latest;
-        (void)prevBakedLyric;
-        // Per-part body to be written in a follow-up pass.
-        continue;
-#if 0
-        {
-            float tmpEndPos = 0.0f;
-            float staticLeftX = 0.0f;
-            float staticY = 0.0f;
-            Lyric *staticFirst = NULL;
-            Lyric *staticLast = NULL;
-            VocalPhrase &lyrPh = notes->mLyricPhrases[0];
-            float phStartMs = TickToMs((float)lyrPh.unk8);
-            float phEndMs = TickToMs((float)(lyrPh.unk8 + lyrPh.unkc));
-            int playerState = mPlayer ? mPlayer->mEnabledState : 0;
-            bool playerOk =
-                (!mPlayer || playerState == 0 || playerState == 2
-                 || playerState == 3);
-            bool windowOk;
-            if (inPractice) {
-                windowOk = !(lastLyricX > scrollerWidth);
-            } else {
-                windowOk = !(phStartMs > lookAhead);
-            }
-            bool sectionBoundsOk =
-                !(sectionOnly && phStartMs > (sectionEnd - 100.0f));
-            if (!playerOk || !windowOk || !sectionBoundsOk) {
-                break;
-            }
-            bool isPast = inPractice ? (phEndMs < ms) : (phEndMs < buildAhead);
-            if (sectionOnly && !isPast && phEndMs > sectionStart) {
-                isPast = false;
-            }
-            if (isPast) {
-                while (itT != &notes->mNotes[notes->mNotes.size()]
-                       && itT->mMs <= phEndMs) {
-                    itT++;
-                }
-                if (altNotes) {
-                    VocalNote *altIt = &altNotes->mNotes[unkfc];
-                    while (altIt
-                               != &altNotes->mNotes[altNotes->mNotes.size()]
-                           && altIt->mMs <= phEndMs) {
-                        altIt++;
-                    }
-                    unkfc = (int)(altIt - &altNotes->mNotes[0]);
-                }
-                int *dzPtr =
-                    lead ? &mNextDeployZone[0] : &mNextDeployZone[1];
-                while (*dzPtr < (int)notes->mFreestyleSections.size()
-                       && notes->mFreestyleSections[*dzPtr].second < phEndMs) {
-                    (*dzPtr)++;
-                }
-                (*curPhPtr)++;
-                continue;
-            }
-
-            // Create + populate plate for this phrase
-            LyricPlate *plate = GetNextLyricPlate(plates, lead);
-            plate->HookUpParents(grp, scroller);
-            if (inPractice) {
-                plate->mInvalidateMs = phStartMs;
-            }
-
-            while (itT != &notes->mNotes[notes->mNotes.size()]
-                   && !(itT->mMs > phEndMs)) {
-                if (altNotes) {
-                    VocalNote *altIt = &altNotes->mNotes[unkfc];
-                    VocalNote *altEnd =
-                        &altNotes->mNotes[altNotes->mNotes.size()];
-                    while (altIt != altEnd
-                           && !(altIt->mMs > itT->mMs)
-                           && altIt->mMs == phEndMs) {
-                        if (altIt->mUnpitchedNote == 0
-                            && altIt->mPhraseEnd != 0) {
-                            bool dedupe = false;
-                            if (itT->mPhraseEnd != 0
-                                && IdenticalLyric(*altIt, *itT))
-                                dedupe = true;
-                            else if (latestInPlate
-                                     && latestInPlate->mVocalNotes.size() > 0
-                                     && IdenticalLyric(
-                                         *altIt,
-                                         *latestInPlate->mVocalNotes[0]
-                                     ))
-                                dedupe = true;
-                            if (!dedupe) {
-                                const VocalNote *altNoteRef = altIt;
-                                Lyric *altLyric = CreateLyric(
-                                    altNoteRef,
-                                    altNotes->mNotes,
-                                    lead,
-                                    false,
-                                    true
-                                );
-                                if (altLyric) {
-                                    CheckDeploySections(
-                                        altLyric,
-                                        altIt->mMs,
-                                        curDeploy,
-                                        notes->mFreestyleSections,
-                                        inPractice,
-                                        latestInPlate,
-                                        tmpEndPos
-                                    );
-                                    ProcessStaticLyrics(
-                                        inPractice,
-                                        altLyric,
-                                        staticLeftX,
-                                        tmpEndPos,
-                                        staticFirst,
-                                        staticLast,
-                                        staticY,
-                                        false,
-                                        plate
-                                    );
-                                    plate->AddLyric(altLyric);
-                                    latestInPlate = plate->LatestLyric();
-                                }
-                            }
-                        }
-                        altIt++;
-                    }
-                    unkfc = (int)(altIt - &altNotes->mNotes[0]);
-                }
-                if (itT->mMs > phEndMs) break;
-                const VocalNote *primaryRef = itT;
-                Lyric *newLyr = CreateLyric(
-                    primaryRef, notes->mNotes, lead, false, false
-                );
-                if (newLyr) {
-                    CheckDeploySections(
-                        newLyr,
-                        itT->mMs,
-                        curDeploy,
-                        notes->mFreestyleSections,
-                        inPractice,
-                        latestInPlate,
-                        tmpEndPos
-                    );
-                    ProcessStaticLyrics(
-                        inPractice,
-                        newLyr,
-                        staticLeftX,
-                        tmpEndPos,
-                        staticFirst,
-                        staticLast,
-                        staticY,
-                        false,
-                        plate
-                    );
-                    plate->AddLyric(newLyr);
-                    latestInPlate = plate->LatestLyric();
-                }
-                itT++;
-            }
-
-            if (inPractice && !plates.empty()) {
-                Lyric *latestNow = plate->LatestLyric();
-                if (latestNow) latestNow->SetChunkEnd(true);
-            }
-            (*curPhPtr)++;
-        }
-
-        *itPPtr = (int)(itT - &notes->mNotes[0]);
-
-        // Color setup: 8 GetLyricColor + 4 GetLyricAlpha
-        Hmx::Color slot0 = mDir->GetLyricColor(0);
-        Hmx::Color slot1 = mDir->GetLyricColor(0);
-        Hmx::Color slot2 = mDir->GetLyricColor(0);
-        Hmx::Color slot3 = mDir->GetLyricColor(0);
-        Hmx::Color slot4 = mDir->GetLyricColor(0);
-        Hmx::Color slot5 = mDir->GetLyricColor(0);
-        Hmx::Color slot6 = mDir->GetLyricColor(0);
-        Hmx::Color slot7 = mDir->GetLyricColor(0);
-        int colorBase = 0;
-        if (inPractice) colorBase = 8;
-        if (lead) colorBase |= 4;
-        float alpha0 = mDir->GetLyricAlpha(colorBase);
-        float alpha1 = mDir->GetLyricAlpha(colorBase | 1);
-        float alpha2 = mDir->GetLyricAlpha(colorBase | 2);
-        float alpha3 = mDir->GetLyricAlpha(colorBase | 3);
-
-        Lyric *prevBakedLyric = GetLastBakedLyric(plates);
-        for (std::deque<LyricPlate *>::iterator pit = plates.begin();
-             pit != plates.end();
-             ++pit) {
-            LyricPlate *plate = *pit;
-            if (plate->Empty()) continue;
-            if (plate->Baked()) continue;
-            plate->mBaked = true;
-            if (inPractice) {
-                plate->UpdateStaticTiming(mMinPhraseHighlightMs);
-            }
-            int phraseTick =
-                (int)MsToTick(plate->mSyllables.front()->mActiveMs);
-            int commonPhraseID = TheSongDB->GetCommonPhraseID(
-                mTrackConfig.TrackNum(), phraseTick
-            );
-            Hmx::Color *prevC = (commonPhraseID == -1) ? &slot0 : &slot4;
-            Hmx::Color *activeC = (commonPhraseID == -1) ? &slot1 : &slot5;
-            Hmx::Color *nowC = (commonPhraseID == -1) ? &slot2 : &slot6;
-            Hmx::Color *pastC = (commonPhraseID == -1) ? &slot3 : &slot7;
-            plate->mPreviewColor = *prevC;
-            plate->mActiveColor = *activeC;
-            plate->mNowColor = *nowC;
-            plate->mPastColor = *pastC;
-            plate->mPreviewPhonemeColor = *prevC;
-            plate->mActivePhonemeColor = *activeC;
-            plate->mNowPhonemeColor = *nowC;
-            plate->mPastPhonemeColor = *pastC;
-            plate->mPreviewColor.alpha = alpha0;
-            plate->mActiveColor.alpha = alpha1;
-            plate->mNowColor.alpha = alpha2;
-            plate->mPastColor.alpha = alpha3;
-            plate->mPreviewPhonemeColor.alpha = alpha0;
-            plate->mActivePhonemeColor.alpha = alpha1;
-            plate->mNowPhonemeColor.alpha = alpha2;
-            plate->mPastPhonemeColor.alpha = alpha3;
-
-            for (std::vector<Lyric *>::iterator lit
-                 = plate->mSyllables.begin();
-                 lit != plate->mSyllables.end();
-                 ++lit) {
-                Lyric *lyr = *lit;
-                float lyricX;
-                if (inPractice) {
-                    lyricX = lastLyricX;
-                    if (lyr->mDeployIdx != -1) {
-                        float gap = mStaticDeployMarginX;
-                        if (lyricX < (0.01f + gap)) {
-                            lyricX -= gap;
-                        }
-                        int *dzNow = lead ? &mNextDeployZone[0]
-                                          : &mNextDeployZone[1];
-                        if (lyr->mDeployIdx < *dzNow) {
-                            if (!sectionOnly) {
-                                MILO_LOG(
-                                    "lyric.mDeployIdx (%d) < "
-                                    "mNextDeployZone (%d) for part %d\n",
-                                    lyr->mDeployIdx,
-                                    *dzNow,
-                                    part
-                                );
-                            }
-                            lyr->mDeployIdx = -1;
-                        } else {
-                            float sumDeploy =
-                                mStaticDeployZoneXSize + mStaticDeployBufferX;
-                            float gapPlus =
-                                mStaticDeployZoneXSize + mStaticDeployMarginX;
-                            lyricX +=
-                                (sumDeploy * (float)(lyr->mDeployIdx - *dzNow))
-                                + gapPlus;
-                        }
-                    }
-                } else {
-                    float startMs = TickToMs((float)lyr->StartTick());
-                    MsToTick(startMs - unk74);
-                    lyricX = unk78 * (startMs / unk74);
-                }
-                if (lyricX < lastLyricX) lyricX = lastLyricX;
-                lyr->mBeginPos.x = lyricX;
-                lyr->mBeginPos.y = 0.0f;
-                float lyricZ = lyr->PitchNote()
-                    ? (lead ? mDir->unk694 : mDir->unk698)
-                    : (lead ? mDir->unk69c : mDir->unk6a0);
-                lyr->mBeginPos.z = lyricZ;
-                plate->BakeLyric(lyr);
-                lastLyricX = lyricX + lyr->Width();
-
-                // Tight-shift push between prev and current lyric
-                if (inPractice && prevBakedLyric
-                    && prevBakedLyric->mWordEnd) {
-                    std::deque<LyricShift> &shifts =
-                        lead ? mLeadLyricShifts : mHarmonyLyricShifts;
-                    float prevEnd = prevBakedLyric->mEndMs;
-                    float prevWidth =
-                        (mStaticDeployMarginX - prevBakedLyric->mBeginPos.x)
-                        - prevBakedLyric->Width();
-                    float prevHighlight =
-                        prevBakedLyric->mActiveMs + mMinLyricHighlightMs;
-                    float shiftMs =
-                        prevHighlight < prevEnd ? prevHighlight : prevEnd;
-                    if (shiftMs < prevEnd) prevEnd = shiftMs;
-                    bool fast = (lyr->mActiveMs - mLyricShiftMs)
-                        < mLyricShiftAnticipationMs;
-                    shifts.push_back(LyricShift(prevEnd, prevWidth, fast));
-                }
-                prevBakedLyric = lyr;
-            }
-            plate->CheckSync();
-            if (inPractice
-                && plate->mWidthX > (mDir->mTrackRightX - mDir->mNowBarX)) {
-                String s;
-                for (std::vector<Lyric *>::iterator lit
-                     = plate->mSyllables.begin();
-                     lit != plate->mSyllables.end();
-                     ++lit) {
-                    s += (*lit)->mText;
-                }
-                MILO_WARN("lyric phrase too big for window: \"%s\"", s);
-            }
-        }
-
-        // Static deploy zones for remaining freestyle sections in this part
-        if (inPractice
-            && *curPhPtr == (int)notes->mLyricPhrases.size()) {
-            int *dzPtr = lead ? &mNextDeployZone[0] : &mNextDeployZone[1];
-            std::deque<LyricShift> &shifts =
-                lead ? mLeadLyricShifts : mHarmonyLyricShifts;
-            int codaTick = TheSongDB->GetCodaStartTick();
-            while (*dzPtr < (int)notes->mFreestyleSections.size()) {
-                std::pair<float, float> &sec =
-                    notes->mFreestyleSections[*dzPtr];
-                float nextStart =
-                    ((*dzPtr + 1) < (int)notes->mFreestyleSections.size())
-                        ? notes->mFreestyleSections[*dzPtr + 1].first
-                        : -1.0f;
-                if (codaTick != -1) {
-                    float codaMs = TickToMs((float)codaTick);
-                    if (sec.first < codaMs && codaMs < sec.second) {
-                        std::pair<float, float> leftPart(sec.first, codaMs);
-                        std::pair<float, float> rightPart(codaMs, sec.second);
-                        BuildStaticDeployZone(
-                            part, leftPart, codaMs, lastLyricX, shifts
-                        );
-                        BuildStaticDeployZone(
-                            part, rightPart, nextStart, lastLyricX, shifts
-                        );
-                    } else {
-                        BuildStaticDeployZone(
-                            part, sec, nextStart, lastLyricX, shifts
-                        );
-                    }
-                } else {
-                    BuildStaticDeployZone(
-                        part, sec, nextStart, lastLyricX, shifts
-                    );
-                }
-                (*dzPtr)++;
-            }
-        }
-
-        if (inPractice) {
-            // tight-shift preview into shifts deque — omitted in skeleton
-        }
-}
-#endif
     }
 
     dumpDeployVectors = false;
