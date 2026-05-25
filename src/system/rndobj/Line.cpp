@@ -183,8 +183,7 @@ void RndLine::SetNumPoints(int num) {
                     i7 = i5 * 2;
             }
             mMesh->Faces(i5).Set(i7, i7 + 2, i7 + 1);
-            mMesh->Faces(i1 - 1).Set(i7 + 1, i7 + 2, i7 + 3);
-            i1 = i5;
+            mMesh->Faces(i5 + 1).Set(i7 + 1, i7 + 2, i7 + 3);
         }
         mMesh->Sync(0x13F);
     }
