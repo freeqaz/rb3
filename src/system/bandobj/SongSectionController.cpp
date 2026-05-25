@@ -1,6 +1,7 @@
 #include "bandobj/SongSectionController.h"
 #include "math/Rand.h"
 #include "obj/Msg.h"
+#include "obj/Utl.h"
 #include "utl/Symbols.h"
 
 INIT_REVS(SongSectionController)
@@ -147,6 +148,33 @@ bool SongSectionController::ActivatePool(Symbol cat, bool forceTrigger) {
         }
     }
     return false;
+}
+
+Symbol SongSectionController::FindPoolCategoryForPracSession(Symbol pracSession) {
+    ObjList<PracticeSectionMapping> &mappings =
+        mMappingsOwner ? mMappingsOwner->mSectionMappings : mSectionMappings;
+    for (ObjList<PracticeSectionMapping>::iterator it = mappings.begin();
+         it != mappings.end();
+         ++it) {
+        bool invalidMatched = false;
+        for (std::list<String>::iterator sit = it->mInvalidPracticeSections.begin();
+             sit != it->mInvalidPracticeSections.end();
+             ++sit) {
+            if (StringMatchesFilter(pracSession.Str(), sit->c_str())) {
+                invalidMatched = true;
+            }
+        }
+        if (!invalidMatched) {
+            for (std::list<String>::iterator sit = it->mValidPracticeSections.begin();
+                 sit != it->mValidPracticeSections.end();
+                 ++sit) {
+                if (StringMatchesFilter(pracSession.Str(), sit->c_str())) {
+                    return it->mPoolCategory;
+                }
+            }
+        }
+    }
+    return Symbol("CATCH_ALL");
 }
 
 void SongSectionController::ResetAll() {
