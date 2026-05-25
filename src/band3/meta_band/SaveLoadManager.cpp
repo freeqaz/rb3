@@ -151,6 +151,40 @@ void SaveLoadManager::Poll() {
             break;
         }
         break;
+    case (State)0x4:
+        if (unk69) return;
+        switch (unk6c) {
+        case 7:
+            SetState((State)0xb);
+            break;
+        case 8:
+            SetState((State)0x5);
+            break;
+        case 9:
+            SetState((State)0x7);
+            break;
+        default:
+            SetState((State)0x42);
+            break;
+        }
+        break;
+    case (State)0x1A:
+        if (ThePlatformMgr.mGuideShowing) return;
+        SetState((State)0x19);
+        break;
+    case (State)0x2D:
+        if (ThePlatformMgr.mGuideShowing) return;
+        SetState((State)0x2b);
+        break;
+    case (State)0x3C:
+        if (ThePlatformMgr.mGuideShowing) return;
+        SetState((State)0x3b);
+        break;
+    case (State)0x54:
+        if (TheSongMgr.IsSongCacheWriteDone()) {
+            SetState((State)0x54);
+        }
+        break;
     default:
         break;
     }
