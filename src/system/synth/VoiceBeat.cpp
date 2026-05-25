@@ -1,6 +1,8 @@
 #include "synth/VoiceBeat.h"
 #include "math/Utl.h"
+#include "os/Timer.h"
 #include <algorithm>
+#include <math.h>
 
 VoiceBeat::VoiceBeat() {
     mEnabled = true;
@@ -13,7 +15,179 @@ void VoiceBeat::SetEnable(bool enable) {
     mEnabled = enable;
 }
 
-void VoiceBeat::Analyze(float *, int, bool, bool, float) {}
+void VoiceBeat::Analyze(
+    float *samples, int numSamples, bool useWindow, bool storeEvents, float ms
+) {
+    START_AUTO_TIMER("voice_beat");
+    if (!mEnabled) return;
+
+    if (ms != -1.0f) {
+        mRate = ((double)numSamples
+                 + (ms - ((float)(numSamples / 16) + (float)mCount * 0.0625f)) / 5.0)
+            / (double)numSamples;
+    }
+
+    double k_a0 = 2666.171709;
+    double k_a1 = -0.9459779362;
+    double k_a2 = 1.9444776578;
+    double k_b0 = 143.5132541;
+    double k_b1 = -0.7319917025;
+    double k_b2 = 1.7041197124;
+    double k_c0 = 1.178584698;
+    double k_c1 = 6.0;
+    double k_c2 = -0.7199103273;
+    double k_c3 = 3.1159669252;
+    double k_c4 = -5.0679983867;
+    double k_c5 = 3.6717290892;
+    double k_envFast = 0.03;
+    double k_envSyl = 0.08;
+    double k_floorRise = 0.001;
+    double k_msPerSample = 0.0625f;
+    double k_thrSpam = 0.35;
+    double k_thrEnergy = 0.3;
+
+    for (int i = 0; i < numSamples; i++) {
+        if (useWindow) {
+            *samples *= (float)sin(3.1415927410125732 * ((double)i / (double)numSamples));
+        }
+
+        double oldXV1 = mXVVoice[1];
+        double oldXV3 = mXVVoice[3];
+        mXVVoice[0] = oldXV1;
+        mXVVoice[1] = mXVVoice[2];
+        double oldYV1 = mYVVoice[1];
+        mXVVoice[2] = oldXV3;
+        double oldYV2 = mYVVoice[2];
+        mXVVoice[3] = mXVVoice[4];
+        double oldYV3 = mYVVoice[3];
+        double oldYV4 = mYVVoice[4];
+        double newXV = (double)*samples / 6.349260768;
+        mYVVoice[0] = oldYV1;
+        double oldVE = mVoiceEnergy;
+        mYVVoice[3] = oldYV4;
+        double oldFBE = mFullBandEnergy;
+        mYVVoice[1] = oldYV2;
+        mXVVoice[4] = newXV;
+        mYVVoice[2] = oldYV3;
+        double oldAA_X1 = mXVEnvAntiAlias[1];
+        double oldAA_X2 = mXVEnvAntiAlias[2];
+        double oldAA_Y1 = mYVEnvAntiAlias[1];
+        double oldAA_Y2 = mYVEnvAntiAlias[2];
+        double newYV = 2.4013168963 * oldYV4
+            + (-2.0287939898 * oldYV3
+               + (0.7561945957 * oldYV2
+                  + (-0.1330748863 * oldYV1 + -(2.0 * oldXV3 - (oldXV1 + newXV)))));
+        mYVVoice[4] = newYV;
+
+        double absYV = fabs(newYV);
+        double envInput = absYV / k_a0;
+        mCount += mRate;
+        float absSample = fabs(*samples);
+        mXVEnvAntiAlias[0] = oldAA_X1;
+        mXVEnvAntiAlias[1] = oldAA_X2;
+        mXVEnvAntiAlias[2] = envInput;
+        mYVEnvAntiAlias[0] = oldAA_Y1;
+        mYVEnvAntiAlias[1] = oldAA_Y2;
+        double newVoiceEnergy = 0.02 * (absYV - oldVE) + oldVE;
+        double aaAcc = 2.0 * oldAA_X2 + (oldAA_X1 + envInput);
+        double newFullBandEnergy
+            = 0.02 * ((double)absSample - oldFBE) + oldFBE;
+        double newAA_Y2 = k_a2 * oldAA_Y2 + (k_a1 * oldAA_Y1 + aaAcc);
+        mVoiceEnergy = newVoiceEnergy;
+        mFullBandEnergy = newFullBandEnergy;
+        double ratio = newVoiceEnergy / newFullBandEnergy;
+        mYVEnvAntiAlias[2] = newAA_Y2;
+
+        if ((i % 40) == 0) {
+            double oldSylX1 = mXVSyllables[1];
+            double sylInput = newAA_Y2 / k_b0;
+            double oldSpamX1 = mXVSpamSyllables[1];
+            double oldSpamX2 = mXVSpamSyllables[2];
+            double oldSpamX4 = mXVSpamSyllables[4];
+            double oldSpamX3 = mXVSpamSyllables[3];
+            double spamInput = newAA_Y2 / k_c0;
+            double oldSylX2 = mXVSyllables[2];
+            double oldSylY1 = mYVSyllables[1];
+            double oldSylY2 = mYVSyllables[2];
+            double oldSpamY1 = mYVSpamSyllables[1];
+            double oldSpamY2 = mYVSpamSyllables[2];
+            double sylAcc0 = oldSylX1 + sylInput;
+            mXVSyllables[0] = oldSylX1;
+            double oldSpamY3 = mYVSpamSyllables[3];
+            double spamSum24 = oldSpamX2 + oldSpamX4;
+            double spamAcc0 = oldSpamX1 + spamInput;
+            mXVSpamSyllables[0] = oldSpamX1;
+            double sylAcc1 = 2.0 * oldSylX2 + sylAcc0;
+            double oldSpamY4 = mYVSpamSyllables[4];
+            double spamAcc1 = -(4.0 * spamSum24 - spamAcc0);
+            mXVSyllables[1] = oldSylX2;
+            double oldSylEnvSigma = mSylEnvSigma;
+            double sylAcc2 = k_b1 * oldSylY1 + sylAcc1;
+            double k_c1_l = k_c1;
+            mYVSyllables[1] = oldSylY2;
+            double spamAcc2 = k_c1_l * oldSpamX3 + spamAcc1;
+            double k_b2_l = k_b2;
+            double k_envSyl_l = k_envSyl;
+            double newSylY2 = k_b2_l * oldSylY2 + sylAcc2;
+            double k_c2_l = k_c2;
+            double oldFloorSigma = mFloorSigma;
+            double spamAcc3 = k_c2_l * oldSpamY1 + spamAcc2;
+            double k_c3_l = k_c3;
+            mXVSpamSyllables[1] = oldSpamX2;
+            double sylDelta = newSylY2 - oldSylEnvSigma;
+            mXVSpamSyllables[3] = oldSpamX4;
+            float sylY2_f = (float)newSylY2;
+            double spamAcc4 = k_c3_l * oldSpamY2 + spamAcc3;
+            double oldSpamAvg = mSpamAvg;
+            mYVSpamSyllables[1] = oldSpamY2;
+            double newSylEnvSigma = k_envSyl_l * sylDelta + oldSylEnvSigma;
+            double k_c4_l = k_c4;
+            mXVSyllables[2] = sylInput;
+            double spamAcc5 = k_c4_l * oldSpamY3 + spamAcc4;
+            double k_c5_l = k_c5;
+            mYVSyllables[0] = oldSylY1;
+            mYVSyllables[2] = newSylY2;
+            double newSpamY4 = k_c5_l * oldSpamY4 + spamAcc5;
+            mXVSpamSyllables[2] = oldSpamX3;
+            mXVSpamSyllables[4] = spamInput;
+            double absSpam = fabs(newSpamY4);
+            mYVSpamSyllables[0] = oldSpamY1;
+            double spamDelta = absSpam - oldSpamAvg;
+            mYVSpamSyllables[2] = oldSpamY3;
+            double newSpamAvg = k_envFast * spamDelta + oldSpamAvg;
+            mYVSpamSyllables[3] = oldSpamY4;
+            mYVSpamSyllables[4] = newSpamY4;
+            mSpamAvg = newSpamAvg;
+            unk4 = sylY2_f;
+            mSylEnvSigma = newSylEnvSigma;
+
+            if (newSylY2 < oldFloorSigma) {
+                mFloorSigma = newSylY2;
+            } else {
+                mFloorSigma = k_floorRise * (newSylY2 - oldFloorSigma) + oldFloorSigma;
+            }
+
+            ms = (float)mCount * (float)k_msPerSample;
+            unk0 = newSpamAvg > k_thrSpam;
+            unk1 = ratio > k_thrEnergy;
+
+            if ((float)sylDelta < 0.0f && (float)mSylDeltaPrev >= 0.0f) {
+                static double k_thrFloor = 0.15;
+                double *floorPtr
+                    = (k_thrFloor >= mFloorSigma) ? &k_thrFloor : &mFloorSigma;
+                if ((float)newSylY2 > (float)(4.0 * *floorPtr) && unk1 && unk0) {
+                    if (storeEvents) {
+                        mPeaks.push_back((float)newSylY2);
+                        mTimes.push_back(ms);
+                    }
+                    mTriggered = true;
+                }
+            }
+            mSylDeltaPrev = sylDelta;
+        }
+        samples++;
+    }
+}
 
 void VoiceBeat::Reset() {
     memset(mXVVoice, 0, sizeof(mXVVoice));
@@ -95,6 +269,33 @@ void EventTracker::Reset() {
     invalidate();
 }
 
+bool EventTracker::Hit(float msFrom, float msUpTo, float msNow) {
+    mSelFrom = findEarliest(msFrom, mSelFrom);
+    mSelTo = findLatest(msUpTo, mSelTo);
+    float tAccum = 0.0f;
+    for (int i = mSelFrom; i <= mSelTo; i++) {
+        static float k_zero = 0.0f;
+        float diff = 0.2f - mPeaks[i];
+        float *p = (k_zero >= diff) ? &k_zero : &diff;
+        float tolHalf = 1000.0f * (*p) + 60.0f;
+        if (mTimes[i] - tolHalf <= msNow && msNow <= mTimes[i] + tolHalf) {
+            tAccum += mTimes[i];
+            mHits[i] = true;
+        }
+    }
+    mSelFrom = findEarliest(msNow - 150.0f, mSelFrom);
+    mSelTo = findLatest(150.0f + msNow, mSelTo);
+    for (int i = mSelFrom; i <= mSelTo; i++) {
+        mSwings[i]++;
+    }
+    if (tAccum != 0.0f) {
+        int n = mSelFrom - mSelTo + 1;
+        mAvgHitTime = 0.1f * (tAccum / (float)n - (msFrom + msUpTo) * 0.5f - mAvgHitTime)
+            + mAvgHitTime;
+    }
+    return 0.0f != tAccum;
+}
+
 bool EventTracker::Miss(float msFrom, float msUpTo) {
     mSelFrom = findEarliest(msFrom, mSelFrom);
     mSelTo = findLatest(msUpTo, mSelTo);
@@ -129,5 +330,17 @@ void TalkyMatcher::LoadEvents(
 }
 
 void TalkyMatcher::Reset() { mVoiceBeat.Reset(); }
+
+void TalkyMatcher::Analyze(const short *samples, int numSamples, float ms) {
+    if (numSamples > 0x3000) numSamples = 0x3000;
+    int n3 = numSamples / 3;
+    for (int i = 0; i < n3; i++) {
+        mBuffer[i] = (float)samples[i * 3] / 32767.0f;
+    }
+    mVoiceBeat.Analyze(mBuffer, n3, false, true, ms + 6.0f);
+    if (!mRefEvents.mTimes.empty()) {
+        updateScoring(ms);
+    }
+}
 
 void TalkyMatcher::SetEnableTalkyMatcher(bool enable) { mVoiceBeat.SetEnable(enable); }
