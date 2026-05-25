@@ -1,5 +1,7 @@
 #pragma once
 #include "meta_band/SavedSetlist.h"
+#include "meta_band/SongRecord.h"
+#include "meta_band/SongSortNode.h"
 #include "net_band/DataResults.h"
 #include "obj/Object.h"
 #include "rndobj/Tex.h"

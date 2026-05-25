@@ -224,6 +224,83 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
     }
 }
 
+void MusicLibraryNetSetlists::RefreshSetlistArt() {
+    MILO_ASSERT(mSucceeded, 0x18E);
+    SortNode *node = TheMusicLibrary->GetHighlightedNode();
+    SetlistSortNode *ssn = dynamic_cast<SetlistSortNode *>(node);
+    MILO_ASSERT(ssn, 0x192);
+    SavedSetlist *setlist = ssn->mSetlistRecord->mSetlist;
+    NetSavedSetlist *nss = dynamic_cast<NetSavedSetlist *>(setlist);
+    MILO_ASSERT(nss, 0x195);
+    if (unk50 != node->GetToken()
+        && (nss->GetOwnerOnlineID()->IsInvalid()
+            || ThePlatformMgr.CanSeeUserCreatedContent(nss->GetOwnerOnlineID()))) {
+        CleanUpArt();
+        MILO_ASSERT(!mPendingSetlistArt, 0x1A2);
+        MILO_ASSERT(!mSetlistArtLoader, 0x1A3);
+        mPendingSetlistArt = Hmx::Object::New<RndTex>();
+        unk50 = node->GetToken();
+        if (nss->unk44) {
+            mSetlistArtLoader = TheNetCacheMgr->AddNetCacheLoader(
+                nss->GetArtUrl(), (NetLoaderPos)0
+            );
+            if (!mSetlistArtLoader) {
+                RELEASE(mPendingSetlistArt);
+            }
+        } else {
+            MILO_ASSERT(nss->GetType() != SavedSetlist::kSetlistHarmonix, 0x1B6);
+            MILO_ASSERT(nss->GetType() != SavedSetlist::kBattleHarmonix, 0x1B7);
+            MILO_ASSERT(nss->GetType() != SavedSetlist::kBattleHarmonixArchived, 0x1B8);
+            SavedSetlist::SetlistType type = nss->GetType();
+            if (type == SavedSetlist::kSetlistFriend
+                || type == SavedSetlist::kSetlistHarmonix) {
+                TheRockCentral.GetSetlistArt(
+                    nss->mGuid.c_str(), mPendingSetlistArt, this, 0
+                );
+            } else if (type >= SavedSetlist::kBattleHarmonix
+                       && type <= SavedSetlist::kBattleFriendArchived) {
+                BattleSavedSetlist *bss = dynamic_cast<BattleSavedSetlist *>(setlist);
+                MILO_ASSERT(bss, 0x1C9);
+                TheRockCentral.GetBattleArt(
+                    bss->mID, mPendingSetlistArt, this, 0
+                );
+            } else {
+                MILO_FAIL("Bad SetlistType %i in RefreshSetlistArt!", type);
+            }
+        }
+    }
+}
+
+bool MusicLibraryNetSetlists::IsSetlistArtReady(Symbol s) const {
+    FOREACH (it, mSetlists) {
+        if (s == it->unk0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+RndTex *MusicLibraryNetSetlists::GetSetlistArt(Symbol s) const {
+    FOREACH (it, mSetlists) {
+        if (s == it->unk0) {
+            return it->unk4;
+        }
+    }
+    MILO_FAIL("No setlist art matching id sym \"%s\"!", s);
+    return nullptr;
+}
+
+void MusicLibraryNetSetlists::CleanUpArt() {
+    if (mPendingSetlistArt) {
+        TheRockCentral.CancelOutstandingCalls(this);
+    }
+    if (mSetlistArtLoader) {
+        TheNetCacheMgr->DeleteNetCacheLoader(mSetlistArtLoader);
+        mSetlistArtLoader = nullptr;
+    }
+    RELEASE(mPendingSetlistArt);
+}
+
 BEGIN_HANDLERS(MusicLibraryNetSetlists)
     HANDLE_MESSAGE(RockCentralOpCompleteMsg)
     HANDLE_SUPERCLASS(Hmx::Object)
