@@ -1,7 +1,9 @@
 #include "meta/StorePackedMetadata.h"
 #include "meta/StoreOffer.h"
 #include "os/CommerceMgr_Wii.h"
+#include "os/ContentMgr_Wii.h"
 #include "os/File.h"
+#include <set>
 #include "obj/ObjMacros.h"
 #include "utl/Compress.h"
 #include "utl/MemMgr.h"
@@ -12,6 +14,15 @@
 extern "C" int NANDGetStatus(const char *, NANDStatus *);
 
 void CM_CNTSDCacheClearRSO();
+int CM_CNTSDCachePushDeleteContentRSO(unsigned long, unsigned long long, unsigned short, ...);
+int DebugSdBackup(unsigned long long, unsigned short);
+
+extern "C" {
+    int EC_DownloadTitle(unsigned long long titleId, int param);
+    int EC_DownloadContents(unsigned long long titleId, unsigned short *contents, int numContents);
+}
+
+int DebugWaitAsyncOp(long opId);
 
 StoreMetadataManager TheStoreMetadata;
 std::vector<int> StoreMetadataManager::mSetlistOffers;
@@ -1088,6 +1099,86 @@ StorePackedSubMenu *StorePage::Submenu(int idx) const {
     if (mPage->mHasOffers)
         return NULL;
     return &mSubmenus[idx];
+}
+
+void StoreMetadataManager::DebugDownload() {
+    int useCntCache = (TheWiiContentMgr.mMode == 0) ? 1 : 0;
+    std::set<unsigned long long> downloadedTitles;
+    bool success = true;
+
+    unsigned short contentList[3072];
+
+    for (int i = 0; i < mOfferTable->mNumOffers && success; i++) {
+        unsigned char flags = mOfferTable->mBufferNewRelease[i].mFlags;
+        if (!(flags & 1) || (flags & 2))
+            continue;
+
+        StorePackedOffer *offer = mOfferTable->mOffers[i];
+        StorePackedSong *firstSong;
+        if (offer->mIsRBN) {
+            firstSong = &mSongTable->mSongs
+                [((StorePackedRBNOffer *)offer)->mSongs[0]];
+        } else {
+            firstSong = &mSongTable->mSongs[offer->mSongs[0]];
+        }
+        unsigned long long titleId = WiiCommerceMgr::MakeDataTitleId(&firstSong->unk6);
+
+        const char *offerName = TheStoreMetadata.GetString(offer->mNameIndex);
+        TheDebug << MakeString("DebugDownload: found offer %s\n", offerName);
+
+        if (downloadedTitles.find(titleId) == downloadedTitles.end()) {
+            TheDebug << MakeString("DebugDownload: EC_DownloadTitle %llx\n", titleId);
+            EC_DownloadTitle(titleId, 0);
+            DebugWaitAsyncOp(0);
+            downloadedTitles.insert(titleId);
+        }
+
+        int numContents = 0;
+        int contentByteSize = 0;
+        for (int j = 0; j < offer->mNumSongs; j++) {
+            StorePackedSong *song;
+            if (offer->mIsRBN) {
+                song = &mSongTable->mSongs
+                    [((StorePackedRBNOffer *)offer)->mSongs[j]];
+            } else {
+                song = &mSongTable->mSongs[offer->mSongs[j]];
+            }
+            unsigned short base = song->unka;
+            contentList[numContents] = base;
+            numContents++;
+            contentByteSize += 2;
+            contentList[numContents] = (unsigned short)(base + 1);
+            numContents++;
+            contentByteSize += 2;
+        }
+
+        if (useCntCache) {
+            CM_CNTSDCacheClearRSO();
+            for (int k = 0; (unsigned long)k < (unsigned long)contentByteSize / 2; k++) {
+                CM_CNTSDCachePushDeleteContentRSO(1, titleId, contentList[k]);
+            }
+        }
+
+        TheDebug << MakeString(
+            "DebugDownload: downloading %d content units\n", (unsigned long)contentByteSize
+        );
+        if (DebugWaitAsyncOp(EC_DownloadContents(titleId, contentList, contentByteSize)) == 0) {
+            TheDebug << FormatString("DebugDownload: failed, so quitting.\n").Str();
+            success = false;
+        } else if (useCntCache) {
+            for (int k = 0; (unsigned long)k < (unsigned long)contentByteSize / 2; k++) {
+                int r = DebugSdBackup(titleId, contentList[k]);
+                success = (r != 0);
+                if (!success) {
+                    TheDebug << FormatString("DebugDownload: failed, so quitting.\n").Str();
+                    break;
+                }
+            }
+        }
+    }
+    TheDebug << FormatString("DebugDownload: starting a content refresh.\n").Str();
+    TheWiiContentMgr.mDirty = true;
+    TheWiiContentMgr.StartRefresh();
 }
 
 void UpdateOfferStateFromEc(
