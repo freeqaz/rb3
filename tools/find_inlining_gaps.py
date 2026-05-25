@@ -40,6 +40,20 @@ REPORT = ROOT / "build" / "SZBE69_B8" / "report.json"
 ASM_DIR = ROOT / "build" / "SZBE69_B8" / "asm"
 OBJDIFF_CONFIG = ROOT / "objdiff.json"
 OBJDIFF_CLI = ROOT / "build" / "tools" / "objdiff-cli"
+SRC_DIR = ROOT / "src"
+
+sys.path.insert(0, str(ROOT / "tools"))
+try:
+    import mwcc_symbols  # noqa: E402
+except ImportError:  # pragma: no cover
+    mwcc_symbols = None  # type: ignore
+
+# Memory entry pointer per mode for suggestion output.
+MEMORY_REF = {
+    "qualified-call": "feedback_qualified_inline_call.md",
+    "missing-inline": "feedback_inline_container_methods.md",
+    "missing-noinline": "feedback_cw_noinline_pattern.md",
+}
 
 # .fn header in dtk-emitted asm: ".fn MangledName, global"
 FN_HEADER_RE = re.compile(r'^\.fn\s+([^,]+),')
@@ -175,6 +189,86 @@ def in_scope(unit_md: dict) -> bool:
     return not any(d in sp for d in SKIP_DIRS)
 
 
+# --- fix suggestion ---
+
+_HEADER_CACHE: dict[str, Path | None] = {}
+# POSIX ERE for grep -E (no Perl extensions). Matches `class Name : base {`
+# or `class Name {` but not `class Name;` (forward decls).
+_CLASS_DEF_RE_TEMPLATE = r"^[[:space:]]*class[[:space:]]+{name}([[:space:]]|\{{|:)"
+
+
+def find_class_header(class_name: str) -> Path | None:
+    """Locate the .h that defines `class <class_name>` (not just a fwd decl).
+    Strips MWCC template-arg encoding (e.g. `ObjDirPtr<9ObjectDir>` ->
+    `ObjDirPtr`) before grepping."""
+    # Strip template args entirely — they contain MWCC length-prefix digits
+    # that won't match the source-level template parameter list.
+    base = class_name.split("<", 1)[0]
+    if base in _HEADER_CACHE:
+        return _HEADER_CACHE[base]
+    pat = _CLASS_DEF_RE_TEMPLATE.format(name=re.escape(base))
+    try:
+        rg = subprocess.run(
+            ["grep", "-rlE", pat, "--include=*.h", str(SRC_DIR)],
+            capture_output=True, text=True, timeout=10,
+        )
+        hits = [Path(p) for p in rg.stdout.split("\n") if p.strip()]
+    except Exception:
+        hits = []
+    hits.sort(key=lambda p: (len(p.parts), str(p)))
+    result = hits[0] if hits else None
+    _HEADER_CACHE[base] = result
+    return result
+
+
+def demangle(mangled: str) -> str | None:
+    if mwcc_symbols is None:
+        return None
+    try:
+        return mwcc_symbols.demangle(mangled)
+    except Exception:
+        return None
+
+
+_ACTION_BY_MODE = {
+    "qualified-call":
+        "declare Class::Method on the class (non-virtual; match `C` const "
+        "from mangling), define `inline` in the .cpp, replace the inlined "
+        "logic in the partial fn with `obj->Class::Method(args)`",
+    "missing-inline":
+        "the partial fn calls this helper out-of-line but target inlines it; "
+        "add `inline` (and move the body into the header if it isn't there)",
+    "missing-noinline":
+        "the partial fn inlines this helper but target calls it out-of-line; "
+        "mark the helper `__declspec(noinline)` or strip `inline`",
+}
+
+
+def suggest_fix(mode: str, ref_mangled: str) -> dict:
+    """Return a {edit, file, method, action, memory} suggestion dict."""
+    out: dict = {
+        "memory": MEMORY_REF.get(mode),
+        "method": demangle(ref_mangled) or ref_mangled,
+        "action": _ACTION_BY_MODE.get(mode, "no recipe registered"),
+    }
+    if mwcc_symbols is None:
+        out["edit"] = "header"
+        out["file"] = None
+        return out
+    cls = mwcc_symbols._extract_class(ref_mangled)
+    if not cls:
+        out["edit"] = "header"
+        out["file"] = None
+        out["class"] = None
+        return out
+    bare, qualified = cls
+    out["class"] = qualified
+    header = find_class_header(bare)
+    out["file"] = str(header.relative_to(ROOT)) if header else None
+    out["edit"] = "header" if mode != "qualified-call" else "header+cpp"
+    return out
+
+
 def iter_wanted(args, report: dict):
     """Yield (unit_metadata, asm_path, {fn_mangled: info}) for each in-scope TU
     that has at least one partial fn passing the size/percent filters."""
@@ -231,6 +325,9 @@ def find_qualified_call_rows(args, report: dict, unit_map: dict[str, str]) -> li
                     strong += 1
             if args.strict and strong == 0:
                 continue
+            primary = next((a["ref"] for a in annotated
+                            if a.get("in_ours_fn") is False),
+                           annotated[0]["ref"])
             rows.append({
                 "mode": "qualified-call",
                 "unit": sp,
@@ -240,6 +337,7 @@ def find_qualified_call_rows(args, report: dict, unit_map: dict[str, str]) -> li
                 "size": info["size"],
                 "refs": annotated,
                 "strong_count": strong,
+                "fix": suggest_fix("qualified-call", primary),
             })
     return rows
 
@@ -311,6 +409,7 @@ def _bl_rows(args, report: dict, unit_map: dict[str, str],
             strong = len(annotated)
             if args.strict and strong == 0:
                 continue
+            primary = annotated[0]["ref"]
             rows.append({
                 "mode": which,
                 "unit": sp,
@@ -320,6 +419,7 @@ def _bl_rows(args, report: dict, unit_map: dict[str, str],
                 "size": info["size"],
                 "refs": annotated,
                 "strong_count": strong,
+                "fix": suggest_fix(which, primary),
             })
     return rows
 
@@ -404,13 +504,20 @@ def main(argv: list[str]) -> int:
         print(f"        fn: {r['demangled'] or r['fn']}")
         for ann in r["refs"]:
             if "extra_count" in ann:
-                # bl-mode row: how many extra bls one side has
                 side = "ours" if r["mode"] == "missing-inline" else "target"
                 print(f"        +{ann['extra_count']} bl in {side}  {ann['ref']}")
             else:
                 v = ann.get("in_ours_fn")
                 mark = "MISSING" if v is False else ("in-fn" if v is True else "unknown")
                 print(f"        {mark:>7}  {ann['ref']}")
+        fix = r.get("fix")
+        if fix:
+            file = fix.get("file") or "(header not found — grep for `class <N>`)"
+            print(f"        fix: edit {file}")
+            print(f"             method: {fix.get('method')}")
+            print(f"             action: {fix.get('action')}")
+            if fix.get("memory"):
+                print(f"             memory: {fix['memory']}")
         print()
     return 0
 
