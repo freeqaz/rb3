@@ -913,6 +913,53 @@ void MemCheckConsistency(const char *file, int line) {
     }
 }
 
+#define HEAP_ASSERT(cond, msg)                                                           \
+    ((cond) ||                                                                           \
+     (TheDebugFailer << MakeString(kMemAssertStr, mName, file, line, msg), 0))
+
+void Heap::CheckConsistency(const char *file, int line) {
+    int *p = mStart;
+    FreeBlock *freeBlock = mFreeBlockChain;
+    int *heapEnd = mStart + mSizeWords;
+    while (p < heapEnd) {
+        int blockWords;
+        if (freeBlock != nullptr && p == (int *)freeBlock) {
+            FreeBlock *nextFree = freeBlock->mNext;
+            blockWords = freeBlock->mSizeWords;
+            if (nextFree != nullptr) {
+                HEAP_ASSERT((int *)nextFree < heapEnd, "nextBlock->StartAddr() < heapEnd");
+                HEAP_ASSERT(
+                    nextFree >= (FreeBlock *)((int *)freeBlock + freeBlock->mSizeWords),
+                    "nextBlock->StartAddr() >= freeBlock->EndAddr()"
+                );
+            }
+            if (mDebugLevel >= 2) {
+                int checksum = 0;
+                int *pp = (int *)freeBlock + 3;
+                int *blockEnd = (int *)freeBlock + freeBlock->mSizeWords;
+                if (pp < blockEnd) {
+                    for (; pp < blockEnd; pp++) {
+                        checksum ^= *pp ^ 0xDEADDEAD;
+                    }
+                }
+                HEAP_ASSERT(checksum == 0, "checksum == 0");
+            }
+            freeBlock = nextFree;
+        } else {
+            int *q = p;
+            unsigned int header;
+            do {
+                header = *q;
+                q++;
+            } while (header == 0);
+            blockWords = header >> 8;
+        }
+        HEAP_ASSERT(blockWords >= 0, "sizeWords >= 0");
+        HEAP_ASSERT(blockWords <= mSizeWords, "sizeWords <= mSizeWords");
+        p += blockWords;
+    }
+}
+
 // ChunkAllocator pool table used by MemPrintOverview.
 class ChunkAllocator;
 extern ChunkAllocator *gChunkAlloc[2];
