@@ -17,6 +17,7 @@ public:
     void PostDynamicAdd();
     void Start();
     void Restart();
+    void Poll(float);
     int TambourineSwing(int);
     void Jump(float);
     void SetPaused(bool);

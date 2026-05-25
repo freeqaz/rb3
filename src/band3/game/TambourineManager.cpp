@@ -20,6 +20,7 @@
 #include "os/Debug.h"
 #include "os/System.h"
 #include "synth/Sequence.h"
+#include "synth/Synth.h"
 #include "utl/Messages4.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols4.h"
@@ -76,6 +77,98 @@ void TambourineManager::Jump(float) {
 
 const std::vector<int> &TambourineManager::TambourineGems() const {
     return mPlayerRef.mVocalParts[0]->mVocalNoteList->mTambourineGems;
+}
+
+void TambourineManager::Poll(float ms) {
+    if (unk60 <= 0 || (unsigned int)mTambourineIdx == TambourineGems().size()) {
+        if (unk74) {
+            TheProfileMgr.UpdateAllMicLevels();
+        }
+        unk74 = false;
+        return;
+    }
+    if (!unk74) {
+        for (int i = 0; i < 3; i++) {
+            Mic *mic = TheSynth->GetMic(i);
+            if (mic) {
+                mic->SetGain(0.0f);
+                mic->SetVolume(-96.0f);
+            }
+        }
+        unk74 = true;
+    }
+    int tick = (int)MsToTick(ms);
+    int delta = tick - TambourineGems()[mTambourineIdx];
+    if (mIsLocal) {
+        if (delta > mTambourineWindowTicks) {
+            TambourineFail(mTambourineIdx, false);
+            mTambourineIdx++;
+            unk4c++;
+            if (unk4c == 8) {
+                if (!mPlayerRef.IsNet()) {
+                    mPlayerRef.PopupHelp("tambourine", true);
+                }
+            }
+        } else if (delta > 0) {
+            if (mPlayerRef.IsAutoplay()) {
+                TambourineSucceed(mTambourineIdx);
+                mTambourineIdx++;
+            }
+        }
+    } else if (delta > 0) {
+        VocalTrack *track = mPlayerRef.mTrack;
+        if (unk48) {
+            mTambourineFader->DoFade(0.0f, 0.0f);
+            if (track) {
+                track->HitTambourineGem(mTambourineIdx);
+            }
+        } else {
+            mTambourineFader->DoFade(-96.0f, 0.0f);
+            if (track) {
+                track->MissTambourineGem(mTambourineIdx, false);
+            }
+        }
+        mTambourineIdx++;
+    }
+}
+
+void TambourineManager::ComputeTambourinePoints() {
+    Symbol awardSym;
+    Symbol trackSym = tambourine;
+    int points = 0;
+    TheScoring->GetSoloAward(100, trackSym, points, awardSym);
+    unk78 = 0;
+    unk7c = 0;
+    VocalNoteList *list = mPlayerRef.mVocalParts[0]->mVocalNoteList;
+    int gemCount = 0;
+    for (std::vector<VocalPhrase>::iterator it = list->mPhrases.begin();
+         it != list->mPhrases.end(); ++it) {
+        if (it->mTambourinePhrase) {
+            int phraseStart = it->unk8;
+            int phraseEnd = phraseStart + it->unkc;
+            int i = 0;
+            while ((unsigned int)i < TambourineGems().size() &&
+                   TambourineGems()[i] < phraseStart) {
+                i++;
+            }
+            int j = i;
+            while ((unsigned int)j < TambourineGems().size() &&
+                   TambourineGems()[j] < phraseEnd) {
+                j++;
+            }
+            gemCount += j - i;
+        } else {
+            if (gemCount != 0) {
+                unk78 += (int)((float)gemCount * mTambourinePoints);
+                unk7c += gemCount * points;
+            }
+            gemCount = 0;
+        }
+    }
+    if (gemCount != 0) {
+        unk78 += (int)((float)gemCount * mTambourinePoints);
+        unk7c += gemCount * points;
+    }
 }
 
 bool TambourineManager::IsTambourineButton(JoypadButton btn) const { return btn == kPad_X; }
