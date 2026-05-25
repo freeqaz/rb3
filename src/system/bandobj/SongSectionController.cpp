@@ -177,6 +177,27 @@ Symbol SongSectionController::FindPoolCategoryForPracSession(Symbol pracSession)
     return Symbol("CATCH_ALL");
 }
 
+bool SongSectionController::UpdatePoolCategory() {
+    Symbol prev = mCurPoolCategory;
+    if (mMidiSection.Null()) {
+        mCurPoolCategory = Symbol("CATCH_ALL");
+    } else {
+        mCurPoolCategory = FindPoolCategoryForPracSession(mMidiSection);
+    }
+    return prev != mCurPoolCategory;
+}
+
+SongSectionController::ContentPoolMapping *
+SongSectionController::GetContentPoolMapping(Symbol cat) {
+    for (ObjList<ContentPoolMapping>::iterator it = mContentPoolMappings.begin();
+         it != mContentPoolMappings.end();
+         ++it) {
+        if (it->mPoolCategory == cat)
+            return &*it;
+    }
+    return nullptr;
+}
+
 void SongSectionController::ResetAll() {
     mActivePool = 0;
     mPendingPool = 0;
