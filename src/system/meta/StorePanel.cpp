@@ -7,6 +7,7 @@
 #include "os/PlatformMgr.h"
 #include "rndobj/Bitmap.h"
 #include "rndobj/Tex.h"
+#include "ui/UI.h"
 #include "utl/BufStream.h"
 #include "utl/MakeString.h"
 #include "utl/NetCacheLoader.h"
@@ -421,7 +422,23 @@ bool StorePanel::ToggleTestOffers() {
     return mShowTestOffers;
 }
 
-void StorePanel::FinishCheckout() {}
+#pragma push
+#pragma pool_data off
+void StorePanel::FinishCheckout() {
+    static Message msg("checkout_finished", 0);
+    msg[0] = (int)unk71;
+    TheUI.Handle(msg, false);
+    RELEASE(mPurchaser);
+    unsigned char wasCheckout = *(unsigned char *)((char *)&TheWiiCommerceMgr + 0x4194);
+    *(unsigned char *)((char *)&TheWiiCommerceMgr + 0x4194) = 0;
+    if (wasCheckout != 0) {
+        static Message enumMsg("enumerate_from_checkout");
+        Hmx::Object::HandleType(enumMsg);
+        TheStoreMetadata.UpdateOfferOwnership();
+        unk70 = true;
+    }
+}
+#pragma pop
 
 void StorePanel::Unload() {
     TheStoreMetadata.Unload();
