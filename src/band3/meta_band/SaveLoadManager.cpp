@@ -288,6 +288,7 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x1c);
             } else {
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
+                MILO_FAIL("SaveLoadManager - kS_SongCacheCreateMountWrite unhandled error %d\n", (int)result);
                 SetState((State)0x25);
             }
         }
@@ -336,19 +337,19 @@ void SaveLoadManager::Poll() {
         }
         break;
     case (State)0x21:
-        if (!mCache->IsDone()) return;
-        unk70 = (int)mCache->GetLastResult();
-        SetState((State)0x23);
-        break;
     case (State)0x33:
-        if (!mCache->IsDone()) return;
-        unk70 = (int)mCache->GetLastResult();
-        SetState((State)0x35);
-        break;
     case (State)0x3E:
         if (!mCache->IsDone()) return;
         unk70 = (int)mCache->GetLastResult();
-        SetState((State)0x3f);
+        if (mState == (State)0x21) {
+            SetState((State)0x23);
+        } else if (mState == (State)0x33) {
+            SetState((State)0x35);
+        } else if (mState == (State)0x3E) {
+            SetState((State)0x3f);
+        } else {
+            MILO_FAIL("Impossible state.\n");
+        }
         break;
     case (State)0x27:
         if (!TheCacheMgr->IsDone()) return;
@@ -370,6 +371,7 @@ void SaveLoadManager::Poll() {
                     break;
                 }
             } else {
+                MILO_FAIL("SaveLoadManager - CacheMgr search returned error %d\n", (int)result);
                 SetState((State)0x37);
             }
         }
@@ -385,6 +387,7 @@ void SaveLoadManager::Poll() {
             } else if (result == kCache_ErrorCorrupt) {
                 SetState((State)0x2f);
             } else {
+                MILO_FAIL("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result);
                 SetState((State)0x37);
             }
         }
@@ -408,6 +411,7 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x2f);
             } else {
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
+                MILO_LOG("SaveLoadManager - unknown error %d during state %d.\n", (int)result, (int)mState);
                 SetState((State)0x37);
             }
         }
@@ -426,6 +430,7 @@ void SaveLoadManager::Poll() {
                 unk7c = 1;
                 SetState((State)0x3a);
             } else {
+                MILO_LOG("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result);
                 SetState((State)0x40);
             }
         }
@@ -441,6 +446,7 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x3a);
             } else {
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
+                MILO_FAIL("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result);
                 SetState((State)0x40);
             }
         }
