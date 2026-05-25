@@ -310,26 +310,15 @@ void Character::DrawShowing() {
     } else {
         i7 = Clamp<int>(0, mLods.size() - 1, mMinLod);
     }
-    bool b3 = false;
-    bool b2 = false;
-    bool b1 = false;
-    if (mSelfShadow && TheRnd->DrawMode() == 0) {
-        b1 = true;
-    }
-    if (b1 && i7 <= 1) {
-        b2 = true;
-    }
-    if (b2 && (mDrawMode & 1)) {
-        b3 = true;
-    }
-    if (b3) {
+    bool doSelfShadow = mSelfShadow && TheRnd->DrawMode() == 0 && i7 <= 1 && (mDrawMode & 1);
+    if (doSelfShadow) {
         int lastMinLod = mMinLod;
         mMinLod = i7;
         RndShadowMap::PrepShadow(this, mEnv);
         mMinLod = lastMinLod;
     }
     DrawLod(i7);
-    if (b3)
+    if (doSelfShadow)
         RndShadowMap::EndShadow();
     if (LOADMGR_EDITMODE && TheRnd->DrawMode() == 0) {
         mTest->Draw();
