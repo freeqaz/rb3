@@ -1616,6 +1616,8 @@ DataNode BandDirector::OnCopyCats(DataArray *da) {
     }
 }
 
+#pragma push
+#pragma fp_contract off
 void BandDirector::OnMidiAddPostProc(Symbol s, float f1, float f2) {
     MILO_ASSERT(mPropAnim, 0x9A1);
     DataArrayPtr dptr(Symbol("postproc"));
@@ -1639,11 +1641,12 @@ void BandDirector::OnMidiAddPostProc(Symbol s, float f1, float f2) {
                     okeys->Add(profilma, frame, false);
                 }
             }
-            okeys->Add(proc, f2 * 30.0f + frame, false);
+            okeys->Add(proc, frame + f2 * 30.0f, false);
         } else
             MILO_WARN("PostProc %s not found.  Cannot add to song.anim!\n", s.Str());
     }
 }
+#pragma pop
 
 void BandDirector::ExportWorldEvent(Symbol s) {
     if (s != none) {
