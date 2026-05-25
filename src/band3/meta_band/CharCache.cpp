@@ -7,6 +7,7 @@
 #include "game/BandUserMgr.h"
 #include "meta_band/BandProfile.h"
 #include "meta_band/CharData.h"
+#include "meta_band/CharSync.h"
 #include "meta_band/CustomizePanel.h"
 #include "meta_band/PatchPanel.h"
 #include "meta_band/PrefabMgr.h"
@@ -88,6 +89,17 @@ int CharCache::FindSlot(BandCharacter *bchar) {
             break;
     }
     return i;
+}
+
+void CharCache::Lock(bool lock, bool forceUpdate) {
+    if (!lock && unk28) {
+        forceUpdate = true;
+    }
+    if (forceUpdate) {
+        unk28 = false;
+        TheCharSync->UpdateCharCache();
+    }
+    unk28 = lock;
 }
 
 bool CharCache::CharactersAreLoading() {
