@@ -439,7 +439,13 @@ void Character::SetSphereBase(RndTransformable *trans) {
         trans = this;
     Sphere s18;
     MakeWorldSphere(s18, false);
-    Multiply(trans->WorldXfm(), s18.center, s18.center);
+    const Transform &xfm = trans->WorldXfm();
+    Subtract(s18.center, xfm.v, s18.center);
+    s18.center.Set(
+        Dot(xfm.m.x, s18.center),
+        Dot(xfm.m.y, s18.center),
+        Dot(xfm.m.z, s18.center)
+    );
     SetSphere(s18);
     mSphereBase = trans;
 }
