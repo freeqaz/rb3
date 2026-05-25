@@ -7,6 +7,8 @@
 #include "math/Rand.h"
 #include "rndobj/Cam.h"
 #include "rndobj/Dir.h"
+#include "rndobj/Rnd.h"
+#include "rndobj/Utl.h"
 #include "rndwii/Tex.h"
 #include "utl/Symbols.h"
 #include <revolution/gx/GXMisc.h>
@@ -831,6 +833,35 @@ void OutfitConfig::ApplyAO(SyncMeshCB *mesh) {
     }
     for (int i = 0; i < mPiercings.size(); i++) {
         mPiercings[i].Deform(mesh);
+    }
+}
+
+void OutfitConfig::Mats(std::list<RndMat *> &list, bool allocTempMats) {
+    for (ObjVector<MatSwap>::iterator it = mMats.begin(); it != mMats.end(); ++it) {
+        if (!it->mResourceMat)
+            continue;
+        std::vector<ObjRef *> refs;
+        {
+            MemDoTempAllocations m(true, false);
+            refs = it->mResourceMat->Refs();
+        }
+        for (std::vector<ObjRef *>::iterator rit = refs.end(); rit != refs.begin();) {
+            ObjRef *cur = *--rit;
+            RndMesh *mesh = dynamic_cast<RndMesh *>(cur->RefOwner());
+            if (mesh) {
+                if (allocTempMats) {
+                    cur->Replace(it->mResourceMat, it->mMat);
+                }
+                it->mMat->mShaderOptions = GetDefaultMatShaderOpts(mesh, it->mMat);
+                list.push_back(it->mMat);
+            }
+        }
+    }
+    if (allocTempMats) {
+        SetSkinTextures();
+        if (mBandLogo) {
+            mBandLogo->SetDiffuseTex(TheRnd->mDefaultTex[Rnd::kDefaultTex_White]);
+        }
     }
 }
 
