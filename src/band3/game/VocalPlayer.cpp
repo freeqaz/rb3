@@ -379,27 +379,11 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         spewData->mMs = 0.0f;
         spewData->mCompMs = 0.0f;
 
-        // Resize singer data to match singer count
-        int singerCount = (int)mSingers.size();
-        if ((int)spewData->mSingerData.size() < singerCount) {
-            VocalFrameSpewData::VocalFrameSingerData defSinger;
-            spewData->mSingerData.resize(singerCount, defSinger);
-        } else {
-            while ((int)spewData->mSingerData.size() > singerCount) {
-                spewData->mSingerData.pop_back();
-            }
-        }
+        VocalFrameSpewData::VocalFrameSingerData defSinger;
+        spewData->mSingerData.resize(mSingers.size(), defSinger);
 
-        // Resize part data to match part count
-        int partCount = (int)mVocalParts.size();
-        if ((int)spewData->mPartData.size() < partCount) {
-            VocalFrameSpewData::VocalFramePartData defPart;
-            spewData->mPartData.resize(partCount, defPart);
-        } else {
-            while ((int)spewData->mPartData.size() > partCount) {
-                spewData->mPartData.pop_back();
-            }
-        }
+        VocalFrameSpewData::VocalFramePartData defPart;
+        spewData->mPartData.resize(mVocalParts.size(), defPart);
 
         spewData->mMs = ms;
         spewData->mCompMs = fCompMS;
@@ -627,16 +611,90 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                 }
             }
 
-            // Remove matched parts (HasBestSingerCandidate) from partsArray
-            partsArray.erase(
-                std::remove_if(partsArray.begin(), partsArray.end(), partPred),
-                partsArray.end()
-            );
-            // Remove matched singers (HasAssignedPart) from singersArray
-            singersArray.erase(
-                std::remove_if(singersArray.begin(), singersArray.end(), singerPred),
-                singersArray.end()
-            );
+            // Inlined STL std::remove_if Duff's device: unrolled 4-at-a-time
+            // find_if + remove_copy_if + erase. MWCC does not inline the
+            // generic std::find_if wrapper, so hand-roll the body to match
+            // target's inlined codegen (see Stats.cpp:520 for the same trick).
+            {
+                VocalPart **partFirst = &partsArray[0];
+                VocalPart **partLast = partFirst + partsArray.size();
+                VocalPart **partFound;
+                int partTrip = (int)(partLast - partFirst) >> 2;
+                for (; partTrip > 0; --partTrip) {
+                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    ++partFirst;
+                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    ++partFirst;
+                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    ++partFirst;
+                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    ++partFirst;
+                }
+                switch (partLast - partFirst) {
+                case 3:
+                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    ++partFirst;
+                case 2:
+                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    ++partFirst;
+                case 1:
+                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                case 0:
+                default:
+                    partFound = partLast;
+                }
+            partRemoved:
+                if (partFound != partLast) {
+                    VocalPart **partSrc = partFound + 1;
+                    for (; partSrc != partLast; ++partSrc) {
+                        if (!partPred(*partSrc)) {
+                            *partFound = *partSrc;
+                            ++partFound;
+                        }
+                    }
+                }
+                partsArray.erase(partFound, partLast);
+            }
+            {
+                Singer **singerFirst = &singersArray[0];
+                Singer **singerLast = singerFirst + singersArray.size();
+                Singer **singerFound;
+                int singerTrip = (int)(singerLast - singerFirst) >> 2;
+                for (; singerTrip > 0; --singerTrip) {
+                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    ++singerFirst;
+                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    ++singerFirst;
+                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    ++singerFirst;
+                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    ++singerFirst;
+                }
+                switch (singerLast - singerFirst) {
+                case 3:
+                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    ++singerFirst;
+                case 2:
+                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    ++singerFirst;
+                case 1:
+                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                case 0:
+                default:
+                    singerFound = singerLast;
+                }
+            singerRemoved:
+                if (singerFound != singerLast) {
+                    Singer **singerSrc = singerFound + 1;
+                    for (; singerSrc != singerLast; ++singerSrc) {
+                        if (!singerPred(*singerSrc)) {
+                            *singerFound = *singerSrc;
+                            ++singerFound;
+                        }
+                    }
+                }
+                singersArray.erase(singerFound, singerLast);
+            }
         } while (!partsArray.empty() && !singersArray.empty());
     }
 
