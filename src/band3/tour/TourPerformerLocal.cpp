@@ -222,11 +222,13 @@ Symbol TourPerformerLocal::GetRandomQuestFilter(
          it != i_rSongsInFilter.end();
          ++it) {
         Symbol filterSym = it->first;
-        if (!i_pProgress->HasQuestFilter(filterSym) && it->second >= i_iNumSongs) {
-            GigFilter *pFilter = TheQuestMgr.GetQuestFilter(filterSym);
-            MILO_ASSERT(pFilter, 0x179);
-            totalWeight += pFilter->GetWeight();
-            validFilters.push_back(filterSym);
+        if (!i_pProgress->HasQuestFilter(filterSym)) {
+            if (it->second >= i_iNumSongs) {
+                GigFilter *pFilter = TheQuestMgr.GetQuestFilter(filterSym);
+                MILO_ASSERT(pFilter, 0x179);
+                totalWeight += pFilter->GetWeight();
+                validFilters.push_back(filterSym);
+            }
         }
     }
     float roll = RandomFloat(0.0f, totalWeight);
