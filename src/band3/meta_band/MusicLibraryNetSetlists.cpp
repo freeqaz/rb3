@@ -135,7 +135,7 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
                 artUrl = node.Str(nullptr);
             }
         }
-        NetSavedSetlist *nss = nullptr;
+        NetSavedSetlist *setlist = nullptr;
         switch (type) {
         case 0:
         case 1: {
@@ -144,7 +144,7 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
             result.GetDataResultValue("guid", node);
             String guid(node.Str(nullptr));
             MILO_ASSERT(!archived, 0xFC);
-            nss = new NetSavedSetlist(
+            setlist = new NetSavedSetlist(
                 SavedSetlist::kSetlistFriend, title.c_str(), desc.c_str(), validInstr,
                 owner.c_str(), artUrl.c_str(), guid.c_str()
             );
@@ -152,7 +152,7 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
         }
         case 2: {
             MILO_ASSERT(!archived, 0x108);
-            nss = new NetSavedSetlist(
+            setlist = new NetSavedSetlist(
                 SavedSetlist::kSetlistHarmonix, title.c_str(), desc.c_str(), validInstr,
                 gNullStr, artUrl.c_str(), gNullStr
             );
@@ -174,7 +174,7 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
             SavedSetlist::SetlistType battleType = archived
                 ? SavedSetlist::kBattleFriendArchived
                 : SavedSetlist::kBattleFriend;
-            nss = new BattleSavedSetlist(
+            setlist = new BattleSavedSetlist(
                 id, (ScoreType)scoreType, battleType, title.c_str(), validInstr,
                 desc.c_str(), owner.c_str(), artUrl.c_str(), secondsLeft
             );
@@ -193,7 +193,7 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
             SavedSetlist::SetlistType battleType = archived
                 ? SavedSetlist::kBattleHarmonixArchived
                 : SavedSetlist::kBattleHarmonix;
-            nss = new BattleSavedSetlist(
+            setlist = new BattleSavedSetlist(
                 id, (ScoreType)scoreType, battleType, title.c_str(), validInstr,
                 desc.c_str(), nullptr, artUrl.c_str(), secondsLeft
             );
@@ -203,26 +203,33 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
             MILO_FAIL("Bad setlist type from RockCentral!\n");
             break;
         }
-        MILO_ASSERT(nss, 0x15C);
+        MILO_ASSERT(setlist, 0x15C);
         int i = 0;
         while (result.GetDataResultValue(MakeString("s_id%03i", i), node)) {
-            nss->AddSong(node.Int(nullptr));
+            setlist->AddSong(node.Int(nullptr));
             result.GetDataResultValue(MakeString("s_name%03i", i), node);
-            nss->AddSongTitle(node.Str(nullptr));
+            setlist->AddSongTitle(node.Str(nullptr));
             i++;
         }
         bool keep = true;
-        if (!nss->GetOwnerOnlineID()->IsInvalid()
-            && !ThePlatformMgr.CanSeeUserCreatedContent(nss->GetOwnerOnlineID())) {
+        if (!setlist->GetOwnerOnlineID()->IsInvalid()
+            && !ThePlatformMgr.CanSeeUserCreatedContent(setlist->GetOwnerOnlineID())) {
             keep = false;
         }
-        if (keep && !nss->mSongs.empty()) {
-            setlists.push_back(nss);
+        if (keep && !setlist->mSongs.empty()) {
+            setlists.push_back(setlist);
         } else {
-            RELEASE(nss);
+            RELEASE(setlist);
         }
     }
 }
+
+// The original assertion string referenced "kArchivedHarmonix", which is no
+// longer a member of SavedSetlist::SetlistType (renamed to
+// kBattleHarmonixArchived). Aliasing here lets MILO_ASSERT preserve the
+// original stringified message byte-for-byte while the comparison still
+// resolves to the correct enum value.
+#define kArchivedHarmonix kBattleHarmonixArchived
 
 void MusicLibraryNetSetlists::RefreshSetlistArt() {
     MILO_ASSERT(mSucceeded, 0x18E);
@@ -232,44 +239,50 @@ void MusicLibraryNetSetlists::RefreshSetlistArt() {
     SavedSetlist *setlist = ssn->mSetlistRecord->mSetlist;
     NetSavedSetlist *nss = dynamic_cast<NetSavedSetlist *>(setlist);
     MILO_ASSERT(nss, 0x195);
-    if (unk50 != node->GetToken()
-        && (nss->GetOwnerOnlineID()->IsInvalid()
-            || ThePlatformMgr.CanSeeUserCreatedContent(nss->GetOwnerOnlineID()))) {
-        CleanUpArt();
-        MILO_ASSERT(!mPendingSetlistArt, 0x1A2);
-        MILO_ASSERT(!mSetlistArtLoader, 0x1A3);
-        mPendingSetlistArt = Hmx::Object::New<RndTex>();
-        unk50 = node->GetToken();
-        if (nss->unk44) {
-            mSetlistArtLoader = TheNetCacheMgr->AddNetCacheLoader(
-                nss->GetArtUrl(), (NetLoaderPos)0
+    if (unk50 == node->GetToken()) return;
+    if (!nss->GetOwnerOnlineID()->IsInvalid()
+        && !ThePlatformMgr.CanSeeUserCreatedContent(nss->GetOwnerOnlineID()))
+        return;
+    CleanUpArt();
+    MILO_ASSERT(!mPendingSetlistArt, 0x1A2);
+    MILO_ASSERT(!mSetlistArtLoader, 0x1A3);
+    mPendingSetlistArt = Hmx::Object::New<RndTex>();
+    unk50 = node->GetToken();
+    if (nss->unk44) {
+        mSetlistArtLoader =
+            TheNetCacheMgr->AddNetCacheLoader(nss->GetArtUrl(), (NetLoaderPos)0);
+        if (!mSetlistArtLoader) {
+            RELEASE(mPendingSetlistArt);
+        }
+    } else {
+        MILO_ASSERT(nss->GetType() != SavedSetlist::kSetlistHarmonix, 0x1B6);
+        MILO_ASSERT(nss->GetType() != SavedSetlist::kBattleHarmonix, 0x1B7);
+        MILO_ASSERT(nss->GetType() != SavedSetlist::kArchivedHarmonix, 0x1B8);
+        SavedSetlist::SetlistType type = nss->GetType();
+        switch (type) {
+        case SavedSetlist::kSetlistFriend:
+        case SavedSetlist::kSetlistHarmonix:
+            TheRockCentral.GetSetlistArt(
+                nss->mGuid.c_str(), mPendingSetlistArt, this, 0
             );
-            if (!mSetlistArtLoader) {
-                RELEASE(mPendingSetlistArt);
-            }
-        } else {
-            MILO_ASSERT(nss->GetType() != SavedSetlist::kSetlistHarmonix, 0x1B6);
-            MILO_ASSERT(nss->GetType() != SavedSetlist::kBattleHarmonix, 0x1B7);
-            MILO_ASSERT(nss->GetType() != SavedSetlist::kBattleHarmonixArchived, 0x1B8);
-            SavedSetlist::SetlistType type = nss->GetType();
-            if (type == SavedSetlist::kSetlistFriend
-                || type == SavedSetlist::kSetlistHarmonix) {
-                TheRockCentral.GetSetlistArt(
-                    nss->mGuid.c_str(), mPendingSetlistArt, this, 0
-                );
-            } else if (type >= SavedSetlist::kBattleHarmonix
-                       && type <= SavedSetlist::kBattleFriendArchived) {
-                BattleSavedSetlist *bss = dynamic_cast<BattleSavedSetlist *>(setlist);
-                MILO_ASSERT(bss, 0x1C9);
-                TheRockCentral.GetBattleArt(
-                    bss->mID, mPendingSetlistArt, this, 0
-                );
-            } else {
-                MILO_FAIL("Bad SetlistType %i in RefreshSetlistArt!", type);
-            }
+            break;
+        case SavedSetlist::kBattleHarmonix:
+        case SavedSetlist::kBattleFriend:
+        case SavedSetlist::kBattleHarmonixArchived:
+        case SavedSetlist::kBattleFriendArchived: {
+            BattleSavedSetlist *bss = dynamic_cast<BattleSavedSetlist *>(setlist);
+            MILO_ASSERT(bss, 0x1C9);
+            TheRockCentral.GetBattleArt(bss->mID, mPendingSetlistArt, this, 0);
+            break;
+        }
+        default:
+            MILO_FAIL("Bad SetlistType %i in RefreshSetlistArt!", type);
+            break;
         }
     }
 }
+
+#undef kArchivedHarmonix
 
 bool MusicLibraryNetSetlists::IsSetlistArtReady(Symbol s) const {
     FOREACH (it, mSetlists) {
