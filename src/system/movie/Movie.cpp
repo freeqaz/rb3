@@ -528,6 +528,61 @@ void Movie::Impl::SharedFinishOpen(bool) {}
 int Movie::Impl::MovieOpen(const char *, unsigned int) { return 0; }
 void Movie::Impl::FinishOpen() {}
 
+void Movie::Impl::DiscContentionCheck(Loader *loader) {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x59);
+    for (std::list<Loader *>::iterator it = TheLoadMgr.mLoading.begin();
+         it != TheLoadMgr.mLoading.end();
+         ++it) {
+        Loader *cur = *it;
+        if (cur == loader) continue;
+        void *key = (void *)cur->LoaderFile().c_str();
+        mDiscContentionMap[key] = cur->LoaderFile();
+    }
+}
+
+void Movie::Impl::DiscContentionPublish() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x68);
+    String list;
+    int count = 0;
+    bool first = true;
+    for (std::map<void *, String>::iterator it = mDiscContentionMap.begin();
+         it != mDiscContentionMap.end();
+         ++it) {
+        if (!first) list += ", ";
+        list += it->second;
+        first = false;
+        count++;
+    }
+    if (count != 0) {
+        MILO_LOG("Streaming Bink Thrashed with %d files: (%s)\n", count, list);
+        if (!mDiscContentionMap.empty()) {
+            mDiscContentionMap.clear();
+        }
+    }
+}
+
 void Movie::Impl::SetPaused(bool b) {
     if (mTimeCallback != NULL) {
         float dt = mTimeCallback();
