@@ -8,6 +8,16 @@
 class StoreTitleContentState;
 struct ECContentCatalogInfo;
 
+class StoreContentStateCache : public std::map<unsigned long long, StoreTitleContentState *> {
+public:
+    StoreContentStateCache() : mTitleIdx(0), mIndexInConfig(0) {}
+    void PollUpdate();
+    void UpdateContentStateFromFastEnum();
+
+    int mTitleIdx; // 0x18
+    int mIndexInConfig; // 0x1C
+};
+
 DECLARE_MESSAGE(CommerceMgrOpCompleteMsg, "commerce_mgr_op_complete")
 END_MESSAGE
 
@@ -201,6 +211,7 @@ public:
     bool FindOffer(const char *, int *, bool *, bool *) const;
     void AddSetlistOffer(int);
     void ClearSetlistOffers();
+    void MarkPurchased(ECContentCatalogInfo *);
 
     DataNode OnMsg(const CommerceMgrOpCompleteMsg &);
     void DebugPurchase();
