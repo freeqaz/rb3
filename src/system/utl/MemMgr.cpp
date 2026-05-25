@@ -893,8 +893,8 @@ struct HeapDesc {
 
 extern HeapDesc gHeapData[4];
 extern char gZeroAllocBuf[0x20];
-extern int gUnknownAllocCount;
-extern int gUnknownAllocBytes;
+extern int gSysAllocs;
+extern int gSysAllocBytes;
 
 void AddHeap(const char *name, int heapNum, int sizeBytes, bool useHeapAlign, int region,
              Heap::Strategy strategy, int debugLevel, bool allowTemp);
@@ -903,11 +903,12 @@ void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
 
 void MemInit() {
     if (gMemInited) return;
+    CriticalSection *lock = &sMemLock;
     gMemInited = true;
     gInsideMemFunc = true;
-    gMemLock = &sMemLock;
+    gMemLock = lock;
     gMemStackLock = &sMemStackLock;
-    gMemLock->Enter();
+    if (lock != nullptr) lock->Enter();
     int *tmpBuf = (int *)WiiMalloc(0x10000);
     int numHeaps;
     if (gSingleHeap != 0) {
@@ -980,7 +981,7 @@ void MemInit() {
         desc2++;
     } while (i < 4);
     gInsideMemFunc = false;
-    gMemLock->Exit();
+    if (lock != nullptr) lock->Exit();
 }
 
 void *_MemAlloc(int size, int align) {
@@ -1028,8 +1029,8 @@ void *_MemAlloc(int size, int align) {
     }
     if (heap == nullptr) {
         void *result = WiiMalloc(size);
-        gUnknownAllocBytes += size;
-        gUnknownAllocCount += 1;
+        gSysAllocBytes += size;
+        gSysAllocs += 1;
         return result;
     }
     MILO_ASSERT(!gInsideMemFunc, 0x90a);
