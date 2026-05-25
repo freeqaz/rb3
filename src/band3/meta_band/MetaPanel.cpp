@@ -346,10 +346,10 @@ void MetaPanel::Exit() {
 }
 
 bool MetaPanel::Exiting() const {
-    if (GetState() == kDown) {
+    if (GetState() != kDown) {
         return UIPanel::Exiting();
     } else {
-        return (mMusic->IsPlaying() && !mMusic->IsFading()) || UIPanel::Exiting();
+        return (mMusic->IsPlaying() && mMusic->IsFading()) || UIPanel::Exiting();
     }
 }
 
