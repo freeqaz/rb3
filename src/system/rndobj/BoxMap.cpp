@@ -119,3 +119,30 @@ void BoxMapLighting::ApplyLight(Hmx::Color *color, const LightParams_Directional
         color[i].blue += d * light.mColor.blue;
     }
 }
+
+void BoxMapLighting::ApplyLight(
+    Hmx::Color *color, const LightParams_Point &light, const Vector3 &viewPos
+) const {
+    if (light.mRange > light.mFalloffStart) {
+        Vector3 d;
+        d.x = light.unk0.x - viewPos.x;
+        d.y = light.unk0.y - viewPos.y;
+        d.z = light.unk0.z - viewPos.z;
+        float distSq = d.x * d.x + d.y * d.y + d.z * d.z;
+        if (distSq > 0.0f) {
+            float dist = std::sqrt(distSq);
+            float invDist = 1.0f / dist;
+            float fade = Max(0.0f, dist - light.mFalloffStart);
+            float atten = Max(0.0f, 1.0f - fade / (light.mRange - light.mFalloffStart));
+            LightParams_Directional dl;
+            dl.mDirection.x = d.x * invDist;
+            dl.mDirection.y = d.y * invDist;
+            dl.mDirection.z = d.z * invDist;
+            dl.mColor.red = light.mColor.red * atten;
+            dl.mColor.green = light.mColor.green * atten;
+            dl.mColor.blue = light.mColor.blue * atten;
+            ApplyLight(color, dl);
+        }
+    }
+}
+
