@@ -125,6 +125,35 @@ void SaveLoadManager::Poll() {
         AutoLoad();
         return;
     }
+    if ((unsigned int)mState > 0x6f) return;
+    switch (mState) {
+    case kS_Start:
+        switch (mMode) {
+        case kMode_AutoLoad:
+            SetState((State)0x2);
+            break;
+        case kMode_AutoSave:
+            SetState((State)0x56);
+            break;
+        case kMode_DisableAutoSave:
+            mUser = NULL;
+            SetState((State)0x42);
+            break;
+        case kMode_ManualDelete:
+            SetState((State)0x69);
+            break;
+        case kMode_ManualLoad:
+            SetState((State)0x51);
+            break;
+        default:
+            MILO_LOG("Unknown SaveLoadMode: %d\n", mMode);
+            SetState((State)0x6e);
+            break;
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 void SaveLoadManager::SaveLoadErrorSetState() {
