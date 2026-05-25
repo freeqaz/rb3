@@ -211,6 +211,15 @@ int TourPerformerImpl::GetBaseSongStars() const { return GetMostRecentGigData().
 
 int TourPerformerImpl::GetTotalSongStars() const { return GetMostRecentGigData().unkc; }
 
+int TourPerformerImpl::GetTotalGigStars() const {
+    int total = 0;
+    int n = mGigData.size();
+    for (int i = 0; i < n; i++) {
+        total += mGigData[i].unkc;
+    }
+    return total;
+}
+
 Symbol TourPerformerImpl::GetCurrentQuestSuccessMessage() const {
     Quest *pQuest = TheQuestMgr.GetQuest(GetCurrentQuest());
     MILO_ASSERT(pQuest, 0x1E1);
