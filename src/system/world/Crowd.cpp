@@ -615,17 +615,19 @@ void WorldCrowd::SetFullness(float flatFullness, float charFullness) {
                 multiMesh->InvalidateProxies();
             }
             unsigned short totalChars3D = it->m3DCharsCreated.size();
-            int targetChars3D = (int)(charFullness * (float)totalChars3D);
+            int targetChars3D = (int)((float)totalChars3D * charFullness);
             if (targetChars3D >= (int)totalChars3D) {
                 targetChars3D = (int)totalChars3D;
             }
-            unsigned short currentChars3D = it->m3DChars.size();
-            if ((int)currentChars3D < targetChars3D) {
-                for (int i = (int)currentChars3D; i < targetChars3D; i++) {
-                    it->m3DChars.push_back(it->m3DCharsCreated[i]);
+            int currentChars3D = (int)it->m3DChars.size();
+            if (currentChars3D < targetChars3D) {
+                int toAdd = targetChars3D - currentChars3D;
+                for (int i = 0; i < toAdd; i++) {
+                    it->m3DChars.push_back(it->m3DCharsCreated[(int)it->m3DChars.size()]);
                 }
-            } else if (targetChars3D < (int)currentChars3D) {
-                for (int i = (int)currentChars3D; i > targetChars3D; i--) {
+            } else if (targetChars3D < currentChars3D) {
+                int toRemove = currentChars3D - targetChars3D;
+                for (int i = 0; i < toRemove; i++) {
                     it->m3DChars.pop_back();
                 }
             }
