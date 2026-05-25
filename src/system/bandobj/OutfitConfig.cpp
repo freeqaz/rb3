@@ -187,6 +187,29 @@ void OutfitConfig::MatSwap::Compose(
     }
 }
 
+bool OutfitConfig::MatSwap::Compress(BandCharDesc *desc) {
+    RndMat *mat = mMat;
+    if (!mat)
+        return false;
+    RndTex *diffTex = mat->GetDiffuseTex();
+    if (!diffTex || (diffTex->GetType() & RndTex::kRenderedNoZ) != RndTex::kRenderedNoZ)
+        return false;
+    ObjectDir *dir = mMat.RefOwner()->Dir();
+    if (mTwoColorDiffuse && diffTex != mTwoColorDiffuse
+        && mTwoColorDiffuse->Dir() == dir) {
+        delete (RndTex *)mTwoColorDiffuse;
+    }
+    if (mTwoColorInterp && diffTex != mTwoColorInterp
+        && mTwoColorInterp->Dir() == dir) {
+        delete (RndTex *)mTwoColorInterp;
+    }
+    if (mTwoColorMask && diffTex != mTwoColorMask && mTwoColorMask->Dir() == dir) {
+        delete (RndTex *)mTwoColorMask;
+    }
+    desc->Compress(diffTex, mMat->GetBlend() == RndMat::kBlendSrcAlpha);
+    return true;
+}
+
 OutfitConfig::Piercing::Piercing(Hmx::Object *o)
     : mPiercing(o, 0), mReskin(0), mPieces(o) {}
 
