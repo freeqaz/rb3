@@ -35,6 +35,7 @@
 #include "rndobj/MultiMesh.h"
 #include "rndobj/PropAnim.h"
 #include "synth/MicManagerInterface.h"
+#include "utl/BeatMap.h"
 #include "utl/Std.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols4.h"
@@ -1082,6 +1083,277 @@ void VocalTrack::UpdateLyricZ() {
                 plate->mText->DirtyLocalXfm().v.z += delta;
             }
         }
+    }
+}
+
+void VocalTrack::UpdateScrolling(float ms) {
+    static bool dumpLyrics;
+    static bool dumpDeployVectors;
+    static bool warnOnMarkerCreation;
+
+    if (!mPlayer || mPlayer->IsNet())
+        return;
+    if (ms < 0.0f)
+        return;
+    float trackScale = unk74;
+    float trackWidth = unk78;
+    float lookAhead = 64.0f * trackScale + ms;
+    float buildAhead =
+        trackScale * ((mDir->mTrackLeftX - trackWidth) / trackWidth) + ms;
+    if (mPlayer->IsNet())
+        return;
+    if (mPlayer->mEnabledState == kPlayerDisabled
+        || mPlayer->mEnabledState == kPlayerDisconnected)
+        return;
+
+    float sectionStart = -FLT_MAX;
+    float sectionEnd = -FLT_MAX;
+    bool sectionOnly = mPlayer->SongSectionOnly(sectionStart, sectionEnd);
+    if (sectionOnly && sectionEnd < lookAhead) {
+        lookAhead = sectionEnd;
+    }
+
+    if (!mPlayer->InTambourinePhrase()) {
+        for (int part = 0; part < mPlayer->NumVocalParts(); part++) {
+            VocalNoteList *notes = GetVocalNoteList(part);
+            if (!notes)
+                continue;
+            int idx = mNextScrollNote[part];
+            while (idx < notes->mNotes.size()) {
+                VocalNote &n = notes->mNotes[idx];
+                if (!n.mUnpitchedNote) {
+                    mNextScrollNote[part] = idx;
+                }
+                if (sectionOnly && (n.mMs + n.mDurationMs) < sectionStart) {
+                    if (idx == notes->mNotes.size() - 1) {
+                        mNextScrollNote[part] = notes->mNotes.size();
+                    }
+                    idx++;
+                    continue;
+                }
+                if ((n.mMs + n.mDurationMs) > buildAhead)
+                    break;
+                idx++;
+            }
+            if (part < 2) {
+                int dz = mNextDeployZone[part];
+                while (dz < notes->mFreestyleSections.size()
+                       && notes->mFreestyleSections[dz].second <= buildAhead) {
+                    mNextDeployZone[part] = dz;
+                    dz++;
+                }
+            }
+            int prepEnd = mNextScrollNote[part];
+            while (prepEnd < notes->mNotes.size()
+                   && notes->mNotes[prepEnd].mMs <= lookAhead) {
+                prepEnd++;
+            }
+            PrepareNoteTubes(unk74, mNextScrollNote[part], prepEnd, part);
+            mNextScrollNote[part] = prepEnd;
+        }
+    }
+
+    int beat = unk108;
+    while (true) {
+        int tick = (int)BeatToTick((float)beat);
+        float beatMs = TickToMs((float)tick);
+        if (beat < 0) {
+            beat++;
+            continue;
+        }
+        if (beatMs > lookAhead)
+            break;
+        if (WantBeatLines(tick)) {
+            if (TheBeatMap->IsDownbeat(beat)) {
+                CreateMarker("downbeat_marker.mesh", beatMs, warnOnMarkerCreation);
+            } else {
+                CreateMarker("beat_marker.mesh", beatMs, warnOnMarkerCreation);
+            }
+        }
+        beat++;
+    }
+    unk108 = beat;
+
+    int phraseIdx = unk104;
+    VocalNoteList *leadNotes = GetVocalNoteList(0);
+    while (phraseIdx < leadNotes->mPhrases.size()) {
+        VocalPhrase &ph = leadNotes->mPhrases[phraseIdx];
+        float phMs = ph.unk0 + ph.unk4;
+        if (phMs < buildAhead
+            || (sectionOnly && phMs < (sectionStart - 100.0f))) {
+            phraseIdx++;
+            continue;
+        }
+        if (phMs > lookAhead || (sectionOnly && phMs > sectionEnd))
+            break;
+        CreateMarker("phrase_marker.mesh", phMs, warnOnMarkerCreation);
+        phraseIdx++;
+    }
+    unk104 = phraseIdx;
+
+    float oldRange = mDir->mLastMax - mDir->mLastMin;
+    while (!mRangeShifts.empty()
+           && mRangeShifts.front().unk0 < ms - mRangeShifts.front().unk4) {
+        RangeShift &rs = mRangeShifts.front();
+        mDir->SetRange(rs.unk8, rs.unkc, unk208, false);
+        mRangeShifts.pop_front();
+    }
+    if (!mRangeShifts.empty()) {
+        RangeShift &rs = mRangeShifts.front();
+        if (rs.unk0 < ms) {
+            float t = (ms - rs.unk0) / rs.unk4;
+            t = Clamp<float>(0.0f, 1.0f, t);
+            mDir->SetRange(
+                t * (rs.unk10 - rs.unk8) + rs.unk8,
+                t * (rs.unk14 - rs.unkc) + rs.unkc,
+                unk208,
+                false
+            );
+        }
+    }
+    float newRange = mDir->mLastMax - mDir->mLastMin;
+    float rangeDelta = oldRange - newRange;
+    if (rangeDelta < 0.0f)
+        rangeDelta = -rangeDelta;
+    if (rangeDelta > 0.1f) {
+        for (int p = 0; p < 3; p++) {
+            mNextScrollNote[p] = 0;
+            if (p < 2)
+                mNextDeployZone[p] = 0;
+            mCurLyricPhrase[p < 2 ? p : 0] = 0;
+        }
+        ResetAllTubePlates();
+        ClearLyrics();
+    }
+
+    if (!InTambourinePhrase()) {
+        float lyricMs = TheGame->InRollback() ? unk2a4 : ms;
+        for (int side = 0; side < 2; side++) {
+            std::deque<LyricShift> &shifts =
+                (side == 0) ? mLeadLyricShifts : mHarmonyLyricShifts;
+            RndTransformable *scroller = (side == 0)
+                ? mDir->mLeadLyricScroller.Ptr()
+                : mDir->mHarmonyLyricScroller.Ptr();
+            float &xPos = (side == 0) ? unk294 : unk298;
+            float &shiftedX = (side == 0) ? unk2ac : unk2b0;
+            while (!shifts.empty()) {
+                LyricShift &shift = shifts.front();
+                float window = shift.unk8 ? mLyricShiftQuickMs : mLyricShiftMs;
+                if (shift.unk4 >= (lyricMs - window))
+                    break;
+                xPos = shift.unk0;
+                Transform &xfm = scroller->DirtyLocalXfm();
+                xfm.v.x = shift.unk0;
+                shiftedX = shift.unk0 + mDir->mNowBarX;
+                if (dumpLyricShifts) {
+                    TheDebug << MakeString(
+                        "Finished shifting lyrics for part %d to %.2f at %.2f sec\n",
+                        side,
+                        xPos,
+                        lyricMs / 1000.0f
+                    );
+                }
+                shifts.pop_front();
+            }
+            if (!shifts.empty()) {
+                LyricShift &shift = shifts.front();
+                float window = shift.unk8 ? mLyricShiftQuickMs : mLyricShiftMs;
+                if (shift.unk4 < lyricMs) {
+                    float t = (lyricMs - shift.unk4) / window;
+                    t = Clamp<float>(0.0f, 1.0f, t);
+                    float curX = t * (shift.unk0 - xPos) + xPos;
+                    scroller->DirtyLocalXfm().v.x = curX;
+                    shiftedX = curX + mDir->mNowBarX;
+                    if (dumpLyricShifts) {
+                        TheDebug << MakeString(
+                            "Sliding lyrics for part %d to %.2f at %.2f sec\n",
+                            side,
+                            curX,
+                            lyricMs / 1000.0f
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    if (!mPlayer->InTambourinePhrase()) {
+        std::deque<TambourineGem *> &usedGems = mTambourineGemPool->mUsedGems;
+        float oldTime = ms - 250.0f;
+        while (!usedGems.empty() && usedGems.front()->unk0 < oldTime) {
+            TambourineGem *g = usedGems.front();
+            mTambourineGemPool->mFreeGems.push_back(g);
+            g->unk8 = 2;
+            usedGems.pop_front();
+        }
+        const std::vector<int> &tambGems =
+            mPlayer->mTambourineManager.TambourineGems();
+        int targetTick = (int)MsToTick(lookAhead);
+        int gemIdx = unk100;
+        while (gemIdx < tambGems.size() && tambGems[gemIdx] < targetTick) {
+            float gemMs = TickToMs((float)tambGems[gemIdx]);
+            MILO_ASSERT(
+                mTambourineGemPool->mUsedGems.empty()
+                    || gemMs >= mTambourineGemPool->mUsedGems.back()->unk0,
+                0x1EB
+            );
+            if (mTambourineGemPool->mFreeGems.empty()) {
+                for (int k = 0; k < 5; k++) {
+                    mTambourineGemPool->mFreeGems.push_back(new TambourineGem());
+                }
+            }
+            TambourineGem *g = mTambourineGemPool->mFreeGems.front();
+            mTambourineGemPool->mFreeGems.pop_front();
+            mTambourineGemPool->mUsedGems.push_back(g);
+            g->unk4 = gemIdx;
+            g->unk0 = gemMs;
+            g->unk8 = 0;
+            MILO_ASSERT(mTambourineGemPool->mTambourineManager, 0x1FD);
+            if (mTambourineGemPool->mTambourineManager->GemHit(gemIdx)
+                || mTambourineGemPool->mTambourineManager->GemProcessed(gemIdx)) {
+                g->unk8 = 1;
+            }
+            gemIdx++;
+        }
+        unk100 = gemIdx;
+    }
+
+    UpdateLyricZ();
+
+    int isolated = -1;
+    int numParts = mPlayer->NumVocalParts();
+    if (!mPlayer->InTambourinePhrase()) {
+        isolated = mDir->unk6c4;
+    }
+
+    bool inPractice = !InTambourinePhrase();
+    for (int part = 0; part < numParts; part++) {
+        if (isolated != part && !(isolated == -1 && part != 2))
+            continue;
+        VocalNoteList *notes = GetVocalNoteList(part);
+        if (!notes)
+            continue;
+        bool wantLyrics =
+            (part == 2) ? mDir->mHarmLyrics : mDir->mLeadLyrics;
+        if (!wantLyrics)
+            continue;
+
+        bool lead = (part == 0);
+        std::deque<LyricPlate *> &plates = lead ? mLyricsLead : mLyricsHarmony;
+        std::vector<std::pair<float, float> > &freestyles =
+            notes->mFreestyleSections;
+        VocalNoteList *altNotes =
+            (!lead && isolated < 1) ? GetVocalNoteList(2) : NULL;
+        int &deployIdx = lead ? unkf4 : unkf8;
+        if (part == 2)
+            deployIdx = unkfc;
+        BuildScrollingDeployZones(lookAhead);
+        UpdateAllTubePlates(ms);
+    }
+
+    if (!InTambourinePhrase()) {
+        UpdateMarkerVisibility(ms - trackWidth, ms + trackWidth);
+        InvalidateMarkers(ms);
     }
 }
 
