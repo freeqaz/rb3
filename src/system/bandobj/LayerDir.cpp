@@ -226,15 +226,17 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
 }
 
 DataNode LayerDir::GetBitmapList(DataArray *arr) {
-    DataArray *propPath = DataVariable("milo_prop_path").Array(NULL);
+    DataArray *propPath = DataVariable(Symbol("milo_prop_path")).Array(NULL);
     DataNode savedNode(propPath->Node(2));
     propPath->Node(2) = DataNode(Symbol("name"));
     const char *name = arr->GetObj(0)->Property(propPath, true)->Str(NULL);
     for (ObjList<Layer>::iterator it = mLayers.begin(); it != mLayers.end(); ++it) {
         if (strcmp(it->mName.c_str(), name) == 0) {
             DataArray *result = new DataArray(it->mBitmapList.size());
-            for (int i = 0; i < it->mBitmapList.size(); i++) {
-                String fileName(FileGetName(it->mBitmapList[i].c_str()));
+            std::vector<FilePath>::iterator fp = it->mBitmapList.begin();
+            int i = 0;
+            for (; fp != it->mBitmapList.end(); ++fp, i++) {
+                String fileName(FileGetName(fp->c_str()));
                 result->Node(i) =
                     DataNode(fileName.substr(0, fileName.length() - 4));
             }
