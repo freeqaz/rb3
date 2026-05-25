@@ -4,6 +4,92 @@
 #include "os/Debug.h"
 #include <algorithm>
 
+// Explicit specializations to avoid bool materialization in comparison loops,
+// so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
+namespace stlpmtx_std {
+
+typedef std::pair<int, float> PairIF;
+
+template <>
+void __adjust_heap<PairIF *, long, PairIF, SingerStats::PartPercentageSorter>(
+    PairIF *__first,
+    long __holeIndex,
+    long __len,
+    PairIF __val,
+    SingerStats::PartPercentageSorter
+) {
+    long __topIndex = __holeIndex;
+    long __secondChild = 2 * __holeIndex + 2;
+    while (__secondChild < __len) {
+        if ((__first + __secondChild)->second > (__first + (__secondChild - 1))->second)
+            __secondChild--;
+        *(__first + __holeIndex) = *(__first + __secondChild);
+        __holeIndex = __secondChild;
+        __secondChild = 2 * (__secondChild + 1);
+    }
+    if (__secondChild == __len) {
+        *(__first + __holeIndex) = *(__first + (__secondChild - 1));
+        __holeIndex = __secondChild - 1;
+    }
+    // Inline __push_heap to avoid extra stack frame for __val copy
+    long __parent = (__holeIndex - 1) / 2;
+    while (__holeIndex > __topIndex &&
+           (__first + __parent)->second < __val.second) {
+        *(__first + __holeIndex) = *(__first + __parent);
+        __holeIndex = __parent;
+        __parent = (__holeIndex - 1) / 2;
+    }
+    *(__first + __holeIndex) = __val;
+}
+
+template <>
+PairIF *
+__unguarded_partition<PairIF *, PairIF, SingerStats::PartPercentageSorter>(
+    PairIF *__first,
+    PairIF *__last,
+    PairIF __pivot,
+    SingerStats::PartPercentageSorter
+) {
+    for (;;) {
+        while (__first->second > __pivot.second)
+            ++__first;
+        --__last;
+        while (__pivot.second > __last->second)
+            --__last;
+        if (!(__first < __last))
+            return __first;
+        iter_swap(__first, __last);
+        ++__first;
+    }
+}
+
+template <>
+void __insertion_sort<PairIF *, PairIF, SingerStats::PartPercentageSorter>(
+    PairIF *__first,
+    PairIF *__last,
+    PairIF *,
+    SingerStats::PartPercentageSorter __comp
+) {
+    if (__first == __last) return;
+    int __val_first = 0;
+    for (PairIF *__i = __first + 1; __i != __last; ++__i) {
+        float __val_second = __i->second;
+        __val_first = __i->first;
+        if (__val_second > __first->second) {
+            copy_backward(__first, __i, __i + 1);
+            __first->first = __val_first;
+            __first->second = __val_second;
+        } else {
+            PairIF __val;
+            __val.first = __val_first;
+            __val.second = __val_second;
+            __unguarded_linear_insert(__i, __val, __comp);
+        }
+    }
+}
+
+} // namespace stlpmtx_std
+
 DECOMP_FORCEACTIVE(
     Stats,
     __FILE__,
