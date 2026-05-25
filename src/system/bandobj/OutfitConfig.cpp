@@ -16,8 +16,6 @@
 
 INIT_REVS(OutfitConfig);
 
-DECOMP_FORCEACTIVE(OutfitConfig, "ObjPtr_p.h", "f.Owner()", "")
-
 RndMat *OutfitConfig::sMat;
 RndCam *OutfitConfig::sCam;
 BandCharDesc *OutfitConfig::sBandCharDesc;
@@ -225,6 +223,155 @@ RndMesh *OutfitConfig::Piercing::GetHeadMesh() {
     return mPiercing.Owner()->Dir()->Find<RndMesh>("head.mesh", false);
 }
 
+void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
+    if (!mPiercing)
+        return;
+    RndMesh *reskinMesh = dynamic_cast<RndMesh *>((RndTransformable *)mPiercing);
+    if (reskinMesh)
+        cb->SyncMesh(reskinMesh, 0x1f);
+    RndMesh *headMesh = GetHeadMesh();
+    if (!headMesh)
+        return;
+    if (headMesh->mGeomOwner->mVerts.size() == 0)
+        return;
+    const std::vector<SyncMeshCB::Vert> *beforeVerts = &cb->GetVerts(headMesh);
+    if (!beforeVerts)
+        return;
+    if ((unsigned short)beforeVerts->size()
+        != (unsigned int)headMesh->mGeomOwner->mVerts.size()) {
+        MILO_WARN(
+            "%s can't apply piercing deformation, before verts different than head "
+            "(0x%x) vert count (%d v %d)",
+            PathName(mPiercing.Owner()),
+            (int)headMesh,
+            (unsigned long)beforeVerts->size(),
+            headMesh->mGeomOwner->mVerts.size()
+        );
+        return;
+    }
+    for (int i = 0; i < mPieces.size(); i++) {
+        const Piece &piece = mPieces[i];
+        if (piece.mVert == -1)
+            continue;
+        if (reskinMesh && !piece.mAttachment) {
+            if (piece.unk14.size()
+                != (unsigned int)reskinMesh->mGeomOwner->mVerts.size() * 2) {
+                MILO_WARN(
+                    "%s can't do piercing piece %d deform, head verts out of date, "
+                    "need to re-ao",
+                    PathName(mPiercing.Owner()),
+                    i
+                );
+                continue;
+            }
+            for (int j = 0; j < reskinMesh->mGeomOwner->mVerts.size(); j++) {
+                unsigned short faceIdx = piece.unk14[j * 2];
+                RndMesh::Vert &dst = reskinMesh->mGeomOwner->mVerts[j];
+                if (faceIdx >= (unsigned short)headMesh->mGeomOwner->mFaces.size()) {
+                    MILO_WARN(
+                        "%s can't do piercing piece %d deform, head verts out of "
+                        "date, need to re-ao",
+                        PathName(mPiercing.Owner()),
+                        i
+                    );
+                    break;
+                }
+                unsigned short packed = piece.unk14[j * 2 + 1];
+                float weights[3];
+                weights[0] = (float)(packed & 0xff) / 255.0f;
+                weights[1] = (float)((packed >> 8) & 0xff) / 255.0f;
+                weights[2] = 1.0f - weights[0] - weights[1];
+                unsigned short *faceVerts =
+                    &headMesh->mGeomOwner->mFaces[faceIdx].v1;
+                for (int k = 0; k < 3; k++) {
+                    unsigned short srcIdx = faceVerts[k];
+                    RndMesh::Vert &cur = headMesh->mGeomOwner->mVerts[srcIdx];
+                    const SyncMeshCB::Vert &before = (*beforeVerts)[srcIdx];
+                    float w = weights[k];
+                    dst.pos.x += (cur.pos.x - before.pos.x) * w;
+                    dst.pos.y += (cur.pos.y - before.pos.y) * w;
+                    dst.pos.z += (cur.pos.z - before.pos.z) * w;
+                }
+            }
+        } else {
+            if (piece.mVert >= headMesh->mGeomOwner->mVerts.size()) {
+                MILO_WARN(
+                    "%s can't do piercing piece %d deform, head verts out of date, "
+                    "need to re-ao",
+                    PathName(mPiercing.Owner()),
+                    i
+                );
+                continue;
+            }
+            const SyncMeshCB::Vert &before = (*beforeVerts)[piece.mVert];
+            RndMesh::Vert &headVert = headMesh->mGeomOwner->mVerts[piece.mVert];
+            float dx = headVert.pos.x - before.pos.x;
+            float dy = headVert.pos.y - before.pos.y;
+            float dz = headVert.pos.z - before.pos.z;
+            if (reskinMesh) {
+                for (int j = 0; j < piece.unk14.size(); j++) {
+                    unsigned short dstIdx = piece.unk14[j];
+                    if (dstIdx >= reskinMesh->mGeomOwner->mVerts.size()) {
+                        MILO_WARN(
+                            "%s mesh %s no longer matches piece %d, has fewer verts "
+                            "(%d v %d), must re-AO file",
+                            PathName(mPiercing.Owner()),
+                            reskinMesh->Name(),
+                            i,
+                            (int)dstIdx,
+                            reskinMesh->mGeomOwner->mVerts.size()
+                        );
+                        break;
+                    }
+                    RndMesh::Vert &dst = reskinMesh->mGeomOwner->mVerts[dstIdx];
+                    dst.pos.x += dx;
+                    dst.pos.y += dy;
+                    dst.pos.z += dz;
+                }
+            } else {
+                RndTransformable *attach = mPiercing;
+                attach->SetDirty();
+                attach->mLocalXfm.v.x = unkc.v.x + dx;
+                attach->mLocalXfm.v.y = unkc.v.y + dy;
+                attach->mLocalXfm.v.z = unkc.v.z + dz;
+            }
+        }
+    }
+}
+
+void OutfitConfig::MeshAO::Apply(OutfitConfig *cfg, SyncMeshCB *mesh) {
+    RndMesh *m =
+        dynamic_cast<RndMesh *>(cfg->Dir()->FindObject(mMeshName.c_str(), false));
+    if (m) {
+        if (m->mKeepMeshData) {
+            mesh->SyncMesh(m, 0x400);
+            if ((unsigned int)m->mGeomOwner->mVerts.size() == mCoeffs.size()) {
+                m->mHasAOCalc = true;
+                for (unsigned int i = 0; i < mCoeffs.size(); i++) {
+                    Hmx::Color32 ao(mCoeffs[i]);
+                    Hmx::Color32 &vc = m->mGeomOwner->mVerts[i].color;
+                    vc.a = Min(vc.a, ao.a);
+                    vc.r = Min(vc.r, ao.r);
+                    vc.g = Min(vc.g, ao.g);
+                    vc.b = Min(vc.b, ao.b);
+                }
+            } else {
+                MILO_WARN(
+                    "%s MeshAO has different vert count %d v %d from %s, can't apply",
+                    PathName(cfg),
+                    (unsigned long)mCoeffs.size(),
+                    m->mGeomOwner->mVerts.size(),
+                    m->Name()
+                );
+            }
+        }
+    } else {
+        MILO_WARN(
+            "%s MeshAO %s can't find matching mesh to apply", PathName(cfg), mMeshName
+        );
+    }
+}
+
 OutfitConfig::Overlay::Overlay(Hmx::Object *o) : mCategory(0), mTexture(o, 0) {}
 
 void OutfitConfig::Init() {
@@ -325,6 +472,9 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
             headmesh->SetMat(dir1->Find<RndMat>("head_naked.mat", false));
     }
 }
+
+DECOMP_FORCEACTIVE(OutfitConfig, "norm_%s.texblendctl", "%s_head_norm%02d.tex")
+DECOMP_FORCEACTIVE(OutfitConfig, "ObjPtr_p.h", "f.Owner()", "")
 
 BinStream &operator>>(BinStream &bs, OutfitConfig::MatSwap &swap) {
     bs >> swap.mMat;
@@ -442,8 +592,6 @@ BinStream &operator>>(BinStream &bs, OutfitConfig::MeshAO &ao) {
     return bs;
 }
 
-SAVE_OBJ(OutfitConfig, 0x5C7)
-
 BinStream &operator>>(BinStream &bs, OldMatOption &o) {
     bs >> o.mMat;
     bs >> o.mPrimaryPalette;
@@ -458,6 +606,8 @@ BinStream &operator>>(BinStream &bs, OldColorOption &o) {
     bs >> o.mMatOptions;
     return bs;
 }
+
+SAVE_OBJ(OutfitConfig, 0x5C7)
 
 #pragma push
 #pragma dont_inline on
@@ -679,155 +829,6 @@ int OutfitConfig::NumIndices(int idx) const {
 void OutfitConfig::CompressTextures() {
     if (unk3c != 2)
         unk3c = 1;
-}
-
-void OutfitConfig::MeshAO::Apply(OutfitConfig *cfg, SyncMeshCB *mesh) {
-    RndMesh *m =
-        dynamic_cast<RndMesh *>(cfg->Dir()->FindObject(mMeshName.c_str(), false));
-    if (m) {
-        if (m->mKeepMeshData) {
-            mesh->SyncMesh(m, 0x400);
-            if ((unsigned int)m->mGeomOwner->mVerts.size() == mCoeffs.size()) {
-                m->mHasAOCalc = true;
-                for (unsigned int i = 0; i < mCoeffs.size(); i++) {
-                    Hmx::Color32 ao(mCoeffs[i]);
-                    Hmx::Color32 &vc = m->mGeomOwner->mVerts[i].color;
-                    vc.a = Min(vc.a, ao.a);
-                    vc.r = Min(vc.r, ao.r);
-                    vc.g = Min(vc.g, ao.g);
-                    vc.b = Min(vc.b, ao.b);
-                }
-            } else {
-                MILO_WARN(
-                    "%s MeshAO has different vert count %d v %d from %s, can't apply",
-                    PathName(cfg),
-                    (unsigned long)mCoeffs.size(),
-                    m->mGeomOwner->mVerts.size(),
-                    m->Name()
-                );
-            }
-        }
-    } else {
-        MILO_WARN(
-            "%s MeshAO %s can't find matching mesh to apply", PathName(cfg), mMeshName
-        );
-    }
-}
-
-void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
-    if (!mPiercing)
-        return;
-    RndMesh *reskinMesh = dynamic_cast<RndMesh *>((RndTransformable *)mPiercing);
-    if (reskinMesh)
-        cb->SyncMesh(reskinMesh, 0x1f);
-    RndMesh *headMesh = GetHeadMesh();
-    if (!headMesh)
-        return;
-    if (headMesh->mGeomOwner->mVerts.size() == 0)
-        return;
-    const std::vector<SyncMeshCB::Vert> *beforeVerts = &cb->GetVerts(headMesh);
-    if (!beforeVerts)
-        return;
-    if ((unsigned short)beforeVerts->size()
-        != (unsigned int)headMesh->mGeomOwner->mVerts.size()) {
-        MILO_WARN(
-            "%s can't apply piercing deformation, before verts different than head "
-            "(0x%x) vert count (%d v %d)",
-            PathName(mPiercing.Owner()),
-            (int)headMesh,
-            (unsigned long)beforeVerts->size(),
-            headMesh->mGeomOwner->mVerts.size()
-        );
-        return;
-    }
-    for (int i = 0; i < mPieces.size(); i++) {
-        const Piece &piece = mPieces[i];
-        if (piece.mVert == -1)
-            continue;
-        if (reskinMesh && !piece.mAttachment) {
-            if (piece.unk14.size()
-                != (unsigned int)reskinMesh->mGeomOwner->mVerts.size() * 2) {
-                MILO_WARN(
-                    "%s can't do piercing piece %d deform, head verts out of date, "
-                    "need to re-ao",
-                    PathName(mPiercing.Owner()),
-                    i
-                );
-                continue;
-            }
-            for (int j = 0; j < reskinMesh->mGeomOwner->mVerts.size(); j++) {
-                unsigned short faceIdx = piece.unk14[j * 2];
-                RndMesh::Vert &dst = reskinMesh->mGeomOwner->mVerts[j];
-                if (faceIdx >= (unsigned short)headMesh->mGeomOwner->mFaces.size()) {
-                    MILO_WARN(
-                        "%s can't do piercing piece %d deform, head verts out of "
-                        "date, need to re-ao",
-                        PathName(mPiercing.Owner()),
-                        i
-                    );
-                    break;
-                }
-                unsigned short packed = piece.unk14[j * 2 + 1];
-                float weights[3];
-                weights[0] = (float)(packed & 0xff) / 255.0f;
-                weights[1] = (float)((packed >> 8) & 0xff) / 255.0f;
-                weights[2] = 1.0f - weights[0] - weights[1];
-                unsigned short *faceVerts =
-                    &headMesh->mGeomOwner->mFaces[faceIdx].v1;
-                for (int k = 0; k < 3; k++) {
-                    unsigned short srcIdx = faceVerts[k];
-                    RndMesh::Vert &cur = headMesh->mGeomOwner->mVerts[srcIdx];
-                    const SyncMeshCB::Vert &before = (*beforeVerts)[srcIdx];
-                    float w = weights[k];
-                    dst.pos.x += (cur.pos.x - before.pos.x) * w;
-                    dst.pos.y += (cur.pos.y - before.pos.y) * w;
-                    dst.pos.z += (cur.pos.z - before.pos.z) * w;
-                }
-            }
-        } else {
-            if (piece.mVert >= headMesh->mGeomOwner->mVerts.size()) {
-                MILO_WARN(
-                    "%s can't do piercing piece %d deform, head verts out of date, "
-                    "need to re-ao",
-                    PathName(mPiercing.Owner()),
-                    i
-                );
-                continue;
-            }
-            const SyncMeshCB::Vert &before = (*beforeVerts)[piece.mVert];
-            RndMesh::Vert &headVert = headMesh->mGeomOwner->mVerts[piece.mVert];
-            float dx = headVert.pos.x - before.pos.x;
-            float dy = headVert.pos.y - before.pos.y;
-            float dz = headVert.pos.z - before.pos.z;
-            if (reskinMesh) {
-                for (int j = 0; j < piece.unk14.size(); j++) {
-                    unsigned short dstIdx = piece.unk14[j];
-                    if (dstIdx >= reskinMesh->mGeomOwner->mVerts.size()) {
-                        MILO_WARN(
-                            "%s mesh %s no longer matches piece %d, has fewer verts "
-                            "(%d v %d), must re-AO file",
-                            PathName(mPiercing.Owner()),
-                            reskinMesh->Name(),
-                            i,
-                            (int)dstIdx,
-                            reskinMesh->mGeomOwner->mVerts.size()
-                        );
-                        break;
-                    }
-                    RndMesh::Vert &dst = reskinMesh->mGeomOwner->mVerts[dstIdx];
-                    dst.pos.x += dx;
-                    dst.pos.y += dy;
-                    dst.pos.z += dz;
-                }
-            } else {
-                RndTransformable *attach = mPiercing;
-                attach->SetDirty();
-                attach->mLocalXfm.v.x = unkc.v.x + dx;
-                attach->mLocalXfm.v.y = unkc.v.y + dy;
-                attach->mLocalXfm.v.z = unkc.v.z + dz;
-            }
-        }
-    }
 }
 
 void OutfitConfig::ApplyAO(SyncMeshCB *mesh) {
