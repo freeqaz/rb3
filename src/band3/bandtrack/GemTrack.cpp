@@ -11,6 +11,7 @@
 #include "game/GameConfig.h"
 #include "game/GamePanel.h"
 #include "game/GemPlayer.h"
+#include "game/RealGuitarGemPlayer.h"
 #include "game/SongDB.h"
 #include "game/TrainerPanel.h"
 #include "math/Utl.h"
@@ -624,7 +625,48 @@ void GemTrack::DrawTrackElements(int from_tick, int to_tick) {
 }
 #pragma pop
 
-void GemTrack::Poll(float f) {}
+void GemTrack::Poll(float f) {
+    int topTick;
+    int bottomTick;
+    Player *player = GetPlayer();
+    if (player) {
+        Track::Poll(f);
+        MILO_ASSERT(mGemManager, 0x2E4);
+        mGemManager->Poll(f, mPlayerState);
+        mTrackConfig.TrackNum();
+        topTick = (int)MsToTick(1000.0f * mTrackDir->TopSeconds() + f);
+        bottomTick = (int)MsToTick(1000.0f * mTrackDir->BottomSeconds() + f);
+        if (TheGame->unkdc != -1.0f) {
+            if (bottomTick < mLastBottomTick) {
+                DrawBeatLines(bottomTick, mLastBottomTick);
+            }
+        } else if (topTick < mLastTopTick) {
+            RebuildBeats();
+            mGemManager->Jump(f);
+        }
+        mLastBottomTick = bottomTick;
+        if (mTrackConfig.IsRealGuitarTrack()) {
+            mTrackDir->UpdateFingerFeedback(
+                ((RealGuitarGemPlayer *)player)->GetRGState()
+            );
+        }
+        if (topTick >= 0 && topTick > mLastTopTick) {
+            if (TheGame->IsWaiting()) return;
+            DrawTrackElements(mLastTopTick, topTick);
+            if (sUpdateShifting || mUpdateShifting) {
+                UpdateShifts();
+                mUpdateShifting = false;
+                sUpdateShifting = false;
+            }
+            int kbd = mTrackConfig.IsKeyboardTrack();
+            bool shifting = kbd & ((GemTrackDir *)kbd)->KeyShifting();
+            if (shifting) {
+                CheckShifts(f, topTick);
+            }
+            mLastPlayerState = mPlayerState;
+        }
+    }
+}
 
 void GemTrack::RedrawTrackElements(float f) {
     int top_tick = MsToTick(mTrackDir->TopSeconds() * 1000.0f + f);
