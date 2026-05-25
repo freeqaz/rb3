@@ -148,7 +148,7 @@ void StoreOfferContentsProvider::ToggleAllChecked() {
 
 void StoreOfferContentsProvider::AcceptCurChecked() {
     std::vector<unsigned short VECTOR_SIZE_SMALL> contentUnits;
-    for (unsigned int i = 0; i < mElements.size(); i++) {
+    for (int i = 0; i < mElements.size(); i++) {
         Element *element = mElements[i];
         if (element->mChecked) {
             unsigned short base = (unsigned short)element->mSong->unka;
