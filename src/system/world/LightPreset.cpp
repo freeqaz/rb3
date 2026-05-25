@@ -526,16 +526,15 @@ void LightPreset::AdvanceManual(LightPreset::KeyframeCmd cmd) {
 }
 
 void LightPreset::GetKey(float frame, int &iref1, int &iref2, float &fref) const {
-    float theframe = frame;
-    if (theframe <= 0.0f || mCachedDuration <= 0.0f) {
+    if (frame <= 0.0f || mCachedDuration <= 0.0f) {
         iref1 = -1;
         iref2 = 0;
         fref = 1.0f;
         return;
     } else {
         if (mLooping) {
-            theframe = std::fmod(frame, mCachedDuration);
-            if (theframe >= mKeyframes.back().mFrame) {
+            frame = std::fmod(frame, mCachedDuration);
+            if (frame >= mKeyframes.back().mFrame) {
                 if (mKeyframes.back().mFadeOutTime <= 0.0f) {
                     iref1 = -1;
                     iref2 = mKeyframes.size() - 1;
@@ -543,11 +542,11 @@ void LightPreset::GetKey(float frame, int &iref1, int &iref2, float &fref) const
                     return;
                 }
                 float framedur = mKeyframes.back().mFrame + mKeyframes.back().mDuration;
-                if (theframe > framedur) {
+                if (frame > framedur) {
                     MILO_ASSERT(mKeyframes.back().mFadeOutTime > 0, 0x358);
                     iref1 = mKeyframes.size() - 1;
                     iref2 = 0;
-                    fref = (theframe - framedur) / mKeyframes.back().mFadeOutTime;
+                    fref = (frame - framedur) / mKeyframes.back().mFadeOutTime;
                     return;
                 }
                 iref1 = -1;
@@ -555,7 +554,7 @@ void LightPreset::GetKey(float frame, int &iref1, int &iref2, float &fref) const
                 fref = 1.0f;
                 return;
             }
-        } else if (theframe >= mKeyframes.back().mFrame) {
+        } else if (frame >= mKeyframes.back().mFrame) {
             iref1 = -1;
             iref2 = mKeyframes.size() - 1;
             fref = 1.0f;
@@ -565,25 +564,25 @@ void LightPreset::GetKey(float frame, int &iref1, int &iref2, float &fref) const
         int after = mKeyframes.size() - 1;
         for (before = 0; after > before + 1;) {
             int mid = (before + after) >> 1;
-            if (theframe == mKeyframes[mid].mFrame) {
+            if (frame == mKeyframes[mid].mFrame) {
                 iref1 = -1;
                 iref2 = mid;
                 fref = 1.0f;
                 return;
             }
-            if (theframe > mKeyframes[mid].mFrame) {
+            if (frame > mKeyframes[mid].mFrame) {
                 before = mid;
             } else {
                 after = mid;
             }
         }
-        MILO_ASSERT(theframe >= mKeyframes[before].mFrame && theframe < mKeyframes[after].mFrame, 0x387);
+        MILO_ASSERT(frame >= mKeyframes[before].mFrame && frame < mKeyframes[after].mFrame, 0x387);
         float dur = mKeyframes[before].mFrame + mKeyframes[before].mDuration;
-        if (theframe > dur) {
+        if (frame > dur) {
             MILO_ASSERT(mKeyframes[before].mFadeOutTime > 0, 0x38c);
             iref1 = before;
             iref2 = after;
-            fref = (theframe - dur) / mKeyframes[before].mFadeOutTime;
+            fref = (frame - dur) / mKeyframes[before].mFadeOutTime;
         } else {
             iref1 = -1;
             iref2 = before;
