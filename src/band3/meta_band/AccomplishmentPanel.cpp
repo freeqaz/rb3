@@ -836,11 +836,15 @@ Symbol AccomplishmentPanel::GetSelectedDetailsEntry() {
         int i = handled.Int();
         if (mAccomplishmentEntryProvider->NumData() > 0) {
             AccomplishmentEntryProvider *pProvider = mAccomplishmentEntryProvider;
-            MILO_ASSERT(0 <= i && i < pProvider->NumData(), 0x244);
-            return pProvider->m_vEntries[i];
+            return pProvider->AccomplishmentEntryProvider::DataSymbol(i);
         } else
             return "";
     }
+}
+
+inline Symbol AccomplishmentEntryProvider::DataSymbol(int i_iData) {
+    MILO_ASSERT_RANGE(i_iData, 0, NumData(), 0x244);
+    return m_vEntries[i_iData];
 }
 
 Symbol AccomplishmentPanel::GetAccomplishmentName() {

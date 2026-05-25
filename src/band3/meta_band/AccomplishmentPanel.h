@@ -156,6 +156,7 @@ public:
     virtual ~AccomplishmentEntryProvider() {}
     virtual void Text(int, int, UIListLabel *, UILabel *) const;
     virtual int NumData() const { return m_vEntries.empty() ? 0 : m_vEntries.size(); }
+    Symbol DataSymbol(int);
 
     void Update(Accomplishment *);
 
