@@ -49,6 +49,120 @@
 #include "utl/Symbols4.h"
 #include <algorithm>
 
+// Explicit specializations to avoid bool materialization in comparison loops,
+// so CW calls String::operator< directly (bl __lt__6StringCFRC6String)
+// instead of generating mfcr/srwi./bne from inlined UIResource::Compare.
+namespace stlpmtx_std {
+
+template <>
+UIResource **
+__unguarded_partition<UIResource **, UIResource *, UIResource::Compare>(
+    UIResource **__first,
+    UIResource **__last,
+    UIResource *__pivot,
+    UIResource::Compare
+) {
+    for (;;) {
+        while ((*__first)->mResourcePath < __pivot->mResourcePath)
+            ++__first;
+        --__last;
+        while (__pivot->mResourcePath < (*__last)->mResourcePath)
+            --__last;
+        if (!(__first < __last))
+            return __first;
+        iter_swap(__first, __last);
+        ++__first;
+    }
+}
+
+template <>
+void __unguarded_linear_insert<UIResource **, UIResource *, UIResource::Compare>(
+    UIResource **__last,
+    UIResource *__val,
+    UIResource::Compare
+) {
+    UIResource **__next = __last;
+    --__next;
+    while (__val->mResourcePath < (*__next)->mResourcePath) {
+        *__last = *__next;
+        __last = __next;
+        --__next;
+    }
+    *__last = __val;
+}
+
+template <>
+void __adjust_heap<UIResource **, long, UIResource *, UIResource::Compare>(
+    UIResource **__first,
+    long __holeIndex,
+    long __len,
+    UIResource *__value,
+    UIResource::Compare
+) {
+    long __topIndex = __holeIndex;
+    long __secondChild = 2 * __holeIndex + 2;
+    while (__secondChild < __len) {
+        if ((*(__first + __secondChild))->mResourcePath < (*(__first + (__secondChild - 1)))->mResourcePath)
+            __secondChild--;
+        *(__first + __holeIndex) = *(__first + __secondChild);
+        __holeIndex = __secondChild;
+        __secondChild = 2 * (__secondChild + 1);
+    }
+    if (__secondChild == __len) {
+        *(__first + __holeIndex) = *(__first + (__secondChild - 1));
+        __holeIndex = __secondChild - 1;
+    }
+    // Inline __push_heap to avoid extra callee-saved register for &__value->mResourcePath
+    long __parent = (__holeIndex - 1) / 2;
+    while (__holeIndex > __topIndex && (*(__first + __parent))->mResourcePath < __value->mResourcePath) {
+        *(__first + __holeIndex) = *(__first + __parent);
+        __holeIndex = __parent;
+        __parent = (__holeIndex - 1) / 2;
+    }
+    *(__first + __holeIndex) = __value;
+}
+
+template <>
+void __introsort_loop<UIResource **, UIResource *, long, UIResource::Compare>(
+    UIResource **__first,
+    UIResource **__last,
+    UIResource **,
+    long __depth_limit,
+    UIResource::Compare __comp
+) {
+    while (__last - __first > 16) {
+        if (__depth_limit == 0) {
+            partial_sort(__first, __last, __last, __comp);
+            return;
+        }
+        ptrdiff_t __len = __last - __first;
+        --__depth_limit;
+        UIResource **__mid = __first + __len / 2;
+        UIResource **__pivot_ptr;
+        if ((*__first)->mResourcePath < (*__mid)->mResourcePath) {
+            if ((*__mid)->mResourcePath < (*(__last - 1))->mResourcePath)
+                __pivot_ptr = __mid;
+            else if ((*__first)->mResourcePath < (*(__last - 1))->mResourcePath)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __first;
+        } else {
+            if ((*__first)->mResourcePath < (*(__last - 1))->mResourcePath)
+                __pivot_ptr = __first;
+            else if ((*__mid)->mResourcePath < (*(__last - 1))->mResourcePath)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __mid;
+        }
+        UIResource **__cut =
+            __unguarded_partition(__first, __last, *__pivot_ptr, __comp);
+        __introsort_loop(__cut, __last, (UIResource **)0, __depth_limit, __comp);
+        __last = __cut;
+    }
+}
+
+} // namespace stlpmtx_std
+
 #pragma push
 #pragma dont_inline on
 BEGIN_HANDLERS(Automator)
