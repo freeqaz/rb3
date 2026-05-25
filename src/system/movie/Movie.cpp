@@ -551,6 +551,43 @@ void Movie::Impl::DiscContentionCheck(Loader *loader) {
     }
 }
 
+void Movie::Impl::DoFrame() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x342);
+    if (!mPreloadFlag) {
+        TheBlockMgr.MarkDiscRead();
+    }
+    if (mTimeCallback != NULL) {
+        float dt = mTimeCallback();
+        if (dt == 0.0f) {
+            SetPaused(true);
+            return;
+        }
+    }
+    BeginFrame();
+    BinkDoFrame(mBink);
+    EndFrame();
+    bool skip = true;
+    if (mBink->ReadError == 0) {
+        bool atEnd = false;
+        if (!mLoop) {
+            if (mBink->FrameNum == mBink->Frames) atEnd = true;
+        }
+        if (!atEnd) skip = false;
+    }
+    if (!skip) NextFrame();
+}
+
 void Movie::Impl::DiscContentionPublish() {
     bool ok = true;
     if (mThreadId != (unsigned int)OSGetCurrentThread()) {
