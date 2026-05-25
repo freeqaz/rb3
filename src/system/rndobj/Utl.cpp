@@ -362,8 +362,7 @@ void UtilDrawCigar(
 ) {
     float sLen0 = lengths[0] * Length(tf.m.x);
     float sLen1 = lengths[1] * Length(tf.m.x);
-    Transform basis;
-    memcpy(&basis, &tf, 0x40);
+    Transform basis = tf;
     Normalize(basis.m, basis.m);
 
     Vector3 top;
