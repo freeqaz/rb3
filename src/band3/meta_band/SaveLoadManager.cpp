@@ -22,6 +22,25 @@
 
 SaveLoadManager *TheSaveLoadMgr;
 
+SaveLoadManager::SaveLoadManager()
+    : mActivated(false), mInitialLoadNotDone(true), mMode(kMode_AutoLoad),
+      mState(kS_Idle), mStateAtSelectStart(kS_Idle), mUser(NULL), mLocalUser(NULL),
+      unk44(NULL), unk48(0), unk4c(), mCacheID(NULL), mCache(NULL), mData(NULL),
+      unk64(0), unk68(false), unk69(false), unk6c(0), unk70(0), mRequestFlags(0),
+      unk78(0), unk7c(0), mAction(NULL) {
+    unk44 = new DataArray(0);
+    mSaveProfiles.reserve(4);
+    mUploadProfiles.reserve(4);
+    SetName("saveload_mgr", ObjectDir::sMainDir);
+    ThePlatformMgr.AddSink(this, SigninChangedMsg::Type());
+}
+
+SaveLoadManager::~SaveLoadManager() {
+    ThePlatformMgr.RemoveSink(this, SigninChangedMsg::Type());
+    unk4c.~String();
+    RELEASE(unk44);
+}
+
 bool SaveLoadManager::IsInitialLoadDone() const { return !mInitialLoadNotDone; }
 
 bool SaveLoadManager::IsIdle() {
@@ -227,6 +246,92 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x25);
             }
         }
+        break;
+    case (State)0x1D:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        SetState((State)0x20);
+        break;
+    case (State)0x20:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                SetState((State)0x21);
+            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x16);
+            } else if (result == kCache_ErrorCorrupt) {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x1c);
+            } else {
+                UpdateStatus(kSaveLoadMgrStatus_Loading);
+                SetState((State)0x25);
+            }
+        }
+        break;
+    case (State)0x22:
+        if (!TheCacheMgr->IsDone()) return;
+        if (TheCacheMgr->GetLastResult() == kCache_NoError) {
+            SetState((State)0x26);
+        } else {
+            SetState((State)0x25);
+        }
+        break;
+    case (State)0x23:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        if (unk70 == 0) {
+            unk70 = (int)TheCacheMgr->GetLastResult();
+        }
+        if (unk70 == 0) {
+            SetState((State)0x26);
+        } else {
+            SetState((State)0x25);
+        }
+        break;
+    case (State)0x32:
+        if (!TheCacheMgr->IsDone()) return;
+        if (TheCacheMgr->GetLastResult() == kCache_NoError) {
+            SetState((State)0x32);
+        } else {
+            SetState((State)0x37);
+        }
+        break;
+    case (State)0x34:
+        if (!TheCacheMgr->IsDone()) return;
+        if (TheCacheMgr->GetLastResult() == kCache_NoError) {
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        } else {
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileError);
+        }
+        SetState((State)0x38);
+        break;
+    case (State)0x35:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        if (unk70 == 0) {
+            unk70 = (int)TheCacheMgr->GetLastResult();
+        }
+        if (unk70 == 0) {
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        } else {
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileError);
+        }
+        SetState((State)0x38);
+        break;
+    case (State)0x3F:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        if (unk70 == 0) {
+            unk70 = (int)TheCacheMgr->GetLastResult();
+        }
+        if (unk70 == 0) {
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        } else {
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileError);
+        }
+        SetState((State)0x41);
         break;
     case (State)0x54:
         if (TheSongMgr.IsSongCacheWriteDone()) {
