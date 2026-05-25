@@ -430,6 +430,7 @@ const char *Movie::Impl::MovieLoader::StateName() const {
 
 void Movie::Impl::MovieLoader::PollLoading() {
     while (!TheLoadMgr.CheckSplit()) {
+        (this->*mOpenState)();
         Loader *front = TheLoadMgr.GetFirstLoading();
         bool atFront;
         if (front == 0) {
@@ -439,12 +440,33 @@ void Movie::Impl::MovieLoader::PollLoading() {
         }
         if (!atFront) return;
         if (IsLoaded()) return;
-        (this->*mOpenState)();
     }
 }
 
-void Movie::Impl::MovieLoader::OpenFile() {}
-void Movie::Impl::MovieLoader::LoadFile() {}
+void Movie::Impl::MovieLoader::OpenFile() {
+    // Loader::mFile is a FilePath (offset 0x8 in base). Our local File* is also mFile.
+    // Use this-> on local to disambiguate, plus use Loader::mFile via .c_str() for filename.
+    this->mFile = NewFile(Loader::mFile.c_str(), 2);
+    if (this->mFile != NULL && !this->mFile->Fail()) {
+        this->mFile->ReadAsync(mBuffer, 0x20);
+        mOpenState = &MovieLoader::LoadFile;
+    } else {
+        MILO_WARN("Could not load: %s", FileLocalize(Loader::mFile.c_str(), NULL));
+        mOpenState = &MovieLoader::DoneLoading;
+    }
+}
+void Movie::Impl::MovieLoader::LoadFile() {
+    if (this->mFile == NULL) {
+        TheDebug.Fail(MakeString(kAssertStr, "MovieLoader_p.h", 0x47, "mFile"));
+    }
+    int bytesRead;
+    if (this->mFile->ReadDone(bytesRead)) {
+        if (!this->mFile->Fail()) {
+            mImpl->DiscContentionCheck(this);
+        }
+        mOpenState = &MovieLoader::DoneLoading;
+    }
+}
 void Movie::Impl::MovieLoader::DoneLoading() {}
 
 void Movie::Impl::BeginFrame() {
