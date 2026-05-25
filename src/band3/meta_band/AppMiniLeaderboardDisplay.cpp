@@ -207,6 +207,10 @@ BEGIN_HANDLERS(AppMiniLeaderboardDisplay)
     HANDLE_CHECK(0x16c)
 END_HANDLERS
 
+bool Leaderboard::IsEnumComplete() const { return mEnumState == kEnumDone; }
+
+bool Leaderboard::ShowsDifficultyAndPct() const { return false; }
+
 void PlayerMiniLeaderboard::EnumerateFromID() {
     mDataResultList.Clear();
     std::vector<int> ids;
