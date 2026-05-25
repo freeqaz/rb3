@@ -434,8 +434,8 @@ void Movie::Impl::MovieLoader::PollLoading() {
         } else {
             atFront = (front == this);
         }
-        if (!atFront) break;
-        if (IsLoaded()) break;
+        if (!atFront) return;
+        if (IsLoaded()) return;
         (this->*mOpenState)();
     }
 }
@@ -574,8 +574,34 @@ void Movie::Impl::MovieClose() {
     mBink = NULL;
 }
 
-// TODO: full implementation. Stubs so SetPaused can link.
-void Movie::Impl::SharedFinishOpen(bool) {}
+void Movie::Impl::SharedFinishOpen(bool unpause) {
+    sActivePending--;
+    MILO_ASSERT(sActivePending >= 0, 0x282);
+    if (sActivePending <= 0) {
+        std::vector<Impl *> readyMovies;
+        std::vector<BINK *> readyBinks;
+        for (int i = 0; i < (int)sActiveMovies.size(); i++) {
+            Impl *cur = sActiveMovies[i];
+            if (cur->mMovieBuffers == NULL) {
+                readyMovies.push_back(cur);
+                readyBinks.push_back(cur->mBink);
+            }
+        }
+        MovieInternalBuffers *buffers = MovieInternalBuffers::New(readyBinks);
+        if (buffers != NULL) {
+            buffers->mPendingBlits = readyMovies.size();
+            for (int i = 0; i < (int)readyMovies.size(); i++) {
+                Impl *cur = readyMovies[i];
+                cur->mMovieBuffers = buffers;
+                cur->FinishOpen();
+            }
+        }
+        if (unpause && readyMovies.size() == 1) {
+            readyMovies[0]->SetPaused(false);
+        }
+    }
+}
+
 void Movie::Impl::SetRect() {}
 
 void Movie::Impl::Begin(

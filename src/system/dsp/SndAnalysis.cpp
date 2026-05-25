@@ -146,7 +146,7 @@ float RefinePeriod2(const float *buf, const float *autocorr, const float *dp, in
         // inner = sum_{j<half} buf[period+j] * buf[period+j+1]
         float inner = 0.0f;
         for (int j = 0; j < half; j++) {
-            inner += buf[period + j + 1] * buf[period + j];
+            inner += buf[period + j] * buf[period + j + 1];
         }
 
         float num = ((next_dp - inner) - v1v2) + v2;

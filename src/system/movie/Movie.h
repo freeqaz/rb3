@@ -19,6 +19,9 @@ struct MovieInternalBuffers {
     char mPadInner[0x1DC - 0x4 - 0x78]; // pad up to 0x1DC
     int mPendingBlits; // 0x1DC (incremented on async submit, decremented on completion)
     int mNextFrameIdx; // 0x1E0
+
+    // Defined in Movie_Wii.cpp. Takes vector by value (BinkRegisterFrameBuffers-friendly).
+    static MovieInternalBuffers *New(std::vector<BINK *>);
 };
 
 class Movie {
