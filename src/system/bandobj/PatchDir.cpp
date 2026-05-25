@@ -1,4 +1,5 @@
 #include "bandobj/PatchDir.h"
+#include "decomp.h"
 #include "math/Rand.h"
 #include "rndobj/Mat.h"
 #include "rndwii/Rnd.h"
@@ -62,7 +63,11 @@ void PatchSticker::FinishLoad() {
         RndBitmap *cur = &other;
         {
             RndBitmap *next;
-            while (true) {
+            goto mip_check;
+            do {
+                prev = cur;
+                cur = next;
+            mip_check:
                 next = cur->mMip;
                 if (!next)
                     break;
@@ -71,10 +76,7 @@ void PatchSticker::FinishLoad() {
                     minDim = next->mHeight;
                 if (minDim < 0x40)
                     break;
-                if (!(true)) break;
-                prev = cur;
-                cur = next;
-            }
+            } while (true);
         }
         if (prev)
             prev->DetachMip();
@@ -177,7 +179,8 @@ PatchSticker *PatchLayer::GetSticker(bool b) const {
         return sStickerOwner->GetSticker(mStickerCategory, mStickerIdx, b);
 }
 
-bool PatchLayer::HasSticker() const { return !mStickerCategory.Null(); }
+inline bool PatchLayer::HasSticker() const { return !mStickerCategory.Null(); }
+DECOMP_FORCEFUNC(PatchDir, const PatchLayer, HasSticker())
 
 void PatchLayer::SelectFX() { unk28 = TheTaskMgr.UISeconds() + 0.5f; }
 
