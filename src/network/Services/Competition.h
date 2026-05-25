@@ -7,6 +7,5 @@ namespace Quazal {
     public:
         Competition();
         virtual ~Competition();
-        virtual void Trace(unsigned int) const;
     };
 }

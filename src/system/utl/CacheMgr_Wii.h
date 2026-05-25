@@ -10,10 +10,6 @@ public:
     virtual void Poll();
     virtual bool SearchAsync(const char *, CacheID **);
     virtual bool
-    ShowUserSelectUIAsync(LocalUser *, unsigned long long, const char *, const char *, CacheID **);
-    virtual bool
-    CreateCacheIDFromDeviceID(unsigned int, const char *, const char *, CacheID **);
-    virtual bool
     CreateCacheID(const char *, const char *, const char *, const char *, const char *, int, CacheID **);
     virtual bool MountAsync(CacheID *, Cache **, Hmx::Object *);
     virtual bool UnmountAsync(Cache **, Hmx::Object *);

@@ -94,7 +94,6 @@ public:
     virtual void Restart(bool);
     virtual float GetNotesHitFraction(bool *) const;
     virtual void RemoteUpdateCrowd(float);
-    virtual void DynamicAddBeatmatch();
     virtual void PostDynamicAdd();
     virtual void Leave();
     virtual void SetTrack(int);

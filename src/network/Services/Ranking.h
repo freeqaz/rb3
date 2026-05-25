@@ -6,6 +6,5 @@ namespace Quazal {
     public:
         Ranking() {}
         virtual ~Ranking() {}
-        virtual void Trace(unsigned int) const;
     };
 }

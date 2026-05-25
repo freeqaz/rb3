@@ -57,7 +57,6 @@ public:
     virtual ~JoinResponseMsg() {}
     virtual void Save(BinStream &) const;
     virtual void Load(BinStream &);
-    virtual void Dispatch();
     virtual void Print(TextStream &) const;
     NETMSG_BYTECODE(JoinResponseMsg);
     NETMSG_NAME(JoinResponseMsg);
