@@ -49,12 +49,35 @@ static const unsigned int kNoThread = 0;
 // MILO_ASSERT stringifies #cond verbatim. mThreadId is unsigned int but
 // ::CurrentThreadId() returns OSThread*, so we wrap the call to insert the
 // cast at evaluation time while keeping the source text clean for #cond.
-#define CurrentThreadId() ((unsigned int) ::CurrentThreadId())
-// Same idea: the on-thread check matches across many functions when written as
-// a single assertion with its full expression in #cond, instead of expanded
-// imperatively. The wrapper compiles to the same logic as MainThread() &&
-// matching-thread short-circuit.
-#define ASSERT_MOVIE_THREAD(line) MILO_ASSERT(mThreadId == CurrentThreadId() || (mThreadId == kNoThread && MainThread()), line)
+// (Without this, source must write `(unsigned int)CurrentThreadId()`, which
+// pool-shifts the assert string compared to the target binary.)
+#define CurrentThreadId() ((unsigned int)::CurrentThreadId())
+
+// The on-thread check appears as imperative ladder code in target asm (one
+// outer if-test, then a MainThread() check), but the assertion FAIL path
+// stringifies the FULL logical expression. We reproduce both: the imperative
+// ladder lives in ASSERT_MOVIE_THREAD's body (computes `ok`), and the failure
+// path uses an explicit string literal that matches target's pool entry.
+#define MOVIE_THREAD_COND_STR \
+    "mThreadId == CurrentThreadId() || (mThreadId == kNoThread && MainThread())"
+#define ASSERT_MOVIE_THREAD(line)                                                          \
+    do {                                                                                   \
+        bool ok = true;                                                                    \
+        if (mThreadId != (unsigned int)OSGetCurrentThread()) {                             \
+            unsigned int tid = mThreadId;                                                  \
+            bool b = false;                                                                \
+            if (tid == kNoThread) {                                                        \
+                bool main = true;                                                          \
+                if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread())           \
+                    main = false;                                                          \
+                if (main) b = true;                                                        \
+            }                                                                              \
+            if (!b) ok = false;                                                            \
+        }                                                                                  \
+        (ok) || (TheDebugFailer                                                            \
+                 << (MakeString(kAssertStr, __FILE__, line, MOVIE_THREAD_COND_STR)),       \
+                 0);                                                                       \
+    } while (false)
 
 std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
 Movie::Impl *Movie::Impl::sAsyncMovie;
@@ -73,7 +96,7 @@ namespace {
 #pragma dont_inline on
     static void EndianSwapBuffer(void *buf, int size) {
         if ((size & 3) != 0) {
-            TheDebug.Fail(MakeString(kAssertStr, "Movie.cpp", 0xae, "size % sizeof(uint32) == 0"));
+            TheDebug.Fail(MakeString(kAssertStr, __FILE__, 0xae, "size % sizeof(uint32) == 0"));
         }
         char *p = (char *)buf;
         char *end = p + size;
