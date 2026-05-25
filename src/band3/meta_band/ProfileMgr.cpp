@@ -1191,6 +1191,11 @@ float ProfileMgr::GetExcessAudioLag() const {
 }
 END_FORCE_LOCAL_INLINE
 
+float ProfileMgr::GetSongToTaskMgrMs(LagContext lc) const {
+    float adjust = 0.0f;
+    return (mSongToTaskMgrMs - mInGameExtraVideoLatency) - adjust;
+}
+
 void ProfileMgr::SetExcessAudioLag(float lag) {
     SetSongToTaskMgrMsRaw(-(lag + GetSyncOffsetRaw() + mPlatformAudioLatency));
 }
