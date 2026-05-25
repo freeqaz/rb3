@@ -22,8 +22,9 @@ void VoiceBeat::Analyze(
     if (!mEnabled) return;
 
     if (ms != -1.0f) {
+        float mCountScaled = (float)mCount * 0.0625f;
         mRate = ((double)numSamples
-                 + (ms - ((float)(numSamples / 16) + (float)mCount * 0.0625f)) / 5.0)
+                 + (ms - ((float)(numSamples / 16) + mCountScaled)) / 5.0)
             / (double)numSamples;
     }
 
@@ -171,11 +172,11 @@ void VoiceBeat::Analyze(
             unk0 = newSpamAvg > k_thrSpam;
             unk1 = ratio > k_thrEnergy;
 
-            if ((float)sylDelta < 0.0f && (float)mSylDeltaPrev >= 0.0f) {
+            if (sylDelta < 0.0 && mSylDeltaPrev >= 0.0) {
                 static double k_thrFloor = 0.15;
                 double *floorPtr
                     = (k_thrFloor >= mFloorSigma) ? &k_thrFloor : &mFloorSigma;
-                if ((float)newSylY2 > (float)(4.0 * *floorPtr) && unk1 && unk0) {
+                if (newSylY2 > 4.0 * *floorPtr && unk1 && unk0) {
                     if (storeEvents) {
                         mPeaks.push_back((float)newSylY2);
                         mTimes.push_back(ms);
