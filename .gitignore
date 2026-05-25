@@ -52,6 +52,8 @@ decomp.db
 decomp.db-shm
 decomp.db-wal
 permuter_cache.db
+permuter_cache.db-shm
+permuter_cache.db-wal
 .objdiff_report_cache
 
 # Analysis output files (large, per-function dumps)
