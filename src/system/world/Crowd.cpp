@@ -337,22 +337,28 @@ void WorldCrowd::Draw3DChars() {
                     spXfm.m.z.z = placeXfm.m.z.z;
                     if (mRotate == 1) {
                         Transform &camXfm = RndCam::sCurrent->WorldXfm();
-                        Vector3 cross;
-                        cross.x = spXfm.m.z.y * camXfm.m.y.z;
-                        cross.y = spXfm.m.z.z * camXfm.m.y.x;
-                        cross.z = spXfm.m.z.x * camXfm.m.y.y;
-                        spXfm.m.x.x = cross.x - spXfm.m.z.z * camXfm.m.y.y;
-                        spXfm.m.x.y = cross.y - spXfm.m.z.x * camXfm.m.y.z;
-                        spXfm.m.x.z = cross.z - spXfm.m.z.y * camXfm.m.y.x;
+                        float cyx = camXfm.m.y.x;
+                        float xT7 = spXfm.m.z.y * cyx;
+                        float xT6 = spXfm.m.z.z * cyx;
+                        float cyy = camXfm.m.y.y;
+                        float xT0 = spXfm.m.z.z * cyy;
+                        float xT2 = spXfm.m.z.x * cyy;
+                        float xT1 = spXfm.m.z.x * camXfm.m.y.z;
+                        spXfm.m.x.x = spXfm.m.z.y * camXfm.m.y.z - xT0;
+                        spXfm.m.x.y = xT6 - xT1;
+                        spXfm.m.x.z = xT2 - xT7;
                     } else if (mRotate == 2) {
                         Transform &camXfm = RndCam::sCurrent->WorldXfm();
-                        Vector3 cross;
-                        cross.x = camXfm.m.y.y * spXfm.m.z.z;
-                        cross.y = camXfm.m.y.z * spXfm.m.z.x;
-                        cross.z = camXfm.m.y.x * spXfm.m.z.y;
-                        spXfm.m.x.x = cross.x - camXfm.m.y.z * spXfm.m.z.y;
-                        spXfm.m.x.y = cross.y - camXfm.m.y.x * spXfm.m.z.z;
-                        spXfm.m.x.z = cross.z - camXfm.m.y.y * spXfm.m.z.x;
+                        float czx_b = spXfm.m.z.x;
+                        float xT7 = camXfm.m.y.y * czx_b;
+                        float xT6 = camXfm.m.y.z * czx_b;
+                        float cyx_b = camXfm.m.y.x;
+                        float xT0 = camXfm.m.y.z * spXfm.m.z.y;
+                        float xT2 = cyx_b * spXfm.m.z.y;
+                        float xT1 = cyx_b * spXfm.m.z.z;
+                        spXfm.m.x.x = camXfm.m.y.y * spXfm.m.z.z - xT0;
+                        spXfm.m.x.y = xT6 - xT1;
+                        spXfm.m.x.z = xT2 - xT7;
                     } else {
                         Transform &focusXfm = mFocus->WorldXfm();
                         Vector3 fwd2d;
@@ -593,17 +599,19 @@ void WorldCrowd::SetFullness(float flatFullness, float charFullness) {
             if (instanceCount < targetInstances) {
                 int toMove = targetInstances - instanceCount;
                 std::list<RndMultiMesh::Instance>::iterator backIt = backup.begin();
+                std::list<RndMultiMesh::Instance>::iterator backBegin = backup.begin();
                 for (int i = 0; i < toMove; i++) {
                     ++backIt;
                 }
-                instances.splice(instances.end(), backup, backup.begin(), backIt);
+                instances.splice(instances.end(), backup, backBegin, backIt);
             } else if (targetInstances < instanceCount) {
                 int toRemove = instanceCount - targetInstances;
                 std::list<RndMultiMesh::Instance>::iterator instIt = instances.begin();
+                std::list<RndMultiMesh::Instance>::iterator instBegin = instances.begin();
                 for (int i = 0; i < toRemove; i++) {
                     ++instIt;
                 }
-                backup.splice(backup.end(), instances, instances.begin(), instIt);
+                backup.splice(backup.end(), instances, instBegin, instIt);
                 multiMesh->InvalidateProxies();
             }
             unsigned short totalChars3D = it->m3DCharsCreated.size();
