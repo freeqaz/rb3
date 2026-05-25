@@ -420,6 +420,27 @@ void CharKeyHandMidi::UnkeyFinger(CharIKFingers::FingerNum finger) {
     unk74++;
 }
 
+SAVE_OBJ(CharKeyHandMidi, 0x2E3)
+
+BEGIN_COPYS(CharKeyHandMidi)
+    COPY_SUPERCLASS(Hmx::Object)
+    COPY_SUPERCLASS(CharWeightable)
+    CREATE_COPY(CharKeyHandMidi)
+    BEGIN_COPYING_MEMBERS
+        COPY_MEMBER(mIKObject)
+        COPY_MEMBER(mFirstSpot)
+        COPY_MEMBER(mSecondSpot)
+        COPY_MEMBER(mIsRightHand)
+    END_COPYING_MEMBERS
+END_COPYS
+
+void CharKeyHandMidi::PollDeps(
+    std::list<Hmx::Object *> &changedBy, std::list<Hmx::Object *> &change
+) {
+    changedBy.push_back(mFirstSpot);
+    changedBy.push_back(mSecondSpot);
+}
+
 BEGIN_LOADS(CharKeyHandMidi)
     LOAD_REVS(bs)
     ASSERT_REVS(2, 0)
