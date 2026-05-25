@@ -249,20 +249,20 @@ void DrawAccessories<LensExtract>(
     RndMultiMesh *multiMesh = NULL;
     for (; it != spotEnd; ++it) {
         if (it->unk4->LensMesh() != NULL) {
-            RndMesh *disk = Spotlight::sDiskMesh;
+            RndMesh *mesh = Spotlight::sDiskMesh;
             RndMultiMesh *nextMesh;
-            if (disk != curDisk) {
-                nextMesh = disk->CreateMultiMesh();
+            if (mesh != curDisk) {
+                nextMesh = mesh->CreateMultiMesh();
             } else {
                 nextMesh = multiMesh;
             }
             const Transform &lensXfm = it->unk4->mLensXfm;
             bool visible;
-            if (!disk->Showing()) {
+            if (!mesh->Showing()) {
                 visible = false;
             } else {
-                MILO_ASSERT(disk, 0xB9);
-                Sphere sphere = disk->GetSphere();
+                MILO_ASSERT(mesh, 0xB9);
+                Sphere sphere = mesh->GetSphere();
                 if (sphere.radius > 0.0f) {
                     Multiply(sphere, lensXfm, sphere);
                     visible = !(sphere > RndCam::Current()->mWorldFrustum);
@@ -271,7 +271,7 @@ void DrawAccessories<LensExtract>(
                 }
             }
             if (visible) {
-                bool diskChanged = (curDisk != disk);
+                bool diskChanged = (curDisk != mesh);
                 RndMat *lensMat = it->unk4->LensMesh();
                 bool matChanged = (curMat != lensMat);
                 if ((diskChanged || matChanged) && multiMesh != NULL
@@ -280,8 +280,8 @@ void DrawAccessories<LensExtract>(
                     multiMesh->mInstances.resize(0, RndMultiMesh::Instance());
                 }
                 if (diskChanged) {
-                    curDisk = disk;
-                    nextMesh = disk->CreateMultiMesh();
+                    curDisk = mesh;
+                    nextMesh = mesh->CreateMultiMesh();
                 }
                 if (matChanged || diskChanged) {
                     curMat = lensMat;
