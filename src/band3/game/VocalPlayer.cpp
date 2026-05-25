@@ -46,6 +46,8 @@
 #include "world/Dir.h"
 #include "utl/Messages.h"
 #include "utl/Messages4.h"
+#include <algorithm>
+#include <functional>
 #include <utility>
 
 MicClientID sNullMicClientID;
@@ -579,37 +581,63 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             }
         }
 
-        // Find best part for this singer
-        VocalPart *pBestPart = 0;
-        float fBestPitchDistance = 0.0f;
-        float fBestScore = 0.0f;
-        FindBestPart(
-            pSinger->mFrameMicPitch,
-            fCompMS,
-            partsArray,
-            pSinger,
-            pBestPart,
-            fBestPitchDistance,
-            fBestScore
-        );
-        if (pBestPart) {
-            pBestPart->AddSingerCandidate(pSinger, fBestPitchDistance);
-            pSinger->unk74 = fBestScore;
-            if (mVocalOverlay) {
-                mVocalOverlay->AddPossiblePart(pSinger->mSingerIndex, pBestPart);
-            }
-        }
+    }
 
-        // Assign best singer candidate for each part, build scoredPartIndices
-        FOREACH (pIt2, partsArray) {
-            VocalPart *pPart = *pIt2;
-            Singer *pBestSinger = pPart->GetBestSingerCandidate();
-            if (pBestSinger) {
-                pBestSinger->SetAssignedPart(pPart->mPartIndex, mVocalPartBias);
-                pBestSinger->mFrameTargetPitch = pBestSinger->unk74;
-                scoredPartIndices.push_back(pPart->mPartIndex);
+    // Greedy matching: repeatedly assign singers to parts until no more matches
+    {
+        static std::mem_fun_t<bool, VocalPart> partPred(&VocalPart::HasBestSingerCandidate);
+        static std::const_mem_fun_t<bool, Singer> singerPred(&Singer::HasAssignedPart);
+        bool bAnyAssigned;
+        do {
+            bAnyAssigned = false;
+            // For each singer in singersArray, find best part
+            FOREACH (sIt2, singersArray) {
+                Singer *pSinger = *sIt2;
+                VocalPart *pBestPart = 0;
+                float fBestPitchDistance = 0.0f;
+                float fBestScore = 0.0f;
+                FindBestPart(
+                    pSinger->mFrameMicPitch,
+                    fCompMS,
+                    partsArray,
+                    pSinger,
+                    pBestPart,
+                    fBestPitchDistance,
+                    fBestScore
+                );
+                if (pBestPart) {
+                    pBestPart->AddSingerCandidate(pSinger, fBestPitchDistance);
+                    pSinger->unk74 = fBestScore;
+                    bAnyAssigned = true;
+                }
+                if (mVocalOverlay) {
+                    mVocalOverlay->AddPossiblePart(pSinger->mSingerIndex, pBestPart);
+                }
             }
-        }
+            if (!bAnyAssigned) break;
+
+            // Assign best singer candidate for each part, build scoredPartIndices
+            FOREACH (pIt2, partsArray) {
+                VocalPart *pPart = *pIt2;
+                Singer *pBestSinger = pPart->GetBestSingerCandidate();
+                if (pBestSinger) {
+                    pBestSinger->SetAssignedPart(pPart->mPartIndex, mVocalPartBias);
+                    pBestSinger->mFrameTargetPitch = pBestSinger->unk74;
+                    scoredPartIndices.push_back(pPart->mPartIndex);
+                }
+            }
+
+            // Remove matched parts (HasBestSingerCandidate) from partsArray
+            partsArray.erase(
+                std::remove_if(partsArray.begin(), partsArray.end(), partPred),
+                partsArray.end()
+            );
+            // Remove matched singers (HasAssignedPart) from singersArray
+            singersArray.erase(
+                std::remove_if(singersArray.begin(), singersArray.end(), singerPred),
+                singersArray.end()
+            );
+        } while (!partsArray.empty() && !singersArray.empty());
     }
 
     if (mVocalOverlay) {
