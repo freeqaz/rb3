@@ -33,7 +33,7 @@
             "band3/bandtrack/GemSmasher.cpp": "Matching",
             "band3/bandtrack/GemTrack.cpp": "NonMatching",
             "band3/bandtrack/GraphicsUtl.cpp": "Matching",
-            "band3/bandtrack/Lyric.cpp": "NonMatching",
+            "band3/bandtrack/Lyric.cpp": "Matching",
             "band3/bandtrack/NowBar.cpp": "Matching",
             "band3/bandtrack/Tail.cpp": "NonMatching",
             "band3/bandtrack/Track.cpp": "NonMatching",
@@ -43,7 +43,7 @@
             "band3/game/AccuracyTracker.cpp": "Matching",
             "band3/game/Band.cpp": "NonMatching",
             "band3/game/BandPerformer.cpp": "NonMatching",
-            "band3/game/BandUser.cpp": "NonMatching",
+            "band3/game/BandUser.cpp": "Matching",
             "band3/game/BandUserMgr.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (stringBase reloc offset noise)"
@@ -60,10 +60,7 @@
                 "status": "Equivalent",
                 "comment": "all funcs match (code byte gap is at-limit noise, 94.19%)"
             },
-            "band3/game/FreestylePanel.cpp": {
-                "status": "Equivalent",
-                "comment": "Poll fixed to 100% (condition inversion to early-return + while-loop restructure)"
-            },
+            "band3/game/FreestylePanel.cpp": "Matching",
             "band3/game/FretHand.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (offset folding addi+lwz vs lwz, same effective address)"
@@ -134,7 +131,7 @@
                 "comment": "cosmetic (f30/f31 callee-saved swap, prologue scheduling)"
             },
             "band3/game/TambourineManager.cpp": "NonMatching",
-            "band3/game/Tracker.cpp": "NonMatching",
+            "band3/game/Tracker.cpp": "Matching",
             "band3/game/TrackerDisplay.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (float-constant-pool form)"
@@ -152,7 +149,7 @@
                 "status": "LinkIssues",
                 "comment": "the bss meme strikes again"
             },
-            "band3/game/UITransitionNetMsgs.cpp": "NonMatching",
+            "band3/game/UITransitionNetMsgs.cpp": "Matching",
             "band3/game/VocalGuidePitch.cpp": "NonMatching",
             "band3/game/VocalOverlay.cpp": {
                 "status": "Equivalent",
@@ -172,11 +169,11 @@
             "band3/meta_band/AccomplishmentManager.cpp": "NonMatching",
             "band3/meta_band/AccomplishmentOneShot.cpp": "Matching",
             "band3/meta_band/AccomplishmentPanel.cpp": "NonMatching",
-            "band3/meta_band/AccomplishmentPlayerConditional.cpp": "NonMatching",
+            "band3/meta_band/AccomplishmentPlayerConditional.cpp": "Matching",
             "band3/meta_band/AccomplishmentProgress.cpp": "NonMatching",
             "band3/meta_band/AccomplishmentSetlist.cpp": "Matching",
             "band3/meta_band/AccomplishmentSongConditional.cpp": "Matching",
-            "band3/meta_band/AccomplishmentSongFilterConditional.cpp": "NonMatching",
+            "band3/meta_band/AccomplishmentSongFilterConditional.cpp": "Matching",
             "band3/meta_band/AccomplishmentSongListConditional.cpp": "Matching",
             "band3/meta_band/AccomplishmentTourConditional.cpp": {
                 "status": "Equivalent",
@@ -185,15 +182,12 @@
             "band3/meta_band/AccomplishmentTrainerCategoryConditional.cpp": "Matching",
             "band3/meta_band/AccomplishmentTrainerConditional.cpp": "Matching",
             "band3/meta_band/AccomplishmentTrainerListConditional.cpp": "Matching",
-            "band3/meta_band/AppInlineHelp.cpp": {
-                "status": "Equivalent",
-                "comment": "AppInlineHelp dtor ordering"
-            },
+            "band3/meta_band/AppInlineHelp.cpp": "Matching",
             "band3/meta_band/AppLabel.cpp": "NonMatching",
             "band3/meta_band/AppMiniLeaderboardDisplay.cpp": "NonMatching",
             "band3/meta_band/AppScoreDisplay.cpp": "Matching",
             "band3/meta_band/Asset.cpp": "Matching",
-            "band3/meta_band/AssetMgr.cpp": "NonMatching",
+            "band3/meta_band/AssetMgr.cpp": "Matching",
             "band3/meta_band/AssetOffer.cpp": "Matching",
             "band3/meta_band/AssetProvider.cpp": {
                 "status": "Equivalent",
@@ -202,7 +196,7 @@
             "band3/meta_band/AssetStore.cpp": "Matching",
             "band3/meta_band/AssetTypes.cpp": "Matching",
             "band3/meta_band/Award.cpp": "LinkIssues",
-            "band3/meta_band/BandMachine.cpp": "NonMatching",
+            "band3/meta_band/BandMachine.cpp": "Matching",
             "band3/meta_band/BandMachineMgr.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (r5/r6 volatile register swap)"
@@ -213,7 +207,7 @@
                 "status": "LinkIssues",
                 "comment": "bss meme"
             },
-            "band3/meta_band/BandProfile.cpp": "NonMatching",
+            "band3/meta_band/BandProfile.cpp": "Matching",
             "band3/meta_band/BandScreen.cpp": "Matching",
             "band3/meta_band/BandSongMetadata.cpp": "Matching",
             "band3/meta_band/BandSongMgr.cpp": "NonMatching",
@@ -236,7 +230,7 @@
                 "status": "LinkIssues",
                 "comment": "bss meme"
             },
-            "band3/meta_band/CampaignGoalsLeaderboardChoicePanel.cpp": "NonMatching",
+            "band3/meta_band/CampaignGoalsLeaderboardChoicePanel.cpp": "Matching",
             "band3/meta_band/CampaignGoalsLeaderboardPanel.cpp": {
                 "status": "LinkIssues",
                 "comment": "bss meme"
@@ -247,7 +241,7 @@
                 "comment": "cosmetic (instruction scheduling of 5 setup ops)"
             },
             "band3/meta_band/CampaignLevel.cpp": "Matching",
-            "band3/meta_band/CampaignSongInfoPanel.cpp": "NonMatching",
+            "band3/meta_band/CampaignSongInfoPanel.cpp": "Matching",
             "band3/meta_band/CharCache.cpp": "NonMatching",
             "band3/meta_band/CharData.cpp": {
                 "status": "LinkIssues",
@@ -289,10 +283,7 @@
                 "status": "Equivalent",
                 "comment": "SetSetlist 100% normalized (string-pool offset only)"
             },
-            "band3/meta_band/InputMgr.cpp": {
-                "status": "Equivalent",
-                "comment": "AllowRemoteExit now 100% (was stale 98.5% in report)"
-            },
+            "band3/meta_band/InputMgr.cpp": "Matching",
             "band3/meta_band/Instarank.cpp": "Matching",
             "band3/meta_band/InstrumentFinishProvider.cpp": "Matching",
             "band3/meta_band/InterstitialMgr.cpp": "Matching",
@@ -308,7 +299,7 @@
             },
             "band3/meta_band/LessonProvider.cpp": "Matching",
             "band3/meta_band/LicenseMgr.cpp": "LinkIssues",
-            "band3/meta_band/LockStepMgr.cpp": "NonMatching",
+            "band3/meta_band/LockStepMgr.cpp": "Matching",
             "band3/meta_band/MainHubMessageProvider.cpp": "Matching",
             "band3/meta_band/MainHubPanel.cpp": "NonMatching",
             "band3/meta_band/MakeupProvider.cpp": "Matching",
@@ -320,7 +311,7 @@
                 "status": "Equivalent",
                 "comment": "SetQuickFindingMode 100% normalized (__FUNCTION__ pool offset swap)"
             },
-            "band3/meta_band/MetaNetMsgs.cpp": "NonMatching",
+            "band3/meta_band/MetaNetMsgs.cpp": "Matching",
             "band3/meta_band/MetaPanel.cpp": "NonMatching",
             "band3/meta_band/MetaPerformer.cpp": "NonMatching",
             "band3/meta_band/ModifierMgr.cpp": "Matching",
@@ -336,7 +327,7 @@
                 "comment": "all funcs match (code byte gap is at-limit noise, 98.15%)"
             },
             "band3/meta_band/NewAssetProvider.cpp": "Matching",
-            "band3/meta_band/NewAwardPanel.cpp": "NonMatching",
+            "band3/meta_band/NewAwardPanel.cpp": "Matching",
             "band3/meta_band/NextSongPanel.cpp": "NonMatching",
             "band3/meta_band/OutfitProvider.cpp": {
                 "status": "Equivalent",
@@ -351,13 +342,13 @@
             "band3/meta_band/PassiveMessagesPanel.cpp": "Matching",
             "band3/meta_band/PassiveMessenger.cpp": "NonMatching",
             "band3/meta_band/PatchPanel.cpp": "NonMatching",
-            "band3/meta_band/PatchSelectPanel.cpp": "NonMatching",
+            "band3/meta_band/PatchSelectPanel.cpp": "Matching",
             "band3/meta_band/PerformanceData.cpp": "NonMatching",
             "band3/meta_band/PlayerLeaderboards.cpp": {
                 "status": "Equivalent",
                 "comment": "EnumerateFromID 92.9% \u2014 permuter-class register scheduling (r4 vs r7 for sPageSize addr). All other funcs 100%, data 100%."
             },
-            "band3/meta_band/PrefabMgr.cpp": "NonMatching",
+            "band3/meta_band/PrefabMgr.cpp": "Matching",
             "band3/meta_band/ProfileAssets.cpp": "Matching",
             "band3/meta_band/ProfileMgr.cpp": "NonMatching",
             "band3/meta_band/RetryAudioPanel.cpp": {
@@ -368,8 +359,8 @@
             "band3/meta_band/SaveLoadStatusPanel.cpp": "Matching",
             "band3/meta_band/SavedSetlist.cpp": "NonMatching",
             "band3/meta_band/SelectDifficultyPanel.cpp": "Matching",
-            "band3/meta_band/SessionMgr.cpp": "NonMatching",
-            "band3/meta_band/SessionUsersProviders.cpp": "NonMatching",
+            "band3/meta_band/SessionMgr.cpp": "Matching",
+            "band3/meta_band/SessionUsersProviders.cpp": "Matching",
             "band3/meta_band/SetlistMergePanel.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (stringBase reloc offset noise, callee-saved register swap)"
@@ -379,14 +370,14 @@
                 "status": "Equivalent",
                 "comment": "cosmetic (string-pool relocs, register swaps)"
             },
-            "band3/meta_band/SetlistToStorePanel.cpp": "NonMatching",
+            "band3/meta_band/SetlistToStorePanel.cpp": "Matching",
             "band3/meta_band/ShellInputInterceptor.cpp": "NonMatching",
             "band3/meta_band/SigninScreen.cpp": {
                 "status": "Equivalent",
                 "comment": "100% normalized (branch displacement, commutative)"
             },
             "band3/meta_band/SongRecord.cpp": "NonMatching",
-            "band3/meta_band/SongSelectPanel.cpp": "NonMatching",
+            "band3/meta_band/SongSelectPanel.cpp": "Matching",
             "band3/meta_band/SongSetlistProvider.cpp": "Matching",
             "band3/meta_band/SongSort.cpp": {
                 "status": "Equivalent",
@@ -406,16 +397,16 @@
                 "status": "Equivalent",
                 "comment": "cosmetic (callee-saved register swaps)"
             },
-            "band3/meta_band/SongSortByReview.cpp": "NonMatching",
+            "band3/meta_band/SongSortByReview.cpp": "Matching",
             "band3/meta_band/SongSortBySong.cpp": "Matching",
-            "band3/meta_band/SongSortByStars.cpp": "NonMatching",
+            "band3/meta_band/SongSortByStars.cpp": "Matching",
             "band3/meta_band/SongSortMgr.cpp": "NonMatching",
             "band3/meta_band/SongSortNode.cpp": "NonMatching",
             "band3/meta_band/SongStatusMgr.cpp": "NonMatching",
             "band3/meta_band/SongUpgradeMgr.cpp": "NonMatching",
             "band3/meta_band/StandIn.cpp": "Matching",
             "band3/meta_band/StandInProvider.cpp": "Matching",
-            "band3/meta_band/StoreInfoPanel.cpp": "NonMatching",
+            "band3/meta_band/StoreInfoPanel.cpp": "Matching",
             "band3/meta_band/StoreMainPanel.cpp": "NonMatching",
             "band3/meta_band/StoreMenuPanel.cpp": "NonMatching",
             "band3/meta_band/StoreMenuProvider.cpp": "NonMatching",
@@ -424,7 +415,7 @@
             "band3/meta_band/StoreRootPanel.cpp": "NonMatching",
             "band3/meta_band/StoreSongSortNode.cpp": "Matching",
             "band3/meta_band/TabInterfacePanel.cpp": "Matching",
-            "band3/meta_band/TexLoadPanel.cpp": "Equivalent",
+            "band3/meta_band/TexLoadPanel.cpp": "Matching",
             "band3/meta_band/TokenRedemptionPanel.cpp": "NonMatching",
             "band3/meta_band/TrainerProvider.cpp": "Matching",
             "band3/meta_band/TrainingMgr.cpp": "Matching",
@@ -440,17 +431,14 @@
             "band3/meta_band/Utl.cpp": "Matching",
             "band3/meta_band/ViewSetting.cpp": "NonMatching",
             "band3/meta_band/VoiceMgr.cpp": "Matching",
-            "band3/meta_band/VoiceoverPanel.cpp": "NonMatching",
+            "band3/meta_band/VoiceoverPanel.cpp": "Matching",
             "band3/meta_band/WaitingUserGate.cpp": "NonMatching",
             "band3/meta_band/WiiBufStreamMgr.cpp": "Matching",
             "band3/meta_band/WiiFriendsList.cpp": "MISSING",
             "band3/meta_band/WiiFriendsProvider.cpp": "MISSING",
             "band3/meta_band/WiiProfilePanel.cpp": "MISSING",
             "band3/net_band/ContextWrapper.cpp": "Matching",
-            "band3/net_band/DataResults.cpp": {
-                "status": "Equivalent",
-                "comment": "Update fixed to 100% (3 real logic bugs in JSON array indexing fixed: wrong field-names array, wrong type-string switch, wrong data-row iteration)"
-            },
+            "band3/net_band/DataResults.cpp": "Matching",
             "band3/net_band/EntityUploader_Wii.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (volatile register swaps)"
@@ -967,8 +955,8 @@
         "cflags": "system",
         "objects": {
             "system/bandobj/ArpeggioShape.cpp": "Matching",
-            "system/bandobj/Band.cpp": "Equivalent",
-            "system/bandobj/BandButton.cpp": "NonMatching",
+            "system/bandobj/Band.cpp": "Matching",
+            "system/bandobj/BandButton.cpp": "Matching",
             "system/bandobj/BandCamShot.cpp": "NonMatching",
             "system/bandobj/BandCharDesc.cpp": "NonMatching",
             "system/bandobj/BandCharacter.cpp": "NonMatching",
@@ -1004,11 +992,11 @@
                 "status": "Equivalent",
                 "comment": "EnterDir fixed to 99.7% AtLimit (hoisted const_cast to single local)"
             },
-            "system/bandobj/BandScoreboard.cpp": "NonMatching",
+            "system/bandobj/BandScoreboard.cpp": "Matching",
             "system/bandobj/BandSong.cpp": "Matching",
             "system/bandobj/BandSongPref.cpp": "Matching",
             "system/bandobj/BandStarDisplay.cpp": "NonMatching",
-            "system/bandobj/BandSwatch.cpp": "NonMatching",
+            "system/bandobj/BandSwatch.cpp": "Matching",
             "system/bandobj/BandTrack.cpp": "NonMatching",
             "system/bandobj/BandWardrobe.cpp": "NonMatching",
             "system/bandobj/CharDeform.cpp": "Matching",
@@ -1035,7 +1023,7 @@
                 "status": "Equivalent",
                 "comment": "DrawShowing 98.92% \u2014 AtLimit f0/f1 register swap in inlined ClampEq, classified unfixable. All other funcs 100%, data 100%."
             },
-            "system/bandobj/MicInputArrow.cpp": "NonMatching",
+            "system/bandobj/MicInputArrow.cpp": "Matching",
             "system/bandobj/MiniLeaderboardDisplay.cpp": "Matching",
             "system/bandobj/NoteTube.cpp": "NonMatching",
             "system/bandobj/OutfitConfig.cpp": "NonMatching",
@@ -1057,7 +1045,7 @@
             "system/bandobj/SongSectionController.cpp": "NonMatching",
             "system/bandobj/StarDisplay.cpp": "Matching",
             "system/bandobj/StreakMeter.cpp": "NonMatching",
-            "system/bandobj/TrackPanelDir.cpp": "NonMatching",
+            "system/bandobj/TrackPanelDir.cpp": "Matching",
             "system/bandobj/TrackPanelDirBase.cpp": {
                 "status": "Equivalent",
                 "comment": "cosmetic (register swap, string-pool form)"
@@ -1133,11 +1121,8 @@
             "system/beatmatch/VocalNoteList.cpp": "NonMatching",
             "system/char/Char.cpp": "NonMatching",
             "system/char/CharBlendBone.cpp": "Equivalent",
-            "system/char/CharBone.cpp": {
-                "status": "Equivalent",
-                "comment": "regswaps in standalone stlport functions"
-            },
-            "system/char/CharBoneDir.cpp": "NonMatching",
+            "system/char/CharBone.cpp": "Matching",
+            "system/char/CharBoneDir.cpp": "Matching",
             "system/char/CharBoneOffset.cpp": "Matching",
             "system/char/CharBoneTwist.cpp": "Equivalent",
             "system/char/CharBones.cpp": "NonMatching",
@@ -1297,7 +1282,7 @@
             "system/meta/SongPreview.cpp": "Matching",
             "system/meta/Sorting.cpp": "Matching",
             "system/meta/StoreArtLoaderPanel.cpp": "Matching",
-            "system/meta/StoreEnumeration.cpp": "NonMatching",
+            "system/meta/StoreEnumeration.cpp": "Matching",
             "system/meta/StoreOffer.cpp": "NonMatching",
             "system/meta/StorePackedMetadata.cpp": "NonMatching",
             "system/meta/StorePanel.cpp": "NonMatching",
@@ -1450,7 +1435,7 @@
             "system/rndobj/Font.cpp": "NonMatching",
             "system/rndobj/Fur.cpp": "Matching",
             "system/rndobj/Gen.cpp": "NonMatching",
-            "system/rndobj/Graph.cpp": "NonMatching",
+            "system/rndobj/Graph.cpp": "Matching",
             "system/rndobj/Group.cpp": {
                 "status": "Equivalent",
                 "comment": "CollideShowing 97.5% \u2014 AtLimit FP register-swap in inlined Interp. All other funcs 100%, data 100%."
@@ -1489,7 +1474,7 @@
             "system/rndobj/PropKeys.cpp": "NonMatching",
             "system/rndobj/Rnd.cpp": "NonMatching",
             "system/rndobj/ScreenMask.cpp": "NonMatching",
-            "system/rndobj/Set.cpp": "Equivalent",
+            "system/rndobj/Set.cpp": "Matching",
             "system/rndobj/ShaderOptions.cpp": "Matching",
             "system/rndobj/ShadowMap.cpp": "NonMatching",
             "system/rndobj/SIVideo.cpp": "Matching",
@@ -1606,7 +1591,7 @@
             "system/ui/LabelNumberTicker.cpp": "Matching",
             "system/ui/LabelShrinkWrapper.cpp": "Matching",
             "system/ui/LocalePanel.cpp": "LinkIssues",
-            "system/ui/PanelDir.cpp": "Equivalent",
+            "system/ui/PanelDir.cpp": "Matching",
             "system/ui/Screenshot.cpp": "Equivalent",
             "system/ui/ScrollSelect.cpp": "LinkIssues",
             "system/ui/UI.cpp": "NonMatching",
