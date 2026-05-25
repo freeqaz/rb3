@@ -1032,7 +1032,50 @@ void SongStatusMgr::PopulatePlayerScore(
     pscore.mStars = status->GetStars(ty, diff);
 }
 
-void SongStatusMgr::UploadDirtyScores() {}
+#pragma push
+#pragma pool_data off
+void SongStatusMgr::UploadDirtyScores() {
+    if (mUpdatingStatus) return;
+    if (!mLocalUser) return;
+    int padNum = mLocalUser->GetPadNum();
+    Server *server = TheNet.GetServer();
+    MILO_ASSERT(server, 0x7FE);
+    if (!server->GetPlayerID(padNum)) return;
+    if (!mCacheMgr.unk1f54) return;
+
+    for (int songIdx = 0; songIdx < 1000; songIdx++) {
+        int songID = mCacheMgr.GetSongID(songIdx);
+        if (songID == 0 || !mSongMgr->HasSong(songID)) continue;
+        SongStatus *status = mCacheMgr.GetSongStatusPtrForIndex(songIdx);
+        for (int scoreType = 0; scoreType < 11; scoreType++) {
+            for (int diff = 0; diff < 4; diff++) {
+                if (status->mSongData[scoreType][diff].mFlags & kSongStatusFlag_Dirty) {
+                    mUpdatingStatus = status;
+                    mUpdatingScoreType = (ScoreType)scoreType;
+                    mUpdatingDifficulty = (Difficulty)diff;
+                    static DataResultList tempResult;
+                    if (mSongMgr->GetShortNameFromSongID(status->mSongID, false).Null()) {
+                        static RockCentralOpCompleteMsg fakeRockCentralComplete(true, 0, DataNode(0));
+                        OnMsg(fakeRockCentralComplete);
+                    } else {
+                        unsigned short bandMask = (scoreType == kScoreBand)
+                            ? status->mBandScoreInstrumentMask
+                            : (1 << ScoreTypeToTrackType((ScoreType)scoreType));
+                        std::vector<PlayerScore> scores;
+                        PlayerScore score;
+                        PopulatePlayerScore(status, (ScoreType)scoreType, (Difficulty)diff, score);
+                        scores.push_back(score);
+                        TheRockCentral.RecordScore(
+                            status->mSongID, 0, scores, 0, bandMask, false, this, tempResult
+                        );
+                    }
+                    return;
+                }
+            }
+        }
+    }
+}
+#pragma pop
 
 DataNode SongStatusMgr::OnMsg(const RockCentralOpCompleteMsg &msg) {
     int arg2 = msg->Int(2);
