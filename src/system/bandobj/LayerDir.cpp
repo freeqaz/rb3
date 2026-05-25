@@ -158,38 +158,32 @@ DataNode LayerDir::RandomizeColors(DataArray *) {
 }
 
 void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
-    RndMat *mat = layer.mMat;
-    if (mat) {
+    if (layer.mMat) {
         if (layer.mActive) {
             if (layer.mAllowColor) {
                 if (useColorIdx) {
                     Hmx::Object *palette = layer.mColorPalette;
                     if (palette) {
-                        if (palette->Property(Symbol("colors"), true)->Array()->Size()
-                            > layer.mColorIdx) {
-                            int packed = palette->Property(Symbol("colors"), true)
-                                             ->Array()
-                                             ->Node(layer.mColorIdx)
-                                             .Int();
+                        DataArray *arr =
+                            palette->Property(Symbol("colors"), true)->Array();
+                        if (arr->Size() > layer.mColorIdx) {
+                            DataArray *arr2 =
+                                palette->Property(Symbol("colors"), true)->Array();
+                            int packed = arr2->Node(layer.mColorIdx).Int(arr2);
                             layer.mColor.Unpack(packed);
                         }
                     }
                 }
-                mat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
+                layer.mMat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
             }
             if (layer.mAllowAlpha) {
                 float a = layer.mAlpha * (layer.mAlphaMax - layer.mAlphaMin)
                     + layer.mAlphaMin;
-                mat->SetProperty(Symbol("alpha"), DataNode(a));
+                layer.mMat->SetProperty(Symbol("alpha"), DataNode(a));
             } else {
-                mat->SetProperty(Symbol("alpha"), DataNode(1.0f));
+                layer.mMat->SetProperty(Symbol("alpha"), DataNode(1.0f));
             }
-            if (layer.mProxy) {
-                FilePath fp(FilePath::sRoot.c_str(), layer.unk40.c_str());
-                layer.mProxy->SetProxyFile(fp, false);
-                layer.mProxy->SyncObjects();
-                layer.mProxy->SetFrame(mFrame, 1.0f);
-            } else {
+            if (!layer.mProxy) {
                 String png = layer.mBitmap + ".png";
                 String bmp = layer.mBitmap + ".bmp";
                 String normPng = layer.mBitmap + "_norm.png";
@@ -207,15 +201,20 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
                         || strcmp(name, normBmp.c_str()) == 0
                         || strcmp(name, specBmp.c_str()) == 0) {
                         FilePath bitmap(FilePath::sRoot.c_str(), it->c_str());
-                        mat->mDiffuseTex->SetBitmap(bitmap);
+                        layer.mMat->mDiffuseTex->SetBitmap(bitmap);
                         break;
                     }
                 }
+            } else {
+                FilePath fp(FilePath::sRoot.c_str(), layer.unk40.c_str());
+                layer.mProxy->SetProxyFile(fp, false);
+                layer.mProxy->Enter();
+                layer.mProxy->SetFrame(mFrame, 1.0f);
             }
         } else {
-            mat->SetProperty(Symbol("alpha"), DataNode(0.0f));
+            layer.mMat->SetProperty(Symbol("alpha"), DataNode(0.0f));
         }
-        const std::vector<ObjRef *> &refs = mat->Refs();
+        const std::vector<ObjRef *> &refs = layer.mMat->Refs();
         for (std::vector<ObjRef *>::const_iterator it = refs.end();
              it != refs.begin();) {
             --it;
