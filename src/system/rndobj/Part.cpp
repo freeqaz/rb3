@@ -1055,9 +1055,9 @@ void RndParticleSys::UpdateParticles() {
                     if (mSubSamples > 1) {
                         Vector3 vel;
                         if (!mMesh) {
-                            float half = 0.5f;
                             float pitchMid =
-                                LimitAng(mPitch.y - mPitch.x) * half + mPitch.x;
+                                LimitAng(mPitch.y - mPitch.x) * 0.5f + mPitch.x;
+                            float half = 0.5f;
                             float yawMid = LimitAng(mYaw.y - mYaw.x) * half + mYaw.x;
                             float speedMid = (mSpeed.y - mSpeed.x) * half + mSpeed.x;
                             float halfPi = 1.5707963705062866f;
