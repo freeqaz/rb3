@@ -170,7 +170,7 @@ void VocalTrack::UpdateTubePlates(
 }
 
 void VocalTrack::UpdateAllTubePlates(float f1) {
-    if (!mPlayer->InTambourinePhrase()) {
+    if (!mPlayer->IsNet()) {
         for (int i = 0; i < 3; i++) {
             UpdateTubePlates(mFrontTubePlates[i], f1, unk2a8, false);
             UpdateTubePlates(mBackTubePlates[i], f1, unk2a8, false);
