@@ -72,6 +72,7 @@ public:
         void SetVertsAndFaces(RndMesh *, bool);
         void ExtendTwin(const MeshVert *, Vector2 &, Vector2 &);
         void CopyDeformWeights(RndMeshDeform *, RndMeshDeform *);
+        bool SetSameVerts(WorkVerts *);
 
         int unk0;
         std::vector<MeshVert *> mMeshVerts; // 0x4

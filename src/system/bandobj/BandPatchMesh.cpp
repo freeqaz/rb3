@@ -116,9 +116,70 @@ struct SortByWorkVertZ {
     }
 };
 
+struct SortByPointer {
+    bool operator()(BandPatchMesh::MeshVert *v1, BandPatchMesh::MeshVert *v2) {
+        return v1->mVert < v2->mVert;
+    }
+};
+
 // Explicit specializations to avoid bool materialization in comparison loops,
 // so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
 namespace stlpmtx_std {
+
+// --- SortByPointer specializations ---
+
+template <>
+void __unguarded_linear_insert<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVert *, SortByPointer>(
+    BandPatchMesh::MeshVert **__last,
+    BandPatchMesh::MeshVert *__val,
+    SortByPointer
+) {
+    BandPatchMesh::MeshVert **__next = __last;
+    --__next;
+    while (__val->mVert < (*__next)->mVert) {
+        BandPatchMesh::MeshVert *__tmp = *__next;
+        *__last = __tmp;
+        __last = __next;
+        --__next;
+    }
+    *__last = __val;
+}
+
+template <>
+void __adjust_heap<BandPatchMesh::MeshVert **, long, BandPatchMesh::MeshVert *, SortByPointer>(
+    BandPatchMesh::MeshVert **__first,
+    long __holeIndex,
+    long __len,
+    BandPatchMesh::MeshVert *__val,
+    SortByPointer
+) {
+    long __topIndex = __holeIndex;
+    long __secondChild = 2 * __holeIndex + 2;
+    while (__secondChild < __len) {
+        if ((*(__first + __secondChild))->mVert < (*(__first + (__secondChild - 1)))->mVert)
+            __secondChild--;
+        *(__first + __holeIndex) = *(__first + __secondChild);
+        __holeIndex = __secondChild;
+        __secondChild = 2 * (__secondChild + 1);
+    }
+    if (__secondChild == __len) {
+        *(__first + __holeIndex) = *(__first + (__secondChild - 1));
+        __holeIndex = __secondChild - 1;
+    }
+    // inline __push_heap with SortByPointer comparator
+    long __parent = (__holeIndex - 1) / 2;
+    while (
+        __holeIndex > __topIndex
+        && (*(__first + __parent))->mVert < __val->mVert
+    ) {
+        *(__first + __holeIndex) = *(__first + __parent);
+        __holeIndex = __parent;
+        __parent = (__holeIndex - 1) / 2;
+    }
+    *(__first + __holeIndex) = __val;
+}
+
+// --- SortByWorkVertZ specializations ---
 
 template <>
 BandPatchMesh::MeshVert **
@@ -487,12 +548,6 @@ void BandPatchMesh::WorkVerts::Project() {
         SpreadEdges(i);
 }
 
-struct SortByPointer {
-    bool operator()(BandPatchMesh::MeshVert *v1, BandPatchMesh::MeshVert *v2) {
-        return v1->mVert < v2->mVert;
-    }
-};
-
 void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
     std::sort(unk10.begin(), unk10.end(), SortByPointer());
     for (int i = 0; i < unk10.size(); i++) {
@@ -532,6 +587,65 @@ void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
             mesh->Faces()[i][j] = mMeshVerts[myface[j]]->unk24;
         }
     }
+}
+
+bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
+    int start = 0;
+    int end = 0;
+    for (int i = 0; i < other->unk10.size(); i++) {
+        MeshVert *mv = other->unk10[i];
+        int otherIdx = mv->mVert - &other->mMesh->Verts(0);
+        if (mv->unk28 == otherIdx) {
+            float mvz = mv->mVert->pos.z;
+            float lo = mvz - 0.1f;
+            float hi = mvz + 0.1f;
+            int size = unk18.size();
+            while (start < size && unk18[start]->pos.z < lo)
+                start++;
+            if (end < start)
+                end = start;
+            while (end < size && unk18[end]->pos.z < hi)
+                end++;
+            for (int k = start; k < end; k++) {
+                RndMesh::Vert *v = unk18[k];
+                float dx = mv->mVert->pos.x - v->pos.x;
+                float dy = mv->mVert->pos.y - v->pos.y;
+                float dz = mvz - v->pos.z;
+                if (dx * dx + dy * dy + dz * dz < 0.01f) {
+                    mv->unk27 = 1;
+                    if (mMeshVerts.empty()) {
+                        SetMeshVerts();
+                    }
+                    int idx = unk18[k] - &mMesh->Verts(0);
+                    SetMeshVertAndTwins(idx, mv);
+                    mMeshVerts[idx]->unk27 = 1;
+                    break;
+                }
+            }
+        }
+    }
+    int n10 = unk10.size();
+    for (int i = 0; i < n10; i++) {
+        MeshVert *mv = unk10[i];
+        int vIdx = mv->mVert - &mMesh->Verts(0);
+        unsigned short *facePtr = (unsigned short *)((char *)mv + 0x32);
+        for (int j = 0; j < mv->unk30; j++) {
+            unsigned short faceIdx = facePtr[j];
+            RndMesh::Face &face = mMesh->Faces()[faceIdx];
+            unsigned short prev = face.v3;
+            for (int z = 0; z < 3; z++) {
+                if ((int)face[z] == vIdx) {
+                    MeshVert *partner = mMeshVerts[prev];
+                    if (partner->mVert) {
+                        AddEdge(partner, mv);
+                    }
+                    break;
+                }
+                prev = face[z];
+            }
+        }
+    }
+    return !unk10.empty();
 }
 
 void BandPatchMesh::WorkVerts::CopyDeformWeights(RndMeshDeform *m1, RndMeshDeform *md) {
