@@ -1,5 +1,8 @@
 #include "bandobj/OutfitConfig.h"
 #include "bandobj/BandCharacter.h"
+#include "bandobj/BandHeadShaper.h"
+#include "char/CharClip.h"
+#include "char/CharMeshCacheMgr.h"
 #include "decomp.h"
 #include "math/Rand.h"
 #include "rndobj/Cam.h"
@@ -828,6 +831,25 @@ void OutfitConfig::ApplyAO(SyncMeshCB *mesh) {
     }
     for (int i = 0; i < mPiercings.size(); i++) {
         mPiercings[i].Deform(mesh);
+    }
+}
+
+void OutfitConfig::PoseBones() {
+    Symbol gender(strstr(Dir()->GetPathName(), "female") ? "female" : "male");
+    CharClip *clip = BandCharDesc::GetDeformClip(gender);
+    if (clip) {
+        clip->PoseMeshes(Dir(), clip->mBeatTrack.front().value);
+    }
+    RndMesh *headMesh =
+        dynamic_cast<RndMesh *>(Dir()->FindObject("head.mesh", false));
+    if (headMesh) {
+        BandHeadShaper shaper;
+        CharMeshCacheMgr cacheMgr;
+        Symbol gender2(strstr(Dir()->GetPathName(), "female") ? "female" : "male");
+        if (shaper.Start(Dir(), gender2, headMesh, &cacheMgr, true)) {
+            BandCharDesc::Head head;
+            head.SetShape(shaper);
+        }
     }
 }
 

@@ -106,6 +106,7 @@ public:
     int NumIndices(int) const;
     void SetSkinTextures();
     bool InMilo();
+    void PoseBones();
 
     static RndMat *sMat;
     static RndCam *sCam;
