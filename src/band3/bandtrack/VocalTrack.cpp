@@ -1218,13 +1218,12 @@ void VocalTrack::UpdateScrolling(float ms) {
     if (rangeDelta < 0.0f)
         rangeDelta = -rangeDelta;
     if (rangeDelta > 0.1f) {
-        mNextScrollNote[0] = 0;
-        mNextDeployZone[0] = 0;
-        mCurLyricPhrase[0] = 0;
-        mNextScrollNote[1] = 0;
-        mNextDeployZone[1] = 0;
-        mCurLyricPhrase[1] = 0;
-        mNextScrollNote[2] = 0;
+        for (int p = 0; p < 3; p++) {
+            mNextScrollNote[p] = 0;
+            if (p < 2)
+                mNextDeployZone[p] = 0;
+            mCurLyricPhrase[p < 2 ? p : 0] = 0;
+        }
         ResetAllTubePlates();
         ClearLyrics();
     }
