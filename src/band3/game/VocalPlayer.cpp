@@ -414,10 +414,10 @@ void VocalPlayer::SendVocalState(float f1) {
     std::vector<int> boolsToPack(mSingers.size());
     FOREACH (it, mSingers) {
         Singer *cur = *it;
+        float f10 = cur->GetFrameMicPitch();
         float f9 = Clamp<float>(
             -1, 1, (cur->mFrameMicPitch - cur->mFrameTargetPitch) / mMaxDetune
         );
-        float f10 = cur->GetFrameMicPitch();
         moreFsToPack[cur->GetSingerIndex()] = f9;
         boolsToPack[cur->GetSingerIndex()] = f10 == 0;
     }
