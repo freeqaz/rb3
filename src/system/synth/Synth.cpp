@@ -226,10 +226,7 @@ DECOMP_FORCEACTIVE(
     "sample"
 )
 
-#pragma push
-#pragma dont_inline on
-DECOMP_FORCEFUNC(Synth, Synth, GetNumMics())
-#pragma pop
+int Synth::GetNumMics() const { return mNumMics; }
 
 void Synth::StopPlaybackAllMics() {
     MicManagerInterface *micInterface = mMicClientMapper->mMicManager;
