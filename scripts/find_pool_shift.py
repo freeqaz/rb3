@@ -45,6 +45,15 @@ SKIP_PREFIXES = (
     "main/network/",
 )
 
+# TUs where the pool-shift signal is real but NOT source-fixable. Documented
+# negative results — keep out of dispatched waves unless you have new info.
+SKIP_UNITS = {
+    # Target pool contains "false" + "a->Size() == 10" with zero .text refs —
+    # DCE'd asserts from a build-flag-conditional path absent in our build.
+    # Two failed waves (2026-05-25). See feedback_milo_assert_pool_shift.md.
+    "main/system/bandobj/PatchDir",
+}
+
 
 def is_pool_symbol(value: str) -> bool:
     return value.startswith(POOL_SYMBOL_PREFIXES)
@@ -130,6 +139,8 @@ def gather_targets(
     for unit in report.get("units", []):
         name = unit.get("name", "")
         if any(name.startswith(p) for p in SKIP_PREFIXES):
+            continue
+        if name in SKIP_UNITS:
             continue
         if name_filter and name_filter not in name:
             continue
