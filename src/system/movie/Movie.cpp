@@ -4,25 +4,49 @@
 #include "obj/DataFunc.h"
 #include "obj/ObjMacros.h"
 #include "obj/Task.h"
+#include "os/BlockMgr.h"
 #include "os/CritSec.h"
 #include "os/Debug.h"
+#include "os/Endian.h"
+#include "os/File.h"
 #include "os/OSFuncs.h"
 #include "os/System.h"
 #include "os/Timer.h"
+#include "utl/BinkIntegration.h"
+#include "utl/Loader.h"
 #include "utl/MemMgr.h"
+#include "utl/Symbols3.h"
+#include "utl/Symbols4.h"
 #include <list>
 #include <vector>
 
 extern "C" {
     void BinkSetMemory(void *(*)(unsigned int), void (*)(void *));
+    BINK *BinkOpen(const char *, unsigned int);
+    void BinkClose(BINK *);
+    void BinkDoFrame(BINK *);
+    void BinkNextFrame(BINK *);
+    int BinkWait(BINK *);
+    int BinkShouldSkip(BINK *);
+    char *BinkGetError();
+    void BinkSetSoundOnOff(BINK *, int);
+    void BinkGetSummary(BINK *, void *);
+    void BinkSetSoundTrack(int, int *);
+    void BinkGetFrameBuffersInfo(BINK *, BINKFRAMEBUFFERS *);
+    void BinkRegisterFrameBuffers(BINK *, BINKFRAMEBUFFERS *);
+    void BinkPause(BINK *, int);
 }
 
+extern int kNoHandle;
 int gBinkCore0 = -1;
 int gBinkCore1 = -1;
 
 static const unsigned int kNoThread = 0;
 
 std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
+Movie::Impl *Movie::Impl::sAsyncMovie;
+int Movie::Impl::sActivePending;
+Movie::Impl *Movie::Impl::sNextMovie;
 
 namespace {
     CriticalSection gMovieCrit;
@@ -31,6 +55,16 @@ namespace {
 
     void *RadAlloc(unsigned int size) { return _MemAlloc(size, 0x80); }
     void RadFree(void *p) { _MemFree(p); }
+    static void EndianSwapBuffer(void *buf, int len) {
+        MILO_ASSERT((len & 3) == 0, 0xae);
+        unsigned int *p = (unsigned int *)buf;
+        unsigned int *end = p + (len / 4);
+        while (p < end) {
+            unsigned int *cur = p;
+            p++;
+            EndianSwapEq(*cur);
+        }
+    }
 }
 
 static DataNode OnMovieSetTrack(DataArray *arr) {
@@ -201,7 +235,7 @@ float Movie::Impl::MsPerFrame() const {
     if (mBink != NULL) {
         ms = 1000.0f * (float)mBink->FrameRateDiv / (float)mBink->FrameRate;
     } else {
-        ms = 1000.0f;
+        ms = 0.0f;
     }
     return ms;
 }
@@ -219,7 +253,6 @@ int Movie::Impl::NextFrame() {
         if (!b) ok = false;
     }
     MILO_ASSERT(ok, 0x2D0);
-    extern void BinkNextFrame(HBINK);
     BinkNextFrame(mBink);
     return 0;
 }
@@ -297,4 +330,170 @@ bool Movie::Impl::IsLoading() const {
     }
     MILO_ASSERT(ok, 0x160);
     return mLoader != NULL || mLoader2 != NULL;
+}
+
+Movie::Impl::Impl()
+    : mLoader(0), mLoader2(0), mFilename(), mBink(0), mPreloadFlag(false),
+      mPreloadBuf(0), mPreloadBufLen(0), mLoop(false), mSoundEnabled(false),
+      mStretchToFit(false), mAspect(0.0f), mRectX1(0.0f), mRectX2(0.0f),
+      mRectY1(0.0f), mRectY2(0.0f), mWidth(0), mHeight(0), mPaused(false),
+      mTimeCallback(0), mCurFrame(0), mNextFrame(0),
+      mBinkHandle(kNoHandle), mLoading(false), mMidFrame(false),
+      mThreadId((unsigned int)gMainThreadID), mForceTrack(0),
+      mMovieBuffers(0) {
+    // Set time callback if is_timed_movie is configured
+    DataArray *cfg = SystemConfig(movie, is_timed_movie);
+    DataNode result = cfg->ExecuteScript(1, 0, 0, 1);
+    bool timed = result != DataNode(0);
+    if (timed) {
+        mTimeCallback = TaskMgrDeltaSeconds;
+    }
+    // Check that we're on the appropriate thread
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x1C8);
+}
+
+Movie::Impl::~Impl() {
+    if (this == 0) return;
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x1CD);
+    End();
+    if (mDiscContentionMap.size() != 0) {
+        mDiscContentionMap.clear();
+    }
+}
+
+bool Movie::Impl::Ready() const {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x1D5);
+    if (mLoader != 0) {
+        return mLoader->IsLoaded();
+    } else if (mLoader2 != 0) {
+        return mLoader2->IsLoaded();
+    } else {
+        return true;
+    }
+}
+
+bool Movie::Impl::MovieLoader::IsLoaded() const {
+    return mOpenState == &MovieLoader::DoneLoading;
+}
+
+const char *Movie::Impl::MovieLoader::StateName() const {
+    return "MovieLoader";
+}
+
+void Movie::Impl::MovieLoader::PollLoading() {
+    (this->*mOpenState)();
+    while (!TheLoadMgr.CheckSplit()) {
+        Loader *front = TheLoadMgr.GetFirstLoading();
+        bool atFront;
+        if (front == 0) {
+            atFront = (this == 0);
+        } else {
+            atFront = (front == this);
+        }
+        if (!atFront) break;
+        if (IsLoaded()) break;
+        (this->*mOpenState)();
+    }
+}
+
+void Movie::Impl::MovieLoader::OpenFile() {}
+void Movie::Impl::MovieLoader::LoadFile() {}
+void Movie::Impl::MovieLoader::DoneLoading() {}
+
+void Movie::Impl::BeginFrame() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x370);
+    sAsyncMovie = this;
+    mMidFrame = true;
+    MovieInternalBuffers *bufs = mMovieBuffers;
+    mCurFrame = (bufs->mBuffers.FrameNum + 1) % bufs->mBuffers.TotalFrames;
+    mNextFrame = (int)(bufs->mNextFrameIdx + 1) % (int)bufs->mBuffers.TotalFrames;
+}
+
+void Movie::Impl::EndFrame() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x38F);
+    if (mMidFrame) {
+        sAsyncMovie = NULL;
+        mMidFrame = false;
+        mMovieBuffers->mNextFrameIdx++;
+        if (mMovieBuffers->mNextFrameIdx >= (int)mMovieBuffers->mBuffers.TotalFrames) {
+            mMovieBuffers->mNextFrameIdx = 0;
+        }
+    } else {
+        MILO_WARN("mMidFrame");
+    }
+}
+
+// TODO: full implementation. Stub so ~Impl can link.
+void Movie::Impl::End() {
+    bool ok = true;
+    if (mThreadId != (unsigned int)OSGetCurrentThread()) {
+        unsigned int tid = mThreadId;
+        bool b = false;
+        if (tid == kNoThread) {
+            bool main = true;
+            if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread()) main = false;
+            if (main) b = true;
+        }
+        if (!b) ok = false;
+    }
+    MILO_ASSERT(ok, 0x498);
+    if (mLoading) {
+        mLoading = false;
+        SharedFinishOpen(false);
+    }
 }

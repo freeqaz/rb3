@@ -1,31 +1,60 @@
 #pragma once
 
 #include "utl/BinStream.h"
+#include "utl/BINK.h"
+#include "utl/FilePath.h"
+#include "utl/Loader.h"
+#include "utl/Str.h"
+#include "os/Timer.h"
 #include <list>
+#include <map>
 #include <vector>
 
-// Minimal Bink handle stub for matching the Wii target.
-struct HBINK_t {
-    char pad0[0x8];
-    unsigned int Frames; // 0x08 (NumFrames)
-    unsigned int FrameNum; // 0x0C (1-based current frame)
-    char pad10[0x4];
-    unsigned int FrameRate; // 0x14
-    unsigned int FrameRateDiv; // 0x18
+// Wii-specific Bink frame-buffer wrapper (defined in Movie_Wii.cpp).
+// Layout exposed here so Movie.cpp can poke the fields used by Begin/EndFrame.
+struct MovieInternalBuffers {
+    void *mUnk0; // 0x00
+    BINKFRAMEBUFFERS mBuffers; // 0x04 (TotalFrames at 0x04, FrameNum at 0x18)
+    char mPadInner[0x1DC - 0x4 - 0x78]; // pad up to 0x1DC
+    int mPendingBlits; // 0x1DC (incremented on async submit, decremented on completion)
+    int mNextFrameIdx; // 0x1E0
 };
-typedef HBINK_t *HBINK;
 
 class Movie {
 public:
     class Impl {
     public:
-        class MovieLoader;
+        class MovieLoader : public Loader {
+        public:
+            MovieLoader(const FilePath &, Movie::Impl *);
+            virtual ~MovieLoader();
+            virtual const char *DebugText() { return Loader::DebugText(); }
+            virtual bool IsLoaded() const;
+            virtual const char *StateName() const;
+            virtual void PollLoading();
+
+            void OpenFile();
+            void LoadFile();
+            void DoneLoading();
+
+            typedef void (MovieLoader::*StateFunc)();
+
+            int mState; // 0x18 (state index)
+            StateFunc mOpenState; // 0x1C
+            StateFunc mLoadState; // 0x20
+            StateFunc mDoneState; // 0x24
+            char mBuffer[0x20]; // 0x28 (read buffer)
+            Movie::Impl *mImpl; // 0x48
+        };
 
         Impl();
         ~Impl();
         static void Init();
         static void PlatformInit();
         static std::vector<Impl *> sActiveMovies;
+        static Impl *sAsyncMovie;
+        static int sActivePending;
+        static Impl *sNextMovie;
         void End();
         bool IsOpen() const;
         bool IsLoading() const;
@@ -49,39 +78,51 @@ public:
         int MovieOpen(const char *, unsigned int);
         bool PlatformCacheFile(const char *);
         int NextFrame();
+        void DiscContentionCheck(Loader *);
+        void DiscContentionPublish();
+        void SharedFinishOpen(bool);
+        void FinishOpen();
+        void SetRect();
+        void DoFrame();
+        void BeginFrame();
+        void EndFrame();
 
-        // Layout reverse-engineered from compiled binary (m2c struct dump).
+        // Layout from binary analysis
         MovieLoader *mLoader; // 0x00
         MovieLoader *mLoader2; // 0x04
-        char mFilenamePad[0xC]; // 0x08 (String, 12 bytes)
-        HBINK mBink; // 0x14 (bink handle)
-        bool mPreloadFlag; // 0x18
+        String mFilename; // 0x08 (12 bytes)
+        BINK *mBink; // 0x14
+        bool mPreloadFlag; // 0x18 (is preloaded)
         char pad19[3];
-        int mUnk1C; // 0x1C
-        char pad20[4];
-        bool mUnk24; // 0x24
-        bool mUnk25; // 0x25
-        bool mUnk26; // 0x26
+        char *mPreloadBuf; // 0x1C
+        int mPreloadBufLen; // 0x20
+        bool mLoop; // 0x24
+        bool mSoundEnabled; // 0x25
+        bool mStretchToFit; // 0x26
         char pad27[1];
         float mAspect; // 0x28
-        char pad2C[0x10]; // 0x2C
+        float mRectX1; // 0x2C
+        float mRectX2; // 0x30
+        float mRectY1; // 0x34
+        float mRectY2; // 0x38
         int mWidth; // 0x3C
         int mHeight; // 0x40
         bool mPaused; // 0x44
         char pad45[3];
-        char mTimerPad[0x30]; // 0x48 Timer
-        char pad78[0x30];
+        Timer mPollTimer; // 0x48 (0x30 bytes)
+        Timer mFrameTimer; // 0x78 (0x30 bytes)
         float (*mTimeCallback)(); // 0xA8
-        char padAC[8];
+        int mCurFrame; // 0xAC
+        int mNextFrame; // 0xB0
         int mBinkHandle; // 0xB4
-        char padB8[0x18];
-        bool mUnkD0; // 0xD0
-        char padD1[1];
-        bool mUnkD2; // 0xD2
+        std::map<void *, String> mDiscContentionMap; // 0xB8 (0x18 bytes for _Rb_tree)
+        bool mLoading; // 0xD0
+        bool mMidFrame; // 0xD1
+        bool mIsCachedStream; // 0xD2
         char padD3[1];
         unsigned int mThreadId; // 0xD4
-        char padD8[4]; // 0xD8
-        int mForceTrack; // 0xDC
+        int mForceTrack; // 0xD8 (sound track index)
+        MovieInternalBuffers *mMovieBuffers; // 0xDC
     };
 
     Movie();
