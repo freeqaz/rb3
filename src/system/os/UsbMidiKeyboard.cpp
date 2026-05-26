@@ -61,7 +61,7 @@ void UsbMidiKeyboard::Terminate() {
 
 void UsbMidiKeyboard::Poll() {
     if (!gUseMidiPort && TheKeyboard) {
-        for (int i = 0; 4 > i; i++) {
+        for (int i = 0; i < 4; i++) {
             JoypadType ty = JoypadGetPadData(i)->mType;
             if (ty == kJoypadXboxMidiBoxKeyboard || ty == kJoypadPs3MidiBoxKeyboard
                 || ty == kJoypadWiiMidiBoxKeyboard || ty == kJoypadXboxKeytar
