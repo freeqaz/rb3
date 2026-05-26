@@ -927,13 +927,14 @@ bool BandCharacter::IsLoading() {
 
 void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     bool b4 = false;
-    if (!mInCloset) {
+    bool &_ref0 = mInCloset;
+    if (!_ref0) {
         if (b2 || (unk224 & 7))
             b4 = true;
     }
-    bool bvar1 = mInCloset;
     unk5a1 = b4;
-    mInCloset = b2;
+    bool bvar1 = _ref0;
+    _ref0 = b2;
     if (bvar1 && !b2)
         b3 = true;
     if (!IsLoading() || !unk6bd || b3) {
@@ -943,7 +944,7 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
         unk6bd = b4;
     }
 
-    if (!mFileMerger->StartLoad(b1) && (mInCloset || (bvar1 && !mInCloset))) {
+    if (!mFileMerger->StartLoad(b1) && (_ref0 || (bvar1 && !_ref0))) {
         mFileMerger->Select("blank", FilePath(""), true);
         mFileMerger->StartLoad(b1);
     }
