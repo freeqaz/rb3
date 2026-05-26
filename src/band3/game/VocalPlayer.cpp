@@ -867,7 +867,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     TheGameMicManager->SetOverdriveEffectEnable(IsDeployingBandEnergy());
     if (IsDeployingBandEnergy()) {
         TheGameMicManager->Poll(
-            (float)TheTempoMap->GetTempoInMicroseconds((int)pos.mTotalTick)
+            TheTempoMap->GetTempo((int)pos.mTotalTick)
         );
     }
 

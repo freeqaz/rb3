@@ -1082,7 +1082,7 @@ void GemPlayer::Poll(float ms, const SongPos &pos) {
         int tick = (int)pos.mTotalTick;
         float beat;
         float beatPhase;
-        float tempo = 60000.0f / TheTempoMap->GetTempoBPM(tick);
+        float tempo = 60000.0f / TheTempoMap->GetTempo(tick);
 
         if (mGuitarFx && !TheGame->mProperties.mDisableGuitarFx) {
             SetGuitarFx();
