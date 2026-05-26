@@ -445,7 +445,7 @@ found:
 
 void VocalNoteList::CapLastFreestyleSection(float ms) {
     while (!mFreestyleSections.empty() && mFreestyleSections.back().first >= ms) {
-        mFreestyleSections.erase(mFreestyleSections.end() - 1);
+        mFreestyleSections.erase(mFreestyleSections.end() - 1, mFreestyleSections.end());
     }
     if (!mFreestyleSections.empty() && mFreestyleSections.back().second > ms) {
         mFreestyleSections.back().second = ms;
