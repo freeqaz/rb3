@@ -44,7 +44,47 @@
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
-DECOMP_FORCEACTIVE(AppLabel, "%s) %s")
+DECOMP_FORCEACTIVE(
+    AppLabel,
+    "%s) %s",
+    "heading",
+    "slot_heading",
+    "slot_left",
+    "slot_right",
+    "slot_centered",
+    "AppLabel.cpp",
+    "profile",
+    "<alt>%s</alt> %s",
+    "%s %s",
+    "ssn",
+    "%i (%i)",
+    "p",
+    "Could not set user name, unknown class",
+    "",
+    "pProfile",
+    "pMachineMgr",
+    "<alt>%s</alt> %s (%s %s)",
+    "panel",
+    "practice_mbt",
+    "%s (%d:%d:%d)",
+    "!e->mOffer",
+    "bsp",
+    "pUser",
+    "pitch %d doesn't map to a white key",
+    "linking code is not 10 characters!\n",
+    "linking code has spaces!\n",
+    "setting",
+    "%s",
+    "%s%s",
+    "smp",
+    "store_browser_panel",
+    "sbp",
+    "%s::%s",
+    "Bad ScoreType in AppLabel::SetBattleInstrumentString!",
+    "setlist",
+    "ratingIcons",
+    "%s(%d): %s unhandled msg: %s"
+)
 
 AppLabel::~AppLabel() {}
 
