@@ -1315,7 +1315,7 @@ void CamShotCrowd::Load(BinStream &bs) {
     bs >> num;
     if (mCrowd && num != mCrowd->GetModifyStamp())
         unk10.clear();
-    if (!mCrowd && num != -1)
+    else if (!mCrowd && num != -1)
         unk10.clear();
 }
 
