@@ -341,9 +341,9 @@ DataNode TambourineManager::OnPlayTambourine(DataArray *d) {
 }
 
 void TambourineManager::OnRemoteTambourineSucceeding(DataArray *msg) {
-    int succeeding = msg->Int(2);
     int pct = msg->Int(3);
-    mTambourineActive = succeeding != 0;
+    int succeeding = msg->Int(2);
+    mTambourineActive = 0 != succeeding;
     if (succeeding) {
         BandTrack *track = mPlayerRef.GetBandTrack();
         if (track) {
