@@ -54,8 +54,8 @@ void BeatMaster::Load(
     midi_receivers.push_back(mMidiParserMgr);
     mSongData->Load(info, i, plist, midi_receivers, b, validate);
     MILO_ASSERT(!mLoader, 0x82);
-    mLoader = new BeatMasterLoader(this);
     mLoaded = false;
+    mLoader = new BeatMasterLoader(this);
     unk2d = false;
     if (b)
         TheLoadMgr.PollUntilLoaded(mLoader, 0);
