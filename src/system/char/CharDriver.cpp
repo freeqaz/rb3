@@ -51,8 +51,8 @@ void CharDriver::Highlight() {
 }
 
 float CharDriver::Display(float f) {
-    Vector2 curPos;
     CharClipDisplay::Init(Dir());
+    Vector2 curPos;
     std::vector<CharClipDisplay> displays;
     for (CharClipDriver *it = mFirst; it != nullptr; it = it->Next()) {
         displays.push_back(CharClipDisplay());
@@ -85,8 +85,8 @@ float CharDriver::Display(float f) {
         displays[i].DrawTrack();
     }
 
-    CharClipDriver *prev = mFirst;
     int idx = 0;
+    CharClipDriver *prev = mFirst;
     CharClipDriver *next;
     while (prev && (next = prev->Next()) != nullptr) {
         CharClipDisplay *prevDisplay = &displays[idx];
@@ -103,7 +103,7 @@ float CharDriver::Display(float f) {
                     }
                 }
                 Hmx::Color redColor(1, 0, 0);
-                curPos.y = nextDisplay->unk18 + 1.0f + (float)curOfs;
+                curPos.y = (nextDisplay->unk18 + (1.0f + (float)curOfs));
                 TheRnd->DrawString(MakeString("%d", i), curPos, redColor, true);
 
                 Vector2 nextPos;
