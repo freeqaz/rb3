@@ -238,9 +238,7 @@ void NextSongPanel::UpdateScrollArrows(int i, bool b) {
         static Message cMsg("trigger_hide_down_arrow", 0);
         cMsg[0] = i;
         Handle(cMsg, true);
-    }
-
-    if ((!n2 || b) && unk84[i]) {
+    } else if ((!n2 || b) && unk84[i]) {
         static Message cMsg("trigger_show_down_arrow", 0);
         cMsg[0] = i;
         Handle(cMsg, true);
