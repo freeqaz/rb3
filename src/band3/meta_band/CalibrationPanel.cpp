@@ -266,8 +266,8 @@ void CalibrationPanel::UpdateProgress(bool b) {
     maxProgress = (float)mNumHits;
     progress = progress * (float)((mNumHits + 2) / mNumHits);
     progress = *(maxProgress < progress ? &maxProgress : &progress);
-    tabanim->SetFrame(24.0f * progress / (float)mNumHits, 1.0f);
-    boneanim->SetFrame(24.0f * progress / (float)mNumHits, 1.0f);
+    tabanim->SetFrame(24.0f * (progress / (float)mNumHits), 1.0f);
+    boneanim->SetFrame(24.0f * (progress / (float)mNumHits), 1.0f);
 }
 
 void CalibrationPanel::Draw() { UIPanel::Draw(); }
