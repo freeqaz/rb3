@@ -195,8 +195,8 @@ int BandIKEffector::MeasureLengths(
 void BandIKEffector::NeutralLocalPos(RndTransformable *bone, Vector3 &pos) {
     if (sDeformClip) {
         const char *name = bone->Name();
-        auto _tmp0 = strcmp(name, "bone_pelvis.mesh");
-        if (_tmp0 != 0) {
+        bool pelvisMatch = (strcmp(name, "bone_pelvis.mesh") == 0);
+        if (!pelvisMatch) {
             Symbol sym = CharBones::ChannelName(name, CharBones::TYPE_POS);
             void *chan = sDeformClip->GetChannel(sym);
             if (chan) {
@@ -211,7 +211,8 @@ void BandIKEffector::NeutralLocalPos(RndTransformable *bone, Vector3 &pos) {
 void BandIKEffector::NeutralLocalXfm(RndTransformable *bone, Transform &tf) {
     tf = bone->mLocalXfm;
     if (sDeformClip) {
-        if (strcmp(bone->Name(), "bone_pelvis.mesh") != 0) {
+        bool pelvisMatch = (strcmp(bone->Name(), "bone_pelvis.mesh") == 0);
+        if (!pelvisMatch) {
             void *posChan = sDeformClip->GetChannel(
                 CharBones::ChannelName(bone->Name(), CharBones::TYPE_POS)
             );
@@ -647,29 +648,6 @@ float BandIKEffector::GetGroundHeight(RndTransformable *trans) {
     }
 }
 
-int BandIKEffector::GetType() {
-    ObjPtr<RndTransformable, ObjectDir> &_ref0 = mEffector;
-    if (!_ref0) {
-        MILO_NOTIFY_ONCE("%s trying to get type with NULL effector", PathName(this));
-        return 0;
-    }
-    const char *name = _ref0->Name();
-    if (strncmp(name, "bone_pelvis", 11) == 0)
-        return 1;
-    if (strncmp(name, "bone_L-ankle", 12) == 0
-        || strncmp(name, "bone_R-ankle", 12) == 0)
-        return 2;
-    if (strncmp(name, "bone_L-hand", 11) == 0
-        || strncmp(name, "bone_R-hand", 11) == 0)
-        return 3;
-    if (strncmp(name, "bone_L-foreArm", 11) == 0
-        || strncmp(name, "bone_R-foreArm", 11) == 0)
-        return 4;
-    if (strncmp(name, "bone_head", 9) == 0)
-        return 5;
-    return 0;
-}
-
 void BandIKEffector::Poll() {
     int type = GetType();
     if (type == 4)
@@ -790,6 +768,29 @@ void BandIKEffector::Poll() {
         MakeRotMatrix(q.q, finalXfm.m);
         mEffector->SetWorldXfm(finalXfm);
     }
+}
+
+int BandIKEffector::GetType() {
+    ObjPtr<RndTransformable, ObjectDir> &_ref0 = mEffector;
+    if (!_ref0) {
+        MILO_NOTIFY_ONCE("%s trying to get type with NULL effector", PathName(this));
+        return 0;
+    }
+    const char *name = _ref0->Name();
+    if (strncmp(name, "bone_pelvis", 11) == 0)
+        return 1;
+    if (strncmp(name, "bone_L-ankle", 12) == 0
+        || strncmp(name, "bone_R-ankle", 12) == 0)
+        return 2;
+    if (strncmp(name, "bone_L-hand", 11) == 0
+        || strncmp(name, "bone_R-hand", 11) == 0)
+        return 3;
+    if (strncmp(name, "bone_L-foreArm", 11) == 0
+        || strncmp(name, "bone_R-foreArm", 11) == 0)
+        return 4;
+    if (strncmp(name, "bone_head", 9) == 0)
+        return 5;
+    return 0;
 }
 
 float BandIKEffector::ApplyPosConstraints(
