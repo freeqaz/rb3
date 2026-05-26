@@ -499,18 +499,14 @@ void OvershellSlot::SelectDifficulty(Difficulty diff) {
                 EndOverrideFlow(kOverrideFlow_SongSettings, true);
             } else {
                 Difficulty pUserDiff = pUser->GetDifficulty();
-                if (diff == pUserDiff)
-                    CancelSongSettings();
-                else {
+                if (diff != pUserDiff) {
                     OvershellSlotState* state = mStateMgr->GetSlotState(kState_ChooseDiffConfirm);
                     state->SetProperty("difficulty", diff);
                     pUser->SetOvershellSlotState(kState_ChooseDiffConfirm);
-                }
+                } else
+                    CancelSongSettings();
             }
-            goto lol;
         }
-        pUser->SetDifficulty(diff);
-        EndOverrideFlow(kOverrideFlow_SongSettings, true);
     } else {
         pUser->SetDifficulty(diff);
         pUser->SetOvershellSlotState(kState_ReadyToPlay);
