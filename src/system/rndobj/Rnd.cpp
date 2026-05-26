@@ -572,9 +572,8 @@ void Rnd::BeginDrawing() {
         worldLastMs = worldTimer->mLastMs;
         savedWorld = worldTimer;
     }
-    std::vector<std::pair<Timer, TimerStats> > &timers = AutoTimer::sTimers;
-    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = timers.begin();
-         it != timers.end();
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
+         it != AutoTimer::sTimers.end();
          ++it) {
         it->first.Reset();
     }
@@ -653,6 +652,117 @@ void Rnd::DoPostProcess() {
                 (*it)->DoPost();
             }
     }
+}
+
+#pragma push
+#pragma auto_inline on
+void Rnd::DrawPreClear() {
+    if (unkf8) {
+        unkf8();
+    }
+    if (sCompressDone) {
+        MILO_ASSERT(sTexture, 0x46A);
+        CompressTexDesc *desc = unk154.front();
+        RndTex *tex = desc->mTex;
+        if (tex) {
+            ReplaceObject(tex, sTexture, false, false, false);
+            sTexture = tex;
+        }
+        std::list<CompressTexDesc *>::iterator it = unk154.begin();
+        unk154.erase(it);
+        if (desc) {
+            CompressTextureCallback *cb = desc->mCallback;
+            if (cb) {
+                cb->TextureCompressed((int)desc);
+            }
+            delete desc;
+        }
+        if (sTexture) {
+            delete (RndTex *)sTexture;
+        }
+        sTexture = nullptr;
+        sCompressDone = false;
+    }
+    if (!sTexture) {
+        std::list<CompressTexDesc *>::iterator it_end = unk154.end();
+        std::list<CompressTexDesc *>::iterator it_begin = unk154.begin();
+        if (it_end != it_begin) {
+            std::list<CompressTexDesc *>::iterator it = it_begin;
+            do {
+                CompressTexDesc *desc = *it;
+                if (!desc->mTex || !desc->mCallback) {
+                    it = unk154.erase(it);
+                    if (desc) {
+                        CompressTextureCallback *cb = desc->mCallback;
+                        if (cb) {
+                            cb->TextureCompressed((int)desc);
+                        }
+                        delete desc;
+                    }
+                } else {
+                    ++it;
+                }
+            } while (it_end != it);
+            it_begin = unk154.begin();
+            unsigned int count = 0;
+            std::list<CompressTexDesc *>::iterator it2 = it_begin;
+            while (it2 != unk154.end()) {
+                count++;
+                ++it2;
+            }
+            if (count != 0) {
+                CompressTexDesc *first = unk154.front();
+                sTexture = first->mTex;
+                RndTex *newTex;
+                {
+                    MemDoTempAllocations m(true, false);
+                    newTex = Hmx::Object::New<RndTex>();
+                }
+                ReplaceObject(sTexture, newTex, false, false, false);
+            }
+        }
+    }
+    ObjPtrList<RndDrawable> *drawList;
+    drawList = unk130 ? &unk110 : &mDraws;
+    if (drawList->size() != 0) {
+        unkf0 = true;
+        RndCam *prevCam = RndCam::Current();
+        for (ObjPtrList<RndDrawable>::iterator it = drawList->begin();
+             it != drawList->end();
+             ++it) {
+            RndDrawable *draw = *it;
+            if (draw) {
+                draw->DrawPreClear();
+            }
+        }
+        if ((prevCam != nullptr) && (prevCam != RndCam::Current())) {
+            prevCam->Select();
+        }
+        unkf0 = false;
+    }
+}
+#pragma pop
+
+void Rnd::EndDrawing() {
+    EndWorld();
+    if (MainThread()) {
+        AutoSlowFrame asf("RndOverlay::DrawAll");
+        if (RndCam::Current()->TargetTex()) {
+            mDefaultCam->Select();
+        }
+        RndOverlay::DrawAll(false);
+        RndGraph::DrawAll();
+    }
+    mDrawing = false;
+    mFrameID++;
+}
+
+void Rnd::SetShowTimers(bool b1, bool b2) {
+    RndOverlay *o = mTimersOverlay;
+    o->mShowing = b1;
+    o->mTimer.Restart();
+    mVerboseTimers = b2;
+    SetGSTiming(b1);
 }
 
 float Rnd::UpdateOverlay(RndOverlay *ovl, float f) {
@@ -816,117 +926,6 @@ void Rnd::CompressTextureCancel(CompressTextureCallback *cb) {
             (*it)->mCallback = nullptr;
         }
     }
-}
-
-#pragma push
-#pragma auto_inline on
-void Rnd::DrawPreClear() {
-    if (unkf8) {
-        unkf8();
-    }
-    if (sCompressDone) {
-        MILO_ASSERT(sTexture, 0x46A);
-        CompressTexDesc *desc = unk154.front();
-        RndTex *tex = desc->mTex;
-        if (tex) {
-            ReplaceObject(tex, sTexture, false, false, false);
-            sTexture = tex;
-        }
-        std::list<CompressTexDesc *>::iterator it = unk154.begin();
-        unk154.erase(it);
-        if (desc) {
-            CompressTextureCallback *cb = desc->mCallback;
-            if (cb) {
-                cb->TextureCompressed((int)desc);
-            }
-            delete desc;
-        }
-        if (sTexture) {
-            delete (RndTex *)sTexture;
-        }
-        sTexture = nullptr;
-        sCompressDone = false;
-    }
-    if (!sTexture) {
-        std::list<CompressTexDesc *>::iterator it_end = unk154.end();
-        std::list<CompressTexDesc *>::iterator it_begin = unk154.begin();
-        if (it_end != it_begin) {
-            std::list<CompressTexDesc *>::iterator it = it_begin;
-            do {
-                CompressTexDesc *desc = *it;
-                if (!desc->mTex || !desc->mCallback) {
-                    it = unk154.erase(it);
-                    if (desc) {
-                        CompressTextureCallback *cb = desc->mCallback;
-                        if (cb) {
-                            cb->TextureCompressed((int)desc);
-                        }
-                        delete desc;
-                    }
-                } else {
-                    ++it;
-                }
-            } while (it_end != it);
-            it_begin = unk154.begin();
-            unsigned int count = 0;
-            std::list<CompressTexDesc *>::iterator it2 = it_begin;
-            while (it2 != unk154.end()) {
-                count++;
-                ++it2;
-            }
-            if (count != 0) {
-                CompressTexDesc *first = unk154.front();
-                sTexture = first->mTex;
-                RndTex *newTex;
-                {
-                    MemDoTempAllocations m(true, false);
-                    newTex = Hmx::Object::New<RndTex>();
-                }
-                ReplaceObject(sTexture, newTex, false, false, false);
-            }
-        }
-    }
-    ObjPtrList<RndDrawable> *drawList;
-    drawList = unk130 ? &unk110 : &mDraws;
-    if (drawList->size() != 0) {
-        unkf0 = true;
-        RndCam *prevCam = RndCam::Current();
-        for (ObjPtrList<RndDrawable>::iterator it = drawList->begin();
-             it != drawList->end();
-             ++it) {
-            RndDrawable *draw = *it;
-            if (draw) {
-                draw->DrawPreClear();
-            }
-        }
-        if ((prevCam != nullptr) && (prevCam != RndCam::Current())) {
-            prevCam->Select();
-        }
-        unkf0 = false;
-    }
-}
-#pragma pop
-
-void Rnd::EndDrawing() {
-    EndWorld();
-    if (MainThread()) {
-        AutoSlowFrame asf("RndOverlay::DrawAll");
-        if (RndCam::Current()->TargetTex()) {
-            mDefaultCam->Select();
-        }
-        RndOverlay::DrawAll(false);
-        RndGraph::DrawAll();
-    }
-    mDrawing = false;
-    mFrameID++;
-}
-
-void Rnd::SetShowTimers(bool b1, bool b2) {
-    RndOverlay *o = mTimersOverlay;
-    o->mShowing = b1;
-    o->mTimer.Restart();
-    mVerboseTimers = b2;
-    SetGSTiming(b1);
 }
 
 #pragma push
