@@ -1547,7 +1547,7 @@ void RndText::ReplaceLineText(
         if (mesh) {
             RndMesh::Vert *vertIt = &mesh->Verts().mVerts[line.startIdx * 4];
             RndMesh::Vert *vertEnd = &mesh->Verts().mVerts[line.endIdx * 4];
-            for (; vertIt < vertEnd; vertIt++) {
+            for (int i = vertEnd - vertIt; i > 0; i--, vertIt++) {
                 vertIt->pos.Set(0, 0, 0);
                 vertIt->uv.Set(0, 0);
             }
