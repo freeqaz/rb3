@@ -30,11 +30,14 @@
 #define ECHO TESTER_RETURN(kDataTokenNotRecognized) /* don't echo unmatched characters */
 %}
 
-/* TODO: '-' has a significant usage outside of SIGN */
+/* '-' has a significant usage outside of SIGN, so split into PLUS|MINUS to
+ * keep flex's character-class for '-' distinct from '+'. */
 
 DIGIT               [0-9]
 HEX_DIGIT           [A-Fa-f0-9]
-SIGN                [+-]
+PLUS                \+
+MINUS               -
+SIGN                ({PLUS}|{MINUS})
 
 HEX_NUMBER          0x{HEX_DIGIT}+
 INTEGER             {SIGN}?{DIGIT}+
