@@ -39,6 +39,9 @@ enum LoadState {
 };
 
 struct NetLoaderRef {
+    NetLoaderRef() {}
+    NetLoaderRef(const String& name, int refCount, NetLoader* nl, NetCacheLoader* cl)
+        : mName(name), mRefCount(refCount), mNetLoader(nl), mCacheLoader(cl) {}
     void Poll();
     bool NeedsToDownload();
     bool IsDownloading();

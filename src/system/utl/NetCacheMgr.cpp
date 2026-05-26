@@ -338,22 +338,14 @@ NetLoaderRef *NetCacheMgr::AddLoaderRef(const char *name, RefType type, NetLoade
         case kRT_CacheLoader: {
             NetCacheLoader *ncl = new NetCacheLoader(mCache, String(name));
             String s(name);
-            NetLoaderRef tmp;
-            tmp.mName = s;
-            tmp.mRefCount = 0;
-            tmp.mNetLoader = NULL;
-            tmp.mCacheLoader = ncl;
+            NetLoaderRef tmp(s, 0, NULL, ncl);
             newRef = tmp;
             break;
         }
         case kRT_NetLoader: {
             NetLoader *nl = NetLoader::Create(String(name));
             String s(name);
-            NetLoaderRef tmp;
-            tmp.mName = s;
-            tmp.mRefCount = 0;
-            tmp.mNetLoader = nl;
-            tmp.mCacheLoader = NULL;
+            NetLoaderRef tmp(s, 0, nl, NULL);
             newRef = tmp;
             break;
         }
