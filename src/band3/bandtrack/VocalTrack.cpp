@@ -89,6 +89,25 @@ void VocalTrack::ClearMarkers() {
     }
 }
 
+inline void TambourineGemPool::NewGem(float time, int gemIdx) {
+    MILO_ASSERT(mUsedGems.empty() || time >= mUsedGems.back()->Time(), 0x1EB);
+    if (mFreeGems.empty()) {
+        for (int k = 0; k < 5; k++) {
+            mFreeGems.push_back(new TambourineGem());
+        }
+    }
+    TambourineGem *g = mFreeGems.front();
+    mFreeGems.pop_front();
+    mUsedGems.push_back(g);
+    g->unk4 = gemIdx;
+    g->unk0 = time;
+    g->unk8 = 0;
+    MILO_ASSERT(mTambourineManager, 0x1FD);
+    if (mTambourineManager->GemHit(gemIdx) || mTambourineManager->GemProcessed(gemIdx)) {
+        g->unk8 = 1;
+    }
+}
+
 void VocalTrack::UpdateTubePlates(
     std::deque<TubePlate *> &deque, float f2, float f3, bool b4
 ) {
@@ -1297,27 +1316,7 @@ void VocalTrack::UpdateScrolling(float ms) {
         int gemIdx = unk100;
         while (gemIdx < tambGems.size() && tambGems[gemIdx] < targetTick) {
             float gemMs = TickToMs((float)tambGems[gemIdx]);
-            MILO_ASSERT(
-                mTambourineGemPool->mUsedGems.empty()
-                    || gemMs >= mTambourineGemPool->mUsedGems.back()->unk0,
-                0x1EB
-            );
-            if (mTambourineGemPool->mFreeGems.empty()) {
-                for (int k = 0; k < 5; k++) {
-                    mTambourineGemPool->mFreeGems.push_back(new TambourineGem());
-                }
-            }
-            TambourineGem *g = mTambourineGemPool->mFreeGems.front();
-            mTambourineGemPool->mFreeGems.pop_front();
-            mTambourineGemPool->mUsedGems.push_back(g);
-            g->unk4 = gemIdx;
-            g->unk0 = gemMs;
-            g->unk8 = 0;
-            MILO_ASSERT(mTambourineGemPool->mTambourineManager, 0x1FD);
-            if (mTambourineGemPool->mTambourineManager->GemHit(gemIdx)
-                || mTambourineGemPool->mTambourineManager->GemProcessed(gemIdx)) {
-                g->unk8 = 1;
-            }
+            mTambourineGemPool->NewGem(gemMs, gemIdx);
             gemIdx++;
         }
         unk100 = gemIdx;

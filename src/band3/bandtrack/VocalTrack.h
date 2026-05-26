@@ -18,6 +18,8 @@ class TambourineGem {
 public:
     TambourineGem() : unk0(0), unk4(-1), unk8(2) {}
 
+    float Time() const { return unk0; }
+
     float unk0;
     int unk4;
     int unk8;
@@ -34,6 +36,7 @@ public:
             mUsedGems.pop_front();
         }
     }
+    void NewGem(float time, int gemIdx);
     void SetTambourineManager(TambourineManager *mgr) { mTambourineManager = mgr; }
 
     std::deque<TambourineGem *> mFreeGems; // 0x0
