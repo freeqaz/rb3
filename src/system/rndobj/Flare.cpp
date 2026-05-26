@@ -117,10 +117,10 @@ void RndFlare::DrawShowing() {
     Hmx::Rect localRect = CalcRect(screenPos, scale);
 
     if (RectOffscreen(localRect) || depth <= 0.0f) {
-        mTestDone = false;
-        mLastDone = mTestDone;
         mStep = 0;
         unkec = 0.0f;
+        mTestDone = false;
+        mLastDone = mTestDone;
         return;
     }
 
@@ -178,7 +178,8 @@ void RndFlare::DrawShowing() {
             col.green = alpha * 0.6f;
             col.blue = alpha * 0.6f;
             col.alpha = 1.0f;
-            if (mMat->mUseEnviron) {
+            RndMat *mat = mMat;
+            if (mat->mUseEnviron) {
                 RndEnviron *env = RndEnviron::sCurrent;
                 if (env) {
                     const Hmx::Color &ambColor = env->AmbientColor();
@@ -188,10 +189,10 @@ void RndFlare::DrawShowing() {
                     col.alpha *= ambColor.alpha;
                 }
             }
-            mMat->mColor.red = col.red;
-            mMat->mColor.green = col.green;
-            mMat->mColor.blue = col.blue;
-            mMat->mDirty |= 1;
+            mat->mColor.red = col.red;
+            mat->mColor.green = col.green;
+            mat->mColor.blue = col.blue;
+            mat->mDirty |= 1;
         }
 
         if (mMat && mMat->mTexGen == kTexGenXfm) {
@@ -209,8 +210,9 @@ void RndFlare::DrawShowing() {
             texMat.m.z.x = 0.0f;
             texMat.m.z.y = 0.0f;
             texMat.m.z.z = 1.0f;
-            mMat->mTexXfm = texMat;
-            mMat->mDirty |= 2;
+            RndMat *m = mMat;
+            m->mTexXfm = texMat;
+            m->mDirty |= 2;
         }
 
         Hmx::Rect *drawRect;
