@@ -962,20 +962,12 @@ void LightPreset::AnimateSpotlightDrawerFromPreset(
 ) {
     float base = sd->mParams.mBaseIntensity;
     float smoke = sd->mParams.mSmokeIntensity;
-    float dBase = e.mBaseIntensity - base;
     float infl = sd->mParams.mLightingInfluence;
-    float dSmoke = e.mSmokeIntensity - smoke;
-    float baseRes = f * dBase + base;
-    float dInfl = e.mLightInfluence - infl;
     float total = sd->mParams.mIntensity;
-    float smokeRes = f * dSmoke + smoke;
-    float dTotal = e.mTotalIntensity - total;
-    float inflRes = f * dInfl + infl;
-    sd->mParams.mBaseIntensity = baseRes;
-    float totalRes = f * dTotal + total;
-    sd->mParams.mSmokeIntensity = smokeRes;
-    sd->mParams.mLightingInfluence = inflRes;
-    sd->mParams.mIntensity = totalRes;
+    sd->mParams.mBaseIntensity = f * (e.mBaseIntensity - base) + base;
+    sd->mParams.mSmokeIntensity = f * (e.mSmokeIntensity - smoke) + smoke;
+    sd->mParams.mLightingInfluence = f * (e.mLightInfluence - infl) + infl;
+    sd->mParams.mIntensity = f * (e.mTotalIntensity - total) + total;
 }
 
 void LightPreset::SetSpotlight(Spotlight *s, int data) {
@@ -1268,21 +1260,13 @@ void LightPreset::SpotlightDrawerEntry::Animate(
     const LightPreset::SpotlightDrawerEntry &e, float f
 ) {
     float base = mBaseIntensity;
-    float eBase = e.mBaseIntensity;
     float smoke = mSmokeIntensity;
-    float dBase = eBase - base;
-    float eSmoke = e.mSmokeIntensity;
     float infl = mLightInfluence;
-    float dSmoke = eSmoke - smoke;
-    float eInfl = e.mLightInfluence;
-    mBaseIntensity = f * dBase + base;
-    float dInfl = eInfl - infl;
     float total = mTotalIntensity;
-    float eTotal = e.mTotalIntensity;
-    mSmokeIntensity = f * dSmoke + smoke;
-    float dTotal = eTotal - total;
-    mLightInfluence = f * dInfl + infl;
-    mTotalIntensity = f * dTotal + total;
+    mBaseIntensity = f * (e.mBaseIntensity - base) + base;
+    mSmokeIntensity = f * (e.mSmokeIntensity - smoke) + smoke;
+    mLightInfluence = f * (e.mLightInfluence - infl) + infl;
+    mTotalIntensity = f * (e.mTotalIntensity - total) + total;
 }
 
 bool LightPreset::SpotlightDrawerEntry::operator!=(
