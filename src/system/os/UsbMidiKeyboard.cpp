@@ -61,7 +61,7 @@ void UsbMidiKeyboard::Terminate() {
 
 void UsbMidiKeyboard::Poll() {
     if (!gUseMidiPort && TheKeyboard) {
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; 4 > i; i++) {
             JoypadType ty = JoypadGetPadData(i)->mType;
             if (ty == kJoypadXboxMidiBoxKeyboard || ty == kJoypadPs3MidiBoxKeyboard
                 || ty == kJoypadWiiMidiBoxKeyboard || ty == kJoypadXboxKeytar
@@ -73,10 +73,7 @@ void UsbMidiKeyboard::Poll() {
                 int ivar1 = 1;
                 for (int j = 0; j < 25; j++) {
                     int u5 = proData->unk0[j];
-                    if (u5 == TheKeyboard->GetKeyPressed(i, j)) {
-                        if (u5 != 0)
-                            ivar1++;
-                    } else {
+                    if (!(u5 == TheKeyboard->GetKeyPressed(i, j))) {
                         if (u5 != 0) {
                             int extVel = TheKeyboard->GetSlottedKeyVelocityFromExtended(
                                 ivar1++, proData->unk0
@@ -90,6 +87,9 @@ void UsbMidiKeyboard::Poll() {
                             SendMessage(KeyboardKeyReleasedMsg(j, i));
                         }
                         TheKeyboard->SetKeyPressed(i, j, u5);
+                    } else {
+                        if (u5 != 0)
+                            ivar1++;
                     }
                 }
                 bool sus = proData->mSustain;
