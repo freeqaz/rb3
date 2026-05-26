@@ -144,7 +144,7 @@ public:
     const std::map<int, int> &GetGigTypeCompletedMap() const {
         return mGigTypeCompletedMap;
     }
-    const std::set<Symbol> &GetNewGoalsSet() const { return unk64; }
+    const std::set<Symbol> &GetNewGoalsSet() const { return mNewlyAcquiredAccomplishments; }
     // // int GetTotalGemsSmashed() const;
     // // int GetTotalGuitarHopos() const;
     // // int GetTotalBassHopos() const;
@@ -189,7 +189,7 @@ public:
     bool mHardCoreStatusUpdatePending; // 0x40
     std::list<GamerAwardStatus *> mGamerAwardStatusList; // 0x44
     std::set<Symbol> mAccomplishments; // 0x4c
-    std::set<Symbol> unk64; // 0x64
+    std::set<Symbol> mNewlyAcquiredAccomplishments; // 0x64
     std::vector<Symbol> unk7c; // 0x7c
     int mMetaScore; // 0x84
     std::set<Symbol> mAwards; // 0x88

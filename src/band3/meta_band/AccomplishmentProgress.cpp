@@ -75,7 +75,7 @@ void AccomplishmentProgress::Clear() {
     mHardCoreStatusUpdatePending = false;
     mUploadDirty = false;
     mAccomplishments.clear();
-    unk64.clear();
+    mNewlyAcquiredAccomplishments.clear();
     unkb0.clear();
     mNewRewardVignettes.clear();
     mNewAwards.clear();
@@ -152,7 +152,7 @@ bool AccomplishmentProgress::AddAccomplishment(Symbol s) {
             TheAccomplishmentMgr->GetLeaderboardHardcoreStatus(mAccomplishments.size());
         TheAccomplishmentMgr->GetIconHardCoreStatus(mAccomplishments.size());
         mAccomplishments.insert(s);
-        unk64.insert(s);
+        mNewlyAcquiredAccomplishments.insert(s);
 
         Symbol cat = pAccomplishment->GetCategory();
         AccomplishmentCategory *pCategory =
@@ -292,7 +292,7 @@ void AccomplishmentProgress::AddNewRewardVignette(Symbol s) {
 }
 
 bool AccomplishmentProgress::IsUploadDirty() const {
-    return mUploadDirty || !unk64.empty();
+    return mUploadDirty || !mNewlyAcquiredAccomplishments.empty();
 }
 
 bool AccomplishmentProgress::HasNewRewardVignettes() const {
@@ -513,7 +513,7 @@ void AccomplishmentProgress::Poll() {}
 void AccomplishmentProgress::SaveFixed(FixedSizeSaveableStream &stream) const {
     stream << mUploadDirty;
     FixedSizeSaveable::SaveStd(stream, mAccomplishments, 1000);
-    FixedSizeSaveable::SaveStd(stream, unk64, 1000);
+    FixedSizeSaveable::SaveStd(stream, mNewlyAcquiredAccomplishments, 1000);
     FixedSizeSaveable::SaveStd(stream, mAwards, 500);
     FixedSizeSaveable::SaveStd(stream, mNewRewardVignettes, 20);
     FixedSizeSaveable::SaveStd(stream, unkb0, 20);
@@ -581,7 +581,7 @@ int AccomplishmentProgress::SaveSize(int i) {
 void AccomplishmentProgress::LoadFixed(FixedSizeSaveableStream &stream, int rev) {
     stream >> mUploadDirty;
     FixedSizeSaveable::LoadStd(stream, mAccomplishments, 1000);
-    FixedSizeSaveable::LoadStd(stream, unk64, 1000);
+    FixedSizeSaveable::LoadStd(stream, mNewlyAcquiredAccomplishments, 1000);
     FixedSizeSaveable::LoadStd(stream, mAwards, 500);
     FixedSizeSaveable::LoadStd(stream, mNewRewardVignettes, 20);
     FixedSizeSaveable::LoadStd(stream, unkb0, 20);
@@ -1071,7 +1071,7 @@ bool AccomplishmentProgress::InqGoalLeaderboardData(
 
 void AccomplishmentProgress::HandleUploadStarted() {
     unk7c.clear();
-    for (std::set<Symbol>::iterator it = unk64.begin(); it != unk64.end(); ++it) {
+    for (std::set<Symbol>::iterator it = mNewlyAcquiredAccomplishments.begin(); it != mNewlyAcquiredAccomplishments.end(); ++it) {
         Symbol cur = *it;
         unk7c.push_back(cur);
     }
@@ -1087,9 +1087,10 @@ DataNode AccomplishmentProgress::OnMsg(const RockCentralOpCompleteMsg &msg) {
 
 void AccomplishmentProgress::HandleSuccessfulUpload() {
     for (std::vector<Symbol>::iterator it = unk7c.begin(); it != unk7c.end(); ++it) {
-        std::set<Symbol>::iterator found = unk64.find(*it);
-        MILO_ASSERT(found != unk64.end(), 0x755);
-        unk64.erase(found);
+        Symbol sym = *it;
+        std::set<Symbol>::iterator iterNewGoal = mNewlyAcquiredAccomplishments.find(sym);
+        MILO_ASSERT(iterNewGoal != mNewlyAcquiredAccomplishments.end(), 0x755);
+        mNewlyAcquiredAccomplishments.erase(iterNewGoal);
     }
     unk7c.clear();
 }
