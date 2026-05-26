@@ -750,7 +750,7 @@ bool RndBitmap::LoadDIB(BinStream *bs, unsigned int offbits) {
         );
         return false;
     }
-    int paletteBytes = 0;
+    unsigned int paletteBytes = 0;
     if (infoheader.biBitCount <= 8) {
         paletteBytes = (1 << infoheader.biBitCount) * 4;
     }
@@ -810,7 +810,7 @@ bool RndBitmap::LoadDIB(BinStream *bs, unsigned int offbits) {
                 if (palCount == 0) goto palette_done;
             }
             do {
-                *((unsigned char *)palette + paletteBytes + 3) = 0xFF;
+                *(((unsigned char *)palette + (paletteBytes + 3))) = 0xFF;
                 paletteBytes -= 4;
                 palCount--;
             } while (palCount != 0);
