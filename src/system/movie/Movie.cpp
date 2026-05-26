@@ -63,10 +63,10 @@ static const unsigned int kNoThread = 0;
 #define ASSERT_MOVIE_THREAD(line)                                                          \
     do {                                                                                   \
         bool ok = true;                                                                    \
-        if (mThreadId != (unsigned int)OSGetCurrentThread()) {                             \
-            unsigned int tid = mThreadId;                                                  \
+        unsigned int _cur = (unsigned int)OSGetCurrentThread();                            \
+        if (mThreadId != _cur) {                                                           \
             bool b = false;                                                                \
-            if (tid == kNoThread) {                                                        \
+            if (mThreadId == kNoThread) {                                                  \
                 bool main = true;                                                          \
                 if (gMainThreadID != 0 && gMainThreadID != OSGetCurrentThread())           \
                     main = false;                                                          \
@@ -83,6 +83,39 @@ std::vector<Movie::Impl *> Movie::Impl::sActiveMovies;
 Movie::Impl *Movie::Impl::sAsyncMovie;
 int Movie::Impl::sActivePending;
 Movie::Impl *Movie::Impl::sNextMovie;
+
+void Movie::Impl::MovieLoader::DoneLoading() {}
+
+void Movie::Impl::DiscContentionCheck(Loader *loader) {
+    ASSERT_MOVIE_THREAD(0x59);
+    for (std::list<Loader *>::iterator it = TheLoadMgr.mLoading.begin();
+         it != TheLoadMgr.mLoading.end();
+         ++it) {
+        Loader *cur = *it;
+        if (cur == loader) continue;
+        void *key = (void *)cur->LoaderFile().c_str();
+        mDiscContentionMap[key] = cur->LoaderFile();
+    }
+}
+
+void Movie::Impl::DiscContentionPublish() {
+    ASSERT_MOVIE_THREAD(0x68);
+    unsigned char first = 1;
+    int count = 0;
+    String list;
+    for (std::map<void *, String>::iterator it = mDiscContentionMap.begin();
+         it != mDiscContentionMap.end();
+         ++it) {
+        if (!first) list += ", ";
+        first = 0;
+        list += it->second;
+        count++;
+    }
+    if (count != 0) {
+        TheDebug.Notify(MakeString("Streaming Bink Thrashed with %d files: (%s)", count, list));
+        mDiscContentionMap.clear();
+    }
+}
 
 namespace {
     CriticalSection gMovieCrit;
@@ -361,13 +394,12 @@ void Movie::Impl::MovieLoader::LoadFile() {
         mOpenState = &MovieLoader::DoneLoading;
     }
 }
-void Movie::Impl::MovieLoader::DoneLoading() {}
 
 void Movie::Impl::BeginFrame() {
     ASSERT_MOVIE_THREAD(0x370);
     sAsyncMovie = this;
-    mMidFrame = true;
     MovieInternalBuffers *bufs = mMovieBuffers;
+    mMidFrame = true;
     mCurFrame = (bufs->mBuffers.FrameNum + 1) % bufs->mBuffers.TotalFrames;
     mNextFrame = (int)(bufs->mNextFrameIdx + 1) % (int)bufs->mBuffers.TotalFrames;
 }
@@ -660,18 +692,6 @@ void Movie::Impl::FinishOpen() {
     SetPaused(true);
 }
 
-void Movie::Impl::DiscContentionCheck(Loader *loader) {
-    ASSERT_MOVIE_THREAD(0x59);
-    for (std::list<Loader *>::iterator it = TheLoadMgr.mLoading.begin();
-         it != TheLoadMgr.mLoading.end();
-         ++it) {
-        Loader *cur = *it;
-        if (cur == loader) continue;
-        void *key = (void *)cur->LoaderFile().c_str();
-        mDiscContentionMap[key] = cur->LoaderFile();
-    }
-}
-
 void Movie::Impl::DoFrame() {
     ASSERT_MOVIE_THREAD(0x342);
     if (!mPreloadFlag) {
@@ -698,25 +718,6 @@ void Movie::Impl::DoFrame() {
         if (!atEnd) skip = false;
     }
     if (!skip) NextFrame();
-}
-
-void Movie::Impl::DiscContentionPublish() {
-    ASSERT_MOVIE_THREAD(0x68);
-    unsigned char first = 1;
-    int count = 0;
-    String list;
-    for (std::map<void *, String>::iterator it = mDiscContentionMap.begin();
-         it != mDiscContentionMap.end();
-         ++it) {
-        if (!first) list += ", ";
-        first = 0;
-        list += it->second;
-        count++;
-    }
-    if (count != 0) {
-        TheDebug.Notify(MakeString("Streaming Bink Thrashed with %d files: (%s)\n", count, list));
-        mDiscContentionMap.clear();
-    }
 }
 
 bool Movie::Impl::Poll() {
