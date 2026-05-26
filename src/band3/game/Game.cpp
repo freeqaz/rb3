@@ -234,8 +234,8 @@ void Game::LoadSong() {
     gSongLoadTimer.Restart();
     Symbol songSym = MetaPerformer::Current()->Song();
     PlayerTrackConfigList *cfgList = TheGameConfig->GetConfigList();
-    SongDataValidate i2 =
-        TheSongMgr.Data(TheSongMgr.GetSongIDFromShortName(songSym, true))->IsOnDisc()
+    auto _tmp0 = TheSongMgr.GetSongIDFromShortName(songSym, true);
+    const SongDataValidate& i2 = TheSongMgr.Data(_tmp0)->IsOnDisc()
         ? kSongData_Validate
         : kSongData_NoValidation;
     Fader *fader = TheSynth->Find<Fader>("per_song_sfx_level.fade", false);
