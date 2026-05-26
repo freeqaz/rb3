@@ -587,7 +587,7 @@ void CharEyes::NextLook() {
             }
         }
 
-        static DataNode &interestCheat = DataVariable("cheat.disable_interest_objects");
+        static const DataNode &interestCheat = DataVariable("cheat.disable_interest_objects");
 
         if (mInterests.size() > 0 && !sDisableInterestObjects) {
             if (interestCheat.Int(0) == 0) {
@@ -617,7 +617,8 @@ void CharEyes::NextLook() {
                          it != mInterests.end();
                          ++it) {
                         if (it->mInterest != unkc8) {
-                            if (!it->IsInRefractoryPeriod()) {
+                            bool _cond = !it->IsInRefractoryPeriod();
+                            if (_cond) {
                                 float score = it->mInterest->ComputeScore(
                                     headXfm.m.y,
                                     headXfm.v,
@@ -849,7 +850,8 @@ storeState:
 }
 
 void CharEyes::LidTrackAndClampingUpdate(EyeDesc &desc, float blinkWeight) {
-    if (DataVariable("no_lids").Int(0))
+    auto _tmp0 = DataVariable("no_lids").Int(0);
+    if (_tmp0)
         return;
     if (!mFaceServo)
         return;
@@ -960,7 +962,7 @@ void CharEyes::LidTrackAndClampingUpdate(EyeDesc &desc, float blinkWeight) {
             );
             Normalize(newDir, newDir);
 
-            float dot = Dot(newDir, origDir);
+            float dot = Dot(origDir, newDir);
             float clamped = Clamp<float>(-1.0f, 1.0f, dot);
             float angle = std::acos(clamped);
 
