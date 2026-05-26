@@ -98,8 +98,8 @@ void UIStats::MaybePublish(UIScreen *from) {
         int compressedSize = 0x10100;
         unsigned char stackbuf[0x10100];
         unsigned char *buf = stackbuf + 0x100;
-        unsigned char *write = (unsigned char *)mPadLogWritePtr;
         unsigned char *base = (unsigned char *)mPadLogBuffer;
+        unsigned char *write = (unsigned char *)mPadLogWritePtr;
         unsigned int writeOff = (unsigned int)(write - base);
         int size = 0x10000;
         if (write == base || (unsigned int)mPadLogCount < 0x4000) {
@@ -167,7 +167,7 @@ void UIStats::MaybePublish(UIScreen *from) {
             if (participating) {
                 ThePlatformMgr.GetOnlineID(padNum, &id);
             }
-            if (participating != mLastWasParticipating[padNum]
+            if ((unsigned int)participating != mLastWasParticipating[padNum]
                 || !(id == mLastPadID[padNum])) {
                 const char *key = MakeString("local_user_%d", padNum);
                 screenExit.AddPair(key, DataNode(participating ? id.ToString() : "null"));
@@ -184,7 +184,7 @@ void UIStats::MaybePublish(UIScreen *from) {
             OnlineID id;
             if (participating) {
                 controllerType = user->GetControllerType();
-                id = *(OnlineID *)((char *)user + 0x1c);
+                id = *user->mOnlineID;
             }
             if (controllerType != mLastControllerType[remoteCount]
                 || !(id == mLastRemoteID[remoteCount])) {
