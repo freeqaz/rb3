@@ -647,9 +647,9 @@ DataArray *StoreOffer::DescriptionData(UILabel *label) const {
     int i = 0;
     for (std::vector<RndText::Line>::iterator it = lines.begin(); it != lines.end();
          ++it, ++i) {
-        int len = it->lineEnd - it->lineStart + 1;
+        int len = it->unk1c - it->unk18 + 1;
         char *buf = (char *)_MemAlloc(len + 1, 1);
-        memcpy(buf, it->lineStart, len);
+        memcpy(buf, it->unk18, len);
         buf[len] = 0;
         TheDebug << MakeString("line: %d - %d: %s\n", it->startIdx, it->endIdx, buf);
         gStoreOfferDescriptionArray->Node(i) = DataNode(buf);
