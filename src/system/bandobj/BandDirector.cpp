@@ -1691,8 +1691,8 @@ DataNode BandDirector::OnFirstShotOK(DataArray *da) {
     if (strncmp(s2.mStr, "coop_", 5) != 0)
         return 0;
     else {
-        float f3c = kHugeFloat;
         float f10 = mPropAnim->GetFrame();
+        float f3c = kHugeFloat;
         Symbol symshottouse =
             TheBandWardrobe->PlayShot5() ? shot_5 : TheBandWardrobe->GetPlayMode();
         if (symshottouse == coop_bg)

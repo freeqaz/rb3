@@ -94,9 +94,9 @@ public:
 
     // TODO: find a better name for this
     bool NoWorlds() {
-        bool b1;
-        bool ret;
         bool b2;
+        bool ret;
+        bool b1;
 
         ret = true;
         b2 = true;
