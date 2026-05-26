@@ -1036,7 +1036,7 @@ void GemTrackDir::SetScreenRectX(float f) {
 
 void GemTrackDir::SetTrackOffset(float f) {
     if (unk488 >= 0 && unk488 < mNumTracks) {
-        mRotater->mLocalXfm.v.y = -f * (unk488 - 0.5f * (mNumTracks - 1));
+        mRotater->mLocalXfm.v.x = -f * (unk488 - 0.5f * (mNumTracks - 1));
         mRotater->SetDirty();
     }
 }
