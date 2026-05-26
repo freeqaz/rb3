@@ -413,14 +413,16 @@ void PollTriFrame(float frameMs, float syncMs) {
 
 void App::Run() { RunWithoutDebugging(); }
 
+#pragma push
+#pragma pool_data off
 void App::RunWithoutDebugging() {
     Timer loop_timer;
     loop_timer.Restart();
     int frameticker = 0;
     while (true) {
         if (gCheckConsistencyish != 0 && (frameticker % (gCheckConsistencyish * 4 - 3)) == 0) {
-                MemCheckConsistency(__FILE__, 864);
                 OSReport("checking consistency %d...\n", gCheckConsistencyish);
+                MemCheckConsistency(__FILE__, 864);
             }
         frameticker++;
         SetGPHangDetectEnabled(false, __FUNCTION__);
@@ -454,6 +456,7 @@ void App::RunWithoutDebugging() {
         PollTriFrame(gTriFrameTimer.mLastMs, f);
     }
 }
+#pragma pop
 
 // Stub: original implementation (.text:0x80010420, size 0xF8) not yet decompiled.
 // Empty body unblocks the link; behavior diff is a no-op poll path.
