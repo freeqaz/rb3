@@ -111,6 +111,38 @@ void Tour::ConfigureTourStatusData(DataArray *arr) {
     }
 }
 
+int Tour::GetTourStatusIndexForFanCount(int fanCount) const {
+    int result = 0;
+    for (int i = 0; i < m_vTourStatus.size(); i++) {
+        if (fanCount < m_vTourStatus[i].mStars)
+            break;
+        result = i;
+    }
+    return result;
+}
+
+bool Tour::DoesTourStatusExist(int fanCount, int offset) const {
+    int index = offset + GetTourStatusIndexForFanCount(fanCount);
+    if (index >= 0 && index < m_vTourStatus.size()) return true;
+    return false;
+}
+
+Symbol Tour::GetTourStatusForStarCount(int i, int j) const {
+    int iStatusIndex = j + GetTourStatusIndexForFanCount(i);
+    MILO_ASSERT(iStatusIndex >= 0, 0xCC);
+    MILO_ASSERT(iStatusIndex < m_vTourStatus.size(), 0xCD);
+    return m_vTourStatus[iStatusIndex].mStatus;
+}
+
+int Tour::GetStarsForTourStatus(Symbol s) const {
+    for (int i = 0; i < m_vTourStatus.size(); i++) {
+        if (m_vTourStatus[i].mStatus == s)
+            return m_vTourStatus[i].mStars;
+    }
+    MILO_ASSERT(false, 0xDD);
+    return 0;
+}
+
 void Tour::ConfigureTourPropertyData(DataArray *arr) {
     MILO_ASSERT(m_mapTourProperties.empty(), 0xF7);
     for (int i = 1; i < arr->Size(); i++) {
@@ -149,38 +181,6 @@ void Tour::ConfigureTourDescData(DataArray *arr) {
             }
         }
     }
-}
-
-int Tour::GetTourStatusIndexForFanCount(int fanCount) const {
-    int result = 0;
-    for (int i = 0; i < m_vTourStatus.size(); i++) {
-        if (fanCount < m_vTourStatus[i].mStars)
-            break;
-        result = i;
-    }
-    return result;
-}
-
-bool Tour::DoesTourStatusExist(int fanCount, int offset) const {
-    int index = offset + GetTourStatusIndexForFanCount(fanCount);
-    if (index >= 0 && index < m_vTourStatus.size()) return true;
-    return false;
-}
-
-Symbol Tour::GetTourStatusForStarCount(int i, int j) const {
-    int iStatusIndex = j + GetTourStatusIndexForFanCount(i);
-    MILO_ASSERT(iStatusIndex >= 0, 0xCC);
-    MILO_ASSERT(iStatusIndex < m_vTourStatus.size(), 0xCD);
-    return m_vTourStatus[iStatusIndex].mStatus;
-}
-
-int Tour::GetStarsForTourStatus(Symbol s) const {
-    for (int i = 0; i < m_vTourStatus.size(); i++) {
-        if (m_vTourStatus[i].mStatus == s)
-            return m_vTourStatus[i].mStars;
-    }
-    MILO_ASSERT(false, 0xDD);
-    return 0;
 }
 
 bool Tour::HasTourProperty(Symbol s) const {
