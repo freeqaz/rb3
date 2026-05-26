@@ -5,6 +5,10 @@
 #include "decomp.h"
 #include <cstring>
 
+#define MAX_BUF_THREADS 0x10
+#define MAX_HEAPS 0x10
+#define DIM(a) (sizeof(a) / sizeof(a[0]))
+
 extern "C" void *WiiMalloc(int);
 extern "C" void WiiFree(void *);
 int GetFreeSystemMemory();
@@ -122,13 +126,6 @@ bool gInsideMemFunc;       // .sbss:0x80C7A369
 const char *kMemAssertStr = "Heap: %s File: %s Line: %d Error: %s\n";
 volatile int gCheckConsistencyish;
 
-int MemNumHeaps() { return gNumHeaps; }
-
-const char *MemHeapName(int heap) {
-    if (heap < 0) return "system";
-    return gHeaps[heap].Name();
-}
-
 // Forward decls used in this TU.
 namespace MemMgr {
     // Helper: always-true validator for thread ids. Inlines to a no-op,
@@ -167,7 +164,7 @@ MemHeapStack &ThreadMemStack(bool createIfMissing) {
                     if (!MemMgr::ValidateThreadId(MemMgr::gThreadIds[cur])) break;
                 }
                 if (cur == MemMgr::gNumThreads) {
-                    MILO_ASSERT(MemMgr::gNumThreads < 0x10, 0x264);
+                    MILO_ASSERT(MemMgr::gNumThreads < MAX_BUF_THREADS, 0x264);
                     MemMgr::gThreadIds[cur] = OSGetCurrentThread();
                     MemMgr::gNumThreads++;
                 }
@@ -199,21 +196,51 @@ int GetCurrentHeapNum() {
 
 void MemFreeBlockStats(int heapNum, int &a, int &b, int &c, int &d) {
     CritSecTracker tracker(gMemLock);
-    MILO_ASSERT(heapNum < 0x10, 0x293);
+    MILO_ASSERT(heapNum < MAX_HEAPS, 0x293);
     gHeaps[heapNum].FreeBlockStats(a, b, c, d);
 }
 
+void MemMoreFreeBlockStats(int heapNum, int &a, int &b, int &c, int &d) {
+    CritSecTracker tracker(gMemLock);
+    MILO_ASSERT(heapNum < MAX_HEAPS, 0x29b);
+    gHeaps[heapNum].MoreFreeBlockStats(a, b, c, d);
+}
+
+void MemResetMinFreeBlockStats(int heapNum) {
+    CritSecTracker tracker(gMemLock);
+    MILO_ASSERT(heapNum < MAX_HEAPS, 0x2a3);
+    gHeaps[heapNum].ResetMinFreeBlockStats();
+}
+
+static int gPrevFree[MAX_HEAPS] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+void MemDelta(const char *name, int heapNum) {
+    int numLargeFrags = 0;
+    int numRightFrags = 0;
+    int numFreeBytes = 0;
+    int biggestFreeBlock = 0;
+    MemFreeBlockStats(heapNum, numLargeFrags, numRightFrags, numFreeBytes, biggestFreeBlock);
+    if (gPrevFree[heapNum] == -1) {
+        gPrevFree[heapNum] = numFreeBytes;
+    }
+    int delta = gPrevFree[heapNum] - numFreeBytes;
+    TheDebug << name << " lfrag:" << numLargeFrags << " rfrag:" << numRightFrags
+             << " largest:" << numFreeBytes << " free:" << numFreeBytes
+             << " delta:" << delta << "\n";
+    gPrevFree[heapNum] = numFreeBytes;
+}
+
 void Heap::InsertFreeBlock(
-    FreeBlock *block, int sizeWords, FreeBlock *prev, FreeBlock *next, int timeStamp
+    FreeBlock *iBlock, int sizeWords, FreeBlock *iPrevBlock, FreeBlock *iNextBlock, int timeStamp
 ) {
-    MILO_ASSERT(block == prev || block == next, 0x300);
-    block->mSizeWords = sizeWords;
-    block->mNext = next;
-    block->mTimeStamp = timeStamp;
-    if (prev != nullptr) {
-        prev->mNext = block;
+    MILO_ASSERT((iBlock != iPrevBlock) && (iBlock != iNextBlock), 0x300);
+    iBlock->mSizeWords = sizeWords;
+    iBlock->mNext = iNextBlock;
+    iBlock->mTimeStamp = timeStamp;
+    if (iPrevBlock != nullptr) {
+        iPrevBlock->mNext = iBlock;
     } else {
-        mFreeBlockChain = block;
+        mFreeBlockChain = iBlock;
     }
 }
 
@@ -292,9 +319,45 @@ void Heap::LastFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
     }
 }
 
+
+void Heap::Init(const char *name, int heapNum, int *start, int sizeWords,
+                bool useHeapAlign, Strategy strategy, int debugLevel, bool allowTemp) {
+    MILO_ASSERT_FMT(start, "Could not allocate %d bytes for heap %s\n", sizeWords * 4, name);
+    int *aligned = (int *)(((unsigned int)((char *)start - 4)) & ~0xF);
+    int *newStart = aligned + 4; // +0x10 bytes
+    int padWords = newStart - start;
+    int newSizeWords = sizeWords - padWords;
+    mName = name;
+    mHeapNum = heapNum;
+    mUseHeapAlign = useHeapAlign;
+    mStrategy = strategy;
+    mDebugLevel = debugLevel;
+    mAllowTemp = allowTemp;
+    mSizeWords = newSizeWords;
+    mStart = newStart;
+    unsigned int ts = gTimeStamp;
+    gTimeStamp = ts + 1;
+    InsertFreeBlock((FreeBlock *)newStart, newSizeWords, nullptr, nullptr, ts);
+    mNumFreeBytes = newSizeWords << 2;
+    mBiggestFree = mNumFreeBytes;
+    mLargestFree = mNumFreeBytes;
+    mMinLargest = mNumFreeBytes;
+    if (mDebugLevel >= 1) {
+        FreeBlock *block = mFreeBlockChain;
+        int *fillStart = (int *)block + 3;
+        int *fillEnd = (int *)block + block->mSizeWords;
+        for (int *p = fillStart; p < fillEnd; p++) {
+            *p = 0xDEADDEAD;
+        }
+    }
+}
+
 int *Heap::SplitFromBack(int n) {
     FreeBlock *startBlock = (FreeBlock *)mStart;
-    MILO_ASSERT(mSizeWords == startBlock->mSizeWords, 0x2C9);
+    if (mSizeWords != startBlock->mSizeWords) {
+        FormatString fs("can't split heap if it is in use.");
+        TheDebug.Fail(fs.Str());
+    }
     int newSize = mSizeWords - n;
     if (n == 0 || newSize < 8) {
         return nullptr;
@@ -309,10 +372,10 @@ int *Heap::Truncate(int *mem, int truncWords, int &outSize) {
     if (mem < mStart || mem >= mStart + mSizeWords) {
         return nullptr;
     }
+    MILO_ASSERT(truncWords >= 0, 0x49E);
     unsigned int header = ((unsigned int *)mem)[-1];
     AllocBlock *allocBlock = (AllocBlock *)(mem - 1);
     int newFreeWords = ((header >> 8) - 1 - (header & 0xFF)) - truncWords;
-    MILO_ASSERT(newFreeWords >= 0, 0x49E);
     if (newFreeWords > 8) {
         FreeBlock *prev = nullptr;
         FreeBlock *next = nullptr;
@@ -465,7 +528,7 @@ int *Heap::Alloc(int sizeWords, int alignShift, int &actualSize) {
         LastFit(sizeWords, alignShift, info);
         break;
     default:
-        MILO_ASSERT(0, 0x432);
+        MILO_ASSERT(false, 0x432);
         break;
     }
     FreeBlock *block = info.mBlock;
@@ -583,19 +646,6 @@ void Heap::LRUFit(int sizeWords, int alignShift, FreeBlockInfo &info) {
     }
 }
 
-int MemFindHeap(const char *name) {
-    for (int i = 0; i < gNumHeaps; i++) {
-        if (strcmp(gHeaps[i].mName, name) == 0) {
-            return i;
-        }
-    }
-    if (gSingleHeap) {
-        return 0;
-    }
-    MILO_ASSERT_FMT(gNumHeaps <= 0, "could not find heap %s", name);
-    return -1;
-}
-
 void MemSetAllowTemp(char *name, bool allow) {
     int heap = MemFindHeap(name);
     if (heap >= 0) {
@@ -674,7 +724,7 @@ bool FreeBlock::AttemptMerge(FreeBlock *next, int debugLevel) {
 void MemPushHeap(int iHeap) {
     MemHeapStack &s = ThreadMemStack(true);
     MILO_ASSERT(iHeap > kNoHeap && iHeap < gNumHeaps, 0x606);
-    MILO_ASSERT(s.mSize + 1 < sizeof(s.mStack) / sizeof(s.mStack[0]), 0x607);
+    MILO_ASSERT(s.mSize + 1 < DIM(s.mStack), 0x607);
     s.mStack[s.mSize] = iHeap;
     s.mSize++;
 }
@@ -717,18 +767,6 @@ MemDoTempAllocations::~MemDoTempAllocations() {
         heap->mStrategy = mOld;
     }
     enabled = mOld == 2;
-}
-
-void MemMoreFreeBlockStats(int heapNum, int &a, int &b, int &c, int &d) {
-    CritSecTracker tracker(gMemLock);
-    MILO_ASSERT(heapNum < 0x10, 0x29b);
-    gHeaps[heapNum].MoreFreeBlockStats(a, b, c, d);
-}
-
-void MemResetMinFreeBlockStats(int heapNum) {
-    CritSecTracker tracker(gMemLock);
-    MILO_ASSERT(heapNum < 0x10, 0x2a3);
-    gHeaps[heapNum].ResetMinFreeBlockStats();
 }
 
 void *MemResizeElem(void *&mem, int &totalSize, void *cutPoint, int cutLength, int insertLength, const char *name) {
@@ -858,6 +896,26 @@ void *_MemRealloc(void *mem, int newSize, int align) {
     return realloc(mem, newSize);
 }
 
+int MemNumHeaps() { return gNumHeaps; }
+
+int MemFindHeap(const char *name) {
+    for (int i = 0; i < gNumHeaps; i++) {
+        if (strcmp(gHeaps[i].mName, name) == 0) {
+            return i;
+        }
+    }
+    if (gSingleHeap) {
+        return 0;
+    }
+    MILO_ASSERT_FMT(gNumHeaps <= 0, "could not find heap %s", name);
+    return -1;
+}
+
+const char *MemHeapName(int heap) {
+    if (heap < 0) return "system";
+    return gHeaps[heap].Name();
+}
+
 extern unsigned char *g_pRSOReserveBuf;
 
 // On first request of exactly kRSOBufferSize (0x10EC00 bytes), return the
@@ -917,7 +975,7 @@ void MemInit() {
         numHeaps = 4;
     }
     gNumHeaps = numHeaps;
-    MILO_ASSERT(numHeaps < 0x10, 0x704);
+    MILO_ASSERT(gNumHeaps < MAX_HEAPS, 0x704);
     int totalCombinedBytes = 0;
     int singleHeapSplitAccum = 0;
     int idx = 3;
@@ -984,22 +1042,22 @@ void MemInit() {
     if (lock != nullptr) lock->Exit();
 }
 
-void *_MemAlloc(int size, int align) {
+void *_MemAlloc(int iSizeBytes, int align) {
     if (!gMemInited) {
         MemInit();
     }
     AutoTimer autoTimer(&gMemAllocTimer, 0.0f, nullptr, nullptr);
-    MILO_ASSERT(size >= 0, 0x86d);
-    if (size == 0) {
+    MILO_ASSERT(iSizeBytes >= 0, 0x86d);
+    if (iSizeBytes == 0) {
         return gZeroAllocBuf;
     }
     CritSecTracker tracker(gMemLock);
     int currentHeap = GetCurrentHeapNum();
     if (kFastHeap != currentHeap) {
         int tinyHeap = kTinyHeap;
-        if (tinyHeap != GetCurrentHeapNum() && size < 0x400) {
+        if (tinyHeap != GetCurrentHeapNum() && iSizeBytes < 0x400) {
             MemPushHeap(tinyHeap);
-            void *result = _MemAlloc(size, align);
+            void *result = _MemAlloc(iSizeBytes, align);
             MemPopHeap();
             return result;
         }
@@ -1021,21 +1079,21 @@ void *_MemAlloc(int size, int align) {
         heap->mAllowTemp = true;
         int oldStrategy = heap->mStrategy;
         heap->mStrategy = 2;
-        void *result = _MemAlloc(size, align);
+        void *result = _MemAlloc(iSizeBytes, align);
         heap->mStrategy = oldStrategy;
         heap->mAllowTemp = oldAllowTemp;
         stack.mSize += pushCount;
         return result;
     }
     if (heap == nullptr) {
-        void *result = WiiMalloc(size);
-        gSysAllocBytes += size;
+        void *result = WiiMalloc(iSizeBytes);
+        gSysAllocBytes += iSizeBytes;
         gSysAllocs += 1;
         return result;
     }
     MILO_ASSERT(!gInsideMemFunc, 0x90a);
     gInsideMemFunc = true;
-    int sizeWords = ((size + 3) >> 2) + 1;
+    int sizeWords = ((iSizeBytes + 3) >> 2) + 1;
     if ((unsigned int)sizeWords < 3) {
         sizeWords = 3;
     }
@@ -1059,7 +1117,7 @@ void *_MemAlloc(int size, int align) {
     void *mem = heap->Alloc(sizeWords, alignShift, actualSize);
     if (mem == nullptr) {
         Heap *fastHeap = &gHeaps[kFastHeap];
-        if (heap != fastHeap && size < 0x400) {
+        if (heap != fastHeap && iSizeBytes < 0x400) {
             int saved = fastHeap->mStrategy;
             fastHeap->mStrategy = heap->mStrategy;
             mem = fastHeap->Alloc(sizeWords, alignShift, actualSize);
@@ -1085,16 +1143,17 @@ void *_MemAlloc(int size, int align) {
                 "I tried all the heaps to get %d bytes, it was not available.\n"
                 "main: free(%d) biggest(%d) lfrag(%d) rfrag(%d)\n"
                 "fast: free(%d) biggest(%d) lfrag(%d) rfrag(%d)\n",
-                size, biggest1, total1, leftFrag1, rightFrag1,
+                iSizeBytes, biggest1, total1, leftFrag1, rightFrag1,
                 biggest2, total2, leftFrag2, rightFrag2
             );
             return nullptr;
         }
     }
+    void *allocated_mem = mem;
     gInsideMemFunc = false;
-    MILO_ASSERT(mem, 0x98a);
-    MILO_ASSERT(mem != (void *)0x01000000, 0x98b);
-    return mem;
+    MILO_ASSERT(allocated_mem, 0x98a);
+    MILO_ASSERT(allocated_mem != (void *)0x01000000, 0x98b);
+    return allocated_mem;
 }
 
 extern char gZeroAllocBuf[0x20];
@@ -1141,17 +1200,17 @@ void _MemFree(void *mem) {
 void AddHeap(const char *name, int heapNum, int sizeBytes, bool useHeapAlign, int region,
              Heap::Strategy strategy, int debugLevel, bool allowTemp) {
     int actualSize = sizeBytes;
-    int *mem = (int *)WiiAllocHeapAlign(&actualSize, region, useHeapAlign ? 0x20 : -0x20);
-    if (mem == nullptr) {
+    int *raw_mem = (int *)WiiAllocHeapAlign(&actualSize, region, useHeapAlign ? 0x20 : -0x20);
+    if (raw_mem == nullptr) {
         int available = GetFreeSystemMemory();
-        mem = (int *)WiiMalloc(available);
-        MILO_ASSERT(mem, 0x7f5);
+        raw_mem = (int *)WiiMalloc(available);
+        MILO_ASSERT(raw_mem, 0x7f5);
         if (available < actualSize) {
-            OSReport("not enough memory for heap \"%s\". Available: %d\n", name, available);
+            OSReport("not enough memory for heap:%s. Wanted:%d. Got:%d\n", name, sizeBytes, available);
         }
         actualSize = available;
     }
-    gHeaps[heapNum].Init(name, heapNum, mem, actualSize >> 2, useHeapAlign, strategy,
+    gHeaps[heapNum].Init(name, heapNum, raw_mem, actualSize >> 2, useHeapAlign, strategy,
                          debugLevel, allowTemp);
 }
 
@@ -1159,42 +1218,14 @@ void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
                bool useHeapAlign, Heap::Strategy strategy, int debugLevel, bool allowTemp) {
     int sizeWords = sizeBytes >> 2;
     int *mem = gHeaps[srcHeap].SplitFromBack(sizeWords);
-    MILO_ASSERT_FMT(mem, "Unable to split heap \"%s\"", name);
+    if (!mem) {
+        FormatString fs("Can't split that much (or that little) off this heap.");
+        TheDebug.Fail(fs.Str());
+    }
     gHeaps[newHeapNum].Init(name, newHeapNum, mem, sizeWords, useHeapAlign, strategy,
                             debugLevel, allowTemp);
 }
 
-void Heap::Init(const char *name, int heapNum, int *start, int sizeWords,
-                bool useHeapAlign, Strategy strategy, int debugLevel, bool allowTemp) {
-    MILO_ASSERT_FMT(start, "size %d for heap %s", sizeWords * 4, name);
-    int *aligned = (int *)(((unsigned int)((char *)start - 4)) & ~0xF);
-    int *newStart = aligned + 4; // +0x10 bytes
-    int padWords = newStart - start;
-    int newSizeWords = sizeWords - padWords;
-    mName = name;
-    mHeapNum = heapNum;
-    mUseHeapAlign = useHeapAlign;
-    mStrategy = strategy;
-    mDebugLevel = debugLevel;
-    mAllowTemp = allowTemp;
-    mSizeWords = newSizeWords;
-    mStart = newStart;
-    unsigned int ts = gTimeStamp;
-    gTimeStamp = ts + 1;
-    InsertFreeBlock((FreeBlock *)newStart, newSizeWords, nullptr, nullptr, ts);
-    mNumFreeBytes = newSizeWords << 2;
-    mBiggestFree = mNumFreeBytes;
-    mLargestFree = mNumFreeBytes;
-    mMinLargest = mNumFreeBytes;
-    if (mDebugLevel >= 1) {
-        FreeBlock *block = mFreeBlockChain;
-        int *fillStart = (int *)block + 3;
-        int *fillEnd = (int *)block + block->mSizeWords;
-        for (int *p = fillStart; p < fillEnd; p++) {
-            *p = 0xDEADDEAD;
-        }
-    }
-}
 
 int GetFreeSystemMemory() {
     int low = 0;
@@ -1340,7 +1371,7 @@ void MemPrintOverview(int heapIdx, TextStream &stream) {
             stream << MakeString(
                 " [%5s pool] free:%7d TotalChunksSize:%7d NumHunks:%d\n",
                 MemHeapName(*(int *)((char *)ca + 0x201c)),
-                (*(int **)((char *)ca + 0x2014) - *(int **)((char *)ca + 0x2018)) >> 8,
+                (int)(*(int **)((char *)ca + 0x2014) - *(int **)((char *)ca + 0x2018)) >> 8,
                 *(int *)((char *)ca + 0x8) >> 10,
                 *(int *)((char *)ca + 0x2010)
             );
