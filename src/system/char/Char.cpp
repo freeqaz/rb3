@@ -255,14 +255,14 @@ float CharDebug::UpdateOverlay(RndOverlay *ovl, float hilite_y) {
         DisplayObject(*it);
     }
     mOnce.clear();
-    if (mObjects.empty()) {
+    auto _tmp0 = mObjects.empty();
+    if (_tmp0) {
         ovl->mShowing = false;
         ovl->mTimer.Restart();
     }
     if (worldCam) {
         cur->Select();
     }
-    float ret = gCharHighlightY;
     gCharHighlightY = -1;
-    return ret;
+    return gCharHighlightY;
 }
