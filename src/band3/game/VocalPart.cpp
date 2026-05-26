@@ -301,10 +301,8 @@ void VocalPart::AddPhrasePoints(float pts) {
     float oldScore = mPhraseScore;
     float newScore = oldScore + pts;
     float cap = mPhraseScoreMax;
-    if (cap >= unk38)
-        cap = unk38;
-    if (cap >= newScore)
-        cap = newScore;
+    cap = Min(unk38, cap);
+        cap = Min(cap, newScore);
     mPhraseScore = cap;
     float delta = mPhraseScore - oldScore;
     int i1, i2, i3;
@@ -381,7 +379,8 @@ bool VocalPart::InTambourinePhrase() const {
 }
 
 float VocalPart::FramePhraseMeterFrac() const {
-    if (!mPlayer->IsNet()) {
+    bool _cond = !mPlayer->IsNet();
+    if (_cond) {
         float ratio = 0.0f;
         if (mPhraseScoreMax != 0.0f)
             ratio = mPhraseScore / mPhraseScoreMax;
