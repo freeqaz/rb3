@@ -185,12 +185,12 @@ useFixedMat:
 }
 
 TourSetlistType QuestFilterPanel::GetSelectedSetlistType() {
-    if (GetState() != kUp)
+    TourSetlistType ret;
+    if (kUp != GetState())
         return kTourSetlist_Invalid;
     DataNode handled = Handle(get_selected_filter_index_msg, true);
     int i = handled.Int();
     if (m_pQuestFilterProvider->NumData() > 0) {
-        TourSetlistType ret;
         TourProgress *prog = TheTour->GetTourProgress();
         if (prog) {
             TourDesc *desc = TheTour->GetTourDesc(prog->GetTourDesc());
