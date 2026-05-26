@@ -414,18 +414,22 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 unk7c = 2;
                 int sz = mCacheID->GetDeviceID();
                 unk78 = sz;
                 TheCacheMgr->AddCacheID(mCacheID, Symbol(kStrGlobalCacheName.Str()));
                 SetState((State)0x31);
-            } else if (result == kCache_ErrorUserCancel) {
+                break;
+                case kCache_ErrorUserCancel:
                 unk7c = 1;
                 SetState((State)0x29);
-            } else {
+                break;
+                default:
                 TheDebug.Fail(MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result));
                 SetState((State)0x37);
+                break;
             }
         }
         break;
@@ -437,15 +441,20 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 SetState((State)0x32);
-            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                break;
+                case kCache_ErrorStorageDeviceMissing:
                 SetState((State)0x28);
-            } else if (result == kCache_ErrorCorrupt) {
+                break;
+                case kCache_ErrorCorrupt:
                 SetState((State)0x2f);
-            } else {
+                break;
+                default:
                 TheDebug.Fail(MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result));
                 SetState((State)0x37);
+                break;
             }
         }
         break;
