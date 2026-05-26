@@ -156,7 +156,8 @@ void Tour::ConfigureTourPropertyData(DataArray *arr) {
             std::map<Symbol, TourProperty *>::iterator it = m_mapTourProperties.lower_bound(name);
             bool canInsert = it == m_mapTourProperties.end() || name < it->first;
             if (canInsert) {
-                it = m_mapTourProperties.insert(it, std::map<Symbol, TourProperty *>::value_type(name, (TourProperty *)0));
+                std::map<Symbol, TourProperty *>::iterator hint = it;
+                it = m_mapTourProperties.insert(hint, std::map<Symbol, TourProperty *>::value_type(name, (TourProperty *)0));
                 it->second = pProperty;
             }
         }
@@ -177,7 +178,8 @@ void Tour::ConfigureTourDescData(DataArray *arr) {
             std::map<Symbol, TourDesc *>::iterator it = m_mapTourDesc.lower_bound(name);
             bool canInsert = it == m_mapTourDesc.end() || name < it->first;
             if (canInsert) {
-                it = m_mapTourDesc.insert(it, std::map<Symbol, TourDesc *>::value_type(name, (TourDesc *)0));
+                std::map<Symbol, TourDesc *>::iterator hint = it;
+                it = m_mapTourDesc.insert(hint, std::map<Symbol, TourDesc *>::value_type(name, (TourDesc *)0));
                 it->second = pTourDesc;
             }
         }
