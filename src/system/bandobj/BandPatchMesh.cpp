@@ -728,7 +728,7 @@ bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
                 start++;
             if (end < start)
                 end = start;
-            while (end < size && unk18[end]->pos.z < hi)
+            while ((unsigned int)end < size && unk18[end]->pos.z < hi)
                 end++;
             for (int k = start; k < end; k++) {
                 RndMesh::Vert *v = unk18[k];
@@ -752,9 +752,9 @@ bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
     for (int i = 0; i < n10; i++) {
         MeshVert *mv = unk10[i];
         int vIdx = mv->mVert - &mMesh->Verts(0);
-        unsigned short *facePtr = (unsigned short *)((char *)mv + 0x32);
-        for (int j = 0; j < mv->unk30; j++) {
-            unsigned short faceIdx = facePtr[j];
+        MeshVert *faceIter = mv;
+        for (int j = 0; j < mv->unk30; j++, faceIter = (MeshVert *)((char *)faceIter + 2)) {
+            unsigned short faceIdx = *(unsigned short *)((char *)faceIter + 0x32);
             RndMesh::Face &face = mMesh->Faces()[faceIdx];
             unsigned short prev = face.v3;
             for (int z = 0; z <= 2; z++) {
