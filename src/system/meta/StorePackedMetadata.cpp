@@ -1652,6 +1652,7 @@ StorePage *StoreMetadataManager::LoadDynamicPage(DataArray *arr) {
 }
 
 void StoreMetadataManager::PollLoading() {
+    bool loaded;
     if (mFlags & 1) {
         SetLoadingState(0xA);
     }
@@ -1669,7 +1670,6 @@ void StoreMetadataManager::PollLoading() {
         return;
     }
     case 10: {
-        bool loaded;
         if (mVersion == NULL) {
             int ok;
             if (!(mFlags & 1)) {
@@ -1722,12 +1722,7 @@ void StoreMetadataManager::PollLoading() {
         if (mRedemptionsTable == NULL) {
             mRedemptionsTable = new StoreRedemptionsTable();
             loaded = mRedemptionsTable->Load(mBasePath.c_str());
-        load_check:
-            if (!loaded) {
-                mErrorMsg = 6;
-                SetLoadingState(0xB);
-            }
-            return;
+            goto load_check;
         }
         }
         if (StoreIndexFileReader::mMetaDataCntHandleInited) {
@@ -1751,6 +1746,12 @@ void StoreMetadataManager::PollLoading() {
         if (!gDebugDontRelyOnCommerceServer
             && TheWiiCommerceMgr.RequestOffers(this) != 0) {
             mFlags |= 0x10;
+        }
+        return;
+    load_check:
+        if (!loaded) {
+            mErrorMsg = 6;
+            SetLoadingState(0xB);
         }
         return;
     }
@@ -1853,11 +1854,11 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
 }
 
 void StoreMetadataManager::DebugDownload() {
-    int useCntCache = (TheWiiContentMgr.mMode == 0) ? 1 : 0;
     std::set<unsigned long long> downloadedTitles;
-    bool success = true;
+    int useCntCache = (TheWiiContentMgr.mMode == 0) ? 1 : 0;
+    int success = 1;
 
-    unsigned short contentList[3072];
+    unsigned short contentList[512];
 
     for (int i = 0; i < mOfferTable->mNumOffers && success; i++) {
         unsigned char flags = mOfferTable->mBufferNewRelease[i].mFlags;
@@ -1874,10 +1875,9 @@ void StoreMetadataManager::DebugDownload() {
         }
         unsigned long long titleId = WiiCommerceMgr::MakeDataTitleId(&firstSong->unk6);
 
-        const char *offerName = TheStoreMetadata.GetString(offer->mNameIndex);
-        TheDebug << MakeString("DebugDownload: found offer %s\n", offerName);
-
         if (downloadedTitles.find(titleId) == downloadedTitles.end()) {
+            const char *offerName = TheStoreMetadata.GetString(offer->mNameIndex);
+            TheDebug << MakeString("DebugDownload: found offer %s\n", offerName);
             TheDebug << MakeString("DebugDownload: EC_DownloadTitle %llx\n", titleId);
             EC_DownloadTitle(titleId, 0);
             DebugWaitAsyncOp(0);
@@ -1885,7 +1885,6 @@ void StoreMetadataManager::DebugDownload() {
         }
 
         int numContents = 0;
-        int contentByteSize = 0;
         for (int j = 0; j < offer->mNumSongs; j++) {
             StorePackedSong *song;
             if (offer->mIsRBN) {
@@ -1897,37 +1896,37 @@ void StoreMetadataManager::DebugDownload() {
             unsigned short base = song->unka;
             contentList[numContents] = base;
             numContents++;
-            contentByteSize += 2;
             contentList[numContents] = (unsigned short)(base + 1);
             numContents++;
-            contentByteSize += 2;
         }
 
         if (useCntCache) {
             CM_CNTSDCacheClearRSO();
-            for (int k = 0; (unsigned long)k < (unsigned long)contentByteSize / 2; k++) {
+            for (int k = 0; (unsigned long)k < (unsigned long)numContents; k++) {
                 CM_CNTSDCachePushDeleteContentRSO(1, titleId, contentList[k]);
             }
         }
 
         TheDebug << MakeString(
-            "DebugDownload: downloading %d content units\n", (unsigned long)contentByteSize
+            "DebugDownload: downloading %d content units\n", (unsigned long)numContents
         );
-        if (DebugWaitAsyncOp(EC_DownloadContents(titleId, contentList, contentByteSize)) == 0) {
-            TheDebug << FormatString("DebugDownload: failed, so quitting.\n").Str();
+        if (DebugWaitAsyncOp(EC_DownloadContents(titleId, contentList, numContents)) == 0) {
+            FormatString fmt1("DebugDownload: failed, so quitting.\n");
+            TheDebug << fmt1.Str();
             success = false;
         } else if (useCntCache) {
-            for (int k = 0; (unsigned long)k < (unsigned long)contentByteSize / 2; k++) {
-                int r = DebugSdBackup(titleId, contentList[k]);
-                success = (r != 0);
+            for (int k = 0; (unsigned long)k < (unsigned long)numContents; k++) {
+                success = DebugSdBackup(titleId, contentList[k]);
                 if (!success) {
-                    TheDebug << FormatString("DebugDownload: failed, so quitting.\n").Str();
+                    FormatString fmt2("DebugDownload: failed, so quitting.\n");
+                    TheDebug << fmt2.Str();
                     break;
                 }
             }
         }
     }
-    TheDebug << FormatString("DebugDownload: starting a content refresh.\n").Str();
+    FormatString fmt3("DebugDownload: starting a content refresh.\n");
+    TheDebug << fmt3.Str();
     TheWiiContentMgr.mDirty = true;
     TheWiiContentMgr.StartRefresh();
 }
@@ -2020,14 +2019,15 @@ void DebugPrint(ECContentCatalogInfo *) {}
 
 bool StoreSingleStringTable::LoadFile(const char *filename) {
     char *dataStart, *dataEnd;
-    if (!StoreLoadPackedFile(
+    bool ret = StoreLoadPackedFile(
         filename, true, 0x20000, true, true, &mBuffer, &dataStart, &dataEnd, (int *)this
-    ))
-        return false;
+    );
+    if (!ret)
+        return ret;
     mStrings = (char **)dataStart;
-    char *strData = dataStart + mNumStrings * 4;
-    int remaining = (int)(dataEnd - strData);
-    int estCount = (remaining + (remaining >> 31 & 1)) >> 1;
+    dataStart += mNumStrings * 4;
+    int remaining = (int)(dataEnd - dataStart);
+    int estCount = ((remaining >> 31 & 1) + remaining) >> 1;
     if (mNumStrings > estCount) {
         TheDebug << MakeString(
             "%d strings, but based on the data size, there can only be %d.\n",
@@ -2037,7 +2037,7 @@ bool StoreSingleStringTable::LoadFile(const char *filename) {
         mNumStrings = estCount;
     }
     int nullCount = 0;
-    for (char *p = strData; p < dataEnd; p++) {
+    for (char *p = dataStart; p < dataEnd; p++) {
         if ((signed char)*p == 0)
             nullCount++;
     }
@@ -2048,7 +2048,7 @@ bool StoreSingleStringTable::LoadFile(const char *filename) {
     }
     int i = 0;
     int iOff = 0;
-    char *cur = strData;
+    char *cur = dataStart;
     for (; i < mNumStrings && cur < dataEnd; ) {
         if (mStrings[i] != cur) {
             FormatString fmt("String %d does not match up\n");
