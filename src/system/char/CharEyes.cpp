@@ -663,7 +663,7 @@ stateReset:
     unk128 = 0.2f;
     unk12c = -1;
 
-    static DataNode &blinkCheat = DataVariable("cheat.disable_procedural_blinks");
+    static const DataNode &blinkCheat = DataVariable("cheat.disable_procedural_blinks");
 
     if (!sDisableProceduralBlink && !blinkCheat.NotNull() && !unk13c && mFaceServo
         && unk144 < 9
