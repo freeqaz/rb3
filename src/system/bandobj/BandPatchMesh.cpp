@@ -337,11 +337,26 @@ void BandPatchMesh::WorkVerts::AddEdge(
     }
 }
 
+// TU-local enum so MILO_ASSERT stringifies as "vf != MeshFace::kFinished" etc.
+// without editing the header. The original BandPatchMesh::MeshFace class has
+// no enum members, but the target binary's string pool references named
+// constants — using a #define alias lets us preserve the runtime behavior
+// (b != 4 etc.) while emitting the longer pool strings the target binary has.
+namespace {
+    struct MeshFace_local {
+        enum { kUnAdded = -1, kDontTestMonotonicity = 3, kFinished = 4 };
+    };
+}
+
 int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
     unk28[faceidx].mFlags = b;
     unk20.push_back(faceidx);
-    MILO_ASSERT(b != 4, 0x2A1);
-    MILO_ASSERT(b != -1, 0x2A2);
+#define vf b
+#define MeshFace MeshFace_local
+    MILO_ASSERT(vf != MeshFace::kFinished, 0x2A1);
+    MILO_ASSERT(vf != MeshFace::kUnAdded, 0x2A2);
+#undef MeshFace
+#undef vf
     RndMesh::Face &face = mMesh->Faces()[faceidx];
     int prevVertCount = unk10.size();
     MeshVert *verts[3];
@@ -350,7 +365,11 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
         MeshVert *mv = mMeshVerts[face[i]];
         verts[i] = mv;
         if (mv->mVert == 0) {
-            MILO_ASSERT(b != 3, 0x2B1);
+#define vf b
+#define MeshFace MeshFace_local
+            MILO_ASSERT(vf != MeshFace::kDontTestMonotonicity, 0x2B1);
+#undef MeshFace
+#undef vf
             AddMeshVertAndTwins(face[i], mMeshVerts[face[b]]);
         }
         allOut &= verts[i]->unk26;
