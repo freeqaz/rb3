@@ -2409,8 +2409,7 @@ float GemPlayer::GetCommonPhraseFraction(int tick) {
     int idx = TheSongDB->GetGemList(mTrackNum)->ClosestMarkerIdxAtOrAfterTick(ext.unk0);
     if (idx != -1) {
         const std::vector<GameGem> &gems = TheSongDB->GetGems(mTrackNum);
-        for (int n = (int)gems.size() - idx; n > 0; n--, idx++) {
-            if ((unsigned int)idx >= gems.size()) break;
+        for (int n = (int)gems.size() - idx; (unsigned int)idx < gems.size(); n--, idx++) {
             if (gems[idx].GetTick() >= ext.unk4) break;
             total++;
             if (!mGemStatus->GetHit(idx)) {
