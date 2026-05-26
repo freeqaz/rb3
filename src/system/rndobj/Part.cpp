@@ -1260,7 +1260,7 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
 
     bool bounce = (mBounce != NULL);
     if (bounce) {
-        const Transform &bxf = mBounce->WorldXfm();
+        Transform &bxf = mBounce->WorldXfm();
         const Transform &bxf2 = mBounce->WorldXfm();
         bouncePlane.a = bxf2.m.z.x;
         bouncePlane.b = bxf2.m.z.y;
