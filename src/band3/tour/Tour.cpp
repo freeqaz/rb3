@@ -29,6 +29,7 @@
 #include "meta_band/NetSync.h"
 #include "ui/UILabel.h"
 #include "ui/UIScreen.h"
+#include "decomp.h"
 
 #pragma pool_data off
 
@@ -311,6 +312,8 @@ Quest *Tour::GetQuest() {
 }
 
 TourPerformerImpl *Tour::GetPerformer() const { return m_pTourPerformer; }
+
+DECOMP_FORCEACTIVE(Tour, "pUser")
 
 bool Tour::HasAnnouncement() const { return GetAnnouncement() != ""; }
 
