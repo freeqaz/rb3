@@ -836,8 +836,8 @@ void UILabel::CenterWithLabel(UILabel *label, bool b, float f) {
     float spaceBetween = f;
     Transform xfm = LocalXfm();
     float width = mText->MaxLineWidth();
-    float centerX = xfm.v.x;
     Transform otherxfm = label->LocalXfm();
+    float centerX = otherxfm.v.x;
     float otherwidth = label->mText->MaxLineWidth();
     otherxfm.v.x = (float)num * (otherwidth * 0.5f + spaceBetween * 0.5f) + centerX;
     xfm.v.x = centerX - (float)num * (width * 0.5f + spaceBetween * 0.5f);
