@@ -36,8 +36,8 @@ float DeJitter::Apply(float ms, float &delta) {
             }
             float f3 = unk_0x10;
             float f4 = unk_0x14;
-            filteredValue = ms + 16.0f;
             f1 = (f1 - f3) * 0.1f + f3;
+            filteredValue = ms + 16.0f;
             unk_0x10 = f1;
             f1 = f4 + f1;
             if (f1 <= filteredValue) {
