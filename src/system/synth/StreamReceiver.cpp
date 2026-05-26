@@ -104,7 +104,16 @@ void StreamReceiver::Stop() {
 }
 
 void StreamReceiver::Poll() {
-    if (mState == kPlaying || mState == kStopped) {
+    if ((unsigned int)(mState - kPlaying) > 1U) {
+        if (mState != kInit) {
+            if (mState == kReady) {
+            } else {
+                goto state_bad;
+            }
+        } else {
+            mWantToSend = true;
+        }
+    } else {
         int playCursor = GetPlayCursor();
         int activeBuf = playCursor / 0xC000;
         mLastPlayCursor = playCursor;
@@ -125,11 +134,10 @@ void StreamReceiver::Poll() {
         if (diff == mNumBuffers / 2 || diff == -mNumBuffers / 2) {
             mWantToSend = true;
         }
-    } else if (mState == kInit) {
-        mWantToSend = true;
-    } else if (mState != kReady) {
-        MILO_FAIL("bad state logic.\n");
     }
+    goto block_17;
+state_bad:
+    MILO_FAIL("bad state logic.\n");
 block_17:
     if (mWantToSend && mState != kInit && mRingFreeSpace != 0) {
         mStarving = true;
