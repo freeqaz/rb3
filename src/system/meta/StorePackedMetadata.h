@@ -69,8 +69,6 @@ public:
     char *mBuffer; // 0x4
     StorePackedOffer **mOffers; // 0x8
     StoreOfferState *mBufferNewRelease; // 0xc
-    unsigned short mNumNewReleases; // 0x10
-    unsigned short *mNewReleases; // 0x14
 };
 
 class StoreRbnOfferTable {
@@ -83,8 +81,6 @@ public:
     char *mBuffer; // 0x4
     StorePackedRBNOffer **mOffers; // 0x8
     StoreOfferState *mBufferNewRelease; // 0xc
-    unsigned short mNumNewReleases; // 0x10
-    unsigned short *mNewReleases; // 0x14
 };
 
 class StoreSingleStringTable {
@@ -175,7 +171,9 @@ public:
     StoreMetadataManager()
         : mFlags(0), mLoadingState(0), mBasePath(), mVersion(0), mStringTable(0),
           mSongTable(0), mOfferTable(0), mRbnOfferTable(0), mPageTable(0),
-          mCurrentPage(0), mMarqueeTable(0), mRedemptionsTable(0) {}
+          mCurrentPage(0), mMarqueeTable(0), mRedemptionsTable(0),
+          unk70(0), unk74(0), unk78(0), unk7c(0), unk80(0), mErrorMsg(0),
+          unk88(0), unk90(0) {}
     ~StoreMetadataManager();
     virtual DataNode Handle(DataArray *, bool);
 
