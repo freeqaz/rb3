@@ -61,15 +61,13 @@ int DrumTrackWatcherImpl::RelevantGem(int i1, int i2, int i3) {
 bool DrumTrackWatcherImpl::Swing(int slot, bool b1, bool b2, GemHitFlags flags) {
     KillSustainForSlot(slot);
     float now = mParent->GetNow();
-    int idx = mGemList->ClosestMarkerIdx(now + mSyncOffset);
+    unsigned int idx = mGemList->ClosestMarkerIdx(now + mSyncOffset);
     float timeat = mGemList->TimeAt(idx);
-    float timeatplus20 = timeat + 20.0f;
     int i3 = idx;
-    for (; i3 + 1 < mGemList->NumGems() && mGemList->TimeAt(i3 + 1) <= timeatplus20;
+    for (; i3 + 1 < mGemList->NumGems() && mGemList->TimeAt(i3 + 1) <= timeat + 20.0f;
          i3++)
         ;
-    float timeatminus20 = timeat - 20.0f;
-    while (idx - 1 >= 0 && mGemList->TimeAt(idx - 1) >= timeatminus20) {
+    while (idx - 1 >= 0 && mGemList->TimeAt(idx - 1) >= timeat - 20.0f) {
         idx--;
     }
     int relevant = RelevantGem(idx, i3, slot);
