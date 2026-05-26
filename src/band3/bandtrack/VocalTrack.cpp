@@ -1997,19 +1997,18 @@ void VocalTrack::Poll(float f1) {
 void VocalTrack::PollKaraoke(float f1) {
     if (mPlayer) {
         int numSingers = mPlayer->NumSingers();
-        int i;
         if (!unk2e5) {
             StartUpdateArrows();
-            for (i = 0; i < numSingers; i++) {
+            for (int i = 0; i < numSingers; i++) {
                 UpdatePitchArrow(f1, i);
             }
             UpdateUnusedArrows();
         }
         float f7 = 0;
-        for (i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             float clamped = Clamp<float>(0, 1, mPlayer->FramePhraseMeterFrac(i));
             int rating = mPlayer->CalculatePhraseRating(clamped);
-            mDir->mStreakMeter->SetPartPct(i, clamped, rating <= 4);
+            mDir->mStreakMeter->SetPartPct(i, clamped, rating >= 4);
             if (clamped > f7)
                 f7 = clamped;
         }
