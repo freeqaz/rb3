@@ -219,8 +219,7 @@ void CharacterTest::SetStartEndBeat(float f1, float f2, int bpm) {
         if (milohandled.Type() == kDataObject) {
             Hmx::Object *handledObj = milohandled.GetObj();
             if (handledObj == mMe) {
-                mMe->mFrozen = 0; // i know this is wrong, just can't figure out the right
-                                  // member atm
+                mMe->SetRate(RndAnimatable::k30_fps);
                 miloObj->SetProperty("bpm", bpm);
                 float beatsPerSecond = bpm / 60.0f;
                 float startFrame = (30.0f * f1) / beatsPerSecond;
