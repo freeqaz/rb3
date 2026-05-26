@@ -32,14 +32,18 @@ void __adjust_heap<PairIF *, long, PairIF, SingerStats::PartPercentageSorter>(
         __holeIndex = __secondChild - 1;
     }
     // Inline __push_heap to avoid extra stack frame for __val copy
+    // Load __val fields early to avoid repeated reloads from the struct pointer
+    int __val_first = __val.first;
+    float __val_second = __val.second;
     long __parent = (__holeIndex - 1) / 2;
     while (__holeIndex > __topIndex &&
-           (__first + __parent)->second < __val.second) {
+           (__first + __parent)->second < __val_second) {
         *(__first + __holeIndex) = *(__first + __parent);
         __holeIndex = __parent;
         __parent = (__holeIndex - 1) / 2;
     }
-    *(__first + __holeIndex) = __val;
+    (__first + __holeIndex)->first = __val_first;
+    (__first + __holeIndex)->second = __val_second;
 }
 
 template <>
@@ -80,10 +84,7 @@ void __insertion_sort<PairIF *, PairIF, SingerStats::PartPercentageSorter>(
             __first->first = __val_first;
             __first->second = __val_second;
         } else {
-            PairIF __val;
-            __val.first = __val_first;
-            __val.second = __val_second;
-            __unguarded_linear_insert(__i, __val, __comp);
+            __unguarded_linear_insert(__i, *__i, __comp);
         }
     }
 }
@@ -101,6 +102,12 @@ DECOMP_FORCEACTIVE(
     "index < mBestOverdriveDeployments.size()",
     "index < mBestStreakMultipliers.size()"
 )
+
+// Force instantiation of BinStream vector<float> operators in this TU.
+DECOMP_FORCEBLOCK(Stats, (BinStream& bs, const std::vector<float>& fvec, std::vector<float>& fvec2), {
+    bs << fvec;
+    bs >> fvec2;
+})
 
 Stats::Stats()
     : mHitCount(0), mMissCount(0), m0x08(0), m0x0c(0), mPersistentStreak(0),
