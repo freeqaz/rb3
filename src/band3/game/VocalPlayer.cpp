@@ -1182,7 +1182,7 @@ void VocalPlayer::HandlePhraseEnd(float f1) {
     mTambourineManager.SetTambourine(mVocalParts.front()->InTambourinePhrase());
     bool b14 = i4 != -1 && ic8 >= 4;
     if (mTrack) {
-        if (mScoringEnabled) {
+        if (ScoringEnabled()) {
             mTrack->OnPhraseComplete(fcc, fd0, i16);
         }
         if (IsLocal()) {
