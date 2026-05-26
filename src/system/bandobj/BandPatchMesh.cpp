@@ -359,9 +359,9 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
 #undef MeshFace
 #undef vf
     RndMesh::Face &face = mMesh->Faces()[faceidx];
-    MeshVert *verts[3];
     int prevVertCount = unk10.size();
     int allOut = 0xf;
+    MeshVert *verts[3];
     for (int i = 0; i < 3; i++) {
         MeshVert *mv = mMeshVerts[face[i]];
         verts[i] = mv;
@@ -381,12 +381,9 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
         temp.SetVert(verts[0]->mVert);
         reject = 0;
         Vector2 v(temp.unk1c);
-        if (temp.AddUV(verts[1], unk34, &v) != 0) {
-            if (temp.AddUV(verts[2], unk34, &v) == 0)
-                reject = 1;
-        } else {
+        if (temp.AddUV(verts[1], unk34, &v) == 0
+            || temp.AddUV(verts[2], unk34, &v) == 0)
             reject = 1;
-        }
     }
     if (reject == 0 && b != 3) {
         int prev = (b == 0) ? 2 : b - 1;
