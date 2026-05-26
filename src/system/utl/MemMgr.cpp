@@ -553,9 +553,11 @@ int *Heap::Alloc(int sizeWords, int alignShift, int &actualSize) {
         info.mBlock = newBlock;
         int newSize = info.mBlockSize - info.mPadWords;
         info.mBlockSize = newSize;
+        unsigned int bTimeStamp = block->mTimeStamp;
+        FreeBlock *bNext = block->mNext;
         newBlock->mSizeWords = newSize;
-        newBlock->mNext = block->mNext;
-        newBlock->mTimeStamp = block->mTimeStamp;
+        newBlock->mNext = bNext;
+        newBlock->mTimeStamp = bTimeStamp;
         InsertFreeBlock(block, info.mPadWords, info.mPrev, newBlock, newBlock->mTimeStamp);
         info.mPadWords = 0;
         info.mPrev = block;
@@ -591,36 +593,8 @@ int *Heap::Alloc(int sizeWords, int alignShift, int &actualSize) {
         unsigned int hdr = allocBlock->mHeader;
         int *fillStart = (int *)allocBlock + 1;
         int *fillEnd = (int *)allocBlock - (hdr & 0xFF) + (hdr >> 8);
-        if (fillStart < fillEnd) {
-            int *p = fillStart;
-            int *bulkEnd = fillEnd - 8;
-            int byteSize = (int)((char *)fillEnd - (char *)p);
-            int bytePlus3 = byteSize + 3;
-            if ((bytePlus3 / 4) > 8) {
-                bool valid = false;
-                if (p <= fillEnd) {
-                    bool ok = true;
-                    if (!(byteSize & 0x80000000) && (bytePlus3 & 0x80000000)) {
-                        ok = false;
-                    }
-                    if (ok) valid = true;
-                }
-                if (valid && p < bulkEnd) {
-                    do {
-                        p[0] = 0xABCDABCD; p[1] = 0xABCDABCD;
-                        p[2] = 0xABCDABCD; p[3] = 0xABCDABCD;
-                        p[4] = 0xABCDABCD; p[5] = 0xABCDABCD;
-                        p[6] = 0xABCDABCD; p[7] = 0xABCDABCD;
-                        p += 8;
-                    } while (p < bulkEnd);
-                }
-            }
-            if (p < fillEnd) {
-                do {
-                    *p = 0xABCDABCD;
-                    p++;
-                } while (p < fillEnd);
-            }
+        for (int *p = fillStart; p < fillEnd; p++) {
+            *p = 0xABCDABCD;
         }
     }
     actualSize = allocBlock->mHeader >> 8;

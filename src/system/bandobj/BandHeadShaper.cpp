@@ -273,18 +273,17 @@ void BandHeadShaper::AddFrame(const char *cc, int frame, float weight) {
             BandFaceDeform::DeltaArray &da = df->mFrames[fi];
             for (Delta *d = (Delta *)da.begin(); d < da.end();
                  d = (Delta *)d->next()) {
-                float dx, dy, dz;
-                signed char *bytes = (signed char *)d + 4;
+                signed char *bytes = (signed char *)d;
                 for (int j = 0; j < d->num; j++) {
-                    dx = 0.015748031f * (float)bytes[0];
-                    dy = 0.015748031f * (float)bytes[1];
-                    dz = 0.015748031f * (float)bytes[2];
+                    float dx = 0.015748031f * (float)bytes[4];
+                    float dy = 0.015748031f * (float)bytes[5];
+                    float dz = 0.015748031f * (float)bytes[6];
                     bytes += 3;
                     int vi = (*mMapping)[j + *(unsigned short *)d];
                     RndMesh::Vert &v = mDst->Verts()[vi];
-                    v.pos.x += dx * weight;
-                    v.pos.y += dy * weight;
-                    v.pos.z += dz * weight;
+                    v.pos.x = dx * weight + v.pos.x;
+                    v.pos.y = dy * weight + v.pos.y;
+                    v.pos.z = dz * weight + v.pos.z;
                 }
             }
         }

@@ -908,8 +908,8 @@ void BandCharDesc::ComputeDeformWeights(float *out) const {
         heightWeights[1] = 1.0f - t;
     }
 
-    float weight = mWeight;
     float muscle = mMuscle;
+    float weight = mWeight;
     if (muscle < sMuscleRange[0])
         muscle = sMuscleRange[0];
     else if (muscle > sMuscleRange[1])
@@ -926,29 +926,25 @@ void BandCharDesc::ComputeDeformWeights(float *out) const {
         DeformVert *prev = tri->mVerts[2];
         DeformVert **vp = tri->mVerts;
         float sign = 0.0f;
-        int hit = 0;
-        for (int j = 3; j != 0;) {
+        int j = 3;
+        do {
             DeformVert *cur = *vp;
             float ex = cur->mPosX - prev->mPosX;
             float ey = cur->mPosY - prev->mPosY;
-            float px = weight - prev->mPosX;
-            float py = muscle - prev->mPosY;
+            float px = muscle - prev->mPosX;
+            float py = weight - prev->mPosY;
             float cross = ex * py - ey * px;
             if (sign == 0.0f) {
                 sign = cross;
             } else if (sign * cross < 0.0f) {
-                hit = 0;
-                break;
+                goto next_tri;
             }
             prev = cur;
             vp++;
-            if (--j == 0)
-                hit = 1;
-        }
-        if (hit) {
-            from = &tris[i];
-            break;
-        }
+        } while (--j != 0);
+        from = &tris[i];
+        break;
+        next_tri:;
     }
     MILO_ASSERT(from != to, 0x3F3);
 
@@ -958,7 +954,7 @@ void BandCharDesc::ComputeDeformWeights(float *out) const {
     mtx.z.Set(from->mVerts[2]->mPosX, from->mVerts[2]->mPosY, 1.0f);
     Invert(mtx, mtx);
 
-    Vector3 point(weight, muscle, 1.0f);
+    Vector3 point(muscle, weight, 1.0f);
     Vector3 bary;
     Multiply(point, mtx, bary);
 

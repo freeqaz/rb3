@@ -978,7 +978,7 @@ void VocalPlayer::SendVocalState(float f1) {
         Singer *cur = *it;
         float f10 = cur->GetFrameMicPitch();
         float f9 = Clamp<float>(
-            -1, 1, (cur->mFrameMicPitch - cur->mFrameTargetPitch) / mMaxDetune
+            -1, 1, (f10 - cur->mFrameTargetPitch) / mMaxDetune
         );
         moreFsToPack[cur->GetSingerIndex()] = f9;
         boolsToPack[cur->GetSingerIndex()] = f10 != 0;

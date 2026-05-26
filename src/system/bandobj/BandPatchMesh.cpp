@@ -769,9 +769,7 @@ bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
             }
         }
     }
-        if (unk10.empty())
-        return false;
-    return true;
+                return !(unk10.empty());
 }
 
 void BandPatchMesh::WorkVerts::CopyDeformWeights(RndMeshDeform *m1, RndMeshDeform *md) {

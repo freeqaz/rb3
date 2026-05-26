@@ -316,7 +316,7 @@ bool Movie::Impl::Ready() const {
     }
 }
 
-Movie::Impl::MovieLoader::MovieLoader(const FilePath &fp, Movie::Impl *impl)
+inline Movie::Impl::MovieLoader::MovieLoader(const FilePath &fp, Movie::Impl *impl)
     : Loader(fp, kLoadStayBack), mFile(NULL), mOpenState(&MovieLoader::OpenFile), mImpl(impl) {}
 
 Movie::Impl::MovieLoader::~MovieLoader() {

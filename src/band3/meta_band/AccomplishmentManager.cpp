@@ -556,7 +556,7 @@ DECOMP_FORCEACTIVE(
 )
 
 void AccomplishmentManager::ConfigurePrecachedFilterData(DataArray *arr) {
-    for (int i = 1; i < arr->Size(); i++) {
+    for (int i = 1; arr->Size() > i; i++) {
         DataArray *pDataArray = arr->Array(i);
         MILO_ASSERT(pDataArray, 0x2CA);
         Symbol key = pDataArray->Sym(0);

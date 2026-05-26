@@ -821,7 +821,7 @@ void BandCharacter::DrawShowing() {
             UtilDrawSphere(mBounding.center, mBounding.GetRadius(), blue);
         }
         Character::DrawShowing();
-        static DataNode &n = DataVariable("bandcharacter.show_slot");
+        static const DataNode &n = DataVariable("bandcharacter.show_slot");
         if (n.Int()) {
             Transform &headxfm = CharUtlFindBoneTrans("bone_head", this)->WorldXfm();
             Vector3 headPos;

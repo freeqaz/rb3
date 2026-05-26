@@ -106,16 +106,13 @@ void LightHue::TranslateColor(const Hmx::Color &col, Hmx::Color &res) {
         vecx = vec.x;
         vecy = vec.y;
         vecz = vec.z;
+        float svy = s * vecy;
         float clamped = Clamp(0.0f, 1.0f, l * vecz * 2.0f);
-        MakeColor(vecx, s * vecy, clamped, res);
-        float ra = res.alpha;
-        float rb = res.blue;
-        float rg = res.green;
-        float rr = res.red;
-        res.alpha = ra * maxcol;
-        res.blue = rb * maxcol;
-        res.green = rg * maxcol;
-        res.red = rr * maxcol;
+        MakeColor(vecx, svy, clamped, res);
+        res.alpha = res.alpha * maxcol;
+        res.blue = res.blue * maxcol;
+        res.green = res.green * maxcol;
+        res.red = res.red * maxcol;
     } else
         res = col;
 }

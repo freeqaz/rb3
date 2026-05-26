@@ -853,7 +853,7 @@ void ObjectDir::LoadSubDir(int i, const FilePath &fp, BinStream &bs, bool b) {
         FilePath subdirpath = GetSubDirPath(fp, bs);
         if (streq(mPathName, subdirpath.c_str())) {
             MILO_WARN(
-                "%s trying to subdir self in slot %d, setting NULL", PathName(this), i
+                "%s trying to subdir self in slot %d, setting NULL", (char *)PathName(this), i
             );
             mSubDirs[i] = 0;
         } else

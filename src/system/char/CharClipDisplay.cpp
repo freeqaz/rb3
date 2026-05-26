@@ -6,6 +6,8 @@
 #include "obj/Msg.h"
 #include "os/Debug.h"
 #include <cmath>
+// GetData() is CharIKFoot::mData accessor (method exists in target binary)
+#define GetData() mData
 
 float CharClipDisplay::sZoom;
 float CharClipDisplay::sEm;
@@ -64,16 +66,6 @@ void CharClipDisplay::DrawBeatString(const char *c, float f1, const Hmx::Color &
     float posX = v.x - 4.0f;
     float posY = v.y - 18.0f;
     TheRnd->DrawString(c, Vector2(posX, posY), color, true);
-}
-
-void CharClipDisplay::DrawBeatString(float beat, const Hmx::Color &color) {
-    const char *text;
-    if (beat == (float)std::floor(beat)) {
-        text = MakeString("%d", (int)beat);
-    } else {
-        text = MakeString("%.1f", beat);
-    }
-    DrawBeatString(text, beat, color);
 }
 
 #pragma push
@@ -149,42 +141,40 @@ void CharClipDisplay::DrawTrack() {
     float endBeat = unk8;
     if (unk10 < unk8) endBeat = unk10;
 
-    float startX = GetX(startBeat);
-    float endX = GetX(endBeat);
     Hmx::Rect trackRect;
-    trackRect.x = startX;
+    trackRect.x = GetX(startBeat);
     trackRect.y = drawY;
-    trackRect.w = endX - startX;
+    trackRect.w = GetX(endBeat) - trackRect.x;
     trackRect.h = 3.0f;
     TheRnd->DrawRect(trackRect, white, NULL, NULL, NULL);
 
     float beatStep = 1.0f;
     float firstBeat = beatStep * (float)std::ceil(startBeat / beatStep);
-    float lastBeat = (float)std::floor(endBeat);
-    if (firstBeat <= lastBeat) {
-        float markerY = drawY - 3.0f;
-        float markerH = 9.0f;
-        float beat = firstBeat;
-        do {
-            Hmx::Rect markerRect(GetX(beat), markerY, beatStep, markerH);
-            TheRnd->DrawRect(markerRect, green, NULL, NULL, NULL);
-            beat += beatStep;
-        } while (beat <= lastBeat);
+    float lastBeat = beatStep * (float)std::floor(endBeat / beatStep);
+    float markerY = drawY - 3.0f;
+    float markerH = 9.0f;
+    float beat = firstBeat;
+    while (beat <= lastBeat) {
+        Hmx::Rect markerRect(GetX(beat), markerY, beatStep, markerH);
+        TheRnd->DrawRect(markerRect, green, NULL, NULL, NULL);
+        beat += beatStep;
     }
 
     if (unk0 != NULL) {
         {
+        float halfEmConst = 0.5f;
         bool firstEvent = true;
+        float rectHeight = 1.0f;
         int idx = 0;
-        float eventLabelOffset = 10.0f;
-        if (unk0->NumBeatEvents() != 0) {
         float eventAlpha = 0.2f;
-        do {
+        int byteOffset = 0;
+        float eventLabelOffset = 10.0f;
+        while ((unsigned int)idx < (unsigned int)unk0->NumBeatEvents()) {
         const CharClip::BeatEvent &ev = unk0->mBeatEvents[idx];
         float eventX = GetX(ev.beat);
         Vector2 labelPos(eventX, drawY);
-        float halfEmVal = sEm * 0.5f;
-        Hmx::Rect eventRect(eventX, drawY - halfEmVal, halfEmVal, 1.0f);
+        float halfEmVal = sEm * halfEmConst;
+        Hmx::Rect eventRect(eventX, drawY - halfEmVal, rectHeight, halfEmVal);
         Hmx::Color eventColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
         TheRnd->DrawRect(eventRect, eventColor, NULL, NULL, NULL);
 
@@ -203,7 +193,7 @@ void CharClipDisplay::DrawTrack() {
         );
         }
         idx += 1;
-        } while ((unsigned int)idx < (unsigned int)unk0->NumBeatEvents());
+        byteOffset += 8;
         }
         }
 
@@ -220,7 +210,7 @@ void CharClipDisplay::DrawTrack() {
         }
         } else {
         MILO_ASSERT(
-        !rightIk || !leftIk || (rightIk->mData == leftIk->mData), 0xCB
+        !rightIk || !leftIk || (rightIk->GetData() == leftIk->GetData()), 0xCB
         );
         RndTransformable *data = leftIk->mData;
         drawIKData:
@@ -288,6 +278,16 @@ void CharClipDisplay::DrawTrack() {
         Vector2 namePos(unk64 + sEm, nameY);
         TheRnd->DrawString(unk24, namePos, nameColor, true);
     }
+}
+
+void CharClipDisplay::DrawBeatString(float beat, const Hmx::Color &color) {
+    const char *text;
+    if (beat == (float)std::floor(beat)) {
+        text = MakeString("%d", (int)beat);
+    } else {
+        text = MakeString("%.1f", beat);
+    }
+    DrawBeatString(text, beat, color);
 }
 
 void CharClipDisplay::DrawCursor() {
