@@ -68,14 +68,14 @@ inline void QuestFilterProvider::UpdateSongLabel(
         pAppLabel->SetTokenFmt(setlist_song_fmt, iSongNum, tour_custom_song);
     } else if (eType == kTourSetlist_Fixed) {
         FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sFilter);
-        MILO_ASSERT_FMT(pFixedSetlist, "Invalid fixed set list: %s", sFilter);
+        MILO_ASSERT_FMT(pFixedSetlist, "Invalid fixed set list: %s", sFilter.Str());
         MILO_ASSERT(pFixedSetlist->GetNumSongs() == iNumSongs, 0x58);
         Symbol s = pFixedSetlist->GetSongName(iSongNum - 1);
         AppLabel *pLabel = dynamic_cast<AppLabel *>(pAppLabel);
         MILO_ASSERT(pLabel, 0x5C);
         pLabel->SetSongAndArtistNameFromSymbol(s, iSongNum);
     } else {
-        MILO_FAIL("Invalid setlist type, Filter = %s", sFilter);
+        MILO_FAIL("Invalid setlist type, Filter = %s", sFilter.Str());
     }
 }
 
@@ -115,22 +115,67 @@ useFixed:
             MILO_ASSERT(false, 0x7E);
         }
     } else if (i_pSlot->Matches("song1")) {
-        if (m_rProgress.GetNumSongsForCurrentGig() <= 0) {
+        int iNumSongs = m_rProgress.GetNumSongsForCurrentGig();
+        if (iNumSongs <= 0) {
             i_pLabel->SetTextToken(Symbol(gNullStr));
         } else {
-            UpdateSongLabel(i_pLabel, sFilter, eType, 1);
+            if (eType == kTourSetlist_Random) {
+                i_pLabel->SetTokenFmt(setlist_song_fmt, 1, tour_random_song);
+            } else if (eType == kTourSetlist_Custom) {
+                i_pLabel->SetTokenFmt(setlist_song_fmt, 1, tour_custom_song);
+            } else if (eType == kTourSetlist_Fixed) {
+                FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sFilter);
+                MILO_ASSERT_FMT(pFixedSetlist, "Invalid fixed set list: %s", sFilter.Str());
+                MILO_ASSERT(pFixedSetlist->GetNumSongs() == iNumSongs, 0x58);
+                Symbol s = pFixedSetlist->GetSongName(0);
+                AppLabel *pLabel = dynamic_cast<AppLabel *>(i_pLabel);
+                MILO_ASSERT(pLabel, 0x5C);
+                pLabel->SetSongAndArtistNameFromSymbol(s, 1);
+            } else {
+                MILO_FAIL("Invalid setlist type, Filter = %s", sFilter.Str());
+            }
         }
     } else if (i_pSlot->Matches("song2")) {
-        if (m_rProgress.GetNumSongsForCurrentGig() <= 1) {
+        int iNumSongs = m_rProgress.GetNumSongsForCurrentGig();
+        if (iNumSongs <= 1) {
             i_pLabel->SetTextToken(Symbol(gNullStr));
         } else {
-            UpdateSongLabel(i_pLabel, sFilter, eType, 2);
+            if (eType == kTourSetlist_Random) {
+                i_pLabel->SetTokenFmt(setlist_song_fmt, 2, tour_random_song);
+            } else if (eType == kTourSetlist_Custom) {
+                i_pLabel->SetTokenFmt(setlist_song_fmt, 2, tour_custom_song);
+            } else if (eType == kTourSetlist_Fixed) {
+                FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sFilter);
+                MILO_ASSERT_FMT(pFixedSetlist, "Invalid fixed set list: %s", sFilter.Str());
+                MILO_ASSERT(pFixedSetlist->GetNumSongs() == iNumSongs, 0x58);
+                Symbol s = pFixedSetlist->GetSongName(1);
+                AppLabel *pLabel = dynamic_cast<AppLabel *>(i_pLabel);
+                MILO_ASSERT(pLabel, 0x5C);
+                pLabel->SetSongAndArtistNameFromSymbol(s, 2);
+            } else {
+                MILO_FAIL("Invalid setlist type, Filter = %s", sFilter.Str());
+            }
         }
     } else if (i_pSlot->Matches("song3")) {
-        if (m_rProgress.GetNumSongsForCurrentGig() <= 2) {
+        int iNumSongs = m_rProgress.GetNumSongsForCurrentGig();
+        if (iNumSongs <= 2) {
             i_pLabel->SetTextToken(Symbol(gNullStr));
         } else {
-            UpdateSongLabel(i_pLabel, sFilter, eType, 3);
+            if (eType == kTourSetlist_Random) {
+                i_pLabel->SetTokenFmt(setlist_song_fmt, 3, tour_random_song);
+            } else if (eType == kTourSetlist_Custom) {
+                i_pLabel->SetTokenFmt(setlist_song_fmt, 3, tour_custom_song);
+            } else if (eType == kTourSetlist_Fixed) {
+                FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sFilter);
+                MILO_ASSERT_FMT(pFixedSetlist, "Invalid fixed set list: %s", sFilter.Str());
+                MILO_ASSERT(pFixedSetlist->GetNumSongs() == iNumSongs, 0x58);
+                Symbol s = pFixedSetlist->GetSongName(2);
+                AppLabel *pLabel = dynamic_cast<AppLabel *>(i_pLabel);
+                MILO_ASSERT(pLabel, 0x5C);
+                pLabel->SetSongAndArtistNameFromSymbol(s, 3);
+            } else {
+                MILO_FAIL("Invalid setlist type, Filter = %s", sFilter.Str());
+            }
         }
     } else {
         i_pLabel->SetTextToken(Symbol(i_pSlot->GetDefaultText()));
