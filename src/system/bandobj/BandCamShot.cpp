@@ -440,7 +440,7 @@ void BandCamShot::SetFrame(float frame, float blend) {
     }
     float origFrame = frame;
     float dur = Duration();
-    bool skip = frame < dur || mNextShots.empty();
+    bool skip = ShouldSetNextShot(frame);
     if (!skip) {
         frame = frame - (unk15c + dur);
     }
