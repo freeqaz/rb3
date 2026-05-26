@@ -127,7 +127,9 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
     int numPoints = mPoints.size();
 
     if (mPitched) {
-        MILO_ASSERT(unk_0x30 > 0.0f, 0xCE);
+#define mWidth unk_0x30
+        MILO_ASSERT(mWidth > 0.0f, 0xCE);
+#undef mWidth
         int numEdges = numPoints * 2;
         plate->AllocateVerts(numEdges + 4, warnOnReallocate);
 
