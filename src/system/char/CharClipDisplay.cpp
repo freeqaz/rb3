@@ -71,7 +71,7 @@ void CharClipDisplay::DrawBeatString(float beat, const Hmx::Color &color) {
     if (beat == (float)std::floor(beat)) {
         text = MakeString("%d", (int)beat);
     } else {
-        text = MakeString("%.2f", beat);
+        text = MakeString("%.1f", beat);
     }
     DrawBeatString(text, beat, color);
 }
@@ -151,19 +151,24 @@ void CharClipDisplay::DrawTrack() {
 
     float startX = GetX(startBeat);
     float endX = GetX(endBeat);
-    Hmx::Rect trackRect(startX, drawY, endX - startX, 3.0f);
+    Hmx::Rect trackRect;
+    trackRect.x = startX;
+    trackRect.y = drawY;
+    trackRect.w = endX - startX;
+    trackRect.h = 3.0f;
     TheRnd->DrawRect(trackRect, white, NULL, NULL, NULL);
 
-    float firstBeat = (float)std::ceil(startBeat);
+    float beatStep = 1.0f;
+    float firstBeat = beatStep * (float)std::ceil(startBeat / beatStep);
     float lastBeat = (float)std::floor(endBeat);
-    if (firstBeat + 1.0f != firstBeat && firstBeat <= lastBeat) {
+    if (firstBeat <= lastBeat) {
         float markerY = drawY - 3.0f;
         float markerH = 9.0f;
         float beat = firstBeat;
         do {
-            Hmx::Rect markerRect(GetX(beat), markerY, 1.0f, markerH);
+            Hmx::Rect markerRect(GetX(beat), markerY, beatStep, markerH);
             TheRnd->DrawRect(markerRect, green, NULL, NULL, NULL);
-            beat += 1.0f;
+            beat += beatStep;
         } while (beat <= lastBeat);
     }
 
@@ -177,6 +182,7 @@ void CharClipDisplay::DrawTrack() {
         do {
         const CharClip::BeatEvent &ev = unk0->mBeatEvents[idx];
         float eventX = GetX(ev.beat);
+        Vector2 labelPos(eventX, drawY);
         float halfEmVal = sEm * 0.5f;
         Hmx::Rect eventRect(eventX, drawY - halfEmVal, halfEmVal, 1.0f);
         Hmx::Color eventColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
@@ -188,10 +194,10 @@ void CharClipDisplay::DrawTrack() {
         && unk1c > unk0->mBeatEvents.back().beat))) {
         Hmx::Color eventLabelColor(eventAlpha, eventAlpha, 1.0f, 1.0f);
         firstEvent = false;
-        float labelY = drawY - (halfEmVal + eventLabelOffset);
+        labelPos.y -= (halfEmVal + eventLabelOffset);
         TheRnd->DrawString(
         ev.event.Str(),
-        Vector2(eventX, labelY),
+        labelPos,
         eventLabelColor,
         true
         );
@@ -224,8 +230,9 @@ void CharClipDisplay::DrawTrack() {
         void *channel = unk0->GetChannel(channelName);
         Vector3 channelData;
         Hmx::Rect ikRect(0.0f, drawY, 1.0f, 1.0f);
-        int firstFrame = (int)(float)std::ceil(unk0->BeatToFrame(startBeat));
+        float firstFrameF = (float)std::ceil(unk0->BeatToFrame(startBeat));
         int lastFrame = (int)(float)std::floor(unk0->BeatToFrame(endBeat));
+        int firstFrame = (int)firstFrameF;
         for (int frame = firstFrame; frame <= lastFrame; frame++) {
         float frameBeat = unk0->FrameToBeat((float)frame);
         unk0->EvaluateChannel(&channelData, channel, frameBeat);
