@@ -125,10 +125,7 @@ void OutfitConfig::MatSwap::Compose(
             );
         }
         RndCam *defaultCam = TheRnd->DefaultCam();
-        if (defaultCam) {
-            defaultCam->ClassName();
-        }
-        sCam->Copy(defaultCam, Hmx::Object::kCopyShallow);
+        sCam->Copy(defaultCam, Hmx::Object::kCopyDeep);
         sCam->SetTargetTex(diffTex);
         sCam->SetTransParent(nullptr, false);
         {
