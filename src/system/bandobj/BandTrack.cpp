@@ -787,10 +787,11 @@ void BandTrack::SavePlayer() {
 
 void BandTrack::SetCrowdRating(float f, CrowdMeterState state) {
     BandCrowdMeter *meter = GetCrowdMeter();
-    if (meter && !meter->Disabled() && mTrackIdx > -1) {
-        meter->SetPlayerValue(mTrackIdx, f);
+    int &_ref0 = mTrackIdx;
+    if (meter && !meter->Disabled() && _ref0 > -1) {
+        meter->SetPlayerValue(_ref0, f);
         if (state != kCrowdMeterInvalidState) {
-            meter->SetPlayerIconState(mTrackIdx, state);
+            meter->SetPlayerIconState(_ref0, state);
             bool isWarning = state == kCrowdMeterWarning;
             bool isFailed = state == kCrowdMeterFailed;
             if (isWarning != (bool)unk1c && !isFailed) {
