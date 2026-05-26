@@ -58,16 +58,17 @@ void UIStats::MaybePublish(UIScreen *from) {
 
     Server *server = TheNet.mServer;
     const DataArray *gather = from->TypeDef()->FindArray(gather_uistats, false);
+    bool &_ref0 = mPublishingPad;
     if (!server->IsConnected()
         || (gather && gather->Node(1).Int(gather) == 0)) {
         if (!server->IsConnected()) {
-            mPublishingPad = false;
+            _ref0 = false;
         }
         DropScreen(from);
         return;
     }
 
-    if (!mPublishingPad) {
+    if (!_ref0) {
         mLastMode = Symbol("");
         for (int i = 0; i < 4; i++) {
             mLastWasParticipating[i] = 0;
@@ -79,7 +80,7 @@ void UIStats::MaybePublish(UIScreen *from) {
             mLastControllerType[i] = kControllerNone;
         }
     }
-    mPublishingPad = true;
+    _ref0 = true;
 
     DataPoint screenExit("stats/screen_exit");
     DataPoint padUser("stats/pad_user");
@@ -96,7 +97,6 @@ void UIStats::MaybePublish(UIScreen *from) {
     if (mPadLogCount != 0) {
         int compressedSize = 0x10100;
         unsigned char stackbuf[0x10100];
-        unsigned char *compressed = stackbuf;
         unsigned char *buf = stackbuf + 0x100;
         unsigned char *write = (unsigned char *)mPadLogWritePtr;
         unsigned char *base = (unsigned char *)mPadLogBuffer;
@@ -111,16 +111,16 @@ void UIStats::MaybePublish(UIScreen *from) {
             memcpy(buf, mPadLogWritePtr, tail);
         }
         if ((unsigned int)mPadLogCount >= 0x1A) {
-            CompressMem(buf, size, compressed, compressedSize, 0);
+            CompressMem(buf, size, stackbuf, compressedSize, 0);
         } else {
-            memmove(compressed, buf, size);
+            memmove(stackbuf, buf, size);
             compressedSize = size;
         }
 
         String hex(MakeString("%x:", (unsigned int)mPadLogCount));
         int prefixLen = strlen(hex.c_str());
         hex.resize(prefixLen + (compressedSize * 2));
-        unsigned char *src = compressed;
+        unsigned char *src = stackbuf;
         char *dst = (char *)hex.c_str() + prefixLen;
         for (int i = 0; i < compressedSize; i++) {
             unsigned char b = *src;
