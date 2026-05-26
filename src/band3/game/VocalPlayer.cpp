@@ -1437,6 +1437,8 @@ void VocalPlayer::OnGameOver() {
     }
 }
 
+#pragma push
+#pragma pool_data off
 void VocalPlayer::ResetScoring() {
     std::vector<int> phraseActiveParts(3);
     for (int i = 0; i < mVocalParts.size(); i++) {
@@ -1453,6 +1455,7 @@ void VocalPlayer::ResetScoring() {
         phraseActiveParts[0], phraseActiveParts[1], phraseActiveParts[2], true
     );
 }
+#pragma pop
 
 void VocalPlayer::EnableController() {
     TheGameMicManager->SetPlayback(true);
