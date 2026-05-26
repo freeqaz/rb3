@@ -45,20 +45,6 @@ void StorePanel::Load() {
     unk89 = false;
 }
 
-void StorePanel::ExitError(StoreError e) {
-    if (e == kStoreErrorSuccess) {
-        FormatString fmt("StorePanel: ExitError called with success!\n");
-        TheDebug.Notify(fmt.Str());
-        e = (StoreError)100;
-    }
-    mLoadOK = false;
-    StoreError finalErr = e;
-    if (TheStoreMetadata.mErrorMsg != 0) {
-        finalErr = (StoreError)TheStoreMetadata.mErrorMsg;
-    }
-    ExitStore(finalErr);
-}
-
 void StorePanel::HandleNetCacheMgrFailure() {
     StoreError err = kStoreErrorSuccess;
     NetCacheMgrFailType failTy = TheNetCacheMgr->GetFailType();
@@ -412,11 +398,6 @@ void StorePanel::EnumerateOffers(bool b) {
     Hmx::Object::HandleType(enum_start_msg);
 }
 
-void StorePanel::UpdateFromEnumProduct(StorePurchaseable *sp, const EnumProduct *ep) {
-    MILO_ASSERT(sp, 0x48A);
-    MILO_ASSERT(ep, 0x48B);
-}
-
 bool StorePanel::ToggleTestOffers() {
     mShowTestOffers = !mShowTestOffers;
     return mShowTestOffers;
@@ -432,8 +413,8 @@ void StorePanel::FinishCheckout() {
     unsigned char wasCheckout = *(unsigned char *)((char *)&TheWiiCommerceMgr + 0x4194);
     *(unsigned char *)((char *)&TheWiiCommerceMgr + 0x4194) = 0;
     if (wasCheckout != 0) {
-        static Message enumMsg("enumerate_from_checkout");
-        Hmx::Object::HandleType(enumMsg);
+        static Message msg("enumerate_from_checkout");
+        Hmx::Object::HandleType(msg);
         TheStoreMetadata.UpdateOfferOwnership();
         unk70 = true;
     }
@@ -474,6 +455,25 @@ int StorePanel::UpdateOffers(const std::list<EnumProduct> &list, bool b) {
          ++it) {
     }
     return result;
+}
+
+void StorePanel::UpdateFromEnumProduct(StorePurchaseable *sp, const EnumProduct *ep) {
+    MILO_ASSERT(sp, 0x48A);
+    MILO_ASSERT(ep, 0x48B);
+}
+
+void StorePanel::ExitError(StoreError e) {
+    if (e == kStoreErrorSuccess) {
+        FormatString fmt("StorePanel: ExitError with kStoreErrorSuccess?");
+        TheDebug.Notify(fmt.Str());
+        e = (StoreError)100;
+    }
+    mLoadOK = false;
+    StoreError finalErr = e;
+    if (TheStoreMetadata.mErrorMsg != 0) {
+        finalErr = (StoreError)TheStoreMetadata.mErrorMsg;
+    }
+    ExitStore(finalErr);
 }
 
 DataNode StorePanel::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
