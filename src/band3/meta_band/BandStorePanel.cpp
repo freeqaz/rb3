@@ -111,10 +111,7 @@ void BandStorePanel::Unload() {
 
 void BandStorePanel::Enter() {
     StorePanel::Enter();
-    // Cross-cast via (BandUser*) defeats MWCC's inlined virtual-base
-    // resolution and forces emission of an actual __dynamic_cast call,
-    // matching the target's codegen. Runtime behavior is identical.
-    LocalUser *u = dynamic_cast<LocalUser *>((BandUser *)(LocalBandUser *)StoreUser());
+    LocalBandUser *u = dynamic_cast<LocalBandUser *>((LocalUser *)StoreUser());
     if (u && !u->IsJoypadConnected()) {
         ExitError(kStoreErrorStoreServer);
     }
