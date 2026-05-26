@@ -174,8 +174,7 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
                         }
                     }
                 }
-                Hmx::Object *mat = layer.mMat;
-                mat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
+                layer.mMat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
             }
             if (layer.mAllowAlpha) {
                 float alphaMin = layer.mAlphaMin;
@@ -188,7 +187,7 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
                 mat2->SetProperty(Symbol("alpha"), DataNode(1.0f));
             }
             if (!layer.mProxy) {
-                String png = layer.mBitmap + ".png";
+                const String& png = layer.mBitmap + ".png";
                 String bmp = layer.mBitmap + ".bmp";
                 String normPng = layer.mBitmap + "_norm.png";
                 String specPng = layer.mBitmap + "_spec.png";
