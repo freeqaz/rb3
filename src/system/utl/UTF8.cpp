@@ -216,8 +216,8 @@ void UTF8RemoveSpaces(char *out, int len, const char *in) {
     MILO_ASSERT(out, 0x1AD);
     MILO_ASSERT(in, 0x1AE);
     MILO_ASSERT(len > 0, 0x1AF);
-    unsigned short us;
     char *out_beg = out;
+    unsigned short us;
     char *out_end = out + len - 3;
     bool prev_was_space = true;
     while ((*in != 0) && (out < out_end)) {
