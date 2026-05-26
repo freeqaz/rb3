@@ -276,7 +276,7 @@ void TrainerGemTab::Draw(int i) {
 
 void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY, int) {
     mTrackGroup->SetShowing(true);
-    mTrackGroup->DrawShowing();
+    static_cast<RndDrawable *>(mTrackGroup)->DrawShowing();
     float yRange = endY - startY;
     float tickRange = (float)endTick - (float)startTick;
     mTrackGroup->SetShowing(false);
@@ -366,10 +366,11 @@ void TrainerGemTab::DrawTails(
             tail->SetShowing(true);
             Transform &cur = tail->WorldXfm();
             Transform orig = cur;
-            Transform xfm = cur;
+            Transform xfm = orig;
             xfm.v.x = mInstLanes[GetLane(slot)]->WorldXfm().v.x;
             float scale = 2.5f * ((float)gem.GetDurationTicks() / 480.0f);
-            float endZ = xfm.v.z + 10.0f * scale;
+            float scaleX10 = 10.0f * scale;
+            float endZ = xfm.v.z + scaleX10;
             if (endZ > unk12c) {
                 float overhang = 0.1f * (endZ - unk12c);
                 float drawScale = scale - overhang;
@@ -384,12 +385,10 @@ void TrainerGemTab::DrawTails(
                 extra.mIsRGChord = gem.IsRealGuitarChord();
                 extra.mSlot = slot;
                 Transform &tw = tail->WorldXfm();
-                extra.mXfm.m.x = tw.m.x;
-                extra.mXfm.m.y.x = tw.m.y.x * overhang;
-                extra.mXfm.m.y.y = tw.m.y.y * overhang;
-                extra.mXfm.m.y.z = tw.m.y.z * overhang;
-                extra.mXfm.m.z = tw.m.z;
-                extra.mXfm.v = tw.v;
+                extra.mXfm = tw;
+                extra.mXfm.m.y.x *= overhang;
+                extra.mXfm.m.y.y *= overhang;
+                extra.mXfm.m.y.z *= overhang;
                 extra.mXfm.v.x = 100.0f + mInstLanes[GetLane(slot)]->WorldXfm().v.x;
                 unk130.push_back(extra);
             } else {
