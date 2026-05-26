@@ -178,11 +178,14 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
                 mat->SetProperty(Symbol("color"), DataNode(layer.mColor.Pack()));
             }
             if (layer.mAllowAlpha) {
-                float a = layer.mAlpha * (layer.mAlphaMax - layer.mAlphaMin)
-                    + layer.mAlphaMin;
-                layer.mMat->SetProperty(Symbol("alpha"), DataNode(a));
+                float alphaMin = layer.mAlphaMin;
+                float alphaMax = layer.mAlphaMax;
+                float a = layer.mAlpha * (alphaMax - alphaMin) + alphaMin;
+                Hmx::Object *mat2 = layer.mMat;
+                mat2->SetProperty(Symbol("alpha"), DataNode(a));
             } else {
-                layer.mMat->SetProperty(Symbol("alpha"), DataNode(1.0f));
+                Hmx::Object *mat2 = layer.mMat;
+                mat2->SetProperty(Symbol("alpha"), DataNode(1.0f));
             }
             if (!layer.mProxy) {
                 String png = layer.mBitmap + ".png";
@@ -207,8 +210,10 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
                     }
                 }
             } else {
-                FilePath fp(FilePath::sRoot.c_str(), layer.unk40.c_str());
-                layer.mProxy->SetProxyFile(fp, false);
+                {
+                    FilePath fp(FilePath::sRoot.c_str(), layer.unk40.c_str());
+                    layer.mProxy->SetProxyFile(fp, false);
+                }
                 layer.mProxy->Enter();
                 layer.mProxy->SetFrame(mFrame, 1.0f);
             }
@@ -230,10 +235,12 @@ DataNode LayerDir::GetBitmapList(DataArray *arr) {
     DataArray *propPath = DataVariable(Symbol("milo_prop_path")).Array(NULL);
     DataNode savedNode(propPath->Node(2));
     propPath->Node(2) = DataNode(Symbol("name"));
-    const char *name = arr->GetObj(0)->Property(propPath, true)->Str(NULL);
+    const char *name = (*reinterpret_cast<Hmx::Object **>(arr))->Property(propPath, true)->Str(NULL);
     for (ObjList<Layer>::iterator it = mLayers.begin(); it != mLayers.end(); ++it) {
         if (strcmp(it->mName.c_str(), name) == 0) {
             DataArray *result = new DataArray(it->mBitmapList.size());
+            if (!result)
+                result = new DataArray(0);
             std::vector<FilePath>::iterator fp = it->mBitmapList.begin();
             int i = 0;
             for (; fp != it->mBitmapList.end(); ++fp, i++) {
