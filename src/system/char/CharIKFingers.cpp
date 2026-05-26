@@ -475,8 +475,8 @@ void CharIKFingers::MeasureLengths() {
         RndTransformable *t3 = mFingers[i].mFingertip;
         if (t1 && t2 && t3) {
             float &len = mFingers[i].unk4;
-            len = Length(t1->mLocalXfm.v) + Length(t2->mLocalXfm.v)
-                + Length(t3->mLocalXfm.v);
+            len = Length(t3->mLocalXfm.v) + Length(t2->mLocalXfm.v)
+                + Length(t1->mLocalXfm.v);
         }
     }
 
@@ -485,9 +485,9 @@ void CharIKFingers::MeasureLengths() {
         mAAPlusBB = 0;
         float handLen = Length(mHand->mLocalXfm.v);
         mAAPlusBB += handLen * handLen;
-        mInv2ab *= handLen;
         float handParentLen = Length(mHand->TransParent()->mLocalXfm.v);
         mAAPlusBB += handParentLen * handParentLen;
+        mInv2ab *= handLen;
         mInv2ab = 1.0f / (mInv2ab * handParentLen);
     }
 }
