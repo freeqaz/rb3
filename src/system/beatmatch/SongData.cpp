@@ -94,11 +94,11 @@ SongData::~SongData() {
 void Validate(MemStream *ms, const char *file, bool b) {
     if (UsingCD() && HasFileChecksumData()) {
         StreamChecksumValidator v;
-        StreamChecksumValidator &vref = v;
-        if (vref.Begin(file, b)) {
-            vref.Update((const unsigned char *)ms->Buffer(), ms->BufferSize());
-            vref.End();
-            vref.Validate();
+        StreamChecksumValidator *vptr = &v;
+        if (vptr->Begin(file, b)) {
+            vptr->Update((const unsigned char *)ms->Buffer(), ms->BufferSize());
+            vptr->End();
+            vptr->Validate();
         }
     }
 }
@@ -486,8 +486,7 @@ void SongData::UnflipGems(int i1, int i2, int diff) {
         mBackupTracks[i2]->mMixes->GetMixList(diff);
     std::vector<GameGem> &gems = mGemDBs[i1]->GetDiffGemList(diff)->mGems;
     TickedInfoCollection<String> &mixes = mDrumMixDBs[i1]->GetMixList(diff);
-    auto _tmp0 = backup_gems.size();
-    MILO_ASSERT(_tmp0 == gems.size(), 0x2CE);
+    MILO_ASSERT(backup_gems.size() == gems.size(), 0x2CE);
     MILO_ASSERT(backup_mixes.Size() == mixes.Size(), 0x2CF);
     DataArray *cfg = SystemConfig("beatmatcher", "audio");
     DataArray *submixArr = cfg->FindArray("flipped_submixes", false);
@@ -596,8 +595,8 @@ void SongData::TrimOverlappingGems(int i1, int i2, int diff) {
 
 void SongData::ValidateVocalSPPhrases() {
     Symbol voxSym;
-    int maxList;
     int firstList;
+    int maxList;
     if (mPlayerTrackConfigList->UseVocalHarmony()) {
         firstList = 1;
         maxList = std::min<int>(kHarm3VocalNoteList, mVocalNoteLists.size() - 1);
@@ -620,8 +619,9 @@ void SongData::ValidateVocalSPPhrases() {
     const PhraseList &phrases =
         mPhraseDBs[trackIdx]->GetPhraseList(mTrackDifficulties[trackIdx], kCommonPhrase);
     VocalNoteList *curVoxList = mVocalNoteLists[firstList];
-    if (!phrases.mPhrases.size()) return;
-    for (int i = 0; i < phrases.mPhrases.size(); i++) {
+    int i = 0;
+    if (phrases.mPhrases.size() == 0) return;
+    for (; i < phrases.mPhrases.size(); i++) {
         float ms = phrases.mPhrases[i].mMs;
         float endMs = ms + phrases.mPhrases[i].GetDurationMs();
         VocalPhrase *phrase = NULL;
