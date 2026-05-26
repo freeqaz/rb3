@@ -962,8 +962,8 @@ void StorePackedPage::EndianFix() {
     unsigned char b6 = b[6];
     unsigned char b7 = b[7];
     mHasOffers = b6 >> 4;
-    mDefaultSort = b6;
     unk6p0 = b7 >> 4;
+    mDefaultSort = b6;
     unk6p1 = b7;
 }
 
@@ -1578,12 +1578,13 @@ void StoreMetadataManager::DebugPurchase() {
             }
             if (offerId == offerIdAttr) {
                 unsigned short nameKey = offer->mNameIndex;
+                StoreStringTable *strTable = TheStoreMetadata.mStringTable;
                 const char *name;
                 if (nameKey & 0x8000) {
-                    name = TheStoreMetadata.mStringTable->mLocalized
+                    name = strTable->mLocalized
                                .GetString((nameKey & 0x7FFF) - 1);
                 } else {
-                    name = TheStoreMetadata.mStringTable->mNonLocalized
+                    name = strTable->mNonLocalized
                                .GetString(nameKey - 1);
                 }
                 TheDebug << MakeString("DebugPurchase: %s\n", name);
@@ -2068,22 +2069,26 @@ void StorePackedSong::EndianFix() {
     typedef unsigned short u16;
     u8 *p = (u8 *)this;
     u8 b10 = p[0x10];
+    u8 b10b = p[0x10];
     u16 s10 = (u16)((*(u16 *)(p + 0x10) & ~0x40u) | ((b10 << 5) & 0x40u));
     *(u16 *)(p + 0x10) = s10;
     u8 bA = p[0xa];
-    u8 b10b = p[0x10];
     *(u16 *)(p + 0xa) = (u16)((*(u16 *)(p + 0xa) & ~0xFF80u) | (((((u16)bA & 1u) << 8u) | p[0xb]) << 7u & 0xFF80u));
     *(u16 *)(p + 0x10) = (u16)((s10 & ~0xFF80u) | (((((u16)b10b & 1u) << 8u) | p[0x11]) << 7u & 0xFF80u));
     mOfferIndex -= 1;
     unk18 -= 1;
     unk1a -= 1;
 }
+__declspec(noinline) void _outline_EndianFix(StorePackedRanks* _obj) {
+    return _obj->EndianFix();
+}
+
 
 void StorePackedOfferBase::EndianFixBase() {
     unsigned char *p = (unsigned char *)this;
+    unsigned char b1 = p[0x1];
     unsigned char b0 = p[0x0];
     unsigned char b41 = p[0x41];
-    unsigned char b1 = p[0x1];
     unsigned char b40 = p[0x40];
     unsigned char b3f = p[0x3f];
     p[0x0] = (unsigned char)((((((b0 & ~0x60) | ((b0 << 5) & 0x60)) & ~0x1C) | (((int)(b0 & 0x1F) >> 2 << 2) & 0x1C)) & ~2) | (((int)(b0 & 0x3F) >> 5 << 1) & 2));
@@ -2093,7 +2098,7 @@ void StorePackedOfferBase::EndianFixBase() {
     s3f = (unsigned short)((s3f & ~0xF) | ((int)b3f >> 4 & 0xF));
     *(unsigned short *)(p + 0x3f) = s3f;
     p[0x41] = (b41 & ~0xF8) | ((b41 << 3) & 0xF8);
-    mRanks.EndianFix();
+    _outline_EndianFix(&mRanks);
 }
 
 void StorePackedOffer::EndianFix() {
