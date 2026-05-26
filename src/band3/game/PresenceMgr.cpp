@@ -19,6 +19,11 @@ PresenceMgr ThePresenceMgr;
 
 DECOMP_FORCEACTIVE(PresenceMgr, __FILE__, "TheSessionMgr", "required_song_options_chosen")
 
+DECOMP_FORCEBLOCK(
+    PresenceMgr, (std::vector<Symbol> * dummy, Symbol s),
+    dummy->insert(dummy->begin(), 1, s);
+)
+
 PresenceMgr::PresenceMgr()
     : unk1c(0), unk20(0), unk24(0), unk34(0), unk38(0), unk39(0), unk3c(0) {}
 
