@@ -263,11 +263,12 @@ void CalibrationPanel::UpdateProgress(bool b) {
             + -5.2929307473 * c4 + 3.7554462943 * c8);
         unkb8[4] = progress;
     }
-    maxProgress = (float)mNumHits;
-    progress = progress * (float)((mNumHits + 2) / mNumHits);
+    int &_ref0 = mNumHits;
+    progress = progress * (float)((_ref0 + 2) / _ref0);
+    maxProgress = (float)_ref0;
     progress = *(maxProgress < progress ? &maxProgress : &progress);
-    tabanim->SetFrame(24.0f * (progress / (float)mNumHits), 1.0f);
-    boneanim->SetFrame(24.0f * (progress / (float)mNumHits), 1.0f);
+    tabanim->SetFrame(24.0f * (progress / (float)_ref0), 1.0f);
+    boneanim->SetFrame(24.0f * (progress / (float)_ref0), 1.0f);
 }
 
 void CalibrationPanel::Draw() { UIPanel::Draw(); }
@@ -517,10 +518,15 @@ DataNode CalibrationPanel::OnMsg(const ButtonDownMsg &msg) {
             return 0;
         } else {
             if (mTestState == tsTesting && GetTestRep() >= 5) {
-                bool b3 = false;
-                if (msg.GetButton() == kPad_DUp || msg.GetButton() == kPad_DDown
-                    || msg.GetAction() == kAction_Confirm) {
-                    b3 = true;
+                bool b3 = true;
+                bool b4 = true;
+                if (msg.GetButton() != kPad_DUp && msg.GetButton() != kPad_DDown) {
+                    b4 = false;
+                }
+                if (!b4) {
+                    if (msg.GetAction() != kAction_Confirm) {
+                        b3 = false;
+                    }
                 }
                 if (msg.GetButton() == kPad_Xbox_A)
                     b3 = unka0;
