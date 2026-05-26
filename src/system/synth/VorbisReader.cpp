@@ -339,7 +339,7 @@ bool VorbisReader::TryDecode() {
                 pollErr = vorbis_synthesis_poll(mVorbisBlock, &mPendingPacket);
             }
         }
-        if (pollErr == OV_ENOTAUDIO) {
+        if ((unsigned int)pollErr == OV_ENOTAUDIO) {
             unk98 = false;
         } else if (pollErr == -0x32) {
             return true;
