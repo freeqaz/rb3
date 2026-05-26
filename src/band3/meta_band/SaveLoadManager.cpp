@@ -600,7 +600,6 @@ void SaveLoadManager::SetState(State newState) {
         break;
     case 0x3: // kS_AutoloadSelectProfile
     {
-        mUploadProfiles.resize(0);
         std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
         mUploadProfiles = newProfiles;
         if (TheMemcardMgr.IsDisableWriting() || mUploadProfiles.size() == 0 && !mInitialLoadNotDone) {
@@ -1203,16 +1202,6 @@ void SaveLoadManager::SetState(State newState) {
         }
         break;
     }
-    case 0x57:
-    {
-        mSaveProfiles.erase(mSaveProfiles.begin());
-        if (mSaveProfiles.size() != 0) {
-            SetState((State)0x58);
-        } else {
-            SetState((State)0x59);
-        }
-        break;
-    }
     case 0x58:
     {
         MILO_ASSERT(!mSaveProfiles.empty(), 0x8f9);
@@ -1223,6 +1212,16 @@ void SaveLoadManager::SetState(State newState) {
         TheMemcardMgr.AddSink(this);
         TheEntityUploader.UpdateFromProfile(pProfile, this);
         pProfile->SendBandLogo();
+        break;
+    }
+    case 0x57:
+    {
+        mSaveProfiles.erase(mSaveProfiles.begin());
+        if (mSaveProfiles.size() != 0) {
+            SetState((State)0x58);
+        } else {
+            SetState((State)0x59);
+        }
         break;
     }
     case 0x59:
