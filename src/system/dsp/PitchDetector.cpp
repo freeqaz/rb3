@@ -64,25 +64,6 @@ void PitchDetector::Deallocate() {
     _MemFree(mPeakBuf);
 }
 
-void PitchDetector::SetSampleRate(int sampleRate) {
-    if (mSamplesPerSec != sampleRate) {
-        mSamplesPerSec = sampleRate;
-        MILO_ASSERT(sampleRate, 0x1B2);
-        mDecimRate = sampleRate / 6000;
-        int decimated = mSamplesPerSec / mDecimRate;
-        mMaxPeriod = decimated / 1320;
-        mFrameSize = (((decimated / 65) * 2) + 15) & ~15;
-        Deallocate();
-        mDecimBuf = (float *)_MemAlloc(mFrameSize * 4, 0x10);
-        mCorrBuf = (float *)_MemAlloc(mFrameSize * 4, 0x10);
-        mPeakBuf = (float *)_MemAlloc(mFrameSize * 4, 0x10);
-        memset(mDecimBuf, 0, mFrameSize * 4);
-        memset(mCorrBuf, 0, mFrameSize * 4);
-        memset(mPeakBuf, 0, mFrameSize * 4);
-        mIdx = 0;
-    }
-}
-
 void PitchDetector::AnalyzeBlock(
     const char *label,
     short *samples,
@@ -110,43 +91,40 @@ void PitchDetector::AnalyzeBlock(
 
     float lastVal = 0.0f;
     int ixDecim = 0;
-    if (dec_size > 0 && dec_size < mFrameSize) {
-        int keep = mFrameSize - dec_size;
-        memcpy(mDecimBuf, mDecimBuf + dec_size, keep * 4);
+    if (dec_size != 0 && dec_size < mFrameSize) {
+        int overlap = mFrameSize - dec_size;
+        memcpy(mDecimBuf, mDecimBuf + dec_size, overlap * 4);
         lastVal = mCorrBuf[dec_size - 1];
-        if (keep > 0) {
-            for (int i = 0; i < keep; i++) {
+        if (overlap > 0) {
+            for (int i = 0; i < overlap; i++) {
                 mCorrBuf[i] = mCorrBuf[i + dec_size] - lastVal;
             }
         }
-        MILO_ASSERT(keep > 0, 0xBA);
-        lastVal = mCorrBuf[keep - 1];
+        MILO_ASSERT(overlap>0, 0xBA);
+        lastVal = mCorrBuf[overlap - 1];
     }
 
     if (dec_size > mFrameSize) {
         int extra = (dec_size - mFrameSize) * mDecimRate;
         dec_size = mFrameSize;
         numSamples -= extra;
-        samples += extra * 2;
+        samples += extra;
     }
     int begIxDecim = ixDecim;
 
     mFilter->Begin();
-    begIxDecim = ixDecim;
     float decimAccum = gain * mFilter->FilterSlow((float)samples[0]);
+    int writeOff = ixDecim * 4;
     int sampleIdx = 0;
-    int decimWriteIdx = ixDecim * 4;
     while (sampleIdx < numSamples) {
-        float filtered = mFilter->FilterSlow((float)samples[0]) * gain;
-        if (ixDecim < mFrameSize) {
-            if (((sampleIdx + mIdx) % mDecimRate) == 0) {
-                mDecimBuf[ixDecim] = decimAccum;
-                float sq = decimAccum * decimAccum + lastVal;
-                mCorrBuf[ixDecim] = sq;
-                lastVal = mCorrBuf[ixDecim];
-                ixDecim++;
-            }
-            decimAccum = kPropFilter * (filtered - decimAccum) + decimAccum;
+        decimAccum = kPropFilter * (mFilter->FilterSlow((float)samples[0]) * gain - decimAccum) + decimAccum;
+        if (ixDecim < mFrameSize && ((sampleIdx + mIdx) % mDecimRate) == 0) {
+            ixDecim++;
+            *((float *)((char *)mDecimBuf + writeOff)) = decimAccum;
+            float sq = decimAccum * decimAccum + lastVal;
+            *((float *)((char *)mCorrBuf + writeOff)) = sq;
+            lastVal = *((float *)((char *)mCorrBuf + writeOff));
+            writeOff += 4;
         }
         samples += 1;
         sampleIdx += 1;
@@ -168,7 +146,7 @@ void PitchDetector::AnalyzeBlock(
         unk30_period = RefinePeriod2(mDecimBuf, mCorrBuf, mPeakBuf, mFrameSize, period);
     }
 
-    float floorRatio = 0.1f;
+    float floorRatio = 1.1f;
     if (PD_FLOOR_RATIO.Float(NULL) > 0.0f) {
         floorRatio = PD_FLOOR_RATIO.Float(NULL);
     }
@@ -184,7 +162,7 @@ void PitchDetector::AnalyzeBlock(
     if (PD_GATE_RATIO.Float(NULL) > 0.0f) {
         gateRatio = PD_GATE_RATIO.Float(NULL);
     }
-    float fixedGain = 10.0f;
+    float fixedGain = 12.0f;
     if (PD_FIXED_GAIN.Float(NULL) > 0.0f) {
         fixedGain = PD_FIXED_GAIN.Float(NULL);
     }
@@ -194,33 +172,41 @@ void PitchDetector::AnalyzeBlock(
     }
 
     if (floorSeconds != unk4C) {
-        float alpha = 1.0f;
+        float alpha;
         if (floorSeconds > 0.0f) {
             alpha = 1.0f - (float)exp(-1.0f / (floorSeconds * 60.0f));
+        } else {
+            alpha = 1.0f;
         }
         unk48 = alpha;
         unk4C = floorSeconds;
     }
 
     if ((unsigned)unk14 > 60) {
-        if (unk34 > 0.0f) {
-            float candidate = unk34 * floorRatio;
-            if (candidate < unk38) {
-                unk38 = candidate;
-            } else if (unk30_period == 0.0f || unk34 >= unk38 * gateRatio) {
-                unk38 = unk38 + unk48 * (unk34 - unk38);
-            }
-        } else if (unk30_period == 0.0f || unk34 >= unk38 * gateRatio) {
-            unk38 = unk38 + unk48 * (unk34 - unk38);
+        float level = unk34;
+        float candidate;
+        if ((level > 0.0f) && (candidate = level * floorRatio, candidate < unk38)) {
+            unk38 = candidate;
+        } else if (unk30_period == 0.0f || level < unk38 * gateRatio) {
+            float floorVal = unk38;
+            unk38 = unk48 * (floorTop - floorVal) + floorVal;
         }
     }
 
-    if (floorBottom > unk38) {
-        unk38 = floorBottom;
+    float *floorBottomPtr;
+    if (floorBottom < unk38) {
+        floorBottomPtr = &unk38;
+    } else {
+        floorBottomPtr = &floorBottom;
     }
-    if (floorTop < unk38) {
-        unk38 = floorTop;
+    unk38 = *floorBottomPtr;
+    float *floorTopPtr;
+    if (unk38 < floorTop) {
+        floorTopPtr = &unk38;
+    } else {
+        floorTopPtr = &floorTop;
     }
+    unk38 = *floorTopPtr;
 
     if (unk34 < unk38 * gateRatio) {
         unk30_period = 0.0f;
@@ -232,7 +218,7 @@ void PitchDetector::AnalyzeBlock(
     if (unk30_period == 0.0f) {
         unk2C = 0.0f;
     } else {
-        float pitchHz = (float)mSamplesPerSec / (float)mDecimRate / unk30_period;
+        float pitchHz = (float)(mSamplesPerSec / mDecimRate) / unk30_period;
         if (pitchHz <= 0.0f) {
             confidenceOut = 0.0f;
             pitchOut = 0.0f;
@@ -245,6 +231,25 @@ void PitchDetector::AnalyzeBlock(
     unk14++;
     unk18 += numSamples;
     pitchOut = unk2C;
-    confidenceOut = fixedGain * pitchHint * unk34 / unk38;
+    confidenceOut = fixedGain * (pitchHint * unk34) / unk38;
     gateOut = unk34;
+}
+
+void PitchDetector::SetSampleRate(int sampleRate) {
+    if (mSamplesPerSec != sampleRate) {
+        mSamplesPerSec = sampleRate;
+        MILO_ASSERT(mSamplesPerSec, 0x1B2);
+        mDecimRate = sampleRate / 6000;
+        int decimated = mSamplesPerSec / mDecimRate;
+        mMaxPeriod = decimated / 1320;
+        mFrameSize = (((decimated / 65) * 2) + 15) & ~15;
+        Deallocate();
+        mDecimBuf = (float *)_MemAlloc(mFrameSize * 4, 0x10);
+        mCorrBuf = (float *)_MemAlloc(mFrameSize * 4, 0x10);
+        mPeakBuf = (float *)_MemAlloc(mFrameSize * 4, 0x10);
+        memset(mDecimBuf, 0, mFrameSize * 4);
+        memset(mCorrBuf, 0, mFrameSize * 4);
+        memset(mPeakBuf, 0, mFrameSize * 4);
+        mIdx = 0;
+    }
 }
