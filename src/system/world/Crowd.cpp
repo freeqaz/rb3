@@ -1,3 +1,8 @@
+/* ===== PERMUTER LOCK — DO NOT EDIT =====
+ * The source permuter is actively working on: WorldCrowd::Load
+ * Started: 2026-05-26 04:08 (stale after 5 minutes)
+ * This banner is temporary and will be removed automatically.
+ ===== */
 #include "world/Crowd.h"
 #include "CameraShot.h"
 #include "char/Character.h"

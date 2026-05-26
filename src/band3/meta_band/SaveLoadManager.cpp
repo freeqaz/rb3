@@ -658,6 +658,7 @@ void SaveLoadManager::SetState(State newState) {
         break;
     }
     case 0xa: // kS_AutoloadSelectDevice3
+    case 0xd:
     {
         BandProfile *pProfile = GetProfile();
         MILO_ASSERT(pProfile, 0x57b);
@@ -690,21 +691,18 @@ void SaveLoadManager::SetState(State newState) {
         break;
     }
     case 0xc: // kS_AutoloadNotOwner
-    case 0xd:
     case 0xe:
     case 0xf:
-    case 0x10:
-    case 0x11:
     {
         Symbol dummy(saveload_dialog_event);
         TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
-    case 0x12: // kS_AutoloadDeviceMissing
-    case 0x13:
+    case 0x10: // kS_AutoloadDeviceMissing
+    case 0x11:
         SetState((State)0x46);
         break;
-    case 0x14:
+    case 0x12:
     {
         mInitialLoadNotDone = false;
         if (TheProfileMgr.GlobalOptionsNeedsSave()) {
@@ -717,7 +715,20 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)0x6e);
         break;
     }
-    case 0x15: // kS_SongCacheCreateSearch (entry-like)
+    case 0x13:
+    {
+        if (mCacheID == NULL) {
+            Symbol sym(kStrGlobalCacheName);
+            mCacheID = TheCacheMgr->GetCacheID(sym);
+        }
+        if (mCacheID == NULL) {
+            SetState((State)0x37);
+        } else {
+            SetState((State)0x31);
+        }
+        break;
+    }
+    case 0x14: // kS_SongCacheCreateSearch (entry-like)
     {
         unk4c = TheSongMgr.GetCachedSongInfoName();
         if (mCacheID != NULL) {
@@ -734,84 +745,87 @@ void SaveLoadManager::SetState(State newState) {
         bool locResult = false;
         const char *locName = Localize(song_info_cache_name, &locResult);
         if (!TheCacheMgr->SearchAsync(locName, &mCacheID)) {
-            CacheResult res = TheCacheMgr->GetLastResult();
-            MILO_FAIL(MakeString<int>("TheCacheMgr->SearchAsync() failed with CacheResult %d\n", (int)res));
+            MILO_FAIL(MakeString<int>("TheCacheMgr->SearchAsync() failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
         }
         break;
     }
-    case 0x16: // kS_SongCacheCreateNotFound_Msg (mount states share handler)
-    case 0x17:
-    {
-        Symbol dummy(saveload_dialog_event);
-        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
-        break;
-    }
-    case 0x18:
-    case 0x19:
+    case 0x15: // kS_SongCacheCreateNotFound_Msg
+    case 0x16:
     {
         Symbol sym(unk4c.c_str());
         TheCacheMgr->AddCacheID(mCacheID, sym);
         SetState((State)0x20);
         break;
     }
-    case 0x1a: // kS_SongCacheCreateMountRead (0x1A)
-    {
-        if (mCacheID != NULL) {
-            TheCacheMgr->RemoveCacheID(mCacheID);
-            delete mCacheID;
-            mCacheID = NULL;
-        }
-        bool locResult = false;
-        const char *locName = Localize(song_info_cache_name, &locResult);
-        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
-            CacheResult res = TheCacheMgr->GetLastResult();
-            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)res));
-        }
-        break;
-    }
-    case 0x1b: // break-only (NOP)
-        break;
-    case 0x1c:
-    {
-        MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
-        break;
-    }
-    case 0x1d:
+    case 0x17:
+    case 0x18:
     {
         Symbol dummy(saveload_dialog_event);
         TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
-    case 0x1e:
+    case 0x19:
     {
-        UpdateStatus((SaveLoadMgrStatus)1);
-#if 0 // FIXME(decomp): WIP referenced 4-arg Cache::ReadAsync(CacheID*,...) — real sig is (const char*, void*, uint, Hmx::Object*).
-        if (!mCache->ReadAsync(mCacheID, mData, mSaveSize, NULL)) {
+        if (mCacheID != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            if (mCacheID != NULL) {
+                delete mCacheID;
+            }
+            mCacheID = NULL;
+        }
+        bool locResult = false;
+        const char *locName = Localize(song_info_cache_name, &locResult);
+        // FIXME(decomp): 6-arg SearchAsync; real sig unknown — args: (r4=0, r5=0, r6=0x25800, r7=sz, r8=locName, r9=&mCacheID)
+        if (!TheCacheMgr->SearchAsync(locName, &mCacheID)) {
+            SetState((State)0x1a);
+        }
+        break;
+    }
+    case 0x1a: // NOP — async wait state, polled in Poll()
+        break;
+    case 0x1b:
+    {
+        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
             MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
         }
-#endif
         break;
     }
-    case 0x1f: // kS_SongCacheCreateSearch
+    case 0x1c:
     {
-#if 0 // FIXME(decomp): WIP referenced _MemAllocTemp(CacheID*, 0) (wrong type) and 4-arg Cache::GetFileSizeAsync — real sig is (const char*, uint*, Hmx::Object*).
-        mData = _MemAllocTemp(mCacheID, 0);
-        if (!mCache->GetFileSizeAsync(mCacheID, mSaveSize, mData, 0)) {
-            MILO_FAIL(MakeString<int>("mCache->GetFileSizeAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x1d:
+    {
+        UpdateStatus((SaveLoadMgrStatus)1);
+#if 0 // FIXME(decomp): WIP referenced 4-arg Cache::GetFileSizeAsync — real sig is (const char*, uint*, Hmx::Object*).
+        if (!TheCacheMgr->GetFileSizeAsync(unk4c.c_str(), &mSaveSize, NULL)) {
+            MILO_FAIL(MakeString<int>("TheCacheMgr->GetFileSizeAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
         }
 #endif
         break;
     }
-    case 0x20: // kS_SongCacheCreateMountWrite
+    case 0x1e:
     {
-#if 0 // FIXME(decomp): WIP referenced Cache::ReadAsync(CacheID*,...) — real sig is (const char*, void*, uint, Hmx::Object*).
-        if (!mCache->ReadAsync(mCacheID, mSaveSize, mData, 0)) {
+        mData = _MemAllocTemp(mSaveSize, 0);
+#if 0 // FIXME(decomp): WIP referenced Cache::ReadAsync — real sig is (const char*, void*, uint, Hmx::Object*).
+        if (!mCache->ReadAsync(unk4c.c_str(), mData, mSaveSize, NULL)) {
             MILO_FAIL(MakeString<int>("mCache->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
         }
 #endif
         break;
     }
-    case 0x21:
+    case 0x1f: // kS_SongCacheCreateMountWrite
+    {
+#if 0 // FIXME(decomp): WIP referenced Cache::WriteAsync — real sig unknown.
+        if (!mCache->WriteAsync(unk4c.c_str(), mData, mSaveSize, NULL)) {
+            MILO_FAIL(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+#endif
+        break;
+    }
+    case 0x20: // kS_SongCacheCreateMountWrite — write cached song info
     {
         int sz = TheSongMgr.GetCachedSongInfoSize();
         mData = _MemAllocTemp(sz, 0);
@@ -824,15 +838,15 @@ void SaveLoadManager::SetState(State newState) {
         stream.~BufStream();
         break;
     }
-    case 0x22: // kS_SongCacheCreateMountWrite group
-    case 0x23:
+    case 0x21: // kS_SongCacheCreateMountWrite — UnmountAsync
+    case 0x22:
     {
         if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
             MILO_FAIL(MakeString<int>("TheCacheMgr->UnmountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
         }
         break;
     }
-    case 0x24:
+    case 0x23:
     {
         unk78 = 0;
         unk7c = 1;
@@ -840,7 +854,7 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)(mCache != NULL ? 0x22 : 0x26));
         break;
     }
-    case 0x25:
+    case 0x24:
     {
         unk7c = 0;
         unk78 = 0;
@@ -848,10 +862,15 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)(mCache != NULL ? 0x22 : 0x26));
         break;
     }
-    case 0x26:
+    case 0x25:
         mCacheID = NULL;
         SetState((State)0x3);
         break;
+    case 0x26:
+    {
+        // FIXME(decomp): RemoveCacheID + 6-arg SearchAsync for global_options_cache_name → SetState(0x2d)
+        break;
+    }
     case 0x27:
     {
         if (mCache != NULL) {

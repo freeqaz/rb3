@@ -1,0 +1,48 @@
+{
+  "symbol": "PollLoaders__11NetCacheMgrFv",
+  "function_name": "NetCacheMgr::PollLoaders",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/NetCacheMgr.cpp",
+  "initial_percent": 98.63115,
+  "final_percent": 98.87705,
+  "total_delta": 0.2458999999999918,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.63115,
+      "best_name": "declmove_0+declreorder_0",
+      "best_pattern": "compose:declaration_movement+declaration_reorder",
+      "best_score": 98.87705,
+      "delta": 0.2458999999999918,
+      "num_variants": 25,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.491806,
+      "best_name": "stmt_reorder_1",
+      "best_pattern": "statement_reorder",
+      "best_score": 98.87705,
+      "delta": 0.38524400000000014,
+      "num_variants": 25,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 10.3,
+  "winning_pattern": "statement_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 13,
+    "2": 23,
+    "5": 14
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

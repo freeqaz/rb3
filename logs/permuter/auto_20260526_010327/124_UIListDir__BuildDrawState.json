@@ -1,0 +1,48 @@
+{
+  "symbol": "BuildDrawState__9UIListDirCFR21UIListWidgetDrawStateRC11UIListStateQ211UIComponent5Statef",
+  "function_name": "UIListDir::BuildDrawState",
+  "source_path": "/home/free/code/milohax/rb3/src/system/ui/UIListDir.cpp",
+  "initial_percent": 97.34478,
+  "final_percent": 97.37781,
+  "total_delta": 0.03302999999999656,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.34478,
+      "best_name": "hoist_0",
+      "best_pattern": "hoist_sret",
+      "best_score": 97.37781,
+      "delta": 0.03302999999999656,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 96.6605,
+      "best_name": "varext_0",
+      "best_pattern": "variable_extraction",
+      "best_score": 97.37781,
+      "delta": 0.7173099999999977,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 19.6,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 26,
+    "0": 6,
+    "2": 28
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

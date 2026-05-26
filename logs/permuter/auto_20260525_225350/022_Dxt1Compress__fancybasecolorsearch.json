@@ -1,0 +1,48 @@
+{
+  "symbol": "fancybasecolorsearch__12Dxt1CompressFPUcPA4_A4_UcPPUciiii",
+  "function_name": "Dxt1Compress::fancybasecolorsearch",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/Dxt1Compress.cpp",
+  "initial_percent": 98.96117,
+  "final_percent": 98.9767,
+  "total_delta": 0.015529999999998267,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.96117,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 98.9767,
+      "delta": 0.015529999999998267,
+      "num_variants": 26,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 97.2,
+      "best_name": "varext_0",
+      "best_pattern": "variable_extraction",
+      "best_score": 98.9767,
+      "delta": 1.776699999999991,
+      "num_variants": 26,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 11.35,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 31,
+    "2": 19,
+    "1": 2
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

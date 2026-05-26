@@ -34,7 +34,7 @@ public:
             }
             MILO_LOG("median is %.3f\n", fvec[num / 2]);
         } else
-            MILO_LOG("No samples to be had\n");
+            MILO_LOG("%s", "No samples to be had\n");
         mCur = 0;
     }
 

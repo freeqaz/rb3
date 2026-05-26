@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""Detect MWCC-mangled identifiers pasted into C++ source without a declaration.
+
+Failure mode: a sweep agent inserts m2c-style mangled symbols
+(Miss__8GemTrackFfii, Hit__6PlayerFv, ...) directly into a .cpp file instead
+of converting them to proper C++ calls. The file then breaks the build with
+"(10140) undefined identifier" at the mangled name.
+
+Mangled-name uses are LEGITIMATE when paired with an `extern "C"` declaration
+in the same TU — that's the cross-TU inline-call trick. We only flag uses
+where the mangled identifier is NOT declared in the same file.
+
+Usage:
+  bin/lint-mangled-paste                  # scan src/
+  bin/lint-mangled-paste path/to/file.cpp # scan a specific file
+"""
+from __future__ import annotations
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+MANGLED_RE = re.compile(
+    r"\b[A-Za-z_][A-Za-z0-9_]*__"
+    r"(?:[0-9]+[A-Za-z_][A-Za-z0-9_]*)?"
+    r"F[a-zA-Z0-9_]+\b"
+)
+LINE_COMMENT_RE = re.compile(r"//.*$")
+BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+EXCLUDE_DIR_PREFIXES = (".permuter_work_",)
+EXCLUDE_SUFFIXES = (".permuter_bak",)
+
+
+def iter_sources(targets: list[Path]):
+    for target in targets:
+        if target.is_file():
+            yield target
+            continue
+        for path in target.rglob("*"):
+            if not path.is_file():
+                continue
+            if path.suffix not in (".cpp", ".h", ".hpp", ".cc", ".cxx"):
+                continue
+            if any(part.startswith(EXCLUDE_DIR_PREFIXES) for part in path.parts):
+                continue
+            if path.name.endswith(EXCLUDE_SUFFIXES):
+                continue
+            yield path
+
+
+def strip_comments(text: str) -> str:
+    # Remove block comments first, then line comments. Comments are replaced
+    # by blank space to preserve line numbering.
+    def _blank(m: re.Match) -> str:
+        return "".join("\n" if c == "\n" else " " for c in m.group(0))
+    text = BLOCK_COMMENT_RE.sub(_blank, text)
+    return "\n".join(LINE_COMMENT_RE.sub("", line) for line in text.splitlines())
+
+
+def collect_decl_regions(stripped: str) -> list[tuple[int, int]]:
+    """Return (start_line, end_line) ranges spanned by extern "C" declarations.
+
+    Covers two forms:
+      extern "C" foo(...);                 # one line / paren-continued
+      extern "C" { foo(...); bar(...); }   # braced block
+    """
+    regions: list[tuple[int, int]] = []
+    lines = stripped.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if "extern" in line and '"C"' in line:
+            if "{" in line:
+                # Braced block: find matching close brace
+                depth = line.count("{") - line.count("}")
+                start = i + 1
+                j = i
+                while depth > 0 and j + 1 < len(lines):
+                    j += 1
+                    depth += lines[j].count("{") - lines[j].count("}")
+                regions.append((start, j + 1))
+                i = j + 1
+                continue
+            # Paren-continued single decl: span until matching ';'
+            start = i + 1
+            j = i
+            while j < len(lines) and ";" not in lines[j]:
+                j += 1
+            regions.append((start, j + 1))
+            i = j + 1
+            continue
+        i += 1
+    return regions
+
+
+def in_region(lineno: int, regions: list[tuple[int, int]]) -> bool:
+    return any(s <= lineno <= e for s, e in regions)
+
+
+def scan_file(path: Path) -> list[tuple[int, str, str]]:
+    try:
+        text = path.read_text(errors="replace")
+    except OSError:
+        return []
+    stripped = strip_comments(text)
+    decl_regions = collect_decl_regions(stripped)
+    declared: set[str] = set()
+    # First pass over the stripped source: collect identifiers that appear
+    # inside any extern "C" region as declarations.
+    for lineno, line in enumerate(stripped.splitlines(), start=1):
+        if not in_region(lineno, decl_regions):
+            continue
+        for match in MANGLED_RE.finditer(line):
+            declared.add(match.group(0))
+    # Second pass: report uses that aren't declared.
+    issues: list[tuple[int, str, str]] = []
+    raw_lines = text.splitlines()
+    for lineno, line in enumerate(stripped.splitlines(), start=1):
+        for match in MANGLED_RE.finditer(line):
+            ident = match.group(0)
+            if ident in declared:
+                continue
+            issues.append((lineno, ident, raw_lines[lineno - 1].strip()))
+    return issues
+
+
+def main(argv: list[str]) -> int:
+    targets = [Path(a) for a in argv[1:]] or [ROOT / "src"]
+    any_found = False
+    for path in iter_sources(targets):
+        for lineno, ident, line in scan_file(path):
+            any_found = True
+            rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+            print(f"{rel}:{lineno}: {ident}")
+            print(f"    {line}")
+    if any_found:
+        print()
+        print("Found mangled-paste candidates with no extern \"C\" declaration.")
+        print("Convert to proper C++ calls, e.g.")
+        print("  'Miss__8GemTrackFfii(track, ms, gid, slot)' -> 'track->Miss(ms, gid, slot)'")
+        print("  'Hit__6PlayerFv(this)'                      -> 'Player::Hit()'")
+        return 1
+    print("OK: no MWCC-mangled identifier pastes found.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

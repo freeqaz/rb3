@@ -1,0 +1,48 @@
+{
+  "symbol": "UpdateSetlist__11RockCentralFP17LocalSavedSetlistR14DataResultListPQ23Hmx6Objectii",
+  "function_name": "RockCentral::UpdateSetlist",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/net_band/RockCentral.cpp",
+  "initial_percent": 97.82979,
+  "final_percent": 98.305855,
+  "total_delta": 0.4760649999999913,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.82979,
+      "best_name": "typewidth_0",
+      "best_pattern": "type_width_change",
+      "best_score": 98.29256,
+      "delta": 0.4627699999999919,
+      "num_variants": 19,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 88.47607,
+      "best_name": "varext_2",
+      "best_pattern": "variable_extraction",
+      "best_score": 98.29256,
+      "delta": 9.816489999999988,
+      "num_variants": 19,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 199.36,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 14,
+    "0": 12,
+    "5": 12
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

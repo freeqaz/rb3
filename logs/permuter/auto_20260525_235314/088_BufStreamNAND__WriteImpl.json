@@ -1,0 +1,38 @@
+{
+  "symbol": "WriteImpl__13BufStreamNANDFPCvi",
+  "function_name": "BufStreamNAND::WriteImpl",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/BufStreamNAND.cpp",
+  "initial_percent": 97.85714,
+  "final_percent": 100.0,
+  "total_delta": 2.142859999999999,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.85714,
+      "best_name": "andsplit_0+stmt_reorder_2",
+      "best_pattern": "compose:and_split+statement_reorder",
+      "best_score": 100.0,
+      "delta": 2.142859999999999,
+      "num_variants": 15,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "perfect",
+  "elapsed_seconds": 13.42,
+  "winning_pattern": "compose:and_split+statement_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 5,
+    "1": 1,
+    "2": 9
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -1,0 +1,48 @@
+{
+  "symbol": "OnGemEnd__10SongParserFiUc",
+  "function_name": "SongParser::OnGemEnd",
+  "source_path": "/home/free/code/milohax/rb3/src/system/beatmatch/SongParser.cpp",
+  "initial_percent": 0.0,
+  "final_percent": 98.35714,
+  "total_delta": 98.35714,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 0.0,
+      "best_name": "stmt_reorder_0",
+      "best_pattern": "statement_reorder",
+      "best_score": 98.34226,
+      "delta": 98.34226,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.34226,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.34226,
+      "delta": 0.0,
+      "num_variants": 29,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 68.14,
+  "winning_pattern": "statement_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 37,
+    "0": 9,
+    "2": 13
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

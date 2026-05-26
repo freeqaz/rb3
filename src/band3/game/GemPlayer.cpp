@@ -337,11 +337,176 @@ void GemPlayer::Swing(int i1, int i2, float f3, bool b4, bool b5) {
     SwingHook(i1, i2, f3, b4, b5);
 }
 
-void GemPlayer::Hit(int, float, int, unsigned int gem_hit_slots, GemHitFlags) {
+void GemPlayer::Hit(
+    int track, float ms, int gem_id, unsigned int gem_hit_slots, GemHitFlags flags
+) {
     MILO_ASSERT(gem_hit_slots != 0, 0x23F);
-    MILO_WARN("hit");
-    MILO_WARN("drum_trainer_unmute");
-    MILO_WARN("send_hit");
+    if (!mGemStatus->Get0x40(gem_id)) {
+        if (TheGame->IsPaused())
+            return;
+        HandleFirstGemAfterRollback(gem_id);
+        InputReceived();
+        if (gem_id == mGemStatus->GetSize() - 1) {
+            unk3e1 = 1;
+        }
+        const GameGem &gem = TheSongDB->GetGem(mTrackNum, gem_id);
+        unsigned int gemSlots = gem.mSlots;
+        float delta = gem.mMs - (ms + mSyncOffset);
+        if (sTracker) {
+            int cur = sTracker->mCur;
+            if (cur < 1000) {
+                sTracker->mCur = cur + 1;
+                sTracker->mDeltas[cur] = delta;
+            } else if (cur == 1000) {
+                sTracker->DeltaTracker::PrintDeltas();
+                sTracker->mCur = 1001;
+            }
+        }
+        unk1fe = 0;
+        unk1fd = 0;
+        unk1ff = 0;
+        int ignoreAt = IgnoreGemsAt(gem.GetTick());
+        if (ignoreAt) {
+            if (mTrack) {
+                const GameGem &gem2 = TheSongDB->GetGem(mTrackNum, gem_id);
+                mTrack->Miss(ms, gem_id, gem2.GetSlot());
+            }
+            IgnoreGem(gem_id);
+            goto block_96;
+        }
+        if (InIgnorableFill(gem.GetTick())) {
+            mTrack->Hit(ms, gem_id, 1);
+            IgnoreGem(gem_id);
+            return;
+        }
+        if (mTrack) {
+            if (IsAutoplay()
+                && mUser->GetTrackType() != kTrackRealGuitar
+                && mUser->GetTrackType() != kTrackRealBass) {
+                unsigned int remaining = gemSlots;
+                int slot = 0;
+                while (remaining) {
+                    unsigned int bit = 1U << slot;
+                    if (remaining & bit) {
+                        remaining -= bit;
+                        FretButtonDown(slot, ms);
+                        RemoveFretReleasesInSlot(slot);
+                        float endMs;
+                        if (gem.IgnoreDuration()) {
+                            endMs = 200.0f;
+                        } else {
+                            endMs = (float)gem.mDurationMs;
+                        }
+                        UpcomingFretRelease release;
+                        release.unk0 = slot;
+                        release.unk4 = ms + mSyncOffset + endMs;
+                        mUpcomingFretReleases.push_back(release);
+                    }
+                    slot++;
+                }
+            }
+            int hitFlags = 1;
+            if (mMatcher && mMatcher->UsingAlternateButtons()) {
+                hitFlags = 1 | 8;
+            }
+            if (gemSlots != gem_hit_slots) {
+                mTrack->PartialHit(ms, gem_id, gem_hit_slots, hitFlags);
+                EndHitStreak();
+                BuildMissStreak(gem_id);
+            } else {
+                mTrack->Hit(ms, gem_id, hitFlags);
+            }
+            if ((int)flags & 8) {
+                mStats.mUpstrumCount++;
+            } else {
+                mStats.mDownstrumCount++;
+            }
+            if (!mTrack->Lefty()) {
+                mStats.m0x34 = 1;
+            }
+        }
+        if (gemSlots != gem_hit_slots) {
+            mStatCollector.PassGem(ms, gem, gem_id);
+            if (gem_id != -1) {
+                mGemStatus->mGems[gem_id] |= 2;
+            }
+            if (gem_id != -1) {
+                mGemStatus->mGems[gem_id] |= 4;
+            }
+        } else {
+            mStatCollector.HitGem(ms, gem, gem_id, gem_hit_slots, flags);
+            if (gem_id != -1) {
+                mGemStatus->mGems[gem_id] |= 1;
+            }
+            mGemStatus->mHits++;
+        }
+        if (((int)flags & 2) && gem_id != -1) {
+            mGemStatus->mGems[gem_id] |= 0x80;
+        }
+        UpdateSectionStats();
+        if (((int)flags & 4) && gem_id != -1) {
+            mGemStatus->mGems[gem_id] |= 0x20;
+        }
+    block_96:
+        unk3c0 = 0;
+        SetRemoteAnnoyingMode(false);
+        static Message msg("hit", 0, 0, 0.0f);
+        int numHit = GameGem::CountBitsInSlotType(gem_hit_slots);
+        int numTotal = GameGem::CountBitsInSlotType(gemSlots);
+        msg[1] = gem_id;
+        msg[2] = (int)flags;
+        msg[3] = (float)numHit / (float)numTotal;
+        Export(msg, true);
+        if (mIsInCoda) {
+            if (gemSlots == gem_hit_slots) {
+                CodaHit(ms, gem_id);
+            } else {
+                mBand->DealWithCodaGem(this, gem_id, false, false);
+            }
+        } else {
+            int numGemSlots = GameGem::CountBitsInSlotType(gem_hit_slots);
+            unk354 = ms;
+            CheckHeldNotes(gem.mMs);
+            if (!ignoreAt) {
+                BuildHitStreak(gem_id, delta);
+                EndMissStreak();
+                if ((int)flags & 8) {
+                    mStats.m0x30++;
+                }
+                Player::Hit();
+                AddHeadPoints(ms, gem_id, numGemSlots, flags);
+            }
+            if (gem.IgnoreDuration()) {
+                UpdateCrowdMeter((float)numGemSlots / (float)gem.NumSlots(), gem_id);
+            } else {
+                HeldNote &note = GetUnusedHeldNote();
+                HeldNote tmp(
+                    (TrackType)mUser->GetTrackType(), gem_id, gem, gem_hit_slots
+                );
+                note = tmp;
+            }
+            HandleCommonPhraseNote(gem.NumSlots() == numGemSlots, gem_id);
+            if (mBehavior->GetHasSolos()) {
+                HandleSoloGem(gem_id, true, ms, ((unsigned int)flags >> 1) & 1);
+            }
+            if (TheGame->mProperties.mInDrumTrainer) {
+                static Message dtmsg("drum_trainer_unmute", 0);
+                dtmsg[1] = gem.GetSlot();
+                Export(dtmsg, false);
+            }
+        }
+        if (IsLocal()) {
+            static Message msg2("send_hit", 0, 0, 0.0f);
+            msg2[1] = mStats.GetCurrentStreak();
+            msg2[2] = (int)mScore;
+            msg2[3] = mCrowd->GetDisplayValue();
+            HandleType(msg2);
+        }
+        unk1fe = 1;
+        unk1fd = 1;
+        unk1ff = 1;
+        HitHook(track, ms, gem_id, gem_hit_slots, flags);
+    }
 }
 
 void GemPlayer::Miss(
@@ -2432,12 +2597,11 @@ int GemPlayer::GetCodaFreestyleExtents(Extent &extent) const {
     if (fillInfo->mFills.empty())
         return false;
     int lastStart = fillInfo->mFills.back().start;
-    if (lastStart >= codaStartTick) {
-        extent.unk0 = lastStart;
-        extent.unk4 = fillInfo->mFills.back().end;
-        return true;
-    }
-    return false;
+    if (lastStart < codaStartTick)
+        return false;
+    extent.unk0 = lastStart;
+    extent.unk4 = fillInfo->mFills.back().end;
+    return true;
 }
 
 void GemPlayer::CodaHit(float f1, int i2) {

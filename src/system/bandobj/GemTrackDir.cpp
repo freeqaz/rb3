@@ -1066,6 +1066,11 @@ void GemTrackDir::ClearChordMeshRefCounts(
 void GemTrackDir::ClearChordMeshRefCounts() {
     ClearChordMeshRefCounts(unk6b4);
     ClearChordMeshRefCounts(unk6cc);
+    for (std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
+         = unk6b4.begin();
+         it != unk6b4.end();
+         ++it) {
+    }
 }
 
 void GemTrackDir::FreeChordMeshes(
@@ -1098,8 +1103,7 @@ void GemTrackDir::DeleteUnusedChordMeshes() {
                 arpIt != unk6cc.end() ? arpIt->second.second : NULL;
             delete chordMesh;
             delete arpMesh;
-            if (arpIt != unk6cc.end())
-                unk6cc.erase(arpIt);
+            unk6cc.erase(it->first);
             std::map<unsigned int, std::pair<int, RndMesh *> >::iterator next
                 = it;
             ++next;

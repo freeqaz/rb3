@@ -1,0 +1,36 @@
+{
+  "symbol": "LoadDynamicPage__20StoreMetadataManagerFP9DataArray",
+  "function_name": "StoreMetadataManager::LoadDynamicPage",
+  "source_path": "/home/free/code/milohax/rb3/src/system/meta/StorePackedMetadata.cpp",
+  "initial_percent": 98.10345,
+  "final_percent": 98.10345,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.10345,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 98.82758,
+      "delta": 0.7241300000000024,
+      "num_variants": 26,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "no_apply",
+  "elapsed_seconds": 30.55,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 0,
+  "validation_distribution": {
+    "0": 26
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

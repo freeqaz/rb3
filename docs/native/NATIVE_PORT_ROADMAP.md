@@ -1,0 +1,398 @@
+# RB3 Native Port — Roadmap & Status
+
+**Status**: Phase 0 — planning. No native code yet.
+**v1 milestone**: Play one song end-to-end (audio + venue + HUD + scoring) on Linux x86_64.
+
+This doc is the durable tracking artifact for the RB3 native port. Sessions append to the Status Log at the bottom and adjust phase tables as items move. Companion: [NATIVE_PORT_INVENTORY.md](NATIVE_PORT_INVENTORY.md) (per-area disposition of DC3's existing native code).
+
+---
+
+## Goal & non-goals
+
+**Goal**: A native, cross-platform port of Rock Band 3 (Wii build SZBE69_B8 as the source of truth) that runs on Linux x86_64, macOS (arm64 + x86_64), and Web (Emscripten). Single-player only for v1.
+
+**Non-goals**:
+- 100% asm-match in the *native* runtime. Asm-match remains the verification standard inside the decomp repo, but the native build is a clean LP64 modern-C++ target. Match% proves the source is faithful; it is not the deliverable.
+- Online multiplayer in v1. `src/network/` and Wii DWC/WFC stacks are out of scope. Local multiplayer is deferred too — focus on single-player polish first.
+- Windows in v1. Add later if needed.
+- Rewriting decomp work in `src/sdk/`, `src/system/rndwii/`, or `src/system/os/`. These are replaced wholesale by the host platform; matching them teaches nothing about porting.
+
+---
+
+## Architecture
+
+Three repos. The deliverable lives in **milo-native-engine**; the matched decomps remain authoritative for verification.
+
+```
+/home/free/code/milohax/
+├── milo-native-engine/    ← NEW. Shared LP64 modern-C++ engine + native glue.
+│                            Both decomps depend on it for the runtime build.
+│                            Owns: gfx (WebGPU), audio (miniaudio/FFmpeg), input,
+│                            CMake scaffolding, host-STL shim layer, native impls
+│                            of os/ interfaces, and engine-only unit tests.
+│
+├── dc3-decomp/            ← DC3 source of truth. Keeps its matched src/system/
+│                            fork for asm-match verification against Xbox 360.
+│                            Native build links against milo-native-engine and
+│                            supplies its own MSVC compat shim (msvc_compat.h)
+│                            plus Win32-API shim (xdk_shims.cpp).
+│
+└── rb3/                   ← THIS REPO. Keeps its matched src/system/ fork for
+                             asm-match verification against Wii MWCC. Native
+                             build (new: rb3/native/) links against
+                             milo-native-engine. Supplies MWCC compat shim
+                             (mwcc_compat.h) plus Wii-SDK shim (rvl_shims.cpp).
+                             Owns src/band3/ (RB3 game layer).
+```
+
+### Three layers of source ownership
+
+The plan has three categories of source, not two. Be explicit about which is which when discussing any file:
+
+| Layer | Owned by | Compiles under | Purpose |
+|-------|----------|----------------|---------|
+| **Matched fork** (`src/system/*.cpp` in each decomp) | Per-decomp | MWCC (RB3) / MSVC PPC (DC3) | Asm-match verification. Off the native link path. |
+| **Engine runtime** (`milo-native-engine/src/**`) | Shared repo | Clang LP64 only | The deliverable. Linked by both decomps' native builds. |
+| **Per-decomp native glue** (`rb3/native/src/**`, `dc3-decomp/native/src/**`) | Per-decomp | Clang LP64 only | Compat shims, link glue, game-specific stubs that depend on per-game types. |
+
+The matched fork and the engine runtime are *separate copies* that drift independently. The matched fork must compile under its original toolchain; the engine runtime is freed from that constraint and stays clean LP64 modern C++. They are never merged into one shared file — see the next section for why the previous "hybrid src/system" idea was wrong.
+
+### Why `src/system` does not converge across the three layers
+
+Earlier drafts proposed "hoisting" a matched `src/system/foo.cpp` into the engine once both decomps reached AT_LIMIT. After auditing DC3's existing native work this turns out to be the wrong shape:
+
+- DC3 has ~865 `HX_NATIVE` ifdef blocks across ~295 source files in its matched fork. The blocks are the patches that make the MSVC PPC source compile and behave correctly under clang LP64. They are not a transitional state — they are the matched fork's permanent native compatibility layer.
+- RB3 today has zero `HX_NATIVE` blocks. Phase 1 lands them.
+- An asm-matched `.cpp` and its clang-LP64-clean cousin are two different files with different correctness criteria. Merging them creates a third hybrid that satisfies neither.
+
+So the engine's `src/system/` (when it grows beyond glue) is a *new* clean LP64 implementation written against the same `os/`, `obj/`, `rndobj/`, `math/` interfaces as the decomp forks. The decomp `src/system/` files compile under their compiler for asm-match and **do not appear on the native link line at all**. The native build link rule:
+
+- Native link = `milo-native-engine/src/**` (engine) + `rb3/native/src/**` (per-game glue) + `rb3/src/band3/**` (RB3 game logic) + selected `rb3/src/system/**` files that already work under clang via `HX_NATIVE` gating.
+- Decomp link = `rb3/src/**` only (no engine, no native glue).
+
+The two builds share *header* interfaces (e.g. `os/ThreadCall.h`) but compile separate implementation .cpp files. New engine `.cpp` files only appear in `milo-native-engine/src/system/` when there's a concrete reason — almost always "the matched fork's HX_NATIVE branch became larger and more cross-game-relevant than the matched logic, so move the native logic to the engine and let the matched fork keep only its asm-match path."
+
+### Compiler-quirk gating model
+
+The shared engine targets **vanilla Clang LP64 C++17**. The matched forks carry per-compiler quirks. We gate explicitly so both can coexist:
+
+- `#ifdef HX_NATIVE` — code that runs on the clang LP64 native build. Lives in the matched fork's headers (e.g. `Data.h` ctor zero-init for the 8-byte union) and source. Both decomps adopt the same convention.
+- `#ifdef __MWERKS__` — MWCC-only code. Inline `asm { psq_l ... }` blocks in `src/system/math/Vec.h`, `#pragma dont_inline`, `#pragma pool_data`, `__alloca`. Lives in RB3's matched fork. Native build must compile when this gate is off.
+- `#ifdef _MSC_VER` — MSVC-only code in DC3's matched fork. Native build must compile when this gate is off.
+- `#ifdef __EMSCRIPTEN__` — web-build branch within native code.
+
+Per-decomp compat shims (`mwcc_compat.h`, `msvc_compat.h`) absorb the rest. RB3's `mwcc_compat.h` is expected to be much thinner than DC3's `msvc_compat.h` because clang and MWCC agree on more than clang and MSVC do.
+
+### STL ABI seam (resolved)
+
+Both decomps use **STLport** for their matched STL. The native build never sees the stlport headers. Mechanism, copied from DC3:
+
+1. Each decomp ships `src/system/stlport/` for its matched build (`<vector>`, `<map>`, etc. resolve to STLport).
+2. The engine ships a shim layer (e.g. `milo-native-engine/src/stl/_vector.h` containing only `#include <vector>`) that maps STLport-shape internal-header includes to host STL.
+3. The native build's include path puts the engine shim layer *before* `src/system/stlport/`, so host clang STL wins. The matched build doesn't see the shim layer.
+4. Common Milo container helpers in `utl/Symbol.h`, `utl/Str.h`, etc. that reach into STL internals get gated with `#ifdef HX_NATIVE` to use the host-STL shape instead.
+
+There is no third copy of stlport in the engine. Both decomps' stlport stays forked for asm-match indefinitely.
+
+### Per-decomp OS-API shim (the xdk/rvl story)
+
+The matched forks call into their platform's SDK directly:
+- DC3 source uses Win32 types from `xdk/XAPILIB.h`: `HANDLE`, `WaitForSingleObject`, `RTL_CRITICAL_SECTION`, etc.
+- RB3 source uses Wii types from `revolution/OS.h`: `OSMutex`, `OSThread`, `OSCreateThread`, `OSGetCurrentThread`, etc.
+
+For the native build, each decomp ships an SDK shim that maps its platform's calls to POSIX:
+- DC3's `native/src/xdk_shims.cpp` (exists) — POSIX implementations of the Win32 API surface DC3's matched fork happens to call.
+- RB3's `native/src/rvl_shims.cpp` (new) — POSIX implementations of the Wii SDK surface RB3's matched fork happens to call. Wii thread/mutex/event calls map onto pthread; Wii filesystem calls map onto stdio; Wii timer calls map onto `clock_gettime`.
+
+The shims are per-decomp because the *which* of the API surface is per-decomp. They are not engine code. The engine sees only the higher-level interfaces (`os/ThreadCall.h`, `os/CritSec.h`, `os/File.h`) and ships *its own* POSIX implementations of those interfaces — `ThreadCall_Native.cpp` etc. — which never call into the SDK shim.
+
+Concretely: the matched fork's `src/system/os/ThreadCall_Wii.cpp` (which calls `OSCreateThread`) is excluded from the native link. The engine's `ThreadCall_Native.cpp` (which calls `pthread_create`) takes its place. The `rvl_shims.cpp` exists for the much smaller surface that *non-os* matched fork code happens to call directly into Wii SDK headers for — Splash, OutfitConfig, StorePackedMetadata, etc.
+
+---
+
+## DC3 → RB3 differences to handle
+
+DC3's native port is mature (boot-to-gameplay, audio playing, post-processing, crowd billboards). RB3 differs in ways that matter:
+
+| Area | DC3 (source) | RB3 (this port) | Impact |
+|------|--------------|-----------------|--------|
+| Original platform | Xbox 360 (PPC Xenon, big-endian, ILP32) | Wii (PPC Gekko/Broadway, big-endian, ILP32) | Endianness + word-size assumptions match — most LP64 lessons transfer 1:1 |
+| Original compiler | MSVC PPC | MetroWorks CodeWarrior 4.3.172 | Different mangling, different STL (MSVC vs STLport), different `__declspec` vs MWCC pragmas. Per-decomp shims, not engine concern |
+| Original STL | MSVC STL | STLport on Wii | Matched-fork ABI differs; native build resolves to host STL via shim path priority (see STL seam above) |
+| SDK shim | `xdk_shims.cpp` (Win32 → POSIX) exists | `rvl_shims.cpp` (Wii SDK → POSIX) to be written | Same pattern, different surface. Per-decomp |
+| MWCC inline assembly | None | PowerPC `asm { psq_l ... }` blocks in `math/Vec.h`, `math/Mtx.h`, `math/Geo.cpp`, `math/Rot.cpp`, `bandobj/BandIKEffector.cpp`, `char/CharForeTwist.cpp`, `char/CharHair.cpp`, `bandobj/InlineHelp.cpp`, `rndobj/Part.cpp` | Each asm block needs a C++ fallback gated by `#ifndef __MWERKS__`. List is small and known |
+| MWCC pragmas | None | `#pragma dont_inline`, `#pragma pool_data`, `#pragma fp_contract`, `#pragma force_active` scattered across matched fork | No runtime semantic; gate with `#ifdef __MWERKS__` or `#pragma` no-ops under clang |
+| MWCC intrinsics | None | `__alloca` (rare) | Provide clang `alloca` fallback in `mwcc_compat.h` |
+| Symbol info | None (Ghidra-inferred) | Full DWARF in debug ELF | RB3 has much richer type info; field layouts more reliable |
+| Milo version | Newer (DC3 ≈ 2012) | Older (RB3 ≈ 2010) | DC3 patterns generally apply forward; RB3 may lack newer APIs. Carry-forward is one-way DC3 → RB3 |
+| Game layer | `src/dance/` + `lazer/meta_ham/` | `src/band3/` (bandtrack, game, meta_band, tour) | Entirely separate. RB3 game logic — GemPlayer, scoring, instruments, song HUD — has no DC3 equivalent. Decomp-matched source already exists; needs native bring-up |
+| Renderer source | Xbox D3D9 abstractions in `rndxbox/` | Wii GX in `system/rndwii/` | Both replaced by WebGPU. DC3's `Rnd_Wgpu.cpp`/`Tex_Wgpu.cpp`/`Mesh_Wgpu.cpp`/`Part_Wgpu.cpp` carry over directly |
+| Audio source | XMA (Xbox proprietary) + MOGG/Vorbis | Wii audio paths + MOGG/Vorbis | Both replaced by miniaudio + FFmpeg/Vorbis. DC3's VorbisReader native impl carries directly. XMA codec dropped — RB3 doesn't need it |
+| Multiplayer | Disabled in DC3 native | Out of scope for v1 | No cross-port concern |
+| Asset packaging | Xbox `.ark`/`.hdr` extracted to `orig-assets/` | Wii `.ark` + `band_r_wii.sel` in `orig/SZBE69_B8/files/` | Asset loader (`ArkFile`) is mostly shared; the per-game extract step differs |
+| Songs/DLC | DC3 has on-disc + DLC validation hooks | RB3 has its own on-disc setlist + DLC system | RB3-specific. Hook into `src/band3/meta_band/` |
+
+### What RB3 gets for free from DC3
+
+In priority order:
+
+1. **All of `native/src/gfx/`** — WebGPU device, pipeline manager, post-processing (bloom, contrast, levels, vignette, chromatic, posterization), shadow pass, screenshot, video encode. Direct copy into engine.
+2. **All of `native/src/audio/`** — miniaudio device, web audio adapter. Direct copy into engine.
+3. **Renderer glue in `native/src/platform/`** — `Mesh_Wgpu.cpp`, `Tex_Wgpu.cpp`, `Rnd_Wgpu.cpp`, `Part_Wgpu.cpp`, RenderState, TransparentQueue, MeshGpuCache. Direct copy after Rnd_Wgpu's game-specific draw-pass hooks are factored out.
+4. **File I/O stack** — `AsyncFile_Native.cpp`, `File_Native.cpp`, `CDReader_Native.cpp`, `DataParser_Native.cpp`. Direct copy into engine.
+5. **Audio stack** — `FFmpegAudioReader`, `StreamReceiver_Native`, `Synth_Stub`. Direct copy into engine. XMA decoder dropped.
+6. **Input stack** — `Joypad_Native`, `Keyboard_Native`. Direct copy. Button → action mapping is per-game (RB3 needs guitar/drum/vocal mappings; DC3 has dance pad).
+7. **Threading & system** — `ThreadCall_Native`, `Memory_Native`, `System_Native`, `PlatformMgr_Native`. Move into engine after the SDK-shim dependency is factored out (DC3's current versions `#include "xdk/XAPILIB.h"`; engine versions must not).
+8. **LP64 lessons** — the entire HX_NATIVE catalog from DC3 sessions 1-77. Many apply identically since both decomps were ILP32 PPC. Phase 1 work is largely "port HX_NATIVE branches from DC3 sister files to RB3 sister files."
+9. **STL shim layer** — `native/src/stl/_*.h` shims. Direct copy into engine.
+10. **CMake scaffolding** — DC3's CMake handles macOS + Linux + Web. Engine adopts the structure; per-game source lists move to each decomp's CMakeLists.
+11. **Documentation patterns** — `docs/native/`, `docs/sessions/` layout. Mirror it.
+
+### What RB3 must build itself
+
+1. **`src/band3/` game-layer port** — GemPlayer, BandTrack, scoring, instrument-specific tracks (guitar/drum/vocal/keys/proGuitar/proKeys). DC3 has no analog. Lives in rb3/, not the engine.
+2. **MWCC compatibility shim** (`rb3/native/src/mwcc_compat.h`) — fallback for MWCC intrinsics (`__alloca`), and gates for `#pragma` directives that clang doesn't recognize. Small.
+3. **Wii SDK shim** (`rb3/native/src/rvl_shims.cpp`) — POSIX implementations of the Wii SDK calls RB3's matched fork happens to make outside `src/system/os/`. Surface to spec: scan `grep -rln 'revolution/' src/system | grep -v '/os/'` and shim each header's call surface.
+4. **PowerPC asm fallbacks** in matched-fork `math/` and a handful of perf-critical files. Each `asm { ... }` block gets a `#ifdef __MWERKS__ / #else <C++ equivalent> / #endif` wrap. List enumerated in the differences table above.
+5. **Wii asset extraction pipeline** — equivalent of DC3's `orig-assets/`. Tools (Mackiloha, MiloLib) exist; integration script is new.
+6. **RB3-specific DTA handlers** — Phase 4 work. RB3's DTA flow differs from DC3's in content but not in shape. See DTA section below.
+7. **HUD & gem-track rendering** — RB3's note highway, lane visualizations, scoring overlays. Phase 5 work; needs decomp completion in `src/band3/bandtrack/`.
+8. **Crowd / venue specifics** — RB3 venues differ from DC3 (band stage vs dance floor). Some venue rendering logic needs adaptation even though `WorldCrowd` is shared engine code.
+
+---
+
+## Phases & acceptance criteria
+
+Phase boundaries are deliberately the same as DC3's so cross-pollination stays legible. Each phase has a concrete acceptance signal — usually a test-runnable command or a measurable runtime behavior.
+
+### Phase 0 — Setup & bootstrapping
+
+**Goal**: `milo-native-engine` exists as a buildable repo; both decomps consume it; `rb3-native` executable links and runs to its first crash.
+
+This phase splits into 0.1 → 0.2 → 0.3 → 0.4. Each substep has its own acceptance gate. Do not flag-day the transition — each substep keeps the prior state working until the next is proven.
+
+#### 0.1 — Engine repo skeleton
+
+- Create `/home/free/code/milohax/milo-native-engine/` with CMake scaffolding, README, .gitignore.
+- Engine CMake defines targets that *will* be populated in 0.2; for now they hold zero source files but produce a valid `libmilo-engine.a` (empty archive is fine).
+- dc3-decomp's CMake is **unchanged** at this point. dc3-native still builds via its current inline layout.
+
+**Acceptance**: `cd milo-native-engine && cmake -B build && cmake --build build` produces `libmilo-engine.a` (empty or near-empty). dc3-native build untouched, unchanged.
+
+#### 0.2 — Move engine-clean code into engine; dc3-decomp keeps building
+
+Move into `milo-native-engine/src/`:
+- All of `gfx/` (WebGPU infra).
+- All of `audio/` (miniaudio integration).
+- All of `stl/` (host-STL shim).
+- `platform/` files with no Win32-API surface and no game-class dependencies — file I/O, input, threading-via-pthread, renderer glue (after the Rnd_Wgpu game-hook factoring, see 0.2a).
+- `char/CharTwistSolver.cpp` (engine helper).
+
+Move into engine `src/system/` *only if it currently has a meaningful HX_NATIVE branch and that branch is engine-owned*:
+- This is initially empty. The engine `src/system/` starts as a clean LP64 implementation of `os/ThreadCall.h`, `os/CritSec.h`, `os/File.h` interfaces — the new versions that replace DC3's `xdk`-dependent native files. dc3-decomp's matched `src/system/os/ThreadCall_Xbox.cpp` stays in dc3-decomp for asm-match; the native build no longer compiles it.
+
+**0.2a — Rnd_Wgpu game-hook factoring** (prereq for moving Rnd_Wgpu): DC3's `Rnd_Wgpu.cpp` currently `#include "hamobj/HamDirector.h"` for an overlay draw pass and a character-impostor render-to-texture loop. Refactor into a `GameRenderHook` interface owned by the engine. DC3's existing per-game hook becomes `dc3-decomp/native/src/dc3_render_hook.cpp` providing a `HamRenderHook` implementation; RB3 will add `rb3/native/src/rb3_render_hook.cpp` in 0.4.
+
+**0.2b — Win32 shim factoring**: DC3's `Memory_Native.cpp` and `ThreadCall_Native.cpp` `#include "xdk/XAPILIB.h"`. Rewrite the engine versions to depend only on POSIX directly (no SDK include). DC3's matched fork still needs `xdk_shims.cpp` for the *non-os* Win32 calls its decomp source makes, so xdk_shims stays per-decomp.
+
+dc3-decomp's CMake gets a new `add_subdirectory(${MILO_ENGINE_PATH})` block and drops the source paths that moved. The matched fork's `src/system/os/*_Xbox.cpp` files are removed from the native link list; the engine's POSIX implementations take their place.
+
+**Convergence test**: dc3-decomp's engine-only test set passes. This is the subset of `dc3-decomp/native/tests/` that touches no `hamobj/`, `meta_ham/`, `lazer/` classes:
+- `test_binstream`, `test_chunkstream`, `test_dirloader`, `test_dta_parser`
+- `test_asset_loading`, `test_mesh_loading`, `test_archive_enumeration`
+- `test_charbones_serialization`, `test_charclipgroup`, `test_bone_ground_truth`
+- `test_object_lifetime`, `test_rndcam_projection`
+- `test_mogg_decode`, `test_mogg_v0xe`, `test_extract_bik`
+
+These tests move into the engine repo as `milo-engine-tests` and run against `libmilo-engine.a` only. They become the cross-decomp convergence gate. (Game-coupled DC3 tests — `test_loading_panel`, `test_ham_provider`, `test_subsystems`, `test_headless_boot`, `test_dta_flow`, `test_movegraph`, `test_gameplay_telemetry` — stay in dc3-decomp/native/tests/ and link against dc3-native game sources.)
+
+#### 0.3 — Stand up `rb3/native/` skeleton
+
+- Create `rb3/native/` with CMakeLists that adds the engine via `add_subdirectory(${MILO_ENGINE_PATH})` and produces an empty `rb3-native` executable.
+- Create `rb3/native/src/mwcc_compat.h` — initially with `__alloca` fallback and `#pragma` no-ops for the directives clang doesn't recognize.
+- Create `rb3/native/src/rvl_shims.cpp` — initial surface: enumerate `revolution/OS.h` and `revolution/IPC.h` calls made by RB3 matched fork outside `src/system/os/`. Provide POSIX impls.
+- Create `rb3/native/src/rb3_render_hook.cpp` — initially a no-op `BandRenderHook` that satisfies the engine's `GameRenderHook` interface.
+- Create `rb3/native/src/main_native.cpp` — mirrors DC3's; constructs the `App`, runs a no-op main loop.
+
+**Acceptance**: `rb3-native` links. Running it produces a controlled crash or exit ("data dir not found", "App init failed"). No game logic runs yet.
+
+#### 0.4 — CI smoke
+
+- Add a CI job that builds `rb3-native` on Linux on each PR.
+- Add a CI job that runs the engine test set in milo-native-engine on each PR.
+- dc3-decomp gains a CI job that builds dc3-native against the current engine pin and runs both engine tests and DC3-only tests.
+
+**Acceptance**: All three CI jobs green.
+
+### Phase 1 — Engine foundation
+
+**Goal**: `rb3-native` boots far enough to load a `.milo` file and print its scene tree.
+
+Phase 1 is mostly **landing HX_NATIVE branches in RB3's matched fork to mirror what DC3 already did**. Categories of HX_NATIVE blocks to port from DC3 sister files:
+
+1. **LP64 type fixes** — `src/types.h` (`u32 = unsigned int` instead of `unsigned long`), `src/system/utl/BinStream.h`/`.cpp` (operator overloads, intptr_t casts), `src/system/obj/Data.h` (8-byte union zero-init in DataNode ctors). Largely a direct port; the underlying ABI issue is identical.
+2. **CRT shims** — `src/types.h` (`stricmp` → `strcasecmp`), `src/system/utl/Str.h`. Trivially small for MWCC since clang and MWCC share more headers than clang and MSVC.
+3. **Native impls** — full function bodies gated `#ifdef HX_NATIVE` where the matched implementation calls into the SDK directly. E.g. `VorbisReader::Poll` single-threaded decode (DC3 Session 62+), `StreamReceiver::WriteData` ring-buffer write, `Synth::Init` skip Xbox audio HW. Port the body; the upstream interface is the same.
+4. **PPC-only guards** — `#ifndef HX_NATIVE` around inline asm fallbacks, around code that touches Wii GX hardware registers directly, around `__alloca` calls that the mwcc_compat.h fallback handles instead.
+5. **Debug logging** — `fprintf(stderr, ...)` calls that exist only on native. Optional; add as needed.
+
+Engine-side bring-up:
+- `System.cpp` / `Memory.cpp` / `Timer.cpp` clang-LP64 implementations land in the engine. RB3's matched fork files (`os/System_Wii.cpp`, etc.) drop off the native link.
+- DTA parser + DataNode plumbing: verify RB3 hits the same 8-byte union initialization issue DC3 did. Land the same fix.
+- Asset pipeline: `ArkFile`, `ChunkStream`, `ObjDir`. RB3's `.ark` + `.sel` differs from DC3's `.ark` + `.hdr` only in the entry-point file the loader bootstraps from.
+- Object factory + `ObjDirPtr` + `ObjRef` ring. The double-link bug DC3 fixed in `ObjDirPtr(C*)` (session 61) recurs in RB3's identical code path.
+
+**Acceptance**: `rb3-native` loads a chosen RB3 `.milo` file (e.g. `world/main.milo`) and dumps its scene tree to stdout without crashing. Engine test set still passes.
+
+### Phase 2 — Rendering bring-up
+
+**Goal**: A static RB3 venue renders. No animation, no UI, no audio. Just a frame.
+
+- Wire `Rnd_Wgpu`, `Mesh_Wgpu`, `Tex_Wgpu` through `BandRenderHook` for RB3's draw paths.
+- Material + shader pipeline — `standard_wgsl.inc` carries over directly.
+- WebGPU resource binding: validate against RB3's asset content (texture formats, mesh vertex layouts). Expect at least one BC*-format issue analogous to DC3 Session 71's render-target-attachment bug.
+- First milestone: clear-color frame, then triangle, then a single textured RB3 mesh.
+- Second milestone: load an RB3 venue `.milo` and render the scene statically.
+
+**Acceptance**: Screenshot of an RB3 venue rendering, even without lighting accuracy.
+
+### Phase 3 — Audio
+
+**Goal**: A `.mogg` plays through the speakers at correct pitch and speed.
+
+- VorbisReader: port DC3's Session 62-67 native impl. The decoder is in the engine; the matched-fork glue lives in `rb3/src/system/oggvorbis/` with `#ifdef HX_NATIVE` branches mirroring DC3's.
+- `StreamReceiver_Native`, `AudioDevice` ring buffer — already in engine; verify RB3's `Synth` initialization wires them.
+- Validate `songMs` clock from audio playback drives engine timing.
+
+**Acceptance**: A tutorial-song `.mogg` plays at real-time speed and `songMs` advances correctly.
+
+### Phase 4 — Input & UI menu navigation
+
+**Goal**: Navigate boot → main menu → song select with a keyboard, headless GPU.
+
+Phase 4 is structured around the DTA-loading work because that is the recurring blocker:
+
+#### 4a — Input pipeline
+
+- `Joypad_Native` + `Keyboard_Native` adapted from engine. RB3 controller mapping (guitar/drum face buttons, vocal mic) goes in `rb3/native/src/rb3_input_map.cpp`.
+- `MsgSinks::Export` (already engine) + RB3 UI manager identity (investigate first task: does RB3 use `TheHamUI` like DC3 or a different two-pass draw stack?).
+
+#### 4b — DTA execution baseline
+
+DC3 hit a deep DTA-loading blocker that took multiple sessions of root-causing across the boot path. RB3 will hit something analogous. The work is *not* "fix the parser" — DC3's parser works. The work is reaching enough state that the DTA-driven boot script can advance:
+
+- DTA parser + DataArray: already engine, verified by `test_dta_parser`.
+- `SystemPreInit` + `SystemInit` load configs from `.ark`: same code path as DC3.
+- `UIManager::Init` broadcasts `"init"` message → DTA handlers fire.
+- Specific DTA commands fail silently when they reference Xbox-specific objects (DC3) / Wii-specific objects (RB3). For RB3, the parallel set: `$content_mgr`, `$net_mgr`, `$disc_mgr`, plus RB3-specific managers like `$band_user_mgr`, `$song_mgr`.
+
+For each missing object, the work is: provide a no-op stub object that satisfies enough of the DTA-callable surface to let the boot continue. See DC3's `docs/native/DTA_LOADING_BLOCKER.md` for the pattern.
+
+#### 4c — Screen flow + first interactive milestone
+
+- `UIScreen::Enter` auto-skip pattern (DC3 Session 24).
+- Animation lifecycle: `AnimTask::Poll` self-deletes when `mAnimTarget` nulled (DC3 Session 39).
+- `mSink` button routing fallback (DC3 Session 39).
+
+**Acceptance**: First milestone: attract → title → main_screen renders with text. Second milestone: full menu flow to song_select with keyboard input working.
+
+### Phase 5 — Gameplay (v1 milestone)
+
+**Goal**: Pick a song, load venue, play audio, render gem track, advance score. Single instrument (guitar) is fine.
+
+- `GemPlayer` core (RB3-specific; no DC3 analog). Decomp source already exists in `src/band3/game/`. The bring-up work is HX_NATIVE-gating it the same way DC3 did its `HamDirector` etc.
+- Note-track rendering — likely a custom mesh stream with note placement. Largest single bring-up item.
+- HUD overlay — DC3's `FlushPostProcessingForOverlay` pattern (Session 72) ported into engine; RB3 hooks via `BandRenderHook::DrawHUD`.
+- Scoring + hit detection driven by `songMs`.
+
+**Acceptance**: First milestone: tutorial song plays through with audio synced and gem-track rendering (no scoring). Second milestone: scoring works, one full song completed end-to-end on Linux x86_64.
+
+### Phase 6 — Polish & multi-platform (post-v1)
+
+- Multi-instrument support (drums, vocals, keys, pro-guitar, pro-keys).
+- All venues.
+- Post-processing fidelity pass.
+- **macOS reactivation**: engine's CMake already handles macOS; verify rb3-native links and runs on arm64 + x86_64. Acceptance: one song plays end-to-end on macOS.
+- **Web reactivation**: engine's `DC3_WEB_*` source lists are renamed `MILO_WEB_*` during 0.2 extraction. RB3 opts in via `cmake -DMILO_BUILD_WEB=ON`. Acceptance: one song plays end-to-end in browser via Emscripten.
+- Multi-song stability sweep (DC3 Session 75-76 model).
+
+---
+
+## Cross-pollination workflow
+
+The whole point of `milo-native-engine` is that fixes in either game's port land in both. Workflow when a native bug is found:
+
+1. **Diagnose in one decomp's native build.** Capture stack, repro.
+2. **Locate the file.** Is it engine code (`milo-native-engine/src/**`), per-decomp glue (`*-decomp/native/src/**`), or matched-fork code under `HX_NATIVE` gating (`*-decomp/src/system/**`)?
+3. **Engine code** → fix in milo-native-engine. Bump the engine pin in both decomps. Both pick up the fix.
+4. **Per-decomp glue** → fix locally. If the bug is structurally identical to something the sister repo will hit (it usually is), open a tracking issue in the sister repo's docs/sessions/ so it lands before the sister repo's bring-up trips on it.
+5. **Matched-fork HX_NATIVE branch** → fix in the affected decomp's matched fork. The same logical bug almost certainly exists in the sister repo's matched fork; cross-port the HX_NATIVE branch (not the matched code itself — that stays per-compiler-quirk).
+
+### What we expect cross-pollination to look like in practice
+
+- **Engine code**: changes here happen most often during Phase 0-3. Once stable, churn drops.
+- **Per-decomp glue**: each decomp owns its own. Cross-pollination is "you'll hit this; here's our diff."
+- **Matched-fork HX_NATIVE**: every Phase 1 RB3 session is essentially "find the DC3 sister file, copy the HX_NATIVE branches into the RB3 matched file, adapt for STLport vs MSVC STL and MWCC vs MSVC quirks."
+
+---
+
+## Open questions / risks
+
+| # | Item | Mitigation |
+|---|------|-----------|
+| 1 | **DTA loading depth** — DC3 found that specific DTA commands fail silently when referencing platform-specific manager objects. RB3 will hit the same class of issue with a different set of missing objects. | Treat Phase 4b as a discovery phase: each missing object gets a no-op stub until boot advances past the next milestone. Reference DC3's `docs/native/DTA_LOADING_BLOCKER.md` for the pattern. |
+| 2 | **RB3 UI manager identity** — does RB3 use `TheHamUI` like DC3, or a `TheBandUI` or different two-pass stack? | First investigation task of Phase 4. Source of truth: `src/band3/meta_band/`. |
+| 3 | **Wii asset extraction path** — RB3 uses `.ark` + `.sel`; existing tools (Mackiloha, MiloLib) cover this but the extracted layout may not match what `ArkFile` expects at runtime. | Validate early in Phase 1 with a single milo load test. The ArkFile loader is shared; only the bootstrap entry point (`.sel` vs DC3's `.hdr`) is per-game. |
+| 4 | **Endian handling** — both Xbox 360 and Wii are big-endian, but DC3's native sometimes assumes little-endian host RAM (BinStream paths). Verify byte-swap toggles for RB3. | Carry DC3's `ChunkStream` endianness fix (Session 31) and test against an RB3 asset early. |
+| 5 | **MWCC paired-singles inline asm fallbacks** — the 9 matched-fork files with `asm { psq_l ... }` blocks need C++ fallbacks for the native build. The math fallbacks are well-understood (cross product, dot product, normalize). The perf-critical fallbacks (Part.cpp particle inner loop, CharHair `StrandMultiply`) need testing for correctness, not just compilation. | Land math fallbacks in Phase 1. Test perf-critical fallbacks against the matched build's known-correct output before Phase 2 rendering work depends on them. |
+| 6 | **DLC / additional content** — RB3 has a deep DLC catalog. v1 ignores DLC; v2+ may want it. | Out of scope for v1; design `SongMetadata` validation to be DLC-extensible. |
+| 7 | **Engine pin bootstrap** — the very first engine SHA pin can't pre-exist before the engine is created. | Phase 0.1 lands the engine repo *and* the initial pin in dc3-decomp's CMakeLists in the same change-set. Subsequent pins use `scripts/bump-engine.sh`. |
+
+---
+
+## Decision log
+
+Decisions made up-front and during planning. Append when a phase boundary or scope decision changes.
+
+| Decision | Rationale |
+|----------|-----------|
+| **New repo `milo-native-engine`** (sibling to dc3-decomp and rb3) | Highest cross-pollination value. Avoids one-way coupling. |
+| **Copy-first, extract-later** bootstrap | Faster path to a working RB3 native. Extraction happens once code shape stabilizes. |
+| **Three-layer source model** (matched fork / engine runtime / per-decomp glue) | Earlier "hybrid src/system" plan conflated layers. Three distinct categories with explicit ownership avoids the trap. |
+| **Engine `src/system/` is a clean LP64 rewrite, not a hoisted matched fork** | The matched forks' `HX_NATIVE` branches are *the* native compatibility layer; they don't graduate out. Engine grows its own clean implementations against the same headers. |
+| **Per-decomp SDK shims** (`xdk_shims.cpp`, `rvl_shims.cpp`) | The which-API-surface is per-decomp; the shim layer can't be shared because the matched forks call into different SDKs. |
+| **STL: stlport stays per-decomp, native uses host STL via shim path priority** | DC3's existing pattern works; replicate verbatim. Engine ships the shim headers. |
+| **Convergence test = engine-only test subset** | Game-coupled tests stay per-decomp. The cross-decomp gate is the engine tests passing on both repos' native build pipelines. |
+| **Platforms v1**: Linux x86_64 + macOS + Web | Mirrors DC3. Skip Windows for now. macOS + Web reactivate in Phase 6. |
+| **Single-player v1** | Defer all `src/network/` + Wii online. Match DC3 scope. |
+| **v1 milestone**: one song end-to-end | Concrete, demoable, captures most of the engine's surface area. |
+| **Engine packaging: sibling repo + `add_subdirectory()` + pin file** | Source-level build keeps iteration and debugging fast during heavy Phase 0–5 engine churn. SHA pinned via `MILO_ENGINE_PIN` in each decomp's CMakeLists; bumped explicitly. Reversible to FetchContent or static-lib install later. |
+| **Engine SHA pin: warning, not error** | CMake compares engine HEAD vs pin and prints `message(WARNING ...)` on mismatch. Lets us test against engine branches without editing CMakeLists. Bump the pin when changes land canonical. |
+| **Engine library shape: single `milo-engine` static lib** | All engine .cpp files compile into one `libmilo-engine.a` target. No subsystem splits initially; revisit if link time degrades. Tool targets (`milo-viewer`, `milo2gltf`, `render-test`) are separate executables, opt-in via `MILO_ENGINE_BUILD_TOOLS=ON`. |
+| **Debug tooling (HttpServer + DebugPanel) built in by default** | Both included in `milo-engine` unconditionally — no CMake flag to disable. Bring-up without an HTTP eval endpoint and ImGui debug panel is too painful. |
+| **Compiler-quirk gating macros**: `HX_NATIVE`, `__MWERKS__`, `_MSC_VER`, `__EMSCRIPTEN__` | Explicit four-way gating. `HX_NATIVE` means "clang LP64 native build"; the others identify the matched-fork compiler. |
+
+---
+
+## Status log
+
+Append a one-line entry per session. Detailed session notes go in `docs/sessions/native/` (mirror DC3's `docs/sessions/` layout).
+
+| Date | Phase | Summary |
+|------|-------|---------|
+| 2026-05-25 | 0 | Roadmap drafted. No code yet. Decisions: new milo-native-engine repo, copy-first bootstrap, hybrid src/system, clean LP64 in shared engine, Linux+macOS+Web, single-player v1, one-song-e2e v1 target. |
+| 2026-05-25 | 0.1 | Per-file inventory of dc3-decomp/native/ complete — see [NATIVE_PORT_INVENTORY.md](NATIVE_PORT_INVENTORY.md). Dividing line is **game coupling** (not "native APIs vs engine"): most files ship to milo-native-engine, a small set needs cleanup, DC3-specific files (Kinect, XDK, DC3 game classes) stay put. |
+| 2026-05-25 | 0.1 | Engine packaging decisions locked: sibling repo + `add_subdirectory()` + soft SHA pin (warning), single `milo-engine` static lib. Reversible to FetchContent/install-package later. |
+| 2026-05-25 | 0.1 | Debug tooling (HttpServer + DebugPanel) built into `milo-engine` by default for both decomps — no opt-out flag. |
+| 2026-05-25 | 0.1 | Staff-engineer design review pass: tightened the three-layer source model, replaced "hybrid src/system convergence" with the cleaner "engine is its own clean LP64 fork" model, added explicit SDK-shim spec (xdk for DC3, rvl for RB3), enumerated MWCC inline-asm files, added STL-seam spec, defined convergence test as the engine-only test subset, split Phase 0 into 4 substeps with per-step acceptance, split Phase 4 into 4a/4b/4c around the DTA work. |
+
+---
+
+## Reference
+
+- **DC3 native port (model)**: `/home/free/code/milohax/dc3-decomp/native/`
+- **DC3 native status & sessions**: `/home/free/code/milohax/dc3-decomp/docs/native/NATIVE_PORT_STATUS.md`
+- **DC3 convergence plan (Phase 1→2 transition example)**: `/home/free/code/milohax/dc3-decomp/docs/native/CONVERGENCE_PLAN.md`
+- **DC3 DTA blocker** (expect equivalent in RB3): `/home/free/code/milohax/dc3-decomp/docs/native/DTA_LOADING_BLOCKER.md`
+- **RB3 ↔ DC3 sync plan** (decomp tooling, not native): [SYNC_WITH_DC3.md](../SYNC_WITH_DC3.md)
+- **RB3 decomp scope (skip lists carry over for port)**: see "Skip / deprioritize" in [CLAUDE.md](../../CLAUDE.md)

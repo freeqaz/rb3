@@ -1,0 +1,38 @@
+{
+  "symbol": "DrawShowing__13BandCharacterFv",
+  "function_name": "BandCharacter::DrawShowing",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/BandCharacter.cpp",
+  "initial_percent": 99.14384,
+  "final_percent": 99.14384,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 99.14384,
+      "best_name": "varext_0+stmt_reorder_7",
+      "best_pattern": "compose:variable_extraction+statement_reorder",
+      "best_score": 99.26712,
+      "delta": 0.12328000000000827,
+      "num_variants": 20,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "no_apply",
+  "elapsed_seconds": 31.0,
+  "winning_pattern": "compose:variable_extraction+statement_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 15,
+    "0": 4,
+    "5": 1
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

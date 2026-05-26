@@ -1,0 +1,37 @@
+{
+  "symbol": "AcceptCurChecked__26StoreOfferContentsProviderFv",
+  "function_name": "StoreOfferContentsProvider::AcceptCurChecked",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/StoreOfferContentsProvider.cpp",
+  "initial_percent": 99.08929,
+  "final_percent": 100.0,
+  "total_delta": 0.9107099999999946,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 99.08929,
+      "best_name": "typewidth_0",
+      "best_pattern": "type_width_change",
+      "best_score": 100.0,
+      "delta": 0.9107099999999946,
+      "num_variants": 6,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "perfect",
+  "elapsed_seconds": 16.45,
+  "winning_pattern": "type_width_change",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 2,
+    "5": 4
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -221,15 +221,14 @@ void TrainerGemTab::DrawStartFinish() {
 
 void TrainerGemTab::DrawExtraTails() {
     for (unsigned long i = 0; i < unk130.size(); i++) {
-        const ExtraTail &tail = unk130[i];
         RndMesh *mesh;
-        if (tail.mIsRGChord) {
+        if (unk130[i].mIsRGChord) {
             mesh = mGemSustainCyan;
         } else {
-            mesh = mTails[SlotToGemIndex(tail.mSlot)];
+            mesh = mTails[SlotToGemIndex(unk130[i].mSlot)];
         }
         mesh->SetShowing(true);
-        mesh->SetWorldXfm(tail.mXfm);
+        mesh->SetWorldXfm(unk130[i].mXfm);
         mesh->Draw();
         mesh->SetShowing(false);
     }

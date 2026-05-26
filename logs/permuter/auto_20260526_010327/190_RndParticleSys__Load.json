@@ -1,0 +1,48 @@
+{
+  "symbol": "Load__14RndParticleSysFR9BinStream",
+  "function_name": "RndParticleSys::Load",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/Part.cpp",
+  "initial_percent": 96.51881,
+  "final_percent": 96.52931,
+  "total_delta": 0.010499999999993292,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.51881,
+      "best_name": "asgn_swap_0",
+      "best_pattern": "assignment_reorder",
+      "best_score": 96.52581,
+      "delta": 0.007000000000005002,
+      "num_variants": 21,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 93.53981,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 96.52581,
+      "delta": 2.986000000000004,
+      "num_variants": 21,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 17.58,
+  "winning_pattern": "initializer_literal",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 10,
+    "2": 9,
+    "5": 23
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

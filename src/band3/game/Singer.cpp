@@ -301,22 +301,20 @@ void Singer::UpdatePitchHistory(float pitch) {
 }
 
 int Singer::SuddenOctaveShift(float pitch) const {
+    if (unka8 < 1) return 0;
+    if (!(pitch > 0.0f)) return 0;
+    int sign;
+    if (pitch > unka0) sign = 1;
+    else sign = -1;
+    float step = 12.0f * (float)sign;
     int shift = 0;
-    if (unka8 >= 1) {
-        if (pitch > 0.0f) {
-            int sign;
-            if (pitch > unka0) sign = 1;
-            else sign = -1;
-            float step = 12.0f * (float)sign;
-            do {
-                float diff = pitch - unka0;
-                if (!(diff > 0.0f)) diff = -diff;
-                if (!(diff > 10.0f)) break;
-                pitch -= step;
-                shift += sign;
-            } while (true);
-        }
-    }
+    do {
+        float diff = pitch - unka0;
+        if (!(diff > 0.0f)) diff = -diff;
+        if (!(diff > 10.0f)) break;
+        pitch -= step;
+        shift += sign;
+    } while (true);
     return shift;
 }
 
