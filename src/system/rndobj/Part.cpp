@@ -504,7 +504,7 @@ BEGIN_LOADS(RndParticleSys)
     if (gRev >= 5 && gRev <= 14) {
         bool baf;
         bs >> baf;
-        int u1 = 0;
+        int u1 = 0.0f;
         if (baf)
             u1 = 2;
         if (mMat)
@@ -576,8 +576,8 @@ BEGIN_LOADS(RndParticleSys)
     } else
         SetPool(mMaxParticles, mType);
 
-    unkec = 0;
     unke4 = GetFrame();
+    unkec = 0;
 END_LOADS
 
 RndParticle *RndParticleSys::AllocParticle() {
@@ -1222,8 +1222,8 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
     if (mActiveParticles == NULL || frameSpan == 0.0f)
         return;
 
-    float dragFactor;
     float one;
+    float dragFactor;
     if (mDrag > 0.0f) {
         one = 1.0f;
         dragFactor = std::pow(one - mDrag, frameSpan * (1.0f / 30.0f));
@@ -1240,27 +1240,27 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
         rpmDragFactor = one;
     }
 
-    float forceY_dt = mForceDir.y * frameSpan;
-    float forceX_dt = mForceDir.x * frameSpan;
     float forceZ_dt = mForceDir.z * frameSpan;
-
-    float relForceRow2 =
-        mRelativeXfm.m.z.x * forceX_dt + mRelativeXfm.m.z.y * forceY_dt
-        + mRelativeXfm.m.z.z * forceZ_dt;
-    float relForceRow1 =
-        mRelativeXfm.m.y.x * forceX_dt + mRelativeXfm.m.y.y * forceY_dt
-        + mRelativeXfm.m.y.z * forceZ_dt;
-    bool bounce = (mBounce != NULL);
+    Plane bouncePlane;
     bool isBubble = mBubble;
-    bool isFancy = (mType == kFancy);
+
+    float forceX_dt = mForceDir.x * frameSpan;
+    float forceY_dt = mForceDir.y * frameSpan;
     float relForceRow0 =
         mRelativeXfm.m.x.x * forceX_dt + mRelativeXfm.m.x.y * forceY_dt
         + mRelativeXfm.m.x.z * forceZ_dt;
+    float relForceRow1 =
+        mRelativeXfm.m.y.x * forceX_dt + mRelativeXfm.m.y.y * forceY_dt
+        + mRelativeXfm.m.y.z * forceZ_dt;
+    float relForceRow2 =
+        mRelativeXfm.m.z.x * forceX_dt + mRelativeXfm.m.z.y * forceY_dt
+        + mRelativeXfm.m.z.z * forceZ_dt;
     bool isRotate = mRotate;
+    bool isFancy = (mType == kFancy);
 
-    Plane bouncePlane;
+    bool bounce = (mBounce != NULL);
     if (bounce) {
-        const Transform &bxf = mBounce->WorldXfm();
+        Transform &bxf = mBounce->WorldXfm();
         const Transform &bxf2 = mBounce->WorldXfm();
         bouncePlane.a = bxf2.m.z.x;
         bouncePlane.b = bxf2.m.z.y;
