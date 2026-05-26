@@ -425,7 +425,7 @@ void TubePlate::AllocateVerts(int num, bool warn) {
             MILO_WARN(
                 "TubePlate: Reallocating verts from %d to %d; please alert HUD/Track owner",
                 cap,
-                verts.capacity()
+                (int)verts.capacity()
             );
     }
     verts.resize(newsize, true);
