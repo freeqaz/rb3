@@ -429,7 +429,7 @@ BEGIN_LOADS(RndFont)
     if (gRev > 0xD) {
         bs >> mTexCellSize;
         if (gRev < 0x11) {
-            for (int i = 0.0f; i < 0x100; i++) {
+            for (int i = 0; i < 0x100; i++) {
                 CharInfo &info = mCharInfoMap[i];
                 bs >> info.unk0;
                 bs >> info.unk4;
