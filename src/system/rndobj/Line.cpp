@@ -486,8 +486,8 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     // Phase 5: Write vertex positions.
     // The cap offset is (-side.y, side.x) used to extend the cap perpendicular to the line direction.
     Vector2 capOffset;
-    capOffset.y = pointsBegin->unk7;
     capOffset.x = -pointsBegin->unk8;
+    capOffset.y = pointsBegin->unk7;
 
     VertsMap vmap;
     MapVerts(0, vmap);
