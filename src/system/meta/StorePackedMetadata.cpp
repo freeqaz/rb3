@@ -1381,6 +1381,7 @@ void StoreMetadataManager::MarkPurchased(ECContentCatalogInfo *info) {
 }
 
 int StoreMetadataManager::SongStateFlags(const StorePackedSong *song) {
+    StoreTitleContentState *state2;
     unsigned long long dataTitle =
         WiiCommerceMgr::MakeDataTitleId(&song->unk6);
     StoreTitleContentState *state;
@@ -1393,16 +1394,14 @@ int StoreMetadataManager::SongStateFlags(const StorePackedSong *song) {
         state = (*it).second;
     }
     unsigned short rawA = *(unsigned short *)((char *)song + 0xa);
-    char unkc = song->unkc;
     unsigned short unka = (rawA >> 7) & 0x1FF;
     unsigned char flags =
         ((unsigned char *)state)[(rawA >> 4) & 0xFF8]
         & ((unsigned char *)state)[(unka + 1) * 8];
-    if (unkc != 0) {
+    if (song->unkc != 0) {
         unsigned short upgradeIdx = song->unk10;
         unsigned long long upgradeTitle =
             WiiCommerceMgr::MakeDataTitleId(&song->unkc);
-        StoreTitleContentState *state2;
         std::map<unsigned long long, StoreTitleContentState *>::iterator it2 = unk58.find(upgradeTitle);
         if (it2 == unk58.end()) {
             state2 = (StoreTitleContentState *)operator new(0x1000);
