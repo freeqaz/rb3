@@ -67,9 +67,10 @@ void RndScreenMask::DrawShowing() {
     }
 
     if (!mUseCurrentRect && (int)targetTex) {
+        RndCam *cur = RndCam::sCurrent;
         int isDefaultRect = 0;
-        if (RndCam::sCurrent->mScreenRect.x == 0.0f && RndCam::sCurrent->mScreenRect.y == 0.0f &&
-            RndCam::sCurrent->mScreenRect.w == 1.0f && RndCam::sCurrent->mScreenRect.h == 1.0f) {
+        if (cur->mScreenRect.x == 0.0f && cur->mScreenRect.y == 0.0f &&
+            cur->mScreenRect.w == 1.0f && cur->mScreenRect.h == 1.0f) {
             isDefaultRect = 1;
         }
         if (!isDefaultRect) {
