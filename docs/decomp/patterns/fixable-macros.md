@@ -40,7 +40,7 @@ Then either: (a) extract inline expressions to a local (when base has the long s
   #undef mWidth
   ```
   `#cond` stringifies the literal `mWidth > 0.0f` token (deduping with the FORCEACTIVE) while the runtime condition macro-expands to `unk_0x30 > 0.0f`. Use sparingly — header rename is cleaner if available.
-- `AppLabel.cpp` (DECOMP_FORCEACTIVE pool injection) — when the cluster is driven by string ORDERING (same strings, different positions) or by dead pool entries with zero `.text` references in target, list ALL target-pool strings in target's exact emission order inside a single `DECOMP_FORCEACTIVE(TU, ...)` call. Forces MWCC to emit them in that order, including dead/unused literals. +10 fns to 100% with this one trick.
+- `AppLabel.cpp` (DECOMP_FORCEACTIVE pool injection) — when the cluster is driven by string ORDERING (same strings, different positions) or by dead pool entries with zero `.text` references in target, list ALL target-pool strings in target's exact emission order inside a single `DECOMP_FORCEACTIVE(TU, ...)` call. Forces MWCC to emit them in that order, including dead/unused literals. +10 fns to 100% with this one trick. **CAVEAT**: only works when target's `.text` has NO function owning the missing strings. `DECOMP_FORCEACTIVE` emits a `FORCEACTIVE...__Fv` text function as a side effect — if target lacks that function, you'll add an extra .text symbol that shifts register allocation in unrelated functions and regresses many. OutfitConfig wave (2026-05-26) attempted this and saw +5 fns / 31 regressions / −142 bytes net. Verify with `objdump -t` before applying.
 
 Same family as [format-string tweaks shift string pool](fixable-operators.md) and `MakeString("literal")` opening a FormatString slot.
 
