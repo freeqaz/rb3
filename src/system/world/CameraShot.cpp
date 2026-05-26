@@ -85,7 +85,7 @@ void CamShot::StartAnim() {
     FOREACH (it, mAnims) {
         (*it)->StartAnim();
     }
-    for (int i = 0; i != mCrowds.size(); i++) {
+    for (unsigned int i = 0; mCrowds.size() != i; i++) {
         mCrowds[i].Set3DCrowd();
     }
 }
