@@ -218,25 +218,20 @@ void TourDescPanel::LoadIcons() {
         }
     }
 }
-__declspec(noinline) Symbol _outline_GetName(TourDesc* _obj) {
-    return _obj->GetName();
-}
-
-
 void TourDescProvider::UpdateExtendedMesh(int, int iData, RndMesh *i_pMesh) const {
     MILO_ASSERT(iData < NumData(), 0x14C);
     Symbol s = DataSymbol(iData);
     TourDesc *pTourDesc = TheTour->GetTourDesc(s);
     MILO_ASSERT(pTourDesc, 0x150);
-        bool bAvailable;
+    bool bAvailable;
     if (MetaPanel::sUnlockAll) {
         bAvailable = true;
     } else {
         bAvailable = IsTourDescAvailable(s);
     }
     if (!strcmp(i_pMesh->Name(), "tour_art.mesh")) {
-        String texName(bAvailable ? _outline_GetName(pTourDesc)
-                                  : MakeString("%s_gray", _outline_GetName(pTourDesc)));
+        String texName(bAvailable ? pTourDesc->GetName()
+                                  : MakeString("%s_gray", pTourDesc->GetName()));
         std::vector<DynamicTex *>::iterator it =
             std::find(mTexs->begin(), mTexs->end(), texName);
         if (it != mTexs->end())
