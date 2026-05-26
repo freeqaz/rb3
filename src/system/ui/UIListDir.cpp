@@ -34,6 +34,8 @@ UIListDir::~UIListDir() { DeleteAll(unk1fc); }
 
 UIListOrientation UIListDir::Orientation() const { return mOrientation; }
 
+float UIListDir::ElementSpacing() const { return mElementSpacing; }
+
 // fn_805693B0
 void UIListDir::BuildDrawState(
     UIListWidgetDrawState &drawState,
