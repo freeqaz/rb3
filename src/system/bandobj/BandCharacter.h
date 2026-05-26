@@ -142,6 +142,8 @@ public:
     DataNode OnPortraitEnd(DataArray *);
 
     bool InCloset() const { return mInCloset; }
+    const char *GetGroupName() const;
+    int GetPlayFlags() const;
 
     static void MakeMRU(BandCharacter *, CharClip *);
     static Symbol NameToDrumVenue(const char *);

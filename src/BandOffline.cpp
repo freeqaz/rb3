@@ -28,6 +28,128 @@
 // Forward declaration
 extern const char *BandIntensityString(int);
 
+// ─── STL template specializations for pair<String,float> + SortGroupPolls ───
+// Manual specializations avoid bool materialization (mfcr/extrwi/beq) that the
+// generic template produces. Direct float comparisons generate fcmpo+bgt/ble.
+
+namespace stlpmtx_std {
+
+typedef std::pair<String, float> PairSF;
+
+template <>
+void __push_heap<PairSF *, long, PairSF, SortGroupPolls>(
+    PairSF *__first, long __holeIndex, long __topIndex,
+    PairSF __val, SortGroupPolls) {
+    long __parent = (__holeIndex - 1) / 2;
+    while (__holeIndex > __topIndex &&
+           (__first + __parent)->second < __val.second) {
+        *(__first + __holeIndex) = *(__first + __parent);
+        __holeIndex = __parent;
+        __parent = (__holeIndex - 1) / 2;
+    }
+    *(__first + __holeIndex) = __val;
+}
+
+template <>
+void __adjust_heap<PairSF *, long, PairSF, SortGroupPolls>(
+    PairSF *__first, long __holeIndex, long __len,
+    PairSF __val, SortGroupPolls __comp) {
+    long __topIndex = __holeIndex;
+    long __secondChild = 2 * __holeIndex + 2;
+    while (__secondChild < __len) {
+        if ((__first + __secondChild)->second > (__first + (__secondChild - 1))->second)
+            __secondChild--;
+        *(__first + __holeIndex) = *(__first + __secondChild);
+        __holeIndex = __secondChild;
+        __secondChild = 2 * (__secondChild + 1);
+    }
+    if (__secondChild == __len) {
+        *(__first + __holeIndex) = *(__first + (__secondChild - 1));
+        __holeIndex = __secondChild - 1;
+    }
+    __push_heap(__first, __holeIndex, __topIndex, __val, __comp);
+}
+
+template <>
+void __unguarded_linear_insert<PairSF *, PairSF, SortGroupPolls>(
+    PairSF *__last, PairSF __val, SortGroupPolls __comp) {
+    PairSF *__next = __last;
+    --__next;
+    while (__val.second > __next->second) {
+        *__last = *__next;
+        __last = __next;
+        --__next;
+    }
+    *__last = __val;
+}
+
+template <>
+void __linear_insert<PairSF *, PairSF, SortGroupPolls>(
+    PairSF *__first, PairSF *__last, PairSF __val, SortGroupPolls __comp) {
+    if (__val.second > __first->second) {
+        copy_backward(__first, __last, __last + 1);
+        *__first = __val;
+    } else {
+        __unguarded_linear_insert(__last, __val, __comp);
+    }
+}
+
+template <>
+PairSF *
+__unguarded_partition<PairSF *, PairSF, SortGroupPolls>(
+    PairSF *__first, PairSF *__last, PairSF __pivot, SortGroupPolls) {
+    for (;;) {
+        while (__first->second > __pivot.second)
+            ++__first;
+        --__last;
+        while (__pivot.second > __last->second)
+            --__last;
+        if (!(__first < __last))
+            return __first;
+        iter_swap(__first, __last);
+        ++__first;
+    }
+}
+
+template <>
+void __introsort_loop<PairSF *, PairSF, long, SortGroupPolls>(
+    PairSF *__first, PairSF *__last, PairSF *,
+    long __depth_limit, SortGroupPolls __comp) {
+    while (__last - __first > 16) {
+        if (__depth_limit == 0) {
+            partial_sort(__first, __last, __last, __comp);
+            return;
+        }
+        ptrdiff_t __len = __last - __first;
+        float __a = __first->second;
+        float __c = (__last - 1)->second;
+        --__depth_limit;
+        PairSF *__mid = __first + __len / 2;
+        float __b = __mid->second;
+        PairSF *__pivot_ptr;
+        if (__a > __b) {
+            if (__b > __c)
+                __pivot_ptr = __mid;
+            else if (__a > __c)
+                __pivot_ptr = __last - 1;
+            else
+                __pivot_ptr = __first;
+        } else if (__a > __c) {
+            __pivot_ptr = __first;
+        } else if (__b > __c) {
+            __pivot_ptr = __last - 1;
+        } else {
+            __pivot_ptr = __mid;
+        }
+        PairSF *__cut = __unguarded_partition(
+            __first, __last, *__pivot_ptr, __comp);
+        __introsort_loop(__cut, __last, (PairSF *)0, __depth_limit, __comp);
+        __last = __cut;
+    }
+}
+
+} // namespace stlpmtx_std
+
 // ─── BandOffline ─────────────────────────────────────────────────────────────
 
 void BandOffline::Init() {
@@ -45,6 +167,16 @@ void BandOffline::Poll() {
     TheRnd->DoWorldBegin();
     TheUI.Draw();
     TheRnd->DoWorldEnd();
+}
+
+// ─── BandCharacter accessors (defined in this TU per the linker map) ─────────
+
+const char *BandCharacter::GetGroupName() const {
+    return mGroupName;
+}
+
+int BandCharacter::GetPlayFlags() const {
+    return mPlayFlags;
 }
 
 // ─── GetStatKeeperIndex ──────────────────────────────────────────────────────
