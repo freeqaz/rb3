@@ -87,13 +87,13 @@ void CharLipSync::Generator::RemoveViseme(int visemeIdx) {
 
     int cur = 0;
     int i = 0;
-    lipSync = mLipSync;
+    std::vector<unsigned char VECTOR_SIZE_LARGE> &data = mLipSync->mData;
     while (i < mLipSync->mFrames) {
-        int count = lipSync->mData[cur++];
+        int count = data[cur++];
         for (int j = 0; j < count; j++) {
-            if (lipSync->mData[cur] >= visemeIdx) {
-                lipSync->mData[cur]--;
-                MILO_ASSERT(lipSync->mData[cur] < mLipSync->mVisemes.size(), 0x83);
+            if (data[cur] >= visemeIdx) {
+                data[cur]--;
+                MILO_ASSERT(data[cur] < mLipSync->mVisemes.size(), 0x83);
             }
             cur += 2;
         }
