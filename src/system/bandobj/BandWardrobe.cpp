@@ -1151,38 +1151,40 @@ DataNode BandWardrobe::OnEnterVignette(DataArray *da) {
                 TheDebug.Notify(MakeString(
                     "%s has no main.drv, not valid character", PathName(it)
                 ));
-            } else if (strstr(name, "extra")) {
-                driver->SetClipType(vignette);
-                it->BoneServo()->SetClipType(vignette);
-                ObjectDir *visemes = dynamic_cast<ObjectDir *>(
-                    it->FindObject("vignette_visemes", false)
-                );
-                if (visemes) {
-                    CharLipSyncDriver *lsd = dynamic_cast<CharLipSyncDriver *>(
+            } else {
+                if (strstr(name, "extra")) {
+                    driver->SetClipType(vignette);
+                    it->BoneServo()->SetClipType(vignette);
+                    ObjectDir *visemes = dynamic_cast<ObjectDir *>(
+                        it->FindObject("vignette_visemes", false)
+                    );
+                    if (visemes) {
+                        CharLipSyncDriver *lsd = dynamic_cast<CharLipSyncDriver *>(
+                            it->FindObject("vignette.lipdrv", false)
+                        );
+                        if (lsd)
+                            lsd->SetClips(visemes);
+                        CharFaceServo *fs = dynamic_cast<CharFaceServo *>(
+                            it->FindObject("face.faceservo", false)
+                        );
+                        if (fs)
+                            fs->SetClips(visemes);
+                    }
+                    CharWeightSetter *ws = dynamic_cast<CharWeightSetter *>(
+                        it->FindObject("venue.weight", false)
+                    );
+                    if (ws)
+                        ws->SetWeight(0.0f);
+                    CharLipSyncDriver *lsd2 = dynamic_cast<CharLipSyncDriver *>(
                         it->FindObject("vignette.lipdrv", false)
                     );
-                    if (lsd)
-                        lsd->SetClips(visemes);
-                    CharFaceServo *fs = dynamic_cast<CharFaceServo *>(
-                        it->FindObject("face.faceservo", false)
-                    );
-                    if (fs)
-                        fs->SetClips(visemes);
-                }
-                CharWeightSetter *ws = dynamic_cast<CharWeightSetter *>(
-                    it->FindObject("venue.weight", false)
-                );
-                if (ws)
-                    ws->SetWeight(0.0f);
-                CharLipSyncDriver *lsd2 = dynamic_cast<CharLipSyncDriver *>(
-                    it->FindObject("vignette.lipdrv", false)
-                );
-                if (lsd2) {
-                    CharLipSync *ls = dynamic_cast<CharLipSync *>(
-                        charsDir->FindObject(MakeString("%s.lipsync", name), false)
-                    );
-                    lsd2->SetLipSync(ls);
-                    lsd2->Sync();
+                    if (lsd2) {
+                        CharLipSync *ls = dynamic_cast<CharLipSync *>(
+                            charsDir->FindObject(MakeString("%s.lipsync", name), false)
+                        );
+                        lsd2->SetLipSync(ls);
+                        lsd2->Sync();
+                    }
                 }
                 it->GetDriver()->SetClips(charsDir);
             }
@@ -1236,7 +1238,7 @@ DataNode BandWardrobe::OnEnterVignette(DataArray *da) {
                     slot = MostImportantHuman(info);
                 hints[idx] = Symbol("done");
                 info[slot].hint = idx;
-                mVignetteNames.names[idx] = Symbol(player_names[idx]);
+                mVignetteNames.names[slot] = Symbol(player_names[idx]);
             }
         }
     }
