@@ -418,12 +418,10 @@ void App::RunWithoutDebugging() {
     loop_timer.Restart();
     int frameticker = 0;
     while (true) {
-        if (gCheckConsistencyish != 0) {
-            if ((frameticker % (gCheckConsistencyish * 4 - 3)) == 0) {
-                OSReport("checking consistency %d...\n", gCheckConsistencyish);
+        if (gCheckConsistencyish != 0 && (frameticker % (gCheckConsistencyish * 4 - 3)) == 0) {
                 MemCheckConsistency(__FILE__, 864);
+                OSReport("checking consistency %d...\n", gCheckConsistencyish);
             }
-        }
         frameticker++;
         SetGPHangDetectEnabled(false, __FUNCTION__);
         TIMER_ACTION("poll", {
