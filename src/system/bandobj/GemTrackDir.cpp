@@ -1182,9 +1182,10 @@ DECOMP_FORCEACTIVE(
 int GemTrackDir::PrepareChordMesh(unsigned int chord) {
     std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
         = unk6b4.find(chord);
+    const ObjPtr<ChordShapeGenerator, ObjectDir> &_ref0 = mChordShapeGen;
     if (it == unk6b4.end()) {
-        RndMesh *chordMesh = mChordShapeGen->BuildChordMesh(chord, 6);
-        RndMesh *invMesh = mChordShapeGen->MakeInvertedMesh(chordMesh);
+        RndMesh *chordMesh = _ref0->BuildChordMesh(chord, 6);
+        RndMesh *invMesh = _ref0->MakeInvertedMesh(chordMesh);
 
         chordMesh->SetMutable(0);
         dynamic_cast<WiiMesh *>(chordMesh)->mDisplays.Clear();
