@@ -736,7 +736,7 @@ bool Movie::Impl::Poll() {
             String fn(mFilename);
             float bms = mFrameTimer.SplitMs();
             const char *msg = MakeString("GLITCH: %g ms (%g ms bink), %s\n", ms, bms, fn);
-            static DataNode &notify_level = DataVariable("notify_level");
+            static const DataNode &notify_level = DataVariable("notify_level");
             if (notify_level.Int(NULL) == 0) {
                 TheDebug << MakeString("%s\n", msg);
             } else {
@@ -760,8 +760,8 @@ bool Movie::Impl::Poll() {
         }
     }
     mFrameTimer.SplitMs();
-    if (mBink->ReadError != 0) return false;
-    if (!mLoop && mBink->FrameNum == mBink->Frames) return false;
+        if (mBink->ReadError != 0 || !mLoop && mBink->FrameNum == mBink->Frames)
+        return false;
     return true;
 }
 
