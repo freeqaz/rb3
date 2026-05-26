@@ -426,7 +426,7 @@ int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
             if ((int)var_r11_3 > 0x1F) {
                 var_r11_3 = (var_r11_3 + temp_r0) - 0x20;
             }
-            return ((unsigned char)var_r11_3) + (((y >> 1) & 0xFFFFFFFE) * temp_r0) + ((x << 1) & 0xFFFFFFE0);
+            return (((unsigned char)var_r11_3) + ((((y >> 1) & 0xFFFFFFFE) * temp_r0) + ((x << 1) & 0xFFFFFFE0)));
         }
         int temp_r10_2 = (y >> 2) % 4;
         int var_r3, var_r8, var_r11_2;
@@ -473,9 +473,8 @@ int RndBitmap::PixelOffset(int x, int y, bool &nibble) const {
         return var_r11 + var_r10;
     }
     nibble = x & 1;
-    int var_r11 = (int)(mBpp * x) >> 3;
     int var_r10 = mRowBytes * y;
-    return var_r11 + var_r10;
+    return ((int)(mBpp * x) >> 3) + var_r10;
 }
 
 unsigned char RndBitmap::PixelIndex(int i1, int i2) const {
