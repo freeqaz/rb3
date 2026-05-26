@@ -21,6 +21,7 @@ public:
     class Array2d {
     public:
         Array2d() {}
+        ~Array2d() { delete[] mData; }
         void Resize(int, int);
         int CalcWidth();
         int CalcHeight();
