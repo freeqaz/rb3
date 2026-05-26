@@ -73,7 +73,7 @@ void CharIKHand::Poll() {
             RndTransformable *itTrans = (*it).mTarget;
             if (itTrans) {
                 float curFloat = *locfloats;
-                Transform &worldtf = itTrans->WorldXfm();
+                const Transform &worldtf = itTrans->WorldXfm();
                 ScaleAddEq(vec, worldtf.v, curFloat / sumfloat);
                 if (mOrientation) {
                     Hmx::Matrix3 m100;
@@ -87,6 +87,7 @@ void CharIKHand::Poll() {
         if (mOrientation)
             Normalize(quat, quat);
     }
+    RndTransformable *parent2 = 0;
     if (mFinger) {
         Transform tf;
         tf.v = vec;
@@ -100,7 +101,6 @@ void CharIKHand::Poll() {
     }
     Interp(mHand->WorldXfm().v, vec, charWeight, mWorldDst);
     RndTransformable *parent1 = mHand->TransParent();
-    RndTransformable *parent2 = 0;
     if (!mMoveElbow)
         parent1 = 0;
     if (charWeight != 0 || mAlwaysIKElbow) {
@@ -111,7 +111,8 @@ void CharIKHand::Poll() {
         }
         IKElbow(parent1, parent2);
     }
-    if (charWeight != 0 && (!parent1 || mOrientation || mStretch)) {
+    if (charWeight != 0) {
+        if ((!parent1 || mOrientation || mStretch)) {
         Transform tf(mHand->WorldXfm());
         if (!parent1 || mStretch) {
             tf.v = mWorldDst;
@@ -124,6 +125,7 @@ void CharIKHand::Poll() {
             MakeRotMatrix(quat, tf.m);
         }
         mHand->SetWorldXfm(tf);
+    }
     }
 
     if (mConstrainWrist && charWeight > 0.0f && parent1) {
