@@ -91,8 +91,8 @@ public:
 // (e.g. solo vs. band, guitar vs. pro-guitar) for the score display.
 class ScoreTypeViewSetting : public ViewSetting {
 public:
-    ScoreTypeViewSetting(Symbol name, ScoreType st)
-        : ViewSetting(name), mScoreType(st) {}
+    ScoreTypeViewSetting()
+        : ViewSetting("visible_scores"), mScoreType(kScoreBand) {}
     virtual ~ScoreTypeViewSetting() {}
 
     virtual int NumData() const { return 2; }

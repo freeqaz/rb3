@@ -330,7 +330,7 @@ ViewSettingsProvider::ViewSettingsProvider() : mActiveSetting(nullptr),
     mOddMat(nullptr) {
     mSettings.push_back(new HeaderViewSetting(options));
     mSettings.push_back(new SortViewSetting());
-    mSettings.push_back(new ScoreTypeViewSetting("visible_scores", kScoreBand));
+    mSettings.push_back(new ScoreTypeViewSetting());
     mSettings.push_back(new HeaderViewSetting(filters));
     for (int i = 0; i < kNumFilterTypes - 2; i++) {
         mSettings.push_back(new FilterViewSetting((FilterType)i));
