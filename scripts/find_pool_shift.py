@@ -52,6 +52,11 @@ SKIP_UNITS = {
     # DCE'd asserts from a build-flag-conditional path absent in our build.
     # Two failed waves (2026-05-25). See feedback_milo_assert_pool_shift.md.
     "main/system/bandobj/PatchDir",
+    # -28 cluster driven by MWCC vtable key-function placement, not pool-shift:
+    # ~10 base-class virtuals instantiated in this TU that target places in
+    # other TUs. Two failed waves (2026-05-26). FORCEACTIVE made it worse.
+    # Requires vtable key-function relocation surgery (off-pattern).
+    "main/band3/meta_band/AccomplishmentProgress",
 }
 
 
