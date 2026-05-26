@@ -466,11 +466,9 @@ float Rnd::DrawTimers(float f) {
     Hmx::Color bgColor(0.0f, 0.0f, 0.0f, 0.5f);
     DrawRectScreen(rect, bgColor, mOverlayMat, nullptr, nullptr);
 
-    Hmx::Color barColor(0.5f, 0.5f, 0.5f, 1.0f);
     Hmx::Color worstExcessColor(0.0f, 0.5f, 0.5f, 1.0f);
     Hmx::Color budgetExcessColor(0.5f, 0.0f, 0.0f, 1.0f);
-
-    float y = f;
+    Hmx::Color barColor(0.5f, 0.5f, 0.5f, 1.0f);
 
     rect.h = 0.0268f;
 
@@ -481,7 +479,11 @@ float Rnd::DrawTimers(float f) {
             continue;
         }
 
+        bool hasBudget = false;
         if (it->first.mBudget != 0.0f && it->first.mLastMs > it->first.mBudget) {
+            hasBudget = true;
+        }
+        if (hasBudget) {
             rect.w = it->first.mBudget * 0.019f;
             DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
             rect.x += rect.w;
@@ -499,8 +501,7 @@ float Rnd::DrawTimers(float f) {
         }
 
         rect.x = 0.025f;
-        y += 0.045f;
-        rect.y = y;
+        rect.y += 0.045f;
     }
 
     rect.h = totalHeight;
