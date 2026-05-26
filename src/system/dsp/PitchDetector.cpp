@@ -15,7 +15,7 @@ float RefinePeriod2(const float *buf, const float *autocorr, const float *peaks,
 
 void dump(float *data, int len) {
     const char *space = " ";
-    for (int i = 0.0f; i < len; i++) {
+    for (int i = 0.0f; len > i; i++) {
         int n = (int)(data[i] / 700.0f) + 30;
         int j = 0;
         if (n > 0) {
