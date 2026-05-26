@@ -69,11 +69,10 @@ bool Box::Clamp(Vector3 &vec) {
 void Multiply(const Box &box, float f, Box &out) {
     float miny = box.mMin.y;
     float maxy = box.mMax.y;
-    float rangey = maxy - miny;
     float minz = box.mMin.z;
     float maxz = box.mMax.z;
     float minx = box.mMin.x;
-    float cy = rangey * 0.5f + miny;
+    float cy = (maxy - miny) * 0.5f + miny;
     float maxx = box.mMax.x;
     float cz = (maxz - minz) * 0.5f + minz;
     float ny = miny - cy;
@@ -81,8 +80,8 @@ void Multiply(const Box &box, float f, Box &out) {
     float pz = maxz - cz;
     float py = maxy - cy;
     float nz = minz - cz;
-    float nx = minx - cx;
     float pyf = py * f;
+    float nx = minx - cx;
     float px = maxx - cx;
     float pzf = pz * f;
     float nxf = nx * f;
@@ -178,7 +177,9 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
     float startZ = seg.start.z;
     float segDirZ = seg.end.z - startZ;
 
-    float segDirDot = tri.frame.z.x * segDirX + tri.frame.z.y * segDirY + tri.frame.z.z * segDirZ;
+    float segDirDot_y = tri.frame.z.y * segDirY;
+    float segDirDot_x = tri.frame.z.x * segDirX + segDirDot_y;
+    float segDirDot = tri.frame.z.z * segDirZ + segDirDot_x;
 
     if (fabsf(segDirDot) < 0.0001f || (b && segDirDot > 0.0f)) {
         return false;
@@ -188,7 +189,9 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
     float vec3AX = seg.start.x - tri.origin.x;
     float vec3AZ = seg.start.z - tri.origin.z;
 
-    float tempDot = tri.frame.z.x * vec3AX + tri.frame.z.y * vec3AY + tri.frame.z.z * vec3AZ;
+    float tempDot_y = tri.frame.z.y * vec3AY;
+    float tempDot_x = tri.frame.z.x * vec3AX + tempDot_y;
+    float tempDot = tri.frame.z.z * vec3AZ + tempDot_x;
     float t = -tempDot / segDirDot;
     out = t;
 
