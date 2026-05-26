@@ -199,8 +199,7 @@ bool TambourineManager::GemProcessed(int index) const {
 void TambourineManager::LocalTambourineSoloEnd(int pct, int numGems) {
     Symbol awardSym;
     int points = 0;
-    Symbol trackSym = tambourine;
-    TheScoring->GetSoloAward(pct, trackSym, points, awardSym);
+    TheScoring->GetSoloAward(pct, tambourine, points, awardSym);
     int total = points * numGems;
     mPlayerRef.AddBonusPoints(total);
     mPlayerRef.AddTambourinePointsStat((float)total);
