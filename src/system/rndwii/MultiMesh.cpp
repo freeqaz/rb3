@@ -13,9 +13,15 @@
 #include "revolution/gx/GXTransform.h"
 
 #pragma pool_data off
+__declspec(noinline) int _outline_NumFaces(WiiMesh* _obj) {
+    return _obj->NumFaces();
+}
+
 void WiiMultiMesh::DrawShowing() {
     int count;
-    float baseDiag0, baseDiag1, baseDiag2;
+    float baseDiag0;
+    float baseDiag1;
+    float baseDiag2;
     START_AUTO_TIMER("multimesh");
     if (mInstances.empty() || mMesh == nullptr) {
         return;
@@ -32,7 +38,7 @@ void WiiMultiMesh::DrawShowing() {
 
     MILO_ASSERT(mesh->NumBones() == 0, 0x2f);
 #ifdef MILO_DEBUG
-    if (m2->NumFaces() == 0) {
+    if (_outline_NumFaces(m2) == 0) {
         return;
     }
 #endif
@@ -339,5 +345,5 @@ void WiiMultiMesh::DrawShowing() {
 
     unk34 = false;
     TheNgStats->mMultiMeshInsts += count;
-    TheNgStats->mFaces += count * m2->NumFaces();
+    TheNgStats->mFaces += count * _outline_NumFaces(m2);
 }
