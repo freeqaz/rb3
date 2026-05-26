@@ -1414,7 +1414,8 @@ void OvershellSlot::UpdateView() {
                 } else
                     tt = ControllerTypeToTrackType(user->GetControllerType(), false);
             } else {
-                b20 = mp->IsNowUsingVocalHarmony();
+                if (mp->IsNowUsingVocalHarmony())
+                    b20 = true;
                 if (mp->IsUsingRealDrums())
                     b21 = true;
             }
