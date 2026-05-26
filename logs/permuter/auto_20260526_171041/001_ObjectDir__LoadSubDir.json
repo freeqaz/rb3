@@ -1,0 +1,48 @@
+{
+  "symbol": "LoadSubDir__9ObjectDirFiRC8FilePathR9BinStreamb",
+  "function_name": "ObjectDir::LoadSubDir",
+  "source_path": "/home/free/code/milohax/rb3/src/system/obj/Dir.cpp",
+  "initial_percent": 58.042435,
+  "final_percent": 99.39114,
+  "total_delta": 41.348704999999995,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 58.042435,
+      "best_name": "varcast_0",
+      "best_pattern": "varargs_cast",
+      "best_score": 99.3893,
+      "delta": 41.34686500000001,
+      "num_variants": 10,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 99.3893,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 99.3893,
+      "delta": 0.0,
+      "num_variants": 8,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 14.14,
+  "winning_pattern": "varargs_cast",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 4,
+    "5": 10,
+    "2": 4
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

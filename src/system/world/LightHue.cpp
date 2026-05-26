@@ -1,3 +1,8 @@
+/* ===== PERMUTER LOCK — DO NOT EDIT =====
+ * The source permuter is actively working on: LightHue::Sync
+ * Started: 2026-05-26 17:22 (stale after 5 minutes)
+ * This banner is temporary and will be removed automatically.
+ ===== */
 #include "world/LightHue.h"
 #include "math/Color.h"
 #include "rndobj/Bitmap.h"
