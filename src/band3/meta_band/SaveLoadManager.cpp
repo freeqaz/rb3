@@ -547,11 +547,14 @@ void SaveLoadManager::SetState(State newState) {
     case 0x46:
     case 0x47:
     case 0x64:
-    case 0x6d:
         if (newState != (State)0x6d) {
             delete mAction;
             mAction = NULL;
         }
+        break;
+    case 0x6d:
+        delete mAction;
+        mAction = NULL;
         break;
     case 0x1f:
     case 0x21:
@@ -834,7 +837,7 @@ void SaveLoadManager::SetState(State newState) {
         unk78 = 0;
         unk7c = 1;
         unk68 = true;
-        SetState((State)(mData != NULL ? 0x22 : 0x26));
+        SetState((State)(mCache != NULL ? 0x22 : 0x26));
         break;
     }
     case 0x25:
@@ -842,11 +845,11 @@ void SaveLoadManager::SetState(State newState) {
         unk7c = 0;
         unk78 = 0;
         unk68 = true;
-        SetState((State)(mData != NULL ? 0x22 : 0x26));
+        SetState((State)(mCache != NULL ? 0x22 : 0x26));
         break;
     }
     case 0x26:
-        mCache = NULL;
+        mCacheID = NULL;
         SetState((State)0x3);
         break;
     case 0x27:
