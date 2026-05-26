@@ -19,6 +19,26 @@ TheDOFProc->Set(BlurDepth(), MaxBlur(), MinBlur());
 
 **Example:** In `PatchPanel::Poll`, `unk60 * mScaleVelX` vs `mScaleVelX * unk60` fixed an OFFSET_SWAP.
 
+## Bit-Pack OR Chain: High-to-Low Wins
+
+When a function packs multiple bit-fields into one integer via `A | B | C | ...`, MWCC schedules the OR-chain in source order. Low-to-high ordering forces a `clrlslwi` per field; **high-bit-first ordering lets MWCC emit `slwi` + `rlwimi`** and matches the typical target shape.
+
+```cpp
+// Mismatches — low-to-high evaluation forces clrlslwi per field:
+unsigned int packed = (elapsed | ((but << 23) & 0x0F800000)) |
+                      (((pad << 28) & 0x70000000) | (state << 31));
+
+// Matches — high-to-low (state<<31 first, no-shift term last):
+unsigned int packed = (state << 31) | ((pad << 28) & 0x70000000) |
+                      ((but << 23) & 0x0F800000) | elapsed;
+```
+
+**Rule:** sort OR-chain terms by descending shift amount; place the non-shifted term last.
+
+**Example:** `UIStats::EventLog` 97.9% -> 99.8% (+1.9pp) — reorder collapsed an r28<->r31 register cascade.
+
+**Permuter:** `scripts/permuter/patterns/bitpack_or_reorder.py` (pattern name `bitpack_or_reorder`). Triggered on `rlwimi`/`slwi`/`or`-family diff ops.
+
 ## Direct .Set() vs Constructor Assignment
 
 `vec.Set(x, y, z)` avoids a temporary on the stack that constructor assignment `vec = Vector3(x, y, z)` creates.

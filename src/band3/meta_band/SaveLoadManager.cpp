@@ -1067,7 +1067,7 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)0x3);
         break;
     }
-    case 0x3f:
+    case 0x40:
     {
         unk7c = 0;
         unk78 = 0;
@@ -1075,10 +1075,10 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)0x41);
         break;
     }
-    case 0x40: // kS_SaveChooseDeviceInvalid (0x40 = 64)
+    case 0x41:
         SetState((State)0x54);
         break;
-    case 0x41:
+    case 0x42:
     {
         unk7c = 0;
         TheMemcardMgr.DisableWriting(true);
@@ -1086,10 +1086,58 @@ void SaveLoadManager::SetState(State newState) {
             TheMemcardMgr.SaveLoadProfileComplete(*pp, 2);
         }
         TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        {
+            Symbol dummy(saveload_dialog_event);
+            TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        }
+        break;
+    }
+    case 0x43:
+    case 0x44:
+    {
+        unk7c = 0;
+        int saveResult = (newState == (State)0x43) ? 1 : -1;
+        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+            TheMemcardMgr.SaveLoadProfileComplete(*pp, saveResult);
+        }
+        TheProfileMgr.SetGlobalOptionsSaveState((ProfileSaveState)saveResult);
+        if (mMode == 0) {
+            SetState((State)0x3);
+        } else if (mMode == 1 || mMode == 4) {
+            SetState((State)0x54);
+        }
+        break;
+    }
+    case 0x45:
+    {
+        BandProfile *pProfile = GetProfile();
+        MILO_ASSERT(pProfile, 0x839);
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        TheMemcardMgr.OnCheckForSaveContainer(pProfile);
+        break;
+    }
+    case 0x46:
+        StartSaveAction(true);
+        break;
+    case 0x47:
+        StartSaveAction(false);
+        break;
+    case 0x48:
+    case 0x49:
+    case 0x4c:
+    case 0x4e:
+    case 0x4f:
+    case 0x50:
+    {
+        Symbol dummy(saveload_dialog_event);
         TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
-    case 0x42: // shared with 0xa
+    // States 0x4a, 0x4b have no entry body in target (async-wait, polled).
+    case 0x4d:
     {
         BandProfile *pProfile = GetProfile();
         MILO_ASSERT(pProfile, 0x57b);
@@ -1103,75 +1151,23 @@ void SaveLoadManager::SetState(State newState) {
         TheMemcardMgr.SelectDevice(pProfile, true, localUser, devId);
         break;
     }
-    case 0x43:
-    case 0x44:
+    case 0x51:
     {
-        bool overwrite = (newState == (State)0x43);
-        unk7c = 0;
-        int saveResult = overwrite ? 1 : -1;
-        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
-            TheMemcardMgr.SaveLoadProfileComplete(*pp, saveResult);
+        bool needsWrite = false;
+        if (TheSongMgr.SongCacheNeedsWrite() && !unk68) {
+            needsWrite = true;
         }
-        TheProfileMgr.SetGlobalOptionsSaveState((ProfileSaveState)saveResult);
-        if (mMode == 0) {
-            SetState((State)0x3);
-        } else if (mMode == 1 || mMode == 4) {
-            SetState((State)0x54);
-        }
-        break;
-    }
-    case 0x45: // kS_SaveChooseDeviceInvalid
-    {
-        BandProfile *pProfile = GetProfile();
-        MILO_ASSERT(pProfile, 0x839);
-        mWaiting = true;
-        Hmx::Object *localUser = NULL;
-        if (mLocalUser != NULL) localUser = mLocalUser;
-        TheMemcardMgr.AddSink(this);
-        if (mLocalUser != NULL) localUser = mLocalUser;
-        TheMemcardMgr.OnCheckForSaveContainer(pProfile);
-        break;
-    }
-    case 0x46: // kS_SaveOverwrite
-        StartSaveAction(true);
-        break;
-    case 0x47: // kS_SaveNoOverwrite
-        StartSaveAction(false);
-        break;
-    case 0x48: // kS_SaveDeviceInvalid
-    {
-        Symbol dummy(saveload_dialog_event);
-        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
-        break;
-    }
-    case 0x49:
-    {
-        Symbol dummy(saveload_dialog_event);
-        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
-        break;
-    }
-    case 0x4a: // kS_SaveNotEnoughSpacePS3
-    case 0x4b: // kS_SaveChooseDevice
-    case 0x4c: // kS_GlobalCreateNotFound_Msg
-    {
-        Symbol dummy(saveload_dialog_event);
-        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
-        break;
-    }
-    case 0x4d: // kS_GlobalCreateMissing_Msg
-    {
-        bool songCacheNeeded = TheSongMgr.SongCacheNeedsWrite() && !unk68;
-        if (songCacheNeeded) {
+        if (needsWrite) {
             SetState((State)0x52);
         } else {
             SetState((State)0x54);
         }
         break;
     }
-    case 0x4e: // kS_GlobalCreateCorrupt
+    case 0x52:
         TheSongMgr.StartSongCacheWrite();
         break;
-    case 0x4f:
+    case 0x53:
     {
         if (mCacheID == NULL) {
             mCacheID = TheCacheMgr->GetCacheID(kStrGlobalCacheName);
@@ -1183,54 +1179,15 @@ void SaveLoadManager::SetState(State newState) {
         }
         break;
     }
-    case 0x50: // kS_SaveFailed
+    case 0x54:
     {
-        std::vector<BandProfile *> saveProfiles = TheProfileMgr.GetShouldAutosaveProfiles();
-        mUploadProfiles = saveProfiles;
-
-        bool doUpload = IsReasonToUpload();
-        if (doUpload) {
-            std::vector<BandProfile *> signedIn = TheProfileMgr.GetSignedInProfiles();
-            mSaveProfiles = signedIn;
-        }
-
-        if (mSaveProfiles.size() > 0) {
-            SetState((State)0x58);
-        } else {
-            SetState((State)0x59);
-        }
-        break;
-    }
-    case 0x51:
-    {
-        SetState((State)0x6e);
-        TheProfileMgr.HandleProfileSaveComplete();
-        break;
-    }
-    case 0x52:
-    {
-        std::vector<BandProfile *> uploadProfs = TheProfileMgr.GetShouldAutosaveProfiles();
-        mUploadProfiles = uploadProfs;
-        // erase first
-        unsigned short newSz = mSaveProfiles.erase(mSaveProfiles.begin()) - mSaveProfiles.begin();
-        if (newSz != 0) {
-            SetState((State)0x58);
-        } else {
-            SetState((State)0x59);
-        }
-        break;
-    }
-    case 0x53:
-    {
-        // Shrink mUploadProfiles by one then get profiles to autosave
-        unsigned short newSz = (unsigned short)(mUploadProfiles.size() - 1);
-        if (mUploadProfiles.size() > 1) {
-            // shift data (memmove)
-        }
-        mUploadProfiles.resize(newSz);
+        mUploadProfiles.erase(mUploadProfiles.begin());
         mUploadProfiles = TheProfileMgr.GetShouldAutosaveProfiles();
         if (!TheMemcardMgr.IsDisableWriting()) {
-            if (mUploadProfiles.size() != 0 || TheWiiProfileMgr.NeedsSave() || TheProfileMgr.GlobalOptionsNeedsSave()) {
+            if (mUploadProfiles.size() != 0 ||
+                TheWiiProfileMgr.NeedsSave() ||
+                TheProfileMgr.GlobalOptionsNeedsSave())
+            {
                 SetState((State)0x46);
                 break;
             }
@@ -1239,51 +1196,68 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)0x55);
         break;
     }
-    case 0x54: // kS_SaveCheckProfile
+    case 0x55:
+        SetState((State)0x6e);
+        TheProfileMgr.HandleProfileSaveComplete();
+        break;
+    case 0x56:
     {
-        // Shrink save profiles by one, continue or finish
-        unsigned short newSz = (unsigned short)(mSaveProfiles.size() - 1);
-        if (mSaveProfiles.size() > 1) {
-            // shift data
+        mSaveProfiles.erase(mSaveProfiles.begin());
+        if (IsReasonToUpload()) {
+            mSaveProfiles = TheProfileMgr.GetSignedInProfiles();
         }
-        mSaveProfiles.resize(newSz);
-        if (newSz != 0) {
+        if (mSaveProfiles.size() != 0) {
             SetState((State)0x58);
         } else {
             SetState((State)0x59);
         }
         break;
     }
-    case 0x55: // kS_SaveCheckAutosave
-        SetState((State)0x51);
-        break;
-    case 0x56:
-        SetState((State)0x46);
-        break;
     case 0x57:
-    case 0x58:
-    case 0x59:
-    case 0x5a: // kS_ManualLoadInit
-    case 0x5b: // kS_ManualSaveNoDevice
-    case 0x5c: // kS_ManualLoadNoDevice
     {
-        MILO_LOG("TODO state not implemented\n");
+        mSaveProfiles.erase(mSaveProfiles.begin());
+        if (mSaveProfiles.size() != 0) {
+            SetState((State)0x58);
+        } else {
+            SetState((State)0x59);
+        }
         break;
     }
-    case 0x5d: // kS_ManualLoadStartLoad
+    case 0x58:
+    {
+        MILO_ASSERT(!mSaveProfiles.empty(), 0x8f9);
+        BandProfile *pProfile = mSaveProfiles.front();
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        TheEntityUploader.UpdateFromProfile(pProfile, this);
+        pProfile->SendBandLogo();
+        break;
+    }
+    case 0x59:
+        SetState((State)0x51);
+        break;
+    case 0x5a:
+        SetState((State)0x46);
+        break;
+    case 0x5b:
+    case 0x61:
+        MILO_FAIL("SelectDevice not supported on the Wii.\n");
+        break;
+    case 0x5c:
     {
         Symbol dummy(saveload_dialog_event);
         TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
-    case 0x5e: // kS_ManualLoadConfirmUnsaved
+    case 0x5d:
         SetState((State)0x6e);
         break;
-    case 0x5f: // kS_ManualLoadConfirm_Yes
+    case 0x5e:
     {
-        LocalBandUser *pUser = mUser;
         int padNum = 0;
-        if (pUser != NULL) padNum = pUser->GetPadNum();
+        if (mUser != NULL) padNum = mUser->GetPadNum();
         if (TheProfileMgr.HasUnsavedDataForPad(padNum)) {
             SetState((State)0x5f);
         } else {
@@ -1291,24 +1265,22 @@ void SaveLoadManager::SetState(State newState) {
         }
         break;
     }
-    case 0x60: // kS_ManualLoadConfirm
-    case 0x61: // kS_ManualSaveChooseDevice
-    case 0x62: // kS_GlobalOptionsMissing_Msg
-    case 0x64: // kS_ManualLoadChooseDevice
+    case 0x5f:
+    case 0x60:
+    case 0x62:
+    case 0x63:
     case 0x65:
     case 0x66:
     case 0x67:
-    case 0x6b:
-    case 0x6c:
     {
         Symbol dummy(saveload_dialog_event);
         TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
-    case 0x63:
+    case 0x64:
     {
         for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
-            (*pp)->SaveLoadComplete(kMetaProfileUnloaded);
+            (*pp)->PreLoad();
         }
         mWaiting = true;
         delete mAction;
@@ -1328,15 +1300,25 @@ void SaveLoadManager::SetState(State newState) {
         break;
     case 0x6a:
     {
-        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        MILO_LOG("\n**SaveLoadManager: kS_ManualDeleteStart\n");
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        TheMemcardMgr.OnDeleteSaves(NULL);
         break;
     }
-    case 0x6d: // kS_Done
+    case 0x6b:
+    case 0x6c:
         SetState((State)0x6e);
         break;
-    case 0x6e: // kS_LoadComplete
-        SetState((State)0x6e);
+    // State 0x6d has no entry body in target (async-wait, polled).
+    case 0x6e:
+    {
+        TheMemcardMgr.SaveLoadAllComplete();
+        Finish();
         break;
+    }
     default:
         break;
     }
