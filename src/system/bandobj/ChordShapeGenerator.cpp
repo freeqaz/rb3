@@ -229,17 +229,21 @@ void ChordShapeGenerator::DumpChordGenData() {
 void ChordShapeGenerator::NameMesh(RndMesh *mesh, bool lefty) {
     MILO_ASSERT(mesh && Dir(), 0x3CF);
     const char *name = lefty ? "chord_L" : "chord";
-    for (int i = 0; i < mNumSlots; i++) {
+    for (int i = 0; mNumSlots > i; i++) {
         name = MakeString("%s_%d", name, mStringFrets[i]);
     }
-    if (dynamic_cast<RndMesh *>(Dir()->FindObject(MakeString("%s.mesh", name), false))) {
-        int counter = 1;
-        do {
-            name = MakeString("%s(%d)", name, counter);
-            counter++;
-        } while (dynamic_cast<RndMesh *>(
-            Dir()->FindObject(MakeString("%s.mesh", name), false)
-        ));
+    {
+        const char *meshFmt = MakeString("%s.mesh", name);
+        if (dynamic_cast<RndMesh *>(Dir()->FindObject(meshFmt, false))) {
+            do {
+                int counter = 1;
+                name = MakeString("%s(%d)", name, counter);
+                counter++;
+                meshFmt = MakeString("%s.mesh", name);
+            } while (dynamic_cast<RndMesh *>(
+                Dir()->FindObject(meshFmt, false)
+            ));
+        }
     }
     mesh->SetName(MakeString("%s.mesh", name), Dir());
     Dir()->SyncObjects();
@@ -256,7 +260,8 @@ int vertIt;
 unsigned int faceIt;
 
 RndMesh *ChordShapeGenerator::BuildChordMesh() {
-    mSource = mChordSrcMesh;
+    RndMesh * &_ref0 = mSource;
+    _ref0 = mChordSrcMesh;
     if (CheckParams()) {
         TheDebug.Notify(MakeString(
             "Could not create chord shape because some references are missing"
@@ -268,7 +273,7 @@ RndMesh *ChordShapeGenerator::BuildChordMesh() {
     unkd0 = mBaseHeight->WorldXfm().v.z;
     GetCrossSection(unkc8, sec2);
     GetCrossSection(unkcc, sec1);
-    RndMesh *mesh = NewCopyMesh(mSource);
+    RndMesh *mesh = NewCopyMesh(_ref0);
     mesh->SetMutable(0x3F);
     mesh->Verts().resize(0, true);
     mesh->Faces().clear();
@@ -277,8 +282,8 @@ RndMesh *ChordShapeGenerator::BuildChordMesh() {
     vertIt = 0;
     faceIt = 0;
     std::map<unsigned short, unsigned short> connectingVerts;
-    Hmx::Color32 offColor(0xFF000000);
     Hmx::Color32 onColor(0xFFFFFFFF);
+    Hmx::Color32 offColor(0xFF000000);
     for (int i = 0; i < mNumSlots; i++) {
         Hmx::Color32 col = unk64[i] ? onColor : offColor;
         Hmx::Color32 colPrev = (i == 0)
