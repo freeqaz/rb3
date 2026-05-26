@@ -345,14 +345,19 @@ void SaveLoadManager::Poll() {
     case (State)0x3E:
         if (!mCache->IsDone()) return;
         unk70 = (int)mCache->GetLastResult();
-        if (mState == (State)0x21) {
+                switch (mState) {
+            case (State)0x21:
             SetState((State)0x23);
-        } else if (mState == (State)0x33) {
+            break;
+            case (State)0x33:
             SetState((State)0x35);
-        } else if (mState == (State)0x3E) {
+            break;
+            case (State)0x3E:
             SetState((State)0x3f);
-        } else {
+            break;
+            default:
             TheDebug.Fail(MakeString("Impossible state.\n"));
+            break;
         }
         break;
     case (State)0x22:
@@ -380,9 +385,11 @@ void SaveLoadManager::Poll() {
         {
             CacheResult result = TheCacheMgr->GetLastResult();
             unk70 = (int)result;
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 SetState((State)0x2e);
-            } else if (result == kCache_ErrorCacheNotFound) {
+                break;
+                case kCache_ErrorCacheNotFound:
                 switch (unk7c) {
                 case 0:
                     SetState((State)0x2b);
@@ -394,9 +401,11 @@ void SaveLoadManager::Poll() {
                     SetState((State)0x29);
                     break;
                 }
-            } else {
+                break;
+                default:
                 TheDebug.Fail(MakeString<int>("SaveLoadManager - CacheMgr search returned error %d\n", (int)result));
                 SetState((State)0x37);
+                break;
             }
         }
         break;
