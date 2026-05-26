@@ -139,13 +139,14 @@ bool VertLess(const RndMesh::Vert &v1, const RndMesh::Vert &v2) {
 }
 
 void GemRepTemplate::SetupTailVerts() {
+    char _slotpad[12]; (void)_slotpad;
     mTailVerts = mObjectDir->Find<RndMesh>("tail02.mesh", true)->Verts(); // where assert
     MILO_ASSERT(!(mTailVerts.size()%2), 212);
     std::sort(mTailVerts.begin(), mTailVerts.end(), VertLess);
     mCapVerts = mTailVerts;
 
     int i4 = mTailVerts.size() / 2;
-    for (int i = 0.0f; i < i4; i++) {
+    for (int i = 0; i < i4; i++) {
         mCapVerts[i + i4] = mTailVerts[i];
     }
     mTailVerts.resize(i4, true);
