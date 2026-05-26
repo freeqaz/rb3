@@ -350,7 +350,7 @@ void StoreOfferProvider::BuildList(DataArray *grouping) {
             Symbol subgroupSym = subgroupArr
                 ? subgroupArr->ExecuteScript(1, NULL, args, 0).ForceSym(NULL)
                 : Symbol(gNullStr);
-            if (groupSym != gNullStr &&
+            if (groupSym.Str() != gNullStr &&
                 (!lastGroup || lastGroup->mGroupHeading != groupSym ||
                  lastGroup->mIsCover != isCover)) {
                 Element *g = new Element(NULL, groupSym, localize, isCover, false);
@@ -360,7 +360,7 @@ void StoreOfferProvider::BuildList(DataArray *grouping) {
                 Symbol shortcutSym = shortcutArr
                     ? shortcutArr->ExecuteScript(1, NULL, args, 0).ForceSym(NULL)
                     : groupSym;
-                if (curGroupSym == gNullStr || curGroupSym != shortcutSym) {
+                if (curGroupSym.Str() == gNullStr || curGroupSym != shortcutSym) {
                     if (localize) {
                         mShortcuts->Insert(
                             mShortcuts->Size(), DataNode(shortcutSym)
@@ -373,13 +373,13 @@ void StoreOfferProvider::BuildList(DataArray *grouping) {
                     lastGroup->mShortcut = shortcutSym;
                     curGroupSym = shortcutSym;
                 }
-                if (subgroupSym != gNullStr) {
+                if (subgroupSym.Str() != gNullStr) {
                     Element *sg =
                         new Element(NULL, subgroupSym, localize, false, false);
                     mElements.push_back(sg);
                     lastSubgroup = mElements.back();
                 }
-            } else if (subgroupSym != gNullStr &&
+            } else if (subgroupSym.Str() != gNullStr &&
                        (!lastSubgroup ||
                         lastSubgroup->mGroupHeading != subgroupSym)) {
                 Element *sg =
