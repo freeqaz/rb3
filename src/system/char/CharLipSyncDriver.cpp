@@ -183,14 +183,7 @@ void CharLipSyncDriver::Poll() {
         float curWeight = weight * w.unk14;
         CharClip *clip = w.unk0;
         if (curWeight != 0.0f && clip && clip != mSongOwner->mBlinkClip) {
-        CharClip *remapped = dynamic_cast<CharClip *>(mClips->FindObject(clip->Name(), false));
-        if (!remapped) {
-        MILO_FAIL(
-        kNotObjectMsg,
-        clip->Name(),
-        PathName(mClips) ? PathName(mClips) : "**no file**"
-        );
-        }
+        CharClip *remapped = mClips->Find<CharClip>(clip->Name(), true);
         ScaleAddViseme(remapped, curWeight);
         }
         }
