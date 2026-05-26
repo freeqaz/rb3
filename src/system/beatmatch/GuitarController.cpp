@@ -132,7 +132,7 @@ void GuitarController::Poll() {
 }
 
 int GuitarController::OnMsg(const ButtonDownMsg &msg) {
-    const bool &_ref0 = mDisabled;
+    bool &_ref0 = mDisabled;
     if (_ref0)
         return 0;
     if (!mUser->IsLocal())
