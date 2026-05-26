@@ -90,13 +90,15 @@ void WiiTex::CopyFromFB(
         GXSetZMode(TRUE, GX_ALWAYS, TRUE);
     GXSetAlphaUpdate(TRUE);
     // TODO add PSVEC copy
-    GXSetCopyClear(*(GXColor *)&TheRnd->mClearColor, 0x00FFFFFF);
+    if (TheRnd)
+        GXSetCopyClear(*(GXColor *)&TheRnd->mClearColor, 0x00FFFFFF);
     GXSetTexCopySrc(src_x, src_y, src_w, src_h);
     GXSetTexCopyDst(mWidth, mHeight, mFormat, is_mip);
     GXGetTexBufferSize(mWidth, mHeight, mFormat, 0, 0);
 
     GXSetCopyClamp(GX_CLAMP_ALL);
-    GXCopyTex(mImageData, u8(copy_bool));
+    auto _tmp0 = u8(copy_bool);
+    GXCopyTex(mImageData, _tmp0);
     if (bComposingOutfitTexture || !TheRnd->mInGame)
         RndGxDrawDone();
 }
