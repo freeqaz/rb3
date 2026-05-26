@@ -860,47 +860,6 @@ void GemTrackDir::SetDisplayRange(float f) {
     mKeyRange = f;
 }
 
-void GemTrackDir::SetDisplayOffset(float offset, bool force) {
-    if (offset < 0.0f || offset > 5.0f) {
-        MILO_WARN("keyboard shift must be between 0 and 5 white keys inclusive");
-        return;
-    }
-    if (mKeyRange != 10.0f) {
-        MILO_WARN("Keyboard display range should always be 10");
-        return;
-    }
-    if (mKeyOffset == offset && !force)
-        return;
-    unk654->SetFrame(offset, 1.0f);
-    mKeysShiftAnim->SetFrame(offset, 1.0f);
-    int startSemitone = WhiteKeyToSemitone(Round(offset));
-    int endSemitone = Min(24, WhiteKeyToSemitone(Round(offset + mKeyRange - 1.0f)));
-    if (startSemitone > 0 && IsBlackKey(startSemitone - 1))
-        startSemitone--;
-    if (endSemitone < 24 && IsBlackKey(endSemitone + 1))
-        endSemitone++;
-    int i;
-    for (i = 0; i < startSemitone; i++) {
-        if (unk680[i]->Showing() || force) {
-            unk680[i]->SetShowing(false);
-            unk690[i]->Trigger();
-        }
-    }
-    for (i = startSemitone; i <= endSemitone; i++) {
-        if (!unk680[i]->Showing() || force) {
-            unk680[i]->SetShowing(true);
-            unk688[i]->Trigger();
-        }
-    }
-    for (i = endSemitone + 1; i < unk680.size(); i++) {
-        if (unk680[i]->Showing() || force) {
-            unk680[i]->SetShowing(false);
-            unk690[i]->Trigger();
-        }
-    }
-    mKeyOffset = offset;
-}
-
 enum {
     kWhiteKeyC = 0,
     kWhiteKeyD = 1,
@@ -1024,6 +983,47 @@ bool GemTrackDir::IsBlackKey(int semitone) const {
     }
 }
 
+void GemTrackDir::SetDisplayOffset(float offset, bool force) {
+    if (offset < 0.0f || offset > 5.0f) {
+        MILO_WARN("keyboard shift must be between 0 and 5 white keys inclusive");
+        return;
+    }
+    if (mKeyRange != 10.0f) {
+        MILO_WARN("Keyboard display range should always be 10");
+        return;
+    }
+    if (mKeyOffset == offset && !force)
+        return;
+    unk654->SetFrame(offset, 1.0f);
+    mKeysShiftAnim->SetFrame(offset, 1.0f);
+    int startSemitone = WhiteKeyToSemitone(Round(offset));
+    int endSemitone = Min(24, WhiteKeyToSemitone(Round(offset + mKeyRange - 1.0f)));
+    if (startSemitone > 0 && IsBlackKey(startSemitone - 1))
+        startSemitone--;
+    if (endSemitone < 24 && IsBlackKey(endSemitone + 1))
+        endSemitone++;
+    int i;
+    for (i = 0; i < startSemitone; i++) {
+        if (unk680[i]->Showing() || force) {
+            unk680[i]->SetShowing(false);
+            unk690[i]->Trigger();
+        }
+    }
+    for (i = startSemitone; i <= endSemitone; i++) {
+        if (!unk680[i]->Showing() || force) {
+            unk680[i]->SetShowing(true);
+            unk688[i]->Trigger();
+        }
+    }
+    for (i = endSemitone + 1; i < unk680.size(); i++) {
+        if (unk680[i]->Showing() || force) {
+            unk680[i]->SetShowing(false);
+            unk690[i]->Trigger();
+        }
+    }
+    mKeyOffset = offset;
+}
+
 void GemTrackDir::SetScreenRectX(float f) {
     RndCam *cam = mGameCam;
     if (cam && unk488 >= 0 && unk488 < mNumTracks) {
@@ -1135,31 +1135,31 @@ RndMesh *GemTrackDir::GetChordMesh(unsigned int key, bool which) {
 int GemTrackDir::PrepareChordMesh(unsigned int chord) {
     std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
         = unk6b4.find(chord);
-    if (it != unk6b4.end()) {
-        it->second.first = 1;
-        return 0;
+    if (it == unk6b4.end()) {
+        RndMesh *chordMesh = mChordShapeGen->BuildChordMesh(chord, 6);
+        RndMesh *invMesh = mChordShapeGen->MakeInvertedMesh(chordMesh);
+
+        chordMesh->SetMutable(0);
+        dynamic_cast<WiiMesh *>(chordMesh)->mDisplays.Clear();
+        chordMesh->Sync(0x3F);
+        unk6b4[chord] = std::make_pair(1, chordMesh);
+
+        invMesh->SetMutable(0);
+        dynamic_cast<WiiMesh *>(invMesh)->mDisplays.Clear();
+        invMesh->Sync(0x3F);
+        unk6cc[chord] = std::make_pair(1, invMesh);
+
+        if (TheLoadMgr.EditMode()) {
+            chordMesh->SetName(MakeString("chord_%d", chord), this);
+            invMesh->SetName(MakeString("chord_L_%d", chord), this);
+        } else {
+            chordMesh->SetName("", this);
+            invMesh->SetName("", this);
+        }
+        return 1;
     }
-    RndMesh *chordMesh = mChordShapeGen->BuildChordMesh(chord, 6);
-    RndMesh *invMesh = mChordShapeGen->MakeInvertedMesh(chordMesh);
-
-    chordMesh->SetMutable(0);
-    dynamic_cast<WiiMesh *>(chordMesh->GeomOwner())->mDisplays.Clear();
-    chordMesh->Sync(0x3F);
-    unk6b4[chord] = std::make_pair(1, chordMesh);
-
-    invMesh->SetMutable(0);
-    dynamic_cast<WiiMesh *>(invMesh->GeomOwner())->mDisplays.Clear();
-    invMesh->Sync(0x3F);
-    unk6cc[chord] = std::make_pair(1, invMesh);
-
-    if (TheLoadMgr.EditMode()) {
-        chordMesh->SetName(MakeString("chord_%d", chord), this);
-        invMesh->SetName(MakeString("chord_L_%d", chord), this);
-    } else {
-        chordMesh->SetName("", this);
-        invMesh->SetName("", this);
-    }
-    return 1;
+    it->second.first = 1;
+    return 0;
 }
 
 float GemTrackDir::GetFretPosOffset(int idx) const {
