@@ -1409,16 +1409,18 @@ int RndText::AddLineUTF8(
     bool *bp,
     int i6
 ) {
+    int lineIdx;
     unkbp7 = true;
     float f98 = 0;
     if (!fp)
         fp = &f98;
 
-    if (utf8.length() + mText.length() > mFixedLength) {
+    String &_ref0 = mText;
+    if (utf8.length() + _ref0.length() > mFixedLength) {
         MILO_WARN(
             "Text %s%s exceeds fixed length of %d, truncating",
             utf8.c_str(),
-            mText.c_str(),
+            _ref0.c_str(),
             mFixedLength
         );
         return -1;
@@ -1426,7 +1428,6 @@ int RndText::AddLineUTF8(
         int newCharsInBytes = NumCharsInBytes(utf8, style, *fp, i6);
         if (newCharsInBytes != 0 || i6 != 0) {
             MILO_ASSERT(newCharsInBytes <= utf8.length(), 0x850);
-            int lineIdx;
             for (lineIdx = mLines.size(); lineIdx > 0
                  && (mLines[lineIdx - 1].endIdx
                      && mLines[lineIdx - 1].startIdx == mLines[lineIdx - 1].endIdx);
@@ -1456,8 +1457,8 @@ int RndText::AddLineUTF8(
                 i6 = newCharsInBytes;
             }
             MILO_ASSERT(line.endIdx <= mFixedLength, 0x874);
-            line.unk18 = mText.c_str() + line.startIdx;
-            line.unk1c = mText.c_str() + line.endIdx;
+            line.unk18 = _ref0.c_str() + line.startIdx;
+            line.unk1c = _ref0.c_str() + line.endIdx;
             ApplyLineText(utf8, style, *fp, line, newCharsInBytes, i6, bp);
             return lineIdx;
         } else
