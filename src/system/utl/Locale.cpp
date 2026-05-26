@@ -113,7 +113,7 @@ void Locale::Init() {
         for (int i = 0; i < numChunks; i++) {
             Symbol curSym = chunks[i].node1.LiteralSym();
             if (curSym != s60) {
-                i13 += strlen(chunks[i].node3.LiteralStr());
+                i13 += strlen(chunks[i].node3.LiteralStr()) + 1;
                 s60 = curSym;
                 mSize++;
             }
@@ -122,11 +122,13 @@ void Locale::Init() {
     mSymTable = new Symbol[mSize];
     mStringData = new StringTable(i13);
     mStrTable = new const char *[mSize];
+    mUploadedFlags = new bool[mSize];
     int chunkIdx = 0;
     s60 = Symbol();
     for (int i = 0; i < numChunks; i++) {
         Symbol curSym = chunks[i].node1.LiteralSym();
         if (curSym != s60) {
+            mUploadedFlags[chunkIdx] = false;
             mSymTable[chunkIdx] = curSym;
             mStrTable[chunkIdx] = mStringData->Add(chunks[i].node3.LiteralStr());
             s60 = curSym;
