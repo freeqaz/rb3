@@ -17,6 +17,43 @@
 #include "synth/VoiceBeat.h"
 #include <algorithm>
 
+// vector<SingerResultsData> internal element-copy paths (_M_fill_insert_aux's
+// backward element shift, plus the forward copies) need an 8x-unrolled word
+// copy whose load/store pairing schedule matches the target. The generic
+// stlport copy helpers route through SingerResultsData::operator= and emit a
+// pairing that loads each pair's low word first (and the backward shift only
+// unrolls 2x). Routing the copy through a POD word-struct that mirrors
+// SingerResultsData's layout in a count-based loop reproduces the target: the
+// 8x unroll and the high-word-first pairing within each 2-word group.
+namespace stlpmtx_std {
+
+struct _SingerW2 { unsigned int a, b; };
+struct _SingerResultsWords {
+    _SingerW2 ab;     // unk0, unk4    -> words 0,1 (paired)
+    unsigned int c;   // unk8          -> word 2  (single)
+    _SingerW2 de;     // unkc, unk10   -> words 3,4 (paired)
+    _SingerW2 fg;     // unk14, unk18  -> words 5,6 (paired)
+    unsigned int h;   // unk1c         -> word 7  (single)
+};
+
+// _M_fill_insert_aux backward element shift: opens a gap by moving existing
+// elements toward the back (decrementing).
+template <>
+inline SingerResultsData*
+__copy_backward_ptrs<SingerResultsData*, SingerResultsData*>(
+    SingerResultsData* __first, SingerResultsData* __last,
+    SingerResultsData* __result, const __false_type& /*TrivialAssignment*/
+) {
+    _SingerResultsWords* __d = (_SingerResultsWords*)__result;
+    _SingerResultsWords* __l = (_SingerResultsWords*)__last;
+    for (ptrdiff_t __n = __last - __first; __n > 0; --__n) {
+        *--__d = *--__l;
+    }
+    return (SingerResultsData*)__d;
+}
+
+} // namespace stlpmtx_std
+
 MicClientID sNullClientID(-1, -1);
 
 Singer::Singer(VocalPlayer *vp, int n)
