@@ -60,7 +60,13 @@ public:
     class Strand {
     public:
         Strand(Hmx::Object *);
-        Strand(const Strand &);
+        inline Strand(const Strand &rhs)
+            : mShowSpheres(rhs.mShowSpheres), mShowCollide(rhs.mShowCollide),
+              mShowPose(rhs.mShowPose), mRoot(rhs.mRoot), mAngle(rhs.mAngle),
+              mPoints(rhs.mPoints), mHookupFlags(rhs.mHookupFlags) {
+            mBaseMat = rhs.mBaseMat;
+            mRootMat = rhs.mRootMat;
+        }
         ~Strand() {}
         void Load(BinStream &);
         void SetRoot(RndTransformable *);

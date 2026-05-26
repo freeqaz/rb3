@@ -707,14 +707,6 @@ CharHair::Strand::Strand(Hmx::Object *o)
     mRootMat.Identity();
 }
 
-CharHair::Strand::Strand(const CharHair::Strand &rhs)
-    : mShowSpheres(rhs.mShowSpheres), mShowCollide(rhs.mShowCollide),
-      mShowPose(rhs.mShowPose), mRoot(rhs.mRoot), mAngle(rhs.mAngle),
-      mPoints(rhs.mPoints), mHookupFlags(rhs.mHookupFlags) {
-    mBaseMat = rhs.mBaseMat;
-    mRootMat = rhs.mRootMat;
-}
-
 void CharHair::Hookup() {
     if (mManagedHookup)
         return;
