@@ -46,8 +46,6 @@ void SplineTangent(const Keys<Vector3, Vector3> &keys, int i, Vector3 &vout) {
     }
 }
 
-// regswaps in retail with the right inline settings: https://decomp.me/scratch/lOd4o
-// i absolutely hate inlines
 void InterpTangent(
     const Vector3 &v1,
     const Vector3 &v2,
@@ -57,23 +55,17 @@ void InterpTangent(
     Vector3 &vout
 ) {
     float fsq = f * f;
-    float f6 = f * 6.0f;
-    float fsq3 = fsq * 3.0f;
-    float f4 = f * 4.0f;
+    float fsq3 = 3.0f * fsq;
+    float f6 = 6.0f * f;
+    float fsq6 = 6.0f * fsq;
+    float a = fsq6 - f6;
+    float b = 1.0f + (fsq3 - 4.0f * f);
+    float c = -6.0f * fsq + f6;
+    float d = fsq3 - 2.0f * f;
 
-    float a = fsq * 6.0f - f6;
-    float b = fsq3 - f4 + 1.0f;
-    float c = f6 - fsq * 6.0f;
-    float d = fsq3 - f * 2.0f;
-
-    Scale(v1, a, vout);
-    Vector3 vtmp;
-    Scale(v2, b, vtmp);
-    Add(vout, vtmp, vout);
-    Scale(v3, c, vtmp);
-    Add(vout, vtmp, vout);
-    Scale(v4, d, vtmp);
-    Add(vout, vtmp, vout);
+    vout.z = v1.z * a + v2.z * b + v3.z * c + v4.z * d;
+    vout.y = v1.y * a + v2.y * b + v3.y * c + v4.y * d;
+    vout.x = v1.x * a + v2.x * b + v3.x * c + v4.x * d;
 }
 
 // fn_802E36D4 - InterpVector(const Keys<Vector3, Vector3>&, const Key<Vector3>*, const

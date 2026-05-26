@@ -593,45 +593,43 @@ void WorldCrowd::SetFullness(float flatFullness, float charFullness) {
     mFlatFullness = flatFullness;
     mCharFullness = charFullness;
     FOREACH (it, mCharacters) {
-        RndMultiMesh *multiMesh = it->mMMesh;
-        if (multiMesh) {
-            std::list<RndMultiMesh::Instance> &instances = multiMesh->mInstances;
-            int instanceCount = (int)instances.size();
-            std::list<RndMultiMesh::Instance> &backup = it->mBackup;
-            int backupCount = (int)backup.size();
-            int targetInstances = (int)((float)(instanceCount + backupCount) * mFlatFullness);
+        if (it->mMMesh) {
+            int instanceCountA = (int)it->mMMesh->mInstances.size();
+            int totalCount = instanceCountA + (int)it->mBackup.size();
+            int instanceCount = (int)it->mMMesh->mInstances.size();
+            int targetInstances = (int)((float)totalCount * mFlatFullness);
             if (instanceCount < targetInstances) {
-                int toMove = targetInstances - instanceCount;
-                std::list<RndMultiMesh::Instance>::iterator backIt = backup.begin();
-                std::list<RndMultiMesh::Instance>::iterator backBegin = backup.begin();
-                for (int i = 0; i < toMove; i++) {
+                std::list<RndMultiMesh::Instance>::iterator backIt = it->mBackup.begin();
+                for (; instanceCount < targetInstances; instanceCount++) {
                     ++backIt;
                 }
-                instances.splice(instances.end(), backup, backBegin, backIt);
+                it->mMMesh->mInstances.splice(
+                    it->mMMesh->mInstances.end(), it->mBackup, it->mBackup.begin(), backIt
+                );
             } else if (targetInstances < instanceCount) {
-                int toRemove = instanceCount - targetInstances;
-                std::list<RndMultiMesh::Instance>::iterator instIt = instances.begin();
-                std::list<RndMultiMesh::Instance>::iterator instBegin = instances.begin();
-                for (int i = 0; i < toRemove; i++) {
+                std::list<RndMultiMesh::Instance>::iterator instIt =
+                    it->mMMesh->mInstances.begin();
+                for (; targetInstances < instanceCount; instanceCount--) {
                     ++instIt;
                 }
-                backup.splice(backup.end(), instances, instBegin, instIt);
-                multiMesh->InvalidateProxies();
+                it->mBackup.splice(
+                    it->mBackup.end(), it->mMMesh->mInstances, it->mMMesh->mInstances.begin(),
+                    instIt
+                );
+                it->mMMesh->InvalidateProxies();
             }
             unsigned short totalChars3D = it->m3DCharsCreated.size();
-            int targetChars3D = (int)((float)totalChars3D * charFullness);
+            int targetChars3D = (int)(charFullness * (float)totalChars3D);
             if (targetChars3D >= (int)totalChars3D) {
                 targetChars3D = (int)totalChars3D;
             }
             int currentChars3D = (int)it->m3DChars.size();
             if (currentChars3D < targetChars3D) {
-                int toAdd = targetChars3D - currentChars3D;
-                for (int i = 0; i < toAdd; i++) {
+                for (; currentChars3D < targetChars3D; currentChars3D++) {
                     it->m3DChars.push_back(it->m3DCharsCreated[(int)it->m3DChars.size()]);
                 }
             } else if (targetChars3D < currentChars3D) {
-                int toRemove = currentChars3D - targetChars3D;
-                for (int i = 0; i < toRemove; i++) {
+                for (; targetChars3D < currentChars3D; currentChars3D--) {
                     it->m3DChars.pop_back();
                 }
             }

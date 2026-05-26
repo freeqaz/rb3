@@ -186,8 +186,8 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
     }
 
     float vec3AY = seg.start.y - tri.origin.y;
-    float vec3AX = seg.start.x - tri.origin.x;
     float vec3AZ = seg.start.z - tri.origin.z;
+    float vec3AX = seg.start.x - tri.origin.x;
 
     float tempDot_y = tri.frame.z.y * vec3AY;
     float tempDot_x = tri.frame.z.x * vec3AX + tempDot_y;
@@ -199,18 +199,18 @@ bool Intersect(const Segment &seg, const Triangle &tri, bool b, float &out) {
         return false;
     }
 
-    float mulX = segDirX * t;
-    float mulY = segDirY * t;
-    float mulZ = segDirZ * t;
-    float vec3BX = seg.start.x + mulX - tri.origin.x;
-    float vec3BY = seg.start.y + mulY - tri.origin.y;
-    float vec3BZ = seg.start.z + mulZ - tri.origin.z;
+    float hitY = startY + segDirY * t;
+    float hitZ = startZ + segDirZ * t;
+    float hitX = startX + segDirX * t;
 
-    float dotXX = tri.frame.x.x * tri.frame.x.x + tri.frame.x.y * tri.frame.x.y + tri.frame.x.z * tri.frame.x.z;
+    float vec3BY = hitY - tri.origin.y;
     float dotYY = tri.frame.y.x * tri.frame.y.x + tri.frame.y.y * tri.frame.y.y + tri.frame.y.z * tri.frame.y.z;
+    float dotXX = tri.frame.x.x * tri.frame.x.x + tri.frame.x.y * tri.frame.x.y + tri.frame.x.z * tri.frame.x.z;
     float dotXY = tri.frame.x.x * tri.frame.y.x + tri.frame.x.y * tri.frame.y.y + tri.frame.x.z * tri.frame.y.z;
-    float dotX3B = tri.frame.x.x * vec3BX + tri.frame.x.y * vec3BY + tri.frame.x.z * vec3BZ;
-    float dotY3B = tri.frame.y.x * vec3BX + tri.frame.y.y * vec3BY + tri.frame.y.z * vec3BZ;
+    float vec3BX = hitX - tri.origin.x;
+    float vec3BZ = hitZ - tri.origin.z;
+    float dotX3B = tri.frame.x.y * vec3BY + tri.frame.x.x * vec3BX + tri.frame.x.z * vec3BZ;
+    float dotY3B = tri.frame.y.y * vec3BY + tri.frame.y.x * vec3BX + tri.frame.y.z * vec3BZ;
 
     float denom = dotXY * dotXY - dotYY * dotXX;
     float k = (dotY3B * dotXY - dotX3B * dotYY) / denom;
