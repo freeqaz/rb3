@@ -100,8 +100,8 @@ public:
 // + (i / tileW) * tileBytes plus equivalent for j.
 // ---------------------------------------------------------------------------
 int Dxt1Compress::PixelOffset(int i, int j, int width, int height, int bpp_in_other_dim, int bpp) {
-    int tileH, tileW, shift;
     int rowTiles, yTile, iTile, tileSize, tileIdx, tileBytes;
+    int tileH, tileW, shift;
     int xInTile, yInTile, linear, divisor, row, rem;
     (void)height;
     tileH = 4;
