@@ -327,20 +327,22 @@ float CharClipDriver::Evaluate(float beat, float deltaBeat, float deltaSeconds) 
             } else {
                 newBeat = mClip->StartBeat();
             }
-            mBeat = newBeat + AlignToBeat(beat);
+            mBeat = newBeat;
+            mBeat += AlignToBeat(beat);
             mNextEvent = 0;
         } else if (mBeat < mClip->StartBeat()) {
             float lengthBeats = mClip->LengthBeats();
             float newBeat;
             if (lengthBeats > 0.0f) {
-                float startBeat = mClip->StartBeat();
                 float endBeat = mClip->EndBeat();
+                float startBeat = mClip->StartBeat();
                 float dist = std::fmod(startBeat - mBeat, lengthBeats);
                 newBeat = endBeat - dist;
             } else {
                 newBeat = mClip->StartBeat();
             }
-            mBeat = newBeat + AlignToBeat(beat);
+            mBeat = newBeat;
+            mBeat += AlignToBeat(beat);
             mNextEvent = mClip->NumBeatEvents();
         }
     }
