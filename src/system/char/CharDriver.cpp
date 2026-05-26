@@ -51,6 +51,7 @@ void CharDriver::Highlight() {
 }
 
 float CharDriver::Display(float f) {
+    Vector2 curPos;
     CharClipDisplay::Init(Dir());
     std::vector<CharClipDisplay> displays;
     for (CharClipDriver *it = mFirst; it != nullptr; it = it->Next()) {
@@ -61,7 +62,6 @@ float CharDriver::Display(float f) {
     }
 
     float lineSpacing = CharClipDisplay::LineSpacing();
-    unsigned int displayCount = displays.size();
     float y = f * (float)TheRnd->Height() + (float)displays.size() * lineSpacing;
     for (unsigned int i = 0; i < displays.size(); i++) {
         displays[i].unk18 = -((float)i * lineSpacing - y);
@@ -69,8 +69,8 @@ float CharDriver::Display(float f) {
 
     MsgSource *source = CharClipDisplay::FindSource(this);
     float result = (y + (float)(1 + (source != nullptr)) * lineSpacing) / (float)TheRnd->Height();
-    Hmx::Rect rect(0, f, 1.0f, result - f);
     Hmx::Color bgColor(0, 0, 0, 0.5f);
+    Hmx::Rect rect(0, f, 1.0f, result - f);
     TheRnd->DrawRectScreen(rect, bgColor, nullptr, nullptr, nullptr);
 
     Hmx::Color textColor(1, 1, 1, 1);
@@ -81,7 +81,7 @@ float CharDriver::Display(float f) {
         true
     );
 
-    for (unsigned int i = 0; i < displayCount; i++) {
+    for (unsigned int i = 0; i < displays.size(); i++) {
         displays[i].DrawTrack();
     }
 
@@ -96,7 +96,6 @@ float CharDriver::Display(float f) {
             for (int i = 0; i < nodes->size; i++) {
                 int curOfs = 0;
                 int nextOfs = 0;
-                Vector2 curPos;
                 curPos.x = nextDisplay->GetX(nodes->nodes[i].curBeat);
                 for (int j = 0; j < i; j++) {
                     if (std::fabs(curPos.x - nextDisplay->GetX(nodes->nodes[j].curBeat)) < 8.0f) {
@@ -127,7 +126,7 @@ float CharDriver::Display(float f) {
         idx++;
     }
 
-    for (unsigned int i = 0; i < displayCount; i++) {
+    for (unsigned int i = 0; i < displays.size(); i++) {
         displays[i].DrawCursor();
     }
 
