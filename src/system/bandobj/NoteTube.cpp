@@ -157,7 +157,7 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
 
         float halfWidth = 0.0f;
         int vertIdx = vertStart;
-        for (int i = 0; i < numPoints; i++) {
+        for (int i = 0; i < (int)mPoints.size(); i++) {
             float px = mPoints[i].x;
             float pz = mPoints[i].z;
             if (i % 2) {
@@ -187,17 +187,19 @@ void NoteTube::DrawToPlate(TubePlate *plate) {
         }
 
         int lastVert = vertStart + numEdges;
+        float lastX = (baseX + (2.0f * unk_0x30 + mPoints[numPoints - 1].x)) - 0.015625f;
+        float lastZ = mPoints[numPoints - 1].z;
         SetMeshVert(
             verts[lastVert + 2],
-            (baseX + (2.0f * unk_0x30 + mPoints[numPoints - 1].x)) - 0.015625f,
-            mPoints[numPoints - 1].z + unk_0x30,
+            lastX,
+            lastZ + unk_0x30,
             uvX1,
             uvY1
         );
         SetMeshVert(
             verts[lastVert + 3],
-            (baseX + (2.0f * unk_0x30 + mPoints[numPoints - 1].x)) - 0.015625f,
-            mPoints[numPoints - 1].z - unk_0x30,
+            lastX,
+            lastZ - unk_0x30,
             uvX1,
             uvY0
         );
