@@ -57,20 +57,25 @@ void RndCamAnim::Replace(Hmx::Object *from, Hmx::Object *to) {
             mKeysOwner = dynamic_cast<RndCamAnim *>(to)->mKeysOwner;
     }
 }
+__declspec(noinline) float _outline_YFov(RndCam* _obj) {
+    return _obj->YFov();
+}
+
 
 // fn_805CE7DC
 void RndCamAnim::SetFrame(float frame, float blend) {
     RndAnimatable::SetFrame(frame, blend);
-    if (mCam) {
+    ObjPtr<RndCam> &_ref0 = mCam;
+    if (_ref0) {
         if (!FovKeys().empty()) {
-            float ref = mCam->YFov();
+            float ref = _outline_YFov(_ref0);
             FovKeys().AtFrame(frame, ref);
             if (blend != 1.0f) {
-                Interp(mCam->YFov(), ref, blend, ref);
+                Interp(_outline_YFov(_ref0), ref, blend, ref);
             }
-            float nearPlane = mCam->NearPlane();
-            float farPlane = mCam->FarPlane();
-            mCam->SetFrustum(nearPlane, farPlane, ref, 1.0f);
+            float nearPlane = _ref0->NearPlane();
+            float farPlane = _ref0->FarPlane();
+            _ref0->SetFrustum(nearPlane, farPlane, ref, 1.0f);
         }
     }
 }
