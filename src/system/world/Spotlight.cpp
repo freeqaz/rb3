@@ -882,7 +882,7 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
     identMtx.x.Set(1.0f, 0.0f, 0.0f);
     identMtx.y.Set(0.0f, 1.0f, 0.0f);
     identMtx.z.Set(0.0f, 0.0f, 1.0f);
-
+    Hmx::Matrix3 orientMtx;
     Hmx::Matrix3 *pMtx;
     Hmx::Matrix3 rotMtx;
     if (def.mIsCone) {
@@ -895,7 +895,6 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
         );
         pMtx = &rotMtx;
     }
-    Hmx::Matrix3 orientMtx;
     orientMtx.x = pMtx->x;
     orientMtx.y = pMtx->y;
     orientMtx.z = pMtx->z;
@@ -910,7 +909,7 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
 
     float length = def.mLength;
     Vector2 radii = def.NGRadii();
-    float halfStep = 0.5f;
+    float halfStep = 2.0f;
     float numSegsF = (float)numSegments;
     float angleStep = 6.2831855f / numSegsF;
     float halfAngle = angleStep * 0.5f;
@@ -930,7 +929,7 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
         float segU = (float)seg / numSegsF;
 
         for (unsigned int v = 0; v < 3; v++) {
-            float uvV = (float)v * halfStep;
+            float uvV = (float)v / halfStep;
             if (v <= 1) {
                 float t = (float)v;
                 float radius = (bottomRadius - topRadius) * t + topRadius;
@@ -945,16 +944,16 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
                 verts[iVert].pos.x = cosCs * cosH * bottomRadius;
                 Multiply(verts[iVert].pos, orientMtx, verts[iVert].pos);
             }
-            verts[iVert].color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+            verts[iVert].color.color = -1;
             verts[iVert].uv.Set(segU, uvV);
             iVert++;
         }
 
         short sideWidth;
-        if (seg < numSegments - 1) {
-            sideWidth = 3;
-        } else {
+        if (seg >= numSegments - 1) {
             sideWidth = 3 - (short)numVerts;
+        } else {
+            sideWidth = 3;
         }
 
         short cur = baseIdx - 1;
@@ -973,8 +972,7 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
             cur = cur + 1;
             iFace += 2;
             curFlip = flip;
-            fCount--;
-        } while (fCount != 0);
+        } while (--fCount);
 
         halfAngle = halfAngle + angleStep;
         faces[iFace].Set(baseIdx - 2, baseIdx + sideWidth - 2, numVerts);
@@ -984,13 +982,13 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
     }
 
     verts[numVerts].pos.Set(0.0f, 0.0f, 0.0f);
-    verts[numVerts].color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    verts[numVerts].color.color = -1;
     verts[numVerts].uv.Set(0.0f, 0.0f);
 
     int baseVertIdx = numVerts + 1;
     verts[baseVertIdx].pos.Set(0.0f, length, 0.0f);
     Multiply(verts[baseVertIdx].pos, orientMtx, verts[baseVertIdx].pos);
-    verts[baseVertIdx].color.Set(1.0f, 1.0f, 1.0f, 1.0f);
+    verts[baseVertIdx].color.color = -1;
     verts[baseVertIdx].uv.Set(0.0f, 1.0f);
 
     def.mBeam->Sync(0x13F);
