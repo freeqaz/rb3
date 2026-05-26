@@ -400,8 +400,10 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
         pt1->unk7 = sx;
         pt2->unk7 = sx;
         pt2->unk8 = pt1->unk8;
-        perp.y = pt1->unk7;
-        perp.x = -pt1->unk8;
+        float py = pt1->unk7;
+        float px = pt1->unk8;
+        perp.y = py;
+        perp.x = -px;
 
         if (mLineHasCaps) {
             Subtract(*(Vector3 *)&pt1->unk0, *(Vector2 *)&pt1->unk7, *(Vector3 *)&vmap.v->pos);
@@ -422,8 +424,10 @@ void RndLine::UpdateLinePair(RndLine::Point *pt1, RndLine::Point *pt2) {
         vmap.v++;
 
         if (mLineHasCaps) {
-            perp.y = -pt2->unk7;
-            perp.x = pt2->unk8;
+            float ny = pt2->unk7;
+            float nx = pt2->unk8;
+            perp.x = nx;
+            perp.y = -ny;
             Subtract(*(Vector3 *)&pt2->unk0, *(Vector2 *)&pt2->unk7, *(Vector3 *)&vmap.v->pos);
             Add(*(Vector3 *)&vmap.v->pos, perp, *(Vector3 *)&vmap.v->pos);
             vmap.v++;
@@ -451,16 +455,16 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     // Phase 2: Compute direction and side vectors between adjacent points
     Point *pt;
     for (pt = start; pt != end; pt++) {
-        float nextX = pt[1].unk3;
         float curX = pt->unk3;
+        float nextX = pt[1].unk3;
         float nextZ = pt[1].unk4;
         float dirX = nextX - curX;
         float curZ = pt->unk4;
         pt->unk5 = dirX;
-        float dirZ = nextZ - curZ;
-        pt->unk6 = dirZ;
+        pt->unk6 = nextZ - curZ;
 
-        if (!(std::fabs(dirX) < 0.0001f) || !(std::fabs(dirZ) < 0.0001f)) {
+        if (!(std::fabs(dirX) < 0.0001f) || !(std::fabs(pt->unk6) < 0.0001f)) {
+            float dirZ = pt->unk6;
             float invLen = 1.0f / std::sqrt(dirX * dirX + dirZ * dirZ);
             pt->unk5 = dirX * invLen;
             pt->unk6 = dirZ * invLen;
@@ -494,24 +498,27 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     Hmx::Ray prevRay;
     prevRay.base.Set(startProj[0] + startSide[0], startProj[1] + startSide[1]);
-    prevRay.dir.Set(startDir[1], startDir[0]);
+    prevRay.dir.Set(startDir[0], startDir[1]);
 
-    for (Point *p = secondPt; p != end; p++) {
+    for (pt = secondPt; pt != end; pt++) {
+        Point *p = pt;
         float *dir = &p->unk5;
         float *side = &p->unk7;
         float *proj = &p->unk3;
         Point *prevP = p - 1;
         float *prevDir2 = &prevP->unk5;
 
-        float dot = prevDir2[0] * dir[0] + prevDir2[1] * dir[1];
+        float dot = dir[0] * prevDir2[0] + dir[1] * prevDir2[1];
 
         if (dot < mFoldCos) {
             flipped = !flipped;
         }
 
         if (flipped) {
-            p->unk7 = -p->unk7;
-            p->unk8 = -p->unk8;
+            float s7 = p->unk7;
+            float s8 = p->unk8;
+            p->unk7 = -s7;
+            p->unk8 = -s8;
         }
 
         Hmx::Ray oldPrevRay = prevRay;
@@ -521,8 +528,12 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
         if (dot < 0.9998499751091003f) {
             Intersect(prevRay, oldPrevRay, *(Vector2 *)&p->unk7);
-            p->unk7 = p->unk7 - p->unk3;
-            p->unk8 = p->unk8 - p->unk4;
+            float ix = p->unk7;
+            float px = p->unk3;
+            float iz = p->unk8;
+            float pz = p->unk4;
+            p->unk7 = ix - px;
+            p->unk8 = iz - pz;
         }
     }
 
@@ -533,21 +544,18 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     }
 
     // Phase 4: Copy side vectors for points outside the visible range
-    Point *pointsBegin = &mPoints[0];
-    Point *pointsEnd = &mPoints.back();
-
-    if (pointsBegin == start) {
-        if (end + 1 <= pointsEnd) {
-            for (Point *pt = end + 1; pt <= pointsEnd; pt++) {
-                pt->unk7 = end->unk7;
-                pt->unk8 = end->unk8;
-                pt->unk0 = end->unk0;
-                pt->unk1 = end->unk1;
-                pt->unk2 = end->unk2;
-            }
+    if (start == &mPoints[0]) {
+        Point *pt = end + 1;
+        Point *pointsEnd = &mPoints.back();
+        for (; pt <= pointsEnd; pt++) {
+            pt->unk7 = end->unk7;
+            pt->unk8 = end->unk8;
+            pt->unk0 = end->unk0;
+            pt->unk1 = end->unk1;
+            pt->unk2 = end->unk2;
         }
-    } else if (pointsBegin < start) {
-        for (Point *pt = pointsBegin; pt < start; pt++) {
+    } else if (&mPoints[0] < start) {
+        for (Point *pt = &mPoints[0]; pt < start; pt++) {
             pt->unk7 = start->unk7;
             pt->unk8 = start->unk8;
             pt->unk0 = start->unk0;
@@ -558,6 +566,8 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     // Phase 5: Write vertex positions.
     // The cap offset is (-side.y, side.x) used to extend the cap perpendicular to the line direction.
+    Point *pointsBegin = &mPoints[0];
+    Point *pointsEnd = &mPoints.back();
     Vector2 capOffset;
     capOffset.x = -pointsBegin->unk8;
     capOffset.y = pointsBegin->unk7;
