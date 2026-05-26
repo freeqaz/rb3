@@ -605,7 +605,7 @@ void AppLabel::SetSectionName(const PracticeSection &section) {
                 Localize(section.unk0, nullptr),
                 section.unk18 + 1,
                 section.unk1c + 1,
-                section.unk20 + 1
+                section.unk20
             ),
             true
         );
