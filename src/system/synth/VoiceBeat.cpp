@@ -32,12 +32,10 @@ void VoiceBeat::Analyze(
     double k_a1 = -0.9459779362;
     double k_a2 = 1.9444776578;
     double k_b0 = 143.5132541;
-    double k_b1 = -0.7319917025;
     double k_b2 = 1.7041197124;
     double k_c0 = 1.178584698;
     double k_c1 = 6.0;
     double k_c2 = -0.7199103273;
-    double k_c3 = 3.1159669252;
     double k_c4 = -5.0679983867;
     double k_c5 = 3.6717290892;
     double k_envFast = 0.03;
@@ -123,7 +121,7 @@ void VoiceBeat::Analyze(
             double spamAcc1 = -(4.0 * spamSum24 - spamAcc0);
             mXVSyllables[1] = oldSylX2;
             double oldSylEnvSigma = mSylEnvSigma;
-            double sylAcc2 = k_b1 * oldSylY1 + sylAcc1;
+            double sylAcc2 = (-0.7319917025) * oldSylY1 + sylAcc1;
             double k_c1_l = k_c1;
             mYVSyllables[1] = oldSylY2;
             double spamAcc2 = k_c1_l * oldSpamX3 + spamAcc1;
@@ -133,7 +131,7 @@ void VoiceBeat::Analyze(
             double k_c2_l = k_c2;
             double oldFloorSigma = mFloorSigma;
             double spamAcc3 = k_c2_l * oldSpamY1 + spamAcc2;
-            double k_c3_l = k_c3;
+            double k_c3_l = 3.1159669252;
             mXVSpamSyllables[1] = oldSpamX2;
             double sylDelta = newSylY2 - oldSylEnvSigma;
             mXVSpamSyllables[3] = oldSpamX4;
