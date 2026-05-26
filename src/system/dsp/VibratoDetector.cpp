@@ -47,18 +47,18 @@ int VibratoDetector::Analyze(float f1) {
 }
 
 int VibratoDetector::Detect() {
-    float diffs[4];
-    int last = mBuffer[mBufIdx % 5];
     float diffs_pitch[4];
+    int last = mBuffer[mBufIdx % 5];
+    float diffs[4];
     float total = 0.0f;
-    int d = 0;
     float last_pitch = mPitches[mBufIdx % 5];
+    int d = 0;
     for (int i = 1; i <= 4; i++) {
         int idx = (mBufIdx + i) % 5;
         int s = mBuffer[idx];
         float p = mPitches[idx];
-        diffs[i - 1] = (float)(s - last);
         diffs_pitch[i - 1] = fabsf(last_pitch - p);
+        diffs[i - 1] = (float)(s - last);
         total += diffs[i - 1];
         last = s;
         last_pitch = p;
