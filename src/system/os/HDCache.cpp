@@ -314,21 +314,20 @@ bool HDCache::ReadFail() {
 
 bool HDCache::WriteDone() {
     int done;
-    if (unk18 >= 0) {
-        if (mWriteArkFiles[mWriteFileIdx]->WriteDone(done)) {
-            MILO_ASSERT(mReadArkFiles[mWriteFileIdx]->Size() == mWriteArkFiles[mWriteFileIdx]->Size(), 0x1F2);
+    std::vector<ArkFile *> &_ref0 = mWriteArkFiles;
+    if (unk18 >= 0 && _ref0[mWriteFileIdx]->WriteDone(done)) {
+            MILO_ASSERT(mReadArkFiles[mWriteFileIdx]->Size() == _ref0[mWriteFileIdx]->Size(), 0x1F2);
             UnlockCache();
-            if (mWriteArkFiles[mWriteFileIdx]->Fail()) {
+            if (_ref0[mWriteFileIdx]->Fail()) {
                 TheDebug << MakeString("HDCache Write %d.%d failed\n", mWriteFileIdx, unk18);
             } else {
-                mBlockState[mWriteFileIdx][unk18 / 32] |= 1 << (unk18 % 32);
                 if (++unk24 == 1) {
                     unk28 = SystemMs();
                 }
+                mBlockState[mWriteFileIdx][unk18 / 32] |= 1 << (unk18 % 32);
             }
             unk18 = -1;
         }
-    }
     return unk18 + 1 == 0;
 }
 
