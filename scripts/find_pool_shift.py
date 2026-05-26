@@ -73,6 +73,12 @@ SKIP_UNITS = {
     # are actually stack-frame shifts (-16/+8/-8). Scanner's "dominant pool
     # delta per function" misleads when stack diffs outnumber pool diffs.
     "main/band3/meta_band/ViewSetting",
+    # SaveLoadManager pool clusters (+671/+60/+330) are downstream of
+    # unimplemented SetState (7692-byte target body, 64 lines stubbed). The
+    # missing strings are the per-state cache-failure MILO_ASSERT/WARN bodies
+    # that SetState's 100+ case handlers emit. See feedback_setstate_decomp_workstream.md.
+    # Will resolve when SetState lands; not a standalone pool-shift target.
+    "main/band3/meta_band/SaveLoadManager",
 }
 
 
