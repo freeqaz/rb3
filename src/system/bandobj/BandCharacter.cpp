@@ -1643,32 +1643,6 @@ DataNode BandCharacter::OnLoadDircut(DataArray *da) {
     }
 }
 
-DataNode BandCharacter::OnPostMerge(DataArray *da) {
-    Symbol category = da->Sym(2);
-    ObjectDir *dir = da->Obj<ObjectDir>(3);
-    bool noTextures = da->Int(4) != 0;
-    while (unk630.size() != 0) {
-        OutfitConfig *cfg = unk630.front();
-        unk630.pop_front();
-        SyncOutfitConfig(cfg);
-        cfg->Recompose();
-        if (!mInCloset)
-            cfg->CompressTextures();
-    }
-    RndTransformable *bone = Find<RndTransformable>("bone_guitar_lh_mod.mesh", false);
-    if (bone)
-        bone->ResetLocalXfm();
-    unk680 = mInstDir->Find<RndMesh>("mic_stand.mesh", false);
-    unk68c = Find<RndMesh>("drum_L-stick.mesh", false);
-    unk698 = Find<RndMesh>("drum_R-stick.mesh", false);
-    unk6a4 = Find<RndMesh>("guitar_pick.mesh", false);
-    if (!mFileMerger->mLoadingLoad
-        && (noTextures || (mFileMerger->mAsyncLoad && !unk6bd))) {
-        SyncObjects();
-    }
-    return DataNode(0);
-}
-
 DataNode BandCharacter::OnListDrumVenues(DataArray *da) {
     DataArrayPtr ptr;
     ptr->Resize(4);
@@ -1740,24 +1714,38 @@ DataNode BandCharacter::OnChangeFaceGroup(DataArray *da) {
     return DataNode(0);
 }
 
-void ReplaceRefs(Hmx::Object *mine, Hmx::Object *theirs) {
-    MILO_ASSERT(theirs, 0xA72);
-    std::vector<ObjRef *>::const_iterator it = mine->Refs().end();
-    std::vector<ObjRef *>::const_iterator begin = mine->Refs().begin();
+void ReplaceRefs(Hmx::Object *theirs, Hmx::Object *mine) {
+    MILO_ASSERT(mine, 0xA72);
+    std::vector<ObjRef *>::const_iterator it = theirs->Refs().end();
+    std::vector<ObjRef *>::const_iterator begin = theirs->Refs().begin();
     for (; it != begin; --it) {
         ObjRef *ref = it[-1];
         ref->RefOwner();
         if (ref->RefOwner() != NULL) {
             ObjectDir *dir = ref->RefOwner()->Dir();
             bool match = (dir == sOutfitDir) || (dir == sResourceDir) || (dir == sToDir);
-            if (match && mine != theirs) {
-                ref->Replace(mine, theirs);
-                it = mine->Refs().end();
-                begin = mine->Refs().begin();
+            if (match && theirs != mine) {
+                ref->Replace(theirs, mine);
+                it = theirs->Refs().end();
+                begin = theirs->Refs().begin();
             }
         }
     }
 }
+
+// just here temporarily until we match the corresponding funcs these strings belong to
+DECOMP_FORCEACTIVE(
+    BandCharacter,
+    "Mesh",
+    "%s is being merged into",
+    "mine->Dir() == this",
+    "bone_",
+    "exo_",
+    "world.wind",
+    "instruments can only have one subdir, which is the resource or colorpalettes.milo",
+    "bone_pelvis.mesh",
+    "outfits can only have one subdir, which is the resource"
+)
 
 extern Symbol AmbientOcclusion;
 extern Symbol CharWeightSetter;
@@ -1933,20 +1921,6 @@ DataNode BandCharacter::OnCopyPrefab(DataArray *da) {
     return DataNode(0);
 }
 
-// just here temporarily until we match the corresponding funcs these strings belong to
-DECOMP_FORCEACTIVE(
-    BandCharacter,
-    "Mesh",
-    "%s is being merged into",
-    "mine->Dir() == this",
-    "bone_",
-    "exo_",
-    "world.wind",
-    "instruments can only have one subdir, which is the resource or colorpalettes.milo",
-    "bone_pelvis.mesh",
-    "outfits can only have one subdir, which is the resource"
-)
-
 DataNode BandCharacter::OnSetFileMerger(DataArray *da) {
     FilePathTracker tracker(FileRoot());
     SetVisemes();
@@ -2087,6 +2061,32 @@ DataNode BandCharacter::OnSetFileMerger(DataArray *da) {
     return DataNode(0);
 }
 
+DataNode BandCharacter::OnPostMerge(DataArray *da) {
+    Symbol category = da->Sym(2);
+    ObjectDir *dir = da->Obj<ObjectDir>(3);
+    bool noTextures = da->Int(4) != 0;
+    while (unk630.size() != 0) {
+        OutfitConfig *cfg = unk630.front();
+        unk630.pop_front();
+        SyncOutfitConfig(cfg);
+        cfg->Recompose();
+        if (!mInCloset)
+            cfg->CompressTextures();
+    }
+    RndTransformable *bone = Find<RndTransformable>("bone_guitar_lh_mod.mesh", false);
+    if (bone)
+        bone->ResetLocalXfm();
+    unk680 = mInstDir->Find<RndMesh>("mic_stand.mesh", false);
+    unk68c = Find<RndMesh>("drum_L-stick.mesh", false);
+    unk698 = Find<RndMesh>("drum_R-stick.mesh", false);
+    unk6a4 = Find<RndMesh>("guitar_pick.mesh", false);
+    if (!mFileMerger->mLoadingLoad
+        && (noTextures || (mFileMerger->mAsyncLoad && !unk6bd))) {
+        SyncObjects();
+    }
+    return DataNode(0);
+}
+
 void BandCharacter::SaveBoneAndChildren(RndTransformable *bone) {
     if (strncmp(bone->Name(), "bone_", 5) == 0) {
         BoneState state;
@@ -2108,7 +2108,7 @@ DataNode BandCharacter::OnPortraitBegin(DataArray *da) {
     state.mBone = this;
     state.mXfm = mLocalXfm;
     unk6e4.push_front(state);
-    RndTransformable *bone = Find<RndTransformable>("bone_pelvis", true);
+    RndTransformable *bone = Find<RndTransformable>("bone_pelvis.mesh", true);
     SaveBoneAndChildren(bone);
     strcpy(unk6f4, mGroupName);
     unk6ec = Hmx::Object::New<CharDriver>();
