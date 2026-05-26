@@ -702,8 +702,8 @@ void Movie::Impl::DiscContentionPublish() {
          it != mDiscContentionMap.end();
          ++it) {
         if (!first) list += ", ";
-        list += it->second;
         first = false;
+        list += it->second;
         count++;
     }
     if (count != 0) {
