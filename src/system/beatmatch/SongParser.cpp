@@ -1579,7 +1579,7 @@ bool SongParser::CheckForceHopoMarker(int tick, int pitch, bool b) {
 bool SongParser::CheckDrumMapMarker(int i, int j, bool b) {
     if (!mDrumStyleGems)
         return false;
-    else if (j >= 108U && j < 113U) {
+    else if (j >= 108 && j < 113) {
         mSink->DrumMapLane(mTrack, i, j - 108, b);
         return true;
     } else
@@ -1732,7 +1732,7 @@ bool SongParser::AudioTrackUsed(SongInfoAudioType ty) {
 
 void SongParser::AnalyzeTrackList() {
     std::vector<Symbol> &_ref0 = mTrackNames;
-    MILO_ASSERT(!_ref0.empty(), 0x9F8);
+    MILO_ASSERT(!mTrackNames.empty(), 0x9F8);
     int i = 0;
     int i1 = mParts.size();
     const char *c64;
@@ -2187,7 +2187,7 @@ bool SongParser::HandleRGGemStop(
                 if (mRGRootNote < 0) {
                     if (geminfo.show_chord_names) {
                         MILO_WARN(
-                            "%s (%s): No root note set for chord gem at %s",
+                            "%s (%s): No root note set for gem at %s",
                             mFilename,
                             mTrackName,
                             PrintTick(tick)
