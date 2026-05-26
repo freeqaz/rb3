@@ -155,17 +155,19 @@ void MidiParser::Poll() {
     float beat = TheTaskMgr.Beat();
     static DataNode &parser = DataVariable("mp.parser");
     parser = this;
-    while (mEvent = (DataEvent *)mEvents->NextEvent(beat), mEvent) {
-        *mpStart = mEvent->start;
-        *mpEnd = mEvent->end;
-        *mpLength = Max(0.0f, mEvent->end - beat);
-        DataArray *eventMsg = mEvent->Msg();
+    DataEvent * &_ref0 = mEvent;
+    while (_ref0 = (DataEvent *)mEvents->NextEvent(beat), _ref0) {
+        *mpStart = _ref0->start;
+        *mpEnd = _ref0->end;
+        *mpLength = Max(0.0f, _ref0->end - beat);
+        DataArray *eventMsg = _ref0->Msg();
         if (mAppendLength) {
             eventMsg->Node(eventMsg->Size() - 1) = mpLength->Float();
         }
         if (mMessageSelf) {
             DataNode ret = HandleType(eventMsg);
-            MILO_ASSERT(ret.Type() != kDataUnhandled, 0x112);
+            auto _tmp0 = ret.Type();
+            MILO_ASSERT(_tmp0 != kDataUnhandled, 0x112);
         } else {
             Export(eventMsg, false);
         }
