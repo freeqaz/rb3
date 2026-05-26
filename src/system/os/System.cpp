@@ -569,17 +569,18 @@ void AppendStackTrace(char *buf) {
 
 void AppendThreadStackTrace(char *buf, unsigned int *stack) {
     strcat(buf, "\n\n-- Thread failure, no stack yet --");
-    unsigned int *stackPtr = stack;
     int idx = 0;
+    unsigned int *stackPtr = stack;
     while (idx < 50 && *stackPtr) {
         stackPtr++;
         idx++;
     }
-    strcat(buf, " (map file unavailable)");
     unsigned int *ptr = stack;
+    strcat(buf, " (map file unavailable)");
     while ((ptr - stack) < idx) {
         strcat(buf, "\n   ");
-        sprintf(buf + strlen(buf), "%08x", *ptr);
+        auto _tmp0 = strlen(buf);
+        sprintf(buf + _tmp0, "%08x", *ptr);
         ptr++;
     }
 }
