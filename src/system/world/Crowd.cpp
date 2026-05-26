@@ -416,6 +416,7 @@ void WorldCrowd::DrawShowing() {
     MILO_ASSERT(!gImpostorMat->NextPass(), 0x34A);
     std::vector<Hmx::Rect> rects;
     rects.reserve(12);
+    float kAspect = 1.0f;
     FOREACH (charIt, mCharacters) {
         Character *curChar = charIt->mDef.mChar;
         RndMultiMesh *mmesh = charIt->mMMesh;
@@ -449,7 +450,7 @@ void WorldCrowd::DrawShowing() {
                 float yFov = (float)std::atan((double)(halfHeight / dist)) * 2.0f;
                 float nearP = curCam->NearPlane();
                 gImpostorCamera->SetFrustum(
-                    nearP, curCam->FarPlane(), yFov, 1.0f
+                    nearP, curCam->FarPlane(), yFov, kAspect
                 );
 
                 Transform charXfm;
@@ -507,7 +508,9 @@ void WorldCrowd::DrawShowing() {
                 charXfm.v.z = 0;
                 curChar->SetWorldXfm(charXfm);
 
-                rects.erase(rects.begin(), rects.end());
+                if (rects.begin() != rects.end()) {
+                    rects.erase(rects.begin(), rects.end());
+                }
 
                 TheWiiRnd.PrepareRenderAlley();
                 if (TheRnd->DrawMode() == kDrawNormal) {
