@@ -390,9 +390,9 @@ RndMesh::VertVector &RndMesh::VertVector::operator=(const RndMesh::VertVector &c
         }
     }
     if (mVerts) {
+        Vert *myVerts = mVerts;
         Vert *otherVerts = c.mVerts;
         Vert *otherEnd = &otherVerts[mNumVerts];
-        Vert *myVerts = mVerts;
         while (otherVerts != otherEnd) {
             *myVerts++ = *otherVerts++;
         }
