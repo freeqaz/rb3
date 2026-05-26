@@ -1,0 +1,96 @@
+[
+  {
+    "unit": "main/system/movie/Movie",
+    "delta": -143,
+    "function_count": 19,
+    "total_instruction_hits": 19,
+    "functions": [
+      "IsOpen__Q25Movie4ImplCFv",
+      "IsLoading__Q25Movie4ImplCFv",
+      "MovieClose__Q25Movie4ImplFv",
+      "__ct__Q25Movie4ImplFv",
+      "__dt__Q25Movie4ImplFv",
+      "Ready__Q25Movie4ImplCFv",
+      "FinishOpen__Q25Movie4ImplFv",
+      "NextFrame__Q25Movie4ImplFv",
+      "DoFrame__Q25Movie4ImplFv",
+      "SetRect__Q25Movie4ImplFv",
+      "BeginFrame__Q25Movie4ImplFv",
+      "EndFrame__Q25Movie4ImplFv",
+      "SetTimeCallback__Q25Movie4ImplFPFv_f",
+      "End__Q25Movie4ImplFv",
+      "Terminate__Q25Movie4ImplFv",
+      "SetWidthHeight__Q25Movie4ImplFii",
+      "GetFrame__Q25Movie4ImplCFv",
+      "NumFrames__Q25Movie4ImplCFv",
+      "MsPerFrame__Q25Movie4ImplCFv"
+    ]
+  },
+  {
+    "unit": "main/system/char/CharEyes",
+    "delta": -49,
+    "function_count": 9,
+    "total_instruction_hits": 32,
+    "functions": [
+      "Save__8CharEyesFR9BinStream",
+      "PropSync<10CharLookAt>__FR36ObjOwnerPtr<10CharLookAt,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<12CharInterest>__FR38ObjOwnerPtr<12CharInterest,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "Load__8CharEyesFR9BinStream",
+      "PropSync<10CharLookAt>__FR31ObjPtr<10CharLookAt,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<16CharWeightSetter>__FR37ObjPtr<16CharWeightSetter,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<13CharFaceServo>__FR34ObjPtr<13CharFaceServo,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<Q28CharEyes17CharInterestState,Us>__FR44ObjVector<Q28CharEyes17CharInterestState,Us>R8DataNodeP9DataArrayi6PropOp_b",
+      "SyncProperty__8CharEyesFR8DataNodeP9DataArrayi6PropOp"
+    ]
+  },
+  {
+    "unit": "main/system/beatmatch/SongParser",
+    "delta": -15,
+    "function_count": 5,
+    "total_instruction_hits": 14,
+    "functions": [
+      "IsPartTrackName__10SongParserCFPCcPPCc",
+      "UpdateReadingState__10SongParserFv",
+      "AnalyzeTrackList__10SongParserFv",
+      "ShouldReadTrack__10SongParserF6Symbol",
+      "HandleRGGemStop__10SongParserFiRQ210SongParser14DifficultyInfoUci"
+    ]
+  },
+  {
+    "unit": "main/system/bandobj/OutfitConfig",
+    "delta": 50,
+    "function_count": 5,
+    "total_instruction_hits": 10,
+    "functions": [
+      "PropSync<i,Us>__FRQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<26ObjPtr<6RndTex,9ObjectDir>,Us>__FR42ObjVector<26ObjPtr<6RndTex,9ObjectDir>,Us>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<Q312OutfitConfig6MeshAO4Seam,Us>__FRQ211stlpmtx_std99vector<Q312OutfitConfig6MeshAO4Seam,Us,Q211stlpmtx_std42StlNodeAlloc<Q312OutfitConfig6MeshAO4Seam>>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<13RndTexBlender>__FR34ObjPtr<13RndTexBlender,9ObjectDir>R8DataNodeP9DataArrayi6PropOp_b",
+      "PropSync<Q212OutfitConfig7Overlay,Us>__FR38ObjVector<Q212OutfitConfig7Overlay,Us>R8DataNodeP9DataArrayi6PropOp_b"
+    ]
+  },
+  {
+    "unit": "main/band3/game/BandUserMgr",
+    "delta": -5,
+    "function_count": 4,
+    "total_instruction_hits": 7,
+    "functions": [
+      "GetUserFromPad__11BandUserMgrFi",
+      "GetUserWithChar__11BandUserMgrFPC8CharData",
+      "DebugSetControllerTypeOverride__11BandUserMgrFi14ControllerType",
+      "DebugGetControllerTypeOverride__11BandUserMgrFi"
+    ]
+  },
+  {
+    "unit": "main/system/utl/NetCacheMgr",
+    "delta": 19,
+    "function_count": 4,
+    "total_instruction_hits": 4,
+    "functions": [
+      "NeedsToDownload__12NetLoaderRefFv",
+      "IsDownloading__12NetLoaderRefFv",
+      "Poll__12NetLoaderRefFv",
+      "IsSafeToDelete__12NetLoaderRefFv"
+    ]
+  }
+]

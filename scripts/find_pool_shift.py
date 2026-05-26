@@ -91,6 +91,30 @@ SKIP_UNITS = {
     # 3 flagged AtLimit/ADDRESS_RELOCATION_NOISE. FORCEACTIVE unsafe
     # (would regress per OutfitConfig pattern). Investigation 2026-05-26.
     "main/system/bandobj/BandIKEffector",
+    # BandIKEffector-class (2026-05-26). -49 cluster of 9 fns is the
+    # PropSync<T>/Save/Load template family; target-only pool strings are RTTI
+    # type-name anchors (ObjPtr<CharLookAt, ObjectDir>, Replace__/RefOwner__
+    # template instantiations), NOT MILO_ASSERT #cond strings. Base is missing
+    # template instantiations the target has — structural, not source-fixable
+    # pool-shift. strings(target.o) vs strings(base.o) shows zero asymmetric
+    # assert condition strings.
+    "main/system/char/CharEyes",
+    # Documented FORCEACTIVE trap (2026-05-26 re-confirm). +50 cluster: target
+    # pool has RTTI type-name strings (BandPatchMesh *, OutfitConfig::MatSwap *)
+    # plus "option > 0 && option < BandCharDesc::kNumPalettes" — the latter
+    # belongs to a real-but-undecompiled function (MatSwap::Compose etc.), so
+    # FORCEACTIVE injection adds an EXTRA .text symbol → +5 fns / 31 regressions.
+    # Blocked until those functions are decompiled. See feedback_milo_assert_pool_shift.md.
+    "main/system/bandobj/OutfitConfig",
+    # FALSE POSITIVE (2026-05-26). -5 cluster of 4 fns is a pure stack-frame
+    # shift, not pool-shift. run_diff_inspect mode=offsets on GetUserFromPad:
+    # "All offsets explained by dominant delta — likely pure stack frame shift."
+    # The lone base-only warn string ("%s:%s couldn't find type %s") touches
+    # only 1 fn and does not drive a uniform 4-fn cascade. MidiParser/ViewSetting profile.
+    "main/band3/game/BandUserMgr",
+    # Out of scope per feedback-scope-native-port — native port replaces the
+    # NetCacheMgr/Wii caching layer. +19 cluster not worth chasing.
+    "main/system/utl/NetCacheMgr",
 }
 
 
