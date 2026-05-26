@@ -867,9 +867,14 @@ DECOMP_FORCEACTIVE(
 )
 
 void VocalTrackDir::ApplyArrowStyle(Hmx::Object *o) {
-    bool isArrow;
-    if (!o) isArrow = false;
-    else isArrow = (o->Type() == arrow_style);
+    bool isArrow = false;
+    if (o) {
+        const DataArray *td = o->TypeDef();
+        const char *typeMStr = td ? td->Sym(0).mStr : gNullStr;
+        if (typeMStr == arrow_style.mStr) {
+            isArrow = true;
+        }
+    }
     if (isArrow) {
         if (mPitchArrow1 && o->Property(arrow_A, true)->NotNull()) {
             FilePath fp(o->Property(arrow_A, true)->Str());
