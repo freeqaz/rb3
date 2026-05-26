@@ -240,14 +240,10 @@ void PatchLayer::Draw() {
         if (scale < 0) {
             scale = ((float)mScaleX * (1 / 1638.3f) - 5.0f) * -1.0f;
         }
-        Scale(
-            Vector3(
-                sticker->unk18 * scale * 7.5f,
-                1.0f,
-                sticker->unk1c * ((float)mScaleY * (1 / 1638.3f) - 5.0f) * 7.5f
-            ),
-            tf50.m, tf50.m
-        );
+        float scaleX = sticker->unk18 * scale * 7.5f;
+        float scaleZ = sticker->unk1c * ((float)mScaleY * (1 / 1638.3f) - 5.0f) * 7.5f;
+        Scale(Vector3(scaleX, 1.0f, scaleZ), tf50.m, tf50.m);
+        float blend = 1.0f;
         Transform tfa8;
         tfa8.Reset();
         if (scale != (float)mScaleX * (1 / 1638.3f) - 5.0f) {
@@ -257,12 +253,12 @@ void PatchLayer::Draw() {
             sMat->SetTexXfm(tfa8);
         float uisec = TheTaskMgr.UISeconds();
         if (unk28 >= uisec)
-            sTransAnim->SetFrame((unk28 - uisec) * 40.0f + 100.0f, 1.0f);
+            sTransAnim->SetFrame((unk28 - uisec) * 40.0f + 100.0f, blend);
         else
-            sTransAnim->SetFrame(0, 1.0f);
+            sTransAnim->SetFrame(0, blend);
         float deform = (float)mDeformFrame * (1 / 20.46f);
         if (deform != sGrpAnim->GetFrame()) {
-            sGrpAnim->SetFrame(deform, 1.0f);
+            sGrpAnim->SetFrame(deform, blend);
         }
         sResource->SetLocalXfm(tf50);
         sResource->DrawShowing();
