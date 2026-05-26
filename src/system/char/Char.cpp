@@ -255,8 +255,7 @@ float CharDebug::UpdateOverlay(RndOverlay *ovl, float hilite_y) {
         DisplayObject(*it);
     }
     mOnce.clear();
-    auto _tmp0 = mObjects.empty();
-    if (_tmp0) {
+    if (mObjects.empty()) {
         ovl->mShowing = false;
         ovl->mTimer.Restart();
     }
