@@ -39,6 +39,13 @@
 bool sEnableShift = true;
 bool sUpdateShifting;
 
+static inline void MinEqPtr(int &x, const int &y) {
+    const int *p = &x;
+    if (y < x)
+        p = &y;
+    x = *p;
+}
+
 inline bool GemTrack::ShiftsEnabled() const { return mEnableShifting && sEnableShift; }
 
 DataNode ToggleShift(DataArray *arr) {
@@ -221,7 +228,7 @@ void GemTrack::CheckShifts(float ms, int topTick) {
                 frame = clamped + 5;
                 shift.unk20 = 5;
             }
-            MinEq(key, 24);
+            MinEqPtr(key, 24);
             mUpcomingShiftMaskAnim->SetFrame((float)frame, 1.0f);
             Transform xfm;
             mTrackDir->MakeWidgetXfm(key, secs, xfm);
@@ -241,10 +248,10 @@ void GemTrack::CheckShifts(float ms, int topTick) {
                     shift.unk8 = mTrackDir->GetKeyOffset();
                 }
             }
-            float frac = (float)(nowTick - shift.unk0)
-                / (float)(shift.unk4 - shift.unk0);
             float baseRange = shift.unk10;
             float baseOffset = shift.unk8;
+            float frac = (float)(nowTick - shift.unk0)
+                / (float)(shift.unk4 - shift.unk0);
             newRange = frac * (shift.unk14 - baseRange) + baseRange;
             newOffset = frac * (shift.unkc - baseOffset) + baseOffset;
             mUpcomingShiftMaskAnim->SetFrame(
