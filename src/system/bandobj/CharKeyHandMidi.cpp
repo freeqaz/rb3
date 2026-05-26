@@ -360,8 +360,8 @@ void CharKeyHandMidi::EndTest() {
 }
 
 DataNode CharKeyHandMidi::OnFingersUp(DataArray *msg) {
-    KeyboardKey key = (KeyboardKey)msg->Int(2);
-    MILO_ASSERT(key > kNoKey && key <= kKeyC4, 0x65);
+    const KeyboardKey& key = (KeyboardKey)msg->Int(2);
+    MILO_ASSERT(kNoKey < key && key <= kKeyC4, 0x65);
     for (int i = 0; i < 5; i++) {
         if (unk6c[i] == (KeyboardKey)(key - kNoKey)) {
             UnkeyFinger((CharIKFingers::FingerNum)i);
