@@ -750,12 +750,7 @@ Hmx::Object *sTexture;
 bool sCompressDone;
 
 float Rnd::DrawTimers(float f) {
-    static DataArray *timerScript;
-    if (!timerScript) {
-        Symbol timerSym("timer_script");
-        Symbol rndSym("rnd");
-        timerScript = SystemConfig(rndSym)->FindArray(timerSym, false);
-    }
+    static DataArray *timerScript = SystemConfig("rnd")->FindArray("timer_script", false);
 
     if (timerScript) {
         timerScript->ExecuteScript(1, nullptr, nullptr, 1);
@@ -766,20 +761,17 @@ float Rnd::DrawTimers(float f) {
     }
 
     int numTimers = 0;
-    std::vector<std::pair<Timer, TimerStats> > &timers = AutoTimer::sTimers;
-    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = timers.begin();
-         it != timers.end();
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
+         it != AutoTimer::sTimers.end();
          ++it) {
         if (it->first.mDraw) {
             numTimers++;
         }
     }
 
-    float bgLeft = 0.025f;
-    float rowSpacing = 0.045f;
-    float totalHeight = numTimers * rowSpacing;
+    float totalHeight = numTimers * 0.045f;
 
-    Hmx::Rect rect(bgLeft, f, 0.95f, totalHeight);
+    Hmx::Rect rect(0.025f, f, 0.95f, totalHeight);
     Hmx::Color bgColor(0.0f, 0.0f, 0.0f, 0.5f);
     DrawRectScreen(rect, bgColor, mOverlayMat, nullptr, nullptr);
 
@@ -787,43 +779,36 @@ float Rnd::DrawTimers(float f) {
     Hmx::Color budgetExcessColor(0.5f, 0.0f, 0.0f, 1.0f);
     Hmx::Color worstExcessColor(0.0f, 0.5f, 0.5f, 1.0f);
 
-    float scale = 0.019f;
-    float barHeight = 0.0268f;
     float y = f;
 
-    rect.h = barHeight;
+    rect.h = 0.0268f;
 
-    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = timers.begin();
-         it != timers.end();
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
+         it != AutoTimer::sTimers.end();
          ++it) {
         if (!it->first.mDraw) {
             continue;
         }
 
-        float lastMs = it->first.mLastMs;
-        float budget = it->first.mBudget;
-
-        bool overBudget = budget != 0.0f && lastMs > budget;
-
-        if (overBudget) {
-            rect.w = budget * scale;
+        if (it->first.mBudget != 0.0f && it->first.mLastMs > it->first.mBudget) {
+            rect.w = it->first.mBudget * 0.019f;
             DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
             rect.x += rect.w;
-            rect.w = (lastMs - budget) * scale;
+            rect.w = (it->first.mLastMs - it->first.mBudget) * 0.019f;
             DrawRectScreen(rect, budgetExcessColor, nullptr, nullptr, nullptr);
         } else {
-            rect.w = lastMs * scale;
+            rect.w = it->first.mLastMs * 0.019f;
             DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
         }
 
         if (it->first.mWorstMs > it->first.mLastMs) {
             rect.x += rect.w;
-            rect.w = (it->first.mWorstMs - it->first.mLastMs) * scale;
+            rect.w = (it->first.mWorstMs - it->first.mLastMs) * 0.019f;
             DrawRectScreen(rect, worstExcessColor, nullptr, nullptr, nullptr);
         }
 
-        rect.x = bgLeft;
-        y += rowSpacing;
+        rect.x = 0.025f;
+        y += 0.045f;
         rect.y = y;
     }
 
@@ -841,10 +826,10 @@ float Rnd::DrawTimers(float f) {
     barColor.red = 1.0f;
     barColor.green = 1.0f;
     barColor.blue = 1.0f;
-    Vector2 pos(bgLeft + 0.00391f, f + 0.00446f);
+    Vector2 pos(0.025f + 0.00391f, f + 0.00446f);
 
-    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = timers.begin();
-         it != timers.end();
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
+         it != AutoTimer::sTimers.end();
          ++it) {
         if (!it->first.mDraw) {
             continue;
@@ -865,7 +850,7 @@ float Rnd::DrawTimers(float f) {
         } else {
             DrawStringScreen(it->first.mName.mStr, pos, barColor, true);
         }
-        pos.y += rowSpacing;
+        pos.y += 0.045f;
     }
 
     return pos.y;
