@@ -219,7 +219,7 @@ void CharClipDriver::PlayEvents(float oldBeat) {
 CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float deltaSeconds) {
     MILO_ASSERT(mBlendFrac >= 0, 0xa0);
     if (mBlendWidth < 0.0f) {
-        MILO_WARN("CharClipDriver: blend width < 0 with clip %s", (char *)mClip->Name());
+        MILO_WARN("CharClipDriver: blend width < 0 with clip %s", (const char *)mClip->Name());
         mBlendWidth = 0.0f;
     }
     if (mNext) {
