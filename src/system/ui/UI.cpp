@@ -202,19 +202,20 @@ inline void Automator::Poll() {
     static ButtonDownMsg b_msg(nullptr, kPad_NumButtons, kAction_None, -1);
     if (mCurScript) {
         mFramesSinceAdvance++;
-        Symbol sym = mCurScript->Array(mCurMsgIndex)->Sym(0);
+        DataArray *curEntry = mCurScript->Array(mCurMsgIndex);
+        Symbol sym = curEntry->Sym(0);
         if (sym == button_down) {
             FillButtonMsg(b_msg, mCurMsgIndex);
-            AdvanceScript(b_msg.Message::Type());
+            AdvanceScript(button_down);
             TheUI.Handle(b_msg, false);
         } else if (sym == quick_cheat) {
-            DataArray *cheatArr = mCurScript->Array(1);
+            DataArray *cheatArr = curEntry->Array(1);
             AdvanceScript(quick_cheat);
             CallQuickCheat(cheatArr, nullptr);
         } else if (mCurMsgIndex > 1 && mFramesSinceAdvance > 0x1e) {
-            mCurMsgIndex--;
-            if (mCurScript->Array(mCurMsgIndex)->Sym(0) == button_down) {
-                FillButtonMsg(b_msg, mCurMsgIndex);
+            int prevIdx = mCurMsgIndex - 1;
+            if (mCurScript->Array(prevIdx)->Sym(0) == button_down) {
+                FillButtonMsg(b_msg, prevIdx);
                 TheUI.Handle(b_msg, false);
             }
         }
@@ -550,7 +551,7 @@ void UIManager::Poll() {
         if (!mCurrentScreen || !mCurrentScreen->Entering()) {
             if (mOverlay->Showing() && mLoadTimer.Running()) {
                 if (mCurrentScreen) {
-                    mLoadTimer.Split();
+                    mLoadTimer.Stop();
                     mOverlay->CurrentLine() = MakeString(
                         "%s entered in %f seconds",
                         mCurrentScreen->Name(),
