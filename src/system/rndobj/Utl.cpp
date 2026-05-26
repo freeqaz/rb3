@@ -531,10 +531,10 @@ void UtilDrawAxes(const Transform &tf, float f, const Hmx::Color &c) {
     TheRnd->DrawLine(tf.v, vec38, c48, false);
 
     ScaleAdd(tf.v, tf.m.z, f, vec38);
-    c48.alpha = Interp(c.alpha, 1.0f, 0.8f);
-    c48.blue = Interp(c.blue, 1.0f, 0.8f);
     c48.green = Interp(c.green, 0.0f, 0.8f);
+    c48.blue = Interp(c.blue, 1.0f, 0.8f);
     c48.red = Interp(c.red, 0.0f, 0.8f);
+    c48.alpha = Interp(c.alpha, 1.0f, 0.8f);
     TheRnd->DrawLine(tf.v, vec38, c48, false);
 }
 
