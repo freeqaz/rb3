@@ -348,14 +348,14 @@ void BandIKEffector::ComputeHandPullAndQuat(
     float aaPlusbb,
     float aPlusb
 ) {
-    float dy = handTarget.y - shoulderXfm.v.y;
     float maxReach = aPlusb * 0.99f;
+    float dy = handTarget.y - shoulderXfm.v.y;
     float dx = handTarget.x - shoulderXfm.v.x;
     float dz = handTarget.z - shoulderXfm.v.z;
-    float maxReachSq = maxReach * maxReach;
-    outQuat.v.x = dx;
-    outQuat.v.y = dy;
     float distSq = dz * dz + (dx * dx + dy * dy);
+    float maxReachSq = maxReach * maxReach;
+    outQuat.v.y = dy;
+    outQuat.v.x = dx;
     outQuat.v.z = dz;
 
     if (distSq > maxReachSq && GetType() == 3) {
@@ -380,8 +380,8 @@ void BandIKEffector::ComputeHandPullAndQuat(
 
     RndTransformable *parent = mEffector->TransParent();
     outElbowXfm.v = parent->mLocalXfm.v;
-    outElbowXfm.m.x.x = cosAngle;
     outElbowXfm.m.x.y = sinAngle;
+    outElbowXfm.m.x.x = cosAngle;
     outElbowXfm.m.x.z = 0.0f;
     outElbowXfm.m.y.x = -sinAngle;
     outElbowXfm.m.y.y = cosAngle;
@@ -462,8 +462,8 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
         accum.v.y += shoulderXfm.v.y * elbowWeight;
         accum.v.z += shoulderXfm.v.z * elbowWeight;
 
-        float dot = scaled.x * accum.q.x + scaled.y * accum.q.y
-            + scaled.z * accum.q.z + scaled.w * accum.q.w;
+        float dot = scaled.w * accum.q.w + scaled.x * accum.q.x + scaled.y * accum.q.y
+            + scaled.z * accum.q.z;
         if (dot < 0.0f) {
             accum.q.x -= scaled.x;
             accum.q.y -= scaled.y;
@@ -567,7 +567,7 @@ void BandIKEffector::DoFancyElbow(QuatXfm &hand, float handWeight) {
         Multiply(m, worldShoulder.m, elbowOut.m);
         elbow->SetWorldXfm(elbowOut);
 
-        Transform &handWorld = mEffector->WorldXfm();
+        const Transform &handWorld = mEffector->WorldXfm();
         handOut.v = handWorld.v;
         Hmx::Quat finalHandQ;
         finalHandQ.Set(handWorld.m);
