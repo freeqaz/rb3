@@ -30,12 +30,12 @@ Track::Track(BandUser *user)
       mIntroEndMs(-3.4028235E+38f) {}
 
 void Track::Poll(float f) {
+    CrowdMeterState cty;
     Player *player = mTrackConfig.GetBandUser()->GetPlayer();
     if (player) {
         float dispval = player->mCrowd->GetDisplayValue();
         bool warning = player->AllowWarningState();
         if (mLastRating != dispval || warning != unk50) {
-            CrowdMeterState cty;
             if (player->mCrowd->IsBelowLoseLevel() && !IsNoFailActive()
                 && GetPlayerDifficulty() != kDifficultyEasy) {
                 cty = kCrowdMeterFailed;

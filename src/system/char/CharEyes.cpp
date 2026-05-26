@@ -546,32 +546,25 @@ void CharEyes::NextLook() {
             (facingDir.y - lastFacing.y) * 45.0f,
             (facingDir.z - lastFacing.z) * 45.0f
         );
-
         float extrapMag = Length(extrap);
         float maxExtrap = std::tan(mMaxExtrapolation * 0.017453292f);
-
         if (extrapMag > maxExtrap) {
             float scale = maxExtrap / extrapMag;
             extrap.x = scale * extrap.x;
             extrap.y = extrap.y * scale;
             extrap.z = extrap.z * scale;
         }
-
         Vector3 newFacing(
             facingDir.x + extrap.x,
             extrap.y + facingDir.y,
             extrap.z + facingDir.z
         );
-
         float dist = RandomFloat(20.0f, 100.0f);
         dist *= 12.0f;
-
         Vector3 proj(dist * newFacing.x, newFacing.y * dist, newFacing.z * dist);
-
         unk58.x = headXfm.v.x + proj.x;
         unk58.y = proj.y + headXfm.v.y;
         unk58.z = headXfm.v.z + proj.z;
-
         RndTransformable *dirTrans = dynamic_cast<RndTransformable *>(Dir());
         if (dirTrans) {
             const Vector3 &dirPos = dirTrans->WorldXfm().v;
@@ -673,7 +666,7 @@ stateReset:
     static DataNode &blinkCheat = DataVariable("cheat.disable_procedural_blinks");
 
     if (!sDisableProceduralBlink && !blinkCheat.NotNull() && !unk13c && mFaceServo
-        && unk144 < 25
+        && unk144 < 9
         && TheTaskMgr.Seconds(TaskMgr::kRealTime) - unk14c > 0.6f
         && unkc0 < 0.5f) {
         Vector3 oldDir(

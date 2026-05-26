@@ -1,8 +1,3 @@
-/* ===== PERMUTER LOCK — DO NOT EDIT =====
- * The source permuter is actively working on: TryDemangleClassAndFunc
- * Started: 2026-05-26 08:17 (stale after 5 minutes)
- * This banner is temporary and will be removed automatically.
- ===== */
 #include "os/MapFile_Wii.h"
 #include "os/Debug.h"
 #include <string.h>
@@ -270,8 +265,8 @@ String TryDemangleClassAndFunc(String str) {
         }
 
         if (str[0] == 'C') {
-            const String& constPrefix = ("const ");
-            classctx = constPrefix + classctx;
+            String _val0 = ("const ");
+            classctx = _val0 + classctx;
             str = str.substr(1, strlen(str.c_str()));
         }
 

@@ -381,10 +381,8 @@ void ClipDistMap::FindBestNodeRecurse(
     searchEnd = Max(endBeat, searchEnd);
 
     float searchStart = (endBeat - minGap) - searchRadius;
-    searchStart = Max(startBeat, searchStart);
-
-    Node node;
-    if (!FindBestNode(minDist, searchStart, searchEnd, node))
+        Node node;
+    if (!FindBestNode(minDist, searchStart = Max(startBeat, searchStart), searchEnd, node))
         return;
 
     unsigned int count = mNodes.size();

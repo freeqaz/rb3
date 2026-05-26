@@ -1,0 +1,58 @@
+{
+  "symbol": "SetupTailVerts__14GemRepTemplateFv",
+  "function_name": "GemRepTemplate::SetupTailVerts",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/bandtrack/GemRepTemplate.cpp",
+  "initial_percent": 96.564514,
+  "final_percent": 96.55645,
+  "total_delta": -0.008064000000004512,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.564514,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.564514,
+      "delta": 0.0,
+      "num_variants": 17,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 94.35081,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 96.55645,
+      "delta": 2.2056400000000025,
+      "num_variants": 19,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 94.66129,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 96.55645,
+      "delta": 1.8951600000000042,
+      "num_variants": 19,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 20.3,
+  "winning_pattern": "comparison_flip",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 32,
+    "2": 13,
+    "5": 10
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

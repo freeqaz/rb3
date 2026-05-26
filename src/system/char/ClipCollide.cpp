@@ -177,7 +177,7 @@ void ClipCollide::Collide() {
                 b->Poll();
 
                 for (i = 0; i < 3; i++) {
-                    const Transform &xfm = meshes[i]->WorldXfm();
+                    Transform &xfm = meshes[i]->WorldXfm();
                     Vector3 p = xfm.v;
 
                     if (i == 2) {

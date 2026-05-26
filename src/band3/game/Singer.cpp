@@ -163,10 +163,8 @@ void Singer::SetIsSinging(bool b1) { mIsSinging = b1; }
 void Singer::Detune(float f1) { mDetune = f1; }
 
 void Singer::HandlePhraseEnd(float, const std::vector<float> &micPitches) {
-    mAmbiguousData.clear();
     MILO_ASSERT(mResultsData.size() == micPitches.size(), 0x3BF);
     for (int i = 0; (unsigned)i < mResultsData.size(); i++) {
-        mResultsData[i].unk14 = 0.0f;
         float micPitch = micPitches[i];
         if (micPitch > 0.0f) {
             mResultsData[i].unk18 +=
@@ -174,6 +172,7 @@ void Singer::HandlePhraseEnd(float, const std::vector<float> &micPitches) {
             mResultsData[i].unk1c++;
         }
         mResultsData[i].unk10 = 0.0f;
+        mResultsData[i].unk14 = 0.0f;
         mResultsData[i].unkc = 0.0f;
         if (micPitch > 0.0f) {
             mResultsData[i].unk4 +=
@@ -182,6 +181,7 @@ void Singer::HandlePhraseEnd(float, const std::vector<float> &micPitches) {
         }
         mResultsData[i].unk0 = 0.0f;
     }
+    mAmbiguousData.clear();
 }
 
 void Singer::SetFrameMicPitch(float f1) { mFrameMicPitch = f1; }

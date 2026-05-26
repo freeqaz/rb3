@@ -347,8 +347,8 @@ void AnimTask::Replace(Hmx::Object *from, Hmx::Object *to) {
 // retail: https://decomp.me/scratch/k4A5l
 void AnimTask::Poll(float time) {
     float frame;
-    float blend = 1.0f;
     float &_ref0 = mBlendPeriod;
+    float blend = 1.0f;
     if (_ref0) {
         blend = time / _ref0;
         if (blend >= 1.0f) {

@@ -1476,8 +1476,10 @@ int SongParser::PitchToSlot(int pitch, int &diff, int tick) const {
         diff = 0;
         while (diff < mNumDifficulties) {
             i3 = pitch - (diff * 0xC + 0x3C);
-            if (i3 >= 0 && i3 < mNumSlots)
-                return i3;
+            if (i3 >= 0)
+                {
+                if (i3 < mNumSlots) return i3;
+            }
             diff++;
         }
         i3 = -1;

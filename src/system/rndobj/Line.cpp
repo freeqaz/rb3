@@ -420,7 +420,7 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     float *startSide = &start->unk7;
 
     Hmx::Ray prevRay;
-    prevRay.base.Set(startSide[0] + startProj[0], startSide[1] + startProj[1]);
+    prevRay.base.Set(startProj[0] + startSide[0], startProj[1] + startSide[1]);
     prevRay.dir.Set(startDir[1], startDir[0]);
 
     for (Point *p = secondPt; p != end; p++) {

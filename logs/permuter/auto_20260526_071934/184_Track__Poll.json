@@ -1,0 +1,58 @@
+{
+  "symbol": "Poll__5TrackFf",
+  "function_name": "Track::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/bandtrack/Track.cpp",
+  "initial_percent": 96.74097,
+  "final_percent": 96.74097,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.74097,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.74097,
+      "delta": 0.0,
+      "num_variants": 28,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 87.60844,
+      "best_name": "scope_widen_0_bare",
+      "best_pattern": "scope_widening",
+      "best_score": 96.74097,
+      "delta": 9.132530000000003,
+      "num_variants": 28,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 96.74097,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.74097,
+      "delta": 0.0,
+      "num_variants": 29,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 86.01,
+  "winning_pattern": "scope_widening",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 13,
+    "2": 40,
+    "5": 32
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

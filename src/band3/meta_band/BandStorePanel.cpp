@@ -310,8 +310,8 @@ void BandStorePanel::Poll() {
             DataArray *metadata = mMetadataLoader->unk_0x4;
             if (metadata->Size()) {
                 metadata->AddRef();
-                MILO_ASSERT(metadata, 0x11C);
                 const char *nullStr = gNullStr;
+                MILO_ASSERT(metadata, 0x11C);
                 static Message msg(
                     MetadataLoadedMsg::Type(),
                     DataNode(metadata, kDataArray),

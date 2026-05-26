@@ -1662,7 +1662,8 @@ void StoreMetadataManager::PollLoading() {
         }
         return;
     }
-    case 10:
+    case 10: {
+        bool loaded;
         if (mVersion == NULL) {
             int ok;
             if (!(mFlags & 1)) {
@@ -1676,16 +1677,11 @@ void StoreMetadataManager::PollLoading() {
             if (ok != 0) {
                 mVersion = new StoreVersionHeader();
                 String path(mBasePath);
-                bool loaded = mVersion->LoadFile(MakeString("%sversion", path.c_str()));
-                if (!loaded) {
-                    mErrorMsg = 6;
-                    SetLoadingState(0xB);
-                }
+                loaded = mVersion->LoadFile(MakeString("%sversion", path.c_str()));
+                goto load_check;
             }
             return;
         }
-        {
-        bool loaded;
         if (mStringTable == NULL) {
             mStringTable = new StoreStringTable();
             loaded = mStringTable->Load(mBasePath.c_str());
@@ -1784,52 +1780,41 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
         }
     } else if (mFlags & 0x10) {
         UpdateOfferPrices();
-    } else {
-        switch (mLoadingState) {
-        case 3:
-            ((StoreContentStateCache *)&unk58)->UpdateContentStateFromFastEnum();
-            break;
-        case 4: {
-            unsigned long a, b, c, d;
-            CM_CNTSDGetUserAvailableAreaRSO(&a, &b, &c, &d);
-            TheDebug << MakeString(
-                "CNTSDGetUserAvailableArea(%d, %d, %d, %d);\n", a, b, c, d
-            );
-            if (TheWiiContentMgr.mMode == 1) {
-                SetLoadingState(5);
-            } else {
-                mContentSize = 0;
-                SetLoadingState(8);
-            }
-            break;
-        }
-        case 8: {
-            unsigned long long titleId = *(unsigned long long *)&unk88;
-            unsigned short idx = unk90;
-            StoreTitleContentState *state;
-            std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
-            if (it == unk58.end()) {
-                state = (StoreTitleContentState *)operator new(0x1000);
-                if (state) memset(state, 0, 0x1000);
-                unk58[titleId] = state;
-            } else {
-                state = (*it).second;
-            }
-            unsigned char *p = (unsigned char *)state + ((idx << 3) & 0x7FFF8);
-            *p |= 2;
-            SetLoadingState(6);
-            break;
-        }
-        case 6:
-            SetLoadingState(9);
-            break;
-        case 5: {
+    } else if (mLoadingState == 3) {
+        ((StoreContentStateCache *)&unk58)->UpdateContentStateFromFastEnum();
+    } else if (mLoadingState == 4) {
+        unsigned long a, b, c, d;
+        CM_CNTSDGetUserAvailableAreaRSO(&a, &b, &c, &d);
+        TheDebug << MakeString(
+            "CNTSDGetUserAvailableArea(%d, %d, %d, %d);\n", a, b, c, d
+        );
+        if (TheWiiContentMgr.mMode == 1) {
+            SetLoadingState(5);
+        } else {
             mContentSize = 0;
-            int rc = CheckRequestedDownloadSize__14WiiCommerceMgrFv(&TheWiiCommerceMgr);
-            if (rc == 0) {
-                SetLoadingState(8);
-                break;
-            }
+            SetLoadingState(8);
+        }
+    } else if (mLoadingState == 8) {
+        unsigned short idx = unk90;
+        unsigned long long titleId = *(unsigned long long *)&unk88;
+        StoreTitleContentState *state;
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
+        if (it == unk58.end()) {
+            state = (StoreTitleContentState *)operator new(0x1000);
+            if (state) memset(state, 0, 0x1000);
+            unk58[titleId] = state;
+        } else {
+            state = (*it).second;
+        }
+        unsigned char *p = (unsigned char *)state + ((idx << 3) & 0x7FFF8);
+        *p |= 2;
+        SetLoadingState(6);
+    } else if (mLoadingState == 6) {
+        SetLoadingState(9);
+    } else if (mLoadingState == 5) {
+        mContentSize = 0;
+        int rc = CheckRequestedDownloadSize__14WiiCommerceMgrFv(&TheWiiCommerceMgr);
+        if (rc != 0) {
             if (rc == 4) {
                 mContentSize = *(int *)((char *)&TheWiiCommerceMgr + 0x4190);
                 mErrorMsg = 0x69;
@@ -1839,26 +1824,24 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
                 mErrorMsg = 0x64;
             }
             SetLoadingState(0xB);
-            break;
+        } else {
+            SetLoadingState(8);
         }
-        case 9: {
-            unsigned long long titleId = *(unsigned long long *)&unk88;
-            unsigned short idx = unk90;
-            StoreTitleContentState *state;
-            std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
-            if (it == unk58.end()) {
-                state = (StoreTitleContentState *)operator new(0x1000);
-                if (state) memset(state, 0, 0x1000);
-                unk58[titleId] = state;
-            } else {
-                state = (*it).second;
-            }
-            unsigned char *p = (unsigned char *)state + ((idx << 3) & 0x7FFF8);
-            *p |= 1;
-            SetLoadingState(0xA);
-            break;
+    } else if (mLoadingState == 9) {
+        unsigned short idx = unk90;
+        unsigned long long titleId = *(unsigned long long *)&unk88;
+        StoreTitleContentState *state;
+        std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(titleId);
+        if (it == unk58.end()) {
+            state = (StoreTitleContentState *)operator new(0x1000);
+            if (state) memset(state, 0, 0x1000);
+            unk58[titleId] = state;
+        } else {
+            state = (*it).second;
         }
-        }
+        unsigned char *p = (unsigned char *)state + ((idx << 3) & 0x7FFF8);
+        *p |= 1;
+        SetLoadingState(0xA);
     }
     return DataNode(1);
 }

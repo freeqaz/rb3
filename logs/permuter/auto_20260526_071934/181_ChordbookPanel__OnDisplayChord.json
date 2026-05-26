@@ -1,0 +1,58 @@
+{
+  "symbol": "OnDisplayChord__14ChordbookPanelFPC9DataArray",
+  "function_name": "ChordbookPanel::OnDisplayChord",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/game/ChordbookPanel.cpp",
+  "initial_percent": 96.76471,
+  "final_percent": 96.76471,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.76471,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.76471,
+      "delta": 0.0,
+      "num_variants": 3,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 84.411766,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 96.47059,
+      "delta": 12.058824000000001,
+      "num_variants": 5,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 93.23529,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 96.76471,
+      "delta": 3.5294199999999876,
+      "num_variants": 6,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 29.62,
+  "winning_pattern": "comparison_flip",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 5,
+    "0": 3,
+    "5": 6
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

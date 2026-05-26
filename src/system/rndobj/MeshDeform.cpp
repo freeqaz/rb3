@@ -299,7 +299,7 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
             Multiply(mBones[i].unk14, tmp, xfms[i]);
         } else {
             xfms[i].Reset();
-            TheDebug << MakeString("%s null bone %d\n", PathName(this), i);
+            TheDebug << MakeString("%s null bone %d\n", PathName(this), (int)i);
         }
     }
     int meshNumVerts = mMesh->Verts().size();

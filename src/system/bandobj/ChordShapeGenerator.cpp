@@ -472,7 +472,7 @@ void ChordShapeGenerator::BuildContourCap(
     );
     capMap.insert(connectingVerts.begin(), connectingVerts.end());
     capMap.insert(endVerts.begin(), endVerts.end());
-    std::vector<RndMesh::Face> &srcFaces = mSource->Faces();
+    const std::vector<RndMesh::Face> &srcFaces = mSource->Faces();
     std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
     for (unsigned int i = 0; i < srcFaces.size(); i++) {
         const RndMesh::Face &f = srcFaces[i];

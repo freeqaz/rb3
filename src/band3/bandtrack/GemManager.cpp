@@ -913,7 +913,8 @@ void GemManager::UpdateLeftyFlip(bool poll) {
     if (type != real_keys) {
         RndDir *smasher = mTrackDir->SmasherPlate();
         if (smasher) {
-            bool isKeys = mTrackConfig.GetBandUser()->GetControllerType() == kControllerKeys;
+            auto _tmp1 = mTrackConfig.GetBandUser()->GetControllerType();
+            bool isKeys = _tmp1 == kControllerKeys;
             static Message msg("set_lefty", 0);
             msg[0] = mTrackConfig.UseLeftyGems() && !isKeys;
             smasher->Handle(msg, true);

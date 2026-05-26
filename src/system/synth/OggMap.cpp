@@ -18,7 +18,8 @@ void OggMap::Read(BinStream &bs) {
 void OggMap::GetSeekPos(int sampTarget, int &seekPos, int &actSamp) {
     MILO_ASSERT(!mLookup.empty(), 0x54);
     int i14 = sampTarget / mGran;
-    int i18 = mLookup.size() - 1;
+    auto _tmp0 = mLookup.size();
+    int i18 = _tmp0 - 1;
     ClampEq(i14, 0, i18);
     seekPos = mLookup[i14].first;
     actSamp = mLookup[i14].second;

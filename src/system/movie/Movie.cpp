@@ -374,10 +374,11 @@ void Movie::Impl::BeginFrame() {
 }
 
 void Movie::Impl::EndFrame() {
+    bool &_ref0 = mMidFrame;
     ASSERT_MOVIE_THREAD(0x38F);
-    if (mMidFrame) {
+    if (_ref0) {
         sAsyncMovie = NULL;
-        mMidFrame = false;
+        _ref0 = false;
         mMovieBuffers->mNextFrameIdx++;
         if (mMovieBuffers->mNextFrameIdx >= (int)mMovieBuffers->mBuffers.TotalFrames) {
             mMovieBuffers->mNextFrameIdx = 0;

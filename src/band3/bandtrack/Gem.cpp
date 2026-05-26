@@ -310,22 +310,23 @@ void Gem::AddChordInstance(Symbol s1) {
 }
 
 void Gem::AddStrumInstance(Symbol s1, Symbol s2) {
-    if (mGemManager && mGemManager->mTrackDir) {
+    GemManager * &_ref0 = mGemManager;
+    if (_ref0 && _ref0->mTrackDir) {
         int lowString = mGameGem.GetLowestString();
         int highString = mGameGem.GetHighestString();
         MILO_ASSERT(lowString != -1, 572);
         MILO_ASSERT(highString != -1, 573);
         Symbol s88;
-        if (!mGemManager->GetChordWidgetName(s1, s2, s88)) {
+        if (!_ref0->GetChordWidgetName(s1, s2, s88)) {
             MILO_WARN(
                 "could not find widget for %s for %s chord gem in %s",
                 s2,
                 s1,
-                mGemManager->mTrackDir->Name()
+                _ref0->mTrackDir->Name()
             );
         } else {
             int range = (highString - lowString) + 1;
-            bool lefty = mGemManager->mTrackConfig.IsLefty();
+            bool lefty = _ref0->mTrackConfig.IsLefty();
             if (s2 == area_strum) {
                 MILO_ASSERT_RANGE_EQ(range, 4, 6, 0x250);
                 char u6 = ' ';
@@ -353,11 +354,11 @@ void Gem::AddStrumInstance(Symbol s1, Symbol s2) {
                 s88 = MakeString("%s_%d.wid", s88, range);
             } else
                 MILO_FAIL("Invalid strum type for real guitar strum gem");
-            TrackWidget *w8c = mGemManager->GetWidgetByName(s88);
+            TrackWidget *w8c = _ref0->GetWidgetByName(s88);
             if (lefty)
                 lowString = highString;
             Transform tf48;
-            mGemManager->mTrackDir->MakeWidgetXfm(lowString, mGameGem.mMs / 1000.0f, tf48);
+            _ref0->mTrackDir->MakeWidgetXfm(lowString, mGameGem.mMs / 1000.0f, tf48);
             w8c->AddInstance(tf48, 0);
             mWidgets.insert(w8c);
         }

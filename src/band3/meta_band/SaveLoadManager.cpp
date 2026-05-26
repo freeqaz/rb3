@@ -531,6 +531,32 @@ void SaveLoadManager::Poll() {
         }
         SetState((State)0x41);
         break;
+    case (State)0x46:
+    case (State)0x47:
+        if (mWaiting) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        mTimer.Stop();
+        switch (unk6c) {
+        case 1:
+            SetState((State)0x4c);
+            break;
+        case 7:
+            MILO_ASSERT(mState != kS_SaveOverwrite, 0x2fb);
+            SetState((State)0x48);
+            break;
+        case 0:
+            SetState((State)0x43);
+            break;
+        case 6:
+            unk7c = 0;
+            unk78 = 0;
+            SetState((State)0x49);
+            break;
+        default:
+            SetState((State)0x4e);
+            break;
+        }
+        break;
     case (State)0x52:
         if (TheSongMgr.IsSongCacheWriteDone()) {
             SetState((State)0x54);

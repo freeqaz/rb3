@@ -950,7 +950,7 @@ void VocalPart::CalculateScore(
     if (noteIdx == -1)
         return;
     float sliceWeight = GetNoteSliceWeight(unk54, ms, noteIdx);
-    VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
     float noteMult;
     if (!note.mUnpitchedNote) {
         noteMult = mPitchHitMultiplier;
