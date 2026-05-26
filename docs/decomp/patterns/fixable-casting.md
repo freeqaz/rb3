@@ -91,3 +91,21 @@ unsigned int diff = (unsigned int)(dataEnd - dataStart);
 ```
 
 **Example:** also `StoreRedemptionsTable::Load`.
+
+## `(T)(float)floor(...)` Forces `frsp` Before `fctiwz`
+
+When converting a `double`-returning math call (`floor`, `ceil`, `round`, `sqrt`, etc.) directly to a small integral type, MWCC may skip the single-precision rounding step. Target sometimes wants an explicit `frsp` before `fctiwz`/`fcfid`. Add an explicit `(float)` cast (or a `float` intermediate variable):
+
+```cpp
+// no frsp emitted:
+x = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.x * 127.0f));
+
+// frsp emitted before fctiwz:
+x = (char)(float)floor(Clamp(-127.0f, 127.0f, 0.5f + q.x * 127.0f));
+```
+
+Both shapes — inline `(T)(float)floor(...)` cast and `float f = floor(...); x = f;` intermediate — produce identical code (the same TGT-only `frsp` insert is recovered).
+
+**Example:** `CharBonesSamples::Relativize` 80.6% → 81.4% via `ByteQuat::Set` (4 components) + `ShortVector3::ToShort`. **Always blast-radius-check first** — `ShortQuat::Set` is used across many TUs and the same trick regressed via IPA cascade (81.4→69.4%).
+
+The source permuter pattern `math_return_cast` automates `return (T)math_call(...)` → `return (T)(float)math_call(...)`. The assignment shape `x = (T)floor(...)` and the `void`-return shape via member-assignment is covered when the same `cast_expression` AST node appears inside an assignment too (the pattern walks any cast_expression in the function body).

@@ -12,8 +12,7 @@ class CharClip;
 inline short MakeShortAng(float f) {
     f = 0.5f + f * 1638.4f;
     MILO_ASSERT(f < 32768 && f > -32767, 0x60);
-    f = floor(f);
-    return f;
+    return (short)(float)floor(f);
 }
 #line 102
 
@@ -24,7 +23,7 @@ public:
 
     static short ToShort(float f) {
         float scaled = f * (1.0f / 1300.0f) * 32767.0f + 0.5f;
-        return floor(Clamp(-32767.0f, 32767.0f, scaled));
+        return (short)(float)floor(Clamp(-32767.0f, 32767.0f, scaled));
     }
     void Set(const Vector3 &vec) {
         x = ToShort(vec.x);

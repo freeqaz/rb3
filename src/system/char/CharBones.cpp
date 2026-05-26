@@ -381,9 +381,9 @@ void CharBones::ScaleAdd(CharBones &dst, float f) const {
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
-                float fz = (float)(int)sdata[2] * 3.051851e-05f * 1300.0f;
-                float fy = (float)(int)sdata[1] * 3.051851e-05f * 1300.0f;
-                float fx = (float)(int)sdata[0] * 3.051851e-05f * 1300.0f;
+                float fz = (float)sdata[2] * 0.039674062f;
+                float fy = (float)sdata[1] * 0.039674062f;
+                float fx = (float)sdata[0] * 0.039674062f;
                 while (db->name != src->name) {
                     db++;
                     if (db >= db_end) {
@@ -455,10 +455,10 @@ add_quat:
                     }
                     dquat++;
                 }
-                float sw = (float)(int)sdata[3] * swscale;
-                float sz = (float)(int)sdata[2] * scale;
-                float sy = (float)(int)sdata[1] * scale;
-                float sx = (float)(int)sdata[0] * scale;
+                float sw = (float)sdata[3] * swscale;
+                float sy = (float)sdata[1] * scale;
+                float sz = (float)sdata[2] * scale;
+                float sx = (float)sdata[0] * scale;
                 if (sw * dquat->w + sz * dquat->z + sx * dquat->x + sy * dquat->y < 0.0f) {
                     dquat->x -= sx;
                     dquat->y -= sy;
@@ -1067,9 +1067,11 @@ rotateto_quat:
                 float sz = sqz * f;
                 float sw;
                 if (sqw < 0.0f) {
-                    sw = sqw * f - one_minus_f;
+                    float tmp = sqw * f;
+                    sw = tmp - one_minus_f;
                 } else {
-                    sw = sqw * f + one_minus_f;
+                    float tmp = sqw * f;
+                    sw = tmp + one_minus_f;
                 }
                 float dx = dquat->x;
                 src++;
@@ -1111,9 +1113,11 @@ rotateto_quat:
                 float sz = sqz * f;
                 float sw;
                 if (sqw < 0.0f) {
-                    sw = sqw * f - one_minus_f;
+                    float tmp = sqw * f;
+                    sw = tmp - one_minus_f;
                 } else {
-                    sw = sqw * f + one_minus_f;
+                    float tmp = sqw * f;
+                    sw = tmp + one_minus_f;
                 }
                 float dx = dquat->x;
                 src++;

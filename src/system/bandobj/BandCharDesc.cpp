@@ -874,7 +874,7 @@ static float sMuscleRange[2] = { 0.0f, 1.0f };
 
 void BandCharDesc::ComputeDeformWeights(float *out) const {
     DeformVert verts[9] = {
-        { 0.0f, 0.0f, { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f } },
+        { 0, 0.0f, { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f } },
         { 0.5f, 0.0f, { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f } },
         { 1.0f, 0.0f, { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
         { 0.0f, 0.5f, { 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.5f } },
@@ -910,14 +910,14 @@ void BandCharDesc::ComputeDeformWeights(float *out) const {
 
     float weight = mWeight;
     float muscle = mMuscle;
-    if (mWeight < sWeightRange[0])
-        weight = sWeightRange[0];
-    else if (mWeight > sWeightRange[1])
-        weight = sWeightRange[1];
     if (muscle < sMuscleRange[0])
         muscle = sMuscleRange[0];
     else if (muscle > sMuscleRange[1])
         muscle = sMuscleRange[1];
+    if (mWeight < sWeightRange[0])
+        weight = sWeightRange[0];
+    else if (mWeight > sWeightRange[1])
+        weight = sWeightRange[1];
 
     DeformTri *from = NULL;
     DeformTri *to = NULL;
@@ -963,10 +963,10 @@ void BandCharDesc::ComputeDeformWeights(float *out) const {
     Multiply(point, mtx, bary);
 
     for (int k = 0; k < 6; k++) {
-        float w1 = from->mVerts[1]->mWeights[k];
         float w0 = from->mVerts[0]->mWeights[k];
+        float w1 = from->mVerts[1]->mWeights[k];
         float w2 = from->mVerts[2]->mWeights[k];
-        float blend = w2 * bary.z + (w0 * bary.x + w1 * bary.y);
+        float blend = w0 * bary.x + w1 * bary.y + w2 * bary.z;
         out[k * 3 + 0] = blend * heightWeights[0];
         out[k * 3 + 1] = blend * heightWeights[1];
         out[k * 3 + 2] = blend * heightWeights[2];

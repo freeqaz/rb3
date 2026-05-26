@@ -253,7 +253,7 @@ void TourDescProvider::UpdateExtendedCustom(int, int iData, Hmx::Object *i_pObj)
         pStarDisplay->SetValues(iStars, iStars);
         pStarDisplay->SetShowDenominator(false);
         pStarDisplay->SetForceMixedMode(true);
-    } else if (strcmp(pName, "bronze.pic") == 0) {
+    } else if (TheTour && strcmp(pName, "bronze.pic") == 0) {
         UIPicture *pPicture = dynamic_cast<UIPicture *>(i_pObj);
         MILO_ASSERT(pPicture, 0x184);
         if (TheTour->HasBronzeMedal(s)) {

@@ -132,12 +132,11 @@ void CharBonesSamples::Print() {
 }
 
 void CharBonesSamples::Relativize(CharClip *clip) {
-    std::vector<Bone> &bones = mBones;
-    if (bones.empty())
+    if (mBones.empty())
         return;
 
     for (int sample = mNumSamples - 1; sample >= 0; sample--) {
-        Bone *bone = &bones[0];
+        Bone *bone = &mBones[0];
         mStart = mRawData + sample * mTotalSize;
 
         if (mCompression >= kCompressVects) {
@@ -271,8 +270,8 @@ void CharBonesSamples::EvaluateChannel(void *dest, int byteOffset, int sample, f
             float *out = (float *)dest;
             if (mCompression >= kCompressQuats) {
                 int q3 = (signed char)s[3];
-                int q2 = (signed char)s[2];
                 int q1 = (signed char)s[1];
+                int q2 = (signed char)s[2];
                 int q0 = (signed char)s[0];
                 out[3] = (float)q3 * (1.0f / 127.0f);
                 out[2] = (float)q2 * (1.0f / 127.0f);

@@ -262,10 +262,10 @@ class ByteQuat {
 public:
     char x, y, z, w;
     void Set(const Hmx::Quat &q) {
-        x = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.x * 127.0f));
-        y = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.y * 127.0f));
-        z = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.z * 127.0f));
-        w = (char)floor(Clamp(-127.0f, 127.0f, 0.5f + q.w * 127.0f));
+        x = (char)(float)floor(Clamp(-127.0f, 127.0f, 0.5f + q.x * 127.0f));
+        y = (char)(float)floor(Clamp(-127.0f, 127.0f, 0.5f + q.y * 127.0f));
+        z = (char)(float)floor(Clamp(-127.0f, 127.0f, 0.5f + q.z * 127.0f));
+        w = (char)(float)floor(Clamp(-127.0f, 127.0f, 0.5f + q.w * 127.0f));
     }
     void ToQuat(Hmx::Quat& q) const {
         q.Set(
