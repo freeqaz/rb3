@@ -145,14 +145,14 @@ void GemRepTemplate::SetupTailVerts() {
     mCapVerts = mTailVerts;
 
     int i4 = mTailVerts.size() / 2;
-    for (int i = 0; i < i4; i++) {
+    for (int i = 0.0f; i < i4; i++) {
         mCapVerts[i + i4] = mTailVerts[i];
     }
     mTailVerts.resize(i4, true);
     mCapVerts.resize(i4, true);
     mNumTailSections[0] = 90;
-    mNumTailSections[1] = 2;
     mTailSectionLength[0] = kTailMaxLength / mNumTailSections[0];
+    mNumTailSections[1] = 2;
     mTailSectionLength[1] = kTailMaxLength - mTailSectionLength[0];
 }
 
