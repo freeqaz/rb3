@@ -1441,6 +1441,8 @@ bool ShouldStrip(RndTransformable *trans) {
     }
 }
 
+#pragma push
+#pragma fp_contract off
 void ConvertBonesToTranses(class ObjectDir *dir, bool b) {
     std::list<RndMesh *> meshes;
     for (ObjDirItr<RndMesh> it(dir, false); it != 0; ++it) {
@@ -1479,3 +1481,4 @@ void ConvertBonesToTranses(class ObjectDir *dir, bool b) {
         }
     }
 }
+#pragma pop
