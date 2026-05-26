@@ -64,20 +64,23 @@ void StoreMainPanel::Poll() {
     if (mNewReleaseList.size() == 0)
         return;
     if (!unk6c) {
-        if (!IsAllArtLoadedOrFailed())
-            return;
-        MILO_ASSERT(mNewReleaseList.size() == mCoverArtTexs.size(), 0x6F);
-        for (int i = 0; i < mNewReleaseList.size(); i++) {
-            RndBitmap *bmp = GetBmp(mNewReleaseList[i].mStrName);
-            if (bmp) {
-                mCoverArtTexs[i]->SetBitmap(*bmp, 0, 0);
-            } else {
-                delete mCoverArtTexs[i];
-                mCoverArtTexs[i] = 0;
+        if (IsAllArtLoadedOrFailed()) {
+            MILO_ASSERT(mNewReleaseList.size() == mCoverArtTexs.size(), 0x6F);
+            for (int i = 0; i < mNewReleaseList.size(); i++) {
+                RndBitmap *bmp = GetBmp(mNewReleaseList[i].mStrName);
+                if (bmp) {
+                    mCoverArtTexs[i]->SetBitmap(*bmp, 0, 0);
+                } else {
+                    delete mCoverArtTexs[i];
+                    mCoverArtTexs[i] = 0;
+                }
             }
+            unk6c = true;
+            goto time_check;
         }
-        unk6c = true;
+        return;
     }
+time_check:
     if (mTimeNextEvent <= TheTaskMgr.UISeconds()) {
         int n = mNewReleaseList.size();
         mCurrentEntry = (mCurrentEntry + 1) % n;
@@ -92,10 +95,18 @@ void StoreMainPanel::Poll() {
             }
             if (i < 2) {
                 RndTex *tex = mCoverArtMats[i + 1]->GetDiffuseTex();
-                mCoverArtMats[i]->SetDiffuseTex(tex ? tex : mNoneTex);
+                if (tex) {
+                    mCoverArtMats[i]->SetDiffuseTex(tex);
+                } else {
+                    mCoverArtMats[i]->SetDiffuseTex(mNoneTex);
+                }
             } else {
                 RndTex *tex = mCoverArtTexs[idx];
-                mCoverArtMats[i]->SetDiffuseTex(tex ? tex : mNoneTex);
+                if (tex) {
+                    mCoverArtMats[i]->SetDiffuseTex(tex);
+                } else {
+                    mCoverArtMats[i]->SetDiffuseTex(mNoneTex);
+                }
             }
         }
         mScrollAnim->Animate(
