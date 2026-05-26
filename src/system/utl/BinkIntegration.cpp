@@ -302,7 +302,7 @@ unsigned int BinkFileReadFrame(
             unsigned int delta =
                 (adjustedOffset - 0x38) - bf->iHeaderSize;
             unsigned int aligned = delta & ~0xf;
-            seekTo = bf->iHeaderSize + aligned + 0x38;
+            seekTo = (bf->iHeaderSize + (aligned + 0x38));
             unaligned = delta & 0xf;
             bf->pBufPos = bf->pBuffer + unaligned;
             bf->pXTEADecrypter->SetNonce(bf->mEncryptionHeader.mNonce, delta >> 4);
