@@ -529,29 +529,34 @@ void Movie::Impl::Begin(
     if (!PlatformCacheFile(file)) return;
     mLoop = loop;
     mSoundEnabled = soundEnabled;
-    mStretchToFit = stretchToFit;
     mForceTrack = forceTrack;
-    mAspect = 0.0f;
+    mStretchToFit = stretchToFit;
     mBinkHandle = kNoHandle;
+    mAspect = 0.0f;
     mIsCachedStream = false;
     mPollTimer.Reset();
     MILO_ASSERT(!mLoader, 0x21D);
     MILO_ASSERT(!mBink, 0x21E);
     MILO_ASSERT(!mPreloadBuf, 0x21F);
-    const char *fn = mFilename.c_str();
     if (preload) {
+        const char *fn = mFilename.c_str();
+        void *_mem = ::operator new(sizeof(FileLoader));
         FilePath fp(fn);
-        BinStream *bs = (stream != NULL && stream->Cached()) ? stream : NULL;
-        mLoader = (MovieLoader *)new FileLoader(fp, fn, kLoadFront, 0, false, true, bs);
+        bool streamCached = false;
+        if (stream) streamCached = stream->Cached();
+        BinStream *bs = streamCached ? stream : NULL;
+        mLoader = (MovieLoader *)::new(_mem) FileLoader(fp, fn, kLoadFront, 0, false, true, bs);
     } else {
+        void *_mem = ::operator new(sizeof(MovieLoader));
+        const char *fn = mFilename.c_str();
         FilePath fp(fn);
-        mLoader2 = new MovieLoader(fp, this);
+        mLoader2 = ::new(_mem) MovieLoader(fp, this);
     }
     sActiveMovies.push_back(this);
     sActivePending++;
     if (sActivePending > 1 && !preload) {
         String localFn = mFilename;
-        MILO_WARN("%s, multiple movies must be preloaded", localFn);
+        MILO_WARN("%s, multiple movies must be preloaded", localFn.c_str());
     }
     mLoading = true;
 }
