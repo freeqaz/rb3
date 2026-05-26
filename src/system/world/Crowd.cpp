@@ -435,7 +435,7 @@ void WorldCrowd::DrawShowing() {
                 camXfmCopy.v.z = curCamXfm.v.z - placementXfm.v.z - halfHeight;
                 float dist = Length(camXfmCopy.v);
                 float minDist = curCam->NearPlane() + halfHeight;
-                if (dist < minDist) dist = minDist;
+                dist = Max(dist, minDist);
                 Vector3 delta(0.0f, -dist, 0.0f);
                 Multiply(delta, camXfmCopy.m, camXfmCopy.v);
                 camXfmCopy.v.z += halfHeight;
@@ -519,7 +519,7 @@ void WorldCrowd::DrawShowing() {
                     }
                     {
                         const Transform &charWorldXfm = curChar->WorldXfm();
-                        RndEnvironTracker tracker(mEnviron, &charWorldXfm.v);
+                        const RndEnvironTracker tracker(mEnviron, &charWorldXfm.v);
                         gImpostorCamera->Select();
                         WiiMat::SetOverrideAlphaWrite(true);
                         curChar->SetShowing(true);
