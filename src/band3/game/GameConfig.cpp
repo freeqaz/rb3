@@ -217,7 +217,8 @@ int GameConfig::GetFxSwitchPosition(LocalBandUser *pUser) {
             if (idx > 29) {
                 idx = 29;
             } else {
-                idx &= ~((int)((1.0f + ry) * 15.0f + 0.5) >> 31);
+                idx = (int)((1.0f + ry) * 15.0f + 0.5)
+                    & ~((int)((1.0f + ry) * 15.0f + 0.5) >> 31);
             }
             return tbl[idx];
         }

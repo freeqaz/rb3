@@ -230,7 +230,7 @@ void SetlistSort::BuildSetlistTree(std::map<Symbol, SetlistRecord> &records) {
             shortcut = *found.first;
             MILO_ASSERT(0 == newSetlist->Compare(shortcut, kNodeShortcut), 0x16B);
         } else {
-            shortcut = NewShortcutNode((SongSortNode *)newSetlist);
+            shortcut = NewShortcutNode(newSetlist);
             mTree.insert(found.first, shortcut);
         }
         shortcut->Insert(newSetlist, this);

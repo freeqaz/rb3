@@ -236,7 +236,7 @@ BEGIN_HANDLERS(WaitingUserGate)
     HANDLE_MESSAGE(LockStepCompleteMsg)
     HANDLE_MESSAGE(ProcessedJoinRequestMsg)
     HANDLE_SUPERCLASS(Hmx::Object)
-    HANDLE_CHECK(0x55)
+    HANDLE_CHECK(0x148)
 END_HANDLERS
 
 // --- JoinEntryPointEvent --------------------------------------------------

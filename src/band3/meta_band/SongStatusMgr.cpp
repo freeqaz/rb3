@@ -802,7 +802,7 @@ int SongStatusMgr::GetTotalBestStars(ScoreType ty, Difficulty diff, Symbol s) co
         if (songID && mSongMgr->HasSong(songID)) {
             if (s != gNullStr) {
                 BandSongMetadata *metaData = (BandSongMetadata *)mSongMgr->Data(songID);
-                MILO_ASSERT(metaData, 0x63E);
+                MILO_ASSERT(metaData, 0x677);
                 if (s != metaData->SourceSym())
                     continue;
             }

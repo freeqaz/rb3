@@ -340,7 +340,7 @@ Symbol Tour::GetTourGigGuideMap() const {
 Symbol Tour::GetConclusionText() const {
     if (m_pTourProgress) {
         TourDesc *pTourDesc = GetTourDesc(m_pTourProgress->GetTourDesc());
-        MILO_ASSERT(pTourDesc, 0x226);
+        MILO_ASSERT(pTourDesc, 0x246);
         return pTourDesc->GetConclusionText();
     } else
         return "";
@@ -421,7 +421,7 @@ bool Tour::HasBronzeMedal(Symbol s) const {
     MILO_ASSERT(pProgress, 0x3EC);
     int stars = pProgress->GetTourMostStars(s);
     TourDesc *pTourDesc = GetTourDesc(s);
-    MILO_ASSERT(pTourDesc, 0x3C2);
+    MILO_ASSERT(pTourDesc, 0x3F1);
     int goal = pTourDesc->GetTourStarsBronzeGoalValue();
     return goal <= stars;
 }
@@ -801,5 +801,5 @@ BEGIN_HANDLERS(Tour)
     HANDLE_MESSAGE(PrimaryProfileChangedMsg)
     HANDLE_MESSAGE(RemoteLeaderLeftMsg)
     HANDLE_SUPERCLASS(Hmx::Object)
-    HANDLE_CHECK(0x57B)
+    HANDLE_CHECK(0x54C)
 END_HANDLERS
