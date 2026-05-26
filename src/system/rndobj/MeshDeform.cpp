@@ -220,7 +220,7 @@ void RndMeshDeform::Print() {
         TheDebug << "weights" << idx << ": ";
         u8 *p = cData + 1;
         for (int j = 0; j < (int)*cData; j++) {
-            TheDebug << "(" << (int)p[0] << " "
+            TheDebug << "(" << p[0] << " "
                      << (float)p[1] * 0.003921568859368563f << ") ";
             p += 2;
         }
