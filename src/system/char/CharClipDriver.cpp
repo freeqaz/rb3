@@ -310,7 +310,7 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
 }
 
 float CharClipDriver::Evaluate(float beat, float deltaBeat, float deltaSeconds) {
-    float nextResult = 0.0f;
+    float nextResult = 0;
     if (mNext) {
         nextResult = mNext->Evaluate(beat, deltaBeat, deltaSeconds);
     }
@@ -328,10 +328,10 @@ float CharClipDriver::Evaluate(float beat, float deltaBeat, float deltaSeconds) 
             mBeat = newBeat + AlignToBeat(beat);
             mNextEvent = 0;
         } else if (mBeat < mClip->StartBeat()) {
-            float startBeat = mClip->StartBeat();
             float lengthBeats = mClip->LengthBeats();
             float newBeat;
             if (lengthBeats > 0.0f) {
+                float startBeat = mClip->StartBeat();
                 float endBeat = mClip->EndBeat();
                 float dist = std::fmod(startBeat - mBeat, lengthBeats);
                 newBeat = endBeat - dist;
