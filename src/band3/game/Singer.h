@@ -78,6 +78,9 @@ public:
         bool unk8;
         int unkc;
         float unk10;
+        AmbiguousData() {}
+        AmbiguousData(const AmbiguousData &o)
+            : unk0(o.unk0), unk4(o.unk4), unk8(o.unk8), unkc(o.unkc), unk10(o.unk10) {}
         AmbiguousData &operator=(const AmbiguousData &o) {
             int t4 = o.unk4;
             unk0 = o.unk0;

@@ -345,11 +345,12 @@ int Singer::SuddenOctaveShift(float pitch) const {
         if (pitch > unka0) sign = 1;
         else sign = -1;
         float step = 12.0f * (float)sign;
+        float a0 = unka0;
         goto check;
     update:
         pitch -= step;
     check:
-        float diff = pitch - unka0;
+        float diff = pitch - a0;
         shift += sign;
         if (!(diff > 0.0f)) diff = -diff;
         if (diff > 10.0f) goto update;
