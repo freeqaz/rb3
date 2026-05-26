@@ -173,9 +173,10 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
     } else {
         xfm = mLocalXfm;
     }
+    float axisX = xfm.m.z.x;
     float axisY = xfm.m.z.y;
     float axisZ = xfm.m.z.z;
-    float planeDist = axisZ * xfm.v.z + (xfm.m.z.x * xfm.v.x + axisY * xfm.v.y);
+    float planeDist = axisZ * xfm.v.z + (axisX * xfm.v.x + axisY * xfm.v.y);
     float planef = (float)(-planeDist);
 
     RndMesh::VertVector &verts = geomOwner->mVerts;
@@ -191,11 +192,10 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
         int m3 = (bw.GetZ() > 0.0f) ? (1 << vert.boneIndices[3]) : 0;
         if (!((m012 | m3) & boneMask))
             continue;
-        float axisX = xfm.m.z.x;
         float axisCoord = planef + ((axisZ * vert.pos.z) + ((axisX * vert.pos.x) + (axisY * vert.pos.y)));
         if (axisCoord < mShape[2].offset) {
         float projY = axisY * axisCoord + xfm.v.y;
-        float projX = xfm.m.z.x * axisCoord + xfm.v.x;
+        float projX = axisX * axisCoord + xfm.v.x;
         float dy = vert.pos.y - projY;
         float projZ = axisZ * axisCoord + xfm.v.z;
         float dx = vert.pos.x - projX;
@@ -212,9 +212,9 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
                     called = 1;
                 }
                 float t = mShape[0].offset;
-                vert.pos.x = xfm.m.z.x * t + xfm.v.x;
-                vert.pos.y = xfm.m.z.y * t + xfm.v.y;
-                vert.pos.z = xfm.m.z.z * t + xfm.v.z;
+                vert.pos.x = axisX * t + xfm.v.x;
+                vert.pos.y = axisY * t + xfm.v.y;
+                vert.pos.z = axisZ * t + xfm.v.z;
                 float scale = mShape[0].radius / std::sqrt(distSq);
                 vert.pos.x += dx * scale;
                 vert.pos.y += dy * scale;
@@ -248,7 +248,6 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
         const float kTolerance = 0.01f;
         std::vector<RndMesh::Face> &faces = go->mFaces;
         int faceCount = faces.size() - 1;
-        float faceAxisX = xfm.m.z.x;
         for (int fi = 0; fi <= faceCount; fi++) {
             int pass = 0;
             RndMesh::Face *facep = &faces[fi];
@@ -260,7 +259,7 @@ void CharCuff::DeformMesh(RndMesh *mesh, int boneMask, SyncMeshCB *cb) {
                 int bm = bm32 | bm01;
                 if (!(bm & boneMask)) break;
                 float ac2 = axisY * v0.pos.y;
-                ac2 = faceAxisX * v0.pos.x + ac2;
+                ac2 = axisX * v0.pos.x + ac2;
                 ac2 = axisZ * v0.pos.z + ac2;
                 ac2 = planef + ac2;
                 if (ac2 > kTolerance + mShape[0].offset) break;
