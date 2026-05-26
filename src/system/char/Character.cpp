@@ -452,24 +452,24 @@ void Character::SetShadow(RndGroup *shadow) {
 }
 
 void Character::DrawShadow(const Transform &tf, const Plane &pl) {
-    if (Showing() && mShadow && mShadow->Showing()) {
-        MILO_ASSERT(GetGfxMode() == kOldGfx, 0x2CB);
-        Transform tf40;
-        Transpose(tf, tf40);
-        Plane plb0;
-        Multiply(pl, tf40, plb0);
-        Transform tf70;
-        tf70.m.Set(1, -plb0.a / plb0.b, 0, 0, 0, 0, 0, -plb0.c / plb0.b, 1);
-        tf70.v.Set(0, -plb0.d / plb0.b, 0);
-        Transform tfa0;
-        Multiply(tf40, tf70, tfa0);
-        Multiply(tfa0, tf, tfa0);
-        for (int i = 0.0f; i < mShadowBones.size(); i++) {
-            ShadowBone *cur = mShadowBones[i];
-            Multiply(cur->Parent()->WorldXfm(), tfa0, cur->DirtyLocalXfm());
-        }
-        mShadow->DrawShowing();
+    if (!Showing() || !mShadow || !mShadow->Showing())
+        return;
+    MILO_ASSERT(GetGfxMode() == kOldGfx, 0x2CB);
+    Transform tf40;
+    Transpose(tf, tf40);
+    Plane plb0;
+    Multiply(pl, tf40, plb0);
+    Transform tf70;
+    tf70.m.Set(1, -plb0.a / plb0.b, 0, 0, 0, 0, 0, -plb0.c / plb0.b, 1);
+    tf70.v.Set(0, -plb0.d / plb0.b, 0);
+    Transform tfa0;
+    Multiply(tf40, tf70, tfa0);
+    Multiply(tfa0, tf, tfa0);
+    for (int i = 0.0f; i < mShadowBones.size(); i++) {
+        ShadowBone *cur = mShadowBones[i];
+        Multiply(cur->Parent()->WorldXfm(), tfa0, cur->DirtyLocalXfm());
     }
+    mShadow->DrawShowing();
 }
 
 #pragma push
