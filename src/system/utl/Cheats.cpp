@@ -25,40 +25,36 @@ void CheatsManager::CallCheatScript(bool b1, DataArray *arr2, LocalUser *user, b
             if ((*it)->GetPadNum() == -1)
                 break;
             JoypadData *data = JoypadGetPadData((*it)->GetPadNum());
-            if (b1 && b2 && (int)data->mType - 1U > 2 && data->mType - 0x13U > 2) {
+            if (!b1 || !b2 || (unsigned int)(data->mType - 1) <= 2U || (unsigned int)(data->mType - 0x13) <= 2U) {
                 user = *it;
                 break;
             }
         }
     }
     if (user) {
-        switch (JoypadGetPadData(user->GetPadNum())->mType) {
-        case kJoypadDigital:
-        case kJoypadAnalog:
-        case kJoypadWiiCore:
-        case kJoypadWiiFS:
-        case kJoypadWiiClassic:
-        case kJoypadDualShock:
-            DataVariable("cheat_pad") = user ? user->GetPadNum() : 0;
-            LogCheat(user ? user->GetPadNum() : -1, b1, arr2);
-            if (b1) {
-                int i = 2;
-                for (; arr2->Node(i).Type() != kDataCommand && i < arr2->Size(); i++)
-                    ;
-                if (i < arr2->Size()) {
-                    arr2->ExecuteScript(i, nullptr, nullptr, 1);
-                }
-            } else
-                arr2->Execute();
-            Hmx::Object *uiObj = ObjectDir::Main()->Find<Hmx::Object>("ui", true);
-            static Message msg("cheat_invoked", 0, 0);
-            msg[0] = b1;
-            msg[1] = DataNode(arr2, kDataArray);
-            uiObj->Handle(msg, false);
-            break;
-        default:
-            break;
+        JoypadData *padData = JoypadGetPadData(user->GetPadNum());
+        int mType = padData->mType;
+        if (b1 && b2 && mType != kJoypadDigital && mType != kJoypadAnalog
+            && mType != kJoypadWiiCore && mType != kJoypadWiiFS
+            && mType != kJoypadWiiClassic && mType != kJoypadDualShock) {
+            return;
         }
+        DataVariable("cheat_pad") = user ? user->GetPadNum() : 0;
+        LogCheat(user ? user->GetPadNum() : -1, b1, arr2);
+        if (b1) {
+            int i = 2;
+            for (; arr2->Node(i).Type() != kDataCommand && i < arr2->Size(); i++)
+                ;
+            if (i < arr2->Size()) {
+                arr2->ExecuteScript(i, nullptr, nullptr, 1);
+            }
+        } else
+            arr2->Execute();
+        Hmx::Object *uiObj = ObjectDir::Main()->Find<Hmx::Object>("ui", true);
+        static Message msg("cheat_invoked", 0, 0);
+        msg[0] = b1;
+        msg[1] = DataNode(arr2, kDataArray);
+        uiObj->Handle(msg, false);
     }
 }
 
