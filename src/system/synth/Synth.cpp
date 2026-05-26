@@ -287,44 +287,49 @@ void Synth::ToggleHud() {
 DECOMP_FORCEACTIVE(Synth, "%i", "0", "stream", "chan %i", "Total active Sequences: %d")
 
 void Synth::DrawMeter(float &y, float level, float peakHold, const char *name) {
-    Hmx::Color yellow(0.5f, 0.5f, 0.0f, 1.0f);
-    Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
-    Hmx::Color black(0.0f, 0.0f, 0.0f, 1.0f);
     Hmx::Color grey(0.5f, 0.5f, 0.5f, 1.0f);
+    Hmx::Color black(0.0f, 0.0f, 0.0f, 1.0f);
+    Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
+    Hmx::Color green(0.5f, 1.0f, 0.0f, 1.0f);
+    Hmx::Color red(1.0f, 0.5f, 0.5f, 1.0f);
 
-    float rndWidth = (float)TheRnd->Width();
-    Vector2 labelPos(rndWidth * 0.1f, y);
+    Vector2 labelPos((float)TheRnd->Width() * 0.1f, y);
     TheRnd->DrawString(name, labelPos, white, true);
 
-    float barLeft = rndWidth * 0.2f;
-    float barWidth = rndWidth * 0.7f;
+    float barLeft = (float)TheRnd->Width() * 0.2f;
+    float barWidth = (float)TheRnd->Width() * 0.7f;
     Hmx::Rect bgRect(barLeft, y, barWidth, 12.0f);
     TheRnd->DrawRect(bgRect, black, 0, 0, 0);
 
+    static float levelMin = 0.0f;
+    static float levelMax = 1.0f;
     float levelNorm = (level + 40.0f) / 40.0f;
-    if (levelNorm < 0.0f) {
-        levelNorm = 0.0f;
-    } else if (levelNorm > 1.0f) {
-        levelNorm = 1.0f;
+    if (levelNorm < levelMin) {
+        levelNorm = levelMin;
+    } else if (levelNorm > levelMax) {
+        levelNorm = levelMax;
     }
     Hmx::Rect levelRect(barLeft, y, levelNorm * barWidth, 12.0f);
     TheRnd->DrawRect(levelRect, grey, 0, 0, 0);
 
+    static float peakMin = 0.0f;
+    static float peakMax = 1.0f;
     float peakNorm = (peakHold + 40.0f) / 40.0f;
-    if (peakNorm < 0.0f) {
-        peakNorm = 0.0f;
-    } else if (peakNorm > 1.0f) {
-        peakNorm = 1.0f;
+    if (peakNorm < peakMin) {
+        peakNorm = peakMin;
+    } else if (peakNorm > peakMax) {
+        peakNorm = peakMax;
     }
-    Hmx::Color *peakColor = &white;
-    if (peakNorm != 1.0f) {
-        peakColor = &yellow;
+    Hmx::Color *peakColor = &green;
+    if (peakNorm == 1.0f) {
+        peakColor = &red;
     }
     Hmx::Rect peakRect(barLeft + peakNorm * barWidth, y, 8.0f, 12.0f);
     TheRnd->DrawRect(peakRect, *peakColor, 0, 0, 0);
 
-    Vector2 dbLabelPos(barWidth + barLeft, y);
-    TheRnd->DrawString(MakeString("%i", (int)peakHold), dbLabelPos, white, true);
+    Hmx::Color white2(1.0f, 1.0f, 1.0f, 1.0f);
+    Vector2 dbLabelPos(barLeft + barWidth, y);
+    TheRnd->DrawString(MakeString("%i", (int)peakHold), dbLabelPos, white2, true);
 
     y += 16.0f;
 }
