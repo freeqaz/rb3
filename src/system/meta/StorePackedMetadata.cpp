@@ -1335,10 +1335,9 @@ void StoreContentStateCache::PollUpdate() {
 }
 
 void StoreContentStateCache::UpdateContentStateFromFastEnum() {
-    int &_ref0 = mIndexInConfig;
     if (0 != TheWiiCommerceMgr.unk2110) {
         StoreTitleContentState *state;
-        unsigned long long titleId = TheWiiCommerceMgr.mTitleIds[_ref0];
+        unsigned long long titleId = TheWiiCommerceMgr.mTitleIds[mIndexInConfig];
         std::map<unsigned long long, StoreTitleContentState *>::iterator it = find(titleId);
         if (it == end()) {
             state = (StoreTitleContentState *)operator new(0x1000);
@@ -1363,7 +1362,7 @@ void StoreContentStateCache::UpdateContentStateFromFastEnum() {
             catalog += 0x10;
         }
     }
-    _ref0 += 1;
+    mIndexInConfig += 1;
 }
 
 void StoreMetadataManager::MarkPurchased(ECContentCatalogInfo *info) {
