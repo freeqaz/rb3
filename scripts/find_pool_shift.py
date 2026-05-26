@@ -57,6 +57,22 @@ SKIP_UNITS = {
     # other TUs. Two failed waves (2026-05-26). FORCEACTIVE made it worse.
     # Requires vtable key-function relocation surgery (off-pattern).
     "main/band3/meta_band/AccomplishmentProgress",
+    # -1621 / +145 / +663 clusters are structural, not pool-shift. Base .o
+    # has 229 .text functions vs target's 123 — base over-instantiates 106
+    # extras (73 stlport templates, 15 MakeString variants, 8 Hmx::Object
+    # virtuals). Vtable key-function placement at scale beyond
+    # AccomplishmentProgress. Wave 2026-05-26: 101/123 fns already match.
+    "main/system/meta/StorePackedMetadata",
+    # FALSE POSITIVE (MidiParser wave 2026-05-26). 5-byte cluster traced to
+    # .sbss vs .sdata section-assignment difference for STL allocator guards,
+    # not a real pool cascade. run_diff_inspect mode=offsets returns "No
+    # offset differences found" on the affected functions.
+    "main/system/midi/MidiParser",
+    # FALSE POSITIVE (ViewSetting wave 2026-05-26). Scanner found 5-byte
+    # cluster on pool-touching instructions, but dominant per-function deltas
+    # are actually stack-frame shifts (-16/+8/-8). Scanner's "dominant pool
+    # delta per function" misleads when stack diffs outnumber pool diffs.
+    "main/band3/meta_band/ViewSetting",
 }
 
 
