@@ -19,15 +19,16 @@ void CharSleeve::SetName(const char *cc, class ObjectDir *dir) {
 
 // https://decomp.me/scratch/vVQkq (retail)
 void CharSleeve::Poll() {
-    if (mSleeve && mSleeve->TransParent()) {
-        float deltasecs = TheTaskMgr.DeltaSeconds();
+        if (!mSleeve || !mSleeve->TransParent())
+        return;
+    float deltasecs = TheTaskMgr.DeltaSeconds();
         float dvar12 = deltasecs * 60.0f;
         float dv2 = deltasecs * dvar12;
         float gravity_z = (mGravity * dv2) * -3.8582678f;
         float powed = 1.0f - std::pow(1.0f - mStiffness, dvar12 * dvar12);
         RndTransformable *sleeveparent = mSleeve->TransParent();
         float absed = std::fabs(mSleeve->mLocalXfm.v.z);
-        bool b2 = false;
+        bool b2 = 0;
         if (mMe && mMe->Teleported()) {
             mPos = mSleeve->WorldXfm().v;
             Vector3 v9c(0.0f, 0.0f, -(absed + mPosLength));
@@ -89,7 +90,6 @@ void CharSleeve::Poll() {
             Cross(tf90.m.y, tf90.m.z, tf90.m.x);
             mTopSleeve->SetWorldXfm(tf90);
         }
-    }
 }
 
 void CharSleeve::PollDeps(
