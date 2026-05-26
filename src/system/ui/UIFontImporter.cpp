@@ -504,6 +504,7 @@ BEGIN_HANDLERS(UIFontImporter)
     HANDLE_CHECK(0xA2C)
 END_HANDLERS
 
+#pragma fp_contract off
 BEGIN_PROPSYNCS(UIFontImporter)
     SYNC_PROP(UPPER_CASE_A_Z, mUpperCaseAthroughZ)
     SYNC_PROP(lower_case_a_z, mLowerCaseAthroughZ)
@@ -515,7 +516,6 @@ BEGIN_PROPSYNCS(UIFontImporter)
     SYNC_PROP(minus, mMinus)
     SYNC_PROP(font_name, mFontName)
     SYNC_PROP_MODIFY(font_pct_size, mFontPctSize, GenerateBitmapFilename())
-#pragma fp_contract on
     SYNC_PROP_SET(
         font_point_size,
         mLastGenWasNG ? FontPercentToSizeHD(mFontPctSize)
@@ -525,15 +525,12 @@ BEGIN_PROPSYNCS(UIFontImporter)
     )
     SYNC_PROP_SET(
         font_pixel_size,
-        std::abs(
-            mLastGenWasNG ? FontPercentToSizeHD(mFontPctSize)
-                          : FontPercentToSizeSD(mFontPctSize)
-        ),
-        mFontPctSize = mLastGenWasNG ? FontSizeToPercentHD(-_val.Int())
-                                     : FontSizeToPercentSD(-_val.Int())
+        mLastGenWasNG ? std::abs(FontPercentToSizeHD(mFontPctSize))
+                      : std::abs(FontPercentToSizeSD(mFontPctSize)),
+        mFontPctSize = mLastGenWasNG ? FontSizeToPercentHD(_val.Int())
+                                     : FontSizeToPercentSD(_val.Int())
     )
-#pragma fp_contract reset
-    SYNC_PROP_SET(bold, std::abs(mFontWeight), mFontWeight = _val.Int() ? 800 : 400;
+    SYNC_PROP_SET(bold, (mFontWeight > 400), if (_val.Int()) mFontWeight = 800; else mFontWeight = 400;
                   GenerateBitmapFilename())
     SYNC_PROP_MODIFY(italics, mItalics, GenerateBitmapFilename())
     SYNC_PROP(font_quality, (int &)mFontQuality)
