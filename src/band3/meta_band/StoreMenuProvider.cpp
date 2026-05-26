@@ -73,9 +73,10 @@ bool StoreMenuProvider::IsActive(int i) const {
     }
     StorePackedSubMenu *submenu = mPage->Submenu(i);
     if (submenu != NULL) {
-        if (submenu->unk6 == 0 || TheRockCentral.mState == 2) {
-            return *(short *)&submenu->unk4 != 0;
+        if (submenu->unk6 != 0 && TheRockCentral.mState != 2) {
+            return false;
         }
+        return *(short *)&submenu->unk4 != 0;
     }
     return false;
 }
