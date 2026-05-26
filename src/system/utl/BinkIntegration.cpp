@@ -272,7 +272,8 @@ unsigned int BinkFileReadFrame(
     BINKFILE *bf = (BINKFILE *)bink->iodata;
     int adjustedOffset =
         iOffset + ((bf->mEncryptionHeader.mSignature != 0) ? 0x38 : 0);
-    if ((unsigned int)(adjustedOffset + iReadSize) > bf->pFile->Size()) {
+    auto _tmp0 = bf->pFile->Size();
+    if ((unsigned int)(adjustedOffset + iReadSize) > _tmp0) {
         bink->ReadError = 1;
         return 0;
     }
@@ -362,9 +363,7 @@ unsigned int BinkFileReadFrame(
     }
     unsigned int fileSize = bf->pFile->Size();
     unsigned int avail = fileSize - bf->iFileBufPos;
-    if (avail >= bink->BufSize) {
-        avail = bink->BufSize;
-    }
+        avail = Min(avail, bink->BufSize);
     bink->CurBufSize = avail;
     if (bink->CurBufSize < bink->CurBufUsed + 0x8000) {
         bink->CurBufSize = bink->CurBufUsed;
