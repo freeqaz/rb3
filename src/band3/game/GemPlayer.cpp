@@ -2432,11 +2432,12 @@ int GemPlayer::GetCodaFreestyleExtents(Extent &extent) const {
     if (fillInfo->mFills.empty())
         return false;
     int lastStart = fillInfo->mFills.back().start;
-    if (lastStart < codaStartTick)
-        return false;
-    extent.unk0 = lastStart;
-    extent.unk4 = fillInfo->mFills.back().end;
-    return true;
+    if (lastStart >= codaStartTick) {
+        extent.unk0 = lastStart;
+        extent.unk4 = fillInfo->mFills.back().end;
+        return true;
+    }
+    return false;
 }
 
 void GemPlayer::CodaHit(float f1, int i2) {
