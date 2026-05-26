@@ -488,11 +488,11 @@ DataNode RndPropAnim::ForeachKeyframe(const DataArray *da) {
                 *var5 = curBool.value;
             } break;
             case PropKeys::kQuat: {
-                Hmx::Quat curQuat = theKeys->AsQuatKeys()[keyIdx].value;
+                const Hmx::Quat &curQuat = theKeys->AsQuatKeys()[keyIdx].value;
                 *var5 = DataArrayPtr(curQuat.x, curQuat.y, curQuat.z, curQuat.w);
             } break;
             case PropKeys::kVector3: {
-                Vector3 curVector = theKeys->AsVector3Keys()[keyIdx].value;
+                const Vector3 &curVector = theKeys->AsVector3Keys()[keyIdx].value;
                 *var5 = DataArrayPtr(curVector.x, curVector.y, curVector.z);
             } break;
             case PropKeys::kSymbol: {
@@ -515,9 +515,7 @@ DataNode RndPropAnim::ForeachKeyframe(const DataArray *da) {
                     curFloatKey.value = sKeyReplace.Float();
                 } break;
                 case PropKeys::kColor: {
-                    Key<Hmx::Color> &curColorKey = theKeys->AsColorKeys()[keyIdx];
-                    auto _tmp0 = sKeyReplace.Int();
-                    curColorKey.value.Unpack(_tmp0);
+                    theKeys->AsColorKeys()[keyIdx].value.Unpack(sKeyReplace.Int());
                 } break;
                 case PropKeys::kObject: {
                     ObjectStage objStage(sKeyReplace.GetObj());
