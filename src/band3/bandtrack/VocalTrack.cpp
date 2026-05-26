@@ -2273,7 +2273,8 @@ Lyric *VocalTrack::CreateLyric(
             break;
         lyric->mVocalNotes.push_back(cur);
         float endMs = cur->mMs + cur->mDurationMs;
-        lyric->mEndMs = Max(lyric->mEndMs, endMs);
+        const float &maxMs = lyric->mEndMs < endMs ? endMs : lyric->mEndMs;
+        lyric->mEndMs = maxMs;
         cur++;
         note = note + 1;
     }
