@@ -57,7 +57,8 @@ void UIListDir::BuildDrawState(
             if (selectedDisp < fadeCountStart) {
                 fadeCountStart = selectedDisp;
             }
-            int fadeEndCalc = (numDisplay - state.SelectedDisplay()) - 1;
+            auto _tmp2 = state.SelectedDisplay();
+            int fadeEndCalc = (numDisplay - _tmp2) - 1;
             if (fadeEndCalc < fadeCountEnd) {
                 fadeCountEnd = fadeEndCalc;
             }
