@@ -158,10 +158,11 @@ void CharEyes::Exit() {
 }
 
 void CharEyes::Highlight() {
+bool matchesFilter;
 #ifdef MILO_DEBUG
     if (GetHead()) {
-        RndGraph *oneframe = RndGraph::GetOneFrame();
         RndTransformable *trans = 0;
+        RndGraph *oneframe = RndGraph::GetOneFrame();
         for (ObjVector<EyeDesc>::iterator it = mEyes.begin(); it != mEyes.end(); ++it) {
             trans = it->mEye->GetSource();
             if (trans) {
@@ -246,7 +247,7 @@ void CharEyes::Highlight() {
             for (ObjVector<CharInterestState>::iterator it = mInterests.begin();
                  it != mInterests.end();
                  ++it) {
-                bool matchesFilter = true;
+                                matchesFilter = true;
                 if (!it->mInterest->IsMatchingFilterFlags(mInterestFilterFlags)) {
                     bool defaultOK = false;
                     if (mInterestFilterFlags == mDefaultFilterFlags) {
