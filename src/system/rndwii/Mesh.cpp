@@ -238,12 +238,12 @@ void WiiMesh::Init() {
     DisplayList::Init();
     gBoneTransformCache = (void *)0xe0000000;
     char *base = (char *)0xe0000000 + ((MaxBones() * 0x30 + 0x1f) & ~0x1f);
-    void **wp = gBoneWeightCache;
     int i = 0;
-    void **ip = gBoneIndexCache;
+    void **wp = gBoneWeightCache;
     void **np = gNrmCache;
-    char *maxBase = (char *)0xe0003fe0;
+    void **ip = gBoneIndexCache;
     void **vp = gVertexCache;
+    char *maxBase = (char *)0xe0003fe0;
     do {
         *vp = base;
         *np = base + 0x3c0;
