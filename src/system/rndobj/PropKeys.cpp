@@ -900,7 +900,8 @@ void ObjectKeys::Copy(const PropKeys *keys) {
     clear();
     if (keys->mKeysType == mKeysType) {
         const ObjectKeys *newKeys = static_cast<const ObjectKeys *>(keys);
-        insert(begin(), newKeys->begin(), newKeys->end());
+        if (newKeys != 0)
+            insert(begin(), newKeys->begin(), newKeys->end());
     }
 }
 
