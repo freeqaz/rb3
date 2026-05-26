@@ -26,8 +26,8 @@ void BandStarDisplay::SetNumStars(float f, bool b) {
         int newStar = (int)f;
         double intPart;
         float fracPart = (float)modf(f, &intPart);
-        bool animated = false;
         if (newStar > i) {
+            bool animated = false;
             while (newStar > i && i < size) {
                 mStarSweepAnims[i]->SetFrame(1.0f, 1.0f);
                 mStarFullTriggers[i]->Trigger();
