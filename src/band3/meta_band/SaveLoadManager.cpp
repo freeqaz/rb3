@@ -601,8 +601,10 @@ void SaveLoadManager::SetState(State newState) {
     case 0x3: // kS_AutoloadSelectProfile
     {
         mUploadProfiles.erase(mUploadProfiles.begin(), mUploadProfiles.end());
-        std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
-        mUploadProfiles = newProfiles;
+        {
+            std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
+            mUploadProfiles = newProfiles;
+        }
         if (TheMemcardMgr.IsDisableWriting() || mUploadProfiles.size() == 0 && !mInitialLoadNotDone) {
             mUser = NULL;
             SetState((State)0x12);
@@ -839,8 +841,8 @@ void SaveLoadManager::SetState(State newState) {
     }
     case 0x24:
     {
-        unk78 = 0;
         unk7c = 1;
+        unk78 = 0;
         unk68 = true;
         SetState((State)(mCache != NULL ? 0x22 : 0x26));
         break;
@@ -1125,29 +1127,26 @@ void SaveLoadManager::SetState(State newState) {
     case 0x48:
     case 0x49:
     case 0x4c:
-    case 0x4e:
-    case 0x4f:
+    case 0x4d:
     case 0x50:
     {
         Symbol dummy(saveload_dialog_event);
         TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
-    // States 0x4a, 0x4b have no entry body in target (async-wait, polled).
-    case 0x4d:
+    case 0x4e:
     {
-        BandProfile *pProfile = GetProfile();
-        MILO_ASSERT(pProfile, 0x57b);
-        int devId = -1;
-        if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
-        mWaiting = true;
-        Hmx::Object *localUser = NULL;
-        if (mLocalUser != NULL) localUser = mLocalUser;
-        TheMemcardMgr.AddSink(this);
-        if (mLocalUser != NULL) localUser = mLocalUser;
-        TheMemcardMgr.SelectDevice(pProfile, true, localUser, devId);
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
+    case 0x4f:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    // States 0x4a, 0x4b have no entry body in target (async-wait, polled).
     case 0x51:
     {
         bool needsWrite = false;

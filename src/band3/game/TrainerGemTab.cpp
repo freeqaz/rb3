@@ -220,7 +220,7 @@ void TrainerGemTab::DrawStartFinish() {
 }
 
 void TrainerGemTab::DrawExtraTails() {
-    for (unsigned long i = 0; i < unk130.size(); i++) {
+    for (int i = 0; (unsigned int)i < unk130.size(); i++) {
         RndMesh *mesh;
         if (unk130[i].mIsRGChord) {
             mesh = mGemSustainCyan;
@@ -241,7 +241,7 @@ void TrainerGemTab::Draw(int i) {
         return;
     if (!mGems[0])
         return;
-    unk130.resize(0);
+    unk130.erase(unk130.begin(), unk130.end());
     mGemTab->SetShowing(true);
     switch (unk48) {
     case 1:

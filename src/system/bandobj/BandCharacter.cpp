@@ -1173,8 +1173,8 @@ BandCharacter::SetState(const char *cc, int playFlags, int mask, bool b4, bool b
         strcpy(mGroupName, cc);
         b4 = true;
     }
-    mPlayFlags = playFlags;
     CharDriver *oldDriver = unk454;
+    mPlayFlags = playFlags;
     if (AddDriverClipDir() && streq(mGroupName, "realtime_idle")
         && (mPlayFlags & 0x38000)) {
         unk454 = mAddDriver;

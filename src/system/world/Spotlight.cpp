@@ -590,13 +590,14 @@ void Spotlight::UpdateFloorSpotTransform(const Transform &tf) {
 #pragma auto_inline on
 void Spotlight::DrawShowing() {
     START_AUTO_TIMER("spotlight");
-    if (LightCanSort() && mLightCanMesh) {
-        mLightCanMesh->SetWorldXfm(mLightCanXfm);
-        Sphere s(mLightCanMesh->mSphere);
+    const ObjPtr<RndMesh> &_ref0 = mLightCanMesh;
+    if (LightCanSort() && _ref0) {
+        _ref0->SetWorldXfm(mLightCanXfm);
+        Sphere s(_ref0->mSphere);
         if (s.GetRadius() >= 1) {
             Multiply(s, mLightCanXfm, s);
             if (!RndCam::sCurrent->CompareSphereToWorld(s)) {
-                mLightCanMesh->DrawShowing();
+                _ref0->DrawShowing();
             }
         }
     }

@@ -816,10 +816,10 @@ bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
         return false;
     }
     if (TheSongMgr.IsDemo(data->ID())) {
-        bool demoNotAllowed = false;
+        int demoNotAllowed = 0;
         if (unk12d) {
             if (!SongSortMgr::IsSetlistSort(unkdc))
-                demoNotAllowed = true;
+                demoNotAllowed = 1;
         }
         if (demoNotAllowed) {
             if (!b3)

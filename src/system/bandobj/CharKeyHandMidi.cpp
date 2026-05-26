@@ -53,7 +53,7 @@ CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
     KeyboardKey setToKey, KeyboardKey lastKeyDown, CharIKFingers::FingerNum lastFingerDown
 ) {
     int finger;
-    if (setToKey == lastKeyDown)
+    if ((int)(int)setToKey == lastKeyDown)
         return lastFingerDown;
     if (lastKeyDown == 0 || lastFingerDown == CharIKFingers::kFingerNone)
         return CharIKFingers::kFingerMiddle;

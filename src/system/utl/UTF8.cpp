@@ -193,8 +193,8 @@ void UTF8FilterString(char *out, int len, const char *in, const char *allowed, c
     MILO_ASSERT(in, 0x192);
     MILO_ASSERT(len > 0, 0x193);
     MILO_ASSERT(allowed, 0x194);
-    int decoded;
     unsigned short us;
+    int decoded;
     char *out_beg = out;
 
     while ((*in != 0) && (out - out_beg < len - 3)) {

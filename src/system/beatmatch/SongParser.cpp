@@ -1731,12 +1731,13 @@ bool SongParser::AudioTrackUsed(SongInfoAudioType ty) {
 }
 
 void SongParser::AnalyzeTrackList() {
-    MILO_ASSERT(!mTrackNames.empty(), 0x9F8);
+    std::vector<Symbol> &_ref0 = mTrackNames;
+    MILO_ASSERT(!_ref0.empty(), 0x9F8);
     int i = 0;
     int i1 = mParts.size();
     const char *c64;
-    for (; i < mTrackNames.size(); i++) {
-        if (IsPartTrackName(mTrackNames[i].mStr, &c64)) {
+    for (; i < _ref0.size(); i++) {
+        if (IsPartTrackName(_ref0[i].mStr, &c64)) {
             Symbol s68 = c64;
             DataArray *arr = mTrackNameMapping->FindArray(s68, false);
             if (arr) {
@@ -1750,7 +1751,7 @@ void SongParser::AnalyzeTrackList() {
                     }
                 }
             } else {
-                MILO_WARN("%s: bad track name: '%s'", mFilename, mTrackNames[i]);
+                MILO_WARN("%s: bad track name: '%s'", mFilename, _ref0[i]);
             }
         }
     }

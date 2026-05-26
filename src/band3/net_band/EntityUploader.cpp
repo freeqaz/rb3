@@ -227,6 +227,14 @@ __declspec(noinline) int _outline_NumChars(BandProfile* _obj) {
 __declspec(noinline) TourBand * _outline_GetTourBand(BandProfile* _obj) {
     return _obj->GetTourBand();
 }
+__declspec(noinline) String _outline_GetBandName(BandProfile* _obj) {
+    return _obj->GetBandName();
+}
+__declspec(noinline) const std::vector<LocalSavedSetlist *> & _outline_GetSavedSetlists(BandProfile* _obj) {
+    return _obj->GetSavedSetlists();
+}
+
+
 
 
 
@@ -259,14 +267,14 @@ int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profi
             data[curOp] = new EntityData();
             data[curOp]->mOpID = id;
             data[curOp]->mOpType = 3;
-            data[curOp]->mString = profile->GetBandName();
+            data[curOp]->mString = _outline_GetBandName(profile);
             data[curOp]->mRetCode = 0;
             data[curOp]->mOpFinished = false;
             data[curOp]->mSavableObject = band;
             curOp++;
             band->UploadAttempted();
         }
-        const std::vector<LocalSavedSetlist *> &setlists = profile->GetSavedSetlists();
+        const std::vector<LocalSavedSetlist *> &setlists = _outline_GetSavedSetlists(profile);
         FOREACH (it, setlists) {
             LocalSavedSetlist *cur = *it;
             if (cur->NeedsUpload()) {
@@ -293,7 +301,8 @@ void EntityUploader::RockCentralOpComplete(bool b1, int i2, int i3) {
         for (int i = 0; i < mNumUploadOps; i++) {
             if (i3 == mUploadOps[i]->mOpID) {
                 mUploadOps[i]->mDataResultList.Update(nullptr);
-                if (mUploadOps[i]->mDataResultList.NumDataResults() > 0) {
+                auto _tmp0 = mUploadOps[i]->mDataResultList.NumDataResults();
+                if (_tmp0 > 0) {
                     DataNode codeNode;
                     mUploadOps[i]->mDataResultList.GetDataResult(0)->GetDataResultValue(
                         "ret_code", codeNode

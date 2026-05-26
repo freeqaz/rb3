@@ -175,7 +175,10 @@ void Dxt1Compress::fancybasecolorsearch(
     int /*type*/,
     int /*haveAlpha*/
 ) {
-    int i, j, colors, z;
+    int i;
+    int j;
+    int colors;
+    int z;
     unsigned int pixerror, pixerrorbest;
     int pixerrorred, pixerrorgreen, pixerrorblue;
     int colordist, blockerrlin[2][3];

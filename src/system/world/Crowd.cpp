@@ -851,7 +851,7 @@ void WorldCrowd::Enter() {
         CharDef &def = it->mDef;
         Character *curChar = def.mChar;
         if (curChar) {
-            if (curChar->GetPollState() != 2)
+            if (2 != curChar->GetPollState())
                 curChar->Enter();
             for (int i = 0; i < 3; i++) {
                 ColorPalette *randPal =

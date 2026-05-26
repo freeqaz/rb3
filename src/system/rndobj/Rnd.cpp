@@ -562,14 +562,15 @@ void Rnd::BeginDrawing() {
     mDrawing = true;
     mWorldEnded = false;
     mDrawTimer.Restart();
+    Timer *savedWorld = nullptr;
     static Timer *gsTimer = AutoTimer::GetTimer("gs");
     Timer *gsLocal = gsTimer;
     float gsLastMs = gsLocal->mLastMs;
     static Timer *worldTimer = AutoTimer::GetTimer("world");
-    Timer *savedWorld = worldTimer;
     float worldLastMs;
-    if (savedWorld) {
-        worldLastMs = savedWorld->mLastMs;
+    if (worldTimer) {
+        worldLastMs = worldTimer->mLastMs;
+        savedWorld = worldTimer;
     }
     std::vector<std::pair<Timer, TimerStats> > &timers = AutoTimer::sTimers;
     for (std::vector<std::pair<Timer, TimerStats> >::iterator it = timers.begin();

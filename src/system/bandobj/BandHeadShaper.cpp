@@ -131,7 +131,8 @@ void BandHeadShaper::Init() {
         gVisemes[3] = FindSubdir(gHeadMale, "vignette_visemes");
         MemPopHeap();
     }
-    if (cfg->FindData("head_female_path", genderpath, false) && genderpath[0] != 0) {
+    auto _tmp1 = cfg->FindData("head_female_path", genderpath, false);
+    if (_tmp1 && genderpath[0] != 0) {
         static int _x = MemFindHeap("char");
         MemPushHeap(_x);
         gHeadMale = DirLoader::LoadObjects(FilePath(genderpath), 0, 0);

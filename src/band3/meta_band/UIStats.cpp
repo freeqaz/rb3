@@ -57,8 +57,8 @@ void UIStats::MaybePublish(UIScreen *from) {
     MILO_ASSERT(from, 0x48);
 
     Server *server = TheNet.mServer;
-    const DataArray *gather = from->TypeDef()->FindArray(gather_uistats, false);
     bool &_ref0 = mPublishingPad;
+    const DataArray *gather = from->TypeDef()->FindArray(gather_uistats, false);
     if (!server->IsConnected()
         || (gather && gather->Node(1).Int(gather) == 0)) {
         if (!server->IsConnected()) {

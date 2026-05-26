@@ -94,6 +94,7 @@ int GameMic::GetDataSampleRate() {
 }
 
 void GameMic::SetInputFile(const char *filename) {
+    MemStream * &_ref0 = mStoredAudio;
     int sampleRate;
     if (nullptr == filename) {
         auto _tmp0 = GetMyMic()->GetSampleRate();
@@ -105,14 +106,14 @@ void GameMic::SetInputFile(const char *filename) {
         WaveFile wav(fs);
         unkc = wav.mSamplesPerSec;
         WaveFileData data(wav);
-        if (!mStoredAudio) {
-            mStoredAudio = new MemStream();
+        if (!_ref0) {
+            _ref0 = new MemStream();
         }
-        mStoredAudio->Resize(
+        _ref0->Resize(
             (int)(wav.mNumChannels * wav.mNumSamples * wav.mBitsPerSample) / 8
         );
         data.Read(
-            mStoredAudio->mBuffer.begin(),
+            _ref0->mBuffer.begin(),
             (int)(wav.mNumChannels * wav.mNumSamples * wav.mBitsPerSample) / 8
         );
         sampleRate = unkc;

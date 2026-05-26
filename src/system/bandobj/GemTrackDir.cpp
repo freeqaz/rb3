@@ -1116,52 +1116,6 @@ void GemTrackDir::DeleteUnusedChordMeshes() {
     }
 }
 
-RndMesh *GemTrackDir::GetChordMesh(unsigned int key, bool which) {
-    std::map<unsigned int, std::pair<int, RndMesh *> > &chordMap
-        = which ? unk6cc : unk6b4;
-    std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
-        = chordMap.find(key);
-    if (it != chordMap.end()) {
-        return it->second.second;
-    }
-    TheDebug.Notify(MakeString(
-        "couldn't find %s gem for chord shape %x",
-        which ? "lefty" : "righty",
-        key
-    ));
-    return NULL;
-}
-
-int GemTrackDir::PrepareChordMesh(unsigned int chord) {
-    std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
-        = unk6b4.find(chord);
-    if (it == unk6b4.end()) {
-        RndMesh *chordMesh = mChordShapeGen->BuildChordMesh(chord, 6);
-        RndMesh *invMesh = mChordShapeGen->MakeInvertedMesh(chordMesh);
-
-        chordMesh->SetMutable(0);
-        dynamic_cast<WiiMesh *>(chordMesh)->mDisplays.Clear();
-        chordMesh->Sync(0x3F);
-        unk6b4[chord] = std::make_pair(1, chordMesh);
-
-        invMesh->SetMutable(0);
-        dynamic_cast<WiiMesh *>(invMesh)->mDisplays.Clear();
-        invMesh->Sync(0x3F);
-        unk6cc[chord] = std::make_pair(1, invMesh);
-
-        if (TheLoadMgr.EditMode()) {
-            chordMesh->SetName(MakeString("chord_%d", chord), this);
-            invMesh->SetName(MakeString("chord_L_%d", chord), this);
-        } else {
-            chordMesh->SetName("", this);
-            invMesh->SetName("", this);
-        }
-        return 1;
-    }
-    it->second.first = 1;
-    return 0;
-}
-
 float GemTrackDir::GetFretPosOffset(int idx) const {
     float f;
     if (idx > mFretPosOffsets.size()) {
@@ -1215,6 +1169,60 @@ void GemTrackDir::KeyMissRight() {
 void GemTrackDir::KeyMissLeft() {
     if (mMissOutofRangeLeftTrig)
         mMissOutofRangeLeftTrig->Trigger();
+}
+
+DECOMP_FORCEACTIVE(
+    GemTrackDir,
+    "show_octave_lanes",
+    "show_white_key_grading",
+    "chord_bracket.mat",
+    "chord_bracket_miss.mat"
+)
+
+int GemTrackDir::PrepareChordMesh(unsigned int chord) {
+    std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
+        = unk6b4.find(chord);
+    if (it == unk6b4.end()) {
+        RndMesh *chordMesh = mChordShapeGen->BuildChordMesh(chord, 6);
+        RndMesh *invMesh = mChordShapeGen->MakeInvertedMesh(chordMesh);
+
+        chordMesh->SetMutable(0);
+        dynamic_cast<WiiMesh *>(chordMesh)->mDisplays.Clear();
+        chordMesh->Sync(0x3F);
+        unk6b4[chord] = std::make_pair(1, chordMesh);
+
+        invMesh->SetMutable(0);
+        dynamic_cast<WiiMesh *>(invMesh)->mDisplays.Clear();
+        invMesh->Sync(0x3F);
+        unk6cc[chord] = std::make_pair(1, invMesh);
+
+        if (TheLoadMgr.EditMode()) {
+            chordMesh->SetName(MakeString("chord_%d", chord), this);
+            invMesh->SetName(MakeString("chord_L_%d", chord), this);
+        } else {
+            chordMesh->SetName("", this);
+            invMesh->SetName("", this);
+        }
+        return 1;
+    }
+    it->second.first = 1;
+    return 0;
+}
+
+RndMesh *GemTrackDir::GetChordMesh(unsigned int key, bool which) {
+    std::map<unsigned int, std::pair<int, RndMesh *> > &chordMap
+        = which ? unk6cc : unk6b4;
+    std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it
+        = chordMap.find(key);
+    if (it != chordMap.end()) {
+        return it->second.second;
+    }
+    TheDebug.Notify(MakeString(
+        "couldn't find %s gem for chord shape %x",
+        which ? "lefty" : "righty",
+        key
+    ));
+    return NULL;
 }
 
 void GemTrackDir::SetUnisonProgress(float f) {
