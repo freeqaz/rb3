@@ -99,8 +99,8 @@ void CharIKHand::Poll() {
         quat.Set(tf.m);
     }
     Interp(mHand->WorldXfm().v, vec, charWeight, mWorldDst);
-    RndTransformable *parent2 = 0;
     RndTransformable *parent1 = mHand->TransParent();
+    RndTransformable *parent2 = 0;
     if (!mMoveElbow)
         parent1 = 0;
     if (charWeight != 0 || mAlwaysIKElbow) {
