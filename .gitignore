@@ -71,6 +71,7 @@ function_analysis/
 
 # Source permuter scratch / work files
 .permuter_work_*
+.permuter_pp_*
 *.permuter.lock
 *.permuter_bak
 
