@@ -153,9 +153,9 @@ int WiiNetworkSocket::Send(const void *data, u32 len) {
     so_ret_t ret = SOSend(sock, data, sendLen, 0);
     switch (ret) {
     case SO_E15:
+    case SO_OK:
     case SO_E56:
         mFail = true;
-    case SO_OK:
     case SO_EAGAIN:
         return 0;
     case SO_ENOMEM:
