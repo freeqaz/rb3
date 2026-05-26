@@ -467,8 +467,8 @@ float Rnd::DrawTimers(float f) {
     DrawRectScreen(rect, bgColor, mOverlayMat, nullptr, nullptr);
 
     Hmx::Color barColor(0.5f, 0.5f, 0.5f, 1.0f);
-    Hmx::Color budgetExcessColor(0.5f, 0.0f, 0.0f, 1.0f);
     Hmx::Color worstExcessColor(0.0f, 0.5f, 0.5f, 1.0f);
+    Hmx::Color budgetExcessColor(0.5f, 0.0f, 0.0f, 1.0f);
 
     float y = f;
 
@@ -503,8 +503,8 @@ float Rnd::DrawTimers(float f) {
         rect.y = y;
     }
 
-    rect.y = f;
     rect.h = totalHeight;
+    rect.y = f;
     barColor.red = 0.25f;
     barColor.green = 0.25f;
     barColor.blue = 0.25f;
@@ -531,7 +531,7 @@ float Rnd::DrawTimers(float f) {
         if (lastMs >= 0.05f) {
             if (mVerboseTimers && AutoTimer::CollectingStats()) {
                 Symbol name = it->first.mName;
-                TimerStats &stats = it->second;
+                const TimerStats &stats = it->second;
                 DrawStringScreen(MakeString("%s %2.1f (%.2f, %.2f) %.2f", name, lastMs, stats.mAvgMs, stats.mStdDevMs, stats.mMaxMs), pos, barColor, true);
             } else {
                 Symbol name = it->first.mName;
