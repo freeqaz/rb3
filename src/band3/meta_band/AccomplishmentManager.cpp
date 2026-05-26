@@ -1703,8 +1703,7 @@ Symbol AccomplishmentManager::GetFirstUnfinishedAccomplishmentEntry(
     BandProfile *i_pProfile, Symbol s
 ) {
     MILO_ASSERT(i_pProfile, 0xA88);
-    MetaPerformer *pPerformer = MetaPerformer::Current();
-    MILO_ASSERT(pPerformer, 0xA8B);
+    MILO_ASSERT(MetaPerformer::Current(), 0xA8B);
     Accomplishment *pAccomplishment = TheAccomplishmentMgr->GetAccomplishment(s);
     MILO_ASSERT(pAccomplishment, 0xA8E);
     std::vector<Symbol> vUnused;

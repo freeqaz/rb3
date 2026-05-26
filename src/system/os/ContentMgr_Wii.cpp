@@ -92,8 +92,8 @@ void HandleErrorFromRestore(WiiContent *content, OpResult result) {}
 
 int ConvertCNTSDError(int error) {
     switch (error) {
-        case -0xBB8:
         case -0xBBC:
+        case -0xBB8:
         case -0xBC2:
             return 1;
         case -0xBF8:

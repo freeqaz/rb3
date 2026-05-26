@@ -136,6 +136,10 @@ void SaveLoadManager::ManualDelete() {
     mRequestFlags |= 1;
 }
 
+namespace {
+    Symbol kStrGlobalCacheName("globaloptions");
+}
+
 void SaveLoadManager::Poll() {
     if (!mActivated) return;
     if (mState == kS_Idle) {
@@ -216,18 +220,6 @@ void SaveLoadManager::Poll() {
             break;
         }
         break;
-    case (State)0x1A:
-        if (ThePlatformMgr.mGuideShowing) return;
-        SetState((State)0x19);
-        break;
-    case (State)0x2D:
-        if (ThePlatformMgr.mGuideShowing) return;
-        SetState((State)0x2b);
-        break;
-    case (State)0x3C:
-        if (ThePlatformMgr.mGuideShowing) return;
-        SetState((State)0x3b);
-        break;
     case (State)0x14:
         if (!TheCacheMgr->IsDone()) return;
         {
@@ -263,6 +255,10 @@ void SaveLoadManager::Poll() {
             }
         }
         break;
+    case (State)0x1A:
+        if (ThePlatformMgr.mGuideShowing) return;
+        SetState((State)0x19);
+        break;
     case (State)0x1B:
         if (!TheCacheMgr->IsDone()) return;
         {
@@ -278,11 +274,6 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x25);
             }
         }
-        break;
-    case (State)0x1D:
-        if (!TheCacheMgr->IsDone()) return;
-        UpdateStatus(kSaveLoadMgrStatus_Loading);
-        SetState((State)0x20);
         break;
     case (State)0x20:
         if (!TheCacheMgr->IsDone()) return;
@@ -303,26 +294,6 @@ void SaveLoadManager::Poll() {
             }
         }
         break;
-    case (State)0x22:
-        if (!TheCacheMgr->IsDone()) return;
-        if (TheCacheMgr->GetLastResult() == kCache_NoError) {
-            SetState((State)0x26);
-        } else {
-            SetState((State)0x25);
-        }
-        break;
-    case (State)0x23:
-        if (!TheCacheMgr->IsDone()) return;
-        UpdateStatus(kSaveLoadMgrStatus_Loading);
-        if (unk70 == 0) {
-            unk70 = (int)TheCacheMgr->GetLastResult();
-        }
-        if (unk70 == 0) {
-            SetState((State)0x26);
-        } else {
-            SetState((State)0x25);
-        }
-        break;
     case (State)0x1E:
         if (!mCache->IsDone()) return;
         {
@@ -335,6 +306,11 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x25);
             }
         }
+        break;
+    case (State)0x1D:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        SetState((State)0x20);
         break;
     case (State)0x1F:
         if (!mCache->IsDone()) return;
@@ -358,7 +334,27 @@ void SaveLoadManager::Poll() {
         } else if (mState == (State)0x3E) {
             SetState((State)0x3f);
         } else {
-            TheDebug.Fail("Impossible state.\n");
+            TheDebug.Fail(MakeString("Impossible state.\n"));
+        }
+        break;
+    case (State)0x22:
+        if (!TheCacheMgr->IsDone()) return;
+        if (TheCacheMgr->GetLastResult() == kCache_NoError) {
+            SetState((State)0x26);
+        } else {
+            SetState((State)0x25);
+        }
+        break;
+    case (State)0x23:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        if (unk70 == 0) {
+            unk70 = (int)TheCacheMgr->GetLastResult();
+        }
+        if (unk70 == 0) {
+            SetState((State)0x26);
+        } else {
+            SetState((State)0x25);
         }
         break;
     case (State)0x27:
@@ -386,6 +382,30 @@ void SaveLoadManager::Poll() {
             }
         }
         break;
+    case (State)0x2B:
+    case (State)0x2C:
+        if (!TheCacheMgr->IsDone()) return;
+        {
+            CacheResult result = TheCacheMgr->GetLastResult();
+            if (result == kCache_NoError) {
+                unk7c = 2;
+                int sz = mCacheID->GetDeviceID();
+                unk78 = sz;
+                TheCacheMgr->AddCacheID(mCacheID, Symbol(kStrGlobalCacheName.Str()));
+                SetState((State)0x31);
+            } else if (result == kCache_ErrorUserCancel) {
+                unk7c = 1;
+                SetState((State)0x29);
+            } else {
+                TheDebug.Fail(MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result));
+                SetState((State)0x37);
+            }
+        }
+        break;
+    case (State)0x2D:
+        if (ThePlatformMgr.mGuideShowing) return;
+        SetState((State)0x2b);
+        break;
     case (State)0x2E:
         if (!TheCacheMgr->IsDone()) return;
         {
@@ -401,11 +421,6 @@ void SaveLoadManager::Poll() {
                 SetState((State)0x37);
             }
         }
-        break;
-    case (State)0x30:
-        if (!TheCacheMgr->IsDone()) return;
-        UpdateStatus(kSaveLoadMgrStatus_Loading);
-        SetState((State)0x31);
         break;
     case (State)0x31:
         if (!TheCacheMgr->IsDone()) return;
@@ -426,6 +441,22 @@ void SaveLoadManager::Poll() {
             }
         }
         break;
+    case (State)0x30:
+        if (!TheCacheMgr->IsDone()) return;
+        UpdateStatus(kSaveLoadMgrStatus_Loading);
+        SetState((State)0x31);
+        break;
+    case (State)0x32:
+        if (!mCache->IsDone()) return;
+        if (mCache->GetLastResult() == kCache_NoError) {
+            FixedSizeSaveableStream stream(mData, TheProfileMgr.GetGlobalOptionsSize(), true);
+            TheProfileMgr.LoadGlobalOptions(stream);
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        } else {
+            TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileError);
+        }
+        SetState((State)0x34);
+        break;
     case (State)0x3B:
         if (!TheCacheMgr->IsDone()) return;
         {
@@ -445,6 +476,10 @@ void SaveLoadManager::Poll() {
             }
         }
         break;
+    case (State)0x3C:
+        if (ThePlatformMgr.mGuideShowing) return;
+        SetState((State)0x3b);
+        break;
     case (State)0x3D:
         if (!TheCacheMgr->IsDone()) return;
         {
@@ -459,14 +494,6 @@ void SaveLoadManager::Poll() {
                 TheDebug.Fail(MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result));
                 SetState((State)0x40);
             }
-        }
-        break;
-    case (State)0x32:
-        if (!TheCacheMgr->IsDone()) return;
-        if (TheCacheMgr->GetLastResult() == kCache_NoError) {
-            SetState((State)0x32);
-        } else {
-            SetState((State)0x37);
         }
         break;
     case (State)0x34:
@@ -527,10 +554,6 @@ void SaveLoadManager::Poll() {
     default:
         break;
     }
-}
-
-namespace {
-    Symbol kStrGlobalCacheName("globaloptions");
 }
 
 void SaveLoadManager::SetState(State newState) {
@@ -1494,9 +1517,11 @@ Symbol SaveLoadManager::GetDialogOpt2() {
 DataNode SaveLoadManager::GetDialogMsg() {
     String profileName(gNullStr);
     int playerNum = -1;
-    if (mUser != NULL) {
-        profileName = mUser->UserName();
-        playerNum = mUser->GetPadNum() + 1;
+    LocalBandUser * &_ref0 = mUser;
+    if (_ref0 != NULL) {
+        profileName = _ref0->UserName();
+        auto _tmp0 = _ref0->GetPadNum();
+        playerNum = _tmp0 + 1;
     }
     switch (mState) {
     case (State)0x6:

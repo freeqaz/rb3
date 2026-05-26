@@ -286,8 +286,8 @@ int RndGroup::CollidePlane(const Plane &p) {
 
 RndDrawable *RndGroup::CollideShowing(const Segment &seg, float &f, Plane &p) {
     RndDrawable *ret = nullptr;
-    Segment localseg(seg);
     float locf;
+    Segment localseg(seg);
     f = 1.0f;
     FOREACH (it, mDraws) {
         RndDrawable *collided = (*it)->Collide(localseg, locf, p);

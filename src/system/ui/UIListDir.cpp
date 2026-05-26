@@ -165,7 +165,8 @@ void UIListDir::BuildDrawState(
                 }
             }
             UIListWidgetState elemState;
-            if (state.Provider()->IsActive(prevData)) {
+            auto _tmp1 = state.Provider()->IsActive(prevData);
+            if (_tmp1) {
                 elemState = showing == selected ? kUIListWidgetHighlight
                                                 : kUIListWidgetActive;
             } else {

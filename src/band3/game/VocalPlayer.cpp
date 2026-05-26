@@ -1081,14 +1081,13 @@ int VocalPlayer::GetSpotlightPhraseID() const {
 void VocalPlayer::HandlePhraseEnd(float f1) {
     std::vector<VocalPart *> voxParts = mVocalParts;
     std::sort(voxParts.begin(), voxParts.end(), VocalPart::FramePhraseMeterFracSorter);
-    for (int i = 0.0f; i < voxParts.size(); i++) {
+    for (int i = 0.0f; voxParts.size() > i; i++) {
         VocalPart *cur = voxParts[i];
         cur->SetPhraseScoreMultiplier(mPartScoreMultipliers->Float(i + 1));
         cur->SetPhraseRank(i);
     }
     int i4 = GetSpotlightPhraseID();
     float fc4 = -1.0f;
-    int i16 = 0;
     int ic8 = -1;
     int i15 = 0;
     int i14 = mPhraseActivePartCount;
@@ -1114,7 +1113,7 @@ void VocalPlayer::HandlePhraseEnd(float f1) {
             vec60[cur->PartIndex()] = 1;
             mPhraseActivePartCount++;
         }
-        if (ic8 < id8 && ScoringEnabled() && cur->ScoringEnabled()) {
+        if (id8 > ic8 && ScoringEnabled() && cur->ScoringEnabled()) {
             ic8 = id8;
         }
         if (id8 >= 4)
@@ -1164,6 +1163,7 @@ void VocalPlayer::HandlePhraseEnd(float f1) {
     mTambourineManager.SetTambourine(mVocalParts.front()->InTambourinePhrase());
     bool b14 = i4 != -1 && ic8 >= 4;
     if (mTrack) {
+        int i16 = 0;
         if (ScoringEnabled()) {
             mTrack->OnPhraseComplete(fcc, fd0, i16);
         }
@@ -1717,7 +1717,7 @@ float VocalPlayer::GetNumPhrases(int startTick, int endTick, int isolatedPart) {
                 }
             } else {
                 VocalNoteList *vnl = TheSongDB->GetVocalNoteList(part);
-                if (vnl != NULL && vnl->HasNoteInRange(clampedEnd, clampedStart) != -1) {
+                if (vnl != NULL && vnl->HasNoteInRange(clampedStart, clampedEnd) != -1) {
                     if (part != 0 || phrase->unk10 != phrase->unk14) {
                         found = 1;
                         count++;

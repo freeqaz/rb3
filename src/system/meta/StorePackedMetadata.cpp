@@ -1684,64 +1684,49 @@ void StoreMetadataManager::PollLoading() {
             }
             return;
         }
+        {
+        bool loaded;
         if (mStringTable == NULL) {
             mStringTable = new StoreStringTable();
-            if (!mStringTable->Load(mBasePath.c_str())) {
-                mErrorMsg = 6;
-                SetLoadingState(0xB);
-            }
-            return;
+            loaded = mStringTable->Load(mBasePath.c_str());
+            goto load_check;
         }
         if (mSongTable == NULL) {
             mSongTable = new StoreSongTable();
-            if (!mSongTable->Load(mBasePath.c_str())) {
-                mErrorMsg = 6;
-                SetLoadingState(0xB);
-            }
-            return;
+            loaded = mSongTable->Load(mBasePath.c_str());
+            goto load_check;
         }
         if (mOfferTable == NULL) {
             mOfferTable = new StoreOfferTable();
-            if (!mOfferTable->Load(mBasePath.c_str())) {
-                mErrorMsg = 6;
-                SetLoadingState(0xB);
-            }
-            return;
+            loaded = mOfferTable->Load(mBasePath.c_str());
+            goto load_check;
         }
         if (mRbnOfferTable == NULL) {
             mRbnOfferTable = new StoreRbnOfferTable();
-            if (!mRbnOfferTable->Load(mBasePath.c_str())) {
-                mErrorMsg = 6;
-                SetLoadingState(0xB);
-            }
-            return;
+            loaded = mRbnOfferTable->Load(mBasePath.c_str());
+            goto load_check;
         }
         if (mPageTable == NULL) {
             mPageTable = new StorePageTable();
-            bool ok2 = mPageTable->Load(mBasePath.c_str());
+            loaded = mPageTable->Load(mBasePath.c_str());
             mCurrentPage = LoadPage(mVersion->mBuildNumber);
-            if (!ok2) {
-                mErrorMsg = 6;
-                SetLoadingState(0xB);
-            }
-            return;
+            goto load_check;
         }
         if (mMarqueeTable == NULL) {
             mMarqueeTable = new StoreMarqueeTable();
-            if (!mMarqueeTable->Load(mBasePath.c_str())) {
+            loaded = mMarqueeTable->Load(mBasePath.c_str());
+            goto load_check;
+        }
+        if (mRedemptionsTable == NULL) {
+            mRedemptionsTable = new StoreRedemptionsTable();
+            loaded = mRedemptionsTable->Load(mBasePath.c_str());
+        load_check:
+            if (!loaded) {
                 mErrorMsg = 6;
                 SetLoadingState(0xB);
             }
             return;
         }
-        if (mRedemptionsTable == NULL) {
-            mRedemptionsTable = new StoreRedemptionsTable();
-            bool ok2 = mRedemptionsTable->Load(mBasePath.c_str());
-            if (!ok2) {
-                mErrorMsg = 6;
-                SetLoadingState(0xB);
-            }
-            return;
         }
         if (StoreIndexFileReader::mMetaDataCntHandleInited) {
             CNTReleaseHandle(&StoreIndexFileReader::mMetaDataCntHandle);
@@ -1980,8 +1965,8 @@ void UpdateOfferStateFromEc(
         );
         return;
     }
-    unsigned long ecCount = info->nIndexes;
     unsigned long indexCount = (unsigned long)(offerBase->mNumSongs * 2);
+    unsigned long ecCount = info->nIndexes;
     if (ecCount != indexCount) {
         TheDebug << MakeString(
             "Store: offer %s from ecommerce says there are %d contents but store index data says %d\n",

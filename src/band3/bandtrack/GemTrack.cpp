@@ -180,8 +180,8 @@ void GemTrack::UpdateShiftsToTick(int tick) {
 }
 
 void GemTrack::CheckShifts(float ms, int topTick) {
-    int tickOffset = 0;
     int nowTick = MsToTick(ms);
+    int tickOffset = 0;
     if (TheGame->InTrainer()) {
         nowTick = GetLoopTick(nowTick, tickOffset);
         mCurrentRangeShift = mRangeShifts.begin();
@@ -214,8 +214,8 @@ void GemTrack::CheckShifts(float ms, int topTick) {
             int frame;
             if (clamped >= 0) {
                 key = WhiteKeyToSemitone(2);
-                shift.unk20 = -5;
                 frame = -(5 - clamped);
+                shift.unk20 = -5;
             } else {
                 key = WhiteKeyToSemitone((int)mRange - 3);
                 frame = clamped + 5;
@@ -243,8 +243,10 @@ void GemTrack::CheckShifts(float ms, int topTick) {
             }
             float frac = (float)(nowTick - shift.unk0)
                 / (float)(shift.unk4 - shift.unk0);
-            newRange = frac * (shift.unk14 - shift.unk10) + shift.unk10;
-            newOffset = frac * (shift.unkc - shift.unk8) + shift.unk8;
+            float baseRange = shift.unk10;
+            float baseOffset = shift.unk8;
+            newRange = frac * (shift.unk14 - baseRange) + baseRange;
+            newOffset = frac * (shift.unkc - baseOffset) + baseOffset;
             mUpcomingShiftMaskAnim->SetFrame(
                 frac * (float)(shift.unk20 - shift.unk1c) + (float)shift.unk1c,
                 1.0f

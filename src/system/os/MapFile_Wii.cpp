@@ -1,3 +1,8 @@
+/* ===== PERMUTER LOCK — DO NOT EDIT =====
+ * The source permuter is actively working on: TryDemangleClassAndFunc
+ * Started: 2026-05-26 08:17 (stale after 5 minutes)
+ * This banner is temporary and will be removed automatically.
+ ===== */
 #include "os/MapFile_Wii.h"
 #include "os/Debug.h"
 #include <string.h>

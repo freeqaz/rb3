@@ -126,12 +126,12 @@ END_LOADS
 void UIFontImporter::FontImporterSyncObjects() {
     if (!mDefaultMat && mMatVariations.size() > 0 && mGennedFonts.size() > 0) {
         ObjPtrList<RndMat>::iterator mit;
+        ObjPtrList<RndFont>::iterator it;
         for (mit = mMatVariations.begin(); mit != mMatVariations.end();) {
             RndMat *old = *mit;
             mit = mMatVariations.erase(mit);
             delete old;
         }
-        ObjPtrList<RndFont>::iterator it;
         int idx = 0;
         for (it = mGennedFonts.begin(); it != mGennedFonts.end(); it++, idx++) {
             RndFont *font = *it;

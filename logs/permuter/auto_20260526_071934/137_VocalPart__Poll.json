@@ -1,0 +1,59 @@
+{
+  "symbol": "Poll__9VocalPartFfRC7SongPos",
+  "function_name": "VocalPart::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/game/VocalPart.cpp",
+  "initial_percent": 97.234634,
+  "final_percent": 97.234634,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.234634,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.234634,
+      "delta": 0.0,
+      "num_variants": 27,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 92.48603,
+      "best_name": "membind_0",
+      "best_pattern": "member_ref_bind",
+      "best_score": 97.234634,
+      "delta": 4.748604,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 97.14525,
+      "best_name": "refelim_0",
+      "best_pattern": "reference_elimination",
+      "best_score": 97.234634,
+      "delta": 0.08938399999999547,
+      "num_variants": 27,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 32.63,
+  "winning_pattern": "reference_elimination",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "1": 34,
+    "2": 29,
+    "0": 3,
+    "5": 18
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

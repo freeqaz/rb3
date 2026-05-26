@@ -143,7 +143,7 @@ void CharIKHead::UpdatePoints(bool b) {
         mUpdatePoints = false;
         mPoints.clear();
         int gencnt = GenerationCount(mSpine, mHead);
-        float f1 = 0.0f;
+        float f1 = 0;
         if (gencnt != 0) {
             mPoints.resize(gencnt + 1);
             RndTransformable *curtrans = mHead;

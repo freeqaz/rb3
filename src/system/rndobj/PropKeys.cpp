@@ -658,7 +658,8 @@ void SymbolKeys::SetFrame(float frame, float blend) {
         Symbol s;
         idx = SymbolAt(frame, s);
         if (mInterpolation != kStep || mLastKeyFrameIndex != idx) {
-            mTarget->SetProperty(mProp, DataGetMacro(s)->Int(0));
+            auto _tmp0 = DataGetMacro(s)->Int(0);
+            mTarget->SetProperty(mProp, _tmp0);
         }
         break;
     }

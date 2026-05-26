@@ -628,14 +628,15 @@ bool Movie::Impl::CheckOpen(bool b) {
 
 void Movie::Impl::FinishOpen() {
     ASSERT_MOVIE_THREAD(0x2AC);
-    if (mBink == NULL) {
+    BINK * &_ref0 = mBink;
+    if (_ref0 == NULL) {
         MILO_WARN("BinkOpen '%s' error: %s\n", mFilename, BinkGetError());
         return;
     }
     mSoundEnabled = mSoundEnabled | (mMovieBuffers->mPendingBlits > 1);
-    BinkSetSoundOnOff(mBink, !mSoundEnabled);
+    BinkSetSoundOnOff(_ref0, !mSoundEnabled);
     BINKSUMMARY summary;
-    BinkGetSummary(mBink, &summary);
+    BinkGetSummary(_ref0, &summary);
     mAspect = (float)(unsigned int)summary.Width / (float)(unsigned int)summary.Height;
     unsigned int wMod = summary.Width & 0xF;
     unsigned int hMod = summary.Height & 0xF;
@@ -674,20 +675,21 @@ void Movie::Impl::DoFrame() {
     }
     if (mTimeCallback != NULL) {
         float dt = mTimeCallback();
-        bool atZ = (dt == 0.0f);
+        bool atZ = (dt == 0);
         if (atZ) {
             SetPaused(atZ);
             return;
         }
     }
     BeginFrame();
-    BinkDoFrame(mBink);
+    BINK * &_ref0 = mBink;
+    BinkDoFrame(_ref0);
     EndFrame();
     bool skip = true;
-    if (mBink->ReadError == 0) {
+    if (_ref0->ReadError == 0) {
         bool atEnd = false;
         if (!mLoop) {
-            if (mBink->FrameNum == mBink->Frames) atEnd = true;
+            if (_ref0->FrameNum == _ref0->Frames) atEnd = true;
         }
         if (!atEnd) skip = false;
     }
@@ -696,14 +698,14 @@ void Movie::Impl::DoFrame() {
 
 void Movie::Impl::DiscContentionPublish() {
     ASSERT_MOVIE_THREAD(0x68);
-    bool first = true;
+    unsigned char first = 1;
     int count = 0;
     String list;
     for (std::map<void *, String>::iterator it = mDiscContentionMap.begin();
          it != mDiscContentionMap.end();
          ++it) {
         if (!first) list += ", ";
-        first = false;
+        first = 0;
         list += it->second;
         count++;
     }

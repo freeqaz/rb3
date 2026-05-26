@@ -166,7 +166,7 @@ public:
     int unke0;
     bool unke4;
 #ifdef MILO_DEBUG
-    float unke8, unkec, unkf0;
+    Vector3 unke8; // 0xe8 - debug: reference view direction (default: Y-axis)
 #endif
     float unkf4;
     CharEyeDartRuleset::EyeDartRulesetData mEyeDartRulesetData;

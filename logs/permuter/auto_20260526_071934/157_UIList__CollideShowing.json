@@ -1,0 +1,58 @@
+{
+  "symbol": "CollideShowing__6UIListFRC7SegmentRfR5Plane",
+  "function_name": "UIList::CollideShowing",
+  "source_path": "/home/free/code/milohax/rb3/src/system/ui/UIList.cpp",
+  "initial_percent": 97.0041,
+  "final_percent": 97.0041,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.0041,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.0041,
+      "delta": 0.0,
+      "num_variants": 19,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 87.922134,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 97.0041,
+      "delta": 9.081965999999994,
+      "num_variants": 22,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 97.0041,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.0041,
+      "delta": 0.0,
+      "num_variants": 19,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 23.09,
+  "winning_pattern": "initializer_literal",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 24,
+    "5": 25,
+    "2": 11
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

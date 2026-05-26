@@ -222,12 +222,14 @@ void CharacterTest::SetStartEndBeat(float f1, float f2, int bpm) {
                 mMe->mFrozen = 0; // i know this is wrong, just can't figure out the right
                                   // member atm
                 miloObj->SetProperty("bpm", bpm);
+                float beatsPerSecond = bpm / 60.0f;
+                float startFrame = (30.0f * f1) / beatsPerSecond;
                 miloObj->Handle(
                     Message(
                         "set_anim_frame",
-                        (f1 * 30.0f) / (bpm / 60.0f),
-                        (f2 * 30.0f) / (bpm / 60.0f),
-                        (float)bpm
+                        startFrame,
+                        (30.0f * f2) / beatsPerSecond,
+                        startFrame
                     ),
                     true
                 );

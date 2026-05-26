@@ -469,7 +469,7 @@ float UIList::GetDistanceToPlane(const Plane &p, Vector3 &v) {
 RndDrawable *UIList::CollideShowing(const Segment &seg, float &fref, Plane &p) {
     std::vector<std::vector<Vector3> > vecOfVecs;
     BoundingBoxTriangles(vecOfVecs);
-    bool intersects = false;
+    bool intersects = 0;
     Segment s(seg);
     fref = 1.0f;
     for (std::vector<std::vector<Vector3> >::iterator it = vecOfVecs.begin();

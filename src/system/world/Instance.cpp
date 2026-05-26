@@ -298,10 +298,6 @@ void WorldInstance::SetProxyFile(const FilePath &fp, bool override) {
         Hmx::Object::Copy(mDir, kCopyShallow);
     }
 }
-__declspec(noinline) bool _outline_HasTriggerEvents(EventTrigger* _obj) {
-    return _obj->HasTriggerEvents();
-}
-
 
 #include "utl/ClassSymbols.h"
 
@@ -326,7 +322,7 @@ void WorldInstance::SyncDir() {
             std::list<ObjPair> objPairs;
             objPairs.push_back(ObjPair(mDir, this));
             for (ObjDirItr<Hmx::Object> it(mDir, false); it != nullptr; ++it) {
-                RndMesh *curMesh = dynamic_cast<RndMesh *>(&*it);
+                bool curMesh = dynamic_cast<RndMesh *>(&*it) != nullptr;
                 if (!grp)
                     goto iterate;
                 if (it != grp && !GroupedUnder(grp, it))
@@ -343,7 +339,7 @@ void WorldInstance::SyncDir() {
                     continue;
                 else {
                     EventTrigger *trig = dynamic_cast<EventTrigger *>(&*it);
-                    if (trig && _outline_HasTriggerEvents(trig)) {
+                    if (trig && trig->HasTriggerEvents()) {
                         MILO_WARN("%s must be in shared.grp", PathName(it));
                     } else {
                         Hmx::Object *foundObj = FindObject(it->Name(), false);
@@ -387,9 +383,7 @@ void WorldInstance::SyncDir() {
                     if (GenerationCount(this, it) > 0) {
                         RndDrawable *draw = dynamic_cast<RndDrawable *>(&*it);
                         if (draw) {
-                            Sphere s = draw->mSphere;
-                            s.radius *= f21;
-                            draw->SetSphere(s);
+                            draw->mSphere.radius *= f21;
                         }
                     }
                 }

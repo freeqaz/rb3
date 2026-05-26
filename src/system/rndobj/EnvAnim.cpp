@@ -100,12 +100,13 @@ void RndEnvAnim::SetFrame(float frame, float blend) {
 
 // fn_805DB940
 void RndEnvAnim::SetKey(float frame) {
-    if (mEnviron) {
-        FogColorKeys().Add(mEnviron->FogColor(), frame, true);
+    const ObjPtr<RndEnviron, ObjectDir> &_ref0 = mEnviron;
+    if (_ref0) {
+        FogColorKeys().Add(_ref0->FogColor(), frame, true);
         FogRangeKeys().Add(
-            Vector2(mEnviron->GetFogStart(), mEnviron->GetFogEnd()), frame, true
+            Vector2(_ref0->GetFogStart(), _ref0->GetFogEnd()), frame, true
         );
-        AmbientColorKeys().Add(mEnviron->AmbientColor(), frame, true);
+        AmbientColorKeys().Add(_ref0->AmbientColor(), frame, true);
     }
 }
 

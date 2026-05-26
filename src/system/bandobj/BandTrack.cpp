@@ -676,7 +676,7 @@ void BandTrack::ClearFinaleHelp() {
         TIMER_GET_CYCLES(cycle);
         float elapsed = Timer::CyclesToMs(cycle - unk88);
         static float kMinFinaleHelpTime =
-            SystemConfig("objects", "min_finale_help_time")->Float(1);
+            SystemConfig("objects", ThisDir()->ClassName(), "min_finale_help_time")->Float(1);
         float delay = 0.0f;
         if (elapsed < kMinFinaleHelpTime)
             delay = kMinFinaleHelpTime - elapsed;

@@ -101,7 +101,7 @@ CharEyes::CharEyes()
       mLowerLidTrackRotate(0), mInterestFilterFlags(0), unka4(0, 0, 0), unkb4(0),
       unkc0(0), unkc4(0), unkc5(0), unkc8(this), unkd4(this), unke0(-1), unke4(0),
 #ifdef MILO_DEBUG
-      unke8(0), unkec(1.0f), unkf0(0),
+      unke8(0, 1.0f, 0),
 #endif
       unkf4(0), unk124(0), unk128(-1.0f), unk12c(-1), unk13c(0), unk140(-1.0f), unk144(0),
       unk148(-1.0f), unk14c(-1.0f), unk15c(0), unk15d(1) {
@@ -243,7 +243,6 @@ void CharEyes::Highlight() {
             const Transform &headxfm = head->WorldXfm();
             Vector3 headFwd(headxfm.m.y);
             Normalize(headFwd, headFwd);
-            const Vector3 &headPos = headxfm.v;
             for (ObjVector<CharInterestState>::iterator it = mInterests.begin();
                  it != mInterests.end();
                  ++it) {
@@ -272,8 +271,8 @@ void CharEyes::Highlight() {
                             Hmx::Color(1.0f, 1.0f, 1.0f, 1.0f)
                         );
                     }
-                } else if (it->mInterest->IsWithinViewCone(headPos, headFwd)
-                           && it->mInterest->IsWithinViewCone(headPos, headFwd)) {
+                } else if (it->mInterest->IsWithinViewCone(headxfm.v, unke8)
+                           && it->mInterest->IsWithinViewCone(headxfm.v, headFwd)) {
                     if (matchesFilter) {
                         oneframe->AddSphere(
                             it->mInterest->WorldXfm().v, 2.0f, Hmx::Color(1.0f, 1.0f, 0.0f, 1.0f)

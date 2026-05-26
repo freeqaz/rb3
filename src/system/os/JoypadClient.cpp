@@ -151,7 +151,8 @@ bool JoypadClient::OnMsg(const ButtonDownMsg &msg) {
     if (mFilterAllButStart && msg.GetAction() != kAction_Start)
         return 0;
     LocalUser *btnUser = msg.GetUser();
-    if (mUser && btnUser != mUser)
+    LocalUser * &_ref0 = mUser;
+    if (_ref0 && btnUser != _ref0)
         return 0;
 
     JoypadButton btn = msg.GetButton();

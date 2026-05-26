@@ -1,0 +1,58 @@
+{
+  "symbol": "UpdatePoints__10CharIKHeadFb",
+  "function_name": "CharIKHead::UpdatePoints",
+  "source_path": "/home/free/code/milohax/rb3/src/system/char/CharIKHead.cpp",
+  "initial_percent": 96.850746,
+  "final_percent": 96.850746,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.850746,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.850746,
+      "delta": 0.0,
+      "num_variants": 25,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 73.01194,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 96.850746,
+      "delta": 23.838806000000005,
+      "num_variants": 26,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 96.850746,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.850746,
+      "delta": 0.0,
+      "num_variants": 25,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 19.46,
+  "winning_pattern": "initializer_literal",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 38,
+    "0": 3,
+    "5": 35
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

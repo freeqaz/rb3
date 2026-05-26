@@ -562,7 +562,7 @@ void Rnd::BeginDrawing() {
     mDrawing = true;
     mWorldEnded = false;
     mDrawTimer.Restart();
-    Timer *savedWorld = nullptr;
+    Timer *savedWorld = 0;
     static Timer *gsTimer = AutoTimer::GetTimer("gs");
     Timer *gsLocal = gsTimer;
     float gsLastMs = gsLocal->mLastMs;
@@ -581,8 +581,9 @@ void Rnd::BeginDrawing() {
     if (savedWorld) {
         savedWorld->SetLastMs(worldLastMs);
     }
-    mLastProcCmds = mProcCmds;
-    mProcCmds = mProcCounter.ProcCommands();
+    ProcessCmd &_ref0 = mProcCmds;
+    mLastProcCmds = _ref0;
+    _ref0 = mProcCounter.ProcCommands();
     mDefaultCam->Select();
     mDefaultEnv->Select(nullptr);
     if (!TheHiResScreen.IsActive()) {

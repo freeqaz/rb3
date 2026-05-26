@@ -83,7 +83,7 @@ RndDrawable *RndMesh::CollideShowing(const Segment &seg, float &f, Plane &pl) {
             bool b1 = false;
             f = 1.0f;
             FOREACH (it, Faces()) {
-                const Vert &vert0 = Verts(it->v1);
+                Vert &vert0 = Verts(it->v1);
                 const Vert &vert1 = Verts(it->v2);
                 const Vert &vert2 = Verts(it->v3);
                 Triangle tri;

@@ -132,7 +132,7 @@ void GuitarController::Poll() {
 }
 
 int GuitarController::OnMsg(const ButtonDownMsg &msg) {
-    bool &_ref0 = mDisabled;
+    const bool &_ref0 = mDisabled;
     if (_ref0)
         return 0;
     if (!mUser->IsLocal())
@@ -233,7 +233,8 @@ void GuitarController::ReconcileFretState() {
     if (mUser->IsLocal()) {
         LocalUser *lUser = mUser->GetLocalUser();
         if (UserHasController(lUser)) {
-            JoypadData *padData = JoypadGetPadData(lUser->GetPadNum());
+            auto _tmp0 = lUser->GetPadNum();
+            JoypadData *padData = JoypadGetPadData(_tmp0);
             int mask = 0;
             for (int i = 0; i < 5; i++) {
                 int fretmask = mFretMask;

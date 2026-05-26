@@ -225,7 +225,7 @@ bool PitchBetween(float pitch, float a, float b, float &out);
 
 float VocalPart::GetSloppyPitch(float ms, int noteIdx, float pitch, float &outPitch)
     const {
-    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+    VocalNote &note = mVocalNoteList->mNotes[noteIdx];
     float msPlus = ms + mSlop;
     float pitchHi;
     if (note.mEndPitch == note.mBeginPitch) {

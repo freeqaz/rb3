@@ -1,0 +1,58 @@
+{
+  "symbol": "Duplicate__9DrumMixDBCFv",
+  "function_name": "DrumMixDB::Duplicate",
+  "source_path": "/home/free/code/milohax/rb3/src/system/beatmatch/DrumMixDB.cpp",
+  "initial_percent": 97.0418,
+  "final_percent": 97.0418,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.0418,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.0418,
+      "delta": 0.0,
+      "num_variants": 8,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 91.768486,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 97.0418,
+      "delta": 5.273313999999999,
+      "num_variants": 8,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 72.30225,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 97.0418,
+      "delta": 24.739549999999994,
+      "num_variants": 9,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 10.5,
+  "winning_pattern": "comparison_flip",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 4,
+    "1": 9,
+    "5": 12
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

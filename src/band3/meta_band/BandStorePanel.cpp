@@ -187,6 +187,7 @@ void BandStorePanel::LoadArt(const char *path, UIPanel *callback) {
     StorePanel::LoadArt(full.c_str(), callback);
 }
 
+#pragma pool_data off
 void BandStorePanel::Request(const String &path, bool extra) {
     int id = atoi(path.c_str());
     if (id == 0) {
@@ -216,10 +217,7 @@ void BandStorePanel::Request(const String &path, bool extra) {
         // ID-based request: dispatch a static MetadataLoadedMsg, then
         // populate/enumerate offers and update chunk navigation paths.
         unsigned short buildNum = TheStoreMetadata.mVersion->mBuildNumber;
-        static DataArray *metadata = 0;
-        if (!metadata) {
-            metadata = new DataArray(1);
-        }
+        static DataArray *metadata = new DataArray(1);
         metadata->AddRef();
         metadata->Node(0) = DataNode(id);
         static Message msg(
@@ -260,6 +258,7 @@ void BandStorePanel::Request(const String &path, bool extra) {
         TheUI.Handle(update_loading_status_msg, false);
     }
 }
+#pragma pool_data reset
 
 void BandStorePanel::ExitStore(StoreError err) const {
     if (!TheUIEventMgr->HasActiveTransitionEvent()) {

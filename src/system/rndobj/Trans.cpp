@@ -1,8 +1,3 @@
-/* ===== PERMUTER LOCK — DO NOT EDIT =====
- * The source permuter is actively working on: RndTransformable::Load
- * Started: 2026-05-26 07:56 (stale after 5 minutes)
- * This banner is temporary and will be removed automatically.
- ===== */
 #include "rndobj/Trans.h"
 #include "math/Rot.h"
 #include "obj/Data.h"
@@ -362,7 +357,7 @@ BEGIN_LOADS(RndTransformable)
     case 2:
         uint numb4;
         bs >> numb4;
-        int sp80[6] = { 0.0f, 0, 0, 5, 6, 7 };
+        int sp80[6] = { 0, 0, 0, 5, 6, 7 };
         if (numb4 >= 0x18) {
             mConstraint = 0;
         } else {

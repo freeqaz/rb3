@@ -394,9 +394,11 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
         }
 
         // Side vector: perpendicular to direction, scaled by width
+        pt->unk7 = -pt->unk6;
+        pt->unk8 = pt->unk5;
         float width = mWidth;
-        pt->unk7 = -pt->unk6 * width;
-        pt->unk8 = pt->unk5 * width;
+        pt->unk7 *= width;
+        pt->unk8 *= width;
     }
 
     // Copy direction/side from second-to-last point to last point
@@ -459,7 +461,7 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     // Phase 4: Copy side vectors for points outside the visible range
     Point *pointsBegin = &mPoints[0];
-    Point *pointsEnd = &_outline_back(&mPoints);
+    Point *pointsEnd = &mPoints.back();
 
     if (pointsBegin == start) {
         if (end + 1 <= pointsEnd) {
@@ -484,8 +486,8 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     // Phase 5: Write vertex positions.
     // The cap offset is (-side.y, side.x) used to extend the cap perpendicular to the line direction.
     Vector2 capOffset;
-    capOffset.x = -pointsBegin->unk8;
     capOffset.y = pointsBegin->unk7;
+    capOffset.x = -pointsBegin->unk8;
 
     VertsMap vmap;
     MapVerts(0, vmap);
@@ -508,11 +510,11 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     if (mLineHasCaps) {
         if (flipped) {
-            capOffset.x = -pointsEnd->unk8;
             capOffset.y = pointsEnd->unk7;
+            capOffset.x = -pointsEnd->unk8;
         } else {
-            capOffset.x = pointsEnd->unk8;
             capOffset.y = -pointsEnd->unk7;
+            capOffset.x = pointsEnd->unk8;
         }
         Subtract(*(Vector3 *)&pointsEnd->unk0, *(Vector2 *)&pointsEnd->unk7, vmap.v->pos);
         Add(vmap.v->pos, capOffset, vmap.v->pos);

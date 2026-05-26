@@ -516,7 +516,8 @@ DataNode RndPropAnim::ForeachKeyframe(const DataArray *da) {
                 } break;
                 case PropKeys::kColor: {
                     Key<Hmx::Color> &curColorKey = theKeys->AsColorKeys()[keyIdx];
-                    curColorKey.value.Unpack(sKeyReplace.Int());
+                    auto _tmp0 = sKeyReplace.Int();
+                    curColorKey.value.Unpack(_tmp0);
                 } break;
                 case PropKeys::kObject: {
                     ObjectStage objStage(sKeyReplace.GetObj());

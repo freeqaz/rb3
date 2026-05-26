@@ -97,10 +97,12 @@ void Spotlight::ConvertGroupToMesh(RndGroup *grp) {
         std::vector<RndDrawable *>::iterator itEnd = grp->mDraws.end();
         for (; it != itEnd; it++) {
             RndMesh *cur = dynamic_cast<RndMesh *>(*it);
-            if (cur && cur) {
+            if (cur) {
+                if (cur) {
                 count++;
                 if (!mLightCanMesh)
                     mLightCanMesh = cur;
+            }
             }
         }
         if (count > 1) {
