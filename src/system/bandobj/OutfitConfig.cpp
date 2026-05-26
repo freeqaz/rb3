@@ -604,6 +604,27 @@ BinStream &operator>>(BinStream &bs, OldColorOption &o) {
     return bs;
 }
 
+template <>
+__declspec(noinline) void stlpmtx_std::_Copy_Construct<OldColorOption>(OldColorOption* __p, const OldColorOption& __val) {
+    new(__p) OldColorOption(__val);
+}
+
+template <>
+__declspec(noinline) OldColorOption* stlpmtx_std::__uninitialized_move<OldColorOption*, OldColorOption*, stlpmtx_std::__false_type>(
+    OldColorOption* __first, OldColorOption* __last, OldColorOption* __result,
+    stlpmtx_std::__false_type __trivial_ucpy, const stlpmtx_std::__false_type&) {
+    return stlpmtx_std::__uninitialized_copy(__first, __last, __result, __trivial_ucpy);
+}
+
+template <>
+__declspec(noinline) OldColorOption* stlpmtx_std::__uninitialized_fill_n<OldColorOption*, unsigned long, OldColorOption>(
+    OldColorOption* __first, unsigned long __n, const OldColorOption& __x, const stlpmtx_std::__false_type&) {
+    OldColorOption* __cur = __first;
+    for (; __n > 0; --__n, ++__cur)
+        stlpmtx_std::_Param_Construct(&*__cur, __x);
+    return __cur;
+}
+
 SAVE_OBJ(OutfitConfig, 0x5C7)
 
 #pragma push
@@ -973,8 +994,9 @@ void OutfitConfig::Mats(std::list<RndMat *> &list, bool allocTempMats) {
 }
 
 void OutfitConfig::PoseBones() {
-    Symbol gender(strstr(Dir()->GetPathName(), "female") ? "female" : "male");
-    CharClip *clip = BandCharDesc::GetDeformClip(gender);
+    CharClip *clip = BandCharDesc::GetDeformClip(
+        Symbol(strstr(Dir()->GetPathName(), "female") ? "female" : "male")
+    );
     if (clip) {
         clip->PoseMeshes(Dir(), clip->mBeatTrack.front().value);
     }
@@ -983,8 +1005,13 @@ void OutfitConfig::PoseBones() {
     if (headMesh) {
         BandHeadShaper shaper;
         CharMeshCacheMgr cacheMgr;
-        Symbol gender2(strstr(Dir()->GetPathName(), "female") ? "female" : "male");
-        if (shaper.Start(Dir(), gender2, headMesh, &cacheMgr, true)) {
+        if (shaper.Start(
+                Dir(),
+                Symbol(strstr(Dir()->GetPathName(), "female") ? "female" : "male"),
+                headMesh,
+                &cacheMgr,
+                true
+            )) {
             BandCharDesc::Head head;
             head.SetShape(shaper);
         }
