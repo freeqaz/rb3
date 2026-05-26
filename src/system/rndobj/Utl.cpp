@@ -376,70 +376,72 @@ void UtilDrawCigar(
 
     float anglePiHalf = 1.5707963705062866f;
 
-    Vector3 verts2e0[18];
     Vector3 verts1c0[18];
+    Vector3 verts2e0[18];
 
-    int iIdx = 0;
+    int iRing = 0;
     int iLatSum = 0;
     do {
-        float latVal = (1.5707963705062866f * (float)iIdx) / 3.0f;
-        float r0 = radii[0] * FastSin(latVal + anglePiHalf);
+        float latVal = (1.5707963705062866f * (float)iRing) / 3.0f;
+        float latValPlusHalf = latVal + anglePiHalf;
+        float r0 = radii[0] * FastSin(latValPlusHalf);
         float h0 = FastSin(latVal) * radii[0];
-        float r1 = FastSin(latVal + anglePiHalf) * radii[1];
-        float h1 = FastSin(latVal) * radii[1] + sLen1;
-        float h0b = sLen0 - h0;
+        float r1 = radii[1] * FastSin(latValPlusHalf);
+        float h1sin = FastSin(latVal) * radii[1];
         int iLon = 0;
         do {
-            float lonVal = (3.1415927410125732f * (float)iLon) / -3.0f;
+            float lonVal = (6.2831854820251465f * (float)iLon) / 6.0f;
             float sinLon = FastSin(lonVal);
             float sinLonPi2 = FastSin(lonVal + anglePiHalf);
             int idx = iLatSum + iLon;
-            Vector3 v1(h0b, sinLonPi2 * r0, sinLon * r0);
+            Vector3 v1(sLen0 - h0, sinLonPi2 * r0, sinLon * r0);
             Multiply(v1, basis, verts1c0[idx]);
-            Vector3 v2(h1, sinLonPi2 * r1, sinLon * r1);
+            Vector3 v2(sLen1 + h1sin, sinLonPi2 * r1, sinLon * r1);
             Multiply(v2, basis, verts2e0[idx]);
             iLon = iLon + 1;
         } while (iLon < 6);
         iLatSum = iLatSum + 6;
-        iIdx = iIdx + 1;
-    } while (iLatSum < 0x12);
+        iRing = iRing + 1;
+    } while (iRing < 3);
 
     int i = 0;
     do {
-        TheRnd->DrawLine(verts2e0[i], verts1c0[i], col, false);
+        TheRnd->DrawLine(verts1c0[i], verts2e0[i], col, false);
         i = i + 1;
     } while (i < 6);
 
-    int iRing = 0;
+    int iDrawRing = 0;
+    int iDrawBase = 0;
     do {
         int iJ = 0;
         int iK = 5;
         int iJcur;
         do {
             iJcur = iJ;
-            int p1 = iRing * 6 + iJcur;
-            int p2 = iRing * 6 + iK;
-            TheRnd->DrawLine(verts2e0[p1], verts2e0[p2], col, false);
+            int p1 = iDrawBase + iJcur;
+            int p2 = iDrawBase + iK;
+            TheRnd->DrawLine(verts1c0[p1], verts1c0[p2], col, false);
             Vector3 *pTop;
-            if (iRing == 2) {
+            if (iDrawRing == 2) {
                 pTop = &top;
             } else {
-                pTop = &verts2e0[p1 + 6];
+                pTop = &verts1c0[p1 + 6];
             }
-            TheRnd->DrawLine(verts2e0[p1], *pTop, col, false);
-            TheRnd->DrawLine(verts1c0[p1], verts1c0[p2], col, false);
+            TheRnd->DrawLine(verts1c0[p1], *pTop, col, false);
+            TheRnd->DrawLine(verts2e0[p1], verts2e0[p2], col, false);
             Vector3 *pBottom;
-            if (iRing == 2) {
+            if (iDrawRing == 2) {
                 pBottom = &bottom;
             } else {
-                pBottom = &verts1c0[p1 + 6];
+                pBottom = &verts2e0[p1 + 6];
             }
-            TheRnd->DrawLine(verts1c0[p1], *pBottom, col, false);
+            TheRnd->DrawLine(verts2e0[p1], *pBottom, col, false);
             iJ = iJcur + 1;
             iK = iJcur;
         } while (iJcur + 1 < 6);
-        iRing = iRing + 1;
-    } while (iRing < 3);
+        iDrawBase = iDrawBase + 6;
+        iDrawRing = iDrawRing + 1;
+    } while (iDrawRing < 3);
 }
 
 void UtilDrawString(const char *c, const Vector3 &v, const Hmx::Color &col) {
