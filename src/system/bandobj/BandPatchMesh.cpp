@@ -577,7 +577,7 @@ void __adjust_heap<BandPatchMesh::MeshVert **, long, BandPatchMesh::MeshVert *, 
 
 void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
     std::sort(unk10.begin(), unk10.end(), SortByPointer());
-    for (int i = 0; i < unk10.size(); i++) {
+    for (int i = 0.0f; i < unk10.size(); i++) {
         unk10[i]->unk24 = i;
     }
     std::sort(unk20.begin(), unk20.end());
