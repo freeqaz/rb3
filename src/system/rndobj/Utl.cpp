@@ -295,8 +295,8 @@ void RandomPointOnMesh(RndMesh *m, Vector3 &v1, Vector3 &v2) {
         MILO_NOTIFY_ONCE(
             "%s: %s random face contains unknown vert indices!", PathName(m), m->Name()
         );
-        v1.Zero();
         v2.Zero();
+        v1.Zero();
     } else {
         Vector3 v58, v64, v70;
         Vector3 v7c, v88, v94;
@@ -361,17 +361,18 @@ void UtilDrawCigar(
     const Hmx::Color &col,
     int segments
 ) {
-    float sLen0 = lengths[0] * Length(tf.m.x);
-    float sLen1 = lengths[1] * Length(tf.m.x);
+    volatile float sLen[2];
+    sLen[0] = lengths[0] * Length(tf.m.x);
+    sLen[1] = lengths[1] * Length(tf.m.x);
     Transform basis = tf;
     Normalize(basis.m, basis.m);
 
     Vector3 top;
-    top.Set(0, sLen0 - radii[0], 0);
+    top.Set(0, sLen[0] - radii[0], 0);
     Multiply(top, basis, top);
 
     Vector3 bottom;
-    bottom.Set(0, sLen1 + radii[1], 0);
+    bottom.Set(0, sLen[1] + radii[1], 0);
     Multiply(bottom, basis, bottom);
 
     float anglePiHalf = 1.5707963705062866f;
@@ -380,66 +381,74 @@ void UtilDrawCigar(
     Vector3 verts2e0[18];
 
     int iRing = 0;
-    int iLatSum = 0;
+    int iRingByteOffset = 0;
     do {
         float latVal = (1.5707963705062866f * (float)iRing) / 3.0f;
         float latValPlusHalf = latVal + anglePiHalf;
         float r0 = radii[0] * FastSin(latValPlusHalf);
-        float h0 = FastSin(latVal) * radii[0];
+        float h0 = radii[0] * FastSin(latVal);
         float r1 = radii[1] * FastSin(latValPlusHalf);
-        float h1sin = FastSin(latVal) * radii[1];
+        float h1sin = radii[1] * FastSin(latVal);
+        Vector3 *pV1 = (Vector3*)((char*)verts1c0 + iRingByteOffset);
+        Vector3 *pV2 = (Vector3*)((char*)verts2e0 + iRingByteOffset);
         int iLon = 0;
         do {
             float lonVal = (6.2831854820251465f * (float)iLon) / 6.0f;
             float sinLon = FastSin(lonVal);
             float sinLonPi2 = FastSin(lonVal + anglePiHalf);
-            int idx = iLatSum + iLon;
-            Vector3 v1(sLen0 - h0, sinLonPi2 * r0, sinLon * r0);
-            Multiply(v1, basis, verts1c0[idx]);
-            Vector3 v2(sLen1 + h1sin, sinLonPi2 * r1, sinLon * r1);
-            Multiply(v2, basis, verts2e0[idx]);
+            Vector3 v1(sLen[0] - h0, sinLonPi2 * r0, sinLon * r0);
+            Multiply(v1, basis, pV1[iLon]);
+            Vector3 v2(sLen[1] + h1sin, sinLon * r1, sinLonPi2 * r1);
+            Multiply(v2, basis, pV2[iLon]);
             iLon = iLon + 1;
         } while (iLon < 6);
-        iLatSum = iLatSum + 6;
+        iRingByteOffset = iRingByteOffset + 0x48;
         iRing = iRing + 1;
     } while (iRing < 3);
 
     int i = 0;
     do {
-        TheRnd->DrawLine(verts1c0[i], verts2e0[i], col, false);
+        TheRnd->DrawLine(verts2e0[i], verts1c0[i], col, false);
         i = i + 1;
     } while (i < 6);
 
     int iDrawRing = 0;
-    int iDrawBase = 0;
+    Vector3 *pVerts2Ring = verts2e0;
+    Vector3 *pVerts1Ring = verts1c0;
     do {
-        int iJ = 0;
+        Vector3 *pV2J = pVerts2Ring;
+        Vector3 *pV1J = pVerts1Ring;
+        int iNextRingByteOff = (iDrawRing + 1) * 0x48;
+        Vector3 *pV2Next = (Vector3*)((char*)verts2e0 + iNextRingByteOff);
+        Vector3 *pV1Next = (Vector3*)((char*)verts1c0 + iNextRingByteOff);
         int iK = 5;
-        int iJcur;
+        int iJ = 0;
         do {
-            iJcur = iJ;
-            int p1 = iDrawBase + iJcur;
-            int p2 = iDrawBase + iK;
-            TheRnd->DrawLine(verts1c0[p1], verts1c0[p2], col, false);
-            Vector3 *pTop;
-            if (iDrawRing == 2) {
-                pTop = &top;
-            } else {
-                pTop = &verts1c0[p1 + 6];
-            }
-            TheRnd->DrawLine(verts1c0[p1], *pTop, col, false);
-            TheRnd->DrawLine(verts2e0[p1], verts2e0[p2], col, false);
+            TheRnd->DrawLine(*pV2J, pVerts2Ring[iK], col, false);
             Vector3 *pBottom;
             if (iDrawRing == 2) {
                 pBottom = &bottom;
             } else {
-                pBottom = &verts2e0[p1 + 6];
+                pBottom = pV2Next;
             }
-            TheRnd->DrawLine(verts2e0[p1], *pBottom, col, false);
-            iJ = iJcur + 1;
-            iK = iJcur;
-        } while (iJcur + 1 < 6);
-        iDrawBase = iDrawBase + 6;
+            TheRnd->DrawLine(*pV2J, *pBottom, col, false);
+            TheRnd->DrawLine(*pV1J, pVerts1Ring[iK], col, false);
+            Vector3 *pTop;
+            if (iDrawRing == 2) {
+                pTop = &top;
+            } else {
+                pTop = pV1Next;
+            }
+            TheRnd->DrawLine(*pV1J, *pTop, col, false);
+            iK = iJ;
+            iJ = iJ + 1;
+            pV2J++;
+            pV2Next++;
+            pV1J++;
+            pV1Next++;
+        } while (iJ < 6);
+        pVerts2Ring += 6;
+        pVerts1Ring += 6;
         iDrawRing = iDrawRing + 1;
     } while (iDrawRing < 3);
 }
