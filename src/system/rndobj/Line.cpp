@@ -411,7 +411,7 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     // Phase 3: Handle fold angles at interior points
     Point *secondPt = start + 1;
-    bool flipped = false;
+    bool flipped = 0;
 
     float *startProj = &start->unk3;
     float *startDir = &start->unk5;
@@ -419,7 +419,7 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     Hmx::Ray prevRay;
     prevRay.base.Set(startSide[0] + startProj[0], startSide[1] + startProj[1]);
-    prevRay.dir.Set(startDir[0], startDir[1]);
+    prevRay.dir.Set(startDir[1], startDir[0]);
 
     for (Point *p = secondPt; p != end; p++) {
         float *dir = &p->unk5;
