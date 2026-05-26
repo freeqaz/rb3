@@ -935,7 +935,7 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     unk5a1 = b4;
     bool bvar1 = _ref0;
     _ref0 = b2;
-    if (bvar1 && !b2)
+    if (bvar1 && !mInCloset)
         b3 = true;
     if (!IsLoading() || !unk6bd || b3) {
         b4 = false;
