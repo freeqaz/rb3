@@ -171,7 +171,8 @@ void QuatSpline(
     float ref,
     Hmx::Quat &qout
 ) {
-    MILO_ASSERT(keys.size(), 0x9B);
+    auto _tmp0 = keys.size();
+    MILO_ASSERT(_tmp0, 0x9B);
     if (prev == next) {
         qout = prev->value;
     } else {
@@ -196,9 +197,7 @@ void QuatSpline(
             float pp = q88[i];
             float n = nextQuat[i];
             float nn = q58[i];
-            qout[i] = 0.5f * (fcubed * (nn - (3.0f * n - (3.0f * p - pp)))
-                + fsq * ((4.0f * n + (2.0f * pp + 5.0f * p)) - nn)
-                + (2.0f * p + ref * (n - pp)));
+            qout[i] = 0.5f * ((fcubed * (nn - (3.0f * n - (3.0f * p - pp))) + (fsq * ((4.0f * n + (2.0f * pp + 5.0f * p)) - nn) + (2.0f * p + ref * (n - pp)))));
             i++;
         }
         Normalize(qout, qout);
