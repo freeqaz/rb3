@@ -72,8 +72,9 @@ void UIListDir::BuildDrawState(
             if (firstShowing < fadeCountStart) {
                 fadeCountStart = firstShowing;
             }
+            auto _tmp0 = state.Provider()->NumData();
             int fadeEndCalc =
-                state.Provider()->NumData() - (firstShowing + numDisplay);
+                _tmp0 - (firstShowing + numDisplay);
             if (fadeEndCalc < fadeCountEnd) {
                 fadeCountEnd = fadeEndCalc;
             }
@@ -108,8 +109,9 @@ void UIListDir::BuildDrawState(
     float highlightBase = 0.0f;
     float scrollOffset = (float)direction * state.StepPercent();
 
+    int dispIndex;
     for (int i = 0; i < numDisplayWithData; i++) {
-        int dispIndex = i;
+                dispIndex = i;
         if (state.IsScrolling() && direction == -1) {
             dispIndex = i - 1;
         }
