@@ -417,8 +417,8 @@ bool SongSortMgr::GetRandomSongs(
     int count,
     std::vector<Symbol> *randomSongs,
     std::vector<int> *randomSongIDs,
-    std::vector<Symbol> *availableParts,
     std::vector<Symbol> *excludedSyms,
+    std::vector<Symbol> *availableParts,
     bool b1,
     bool b2
 ) {
@@ -427,19 +427,20 @@ bool SongSortMgr::GetRandomSongs(
     MILO_ASSERT(randomSongs || randomSongIDs, 0x281);
 
     Symbol curName;
+    int numAdded = 0;
     std::vector<int> bucket4;
     std::vector<int> bucket3;
     std::vector<int> bucket2;
     std::vector<int> bucket1;
     std::vector<int> bucket0;
+    std::vector<int> *songPools[5];
+    songPools[0] = &bucket4;
+    songPools[1] = &bucket3;
+    songPools[2] = &bucket2;
+    songPools[3] = &bucket1;
+    songPools[4] = &bucket0;
     std::vector<int> excludeList;
     std::vector<int> validSongs;
-    std::vector<int> *songPools[5];
-    songPools[0] = &bucket0;
-    songPools[1] = &bucket1;
-    songPools[2] = &bucket2;
-    songPools[3] = &bucket3;
-    songPools[4] = &bucket4;
     if (excludedSyms) {
         FOREACH (it, *excludedSyms) {
             Symbol s = *it;
@@ -450,7 +451,6 @@ bool SongSortMgr::GetRandomSongs(
     TheSongMgr.GetValidSongs(
         excludeList, *TheBandUserMgr, validSongs, -1.0f, -1.0f, b1, b2
     );
-    int numAdded = 0;
     std::map<Symbol, SongRecord>::const_iterator it = mSongs.begin();
     for (; it != mSongs.end(); ++it) {
         curName = it->first;
@@ -461,7 +461,8 @@ bool SongSortMgr::GetRandomSongs(
         if (availableParts) {
             bool partOk = false;
             FOREACH (pit, *availableParts) {
-                if (!rec.GetData()->HasPart(*pit, false)) {
+                Symbol sym = *pit;
+                if (!rec.GetData()->HasPart(sym, false)) {
                     partOk = true;
                     break;
                 }
@@ -481,15 +482,15 @@ bool SongSortMgr::GetRandomSongs(
         MILO_WARN("Not enough valid random songs!");
         return false;
     }
-    int weights[4];
+    int weights[5];
     DataArray *cfg = SystemConfig(Symbol("song_select"), Symbol("review_weights"));
-    for (int i = 0; i < 4; i++) {
+    for (int i = 1; i < 5; i++) {
         weights[i] = cfg->FindInt(MakeString("review_%i", i + 1));
     }
     for (int i = 0; i < count; i++) {
         int total = 0;
         for (int j = 1; j < 5; j++) {
-            total += songPools[j]->size() * weights[j - 1];
+            total += songPools[j]->size() * weights[j];
         }
         std::vector<int> *chosen;
         if (total == 0) {
@@ -498,18 +499,17 @@ bool SongSortMgr::GetRandomSongs(
             int r = RandomInt(0, total);
             for (int j = 1; j < 5; j++) {
                 chosen = songPools[j];
-                r -= songPools[j]->size() * weights[j - 1];
+                r -= songPools[j]->size() * weights[j];
                 if (r < 0)
                     break;
             }
         }
         MILO_ASSERT(chosen->size(), 0x2F9);
         int idx = RandomInt(0, chosen->size());
-        std::vector<int>::iterator it = chosen->begin() + idx;
+        std::vector<int>::iterator it = chosen->begin();
+        for (int j = 0; j < idx; j++) ++it;
         if (randomSongs) {
-            Symbol shortName;
-            shortName = TheSongMgr.GetShortNameFromSongID(*it, true);
-            randomSongs->push_back(shortName);
+            randomSongs->push_back(TheSongMgr.GetShortNameFromSongID(*it, true));
         }
         if (randomSongIDs) {
             randomSongIDs->push_back(*it);
