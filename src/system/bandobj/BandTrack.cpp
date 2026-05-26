@@ -803,8 +803,9 @@ void BandTrack::SetCrowdRating(float f, CrowdMeterState state) {
                         TrackPanelDirBase *tpd = dynamic_cast<TrackPanelDirBase *>(
                             ThisDir()->Dir()
                         );
+                        float startDelay = tpd->GetPulseAnimStartDelay(false);
                         anim->Animate(
-                            0.0f, false, tpd->GetPulseAnimStartDelay(false),
+                            0.0f, false, startDelay,
                             RndAnimatable::k1_fpb, 0.0f, 1.0f, 0.0f, 1.0f, loop
                         );
                     } else {
@@ -881,10 +882,20 @@ void BandTrack::SetTourMomentGoalText(const char *top, const char *bottom) {
     if (mPlayerFeedback) {
         RndDir *goal = mPlayerFeedback->Find<RndDir>("tour_moment_goal", true);
         if (goal) {
-            goal->Find<BandLabel>("tg_main_text_top.lbl", true)
-                ->SetDisplayText(top, true);
-            goal->Find<BandLabel>("tg_main_text_bottom.lbl", true)
-                ->SetDisplayText(bottom, true);
+            BandLabel *topLabel = goal->Find<BandLabel>("tg_main_text_top.lbl", true);
+            BandLabel **topPtr;
+            if ((topPtr = new BandLabel*) != 0) {
+                *topPtr = topLabel;
+                (*topPtr)->SetDisplayText(top, true);
+                delete topPtr;
+            }
+            BandLabel *bottomLabel = goal->Find<BandLabel>("tg_main_text_bottom.lbl", true);
+            BandLabel **bottomPtr;
+            if ((bottomPtr = new BandLabel*) != 0) {
+                *bottomPtr = bottomLabel;
+                (*bottomPtr)->SetDisplayText(bottom, true);
+                delete bottomPtr;
+            }
         }
     }
 }
