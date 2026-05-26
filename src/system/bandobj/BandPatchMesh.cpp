@@ -687,7 +687,7 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     float bx = mv->mVert->uv.y - anchor->mVert->uv.y;
     float by = mv->mVert->uv.x - anchor->mVert->uv.x;
     float det = ay * bx - ax * by;
-    if (fabs(det) < 1e-15f) {
+    if (fabsf(det) < 1e-15f) {
         outUv.x = 0.0f;
         outUv.y = 0.0f;
         return;
