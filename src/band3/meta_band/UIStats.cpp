@@ -232,17 +232,18 @@ void UIStats::EventLog(unsigned int pad, unsigned int but, unsigned int state) {
     MILO_ASSERT(pad < 8, 0x13B);
     MILO_ASSERT(state < 2, 0x13D);
     int now = SystemMs();
-    unsigned int elapsed = (unsigned int)(now - mLastPublishTime) >> 4;
+    int &_ref0 = mLastPublishTime;
+    unsigned int elapsed = (unsigned int)(now - _ref0) >> 4;
     if (elapsed > 0x7FFFFF) elapsed = 0x7FFFFF;
     unsigned int packed = (state << 31) | ((pad << 28) & 0x70000000) | ((but << 23) & 0x0F800000) | elapsed;
     *(unsigned int *)mPadLogWritePtr = (unsigned short)packed;
+    mPadLogWritePtr = (char *)mPadLogWritePtr + 4;
     int count = mPadLogCount + 1;
     mPadLogCount = count;
-    mPadLogWritePtr = (char *)mPadLogWritePtr + 4;
     if ((mPadLogCount & 0x3FFF) == 0) {
         mPadLogWritePtr = mPadLogBuffer;
     }
-    mLastPublishTime = now;
+    _ref0 = now;
 }
 
 DataNode UIStats::OnMsg(const ButtonDownMsg &msg) {
