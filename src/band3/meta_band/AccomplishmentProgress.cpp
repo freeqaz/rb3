@@ -1,8 +1,3 @@
-/* ===== PERMUTER LOCK — DO NOT EDIT =====
- * The source permuter is actively working on: AccomplishmentProgress::UpdateScoreTypeSpecificStats
- * Started: 2026-05-26 04:21 (stale after 5 minutes)
- * This banner is temporary and will be removed automatically.
- ===== */
 #include "meta_band/AccomplishmentProgress.h"
 #include "decomp.h"
 #include "meta_band/BandMachineMgr.h"
@@ -348,13 +343,14 @@ void AccomplishmentProgress::UpdateStats(
     Performer *i_pPerformer,
     Band *i_pBand
 ) {
+    int kickPercent;
     MILO_ASSERT(i_pBand, 0x46C);
-    if (type == kScoreHarmony || type == kScoreVocals) {
+    if (!(type == kScoreHarmony || type == kScoreVocals)) {
+        mTotalGemsSmashed += stats.mHitCount;
+    } else {
         mTotalAwesomes += stats.mHitCount;
         mTotalDoubleAwesomes += stats.mDoubleHarmonyHit;
         mTotalTripleAwesomes += stats.mTripleHarmonyHit;
-    } else {
-        mTotalGemsSmashed += stats.mHitCount;
     }
     if (type == kScoreGuitar) {
         mTotalGuitarHopos += stats.mHopoGemsHopoed;
@@ -376,7 +372,6 @@ void AccomplishmentProgress::UpdateStats(
         }
     }
     if (type == kScoreDrum) {
-        int kickPercent;
         if (stats.m0x68 != 0) {
             kickPercent =
                 (int)(100.0f * ((float)stats.m0x6c / (float)stats.m0x68));
