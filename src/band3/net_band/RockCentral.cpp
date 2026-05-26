@@ -1140,8 +1140,10 @@ void RockCentral::RecordOptionData() {
         ADD_DATA_PAIR("bass_boost", (int)TheProfileMgr.GetBassBoost());
         ADD_DATA_PAIR("dolby", (int)TheProfileMgr.GetDolby());
         //
-        ADD_DATA_PAIR("video_cal", TheProfileMgr.GetSyncOffsetRaw());
-        ADD_DATA_PAIR("audio_cal", TheProfileMgr.GetSongToTaskMgrMsRaw());
+        auto _tmp0 = TheProfileMgr.GetSyncOffsetRaw();
+        ADD_DATA_PAIR("video_cal", _tmp0);
+        auto _tmp1 = TheProfileMgr.GetSongToTaskMgrMsRaw();
+        ADD_DATA_PAIR("audio_cal", _tmp1);
         //
         ADD_DATA_PAIR(
             "pro_guitar_connected", (int)TheProfileMgr.GetHasConnectedProGuitar()
@@ -1331,7 +1333,8 @@ void RockCentral::UpdateSetlist(
             p6 = profile->mPatches[setlist->mArt.patchIndex];
         }
         INIT_DATAPOINT("setlists/update");
-        ADD_DATA_PAIR(pid, server->GetPlayerID(profile->GetPadNum()));
+        auto _tmp2 = server->GetPlayerID(profile->GetPadNum());
+        ADD_DATA_PAIR(pid, _tmp2);
         ADD_DATA_PAIR(name, setlist->GetTitle());
         ADD_DATA_PAIR(description, setlist->GetDescription());
         ADD_DATA_PAIR(type, SavedSetlist::kSetlistLocal);
@@ -1344,7 +1347,7 @@ void RockCentral::UpdateSetlist(
             ADD_DATA_PAIR(art, str.c_str())
         }
         std::vector<int> &songs = setlist->mSongs;
-        for (int i = 0; i < songs.size(); i++) {
+        for (unsigned int i = 0; i < songs.size(); i++) {
             char buf[12];
             ADD_BUFFER_PAIR(buf, songs[i], "song_id%03d", i);
         }
