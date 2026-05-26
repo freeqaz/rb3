@@ -402,18 +402,6 @@ void Rnd::Terminate() {
     SetName(NULL, NULL);
 }
 
-void Rnd::RemovePointTest(RndFlare *flare) {
-    if (!TheHiResScreen.IsActive()) {
-        for (std::list<PointTest>::iterator it = mPointTests.begin();
-             it != mPointTests.end();) {
-            if (it->unk_0xC == flare) {
-                it = mPointTests.erase(it);
-            } else
-                ++it;
-        }
-    }
-}
-
 void Rnd::TestPoint(const Vector3 &pos, RndFlare *flare) {
     if (TheHiResScreen.IsActive())
         return;
@@ -435,6 +423,128 @@ void Rnd::TestPoint(const Vector3 &pos, RndFlare *flare) {
     it->unk_0x0 = (int)(screen.x * (float)mWidth);
     it->unk_0x4 = (int)(screen.y * (float)mHeight);
     it->unk_0x8 = cam->ProjectZ(depth);
+}
+
+void Rnd::RemovePointTest(RndFlare *flare) {
+    if (!TheHiResScreen.IsActive()) {
+        for (std::list<PointTest>::iterator it = mPointTests.begin();
+             it != mPointTests.end();) {
+            if (it->unk_0xC == flare) {
+                it = mPointTests.erase(it);
+            } else
+                ++it;
+        }
+    }
+}
+
+Hmx::Object *sTexture;
+bool sCompressDone;
+
+float Rnd::DrawTimers(float f) {
+    static DataArray *timerScript = SystemConfig("rnd")->FindArray("timer_script", false);
+
+    if (timerScript) {
+        timerScript->ExecuteScript(1, nullptr, nullptr, 1);
+    }
+
+    if (mVerboseTimers) {
+        AutoTimer::CollectTimerStats();
+    }
+
+    int numTimers = 0;
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
+         it != AutoTimer::sTimers.end();
+         ++it) {
+        if (it->first.mDraw) {
+            numTimers++;
+        }
+    }
+
+    float totalHeight = numTimers * 0.045f;
+
+    Hmx::Rect rect(0.025f, f, 0.95f, totalHeight);
+    Hmx::Color bgColor(0.0f, 0.0f, 0.0f, 0.5f);
+    DrawRectScreen(rect, bgColor, mOverlayMat, nullptr, nullptr);
+
+    Hmx::Color barColor(0.5f, 0.5f, 0.5f, 1.0f);
+    Hmx::Color budgetExcessColor(0.5f, 0.0f, 0.0f, 1.0f);
+    Hmx::Color worstExcessColor(0.0f, 0.5f, 0.5f, 1.0f);
+
+    float y = f;
+
+    rect.h = 0.0268f;
+
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
+         it != AutoTimer::sTimers.end();
+         ++it) {
+        if (!it->first.mDraw) {
+            continue;
+        }
+
+        if (it->first.mBudget != 0.0f && it->first.mLastMs > it->first.mBudget) {
+            rect.w = it->first.mBudget * 0.019f;
+            DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
+            rect.x += rect.w;
+            rect.w = (it->first.mLastMs - it->first.mBudget) * 0.019f;
+            DrawRectScreen(rect, budgetExcessColor, nullptr, nullptr, nullptr);
+        } else {
+            rect.w = it->first.mLastMs * 0.019f;
+            DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
+        }
+
+        if (it->first.mWorstMs > it->first.mLastMs) {
+            rect.x += rect.w;
+            rect.w = (it->first.mWorstMs - it->first.mLastMs) * 0.019f;
+            DrawRectScreen(rect, worstExcessColor, nullptr, nullptr, nullptr);
+        }
+
+        rect.x = 0.025f;
+        y += 0.045f;
+        rect.y = y;
+    }
+
+    rect.y = f;
+    rect.h = totalHeight;
+    barColor.red = 0.25f;
+    barColor.green = 0.25f;
+    barColor.blue = 0.25f;
+    rect.w = 0.001f;
+    for (int i = 0; i < 50; i += 5) {
+        DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
+        rect.x += 0.095f;
+    }
+
+    barColor.red = 1.0f;
+    barColor.green = 1.0f;
+    barColor.blue = 1.0f;
+    Vector2 pos(0.025f + 0.00391f, f + 0.00446f);
+
+    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
+         it != AutoTimer::sTimers.end();
+         ++it) {
+        if (!it->first.mDraw) {
+            continue;
+        }
+
+        float lastMs = it->first.mLastMs;
+
+        if (lastMs >= 0.05f) {
+            if (mVerboseTimers && AutoTimer::CollectingStats()) {
+                Symbol name = it->first.mName;
+                TimerStats &stats = it->second;
+                DrawStringScreen(MakeString("%s %2.1f (%.2f, %.2f) %.2f", name, lastMs, stats.mAvgMs, stats.mStdDevMs, stats.mMaxMs), pos, barColor, true);
+            } else {
+                Symbol name = it->first.mName;
+                float worstMs = it->first.mWorstMs;
+                DrawStringScreen(MakeString("%s %.2f (%.2f)", name, lastMs, worstMs), pos, barColor, true);
+            }
+        } else {
+            DrawStringScreen(it->first.mName.mStr, pos, barColor, true);
+        }
+        pos.y += 0.045f;
+    }
+
+    return pos.y;
 }
 
 void Rnd::RegisterPostProcessor(PostProcessor *p) {
@@ -542,14 +652,6 @@ void Rnd::DoPostProcess() {
                 (*it)->DoPost();
             }
     }
-}
-
-void Rnd::SetShowTimers(bool b1, bool b2) {
-    RndOverlay *o = mTimersOverlay;
-    o->mShowing = b1;
-    o->mTimer.Restart();
-    mVerboseTimers = b2;
-    SetGSTiming(b1);
 }
 
 float Rnd::UpdateOverlay(RndOverlay *ovl, float f) {
@@ -707,154 +809,12 @@ RndTex *Rnd::CreateDefaultTexture(DefaultTextureType textureType) {
 
 RndTex *Rnd::GetNullTexture() { return mNullTex; }
 
-void Rnd::EndDrawing() {
-    EndWorld();
-    if (MainThread()) {
-        AutoSlowFrame asf("RndOverlay::DrawAll");
-        if (RndCam::Current()->TargetTex()) {
-            mDefaultCam->Select();
-        }
-        RndOverlay::DrawAll(false);
-        RndGraph::DrawAll();
-    }
-    mDrawing = false;
-    mFrameID++;
-}
-
-static void PreClearCompilerHelper(ObjPtrList<RndDrawable> &list, RndDrawable *draw) {
-    for (ObjPtrList<RndDrawable>::iterator it = list.begin(); it != list.end(); ++it) {
-        if (*it == draw)
-            return;
-    }
-    list.push_back(draw);
-    list.sort(SortDraws);
-}
-
-void Rnd::PreClearDrawAddOrRemove(RndDrawable *d, bool b2, bool b3) {
-    ObjPtrList<RndDrawable> &list = b3 ? unk110 : mDraws;
-    if (!b2) {
-        list.remove(d);
-    } else {
-        PreClearCompilerHelper(list, d);
-    }
-}
-
 void Rnd::CompressTextureCancel(CompressTextureCallback *cb) {
     FOREACH (it, unk154) {
         if ((*it)->mCallback == cb) {
             (*it)->mCallback = nullptr;
         }
     }
-}
-
-Hmx::Object *sTexture;
-bool sCompressDone;
-
-float Rnd::DrawTimers(float f) {
-    static DataArray *timerScript = SystemConfig("rnd")->FindArray("timer_script", false);
-
-    if (timerScript) {
-        timerScript->ExecuteScript(1, nullptr, nullptr, 1);
-    }
-
-    if (mVerboseTimers) {
-        AutoTimer::CollectTimerStats();
-    }
-
-    int numTimers = 0;
-    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
-         it != AutoTimer::sTimers.end();
-         ++it) {
-        if (it->first.mDraw) {
-            numTimers++;
-        }
-    }
-
-    float totalHeight = numTimers * 0.045f;
-
-    Hmx::Rect rect(0.025f, f, 0.95f, totalHeight);
-    Hmx::Color bgColor(0.0f, 0.0f, 0.0f, 0.5f);
-    DrawRectScreen(rect, bgColor, mOverlayMat, nullptr, nullptr);
-
-    Hmx::Color barColor(0.5f, 0.5f, 0.5f, 1.0f);
-    Hmx::Color budgetExcessColor(0.5f, 0.0f, 0.0f, 1.0f);
-    Hmx::Color worstExcessColor(0.0f, 0.5f, 0.5f, 1.0f);
-
-    float y = f;
-
-    rect.h = 0.0268f;
-
-    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
-         it != AutoTimer::sTimers.end();
-         ++it) {
-        if (!it->first.mDraw) {
-            continue;
-        }
-
-        if (it->first.mBudget != 0.0f && it->first.mLastMs > it->first.mBudget) {
-            rect.w = it->first.mBudget * 0.019f;
-            DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
-            rect.x += rect.w;
-            rect.w = (it->first.mLastMs - it->first.mBudget) * 0.019f;
-            DrawRectScreen(rect, budgetExcessColor, nullptr, nullptr, nullptr);
-        } else {
-            rect.w = it->first.mLastMs * 0.019f;
-            DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
-        }
-
-        if (it->first.mWorstMs > it->first.mLastMs) {
-            rect.x += rect.w;
-            rect.w = (it->first.mWorstMs - it->first.mLastMs) * 0.019f;
-            DrawRectScreen(rect, worstExcessColor, nullptr, nullptr, nullptr);
-        }
-
-        rect.x = 0.025f;
-        y += 0.045f;
-        rect.y = y;
-    }
-
-    rect.y = f;
-    rect.h = totalHeight;
-    barColor.red = 0.25f;
-    barColor.green = 0.25f;
-    barColor.blue = 0.25f;
-    rect.w = 0.001f;
-    for (int i = 0; i < 50; i += 5) {
-        DrawRectScreen(rect, barColor, nullptr, nullptr, nullptr);
-        rect.x += 0.095f;
-    }
-
-    barColor.red = 1.0f;
-    barColor.green = 1.0f;
-    barColor.blue = 1.0f;
-    Vector2 pos(0.025f + 0.00391f, f + 0.00446f);
-
-    for (std::vector<std::pair<Timer, TimerStats> >::iterator it = AutoTimer::sTimers.begin();
-         it != AutoTimer::sTimers.end();
-         ++it) {
-        if (!it->first.mDraw) {
-            continue;
-        }
-
-        float lastMs = it->first.mLastMs;
-
-        if (lastMs >= 0.05f) {
-            if (mVerboseTimers && AutoTimer::CollectingStats()) {
-                Symbol name = it->first.mName;
-                TimerStats &stats = it->second;
-                DrawStringScreen(MakeString("%s %2.1f (%.2f, %.2f) %.2f", name, lastMs, stats.mAvgMs, stats.mStdDevMs, stats.mMaxMs), pos, barColor, true);
-            } else {
-                Symbol name = it->first.mName;
-                float worstMs = it->first.mWorstMs;
-                DrawStringScreen(MakeString("%s %.2f (%.2f)", name, lastMs, worstMs), pos, barColor, true);
-            }
-        } else {
-            DrawStringScreen(it->first.mName.mStr, pos, barColor, true);
-        }
-        pos.y += 0.045f;
-    }
-
-    return pos.y;
 }
 
 #pragma push
@@ -945,6 +905,28 @@ void Rnd::DrawPreClear() {
     }
 }
 #pragma pop
+
+void Rnd::EndDrawing() {
+    EndWorld();
+    if (MainThread()) {
+        AutoSlowFrame asf("RndOverlay::DrawAll");
+        if (RndCam::Current()->TargetTex()) {
+            mDefaultCam->Select();
+        }
+        RndOverlay::DrawAll(false);
+        RndGraph::DrawAll();
+    }
+    mDrawing = false;
+    mFrameID++;
+}
+
+void Rnd::SetShowTimers(bool b1, bool b2) {
+    RndOverlay *o = mTimersOverlay;
+    o->mShowing = b1;
+    o->mTimer.Restart();
+    mVerboseTimers = b2;
+    SetGSTiming(b1);
+}
 
 #pragma push
 #pragma dont_inline on
@@ -1111,6 +1093,26 @@ void Rnd::ResetProcCounter() {
 
 bool Rnd::GetEvenOddDisabled() const { return mProcCounter.mEvenOddDisabled; }
 void Rnd::SetEvenOddDisabled(bool b) { mProcCounter.SetEvenOddDisabled(b); }
+
+static void PreClearCompilerHelper(ObjPtrList<RndDrawable> &list, RndDrawable *draw);
+
+void Rnd::PreClearDrawAddOrRemove(RndDrawable *d, bool b2, bool b3) {
+    ObjPtrList<RndDrawable> &list = b3 ? unk110 : mDraws;
+    if (!b2) {
+        list.remove(d);
+    } else {
+        PreClearCompilerHelper(list, d);
+    }
+}
+
+static void PreClearCompilerHelper(ObjPtrList<RndDrawable> &list, RndDrawable *draw) {
+    for (ObjPtrList<RndDrawable>::iterator it = list.begin(); it != list.end(); ++it) {
+        if (*it == draw)
+            return;
+    }
+    list.push_back(draw);
+    list.sort(SortDraws);
+}
 
 String UniqueFileName(const char *name) {
     int idx = 0;
