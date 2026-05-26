@@ -878,8 +878,8 @@ float VocalPart::GetBestHit(
                     MILO_ASSERT(noteMatched != -1, 0x486);
                     const VocalNote &best = mVocalNoteList->mNotes[noteMatched];
                     const VocalNote &cur = mVocalNoteList->mNotes[i];
-                    if (fabs((best.mMs + best.mDurationMs) - ms)
-                        < fabs(cur.mMs - ms)) {
+                    if ((float)fabs((best.mMs + best.mDurationMs) - ms)
+                        < (float)fabs(cur.mMs - ms)) {
                         score = 0.0f;
                     }
                 }
@@ -896,11 +896,11 @@ float VocalPart::GetBestHit(
             }
         } else if (0.0f != io_rPitch) {
             float pitch = savedPitch;
-            int octaves = o_rOctaves;
             float sloppyPitch;
+            int octaves = o_rOctaves;
             float spArg5;
             float score = ScoreNote(ms, i, pitch, octaves, sloppyPitch, spArg5);
-            if (score >= bestScore || (score > 0.0f && foundTalky)) {
+            if (score >= bestScore || (score > 0.0 && foundTalky)) {
                 bestScore = score;
                 io_rPitch = pitch;
                 foundTalky = 0;
