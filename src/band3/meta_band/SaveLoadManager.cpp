@@ -194,7 +194,7 @@ void SaveLoadManager::Poll() {
             SetState((State)0x51);
             break;
         default:
-            MILO_LOG("SaveLoadManager startup bad mode: %d\n", mMode);
+            MILO_WARN("SaveLoadManager startup bad mode: %d\n", mMode);
             SetState((State)0x6e);
             break;
         }
@@ -836,7 +836,9 @@ void SaveLoadManager::SetState(State newState) {
         BufStream stream(mData, sz, true);
         TheSongMgr.SaveCachedSongInfo(stream);
         if (!mCache->WriteAsync(unk4c.c_str(), mData, (uint)sz, NULL)) {
+#pragma dont_inline on
             MILO_FAIL(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
         }
         break;
     }
@@ -844,7 +846,9 @@ void SaveLoadManager::SetState(State newState) {
     case 0x23:
     {
         if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
+#pragma dont_inline on
             MILO_FAIL(MakeString<int>("TheCacheMgr->UnmountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
         }
         break;
     }
@@ -878,7 +882,9 @@ void SaveLoadManager::SetState(State newState) {
             mCacheID = NULL;
         }
         if (!TheCacheMgr->SearchAsync(kStrGlobalCacheName.Str(), &mCacheID)) {
+#pragma dont_inline on
             MILO_FAIL(MakeString<int>("TheCacheMgr->SearchAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
         }
         break;
     }
@@ -953,7 +959,9 @@ void SaveLoadManager::SetState(State newState) {
     {
         UpdateStatus((SaveLoadMgrStatus)1);
         if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
+#pragma dont_inline on
             MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
         }
         break;
     }
@@ -962,7 +970,9 @@ void SaveLoadManager::SetState(State newState) {
         int sz = TheProfileMgr.GetGlobalOptionsSize();
         mData = _MemAllocTemp(sz, 0);
         if (!mCache->ReadAsync(kStrGlobalCacheName.Str(), mData, (uint)sz, NULL)) {
+#pragma dont_inline on
             MILO_FAIL(MakeString<int>("TheCacheMgr->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
         }
         break;
     }
@@ -975,7 +985,9 @@ void SaveLoadManager::SetState(State newState) {
         FixedSizeSaveableStream stream(mData, sz, true);
         TheProfileMgr.SaveGlobalOptions(stream);
         if (!mCache->WriteAsync(kStrGlobalCacheName.Str(), mData, (uint)sz, NULL)) {
+#pragma dont_inline on
             MILO_FAIL(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
         }
         break;
     }
@@ -985,7 +997,9 @@ void SaveLoadManager::SetState(State newState) {
     {
         if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
             if (TheCacheMgr->GetLastResult() != kCache_ErrorStorageDeviceMissing) {
+#pragma dont_inline on
                 MILO_WARN("UnmountAsync failed with error %d\n", (int)TheCacheMgr->GetLastResult());
+#pragma dont_inline reset
             }
         }
         break;

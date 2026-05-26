@@ -129,7 +129,7 @@ protected:
 
     bool mActivated; // 0x1c
     bool mInitialLoadNotDone; // 0x1d
-    int mMode; // 0x20
+    SaveLoadMode mMode; // 0x20
     State mState; // 0x24
     State mStateAtSelectStart; // 0x28
     LocalBandUser *mUser; // 0x2c
