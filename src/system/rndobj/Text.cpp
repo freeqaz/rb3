@@ -1505,7 +1505,10 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
                 unsigned int definingFontAsInt = (unsigned int)defining;
                 MeshInfo &curMeshInfo = mMeshMap[definingFontAsInt];
                 RndMesh::Vert *vert10 = curMeshInfo.mesh->Verts().begin() + i11;
-                vert10->color = col;
+                vert10[3].color = col;
+                vert10[2].color = col;
+                vert10[1].color = col;
+                vert10[0].color = col;
                 i11 += 4;
                 curMeshInfo.syncFlags |= 0x1F;
             }
