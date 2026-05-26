@@ -133,13 +133,13 @@ unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int le
         unsigned int encread = file->Read(encHeader, sizeof(BINKENCRYPTIONHEADER));
         // byteswap mSignature through mMagicB from bad endian to big endian
         intelendian(encHeader, 0x14);
+        // check if the header is BIKE (after first swap, before nonce swap)
+        int whatever = encHeader->mSignature - 0x45420000; // 'BI--'
         // byteswap mNonce (each 64-bit word independently)
         unsigned long long n0 = encHeader->mNonce[0];
         unsigned long long n1 = encHeader->mNonce[1];
         encHeader->mNonce[0] = EndianSwap(n0);
         encHeader->mNonce[1] = EndianSwap(n1);
-        // check if the header is BIKE
-        int whatever = encHeader->mSignature - 0x45420000; // 'BI--'
         if (whatever == 0x494B) { // '--KE'
             XTEABlockEncrypter *decrypter = new XTEABlockEncrypter;
             ((BINKFILE *)bink->iodata)->pXTEADecrypter = decrypter;
@@ -193,10 +193,7 @@ unsigned int BinkFileReadHeader(BINKIO *bink, int, void *header, unsigned int le
     ((BINKFILE *)bink->iodata)->iFileBufPos += r;
     unsigned int size = file->Size();
     unsigned int anothersize = size - ((BINKFILE *)bink->iodata)->iFileBufPos;
-    if (bink->BufSize < anothersize) {
-        anothersize = bink->BufSize;
-    }
-    bink->CurBufSize = anothersize;
+    bink->CurBufSize = (bink->BufSize < anothersize) ? bink->BufSize : anothersize;
     intelendian(header, r);
     return r;
 }
