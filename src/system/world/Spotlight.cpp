@@ -909,7 +909,6 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
 
     float length = def.mLength;
     Vector2 radii = def.NGRadii();
-    float halfStep = 2.0f;
     float numSegsF = (float)numSegments;
     float angleStep = 6.2831855f / numSegsF;
     float halfAngle = angleStep * 0.5f;
@@ -924,6 +923,7 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
     short baseIdx = 2;
     int iFace = 0;
     for (int seg = 0; seg != numSegments; seg++) {
+        float halfStep = 2.0f;
         float cosH = (float)std::cos((double)halfAngle);
         float sinH = (float)std::sin((double)halfAngle);
         float segU = (float)seg / numSegsF;
@@ -940,12 +940,12 @@ void Spotlight::BuildNGCone(BeamDef &def, int numSegments) {
                 float sinCs = (float)std::sin((double)csAngle);
                 csAngle = csAngle + xsAngle;
                 verts[iVert].pos.y = sinCs * bottomRadius + length;
-                verts[iVert].pos.z = cosCs * sinH * bottomRadius;
+                verts[iVert].pos.z = (cosCs * (sinH * bottomRadius));
                 verts[iVert].pos.x = cosCs * cosH * bottomRadius;
                 Multiply(verts[iVert].pos, orientMtx, verts[iVert].pos);
             }
             verts[iVert].color.color = -1;
-            verts[iVert].uv.Set(segU, uvV);
+            verts[iVert].uv.Set(uvV, segU);
             iVert++;
         }
 
