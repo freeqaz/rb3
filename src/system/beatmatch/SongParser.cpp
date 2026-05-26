@@ -1229,7 +1229,8 @@ bool SongParser::OnTrackName(int tick, const char *name) {
 void SongParser::PrepareTrack(const char *track_name, PartInfo *info) {
     Reset();
     bool b2 = false;
-    for (std::vector<PartInfo>::iterator it = mParts.begin(); it != mParts.end(); ++it) {
+    std::vector<PartInfo> &_ref0 = mParts;
+    for (std::vector<PartInfo>::iterator it = _ref0.begin(); it != _ref0.end(); ++it) {
         if (it->ContainsTrackName(track_name)) {
             if (it->NoSongDataTrack()) {
                 if (it->audio_type == kAudioFake) {
@@ -1399,7 +1400,9 @@ void SongParser::OnMidiMessageRealGuitarOff(
     if (!OnMidiMessageCommonOff(tick, pitch) && pitch != 108 && (pitch - 4 > 11U)
         && !HandleRGChordNamingStop(tick, pitch) && !HandleRGEnharmonicStop(tick, pitch)
         && !HandleRGSlashesStop(tick, pitch) && !HandleRGChordMarkupStop(tick, pitch)
-        && !HandleRGRollStop(tick, pitch) && !HandleRGTrillStop(tick, pitch)) {
+        && !HandleRGRollStop(tick, pitch)) {
+        bool _cond = !HandleRGTrillStop(tick, pitch);
+        if (_cond) {
         int difflevel = RGGetDifficultyLevel(pitch);
         if (difflevel == -1) {
             MILO_WARN(
@@ -1429,6 +1432,7 @@ void SongParser::OnMidiMessageRealGuitarOff(
                 );
             }
         }
+    }
     }
 }
 
@@ -1581,7 +1585,7 @@ bool SongParser::CheckForceHopoMarker(int tick, int pitch, bool b) {
 bool SongParser::CheckDrumMapMarker(int i, int j, bool b) {
     if (!mDrumStyleGems)
         return false;
-    else if (j >= 108U && j < 113U) {
+    else if ((int)(int)108U <= j && j < 113U) {
         mSink->DrumMapLane(mTrack, i, j - 108, b);
         return true;
     } else
