@@ -424,9 +424,6 @@ void ViewSettingsProvider::BuildFilters(Symbol s) {
         }
     }
     Symbol filterSyms[9];
-    for (int i = 0; i < 9; i++) {
-        filterSyms[i] = gNullStr;
-    }
     TheSongMgr.GetRankedSongs(validSongs, true, true);
     for (std::vector<int>::iterator it = validSongs.begin();
          it != validSongs.end();
@@ -443,13 +440,10 @@ void ViewSettingsProvider::BuildFilters(Symbol s) {
         filterSyms[3] = data->HasProGuitarSym();
         filterSyms[2] = data->HasKeysSym();
         for (int ft = 0; ft < 9; ft++) {
-            bool skip = false;
             if (ft == 6 && data->Rank(s) == 0.0f) {
-                skip = true;
+                continue;
             }
-            if (!skip) {
-                (*filterMaps[ft])[filterSyms[ft]] += 1;
-            }
+            (*filterMaps[ft])[filterSyms[ft]] += 1;
         }
     }
     for (std::vector<ViewSetting *>::iterator it = mSettings.begin();
