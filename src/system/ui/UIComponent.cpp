@@ -291,6 +291,7 @@ void UIComponent::Update() {
                     }
                 }
             } else {
+                ObjectDir *curdir = Dir();
                 const DataArray *def = TypeDef();
                 MILO_WARN(
                     "Can't find %s (%s) resource file %s for type %s! (%s)",
@@ -298,7 +299,7 @@ void UIComponent::Update() {
                     Name(),
                     def->FindStr("resource_file"),
                     Type(),
-                    PathName(Dir())
+                    PathName(curdir)
                 );
                 DataArray *cfg = SystemConfig("objects", ClassName(), "types");
                 DataArray *defaultarr = cfg->FindArray("default", false);
