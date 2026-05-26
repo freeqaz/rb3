@@ -16,6 +16,62 @@
 #include "types.h"
 #include <math.h>
 
+// The target copies vector<RndLine::Point> with an 8x-unrolled word copy
+// (lwz/stw for ALL 13 words of Point, not typed lfs/stfs). Confirmed by the
+// debug ELF's DWARF decompilation. The generic stlport copy paths do
+// `*dst = *src` (Point assignment), which our MWCC emits as per-field typed
+// copy + no unroll. To match, route the copy through a trivial POD word-struct
+// assignment in a count-based loop: MWCC word-copies the POD assignment and
+// inlines+unrolls the loop. The sub-object grouping below (Vector3 = 3 words,
+// Color32 = 1 word, then a 3-word + 6-word split of the 9 unk floats) is what
+// reproduces the target's exact load/store pairing schedule.
+namespace stlpmtx_std {
+
+struct _RndLineW3 { unsigned int a, b, c; };
+struct _RndLineW6 { unsigned int a, b, c, d, e, f; };
+struct _RndLinePointWords {
+    _RndLineW3 v;     // Vector3 v        -> words 0,1,2
+    unsigned int col; // Hmx::Color32 c   -> word 3
+    _RndLineW3 unkA;  // unk0,unk1,unk2   -> words 4,5,6
+    _RndLineW6 unkB;  // unk3..unk8       -> words 7..12
+};
+
+// Used by _Vector_impl<Point>::operator= in-place copy path.
+template <>
+inline RndLine::Point*
+__copy_ptrs<const RndLine::Point*, RndLine::Point*>(
+    const RndLine::Point* __first, const RndLine::Point* __last,
+    RndLine::Point* __result, const __false_type& /*IsOKToMemCpy*/
+) {
+    _RndLinePointWords* __d = (_RndLinePointWords*)__result;
+    const _RndLinePointWords* __s = (const _RndLinePointWords*)__first;
+    for (ptrdiff_t __n = __last - __first; __n > 0; --__n) {
+        *__d = *__s;
+        ++__s;
+        ++__d;
+    }
+    return (RndLine::Point*)__d;
+}
+
+// Used by _M_fill_insert_aux to shift existing elements backward to open a gap.
+// (op= does NOT use this — its realloc path goes through __uninitialized_copy
+// which stays generic/typed, matching the target.)
+template <>
+inline RndLine::Point*
+__copy_backward_ptrs<RndLine::Point*, RndLine::Point*>(
+    RndLine::Point* __first, RndLine::Point* __last,
+    RndLine::Point* __result, const __false_type& /*TrivialAssignment*/
+) {
+    _RndLinePointWords* __d = (_RndLinePointWords*)__result;
+    _RndLinePointWords* __l = (_RndLinePointWords*)__last;
+    for (ptrdiff_t __n = __last - __first; __n > 0; --__n) {
+        *--__d = *--__l;
+    }
+    return (RndLine::Point*)__d;
+}
+
+} // namespace stlpmtx_std
+
 // Defined in Geo.cpp but not declared in Geo.h.
 void Intersect(const Hmx::Ray &r1, const Hmx::Ray &r2, Vector2 &out);
 
