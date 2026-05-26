@@ -14,9 +14,9 @@ void WiiCam::Select() {
     TheNgStats->mCams++;
     RndCam::Select();
     int ox = 0;
-    int oy = 0;
     int height;
     int width;
+    int oy = 0;
     if (mTargetTex) {
         width = mTargetTex->mWidth;
         height = mTargetTex->mHeight;
@@ -31,7 +31,7 @@ void WiiCam::Select() {
         }
         height = TheWiiRnd.mHeight;
         if (TheWiiRnd.mAspect == Rnd::kLetterbox && !TheWiiRnd.unk_0x2B0) {
-            float scaled = 9.0f * (float)width * 0.0625f;
+            float scaled = (9.0f * ((float)width * 0.0625f));
             float bar = (float)height - scaled;
             unsigned int barI;
             if (bar > 0.0f) {
