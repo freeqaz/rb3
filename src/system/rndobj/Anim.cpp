@@ -348,16 +348,17 @@ void AnimTask::Replace(Hmx::Object *from, Hmx::Object *to) {
 void AnimTask::Poll(float time) {
     float frame;
     float blend = 1.0f;
-    if (mBlendPeriod) {
-        blend = time / mBlendPeriod;
+    float &_ref0 = mBlendPeriod;
+    if (_ref0) {
+        blend = time / _ref0;
         if (blend >= 1.0f) {
             blend = 1.0f;
             delete mBlendTask;
-            mBlendPeriod = 0.0f;
+            _ref0 = 0.0f;
         } else if (!mBlendTask) {
             float oldtime = mBlendTime;
             mBlendTime = time;
-            blend = (time - oldtime) / (mBlendPeriod - oldtime);
+            blend = (time - oldtime) / (_ref0 - oldtime);
         }
     } else {
         if (mBlendTask)
@@ -369,9 +370,9 @@ void AnimTask::Poll(float time) {
     } else {
         frame = Clamp<float>(mMin, mMax, time);
     }
-    mAnim->SetFrame(frame, blend);
+    mAnim->SetFrame(blend, frame);
     if (!mAnimTarget
-        || (!mLoop && !mBlending && !mBlendPeriod)
+        || (!mLoop && !mBlending && !_ref0)
             && ((time > mMax || time < mMin) || (mScale == 0))) {
         delete this;
     }
