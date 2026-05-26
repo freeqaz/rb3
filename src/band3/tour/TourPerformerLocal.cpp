@@ -477,7 +477,8 @@ void TourPerformerLocal::CheatCycleSetlist() {
          it != mapSongsInFilter.end();
          ++it) {
         Symbol current = it->first;
-        if (mapSongsInFilter[current] >= iNumSongs) {
+        if (mapSongsInFilter.find(current) != mapSongsInFilter.end() &&
+            mapSongsInFilter[current] >= iNumSongs) {
             // Find which quest filter slots have this filter selected
             unsigned int *pIndices = filterIndices;
             for (int i = 0; i < kTour_NumQuestFilters; i++, pIndices++) {
@@ -511,7 +512,8 @@ void TourPerformerLocal::CheatCycleSetlist() {
                 FixedSetlist *pFixedSetlist = TheQuestMgr.GetFixedSetlist(sym);
                 MILO_ASSERT(pFixedSetlist, 0x353);
                 if (pFixedSetlist->GetGroup() == setlistType) {
-                    if (pFixedSetlist->GetNumSongs() == iNumSongs) {
+                    int numSongs = pFixedSetlist->GetNumSongs();
+                    if (numSongs == iNumSongs) {
                         validSetlists.push_back(sym);
                     }
                 }
