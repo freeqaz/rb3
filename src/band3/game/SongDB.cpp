@@ -28,6 +28,17 @@
 
 bool ExtentCmp(const Extent &e, int n) { return e.unk4 < n; }
 
+// Force the complete out-of-line vector<VocalNote>/<VocalPhrase> destructors.
+// `delete ptr` gets inlined/DCE'd here (-inline noauto); a stack-local vector
+// with push_back references the non-inline stlport ~vector() via a real `bl`.
+DECOMP_FORCEBLOCK(
+    SongDB, (const VocalNote &vn, const VocalPhrase &vp),
+    std::vector<VocalNote> notes;
+    notes.push_back(vn);
+    std::vector<VocalPhrase> phrases;
+    phrases.push_back(vp);
+)
+
 SongDB::SongDB()
     : mSongData(new SongData()), mSongDurationMs(0), mCodaStartTick(-1),
       mMultiplayerAnalyzer(new MultiplayerAnalyzer(mSongData)), unk24(-1), unk28(-1) {
