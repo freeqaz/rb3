@@ -79,6 +79,12 @@ SKIP_UNITS = {
     # that SetState's 100+ case handlers emit. See feedback_setstate_decomp_workstream.md.
     # Will resolve when SetState lands; not a standalone pool-shift target.
     "main/band3/meta_band/SaveLoadManager",
+    # FALSE POSITIVE (GemTrackDir wave 2026-05-26). Scanner reported +82
+    # cluster but per-function deltas are wildly varied (-153, +16, -67,
+    # +1036, +20). No actual common cluster. Earlier commit fb74d182 already
+    # harvested the semantic-correctness wins; deeper progress requires
+    # per-function structural work, not pool-shift.
+    "main/system/bandobj/GemTrackDir",
 }
 
 
