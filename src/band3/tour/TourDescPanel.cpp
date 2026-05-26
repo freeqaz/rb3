@@ -464,8 +464,13 @@ void TourDescProvider::Text(
     MILO_ASSERT(pTourDesc, 0x60);
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0x63);
+        bool bAvailable;
     bool bSelected = pProgress->GetTourDesc() == s;
-    bool bAvailable = MetaPanel::sUnlockAll ? true : IsTourDescAvailable(s);
+    if (MetaPanel::sUnlockAll) {
+        bAvailable = true;
+    } else {
+        bAvailable = IsTourDescAvailable(s);
+    }
     if (i_pSlot->Matches("name")) {
         if (bAvailable)
             i_pLabel->SetTextToken(s);
