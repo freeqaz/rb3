@@ -1321,7 +1321,7 @@ void SongParser::PrepareTrack(const char *track_name, PartInfo *info) {
     mDrumStyleGems = drumstyle;
     TrackType newty = (TrackType)(mTrackType - 1);
     mIgnoreGemDurations = mTrackType == kTrackDrum;
-    if (newty <= kTrackRealBass && ((1 << (newty) & 0x1EBU) != 0)) {
+    if ((unsigned)newty <= (unsigned)kTrackRealBass && ((1 << (newty) & 0x1EBU) != 0)) {
         s9 = true;
     }
     mTrackAllowsHopos = s9;
@@ -1732,9 +1732,10 @@ bool SongParser::AudioTrackUsed(SongInfoAudioType ty) {
 
 void SongParser::AnalyzeTrackList() {
     MILO_ASSERT(!mTrackNames.empty(), 0x9F8);
+    int i = 0;
     int i1 = mParts.size();
     const char *c64;
-    for (int i = 0; i < mTrackNames.size(); i++) {
+    for (; i < mTrackNames.size(); i++) {
         if (IsPartTrackName(mTrackNames[i].mStr, &c64)) {
             Symbol s68 = c64;
             DataArray *arr = mTrackNameMapping->FindArray(s68, false);
