@@ -578,58 +578,58 @@ void CalibrationPanel::ScanHardwareModeInputs() {
 }
 
 void CalibrationPanel::TriggerCalibration(int pad) {
-    float f34 = 0;
-    float f9 = mCycleTimeMs / 2.0f;
-    float f8 = std::fmod(f9 + GetAudioTimeMs(), mCycleTimeMs);
-    f34 = f8 - f9;
-    f8 = GetAudioTimeMs();
-    f9 = unkd0;
-    if (f8 > f9 && (f8 - f9) < 210.0f && f9 != -1.0f)
+    float sample = 0;
+    float halfCycle = mCycleTimeMs / 2.0f;
+    float cycleOff = std::fmod(halfCycle + GetAudioTimeMs(), mCycleTimeMs);
+    sample = cycleOff - halfCycle;
+    float nowMs = GetAudioTimeMs();
+    float lastMs = unkd0;
+    if (nowMs > lastMs && (nowMs - lastMs) < 210.0f && lastMs != -1.0f)
         return;
-    unkd0 = f8;
-    f8 = TheProfileMgr.GetExcessAudioLagNeutral(pad, true);
+    unkd0 = nowMs;
+    float lag = TheProfileMgr.GetExcessAudioLagNeutral(pad, true);
     if (mEnableVideo)
-        f8 = TheProfileMgr.GetExcessVideoLagNeutral(pad, true);
+        lag = TheProfileMgr.GetExcessVideoLagNeutral(pad, true);
     if (mHardwareMode) {
-        f8 = TheProfileMgr.GetPlatformAudioLatency();
+        lag = TheProfileMgr.GetPlatformAudioLatency();
         if (mEnableVideo)
-            f8 = TheProfileMgr.GetPlatformVideoLatency();
-        f34 -= 16.666666f;
+            lag = TheProfileMgr.GetPlatformVideoLatency();
+        sample -= 16.666666f;
         if (!mEnableVideo) {
-            f34 -= 20.0f;
+            sample -= 20.0f;
         } else {
-            f34 -= 24.0f;
+            sample -= 24.0f;
         }
     } else {
         if (mEnableVideo) {
-            f34 += kAnimPerceptualOffset;
+            sample += kAnimPerceptualOffset;
         } else {
-            f34 += -6.0f;
+            sample += -6.0f;
         }
     }
     switch (JoypadGetPadData(pad)->mType) {
     case kJoypadWiiButtonGuitar:
         if (mEnableVideo)
-            f34 += 7.0f;
+            sample += 7.0f;
         else
-            f34 -= 14.0f;
+            sample -= 14.0f;
         break;
     case kJoypadXboxButtonGuitar:
     case kJoypadPs3ButtonGuitar:
         if (mEnableVideo)
-            f34 -= 12.0f;
+            sample -= 12.0f;
         else
-            f34 -= 34.0f;
+            sample -= 34.0f;
         break;
     default:
         break;
     }
-    int i7 = 10;
-    f34 -= f8;
+    int repAdvance = 10;
+    sample -= lag;
     if (mHardwareMode)
-        i7 = 40;
-    unk90 = GetTestRep() + i7;
-    mTestSamples.push_back(f34);
+        repAdvance = 40;
+    unk90 = GetTestRep() + repAdvance;
+    mTestSamples.push_back(sample);
     if (mTestSamples.size() >= mNumHits)
         EndTest();
 }
