@@ -37,8 +37,18 @@
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
-CustomizePanel::CustomizeState CustomizePanel::sBackStates[] = { (CustomizeState)0,
-                                                                 (CustomizeState)0 };
+CustomizePanel::CustomizeState CustomizePanel::sBackStates[] = {
+    (CustomizeState)0,    (CustomizeState)0,    (CustomizeState)1,    (CustomizeState)1,
+    (CustomizeState)3,    (CustomizeState)4,    (CustomizeState)4,    (CustomizeState)4,
+    (CustomizeState)1,    (CustomizeState)8,    (CustomizeState)8,    (CustomizeState)8,
+    (CustomizeState)8,    (CustomizeState)8,    (CustomizeState)8,    (CustomizeState)8,
+    (CustomizeState)8,    (CustomizeState)1,    (CustomizeState)0x11, (CustomizeState)0x11,
+    (CustomizeState)0x11, (CustomizeState)0x11, (CustomizeState)0x11, (CustomizeState)1,
+    (CustomizeState)0x17, (CustomizeState)0x17, (CustomizeState)0x17, (CustomizeState)0x17,
+    (CustomizeState)0x17, (CustomizeState)3,    (CustomizeState)3,    (CustomizeState)1,
+    (CustomizeState)0,    (CustomizeState)0x20, (CustomizeState)0x20, (CustomizeState)0x20,
+    (CustomizeState)1,
+};
 
 CustomizePanel::CustomizePanel()
     : mCustomizeState(kCustomizeState_Invalid), mPendingState(kCustomizeState_Invalid),
@@ -882,7 +892,7 @@ DataNode CustomizePanel::LeaveState(bool b1) {
             return 1;
         default:
             mClosetMgr->ResetCharacterPreview();
-            // SetPendingState(sBackStates[mCustomizeState]);
+            SetPendingState(sBackStates[mCustomizeState]);
             return 1;
         }
 }
@@ -899,6 +909,8 @@ DataNode CustomizePanel::LeaveCustomizePanel() {
 
 void CustomizePanel::SetIsWaitingToLeave(bool b) { mWaitingToLeave = b; }
 
+#pragma push
+#pragma pool_data off
 void CustomizePanel::MovePatch(float dx, float dy) {
     int idx = mPreviewDesc->FindPatchIndex(
         (BandCharDesc::Patch::Category)mPatchCategory, mPatchName.c_str()
@@ -907,19 +919,23 @@ void CustomizePanel::MovePatch(float dx, float dy) {
         BandCharDesc::Patch *patch = mPreviewDesc->GetPatch(idx);
         float oldX = patch->mUV.x;
         float oldY = patch->mUV.y;
-        float newX = oldX + dx;
-        float newY = oldY + dy;
-        if (newX < 0.0f)
-            newX = 0.0f;
-        else if (newX > 1.0f)
-            newX = 1.0f;
-        if (newY < 0.0f)
-            newY = 0.0f;
-        else if (newY > 1.0f)
-            newY = 1.0f;
-        if (newX != oldX || newY != oldY) {
-            patch->mUV.x = newX;
-            patch->mUV.y = newY;
+        Vector2 newUV;
+        newUV.x = oldX + dx;
+        newUV.y = oldY + dy;
+        if (newUV.x < 0.0f)
+            newUV.x = 0.0f;
+        else if (newUV.x > 1.0f)
+            newUV.x = 1.0f;
+        if (newUV.y < 0.0f)
+            newUV.y = 0.0f;
+        else if (newUV.y > 1.0f)
+            newUV.y = 1.0f;
+        bool changed = false;
+        if (newUV.x != oldX || newUV.y != oldY)
+            changed = true;
+        if (changed) {
+            patch->mUV.x = newUV.x;
+            patch->mUV.y = newUV.y;
             RefreshPatchEdit();
         }
     }
@@ -944,23 +960,28 @@ void CustomizePanel::ScalePatch(float dx, float dy) {
         BandCharDesc::Patch *patch = mPreviewDesc->GetPatch(idx);
         float oldX = patch->mScale.x;
         float oldY = patch->mScale.y;
-        float newX = oldX + dx;
-        float newY = oldY + dy;
-        if (newX < 0.0f)
-            newX = 0.0f;
-        else if (newX > 5.0f)
-            newX = 5.0f;
-        if (newY < 0.0f)
-            newY = 0.0f;
-        else if (newY > 5.0f)
-            newY = 5.0f;
-        if (newX != oldX || newY != oldY) {
-            patch->mScale.x = newX;
-            patch->mScale.y = newY;
+        Vector2 newScale;
+        newScale.x = oldX + dx;
+        newScale.y = oldY + dy;
+        if (newScale.x < 0.0f)
+            newScale.x = 0.0f;
+        else if (newScale.x > 5.0f)
+            newScale.x = 5.0f;
+        if (newScale.y < 0.0f)
+            newScale.y = 0.0f;
+        else if (newScale.y > 5.0f)
+            newScale.y = 5.0f;
+        bool changed = false;
+        if (newScale.x != oldX || newScale.y != oldY)
+            changed = true;
+        if (changed) {
+            patch->mScale.x = newScale.x;
+            patch->mScale.y = newScale.y;
             RefreshPatchEdit();
         }
     }
 }
+#pragma pop
 
 void CustomizePanel::ClearAssetPatchData() {
     unk90 = gNullStr;
