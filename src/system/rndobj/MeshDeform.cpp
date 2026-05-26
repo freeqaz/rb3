@@ -303,8 +303,8 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         }
     }
     int meshNumVerts = mMesh->Verts().size();
-    int vertIdx = 0;
     u8 *vertData = (u8 *)mVerts.mData;
+    int vertIdx = 0;
     while (vertData < (u8 *)mVerts.mData + mVerts.mSize) {
         if (vertIdx == meshNumVerts) {
             TheDebug.Notify(MakeString(
@@ -328,7 +328,7 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
             n++;
             float w = (1.0f / 255.0f) * (float)weightByte;
             totalWeight += w;
-            Transform &bx = xfms[boneIdx];
+            const Transform &bx = xfms[boneIdx];
             weighted.m.x.x += bx.m.x.x * w;
             weighted.m.x.y += bx.m.x.y * w;
             weighted.m.x.z += bx.m.x.z * w;
