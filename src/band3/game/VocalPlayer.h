@@ -76,6 +76,26 @@ public:
         }
         ts << "\n";
     }
+    void OutputFrame(TextFileStream &ts) const {
+        ts << mMs << "\t";
+        ts << mCompMs << "\t";
+        for (int i = 0; i < (int)mSingerData.size(); i++) {
+            ts << mSingerData[i].unk0 << "\t";
+            ts << mSingerData[i].unk4 << "\t";
+            ts << mSingerData[i].unk8 << "\t";
+        }
+        for (int i = 0; i < (int)mPartData.size(); i++) {
+            ts << mPartData[i].unk0 << "\t";
+            ts << mPartData[i].unk4 << "\t";
+            ts << mPartData[i].unk8 << "\t";
+            ts << mPartData[i].unkc << "\t";
+            ts << mPartData[i].unk10 << "\t";
+            ts << mPartData[i].unk14 << "\t";
+            ts << mPartData[i].unk18 << "\t";
+            ts << mPartData[i].unk1c << "\t";
+        }
+        ts << "\n";
+    }
 
     float mMs; // 0x0
     float mCompMs; // 0x4

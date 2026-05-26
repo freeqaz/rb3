@@ -767,10 +767,11 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         }
 
         if (0.0f != pSinger->mFrameMicPitch) {
-            MILO_ASSERT(mTrack, 0x501);
+            VocalTrack *pTrack = mTrack;
+            MILO_ASSERT(pTrack, 0x501);
             float fAdjusted = (kSemitone * (float)iOctaveOffset) + pSinger->mFrameMicPitch;
-            float fBottom = mTrack->GetBottomDisplayPitch() - mTrackWrappingMargin;
-            float fTop = mTrackWrappingMargin + mTrack->GetTopDisplayPitch();
+            float fBottom = pTrack->GetBottomDisplayPitch() - mTrackWrappingMargin;
+            float fTop = mTrackWrappingMargin + pTrack->GetTopDisplayPitch();
             if ((fBottom > 0.0f) && (fAdjusted < fBottom)) {
                 iOctaveOffset += (int)((fBottom - fAdjusted) / kSemitone) + 1;
             } else if ((fTop > 0.0f) && (fAdjusted > fTop)) {
@@ -897,26 +898,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     // Frame spew output to stream
     if (mFrameSpewStream) {
         MILO_ASSERT(mFrameSpewData, 0x5CC);
-        VocalFrameSpewData *spew = mFrameSpewData;
-        TextFileStream *ts = mFrameSpewStream;
-        *ts << spew->mMs << "\t";
-        *ts << spew->mCompMs << "\t";
-        for (int i = 0; i < (int)spew->mSingerData.size(); i++) {
-            *ts << spew->mSingerData[i].unk0 << "\t";
-            *ts << spew->mSingerData[i].unk4 << "\t";
-            *ts << spew->mSingerData[i].unk8 << "\t";
-        }
-        for (int i = 0; i < (int)spew->mPartData.size(); i++) {
-            *ts << spew->mPartData[i].unk0 << "\t";
-            *ts << spew->mPartData[i].unk4 << "\t";
-            *ts << spew->mPartData[i].unk8 << "\t";
-            *ts << spew->mPartData[i].unkc << "\t";
-            *ts << spew->mPartData[i].unk10 << "\t";
-            *ts << spew->mPartData[i].unk14 << "\t";
-            *ts << spew->mPartData[i].unk18 << "\t";
-            *ts << spew->mPartData[i].unk1c << "\t";
-        }
-        *ts << "\n";
+        mFrameSpewData->OutputFrame(*mFrameSpewStream);
     }
 }
 
