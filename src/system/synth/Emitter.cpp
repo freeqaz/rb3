@@ -86,8 +86,10 @@ void SynthEmitter::CheckLoadResources() {
 
 // fn_8066E758 in retail
 void SynthEmitter::Poll() {
-    if (mSfx && mListener && mSynthEmitterEnabled) {
-        Transform tf70;
+        ObjPtr<Sfx> &_ref0 = mSfx;
+        if (!_ref0 || !mListener || !mSynthEmitterEnabled)
+        return;
+    Transform tf70;
         Invert(mListener->WorldXfm(), tf70);
         Vector3 v80;
         Multiply(WorldXfm().v, tf70, v80);
@@ -97,7 +99,7 @@ void SynthEmitter::Poll() {
         } else {
             bool needStart = !mInst;
             if (needStart) {
-                mInst = dynamic_cast<SfxInst *>(mSfx->MakeInst());
+                mInst = dynamic_cast<SfxInst *>(_ref0->MakeInst());
                 if (!mInst) {
                     return;
                 }
@@ -115,7 +117,6 @@ void SynthEmitter::Poll() {
                 mInst->Start();
             }
         }
-    }
 }
 
 SynthEmitter::~SynthEmitter() { delete mInst; }
