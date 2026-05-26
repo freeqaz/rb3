@@ -377,11 +377,9 @@ void TrackPanel::HandleRemoveUser(BandUser *user) {
 }
 
 void TrackPanel::PostHandleRemoveUser(BandUser *user) {
-    Track *track = user->GetTrack();
-    if (std::find(mTracks.begin(), mTracks.end(), track) != mTracks.end()) {
-        mTracks.erase(
-            std::remove(mTracks.begin(), mTracks.end(), track), mTracks.end()
-        );
+    if (std::find(mTracks.begin(), mTracks.end(), user->GetTrack()) != mTracks.end()) {
+        Track *track = user->GetTrack();
+        mTracks.erase(std::remove(mTracks.begin(), mTracks.end(), track));
         delete track;
     }
 }
