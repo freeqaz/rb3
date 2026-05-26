@@ -265,7 +265,7 @@ String TryDemangleClassAndFunc(String str) {
         }
 
         if (str[0] == 'C') {
-            String _val0 = ("const ");
+            const String& _val0 = ("const ");
             classctx = _val0 + classctx;
             str = str.substr(1, strlen(str.c_str()));
         }
