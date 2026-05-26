@@ -911,7 +911,7 @@ void Player::FinalizeStats() {
     mStats.mNotesHitFraction = GetNotesHitFraction(nullptr);
     mStats.m0x14c = mStats.GetCurrentStreak();
     mStats.m0x150 = mStats.mPersistentStreak;
-    mStats.mEndGameScore = CodaScore();
+    mStats.mEndGameScore = GetScore();
     mStats.mEndGameCrowdLevel = mCrowd->GetValue();
     mStats.mEndGameOverdrive = mBandEnergy;
     mStats.mOverdrivePhraseCount = TheSongDB->GetNumOverdrivePhrases(mTrackNum);

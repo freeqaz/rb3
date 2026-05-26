@@ -1458,7 +1458,7 @@ void Game::AddPlayer(BandUser *user) {
     Player *player = mBand->AddPlayerDynamically(mMaster, user);
     SetDrumKitBank(player, TheGamePanel->mDrumKitBank);
     mAllActivePlayers.push_back(player);
-    player->PostDynamicAdd();
+    player->Start();
     SetPaused(true, true, true);
     SetPaused(false, true, true);
     mTrackerManager->HandleAddPlayer(player);
