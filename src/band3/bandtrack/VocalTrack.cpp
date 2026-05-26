@@ -1034,9 +1034,11 @@ void VocalTrack::PollLyricAnimations(
 }
 
 void VocalTrack::UpdateLyricZ() {
+    float z;
     bool leadDirty = false;
     bool harmonyDirty = false;
-    mDir->RecalculateLyricZ(&leadDirty, &harmonyDirty);
+    ObjPtr<VocalTrackDir> &_ref0 = mDir;
+    _ref0->RecalculateLyricZ(&leadDirty, &harmonyDirty);
     if (leadDirty) {
         FOREACH (it, mLyricsLead) {
             LyricPlate *plate = *it;
@@ -1044,11 +1046,10 @@ void VocalTrack::UpdateLyricZ() {
                 float delta = 0.0f;
                 for (unsigned int i = 0; i < plate->mSyllables.size(); i++) {
                     Lyric *lyric = plate->mSyllables[i];
-                    float z;
                     if (lyric->PitchNote()) {
-                        z = mDir->unk694;
+                        z = _ref0->unk694;
                     } else {
-                        z = mDir->unk69c;
+                        z = _ref0->unk69c;
                     }
                     if (delta == 0.0f) {
                         delta = z - lyric->mBeginPos.z;
@@ -1079,9 +1080,9 @@ void VocalTrack::UpdateLyricZ() {
                     Lyric *lyric = plate->mSyllables[i];
                     float z;
                     if (lyric->PitchNote()) {
-                        z = mDir->unk698;
+                        z = _ref0->unk698;
                     } else {
-                        z = mDir->unk6a0;
+                        z = _ref0->unk6a0;
                     }
                     if (delta == 0.0f) {
                         delta = z - lyric->mBeginPos.z;
