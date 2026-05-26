@@ -41,13 +41,23 @@ public:
     int unk28;
 };
 
+class LoadMemcardAction : public MemcardAction {
+public:
+    LoadMemcardAction(std::vector<BandProfile *, unsigned short> *);
+    virtual ~LoadMemcardAction();
+    virtual void PreAction();
+    virtual void Action();
+    virtual void PostAction();
+    std::vector<BandProfile *, unsigned short> *mProfiles;
+};
+
 SaveLoadManager *TheSaveLoadMgr;
 
 SaveLoadManager::SaveLoadManager()
     : mActivated(false), mInitialLoadNotDone(true), mState(kS_Idle),
       mStateAtSelectStart(kS_Idle), mUser(NULL), mLocalUser(NULL),
-      unk44(), unk48(0), mCacheID(NULL), mCache(NULL),
-      mData(NULL), unk64(0), unk68(false), mWaiting(false), unk6c(0), unk70(0),
+      unk44(), unk48(0), mSaveSize(0), mCacheID(NULL), mCache(NULL),
+      mData(NULL), unk68(false), mWaiting(false), unk6c(0), unk70(0),
       mRequestFlags(0), unk78(0), unk7c(0), mAction(NULL) {
     mSaveProfiles.reserve(4);
     mUploadProfiles.reserve(4);
@@ -329,7 +339,7 @@ void SaveLoadManager::Poll() {
     case (State)0x1F:
         if (!mCache->IsDone()) return;
         if (mCache->GetLastResult() == kCache_NoError) {
-            BufStream stream(mData, unk64, true);
+            BufStream stream(mData, mSaveSize, true);
             TheSongMgr.LoadCachedSongInfo(stream);
             SetState((State)0x22);
         } else {
@@ -519,6 +529,10 @@ void SaveLoadManager::Poll() {
     }
 }
 
+namespace {
+    Symbol kStrGlobalCacheName("globaloptions");
+}
+
 void SaveLoadManager::SetState(State newState) {
     State oldState = mState;
     if (oldState == newState) return;
@@ -567,12 +581,11 @@ void SaveLoadManager::SetState(State newState) {
     }
     if ((unsigned int)mState > 0x6e) return;
 
-    // Entry handlers (partial implementation - large state machine)
     switch ((int)mState) {
-    case 0x0:
+    case 0x0: // kS_Idle
         UpdateStatus((SaveLoadMgrStatus)5);
         break;
-    case 0x1:
+    case 0x1: // kS_Start
         unk7c = 0;
         break;
     case 0x2:
@@ -581,6 +594,726 @@ void SaveLoadManager::SetState(State newState) {
         } else {
             SetState((State)0x3);
         }
+        break;
+    case 0x3: // kS_AutoloadSelectProfile
+    {
+        std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
+        mUploadProfiles = newProfiles;
+        if (TheMemcardMgr.IsDisableWriting() || mUploadProfiles.size() == 0 && !mInitialLoadNotDone) {
+            mUser = NULL;
+            SetState((State)0x12);
+        } else {
+            SetState((State)0xb);
+            mInitialLoadNotDone = false;
+        }
+        break;
+    }
+    case 0x4:
+    {
+        BandProfile *pProfile = GetProfile();
+        MILO_ASSERT(pProfile, 0x538);
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        TheMemcardMgr.OnSearchForDevice(pProfile);
+        break;
+    }
+    case 0x5:
+        if (unk7c == 2) {
+            SetState((State)0x9);
+        } else {
+            SetState((State)0x6);
+        }
+        break;
+    case 0x6: // kS_AutoloadNoSaveFound_Msg
+    case 0x7: // kS_AutoloadMultipleSavesFound
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x8: // kS_AutoloadSetDevice
+    {
+        MILO_ASSERT(unk7c == 2, 0x559);
+        TheMemcardMgr.SetDevice(unk78);
+        SetState((State)0xb);
+        break;
+    }
+    case 0x9: // kS_AutoloadSelectDevice2
+    {
+        BandProfile *pProfile = GetProfile();
+        MILO_ASSERT(pProfile, 0x564);
+        int devId = -1;
+        if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.SelectDevice(pProfile, false, localUser, devId);
+        break;
+    }
+    case 0xa: // kS_AutoloadSelectDevice3
+    {
+        BandProfile *pProfile = GetProfile();
+        MILO_ASSERT(pProfile, 0x57b);
+        int devId = -1;
+        if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.SelectDevice(pProfile, true, localUser, devId);
+        break;
+    }
+    case 0xb: // kS_AutoloadStartLoad
+    {
+        mTimer.Restart();
+        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+            (*pp)->SaveLoadComplete(kMetaProfileUnloaded);
+        }
+        if (TheWiiProfileMgr.NeedsLoading()) TheWiiProfileMgr.PreLoad();
+        mWaiting = true;
+        delete mAction;
+        mAction = NULL;
+        mAction = new LoadMemcardAction(&mUploadProfiles);
+        mInitialLoadNotDone = false;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        TheMemcardMgr.OnLoadGame(NULL, mAction);
+        break;
+    }
+    case 0xc: // kS_AutoloadNotOwner
+    case 0xd:
+    case 0xe:
+    case 0xf:
+    case 0x10:
+    case 0x11:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x12: // kS_AutoloadDeviceMissing
+    case 0x13:
+        SetState((State)0x46);
+        break;
+    case 0x14:
+    {
+        mInitialLoadNotDone = false;
+        if (TheProfileMgr.GlobalOptionsNeedsSave()) {
+            if (!TheMemcardMgr.IsDisableWriting()) {
+                SetState((State)0x46);
+                break;
+            }
+        }
+        TheProfileMgr.HandleProfileLoadComplete();
+        SetState((State)0x6e);
+        break;
+    }
+    case 0x15: // kS_SongCacheCreateSearch (entry-like)
+    {
+        unk4c = TheSongMgr.GetCachedSongInfoName();
+        if (mCacheID != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            if (mCacheID != NULL) {
+                delete mCacheID;
+            }
+            mCacheID = NULL;
+        }
+        TheSongMgr.CreateSongCacheID(&mCacheID);
+        if (mCacheID == NULL) {
+            MILO_LOG("SaveLoadManager - CacheMgr search failed in CreateSongCacheID()\n");
+        }
+        bool locResult = false;
+        const char *locName = Localize(song_info_cache_name, &locResult);
+        if (!TheCacheMgr->SearchAsync(locName, &mCacheID)) {
+            CacheResult res = TheCacheMgr->GetLastResult();
+            MILO_FAIL(MakeString<int>("TheCacheMgr->SearchAsync() failed with CacheResult %d\n", (int)res));
+        }
+        break;
+    }
+    case 0x16: // kS_SongCacheCreateNotFound_Msg (mount states share handler)
+    case 0x17:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x18:
+    case 0x19:
+    {
+        Symbol sym(unk4c.c_str());
+        TheCacheMgr->AddCacheID(mCacheID, sym);
+        SetState((State)0x20);
+        break;
+    }
+    case 0x1a: // kS_SongCacheCreateMountRead (0x1A)
+    {
+        if (mCacheID != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            delete mCacheID;
+            mCacheID = NULL;
+        }
+        bool locResult = false;
+        const char *locName = Localize(song_info_cache_name, &locResult);
+        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
+            CacheResult res = TheCacheMgr->GetLastResult();
+            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)res));
+        }
+        break;
+    }
+    case 0x1b: // break-only (NOP)
+        break;
+    case 0x1c:
+    {
+        MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        break;
+    }
+    case 0x1d:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x1e:
+    {
+        UpdateStatus((SaveLoadMgrStatus)1);
+#if 0 // FIXME(decomp): WIP referenced 4-arg Cache::ReadAsync(CacheID*,...) — real sig is (const char*, void*, uint, Hmx::Object*).
+        if (!mCache->ReadAsync(mCacheID, mData, mSaveSize, NULL)) {
+            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+#endif
+        break;
+    }
+    case 0x1f: // kS_SongCacheCreateSearch
+    {
+#if 0 // FIXME(decomp): WIP referenced _MemAllocTemp(CacheID*, 0) (wrong type) and 4-arg Cache::GetFileSizeAsync — real sig is (const char*, uint*, Hmx::Object*).
+        mData = _MemAllocTemp(mCacheID, 0);
+        if (!mCache->GetFileSizeAsync(mCacheID, mSaveSize, mData, 0)) {
+            MILO_FAIL(MakeString<int>("mCache->GetFileSizeAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+#endif
+        break;
+    }
+    case 0x20: // kS_SongCacheCreateMountWrite
+    {
+#if 0 // FIXME(decomp): WIP referenced Cache::ReadAsync(CacheID*,...) — real sig is (const char*, void*, uint, Hmx::Object*).
+        if (!mCache->ReadAsync(mCacheID, mSaveSize, mData, 0)) {
+            MILO_FAIL(MakeString<int>("mCache->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+#endif
+        break;
+    }
+    case 0x21:
+    {
+        int sz = TheSongMgr.GetCachedSongInfoSize();
+        mData = _MemAllocTemp(sz, 0);
+        BufStream stream(mData, sz, true);
+        TheSongMgr.SaveCachedSongInfo(stream);
+        if (!mCache->WriteAsync(unk4c.c_str(), mData, sz, NULL) &&
+            !TheCacheMgr->IsDone()) {
+            MILO_FAIL(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+        stream.~BufStream();
+        break;
+    }
+    case 0x22: // kS_SongCacheCreateMountWrite group
+    case 0x23:
+    {
+        if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
+            MILO_FAIL(MakeString<int>("TheCacheMgr->UnmountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+        break;
+    }
+    case 0x24:
+    {
+        unk78 = 0;
+        unk7c = 1;
+        unk68 = true;
+        SetState((State)(mData != NULL ? 0x22 : 0x26));
+        break;
+    }
+    case 0x25:
+    {
+        unk7c = 0;
+        unk78 = 0;
+        unk68 = true;
+        SetState((State)(mData != NULL ? 0x22 : 0x26));
+        break;
+    }
+    case 0x26:
+        mCache = NULL;
+        SetState((State)0x3);
+        break;
+    case 0x27:
+    {
+        if (mCache != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            if (mCache != NULL) delete mCache;
+            mCache = NULL;
+        }
+        int sz = TheProfileMgr.GetGlobalOptionsSize();
+        bool locResult = false;
+        const char *locName = Localize(global_options_cache_name, &locResult);
+        // FIXME(decomp): invented 6-arg SearchAsync; real CacheMgr::SearchAsync is (const char*, CacheID**).
+        // TheCacheMgr->SearchAsync(locName, 0, (long long)sz, sz, kStrGlobalCacheName, &mCache);
+        if (!TheCacheMgr->IsDone()) break;
+        CacheResult res = TheCacheMgr->GetLastResult();
+        if (res != 0) SetState((State)0x2d);
+        break;
+    }
+    case 0x28:
+    {
+        if (mCacheID == NULL) {
+            mCacheID = TheCacheMgr->GetCacheID(kStrGlobalCacheName);
+        }
+        if (mCacheID == NULL) {
+            SetState((State)0x37);
+        } else {
+            SetState((State)0x31);
+        }
+        break;
+    }
+    case 0x29: // kS_SongCacheCreateNotFound_Msg
+    case 0x2c:
+    case 0x2e:
+    case 0x2f:
+    case 0x32: // kS_SongCacheCreateMissing_Msg
+    case 0x33:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x2a:
+    {
+        if (unk7c == 0) {
+            SetState((State)0x2b);
+        } else {
+            unk7c = 0;
+            SetState((State)0x2a);
+        }
+        break;
+    }
+    case 0x2b:
+    {
+        if (mCache != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            if (mCache != NULL) delete mCache;
+            mCache = NULL;
+        }
+        int sz = TheProfileMgr.GetGlobalOptionsSize();
+        bool locResult = false;
+        const char *locName = Localize(global_options_cache_name, &locResult);
+        // FIXME(decomp): invented 6-arg SearchAsync; real CacheMgr::SearchAsync is (const char*, CacheID**).
+        // TheCacheMgr->SearchAsync(locName, 0, (long long)sz, sz, kStrGlobalCacheName, &mCache);
+        if (!TheCacheMgr->IsDone()) break;
+        CacheResult res = TheCacheMgr->GetLastResult();
+        if (res != 0) SetState((State)0x3c);
+        break;
+    }
+    case 0x2d:
+    {
+        MILO_ASSERT(unk7c == 2, 0x720);
+        if (mCache != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            if (mCache != NULL) delete mCache;
+            mCache = NULL;
+        }
+        bool locResult = false;
+        const char *locName = Localize(global_options_cache_name, &locResult);
+        // FIXME(decomp): invented 5-arg MountAsync; real CacheMgr::MountAsync is (CacheID*, Cache**, Hmx::Object*).
+        // TheCacheMgr->MountAsync(mCacheID, unk78, locName, kStrGlobalCacheName, &mCache);
+        break;
+    }
+    case 0x30:
+    {
+        if (mCache != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            if (mCache != NULL) delete mCache;
+            mCache = NULL;
+        }
+        int sz = TheProfileMgr.GetGlobalOptionsSize();
+        bool locResult = false;
+        const char *locName = Localize(global_options_cache_name, &locResult);
+        // FIXME(decomp): invented 5-arg MountAsync; real CacheMgr::MountAsync is (CacheID*, Cache**, Hmx::Object*).
+        // TheCacheMgr->MountAsync(mCacheID, 0, (long long)sz, sz, kStrGlobalCacheName, &mCache);
+        if (!TheCacheMgr->IsDone()) break;
+        CacheResult res = TheCacheMgr->GetLastResult();
+        if (res != 0) SetState((State)0x3c);
+        break;
+    }
+    case 0x31:
+    {
+        if (unk7c == 0 || unk7c == 2) {
+            SetState((State)0x3b);
+        } else {
+            SetState((State)0x3a);
+        }
+        break;
+    }
+    case 0x34: // kS_SongCacheCreateCorrupt
+    {
+        if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
+            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+        break;
+    }
+    case 0x35:
+    {
+        UpdateStatus((SaveLoadMgrStatus)1);
+        if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
+            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+        break;
+    }
+    case 0x36:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x37:
+    {
+        UpdateStatus((SaveLoadMgrStatus)1);
+#if 0 // FIXME(decomp): WIP referenced Cache::ReadAsync(CacheID*,...) — real sig is (const char*, void*, uint, Hmx::Object*).
+        if (!mCache->ReadAsync(mCacheID, mData, mSaveSize, NULL)) {
+            MILO_FAIL(MakeString<int>("TheCacheMgr->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+#endif
+        break;
+    }
+    case 0x38:
+    {
+        int sz = TheProfileMgr.GetGlobalOptionsSize();
+        mData = _MemAllocTemp(sz, 0);
+        if (!mCache->WriteAsync(kStrGlobalCacheName.Str(), mData, sz, NULL)) {
+            MILO_FAIL(MakeString<int>("TheCacheMgr->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+        break;
+    }
+    case 0x39:
+    {
+        UpdateStatus((SaveLoadMgrStatus)1);
+        int sz = TheProfileMgr.GetGlobalOptionsSize();
+        mData = _MemAllocTemp(sz, 0);
+        FixedSizeSaveableStream stream(mData, sz, true);
+        TheProfileMgr.SaveGlobalOptions(stream);
+        if (!mCache->WriteAsync(kStrGlobalCacheName.Str(), mData, sz, NULL)) {
+            MILO_FAIL(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+        }
+        stream.~FixedSizeSaveableStream();
+        break;
+    }
+    case 0x3a:
+    case 0x3b:
+    {
+        if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
+            CacheResult res = TheCacheMgr->GetLastResult();
+            if (res != kCache_ErrorStorageDeviceMissing) {
+                MILO_FAIL(MakeString<int>("TheCacheMgr->UnmountAsync failed with CacheResult %d\n", (int)res));
+            }
+        }
+        break;
+    }
+    case 0x3c: // kS_SongCacheCreateMountRead2
+    {
+        unk7c = 1;
+        unk78 = 0;
+        TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        SetState((State)0x38);
+        break;
+    }
+    case 0x3d:
+    {
+        unk7c = 0;
+        unk78 = 0;
+        TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        SetState((State)0x38);
+        break;
+    }
+    case 0x3e: // kS_SongCacheCreateMountRead2
+    {
+        std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
+        bool hasNew = newProfiles.size() > 0;
+        mUploadProfiles = newProfiles;
+        if (hasNew) unk7c = 1;
+        SetState((State)0x3);
+        break;
+    }
+    case 0x3f:
+    {
+        unk7c = 0;
+        unk78 = 0;
+        TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        SetState((State)0x41);
+        break;
+    }
+    case 0x40: // kS_SaveChooseDeviceInvalid (0x40 = 64)
+        SetState((State)0x54);
+        break;
+    case 0x41:
+    {
+        unk7c = 0;
+        TheMemcardMgr.DisableWriting(true);
+        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+            TheMemcardMgr.SaveLoadProfileComplete(*pp, 2);
+        }
+        TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x42: // shared with 0xa
+    {
+        BandProfile *pProfile = GetProfile();
+        MILO_ASSERT(pProfile, 0x57b);
+        int devId = -1;
+        if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.SelectDevice(pProfile, true, localUser, devId);
+        break;
+    }
+    case 0x43:
+    case 0x44:
+    {
+        bool overwrite = (newState == (State)0x43);
+        unk7c = 0;
+        int saveResult = overwrite ? 1 : -1;
+        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+            TheMemcardMgr.SaveLoadProfileComplete(*pp, saveResult);
+        }
+        TheProfileMgr.SetGlobalOptionsSaveState((ProfileSaveState)saveResult);
+        if (mMode == 0) {
+            SetState((State)0x3);
+        } else if (mMode == 1 || mMode == 4) {
+            SetState((State)0x54);
+        }
+        break;
+    }
+    case 0x45: // kS_SaveChooseDeviceInvalid
+    {
+        BandProfile *pProfile = GetProfile();
+        MILO_ASSERT(pProfile, 0x839);
+        mWaiting = true;
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.OnCheckForSaveContainer(pProfile);
+        break;
+    }
+    case 0x46: // kS_SaveOverwrite
+        StartSaveAction(true);
+        break;
+    case 0x47: // kS_SaveNoOverwrite
+        StartSaveAction(false);
+        break;
+    case 0x48: // kS_SaveDeviceInvalid
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x49:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x4a: // kS_SaveNotEnoughSpacePS3
+    case 0x4b: // kS_SaveChooseDevice
+    case 0x4c: // kS_GlobalCreateNotFound_Msg
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x4d: // kS_GlobalCreateMissing_Msg
+    {
+        bool songCacheNeeded = TheSongMgr.SongCacheNeedsWrite() && !unk68;
+        if (songCacheNeeded) {
+            SetState((State)0x52);
+        } else {
+            SetState((State)0x54);
+        }
+        break;
+    }
+    case 0x4e: // kS_GlobalCreateCorrupt
+        TheSongMgr.StartSongCacheWrite();
+        break;
+    case 0x4f:
+    {
+        if (mCacheID == NULL) {
+            mCacheID = TheCacheMgr->GetCacheID(kStrGlobalCacheName);
+        }
+        if (mCacheID == NULL) {
+            SetState((State)0x40);
+        } else {
+            SetState((State)0x3d);
+        }
+        break;
+    }
+    case 0x50: // kS_SaveFailed
+    {
+        std::vector<BandProfile *> saveProfiles = TheProfileMgr.GetShouldAutosaveProfiles();
+        mUploadProfiles = saveProfiles;
+
+        bool doUpload = IsReasonToUpload();
+        if (doUpload) {
+            std::vector<BandProfile *> signedIn = TheProfileMgr.GetSignedInProfiles();
+            mSaveProfiles = signedIn;
+        }
+
+        if (mSaveProfiles.size() > 0) {
+            SetState((State)0x58);
+        } else {
+            SetState((State)0x59);
+        }
+        break;
+    }
+    case 0x51:
+    {
+        SetState((State)0x6e);
+        TheProfileMgr.HandleProfileSaveComplete();
+        break;
+    }
+    case 0x52:
+    {
+        std::vector<BandProfile *> uploadProfs = TheProfileMgr.GetShouldAutosaveProfiles();
+        mUploadProfiles = uploadProfs;
+        // erase first
+        unsigned short newSz = mSaveProfiles.erase(mSaveProfiles.begin()) - mSaveProfiles.begin();
+        if (newSz != 0) {
+            SetState((State)0x58);
+        } else {
+            SetState((State)0x59);
+        }
+        break;
+    }
+    case 0x53:
+    {
+        // Shrink mUploadProfiles by one then get profiles to autosave
+        unsigned short newSz = (unsigned short)(mUploadProfiles.size() - 1);
+        if (mUploadProfiles.size() > 1) {
+            // shift data (memmove)
+        }
+        mUploadProfiles.resize(newSz);
+        mUploadProfiles = TheProfileMgr.GetShouldAutosaveProfiles();
+        if (!TheMemcardMgr.IsDisableWriting()) {
+            if (mUploadProfiles.size() != 0 || TheWiiProfileMgr.NeedsSave() || TheProfileMgr.GlobalOptionsNeedsSave()) {
+                SetState((State)0x46);
+                break;
+            }
+        }
+        mUser = NULL;
+        SetState((State)0x55);
+        break;
+    }
+    case 0x54: // kS_SaveCheckProfile
+    {
+        // Shrink save profiles by one, continue or finish
+        unsigned short newSz = (unsigned short)(mSaveProfiles.size() - 1);
+        if (mSaveProfiles.size() > 1) {
+            // shift data
+        }
+        mSaveProfiles.resize(newSz);
+        if (newSz != 0) {
+            SetState((State)0x58);
+        } else {
+            SetState((State)0x59);
+        }
+        break;
+    }
+    case 0x55: // kS_SaveCheckAutosave
+        SetState((State)0x51);
+        break;
+    case 0x56:
+        SetState((State)0x46);
+        break;
+    case 0x57:
+    case 0x58:
+    case 0x59:
+    case 0x5a: // kS_ManualLoadInit
+    case 0x5b: // kS_ManualSaveNoDevice
+    case 0x5c: // kS_ManualLoadNoDevice
+    {
+        MILO_LOG("TODO state not implemented\n");
+        break;
+    }
+    case 0x5d: // kS_ManualLoadStartLoad
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x5e: // kS_ManualLoadConfirmUnsaved
+        SetState((State)0x6e);
+        break;
+    case 0x5f: // kS_ManualLoadConfirm_Yes
+    {
+        LocalBandUser *pUser = mUser;
+        int padNum = 0;
+        if (pUser != NULL) padNum = pUser->GetPadNum();
+        if (TheProfileMgr.HasUnsavedDataForPad(padNum)) {
+            SetState((State)0x5f);
+        } else {
+            SetState((State)0x64);
+        }
+        break;
+    }
+    case 0x60: // kS_ManualLoadConfirm
+    case 0x61: // kS_ManualSaveChooseDevice
+    case 0x62: // kS_GlobalOptionsMissing_Msg
+    case 0x64: // kS_ManualLoadChooseDevice
+    case 0x65:
+    case 0x66:
+    case 0x67:
+    case 0x6b:
+    case 0x6c:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x63:
+    {
+        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+            (*pp)->SaveLoadComplete(kMetaProfileUnloaded);
+        }
+        mWaiting = true;
+        delete mAction;
+        mAction = NULL;
+        mAction = new LoadMemcardAction(&mUploadProfiles);
+        Hmx::Object *localUser = NULL;
+        if (mLocalUser != NULL) localUser = mLocalUser;
+        TheMemcardMgr.AddSink(this);
+        TheMemcardMgr.OnLoadGame(NULL, mAction);
+        break;
+    }
+    case 0x68:
+        SetState((State)0x6e);
+        break;
+    case 0x69:
+        SetState((State)0x6a);
+        break;
+    case 0x6a:
+    {
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
+        break;
+    }
+    case 0x6d: // kS_Done
+        SetState((State)0x6e);
+        break;
+    case 0x6e: // kS_LoadComplete
+        SetState((State)0x6e);
         break;
     default:
         break;

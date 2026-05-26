@@ -139,10 +139,10 @@ protected:
     DataArrayPtr unk44; // 0x44
     int unk48; // 0x48
     String unk4c; // 0x4c
-    CacheID *mCacheID; // 0x58
-    Cache *mCache; // 0x5c
-    void *mData; // 0x60
-    int unk64; // 0x64
+    int mSaveSize; // 0x58
+    CacheID *mCacheID; // 0x5c
+    Cache *mCache; // 0x60
+    void *mData; // 0x64
     bool unk68; // 0x68
     bool mWaiting; // 0x69
     int unk6c; // 0x6c

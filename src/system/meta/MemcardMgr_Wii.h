@@ -23,6 +23,7 @@ public:
     bool IsDisableWriting() const;
     bool IsWriteMode() const;
     void OnSaveGame(Profile *, MemcardAction *, int);
+    void OnLoadGame(Profile *, MemcardAction *);
 
     void SaveLoadAllComplete();
 
