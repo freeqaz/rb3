@@ -1081,7 +1081,7 @@ int VocalPlayer::GetSpotlightPhraseID() const {
 void VocalPlayer::HandlePhraseEnd(float f1) {
     std::vector<VocalPart *> voxParts = mVocalParts;
     std::sort(voxParts.begin(), voxParts.end(), VocalPart::FramePhraseMeterFracSorter);
-    for (int i = 0; i < voxParts.size(); i++) {
+    for (int i = 0.0f; i < voxParts.size(); i++) {
         VocalPart *cur = voxParts[i];
         cur->SetPhraseScoreMultiplier(mPartScoreMultipliers->Float(i + 1));
         cur->SetPhraseRank(i);
@@ -1147,7 +1147,7 @@ void VocalPlayer::HandlePhraseEnd(float f1) {
         if (i15 >= 2) {
             mStats.mDoubleHarmonyHit++;
         }
-        if (i14 == 3) {
+        if (!(i14 - 3)) {
             mStats.mTripleHarmonyPhraseCount++;
             if (i15 == 3) {
                 mStats.mTripleHarmonyHit++;
@@ -1710,14 +1710,14 @@ float VocalPlayer::GetNumPhrases(int startTick, int endTick, int isolatedPart) {
         int part = startPart;
         int found = 0;
         while (part <= endPart && !found) {
-            if (part == 0) {
+            if (phrase && part == 0) {
                 if (phrase->unk10 != phrase->unk14) {
                     found = 1;
                     count++;
                 }
             } else {
                 VocalNoteList *vnl = TheSongDB->GetVocalNoteList(part);
-                if (vnl != NULL && vnl->HasNoteInRange(clampedStart, clampedEnd) != -1) {
+                if (vnl != NULL && vnl->HasNoteInRange(clampedEnd, clampedStart) != -1) {
                     if (part != 0 || phrase->unk10 != phrase->unk14) {
                         found = 1;
                         count++;
