@@ -216,6 +216,7 @@ void TryDemangleParams(String &s1, String &s2, String s3, String s4) {
 }
 
 String TryDemangleClassAndFunc(String str) {
+    int compLen;
     int underPos = str.find("__");
     String params;
     String funcname;
@@ -264,7 +265,7 @@ String TryDemangleClassAndFunc(String str) {
         }
 
         if (str[0] == 'C') {
-            String constPrefix("const ");
+            const String& constPrefix = ("const ");
             classctx = constPrefix + classctx;
             str = str.substr(1, strlen(str.c_str()));
         }
@@ -286,7 +287,6 @@ String TryDemangleClassAndFunc(String str) {
 
         int i = 0;
         while (i < nesting) {
-            int compLen;
             if (IsAsciiNum(str[1])) {
                 if (IsAsciiNum(str[2])) {
                     compLen = atoi(str.substr(0, 3).c_str());
