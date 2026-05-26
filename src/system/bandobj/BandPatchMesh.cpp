@@ -315,7 +315,6 @@ void BandPatchMesh::WorkVerts::AddFace(int i, MeshVert *mv) {
 void BandPatchMesh::WorkVerts::AddEdge(
     BandPatchMesh::MeshVert *mv0, BandPatchMesh::MeshVert *mv1
 ) {
-    int target = mv1->unk28;
     for (int idx = mv0->unk28; idx != -1; idx = mMeshVerts[idx]->unk2c) {
         MeshVert *mv = mMeshVerts[idx];
         unsigned short *faceidxptr = (unsigned short *)((char *)mv + 0x32);
@@ -324,14 +323,14 @@ void BandPatchMesh::WorkVerts::AddEdge(
             if (unk28[faceidx].mFlags == -1) {
                 RndMesh *mesh = mMesh;
                 RndMesh::Face &face = mesh->Faces()[faceidx];
-                if (idx == face[0]) {
-                    if (mMeshVerts[face[1]]->unk28 == target)
+                if (mv1 && idx == face[0]) {
+                    if (mMeshVerts[face[1]]->unk28 == (mv1->unk28))
                         TryAddFace(faceidx, 0);
                 } else if (idx == face[1]) {
-                    if (mMeshVerts[face[2]]->unk28 == target)
+                    if (mMeshVerts[face[2]]->unk28 == (mv1->unk28))
                         TryAddFace(faceidx, 1);
                 } else if (idx == face[2]) {
-                    if (mMeshVerts[face[0]]->unk28 == target)
+                    if (mMeshVerts[face[0]]->unk28 == (mv1->unk28))
                         TryAddFace(faceidx, 2);
                 }
             }
@@ -360,8 +359,8 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
 #undef MeshFace
 #undef vf
     RndMesh::Face &face = mMesh->Faces()[faceidx];
-    int prevVertCount = unk10.size();
     MeshVert *verts[3];
+    int prevVertCount = unk10.size();
     int allOut = 0xf;
     for (int i = 0; i < 3; i++) {
         MeshVert *mv = mMeshVerts[face[i]];
@@ -376,24 +375,22 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
         }
         allOut &= verts[i]->unk26;
     }
-    int reject;
-    if (allOut != 0) {
-        reject = 1;
-    } else {
+    int reject = (allOut != 0) ? 1 : 0;
+    if (reject == 0) {
         MeshVert temp;
         temp.SetVert(verts[0]->mVert);
         reject = 0;
         Vector2 v(temp.unk1c);
-        if (temp.AddUV(verts[1], unk34, &v) != 0
-            && temp.AddUV(verts[2], unk34, &v) != 0) {
-            reject = 0;
+        if (temp.AddUV(verts[1], unk34, &v) != 0) {
+            if (temp.AddUV(verts[2], unk34, &v) == 0)
+                reject = 1;
         } else {
             reject = 1;
         }
     }
     if (reject == 0 && b != 3) {
         int prev = (b == 0) ? 2 : b - 1;
-        int next = (b + 1) % 3;
+        int next = (b == 2) ? 0 : b + 1;
         MeshVert *vb = verts[b];
         MeshVert *vn = verts[next];
         MeshVert *vp = verts[prev];
@@ -416,9 +413,9 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
         int added = unk10.size() - prevVertCount;
         for (int i = 0; i < added; i++) {
             unk10[unk10.size() - 1]->mVert = 0;
-            unk10.resize(unk10.size() - 1);
+            unk10.pop_back();
         }
-        unk20.resize(unk20.size() - 1);
+        unk20.pop_back();
         if (allOut == 0) {
             unk28[faceidx].mFlags = -1;
         }
@@ -631,7 +628,7 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     for (int i = 0; i < mv->unk30; i++) {
         unsigned short faceIdx = facePtr[i];
         if (unk28[faceIdx].mFlags == 4) {
-            RndMesh::Face &face = mMesh->Faces()[faceIdx];
+            const RndMesh::Face &face = mMesh->Faces()[faceIdx];
             MeshVert *v0 = mMeshVerts[face.v2];
             MeshVert *next = mMeshVerts[face.v3];
             unsigned short *vptr = (unsigned short *)&face;
@@ -693,7 +690,7 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     float bx = mv->mVert->uv.y - anchor->mVert->uv.y;
     float by = mv->mVert->uv.x - anchor->mVert->uv.x;
     float det = ay * bx - ax * by;
-    if (std::fabs(det) < 1e-15f) {
+    if (fabs(det) < 1e-15f) {
         outUv.x = 0.0f;
         outUv.y = 0.0f;
         return;
