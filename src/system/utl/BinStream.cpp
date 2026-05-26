@@ -148,8 +148,8 @@ inline void SwapData(const void *v1, void *v2, int num_bytes) {
         unsigned long long *l1 = (unsigned long long *)v1;
         unsigned long long *l2 = (unsigned long long *)v2;
         unsigned long long ull = *l1;
-        *l2 = (ull >> 56) | ((ull >> 40) & 0xFF00ULL) | ((ull >> 24) & 0xFF0000ULL) | ((ull >> 8) & 0xFF000000ULL)
-            | ((ull & 0xFF000000ULL) << 8) | ((ull & 0xFF0000ULL) << 24) | ((ull & 0xFF00ULL) << 40) | ((ull & 0xFFULL) << 56);
+        *l2 = ((ull >> 8) & 0xFF000000ULL) | ((ull >> 24) & 0xFF0000ULL) | ((ull >> 40) & 0xFF00ULL) | (ull >> 56)
+            | ((ull & 0xFFULL) << 56) | ((ull & 0xFF00ULL) << 40) | ((ull & 0xFF0000ULL) << 24) | ((ull & 0xFF000000ULL) << 8);
         break;
     }
     default:
