@@ -182,13 +182,14 @@ int FilterViewSetting::NumData() const { return mFilters.size(); }
 
 void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
     const {
-    if (slot->Matches("name")) {
+    auto _tmp0 = slot->Matches("name");
+    if (_tmp0) {
         label->SetTextToken(mFilters[idx].mSym);
     } else {
         int count = mFilters[idx].mCount;
         Symbol fmt = (count == 1) ? song_select_song : song_select_songs;
-        DataNode num(LocalizeSeparatedInt(count));
         DataNode word(fmt);
+        DataNode num(LocalizeSeparatedInt(count));
         DataArray *da = new DataArray(2);
         da->Node(0) = num;
         da->Node(1) = word;
