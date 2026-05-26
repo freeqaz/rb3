@@ -600,6 +600,7 @@ void SaveLoadManager::SetState(State newState) {
         break;
     case 0x3: // kS_AutoloadSelectProfile
     {
+        mUploadProfiles.erase(mUploadProfiles.begin(), mUploadProfiles.end());
         std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
         mUploadProfiles = newProfiles;
         if (TheMemcardMgr.IsDisableWriting() || mUploadProfiles.size() == 0 && !mInitialLoadNotDone) {
@@ -738,8 +739,7 @@ void SaveLoadManager::SetState(State newState) {
     case 0x15: // kS_SongCacheCreateNotFound_Msg
     case 0x16:
     {
-        Symbol sym(unk4c.c_str());
-        TheCacheMgr->AddCacheID(mCacheID, sym);
+        TheCacheMgr->AddCacheID(mCacheID, Symbol(unk4c.c_str()));
         SetState((State)0x20);
         break;
     }
@@ -818,11 +818,12 @@ void SaveLoadManager::SetState(State newState) {
         int sz = TheSongMgr.GetCachedSongInfoSize();
         mData = _MemAllocTemp(sz, 0);
         BufStream stream(mData, sz, true);
-        TheSongMgr.SaveCachedSongInfo(stream);
-        if (!mCache->WriteAsync(unk4c.c_str(), mData, (uint)sz, NULL)) {
+        if (TheSongMgr.SaveCachedSongInfo(stream)) {
+            if (!mCache->WriteAsync(unk4c.c_str(), mData, (uint)sz, NULL)) {
 #pragma dont_inline on
-            TheDebug.Fail(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+                TheDebug.Fail(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
+            }
         }
         break;
     }
@@ -859,8 +860,7 @@ void SaveLoadManager::SetState(State newState) {
     case 0x13:
     {
         if (mCacheID == NULL) {
-            Symbol sym(kStrGlobalCacheName);
-            mCacheID = TheCacheMgr->GetCacheID(sym);
+            mCacheID = TheCacheMgr->GetCacheID(Symbol(kStrGlobalCacheName.Str()));
         }
         if (mCacheID == NULL) {
             SetState((State)0x37);
@@ -1092,9 +1092,17 @@ void SaveLoadManager::SetState(State newState) {
             TheMemcardMgr.SaveLoadProfileComplete(*pp, saveResult);
         }
         TheProfileMgr.SetGlobalOptionsSaveState((ProfileSaveState)saveResult);
-        if (mMode == 0) SetState((State)0x3);
-        if (mMode == 1) SetState((State)0x54);
-        if (mMode == 4) SetState((State)0x54);
+        switch (mMode) {
+        case kMode_AutoLoad:
+            SetState((State)0x3);
+            break;
+        case kMode_AutoSave:
+        case kMode_ManualLoad:
+            SetState((State)0x54);
+            break;
+        default:
+            break;
+        }
         break;
     }
     case 0x45:
@@ -1159,7 +1167,7 @@ void SaveLoadManager::SetState(State newState) {
     case 0x53:
     {
         if (mCacheID == NULL) {
-            mCacheID = TheCacheMgr->GetCacheID(kStrGlobalCacheName);
+            mCacheID = TheCacheMgr->GetCacheID(Symbol(kStrGlobalCacheName.Str()));
         }
         if (mCacheID == NULL) {
             SetState((State)0x40);
