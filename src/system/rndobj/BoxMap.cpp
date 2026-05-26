@@ -78,20 +78,21 @@ void BoxMapLighting::ApplyQueuedLights(Hmx::Color *color, const Vector3 *v3) con
 END_UNPOOL_DATA
 
 bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
+    char _slotpad[4]; (void)_slotpad;
     float beamLen = spot.unk44;
     if (beamLen > 0) {
         float topR = spot.unk48;
         float botR = spot.unk4c;
-        if (botR >= topR
-            && (spot.mColor.red > 0.003921569f || spot.mColor.green > 0.003921569f
+        if (botR >= topR) {
+            if ((spot.mColor.red > 0.003921569f || spot.mColor.green > 0.003921569f
                 || spot.mColor.blue > 0.003921569f)) {
             float f1 = (topR * beamLen) / (botR - topR);
             float vy = spot.unk0.y * f1;
             float vz = spot.unk0.z * f1;
             float f2 = botR / (beamLen + f1);
             f2 *= f2;
-            float f3 = 1.0f / (beamLen * 2.0f);
             float vx = spot.unk0.x * f1;
+            float f3 = 1.0f / (beamLen * 2.0f);
             float unk1c_x = spot.unk38.x - vx;
             float f2_new = (1.0f - f2) / (f2 + 1.0f);
             spot.unk30 = f3;
@@ -103,6 +104,7 @@ bool BoxMapLighting::CacheData(BoxMapLighting::LightParams_Spot &spot) {
             spot.unk2c = 1.0f / f2c;
             spot.unk34 = f1 * f3;
             return true;
+        }
         }
     }
     mQueued_Spot.RemoveEntry();
