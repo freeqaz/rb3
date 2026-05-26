@@ -2039,7 +2039,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
     bool spotlight = phraseID != -1;
     bool enabled = player && player->GetEnabledState() == kPlayerEnabled;
     Singer *singer = player->mSingers[singerIdx];
-    float pitchFrame = 0.0f;
+    float pitchFrame = 0;
     int arrowIdx = singerIdx;
     if (singer) {
         arrowIdx = singer->GetMicClientID().unk0;

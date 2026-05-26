@@ -647,11 +647,12 @@ float BandIKEffector::GetGroundHeight(RndTransformable *trans) {
 }
 
 int BandIKEffector::GetType() {
-    if (!mEffector) {
+    ObjPtr<RndTransformable, ObjectDir> &_ref0 = mEffector;
+    if (!_ref0) {
         MILO_NOTIFY_ONCE("%s trying to get type with NULL effector", PathName(this));
         return 0;
     }
-    const char *name = mEffector->Name();
+    const char *name = _ref0->Name();
     if (strncmp(name, "bone_pelvis", 11) == 0)
         return 1;
     if (strncmp(name, "bone_L-ankle", 12) == 0

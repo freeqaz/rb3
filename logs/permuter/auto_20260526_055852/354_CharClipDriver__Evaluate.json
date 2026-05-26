@@ -1,0 +1,48 @@
+{
+  "symbol": "Evaluate__14CharClipDriverFfff",
+  "function_name": "CharClipDriver::Evaluate",
+  "source_path": "/home/free/code/milohax/rb3/src/system/char/CharClipDriver.cpp",
+  "initial_percent": 91.23256,
+  "final_percent": 95.83721,
+  "total_delta": 4.604649999999992,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 91.23256,
+      "best_name": "scope_narrow_0",
+      "best_pattern": "scope_narrowing",
+      "best_score": 95.83721,
+      "delta": 4.604649999999992,
+      "num_variants": 27,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 90.98256,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 95.83721,
+      "delta": 4.854649999999992,
+      "num_variants": 27,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 15.35,
+  "winning_pattern": "initializer_literal",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 22,
+    "5": 24,
+    "0": 8
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

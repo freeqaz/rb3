@@ -1,0 +1,48 @@
+{
+  "symbol": "CheckConsistency__4HeapFPCci",
+  "function_name": "Heap::CheckConsistency",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/MemMgr.cpp",
+  "initial_percent": 91.25263,
+  "final_percent": 91.436844,
+  "total_delta": 0.1842139999999972,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 91.25263,
+      "best_name": "declmove_0+declreorder_3",
+      "best_pattern": "compose:declaration_movement+declaration_reorder",
+      "best_score": 91.436844,
+      "delta": 0.1842139999999972,
+      "num_variants": 23,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 83.857895,
+      "best_name": "bitacc_0",
+      "best_pattern": "bitwise_accumulator",
+      "best_score": 91.436844,
+      "delta": 7.578948999999994,
+      "num_variants": 23,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 12.3,
+  "winning_pattern": "bitwise_accumulator",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 18,
+    "5": 23,
+    "1": 5
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

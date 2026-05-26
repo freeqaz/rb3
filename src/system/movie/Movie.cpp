@@ -342,11 +342,11 @@ void Movie::Impl::MovieLoader::OpenFile() {
     // Loader::mFile is a FilePath (offset 0x8 in base). Our local File* is also mFile.
     // Use this-> on local to disambiguate, plus use Loader::mFile via .c_str() for filename.
     this->mFile = NewFile(Loader::mFile.c_str(), 2);
-    if (this->mFile != NULL && !this->mFile->Fail()) {
+    if (NULL != this->mFile && !this->mFile->Fail()) {
         this->mFile->ReadAsync(mBuffer, 0x20);
         mOpenState = &MovieLoader::LoadFile;
     } else {
-        MILO_WARN("Could not load: %s", FileLocalize(Loader::mFile.c_str(), NULL));
+        MILO_WARN("Could not load: %s", (char *)FileLocalize(Loader::mFile.c_str(), NULL));
         mOpenState = &MovieLoader::DoneLoading;
     }
 }
@@ -559,7 +559,8 @@ void Movie::Impl::Begin(
 
 int Movie::Impl::MovieOpen(const char *file, unsigned int flags) {
     ASSERT_MOVIE_THREAD(0x167);
-    MILO_ASSERT(!mBink, 0x169);
+    BINK * &_ref0 = mBink;
+    MILO_ASSERT(!_ref0, 0x169);
     mPaused = false;
     if (gInitialized) {
         BinkInit();
@@ -572,11 +573,11 @@ int Movie::Impl::MovieOpen(const char *file, unsigned int flags) {
         }
         if ((flags & 0x4000000) == 0) {
             AutoSlowFrame asf("BinkOpen");
-            mBink = BinkOpen(file, flags);
+            _ref0 = BinkOpen(file, flags);
         } else {
-            mBink = BinkOpen(file, flags);
+            _ref0 = BinkOpen(file, flags);
         }
-        if (mBink != NULL) {
+        if (_ref0 != NULL) {
             openMovieFiles.push_back(this);
         } else {
             MILO_WARN("BinkOpen '%s' error: %s\n", mFilename, BinkGetError());
@@ -764,11 +765,14 @@ void Movie::Impl::SetPaused(bool b) {
             b = true;
         }
     }
-    if (mPaused == b) return;
+    bool &_ref0 = mPaused;
+    if (_ref0 == b) return;
     if (mBink == NULL) return;
-    if (mMovieBuffers->mPendingBlits > 1 && sAsyncMovie != NULL && !b) {
+    if (mMovieBuffers->mPendingBlits > 1 && sAsyncMovie != NULL) {
+        if (!b) {
         sNextMovie = this;
         return;
+    }
     }
     if (!b) LockThread();
     if (!b && mPreloadBuf != NULL && mTimeCallback != NULL) {
@@ -777,10 +781,10 @@ void Movie::Impl::SetPaused(bool b) {
         BINKFRAMEBUFFERS info;
         BinkGetFrameBuffersInfo(mBink, &info);
         BinkRegisterFrameBuffers(mBink, &mMovieBuffers->mBuffers);
-        mPaused = true;
+        _ref0 = true;
         FinishOpen();
     }
     BinkPause(mBink, b);
-    mPaused = b;
+    _ref0 = b;
     if (b) UnlockThread();
 }

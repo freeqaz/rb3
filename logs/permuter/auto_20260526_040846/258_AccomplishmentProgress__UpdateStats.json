@@ -1,0 +1,48 @@
+{
+  "symbol": "UpdateStats__22AccomplishmentProgressF9ScoreType10DifficultyiRC5StatsP9PerformerP4Band",
+  "function_name": "AccomplishmentProgress::UpdateStats",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/AccomplishmentProgress.cpp",
+  "initial_percent": 95.46218,
+  "final_percent": 99.70168,
+  "total_delta": 4.2394999999999925,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.46218,
+      "best_name": "brpol_0",
+      "best_pattern": "branch_polarity",
+      "best_score": 99.69748,
+      "delta": 4.235299999999995,
+      "num_variants": 23,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 96.76471,
+      "best_name": "scope_widen_0_bare",
+      "best_pattern": "scope_widening",
+      "best_score": 99.69748,
+      "delta": 2.932770000000005,
+      "num_variants": 22,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 43.35,
+  "winning_pattern": "scope_widening",
+  "ghidra_stats": null,
+  "validation_tier": 6,
+  "validation_distribution": {
+    "0": 2,
+    "2": 27,
+    "6": 16
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

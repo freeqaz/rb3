@@ -132,10 +132,11 @@ void RockCentral::Init(bool b1) {
     TheDataPointMgr.SetDataPointRecorder(RecordDataPointNoRet);
     unk88.Generate();
 
-    mTime.Start();
-    mRetryTime = mTime.Ms();
+    Timer &_ref0 = mTime;
+    _ref0.Start();
+    mRetryTime = _ref0.Ms();
     unk85 = b1;
-    const char *optionStr = OptionStr("log_datapoints", nullptr);
+    const char *optionStr = OptionStr("log_datapoints", 0);
     if (optionStr) {
         gDataPointLog = new TextFileStream(optionStr, false);
     }
@@ -1124,7 +1125,7 @@ void RockCentral::RecordAccomplishmentData(
 #pragma pop
 
 void RockCentral::RecordOptionData() {
-    Server *server = IsConnected(nullptr, -1, false);
+    Server *server = IsConnected(0, -1, false);
     if (server) {
         INIT_DATAPOINT("misc/option_data");
         ADD_DATA_PAIR("cymbal_config", (int)TheProfileMgr.GetCymbalConfiguration());
@@ -1333,7 +1334,8 @@ void RockCentral::UpdateSetlist(
             p6 = profile->mPatches[setlist->mArt.patchIndex];
         }
         INIT_DATAPOINT("setlists/update");
-        auto _tmp2 = server->GetPlayerID(profile->GetPadNum());
+        auto _tmp3 = profile->GetPadNum();
+        auto _tmp2 = server->GetPlayerID(_tmp3);
         ADD_DATA_PAIR(pid, _tmp2);
         ADD_DATA_PAIR(name, setlist->GetTitle());
         ADD_DATA_PAIR(description, setlist->GetDescription());

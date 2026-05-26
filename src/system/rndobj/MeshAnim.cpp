@@ -12,7 +12,8 @@ RndMeshAnim::RndMeshAnim() : mMesh(this, 0), mKeysOwner(this, this) {}
 int RndMeshAnim::NumVerts() {
     int num = 0;
     if (VertPointsKeys().size() != 0) {
-        MaxEq<int>(num, VertPointsKeys().size());
+        auto _tmp0 = VertPointsKeys().size();
+        MaxEq<int>(num, _tmp0);
     }
     if (VertNormalsKeys().size() != 0) {
         MaxEq<int>(num, VertNormalsKeys()[0].value.size());

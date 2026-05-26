@@ -1,0 +1,58 @@
+{
+  "symbol": "RecordOptionData__11RockCentralFv",
+  "function_name": "RockCentral::RecordOptionData",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/net_band/RockCentral.cpp",
+  "initial_percent": 98.720985,
+  "final_percent": 98.69643,
+  "total_delta": -0.024554999999992333,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.720985,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.720985,
+      "delta": 0.0,
+      "num_variants": 22,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.561386,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 98.69643,
+      "delta": 0.1350440000000077,
+      "num_variants": 22,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 98.69643,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.69643,
+      "delta": 0.0,
+      "num_variants": 22,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 45.65,
+  "winning_pattern": "initializer_literal",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 31,
+    "0": 28,
+    "5": 7
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

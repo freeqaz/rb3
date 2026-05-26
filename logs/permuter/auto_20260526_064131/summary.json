@@ -1,0 +1,42 @@
+{
+  "total": 400,
+  "processed": 400,
+  "improved": 3,
+  "perfect": 0,
+  "no_change": 397,
+  "errors": 0,
+  "total_delta": 3.730195000000009,
+  "improvements": [
+    {
+      "symbol": "DiscContentionPublish__Q25Movie4ImplFv",
+      "function": "Movie::Impl::DiscContentionPublish",
+      "source": "src/system/movie/Movie.cpp",
+      "initial": 95.396225,
+      "final": 97.0,
+      "delta": 1.6037749999999988,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Display__10CharDriverFf",
+      "function": "CharDriver::Display",
+      "source": "src/system/char/CharDriver.cpp",
+      "initial": 93.57337,
+      "final": 93.65658,
+      "delta": 0.08321000000000822,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "DrawBlackBackground__6WiiRndFv",
+      "function": "WiiRnd::DrawBlackBackground",
+      "source": "src/system/rndwii/Rnd.cpp",
+      "initial": 87.8642,
+      "final": 89.90741,
+      "delta": 2.043210000000002,
+      "rounds": 2,
+      "reason": "max_rounds"
+    }
+  ],
+  "elapsed_seconds": 2252.0
+}

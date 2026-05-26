@@ -120,7 +120,7 @@ void MusicLibraryNetSetlists::ParseDataResultsIntoSetlists(bool archived) {
     MILO_LOG("\n");
     FOREACH (it, mDataResults.mDataResultList) {
         DataNode node;
-        DataResult &result = *it;
+        const DataResult &result = *it;
         result.GetDataResultValue("title", node);
         String title(node.Str(nullptr));
         result.GetDataResultValue("desc", node);

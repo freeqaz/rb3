@@ -1,0 +1,47 @@
+{
+  "symbol": "MoveParticles__14RndParticleSysFff",
+  "function_name": "RndParticleSys::MoveParticles",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/Part.cpp",
+  "initial_percent": 96.94336,
+  "final_percent": 97.021484,
+  "total_delta": 0.07812400000000252,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.94336,
+      "best_name": "declmove_0+declreorder_5",
+      "best_pattern": "compose:declaration_movement+declaration_reorder",
+      "best_score": 96.9707,
+      "delta": 0.027339999999995257,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 96.60547,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 97.01953,
+      "delta": 0.4140600000000063,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 21.28,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 41,
+    "5": 19
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

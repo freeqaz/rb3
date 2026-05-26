@@ -153,9 +153,9 @@ void MidiParser::Reset(float f) { mEvents->Reset(f); }
 
 void MidiParser::Poll() {
     float beat = TheTaskMgr.Beat();
+    DataEvent * &_ref0 = mEvent;
     static DataNode &parser = DataVariable("mp.parser");
     parser = this;
-    DataEvent * &_ref0 = mEvent;
     while (_ref0 = (DataEvent *)mEvents->NextEvent(beat), _ref0) {
         *mpStart = _ref0->start;
         *mpEnd = _ref0->end;

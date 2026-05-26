@@ -579,8 +579,9 @@ void CalibrationPanel::ScanHardwareModeInputs() {
 
 void CalibrationPanel::TriggerCalibration(int pad) {
     float sample = 0;
-    float halfCycle = mCycleTimeMs / 2.0f;
-    float cycleOff = std::fmod(halfCycle + GetAudioTimeMs(), mCycleTimeMs);
+    float &_ref0 = mCycleTimeMs;
+    float halfCycle = _ref0 / 2.0f;
+    float cycleOff = std::fmod(halfCycle + GetAudioTimeMs(), _ref0);
     sample = cycleOff - halfCycle;
     float nowMs = GetAudioTimeMs();
     float lastMs = unkd0;

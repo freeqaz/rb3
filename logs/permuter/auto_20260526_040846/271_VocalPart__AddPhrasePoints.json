@@ -1,0 +1,48 @@
+{
+  "symbol": "AddPhrasePoints__9VocalPartFf",
+  "function_name": "VocalPart::AddPhrasePoints",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/game/VocalPart.cpp",
+  "initial_percent": 95.327866,
+  "final_percent": 98.934425,
+  "total_delta": 3.6065590000000043,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.327866,
+      "best_name": "crosscompose:maxcond_0+fsel_0",
+      "best_pattern": "crosscompose:max_to_conditional+fsel_template",
+      "best_score": 98.934425,
+      "delta": 3.6065590000000043,
+      "num_variants": 18,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 94.016396,
+      "best_name": "argswap_0",
+      "best_pattern": "argument_swap",
+      "best_score": 98.934425,
+      "delta": 4.918029000000004,
+      "num_variants": 19,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 20.83,
+  "winning_pattern": "argument_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 10,
+    "2": 20,
+    "1": 7
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

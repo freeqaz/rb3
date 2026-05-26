@@ -198,7 +198,7 @@ int GameConfig::GetFxSwitchPosition(LocalBandUser *pUser) {
     Symbol cnttype = JoypadControllerTypePadNum(padNum);
     const DataArray *cfg = SystemConfig(joypad)->FindArray(five_way_controllers, false);
     if (!cfg) return -1;
-    if (pUser->GetTrackType() == kTrackBass) return -1;
+    if (kTrackBass == pUser->GetTrackType()) return -1;
     for (int i = 1; i < cfg->Size(); i++) {
         if (cfg->Node(i).Sym(cfg) == cnttype) {
             int tbl[30] = {

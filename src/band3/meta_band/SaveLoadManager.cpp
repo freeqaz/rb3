@@ -582,8 +582,6 @@ void SaveLoadManager::SetState(State newState) {
     if (wasIdle) {
         UpdateStatus((SaveLoadMgrStatus)0);
     }
-    if ((unsigned int)mState > 0x6e) return;
-
     switch ((int)mState) {
     case 0x0: // kS_Idle
         UpdateStatus((SaveLoadMgrStatus)5);
@@ -1318,7 +1316,7 @@ void SaveLoadManager::SetState(State newState) {
         break;
     }
     default:
-        break;
+        return;
     }
 }
 

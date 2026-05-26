@@ -223,7 +223,8 @@ void ClipDistMap::FindDists(float f1, DataArray *arr) {
                     dataVarAMiddle = beatA - interpA;
                     dataVarBMiddle = beatB - interpB;
                     dataVarDelta = beatA - beatB;
-                    if (arr->Evaluate(1).Int() == 0)
+                    auto _tmp0 = arr->Evaluate(1).Int();
+                    if (_tmp0 == 0)
                         continue;
                 }
 

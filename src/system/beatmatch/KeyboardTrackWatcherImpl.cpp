@@ -404,11 +404,13 @@ int KeyboardTrackWatcherImpl::NextGemAfter(int gemID, bool timeout) {
     int gapCount = 0;
     for (int i = gemID + 1; i < mGemList->NumGems(); i++) {
         int tick = mGemList->GetGem(i).GetTick();
-        if (timeout && tick - lastTick > 10) {
+        if (timeout) {
+            if (tick - lastTick > 10) {
             lastTick = tick;
             if (++gapCount == 2) {
                 return Min(gemID + 1, mGemList->NumGems() - 1);
             }
+        }
         }
         if (mGemList->GetGem(i).GetSlot() == slot) {
             return i;

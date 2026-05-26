@@ -60,7 +60,8 @@ int ArkHash::GetHashValue(const char *c) const {
     int hashIdx = HashString(c, mTableSize);
     MILO_ASSERT(hashIdx < mTableSize, 0x107);
     while (mTable[hashIdx]) {
-        if (strcmp(mTable[hashIdx], c) == 0)
+        auto _tmp0 = strcmp(mTable[hashIdx], c);
+        if (_tmp0 == 0)
             return hashIdx;
         if (++hashIdx == mTableSize)
             hashIdx = 0;

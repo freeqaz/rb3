@@ -194,6 +194,10 @@ void WorldCrowd::Sort3DCharList() {
         it->m3DCharsCreated = it->m3DChars;
     }
 }
+__declspec(noinline) void _outline_InvalidateProxies(RndMultiMesh* _obj) {
+    return _obj->InvalidateProxies();
+}
+
 
 // matches in retail
 void WorldCrowd::Set3DCharAll() {
@@ -205,13 +209,13 @@ void WorldCrowd::Set3DCharAll() {
         if (multiMesh) {
             std::list<RndMultiMesh::Instance>::iterator instIt =
                 multiMesh->mInstances.begin();
-            int idx = 0;
+            int idx = 0.0f;
             for (; instIt != multiMesh->mInstances.end(); ++instIt, ++idx) {
                 CharData::Char3D char3D(instIt->mXfm, idx);
                 it->m3DChars.push_back(char3D);
             }
             multiMesh->mInstances.clear();
-            multiMesh->InvalidateProxies();
+            _outline_InvalidateProxies(multiMesh);
         }
     }
     Sort3DCharList();

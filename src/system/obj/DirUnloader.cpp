@@ -26,15 +26,16 @@ void DirUnloader::PollLoading() {
     MILO_ASSERT(gSuppressPointTest>=0, 0x33);
     gSuppressPointTest++;
     TheLoadMgr.StartAsyncUnload();
+    std::vector<ObjPtr<Hmx::Object> > &_ref0 = mObjects;
     while (!TheLoadMgr.CheckSplit() && TheLoadMgr.GetFirstLoading() == this) {
-        if (mObjects.empty()) {
+        if (_ref0.empty()) {
             delete this;
             break;
         }
-        Hmx::Object *obj = mObjects.back();
+        Hmx::Object *obj = _ref0.back();
         if (obj)
             delete obj;
-        mObjects.pop_back();
+        _ref0.pop_back();
     }
     TheLoadMgr.FinishAsyncUnload();
     MILO_ASSERT(gSuppressPointTest>0, 0x47);

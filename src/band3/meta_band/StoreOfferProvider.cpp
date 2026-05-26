@@ -313,15 +313,16 @@ inline const String &NextChunkPath(const BandStorePanel *p) {
 }
 
 void StoreOfferProvider::BuildList(DataArray *grouping) {
+    DataArray * &_ref0 = mShortcuts;
     ClearList();
-    mShortcuts = new DataArray(0);
+    _ref0 = new DataArray(0);
     const char *prevPath = PrevChunkPath(BandStorePanel::Instance()).c_str();
     if (*prevPath == 0) prevPath = NULL;
     if (prevPath) {
         Element *prev = new Element(NULL, store_previous_chunk, true, false, true);
         mElements.push_back(prev);
         mElements.back()->mShortcut = store_previous_chunk;
-        mShortcuts->Insert(mShortcuts->Size(), DataNode(store_previous_chunk));
+        _ref0->Insert(_ref0->Size(), DataNode(store_previous_chunk));
     }
     if (grouping) {
         Symbol sortName = grouping->Sym(0);
@@ -362,12 +363,12 @@ void StoreOfferProvider::BuildList(DataArray *grouping) {
                     : groupSym;
                 if (curGroupSym.Str() == gNullStr || curGroupSym != shortcutSym) {
                     if (localize) {
-                        mShortcuts->Insert(
-                            mShortcuts->Size(), DataNode(shortcutSym)
+                        _ref0->Insert(
+                            _ref0->Size(), DataNode(shortcutSym)
                         );
                     } else {
-                        mShortcuts->Insert(
-                            mShortcuts->Size(), DataNode(shortcutSym.Str())
+                        _ref0->Insert(
+                            _ref0->Size(), DataNode(shortcutSym.Str())
                         );
                     }
                     lastGroup->mShortcut = shortcutSym;
@@ -409,7 +410,7 @@ void StoreOfferProvider::BuildList(DataArray *grouping) {
         Element *next = new Element(NULL, store_next_chunk, true, false, true);
         mElements.push_back(next);
         mElements.back()->mShortcut = store_next_chunk;
-        mShortcuts->Insert(mShortcuts->Size(), DataNode(store_next_chunk));
+        _ref0->Insert(_ref0->Size(), DataNode(store_next_chunk));
     }
 }
 

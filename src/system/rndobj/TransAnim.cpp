@@ -115,7 +115,8 @@ void RndTransAnim::Load(BinStream &bs) {
         bs >> mFollowPath;
     } else {
         bool follow = false;
-        if (RotKeys().empty() && TransKeys().size() > 1)
+        auto _tmp0 = RotKeys().empty();
+        if (_tmp0 && TransKeys().size() > 1)
             follow = true;
         mFollowPath = follow;
     }

@@ -384,7 +384,7 @@ void BandCharacter::Poll() {
         if (Showing()) {
             // Update singalong weight
             if (unk6b0) {
-                unsigned int showWeight = 0;
+                unsigned int showWeight = 0.0f;
                 if (wasShowing && mMinLod < 1) {
                     showWeight = 1;
                 }
@@ -1274,7 +1274,7 @@ void BandCharacter::SetDircuts() {
         const String &str = *it;
         int idx;
         for (idx = i; idx < maxNum; idx++) {
-            FileMerger::Merger &cur = mFileMerger->mMergers[slots[idx]];
+            const FileMerger::Merger &cur = mFileMerger->mMergers[slots[idx]];
             if (cur.mSelected == str || cur.mLoaded == str || cur.loading == str) {
                 int tmp = slots[idx];
                 slots[idx] = slots[i];

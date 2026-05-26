@@ -36,7 +36,8 @@ int CharBonesSamples::FracToSample(float *frac) const {
         return mNumSamples - 1;
     }
     *frac = scaledPos - (float)sampleIdx;
-    if (mFrames.size() != 0) {
+    auto _tmp0 = mFrames.size();
+    if (_tmp0 != 0) {
         float frame = mFrames[sampleIdx];
         float nextFrame = mFrames[sampleIdx + 1];
         float interpFrame = (*frac * (nextFrame - frame)) + frame;

@@ -537,14 +537,16 @@ void LightPreset::GetKey(float frame, int &iref1, int &iref2, float &fref) const
             if (frame >= mKeyframes.back().mFrame) {
                 if (mKeyframes.back().mFadeOutTime <= 0.0f) {
                     iref1 = -1;
-                    iref2 = mKeyframes.size() - 1;
+                    auto _tmp0 = mKeyframes.size();
+                    iref2 = _tmp0 - 1;
                     fref = 1.0f;
                     return;
                 }
                 float framedur = mKeyframes.back().mFrame + mKeyframes.back().mDuration;
                 if (frame > framedur) {
                     MILO_ASSERT(mKeyframes.back().mFadeOutTime > 0, 0x358);
-                    iref1 = mKeyframes.size() - 1;
+                    auto _tmp1 = mKeyframes.size();
+                    iref1 = _tmp1 - 1;
                     iref2 = 0;
                     fref = (frame - framedur) / mKeyframes.back().mFadeOutTime;
                     return;

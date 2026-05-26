@@ -1330,7 +1330,7 @@ void StoreContentStateCache::PollUpdate() {
 
 void StoreContentStateCache::UpdateContentStateFromFastEnum() {
     int &_ref0 = mIndexInConfig;
-    if (TheWiiCommerceMgr.unk2110 != 0) {
+    if (0 != TheWiiCommerceMgr.unk2110) {
         StoreTitleContentState *state;
         unsigned long long titleId = TheWiiCommerceMgr.mTitleIds[_ref0];
         std::map<unsigned long long, StoreTitleContentState *>::iterator it = find(titleId);
@@ -1382,9 +1382,9 @@ void StoreMetadataManager::MarkPurchased(ECContentCatalogInfo *info) {
 }
 
 int StoreMetadataManager::SongStateFlags(const StorePackedSong *song) {
-    StoreTitleContentState *state2;
     unsigned long long dataTitle =
         WiiCommerceMgr::MakeDataTitleId(&song->unk6);
+    StoreTitleContentState *state2;
     StoreTitleContentState *state;
     std::map<unsigned long long, StoreTitleContentState *>::iterator it = unk58.find(dataTitle);
     if (it == unk58.end()) {
@@ -1611,7 +1611,7 @@ StorePage *StoreMetadataManager::LoadDynamicPage(DataArray *arr) {
     std::list<const char *> names;
     short numNodes = arr->Size();
     for (int i = 0; i < numNodes; i++) {
-        DataNode &node = arr->Node(i);
+        const DataNode &node = arr->Node(i);
         auto _tmp0 = node.Type();
         if (_tmp0 == kDataArray) {
             DataArray *sub = node.Array(NULL);

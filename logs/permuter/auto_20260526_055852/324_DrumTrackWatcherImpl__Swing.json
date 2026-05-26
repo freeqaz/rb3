@@ -1,0 +1,47 @@
+{
+  "symbol": "Swing__20DrumTrackWatcherImplFibb11GemHitFlags",
+  "function_name": "DrumTrackWatcherImpl::Swing",
+  "source_path": "/home/free/code/milohax/rb3/src/system/beatmatch/DrumTrackWatcherImpl.cpp",
+  "initial_percent": 92.88396,
+  "final_percent": 94.744026,
+  "total_delta": 1.8600660000000033,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 92.88396,
+      "best_name": "crosscompose:typewidth_0+tmpelim_0",
+      "best_pattern": "crosscompose:type_width_change+temp_elimination",
+      "best_score": 94.70648,
+      "delta": 1.8225199999999973,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 73.044365,
+      "best_name": "tmpelim_0",
+      "best_pattern": "temp_elimination",
+      "best_score": 94.740616,
+      "delta": 21.696251000000004,
+      "num_variants": 29,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 16.39,
+  "winning_pattern": "temp_elimination",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 18,
+    "5": 40
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

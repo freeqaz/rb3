@@ -280,7 +280,7 @@ void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY,
     float yRange = endY - startY;
     float tickRange = (float)endTick - (float)startTick;
     mTrackGroup->SetShowing(false);
-    for (unsigned int i = 0; i < unk4c.size(); i++) {
+    for (int i = 0; (unsigned int)i < unk4c.size(); i++) {
         const GameGem &gem = unk4c[i];
         int tick = gem.GetTick();
         if (tick >= startTick && tick < endTick) {

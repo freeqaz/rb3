@@ -170,10 +170,11 @@ Game::Game()
       mInvalidScore(0), unk130(0), unk134(0), unk138(0), mDrumFillsMod(1), unk13c(-1),
       unk140(-1), mTrackerManager(0), unk148(0), mDisablePauseMs(-1), unk150(1) {
     MILO_ASSERT(!TheSongDB, 0xCE);
-    TheSongDB = mSongDB;
+    SongDB * &_ref0 = mSongDB;
+    TheSongDB = _ref0;
     TheGame = this;
     SetName("beatmatch", ObjectDir::sMainDir);
-    mMaster = new BeatMaster(mSongDB->GetData(), TheBandUserMgr->GetNumParticipants());
+    mMaster = new BeatMaster(_ref0->GetData(), TheBandUserMgr->GetNumParticipants());
     mMaster->RegisterSink(*this);
     TheNetSession->AddSink(this, GameEndedMsg::Type());
     TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type());
@@ -195,7 +196,8 @@ Game::Game()
     mBand = new Band(false, 0, BandUserMgr::GetBandUser(nullptr), mMaster);
     PopulatePlayerLists();
     mTrackerManager = new TrackerManager(mBand);
-    mDemoMaxPctComplete = SystemConfig(demo)->FindInt(max_pct_complete);
+    auto _tmp1 = SystemConfig(demo)->FindInt(max_pct_complete);
+    mDemoMaxPctComplete = _tmp1;
     mDemoMaxMs = SystemConfig(demo)->FindFloat(max_ms);
     LoadSong();
     ThePlatformMgr.GetDiscErrorMgrWii()->RegisterCallback(this);
@@ -241,10 +243,10 @@ void Game::LoadSong() {
     Fader *fader = TheSynth->Find<Fader>("per_song_sfx_level.fade", false);
     if (fader)
         fader->SetVal(0);
-    mMaster->GetAudio()->SetPracticeMode(TheGameMode->InMode("practice"));
+    BeatMaster * &_ref0 = mMaster;
+    _ref0->GetAudio()->SetPracticeMode(TheGameMode->InMode("practice"));
     RELEASE(mSongInfo);
-    mSongInfo = new SongInfoCopy(TheSongMgr.SongAudioData(songSym));
-    mMaster->Load(mSongInfo, 4, cfgList, false, i2, nullptr);
+        _ref0->Load(mSongInfo = new SongInfoCopy(TheSongMgr.SongAudioData(songSym)), 4, cfgList, false, i2, nullptr);
 }
 
 bool Game::IsLoaded() {

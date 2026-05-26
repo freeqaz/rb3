@@ -1,0 +1,57 @@
+{
+  "symbol": "IsSpotlightGem__10GemManagerFiRb",
+  "function_name": "GemManager::IsSpotlightGem",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/bandtrack/GemManager.cpp",
+  "initial_percent": 98.14815,
+  "final_percent": 98.1358,
+  "total_delta": -0.012349999999997863,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.14815,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.14815,
+      "delta": 0.0,
+      "num_variants": 13,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 89.4321,
+      "best_name": "varext_0",
+      "best_pattern": "variable_extraction",
+      "best_score": 98.1358,
+      "delta": 8.703699999999998,
+      "num_variants": 21,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 98.1358,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.1358,
+      "delta": 0.0,
+      "num_variants": 23,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 33.18,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 32,
+    "5": 25
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

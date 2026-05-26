@@ -1,0 +1,48 @@
+{
+  "symbol": "UTF8RemoveSpaces__FPciPCc",
+  "function_name": "UTF8RemoveSpaces",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/UTF8.cpp",
+  "initial_percent": 95.7377,
+  "final_percent": 96.84426,
+  "total_delta": 1.1065600000000018,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.7377,
+      "best_name": "brpol_0",
+      "best_pattern": "branch_polarity",
+      "best_score": 96.81967,
+      "delta": 1.0819699999999983,
+      "num_variants": 26,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.46722,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 96.81967,
+      "delta": 1.3524500000000046,
+      "num_variants": 26,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 11.71,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "1": 8,
+    "2": 23,
+    "5": 21
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

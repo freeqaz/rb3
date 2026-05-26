@@ -546,7 +546,8 @@ void TrackPanel::Poll() {
         return;
     float ms = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);
     int tick = MsToTick(ms);
-    if (TheGame->mMaster->GetAudio()->Fail())
+    auto _tmp0 = TheGame->mMaster->GetAudio()->Fail();
+    if (_tmp0)
         return;
     StartPulseAnims();
     bool wasSoloing = unk62;
@@ -566,7 +567,8 @@ void TrackPanel::Poll() {
         Performer *mainPerformer = TheGame->GetMainPerformer();
         if (unk61) {
             MetaPerformer::Current();
-            mScoreboard->SetScore(mainPerformer->GetAccumulatedScore());
+            auto _tmp1 = mainPerformer->GetAccumulatedScore();
+            mScoreboard->SetScore(_tmp1);
         } else if (TheGame->mProperties.mShowStars) {
             mScoreboard->SetNumStars(
                 mainPerformer->GetNumStarsFloat(), TheGame->mProperties.mPlayStarSfx

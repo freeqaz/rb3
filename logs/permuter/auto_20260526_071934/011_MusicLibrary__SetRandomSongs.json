@@ -1,0 +1,58 @@
+{
+  "symbol": "SetRandomSongs__12MusicLibraryFiRQ211SongSortMgr10SongFilter6Symbolbb",
+  "function_name": "MusicLibrary::SetRandomSongs",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/MusicLibrary.cpp",
+  "initial_percent": 99.16923,
+  "final_percent": 99.16923,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 99.16923,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 99.16923,
+      "delta": 0.0,
+      "num_variants": 16,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 93.129234,
+      "best_name": "logswap_0",
+      "best_pattern": "milo_log_swap",
+      "best_score": 99.16923,
+      "delta": 6.039996000000002,
+      "num_variants": 19,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 97.84615,
+      "best_name": "logswap_0",
+      "best_pattern": "milo_log_swap",
+      "best_score": 99.16923,
+      "delta": 1.3230800000000045,
+      "num_variants": 19,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 50.92,
+  "winning_pattern": "milo_log_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 21,
+    "2": 18,
+    "5": 15
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

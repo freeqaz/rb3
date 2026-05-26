@@ -1,0 +1,58 @@
+{
+  "symbol": "SetSameVerts__Q213BandPatchMesh9WorkVertsFPQ213BandPatchMesh9WorkVerts",
+  "function_name": "BandPatchMesh::WorkVerts::SetSameVerts",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/BandPatchMesh.cpp",
+  "initial_percent": 98.73029,
+  "final_percent": 98.979256,
+  "total_delta": 0.24896600000001,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.73029,
+      "best_name": "cmpeq_0+signunsign_1",
+      "best_pattern": "compose:comparison_equivalence+signed_unsigned",
+      "best_score": 98.979256,
+      "delta": 0.24896600000001,
+      "num_variants": 26,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.48133,
+      "best_name": "boolret_0",
+      "best_pattern": "bool_return_expr",
+      "best_score": 98.979256,
+      "delta": 0.49792600000000675,
+      "num_variants": 27,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 98.979256,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.979256,
+      "delta": 0.0,
+      "num_variants": 27,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 28.77,
+  "winning_pattern": "bool_return_expr",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 33,
+    "0": 6,
+    "5": 41
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

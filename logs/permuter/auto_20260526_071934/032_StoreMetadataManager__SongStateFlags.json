@@ -1,0 +1,58 @@
+{
+  "symbol": "SongStateFlags__20StoreMetadataManagerFPC15StorePackedSong",
+  "function_name": "StoreMetadataManager::SongStateFlags",
+  "source_path": "/home/free/code/milohax/rb3/src/system/meta/StorePackedMetadata.cpp",
+  "initial_percent": 98.814285,
+  "final_percent": 98.814285,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.814285,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.814285,
+      "delta": 0.0,
+      "num_variants": 20,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 97.38571,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 98.814285,
+      "delta": 1.428574999999995,
+      "num_variants": 24,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 98.814285,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.814285,
+      "delta": 0.0,
+      "num_variants": 20,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 21.92,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 4,
+    "2": 18,
+    "5": 42
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

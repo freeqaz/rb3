@@ -465,7 +465,7 @@ void Player::Save(BandUser *user, bool b) { SetEnabledState(kPlayerBeingSaved, u
 void Player::DisablePlayer(int i) {
     if (!unk2a9) {
         const char *cue = MakeString("%s_died.cue", TrackTypeToSym(mTrackType).Str());
-        float f = 0.0f;
+        float f = 0;
         if (TheBandUserMgr->IsMultiplayerGame()) {
             if (mUser->GetSlot() % 2)
                 f = 1.0f;

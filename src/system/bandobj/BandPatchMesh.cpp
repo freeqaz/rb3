@@ -724,7 +724,7 @@ bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
             float lo = mvz - 0.1f;
             float hi = mvz + 0.1f;
             int size = unk18.size();
-            while (start < size && unk18[start]->pos.z < lo)
+            while ((unsigned int)start < size && unk18[start]->pos.z < lo)
                 start++;
             if (end < start)
                 end = start;
@@ -757,7 +757,7 @@ bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
             unsigned short faceIdx = facePtr[j];
             RndMesh::Face &face = mMesh->Faces()[faceIdx];
             unsigned short prev = face.v3;
-            for (int z = 0; z < 3; z++) {
+            for (int z = 0; z <= 2; z++) {
                 if ((int)face[z] == vIdx) {
                     MeshVert *partner = mMeshVerts[prev];
                     if (partner->mVert) {
@@ -769,7 +769,9 @@ bool BandPatchMesh::WorkVerts::SetSameVerts(BandPatchMesh::WorkVerts *other) {
             }
         }
     }
-    return !unk10.empty();
+        if (unk10.empty())
+        return false;
+    return true;
 }
 
 void BandPatchMesh::WorkVerts::CopyDeformWeights(RndMeshDeform *m1, RndMeshDeform *md) {

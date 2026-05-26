@@ -1415,7 +1415,7 @@ int RndText::AddLineUTF8(
     if (!fp)
         fp = &f98;
 
-    String &_ref0 = mText;
+    const String &_ref0 = mText;
     if (utf8.length() + _ref0.length() > mFixedLength) {
         MILO_WARN(
             "Text %s%s exceeds fixed length of %d, truncating",

@@ -1,0 +1,58 @@
+{
+  "symbol": "PollSearch__11CacheMgrWiiFv",
+  "function_name": "CacheMgrWii::PollSearch",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/CacheMgr_Wii.cpp",
+  "initial_percent": 98.16923,
+  "final_percent": 98.16154,
+  "total_delta": -0.007689999999996644,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.16923,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.16923,
+      "delta": 0.0,
+      "num_variants": 18,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 86.16154,
+      "best_name": "tmpelim_0",
+      "best_pattern": "temp_elimination",
+      "best_score": 98.16154,
+      "delta": 12.0,
+      "num_variants": 22,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 98.10769,
+      "best_name": "varext_0",
+      "best_pattern": "variable_extraction",
+      "best_score": 98.16154,
+      "delta": 0.05384999999999707,
+      "num_variants": 20,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 13.17,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "1": 16,
+    "2": 29,
+    "5": 15
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

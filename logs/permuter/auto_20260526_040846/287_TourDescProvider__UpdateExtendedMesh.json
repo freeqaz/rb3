@@ -1,0 +1,48 @@
+{
+  "symbol": "UpdateExtendedMesh__16TourDescProviderCFiiP7RndMesh",
+  "function_name": "TourDescProvider::UpdateExtendedMesh",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/tour/TourDescPanel.cpp",
+  "initial_percent": 94.88327,
+  "final_percent": 95.097275,
+  "total_delta": 0.21400500000000022,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 94.88327,
+      "best_name": "ternary_0",
+      "best_pattern": "ternary_swap",
+      "best_score": 95.097275,
+      "delta": 0.21400500000000022,
+      "num_variants": 20,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 83.96887,
+      "best_name": "accessor_outline_0",
+      "best_pattern": "accessor_outline",
+      "best_score": 95.097275,
+      "delta": 11.128405,
+      "num_variants": 21,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 32.64,
+  "winning_pattern": "accessor_outline",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 18,
+    "2": 10,
+    "5": 13
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -1349,7 +1349,8 @@ bool GemManager::IsSpotlightGem(int gemId, bool &outUnison) {
     if (!TheGame->AllowOverdrivePhrases()) {
         return false;
     }
-    int phrase_id = TheSongDB->GetPhraseID(mTrackConfig.TrackNum(), gemId);
+    auto _tmp0 = mTrackConfig.TrackNum();
+    int phrase_id = TheSongDB->GetPhraseID(_tmp0, gemId);
     MILO_ASSERT(phrase_id >= -1, 0xA04);
     if (phrase_id != -1) {
         Band *band = mTrackConfig.GetBandUser()->GetPlayer()->mBand;

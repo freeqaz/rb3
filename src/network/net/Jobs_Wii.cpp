@@ -85,7 +85,8 @@ JobCreateProfile::~JobCreateProfile() {}
 
 DataNode JobCreateProfile::OnMsg(const DWCProfanityResultMsg &msg) {
     if (msg.Success()) {
-        if (msg->Int(3) != 0) {
+        auto _tmp0 = msg->Int(3);
+        if (_tmp0 != 0) {
             CompleteJob(2);
         } else {
             SET_STEP(JobCreateProfile::StepCheckRockCentral);

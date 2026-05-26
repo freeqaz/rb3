@@ -373,7 +373,7 @@ DataNode CharKeyHandMidi::OnFingersUp(DataArray *msg) {
 
 DataNode CharKeyHandMidi::OnFingersDown(DataArray *msg) {
     KeyboardKey key = (KeyboardKey)msg->Int(2);
-    MILO_ASSERT(key > kNoKey && key <= kKeyC4, 0x81);
+    MILO_ASSERT(key > kNoKey && (bool)(key <= kKeyC4), 0x81);
     unk5c.push_back((KeyboardKey)(key - kNoKey));
     return 0;
 }

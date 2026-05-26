@@ -87,8 +87,8 @@ void RndMeshDeform::VertArray::Load(BinStream &bs) {
 int RndMeshDeform::VertArray::AppendWeights(int num, int *boneIndices, float *weights) {
     MILO_ASSERT(num < VertArray::kMaxWeights, 0x5F);
     int numVerts = NumVerts();
-    float sum = 0.0f;
     RndMeshDeform * &_ref0 = mParent;
+    float sum = 0.0f;
     for (int i = 0; i < num; i++) {
         for (int j = i + 1; j < num; j++) {
             if (boneIndices[j] == boneIndices[i]) {

@@ -176,7 +176,8 @@ void CharIKHand::IKElbow(RndTransformable *trans1, RndTransformable *trans2) {
     float sqrted = -std::sqrt(-(loc210 * loc210 - 1.0f));
     float negSqrted = -sqrted;
     trans1->DirtyLocalXfm().m.Set(loc210, sqrted, 0, negSqrted, loc210, 0, 0, 0, 1);
-    Vector3 v10c, v118;
+    Vector3 v10c;
+    Vector3 v118;
     Multiply(trans2->WorldXfm(), mHand->WorldXfm().v, v118);
     Multiply(trans2->WorldXfm(), mWorldDst, v10c);
     if (mElbowSwing > 0) {

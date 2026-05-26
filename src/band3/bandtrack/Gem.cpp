@@ -76,7 +76,7 @@ void Gem::Poll(float f1, float f2, float f3, float f4, float f5) {
                 mGemManager->mTrackDir->SecondsToY(f5 - fvar1),
                 mGemManager->mTrackDir->SecondsToY(fvar2)
             );
-            for (int i = 0; i < mTails.size(); i++) {
+            for (int i = 0.0f; i < mTails.size(); i++) {
                 mTails[i]->Poll(f1, f2, f3);
             }
         }

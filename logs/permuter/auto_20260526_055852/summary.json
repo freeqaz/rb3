@@ -1,0 +1,292 @@
+{
+  "total": 400,
+  "processed": 400,
+  "improved": 28,
+  "perfect": 0,
+  "no_change": 372,
+  "errors": 0,
+  "total_delta": 31.67862099999998,
+  "improvements": [
+    {
+      "symbol": "OnRemoteTambourineSucceeding__17TambourineManagerFP9DataArray",
+      "function": "TambourineManager::OnRemoteTambourineSucceeding",
+      "source": "src/band3/game/TambourineManager.cpp",
+      "initial": 93.92105,
+      "final": 97.81579,
+      "delta": 3.894740000000013,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "GetSelectedSetlistType__16QuestFilterPanelFv",
+      "function": "QuestFilterPanel::GetSelectedSetlistType",
+      "source": "src/band3/tour/QuestFilterPanel.cpp",
+      "initial": 93.16327,
+      "final": 93.36735,
+      "delta": 0.2040800000000047,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "BinkFileReadFrame__FP6BINKIOUiiPvUi",
+      "function": "BinkFileReadFrame",
+      "source": "src/system/utl/BinkIntegration.cpp",
+      "initial": 93.02146,
+      "final": 93.042915,
+      "delta": 0.0214549999999889,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Swing__20DrumTrackWatcherImplFibb11GemHitFlags",
+      "function": "DrumTrackWatcherImpl::Swing",
+      "source": "src/system/beatmatch/DrumTrackWatcherImpl.cpp",
+      "initial": 92.88396,
+      "final": 94.744026,
+      "delta": 1.8600660000000033,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "PollSearch__11CacheMgrWiiFv",
+      "function": "CacheMgrWii::PollSearch",
+      "source": "src/system/utl/CacheMgr_Wii.cpp",
+      "initial": 92.83846,
+      "final": 98.16923,
+      "delta": 5.330770000000001,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "BuildFilteredSongList__11SongSortMgrFPQ211SongSortMgr10SongFilter6Symbol",
+      "function": "SongSortMgr::BuildFilteredSongList",
+      "source": "src/band3/meta_band/SongSortMgr.cpp",
+      "initial": 92.51543,
+      "final": 92.825195,
+      "delta": 0.30976499999999874,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "AppendWeights__Q213RndMeshDeform9VertArrayFiPiPf",
+      "function": "RndMeshDeform::VertArray::AppendWeights",
+      "source": "src/system/rndobj/MeshDeform.cpp",
+      "initial": 92.617775,
+      "final": 97.577774,
+      "delta": 4.9599990000000105,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "SuddenOctaveShift__6SingerCFf",
+      "function": "Singer::SuddenOctaveShift",
+      "source": "src/band3/game/Singer.cpp",
+      "initial": 92.55319,
+      "final": 92.65958,
+      "delta": 0.10639000000000465,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Poll__15UsbMidiKeyboardFv",
+      "function": "UsbMidiKeyboard::Poll",
+      "source": "src/system/os/UsbMidiKeyboard.cpp",
+      "initial": 92.3734,
+      "final": 93.9335,
+      "delta": 1.5600999999999914,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "AppendThreadStackTrace__FPcPUi",
+      "function": "AppendThreadStackTrace",
+      "source": "src/system/os/System.cpp",
+      "initial": 90.27451,
+      "final": 91.54902,
+      "delta": 1.2745099999999923,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Display__10CharDriverFf",
+      "function": "CharDriver::Display",
+      "source": "src/system/char/CharDriver.cpp",
+      "initial": 92.21634,
+      "final": 93.57337,
+      "delta": 1.3570299999999946,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "UpdateLyricZ__10VocalTrackFv",
+      "function": "VocalTrack::UpdateLyricZ",
+      "source": "src/band3/bandtrack/VocalTrack.cpp",
+      "initial": 92.13065,
+      "final": 92.38191,
+      "delta": 0.25126000000000204,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "RunWithoutDebugging__3AppFv",
+      "function": "App::RunWithoutDebugging",
+      "source": "src/App.cpp",
+      "initial": 90.28866,
+      "final": 90.49227,
+      "delta": 0.20361000000001184,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "NextLook__8CharEyesFv",
+      "function": "CharEyes::NextLook",
+      "source": "src/system/char/CharEyes.cpp",
+      "initial": 91.66133,
+      "final": 91.936,
+      "delta": 0.2746700000000004,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "CheckConsistency__4HeapFPCci",
+      "function": "Heap::CheckConsistency",
+      "source": "src/system/utl/MemMgr.cpp",
+      "initial": 91.25263,
+      "final": 91.436844,
+      "delta": 0.1842139999999972,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Evaluate__14CharClipDriverFfff",
+      "function": "CharClipDriver::Evaluate",
+      "source": "src/system/char/CharClipDriver.cpp",
+      "initial": 91.23256,
+      "final": 95.83721,
+      "delta": 4.604649999999992,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "CopyFromFB__6WiiTexFiiiibb",
+      "function": "WiiTex::CopyFromFB",
+      "source": "src/system/rndwii/Tex.cpp",
+      "initial": 90.911766,
+      "final": 92.15686,
+      "delta": 1.2450939999999946,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "AddUV__Q213BandPatchMesh8MeshVertFPCQ213BandPatchMesh8MeshVertRC7Vector2PC7Vector2",
+      "function": "BandPatchMesh::MeshVert::AddUV",
+      "source": "src/system/bandobj/BandPatchMesh.cpp",
+      "initial": 90.82447,
+      "final": 91.07979,
+      "delta": 0.25531999999999755,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "RecursePatternInternal__FPCcPFPCcPCc_vbb",
+      "function": "RecursePatternInternal",
+      "source": "src/system/os/File.cpp",
+      "initial": 90.68232,
+      "final": 90.709946,
+      "delta": 0.02762599999999793,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Send__16WiiNetworkSocketFPCvUl",
+      "function": "WiiNetworkSocket::Send",
+      "source": "src/system/os/NetworkSocket_Wii.cpp",
+      "initial": 90.617645,
+      "final": 90.70588,
+      "delta": 0.0882349999999974,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Text__16TourDescProviderCFiiP11UIListLabelP7UILabel",
+      "function": "TourDescProvider::Text",
+      "source": "src/band3/tour/TourDescPanel.cpp",
+      "initial": 90.130844,
+      "final": 90.17757,
+      "delta": 0.04672600000000671,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "LidTrackAndClampingUpdate__8CharEyesFRQ28CharEyes7EyeDescf",
+      "function": "CharEyes::LidTrackAndClampingUpdate",
+      "source": "src/system/char/CharEyes.cpp",
+      "initial": 90.56469,
+      "final": 90.567986,
+      "delta": 0.003296000000005961,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "UpdateLine__7RndLineFPQ27RndLine5PointPQ27RndLine5Point",
+      "function": "RndLine::UpdateLine",
+      "source": "src/system/rndobj/Line.cpp",
+      "initial": 90.163666,
+      "final": 90.166664,
+      "delta": 0.0029979999999909523,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Init__4HeapFPCciPiibQ24Heap8Strategyib",
+      "function": "Heap::Init",
+      "source": "src/system/utl/MemMgr.cpp",
+      "initial": 89.172134,
+      "final": 90.09836,
+      "delta": 0.9262259999999998,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Detect__15VibratoDetectorFv",
+      "function": "VibratoDetector::Detect",
+      "source": "src/system/dsp/VibratoDetector.cpp",
+      "initial": 88.76761,
+      "final": 88.90845,
+      "delta": 0.1408399999999972,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "RefreshLayer__8LayerDirFRQ28LayerDir5Layerb",
+      "function": "LayerDir::RefreshLayer",
+      "source": "src/system/bandobj/LayerDir.cpp",
+      "initial": 87.97165,
+      "final": 88.40722,
+      "delta": 0.43556999999999846,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "WriteDone__7HDCacheFv",
+      "function": "HDCache::WriteDone",
+      "source": "src/system/os/HDCache.cpp",
+      "initial": 88.159294,
+      "final": 88.513275,
+      "delta": 0.35398099999999033,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Truncate__4HeapFPiiRi",
+      "function": "Heap::Truncate",
+      "source": "src/system/utl/MemMgr.cpp",
+      "initial": 87.90647,
+      "final": 89.66187,
+      "delta": 1.7553999999999945,
+      "rounds": 2,
+      "reason": "max_rounds"
+    }
+  ],
+  "elapsed_seconds": 2500.0
+}

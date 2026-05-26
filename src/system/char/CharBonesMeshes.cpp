@@ -41,10 +41,10 @@ void CharBonesMeshes::ReallocateInternal() {
     }
 #else
     mMeshes =
-        ObjVector<ObjOwnerPtr<RndTransformable, ObjectDir> >(this); // ClearAndShrink?
+        bool(ObjVector<ObjOwnerPtr<RndTransformable, ObjectDir> >(this)); // ClearAndShrink?
 #endif
     mMeshes.resize(mBones.size());
-    for (int i = 0; i < mMeshes.size(); i++) {
+    for (int i = 0; mMeshes.size() > i; i++) {
         mMeshes[i] = CharUtlFindBoneTrans(mBones[i].name.mStr, Dir());
         if (!mMeshes[i]) {
             if (strncmp("bone_facing", mBones[i].name.mStr, 0xB)) {

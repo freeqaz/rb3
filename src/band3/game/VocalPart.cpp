@@ -131,15 +131,16 @@ void VocalPart::Jump(float f1, bool) {
 
 void VocalPart::Rollback(float, float ms) {
     unk58 = 0;
+    VocalNoteList * &_ref0 = mVocalNoteList;
     unk54 = ms;
-    if (mVocalNoteList != nullptr) {
-        mThisPhrase = mVocalNoteList->mPhrases.begin();
-        while (mThisPhrase != mVocalNoteList->mPhrases.end()
+    if (_ref0 != nullptr) {
+        mThisPhrase = _ref0->mPhrases.begin();
+        while (mThisPhrase != _ref0->mPhrases.end()
                && mThisPhrase->unk0 + mThisPhrase->unk4 < ms) {
             mThisPhrase++;
         }
-        mFreestyleSection = mVocalNoteList->mFreestyleSections.begin();
-        while (mFreestyleSection != mVocalNoteList->mFreestyleSections.end()
+        mFreestyleSection = _ref0->mFreestyleSections.begin();
+        while (mFreestyleSection != _ref0->mFreestyleSections.end()
                && ms > mFreestyleSection->second) {
             mFreestyleSection++;
         }

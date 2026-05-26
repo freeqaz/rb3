@@ -1,0 +1,58 @@
+{
+  "symbol": "LoadFile__Q35Movie4Impl11MovieLoaderFv",
+  "function_name": "Movie::Impl::MovieLoader::LoadFile",
+  "source_path": "/home/free/code/milohax/rb3/src/system/movie/Movie.cpp",
+  "initial_percent": 96.3,
+  "final_percent": 96.3,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.3,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.3,
+      "delta": 0.0,
+      "num_variants": 7,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 76.88,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 96.3,
+      "delta": 19.42,
+      "num_variants": 14,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 90.18,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 96.3,
+      "delta": 6.11999999999999,
+      "num_variants": 12,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 13.9,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 10,
+    "2": 7,
+    "5": 16
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

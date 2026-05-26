@@ -339,8 +339,9 @@ void BandList::ConcealAnimPoll(int i, Transform &tf) {
 
 void BandList::StartFocusAnim(int i, BandList::AnimState astate) {
     float f8 = TheTaskMgr.UISeconds();
-    float f9 = mFocusAnim->StartFrame();
-    float f10 = mFocusAnim->EndFrame();
+    ObjPtr<RndTransAnim, ObjectDir> &_ref0 = mFocusAnim;
+    float f9 = _ref0->StartFrame();
+    float f10 = _ref0->EndFrame();
     float curframe = 0;
     AnimState curastate = mAnimStates[i];
     if (astate != kOut && astate != kIn) {
@@ -360,7 +361,7 @@ void BandList::StartFocusAnim(int i, BandList::AnimState astate) {
     } else {
         curframe = mFrames[i];
         float f11 = Abs(f9 - curframe);
-        f8 = (f8 - (f11 / mFocusAnim->FramesPerUnit()));
+        f8 = (f8 - (f11 / _ref0->FramesPerUnit()));
         f10 = curframe;
     }
     mAnimStates[i] = astate == kIn ? kGoingIn : kGoingOut;
@@ -432,6 +433,7 @@ void BandList::UpdatePulseAnim(int i, Transform &tf) {
         mFrames[i] = f5;
         mPulseAnim->MakeTransform(f5, tf, true, 1.0f);
     }
+    char _slotpad[16]; (void)_slotpad;
 }
 #pragma fp_contract on
 

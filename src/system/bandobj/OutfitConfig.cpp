@@ -421,7 +421,7 @@ void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDes
     };
     OutfitConfig *cfg = dir2->Find<OutfitConfig>("skin.cfg", false);
     Symbol gender = desc->mGender;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; 5 > i; i++) {
         const char *partname = skinMats[i * 2 + 1];
         RndMat *curmat = dir1->Find<RndMat>(skinMats[i * 2], false);
         if (curmat) {

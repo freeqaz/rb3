@@ -1,0 +1,58 @@
+{
+  "symbol": "MaybePublish__7UIStatsFP8UIScreen",
+  "function_name": "UIStats::MaybePublish",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/UIStats.cpp",
+  "initial_percent": 98.994545,
+  "final_percent": 98.97056,
+  "total_delta": -0.02398499999999615,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.994545,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.994545,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.89967,
+      "best_name": "declreorder_0",
+      "best_pattern": "declaration_reorder",
+      "best_score": 98.97056,
+      "delta": 0.07089000000000567,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 98.97056,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.97056,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 30.77,
+  "winning_pattern": "declaration_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 26,
+    "2": 46,
+    "5": 18
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

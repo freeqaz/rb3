@@ -1,0 +1,48 @@
+{
+  "symbol": "NextLook__8CharEyesFv",
+  "function_name": "CharEyes::NextLook",
+  "source_path": "/home/free/code/milohax/rb3/src/system/char/CharEyes.cpp",
+  "initial_percent": 91.66133,
+  "final_percent": 91.936,
+  "total_delta": 0.2746700000000004,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 91.66133,
+      "best_name": "boolcast_0",
+      "best_pattern": "bool_cast",
+      "best_score": 91.936,
+      "delta": 0.2746700000000004,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 91.66133,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 91.936,
+      "delta": 0.2746700000000004,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 23.55,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 18,
+    "2": 25,
+    "5": 17
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -505,10 +505,10 @@ BEGIN_HANDLERS(UIFontImporter)
 END_HANDLERS
 
 BEGIN_PROPSYNCS(UIFontImporter)
-    SYNC_PROP(UPPER_CASE_A_Z, mUpperCaseAthroughZ)
-    SYNC_PROP(lower_case_a_z, mLowerCaseAthroughZ)
     SYNC_PROP(numbers_0_9, mNumbers0through9)
     SYNC_PROP(punctuation, mPunctuation)
+    SYNC_PROP(UPPER_CASE_A_Z, mUpperCaseAthroughZ)
+    SYNC_PROP(lower_case_a_z, mLowerCaseAthroughZ)
     SYNC_PROP(UPPER_EURO, mUpperEuro)
     SYNC_PROP(lower_euro, mLowerEuro)
     SYNC_PROP(plus, mPlus)

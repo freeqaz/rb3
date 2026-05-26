@@ -1,0 +1,48 @@
+{
+  "symbol": "DrawShowing__10WorldCrowdFv",
+  "function_name": "WorldCrowd::DrawShowing",
+  "source_path": "/home/free/code/milohax/rb3/src/system/world/Crowd.cpp",
+  "initial_percent": 95.293236,
+  "final_percent": 95.56176,
+  "total_delta": 0.26852400000001353,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.293236,
+      "best_name": "maxcond_0",
+      "best_pattern": "max_to_conditional",
+      "best_score": 95.55854,
+      "delta": 0.26530400000000043,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.293236,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 95.55854,
+      "delta": 0.26530400000000043,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 27.61,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 6,
+    "2": 40,
+    "5": 14
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

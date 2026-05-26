@@ -57,7 +57,7 @@ bool JoypadTrackWatcherImpl::Swing(int i1, bool b1, bool b2, GemHitFlags flags) 
                 false
             );
             for (int i = unplayedGem; i < mGemList->NumGems(); i++) {
-                GameGem &curGem = mGemList->GetGem(i);
+                const GameGem &curGem = mGemList->GetGem(i);
                 if (curGem.mMs >= loopThreshold
                     || curGem.GetTick() >= i64 + i60)
                     break;

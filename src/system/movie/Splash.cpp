@@ -190,7 +190,8 @@ int Splash::SetImmutableState(Splash::SplashState state) {
         cs->Enter(); // ???
     if (mState >= kResumed && state > mState) {
         mState = state;
-        if (MainThread())
+        auto _tmp0 = MainThread();
+        if (_tmp0)
             unk_0xAC.Set();
         else
             unk_0x88.Set();

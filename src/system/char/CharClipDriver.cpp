@@ -175,23 +175,24 @@ float CharClipDriver::AlignToBeat(float oldBeat) {
 void CharClipDriver::SetBeatOffset(float offset, TaskUnits units, Symbol sym) {
     if (offset == 0.0f)
         return;
-    if (!mClip)
+    ObjOwnerPtr<CharClip> &_ref0 = mClip;
+    if (!_ref0)
         return;
-    mBeat = mClip->StartBeat();
+    mBeat = _ref0->StartBeat();
     if (!sym.Null()) {
         unsigned int i = 0;
-        for (; i < mClip->mBeatEvents.size(); i++) {
-            if (mClip->mBeatEvents[i].event == sym) {
-                mBeat = mClip->mBeatEvents[i].beat;
+        for (; i < _ref0->mBeatEvents.size(); i++) {
+            if (_ref0->mBeatEvents[i].event == sym) {
+                mBeat = _ref0->mBeatEvents[i].beat;
                 break;
             }
         }
-        if (i == mClip->mBeatEvents.size()) {
-            MILO_WARN("%s could not find event %s", PathName(mClip), sym);
+        if (i == _ref0->mBeatEvents.size()) {
+            MILO_WARN("%s could not find event %s", PathName(_ref0), sym);
         }
     }
     if (units != kTaskBeats) {
-        offset = mClip->DeltaSecondsToDeltaBeat(offset, mBeat);
+        offset = _ref0->DeltaSecondsToDeltaBeat(offset, mBeat);
     }
     mBeat += offset;
 }
@@ -217,7 +218,8 @@ void CharClipDriver::PlayEvents(float oldBeat) {
 }
 
 CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float deltaSeconds) {
-    MILO_ASSERT(mBlendFrac >= 0, 0xa0);
+    float &_ref0 = mBlendFrac;
+    MILO_ASSERT(_ref0 >= 0, 0xa0);
     if (mBlendWidth < 0.0f) {
         MILO_WARN("CharClipDriver: blend width < 0 with clip %s", (const char *)mClip->Name());
         mBlendWidth = 0.0f;
@@ -274,7 +276,7 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
             float frame = mClip->BeatToFrame(mBeat);
             syncAnim->SetFrame(frame, 1.0f);
         }
-        if (mBlendFrac < 1.0f) {
+        if (_ref0 < 1.0f) {
             if (mBlendWidth > 0.0f) {
                 float inc;
                 if (useUserTime) {
@@ -284,20 +286,20 @@ CharClipDriver *CharClipDriver::PreEvaluate(float beat, float deltaBeat, float d
                 }
                 inc = inc / mBlendWidth;
                 if (inc > 0.0f) {
-                    mBlendFrac += inc;
+                    _ref0 += inc;
                 }
             } else {
-                mBlendFrac = 1.0f;
+                _ref0 = 1.0f;
             }
-            if (1.0f < mBlendFrac) {
-                mBlendFrac = 1.0f;
+            if (1.0f < _ref0) {
+                _ref0 = 1.0f;
             }
         }
     }
 
     if (!mPlayMultipleClips) {
         if (mNext) {
-            if (mBlendFrac == 1.0f) {
+            if (_ref0 == 1.0f) {
                 mNext = mNext->Exit(true);
             }
         }

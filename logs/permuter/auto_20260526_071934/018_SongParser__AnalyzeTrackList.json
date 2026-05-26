@@ -1,0 +1,58 @@
+{
+  "symbol": "AnalyzeTrackList__10SongParserFv",
+  "function_name": "SongParser::AnalyzeTrackList",
+  "source_path": "/home/free/code/milohax/rb3/src/system/beatmatch/SongParser.cpp",
+  "initial_percent": 99.04676,
+  "final_percent": 99.03237,
+  "total_delta": -0.014390000000005898,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 99.04676,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 99.04676,
+      "delta": 0.0,
+      "num_variants": 22,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 66.83093,
+      "best_name": "membind_0",
+      "best_pattern": "member_ref_bind",
+      "best_score": 99.03237,
+      "delta": 32.201440000000005,
+      "num_variants": 23,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 99.03237,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 99.03237,
+      "delta": 0.0,
+      "num_variants": 24,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 19.34,
+  "winning_pattern": "member_ref_bind",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 15,
+    "2": 27,
+    "5": 27
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

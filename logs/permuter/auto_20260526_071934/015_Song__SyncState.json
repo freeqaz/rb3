@@ -1,0 +1,58 @@
+{
+  "symbol": "SyncState__4SongFv",
+  "function_name": "Song::SyncState",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/Song.cpp",
+  "initial_percent": 99.08908,
+  "final_percent": 99.08908,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 99.08908,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 99.08908,
+      "delta": 0.0,
+      "num_variants": 26,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 89.22988,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 99.08908,
+      "delta": 9.859200000000001,
+      "num_variants": 28,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 98.21265,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 99.08908,
+      "delta": 0.8764299999999992,
+      "num_variants": 26,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 23.61,
+  "winning_pattern": "initializer_literal",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 33,
+    "0": 9,
+    "5": 38
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}
