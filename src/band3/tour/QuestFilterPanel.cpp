@@ -83,8 +83,8 @@ inline void QuestFilterProvider::Text(
     int, int i_iData, UIListLabel *i_pSlot, UILabel *i_pLabel
 ) const {
     MILO_ASSERT(i_iData < NumData(), 0x67);
-    Symbol sFilter = DataSymbol(i_iData);
     TourSetlistType eType;
+    Symbol sFilter = DataSymbol(i_iData);
     TourProgress *pProg = TheTour->GetTourProgress();
     if (pProg) {
         TourDesc *pTourDesc = TheTour->GetTourDesc(pProg->GetTourDesc());
