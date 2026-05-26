@@ -155,7 +155,11 @@ void CharClipDisplay::DrawTrack() {
     float markerH = 9.0f;
     float beat = firstBeat;
     while (beat <= lastBeat) {
-        Hmx::Rect markerRect(GetX(beat), markerY, beatStep, markerH);
+        Hmx::Rect markerRect;
+        markerRect.y = markerY;
+        markerRect.h = markerH;
+        markerRect.x = GetX(beat);
+        markerRect.w = beatStep;
         TheRnd->DrawRect(markerRect, green, NULL, NULL, NULL);
         beat += beatStep;
     }
@@ -204,22 +208,23 @@ void CharClipDisplay::DrawTrack() {
         if (leftIk == NULL) {
         if (rightIk == NULL)
         goto sampleDraw;
-        else {
-        RndTransformable *data = rightIk->mData;
-        goto drawIKData;
         }
-        } else {
         MILO_ASSERT(
         !rightIk || !leftIk || (rightIk->GetData() == leftIk->GetData()), 0xCB
         );
-        RndTransformable *data = leftIk->mData;
-        drawIKData:
+        {
+        RndTransformable *data;
+        if (leftIk != NULL) data = leftIk->mData.mPtr;
+        else data = rightIk->mData.mPtr;
         if (data != NULL) {
         Symbol channelName
         = CharBones::ChannelName(data->Name(), CharBones::TYPE_POS);
         void *channel = unk0->GetChannel(channelName);
         Vector3 channelData;
-        Hmx::Rect ikRect(0.0f, drawY, 1.0f, 1.0f);
+        Hmx::Rect ikRect;
+        ikRect.y = drawY;
+        ikRect.w = 1.0f;
+        ikRect.h = 1.0f;
         float firstFrameF = (float)std::ceil(unk0->BeatToFrame(startBeat));
         int lastFrame = (int)(float)std::floor(unk0->BeatToFrame(endBeat));
         int firstFrame = (int)firstFrameF;
@@ -267,7 +272,8 @@ void CharClipDisplay::DrawTrack() {
 
         {
         float screenWidth = (float)TheRnd->Width();
-        float labelX = -(sEm * 3.0f - screenWidth);
+        float s2em = sEm * 2.0f;
+        float labelX = screenWidth - s2em;
         Vector2 endPos(labelX, nameY);
         TheRnd->DrawString(MakeString("%.1f", unk8), endPos, white, true);
         }
