@@ -1040,7 +1040,9 @@ void VocalTrack::UpdateLyricZ() {
     ObjPtr<VocalTrackDir> &_ref0 = mDir;
     _ref0->RecalculateLyricZ(&leadDirty, &harmonyDirty);
     if (leadDirty) {
-        FOREACH (it, mLyricsLead) {
+        std::deque<LyricPlate *>::iterator it = mLyricsLead.begin();
+        std::deque<LyricPlate *>::iterator leadEnd = mLyricsLead.end();
+        for (; it != leadEnd; ++it) {
             LyricPlate *plate = *it;
             if (plate->mBaked) {
                 float delta = 0.0f;
@@ -1054,11 +1056,7 @@ void VocalTrack::UpdateLyricZ() {
                     if (delta == 0.0f) {
                         delta = z - lyric->mBeginPos.z;
                     } else {
-                        float diff = (z - lyric->mBeginPos.z) - delta;
-                        if (diff > 0.0f) {
-                        } else {
-                            diff = -diff;
-                        }
+                        float diff = Abs((z - lyric->mBeginPos.z) - delta);
                         if (diff > 0.01f) {
                             MILO_WARN(
                                 "relative lyric placement changed in baked plate (lead)"
@@ -1072,7 +1070,9 @@ void VocalTrack::UpdateLyricZ() {
         }
     }
     if (harmonyDirty) {
-        FOREACH (it, mLyricsHarmony) {
+        std::deque<LyricPlate *>::iterator harmonyEnd = mLyricsHarmony.end();
+        for (std::deque<LyricPlate *>::iterator it = mLyricsHarmony.begin();
+             it != harmonyEnd; ++it) {
             LyricPlate *plate = *it;
             if (plate->mBaked) {
                 float delta = 0.0f;
@@ -1087,11 +1087,7 @@ void VocalTrack::UpdateLyricZ() {
                     if (delta == 0.0f) {
                         delta = z - lyric->mBeginPos.z;
                     } else {
-                        float diff = (z - lyric->mBeginPos.z) - delta;
-                        if (diff > 0.0f) {
-                        } else {
-                            diff = -diff;
-                        }
+                        float diff = Abs((z - lyric->mBeginPos.z) - delta);
                         if (diff > 0.01f) {
                             MILO_WARN(
                                 "relative lyric placement changed in baked plate (harmony)"
