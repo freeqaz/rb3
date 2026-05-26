@@ -234,7 +234,7 @@ void UIStats::EventLog(unsigned int pad, unsigned int but, unsigned int state) {
     int now = SystemMs();
     unsigned int elapsed = (unsigned int)(now - mLastPublishTime) >> 4;
     if (elapsed > 0x7FFFFF) elapsed = 0x7FFFFF;
-    unsigned int packed = (elapsed | ((but << 23) & 0x0F800000)) | (((pad << 28) & 0x70000000) | (state << 31));
+    unsigned int packed = (state << 31) | ((pad << 28) & 0x70000000) | ((but << 23) & 0x0F800000) | elapsed;
     *(unsigned int *)mPadLogWritePtr = (unsigned short)packed;
     int count = mPadLogCount + 1;
     mPadLogCount = count;
