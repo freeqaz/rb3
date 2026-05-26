@@ -1211,6 +1211,9 @@ void StoreMetadataManager::SetLoadingState(int state) {
     case 0:
         mFlags &= ~4;
         return;
+    case 11:
+        mFlags &= ~0x1C;
+        return;
     case 1: {
         if (TheWiiCommerceMgr.InitCommerce(NULL) == 0) {
             SetLoadingState(11);
@@ -1241,35 +1244,30 @@ void StoreMetadataManager::SetLoadingState(int state) {
         );
         return;
     }
-    case 6: {
-        if (UpdateTitle__14WiiCommerceMgrFUx(&TheWiiCommerceMgr, *(unsigned long long *)&unk88) == 0) {
-            mErrorMsg = 2;
-            SetLoadingState(11);
-        }
-        return;
-    }
     case 7:
         SetLoadingState(5);
         return;
     case 8: {
+        unsigned short idx = unk90;
+        unsigned long long titleId = *(unsigned long long *)&unk88;
         StoreTitleContentState *titleState;
         std::map<unsigned long long, StoreTitleContentState *>::iterator it =
-            unk58.find(*(unsigned long long *)&unk88);
+            unk58.find(titleId);
         if (it == unk58.end()) {
             titleState = (StoreTitleContentState *)operator new(0x1000);
             if (titleState) memset(titleState, 0, 0x1000);
-            unk58[*(unsigned long long *)&unk88] = titleState;
+            unk58[titleId] = titleState;
         } else {
             titleState = it->second;
         }
-        unsigned char st = ((unsigned char *)titleState)[unk90 << 3] & 2;
+        int st = ((unsigned char *)titleState)[idx << 3] & 2;
         if (st == 2) {
             SetLoadingState(6);
         } else {
             if (TheWiiCommerceMgr.unkF2) {
                 EC_SetParameter("PCPW", gUsersPIN);
             }
-            long opId = EC_PurchaseDataTitle(*(unsigned long long *)&unk88, unk94, 0);
+            long opId = EC_PurchaseDataTitle(titleId, unk94, 0);
             if (opId < 0) {
                 mErrorMsg = 2;
                 SetLoadingState(11);
@@ -1281,22 +1279,33 @@ void StoreMetadataManager::SetLoadingState(int state) {
         }
         return;
     }
+    case 6: {
+        unsigned long long titleId = *(unsigned long long *)&unk88;
+        unsigned short idx = unk90;
+        if (UpdateTitle__14WiiCommerceMgrFUx(&TheWiiCommerceMgr, titleId) == 0) {
+            mErrorMsg = 2;
+            SetLoadingState(11);
+        }
+        return;
+    }
     case 9: {
+        unsigned short idx = unk90;
+        unsigned long long titleId = *(unsigned long long *)&unk88;
         StoreTitleContentState *titleState;
         std::map<unsigned long long, StoreTitleContentState *>::iterator it =
-            unk58.find(*(unsigned long long *)&unk88);
+            unk58.find(titleId);
         if (it == unk58.end()) {
             titleState = (StoreTitleContentState *)operator new(0x1000);
             if (titleState) memset(titleState, 0, 0x1000);
-            unk58[*(unsigned long long *)&unk88] = titleState;
+            unk58[titleId] = titleState;
         } else {
             titleState = it->second;
         }
-        if (((unsigned char *)titleState)[unk90 << 3] & 1) {
+        if ((((unsigned char *)titleState)[idx << 3] & 1) == 1) {
             SetLoadingState(10);
         } else {
             if (DownloadIndexContentUnit__14WiiCommerceMgrFUxiPQ23Hmx6Object(
-                    &TheWiiCommerceMgr, *(unsigned long long *)&unk88, unk90, NULL
+                    &TheWiiCommerceMgr, titleId, idx, NULL
                 ) == 0) {
                 mErrorMsg = 2;
                 SetLoadingState(11);
@@ -1305,9 +1314,6 @@ void StoreMetadataManager::SetLoadingState(int state) {
         return;
     }
     case 10:
-        return;
-    case 11:
-        mFlags &= ~0x1C;
         return;
     }
 }
