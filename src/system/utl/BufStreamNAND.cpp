@@ -228,16 +228,14 @@ void BufStreamNAND::ReadImpl(void *data, int count) {
 
 void BufStreamNAND::WriteImpl(const void *data, int count) {
     if(mFail) return;
-    if(mTell + count > mChunkSize) {
-        if(SaveBufferToNAND(true)) {
+    if(mTell + count > mChunkSize && SaveBufferToNAND(true)) {
             mFail = true;
             return;
         }
-    }
     int size = mSize;
     if(mRunningTell + count > size || mTell + count > mChunkSize) {
-        mFail = true;
         count = size - mTell;
+        mFail = true;
     }
     memcpy(&mBuffer[mTell], data, count);
     mRunningTell += count;
