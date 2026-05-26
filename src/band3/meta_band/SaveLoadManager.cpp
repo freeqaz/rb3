@@ -744,7 +744,7 @@ void SaveLoadManager::SetState(State newState) {
         }
         if (!TheCacheMgr->SearchAsync(unk4c.c_str(), &mCacheID)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->SearchAsync() failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->SearchAsync() failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -787,7 +787,7 @@ void SaveLoadManager::SetState(State newState) {
     {
         if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -803,7 +803,7 @@ void SaveLoadManager::SetState(State newState) {
         UpdateStatus((SaveLoadMgrStatus)1);
         if (!TheCacheMgr->DeleteAsync(mCacheID)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->DeleteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->DeleteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -824,7 +824,7 @@ void SaveLoadManager::SetState(State newState) {
         UpdateStatus((SaveLoadMgrStatus)1);
         if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -837,7 +837,7 @@ void SaveLoadManager::SetState(State newState) {
         TheSongMgr.SaveCachedSongInfo(stream);
         if (!mCache->WriteAsync(unk4c.c_str(), mData, (uint)sz, NULL)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -847,7 +847,7 @@ void SaveLoadManager::SetState(State newState) {
     {
         if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->UnmountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->UnmountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -883,7 +883,7 @@ void SaveLoadManager::SetState(State newState) {
         }
         if (!TheCacheMgr->SearchAsync(kStrGlobalCacheName.Str(), &mCacheID)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->SearchAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->SearchAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -960,7 +960,7 @@ void SaveLoadManager::SetState(State newState) {
         UpdateStatus((SaveLoadMgrStatus)1);
         if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -971,7 +971,7 @@ void SaveLoadManager::SetState(State newState) {
         mData = _MemAllocTemp(sz, 0);
         if (!mCache->ReadAsync(kStrGlobalCacheName.Str(), mData, (uint)sz, NULL)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("TheCacheMgr->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -986,7 +986,7 @@ void SaveLoadManager::SetState(State newState) {
         TheProfileMgr.SaveGlobalOptions(stream);
         if (!mCache->WriteAsync(kStrGlobalCacheName.Str(), mData, (uint)sz, NULL)) {
 #pragma dont_inline on
-            MILO_FAIL(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("mCache->WriteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -998,7 +998,7 @@ void SaveLoadManager::SetState(State newState) {
         if (!TheCacheMgr->UnmountAsync(&mCache, NULL)) {
             if (TheCacheMgr->GetLastResult() != kCache_ErrorStorageDeviceMissing) {
 #pragma dont_inline on
-                MILO_WARN("UnmountAsync failed with error %d\n", (int)TheCacheMgr->GetLastResult());
+                TheDebug.Notify(MakeString<int>("UnmountAsync failed with error %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
             }
         }
