@@ -1607,8 +1607,8 @@ StorePage *StoreMetadataManager::LoadDynamicPage(DataArray *arr) {
         return (StorePage *)&unk78;
     }
     unk78 = -1;
-    std::list<const char *> names;
     int count = 0;
+    std::list<const char *> names;
     short numNodes = arr->Size();
     for (int i = 0; i < numNodes; i++) {
         DataNode &node = arr->Node(i);

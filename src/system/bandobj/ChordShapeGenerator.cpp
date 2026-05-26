@@ -428,8 +428,8 @@ void ChordShapeGenerator::BuildContourCap(
     midPt.v /= 2.0f;
     float capTessA = (unkc8 * 2.0f + unkcc) / 3.0f;
     float capTessB = (unkcc * 2.0f + unkc8) / 3.0f;
-    float xScale = (tf2.v.x - tf1.v.x) / (unkcc - unkc8);
     float xMid = (unkc8 + unkcc) * 0.5f;
+    float xScale = (tf2.v.x - tf1.v.x) / (unkcc - unkc8);
     float fretHeight = mFretHeights[iii];
     std::map<unsigned short, unsigned short>::const_iterator vit = capMap.begin();
     std::map<unsigned short, unsigned short>::const_iterator vend = capMap.end();
