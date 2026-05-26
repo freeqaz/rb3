@@ -941,6 +941,7 @@ void CustomizePanel::MovePatch(float dx, float dy) {
     }
 }
 
+#pragma pool_data on
 void CustomizePanel::RotatePatch(int degrees) {
     int idx = mPreviewDesc->FindPatchIndex(
         (BandCharDesc::Patch::Category)mPatchCategory, mPatchName.c_str()
@@ -951,6 +952,7 @@ void CustomizePanel::RotatePatch(int degrees) {
         RefreshPatchEdit();
     }
 }
+#pragma pool_data off
 
 void CustomizePanel::ScalePatch(float dx, float dy) {
     int idx = mPreviewDesc->FindPatchIndex(
