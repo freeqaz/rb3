@@ -229,14 +229,15 @@ void ChordShapeGenerator::DumpChordGenData() {
 void ChordShapeGenerator::NameMesh(RndMesh *mesh, bool lefty) {
     MILO_ASSERT(mesh && Dir(), 0x3CF);
     const char *name = lefty ? "chord_L" : "chord";
-    for (int i = 0; mNumSlots > i; i++) {
+    for (int i = 0; i < mNumSlots; i++) {
         name = MakeString("%s_%d", name, mStringFrets[i]);
     }
     {
         const char *meshFmt = MakeString("%s.mesh", name);
         if (dynamic_cast<RndMesh *>(Dir()->FindObject(meshFmt, false))) {
+            int counter;
             do {
-                int counter = 1;
+                                counter = 1;
                 name = MakeString("%s(%d)", name, counter);
                 counter++;
                 meshFmt = MakeString("%s.mesh", name);
