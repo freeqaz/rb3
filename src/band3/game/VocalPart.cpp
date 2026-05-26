@@ -233,7 +233,7 @@ float VocalPart::GetSloppyPitch(float ms, int noteIdx, float pitch, float &outPi
         float dur = note.mDurationMs;
         float noteMs = note.mMs;
         float endMs = noteMs + dur;
-        msPlus = Min(msPlus, endMs);
+        msPlus = Min(endMs, msPlus);
         float rel = Max(msPlus - noteMs, 0.0f);
         float t = rel / dur;
         pitchHi = t * (float)note.mEndPitch + (1.0f - t) * (float)note.mBeginPitch;
@@ -256,7 +256,7 @@ float VocalPart::GetSloppyPitch(float ms, int noteIdx, float pitch, float &outPi
     float modLo = (float)fmod(pitchLo, 12.0);
     float between = -1.0f;
     if (!PitchBetween(pitch, pitchHi, pitchLo, between)) {
-        float diffHi = fabs(modPitch - modHi);
+        float diffHi = fabsf(modPitch - modHi);
         float diffLo = fabs(modPitch - modLo);
         if (diffHi < diffLo) {
             float spEnd = note.mMs + note.mDurationMs;
@@ -949,7 +949,7 @@ void VocalPart::CalculateScore(
     if (noteIdx == -1)
         return;
     float sliceWeight = GetNoteSliceWeight(unk54, ms, noteIdx);
-    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+    VocalNote &note = mVocalNoteList->mNotes[noteIdx];
     float noteMult;
     if (!note.mUnpitchedNote) {
         noteMult = mPitchHitMultiplier;
@@ -974,7 +974,7 @@ void VocalPart::CalculateScore(
         framePoints = unk38 - mPhraseScore;
     cache.unk4 = framePoints;
     float capped =
-        Min(Min(mPhraseScoreMax, unk38), sliceWeight * noteMult + mPhraseScore);
+        Min(Min(unk38, mPhraseScoreMax), sliceWeight * noteMult + mPhraseScore);
     float delta = capped - mPhraseScore;
     if (delta < 0.0f)
         delta = 0.0f;
