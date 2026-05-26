@@ -35,10 +35,10 @@ inline unsigned short SwapBytes(unsigned short bytes) { return EndianSwap(bytes)
 // the asm for this is inlined, it's in BinStream::ReadEndian and WriteEndian
 // could also find the standalone function asm in RB3 retail
 inline u64 EndianSwap(u64 ull) {
-    u32 hi = (ull >> 56) | (ull >> 48 | 0xFF00) | (ull >> 40 | 0xFF0000)
-        | (ull >> 32 | 0xFF000000);
-    u64 lo = (ull >> 24 | 0xFF00000000) | (ull >> 16 | 0xFF0000000000)
-        | (ull >> 8 | 0xFF000000000000) | (ull | 0xFF00000000000000);
+    u32 hi = (ull >> 56) | (ull >> 48 & 0xFF00) | (ull >> 40 & 0xFF0000)
+        | (ull >> 32 & 0xFF000000);
+    u64 lo = (ull >> 24 & 0xFF00000000) | (ull >> 16 & 0xFF0000000000)
+        | (ull >> 8 & 0xFF000000000000) | (ull & 0xFF00000000000000);
     return hi | lo;
 }
 
