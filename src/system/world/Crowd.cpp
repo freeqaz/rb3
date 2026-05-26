@@ -891,7 +891,7 @@ void WorldCrowd::Mats(std::list<RndMat *> &mats, bool additive) {
         for (unsigned int p = 0; p < 2; p++) {
             opts.SetLast5(shaderTypes[p]);
             for (int envIdx = 0; envIdx < 2; envIdx++) {
-                bool useEnv = (envIdx != 0);
+                unsigned char useEnv = (envIdx != 0);
                 for (int aoIdx = 0; aoIdx < 2; aoIdx++) {
                     RndMat *mat = Hmx::Object::New<RndMat>();
                     mat->Copy(gImpostorMat, Hmx::Object::kCopyDeep);
@@ -905,10 +905,9 @@ void WorldCrowd::Mats(std::list<RndMat *> &mats, bool additive) {
             }
         }
 
-        int i = 0;
         std::vector<Hmx::Color> colors;
-        Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
-        for (; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
+            Hmx::Color white(1.0f, 1.0f, 1.0f, 1.0f);
             colors.push_back(white);
         }
 
