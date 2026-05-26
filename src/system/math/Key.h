@@ -104,9 +104,10 @@ public:
         int vecSize = size();
         for (int i = 1; i < vecSize; i++) {
             Key<T1> key = (*this)[i];
+            float keyFrame = key.frame;
 
             int j;
-            for (j = i; 0 < j && key.frame < (*this)[j - 1].frame; j--) {
+            for (j = i; 0 < j && keyFrame < (*this)[j - 1].frame; j--) {
                 (*this)[j] = (*this)[j - 1];
             }
             if (j != i)
