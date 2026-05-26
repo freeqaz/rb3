@@ -363,6 +363,8 @@ DECOMP_FORCEACTIVE(
     Player, __FILE__, "causer", "send_already_saved", "", "player_saved", "%s_regen.cue"
 )
 
+#pragma push
+#pragma pool_data off
 void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, bool b) {
     unk298 = 0;
     if (estate == kPlayerBeingSaved && mEnabledState != kPlayerDisabled) {
@@ -415,7 +417,10 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
             unk25c = PollMs();
             DisablePlayer(mTimesFailed);
             mStats.AddFailurePoint(newpct);
-            unk260.push_back(Extent(i, -1));
+            {
+                Extent ext(i, -1);
+                unk260.push_back(ext);
+            }
         }
         break;
     case kPlayerDroppingIn:
@@ -445,6 +450,7 @@ void Player::LocalSetEnabledState(EnabledState estate, int i, BandUser *causer, 
         break;
     }
 }
+#pragma pop
 
 bool Player::Saveable() const {
     bool ret = false;
