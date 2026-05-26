@@ -1408,8 +1408,8 @@ int RndText::AddLineUTF8(
     bool *bp,
     int i6
 ) {
-    int lineIdx;
     unkbp7 = true;
+    int lineIdx;
     float f98 = 0;
     if (!fp)
         fp = &f98;
