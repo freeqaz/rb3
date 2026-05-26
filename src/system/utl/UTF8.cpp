@@ -216,19 +216,19 @@ void UTF8RemoveSpaces(char *out, int len, const char *in) {
     MILO_ASSERT(out, 0x1AD);
     MILO_ASSERT(in, 0x1AE);
     MILO_ASSERT(len > 0, 0x1AF);
-    unsigned short us;
     char *out_beg = out;
+    unsigned short us;
     char *out_end = out + len - 3;
     bool prev_was_space = true;
     while ((*in != 0) && (out < out_end)) {
         us = 0;
         unsigned int decoded = DecodeUTF8(us, in);
         bool is_space = (us == ' ');
-        if (!is_space || !prev_was_space) {
+        if (!(!is_space || !prev_was_space)) {
+            in += decoded;
+        } else {
             for (unsigned int i = decoded; i != 0; i--)
                 *out++ = *in++;
-        } else {
-            in += decoded;
         }
         prev_was_space = is_space;
     }
