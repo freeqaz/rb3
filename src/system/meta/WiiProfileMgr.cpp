@@ -417,6 +417,23 @@ bool WiiProfileMgr::AddIdToDeleteQueue(unsigned int id) {
     return false;
 }
 
+int WiiProfileMgr::GetNextDeleteQueueId() const {
+    for (int i = 0; i < 10; i++) {
+        if (mDeleteQueue[i] != 0)
+            return mDeleteQueue[i];
+    }
+    return 0;
+}
+
+void WiiProfileMgr::RemoveIdFromDeleteQueue(unsigned int id) {
+    for (int i = 0; i < 10; i++) {
+        if (mDeleteQueue[i] == id) {
+            mDeleteQueue[i] = 0;
+            mDirty = true;
+        }
+    }
+}
+
 bool WiiProfileMgr::IsDeleteQueueFull() const {
     for (int i = 0; i < 10; i++) {
         if (mDeleteQueue[i] == 0)
