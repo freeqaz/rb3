@@ -48,7 +48,8 @@ public:
     virtual void PreAction();
     virtual void Action();
     virtual void PostAction();
-    std::vector<BandProfile *, unsigned short> *mProfiles;
+    int unk24; // 0x24
+    std::vector<BandProfile *, unsigned short> *mProfiles; // 0x28
 };
 
 SaveLoadManager *TheSaveLoadMgr;
@@ -749,7 +750,7 @@ void SaveLoadManager::SetState(State newState) {
         if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
         mWaiting = true;
         TheMemcardMgr.AddSink(this);
-        TheMemcardMgr.SelectDevice(pProfile, false, mLocalUser, devId);
+        TheMemcardMgr.SelectDevice(pProfile, false, this, devId);
         break;
     }
     case 0xa: // kS_AutoloadSelectDevice3
@@ -761,14 +762,14 @@ void SaveLoadManager::SetState(State newState) {
         if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
         mWaiting = true;
         TheMemcardMgr.AddSink(this);
-        TheMemcardMgr.SelectDevice(pProfile, true, mLocalUser, devId);
+        TheMemcardMgr.SelectDevice(pProfile, true, this, devId);
         break;
     }
     case 0xb: // kS_AutoloadStartLoad
     {
         mTimer.Restart();
         for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
-            (*pp)->SaveLoadComplete(kMetaProfileUnloaded);
+            (*pp)->PreLoad();
         }
         if (TheWiiProfileMgr.NeedsLoading()) TheWiiProfileMgr.PreLoad();
         mWaiting = true;
@@ -814,7 +815,7 @@ void SaveLoadManager::SetState(State newState) {
             mCacheID = NULL;
         }
         if (!TheSongMgr.CreateSongCacheID(&mCacheID)) {
-            MILO_LOG("SaveLoadManager - CacheMgr search failed in CreateSongCacheID()\n");
+            TheDebug.Notify(MakeString("SaveLoadManager - CacheMgr search failed in CreateSongCacheID()\n"));
         }
         if (!TheCacheMgr->SearchAsync(unk4c.c_str(), &mCacheID)) {
 #pragma dont_inline on
@@ -833,7 +834,7 @@ void SaveLoadManager::SetState(State newState) {
     case 0x15: // kS_SongCacheCreateNotFound_Msg
     case 0x16:
     {
-        TheCacheMgr->AddCacheID(mCacheID, Symbol(unk4c.c_str()));
+        TheCacheMgr->AddCacheID(mCacheID, unk4c.c_str());
         SetState((State)0x20);
         break;
     }
@@ -844,8 +845,9 @@ void SaveLoadManager::SetState(State newState) {
             delete mCacheID;
             mCacheID = NULL;
         }
+        const char *cacheName = unk4c.c_str();
         const char *locName = Localize(song_info_cache_name, NULL);
-        if (!TheCacheMgr->ShowUserSelectUIAsync(NULL, 0x25800ULL, unk4c.c_str(), locName, &mCacheID)) {
+        if (!TheCacheMgr->ShowUserSelectUIAsync(NULL, 0x25800ULL, cacheName, locName, &mCacheID)) {
             if (TheCacheMgr->GetLastResult() != 0) {
                 SetState((State)0x1a);
             }
@@ -954,7 +956,7 @@ void SaveLoadManager::SetState(State newState) {
     case 0x13:
     {
         if (mCacheID == NULL) {
-            mCacheID = TheCacheMgr->GetCacheID(Symbol(kStrGlobalCacheName.Str()));
+            mCacheID = TheCacheMgr->GetCacheID(kStrGlobalCacheName.Str());
         }
         if (mCacheID == NULL) {
             SetState((State)0x37);
@@ -1258,7 +1260,7 @@ void SaveLoadManager::SetState(State newState) {
     case 0x53:
     {
         if (mCacheID == NULL) {
-            mCacheID = TheCacheMgr->GetCacheID(Symbol(kStrGlobalCacheName.Str()));
+            mCacheID = TheCacheMgr->GetCacheID(kStrGlobalCacheName.Str());
         }
         if (mCacheID == NULL) {
             SetState((State)0x40);
@@ -1269,7 +1271,7 @@ void SaveLoadManager::SetState(State newState) {
     }
     case 0x54:
     {
-        mUploadProfiles.erase(mUploadProfiles.begin());
+        mUploadProfiles.erase(mUploadProfiles.begin(), mUploadProfiles.end());
         mUploadProfiles = TheProfileMgr.GetShouldAutosaveProfiles();
         if (!TheMemcardMgr.IsDisableWriting()) {
             if (mUploadProfiles.size() != 0 ||
@@ -1290,7 +1292,7 @@ void SaveLoadManager::SetState(State newState) {
         break;
     case 0x56:
     {
-        mSaveProfiles.erase(mSaveProfiles.begin());
+        mSaveProfiles.erase(mSaveProfiles.begin(), mSaveProfiles.end());
         if (IsReasonToUpload()) {
             mSaveProfiles = TheProfileMgr.GetSignedInProfiles();
         }
