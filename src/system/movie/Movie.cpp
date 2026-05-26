@@ -538,14 +538,12 @@ void Movie::Impl::Begin(
     MILO_ASSERT(!mLoader, 0x21D);
     MILO_ASSERT(!mBink, 0x21E);
     MILO_ASSERT(!mPreloadBuf, 0x21F);
+    const char *fn = mFilename.c_str();
     if (preload) {
-        const char *fn = mFilename.c_str();
         FilePath fp(fn);
-        mLoader = (MovieLoader *)new FileLoader(
-            fp, fn, kLoadFront, 0, false, stream != NULL, stream
-        );
+        BinStream *bs = (stream != NULL && stream->Cached()) ? stream : NULL;
+        mLoader = (MovieLoader *)new FileLoader(fp, fn, kLoadFront, 0, false, true, bs);
     } else {
-        const char *fn = mFilename.c_str();
         FilePath fp(fn);
         mLoader2 = new MovieLoader(fp, this);
     }
