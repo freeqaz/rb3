@@ -343,7 +343,7 @@ DataNode TambourineManager::OnPlayTambourine(DataArray *d) {
 void TambourineManager::OnRemoteTambourineSucceeding(DataArray *msg) {
     int succeeding = msg->Int(2);
     int pct = msg->Int(3);
-    if ((unk48 = 0 != succeeding)) {
+    if ((unk48 = succeeding != 0)) {
         BandTrack *track = mPlayerRef.GetBandTrack();
         if (track) {
             track->SoloHit(pct);
