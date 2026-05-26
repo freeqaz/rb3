@@ -226,9 +226,9 @@ DataNode BandOffline::MakeCharClipBudget(DataArray *da) {
                     songDt += TheTaskMgr.DeltaSeconds();
                     for (int ci = 0; ci < 4; ci++) {
                         BandCharacter *bc = chars[ci];
-                        String grp(bc->GetGroupName());
+                        String grp(bc->mGroupName);
                         float dt = TheTaskMgr.DeltaSeconds();
-                        int flags = bc->GetPlayFlags();
+                        int flags = bc->mPlayFlags;
                         CharStatKeeper *sk = (CharStatKeeper *)((char *)&perSk[0] + GetStatKeeperIndex(bc->Name()) * 0x30);
                         sk->OnPoll(flags, grp, dt);
                     }
