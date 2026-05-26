@@ -33,16 +33,44 @@ Optional:
    lwz   r12, 0x14(r12)    # call slot at live-vptr offset 0x14
    ```
 
-   - First `lwz` offset (`0x20`) = sub-object offset.
-   - Second `lwz` offset (`0x14`) = live-vptr offset. Slot index = `0x14 / 4 = 5`.
+   - First `lwz` offset (`0x20`) = sub-object offset (pass as second argument).
+   - Second `lwz` offset (`0x14`) = live-vptr byte offset from the START of the `__vt__` symbol.
 
-2. **Resolve.**
+   **Critical ABI detail:** The `__vt__` symbol includes an 8-byte header before the first function slot:
+   - `vptr + 0x00` = RTTI pointer (not a function)
+   - `vptr + 0x04` = offset_to_top (not a function)
+   - `vptr + 0x08` = slot 0
+   - `vptr + 0x0c` = slot 1
+   - `vptr + 0x14` = **slot 3** (NOT slot 5!)
+
+   Slot index = **(OFF − 8) / 4**.  Example: `lwz r12, 0x14(r12)` → (0x14 − 8) / 4 = **slot 3**.
+   The old formula `OFF / 4 = 5` is WRONG — it ignores the 8-byte header.
+
+2. **Resolve.** Pass the 0-based slot index as the third argument:
 
    ```bash
    python3 scripts/dump_vtable.py resolve '$0' '$1' '$2'
    ```
 
-   The locked success-criterion call is:
+   Or pass the raw vptr byte offset using `--vptr-offset`:
+
+   ```bash
+   python3 scripts/dump_vtable.py resolve '$0' '$1' 0x14 --vptr-offset
+   ```
+
+   Example: to look up `lwz r12, 0x14(r12)` on `RndDrawable` (vptr offset 0x14 = slot 3):
+
+   ```
+   $ python3 scripts/dump_vtable.py resolve RndDrawable 0 3
+   Symbol: SyncProperty__11RndDrawableFR8DataNodeP9DataArrayi6PropOp
+   Vtable: __vt__11RndDrawable (208 bytes,
+           build/SZBE69_B8/obj/system/rndobj/Draw.o:.data+0x08)
+   Slot 3 of primary sub-table (offset_to_top=0)
+   ```
+
+   (Alternatively: `resolve RndDrawable 0 0x14 --vptr-offset` gives the same result.)
+
+   To look up `lwz r12, 0x1c(r12)` (vptr offset 0x1c = slot 5):
 
    ```
    $ python3 scripts/dump_vtable.py resolve RndDrawable 0 5

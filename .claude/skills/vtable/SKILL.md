@@ -57,12 +57,28 @@ Auto-detection of the `.o` file (when `--obj`/`--unit` are not given): glob `bui
    - `+0xNN` — byte offset within the whole vtable symbol (file offset; includes the 8-byte header)
    - `offset_to_top` — signed delta from this sub-object back to the primary; `0` = primary, negative = secondary base
 
-2. **Translate from an objdiff mismatch.** When you see `lwz r12, OFF(r12)` in asm, OFF is a *live-vptr offset* (post-header). Slot index = OFF / 4. For example, `lwz r12, 0x14(r12)` = slot 5.
+2. **Translate from an objdiff mismatch.** When you see `lwz r12, OFF(r12)` in asm, OFF is a *live-vptr byte offset* measured from the START of the `__vt__` symbol, which includes an 8-byte header (RTTI pointer + offset_to_top) before the first function slot. Slot index = **(OFF − 8) / 4**. For example, `lwz r12, 0x14(r12)` = (0x14 − 8) / 4 = **slot 3** (not slot 5). The old formula `OFF / 4` is WRONG — it ignores the 8-byte header.
 
-3. **Look up a single slot.** When you already know the slot index:
+   MWCC vtable layout (vptr points to the start of the __vt__ symbol):
+   - `vptr + 0x00` = RTTI pointer (not a function)
+   - `vptr + 0x04` = offset_to_top (not a function)
+   - `vptr + 0x08` = slot 0
+   - `vptr + 0x0c` = slot 1
+   - `vptr + 0x10` = slot 2
+   - `vptr + 0x14` = slot 3
+   - `vptr + 0x18` = slot 4
+   - `vptr + 0x1c` = slot 5
+
+3. **Look up a single slot by slot index.** When you know the 0-based slot index:
 
    ```bash
-   python3 scripts/dump_vtable.py '$0' --offset 5
+   python3 scripts/dump_vtable.py '$0' --offset 3
+   ```
+
+   Or to pass the raw vptr byte offset from the asm (e.g. `0x14` from `lwz r12, 0x14(r12)`):
+
+   ```bash
+   python3 scripts/dump_vtable.py '$0' --offset 0x14 --vptr-offset
    ```
 
    For non-primary sub-objects, add `--sub-offset 32` (matching the value from `lwz r12, 0x20(r3)` style sub-object loads). See `/resolve-vcall` for the three-argument form.

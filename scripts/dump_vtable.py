@@ -444,6 +444,37 @@ def _select_subtable(vt: VTable, sub_object_offset: int) -> SubTable:
     )
 
 
+def _vptr_offset_to_slot(raw: int, label: str) -> int:
+    """Convert a live-vptr byte offset to a 0-based slot index.
+
+    The MWCC vtable symbol layout is:
+      vptr+0x00  RTTI pointer   (8-byte header)
+      vptr+0x04  offset_to_top  (8-byte header)
+      vptr+0x08  slot 0  (first virtual function)
+      vptr+0x0c  slot 1
+      vptr+0x10  slot 2
+      vptr+0x14  slot 3
+      ...
+
+    So slot = (vptr_offset - 8) / 4.  Example: `lwz r12, 0x14(r12)` = slot 3.
+    The old formula (vptr_offset / 4) was wrong — it ignored the 8-byte header.
+    """
+    if raw < 8:
+        raise VTError(
+            f"{label} {raw} (0x{raw:x}) is below the 8-byte vtable header; "
+            f"minimum valid vptr offset is 0x08 (slot 0)",
+            exit_code=2,
+        )
+    adjusted = raw - 8
+    if adjusted % 4 != 0:
+        raise VTError(
+            f"{label} {raw} (0x{raw:x}) minus header (8) = {adjusted}, "
+            f"which is not 4-aligned",
+            exit_code=2,
+        )
+    return adjusted // 4
+
+
 def cmd_dump(args: argparse.Namespace) -> int:
     obj_path = find_obj_for_class(args.class_name, obj=args.obj, unit=args.unit)
     vt = parse_vtable(obj_path, args.class_name)
@@ -452,15 +483,13 @@ def cmd_dump(args: argparse.Namespace) -> int:
         offset = parse_int(args.offset)
         sub_offset = parse_int(args.sub_offset) if args.sub_offset is not None else 0
         st = _select_subtable(vt, sub_offset)
-        # Match the resolve subcommand convention: <100 = slot index,
-        # >=100 = live-vptr byte offset (divide by 4).
-        if offset >= 100:
-            if offset % 4 != 0:
-                raise VTError(
-                    f"--offset {offset} (0x{offset:x}) is not 4-aligned",
-                    exit_code=2,
-                )
-            slot_idx = offset // 4
+        # --vptr-offset: raw byte offset from vptr (i.e. from `lwz r12, OFF(r12)`).
+        # Slot index = (OFF - 8) / 4  (subtract 8-byte RTTI+offset_to_top header).
+        # Without --vptr-offset: argument is a direct slot index (0-based).
+        # Legacy: --offset >= 100 was a byte-offset heuristic (broken: used OFF/4
+        # instead of (OFF-8)/4). Now corrected to (OFF-8)/4.
+        if getattr(args, "vptr_offset", False) or offset >= 100:
+            slot_idx = _vptr_offset_to_slot(offset, "--offset")
         else:
             slot_idx = offset
         matching = [s for s in st.slots if s.slot == slot_idx]
@@ -494,16 +523,13 @@ def cmd_resolve(args: argparse.Namespace) -> int:
 
     st = _select_subtable(vt, sub_offset)
 
-    # >= 100 → treat as a live-vptr byte offset (the form an agent reads
-    # straight off `lwz rN, OFF(rM)` in asm). MWCC vptrs point past the
-    # 8-byte header, so live-vptr offset OFF == slot OFF/4.
-    if raw_slot >= 100:
-        if raw_slot % 4 != 0:
-            raise VTError(
-                f"slot byte-offset {raw_slot} (0x{raw_slot:x}) is not 4-aligned",
-                exit_code=2,
-            )
-        slot_idx = raw_slot // 4
+    # --vptr-offset: raw byte offset from vptr (i.e. `lwz r12, OFF(r12)`).
+    # Slot index = (OFF - 8) / 4  (subtract 8-byte RTTI+offset_to_top header).
+    # Without --vptr-offset: argument is a direct 0-based slot index.
+    # Legacy: SLOT >= 100 was a byte-offset heuristic (broken: used OFF/4
+    # instead of (OFF-8)/4, missing the 8-byte header). Now corrected.
+    if getattr(args, "vptr_offset", False) or raw_slot >= 100:
+        slot_idx = _vptr_offset_to_slot(raw_slot, "slot")
     else:
         slot_idx = raw_slot
 
@@ -552,7 +578,10 @@ def build_parser() -> argparse.ArgumentParser:
     pd.add_argument("class_name", help="Class name or mangled __vt__... symbol")
     pd.add_argument("--obj", help="Explicit .o file path")
     pd.add_argument("--unit", help="objdiff-style unit, e.g. system/char/Character")
-    pd.add_argument("--offset", help="Slot index (<100) or byte offset (>=100); show only that slot")
+    pd.add_argument("--offset", help="Slot index (0-based), OR vptr byte offset with --vptr-offset; show only that slot")
+    pd.add_argument("--vptr-offset", dest="vptr_offset", action="store_true",
+                    help="Treat --offset as a raw vptr byte offset from `lwz r12, OFF(r12)`; "
+                         "slot = (OFF - 8) / 4.  Example: --offset 0x14 --vptr-offset → slot 3")
     pd.add_argument("--sub-offset", dest="sub_offset", default="0",
                     help="Sub-object offset for --offset lookup (default 0)")
     pd.add_argument("--json", action="store_true", help="Emit JSON")
@@ -565,7 +594,11 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("sub_object_offset",
                     help="Byte offset from `this` to the vtable load (e.g. 0, 0x20)")
     pr.add_argument("slot",
-                    help="Slot index, OR byte offset >=100 (auto-divided by 4)")
+                    help="0-based slot index, OR raw vptr byte offset with --vptr-offset. "
+                         "Legacy: values >=100 are auto-treated as byte offsets.")
+    pr.add_argument("--vptr-offset", dest="vptr_offset", action="store_true",
+                    help="Treat SLOT as a raw vptr byte offset from `lwz r12, OFF(r12)`; "
+                         "slot = (OFF - 8) / 4.  Example: resolve Cls 0 0x14 --vptr-offset → slot 3")
     pr.add_argument("--obj")
     pr.add_argument("--unit")
     pr.add_argument("--json", action="store_true")
