@@ -1274,7 +1274,7 @@ void ProfileMgr::UpdateMicLevels(int i1) {
                 mic->SetGain(f1);
             }
 #ifdef MILO_DEBUG
-            static DataNode &n = DataVariable("print_mic_gains");
+            static const DataNode &n = DataVariable("print_mic_gains");
             if (n.Int()) {
                 float gain = mic->GetGain();
                 if (f1 == -1) {
