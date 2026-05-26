@@ -288,18 +288,23 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 SetState((State)0x21);
-            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                break;
+                case kCache_ErrorStorageDeviceMissing:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 SetState((State)0x16);
-            } else if (result == kCache_ErrorCorrupt) {
+                break;
+                case kCache_ErrorCorrupt:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 SetState((State)0x1c);
-            } else {
+                break;
+                default:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 TheDebug.Fail(MakeString<int>("SaveLoadManager - kS_SongCacheCreateMountWrite unhandled error %d\n", (int)result));
                 SetState((State)0x25);
+                break;
             }
         }
         break;
@@ -307,12 +312,16 @@ void SaveLoadManager::Poll() {
         if (!mCache->IsDone()) return;
         {
             CacheResult result = mCache->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 SetState((State)0x1f);
-            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                break;
+                case kCache_ErrorStorageDeviceMissing:
                 SetState((State)0x16);
-            } else {
+                break;
+                default:
                 SetState((State)0x25);
+                break;
             }
         }
         break;
@@ -1267,7 +1276,7 @@ void SaveLoadManager::SetState(State newState) {
     }
     case 0x58:
     {
-        MILO_ASSERT(!mSaveProfiles.empty(), 0x8f9);
+        MILO_ASSERT(mSaveProfiles.size() != 0, 0x8f9);
         BandProfile *pProfile = mSaveProfiles.front();
         mWaiting = true;
         Hmx::Object *localUser = NULL;
