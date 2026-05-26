@@ -595,7 +595,7 @@ bool Movie::Impl::CheckOpen(bool b) {
             mLoading = false;
             mPreloadBuf = (char *)((FileLoader *)mLoader)->GetBuffer(NULL);
             mPreloadBufLen = ((FileLoader *)mLoader)->GetSize();
-            if (mLoader != NULL) delete mLoader;
+            delete mLoader;
             mLoader = NULL;
             if (mPreloadBuf == NULL) {
                 SharedFinishOpen(b);
