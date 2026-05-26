@@ -156,14 +156,13 @@ void Movie::Terminate() {
     CriticalSection *cs = &gMovieCrit;
     if (cs)
         cs->Enter();
-    std::list<Movie::Impl *>::iterator sentinel = openMovieFiles.end();
     int count;
     goto check;
     do {
         openMovieFiles.back()->Terminate();
     check:
         count = 0;
-        for (std::list<Movie::Impl *>::iterator it = openMovieFiles.begin(); it != sentinel; ++it)
+        for (std::list<Movie::Impl *>::iterator it = openMovieFiles.begin(); it != openMovieFiles.end(); ++it)
             count++;
     } while (count != 0);
     gInitialized = false;
@@ -235,8 +234,8 @@ void Movie::Impl::SetWidthHeight(int w, int h) {
 }
 
 float Movie::Impl::MsPerFrame() const {
-    ASSERT_MOVIE_THREAD(0x634);
     float ms;
+    ASSERT_MOVIE_THREAD(0x634);
     if (mBink != NULL) {
         ms = 1000.0f * (float)mBink->FrameRateDiv / (float)mBink->FrameRate;
     } else {
@@ -453,7 +452,7 @@ void Movie::Impl::MovieClose() {
 
 void Movie::Impl::SharedFinishOpen(bool unpause) {
     sActivePending--;
-    MILO_ASSERT(sActivePending >= 0, 0x282);
+    MILO_ASSERT(0 <= sActivePending, 0x282);
     if (sActivePending <= 0) {
         std::vector<Impl *> readyMovies;
         std::vector<BINK *> readyBinks;
@@ -484,7 +483,8 @@ void Movie::Impl::SetRect() {
     float screenW = mWidth != 0 ? (float)mWidth : (float)TheRnd->Width();
     float screenH = mHeight != 0 ? (float)mHeight : (float)TheRnd->Height();
     MILO_ASSERT(mAspect, 0x252);
-    float w, h;
+    float h;
+    float w;
     if (mStretchToFit) {
         h = screenW;
         w = screenW * mAspect;
