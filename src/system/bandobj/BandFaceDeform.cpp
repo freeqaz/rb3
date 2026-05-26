@@ -162,21 +162,21 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
                     float sp14 = pos[vi].z - base[vi].z;
                     float sp10 = pos[vi].y - base[vi].y;
 
-                    float dx = (float)spx;
+                    float dx = (float)spC;
                     if (dx > maxClamp)
                         dx = maxClamp;
                     else if (dx < minClamp)
                         dx = minClamp;
                     rec[recOff + 4] = (signed char)(int)(63.5 * (double)dx + 0.5);
 
-                    float dy = spy;
+                    float dy = sp10;
                     if (dy > maxClamp)
                         dy = maxClamp;
                     else if (dy < minClamp)
                         dy = minClamp;
                     rec[recOff + 5] = (signed char)(int)(63.5 * (double)dy + 0.5);
 
-                    float dz = spz;
+                    float dz = sp14;
                     if (dz > maxClamp)
                         dz = maxClamp;
                     else if (dz < minClamp)
@@ -184,8 +184,8 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
                     rec[recOff + 6] = (signed char)(int)(63.5 * (double)dz + 0.5);
 
                     float ddx = pos[vi].x - base[vi].x;
-                    float ddy = pos[vi].y - base[vi].y;
                     float ddz = pos[vi].z - base[vi].z;
+                    float ddy = pos[vi].y - base[vi].y;
                     float absx = (float)std::fabs(ddx);
                     if (md < absx) {
                         md = absx;
@@ -199,7 +199,6 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
                     float absz = (float)std::fabs(ddz);
                     if (md < absz) {
                         maxDelta = absz;
-                        md = absz;
                     }
 
                     off += 0xC;
