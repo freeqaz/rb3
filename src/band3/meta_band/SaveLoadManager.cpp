@@ -543,19 +543,6 @@ void SaveLoadManager::SetState(State newState) {
     case 0x0:
         wasIdle = true;
         break;
-    case 0xb:
-    case 0x46:
-    case 0x47:
-    case 0x64:
-        if (newState != (State)0x6d) {
-            delete mAction;
-            mAction = NULL;
-        }
-        break;
-    case 0x6d:
-        delete mAction;
-        mAction = NULL;
-        break;
     case 0x1f:
     case 0x21:
     case 0x32:
@@ -568,11 +555,24 @@ void SaveLoadManager::SetState(State newState) {
             }
         }
         break;
+    case 0xb:
+    case 0x46:
+    case 0x47:
+    case 0x64:
+        if (newState != (State)0x6d) {
+            delete mAction;
+            mAction = NULL;
+        }
+        break;
     case 0x6f:
         if (mData != NULL) {
             _MemFree(mData);
             mData = NULL;
         }
+        break;
+    case 0x6d:
+        delete mAction;
+        mAction = NULL;
         break;
     default:
         break;
@@ -600,6 +600,7 @@ void SaveLoadManager::SetState(State newState) {
         break;
     case 0x3: // kS_AutoloadSelectProfile
     {
+        mUploadProfiles.resize(0);
         std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
         mUploadProfiles = newProfiles;
         if (TheMemcardMgr.IsDisableWriting() || mUploadProfiles.size() == 0 && !mInitialLoadNotDone) {
@@ -616,10 +617,14 @@ void SaveLoadManager::SetState(State newState) {
         BandProfile *pProfile = GetProfile();
         MILO_ASSERT(pProfile, 0x538);
         mWaiting = true;
-        Hmx::Object *localUser = NULL;
-        if (mLocalUser != NULL) localUser = mLocalUser;
         TheMemcardMgr.AddSink(this);
         TheMemcardMgr.OnSearchForDevice(pProfile);
+        break;
+    }
+    case 0x6: // kS_AutoloadNoSaveFound_Msg
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
     case 0x5:
@@ -629,7 +634,6 @@ void SaveLoadManager::SetState(State newState) {
             SetState((State)0x6);
         }
         break;
-    case 0x6: // kS_AutoloadNoSaveFound_Msg
     case 0x7: // kS_AutoloadMultipleSavesFound
     {
         Symbol dummy(saveload_dialog_event);
@@ -650,11 +654,8 @@ void SaveLoadManager::SetState(State newState) {
         int devId = -1;
         if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
         mWaiting = true;
-        Hmx::Object *localUser = NULL;
-        if (mLocalUser != NULL) localUser = mLocalUser;
         TheMemcardMgr.AddSink(this);
-        if (mLocalUser != NULL) localUser = mLocalUser;
-        TheMemcardMgr.SelectDevice(pProfile, false, localUser, devId);
+        TheMemcardMgr.SelectDevice(pProfile, false, mLocalUser, devId);
         break;
     }
     case 0xa: // kS_AutoloadSelectDevice3
@@ -665,11 +666,8 @@ void SaveLoadManager::SetState(State newState) {
         int devId = -1;
         if (mLocalUser != NULL) devId = mLocalUser->GetPadNum();
         mWaiting = true;
-        Hmx::Object *localUser = NULL;
-        if (mLocalUser != NULL) localUser = mLocalUser;
         TheMemcardMgr.AddSink(this);
-        if (mLocalUser != NULL) localUser = mLocalUser;
-        TheMemcardMgr.SelectDevice(pProfile, true, localUser, devId);
+        TheMemcardMgr.SelectDevice(pProfile, true, mLocalUser, devId);
         break;
     }
     case 0xb: // kS_AutoloadStartLoad
@@ -684,8 +682,6 @@ void SaveLoadManager::SetState(State newState) {
         mAction = NULL;
         mAction = new LoadMemcardAction(&mUploadProfiles);
         mInitialLoadNotDone = false;
-        Hmx::Object *localUser = NULL;
-        if (mLocalUser != NULL) localUser = mLocalUser;
         TheMemcardMgr.AddSink(this);
         TheMemcardMgr.OnLoadGame(NULL, mAction);
         break;
@@ -715,31 +711,15 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)0x6e);
         break;
     }
-    case 0x13:
-    {
-        if (mCacheID == NULL) {
-            Symbol sym(kStrGlobalCacheName);
-            mCacheID = TheCacheMgr->GetCacheID(sym);
-        }
-        if (mCacheID == NULL) {
-            SetState((State)0x37);
-        } else {
-            SetState((State)0x31);
-        }
-        break;
-    }
     case 0x14: // kS_SongCacheCreateSearch (entry-like)
     {
         unk4c = TheSongMgr.GetCachedSongInfoName();
         if (mCacheID != NULL) {
             TheCacheMgr->RemoveCacheID(mCacheID);
-            if (mCacheID != NULL) {
-                delete mCacheID;
-            }
+            delete mCacheID;
             mCacheID = NULL;
         }
-        TheSongMgr.CreateSongCacheID(&mCacheID);
-        if (mCacheID == NULL) {
+        if (!TheSongMgr.CreateSongCacheID(&mCacheID)) {
             MILO_LOG("SaveLoadManager - CacheMgr search failed in CreateSongCacheID()\n");
         }
         if (!TheCacheMgr->SearchAsync(unk4c.c_str(), &mCacheID)) {
@@ -747,6 +727,13 @@ void SaveLoadManager::SetState(State newState) {
             TheDebug.Fail(MakeString<int>("TheCacheMgr->SearchAsync() failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
+        break;
+    }
+    case 0x17:
+    case 0x18:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
     case 0x15: // kS_SongCacheCreateNotFound_Msg
@@ -757,24 +744,14 @@ void SaveLoadManager::SetState(State newState) {
         SetState((State)0x20);
         break;
     }
-    case 0x17:
-    case 0x18:
-    {
-        Symbol dummy(saveload_dialog_event);
-        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
-        break;
-    }
     case 0x19:
     {
         if (mCacheID != NULL) {
             TheCacheMgr->RemoveCacheID(mCacheID);
-            if (mCacheID != NULL) {
-                delete mCacheID;
-            }
+            delete mCacheID;
             mCacheID = NULL;
         }
-        bool locResult = false;
-        const char *locName = Localize(song_info_cache_name, &locResult);
+        const char *locName = Localize(song_info_cache_name, NULL);
         if (!TheCacheMgr->ShowUserSelectUIAsync(NULL, 0x25800ULL, unk4c.c_str(), locName, &mCacheID)) {
             if (TheCacheMgr->GetLastResult() != 0) {
                 SetState((State)0x1a);
@@ -785,6 +762,16 @@ void SaveLoadManager::SetState(State newState) {
     // State 0x1a has no entry body in target (async-wait, polled).
     case 0x1b:
     {
+        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
+#pragma dont_inline on
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
+        }
+        break;
+    }
+    case 0x20:
+    {
+        UpdateStatus((SaveLoadMgrStatus)1);
         if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
 #pragma dont_inline on
             TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
@@ -808,23 +795,21 @@ void SaveLoadManager::SetState(State newState) {
         }
         break;
     }
-    case 0x1e:
-    {
-        mData = _MemAllocTemp(mSaveSize, 0);
-        mCache->ReadAsync(unk4c.c_str(), mData, (uint)mSaveSize, NULL);
-        break;
-    }
     case 0x1f:
     {
-        mCache->GetFileSizeAsync(unk4c.c_str(), (uint *)&mSaveSize, NULL);
+        mData = _MemAllocTemp(mSaveSize, 0);
+        if (!mCache->ReadAsync(unk4c.c_str(), mData, (uint)mSaveSize, NULL)) {
+#pragma dont_inline on
+            TheDebug.Fail(MakeString<int>("mCache->ReadAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
+        }
         break;
     }
-    case 0x20:
+    case 0x1e:
     {
-        UpdateStatus((SaveLoadMgrStatus)1);
-        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
+        if (!mCache->GetFileSizeAsync(unk4c.c_str(), (uint *)&mSaveSize, NULL)) {
 #pragma dont_inline on
-            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("mCache->GetFileSizeAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -872,13 +857,24 @@ void SaveLoadManager::SetState(State newState) {
         mCacheID = NULL;
         SetState((State)0x3);
         break;
+    case 0x13:
+    {
+        if (mCacheID == NULL) {
+            Symbol sym(kStrGlobalCacheName);
+            mCacheID = TheCacheMgr->GetCacheID(sym);
+        }
+        if (mCacheID == NULL) {
+            SetState((State)0x37);
+        } else {
+            SetState((State)0x31);
+        }
+        break;
+    }
     case 0x27:
     {
         if (mCacheID != NULL) {
             TheCacheMgr->RemoveCacheID(mCacheID);
-            if (mCacheID != NULL) {
-                delete mCacheID;
-            }
+            delete mCacheID;
             mCacheID = NULL;
         }
         if (!TheCacheMgr->SearchAsync(kStrGlobalCacheName.Str(), &mCacheID)) {
@@ -886,6 +882,14 @@ void SaveLoadManager::SetState(State newState) {
             TheDebug.Fail(MakeString<int>("TheCacheMgr->SearchAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
+        break;
+    }
+    case 0x29:
+    case 0x2a:
+    case 0x3a:
+    {
+        Symbol dummy(saveload_dialog_event);
+        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
         break;
     }
     case 0x28:
@@ -898,27 +902,20 @@ void SaveLoadManager::SetState(State newState) {
         }
         break;
     }
-    case 0x29:
-    case 0x2a:
-    case 0x3a:
-    {
-        Symbol dummy(saveload_dialog_event);
-        TheUIEventMgr->TriggerEvent(saveload_dialog_event, NULL);
-        break;
-    }
     case 0x2b:
     {
         if (mCacheID != NULL) {
             TheCacheMgr->RemoveCacheID(mCacheID);
-            if (mCacheID != NULL) {
-                delete mCacheID;
-            }
+            delete mCacheID;
             mCacheID = NULL;
         }
         int sz = TheProfileMgr.GetGlobalOptionsSize();
-        bool locResult = false;
-        const char *locName = Localize(global_options_cache_name, &locResult);
-        TheCacheMgr->ShowUserSelectUIAsync(NULL, (unsigned long long)sz, kStrGlobalCacheName.Str(), locName, &mCacheID);
+        const char *locName = Localize(global_options_cache_name, NULL);
+        if (!TheCacheMgr->ShowUserSelectUIAsync(NULL, (unsigned long long)sz, kStrGlobalCacheName.Str(), locName, &mCacheID)) {
+            if (TheCacheMgr->GetLastResult() != kCache_NoError) {
+                SetState((State)0x2d);
+            }
+        }
         break;
     }
     case 0x2c:
@@ -926,20 +923,57 @@ void SaveLoadManager::SetState(State newState) {
         MILO_ASSERT(unk7c == 2, 0x720);
         if (mCacheID != NULL) {
             TheCacheMgr->RemoveCacheID(mCacheID);
-            if (mCacheID != NULL) {
-                delete mCacheID;
-            }
+            delete mCacheID;
             mCacheID = NULL;
         }
-        bool locResult = false;
-        const char *locName = Localize(global_options_cache_name, &locResult);
+        const char *locName = Localize(global_options_cache_name, NULL);
         TheCacheMgr->CreateCacheIDFromDeviceID(unk78, kStrGlobalCacheName.Str(), locName, &mCacheID);
         break;
     }
     // State 0x2d has no entry body in target (async-wait, polled).
+    case 0x39:
+    {
+        if (unk7c == 0 || unk7c == 2) {
+            SetState((State)0x3b);
+        } else {
+            SetState((State)0x3a);
+        }
+        break;
+    }
+    case 0x3b:
+    {
+        if (mCacheID != NULL) {
+            TheCacheMgr->RemoveCacheID(mCacheID);
+            delete mCacheID;
+            mCacheID = NULL;
+        }
+        int sz = TheProfileMgr.GetGlobalOptionsSize();
+        const char *locName = Localize(global_options_cache_name, NULL);
+        if (!TheCacheMgr->ShowUserSelectUIAsync(NULL, (unsigned long long)sz, kStrGlobalCacheName.Str(), locName, &mCacheID)) {
+            if (TheCacheMgr->GetLastResult() != kCache_NoError) {
+                SetState((State)0x3c);
+            }
+        }
+        break;
+    }
     case 0x2e:
     {
-        TheCacheMgr->MountAsync(mCacheID, &mCache, NULL);
+        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
+#pragma dont_inline on
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
+        }
+        break;
+    }
+    case 0x31:
+    case 0x3d:
+    {
+        UpdateStatus((SaveLoadMgrStatus)1);
+        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
+#pragma dont_inline on
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+#pragma dont_inline reset
+        }
         break;
     }
     case 0x2f:
@@ -951,16 +985,9 @@ void SaveLoadManager::SetState(State newState) {
     case 0x30:
     {
         UpdateStatus((SaveLoadMgrStatus)1);
-        TheCacheMgr->DeleteAsync(mCacheID);
-        break;
-    }
-    case 0x31:
-    case 0x3d:
-    {
-        UpdateStatus((SaveLoadMgrStatus)1);
-        if (!TheCacheMgr->MountAsync(mCacheID, &mCache, NULL)) {
+        if (!TheCacheMgr->DeleteAsync(mCacheID)) {
 #pragma dont_inline on
-            TheDebug.Fail(MakeString<int>("TheCacheMgr->MountAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
+            TheDebug.Fail(MakeString<int>("TheCacheMgr->DeleteAsync failed with CacheResult %d\n", (int)TheCacheMgr->GetLastResult()));
 #pragma dont_inline reset
         }
         break;
@@ -1022,35 +1049,13 @@ void SaveLoadManager::SetState(State newState) {
     }
     case 0x38:
     {
-        std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
-        if (newProfiles.size() > 1) {
-            unk7c = 1;
+        bool moreThanOne;
+        {
+            std::vector<BandProfile *> newProfiles = TheProfileMgr.GetNewlySignedInProfiles();
+            moreThanOne = (newProfiles.size() > 1);
         }
+        if (moreThanOne) unk7c = 1;
         SetState((State)0x3);
-        break;
-    }
-    case 0x39:
-    {
-        if (unk7c == 0 || unk7c == 2) {
-            SetState((State)0x3b);
-        } else {
-            SetState((State)0x3a);
-        }
-        break;
-    }
-    case 0x3b:
-    {
-        if (mCacheID != NULL) {
-            TheCacheMgr->RemoveCacheID(mCacheID);
-            if (mCacheID != NULL) {
-                delete mCacheID;
-            }
-            mCacheID = NULL;
-        }
-        int sz = TheProfileMgr.GetGlobalOptionsSize();
-        bool locResult = false;
-        const char *locName = Localize(global_options_cache_name, &locResult);
-        TheCacheMgr->ShowUserSelectUIAsync(NULL, (unsigned long long)sz, kStrGlobalCacheName.Str(), locName, &mCacheID);
         break;
     }
     // State 0x3c has no entry body in target (async-wait, polled).
@@ -1088,11 +1093,9 @@ void SaveLoadManager::SetState(State newState) {
             TheMemcardMgr.SaveLoadProfileComplete(*pp, saveResult);
         }
         TheProfileMgr.SetGlobalOptionsSaveState((ProfileSaveState)saveResult);
-        if (mMode == 0) {
-            SetState((State)0x3);
-        } else if (mMode == 1 || mMode == 4) {
-            SetState((State)0x54);
-        }
+        if (mMode == 0) SetState((State)0x3);
+        if (mMode == 1) SetState((State)0x54);
+        if (mMode == 4) SetState((State)0x54);
         break;
     }
     case 0x45:
@@ -1296,6 +1299,8 @@ void SaveLoadManager::SetState(State newState) {
         break;
     }
     case 0x6b:
+        SetState((State)0x6e);
+        break;
     case 0x6c:
         SetState((State)0x6e);
         break;
