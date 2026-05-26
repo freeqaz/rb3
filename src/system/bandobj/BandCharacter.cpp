@@ -671,8 +671,9 @@ void BandCharacter::SyncObjects() {
         CharClipDriver *first = mDriver->FirstPlaying();
         if (first && mGroupName[0] != 0) {
             int mask = mGender == "male" ? 0x20 : 0x40;
-            if (!(first->GetClip()->mFlags & mask)) {
-                float frame = first->GetClip()->BeatToFrame(first->mBeat);
+            CharClipDriver *fp = mDriver->FirstPlaying();
+            if (!(fp->GetClip()->mFlags & mask)) {
+                float frame = fp->GetClip()->BeatToFrame(fp->mBeat);
                 CharClipDriver *result = PlayMainClip(2, false);
                 if (result) {
                     result->mBeat = result->GetClip()->FrameToBeat(frame);
