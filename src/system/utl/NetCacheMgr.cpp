@@ -378,10 +378,10 @@ NetLoaderRef *NetCacheMgr::AddLoaderRef(const char *name, RefType type, NetLoade
 
 void NetCacheMgr::PollLoaders() {
     bool firstDownload = true;
-    NetLoaderRef *pFirstToDownload = NULL;
     std::list<NetLoaderRef>::iterator it = mNetLoaderRefs.begin();
-    bool commerceBusy = (TheWiiCommerceMgr.mCommerceAsyncOpId != -1);
     NetLoaderRef *pDownloading = NULL;
+    bool commerceBusy = (TheWiiCommerceMgr.mCommerceAsyncOpId != -1);
+    NetLoaderRef *pFirstToDownload = NULL;
     while (it != mNetLoaderRefs.end()) {
         NetLoaderRef *ref = &(*it);
         auto _tmp0 = ref->IsValid();

@@ -288,7 +288,8 @@ void AttachMesh(RndMesh *main, RndMesh *attach) {
 }
 
 void RandomPointOnMesh(RndMesh *m, Vector3 &v1, Vector3 &v2) {
-    RndMesh::Face &face = m->Faces()[RandomInt(0, m->Faces().size())];
+    auto _tmp0 = m->Faces().size();
+    RndMesh::Face &face = m->Faces()[RandomInt(0, _tmp0)];
     int numverts = m->Verts().size();
     if (face.v1 >= numverts || face.v2 >= numverts || face.v3 >= numverts) {
         MILO_NOTIFY_ONCE(

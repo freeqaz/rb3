@@ -52,6 +52,7 @@ void CharKeyHandMidi::RunTest() {
 CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
     KeyboardKey setToKey, KeyboardKey lastKeyDown, CharIKFingers::FingerNum lastFingerDown
 ) {
+    int finger;
     if (setToKey == lastKeyDown)
         return lastFingerDown;
     if (lastKeyDown == 0 || lastFingerDown == CharIKFingers::kFingerNone)
@@ -61,7 +62,6 @@ CharIKFingers::FingerNum CharKeyHandMidi::FindPreferredFinger(
         if (mIsRightHand) {
             if (lastFingerDown == CharIKFingers::kFingerPinky)
                 return CharIKFingers::kFingerPinky;
-            int finger;
             if (distance <= 2)
                 finger = lastFingerDown + 1;
             else if (distance <= 5)

@@ -115,7 +115,8 @@ void BandHeadShaper::Init() {
     FilePathTracker tracker(FileRoot());
     const char *genderpath = "";
     DataArray *cfg = SystemConfig("objects", "BandCharDesc");
-    if (cfg->FindData("head_male_path", genderpath, false) && genderpath[0] != 0) {
+    auto _tmp0 = cfg->FindData("head_male_path", genderpath, false);
+    if (_tmp0 && genderpath[0] != 0) {
         static int _x = MemFindHeap("char");
         MemPushHeap(_x);
         gHeadMale = DirLoader::LoadObjects(FilePath(genderpath), 0, 0);

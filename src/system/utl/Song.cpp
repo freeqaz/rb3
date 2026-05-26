@@ -204,12 +204,13 @@ void Song::Unload() {
 }
 
 void Song::SyncState() {
-    if (!mHxMaster)
+    HxMaster * &_ref0 = mHxMaster;
+    if (!_ref0)
         return;
 
-    bool wasPaused = false;
-    if (mHxMaster)
-        wasPaused = mHxMaster->GetHxAudio()->Paused();
+    bool wasPaused = 0;
+    if (_ref0)
+        wasPaused = _ref0->GetHxAudio()->Paused();
     float savedVolume = TheSynth->GetMasterVolume();
     TheSynth->SetMasterVolume(-96.0f);
 
@@ -226,8 +227,8 @@ void Song::SyncState() {
         }
     }
 
-    if (mHxMaster) {
-        mHxMaster->Reset();
+    if (_ref0) {
+        _ref0->Reset();
     }
 
     std::vector<MidiParser *> parsers;
@@ -277,16 +278,16 @@ void Song::SyncState() {
     TheTaskMgr.SetDeltaTime(kTaskSeconds, savedDeltaSeconds);
     TheTaskMgr.SetDeltaTime(kTaskBeats, savedDeltaBeat);
 
-    if (mHxMaster) {
-        HxAudio *a = mHxMaster->GetHxAudio();
+    if (_ref0) {
+        HxAudio *a = _ref0->GetHxAudio();
         a->SetPaused(true);
-        mHxMaster->Jump(GetFrame() * 1000.0f);
-        while (!mHxMaster->GetHxAudio()->IsReady()) {
+        _ref0->Jump(GetFrame() * 1000.0f);
+        while (!_ref0->GetHxAudio()->IsReady()) {
             TheSynth->Poll();
-            mHxMaster->GetHxAudio()->Poll();
+            _ref0->GetHxAudio()->Poll();
         }
         SetSpeed();
-        a = mHxMaster->GetHxAudio();
+        a = _ref0->GetHxAudio();
         a->SetPaused(wasPaused);
     }
 

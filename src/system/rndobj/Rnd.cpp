@@ -299,7 +299,8 @@ void Rnd::PreInit() {
     rndcfg->FindData("clear_color", mClearColor, true);
     rndcfg->FindData("sync", mSync, true);
     rndcfg->FindData("aspect", (int &)mAspect, true);
-    if (OptionBool("widescreen", false))
+    bool _cond = OptionBool("widescreen", 0);
+    if (_cond)
         mAspect = kWidescreen;
 
     // some other code

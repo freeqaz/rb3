@@ -179,10 +179,12 @@ void CharacterTest::AddDefaults() {
 void CharacterTest::SetDistMap(Symbol s) {
     mShowDistMap = s;
     RELEASE(unk6c);
+    RndOverlay * &_ref0 = mOverlay;
     if (s != none) {
-        mOverlay->SetCallback(this);
-        mOverlay->SetShowing(true);
-        if (mClip1 && mClip2 && Clips()) {
+        _ref0->SetCallback(this);
+        _ref0->SetShowing(true);
+        if (mClip1 && mClip2) {
+            if (Clips()) {
             if (s == raw) {
                 unk6c = new ClipDistMap(mClip1, mClip2, 1, 1, 3, nullptr);
                 unk6c->FindDists(0, nullptr);
@@ -190,6 +192,7 @@ void CharacterTest::SetDistMap(Symbol s) {
                 ClipGraphGenerator gen;
                 unk6c = gen.GeneratePair(mClip1, mClip2, nullptr, nullptr);
             }
+        }
         }
     }
 }

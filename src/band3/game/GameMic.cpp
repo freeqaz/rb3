@@ -95,8 +95,9 @@ int GameMic::GetDataSampleRate() {
 
 void GameMic::SetInputFile(const char *filename) {
     int sampleRate;
-    if (filename == nullptr) {
-        sampleRate = GetMyMic()->GetSampleRate();
+    if (nullptr == filename) {
+        auto _tmp0 = GetMyMic()->GetSampleRate();
+        sampleRate = _tmp0;
         unkc = 0;
     } else {
         mWriteWav = false;

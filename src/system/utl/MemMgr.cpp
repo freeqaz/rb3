@@ -1188,7 +1188,8 @@ void _MemFree(void *mem) {
     gInsideMemFunc = true;
     int i;
     for (i = 0; i < gNumHeaps; i++) {
-        if (gHeaps[i].Free((int *)mem)) break;
+        auto _tmp0 = gHeaps[i].Free((int *)mem);
+        if (_tmp0) break;
     }
     if (i == gNumHeaps) {
         WiiFree(mem);

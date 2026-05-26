@@ -1,3 +1,8 @@
+/* ===== PERMUTER LOCK — DO NOT EDIT =====
+ * The source permuter is actively working on: AccomplishmentProgress::UpdateScoreTypeSpecificStats
+ * Started: 2026-05-26 04:21 (stale after 5 minutes)
+ * This banner is temporary and will be removed automatically.
+ ===== */
 #include "meta_band/AccomplishmentProgress.h"
 #include "decomp.h"
 #include "meta_band/BandMachineMgr.h"

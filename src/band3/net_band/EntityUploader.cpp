@@ -221,6 +221,14 @@ int EntityUploader::GetNumUpdates(BandProfile *profile) {
     }
     return num;
 }
+__declspec(noinline) int _outline_NumChars(BandProfile* _obj) {
+    return _obj->NumChars();
+}
+__declspec(noinline) TourBand * _outline_GetTourBand(BandProfile* _obj) {
+    return _obj->GetTourBand();
+}
+
+
 
 int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profile) {
     int opCount = GetNumUpdates(profile);
@@ -230,7 +238,7 @@ int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profi
         data = new EntityData *[opCount];
         int curOp = 0;
         mNumUploadOps = opCount;
-        for (int i = 0; i < profile->NumChars(); i++) {
+        for (int i = 0; i < _outline_NumChars(profile); i++) {
             TourCharLocal *cur = profile->CharAt(i);
             if (cur->IsUploadNeeded()) {
                 int id = GenerateOpID();
@@ -245,7 +253,7 @@ int EntityUploader::BuildProfileUploadOps(EntityData **&data, BandProfile *profi
                 cur->UploadAttempted();
             }
         }
-        TourBand *band = profile->GetTourBand();
+        TourBand *band = _outline_GetTourBand(profile);
         if (band->IsUploadNeeded()) {
             int id = GenerateOpID();
             data[curOp] = new EntityData();

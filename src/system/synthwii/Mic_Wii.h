@@ -45,7 +45,7 @@ public:
     virtual float PercentTalking() { return 0.0f; }
     virtual void MarkAsInUse(bool b) { mInUse = b; }
     virtual bool IsInUse() { return mInUse; }
-    virtual Symbol GetName() const { return generic_usb; }
+    virtual const Symbol &GetName() const { return generic_usb; }
 
     float GetVolume() const;
     short *GetBuf();

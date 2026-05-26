@@ -1751,7 +1751,8 @@ void GemPlayer::OnDisableController() {
 
 void GemPlayer::Rollback(float f1, float f2) {
     if (mTrack && mMatcher) {
-        if (!InRollback()) {
+        bool _cond = !InRollback();
+        if (_cond) {
             unk3e0 = mFill;
         }
         FinishAllHeldNotes(f2);
@@ -1772,8 +1773,9 @@ void GemPlayer::Rollback(float f1, float f2) {
 
         if (mIsInCoda) {
             FillExtent ext(0, 0, false);
+            auto _tmp0 = MsToTickInt(f1);
             TheSongDB->GetData()->GetFillInfo(mTrackNum)->FillAt(
-                MsToTickInt(f1), ext, false
+                _tmp0, ext, false
             );
             float f6 = TickToMs(ext.start) - f2;
             EnableFills(f6, true);

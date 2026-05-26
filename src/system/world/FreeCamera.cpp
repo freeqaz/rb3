@@ -188,7 +188,8 @@ void FreeCamera::Poll() {
 }
 
 BEGIN_HANDLERS(FreeCamera)
-    HANDLE_ACTION(set_parent, mParent = _msg->Obj<RndTransformable>(2))
+    if (_msg)
+        HANDLE_ACTION(set_parent, mParent = _msg->Obj<RndTransformable>(2))
     HANDLE_ACTION(set_pos, mXfm.v.Set(_msg->Float(2), _msg->Float(3), _msg->Float(4)))
     HANDLE_ACTION(
         set_rot,

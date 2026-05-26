@@ -1036,8 +1036,9 @@ void GemTrackDir::SetScreenRectX(float f) {
 
 void GemTrackDir::SetTrackOffset(float f) {
     if (unk488 >= 0 && unk488 < mNumTracks) {
-        mRotater->mLocalXfm.v.x = -f * (unk488 - 0.5f * (mNumTracks - 1));
-        mRotater->SetDirty();
+        RndGroup *rot = mRotater.mPtr;
+        rot->mLocalXfm.v.x = -f * (unk488 - 0.5f * (mNumTracks - 1));
+        rot->SetDirty();
     }
 }
 
@@ -1094,21 +1095,19 @@ void GemTrackDir::DeleteUnusedChordMeshes() {
     std::map<unsigned int, std::pair<int, RndMesh *> >::iterator it;
     for (it = unk6b4.begin(); it != unk6b4.end(); ++it) {
     }
-    for (it = unk6b4.begin(); it != unk6b4.end();) {
+    for (it = unk6b4.begin(); unk6b4.end() != it;) {
         if (it->second.first == 0) {
             RndMesh *chordMesh = it->second.second;
             std::map<unsigned int, std::pair<int, RndMesh *> >::iterator arpIt
                 = unk6cc.find(it->first);
-            RndMesh *arpMesh =
-                arpIt != unk6cc.end() ? arpIt->second.second : NULL;
+            RndMesh *arpMesh = arpIt->second.second;
             delete chordMesh;
             delete arpMesh;
             unk6cc.erase(it->first);
-            std::map<unsigned int, std::pair<int, RndMesh *> >::iterator next
-                = it;
-            ++next;
-            unk6b4.erase(it);
-            it = next;
+            std::map<unsigned int, std::pair<int, RndMesh *> >::iterator
+                toErase = it;
+            ++it;
+            unk6b4.erase(toErase);
         } else {
             ++it;
         }

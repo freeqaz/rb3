@@ -1611,7 +1611,8 @@ StorePage *StoreMetadataManager::LoadDynamicPage(DataArray *arr) {
     short numNodes = arr->Size();
     for (int i = 0; i < numNodes; i++) {
         DataNode &node = arr->Node(i);
-        if (node.Type() == kDataArray) {
+        auto _tmp0 = node.Type();
+        if (_tmp0 == kDataArray) {
             DataArray *sub = node.Array(NULL);
             DataArray *idArr = sub->FindArray(id, false);
             if (idArr != NULL && idArr->Size() > 1) {
