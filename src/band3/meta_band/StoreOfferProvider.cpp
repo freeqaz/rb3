@@ -188,7 +188,7 @@ StoreOffer *StoreOfferProvider::FindOffer(Symbol s) const {
     std::vector<StoreOffer *>::iterator it =
         std::find(mOffers->begin(), mOffers->end(), s);
     if (it == mOffers->end()) {
-        if (!mPacks)
+        if (mPacks == 0)
             return NULL;
         it = std::find(mPacks->begin(), mPacks->end(), s);
         if (it == mPacks->end())
