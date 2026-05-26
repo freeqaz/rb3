@@ -208,10 +208,11 @@ void TrackerSectionManager::GatherSections() {
     std::vector<PracticeSection>::iterator it = songDB->mPracticeSections.begin();
     for (; it != songDB->mPracticeSections.end(); ++it) {
         if (it->unk4 != it->unk8) {
+            int mStr = (int)it->unk0.mStr;
             Section section;
             section.mStartTick = it->unk4;
             section.mEndTick = it->unk8;
-            section.unk8 = (int)it->unk0.mStr;
+            section.unk8 = mStr;
             mSections.push_back(section);
         }
     }
