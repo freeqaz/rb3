@@ -341,15 +341,19 @@ bool UIListState::BuildScroll(int direction, int firstShowing, int selectedDispl
     } else {
         state.mSelectedDisplay += direction;
         int scrollMax = ScrollMaxDisplay();
-        if (mScrollPastMinDisplay && mMinDisplay >= scrollMax) {
-            scrollMax = mMinDisplay;
+        if (mScrollPastMinDisplay) {
+            int tmp = mMinDisplay;
+            if (tmp < scrollMax) {
+                tmp = scrollMax;
+            }
+            scrollMax = tmp;
         }
 
         if (state.mSelectedDisplay < 0) {
             state.mFirstShowing += state.mSelectedDisplay;
-            int sel = mMinDisplay;
-            if (mMinDisplay >= firstShowing) {
-                sel = firstShowing;
+            int sel = firstShowing;
+            if (mMinDisplay < firstShowing) {
+                sel = mMinDisplay;
             }
             state.mSelectedDisplay = sel;
         } else if (state.mSelectedDisplay > scrollMax) {
@@ -367,27 +371,10 @@ bool UIListState::BuildScroll(int direction, int firstShowing, int selectedDispl
             return origFirst != state.mFirstShowing;
         }
 
-        int result;
-        if (state.mSelectedDisplay > scrollMax) {
-            result = scrollMax;
-        } else {
-            if (state.mSelectedDisplay < 0) {
-                result = 0;
-            } else {
-                result = state.mSelectedDisplay;
-            }
-        }
-        state.mSelectedDisplay = result;
+        ClampEq(state.mSelectedDisplay, 0, scrollMax);
 
         int maxFirst = MaxFirstShowing();
-        if (state.mFirstShowing <= maxFirst) {
-            if (state.mFirstShowing < 0) {
-                maxFirst = 0;
-            } else {
-                maxFirst = state.mFirstShowing;
-            }
-        }
-        state.mFirstShowing = maxFirst;
+        ClampEq(state.mFirstShowing, 0, maxFirst);
     }
 
     return (state.mSelectedDisplay == selectedDisplay) || (state.mFirstShowing != firstShowing);
