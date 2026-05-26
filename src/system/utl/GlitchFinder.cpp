@@ -239,10 +239,10 @@ void GlitchFinder::CheckDump() {
     if (!mStop) {
         if (!mStartPoker)
             return;
-        mStop = true;
         mTime.Split();
-        mStartPoker->mTimeEnd = Timer::CyclesToMs(mTime.mCycles);
         static unsigned int sStart;
+        mStartPoker->mTimeEnd = Timer::CyclesToMs(mTime.mCycles);
+        mStop = true;
         if (sStart == 0) {
             TIMER_GET_CYCLES(start_cycles);
             sStart = start_cycles;
