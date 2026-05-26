@@ -53,6 +53,23 @@ __copy_ptrs<const RndLine::Point*, RndLine::Point*>(
     return (RndLine::Point*)__d;
 }
 
+// Non-const source overload (erase's element shift in operator>>'s resize).
+template <>
+inline RndLine::Point*
+__copy_ptrs<RndLine::Point*, RndLine::Point*>(
+    RndLine::Point* __first, RndLine::Point* __last,
+    RndLine::Point* __result, const __false_type& /*IsOKToMemCpy*/
+) {
+    _RndLinePointWords* __d = (_RndLinePointWords*)__result;
+    const _RndLinePointWords* __s = (const _RndLinePointWords*)__first;
+    for (ptrdiff_t __n = __last - __first; __n > 0; --__n) {
+        *__d = *__s;
+        ++__s;
+        ++__d;
+    }
+    return (RndLine::Point*)__d;
+}
+
 // Used by _M_fill_insert_aux to shift existing elements backward to open a gap.
 // (op= does NOT use this — its realloc path goes through __uninitialized_copy
 // which stays generic/typed, matching the target.)
