@@ -298,6 +298,10 @@ void WorldInstance::SetProxyFile(const FilePath &fp, bool override) {
         Hmx::Object::Copy(mDir, kCopyShallow);
     }
 }
+__declspec(noinline) bool _outline_HasTriggerEvents(EventTrigger* _obj) {
+    return _obj->HasTriggerEvents();
+}
+
 
 #include "utl/ClassSymbols.h"
 
@@ -306,7 +310,7 @@ void WorldInstance::SyncDir() {
         DeleteTransientObjects();
         mSharedGroup = nullptr;
         if (mDir) {
-            RndGroup *grp = mDir->Find<RndGroup>("shared.grp", false);
+            RndGroup *grp = mDir->Find<RndGroup>("shared.grp", 0);
             if (!mDir->mSharedGroup2 && grp) {
                 mDir->mSharedGroup2 = new SharedGroup(grp);
             }
@@ -339,7 +343,7 @@ void WorldInstance::SyncDir() {
                     continue;
                 else {
                     EventTrigger *trig = dynamic_cast<EventTrigger *>(&*it);
-                    if (trig && trig->HasTriggerEvents()) {
+                    if (trig && _outline_HasTriggerEvents(trig)) {
                         MILO_WARN("%s must be in shared.grp", PathName(it));
                     } else {
                         Hmx::Object *foundObj = FindObject(it->Name(), false);
