@@ -543,11 +543,7 @@ static void RecursePatternInternal(
     unsigned int backslashPos = pttn.find_first_of("\\", 0);
 
     int splitPos;
-    if (slashPos == String::npos) {
-        splitPos = (int)pttn.length() - 1;
-    } else {
-        splitPos = (int)slashPos;
-    }
+        splitPos = String::npos == slashPos ? (int)pttn.length() - 1 : (int)slashPos;
     if (backslashPos != String::npos && backslashPos < (unsigned int)splitPos) {
         splitPos = (int)backslashPos;
     }
