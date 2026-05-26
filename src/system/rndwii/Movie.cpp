@@ -32,7 +32,7 @@ void WiiMovie::SetFile(const FilePath &fp, bool b) {
     mFile = fp;
     mStream = b;
     if (!mFile.empty()) {
-        if (b) {
+        if (mStream) {
             unk_0x48 = NewFile(CacheResource(mFile.c_str(), this), 2);
             if (unk_0x48 == nullptr) {
                 TheDebug.Notify(MakeString("%s: %s not found", PathName(this), mFile));
@@ -65,7 +65,7 @@ void WiiMovie::SetFile(const FilePath &fp, bool b) {
         }
         unk_0x44 = mVideoData.mHeight;
         SetTex(mTex);
-        SetFrame(1.0f, 0.0f);
+        SetFrame(0.0f, 1.0f);
     }
 }
 
