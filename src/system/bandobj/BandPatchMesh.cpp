@@ -36,12 +36,14 @@ int BandPatchMesh::MeshVert::AddUV(
     Vector3 v48;
     Subtract(mVert->pos, mv->mVert->pos, v48);
     float lensq = LengthSquared(v48);
-    float dot = Dot(v48, mv->mVert->norm);
+    float dot = Dot(mv->mVert->norm, v48);
     ScaleAddEq(v48, mv->mVert->norm, -dot);
-    float v50x = mv->unk1c.x;
     float v50y = mv->unk1c.y;
-    float v48x = v48.x, v48y = v48.y, v48z = v48.z;
-    float newlensq = v48x * v48x + v48y * v48y + v48z * v48z;
+    float v50x = mv->unk1c.x;
+    float v48x = v48.x;
+    float v48y = v48.y;
+    float v48z = v48.z;
+    float newlensq = v48z * v48z + v48x * v48x + v48y * v48y;
     if (newlensq > 0) {
         float ratio = newlensq / lensq;
         float r = 1.0f / std::sqrt(ratio);
