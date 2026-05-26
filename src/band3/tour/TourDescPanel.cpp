@@ -555,9 +555,12 @@ void TourDescPanel::CheatWinTour() {
     BandProfile *pProfile = TheTour->GetProfile();
     MILO_ASSERT(pProfile, 0x31E);
     AccomplishmentProgress &progress = pProfile->AccessAccomplishmentProgress();
-    progress.SetToursPlayed(s, progress.GetToursPlayed(s) + 1);
-    progress.SetMostStars(s, pTourDesc->GetNumStarsPossibleForTour());
-    progress.SetToursGotAllStars(s, progress.GetToursGotAllStars(s) + 1);
+    int iPlayed = progress.GetToursPlayed(s) + 1;
+    progress.SetToursPlayed(s, iPlayed);
+    int iStarsPossible = pTourDesc->GetNumStarsPossibleForTour();
+    progress.SetMostStars(s, iStarsPossible);
+    int iGotAllStars = progress.GetToursGotAllStars(s) + 1;
+    progress.SetToursGotAllStars(s, iGotAllStars);
     TheAccomplishmentMgr->CheckForFinishedTourAccomplishmentsForUser(pUser);
     Refresh();
 }
