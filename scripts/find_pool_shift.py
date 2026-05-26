@@ -85,6 +85,12 @@ SKIP_UNITS = {
     # harvested the semantic-correctness wins; deeper progress requires
     # per-function structural work, not pool-shift.
     "main/system/bandobj/GemTrackDir",
+    # +189 cluster on Load/PropSync<Constraint,Us>/PropSync<RndTransformable>
+    # is RTTI typeinfo + stlpmtx_std::_List_node template strings actively
+    # used as pool anchors in target's Poll prologue (loaded into r30). All
+    # 3 flagged AtLimit/ADDRESS_RELOCATION_NOISE. FORCEACTIVE unsafe
+    # (would regress per OutfitConfig pattern). Investigation 2026-05-26.
+    "main/system/bandobj/BandIKEffector",
 }
 
 
