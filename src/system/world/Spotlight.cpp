@@ -1001,6 +1001,7 @@ void Spotlight::BuildNGSheet(BeamDef &def) {
     identMtx.y.Set(0.0f, 1.0f, 0.0f);
     identMtx.z.Set(0.0f, 0.0f, 1.0f);
 
+    Hmx::Matrix3 orientMtx;
     Hmx::Matrix3 rotMtx;
     Hmx::Matrix3 *pMtx;
     if (def.mIsCone) {
@@ -1013,21 +1014,18 @@ void Spotlight::BuildNGSheet(BeamDef &def) {
         );
         pMtx = &rotMtx;
     }
-    Hmx::Matrix3 orientMtx;
     orientMtx.x = pMtx->x;
     orientMtx.y = pMtx->y;
     orientMtx.z = pMtx->z;
 
     def.mBeam = Hmx::Object::New<RndMesh>();
-    std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
     RndMesh::VertVector &verts = def.mBeam->Verts();
+    std::vector<RndMesh::Face> &faces = def.mBeam->Faces();
 
-    int defSections = def.mNumSections;
     int numSections = 5;
-    if (defSections > 1) numSections = defSections;
-    int defSegments = def.mNumSegments;
+    if (def.mNumSections > 1) numSections = def.mNumSections;
     int numSegments = 10;
-    if (defSegments > 2) numSegments = defSegments;
+    if (def.mNumSegments > 2) numSegments = def.mNumSegments;
 
     int numRows = numSections + 1;
     int numCols = numSegments + 1;
@@ -1061,9 +1059,13 @@ void Spotlight::BuildNGSheet(BeamDef &def) {
 
             Multiply(verts[iVert].pos, orientMtx, verts[iVert].pos);
 
-            verts[iVert].norm.Set(orientMtx.z.x, orientMtx.z.y, orientMtx.z.z);
+            verts[iVert].norm.Set(0.0f, 0.0f, 1.0f);
+            Multiply(verts[iVert].norm, orientMtx, verts[iVert].norm);
 
-            verts[iVert].color.Set(oneMinusT, oneMinusT, oneMinusT, oneMinusT);
+            {
+                int b = (int)(oneMinusT * 255.0f) & 0xFF;
+                verts[iVert].color.color = b | (b << 8) | (b << 16) | (b << 24);
+            }
             verts[iVert].uv.Set(absSegFrac, t);
             iVert++;
         }
@@ -1074,10 +1076,10 @@ void Spotlight::BuildNGSheet(BeamDef &def) {
     int rowStart = 0;
     for (int row = 0; row < numSections; row++) {
         for (int col = 0; col < numSegments; col++) {
-            short base = (short)(rowStart + col);
-            short next = base + 1;
-            short baseNext = base + (short)numCols;
-            short nextNext = baseNext + 1;
+            int base = rowStart + col;
+            int next = base + 1;
+            int baseNext = base + numCols;
+            int nextNext = baseNext + 1;
             if ((iFace & 2) == 0) {
                 faces[iFace].Set(base, next, baseNext);
                 faces[iFace + 1].Set(baseNext, next, nextNext);
