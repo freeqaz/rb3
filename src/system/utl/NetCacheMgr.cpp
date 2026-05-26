@@ -377,8 +377,8 @@ NetLoaderRef *NetCacheMgr::AddLoaderRef(const char *name, RefType type, NetLoade
 }
 
 void NetCacheMgr::PollLoaders() {
-    bool firstDownload = true;
     std::list<NetLoaderRef>::iterator it = mNetLoaderRefs.begin();
+    bool firstDownload = true;
     NetLoaderRef *pDownloading = NULL;
     bool commerceBusy = (TheWiiCommerceMgr.mCommerceAsyncOpId != -1);
     NetLoaderRef *pFirstToDownload = NULL;
