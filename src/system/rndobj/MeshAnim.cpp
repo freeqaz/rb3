@@ -15,13 +15,13 @@ int RndMeshAnim::NumVerts() {
         MaxEq<int>(num, VertPointsKeys().size());
     }
     if (VertNormalsKeys().size() != 0) {
-        MaxEq<int>(num, VertNormalsKeys().size());
+        MaxEq<int>(num, VertNormalsKeys()[0].value.size());
     }
     if (VertTexsKeys().size() != 0) {
         MaxEq<int>(num, VertTexsKeys().size());
     }
     if (VertColorsKeys().size() != 0) {
-        MaxEq<int>(num, VertColorsKeys().size());
+        MaxEq<int>(num, VertColorsKeys()[0].value.size());
     }
     return num;
 }
