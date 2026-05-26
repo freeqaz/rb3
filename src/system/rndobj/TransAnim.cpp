@@ -338,16 +338,14 @@ DataNode RndTransAnim::OnNumRotKeys(const DataArray *) { return RotKeys().NumKey
 DataNode RndTransAnim::OnNumScaleKeys(const DataArray *) { return ScaleKeys().NumKeys(); }
 
 DataNode RndTransAnim::OnAddTransKey(const DataArray *da) {
-    TransKeys().Add(
-        Vector3(da->Float(2), da->Float(3), da->Float(4)), da->Float(5), false
-    );
+    float x = da->Float(2), y = da->Float(3), z = da->Float(4), frame = da->Float(5);
+    TransKeys().Add(Vector3(x, y, z), frame, false);
     return 0;
 }
 
 DataNode RndTransAnim::OnAddScaleKey(const DataArray *da) {
-    ScaleKeys().Add(
-        Vector3(da->Float(2), da->Float(3), da->Float(4)), da->Float(5), false
-    );
+    float x = da->Float(2), y = da->Float(3), z = da->Float(4), frame = da->Float(5);
+    ScaleKeys().Add(Vector3(x, y, z), frame, false);
     return 0;
 }
 
