@@ -465,8 +465,8 @@ void TourPerformerLocal::CheatCycleSetlist() {
         return;
     }
     std::map<Symbol, int> mapSongsInFilter;
-    std::map<Symbol, int> mapSongsWithArtist;
     unsigned int filterIndices[kTour_NumQuestFilters];
+    std::map<Symbol, int> mapSongsWithArtist;
     // Build validFilters vector (random/custom filters with enough songs)
     InqSongsInFilterData(symFilter, mapSongsInFilter, mapSongsWithArtist);
     filterIndices[0] = 0;
