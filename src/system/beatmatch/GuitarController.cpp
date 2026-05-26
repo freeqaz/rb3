@@ -132,7 +132,8 @@ void GuitarController::Poll() {
 }
 
 int GuitarController::OnMsg(const ButtonDownMsg &msg) {
-    if (mDisabled)
+    bool &_ref0 = mDisabled;
+    if (_ref0)
         return 0;
     if (!mUser->IsLocal())
         return 0;
@@ -145,7 +146,7 @@ int GuitarController::OnMsg(const ButtonDownMsg &msg) {
         std::find(mStrumBarButtons.begin(), mStrumBarButtons.end(), btn);
     if (btnIter != mStrumBarButtons.end()) {
         int slot = GetCurrentSlot();
-        bool b8 = btnIter != mStrumBarButtons.begin();
+        unsigned char b8 = (unsigned char)(btnIter != mStrumBarButtons.begin());
         bool b1 = b8;
         if (mLefty)
             b1 = !b8;
@@ -164,7 +165,7 @@ int GuitarController::OnMsg(const ButtonDownMsg &msg) {
             if (slot != -1) {
                 mFretMask |= 1 << slot;
                 mSink->FretButtonDown(slot, -1);
-                if (mDisabled)
+                if (_ref0)
                     return 0;
                 else {
                     lUser->GetPadNum();
