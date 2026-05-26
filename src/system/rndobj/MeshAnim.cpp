@@ -12,14 +12,13 @@ RndMeshAnim::RndMeshAnim() : mMesh(this, 0), mKeysOwner(this, this) {}
 int RndMeshAnim::NumVerts() {
     int num = 0;
     if (VertPointsKeys().size() != 0) {
-        auto _tmp0 = VertPointsKeys().size();
-        MaxEq<int>(num, _tmp0);
+        MaxEq<int>(num, VertPointsKeys()[0].value.size());
     }
     if (VertNormalsKeys().size() != 0) {
         MaxEq<int>(num, VertNormalsKeys()[0].value.size());
     }
     if (VertTexsKeys().size() != 0) {
-        MaxEq<int>(num, VertTexsKeys().size());
+        MaxEq<int>(num, VertTexsKeys()[0].value.size());
     }
     if (VertColorsKeys().size() != 0) {
         MaxEq<int>(num, VertColorsKeys()[0].value.size());

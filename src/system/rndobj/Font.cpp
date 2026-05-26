@@ -226,7 +226,7 @@ void RndFont::BleedTest() {
         String errStr;
         for (int i = 0; i < mChars.size(); i++) {
             unsigned short curChar = mChars[i];
-            CharInfo &curInfo = mCharInfoMap[curChar];
+            const CharInfo &curInfo = mCharInfoMap[curChar];
             int i2 = Round(curInfo.unk4 * bmap->Height());
             int i5 = Round(curInfo.unk0 * bmap->Width());
             int i6 = Round(curInfo.charWidth * mCellSize.x) + i5;

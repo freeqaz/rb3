@@ -1,0 +1,58 @@
+{
+  "symbol": "CallCheatScript__13CheatsManagerFbP9DataArrayP9LocalUserb",
+  "function_name": "CheatsManager::CallCheatScript",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/Cheats.cpp",
+  "initial_percent": 95.71429,
+  "final_percent": 95.71429,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.71429,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.71429,
+      "delta": 0.0,
+      "num_variants": 26,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.6987,
+      "best_name": "signunsign_0",
+      "best_pattern": "signed_unsigned",
+      "best_score": 95.71429,
+      "delta": 0.015590000000003101,
+      "num_variants": 26,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 95.71429,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.71429,
+      "delta": 0.0,
+      "num_variants": 26,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 20.17,
+  "winning_pattern": "signed_unsigned",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 41,
+    "0": 12,
+    "5": 25
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

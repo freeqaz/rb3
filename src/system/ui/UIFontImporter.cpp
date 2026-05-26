@@ -505,16 +505,17 @@ BEGIN_HANDLERS(UIFontImporter)
 END_HANDLERS
 
 BEGIN_PROPSYNCS(UIFontImporter)
-    SYNC_PROP(numbers_0_9, mNumbers0through9)
-    SYNC_PROP(punctuation, mPunctuation)
     SYNC_PROP(UPPER_CASE_A_Z, mUpperCaseAthroughZ)
     SYNC_PROP(lower_case_a_z, mLowerCaseAthroughZ)
+    SYNC_PROP(numbers_0_9, mNumbers0through9)
+    SYNC_PROP(punctuation, mPunctuation)
     SYNC_PROP(UPPER_EURO, mUpperEuro)
     SYNC_PROP(lower_euro, mLowerEuro)
     SYNC_PROP(plus, mPlus)
     SYNC_PROP(minus, mMinus)
     SYNC_PROP(font_name, mFontName)
     SYNC_PROP_MODIFY(font_pct_size, mFontPctSize, GenerateBitmapFilename())
+#pragma fp_contract on
     SYNC_PROP_SET(
         font_point_size,
         mLastGenWasNG ? FontPercentToSizeHD(mFontPctSize)
@@ -531,6 +532,7 @@ BEGIN_PROPSYNCS(UIFontImporter)
         mFontPctSize = mLastGenWasNG ? FontSizeToPercentHD(-_val.Int())
                                      : FontSizeToPercentSD(-_val.Int())
     )
+#pragma fp_contract reset
     SYNC_PROP_SET(bold, std::abs(mFontWeight), mFontWeight = _val.Int() ? 800 : 400;
                   GenerateBitmapFilename())
     SYNC_PROP_MODIFY(italics, mItalics, GenerateBitmapFilename())

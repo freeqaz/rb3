@@ -53,9 +53,10 @@ void HiResScreen::BmpCache::GetLoadedRange(uint &ui1, uint &ui2) const {
 }
 
 void HiResScreen::BmpCache::FlushCache() {
-    MILO_ASSERT(mCurrLoadedIndex < mTotalNumCacheLines, 0x9C);
+    const unsigned int &_ref0 = mCurrLoadedIndex;
+    MILO_ASSERT(_ref0 < mTotalNumCacheLines, 0x9C);
     if (mDirtyEnd > mDirtyStart) {
-        File *cacheFile = NewFile(mFileNames[mCurrLoadedIndex].c_str(), 1);
+        File *cacheFile = NewFile(mFileNames[_ref0].c_str(), 1);
         MILO_ASSERT(cacheFile, 0xA2);
         cacheFile->Seek(mDirtyStart, 0);
         unsigned int nStart = mDirtyStart;
@@ -247,7 +248,8 @@ void HiResScreen::Accumulate() {
     GetBorderForTile(tileX, tileY, left, right, top, bottom);
     int xOff = (TheRnd->mWidth - 480) * tileX;
     int yOff = (TheRnd->mHeight - 270) * tileY;
-    Merge(bm, xOff, yOff, left, right, bm.Width(), bm.Height(), top, bottom);
+    auto _tmp0 = bm.Width();
+    Merge(bm, xOff, yOff, left, right, _tmp0, bm.Height(), top, bottom);
     TheRnd->ResetProcCounter();
     mCurrTile++;
 }

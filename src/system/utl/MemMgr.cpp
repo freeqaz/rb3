@@ -350,20 +350,23 @@ void Heap::Init(const char *name, int heapNum, int *start, int sizeWords,
         }
     }
 }
+__declspec(noinline) const char * _outline_Str(FormatString* _obj) {
+    return _obj->Str();
+}
+
 
 int *Heap::SplitFromBack(int n) {
-    FreeBlock *startBlock = (FreeBlock *)mStart;
-    if (mSizeWords != startBlock->mSizeWords) {
+    if (mSizeWords != ((FreeBlock *)mStart)->mSizeWords) {
         FormatString fs("can't split heap if it is in use.");
-        TheDebug.Fail(fs.Str());
+        TheDebug.Fail(_outline_Str(&fs));
     }
     int newSize = mSizeWords - n;
     if (n == 0 || newSize < 8) {
         return nullptr;
     }
     mSizeWords = newSize;
-    startBlock->mSizeWords = newSize;
-    startBlock->mNext = nullptr;
+    ((FreeBlock *)mStart)->mSizeWords = newSize;
+    ((FreeBlock *)mStart)->mNext = nullptr;
     return mStart + mSizeWords;
 }
 
@@ -868,8 +871,8 @@ void *MemTruncate(void *mem, int newSize) {
         _MemFree(mem);
         return nullptr;
     }
-    int outWords;
     int sizeWords = (newSize + 3) >> 2;
+    int outWords;
     int i;
     for (i = 0; i < gNumHeaps; i++) {
         if (gHeaps[i].Truncate((int *)mem, sizeWords, outWords) != nullptr) break;
@@ -1045,7 +1048,7 @@ void *_MemAlloc(int iSizeBytes, int align) {
     if (!gMemInited) {
         MemInit();
     }
-    AutoTimer autoTimer(&gMemAllocTimer, 0.0f, nullptr, nullptr);
+    const AutoTimer autoTimer(&gMemAllocTimer, 0.0f, nullptr, nullptr);
     MILO_ASSERT(iSizeBytes >= 0, 0x86d);
     if (iSizeBytes == 0) {
         return gZeroAllocBuf;
@@ -1168,8 +1171,7 @@ MemHandle *_MemAllocH(int size) {
     MILO_ASSERT(isMain, 0xb23);
     int heapNum = GetCurrentHeapNum();
     Heap *heap = (heapNum > -1) ? &gHeaps[heapNum] : nullptr;
-    bool ok = (heap != nullptr) && heap->mUseHeapAlign;
-    MILO_ASSERT(ok, 0xb27);
+    MILO_ASSERT((heap != nullptr) && heap->mUseHeapAlign, 0xb27);
     // Allocate (size aligned up to 16 + 0x20 header)
     void *data = _MemAlloc(((size - 1) & ~0xF) + 0x20, 0x10);
     MemHandle *h = (MemHandle *)_PoolAlloc(sizeof(MemHandle), sizeof(MemHandle), MainPool);

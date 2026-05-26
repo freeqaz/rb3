@@ -71,12 +71,12 @@ bool DrumTrackWatcherImpl::Swing(int slot, bool b1, bool b2, GemHitFlags flags) 
         idx--;
     }
     int relevant = RelevantGem(idx, i3, slot);
-    bool inslop = InSlopWindow(mGemList->TimeAt(relevant), now);
     unsigned int mask = 1 << slot;
+    bool inslop = InSlopWindow(mGemList->TimeAt(relevant), now);
     NoteSwing(mask, mGemList->GetGem(relevant).GetTick());
     if (inslop) {
         GameGem &gem = mGemList->GetGem(relevant);
-        if (!gem.GetPlayed() || Playable(relevant)) {
+        if (!gem.GetPlayed() && Playable(relevant)) {
             MILO_ASSERT(gem.NumSlots() == 1, 0x8D);
             if (slot == gem.GetSlot()) {
                 if (CheckCymbal(gem, flags))

@@ -695,18 +695,20 @@ void BandDirector::HarvestDircuts() {
 }
 
 void BandDirector::AddSymbolKey(Symbol s1, Symbol s2, float f) {
-    if (mPropAnim) {
+    const ObjPtr<RndPropAnim> &_ref0 = mPropAnim;
+    if (_ref0) {
         DataArrayPtr ptr(s1);
-        SymbolKeys *keys = dynamic_cast<SymbolKeys *>(mPropAnim->GetKeys(this, ptr));
+        SymbolKeys *keys = dynamic_cast<SymbolKeys *>(_ref0->GetKeys(this, ptr));
         if (keys)
             keys->Add(s2, f * 30.0f, false);
     }
 }
 
 void BandDirector::ClearSymbolKeys(Symbol s) {
-    if (mPropAnim) {
+    const ObjPtr<RndPropAnim> &_ref0 = mPropAnim;
+    if (_ref0) {
         DataArrayPtr ptr(s);
-        SymbolKeys *keys = dynamic_cast<SymbolKeys *>(mPropAnim->GetKeys(this, ptr));
+        SymbolKeys *keys = dynamic_cast<SymbolKeys *>(_ref0->GetKeys(this, ptr));
         if (keys)
             keys->clear();
     }
@@ -1346,6 +1348,7 @@ DataNode BandDirector::OnToggleInterestDebugOverlay(DataArray *da) {
 }
 
 DataNode BandDirector::OnShotAnnotate(DataArray *da) {
+    char _slotpad[16]; (void)_slotpad;
     if (!mPropAnim)
         return 0;
     else {
@@ -1353,7 +1356,7 @@ DataNode BandDirector::OnShotAnnotate(DataArray *da) {
         DataArray *arr3 = da->Array(3);
         PropKeys *keys = propanim->GetKeys(this, arr3);
         int i7 = da->Int(4);
-        if (!keys || i7 < 0)
+        if (!keys || 0 > i7)
             return 0;
         else {
             Keys<Symbol, Symbol> &skeys = keys->AsSymbolKeys();

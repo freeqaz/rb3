@@ -306,7 +306,7 @@ void WorldInstance::SyncDir() {
         DeleteTransientObjects();
         mSharedGroup = nullptr;
         if (mDir) {
-            RndGroup *grp = mDir->Find<RndGroup>("shared.grp", 0);
+            RndGroup *grp = mDir->Find<RndGroup>("shared.grp", 0.0f);
             if (!mDir->mSharedGroup2 && grp) {
                 mDir->mSharedGroup2 = new SharedGroup(grp);
             }

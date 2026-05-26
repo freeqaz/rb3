@@ -564,8 +564,7 @@ void WiiContentMgr::Init() {
         mNeedShopAccount = false;
     }
 
-    mSDBuffer = _MemAlloc(0x5680, 0x20);
-    CNTSDInitRSO(mSDBuffer, 0x5680);
+        CNTSDInitRSO(mSDBuffer = _MemAlloc(0x5680, 0x20), 0x5680);
     mCNTSDInited = true;
 
     CNTSDSetEventCallbackRSO(SDCallback);

@@ -525,7 +525,8 @@ DataNode CalibrationPanel::OnMsg(const ButtonDownMsg &msg) {
                 if (msg.GetButton() == kPad_Xbox_A)
                     b3 = unka0;
                 if (b3) {
-                    TriggerCalibration(msg.GetPadNum());
+                    auto _tmp0 = msg.GetPadNum();
+                    TriggerCalibration(_tmp0);
                 }
             }
             return 0;

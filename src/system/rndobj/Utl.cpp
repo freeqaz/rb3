@@ -1325,7 +1325,8 @@ MatShaderOptions GetDefaultMatShaderOpts(const Hmx::Object *o, RndMat *mat) {
         const RndMultiMesh *multimesh = dynamic_cast<const RndMultiMesh *>(o);
         if (multimesh) {
             RndMesh *gotmesh = multimesh->GetMesh();
-            if (gotmesh && gotmesh->Mat()) {
+            if (gotmesh) {
+                if (gotmesh->Mat()) {
                 if (gotmesh->Mat() == mat) {
                     int mask = 0xC;
                     if (gotmesh->TransConstraint() == RndTransformable::kFastBillboardXYZ)
@@ -1334,6 +1335,7 @@ MatShaderOptions GetDefaultMatShaderOpts(const Hmx::Object *o, RndMat *mat) {
                     opts.SetHasBones(false);
                     opts.SetHasAOCalc(gotmesh->HasAOCalc());
                 }
+            }
             }
         } else {
             const RndParticleSys *partsys = dynamic_cast<const RndParticleSys *>(o);

@@ -195,7 +195,8 @@ int BandIKEffector::MeasureLengths(
 void BandIKEffector::NeutralLocalPos(RndTransformable *bone, Vector3 &pos) {
     if (sDeformClip) {
         const char *name = bone->Name();
-        if (strcmp(name, "bone_pelvis.mesh") != 0) {
+        auto _tmp0 = strcmp(name, "bone_pelvis.mesh");
+        if (_tmp0 != 0) {
             Symbol sym = CharBones::ChannelName(name, CharBones::TYPE_POS);
             void *chan = sDeformClip->GetChannel(sym);
             if (chan) {
@@ -707,9 +708,11 @@ void BandIKEffector::Poll() {
 
         Transform finalXfm;
         if (totalWeight < 1.0f) {
-            if (totalWeight != 0.0f || type != 0) {
+            if (!(totalWeight != 0.0f || type != 0)) {
+                return;
+            } else {
                 QuatXfm effQ;
-                const Transform &effWorld = mEffector->WorldXfm();
+                Transform &effWorld = mEffector->WorldXfm();
                 effQ.v = effWorld.v;
                 effQ.q.Set(effWorld.m);
                 if (type - 1U <= 1) {
@@ -770,8 +773,6 @@ void BandIKEffector::Poll() {
                 q.v.z += effQ.v.z * remaining;
                 ScaleAddEq(q.q, effQ.q, remaining);
                 totalWeight += remaining;
-            } else {
-                return;
             }
         }
 

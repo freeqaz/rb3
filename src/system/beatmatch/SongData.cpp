@@ -486,7 +486,8 @@ void SongData::UnflipGems(int i1, int i2, int diff) {
         mBackupTracks[i2]->mMixes->GetMixList(diff);
     std::vector<GameGem> &gems = mGemDBs[i1]->GetDiffGemList(diff)->mGems;
     TickedInfoCollection<String> &mixes = mDrumMixDBs[i1]->GetMixList(diff);
-    MILO_ASSERT(backup_gems.size() == gems.size(), 0x2CE);
+    auto _tmp0 = backup_gems.size();
+    MILO_ASSERT(_tmp0 == gems.size(), 0x2CE);
     MILO_ASSERT(backup_mixes.Size() == mixes.Size(), 0x2CF);
     DataArray *cfg = SystemConfig("beatmatcher", "audio");
     DataArray *submixArr = cfg->FindArray("flipped_submixes", false);
@@ -521,12 +522,13 @@ void SongData::UnflipGems(int i1, int i2, int diff) {
 }
 
 void SongData::RestoreGems(int i1, int i2, int diff) {
-    GameGemList *backup_gems = mBackupTracks[i2]->mGems->GetDiffGemList(diff);
+    std::vector<BackupTrack *> &_ref0 = mBackupTracks;
+    GameGemList *backup_gems = _ref0[i2]->mGems->GetDiffGemList(diff);
     GameGemList *gems = mGemDBs[i1]->GetDiffGemList(diff);
     gems->mGems = backup_gems->mGems;
-    if (mBackupTracks[i2]->mMixes) {
-        TickedInfoCollection<String> &backup_mixes =
-            mBackupTracks[i2]->mMixes->GetMixList(diff);
+    if (_ref0[i2]->mMixes) {
+        const TickedInfoCollection<String> &backup_mixes =
+            _ref0[i2]->mMixes->GetMixList(diff);
         TickedInfoCollection<String> &mixes = mDrumMixDBs[i1]->GetMixList(diff);
         mixes.CopyFrom(backup_mixes);
     }

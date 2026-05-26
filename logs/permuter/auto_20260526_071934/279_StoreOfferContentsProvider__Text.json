@@ -1,0 +1,58 @@
+{
+  "symbol": "Text__26StoreOfferContentsProviderCFiiP11UIListLabelP7UILabel",
+  "function_name": "StoreOfferContentsProvider::Text",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/StoreOfferContentsProvider.cpp",
+  "initial_percent": 95.271736,
+  "final_percent": 95.25,
+  "total_delta": -0.021736000000004196,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.271736,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.271736,
+      "delta": 0.0,
+      "num_variants": 11,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 81.01087,
+      "best_name": "merge:signunsign_0+condarith_0",
+      "best_pattern": "merge:signed_unsigned+condition_arithmetic",
+      "best_score": 95.271736,
+      "delta": 14.260866000000007,
+      "num_variants": 15,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 95.25,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.25,
+      "delta": 0.0,
+      "num_variants": 14,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 28.62,
+  "winning_pattern": "merge:signed_unsigned+condition_arithmetic",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 19,
+    "2": 12,
+    "5": 9
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

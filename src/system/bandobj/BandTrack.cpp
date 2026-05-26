@@ -672,18 +672,20 @@ void BandTrack::PopupHelp(Symbol sym, bool b) {
 }
 
 void BandTrack::ClearFinaleHelp() {
-    if (unk8c && mEndgameFeedback) {
+    if (unk8c) {
+        if (mEndgameFeedback) {
         TIMER_GET_CYCLES(cycle);
+        float delay = 0.0f;
         float elapsed = Timer::CyclesToMs(cycle - unk88);
         static float kMinFinaleHelpTime =
             SystemConfig("objects", ThisDir()->ClassName(), "min_finale_help_time")->Float(1);
-        float delay = 0.0f;
         if (elapsed < kMinFinaleHelpTime)
             delay = kMinFinaleHelpTime - elapsed;
         TheTaskMgr.Start(
             new MessageTask(mEndgameFeedback, end_game_end_msg), kTaskSeconds, delay
         );
         unk8c = false;
+    }
     }
 }
 

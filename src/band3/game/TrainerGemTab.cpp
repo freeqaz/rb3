@@ -276,7 +276,7 @@ void TrainerGemTab::Draw(int i) {
 
 void TrainerGemTab::Render(int startTick, int endTick, float startY, float endY, int) {
     mTrackGroup->SetShowing(true);
-    static_cast<RndDrawable *>(mTrackGroup)->DrawShowing();
+    mTrackGroup->DrawShowing();
     float yRange = endY - startY;
     float tickRange = (float)endTick - (float)startTick;
     mTrackGroup->SetShowing(false);

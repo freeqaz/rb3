@@ -1208,9 +1208,10 @@ void LightPreset::EnvLightEntry::Load(BinStream &bs) {
 void LightPreset::EnvLightEntry::Animate(
     const LightPreset::EnvLightEntry &entry, float f2
 ) {
-    float thisRange = mRange;
+    float &_ref0 = mRange;
+    float thisRange = _ref0;
     float entryRange = entry.mRange;
-    mRange = f2 * (entryRange - thisRange) + thisRange;
+    _ref0 = f2 * (entryRange - thisRange) + thisRange;
     Interp(unk0, entry.unk0, f2, unk0);
     if (f2 == 0.0f) {
         mPosition = mPosition;

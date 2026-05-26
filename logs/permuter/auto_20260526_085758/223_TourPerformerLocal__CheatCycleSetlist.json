@@ -1,0 +1,48 @@
+{
+  "symbol": "CheatCycleSetlist__18TourPerformerLocalFv",
+  "function_name": "TourPerformerLocal::CheatCycleSetlist",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/tour/TourPerformerLocal.cpp",
+  "initial_percent": 96.18317,
+  "final_percent": 97.03713,
+  "total_delta": 0.8539600000000007,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.18317,
+      "best_name": "crosscompose:nullins_0+cmpflip_0",
+      "best_pattern": "crosscompose:null_guard_insert+comparison_flip",
+      "best_score": 97.03465,
+      "delta": 0.8514799999999951,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.46782,
+      "best_name": "stmt_reorder_2",
+      "best_pattern": "statement_reorder",
+      "best_score": 97.03465,
+      "delta": 1.566829999999996,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 48.16,
+  "winning_pattern": "statement_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 10,
+    "2": 27,
+    "5": 23
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

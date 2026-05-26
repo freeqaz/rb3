@@ -250,8 +250,8 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
 }
 
 void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
-    for (int i = 0; i != mPhrases.size(); i++) {
-        VocalPhrase *phrase = &mPhrases[i];
+    for (unsigned int i = 0; mPhrases.size() != i; i++) {
+        VocalPhrase *phrase = mPhrases.begin() + i;
         int prevEnd = 0;
         if (i != 0) {
             prevEnd = phrase[-1].unk8 + phrase[-1].unkc;
@@ -261,8 +261,9 @@ void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
             VocalPhrase newPhrase;
             newPhrase.unk8 = prevEnd;
             newPhrase.unkc = (phrase->unk8 - prevEnd) - 0x280;
-            newPhrase.mTambourinePhrase = phrase[-1].mTambourinePhrase;
-            mPhrases.insert(mPhrases.begin() + i, newPhrase);
+            VocalPhrase *insertPos = &mPhrases[i];
+            newPhrase.mTambourinePhrase = insertPos[-1].mTambourinePhrase;
+            mPhrases.insert(insertPos, newPhrase);
             i--;
         } else {
             phrase->unkc = phrase->unkc + (phrase->unk8 - prevEnd);

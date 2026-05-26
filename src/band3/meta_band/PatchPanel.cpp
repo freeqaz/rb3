@@ -406,6 +406,8 @@ DataNode PatchPanel::OnMsg(const ButtonUpMsg &msg) {
     return DataNode(kDataUnhandled, 0);
 }
 
+#pragma push
+#pragma pool_data on
 void PatchPanel::Poll() {
     UIPanel::Poll();
     int numLoading = mPatch->NumLoadingStickers();
@@ -484,6 +486,7 @@ void PatchPanel::Poll() {
         unk51 = true;
     }
 }
+#pragma pop
 
 void PatchPanel::SetStickerCategory(Symbol cat) {
     Symbol curCat = mStickerProvider->unk30;

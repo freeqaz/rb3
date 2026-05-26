@@ -174,7 +174,7 @@ void CharKeyHandMidi::Poll() {
     }
 
     if (unk78) {
-        Transform &firstXfm = mFirstSpot->WorldXfm();
+        const Transform &firstXfm = mFirstSpot->WorldXfm();
         Vector3 firstPos(firstXfm.v.x, firstXfm.v.y, firstXfm.v.z);
 
         Vector3 keyDir;
@@ -197,7 +197,7 @@ void CharKeyHandMidi::Poll() {
         float tipY = negFwdY * 1.0f;
         float tipZ = negFwdZ * 1.0f;
 
-        float curX = firstPos.x + upDir.x * -0.4f;
+        float curX = upDir.x * -0.4f + firstPos.x;
         float curY = firstPos.y + upDir.y * -0.4f;
         float curZ = firstPos.z + upDir.z * -0.4f;
 
@@ -213,18 +213,18 @@ void CharKeyHandMidi::Poll() {
         unk54[1].Set(curX + tipX, curY + tipY, curZ + tipZ);
 
         for (int key = 2; key <= 0x19; key++) {
-            if (IsBlackKey((KeyboardKey)key)) {
-                float px = curX + blackX;
-                float py = curY + blackY;
-                float pz = curZ + blackZ;
-                unk4c[key].Set(px, py, pz);
-                unk54[key].Set(px + tipX, py + tipY, pz + tipZ);
-            } else {
+            if (!(IsBlackKey((KeyboardKey)key))) {
                 curX = curX + whiteX;
                 curY = curY + whiteY;
                 curZ = curZ + whiteZ;
                 unk4c[key].Set(curX, curY, curZ);
                 unk54[key].Set(curX + tipX, curY + tipY, curZ + tipZ);
+            } else {
+                float px = curX + blackX;
+                float py = curY + blackY;
+                float pz = curZ + blackZ;
+                unk4c[key].Set(px, py, pz);
+                unk54[key].Set(px + tipX, py + tipY, pz + tipZ);
             }
         }
         unk78 = false;

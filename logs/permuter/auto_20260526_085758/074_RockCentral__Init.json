@@ -1,0 +1,48 @@
+{
+  "symbol": "Init__11RockCentralFb",
+  "function_name": "RockCentral::Init",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/net_band/RockCentral.cpp",
+  "initial_percent": 98.205605,
+  "final_percent": 98.21184,
+  "total_delta": 0.0062349999999895545,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.205605,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 98.21184,
+      "delta": 0.0062349999999895545,
+      "num_variants": 20,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.205605,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 98.21184,
+      "delta": 0.0062349999999895545,
+      "num_variants": 20,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 53.44,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 10,
+    "5": 12,
+    "2": 18
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

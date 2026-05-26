@@ -596,7 +596,7 @@ void Spotlight::DrawShowing() {
     if (LightCanSort() && _ref0) {
         _ref0->SetWorldXfm(mLightCanXfm);
         Sphere s(_ref0->mSphere);
-        if (s.GetRadius() >= 1) {
+        if (s.GetRadius() > 0) {
             Multiply(s, mLightCanXfm, s);
             if (!RndCam::sCurrent->CompareSphereToWorld(s)) {
                 _ref0->DrawShowing();

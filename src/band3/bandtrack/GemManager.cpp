@@ -128,7 +128,7 @@ void GemManager::DrawTrackMasks(int i1, int i2) {
             continue;
         if (curPhrase->mStartTick > i1)
             break;
-        Gem &curGem = mGems[curPhrase->mGemId];
+        const Gem &curGem = mGems[curPhrase->mGemId];
         ArpeggioShapePool *pool = mTrackDir->GetArpeggioShapePool();
         ArpeggioShape *poolShape = pool->GetArpeggioShape();
         bool lefty = mTrackConfig.IsLefty();
@@ -465,8 +465,9 @@ void GemManager::SetupGems(int startTick) {
     if (song == gNullStr)
         return;
 
+    auto _tmp2 = TheSongMgr.GetSongIDFromShortName(song, true);
     BandSongMetadata *metadata = (BandSongMetadata *)TheSongMgr.Data(
-        TheSongMgr.GetSongIDFromShortName(song, true)
+        _tmp2
     );
     int songKey = metadata->SongKey();
     BandUser *bandUser = const_cast<BandUser *>(mTrackConfig.GetBandUser());

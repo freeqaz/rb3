@@ -1,8 +1,3 @@
-/* ===== PERMUTER LOCK — DO NOT EDIT =====
- * The source permuter is actively working on: RockCentral::RecordDataPoint
- * Started: 2026-05-26 08:25 (stale after 5 minutes)
- * This banner is temporary and will be removed automatically.
- ===== */
 #include "net_band/RockCentral.h"
 #include "ContextWrapper.h"
 #include "RBBinaryDataDDL_Wii.h"
@@ -136,8 +131,8 @@ void RockCentral::Init(bool b1) {
     TheDebug.AddExitCallback(RockCentralTerminate);
     TheDataPointMgr.SetDataPointRecorder(RecordDataPointNoRet);
     unk88.Generate();
-
     Timer &_ref0 = mTime;
+
     _ref0.Start();
     mRetryTime = _ref0.Ms();
     unk85 = b1;
@@ -1744,7 +1739,8 @@ void RockCentral::RecordDataPoint(
                 u->SetWrapper(wrapper);
                 AddBuildInfoToDP(dataPoint);
                 ADD_DATA_PAIR(machine_id, g_szMachineIdString);
-                ADD_DATA_PAIR(system_ms, SystemMs());
+                auto _tmp4 = SystemMs();
+                ADD_DATA_PAIR(system_ms, _tmp4);
                 ADD_DATA_PAIR(region, PlatformRegionToSymbol(ThePlatformMgr.GetRegion()));
                 ADD_DATA_PAIR(session_guid, TheRockCentral.unk88.ToString());
                 static Quazal::String qString;

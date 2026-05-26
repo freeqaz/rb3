@@ -225,14 +225,18 @@ void SaveLoadManager::Poll() {
         {
             CacheResult result = TheCacheMgr->GetLastResult();
             unk70 = (int)result;
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 TheCacheMgr->AddCacheID(mCacheID, Symbol(unk4c.c_str()));
                 SetState((State)0x1b);
-            } else if (result == kCache_ErrorCacheNotFound) {
+                break;
+                case kCache_ErrorCacheNotFound:
                 SetState((State)0x15);
-            } else {
+                break;
+                default:
                 TheDebug << MakeString<int>("SaveLoadManager - CacheMgr search returned error %d\n", (int)result);
                 SetState((State)0x25);
+                break;
             }
         }
         break;
@@ -240,7 +244,7 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+            if (TheCacheMgr && result == kCache_NoError) {
                 unk7c = 2;
                 int sz = mCacheID->GetDeviceID();
                 unk78 = sz;
@@ -263,15 +267,20 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 SetState((State)0x1e);
-            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                break;
+                case kCache_ErrorStorageDeviceMissing:
                 SetState((State)0x16);
-            } else if (result == kCache_ErrorCorrupt) {
+                break;
+                case kCache_ErrorCorrupt:
                 SetState((State)0x1c);
-            } else {
+                break;
+                default:
                 TheDebug.Fail(MakeString<int>("SaveLoadManager - kS_SongCacheCreateMountRead unhandled error %d\n", (int)result));
                 SetState((State)0x25);
+                break;
             }
         }
         break;
@@ -1738,12 +1747,16 @@ void SaveLoadManager::ManualSave(LocalBandUser *user) {
     TheMemcardMgr.AddSink(this);
     SetState(kS_ManualLoadInit);
 }
+__declspec(noinline) const char * _outline_Str(FormatString* _obj) {
+    return _obj->Str();
+}
+
 
 void SaveLoadManager::PrintoutSaveSizeInfo() {
     FixedSizeSaveable::EnablePrintouts(true);
     FormatString fmt("SAVESIZE\n");
-    TheDebug << fmt.Str();
-    int profileSize = BandProfile::SaveSize(0x97);
+    TheDebug << _outline_Str(&fmt);
+    unsigned int profileSize = BandProfile::SaveSize(0x97);
     int symbolSize = FixedSizeSaveableStream::GetSymbolTableSize(0x97);
     TheDebug << MakeString<int>("Symbol Table Size = %i\n", symbolSize);
     TheDebug << MakeString<int>("SAVESIZE TOTAL = %i \n", WiiProfileMgr::SaveSize(0x97) + (symbolSize + profileSize));

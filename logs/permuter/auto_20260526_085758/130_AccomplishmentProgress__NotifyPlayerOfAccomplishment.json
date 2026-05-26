@@ -1,0 +1,37 @@
+{
+  "symbol": "NotifyPlayerOfAccomplishment__22AccomplishmentProgressF6SymbolPCc",
+  "function_name": "AccomplishmentProgress::NotifyPlayerOfAccomplishment",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/AccomplishmentProgress.cpp",
+  "initial_percent": 97.35443,
+  "final_percent": 97.35443,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.35443,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.35443,
+      "delta": 0.0,
+      "num_variants": 19,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 16.41,
+  "winning_pattern": null,
+  "ghidra_stats": null,
+  "validation_tier": 0,
+  "validation_distribution": {
+    "0": 10,
+    "2": 9
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

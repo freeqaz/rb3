@@ -1588,8 +1588,9 @@ void StoreMetadataManager::DebugPurchase() {
                                .GetString(nameKey - 1);
                 }
                 TheDebug << MakeString("DebugPurchase: %s\n", name);
+                auto _tmp1 = EC_PurchaseDataTitle(info->titleId, *info->indexes, price);
                 DebugWaitAsyncOp(
-                    EC_PurchaseDataTitle(info->titleId, *info->indexes, price)
+                    _tmp1
                 );
                 balance -= price;
                 state->mFlags |= 6;

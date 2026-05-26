@@ -1,0 +1,48 @@
+{
+  "symbol": "Poll__15CharKeyHandMidiFv",
+  "function_name": "CharKeyHandMidi::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/CharKeyHandMidi.cpp",
+  "initial_percent": 86.84746,
+  "final_percent": 86.85743,
+  "total_delta": 0.009969999999995593,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 86.84746,
+      "best_name": "crosscompose:fma_0+brpol_0",
+      "best_pattern": "crosscompose:fma_reorder+branch_polarity",
+      "best_score": 86.85743,
+      "delta": 0.009969999999995593,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 86.85244,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 86.85743,
+      "delta": 0.004989999999992278,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 25.67,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 8,
+    "2": 32,
+    "5": 20
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

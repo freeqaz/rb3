@@ -1,0 +1,48 @@
+{
+  "symbol": "Poll__14BandIKEffectorFv",
+  "function_name": "BandIKEffector::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/BandIKEffector.cpp",
+  "initial_percent": 87.34422,
+  "final_percent": 87.77995,
+  "total_delta": 0.4357299999999924,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 87.34422,
+      "best_name": "brpol_0",
+      "best_pattern": "branch_polarity",
+      "best_score": 87.77995,
+      "delta": 0.4357299999999924,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 85.39216,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 87.77995,
+      "delta": 2.3877899999999954,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 27.52,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 6,
+    "5": 33,
+    "2": 21
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

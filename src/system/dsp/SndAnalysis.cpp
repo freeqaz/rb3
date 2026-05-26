@@ -49,7 +49,7 @@ void ShiftedDotProduct(const float *buf, int len, float *ss, bool /*unused*/) {
 // startPeriod: search starts here.
 // Returns 0 if no good peak found, otherwise the period index.
 int FindCCPeak(const float *dp_data, const float *ss_data, int vlen, int startPeriod) {
-    static DataNode &boost = DataVariable("boost");
+    static const DataNode &boost = DataVariable("boost");
     static DataNode &minperiod = DataVariable("minperiod");
     static DataNode &maxperiod = DataVariable("maxperiod");
     static DataNode &numpeaksmin = DataVariable("numpeaksmin");

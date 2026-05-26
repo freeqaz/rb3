@@ -41,7 +41,7 @@ float CharCuff::Eccentricity(const Vector2 &v) const {
 // fn_804C3D90 - highlight
 void CharCuff::Highlight() {
     Hmx::Color white(1, 1, 1, 1);
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0.0f; i < 2; i++) {
         for (int j = 0; j < 32; j++) {
             float toSine = j * 6.2831855f / 32.0f;
             Vector3 va8(Sine(toSine), Cosine(toSine), mShape[i].offset);

@@ -1,0 +1,58 @@
+{
+  "symbol": "TranslateRelativeTargets__23PerfectOverdriveTrackerFv",
+  "function_name": "PerfectOverdriveTracker::TranslateRelativeTargets",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/game/PerfectOverdriveTracker.cpp",
+  "initial_percent": 95.89744,
+  "final_percent": 95.88974,
+  "total_delta": -0.007699999999999818,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.89744,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.89744,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 87.28974,
+      "best_name": "scope_widen_0_bare",
+      "best_pattern": "scope_widening",
+      "best_score": 95.88974,
+      "delta": 8.600000000000009,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 95.35128,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 95.88974,
+      "delta": 0.5384600000000006,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 40.14,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 52,
+    "1": 6,
+    "5": 32
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

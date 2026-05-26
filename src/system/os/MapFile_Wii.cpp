@@ -156,7 +156,8 @@ void AddParams(String &s1, String &s2, String s3) {
 }
 
 void TryDemangleParams(String &s1, String &s2, String s3, String s4) {
-    switch (s1[0]) {
+    String &_ref0 = s1;
+    switch (_ref0[0]) {
     case 'P': // 0x50
         s1 = s1.substr(1, strlen(s1.c_str()));
         if (IsAsciiNum(s1[0])) {
@@ -184,19 +185,18 @@ void TryDemangleParams(String &s1, String &s2, String s3, String s4) {
         break;
     }
 
-    int hasMore = HasMoreParams(String(s1));
+    int hasMore = HasMoreParams(String(_ref0));
     if (hasMore) {
         TryDemangleParams(s1, s2, String(s3), String(s4));
         return;
     }
 
     // Base case: no more params - strip trailing ", " and assemble result
-    const char *s2str = s2.c_str();
     int needCleanup = 0;
     int doStrip = 0;
-    if (strlen(s2str) > 1) {
+    if (strlen(s2.c_str()) > 1) {
         needCleanup = 1;
-        if (s2.substr(strlen(s2str) - 2, strlen(s2str)) == ", ") {
+        if (s2.substr(strlen(s2.c_str()) - 2, strlen(s2.c_str())) == ", ") {
             doStrip = 1;
         }
     }
@@ -212,7 +212,7 @@ void TryDemangleParams(String &s1, String &s2, String s3, String s4) {
     }
 
     // Assemble final: s1 = (s4 + s3) + "(" + s2 + ")" + s1_remaining
-    s1 = (((s4 + s3) + "(") + s2) + ")" + s1;
+    _ref0 = (((s4 + s3) + "(") + s2) + ")" + _ref0;
 }
 
 String TryDemangleClassAndFunc(String str) {

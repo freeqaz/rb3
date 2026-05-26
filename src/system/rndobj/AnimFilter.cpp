@@ -80,6 +80,7 @@ float RndAnimFilter::Scale() {
 }
 
 void RndAnimFilter::SetFrame(float frame, float blend) {
+    int iref;
     RndAnimatable::SetFrame(frame, blend);
     if (mAnim) {
         frame = frame * Scale() + FrameOffset();
@@ -106,7 +107,6 @@ void RndAnimFilter::SetFrame(float frame, float blend) {
         } else if (ty == 0) {
             frame = Clamp(start, end, frame);
         } else if (ty == 2) {
-            int iref;
             frame = Limit(start, end, frame, iref);
             if (iref & 1) {
                 frame = me - (frame - ms);

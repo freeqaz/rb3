@@ -796,9 +796,10 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
 }
 
 bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
+    char _slotpad[96]; (void)_slotpad;
     SongMetadata *data = TheSongMgr.Data(songID);
     MILO_ASSERT(data, 0x4a2);
-    if (!data->IsVersionOK()) {
+    if (data->IsVersionOK() == 0) {
         if (!b3)
             TheUI.PushScreen(ObjectDir::Main()->Find<UIScreen>("invalid_version_screen", true));
         return false;
@@ -816,7 +817,7 @@ bool MusicLibrary::IsSongAllowedInSetlist(int songID, bool b3) {
         return false;
     }
     if (TheSongMgr.IsDemo(data->ID())) {
-        int demoNotAllowed = 0;
+        int demoNotAllowed = 0.0f;
         if (unk12d) {
             if (!SongSortMgr::IsSetlistSort(unkdc))
                 demoNotAllowed = 1;

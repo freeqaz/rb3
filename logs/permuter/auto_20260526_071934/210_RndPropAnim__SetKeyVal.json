@@ -1,0 +1,58 @@
+{
+  "symbol": "SetKeyVal__11RndPropAnimFPQ23Hmx6ObjectP9DataArrayfRC8DataNodeb",
+  "function_name": "RndPropAnim::SetKeyVal",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/PropAnim.cpp",
+  "initial_percent": 96.341774,
+  "final_percent": 96.33966,
+  "total_delta": -0.0021140000000059445,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.341774,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.341774,
+      "delta": 0.0,
+      "num_variants": 9,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 93.666664,
+      "best_name": "logswap_0",
+      "best_pattern": "milo_log_swap",
+      "best_score": 96.33966,
+      "delta": 2.6729959999999977,
+      "num_variants": 9,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 96.054855,
+      "best_name": "logswap_0",
+      "best_pattern": "milo_log_swap",
+      "best_score": 96.33966,
+      "delta": 0.28480499999999154,
+      "num_variants": 9,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 21.96,
+  "winning_pattern": "milo_log_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 12,
+    "2": 7,
+    "5": 8
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

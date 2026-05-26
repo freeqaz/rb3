@@ -65,7 +65,7 @@ __declspec(noinline) float _outline_YFov(RndCam* _obj) {
 // fn_805CE7DC
 void RndCamAnim::SetFrame(float frame, float blend) {
     RndAnimatable::SetFrame(frame, blend);
-    ObjPtr<RndCam> &_ref0 = mCam;
+    const ObjPtr<RndCam> &_ref0 = mCam;
     if (_ref0) {
         if (!FovKeys().empty()) {
             float ref = _outline_YFov(_ref0);

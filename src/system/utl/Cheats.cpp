@@ -25,7 +25,7 @@ void CheatsManager::CallCheatScript(bool b1, DataArray *arr2, LocalUser *user, b
             if ((*it)->GetPadNum() == -1)
                 break;
             JoypadData *data = JoypadGetPadData((*it)->GetPadNum());
-            if (b1 && b2 && data->mType - 1U > 2 && data->mType - 0x13U > 2) {
+            if (b1 && b2 && (int)data->mType - 1U > 2 && data->mType - 0x13U > 2) {
                 user = *it;
                 break;
             }

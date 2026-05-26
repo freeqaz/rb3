@@ -73,7 +73,7 @@ void CharIKHand::Poll() {
             RndTransformable *itTrans = (*it).mTarget;
             if (itTrans) {
                 float curFloat = *locfloats;
-                const Transform &worldtf = itTrans->WorldXfm();
+                Transform &worldtf = itTrans->WorldXfm();
                 ScaleAddEq(vec, worldtf.v, curFloat / sumfloat);
                 if (mOrientation) {
                     Hmx::Matrix3 m100;

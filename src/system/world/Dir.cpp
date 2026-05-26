@@ -116,9 +116,10 @@ void WorldDir::Poll() {
     float deltas[4];
     AccumulateDeltas(deltas);
     bool b = true;
-    if (!mFirstPoll && !(TheRnd->ProcCmds() & kProcessPost))
+    bool &_ref0 = mFirstPoll;
+    if (!_ref0 && !(TheRnd->ProcCmds() & kProcessPost))
         b = false;
-    mFirstPoll = false;
+    _ref0 = false;
     if (b) {
         ExtendDeltas();
         HandleType(select_camera_msg);

@@ -1,0 +1,48 @@
+{
+  "symbol": "SplitFromBack__4HeapFi",
+  "function_name": "Heap::SplitFromBack",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/MemMgr.cpp",
+  "initial_percent": 87.23913,
+  "final_percent": 97.065216,
+  "total_delta": 9.826086000000004,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 87.23913,
+      "best_name": "varinline_0",
+      "best_pattern": "variable_inline",
+      "best_score": 97.04348,
+      "delta": 9.80435,
+      "num_variants": 20,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 79.95652,
+      "best_name": "accessor_outline_0",
+      "best_pattern": "accessor_outline",
+      "best_score": 97.04348,
+      "delta": 17.086960000000005,
+      "num_variants": 19,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 13.77,
+  "winning_pattern": "accessor_outline",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "1": 10,
+    "5": 15,
+    "2": 14
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

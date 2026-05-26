@@ -976,7 +976,8 @@ rotate_rot:
 }
 
 void CharBones::RotateTo(CharBones &dst, float f) const {
-    if (mBones.size() == 0)
+    auto _tmp0 = mBones.size();
+    if (_tmp0 == 0)
         return;
     const Bone *src = mBones.begin();
 

@@ -1106,8 +1106,7 @@ void RndText::ResetFaces(RndMesh *mesh, int new_size) {
 }
 
 void RndText::UpdateMesh(RndFont *font) {
-    unsigned int fontAsInt = (unsigned int)font;
-    MeshInfo *meshInfo = &mMeshMap[fontAsInt];
+    MeshInfo *meshInfo = &mMeshMap[(unsigned int)font];
     RndMesh *mesh = meshInfo->mesh;
     MILO_ASSERT(mesh, 0x6A6);
     if (!font) {

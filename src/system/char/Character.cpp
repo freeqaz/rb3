@@ -464,7 +464,7 @@ void Character::DrawShadow(const Transform &tf, const Plane &pl) {
         Transform tfa0;
         Multiply(tf40, tf70, tfa0);
         Multiply(tfa0, tf, tfa0);
-        for (int i = 0; i < mShadowBones.size(); i++) {
+        for (int i = 0.0f; i < mShadowBones.size(); i++) {
             ShadowBone *cur = mShadowBones[i];
             Multiply(cur->Parent()->WorldXfm(), tfa0, cur->DirtyLocalXfm());
         }

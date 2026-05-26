@@ -1,0 +1,58 @@
+{
+  "symbol": "BleedTest__7RndFontFv",
+  "function_name": "RndFont::BleedTest",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/Font.cpp",
+  "initial_percent": 95.612564,
+  "final_percent": 95.596855,
+  "total_delta": -0.015709000000001083,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.612564,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.612564,
+      "delta": 0.0,
+      "num_variants": 29,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 92.8089,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 95.596855,
+      "delta": 2.787955000000011,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 95.596855,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.596855,
+      "delta": 0.0,
+      "num_variants": 29,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 21.36,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 6,
+    "2": 49,
+    "5": 33
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

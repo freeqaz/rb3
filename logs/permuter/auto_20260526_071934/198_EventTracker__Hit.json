@@ -1,0 +1,58 @@
+{
+  "symbol": "Hit__12EventTrackerFfff",
+  "function_name": "EventTracker::Hit",
+  "source_path": "/home/free/code/milohax/rb3/src/system/synth/VoiceBeat.cpp",
+  "initial_percent": 96.53571,
+  "final_percent": 96.53571,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.53571,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.53571,
+      "delta": 0.0,
+      "num_variants": 27,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 90.792854,
+      "best_name": "varext_0",
+      "best_pattern": "variable_extraction",
+      "best_score": 96.53571,
+      "delta": 5.742855999999989,
+      "num_variants": 28,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 96.53571,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.53571,
+      "delta": 0.0,
+      "num_variants": 29,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 15.41,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 35,
+    "2": 44,
+    "1": 5
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

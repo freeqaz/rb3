@@ -287,9 +287,11 @@ bool HDCache::ReadDone() {
 }
 
 bool HDCache::ReadAsync(int arkfileNum, int blockNum, void *ptr) {
-    MILO_ASSERT(ReadDone(), 0x190);
+    auto _tmp0 = ReadDone();
+    MILO_ASSERT(_tmp0, 0x190);
     if (mBlockState[arkfileNum]) {
-        MILO_ASSERT(blockNum < TheArchive->GetArkfileNumBlocks(arkfileNum), 0x195);
+        auto _tmp1 = TheArchive->GetArkfileNumBlocks(arkfileNum);
+        MILO_ASSERT(blockNum < _tmp1, 0x195);
         if ((mBlockState[arkfileNum][(blockNum / 32)] & (1 << (blockNum % 32)))) {
             int blockSize = kArkBlockSize;
             MILO_ASSERT(mReadArkFiles[arkfileNum]->Size() >= ((blockNum + 1) * blockSize), 0x19c);

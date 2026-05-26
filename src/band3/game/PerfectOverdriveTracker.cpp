@@ -27,6 +27,7 @@ void PerfectOverdriveTracker::ConfigureTrackerSpecificData(const DataArray *arr)
 
 void PerfectOverdriveTracker::TranslateRelativeTargets() {
     int numCommonPhrases = TheSongDB->NumCommonPhrases();
+    int noteCount;
     DataArray *cfg = SystemConfig("scoring", "band_energy");
     Symbol deployBeatsSym("deploy_beats");
     float deployBeats = cfg->FindArray(deployBeatsSym, true)->Float(1);
@@ -57,7 +58,6 @@ void PerfectOverdriveTracker::TranslateRelativeTargets() {
             ratio = songDurationMs;
         }
         ratio /= songDurationMs;
-        int noteCount;
         if (trackType == kTrackVocals) {
             noteCount = (int)TheSongDB->GetVocalNoteList(0)->mPhrases.size();
         } else {

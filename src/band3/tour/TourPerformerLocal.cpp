@@ -466,15 +466,15 @@ void TourPerformerLocal::CheatCycleSetlist() {
     }
     std::map<Symbol, int> mapSongsInFilter;
     std::map<Symbol, int> mapSongsWithArtist;
-    InqSongsInFilterData(symFilter, mapSongsInFilter, mapSongsWithArtist);
-    // Build validFilters vector (random/custom filters with enough songs)
     unsigned int filterIndices[kTour_NumQuestFilters];
+    // Build validFilters vector (random/custom filters with enough songs)
+    InqSongsInFilterData(symFilter, mapSongsInFilter, mapSongsWithArtist);
     filterIndices[0] = 0;
     filterIndices[1] = 0;
     filterIndices[2] = 0;
     std::vector<Symbol> validFilters;
     for (std::map<Symbol, int>::iterator it = mapSongsInFilter.begin();
-         it != mapSongsInFilter.end();
+         mapSongsInFilter.end() != it;
          ++it) {
         Symbol current = it->first;
         if (mapSongsInFilter.find(current) != mapSongsInFilter.end() &&
@@ -497,7 +497,7 @@ void TourPerformerLocal::CheatCycleSetlist() {
     unsigned int *pIndices = filterIndices;
     for (int i = 0; i < kTour_NumQuestFilters; i++, pIndices++) {
         Symbol setlistType = pProgress->GetSetlistTypeForCurrentGig(i);
-        if (setlistType == random || setlistType == custom) {
+        if (pProgress && setlistType == random || setlistType == custom) {
             unsigned int nextIdx = *pIndices + 1;
             if (nextIdx >= validFilters.size()) nextIdx = 0;
             Symbol picked = validFilters[nextIdx];

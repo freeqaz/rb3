@@ -65,7 +65,7 @@ void WiiMovie::SetFile(const FilePath &fp, bool b) {
         }
         unk_0x44 = mVideoData.mHeight;
         SetTex(mTex);
-        SetFrame(0.0f, 1.0f);
+        SetFrame(1.0f, 0.0f);
     }
 }
 

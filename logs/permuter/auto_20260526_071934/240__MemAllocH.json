@@ -1,0 +1,58 @@
+{
+  "symbol": "_MemAllocH__Fi",
+  "function_name": "_MemAllocH",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/MemMgr.cpp",
+  "initial_percent": 95.925,
+  "final_percent": 95.925,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.925,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.925,
+      "delta": 0.0,
+      "num_variants": 21,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 84.175,
+      "best_name": "tmpelim_0",
+      "best_pattern": "temp_elimination",
+      "best_score": 95.925,
+      "delta": 11.75,
+      "num_variants": 21,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 95.925,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 95.925,
+      "delta": 0.0,
+      "num_variants": 20,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 14.55,
+  "winning_pattern": "temp_elimination",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "1": 10,
+    "5": 22,
+    "2": 30
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

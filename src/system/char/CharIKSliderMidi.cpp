@@ -51,6 +51,7 @@ void CharIKSliderMidi::SetFraction(float f1, float f2) {
 }
 
 void CharIKSliderMidi::Poll() {
+    Transform tf48;
     if (!mTarget || !mFirstSpot || !mSecondSpot)
         return;
     else {
@@ -89,7 +90,6 @@ void CharIKSliderMidi::Poll() {
             if (weight < 1.0f) {
                 Interp(mTarget->WorldXfm().v, mCurPos, weight, mCurPos);
             }
-            Transform tf48;
             Invert(mTarget->TransParent()->WorldXfm(), tf48);
             Vector3 v58;
             Multiply(mCurPos, tf48, v58);
