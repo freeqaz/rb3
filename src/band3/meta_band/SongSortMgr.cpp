@@ -219,8 +219,9 @@ void SongSortMgr::ClearInternalSetlists() {
     mInternalSetlists.clear();
 }
 
+#pragma push
+#pragma pool_data off
 void SongSortMgr::BuildFilteredSongList(SongFilter *filter, Symbol partSym) {
-    char _slotpad[4]; (void)_slotpad;
     std::vector<int> songs;
     TheSongMgr.GetRankedSongs(songs, true, true);
     mSongs.clear();
@@ -228,12 +229,12 @@ void SongSortMgr::BuildFilteredSongList(SongFilter *filter, Symbol partSym) {
         int songID = *it;
         BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(songID);
         if (data) {
-            auto _tmp1 = DoesSongMatchFilter(songID, filter, partSym);
             SongRecord record(data);
-            if (_tmp1) {
-                std::pair<Symbol, SongRecord> p(record.mShortName, record);
-                mSongs.insert(std::pair<const Symbol, SongRecord>(p));
+            if (!DoesSongMatchFilter(songID, filter, partSym)) {
+                continue;
             }
+            std::pair<Symbol, SongRecord> p(record.mShortName, record);
+            mSongs.insert(std::pair<const Symbol, SongRecord>(p));
         }
     }
     unk34.clear();
@@ -248,6 +249,7 @@ void SongSortMgr::BuildFilteredSongList(SongFilter *filter, Symbol partSym) {
         }
     }
 }
+#pragma pop
 
 bool SongSortMgr::DoesSongMatchFilter(int songID, const SongFilter *filter, Symbol partSym)
     const {
