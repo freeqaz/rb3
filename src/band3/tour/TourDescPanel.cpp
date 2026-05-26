@@ -399,7 +399,7 @@ RndMat *TourDescProvider::Mat(int, int iData, UIListMesh *i_pSlot) const {
     TourProgress *pProgress = TheTour->GetTourProgress();
     MILO_ASSERT(pProgress, 0xB2);
     bool bSelected = pProgress->GetTourDesc() == s;
-    bool bPlayed = pProgress->GetToursPlayed(s) != 0;
+    bool bPlayed = pProgress->GetToursPlayed(s) > 0;
     bPlayed = bPlayed || pProgress->GetTourMostStars(s) > 0;
     (void)bPlayed;
     if (i_pSlot->Matches("bronze")) {
