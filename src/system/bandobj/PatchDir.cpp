@@ -179,8 +179,10 @@ PatchSticker *PatchLayer::GetSticker(bool b) const {
         return sStickerOwner->GetSticker(mStickerCategory, mStickerIdx, b);
 }
 
-inline bool PatchLayer::HasSticker() const { return !mStickerCategory.Null(); }
-DECOMP_FORCEFUNC(PatchDir, const PatchLayer, HasSticker())
+inline bool PatchLayer::HasSticker() const { return mStickerCategory.Str() != gNullStr; }
+DECOMP_FORCEBLOCK(PatchDir, (bool (PatchLayer::*fp)() const),
+    fp = &PatchLayer::HasSticker;
+)
 
 void PatchLayer::SelectFX() { unk28 = TheTaskMgr.UISeconds() + 0.5f; }
 
