@@ -130,6 +130,11 @@ int SongUpgradeData::RealGuitarTuning(int string) const {
 
 int SongUpgradeData::RealBassTuning(int string) const { return mRealBassTuning[string]; }
 
+void RecurseMidiFileCallback(const char *c1, const char *c2) {
+    gMidiFileFound = true;
+    *gMidiFileResult = MakeString("%s/%s", c1, c2);
+}
+
 bool SongUpgradeData::CorrectMidiFile(ContentLocT loc, Symbol s) {
     if (FileExists(mMidiFile.c_str(), 0)) {
         return true;
@@ -139,7 +144,7 @@ bool SongUpgradeData::CorrectMidiFile(ContentLocT loc, Symbol s) {
         if (content) {
             gMidiFileFound = false;
             gMidiFileResult = &mMidiFile;
-            content->Enumerate("songs_upgrades", RecurseMidiFileCallback, true, "/");
+            content->Enumerate("/", RecurseMidiFileCallback, true, "&.mid");
             if (gMidiFileFound) {
                 MILO_LOG("SongUpgradeData: updated MIDI file to %s\n", mMidiFile.c_str());
                 return true;
@@ -148,11 +153,6 @@ bool SongUpgradeData::CorrectMidiFile(ContentLocT loc, Symbol s) {
     }
     MILO_LOG("SongUpgradeData: MIDI file %s does not exist in %s\n", mMidiFile.c_str(), s);
     return false;
-}
-
-void RecurseMidiFileCallback(const char *c1, const char *c2) {
-    gMidiFileFound = true;
-    *gMidiFileResult = MakeString("%s/%s", c1, c2);
 }
 
 SongUpgradeMgr::SongUpgradeMgr() : mSongCacheNeedsWrite(0) {
