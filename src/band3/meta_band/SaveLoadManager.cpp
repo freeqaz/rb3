@@ -462,18 +462,23 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 SetState((State)0x33);
-            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                break;
+                case kCache_ErrorStorageDeviceMissing:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 SetState((State)0x28);
-            } else if (result == kCache_ErrorCorrupt) {
+                break;
+                case kCache_ErrorCorrupt:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 SetState((State)0x2f);
-            } else {
+                break;
+                default:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 TheDebug << MakeString<int, int>("SaveLoadManager - unknown error %d during state %d.\n", (int)result, (int)mState);
                 SetState((State)0x37);
+                break;
             }
         }
         break;
@@ -497,18 +502,22 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 unk7c = 2;
                 int sz = mCacheID->GetDeviceID();
                 unk78 = sz;
                 TheCacheMgr->AddCacheID(mCacheID, Symbol(unk4c.c_str()));
                 SetState((State)0x3d);
-            } else if (result == kCache_ErrorUserCancel) {
+                break;
+                case kCache_ErrorUserCancel:
                 unk7c = 1;
                 SetState((State)0x3a);
-            } else {
+                break;
+                default:
                 TheDebug << MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result);
                 SetState((State)0x40);
+                break;
             }
         }
         break;
