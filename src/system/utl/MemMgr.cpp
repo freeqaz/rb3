@@ -1055,9 +1055,10 @@ void *_MemAlloc(int iSizeBytes, int align) {
     int currentHeap = GetCurrentHeapNum();
     if (kFastHeap != currentHeap) {
         int tinyHeap = kTinyHeap;
-        if (tinyHeap != GetCurrentHeapNum() && iSizeBytes < 0x400) {
+        auto _tmp1 = GetCurrentHeapNum();
+        if (tinyHeap != _tmp1 && iSizeBytes < 0x400) {
             MemPushHeap(tinyHeap);
-            void *result = _MemAlloc(iSizeBytes, align);
+            void *result = _MemAlloc(align, iSizeBytes);
             MemPopHeap();
             return result;
         }
