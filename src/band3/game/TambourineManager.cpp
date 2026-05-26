@@ -288,7 +288,7 @@ void TambourineManager::TambourineSucceed(int index) {
     mPlayerRef.HandleType(msg);
     mPlayerRef.Handle(tambourine_hit_msg, false);
     if (unk4c >= 8) {
-        mPlayerRef.PopupHelp(tambourine, false);
+        mPlayerRef.PopupHelp("tambourine", false);
     }
     unk4c = 0;
     mPlayerRef.AddTambourineSeen();
