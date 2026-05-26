@@ -1122,8 +1122,8 @@ RndMesh *GemTrackDir::GetChordMesh(unsigned int key, bool which) {
         return it->second.second;
     }
     TheDebug.Notify(MakeString(
-        "GemTrackDir::GetChordMesh: no %s mesh for chord %u",
-        which ? "arpeggio" : "chord",
+        "couldn't find %s gem for chord shape %x",
+        which ? "lefty" : "righty",
         key
     ));
     return NULL;
