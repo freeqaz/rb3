@@ -2144,17 +2144,18 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
 float VocalTrack::GetHarmonyScore(int singerIdx) {
     Singer *singer = mPlayer->mSingers[singerIdx];
     int numParts = mPlayer->mVocalParts.size();
-    float harmonyScore = 0.0f;
     float frameScore = singer->unk6c;
+    float harmonyScore = 0.0f;
     if (harmonyScore == frameScore)
         return harmonyScore;
     for (int part = 0; part < numParts; part++) {
         if (part != singer->mFrameAssignedPart) {
             Singer *candidate = mPlayer->mVocalParts[part]->GetBestSingerCandidate();
             if (candidate) {
-                harmonyScore += Clamp<float>(
-                    0.0f, 1.0f, frameScore * candidate->unk6c * frameScore * 1.2f
-                );
+                float tmp = frameScore * candidate->unk6c;
+                tmp *= frameScore;
+                tmp *= 1.2f;
+                harmonyScore += Clamp<float>(0.0f, 1.0f, tmp);
             }
         }
     }
