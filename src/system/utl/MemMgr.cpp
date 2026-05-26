@@ -330,17 +330,16 @@ void Heap::Init(const char *name, int heapNum, int *start, int sizeWords,
     mName = name;
     mHeapNum = heapNum;
     mUseHeapAlign = useHeapAlign;
-    mStrategy = strategy;
     mDebugLevel = debugLevel;
+    mStrategy = strategy;
     mAllowTemp = allowTemp;
     mSizeWords = newSizeWords;
     mStart = newStart;
     unsigned int ts = gTimeStamp;
     gTimeStamp = ts + 1;
     InsertFreeBlock((FreeBlock *)newStart, newSizeWords, nullptr, nullptr, ts);
-    mNumFreeBytes = newSizeWords << 2;
     mBiggestFree = mNumFreeBytes;
-    mLargestFree = mNumFreeBytes;
+        mLargestFree = mNumFreeBytes = newSizeWords << 2;
     mMinLargest = mNumFreeBytes;
     if (mDebugLevel >= 1) {
         FreeBlock *block = mFreeBlockChain;
@@ -372,9 +371,9 @@ int *Heap::Truncate(int *mem, int truncWords, int &outSize) {
     if (mem < mStart || mem >= mStart + mSizeWords) {
         return nullptr;
     }
-    MILO_ASSERT(truncWords >= 0, 0x49E);
-    unsigned int header = ((unsigned int *)mem)[-1];
     AllocBlock *allocBlock = (AllocBlock *)(mem - 1);
+    unsigned int header = ((unsigned int *)mem)[-1];
+    MILO_ASSERT(truncWords >= 0, 0x49E);
     int newFreeWords = ((header >> 8) - 1 - (header & 0xFF)) - truncWords;
     if (newFreeWords > 8) {
         FreeBlock *prev = nullptr;
@@ -1291,12 +1290,12 @@ void MemCheckConsistency(const char *file, int line) {
      (TheDebugFailer << MakeString(kMemAssertStr, mName, file, line, msg), 0))
 
 void Heap::CheckConsistency(const char *file, int line) {
-    int *p = mStart;
-    FreeBlock *freeBlock = mFreeBlockChain;
     int *heapEnd = mStart + mSizeWords;
+    FreeBlock *freeBlock = mFreeBlockChain;
+    int *p = mStart;
     while (p < heapEnd) {
         int blockWords;
-        if (freeBlock != nullptr && p == (int *)freeBlock) {
+        if (freeBlock != nullptr & p == (int *)freeBlock) {
             FreeBlock *nextFree = freeBlock->mNext;
             blockWords = freeBlock->mSizeWords;
             if (nextFree != nullptr) {
