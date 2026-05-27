@@ -54,6 +54,7 @@ BOOL DVDLowPrepareCoverRegister(DVDLowCallback callback);
 BOOL DVDLowPrepareStatusRegister(DVDLowCallback callback);
 BOOL DVDLowPrepareControlRegister(DVDLowCallback callback);
 u32 DVDLowGetImmBufferReg(void);
+BOOL DVDLowReportKey(void* buf, u32 offset, u32 keyType, DVDLowCallback callback);
 BOOL DVDLowUnmaskStatusInterrupts(void);
 BOOL DVDLowMaskCoverInterrupt(void);
 BOOL DVDLowClearCoverInterrupt(DVDLowCallback callback);

@@ -1921,7 +1921,7 @@
             "sdk/RVL_SDK/src/dsp/dsp.c": "Matching",
             "sdk/RVL_SDK/src/dvd/dvd_broadway.c": "MISSING",
             "sdk/RVL_SDK/src/dvd/dvd.c": "MISSING",
-            "sdk/RVL_SDK/src/dvd/dvdDeviceError.c": "MISSING",
+            "sdk/RVL_SDK/src/dvd/dvdDeviceError.c": "NonMatching",
             "sdk/RVL_SDK/src/dvd/dvderror.c": "NonMatching",
             "sdk/RVL_SDK/src/dvd/dvdFatal.c": "NonMatching",
             "sdk/RVL_SDK/src/dvd/dvdfs.c": "NonMatching",
