@@ -88,7 +88,8 @@ set(MILO_ENGINE_DECOMP_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
     ${REPO_ROOT}/src
     ${REPO_ROOT}/src/system
-    ${REPO_ROOT}/src/system/oggvorbis)
+    ${REPO_ROOT}/src/system/oggvorbis
+    ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt uses <angled> self-includes
 set(MILO_ENGINE_DECOMP_COMPAT_FLAGS ${DECOMP_FLAGS})
 
 # Engine platform/audio/char TUs that are DC3-shaped against subsystem headers
@@ -251,7 +252,8 @@ function(rb3_configure_target tgt)
         ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
         ${REPO_ROOT}/src
         ${REPO_ROOT}/src/system
-        ${REPO_ROOT}/src/system/oggvorbis)
+        ${REPO_ROOT}/src/system/oggvorbis
+        ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt uses <angled> self-includes
     target_link_libraries(${tgt} PRIVATE milo-engine Threads::Threads)
     if(ZLIB_FOUND)
         target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
