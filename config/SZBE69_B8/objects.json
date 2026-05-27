@@ -1835,7 +1835,7 @@
             "sdk/RVL_SDK/src/ax/AXOut.c": "MISSING",
             "sdk/RVL_SDK/src/ax/AXProf.c": "NonMatching",
             "sdk/RVL_SDK/src/ax/AXSPB.c": "MISSING",
-            "sdk/RVL_SDK/src/ax/AXVPB.c": "MISSING",
+            "sdk/RVL_SDK/src/ax/AXVPB.c": "NonMatching",
             "sdk/RVL_SDK/src/ax/DSPCode.c": "Matching",
             "sdk/RVL_SDK/src/axfx/AXFXChorus.c": "MISSING",
             "sdk/RVL_SDK/src/axfx/AXFXChorusExp.c": "MISSING",
