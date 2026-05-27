@@ -1,9 +1,26 @@
 # RB3 Native Port — Roadmap & Status
 
-**Status**: Phase 0 — **COMPLETE** (0.1–0.4 closed). Phase 1 in progress: `rb3-native` full-engine link + `.milo` scene-tree dump.
+**Status**: Phase 0 **COMPLETE**. Phase 1 milestone (b) **COMPLETE** — `rb3-native` links the full engine (built **GFX-off**) and dumps `.milo` scene-tree headers (60/60 milos, 0 crashes). **Next critical path: full object-graph load → headless DTA boot → rendering** — see [Critical path to a booting RB3](#critical-path-to-a-booting-rb3).
 **v1 milestone**: Play one song end-to-end (audio + venue + HUD + scoring) on Linux x86_64.
 
 This doc is the durable tracking artifact for the RB3 native port. Sessions append to the Status Log at the bottom and adjust phase tables as items move. Companion: [NATIVE_PORT_INVENTORY.md](NATIVE_PORT_INVENTORY.md) (per-area disposition of DC3's existing native code).
+
+---
+
+## Critical path to a booting RB3
+
+**Where we are (2026-05-27):** `rb3-native` links the shared engine (built **GFX-off** — see [Phase 2](#phase-2--rendering-bring-up)) with RB3's matched fork injected as MWCC context, runs to a clean exit, and dumps a `.milo`'s `ObjectDir` **header** (object names + class types) read straight from the `ChunkStream`. That header dump needs no object factories, so it works *before* the render/synth object classes are native-clean. The next milestones turn that into a real, booting game.
+
+**"Booting RB3"** = the App reaches its **main menu, rendered and navigable** (historically the hard part for DC3 too). The spine is the DTA-driven boot script; rendering comes up alongside it. Ordered critical path:
+
+| Step | Milestone | Unblocks | Key RB3-specific blockers |
+|------|-----------|----------|---------------------------|
+| **1** | **Full object-graph load** (completes Phase 1) | Instantiating real objects from a `.milo` instead of header-only | ~22/64 `rndobj` + ~7/47 `synth` matched-fork TUs are not yet clang-LP64-clean (POSIX `wait`/`select` identifier clashes, MWCC `MSL_Common/extras.h`, switch-jump-over-init in `Trans.cpp`, an `ObjVector.h` template instantiation). Once clean: re-add `rndobj`/`synth` to `NATIVE_FORK_SOURCES`, re-enable factory registration in `main_native.cpp`, populate `gSystemConfig` `objects` so `SyncObjects` doesn't `MILO_FAIL`. |
+| **2** | **Headless DTA boot** (Phase 4b, pulled forward) | App runs `SystemPreInit`/`SystemInit` → loads configs from the ark → `UIManager::Init` fires the DTA boot script toward `attract`/`main_screen` (no render yet) | Port DC3's `os/System.cpp`/`os/File.cpp` runtime `HX_NATIVE` blocks the W2.1 audit deferred (System-init reorder, `TheCacheMgr`/`TheNetCacheMgr` null-guards). Stub RB3-specific DTA-referenced managers (`$content_mgr`, `$song_mgr`, `$band_user_mgr`, `$disc_mgr`, …) — DC3's `DTA_LOADING_BLOCKER.md` is the pattern. Resolve RB3's UI-manager identity (`TheHamUI` vs a band-specific stack). |
+| **3** | **Rendering** (Phase 2) | The booted main menu actually draws | The engine's WebGPU layer is DC3-wired and won't compile against RB3's 2010 `rndobj` — pick a reconciliation strategy (see Phase 2). Depends on Step 1's `rndobj` TUs being clang-clean. |
+| **4** | **Audio / input / gameplay** (Phases 3–5) | Song playback, menu navigation, the v1 one-song milestone | Mostly DC3→RB3 HX_NATIVE carry-forward (synth/ groundwork already landed) + RB3-only `GemPlayer`/note-track work. |
+
+Steps 1→2 give a **headless boot** (proves the game logic boots); Step 3 makes it **visible**. Step 1's matched-fork clang-cleanup is also the prerequisite for Phase 2, so it is the highest-leverage next task. Per-phase acceptance criteria are below; open regressions are tracked under [Known issues](#known-issues--tracked-regressions).
 
 ---
 
@@ -250,25 +267,34 @@ Phase 1 is mostly **landing HX_NATIVE branches in RB3's matched fork to mirror w
 4. **PPC-only guards** — `#ifndef HX_NATIVE` around inline asm fallbacks, around code that touches Wii GX hardware registers directly, around `__alloca` calls that the mwcc_compat.h fallback handles instead.
 5. **Debug logging** — `fprintf(stderr, ...)` calls that exist only on native. Optional; add as needed.
 
-Engine-side bring-up:
-- `System.cpp` / `Memory.cpp` / `Timer.cpp` clang-LP64 implementations land in the engine. RB3's matched fork files (`os/System_Wii.cpp`, etc.) drop off the native link.
-- DTA parser + DataNode plumbing: verify RB3 hits the same 8-byte union initialization issue DC3 did. Land the same fix.
-- Asset pipeline: `ArkFile`, `ChunkStream`, `ObjDir`. RB3's `.ark` + `.sel` differs from DC3's `.ark` + `.hdr` only in the entry-point file the loader bootstraps from.
-- Object factory + `ObjDirPtr` + `ObjRef` ring. The double-link bug DC3 fixed in `ObjDirPtr(C*)` (session 61) recurs in RB3's identical code path.
+Engine-side bring-up — **status after the 2026-05-27 session:**
+- **DONE** — DataNode 8-byte union zero-init, DataArray symbol-pointer LP64 truncation, and Task liveness landed in RB3's `obj/` matched fork (DC3→RB3 carry-forward). The `ObjRef`/`ObjDirPtr` double-link ring fix was **deliberately not ported**: RB3's 2010-era `Hmx::Object` tracks refs in a `std::vector<ObjRef*>`, not DC3's intrusive next/prev ring, so DC3's session-61 bug cannot occur in RB3.
+- **DONE** — `Memory_Native`/`ThreadCall_Native` POSIX impls live in the engine; RB3's `os/` matched fork already compiles clean under clang LP64 for the DTA/header-dump path (no edits needed there yet — but see Step 2: booting the App will need the deferred `os/System.cpp` runtime blocks).
+- **DONE (header level)** — Asset pipeline: `ArkFile`/`ChunkStream`/`ObjDir` read a `.milo`'s directory header (`world.milo_xbox` → `world [WorldDir]`, `cowbell_bank.milo_xbox` → 8 `Sfx`/`SynthSample` objects, etc.). RB3's `.ark`+`.sel` bootstrap differs from DC3's `.ark`+`.hdr` only at the entry point. Assets are `.milo_xbox` (Xbox-format, big-endian PPC like Wii — the scene-graph structure is shared).
+- **REMAINING (Step 1 of the critical path)** — Object **factory** + full graph load: needs RB3's `rndobj`/`synth` matched-fork TUs clang-LP64-clean so their classes register and instantiate. Until then `main_native` dumps the directory header, not the live object tree.
 
-**Acceptance**: `rb3-native` loads a chosen RB3 `.milo` file (e.g. `world/main.milo`) and dumps its scene tree to stdout without crashing. Engine test set still passes.
+**Acceptance — two tiers:**
+- **(b1) Header dump — DONE:** `rb3-native <path.milo_xbox>` prints the directory's object names + class types without crashing. Verified across 60 milos / 7 root dir classes.
+- **(b2) Full object-graph load — REMAINING:** `rb3-native` instantiates the `.milo`'s objects via the registered factories and dumps the live `ObjDir` tree. Engine test set still passes.
 
 ### Phase 2 — Rendering bring-up
 
-**Goal**: A static RB3 venue renders. No animation, no UI, no audio. Just a frame.
+**Goal**: A static RB3 venue (or the main menu) renders. No animation, no UI, no audio. Just a frame.
 
-- Wire `Rnd_Wgpu`, `Mesh_Wgpu`, `Tex_Wgpu` through `BandRenderHook` for RB3's draw paths.
-- Material + shader pipeline — `standard_wgsl.inc` carries over directly.
-- WebGPU resource binding: validate against RB3's asset content (texture formats, mesh vertex layouts). Expect at least one BC*-format issue analogous to DC3 Session 71's render-target-attachment bug.
-- First milestone: clear-color frame, then triangle, then a single textured RB3 mesh.
-- Second milestone: load an RB3 venue `.milo` and render the scene statically.
+**Blocker found 2026-05-27 (Waves 2.3 + 3):** the shared engine's WebGPU layer is **DC3-wired** and does **not** compile against RB3's older (2010) `rndobj`. Concretely: engine `src/platform/Part_Wgpu.cpp` calls `RndParticleSys::NumTilesAcross()`/`NumTilesDown()` (RB3 has no sprite-atlas tiling); the engine renderer is `WgpuRnd : NgRnd` but RB3 has no `NgRnd` (its `Rnd` is a different, older class); RB3 also lacks `FontMap`/2012-shape `RndText`, `MetaMaterial`, `RndAmbientOcclusion`, `Hmx::Matrix4`, `TheHiResScreen`. That is why RB3 currently builds the engine **GFX-off** — the `MILO_ENGINE_BUILD_GFX` option (default ON) plus the consumer `MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE` seam, engine commit `54b9fa0`. DC3 sets neither → its full GPU build is byte-identical.
 
-**Acceptance**: Screenshot of an RB3 venue rendering, even without lighting accuracy.
+**Prerequisite:** Step 1 of the critical path (clang-clean `rndobj` TUs) — the GPU backends can't link against object classes that don't compile.
+
+**Reconciliation strategy (decision deferred to Phase 2 start, pick one):**
+- **(A) Generalize the engine gfx layer** to abstract over both DC3's `NgRnd`-era and RB3's older `Rnd` shapes — a thin renderer interface the `Rnd_Wgpu`/`Tex_Wgpu`/`Mesh_Wgpu`/`Part_Wgpu` backends target, with per-decomp adapters for the divergent class members. Highest cross-pollination value; most up-front work.
+- **(B) RB3-specific GPU backends** in `rb3/native/` (its own `*_Wgpu`-equivalent TUs against RB3's `rndobj`/`rndwii`), reusing the engine's `GpuDevice`/`PipelineManager`/post-proc but not its Rnd/Mesh/Tex/Part backends. Faster to a first RB3 frame; some duplication.
+
+Then, once a backend compiles+links for RB3:
+- Wire RB3's draw paths through `BandRenderHook` (the no-op `rb3_render_hook.cpp` slot already exists).
+- Material + shader pipeline — `standard.wgsl` carries over; validate RB3 texture formats / mesh vertex layouts (expect a CMPR/BC*-format issue analogous to DC3 Session 71).
+- First milestone: clear-color frame → triangle → a single textured RB3 mesh. Second: render an RB3 venue/main-menu `.milo` statically.
+
+**Acceptance**: Screenshot of an RB3 venue or main menu rendering, even without lighting accuracy.
 
 ### Phase 3 — Audio
 
@@ -329,6 +355,17 @@ For each missing object, the work is: provide a no-op stub object that satisfies
 - **macOS reactivation**: engine's CMake already handles macOS; verify rb3-native links and runs on arm64 + x86_64. Acceptance: one song plays end-to-end on macOS.
 - **Web reactivation**: engine's `DC3_WEB_*` source lists are renamed `MILO_WEB_*` during 0.2 extraction. RB3 opts in via `cmake -DMILO_BUILD_WEB=ON`. Acceptance: one song plays end-to-end in browser via Emscripten.
 - Multi-song stability sweep (DC3 Session 75-76 model).
+
+---
+
+## Known issues & tracked regressions
+
+| # | Issue | Status / notes |
+|---|-------|----------------|
+| K1 | **`milo-engine-tests`: 4 `RndCamProjectionTest` failures** (`PerspectiveIdentityProjectionMatchesExpectedMatrix`, `PerspectiveWorldToScreenMatchesExpectedFrustumEdges`, `ChooseModeDebugUiCamHackPushesApproximateLayoutOffscreen`, `OrthographicProjectionMatchesExpectedMatrix`); suite is **191/195**. | **Pre-existing** — not introduced by the 2026-05-27 session (reverting that session's engine change did not fix them; the engine source on the projection path was unchanged). Prime suspect: clang-22.1.5 toolchain drift in projection-matrix float codegen. Test file `milo-native-engine/tests/test_rndcam_projection.cpp:178`. **OPEN** — diagnose (compare expected/actual matrices; check `-ffp-contract`/FMA codegen) before relying on RndCam projection in Phase 2. |
+| K2 | **RB3 `rndobj`/`synth` matched-fork TUs not clang-LP64-clean** (~22/64 rndobj, ~7/47 synth — e.g. `Trans.cpp`, `Tex.cpp`, `Mesh.cpp`, `Rnd.cpp`, `Sfx.cpp`, `Sequence.cpp`). | Blocks full object-graph load (critical-path Step 1) **and** the GPU backends (Phase 2). Causes are matched-fork compile issues, not integration: POSIX `wait`/`select` identifier clashes, MWCC `MSL_Common/extras.h`, switch jump-over-init (`Trans.cpp`), `ObjVector.h` template instantiation, tomcrypt `<angled>` includes. **OPEN** — Wave-1/2-style HX_NATIVE bring-up. |
+| K3 | **RB3 renders nothing yet** — engine built GFX-off. | **By design** for milestone (b); the `.milo` scene-tree dump needs no GPU. Real rendering is Phase 2 once a reconciliation strategy is chosen. |
+| K4 | **`dc3_runtime_sources.cmake` lists two engine-graduated files** (`Memory_Native`, `ThreadCall_Native`) → benign duplicate symbols in `milo-engine-tests`. | Cosmetic. A safe per-line removal is identified (verified not to change behavior or the K1 failures) but left un-applied. **LOW PRIORITY.** |
 
 ---
 
