@@ -68,17 +68,16 @@ bool Box::Clamp(Vector3 &vec) {
 
 void Multiply(const Box &box, float f, Box &out) {
     float miny = box.mMin.y;
-    float maxy = box.mMax.y;
     float minz = box.mMin.z;
-    float maxz = box.mMax.z;
     float minx = box.mMin.x;
-    float cy = (maxy - miny) * 0.5f + miny;
+    float maxz = box.mMax.z;
+    float cy = (box.mMax.y - miny) * 0.5f + miny;
     float maxx = box.mMax.x;
     float cz = (maxz - minz) * 0.5f + minz;
     float ny = miny - cy;
     float cx = (maxx - minx) * 0.5f + minx;
     float pz = maxz - cz;
-    float py = maxy - cy;
+    float py = box.mMax.y - cy;
     float nz = minz - cz;
     float pyf = py * f;
     float nx = minx - cx;
@@ -630,27 +629,25 @@ void BSPFace::Update() {
     const Vector2 *curr = prev + 1;
     area = 0.0f;
     while (curr != p.mPoints.end()) {
-        area += (anchor->x * prev->y - anchor->y * prev->x +
+        area += (curr->y * anchor->x - anchor->x * prev->y - anchor->y * prev->x +
                  prev->x * curr->y - prev->y * curr->x +
-                 curr->x * anchor->y - curr->y * anchor->x) * 0.5f;
+                 curr->x * anchor->y) * 0.5f;
         prev = curr;
         curr++;
     }
 
     planes.clear();
 
-    float fa = t.m.z.x;
-    float fb = t.m.z.y;
-    float fvy = t.v.y;
     float fvx = t.v.x;
+    float fvy = t.v.y;
     float fc = t.m.z.z;
     Plane facePlane;
-    facePlane.a = fa;
-    facePlane.b = fb;
+    facePlane.a = t.m.z.x;
+    facePlane.b = t.m.z.y;
     facePlane.c = fc;
-    float fd_bvy = fb * fvy;
+    float fd_bvy = t.m.z.y * fvy;
     float fvz = t.v.z;
-    float fd_avx = fa * fvx;
+    float fd_avx = t.m.z.x * fvx;
     float fd_sum = fd_avx + fd_bvy;
     float fd_cvz = fc * fvz;
     facePlane.d = -(fd_cvz + fd_sum);
@@ -963,9 +960,8 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
 
     const Vector2 *lastPoint = &poly.mPoints.back();
     const Vector2 *dirPtr = &ray.dir;
-    float baseY = ray.base.y;
     float baseX = ray.base.x;
-    float yDiff = lastPoint->y - baseY;
+    float yDiff = lastPoint->y - ray.base.y;
     float xDiff = lastPoint->x - baseX;
     float lastDot = xDiff * dirPtr->x + yDiff * dirPtr->y;
 
@@ -974,7 +970,7 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
         float yDelta = i->y - ray.base.y;
         float dot = (i->x - ray.base.x) * dirPtr->x + yDelta * dirPtr->y;
 
-        if (dot >= 0.0f) {
+        if (newPoints && dot >= 0.0f) {
             if (dot > 0.0f && lastDot < 0.0f) {
                 float t = lastDot / (lastDot - dot);
                 v.Set(lastPoint->x + t * (i->x - lastPoint->x),
