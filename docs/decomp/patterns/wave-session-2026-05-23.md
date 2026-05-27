@@ -347,7 +347,7 @@ After the original `_Temporary_buffer` and `__introsort_loop` discoveries, an 8-
 
 The comparator-specialization pattern is narrow. All three must hold:
 
-1. **Integer/pointer comparator** — float compares already use `fcmpo` + `blt` directly. Float comparators (MessageTimer's `MaxSort` on `MaxMs()` float, BandPatchMesh's `SortByZ` on `.pos.z`) cannot be improved this way — residual mismatches are unfixable f0↔f1/f2 volatile-FPR swaps.
+1. **Integer/pointer comparator** — float compares already use `fcmpo` + `blt` directly. Float comparators (MessageTimer's `MaxSort` on `MaxMs()` float, BandPatchMesh's `SortByZ` on `.pos.z`) cannot be improved this way via specialization — residual mismatches are f0↔f1/f2 volatile-FPR swaps. These are permuter-class (scheduling-driven) — run the source permuter on the function before declaring at-limit; see [permuter-roi.md](../patterns/permuter-roi.md).
 2. **Trivially-copyable element type** — non-trivial copy ctors (smart pointers like `ObjOwnerPtr<T>`) trigger hidden-pointer ABI in the generic template; a specialization with `T __val` by-value uses a different calling convention. CharClipGroup's `Alphabetically` on `ObjOwnerPtr<CharClip, ObjectDir>` confirmed this.
 3. **Target binary diff must currently show `mfcr` / `srwi.` / `beq` bool-mat** in the inner loop. If the target itself was built without the specialization (CameraManager's `NameSort`, Stats.cpp's `PartPercentageSorter`), forcing one will regress.
 

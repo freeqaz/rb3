@@ -44,7 +44,7 @@ Then either: (a) extract inline expressions to a local (when base has the long s
 
 Same family as [format-string tweaks shift string pool](fixable-operators.md) and `MakeString("literal")` opening a FormatString slot.
 
-**When to apply:** TU has a long 95-99% tail AND multiple functions share the SAME `@stringBase`/`@sda`/`@sda2` byte delta. That uniform delta IS the pool-shift signature. Without it the partials are permuter-class — assert-count alone is a poor predictor.
+**When to apply:** TU has a long 95-99% tail AND multiple functions share the SAME `@stringBase`/`@sda`/`@sda2` byte delta. That uniform delta IS the pool-shift signature. Without it the partials are permuter-class (run [`permuter-roi.md`](permuter-roi.md) before hand-editing) — assert-count alone is a poor predictor.
 
 **Find candidates:** `python3 scripts/find_pool_shift.py [--filter PATH]` — walks `report.json`, runs objdiff with `--include-instructions` per partial, extracts Signed-arg diffs on pool-symbol instructions, groups by TU + delta. Ranks TUs where ≥3 functions share one delta. Per-TU output gives the exact byte delta to chase. (Latest scan: `docs/decomp/pool-shift-scan-2026-05-25.json`.)
 
@@ -199,4 +199,4 @@ Logged so future sweeps don't re-attempt these:
 | `system/obj/MessageTimer.cpp` | `MaxSort`, `ObjSort` | `EventEntry*`, `ObjEntry*` | Float comparators (`MaxMs()`) — already use `fcmpo`. Residual is f0↔f1/f2 volatile swaps. |
 | `system/char/CharClipGroup.cpp` | `Alphabetically` | `ObjOwnerPtr<CharClip, ObjectDir>` | Non-trivially-copyable element → ABI mismatch (hidden-pointer vs by-value). |
 | `system/bandobj/BandPatchMesh.cpp` `SortByZ` | `SortByZ` | `RndMesh::Vert*` | Float compare on `.pos.z`/.y/.x — already `fcmpo`. |
-| `band3/game/Stats.cpp` | `PartPercentageSorter` | `pair<int, float>` | Residual is unfixable volatile FPR swaps from inlined `pair.second` (float) compare. Specializations are structurally correct but neutral. |
+| `band3/game/Stats.cpp` | `PartPercentageSorter` | `pair<int, float>` | Residual is volatile FPR swaps from inlined `pair.second` (float) compare. Specializations are structurally correct but neutral here — run the source permuter (see [permuter-roi.md](permuter-roi.md)) before marking at-limit. |
