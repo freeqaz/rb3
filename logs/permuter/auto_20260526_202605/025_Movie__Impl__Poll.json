@@ -1,0 +1,38 @@
+{
+  "symbol": "Poll__Q25Movie4ImplFv",
+  "function_name": "Movie::Impl::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/system/movie/Movie.cpp",
+  "initial_percent": 84.55073,
+  "final_percent": 84.55073,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 84.55073,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 84.55073,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 15.12,
+  "winning_pattern": null,
+  "ghidra_stats": null,
+  "validation_tier": 0,
+  "validation_distribution": {
+    "0": 4,
+    "2": 20,
+    "5": 6
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

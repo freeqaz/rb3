@@ -1,0 +1,42 @@
+{
+  "total": 43,
+  "processed": 43,
+  "improved": 3,
+  "perfect": 0,
+  "no_change": 40,
+  "errors": 0,
+  "total_delta": 2.1639900000000125,
+  "improvements": [
+    {
+      "symbol": "Poll__10CharSleeveFv",
+      "function": "CharSleeve::Poll",
+      "source": "src/system/char/CharSleeve.cpp",
+      "initial": 89.09591,
+      "final": 89.23657,
+      "delta": 0.1406599999999969,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "TryAddFace__Q213BandPatchMesh9WorkVertsFii",
+      "function": "BandPatchMesh::WorkVerts::TryAddFace",
+      "source": "src/system/bandobj/BandPatchMesh.cpp",
+      "initial": 87.05818,
+      "final": 88.77091,
+      "delta": 1.7127300000000076,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Highlight__8CharEyesFv",
+      "function": "CharEyes::Highlight",
+      "source": "src/system/char/CharEyes.cpp",
+      "initial": 81.96833,
+      "final": 82.27893,
+      "delta": 0.310600000000008,
+      "rounds": 2,
+      "reason": "plateau"
+    }
+  ],
+  "elapsed_seconds": 760.7
+}

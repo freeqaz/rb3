@@ -1,0 +1,48 @@
+{
+  "symbol": "__ct__17SuperFormatStringFPCcPC9DataArrayb",
+  "function_name": "SuperFormatString::SuperFormatString",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/SuperFormatString.cpp",
+  "initial_percent": 97.479614,
+  "final_percent": 97.97864,
+  "total_delta": 0.49902600000000064,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.479614,
+      "best_name": "crosscompose:crefswap_0+scope_widen_0_bare",
+      "best_pattern": "crosscompose:const_ref_swap+scope_widening",
+      "best_score": 97.93592,
+      "delta": 0.4563059999999979,
+      "num_variants": 26,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 97.97864,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.97864,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 59.41,
+  "winning_pattern": "crosscompose:const_ref_swap+scope_widening",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 46,
+    "1": 8,
+    "5": 2
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

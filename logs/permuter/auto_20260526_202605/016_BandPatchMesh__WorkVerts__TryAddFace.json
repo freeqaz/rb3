@@ -1,0 +1,48 @@
+{
+  "symbol": "TryAddFace__Q213BandPatchMesh9WorkVertsFii",
+  "function_name": "BandPatchMesh::WorkVerts::TryAddFace",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/BandPatchMesh.cpp",
+  "initial_percent": 87.05818,
+  "final_percent": 88.77091,
+  "total_delta": 1.7127300000000076,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 87.05818,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 88.76,
+      "delta": 1.701820000000012,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 88.76,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 88.76,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 43.0,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 33,
+    "0": 8,
+    "5": 19
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

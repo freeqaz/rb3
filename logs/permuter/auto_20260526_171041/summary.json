@@ -1,0 +1,542 @@
+{
+  "total": 400,
+  "processed": 400,
+  "improved": 53,
+  "perfect": 0,
+  "no_change": 347,
+  "errors": 0,
+  "total_delta": 240.43931840000002,
+  "improvements": [
+    {
+      "symbol": "Load__10WorldCrowdFR9BinStream",
+      "function": "WorldCrowd::Load",
+      "source": "src/system/world/Crowd.cpp",
+      "initial": 95.71785,
+      "final": 99.42419,
+      "delta": 3.7063399999999973,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "LoadSubDir__9ObjectDirFiRC8FilePathR9BinStreamb",
+      "function": "ObjectDir::LoadSubDir",
+      "source": "src/system/obj/Dir.cpp",
+      "initial": 58.042435,
+      "final": 99.39114,
+      "delta": 41.348704999999995,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "SetSameVerts__Q213BandPatchMesh9WorkVertsFPQ213BandPatchMesh9WorkVerts",
+      "function": "BandPatchMesh::WorkVerts::SetSameVerts",
+      "source": "src/system/bandobj/BandPatchMesh.cpp",
+      "initial": 99.016594,
+      "final": 99.390045,
+      "delta": 0.37345100000000286,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "ConfigurePrecachedFilterData__21AccomplishmentManagerFP9DataArray",
+      "function": "AccomplishmentManager::ConfigurePrecachedFilterData",
+      "source": "src/band3/meta_band/AccomplishmentManager.cpp",
+      "initial": 99.183624,
+      "final": 99.34491,
+      "delta": 0.16128600000000404,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "DrawShowing__13BandCharacterFv",
+      "function": "BandCharacter::DrawShowing",
+      "source": "src/system/bandobj/BandCharacter.cpp",
+      "initial": 98.09931,
+      "final": 99.28082,
+      "delta": 1.181510000000003,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "DrawShowing__9SpotlightFv",
+      "function": "Spotlight::DrawShowing",
+      "source": "src/system/world/Spotlight.cpp",
+      "initial": 98.84509,
+      "final": 98.87091,
+      "delta": 0.025819999999995957,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Text__19QuestFilterProviderCFiiP11UIListLabelP7UILabel",
+      "function": "QuestFilterProvider::Text",
+      "source": "src/band3/tour/QuestFilterPanel.cpp",
+      "initial": 95.80338,
+      "final": 98.221985,
+      "delta": 2.4186049999999994,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "PollSearch__11CacheMgrWiiFv",
+      "function": "CacheMgrWii::PollSearch",
+      "source": "src/system/utl/CacheMgr_Wii.cpp",
+      "initial": 92.83846,
+      "final": 98.16923,
+      "delta": 5.330770000000001,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Swing__22JoypadTrackWatcherImplFibb11GemHitFlags",
+      "function": "JoypadTrackWatcherImpl::Swing",
+      "source": "src/system/beatmatch/JoypadTrackWatcherImpl.cpp",
+      "initial": 98.04338,
+      "final": 98.12557,
+      "delta": 0.0821899999999971,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Load__7RndFontFR9BinStream",
+      "function": "RndFont::Load",
+      "source": "src/system/rndobj/Font.cpp",
+      "initial": 98.02631,
+      "final": 98.053535,
+      "delta": 0.027225000000001387,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "LoadSong__4GameFv",
+      "function": "Game::LoadSong",
+      "source": "src/band3/game/Game.cpp",
+      "initial": 97.67175,
+      "final": 98.05344,
+      "delta": 0.38168999999999187,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "CheckDrumMapMarker__10SongParserFiib",
+      "function": "SongParser::CheckDrumMapMarker",
+      "source": "src/system/beatmatch/SongParser.cpp",
+      "initial": 96.0,
+      "final": 98.0,
+      "delta": 2.0,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Poll__10MidiParserFv",
+      "function": "MidiParser::Poll",
+      "source": "src/system/midi/MidiParser.cpp",
+      "initial": 96.13426,
+      "final": 97.52315,
+      "delta": 1.3888900000000035,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "BuildList__18StoreOfferProviderFP9DataArray",
+      "function": "StoreOfferProvider::BuildList",
+      "source": "src/band3/meta_band/StoreOfferProvider.cpp",
+      "initial": 90.06684,
+      "final": 97.930534,
+      "delta": 7.863693999999995,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Poll__9UIManagerFv",
+      "function": "UIManager::Poll",
+      "source": "src/system/ui/UI.cpp",
+      "initial": 95.94716,
+      "final": 97.741776,
+      "delta": 1.7946160000000049,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "UpdateContentStateFromFastEnum__22StoreContentStateCacheFv",
+      "function": "StoreContentStateCache::UpdateContentStateFromFastEnum",
+      "source": "src/system/meta/StorePackedMetadata.cpp",
+      "initial": 97.657715,
+      "final": 97.8255,
+      "delta": 0.16778500000000918,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "NameMesh__19ChordShapeGeneratorFP7RndMeshb",
+      "function": "ChordShapeGenerator::NameMesh",
+      "source": "src/system/bandobj/ChordShapeGenerator.cpp",
+      "initial": 93.5914,
+      "final": 97.76344,
+      "delta": 4.17204000000001,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Poll__10TrackPanelFv",
+      "function": "TrackPanel::Poll",
+      "source": "src/band3/bandtrack/TrackPanel.cpp",
+      "initial": 97.534546,
+      "final": 97.72,
+      "delta": 0.1854539999999929,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "SetState__15SaveLoadManagerFQ215SaveLoadManager5State",
+      "function": "SaveLoadManager::SetState",
+      "source": "src/band3/meta_band/SaveLoadManager.cpp",
+      "initial": 5.5106606,
+      "final": 97.70307,
+      "delta": 92.1924094,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "AddLineUTF8__7RndTextFRC6StringRC9TransformRCQ27RndText5StylePfPbi",
+      "function": "RndText::AddLineUTF8",
+      "source": "src/system/rndobj/Text.cpp",
+      "initial": 97.56766,
+      "final": 97.65016,
+      "delta": 0.08249999999999602,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "AppendWeights__Q213RndMeshDeform9VertArrayFiPiPf",
+      "function": "RndMeshDeform::VertArray::AppendWeights",
+      "source": "src/system/rndobj/MeshDeform.cpp",
+      "initial": 92.617775,
+      "final": 97.577774,
+      "delta": 4.9599990000000105,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "GetNumPhrases__11VocalPlayerFiii",
+      "function": "VocalPlayer::GetNumPhrases",
+      "source": "src/band3/game/VocalPlayer.cpp",
+      "initial": 96.81396,
+      "final": 97.48062,
+      "delta": 0.6666600000000074,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "BuildDrawState__9UIListDirCFR21UIListWidgetDrawStateRC11UIListStateQ211UIComponent5Statef",
+      "function": "UIListDir::BuildDrawState",
+      "source": "src/system/ui/UIListDir.cpp",
+      "initial": 97.34478,
+      "final": 97.37781,
+      "delta": 0.03302999999999656,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "OnMsg__16GuitarControllerFRC13ButtonDownMsg",
+      "function": "GuitarController::OnMsg",
+      "source": "src/system/beatmatch/GuitarController.cpp",
+      "initial": 97.27575,
+      "final": 97.30897,
+      "delta": 0.03322000000000003,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "dump__FPfi",
+      "function": "dump",
+      "source": "src/system/dsp/PitchDetector.cpp",
+      "initial": 96.69643,
+      "final": 97.23214,
+      "delta": 0.5357099999999946,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "CheatCycleSetlist__18TourPerformerLocalFv",
+      "function": "TourPerformerLocal::CheatCycleSetlist",
+      "source": "src/band3/tour/TourPerformerLocal.cpp",
+      "initial": 92.121284,
+      "final": 97.03713,
+      "delta": 4.915846000000002,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "MoveParticles__14RndParticleSysFff",
+      "function": "RndParticleSys::MoveParticles",
+      "source": "src/system/rndobj/Part.cpp",
+      "initial": 96.84766,
+      "final": 97.021484,
+      "delta": 0.1738239999999962,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "CollideShowing__6UIListFRC7SegmentRfR5Plane",
+      "function": "UIList::CollideShowing",
+      "source": "src/system/ui/UIList.cpp",
+      "initial": 95.96722,
+      "final": 97.0041,
+      "delta": 1.0368799999999965,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Text__17FilterViewSettingCFiiP11UIListLabelP7UILabel",
+      "function": "FilterViewSetting::Text",
+      "source": "src/band3/meta_band/ViewSetting.cpp",
+      "initial": 96.303925,
+      "final": 96.960785,
+      "delta": 0.6568599999999947,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "UTF8RemoveSpaces__FPciPCc",
+      "function": "UTF8RemoveSpaces",
+      "source": "src/system/utl/UTF8.cpp",
+      "initial": 95.7377,
+      "final": 96.84426,
+      "delta": 1.1065600000000018,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "TryDemangleClassAndFunc__F6String",
+      "function": "TryDemangleClassAndFunc",
+      "source": "src/system/os/MapFile_Wii.cpp",
+      "initial": 96.76856,
+      "final": 96.83663,
+      "delta": 0.06807000000000585,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Poll__8AnimTaskFf",
+      "function": "AnimTask::Poll",
+      "source": "src/system/rndobj/Anim.cpp",
+      "initial": 96.69811,
+      "final": 96.72956,
+      "delta": 0.03145000000000664,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "SyncDir__13WorldInstanceFv",
+      "function": "WorldInstance::SyncDir",
+      "source": "src/system/world/Instance.cpp",
+      "initial": 95.40949,
+      "final": 96.63135,
+      "delta": 1.2218599999999924,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "SetupTailVerts__14GemRepTemplateFv",
+      "function": "GemRepTemplate::SetupTailVerts",
+      "source": "src/band3/bandtrack/GemRepTemplate.cpp",
+      "initial": 95.173386,
+      "final": 96.564514,
+      "delta": 1.391128000000009,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "PrepareChordMesh__11GemTrackDirFUi",
+      "function": "GemTrackDir::PrepareChordMesh",
+      "source": "src/system/bandobj/GemTrackDir.cpp",
+      "initial": 91.21459,
+      "final": 96.48069,
+      "delta": 5.2660999999999945,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "SetFrame__10RndCamAnimFff",
+      "function": "RndCamAnim::SetFrame",
+      "source": "src/system/rndobj/CamAnim.cpp",
+      "initial": 95.13021,
+      "final": 96.302086,
+      "delta": 1.1718759999999975,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Poll__10CharIKHandFv",
+      "function": "CharIKHand::Poll",
+      "source": "src/system/char/CharIKHand.cpp",
+      "initial": 95.71429,
+      "final": 96.127235,
+      "delta": 0.41294499999999346,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "UpdateOverlay__9CharDebugFP10RndOverlayf",
+      "function": "CharDebug::UpdateOverlay",
+      "source": "src/system/char/Char.cpp",
+      "initial": 95.08419,
+      "final": 95.132835,
+      "delta": 0.04864499999999339,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Init__7WiiMeshFv",
+      "function": "WiiMesh::Init",
+      "source": "src/system/rndwii/Mesh.cpp",
+      "initial": 94.255684,
+      "final": 94.318184,
+      "delta": 0.0625,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Swing__20DrumTrackWatcherImplFibb11GemHitFlags",
+      "function": "DrumTrackWatcherImpl::Swing",
+      "source": "src/system/beatmatch/DrumTrackWatcherImpl.cpp",
+      "initial": 92.88396,
+      "final": 95.06826,
+      "delta": 2.1842999999999932,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Poll__15UsbMidiKeyboardFv",
+      "function": "UsbMidiKeyboard::Poll",
+      "source": "src/system/os/UsbMidiKeyboard.cpp",
+      "initial": 92.3734,
+      "final": 93.9335,
+      "delta": 1.5600999999999914,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Display__10CharDriverFf",
+      "function": "CharDriver::Display",
+      "source": "src/system/char/CharDriver.cpp",
+      "initial": 92.21634,
+      "final": 93.65658,
+      "delta": 1.4402400000000029,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "AppendThreadStackTrace__FPcPUi",
+      "function": "AppendThreadStackTrace",
+      "source": "src/system/os/System.cpp",
+      "initial": 90.27451,
+      "final": 91.54902,
+      "delta": 1.2745099999999923,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "SetCrowdRating__9BandTrackFf15CrowdMeterState",
+      "function": "BandTrack::SetCrowdRating",
+      "source": "src/system/bandobj/BandTrack.cpp",
+      "initial": 85.74627,
+      "final": 93.58209,
+      "delta": 7.835819999999998,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "BinkFileReadFrame__FP6BINKIOUiiPvUi",
+      "function": "BinkFileReadFrame",
+      "source": "src/system/utl/BinkIntegration.cpp",
+      "initial": 93.02146,
+      "final": 93.042915,
+      "delta": 0.0214549999999889,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "CopyFromFB__6WiiTexFiiiibb",
+      "function": "WiiTex::CopyFromFB",
+      "source": "src/system/rndwii/Tex.cpp",
+      "initial": 90.911766,
+      "final": 92.15686,
+      "delta": 1.2450939999999946,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "NextLook__8CharEyesFv",
+      "function": "CharEyes::NextLook",
+      "source": "src/system/char/CharEyes.cpp",
+      "initial": 91.66133,
+      "final": 91.93733,
+      "delta": 0.27599999999999625,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "BeginFrame__Q25Movie4ImplFv",
+      "function": "Movie::Impl::BeginFrame",
+      "source": "src/system/movie/Movie.cpp",
+      "initial": 91.166664,
+      "final": 91.31944,
+      "delta": 0.1527760000000029,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "DrawTimers__3RndFf",
+      "function": "Rnd::DrawTimers",
+      "source": "src/system/rndobj/Rnd.cpp",
+      "initial": 76.92157,
+      "final": 90.60504,
+      "delta": 13.68347,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "GetBitmapList__8LayerDirFP9DataArray",
+      "function": "LayerDir::GetBitmapList",
+      "source": "src/system/bandobj/LayerDir.cpp",
+      "initial": 81.4406,
+      "final": 90.15842,
+      "delta": 8.717820000000003,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "DrawBlackBackground__6WiiRndFv",
+      "function": "WiiRnd::DrawBlackBackground",
+      "source": "src/system/rndwii/Rnd.cpp",
+      "initial": 87.8642,
+      "final": 89.90741,
+      "delta": 2.043210000000002,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Poll__15SaveLoadManagerFv",
+      "function": "SaveLoadManager::Poll",
+      "source": "src/band3/meta_band/SaveLoadManager.cpp",
+      "initial": 89.54492,
+      "final": 90.98242,
+      "delta": 1.4375,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "OnFingersUp__15CharKeyHandMidiFP9DataArray",
+      "function": "CharKeyHandMidi::OnFingersUp",
+      "source": "src/system/bandobj/CharKeyHandMidi.cpp",
+      "initial": 86.21429,
+      "final": 96.10317,
+      "delta": 9.88888,
+      "rounds": 2,
+      "reason": "max_rounds"
+    }
+  ],
+  "elapsed_seconds": 3473.1
+}

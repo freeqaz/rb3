@@ -1,0 +1,48 @@
+{
+  "symbol": "ExtendTwin__Q213BandPatchMesh9WorkVertsFPCQ213BandPatchMesh8MeshVertR7Vector2R7Vector2",
+  "function_name": "BandPatchMesh::WorkVerts::ExtendTwin",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/BandPatchMesh.cpp",
+  "initial_percent": 71.52612,
+  "final_percent": 72.57462,
+  "total_delta": 1.04849999999999,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 71.52612,
+      "best_name": "fabs_0",
+      "best_pattern": "fabs_variant",
+      "best_score": 72.57462,
+      "delta": 1.04849999999999,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 71.470146,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 72.57462,
+      "delta": 1.1044739999999962,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 25.85,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 9,
+    "5": 49,
+    "0": 2
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

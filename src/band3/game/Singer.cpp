@@ -29,11 +29,11 @@ namespace stlpmtx_std {
 
 struct _SingerW2 { unsigned int a, b; };
 struct _SingerResultsWords {
-    _SingerW2 ab;     // unk0, unk4    -> words 0,1 (paired)
-    unsigned int c;   // unk8          -> word 2  (single)
-    _SingerW2 de;     // unkc, unk10   -> words 3,4 (paired)
-    _SingerW2 fg;     // unk14, unk18  -> words 5,6 (paired)
-    unsigned int h;   // unk1c         -> word 7  (single)
+    _SingerW2 ab;     // targetPitchHitScore, micPitchHitScore    -> words 0,1 (paired)
+    unsigned int c;   // phraseCount                              -> word 2  (single)
+    _SingerW2 de;     // centsDeviation, targetPitchAccuracy      -> words 3,4 (paired)
+    _SingerW2 fg;     // centsVariance, phraseScore               -> words 5,6 (paired)
+    unsigned int h;   // scoreFrameCount                          -> word 7  (single)
 };
 
 // _M_fill_insert_aux backward element shift: opens a gap by moving existing
@@ -76,21 +76,21 @@ __copy_ptrs<SingerResultsData*, SingerResultsData*>(
 MicClientID sNullClientID(-1, -1);
 
 Singer::Singer(VocalPlayer *vp, int n)
-    : mPlayer(vp), unkc(0), mSingerIndex(n), unk14(0), unk18(0), unk1c(0), mIsSinging(0),
-      mDetune(0), unk2c(0), unk30(0), unk38(100.0f), unk3c(0), unk40(0), unk44(0),
-      unk48(-1.0f), mScreamEnergyThreshold(0.8f), unk50(500.0f), mFrameMicPitch(0),
-      unk60(0), unk64(0), unk6c(0), mFrameAssignedPart(-1), unk74(0), mOctaveOffset(0),
-      unk7c(0), unk80(0), unk84(0), unk88(0), unka0(0), unka4(0), unka8(0), mVibrato(0),
-      unk244(0), mVibratoFrameBonus(0), unk24c(-1.0f), mAutoplayPart(-1),
+    : mPlayer(vp), mUnused8(0), mSingerIndex(n), mUnused14(0), mTalkDataPtr(0), mUnused1c(0), mIsSinging(0),
+      mDetune(0), mCurrentFrameTime(0), mUnused30(0), mTambourineDeploymentSuppressMs(100.0f), mTambourineActivationTime(0), mLastTambourineTime(0), mTotalTambourineDeployment(0),
+      mScreamStartTime(-1.0f), mScreamEnergyThreshold(0.8f), mScreamMinDurationMs(500.0f), mFrameMicPitch(0),
+      mLastFrameMicEnergy(0), mSmoothedMicEnergy(0), mFrameTargetPitch(0), mFrameAssignedPart(-1), mBestTargetPitch(0), mOctaveOffset(0),
+      mUnused7c(0), mScreamOccurred(0), mUnused84(0), mUnused88(0), mPitchHistoryMean(0), mPitchHistoryIndex(0), mPitchHistoryValidCount(0), mVibrato(0),
+      mAccumulatedVibratoBonusPoints(0), mVibratoFrameBonus(0), mVibratoBonusAccumulator(-1.0f), mAutoplayPart(-1),
       mAutoplayVariationMagnitude(0), mAutoplayOffset(0),
-      mTambourineDetector(vp->mTambourineManager, this), unk29c(0), unk2a0(0), unk2a4(0) {
+      mTambourineDetector(vp->mTambourineManager, this), mPitchDeviationMean(0), mPitchDeviationDev(0), mPitchDeviationFrameCount(0) {
     CreateMicClientID();
     Difficulty diff = mPlayer->GetUser()->GetDifficulty();
     DataArray *cfg = SystemConfig("scoring", "vocals");
     cfg->FindArray("pitch_margin")->Float(diff + 1); // lol what happened to this
     mMaxDetune = cfg->FindFloat("max_detune");
     mScreamEnergyThreshold = cfg->FindFloat("scream_energy_threshold");
-    unk38 = cfg->FindFloat("tambourine_deployment_suppress_ms");
+    mTambourineDeploymentSuppressMs = cfg->FindFloat("tambourine_deployment_suppress_ms");
     mVibrato = new VibratoDetector(0, 100);
     mTalkyMatcher = new TalkyMatcher();
     for (int i = 0; i < 5; i++)
@@ -112,7 +112,7 @@ Singer::Singer(VocalPlayer *vp, int n)
 Singer::~Singer() {
     RELEASE(mTalkyMatcher);
     RELEASE(mVibrato);
-    RELEASE(unk18);
+    RELEASE(mTalkDataPtr);
 }
 
 void Singer::PostLoad() {
@@ -157,15 +157,15 @@ void Singer::Restart(bool b1) {
     mFrameAssignedPart = -1;
     ClearFreestyleDeployment();
     ClearScoreHistories();
-    unk64 = 0;
-    unk80 = 0;
+    mSmoothedMicEnergy = 0;
+    mScreamOccurred = 0;
     if (!b1) {
         FOREACH (it, mResultsData) {
             it->Reset();
         }
-        unk29c = 0;
-        unk2a0 = 0;
-        unk2a4 = 0;
+        mPitchDeviationMean = 0;
+        mPitchDeviationDev = 0;
+        mPitchDeviationFrameCount = 0;
     }
     mAmbiguousData.clear();
 }
@@ -203,17 +203,17 @@ void Singer::ProcessTalkyData() {
 void Singer::DetectScream(float f1, float f2, float f3) {
     MILO_ASSERT(mPlayer->IsLocal(), 0x2F6);
     if (f3 >= mScreamEnergyThreshold) {
-        if (unk48 < 0) {
-            unk48 = f1;
-        } else if (f1 - unk48 > unk50 && mPlayer->mIsInCoda && !unk80) {
-            unk80 = true;
+        if (mScreamStartTime < 0) {
+            mScreamStartTime = f1;
+        } else if (f1 - mScreamStartTime > mScreamMinDurationMs && mPlayer->mIsInCoda && !mScreamOccurred) {
+            mScreamOccurred = true;
             mPlayer->HitCoda();
         }
     } else
         CancelScream();
 }
 
-void Singer::CancelScream() { unk48 = -1.0f; }
+void Singer::CancelScream() { mScreamStartTime = -1.0f; }
 
 void Singer::SetIsSinging(bool b1) { mIsSinging = b1; }
 void Singer::Detune(float f1) { mDetune = f1; }
@@ -223,19 +223,19 @@ void Singer::HandlePhraseEnd(float, const std::vector<float> &micPitches) {
     for (int i = 0; (unsigned)i < mResultsData.size(); i++) {
         float micPitch = micPitches[i];
         if (micPitch > 0.0f) {
-            mResultsData[i].unk18 +=
-                std::max(std::min(mResultsData[i].unk10 / micPitch, 1.0f), 0.0f);
-            mResultsData[i].unk1c++;
+            mResultsData[i].phraseScore +=
+                std::max(std::min(mResultsData[i].targetPitchAccuracy / micPitch, 1.0f), 0.0f);
+            mResultsData[i].scoreFrameCount++;
         }
-        mResultsData[i].unk10 = 0.0f;
-        mResultsData[i].unk14 = 0.0f;
-        mResultsData[i].unkc = 0.0f;
+        mResultsData[i].targetPitchAccuracy = 0.0f;
+        mResultsData[i].centsVariance = 0.0f;
+        mResultsData[i].centsDeviation = 0.0f;
         if (micPitch > 0.0f) {
-            mResultsData[i].unk4 +=
-                std::max(std::min(mResultsData[i].unk0 / micPitch, 1.0f), 0.0f);
-            mResultsData[i].unk8++;
+            mResultsData[i].micPitchHitScore +=
+                std::max(std::min(mResultsData[i].targetPitchHitScore / micPitch, 1.0f), 0.0f);
+            mResultsData[i].phraseCount++;
         }
-        mResultsData[i].unk0 = 0.0f;
+        mResultsData[i].targetPitchHitScore = 0.0f;
     }
     mAmbiguousData.clear();
 }
@@ -269,26 +269,26 @@ void Singer::AllScoresAreIn(const std::vector<int> &scores) {
     MILO_ASSERT(mResultsData.size() == mScoreCaches.size(), 0x4B6);
     for (int i = 0; (unsigned)i < mResultsData.size(); i++) {
         float cacheUnk4 = mScoreCaches[i].unk4;
-        float sum = mResultsData[i].unk10 + cacheUnk4;
+        float sum = mResultsData[i].targetPitchAccuracy + cacheUnk4;
         float cacheUnk8 = mScoreCaches[i].unk8;
-        mResultsData[i].unk10 = std::min(cacheUnk8, sum);
-        mResultsData[i].unk14 += mScoreCaches[i].unkc;
-        mResultsData[i].unkc += mScoreCaches[i].unk0;
+        mResultsData[i].targetPitchAccuracy = std::min(cacheUnk8, sum);
+        mResultsData[i].centsVariance += mScoreCaches[i].unkc;
+        mResultsData[i].centsDeviation += mScoreCaches[i].unk0;
     }
     for (AmbiguousData *entry = &mAmbiguousData[0]; entry != &mAmbiguousData[0] + mAmbiguousData.size(); entry++) {
-        if (entry->unk8)
+        if (entry->isResolved)
             continue;
-        int part0 = entry->unk0;
+        int part0 = entry->part1;
         if (part0 != mFrameAssignedPart) {
             if (std::find(scores.begin(), scores.end(), part0) != scores.end()) {
-                entry->unk8 = true;
+                entry->isResolved = true;
                 continue;
             }
         }
-        int part4 = entry->unk4;
+        int part4 = entry->part2;
         if (part4 != mFrameAssignedPart) {
             if (std::find(scores.begin(), scores.end(), part4) != scores.end()) {
-                entry->unk8 = true;
+                entry->isResolved = true;
             }
         }
     }
@@ -296,13 +296,13 @@ void Singer::AllScoresAreIn(const std::vector<int> &scores) {
 
 void Singer::NoteTambourineSwing(float f1) {
     ClearFreestyleDeployment();
-    unk3c = f1 + unk38;
+    mTambourineActivationTime = f1 + mTambourineDeploymentSuppressMs;
 }
 
 void Singer::ClearFreestyleDeployment() {
-    unk3c = 0;
-    unk40 = 0;
-    unk44 = 0;
+    mTambourineActivationTime = 0;
+    mLastTambourineTime = 0;
+    mTotalTambourineDeployment = 0;
 }
 
 void Singer::SetAutoplayToPart(int part) { mAutoplayPart = part; }
@@ -321,9 +321,9 @@ void Singer::ClearScoreHistories() {
 }
 
 void Singer::ClearPitchHistory() {
-    unka0 = 0;
-    unka4 = 0;
-    unka8 = 0;
+    mPitchHistoryMean = 0;
+    mPitchHistoryIndex = 0;
+    mPitchHistoryValidCount = 0;
     mPitchHistory[0] = 0;
     mPitchHistory[1] = 0;
     mPitchHistory[2] = 0;
@@ -332,39 +332,39 @@ void Singer::ClearPitchHistory() {
 }
 
 void Singer::UpdatePitchHistory(float pitch) {
-    if ((unsigned int)unka4 > 4) {
-        TheDebug.Notify(MakeString("pitch history index out of bounds (%d) singer %d", unka4, mSingerIndex));
+    if ((unsigned int)mPitchHistoryIndex > 4) {
+        TheDebug.Notify(MakeString("pitch history index out of bounds (%d) singer %d", mPitchHistoryIndex, mSingerIndex));
         ClearPitchHistory();
     }
-    float prev = mPitchHistory[unka4];
+    float prev = mPitchHistory[mPitchHistoryIndex];
     if ((pitch > 0.0f) != (prev > 0.0f)) {
         if (pitch > 0.0f) {
-            unka8 += 1;
-            unka0 = unka0 + (pitch - unka0) / (float)unka8;
+            mPitchHistoryValidCount += 1;
+            mPitchHistoryMean = mPitchHistoryMean + (pitch - mPitchHistoryMean) / (float)mPitchHistoryValidCount;
         } else {
-            unka8 -= 1;
-            if (unka8 == 0) ClearPitchHistory();
-            if ((unsigned int)unka8 > 5) {
-                TheDebug.Notify(MakeString("pitch history valid frames out of bounds (%d)", unka8));
+            mPitchHistoryValidCount -= 1;
+            if (mPitchHistoryValidCount == 0) ClearPitchHistory();
+            if ((unsigned int)mPitchHistoryValidCount > 5) {
+                TheDebug.Notify(MakeString("pitch history valid frames out of bounds (%d)", mPitchHistoryValidCount));
                 ClearPitchHistory();
             }
         }
     } else if (pitch > 0.0f) {
-        unka0 = unka0 + (pitch - prev) / (float)unka8;
+        mPitchHistoryMean = mPitchHistoryMean + (pitch - prev) / (float)mPitchHistoryValidCount;
     }
-    mPitchHistory[unka4] = pitch;
-    unka4 = (unka4 + 1) % 5;
+    mPitchHistory[mPitchHistoryIndex] = pitch;
+    mPitchHistoryIndex = (mPitchHistoryIndex + 1) % 5;
 }
 
 int Singer::SuddenOctaveShift(float pitch) const {
     int sign;
-    if (unka8 >= 1) {
+    if (mPitchHistoryValidCount >= 1) {
         if (pitch > 0.0f) {
         int shift = 0;
-        if (pitch > unka0) sign = 1;
+        if (pitch > mPitchHistoryMean) sign = 1;
         else sign = -1;
         float step = 12.0f * (float)sign;
-        float a0 = unka0;
+        float a0 = mPitchHistoryMean;
         goto check;
     update:
         pitch -= step;
@@ -380,19 +380,19 @@ int Singer::SuddenOctaveShift(float pitch) const {
 }
 
 void Singer::UpdatePitchDeviation(float pitch) {
-    float mean = unk29c;
-    int count = unk2a4 + 1;
-    float dev = unk2a0;
-    unk2a4 = count;
+    float mean = mPitchDeviationMean;
+    int count = mPitchDeviationFrameCount + 1;
+    float dev = mPitchDeviationDev;
+    mPitchDeviationFrameCount = count;
     float newMean = mean + (pitch - mean) / (float)count;
-    unk29c = newMean;
-    unk2a0 = dev + (std::fabs(pitch - newMean) - dev) / (float)count;
+    mPitchDeviationMean = newMean;
+    mPitchDeviationDev = dev + (std::fabs(pitch - newMean) - dev) / (float)count;
 }
 
 float Singer::GetPartPercentage(int part) const {
     const SingerResultsData &rd = mResultsData[part];
-    if (rd.unk1c == 0) return 0.0f;
-    return rd.unk18 / (float)rd.unk1c;
+    if (rd.scoreFrameCount == 0) return 0.0f;
+    return rd.phraseScore / (float)rd.scoreFrameCount;
 }
 
 int Singer::GetFrameMatchType() {
@@ -404,44 +404,44 @@ int Singer::GetFrameMatchType() {
 
 float Singer::AddToFreestyleDeployment(float val) {
     if (mFrameMicPitch < mScreamEnergyThreshold) {
-        unk40 = 0;
-        unk44 = 0;
-    } else if (val >= unk3c) {
-        if (unk40 > 0.0f) {
-            float diff = val - unk40;
+        mLastTambourineTime = 0;
+        mTotalTambourineDeployment = 0;
+    } else if (val >= mTambourineActivationTime) {
+        if (mLastTambourineTime > 0.0f) {
+            float diff = val - mLastTambourineTime;
             if (diff > 0.0f) {
-                unk44 += diff;
+                mTotalTambourineDeployment += diff;
             }
         }
-        unk40 = val;
+        mLastTambourineTime = val;
     }
-    return unk44;
+    return mTotalTambourineDeployment;
 }
 
 void Singer::ResolveAmbiguity() {
     for (AmbiguousData *entry = &mAmbiguousData[0];
          entry != &mAmbiguousData[0] + mAmbiguousData.size(); entry++) {
-        if (!entry->unk8 || entry->unkc == -1)
+        if (!entry->isResolved || entry->winningPart == -1)
             continue;
-        int part1 = entry->unk0;
-        int part2 = entry->unk4;
-        float points1 = mResultsData[part1].unkc;
-        float points2 = mResultsData[part2].unkc;
+        int part1 = entry->part1;
+        int part2 = entry->part2;
+        float points1 = mResultsData[part1].centsDeviation;
+        float points2 = mResultsData[part2].centsDeviation;
         float delta = points1 - points2;
         float maxPoints = (points1 < points2) ? points2 : points1;
         if (std::fabs(delta) / maxPoints > 0.1f) {
             int iWinningPart = (delta > 0.0f) ? part1 : part2;
             int iLosingPart = (delta < 0.0f) ? part1 : part2;
             MILO_ASSERT(iWinningPart != iLosingPart, 0x1B4);
-            if (iWinningPart != entry->unkc) {
-                float pts = entry->unk10;
+            if (iWinningPart != entry->winningPart) {
+                float pts = entry->ambiguousPoints;
                 mPlayer->SwapAmbiguousPoints(pts, iLosingPart, iWinningPart);
-                mResultsData[iLosingPart].unk0 -= pts;
-                if (mResultsData[iLosingPart].unk0 < 0.0f)
-                    mResultsData[iLosingPart].unk0 = 0.0f;
-                mResultsData[iWinningPart].unk0 += pts;
+                mResultsData[iLosingPart].targetPitchHitScore -= pts;
+                if (mResultsData[iLosingPart].targetPitchHitScore < 0.0f)
+                    mResultsData[iLosingPart].targetPitchHitScore = 0.0f;
+                mResultsData[iWinningPart].targetPitchHitScore += pts;
             }
-            entry->unkc = -1;
+            entry->winningPart = -1;
         }
     }
 }
@@ -453,9 +453,9 @@ void Singer::Poll_(float ms, const SongPos &, float micPitch, float micEnergy, f
     bool isLocal = mPlayer->IsLocal();
 
     if (micPitch != 0.0f) {
-        micPitch -= unk54;
+        micPitch -= mMicPitchOffset;
     }
-    unk64 = 0.9f * (unk64 - micEnergy) + micEnergy;
+    mSmoothedMicEnergy = 0.9f * (mSmoothedMicEnergy - micEnergy) + micEnergy;
 
     if ((!isLocal || mAutoplayPart != -1) && !mPlayer->AtLastPhrase()) {
         mPlayer->CurrentPhrase();
@@ -502,9 +502,9 @@ void Singer::Poll_(float ms, const SongPos &, float micPitch, float micEnergy, f
     if (isLocal && mPlayer->AtLastPhrase()) {
         DetectScream(ms, micPitch, micEnergy);
         mFrameMicPitch = micPitch;
-        unk60 = micEnergy;
+        mLastFrameMicEnergy = micEnergy;
         mFrameTargetPitch = 0.0f;
-        unk6c = 0.0f;
+        mFrameBestHitScore = 0.0f;
         return;
     }
 
@@ -516,21 +516,21 @@ void Singer::Poll_(float ms, const SongPos &, float micPitch, float micEnergy, f
             frames = 100;
         }
         for (int i = 0; i < frames; i++) {
-            unk244 += mPossibleVibratoPoints[i];
+            mAccumulatedVibratoBonusPoints += mPossibleVibratoPoints[i];
         }
     }
 
-    float bonus = std::min(unk244, sMaxVibratoFrameBonus);
+    float bonus = std::min(mAccumulatedVibratoBonusPoints, sMaxVibratoFrameBonus);
     mVibratoFrameBonus = bonus;
     mFrameMicPitch = micPitch;
-    unk244 -= bonus;
-    unk60 = micEnergy;
-    unk2c = ms;
+    mAccumulatedVibratoBonusPoints -= bonus;
+    mLastFrameMicEnergy = micEnergy;
+    mCurrentFrameTime = ms;
 
     VocalFrameSpewData *spew = mPlayer->mFrameSpewData;
     if (spew) {
         spew->mSingerData[mSingerIndex].unk0 = mFrameMicPitch;
-        spew->mSingerData[mSingerIndex].unk4 = unk60;
+        spew->mSingerData[mSingerIndex].unk4 = mLastFrameMicEnergy;
     }
 }
 
@@ -544,7 +544,7 @@ void Singer::Poll(float ms, const SongPos &pos, float f3, float f4) {
     }
     ProcessTalkyData();
     mFrameAssignedPart = -1;
-    unk74 = 0.0f;
+    mBestTargetPitch = 0.0f;
     for (std::vector<VocalScoreCache>::iterator it = mScoreCaches.begin();
          it != mScoreCaches.end(); ++it) {
         it->unk0 = 0.0f;
@@ -566,18 +566,18 @@ void Singer::AddAmbiguousPart(int i_iPart1, int i_iPart2) {
     bool bFound = false;
     for (AmbiguousData *iter = &mAmbiguousData[0];
          iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
-        if (iter->unk0 == i_iPart1 || iter->unk0 == i_iPart2) {
+        if (iter->part1 == i_iPart1 || iter->part1 == i_iPart2) {
             bFound = true;
             break;
         }
     }
     if (!bFound) {
         AmbiguousData entry;
-        entry.unk0 = i_iPart1;
-        entry.unk4 = i_iPart2;
-        entry.unk8 = false;
-        entry.unkc = -1;
-        entry.unk10 = -1.0f;
+        entry.part1 = i_iPart1;
+        entry.part2 = i_iPart2;
+        entry.isResolved = false;
+        entry.winningPart = -1;
+        entry.ambiguousPoints = -1.0f;
         mAmbiguousData.push_back(entry);
     }
 }
@@ -588,12 +588,12 @@ void Singer::DisableAmbiguousPart(int i_iPart1, int i_iPart2) {
         for (AmbiguousData *iter = &mAmbiguousData[0];
              iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
             bool match = false;
-            if (iter->unk0 == i_iPart1 && iter->unk4 == i_iPart2) {
+            if (iter->part1 == i_iPart1 && iter->part2 == i_iPart2) {
                 match = true;
             }
             if (match) {
-                if (!iter->unk8) {
-                    iter->unk8 = true;
+                if (!iter->isResolved) {
+                    iter->isResolved = true;
                 }
                 return;
             }
@@ -602,8 +602,8 @@ void Singer::DisableAmbiguousPart(int i_iPart1, int i_iPart2) {
 }
 
 void Singer::GetPitchDeviation(float &mean, float &dev) const {
-    mean = unk29c;
-    dev = unk2a0;
+    mean = mPitchDeviationMean;
+    dev = mPitchDeviationDev;
 }
 
 void Singer::SetAssignedPart(int part, float f2) {
@@ -614,24 +614,24 @@ void Singer::SetAssignedPart(int part, float f2) {
     }
     mScoreHistories[part].BiasLastScore(f2);
     float assignedPoints = mScoreCaches[part].unk4;
-    float unk0 = mResultsData[part].unk0;
+    float unk0 = mResultsData[part].targetPitchHitScore;
     float cap = mScoreCaches[part].unk8;
     float total = unk0 + assignedPoints;
-    mResultsData[part].unk0 = std::min(total, cap);
+    mResultsData[part].targetPitchHitScore = std::min(total, cap);
     float vibPts = mScoreCaches[part].unk10;
     mPossibleVibratoPoints.Set(vibPts);
     for (AmbiguousData *iter = &mAmbiguousData[0];
          iter != &mAmbiguousData[0] + mAmbiguousData.size(); iter++) {
-        if ((iter->unk0 != part && iter->unk4 != part) || iter->unk8)
+        if ((iter->part1 != part && iter->part2 != part) || iter->isResolved)
             continue;
-        if (iter->unkc == part) {
-            MILO_ASSERT(iter->unk10 >= 0.0f, 0x460);
-            iter->unk10 += assignedPoints;
-        } else if (iter->unkc != -1) {
-            iter->unk8 = true;
+        if (iter->winningPart == part) {
+            MILO_ASSERT(iter->ambiguousPoints >= 0.0f, 0x460);
+            iter->ambiguousPoints += assignedPoints;
+        } else if (iter->winningPart != -1) {
+            iter->isResolved = true;
         } else {
-            iter->unk10 = assignedPoints;
-            iter->unkc = part;
+            iter->ambiguousPoints = assignedPoints;
+            iter->winningPart = part;
         }
     }
 }

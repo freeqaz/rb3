@@ -1,0 +1,47 @@
+{
+  "symbol": "Swing__22JoypadTrackWatcherImplFibb11GemHitFlags",
+  "function_name": "JoypadTrackWatcherImpl::Swing",
+  "source_path": "/home/free/code/milohax/rb3/src/system/beatmatch/JoypadTrackWatcherImpl.cpp",
+  "initial_percent": 98.04338,
+  "final_percent": 98.12557,
+  "total_delta": 0.0821899999999971,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.04338,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 98.12329,
+      "delta": 0.07990999999999815,
+      "num_variants": 27,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.12329,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.12329,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 15.88,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 42,
+    "5": 15
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

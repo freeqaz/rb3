@@ -1,0 +1,62 @@
+{
+  "total": 400,
+  "processed": 400,
+  "improved": 5,
+  "perfect": 0,
+  "no_change": 395,
+  "errors": 0,
+  "total_delta": 2.571926000000005,
+  "improvements": [
+    {
+      "symbol": "Poll__15SaveLoadManagerFv",
+      "function": "SaveLoadManager::Poll",
+      "source": "src/band3/meta_band/SaveLoadManager.cpp",
+      "initial": 92.302734,
+      "final": 93.8125,
+      "delta": 1.509765999999999,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "DrawTimers__3RndFf",
+      "function": "Rnd::DrawTimers",
+      "source": "src/system/rndobj/Rnd.cpp",
+      "initial": 91.98319,
+      "final": 92.35294,
+      "delta": 0.36975000000001046,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Reskin__13RndMeshDeformFP10SyncMeshCBb",
+      "function": "RndMeshDeform::Reskin",
+      "source": "src/system/rndobj/MeshDeform.cpp",
+      "initial": 85.71532,
+      "final": 85.74422,
+      "delta": 0.028899999999993042,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Poll__Q25Movie4ImplFv",
+      "function": "Movie::Impl::Poll",
+      "source": "src/system/movie/Movie.cpp",
+      "initial": 84.04348,
+      "final": 84.55314,
+      "delta": 0.5096599999999967,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "CacheData__14BoxMapLightingFRQ214BoxMapLighting16LightParams_Spot",
+      "function": "BoxMapLighting::CacheData",
+      "source": "src/system/rndobj/BoxMap.cpp",
+      "initial": 84.38461,
+      "final": 84.53846,
+      "delta": 0.1538500000000056,
+      "rounds": 2,
+      "reason": "max_rounds"
+    }
+  ],
+  "elapsed_seconds": 2636.7
+}

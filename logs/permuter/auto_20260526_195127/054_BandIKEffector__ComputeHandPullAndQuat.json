@@ -1,0 +1,47 @@
+{
+  "symbol": "ComputeHandPullAndQuat__14BandIKEffectorFR7QuatXfmR9TransformRC9TransformRC7Vector3fff",
+  "function_name": "BandIKEffector::ComputeHandPullAndQuat",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/BandIKEffector.cpp",
+  "initial_percent": 72.48619,
+  "final_percent": 73.51381,
+  "total_delta": 1.027620000000013,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 72.48619,
+      "best_name": "asgn_swap_1+stmt_reorder_0",
+      "best_pattern": "compose:assignment_reorder+statement_reorder",
+      "best_score": 73.441986,
+      "delta": 0.9557960000000065,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 72.61326,
+      "best_name": "asgn_swap_0+stmt_reorder_7",
+      "best_pattern": "compose:assignment_reorder+statement_reorder",
+      "best_score": 73.51381,
+      "delta": 0.9005500000000097,
+      "num_variants": 29,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 33.52,
+  "winning_pattern": "compose:assignment_reorder+statement_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 32,
+    "5": 26
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

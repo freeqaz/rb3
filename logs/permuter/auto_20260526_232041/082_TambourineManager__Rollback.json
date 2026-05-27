@@ -1,0 +1,37 @@
+{
+  "symbol": "Rollback__17TambourineManagerFff",
+  "function_name": "TambourineManager::Rollback",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/game/TambourineManager.cpp",
+  "initial_percent": 98.44068,
+  "final_percent": 98.44068,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.44068,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 98.44068,
+      "delta": 0.0,
+      "num_variants": 16,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 10.06,
+  "winning_pattern": null,
+  "ghidra_stats": null,
+  "validation_tier": 0,
+  "validation_distribution": {
+    "2": 14,
+    "5": 2
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -1,0 +1,48 @@
+{
+  "symbol": "Format__Q26Quazal6StringFPCce",
+  "function_name": "Quazal::String::Format",
+  "source_path": "/home/free/code/milohax/rb3/src/network/Platform/String.cpp",
+  "initial_percent": 98.38028,
+  "final_percent": 98.45071,
+  "total_delta": 0.07043000000000177,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.38028,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 98.45071,
+      "delta": 0.07043000000000177,
+      "num_variants": 13,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 94.91549,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 98.45071,
+      "delta": 3.5352199999999954,
+      "num_variants": 13,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 7.52,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 10,
+    "5": 6,
+    "0": 10
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

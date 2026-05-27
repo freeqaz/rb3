@@ -1,0 +1,47 @@
+{
+  "symbol": "Select__6WiiCamFv",
+  "function_name": "WiiCam::Select",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndwii/Cam.cpp",
+  "initial_percent": 80.203705,
+  "final_percent": 80.388885,
+  "total_delta": 0.18518000000000256,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 80.203705,
+      "best_name": "declmove_0+declreorder_8",
+      "best_pattern": "compose:declaration_movement+declaration_reorder",
+      "best_score": 80.388885,
+      "delta": 0.18518000000000256,
+      "num_variants": 28,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 80.22685,
+      "best_name": "commgroup_0",
+      "best_pattern": "commutative_swap",
+      "best_score": 80.388885,
+      "delta": 0.16203500000000304,
+      "num_variants": 28,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 19.0,
+  "winning_pattern": "commutative_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 42,
+    "2": 14
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

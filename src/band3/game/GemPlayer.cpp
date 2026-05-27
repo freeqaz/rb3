@@ -336,7 +336,13 @@ void GemPlayer::Swing(int i1, int i2, float f3, bool b4, bool b5) {
     }
     SwingHook(i1, i2, f3, b4, b5);
 }
+__declspec(noinline) int _outline_GetSize(GemStatus* _obj) {
+    return _obj->GetSize();
+}
 
+
+#pragma push
+#pragma pool_data off
 void GemPlayer::Hit(
     int track, float ms, int gem_id, unsigned int gem_hit_slots, GemHitFlags flags
 ) {
@@ -346,7 +352,7 @@ void GemPlayer::Hit(
             return;
         HandleFirstGemAfterRollback(gem_id);
         InputReceived();
-        if (gem_id == mGemStatus->GetSize() - 1) {
+        if (gem_id == _outline_GetSize(mGemStatus) - 1) {
             unk3e1 = 1;
         }
         const GameGem &gem = TheSongDB->GetGem(mTrackNum, gem_id);
@@ -365,11 +371,13 @@ void GemPlayer::Hit(
         unk1fe = 0;
         unk1fd = 0;
         unk1ff = 0;
-        int ignoreAt = IgnoreGemsAt(gem.GetTick());
+        int _tmp1 = gem.GetTick();
+        int ignoreAt = IgnoreGemsAt(_tmp1);
         if (ignoreAt) {
             if (mTrack) {
                 const GameGem &gem2 = TheSongDB->GetGem(mTrackNum, gem_id);
-                mTrack->Miss(ms, gem_id, gem2.GetSlot());
+                int _tmp2 = gem2.GetSlot();
+                mTrack->Miss(ms, gem_id, _tmp2);
             }
             IgnoreGem(gem_id);
             goto block_96;
@@ -391,6 +399,7 @@ void GemPlayer::Hit(
                         remaining -= bit;
                         FretButtonDown(slot, ms);
                         RemoveFretReleasesInSlot(slot);
+                        float msPlusOffset = ms + mSyncOffset;
                         float endMs;
                         if (gem.IgnoreDuration()) {
                             endMs = 200.0f;
@@ -399,7 +408,7 @@ void GemPlayer::Hit(
                         }
                         UpcomingFretRelease release;
                         release.unk0 = slot;
-                        release.unk4 = ms + mSyncOffset + endMs;
+                        release.unk4 = msPlusOffset + endMs;
                         mUpcomingFretReleases.push_back(release);
                     }
                     slot++;
@@ -407,7 +416,7 @@ void GemPlayer::Hit(
             }
             int hitFlags = 1;
             if (mMatcher && mMatcher->UsingAlternateButtons()) {
-                hitFlags = 1 | 8;
+                hitFlags |= 8;
             }
             if (gemSlots != gem_hit_slots) {
                 mTrack->PartialHit(ms, gem_id, gem_hit_slots, hitFlags);
@@ -451,11 +460,12 @@ void GemPlayer::Hit(
         unk3c0 = 0;
         SetRemoteAnnoyingMode(false);
         static Message msg("hit", 0, 0, 0.0f);
-        int numHit = GameGem::CountBitsInSlotType(gem_hit_slots);
-        int numTotal = GameGem::CountBitsInSlotType(gemSlots);
+        float numTotalF = (float)GameGem::CountBitsInSlotType(gemSlots);
+        float numHitF = (float)GameGem::CountBitsInSlotType(gem_hit_slots);
+        float ratio = numHitF / numTotalF;
         msg[1] = gem_id;
         msg[2] = (int)flags;
-        msg[3] = (float)numHit / (float)numTotal;
+        msg[3] = ratio;
         Export(msg, true);
         if (mIsInCoda) {
             if (gemSlots == gem_hit_slots) {
@@ -496,11 +506,11 @@ void GemPlayer::Hit(
             }
         }
         if (IsLocal()) {
-            static Message msg2("send_hit", 0, 0, 0.0f);
-            msg2[1] = mStats.GetCurrentStreak();
-            msg2[2] = (int)mScore;
-            msg2[3] = mCrowd->GetDisplayValue();
-            HandleType(msg2);
+            static Message msg("send_hit", 0, 0, 0.0f);
+            msg[1] = mStats.GetCurrentStreak();
+            msg[2] = (int)mScore;
+            msg[3] = mCrowd->GetDisplayValue();
+            HandleType(msg);
         }
         unk1fe = 1;
         unk1fd = 1;
@@ -508,6 +518,7 @@ void GemPlayer::Hit(
         HitHook(track, ms, gem_id, gem_hit_slots, flags);
     }
 }
+#pragma pop
 
 void GemPlayer::Miss(
     int track, int slot, float ms, int gem_id, int chordSlotsInProgress, GemHitFlags flags

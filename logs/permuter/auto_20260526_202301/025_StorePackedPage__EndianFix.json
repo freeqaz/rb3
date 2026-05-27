@@ -1,0 +1,48 @@
+{
+  "symbol": "EndianFix__15StorePackedPageFv",
+  "function_name": "StorePackedPage::EndianFix",
+  "source_path": "/home/free/code/milohax/rb3/src/system/meta/StorePackedMetadata.cpp",
+  "initial_percent": 50.0,
+  "final_percent": 52.5,
+  "total_delta": 2.5,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 50.0,
+      "best_name": "asgn_swap_1+stmt_reorder_1",
+      "best_pattern": "compose:assignment_reorder+statement_reorder",
+      "best_score": 50.5,
+      "delta": 0.5,
+      "num_variants": 13,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 32.375,
+      "best_name": "asgn_swap_0",
+      "best_pattern": "assignment_reorder",
+      "best_score": 52.5,
+      "delta": 20.125,
+      "num_variants": 12,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 24.22,
+  "winning_pattern": "assignment_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 10,
+    "5": 14,
+    "0": 1
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

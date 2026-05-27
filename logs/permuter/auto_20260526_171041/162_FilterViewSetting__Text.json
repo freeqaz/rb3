@@ -1,0 +1,48 @@
+{
+  "symbol": "Text__17FilterViewSettingCFiiP11UIListLabelP7UILabel",
+  "function_name": "FilterViewSetting::Text",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/ViewSetting.cpp",
+  "initial_percent": 96.303925,
+  "final_percent": 96.960785,
+  "total_delta": 0.6568599999999947,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.303925,
+      "best_name": "tmpelim_0",
+      "best_pattern": "temp_elimination",
+      "best_score": 96.95098,
+      "delta": 0.6470549999999946,
+      "num_variants": 18,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 96.95098,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.95098,
+      "delta": 0.0,
+      "num_variants": 19,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 31.78,
+  "winning_pattern": "temp_elimination",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 23,
+    "5": 10,
+    "2": 4
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

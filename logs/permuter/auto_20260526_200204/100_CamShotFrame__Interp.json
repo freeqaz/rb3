@@ -1,0 +1,48 @@
+{
+  "symbol": "Interp__12CamShotFrameFRC12CamShotFrameffP6RndCam",
+  "function_name": "CamShotFrame::Interp",
+  "source_path": "/home/free/code/milohax/rb3/src/system/world/CameraShot.cpp",
+  "initial_percent": 98.70253,
+  "final_percent": 99.25105,
+  "total_delta": 0.5485200000000106,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.70253,
+      "best_name": "declmove_0+declreorder_6",
+      "best_pattern": "compose:declaration_movement+declaration_reorder",
+      "best_score": 98.79114,
+      "delta": 0.08861000000000274,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 92.64135,
+      "best_name": "bool_to_uchar_0",
+      "best_pattern": "bool_to_uchar",
+      "best_score": 99.24473,
+      "delta": 6.603380000000001,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 38.36,
+  "winning_pattern": "bool_to_uchar",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 25,
+    "0": 8,
+    "5": 27
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

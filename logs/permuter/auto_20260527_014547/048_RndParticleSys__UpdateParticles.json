@@ -1,0 +1,78 @@
+{
+  "symbol": "UpdateParticles__14RndParticleSysFv",
+  "function_name": "RndParticleSys::UpdateParticles",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/Part.cpp",
+  "initial_percent": 87.09816,
+  "final_percent": 93.34356,
+  "total_delta": 6.245400000000004,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 87.09816,
+      "best_name": "membind_0",
+      "best_pattern": "member_ref_bind",
+      "best_score": 93.34356,
+      "delta": 6.245400000000004,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 87.09816,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 93.34356,
+      "delta": 6.245400000000004,
+      "num_variants": 34,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 87.09816,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 93.34356,
+      "delta": 6.245400000000004,
+      "num_variants": 35,
+      "improved": true
+    },
+    {
+      "round_num": 4,
+      "baseline": 87.09816,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 93.34356,
+      "delta": 6.245400000000004,
+      "num_variants": 34,
+      "improved": true
+    },
+    {
+      "round_num": 5,
+      "baseline": 87.09816,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 93.34356,
+      "delta": 6.245400000000004,
+      "num_variants": 35,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 96.26,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 111,
+    "0": 55,
+    "2": 1
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

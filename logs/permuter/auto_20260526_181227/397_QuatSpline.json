@@ -1,0 +1,47 @@
+{
+  "symbol": "QuatSpline__FRC29Keys<Q23Hmx4Quat,Q23Hmx4Quat>PC16Key<Q23Hmx4Quat>PC16Key<Q23Hmx4Quat>fRQ23Hmx4Quat",
+  "function_name": "QuatSpline",
+  "source_path": "/home/free/code/milohax/rb3/src/system/math/Key.cpp",
+  "initial_percent": 86.17716,
+  "final_percent": 90.673225,
+  "total_delta": 4.4960650000000015,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 86.17716,
+      "best_name": "commgroup_0",
+      "best_pattern": "commutative_swap",
+      "best_score": 90.66929,
+      "delta": 4.492130000000003,
+      "num_variants": 25,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 86.00394,
+      "best_name": "varext_0",
+      "best_pattern": "variable_extraction",
+      "best_score": 90.66929,
+      "delta": 4.665350000000004,
+      "num_variants": 24,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 14.36,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 29,
+    "5": 20
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

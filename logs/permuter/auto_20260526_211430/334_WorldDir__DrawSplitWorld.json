@@ -1,0 +1,48 @@
+{
+  "symbol": "DrawSplitWorld__8WorldDirFv",
+  "function_name": "WorldDir::DrawSplitWorld",
+  "source_path": "/home/free/code/milohax/rb3/src/system/world/Dir.cpp",
+  "initial_percent": 96.9403,
+  "final_percent": 97.537315,
+  "total_delta": 0.5970150000000132,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.9403,
+      "best_name": "accessor_outline_0",
+      "best_pattern": "accessor_outline",
+      "best_score": 97.537315,
+      "delta": 0.5970150000000132,
+      "num_variants": 20,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.1194,
+      "best_name": "membind_0",
+      "best_pattern": "member_ref_bind",
+      "best_score": 97.537315,
+      "delta": 2.417915000000008,
+      "num_variants": 19,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 30.6,
+  "winning_pattern": "member_ref_bind",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 19,
+    "0": 10,
+    "5": 10
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -1,0 +1,48 @@
+{
+  "symbol": "RandomPointOnMesh__FP7RndMeshR7Vector3R7Vector3",
+  "function_name": "RandomPointOnMesh",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/Utl.cpp",
+  "initial_percent": 99.01172,
+  "final_percent": 99.07031,
+  "total_delta": 0.05859000000000947,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 99.01172,
+      "best_name": "stmt_reorder_0",
+      "best_pattern": "statement_reorder",
+      "best_score": 99.06836,
+      "delta": 0.05664000000000158,
+      "num_variants": 25,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 1.7871094,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 99.06836,
+      "delta": 97.28125059999999,
+      "num_variants": 27,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 38.35,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 4,
+    "2": 22,
+    "5": 26
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

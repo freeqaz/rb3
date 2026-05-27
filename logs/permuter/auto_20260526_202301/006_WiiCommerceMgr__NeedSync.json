@@ -1,0 +1,36 @@
+{
+  "symbol": "NeedSync__14WiiCommerceMgrFv",
+  "function_name": "WiiCommerceMgr::NeedSync",
+  "source_path": "/home/free/code/milohax/rb3/src/system/os/CommerceMgr_Wii.cpp",
+  "initial_percent": 76.42857,
+  "final_percent": 76.42857,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 76.42857,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 76.42857,
+      "delta": 0.0,
+      "num_variants": 3,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 2.67,
+  "winning_pattern": null,
+  "ghidra_stats": null,
+  "validation_tier": 0,
+  "validation_distribution": {
+    "2": 3
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

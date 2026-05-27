@@ -1,0 +1,57 @@
+{
+  "symbol": "GetDialogMsg__15SaveLoadManagerFv",
+  "function_name": "SaveLoadManager::GetDialogMsg",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/SaveLoadManager.cpp",
+  "initial_percent": 96.58194,
+  "final_percent": 97.178276,
+  "total_delta": 0.5963359999999938,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.58194,
+      "best_name": "declreorder_0",
+      "best_pattern": "declaration_reorder",
+      "best_score": 97.178276,
+      "delta": 0.5963359999999938,
+      "num_variants": 21,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 96.58194,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 97.178276,
+      "delta": 0.5963359999999938,
+      "num_variants": 21,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 96.58194,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 97.178276,
+      "delta": 0.5963359999999938,
+      "num_variants": 21,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 170.45,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 12,
+    "5": 51
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

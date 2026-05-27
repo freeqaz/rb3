@@ -1,0 +1,47 @@
+{
+  "symbol": "Load__12RndTransAnimFR9BinStream",
+  "function_name": "RndTransAnim::Load",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/TransAnim.cpp",
+  "initial_percent": 97.5048,
+  "final_percent": 97.5048,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.5048,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.5048,
+      "delta": 0.0,
+      "num_variants": 21,
+      "improved": false
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.80683,
+      "best_name": "andsplit_0",
+      "best_pattern": "and_split",
+      "best_score": 97.50374,
+      "delta": 1.6969099999999884,
+      "num_variants": 27,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "no_apply",
+  "elapsed_seconds": 19.52,
+  "winning_pattern": "and_split",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 22,
+    "5": 26
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

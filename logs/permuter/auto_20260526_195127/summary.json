@@ -1,0 +1,122 @@
+{
+  "total": 63,
+  "processed": 63,
+  "improved": 11,
+  "perfect": 0,
+  "no_change": 52,
+  "errors": 0,
+  "total_delta": 7.86559299999999,
+  "improvements": [
+    {
+      "symbol": "BuildNGCone__9SpotlightFRQ29Spotlight7BeamDefi",
+      "function": "Spotlight::BuildNGCone",
+      "source": "src/system/world/Spotlight.cpp",
+      "initial": 82.7771,
+      "final": 83.618324,
+      "delta": 0.8412239999999969,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "Highlight__8CharEyesFv",
+      "function": "CharEyes::Highlight",
+      "source": "src/system/char/CharEyes.cpp",
+      "initial": 81.39586,
+      "final": 81.96833,
+      "delta": 0.5724699999999956,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Select__6WiiCamFv",
+      "function": "WiiCam::Select",
+      "source": "src/system/rndwii/Cam.cpp",
+      "initial": 80.203705,
+      "final": 80.388885,
+      "delta": 0.18518000000000256,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "DoFancyElbow__14BandIKEffectorFR7QuatXfmf",
+      "function": "BandIKEffector::DoFancyElbow",
+      "source": "src/system/bandobj/BandIKEffector.cpp",
+      "initial": 79.98578,
+      "final": 80.02702,
+      "delta": 0.04123999999998773,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "AddEdge__Q213BandPatchMesh9WorkVertsFPQ213BandPatchMesh8MeshVertPQ213BandPatchMesh8MeshVert",
+      "function": "BandPatchMesh::WorkVerts::AddEdge",
+      "source": "src/system/bandobj/BandPatchMesh.cpp",
+      "initial": 73.05645,
+      "final": 76.40323,
+      "delta": 3.3467799999999954,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "ComputeHandPullAndQuat__14BandIKEffectorFR7QuatXfmR9TransformRC9TransformRC7Vector3fff",
+      "function": "BandIKEffector::ComputeHandPullAndQuat",
+      "source": "src/system/bandobj/BandIKEffector.cpp",
+      "initial": 72.48619,
+      "final": 73.51381,
+      "delta": 1.027620000000013,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "DebugDownload__20StoreMetadataManagerFv",
+      "function": "StoreMetadataManager::DebugDownload",
+      "source": "src/system/meta/StorePackedMetadata.cpp",
+      "initial": 71.55789,
+      "final": 71.8386,
+      "delta": 0.2807099999999991,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "ExtendTwin__Q213BandPatchMesh9WorkVertsFPCQ213BandPatchMesh8MeshVertR7Vector2R7Vector2",
+      "function": "BandPatchMesh::WorkVerts::ExtendTwin",
+      "source": "src/system/bandobj/BandPatchMesh.cpp",
+      "initial": 71.52612,
+      "final": 72.57462,
+      "delta": 1.04849999999999,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "PixelOffset__12Dxt1CompressFiiiiii",
+      "function": "Dxt1Compress::PixelOffset",
+      "source": "src/system/rndobj/Dxt1Compress.cpp",
+      "initial": 70.674416,
+      "final": 70.906975,
+      "delta": 0.23255900000000906,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "PixelOffset__9RndBitmapCFiiRb",
+      "function": "RndBitmap::PixelOffset",
+      "source": "src/system/rndobj/Bitmap.cpp",
+      "initial": 67.04651,
+      "final": 67.23256,
+      "delta": 0.1860500000000087,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "DrawShowing__12WiiMultiMeshFv",
+      "function": "WiiMultiMesh::DrawShowing",
+      "source": "src/system/rndwii/MultiMesh.cpp",
+      "initial": 67.45909,
+      "final": 67.56235,
+      "delta": 0.10325999999999169,
+      "rounds": 2,
+      "reason": "max_rounds"
+    }
+  ],
+  "elapsed_seconds": 507.2
+}

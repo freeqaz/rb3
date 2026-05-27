@@ -1,0 +1,78 @@
+{
+  "symbol": "storedxtencodedblock__12Dxt1CompressFPUcPA4_A4_UcPPUciiUii",
+  "function_name": "Dxt1Compress::storedxtencodedblock",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/Dxt1Compress.cpp",
+  "initial_percent": 91.469055,
+  "final_percent": 91.74267,
+  "total_delta": 0.2736150000000066,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 91.469055,
+      "best_name": "crosscompose:slot_pad_char_pad+declreorder_0",
+      "best_pattern": "crosscompose:slot_pad+declaration_reorder",
+      "best_score": 91.74267,
+      "delta": 0.2736150000000066,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 91.469055,
+      "best_name": "commasplit_0",
+      "best_pattern": "comma_split",
+      "best_score": 91.74267,
+      "delta": 0.2736150000000066,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 91.469055,
+      "best_name": "commasplit_0",
+      "best_pattern": "comma_split",
+      "best_score": 91.74267,
+      "delta": 0.2736150000000066,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 4,
+      "baseline": 91.469055,
+      "best_name": "commasplit_0",
+      "best_pattern": "comma_split",
+      "best_score": 91.74267,
+      "delta": 0.2736150000000066,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 5,
+      "baseline": 91.469055,
+      "best_name": "commasplit_0",
+      "best_pattern": "comma_split",
+      "best_score": 91.74267,
+      "delta": 0.2736150000000066,
+      "num_variants": 29,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 120.83,
+  "winning_pattern": "comma_split",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 96,
+    "2": 45,
+    "1": 4
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

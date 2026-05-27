@@ -2053,7 +2053,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
                      << singer->mFrameTargetPitch << "\n";
             TheDebug << "singer->FrameMicPitch()" << ": " << singer->mFrameMicPitch
                      << "\n";
-            TheDebug << "singer->FrameBestHit()" << ": " << singer->unk6c << "\n";
+            TheDebug << "singer->FrameBestHit()" << ": " << singer->mFrameBestHitScore << "\n";
             TheDebug << "mPlayer->Freestyling()" << ": " << mPlayer->Freestyling()
                      << "\n";
         }
@@ -2066,7 +2066,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
             if (part) {
                 color = (VocalHUDColor)part->unkc8;
             }
-            arrow->SetFrameScore(singer->unk60, color, 0.0f);
+            arrow->SetFrameScore(singer->mLastFrameMicEnergy, color, 0.0f);
             if (gDebugSpew) {
                 MILO_LOG("phoneme phrase\n");
             }
@@ -2077,7 +2077,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
             }
         } else if (enabled && singer->mFrameTargetPitch > 0.0f) {
             VocalPart *part = NULL;
-            float frameScore = singer->unk6c;
+            float frameScore = singer->mFrameBestHitScore;
             if (singer->mFrameAssignedPart > -1) {
                 part = mPlayer->mVocalParts[singer->mFrameAssignedPart];
             }
@@ -2121,7 +2121,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
             TheDebug << "pitchFrame" << ": " << pitchFrame << "\n";
         }
         arrow->SetTiltDegrees(5.0f * pitchFrame);
-        float volume = Clamp<float>(0, 1, 4.0f * singer->unk60);
+        float volume = Clamp<float>(0, 1, 4.0f * singer->mLastFrameMicEnergy);
         if (singer->mFrameAssignedPart != -1) {
             volume = std::max<float>(volume, 0.5f);
         }
@@ -2130,7 +2130,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
         arrow->SetSplit(false);
         if (mPlayer->Freestyling()) {
             mDir->Find<RndAnimatable>("vocal_feedback.anim", true)
-                ->SetFrame(singer->unk60, 1.0f);
+                ->SetFrame(singer->mLastFrameMicEnergy, 1.0f);
         }
         arrow->unk18c = false;
     }
@@ -2139,7 +2139,7 @@ void VocalTrack::UpdatePitchArrow(float ms, int singerIdx) {
 float VocalTrack::GetHarmonyScore(int singerIdx) {
     Singer *singer = mPlayer->mSingers[singerIdx];
     int numParts = mPlayer->mVocalParts.size();
-    float frameScore = singer->unk6c;
+    float frameScore = singer->mFrameBestHitScore;
     float harmonyScore = 0.0f;
     if (harmonyScore == frameScore)
         return harmonyScore;
@@ -2147,7 +2147,7 @@ float VocalTrack::GetHarmonyScore(int singerIdx) {
         if (part != singer->mFrameAssignedPart) {
             Singer *candidate = mPlayer->mVocalParts[part]->GetBestSingerCandidate();
             if (candidate) {
-                float tmp = frameScore * candidate->unk6c;
+                float tmp = frameScore * candidate->mFrameBestHitScore;
                 tmp *= frameScore;
                 tmp *= 1.2f;
                 harmonyScore += Clamp<float>(0.0f, 1.0f, tmp);

@@ -1,0 +1,48 @@
+{
+  "symbol": "OnFingersUp__15CharKeyHandMidiFP9DataArray",
+  "function_name": "CharKeyHandMidi::OnFingersUp",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/CharKeyHandMidi.cpp",
+  "initial_percent": 86.21429,
+  "final_percent": 96.10317,
+  "total_delta": 9.88888,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 86.21429,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 96.10317,
+      "delta": 9.88888,
+      "num_variants": 17,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.57143,
+      "best_name": "crefswap_0",
+      "best_pattern": "const_ref_swap",
+      "best_score": 96.10317,
+      "delta": 0.5317399999999992,
+      "num_variants": 15,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 17.05,
+  "winning_pattern": "const_ref_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 2,
+    "5": 22,
+    "2": 8
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

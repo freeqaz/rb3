@@ -1,0 +1,78 @@
+{
+  "symbol": "Poll__10CharSleeveFv",
+  "function_name": "CharSleeve::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/system/char/CharSleeve.cpp",
+  "initial_percent": 89.20588,
+  "final_percent": 89.23657,
+  "total_delta": 0.03069000000000699,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 89.20588,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 89.23657,
+      "delta": 0.03069000000000699,
+      "num_variants": 45,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 89.20588,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 89.23657,
+      "delta": 0.03069000000000699,
+      "num_variants": 45,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 89.20588,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 89.23657,
+      "delta": 0.03069000000000699,
+      "num_variants": 45,
+      "improved": true
+    },
+    {
+      "round_num": 4,
+      "baseline": 89.20588,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 89.23657,
+      "delta": 0.03069000000000699,
+      "num_variants": 45,
+      "improved": true
+    },
+    {
+      "round_num": 5,
+      "baseline": 89.20588,
+      "best_name": "initlit_0",
+      "best_pattern": "initializer_literal",
+      "best_score": 89.23657,
+      "delta": 0.03069000000000699,
+      "num_variants": 45,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 93.51,
+  "winning_pattern": "initializer_literal",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 120,
+    "5": 65,
+    "0": 40
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

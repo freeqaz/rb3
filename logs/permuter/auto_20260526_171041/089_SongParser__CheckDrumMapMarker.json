@@ -1,0 +1,47 @@
+{
+  "symbol": "CheckDrumMapMarker__10SongParserFiib",
+  "function_name": "SongParser::CheckDrumMapMarker",
+  "source_path": "/home/free/code/milohax/rb3/src/system/beatmatch/SongParser.cpp",
+  "initial_percent": 96.0,
+  "final_percent": 98.0,
+  "total_delta": 2.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.0,
+      "best_name": "signunsign_0",
+      "best_pattern": "signed_unsigned",
+      "best_score": 98.0,
+      "delta": 2.0,
+      "num_variants": 3,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 85.166664,
+      "best_name": "bitacc_0",
+      "best_pattern": "bitwise_accumulator",
+      "best_score": 98.0,
+      "delta": 12.833336000000003,
+      "num_variants": 6,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 12.44,
+  "winning_pattern": "bitwise_accumulator",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 8,
+    "2": 1
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

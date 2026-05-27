@@ -1,0 +1,58 @@
+{
+  "symbol": "Text__25BandStoreShortcutProviderCFiiP11UIListLabelP7UILabel",
+  "function_name": "BandStoreShortcutProvider::Text",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/BandStorePanel.cpp",
+  "initial_percent": 0.0,
+  "final_percent": 96.75439,
+  "total_delta": 96.75439,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 0.0,
+      "best_name": "varext_0",
+      "best_pattern": "variable_extraction",
+      "best_score": 96.75439,
+      "delta": 96.75439,
+      "num_variants": 5,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 96.75439,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.75439,
+      "delta": 0.0,
+      "num_variants": 3,
+      "improved": false
+    },
+    {
+      "round_num": 3,
+      "baseline": 96.75439,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 96.75439,
+      "delta": 0.0,
+      "num_variants": 3,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 30.14,
+  "winning_pattern": "variable_extraction",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 8,
+    "0": 1,
+    "2": 2
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

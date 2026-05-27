@@ -1,0 +1,48 @@
+{
+  "symbol": "Detect__15VibratoDetectorFv",
+  "function_name": "VibratoDetector::Detect",
+  "source_path": "/home/free/code/milohax/rb3/src/system/dsp/VibratoDetector.cpp",
+  "initial_percent": 97.72535,
+  "final_percent": 97.73943,
+  "total_delta": 0.014079999999992765,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.72535,
+      "best_name": "declreorder_0",
+      "best_pattern": "declaration_reorder",
+      "best_score": 97.73943,
+      "delta": 0.014079999999992765,
+      "num_variants": 21,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 97.73943,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 97.73943,
+      "delta": 0.0,
+      "num_variants": 20,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 7.42,
+  "winning_pattern": "declaration_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 15,
+    "1": 2,
+    "5": 24
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

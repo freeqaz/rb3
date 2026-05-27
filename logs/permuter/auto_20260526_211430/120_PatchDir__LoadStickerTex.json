@@ -1,0 +1,48 @@
+{
+  "symbol": "LoadStickerTex__8PatchDirFP12PatchStickerb",
+  "function_name": "PatchDir::LoadStickerTex",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/PatchDir.cpp",
+  "initial_percent": 98.62963,
+  "final_percent": 99.987656,
+  "total_delta": 1.3580259999999953,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.62963,
+      "best_name": "demorgan_guard_0",
+      "best_pattern": "demorgan_guard",
+      "best_score": 99.987656,
+      "delta": 1.3580259999999953,
+      "num_variants": 12,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 91.22222,
+      "best_name": "accessor_outline_0",
+      "best_pattern": "accessor_outline",
+      "best_score": 99.987656,
+      "delta": 8.765436000000008,
+      "num_variants": 7,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 11.15,
+  "winning_pattern": "accessor_outline",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 6,
+    "2": 7,
+    "5": 6
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

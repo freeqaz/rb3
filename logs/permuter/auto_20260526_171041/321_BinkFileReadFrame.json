@@ -1,0 +1,48 @@
+{
+  "symbol": "BinkFileReadFrame__FP6BINKIOUiiPvUi",
+  "function_name": "BinkFileReadFrame",
+  "source_path": "/home/free/code/milohax/rb3/src/system/utl/BinkIntegration.cpp",
+  "initial_percent": 93.02146,
+  "final_percent": 93.042915,
+  "total_delta": 0.0214549999999889,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 93.02146,
+      "best_name": "commgroup_0",
+      "best_pattern": "commutative_swap",
+      "best_score": 93.042915,
+      "delta": 0.0214549999999889,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 93.042915,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 93.042915,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 18.34,
+  "winning_pattern": "commutative_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 42,
+    "0": 4,
+    "5": 14
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

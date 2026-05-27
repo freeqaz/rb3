@@ -187,6 +187,14 @@ class MCPClient:
         except requests.exceptions.RequestException:
             pass
 
+        # The server returns 202 Accepted from the notification POST before it
+        # has actually processed the message. A tools/call issued immediately
+        # afterwards races against initialization and is rejected with
+        # JSON-RPC -32602 "Invalid request parameters". Sleep briefly so the
+        # server can flush the notification before we send anything else.
+        import time
+        time.sleep(0.1)
+
     def initialize(self, force: bool = False) -> str:
         """Initialize MCP session. Returns session ID."""
         if not force:
@@ -229,6 +237,18 @@ class MCPClient:
             "name": tool_name,
             "arguments": arguments
         }, timeout=timeout)
+
+        # The server returns JSON-RPC -32602 "Invalid request parameters" when a
+        # tools/call arrives before notifications/initialized has been processed
+        # (race on session re-establishment after a service restart). Retry once
+        # by forcing a fresh handshake.
+        if (isinstance(result.get("error"), dict)
+                and result["error"].get("message") == "Invalid request parameters"):
+            self.initialize(force=True)
+            result = self._make_request("tools/call", {
+                "name": tool_name,
+                "arguments": arguments
+            }, timeout=timeout)
 
         if "error" in result:
             error = result["error"]

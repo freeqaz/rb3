@@ -1,0 +1,48 @@
+{
+  "symbol": "base64_encode__2ecFPCvUlRQ23std55basic_string<c,Q23std14char_traits<c>,14ECAllocator<c>>",
+  "function_name": "ec::base64_encode",
+  "source_path": "/home/free/code/milohax/rb3/src/sdk/ec/src/ec_base64.cpp",
+  "initial_percent": 98.66337,
+  "final_percent": 99.90099,
+  "total_delta": 1.2376199999999926,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.66337,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 99.90099,
+      "delta": 1.2376199999999926,
+      "num_variants": 16,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.66337,
+      "best_name": "cmpflip_0",
+      "best_pattern": "comparison_flip",
+      "best_score": 99.90099,
+      "delta": 1.2376199999999926,
+      "num_variants": 16,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 10.58,
+  "winning_pattern": "comparison_flip",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 14,
+    "5": 16,
+    "1": 2
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

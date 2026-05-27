@@ -1,0 +1,48 @@
+{
+  "symbol": "RefreshAll__15ManageBandPanelFv",
+  "function_name": "ManageBandPanel::RefreshAll",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/ManageBandPanel.cpp",
+  "initial_percent": 97.04,
+  "final_percent": 97.24,
+  "total_delta": 0.19999999999998863,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 97.04,
+      "best_name": "typewidth_0",
+      "best_pattern": "type_width_change",
+      "best_score": 97.153336,
+      "delta": 0.11333599999998967,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 85.58,
+      "best_name": "andsplit_0+stmt_reorder_3",
+      "best_pattern": "compose:and_split+statement_reorder",
+      "best_score": 97.236664,
+      "delta": 11.656664000000006,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 46.46,
+  "winning_pattern": "compose:and_split+statement_reorder",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 13,
+    "2": 23,
+    "5": 24
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

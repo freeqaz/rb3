@@ -1,0 +1,122 @@
+{
+  "total": 400,
+  "processed": 400,
+  "improved": 11,
+  "perfect": 3,
+  "no_change": 377,
+  "errors": 12,
+  "total_delta": 105.887446,
+  "improvements": [
+    {
+      "symbol": "HitTambourineGem__10VocalTrackFi",
+      "function": "VocalTrack::HitTambourineGem",
+      "source": "src/band3/bandtrack/VocalTrack.cpp",
+      "initial": 99.24074,
+      "final": 100.0,
+      "delta": 0.7592599999999976,
+      "rounds": 1,
+      "reason": "perfect"
+    },
+    {
+      "symbol": "RandomPointOnMesh__FP7RndMeshR7Vector3R7Vector3",
+      "function": "RandomPointOnMesh",
+      "source": "src/system/rndobj/Utl.cpp",
+      "initial": 99.01172,
+      "final": 99.07031,
+      "delta": 0.05859000000000947,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "base64_encode__2ecFPCvUlRQ23std55basic_string<c,Q23std14char_traits<c>,14ECAllocator<c>>",
+      "function": "ec::base64_encode",
+      "source": "src/sdk/ec/src/ec_base64.cpp",
+      "initial": 98.66337,
+      "final": 99.90099,
+      "delta": 1.2376199999999926,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "SetRange__13VocalTrackDirFffib",
+      "function": "VocalTrackDir::SetRange",
+      "source": "src/system/bandobj/VocalTrackDir.cpp",
+      "initial": 98.4331,
+      "final": 99.27817,
+      "delta": 0.8450700000000069,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "UpdateLyricZ__10VocalTrackFv",
+      "function": "VocalTrack::UpdateLyricZ",
+      "source": "src/band3/bandtrack/VocalTrack.cpp",
+      "initial": 97.81407,
+      "final": 97.839195,
+      "delta": 0.02512500000000273,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "LocalTambourineSoloEnd__17TambourineManagerFii",
+      "function": "TambourineManager::LocalTambourineSoloEnd",
+      "source": "src/band3/game/TambourineManager.cpp",
+      "initial": 97.79661,
+      "final": 100.0,
+      "delta": 2.203389999999999,
+      "rounds": 1,
+      "reason": "perfect"
+    },
+    {
+      "symbol": "ReadImpl__13BufStreamNANDFPvi",
+      "function": "BufStreamNAND::ReadImpl",
+      "source": "src/system/utl/BufStreamNAND.cpp",
+      "initial": 97.76119,
+      "final": 100.0,
+      "delta": 2.238810000000001,
+      "rounds": 1,
+      "reason": "perfect"
+    },
+    {
+      "symbol": "SetSkinTextures__12OutfitConfigFP9ObjectDirP9ObjectDirP12BandCharDesc",
+      "function": "OutfitConfig::SetSkinTextures",
+      "source": "src/system/bandobj/OutfitConfig.cpp",
+      "initial": 0.0,
+      "final": 97.50836,
+      "delta": 97.50836,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "UpdateLine__7RndLineFPQ27RndLine5PointPQ27RndLine5Point",
+      "function": "RndLine::UpdateLine",
+      "source": "src/system/rndobj/Line.cpp",
+      "initial": 97.12913,
+      "final": 97.13063,
+      "delta": 0.0014999999999929514,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Poll__15SaveLoadManagerFv",
+      "function": "SaveLoadManager::Poll",
+      "source": "src/band3/meta_band/SaveLoadManager.cpp",
+      "initial": 95.146484,
+      "final": 95.62988,
+      "delta": 0.48339599999999905,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "CountGemsInSong__12TrackerUtilsFi9TrackType",
+      "function": "TrackerUtils::CountGemsInSong",
+      "source": "src/band3/game/TrackerUtils.cpp",
+      "initial": 93.197365,
+      "final": 93.72369,
+      "delta": 0.5263249999999999,
+      "rounds": 2,
+      "reason": "plateau"
+    }
+  ],
+  "elapsed_seconds": 4049.3
+}

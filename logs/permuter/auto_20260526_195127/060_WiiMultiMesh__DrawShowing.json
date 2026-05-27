@@ -1,0 +1,48 @@
+{
+  "symbol": "DrawShowing__12WiiMultiMeshFv",
+  "function_name": "WiiMultiMesh::DrawShowing",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndwii/MultiMesh.cpp",
+  "initial_percent": 67.45909,
+  "final_percent": 67.56235,
+  "total_delta": 0.10325999999999169,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 67.45909,
+      "best_name": "accessor_outline_0",
+      "best_pattern": "accessor_outline",
+      "best_score": 67.55123,
+      "delta": 0.09214000000000055,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 66.69182,
+      "best_name": "commasplit_0",
+      "best_pattern": "comma_split",
+      "best_score": 67.55123,
+      "delta": 0.8594099999999969,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 20.15,
+  "winning_pattern": "comma_split",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 10,
+    "2": 26,
+    "5": 24
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -1,0 +1,27 @@
+{
+  "completed": [
+    "AddStrumInstance__3GemF6Symbol6Symbol",
+    "CreateMarker__10VocalTrackF6Symbolfb",
+    "DrawFill__8GemTrackFP8FillInfoii",
+    "DrawTrackElements__8GemTrackFii",
+    "DrawTrackMasks__10GemManagerFii",
+    "IsSpotlightGem__10GemManagerFiRb",
+    "OnPhraseComplete__10VocalTrackFffi",
+    "Poll__10TrackPanelFv",
+    "Poll__10VocalTrackFf",
+    "Poll__3GemFfffff",
+    "Poll__5TrackFf",
+    "PrepareNoteTubes__10VocalTrackFfiRii",
+    "PrintLyricOneLine__FRC5Lyric",
+    "RebuildHUD__10VocalTrackFv",
+    "SetupGems__10GemManagerFi",
+    "SetupTailVerts__14GemRepTemplateFv",
+    "SmasherPlate__8TrackDirFv",
+    "UpdateLeftyFlip__10GemManagerFb",
+    "UpdateLyricZ__10VocalTrackFv",
+    "UpdatePitchArrow__10VocalTrackFfi",
+    "UpdateReservedVocalSlot__10TrackPanelFv",
+    "UpdateSyllableText__FR6StringbRb",
+    "UpdateVocalStyle__10VocalTrackFv"
+  ]
+}

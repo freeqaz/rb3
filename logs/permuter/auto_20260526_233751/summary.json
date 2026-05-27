@@ -1,0 +1,132 @@
+{
+  "total": 66,
+  "processed": 66,
+  "improved": 12,
+  "perfect": 0,
+  "no_change": 51,
+  "errors": 3,
+  "total_delta": 130.557935,
+  "improvements": [
+    {
+      "symbol": "Text__25BandStoreShortcutProviderCFiiP11UIListLabelP7UILabel",
+      "function": "BandStoreShortcutProvider::Text",
+      "source": "src/band3/meta_band/BandStorePanel.cpp",
+      "initial": 0.0,
+      "final": 96.75439,
+      "delta": 96.75439,
+      "rounds": 3,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "OnMsg__14StoreMenuPanelFRC17MetadataLoadedMsg",
+      "function": "StoreMenuPanel::OnMsg",
+      "source": "src/band3/meta_band/StoreMenuPanel.cpp",
+      "initial": 88.22785,
+      "final": 98.48101,
+      "delta": 10.253159999999994,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "BuildList__18StoreOfferProviderFP9DataArray",
+      "function": "StoreOfferProvider::BuildList",
+      "source": "src/band3/meta_band/StoreOfferProvider.cpp",
+      "initial": 97.38401,
+      "final": 97.930534,
+      "delta": 0.5465239999999909,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "ParseDataResultsIntoSetlists__23MusicLibraryNetSetlistsFb",
+      "function": "MusicLibraryNetSetlists::ParseDataResultsIntoSetlists",
+      "source": "src/band3/meta_band/MusicLibraryNetSetlists.cpp",
+      "initial": 96.93967,
+      "final": 97.80616,
+      "delta": 0.8664899999999989,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "NotifyPlayerOfAccomplishment__22AccomplishmentProgressF6SymbolPCc",
+      "function": "AccomplishmentProgress::NotifyPlayerOfAccomplishment",
+      "source": "src/band3/meta_band/AccomplishmentProgress.cpp",
+      "initial": 93.01266,
+      "final": 97.35443,
+      "delta": 4.341769999999997,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "TryToSetHighlight__12MusicLibraryF6Symbol12SongNodeTypeb",
+      "function": "MusicLibrary::TryToSetHighlight",
+      "source": "src/band3/meta_band/MusicLibrary.cpp",
+      "initial": 97.19697,
+      "final": 97.31061,
+      "delta": 0.11364000000000374,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "GetDialogMsg__15SaveLoadManagerFv",
+      "function": "SaveLoadManager::GetDialogMsg",
+      "source": "src/band3/meta_band/SaveLoadManager.cpp",
+      "initial": 96.58194,
+      "final": 97.178276,
+      "delta": 0.5963359999999938,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "RemoveOldestCachedContent__11BandSongMgrFv",
+      "function": "BandSongMgr::RemoveOldestCachedContent",
+      "source": "src/band3/meta_band/BandSongMgr.cpp",
+      "initial": 96.86556,
+      "final": 97.044815,
+      "delta": 0.17925499999999772,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "GetNumCompleted__19AccomplishmentPanelFv",
+      "function": "AccomplishmentPanel::GetNumCompleted",
+      "source": "src/band3/meta_band/AccomplishmentPanel.cpp",
+      "initial": 84.42593,
+      "final": 97.01852,
+      "delta": 12.592590000000001,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Text__17FilterViewSettingCFiiP11UIListLabelP7UILabel",
+      "function": "FilterViewSetting::Text",
+      "source": "src/band3/meta_band/ViewSetting.cpp",
+      "initial": 96.29412,
+      "final": 96.960785,
+      "delta": 0.6666649999999947,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "FakeFill__22AccomplishmentProgressFv",
+      "function": "AccomplishmentProgress::FakeFill",
+      "source": "src/band3/meta_band/AccomplishmentProgress.cpp",
+      "initial": 93.649605,
+      "final": 96.17716,
+      "delta": 2.5275550000000067,
+      "rounds": 3,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Text__26StoreOfferContentsProviderCFiiP11UIListLabelP7UILabel",
+      "function": "StoreOfferContentsProvider::Text",
+      "source": "src/band3/meta_band/StoreOfferContentsProvider.cpp",
+      "initial": 95.184784,
+      "final": 96.304344,
+      "delta": 1.119560000000007,
+      "rounds": 3,
+      "reason": "max_rounds"
+    }
+  ],
+  "elapsed_seconds": 2183.1
+}

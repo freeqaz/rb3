@@ -1,0 +1,58 @@
+{
+  "symbol": "ParseDataResultsIntoSetlists__23MusicLibraryNetSetlistsFb",
+  "function_name": "MusicLibraryNetSetlists::ParseDataResultsIntoSetlists",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/MusicLibraryNetSetlists.cpp",
+  "initial_percent": 96.93967,
+  "final_percent": 97.80616,
+  "total_delta": 0.8664899999999989,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.93967,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 97.779205,
+      "delta": 0.8395349999999979,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 96.93967,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 97.779205,
+      "delta": 0.8395349999999979,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 96.93967,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 97.779205,
+      "delta": 0.8395349999999979,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 110.31,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 15,
+    "5": 43,
+    "2": 32
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

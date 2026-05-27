@@ -1,3 +1,8 @@
+/* ===== PERMUTER LOCK — DO NOT EDIT =====
+ * The source permuter is actively working on: Spotlight::DrawShowing
+ * Started: 2026-05-27 03:28 (stale after 5 minutes)
+ * This banner is temporary and will be removed automatically.
+ ===== */
 #include "world/Spotlight.h"
 #include "char/Character.h"
 #include "decomp.h"

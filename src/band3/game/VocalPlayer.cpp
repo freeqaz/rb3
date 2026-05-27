@@ -485,7 +485,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     // Poll each singer and score
     FOREACH (sIt, mSingers) {
         Singer *pSinger = *sIt;
-        pSinger->unk54 = mTuningOffset;
+        pSinger->mMicPitchOffset = mTuningOffset;
         pSinger->SetMicProcessing(bSomePitched, bSomeUnpitched);
         pSinger->Poll(fCompMS, pos, frameMinPitch, frameMaxPitch);
 
@@ -512,14 +512,14 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
 
             if (bScoringAllowed && pPart->ScoringEnabled()) {
                 VocalScoreCache &cache = pSinger->AccessScoreCache(pPart->mPartIndex);
-                float fEnergy = pSinger->unk60;
+                float fEnergy = pSinger->mLastFrameMicEnergy;
                 int iRating;
                 float fDev;
                 pPart->ScoreSinger(
                     fCompMS,
                     pSinger->mFrameMicPitch,
                     fEnergy,
-                    fEnergy - pSinger->unk64,
+                    fEnergy - pSinger->mSmoothedMicEnergy,
                     pSinger->mOctaveOffset,
                     pSinger->mTalkyMatcher,
                     cache,
@@ -591,7 +591,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                     );
                 if (bFoundPart) {
                     pBestPart->AddSingerCandidate(pSinger, fBestScore);
-                    pSinger->unk74 = fBestTargetPitch;
+                    pSinger->mBestTargetPitch = fBestTargetPitch;
                     bAnyAssigned = true;
                 }
                 if (mVocalOverlay) {
@@ -606,7 +606,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                 Singer *pBestSinger = pPart->GetBestSingerCandidate();
                 if (pBestSinger) {
                     pBestSinger->SetAssignedPart(pPart->mPartIndex, mVocalPartBias);
-                    pBestSinger->mFrameTargetPitch = pBestSinger->unk74;
+                    pBestSinger->mFrameTargetPitch = pBestSinger->mBestTargetPitch;
                     int partIndex = pPart->mPartIndex;
                     scoredPartIndices.push_back(partIndex);
                 }
@@ -722,7 +722,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         int iOctaveOffset = 0;
         float fFramePitch = pSinger->mFrameMicPitch;
 
-        if (0.0f != pSinger->unk74) {
+        if (0.0f != pSinger->mBestTargetPitch) {
             pSinger->ClearFreestyleDeployment();
         }
 
@@ -730,7 +730,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             VocalPart *pPart = mVocalParts[pSinger->mFrameAssignedPart];
             VocalScoreCache &cache = pSinger->AccessScoreCache(pPart->mPartIndex);
             pPart->AddScore(cache);
-            pSinger->unk6c = cache.unk0;
+            pSinger->mFrameBestHitScore = cache.unk0;
 
             if (mFrameSpewData) {
                 mFrameSpewData->mSingerData[pSinger->mSingerIndex].unk8 =
@@ -745,7 +745,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             float fOld = pSinger->mFrameMicPitch;
             iOctaveOffset = pSinger->mOctaveOffset;
             if (0.0f != fOld) {
-                float fPrev = pSinger->unk74;
+                float fPrev = pSinger->mBestTargetPitch;
                 if (0.0f != fPrev) {
                     float diff = fPrev - fOld;
                     float absDiff = fabsf(diff);
@@ -766,7 +766,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                     }
                 }
             }
-            pSinger->unk6c = 0.0f;
+            pSinger->mFrameBestHitScore = 0.0f;
             pSinger->mFrameTargetPitch = 0.0f;
 
             bool bNotNet = !IsNet();
@@ -811,7 +811,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         pSinger->UpdatePitchHistory(fFramePitch);
 
         if (mVocalOverlay) {
-            mVocalOverlay->AppendEnergy(pSinger->mSingerIndex, pSinger->unk60, fCompMS);
+            mVocalOverlay->AppendEnergy(pSinger->mSingerIndex, pSinger->mLastFrameMicEnergy, fCompMS);
         }
         if (mVocalOverlay) {
             TalkyMatcher *pTalky = pSinger->mTalkyMatcher;
@@ -823,7 +823,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             );
         }
         if (mVocalOverlay) {
-            mVocalOverlay->AppendDeploymentTime(pSinger->mSingerIndex, pSinger->unk44);
+            mVocalOverlay->AppendDeploymentTime(pSinger->mSingerIndex, pSinger->mTotalTambourineDeployment);
         }
     }
 

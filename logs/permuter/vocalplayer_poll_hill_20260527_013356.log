@@ -1,0 +1,78 @@
+  Ghidra: unavailable (no such table: decompilations)
+Beam seed: baseline 0.00%
+  Target facts: none
+
+=== Beam depth 1/4 (beam size: 1) ===
+  Expanding state 1/1 (score=0.00%, gen=0, patterns=0)
+  BSF mode: unavailable (tools.compiler_trace not found)
+  BSF mode: unavailable (tools.compiler_trace not found)
+Source dedup: 3 duplicate variants skipped
+    Generated 32 proposals
+  Scoring 32 candidates (4 workers)...
+  Depth 1: 27 viable, 5 build failures, 27 improved over baseline
+  Survivors:
+    [1] 0.00% gen=1 stag=0 v=SEM patterns=variable_extraction
+    [2] 0.00% gen=1 stag=0 v=SEM patterns=and_split
+    [3] 0.00% gen=1 stag=0 v=SEM patterns=bool_cast
+    [4] 0.00% gen=1 stag=0 v=SEM patterns=bool_materialize
+    [5] 0.00% gen=1 stag=0 v=SEM patterns=condition_arithmetic
+    [6] 0.00% gen=1 stag=0 v=SEM patterns=float_double_literal
+    [7] 0.00% gen=1 stag=0 v=SEM patterns=initializer_literal
+    [8] 0.00% gen=1 stag=0 v=SEM patterns=member_ref_bind
+    [9] 0.00% gen=1 stag=0 v=FCT patterns=accessor_outline
+    [10] 0.00% gen=1 stag=0 v=SEM patterns=comparison_equivalence
+    [11] 0.00% gen=1 stag=0 v=SEM patterns=comparison_flip
+    [12] 0.00% gen=1 stag=0 v=SEM patterns=bool_to_uchar
+
+=== Beam depth 2/4 (beam size: 12) ===
+  Expanding state 1/12 (score=0.00%, gen=1, patterns=1)
+  BSF mode: unavailable (tools.compiler_trace not found)
+Source dedup: 3 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 2/12 (score=0.00%, gen=1, patterns=1)
+Source dedup: 1 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 3/12 (score=0.00%, gen=1, patterns=1)
+Source dedup: 1 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 4/12 (score=0.00%, gen=1, patterns=1)
+  BSF mode: unavailable (tools.compiler_trace not found)
+Source dedup: 2 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 5/12 (score=0.00%, gen=1, patterns=1)
+  BSF mode: unavailable (tools.compiler_trace not found)
+Source dedup: 2 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 6/12 (score=0.00%, gen=1, patterns=1)
+Source dedup: 1 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 7/12 (score=0.00%, gen=1, patterns=1)
+  BSF mode: unavailable (tools.compiler_trace not found)
+Source dedup: 1 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 8/12 (score=0.00%, gen=1, patterns=1)
+  BSF mode: unavailable (tools.compiler_trace not found)
+Source dedup: 1 duplicate variants skipped
+    Generated 32 proposals
+  Expanding state 9/12 (score=0.00%, gen=1, patterns=1)
+  BSF mode: unavailable (tools.compiler_trace not found)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/free/code/milohax/rb3/scripts/permuter/hill_climber.py", line 1608, in <module>
+    main()
+  File "/home/free/code/milohax/rb3/scripts/permuter/hill_climber.py", line 1470, in main
+    result = beam_search(
+  File "/home/free/code/milohax/rb3/scripts/permuter/beam_search.py", line 808, in beam_search
+    variants = _expand_state(
+  File "/home/free/code/milohax/rb3/scripts/permuter/beam_search.py", line 530, in _expand_state
+    variants = list(generate_variants(
+  File "/home/free/code/milohax/rb3/scripts/permuter/generator.py", line 384, in generate_variants
+    source_hash = variant_identity_bytes(ctx.file_path, variant)
+  File "/home/free/code/milohax/rb3/scripts/permuter/types.py", line 460, in variant_identity_bytes
+    updates = variant_file_updates(primary_path, variant)
+  File "/home/free/code/milohax/rb3/scripts/permuter/types.py", line 412, in variant_file_updates
+    raise ValueError(
+ValueError: Variant 'accessor_outline_0+ref2val_0' (compose:accessor_outline+value_address_caching) modified byte 12061 BEFORE target function (func starts at 12063)

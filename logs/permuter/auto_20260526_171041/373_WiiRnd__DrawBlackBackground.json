@@ -1,0 +1,48 @@
+{
+  "symbol": "DrawBlackBackground__6WiiRndFv",
+  "function_name": "WiiRnd::DrawBlackBackground",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndwii/Rnd.cpp",
+  "initial_percent": 87.8642,
+  "final_percent": 89.90741,
+  "total_delta": 2.043210000000002,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 87.8642,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 89.90741,
+      "delta": 2.043210000000002,
+      "num_variants": 16,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 89.34568,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 89.90741,
+      "delta": 0.5617299999999972,
+      "num_variants": 13,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 14.16,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 10,
+    "5": 11,
+    "2": 8
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

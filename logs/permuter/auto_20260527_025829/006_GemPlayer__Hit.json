@@ -1,0 +1,38 @@
+{
+  "symbol": "Hit__9GemPlayerFifiUi11GemHitFlags",
+  "function_name": "GemPlayer::Hit",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/game/GemPlayer.cpp",
+  "initial_percent": 95.869965,
+  "final_percent": 95.869965,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.869965,
+      "best_name": "accessor_outline_0",
+      "best_pattern": "accessor_outline",
+      "best_score": 95.91359,
+      "delta": 0.0436250000000058,
+      "num_variants": 43,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "no_apply",
+  "elapsed_seconds": 80.54,
+  "winning_pattern": "accessor_outline",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 40,
+    "0": 2,
+    "5": 1
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

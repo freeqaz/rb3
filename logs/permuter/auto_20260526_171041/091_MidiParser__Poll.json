@@ -1,0 +1,48 @@
+{
+  "symbol": "Poll__10MidiParserFv",
+  "function_name": "MidiParser::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/system/midi/MidiParser.cpp",
+  "initial_percent": 96.13426,
+  "final_percent": 97.52315,
+  "total_delta": 1.3888900000000035,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 96.13426,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 97.51852,
+      "delta": 1.3842599999999976,
+      "num_variants": 24,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 97.5,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 97.51852,
+      "delta": 0.018519999999995207,
+      "num_variants": 25,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 17.89,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 32,
+    "0": 8,
+    "5": 9
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

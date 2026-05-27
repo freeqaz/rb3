@@ -1,0 +1,47 @@
+{
+  "symbol": "ShiftedDotProduct__FPCfiPfb",
+  "function_name": "ShiftedDotProduct",
+  "source_path": "/home/free/code/milohax/rb3/src/system/dsp/SndAnalysis.cpp",
+  "initial_percent": 46.101215,
+  "final_percent": 47.396763,
+  "total_delta": 1.2955479999999966,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 46.101215,
+      "best_name": "boolmat_0",
+      "best_pattern": "bool_materialize",
+      "best_score": 47.39271,
+      "delta": 1.2914949999999976,
+      "num_variants": 13,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 44.275303,
+      "best_name": "commgroup_0",
+      "best_pattern": "commutative_swap",
+      "best_score": 47.39271,
+      "delta": 3.117407,
+      "num_variants": 14,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 48.03,
+  "winning_pattern": "commutative_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 15,
+    "5": 12
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

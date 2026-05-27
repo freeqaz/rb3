@@ -1,0 +1,48 @@
+{
+  "symbol": "SetRange__13VocalTrackDirFffib",
+  "function_name": "VocalTrackDir::SetRange",
+  "source_path": "/home/free/code/milohax/rb3/src/system/bandobj/VocalTrackDir.cpp",
+  "initial_percent": 98.4331,
+  "final_percent": 99.27817,
+  "total_delta": 0.8450700000000069,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.4331,
+      "best_name": "stmt_reorder_0",
+      "best_pattern": "statement_reorder",
+      "best_score": 99.26761,
+      "delta": 0.8345100000000087,
+      "num_variants": 14,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 98.38732,
+      "best_name": "argswap_0",
+      "best_pattern": "argument_swap",
+      "best_score": 99.26761,
+      "delta": 0.8802900000000022,
+      "num_variants": 22,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 58.7,
+  "winning_pattern": "argument_swap",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 20,
+    "0": 3,
+    "5": 13
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

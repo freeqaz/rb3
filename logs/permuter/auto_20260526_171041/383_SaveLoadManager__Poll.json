@@ -1,0 +1,48 @@
+{
+  "symbol": "Poll__15SaveLoadManagerFv",
+  "function_name": "SaveLoadManager::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/SaveLoadManager.cpp",
+  "initial_percent": 89.54492,
+  "final_percent": 90.98242,
+  "total_delta": 1.4375,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 89.54492,
+      "best_name": "switchif_0",
+      "best_pattern": "switch_if_convert",
+      "best_score": 90.305664,
+      "delta": 0.7607439999999883,
+      "num_variants": 29,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 89.44141,
+      "best_name": "switchif_0",
+      "best_pattern": "switch_if_convert",
+      "best_score": 90.98242,
+      "delta": 1.54101,
+      "num_variants": 29,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 60.64,
+  "winning_pattern": "switch_if_convert",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 10,
+    "5": 28,
+    "2": 20
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

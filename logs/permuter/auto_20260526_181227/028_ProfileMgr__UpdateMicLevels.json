@@ -1,0 +1,38 @@
+{
+  "symbol": "UpdateMicLevels__10ProfileMgrFi",
+  "function_name": "ProfileMgr::UpdateMicLevels",
+  "source_path": "/home/free/code/milohax/rb3/src/band3/meta_band/ProfileMgr.cpp",
+  "initial_percent": 98.94536,
+  "final_percent": 100.0,
+  "total_delta": 1.0546400000000062,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 98.94536,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 99.983604,
+      "delta": 1.038244000000006,
+      "num_variants": 26,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "noise_only",
+  "elapsed_seconds": 32.11,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 5,
+    "5": 11,
+    "2": 10
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

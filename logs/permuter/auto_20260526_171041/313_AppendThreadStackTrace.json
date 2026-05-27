@@ -1,0 +1,48 @@
+{
+  "symbol": "AppendThreadStackTrace__FPcPUi",
+  "function_name": "AppendThreadStackTrace",
+  "source_path": "/home/free/code/milohax/rb3/src/system/os/System.cpp",
+  "initial_percent": 90.27451,
+  "final_percent": 91.54902,
+  "total_delta": 1.2745099999999923,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 90.27451,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 91.54902,
+      "delta": 1.2745099999999923,
+      "num_variants": 14,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 87.72549,
+      "best_name": "declmove_0",
+      "best_pattern": "declaration_movement",
+      "best_score": 91.54902,
+      "delta": 3.823530000000005,
+      "num_variants": 14,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 10.55,
+  "winning_pattern": "declaration_movement",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "5": 7,
+    "2": 14,
+    "0": 7
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

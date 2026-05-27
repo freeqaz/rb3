@@ -1,0 +1,38 @@
+{
+  "symbol": "Reskin__13RndMeshDeformFP10SyncMeshCBb",
+  "function_name": "RndMeshDeform::Reskin",
+  "source_path": "/home/free/code/milohax/rb3/src/system/rndobj/MeshDeform.cpp",
+  "initial_percent": 85.74422,
+  "final_percent": 85.74422,
+  "total_delta": 0.0,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 85.74422,
+      "best_name": null,
+      "best_pattern": null,
+      "best_score": 85.74422,
+      "delta": 0.0,
+      "num_variants": 30,
+      "improved": false
+    }
+  ],
+  "stopped_reason": "plateau",
+  "elapsed_seconds": 27.56,
+  "winning_pattern": null,
+  "ghidra_stats": null,
+  "validation_tier": 0,
+  "validation_distribution": {
+    "0": 5,
+    "5": 8,
+    "2": 17
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

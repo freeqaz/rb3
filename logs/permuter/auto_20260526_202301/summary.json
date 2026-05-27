@@ -1,0 +1,112 @@
+{
+  "total": 60,
+  "processed": 60,
+  "improved": 10,
+  "perfect": 0,
+  "no_change": 50,
+  "errors": 0,
+  "total_delta": 23.016689999999976,
+  "improvements": [
+    {
+      "symbol": "ComputeHandPullAndQuat__14BandIKEffectorFR7QuatXfmR9TransformRC9TransformRC7Vector3fff",
+      "function": "BandIKEffector::ComputeHandPullAndQuat",
+      "source": "src/system/bandobj/BandIKEffector.cpp",
+      "initial": 73.51381,
+      "final": 73.63536,
+      "delta": 0.12154999999999916,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "ExtendTwin__Q213BandPatchMesh9WorkVertsFPCQ213BandPatchMesh8MeshVertR7Vector2R7Vector2",
+      "function": "BandPatchMesh::WorkVerts::ExtendTwin",
+      "source": "src/system/bandobj/BandPatchMesh.cpp",
+      "initial": 71.52612,
+      "final": 72.022385,
+      "delta": 0.49626499999999396,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "UtilDrawCigar__FRC9TransformPCfPCfRCQ23Hmx5Colori",
+      "function": "UtilDrawCigar",
+      "source": "src/system/rndobj/Utl.cpp",
+      "initial": 65.78261,
+      "final": 67.01087,
+      "delta": 1.2282599999999917,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "Init__7HttpWiiFv",
+      "function": "HttpWii::Init",
+      "source": "src/system/utl/HttpWii.cpp",
+      "initial": 64.5969,
+      "final": 67.10853,
+      "delta": 2.5116299999999967,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "EndianFix__15StorePackedPageFv",
+      "function": "StorePackedPage::EndianFix",
+      "source": "src/system/meta/StorePackedMetadata.cpp",
+      "initial": 50.0,
+      "final": 52.5,
+      "delta": 2.5,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "DrawMeter__5SynthFRfffPCc",
+      "function": "Synth::DrawMeter",
+      "source": "src/system/synth/Synth.cpp",
+      "initial": 49.013332,
+      "final": 49.191113,
+      "delta": 0.17778100000000308,
+      "rounds": 2,
+      "reason": "plateau"
+    },
+    {
+      "symbol": "ShiftedDotProduct__FPCfiPfb",
+      "function": "ShiftedDotProduct",
+      "source": "src/system/dsp/SndAnalysis.cpp",
+      "initial": 46.101215,
+      "final": 47.396763,
+      "delta": 1.2955479999999966,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "EndianFix__15StorePackedSongFv",
+      "function": "StorePackedSong::EndianFix",
+      "source": "src/system/meta/StorePackedMetadata.cpp",
+      "initial": 40.962963,
+      "final": 54.74074,
+      "delta": 13.777777,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "EndianFixBase__20StorePackedOfferBaseFv",
+      "function": "StorePackedOfferBase::EndianFixBase",
+      "source": "src/system/meta/StorePackedMetadata.cpp",
+      "initial": 33.47619,
+      "final": 33.714287,
+      "delta": 0.23809699999999623,
+      "rounds": 2,
+      "reason": "max_rounds"
+    },
+    {
+      "symbol": "UpdateNetOverlay__3NetFv",
+      "function": "Net::UpdateNetOverlay",
+      "source": "src/network/net/Net.cpp",
+      "initial": 14.398754,
+      "final": 15.068536,
+      "delta": 0.6697819999999997,
+      "rounds": 2,
+      "reason": "plateau"
+    }
+  ],
+  "elapsed_seconds": 533.4
+}

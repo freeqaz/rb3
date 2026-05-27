@@ -1,0 +1,48 @@
+{
+  "symbol": "Poll__Q25Movie4ImplFv",
+  "function_name": "Movie::Impl::Poll",
+  "source_path": "/home/free/code/milohax/rb3/src/system/movie/Movie.cpp",
+  "initial_percent": 84.04348,
+  "final_percent": 84.55314,
+  "total_delta": 0.5096599999999967,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 84.04348,
+      "best_name": "retmerge_0",
+      "best_pattern": "early_return_merge",
+      "best_score": 84.55073,
+      "delta": 0.5072499999999991,
+      "num_variants": 30,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 65.48309,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 84.55073,
+      "delta": 19.067639999999997,
+      "num_variants": 30,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 25.46,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "0": 8,
+    "2": 22,
+    "5": 30
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}
