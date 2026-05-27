@@ -14,10 +14,55 @@ set(CMAKE_C_STANDARD 11)
 set(REPO_ROOT ${CMAKE_SOURCE_DIR}/..)
 
 # ============================================================================
+# MWCC-compat + decomp flags. -fms-compatibility / -fms-extensions /
+# -fdelayed-template-parsing relax clang enough to accept the decomp's
+# permissive template code (implicit `typename` on dependent names, `register`
+# storage class, etc.) that MWCC also accepts. Used both for the engine context
+# injection (below) and for the rb3 matched-fork TUs each target compiles.
+# ============================================================================
+set(DECOMP_FLAGS
+    -w
+    -Wno-register             # decomp uses the (C++17-removed) `register` keyword
+    -Wno-dynamic-exception-spec # operator new(...) throw(std::bad_alloc) (pre-C++17)
+    -Wno-c++11-narrowing      # decomp has a few narrowing constant inits
+    -Wno-return-type          # decomp has a few `return;` in non-void fns (MWCC-tolerated)
+    -ferror-limit=0
+    -fno-omit-frame-pointer
+    -fms-compatibility
+    -fms-compatibility-version=19.29
+    -fms-extensions
+    -fdelayed-template-parsing
+    -fno-strict-aliasing
+    # GCC 15/16 libstdc++ <atomic>/<thread>/<mutex> + glibc <sys/cdefs.h> need
+    # the __GNUC__/__GCC_ATOMIC_* builtins that clang drops in -fms-compatibility
+    # mode. The engine's audio/threading TUs include <atomic>; the rb3-dta
+    # obj/utl/os/math subset never did, so these only surface once rb3-native
+    # pulls the engine's full source set. Mirror dc3-native's atomic-compat set.
+    -D__GNUC_STDC_INLINE__
+    -D__GCC_ATOMIC_TEST_AND_SET_TRUEVAL=1
+    -D__GCC_ATOMIC_BOOL_LOCK_FREE=2
+    -D__GCC_ATOMIC_CHAR_LOCK_FREE=2
+    -D__GCC_ATOMIC_WCHAR_T_LOCK_FREE=2
+    -D__GCC_ATOMIC_CHAR16_T_LOCK_FREE=2
+    -D__GCC_ATOMIC_CHAR32_T_LOCK_FREE=2
+    -D__GCC_ATOMIC_SHORT_LOCK_FREE=2
+    -D__GCC_ATOMIC_INT_LOCK_FREE=2
+    -D__GCC_ATOMIC_LONG_LOCK_FREE=2
+    -D__GCC_ATOMIC_LLONG_LOCK_FREE=2
+    -D__GCC_ATOMIC_POINTER_LOCK_FREE=2
+    "SHELL:-include ${CMAKE_SOURCE_DIR}/src/mwcc_compat.h"
+)
+
+# ============================================================================
 # milo-native-engine (shared LP64 engine) — consumed via add_subdirectory with
-# a soft SHA pin (warn on mismatch). For milestone (a) we DO NOT inject decomp
-# context (MILO_ENGINE_DECOMP_INCLUDE_DIRS), so HAVE_CONTEXT stays OFF and the
-# engine builds only the placeholder libmilo-engine.a (no gfx/Dawn/audio).
+# a soft SHA pin (warn on mismatch). Milestone (b): we now INJECT RB3's
+# matched-fork context (MILO_ENGINE_DECOMP_INCLUDE_DIRS / _COMPAT_FLAGS) so the
+# engine compiles its full (GFX-off) source set against RB3's Milo headers.
+#
+# CRITICAL: MILO_ENGINE_BUILD_GFX is forced OFF for RB3. RB3-Wii's 2010-era
+# rndobj/ is structurally older than DC3's; the engine's WebGPU layer is
+# DC3-wired and cannot compile against RB3 headers (Wave 2.3 finding). A .milo
+# scene-tree dump needs no GPU, so the engine is still useful with GFX off.
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
@@ -34,99 +79,216 @@ if(EXISTS "${MILO_ENGINE_PATH}/.git")
             "  (update MILO_ENGINE_PIN once the new engine state is canonical)")
     endif()
 endif()
-# Milestone (a): intentionally NOT setting MILO_ENGINE_DECOMP_INCLUDE_DIRS ->
-# engine builds placeholder-only.
+
+# RB3 matched-fork context for the engine. Mirrors the dc3-native injection
+# (dc3-decomp/native/CMakeLists.txt) but with RB3's include roots + the MWCC
+# DECOMP_FLAGS above. RB3 has no shared decomp PCH, so MILO_ENGINE_DECOMP_PCH
+# is intentionally left unset.
+set(MILO_ENGINE_DECOMP_INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
+    ${REPO_ROOT}/src
+    ${REPO_ROOT}/src/system
+    ${REPO_ROOT}/src/system/oggvorbis)
+set(MILO_ENGINE_DECOMP_COMPAT_FLAGS ${DECOMP_FLAGS})
+
+# Engine platform/audio/char TUs that are DC3-shaped against subsystem headers
+# (or SDK files) that are OLDER or absent in the RB3-Wii fork. ALL are OFF the
+# milo scene-tree-dump path — RB3 supplies its own file/memory/thread backends
+# via the native shims (native_file.cpp, rvl_shims.cpp), exactly as rb3-dta
+# does. None is a real engine bug; each is a genuine RB3-header-shape / missing-
+# header mismatch (the Wave-2.3 GPU partition is handled separately by
+# MILO_ENGINE_BUILD_GFX=OFF). Excluded from the engine lib for RB3 only (the
+# default DC3 build is unaffected — DC3 never sets this var):
+#
+#   --- audio / synth (DC3 synth-header shape) ---
+#   SampleInst_Native.cpp   RB3 SampleData lacks HasData/NumChannels/DataPtr/
+#                           GetNumSamples; SampleInst lacks mSample.
+#   StreamReceiver_Native.cpp  RB3 StreamReceiver lacks IsOutputDrained/SetSlip*
+#                           — header fails the `override` check.
+#   Synth_Stub.cpp          RB3 StandardStream ctor differs; the synth path
+#                           pulls synth/tomcrypt (broken <angled> includes +
+#                           `environ` clash with <unistd.h>).
+#   FxSendNative.cpp        DC3 synth FxSend shape.
+#   AudioDevice.cpp         engine audio mixer; not needed for a names+types
+#                           dump (no playback), and pairs with the synth stubs.
+#
+#   --- input (DC3 input shape) ---
+#   Joypad_Native.cpp       RB3 TheUI is a value (not pointer), JoypadData lacks
+#                           mNumAnalogSticks, no JoypadTerminateCommon /
+#                           kAction_ShellOption.
+#
+#   --- file / memory / thread (RB3 supplies these via native shims) ---
+#   File_Native.cpp         RB3 os/File.h File interface + FileStat differ;
+#                           uses FileMakePathBuf (DC3-only). RB3 reads via
+#                           native_file.cpp (NativeStdioFile) instead.
+#   AsyncFile_Native.cpp    RB3 AsyncFile is abstract w/ a different vtable.
+#   CDReader_Native.cpp     RB3 Archive lacks NumArkFiles (DC3 shape).
+#   Memory_Native.cpp       includes DC3's src/Memory.h, which RB3 lacks
+#                           (RB3 uses utl/MemMgr). rvl_shims.cpp backs the
+#                           Wii allocator surface instead.
+#   ThreadCall_Native.cpp   RB3 lacks ThreadCallFunc/ThreadCallCallbackFunc
+#                           typedefs (DC3 threadcall shape).
+#   DataParser_Native.cpp   RB3 gDataLine is `int`, not DataType (DC3 shape);
+#                           RB3 parses DTA via DataFlex.c (compiled directly).
+#   Keygen_Stub.cpp         RB3 KeyChain::getKey/getNumKeys signatures differ.
+#   MapFile_Stub.cpp        RB3 lacks GenericMapFile / FixedString (DC3 shape).
+#   NetworkSocket_Stub.cpp  RB3 NetworkSocket vtable (Listen/GetRemoteIP/
+#                           InqBoundPort return types) differs (DC3 shape).
+#
+#   --- bone / char (pull the GFX (GpuDevice.h -> webgpu) chain via rndobj/Rnd.h
+#       and the DC3-shaped char/ headers; not needed for a names+types dump) ---
+#   BoneSetup.cpp           includes platform/BoneSetup.h + rndobj/Rnd.h, which
+#                           drags in src/gfx/GpuDevice.h (webgpu/webgpu_cpp.h).
+#   CharTwistSolver.cpp     pulls the DC3-shaped char/ + GFX (GpuDevice.h) chain.
+set(MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
+    SampleInst_Native.cpp
+    StreamReceiver_Native.cpp
+    Synth_Stub.cpp
+    FxSendNative.cpp
+    AudioDevice.cpp
+    Joypad_Native.cpp
+    File_Native.cpp
+    AsyncFile_Native.cpp
+    CDReader_Native.cpp
+    Memory_Native.cpp
+    ThreadCall_Native.cpp
+    DataParser_Native.cpp
+    Keygen_Stub.cpp
+    MapFile_Stub.cpp
+    NetworkSocket_Stub.cpp
+    BoneSetup.cpp
+    CharTwistSolver.cpp)
+
+# Build the real engine lib, but with the WebGPU gfx + Wgpu platform backends
+# OFF (see CRITICAL note above). Sticky CACHE so a stale value can't linger.
+set(MILO_ENGINE_BUILD_GFX OFF CACHE BOOL "RB3: WebGPU layer is DC3-wired; force off" FORCE)
 add_subdirectory(${MILO_ENGINE_PATH} ${CMAKE_BINARY_DIR}/milo-engine)
 
 # ============================================================================
-# Engine core: the subset of the RB3-Wii matched fork needed for DTA parsing.
-#   obj  (DataNode/DataArray/Object), utl (MemMgr/Str/Symbol/streams),
-#   os   (File/Debug/System/Timer), math (Vec/Geo/Rot/...).
+# RB3-Wii matched-fork source globs.
+#   rb3-dta (milestone a) needs only: obj/utl/os/math.
+#   rb3-native (milestone b) uses the SAME proven-clean obj/utl/os/math subset.
+#
+#   NOTE: rndobj/ and synth/ are intentionally NOT compiled into rb3-native yet.
+#   A keep-going build of the full globs showed 22/64 rndobj and 7/47 synth TUs
+#   do not yet compile under clang LP64 — including the core base classes the
+#   loader needs (rndobj/Trans.cpp RndTransformable, rndobj/Tex.cpp, Mesh.cpp,
+#   Rnd.cpp; synth/Sfx.cpp, Sequence.cpp). Causes are matched-fork native
+#   bring-up gaps NOT in Wave 3's integration scope: POSIX identifier clashes
+#   (`wait`/`select` shadowed by <sys/wait.h>/<sys/select.h>), MWCC MSL headers
+#   (rndobj/MeshDeform.cpp -> 'MSL_Common/extras.h'), switch/case jump-over-init
+#   (rndobj/Trans.cpp), `expression is not assignable` register/cast idioms
+#   (rndobj/Tex.cpp), and synth/tomcrypt <angled> includes + an ObjVector.h
+#   template instantiation issue. Bringing those up is matched-fork porting
+#   work (Wave 1/2 territory). Until then rb3-native can load milos whose object
+#   classes live in the obj/ subset; the seam + harness are complete and adding
+#   rndobj/synth here is a one-line glob change once those forks are native-clean.
 # ============================================================================
-file(GLOB ENGINE_OBJ  ${REPO_ROOT}/src/system/obj/*.cpp)
-file(GLOB ENGINE_UTL  ${REPO_ROOT}/src/system/utl/*.cpp)
-file(GLOB ENGINE_OS   ${REPO_ROOT}/src/system/os/*.cpp)
-file(GLOB ENGINE_MATH ${REPO_ROOT}/src/system/math/*.cpp)
-set(ENGINE_SOURCES ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH})
+file(GLOB ENGINE_OBJ    ${REPO_ROOT}/src/system/obj/*.cpp)
+file(GLOB ENGINE_UTL    ${REPO_ROOT}/src/system/utl/*.cpp)
+file(GLOB ENGINE_OS     ${REPO_ROOT}/src/system/os/*.cpp)
+file(GLOB ENGINE_MATH   ${REPO_ROOT}/src/system/math/*.cpp)
 
+# --- DTA harness source set (milestone a): obj/utl/os/math only ---
+set(DTA_FORK_SOURCES ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH})
+
+# --- native harness source set (milestone b): same proven-clean subset ---
+set(NATIVE_FORK_SOURCES ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH})
+
+# Shared exclusions applied to BOTH source sets.
+#
 # Drop platform-specific TUs — native shims (rvl_shims.cpp) replace them.
-list(FILTER ENGINE_SOURCES EXCLUDE REGEX "_(Xbox|Win|Wii|X360|Gekko)\\.cpp$")
-list(FILTER ENGINE_SOURCES EXCLUDE REGEX "(Dx9|Wgpu|Gpu|D3D|GX)")
-# DataFlex_target.cpp is a separate yytarget:: tester lexer (uses Windows <io.h>,
-# not the DTA-parse path); the real lexer is DataFlex.c. Drop the target variant.
-list(FILTER ENGINE_SOURCES EXCLUDE REGEX "DataFlex_target\\.cpp$")
+set(_FORK_EXCLUDE_REGEX_PLATFORM "_(Xbox|Win|Wii|X360|Gekko)\\.cpp$")
+# Wii/GX/GPU/DX render backends — no GPU on native (engine built GFX-off).
+set(_FORK_EXCLUDE_REGEX_GFX "(Dx9|Wgpu|Gpu|D3D|GX)")
+# DataFlex_target.cpp is a separate yytarget:: tester lexer (Windows <io.h>);
+# the real lexer is DataFlex.c. Drop the target variant.
+set(_FORK_EXCLUDE_REGEX_FLEX "DataFlex_target\\.cpp$")
 # Off-path Wii-platform TUs that pull unshimmed Wii SDK surface (NAND saves,
-# RevoEX nhttp, DVD disc I/O, content/audio backends) or are otherwise not on
-# the DTA-parse path. Not needed to load a songs.dta; any symbols they'd define
-# are off-path (the loose linker flags below tolerate unresolved refs).
-list(FILTER ENGINE_SOURCES EXCLUDE REGEX "/(BufStreamNAND|HttpWii|FakeSongMgr|CDReader|WaveFile|AsyncFileCNT)\\.cpp$")
-# AsyncFile.cpp / HolmesClient.cpp pull os/AsyncFileCNT.h, which hard-includes
-# the real sdk/RVL_SDK cnt.h -> ARC.h chain (un-shimmable cheaply). The DTA path
-# reads synchronously via FileStream, so the async backends aren't needed.
-list(FILTER ENGINE_SOURCES EXCLUDE REGEX "/(AsyncFile|HolmesClient)\\.cpp$")
+# RevoEX nhttp, DVD disc I/O, content/audio backends). The loose linker flags
+# tolerate any unresolved refs they'd have defined.
+set(_FORK_EXCLUDE_REGEX_WIISDK "/(BufStreamNAND|HttpWii|FakeSongMgr|CDReader|WaveFile|AsyncFileCNT)\\.cpp$")
+# AsyncFile.cpp / HolmesClient.cpp pull os/AsyncFileCNT.h -> sdk/RVL_SDK cnt.h ->
+# ARC.h (un-shimmable cheaply). Both harnesses read synchronously via the native
+# FileStream, so the async backends aren't needed.
+set(_FORK_EXCLUDE_REGEX_ASYNC "/(AsyncFile|HolmesClient)\\.cpp$")
+
+foreach(_set DTA_FORK_SOURCES NATIVE_FORK_SOURCES)
+    list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_PLATFORM}")
+    list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_GFX}")
+    list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_FLEX}")
+    list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_WIISDK}")
+    list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_ASYNC}")
+endforeach()
 
 # Flex-generated DTA lexer (C source).
 set(DTA_LEXER ${REPO_ROOT}/src/system/obj/DataFlex.c)
 set_source_files_properties(${DTA_LEXER} PROPERTIES LANGUAGE C)
 
-# Native shims.
+# Native shims (shared by both targets).
 set(NATIVE_SHIMS
     ${CMAKE_SOURCE_DIR}/src/rvl_shims.cpp
     ${CMAKE_SOURCE_DIR}/src/native_link_glue.cpp
-    ${CMAKE_SOURCE_DIR}/src/native_file.cpp   # stdio-backed File for the DTA read path
+    ${CMAKE_SOURCE_DIR}/src/native_file.cpp   # stdio-backed File for the read path
     ${CMAKE_SOURCE_DIR}/src/dta_link_stubs.s  # weak no-op stubs for off-path symbols
 )
 
+# ============================================================================
+# Shared compile/include/link helper applied to each native target.
+# ============================================================================
+find_package(Threads REQUIRED)
+find_package(ZLIB)
+
+function(rb3_configure_target tgt)
+    target_compile_options(${tgt} PRIVATE ${DECOMP_FLAGS})
+    target_compile_definitions(${tgt} PRIVATE HX_NATIVE=1 MILO_DEBUG=1 _DEBUG=1)
+    # native include dir provides revolution/* shims + (via engine) the
+    # __wrap_iter STL shim. The engine's include/ is exported BEFORE/SYSTEM by
+    # milo-engine.
+    target_include_directories(${tgt} SYSTEM BEFORE PRIVATE
+        ${MILO_ENGINE_PATH}/include)
+    target_include_directories(${tgt} PRIVATE
+        ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
+        ${REPO_ROOT}/src
+        ${REPO_ROOT}/src/system
+        ${REPO_ROOT}/src/system/oggvorbis)
+    target_link_libraries(${tgt} PRIVATE milo-engine Threads::Threads)
+    if(ZLIB_FOUND)
+        target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
+    endif()
+    # Off-path symbols (rendering/audio/Bink/MIDI/RSO/Wii managers + their
+    # vtables/typeinfo) are satisfied by the weak no-op stubs in
+    # dta_link_stubs.s — calling one harmlessly returns, reading one yields a
+    # valid non-null pointer. Preferable to --unresolved-symbols=ignore-all,
+    # which leaves null symbols that crash when a global ctor calls one at
+    # static-init time.
+    target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
+endfunction()
+
+# ============================================================================
+# rb3-dta (milestone a) — minimal DTA-parse harness. Links the now-fuller
+# (real, GFX-off) engine lib but compiles only the obj/utl/os/math fork subset.
+# Must keep parsing 138 songs.
+# ============================================================================
 add_executable(rb3-dta
     ${CMAKE_SOURCE_DIR}/src/main_dta.cpp
-    ${ENGINE_SOURCES}
+    ${DTA_FORK_SOURCES}
     ${DTA_LEXER}
     ${NATIVE_SHIMS}
 )
+rb3_configure_target(rb3-dta)
 
-# --- MWCC-compat + decomp flags ---
-# -fms-compatibility / -fms-extensions / -fdelayed-template-parsing relax clang
-# enough to accept the decomp's permissive template code (implicit `typename`
-# on dependent names, `register` storage class, etc.) that MWCC also accepts.
-set(DECOMP_FLAGS
-    -w
-    -Wno-register             # decomp uses the (C++17-removed) `register` keyword
-    -Wno-dynamic-exception-spec # operator new(...) throw(std::bad_alloc) (pre-C++17)
-    -Wno-c++11-narrowing      # decomp has a few narrowing constant inits
-    -Wno-return-type          # decomp has a few `return;` in non-void fns (MWCC-tolerated)
-    -ferror-limit=0
-    -fno-omit-frame-pointer
-    -fms-compatibility
-    -fms-compatibility-version=19.29
-    -fms-extensions
-    -fdelayed-template-parsing
-    -fno-strict-aliasing
-    "SHELL:-include ${CMAKE_SOURCE_DIR}/src/mwcc_compat.h"
+# ============================================================================
+# rb3-native (milestone b) — full-engine boot harness. With no argv it inits
+# the minimal engine state and exits cleanly (FLOOR); with a .milo path it loads
+# the scene and dumps the object tree (STRETCH). Links the real engine lib +
+# RB3's obj/utl/os/math/rndobj/synth fork + the render-hook seam.
+# ============================================================================
+add_executable(rb3-native
+    ${CMAKE_SOURCE_DIR}/src/main_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_render_hook.cpp
+    ${NATIVE_FORK_SOURCES}
+    ${DTA_LEXER}
+    ${NATIVE_SHIMS}
 )
-target_compile_options(rb3-dta PRIVATE ${DECOMP_FLAGS})
-target_compile_definitions(rb3-dta PRIVATE HX_NATIVE=1 MILO_DEBUG=1 _DEBUG=1)
-
-# native include dir provides revolution/* shims + (via engine) the __wrap_iter
-# STL shim. The engine's include/ is exported BEFORE/SYSTEM by milo-engine.
-target_include_directories(rb3-dta SYSTEM BEFORE PRIVATE
-    ${MILO_ENGINE_PATH}/include)
-target_include_directories(rb3-dta PRIVATE
-    ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
-    ${REPO_ROOT}/src
-    ${REPO_ROOT}/src/system
-    ${REPO_ROOT}/src/system/oggvorbis
-)
-
-find_package(Threads REQUIRED)
-target_link_libraries(rb3-dta PRIVATE milo-engine Threads::Threads)
-find_package(ZLIB)
-if(ZLIB_FOUND)
-    target_link_libraries(rb3-dta PRIVATE ZLIB::ZLIB)
-endif()
-
-# Off-path symbols (rendering/audio/Bink/MIDI/RSO/Wii managers + their vtables/
-# typeinfo) are satisfied by the weak no-op stubs in dta_link_stubs.s — calling
-# one harmlessly returns, reading one yields a valid non-null pointer. This is
-# preferable to --unresolved-symbols=ignore-all, which leaves null symbols that
-# crash when a global ctor (e.g. ThePlatformMgr) calls one at static-init time.
-target_link_options(rb3-dta PRIVATE -Wl,--allow-multiple-definition)
+rb3_configure_target(rb3-native)
