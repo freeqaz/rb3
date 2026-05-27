@@ -89,6 +89,10 @@ typedef struct SCBtCmpDevInfoArray {
 } SCBtCmpDevInfoArray; // size 0x205
 
 BOOL SCCheckPCMessageRestriction(void);
+BOOL SCCheckPCShoppingRestriction(void);
+u32 SCGetNetContentRestrictions(void);
+u32 SCGetEULA(void);
+void SCGetFreeChannelAppCount(u32 *count);
 
 u8 SCGetAspectRatio(void);
 s8 SCGetDisplayOffsetH(void);
@@ -99,8 +103,9 @@ u8 SCGetProgressiveMode(void);
 u8 SCGetScreenSaverMode(void);
 u8 SCGetSoundMode(void);
 u32 SCGetCounterBias(void);
-u32 SCGetSimpleAddressID(int);
-u32 SCGetSimpleAddressRegionIdHi(unsigned char *);
+u32 SCGetSimpleAddressID(int region);
+BOOL SCGetSimpleAddressRegionIdHi(u8 *dst);
+void SCGetParentalControl(void *dst);
 
 void SCGetBtDeviceInfoArray(SCBtDeviceInfoArray *array);
 BOOL SCSetBtDeviceInfoArray(const SCBtDeviceInfoArray *array);
