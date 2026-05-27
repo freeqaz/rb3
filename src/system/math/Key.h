@@ -147,7 +147,13 @@ public:
             while (bound < size() && frame == (*this)[bound].frame) {
                 bound++;
             }
+#ifdef HX_NATIVE
+            // Native (clang LP64) STL: std::vector::insert takes a const_iterator,
+            // not the raw Key<T1>* that MWCC's STL accepted here.
+            this->insert(this->begin() + bound, Key<T1>(val, frame));
+#else
             insert(&(*this)[bound], Key<T1>(val, frame));
+#endif
         }
         return bound;
     }

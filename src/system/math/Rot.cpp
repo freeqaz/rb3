@@ -117,15 +117,18 @@ void Normalize(const Hmx::Quat &qin, Hmx::Quat &qout) {
         psq_st _zw, 8(_qout), 0, 0
     }
 #else
+    // Matches the PPC asm above: ps_sel selects the computed reciprocal-sqrt
+    // scale when (lenSq - 1e-5f) >= 0, otherwise selects 0, so a near-zero
+    // quaternion is driven to (0,0,0,0) rather than passed through.
     float lenSq = qin.x*qin.x + qin.y*qin.y + qin.z*qin.z + qin.w*qin.w;
-    if (lenSq > 1e-5f) {
+    if (lenSq - 1e-5f >= 0.0f) {
         float invLen = 1.0f / std::sqrt(lenSq);
         qout.x = qin.x * invLen;
         qout.y = qin.y * invLen;
         qout.z = qin.z * invLen;
         qout.w = qin.w * invLen;
     } else {
-        qout = qin;
+        qout.Set(0, 0, 0, 0);
     }
 #endif
 }
@@ -680,10 +683,14 @@ void Multiply(const Transform &a, const Transform &b, Transform &res) {
         psq_st   _f27, 44(_res), 1, 0
     }
 #else
+    // Row-vector convention: composing (v * A) * B = v * (A*B), so the combined
+    // transform is res.m = a.m * b.m and res.v = a.v * b.m + b.v (translation of
+    // a pushed through b's rotation, then offset by b's translation). This
+    // matches the dc3 sister mtx.cpp Multiply(Transform,Transform,Transform).
     Multiply(a.m, b.m, res.m);
-    res.v.x = a.m.x.x * b.v.x + a.m.x.y * b.v.y + a.m.x.z * b.v.z + a.v.x;
-    res.v.y = a.m.y.x * b.v.x + a.m.y.y * b.v.y + a.m.y.z * b.v.z + a.v.y;
-    res.v.z = a.m.z.x * b.v.x + a.m.z.y * b.v.y + a.m.z.z * b.v.z + a.v.z;
+    res.v.x = a.v.x * b.m.x.x + a.v.y * b.m.y.x + a.v.z * b.m.z.x + b.v.x;
+    res.v.y = a.v.x * b.m.x.y + a.v.y * b.m.y.y + a.v.z * b.m.z.y + b.v.y;
+    res.v.z = a.v.x * b.m.x.z + a.v.y * b.m.y.z + a.v.z * b.m.z.z + b.v.z;
 #endif
 }
 
