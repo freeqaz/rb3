@@ -61,7 +61,7 @@ int DrumTrackWatcherImpl::RelevantGem(int i1, int i2, int i3) {
 bool DrumTrackWatcherImpl::Swing(int slot, bool b1, bool b2, GemHitFlags flags) {
     KillSustainForSlot(slot);
     float now = mParent->GetNow();
-    unsigned int idx = mGemList->ClosestMarkerIdx(now + mSyncOffset);
+    int idx = mGemList->ClosestMarkerIdx(now + mSyncOffset);
     float timeat = mGemList->TimeAt(idx);
     int i3 = idx;
     for (; i3 + 1 < mGemList->NumGems() && mGemList->TimeAt(i3 + 1) <= timeat + 20.0f;
@@ -71,12 +71,12 @@ bool DrumTrackWatcherImpl::Swing(int slot, bool b1, bool b2, GemHitFlags flags) 
         idx--;
     }
     int relevant = RelevantGem(idx, i3, slot);
-    unsigned int mask = 1 << slot;
     bool inslop = InSlopWindow(mGemList->TimeAt(relevant), now);
     auto _tmp0 = mGemList->GetGem(relevant).GetTick();
+    unsigned int mask = 1 << slot;
     NoteSwing(mask, _tmp0);
     if (inslop) {
-        const GameGem &gem = mGemList->GetGem(relevant);
+        GameGem &gem = mGemList->GetGem(relevant);
         if (!gem.GetPlayed() && Playable(relevant)) {
             MILO_ASSERT(gem.NumSlots() == 1, 0x8D);
             if (slot == gem.GetSlot()) {
