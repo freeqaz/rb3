@@ -30,7 +30,17 @@ bool InterstitialPanel::Exiting() const {
     // Same seam + rationale as BackdropPanel::Exiting()'s native outro fix below:
     // treat the cosmetic camshot as immediately done so the screen-flow advances
     // to game_screen (where Game::LoadSong runs).
-    return UIPanel::Exiting();
+    bool baseEx = UIPanel::Exiting();
+    if (getenv("INTERSTITIAL_DBG")) {
+        static int sLastFlags = -1;
+        int flags = (baseEx ? 1 : 0) | (mCamshotDone ? 2 : 0) | ((unk88 & 0xF) << 4);
+        if (flags != sLastFlags) {
+            MILO_LOG("INTERSTITIAL_DBG: InterstitialPanel::Exiting %s baseEx=%d camshotDone=%d unk88=%d -> %d\n",
+                     Name(), baseEx ? 1 : 0, mCamshotDone ? 1 : 0, unk88, baseEx ? 1 : 0);
+            sLastFlags = flags;
+        }
+    }
+    return baseEx;
 #else
     return UIPanel::Exiting() || !mCamshotDone || unk88 < 3;
 #endif
@@ -87,7 +97,24 @@ void BackdropPanel::Exit() {
 #endif
 }
 
-bool BackdropPanel::Exiting() const { return UIPanel::Exiting() || !mOutroDone; }
+bool BackdropPanel::Exiting() const {
+#ifdef HX_NATIVE
+    bool baseEx = UIPanel::Exiting();
+    bool result = baseEx || !mOutroDone;
+    if (getenv("INTERSTITIAL_DBG")) {
+        static int sLastFlags = -1;
+        int flags = (baseEx ? 1 : 0) | (mOutroDone ? 2 : 0) | (result ? 4 : 0);
+        if (flags != sLastFlags) {
+            MILO_LOG("INTERSTITIAL_DBG: BackdropPanel::Exiting %s baseEx=%d outroDone=%d -> %d\n",
+                     Name(), baseEx ? 1 : 0, mOutroDone ? 1 : 0, result ? 1 : 0);
+            sLastFlags = flags;
+        }
+    }
+    return result;
+#else
+    return UIPanel::Exiting() || !mOutroDone;
+#endif
+}
 
 void BackdropPanel::SetOutroDone() { mOutroDone = true; }
 

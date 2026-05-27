@@ -231,7 +231,9 @@ bool MidiParserMgr::CreateNote(
             } else
                 Error(MakeString("Double note-on (%d)", data1), tick);
             break;
-        case kNoteOff:
+        case kNoteOff: {
+            // Braced to prevent clang's "jump bypasses variable initialization"
+            // when falling through to `default:` (HX_NATIVE bring-up pattern).
             int onTick = mNoteOns[data1];
             if (onTick == -1) {
                 Error(MakeString("Double note-off (%d)", data1), tick);
@@ -241,6 +243,7 @@ bool MidiParserMgr::CreateNote(
                 return true;
             }
             break;
+        }
         default:
             break;
         }

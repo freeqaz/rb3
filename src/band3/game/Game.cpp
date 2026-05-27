@@ -262,6 +262,16 @@ void Game::LoadSong() {
 }
 
 bool Game::IsLoaded() {
+#ifdef HX_NATIVE
+    // K6 diagnostic — fires on mLoadState transitions only (no per-frame spam).
+    if (getenv("GAME_DBG")) {
+        static int sLastState = -1;
+        if ((int)mLoadState != sLastState) {
+            MILO_LOG("GAME_DBG: Game::IsLoaded() mLoadState=%d\n", (int)mLoadState);
+            sLastState = (int)mLoadState;
+        }
+    }
+#endif
     if (mLoadState == kReady)
         return true;
     else if (mMaster && mMaster->GetAudio()->GetSongStream()
@@ -271,19 +281,40 @@ bool Game::IsLoaded() {
         return false;
     } else {
         if (mLoadState == kLoadingSong) {
+#ifdef HX_NATIVE
+            if (getenv("GAME_DBG"))
+                MILO_LOG("GAME_DBG: IsLoaded kLoadingSong: mMaster->IsLoaded()=%d\n", (int)mMaster->IsLoaded());
+#endif
             if (!mMaster->IsLoaded())
                 return false;
+#ifdef HX_NATIVE
+            if (getenv("GAME_DBG"))
+                MILO_LOG("GAME_DBG: IsLoaded -> kWaitingForAudio (PostLoad next)\n");
+#endif
             TheSongDB->PostLoad(GetBeatMaster()->GetMidiParserMgr()->GetEventsList());
             PostLoad();
             mLoadState = kWaitingForAudio;
         }
         if (mLoadState == kWaitingForAudio) {
+#ifdef HX_NATIVE
+            if (getenv("GAME_DBG"))
+                MILO_LOG("GAME_DBG: IsLoaded kWaitingForAudio: audio fail=%d ready=%d\n",
+                         (int)mMaster->GetAudio()->Fail(), (int)mMaster->GetAudio()->IsReady());
+#endif
             if (mMaster->GetAudio()->Fail())
                 return true;
             if (!mMaster->GetAudio()->IsReady()) {
                 TheSynth->Poll();
                 return false;
             }
+#ifdef HX_NATIVE
+            // K6 SUCCESS — Game::mLoadState reaches kReady (audio load chain
+            // complete). songMs would start flowing once Game::Go() runs, which
+            // happens via GamePanel::Poll(), which is gated by the screen
+            // transition into game_screen (currently stuck at tv3_b/tv3_c
+            // vignette in headless — that's the next-blocker).
+            MILO_LOG("GAME_DBG: *** Game::mLoadState = kReady — audio loaded, PushAllOptions next ***\n");
+#endif
             mLoadState = kReady;
             TheProfileMgr.PushAllOptions();
             mTrackerManager->ConfigureGoals();

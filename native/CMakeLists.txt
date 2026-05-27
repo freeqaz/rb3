@@ -116,8 +116,10 @@ set(MILO_ENGINE_DECOMP_COMPAT_FLAGS ${DECOMP_FLAGS})
 #                           pulls synth/tomcrypt (broken <angled> includes +
 #                           `environ` clash with <unistd.h>).
 #   FxSendNative.cpp        DC3 synth FxSend shape.
-#   AudioDevice.cpp         engine audio mixer; not needed for a names+types
-#                           dump (no playback), and pairs with the synth stubs.
+# AudioDevice.cpp is NOT excluded — it's the miniaudio output device, needed for
+# V1 audio playback. rb3_synth_native.cpp's NativeSynth::Init calls
+# AudioDevice::GetInstance().Init(44100), and rb3_stream_receiver_native.cpp
+# registers each StreamReceiver as an AudioSource.
 #
 #   --- input (DC3 input shape) ---
 #   Joypad_Native.cpp       RB3 TheUI is a value (not pointer), JoypadData lacks
@@ -152,7 +154,7 @@ set(MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
     StreamReceiver_Native.cpp
     Synth_Stub.cpp
     FxSendNative.cpp
-    AudioDevice.cpp
+    # AudioDevice.cpp intentionally NOT excluded — needed for V1 audio (X6).
     Joypad_Native.cpp
     File_Native.cpp
     AsyncFile_Native.cpp
@@ -230,6 +232,7 @@ file(GLOB ENGINE_UI       ${REPO_ROOT}/src/system/ui/*.cpp)
 file(GLOB ENGINE_WORLD    ${REPO_ROOT}/src/system/world/*.cpp)
 file(GLOB ENGINE_TRACK    ${REPO_ROOT}/src/system/track/*.cpp)
 file(GLOB ENGINE_BEATM    ${REPO_ROOT}/src/system/beatmatch/*.cpp)
+file(GLOB ENGINE_MIDI     ${REPO_ROOT}/src/system/midi/*.cpp)
 file(GLOB ENGINE_META     ${REPO_ROOT}/src/system/meta/*.cpp)
 file(GLOB ENGINE_MOVIE    ${REPO_ROOT}/src/system/movie/*.cpp)
 file(GLOB ENGINE_BANDOBJ  ${REPO_ROOT}/src/system/bandobj/*.cpp)
@@ -252,6 +255,7 @@ set(NATIVE_FORK_SOURCES
     ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH}
     ${ENGINE_RNDOBJ} ${ENGINE_SYNTH}
     ${ENGINE_UI} ${ENGINE_WORLD} ${ENGINE_TRACK} ${ENGINE_BEATM}
+    ${ENGINE_MIDI}
     ${ENGINE_META} ${ENGINE_MOVIE} ${ENGINE_BANDOBJ} ${ENGINE_CHAR}
     ${GAME_METABAND} ${GAME_GAME} ${GAME_NETBAND} ${GAME_TOUR}
     ${GAME_BANDTRACK} ${GAME_APP})
@@ -294,7 +298,7 @@ endforeach()
 # anchored (/Name.cpp$) so e.g. SongSort.cpp doesn't also drop SongSortByPlays.cpp.
 set(_NATIVE_FORK_EXCLUDE
     BandPatchMesh
-    ClipDistMap DataResults GameGemList
+    ClipDistMap DataResults
     SaveLoadManager Singer
     Splash
     StorePackedMetadata TourPerformerLocal
@@ -338,6 +342,7 @@ function(rb3_configure_target tgt)
         ${REPO_ROOT}/src/system/oggvorbis
         ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt's <angled> sibling includes
     target_link_libraries(${tgt} PRIVATE milo-engine Threads::Threads)
+    target_link_libraries(${tgt} PRIVATE vorbis vorbisfile ogg)
     if(ZLIB_FOUND)
         target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
     endif()
@@ -379,8 +384,23 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/rb3_render_tri.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_band_rnd.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_render_mesh.cpp
-    # native CreateNativeSynth() — headless base Synth (no audio assets yet)
+    # X6: native NativeSynth (boots miniaudio AudioDevice + binds the
+    # RB3-shaped StreamReceiver factory below)
     ${CMAKE_SOURCE_DIR}/src/rb3_synth_native.cpp
+    # X6: RB3-shaped StreamReceiver bridging the matched-fork synth onto
+    # AudioDevice. Bound to StreamReceiver::sFactory inside NativeSynth::Init.
+    ${CMAKE_SOURCE_DIR}/src/rb3_stream_receiver_native.cpp
+    # X6: RB3-shaped KeyChain (class-static, int) — provides the 12 .mogg
+    # decryption keys. Engine's Keygen_Stub.cpp is a DC3-shaped namespace and
+    # is platform-excluded for RB3; the matched-fork keygen_wii.cpp lives
+    # outside the globbed source set. Strong defs win over the weak no-ops in
+    # rndobj_synth_link_stubs.s; unblocks VorbisReader's keyIndex range check.
+    ${CMAKE_SOURCE_DIR}/src/rb3_keychain_native.cpp
+    # K3: vorbis_synthesis_poll shim — Harmonix's incremental decoder (Xbox
+    # extension) delegates to standard vorbis_synthesis (full decode at once).
+    # System libvorbis provides all ogg_*/vorbis_* symbols; this shim adds the
+    # one HMX-specific entry-point that libvorbis doesn't export.
+    ${CMAKE_SOURCE_DIR}/src/rb3_vorbis_poll_shim.cpp
     # native ctors for Wii/online manager globals whose real ctors live in
     # platform-EXCLUDED Wii TUs (PlatformMgr, ContentMgr — strong defs win over
     # the weak noop stubs in dta_link_stubs.s, so each global's MsgSource base
@@ -391,6 +411,16 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
     # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # K5: tomcrypt AES/CTR for v0x10 .mogg decryption. The matched-fork
+    # ByteGrinder::HvDecrypt + VorbisReader::DoFileRead path calls
+    # rijndael_setup, rijndael_ecb_decrypt, register_cipher, ctr_start,
+    # ctr_decrypt — these C sources implement them. Globs only pick up
+    # *.cpp under src/system/synth/, so we list these .c files explicitly
+    # (mirrors DC3's native build). Strong defs win over the weak noops in
+    # rndobj_synth_link_stubs.s.
+    ${REPO_ROOT}/src/system/synth/tomcrypt/aes.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/crypt.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/ctr.c
     # Synchronizable base (network/net): not part of the globbed source set, but
     # OvershellPanel (& other menu objects) MI-inherit it; its zeroed RTTI stub
     # crashed __dynamic_cast<UIPanel*>. Compile the real matched-fork ctor/dtor so

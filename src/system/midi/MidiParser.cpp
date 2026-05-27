@@ -204,13 +204,19 @@ void MidiParser::ParseNote(int startTick, int endTick, unsigned char data1) {
         if (mNotes.size() == 0)
             mNotes.reserve(20000);
         int idx;
-        Note *notesBegin;
         for (idx = mNotes.size() - 1; idx >= 0; idx--) {
             if (startTick >= mNotes[idx].startTick)
                 break;
         }
+#ifdef HX_NATIVE
+        // std::vector<T>::begin() returns iterator (not raw T*) under modern
+        // STL — STLport's old shape used a raw pointer. insert wants iterator.
+        mNotes.insert(mNotes.begin() + (idx + 1), Note(startTick, endTick, data1));
+#else
+        Note *notesBegin;
         notesBegin = mNotes.begin();
         mNotes.insert(notesBegin + (idx + 1), Note(startTick, endTick, data1));
+#endif
     }
 }
 
@@ -704,6 +710,12 @@ BEGIN_PROPSYNCS(MidiParser)
     SYNC_PROP(max_gap, mProcess.maxGap)
     SYNC_PROP(use_realtime_gaps, mProcess.useRealtimeGaps)
     SYNC_PROP(variable_blend_pct, mProcess.variableBlendPct)
+#ifdef HX_NATIVE
+    // POSIX <strings.h> exposes a non-namespaced `index(const char*, int)` that
+    // collides with this bare `index` Symbol identifier in the macro expansion.
+    SYNC_PROP_SET(Symbol("index"), GetIndex(), SetIndex(_val.Int()))
+#else
     SYNC_PROP_SET(index, GetIndex(), SetIndex(_val.Int()))
+#endif
     SYNC_PROP_SET(song_name, TheMidiParserMgr->GetSongName(), )
 END_PROPSYNCS

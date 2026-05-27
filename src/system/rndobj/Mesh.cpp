@@ -42,6 +42,10 @@ inline void Triangle::Set(const Vector3 &v0, const Vector3 &v1, const Vector3 &v
 PatchVerts gPatchVerts;
 int MESH_REV_SEP_COLOR = 0x25;
 
+#ifdef HX_NATIVE
+bool RndMesh::sUpdateApproxLight = false;
+#endif
+
 Vector3 TransformNormal(const Vector3 &normal, const Hmx::Matrix3 &mat) {
     Hmx::Matrix3 inv;
     FastInvert(mat, inv);

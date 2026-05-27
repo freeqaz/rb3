@@ -109,6 +109,16 @@ void StandardStream::PollStream() {
         std::for_each(
             mChannels.begin(), mChannels.end(), std::mem_fun(&StreamReceiver::Poll)
         );
+#ifdef HX_NATIVE
+        {
+            static int sLastState = -99;
+            if ((int)mState != sLastState) {
+                MILO_LOG("STREAM_DBG: StandardStream::PollStream state %d -> %d (chans=%d)\n",
+                         sLastState, (int)mState, (int)mChannels.size());
+                sLastState = (int)mState;
+            }
+        }
+#endif
         switch (mState) {
         case kInit:
         case kReady:
@@ -116,6 +126,9 @@ void StandardStream::PollStream() {
             break;
         case kBuffering:
             if (StuffChannels()) {
+#ifdef HX_NATIVE
+                MILO_LOG("STREAM_DBG: kBuffering -> kReady (StuffChannels returned true)\n");
+#endif
                 mState = kReady;
             }
             break;

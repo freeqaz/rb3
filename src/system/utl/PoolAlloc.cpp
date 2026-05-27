@@ -164,7 +164,20 @@ void *_PoolAlloc(int classSize, int reqSize, PoolType pool) {
     // Native build has no Wii fixed-size pools / ChunkAllocator (gChunkAlloc and
     // the heap descriptors are Wii-boot data that don't exist here). Route pool
     // allocations straight through the (malloc-backed) general allocator.
-    return _MemAlloc(classSize, 0x20);
+    //
+    // CRITICAL: NEW_POOL_OVERLOAD's `operator new(size_t s)` hard-codes the
+    // declaring class's `sizeof(obj)` as `classSize`, but when a DERIVED class
+    // inherits that operator new (e.g. VorbisReader : ... : CriticalSection,
+    // which inherits CriticalSection's pool overload), the C++ ABI calls it
+    // with s == sizeof(DerivedClass), which is bigger. The matched-fork path
+    // below MILO_ASSERTs `reqSize == classSize`. Use the LARGER of the two so
+    // derived-class allocations are sized to their actual layout (the C++
+    // compiler's reqSize already accounts for the derived sub-objects + any
+    // base padding); otherwise the ctor's field stores past the base-class
+    // allocation smash the next heap chunk's malloc header — the classic
+    // glibc `_int_malloc` consistency abort that fires on the NEXT alloc.
+    int allocSize = classSize > reqSize ? classSize : reqSize;
+    return _MemAlloc(allocSize, 0x20);
 #else
     if (MemTempAllocationsEnabled()) {
         bool notPoolSize = true;

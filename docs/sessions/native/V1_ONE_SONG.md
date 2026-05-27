@@ -4,6 +4,20 @@
 scoring, single instrument (guitar is fine). This is the v1 milestone from the
 roadmap's Goal & non-goals.
 
+> **🔄 In progress (2026-05-27, post-asset-unblock).** Audit ([V1_PATH_DECISION.md](V1_PATH_DECISION.md))
+> picked the Xbox 360 path; assets extracted; audio backend port underway:
+> - **X1** Xbox ARK extracted → `orig-assets/extracted-xbox-full/` (85 songs, 83 .mogg, 635 .mid). ✓ 30 sec via arkhelper.
+> - **X1-fix** `SetUsingCD(true)` in `src/system/os/System.cpp:358` (HX_NATIVE PreInit) so logical `config/foo.dta` rewrites to `config/gen/foo.dtb` matching the canonical extract layout. ✓
+> - **X2** v0xE MOGG decode validation → not needed; RB3 moggs are v0x10 (header byte `0x10`), but DC3's pure-C++ `GrindArray` handles `moggVersion > 0x0D` generically (6-bit hash + 64-slot switchCases, no per-version table). ✓
+> - **X3** Port `ByteGrinder::GrindArray` + `magicNumberGeneratorNative` from DC3 → `src/system/synth/ByteGrinder.cpp` HX_NATIVE block at lines 859-1043 (matched `#else` at 1045-1108). ✓ 2.5 min. Symbols verified in linked binary.
+> - **X4** Port `VorbisReader` HX_NATIVE Poll/DoFileRead/Decrypt + magicHash → `src/system/synth/VorbisReader.cpp` (Block A magicHash at 50-64, Block B free-fn `::Decrypt` + native Poll/DoFileRead at 109-255, matched at 267-340). ✓ 2.5 min. `unke4` used as `mPcmBuffers` equivalent. Symbols verified.
+> - **X5** Verify `StandardStream` port complete. ✓ Wave 2.4 had already landed all portable blocks; **do NOT add `#include "platform/StreamReceiver_Native.h"`** (would break the compile — engine's `StreamReceiverNative` inherits DC3 vtable incompatible with RB3's dual `StartSendImpl` shape). 4.5 min.
+> - **X6** Real `NativeSynth` + RB3-shaped `StreamReceiverNative` bridge. ⏳ In flight (Opus subagent). Creates `rb3_stream_receiver_native.cpp` (NEW) deriving from both RB3's `StreamReceiver` AND engine's `AudioSource`, implements dual `StartSendImpl` overloads + 96KB-base-ring + miniaudio integration. Rewrites `rb3_synth_native.cpp` with `NativeSynth : Synth` (Init/Terminate; no Stream* overrides because base RB3 `Synth` already handles them under HX_NATIVE).
+>
+> Renumbered task graph: see [V1_PATH_DECISION.md](V1_PATH_DECISION.md). Next after X6: X7 LoadSong byte-correctness, X8 residual TUs, X9 venue-char Draw, X10-X11 play-through.
+>
+> **Asset target post-X6:** point `RB3_DATA=/home/free/code/milohax/rb3/orig-assets/extracted-xbox-full` (the new full extract with `.mogg`+`.mid`). The old `orig-assets/extracted/` was the partial extract used during boot-to-song; SetUsingCD(true) makes the new layout work.
+
 **Guiding principle (non-negotiable, carried over from boot-to-song):** avoid
 hacks. Retain the actual game code as much as possible. Diverge only where
 native platform differences force it, gated `#ifdef HX_NATIVE`. Mirror DC3 where

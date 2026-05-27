@@ -143,6 +143,10 @@ void MidiReader::ReadFileHeader(BinStream &bs) {
     MILO_ASSERT(mState == kStart, 0x146);
     MidiChunkHeader header(bs);
 
+#ifdef HX_NATIVE
+    MILO_LOG("MIDI_DBG: ReadFileHeader entry, header.mID match=%d Length=%u tell=%d LE=%d\n",
+        header.mID == MidiChunkID::kMThd ? 1 : 0, header.Length(), bs.Tell(), bs.LittleEndian());
+#endif
     if ((header.mID != MidiChunkID::kMThd) || header.Length() != 6U) {
         MILO_WARN("%s: MIDI file header is corrupt", mStreamName.c_str());
     }
@@ -156,6 +160,9 @@ void MidiReader::ReadFileHeader(BinStream &bs) {
         );
     }
     bs >> mNumTracks;
+#ifdef HX_NATIVE
+    MILO_LOG("MIDI_DBG: midiType=%d mNumTracks=%d\n", midiType, mNumTracks);
+#endif
     if (mNumTracks <= 0) {
         MILO_WARN("%s: MIDI file has no tracks", mStreamName.c_str());
     } else {

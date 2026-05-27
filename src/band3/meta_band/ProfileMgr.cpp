@@ -597,7 +597,17 @@ void ProfileMgr::PushAllOptions() {
         TheRnd->ConfigureRenderMode();
         TheRnd->ChangeYScale(true);
     }
+#ifdef HX_NATIVE
+    // GameMicManager::Init() is gated out of native boot (App.cpp:258 HX_NATIVE
+    // block) — TheGameMicManager is NULL on native, so we can't poke unk2f here.
+    // Mic-input is a V1-deferral (no real USB mic on the native host); skipping
+    // the synapse-enable assignment is a no-op for headless playback.
+    if (TheGameMicManager) {
+        TheGameMicManager->unk2f = mSynapseEnabled;
+    }
+#else
     TheGameMicManager->unk2f = mSynapseEnabled;
+#endif
     TheSynth->SetDolby(mDolby, false);
     MILO_ASSERT(mVoiceChatSliderConfig, 0x534);
     MILO_ASSERT(0 <= mVoiceChatVolume && mVoiceChatVolume < mVoiceChatSliderConfig->Size() - 1, 0x535);

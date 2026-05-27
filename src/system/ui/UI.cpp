@@ -530,6 +530,40 @@ void UIManager::Poll() {
     }
     if (mCurrentScreen)
         mCurrentScreen->Poll();
+#ifdef HX_NATIVE
+    // V3 diagnostic — log transition-state change + the three TransitionTo
+    // predicates that gate the kTransitionTo -> kTransitionFrom advance. Gated
+    // on UISCREEN_DBG=1 to avoid spam.
+    if (getenv("UISCREEN_DBG")) {
+        static TransitionState sLastTState = (TransitionState)-1;
+        static UIScreen *sLastCur = (UIScreen *)-1;
+        static UIScreen *sLastTrans = (UIScreen *)-1;
+        if (mTransitionState != sLastTState || mCurrentScreen != sLastCur
+            || mTransitionScreen != sLastTrans) {
+            MILO_LOG("UISCREEN_DBG: UIManager state=%d cur=%s trans=%s\n",
+                     (int)mTransitionState,
+                     mCurrentScreen ? mCurrentScreen->Name() : "(nil)",
+                     mTransitionScreen ? mTransitionScreen->Name() : "(nil)");
+            sLastTState = mTransitionState;
+            sLastCur = mCurrentScreen;
+            sLastTrans = mTransitionScreen;
+        }
+        if (mTransitionState == kTransitionTo) {
+            static int sStallCount = 0;
+            sStallCount++;
+            if ((sStallCount % 30) == 1) {
+                int curExiting = mCurrentScreen ? mCurrentScreen->Exiting() : -1;
+                int transLoaded = mTransitionScreen ? mTransitionScreen->CheckIsLoaded() : -1;
+                int blocking = IsBlockingTransition();
+                MILO_LOG("UISCREEN_DBG: kTransitionTo stalled #%d cur=%s exiting=%d trans=%s loaded=%d blocking=%d\n",
+                         sStallCount,
+                         mCurrentScreen ? mCurrentScreen->Name() : "(nil)", curExiting,
+                         mTransitionScreen ? mTransitionScreen->Name() : "(nil)", transLoaded,
+                         blocking);
+            }
+        }
+    }
+#endif
     if (mTransitionState == kTransitionTo) {
         START_AUTO_TIMER("ui_transition_to_poll");
         if ((!mTransitionScreen || mTransitionScreen->CheckIsLoaded())

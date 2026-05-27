@@ -195,6 +195,22 @@ void GamePanel::PollForLoading() {
 }
 
 bool GamePanel::IsLoaded() const {
+#ifdef HX_NATIVE
+    // K6 diagnostic — only fires when at least one gate changes.
+    if (getenv("GAME_DBG")) {
+        static int sLastReportedState = -1;
+        int uiL = UIPanel::IsLoaded() ? 1 : 0;
+        int vpb = mVocalPercussionBank.IsLoaded() ? 1 : 0;
+        int dkb = mDrumKitBank.IsLoaded() ? 1 : 0;
+        int dir = (mDirectInstrument && mDirectInstrument->IsLoaded()) ? 1 : 0;
+        int compositeState = (uiL << 3) | (vpb << 2) | (dkb << 1) | dir | (mLoadingState << 4);
+        if (compositeState != sLastReportedState) {
+            MILO_LOG("GAME_DBG: GamePanel::IsLoaded uiL=%d vpb=%d dkb=%d dir=%d state=%d\n",
+                     uiL, vpb, dkb, dir, (int)mLoadingState);
+            sLastReportedState = compositeState;
+        }
+    }
+#endif
     if (!UIPanel::IsLoaded())
         return false;
     if (!mVocalPercussionBank.IsLoaded())
@@ -270,6 +286,24 @@ void GamePanel::RunVocalTest() {
 
 void GamePanel::Poll() {
     START_AUTO_TIMER("game_poll");
+#ifdef HX_NATIVE
+    // K6 diagnostic — fires only on mGameState change (no per-frame spam). The
+    // K6 audio-load chain now reaches Game::mLoadState=kReady, but the screen
+    // transition (tv3_b/tv3_c vignette) keeps GamePanel from going Active in
+    // headless, so this Poll() never runs in the V1 reproducer. Tracking the
+    // gate is what got us to K6 ack; next stop is the InterstitialPanel /
+    // BandScreen camshot-exit gate (see InterstitialPanel.cpp HX_NATIVE block).
+    if (getenv("GAME_DBG")) {
+        static int sLastState = -1;
+        int istate = mGameState;
+        if (istate != sLastState) {
+            MILO_LOG("GAME_DBG: GamePanel::Poll state=%d IsLoaded=%d audio_fail=%d\n",
+                     istate, (int)IsLoaded(),
+                     mGame ? (int)mGame->mMaster->GetAudio()->Fail() : -1);
+            sLastState = istate;
+        }
+    }
+#endif
     if (!IsLoaded()) return;
     UIPanel::Poll();
     if (mGame->mMaster->GetAudio()->Fail()) return;

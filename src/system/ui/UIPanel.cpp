@@ -186,10 +186,22 @@ bool UIPanel::Entering() const {
 }
 
 bool UIPanel::Exiting() const {
+    bool ret;
     if (mDir && !mLoaded)
-        return mDir->Exiting();
+        ret = mDir->Exiting();
     else
-        return false;
+        ret = false;
+#ifdef HX_NATIVE
+    if (ret && getenv("UISCREEN_DBG")) {
+        static const char *sLastPanel = nullptr;
+        if (Name() != sLastPanel) {
+            MILO_LOG("UISCREEN_DBG: UIPanel::Exiting %s mDir=%p !mLoaded=%d -> 1 (dir->Exiting)\n",
+                     Name(), (void *)mDir, !mLoaded);
+            sLastPanel = Name();
+        }
+    }
+#endif
+    return ret;
 }
 
 bool UIPanel::Unloading() const {

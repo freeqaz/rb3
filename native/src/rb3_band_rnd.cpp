@@ -21,6 +21,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 #include <vector>
 
 // The single global renderer. TheRnd (declared extern in rndobj/Rnd.h) is a
@@ -143,6 +144,82 @@ static void MatMul4(const float* A, const float* B, float* out) {
 // ===========================================================================
 // BandRnd
 // ===========================================================================
+
+void BandRnd::InitScreenshots() {
+    const char* ssDir = getenv("MILO_SCREENSHOT_DIR");
+    if (!ssDir || !ssDir[0]) return;
+    mShotDir = ssDir;
+
+    const char* ssFrames = getenv("MILO_SCREENSHOT_FRAMES");
+    if (!ssFrames || !ssFrames[0]) ssFrames = "5,25,50,120,200,280,360,500,700,1100,1400";
+    {
+        std::istringstream iss(ssFrames);
+        std::string tok;
+        while (std::getline(iss, tok, ',')) {
+            int f = atoi(tok.c_str());
+            if (f >= 0) mShotFrames.push_back(f);
+        }
+    }
+
+    const char* ssNames = getenv("MILO_SCREENSHOT_NAMES");
+    if (ssNames && ssNames[0]) {
+        std::istringstream iss(ssNames);
+        std::string tok;
+        while (std::getline(iss, tok, ',')) mShotNames.push_back(tok);
+    }
+    // Pad names if fewer than frames.
+    while ((int)mShotNames.size() < (int)mShotFrames.size())
+        mShotNames.push_back("");
+
+    mShotIndex = 0;
+    printf("BandRnd: auto-screenshot — dir=%s frames=", mShotDir.c_str());
+    for (int i = 0; i < (int)mShotFrames.size(); i++) {
+        if (i) printf(",");
+        printf("%d", mShotFrames[i]);
+    }
+    printf("\n");
+}
+
+void BandRnd::BeginDrawing() {
+    if (!mGpuReady) return;
+    // Use the currently-selected camera if available (RndCam::sCurrent is set by
+    // the game's scene cameras via RndCam::Select() during the UI Draw cycle).
+    // Fall back to mDefaultCam (set during App boot) or null (identity matrices).
+    RndCam* cam = RndCam::sCurrent ? RndCam::sCurrent : mDefaultCam;
+    BeginFrame(cam);
+}
+
+void BandRnd::EndDrawing() {
+    if (!mGpuReady) return;
+    EndFrame();
+
+    // Auto-screenshot: capture the specified frames.
+    if (mShotIndex < (int)mShotFrames.size() &&
+        mFrameCount == mShotFrames[mShotIndex]) {
+        int w = mGpu.WindowWidth(), h = mGpu.WindowHeight();
+        std::vector<uint8_t> pixels((size_t)w * h * 4);
+        if (mGpu.ReadbackHeadlessFrame(pixels.data(), pixels.size())) {
+            char path[512];
+            const std::string& label = mShotNames[mShotIndex];
+            if (!label.empty())
+                snprintf(path, sizeof(path), "%s/%02d_f%04d_%s.png",
+                         mShotDir.c_str(), mShotIndex + 1, mFrameCount, label.c_str());
+            else
+                snprintf(path, sizeof(path), "%s/%02d_f%04d.png",
+                         mShotDir.c_str(), mShotIndex + 1, mFrameCount);
+            if (WritePNG(path, pixels.data(), w, h))
+                printf("BandRnd: screenshot %d -> %s\n", mFrameCount, path);
+            else
+                fprintf(stderr, "BandRnd: WritePNG failed -> %s\n", path);
+        } else {
+            fprintf(stderr, "BandRnd: readback failed for frame %d "
+                    "(MILO_HEADLESS required)\n", mFrameCount);
+        }
+        mShotIndex++;
+    }
+
+    mFrameCount++;
+}
 
 void BandRnd::PreInitRender() {
     if (mPreInited) return;

@@ -2604,6 +2604,9 @@ void MidiTrackLister::FillTrackList(std::vector<Symbol> &syms, BinStream &bs) {
 }
 
 void MidiTrackLister::OnText(int i1, const char *cc, unsigned char uc) {
+#ifdef HX_NATIVE
+    MILO_LOG("MIDI_DBG: MidiTrackLister::OnText tick=%d text='%s' type=%d\n", i1, cc, uc);
+#endif
     if (uc == 3) {
         mTrackList->push_back(cc);
         SkipCurrentTrack();

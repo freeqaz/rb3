@@ -72,11 +72,19 @@ extern void InitMakeString();
 sigjmp_buf gDrawJmpBuf;
 bool gDrawJmpBufSet = false;
 
-static void RB3SignalHandler(int sig, siginfo_t *info, void *) {
+static void RB3SignalHandler(int sig, siginfo_t *info, void *ctx) {
     if (sig == SIGSEGV && gDrawJmpBufSet) {
         gDrawJmpBufSet = false;
         siglongjmp(gDrawJmpBuf, 1);
     }
+#if defined(__has_feature) && __has_feature(address_sanitizer)
+    // Under ASan, for non-draw-guard signals, restore the default handler
+    // (which is ASan's interceptor) and re-raise so ASan can print its
+    // localized report instead of our terse backtrace.
+    signal(sig, SIG_DFL);
+    raise(sig);
+    return;
+#else
     const char *signame = (sig == SIGSEGV) ? "SIGSEGV"
                         : (sig == SIGABRT) ? "SIGABRT"
                         : (sig == SIGBUS)  ? "SIGBUS"
@@ -90,6 +98,7 @@ static void RB3SignalHandler(int sig, siginfo_t *info, void *) {
     int n = backtrace(bt, 64);
     backtrace_symbols_fd(bt, n, STDERR_FILENO);
     _exit(128 + sig);
+#endif
 }
 
 // gSystemConfig (os/System.cpp) is the global DTA tree that SystemConfig()
@@ -499,6 +508,17 @@ extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_re
 // TheQuestMgr.Init), then App::Run() enters the HX_NATIVE frame loop. The boot
 // gets as far as the matched-fork Load()/DTA-manager state allows; the signal
 // handler + draw guard keep a partial-scene crash reportable.
+//
+// Env-var matrix for RB3_GAME mode:
+//   RB3_DATA=<path>    — root of extracted Xbox ARK assets (required)
+//   MILO_HEADLESS=1    — suppress Dawn window (no DISPLAY / CI / render-skip)
+//   MILO_WIDTH/HEIGHT  — window size when not headless (default 1280×720)
+//   MILO_AUDIO=1       — open miniaudio output device even when MILO_HEADLESS=1;
+//                        overrides the headless audio skip in AudioDevice::Init.
+//                        Use for V1 audio-path acceptance: RenderAudio is invoked
+//                        without requiring a visible window.
+//   MILO_MAX_FRAMES=N  — exit the frame loop after N frames (test / CI cap)
+//   RB3_SYSCFG=<path>  — override system config DTA path
 // ---------------------------------------------------------------------------
 #include "App.h"
 #include "rb3_band_rnd.h"
@@ -516,6 +536,7 @@ static int RunGame(int argc, char **argv) {
     }
     printf("rb3-native: RB3_GAME — GpuDevice up (%dx%d, %s)\n",
            W, H, headless ? "headless" : "windowed");
+    gBandRnd.InitScreenshots(); // reads MILO_SCREENSHOT_DIR / _FRAMES / _NAMES
 
     // RB3's 2010 milos serialize text/tex/dir objects under the legacy short
     // class names "Text"/"Tex"/"Dir"; the engine registers RndText/RndTex/RndDir.
@@ -550,6 +571,8 @@ int main(int argc, char **argv) {
     setbuf(stderr, nullptr);
 
     // Reliable signal handling for the full-boot modes (see RB3SignalHandler).
+    // Under AddressSanitizer the handler chains to ASan's default for non-
+    // draw-guard signals so the localized ASan report still fires.
     struct sigaction sa;
     sa.sa_sigaction = RB3SignalHandler;
     sa.sa_flags = SA_SIGINFO;

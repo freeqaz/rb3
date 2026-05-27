@@ -856,6 +856,192 @@ void ByteGrinder::Init() {
 }
 #pragma dont_inline reset
 
+#ifdef HX_NATIVE
+// ============================================================================
+// Native (non-DTA) implementation of GrindArray
+// Uses the Onyx Music Game Toolkit's proven algorithm (cbits/ByteGrinder.cpp).
+// The DTA version fails on x86_64 due to integer width/evaluation differences.
+// ============================================================================
+
+namespace {
+
+static const u32 kLcgMul = 0x19660D;
+static const u32 kLcgInc = 0x3C6EF35F;
+
+// --- Native op functions matching Onyx ops.c ---
+// Signature: op(bar, foo) where bar = bar[ix+1], foo = running accumulator.
+// All rotations are 8-bit right rotations via (val>>amt)|(val<<(8-amt)).
+#define ROTR8(val, amt) (u8)(((u8)(val) >> (amt)) | ((u8)(val) << (8 - (amt))))
+
+typedef u8 (*NativeOp)(u8, u8);
+
+// RB2 ops (0-31)
+static u8 nop0(u8 bar, u8 foo)  { return foo ^ bar; }
+static u8 nop1(u8 bar, u8 foo)  { return u8(foo + bar); }
+static u8 nop2(u8 bar, u8 foo)  { return ROTR8(foo, bar & 7); }
+static u8 nop3(u8 bar, u8 foo)  { return ROTR8(foo, (bar == 0)); }
+static u8 nop4(u8 bar, u8 foo)  { return ROTR8(foo == 0, bar == 0); }
+static u8 nop5(u8 bar, u8 foo)  { return ROTR8(0xFF ^ foo, bar & 7); }
+static u8 nop6(u8 bar, u8 foo)  { return u8(bar ^ (foo == 0)); }
+static u8 nop7(u8 bar, u8 foo)  { return u8(bar + (foo == 0)); }
+static u8 nop8(u8 bar, u8 foo)  { return u8(bar ^ u8(foo + bar)); }
+static u8 nop9(u8 bar, u8 foo)  { return u8(bar + (foo ^ bar)); }
+static u8 nop10(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, (bar == 0))); }
+static u8 nop11(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, bar & 7)); }
+static u8 nop12(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, bar & 7)); }
+static u8 nop13(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, (bar == 0))); }
+static u8 nop14(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, 1)); }
+static u8 nop15(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, 2)); }
+static u8 nop16(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, 3)); }
+static u8 nop17(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, 4)); }
+static u8 nop18(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, 5)); }
+static u8 nop19(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, 6)); }
+static u8 nop20(u8 bar, u8 foo) { return u8(bar + ROTR8(foo, 7)); }
+static u8 nop21(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 1)); }
+static u8 nop22(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 2)); }
+static u8 nop23(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 3)); }
+static u8 nop24(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 4)); }
+static u8 nop25(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 5)); }
+static u8 nop26(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 6)); }
+static u8 nop27(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 7)); }
+static u8 nop28(u8 bar, u8 foo) { return u8(bar ^ u8(bar + ROTR8(foo, 5))); }
+static u8 nop29(u8 bar, u8 foo) { return u8(bar ^ u8(bar + ROTR8(foo, 3))); }
+static u8 nop30(u8 bar, u8 foo) { return u8(bar + (bar ^ ROTR8(foo, 3))); }
+static u8 nop31(u8 bar, u8 foo) { return u8(bar + (bar ^ ROTR8(foo, 5))); }
+
+// RB3+ ops (32-63)
+static u8 nop32(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 3) ^ 0x1F); }
+static u8 nop33(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 5) ^ 0x07); }
+static u8 nop34(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 2) ^ 0x3F); }
+static u8 nop35(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 6) ^ 0x03); }
+static u8 nop36(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 2) ^ 0xC0); }
+static u8 nop37(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 5) ^ 0xF8); }
+static u8 nop38(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 6) ^ 0xFC); }
+static u8 nop39(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 3) ^ 0xE0); }
+static u8 nop40(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 6) ^ 0x01); }
+static u8 nop41(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 2) ^ 0x17); }
+static u8 nop42(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 3) ^ 0x0B); }
+static u8 nop43(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 5) ^ 0x02); }
+static u8 nop44(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 2) ^ 0x0D); }
+static u8 nop45(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 3) ^ 0x06); }
+static u8 nop46(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 4) ^ 0x03); }
+static u8 nop47(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 1) ^ 0x1B); }
+static u8 nop48(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 4) | 0x05) ^ 0x02); }
+static u8 nop49(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 3) | 0x0B) ^ 0x04); }
+static u8 nop50(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 5) | 0x02) ^ 0x01); }
+static u8 nop51(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 6) | 0x01)); }
+static u8 nop52(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 1) | 0x1B) ^ 0x24); }
+static u8 nop53(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 7)); }
+static u8 nop54(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 3) | 0x06) ^ 0x09); }
+static u8 nop55(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 5) | 0x01) ^ 0x02); }
+static u8 nop56(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 4) | 0x06) ^ 0x01); }
+static u8 nop57(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 5) | 0x03)); }
+static u8 nop58(u8 bar, u8 foo) { return u8(bar ^ ROTR8(foo, 6) ^ 0x01); }
+static u8 nop59(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 2) | 0x19) ^ 0x06); }
+static u8 nop60(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 4) | 0x0A) ^ 0x05); }
+static u8 nop61(u8 bar, u8 foo) { return u8(foo ^ ((bar << 5) | 0x1F)); } // args swapped vs others
+static u8 nop62(u8 bar, u8 foo) { return u8(bar ^ u8((foo << 3) + 0x07)); }
+static u8 nop63(u8 bar, u8 foo) { return u8(bar ^ (ROTR8(foo, 6) | 0x02) ^ 0x01); }
+
+static const NativeOp kOpsRB2[32] = {
+    nop0,  nop1,  nop2,  nop3,  nop4,  nop5,  nop6,  nop7,
+    nop8,  nop9,  nop10, nop11, nop12, nop13, nop14, nop15,
+    nop16, nop17, nop18, nop19, nop20, nop21, nop22, nop23,
+    nop24, nop25, nop26, nop27, nop28, nop29, nop30, nop31,
+};
+
+static const NativeOp kOpsRB3[32] = {
+    nop32, nop33, nop34, nop35, nop36, nop37, nop38, nop39,
+    nop40, nop41, nop42, nop43, nop44, nop45, nop46, nop47,
+    nop48, nop49, nop50, nop51, nop52, nop53, nop54, nop55,
+    nop56, nop57, nop58, nop59, nop60, nop61, nop62, nop63,
+};
+
+// The O function table: O[slot] = op function, populated by constructor permutation.
+static NativeOp sOTable[64];
+static bool sOTableInit = false;
+
+static void GeneratePermutation32(u32 seed, u32 outPerm[32]) {
+    bool usedUp[32];
+    memset(usedUp, 0, sizeof(usedUp));
+    for (int i = 0; i < 32; i++) {
+        u32 idx;
+        for (;;) {
+            seed = seed * kLcgMul + kLcgInc;
+            idx = (seed >> 2) & 0x1F;
+            if (!usedUp[idx]) { usedUp[idx] = true; break; }
+        }
+        outPerm[i] = idx;
+    }
+}
+
+static void EnsureOTableInit() {
+    if (sOTableInit) return;
+    // Matches ByteGrinder::ByteGrinder() constructor permutation:
+    // PickOneOf32A(true, 0xD5) then O[pick()] = opsRB2[i]
+    // PickOneOf32A(true, 0x23E) then O[pick()+32] = opsRB3[i]
+    u32 perm[32];
+    GeneratePermutation32(0xD5, perm);
+    for (int i = 0; i < 32; i++) sOTable[perm[i]] = kOpsRB2[i];
+    GeneratePermutation32(0x23E, perm);
+    for (int i = 0; i < 32; i++) sOTable[perm[i] + 32] = kOpsRB3[i];
+    sOTableInit = true;
+}
+
+} // anonymous namespace
+
+void ByteGrinder::GrindArray(
+    long seedA, long seedB, unsigned char *arrayToGrind, int arrayLen, int moggVersion
+) {
+    EnsureOTableInit();
+
+    // Build hash map: for v > 0xD, 6-bit hash seeded with seedB; else 5-bit seeded with seedA.
+    u8 hashMap[256];
+    if (moggVersion > 0x0D) {
+        u32 s = (u32)seedB;
+        for (int i = 0; i < 256; i++) {
+            hashMap[i] = (s >> 2) & 0x3F;
+            s = s * kLcgMul + kLcgInc;
+        }
+    } else {
+        u32 s = (u32)seedA;
+        for (int i = 0; i < 256; i++) {
+            hashMap[i] = (s >> 3) & 0x1F;
+            s = s * kLcgMul + kLcgInc;
+        }
+    }
+
+    // Build switchCases: per-call permutation mapping case index -> O-table slot.
+    // First 32 slots from seedB, then (for v > 0xD) 32 more from seedA offset by 32.
+    u8 switchCases[64];
+    u32 perm[32];
+    GeneratePermutation32((u32)seedB, perm);
+    for (int i = 0; i < 32; i++) switchCases[i] = (u8)perm[i];
+
+    if (moggVersion > 0xD) {
+        GeneratePermutation32((u32)seedA, perm);
+        for (int i = 0; i < 32; i++) switchCases[32 + i] = (u8)(perm[i] + 32);
+    }
+
+    // Grind: for each key byte, apply ops over pairs of array bytes.
+    // This matches Onyx's ByteGrinder::GrindArray — simple stride-2 loop.
+    for (int i = 0; i < arrayLen; i++) {
+        u8 foo = arrayToGrind[i];
+        for (int ix = 0; ix < arrayLen; ix += 2) {
+            foo = sOTable[switchCases[hashMap[arrayToGrind[ix]]]](arrayToGrind[ix + 1], foo);
+        }
+        arrayToGrind[i] = foo;
+    }
+}
+
+int magicNumberGeneratorNative(int idx, int mode) {
+    int magic = (mode == 2) ? 0x36363636 : 0x5c5c5c5c;
+    int v = (idx ^ magic) * 0x19660d + 0x3c6ef35f;
+    if (mode == 1) v = v * 0x19660d + 0x3c6ef35f;
+    return v;
+}
+
+#else // !HX_NATIVE
 void ByteGrinder::GrindArray(
     long seedA, long seedB, unsigned char *arrayToGrind, int arrayLen, int moggVersion
 ) {
@@ -920,6 +1106,7 @@ void ByteGrinder::GrindArray(
     }
     mainScriptArray->Release();
 }
+#endif // HX_NATIVE
 
 void ByteGrinder::HvDecrypt(unsigned char *inBlock, unsigned char *outBlock, int moggVer) {
     symmetric_key key;

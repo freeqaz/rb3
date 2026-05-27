@@ -102,6 +102,17 @@ bool UIScreen::Entering() const {
 bool UIScreen::Exiting() const {
     for (const_iterator it = mPanelList.begin(); it != mPanelList.end(); it++) {
         if (it->Active() && it->mPanel->Exiting()) {
+#ifdef HX_NATIVE
+            if (getenv("UISCREEN_DBG")) {
+                static const char *sLastPanel = nullptr;
+                const char *pn = it->mPanel->Name();
+                if (pn != sLastPanel) {
+                    MILO_LOG("UISCREEN_DBG: UIScreen::Exiting %s -> panel %s exiting=1\n",
+                             Name(), pn);
+                    sLastPanel = pn;
+                }
+            }
+#endif
             return true;
         }
     }
@@ -298,6 +309,18 @@ void UIScreen::UnloadPanels() {
 bool UIScreen::CheckIsLoaded() {
     for (iterator it = mPanelList.begin(); it != mPanelList.end(); it++) {
         if (it->Active() && !it->mPanel->CheckIsLoaded()) {
+#ifdef HX_NATIVE
+            if (getenv("UISCREEN_DBG")) {
+                static int sLastReportFrame = -1;
+                static const char *sLastBlockedPanel = nullptr;
+                const char *pn = it->mPanel->Name();
+                if (pn != sLastBlockedPanel) {
+                    MILO_LOG("UISCREEN_DBG: UIScreen::CheckIsLoaded %s -> BLOCKED on panel %s (state=%d)\n",
+                             Name(), pn, (int)it->mPanel->GetState());
+                    sLastBlockedPanel = pn;
+                }
+            }
+#endif
             return false;
         }
     }

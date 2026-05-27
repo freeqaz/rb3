@@ -347,7 +347,7 @@ void SystemPreInit(const char *config) {
     //   - WiiNetworkSocket::Init / ThePlatformMgr.PreInit / TheContentMgr->PreInit
     //     (TheContentMgr is a no-op link stub here — calling a virtual on it is UB)
     //   - CheckForArchive / ArchiveInit: RB3 native loads loose extracted files,
-    //     not the .ark (SetUsingCD(false)).
+    //     not the .ark (UsingCD() controls .dta -> gen/.dtb rewrite, see below).
     // KEEPS DataInit() (→ ObjectDir::PreInit sets sMainDir + DataSetThis, the dir
     // context the boot-script {func} directives need) and PreInitSystem(config)
     // (loads band_preinit_keep.dta into gSystemConfig).
@@ -355,6 +355,18 @@ void SystemPreInit(const char *config) {
     if (!gStringTable) {
         Symbol::PreInit(600000, 75000);
     }
+    // RB3 native loads from a loose extracted tree (not the .ark). For the
+    // existing pre-flattened extract at `orig-assets/extracted/` the engine
+    // reads flat `config/<name>.dta` text directly, so leave UsingCD off
+    // (CachedDataFile rewrites logical .dta to gen/*.dtb only when
+    // UsingCD()&&!FileIsLocal(); see DataFile.cpp:620). The full arkhelper
+    // extract at `orig-assets/extracted-xbox-full/` has raw binary .dtb under
+    // gen/ but the bytes appear to be missing the HMX encryption wrapper —
+    // attempting to read them via the cached-stream path fails on the magic
+    // byte check. Until that asset-shape issue is resolved (likely needs
+    // dtab-converted dta text, or a different arkhelper output mode), keep
+    // the old-extract path here. Audio files (.mogg/.mid) from the full
+    // extract can be merged into the old layout via symlink/copy.
     SetUsingCD(false);
     ThePlatformMgr.RegionInit();
     OptionInit();

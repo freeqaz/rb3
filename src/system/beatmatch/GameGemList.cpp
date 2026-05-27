@@ -4,6 +4,12 @@
 #include "utl/Std.h"
 #include <algorithm>
 
+// STLport-only template specializations of internal sort helpers
+// (`__unguarded_partition`/`__unguarded_linear_insert`/`__introsort_loop`).
+// libstdc++/libc++ don't expose these as namespace-level identifiers and use
+// a different internal sort, so the asm-match block below isn't reachable on
+// native. Native uses std::sort with the default `<` operator on GameGem.
+#ifndef HX_NATIVE
 namespace stlpmtx_std {
 
 template <>
@@ -89,6 +95,7 @@ void __introsort_loop<GameGem *, GameGem, long, less<GameGem> >(
 }
 
 } // namespace stlpmtx_std
+#endif // !HX_NATIVE
 
 bool GameGemTickCmp(const GameGem &gem, int tick);
 

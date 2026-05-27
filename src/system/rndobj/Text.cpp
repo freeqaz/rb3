@@ -580,8 +580,19 @@ bool canBreak(const char *cc, int i) {
 
 float segmentLength(int i1, int i2, int i3, int i4, float *f5, const char *c6) {
     float lineLen = 0;
+#ifdef HX_NATIVE
+    // Order the trailing-space scan so we never read c6[-1] when i2==0.
+    // (matched: cc[i2-1]==' ' && i1<i2 reads then bounds-checks → ASan
+    // heap-buffer-overflow on the 1-byte-before-buffer read; benign on PPC/Wii
+    // where reading the byte before a malloc chunk is allowed, fatal under
+    // glibc hardening. Additive, byte-identical semantics under the matched
+    // i1 < i2 invariant the trim relies on.)
+    for (; i1 < i2 && c6[i2 - 1] == ' '; i2--, i4--)
+        ;
+#else
     for (; c6[i2 - 1] == ' ' && i1 < i2; i2--, i4--)
         ;
+#endif
     for (int i = i3; i < i4; i++) {
         lineLen += f5[i];
     }

@@ -732,7 +732,25 @@ void CharClip::Transitions::Load(BinStream &bs) {
         int temp, numNodes;
         bs >> temp;
         bs >> numNodes;
+#ifdef HX_NATIVE
+        // Wii/Xbox serialized `temp` is the total bytes of the SAVED in-memory
+        // NodeVector array, computed under a 32-bit-pointer ABI:
+        //   sizeof(NodeVector header) = 4 (CharClip*) + 4 (int size) = 8 bytes,
+        //   followed by `size` CharGraphNodes (8 bytes each).
+        // Under clang LP64 the CharClip* grows to 8 bytes and alignment adds 4
+        // bytes of padding before `nodes`, so each NodeVector header is 16
+        // bytes — i.e. 8 bytes wider per entry. Loading writes the LP64 layout
+        // into the buffer, so the Wii-sized `temp` undersizes the alloc by
+        // exactly 8 * numNodes bytes; the trailing `bs >> it->nodes[j]` writes
+        // (typically 4 bytes here, the curBeat field at the boundary) past the
+        // chunk, smashing the next chunk's malloc header. Bump the alloc by
+        // the exact LP64 header delta. The matched non-native path (#else
+        // branch's identical code) is untouched.
+        int allocBytes = temp + 8 * numNodes;
+        NodeVector *start = (NodeVector *)_MemAllocTemp(allocBytes, 0);
+#else
         NodeVector *start = (NodeVector *)_MemAllocTemp(temp, 0);
+#endif
         NodeVector *it = start;
         for (int i = 0; i < numNodes; i++) {
             char buf[0x100];

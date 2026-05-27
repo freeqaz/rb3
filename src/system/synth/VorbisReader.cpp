@@ -26,6 +26,15 @@ void VorbisReader::setupCypher(int moggVersion) {
     // anti-tamper measure; on LP64 that truncates the 64-bit pointer and
     // corrupts the key. Call getMasher directly to populate masterKey instead.
     KeyChain::getMasher(masterKey);
+    MILO_LOG("MOGG_DBG: setupCypher entry moggVersion=0x%X mKeyIndex=%ld mMagicA=0x%lX mMagicB=0x%lX\n",
+             moggVersion, (long)mKeyIndex, (long)mMagicA, (long)mMagicB);
+    MILO_LOG("MOGG_DBG: mNonce=");
+    for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", mNonce[_i]);
+    MILO_LOG("\nMOGG_DBG: mKeyMask=");
+    for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", mKeyMask[_i]);
+    MILO_LOG("\nMOGG_DBG: masterKey[0:16]=");
+    for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", masterKey[_i]);
+    MILO_LOG("\n");
 #else
     DataArray *arr = DataReadString("{Na 42 'O32'}");
     unsigned int iEval = arr->Evaluate(0).Int();
@@ -39,14 +48,34 @@ void VorbisReader::setupCypher(int moggVersion) {
     buf118Arr->Release();
 #endif
     KeyChain::getKey(mKeyIndex, gKey, masterKey);
+#ifdef HX_NATIVE
+    MILO_LOG("MOGG_DBG: gKey AFTER getKey=");
+    for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", gKey[_i]);
+    MILO_LOG("\n");
+#endif
     TheSynth->mGrinder.GrindArray(mMagicA, mMagicB, gKey, 0x10, moggVersion);
+#ifdef HX_NATIVE
+    MILO_LOG("MOGG_DBG: gKey AFTER GrindArray=");
+    for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", gKey[_i]);
+    MILO_LOG("\n");
+#endif
     for (int i = 0; i < 16; i++) {
         gKey[i] ^= mKeyMask[i];
     }
+#ifdef HX_NATIVE
+    MILO_LOG("MOGG_DBG: gKey FINAL (XOR mKeyMask)=");
+    for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", gKey[_i]);
+    MILO_LOG("\n");
+#endif
     int ret = ctr_start(gCipher, mNonce, gKey, gKeySize, 0, mCtrState);
     memset(gKey, 0, gKeySize);
     MILO_ASSERT(ret == 0, 0xAA);
 
+#ifdef HX_NATIVE
+    extern int magicNumberGeneratorNative(int idx, int mode);
+    mMagicHashA = magicNumberGeneratorNative(mMagicA, 1);
+    mMagicHashB = magicNumberGeneratorNative(mMagicB, 2);
+#else
     sprintf(script, "{ha %d 1}", mMagicA);
     DataArray *magicGenA = DataReadString(script);
     mMagicHashA = magicGenA->Evaluate(0).Int();
@@ -56,6 +85,7 @@ void VorbisReader::setupCypher(int moggVersion) {
     DataArray *magicGenB = DataReadString(script);
     mMagicHashB = magicGenB->Evaluate(0).Int();
     magicGenB->Release();
+#endif
 }
 
 VorbisReader::VorbisReader(
@@ -100,6 +130,7 @@ VorbisReader::~VorbisReader() {
     RELEASE(mCtrState);
 }
 
+#ifndef HX_NATIVE
 void VorbisReader::Poll(float until) {
     if (!mFail && !unk3c && CheckHmxHeader() && !mDone && (mSeekTarget < 0 || DoSeek())) {
         DoFileRead();
@@ -128,6 +159,156 @@ void VorbisReader::Poll(float until) {
         }
     }
 }
+#else // HX_NATIVE
+
+static void Decrypt(VorbisReader *reader, unsigned char *data, int bytes,
+                    symmetric_CTR *ctrState, int magicHashA, int magicHashB) {
+    if (!ctrState)
+        return;
+
+    // Step 1: Decrypt the entire buffer in-place using AES-CTR (stream cipher)
+    unsigned char *tmp = new unsigned char[bytes];
+    ctr_decrypt(data, tmp, bytes, ctrState);
+    memcpy(data, tmp, bytes);
+    delete[] tmp;
+
+    // Step 2: Scan for all HMXA page headers and apply anti-tamper reversal.
+    // v0xE encryption replaces OggS with HMXA and XORs bytes 12-15 and 20-23
+    // with magicHash values. The XOR was designed for big-endian (Xbox 360),
+    // so we must byte-swap the hash values on little-endian before XORing.
+    if (magicHashA != 0 || magicHashB != 0) {
+        unsigned int xorA = __builtin_bswap32((unsigned int)magicHashA);
+        unsigned int xorB = __builtin_bswap32((unsigned int)magicHashB);
+        for (int i = 0; i <= bytes - 4; i++) {
+            if (data[i] == 'H' && data[i+1] == 'M'
+                && data[i+2] == 'X' && data[i+3] == 'A') {
+                data[i]   = 'O';
+                data[i+1] = 'g';
+                data[i+2] = 'g';
+                data[i+3] = 'S';
+                if (i + 16 <= bytes) {
+                    unsigned int *ui = (unsigned int *)&data[i + 12];
+                    *ui ^= xorA;
+                }
+                if (i + 24 <= bytes) {
+                    unsigned int *ui = (unsigned int *)&data[i + 20];
+                    *ui ^= xorB;
+                }
+            }
+        }
+    }
+}
+
+bool VorbisReader::DoFileRead() {
+    bool ret = false;
+    if (mFail)
+        return false;
+
+    int queuedBytes = mOggSync->fill - mOggSync->returned;
+    if (mEnableReads && !mReadBuffer && !mFile->Eof() && queuedBytes < 0x10000) {
+        mReadBuffer = ogg_sync_buffer(mOggSync, 0x4000);
+        mFile->ReadAsync(mReadBuffer, 0x4000);
+        mFail = mFile->Fail();
+        ret = true;
+    }
+
+    int bytes = 0;
+    if (!mFail && mReadBuffer && mFile->ReadDone(bytes) && !unk38) {
+        mFail = mFile->Fail();
+        if (mFail)
+            return false;
+        MILO_ASSERT(bytes > 0, 0x1F9);
+        static int sDbgDecryptCallCount = 0;
+        if (sDbgDecryptCallCount < 3) {
+            MILO_LOG("MOGG_DBG: DoFileRead got %d bytes BEFORE decrypt[0:32]=", bytes);
+            int _lim = bytes < 32 ? bytes : 32;
+            for (int _i = 0; _i < _lim; _i++)
+                MILO_LOG("%02x", ((unsigned char*)mReadBuffer)[_i]);
+            MILO_LOG("\n");
+        }
+        ::Decrypt(this, (unsigned char *)mReadBuffer, bytes, mCtrState, mMagicHashA, mMagicHashB);
+        if (sDbgDecryptCallCount < 3) {
+            MILO_LOG("MOGG_DBG: AFTER decrypt[0:32]=");
+            int _lim = bytes < 32 ? bytes : 32;
+            for (int _i = 0; _i < _lim; _i++)
+                MILO_LOG("%02x", ((unsigned char*)mReadBuffer)[_i]);
+            MILO_LOG(" (ASCII: %c%c%c%c)\n",
+                     ((unsigned char*)mReadBuffer)[0],
+                     ((unsigned char*)mReadBuffer)[1],
+                     ((unsigned char*)mReadBuffer)[2],
+                     ((unsigned char*)mReadBuffer)[3]);
+            sDbgDecryptCallCount++;
+        }
+        ogg_sync_wrote(mOggSync, bytes);
+        mReadBuffer = 0;
+        ret = true;
+    }
+    mFail = mFile->Fail();
+    return ret;
+}
+
+void VorbisReader::Poll(float until) {
+    static int sPollCallCount = 0;
+    static int sLastHeadersRead = -1;
+    sPollCallCount++;
+    if (mHeadersRead != sLastHeadersRead) {
+        MILO_LOG("VORBIS_DBG: Poll #%d hdr=%d fail=%d done=%d\n",
+                 sPollCallCount, mHeadersRead, (int)mFail, (int)mDone);
+        MILO_LOG("VORBIS_DBG:   ch=%d rate=%d eof=%d queued=%d\n",
+                 mNumChannels, mSampleRate, (int)mFile->Eof(), QueuedInputBytes());
+        sLastHeadersRead = mHeadersRead;
+    }
+    if (!mFail && !unk3c && CheckHmxHeader() && !mDone && (mSeekTarget < 0 || DoSeek())) {
+        DoFileRead();
+        unke2 = mFile->Eof();
+        if (mHeadersRead < 3) {
+            while (TryReadHeader())
+                ;
+            if (mHeadersRead >= 3) {
+                MILO_LOG("VORBIS_DBG: All 3 headers read! ch=%d rate=%d — entering audio decode phase\n",
+                         mVorbisInfo->channels, mVorbisInfo->rate);
+                mNumChannels = mVorbisInfo->channels;
+                mSampleRate = mVorbisInfo->rate;
+                unke4.resize(mNumChannels);
+                Init();
+                InitDecoder();
+            }
+        } else {
+            Timer timer;
+            timer.Start();
+            bool first = !unke0;
+            while (Timer::CyclesToMs(timer.mCycles) < until || first) {
+                first = false;
+                // Step 1: Push any decoded PCM to ring buffers
+                {
+                    float **pcm;
+                    int pcmAvail = vorbis_synthesis_pcmout(mVorbisDsp, &pcm);
+                    if (pcmAvail > 0) {
+                        int consumed = ConsumeData((void **)pcm, pcmAvail,
+                                                   mVorbisDsp->granulepos - pcmAvail);
+                        vorbis_synthesis_read(mVorbisDsp, consumed);
+                        if (consumed == 0)
+                            break; // Ring buffer full — wait for audio callback to drain
+                    }
+                }
+                // Step 2: Decode more Vorbis blocks
+                if (!TryDecode()) {
+                    // No packet available — on native there's no background decode
+                    // thread, so read more file data and retry before giving up.
+                    if (!DoFileRead())
+                        break; // Can't read more (EOF, error, or ogg buffer full)
+                    if (!TryDecode())
+                        break; // Still no packet — give up this poll cycle
+                }
+                // Step 3: Feed raw data for next iteration
+                DoFileRead();
+                timer.Split();
+            }
+        }
+    }
+}
+
+#endif // HX_NATIVE
 
 void VorbisReader::Seek(int sample) {
     CritSecTracker tracker(this);
@@ -139,6 +320,7 @@ void VorbisReader::Seek(int sample) {
     unke1 = false;
 }
 
+#ifndef HX_NATIVE
 bool VorbisReader::DoFileRead() {
     bool ret = false;
     if (mFail)
@@ -211,6 +393,7 @@ void VorbisReader::Decrypt(unsigned char *data, int bytes) {
         i += n;
     }
 }
+#endif // !HX_NATIVE
 
 #define kMaxHeader 60000
 
@@ -242,7 +425,17 @@ bool VorbisReader::CheckHmxHeader() {
                 bs.Read(stuff, sizeof(stuff));
                 bs >> mKeyIndex;
                 mKeyIndex = mKeyIndex % 6 + 6;
+#ifdef HX_NATIVE
+                MILO_LOG("MOGG_DBG: pre-HvDecrypt stuff=");
+                for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", stuff[_i]);
+                MILO_LOG(" mKeyIndex(raw)=%ld\n", (long)mKeyIndex);
+#endif
                 TheSynth->mGrinder.HvDecrypt(stuff, mKeyMask, version);
+#ifdef HX_NATIVE
+                MILO_LOG("MOGG_DBG: post-HvDecrypt mKeyMask=");
+                for (int _i = 0; _i < 16; _i++) MILO_LOG("%02x", mKeyMask[_i]);
+                MILO_LOG("\n");
+#endif
                 gCipher = register_cipher(&rijndael_desc);
                 MILO_ASSERT(gCipher >= 0, 0x279);
                 mCtrState = new symmetric_CTR();

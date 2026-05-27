@@ -393,6 +393,16 @@ void SongData::SendGems(int track) {
 }
 
 void SongData::PostLoadVocals() {
+#ifdef HX_NATIVE
+    // Vocals subsystem (VocalNoteList/VocalPlayer/Singer) is still in
+    // _NATIVE_FORK_EXCLUDE — calling methods on stub-vtable VocalNoteList*
+    // dereferences invalid memory. For V1 (one song end-to-end, single
+    // instrument), skip vocal post-load entirely. When the vocals TUs come
+    // up clang-LP64-clean, drop this guard.
+    if (mVocalNoteLists.empty()) return;
+    MILO_LOG("PostLoadVocals: HX_NATIVE skip (vocal TUs not yet brought up)\n");
+    return;
+#endif
     for (int i = 0; i < mVocalNoteLists.size(); i++) {
         VocalNoteList *curList = mVocalNoteLists[i];
         bool b = i == 0 || i == 1;
@@ -992,7 +1002,20 @@ void SongData::AddKeyboardRangeShift(int i1, int i2, float f3, int i4, int i5) {
         float fSpan = 16.0f;
         if (curRanges.size() != 0) {
             fSpan = curRanges.back().unkc - curRanges.back().unk8;
+#ifdef HX_NATIVE
+            // PART REAL_KEYS_X charts in the retail RB3 360 extract sometimes
+            // emit range sections with non-positive span (likely an authoring
+            // artifact; ignored on console because the bound is asserted past
+            // the audible region). For native single-instrument playback (V1
+            // guitar), warn and clamp to a positive default instead of
+            // aborting — keys aren't on the playback path.
+            if (!(fSpan > 0.0f)) {
+                MILO_WARN("AddKeyboardRangeShift: non-positive span %.2f; clamping", fSpan);
+                fSpan = 16.0f;
+            }
+#else
             MILO_ASSERT(fSpan > 0.0f, 0x589);
+#endif
         }
         sect.unkc += fSpan;
     }

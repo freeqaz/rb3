@@ -44,30 +44,6 @@ __hmx_rndsynth_noop_stub:
     .set gDebugFullQuota, __hmx_rndsynth_noop_stub
     .weak Ntsc__6WiiRndFv
     .set Ntsc__6WiiRndFv, __hmx_rndsynth_noop_stub
-    .weak ogg_page_serialno
-    .set ogg_page_serialno, __hmx_rndsynth_noop_stub
-    .weak ogg_stream_clear
-    .set ogg_stream_clear, __hmx_rndsynth_noop_stub
-    .weak ogg_stream_init
-    .set ogg_stream_init, __hmx_rndsynth_noop_stub
-    .weak ogg_stream_packetout
-    .set ogg_stream_packetout, __hmx_rndsynth_noop_stub
-    .weak ogg_stream_pagein
-    .set ogg_stream_pagein, __hmx_rndsynth_noop_stub
-    .weak ogg_stream_reset
-    .set ogg_stream_reset, __hmx_rndsynth_noop_stub
-    .weak ogg_sync_buffer
-    .set ogg_sync_buffer, __hmx_rndsynth_noop_stub
-    .weak ogg_sync_clear
-    .set ogg_sync_clear, __hmx_rndsynth_noop_stub
-    .weak ogg_sync_init
-    .set ogg_sync_init, __hmx_rndsynth_noop_stub
-    .weak ogg_sync_pageout
-    .set ogg_sync_pageout, __hmx_rndsynth_noop_stub
-    .weak ogg_sync_reset
-    .set ogg_sync_reset, __hmx_rndsynth_noop_stub
-    .weak ogg_sync_wrote
-    .set ogg_sync_wrote, __hmx_rndsynth_noop_stub
     .weak register_cipher
     .set register_cipher, __hmx_rndsynth_noop_stub
     .weak rijndael_desc
@@ -84,34 +60,6 @@ __hmx_rndsynth_noop_stub:
     .set TheUI, __hmx_rndsynth_noop_stub
     .weak TheWiiRnd
     .set TheWiiRnd, __hmx_rndsynth_noop_stub
-    .weak vorbis_block_clear
-    .set vorbis_block_clear, __hmx_rndsynth_noop_stub
-    .weak vorbis_block_init
-    .set vorbis_block_init, __hmx_rndsynth_noop_stub
-    .weak vorbis_comment_clear
-    .set vorbis_comment_clear, __hmx_rndsynth_noop_stub
-    .weak vorbis_comment_init
-    .set vorbis_comment_init, __hmx_rndsynth_noop_stub
-    .weak vorbis_dsp_clear
-    .set vorbis_dsp_clear, __hmx_rndsynth_noop_stub
-    .weak vorbis_info_clear
-    .set vorbis_info_clear, __hmx_rndsynth_noop_stub
-    .weak vorbis_info_init
-    .set vorbis_info_init, __hmx_rndsynth_noop_stub
-    .weak vorbis_synthesis_blockin
-    .set vorbis_synthesis_blockin, __hmx_rndsynth_noop_stub
-    .weak vorbis_synthesis_headerin
-    .set vorbis_synthesis_headerin, __hmx_rndsynth_noop_stub
-    .weak vorbis_synthesis_init
-    .set vorbis_synthesis_init, __hmx_rndsynth_noop_stub
-    .weak vorbis_synthesis_pcmout
-    .set vorbis_synthesis_pcmout, __hmx_rndsynth_noop_stub
-    .weak vorbis_synthesis_poll
-    .set vorbis_synthesis_poll, __hmx_rndsynth_noop_stub
-    .weak vorbis_synthesis_read
-    .set vorbis_synthesis_read, __hmx_rndsynth_noop_stub
-    .weak vorbis_synthesis_restart
-    .set vorbis_synthesis_restart, __hmx_rndsynth_noop_stub
     .weak _Z14CleanupGpuMeshP7RndMesh
     .set _Z14CleanupGpuMeshP7RndMesh, __hmx_rndsynth_noop_stub
     # _Z17CreateNativeSynthv (CreateNativeSynth) now strongly defined in
@@ -158,8 +106,6 @@ __hmx_rndsynth_noop_stub:
     .set _ZN7RndMesh11sRawCollideE, __hmx_rndsynth_noop_stub
     .weak _ZN7RndMesh12sLastCollideE
     .set _ZN7RndMesh12sLastCollideE, __hmx_rndsynth_noop_stub
-    .weak _ZN7RndMesh18sUpdateApproxLightE
-    .set _ZN7RndMesh18sUpdateApproxLightE, __hmx_rndsynth_noop_stub
     .weak _ZN7RndMesh6OnSyncEi
     .set _ZN7RndMesh6OnSyncEi, __hmx_rndsynth_noop_stub
     .weak _ZN7Striper4InitER13STRIPERCREATE

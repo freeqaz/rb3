@@ -15,10 +15,13 @@
 
 #include "gfx/GpuDevice.h"
 #include "gfx/PipelineManager.h"
+#include "gfx/Screenshot.h"
 #include "rndobj/Rnd.h"
 #include "rb3_gpu_uniforms.h"
 
 #include <webgpu/webgpu_cpp.h>
+#include <string>
+#include <vector>
 
 class RndCam;
 class RndMesh;
@@ -68,9 +71,18 @@ public:
     wgpu::RenderPassEncoder& Pass() { return mPass; }
     bool InPass() const { return mInPass; }
 
+    // Initialise auto-screenshot from env vars (call after InitGpu).
+    // Reads MILO_SCREENSHOT_DIR and MILO_SCREENSHOT_FRAMES (comma-separated
+    // frame numbers); if set, captures a PNG at each listed frame number.
+    // Frame names (optional) come from MILO_SCREENSHOT_NAMES (comma-separated,
+    // same count as MILO_SCREENSHOT_FRAMES).
+    void InitScreenshots();
+
     // --- Rnd virtual overrides ---
-    void BeginDrawing() override {}
-    void EndDrawing() override {}
+    // BeginDrawing: acquire GPU target + start render pass (using current cam).
+    void BeginDrawing() override;
+    // EndDrawing: end pass + submit + optionally capture screenshot.
+    void EndDrawing() override;
 
 private:
     void WriteSceneUniforms(RndCam* cam);
@@ -109,6 +121,16 @@ public:
     bool mPreInited = false;
     int mDrawnMeshes = 0;
     int mDrawnTris = 0;
+
+    // Frame counter (incremented each EndDrawing call — the base Rnd::EndDrawing
+    // is bypassed so mFrameID never advances; we keep our own).
+    int mFrameCount = 0;
+
+    // Auto-screenshot state (MILO_SCREENSHOT_DIR / MILO_SCREENSHOT_FRAMES).
+    std::string mShotDir;
+    std::vector<int> mShotFrames;
+    std::vector<std::string> mShotNames;
+    int mShotIndex = 0;
 };
 
 extern BandRnd gBandRnd;

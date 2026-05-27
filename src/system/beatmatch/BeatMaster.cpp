@@ -62,20 +62,46 @@ void BeatMaster::Load(
 }
 
 void BeatMaster::LoaderPoll() {
+#ifdef HX_NATIVE
+    static int sLpCount = 0;
+    static int sLastPhase = -1;
+    int phase = 0;
+    if (mLoaded) phase = unk2d ? 3 : 2;
+    if (!mLoaded) phase = 1;
+    sLpCount++;
+    if (phase != sLastPhase) {
+        MILO_LOG("BEATMASTER_DBG: LoaderPoll #%d phase=%d mLoaded=%d unk2d=%d\n",
+                 sLpCount, phase, (int)mLoaded, (int)unk2d);
+        sLastPhase = phase;
+    }
+#endif
     if (!mLoaded && mSongData->Poll()) {
+#ifdef HX_NATIVE
+        MILO_LOG("BEATMASTER_DBG: MIDI parsed -> mLoaded=true; calling FinishLoad\n");
+#endif
         mLoaded = true;
         mMidiParserMgr->FinishLoad();
     } else if (mLoaded && !unk2d) {
+#ifdef HX_NATIVE
+        MILO_LOG("BEATMASTER_DBG: calling mAudio->Load() -- entering audio bring-up phase\n");
+#endif
         unk2d = true;
         mAudio->Load(mSongInfo, mPtCfg);
         mSongInfo = 0;
+#ifdef HX_NATIVE
+        MILO_LOG("BEATMASTER_DBG: mAudio->Load() returned; mSongStream=%p\n", (void*)mAudio->GetSongStream());
+#endif
     } else if (unk2d) {
         TheSynth->Poll();
         bool b1 = false;
         if (unk2d && mAudio->IsLoaded())
             b1 = true;
-        if (b1)
+        if (b1) {
+#ifdef HX_NATIVE
+            MILO_LOG("BEATMASTER_DBG: mAudio->IsLoaded()=true; RELEASE(mLoader)\n");
+#endif
             RELEASE(mLoader);
+        }
     }
 }
 

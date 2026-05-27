@@ -11,7 +11,7 @@
 namespace {
 class NativeStdioFile : public File {
 public:
-    NativeStdioFile(const char *path, int mode) : mFp(nullptr), mFail(true) {
+    NativeStdioFile(const char *path, int mode) : mFp(nullptr), mFail(true), mLastReadBytes(0) {
         // mode bit 2 (0x2) = read on Wii; otherwise treat as write/append.
         const char *m = (mode & 2) ? "rb" : ((mode & 0x800) ? "ab" : "wb");
         mFp = std::fopen(path, m);
@@ -27,7 +27,10 @@ public:
             return -1;
         return (int)std::fread(buf, 1, (size_t)n, mFp);
     }
-    bool ReadAsync(void *buf, int n) override { return Read(buf, n) == n; }
+    bool ReadAsync(void *buf, int n) override {
+        mLastReadBytes = Read(buf, n);
+        return mLastReadBytes == n;
+    }
     int Write(const void *buf, int n) override {
         if (!mFp || n < 0)
             return -1;
@@ -71,7 +74,8 @@ public:
     }
     int UncompressedSize() override { return Size(); }
     bool ReadDone(int &result) override {
-        result = 0;
+        result = mLastReadBytes;
+        mLastReadBytes = 0;
         return true;
     }
     int GetFileHandle(DVDFileInfo *&info) override {
@@ -82,6 +86,7 @@ public:
 private:
     std::FILE *mFp;
     bool mFail;
+    int mLastReadBytes;
 };
 } // namespace
 

@@ -23,7 +23,25 @@ void BandScreen::Exit(UIScreen *s) {
     UnloadInterstitials();
 }
 
-bool BandScreen::Exiting() const { return UIScreen::Exiting() || TheBandUI.WipingOut(); }
+bool BandScreen::Exiting() const {
+#ifdef HX_NATIVE
+    if (getenv("UISCREEN_DBG")) {
+        bool uiEx = UIScreen::Exiting();
+        bool wipe = TheBandUI.WipingOut();
+        static int sLastFlags = -1;
+        int flags = (uiEx ? 1 : 0) | (wipe ? 2 : 0);
+        static const char *sLastName = nullptr;
+        if (flags != sLastFlags || Name() != sLastName) {
+            MILO_LOG("UISCREEN_DBG: BandScreen::Exiting %s uiEx=%d wipingOut=%d\n",
+                     Name(), uiEx ? 1 : 0, wipe ? 1 : 0);
+            sLastFlags = flags;
+            sLastName = Name();
+        }
+        return uiEx || wipe;
+    }
+#endif
+    return UIScreen::Exiting() || TheBandUI.WipingOut();
+}
 
 void BandScreen::LoadPanels() {
     if (!TheBandUI.mShowVignettes) {

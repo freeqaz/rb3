@@ -38,6 +38,12 @@ ctx.hpp
 orig/*
 !orig/SZBE69.sha1
 
+# Game ROM dumps (never check these in)
+*.wbfs
+*.iso
+*.wad
+*.nkit.iso
+
 # Extracted asset tree (~4 GB; produced by scripts/milo/extract_ark.sh)
 orig-assets/
 
