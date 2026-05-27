@@ -216,7 +216,7 @@ __declspec(noinline) LocalBandUser * _outline_GetAssociatedLocalBandUser(BandPro
 
 
 void AccomplishmentProgress::NotifyPlayerOfAccomplishment(Symbol s, const char *iconArt) {
-    int &_ref0 = mMetaScore;
+    const int &_ref0 = mMetaScore;
     if (!MetaPanel::sLaunchedGoalMsgsOnly
         || s == TheCampaign->GetCurrentGoal()) {
         LocalBandUser *pUser = _outline_GetAssociatedLocalBandUser(mParentProfile);
@@ -487,7 +487,7 @@ void AccomplishmentProgress::FakeFill() {
     for (std::map<Symbol, Accomplishment *>::const_iterator it = accs.begin();
          it != accs.end();
          ++it) {
-        Symbol key = it->first;
+        Symbol key = (*it).first;
         mStepTrackingMap[key] = 0;
         mAccomplishments.insert(key);
     }

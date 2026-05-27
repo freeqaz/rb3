@@ -143,7 +143,8 @@ namespace {
 
 void SaveLoadManager::Poll() {
     if (!mActivated) return;
-    if (mState == kS_Idle) {
+    State &_ref0 = mState;
+    if (_ref0 == kS_Idle) {
         int flags = mRequestFlags;
         if (flags & 8) {
             mMode = kMode_ManualLoad;
@@ -178,8 +179,8 @@ void SaveLoadManager::Poll() {
         AutoLoad();
         return;
     }
-    if ((unsigned int)mState > 0x6f) return;
-    switch (mState) {
+    if ((unsigned int)_ref0 > 0x6f) return;
+    switch (_ref0) {
     case kS_Start:
         switch (mMode) {
         case kMode_AutoLoad:
@@ -346,7 +347,7 @@ void SaveLoadManager::Poll() {
     case (State)0x3E:
         if (!mCache->IsDone()) return;
         unk70 = (int)mCache->GetLastResult();
-                switch (mState) {
+                switch (_ref0) {
             case (State)0x21:
             SetState((State)0x23);
             break;
@@ -477,7 +478,7 @@ void SaveLoadManager::Poll() {
                 break;
                 default:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
-                TheDebug << MakeString<int, int>("SaveLoadManager - unknown error %d during state %d.\n", (int)result, (int)mState);
+                TheDebug << MakeString<int, int>("SaveLoadManager - unknown error %d during state %d.\n", (int)result, (int)_ref0);
                 SetState((State)0x37);
                 break;
             }
@@ -530,15 +531,19 @@ void SaveLoadManager::Poll() {
         if (!TheCacheMgr->IsDone()) return;
         {
             CacheResult result = TheCacheMgr->GetLastResult();
-            if (result == kCache_NoError) {
+                        switch (result) {
+                case kCache_NoError:
                 SetState((State)0x3e);
-            } else if (result == kCache_ErrorStorageDeviceMissing) {
+                break;
+                case kCache_ErrorStorageDeviceMissing:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 SetState((State)0x3a);
-            } else {
+                break;
+                default:
                 UpdateStatus(kSaveLoadMgrStatus_Loading);
                 TheDebug.Fail(MakeString<int>("SaveLoadManager - CacheMgr choose returned error %d\n", (int)result));
                 SetState((State)0x40);
+                break;
             }
         }
         break;
@@ -587,7 +592,7 @@ void SaveLoadManager::Poll() {
             SetState((State)0x4c);
             break;
         case 7:
-            MILO_ASSERT(mState != kS_SaveOverwrite, 0x2fb);
+            MILO_ASSERT(_ref0 != kS_SaveOverwrite, 0x2fb);
             SetState((State)0x48);
             break;
         case 0:
@@ -616,7 +621,7 @@ void SaveLoadManager::Poll() {
             TheCacheMgr->UnmountAsync(&mCache, NULL);
         } else {
             if (!TheCacheMgr->IsDone()) return;
-            if (mState == (State)0x6d) {
+            if (_ref0 == (State)0x6d) {
                 SetState((State)0x6e);
             } else {
                 SetState(kS_Idle);
@@ -1589,8 +1594,8 @@ Symbol SaveLoadManager::GetDialogOpt2() {
 
 DataNode SaveLoadManager::GetDialogMsg() {
     String profileName(gNullStr);
-    int playerNum = -1;
     LocalBandUser * &_ref0 = mUser;
+    int playerNum = -1;
     if (_ref0 != NULL) {
         profileName = _ref0->UserName();
         auto _tmp0 = _ref0->GetPadNum();

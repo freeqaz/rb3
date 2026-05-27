@@ -182,7 +182,8 @@ int FilterViewSetting::NumData() const { return mFilters.size(); }
 
 void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
     const {
-    if (slot->Matches("name")) {
+    int _tmp0 = slot->Matches("name");
+    if (_tmp0) {
         label->SetTextToken(mFilters[idx].mSym);
     } else {
         int count = mFilters[idx].mCount;

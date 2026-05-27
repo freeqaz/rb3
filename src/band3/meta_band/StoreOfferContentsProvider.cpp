@@ -32,9 +32,11 @@ void StoreOfferContentsProvider::Text(
 ) const {
     AppLabel *appLabel = dynamic_cast<AppLabel *>(label);
     MILO_ASSERT(appLabel, 0x36);
-    if (slot->Matches("name") != 0) {
+    bool _cond = slot->Matches("name");
+    if (_cond) {
         appLabel->SetTextToken(mElements[col]->mSong->GetName());
-    } else if (slot->Matches("downloaded")) {
+    } else bool _cond = slot->Matches("downloaded");
+    if (_cond) {
         bool isDownloaded = IsActive(col);
         if ((int)mListType == kListPurchase) isDownloaded = !isDownloaded;
         if (isDownloaded) {

@@ -326,8 +326,8 @@ inline const String &NextChunkPath(const BandStorePanel *p) {
 }
 
 void StoreOfferProvider::BuildList(DataArray *grouping) {
-    ClearList();
     DataArray * &_ref0 = mShortcuts;
+    ClearList();
     _ref0 = new DataArray(0);
     const char *prevPath = PrevChunkPath(BandStorePanel::Instance()).c_str();
     if (*prevPath == 0) prevPath = NULL;

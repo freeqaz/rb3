@@ -85,8 +85,8 @@ void MusicLibrary::Init(SongPreview &prev) {
 }
 
 void MusicLibrary::TryToSetHighlight(Symbol token, SongNodeType type, bool passthrough) {
-    bool matched = false;
     SortNode *node;
+    bool matched = false;
     bool foundNode = false;
     if (token.mStr != gNullStr) {
         node = GetCurrentSort()->GetNode(token);

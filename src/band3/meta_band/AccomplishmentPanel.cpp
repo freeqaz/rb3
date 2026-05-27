@@ -753,8 +753,8 @@ int AccomplishmentPanel::GetTotalAccomplishments() {
 int AccomplishmentPanel::GetNumCompleted() {
     AccomplishmentProvider * &_ref0 = mAccomplishmentProvider;
     MILO_ASSERT(_ref0, 0x6EF);
-    std::vector<Symbol> &goals = _ref0->mGoals;
     int count = 0;
+    std::vector<Symbol> &goals = _ref0->mGoals;
     BandProfile *profile = TheCampaign->GetProfile();
     for (std::vector<Symbol>::iterator it = goals.begin(); it != goals.end(); ++it) {
         if (IsAccomplished(*it, profile))

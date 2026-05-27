@@ -720,7 +720,7 @@ void BandSongMgr::WriteCachedMetadataToStream(BinStream &bs) const {
 }
 
 bool BandSongMgr::RemoveOldestCachedContent() {
-    if (1 > mCachedSongMetadata.size())
+    if (mCachedSongMetadata.size() < 1)
         return false;
 
     std::map<int, SongMetadata *>::iterator oldest = mCachedSongMetadata.begin();

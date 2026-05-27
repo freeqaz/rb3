@@ -171,7 +171,8 @@ void BandStorePanel::ApplyShortcutProvider(UIList *list) {
 }
 
 void BandStoreShortcutProvider::Text(int i, int j, UIListLabel *listlabel, UILabel *label) const {
-    if (mData->Node(j + mOffset).Evaluate().Type() == kDataString) {
+    int _tmp0 = mData->Node(j + mOffset).Evaluate().Type();
+    if (_tmp0 == kDataString) {
         AppLabel *al = dynamic_cast<AppLabel *>(label);
         MILO_ASSERT(al, 0x30);
         al->SetRawStoreShortcut(j);

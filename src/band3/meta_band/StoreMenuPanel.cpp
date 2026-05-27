@@ -138,11 +138,15 @@ DataNode StoreMenuPanel::OnBack(const DataArray *) {
 DataNode StoreMenuPanel::OnMsg(const MetadataLoadedMsg &msg) {
     BandStorePanel *panel = BandStorePanel::Instance();
     if (msg->Int(3)) {
-        if (msg->Array(2)->Node(0).Type() == kDataInt) {
+        int _tmp1 = msg->Array(2)->Node(0).Type();
+        if (_tmp1 == kDataInt) {
+            int _tmp0 = msg->Array(2)->Int(0);
             StorePage *page =
-                TheStoreMetadata.LoadPage(msg->Array(2)->Int(0));
-            if (page && !page->mPage->mHasOffers) {
+                TheStoreMetadata.LoadPage(_tmp0);
+            if (page) {
+                if (!page->mPage->mHasOffers) {
                 AddMenu(msg->Array(2), msg->Str(4));
+            }
             }
         }
     } else {
