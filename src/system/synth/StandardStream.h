@@ -34,6 +34,11 @@ public:
     };
 
     static bool sReportLargeTimerErrors;
+#ifdef HX_NATIVE
+    // Global offset (ms) applied to GetTime() so the engine's miniaudio/FFmpeg
+    // mixer latency can be compensated for without touching the matched logic.
+    static float sAudioOffsetMs;
+#endif
 
     StandardStream(File *, float, float, Symbol, bool, bool);
     virtual ~StandardStream();
@@ -148,4 +153,13 @@ public:
     float mAccumulatedLoopbacks; // 0x13c
     bool mPollingEnabled; // 0x140
     int unk144; // 0x144
+#ifdef HX_NATIVE
+    // Audio-timer fallback: in headless / engine-driven playback there is no
+    // platform audio clock to drive GetRawTime(), so once the audio output is
+    // detected to be running far slower than wall-clock, UpdateTime() switches
+    // to an independent host wall-clock timer and stops drift-correcting.
+    bool mUseTimerFallback = false;
+    bool mWallClockStarted = false;
+    Timer mWallClock;
+#endif
 };

@@ -4,6 +4,10 @@
 #include "obj/ObjVector.h"
 #include "obj/Task.h"
 #include <functional>
+#ifdef HX_NATIVE
+// std::mem_fun was removed in C++17; std::mem_fn is the LP64 replacement.
+#define mem_fun mem_fn
+#endif
 #include "utl/Symbols.h"
 
 bool sForceSerialSequences;

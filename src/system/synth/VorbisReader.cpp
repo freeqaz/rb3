@@ -18,18 +18,26 @@ namespace {
     MILO_WARN("Ogg Vorbis failure: %s, error code %i", name, err);
 
 void VorbisReader::setupCypher(int moggVersion) {
+    char script[256];
+    unsigned char masterKey[256];
+#ifdef HX_NATIVE
+    // On native, bypass the DTA obfuscation for masterKey initialization.
+    // The matched path passes (int)masterKey through DTA pointer math as an
+    // anti-tamper measure; on LP64 that truncates the 64-bit pointer and
+    // corrupts the key. Call getMasher directly to populate masterKey instead.
+    KeyChain::getMasher(masterKey);
+#else
     DataArray *arr = DataReadString("{Na 42 'O32'}");
     unsigned int iEval = arr->Evaluate(0).Int();
     arr->Release();
 
     char i6 = (iEval % 13);
     i6 = i6 + 'A';
-    char script[256];
-    unsigned char masterKey[256];
     sprintf(script, "{%c %d %c}", i6, (int)masterKey ^ iEval, i6);
     DataArray *buf118Arr = DataReadString(script);
     buf118Arr->Evaluate(0);
     buf118Arr->Release();
+#endif
     KeyChain::getKey(mKeyIndex, gKey, masterKey);
     TheSynth->mGrinder.GrindArray(mMagicA, mMagicB, gKey, 0x10, moggVersion);
     for (int i = 0; i < 16; i++) {
@@ -263,8 +271,16 @@ bool VorbisReader::TryReadHeader() {
     if (!mOggStream) {
         ogg_page page;
         int pageOut = ogg_sync_pageout(mOggSync, &page);
-        if (pageOut < 0)
+        if (pageOut < 0) {
             VORBIS_FAIL("StreamInit", pageOut);
+#ifdef HX_NATIVE
+            // Persistent page-sync failure means the data is corrupt (likely
+            // bad mogg decryption). Mark the reader failed so the single-threaded
+            // native Poll loop can break out instead of spinning forever.
+            mFail = true;
+            return false;
+#endif
+        }
         if (pageOut > 0) {
             mOggStream = new ogg_stream_state();
             ogg_stream_init(mOggStream, ogg_page_serialno(&page));

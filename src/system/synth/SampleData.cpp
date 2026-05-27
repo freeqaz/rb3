@@ -2,6 +2,16 @@
 #include "os/PlatformMgr.h"
 #include "utl/ChunkStream.h"
 #include "utl/WaveFile.h"
+#ifdef HX_NATIVE
+#include <cstdlib>
+
+// On native the game may not register a SampleData allocator (sAlloc/sFree are
+// set by the platform audio layer, which the engine bypasses). Fall back to the
+// host malloc/free so sample loading and teardown don't dereference a null
+// function pointer.
+static void *SampleDataAllocNative(int size, const char *) { return malloc(size); }
+static void SampleDataFreeNative(void *p) { free(p); }
+#endif
 
 SampleDataAllocFunc SampleData::sAlloc = 0;
 SampleDataFreeFunc SampleData::sFree = 0;
@@ -16,7 +26,13 @@ void SampleData::SetAllocator(SampleDataAllocFunc a, SampleDataFreeFunc f) {
 
 SampleData::SampleData() : mData(0), mMarkers() { Reset(); }
 
-SampleData::~SampleData() { sFree(mData); }
+SampleData::~SampleData() {
+#ifdef HX_NATIVE
+    (sFree ? sFree : SampleDataFreeNative)(mData);
+#else
+    sFree(mData);
+#endif
+}
 
 void SampleData::Load(BinStream &bs, const FilePath &fp) {
     Reset();
@@ -29,7 +45,11 @@ void SampleData::Load(BinStream &bs, const FilePath &fp) {
             bs >> mSizeBytes;
             mFormat = kBigEndPCM;
             mNumSamples = mSizeBytes / 2;
+#ifdef HX_NATIVE
+            mData = (sAlloc ? sAlloc : SampleDataAllocNative)(mSizeBytes, fp.c_str());
+#else
             mData = sAlloc(mSizeBytes, fp.c_str());
+#endif
             MILO_ASSERT(!((uint)mData & 31), 0x6A);
             bs.Read(mData, mSizeBytes);
         } else
@@ -44,7 +64,11 @@ void SampleData::Load(BinStream &bs, const FilePath &fp) {
         }
         if (b) {
             if (ThePlatformMgr.AreSFXEnabled()) {
+#ifdef HX_NATIVE
+                mData = (sAlloc ? sAlloc : SampleDataAllocNative)(mSizeBytes, fp.c_str());
+#else
                 mData = sAlloc(mSizeBytes, fp.c_str());
+#endif
                 ReadChunks(bs, mData, mSizeBytes, 0x8000);
             } else {
                 bs.Seek(mSizeBytes, BinStream::kSeekCur);
@@ -76,7 +100,11 @@ void SampleData::LoadWAV(BinStream &bs, const FilePath &fp) {
         mNumSamples = wav.NumSamples();
         mSampleRate = wav.SamplesPerSec();
         mSizeBytes = SizeAs(kPCM);
+#ifdef HX_NATIVE
+        mData = (sAlloc ? sAlloc : SampleDataAllocNative)(mSizeBytes, fp.c_str());
+#else
         mData = sAlloc(mSizeBytes, fp.c_str());
+#endif
         WaveFileData wavdata(wav);
         wavdata.Read(mData, mSizeBytes);
         for (int i = 0; i < wav.NumMarkers(); i++) {
@@ -89,7 +117,11 @@ void SampleData::LoadWAV(BinStream &bs, const FilePath &fp) {
 DECOMP_FORCEACTIVE(SampleData, "size % 192 == 0")
 
 void SampleData::Reset() {
+#ifdef HX_NATIVE
+    (sFree ? sFree : SampleDataFreeNative)(mData);
+#else
     sFree(mData);
+#endif
     mData = 0;
     mFormat = kPCM;
     mSizeBytes = 0;

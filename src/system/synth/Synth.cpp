@@ -23,6 +23,11 @@
 #include "synth/MoggClip.h"
 #include "synth/BinkClip.h"
 #include "synth/StreamNull.h"
+#ifdef HX_NATIVE
+#include "synth/StandardStream.h"
+#include "synth/VorbisReader.h"
+#include "os/File.h"
+#endif
 #include "obj/DataFunc.h"
 #include "obj/DataFile.h"
 #include "os/BufFile.h"
@@ -134,6 +139,9 @@ void Synth::Init() {
 DECOMP_FORCEACTIVE(Synth, "TheSynth != NULL", "use_null_synth")
 
 void Synth::InitSecurity() {
+#ifndef HX_NATIVE
+    // Letter-function DTA handlers (A-M) for masterKey obfuscation.
+    // Not needed on native — setupCypher bypasses the DTA address dance.
     char buf[256];
     buf[1] = 0;
     for (int i = 0; i < 3; i++) {
@@ -144,6 +152,9 @@ void Synth::InitSecurity() {
     }
     buf[0] = 'M';
     DataRegisterFunc(buf, returnMasterKey);
+#endif
+    // ByteGrinder must init on ALL platforms — registers DTA functions
+    // needed by setupCypher (GrindArray, magic hash generation).
     mGrinder.Init();
 }
 
@@ -247,6 +258,10 @@ void Synth::SetMic(const DataArray *data) {
 
 DECOMP_FORCEACTIVE(Synth, "adsr", "loops", "loop not set for %s", "sequences")
 
+#ifdef HX_NATIVE
+extern Synth *CreateNativeSynth();
+#endif
+
 void SynthPreInit() {
     MILO_ASSERT(!TheSynth, 0x2EA);
     DataArray *cfg = SystemConfig("synth");
@@ -254,7 +269,11 @@ void SynthPreInit() {
     if (useNullSynth)
         TheSynth = new Synth();
     else
+#ifdef HX_NATIVE
+        TheSynth = CreateNativeSynth();
+#else
         TheSynth = Synth::New();
+#endif
     if (TheSynth->Fail()) {
         RELEASE(TheSynth);
         TheSynth = new Synth();
@@ -514,19 +533,57 @@ BEGIN_HANDLERS(Synth)
 END_HANDLERS
 #pragma pop
 
-Stream *Synth::NewStream(const char *, float f1, float, bool) {
+Stream *Synth::NewStream(const char *filename, float f1, float f2, bool) {
+#ifdef HX_NATIVE
+    File *file;
+    Symbol ext;
+    NewStreamFile(filename, file, ext);
+    return new StandardStream(file, f1, f2, ext, true, true);
+#else
     return new StreamNull(f1);
+#endif
 }
 
-Stream *Synth::NewBufStream(const void *, int, Symbol, float f1, bool) {
+Stream *Synth::NewBufStream(const void *buf, int size, Symbol ext, float f1, bool b1) {
+#ifdef HX_NATIVE
+    File *file = new BufFile(buf, size);
+    return new StandardStream(file, 0, f1, ext, b1, true);
+#else
     return new StreamNull(f1);
+#endif
 }
 
 void Synth::NewStreamFile(const char *cc, File *&file, Symbol &sym) {
+#ifdef HX_NATIVE
+    // Resolve mogg file from ark/filesystem; defer decode to the engine layer.
+    String path(MakeString("%s.mogg", cc));
+    file = NewFile(path.c_str(), 2); // 2 = kRead
+    sym = "mogg";
+    if (!file) {
+        // Fallback: try without .mogg extension
+        file = NewFile(cc, 2);
+        sym = "mogg";
+    }
+    if (!file) {
+        static char gFakeFile[16];
+        file = new BufFile(gFakeFile, sizeof(gFakeFile));
+        sym = "fake";
+    }
+#else
     static char gFakeFile[16];
     file = new BufFile(gFakeFile, sizeof(gFakeFile));
     sym = "fake";
+#endif
 }
+
+#ifdef HX_NATIVE
+StreamReader *Synth::NewStreamDecoder(File *file, StandardStream *stream, Symbol ext) {
+    if (ext == "mogg" || ext == "main") {
+        return new VorbisReader(file, true, stream, true);
+    }
+    return nullptr;
+}
+#endif
 
 int Synth::GetSampleMem(ObjectDir *dir, Platform plat) {
     int size = 0;

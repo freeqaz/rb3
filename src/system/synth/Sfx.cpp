@@ -20,7 +20,11 @@ SfxInst::SfxInst(Sfx *sfx)
         SampleInst *inst = 0;
         SynthSample *smp = (*it).mSample;
         if (smp)
+#ifdef HX_NATIVE
+            inst = smp->NewInst(false, 0, -1);
+#else
             inst = smp->NewInst();
+#endif
         if (inst) {
             inst->SetBankVolume((*it).mVolume + mRandVol);
             inst->SetBankPan((*it).mPan + mRandPan);

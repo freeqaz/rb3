@@ -18,7 +18,11 @@ NoteVoiceInst::NoteVoiceInst(
       mGlideFrames(0), mGlideToNote(0), mGlideFromNote(0), mGlideFramesLeft(-1),
       mFineTune(f), mDurationFramesLeft(i1), mOwner(minst) {
     if (zone->mSample) {
+#ifdef HX_NATIVE
+        mSample = zone->mSample->NewInst(false, 0, -1);
+#else
         mSample = zone->mSample->NewInst();
+#endif
         mSample->SetBankVolume(zone->mVolume + RatioToDb(uc2 / 127.0f));
         mSample->SetBankPan(zone->mPan);
         mSample->SetBankSpeed(CalcBankSpeed(mTriggerNote));

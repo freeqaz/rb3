@@ -26,7 +26,14 @@ public:
     virtual void Load(BinStream &);
     virtual void PreLoad(BinStream &);
     virtual void PostLoad(BinStream &);
+#ifdef HX_NATIVE
+    // Native build supplies a real SampleInst (engine SampleInst_Native.cpp).
+    // The matched signature takes no args; the engine needs loop/start/end so
+    // the playing instance can honor the sample's loop region.
+    virtual SampleInst *NewInst(bool loop, int startSample, int endSample);
+#else
     virtual SampleInst *NewInst() const { return nullptr; }
+#endif
     virtual float LengthMs() const { return 0; }
     virtual void Sync(SyncType);
 

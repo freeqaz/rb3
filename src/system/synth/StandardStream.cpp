@@ -3,8 +3,16 @@
 #include "synth/Synth.h"
 #include "os/Debug.h"
 #include <functional>
+#ifdef HX_NATIVE
+// std::mem_fun was removed in C++17; std::mem_fn is the LP64 replacement.
+#define mem_fun mem_fn
+#endif
 #include <math.h>
 #include "utl/Symbols.h"
+
+#ifdef HX_NATIVE
+float StandardStream::sAudioOffsetMs = 0.0f;
+#endif
 
 StandardStream::ChannelParams::ChannelParams()
     : mPan(0.0f), mSlipSpeed(1.0f), mSlipEnabled(0), mADSR(), mFaders(0), mFxSend(0, 0),
@@ -322,8 +330,27 @@ int StandardStream::GetNumChannels() const { return mChannels.size(); }
 int StandardStream::GetNumChanParams() const { return mChanParams.size(); }
 
 void StandardStream::Play() {
+#ifdef HX_NATIVE
+    // On console, a background decode thread parses Vorbis headers between
+    // stream creation and Play(). On native there's no decode thread, so we
+    // must pump the reader until the stream transitions from kInit -> kReady.
+    if (mState == kInit && mRdr) {
+        for (int i = 0; i < 500 && !IsReady(); i++) {
+            PollStream();
+        }
+    }
+#endif
     MILO_ASSERT(IsReady() || mState == kSuspended, 0x227);
     UpdateVolumes();
+#ifdef HX_NATIVE
+    // Pre-fill ring buffers before the audio device starts consuming. The
+    // IsReady pump above only runs until header parsing completes (kReady);
+    // without pre-filling, the first audio callback fires on empty buffers,
+    // causing an audible gap and delayed timing.
+    for (int i = 0; i < 20; i++) {
+        PollStream();
+    }
+#endif
     std::for_each(mChannels.begin(), mChannels.end(), std::mem_fun(&StreamReceiver::Play));
     mState = kPlaying;
     mTimer.Start();
@@ -523,7 +550,11 @@ float StandardStream::GetRawTime() {
 float StandardStream::GetTime() {
     if (mChannels.empty() || mSampleRate == 0)
         return mStartMs;
+#ifdef HX_NATIVE
+    return mLastStreamTime + sAudioOffsetMs;
+#else
     return mLastStreamTime;
+#endif
 }
 
 void StandardStream::UpdateTime() {
@@ -532,6 +563,32 @@ void StandardStream::UpdateTime() {
         return;
     }
     float rawTime = GetRawTime();
+#ifdef HX_NATIVE
+    // In headless mode (no real audio device) the audio callback fires very
+    // slowly, so rawTime lags far behind wall-clock time. Use an independent
+    // wall-clock timer (not mTimer, which gets drift-corrected toward rawTime)
+    // to detect this; once detected, bypass drift correction permanently.
+    if (mState == kPlaying && !mUseTimerFallback) {
+        if (!mWallClockStarted) {
+            mWallClock.Start();
+            mWallClockStarted = true;
+        }
+        mWallClock.Split();
+        float wallElapsed = mWallClock.Ms();
+        if (wallElapsed > 500.0f) {
+            float audioElapsed = rawTime - mStartMs;
+            if (audioElapsed < wallElapsed * 0.1f) {
+                // Audio output is < 10% real-time -- switch to wall-clock timing.
+                mUseTimerFallback = true;
+                mTimer.Reset(mStartMs + wallElapsed);
+            }
+        }
+    }
+    if (mUseTimerFallback) {
+        mLastStreamTime = mTimer.Ms();
+        return;
+    }
+#endif
     float n1 = (float)floor(rawTime / 5.3333335f + 0.5f);
     float quantized0 = n1 * 5.3333335f;
     float rawMinusQuantized = rawTime - quantized0;

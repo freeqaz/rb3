@@ -85,7 +85,11 @@ public:
     virtual void ResetMicsChanged() {}
     virtual Stream *NewStream(const char *, float, float, bool);
     virtual Stream *NewBufStream(const void *, int, Symbol, float, bool);
+#ifdef HX_NATIVE
+    virtual StreamReader *NewStreamDecoder(File *, StandardStream *, Symbol);
+#else
     virtual StreamReader *NewStreamDecoder(File *, StandardStream *, Symbol) { return 0; }
+#endif
     virtual void NewStreamFile(const char *, File *&, Symbol &);
     virtual void EnableLevels(bool) {}
     virtual float UpdateOverlay(RndOverlay *, float);
