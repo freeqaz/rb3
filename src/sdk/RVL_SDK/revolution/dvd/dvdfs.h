@@ -1,12 +1,10 @@
 #ifndef RVL_SDK_DVD_FS_H
 #define RVL_SDK_DVD_FS_H
 #include "types.h"
+#include "revolution/dvd/dvd.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// Forward declarations
-typedef struct DVDFileInfo;
 
 typedef struct DVDDir {
     u32 entryNum;
@@ -33,7 +31,6 @@ extern BOOL __DVDLongFileNameFlag;
 
 s32 DVDConvertPathToEntrynum(const char *pathPtr);
 BOOL DVDFastOpen(s32 entrynum, DVDFileInfo *fileInfo);
-BOOL DVDClose(DVDFileInfo *fileInfo);
 BOOL DVDGetCurrentDir(char *path, u32 maxlen);
 BOOL DVDReadAsyncPrio(
     DVDFileInfo *fileInfo,
