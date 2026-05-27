@@ -52,6 +52,25 @@ __copy_backward_ptrs<SingerResultsData*, SingerResultsData*>(
     return (SingerResultsData*)__d;
 }
 
+// resize()'s erase shift (copy(__last, end, __first)) is a forward element copy
+// that MWCC unrolls 8x in the target; routing it through the POD word-struct in
+// a count-based loop reproduces the 8x unroll and the high-word-first pairing.
+template <>
+inline SingerResultsData*
+__copy_ptrs<SingerResultsData*, SingerResultsData*>(
+    SingerResultsData* __first, SingerResultsData* __last,
+    SingerResultsData* __result, const __false_type& /*IsOKToMemCpy*/
+) {
+    _SingerResultsWords* __d = (_SingerResultsWords*)__result;
+    const _SingerResultsWords* __s = (const _SingerResultsWords*)__first;
+    for (ptrdiff_t __n = __last - __first; __n > 0; --__n) {
+        *__d = *__s;
+        ++__s;
+        ++__d;
+    }
+    return (SingerResultsData*)__d;
+}
+
 } // namespace stlpmtx_std
 
 MicClientID sNullClientID(-1, -1);
