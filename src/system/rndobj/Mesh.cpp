@@ -313,6 +313,12 @@ RndMesh::RndMesh()
 }
 
 RndMesh::~RndMesh() {
+#ifdef HX_NATIVE
+    // Release the GPU-side mesh resources tracked by the native engine's
+    // MeshGpuCache (src/platform/MeshGpuCache.cpp) before the CPU mesh dies.
+    extern void CleanupGpuMesh(RndMesh *);
+    CleanupGpuMesh(this);
+#endif
     RELEASE(mFileLoader);
     RELEASE(mBSPTree);
     RELEASE(mMultiMesh);
@@ -962,6 +968,11 @@ void FaceCenter(RndMesh *mesh, RndMesh::Face *face, Vector3 &v) {
 
 void RndMesh::Sync(int flags) { OnSync(mKeepMeshData ? flags | 0x200 : flags); }
 
+#ifndef HX_NATIVE
+// Matched fork: build Wii TEV vertex "patches" on sync. Under HX_NATIVE the
+// native engine (src/platform/MeshGpuCache.cpp) supplies its own RndMesh::OnSync
+// that simply invalidates the GPU upload cache, so gate this Wii-specific patch
+// generation out to avoid a duplicate definition.
 void RndMesh::OnSync(int flags) {
     if (mGeomOwner != this || (flags & 0x80U) || !(flags & 0x20U))
         return;
@@ -1035,6 +1046,7 @@ void RndMesh::OnSync(int flags) {
         mFaces.swap(faces);
     }
 }
+#endif // !HX_NATIVE
 
 // matches in retail
 Vector3 RndMesh::SkinVertex(const RndMesh::Vert &vert, Vector3 *vptr) {

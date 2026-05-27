@@ -7,7 +7,9 @@
 #include "obj/Data.h"
 #include "obj/DataFunc.h"
 #include "os/File.h"
+#ifndef HX_NATIVE
 #include "os/HolmesClient.h"
+#endif
 #include "os/Keyboard.h"
 #include "os/System.h"
 #include "rndobj/Overlay.h"
@@ -15,6 +17,12 @@
 #include "utl/Cheats.h"
 #include "utl/Std.h"
 #include <string.h>
+
+#ifdef HX_NATIVE
+// Holmes (the in-house remote-debug client) has no native counterpart; stub the
+// console-visibility notification so the debug console still builds.
+static void HolmesClientSendMessage(const Message &) {}
+#endif
 
 static RndConsole *gConsole;
 

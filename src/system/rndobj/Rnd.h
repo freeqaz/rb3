@@ -117,6 +117,12 @@ public:
     virtual float UpdateOverlay(RndOverlay *, float);
     virtual bool CanModal(bool) { return 0; }
     virtual void ModalDraw(bool, const char *) {}
+#ifdef HX_NATIVE
+    // Hook for the native WebGPU renderer to clear depth before drawing the
+    // 2D overlay/UI pass. The matched fork has no such concept; WgpuRnd
+    // (milo-native-engine src/platform/Rnd_Wgpu.cpp) overrides this.
+    virtual void ClearDepthForOverlay() {}
+#endif
 
     bool ShrinkToSafeArea() { return mShrinkToSafe; }
     bool InGame() const { return mInGame; }

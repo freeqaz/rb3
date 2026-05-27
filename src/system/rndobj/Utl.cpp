@@ -156,6 +156,12 @@ RndMat *GetMat(RndDrawable *draw) {
 }
 
 bool SortDraws(RndDrawable *draw1, RndDrawable *draw2) {
+#ifdef HX_NATIVE
+    // Object teardown can leave null entries in the ObjPtrList being sorted.
+    // Sort nulls to the end instead of dereferencing them.
+    if (!draw1 || !draw2)
+        return draw1 > draw2;
+#endif
     if (draw1->GetOrder() != draw2->GetOrder())
         return draw1->GetOrder() < draw2->GetOrder();
     else {

@@ -32,7 +32,13 @@ public:
 /** A bone to associate with a Mesh. */
 class RndBone {
 public:
-    RndBone(Hmx::Object *o) : mBone(o, NULL) {}
+    RndBone(Hmx::Object *o) : mBone(o, NULL) {
+#ifdef HX_NATIVE
+        // Native Transform() leaves members uninitialized (the matched fork
+        // relied on zero-init); reset so bone offsets are deterministic.
+        mOffset.Reset();
+#endif
+    }
     void Load(BinStream &);
 
     /** "Trans of the bone" */
@@ -162,6 +168,13 @@ public:
 #endif
     virtual void Print();
     virtual void OnSync(int);
+#ifdef HX_NATIVE
+    // milo-native-engine's WebGPU layer (src/platform/Mesh_Wgpu.cpp) provides a
+    // real RndMesh::DrawShowing() override that uploads/draws via WebGPU. The
+    // matched fork inherits RndDrawable's inline no-op; declare the override here
+    // so the engine body is the one that runs.
+    virtual void DrawShowing();
+#endif
 
     /** Set the number of vertices this Mesh should have.
      * @param [in] num The number to set.

@@ -14,11 +14,18 @@ RndDrawable::RndDrawable() : mShowing(1), mSphere(), mOrder(0.0f) { mSphere.Zero
 
 void RndDrawable::Draw() {
     if (mShowing) {
+#ifdef HX_NATIVE
+        // Frustum culling disabled for the native build: the WebGPU renderer's
+        // camera/frustum setup does not yet match RndCam::sCurrent's, so culling
+        // here would wrongly drop visible drawables. Over-draw is harmless.
+        DrawShowing();
+#else
         Sphere sphere;
         int worldSphere = MakeWorldSphere(sphere, false);
         if (worldSphere == 0 || !RndCam::sCurrent->CompareSphereToWorld(sphere)) {
             DrawShowing();
         }
+#endif
     }
 }
 

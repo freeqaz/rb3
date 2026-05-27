@@ -891,6 +891,13 @@ void RndParticleSys::DrawShowing() {
         }
         unke8 = 0;
     }
+#ifdef HX_NATIVE
+    // The matched fork submits particle geometry through the platform renderer.
+    // On native the milo-native-engine WebGPU layer
+    // (src/platform/Part_Wgpu.cpp) draws the active particles as billboards.
+    extern void DrawParticlesBillboard(RndParticleSys *);
+    DrawParticlesBillboard(this);
+#endif
 }
 
 void RndParticleSys::UpdateSphere() {
@@ -1096,6 +1103,12 @@ void RndParticleSys::UpdateParticles() {
 }
 
 void RndParticleSys::UpdateRelativeXfm() {
+#ifdef HX_NATIVE
+    // DTA scripts that assign the relative-motion parent may not run on native,
+    // leaving mRelativeParent null. Bail out instead of dereferencing it.
+    if (!mRelativeParent)
+        return;
+#endif
     float one = 1.0f;
     if (mRelativeMotion == one) {
         mRelativeXfm = mRelativeParent->WorldXfm();

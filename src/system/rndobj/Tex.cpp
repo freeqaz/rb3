@@ -122,8 +122,15 @@ void RndTex::SetBitmap(int w, int h, int bpp, Type ty, bool useMips, const char 
     SyncBitmap();
 }
 
+#ifndef HX_NATIVE
+// Original matched fork: empty GPU-sync stubs (real platform work lives in the
+// rndwii/rndxbox subclass overrides). Under HX_NATIVE the milo-native-engine
+// WebGPU layer (src/platform/Tex_Wgpu.cpp) provides real out-of-line
+// RndTex::PresyncBitmap()/SyncBitmap() that upload the bitmap to a GPU texture,
+// so gate these stub bodies out to avoid a duplicate-definition collision.
 inline void RndTex::PresyncBitmap() {}
 inline void RndTex::SyncBitmap() {}
+#endif
 
 void RndTex::SetBitmap(const RndBitmap &bmap, const char *path, bool b) {
     PresyncBitmap();

@@ -94,6 +94,30 @@ public:
     float EmulateFPS() const { return mEmulateFPS; }
 
     static void Reset();
+#ifdef HX_NATIVE
+    // Read-only accessors used by the native post-process pass
+    // (milo-native-engine src/gfx/PostProcPass.cpp) to build its uniform block.
+    const RndColorXfm &GetColorXfm() const { return mColorXfm; }
+    float GetVignetteIntensity() const { return mVignetteIntensity; }
+    const Hmx::Color &GetVignetteColor() const { return mVignetteColor; }
+    float GetChromaticAberrationOffset() const { return mChromaticAberrationOffset; }
+    bool GetChromaticSharpen() const { return mChromaticSharpen; }
+    float GetPosterLevels() const { return mPosterLevels; }
+    float GetPosterMin() const { return mPosterMin; }
+    float GetBloomIntensity() const { return mBloomIntensity; }
+    float GetBloomThreshold() const { return mBloomThreshold; }
+    const Hmx::Color &GetBloomColor() const { return mBloomColor; }
+    bool GetBloomGlare() const { return mBloomGlare; }
+    bool GetBloomStreak() const { return mBloomStreak; }
+    float GetBloomStreakAttenuation() const { return mBloomStreakAttenuation; }
+    float GetBloomStreakAngle() const { return mBloomStreakAngle; }
+    float GetNoiseIntensity() const { return mNoiseIntensity; }
+    bool GetNoiseMidtone() const { return mNoiseMidtone; }
+    bool GetNoiseStationary() const { return mNoiseStationary; }
+    const Vector2 &GetFlickerModBounds() const { return mFlickerModBounds; }
+    const Vector2 &GetFlickerTimeBounds() const { return mFlickerTimeBounds; }
+    float GetFlickerSeconds() const { return mFlickerSeconds.x; }
+#endif
     static RndPostProc *sCurrent;
     static RndPostProc *Current();
     static DOFOverrideParams sDOFOverride;

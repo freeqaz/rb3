@@ -306,6 +306,13 @@ void Rnd::PreInit() {
     // some other code
     mWidth = ((float)mHeight / Rnd::YRatio()) + 0.5f;
 
+#ifdef HX_NATIVE
+    // The Wii config picks a 4:3 internal render res (height ~480). The native
+    // WebGPU layer renders at the full GPU surface, so default to 1280x720 to
+    // match the engine's expectations rather than the console's framebuffer.
+    mWidth = 1280;
+    mHeight = 720;
+#endif
     MILO_ASSERT((mScreenBpp == 16) || (mScreenBpp == 32), 575);
     SetupFont();
     RndGraph::Init();
@@ -418,11 +425,18 @@ void Rnd::TestPoint(const Vector3 &pos, RndFlare *flare) {
         flare->SetVisible(false);
         return;
     }
+#ifdef HX_NATIVE
+    // Native has no GPU occlusion-query readback (the mPointTests queue is drained
+    // by platform code that doesn't run here), so an in-view flare would stay
+    // invisible forever. Treat in-frustum flares as fully visible instead.
+    flare->SetVisible(true);
+#else
     std::list<PointTest>::iterator it = mPointTests.insert(mPointTests.end(), PointTest());
     it->unk_0xC = flare;
     it->unk_0x0 = (int)(screen.x * (float)mWidth);
     it->unk_0x4 = (int)(screen.y * (float)mHeight);
     it->unk_0x8 = cam->ProjectZ(depth);
+#endif
 }
 
 void Rnd::RemovePointTest(RndFlare *flare) {
