@@ -33,9 +33,12 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include "utl/MakeString.h"
 #include <cmath>
 
 TrackPanel *TheTrackPanel;
+
+DECOMP_FORCEBLOCK(TrackPanel, (const char *c, DataType d), MakeString(c, d);)
 
 TrackPanel *GetTrackPanel() { return TheTrackPanel; }
 

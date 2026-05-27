@@ -19,7 +19,10 @@
 #include "obj/DataUtl.h"
 #include <cstddef>
 #include <cstdlib>
+#include "utl/MakeString.h"
 #include <map>
+
+DECOMP_FORCEBLOCK(DataFile, (const char *c, char *p, const char *pc), MakeString(c, p, pc);)
 
 struct ConditionalInfo {
     union {
