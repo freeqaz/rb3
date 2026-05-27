@@ -35,9 +35,32 @@ asm void PSVECAdd(register const Vec* vec1, register const Vec* vec2,
 void C_VECSubtract(){
 }
 
-//unused
-asm void PSVECSubtract(){
+#ifdef __MWERKS__
+asm void PSVECSubtract(register const Vec* vec1, register const Vec* vec2,
+                       register Vec* dst) {
+    // clang-format off
+    nofralloc
+
+    // Subtract X,Y components
+    psq_l  f2, Vec.x(vec1), 0, 0
+    psq_l  f4, Vec.x(vec2), 0, 0
+    ps_sub f6, f2, f4
+
+    // Store result
+    psq_st f6, Vec.x(dst), 0, 0
+
+    // Subtract Z component
+    psq_l  f3, Vec.z(vec1), 1, 0
+    psq_l  f5, Vec.z(vec2), 1, 0
+    ps_sub f7, f3, f5
+
+    // Store result
+    psq_st f7, Vec.z(dst), 1, 0
+
+    blr
+    // clang-format on
 }
+#endif
 
 //unused
 void C_VECScale(){
@@ -273,8 +296,20 @@ void C_VECHalfAngle(register const Vec* a, register const Vec* b,
     }
 }
 
-//unused
-void C_VECReflect(){
+void C_VECReflect(const Vec* a, const Vec* normal, Vec* dst) {
+    Vec na, nb;
+    float dot;
+
+    na.x = -a->x;
+    na.y = -a->y;
+    na.z = -a->z;
+    PSVECNormalize(&na, &na);
+    PSVECNormalize(normal, &nb);
+    dot = PSVECDotProduct(&na, &nb);
+    dst->x = 2.0f * nb.x * dot - na.x;
+    dst->y = 2.0f * nb.y * dot - na.y;
+    dst->z = 2.0f * nb.z * dot - na.z;
+    PSVECNormalize(dst, dst);
 }
 
 //unused

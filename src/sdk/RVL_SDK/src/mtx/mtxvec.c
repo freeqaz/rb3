@@ -63,9 +63,48 @@ asm void PSMTXMultVecArray(){
 void C_MTXMultVecSR(){
 }
 
-//unused
-asm void PSMTXMultVecSR(const Mtx m, const Vec* vec1, Vec* vec2){
+#ifdef __MWERKS__
+asm void PSMTXMultVecSR(register const Mtx m, register const Vec* vec1,
+                        register Vec* vec2) {
+    // clang-format off
+    nofralloc
+
+    // Load matrix row 0 XY, vec XY, row 1 XY
+    psq_l   f0,  0(m),     0, 0 // m[0][0], m[0][1]
+    psq_l   f6,  0(vec1),  0, 0 // vx, vy
+    psq_l   f2,  16(m),    0, 0 // m[1][0], m[1][1]
+
+    // Multiply row 0 and row 1 by XY
+    ps_mul  f8,  f0,  f6        // m[0][0]*vx, m[0][1]*vy
+    psq_l   f4,  32(m),    0, 0 // m[2][0], m[2][1]
+    ps_mul  f10, f2,  f6        // m[1][0]*vx, m[1][1]*vy
+
+    // Load vz
+    psq_l   f7,  8(vec1),  1, 0 // vz, 1
+
+    // Multiply row 2 by XY
+    ps_mul  f12, f4,  f6        // m[2][0]*vx, m[2][1]*vy
+
+    // Horizontal sum for each row's XY products
+    psq_l   f3,  24(m),    0, 0 // m[1][2], m[1][3]
+    ps_sum0 f8,  f8,  f8,  f8  // f8[0] = m[0][0]*vx + m[0][1]*vy
+    psq_l   f5,  40(m),    0, 0 // m[2][2], m[2][3]
+    ps_sum0 f10, f10, f10, f10 // f10[0] = m[1][0]*vx + m[1][1]*vy
+    psq_l   f1,  8(m),     0, 0 // m[0][2], m[0][3]
+    ps_sum0 f12, f12, f12, f12 // f12[0] = m[2][0]*vx + m[2][1]*vy
+
+    // Add Z contribution and store results
+    ps_madd f9,  f1,  f7, f8   // m[0][2]*vz + (m[0][0]*vx + m[0][1]*vy)
+    psq_st  f9,  0(vec2),  1, 0 // store result.x
+    ps_madd f11, f3,  f7, f10  // m[1][2]*vz + (m[1][0]*vx + m[1][1]*vy)
+    psq_st  f11, 4(vec2),  1, 0 // store result.y
+    ps_madd f13, f5,  f7, f12  // m[2][2]*vz + (m[2][0]*vx + m[2][1]*vy)
+    psq_st  f13, 8(vec2),  1, 0 // store result.z
+
+    blr
+    // clang-format on
 }
+#endif
 
 //unused
 void C_MTXMultVecArraySR(){
