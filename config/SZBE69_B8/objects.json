@@ -2039,12 +2039,6 @@
             "sdk/RVL_SDK/src/usbcmn/puh_ker_mem.c": "MISSING",
             "sdk/RVL_SDK/src/usbcmn/puh_ker_msg.c": "MISSING",
             "sdk/RVL_SDK/src/usbcmn/puh_ker_sem.c": "MISSING",
-            "sdk/RVL_SDK/src/usbmic/dpc.c": "MISSING",
-            "sdk/RVL_SDK/src/usbmic/mic.c": "MISSING",
-            "sdk/RVL_SDK/src/usbmic/ringbuffer.c": "MISSING",
-            "sdk/RVL_SDK/src/usbmic/usbhelpers.c": "MISSING",
-            "sdk/RVL_SDK/src/usbmic/usbmic.c": "MISSING",
-            "sdk/RVL_SDK/src/usbmic/usbrequest.c": "MISSING",
             "sdk/RVL_SDK/src/vf/d_common.c": "MISSING",
             "sdk/RVL_SDK/src/vf/d_hash.c": "MISSING",
             "sdk/RVL_SDK/src/vf/d_time.c": "MISSING",
@@ -2106,6 +2100,19 @@
             "sdk/RVL_SDK/src/vi/vi.c": "MISSING",
             "sdk/RVL_SDK/src/vi/vi3in1.c": "NonMatching",
             "sdk/RVL_SDK/src/wenc/wenc.c": "MISSING"
+        }
+    },
+    "sdk/RVL_SDK/usbmic": {
+        "progress_category": "sdk",
+        "mw_version": "Wii/1.3",
+        "cflags": "sdk/RVL_SDK/src/usbmic",
+        "objects": {
+            "sdk/RVL_SDK/src/usbmic/dpc.c": "MISSING",
+            "sdk/RVL_SDK/src/usbmic/mic.c": "MISSING",
+            "sdk/RVL_SDK/src/usbmic/ringbuffer.c": "MISSING",
+            "sdk/RVL_SDK/src/usbmic/usbhelpers.c": "MISSING",
+            "sdk/RVL_SDK/src/usbmic/usbmic.c": "NonMatching",
+            "sdk/RVL_SDK/src/usbmic/usbrequest.c": "MISSING"
         }
     },
     "sdk/RVL_SDK/wpad": {
