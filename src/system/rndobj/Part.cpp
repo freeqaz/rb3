@@ -1260,26 +1260,26 @@ void RndParticleSys::MoveParticles(float dt, float frameSpan) {
     }
 
     float forceZ_dt = mForceDir.z * frameSpan;
-    bool isBubble = mBubble;
     float forceY_dt = mForceDir.y * frameSpan;
-
     float forceX_dt = mForceDir.x * frameSpan;
-    bool isRotate = mRotate;
-    float relForceRow1 =
-        mRelativeXfm.m.y.x * forceX_dt + mRelativeXfm.m.y.y * forceY_dt
-        + mRelativeXfm.m.y.z * forceZ_dt;
+
     float relForceRow2 =
         mRelativeXfm.m.z.x * forceX_dt + mRelativeXfm.m.z.y * forceY_dt
         + mRelativeXfm.m.z.z * forceZ_dt;
+    bool isBubble = mBubble;
     Plane bouncePlane;
+    float relForceRow1 =
+        mRelativeXfm.m.y.x * forceX_dt + mRelativeXfm.m.y.y * forceY_dt
+        + mRelativeXfm.m.y.z * forceZ_dt;
     bool isFancy = (mType == kFancy);
     float relForceRow0 =
         mRelativeXfm.m.x.x * forceX_dt + mRelativeXfm.m.x.y * forceY_dt
         + mRelativeXfm.m.x.z * forceZ_dt;
-
     bool bounce = (mBounce != NULL);
+
+    bool isRotate = mRotate;
     if (bounce) {
-        Transform &bxf = mBounce->WorldXfm();
+        const Transform &bxf = mBounce->WorldXfm();
         const Transform &bxf2 = mBounce->WorldXfm();
         bouncePlane.a = bxf2.m.z.x;
         bouncePlane.b = bxf2.m.z.y;
