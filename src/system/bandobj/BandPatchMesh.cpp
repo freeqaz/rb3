@@ -358,11 +358,11 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
     MILO_ASSERT(vf != MeshFace::kUnAdded, 0x2A2);
 #undef MeshFace
 #undef vf
-    RndMesh::Face &face = mMesh->Faces()[faceidx];
     int prevVertCount = unk10.size();
+    RndMesh::Face &face = mMesh->Faces()[faceidx];
     int allOut = 0xf;
     MeshVert *verts[3];
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0.0f; i < 3; i++) {
         MeshVert *mv = mMeshVerts[face[i]];
         verts[i] = mv;
         if (mv->mVert == 0) {
@@ -381,7 +381,8 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
         temp.SetVert(verts[0]->mVert);
         reject = 0;
         Vector2 v(temp.unk1c);
-        if (temp.AddUV(verts[1], unk34, &v) == 0
+        int _tmp0 = temp.AddUV(verts[1], unk34, &v);
+        if (_tmp0 == 0
             || temp.AddUV(verts[2], unk34, &v) == 0)
             reject = 1;
     }
@@ -396,7 +397,7 @@ int BandPatchMesh::WorkVerts::TryAddFace(int faceidx, int b) {
         float ex = vn->unk1c.x - vb->unk1c.x;
         float px = vp->unk1c.x - vb->unk1c.x;
         float t = (ex * px + ey * py) / (ex * ex + ey * ey);
-        if (t > 1.0f)
+        if (t > 1.0)
             t = 1.0f;
         else if (t < 0)
             t = 0;

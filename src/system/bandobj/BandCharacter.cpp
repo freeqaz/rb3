@@ -1581,7 +1581,7 @@ void BandCharacter::GameOver() {
 DataNode BandCharacter::ListAnimGroups(int mask) {
     BandCharDesc::CharInstrumentType instType =
         BandCharDesc::GetInstrumentFromSym(mInstrumentType);
-    if (instType >= BandCharDesc::kNumInstruments) {
+    if (BandCharDesc::kNumInstruments <= instType) {
         DataArray *arr = new DataArray(1);
         arr->Node(0) = Symbol();
         DataNode ret(arr, kDataArray);
@@ -1591,7 +1591,8 @@ DataNode BandCharacter::ListAnimGroups(int mask) {
     DataArray *groups = BandWardrobe::GetGroupArray(instType);
     int count = 1;
     for (int i = 0; i < groups->Size(); i++) {
-        int flags = groups->Array(i)->Int(1) & mask;
+        int _tmp1 = groups->Array(i)->Int(1);
+        int flags = _tmp1 & mask;
         if ((mask & 0xFF) == (flags & 0xFF) && (flags & 0x3F00))
             count++;
     }
@@ -1599,7 +1600,8 @@ DataNode BandCharacter::ListAnimGroups(int mask) {
     int idx = 1;
     result->Node(0) = Symbol();
     for (int i = 0; i < groups->Size(); i++) {
-        int flags = groups->Array(i)->Int(1) & mask;
+        int _tmp2 = groups->Array(i)->Int(1);
+        int flags = _tmp2 & mask;
         if ((mask & 0xFF) == (flags & 0xFF) && (flags & 0x3F00)) {
             result->Node(idx++) = groups->Array(i)->Sym(0);
         }

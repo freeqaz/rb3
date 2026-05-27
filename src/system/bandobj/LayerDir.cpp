@@ -231,8 +231,8 @@ void LayerDir::RefreshLayer(Layer &layer, bool useColorIdx) {
 }
 
 DataNode LayerDir::GetBitmapList(DataArray *arr) {
-    DataArray *propPath = DataVariable(Symbol("milo_prop_path")).Array(NULL);
     char _slotpad[8]; (void)_slotpad;
+    DataArray *propPath = DataVariable(Symbol("milo_prop_path")).Array(NULL);
     DataNode savedNode(propPath->Node(2));
     propPath->Node(2) = DataNode(Symbol("name"));
     const char *name = (*reinterpret_cast<Hmx::Object **>(arr))->Property(propPath, true)->Str(NULL);
