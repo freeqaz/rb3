@@ -1091,13 +1091,16 @@ void GemManager::AdvanceEnd() {
 }
 
 void GemManager::AddChordBracket(Symbol gemType, unsigned int slots, float ms) {
-    if (!mTrackDir)
+    TrackDir * &_ref0 = mTrackDir;
+    if (!_ref0)
         return;
     if (mTrackConfig.IsKeyboardTrack()) {
         if (gemType != invisible) {
             if (slots != 0) {
-                if (TheGame->unkdc != -1.0f && TheGame->unkdc > ms)
-                    return;
+                if (TheGame->unkdc != -1.0f)
+                    {
+                    if (TheGame->unkdc > ms) return;
+                }
                 int lowest = mTrackConfig.GetMaxSlots();
                 int highest = -1;
                 int numSlots = mTrackConfig.GetMaxSlots();
@@ -1109,10 +1112,10 @@ void GemManager::AddChordBracket(Symbol gemType, unsigned int slots, float ms) {
                             highest = s;
                     }
                 }
-                bool isMiss = gemType == "miss";
+                unsigned char isMiss = (unsigned char)(gemType == "miss");
                 if (lowest < highest) {
                     Symbol name;
-                    int leftBlack = mTrackDir->IsBlackKey(lowest);
+                    int leftBlack = _ref0->IsBlackKey(lowest);
                     GetWidgetName(
                         name, leftBlack, Symbol(isMiss ? "bracket_left_miss" : "bracket_left")
                     );
@@ -1127,7 +1130,7 @@ void GemManager::AddChordBracket(Symbol gemType, unsigned int slots, float ms) {
                     Symbol spanName = name;
                     TrackWidget *wSpan = GetWidgetByName(spanName);
                     RememberChordWidget(wSpan);
-                    int rightBlack = mTrackDir->IsBlackKey(highest);
+                    int rightBlack = _ref0->IsBlackKey(highest);
                     GetWidgetName(
                         name, rightBlack,
                         Symbol(isMiss ? "bracket_right_miss" : "bracket_right")
@@ -1139,7 +1142,7 @@ void GemManager::AddChordBracket(Symbol gemType, unsigned int slots, float ms) {
                     RememberChordWidget(wRight);
                     AddWidgetInstanceImpl(wLeft, lowest, ms);
                     for (int s = lowest + 1; s < highest; s++) {
-                        if (!mTrackDir->IsBlackKey(s)) {
+                        if (!_ref0->IsBlackKey(s)) {
                             AddWidgetInstanceImpl(wSpan, s, ms);
                         }
                     }
