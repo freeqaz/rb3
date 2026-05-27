@@ -338,11 +338,11 @@ void BandHeadShaper::AddFrameHelper(
 }
 
 void BandHeadShaper::AddDegrees(const char *cc, int i1, float *degrees, int count) {
-    int base = i1 * (count * 2 + 1);
-    float remainder = 1.0f;
+    float *p = degrees;
     int idx = 1;
     int i = 0;
-    float *p = degrees;
+    int base = i1 * (count * 2 + 1);
+    float remainder = 1.0f;
     for (; i < count; p++, idx += 2, i++) {
         AddFrameHelper(cc, base, idx, *p, remainder);
     }
