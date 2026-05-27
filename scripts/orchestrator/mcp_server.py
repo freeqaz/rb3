@@ -64,6 +64,91 @@ _NOISY_SUBSTRINGS = (
 )
 
 
+def _stack_signal_summary(instrs: list) -> str | None:
+    """Compute a one-line stack-layout signal from already-parsed objdiff instructions.
+
+    Returns None when there's no actionable signal (frame matches AND no user-slot
+    mismatches). Otherwise returns "Stack: ..." suitable for one-line display in
+    run_objdiff output. Uses only the JSON we already have — no DWARF recompile.
+    """
+    try:
+        from analysis.stack_layout import (
+            build_fingerprints, parse_prologue,
+            classify_slots, dominant_delta_from_rows,
+        )
+    except ImportError:
+        return None
+
+    if not instrs:
+        return None
+
+    try:
+        tgt_slots = build_fingerprints("target", instrs)
+        base_slots = build_fingerprints("base", instrs)
+        if not tgt_slots and not base_slots:
+            return None
+        tgt_prol = parse_prologue(instrs, "target")
+        base_prol = parse_prologue(instrs, "base")
+        dom = dominant_delta_from_rows(tgt_slots, base_slots)
+        rows = classify_slots(
+            tgt_slots, base_slots, dom,
+            tgt_prol.callee_save_slots, base_prol.callee_save_slots,
+        )
+    except Exception:
+        return None
+
+    from collections import Counter
+    user_rows = [r for r in rows if not r.callee_save]
+    counts = Counter(r.verdict for r in user_rows)
+    swapped = counts.get("SWAPPED", 0)
+    shifted = counts.get("SHIFTED", 0)
+    differ = counts.get("DIFFER", 0)
+    tgt_only = counts.get("TGT_ONLY", 0)
+    base_only = counts.get("BASE_ONLY", 0)
+    actionable = swapped + shifted + differ + tgt_only + base_only
+    frame_delta = base_prol.frame_size - tgt_prol.frame_size
+
+    if actionable == 0 and frame_delta == 0:
+        return None  # no signal worth showing
+
+    parts: list[str] = []
+    if frame_delta != 0:
+        callee_bytes = (
+            (base_prol.saved_gpr_count - tgt_prol.saved_gpr_count) * 4
+            + (base_prol.saved_fpr_count - tgt_prol.saved_fpr_count) * 8
+        )
+        if callee_bytes == frame_delta:
+            parts.append(f"frame Δ {frame_delta:+#x} (callee-save AT_LIMIT)")
+        else:
+            parts.append(f"frame Δ {frame_delta:+#x} (structural)")
+
+    verdict_pieces = []
+    if swapped:
+        verdict_pieces.append(f"{swapped} SWAPPED")
+    if shifted:
+        verdict_pieces.append(f"{shifted} SHIFTED")
+    if differ:
+        verdict_pieces.append(f"{differ} DIFFER")
+    if tgt_only or base_only:
+        verdict_pieces.append(f"{tgt_only}/{base_only} TGT/BASE-only")
+    if verdict_pieces:
+        parts.append(", ".join(verdict_pieces))
+
+    if not parts:
+        return None
+
+    hint = ""
+    if swapped > 0:
+        hint = " — reorder paired declarations"
+    elif shifted > 0:
+        hint = " — likely extra local on one side"
+    elif differ > 0 and frame_delta == 0:
+        hint = " — different variables in same slots"
+
+    return (f"**Stack:** {' | '.join(parts)}{hint}. "
+            f"Run `run_diff_inspect mode=stack-layout` for the full table.")
+
+
 def _filter_build_output(text: str) -> str:
     """Filter noisy build/split output, keeping only meaningful lines."""
     if not text:
@@ -291,7 +376,7 @@ class DecompMCPServer:
                 ),
                 Tool(
                     name="run_diff_inspect",
-                    description="Deep analysis of WHY a function doesn't match. Provides root cause diagnosis, cluster analysis, register swap detection, offset analysis. Use after run_objdiff when you need deeper insight.",
+                    description="Deep analysis of WHY a function doesn't match. Provides root cause diagnosis, cluster analysis, register swap detection, offset analysis, and stack-layout slot diff (with base-side variable names from a MWCC DWARF recompile). Use after run_objdiff when you need deeper insight. For functions with stack signal flagged in run_objdiff output, use mode=stack-layout.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -301,8 +386,8 @@ class DecompMCPServer:
                             },
                             "mode": {
                                 "type": "string",
-                                "enum": ["diagnose", "clusters", "regswaps", "offsets", "replaces", "compare", "save_baseline", "mismatches"],
-                                "description": "Analysis mode: diagnose (root cause), clusters (contiguous groups), regswaps (register swap pairs), offsets (offset shift histogram), replaces (categorize noise vs real), compare (delta vs baseline), save_baseline, mismatches (instruction table)",
+                                "enum": ["diagnose", "clusters", "regswaps", "offsets", "replaces", "compare", "save_baseline", "mismatches", "stack-layout"],
+                                "description": "Analysis mode: diagnose (root cause), clusters (contiguous groups), regswaps (register swap pairs), offsets (offset shift histogram), replaces (categorize noise vs real), compare (delta vs baseline), save_baseline, mismatches (instruction table), stack-layout (per-slot diff with base-side variable names from DWARF)",
                             },
                             "project_dir": {
                                 "type": "string",
@@ -841,6 +926,15 @@ class DecompMCPServer:
             except (json.JSONDecodeError, KeyError):
                 pass
 
+            # 4b) Stack-layout one-liner (only when actionable)
+            try:
+                data = json.loads(json_output)
+                stack_line = _stack_signal_summary(data.get("instructions", []))
+                if stack_line:
+                    output += f"\n\n{stack_line}"
+            except (json.JSONDecodeError, KeyError):
+                pass
+
             # 5) Auto-diagnose for non-concise mode
             if not concise:
                 try:
@@ -1042,7 +1136,7 @@ Read in chunks of 200 lines.
         if not mode:
             return [TextContent(type="text", text="Error: No mode provided.")]
 
-        valid_modes = {"diagnose", "clusters", "regswaps", "offsets", "replaces", "compare", "save_baseline", "mismatches"}
+        valid_modes = {"diagnose", "clusters", "regswaps", "offsets", "replaces", "compare", "save_baseline", "mismatches", "stack-layout"}
         if mode not in valid_modes:
             return [TextContent(type="text", text=f"Error: Invalid mode '{mode}'. Valid: {', '.join(sorted(valid_modes))}")]
 
@@ -1221,6 +1315,45 @@ Read in chunks of 200 lines.
 
                 output = "\n".join(lines)
                 return [TextContent(type="text", text=output)]
+
+            # -- stack-layout mode (uses a different script) --
+            elif mode == "stack-layout":
+                stack_script = self.project_root / "scripts" / "analysis" / "stack_layout.py"
+                if not stack_script.exists():
+                    return [TextContent(type="text", text=f"Error: stack_layout.py not found at {stack_script}")]
+
+                cmd = [
+                    sys.executable, str(stack_script),
+                    "--symbol", symbol,
+                    "--project-dir", str(project_dir),
+                ]
+                if unit:
+                    cmd.extend(["--unit", unit])
+                result = subprocess.run(
+                    cmd, capture_output=True, text=True,
+                    timeout=300,
+                )
+
+                output = result.stdout
+                if result.stderr:
+                    filtered_stderr = _filter_build_output(result.stderr)
+                    if filtered_stderr:
+                        output += f"\n\n[stderr]\n{filtered_stderr}"
+
+                if result.returncode != 0:
+                    return [TextContent(type="text", text=f"Error (exit {result.returncode}):\n{output}")]
+
+                lines_count = len(output.split("\n"))
+                if lines_count < MAX_INLINE_LINES:
+                    return [TextContent(type="text", text=output)]
+                else:
+                    analysis_dir = project_dir / "function_analysis"
+                    analysis_dir.mkdir(exist_ok=True, parents=True)
+                    output_file = analysis_dir / f"stack_layout_{safe_symbol}.txt"
+                    with open(output_file, "w") as f:
+                        f.write(output)
+                    return [TextContent(type="text", text=f"Output is large ({lines_count} lines). Written to file.\n\n"
+                                        f"**File:** `{output_file.relative_to(project_dir)}`")]
 
             # -- analysis modes (diagnose/clusters/regswaps/offsets/replaces) --
             else:
