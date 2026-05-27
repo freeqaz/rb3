@@ -1,6 +1,6 @@
 # RB3 Native Port — Roadmap & Status
 
-**Status**: Phase 0 — planning. No native code yet.
+**Status**: Phase 0 — **COMPLETE** (0.1–0.4 closed). Phase 1 in progress: `rb3-native` full-engine link + `.milo` scene-tree dump.
 **v1 milestone**: Play one song end-to-end (audio + venue + HUD + scoring) on Linux x86_64.
 
 This doc is the durable tracking artifact for the RB3 native port. Sessions append to the Status Log at the bottom and adjust phase tables as items move. Companion: [NATIVE_PORT_INVENTORY.md](NATIVE_PORT_INVENTORY.md) (per-area disposition of DC3's existing native code).
@@ -207,6 +207,20 @@ dc3-decomp's CMake gets a new `add_subdirectory(${MILO_ENGINE_PATH})` block and 
 These tests move into the engine repo as `milo-engine-tests` and run against `libmilo-engine.a` only. They become the cross-decomp convergence gate. (Game-coupled DC3 tests — `test_loading_panel`, `test_ham_provider`, `test_subsystems`, `test_headless_boot`, `test_dta_flow`, `test_movegraph`, `test_gameplay_telemetry` — stay in dc3-decomp/native/tests/ and link against dc3-native game sources.)
 
 #### 0.3 — Stand up `rb3/native/` skeleton
+
+This substep has two milestones:
+
+- **Milestone (a) — `rb3-dta` (DONE).** A headless DTA parser
+  (`rb3/native/build/rb3-dta`) that links the engine *without* injected decomp
+  context (`MILO_ENGINE_HAVE_CONTEXT=OFF`, engine builds only the placeholder
+  lib — no gfx/Dawn). It parses **138 real RB3 songs** from
+  arkhelper-extracted assets (`orig-assets/extracted/songs/songs.dta`), proving
+  the matched-fork DTA path runs clean under clang LP64. See
+  [`../../native/README.md`](../../native/README.md).
+- **Milestone (b) — full-engine link (IN PROGRESS, this session).** Flip
+  `rb3-native` to inject decomp context (`MILO_ENGINE_HAVE_CONTEXT=ON`, full
+  MWCC context injection), link the whole engine, and run to a controlled exit.
+  Then Phase 1's `.milo` scene-tree dump.
 
 - Create `rb3/native/` with CMakeLists that adds the engine via `add_subdirectory(${MILO_ENGINE_PATH})` and produces an empty `rb3-native` executable.
 - Create `rb3/native/src/mwcc_compat.h` — initially with `__alloca` fallback and `#pragma` no-ops for the directives clang doesn't recognize.

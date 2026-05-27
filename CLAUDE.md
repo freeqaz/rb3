@@ -103,6 +103,10 @@ RB3 shares the Milo engine with DC3 (Dance Central 3) at `/home/free/code/miloha
 
 The goal is a **native cross-platform port**, not a 100% match of the Wii binary. Match % is a means to faithful reimplementation, not the end.
 
+### Native Port Status
+
+The native port is tracked in **[docs/native/NATIVE_PORT_ROADMAP.md](docs/native/NATIVE_PORT_ROADMAP.md)** (canonical) and [docs/native/NATIVE_PORT_INVENTORY.md](docs/native/NATIVE_PORT_INVENTORY.md). **Phase 0 is COMPLETE.** RB3's native code lives in `rb3/native/`, which consumes the shared `../milo-native-engine` engine via `add_subdirectory` with a soft SHA pin (`MILO_ENGINE_PIN` in `native/CMakeLists.txt`). The working milestone-(a) tool is `rb3-dta` — a headless DTA parser that reads 138 real RB3 songs from extracted assets (`cmake -B build && cmake --build build` in `rb3/native/`; see [native/README.md](native/README.md)). Milestone (b) — full-engine link with MWCC context injection + Phase 1 `.milo` scene dump — is in progress.
+
 ### Current match (build/SZBE69_B8/report.json)
 
 Overall: **59.58% code / 75.54% functions** (31,163 / 41,254).

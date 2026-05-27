@@ -99,13 +99,15 @@ Per-file notes only where worth a comment:
 
 These files have engine-level intent but currently include game-specific or SDK-specific headers. Each gets a concrete factoring step before it moves.
 
+**Graduated (Phase 0.2):** `Rnd_Wgpu` (0.2a), `Memory_Native` (0.2b), and `ThreadCall_Native` (0.2b) have all been factored and now live in the engine — see the "SHARED — engine, day 1" tier; they're listed here only for the historical factoring record. Engine source count went 47→50 as a result. The remaining rows below (System_Native, ContentMgr, Achievements, MeshFilter) are still per-decomp until RB3 exercises them.
+
 | File | Coupling | Factoring step |
 |------|----------|----------------|
-| `platform/Rnd_Wgpu.cpp/.h` | Includes `hamobj/HamDirector.h`, `hamobj/HamCharacter.h`, `hamobj/HamGameData.h` for DC3-specific draw passes (HamDirector overlay, character render-to-texture loop). | Extract a `GameRenderHook` interface (engine-owned). DC3 supplies `HamRenderHook`, RB3 supplies `BandRenderHook`. The renderer calls into the hook for "draw your overlay" / "render impostors" without naming game types. The hook implementations stay per-decomp. **Done in Phase 0.2a.** |
+| `platform/Rnd_Wgpu.cpp/.h` | Includes `hamobj/HamDirector.h`, `hamobj/HamCharacter.h`, `hamobj/HamGameData.h` for DC3-specific draw passes (HamDirector overlay, character render-to-texture loop). | Extract a `GameRenderHook` interface (engine-owned). DC3 supplies `HamRenderHook`, RB3 supplies `BandRenderHook`. The renderer calls into the hook for "draw your overlay" / "render impostors" without naming game types. The hook implementations stay per-decomp. **DONE in Phase 0.2a — graduated into the engine.** |
 | `platform/MeshFilter.cpp/.h` | Hardcoded skip-list for Kinect UI elements (player indicators, controller_mode.flow meshes). | Replace hardcoded `if (name == "kinect_player_indicator_X")` with a game-supplied skip list registered at startup. RB3 supplies its own (likely empty or band-specific). |
 | `platform/System_Native.cpp` | Some inits assume DC3-shape (`TheLocale`, `TheHamUI` references; `Game::LoadSong` callbacks). | Audit `System_Native::Init`; factor any DC3-specific subsystem init calls into `dc3-decomp/native/src/dc3_system_init.cpp`. RB3 gets its own `rb3_system_init.cpp`. The engine version of `System_Native` only handles engine subsystems (Locale, Memory, ThreadCall, etc.). |
-| `platform/Memory_Native.cpp` | `#include "xdk/XAPILIB.h"` for `PhysMemTypeTracker` type. | Replace the include with a forward declaration of the Memory.h type (`PhysMemTypeTracker` is defined in shared `src/system/os/Memory.h`). DC3's matched fork keeps the type definition; the engine version's `.cpp` provides the no-op POSIX impls of `PhysicalFree`, `PhysicalUsage`, etc. without dragging in the XDK header. |
-| `platform/ThreadCall_Native.cpp` | `#include "xdk/XAPILIB.h"` for Win32 `HANDLE`, `WaitForSingleObject`, etc. The body uses these types to mimic Win32-shape thread synchronization. | Rewrite the body to use pthread directly without the Win32 type aliases. The engine version implements `os/ThreadCall.h` interface using `pthread_create` / `sem_t` / etc., no Win32 type names anywhere. DC3's matched fork's `os/ThreadCall_Xbox.cpp` still uses Win32 types and is excluded from the native link. |
+| `platform/Memory_Native.cpp` | `#include "xdk/XAPILIB.h"` for `PhysMemTypeTracker` type. | Replace the include with a forward declaration of the Memory.h type (`PhysMemTypeTracker` is defined in shared `src/system/os/Memory.h`). DC3's matched fork keeps the type definition; the engine version's `.cpp` provides the no-op POSIX impls of `PhysicalFree`, `PhysicalUsage`, etc. without dragging in the XDK header. **DONE in Phase 0.2b — graduated into the engine (no `xdk/` include).** |
+| `platform/ThreadCall_Native.cpp` | `#include "xdk/XAPILIB.h"` for Win32 `HANDLE`, `WaitForSingleObject`, etc. The body uses these types to mimic Win32-shape thread synchronization. | Rewrite the body to use pthread directly without the Win32 type aliases. The engine version implements `os/ThreadCall.h` interface using `pthread_create` / `sem_t` / etc., no Win32 type names anywhere. DC3's matched fork's `os/ThreadCall_Xbox.cpp` still uses Win32 types and is excluded from the native link. **DONE in Phase 0.2b — graduated into the engine (pthread + `sem_t`, no Win32 type names).** |
 | `platform/ContentMgr_Stub.cpp` | DLC catalog stub. Both games have DLC but different shapes (DC3 dance packs, RB3 song packs). | Inspect — if it's truly a no-op stub, share. If it references DC3 content types (`HamContent`, etc.), factor those out into per-decomp content stubs. |
 | `platform/Achievements_Stub.cpp` | Both games have achievements; DC3 has Kinect-pose-specific ones. | Share as a no-op base; per-game achievement registration stays per-decomp. |
 
@@ -294,10 +296,12 @@ Tool targets (`milo-viewer`, `milo2gltf`, `render-test`) are separate executable
 
 This inventory drives the Phase 0 deliverables in [NATIVE_PORT_ROADMAP.md](NATIVE_PORT_ROADMAP.md). The phases are reproduced here for cross-reference; the roadmap is authoritative.
 
-1. **Phase 0.1** — Stand up `milo-native-engine` repo. CMake scaffolding, empty `src/` tree, README. dc3-decomp **unchanged**.
-2. **Phase 0.2** — Move SHARED files into engine. Land `0.2a` (Rnd_Wgpu hook factoring) + `0.2b` (Win32 shim removal in Memory_Native + ThreadCall_Native). Update dc3-decomp's CMake to consume the engine. **Convergence test**: dc3-decomp's engine-only test subset still passes via `milo-engine-tests` target in the engine repo, plus dc3-only tests still pass in dc3-decomp.
-3. **Phase 0.3** — Bring up `rb3/native/` skeleton consuming engine. First link of `rb3-native` executable, even if it exits immediately on first frame.
-4. **Phase 0.4** — CI smoke for all three repos.
+**Phase 0 is COMPLETE (0.1–0.4 all closed).**
+
+1. **Phase 0.1 — DONE.** Stood up `milo-native-engine` repo. CMake scaffolding, empty `src/` tree, README. dc3-decomp **unchanged**.
+2. **Phase 0.2 — DONE.** Moved SHARED files into engine. Landed `0.2a` (Rnd_Wgpu hook factoring) + `0.2b` (Win32 shim removal in Memory_Native + ThreadCall_Native). dc3-decomp's CMake consumes the engine; all four DC3 consumers (dc3-native, milo-viewer, render-test, milo-tests) link `libmilo-engine.a`. **Convergence**: `milo-engine-tests` (in engine) at **195/195** + DC3's `milo-tests` at **371/371**.
+3. **Phase 0.3 — DONE.** Brought up `rb3/native/` consuming the engine. Milestone (a): headless `rb3-dta` parses 138 real RB3 songs. (Milestone (b) — full-engine link — is Phase-1 in-progress work.)
+4. **Phase 0.4 — DONE.** CI smoke workflows for all three repos.
 5. **Phase 1+** — As RB3 brings up subsystems, the remaining "cleanup" files (System_Native, ContentMgr, MeshFilter, Achievements) get factored *when RB3 actually exercises them*, not speculatively.
 
 ---
