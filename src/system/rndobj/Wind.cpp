@@ -134,7 +134,11 @@ END_HANDLERS
 
 BEGIN_PROPSYNCS(RndWind)
     SYNC_PROP(prevailing, mPrevailing)
+#ifndef HX_NATIVE
     SYNC_PROP(random, mRandom)
+#else
+    SYNC_PROP(Symbol("random"), mRandom)
+#endif
     SYNC_PROP_SET(wind_owner, mWindOwner, SetWindOwner(_val.Obj<RndWind>()))
     SYNC_PROP_MODIFY(time_loop, mTimeLoop, SyncLoops())
     SYNC_PROP_MODIFY(space_loop, mSpaceLoop, SyncLoops())

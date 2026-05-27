@@ -245,7 +245,11 @@ BEGIN_HANDLERS(RndEnviron)
     HANDLE_ACTION(remove_light, RemoveLight(_msg->Obj<RndLight>(2)))
     HANDLE(allowable_lights_real, OnAllowableLights_Real)
     HANDLE(allowable_lights_approx, OnAllowableLights_Approx)
+#ifndef HX_NATIVE
     HANDLE_ACTION(select, Select(nullptr))
+#else
+    HANDLE_ACTION(Symbol("select"), Select(nullptr))
+#endif
     HANDLE_SUPERCLASS(Hmx::Object)
     HANDLE_CHECK(582)
 END_HANDLERS
