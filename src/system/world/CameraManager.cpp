@@ -9,12 +9,14 @@
 #include "utl/VectorSizeDefs.h"
 #include <algorithm>
 
+#ifndef HX_NATIVE // STLport-internal __less specialization; absent on host STL
 namespace stlpmtx_std {
 
 template <>
 inline less<CameraManager::Category> __less<CameraManager::Category>(CameraManager::Category*) { return less<CameraManager::Category>(); }
 
 } // namespace stlpmtx_std
+#endif
 
 Rand CameraManager::sRand(0);
 int CameraManager::sSeed;

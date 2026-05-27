@@ -19,8 +19,10 @@
 #include "rndobj/MultiMesh.h"
 #include "rndobj/Poll.h"
 #include "rndobj/Trans.h"
-#include "rndwii/Mat.h"
+#ifndef HX_NATIVE
+#include "rndwii/Mat.h" // WiiMat (GX backend); replaced by the engine renderer
 #include "rndwii/Mesh.h"
+#endif
 #include "rndwii/Rnd.h"
 #include "stl/_pair.h"
 #include "utl/Loader.h"
@@ -525,10 +527,14 @@ void WorldCrowd::DrawShowing() {
                         const Transform &charWorldXfm = curChar->WorldXfm();
                         const RndEnvironTracker tracker(mEnviron, &charWorldXfm.v);
                         gImpostorCamera->Select();
+#ifndef HX_NATIVE
                         WiiMat::SetOverrideAlphaWrite(true);
+#endif
                         curChar->SetShowing(true);
                         curChar->DrawShowing();
+#ifndef HX_NATIVE
                         WiiMat::SetOverrideAlphaWrite(false);
+#endif
                         if (mEnviron) {
                             env->SetUseApproxGlobal(savedApprox);
                         }
@@ -1034,11 +1040,15 @@ DataNode WorldCrowd::OnIterateFrac(DataArray *da) {
 void WorldCrowd::CleanUpCrowdFloor() {
     Hmx::Object *miloObj = ObjectDir::Main()->FindObject("milo", false);
     if (!miloObj) {
+#ifndef HX_NATIVE
+        // WiiMesh::RemoveVertData frees the GX vert buffer; the native renderer
+        // owns vertex storage in the GPU backend, so there's nothing to free here.
         WiiMesh *mesh = dynamic_cast<WiiMesh *>(mPlacementMesh.Ptr());
         if (mesh)
             mesh->RemoveVertData();
         else
             MILO_WARN("WorldCrowd[%s] does not have a placement mesh.", PathName(this));
+#endif
     }
 }
 

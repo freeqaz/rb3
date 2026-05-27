@@ -617,7 +617,11 @@ void SpotDrawParams::Load(BinStream &bs, int rev) {
 BEGIN_HANDLERS(SpotlightDrawer)
     HANDLE_SUPERCLASS(RndDrawable)
     HANDLE_SUPERCLASS(Hmx::Object)
+#ifdef HX_NATIVE
+    HANDLE_ACTION(Symbol("select"), Select()) // `select` collides with POSIX select()
+#else
     HANDLE_ACTION(select, Select())
+#endif
     HANDLE_ACTION(deselect, DeSelect())
     HANDLE_CHECK(0x3E4)
 END_HANDLERS
