@@ -160,13 +160,30 @@ inline void SwapData(const void *v1, void *v2, int num_bytes) {
 
 void BinStream::ReadEndian(void *data, int bytes) {
     Read(data, bytes);
+#ifdef HX_NATIVE
+    // mLittleEndian describes the FILE's endianness, not the host's.
+    // On a little-endian host (x86_64/clang LP64), the file matches the host when
+    // it is LE, so we only swap when the file is big-endian (!mLittleEndian).
+    // (The matched PPC/Wii path below runs on a big-endian host and swaps when the
+    // file is LE.)
+    if (!mLittleEndian) {
+        SwapData(data, data, bytes);
+    }
+#else
     if (mLittleEndian) {
         SwapData(data, data, bytes);
     }
+#endif
 }
 
 void BinStream::WriteEndian(const void *void_data, int bytes) {
+#ifdef HX_NATIVE
+    // See ReadEndian: on a little-endian host, swap only when the target file is
+    // big-endian (!mLittleEndian).
+    if (!mLittleEndian) {
+#else
     if (mLittleEndian) {
+#endif
         u64 output[2];
         SwapData(void_data, output, bytes);
         Write(output, bytes);

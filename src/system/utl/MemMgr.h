@@ -35,10 +35,20 @@ public:
 MemHandle *_MemAllocH(int);
 void MemFreeH(MemHandle *);
 
+#ifdef HX_NATIVE
+// C++17 removed dynamic exception specifications (throw(...)), which CodeWarrior
+// still accepts. Use the C++17-conformant noexcept(false)/noexcept forms; on
+// LP64 size_t already matches the host operator new/delete signatures.
+void *operator new(size_t size);
+void operator delete(void *) noexcept;
+void *operator new[](size_t size);
+void operator delete[](void *) noexcept;
+#else
 void *operator new(size_t size) throw(std::bad_alloc);
 void operator delete(void *) throw();
 void *operator new[](size_t size) throw(std::bad_alloc);
 void operator delete[](void *) throw();
+#endif
 
 void *_MemAlloc(int, int);
 void *_MemAllocTemp(int, int);

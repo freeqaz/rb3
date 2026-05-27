@@ -769,10 +769,19 @@ void *MemResizeElem(void *&mem, int &totalSize, void *cutPoint, int cutLength, i
 }
 
 // Global new/delete operators - direct branches to _MemAlloc/_MemFree.
+#ifdef HX_NATIVE
+// C++17 removed dynamic exception specifications; use the conformant forms.
+// Signatures must match the declarations gated in MemMgr.h.
+void *operator new(size_t size) { return _MemAlloc(size, 0); }
+void *operator new[](size_t size) { return _MemAlloc(size, 0); }
+void operator delete(void *v) noexcept { _MemFree(v); }
+void operator delete[](void *v) noexcept { _MemFree(v); }
+#else
 void *operator new(size_t size) throw(std::bad_alloc) { return _MemAlloc(size, 0); }
 void *operator new[](size_t size) throw(std::bad_alloc) { return _MemAlloc(size, 0); }
 void operator delete(void *v) throw() { _MemFree(v); }
 void operator delete[](void *v) throw() { _MemFree(v); }
+#endif
 
 void PublicMemFree(void *v) { _MemFree(v); }
 

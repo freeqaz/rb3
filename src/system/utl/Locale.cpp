@@ -201,11 +201,24 @@ bool Locale::FindDataIndex(Symbol s, int &idx, bool fail) const {
     const char *sStr = s.mStr;
     while (high - low >= 0) {
         int mid = (low + high) >> 1;
+#ifdef HX_NATIVE
+        // The table is sorted by interned-string pointer (Symbol::operator<
+        // compares mStr). On LP64 casting the 8-byte pointer to int truncates it,
+        // which breaks the ordering and the binary search. Compare the pointers
+        // directly instead.
+        const char *midStr = mSymTable[mid].mStr;
+        if (sStr > midStr) {
+            low = mid + 1;
+        } else if (sStr < midStr) {
+            high = mid - 1;
+        } else {
+#else
         if ((int)sStr > (int)mSymTable[mid].mStr) {
             low = mid + 1;
         } else if ((int)sStr < (int)mSymTable[mid].mStr) {
             high = mid - 1;
         } else {
+#endif
             idx = mid;
             return true;
         }

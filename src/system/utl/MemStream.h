@@ -23,7 +23,14 @@ public:
     int Size() const { return mBuffer.size(); }
     void Resize(int size) { mBuffer.resize(size); }
     void Reserve(int size) { mBuffer.reserve(size); }
+#ifdef HX_NATIVE
+    // Host std::vector<char>::begin() returns an iterator object, not a raw
+    // pointer (STLport's does), so it won't implicitly convert to const char*.
+    // data() yields the contiguous storage pointer directly.
+    const char *Buffer() const { return mBuffer.data(); }
+#else
     const char *Buffer() const { return mBuffer.begin(); }
+#endif
 
     bool mFail; // 0xc
     int mTell; // 0x10

@@ -114,7 +114,10 @@ String &String::operator=(Symbol s) { return *this = s.mStr; }
 
 String &String::operator=(const String &str) {
     reserve(str.mCap);
-    strcpy(mStr, str.c_str());
+#ifdef HX_NATIVE
+    if (mStr != str.c_str()) // avoid ASan strcpy-param-overlap on self-assignment
+#endif
+        strcpy(mStr, str.c_str());
     return *this;
 }
 
