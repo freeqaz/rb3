@@ -11,6 +11,16 @@ class ObjList : public std::list<T> {
     typedef typename std::list<T> Base;
 
 public:
+#ifdef HX_NATIVE
+    // Host STL: std::list is a dependent base; pull its members into class scope
+    // so unqualified size()/back()/begin()/end() resolve to the base member
+    // instead of a file-scope `Symbol` shadow under -fms-compatibility.
+    using Base::back;
+    using Base::begin;
+    using Base::end;
+    using Base::size;
+#endif
+
     ObjList(Hmx::Object *o) : mOwner(o) {}
     Hmx::Object *mOwner;
 

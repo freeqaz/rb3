@@ -52,6 +52,7 @@
 // Explicit specializations to avoid bool materialization in comparison loops,
 // so CW calls String::operator< directly (bl __lt__6StringCFRC6String)
 // instead of generating mfcr/srwi./bne from inlined UIResource::Compare.
+#ifndef HX_NATIVE // STLport-internal sort specializations; absent on host STL
 namespace stlpmtx_std {
 
 template <>
@@ -162,6 +163,7 @@ void __introsort_loop<UIResource **, UIResource *, long, UIResource::Compare>(
 }
 
 } // namespace stlpmtx_std
+#endif // HX_NATIVE
 
 #pragma push
 #pragma dont_inline on

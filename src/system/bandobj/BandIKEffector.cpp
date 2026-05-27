@@ -1,4 +1,8 @@
+#ifndef HX_NATIVE
+// Suppresses Mtx.h's global Matrix3 Multiply for the MWCC paired-singles local
+// version; on native there's no asm local, so use the global Multiply (Rot.cpp).
 #define CHARHAIR_LOCAL_MULTIPLY
+#endif
 #include "bandobj/BandIKEffector.h"
 #include "char/CharBones.h"
 #include "char/CharClip.h"
