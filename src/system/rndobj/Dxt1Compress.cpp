@@ -372,22 +372,21 @@ void Dxt1Compress::storedxtencodedblock(
     int haveAlpha
 ) {
     char _slotpad[1]; (void)_slotpad;
-    int i;
+    unsigned int testerror;
+    unsigned short tempcolor;
+    unsigned int bits = 0;
     int j;
     int colors;
-    unsigned char *colorptr;
-    unsigned int testerror;
-    unsigned int testerror2;
-    unsigned int pixerror;
-    unsigned int pixerrorbest;
-    unsigned int bits = 0;
-    unsigned int bits2 = 0;
-    int colordist;
     unsigned char cv[4][4];
-    unsigned char enc = 0;
-    unsigned short color0;
+    unsigned int testerror2;
+    unsigned int bits2 = 0;
+    unsigned int pixerror;
+    int colordist;
+    int i;
     unsigned short color1;
-    unsigned short tempcolor;
+    unsigned char enc = 0;
+    unsigned int pixerrorbest;
+    unsigned short color0;
 
     bestcolor[0][0] = bestcolor[0][0] & 0xf8;
     bestcolor[0][1] = bestcolor[0][1] & 0xfc;
@@ -399,6 +398,7 @@ void Dxt1Compress::storedxtencodedblock(
     color0 = (unsigned short)(bestcolor[0][0] << 8 | bestcolor[0][1] << 3 | bestcolor[0][2] >> 3);
     color1 = (unsigned short)(bestcolor[1][0] << 8 | bestcolor[1][1] << 3 | bestcolor[1][2] >> 3);
     if (color0 < color1) {
+        unsigned char *colorptr;
         tempcolor = color0; color0 = color1; color1 = tempcolor;
         colorptr = bestcolor[0]; bestcolor[0] = bestcolor[1]; bestcolor[1] = colorptr;
     }
