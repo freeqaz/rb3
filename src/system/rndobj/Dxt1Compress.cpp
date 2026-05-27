@@ -371,14 +371,23 @@ void Dxt1Compress::storedxtencodedblock(
     unsigned int /*type*/,
     int haveAlpha
 ) {
-    int i, j, colors;
-    unsigned int testerror, testerror2, pixerror, pixerrorbest;
-    int colordist;
-    unsigned short color0, color1, tempcolor;
-    unsigned int bits = 0, bits2 = 0;
+    char _slotpad[1]; (void)_slotpad;
+    int i;
+    int j;
+    int colors;
     unsigned char *colorptr;
-    unsigned char enc = 0;
+    unsigned int testerror;
+    unsigned int testerror2;
+    unsigned int pixerror;
+    unsigned int pixerrorbest;
+    unsigned int bits = 0;
+    unsigned int bits2 = 0;
+    int colordist;
     unsigned char cv[4][4];
+    unsigned char enc = 0;
+    unsigned short color0;
+    unsigned short color1;
+    unsigned short tempcolor;
 
     bestcolor[0][0] = bestcolor[0][0] & 0xf8;
     bestcolor[0][1] = bestcolor[0][1] & 0xfc;

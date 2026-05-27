@@ -160,7 +160,7 @@ void RndTransformable::ApplyDynamicConstraint() {
         Multiply(mWorldXfm, mTarget->WorldXfm(), mWorldXfm);
     } else if (RndCam::sCurrent) {
         Vector3 v60;
-        const Transform &currentWorld = RndCam::sCurrent->WorldXfm();
+        Transform &currentWorld = RndCam::sCurrent->WorldXfm();
         if (mPreserveScale) {
             MakeScale(mWorldXfm.m, v60);
         }

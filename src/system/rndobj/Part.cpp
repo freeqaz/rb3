@@ -1026,6 +1026,7 @@ void RndParticleSys::UpdateParticles() {
     if (unke4 == 0.0f)
         unke4 = currentFrame;
 
+    Vector2 &_ref0 = mEmitRate;
     if (mNeedForward) {
         RunFastForward();
         if (!mFrameDrive)
@@ -1049,8 +1050,8 @@ void RndParticleSys::UpdateParticles() {
 
                 MoveParticles(currentFrame, frameUpdate);
 
-                if (mExplicitParts != 0 || !(mEmitRate.x <= 0.0f)
-                    || !(mEmitRate.y <= 0.0f) || mMaxBurst != 0) {
+                if (mExplicitParts != 0 || !(_ref0.x <= 0.0f)
+                    || !(_ref0.y <= 0.0f) || mMaxBurst != 0) {
                     Transform locToRel;
                     MakeLocToRel(locToRel);
 

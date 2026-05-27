@@ -1154,20 +1154,19 @@ void DecodeDxt3Alpha(unsigned char *uc, int i, int j, unsigned char &alpha) {
 }
 
 void DecodeDxt5Alpha(unsigned char *uc, int i, int j, unsigned char &alpha) {
-    int pixel = i + (j << 2);
+    unsigned char a0 = uc[0];
+    int code;
     unsigned char byteOffsets[16] = {
         0, 0, 0, 1, 1, 1, 2, 2,
         3, 3, 3, 4, 4, 4, 5, 5,
     };
+    unsigned char a1 = uc[1];
+    unsigned int byte = byteOffsets[i + (j << 2)];
     unsigned char bitOffsets[16] = {
         0, 3, 6, 1, 4, 7, 2, 5,
         0, 3, 6, 1, 4, 7, 2, 5,
     };
-    unsigned char a0 = uc[0];
-    unsigned char a1 = uc[1];
-    unsigned int bit = bitOffsets[pixel];
-    unsigned int byte = byteOffsets[pixel];
-    int code;
+    unsigned int bit = bitOffsets[i + (j << 2)];
     if (bit < 6) {
         code = (uc[byte + 2] >> bit) & 7;
     } else {

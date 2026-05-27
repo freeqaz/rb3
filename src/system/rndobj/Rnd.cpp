@@ -532,7 +532,7 @@ float Rnd::DrawTimers(float f) {
         if (lastMs >= 0.05f) {
             if (mVerboseTimers && AutoTimer::CollectingStats()) {
                 Symbol name = it->first.mName;
-                TimerStats &stats = it->second;
+                const TimerStats &stats = it->second;
                 DrawStringScreen(MakeString("%s %2.1f (%.2f, %.2f) %.2f", name, lastMs, stats.mAvgMs, stats.mStdDevMs, stats.mMaxMs), pos, barColor, true);
             } else {
                 Symbol name = it->first.mName;

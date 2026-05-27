@@ -1466,8 +1466,9 @@ int RndText::AddLineUTF8(
 }
 
 void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *bptr) {
-    MILO_ASSERT(idx < mLines.size(), 0x883);
-    Line &curLine = mLines[idx];
+    std::vector<Line> &_ref0 = mLines;
+    MILO_ASSERT(idx < _ref0.size(), 0x883);
+    Line &curLine = _ref0[idx];
     MILO_ASSERT(mMeshMap.size() < 10, 0x887);
     if (curLine.color == col)
         return;
