@@ -1055,7 +1055,9 @@ extern Symbol increment_sequence_arrow_x_shift;
 extern Symbol increment_sequence_arrow_y_shift;
 extern Symbol increment_song_review;
 extern Symbol indent;
-extern Symbol index;
+#ifndef HX_NATIVE
+extern Symbol index; // native: collides with POSIX index() (<strings.h>)
+#endif
 extern Symbol index_from_frame;
 extern Symbol indexed_song;
 extern Symbol indexParam;

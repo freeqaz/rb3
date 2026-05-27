@@ -148,7 +148,19 @@ void FileTerminate() {
     *gSystemRoot = 0;
 }
 
+#ifdef HX_NATIVE
+// Native file backend: a plain stdio-backed File. The Wii backends (ArkFile /
+// AsyncFile / FileCache) aren't on the DTA-parse path, so NewFile routes
+// straight to this for reads. Defined in native/src/rvl_shims.cpp.
+extern File *HmxNativeOpenFile(const char *path, int mode);
+#endif
+
 File *NewFile(const char *cc, int i) {
+#ifdef HX_NATIVE
+    if (!cc || !*cc)
+        return nullptr;
+    return HmxNativeOpenFile(cc, i);
+#endif
 #ifdef MILO_DEBUG
     if (gNullFiles)
         return new NullFile();
@@ -312,8 +324,13 @@ const char *FileMakePath(const char *root, const char *file, char *buffer) {
 
 const char *FileRelativePath(const char *root, const char *filepath) {
     MILO_ASSERT(root && filepath, 0x3A3);
+#ifdef HX_NATIVE
+    if (*filepath == '\0') // MWCC allowed char==nullptr; clang requires '\0'
+        return filepath;
+#else
     if (*filepath == nullptr)
         return filepath;
+#endif
     char rootBuf[256];
     char fpBuf[256];
     strcpy(rootBuf, root);
@@ -350,7 +367,11 @@ const char *FileRelativePath(const char *root, const char *filepath) {
             if (p != relative) {
                 *p++ = '/';
             }
+#ifdef HX_NATIVE
+            for (const char *pp = list220.front(); *pp != '\0'; pp++) {
+#else
             for (const char *pp = list220.front(); *pp != nullptr; pp++) {
+#endif
                 *p++ = *pp;
             }
             list220.pop_front();

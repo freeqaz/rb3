@@ -626,7 +626,9 @@ extern Symbol skip_to_shortcut;
 extern Symbol skip_to_unfocused;
 extern Symbol skipped_song;
 extern Symbol slaves;
-extern Symbol sleep;
+#ifndef HX_NATIVE
+extern Symbol sleep; // native: collides with POSIX sleep() (<unistd.h>)
+#endif
 extern Symbol sleeve;
 extern Symbol slide;
 extern Symbol slot;
@@ -1682,7 +1684,9 @@ extern Symbol vox_rating_4;
 extern Symbol vox_rating_5;
 extern Symbol vox_rating_6;
 extern Symbol w;
-extern Symbol wait;
+#ifndef HX_NATIVE
+extern Symbol wait; // native: collides with POSIX wait() (<sys/wait.h>)
+#endif
 extern Symbol wait_for;
 extern Symbol wait_for_event_received;
 extern Symbol wait_spread;

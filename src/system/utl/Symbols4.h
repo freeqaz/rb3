@@ -463,7 +463,9 @@ extern Symbol on_change_setlist_mode;
 extern Symbol on_downbeat;
 extern Symbol on_end;
 extern Symbol on_enter;
-extern Symbol on_exit;
+#ifndef HX_NATIVE
+extern Symbol on_exit; // native: collides with on_exit() (<stdlib.h>)
+#endif
 extern Symbol on_extra_loaded;
 extern Symbol on_fail;
 extern Symbol on_file_loaded;
@@ -985,7 +987,9 @@ extern Symbol radius;
 extern Symbol radius0;
 extern Symbol radius1;
 extern Symbol radius2;
-extern Symbol random;
+#ifndef HX_NATIVE
+extern Symbol random; // native: collides with random() (<stdlib.h>)
+#endif
 extern Symbol random_song;
 extern Symbol random_song_by_line;
 extern Symbol random_xfms;
@@ -1456,7 +1460,9 @@ extern Symbol section_name;
 extern Symbol sections;
 extern Symbol see_kick;
 extern Symbol segments;
-extern Symbol select;
+#ifndef HX_NATIVE
+extern Symbol select; // native: collides with select() (<sys/select.h>)
+#endif
 extern Symbol select_all;
 extern Symbol select_asset;
 extern Symbol select_camera;

@@ -1070,7 +1070,9 @@ Symbol increment_sequence_arrow_x_shift("increment_sequence_arrow_x_shift");
 Symbol increment_sequence_arrow_y_shift("increment_sequence_arrow_y_shift");
 Symbol increment_song_review("increment_song_review");
 Symbol indent("indent");
-Symbol index("index");
+#ifndef HX_NATIVE
+Symbol index("index"); // native: collides with POSIX index()
+#endif
 Symbol index_from_frame("index_from_frame");
 Symbol indexed_song("indexed_song");
 Symbol indexParam("indexParam");

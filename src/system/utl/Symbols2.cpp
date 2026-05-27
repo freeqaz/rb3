@@ -808,7 +808,9 @@ Symbol clip1("clip1");
 Symbol clip2("clip2");
 Symbol clips("clips");
 Symbol clockwise("clockwise");
-Symbol close("close");
+#ifndef HX_NATIVE
+Symbol close("close"); // native: collides with POSIX close()
+#endif
 Symbol close_nintendo_connection("close_nintendo_connection");
 Symbol closest_beat("closest_beat");
 Symbol closest_measure("closest_measure");

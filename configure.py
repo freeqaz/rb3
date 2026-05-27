@@ -138,7 +138,7 @@ if not config.non_matching:
 config.binutils_tag = "2.42-1"
 config.compilers_tag = "20240706"
 config.dtk_tag = "v1.3.0"
-config.objdiff_tag = "v4.1.0-milohax.1"  # freeqaz/objdiff fork release (linux-x86_64 asset)
+config.objdiff_tag = "v4.1.0"  # freeqaz/objdiff fork release (linux-x86_64 asset)
 config.sjiswrap_tag = "v1.2.0"
 config.wibo_tag = "0.6.16"
 

@@ -208,9 +208,18 @@ void ThreadTask::Poll(float f) {
 }
 
 BEGIN_HANDLERS(ThreadTask)
+#ifdef HX_NATIVE
+    // The `wait` / `sleep` Symbol globals collide with POSIX wait()/sleep() on
+    // native, so they're omitted from the Symbols tables there; intern the
+    // strings inline instead (identical interned Symbol).
+    HANDLE(Symbol("wait"), OnWait)
+    HANDLE(wait_timeout, OnWaitTimeout)
+    HANDLE(Symbol("sleep"), OnSleep)
+#else
     HANDLE(wait, OnWait)
     HANDLE(wait_timeout, OnWaitTimeout)
     HANDLE(sleep, OnSleep)
+#endif
     HANDLE(loop, OnLoop)
     HANDLE_STATIC(exit, OnExit)
     HANDLE(current, OnCurrent)

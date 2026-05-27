@@ -418,7 +418,13 @@ bool SearchReplace(
     changed = false;
 
     while (true) {
+#ifdef HX_NATIVE
+        // glibc's C++ strstr(const char*, ...) returns const char*; MWCC's
+        // returns char*. Cast to match the decomp's char* temp.
+        temp_r3 = const_cast<char *>(strstr(src, substr_old));
+#else
         temp_r3 = strstr(src, substr_old);
+#endif
         if (temp_r3 == 0)
             break;
         temp_r31 = temp_r3 - src;

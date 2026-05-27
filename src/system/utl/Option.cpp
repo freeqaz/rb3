@@ -45,12 +45,25 @@ static char **FindOption(const char *option) {
     return it;
 }
 
+#ifdef HX_NATIVE
+// MWCC/STLport vector iterators are raw pointers, so the decomp passes char**
+// straight to vector::erase. libstdc++'s erase wants a real iterator; convert
+// from the raw pointer via the element offset.
+static inline std::vector<char *>::iterator OptIter(char **p) {
+    return TheSystemArgs.begin() + (p - TheSystemArgs.data());
+}
+#endif
+
 bool OptionBool(const char *option, bool def) {
     char **opt = FindOption(option);
     if (opt == TheSystemArgs.end())
         return def;
     else {
+#ifdef HX_NATIVE
+        TheSystemArgs.erase(OptIter(opt));
+#else
         TheSystemArgs.erase(opt);
+#endif
         return !def;
     }
 }
@@ -60,10 +73,17 @@ const char *OptionStr(const char *option, const char *def) {
     if (i == TheSystemArgs.end())
         return def;
     else {
+#ifdef HX_NATIVE
+        char **erased = &*TheSystemArgs.erase(OptIter(i));
+        MILO_ASSERT(i != TheSystemArgs.end(), 0x5C);
+        def = *i;
+        TheSystemArgs.erase(OptIter(erased));
+#else
         char **erased = TheSystemArgs.erase(i);
         MILO_ASSERT(i != TheSystemArgs.end(), 0x5C);
         def = *i;
         TheSystemArgs.erase(erased);
+#endif
         return def;
     }
 }

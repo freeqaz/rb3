@@ -619,7 +619,9 @@ Symbol skip_to_shortcut("skip_to_shortcut");
 Symbol skip_to_unfocused("skip_to_unfocused");
 Symbol skipped_song("skipped_song");
 Symbol slaves("slaves");
-Symbol sleep("sleep");
+#ifndef HX_NATIVE
+Symbol sleep("sleep"); // native: collides with POSIX sleep()
+#endif
 Symbol sleeve("sleeve");
 Symbol slide("slide");
 Symbol Slider("Slider");
@@ -1715,7 +1717,9 @@ Symbol vox_rating_4("vox_rating_4");
 Symbol vox_rating_5("vox_rating_5");
 Symbol vox_rating_6("vox_rating_6");
 Symbol w("w");
-Symbol wait("wait");
+#ifndef HX_NATIVE
+Symbol wait("wait"); // native: collides with POSIX wait()
+#endif
 Symbol wait_for("wait_for");
 Symbol wait_for_event_received("wait_for_event_received");
 Symbol wait_spread("wait_spread");

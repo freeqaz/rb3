@@ -7,7 +7,13 @@
 DECOMP_FORCEACTIVE(SHA1, "rb")
 
 CSHA1::CSHA1() {
+#ifdef HX_NATIVE
+    // The decomp's `&m_block->c = &m_workspace;` is an MWCC artifact; the intent
+    // is to alias the workspace block over the byte buffer.
+    m_block = reinterpret_cast<SHA1_WORKSPACE_BLOCK *>(m_workspace);
+#else
     &m_block->c = &m_workspace;
+#endif
     Reset();
 }
 

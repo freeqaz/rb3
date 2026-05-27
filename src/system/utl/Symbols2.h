@@ -786,7 +786,9 @@ extern Symbol clip1;
 extern Symbol clip2;
 extern Symbol clips;
 extern Symbol clockwise;
-extern Symbol close;
+#ifndef HX_NATIVE
+extern Symbol close; // native: collides with POSIX close() (<unistd.h>)
+#endif
 extern Symbol close_nintendo_connection;
 extern Symbol closest_beat;
 extern Symbol closest_measure;

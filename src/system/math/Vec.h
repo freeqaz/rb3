@@ -227,6 +227,15 @@ inline void Scale(const Vector3 &v1, float f, Vector3 &dst) {
 inline float Average(const Vector2 &v) { return (v.x + v.y) / 2; }
 
 inline float Distance(const Vector3 &v1, const Vector3 &v2) {
+#ifndef __MWERKS__
+    // Native (clang): __vec2x32float__ and PPC paired-singles asm don't exist.
+    // Plain C++ Euclidean distance.
+    float dx = v1.x - v2.x;
+    float dy = v1.y - v2.y;
+    float dz = v1.z - v2.z;
+    float total = dx * dx + dy * dy + dz * dz;
+    return total > 0.0f ? __builtin_sqrtf(total) : 0.0f;
+#else
     register const Vector3 *_v1 = &v1;
     register const Vector3 *_v2 = &v2;
 
@@ -305,6 +314,7 @@ inline float Distance(const Vector3 &v1, const Vector3 &v2) {
     // clang-format on
 
     return total;
+#endif // __MWERKS__
 }
 
 inline void Subtract(const Vector3 &v1, const Vector3 &v2, Vector3 &dst) {
@@ -312,6 +322,11 @@ inline void Subtract(const Vector3 &v1, const Vector3 &v2, Vector3 &dst) {
 }
 
 inline float Length(const Vector3 &v1) {
+#ifndef __MWERKS__
+    // Native (clang): plain C++ vector length.
+    float total = v1.x * v1.x + v1.y * v1.y + v1.z * v1.z;
+    return total > 0.0f ? __builtin_sqrtf(total) : 0.0f;
+#else
     typedef __vec2x32float__ psq;
     register const Vector3 *_v1 = &v1;
 
@@ -382,6 +397,7 @@ inline float Length(const Vector3 &v1) {
     }
 
     return total;
+#endif // __MWERKS__
 }
 
 inline float LengthSquared(const Vector2 &v) {
@@ -470,6 +486,18 @@ inline void Cross(const Vector3 &v1, const Vector3 &v2, Vector3 &dst) {
 }
 
 inline void Normalize(register const Vector3 &v, register Vector3 &vout) {
+#ifndef __MWERKS__
+    // Native (clang): plain C++ normalize. (Under non-MWERKS, ASM_BLOCK(...)
+    // expands to nothing and __vec2x32float__ is undefined, so we can't use the
+    // PPC paired-singles path below.)
+    if (v.x != 0 || v.y != 0 || v.z != 0) {
+        float total = v.x * v.x + v.y * v.y + v.z * v.z;
+        float inv = total > 0.0f ? 1.0f / __builtin_sqrtf(total) : 0.0f;
+        vout.Set(v.x * inv, v.y * inv, v.z * inv);
+    } else {
+        vout.Set(0, 0, 0);
+    }
+#else
     if (v.x != 0 || v.y != 0 || v.z != 0) {
         register __vec2x32float__ x;
         register __vec2x32float__ z;
@@ -512,6 +540,7 @@ inline void Normalize(register const Vector3 &v, register Vector3 &vout) {
     } else {
         vout.Set(0, 0, 0);
     }
+#endif // __MWERKS__
 }
 
 inline float operator*(const Vector3 &v1, const Vector3 &v2) {

@@ -135,7 +135,12 @@ void Debug::Fail(const char *msg) {
         }
         if (mTry != 0) {
             mTry--;
+#ifdef HX_NATIVE
+            // glibc longjmp takes jmp_buf (array, decays to ptr); MWCC took &buf.
+            longjmp(TheDebugJump, (int)msg);
+#else
             longjmp(&TheDebugJump, (int)msg);
+#endif
         }
         if (mFailing)
             MemPopHeap();

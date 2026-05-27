@@ -1019,6 +1019,28 @@ void MemInit() {
 }
 
 void *_MemAlloc(int iSizeBytes, int align) {
+#ifdef HX_NATIVE
+    // Native build replaces the Wii Heap machinery (gHeaps/gHeapData/MemInit are
+    // Wii-boot state that doesn't exist here) with the host allocator. align is
+    // honored via posix_memalign for the few callers that pass one.
+    //
+    // The Wii allocator rounds every allocation up to a word-multiple (min ~12B)
+    // and 32B-aligns blocks; some decomp code quietly relies on that slack
+    // (writes a few bytes past the requested size). To preserve that behaviour
+    // (and avoid tripping glibc's tight-chunk overflow detector) we round the
+    // request up to a 32-byte multiple and 32-byte-align by default.
+    size_t want = (iSizeBytes > 0) ? (size_t)iSizeBytes : 1;
+    want = (want + 31u) & ~31u; // round up to 32
+    size_t a = (size_t)(align > 0 ? align : 32);
+    if (a < 32)
+        a = 32;
+    if ((a & (a - 1)) != 0) // ensure power-of-two
+        a = 32;
+    void *p = nullptr;
+    if (posix_memalign(&p, a, want) != 0)
+        p = nullptr;
+    return p;
+#else
     if (!gMemInited) {
         MemInit();
     }
@@ -1131,6 +1153,7 @@ void *_MemAlloc(int iSizeBytes, int align) {
     MILO_ASSERT(allocated_mem, 0x98a);
     MILO_ASSERT(allocated_mem != (void *)0x01000000, 0x98b);
     return allocated_mem;
+#endif // HX_NATIVE
 }
 
 extern char gZeroAllocBuf[0x20];
@@ -1158,6 +1181,11 @@ MemHandle *_MemAllocH(int size) {
 void _MemFree(void *mem) {
     if (mem == nullptr) return;
     if (mem == gZeroAllocBuf) return;
+#ifdef HX_NATIVE
+    // Matches the HX_NATIVE _MemAlloc above (host malloc/posix_memalign).
+    ::free(mem);
+    return;
+#else
     if (mem == g_pRSOReserveBuf) return;
     CritSecTracker tracker(gMemLock);
     MILO_ASSERT(!gInsideMemFunc, 0x9b7);
@@ -1171,6 +1199,7 @@ void _MemFree(void *mem) {
         WiiFree(mem);
     }
     gInsideMemFunc = false;
+#endif // HX_NATIVE
 }
 
 
@@ -1355,3 +1384,15 @@ void MemPrintOverview(int heapIdx, TextStream &stream) {
         }
     }
 }
+
+#ifdef HX_NATIVE
+// On Wii these live in boot data / excluded platform TUs (Mem_Wii.cpp). The
+// native allocator (HX_NATIVE _MemAlloc/_MemFree above) doesn't use the Wii
+// Heap machinery, but the surrounding compiled-but-unused code still references
+// these symbols, so define them here with inert values. HeapDesc is file-local,
+// so the gHeapData definition must live in this TU.
+char gZeroAllocBuf[0x20] = {0};
+int gDefaultHeap = -1;
+int gSuppressPointTest = 0;
+HeapDesc gHeapData[4] = {};
+#endif

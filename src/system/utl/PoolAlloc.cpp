@@ -160,6 +160,12 @@ bool AddrIsInPool(void *addr, PoolType pool) {
 }
 
 void *_PoolAlloc(int classSize, int reqSize, PoolType pool) {
+#ifdef HX_NATIVE
+    // Native build has no Wii fixed-size pools / ChunkAllocator (gChunkAlloc and
+    // the heap descriptors are Wii-boot data that don't exist here). Route pool
+    // allocations straight through the (malloc-backed) general allocator.
+    return _MemAlloc(classSize, 0x20);
+#else
     if (MemTempAllocationsEnabled()) {
         bool notPoolSize = true;
         switch (reqSize) {
@@ -208,9 +214,14 @@ void *_PoolAlloc(int classSize, int reqSize, PoolType pool) {
     }
     MILO_ASSERT(reqSize == classSize, 0x1FA);
     return gChunkAlloc[pool]->Alloc(classSize);
+#endif // HX_NATIVE
 }
 
 void _PoolFree(int size, PoolType pool, void *addr) {
+#ifdef HX_NATIVE
+    // Mirror _PoolAlloc: everything came from the general allocator.
+    _MemFree(addr);
+#else
     if (!AddrIsInPool(addr, pool)) {
         _MemFree(addr);
     } else if (addr) {
@@ -218,4 +229,12 @@ void _PoolFree(int size, PoolType pool, void *addr) {
         MILO_ASSERT(gChunkAlloc[pool], 0x22F);
         gChunkAlloc[pool]->Free(addr, size);
     }
+#endif
 }
+
+#ifdef HX_NATIVE
+// Defined here (ChunkAllocator visible) because the Wii pool data lives in an
+// excluded TU. The native _PoolAlloc/_PoolFree never use these, but other
+// compiled-but-unused functions reference the symbol.
+ChunkAllocator *gChunkAlloc[2] = {nullptr, nullptr};
+#endif

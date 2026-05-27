@@ -471,7 +471,9 @@ Symbol on_change_setlist_mode("on_change_setlist_mode");
 Symbol on_downbeat("on_downbeat");
 Symbol on_end("on_end");
 Symbol on_enter("on_enter");
-Symbol on_exit("on_exit");
+#ifndef HX_NATIVE
+Symbol on_exit("on_exit"); // native: collides with on_exit()
+#endif
 Symbol on_extra_loaded("on_extra_loaded");
 Symbol on_fail("on_fail");
 Symbol on_file_loaded("on_file_loaded");
@@ -1022,7 +1024,9 @@ Symbol radius("radius");
 Symbol radius0("radius0");
 Symbol radius1("radius1");
 Symbol radius2("radius2");
-Symbol random("random");
+#ifndef HX_NATIVE
+Symbol random("random"); // native: collides with random()
+#endif
 Symbol random_song("random_song");
 Symbol random_song_by_line("random_song_by_line");
 Symbol random_xfms("random_xfms");
@@ -1496,7 +1500,9 @@ Symbol section_name("section_name");
 Symbol sections("sections");
 Symbol see_kick("see_kick");
 Symbol segments("segments");
-Symbol select("select");
+#ifndef HX_NATIVE
+Symbol select("select"); // native: collides with select()
+#endif
 Symbol select_all("select_all");
 Symbol select_asset("select_asset");
 Symbol select_camera("select_camera");
