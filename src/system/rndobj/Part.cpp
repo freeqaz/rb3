@@ -1,4 +1,9 @@
+#ifndef HX_NATIVE
+// Suppresses Mtx.h's global Matrix3 Multiply so the MWCC paired-singles local
+// version (below, __MWERKS__-gated) is used. On native there's no asm local, so
+// keep the macro undefined and use the global Multiply (defined in Rot.cpp).
 #define CHARHAIR_LOCAL_MULTIPLY
+#endif
 #include "rndobj/Part.h"
 #include "math/Mtx.h"
 #include "math/Rand.h"

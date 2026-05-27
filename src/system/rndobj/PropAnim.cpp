@@ -527,9 +527,17 @@ DataNode RndPropAnim::ForeachKeyframe(const DataArray *da) {
                     curBoolKey.value = sKeyReplace.Int();
                 } break;
                 case PropKeys::kSymbol: {
+#ifdef HX_NATIVE
+                    // DataNode::Sym() returns by value on host STL; can't take the
+                    // address of the temporary. Assign the value directly.
+                    Symbol replaceSym = sKeyReplace.Sym();
+                    Key<Symbol> &curSymKey = theKeys->AsSymbolKeys()[i];
+                    curSymKey.value = replaceSym;
+#else
                     Symbol *replaceSym = &sKeyReplace.Sym();
                     Key<Symbol> &curSymKey = theKeys->AsSymbolKeys()[i];
                     curSymKey.value = *replaceSym;
+#endif
                 } break;
                 default:
                     MILO_WARN("%s can not replace key, unknown type", PathName(this));
@@ -632,7 +640,15 @@ DataNode RndPropAnim::OnGetIndexFromFrame(const DataArray *da) {
     if (!keys)
         return -1;
     else
+#ifdef HX_NATIVE
+    {
+        // can't take the address of a temporary DataNode under standard C++
+        DataNode tmp(0);
+        return ValueFromFrame(keys, f, &tmp);
+    }
+#else
         return ValueFromFrame(keys, f, &DataNode(0));
+#endif
 }
 
 DataNode RndPropAnim::OnGetFrameFromIndex(const DataArray *da) {

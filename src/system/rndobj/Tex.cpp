@@ -19,10 +19,19 @@ bool UseBottomMip() {
 
 void CopyBottomMip(RndBitmap &dst, const RndBitmap &src) {
     MILO_ASSERT(&src != &dst, 48);
+#ifdef HX_NATIVE
+    // matched src walks the mip chain by rebinding `src` (`&src = src.mMip`),
+    // which isn't valid C++; use a pointer to reach the bottom mip instead.
+    const RndBitmap *s = &src;
+    while (s->mMip)
+        s = s->mMip;
+    dst.Create(*s, s->mBpp, s->mOrder, NULL);
+#else
     while (src.mMip) {
         &src = src.mMip;
     }
     dst.Create(src, src.mBpp, src.mOrder, NULL);
+#endif
 }
 
 RndTex::RndTex()
@@ -399,16 +408,30 @@ void RndTex::PostLoad(BinStream &bs) {
             RELEASE(mLoader);
         }
         BufStream bufs(buffer, size, true);
+#ifdef HX_NATIVE
+        // matched src rebinds the reference (`&bs = &bufs`); can't rebind under
+        // standard C++, so route the post-switch reads through a chosen ref.
+        BinStream &bs2 = buffer ? static_cast<BinStream &>(bufs) : bs;
+#else
         if (buffer)
             &bs = &bufs;
+#endif
         PresyncBitmap();
         if (UseBottomMip()) {
             RndBitmap someotherbmap;
+#ifdef HX_NATIVE
+            bs2 >> someotherbmap;
+#else
             bs >> someotherbmap;
             // someotherbmap.Load(bs);
+#endif
             CopyBottomMip(mBitmap, someotherbmap);
         } else
+#ifdef HX_NATIVE
+            mBitmap.Load(bs2);
+#else
             mBitmap.Load(bs);
+#endif
         if (buffer)
             _MemFree(buffer);
         mNumMips = mBitmap.NumMips();

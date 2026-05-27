@@ -14,7 +14,13 @@ class MetaMusicLoader : public Loader {
 public:
     MetaMusicLoader(File *f, int &bytes, unsigned char *buf, int size);
     virtual ~MetaMusicLoader() {}
+#ifdef HX_NATIVE
+    // mState is a pointer-to-member; clang needs the explicit &Class::member form
+    // (MWCC accepted the bare member-function name).
+    virtual bool IsLoaded() const { return mState == &MetaMusicLoader::DoneLoading; }
+#else
     virtual bool IsLoaded() const { return mState == DoneLoading; }
+#endif
     virtual void PollLoading() {
         while (!TheLoadMgr.CheckSplit() && TheLoadMgr.GetFirstLoading() == this
                && !IsLoaded()) {

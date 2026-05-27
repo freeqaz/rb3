@@ -18,6 +18,18 @@ public:
     typedef typename Base::iterator iterator;
     typedef typename Base::const_iterator const_iterator;
 
+#ifdef HX_NATIVE
+    // Host STL (non-STLport): std::vector is a *dependent* base, so unqualified
+    // size()/back()/begin()/end() in the member bodies below are not found by
+    // ordinary class-scope lookup and -fms-compatibility resolves them to a
+    // file-scope `Symbol size`/`back` shadow ("type 'Symbol' does not provide a
+    // call operator"). Pull the base members into class scope so they win.
+    using Base::back;
+    using Base::begin;
+    using Base::end;
+    using Base::size;
+#endif
+
     ObjVector(Hmx::Object *o) : mOwner(o) {}
     Hmx::Object *mOwner;
 

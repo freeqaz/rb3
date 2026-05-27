@@ -219,7 +219,12 @@ DataNode RndAnimatable::OnAnimate(DataArray *arr) {
     arr->FindData(delay, local_delay, false);
     arr->FindData(units, (int &)local_units, false);
     arr->FindData(name, local_name, false);
+#ifdef HX_NATIVE
+    // `wait` Symbol global collides with POSIX wait(); intern inline (same Symbol).
+    arr->FindData(Symbol("wait"), local_wait, false);
+#else
     arr->FindData(wait, local_wait, false);
+#endif
     DataArray *rangeArr = arr->FindArray(range, false);
     if (rangeArr) {
         animTaskStart = rangeArr->Float(1);

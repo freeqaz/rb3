@@ -95,7 +95,15 @@ void RndMultiMesh::InvalidateProxies() {
              it != sProxyPool.end();
              ++it) {
             if (it->first->mMultiMesh == this) {
+#ifdef HX_NATIVE
+                // STLport's list iterator was a pointer (so `0` bound); host STL's
+                // is a class — pass a default-constructed iterator instead.
+                it->first->SetMultiMesh(
+                    0, std::list<RndMultiMesh::Instance>::iterator()
+                );
+#else
                 it->first->SetMultiMesh(0, 0);
+#endif
             }
         }
     } else

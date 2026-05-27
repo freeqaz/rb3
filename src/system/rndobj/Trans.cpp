@@ -301,7 +301,7 @@ BEGIN_LOADS(RndTransformable)
         bs >> (int &)mConstraint;
         break;
     case 7:
-    case 8:
+    case 8: {
         bs >> (int &)mConstraint;
         unsigned short svar2 = mConstraint;
         if (mConstraint == 4) {
@@ -310,6 +310,7 @@ BEGIN_LOADS(RndTransformable)
             mConstraint += 1;
         }
         break;
+    }
     case 6:
         bs >> (int &)mConstraint;
         mPreserveScale = mConstraint > kTargetWorld;
@@ -323,7 +324,7 @@ BEGIN_LOADS(RndTransformable)
         break;
     case 3:
     case 4:
-    case 5:
+    case 5: {
         int unkb0;
         bs >> unkb0;
         mPreserveScale = unkb0 >> 7 & 1;
@@ -353,8 +354,9 @@ BEGIN_LOADS(RndTransformable)
             break;
         }
         break;
+    }
     case 1:
-    case 2:
+    case 2: {
         uint numb4;
         bs >> numb4;
         int sp80[6] = { 0, 0, 0, 5, 6, 7 };
@@ -364,6 +366,7 @@ BEGIN_LOADS(RndTransformable)
             mConstraint = sp80[numb4];
         }
         break;
+    }
     case 0:
         break;
     }

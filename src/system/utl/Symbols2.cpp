@@ -1400,7 +1400,9 @@ Symbol enumerate_messages("enumerate_messages");
 Symbol enumerate_online("enumerate_online");
 Symbol enumerate_pending("enumerate_pending");
 Symbol env_override("env_override");
-Symbol environ("environ");
+#ifndef HX_NATIVE
+Symbol environ("environ"); // native: collides with POSIX `char **environ`
+#endif
 Symbol environ_3d("environ_3d");
 Symbol environ_map("environ_map");
 Symbol environ_map_specmask("environ_map_specmask");

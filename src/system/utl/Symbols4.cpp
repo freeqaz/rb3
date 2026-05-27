@@ -670,7 +670,9 @@ Symbol patchnum("patchnum");
 Symbol path("path");
 Symbol path_frame("path_frame");
 Symbol path_name("path_name");
-Symbol pause("pause");
+#ifndef HX_NATIVE
+Symbol pause("pause"); // native: collides with POSIX pause()
+#endif
 Symbol pause_all_sfx("pause_all_sfx");
 Symbol pause_ambient_loop("pause_ambient_loop");
 Symbol pause_guide_track("pause_guide_track");

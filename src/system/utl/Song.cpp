@@ -377,7 +377,11 @@ BEGIN_HANDLERS(Song)
     HANDLE_ACTION(set_loop_start, SetLoopStart(_msg->Float(2)))
     HANDLE_ACTION(set_loop_end, SetLoopEnd(_msg->Float(2)))
     HANDLE_ACTION(play, Play())
+#ifdef HX_NATIVE
+    HANDLE_ACTION(Symbol("pause"), Pause()) // `pause` collides with POSIX pause()
+#else
     HANDLE_ACTION(pause, Pause())
+#endif
     HANDLE_EXPR(song_name, mSongName)
     HANDLE(mbt_from_seconds, OnMBTFromSeconds)
     HANDLE_ACTION(add_section, AddSection(_msg->Sym(2), _msg->Float(3)))

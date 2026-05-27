@@ -947,7 +947,9 @@ Symbol switch_to_index("switch_to_index");
 Symbol switch_to_new("switch_to_new");
 Symbol Sym("Sym");
 Symbol symbol("symbol");
-Symbol sync("sync");
+#ifndef HX_NATIVE
+Symbol sync("sync"); // native: collides with POSIX sync()
+#endif
 Symbol sync_anim("sync_anim");
 Symbol sync_color("sync_color");
 Symbol sync_color_fade("sync_color_fade");

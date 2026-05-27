@@ -1,5 +1,9 @@
 #include "rndobj/MeshDeform.h"
+#ifdef HX_NATIVE
+#include <cstring> // MWCC's MSL_Common/extras.h provides memcpy; use libc on native
+#else
 #include "MSL_Common/extras.h"
+#endif
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "obj/PropSync_p.h"

@@ -1,5 +1,9 @@
 #include "rndobj/Utl.h"
+#ifdef HX_NATIVE
+#include <cstring> // MWCC's MSL_Common/extras.h provides mem*; use libc on native
+#else
 #include "MSL_Common/extras.h"
+#endif
 #include "decomp.h"
 #include "math/Color.h"
 #include "math/Geo.h"

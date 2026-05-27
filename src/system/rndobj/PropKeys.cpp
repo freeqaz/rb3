@@ -762,7 +762,12 @@ int QuatKeys::SetKey(float frame) {
             Key<Hmx::Quat> key;
             key.frame = frame;
             key.value.w = key.value.z = key.value.y = key.value.x = 0.0f;
+#ifdef HX_NATIVE
+            // host STL insert takes a const_iterator, not a raw element pointer
+            this->insert(this->begin() + bound, key);
+#else
             insert(&(*this)[bound], key);
+#endif
             retVal = bound;
         }
         SetToCurrentVal(retVal);
@@ -783,7 +788,12 @@ int Vector3Keys::SetKey(float frame) {
             Key<Vector3> key;
             key.frame = frame;
             key.value.z = key.value.y = key.value.x = 0.0f;
+#ifdef HX_NATIVE
+            // host STL insert takes a const_iterator, not a raw element pointer
+            this->insert(this->begin() + bound, key);
+#else
             insert(&(*this)[bound], key);
+#endif
             retVal = bound;
         }
         SetToCurrentVal(retVal);

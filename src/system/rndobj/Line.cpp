@@ -25,6 +25,7 @@
 // inlines+unrolls the loop. The sub-object grouping below (Vector3 = 3 words,
 // Color32 = 1 word, then a 3-word + 6-word split of the 9 unk floats) is what
 // reproduces the target's exact load/store pairing schedule.
+#ifndef HX_NATIVE // STLport-internal __copy_ptrs specialization; absent on host STL
 namespace stlpmtx_std {
 
 struct _RndLineW3 { unsigned int a, b, c; };
@@ -88,6 +89,7 @@ __copy_backward_ptrs<RndLine::Point*, RndLine::Point*>(
 }
 
 } // namespace stlpmtx_std
+#endif // HX_NATIVE
 
 // Defined in Geo.cpp but not declared in Geo.h.
 void Intersect(const Hmx::Ray &r1, const Hmx::Ray &r2, Vector2 &out);

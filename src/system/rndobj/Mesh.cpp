@@ -411,7 +411,7 @@ void RndMesh::PreLoadVertices(BinStream &bs) {
     }
 }
 
-void RndMesh::PostLoadVertices(BinStream &bs) {
+void RndMesh::PostLoadVertices(BinStream &bsIn) {
     void *buf = 0;
     int len = 0;
     if (mFileLoader) {
@@ -420,8 +420,15 @@ void RndMesh::PostLoadVertices(BinStream &bs) {
         (delete mFileLoader, mFileLoader = 0);
     }
     BufStream bfs(buf, len, true);
+#ifdef HX_NATIVE
+    // matched src rebinds the reference via `&bs = &bfs`; references can't be
+    // rebound under standard C++, so pick the stream up front instead.
+    BinStream &bs = buf ? static_cast<BinStream &>(bfs) : bsIn;
+#else
+    BinStream &bs = bsIn;
     if (buf)
         &bs = &bfs;
+#endif
     int count;
     bs >> count;
     bool b58;

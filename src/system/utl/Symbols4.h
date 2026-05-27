@@ -646,7 +646,9 @@ extern Symbol patchnum;
 extern Symbol path;
 extern Symbol path_frame;
 extern Symbol path_name;
-extern Symbol pause;
+#ifndef HX_NATIVE
+extern Symbol pause; // native: collides with POSIX pause() (<unistd.h>)
+#endif
 extern Symbol pause_all_sfx;
 extern Symbol pause_ambient_loop;
 extern Symbol pause_guide_track;

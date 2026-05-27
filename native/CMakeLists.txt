@@ -88,7 +88,8 @@ set(MILO_ENGINE_DECOMP_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
     ${REPO_ROOT}/src
     ${REPO_ROOT}/src/system
-    ${REPO_ROOT}/src/system/oggvorbis)
+    ${REPO_ROOT}/src/system/oggvorbis
+    ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt's <angled> sibling includes
 set(MILO_ENGINE_DECOMP_COMPAT_FLAGS ${DECOMP_FLAGS})
 
 # Engine platform/audio/char TUs that are DC3-shaped against subsystem headers
@@ -188,12 +189,19 @@ file(GLOB ENGINE_OBJ    ${REPO_ROOT}/src/system/obj/*.cpp)
 file(GLOB ENGINE_UTL    ${REPO_ROOT}/src/system/utl/*.cpp)
 file(GLOB ENGINE_OS     ${REPO_ROOT}/src/system/os/*.cpp)
 file(GLOB ENGINE_MATH   ${REPO_ROOT}/src/system/math/*.cpp)
+file(GLOB ENGINE_RNDOBJ ${REPO_ROOT}/src/system/rndobj/*.cpp)
+file(GLOB ENGINE_SYNTH  ${REPO_ROOT}/src/system/synth/*.cpp)
 
 # --- DTA harness source set (milestone a): obj/utl/os/math only ---
 set(DTA_FORK_SOURCES ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH})
 
-# --- native harness source set (milestone b): same proven-clean subset ---
-set(NATIVE_FORK_SOURCES ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH})
+# --- native harness source set (milestone b): obj/utl/os/math + rndobj/synth.
+# rndobj/synth are now clang-LP64-clean (HX_NATIVE matched-fork bring-up), so the
+# object factories they define register at static-init -> full object-graph load
+# (vs the earlier header-only dump). Platform/GFX-backend TUs are filtered below. ---
+set(NATIVE_FORK_SOURCES
+    ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH}
+    ${ENGINE_RNDOBJ} ${ENGINE_SYNTH})
 
 # Shared exclusions applied to BOTH source sets.
 #
@@ -251,7 +259,8 @@ function(rb3_configure_target tgt)
         ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
         ${REPO_ROOT}/src
         ${REPO_ROOT}/src/system
-        ${REPO_ROOT}/src/system/oggvorbis)
+        ${REPO_ROOT}/src/system/oggvorbis
+        ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt's <angled> sibling includes
     target_link_libraries(${tgt} PRIVATE milo-engine Threads::Threads)
     if(ZLIB_FOUND)
         target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
@@ -290,5 +299,8 @@ add_executable(rb3-native
     ${NATIVE_FORK_SOURCES}
     ${DTA_LEXER}
     ${NATIVE_SHIMS}
+    # weak no-op stubs for the off-path symbols rndobj/synth pull in
+    # (Wii GX backend, Bink, libogg, tomcrypt, Striper, engine GPU, game globals)
+    ${CMAKE_SOURCE_DIR}/src/rndobj_synth_link_stubs.s
 )
 rb3_configure_target(rb3-native)

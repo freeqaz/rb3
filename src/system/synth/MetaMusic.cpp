@@ -10,7 +10,11 @@ inline MetaMusicLoader::MetaMusicLoader(File *f, int &bytes, unsigned char *buf,
     : Loader(FilePath(""), kLoadFront), mFile(f), mBytesRead(bytes), mBuf(buf),
       mBufSize(size) {
     MILO_ASSERT(mFile, 0x2A);
+#ifdef HX_NATIVE
+    mState = &MetaMusicLoader::OpenFile; // clang needs explicit &Class::member
+#else
     mState = OpenFile;
+#endif
 }
 
 MetaMusic::MetaMusic(const char *cc)
@@ -75,12 +79,20 @@ void MetaMusic::Load(const char *cc, float f, bool b1, bool b2) {
 
 void MetaMusicLoader::OpenFile() {
     mFile->ReadAsync(mBuf, mBufSize);
+#ifdef HX_NATIVE
+    mState = &MetaMusicLoader::LoadFile;
+#else
     mState = LoadFile;
+#endif
 }
 
 void MetaMusicLoader::LoadFile() {
     if (mFile->ReadDone(mBytesRead)) {
+#ifdef HX_NATIVE
+        mState = &MetaMusicLoader::DoneLoading;
+#else
         mState = DoneLoading;
+#endif
     }
 }
 

@@ -65,6 +65,21 @@ BinStream &operator<<(BinStream &bs, const Key<T> &key) {
 template <class T1, class T2>
 class Keys : public std::vector<Key<T1> > {
 public:
+#ifdef HX_NATIVE
+    // Host STL: std::vector is a dependent base; pull its members into class
+    // scope so the unqualified size()/front()/back()/etc. below resolve to the
+    // base member instead of a file-scope `Symbol` shadow under -fms-compat.
+    typedef std::vector<Key<T1> > _KeysBase;
+    using _KeysBase::back;
+    using _KeysBase::begin;
+    using _KeysBase::empty;
+    using _KeysBase::end;
+    using _KeysBase::erase;
+    using _KeysBase::front;
+    using _KeysBase::insert;
+    using _KeysBase::size;
+#endif
+
     /** Get the number of keyframes in this collection. */
     int NumKeys() const { return size(); }
 

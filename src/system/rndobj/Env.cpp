@@ -54,7 +54,11 @@ RndEnviron::RndEnviron()
 RndEnviron::~RndEnviron() {
     if (sCurrent == this) {
         sCurrent = nullptr;
+#ifdef HX_NATIVE
+        sCurrentPosSet = false; // matched src assigns nullptr to a bool (MWCC-tolerated)
+#else
         sCurrentPosSet = nullptr;
+#endif
         sCurrentPos.Zero();
     }
 }
@@ -245,7 +249,11 @@ BEGIN_HANDLERS(RndEnviron)
     HANDLE_ACTION(remove_light, RemoveLight(_msg->Obj<RndLight>(2)))
     HANDLE(allowable_lights_real, OnAllowableLights_Real)
     HANDLE(allowable_lights_approx, OnAllowableLights_Approx)
+#ifdef HX_NATIVE
+    HANDLE_ACTION(Symbol("select"), Select(nullptr)) // `select` collides with POSIX select()
+#else
     HANDLE_ACTION(select, Select(nullptr))
+#endif
     HANDLE_SUPERCLASS(Hmx::Object)
     HANDLE_CHECK(582)
 END_HANDLERS

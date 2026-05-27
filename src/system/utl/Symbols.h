@@ -948,7 +948,9 @@ extern Symbol SWING;
 extern Symbol switch_to_index;
 extern Symbol switch_to_new;
 extern Symbol symbol;
-extern Symbol sync;
+#ifndef HX_NATIVE
+extern Symbol sync; // native: collides with POSIX sync() (<unistd.h>)
+#endif
 extern Symbol sync_anim;
 extern Symbol sync_color;
 extern Symbol sync_color_fade;

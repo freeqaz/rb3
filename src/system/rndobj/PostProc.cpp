@@ -417,7 +417,11 @@ void RndPostProc::LoadRev(BinStream &bs, int rev) {
 
 BEGIN_HANDLERS(RndPostProc)
     HANDLE_SUPERCLASS(Hmx::Object)
+#ifdef HX_NATIVE
+    HANDLE_ACTION(Symbol("select"), Select()) // `select` collides with POSIX select()
+#else
     HANDLE_ACTION(select, Select())
+#endif
     HANDLE_ACTION(unselect, Unselect())
     HANDLE_ACTION(multi_select, OnSelect())
     HANDLE_ACTION(multi_unselect, OnUnselect())

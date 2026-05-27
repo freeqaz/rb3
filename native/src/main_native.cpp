@@ -21,12 +21,26 @@
 #include "obj/Dir.h"
 #include "obj/DirLoader.h"
 #include "obj/Object.h"
+#include "obj/ObjMacros.h"
 #include "utl/Loader.h"
 #include "utl/FilePath.h"
 #include "utl/Symbol.h"
 #include "utl/ChunkStream.h"
 #include "utl/BinStream.h"
 #include "os/Endian.h"
+
+// rndobj + synth object classes whose factories we register so the loader can
+// instantiate the live object graph (these forks are now clang-LP64-clean).
+#include "rndobj/Dir.h"
+#include "rndobj/Tex.h"
+#include "rndobj/Group.h"
+#include "rndobj/EventTrigger.h"
+#include "rndobj/PropAnim.h"
+#include "synth/Sfx.h"
+#include "synth/SynthSample.h"
+#include "synth/Sequence.h"
+#include "synth/MidiInstrument.h"
+#include "synth/Synth.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -60,6 +74,26 @@ extern DataArray *gSystemConfig;
 static void RegisterCommonFactories() {
     Hmx::Object::Init();   // REGISTER_OBJ_FACTORY(Object)
     ObjectDir::Register(); // REGISTER_OBJ_FACTORY(ObjectDir)
+
+    // rndobj/synth factories. We register via REGISTER_OBJ_FACTORY directly
+    // (name -> `new Class`) rather than the game's RndXXX::Init()/Synth::Init(),
+    // which are coupled to the Rnd/Synth singletons + GPU + SystemConfig. Direct
+    // registration is enough for the loader to construct the live object graph.
+    REGISTER_OBJ_FACTORY(RndDir)
+    REGISTER_OBJ_FACTORY(RndTex)
+    REGISTER_OBJ_FACTORY(RndGroup)
+    REGISTER_OBJ_FACTORY(EventTrigger)
+    REGISTER_OBJ_FACTORY(RndPropAnim)
+
+    REGISTER_OBJ_FACTORY(Sfx)
+    REGISTER_OBJ_FACTORY(SynthSample)
+    REGISTER_OBJ_FACTORY(MidiInstrument)
+    REGISTER_OBJ_FACTORY(Sequence)
+    REGISTER_OBJ_FACTORY(WaitSeq)
+    REGISTER_OBJ_FACTORY(RandomGroupSeq)
+    REGISTER_OBJ_FACTORY(SerialGroupSeq)
+    REGISTER_OBJ_FACTORY(ParallelGroupSeq)
+    REGISTER_OBJ_FACTORY(SfxSeq)
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +192,71 @@ static bool DumpMiloHeader(const char *path, Platform plat) {
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// Live object-graph dump. Walks the ObjectDir returned by DirLoader::LoadObjects
+// (real instantiation via the registered factories), printing each LIVE object's
+// Name() + ClassName(). This is the (b2) milestone: objects are constructed, not
+// just read from the header.
+// ---------------------------------------------------------------------------
+extern void SynthPreInit();
+
+// Minimal synth singleton bring-up for the live load. Synth/Sfx/SynthSample
+// ctors deref TheSynth (e.g. Sfx::Sfx -> TheSynth->mMasterFader), and Synth
+// ctor + Synth::Init read SystemConfig("synth"). Give gSystemConfig a minimal
+// synth array (null synth, no mics) and stand up TheSynth + its master faders.
+// This is a stand-in for the real SystemInit config load (critical-path Step 2).
+static void BringUpSynthMinimal() {
+    if (TheSynth)
+        return;
+    // RB3_SYSCFG=<abs path to a .dta> loads a real system config (so
+    // SystemConfig("objects") has the per-class type-defs property-sync needs).
+    // A suitable wrapper nests config/objects.dta under an `objects` key plus a
+    // minimal `synth` block. Without it, fall back to a minimal in-memory config
+    // (enough to construct objects, but property-sync of typed props will fail).
+    const char *syscfg = getenv("RB3_SYSCFG");
+    if (syscfg) {
+        printf("rb3-native: loading system config '%s'\n", syscfg);
+        gSystemConfig = DataReadFile(syscfg, true);
+        if (!gSystemConfig)
+            fprintf(stderr, "rb3-native: failed to read RB3_SYSCFG '%s'\n", syscfg);
+    }
+    if (!gSystemConfig)
+        gSystemConfig = DataReadString(
+            "(synth (mics 0) (use_null_synth 1) (mute 0)) (objects)"
+        );
+    SynthPreInit();   // TheSynth = new Synth() (null synth; reads synth cfg)
+    if (TheSynth)
+        TheSynth->Init(); // creates mMasterFader/mSfxFader + registers synth factories
+}
+
+static bool DumpLiveTree(const char *miloPath) {
+    // TheLoadMgr.GetPlatform() drives the .milo_<plat> extension + endianness.
+    TheLoadMgr.mPlatform = kPlatformXBox;
+
+    BringUpSynthMinimal();
+
+    ObjectDir *dir = DirLoader::LoadObjects(FilePath(miloPath), nullptr, nullptr);
+    if (!dir) {
+        fprintf(stderr, "rb3-native: DirLoader::LoadObjects returned null\n");
+        return false;
+    }
+
+    int n = 0;
+    printf("\n=== live object graph: %s ===\n", miloPath);
+    printf("root: '%s' [%s]\n", dir->Name() ? dir->Name() : "(unnamed)",
+           dir->ClassName().Str());
+    for (ObjDirItr<Hmx::Object> it(dir, true); it; ++it) {
+        Hmx::Object *o = it;
+        if (o == dir)
+            continue;
+        printf("    %-32s  [%s]\n", o->Name() ? o->Name() : "(unnamed)",
+               o->ClassName().Str());
+        n++;
+    }
+    printf("=== end live object graph (%d objects instantiated) ===\n", n);
+    return true;
+}
+
 int main(int argc, char **argv) {
     setbuf(stdout, nullptr);
 
@@ -186,7 +285,19 @@ int main(int argc, char **argv) {
     // the ChunkStream byte-swaps correctly on the little-endian host.
     TheLoadMgr.mPlatform = kPlatformXBox;
 
-    printf("rb3-native: dumping milo '%s' (platform=xbox)\n", miloPath);
+    printf("rb3-native: loading milo '%s' (platform=xbox)\n", miloPath);
+
+    // RB3_LIVE_LOAD=1 opts into the full DirLoader object-graph load (real object
+    // instantiation via the registered factories — the b2 milestone). It needs
+    // the boot singletons (TheSynth) + a populated gSystemConfig, which is the
+    // headless-DTA-boot work (critical-path Step 2); see BringUpSynthMinimal().
+    // The proven, regression-safe DEFAULT is the header-only names+types dump
+    // (straight from the ChunkStream, zero factories — works for all 60 milos).
+    if (getenv("RB3_LIVE_LOAD")) {
+        if (DumpLiveTree(miloPath))
+            return 0;
+        fprintf(stderr, "rb3-native: live load failed; falling back to header dump\n");
+    }
 
     if (!DumpMiloHeader(miloPath, kPlatformXBox)) {
         fprintf(stderr, "rb3-native: FAILED to dump '%s'\n", miloPath);

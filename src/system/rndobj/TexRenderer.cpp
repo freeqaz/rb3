@@ -5,7 +5,9 @@
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
 #include "os/Debug.h"
-#include "revolution/gx/GXPixel.h"
+#ifndef HX_NATIVE
+#include "revolution/gx/GXPixel.h" // Wii GX hardware; replaced by engine renderer
+#endif
 #include "rndobj/Draw.h"
 #include "rndobj/Graph.h"
 #include "rndobj/Mat.h"
@@ -15,7 +17,9 @@
 #include "rndobj/Rnd.h"
 #include "rndobj/Utl.h"
 #include "rndobj/Dir.h"
-#include "rndwii/Mat.h"
+#ifndef HX_NATIVE
+#include "rndwii/Mat.h" // WiiMat (GX backend); replaced by the engine renderer
+#endif
 #include "utl/Messages3.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
@@ -246,8 +250,10 @@ void RndTexRenderer::DrawToTexture() {
 
                     cam->SetTargetTex(mOutputTexture);
                     cam->Select();
+#ifndef HX_NATIVE
                     GXSetPixelFmt(GX_PF_RGBA6_Z24, GX_ZC_LINEAR);
                     WiiMat::SetOverrideAlphaWrite(true);
+#endif
                     int cap = (mFirstDraw && mPrimeDraw) ? 2 : 1;
                     for (int i = 0; i < cap; i++) {
                         DrawBefore();
@@ -266,8 +272,10 @@ void RndTexRenderer::DrawToTexture() {
                             cam->SetWorldXfm(tf98);
                         }
                     }
+#ifndef HX_NATIVE
                     GXSetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
                     WiiMat::SetOverrideAlphaWrite(false);
+#endif
                     current->Select();
                     mFirstDraw = false;
                     if (!mForce)

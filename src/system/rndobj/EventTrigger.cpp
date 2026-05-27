@@ -770,7 +770,11 @@ void EventTrigger::ConvertParticleTriggerType() {
 BEGIN_CUSTOM_PROPSYNC(EventTrigger::Anim)
     SYNC_PROP_MODIFY_ALT(anim, o.mAnim, ResetAnim(o))
     SYNC_PROP(blend, o.mBlend)
+#ifdef HX_NATIVE
+    SYNC_PROP(Symbol("wait"), o.mWait) // `wait` collides with POSIX wait()
+#else
     SYNC_PROP(wait, o.mWait)
+#endif
     SYNC_PROP(delay, o.mDelay)
     SYNC_PROP(enable, o.mEnable)
     SYNC_PROP(rate, (int &)o.mRate)

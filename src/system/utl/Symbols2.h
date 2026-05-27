@@ -1374,7 +1374,9 @@ extern Symbol enumerate_messages;
 extern Symbol enumerate_online;
 extern Symbol enumerate_pending;
 extern Symbol env_override;
-extern Symbol environ;
+#ifndef HX_NATIVE
+extern Symbol environ; // native: collides with POSIX `char **environ` (<unistd.h>)
+#endif
 extern Symbol environ_3d;
 extern Symbol environ_map;
 extern Symbol environ_map_specmask;
