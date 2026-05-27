@@ -123,6 +123,12 @@ extern int yyget_leng(YY_ONLY_ARG);
 extern void yy_actually_restart(YY_ONLY_ARG);
 #endif
 
+#ifdef HX_NATIVE
+/* Save/restore the lexer hold char across #include (see DataFlex.c). */
+extern char yyGetHoldChar(YY_ONLY_ARG);
+extern void yySetHoldChar(char c YY_LAST_ARG);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

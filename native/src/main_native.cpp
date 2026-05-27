@@ -28,6 +28,9 @@
 #include "utl/ChunkStream.h"
 #include "utl/BinStream.h"
 #include "os/Endian.h"
+#include "os/System.h"
+
+#include <unistd.h> // chdir
 
 // rndobj + synth object classes whose factories we register so the loader can
 // instantiate the live object graph (these forks are now clang-LP64-clean).
@@ -45,6 +48,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
+
+// GPU smoke mode (RB3_GPU_SMOKE=1). The engine is built with the rndobj-FREE
+// WebGPU gfx core ON (MILO_ENGINE_BUILD_GFX), so GpuDevice + Screenshot are
+// available. We use the WebGPU API directly for the clear-color render pass —
+// the rndobj-coupled renderer (WgpuRnd : NgRnd) is NOT built for RB3.
+#include "gfx/GpuDevice.h"
+#include "gfx/Screenshot.h"
 
 extern void InitMakeString();
 
@@ -257,8 +268,204 @@ static bool DumpLiveTree(const char *miloPath) {
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// GPU smoke (RB3_GPU_SMOKE=1). Proves the rndobj-FREE WebGPU gfx core links and
+// runs from rb3-native: stand up a GpuDevice (headless when MILO_HEADLESS=1 —
+// the default in this no-DISPLAY env), then for a few frames acquire the
+// offscreen target, BEGIN a render pass that CLEARS to cornflower blue, END,
+// and "present" (submit). On the last frame, read back the headless target and
+// write a PNG to prove the clear color landed. Exits 0 on success.
+//
+// This does NOT boot the full renderer/App — GpuDevice is self-contained. It is
+// the foundation for native RB3 rendering (Strategy B).
+// ---------------------------------------------------------------------------
+static int RunGpuSmoke() {
+    // Cornflower blue (the classic "is it clearing?" color), in linear 0..1.
+    const wgpu::Color kClear = {0.392, 0.584, 0.929, 1.0};
+
+    bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
+
+    GpuDeviceDesc desc{};
+    desc.headless = headless;
+    desc.width  = getenv("MILO_WIDTH")  ? atoi(getenv("MILO_WIDTH"))  : 256;
+    desc.height = getenv("MILO_HEIGHT") ? atoi(getenv("MILO_HEIGHT")) : 256;
+    desc.title  = "rb3-native GPU smoke";
+
+    printf("rb3-native: GPU smoke — initializing GpuDevice (%dx%d, %s)\n",
+           desc.width, desc.height, headless ? "headless" : "windowed");
+
+    GpuDevice gpu;
+    if (!gpu.Init(desc)) {
+        if (!headless) {
+            printf("rb3-native: windowed init failed; retrying headless\n");
+            desc.headless = true;
+            headless = true;
+            if (!gpu.Init(desc)) {
+                fprintf(stderr, "rb3-native: GpuDevice headless init also FAILED\n");
+                return 1;
+            }
+        } else {
+            fprintf(stderr, "rb3-native: GpuDevice headless init FAILED\n");
+            return 1;
+        }
+    }
+    if (!gpu.IsReady()) {
+        fprintf(stderr, "rb3-native: GpuDevice not ready after init\n");
+        return 1;
+    }
+    if (gpu.IsNullBackend()) {
+        fprintf(stderr, "rb3-native: WARNING — Null backend; clear color will not be real\n");
+    }
+
+    const int kFrames = 3;
+    for (int f = 0; f < kFrames; f++) {
+        wgpu::TextureView view = headless ? gpu.AcquireHeadlessFrame()
+                                          : gpu.AcquireNextFrame();
+        if (!view) {
+            fprintf(stderr, "rb3-native: frame %d — failed to acquire target view\n", f);
+            return 1;
+        }
+
+        wgpu::CommandEncoder enc = gpu.Device().CreateCommandEncoder();
+
+        wgpu::RenderPassColorAttachment colorAtt{};
+        colorAtt.view = view;
+        colorAtt.loadOp = wgpu::LoadOp::Clear;
+        colorAtt.storeOp = wgpu::StoreOp::Store;
+        colorAtt.clearValue = kClear;
+
+        wgpu::RenderPassDescriptor rpDesc{};
+        rpDesc.colorAttachmentCount = 1;
+        rpDesc.colorAttachments = &colorAtt;
+
+        wgpu::RenderPassEncoder pass = enc.BeginRenderPass(&rpDesc);
+        // No draws — just the clear.
+        pass.End();
+
+        wgpu::CommandBuffer cmd = enc.Finish();
+        gpu.Queue().Submit(1, &cmd);
+
+        if (!headless) {
+            gpu.PresentFrame();
+        }
+        printf("rb3-native: frame %d — cleared to cornflower blue\n", f);
+    }
+
+    // Prove the clear color: read back the headless target and write a PNG.
+    int rc = 0;
+    if (headless) {
+        const int w = gpu.WindowWidth(), h = gpu.WindowHeight();
+        std::vector<uint8_t> pixels((size_t)w * h * 4);
+        if (gpu.ReadbackHeadlessFrame(pixels.data(), pixels.size())) {
+            // Sanity-check the center pixel against the expected clear color.
+            size_t c = ((size_t)(h / 2) * w + (w / 2)) * 4;
+            printf("rb3-native: center pixel RGBA = (%u, %u, %u, %u) "
+                   "(expected ~ 100,149,237,255 for cornflower blue)\n",
+                   pixels[c], pixels[c + 1], pixels[c + 2], pixels[c + 3]);
+
+            const char* outPath = getenv("RB3_GPU_SMOKE_PNG");
+            char defPath[] = "/tmp/rb3_gpu_smoke.png";
+            if (!outPath) outPath = defPath;
+            if (WritePNG(outPath, pixels.data(), w, h)) {
+                printf("rb3-native: wrote clear-color frame to %s\n", outPath);
+            } else {
+                fprintf(stderr, "rb3-native: WritePNG failed for %s\n", outPath);
+                rc = 1;
+            }
+        } else {
+            fprintf(stderr, "rb3-native: headless readback FAILED\n");
+            rc = 1;
+        }
+    }
+
+    gpu.Shutdown();
+    printf("rb3-native: GPU smoke %s\n", rc == 0 ? "OK" : "FAILED");
+    return rc;
+}
+
+extern void SynthInit();
+
+// ---------------------------------------------------------------------------
+// Headless DTA boot (RB3_BOOT=1) — critical-path Step 2.
+//
+// Runs the real curated SystemPreInit/SystemInit (now HX_NATIVE-gated in
+// os/System.cpp) so gSystemConfig is populated from the on-disc config DTAs
+// (config/band_preinit_keep.dta then config/band_keep.dta). That gives
+// SystemConfig("objects") the per-class type-defs property-sync needs — which
+// also completes Step 1's full object-graph load. File resolution: chdir to the
+// data dir (RB3_DATA, default the extracted assets) so the relative config/ +
+// ui/ paths and DTA #include/#merge resolve.
+//
+// With a .milo path argument, it then live-loads + dumps that scene using the
+// real config (no BringUpSynthMinimal stand-in).
+// ---------------------------------------------------------------------------
+static int RunBoot(int argc, char **argv, const char *miloPath) {
+    const char *dataDir = getenv("RB3_DATA");
+    if (!dataDir)
+        dataDir = "/home/free/code/milohax/rb3/orig-assets/extracted";
+    if (chdir(dataDir) != 0) {
+        fprintf(stderr, "rb3-native: boot — chdir('%s') failed\n", dataDir);
+        return 1;
+    }
+    printf("rb3-native: boot — data dir '%s'\n", dataDir);
+
+    TheLoadMgr.mPlatform = kPlatformXBox;
+
+    SetSystemArgs(argc, argv);
+    printf("rb3-native: SystemPreInit('config/band_preinit_keep.dta')...\n");
+    SystemPreInit("config/band_preinit_keep.dta");
+    printf("rb3-native: SystemPreInit OK — gSystemConfig=%p\n", (void *)gSystemConfig);
+
+    printf("rb3-native: SystemInit('config/band_keep.dta')...\n");
+    SystemInit("config/band_keep.dta");
+    DataArray *objCfg = gSystemConfig ? gSystemConfig->FindArray(Symbol("objects"), false) : nullptr;
+    DataArray *uiCfg  = gSystemConfig ? gSystemConfig->FindArray(Symbol("ui"), false) : nullptr;
+    printf("rb3-native: SystemInit OK — objects-cfg=%p (%d entries), ui-cfg=%p\n",
+           (void *)objCfg, objCfg ? objCfg->Size() : -1, (void *)uiCfg);
+
+    // Register the obj/rndobj/synth object factories so DirLoader can instantiate
+    // them (SystemInit only registers the obj-level factories via ObjectDir::Init).
+    RegisterCommonFactories();
+
+    if (miloPath) {
+        printf("rb3-native: live-loading '%s' with real config...\n", miloPath);
+        ObjectDir *dir = DirLoader::LoadObjects(FilePath(miloPath), nullptr, nullptr);
+        if (!dir) {
+            fprintf(stderr, "rb3-native: boot live load returned null\n");
+            return 1;
+        }
+        int n = 0;
+        printf("\n=== live object graph: %s ===\n", miloPath);
+        printf("root: '%s' [%s]\n", dir->Name() ? dir->Name() : "(unnamed)",
+               dir->ClassName().Str());
+        for (ObjDirItr<Hmx::Object> it(dir, true); it; ++it) {
+            Hmx::Object *o = it;
+            if (o == dir) continue;
+            printf("    %-32s  [%s]\n", o->Name() ? o->Name() : "(unnamed)",
+                   o->ClassName().Str());
+            n++;
+        }
+        printf("=== end live object graph (%d objects instantiated) ===\n", n);
+    }
+    printf("rb3-native: boot complete.\n");
+    return 0;
+}
+
 int main(int argc, char **argv) {
     setbuf(stdout, nullptr);
+
+    // ---- GPU smoke mode (no engine/object bring-up needed; GpuDevice is
+    //      self-contained). Gated by RB3_GPU_SMOKE=1; leaves all other modes
+    //      untouched. ----
+    if (getenv("RB3_GPU_SMOKE")) {
+        return RunGpuSmoke();
+    }
+
+    // ---- Headless DTA boot mode (RB3_BOOT=1): real SystemPreInit/SystemInit
+    //      config load, then optional live milo load with that config. ----
+    if (getenv("RB3_BOOT")) {
+        return RunBoot(argc, argv, argc >= 2 ? argv[1] : nullptr);
+    }
 
     // ---- Minimal engine bring-up (shared by both modes) ----
     InitMakeString();

@@ -69,6 +69,12 @@ DataArray *ReadEmbeddedFile(const char *c, bool b) {
     Symbol e = gFile;
     DataArray *f = gArray;
     int g = gOpenArray;
+#ifdef HX_NATIVE
+    // Save the flex lexer's lookahead byte: yyrestart(NULL) below flushes the
+    // buffer, which would otherwise drop the character right after the #include
+    // filename and desync the outer parse ("Array closed incorrectly" at EOF).
+    char savedHoldChar = yyGetHoldChar();
+#endif
 
     yyrestart(NULL);
     ret = DataReadFile(x, b);
@@ -86,6 +92,9 @@ DataArray *ReadEmbeddedFile(const char *c, bool b) {
     gOpenArray = g;
 
     yyrestart(NULL);
+#ifdef HX_NATIVE
+    yySetHoldChar(savedHoldChar);
+#endif
     return ret;
 }
 

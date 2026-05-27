@@ -2125,3 +2125,25 @@ void yy_actually_restart(YY_ONLY_ARG) {
     yyrestart(NULL YY_CALL_LAST_ARG);
 }
 #endif
+
+#ifdef HX_NATIVE
+/* Accessors for yy_hold_char — needed by ReadEmbeddedFile to save/restore the
+ * lexer's lookahead byte across #include processing (ported from DC3). Without
+ * this, the character immediately after the #include filename is lost when the
+ * buffer is flushed (yyrestart) for the included file, desyncing the outer parse
+ * (manifests as "Array closed incorrectly" at EOF of the including file). */
+char yyGetHoldChar(YY_ONLY_ARG) { return YY_G(yy_hold_char); }
+void yySetHoldChar(char c YY_LAST_ARG) {
+    YY_G(yy_hold_char) = c;
+    /* After yyrestart(NULL) the buffer is flushed (yy_n_chars=0). If a non-EOB
+     * holdChar is restored, the scanner consumes it at yy_ch_buf[0] then hits EOB
+     * at yy_ch_buf[1], advancing yy_c_buf_p to &yy_ch_buf[2]; yy_get_next_buffer
+     * checks yy_c_buf_p > &yy_ch_buf[yy_n_chars + 1] — with yy_n_chars=0 the
+     * boundary is &yy_ch_buf[1] and position 2 exceeds it ("end of buffer
+     * missed"). Setting yy_n_chars=1 moves the boundary to &yy_ch_buf[2]. */
+    if (c != YY_END_OF_BUFFER_CHAR) {
+        YY_G(yy_current_buffer)->yy_n_chars = 1;
+        YY_G(yy_n_chars) = 1;
+    }
+}
+#endif

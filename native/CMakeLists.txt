@@ -59,14 +59,18 @@ set(DECOMP_FLAGS
 # matched-fork context (MILO_ENGINE_DECOMP_INCLUDE_DIRS / _COMPAT_FLAGS) so the
 # engine compiles its full (GFX-off) source set against RB3's Milo headers.
 #
-# CRITICAL: MILO_ENGINE_BUILD_GFX is forced OFF for RB3. RB3-Wii's 2010-era
-# rndobj/ is structurally older than DC3's; the engine's WebGPU layer is
-# DC3-wired and cannot compile against RB3 headers (Wave 2.3 finding). A .milo
-# scene-tree dump needs no GPU, so the engine is still useful with GFX off.
+# CRITICAL: RB3 builds the rndobj-FREE WebGPU gfx CORE (MILO_ENGINE_BUILD_GFX ON
+# — GpuDevice/PipelineManager/Screenshot/headless frame; enough for a clear-color
+# frame) but forces the rndobj-COUPLED backends OFF
+# (MILO_ENGINE_BUILD_GPU_BACKENDS). RB3-Wii's 2010-era rndobj/ is structurally
+# older than DC3's, so the coupled gfx TUs (DrawRect2D/DofPass/ShadowPass/… —
+# RndMat/RndCam/RndMesh::Vert shapes) and the 8 Wgpu platform backends (WgpuRnd :
+# NgRnd) cannot compile against RB3 headers (Wave 2.3 finding). The core needs no
+# rndobj, so RB3-native can now stand up a GpuDevice + render a clear frame.
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "54b9fa011e0a90c087ed2c6cc0b167729c87caec"
+set(MILO_ENGINE_PIN "9ad4e13"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -158,11 +162,31 @@ set(MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
     MapFile_Stub.cpp
     NetworkSocket_Stub.cpp
     BoneSetup.cpp
-    CharTwistSolver.cpp)
+    CharTwistSolver.cpp
+    #   --- FFmpeg movie/audio (DC3 movie/ + synth shapes) ---
+    # Enabling the gfx core (MILO_ENGINE_BUILD_GFX) turns on the engine's FFmpeg
+    # discovery, which (FFmpeg is system-present) adds these two TUs. They are
+    # NOT gfx core — FFmpegMovieImpl.h includes movie/MovieImpl.h (DC3-only; RB3
+    # has movie/Movie.h, a different shape) and FFmpegAudioReader pulls
+    # synth/StandardStream.h (RB3 synth shape, already excluded above). Bink/FMV
+    # is off-path for the milo dump + clear-frame smoke; drop both for RB3.
+    FFmpegMovieImpl.cpp
+    FFmpegAudioReader.cpp)
 
-# Build the real engine lib, but with the WebGPU gfx + Wgpu platform backends
+# Build the real engine lib: rndobj-FREE gfx CORE ON, rndobj-COUPLED backends
 # OFF (see CRITICAL note above). Sticky CACHE so a stale value can't linger.
-set(MILO_ENGINE_BUILD_GFX OFF CACHE BOOL "RB3: WebGPU layer is DC3-wired; force off" FORCE)
+set(MILO_ENGINE_BUILD_GFX ON CACHE BOOL "RB3: build the rndobj-free WebGPU gfx core" FORCE)
+set(MILO_ENGINE_BUILD_GPU_BACKENDS OFF CACHE BOOL
+    "RB3: NgRnd-coupled backends use DC3 rndobj shapes" FORCE)
+
+# The gfx core links Dawn (WebGPU) + glfw. glfw3 is system-installed
+# (find_package(glfw3) works out of the box); Dawn lives in the dc3 deps tree.
+# Default Dawn_DIR so a bare `cmake -B build-native` finds it (override with
+# -DDawn_DIR=... for a different Dawn install). Mirrors dc3-native's -DDawn_DIR.
+if(NOT DEFINED Dawn_DIR)
+    set(Dawn_DIR "${REPO_ROOT}/../dc3-decomp-deps/dawn/lib/cmake/Dawn"
+        CACHE PATH "Path to Dawn's CMake package config")
+endif()
 add_subdirectory(${MILO_ENGINE_PATH} ${CMAKE_BINARY_DIR}/milo-engine)
 
 # ============================================================================

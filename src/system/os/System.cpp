@@ -338,6 +338,47 @@ bool InitWiiRSO() {
 }
 
 void SystemPreInit(const char *config) {
+#ifdef HX_NATIVE
+    // Native (clang LP64) curated PreInit, modeled on DC3's HX_NATIVE SystemPreInit.
+    // Skips the Wii-only machinery that is fatal or meaningless on the host:
+    //   - the RSO reserve buffers + their `<= 0x91000000` Wii-memory-map asserts
+    //     (host malloc returns high addresses → the assert would always fail)
+    //   - MemInit (the Wii heap mgr uses 32-bit pointer arithmetic)
+    //   - WiiNetworkSocket::Init / ThePlatformMgr.PreInit / TheContentMgr->PreInit
+    //     (TheContentMgr is a no-op link stub here — calling a virtual on it is UB)
+    //   - CheckForArchive / ArchiveInit: RB3 native loads loose extracted files,
+    //     not the .ark (SetUsingCD(false)).
+    // KEEPS DataInit() (→ ObjectDir::PreInit sets sMainDir + DataSetThis, the dir
+    // context the boot-script {func} directives need) and PreInitSystem(config)
+    // (loads band_preinit_keep.dta into gSystemConfig).
+    InitMakeString();
+    if (!gStringTable) {
+        Symbol::PreInit(600000, 75000);
+    }
+    SetUsingCD(false);
+    ThePlatformMgr.RegionInit();
+    OptionInit();
+    TimeConversionInit();
+    Timer::Init();
+    FileInit();
+    AppChild::Init();
+    DateTimeInit();
+    DateTime dt;
+    GetDateAndTime(dt);
+    SeedRand(dt.mSec + dt.mMin * 60 + dt.mHour * 3600);
+    srand(RandomInt());
+    TheDebug.Init();
+    DataInit();
+    PreInitSystem(config);
+    LanguageInit();
+    TheLoadMgr.Init();
+    JoypadInit();
+    KeyboardInit();
+    AutoTimer::Init();
+    ThreadCallPreInit();
+    TheTaskMgr.Init();
+    TheDebug.AddExitCallback(SystemTerminate);
+#else
     MemInit();
     g_pRSOReserveBuf = (unsigned char *)_MemAlloc(kRSOBufferSize, 0x20);
     MILO_ASSERT((char*)g_pRSOReserveBuf + kRSOBufferSize <= (char*)0x91000000, 0x2C8);
@@ -399,6 +440,7 @@ void SystemPreInit(const char *config) {
     ThreadCallPreInit();
     TheTaskMgr.Init();
     TheDebug.AddExitCallback(SystemTerminate);
+#endif
 }
 
 void NormalizeSystemArgs() {
@@ -589,26 +631,69 @@ void SystemPoll(bool b1) {
     Timer::ClearSlowFrame();
     SystemMs();
     TheDebug.Poll();
+#ifndef HX_NATIVE
     TheMC.Poll();
+#endif
     JoypadPoll();
     JoypadClientPoll();
     KeyboardPoll();
     ThreadCallPoll();
     FileCache::PollAll();
     TheLoadMgr.Poll();
+#ifndef HX_NATIVE
+    // TheCacheMgr/TheNetCacheMgr/ThePlatformMgr/TheVirtualKeyboard/TheContentMgr
+    // are Wii/online managers; on native they are no-op link stubs (not real
+    // singletons), so polling them would deref junk. They are not initialized on
+    // the native boot path (see SystemInit HX_NATIVE branch).
     TheCacheMgr->Poll();
     TheNetCacheMgr->Poll();
+#endif
     if (TheAppChild) TheAppChild->Poll();
     if (b1) TheTaskMgr.Poll();
     if (!gUsingCD) HolmesClientPoll();
+#ifndef HX_NATIVE
     ThePlatformMgr.Poll();
     TheVirtualKeyboard.Poll();
     TheContentMgr->PollRefresh();
     ThePlatformMgr.WiiPoll();
+#endif
 }
 
 void SystemInit(const char *config) {
     gSystemTimer.Start();
+#ifdef HX_NATIVE
+    // Native (clang LP64) curated Init, modeled on DC3's HX_NATIVE SystemInit.
+    // Skips: InitWiiRSO/MILO_FAIL, WiiNetworkSocket, TheMC (memcard), CacheMgr /
+    // NetCacheMgr / ThePlatformMgr / TheWiiCommerceMgr / TheVirtualKeyboard /
+    // GlitchFinder (Wii/online managers), and TheContentMgr->Init() (TheContentMgr
+    // is a no-op link stub here — calling a virtual on it is UB; the content_mgr
+    // DTA stub is registered by the harness instead).
+    // KEEPS InitSystem(config) — the band_keep.dta load that populates
+    // gSystemConfig with the (objects ...) type-defs property-sync needs (this is
+    // what completes critical-path Step 1's full object-graph load). sMainDir was
+    // already created by DataInit()->ObjectDir::PreInit() in SystemPreInit, so the
+    // {func} directives in the merged object configs have a valid dir context.
+    Symbol::Init();
+    InitSystem(config);
+    gSystemTitles = SystemConfig("system", "titles");
+    ObjectDir::Init();
+    TrigTableInit();
+    ThreadCallInit();
+    GeoInit();
+    TrigInit();
+    SpewInit();
+    TheLocale.Terminate();
+    TheLocale.Init();
+    FileCache::Init();
+    // CheatsInit() skipped on native: RB3's cheats.dta binds punctuation keyboard
+    // keys (`.` `/` `?`) that the flex lexer parses as the float 0.0, so
+    // InitKeyCheats' `cheat->Str(0)` key read fatals ("Data 0.00 is not String").
+    // Cheats are irrelevant to boot/render; the DTA funcs it registers
+    // (set_cheat_mode, …) resolve to the DataFunc not-found warn-guard if used.
+    DataRegisterFunc("reset_hwm", ResetHWM);
+    DataRegisterFunc("cycle_mem_consistency_check", CycleMemConsistencyCheck);
+    TheDebug.AddExitCallback(SystemTerminate);
+#else
     if (!InitWiiRSO()) MILO_FAIL("_unresolved func.\n");
     if (gUsingCD && !gHostConfig && !gHostLogging) WiiNetworkSocket::Init();
     Symbol::Init();
@@ -634,4 +719,5 @@ void SystemInit(const char *config) {
     CheatsInit();
     DataRegisterFunc("reset_hwm", ResetHWM);
     DataRegisterFunc("cycle_mem_consistency_check", CycleMemConsistencyCheck);
+#endif
 }
