@@ -1074,15 +1074,14 @@ void SongParser::HandlePitchOffsetCC(int tick, unsigned char uc) {
 
 // fn_8048CEE4 - parse and strip lyric text
 bool SongParser::ParseAndStripLyricText(const char *text, VocalNote &note) {
-    const char *p;
     bool ret = false;
+    const char *p;
     if (*text == '+') {
         ret = true;
         note.mBends = ret;
         text++;
     }
     p = text + strlen(text);
-    int len = p - text;
     p--;
     if (p >= text) {
         do {
@@ -1100,12 +1099,11 @@ bool SongParser::ParseAndStripLyricText(const char *text, VocalNote &note) {
                 break;
             }
             p--;
-        } while (--len);
+        } while (--p - text);
     }
     String str;
-    int cap = (p - text) + 1;
-    str.reserve(cap);
-    strncpy((char *)str.c_str(), text, cap);
+    str.reserve(((p - text) + 1));
+    strncpy((char *)str.c_str(), text, ((p - text) + 1));
     char buf[0x100];
     ASCIItoUTF8(buf, 0x100, str.c_str());
     note.SetText(buf);
@@ -1965,12 +1963,11 @@ bool SongParser::HandleRGRootNote(unsigned char uc) {
 bool SongParser::HandleRGGemStop(
     int tick, DifficultyInfo &info, unsigned char uc1, int difflevel
 ) {
-    bool outOfRange = ((unsigned char)(uc1 + 0xE8)) > 5U;
-    if (outOfRange)
-        return false;
-    else {
+    ::RGGemInfo geminfo;
+    if (!((((unsigned char)(uc1 + 0xE8)) > 5U)))
+        {
         bool allStringsEnded = true;
-        if (!outOfRange) {
+        if (!(((unsigned char)(uc1 + 0xE8)) > 5U)) {
             int stringnum = uc1 - 24;
             if (info.mRGGemsInfo[stringnum].mGem.mTick == -1) {
                 MILO_WARN(
@@ -1984,10 +1981,14 @@ bool SongParser::HandleRGGemStop(
             }
             info.mRGGemsInfo[stringnum].unk18 = tick;
 
-            if (info.mRGGemsInfo[0].mGem.mTick != -1 && info.mRGGemsInfo[0].unk18 == -1)
-                allStringsEnded = false;
-            if (info.mRGGemsInfo[1].mGem.mTick != -1 && info.mRGGemsInfo[1].unk18 == -1)
-                allStringsEnded = false;
+            if (info.mRGGemsInfo[0].mGem.mTick != -1)
+                {
+                if (info.mRGGemsInfo[0].unk18 == -1) allStringsEnded = false;
+            }
+            if (info.mRGGemsInfo[1].mGem.mTick != -1)
+                {
+                if (info.mRGGemsInfo[1].unk18 == -1) allStringsEnded = false;
+            }
             if (info.mRGGemsInfo[2].mGem.mTick != -1 && info.mRGGemsInfo[2].unk18 == -1)
                 allStringsEnded = false;
             if (info.mRGGemsInfo[3].mGem.mTick != -1 && info.mRGGemsInfo[3].unk18 == -1)
@@ -1998,10 +1999,10 @@ bool SongParser::HandleRGGemStop(
                 allStringsEnded = false;
 
             if (allStringsEnded) {
-                int firstEndTick = -1;
-                SongParser::RGGemInfo *cur = &info.mRGGemsInfo[0];
                 int nStr = 6;
+                int firstEndTick = -1;
                 do {
+                    SongParser::RGGemInfo *cur = &info.mRGGemsInfo[0];
                     if (firstEndTick == -1) {
                         if (cur->mGem.mTick != -1) {
                             firstEndTick = cur->unk18;
@@ -2038,7 +2039,6 @@ bool SongParser::HandleRGGemStop(
             MILO_ASSERT(on_tick != -1, 0xBB2);
 
             // Build the output RGGemInfo
-            ::RGGemInfo geminfo;
             float off_time = GetTempoMap()->TickToTime((float)tick);
             geminfo.track = mTrack;
             float on_time = GetTempoMap()->TickToTime((float)on_tick);
@@ -2213,7 +2213,7 @@ bool SongParser::HandleRGGemStop(
             // Roll tracking
             float rollInterval = GetRollIntervalMs(mRollIntervals, mTrackType, difflevel, false);
             if (mRollInProgress != -1 && abs(mRollInProgress - on_tick) < 10
-                    && mRollIntervals != NULL && rollInterval > 0.0f
+                    && mRollIntervals != NULL && rollInterval > 0.0
                     && (mRollMask & (1 << difflevel))) {
                 for (int i = 0; i < 6; i++) {
                     mRGRollArray[difflevel].mString[i] = (int)(signed char)geminfo.frets[i];
@@ -2310,6 +2310,7 @@ bool SongParser::HandleRGGemStop(
         }
         return true;
     }
+    else return false;
 }
 
 bool SongParser::HandleRGChordNaming(int tick, unsigned char pitch) {
