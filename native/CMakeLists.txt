@@ -320,6 +320,13 @@ rb3_configure_target(rb3-dta)
 add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/main_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_render_hook.cpp
+    # RB3-Wii native GPU rendering backend (Strategy B):
+    #   rb3_render_tri.cpp  — milestone (ii): triangle via engine gfx core
+    #   rb3_band_rnd.cpp    — BandRnd : Rnd + RndMesh/RndMat/RndCam backends (iii)
+    #   rb3_render_mesh.cpp — boot + load milo + drive BandRnd -> PNG
+    ${CMAKE_SOURCE_DIR}/src/rb3_render_tri.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_band_rnd.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_render_mesh.cpp
     ${NATIVE_FORK_SOURCES}
     ${DTA_LEXER}
     ${NATIVE_SHIMS}

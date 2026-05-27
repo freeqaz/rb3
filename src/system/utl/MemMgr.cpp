@@ -1038,8 +1038,17 @@ void *_MemAlloc(int iSizeBytes, int align) {
     // (writes a few bytes past the requested size). To preserve that behaviour
     // (and avoid tripping glibc's tight-chunk overflow detector) we round the
     // request up to a 32-byte multiple and 32-byte-align by default.
+    //
+    // A trailing GUARD pad is added on top of the rounding so that those latent
+    // small over-writes land inside the block's own slack instead of stomping
+    // an adjacent glibc chunk. Without GPU rendering the decomp's heap is mostly
+    // its own blocks (overflows hit gaps and go unnoticed); once Dawn/WebGPU
+    // shares the glibc heap, adjacent driver chunks expose the overflow as
+    // "corrupted size vs. prev_size". The guard keeps the two allocators from
+    // corrupting each other.
+    static const size_t kGuard = 64;
     size_t want = (iSizeBytes > 0) ? (size_t)iSizeBytes : 1;
-    want = (want + 31u) & ~31u; // round up to 32
+    want = ((want + 31u) & ~31u) + kGuard; // round up to 32 + guard pad
     size_t a = (size_t)(align > 0 ? align : 32);
     if (a < 32)
         a = 32;

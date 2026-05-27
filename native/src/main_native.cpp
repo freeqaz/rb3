@@ -451,6 +451,10 @@ static int RunBoot(int argc, char **argv, const char *miloPath) {
     return 0;
 }
 
+// Render modes implemented in dedicated backend TUs (Strategy B).
+extern int RunRenderTri();              // rb3_render_tri.cpp — milestone (ii)
+extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_render_mesh.cpp — (iii)
+
 int main(int argc, char **argv) {
     setbuf(stdout, nullptr);
 
@@ -459,6 +463,18 @@ int main(int argc, char **argv) {
     //      untouched. ----
     if (getenv("RB3_GPU_SMOKE")) {
         return RunGpuSmoke();
+    }
+
+    // ---- Triangle render (RB3_RENDER_TRI=1): GpuDevice + PipelineManager +
+    //      standard shader + a hand-built triangle -> PNG. No rndobj. ----
+    if (getenv("RB3_RENDER_TRI")) {
+        return RunRenderTri();
+    }
+
+    // ---- Mesh/scene render (RB3_RENDER_MESH=1): boot the real config, load a
+    //      milo, stand up BandRnd, draw its RndMeshes -> PNG. ----
+    if (getenv("RB3_RENDER_MESH")) {
+        return RunRenderMesh(argc, argv, argc >= 2 ? argv[1] : nullptr);
     }
 
     // ---- Headless DTA boot mode (RB3_BOOT=1): real SystemPreInit/SystemInit

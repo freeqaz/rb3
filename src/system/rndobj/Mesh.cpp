@@ -443,6 +443,35 @@ void RndMesh::PostLoadVertices(BinStream &bsIn) {
     if (b58) {
         bs >> loadedCompressedSize;
         bs >> loadedVersion;
+#ifdef HX_NATIVE
+        // Native WebGPU backend: the matched fork only supports Wii vertex
+        // compression and MILO_FAILs otherwise. For the native render path we
+        // read the platform-compressed vertex blob verbatim into
+        // mCompressedVerts (count * loadedCompressedSize bytes) and let the
+        // engine mesh backend (rb3/native) unpack it (Xbox DEC4N/half-float).
+        // mGeomOwner->mVerts stays empty; the backend uses mCompressedVerts.
+        if (loadedCompressedSize > 0 && count > 0) {
+            mNumCompressedVerts = count;
+            unsigned int blobSize = loadedCompressedSize * (unsigned int)count;
+            mCompressedVerts = new unsigned char[blobSize];
+            // Read the blob in chunk-sized pieces, pumping Eof between reads so
+            // the cached ChunkStream advances (ReadChunks with max=0 loops
+            // forever — Min(remaining,0)==0 never advances). Use the per-vert
+            // size as the chunk granularity.
+            unsigned int got = 0;
+            while (got < blobSize) {
+                unsigned int piece = loadedCompressedSize;
+                if (got + piece > blobSize) piece = blobSize - got;
+                bs.Read(mCompressedVerts + got, piece);
+                got += piece;
+                while (bs.Eof() == TempEof)
+                    Timer::Sleep(0);
+            }
+        }
+        if (buf)
+            _MemFree(buf);
+        return;
+#endif
 #ifdef MILO_DEBUG
         MILO_ASSERT(IsVertexCompressionSupported(TheLoadMgr.GetPlatform()), 0x331);
 #else
