@@ -27,6 +27,7 @@ RndMatAnim::TexKeys &RndMatAnim::TexKeys::operator=(const RndMatAnim::TexKeys &k
             *it = *otherIt;
         }
     }
+    return *this;
 }
 
 RndMatAnim::RndMatAnim() : mMat(this), mKeysOwner(this, this), mTexKeys(this) {}
