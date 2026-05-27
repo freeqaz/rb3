@@ -286,8 +286,8 @@ RndMesh *ChordShapeGenerator::BuildChordMesh() {
     Hmx::Color32 onColor(0xFFFFFFFF);
     Hmx::Color32 offColor(0xFF000000);
     for (int i = 0; i < mNumSlots; i++) {
-        Hmx::Color32 col = unk64[i] ? onColor : offColor;
-        Hmx::Color32 colPrev = (i == 0)
+        const Hmx::Color32& col = unk64[i] ? onColor : offColor;
+        const Hmx::Color32& colPrev = (i == 0)
             ? col
             : (unk64[i - 1] ? onColor : offColor);
         int fret = mStringFrets[i];

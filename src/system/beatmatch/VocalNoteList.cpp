@@ -455,13 +455,13 @@ void VocalNoteList::CapLastFreestyleSection(float ms) {
 bool VocalNoteCmp(float ms, const VocalNote &note) { return ms < note.GetMs(); }
 
 VocalNote *VocalNoteList::NextNote(float ms) const {
-    if (mNotes.size() == 0)
+    if (0 == mNotes.size())
         return NULL;
     std::vector<VocalNote>::const_iterator it =
         std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
     if (it == mNotes.begin())
         return (VocalNote *)it;
-    if (ms <= it[-1].GetMs() + it[-1].GetDurationMs())
+    if (ms <= it[-1].GetDurationMs() + it[-1].GetMs())
         return (VocalNote *)(it - 1);
     if (it == mNotes.end())
         return NULL;
@@ -474,8 +474,8 @@ const VocalNote *VocalNoteList::NoteAt(float ms) const {
     if (it == mNotes.begin())
         return NULL;
     --it;
-    MILO_ASSERT(it->GetMs() <= ms, 0x22f);
-    if (ms <= it->GetMs() + it->GetDurationMs())
+    MILO_ASSERT((*it).GetMs() <= ms, 0x22f);
+    if (ms <= it->GetDurationMs() + it->GetMs())
         return it;
     return NULL;
 }
@@ -484,7 +484,7 @@ float VocalNoteList::PitchAt(float ms) const {
     const VocalNote *it =
         std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
     if (it == mNotes.begin())
-        return 0.0f;
+        return 0.0;
     --it;
     MILO_ASSERT(it->GetMs() <= ms, 0x1ff);
     float noteMs = it->GetMs();
@@ -495,8 +495,8 @@ float VocalNoteList::PitchAt(float ms) const {
         float fraction =
             Max<float>(0.0f, Min<float>(ms, noteMs + noteDur) - noteMs)
             / noteDur;
-        return (1.0f - fraction) * (float)it->StartPitch()
-            + fraction * (float)it->EndPitch();
+        return fraction * (float)it->EndPitch()
+            + (1.0f - fraction) * (float)it->StartPitch();
     }
     return 0.0f;
 }
