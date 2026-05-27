@@ -1,4 +1,5 @@
 #include "game/TrainerGemTab.h"
+#include "decomp.h"
 #include "bandobj/BandLabel.h"
 #include "rndobj/Dir.h"
 #include "os/Debug.h"
@@ -188,6 +189,24 @@ void TrainerGemTab::Init(RndDir *gemTab, TrackType ty) {
 }
 
 void TrainerGemTab::SetLefty(bool lefty) { mLefty = lefty; }
+
+void TrainerGemTab::SetPattern(const TrainerSection *section, const std::vector<GameGem> &gems) {
+    unk54 = section;
+    unk4c = gems;
+    int totalTicks = section->GetEndTick() - section->GetStartTick();
+    if (totalTicks > 0xf00) {
+        unk48 = 4;
+    } else if (totalTicks > 0x780) {
+        unk48 = 2;
+    } else {
+        unk48 = 1;
+    }
+}
+
+DECOMP_FORCEBLOCK(
+    TrainerGemTab, (TrainerGemTab * dummy, const TrainerSection *s, const std::vector<GameGem> &g),
+    dummy->SetPattern(s, g);
+)
 
 int TrainerGemTab::SlotToGemIndex(int slot) const {
     static int keyGems[25] = {
