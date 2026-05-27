@@ -53,7 +53,7 @@ BinStream &operator>>(BinStream &bs, ObjVector<T VECTOR_SIZE_ARG> &vec) {
     bs >> length;
     vec.resize(length);
 
-    for (ObjVector<T VECTOR_SIZE_ARG>::iterator it = vec.begin(); it != vec.end(); it++) {
+    for (typename ObjVector<T VECTOR_SIZE_ARG>::iterator it = vec.begin(); it != vec.end(); it++) {
         bs >> *it;
     }
 

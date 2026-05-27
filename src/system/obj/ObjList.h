@@ -43,7 +43,7 @@ BinStream &operator>>(BinStream &bs, ObjList<T> &oList) {
     bs >> length;
     oList.resize(length);
 
-    for (std::list<T>::iterator it = oList.begin(); it != oList.end(); ++it) {
+    for (typename std::list<T>::iterator it = oList.begin(); it != oList.end(); ++it) {
         bs >> *it;
     }
     return bs;
