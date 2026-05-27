@@ -8,7 +8,7 @@
 
 extern volatile u16 *__peReg;
 extern volatile u16 *__memReg;
-extern BOOL __GXIsGPFifoReady(void);
+extern u8 __GXIsGPFifoReady(void);
 extern void __GXCleanGPFifo(void);
 extern void __GXInitRevisionBits(void);
 extern void __GXSetDirtyState(void);
