@@ -28,7 +28,7 @@ void CharSleeve::Poll() {
         float powed = 1.0f - std::pow(1.0f - mStiffness, dvar12 * dvar12);
         RndTransformable *sleeveparent = mSleeve->TransParent();
         float absed = std::fabs(mSleeve->mLocalXfm.v.z);
-        bool b2 = 0;
+        bool b2 = 0.0f;
         if (mMe && mMe->Teleported()) {
             mPos = mSleeve->WorldXfm().v;
             Vector3 v9c(0.0f, 0.0f, -(absed + mPosLength));

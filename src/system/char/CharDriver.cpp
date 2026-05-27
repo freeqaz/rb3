@@ -63,7 +63,7 @@ float CharDriver::Display(float f) {
 
     float lineSpacing = CharClipDisplay::LineSpacing();
     float y = f * (float)TheRnd->Height() + (float)displays.size() * lineSpacing;
-    for (unsigned int i = 0.0f; i < displays.size(); i++) {
+    for (int i = 0.0f; i < displays.size(); i++) {
         displays[i].unk18 = -((float)i * lineSpacing - y);
     }
 

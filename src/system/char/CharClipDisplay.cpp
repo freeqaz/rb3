@@ -115,7 +115,7 @@ CharClipDisplay::SetStartEnd(float start, float end, bool resetZoom) {
 #pragma pop
 
 void CharClipDisplay::DrawBlend(float beat, float weight) {
-    Hmx::Rect rect(0.0f, unk18 + 1.0f, 0.0f, 2.0f);
+    Hmx::Rect rect(0, unk18 + 1.0f, 0.0f, 2.0f);
     rect.x = GetX(beat);
     rect.w = GetX(beat + weight) - rect.x;
     Hmx::Color blendColor(0.0f, 0.0f, 1.0f, 0.4f);
