@@ -1034,14 +1034,14 @@ void VocalTrack::PollLyricAnimations(
 }
 
 void VocalTrack::UpdateLyricZ() {
-    float z;
     bool leadDirty = false;
+    float z;
     bool harmonyDirty = false;
-    const ObjPtr<VocalTrackDir> &_ref0 = mDir;
+    ObjPtr<VocalTrackDir> &_ref0 = mDir;
     _ref0->RecalculateLyricZ(&leadDirty, &harmonyDirty);
     if (leadDirty) {
-        std::deque<LyricPlate *>::iterator it = mLyricsLead.begin();
         std::deque<LyricPlate *>::iterator leadEnd = mLyricsLead.end();
+        std::deque<LyricPlate *>::iterator it = mLyricsLead.begin();
         for (; leadEnd != it; ++it) {
             LyricPlate *plate = *it;
             if (plate->mBaked) {
@@ -2467,7 +2467,7 @@ void VocalTrack::PrepareNoteTubes(
                         firstNote.mMs / 1000.0f
                     );
                 }
-                float runX = 0.0f;
+                float runX = 0;
                 float prevX = -FLT_MAX;
                 int pointIdx = 0;
                 if (curNote != combineNote) {
@@ -2508,7 +2508,8 @@ void VocalTrack::PrepareNoteTubes(
                 }
                 float lastX = unk78 * (runX / windowDurationMs);
                 if (!lastNote.mUnpitchedNote) {
-                    float minX = -(0.75f * zPerPitch - lastX);
+                    float minX = (0.75f * zPerPitch - lastX);
+                    minX = -minX;
                     float prevMin = 0.01f + prevX;
                     if (prevMin >= minX)
                         minX = prevMin;
