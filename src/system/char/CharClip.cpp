@@ -455,6 +455,19 @@ float CharClip::AverageBeatsPerSecond() const {
 
 int CharClip::BeatToSample(float f, float *fp) const {
     float frame = BeatToFrame(f);
+#ifdef HX_NATIVE
+    // Retail STLport vector::back() on an empty mBeatTrack reads OOB benignly;
+    // clang's hardened libstdc++ asserts. Some viseme/pose CharClips load with an
+    // empty mBeatTrack — treat last-key frame as 0 (the `frame != 0` branch),
+    // matching the no-divide fallthrough rather than aborting at play time.
+    float lastFrame = mBeatTrack.empty() ? 0.0f : mBeatTrack.back().frame;
+    float f1 = 0;
+    if (lastFrame != 0) {
+        f1 = frame / lastFrame;
+    } else {
+        f1 = 0;
+    }
+#else
     const Key<float> &lastKey = mBeatTrack.back();
     float f1 = 0;
     if (lastKey.frame != 0) {
@@ -462,6 +475,7 @@ int CharClip::BeatToSample(float f, float *fp) const {
     } else {
         f1 = 0;
     }
+#endif
     *fp = f1;
     return mFull.FracToSample(fp);
 }

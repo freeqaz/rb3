@@ -18,12 +18,19 @@ void Synchronizable::Publish(const char *cc) {
     MILO_ASSERT(mTag.length() == 0, 0x1E);
     mTag = cc;
     MILO_ASSERT(mTag.length(), 0x20);
+#ifndef HX_NATIVE
+    // TheSyncStore is the network/ online sync registry — null/off-link on native.
+    // Keep mTag bookkeeping (so ~Synchronizable's length check is consistent) but
+    // skip the registry insert; nothing synchronizes offline.
     TheSyncStore->AddSyncObj(this, mTag);
+#endif
 }
 
 void Synchronizable::Unpublish() {
     MILO_ASSERT(mTag.length(), 0x26);
+#ifndef HX_NATIVE
     TheSyncStore->RemoveSyncObj(mTag);
+#endif
     mTag = "";
 }
 
@@ -37,6 +44,12 @@ void Synchronizable::SetSyncDirty(unsigned int ui, bool b) {
 }
 
 void Synchronizable::SynchronizeIfDirty() {
+#ifdef HX_NATIVE
+    // Online sync send (SyncObjMsg over TheNetSession to peers) — no offline meaning;
+    // TheUserMgr/TheNetSession/SyncObjMsg live in the un-globbed network/ subsystem.
+    mDirtyMask = 0;
+    mDirtyUsers.clear();
+#else
     while (!mDirtyUsers.empty()) {
         User *u = TheUserMgr->GetUser(mDirtyUsers.back(), true);
         if (HasSyncPermission() && u) {
@@ -55,6 +68,7 @@ void Synchronizable::SynchronizeIfDirty() {
         }
         mDirtyMask = 0;
     }
+#endif
 }
 
 const char *Synchronizable::GetUniqueTag() const { return mTag.c_str(); }

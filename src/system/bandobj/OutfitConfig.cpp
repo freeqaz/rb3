@@ -9,10 +9,14 @@
 #include "rndobj/Dir.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/Utl.h"
+#ifndef HX_NATIVE
 #include "rndwii/Tex.h"
+#endif
 #include "utl/Loader.h"
 #include "utl/Symbols.h"
+#ifndef HX_NATIVE
 #include <revolution/gx/GXMisc.h>
+#endif
 
 INIT_REVS(OutfitConfig);
 
@@ -181,12 +185,18 @@ void OutfitConfig::MatSwap::Compose(
         for (int i = 0; i < patches.size(); i++) {
             patches[i].Render(diffTex, sMat);
         }
+#ifndef HX_NATIVE
         WiiTex::bComposingOutfitTexture = true;
+#endif
         sCam->SetTargetTex(nullptr);
+#ifndef HX_NATIVE
         WiiTex::bComposingOutfitTexture = false;
+#endif
         prevCam->Select();
         sMat->SetDiffuseTex(nullptr);
+#ifndef HX_NATIVE
         GXPixModeSync();
+#endif
     }
 }
 
@@ -604,6 +614,10 @@ BinStream &operator>>(BinStream &bs, OldColorOption &o) {
     return bs;
 }
 
+#ifndef HX_NATIVE
+// STLport-internal explicit template specializations (stlpmtx_std::*) that force
+// the OldColorOption vector helper bodies out-of-line for the matched build's IPA.
+// Host STL has no stlpmtx_std namespace; the native vector uses host instantiation.
 template <>
 __declspec(noinline) void stlpmtx_std::_Copy_Construct<OldColorOption>(OldColorOption* __p, const OldColorOption& __val) {
     new(__p) OldColorOption(__val);
@@ -655,6 +669,7 @@ __declspec(noinline) void stlpmtx_std::_Vector_impl<
     _M_set_finish_idx(__f - __s);
     _M_set_data_size(__e - __s);
 }
+#endif // !HX_NATIVE
 
 SAVE_OBJ(OutfitConfig, 0x5C7)
 
@@ -1099,7 +1114,12 @@ BEGIN_CUSTOM_PROPSYNC(OutfitConfig::MatSwap)
 END_CUSTOM_PROPSYNC
 
 BEGIN_CUSTOM_PROPSYNC(OutfitConfig::MeshAO::Seam)
+#ifdef HX_NATIVE
+    // `index` Symbol global collides with POSIX index(); intern inline (same Symbol).
+    SYNC_PROP(Symbol("index"), o.mIndex)
+#else
     SYNC_PROP(index, o.mIndex)
+#endif
     SYNC_PROP(coeff, o.mCoeff)
 END_CUSTOM_PROPSYNC
 

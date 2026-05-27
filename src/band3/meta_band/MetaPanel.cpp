@@ -156,6 +156,27 @@ public:
 };
 extern WiiInvitationsProvider TheWiiInvitationsProvider;
 
+#ifdef HX_NATIVE
+// These Wii online panels/providers are declared in this TU but have NO decomp
+// implementation (their bodies live in Wii-only code that was never decompiled).
+// The init.dta screen-include chain still instantiates a JoinInvitePanel via its
+// registered factory; a weak no-op ctor stub leaves the object's UIPanel vtable
+// unset -> crash on first use. Provide minimal native ctors so `{new …}` yields a
+// valid (empty) UIPanel, and no-op the provider methods. These panels carry no
+// native online function; they just need to construct + dispatch DTA harmlessly.
+JoinInvitePanel::JoinInvitePanel() : UIPanel() {}
+WiiProfilePanel::WiiProfilePanel() : UIPanel() {}
+// WiiFriendsDetailsProvider's ctor + vtable are left to the weak link stub (the
+// menu init DTA never instantiates it — only JoinInvitePanel is created); defining
+// its ctor here would force emitting its UIList-provider vtable (extra virtuals).
+void WiiFriendsScreen::Init() {}
+void WiiFriendsProvider::Init() {}
+void WiiFriendsProvider::Poll() {}
+void WiiInvitationsProvider::Init() {}
+WiiFriendsProvider TheWiiFriendsProvider;
+WiiInvitationsProvider TheWiiInvitationsProvider;
+#endif
+
 bool MetaPanel::sUnlockAll;
 bool MetaPanel::sIsPlaytest;
 bool MetaPanel::sLaunchedGoalMsgsOnly;
@@ -291,6 +312,27 @@ MetaPanel::~MetaPanel() {
 
 void MetaPanel::Load() {
     UIPanel::Load();
+#ifdef HX_NATIVE
+    // The 360-ARK extract's config/synth.dta has a different `metamusic` schema than
+    // the RB3-Wii decomp expects — it lacks the `metamusic_loop` array, so the
+    // hard-failing SystemConfig 3-arg lookup aborts. The menu background music isn't
+    // available (no audio assets on this extract anyway), so tolerate the missing
+    // config and skip the MetaMusic FILE load. Still construct mMusic (a valid empty
+    // MetaMusic) so the unconditional mMusic->Poll/Stop/IsPlaying derefs across this
+    // TU stay safe; an unloaded MetaMusic polls/stops harmlessly.
+    DataArray *mm = SystemConfig(Symbol("synth"))->FindArray(Symbol("metamusic"), false);
+    DataArray *loopCfg = mm ? mm->FindArray(Symbol("metamusic_loop"), false) : nullptr;
+    mMusic = new MetaMusic("metamusic");
+    if (loopCfg) {
+        DataArray *loopArr = loopCfg->Array(PickLoopIndex(loopCfg->Size()));
+        String filename(MakeString("%s", loopArr->Str(0)));
+        float vol = loopArr->Float(1);
+        mMusic->Load(filename, vol, true, true);
+    }
+    mSongPreview.Init();
+    UpdateMusicMuteState();
+    return;
+#endif
     DataArray *cfg = SystemConfig("synth", "metamusic", "metamusic_loop");
     DataArray *loopArr = cfg->Array(PickLoopIndex(cfg->Size()));
     String filename(MakeString("%s", loopArr->Str(0)));
@@ -309,12 +351,30 @@ void MetaPanel::PollForLoading() {
 }
 
 bool MetaPanel::IsLoaded() const {
+#ifdef HX_NATIVE
+    // When the metamusic config is absent (360-ARK extract; see Load()), no music
+    // FILE is loaded, so mMusic->Loaded() never goes true and the splash_screen
+    // (which contains the `meta` MetaPanel) would never finish its transition. The
+    // panel's UI is fully loaded; gate the music-loaded requirement on whether a
+    // file was actually requested.
+    return UIPanel::IsLoaded() && mMusic
+        && (mMusic->mFilename.empty() || mMusic->Loaded());
+#else
     return UIPanel::IsLoaded() && mMusic && mMusic->Loaded();
+#endif
 }
 
 void MetaPanel::FinishLoad() {
     UIPanel::FinishLoad();
+#ifdef HX_NATIVE
+    // The "fade" SynthFader lives in sfx/common_bank.milo, which the 360-ARK
+    // extract lacks proper synth banks for (same gap the metamusic-absent path
+    // in Load()/IsLoaded() handles). Don't hard-fail when it's missing — AddFader
+    // already null-tolerates (MILO_WARN), so the splash `meta` panel finishes.
+    mMusic->AddFader(TheSynth->Find<Fader>("fade", false));
+#else
     mMusic->AddFader(TheSynth->Find<Fader>("fade", true));
+#endif
 }
 
 void MetaPanel::Unload() {

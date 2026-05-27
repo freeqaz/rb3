@@ -1,5 +1,9 @@
 #include "meta_band/PrefabMgr.h"
+#ifdef HX_NATIVE
+#include <cstring> // MWCC MSL_Common/extras.h -> host <cstring> (mem/str helpers)
+#else
 #include "MSL_Common/extras.h"
+#endif
 #include "bandobj/BandCharDesc.h"
 #include "decomp.h"
 #include "game/BandUserMgr.h"

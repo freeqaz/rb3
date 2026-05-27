@@ -26,7 +26,26 @@ const char *PathName(const class Hmx::Object *obj);
 
 // BEGIN SET TYPE MACRO
 // --------------------------------------------------------------------------------
-#ifdef MILO_DEBUG
+#ifdef HX_NATIVE
+// Native build: the extracted `objects` config may have NO type-def array for a
+// class — both because a few rndobj classes carry the decomp's "Rnd" prefix while
+// the on-disc data uses the bare 2010 names (RndTex vs "Tex"), and because the
+// 360-ARK-fallback config is incomplete vs the Wii original. The matched macro
+// hard-fails in `SystemConfig("objects", class, "types")` when the class is
+// absent; here we decompose it into non-failing lookups and just leave the object
+// with no type-def (SetTypeDef(0)) — exactly the macro's existing graceful path
+// for a missing per-type entry. No game logic changes; matched #else is untouched.
+#define OBJ_SET_TYPE(classname)                                                           \
+    virtual void SetType(Symbol classname) {                                              \
+        static DataArray *_objs  = SystemConfig("objects");                               \
+        static DataArray *_cls   = _objs ? _objs->FindArray(StaticClassName(), false) : 0;\
+        static DataArray *types  = _cls ? _cls->FindArray(Symbol("types"), false) : 0;    \
+        if (classname.Null() || !types)                                                   \
+            SetTypeDef(0);                                                                \
+        else                                                                              \
+            SetTypeDef(types->FindArray(classname, false)); /* 0 -> no type-def, fine */  \
+    }
+#elif defined(MILO_DEBUG)
 #define OBJ_SET_TYPE(classname)                                                           \
     virtual void SetType(Symbol classname) {                                              \
         static DataArray *types = SystemConfig("objects", StaticClassName(), "types");    \

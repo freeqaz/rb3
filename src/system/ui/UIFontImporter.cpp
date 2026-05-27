@@ -2,6 +2,7 @@
 #include "obj/ObjMacros.h"
 #include "ui/UILabel.h"
 #include "ui/UILabelDir.h"
+#include "rndobj/Text.h"
 #include "utl/UTF8.h"
 #include "utl/Symbols.h"
 #include "utl/ClassSymbols.h"
@@ -187,9 +188,24 @@ RndText *UIFontImporter::FindTextForFont(RndFont *font) const {
         FOREACH_OBJREF (it, font) {
             Hmx::Object *owner = (*it)->RefOwner();
             if (owner) {
+#ifdef HX_NATIVE
+                // RB3's 2010-era milos serialize text objects under the bare
+                // class name "Text", but the decomp's class carries the "Rnd"
+                // prefix (OBJ_CLASSNAME(RndText) => ClassName() == "RndText").
+                // The matched `== Text` (Symbol "Text") comparison therefore
+                // never matches a loaded RndText on native, so the genned font's
+                // owning Text object is never found and UILabel::Font() asserts
+                // on a null Text/mFont. Accept the prefixed name too. (Mirrors
+                // the Tex/Text/Dir factory aliases in rb3_band_rnd.cpp.)
+                if (owner->ClassName() == Text
+                    || owner->ClassName() == RndText::StaticClassName()) {
+                    return dynamic_cast<RndText *>(owner);
+                }
+#else
                 if (owner->ClassName() == Text) {
                     return dynamic_cast<RndText *>(owner);
                 }
+#endif
             }
         }
     }

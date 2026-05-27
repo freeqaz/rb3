@@ -595,7 +595,16 @@ void BandCharacter::SyncObjects() {
                                     "bone_prop1.mesh",  "bone_prop2.mesh",
                                     "bone_prop3.mesh",  "spot_neck.mesh",
                                     "spot_navel.mesh",  "bone_mic_stand_bottom.mesh" };
+#ifdef HX_NATIVE
+    // `bones` has no null sentinel: the matched loop walks until `*ptr == 0`,
+    // relying on the static datum *after* the 8-element array being zero on the
+    // Wii image. Under clang LP64 that adjacent storage is arbitrary, so the
+    // loop reads bones[8] (OOB) as a garbage non-null pointer and crashes in
+    // Find(). Bound the walk to the array's 8 known elements (same iteration set).
+    for (const char **ptr = bones; ptr != bones + 8; ptr++) {
+#else
     for (const char **ptr = bones; *ptr != 0; ptr++) {
+#endif
         RndTransformable *t = Find<RndTransformable>(*ptr, false);
         if (t)
             t->SetTransParent(this, false);

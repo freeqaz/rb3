@@ -161,6 +161,9 @@ void GameInit() {
 void GameTerminate() { TheSongMgr.Terminate(); }
 
 Game::Game()
+#ifdef HX_NATIVE
+    // GAME_DBG trace: prove the meta->game transition reached the Game ctor.
+#endif
     : mSongDB(new SongDB()), mSongInfo(0), mIsPaused(0), mGameWantsPause(0),
       mOvershellWantsPause(0), unk6b(0), unk6c(0), mPauseTime(0), mRealtime(0), unk6f(0),
       mTimeOffset(0), mLastPollMs(0), mMuckWithPitch(0), mMusicSpeed(1.0f),
@@ -169,6 +172,10 @@ Game::Game()
       unkdc(-1), unk11c(-1), unk120(0), mSkippedSong(0), unk124(0), mResumeTime(0),
       mInvalidScore(0), unk130(0), unk134(0), unk138(0), mDrumFillsMod(1), unk13c(-1),
       unk140(-1), mTrackerManager(0), unk148(0), mDisablePauseMs(-1), unk150(1) {
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: *** Game::Game() ctor REACHED — the meta->game transition fired ***\n");
+#endif
     MILO_ASSERT(!TheSongDB, 0xCE);
     SongDB * &_ref0 = mSongDB;
     TheSongDB = _ref0;
@@ -235,6 +242,11 @@ Game::~Game() {
 void Game::LoadSong() {
     gSongLoadTimer.Restart();
     Symbol songSym = MetaPerformer::Current()->Song();
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: *** Game::LoadSong() ENTERED — song='%s' (THE GOAL) ***\n",
+                 songSym.mStr ? songSym.mStr : "(null)");
+#endif
     PlayerTrackConfigList *cfgList = TheGameConfig->GetConfigList();
     auto _tmp0 = TheSongMgr.GetSongIDFromShortName(songSym, true);
     const SongDataValidate& i2 = TheSongMgr.Data(_tmp0)->IsOnDisc()

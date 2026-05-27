@@ -99,7 +99,13 @@ void MainHubPanel::Enter() {
     if (rotMsArr)
         mMessageRotationMs = rotMsArr->Float(1);
     mMessageProvider = new MainHubMessageProvider(this);
+#ifndef HX_NATIVE
+    // TheServer (= gWiiServer, the Wii online/login server) is not on the native
+    // link — it is a zeroed weak stub (band3_link_stubs.s), so AddSink would
+    // operate on a garbage MsgSource (mSinks list) and crash. Offline has no
+    // login server. Gate it out (mirrors the other online-subsystem gates).
     TheServer.AddSink(this, UserLoginMsg::Type());
+#endif
     UIPanel::Enter();
     RefreshData();
     SetMainHubOverride(kMainHubOverride_None);
@@ -147,7 +153,9 @@ void MainHubPanel::Exit() {
     TheSessionMgr->GetMatchmaker()->RemoveSink(this);
     TheSessionMgr->RemoveSink(this);
     TheProfileMgr.RemoveSink(this, PrimaryProfileChangedMsg::Type());
-    TheServer.RemoveSink(this, UserLoginMsg::Type());
+#ifndef HX_NATIVE
+    TheServer.RemoveSink(this, UserLoginMsg::Type()); // see Enter() — TheServer stubbed offline
+#endif
     TheBandUI.GetOvershell()->RemoveSink(this, "override_ended");
     unkbc = 0;
     unkc0 = kScoreBand;

@@ -77,6 +77,13 @@ void SetMeshAnim(ObjectDir *dir, std::vector<int> &vec) {
 }
 
 int GetNum(const char *cc, int i1, ObjectDir *dir, int i2) {
+#ifdef HX_NATIVE
+    // The female-head branch in BandHeadShaper::Init reuses gHeadMale for the load
+    // (matched-fork transcription), leaving gHeadFemale null on native, so dir can
+    // arrive null here; guard the deref (the menu boot needs no face-deform counts).
+    if (!dir)
+        return 0;
+#endif
     BandFaceDeform *df = dir->Find<BandFaceDeform>(MakeString("%s.fdm", cc), false);
     int num = 0;
     if (df) {
@@ -104,6 +111,10 @@ ObjectDir *BandHeadShaper::GetViseme(Symbol s, bool b) {
 }
 
 ObjectDir *FindSubdir(ObjectDir *dir, const char *cc) {
+#ifdef HX_NATIVE
+    if (!dir) // gHeadFemale can be null on native (see GetNum note)
+        return 0;
+#endif
     ObjectDir *subdir = dir->Find<ObjectDir>(cc, false);
     if (subdir)
         return subdir->mSubDirs[0].Ptr();
@@ -116,6 +127,15 @@ void BandHeadShaper::Init() {
     const char *genderpath = "";
     DataArray *cfg = SystemConfig("objects", "BandCharDesc");
     auto _tmp0 = cfg->FindData("head_male_path", genderpath, false);
+#ifdef HX_NATIVE
+    // The head-shaper male/female milos contain CharClip/CharBonesSamples objects
+    // whose Load() is not yet native byte-correct (CharClip::Load version-desync,
+    // CharBonesSamples.cpp:457 / CharBones.cpp:1354 string-len overflow) — deferred
+    // T9 char-Load work. Head/face shaping is off the boot-to-menu path; gHeadMale/
+    // gHeadFemale stay null and the existing HX_NATIVE null-guards (GetNum/FindSubdir/
+    // gVisemes loop) handle it. Mirrors BandCharDesc::Init / CharCache::InitMe.
+    _tmp0 = false;
+#endif
     if (_tmp0 && genderpath[0] != 0) {
         static int _x = MemFindHeap("char");
         MemPushHeap(_x);
@@ -132,6 +152,9 @@ void BandHeadShaper::Init() {
         MemPopHeap();
     }
     auto _tmp1 = cfg->FindData("head_female_path", genderpath, false);
+#ifdef HX_NATIVE
+    _tmp1 = false; // deferred — see head_male_path note above
+#endif
     if (_tmp1 && genderpath[0] != 0) {
         static int _x = MemFindHeap("char");
         MemPushHeap(_x);
@@ -148,6 +171,10 @@ void BandHeadShaper::Init() {
         MemPopHeap();
     }
     for (int i = 0; i < 4; i++) {
+#ifdef HX_NATIVE
+        if (!gVisemes[i]) // FindSubdir returns null when its head dir was null
+            continue;
+#endif
         gVisemes[i]->SetName("", 0);
     }
 }

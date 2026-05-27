@@ -477,7 +477,12 @@ END_COPYS
 
 BEGIN_HANDLERS(FileMerger)
     HANDLE_EXPR(loaded, FindMerger(_msg->Sym(2), true)->mLoaded)
+#ifdef HX_NATIVE
+    // `select` Symbol global collides with POSIX select(); intern inline (same Symbol).
+    HANDLE(Symbol("select"), OnSelect)
+#else
     HANDLE(select, OnSelect)
+#endif
     HANDLE(start_load, OnStartLoad)
     HANDLE_ACTION(clear, Clear())
     HANDLE_ACTION(clear_selections, ClearSelections())

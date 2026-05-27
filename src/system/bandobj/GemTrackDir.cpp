@@ -4,7 +4,9 @@
 #include "obj/ObjVersion.h"
 #include "math/Rand.h"
 #include "math/Utl.h"
+#ifndef HX_NATIVE
 #include "rndwii/Mesh.h"
+#endif
 #include "utl/Loader.h"
 #include "beatmatch/RGUtl.h"
 #include "utl/Symbols.h"
@@ -1188,12 +1190,16 @@ int GemTrackDir::PrepareChordMesh(unsigned int chord) {
         RndMesh *invMesh = _ref0->MakeInvertedMesh(chordMesh);
 
         chordMesh->SetMutable(0);
+#ifndef HX_NATIVE
         dynamic_cast<WiiMesh *>(chordMesh)->mDisplays.Clear();
+#endif
         chordMesh->Sync(0x3F);
         unk6b4[chord] = std::make_pair(1, chordMesh);
 
         invMesh->SetMutable(0);
+#ifndef HX_NATIVE
         dynamic_cast<WiiMesh *>(invMesh)->mDisplays.Clear();
+#endif
         invMesh->Sync(0x3F);
         unk6cc[chord] = std::make_pair(1, invMesh);
 

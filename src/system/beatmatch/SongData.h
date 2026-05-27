@@ -188,6 +188,17 @@ public:
     TrackType TrackTypeAt(int idx) const { return mTrackInfos[idx]->mType; }
     int TrackDiffAt(int idx) const { return mTrackDifficulties[idx]; }
     bool TrackHasIndependentSlots(int idx) const {
+#ifdef HX_NATIVE
+        // No-chart native case: the song's .mid is absent from the extract, so the
+        // MIDI parse was skipped (SongData::Load missing-asset boundary) and
+        // mTrackInfos is empty. MasterAudio::SetupTracks still iterates the audio
+        // channel config (from songs.dta) and indexes mTrackInfos here; guard the
+        // empty-track case so the audio setup finishes harmlessly instead of an
+        // OOB std::vector abort. (The song cannot play without a chart; this just
+        // keeps the reached-missing-asset stop clean.)
+        if (idx < 0 || (size_t)idx >= mTrackInfos.size())
+            return false;
+#endif
         return mTrackInfos[idx]->mIndependentSlots;
     }
     bool HasTrackDiffs() const { return mTrackDifficulties.size(); }

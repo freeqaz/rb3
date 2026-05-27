@@ -11,7 +11,13 @@
 #include "char/Character.h"
 #include "math/Utl.h"
 #include "math/Rot.h"
+#ifdef HX_NATIVE
+// STLport functor-base internals; the host libstdc++ provides these via
+// <functional> (CharHair only uses std::list::sort with a comparator).
+#include <functional>
+#else
 #include "stl/_function_base.h"
+#endif
 #include "world/Dir.h"
 #include <cmath>
 #include "utl/Symbols.h"
@@ -210,6 +216,17 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
 }
 #endif
 
+#ifdef HX_NATIVE
+// StrandMultiply is a hand-tuned MWCC paired-singles matrix multiply computing
+// out = a * b (the alias_path handles &b == &out via row scratch). On clang LP64
+// there are no Gekko paired-single ops; use the standard out-of-line matrix
+// multiply (math/Mtx.h Multiply(Matrix3,Matrix3,Matrix3), which already handles
+// the aliasing case). Same substitution CharForeTwist uses for its local
+// Multiply (see CharForeTwist.cpp CHARHAIR_LOCAL_MULTIPLY gate).
+inline void StrandMultiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
+    Multiply(a, b, out);
+}
+#else
 inline void StrandMultiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
     register const Hmx::Matrix3 *_a = &a;
     register const Hmx::Matrix3 *_b = &b;
@@ -332,6 +349,7 @@ inline void StrandMultiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Ma
     mult_end:
     }
 }
+#endif
 
 void CharHair::Strand::SetAngle(float angle) {
     register float angle_rad = angle * DEG2RAD;
@@ -832,6 +850,13 @@ BinStream &operator>>(BinStream &bs, CharHair::Point &pt) {
     pt.force.Zero();
     pt.lastFriction.Zero();
     pt.lastZ.Zero();
+#ifdef HX_NATIVE
+    // Matched-fork omits the trailing `return bs;` (the declared BinStream&
+    // return is never used by callers, and MWCC let the value linger); clang
+    // LP64 emits ud2 (SIGILL) on the non-void fall-through. Same class as the
+    // CharBones::SetStart / ObjDirPtr::operator= missing-return fixes.
+    return bs;
+#endif
 }
 
 void CharHair::Strand::Load(BinStream &bs) {
@@ -845,7 +870,12 @@ void CharHair::Strand::Load(BinStream &bs) {
         mHookupFlags = 0;
 }
 
-BinStream &operator>>(BinStream &bs, CharHair::Strand &strand) { strand.Load(bs); }
+BinStream &operator>>(BinStream &bs, CharHair::Strand &strand) {
+    strand.Load(bs);
+#ifdef HX_NATIVE
+    return bs; // matched-fork missing-return (clang ud2 on fall-through)
+#endif
+}
 
 SAVE_OBJ(CharHair, 0x41B)
 

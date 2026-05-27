@@ -1,0 +1,78 @@
+{
+  "symbol": "Swing__20DrumTrackWatcherImplFibb11GemHitFlags",
+  "function_name": "DrumTrackWatcherImpl::Swing",
+  "source_path": "/home/free/code/milohax/rb3/src/system/beatmatch/DrumTrackWatcherImpl.cpp",
+  "initial_percent": 95.06826,
+  "final_percent": 99.64164,
+  "total_delta": 4.57338,
+  "rounds": [
+    {
+      "round_num": 1,
+      "baseline": 95.06826,
+      "best_name": "declmove_1+declreorder_3",
+      "best_pattern": "compose:declaration_movement+declaration_reorder",
+      "best_score": 97.57338,
+      "delta": 2.505120000000005,
+      "num_variants": 33,
+      "improved": true
+    },
+    {
+      "round_num": 2,
+      "baseline": 95.06826,
+      "best_name": "merge:typewidth_0+declreorder_0",
+      "best_pattern": "merge:type_width_change+declaration_reorder",
+      "best_score": 99.63822,
+      "delta": 4.569960000000009,
+      "num_variants": 34,
+      "improved": true
+    },
+    {
+      "round_num": 3,
+      "baseline": 95.06826,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 99.63822,
+      "delta": 4.569960000000009,
+      "num_variants": 33,
+      "improved": true
+    },
+    {
+      "round_num": 4,
+      "baseline": 95.06826,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 99.63822,
+      "delta": 4.569960000000009,
+      "num_variants": 33,
+      "improved": true
+    },
+    {
+      "round_num": 5,
+      "baseline": 95.06826,
+      "best_name": "const_0",
+      "best_pattern": "const_overload",
+      "best_score": 99.63822,
+      "delta": 4.569960000000009,
+      "num_variants": 33,
+      "improved": true
+    }
+  ],
+  "stopped_reason": "max_rounds",
+  "elapsed_seconds": 57.71,
+  "winning_pattern": "const_overload",
+  "ghidra_stats": null,
+  "validation_tier": 5,
+  "validation_distribution": {
+    "2": 116,
+    "5": 49,
+    "1": 1
+  },
+  "shape_facts_enabled": true,
+  "codegen_shapes": [],
+  "fact_boost_patterns": [],
+  "fact_suppress_patterns": [],
+  "il_analyzed_variants": 0,
+  "il_unique_buckets": 0,
+  "il_duplicate_buckets": 0,
+  "il_pattern_metrics": {}
+}

@@ -390,9 +390,23 @@ DataNode InlineHelp::OnSetConfig(const DataArray *da) {
     for (int i = 0; i < arr->Size(); i++) {
         DataArray *loopArr = arr->Array(i);
         ActionElement el((JoypadAction)loopArr->Int(0));
+#ifdef HX_NATIVE
+        // The per-action help text/icon lives in the inner loopArr
+        // (kAction primary [secondary]); the matched build's arr->Node(1/2) reads
+        // the OUTER array and only happens to stay in-bounds when every action
+        // shares the outer layout. The 360-ARK song_select help config passes a
+        // single-element outer array (e.g. ((kAction_Confirm $primary $secondary)))
+        // → arr->Node(1) is out of range and aborts. Read from loopArr (the
+        // faithful per-action source) and bound-check it.
+        if (loopArr->Size() > 1)
+            el.SetConfig(loopArr->Node(1), false);
+        if (loopArr->Size() > 2)
+            el.SetConfig(loopArr->Node(2), true);
+#else
         el.SetConfig(arr->Node(1), false);
         if (loopArr->Size() > 2)
             el.SetConfig(arr->Node(2), true);
+#endif
         mConfig.push_back(el);
     }
     SyncLabelsToConfig();

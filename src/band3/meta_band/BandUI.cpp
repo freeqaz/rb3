@@ -57,13 +57,27 @@ BandUI::BandUI()
 BandUI::~BandUI() {}
 
 void BandUI::Init() {
+#ifndef HX_NATIVE
+    // Online/net/Wii-mic event subscriptions whose target globals live in
+    // subsystems excluded from the native link (TheNetSession/NetSession +
+    // TheNet are in network/ which isn't globbed; TheGameMicManager's Init is
+    // gated out in App.cpp; TheSaveLoadMgr is the excluded SaveLoadManager).
+    // Each is null natively → AddSink would fault in MsgSource::RemoveSink. These
+    // are online join/invite, USB-mic-change, and save/load-dialog notifications
+    // with no native meaning on the offline boot-to-menu path. Gate them; the
+    // AddSinks below to globals that ARE real natively (ThePlatformMgr — built by
+    // rb3_platform_native.cpp; TheRockCentral — its ctor is compiled;
+    // TheContentMgr — base ContentMgr) are kept.
     TheNetSession->AddSink(this, ProcessedJoinRequestMsg::Type());
     TheNetSession->AddSink(this, LocalUserLeftMsg::Type());
     TheNet.GetSearcher()->AddSink(this, InviteAcceptedMsg::Type());
+#endif
     ThePlatformMgr.AddSink(this, "connection_status_changed");
     ThePlatformMgr.AddSink(this, "disk_error");
+#ifndef HX_NATIVE
     TheGameMicManager->AddSink(this, GameMicsChangedMsg::Type());
     TheSaveLoadMgr->AddSink(this);
+#endif
     TheRockCentral.AddSink(this);
     ThePlatformMgr.AddSink(this, NetErrorMsg::Type());
 

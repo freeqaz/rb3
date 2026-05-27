@@ -36,6 +36,10 @@
 #include "utl/VectorSizeDefs.h"
 #include <vector>
 
+#ifndef HX_NATIVE
+// STLport-internal _Temporary_buffer<Symbol*> specialization that routes the
+// std::sort scratch buffer through Milo's _MemAlloc. Host STL has no
+// stlpmtx_std::_Temporary_buffer; native std::sort uses the host allocator.
 namespace stlpmtx_std {
 template <>
 inline void _Temporary_buffer<Symbol *, Symbol>::_M_allocate_buffer() {
@@ -57,6 +61,7 @@ inline _Temporary_buffer<Symbol *, Symbol>::~_Temporary_buffer() {
     _MemFree(_M_buffer);
 }
 } // namespace stlpmtx_std
+#endif
 
 class TourDescCmp {
 public:

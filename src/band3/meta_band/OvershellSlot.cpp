@@ -78,19 +78,36 @@ OvershellSlot::OvershellSlot(
     setupProviders.SetType("setup_providers");
     setupProviders[0] = mCharProvider;
     setupProviders[1] = mSwappableProfilesProvider;
+#ifdef HX_NATIVE
+    // The invite-friends provider slot is `0` (no Wii invite provider). The bare
+    // literal binds to DataNode(int) -> kDataInt 0, so when the overshell_dir.dta
+    // `setup_providers` handler does `{invite_friends.lst set_provider $invite_provider}`,
+    // DataNode::GetObj calls LiteralStr on an int node and MILO_FAILs (clang LP64;
+    // MWCC's `0` selected the Hmx::Object* overload). Pass an explicit null object so
+    // the slot is kDataObject null and SetProvider(0) yields an empty list.
+    setupProviders[2] = (Hmx::Object *)0;
+#else
     setupProviders[2] = 0;
+#endif
     setupProviders[3] = mPartSelectProvider;
     setupProviders[4] = mCymbalProvider;
     setupProviders[5] = TheModifierMgr;
     mOvershellDir->HandleType(setupProviders);
     mUserNameLabel = mOvershellDir->Find<BandLabel>("user_name.lbl", true);
     MILO_ASSERT(mUserNameLabel, 0xF1);
+#ifndef HX_NATIVE
+    // TheServer (network/ online server) is a zeroed DATA stub on native — its
+    // MsgSource base sink list is garbage, so AddSink/RemoveSink fault. The
+    // user-login event has no offline meaning. Mirrors OvershellPanel ctor gating.
     TheServer.AddSink(this, UserLoginMsg::Type());
+#endif
 }
 
 OvershellSlot::~OvershellSlot() {
     mSessionMgr->RemoveSink(this, LocalUserLeftMsg::Type());
+#ifndef HX_NATIVE
     TheServer.RemoveSink(this, UserLoginMsg::Type());
+#endif
     RELEASE(mSwappableProfilesProvider);
     RELEASE(mCharProvider);
     RELEASE(mMuteUsersProvider);
@@ -2000,3 +2017,37 @@ BEGIN_HANDLERS(OvershellSlot)
     HANDLE_CHECK(0xE4D)
 END_HANDLERS
 #pragma pop
+
+#ifdef HX_NATIVE
+// OvershellProfileProvider has a header (meta_band/OvershellProfileProvider.h) but
+// NO decomp .cpp anywhere in the tree — its body lives in Wii-only profile-swap code
+// that was never decompiled. OvershellSlot's ctor `new`s one (mSwappableProfilesProvider)
+// and hands it to a UIList via `setup_providers`; UIList::Handle(set_provider) then
+// dynamic_casts it to UIListProvider*. With the weak no-op ctor stub the object's
+// vtable/RTTI is garbage -> the dynamic_cast (or any virtual call) crashes. Provide a
+// minimal native impl so the provider constructs with a real vtable and answers
+// offline-empty (Wii profile swapping has no native meaning). Mirrors the MetaPanel.cpp
+// JoinInvitePanel/WiiProfilePanel native-glue precedent for un-decompiled Wii classes.
+OvershellProfileProvider::OvershellProfileProvider(BandUserMgr *mgr)
+    : unk20(0), unk24(0), unk28(0), unk2c(mgr) {}
+OvershellProfileProvider::~OvershellProfileProvider() {}
+void OvershellProfileProvider::Text(int, int, UIListLabel *, UILabel *) const {}
+RndMat *OvershellProfileProvider::Mat(int, int, UIListMesh *) const { return 0; }
+int OvershellProfileProvider::NumData() const { return 0; }
+DataNode OvershellProfileProvider::Handle(DataArray *, bool) { return DataNode(0); }
+WiiProfileActResult
+OvershellProfileProvider::ActOnProfile(int, LocalBandUser *, bool) {
+    return kWiiProfileActResult_Done;
+}
+WiiProfileActResult OvershellProfileProvider::ActOnProfileConfirmed(LocalBandUser *) {
+    return kWiiProfileActResult_Done;
+}
+void OvershellProfileProvider::SetWiiProfileListMode(WiiProfileListMode, bool) {}
+OvershellProfileProvider::WiiProfileListMode
+OvershellProfileProvider::GetWiiProfileListMode() {
+    return (WiiProfileListMode)0;
+}
+int OvershellProfileProvider::GetWiiProfileCount(LocalBandUser *) const { return 0; }
+void OvershellProfileProvider::Reload(LocalBandUser *) {}
+const char *OvershellProfileProvider::GetWiiProfileSelectedName() const { return ""; }
+#endif

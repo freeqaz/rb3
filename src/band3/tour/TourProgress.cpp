@@ -11,7 +11,11 @@
 #include "obj/Object.h"
 #include "os/DateTime.h"
 #include "os/Debug.h"
+#ifdef HX_NATIVE
+#include <vector> // STLport pointer-vector internals -> host STL (engine STL seam)
+#else
 #include "stl/pointers/_vector.h"
+#endif
 #include "tour/TourProperty.h"
 #include "tour/TourPropertyCollection.h"
 #include "tour/TourSavable.h"

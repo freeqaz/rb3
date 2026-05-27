@@ -153,17 +153,17 @@ public:
 
     VocalPlayer *mPlayer; // 0x0
     MicClientID mMicClientID; // 0x4
-    bool mUnused8;  // 0x8
+    bool unkc; // 0x8 — usage unknown
     int mSingerIndex; // 0x10
-    bool mUnused14; // 0x14
-    char *mTalkDataPtr; // 0x18
-    int mUnused1c; // 0x1c
+    bool unk14; // 0x14 — usage unknown
+    char *unk18; // 0x18 — pointer, possibly to talk/talky data (released in dtor)
+    int unk1c; // 0x1c — usage unknown
     int mIsSinging; // 0x20
     float mDetune; // 0x24
     float mMaxDetune; // 0x28
     float mCurrentFrameTime; // 0x2c
-    int mUnused30; // 0x30
-    int mUnused34; // 0x34
+    int unk30; // 0x30 — usage unknown
+    int unk34; // 0x34 — usage unknown
     float mTambourineDeploymentSuppressMs; // 0x38
     float mTambourineActivationTime; // 0x3c
     float mLastTambourineTime; // 0x40
@@ -172,7 +172,7 @@ public:
     float mScreamEnergyThreshold; // 0x4c
     float mScreamMinDurationMs; // 0x50
     float mMicPitchOffset; // 0x54
-    int mUnused58; // 0x58
+    int unk58; // 0x58 — usage unknown
     float mFrameMicPitch; // 0x5c
     float mLastFrameMicEnergy; // 0x60
     float mSmoothedMicEnergy; // 0x64
@@ -181,10 +181,10 @@ public:
     int mFrameAssignedPart; // 0x70
     float mBestTargetPitch; // 0x74
     int mOctaveOffset; // 0x78
-    float mUnused7c; // 0x7c
+    float unk7c; // 0x7c — usage unknown
     bool mScreamOccurred; // 0x80
-    int mUnused84; // 0x84
-    float mUnused88; // 0x88
+    int unk84; // 0x84 — usage unknown
+    float unk88; // 0x88 — usage unknown
     float mPitchHistory[5]; // 0x8c
     float mPitchHistoryMean; // 0xa0
     int mPitchHistoryIndex; // 0xa4

@@ -1,4 +1,10 @@
+#ifndef HX_NATIVE
+// On MWCC the file supplies its own paired-single Matrix3 Multiply (below) and uses
+// CHARHAIR_LOCAL_MULTIPLY to suppress the Mtx.h inline so the asm matches. On native
+// (clang, no PPC intrinsics) we want the standard out-of-line Multiply declared in
+// Mtx.h (defined in Rot.cpp) instead, so leave the suppression off.
 #define CHARHAIR_LOCAL_MULTIPLY
+#endif
 #include "char/CharForeTwist.h"
 #include "math/Rot.h"
 #include "obj/ObjMacros.h"

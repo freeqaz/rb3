@@ -7,6 +7,7 @@
 #include "rndobj/Mesh.h"
 #include "rndobj/Mat.h"
 #include "rndobj/Tex.h"
+#include "rndobj/Text.h"
 #include "rndobj/Trans.h"
 #include "rndobj/Dir.h"
 #include "rndobj/Group.h"
@@ -26,6 +27,10 @@
 // WEAK no-op alias in rndobj_synth_link_stubs.s; this strong definition wins.
 BandRnd gBandRnd;
 Rnd* TheRnd = &gBandRnd;
+
+// Registers the legacy short-name rndobj class aliases (Tex/Text/Dir). Defined
+// below; also called from the real game boot in main_native.cpp (RunGame).
+void RB3RegisterLegacyRndAliases();
 
 // ---------------------------------------------------------------------------
 // VertexFormats::StaticLayout()/SkinnedLayout() — the engine's PipelineManager
@@ -158,13 +163,24 @@ void BandRnd::PreInitRender() {
     RndGroup::Init();
     RndDir::Init();
 
-    // Name aliases for the legacy milo class names. RndTex's OBJ_CLASSNAME is
-    // "RndTex" and RndDir's is "RndDir", but the on-disc milos store the old
-    // short names "Tex" / "Dir". Register those Symbols to the same factory so
-    // NewObject("Tex"/"Dir") resolves (otherwise "Can't make Tex").
-    Hmx::Object::RegisterFactory(Symbol("Tex"), RndTex::NewObject);
-    Hmx::Object::RegisterFactory(Symbol("Dir"), RndDir::NewObject);
-    printf("BandRnd: rndobj factories registered (Trans/Cam/Mesh/Env/Mat/Tex/Light/MultiMesh/Group/Dir + Tex/Dir aliases)\n");
+    RB3RegisterLegacyRndAliases();
+    printf("BandRnd: rndobj factories registered (Trans/Cam/Mesh/Env/Mat/Tex/Light/MultiMesh/Group/Dir + Tex/Text/Dir aliases)\n");
+}
+
+// Name aliases for the legacy milo class names. RndTex/RndText/RndDir register
+// under OBJ_CLASSNAME "RndTex"/"RndText"/"RndDir", but RB3's 2010-era on-disc
+// milos store the old short names "Tex"/"Text"/"Dir" (the other rndobj classes —
+// Mat/Mesh/Group/Cam/Trans/MultiMesh — already use bare OBJ_CLASSNAMEs, so no
+// alias is needed there). Register the short Symbols to the same factory so
+// NewObject("Tex"/"Text"/"Dir") resolves (otherwise "Can't make Tex"/"Text").
+// Called from BOTH the synthetic render harness (PreInitRender) and the real
+// game boot (RunGame, where the real Rnd::PreInit registers the RndXxx names but
+// not the short aliases). RndXxx::NewObject is a valid static factory regardless
+// of registration order, so calling this any time before a milo loads is safe.
+void RB3RegisterLegacyRndAliases() {
+    Hmx::Object::RegisterFactory(Symbol("Tex"),  RndTex::NewObject);
+    Hmx::Object::RegisterFactory(Symbol("Text"), RndText::NewObject);
+    Hmx::Object::RegisterFactory(Symbol("Dir"),  RndDir::NewObject);
 }
 
 static wgpu::Texture MakeSolid(GpuDevice& gpu, wgpu::TextureFormat fmt,

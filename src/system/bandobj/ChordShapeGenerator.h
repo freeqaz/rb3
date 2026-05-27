@@ -16,7 +16,15 @@ public:
 
     class CrossSec {
     public:
+#ifdef HX_NATIVE
+        // STLport's vector<T,N> second param is a size/allocator hint, not a
+        // std::allocator — host libstdc++ rejects `unsigned short` there. Drop
+        // the second arg on native; the field's only used for in-memory edge
+        // lists (no on-disc layout dependency on the allocator type).
+        std::vector<Edge> mEdges; // 0x0
+#else
         std::vector<Edge, unsigned short> mEdges; // 0x0
+#endif
         std::set<unsigned short> mVerts; // 0x8
         float mXOffset; // 0x20
     };

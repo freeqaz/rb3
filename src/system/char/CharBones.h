@@ -104,7 +104,16 @@ public:
     char *RotYOffset() const { return mStart + mRotYOffset; }
     char *RotZOffset() const { return mStart + mRotZOffset; }
     char *EndOffset() const { return mStart + mEndOffset; }
+#ifdef HX_NATIVE
+    // Matched-fork declares a char* return but has no return statement; MWCC let
+    // the assigned value linger in the return reg, but clang LP64 emits ud2 (SIGILL)
+    // on the non-void fall-through. The return value is never used by callers
+    // (SetStartFromRawData ignores it). Add the explicit return. (Mirrors the
+    // ObjDirPtr::operator= missing-return HX_NATIVE fix.)
+    char* SetStart(char* ptr){ mStart = ptr; return ptr; }
+#else
     char* SetStart(char* ptr){ mStart = ptr; }
+#endif
 
     static Type TypeOf(Symbol);
     static const char *SuffixOf(Type);
@@ -146,8 +155,23 @@ public:
 /** "Holds state for a set of bones" */
 class CharBonesObject : public CharBones, public virtual Hmx::Object {
 public:
+#ifdef HX_NATIVE
+    // Clear any stale "freed" mark if this address is being reused by a new
+    // CharBonesObject (see ~CharBonesObject / obj/Object.cpp HxNoteReusedAddr).
+    CharBonesObject();
+#else
     CharBonesObject() {}
+#endif
+#ifdef HX_NATIVE
+    // Record this CharBonesObject's pointer (the representation an
+    // ObjPtr<CharBonesObject> stores as mPtr) as freed, so a dangling
+    // ObjPtr<CharBonesObject>::~ObjPtr (e.g. CharDriver::mBones during venue/char
+    // teardown) skips its Release instead of reading the vbase offset out of this
+    // freed object's vtable and SIGSEGVing. See obj/Object.cpp HxNoteFreedAddr.
+    virtual ~CharBonesObject();
+#else
     virtual ~CharBonesObject() {}
+#endif
     OBJ_CLASSNAME(CharBonesObject);
     OBJ_SET_TYPE(CharBonesObject);
     virtual bool SyncProperty(DataNode &, DataArray *, int, PropOp);

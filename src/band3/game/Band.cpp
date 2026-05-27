@@ -435,9 +435,10 @@ Player *Band::NewPlayer(BeatMaster *master, BandUser *user) {
     const PlayerTrackConfigList *ptclist = TheGameConfig->GetConfigList();
     int track_num = ptclist->GetConfigByUserGuid(user->GetUserGuid()).TrackNum();
     switch (user->GetTrackType()) {
-    case kTrackVocals:
+    case kTrackVocals: {
         int sing_ct = ptclist->NumSingers();
         return new VocalPlayer(user, master, this, track_num, mBandPerformer, sing_ct);
+    }
     case kTrackRealGuitar:
     case kTrackRealBass:
         return new RealGuitarGemPlayer(user, master, this, track_num, mBandPerformer);

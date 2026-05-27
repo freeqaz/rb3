@@ -75,6 +75,18 @@ public:
         int displayableChars; // 0x8
     };
 
+#ifdef HX_NATIVE
+    // mMeshMap is keyed by the RndFont* cast to an integer. The matched-fork uses
+    // `unsigned int`, which is pointer-width on the 32-bit console but TRUNCATES a
+    // 64-bit host pointer — casting back `(RndFont*)key` then yields a bogus pointer
+    // (null-deref in WrapText's mCellSize loop). The map is a runtime-only field
+    // (built by SetFont/UpdateText, never read byte-for-byte from disk), so widening
+    // its key to pointer width on native is layout-safe. Use uintptr_t.
+    typedef unsigned long FontKey;
+#else
+    typedef unsigned int FontKey;
+#endif
+
     RndText();
     OBJ_CLASSNAME(RndText)
     OBJ_SET_TYPE(RndText)
@@ -188,7 +200,7 @@ public:
     String mText; // 0xcc - either ASCII or UTF8 text
     Style mStyle; // 0xd8
     Style mAltStyle; // 0xf0
-    std::map<unsigned int, MeshInfo> mMeshMap; // 0x108
+    std::map<FontKey, MeshInfo> mMeshMap; // 0x108
     unsigned char mAlign; // 0x120
     unsigned char mCapsMode; // 0x121
     int mFixedLength : 16; // 0x122

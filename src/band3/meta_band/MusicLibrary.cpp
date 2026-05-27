@@ -264,7 +264,12 @@ void MusicLibrary::OnEnter() {
     TheProfileMgr.AddSink(this, ProfileChangedMsg::Type());
     ThePlatformMgr.AddSink(this, SigninChangedMsg::Type());
     ThePlatformMgr.AddSink(this, FriendsListChangedMsg::Type());
+#ifndef HX_NATIVE
+    // TheServer (= gWiiServer, the Wii online/login server) is a zeroed weak stub
+    // on the native link (band3_link_stubs.s) — AddSink would walk a garbage
+    // mSinks list and crash. No login server offline. (Same gate as MainHubPanel.)
     TheServer.AddSink(this, UserLoginMsg::Type());
+#endif
     TheSessionMgr->AddSink(this, LocalUserLeftMsg::Type());
     TheSessionMgr->AddSink(this, RemoteUserLeftMsg::Type());
     TheSessionMgr->AddSink(this, AddLocalUserResultMsg::Type());
@@ -284,7 +289,9 @@ void MusicLibrary::OnExit() {
     TheProfileMgr.RemoveSink(this, ProfileChangedMsg::Type());
     ThePlatformMgr.RemoveSink(this, SigninChangedMsg::Type());
     ThePlatformMgr.RemoveSink(this, FriendsListChangedMsg::Type());
-    TheServer.RemoveSink(this, UserLoginMsg::Type());
+#ifndef HX_NATIVE
+    TheServer.RemoveSink(this, UserLoginMsg::Type()); // see OnEnter — TheServer stubbed offline
+#endif
     TheSessionMgr->RemoveSink(this, LocalUserLeftMsg::Type());
     TheSessionMgr->RemoveSink(this, RemoteUserLeftMsg::Type());
     TheSessionMgr->RemoveSink(this, AddLocalUserResultMsg::Type());
@@ -551,6 +558,15 @@ void MusicLibrary::SelectHighlightedNode(LocalBandUser *user) {
 }
 
 void MusicLibrary::PlaySetlist(bool b1) {
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: PlaySetlist(b1=%d) contentDir=%p setlistSize=%d making=%d "
+                 "local=%d sameNetUI=%d primaryProf=%p\n",
+                 b1, (void *)ContentDir(), (int)mSetlist.size(), GetMakingSetlist(false),
+                 TheSessionMgr->IsLocal(),
+                 TheSessionMgr->GetMachineMgr()->AllMachinesHaveSameNetUIState(),
+                 (void *)TheProfileMgr.GetPrimaryProfile());
+#endif
     if (ContentDir()) {
         MakeSureSetlistIsValid();
         if (!mSetlist.empty()) {
@@ -563,8 +579,17 @@ void MusicLibrary::PlaySetlist(bool b1) {
                 SendSetlistToMetaPerformer();
                 UIPanel *panel =
                     ObjectDir::Main()->Find<UIPanel>("song_select_panel", true);
+#ifdef HX_NATIVE
+                if (getenv("GAME_DBG"))
+                    MILO_LOG("GAME_DBG: PlaySetlist -> SendSetlistToMetaPerformer + "
+                             "song_select_panel move_on_quickplay\n");
+#endif
                 panel->HandleType(move_on_quickplay_msg);
             } else {
+#ifdef HX_NATIVE
+                if (getenv("GAME_DBG"))
+                    MILO_LOG("GAME_DBG: PlaySetlist -> remote_not_ready (AllMachinesHaveSameNetUIState=0)\n");
+#endif
                 TheUIEventMgr->TriggerEvent("remote_not_ready", nullptr);
             }
         }
@@ -745,7 +770,7 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
             }
         }
         break;
-    case kNodeSong:
+    case kNodeSong: {
         OwnedSongSortNode *songNode = dynamic_cast<OwnedSongSortNode *>(node);
         MILO_ASSERT(songNode, 0x456);
         int songID = songNode->GetSongRecord()->Data()->ID();
@@ -778,7 +803,8 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
             }
         }
         break;
-    case kNodeSetlist:
+    }
+    case kNodeSetlist: {
         if (IsLeaderLocal()) {
             SetlistSortNode *setlistNode = dynamic_cast<SetlistSortNode *>(node);
             MILO_ASSERT(setlistNode, 0x48e);
@@ -790,6 +816,7 @@ void MusicLibrary::SelectNode(SortNode *node, LocalBandUser *user, bool b3) {
             );
         }
         break;
+    }
     default:
         break;
     }
@@ -1020,10 +1047,20 @@ void MusicLibrary::InitData(RndDir *dir) {
 
 void MusicLibrary::Text(int, int idx, UIListLabel *slot, UILabel *label) const {
     AppLabel *p9_label = dynamic_cast<AppLabel *>(label);
+#ifdef HX_NATIVE
+    // The 360-ARK song_select.milo song.lst uses plain UILabels for some slots
+    // rather than the AppLabel the RB3-Wii code expects; the cast then yields
+    // null. The list-text formatting (song/artist/count display) is cosmetic for
+    // the boot-to-song flow — skip it for a non-AppLabel slot instead of
+    // aborting. The list still populates (the song nodes drive selection).
+    if (!p9_label)
+        return;
+#else
     MILO_ASSERT(p9_label, 0x638);
+#endif
     SortNode *sortNode = GetCurrentSort()->GetNode(idx);
     switch (sortNode->GetType()) {
-    case kNodeHeader:
+    case kNodeHeader: {
         HeaderSortNode *hsn = dynamic_cast<HeaderSortNode *>(sortNode);
         if (hsn->mCover) {
             if (slot->Matches("famousby")) {
@@ -1037,7 +1074,8 @@ void MusicLibrary::Text(int, int idx, UIListLabel *slot, UILabel *label) const {
             p9_label->SetSongCount(hsn->GetSongCount());
         }
         break;
-    case kNodeSubheader:
+    }
+    case kNodeSubheader: {
         SubheaderSortNode *subheaderNode = dynamic_cast<SubheaderSortNode *>(sortNode);
         if (slot->Matches("song_count") && !SongSortMgr::IsSetlistSort(unkdc)) {
             p9_label->SetSongCount(subheaderNode->GetSongCount());
@@ -1046,7 +1084,8 @@ void MusicLibrary::Text(int, int idx, UIListLabel *slot, UILabel *label) const {
             p9_label->SetFromSongSelectNode(sortNode);
         }
         break;
-    case kNodeSong:
+    }
+    case kNodeSong: {
         OwnedSongSortNode *osn = dynamic_cast<OwnedSongSortNode *>(sortNode);
         if (slot->Matches("song")) {
             if (unkdc != 1) {
@@ -1065,12 +1104,13 @@ void MusicLibrary::Text(int, int idx, UIListLabel *slot, UILabel *label) const {
             }
         }
         break;
+    }
     case kNodeFunction:
         if (slot->Matches("function")) {
             p9_label->SetFromSongSelectNode(sortNode);
         }
         break;
-    case kNodeSetlist:
+    case kNodeSetlist: {
         SetlistSortNode *ssn = dynamic_cast<SetlistSortNode *>(sortNode);
         SavedSetlist *setlist = ssn->GetSetlistRecord()->GetSetlist();
         if (slot->Matches("setlist_name")) {
@@ -1079,6 +1119,7 @@ void MusicLibrary::Text(int, int idx, UIListLabel *slot, UILabel *label) const {
             p9_label->SetBattleInstrument(ssn->GetSetlistRecord());
         }
         break;
+    }
     default:
         label->SetTextToken(gNullStr);
         break;
@@ -1109,7 +1150,7 @@ RndMat *MusicLibrary::Mat(int, int idx, UIListMesh *slot) const {
         if (slot->Matches("bg"))
             return mSubheaderMat;
         break;
-    case kNodeSong:
+    case kNodeSong: {
         OwnedSongSortNode *ossn = dynamic_cast<OwnedSongSortNode *>(node);
         MILO_ASSERT(ossn, 0x6FA);
         SongRecord *record = ossn->GetSongRecord();
@@ -1138,6 +1179,7 @@ RndMat *MusicLibrary::Mat(int, int idx, UIListMesh *slot) const {
             }
         }
         break;
+    }
     case kNodeSetlist:
         if (slot->Matches("bg")) {
             if (idx % 2) {
@@ -1181,7 +1223,7 @@ void MusicLibrary::Custom(int, int idx, UIListCustom *slot, Hmx::Object *obj) co
                 return;
             }
             break;
-        case kNodeSetlist:
+        case kNodeSetlist: {
             SetlistSortNode *ssn = dynamic_cast<SetlistSortNode *>(sort);
             MILO_ASSERT(ssn, 0x74A);
             if (!ssn->GetSetlistRecord()->GetSetlist()->IsBattle()) {
@@ -1191,6 +1233,7 @@ void MusicLibrary::Custom(int, int idx, UIListCustom *slot, Hmx::Object *obj) co
                 return;
             }
             break;
+        }
         default:
             break;
         }
@@ -1526,7 +1569,7 @@ bool MusicLibrary::AllSetlistSongsHaveScoreType(ScoreType s) {
     case kScoreRealDrum:
     case kScoreRealGuitar:
     case kScoreRealBass:
-    case kScoreRealKeys:
+    case kScoreRealKeys: {
         TrackType t = ScoreTypeToTrackType(s);
         FOREACH (it, mSetlist) {
             BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(*it);
@@ -1534,13 +1577,15 @@ bool MusicLibrary::AllSetlistSongsHaveScoreType(ScoreType s) {
                 return false;
         }
         break;
-    case kScoreHarmony:
+    }
+    case kScoreHarmony: {
         FOREACH (it, mSetlist) {
             BandSongMetadata *data = (BandSongMetadata *)TheSongMgr.Data(*it);
             if (!data || !data->HasVocalHarmony())
                 return false;
         }
         break;
+    }
     case kScoreBand:
         break;
     default:
@@ -1917,12 +1962,13 @@ void MusicLibrary::FakeWinNode(
 ) const {
     switch (node->GetType()) {
     case kNodeHeader:
-    case kNodeSubheader:
+    case kNodeSubheader: {
         FOREACH (it, node->mChildren) {
             FakeWinNode(*it, users, sty, diff, i1, mask);
         }
         break;
-    case kNodeSong:
+    }
+    case kNodeSong: {
         OwnedSongSortNode *songNode = dynamic_cast<OwnedSongSortNode *>(node);
         MILO_ASSERT(songNode, 0xBCA);
         int randScore = RandomInt(
@@ -1966,6 +2012,7 @@ void MusicLibrary::FakeWinNode(
             }
         }
         break;
+    }
     default:
         break;
     }
@@ -1976,7 +2023,12 @@ void MusicLibrary::FakeWinNode(
 #pragma dont_inline on
 BEGIN_HANDLERS(MusicLibrary)
     HANDLE_ACTION(on_enter, OnEnter())
+#ifdef HX_NATIVE
+    // `on_exit` Symbol global collides with POSIX on_exit(); intern inline.
+    HANDLE_ACTION(Symbol("on_exit"), OnExit())
+#else
     HANDLE_ACTION(on_exit, OnExit())
+#endif
     HANDLE_ACTION(on_unload, OnUnload())
     HANDLE_ACTION(report_sort_and_filters, ReportSortAndFilters())
     HANDLE_ACTION(

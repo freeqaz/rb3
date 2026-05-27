@@ -165,6 +165,20 @@ void __introsort_loop<UIResource **, UIResource *, long, UIResource::Compare>(
 } // namespace stlpmtx_std
 #endif // HX_NATIVE
 
+#ifdef HX_NATIVE
+#include <cstdlib> // getenv (headless UI-clock gate)
+// Headless deterministic UI clock (mirrors dc3-decomp ui/UI.cpp). On a real Wii
+// UISeconds tracks the vsync'd 30 fps frame clock; the native headless loop runs
+// uncapped, so deriving UISeconds from wall-clock (mTimer) advances it far slower
+// than 30 fps — time-based UITriggers (e.g. the splash 'exit-animation.trg', a
+// 2s blocking anim) would take thousands of frames / many real seconds to clear,
+// stalling every screen transition in kTransitionTo (it waits on the old screen
+// to finish Exiting()). Advance a fixed 1/30 s per Poll in headless mode so the
+// UI animates at a deterministic 30 fps regardless of host speed. The screen-
+// transition reset (kTransitionFrom timeline restart) zeroes it.
+static float sHeadlessFakeUISeconds = 0.0f;
+#endif
+
 #pragma push
 #pragma dont_inline on
 BEGIN_HANDLERS(Automator)
@@ -501,7 +515,14 @@ void UIManager::Poll() {
     UIList::CollectGarbage();
     mAutomator->Poll();
     mTimer.Split();
-    TheTaskMgr.SetUISeconds(Timer::CyclesToMs(mTimer.mCycles) / 1000.0f, false);
+#ifdef HX_NATIVE
+    static bool sHeadless = !!getenv("MILO_HEADLESS");
+    if (sHeadless) {
+        sHeadlessFakeUISeconds += 1.0f / 30.0f;
+        TheTaskMgr.SetUISeconds(sHeadlessFakeUISeconds, false);
+    } else
+#endif
+        TheTaskMgr.SetUISeconds(Timer::CyclesToMs(mTimer.mCycles) / 1000.0f, false);
     for (std::vector<UIScreen *>::iterator it = mPushedScreens.begin();
          it != mPushedScreens.end();
          ++it) {

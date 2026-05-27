@@ -113,6 +113,26 @@ void SongData::Load(
 ) {
     const char *midi = FakeSongMgr::MidiFile(info);
     FileStream fs(midi, FileStream::kRead, false);
+#ifdef HX_NATIVE
+    // === Missing-asset boundary (the boot-to-song milestone endpoint) ===
+    // Game::LoadSong has run the full meta->game transition and reached the real
+    // song-data load here. The 360-ARK extract has the song's VISUAL .milo but no
+    // .mid chart (or .mogg audio). Opening the missing .mid yields a failed/empty
+    // FileStream; the console code would then ReadMidiFile an empty stream and
+    // MILO_FAIL on !mTrackNames.empty() (a hard abort). Natively, stop cleanly at
+    // the missing chart instead of aborting: this IS the documented graceful
+    // endpoint — the load path reached the asset that the extract lacks.
+    if (fs.Fail() || fs.Size() == 0) {
+        MILO_LOG("RB3 native: *** SONG-LOAD REACHED THE MISSING CHART ASSET ***\n");
+        MILO_LOG("RB3 native: Game::LoadSong ran to SongData::Load; MIDI chart '%s' "
+                 "is absent from the extract (fail=%d size=%d). The full boot->song "
+                 "path executed; stopping gracefully at the missing .mid (no .mid/"
+                 ".mogg in the 360-ARK extract — the expected milestone endpoint).\n",
+                 midi ? midi : "(null)", fs.Fail(), fs.Size());
+        mMemStream = new MemStream();
+        return; // graceful stop — do not parse an empty MIDI stream / abort
+    }
+#endif
     mMemStream = new MemStream();
     {
         MemDoTempAllocations m(true, false);

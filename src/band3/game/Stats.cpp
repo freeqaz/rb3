@@ -6,6 +6,10 @@
 
 // Explicit specializations to avoid bool materialization in comparison loops,
 // so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
+#ifndef HX_NATIVE
+// STLport-internal sort-algorithm specializations (__adjust_heap/__unguarded_*/
+// __insertion_sort) for PartPercentageSorter. Host STL's std::sort handles this
+// generically; these stlpmtx_std overloads don't exist under host STL.
 namespace stlpmtx_std {
 
 typedef std::pair<int, float> PairIF;
@@ -90,6 +94,7 @@ void __insertion_sort<PairIF *, PairIF, SingerStats::PartPercentageSorter>(
 }
 
 } // namespace stlpmtx_std
+#endif // !HX_NATIVE
 
 DECOMP_FORCEACTIVE(
     Stats,

@@ -38,6 +38,19 @@ CharDriver::CharDriver()
 CharDriver::~CharDriver() {
     if (mFirst)
         mFirst->DeleteStack();
+#ifdef HX_NATIVE
+    // mBones can alias mInternalBones (SetBones / the blend path point mBones at
+    // the internally-allocated CharBonesAlloc). `delete mInternalBones` frees that
+    // object; the mBones ObjPtr member then auto-destructs (members destruct after
+    // the body) and calls mPtr->Release(this) on the freed CharBonesObject → a
+    // use-after-free SIGSEGV during venue/char teardown (e.g. unloading the splash
+    // sv8 venue backdrop on the main_hub transition). Release the ObjPtr while its
+    // target is still alive: if mBones aliases mInternalBones the Release runs on
+    // live memory; otherwise it correctly drops the in-dir ref. Clears the dangling
+    // before the raw delete.
+    if (mBones.Ptr() == (CharBonesObject *)mInternalBones)
+        mBones = (CharBonesObject *)nullptr;
+#endif
     delete mInternalBones;
 }
 

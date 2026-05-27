@@ -159,6 +159,12 @@ File *NewFile(const char *cc, int i) {
 #ifdef HX_NATIVE
     if (!cc || !*cc)
         return nullptr;
+    // NOTE: we intentionally return the (possibly failing) File handle WITHOUT
+    // null-checking ->Fail() here. A missing DTA #include must parse as an empty
+    // file (the flex lexer reads via this File directly), which is how the boot
+    // tolerates dev-only/extraction-gap includes like ui/dev_only/selvenue.dta.
+    // Binary milo loads instead go through ChunkStream, which treats a failing
+    // open as Fail() (see ChunkStream ctor, HX_NATIVE) so DirLoader cleans up.
     return HmxNativeOpenFile(cc, i);
 #endif
 #ifdef MILO_DEBUG

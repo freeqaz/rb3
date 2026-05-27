@@ -57,6 +57,9 @@
 #include "utl/Symbols4.h"
 #include <vector>
 
+#ifndef HX_NATIVE
+// STLport-internal _Temporary_buffer<Symbol*> specialization routing std::sort
+// scratch through Milo's _MemAlloc. Host STL has no stlpmtx_std namespace.
 namespace stlpmtx_std {
 
 template <>
@@ -80,6 +83,7 @@ inline _Temporary_buffer<Symbol *, Symbol>::~_Temporary_buffer() {
 }
 
 } // namespace stlpmtx_std
+#endif
 
 AccomplishmentManager *TheAccomplishmentMgr;
 

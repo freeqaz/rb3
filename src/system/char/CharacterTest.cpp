@@ -457,7 +457,13 @@ DataNode CharacterTest::Handle(DataArray *_msg, bool _warn) {
     HANDLE_ACTION(test_walk, Walk())
     HANDLE_ACTION(recenter, Recenter())
     HANDLE(get_filtered_clips, OnGetFilteredClips)
+#ifdef HX_NATIVE
+    // The global Symbol `sync` collides with POSIX sync() (<unistd.h>) under
+    // clang LP64 overload resolution; reference it as a Symbol literal instead.
+    HANDLE_ACTION(Symbol("sync"), Sync())
+#else
     HANDLE_ACTION(sync, Sync())
+#endif
     if (_warn)
         MILO_WARN(
             "%s(%d): %s unhandled msg: %s",

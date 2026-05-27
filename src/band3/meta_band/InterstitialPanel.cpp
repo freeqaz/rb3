@@ -19,7 +19,21 @@ void InterstitialPanel::Enter() {
 }
 
 bool InterstitialPanel::Exiting() const {
+#ifdef HX_NATIVE
+    // The transition vignette (e.g. tv3_*, the difficulty->game cab-ride video +
+    // venue camera move) gates Exiting() on mCamshotDone (set by the venue camera
+    // animation's transition_camshot_done .trg) and unk88>=3 (3 post-camshot
+    // Draws). Headless/native has no working venue render+anim for these cosmetic
+    // shell vignettes (deferred — see WorldInstance::SyncDir / BackdropPanel),
+    // so transition_camshot_done never fires and Exiting() stays true forever →
+    // the part_difficulty -> tv3 -> game_screen transition stalls in kTransitionTo.
+    // Same seam + rationale as BackdropPanel::Exiting()'s native outro fix below:
+    // treat the cosmetic camshot as immediately done so the screen-flow advances
+    // to game_screen (where Game::LoadSong runs).
+    return UIPanel::Exiting();
+#else
     return UIPanel::Exiting() || !mCamshotDone || unk88 < 3;
+#endif
 }
 
 void InterstitialPanel::Unload() {
@@ -58,6 +72,19 @@ void BackdropPanel::Exit() {
     mOutroDone = false;
     mDir->Handle(vignette_outro_msg, true);
     UIPanel::Exit();
+#ifdef HX_NATIVE
+    // The venue backdrop's outro animation (vignette_outro_msg -> the venue
+    // .anim/.trg that fires vignette_outro_done -> SetOutroDone) is a cosmetic
+    // 3D-venue effect. Headless/native has no working venue render+anim for the
+    // shell venues (the 3D backdrops are deferred — see WorldInstance::SyncDir),
+    // so vignette_outro_done never fires and mOutroDone stays false → Exiting()
+    // stays true forever → the screen transition (e.g. splash_screen ->
+    // main_hub_screen) stalls in kTransitionTo waiting on the old screen to
+    // finish Exiting(). Treat the cosmetic outro as immediately done on native so
+    // the screen-flow transition completes. (The §5.2 transition force-complete
+    // the menu-flow spec anticipated, scoped to the venue backdrop outro.)
+    mOutroDone = true;
+#endif
 }
 
 bool BackdropPanel::Exiting() const { return UIPanel::Exiting() || !mOutroDone; }

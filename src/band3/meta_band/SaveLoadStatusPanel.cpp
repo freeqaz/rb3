@@ -13,7 +13,13 @@ SaveLoadStatusPanel::~SaveLoadStatusPanel() {}
 
 void SaveLoadStatusPanel::FinishLoad() {
     UIPanel::FinishLoad();
+#ifndef HX_NATIVE
+    // TheSaveLoadMgr (SaveLoadManager) is in _NATIVE_FORK_EXCLUDE -> the pointer is
+    // a zeroed DATA stub (null) on native, so AddSink derefs null. The save/load
+    // status panel (Wii memcard write icon) has no offline meaning. Mirrors the
+    // BandUI::Init / ProfileMgr::Init TheSaveLoadMgr AddSink gating.
     TheSaveLoadMgr->AddSink(this);
+#endif
 }
 
 void SaveLoadStatusPanel::Draw() {

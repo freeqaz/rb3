@@ -40,7 +40,15 @@ CharCache::CharCache() : unk28(0) {}
 void CharCache::InitMe() {
     FilePathTracker tracker("char");
     SetName("char_cache", ObjectDir::Main());
+#ifndef HX_NATIVE
+    // world/shared/chars.milo is the band-member character preview cache. It opens
+    // natively but its BandCharDesc/BandCharacter object stream desyncs (deferred
+    // char-Load correctness, T9 territory). The band-character previews aren't on
+    // the boot-to-menu path (the menu DTA + meta_panel.milo don't need them), so
+    // defer the load here — keeps unk1c an empty dir (GetCharacter Find returns
+    // null, tolerated by the menu). Re-enable once char Load is native-correct.
     unk1c.LoadFile(FilePath("../world/shared/chars.milo"), false, true, kLoadFront, false);
+#endif
 }
 
 void CharCache::Request(
@@ -79,6 +87,11 @@ void CharCache::RecomposeCharsWithPatchIx(int idx) {
 
 BandCharacter *CharCache::GetCharacter(int slot) {
     MILO_ASSERT(slot >= 0 && slot < BandWardrobe::kNumTargets, 0x76);
+#ifdef HX_NATIVE
+    // chars.milo load is deferred natively (see InitMe), so unk1c is an empty dir.
+    if (!unk1c.Ptr())
+        return nullptr;
+#endif
     return unk1c->Find<BandCharacter>(MakeString("player%d", slot), true);
 }
 

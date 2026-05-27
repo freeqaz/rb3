@@ -134,8 +134,14 @@ protected:
     State mStateAtSelectStart; // 0x28
     LocalBandUser *mUser; // 0x2c
     LocalUser *mLocalUser; // 0x30
+#ifdef HX_NATIVE
+    // STLport vector<T,N> 2nd-param size hint — drop on host libstdc++.
+    std::vector<BandProfile *> mUploadProfiles; // 0x34
+    std::vector<BandProfile *> mSaveProfiles; // 0x3c
+#else
     std::vector<BandProfile *, unsigned short> mUploadProfiles; // 0x34
     std::vector<BandProfile *, unsigned short> mSaveProfiles; // 0x3c
+#endif
     DataArrayPtr unk44; // 0x44
     int unk48; // 0x48
     String unk4c; // 0x4c

@@ -28,6 +28,15 @@ SelectDifficultyPanel::SelectDifficultyPanel()
     : mMarqueeRotationMs(3000.0f), mCurrentSongIx(0) {}
 
 bool SelectDifficultyPanel::IsLoaded() const {
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG")) {
+        static int spam = 0;
+        if ((spam++ % 60) == 0)
+            MILO_LOG("GAME_DBG: SelectDifficultyPanel::IsLoaded uiLoaded=%d refreshDone=%d numSongs=%d\n",
+                     UIPanel::IsLoaded(), TheContentMgr->RefreshDone(),
+                     MetaPerformer::Current()->NumSongs());
+    }
+#endif
     return UIPanel::IsLoaded() && TheContentMgr->RefreshDone()
         && MetaPerformer::Current()->NumSongs() > 0;
 }

@@ -119,7 +119,13 @@ void SongSort::BuildSongTree(
                 MILO_ASSERT(0 == newSong->Compare(shortcut, kNodeShortcut), 0xCD);
             } else {
                 shortcut = NewShortcutNode(newSong);
+#ifdef HX_NATIVE
+                // host vector::insert needs an iterator; found.first is the raw
+                // ShortcutNode** from equal_range (STLport iterator == pointer).
+                mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
+#else
                 mTree.insert(found.first, shortcut);
+#endif
             }
             shortcut->Insert(newSong, this);
         }
@@ -134,7 +140,13 @@ void SongSort::BuildSongTree(
                 MILO_ASSERT(0 == newSong->Compare(shortcut, kNodeShortcut), 0xE8);
             } else {
                 shortcut = NewShortcutNode(newSong);
+#ifdef HX_NATIVE
+                // host vector::insert needs an iterator; found.first is the raw
+                // ShortcutNode** from equal_range (STLport iterator == pointer).
+                mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
+#else
                 mTree.insert(found.first, shortcut);
+#endif
             }
             shortcut->Insert(newSong, this);
         }
@@ -231,7 +243,11 @@ void SetlistSort::BuildSetlistTree(std::map<Symbol, SetlistRecord> &records) {
             MILO_ASSERT(0 == newSetlist->Compare(shortcut, kNodeShortcut), 0x16B);
         } else {
             shortcut = NewShortcutNode(newSetlist);
+#ifdef HX_NATIVE
+            mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
+#else
             mTree.insert(found.first, shortcut);
+#endif
         }
         shortcut->Insert(newSetlist, this);
     }
@@ -253,7 +269,11 @@ void SetlistSort::BuildSetlistTree(std::map<Symbol, SetlistRecord> &records) {
             MILO_ASSERT(0 == fsn->Compare(shortcut, kNodeShortcut), 0x197);
         } else {
             shortcut = NewShortcutNode(fsn);
+#ifdef HX_NATIVE
+            mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
+#else
             mTree.insert(found.first, shortcut);
+#endif
         }
         shortcut->Insert(fsn, this);
     }

@@ -34,7 +34,17 @@ bool SongSelectPanel::IsLoaded() const {
 
 void SongSelectPanel::FinishLoad() {
     UIPanel::FinishLoad();
+#ifdef HX_NATIVE
+    // The mini-leaderboard display (online scores) is absent from the 360-ARK
+    // extract's ui/song_select/song_select.milo, and online leaderboards don't
+    // exist offline anyway. Find it non-failing; unk48 stays null and the
+    // leaderboard-rotation Poll path is gated on unk58 >= 0 (only armed once a
+    // real online leaderboard enumerates, which never happens offline), so a null
+    // unk48 is safe. (Same tolerant-asset pattern as MetaPanel metamusic.)
+    unk48 = mDir->Find<AppMiniLeaderboardDisplay>("leaderboard.mld", false);
+#else
     unk48 = mDir->Find<AppMiniLeaderboardDisplay>("leaderboard.mld", true);
+#endif
     unk4c = TypeDef()->FindFloat("mini_leaderboard_rotation_off");
     unk50 = TypeDef()->FindFloat("mini_leaderboard_rotation_on");
 }
@@ -102,7 +112,7 @@ void SongSelectPanel::Poll() {
         mLeaderboard->Poll();
     if (unk58 >= 0.0f && GetState() == kUp) {
         float diff = TheTaskMgr.UISeconds() - unk58;
-        if (!unk54 && diff > unk4c && unk48->IsReady() && unk48->HasRows()) {
+        if (!unk54 && diff > unk4c && unk48 && unk48->IsReady() && unk48->HasRows()) {
             unk58 = TheTaskMgr.UISeconds();
             static Message msg(set_mini_leaderboard_showing, 0);
             unk54 = true;

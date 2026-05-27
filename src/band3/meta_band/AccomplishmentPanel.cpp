@@ -50,6 +50,8 @@
 
 // Explicit specialization of _Temporary_buffer for Symbol iterators to use
 // game allocator (_MemAlloc/_MemFree) instead of stdlib malloc/free.
+#ifndef HX_NATIVE
+// Host STL has no STLport _Temporary_buffer; native std::sort uses host allocator.
 _STLP_BEGIN_NAMESPACE
 template <>
 class _Temporary_buffer<Symbol *, Symbol> {
@@ -98,6 +100,7 @@ private:
     void operator=(const _Temporary_buffer<Symbol *, Symbol> &) {}
 };
 _STLP_END_NAMESPACE
+#endif
 
 AccomplishmentGroupCmp::AccomplishmentGroupCmp(const AccomplishmentManager *mgr)
     : mAccomplishmentMgr(mgr) {}

@@ -206,7 +206,11 @@ PassiveMessenger::PassiveMessenger() : unk1c(0) {
     MILO_ASSERT(!ThePassiveMessenger, 0x159);
     ThePassiveMessenger = this;
     SetName("passive_messenger", ObjectDir::Main());
+#ifndef HX_NATIVE
+    // TheVoiceChatMgr lives in network/ (off the native link) -> null; voice-chat
+    // disabled notifications have no offline meaning. Gate the AddSink.
     TheVoiceChatMgr->AddSink(this, VoiceChatDisabledMsg::Type());
+#endif
     ThePlatformMgr.AddSink(this, InviteSentMsg::Type());
     TheSessionMgr->AddSink(this, RemoteUserLeftMsg::Type());
     ThePlatformMgr.AddSink(this, InviteReceivedMsg::Type());
@@ -217,7 +221,9 @@ PassiveMessenger::~PassiveMessenger() {
     MILO_ASSERT(ThePassiveMessenger, 0x169);
     ThePassiveMessenger = nullptr;
     ThePlatformMgr.RemoveSink(this, InviteSentMsg::Type());
-    TheVoiceChatMgr->RemoveSink(this);
+#ifndef HX_NATIVE
+    TheVoiceChatMgr->RemoveSink(this); // null on native (network/ off-link)
+#endif
     TheSessionMgr->RemoveSink(this, RemoteUserLeftMsg::Type());
     ThePlatformMgr.RemoveSink(this, InviteReceivedMsg::Type());
 }

@@ -59,6 +59,20 @@ void UIStats::MaybePublish(UIScreen *from) {
     Server *server = TheNet.mServer;
     bool &_ref0 = mPublishingPad;
     const DataArray *gather = from->TypeDef()->FindArray(gather_uistats, false);
+#ifdef HX_NATIVE
+    // TheNet is the online network global (zeroed DATA stub on native) so its
+    // mServer is null. UIStats only publishes telemetry to a connected online
+    // server — offline there is nothing to publish; treat as not-connected (drop
+    // the screen, clear the publishing flag) instead of deref'ing null mServer.
+    if (!server || !server->IsConnected()
+        || (gather && gather->Node(1).Int(gather) == 0)) {
+        if (!server || !server->IsConnected()) {
+            _ref0 = false;
+        }
+        DropScreen(from);
+        return;
+    }
+#else
     if (!server->IsConnected()
         || (gather && gather->Node(1).Int(gather) == 0)) {
         if (!server->IsConnected()) {
@@ -67,6 +81,7 @@ void UIStats::MaybePublish(UIScreen *from) {
         DropScreen(from);
         return;
     }
+#endif
 
     if (!_ref0) {
         mLastMode = Symbol("");

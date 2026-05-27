@@ -129,11 +129,32 @@ void PatchLayer::InitResources() {
                 0,
                 0
             ));
+#ifdef HX_NATIVE
+            // The art-maker patch-layer milo (config: ../patchcreator/og/
+            // patch_warpmesh.milo) is the original-gen (Wii) asset; the 360-ARK
+            // extract this native build runs against only has the next-gen
+            // patchcreator/ng/gen/*.milo_xbox variants, so LoadObjects returns
+            // null. Patch stickers are character-customization art, off the
+            // boot-to-menu path. Tolerate the missing resource (mirrors the
+            // RndUtlInit sphere.milo null-tolerance) so the init spine reaches
+            // TheUI.Init() instead of fataling on the assert below; the Find()
+            // calls would MILO_FAIL on the null dir.
+            if (!sResource) {
+                MILO_LOG("PatchLayer: art-maker patch_layer milo absent "
+                         "(360-ARK extract has no og/ variant) — skipping\n");
+            } else {
+                sMat = sResource->Find<RndMat>("patch.mat", true);
+                sTransAnim = sResource->Find<RndTransAnim>("root.tnm", true);
+                sGrpAnim = sResource->Find<RndGroup>("warp.grp", true);
+                sColorPalette = sResource->Find<ColorPalette>("sticker.pal", true);
+            }
+#else
             MILO_ASSERT(sResource, 0xBA);
             sMat = sResource->Find<RndMat>("patch.mat", true);
             sTransAnim = sResource->Find<RndTransAnim>("root.tnm", true);
             sGrpAnim = sResource->Find<RndGroup>("warp.grp", true);
             sColorPalette = sResource->Find<ColorPalette>("sticker.pal", true);
+#endif
         }
     }
 }

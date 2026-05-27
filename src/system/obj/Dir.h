@@ -149,7 +149,17 @@ public:
     }
 
     // __as__21ObjDirPtr<9ObjectDir>FRC21ObjDirPtr<9ObjectDir>
+#ifdef HX_NATIVE
+    // MWCC tolerated the missing return (the chained operator= leaves *this in the
+    // return register); clang LP64 traps (ud2 -> SIGILL) on the fall-through. Add
+    // the explicit return — same observable value MWCC produced.
+    ObjDirPtr &operator=(const ObjDirPtr &oPtr) {
+        *this = oPtr.mDir;
+        return *this;
+    }
+#else
     ObjDirPtr &operator=(const ObjDirPtr &oPtr) { *this = oPtr.mDir; }
+#endif
 
     operator T *() const { return mDir; }
     T *Ptr() const { return mDir; }

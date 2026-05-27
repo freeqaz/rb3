@@ -20,7 +20,9 @@
 #include "utl/FilePath.h"
 #include "utl/MemMgr.h"
 #include "utl/MakeString.h"
-#include <revolution/VI.h>
+#ifndef HX_NATIVE
+#include <revolution/VI.h> // Wii video interface; gated out on native (no VI)
+#endif
 
 bool gSplashing = false;
 Splash *TheSplasher;
@@ -475,8 +477,10 @@ int Splash::Show() {
 }
 
 void Splash::Draw() {
+#ifndef HX_NATIVE
     VISetBlack(FALSE);
     VIFlush();
+#endif
     if (unk_0x54 != 0) {
         TheTaskMgr.Poll();
         mLastSplash->Poll();

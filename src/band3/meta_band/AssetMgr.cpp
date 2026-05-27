@@ -17,10 +17,14 @@
 // Explicit inline specialization to avoid an out-of-line __less<Symbol> call
 // from std::sort, which otherwise costs an extra callee-saved register and
 // adds a redundant call before each sort helper invocation.
+#ifndef HX_NATIVE
+// STLport-internal __less<Symbol> specialization; host STL's std::sort uses
+// std::less directly (no stlpmtx_std::__less).
 namespace stlpmtx_std {
 template <>
 inline less<Symbol> __less<Symbol>(Symbol*) { return less<Symbol>(); }
 }
+#endif
 
 AssetMgr::AssetMgr() {
     AddAssets();

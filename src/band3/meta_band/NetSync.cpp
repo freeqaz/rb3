@@ -182,6 +182,13 @@ void NetSync::SendNetFocus(User *u, UIComponent *c) {
 }
 
 void NetSync::SyncScreen(UIScreen *s, int i2) {
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: NetSync::SyncScreen(screen='%s', depth=%d) "
+                 "transAllowed=%d inTransition=%d destScreen=%p\n",
+                 s ? s->Name() : "(null)", i2, IsTransitionAllowed(s),
+                 TheUI.InTransition(), (void *)mDestinationScreen);
+#endif
     bool b2;
     bool b1;
     BandUser *u = TheSessionMgr->GetLeaderUser();
@@ -196,9 +203,30 @@ void NetSync::SyncScreen(UIScreen *s, int i2) {
     }
     if (IsTransitionAllowed(s) && (b2 || unk28) && !mDestinationScreen) {
         Enable();
+#ifdef HX_NATIVE
+        bool _at = AttemptTransition(s, i2);
+        if (getenv("GAME_DBG"))
+            MILO_LOG("GAME_DBG: NetSync::SyncScreen -> AttemptTransition returned %d "
+                     "(now currentScreen='%s')\n", _at,
+                     TheUI.CurrentScreen() ? TheUI.CurrentScreen()->Name() : "(null)");
+#else
         AttemptTransition(s, i2);
+#endif
         if (u && b2) {
+#ifdef HX_NATIVE
+            // Offline, a SyncScreen issued while a prior UI lock-step is still
+            // in-lock (e.g. the song_select -> gameplay move_on_quickplay sync
+            // fired before the song_select enter sync's lock released) hits this
+            // net-sync assert. The lock-step is a multi-machine UI coordination
+            // mechanism; on a single local machine the prior lock completes on its
+            // own (RespondToLock fires synchronously in OnStartLockMsg). Skip
+            // starting a nested lock rather than aborting — the transition itself
+            // (AttemptTransition above) already ran.
+            if (IsBlockingTransition())
+                return;
+#else
             MILO_ASSERT(!IsBlockingTransition(), 0x11C);
+#endif
             NetSyncScreenMsg msg(s, i2);
             TheSyncStore->Poll();
             mUILockStep->StartLock(msg);
@@ -212,8 +240,18 @@ bool NetSync::IsTransitionAllowed(UIScreen *s) const {
     else if (!TheUIEventMgr->IsTransitionAllowed(s))
         return false;
     else {
+#ifdef HX_NATIVE
+        // Offline single-player: net-sync is never kNetUI_Synchronized (IsEnabled()
+        // false) and there may be no signed-in leader user yet, so the console
+        // condition below returns false and the boot screen transition (goto_screen
+        // intro_movie_screen -> splash -> main_hub) never starts. There are no peers
+        // to lock-step with offline; allow the transition once the UIEventMgr has no
+        // blocking dialog (checked above). Mirrors the offline-local-play intent.
+        return true;
+#else
         BandUser *u = TheSessionMgr->GetLeaderUser();
         return (IsEnabled() && u) || (TheNetSession->HasUser(u) && u->IsLocal());
+#endif
     }
 }
 

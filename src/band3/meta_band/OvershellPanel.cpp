@@ -95,7 +95,11 @@ OvershellPanel::OvershellPanel(SessionMgr *smgr, BandUserMgr *umgr)
     ThePlatformMgr.AddSink(this, InviteReceivedMsg::Type());
     ThePlatformMgr.AddSink(this, InviteExpiredMsg::Type());
     ThePlatformMgr.AddSink(this, NetStartUtilityFinishedMsg::Type());
+#ifndef HX_NATIVE
+    // TheServer (network/ online server) is null on native; profanity-check events
+    // are online-only. Gate the AddSink.
     TheServer.AddSink(this, UserNameNewlyProfaneMsg::Type());
+#endif
 }
 
 OvershellPanel::~OvershellPanel() {
@@ -264,6 +268,11 @@ void OvershellPanel::BeginOverrideFlow(OvershellOverrideFlow type) {
 }
 
 void OvershellPanel::EndOverrideFlow(OvershellOverrideFlow type, bool b2) {
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: OvershellPanel::EndOverrideFlow(type=%d, cancel=%d) "
+                 "curFlow=%d\n", type, b2, mPanelOverrideFlow);
+#endif
     MILO_ASSERT(InOverrideFlow(type), 0x1B0);
     mPanelOverrideFlow = kOverrideFlow_None;
     if (type == kOverrideFlow_SongSettings && !b2) {

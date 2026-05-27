@@ -246,7 +246,7 @@ void RndText::CollectGarbage() {
         if (!cur->unkbp7 && cur->unk124b4 > 4) {
             if (cur->mMeshMap.size() != 0) {
                 cur->unkbp5 = true;
-                for (std::map<unsigned int, MeshInfo>::iterator mit =
+                for (std::map<FontKey, MeshInfo>::iterator mit =
                          cur->mMeshMap.begin();
                      mit != cur->mMeshMap.end();
                      ++mit) {
@@ -488,8 +488,8 @@ void RndText::SetFont(RndFont *f) {
         if (it != mTextMeshSet.end()) {
             mTextMeshSet.erase(it);
         }
-        unsigned int fontasInt = (unsigned int)f;
-        mMeshMap.insert(std::pair<unsigned int, MeshInfo>(fontasInt, MeshInfo()));
+        FontKey fontasInt = (FontKey)f;
+        mMeshMap.insert(std::pair<FontKey, MeshInfo>(fontasInt, MeshInfo()));
         mMeshMap[fontasInt].displayableChars = 0;
         mMeshMap[fontasInt].syncFlags = 0;
         UpdateText(true);
@@ -611,7 +611,7 @@ void RndText::ComputeCharWidths(float *fp, int i2, const char *cc, Style style) 
                 u7 = us68;
                 if (fVal < 0)
                     fp[i] = 0;
-                unsigned int key = (unsigned int)i4;
+                FontKey key = (FontKey)i4;
                 mMeshMap[key].displayableChars++;
             } else
                 fp[i] = 0;
@@ -934,7 +934,7 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
     // Find max font cell-diff across fonts used in this text. Inline to force
     // mCellSize.x (offset 0x54) to be loaded before .y (offset 0x58).
     float ratio = 0.0f;
-    for (std::map<unsigned int, MeshInfo>::iterator it = mMeshMap.begin();
+    for (std::map<FontKey, MeshInfo>::iterator it = mMeshMap.begin();
          it != mMeshMap.end();
          ++it) {
         RndFont *font = (RndFont *)it->first;
@@ -1106,7 +1106,7 @@ void RndText::ResetFaces(RndMesh *mesh, int new_size) {
 }
 
 void RndText::UpdateMesh(RndFont *font) {
-    MeshInfo *meshInfo = &mMeshMap[(unsigned int)font];
+    MeshInfo *meshInfo = &mMeshMap[(FontKey)font];
     RndMesh *mesh = meshInfo->mesh;
     MILO_ASSERT(mesh, 0x6A6);
     if (!font) {
@@ -1182,7 +1182,7 @@ void SetupCharVerts(
 }
 
 void RndText::CreateLines(RndFont *font) {
-    RndMesh *mesh = mMeshMap[(unsigned int)font].mesh;
+    RndMesh *mesh = mMeshMap[(FontKey)font].mesh;
     MILO_ASSERT(mesh, 0x709);
     RndMesh::Vert *vertIt = mesh->Verts().begin();
     Style style = mLines[0].lineStyle;
@@ -1478,7 +1478,7 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
         mapInts[i] = 0;
     }
 
-    std::map<unsigned int, MeshInfo>::iterator it = mMeshMap.begin();
+    std::map<FontKey, MeshInfo>::iterator it = mMeshMap.begin();
     for (int i = 0; i < mMeshMap.size(); i++) {
         RndFont *curFont = (RndFont *)it->first;
         for (int j = 0; j < curLine.startIdx;) {
@@ -1492,7 +1492,7 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
         ++it;
     }
 
-    std::map<unsigned int, MeshInfo>::iterator it2 = mMeshMap.begin();
+    std::map<FontKey, MeshInfo>::iterator it2 = mMeshMap.begin();
     for (int i = 0; i < mMeshMap.size(); i++) {
         RndFont *curFont = (RndFont *)it2->first;
         unsigned int idx = curLine.startIdx;
@@ -1503,7 +1503,7 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
             int decoded = DecodeUTF8(us88, mText.c_str() + idx);
             RndFont *defining = GetDefiningFont(us88, curLine.lineStyle.font);
             if (defining == curFont) {
-                unsigned int definingFontAsInt = (unsigned int)defining;
+                FontKey definingFontAsInt = (FontKey)defining;
                 MeshInfo &curMeshInfo = mMeshMap[definingFontAsInt];
                 RndMesh::Vert *vert10 = curMeshInfo.mesh->Verts().begin() + i11;
                 vert10[3].color = col;
@@ -1734,12 +1734,12 @@ void RndText::UpdateSphere() {
 RndFont *RndText::SupportChar(unsigned short us, RndFont *font) {
     RndFont *defining = GetDefiningFont(us, font);
     if (defining) {
-        std::map<unsigned int, MeshInfo>::iterator it =
-            mMeshMap.find((unsigned int)defining);
+        std::map<FontKey, MeshInfo>::iterator it =
+            mMeshMap.find((FontKey)defining);
         if (it == mMeshMap.end()) {
             it = mMeshMap
-                     .insert(std::pair<unsigned int, MeshInfo>(
-                         (unsigned int)defining, MeshInfo()
+                     .insert(std::pair<FontKey, MeshInfo>(
+                         (FontKey)defining, MeshInfo()
                      ))
                      .first;
         }

@@ -190,6 +190,25 @@ void LoadMgr::Poll() {
         return;
     mTimer.Restart();
     unk1c = mPeriod;
+#ifdef HX_NATIVE
+    // Native = synchronous loading (mirrors DC3's loader native adaptation): drain
+    // mLoading to completion in one pass, with the per-state CheckSplit() budget
+    // disabled (unk1c huge). On the Wii this is time-sliced across frames (the
+    // `#else`-equivalent body below); on a fast host that time-slicing only causes
+    // a freshly-front loader's internal LoadObjs/CreateObjects CheckSplit() to bail
+    // after one object per Poll pass — making panel milos take dozens of frames or
+    // never finish within MILO_MAX_FRAMES (the splash `meta_panel.milo` stall). A
+    // single synchronous drain matches DC3's behavior (panel milos load fully when
+    // the screen transition polls them).
+    unk1c = 1e+30f;
+    while (!mLoading.empty()) {
+        PollFrontLoader();
+        if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
+            mLoading.pop_front();
+        }
+    }
+    return;
+#endif
     while (!mLoading.empty()) {
         PollFrontLoader();
         if (!mLoading.empty()) {
@@ -369,6 +388,17 @@ const char *FileLoader::GetBuffer(int *size) {
 bool FileLoader::IsLoaded() const { return mState == &FileLoader::DoneLoading; }
 
 void FileLoader::PollLoading() {
+#ifdef HX_NATIVE
+    // Native = synchronous: always advance one state step (mirrors DC3's
+    // `FileLoader::PollLoading() { (this->*mState)(); }`). See DirLoader::PollLoading
+    // for why the Wii time-sliced `#else` form stalls a freshly-front loader on a
+    // fast host. The LoadStream/LoadFile state functions still honor their internal
+    // CheckSplit() guards.
+    if (!IsLoaded() && TheLoadMgr.GetFirstLoading() == this) {
+        (this->*mState)();
+    }
+    return;
+#endif
     while (!TheLoadMgr.CheckSplit() && TheLoadMgr.GetFirstLoading() == this && !IsLoaded()
     ) {
         (this->*mState)();

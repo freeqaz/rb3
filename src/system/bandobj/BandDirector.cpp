@@ -499,7 +499,12 @@ void GetVenuePath(FilePath &fp, const char *cc) {
         return;
     } else {
         for (int i = 0; gVenues[i] != 0; i++) {
+#ifdef HX_NATIVE
+            // host <cstring> strstr(const char*) returns const char*; only nul-tested.
+            const char *str = strstr(cc, gVenues[i]);
+#else
             char *str = strstr(cc, gVenues[i]);
+#endif
             if (str) {
                 fp.SetRoot(MakeString("world/venue/%s/%s/%s.milo", gVenues[i], cc, cc));
                 return;
@@ -548,9 +553,31 @@ bool BandDirector::ReadyForMidiParsers() {
         msg[1] = NULL_OBJ;
         OnFileLoaded(msg);
     }
+#ifdef HX_NATIVE
+    // The gameplay 3D venue (the stage backdrop the band plays on) is a cosmetic
+    // shell venue, deferred natively like the menu venues (WorldInstance::SyncDir
+    // defers world/vignette/ + world/shared/ proxies — no working venue render).
+    // So mVenue.Dir() is null and mVenue.Name() is empty here (not "none"), which
+    // blocks the console gate forever. The midi-parser / track / scoring / audio
+    // game logic does NOT depend on the 3D venue, so treat the venue as satisfied
+    // natively (require only the loaded song.anim + chars). This advances
+    // GamePanel::PollForLoading -> CreateGame -> Game::LoadSong (the goal).
+    bool cond = mPropAnim != 0;
+    if (cond) cond = TheBandWardrobe->AllCharsLoaded();
+    if (getenv("GAME_DBG")) {
+        static int rmp_spam = 0;
+        if ((rmp_spam++ % 120) == 0)
+            MILO_LOG("GAME_DBG: ReadyForMidiParsers propAnim=%p venueDir=%p "
+                     "venueName='%s' -> %d (native venue-deferred gate)\n",
+                     (void *)mPropAnim, (void *)mVenue.Dir(),
+                     mVenue.Name().mStr ? mVenue.Name().mStr : "(null)", cond);
+    }
+    return cond;
+#else
     bool cond = mPropAnim && (mVenue.Dir() || mVenue.Name() == "none");
     if (cond) cond = TheBandWardrobe->AllCharsLoaded();
     return cond;
+#endif
 }
 
 void BandDirector::SendMessage(Symbol s1, Symbol s2) {
@@ -967,6 +994,11 @@ DataNode BandDirector::OnLoadSong(DataArray *da) {
 DataNode BandDirector::OnFileLoaded(DataArray *da) {
     Symbol sym = da->Sym(2);
     ObjectDir *dir = da->Obj<ObjectDir>(3);
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: BandDirector::OnFileLoaded(sym='%s', dir=%p)\n",
+                 sym.mStr ? sym.mStr : "(null)", (void *)dir);
+#endif
     if (sym == song) {
         mEndOfSongSec = 0;
         if (dir) {

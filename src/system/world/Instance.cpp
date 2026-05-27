@@ -301,10 +301,52 @@ void WorldInstance::SetProxyFile(const FilePath &fp, bool override) {
 
 #include "utl/ClassSymbols.h"
 
+#ifdef HX_NATIVE
+// Native cosmetic-venue deferral (mirrors CharCache::InitMe's clean
+// world/shared/chars.milo deferral). The menu/song 3D venue backdrops are
+// instanced from shared inlined-cached-shared proxy milos under world/ (e.g.
+// world/shared/amps/classic_blacktriple.milo, the sv3 main_hub backdrop's amp
+// props). WorldInstance::SyncDir's proxy-instancing loop creates fresh copies
+// of the shared dir's objects, but on native those copies reach the
+// MILO_ASSERT(p->from->Dir()) (Instance.cpp:714) with a null Dir — a deep
+// world-subsystem inlined-proxy load-correctness gap (the shared mDir's objects
+// aren't resolved by FindObject, so brand-new Dir-less copies are made). The
+// backdrops are purely cosmetic for the boot-to-song flow (the menu/song-select
+// UI screens, song metadata, and Game::LoadSong path don't depend on them).
+//
+// Rather than a naive assert-skip (which leaves a half-instanced venue → a
+// downstream DeleteTransientObjects "Could not find ...mesh" crash, per the
+// prior session), defer the WHOLE instance cleanly: leave `this` as an empty
+// proxy (DeleteTransientObjects already cleared it) and skip the instancing
+// loop. The empty WorldInstance draws nothing (cosmetic-only). Scoped to the
+// cosmetic world/ venue tree so non-venue proxies (UI panels, etc.) are
+// untouched. Re-enable by fixing the inlined-cached-shared instancing
+// (Instance.cpp SyncDir / Dir.cpp PostLoadInlined object-resolution).
+static bool IsDeferredVenueProxy(const FilePath &proxySrc) {
+    const char *p = proxySrc.c_str();
+    if (!p || !*p)
+        return false;
+    // Cosmetic 3D venue/prop backdrops: shell venues + their shared props.
+    return strstr(p, "world/vignette/") != nullptr
+        || strstr(p, "world/shared/") != nullptr;
+}
+#endif
+
 void WorldInstance::SyncDir() {
     if (IsProxy()) {
         DeleteTransientObjects();
         mSharedGroup = nullptr;
+#ifdef HX_NATIVE
+        if (mDir && IsDeferredVenueProxy(mDir.GetFile())) {
+            static int sDeferCount = 0;
+            if (sDeferCount < 8)
+                MILO_LOG("WorldInstance: deferring cosmetic venue proxy '%s' (%s) on native\n",
+                         Name(), mDir.GetFile().c_str());
+            sDeferCount++;
+            SyncObjects();
+            return;
+        }
+#endif
         if (mDir) {
             RndGroup *grp = mDir->Find<RndGroup>("shared.grp", 0);
             if (!mDir->mSharedGroup2 && grp) {

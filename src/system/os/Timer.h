@@ -5,9 +5,26 @@
 #include <vector>
 #include "decomp.h"
 
+#ifdef HX_NATIVE
+// PPC mftb (move-from-time-base) has no native equivalent — ASM_BLOCK expands to
+// nothing on clang, leaving `cycle` uninitialized, so the Wii time-base never
+// advances and TheTaskMgr.UISeconds() stays pinned at 0. That froze every
+// time-based UITrigger (e.g. the splash 'exit-animation.trg'), so screen
+// transitions stalled forever in kTransitionTo waiting on the old screen to
+// finish Exiting(). HxNativeMftb() (defined in Timer.cpp via std::chrono — kept
+// out of this header so <chrono>/<ctime>'s `time` doesn't collide with
+// utl/TimeSymbol.h's `time` Symbol) emulates mftb with a monotonic clock
+// returning microseconds (mirrors dc3-decomp os/Timer.h __mftb()). Native
+// Timer::Init sets sLowCycles2Ms = 1e-3 so CyclesToMs(microseconds) == ms (the
+// Wii OS_TIME_SPEED calibration reads a hardware register at 0x800000F8 that is
+// garbage on native).
+unsigned int HxNativeMftb();
+#define TIMER_GET_CYCLES(name) unsigned int name = HxNativeMftb()
+#else
 #define TIMER_GET_CYCLES(name)                                                           \
     register int name;                                                                   \
     ASM_BLOCK(mftb name)
+#endif
 
 class Timer {
 public:

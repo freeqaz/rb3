@@ -114,8 +114,8 @@ __hmx_rndsynth_noop_stub:
     .set vorbis_synthesis_restart, __hmx_rndsynth_noop_stub
     .weak _Z14CleanupGpuMeshP7RndMesh
     .set _Z14CleanupGpuMeshP7RndMesh, __hmx_rndsynth_noop_stub
-    .weak _Z17CreateNativeSynthv
-    .set _Z17CreateNativeSynthv, __hmx_rndsynth_noop_stub
+    # _Z17CreateNativeSynthv (CreateNativeSynth) now strongly defined in
+    # rb3_synth_native.cpp (headless base Synth) — stub removed.
     .weak _Z22DrawParticlesBillboardP14RndParticleSys
     .set _Z22DrawParticlesBillboardP14RndParticleSys, __hmx_rndsynth_noop_stub
     .weak _Z25HolmesClientCacheResourcePKcS0_

@@ -24,8 +24,22 @@ public:
             mPtr->AddRef(this);
     }
     virtual ~ObjPtr() {
-        if (mPtr != nullptr)
+        if (mPtr != nullptr) {
+#ifdef HX_NATIVE
+            // Native use-after-free guard: if mPtr's target was already freed (a
+            // dangling ObjPtr left over from deep venue/char teardown — e.g.
+            // CharDriver::mBones -> a freed CharBonesObject), `mPtr->Release(this)`
+            // would compute the Hmx::Object* `this` via the freed object's vbase
+            // offset (virtual Hmx::Object inheritance) and SIGSEGV. The freed
+            // target recorded its own pointer (the same mPtr representation) on
+            // destruction; if it's marked freed, the back-ref already died with it
+            // — skip the Release. Check the RAW mPtr bits (no vtable read).
+            extern bool HxAddrWasFreed(const void *);
+            if (HxAddrWasFreed((const void *)mPtr))
+                return;
+#endif
             mPtr->Release(this);
+        }
     }
     virtual Hmx::Object *RefOwner() { return mOwner; }
     virtual void Replace(Hmx::Object *o1, Hmx::Object *o2) {

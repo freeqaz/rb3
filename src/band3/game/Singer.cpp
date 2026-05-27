@@ -71,16 +71,45 @@ __copy_ptrs<SingerResultsData*, SingerResultsData*>(
     return (SingerResultsData*)__d;
 }
 
+// mAmbiguousData.clear() -> erase(begin,end) -> copy(last,finish,first), a
+// forward element copy MWCC unrolls 8x in the target. Routing it through a POD
+// word-struct mirroring AmbiguousData's layout reproduces the target's 8x
+// unroll and high-word-first pairing for the leading int pair. The trailing
+// float member must stay typed so the copy emits lfs/stfs (not lwz/stw).
+struct _AmbiguousW2 { unsigned int a, b; };
+struct _AmbiguousWords {
+    _AmbiguousW2 ab;     // part1, part2             -> words 0,1 (paired)
+    unsigned char c;     // isResolved (bool)        -> byte at 0x8
+    unsigned int d;      // winningPart              -> word at 0xc
+    float e;             // ambiguousPoints (float)  -> lfs/stfs at 0x10
+};
+
+template <>
+inline ::Singer::AmbiguousData*
+__copy_ptrs< ::Singer::AmbiguousData*, ::Singer::AmbiguousData*>(
+    ::Singer::AmbiguousData* __first, ::Singer::AmbiguousData* __last,
+    ::Singer::AmbiguousData* __result, const __false_type& /*IsOKToMemCpy*/
+) {
+    _AmbiguousWords* __d = (_AmbiguousWords*)__result;
+    const _AmbiguousWords* __s = (const _AmbiguousWords*)__first;
+    for (ptrdiff_t __n = __last - __first; __n > 0; --__n) {
+        *__d = *__s;
+        ++__s;
+        ++__d;
+    }
+    return (::Singer::AmbiguousData*)__d;
+}
+
 } // namespace stlpmtx_std
 
 MicClientID sNullClientID(-1, -1);
 
 Singer::Singer(VocalPlayer *vp, int n)
-    : mPlayer(vp), mUnused8(0), mSingerIndex(n), mUnused14(0), mTalkDataPtr(0), mUnused1c(0), mIsSinging(0),
-      mDetune(0), mCurrentFrameTime(0), mUnused30(0), mTambourineDeploymentSuppressMs(100.0f), mTambourineActivationTime(0), mLastTambourineTime(0), mTotalTambourineDeployment(0),
+    : mPlayer(vp), unkc(0), mSingerIndex(n), unk14(0), unk18(0), unk1c(0), mIsSinging(0),
+      mDetune(0), mCurrentFrameTime(0), unk30(0), mTambourineDeploymentSuppressMs(100.0f), mTambourineActivationTime(0), mLastTambourineTime(0), mTotalTambourineDeployment(0),
       mScreamStartTime(-1.0f), mScreamEnergyThreshold(0.8f), mScreamMinDurationMs(500.0f), mFrameMicPitch(0),
       mLastFrameMicEnergy(0), mSmoothedMicEnergy(0), mFrameTargetPitch(0), mFrameAssignedPart(-1), mBestTargetPitch(0), mOctaveOffset(0),
-      mUnused7c(0), mScreamOccurred(0), mUnused84(0), mUnused88(0), mPitchHistoryMean(0), mPitchHistoryIndex(0), mPitchHistoryValidCount(0), mVibrato(0),
+      unk7c(0), mScreamOccurred(0), unk84(0), unk88(0), mPitchHistoryMean(0), mPitchHistoryIndex(0), mPitchHistoryValidCount(0), mVibrato(0),
       mAccumulatedVibratoBonusPoints(0), mVibratoFrameBonus(0), mVibratoBonusAccumulator(-1.0f), mAutoplayPart(-1),
       mAutoplayVariationMagnitude(0), mAutoplayOffset(0),
       mTambourineDetector(vp->mTambourineManager, this), mPitchDeviationMean(0), mPitchDeviationDev(0), mPitchDeviationFrameCount(0) {
@@ -112,7 +141,7 @@ Singer::Singer(VocalPlayer *vp, int n)
 Singer::~Singer() {
     RELEASE(mTalkyMatcher);
     RELEASE(mVibrato);
-    RELEASE(mTalkDataPtr);
+    RELEASE(unk18);
 }
 
 void Singer::PostLoad() {
@@ -218,21 +247,23 @@ void Singer::CancelScream() { mScreamStartTime = -1.0f; }
 void Singer::SetIsSinging(bool b1) { mIsSinging = b1; }
 void Singer::Detune(float f1) { mDetune = f1; }
 
-void Singer::HandlePhraseEnd(float, const std::vector<float> &micPitches) {
-    MILO_ASSERT(mResultsData.size() == micPitches.size(), 0x3BF);
+void Singer::HandlePhraseEnd(float, const std::vector<float> &phraseMaxPoints) {
+    MILO_ASSERT(mResultsData.size() == phraseMaxPoints.size(), 0x3BF);
     for (int i = 0; (unsigned)i < mResultsData.size(); i++) {
-        float micPitch = micPitches[i];
-        if (micPitch > 0.0f) {
+        float maxPoints = phraseMaxPoints[i];
+        float accuracy = mResultsData[i].targetPitchAccuracy;
+        if (maxPoints > 0.0f) {
             mResultsData[i].phraseScore +=
-                std::max(std::min(mResultsData[i].targetPitchAccuracy / micPitch, 1.0f), 0.0f);
+                std::max(std::min(accuracy / maxPoints, 1.0f), 0.0f);
             mResultsData[i].scoreFrameCount++;
         }
         mResultsData[i].targetPitchAccuracy = 0.0f;
         mResultsData[i].centsVariance = 0.0f;
         mResultsData[i].centsDeviation = 0.0f;
-        if (micPitch > 0.0f) {
+        float hitScore = mResultsData[i].targetPitchHitScore;
+        if (maxPoints > 0.0f) {
             mResultsData[i].micPitchHitScore +=
-                std::max(std::min(mResultsData[i].targetPitchHitScore / micPitch, 1.0f), 0.0f);
+                std::max(std::min(hitScore / maxPoints, 1.0f), 0.0f);
             mResultsData[i].phraseCount++;
         }
         mResultsData[i].targetPitchHitScore = 0.0f;
@@ -265,7 +296,7 @@ const VocalScoreCache &Singer::AccessScoreCache(int idx) const {
     return mScoreCaches[idx];
 }
 
-void Singer::AllScoresAreIn(const std::vector<int> &scores) {
+void Singer::AllScoresAreIn(const std::vector<int> &assignedParts) {
     MILO_ASSERT(mResultsData.size() == mScoreCaches.size(), 0x4B6);
     for (int i = 0; (unsigned)i < mResultsData.size(); i++) {
         float cacheUnk4 = mScoreCaches[i].unk4;
@@ -280,14 +311,14 @@ void Singer::AllScoresAreIn(const std::vector<int> &scores) {
             continue;
         int part0 = entry->part1;
         if (part0 != mFrameAssignedPart) {
-            if (std::find(scores.begin(), scores.end(), part0) != scores.end()) {
+            if (std::find(assignedParts.begin(), assignedParts.end(), part0) != assignedParts.end()) {
                 entry->isResolved = true;
                 continue;
             }
         }
         int part4 = entry->part2;
         if (part4 != mFrameAssignedPart) {
-            if (std::find(scores.begin(), scores.end(), part4) != scores.end()) {
+            if (std::find(assignedParts.begin(), assignedParts.end(), part4) != assignedParts.end()) {
                 entry->isResolved = true;
             }
         }

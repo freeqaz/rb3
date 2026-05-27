@@ -9,6 +9,12 @@
 __hmx_native_noop_stub:
     xorl %eax, %eax
     ret
+    // rb3-dta compiles os/System.cpp (whose native SystemInit now calls
+    // RB3InitNativeNetSession) but does not link rb3_netsession_native.cpp; rb3-dta
+    // never calls SystemInit, so this weak no-op never executes. rb3-native links
+    // the strong def, which wins.
+    .weak _Z23RB3InitNativeNetSessionv
+    .set _Z23RB3InitNativeNetSessionv, __hmx_native_noop_stub
     .weak AXSetCompressor
     .set AXSetCompressor, __hmx_native_noop_stub
     .weak BinkOpenAX

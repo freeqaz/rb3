@@ -28,6 +28,18 @@ BinStream &RndBitmap::LoadHeader(BinStream &bs, u8 &numMips) {
     bs >> mWidth;
     bs >> mHeight;
     bs >> mRowBytes;
+#ifdef HX_NATIVE
+    // Cached (Xbox/PS3 `.milo_xbox`) bitmaps serialize a full mip chain after the
+    // base level. The matched-fork code zeroes `numMips` (the Wii GX path
+    // regenerates mips at runtime and, for RndTex, reads from a standalone file
+    // buffer where trailing mip bytes are simply ignored). RndCubeTex, however,
+    // loads its 6 face bitmaps directly from the *shared* milo stream, so the
+    // skipped on-disk mip bytes desync every subsequent object. Stash the real
+    // count in mNativeCachedMips so RndBitmap::Load can consume (and discard) the
+    // mip bytes when the stream is genuinely cached, while keeping numMips==0 so
+    // NumMips() stays 0 and the existing MILO_ASSERT(!mNumMips) checks still hold.
+    mNativeCachedMips = bs.Cached() ? numMips : 0;
+#endif
     numMips = 0;
     bs.Read(pad, rev != 0 ? 0x13 : 6);
     return bs;
@@ -1304,6 +1316,27 @@ void RndBitmap::Load(BinStream &bs) {
         newMip->Create(working_w, working_h, 0, mBpp, mOrder, mPalette, 0, 0);
         ReadChunks(bs, newMip->Pixels(), newMip->PixelBytes(), 0x8000);
     }
+#ifdef HX_NATIVE
+    // Consume (and discard) the trailing mip chain of a genuinely-cached bitmap so
+    // the shared milo stream stays aligned for the next object. We do NOT link
+    // these into mMip — NumMips() stays 0, preserving the matched MILO_ASSERT
+    // checks. Mip pixel sizes use the same rowBytes/height formula as Create():
+    // rowBytes = (bpp==4 && (w&1)) ? (w+1)*bpp>>3 : w*bpp>>3.
+    int discardMips = mNativeCachedMips;
+    int dw = mWidth, dh = mHeight;
+    while (discardMips-- > 0) {
+        dw >>= 1;
+        dh >>= 1;
+        int drow = (mBpp == 4 && (dw & 1)) ? ((dw + 1) * mBpp >> 3) : (dw * mBpp >> 3);
+        int dbytes = drow * dh;
+        if (dbytes > 0) {
+            char *scratch = (char *)_MemAlloc(dbytes, 4);
+            ReadChunks(bs, scratch, dbytes, 0x8000);
+            _MemFree(scratch);
+        }
+    }
+    mNativeCachedMips = 0;
+#endif
 }
 
 bool RndBitmap::LoadSafely(BinStream &bs, int w, int h) {

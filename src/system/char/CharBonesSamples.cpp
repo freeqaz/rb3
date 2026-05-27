@@ -551,6 +551,94 @@ void CharBonesSamples::LoadData(BinStream& bs){
     if(gVer == 0xE){
         bool x; bs >> x;
     }
+#ifdef HX_NATIVE
+    // The matched-fork (Wii-native) LoadData reads a tightly-packed per-element
+    // stream. But the extracted RB3 assets are big-endian *cached* `.milo_xbox`
+    // files, which the Xbox/PS3 Save path stores in a PADDED layout (mirrors
+    // DC3 CharBonesSamples::Save's `cached` branch): every uncompressed-POS/SCALE
+    // Vector3 is followed by a zero pad float (so it occupies 16 bytes on disk),
+    // and each sample is padded out to a 16-byte boundary. Reading the unpadded
+    // Wii layout against a padded Xbox file desyncs the stream (here: a viseme
+    // CharClip's mZeros vector then reads a garbage length and the next clip's
+    // CharBones::Bone string blows up — String chars 23173 > 512).
+    //
+    // BinStream::operator>> already byte-swaps on a LE host for a BE file
+    // (ReadEndian HX_NATIVE), so per-element values come out correct; we only
+    // need to also consume the cached padding bytes. The in-memory mRawData
+    // layout stays UNPADDED (Vector3 at the offsets RecomputeSizes computed).
+    bool cached = bs.Cached() &&
+        (bs.GetPlatform() == kPlatformXBox || bs.GetPlatform() == kPlatformPS3);
+    if (cached && gVer > 0xE) {
+        for (int i = 0; i < mNumSamples; i++) {
+            SetStartFromRawData(Min(i, mNumSamples - 1));
+            int _t0 = bs.Tell();
+
+            // POS + SCALE
+            if (mCompression >= kCompressVects) {
+                short *offset = (short *)QuatOffset();
+                for (short *p = (short *)Start(); p < offset; p += 3) {
+                    bs >> p[0] >> p[1] >> p[2];
+                }
+            } else {
+                Vector3 *offset = (Vector3 *)QuatOffset();
+                for (Vector3 *p = (Vector3 *)Start(); p < offset; p++) {
+                    bs >> *p;
+                    float pad;
+                    bs >> pad; // cached padding float (Vector3 -> Vector4 on disk)
+                }
+            }
+
+            // QUAT
+            if (mCompression >= kCompressQuats) {
+                char *offset = RotXOffset();
+                for (char *p = QuatOffset(); p < offset; p += 4) {
+                    bs >> p[0] >> p[1] >> p[2] >> p[3];
+                }
+            } else if (mCompression != kCompressNone) {
+                short *offset = (short *)RotXOffset();
+                for (short *p = (short *)QuatOffset(); p < offset; p += 4) {
+                    bs >> p[0] >> p[1] >> p[2] >> p[3];
+                }
+            } else {
+                Hmx::Quat *offset = (Hmx::Quat *)RotXOffset();
+                for (Hmx::Quat *p = (Hmx::Quat *)QuatOffset(); p < offset; p++) {
+                    bs >> *p;
+                }
+            }
+
+            // ROT
+            if (mCompression != kCompressNone) {
+                short *offset = (short *)EndOffset();
+                for (short *p = (short *)RotXOffset(); p < offset; p++) {
+                    bs >> *p;
+                }
+            } else {
+                float *offset = (float *)EndOffset();
+                for (float *p = (float *)RotXOffset(); p < offset; p++) {
+                    bs >> *p;
+                }
+            }
+
+            // per-sample 16-byte alignment padding: the cached sample block (with
+            // the per-Vector3 padding floats already consumed above) is rounded
+            // out to a 16-byte boundary on disk. Compute the pad from the actual
+            // bytes consumed for this sample.
+            int consumed = bs.Tell() - _t0;
+            int delta = ((consumed + 0xF) & ~0xF) - consumed;
+            for (int d = 0; d < delta; d++) {
+                char pb;
+                bs >> pb;
+            }
+
+            if ((i & 0x7F) == 0x7F) {
+                while (bs.Eof() == TempEof) {
+                    Timer::Sleep(0);
+                }
+            }
+        }
+        return;
+    }
+#endif
     for(int i = 0; i < mNumSamples; i++){
         SetStartFromRawData(Min(i, mNumSamples - 1));
 

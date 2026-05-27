@@ -40,6 +40,19 @@ float RndWind::GetWind(float x) {
         f += 1.0f;
     float fscaled = f * 1024.0f;
     int i = (int)fscaled;
+#ifdef HX_NATIVE
+    // sWindField has 0x401 entries (indices 0..0x400); GetWind reads [i] and
+    // [i+1] with i in [0,0x3FF] for a finite x in [0,1). A NaN/Inf x (an
+    // uninitialized CharHair sim time on native — the menu/venue hair backdrop is
+    // cosmetic and never seeded with a valid clock) makes (int)fscaled garbage and
+    // OOB-reads sWindField → SIGSEGV during the venue char Poll, which blocks the
+    // song-select transition. Clamp the index defensively (treat bad input as no
+    // wind sample at index 0). Console keeps the matched read.
+    if (!(fscaled == fscaled) || i < 0 || i >= 0x400) {
+        i = 0;
+        fscaled = 0.0f;
+    }
+#endif
     float a = sWindField[i];
     return (fscaled - (float)i) * (sWindField[i + 1] - a) + a;
 }

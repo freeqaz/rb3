@@ -89,6 +89,15 @@ extern int *gpDbgFrameID;
     ((cond) || (TheDebugFailer << (MakeString(__VA_ARGS__)), 0))
 #define MILO_FAIL(...) TheDebugFailer << MakeString(__VA_ARGS__)
 #define MILO_WARN(...) TheDebugNotifier << MakeString(__VA_ARGS__)
+// DTA runtime data-type errors (DataNode::Int/Float/etc on a wrong-typed node):
+// FAIL on the console (shows the dialog + Continue), WARN on native (the offline
+// flow hits benign type mismatches — e.g. PropAnim keyframe values coerced by the
+// retail non-debug path — that must not abort). Mirrors DC3's Debug.h MILO_FAIL_DTA.
+#ifdef HX_NATIVE
+#define MILO_FAIL_DTA(...) TheDebugNotifier << MakeString(__VA_ARGS__)
+#else
+#define MILO_FAIL_DTA(...) TheDebugFailer << MakeString(__VA_ARGS__)
+#endif
 #define MILO_NOTIFY_BETA(...) DebugBeta() << MakeString(__VA_ARGS__)
 #define MILO_LOG(...) TheDebug << MakeString(__VA_ARGS__)
 
@@ -121,6 +130,7 @@ extern int *gpDbgFrameID;
 #define MILO_ASSERT(cond, line) (void)(cond)
 #define MILO_ASSERT_FMT(cond, ...) (void)(cond)
 #define MILO_FAIL(...) (void)(__VA_ARGS__)
+#define MILO_FAIL_DTA(...) (void)(__VA_ARGS__)
 #define MILO_WARN(...) (void)(__VA_ARGS__)
 #define MILO_LOG(...) (void)(__VA_ARGS__)
 

@@ -67,7 +67,17 @@ ChunkStream::ChunkStream(
     }
     mCurReadBuffer = 0;
     mFile = NewFile(file, type == kRead ? 2 : 2564); // don't ask about the magic number
+#ifdef HX_NATIVE
+    // Native NewFile() returns a non-null File even when the underlying open
+    // failed (so a missing DTA #include parses as empty — see os/File.cpp). A
+    // ChunkStream over a failed open must report Fail() so DirLoader::OpenFile
+    // cleans up (returns a null dir) instead of reading a garbage chunk header
+    // and desyncing at the LoadHeader assert (e.g. rndobj/sphere.milo absent
+    // from the 360-ARK extracted asset tree). The matched #else stays as-is.
+    mFail = !mFile || mFile->Fail();
+#else
     mFail = !mFile;
+#endif
     if (!mFail) {
         if (type == kWrite) {
             mFile->Write(&mChunkInfo, 0x810);

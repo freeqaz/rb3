@@ -240,6 +240,23 @@ const char *DirLoader::StateName() const {
 }
 
 void DirLoader::PollLoading() {
+#ifdef HX_NATIVE
+    // Native = synchronous loading (mirrors DC3's DirLoader::PollLoading, which is
+    // just `(this->*mState)();`). RB3's matched-fork `#else` is the Wii time-sliced
+    // form: it only advances `while (!CheckSplit() && GetFirstLoading()==this &&
+    // !IsLoaded())`. On a fast host the LoadMgr 10ms `mPeriod` budget is exhausted
+    // by earlier loaders in the same `LoadMgr::Poll` pass, so `CheckSplit()` is
+    // already true when a freshly-front loader is first reached and the while-body
+    // NEVER runs — the loader sits in OpenFile forever (the splash `meta_panel.milo`
+    // front-loader stall). Always advancing one state step per poll guarantees
+    // forward progress; the internal per-state `GetFirstLoading()!=this` /
+    // `CheckSplit()` re-entrancy guards (kept intact below) still cooperate with
+    // sub-loaders pushed to the front.
+    if (!IsLoaded() && TheLoadMgr.GetFirstLoading() == this) {
+        (this->*mState)();
+    }
+    return;
+#endif
     while (!TheLoadMgr.CheckSplit() && TheLoadMgr.GetFirstLoading() == this && !IsLoaded()
     ) {
         (this->*mState)();
@@ -511,6 +528,34 @@ void DirLoader::CreateObjects() {
         } else {
             BeginTrackObjMem(classSym.mStr, buf);
             obj = Hmx::Object::NewObject(classSym);
+#ifdef HX_NATIVE
+            // Native-only STUB-vtable guard (mirrors DC3 DirLoader::CreateObjects
+            // HX_NATIVE block). A class whose factory was registered (e.g. via its
+            // ::Init() in a compiled TU) but whose .cpp is still in
+            // _NATIVE_FORK_EXCLUDE has a weak-no-op ctor → NewObject returns an
+            // object with an uninitialized/zeroed vtable. Dereferencing it (SetName,
+            // PreLoad/PostLoad) crashes. Detect the stub vtable and treat the object
+            // as unmakeable: null it so LoadObjs ReadDead-skips its serialized bytes
+            // (rev>1), exactly like an unregistered class. This keeps a milo that
+            // references a not-yet-brought-up class loadable instead of crashing
+            // (the referenced class still needs real bring-up for correct content).
+            if (obj) {
+                void **vptr = *(void ***)obj;
+                if (!vptr || !vptr[0]) {
+                    MILO_WARN(
+                        "%s: STUB vtable for %s (class not brought up natively)",
+                        mFile.c_str(), classSym.Str()
+                    );
+                    obj = nullptr;
+                }
+            }
+            if (!obj) {
+                mObjects.push_back(nullptr);
+                if (TheLoadMgr.CheckSplit())
+                    return;
+                continue;
+            }
+#endif
             if (mRev == 0x16 && dynamic_cast<class ObjectDir *>(obj)) {
                 RELEASE(obj);
             } else {

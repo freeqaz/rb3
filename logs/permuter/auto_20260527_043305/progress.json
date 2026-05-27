@@ -1,0 +1,29 @@
+{
+  "completed": [
+    "AddParams__FR6StringR6String6String",
+    "AppendThreadStackTrace__FPcPUi",
+    "ButtonToAction__F12JoypadButton6Symbol",
+    "CanRead__16WiiNetworkSocketCFv",
+    "ConvertCNTSDError__Fi",
+    "DNSThread__FPv",
+    "FileLocalize__FPCcPc",
+    "GetHashValue__7ArkHashCFPCc",
+    "HolmesClientPrint__FPCc",
+    "HolmesClientTruncate__Fii",
+    "Init__13WiiContentMgrFv",
+    "Init__7HDCacheFv",
+    "JoypadPollForButton__Fi",
+    "OnMsg__12JoypadClientFRC13ButtonDownMsg",
+    "OpenFiles__7HDCacheFi",
+    "Poll__15UsbMidiKeyboardFv",
+    "ReadAsync__7HDCacheFiiPv",
+    "RecursePatternInternal__FPCcPFPCcPCc_vbb",
+    "Recv__16WiiNetworkSocketFPvUl",
+    "Send__16WiiNetworkSocketFPCvUl",
+    "SystemInit__FPCc",
+    "TryDemangleClassAndFunc__F6String",
+    "TryDemangleParams__FR6StringR6String6String6String",
+    "WriteDone__7HDCacheFv",
+    "__rs__FR9BinStreamR9FileEntry"
+  ]
+}

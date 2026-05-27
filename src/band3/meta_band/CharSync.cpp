@@ -46,6 +46,18 @@ CharSync::~CharSync() {
 #pragma push
 #pragma dont_inline on
 void CharSync::UpdateCharCache() {
+#ifdef HX_NATIVE
+    // Band-member character PREVIEW cache update (runs on every screen-transition
+    // complete). It builds BandCharDescs from profile/prefab CharData and Requests
+    // them into TheCharCache. On native the underlying char data is DEFERRED — the
+    // chars.milo preview cache (CharCache::InitMe), char-deform (BandCharDesc::Init)
+    // and head (BandHeadShaper::Init) loads are all #ifndef HX_NATIVE because their
+    // CharClip/CharBonesSamples Loads version-desync (T9). So prefabMgr's CharData
+    // has a garbage BandCharDesc (CopyCharDesc derefs a bad ptr -> SetPrefab crash).
+    // The char previews can't render without those milos anyway, and the menu text/
+    // layout renders fine without them. Defer to match the existing char deferrals.
+    return;
+#endif
     OvershellPanel *overshell = TheBandUI.GetOvershell();
     MILO_ASSERT(overshell, 0x47);
 
@@ -127,7 +139,15 @@ void CharSync::UpdateCharCache() {
     for (int n = 0; n < 4; n++) {
         bool inCloset = false;
         std::vector<BandCharDesc *> descs70;
+#ifdef HX_NATIVE
+        // TheBandDirector is only constructed once a venue/world loads (gameplay);
+        // it's null at the menu, where this char-cache update runs on every screen
+        // transition. A null director means "not a music video" — take the normal
+        // char-load branch rather than deref null.
+        if (TheBandDirector && TheBandDirector->IsMusicVideo()) {
+#else
         if (TheBandDirector->IsMusicVideo()) {
+#endif
             BandCharDesc *curDesc = Hmx::Object::New<BandCharDesc>();
             curDesc->GetHead().mHide = true;
             descs70.push_back(curDesc);

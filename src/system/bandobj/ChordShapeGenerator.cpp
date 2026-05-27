@@ -628,7 +628,11 @@ void ChordShapeGenerator::GetCrossSection(float xOffset, CrossSec &cs) {
     cs.mVerts.clear();
     cs.mXOffset = xOffset;
     RndMesh::VertVector &verts = mSource->Verts();
+#ifdef HX_NATIVE
+    std::vector<RndMesh::Face> faces(mSource->Faces());
+#else
     std::vector<RndMesh::Face, unsigned short> faces(mSource->Faces());
+#endif
     float hi = xOffset + 0.1f;
     float lo = xOffset - 0.1f;
     for (unsigned int i = 0; i < faces.size(); i++) {

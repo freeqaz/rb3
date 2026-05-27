@@ -92,6 +92,8 @@ set(MILO_ENGINE_DECOMP_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
     ${REPO_ROOT}/src
     ${REPO_ROOT}/src/system
+    ${REPO_ROOT}/src/band3               # game/ tour/ meta_band/ net_band/ bandtrack/ headers
+    ${REPO_ROOT}/src/network             # net/ Platform/ Protocol/ online headers
     ${REPO_ROOT}/src/system/oggvorbis
     ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt's <angled> sibling includes
 set(MILO_ENGINE_DECOMP_COMPAT_FLAGS ${DECOMP_FLAGS})
@@ -215,6 +217,29 @@ file(GLOB ENGINE_OS     ${REPO_ROOT}/src/system/os/*.cpp)
 file(GLOB ENGINE_MATH   ${REPO_ROOT}/src/system/math/*.cpp)
 file(GLOB ENGINE_RNDOBJ ${REPO_ROOT}/src/system/rndobj/*.cpp)
 file(GLOB ENGINE_SYNTH  ${REPO_ROOT}/src/system/synth/*.cpp)
+# --- Boot-path globs (milestone "boot-to-song" T1): the App.cpp boot spine +
+# the matched-fork subsystems its *::Init() cluster + the UIManager/menu DTA
+# flow touch. ui/world/track are fully clang-clean; beatmatch/meta/movie/char/
+# bandobj + band3/{meta_band,game,net_band,tour,bandtrack} are MOSTLY clean — the
+# residual ~43 TUs that don't yet compile under clang LP64 are EXCLUDED below
+# (NATIVE_FORK_EXCLUDE) and their symbols satisfied by weak no-op stubs in
+# band3_link_stubs.s. Those 43 are matched-fork clang-bring-up gaps (STLport
+# vector<T,N> idioms, switch jump-over-init, DC3-vs-RB3 header shapes) — Wave 1/2
+# porting work, NOT this milestone's scope. ---
+file(GLOB ENGINE_UI       ${REPO_ROOT}/src/system/ui/*.cpp)
+file(GLOB ENGINE_WORLD    ${REPO_ROOT}/src/system/world/*.cpp)
+file(GLOB ENGINE_TRACK    ${REPO_ROOT}/src/system/track/*.cpp)
+file(GLOB ENGINE_BEATM    ${REPO_ROOT}/src/system/beatmatch/*.cpp)
+file(GLOB ENGINE_META     ${REPO_ROOT}/src/system/meta/*.cpp)
+file(GLOB ENGINE_MOVIE    ${REPO_ROOT}/src/system/movie/*.cpp)
+file(GLOB ENGINE_BANDOBJ  ${REPO_ROOT}/src/system/bandobj/*.cpp)
+file(GLOB ENGINE_CHAR     ${REPO_ROOT}/src/system/char/*.cpp)
+file(GLOB GAME_METABAND   ${REPO_ROOT}/src/band3/meta_band/*.cpp)
+file(GLOB GAME_GAME       ${REPO_ROOT}/src/band3/game/*.cpp)
+file(GLOB GAME_NETBAND    ${REPO_ROOT}/src/band3/net_band/*.cpp)
+file(GLOB GAME_TOUR       ${REPO_ROOT}/src/band3/tour/*.cpp)
+file(GLOB GAME_BANDTRACK  ${REPO_ROOT}/src/band3/bandtrack/*.cpp)
+file(GLOB GAME_APP        ${REPO_ROOT}/src/App.cpp)
 
 # --- DTA harness source set (milestone a): obj/utl/os/math only ---
 set(DTA_FORK_SOURCES ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH})
@@ -225,7 +250,11 @@ set(DTA_FORK_SOURCES ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH})
 # (vs the earlier header-only dump). Platform/GFX-backend TUs are filtered below. ---
 set(NATIVE_FORK_SOURCES
     ${ENGINE_OBJ} ${ENGINE_UTL} ${ENGINE_OS} ${ENGINE_MATH}
-    ${ENGINE_RNDOBJ} ${ENGINE_SYNTH})
+    ${ENGINE_RNDOBJ} ${ENGINE_SYNTH}
+    ${ENGINE_UI} ${ENGINE_WORLD} ${ENGINE_TRACK} ${ENGINE_BEATM}
+    ${ENGINE_META} ${ENGINE_MOVIE} ${ENGINE_BANDOBJ} ${ENGINE_CHAR}
+    ${GAME_METABAND} ${GAME_GAME} ${GAME_NETBAND} ${GAME_TOUR}
+    ${GAME_BANDTRACK} ${GAME_APP})
 
 # Shared exclusions applied to BOTH source sets.
 #
@@ -239,11 +268,14 @@ set(_FORK_EXCLUDE_REGEX_FLEX "DataFlex_target\\.cpp$")
 # Off-path Wii-platform TUs that pull unshimmed Wii SDK surface (NAND saves,
 # RevoEX nhttp, DVD disc I/O, content/audio backends). The loose linker flags
 # tolerate any unresolved refs they'd have defined.
-set(_FORK_EXCLUDE_REGEX_WIISDK "/(BufStreamNAND|HttpWii|FakeSongMgr|CDReader|WaveFile|AsyncFileCNT)\\.cpp$")
+set(_FORK_EXCLUDE_REGEX_WIISDK "/(BufStreamNAND|HttpWii|CDReader|WaveFile|AsyncFileCNT)\\.cpp$")
 # AsyncFile.cpp / HolmesClient.cpp pull os/AsyncFileCNT.h -> sdk/RVL_SDK cnt.h ->
 # ARC.h (un-shimmable cheaply). Both harnesses read synchronously via the native
 # FileStream, so the async backends aren't needed.
 set(_FORK_EXCLUDE_REGEX_ASYNC "/(AsyncFile|HolmesClient)\\.cpp$")
+# The background permuter writes hidden scratch copies (.permuter_work_*.cpp);
+# file(GLOB) matches dotfiles, so drop any dot-prefixed basename.
+set(_FORK_EXCLUDE_REGEX_DOTFILE "/\\.[^/]*\\.cpp$")
 
 foreach(_set DTA_FORK_SOURCES NATIVE_FORK_SOURCES)
     list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_PLATFORM}")
@@ -251,6 +283,24 @@ foreach(_set DTA_FORK_SOURCES NATIVE_FORK_SOURCES)
     list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_FLEX}")
     list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_WIISDK}")
     list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_ASYNC}")
+    list(FILTER ${_set} EXCLUDE REGEX "${_FORK_EXCLUDE_REGEX_DOTFILE}")
+endforeach()
+
+# NATIVE-only: residual boot-path TUs that don't yet compile under clang LP64
+# (matched-fork clang-bring-up gaps — see boot-path-glob comment above). Each is
+# stubbed with a weak no-op in band3_link_stubs.s so the boot links. Bringing a
+# TU here clang-clean (+ removing it from this list) is the per-class work that
+# advances the boot (e.g. MetaPanel/Band for the menu DTA flow). Paths are
+# anchored (/Name.cpp$) so e.g. SongSort.cpp doesn't also drop SongSortByPlays.cpp.
+set(_NATIVE_FORK_EXCLUDE
+    BandPatchMesh
+    ClipDistMap DataResults GameGemList
+    SaveLoadManager Singer
+    Splash
+    StorePackedMetadata TourPerformerLocal
+    VocalNoteList VocalPlayer WaitingUserGate)
+foreach(_tu ${_NATIVE_FORK_EXCLUDE})
+    list(FILTER NATIVE_FORK_SOURCES EXCLUDE REGEX "/${_tu}\\.cpp$")
 endforeach()
 
 # Flex-generated DTA lexer (C source).
@@ -283,6 +333,8 @@ function(rb3_configure_target tgt)
         ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
         ${REPO_ROOT}/src
         ${REPO_ROOT}/src/system
+        ${REPO_ROOT}/src/band3               # game/ tour/ meta_band/ net_band/ bandtrack/ headers
+        ${REPO_ROOT}/src/network             # net/ Platform/ Protocol/ online headers
         ${REPO_ROOT}/src/system/oggvorbis
         ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt's <angled> sibling includes
     target_link_libraries(${tgt} PRIVATE milo-engine Threads::Threads)
@@ -327,11 +379,32 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/rb3_render_tri.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_band_rnd.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_render_mesh.cpp
+    # native CreateNativeSynth() — headless base Synth (no audio assets yet)
+    ${CMAKE_SOURCE_DIR}/src/rb3_synth_native.cpp
+    # native ctors for Wii/online manager globals whose real ctors live in
+    # platform-EXCLUDED Wii TUs (PlatformMgr, ContentMgr — strong defs win over
+    # the weak noop stubs in dta_link_stubs.s, so each global's MsgSource base
+    # constructs)
+    ${CMAKE_SOURCE_DIR}/src/rb3_platform_native.cpp
+    # native TheNetSession (`session`): minimal offline concrete NetSession; its
+    # real impl lives in the un-globbed network/ Quazal subsystem
+    ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
+    # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
+    ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # Synchronizable base (network/net): not part of the globbed source set, but
+    # OvershellPanel (& other menu objects) MI-inherit it; its zeroed RTTI stub
+    # crashed __dynamic_cast<UIPanel*>. Compile the real matched-fork ctor/dtor so
+    # the base typeinfo/vtable are valid; its online side-effects (TheSyncStore/
+    # TheNetSession/TheUserMgr) are gated #ifndef HX_NATIVE.
+    ${REPO_ROOT}/src/network/net/Synchronize.cpp
     ${NATIVE_FORK_SOURCES}
     ${DTA_LEXER}
     ${NATIVE_SHIMS}
     # weak no-op stubs for the off-path symbols rndobj/synth pull in
     # (Wii GX backend, Bink, libogg, tomcrypt, Striper, engine GPU, game globals)
     ${CMAKE_SOURCE_DIR}/src/rndobj_synth_link_stubs.s
+    # weak no-op stubs for the boot-path symbols defined by the band3/bandobj/char
+    # TUs that don't yet compile under clang (see _NATIVE_FORK_EXCLUDE)
+    ${CMAKE_SOURCE_DIR}/src/band3_link_stubs.s
 )
 rb3_configure_target(rb3-native)

@@ -405,10 +405,24 @@ void RockCentral::ForceLogout() {
 }
 
 void RockCentral::CancelOutstandingCalls(Hmx::Object *o) {
+#ifdef HX_NATIVE
+    if (!mContextWrapperPool) // RockCentral::Init() (online) is gated off natively
+        return;
+#endif
     mContextWrapperPool->CancelOutstandingContexts(o);
 }
 
-void RockCentral::FailAllOutstandingCalls() { mContextWrapperPool->FailAllContexts(); }
+void RockCentral::FailAllOutstandingCalls() {
+#ifdef HX_NATIVE
+    // mContextWrapperPool is allocated in RockCentral::Init(), which is gated
+    // #ifndef HX_NATIVE (online subsystem). Offline there are no outstanding
+    // RockCentral calls to fail. Reached from NetSync::AttemptTransition on every
+    // screen transition (e.g. the quickplay -> song_select_enter_screen move).
+    if (!mContextWrapperPool)
+        return;
+#endif
+    mContextWrapperPool->FailAllContexts();
+}
 
 Server *RockCentral::IsConnected(Hmx::Object *o, int i, bool b) {
     Server *server = TheNet.GetServer();

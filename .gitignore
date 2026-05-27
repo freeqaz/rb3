@@ -12,6 +12,12 @@ build/
 build.ninja
 objdiff.json
 
+# Native port CMake build dirs
+native/build*/
+
+# Convenience symlink into orig-assets/extracted/
+/system
+
 # clangd
 .cache/
 compile_commands.json

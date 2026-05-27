@@ -1,7 +1,9 @@
 #include "App.h"
 #include "BudgetScreen.h"
 #include "ChecksumData_wii.h"
-#include "MSL_Common/null_def.h"
+#ifndef HX_NATIVE
+#include "MSL_Common/null_def.h" // MWCC MSL header (NULL/nullptr); host STL supplies these
+#endif
 #include "beatmatch/BeatMatch.h"
 #include "bandobj/Band.h"
 #include "bandobj/PatchDir.h"
@@ -29,7 +31,9 @@
 #include "meta_band/StoreRootPanel.h"
 #include "meta_band/TrainingMgr.h"
 #include "meta_band/UIStats.h"
-#include "movie/CustomSplash_Wii.h"
+#ifndef HX_NATIVE
+#include "movie/CustomSplash_Wii.h" // pulls Wii TPL/GX SDK headers; gated out on native
+#endif
 #include "movie/Splash.h"
 #include "net/Net.h"
 #include "net_band/EntityUploader.h"
@@ -51,8 +55,10 @@
 #include "bandobj/BandDirector.h"
 #include "rndobj/HiResScreen.h"
 #include "rndobj/Rnd.h"
-#include "rndwii/Env.h"
+#ifndef HX_NATIVE
+#include "rndwii/Env.h" // Wii GX renderer (GXLightObj etc.) — TheWiiRnd/WiiEnviron
 #include "rndwii/Rnd.h"
+#endif
 #include "synth/BinkReader.h"
 #include "synth/Synth.h"
 #include "band3/tour/QuestManager.h"
@@ -67,13 +73,26 @@
 #include "utl/Rso_Utl.h"
 #include "utl/Option.h"
 #include "world/World.h"
-#include <revolution/VI.h>
+#ifndef HX_NATIVE
+#include <revolution/VI.h> // Wii VI* (VISetBlack/VIFlush); gated out on native
+#endif
+#ifdef HX_NATIVE
+#include <csetjmp> // native frame-loop draw guard (sigsetjmp)
+#include <cstdlib> // getenv/atoi (MILO_MAX_FRAMES)
+#endif
 
 #ifdef VERSION_SZBE69_B8
 DECOMP_FORCEACTIVE(App, "_unresolved func.\n")
 #endif
 u64 sNullMicClientID;
 ModalCallbackFunc *gRealCallback;
+
+#ifdef HX_NATIVE
+// Declared in rndwii/Rnd.h (Wii GX renderer), which is gated out on native.
+// The asm-match #else frame loop still references it identically; provide the
+// decl so it compiles + links (resolved by a weak no-op link stub).
+void SetGPHangDetectEnabled(bool, const char *);
+#endif
 
 const int initArk = 2;
 const int charArk = 5;
@@ -136,16 +155,23 @@ App::App(int argc, char **argv) {
     SetFileChecksumData();
     SystemPreInit(argc, argv, "config/band_preinit_keep.dta");
     TheRnd->PreInit();
+#ifndef HX_NATIVE
+    // Wii disc-error manager: tracks DVD read failures. No optical disc on the
+    // native host, so mDiscErrorMgr is never constructed — skip activating it.
     ThePlatformMgr.mDiscErrorMgr->mActive = true;
+#endif
 #ifdef MILO_DEBUG
     TheRnd->SetClearColor(Hmx::Color(1, 0, 0));
 #else
     TheRnd->SetClearColor(Hmx::Color(0, 0, 0));
 #endif
     TheRnd->Init();
+#ifndef HX_NATIVE
     VISetBlack(true);
     VIFlush();
+#endif
     bool fast = OptionBool("fast", false);
+#ifndef HX_NATIVE
     Splash spl;
 #ifdef MILO_DEBUG
     if (fast || !UsingCD()) {
@@ -175,9 +201,11 @@ App::App(int argc, char **argv) {
     }
     spl.AddScreen("ui/startup/startup_ea_keep.milo", 2000);
     spl.PrepareNext();
+#endif // HX_NATIVE (splash setup — Wii VI / CustomSplash / cosmetic logos)
 
     gInitComplete = false;
 
+#ifndef HX_NATIVE
     CustomSplash csplash;
 #ifdef VERSION_SZBE69_B8
     if (fast || !UsingCD()) {
@@ -188,18 +216,25 @@ App::App(int argc, char **argv) {
     }
     csplash.Init();
     csplash.Show();
+#endif // HX_NATIVE (CustomSplash — Wii-only movie/CustomSplash_Wii.h)
     SynthInit();
     Movie::Init();
+#ifndef HX_NATIVE
     csplash.EndShow();
+#endif
     gInitComplete = true;
     TheRnd->BeginDrawing();
     TheRnd->EndDrawing();
+#ifndef HX_NATIVE
     spl.BeginSplasher();
     float splasher_time = init_time.SplitMs();
+#endif
     if (TheArchive != nullptr) {
         TheArchive->SetArchivePermission(1, &initArk);
     }
+#ifndef HX_NATIVE
     spl.PrepareRemaining();
+#endif
     SystemInit("config/band_keep.dta");
 #ifdef MILO_DEBUG
     MagnuInit();
@@ -213,6 +248,7 @@ App::App(int argc, char **argv) {
     FixedSizeSaveable::Init(151, 5688);
     BandUserMgrInit();
     PollTheSplasher();
+#ifndef HX_NATIVE
     TheNet.Init();
     PollTheSplasher();
     TheRockCentral.Init(false);
@@ -223,6 +259,7 @@ App::App(int argc, char **argv) {
     UsbMidiKeyboard::Init();
     UsbMidiGuitar::Init();
     PollTheSplasher();
+#endif // HX_NATIVE (online services + Wii USB peripheral mgrs — no native backing)
     {
         ObjDirPtr<ObjectDir> oPtr;
         Loader *ldr = nullptr;
@@ -268,40 +305,60 @@ App::App(int argc, char **argv) {
     TrainingMgr::Init();
     PatchDir::Init();
     PollTheSplasher();
+#ifndef HX_NATIVE
     TheWiiProfileMgr.Init(151, 45);
+#endif // HX_NATIVE (Wii NAND profile mgr — no native backing)
     TheUI.Init();
+#ifdef HX_NATIVE
+    // Register the offline DTA-manager stubs whose real subsystems are excluded
+    // from the native link (saveload_mgr / net_cache_mgr) so the splash boot
+    // state machine advances. Placed after TheUI.Init() per DTA_MANAGER_STUBS §4.
+    extern void RB3RegisterNativeManagerStubs();
+    RB3RegisterNativeManagerStubs();
+#endif
     TheCharSync->UpdateCharCache();
     PollTheSplasher();
     TheQuestMgr.Init(SystemConfig("tour"));
     // InitStoreOverlay();
     PollTheSplasher();
+#ifndef HX_NATIVE
 #ifdef VERSION_SZBE69_B8
     if (UsingCD())
 #endif
         if (NewFile("charnames.zbm", 0x10002) == nullptr) {
             ThePlatformMgr.SetDiskError(kDiskError);
         }
+#endif // HX_NATIVE (disc-error probe — no Wii disc)
     if (TheArchive != nullptr) {
         TheArchive->SetArchivePermission(1, &charArk);
     }
     TheLoadMgr.PollUntilEmpty();
     float total_time = init_time.SplitMs();
+#ifdef HX_NATIVE
+    (void)total_time; // splasher_time/MILO_LOG that consume it are gated out
+#endif
     if (TheArchive != nullptr) {
         TheArchive->SetArchivePermission(7, &regularArks);
 #ifdef MILO_DEBUG
         if (Archive::DebugArkOrder()) {
+#ifndef HX_NATIVE
             MILO_LOG("Startup Time: %f %f\n", splasher_time, splasher_time - total_time);
+#endif
         }
 #else
         Archive::DebugArkOrder();
 #endif
     }
+#ifndef HX_NATIVE
     spl.EndSplasher();
+#endif
     EnableKeyCheats(true);
     AutoGlitchReport::EnableCallback();
     MemSetAllowTemp("main", 0);
-    MemPushHeap(MemFindHeap("fast"));
+#ifndef HX_NATIVE
+    MemPushHeap(MemFindHeap("fast")); // Wii fixed-heap regions; native uses the host allocator
     MemPushHeap(MemFindHeap("main"));
+#endif // HX_NATIVE
     gGCNewLists = false;
     // gFrameMissThreshold = 166;
 }
@@ -380,6 +437,7 @@ void PollTriFrame(float frameMs, float syncMs) {
         if (gSleepAmt > 0.0f) {
             OSSleepTicks(OSMicrosecondsToTicks((s64)(int)(1000.0f * gSleepAmt)));
         }
+#ifndef HX_NATIVE
         if (!gPreventTriFrameSwitchage) {
             if (TheBandDirector->IsMusicVideo()) {
                 TheWiiRnd.SetTriFrameRendering(false);
@@ -407,6 +465,7 @@ void PollTriFrame(float frameMs, float syncMs) {
                 }
             }
         }
+#endif // HX_NATIVE (Wii GX tri-frame rendering throttle — no native GX)
     }
 }
 #pragma pop
@@ -416,6 +475,50 @@ void App::Run() { RunWithoutDebugging(); }
 #pragma push
 #pragma pool_data off
 void App::RunWithoutDebugging() {
+#ifdef HX_NATIVE
+    // Native headless frame loop — mirrors dc3 App.cpp:1058-1156 HX_NATIVE branch
+    // (RB3 has NO TheFlowMgr, so no flow poll). Bounded by MILO_MAX_FRAMES so the
+    // headless run terminates; the draw is wrapped in a sigsetjmp guard so a
+    // partially-loaded scene that segfaults in Draw() skips the frame instead of
+    // crashing the process. Renders through TheRnd (= BandRnd, the Strategy-B
+    // backend wired in native/src/rb3_band_rnd.cpp).
+    extern sigjmp_buf gDrawJmpBuf;
+    extern bool gDrawJmpBufSet;
+    // Native synthetic-input driver + screen-flow trace (rb3_game_input.cpp).
+    extern void RB3GameInputPoll(int frame);
+
+    int maxFrames = 5;
+    if (const char *e = getenv("MILO_MAX_FRAMES")) {
+        maxFrames = atoi(e);
+        if (maxFrames <= 0) maxFrames = 5;
+    }
+    MILO_LOG("RB3 Native: entering frame loop — %d frames\n", maxFrames);
+
+    for (int frame = 0; frame < maxFrames; frame++) {
+        SystemPoll(false);
+        TheUI.Poll();
+        RB3GameInputPoll(frame);
+        TheTaskMgr.Poll();
+        if (TheSynth)
+            TheSynth->Poll();
+
+        if (TheRnd)
+            TheRnd->BeginDrawing();
+        if (sigsetjmp(gDrawJmpBuf, 1) == 0) {
+            gDrawJmpBufSet = true;
+            TheUI.Draw();
+            gDrawJmpBufSet = false;
+        } else {
+            gDrawJmpBufSet = false;
+            MILO_LOG("RB3 Native: caught crash in Draw(), skipping frame %d\n", frame);
+        }
+        if (TheRnd)
+            TheRnd->EndDrawing();
+        MILO_LOG("RB3 Native: frame %d complete\n", frame);
+    }
+    MILO_LOG("RB3 Native: %d frames done — exiting frame loop\n", maxFrames);
+    return;
+#endif
     Timer loop_timer;
     loop_timer.Restart();
     int frameticker = 0;

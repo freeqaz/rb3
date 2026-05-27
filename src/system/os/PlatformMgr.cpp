@@ -38,7 +38,18 @@ void UTF8FilterKeyboardString(char *c, int i, const char *cc) {
 
 bool PlatformMgr::IsSignedIn(int padnum) const {
     if (padnum < 0) {
+#ifdef HX_NATIVE
+        // Native headless: only the synthetic primary user is associated to a pad
+        // (pad 0); the other BandUserMgr local users have no pad (GetPadNum() ==
+        // -1). On the real Wii every queried local user has a valid pad, so this
+        // path is a fatal assert. Offline, a pad-less / profile-less user is
+        // simply not signed in — return false (mirrors the §4 offline-default
+        // strategy). Reached via check_rewards_and_hints -> acc_mgr has_new_awards
+        // -> LocalUser::CanSaveData -> IsUserSignedIn on the main_hub transition.
+        return false;
+#else
         MILO_FAIL("PadNum = %d", padnum);
+#endif
     }
     return 1 << padnum & mSigninMask;
 }
@@ -52,7 +63,11 @@ bool PlatformMgr::HasUserSigninChanged(const LocalUser *pUser) const {
     MILO_ASSERT(pUser, 0x58);
     int padnum = pUser->GetPadNum();
     if (padnum < 0)
+#ifdef HX_NATIVE
+        return false; // pad-less native user — see IsSignedIn
+#else
         MILO_FAIL("PadNum = %d", padnum);
+#endif
     return 1 << padnum & mSigninChangeMask;
 }
 

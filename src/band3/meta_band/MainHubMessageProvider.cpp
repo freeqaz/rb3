@@ -44,7 +44,7 @@ void MainHubMessageProvider::SetMessageLabel(AppLabel *label, int idx) const {
     case kDataArray:
         label->SetTokenFmt(messageArray->Array(idx));
         break;
-    case kDataSymbol:
+    case kDataSymbol: {
         Symbol sym = messageArray->Sym(idx);
         if (sym == Symbol("motd")) {
             label->SetMotd(mMainHub);
@@ -124,6 +124,7 @@ void MainHubMessageProvider::SetMessageLabel(AppLabel *label, int idx) const {
             label->SetTextToken(messageArray->Sym(idx));
         }
         break;
+    }
     default:
         MILO_FAIL("Invalid Message Type %i \n", messageArray->Type(idx));
         break;

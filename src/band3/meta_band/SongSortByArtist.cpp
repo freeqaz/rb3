@@ -16,7 +16,7 @@ int ArtistCmp::Compare(const SongSortCmp *s, SongNodeType nodeType) const {
     switch (nodeType) {
     case kNodeShortcut:
         return strcmp(mShortcut.mStr, cmp->mShortcut.mStr);
-    case kNodeHeader:
+    case kNodeHeader: {
         int ret = AlphaKeyStrCmp(mArtist, cmp->mArtist, true);
         if (ret != 0)
             return ret;
@@ -28,6 +28,7 @@ int ArtistCmp::Compare(const SongSortCmp *s, SongNodeType nodeType) const {
                 ret = 1;
             return ret;
         }
+    }
     case kNodeSubheader:
         if (!HasSubheader()) {
             MILO_ASSERT(cmp->HasSubheader(), 0x32);

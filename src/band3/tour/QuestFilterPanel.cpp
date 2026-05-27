@@ -91,7 +91,11 @@ inline void QuestFilterProvider::Text(
         if (pTourDesc) {
             Symbol gigtype =
                 pTourDesc->GetSetlistTypeForGigNum(pProg->GetCurrentGigNum(), i_iData);
+#ifdef HX_NATIVE
+            if (gigtype == Symbol("random")) // `random` collides with POSIX random()
+#else
             if (gigtype == random)
+#endif
                 eType = kTourSetlist_Random;
             else if (gigtype == custom)
                 eType = kTourSetlist_Custom;
@@ -192,7 +196,11 @@ inline RndMat *QuestFilterProvider::Mat(int, int i_iData, UIListMesh *i_pSlot) c
         if (pTourDesc) {
             Symbol gigtype =
                 pTourDesc->GetSetlistTypeForGigNum(pProg->GetCurrentGigNum(), i_iData);
+#ifdef HX_NATIVE
+            if (gigtype == Symbol("random")) // `random` collides with POSIX random()
+#else
             if (gigtype == random)
+#endif
                 eType = kTourSetlist_Random;
             else if (gigtype == custom)
                 eType = kTourSetlist_Custom;
@@ -242,7 +250,11 @@ TourSetlistType QuestFilterPanel::GetSelectedSetlistType() {
             if (desc) {
                 Symbol gigtype =
                     desc->GetSetlistTypeForGigNum(prog->GetCurrentGigNum(), i);
+#ifdef HX_NATIVE
+                if (gigtype == Symbol("random")) // `random` collides with POSIX random()
+#else
                 if (gigtype == random)
+#endif
                     ret = kTourSetlist_Random;
                 else if (gigtype == custom)
                     ret = kTourSetlist_Custom;

@@ -9,6 +9,19 @@
 #include "stl/_pair.h"
 #include <list>
 
+#ifdef HX_NATIVE
+#include <chrono>
+// Native PPC-mftb emulation: monotonic microseconds. Kept in this .cpp (not the
+// header) so <chrono>/<ctime>'s `time` symbol never collides with
+// utl/TimeSymbol.h's `time` Symbol in TUs that include os/Timer.h. See Timer.h.
+unsigned int HxNativeMftb() {
+    using namespace std::chrono;
+    return (unsigned int)(duration_cast<microseconds>(
+                              steady_clock::now().time_since_epoch())
+                              .count());
+}
+#endif
+
 std::vector<std::pair<Timer, TimerStats> > AutoTimer::sTimers;
 int AutoTimer::sCritFrameCount;
 
@@ -187,9 +200,19 @@ Timer *AutoTimer::GetTimer(Symbol name) {
 }
 
 void Timer::Init() {
+#ifdef HX_NATIVE
+    // Native TIMER_GET_CYCLES (HxNativeMftb) returns microseconds, so the
+    // cycle->ms conversion is simply 1e-3. The Wii OSTicksToSeconds calibration
+    // depends on OS_BUS_CLOCK_SPEED read from hardware register 0x800000F8, which
+    // is garbage on native. See os/Timer.h.
+    Timer::sDoubleCycles2Ms = 1.0e-3;
+    Timer::sLowCycles2Ms = (float)Timer::sDoubleCycles2Ms;
+    Timer::sHighCycles2Ms = (float)(Timer::sDoubleCycles2Ms * UINT_MAX);
+#else
     Timer::sDoubleCycles2Ms = OSTicksToSeconds(1000.0);
     Timer::sLowCycles2Ms = (float)Timer::sDoubleCycles2Ms;
     Timer::sHighCycles2Ms = (float)(Timer::sDoubleCycles2Ms * UINT_MAX);
+#endif
 }
 
 void AutoTimer::SetCollectStats(bool b1, bool b2) {

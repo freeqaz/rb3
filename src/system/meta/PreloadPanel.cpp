@@ -201,7 +201,19 @@ void PreloadPanel::OnContentMountedOrFailed(const char *contentName, bool b) {
 bool PreloadPanel::CheckFileCached(const char *cc) {
     if (*cc != '\0' && !sCache->FileCached(cc)) {
         MILO_WARN("Could not cache %s", cc);
+#ifdef HX_NATIVE
+        // The FileCache/content-mount preload is a Wii (disc/SD) staging layer;
+        // natively files are read directly via FileStream, so "not in the cache"
+        // does NOT mean missing. The authoritative existence/format check happens
+        // in the real load path (Game::LoadSong -> BeatMaster -> MidiParser /
+        // SongDB), which reaches the asset and fails gracefully if absent. Don't
+        // fail the preload here on a cache miss — let the song load proceed to the
+        // real load so a missing/extra-only asset surfaces at the actual code
+        // path rather than blocking the meta->game transition at the Wii preload.
+        return true;
+#else
         return false;
+#endif
     } else
         return true;
 }

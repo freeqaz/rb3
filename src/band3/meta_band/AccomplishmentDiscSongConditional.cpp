@@ -13,6 +13,9 @@
 #include "utl/Symbols.h"
 #include <vector>
 
+#ifndef HX_NATIVE
+// STLport-internal _Temporary_buffer<Symbol*> specialization (std::sort scratch
+// via _MemAlloc). Host STL has no stlpmtx_std namespace.
 namespace stlpmtx_std {
 
 template <>
@@ -36,6 +39,7 @@ inline _Temporary_buffer<Symbol *, Symbol>::~_Temporary_buffer() {
 }
 
 } // namespace stlpmtx_std
+#endif
 
 AccomplishmentDiscSongConditional::AccomplishmentDiscSongConditional(DataArray *arr, int i)
     : AccomplishmentSongConditional(arr, i), mPartDifficultySym("") {

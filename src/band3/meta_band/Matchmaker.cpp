@@ -121,8 +121,13 @@ BandMatchmaker::BandMatchmaker() : mSearching(0), unk32(0), unk6c(0), mDevChanne
     TheNetSession->AddSink(this, join_result);
     MILO_ASSERT(TheGameMode, 0x10C);
     TheGameMode->AddSink(this, mode_changed);
+#ifndef HX_NATIVE
+    // TheNet.GetSearcher() is the Wii online match searcher; null on native (the
+    // network/ subsystem is off the link). The matchmaker only matters for online
+    // play, so skip the searcher AddSink — its events never fire offline.
     MILO_ASSERT(TheNet.GetSearcher(), 0x110);
     TheNet.GetSearcher()->AddSink(this, search_finished);
+#endif
     DataArray *cfg = SystemConfig("net", "matchmaker");
     cfg->FindData("searching_interval", mSearchingInterval, true);
 }
@@ -130,7 +135,9 @@ BandMatchmaker::BandMatchmaker() : mSearching(0), unk32(0), unk6c(0), mDevChanne
 BandMatchmaker::~BandMatchmaker() {
     TheNetSession->RemoveSink(this, join_result);
     TheGameMode->RemoveSink(this, mode_changed);
-    TheNet.GetSearcher()->RemoveSink(this, search_finished);
+#ifndef HX_NATIVE
+    TheNet.GetSearcher()->RemoveSink(this, search_finished); // null searcher on native
+#endif
     SetName(nullptr, ObjectDir::Main());
 }
 
@@ -167,7 +174,14 @@ void BandMatchmaker::FindPlayersImpl() {
 }
 
 bool BandMatchmaker::IsFinding() const {
+#ifdef HX_NATIVE
+    // Offline: TheNetSession (native stub) has no SessionSettings (mSettings null),
+    // and there is no public matchmaking. Searching is never active offline, so
+    // IsFinding() is false; the online mSettings->mPublic deref would fault.
+    return mSearching;
+#else
     return mSearching || TheNetSession->mSettings->mPublic;
+#endif
 }
 
 void BandMatchmaker::CancelFindImpl() {
@@ -240,6 +254,13 @@ DataNode BandMatchmaker::OnMsg(const JoinResultMsg &msg) {
 
 DataNode BandMatchmaker::OnMsg(const ModeChangedMsg &msg) {
     SessionSettings *settings = TheNetSession->GetSessionSettings();
+#ifdef HX_NATIVE
+    // Offline has no NetSession SessionSettings (mSettings==0) — nothing to sync
+    // (same null-settings case as UpdateMatchmakingSettings). Reached from the
+    // main_hub quickplay advance: {gamemode set_mode qp_coop} -> ModeChangedMsg.
+    if (!settings)
+        return 1;
+#endif
     if (settings->HasSyncPermission()) {
         settings->SetMode(TheGameMode->mMode, 0);
         settings->SetRanked(TheGameMode->Property(ranked, true)->Int());
@@ -249,6 +270,15 @@ DataNode BandMatchmaker::OnMsg(const ModeChangedMsg &msg) {
 
 void BandMatchmaker::UpdateMatchmakingSettings() {
     SessionSettings *settings = TheNetSession->GetSessionSettings();
+#ifdef HX_NATIVE
+    // Offline single-player has no NetSession SessionSettings (mSettings==0),
+    // so there is nothing to update — the real online matchmaking settings only
+    // exist once a Quazal session is created. Reached on the splash overshell
+    // local-user join (AddLocalUserResultMsg -> BandUserMgr::SetSlot ->
+    // UpdateMatchmakingSettings) which must not deref the null settings.
+    if (!settings)
+        return;
+#endif
     if (settings->HasSyncPermission()) {
         settings->SetMode(TheGameMode->mMode, 0);
         settings->SetRanked(TheGameMode->Property(ranked, true)->Int());

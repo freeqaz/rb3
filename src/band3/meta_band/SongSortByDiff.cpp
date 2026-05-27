@@ -24,7 +24,7 @@ int DifficultyCmp::Compare(const SongSortCmp *s, SongNodeType nodeType) const {
         else
             return mTier < cmp->mTier ? -1 : 1;
     case kNodeSong:
-    case kNodeStoreSong:
+    case kNodeStoreSong: {
         float other = cmp->mRank;
         float mine = mRank;
         if (mine == other) {
@@ -37,6 +37,7 @@ int DifficultyCmp::Compare(const SongSortCmp *s, SongNodeType nodeType) const {
             return -1;
         else
             return 1;
+    }
     default:
         MILO_FAIL("invalid type of node comparison.\n");
         return 0;

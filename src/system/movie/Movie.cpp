@@ -205,6 +205,14 @@ void Movie::Terminate() {
 
 bool Movie::Poll() {
     START_AUTO_TIMER("movie");
+#ifdef HX_NATIVE
+    // No native Bink decoder (the intro_movie.milo asset is absent too). Treat any
+    // movie as instantly ended: Poll() returns false so MoviePanel::Poll fires
+    // movie_done_msg -> {ui goto_screen splash_screen}, advancing past the
+    // intro_movie_screen. Paired with Ready()->true below so the screen loads first.
+    // (DTA_MANAGER_STUBS.md §5.3.)
+    return false;
+#endif
     return mImpl->Poll();
 }
 
@@ -228,7 +236,14 @@ void Movie::Begin(const char *file, float aspect, bool b1, bool b2, bool b3, boo
     MILO_ASSERT(gInitialized, 0x65A);
     mImpl->Begin(file, aspect, b1, b2, b3, b4, i, bs);
 }
+#ifdef HX_NATIVE
+// No native Bink decoder — report Ready immediately so MoviePanel::IsLoaded()
+// (gated on mMovie.Ready()) returns true and intro_movie_screen finishes loading,
+// then Movie::Poll()->false fires movie_done and advances to splash_screen.
+bool Movie::Ready() const { return true; }
+#else
 bool Movie::Ready() const { return mImpl->Ready(); }
+#endif
 void Movie::SetAspect(float f) { mImpl->SetAspect(f); }
 float (*Movie::SetTimeCallback(float (*cb)()))() { return mImpl->SetTimeCallback(cb); }
 void Movie::SetWidthHeight(int w, int h) { mImpl->SetWidthHeight(w, h); }

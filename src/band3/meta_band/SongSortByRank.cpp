@@ -84,7 +84,12 @@ void SongSortByRank::RequestSongRankingInfo() {
     Profile *prof = TheProfileMgr.GetPrimaryProfile();
     if(prof) {
         ScoreType sType = TheMusicLibrary->ActiveScoreType();
+#ifdef HX_NATIVE
+        // Host STL has no stlpmtx_std namespace; the matched fork uses STLport's.
+        std::vector<int> something;
+#else
         stlpmtx_std::vector<int> something;
+#endif
         TheSongMgr.GetRankedSongs(something, true, true);
         TheRockCentral.GetMultipleRankingsForPlayer(prof, sType, something, mDataResults, this);
     }

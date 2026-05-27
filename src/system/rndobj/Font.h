@@ -109,7 +109,16 @@ public:
         float kerning; // 0x8
     };
 
+#ifdef HX_NATIVE
+    // mTable is Entry*[32]. The matched-fork hardcodes 0x80 (=32*4) for the memset,
+    // correct when a pointer is 4 bytes (console) but only HALF the table on LP64
+    // (where 32 pointers = 256 bytes). The unzeroed upper buckets mTable[16..31]
+    // then hold garbage, so Find()/Kerning() walk a bogus Entry*->next and crash.
+    // Use sizeof(mTable) so the whole table is cleared at every platform width.
+    KerningTable() : mNumEntries(0), mEntries(0) { memset(mTable, 0, sizeof(mTable)); }
+#else
     KerningTable() : mNumEntries(0), mEntries(0) { memset(mTable, 0, 0x80); }
+#endif
 
     ~KerningTable() { delete mEntries; }
 
@@ -157,7 +166,11 @@ public:
             delete[] mEntries;
             mEntries = new Entry[mNumEntries];
         }
+#ifdef HX_NATIVE
+        memset(mTable, 0, sizeof(mTable)); // LP64: full Entry*[32] (see ctor note)
+#else
         memset(mTable, 0, 0x80);
+#endif
         for (int i = 0; i < info.size(); i++) {
             const RndFont::KernInfo &curInfo = info[i];
             if (Valid(curInfo, font)) {
@@ -196,7 +209,11 @@ public:
                 delete[] mEntries;
                 mEntries = new Entry[mNumEntries];
             }
+#ifdef HX_NATIVE
+            memset(mTable, 0, sizeof(mTable)); // LP64: full Entry*[32] (see ctor note)
+#else
             memset(mTable, 0, 0x80);
+#endif
             for (int i = 0; i < mNumEntries; i++) {
                 Entry &curEntry = mEntries[i];
                 bs >> curEntry.key;

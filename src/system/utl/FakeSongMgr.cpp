@@ -1,4 +1,8 @@
 #include "utl/FakeSongMgr.h"
+#ifdef HX_NATIVE
+// DECOMP_FORCEACTIVE comes via the matched build's PCH; pull it explicitly on native.
+#include "decomp.h"
+#endif
 #include "utl/MakeString.h"
 #include "os/File.h"
 #include "os/System.h"

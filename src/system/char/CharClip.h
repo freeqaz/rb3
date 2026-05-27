@@ -185,9 +185,22 @@ public:
     int PlayFlags() const { return mPlayFlags; }
     RndAnimatable *SyncAnim() const { return mSyncAnim; }
     /** "Start beat, beat this clip starts at" */
+#ifdef HX_NATIVE
+    // Retail STLport's vector::front()/back() read the slot at begin()/end()-1
+    // without bounds-checking, so on console an empty mBeatTrack silently yields
+    // a (benign, immediately-compared-equal) garbage value. clang's hardened
+    // libstdc++ asserts on empty front()/back(). Some viseme/pose CharClips load
+    // with an empty mBeatTrack (rev>0x11 reads count 0); guard to 0 so the
+    // load-time `EndBeat() == StartBeat()` check and downstream callers behave
+    // like retail instead of aborting.
+    float StartBeat() const { return mBeatTrack.empty() ? 0.0f : mBeatTrack.front().value; }
+    /** "End beat, beat this clip ends at" */
+    float EndBeat() const { return mBeatTrack.empty() ? 0.0f : mBeatTrack.back().value; }
+#else
     float StartBeat() const { return mBeatTrack.front().value; }
     /** "End beat, beat this clip ends at" */
     float EndBeat() const { return mBeatTrack.back().value; }
+#endif
     /** "Length in beats" */
     float LengthBeats() const { return EndBeat() - StartBeat(); }
     int NumBeatEvents() { return mBeatEvents.size(); }

@@ -378,8 +378,15 @@ void ViewSettingsProvider::Text(int, int row, UIListLabel *slot, UILabel *label)
         label->SetTextToken(setting->GetName());
     } else if (slot->Matches("status") && !setting->IsHeader()) {
         AppLabel *al = dynamic_cast<AppLabel *>(label);
+#ifdef HX_NATIVE
+        // 360-ARK milo uses a plain UILabel here; cosmetic status text — skip if
+        // not an AppLabel (same pattern as MusicLibrary::Text).
+        if (al)
+            al->SetViewSettingStatus(setting);
+#else
         MILO_ASSERT(al, 0x1e2);
         al->SetViewSettingStatus(setting);
+#endif
     } else {
         label->SetTextToken(gNullStr);
     }

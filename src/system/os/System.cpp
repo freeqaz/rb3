@@ -369,6 +369,15 @@ void SystemPreInit(const char *config) {
     srand(RandomInt());
     TheDebug.Init();
     DataInit();
+    // DataInit()->ObjectDir::PreInit() only enables DirLoader cache-mode when
+    // UsingCD() — i.e. running off the Wii disc, where logical `foo/bar.milo`
+    // paths must be rewritten to the extracted `foo/gen/bar.milo_<plat>` form.
+    // Native loads the SAME on-disc-shaped extracted tree (every milo lives under
+    // a sibling `gen/` as `*.milo_<plat>`), but with SetUsingCD(false) cache-mode
+    // would stay off and logical milo loads (ui/meta_panel.milo, …) would fail to
+    // resolve to their gen/*.milo_xbox files. Force it on for the native load
+    // path — same effect as the Wii UsingCD() boot branch (Dir.cpp:741).
+    DirLoader::SetCacheMode(true);
     PreInitSystem(config);
     LanguageInit();
     TheLoadMgr.Init();
@@ -442,6 +451,21 @@ void SystemPreInit(const char *config) {
     TheDebug.AddExitCallback(SystemTerminate);
 #endif
 }
+
+#ifdef HX_NATIVE
+// 3-arg SystemPreInit: the real definition lives in System_Wii.cpp (a thin Wii
+// wrapper — InitGQR + SetSystemArgs + the 1-arg SystemPreInit + AutoHangHelper),
+// but that TU is platform-excluded from the native link, so the App ctor's
+// `SystemPreInit(argc, argv, "config/...")` call would otherwise resolve to a
+// weak no-op stub and never create ObjectDir::sMainDir (Rnd::PreInit's first
+// SetName("rnd", sMainDir) then asserts on a null dir). Provide the native
+// equivalent: drop the Wii GQR/hang machinery, keep SetSystemArgs + the curated
+// 1-arg SystemPreInit. Mirrors the System_Wii wrapper shape.
+void SystemPreInit(int argc, char **argv, const char *preinit) {
+    SetSystemArgs(argc, argv);
+    SystemPreInit(preinit);
+}
+#endif
 
 void NormalizeSystemArgs() {
     for (unsigned int i = 0; i < TheSystemArgs.size(); i++) {
@@ -692,6 +716,37 @@ void SystemInit(const char *config) {
     // (set_cheat_mode, …) resolve to the DataFunc not-found warn-guard if used.
     DataRegisterFunc("reset_hwm", ResetHWM);
     DataRegisterFunc("cycle_mem_consistency_check", CycleMemConsistencyCheck);
+    // Bring up the Wii/online manager globals whose ctors live in EXCLUDED Wii
+    // TUs (PlatformMgr_Wii/ContentMgr_Wii). Their objects are constructed natively
+    // (ThePlatformMgr via rb3_platform_native.cpp's PlatformMgr ctor; TheContentMgr
+    // = new base ContentMgr there too). Run their Init() here — the real game's
+    // SystemInit slot for both — now that Main()/sMainDir exists, so they
+    // SetName("platform_mgr"/"content_mgr", Main()) and DTA resolves them. The
+    // base ContentMgr::Init sets mState=kDone (NeverRefreshed→true, offline-safe).
+    // PlatformMgr::Init's Wii body (JoypadSubscribe/TheHttpWii/SOHeapInit) is
+    // weak-stubbed to a no-op on native; we just need the SetName, so call the
+    // SetName directly to avoid the stubbed Wii Init side-effects.
+    ThePlatformMgr.SetName("platform_mgr", ObjectDir::sMainDir);
+    TheContentMgr->Init();
+    // Native has no disc/SD content-discovery refresh (the Wii ContentMgr's
+    // StartRefresh/PollRefresh scan loop lives in the excluded ContentMgr_Wii TU,
+    // and there is no disc). On console that refresh runs at boot and settles at
+    // mState=kDiscoveryEnumerating (the post-refresh idle state — RefreshDone()
+    // true, RefreshInProgress()/InDiscoveryState() false). Songs are loaded
+    // directly via BandSongMgr::AddSongs natively, so the content set is already
+    // "discovered"; put the ContentMgr in that settled state so the screens that
+    // gate IsLoaded() on TheContentMgr->RefreshDone() (e.g. SelectDifficultyPanel,
+    // the part_difficulty screen — the meta->game gate) complete their load. The
+    // base ContentMgr::Init left it at kDone (NeverRefreshed→true) which never
+    // advances natively, hanging part_difficulty_screen forever in transition.
+    TheContentMgr->mState = ContentMgr::kDiscoveryEnumerating;
+    // TheNetSession (`session`): the concrete impl + global live in the excluded
+    // network/ subsystem, so construct a minimal offline native session here
+    // (rb3_netsession_native.cpp) — referenced pervasively (LockStepMgr ctor,
+    // NetSync/SessionMgr/BandUI Init, many panels) so we build the real global
+    // rather than gate each site. SystemConfig("net","session") is available now.
+    extern void RB3InitNativeNetSession();
+    RB3InitNativeNetSession();
     TheDebug.AddExitCallback(SystemTerminate);
 #else
     if (!InitWiiRSO()) MILO_FAIL("_unresolved func.\n");

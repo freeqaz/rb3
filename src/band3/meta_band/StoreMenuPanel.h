@@ -1,6 +1,13 @@
 #pragma once
 #include "meta_band/StoreMenuProvider.h"
+#ifdef HX_NATIVE
+// STLport's pointer-specialized vector header is internal STLport machinery that
+// doesn't compile under host clang; the engine STL seam maps stl/* to host STL.
+// We only need std::vector<T*> for mMenuStack — pull host <vector> directly.
+#include <vector>
+#else
 #include "stl/pointers/_vector.h"
+#endif
 #include "system/ui/UIPanel.h"
 
 class BandList;

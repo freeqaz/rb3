@@ -22,7 +22,23 @@ void AccomplishmentGroup::Configure(DataArray *i_pConfig) {
 
     i_pConfig->FindData(award, mAward, false);
     String instrumentIcon;
+#ifdef HX_NATIVE
+    // Some instrument_icon glyphs are bare digits (e.g. `(instrument_icon 3)` for
+    // harmony vox) which the DTA tokenizer reads as kDataInt, not kDataString.
+    // FindData(...,String&) -> DataNode::Str MILO_FAILs on a non-string under the
+    // native MILO_DEBUG build (retail is non-debug and coerces). Read the value
+    // node directly and stringify whatever scalar type it is.
+    {
+        DataArray *iconArr = i_pConfig->FindArray(instrument_icon, true);
+        const DataNode &iconNode = iconArr->Node(1);
+        if (iconNode.Type() == kDataString || iconNode.Type() == kDataSymbol)
+            instrumentIcon = iconNode.Str(nullptr);
+        else if (iconNode.Type() == kDataInt)
+            instrumentIcon = MakeString("%d", iconNode.Int(nullptr));
+    }
+#else
     i_pConfig->FindData(instrument_icon, instrumentIcon, true);
+#endif
     int scoreType;
     i_pConfig->FindData(preferred_scoretype, scoreType, true);
     mScoreType = (ScoreType)scoreType;

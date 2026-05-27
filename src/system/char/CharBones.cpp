@@ -1343,6 +1343,16 @@ void CharBones::ScaleAdd(CharClip *clip, float f1, float f2, float f3) {
     clip->ScaleAdd(*this, f1, f2, f3);
 }
 
+#ifdef HX_NATIVE
+extern void HxNoteFreedAddr(const void *);
+extern void HxNoteReusedAddr(const void *);
+CharBonesObject::CharBonesObject() { HxNoteReusedAddr((const void *)this); }
+// Mark this CharBonesObject's address (the ObjPtr<CharBonesObject> mPtr
+// representation) freed for the native use-after-free guard. Runs before the
+// virtual Hmx::Object base destructs.
+CharBonesObject::~CharBonesObject() { HxNoteFreedAddr((const void *)this); }
+#endif
+
 CharBonesAlloc::~CharBonesAlloc() { _MemFree(mStart); }
 
 void CharBonesAlloc::ReallocateInternal() {

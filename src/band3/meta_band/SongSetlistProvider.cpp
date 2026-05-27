@@ -13,7 +13,15 @@
 void SetlistProvider::Text(int, int data, UIListLabel *slot, UILabel *label) const {
     if (slot->Matches("song")) {
         AppLabel *appLabel = dynamic_cast<AppLabel *>(label);
+#ifdef HX_NATIVE
+        // 360-ARK song_select.milo uses plain UILabels for some list slots; the
+        // AppLabel cast yields null. Cosmetic list-text formatting — skip rather
+        // than abort (same as MusicLibrary::Text).
+        if (!appLabel)
+            return;
+#else
         MILO_ASSERT(appLabel, 0x1D);
+#endif
         int song = TheMusicLibrary->SongAtSetlistIndex(data);
         if (song == 0) {
             if (TheMusicLibrary->SetlistSize() == data) {

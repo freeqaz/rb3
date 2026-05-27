@@ -122,6 +122,20 @@ void SongSortMgr::BuildSetlistList() {
             mSetlists.insert(std::pair<const Symbol, SetlistRecord>(p));
         }
     }
+#ifdef HX_NATIVE
+    // mInternalSetlists is built only for internal setlists whose songs resolve in
+    // TheSongMgr (BuildInternalSetlists). The 360-ARK extract's song_select
+    // internal_setlists config references song shortnames that don't all match the
+    // extract's songs.dta, and there are no signed-in-profile / net setlists
+    // offline → mSetlists can be empty. The song-by-song browse (kNodeSong) works
+    // without setlists; tolerate the empty setlist (playlist) view rather than
+    // aborting. Reached from the song_select_enter music_library setup.
+    if (mSetlists.empty()) {
+        MILO_WARN("SongSortMgr: no setlists (360-ARK internal_setlists song "
+                  "shortnames don't match extract songs.dta) — empty setlist view");
+        return;
+    }
+#endif
     MILO_ASSERT(mSetlists.size(), 0xF0);
 }
 

@@ -525,12 +525,18 @@ END_HANDLERS
 RemoteBandUser::RemoteBandUser()
     : unk19(), unk1a(), mCurrentInstrumentCareerScore(), mCurrentHardcoreIconLevel(),
       mCymbalConfiguration() {
+#ifndef HX_NATIVE
+    // TheWiiFriendMgr is the Wii online friends-list manager — no native backing
+    // (Wii online + net_band are out of scope), so it's an unconstructed stub.
     TheWiiFriendMgr.AddSink(this, WiiFriendsListChangedMsg::Type());
+#endif
     mRemoteChar = new TourCharRemote();
 }
 
 RemoteBandUser::~RemoteBandUser() {
+#ifndef HX_NATIVE
     TheWiiFriendMgr.RemoveSink(this, WiiFriendsListChangedMsg::Type());
+#endif
     delete mRemoteChar;
 }
 

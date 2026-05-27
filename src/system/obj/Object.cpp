@@ -21,6 +21,55 @@ Hmx::Object *Hmx::Object::sDeleting = 0;
 bool gLoadingProxyFromDisk = 0;
 std::vector<ObjVersion> sRevStack;
 
+#ifdef HX_NATIVE
+#include <set>
+// Native use-after-free guard for the ObjRef back-reference system. Under clang
+// LP64, deep venue/character teardown (unloading the splash sv8 venue backdrop on
+// the main_hub transition: Character -> RndDir::DeleteObjects -> CharDriver::~)
+// destructs a CharDriver whose mBones ObjPtr still points at an already-freed
+// CharBonesObject. The ~ObjPtr then does `mPtr->Release(this)`; because
+// CharBonesObject inherits Hmx::Object *virtually*, computing the Hmx::Object*
+// `this` for that non-virtual call reads the vbase offset out of the freed
+// object's vtable → SIGSEGV before Release even runs. Track freed object
+// addresses (keyed by the Hmx::Object subobject pointer, recorded at the very end
+// of ~Object — the same pointer the ObjPtr stored as mPtr for the common case of
+// a non-most-derived-virtual T) in a bounded ring; ObjPtr::~ObjPtr consults it on
+// the RAW mPtr bits (no vtable read) and skips Release if the target was freed.
+// (RB3 analog of dc3-decomp's SafeReleaseFromRing — the back-ref died with the
+// object, so there is nothing to release.)
+static std::set<const void *> &HxFreedAddrs() {
+    static std::set<const void *> s;
+    return s;
+}
+static std::vector<const void *> &HxFreedRing() {
+    static std::vector<const void *> v;
+    return v;
+}
+static const size_t kHxFreedRingMax = 8192;
+static size_t gHxFreedHead = 0;
+void HxNoteFreedAddr(const void *p) {
+    if (!p)
+        return;
+    std::vector<const void *> &ring = HxFreedRing();
+    std::set<const void *> &set = HxFreedAddrs();
+    if (ring.size() >= kHxFreedRingMax) {
+        set.erase(ring[gHxFreedHead]);
+        ring[gHxFreedHead] = p;
+        gHxFreedHead = (gHxFreedHead + 1) % kHxFreedRingMax;
+    } else {
+        ring.push_back(p);
+    }
+    set.insert(p);
+}
+bool HxAddrWasFreed(const void *p) {
+    return p && HxFreedAddrs().count(p) != 0;
+}
+void HxNoteReusedAddr(const void *p) {
+    HxFreedAddrs().erase(p);
+}
+#endif
+
+
 ObjectDir *Hmx::Object::DataDir() {
     if (mDir != 0)
         return mDir;
@@ -351,6 +400,19 @@ void Hmx::Object::Load(BinStream &bs) {
     LoadType(bs);
     LoadRest(bs);
 }
+
+#ifdef HX_NATIVE
+// The matched-fork definition of the base Hmx::Object::PreLoad lives — oddly — at
+// the bottom of src/BudgetScreen.cpp (a UIScreen test harness TU that is NOT on
+// the native link line). Without it, PreLoad resolves to the weak no-op stub in
+// dta_link_stubs.s, so EVERY leaf object that doesn't override PreLoad (RndText,
+// RndFont, RndMat, RndTex, …) skips its Load() entirely during DirLoader::LoadObjs
+// (which dispatches obj->PreLoad → Hmx::Object::PreLoad → Load). That left e.g.
+// RndText::mFont null and tripped UILabel::Font()'s mFont assert. Provide the real
+// one-line body here (Object.cpp is the natural home for Hmx::Object methods and
+// is compiled). Strong def displaces the weak stub; matched #else path untouched.
+void Hmx::Object::PreLoad(BinStream &bs) { Load(bs); }
+#endif
 
 const char *Hmx::Object::FindPathName() {
     const char *name = (mName && *mName) ? mName : ClassName().Str();

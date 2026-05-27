@@ -413,7 +413,11 @@ bool MetaPerformer::IsSetComplete() const {
 bool MetaPerformer::PartPlaysInSet(Symbol s) const {
     for (std::vector<Symbol>::const_iterator it = mSongs.begin(); it != mSongs.end();
          ++it) {
+#ifdef HX_NATIVE
+        if (*it == gNullStr || *it == any || *it == Symbol("random")) // POSIX random()
+#else
         if (*it == gNullStr || *it == any || *it == random)
+#endif
             return true;
         BandSongMetadata *data =
             (BandSongMetadata *)mSongMgr->Data(mSongMgr->GetSongIDFromShortName(*it, true)
@@ -442,7 +446,11 @@ int MetaPerformer::GetSetlistMaxVocalParts() const {
     int parts = 1;
     for (std::vector<Symbol>::const_iterator it = mSongs.begin(); it != mSongs.end();
          ++it) {
+#ifdef HX_NATIVE
+        if (*it == gNullStr || *it == any || *it == Symbol("random")) // POSIX random()
+#else
         if (*it == gNullStr || *it == any || *it == random)
+#endif
             continue;
         else {
             BandSongMetadata *data = (BandSongMetadata *)mSongMgr->Data(
@@ -461,7 +469,11 @@ int MetaPerformer::GetSetlistMaxVocalParts() const {
 bool MetaPerformer::SetlistHasVocalHarmony() const {
     for (std::vector<Symbol>::const_iterator it = mSongs.begin(); it != mSongs.end();
          ++it) {
+#ifdef HX_NATIVE
+        if (*it == gNullStr || *it == any || *it == Symbol("random")) // POSIX random()
+#else
         if (*it == gNullStr || *it == any || *it == random)
+#endif
             continue;
         else {
             BandSongMetadata *data = (BandSongMetadata *)mSongMgr->Data(
@@ -596,7 +608,11 @@ bool MetaPerformer::CanUpdateScoreLeaderboards() {
 int MetaPerformer::GetHighestDifficultyForPart(Symbol s) const {
     int diff = 0;
     FOREACH (it, mSongs) {
+#ifdef HX_NATIVE
+        if (*it == gNullStr || *it == any || *it == Symbol("random")) // POSIX random()
+#else
         if (*it == gNullStr || *it == any || *it == random)
+#endif
             return -1;
         BandSongMetadata *data =
             (BandSongMetadata *)mSongMgr->Data(mSongMgr->GetSongIDFromShortName(*it, true)

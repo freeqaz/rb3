@@ -89,7 +89,17 @@ public:
     virtual void ContentStarted();
     virtual void ContentMounted(const char *, const char *);
     virtual void ContentDone();
+#ifdef HX_NATIVE
+    // The base MusicLibrary returns null (it is overridden by the content-backed
+    // SongMgr on console). Offline there is no content pipeline, but AppendToSetlist
+    // / PlaySetlist only test ContentDir() for null-ness to choose the LOCAL path
+    // (vs sending a net request to the leader). Return a non-null sentinel so the
+    // selected song is appended + played locally, driving the meta->game
+    // Game::LoadSong path (which then hits the absent .mogg/.mid gracefully).
+    virtual const char *ContentDir() { return "native_local"; }
+#else
     virtual const char *ContentDir() { return nullptr; }
+#endif
     virtual void SyncSave(BinStream &, unsigned int) const;
     virtual void SyncLoad(BinStream &, unsigned int);
     virtual bool HasSyncPermission() const;

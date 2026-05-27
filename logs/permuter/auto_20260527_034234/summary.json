@@ -1,0 +1,22 @@
+{
+  "total": 20,
+  "processed": 20,
+  "improved": 1,
+  "perfect": 0,
+  "no_change": 18,
+  "errors": 1,
+  "total_delta": 4.57338,
+  "improvements": [
+    {
+      "symbol": "Swing__20DrumTrackWatcherImplFibb11GemHitFlags",
+      "function": "DrumTrackWatcherImpl::Swing",
+      "source": "src/system/beatmatch/DrumTrackWatcherImpl.cpp",
+      "initial": 95.06826,
+      "final": 99.64164,
+      "delta": 4.57338,
+      "rounds": 5,
+      "reason": "max_rounds"
+    }
+  ],
+  "elapsed_seconds": 299.6
+}

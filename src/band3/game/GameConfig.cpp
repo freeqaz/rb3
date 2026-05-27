@@ -126,7 +126,7 @@ void GameConfig::AssignTrack(BandUser *u) {
                 ty = kTrackRealBass22Fret;
         }
         break;
-    case kTrackDrum:
+    case kTrackDrum: {
         bool cymsYes = TheGame->mProperties.mForceUseCymbals;
         bool cymsNo = TheGame->mProperties.mForceDontUseCymbals;
         bool pro = pPerformer->IsUsingRealDrums();
@@ -136,6 +136,7 @@ void GameConfig::AssignTrack(BandUser *u) {
             pro = false;
         mPlayerTrackConfigList->SetUseRealDrums(pro);
         break;
+    }
     case kTrackKeys:
         mPlayerTrackConfigList->unk2c = u->GetControllerType() == kControllerKeys;
         break;

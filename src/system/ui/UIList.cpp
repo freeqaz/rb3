@@ -388,7 +388,15 @@ void UIList::Refresh(bool b) {
         Poll();
     else {
         mListDir->FillElements(mListState, mWidgets);
+#ifdef HX_NATIVE
+        // Native: a list can legitimately have a null provider (e.g. the Wii
+        // invite_friends.lst given a null $invite_provider in OvershellSlot's
+        // setup_providers). On console every list gets a real provider, so the
+        // unconditional Provider()->IsActive below never sees null. Guard it.
+        if (b && mListState.Provider()) {
+#else
         if (b) {
+#endif
             int nowrap = mListState.SelectedNoWrap();
             if (nowrap >= NumProviderData() && nowrap != 0)
                 SetSelected(NumProviderData() - 1, -1);

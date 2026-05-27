@@ -85,6 +85,12 @@ public:
     u8 *mBuffer; // 0x14
     /** The next mip after this one, used to create a mipmap. */
     RndBitmap *mMip; // 0x18
+#ifdef HX_NATIVE
+    // Real on-disk mip count for genuinely-cached (.milo_xbox) bitmaps, captured
+    // in LoadHeader so RndBitmap::Load can consume+discard the trailing mip bytes
+    // (keeps the shared milo stream aligned). Trailing/native-only: layout-safe.
+    int mNativeCachedMips = 0;
+#endif
 
     RndBitmap() : mBuffer(0), mMip(0) { Reset(); }
     ~RndBitmap() { Reset(); }

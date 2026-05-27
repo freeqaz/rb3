@@ -49,6 +49,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <csetjmp>
+#include <csignal>
+#include <execinfo.h>
 
 // GPU smoke mode (RB3_GPU_SMOKE=1). The engine is built with the rndobj-FREE
 // WebGPU gfx core ON (MILO_ENGINE_BUILD_GFX), so GpuDevice + Screenshot are
@@ -58,6 +61,36 @@
 #include "gfx/Screenshot.h"
 
 extern void InitMakeString();
+
+// ---------------------------------------------------------------------------
+// Native draw-crash recovery (RB3_GAME mode). Mirrors dc3 main_native.cpp:
+// App::RunWithoutDebugging's HX_NATIVE frame loop wraps TheUI.Draw() in
+// sigsetjmp(gDrawJmpBuf); when a SIGSEGV fires while gDrawJmpBufSet is true we
+// siglongjmp back so a partially-loaded scene that crashes in Draw() skips the
+// frame instead of killing the process. App.cpp references these as externs.
+// ---------------------------------------------------------------------------
+sigjmp_buf gDrawJmpBuf;
+bool gDrawJmpBufSet = false;
+
+static void RB3SignalHandler(int sig, siginfo_t *info, void *) {
+    if (sig == SIGSEGV && gDrawJmpBufSet) {
+        gDrawJmpBufSet = false;
+        siglongjmp(gDrawJmpBuf, 1);
+    }
+    const char *signame = (sig == SIGSEGV) ? "SIGSEGV"
+                        : (sig == SIGABRT) ? "SIGABRT"
+                        : (sig == SIGBUS)  ? "SIGBUS"
+                                           : "SIGNAL";
+    char buf[256];
+    int len = snprintf(buf, sizeof(buf),
+                       "\nRB3 Native: caught %s (signal %d) at %p\n",
+                       signame, sig, info ? info->si_addr : nullptr);
+    write(STDERR_FILENO, buf, len);
+    void *bt[64];
+    int n = backtrace(bt, 64);
+    backtrace_symbols_fd(bt, n, STDERR_FILENO);
+    _exit(128 + sig);
+}
 
 // gSystemConfig (os/System.cpp) is the global DTA tree that SystemConfig()
 // returns. The full SystemInit reads config/objects.dta etc. into it; we skip
@@ -455,8 +488,81 @@ static int RunBoot(int argc, char **argv, const char *miloPath) {
 extern int RunRenderTri();              // rb3_render_tri.cpp — milestone (ii)
 extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_render_mesh.cpp — (iii)
 
+// ---------------------------------------------------------------------------
+// RB3_GAME=1 — the REAL game boot. Mirrors dc3 native main: stand up the
+// GpuDevice (BandRnd = TheRnd, via rb3_band_rnd.cpp's strong TheRnd def) BEFORE
+// chdir/boot (Dawn adapter enumeration wants the clean original cwd), then
+// chdir(RB3_DATA), SetSystemArgs, force kPlatformXBox (the extracted assets are
+// 360-ARK big-endian), and construct + Run the real App. App::App() runs the
+// full HX_NATIVE-gated boot spine (SystemPreInit → TheRnd->PreInit/Init →
+// SynthInit → Movie::Init → SystemInit → the *::Init cluster → TheUI.Init →
+// TheQuestMgr.Init), then App::Run() enters the HX_NATIVE frame loop. The boot
+// gets as far as the matched-fork Load()/DTA-manager state allows; the signal
+// handler + draw guard keep a partial-scene crash reportable.
+// ---------------------------------------------------------------------------
+#include "App.h"
+#include "rb3_band_rnd.h"
+
+static int RunGame(int argc, char **argv) {
+    // Stand up the GpuDevice FIRST (before chdir + RB3 MemMgr boot) — same
+    // ordering rationale as RB3_RENDER_MESH.
+    bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
+    int W = getenv("MILO_WIDTH")  ? atoi(getenv("MILO_WIDTH"))  : 1280;
+    int H = getenv("MILO_HEIGHT") ? atoi(getenv("MILO_HEIGHT")) : 720;
+    gBandRnd.SetClearColor(Hmx::Color(0, 0, 0));
+    if (!gBandRnd.InitGpu(W, H, headless)) {
+        fprintf(stderr, "rb3-native: RB3_GAME — GpuDevice init FAILED\n");
+        return 1;
+    }
+    printf("rb3-native: RB3_GAME — GpuDevice up (%dx%d, %s)\n",
+           W, H, headless ? "headless" : "windowed");
+
+    // RB3's 2010 milos serialize text/tex/dir objects under the legacy short
+    // class names "Text"/"Tex"/"Dir"; the engine registers RndText/RndTex/RndDir.
+    // The real Rnd::PreInit (during App ctor) registers the prefixed names but not
+    // the short aliases, so register them here before any menu milo loads —
+    // otherwise font/ui milos hit "Can't make Tex"/"Text" (UILabel font assert).
+    extern void RB3RegisterLegacyRndAliases();
+    RB3RegisterLegacyRndAliases();
+
+    const char *dataDir = getenv("RB3_DATA");
+    if (!dataDir)
+        dataDir = "/home/free/code/milohax/rb3/orig-assets/extracted";
+    if (chdir(dataDir) != 0) {
+        fprintf(stderr, "rb3-native: RB3_GAME — chdir('%s') failed\n", dataDir);
+        return 1;
+    }
+    printf("rb3-native: RB3_GAME — data dir '%s'\n", dataDir);
+
+    TheLoadMgr.mPlatform = kPlatformXBox;
+    SetSystemArgs(argc, argv);
+
+    printf("rb3-native: RB3_GAME — constructing App...\n");
+    App app(argc, argv);
+    printf("rb3-native: RB3_GAME — App constructed; calling Run()...\n");
+    app.Run();
+    printf("rb3-native: RB3_GAME — Run() returned; exiting cleanly.\n");
+    return 0;
+}
+
 int main(int argc, char **argv) {
     setbuf(stdout, nullptr);
+    setbuf(stderr, nullptr);
+
+    // Reliable signal handling for the full-boot modes (see RB3SignalHandler).
+    struct sigaction sa;
+    sa.sa_sigaction = RB3SignalHandler;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, nullptr);
+    sigaction(SIGABRT, &sa, nullptr);
+    sigaction(SIGBUS, &sa, nullptr);
+
+    // ---- Real game boot (RB3_GAME=1): construct RB3's actual App and Run().
+    //      Renders through BandRnd (= TheRnd). ----
+    if (getenv("RB3_GAME")) {
+        return RunGame(argc, argv);
+    }
 
     // ---- GPU smoke mode (no engine/object bring-up needed; GpuDevice is
     //      self-contained). Gated by RB3_GPU_SMOKE=1; leaves all other modes

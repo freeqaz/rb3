@@ -73,8 +73,18 @@ public:
     int unk8;
 };
 
+#ifdef HX_NATIVE
+// clang treats bare MWCC `#pragma push`/`#pragma pop` as no-ops for the pack
+// stack, so a `#pragma pack(1)` between them LEAKS for the rest of the TU and
+// silently mis-packs every class defined later (e.g. Synth, when this header is
+// transitively included before synth/Synth.h — manifested as a Synth-layout ODR
+// mismatch vs the engine's Synth.cpp). Use the standard pack push/pop so the
+// alignment is properly scoped to StorePackedOfferBase only.
+#pragma pack(push, 1)
+#else
 #pragma push
 #pragma pack(1)
+#endif
 class StorePackedOfferBase {
 public:
     const char *GetName() const;
@@ -143,7 +153,11 @@ public:
     unsigned short mLabelIndex; // 0x47
     unsigned short mSongs[1]; // 0x49
 };
+#ifdef HX_NATIVE
+#pragma pack(pop)
+#else
 #pragma pop
+#endif
 
 class StorePurchaseable : public Hmx::Object {
 public:

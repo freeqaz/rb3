@@ -46,8 +46,14 @@ public:
     void AddRedeemedOffer(const char *);
 };
 
+#ifdef HX_NATIVE
+// See StoreOffer.h: bare MWCC #pragma push/pop don't scope pack on clang, so use
+// the standard pack push/pop to avoid a leaked pack(1) mis-packing later classes.
+#pragma pack(push, 1)
+#else
 #pragma push
 #pragma pack(1)
+#endif
 class StoreVersionHeader {
 public:
     StoreVersionHeader() : mVersion(1), mBuildNumber(0), mCompressed(0) {}
@@ -57,7 +63,11 @@ public:
     unsigned short mBuildNumber; // 0x1
     unsigned char mCompressed; // 0x3
 };
+#ifdef HX_NATIVE
+#pragma pack(pop)
+#else
 #pragma pop
+#endif
 
 class StoreOfferTable {
 public:

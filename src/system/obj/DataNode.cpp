@@ -89,15 +89,26 @@ int DataNode::Int(const DataArray *source) const {
     if (n.mType != kDataInt) {
         String s;
         n.Print(s, true);
+        // MILO_FAIL_DTA: WARN on native (the offline menu flow hits benign DTA
+        // data-type mismatches — e.g. a PropAnim keyframe value for UILabel's
+        // `alignment`/`markup` that the retail non-debug path silently coerces —
+        // which must not abort), FAIL on console. Mirrors DC3's DataNode::Int.
         if (source)
-            MILO_FAIL(
+            MILO_FAIL_DTA(
                 "Data %s is not Int (file %s, line %d)",
                 s.c_str(),
                 source->File(),
                 source->Line()
             );
         else
-            MILO_FAIL("Data %s is not Int", String(s));
+            MILO_FAIL_DTA("Data %s is not Int", String(s));
+#ifdef HX_NATIVE
+        // Native Debug::Fail/Warn can return (not noreturn like the matched PPC
+        // build); coerce to 0 rather than reading the wrong union member.
+        if (n.mType == kDataFloat)
+            return (int)n.mValue.real;
+        return 0;
+#endif
     }
 #endif
     return n.mValue.integer;
@@ -109,14 +120,19 @@ int DataNode::LiteralInt(const DataArray *source) const {
         String s;
         Print(s, true);
         if (source)
-            MILO_FAIL(
+            MILO_FAIL_DTA(
                 "Data %s is not Int (file %s, line %d)",
                 s.c_str(),
                 source->File(),
                 source->Line()
             );
         else
-            MILO_FAIL("Data %s is not Int", String(s));
+            MILO_FAIL_DTA("Data %s is not Int", String(s));
+#ifdef HX_NATIVE
+        if (mType == kDataFloat)
+            return (int)mValue.real;
+        return 0;
+#endif
     }
 #endif
     return mValue.integer;
@@ -128,6 +144,20 @@ Symbol DataNode::Sym(const DataArray *source) const {
     if (n.mType != kDataSymbol) {
         String s;
         n.Print(s, true);
+#ifdef HX_NATIVE
+        // The 360-ARK config DTAs (e.g. config/song_select.dta internal_setlists)
+        // have a different schema than the RB3-Wii code expects, so a node read as
+        // a Symbol is sometimes an int. WARN + return a null Symbol on native
+        // (MILO_FAIL_DTA) instead of aborting, mirroring DataNode::Int's recovery.
+        if (source)
+            MILO_FAIL_DTA(
+                "Data %s is not Symbol (file %s, line %d)", s.c_str(), source->File(),
+                source->Line()
+            );
+        else
+            MILO_FAIL_DTA("Data %s is not Symbol", String(s));
+        return Symbol("");
+#else
         if (source)
             MILO_FAIL(
                 "Data %s is not Symbol (file %s, line %d)",
@@ -137,11 +167,6 @@ Symbol DataNode::Sym(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Symbol", String(s));
-#ifdef HX_NATIVE
-        // Native Debug::Fail can return (not noreturn like the matched PPC
-        // build), so guard against falling through and reading the wrong union
-        // member on a type mismatch.
-        return Symbol("");
 #endif
     }
 #endif

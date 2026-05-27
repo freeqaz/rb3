@@ -85,10 +85,22 @@ void BandCharDesc::Init() {
     DataArray *cfg = SystemConfig("objects", "BandCharDesc");
     if (cfg->FindData("deform_path", dfpath, false)) {
         if (dfpath[0] != 0) {
+#ifndef HX_NATIVE
             static int _x = MemFindHeap("char");
             MemPushHeap(_x);
             gDeforms = DirLoader::LoadObjects(FilePath(dfpath), 0, 0);
             MemPopHeap();
+#else
+            // The band-character deform milo loads CharClip/CharBonesSamples
+            // objects whose Load() is not yet native byte-correct (CharBonesSamples
+            // version-desync, CharBonesSamples.cpp:457 assert) — deferred T9 char-
+            // Load work. gDeforms is null-tolerated by its only consumer
+            // (GetDeformClip returns 0 when null), and band-character deforms are
+            // off the boot-to-menu path. Defer the load (mirrors CharCache::InitMe's
+            // deferred world/shared/chars.milo). Re-enable once char Load is
+            // native-correct.
+            gDeforms = 0;
+#endif
         }
     }
 }

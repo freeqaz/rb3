@@ -274,13 +274,14 @@ bool InputMgr::IsValidButtonForShell(JoypadButton btn, LocalBandUser *user) {
     case kPad_RStickUp:
     case kPad_RStickRight:
     case kPad_RStickDown:
-    case kPad_RStickLeft:
+    case kPad_RStickLeft: {
         ControllerType overrideType =
             TheBandUserMgr->DebugGetControllerTypeOverride(user->GetPadNum());
         if (overrideType != kControllerNone)
             return true;
         else
             return (unsigned int)userType > 1;
+    }
     default:
         return false;
     }

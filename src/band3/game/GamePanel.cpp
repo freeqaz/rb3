@@ -144,6 +144,10 @@ void GamePanel::Load() {
 }
 
 void GamePanel::CreateGame() {
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: *** GamePanel::CreateGame() — about to new Game() ***\n");
+#endif
     RELEASE(mGame);
     mGame = new Game();
     mGame->mDisablePauseMs = Property(disable_pause_ms, true)->Float();
@@ -152,6 +156,19 @@ void GamePanel::CreateGame() {
 void GamePanel::PollForLoading() {
     mLoadingState = kLoadingState_NotReady;
     UIPanel::PollForLoading();
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG")) {
+        static int gp_spam = 0;
+        if ((gp_spam++ % 60) == 0)
+            MILO_LOG("GAME_DBG: GamePanel::PollForLoading uiLoaded=%d transScreen=%p "
+                     "bandDir=%p readyMidi=%d loadChars=%d allCharsLoaded=%d\n",
+                     UIPanel::IsLoaded(), (void *)TheUI.TransitionScreen(),
+                     (void *)TheBandDirector,
+                     TheBandDirector ? TheBandDirector->ReadyForMidiParsers() : -1,
+                     TheGameMode->Property("load_chars", true)->Int(),
+                     (TheBandWardrobe ? TheBandWardrobe->AllCharsLoaded() : -1));
+    }
+#endif
     if (UIPanel::IsLoaded()) {
         mLoadingState = kLoadingState_UILoaded;
         if (TheUI.TransitionScreen()) {
