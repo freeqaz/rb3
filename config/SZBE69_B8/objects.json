@@ -1948,7 +1948,7 @@
             "sdk/RVL_SDK/src/gx/GXLight.c": "Matching",
             "sdk/RVL_SDK/src/gx/GXMisc.c": "NonMatching",
             "sdk/RVL_SDK/src/gx/GXPerf.c": "MISSING",
-            "sdk/RVL_SDK/src/gx/GXPixel.c": "MISSING",
+            "sdk/RVL_SDK/src/gx/GXPixel.c": "NonMatching",
             "sdk/RVL_SDK/src/gx/GXTev.c": "NonMatching",
             "sdk/RVL_SDK/src/gx/GXTexture.c": "NonMatching",
             "sdk/RVL_SDK/src/gx/GXTransform.c": "Matching",
