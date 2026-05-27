@@ -2104,7 +2104,7 @@
             "sdk/RVL_SDK/src/vf/sd_drv.c": "MISSING",
             "sdk/RVL_SDK/src/vi/i2c.c": "MISSING",
             "sdk/RVL_SDK/src/vi/vi.c": "MISSING",
-            "sdk/RVL_SDK/src/vi/vi3in1.c": "MISSING",
+            "sdk/RVL_SDK/src/vi/vi3in1.c": "NonMatching",
             "sdk/RVL_SDK/src/wenc/wenc.c": "MISSING"
         }
     },
