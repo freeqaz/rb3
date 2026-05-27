@@ -2235,10 +2235,10 @@
     "sdk/NdevExi2A": {
         "progress_category": "sdk",
         "mw_version": "Wii/1.3",
-        "cflags": "base",
+        "cflags": "sdk/RVL_SDK",
         "objects": {
-            "sdk/NdevExi2A/DebuggerDriver.c": "MISSING",
-            "sdk/NdevExi2A/exi2.c": "MISSING"
+            "sdk/NdevExi2A/DebuggerDriver.c": "NonMatching",
+            "sdk/NdevExi2A/exi2.c": "NonMatching"
         }
     },
     "sdk/DWC": {
