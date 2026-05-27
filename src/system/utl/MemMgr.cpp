@@ -947,13 +947,13 @@ void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
 void MemInit() {
     if (gMemInited) return;
     CriticalSection *lock = &sMemLock;
-    gMemInited = true;
     gInsideMemFunc = true;
+    gMemInited = true;
     gMemLock = lock;
     gMemStackLock = &sMemStackLock;
     if (lock != nullptr) lock->Enter();
-    int *tmpBuf = (int *)WiiMalloc(0x10000);
     int numHeaps;
+    int *tmpBuf = (int *)WiiMalloc(0x10000);
     if (gSingleHeap != 0) {
         numHeaps = 1;
     } else {
@@ -962,10 +962,10 @@ void MemInit() {
     gNumHeaps = numHeaps;
     MILO_ASSERT(gNumHeaps < MAX_HEAPS, 0x704);
     int totalCombinedBytes = 0;
+    HeapDesc *desc = &gHeapData[3];
     int singleHeapSplitAccum = 0;
     int idx = 3;
-    HeapDesc *desc = &gHeapData[3];
-    Heap *heap = &gHeaps[3]; // unused; placeholder for asm pattern
+ // unused; placeholder for asm pattern
     do {
         const char *name = desc->mName;
         int sizeBytes = desc->mSizeBytes;
@@ -992,7 +992,7 @@ void MemInit() {
         }
         idx--;
         desc--;
-        (void)heap;
+        (void)&gHeaps[3];
     } while (idx >= 0);
     kTinyHeap = MemFindHeap("tiny");
     kFastHeap = MemFindHeap("fast");
@@ -1368,7 +1368,7 @@ void MemPrintOverview(int heapIdx, TextStream &stream) {
     int totalFree = 0;
     int minTotalFree = 0;
     int i;
-    for (i = 0; i < gNumHeaps; i++) {
+    for (i = 0; gNumHeaps > i; i++) {
         if (heapIdx == kNoHeap || heapIdx == i) {
             int numFreeBytes, leftFrag, rightFrag, biggestFree;
             int mNumFreeBytes, mLargestFree, mBiggestFree, mMinLargest;
@@ -1390,14 +1390,13 @@ void MemPrintOverview(int heapIdx, TextStream &stream) {
         (totalFree >> 10) - 0x10000, (minTotalFree >> 10) - 0x10000
     );
     for (i = 0; i < 2; i++) {
-        ChunkAllocator *ca = gChunkAlloc[i];
-        if (ca != nullptr) {
+        if (gChunkAlloc[i] != nullptr) {
             stream << MakeString(
                 " [%5s pool] free:%7d TotalChunksSize:%7d NumHunks:%d\n",
-                MemHeapName(*(int *)((char *)ca + 0x201c)),
-                (int)(*(int **)((char *)ca + 0x2014) - *(int **)((char *)ca + 0x2018)) >> 8,
-                *(int *)((char *)ca + 0x8) >> 10,
-                *(int *)((char *)ca + 0x2010)
+                MemHeapName(*(int *)((char *)gChunkAlloc[i] + 0x201c)),
+                (int)(*(int **)((char *)gChunkAlloc[i] + 0x2014) - *(int **)((char *)gChunkAlloc[i] + 0x2018)) >> 8,
+                *(int *)((char *)gChunkAlloc[i] + 0x8) >> 10,
+                *(int *)((char *)gChunkAlloc[i] + 0x2010)
             );
         }
     }

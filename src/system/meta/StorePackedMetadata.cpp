@@ -2087,18 +2087,18 @@ __declspec(noinline) void _outline_EndianFix(StorePackedRanks* _obj) {
 void StorePackedOfferBase::EndianFixBase() {
     unsigned char *p = (unsigned char *)this;
     unsigned char b1 = p[0x1];
-    unsigned char b0 = p[0x0];
-    unsigned char b41 = p[0x41];
     unsigned char b40 = p[0x40];
+    unsigned char b0 = p[0x0];
     unsigned char b3f = p[0x3f];
     p[0x0] = (unsigned char)((((((b0 & ~0x60) | ((b0 << 5) & 0x60)) & ~0x1C) | (((int)(b0 & 0x1F) >> 2 << 2) & 0x1C)) & ~2) | (((int)(b0 & 0x3F) >> 5 << 1) & 2));
-    p[0x1] = (unsigned char)(((((b1 & ~0xF8) | ((b1 << 3) & 0xF8)) & ~4) | (((int)(b1 & 0x3F) >> 5 << 2) & 4)) & ~3) | (((int)b1 >> 6) & 3);
+        unsigned long _bm = (unsigned char)(((((b1 & ~0xF8) | ((b1 << 3) & 0xF8)) & ~4) | (((int)(b1 & 0x3F) >> 5 << 2) & 4)) & ~3);
+    p[0x1] = _bm | (((int)b1 >> 6) & 3);
     unsigned short s3f = *(unsigned short *)(p + 0x3f);
     s3f = (unsigned short)((s3f & ~0xFFF0) | (((((int)(b40 >> 4 & 0xF) | (b3f << 4 & 0xF0)) << 4 & 0xFF0) | (b40 & 0xF)) << 4 & 0xFFF0));
-    s3f = (unsigned short)((s3f & ~0xF) | ((int)b3f >> 4 & 0xF));
     *(unsigned short *)(p + 0x3f) = s3f;
-    p[0x41] = (b41 & ~0xF8) | ((b41 << 3) & 0xF8);
+    s3f = (unsigned short)((s3f & ~0xF) | ((int)b3f >> 4 & 0xF));
     _outline_EndianFix(&mRanks);
+    p[0x41] = ((p[0x41]) & ~0xF8) | (((p[0x41]) << 3) & 0xF8);
 }
 
 void StorePackedOffer::EndianFix() {
