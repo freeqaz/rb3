@@ -535,6 +535,11 @@ DEF_DATA_FUNC(DataDelete) {
 
 DEF_DATA_FUNC(DataNew) {
     Hmx::Object *obj = Hmx::Object::NewObject(array->Sym(1));
+#ifdef HX_NATIVE
+    // NewObject can return null on native (unregistered type); avoid the deref.
+    if (!obj)
+        return DataNode(0);
+#endif
     if (array->Size() > 2) {
         if (array->Type(2) == kDataArray) {
             obj->SetTypeDef(array);
@@ -554,6 +559,11 @@ DEF_DATA_FUNC(DataNew) {
 
 DEF_DATA_FUNC(DataForEach) {
     DataArray *arr = array->Array(2);
+#ifdef HX_NATIVE
+    // DataNode::Array can return null on native after a type-mismatch FAIL.
+    if (!arr)
+        return 0;
+#endif
     arr->AddRef();
     DataNode *var = array->Var(1);
 
@@ -592,6 +602,12 @@ DEF_DATA_FUNC(DataForEachInt) {
 DEF_DATA_FUNC(DataGetElem) {
     int i = array->Int(2);
     DataArray *a = array->Array(1);
+#ifdef HX_NATIVE
+    if (!a) {
+        MILO_WARN("elem: null array");
+        return DataNode(0);
+    }
+#endif
     return a->Node(i);
 }
 
@@ -819,7 +835,16 @@ DEF_DATA_FUNC(DataSize) {
         return gDataThis->PropertySize(array->UncheckedArray(1)); // TODO figure out what
                                                                   // this actually is
     }
+#ifdef HX_NATIVE
+    {
+        DataArray *a = array->Array(1);
+        if (!a)
+            return 0;
+        return a->Size();
+    }
+#else
     return array->Array(1)->Size();
+#endif
 }
 
 DEF_DATA_FUNC(DataRemoveElem) {
@@ -926,12 +951,24 @@ DEF_DATA_FUNC(DataHandleTypeRet) {
     if (!o) {
         class String str;
         n.Print(str, true);
+#ifdef HX_NATIVE
+        // Native flow lacks many game objects song scripts reference; warn and
+        // return unhandled instead of dereferencing null (native Fail returns).
+        MILO_WARN(
+            "Object %s not found (file %s, line %d)",
+            str.c_str(),
+            array->File(),
+            array->Line()
+        );
+        return DataNode(kDataUnhandled, 0);
+#else
         MILO_FAIL(
             "Object %s not found (file %s, line %d)",
             str.c_str(),
             array->File(),
             array->Line()
         );
+#endif
     }
 #endif
     return o->HandleType(a);
@@ -981,12 +1018,22 @@ DEF_DATA_FUNC(DataHandleRet) {
     if (!o) {
         class String str;
         n.Print(str, true);
+#ifdef HX_NATIVE
+        MILO_WARN(
+            "Object %s not found (file %s, line %d)",
+            str.c_str(),
+            array->File(),
+            array->Line()
+        );
+        return DataNode(kDataUnhandled, 0);
+#else
         MILO_FAIL(
             "Object %s not found (file %s, line %d)",
             str.c_str(),
             array->File(),
             array->Line()
         );
+#endif
     }
 #endif
     return o->Handle(a, false);
@@ -1032,7 +1079,14 @@ DEF_DATA_FUNC(DataExit) {
 DEF_DATA_FUNC(DataContains) {
     DataArray *w = array->Array(1);
     const DataNode &n = array->Evaluate(2);
+#ifdef HX_NATIVE
+    // On LP64, n.UncheckedInt() truncates pointer-typed nodes to 4 bytes before
+    // being wrapped back into a DataNode(int). Pass the DataNode directly so
+    // Contains() does the full-width (pointer-aware) comparison.
+    bool b = !w->Contains(n);
+#else
     bool b = !w->Contains(n.UncheckedInt());
+#endif
     if (b)
         return DataNode(kDataUnhandled, 0);
     else
@@ -1044,7 +1098,18 @@ DEF_DATA_FUNC(DataFindExists) {
     for (int i = 2; i < array->Size(); i++) {
         const DataNode &n = array->Evaluate(i);
         if (n.Type() == kDataInt || n.Type() == kDataSymbol) {
+#ifdef HX_NATIVE
+            // On LP64, n.mValue.integer truncates an 8-byte symbol pointer to
+            // 4 bytes. Route kDataSymbol through the Symbol overload (which
+            // compares full interned pointers) instead of FindArray(int).
+            if (n.Type() == kDataSymbol) {
+                a = a->FindArray(n.LiteralSym(), false);
+            } else {
+                a = a->FindArray(n.mValue.integer, false);
+            }
+#else
             a = a->FindArray(n.mValue.integer, false);
+#endif
             if (!a) {
                 return DataNode(kDataUnhandled, 0);
             }

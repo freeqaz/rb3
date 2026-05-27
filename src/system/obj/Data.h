@@ -60,16 +60,25 @@ public:
     DataType mType; // 0x4
 
     DataNode() {
+#ifdef HX_NATIVE
+        mValue.object = nullptr; // zero all 8 bytes of the union on LP64
+#endif
         mValue.integer = 0;
         mType = kDataInt;
     }
 
     DataNode(int i) {
+#ifdef HX_NATIVE
+        mValue.object = nullptr;
+#endif
         mValue.integer = i;
         mType = kDataInt;
     }
 
     DataNode(long l) {
+#ifdef HX_NATIVE
+        mValue.object = nullptr;
+#endif
         mValue.integer = l;
         mType = kDataInt;
     }
@@ -85,6 +94,9 @@ public:
     }
 
     DataNode(DataType ty, int i) {
+#ifdef HX_NATIVE
+        mValue.object = nullptr;
+#endif
         mType = ty;
         mValue.integer = i;
     }
@@ -95,6 +107,9 @@ public:
     }
 
     DataNode(float f) {
+#ifdef HX_NATIVE
+        mValue.object = nullptr; // zero all 8 bytes of the union on LP64
+#endif
         mValue.real = f;
         mType = kDataFloat;
     }

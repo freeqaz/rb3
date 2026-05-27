@@ -106,8 +106,18 @@ void DataMergeTags(DataArray *dest, DataArray *src) {
             if (node->Type() == kDataArray) {
                 DataArray *arr = node->mValue.array;
                 if (arr->Size() != 0) {
+#ifdef HX_NATIVE
+                    // On LP64, Node(0).mValue.integer truncates an 8-byte symbol
+                    // pointer to 4 bytes; route symbol tags through the Symbol
+                    // overload so the merge keys match correctly.
+                    DataArray *found =
+                        (CONST_ARRAY(arr)->Node(0).Type() == kDataSymbol)
+                        ? dest->FindArray(CONST_ARRAY(arr)->Node(0).LiteralSym(), false)
+                        : dest->FindArray(CONST_ARRAY(arr)->Node(0).mValue.integer, false);
+#else
                     DataArray *found =
                         dest->FindArray(CONST_ARRAY(arr)->Node(0).mValue.integer, false);
+#endif
                     if (found == 0) {
                         dest->Resize(dest->Size() + 1);
                         dest->Node(dest->Size() - 1) = DataNode(arr, kDataArray);
@@ -127,8 +137,15 @@ void DataReplaceTags(DataArray *dest, DataArray *src) {
         if (node->Type() == kDataArray) {
             DataArray *arr = node->mValue.array;
             if (arr->Size() != 0) {
+#ifdef HX_NATIVE
+                DataArray *found =
+                    (CONST_ARRAY(arr)->Node(0).Type() == kDataSymbol)
+                    ? src->FindArray(CONST_ARRAY(arr)->Node(0).LiteralSym(), false)
+                    : src->FindArray(CONST_ARRAY(arr)->Node(0).mValue.integer, false);
+#else
                 DataArray *found =
                     src->FindArray(CONST_ARRAY(arr)->Node(0).mValue.integer, false);
+#endif
                 if (found != 0) {
                     DataReplaceTags(arr, found);
                     int inner_cnt = arr->Size();

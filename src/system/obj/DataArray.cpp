@@ -313,6 +313,21 @@ void DataArray::Remove(int index) {
 }
 
 void DataArray::Remove(const DataNode &dn) {
+#ifdef HX_NATIVE
+    // On LP64, mValue.integer only covers the low 4 bytes of the 8-byte union.
+    // For pointer-typed nodes that truncates the pointer and can yield false
+    // matches; compare the full pointer for pointer types instead.
+    bool isPtr = (dn.Type() == kDataSymbol || dn.Type() == kDataObject
+                  || dn.Type() >= kDataArray);
+    for (int lol = mSize - 1; lol >= 0; lol--) {
+        bool match = isPtr ? (mNodes[lol].mValue.symbol == dn.mValue.symbol)
+                           : (mNodes[lol].mValue.integer == dn.mValue.integer);
+        if (match) {
+            Remove(lol);
+            return;
+        }
+    }
+#else
     int searchType = dn.mValue.integer;
     for (int lol = mSize - 1; lol >= 0; lol--) {
         if (mNodes[lol].mValue.integer == searchType) {
@@ -320,9 +335,22 @@ void DataArray::Remove(const DataNode &dn) {
             return;
         }
     }
+#endif
 }
 
 bool DataArray::Contains(const DataNode &dn) const {
+#ifdef HX_NATIVE
+    bool isPtr = (dn.Type() == kDataSymbol || dn.Type() == kDataObject
+                  || dn.Type() >= kDataArray);
+    for (int lol = mSize - 1; lol >= 0; lol--) {
+        bool match = isPtr ? (mNodes[lol].mValue.symbol == dn.mValue.symbol)
+                           : (mNodes[lol].mValue.integer == dn.mValue.integer);
+        if (match) {
+            return true;
+        }
+    }
+    return false;
+#else
     int searchType = dn.mValue.integer;
     for (int lol = mSize - 1; lol >= 0; lol--) {
         if (mNodes[lol].mValue.integer == searchType) {
@@ -330,6 +358,7 @@ bool DataArray::Contains(const DataNode &dn) const {
         }
     }
     return false;
+#endif
 }
 
 DataArray *DataArray::FindArray(int tag, bool fail) const {
@@ -349,12 +378,33 @@ DataArray *DataArray::FindArray(int tag, bool fail) const {
 }
 
 DataArray *DataArray::FindArray(Symbol tag, bool fail) const {
+#ifdef HX_NATIVE
+    // On LP64, (int)tag.mStr truncates the 8-byte interned Symbol pointer to
+    // 4 bytes before being compared against UncheckedInt(0) (also a truncated
+    // 8-byte pointer) inside FindArray(int). That yields false matches/misses.
+    // Compare the interned Symbol pointers directly instead.
+    for (DataNode *dn = mNodes; dn < &mNodes[mSize]; dn++) {
+        if (dn->Type() == kDataArray) {
+            const DataArray *arr = dn->mValue.array;
+            if (arr->Size() > 0 && arr->Node(0).Type() == kDataSymbol
+                && arr->Node(0).mValue.symbol == tag.mStr) {
+                return (DataArray *)arr;
+            }
+        }
+    }
+    if (fail)
+        MILO_FAIL(
+            "Couldn't find '%s' in array (file %s, line %d)", tag.mStr, File(), mLine
+        );
+    return nullptr;
+#else
     DataArray *found = FindArray((int)tag.mStr, false);
     if (found == 0 && fail)
         MILO_FAIL(
             "Couldn't find '%s' in array (file %s, line %d)", tag.mStr, File(), mLine
         );
     return found;
+#endif
 }
 
 #ifdef VERSION_SZBE69_B8
@@ -718,12 +768,33 @@ void DataArray::Load(BinStream &bs) {
             break;
         }
         case kDataElse: {
+#ifdef HX_NATIVE
+            // Guard against malformed/unbalanced conditionals: back() on an
+            // empty std::list is UB under host STL (matched build relied on
+            // PPC behavior). Skip rather than crash.
+            if (gDataArrayConditional.empty()) {
+                MILO_WARN("DataArray::Load: kDataElse with empty conditional "
+                          "stack, skipping (file %s, line %d)", File(), mLine);
+            } else {
+                gDataArrayConditional.back() = !gDataArrayConditional.back();
+            }
+#else
             gDataArrayConditional.back() = !gDataArrayConditional.back();
+#endif
             size -= 1;
             break;
         }
         case kDataEndif: {
+#ifdef HX_NATIVE
+            if (gDataArrayConditional.empty()) {
+                MILO_WARN("DataArray::Load: kDataEndif with empty conditional "
+                          "stack, skipping (file %s, line %d)", File(), mLine);
+            } else {
+                gDataArrayConditional.pop_back();
+            }
+#else
             gDataArrayConditional.pop_back();
+#endif
             size -= 1;
             break;
         }

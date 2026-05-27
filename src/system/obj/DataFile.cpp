@@ -48,6 +48,14 @@ bool gCompressCached;
 bool gCachingFile;
 bool gReadingFile;
 
+#ifdef HX_NATIVE
+// Bound recursive DTA parsing so malformed/adversarial input can't overflow the
+// native stack. 512 is far deeper than any legitimate .dta nesting, so this
+// never trips for valid content.
+static int gParseDepth = 0;
+static const int kMaxParseDepth = 512;
+#endif
+
 void DataFail(const char *x) { MILO_FAIL("%s (file %s, line %d)", x, gFile, gDataLine); }
 
 DataArray *ReadEmbeddedFile(const char *c, bool b) {
@@ -540,6 +548,20 @@ bool ParseNode() {
 }
 
 DataArray *ParseArray() {
+#ifdef HX_NATIVE
+    if (++gParseDepth > kMaxParseDepth) {
+        gParseDepth--;
+        MILO_FAIL(
+            "DTA parse depth exceeded %d (file %s, line %d)",
+            kMaxParseDepth,
+            gFile,
+            gDataLine
+        );
+        DataArray *empty = new DataArray(0);
+        empty->SetFileLine(gFile, gDataLine);
+        return empty;
+    }
+#endif
     DataArray *sav = gArray;
     int nod = gNode;
     DataArray *da = new DataArray(16);
@@ -553,6 +575,9 @@ DataArray *ParseArray() {
     da = gArray;
     gArray = sav;
     gNode = nod;
+#ifdef HX_NATIVE
+    gParseDepth--;
+#endif
     return da;
 }
 

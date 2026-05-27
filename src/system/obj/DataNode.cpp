@@ -65,6 +65,19 @@ const DataNode &DataNode::Evaluate() const {
     } else if (mType == kDataProperty) {
         MILO_ASSERT(gDataThis, 0x78);
         const DataNode *n = gDataThis->Property(mValue.array, true);
+#ifdef HX_NATIVE
+        // Property(fail=true) MILO_FAILs on a missing property, but native
+        // Debug::Fail can return; guard the deref so we yield a safe int node
+        // instead of dereferencing null.
+        if (!n) {
+            MILO_WARN(
+                "DataNode::Evaluate: property lookup returned null on %s",
+                PathName(gDataThis)
+            );
+            static DataNode sNullNode(0);
+            return sNullNode;
+        }
+#endif
         return UseQueue(*n);
     } else
         return *this;
@@ -124,6 +137,12 @@ Symbol DataNode::Sym(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Symbol", String(s));
+#ifdef HX_NATIVE
+        // Native Debug::Fail can return (not noreturn like the matched PPC
+        // build), so guard against falling through and reading the wrong union
+        // member on a type mismatch.
+        return Symbol("");
+#endif
     }
 #endif
     return STR_TO_SYM(n.mValue.symbol);
@@ -143,6 +162,9 @@ Symbol DataNode::LiteralSym(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Symbol", String(s));
+#ifdef HX_NATIVE
+        return Symbol("");
+#endif
     }
 #endif
     return STR_TO_SYM(mValue.symbol);
@@ -166,6 +188,9 @@ Symbol DataNode::ForceSym(const DataArray *source) const {
                 );
             else
                 MILO_FAIL("Data %s is not String", String(s));
+#ifdef HX_NATIVE
+            return Symbol("");
+#endif
         }
 #endif
         return Symbol(n.mValue.var->mValue.symbol);
@@ -190,6 +215,9 @@ const char *DataNode::Str(const DataArray *source) const {
                 );
             else
                 MILO_FAIL("Data %s is not String", String(s));
+#ifdef HX_NATIVE
+            return "";
+#endif
         }
 #endif
         return n.mValue.var->mValue.symbol;
@@ -213,6 +241,9 @@ const char *DataNode::LiteralStr(const DataArray *source) const {
                 );
             else
                 MILO_FAIL("Data %s is not String", String(s));
+#ifdef HX_NATIVE
+            return "";
+#endif
         }
 #endif
         return mValue.var->mValue.symbol;
@@ -286,6 +317,9 @@ DataFunc *DataNode::Func(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Func", String(s));
+#ifdef HX_NATIVE
+        return nullptr;
+#endif
     }
 #endif
     return mValue.func;
@@ -307,7 +341,14 @@ Hmx::Object *DataNode::GetObj(const DataArray *source) const {
                     msg = PathName(gDataDir);
                 else
                     msg = "**no file**";
+#ifdef HX_NATIVE
+                // Native flow lacks many game objects (HUD, score, etc.) that
+                // song animations reference. Warn instead of failing so script
+                // execution can continue (returns the null object).
+                MILO_WARN(kNotObjectMsg, str, msg);
+#else
                 MILO_FAIL(kNotObjectMsg, str, msg);
+#endif
             }
 #endif
         }
@@ -330,6 +371,9 @@ DataArray *DataNode::Array(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Array", String(s));
+#ifdef HX_NATIVE
+        return nullptr;
+#endif
     }
 #endif
     return n.mValue.array;
@@ -349,6 +393,9 @@ DataArray *DataNode::LiteralArray(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Array", String(s));
+#ifdef HX_NATIVE
+        return nullptr;
+#endif
     }
 #endif
     return mValue.array;
@@ -374,6 +421,9 @@ DataArray *DataNode::Command(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Command", String(s));
+#ifdef HX_NATIVE
+        return nullptr;
+#endif
     }
 #endif
     return mValue.array;
@@ -393,6 +443,9 @@ DataNode *DataNode::Var(const DataArray *source) const {
             );
         else
             MILO_FAIL("Data %s is not Var", String(s));
+#ifdef HX_NATIVE
+        return nullptr;
+#endif
     }
 #endif
     return mValue.var;
@@ -434,6 +487,14 @@ bool DataNode::operator==(const DataNode &node) const {
     if (mType == node.mType) {
         if (mType == kDataString) {
             return strcmp(mValue.var->mValue.symbol, node.mValue.var->mValue.symbol) == 0;
+#ifdef HX_NATIVE
+        } else if (mType == kDataSymbol) {
+            // On LP64, mValue.integer truncates the 8-byte interned Symbol
+            // pointer to 4 bytes, which can make distinct symbols compare equal.
+            // Compare the full pointers (interned, so pointer equality == Symbol
+            // equality).
+            return mValue.symbol == node.mValue.symbol;
+#endif
         } else
             return mValue.integer == node.mValue.integer;
     } else if (mType == kDataObject || node.mType == kDataObject) {
