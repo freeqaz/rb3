@@ -5,5 +5,6 @@
 
 void __AXSPBInit();
 void __AXSPBQuit();
+void __AXPrintStudio();
 
 #endif
