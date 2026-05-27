@@ -32,6 +32,9 @@ ctx.hpp
 orig/*
 !orig/SZBE69.sha1
 
+# Extracted asset tree (~4 GB; produced by scripts/milo/extract_ark.sh)
+orig-assets/
+
 # Used to persist certain empty folders
 # Search patterns covering folders that need to be persisted must end with an asterisk,
 # or else this file will always be ignored
