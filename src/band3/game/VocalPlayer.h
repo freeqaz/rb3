@@ -80,19 +80,21 @@ public:
         ts << mMs << "\t";
         ts << mCompMs << "\t";
         for (int i = 0; i < (int)mSingerData.size(); i++) {
-            ts << mSingerData[i].unk0 << "\t";
-            ts << mSingerData[i].unk4 << "\t";
-            ts << mSingerData[i].unk8 << "\t";
+            const VocalFrameSingerData &data = mSingerData[i];
+            ts << data.unk0 << "\t";
+            ts << data.unk4 << "\t";
+            ts << data.unk8 << "\t";
         }
         for (int i = 0; i < (int)mPartData.size(); i++) {
-            ts << mPartData[i].unk0 << "\t";
-            ts << mPartData[i].unk4 << "\t";
-            ts << mPartData[i].unk8 << "\t";
-            ts << mPartData[i].unkc << "\t";
-            ts << mPartData[i].unk10 << "\t";
-            ts << mPartData[i].unk14 << "\t";
-            ts << mPartData[i].unk18 << "\t";
-            ts << mPartData[i].unk1c << "\t";
+            const VocalFramePartData &data = mPartData[i];
+            ts << data.unk0 << "\t";
+            ts << data.unk4 << "\t";
+            ts << data.unk8 << "\t";
+            ts << data.unkc << "\t";
+            ts << data.unk10 << "\t";
+            ts << data.unk14 << "\t";
+            ts << data.unk18 << "\t";
+            ts << data.unk1c << "\t";
         }
         ts << "\n";
     }

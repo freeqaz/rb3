@@ -415,11 +415,11 @@ void OutfitConfig::RecomposePatches(int flag) {
 }
 
 void OutfitConfig::SetSkinTextures(ObjectDir *dir1, ObjectDir *dir2, BandCharDesc *desc) {
+    OutfitConfig *cfg = dir2->Find<OutfitConfig>("skin.cfg", false);
     static const char *skinMats[] = {
         "torso_naked.mat",     "torso", "legs_skin.mat",  "legs", "feet_skin.mat", "legs",
         "feet_socks_skin.mat", "legs",  "head_naked.mat", "head"
     };
-    OutfitConfig *cfg = dir2->Find<OutfitConfig>("skin.cfg", false);
     Symbol gender = desc->mGender;
     for (int i = 0; 5 > i; i++) {
         const char *partname = skinMats[i * 2 + 1];

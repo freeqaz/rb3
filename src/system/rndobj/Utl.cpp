@@ -289,14 +289,14 @@ void AttachMesh(RndMesh *main, RndMesh *attach) {
 
 void RandomPointOnMesh(RndMesh *m, Vector3 &v1, Vector3 &v2) {
     auto _tmp0 = m->Faces().size();
-    const RndMesh::Face &face = m->Faces()[RandomInt(0, _tmp0)];
+    RndMesh::Face &face = m->Faces()[RandomInt(0, _tmp0)];
     int numverts = m->Verts().size();
     if (face.v1 >= numverts || face.v2 >= numverts || face.v3 >= numverts) {
         MILO_NOTIFY_ONCE(
             "%s: %s random face contains unknown vert indices!", PathName(m), m->Name()
         );
-        v2.Zero();
         v1.Zero();
+        v2.Zero();
     } else {
         Vector3 v58, v64, v70;
         Vector3 v7c, v88, v94;

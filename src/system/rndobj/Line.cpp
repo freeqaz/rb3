@@ -498,7 +498,7 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     Hmx::Ray prevRay;
     prevRay.base.Set(startProj[0] + startSide[0], startProj[1] + startSide[1]);
-    prevRay.dir.Set(startDir[0], startDir[1]);
+    prevRay.dir.Set(startDir[1], startDir[0]);
 
     for (pt = secondPt; pt != end; pt++) {
         Point *p = pt;
@@ -544,9 +544,10 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
     }
 
     // Phase 4: Copy side vectors for points outside the visible range
-    if (start == &mPoints[0]) {
+    std::vector<Point> &_ref0 = mPoints;
+    if (start == &_ref0[0]) {
         Point *pt = end + 1;
-        Point *pointsEnd = &mPoints.back();
+        Point *pointsEnd = &_ref0.back();
         for (; pt <= pointsEnd; pt++) {
             pt->unk7 = end->unk7;
             pt->unk8 = end->unk8;
@@ -554,8 +555,8 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
             pt->unk1 = end->unk1;
             pt->unk2 = end->unk2;
         }
-    } else if (&mPoints[0] < start) {
-        for (Point *pt = &mPoints[0]; pt < start; pt++) {
+    } else if (&_ref0[0] < start) {
+        for (Point *pt = &_ref0[0]; pt < start; pt++) {
             pt->unk7 = start->unk7;
             pt->unk8 = start->unk8;
             pt->unk0 = start->unk0;
@@ -566,8 +567,8 @@ void RndLine::UpdateLine(RndLine::Point *start, RndLine::Point *end) {
 
     // Phase 5: Write vertex positions.
     // The cap offset is (-side.y, side.x) used to extend the cap perpendicular to the line direction.
-    Point *pointsBegin = &mPoints[0];
-    Point *pointsEnd = &mPoints.back();
+    Point *pointsBegin = &_ref0[0];
+    Point *pointsEnd = &_ref0.back();
     Vector2 capOffset;
     capOffset.x = -pointsBegin->unk8;
     capOffset.y = pointsBegin->unk7;

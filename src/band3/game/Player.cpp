@@ -959,17 +959,17 @@ void Player::HandleNewSection(const PracticeSection &section, int sectionIdx, in
 void Player::UpdateSectionStats(float hitFraction, float percentComplete) {
     if (TheGame->unkdc != -1.0f)
         return;
-    if (mQuarantined)
-        return;
-    if (TheSongDB->mPracticeSections.size() == 0)
-        return;
-    if (unk2c0 < 0)
-        return;
-    if ((unsigned int)unk2c0 >= TheSongDB->mPracticeSections.size())
-        return;
-    int sectionIdx = unk2c0;
-    Symbol sectionSym = TheSongDB->mPracticeSections[sectionIdx].unk0;
-    mStats.SetSectionInfo(sectionIdx, sectionSym, hitFraction, percentComplete);
+    if (!mQuarantined) {
+        if (TheSongDB->mPracticeSections.size() == 0)
+            return;
+        if (unk2c0 < 0)
+            return;
+        if ((unsigned int)unk2c0 >= TheSongDB->mPracticeSections.size())
+            return;
+        int sectionIdx = unk2c0;
+        Symbol sectionSym = TheSongDB->mPracticeSections[sectionIdx].unk0;
+        mStats.SetSectionInfo(sectionIdx, sectionSym, hitFraction, percentComplete);
+    }
 }
 
 BandTrack *Player::GetBandTrack() const {

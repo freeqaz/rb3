@@ -79,16 +79,16 @@ namespace ec {
 
     template <typename OutIter>
     ECResult base64_encode(const void *_src, unsigned long length, OutIter dest) {
+        const unsigned char *it = (unsigned char *)_src;
         if (!base64_init) {
             init_base64();
         }
 
-        const unsigned char *it = (unsigned char *)_src;
         const unsigned char *end = it + length;
 
         int encodedCount = 0;
         int encodedValue = 0;
-        while (it != end) {
+        while (end != it) {
             encodedCount++;
             encodedValue = encodedValue * 256 + *it++;
             if (encodedCount >= 3) {

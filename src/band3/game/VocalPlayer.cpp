@@ -371,22 +371,27 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         return;
     }
 
-    VocalFrameSpewData *spewData = mFrameSpewData;
     float fCompMS = GetCompensatedTime(ms);
+    VocalFrameSpewData *spewData = mFrameSpewData;
 
     // Update frame spew data if active
     if (spewData) {
         spewData->mMs = 0.0f;
         spewData->mCompMs = 0.0f;
 
+        int singerDataSize = spewData->mSingerData.size();
+        int partDataSize = spewData->mPartData.size();
+
+        spewData->mSingerData.clear();
         VocalFrameSpewData::VocalFrameSingerData defSinger;
-        spewData->mSingerData.resize(mSingers.size(), defSinger);
+        spewData->mSingerData.resize(singerDataSize, defSinger);
 
+        spewData->mPartData.clear();
         VocalFrameSpewData::VocalFramePartData defPart;
-        spewData->mPartData.resize(mVocalParts.size(), defPart);
+        spewData->mPartData.resize(partDataSize, defPart);
 
-        spewData->mMs = ms;
-        spewData->mCompMs = fCompMS;
+        mFrameSpewData->mMs = ms;
+        mFrameSpewData->mCompMs = fCompMS;
     }
 
     // Reset vocal overlay
@@ -401,10 +406,10 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
 
     // scoredPartIndices initialized before SongSectionOnly, reserve mVocalParts.size()
     std::vector<int> scoredPartIndices;
-    scoredPartIndices.reserve(mVocalParts.size());
 
     float var_f24 = 0.0f;
     int iMaximumFreestyleDeploymentSinger = -1;
+    scoredPartIndices.reserve(mVocalParts.size());
 
     // Determine section scoring state
     float fSectionBeginMs = 0.0f;
@@ -469,8 +474,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
 
     // Get pitch offset from song DB and update tuning
     float pitchOffset = TheSongDB->GetPitchOffsetForTick((int)MsToTick(ms));
-    bool pitchOffsetValid = (pitchOffset >= -50.0f) && (pitchOffset <= 50.0f);
-    if (pitchOffsetValid) {
+    if ((-50.0f <= pitchOffset) && (pitchOffset <= 50.0f)) {
         mTuningOffset = 0.00109659603f * pitchOffset;
     }
 
@@ -509,8 +513,8 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             if (bScoringAllowed && pPart->ScoringEnabled()) {
                 VocalScoreCache &cache = pSinger->AccessScoreCache(pPart->mPartIndex);
                 float fEnergy = pSinger->unk60;
-                int iRating = 0;
-                float fDev = 0.0f;
+                int iRating;
+                float fDev;
                 pPart->ScoreSinger(
                     fCompMS,
                     pSinger->mFrameMicPitch,
@@ -522,7 +526,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                     iRating,
                     fDev
                 );
-                if (1000.0f != fDev && fabsf(fDev) < fabsf(var_f22)) {
+                if (1000.0f != fDev && fabs(fDev) < fabsf(var_f22)) {
                     var_f22 = fDev;
                 }
 
@@ -538,22 +542,20 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         }
 
         // Check ambiguity between pairs of parts
-        for (int i = 0; i < (int)mVocalParts.size() - 1; i++) {
+        for (int i = 0; i < mVocalParts.size() - 1; i++) {
             VocalPart *pPartA = mVocalParts[i];
             if (pPartA->PhraseHasUnpitchedNotes()) continue;
             VocalScoreCache &cacheA = pSinger->AccessScoreCache(i);
             float fScoreA = cacheA.unk0;
 
-            for (int j = i + 1; j < (int)mVocalParts.size(); j++) {
+            for (int j = i + 1; j < mVocalParts.size(); j++) {
                 MILO_ASSERT(j != i, 0x3FA);
                 VocalPart *pPartB = mVocalParts[j];
                 if (pPartB->PhraseHasUnpitchedNotes()) continue;
                 VocalScoreCache &cacheB = pSinger->AccessScoreCache(j);
                 float fScoreB = cacheB.unk0;
 
-                bool aIsZero = (0.0f == fScoreA);
-                bool bIsZero = (0.0f == fScoreB);
-                if (aIsZero && bIsZero) continue;
+                if (0.0f == fScoreA && 0.0f == fScoreB) continue;
 
                 if (fabsf(fScoreA - fScoreB) < 0.00001f) {
                     if (0.0f != cacheA.unkc || 0.0f != cacheB.unkc) {
@@ -569,8 +571,6 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
 
     // Greedy matching: repeatedly assign singers to parts until no more matches
     {
-        static std::mem_fun_t<bool, VocalPart> partPred(&VocalPart::HasBestSingerCandidate);
-        static std::const_mem_fun_t<bool, Singer> singerPred(&Singer::HasAssignedPart);
         bool bAnyAssigned;
         do {
             bAnyAssigned = false;
@@ -578,20 +578,20 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             FOREACH (sIt2, singersArray) {
                 Singer *pSinger = *sIt2;
                 VocalPart *pBestPart = 0;
-                float fBestPitchDistance = 0.0f;
-                float fBestScore = 0.0f;
-                FindBestPart(
-                    pSinger->mFrameMicPitch,
-                    fCompMS,
-                    partsArray,
-                    pSinger,
-                    pBestPart,
-                    fBestPitchDistance,
-                    fBestScore
-                );
-                if (pBestPart) {
-                    pBestPart->AddSingerCandidate(pSinger, fBestPitchDistance);
-                    pSinger->unk74 = fBestScore;
+                float fBestTargetPitch;
+                float fBestScore;
+                bool bFoundPart = FindBestPart(
+                        pSinger->mFrameMicPitch,
+                        fCompMS,
+                        partsArray,
+                        pSinger,
+                        pBestPart,
+                        fBestTargetPitch,
+                        fBestScore
+                    );
+                if (bFoundPart) {
+                    pBestPart->AddSingerCandidate(pSinger, fBestScore);
+                    pSinger->unk74 = fBestTargetPitch;
                     bAnyAssigned = true;
                 }
                 if (mVocalOverlay) {
@@ -607,7 +607,8 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                 if (pBestSinger) {
                     pBestSinger->SetAssignedPart(pPart->mPartIndex, mVocalPartBias);
                     pBestSinger->mFrameTargetPitch = pBestSinger->unk74;
-                    scoredPartIndices.push_back(pPart->mPartIndex);
+                    int partIndex = pPart->mPartIndex;
+                    scoredPartIndices.push_back(partIndex);
                 }
             }
 
@@ -618,27 +619,29 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             {
                 VocalPart **partFirst = &partsArray[0];
                 VocalPart **partLast = partFirst + partsArray.size();
+                std::mem_fun_t<bool, VocalPart> partPred(&VocalPart::HasBestSingerCandidate);
+                std::mem_fun_t<bool, VocalPart> partFindPred(partPred);
                 VocalPart **partFound;
                 int partTrip = (int)(partLast - partFirst) >> 2;
                 for (; partTrip > 0; --partTrip) {
-                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    if (partFindPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
                     ++partFirst;
-                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    if (partFindPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
                     ++partFirst;
-                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    if (partFindPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
                     ++partFirst;
-                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    if (partFindPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
                     ++partFirst;
                 }
                 switch (partLast - partFirst) {
                 case 3:
-                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    if (partFindPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
                     ++partFirst;
                 case 2:
-                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    if (partFindPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
                     ++partFirst;
                 case 1:
-                    if (partPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
+                    if (partFindPred(*partFirst)) { partFound = partFirst; goto partRemoved; }
                 case 0:
                 default:
                     partFound = partLast;
@@ -646,8 +649,9 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             partRemoved:
                 if (partFound != partLast) {
                     VocalPart **partSrc = partFound + 1;
+                    std::mem_fun_t<bool, VocalPart> partCopyPred(partPred);
                     for (; partSrc != partLast; ++partSrc) {
-                        if (!partPred(*partSrc)) {
+                        if (!partCopyPred(*partSrc)) {
                             *partFound = *partSrc;
                             ++partFound;
                         }
@@ -658,27 +662,29 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             {
                 Singer **singerFirst = &singersArray[0];
                 Singer **singerLast = singerFirst + singersArray.size();
+                std::const_mem_fun_t<bool, Singer> singerPred(&Singer::HasAssignedPart);
+                std::const_mem_fun_t<bool, Singer> singerFindPred(singerPred);
                 Singer **singerFound;
                 int singerTrip = (int)(singerLast - singerFirst) >> 2;
                 for (; singerTrip > 0; --singerTrip) {
-                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    if (singerFindPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
                     ++singerFirst;
-                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    if (singerFindPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
                     ++singerFirst;
-                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    if (singerFindPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
                     ++singerFirst;
-                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    if (singerFindPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
                     ++singerFirst;
                 }
                 switch (singerLast - singerFirst) {
                 case 3:
-                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    if (singerFindPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
                     ++singerFirst;
                 case 2:
-                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    if (singerFindPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
                     ++singerFirst;
                 case 1:
-                    if (singerPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
+                    if (singerFindPred(*singerFirst)) { singerFound = singerFirst; goto singerRemoved; }
                 case 0:
                 default:
                     singerFound = singerLast;
@@ -686,8 +692,9 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
             singerRemoved:
                 if (singerFound != singerLast) {
                     Singer **singerSrc = singerFound + 1;
+                    std::const_mem_fun_t<bool, Singer> singerCopyPred(singerPred);
                     for (; singerSrc != singerLast; ++singerSrc) {
-                        if (!singerPred(*singerSrc)) {
+                        if (!singerCopyPred(*singerSrc)) {
                             *singerFound = *singerSrc;
                             ++singerFound;
                         }
@@ -706,6 +713,7 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     static bool bDoCorrect = true;
     const float kSemitone = 12.0f;
     const float kHalfSemitone = 0.5f;
+    const float kMaxOctaveDistance = 2.5f;
 
     FOREACH (sIt2, mSingers) {
         Singer *pSinger = *sIt2;
@@ -743,21 +751,26 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                     float absDiff = fabsf(diff);
                     float mod = (float)fmod(absDiff, 12.0);
                     float alt = kSemitone - mod;
-                    if (mod < alt) {
-                        // keep mod
-                    } else {
+                    if (mod >= alt) {
                         mod = alt;
                     }
-                    if (mod == kHalfSemitone) {
-                        int sign = (diff > 0.0f) ? 1 : -1;
-                        iOctaveOffset = (int)(kHalfSemitone + absDiff / kSemitone) * sign;
+                    if (mod <= kMaxOctaveDistance) {
+                        int octaveAdjust = (int)(kHalfSemitone + absDiff / kSemitone);
+                        int sign;
+                        if (diff > 0.0f) {
+                            sign = 1;
+                        } else {
+                            sign = -1;
+                        }
+                        iOctaveOffset = octaveAdjust * sign;
                     }
                 }
             }
             pSinger->unk6c = 0.0f;
             pSinger->mFrameTargetPitch = 0.0f;
 
-            if (!IsDeployingBandEnergy() && InFreestyleSection()) {
+            bool bNotNet = !IsNet();
+            if (bNotNet && InFreestyleSection()) {
                 float fDeployAmt = pSinger->AddToFreestyleDeployment(fCompMS);
                 if (fDeployAmt > var_f24) {
                     var_f24 = fDeployAmt;
@@ -767,9 +780,9 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         }
 
         if (0.0f != pSinger->mFrameMicPitch) {
+            float fAdjusted = (kSemitone * (float)iOctaveOffset) + pSinger->mFrameMicPitch;
             VocalTrack *pTrack = mTrack;
             MILO_ASSERT(pTrack, 0x501);
-            float fAdjusted = (kSemitone * (float)iOctaveOffset) + pSinger->mFrameMicPitch;
             float fBottom = pTrack->GetBottomDisplayPitch() - mTrackWrappingMargin;
             float fTop = mTrackWrappingMargin + pTrack->GetTopDisplayPitch();
             if ((fBottom > 0.0f) && (fAdjusted < fBottom)) {
@@ -822,14 +835,16 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
     FOREACH (pIt3, mVocalParts) {
         VocalPart *pPart = *pIt3;
         pPart->AfterPoll(fCompMS);
-        if (mFrameSpewData) {
-            mFrameSpewData->mPartData[pPart->mPartIndex].unk18 = (int)pPart->mPhraseScore;
-            mFrameSpewData->mPartData[pPart->mPartIndex].unk1c =
+        VocalFrameSpewData *frameSpewData = mFrameSpewData;
+        if (frameSpewData) {
+            frameSpewData->mPartData[pPart->mPartIndex].unk18 = (int)pPart->mPhraseScore;
+            frameSpewData->mPartData[pPart->mPartIndex].unk1c =
                 (int)pPart->mPhraseScoreMax;
         }
     }
 
-    if (!IsDeployingBandEnergy()) {
+    bool bNotNet = !IsNet();
+    if (bNotNet) {
         SendVocalState(fCompMS);
     }
 
@@ -837,9 +852,9 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         HandlePhraseEnd(fCompMS);
     }
 
-    float fRequiredMs = 0.0f;
+    float fRequiredMs;
     if (GetFreestyleDeploymentRequiredMs(fRequiredMs) && var_f24 > fRequiredMs) {
-        LocalDeployBandEnergy();
+        DeployBandEnergyIfPossible(false);
         mLastDeploymentSinger = iMaximumFreestyleDeploymentSinger;
     }
 
@@ -879,7 +894,14 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
         if (0.0f == fHitPct) {
             fAdjusted = 0.0f;
         }
-        bool bEnable = (fAdjusted != 0.0f);
+        bool bEnable = true;
+        bool bAdjustedNonzero = true;
+        if (0.0f == fAdjusted) {
+            bAdjustedNonzero = false;
+        }
+        if (!bAdjustedNonzero) {
+            bEnable = false;
+        }
         TheGameMicManager->SetPitchCorrectionTarget(
             bEnable, false,
             mSynapseProximitySolo, mSynapseFocusSolo,
@@ -908,7 +930,7 @@ bool VocalPlayer::FindBestPart(
     std::vector<VocalPart *> &i_rParts,
     Singer *i_pSinger,
     VocalPart *&o_rpBestPart,
-    float &o_rfBestPitchDistance,
+    float &o_rfBestTargetPitch,
     float &o_rfBestScore
 ) {
     MILO_ASSERT(i_pSinger, 0x5DA);
@@ -917,7 +939,7 @@ bool VocalPlayer::FindBestPart(
     for (std::vector<VocalPart *>::iterator it = i_rParts.begin(); it != i_rParts.end();
          ++it) {
         VocalPart *pPart = *it;
-        float fPitchDistance;
+        float fTargetPitch;
         float fShiftedPitch
             = 12.0f
                 * (float
@@ -928,11 +950,11 @@ bool VocalPlayer::FindBestPart(
                 i_pSinger->mTalkyMatcher,
                 fShiftedPitch,
                 mPitchMaximumDistance,
-                fPitchDistance
+                fTargetPitch
             )) {
             float fScore = i_pSinger->GetHistoricalScore(i_fTime, pPart->PartIndex());
             if (fScore > o_rfBestScore) {
-                o_rfBestPitchDistance = fPitchDistance;
+                o_rfBestTargetPitch = fTargetPitch;
                 o_rfBestScore = fScore;
                 o_rpBestPart = pPart;
             }

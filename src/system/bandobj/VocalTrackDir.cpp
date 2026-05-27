@@ -977,12 +977,12 @@ void VocalTrackDir::SetRange(float min, float max, int tonic, bool b) {
                 Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(1.0f, 1.0f);
                 tonicRef = 60;
             } else if (mTonic == -1) {
-                Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(0.0f, 1.0f);
+                Find<RndAnimatable>("pitch_window_mat_config.anim", true)->SetFrame(1.0f, 0.0f);
             }
             mTonic = tonic;
         }
-        float offset = (float)fmod((max + min) * 0.5f - (float)tonicRef, 12.0);
         float range = max - min;
+        float offset = (float)fmod((max + min) * 0.5f - (float)tonicRef, 12.0);
         if (range < unk6d8) {
             float diff = unk6d8 - range;
             range = unk6d8;

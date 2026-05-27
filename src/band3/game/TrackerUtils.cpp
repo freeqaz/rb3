@@ -235,7 +235,7 @@ int TrackerUtils::CountVocalPhrasesInSong(int iPlayer) {
 }
 
 int TrackerUtils::CountGemsInSong(int iPlayer, TrackType iTrackType) {
-    MILO_ASSERT(iTrackType != kTrackVocals, 0x1AC);
+    MILO_ASSERT(kTrackVocals != iTrackType, 0x1AC);
     int count = TheSongDB->GetTotalGems(iPlayer);
     if (iTrackType != kTrackDrum) {
         return count;

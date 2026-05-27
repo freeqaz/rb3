@@ -269,8 +269,7 @@ void EventTracker::Reset() {
 }
 
 bool EventTracker::Hit(float msFrom, float msUpTo, float msNow) {
-    auto _tmp0 = findEarliest(msFrom, mSelFrom);
-    mSelFrom = _tmp0;
+    mSelFrom = findEarliest(msFrom, mSelFrom);
     mSelTo = findLatest(msUpTo, mSelTo);
     float tAccum = 0.0f;
     for (int i = mSelFrom; i <= mSelTo; i++) {

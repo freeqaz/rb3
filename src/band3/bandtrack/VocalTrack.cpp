@@ -1037,12 +1037,12 @@ void VocalTrack::UpdateLyricZ() {
     float z;
     bool leadDirty = false;
     bool harmonyDirty = false;
-    ObjPtr<VocalTrackDir> &_ref0 = mDir;
+    const ObjPtr<VocalTrackDir> &_ref0 = mDir;
     _ref0->RecalculateLyricZ(&leadDirty, &harmonyDirty);
     if (leadDirty) {
         std::deque<LyricPlate *>::iterator it = mLyricsLead.begin();
         std::deque<LyricPlate *>::iterator leadEnd = mLyricsLead.end();
-        for (; it != leadEnd; ++it) {
+        for (; leadEnd != it; ++it) {
             LyricPlate *plate = *it;
             if (plate->mBaked) {
                 float delta = 0.0f;
@@ -2600,8 +2600,7 @@ void VocalTrack::Restart(VocalPlayer *player, float f1, float f2) {
 
 void VocalTrack::HitTambourineGem(int id) {
     std::deque<TambourineGem *> &gems = mTambourineGemPool->mUsedGems;
-    int count = gems.size();
-    for (int i = 0; i != count; i++) {
+    for (int i = 0; i != gems.size(); i++) {
         if (id == gems[i]->unk4) {
             gems[i]->unk8 = 1;
             gems[i];

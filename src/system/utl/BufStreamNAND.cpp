@@ -211,18 +211,16 @@ void BufStreamNAND::ReadImpl(void *data, int count) {
 
         int size = mSize;
         if((mRunningTell + bytes) > size || (mTell + bytes) > mChunkSize) {
-            mFail = true;
             bytes = size - mTell;
+            mFail = true;
         }
         memcpy(data, &mBuffer[mTell], bytes);
         mRunningTell += bytes;
         mTell += bytes;
-        if(mChecksum) {
-            if(!mFail) {
+        if(mChecksum && !mFail) {
                 mChecksum->Update((unsigned char*)data, bytes);
                 mBytesChecksummed += bytes;
             }
-        }
     }
 }
 
