@@ -625,6 +625,37 @@ __declspec(noinline) OldColorOption* stlpmtx_std::__uninitialized_fill_n<OldColo
     return __cur;
 }
 
+// Force the element-typed _Vector_impl<OldColorOption>/_Vector_base<OldColorOption>/
+// StlNodeAlloc<OldColorOption> helper bodies out-of-line (the original build's IPA
+// declined to inline them because OldColorOption's non-trivial ObjList member makes
+// them large). Explicit member specializations only affect this instantiation.
+template <>
+__declspec(noinline) OldColorOption* stlpmtx_std::StlNodeAlloc<OldColorOption>::allocate(
+    const unsigned long count, const void* hint) const {
+    const char* name = 0;
+    if (gStlAllocNameLookup) {
+        name = "";
+    }
+    return reinterpret_cast<OldColorOption*>(
+        _MemOrPoolAllocSTL(count * sizeof(OldColorOption), FastPool));
+}
+
+template <>
+__declspec(noinline) void stlpmtx_std::_Vector_impl<
+    OldColorOption, unsigned short, stlpmtx_std::StlNodeAlloc<OldColorOption> >::_M_clear_after_move() {
+    stlpmtx_std::_Destroy_Moved_Range(rbegin(), rend());
+    this->_M_ptr.deallocate(this->_M_ptr._M_data, this->_M_data_size);
+}
+
+template <>
+__declspec(noinline) void stlpmtx_std::_Vector_impl<
+    OldColorOption, unsigned short, stlpmtx_std::StlNodeAlloc<OldColorOption> >::_M_set(
+    OldColorOption* __s, OldColorOption* __f, OldColorOption* __e) {
+    this->_M_ptr._M_data = __s;
+    _M_set_finish_idx(__f - __s);
+    _M_set_data_size(__e - __s);
+}
+
 SAVE_OBJ(OutfitConfig, 0x5C7)
 
 #pragma push
