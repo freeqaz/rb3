@@ -1941,7 +1941,7 @@
             "sdk/RVL_SDK/src/gx/GXAttr.c": "MISSING",
             "sdk/RVL_SDK/src/gx/GXBump.c": "NonMatching",
             "sdk/RVL_SDK/src/gx/GXDisplayList.c": "Matching",
-            "sdk/RVL_SDK/src/gx/GXFifo.c": "MISSING",
+            "sdk/RVL_SDK/src/gx/GXFifo.c": "NonMatching",
             "sdk/RVL_SDK/src/gx/GXFrameBuf.c": "MISSING",
             "sdk/RVL_SDK/src/gx/GXGeometry.c": "Matching",
             "sdk/RVL_SDK/src/gx/GXInit.c": "MISSING",

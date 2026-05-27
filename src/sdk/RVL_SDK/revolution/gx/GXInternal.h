@@ -36,7 +36,10 @@ typedef struct _GXFifoObjImpl {
     void* writePtr;    // at 0x18
     u32 count;         // at 0x1C
     u8 wrap;           // at 0x20
-} GXFifoObjImpl;
+    u8 active;         // at 0x21
+    u8 linked;         // at 0x22
+    u8 pad_0x23;       // at 0x23
+} GXFifoObjImpl; // size 0x24
 
 typedef struct _GXLightObjImpl {
     char UNK_0x0[0xC];

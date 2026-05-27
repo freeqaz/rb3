@@ -18,7 +18,7 @@ typedef struct _GXData {
     u16 vlim;      // at 0x6
     u32 cpCtrlReg; // at 0x8
     u32 cpStatReg; // at 0xC
-    char UNK_0x10[0x4];
+    u32 cpClrReg; // at 0x10
     u32 vcdLoReg;            // at 0x14
     u32 vcdHiReg;            // at 0x18
     u32 vatA[GX_MAX_VTXFMT]; // at 0x1C
