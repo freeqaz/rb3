@@ -224,8 +224,14 @@ int Hmx::Object::PropertySize(DataArray *prop) {
         if (a == nullptr) {
             if (mTypeDef != nullptr) {
                 a = &mTypeDef->FindArray(name)->Evaluate(1);
-            } else
+            } else {
                 MILO_FAIL("%s: property %s not found", PathName(this), name);
+#ifdef HX_NATIVE
+                // Native Debug::Fail can return; bail before the null deref of
+                // `a` in the MILO_ASSERT / Size() call below.
+                return 0;
+#endif
+            }
         }
         MILO_ASSERT(a->Type() == kDataArray, 0x1A1);
         return a->mValue.array->Size();
@@ -501,7 +507,16 @@ DataNode Hmx::Object::OnGet(const DataArray *da) {
         if (prop)
             return *prop;
     }
+#ifdef HX_NATIVE
+    // When the property wasn't found and no default arg was supplied (Size<4),
+    // da->Node(3) is out of bounds. Property(...,fail) MILO_FAILs in that case
+    // but native Fail returns, so guard the OOB access here.
+    if (da->Size() > 3)
+        return da->Node(3);
+    return DataNode(0);
+#else
     return da->Node(3);
+#endif
 }
 
 BEGIN_PROPSYNCS(Hmx::Object)

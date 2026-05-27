@@ -21,8 +21,20 @@ enum TaskUnits {
  */
 class Task : public Hmx::Object {
 public:
+#ifdef HX_NATIVE
+    // A Task may self-delete from inside its own Poll() (MessageTask/ScriptTask
+    // do `delete this`). RB3's TaskTimeline holds raw Task* (not ObjPtrs), so a
+    // self-deleted task leaves a dangling pointer in the timeline list that a
+    // later Poll iteration would dereference. Track live tasks in a set and skip
+    // dead pointers in TaskTimeline::Poll. The matched PPC build tolerated the
+    // stale read; native (host allocator) does not.
+    Task();
+    virtual ~Task();
+    static bool IsLive(Task *t);
+#else
     Task() {}
     virtual ~Task() {}
+#endif
     virtual void Poll(float) = 0;
 };
 
@@ -121,7 +133,14 @@ public:
             float f1 = (*it).unkc;
             float f2 = mTime;
             float diff = f2 - f1;
-            if ((*it).unk0) {
+            if ((*it).unk0
+#ifdef HX_NATIVE
+                // Skip (and drop) tasks that have already been deleted (e.g. a
+                // task that self-deleted from a prior Poll in this same sweep).
+                // The raw pointer would otherwise be a dangling deref.
+                && Task::IsLive((*it).unk0)
+#endif
+            ) {
                 mPollingTask = (*it).unk0;
                 (*it).unk0->Poll(diff);
                 ++it;

@@ -14,6 +14,21 @@
 #include "utl/Symbols4.h"
 #include "utl/TempoMap.h"
 
+#ifdef HX_NATIVE
+#include <unordered_set>
+// Set of currently-live Task pointers. A Task removes itself in ~Task(), so a
+// pointer absent from this set has been deleted (possibly via self-delete from
+// inside its own Poll()).
+static std::unordered_set<Task *> &LiveTasks() {
+    static std::unordered_set<Task *> s;
+    return s;
+}
+
+Task::Task() { LiveTasks().insert(this); }
+Task::~Task() { LiveTasks().erase(this); }
+bool Task::IsLive(Task *t) { return LiveTasks().count(t) > 0; }
+#endif
+
 TaskMgr TheTaskMgr;
 
 MessageTask::MessageTask(Hmx::Object *o, DataArray *msg) : mObj(this, o), mMsg(msg) {

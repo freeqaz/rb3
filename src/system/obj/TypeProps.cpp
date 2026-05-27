@@ -10,6 +10,18 @@ DataArray *TypeProps::GetArray(Symbol prop, DataArray *typeDef, Hmx::Object *ref
     DataNode *n = KeyValue(prop, false);
     DataArray *ret;
     if (n == nullptr) {
+#ifdef HX_NATIVE
+        // Native Debug::Fail can return; bail before dereferencing a null
+        // typeDef in FindArray below.
+        if (!typeDef) {
+            MILO_WARN(
+                "TypeProps::GetArray: %s has no TypeDef for key %s",
+                ref ? PathName(ref) : "<null>",
+                prop
+            );
+            return nullptr;
+        }
+#endif
         MILO_ASSERT(typeDef, 0x16);
         DataArray *clonedPropArr =
             typeDef->FindArray(prop)->Array(1)->Clone(true, false, 0);
@@ -26,7 +38,16 @@ DataArray *TypeProps::GetArray(Symbol prop, DataArray *typeDef, Hmx::Object *ref
 void TypeProps::SetArrayValue(
     Symbol prop, int idx, const DataNode &val, DataArray *tdef, Hmx::Object *ref
 ) {
+#ifdef HX_NATIVE
+    DataArray *arr = GetArray(prop, tdef, ref);
+    if (!arr) {
+        MILO_WARN("TypeProps::SetArrayValue: null array for key %s", prop);
+        return;
+    }
+    DataNode &node = arr->Node(idx);
+#else
     DataNode &node = GetArray(prop, tdef, ref)->Node(idx);
+#endif
     if (node.Type() == kDataObject) {
         Hmx::Object *obj = node.UncheckedObj();
         if (obj)
@@ -42,6 +63,12 @@ void TypeProps::SetArrayValue(
 
 void TypeProps::RemoveArrayValue(Symbol prop, int idx, DataArray *tdef, Hmx::Object *ref) {
     DataArray *arr = GetArray(prop, tdef, ref);
+#ifdef HX_NATIVE
+    if (!arr) {
+        MILO_WARN("TypeProps::RemoveArrayValue: null array for key %s", prop);
+        return;
+    }
+#endif
     DataNode &node = arr->Node(idx);
     if (node.Type() == kDataObject) {
         Hmx::Object *obj = node.UncheckedObj();
@@ -55,6 +82,12 @@ void TypeProps::InsertArrayValue(
     Symbol prop, int idx, const DataNode &val, DataArray *arr, Hmx::Object *ref
 ) {
     DataArray *propArr = GetArray(prop, arr, ref);
+#ifdef HX_NATIVE
+    if (!propArr) {
+        MILO_WARN("TypeProps::InsertArrayValue: null array for key %s", prop);
+        return;
+    }
+#endif
     propArr->Insert(idx, val);
     if (val.Type() == kDataObject) {
         Hmx::Object *obj = val.UncheckedObj();
@@ -76,8 +109,15 @@ void TypeProps::SetKeyValue(Symbol key, const DataNode &value, bool b, Hmx::Obje
     } else {
         int nodeCnt = mMap->Size();
         for (int cnt = nodeCnt - 2; cnt >= 0; cnt -= 2) {
+#ifdef HX_NATIVE
+            // (int) truncates the 8-byte interned symbol pointer to 4 bytes,
+            // which can make distinct keys collide on LP64. Compare full ptrs.
+            const char *symstr = CONST_ARRAY(mMap)->Node(cnt).mValue.symbol;
+            const char *keystr = key.Str();
+#else
             int symstr = (int)CONST_ARRAY(mMap)->Node(cnt).mValue.symbol;
             int keystr = (int)key.Str();
+#endif
             if (symstr == keystr) {
                 DataNode &valNode = mMap->Node(cnt + 1);
                 if (valNode.Type() == kDataObject) {
@@ -98,8 +138,13 @@ void TypeProps::SetKeyValue(Symbol key, const DataNode &value, bool b, Hmx::Obje
 DataNode *TypeProps::KeyValue(Symbol key, bool fail) const {
     if (mMap) {
         for (int i = mMap->Size() - 2; i >= 0; i -= 2) {
+#ifdef HX_NATIVE
+            const char *symstr = CONST_ARRAY(mMap)->Node(i).mValue.symbol;
+            const char *keystr = key.Str();
+#else
             int symstr = (int)CONST_ARRAY(mMap)->Node(i).mValue.symbol;
             int keystr = (int)key.Str();
+#endif
             if (symstr == keystr) {
                 return &mMap->Node(i + 1);
             }
@@ -351,8 +396,13 @@ void TypeProps::ClearKeyValue(Symbol key, Hmx::Object *ref) {
     if (mMap) {
         int cnt = mMap->Size() - 2;
         while (cnt >= 0) {
+#ifdef HX_NATIVE
+            const char *symstr = CONST_ARRAY(mMap)->Node(cnt).mValue.symbol;
+            const char *keystr = key.Str();
+#else
             int symstr = (int)CONST_ARRAY(mMap)->Node(cnt).mValue.symbol;
             int keystr = (int)key.Str();
+#endif
             if (symstr == keystr) {
                 DataNode &n = mMap->Node(cnt + 1);
                 if (n.Type() == kDataObject) {
