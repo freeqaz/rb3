@@ -16,6 +16,7 @@ Top-level sitemap for the RB3 decomp documentation. Mirrors the structure of [DC
 | Doc | Description |
 |-----|-------------|
 | [decomp/patterns/INDEX.md](decomp/patterns/INDEX.md) | MetroWorks CodeWarrior codegen pattern catalog — fixable patterns + ICF risks |
+| [decomp/objdiff-json-extensions.md](decomp/objdiff-json-extensions.md) | Fork-only objdiff-cli JSON: data-symbol diffs (`--include-data`, vtables/init data) and the instruction branch graph. See also the `/data-diff` skill. |
 
 ## Sessions & Analysis
 
