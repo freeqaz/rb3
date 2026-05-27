@@ -1585,7 +1585,7 @@ bool SongParser::CheckForceHopoMarker(int tick, int pitch, bool b) {
 bool SongParser::CheckDrumMapMarker(int i, int j, bool b) {
     if (!mDrumStyleGems)
         return false;
-    else if (108 <= j & j < 113U) {
+    else if (108 <= j & j < 113) {
         mSink->DrumMapLane(mTrack, i, j - 108, b);
         return true;
     } else
