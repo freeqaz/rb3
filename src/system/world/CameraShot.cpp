@@ -1040,8 +1040,8 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
     float interp1 = ::Interp(FieldOfView(), frame.FieldOfView(), d11);
     float interp2 = ::Interp(cam->YFov(), interp1, f2);
     cam->SetFrustum(mCamShot->mNear, mCamShot->mFar, interp2, 1.0f);
-    bool hasTarget = HasTargets();
     bool thasTarget = frame.HasTargets();
+    bool hasTarget = HasTargets();
     bool sameTargets = SameTargets(frame);
     Transform tfd0;
     BuildTransform(cam, tfd0, !sameTargets);
@@ -1129,7 +1129,8 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
         TheDOFProc->Set(cam, f208 * interp9 + interp9, f204, f20c, f210);
     } else
         TheDOFProc->UnSet();
-    float f214, f218;
+    float f214;
+    float f218;
     ::Interp(cam->WorldXfm().v, tf130.v, f2, tf130.v);
     ::Interp(cam->WorldXfm().m, tf130.m, f2, tf130.m);
     ::Interp(mShakeNoiseAmp, frame.mShakeNoiseAmp, d11, f214);

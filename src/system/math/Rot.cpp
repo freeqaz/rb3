@@ -169,13 +169,14 @@ void MakeVertical(Hmx::Matrix3 &m) {
 
 void MakeScale(const Hmx::Matrix3 &m, Vector3 &v) {
     float zlen = Length(m.z);
+    char _slotpad[4]; (void)_slotpad;
     float cx = m.x.z * m.y.y - m.x.y * m.y.z;
     float cy = m.x.z * m.y.x - m.x.x * m.y.z;
     float cz = m.x.x * m.y.y - m.x.y * m.y.x;
     float xlen = Length(m.x);
     float ylen = Length(m.y);
     float dot = (cx * m.z.x + (cy * m.z.y + cz * m.z.z));
-    if (0.0f >= dot)
+    if (dot <= 0.0f)
         zlen = -zlen;
     v.Set(xlen, ylen, zlen);
 }
@@ -374,7 +375,7 @@ void MakeRotMatrix(const Vector3 &v, Hmx::Matrix3 &mtx, bool lookup) {
     _ref0.z.z = xcos * ycos;
     float ysin_zsin = ysin * zsin;
     _ref0.y.y = xcos * zcos;
-    _ref0.x.x = xsin * ysin_zsin - ycos_zcos;
+    _ref0.x.x = ycos_zcos - xsin * ysin_zsin;
     _ref0.x.y = xsin * ysin * zcos + ycos * zsin;
     _ref0.x.z = -ysin * xcos;
     _ref0.z.y = ysin_zsin - ycos_zcos * xsin;

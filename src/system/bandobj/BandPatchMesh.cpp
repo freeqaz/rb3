@@ -626,7 +626,7 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     for (int i = 0; i < mv->unk30; i++) {
         unsigned short faceIdx = facePtr[i];
         if (unk28[faceIdx].mFlags == 4) {
-            RndMesh::Face &face = mMesh->Faces()[faceIdx];
+            const RndMesh::Face &face = mMesh->Faces()[faceIdx];
             MeshVert *v0 = mMeshVerts[face.v2];
             MeshVert *next = mMeshVerts[face.v3];
             unsigned short *vptr = (unsigned short *)&face;
@@ -964,19 +964,16 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
         );
         return false;
     }
-    int numFaces = mesh->Faces().size();
     unsigned short *faceBase = (unsigned short *)&mesh->Faces()[0];
-    unsigned short *endFace = faceBase + numFaces * 3;
-    unsigned short *foundFace = endFace;
+    unsigned short *endFace = faceBase + mesh->Faces().size() * 3;
     {
-        unsigned short *facePtr = faceBase;
         float zero = 0.0f;
-        while (facePtr != endFace) {
-            unsigned short lastIdx = facePtr[2];
+        while (faceBase != endFace) {
+            unsigned short lastIdx = faceBase[2];
             RndMesh::Vert *v0 = &mesh->Verts(lastIdx);
             int matched = 0;
             float firstSign = 0.0f;
-            unsigned short *iter = facePtr;
+            unsigned short *iter = faceBase;
             for (int j = 0; j < 3; j++) {
                 unsigned short curIdx = iter[0];
                 RndMesh::Vert *v1 = &mesh->Verts(curIdx);
@@ -995,13 +992,13 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
                 iter++;
             }
             if (matched == 3) {
-                foundFace = facePtr;
+                endFace = faceBase;
                 break;
             }
-            facePtr += 3;
+            faceBase += 3;
         }
     }
-    if (foundFace == endFace) {
+    if (endFace == endFace) {
         float minDistSq = 1e30f;
         unsigned short *facePtr = faceBase;
         while (facePtr != endFace) {
@@ -1027,7 +1024,7 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
                 float distSq = ddx * ddx + ddy * ddy;
                 if (distSq < minDistSq) {
                     minDistSq = distSq;
-                    foundFace = facePtr;
+                    endFace = facePtr;
                 }
                 v0 = v1;
                 iter++;
@@ -1037,11 +1034,11 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
     }
     RndMesh::Vert *triVerts[3];
     for (int i = 0; i < 3; i++) {
-        triVerts[i] = &mesh->Verts(foundFace[i]);
+        triVerts[i] = &mesh->Verts(endFace[i]);
     }
     Hmx::Matrix3 uvMat;
-    uvMat.x.x = triVerts[0]->uv.x;
     uvMat.x.y = triVerts[0]->uv.y;
+    uvMat.x.x = triVerts[0]->uv.x;
     uvMat.x.z = 1.0f;
     uvMat.y.x = triVerts[1]->uv.x;
     uvMat.y.y = triVerts[1]->uv.y;
@@ -1062,10 +1059,8 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
     Multiply(uvMat, posMat, posOut);
     Hmx::Matrix3 normOut;
     Multiply(uvMat, normMat, normOut);
-    Vector3 rowX(posOut.x);
-    Vector3 rowY(posOut.y);
-    float invRowX = 1.0f / Length(rowX);
-    float invRowY = 1.0f / Length(rowY);
+    float invRowX = 1.0f / Length((posOut.x));
+    float invRowY = 1.0f / Length((posOut.y));
     RndMesh::Vert centerVert;
     centerVert.pos.Set(uv.x, uv.y, 1.0f);
     centerVert.norm.Set(0, 0, 0);
