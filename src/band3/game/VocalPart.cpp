@@ -225,9 +225,9 @@ bool PitchBetween(float pitch, float a, float b, float &out);
 
 float VocalPart::GetSloppyPitch(float ms, int noteIdx, float pitch, float &outPitch)
     const {
-    VocalNote &note = mVocalNoteList->mNotes[noteIdx];
-    float msPlus = ms + mSlop;
+    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
     float pitchHi;
+    float msPlus = ms + mSlop;
     if (note.mEndPitch == note.mBeginPitch) {
         pitchHi = (float)note.mBeginPitch;
     } else {
@@ -247,7 +247,7 @@ float VocalPart::GetSloppyPitch(float ms, int noteIdx, float pitch, float &outPi
         float dur = note.mDurationMs;
         float noteMs = note.mMs;
         float endMs = noteMs + dur;
-        msMinus = Min(msMinus, endMs);
+        msMinus = Min(endMs, msMinus);
         float rel = Max(msMinus - noteMs, 0.0f);
         float t = rel / dur;
         pitchLo = t * (float)note.mEndPitch + (1.0f - t) * (float)note.mBeginPitch;
