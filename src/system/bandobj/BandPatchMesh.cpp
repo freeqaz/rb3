@@ -616,17 +616,17 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
 ) {
     if (mv->unk27 == 0)
         return;
-    const MeshVert *prevTwin = mv;
-    const MeshVert *prevOther = mv;
-    const MeshVert *anchor = mv;
-    const MeshVert *iter = mv;
     float accumX = 0.0f;
     float accumY = 0.0f;
+    const MeshVert *anchor = mv;
+    const MeshVert *iter = mv;
+    const MeshVert *prevTwin = mv;
+    const MeshVert *prevOther = mv;
     unsigned short *facePtr = (unsigned short *)((char *)iter + 0x32);
     for (int i = 0; i < mv->unk30; i++) {
         unsigned short faceIdx = facePtr[i];
         if (unk28[faceIdx].mFlags == 4) {
-            const RndMesh::Face &face = mMesh->Faces()[faceIdx];
+            RndMesh::Face &face = mMesh->Faces()[faceIdx];
             MeshVert *v0 = mMeshVerts[face.v2];
             MeshVert *next = mMeshVerts[face.v3];
             unsigned short *vptr = (unsigned short *)&face;
@@ -688,7 +688,7 @@ void BandPatchMesh::WorkVerts::ExtendTwin(
     float bx = mv->mVert->uv.y - anchor->mVert->uv.y;
     float by = mv->mVert->uv.x - anchor->mVert->uv.x;
     float det = ay * bx - ax * by;
-    if (fabsf(det) < 1e-15f) {
+    if (fabs(det) < 1e-15f) {
         outUv.x = 0.0f;
         outUv.y = 0.0f;
         return;
