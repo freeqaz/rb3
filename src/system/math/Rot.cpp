@@ -169,13 +169,13 @@ void MakeVertical(Hmx::Matrix3 &m) {
 
 void MakeScale(const Hmx::Matrix3 &m, Vector3 &v) {
     float zlen = Length(m.z);
-    float cx = m.x.y * m.y.z - m.x.z * m.y.y;
+    float cx = m.x.z * m.y.y - m.x.y * m.y.z;
     float cy = m.x.z * m.y.x - m.x.x * m.y.z;
     float cz = m.x.x * m.y.y - m.x.y * m.y.x;
     float xlen = Length(m.x);
     float ylen = Length(m.y);
-    float dot = cx * m.z.x + cy * m.z.y + cz * m.z.z;
-    if (dot <= 0.0f)
+    float dot = (cx * m.z.x + (cy * m.z.y + cz * m.z.z));
+    if (0.0f >= dot)
         zlen = -zlen;
     v.Set(xlen, ylen, zlen);
 }
@@ -457,15 +457,16 @@ void RotateAboutX(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
 
 void RotateAboutZ(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
     float fcos = Cosine(f);
+    char _slotpad[12]; (void)_slotpad;
     float fsin = Sine(f);
     mout.x.x = min.x.x * fcos - min.x.y * fsin;
-    mout.x.y = min.x.x * fsin + min.x.y * fcos;
     mout.x.z = min.x.z;
+    mout.x.y = min.x.x * fsin + min.x.y * fcos;
     mout.y.x = min.y.x * fcos - min.y.y * fsin;
     mout.y.y = min.y.x * fsin + min.y.y * fcos;
     mout.y.z = min.y.z;
-    mout.z.x = min.z.x * fcos - min.z.y * fsin;
     mout.z.y = min.z.x * fsin + min.z.y * fcos;
+    mout.z.x = min.z.x * fcos - min.z.y * fsin;
     mout.z.z = min.z.z;
 }
 
@@ -477,8 +478,8 @@ void MakeEuler(const Hmx::Quat &q, Vector3 &v) {
 
 void MakeRotQuat(const Vector3 &v1, const Vector3 &v2, Hmx::Quat &q) {
     float v1x = v1.x;
-    float v2x = v2.x;
     float v1z = v1.z;
+    float v2x = v2.x;
     float v2z = v2.z;
     float v2y = v2.y;
     float v1y = v1.y;
@@ -514,12 +515,12 @@ void MakeRotQuatUnitX(const Vector3 &vec, Hmx::Quat &q) {
 }
 
 void Multiply(const Vector3 &vin, const Hmx::Quat &q, Vector3 &vout) {
-    float qx = q.x;
     float qz = q.z;
     float qy = q.y;
+    float qx = q.x;
     float qw = q.w;
-    float neg_qx = -qx;
     float neg_qz = -qz;
+    float neg_qx = -qx;
     float neg_qy = -qy;
     float viny = vin.y;
     float neg_qxqx = neg_qx * qx;
@@ -544,9 +545,9 @@ void Multiply(const Vector3 &vin, const Hmx::Quat &q, Vector3 &vout) {
     float sum_z_vinx = qxqz - qyqw;
     float sum_z_vinz = neg_qxqx + neg_qyqy;
 
-    vout.y = (sum_y_vinz * vinz + sum_y_vinx * vinx + sum_y_viny * viny) * 2.0f + viny;
+    vout.z = vinz + (sum_z_vinz * vinz + sum_z_vinx * vinx + sum_z_viny * viny) * 2.0f;
     vout.x = (sum_x_vinz * vinz + sum_x_vinx * vinx + sum_x_viny * viny) * 2.0f + vinx;
-    vout.z = (sum_z_vinz * vinz + sum_z_vinx * vinx + sum_z_viny * viny) * 2.0f + vinz;
+    vout.y = (sum_y_vinz * vinz + sum_y_vinx * vinx + sum_y_viny * viny) * 2.0f + viny;
 }
 
 TextStream &operator<<(TextStream &ts, const Hmx::Quat &v) {
@@ -927,18 +928,18 @@ void MultiplyStoreTransposed(
 }
 
 void FastInvert(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
-    float xy = min.x.y;
-    float yy = min.y.y;
     float zy = min.z.y;
+    float xy = min.x.y;
     float xx = min.x.x;
-    float yx = min.y.x;
     float xz = min.x.z;
+    float yx = min.y.x;
+    float zz = min.z.z;
     float zx = min.z.x;
     float yz = min.y.z;
-    float zz = min.z.z;
-    float xdot = 1.0f / (xx * xx + xy * xy + xz * xz);
+    float zdot = 1.0f / ((zz * zz + (zx * zx + zy * zy)));
+    float xdot = 1.0f / ((xx * xx + (xy * xy + xz * xz)));
+    float yy = min.y.y;
     float ydot = 1.0f / (yx * yx + yy * yy + yz * yz);
-    float zdot = 1.0f / (zx * zx + zy * zy + zz * zz);
     mout.Set(
         xx * xdot, xy * xdot, xz * xdot,
         yx * ydot, yy * ydot, yz * ydot,
@@ -947,8 +948,8 @@ void FastInvert(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
 }
 
 void Invert(const Hmx::Matrix3 &min, Hmx::Matrix3 &mout) {
-    float myz = min.y.z;
     float mzx = min.z.x;
+    float myz = min.y.z;
     float mzz = min.z.z;
     float myx = min.y.x;
     float f2 = mzx * myz;
