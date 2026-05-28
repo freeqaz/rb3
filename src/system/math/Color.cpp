@@ -26,16 +26,16 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
     } else {
         q = -(sat * val - (val + sat));
     }
-    float p = val * 2.0f - q;
     float t0 = (1.0f / 3.0f) + hue;
+    float p = val * 2.0f - q;
     float qmp = q - p;
     float qmp_six = 6.0f * qmp;
     float t;
     for (int i = 0; i < 3; i++) {
         switch (i) {
-            case 0: t = t0; break;
-            case 1: t = hue; break;
             default: t = hue - (1.0f / 3.0f); break;
+            case 1: t = hue; break;
+            case 0: t = t0; break;
         }
 
         if (t < 0.0f) {
@@ -57,10 +57,10 @@ void MakeColor(float hue, float sat, float val, Hmx::Color &color) {
 }
 
 void MakeHSL(const Hmx::Color &color, float &f1, float &f2, float &f3) {
-    float maxCol = Max(Max(color.red, color.green), color.blue);
+    float maxCol = Max(Max(color.green, color.red), color.blue);
     float minCol = Min(Min(color.red, color.green), color.blue);
     f3 = (maxCol + minCol) / 2.0f;
-    if (maxCol == minCol) {
+    if (minCol == maxCol) {
         f1 = 0;
         f2 = 0;
     } else {
@@ -69,7 +69,7 @@ void MakeHSL(const Hmx::Color &color, float &f1, float &f2, float &f3) {
             f2 = deltaCol / (minCol + maxCol);
         else
             f2 = deltaCol / ((2.0f - maxCol) - minCol);
-        if (color.red == maxCol) {
+        if (maxCol == color.red) {
             f1 = (color.green - color.blue) / deltaCol;
         } else if (color.green == maxCol) {
             f1 = (color.blue - color.red) / deltaCol + 2.0f;
