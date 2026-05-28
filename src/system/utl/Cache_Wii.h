@@ -7,11 +7,11 @@
 #include "system/os/ThreadCall.h"
 #include <vector>
 
-class CacheIDWii {
+class CacheIDWii : public CacheID {
 public:
     CacheIDWii();
     inline CacheIDWii(const CacheIDWii &other)
-        : mStrCacheName(other.mStrCacheName), m0x10(other.m0x10), m0x1c(other.m0x1c),
+        : CacheID(), mStrCacheName(other.mStrCacheName), m0x10(other.m0x10), m0x1c(other.m0x1c),
           m0x28(other.m0x28) {}
     virtual ~CacheIDWii();
     virtual const char *GetCachePath(const char *);

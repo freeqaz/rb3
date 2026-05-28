@@ -6,6 +6,7 @@ namespace Quazal {
     class EndPoint;
     class Message;
     class ProtocolCallContext;
+    class ProtocolRequestBroker;
 
     class Protocol : public SystemComponent {
     public:
@@ -21,6 +22,7 @@ namespace Quazal {
         virtual void EnforceDeclareSysComponentMacro(); // 0x1C
         virtual void TraceImpl(uint) const; // 0x20
         virtual bool BeginInitialization(); // 0x30
+        virtual bool BeginTermination(); // 0x38
         virtual int GetProtocolType() const = 0; // fix ret type
         virtual void EndPointDisconnected(EndPoint *);
         virtual void FaultDetected(EndPoint *, unsigned int);
@@ -33,7 +35,7 @@ namespace Quazal {
 
         bool unk18;
         int unk1c;
-        int unk20;
+        ProtocolRequestBroker *unk20;
         unsigned int unk24;
         int unk28;
         bool unk2c;
@@ -44,5 +46,6 @@ namespace Quazal {
     class ProtocolRequestBroker {
     public:
         static void InitMessage(Message *, unsigned char, Protocol::_Type);
+        void UnregisterProtocol(Protocol *);
     };
 }

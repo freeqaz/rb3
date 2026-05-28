@@ -16,4 +16,11 @@ namespace Quazal {
 
     Protocol::~Protocol() {}
 
+    bool Protocol::BeginTermination() {
+        if ((unk24 & 1) == 1) {
+            unk20->UnregisterProtocol(this);
+        }
+        return true;
+    }
+
 }
