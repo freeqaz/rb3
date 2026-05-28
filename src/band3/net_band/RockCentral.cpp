@@ -33,7 +33,9 @@
 #include "net/WiiMessenger.h"
 #include "net_band/DataResults.h"
 #include "net_band/RockCentralJobs.h"
+#ifndef HX_NATIVE
 #include "RevoEX/nwc24/NWC24Config.h"
+#endif
 #include "net_band/RockCentralMsgs.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
@@ -250,9 +252,11 @@ DataNode RockCentral::OnMsg(const ServerStatusChangedMsg &msg) {
             MILO_WARN("Couldn't register RB binary data protocol\n");
         }
         unsigned long long uid = -1;
+#ifndef HX_NATIVE
         if (NWC24GetMyUserId(uid) == 0) {
             snprintf(g_szMachineIdString, 0x18, "%llu", uid);
         }
+#endif
         INIT_DATAPOINT("config/get");
         ADD_DATA_PAIR(locale, SystemLanguage());
         RecordDataPoint(dataPoint, 0, mConfigResultList, this);
