@@ -4,9 +4,9 @@ IIR4PoleFilter::IIR4PoleFilter(float *b, float *a) {
     mB0[0] = b[0];
     mGain[0] = b[4];
     mNegA[0] = -a[4];
-    mState1[2] = 1.0f;
     mB0NegA[0] = -b[0] * a[4];
     mState1[1] = 1.0f;
+    mState1[2] = 1.0f;
     mState1[3] = 1.0f;
     mAccum[0] = 0.0f;
     mState1[0] = 0.0f;
