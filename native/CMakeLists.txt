@@ -205,6 +205,14 @@ endif()
 # (dc3-decomp/native/CMakeLists.txt:274-283).
 if(EMSCRIPTEN)
     set(MILO_BUILD_WEB ON CACHE BOOL "Engine web platform layer (W1)" FORCE)
+    # Exclude the lifted *_Web.cpp from libmilo-engine.a; rb3-web compiles them
+    # directly via RB3_WEB_LIFTED_ENGINE_SOURCES (below). Mirrors DC3.
+    # File_Web.cpp is excluded in BOTH source lists — it's DC3-shaped against
+    # os/File.h (uses FileMakePathBuf + stat_buffer fields that don't exist on
+    # RB3's older header). Same header-shape mismatch File_Native.cpp had for
+    # rb3-native; substituted by RB3's stdio-backed NativeStdioFile
+    # (native/src/native_file.cpp, gated on HX_NATIVE; stdio operates on
+    # MEMFS under emcc).
     list(APPEND MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
         File_Web.cpp
         CDReader_Web.cpp
@@ -385,15 +393,16 @@ function(rb3_configure_target tgt)
         if(ZLIB_FOUND)
             target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
         endif()
-        # Off-path symbols (rendering/audio/Bink/MIDI/RSO/Wii managers + their
-        # vtables/typeinfo) are satisfied by the weak no-op stubs in
-        # dta_link_stubs.s — calling one harmlessly returns, reading one yields a
-        # valid non-null pointer. Preferable to --unresolved-symbols=ignore-all,
-        # which leaves null symbols that crash when a global ctor calls one at
-        # static-init time. (wasm-ld has -sERROR_ON_UNDEFINED_SYMBOLS=0 +
-        # missing_stubs.js for the web target — see below.)
-        target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
     endif()
+    # The matched-fork has a handful of header-defined global non-inline objects
+    # (sNullMicClientID, gKickAutoplay, gAvg/gSyncAvg, PollTheSplasher) that
+    # duplicate when included by multiple TUs. wasm-ld accepts the same
+    # --allow-multiple-definition flag GNU ld does; this lets the rb3-web link
+    # succeed without rewriting the fork. Pairs with the weak no-op symbol
+    # stubs that rb3-native gets via dta_link_stubs.s (omitted on web — the
+    # missing_stubs.js / -sERROR_ON_UNDEFINED_SYMBOLS=0 pair handles UNRESOLVED
+    # references, but only --allow-multiple-definition handles DUPLICATE ones).
+    target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
 endfunction()
 
 if(NOT EMSCRIPTEN)
@@ -551,7 +560,12 @@ else() # EMSCRIPTEN — web target
 
 set(RB3_WEB_LIFTED_ENGINE_SOURCES
     ${MILO_ENGINE_PATH}/src/platform/WebAssets.cpp
-    ${MILO_ENGINE_PATH}/src/platform/File_Web.cpp
+    # NOTE: File_Web.cpp is DC3-shaped (uses FileMakePathBuf + stat fields that
+    # don't exist on RB3's older os/File.h). Same problem File_Native.cpp had
+    # for rb3-native — RB3 substitutes its own stdio-backed File via
+    # native_file.cpp (NativeStdioFile, gated on HX_NATIVE). Under emcc, stdio
+    # operates on MEMFS, so native_file.cpp's POSIX I/O reads the assets the
+    # bundle unpacks under /data/.
     ${MILO_ENGINE_PATH}/src/platform/CDReader_Web.cpp
     ${MILO_ENGINE_PATH}/src/platform/GpuDevice_Web.cpp
     ${MILO_ENGINE_PATH}/src/audio/AudioDevice_Web.cpp
@@ -583,20 +597,47 @@ set(RB3_WEB_NATIVE_GLUE
     ${REPO_ROOT}/src/network/net/Synchronize.cpp
 )
 
-# Trim NATIVE_SHIMS for web — native_file.cpp's stdio-backed File is replaced
-# by the engine's File_Web.cpp (MEMFS-backed). dta_link_stubs.s + the other .s
-# files are x86 GAS and won't assemble under emcc — omitted; missing_stubs.js
-# handles the runtime side.
+# Trim NATIVE_SHIMS for web — keep native_file.cpp (its stdio-backed File
+# operates on Emscripten MEMFS under emcc, exactly what the asset bundle
+# unpacks into) since the engine's File_Web.cpp is DC3-shaped and excluded
+# above. dta_link_stubs.s + the other .s files are x86 GAS and won't assemble
+# under emcc — omitted; the engine's missing_stubs.js + -sERROR_ON_UNDEFINED_SYMBOLS=0
+# handle the runtime side.
 set(RB3_WEB_SHIMS
     ${CMAKE_SOURCE_DIR}/src/rvl_shims.cpp
     ${CMAKE_SOURCE_DIR}/src/native_link_glue.cpp
+    ${CMAKE_SOURCE_DIR}/src/native_file.cpp
 )
+
+# Web-only fork-source filter: a handful of matched-fork TUs hit
+# emcc-libc++-specific issues that don't reproduce under clang LP64 native (the
+# common cause is libc++'s recent privatisation of explicit STL iterator
+# constructors — the fork value-initialises iterators with 0 which the older
+# libstdc++ accepted but libc++ now rejects). Each one is off the W1 clear-frame
+# path; failed callers fall through to the missing_stubs.js / -sERROR_ON_UNDEFINED_SYMBOLS=0
+# safety net. Bring each TU emcc-clean in a future wave to grow the web target's
+# functional coverage; for W1 we just need clear-frame.
+set(RB3_WEB_NATIVE_FORK_EXCLUDE
+    # libc++ list::iterator value-init from 0 (now-private explicit ctor)
+    Gen
+    MultiMeshProxy
+    # RB3-bundled oggvorbis codec.h declares `inline void *alloca(size_t)` which
+    # clang under emcc treats as a clash with __builtin_alloca. emcc's
+    # -sUSE_VORBIS=1 ports vorbis natively; the matched-fork synth/Vorbis* paths
+    # aren't needed for W1 clear-frame. Exclude the two TUs that include codec.h.
+    VorbisReader
+    Synth
+)
+set(RB3_WEB_FORK_SOURCES ${NATIVE_FORK_SOURCES})
+foreach(_tu ${RB3_WEB_NATIVE_FORK_EXCLUDE})
+    list(FILTER RB3_WEB_FORK_SOURCES EXCLUDE REGEX "/${_tu}\\.cpp$")
+endforeach()
 
 add_executable(rb3-web
     ${CMAKE_SOURCE_DIR}/src/main_web.cpp
     ${RB3_WEB_LIFTED_ENGINE_SOURCES}
     ${RB3_WEB_NATIVE_GLUE}
-    ${NATIVE_FORK_SOURCES}
+    ${RB3_WEB_FORK_SOURCES}
     ${DTA_LEXER}
     ${RB3_WEB_SHIMS}
 )
@@ -623,12 +664,49 @@ milo_engine_set_web_canvas_selector(rb3-web "#rb3-canvas")
 target_compile_definitions(rb3-web PRIVATE
     HX_WEB=1
     MILO_WEB_AUDIO_NS=rb3
+    # libc++ removed deprecated C++ features in C++17 mode; re-enable them so the
+    # matched-fork's std::random_shuffle / std::mem_fun / std::const_mem_fun_t /
+    # std::binary_function (used pervasively in band3/{game,tour,bandtrack})
+    # compile. Mirrors DC3's dc3-web.
+    _LIBCPP_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE
+    _LIBCPP_ENABLE_CXX17_REMOVED_BINDERS
+    _LIBCPP_ENABLE_CXX17_REMOVED_AUTO_PTR
+    _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
+)
+
+# speex headers live under src/system/speex/include — rb3_configure_target only
+# adds the oggvorbis sibling path. dc3-native links system libspeex; rb3-web has
+# no equivalent (RB3's matched-fork bundles its own speex), so we just add the
+# include path. The speex .cpp implementations are off the boot path under
+# matched fork, but pulling the headers lets Codec.h (used by network/) compile.
+target_include_directories(rb3-web PRIVATE
+    ${REPO_ROOT}/src/system/speex/include
 )
 
 # Extend the engine helper's base export list with RB3's tick symbol. Later
 # -sEXPORTED_FUNCTIONS / -sJSPI_EXPORTS overrides the helper's earlier value.
 target_link_options(rb3-web PRIVATE
     -sEXPORTED_FUNCTIONS=[\"_main\",\"_rb3MainLoopTick\"]
+    # The matched-fork's off-path TUs reference Wii-only globals
+    # (TheWiiRnd, TheNetSession, TheMC, TheSynth, RndMesh::sLastCollide,
+    # typeinfo for WiiContent / RndGenerator / RndMultiMeshProxy) whose strong
+    # defs live in the un-globbed Wii SDK / un-compiled fork TUs. Tell wasm-ld
+    # to leave unresolved references as imports rather than erroring — the
+    # engine's missing_stubs.js + RB3's rb3_pre.js intercept the runtime import
+    # lookups and warn (then return 0) instead of trapping. This mirrors
+    # rb3-native's weak-no-op-symbol-table strategy (dta_link_stubs.s).
+    # `-sERROR_ON_UNDEFINED_SYMBOLS=0` from the engine helper alone isn't
+    # enough — wasm-ld still hard-errors on type references; `--allow-undefined`
+    # is the explicit gate.
+    "SHELL:-Wl,--allow-undefined"
+    # Second --pre-js for RB3-specific abort patching. The engine's
+    # missing_stubs.js installs its abort patch from onRuntimeInitialized — too
+    # late for the RB3 matched-fork's static initializers that hit
+    # missing-import calls during wasm init. rb3_pre.js patches Module.abort
+    # immediately (before wasm init) so those early misses become console
+    # warnings instead of fatal "Aborted(missing function: ...)" / wasm
+    # unreachable traps.
+    "SHELL:--pre-js ${CMAKE_CURRENT_SOURCE_DIR}/web/rb3_pre.js"
 )
 if(MILO_WEB_ASYNC)
     target_link_options(rb3-web PRIVATE

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RB3 — WebGPU (W1 clear-frame)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #ccc;
+        }
+        #canvas-container {
+            position: relative;
+            height: 80vh;
+            width: min(100vw, calc(80vh * 16 / 9));
+            max-width: 100vw;
+        }
+        #rb3-canvas {
+            outline: 1px solid #333;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #status {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #888;
+        }
+        #status.error { color: #e55; }
+        #status.ok { color: #5e5; }
+        #status.loading { color: #5ae; }
+        #controls {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #555;
+        }
+        #controls span {
+            color: #888;
+            background: #1a1a1a;
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid #333;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        #console {
+            margin-top: 8px;
+            max-width: 1280px;
+            width: 100%;
+            max-height: 140px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 11px;
+            color: #666;
+            background: #111;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #222;
+        }
+        #console .err { color: #c66; }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="rb3-canvas" width="1280" height="720" tabindex="0"></canvas>
+    </div>
+    <div id="status">Initializing...</div>
+    <div id="controls">
+        <span>(input wires up in W3)</span>
+    </div>
+    <div id="console"></div>
+
+    <script>
+        const status = document.getElementById('status');
+        const logDiv = document.getElementById('console');
+
+        function log(text, isErr) {
+            const line = document.createElement('div');
+            line.textContent = text;
+            if (isErr) line.className = 'err';
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // WebGPU gate — refuse to boot if the runtime won't actually render.
+        if (!navigator.gpu) {
+            const ua = navigator.userAgent;
+            const isFirefox = /Firefox/.test(ua);
+            const isChromium = /Chrom(e|ium)/.test(ua);
+            const browserHelp = isFirefox
+                ? 'Firefox: WebGPU requires Nightly with <code>dom.webgpu.enabled=true</code> in <code>about:config</code>.'
+                : isChromium
+                ? 'Chrome/Chromium on Linux: launch with <code>--enable-unsafe-webgpu --enable-features=Vulkan</code>, or toggle <code>chrome://flags/#enable-unsafe-webgpu</code>.'
+                : 'Use a Chromium-based browser with WebGPU enabled, or Firefox Nightly with <code>dom.webgpu.enabled</code>.';
+            status.innerHTML =
+                '<strong>WebGPU not available in this browser.</strong><br>' +
+                '<span style="color:#aaa">RB3 needs WebGPU to render. ' + browserHelp + '</span>';
+            status.className = 'error';
+            status.style.maxWidth = '900px';
+            status.style.textAlign = 'center';
+            log('WebGPU not available — refusing to boot engine (would render black)', true);
+            throw new Error('WebGPU unavailable');
+        }
+        {
+            status.textContent = 'Loading WASM...';
+            status.className = 'loading';
+
+            var wasmReady = false;
+            var Module = {
+                canvas: document.getElementById('rb3-canvas'),
+                onRuntimeInitialized: function() {
+                    wasmReady = true;
+                    console.log('RUNTIME_INIT_OK');
+                    status.textContent = 'Downloading assets...';
+                    status.className = 'loading';
+                },
+                print: function(text) {
+                    console.log(text);
+                    log(text);
+                    if (text.includes('assets ready')) {
+                        status.textContent = 'Assets loaded, booting engine...';
+                        status.className = 'loading';
+                    }
+                    if (text.includes('GPU ready')) {
+                        status.textContent = 'Rendering';
+                        status.className = 'ok';
+                    }
+                    if (text.includes('InitGpu FAILED') || text.includes('GPU not ready')) {
+                        status.textContent = 'GPU not available — see console';
+                        status.className = 'error';
+                    }
+                },
+                printErr: function(text) {
+                    console.error(text);
+                    log(text, true);
+                    if (text.includes('adapter request failed') ||
+                        text.includes('device request failed') ||
+                        text.includes('device lost')) {
+                        status.textContent = 'GPU error — see console';
+                        status.className = 'error';
+                    }
+                }
+            };
+
+            console.log('LOADING_WASM_JS');
+            var script = document.createElement('script');
+            script.src = 'rb3-web.js';
+            script.onload = function() {
+                console.log('WASM_JS_LOADED');
+            };
+            script.onerror = function(e) {
+                console.error('WASM_JS_ERROR: ' + e);
+                status.textContent = 'Failed to load rb3-web.js — build first (scripts/web/build.sh)';
+                status.className = 'error';
+            };
+            document.body.appendChild(script);
+        }
+
+        // Canvas resize — match canvas resolution to display size so the WebGPU
+        // surface stays in sync with the visible CSS dimensions.
+        (function() {
+            var canvas = document.getElementById('rb3-canvas');
+            var pending = false;
+            function resizeCanvas() {
+                var rect = canvas.getBoundingClientRect();
+                var w = Math.round(rect.width);
+                var h = Math.round(rect.height);
+                if (w <= 0 || h <= 0) return;
+                if (canvas.width === w && canvas.height === h) return;
+                canvas.width = w;
+                canvas.height = h;
+                if (wasmReady && Module._rb3_resize_canvas) {
+                    Module._rb3_resize_canvas(w, h);
+                }
+            }
+            if (typeof ResizeObserver !== 'undefined') {
+                new ResizeObserver(function() {
+                    if (!pending) {
+                        pending = true;
+                        requestAnimationFrame(function() {
+                            pending = false;
+                            resizeCanvas();
+                        });
+                    }
+                }).observe(canvas);
+            }
+            window.addEventListener('resize', resizeCanvas);
+        })();
+    </script>
+</body>
+</html>

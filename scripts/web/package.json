@@ -1,0 +1,14 @@
+{
+  "name": "rb3-web-scripts",
+  "version": "0.1.0",
+  "description": "RB3 web port browser-automation scripts (smoke tests, screenshots).",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "smoke-test": "node smoke-test.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.58.2",
+    "pixelmatch": "^7.1.0"
+  }
+}
