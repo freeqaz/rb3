@@ -144,13 +144,11 @@ void CharLipSyncDriver::Poll() {
         if (mAlternateDriver)
         songTime = mAlternateDriver->TopClipFrame();
         mSongPlayer->Poll(songTime);
-        CharLipSync::PlayBack *pb = mSongPlayer;
-        unsigned int count = pb->mWeights.size();
+        unsigned int count = mSongPlayer->mWeights.size();
         for (unsigned int i = 0; i < count; i++) {
-        CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
-        float curWeight = w.unk14;
+        float curWeight = mSongPlayer->mWeights[i].unk14;
         if (curWeight != 0.0f) {
-        CharClip *clip = w.unk0;
+        CharClip *clip = mSongPlayer->mWeights[i].unk0;
         if (clip != mBlinkClip) {
         if (mSongOwner)
         curWeight = 0.0f;
@@ -179,9 +177,8 @@ void CharLipSyncDriver::Poll() {
         CharLipSync::PlayBack *pb = mSongOwner->mSongPlayer;
         unsigned int count = pb->mWeights.size();
         for (unsigned int i = 0; i < count; i++) {
-        CharLipSync::PlayBack::Weight &w = pb->mWeights[i];
-        float curWeight = weight * w.unk14;
-        CharClip *clip = w.unk0;
+        float curWeight = weight * pb->mWeights[i].unk14;
+        CharClip *clip = pb->mWeights[i].unk0;
         if (curWeight != 0.0f && clip && clip != mSongOwner->mBlinkClip) {
         CharClip *remapped = mClips->Find<CharClip>(clip->Name(), true);
         ScaleAddViseme(remapped, curWeight);
