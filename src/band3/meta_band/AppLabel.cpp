@@ -555,8 +555,8 @@ void AppLabel::SetBattleTimeLeft(int seconds) {
 void AppLabel::SetBattleInstrument(ScoreType ty) {
     const char *result = gNullStr;
     if ((unsigned)ty <= 0xA) {
-        Symbol nameSym = ScoreTypeToSym(ty);
-        Symbol fmtSym = battle_instrument_fmt;
+        Symbol nameSym(ScoreTypeToSym(ty));
+        Symbol fmtSym(battle_instrument_fmt);
         const char *name = Localize(nameSym, nullptr);
         const char *fontChar = GetFontCharFromScoreType(ty, 0);
         result = MakeString(Localize(fmtSym, nullptr), fontChar, name);
