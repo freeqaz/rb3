@@ -1803,7 +1803,8 @@ MergeFilter::Action
 BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
     static Symbol meshName("Mesh");
     if (o2 == mInstDir) {
-        mInstDir->CopyBoundingSphere(dynamic_cast<Character *>(o1));
+        Character *character = dynamic_cast<Character *>(o1);
+        mInstDir->CopyBoundingSphere(character);
         mInstDir->RepointSphereBase(this);
     }
     else if (!o2 && o1->ClassName() == AmbientOcclusion)

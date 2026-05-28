@@ -258,7 +258,7 @@ void PatchLayer::Draw() {
         MakeRotMatrix(vb4, tf50.m, true);
         float scale = (float)mScaleX * (1 / 1638.3f) - 5.0f;
         hackyScaleValue = scale;
-        if (scale < 0) {
+        if (0 > scale) {
             scale = ((float)mScaleX * (1 / 1638.3f) - 5.0f) * -1.0f;
         }
         float scaleX = sticker->unk18 * scale * 7.5f;
@@ -821,17 +821,20 @@ void PatchDir::Poll() {
         }
     }
 }
+__declspec(noinline) void _outline_MakeLoader(PatchSticker* _obj) {
+    _obj->MakeLoader();
+}
 
 void PatchDir::LoadStickerTex(PatchSticker *sticker, bool push) {
-    if (!sticker->mTex && !sticker->mLoader) {
-        sticker->MakeLoader();
-        MILO_ASSERT(sticker->GetLoader(), 0x4EE);
-        if (push)
-            mStickersLoading.push_back(sticker);
-        else {
-            TheLoadMgr.PollUntilLoaded(sticker->mLoader, 0);
-            sticker->FinishLoad();
-        }
+    if (sticker->mTex || sticker->mLoader)
+        return;
+    _outline_MakeLoader(sticker);
+    MILO_ASSERT(sticker->GetLoader(), 0x4EE);
+    if (push)
+        mStickersLoading.push_back(sticker);
+    else {
+        TheLoadMgr.PollUntilLoaded(sticker->mLoader, 0);
+        sticker->FinishLoad();
     }
 }
 

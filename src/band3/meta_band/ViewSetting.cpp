@@ -132,9 +132,9 @@ int SortViewSetting::StartingOption() const {
 
 void FilterViewSetting::SetFilterData(const std::map<Symbol, int> &m) {
     mFilters.clear();
-    Filter f;
     for (std::map<Symbol, int>::const_iterator it = m.begin(); it != m.end();
          ++it) {
+        Filter f;
         f.mSym = it->first;
         f.mCount = it->second;
         mFilters.push_back(f);
