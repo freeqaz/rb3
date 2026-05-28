@@ -27,12 +27,14 @@ void StreakTracker::TranslateRelativeTargets() {
          id = mSource->GetNextPlayer(id)) {
         Player *pPlayer = mSource->GetPlayer(id);
         MILO_ASSERT(pPlayer, 0x3A);
+        int trackNum = pPlayer->GetTrackNum();
         int count;
-        if (pPlayer->GetTrackType() == kTrackVocals) {
-            count = TrackerUtils::CountVocalPhrasesInSong(pPlayer->GetTrackNum());
+        TrackType trackType = pPlayer->GetTrackType();
+        if (trackType == kTrackVocals) {
+            count = TrackerUtils::CountVocalPhrasesInSong(trackNum);
         } else {
             count = TrackerUtils::CountGemsInSong(
-                pPlayer->GetTrackNum(), pPlayer->GetTrackType()
+                trackNum, trackType
             );
         }
         int val = (float)count * unk60;
