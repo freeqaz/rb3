@@ -950,7 +950,7 @@ void VocalPart::CalculateScore(
     if (noteIdx == -1)
         return;
     float sliceWeight = GetNoteSliceWeight(unk54, ms, noteIdx);
-    const VocalNote &note = mVocalNoteList->mNotes[noteIdx];
+    VocalNote &note = mVocalNoteList->mNotes[noteIdx];
     float noteMult;
     if (!note.mUnpitchedNote) {
         noteMult = mPitchHitMultiplier;
@@ -971,7 +971,7 @@ void VocalPart::CalculateScore(
         spew->mPartData[mPartIndex].unk14 = noteMult;
     }
     cache.unkc = framePoints;
-    if (mPhraseScore + framePoints > unk38)
+    if (unk38 < mPhraseScore + framePoints)
         framePoints = unk38 - mPhraseScore;
     cache.unk4 = framePoints;
     float capped =

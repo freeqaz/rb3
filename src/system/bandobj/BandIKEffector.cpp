@@ -319,29 +319,30 @@ void BandIKEffector::ComputeElbowPullAndQuat(
     QuatXfm &outQuat, const Transform &shoulderXfm, const Vector3 &elbowTarget
 ) {
     float dx = elbowTarget.x - shoulderXfm.v.x;
-    float dy = elbowTarget.y - shoulderXfm.v.y;
     float dz = elbowTarget.z - shoulderXfm.v.z;
-
     Vector3 localElbow;
-    localElbow.x = shoulderXfm.m.x.z * dz + (shoulderXfm.m.x.y * dy + shoulderXfm.m.x.x * dx);
-    localElbow.y = shoulderXfm.m.y.z * dz + (shoulderXfm.m.y.y * dy + shoulderXfm.m.y.x * dx);
+    float dy = elbowTarget.y - shoulderXfm.v.y;
+
     localElbow.z = shoulderXfm.m.z.z * dz + (shoulderXfm.m.z.y * dy + shoulderXfm.m.z.x * dx);
+    localElbow.y = shoulderXfm.m.y.z * dz + (shoulderXfm.m.y.y * dy + shoulderXfm.m.y.x * dx);
+    localElbow.x = shoulderXfm.m.x.z * dz + (shoulderXfm.m.x.y * dy + shoulderXfm.m.x.x * dx);
 
     RndTransformable *parent = mEffector->TransParent();
-    MakeRotQuat(parent->mLocalXfm.v, localElbow, outQuat.q);
+    QuatXfm &_ref0 = outQuat;
+    MakeRotQuat(parent->mLocalXfm.v, localElbow, _ref0.q);
 
     float armLen = parent->mLocalXfm.v.x;
-    outQuat.v.x = elbowTarget.x - shoulderXfm.v.x;
-    outQuat.v.y = elbowTarget.y - shoulderXfm.v.y;
-    outQuat.v.z = elbowTarget.z - shoulderXfm.v.z;
+    _ref0.v.x = elbowTarget.x - shoulderXfm.v.x;
+    _ref0.v.y = elbowTarget.y - shoulderXfm.v.y;
+    _ref0.v.z = elbowTarget.z - shoulderXfm.v.z;
 
     float len = (float)sqrt(
-        outQuat.v.x * outQuat.v.x + outQuat.v.y * outQuat.v.y + outQuat.v.z * outQuat.v.z
+        _ref0.v.x * _ref0.v.x + _ref0.v.y * _ref0.v.y + _ref0.v.z * _ref0.v.z
     );
     float scale = 1.0f - armLen / len;
-    outQuat.v.x *= scale;
-    outQuat.v.y *= scale;
-    outQuat.v.z *= scale;
+    _ref0.v.x *= scale;
+    _ref0.v.y *= scale;
+    _ref0.v.z *= scale;
 }
 
 void BandIKEffector::ComputeHandPullAndQuat(
@@ -353,14 +354,14 @@ void BandIKEffector::ComputeHandPullAndQuat(
     float aaPlusbb,
     float aPlusb
 ) {
-    float maxReach = aPlusb * 0.99f;
     float dy = handTarget.y - shoulderXfm.v.y;
     float dx = handTarget.x - shoulderXfm.v.x;
+    float maxReach = aPlusb * 0.99f;
     float dz = handTarget.z - shoulderXfm.v.z;
     float distSq = dz * dz + (dx * dx + dy * dy);
     float maxReachSq = maxReach * maxReach;
-    outQuat.v.y = dy;
     outQuat.v.x = dx;
+    outQuat.v.y = dy;
     outQuat.v.z = dz;
 
     if (distSq > maxReachSq && GetType() == 3) {
@@ -383,7 +384,8 @@ void BandIKEffector::ComputeHandPullAndQuat(
     float cosSq = cosAngle * cosAngle;
     float sinAngle = -(float)sqrt(1.0f - cosSq);
 
-    RndTransformable *parent = mEffector->TransParent();
+    const ObjPtr<RndTransformable, ObjectDir> &_ref0 = mEffector;
+    RndTransformable *parent = _ref0->TransParent();
     outElbowXfm.v = parent->mLocalXfm.v;
     outElbowXfm.m.x.y = sinAngle;
     outElbowXfm.m.x.x = cosAngle;
@@ -398,7 +400,7 @@ void BandIKEffector::ComputeHandPullAndQuat(
     Vector3 localTarget;
     MultiplyTranspose(handTarget, shoulderXfm, localTarget);
     Vector3 localDir;
-    Multiply(mEffector->mLocalXfm.v, outElbowXfm, localDir);
+    Multiply(_ref0->mLocalXfm.v, outElbowXfm, localDir);
     MakeRotQuat(localDir, localTarget, outQuat.q);
 }
 
@@ -820,7 +822,7 @@ float BandIKEffector::ApplyPosConstraints(
         }
     }
     if (mMore) {
-        totalWeight += mMore->ApplyPosConstraints(dst, src, root);
+        totalWeight += bool(mMore->ApplyPosConstraints(dst, src, root));
     }
     return totalWeight;
 }
