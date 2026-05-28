@@ -92,14 +92,16 @@ SongData::~SongData() {
 }
 
 void Validate(MemStream *ms, const char *file, bool b) {
-    if (UsingCD() && HasFileChecksumData()) {
-        StreamChecksumValidator v;
-        StreamChecksumValidator *vptr = &v;
-        if (vptr->Begin(file, b)) {
-            vptr->Update((const unsigned char *)ms->Buffer(), ms->BufferSize());
-            vptr->End();
-            vptr->Validate();
-        }
+    if (!UsingCD() || !HasFileChecksumData())
+        return;
+    StreamChecksumValidator v;
+    StreamChecksumValidator *vptr = &v;
+    int _tmp1 = vptr->Begin(file, b);
+    if (_tmp1) {
+        int _tmp0 = ms->BufferSize();
+        vptr->Update((const unsigned char *)ms->Buffer(), _tmp0);
+        vptr->End();
+        vptr->Validate();
     }
 }
 
@@ -624,12 +626,13 @@ void SongData::TrimOverlappingGems(int i1, int i2, int diff) {
 }
 
 void SongData::ValidateVocalSPPhrases() {
+    int maxList;
     Symbol voxSym;
     int firstList;
-    int maxList;
+    std::vector<VocalNoteList *> &_ref0 = mVocalNoteLists;
     if (mPlayerTrackConfigList->UseVocalHarmony()) {
         firstList = 1;
-        maxList = std::min<int>(kHarm3VocalNoteList, mVocalNoteLists.size() - 1);
+        maxList = std::min<int>(kHarm3VocalNoteList, _ref0.size() - 1);
         voxSym = "HARM1";
     } else {
         firstList = 0;
@@ -648,7 +651,7 @@ void SongData::ValidateVocalSPPhrases() {
 
     const PhraseList &phrases =
         mPhraseDBs[trackIdx]->GetPhraseList(mTrackDifficulties[trackIdx], kCommonPhrase);
-    VocalNoteList *curVoxList = mVocalNoteLists[firstList];
+    VocalNoteList *curVoxList = _ref0[firstList];
     int i = 0;
     if (phrases.mPhrases.size() == 0) return;
     for (; i < phrases.mPhrases.size(); i++) {
@@ -657,7 +660,7 @@ void SongData::ValidateVocalSPPhrases() {
         VocalPhrase *phrase = NULL;
         bool found1 = false;
         for (int j = firstList; j <= maxList; j++) {
-            if (mVocalNoteLists[j]->NextNote(ms)) {
+            if (_ref0[j]->NextNote(ms)) {
                 found1 = true;
                 break;
             }
@@ -690,12 +693,12 @@ void SongData::ValidateVocalSPPhrases() {
             } else {
                 bool found2 = false;
                 for (int j = firstList; j <= maxList; j++) {
-                    VocalNote *n2 = mVocalNoteLists[j]->NextNote(ms);
+                    VocalNote *n2 = _ref0[j]->NextNote(ms);
                     if (n2) {
                         VocalPhrase *p =
-                            &mVocalNoteLists[j]->GetPhrases()[n2->mPhrase];
+                            &_ref0[j]->GetPhrases()[n2->mPhrase];
                         if (p
-                            && mVocalNoteLists[j]->mNotes[p->unk14 - 1].GetMs()
+                            && _ref0[j]->mNotes[p->unk14 - 1].GetMs()
                                 <= endMs) {
                             found2 = true;
                             break;
@@ -881,8 +884,9 @@ void SongData::AddPhrase(
 }
 
 void SongData::AddDrumFill(int track, int lanes, int startTick, int endTick, bool bre) {
-    bool fillBool = mFills[track]->AddFill(startTick, endTick - startTick, bre);
-    bool laneBool = mFills[track]->AddLanes(startTick, lanes);
+    std::vector<DrumFillInfo *> &_ref0 = mFills;
+    unsigned char fillBool = (unsigned char)(_ref0[track]->AddFill(startTick, endTick - startTick, bre));
+    bool laneBool = _ref0[track]->AddLanes(startTick, lanes);
     if (!(fillBool & 1 & laneBool)) {
         MILO_WARN(
             "%s (%s): Error adding %s at %s",
