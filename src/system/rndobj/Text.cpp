@@ -600,9 +600,9 @@ float segmentLength(int i1, int i2, int i3, int i4, float *f5, const char *c6) {
 }
 
 void RndText::ComputeCharWidths(float *fp, int i2, const char *cc, Style style) {
-    float f3 = style.zOffset;
-    float size = style.size;
     unsigned short u7 = 0;
+    float size = style.size;
+    float f3 = style.zOffset;
     for (int i = 0; i < i2; i++) {
         if (*cc == '<' && mTextMarkup) {
             const char *parsed = ParseMarkup(cc, &style, size, f3);
@@ -1420,13 +1420,15 @@ int RndText::AddLineUTF8(
     int i6
 ) {
     unkbp7 = true;
-    int lineIdx;
     float f98 = 0;
+    int lineIdx;
     if (!fp)
         fp = &f98;
 
     const String &_ref0 = mText;
-    if (utf8.length() + _ref0.length() > mFixedLength) {
+    int _tmp0 = utf8.length();
+    int _tmp1 = _ref0.length();
+    if (_tmp0 + _tmp1 > mFixedLength) {
         MILO_WARN(
             "Text %s%s exceeds fixed length of %d, truncating",
             utf8.c_str(),
