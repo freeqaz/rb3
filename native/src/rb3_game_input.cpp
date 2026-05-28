@@ -37,6 +37,7 @@
 #include "obj/Data.h"
 #include "obj/Dir.h"
 #include "utl/Symbol.h"
+#include "rndobj/Draw.h"    // RndDrawable — N4 song-select details-pane hide
 
 #include <cstdio>
 #include <cstdlib>
@@ -695,6 +696,54 @@ void RB3GameInputPoll(int frame) {
         gLastScreen = curName;
     }
 
+    // N4 fix — song-select stray SAVE/details pane.  On the Music Library
+    // (song_select) screen, the `song_select_details` sub-pane (the song-detail /
+    // leaderboard view with the "view gamer card" + save-prompt widgets) is only
+    // meant to be visible while the panel is in `details_mode` (player pressed
+    // Options on a song).  Retail hides it via the `details_hide.trg` PropAnim,
+    // whose terminal `showing=FALSE` keyframe does not apply natively (the same
+    // class of PropAnim/transform-keyframe gap seen elsewhere), so it is left
+    // drawing over the right of the list — the documented "overlapping SAVE
+    // panel".  Enforce the retail invariant directly: details pane visible iff
+    // details_mode.  We only force-HIDE when details_mode is off, so opening the
+    // details view later (which sets details_mode=1 and runs details_show.trg)
+    // is unaffected.  Glue-layer, permuter-safe; opt-out via RB3_NO_DETAILS_FIX.
+    if (!getenv("RB3_NO_DETAILS_FIX") && cur
+        && curName == Symbol("song_select_screen") && ObjectDir::sMainDir) {
+        UIPanel *ssp = ObjectDir::sMainDir->Find<UIPanel>("song_select_panel", false);
+        ObjectDir *pd = ssp ? (ObjectDir *)ssp->LoadedDir() : nullptr;
+        if (pd && ssp->GetState() == UIPanel::kUp) {
+            const DataNode *dm = ssp->Property(Symbol("details_mode"), false);
+            bool detailsMode = dm && dm->Int();
+            if (!detailsMode) {
+                RndDrawable *d =
+                    dynamic_cast<RndDrawable *>(pd->FindObject("song_select_details", true));
+                if (d && d->Showing())
+                    d->SetShowing(false);
+            }
+        }
+    }
+
+    // RB3_HIDE_MESH=a,b,c : debug — hide named drawables (searching subdirs) in
+    // the song_select_panel dir; used to localize render artifacts.
+    if (getenv("RB3_HIDE_MESH") && cur && curName == Symbol("song_select_screen")
+        && ObjectDir::sMainDir) {
+        UIPanel *ssp = ObjectDir::sMainDir->Find<UIPanel>("song_select_panel", false);
+        ObjectDir *pd = ssp ? (ObjectDir *)ssp->LoadedDir() : nullptr;
+        if (pd) {
+            std::string spec = getenv("RB3_HIDE_MESH");
+            size_t pos = 0;
+            while (pos < spec.size()) {
+                size_t comma = spec.find(',', pos);
+                std::string nm = spec.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+                pos = comma == std::string::npos ? spec.size() : comma + 1;
+                if (nm.empty()) continue;
+                RndDrawable *d = dynamic_cast<RndDrawable *>(pd->FindObject(nm.c_str(), true));
+                if (d) d->SetShowing(false);
+            }
+        }
+    }
+
     // RB3_SCREEN_DBG=1: log transition state (and the transition screen) every N
     // frames so a stalled transition is visible. Dump per-panel load states of
     // the transition screen so a stuck panel is visible.
@@ -710,6 +759,38 @@ void RB3GameInputPoll(int frame) {
                 MILO_LOG("    panel[%zu] '%s' active=%d loaded=%d state=%d isLoaded=%d\n",
                          r, p ? p->Name() : "(null)", refs[r].mActive, refs[r].mLoaded,
                          p ? (int)p->GetState() : -1, p ? (int)p->IsLoaded() : -1);
+            }
+        }
+    }
+
+    // RB3_PANEL_DBG=1: dump the CURRENT screen's panels (showing/state/active)
+    // every N frames — to find which panel is drawing the song-select grey
+    // occluder / stray SAVE panel (N4). Showing()==true && Active() && state==kUp
+    // => the panel draws (UIScreen::Draw / BandUI::Draw gate on exactly that).
+    if (getenv("RB3_PANEL_DBG") && cur && (frame % 20) == 0) {
+        const std::vector<PanelRef> &refs = cur->GetPanelRefs();
+        MILO_LOG("RB3 panel-dbg: frame %d screen='%s' npanels=%zu\n",
+                 frame, cur->Name(), refs.size());
+        for (size_t r = 0; r < refs.size(); ++r) {
+            UIPanel *p = refs[r].mPanel;
+            MILO_LOG("    panel[%zu] '%s' active=%d showing=%d state=%d "
+                     "entering=%d exiting=%d\n",
+                     r, p ? p->Name() : "(null)", refs[r].Active(),
+                     p ? (int)p->Showing() : -1, p ? (int)p->GetState() : -1,
+                     p ? (int)p->Entering() : -1, p ? (int)p->Exiting() : -1);
+        }
+        // song_select_panel details state (the N4 SAVE/details-pane bug): the
+        // details/leaderboard pane should only show while details_mode is set.
+        if (ObjectDir::sMainDir) {
+            UIPanel *ssp2 = ObjectDir::sMainDir->Find<UIPanel>("song_select_panel", false);
+            ObjectDir *pd2 = ssp2 ? (ObjectDir *)ssp2->LoadedDir() : nullptr;
+            if (ssp2) {
+                const DataNode *dm = ssp2->Property(Symbol("details_mode"), false);
+                RndDrawable *d = pd2 ? dynamic_cast<RndDrawable *>(
+                                     pd2->FindObject("song_select_details", true))
+                                     : nullptr;
+                MILO_LOG("    details_mode=%d  song_select_details.showing=%d\n",
+                         dm ? dm->Int() : -99, d ? (int)d->Showing() : -1);
             }
         }
     }
