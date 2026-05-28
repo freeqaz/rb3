@@ -151,11 +151,12 @@ float CharInterest::ComputeScore(
     Normalize(v88, v88);
 
     float f1score = 0.0f;
-    if (Dot(v1, v88) >= mMaxViewAngleCos)
+    float maxViewAngleCos = mMaxViewAngleCos;
+    if (Dot(v1, v88) >= maxViewAngleCos)
         f1score = 1.0f;
 
     float f2score = 0.0f;
-    if (Dot(v3, v88) >= mMaxViewAngleCos)
+    if (Dot(v3, v88) >= maxViewAngleCos)
         f2score = 1.0f;
 
     float f7 = -(lensq * f - 1.0f);
