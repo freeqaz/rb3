@@ -143,6 +143,15 @@ for d in compilers tools; do
     ln -s "$MAIN_REPO/build/$d" "$WORKTREE_PATH/build/$d"
 done
 
+# ---- bin/ : symlink (read-only — wraps objdiff-cli + other host tools) ------
+# scripts/permuter/project.py + several analysis scripts hard-code "bin/objdiff-cli"
+# as a cwd-relative path; without this symlink, permuter runs fail in worktrees.
+if [ -d "$MAIN_REPO/bin" ]; then
+    echo "==> bin/  (symlink — read-only host-tool wrappers)"
+    rm -rf "$WORKTREE_PATH/bin"
+    ln -s "$MAIN_REPO/bin" "$WORKTREE_PATH/bin"
+fi
+
 # ---- build/<VERSION>/ : reflink copy (build WRITES here; warm cache) --------
 WT_BUILD="$WORKTREE_PATH/build/$VERSION"
 if [ "$WARM_CACHE" -eq 1 ]; then
