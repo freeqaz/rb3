@@ -311,14 +311,14 @@ bool Intersect(const Segment &seg, const BSPNode *n, float &t, Plane &p) {
         }
     done_neg:
         if (!t2 && t) {
-            float nd = n->plane.d;
-            float nc = n->plane.c;
-            float nb = n->plane.b;
-            float na = n->plane.a;
-            p.c = -nc;
-            p.a = -na;
-            p.b = -nb;
-            p.d = -nd;
+            float nd = -n->plane.d;
+            float nc = -n->plane.c;
+            float nb = -n->plane.b;
+            float na = -n->plane.a;
+            p.c = nc;
+            p.a = na;
+            p.b = nb;
+            p.d = nd;
         }
     }
     return true;
