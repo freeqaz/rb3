@@ -856,13 +856,13 @@ void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm)
     seg.end.x = xfm.m.z.x * -100.0f + xfm.v.x;
     seg.end.y = xfm.m.z.y * -100.0f + xfm.v.y;
     seg.end.z = xfm.m.z.z * -100.0f + xfm.v.z;
-    MILO_ASSERT(mMeshes.size() < 64, 0x60A);
-    int meshIndices[64];
+    MILO_ASSERT(64 > mMeshes.size(), 0x60A);
     unsigned int meshCount = mMeshes.size();
+    int meshIndices[64];
     {
         int *p = meshIndices;
         int n = 0;
-        for (unsigned int k = meshCount; k != 0; k--) {
+        for (unsigned int k = meshCount; (unsigned long)(int)k >= 1; k--) {
             *p++ = n++;
         }
     }
@@ -922,8 +922,8 @@ void BandPatchMesh::ProjectPatches(const Transform &xfm, RndTex *tex, bool perm)
     WorkVerts *workVerts[64];
     meshPairs[0] = hitPair;
     workVerts[0] = firstWV;
-    int wvCount = 1;
     int j = 0;
+    int wvCount = 1;
     while (meshCount > j) {
         MeshPair *cur = &mMeshes[meshIndices[j]];
         if (cur->mesh != NULL) {
