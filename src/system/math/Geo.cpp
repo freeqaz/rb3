@@ -333,7 +333,7 @@ bool Intersect(const Transform &tf, const Hmx::Polygon &poly, const BSPNode *nod
         Vector3 v(i->x, i->y, 0.0f);
         Multiply(v, tf, v);
         float dot = node->plane.Dot(v);
-        if (0.0f < dot)
+        if (dot > 0.0f)
             front = true;
         if (dot < 0.0f)
             back = true;
