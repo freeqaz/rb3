@@ -306,37 +306,83 @@ configuration and ensure it queries the preferred surface format (as DC3's
 `dc3-decomp/docs/plans/web-port/PLAN.md` Phase 5 describes), then propagate
 the result into `mTargetFmt`.
 
-**Risk 4 — Multi-chunk `ChunkStream` load fault (TOP W2b BLOCKER).**
-`ui/src/system/utl/ChunkStream.cpp` reads `.milo*` containers as N chunks
-(header word at file offset +8 = chunk count). **Single-chunk milos load
-cleanly; multi-chunk ones fault.** Symptoms:
-- **Native:** SIGSEGV in `ObjectDir::PreLoad` → `vector<ObjectDir::Viewport>::
-  resize(garbage)` for `tracksystem.milo_xbox` (7 chunks) and
-  `main_hub.milo_xbox` (27) — the stream is misaligned by the chunk-transition
-  arithmetic, so a bogus viewport count is read and the resize over-allocates.
-  (Confirmed pre-existing: `gem_smasher_guitar_meshes.milo_xbox` (1 chunk) and
-  `gem_smasher_guitar.milo_xbox` (1 chunk) load fine; `track_shared.milo_xbox`
-  (60 chunks) actually *parses* OK natively — so the fault is sensitive to the
-  exact chunk layout, not merely "more than one chunk".)
-- **Web:** parsing a multi-chunk subdir dep (`track_shared`, `ingame_bank`)
-  spins ~46 s with no console output, then OOMs the wasm heap (`[CRASH] page
-  crashed`). The single-threaded web build is suspect: `ChunkStream` has an
-  async-decompress worker (`gDecompressionQueue` + `DecompressChunkAsync` /
-  `PollDecompressionWorker`); for *uncompressed* (`0xCABEDEAF`) milos the chunk
-  is marked `kReady` synchronously, so the spin is more likely in the
-  `Eof()`/`ReadChunkAsync` double-buffer state machine (buffer indices
-  `mCurChunk[bufIdx]`, `mBuffersOffset`) than in decompression. The runaway
-  `vector::resize` then OOMs instead of segfaulting (wasm bounds-checks the
-  store). `EndianSwapEq<int>` is a `[rb3-stub]` no-op on the web build, but that
-  is CORRECT on a little-endian host (verified: adding a real swap BROKE the
-  single-chunk native load) — so it is NOT the cause; do not "fix" it.
-- **Fix direction for W2b:** debug `ChunkStream::Eof()` / `ReadChunkAsync` /
-  `ReadChunkInfo` for the uncompressed multi-chunk case (compare a 2-chunk milo
-  read offset-by-offset against the matched Wii asm). Until then, the three
-  named test milos (`tracksystem`, `gem_smasher_guitar`, `main_hub`) cannot
-  pixelmatch end-to-end; W2b task 7 should be validated against the single-chunk
-  `*_meshes.milo_xbox` siblings (`gem_smasher_guitar_meshes` works today;
-  `tracksystem_meshes` is 12 chunks and will also need this fix).
+**Risk 4 — "Multi-chunk milo load fault" → RESOLVED (it was NOT a ChunkStream
+or endianness bug; it was missing object-factory registration).**
+
+*Original (incorrect) hypothesis:* a chunk-transition / endianness misalignment
+in `ChunkStream`. *Actual root cause (root-caused 2026-05-28):* **`DirLoader`
+cannot construct an object whose class has no registered factory, and for a
+`*Dir` subclass (which serializes a full nested directory: rev + classname +
+inlined-subdir blobs) that mis-construction desyncs the stream.** A NULL object
+is "skipped" by `ReadDead`, which scans to the next `0xADDEADDE` marker — but a
+Dir's serialized form contains its inner objects' own dead markers, so `ReadDead`
+stops at the first inner marker and leaves the rest of the dir's bytes in the
+stream. The next object's `LOAD_REVS`/`ReadString` then reads garbage:
+- `tracksystem.milo_xbox` embeds an `OverdriveMeterDir` (an `OverdriveMeter :
+  RndDir` with `OBJ_CLASSNAME(OverdriveMeterDir)`). The synthetic render harness
+  registered only the rndobj base factories (`RndDir`/`RndMesh`/`RndTex`/…) via
+  `BandRnd::PreInitRender`, **not** the bandobj/ui Dir subclasses (those register
+  from the macro-gated `BandInit()`/`UIManager::Init()` clusters the harness never
+  calls). `NewObject("OverdriveMeterDir")` → NULL → desync → bogus
+  `std::vector<ObjectDir::Viewport>` length (a classname string read as an int) →
+  `resize(1.3e9)` → SIGSEGV (native) / wasm-heap OOM (web).
+- `main_hub.milo_xbox` hit the same desync via UI Dir classes (`PanelDir`,
+  `UIScreen`, `UIPanel`) → `BinStream::ReadString` "String chars <garbage> > 256".
+
+**Why single-chunk worked:** nothing to do with chunk count. `ChunkStream` reads
+correctly across chunk boundaries (verified offset-by-offset — chunk transitions,
+`mTell`, `mCurBufOffset` are all correct, no overrun). `gem_smasher_guitar.milo_xbox`
+simply happened to contain only already-registered classes. A milo crashes iff it
+embeds an *unregistered Dir subclass*, regardless of chunk count.
+
+**Endianness note (confirmed, do NOT touch):** the `.milo_xbox` chunk *header*
+(`mID`/`mNumChunks`/`mChunks[]`) is stored **little-endian** on disk (`0xCABEDEAF`
+reads as LE), so `EndianSwapEq<int>` being a native no-op stub is **correct** for
+it (a real swap corrupts `mNumChunks` → giant alloc — exactly the W2a trap). The
+milo *body* (rev, strings, object data) is **big-endian** and is byte-swapped
+correctly by `BinStream::ReadEndian` (`mLittleEndian=false` for `kPlatformXBox`).
+Both layers are correct on native/web.
+
+**Fix (landed):** `native/src/rb3_game_object_factories.cpp` —
+`RB3RegisterGameObjectFactories()` registers the band3/bandobj/track/world/ui milo
+container + leaf factories (their pure `Init()`/`Register()`, no
+singleton/GPU setup) and is called from `LoadMiloAndWalk` (shared native+web
+entry) before any `DirLoader` runs. Plus `InjectTypeDefStubs` now adds a
+`(RndText (types))` stub. Touches **no matched decomp read logic** — additive
+port-layer only. Result: `tracksystem.milo_xbox` loads + renders
+(`GemTrackDir`, 1151 objects, 277 drawable meshes, `RENDER_MESH OK`);
+single-chunk `gem_smasher_guitar.milo_xbox` still OK (364 objects, +32 vs before
+— no regression).
+
+**Remaining (separate, NOT this bug — W2b/W3 subsystem bring-up):** unregistered
+*leaf* audio/particle classes (`Sfx`, `SynthSample`, `PartLauncher`, the
+`*GroupSeq`s) still warn "Can't make …" but ReadDead-skip cleanly (no desync).
+Bringing them up needs the synth/particle subsystems and is independent of the
+chunk path. Note one rule discovered here: register Dir CONTAINER classes (they
+desync if absent) but do NOT register leaf widgets whose PostLoad needs runtime
+subsystem state we don't boot — e.g. `LabelShrinkWrapper::Update` derefs
+`mResource->Dir()` (null without the UI resource manager) and SIGSEGVs if
+registered; left unregistered it ReadDead-skips harmlessly.
+
+**WEB status (NOT yet passing — a SEPARATE web-platform wall, not the desync):**
+the factory fix IS active on web (verified: `OverdriveMeterDir/PanelDir/
+GemTrackDir/UILabelDir/Font/EventTrigger` all register =1 on the wasm build), so
+the runaway-resize desync no longer fires. But `rb3-web` still page-crashes
+~43–44 s into loading BOTH `tracksystem.milo_xbox` AND (now) the single-chunk
+`gem_smasher_guitar.milo_xbox` — with ZERO per-object NOTIFY output in the gap
+(native floods hundreds). Root cause is web-specific, two compounding limits, NOT
+ChunkStream/endianness:
+  1. **512 MB wasm heap cap** (`MAXIMUM_MEMORY=512MB`, engine CMake) — both milos
+     pull the heavy multi-chunk SUBDIR deps `track_shared` (10 MB / 60 chunks) +
+     `ingame_bank` (8 chunks); decompressing/holding that whole tree (tracksystem
+     = 1151 objects, 277 meshes natively) plus mesh geometry can exceed 512 MB in
+     the linear heap (no texture/geom eviction).
+  2. **Main-thread blocking** — `WebAssetsFetchSync` + the synchronous load loop
+     run on the browser main thread; a multi-second blocking load trips the
+     "page unresponsive" kill.
+  *W2b next steps for web:* bump `MAXIMUM_MEMORY` (or add geom/texture eviction),
+  and/or move the load off the main thread (worker / chunked async pump). The
+  native target is the authoritative proof the load logic itself is correct.
 
 **Risk 3 — Texture upload under Dawn-web.**
 `WriteTexture` has a 256-byte `bytesPerRow` alignment requirement that is

@@ -212,15 +212,25 @@ static void InjectTypeDefStubs() {
     // (RndTex (types)) / (RndDir (types)) stubs so that lookup finds an (empty)
     // types array instead of faulting. Mesh geometry needs no real type-defs.
     if (objCfg->FindArray(Symbol("RndTex"), false) &&
-        objCfg->FindArray(Symbol("RndDir"), false))
+        objCfg->FindArray(Symbol("RndDir"), false) &&
+        objCfg->FindArray(Symbol("RndText"), false))
         return;
-    DataArray* stubs = DataReadString("(RndTex (types)) (RndDir (types))");
+    // W2b: + RndText — the bandobj Dir factories (ChordShapeGenerator/ArpeggioShape)
+    // construct RndText children, whose OBJ_SET_TYPE looks up "RndText" type-defs.
+    DataArray* stubs = DataReadString("(RndTex (types)) (RndDir (types)) (RndText (types))");
     if (stubs) {
         objCfg->InsertNodes(objCfg->Size(), stubs);
-        printf("rb3-render: injected RndTex/RndDir type-def stubs\n");
+        printf("rb3-render: injected RndTex/RndDir/RndText type-def stubs\n");
         stubs->Release();
     }
 }
+
+// Registers the band3/bandobj/track/world milo object-class factories (defined
+// in rb3_game_object_factories.cpp). Without them a multi-chunk milo embedding a
+// bandobj Dir subclass (OverdriveMeterDir, GemTrackDir, ...) can't construct the
+// class -> nested-dir byte extent mis-skipped -> stream desync -> runaway
+// std::vector<Viewport>::resize -> SIGSEGV / wasm OOM. Idempotent.
+extern void RB3RegisterGameObjectFactories();
 
 WalkResult LoadMiloAndWalk(const char* miloPath) {
     WalkResult r;
@@ -230,6 +240,7 @@ WalkResult LoadMiloAndWalk(const char* miloPath) {
     }
 
     InjectTypeDefStubs();
+    RB3RegisterGameObjectFactories();
 
     printf("rb3-render: loading '%s'\n", miloPath);
     ObjectDir* dir = DirLoader::LoadObjects(FilePath(miloPath), nullptr, nullptr);

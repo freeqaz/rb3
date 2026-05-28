@@ -473,6 +473,13 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # band3/bandobj/track/world milo object-class factory registration. Without
+    # these, a multi-chunk milo containing a bandobj Dir subclass (e.g.
+    # OverdriveMeterDir in tracksystem.milo_xbox) can't construct the class, the
+    # nested-dir byte extent is mis-skipped, and the stream desyncs -> runaway
+    # std::vector<Viewport>::resize -> SIGSEGV. See the TU header for the full
+    # root-cause writeup.
+    ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
     # embedded HTTP debug server (RB3_HTTP=1): /api/health, /api/screenshot,
     # /api/dta/eval, /api/input. Background httplib thread + a main-thread command
     # queue drained from App.cpp's HX_NATIVE frame loop (RB3HttpServerPoll /
@@ -594,6 +601,10 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # W2b: register band3/bandobj/track/world milo object-class factories so the
+    # multi-chunk milos (main_hub, tracksystem) that embed bandobj Dir subclasses
+    # load without desyncing. See the TU header for the root-cause writeup.
+    ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
     ${REPO_ROOT}/src/network/net/Synchronize.cpp
     # W2a: milo load + walk + draw. The native PNG path (RunRenderMesh /
     # RenderToPng / _exit) is #ifndef __EMSCRIPTEN__-guarded; the web build only
