@@ -530,17 +530,17 @@ void SongData::UnflipGems(int i1, int i2, int diff) {
             mixes.SetInfo(0, s);
         }
         int i11 = 1;
-        int i7 = backup_mixes.Size() == 1 ? 0x7fffffff : backup_mixes.mInfos[1].mTick;
+        int i7 = backup_mixes.mInfos.size() == 1 ? 0x7fffffff : backup_mixes.mInfos[1].mTick;
         for (int g = 0; g < gems.size(); g++) {
             MILO_ASSERT(backup_gems[g].GetTick() == gems[g].GetTick(), 0x2F4);
             if (backup_gems[g].GetTick() >= i7) {
-                Symbol tag = backup_mixes.mInfos[i11].mInfo.c_str();
-                bool found = submixArr->FindData(tag, s, false);
+                tag = backup_mixes.mInfos[i11].mInfo.c_str();
+                found = submixArr->FindData(tag, s, false);
                 if (found) {
                     mixes.SetInfo(i11, s);
                 }
                 i11++;
-                if (i11 == backup_mixes.Size()) {
+                if (i11 == backup_mixes.mInfos.size()) {
                     if (!found)
                         return;
                     i7 = 0x7fffffff;
