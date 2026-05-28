@@ -459,16 +459,18 @@ void RotateAboutX(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
 }
 
 void RotateAboutZ(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
-    float fcos = Cosine(f);
-    char _slotpad[12]; (void)_slotpad;
+    char _slotpad[12];
+    float fcos = Cosine(f); (void)_slotpad;
     float fsin = Sine(f);
-    mout.x.x = min.x.x * fcos - min.x.y * fsin;
     mout.x.z = min.x.z;
-    mout.x.y = min.x.x * fsin + min.x.y * fcos;
-    mout.y.x = min.y.x * fcos - min.y.y * fsin;
-    mout.y.y = min.y.x * fsin + min.y.y * fcos;
     mout.y.z = min.y.z;
+    mout.x.x = min.x.x * fcos - min.x.y * fsin;
+    mout.x.y = min.x.x * fsin + min.x.y * fcos;
     mout.z.y = min.z.x * fsin + min.z.y * fcos;
+    float _fpr1 = min.y.y;
+    float _fpr0 = min.y.x;
+    mout.y.x = _fpr0 * fcos - _fpr1 * fsin;
+    mout.y.y = _fpr0 * fsin + _fpr1 * fcos;
     mout.z.x = min.z.x * fcos - min.z.y * fsin;
     mout.z.z = min.z.z;
 }
