@@ -637,6 +637,20 @@ inline void Normalize(const Hmx::Matrix3 &src, Hmx::Matrix3 &dst) {
 }
 
 inline void Multiply(const Vector3 &vin, const Hmx::Matrix3 &mtx, Vector3 &vout) {
+#ifdef HX_NATIVE
+    // V21 — ASM_BLOCK is a no-op under clang LP64 (see decomp.h:73). The
+    // matched-fork body below thus never writes to vout, returning garbage
+    // and breaking every IK / skeleton / interest-cam / target-resolution
+    // path that consumes Multiply(Vector3,Matrix3,Vector3). Provide the C
+    // body (matches dc3-decomp/src/system/math/Mtx.h:425). Permuter never
+    // touches this branch; `#else` below is byte-identical to the matched
+    // fork.
+    vout.Set(
+        mtx.x.x * vin.x + mtx.y.x * vin.y + mtx.z.x * vin.z,
+        mtx.x.y * vin.x + mtx.y.y * vin.y + mtx.z.y * vin.z,
+        mtx.x.z * vin.x + mtx.y.z * vin.y + mtx.z.z * vin.z
+    );
+#else
     register __vec2x32float__ i1, i2, m1, m2, o1, o2;
 
     register const Vector3 *_vin = &vin;
@@ -670,6 +684,7 @@ inline void Multiply(const Vector3 &vin, const Hmx::Matrix3 &mtx, Vector3 &vout)
         psq_st o1, Vector3.x(_vout), 0, 0
         psq_st o2, Vector3.z(_vout), 1, 0
     )
+#endif
 }
 
 inline void Invert(const Transform &tfin, Transform &tfout) {

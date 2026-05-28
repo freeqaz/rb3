@@ -12,6 +12,12 @@
 #include "world/Dir.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
+#ifdef HX_NATIVE
+// V22 (salvage V33): for CamShot::GetCam() definition used in DrawShowing
+// venue-cam-follow.
+#include "world/CameraShot.h"
+#include "rndobj/Cam.h"
+#endif
 
 INIT_REVS(BandDirector)
 
@@ -308,6 +314,31 @@ void BandDirector::ListPollChildren(std::list<RndPollable *> &polls) const {
 }
 
 void BandDirector::DrawShowing() {
+#ifdef HX_NATIVE
+    // V22 (salvage V33 re-apply): make the venue draw through the camera the
+    // director is animating. V19 loaded the venue WorldDir as mCurWorld WITHOUT
+    // merging it into GetWorld(), so mCurWorld != GetWorld() and the venue's
+    // `WorldDir::DrawShowing` uses its own static `mCam` (CamOverride) — NOT
+    // the shot-animated `world.cam` the director writes via PlayNextShot. The
+    // engine (Rnd_Wgpu_RB3.cpp) already re-emits the scene uniforms per-mesh on
+    // RndCam::sCurrent change, so the venue can draw through one cam and the
+    // highway through another in the same frame. Bridge: point the venue
+    // WorldDir's mCam at the director's active shot cam each frame.
+    // Opt-out via env VENUE_CAM_LOCK=1 reverts to the static cam.
+    if (mCurWorld && !getenv("VENUE_CAM_LOCK")) {
+        WorldDir *gw = GetWorld();
+        if (gw && gw != mCurWorld) {
+            CamShot *shot = gw->mCameraManager.MiloCamera();
+            if (!shot) shot = gw->mCameraManager.CurrentShot();
+            if (shot) {
+                RndCam *shotCam = shot->GetCam();
+                if (shotCam && shotCam != mCurWorld->CamOverride()) {
+                    mCurWorld->SetCam(shotCam);
+                }
+            }
+        }
+    }
+#endif
     if (mCurWorld)
         mCurWorld->DrawShowing();
 }
@@ -474,12 +505,63 @@ void BandDirector::PlayNextShot() {
 }
 
 void BandDirector::EnterVenue() {
+#ifdef HX_NATIVE
+    // V19 (salvage V33 re-apply): the retail `load_venue <sym>` dispatch (which
+    // reads the world WorldDir's authored `venue` field and loads
+    // world/venue/<class>/<name>/<name>.milo into mVenue) is data/game-mode driven
+    // and never fires in the native flow — the only DTA `load_venue` is the
+    // editor-only `load_and_play_song` preview. So mVenue.Dir() stays null,
+    // EnterVenue is a no-op, mCurWorld stays null, and TheBandWardrobe is null
+    // (it's instanced from world/shared/world_chars.milo, only loaded as a side
+    // effect of the venue load).
+    //
+    // Bridge: read the world's authored `venue` symbol (falls back to
+    // small_club_01 for the gameplay world) and load the venue synchronously,
+    // exactly as retail `load_venue` would. The venue load pulls in
+    // world_chars.milo so TheBandWardrobe becomes non-null and EnterVenue's
+    // normal wardrobe path (SetVenueDir / SyncTransProxies) then runs and sets
+    // mCurWorld.
+    if (!mVenue.Dir() && GetWorld()) {
+        const DataNode *venueProp = GetWorld()->Property(Symbol("venue"), false);
+        Symbol venueSym = venueProp ? venueProp->Sym(nullptr) : Symbol("small_club_01");
+        if (venueSym.Null()) venueSym = Symbol("small_club_01");
+        if (getenv("VENUE_DBG"))
+            MILO_LOG("VENUE_DBG: EnterVenue force-loading venue='%s'\n",
+                     venueSym.mStr ? venueSym.mStr : "(null)");
+        bool prevAsync = mAsyncLoad;
+        mAsyncLoad = false;
+        LoadVenue(venueSym, kLoadStayBack);
+        mAsyncLoad = prevAsync;
+    }
+    if (getenv("VENUE_DBG"))
+        MILO_LOG("VENUE_DBG: EnterVenue() wardrobe=%p venueDir=%p venueName='%s'\n",
+                 (void *)TheBandWardrobe, (void *)mVenue.Dir(),
+                 mVenue.Name().mStr ? mVenue.Name().mStr : "(null)");
+#endif
     if (TheBandWardrobe) {
         WorldDir *dir = mVenue.Dir();
         if (dir) {
             dir->SetName(dir->Name(), GetWorld());
             dir->Enter();
             if (dir != mCurWorld) {
+#ifdef HX_NATIVE
+                // V23 (salvage V33 re-apply): drive the character-load step retail
+                // runs from OnFileLoaded(song). At that earlier moment mVenue.Name()
+                // is still null natively (venue is deferred until V19 force-load
+                // above), so LoadMainCharacters never runs and mVenueNames /
+                // mInstrumentType stay unset — the venue's player_<inst>0_*.tp
+                // closeup-target proxies all collapse onto a shared stand-in dir.
+                // Calling LoadCharacters here (post-V19 force-load, pre-SetVenueDir)
+                // sets mVenueNames=[player_guitar0, player_bass0, player_mic0,
+                // player_drum0] and assigns instruments so SyncTransProxies matches
+                // 32 instrument-keyed proxies (was 0).
+                if (TheBandWardrobe && !mVenue.Name().Null()) {
+                    if (getenv("CHAR_DBG") || getenv("VENUE_DBG"))
+                        MILO_LOG("VENUE_DBG: EnterVenue calling LoadCharacters('%s')\n",
+                                 mVenue.Name().mStr ? mVenue.Name().mStr : "(null)");
+                    TheBandWardrobe->LoadCharacters(mVenue.Name(), mAsyncLoad);
+                }
+#endif
                 TheBandWardrobe->SetVenueDir(dir);
                 if (mCurWorld)
                     mCurWorld->Handle(remove_midi_parsers_msg, false);
@@ -495,6 +577,23 @@ void BandDirector::EnterVenue() {
 #endif
                     mCurWorld->Handle(setup_midi_parsers_msg, false);
                     ClearLighting();
+#ifdef HX_NATIVE
+                    // V23 (salvage V33 re-apply): re-run HarvestDircuts now that
+                    // mVenue.Dir() is real. The earlier harvest (driven from the
+                    // load flow before V19's venue force-load above) bailed at its
+                    // `mPropAnim && mVenue.Dir()` gate (venueDir=(nil)), so the
+                    // song's authored MIDI DIRECTED_CUTs were never harvested and
+                    // the director fell back to generic shot-category cycling.
+                    // With the venue + song.anim both live now we get dircuts=15
+                    // for 20thcenturyboy (beat-synced authored camerawork).
+                    if (mPropAnim && mVenue.Dir()) {
+                        if (getenv("CAMDIR_DBG") || getenv("VENUE_DBG"))
+                            MILO_LOG("VENUE_DBG: EnterVenue re-running HarvestDircuts "
+                                     "(propAnim=%p venueDir=%p)\n",
+                                     (void *)mPropAnim, (void *)mVenue.Dir());
+                        HarvestDircuts();
+                    }
+#endif
                 }
             }
         }

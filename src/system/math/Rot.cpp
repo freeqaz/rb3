@@ -482,6 +482,45 @@ void MakeEuler(const Hmx::Quat &q, Vector3 &v) {
 }
 
 void MakeRotQuat(const Vector3 &v1, const Vector3 &v2, Hmx::Quat &q) {
+#ifdef HX_NATIVE
+    // V26 — restore the shortest-arc half-angle normalization (matching dc3
+    // sister `Rot.cpp:277` MakeRotQuat). The matched-fork rb3 body below
+    // drops the two `0.5` half-angle factors, producing a sqrt(2)-too-large
+    // quat (|q|^2 == 2, w^2+|xyz|^2 == 1+cos + sin^2/(1+cos) == 2). Most
+    // consumers Normalize() the quat first and were unaffected, but the IK /
+    // twist paths (CharIKHand::IKElbow, CharForeTwist, CharUpperTwist,
+    // CharLookAt, CharIKFingers, BandIKEffector, BandPatchMesh) feed it
+    // straight into MakeRotMatrix / Multiply(Vector3,Quat,...), which
+    // assume a unit quat — producing a matrix scaled by |q|^2 == 2 (det ~ 8),
+    // i.e. a non-orthonormal "rotation" that flings IK-driven fingertips
+    // 100+ units. This branch returns a proper unit quat. The `#else` half
+    // below is byte-identical to the permuter's current matched-fork body.
+    float v1x = v1.x;
+    float v1z = v1.z;
+    float v2x = v2.x;
+    float v2z = v2.z;
+    float v2y = v2.y;
+    float v1y = v1.y;
+    float cy = v1z * v2x - v1x * v2z;
+    float cz = v1x * v2y - v1y * v2x;
+    float cx = v1y * v2z - v1z * v2y;
+    float lensq1 = v1x * v1x + v1y * v1y + v1z * v1z;
+    float lensq2 = v2x * v2x + v2y * v2y + v2z * v2z;
+    float sq = std::sqrt(lensq1 * lensq2);
+    float sq2 = std::sqrt((1.0f + (v1x * v2x + v1y * v2y + v1z * v2z) / sq) * 0.5f);
+    if (sq2 > 1e-7f) {
+        q.w = sq2;
+        float scale = 0.5f / (sq * sq2);
+        q.x = cx * scale;
+        q.y = cy * scale;
+        q.z = cz * scale;
+    } else {
+        q.x = 0.0f;
+        q.y = 0.0f;
+        q.z = 1.0f;
+        q.w = 0.0f;
+    }
+#else
     float v1x = v1.x;
     float v1z = v1.z;
     float v2x = v2.x;
@@ -507,6 +546,7 @@ void MakeRotQuat(const Vector3 &v1, const Vector3 &v2, Hmx::Quat &q) {
         q.z = 1.0f;
         q.w = 0.0f;
     }
+#endif
 }
 
 void MakeRotQuatUnitX(const Vector3 &vec, Hmx::Quat &q) {

@@ -138,6 +138,17 @@ void BandTrack::Reset() {
     if (mPlayerFeedback) {
         mPlayerFeedback->HandleType(reset_msg);
         SendTrackerDisplayMessage(disable_msg);
+#ifdef HX_NATIVE
+        // V29 re-apply (permuter wiped the original; see rb3/docs/sessions/native/SCORE_PCT.md).
+        // solo_percent.lbl bakes text_token=solo_percent_fmt ("%d%%") and the load-time
+        // SetTextToken path calls SetTokenFmtImp with zero args, so without this seed the
+        // label renders the raw "%d%%" center-screen whenever draw_order.grp is showing
+        // (V30 confirmed draw_order.grp is deterministically visible 22/22 runs).
+        // Seeding 0 via me_percent_format ("%d%%" + int=0 → "0%") mirrors V14b's SoloStart
+        // seed (~:446) on the always-run reset path.
+        if (UILabel *pctLabel = mPlayerFeedback->Find<UILabel>("solo_percent.lbl", false))
+            pctLabel->SetTokenFmt(me_percent_format, 0);
+#endif
     }
     if (mFailedFeedback) {
         mFailedFeedback->HandleType(reset_msg);

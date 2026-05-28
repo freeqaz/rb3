@@ -28,6 +28,41 @@ void CharIKHand::Poll() {
         return;
     Vector3 vec(0.0f, 0.0f, 0.0f);
     Hmx::Quat quat(0.0f, 0.0f, 0.0f, 0.0f);
+#ifdef HX_NATIVE
+    // V32 diagnostic — gated, render-inert. Reports hand world position,
+    // each target's name + world pos + distance, and the parent (proxy)
+    // chain. Investigative tool for the residual crowd hand-IK "target ~300u
+    // away" pose error documented in VENUE_RENDER V26 / V32. NOTE: in the
+    // current build state CharIKHand::Poll() is NOT exercised in the menu /
+    // song-select / pre-game-screen phases (no IK_TGT lines on a 12000-frame
+    // run); diagnostic stays for the next agent who reaches in-song
+    // crowd-cinematic gameplay where the IKHand path is actually hit.
+    static int sDbgCount = 0;
+    static const char* sIkDbg = getenv("IK_TGT_DBG");
+    if (sIkDbg && sDbgCount < 200) {
+        const Vector3& hp = trans->WorldXfm().v;
+        for (ObjVector<IKTarget>::iterator it = mTargets.begin();
+             it != mTargets.end(); ++it) {
+            RndTransformable* t = it->mTarget;
+            if (!t) continue;
+            const Vector3& tp = t->WorldXfm().v;
+            float dx = tp.x - hp.x, dy = tp.y - hp.y, dz = tp.z - hp.z;
+            float d = std::sqrt(dx*dx + dy*dy + dz*dz);
+            if (d > 50.0f) {
+                const char* tname = t->Name();
+                RndTransformable* tp_parent = t->TransParent();
+                const char* pname = tp_parent ? tp_parent->Name() : "(null)";
+                fprintf(stderr,
+                    "[IK_TGT] ikhand='%s' hand='%s' wpos=(%.1f,%.1f,%.1f) "
+                    "tgt='%s' twpos=(%.1f,%.1f,%.1f) d=%.1f parent='%s'\n",
+                    Name(), trans->Name(), hp.x, hp.y, hp.z,
+                    tname, tp.x, tp.y, tp.z, d, pname);
+                sDbgCount++;
+                if (sDbgCount >= 200) break;
+            }
+        }
+    }
+#endif
     UpdateHand();
     if (mTargets.size() == 1) {
         RndTransformable *frontTrans = mTargets.front().mTarget;

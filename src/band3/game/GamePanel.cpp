@@ -267,6 +267,22 @@ void GamePanel::StartGame() {
     if (mGame->HasIntro())
         mGame->Start();
     mGameState = kGamePlaying;
+#ifdef HX_NATIVE
+    // V25 (salvage V33 re-apply): the HUD master group `draw_order.grp` is
+    // hidden during the cinematic intro by `TrackPanelDir::Reset() ->
+    // SetShowing(false)`; retail then re-shows it via the milo `play_intro`
+    // message -> `PlayIntro() -> SetShowing(!mPerformanceMode)` at the end of
+    // the intro. Natively that play_intro fires inconsistently / late (its
+    // intro camshot/anim timeline is the same proxy/anim machinery the venue
+    // work is still bringing up), so the score plate + star meter can stay
+    // hidden for the first seconds of play and in some runs never come on.
+    //
+    // Force-show the HUD here at the song-start point: StartGame() is invoked
+    // from GamePanel::Poll the moment the song clock crosses 0, exactly the
+    // retail "song begins -> HUD appears" moment. Idempotent vs play_intro.
+    if (TrackPanelDirBase *tpd = GetTrackPanelDir())
+        tpd->SetShowing(true);
+#endif
     if (DataVariable("vocal_test").Int()) {
         RunVocalTest();
     }

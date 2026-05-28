@@ -8,6 +8,14 @@
 #include "rndobj/EventTrigger.h"
 #include "utl/TimeConversion.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include "obj/Data.h"
+#include "obj/Dir.h"
+#include "rndobj/Trans.h"
+#endif
 
 INIT_REVS(TrackPanelDirBase);
 
@@ -78,12 +86,87 @@ BEGIN_COPYS(TrackPanelDirBase)
     END_COPYING_MEMBERS
 END_COPYS
 
+#ifdef HX_NATIVE
+// K9_DBG: dump what the milo "apply" handler dispatch sees on this config object.
+// Set K9_APPLY_DBG=1 to enable. Logs the config object's name, class, mTypeDef
+// type symbol, whether mTypeDef has an "apply" array (and dumps it), and the
+// number of configurable_objects on the parent dir.
+static void K9DumpApply(Hmx::Object *o, const char *origin, bool animate) {
+    if (!getenv("K9_APPLY_DBG")) return;
+    if (!o) {
+        MILO_LOG("K9_APPLY: %s o=NULL\n", origin);
+        return;
+    }
+    const DataArray *td = o->TypeDef();
+    MILO_LOG("K9_APPLY: %s o=%p name='%s' class='%s' animate=%d td=%p td_type='%s'\n",
+             origin, (void*)o, o->Name() ? o->Name() : "?",
+             o->ClassName().mStr ? o->ClassName().mStr : "?",
+             animate ? 1 : 0,
+             (void*)td,
+             (td && td->Size() > 0) ? td->Sym(0).mStr : "?");
+    if (td) {
+        DataArray *applyArr = td->FindArray(apply, false);
+        MILO_LOG("K9_APPLY:   td.apply=%p\n", (void*)applyArr);
+        if (applyArr) {
+            String s;
+            applyArr->Print(s, kDataArray, true);
+            const char *cs = s.c_str();
+            // Truncate the dump to keep log noise reasonable.
+            char buf[2048];
+            std::snprintf(buf, sizeof(buf), "%.2000s", cs);
+            MILO_LOG("K9_APPLY:   td.apply=%s\n", buf);
+        }
+        // Inspect [objects], [visibles], [xfms] arrays on the type editor section.
+        DataArray *objects = td->FindArray(Symbol("objects"), false);
+        DataArray *visibles = td->FindArray(Symbol("visibles"), false);
+        DataArray *xfms = td->FindArray(Symbol("xfms"), false);
+        MILO_LOG("K9_APPLY:   td.objects=%p sz=%d  td.visibles=%p sz=%d  td.xfms=%p sz=%d\n",
+                 (void*)objects, objects ? (objects->Size() - 1) : -1,
+                 (void*)visibles, visibles ? (visibles->Size() - 1) : -1,
+                 (void*)xfms, xfms ? (xfms->Size() - 1) : -1);
+        if (objects) {
+            for (int i = 1; i < objects->Size() && i < 20; i++) {
+                DataNode &n = objects->Node(i);
+                Hmx::Object *child = n.Type() == kDataObject ? n.UncheckedObj() : nullptr;
+                MILO_LOG("K9_APPLY:     objects[%d] type=%d obj=%p name='%s' class='%s'\n",
+                         i - 1, (int)n.Type(),
+                         (void*)child,
+                         (child && child->Name()) ? child->Name() : "?",
+                         (child) ? (child->ClassName().mStr ? child->ClassName().mStr : "?") : "?");
+            }
+        }
+    }
+    // Walk the dir for configurable_objects exposure (the apply script reads them).
+    ObjectDir *dir = o->Dir();
+    MILO_LOG("K9_APPLY:   o.Dir=%p name='%s'\n",
+             (void*)dir, (dir && dir->Name()) ? dir->Name() : "?");
+}
+
+// K9_TRACE_APPLY: tiny invocation counters to spot whether the "apply" handler
+// fired the [objects]/[visibles]/[xfms] update or dropped out.
+static int gK9ApplyCalls = 0;
+static int gK9ApplyAuthorPos = 0;
+static int gK9ApplyAuthorVis = 0;
+#endif
+
 void TrackPanelDirBase::SetConfiguration(Hmx::Object *o, bool b) {
+#ifdef HX_NATIVE
+    K9DumpApply(o, "SetConfiguration", b);
+#endif
     if (o) {
         static Message apply("apply", b);
         apply[0] = b;
         mConfiguration = o;
+#ifdef HX_NATIVE
+        gK9ApplyCalls++;
+        DataNode rv = o->Handle(apply, true);
+        if (getenv("K9_APPLY_DBG")) {
+            MILO_LOG("K9_APPLY:   Handle(apply) returned type=%d (kDataUnhandled=%d)\n",
+                     (int)rv.Type(), (int)kDataUnhandled);
+        }
+#else
         o->Handle(apply, true);
+#endif
     }
     if (!mPerformanceMode)
         SetShowing(gShowHUD);
@@ -91,9 +174,21 @@ void TrackPanelDirBase::SetConfiguration(Hmx::Object *o, bool b) {
 
 void TrackPanelDirBase::ReapplyConfiguration(bool b) {
     if (mConfiguration) {
+#ifdef HX_NATIVE
+        K9DumpApply(mConfiguration, "ReapplyConfiguration", b);
+#endif
         static Message apply("apply", b);
         apply[0] = b;
+#ifdef HX_NATIVE
+        gK9ApplyCalls++;
+        DataNode rv = mConfiguration->Handle(apply, true);
+        if (getenv("K9_APPLY_DBG")) {
+            MILO_LOG("K9_APPLY:   Reapply Handle(apply) returned type=%d (kDataUnhandled=%d)\n",
+                     (int)rv.Type(), (int)kDataUnhandled);
+        }
+#else
         mConfiguration->Handle(apply, true);
+#endif
         if (!mPerformanceMode)
             SetShowing(gShowHUD);
     }

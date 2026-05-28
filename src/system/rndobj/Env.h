@@ -71,7 +71,20 @@ public:
     bool GetUseApprox() const { return mUseApprox_Local || mUseApprox_Global; }
     bool UsesApproxLocal() const { return mUseApprox_Local; }
     bool UsesApproxGlobal() const { return mUseApprox_Global; }
-    bool SetFogEnable(bool enable) { mAmbientFogOwner->mFogEnable = enable; }
+    bool SetFogEnable(bool enable) {
+#ifdef HX_NATIVE
+        // V19 (salvage V33 re-apply): the matched fork declares this `bool` but
+        // never returns; MWCC PPC tolerates the missing return (garbage in r3) but
+        // clang emits a `ud2` trap → SIGILL the moment the venue light-preset path
+        // calls it (LightPreset::AnimateEnvFromPreset → LightPresetManager::Poll →
+        // BandDirector::Poll). The return value is never consumed; just return
+        // `enable` so the function has a defined return value.
+        mAmbientFogOwner->mFogEnable = enable;
+        return enable;
+#else
+        mAmbientFogOwner->mFogEnable = enable;
+#endif
+    }
 
     NEW_OVERLOAD
     DELETE_OVERLOAD

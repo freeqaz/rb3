@@ -1729,6 +1729,41 @@ DataNode BandCharacter::OnChangeFaceGroup(DataArray *da) {
 
 void ReplaceRefs(Hmx::Object *theirs, Hmx::Object *mine) {
     MILO_ASSERT(mine, 0xA72);
+#ifdef HX_NATIVE
+    // V23 (salvage V33 re-apply): reallocation-safe index-based rewrite.
+    // The matched fork caches raw std::vector<ObjRef*> iterators into
+    // theirs->Refs(), walks them in reverse (it[-1]), and after each
+    // ref->Replace() resets it = end(). ref->Replace() ERASES the replaced
+    // ObjRef from theirs->mRefs, which under libstdc++ can REALLOCATE the
+    // vector and invalidate both cached iterators → the next --it; it[-1]
+    // dereferences a dangling iterator → SIGSEGV (fault @ +0x30). MWCC/PPC
+    // tolerated the stale iterator; clang-LP64 does not. Semantics identical
+    // (reverse walk over current refs; replace any whose owner.Dir() is in
+    // {sOutfitDir, sResourceDir, sToDir}).
+    while (true) {
+        const std::vector<ObjRef *> &refs = theirs->Refs();
+        int sz = (int)refs.size();
+        bool replaced = false;
+        for (int i = sz - 1; i >= 0; --i) {
+            // Re-read size each iter — outer Replace() may have shortened it.
+            if (i >= (int)theirs->Refs().size()) continue;
+            ObjRef *ref = theirs->Refs()[i];
+            if (!ref) continue;
+            ref->RefOwner();
+            if (ref->RefOwner() != NULL) {
+                ObjectDir *dir = ref->RefOwner()->Dir();
+                bool match =
+                    (dir == sOutfitDir) || (dir == sResourceDir) || (dir == sToDir);
+                if (match && theirs != mine) {
+                    ref->Replace(theirs, mine);
+                    replaced = true;
+                    break;  // refs may have reallocated; restart from new end
+                }
+            }
+        }
+        if (!replaced) break;
+    }
+#else
     std::vector<ObjRef *>::const_iterator it = theirs->Refs().end();
     std::vector<ObjRef *>::const_iterator begin = theirs->Refs().begin();
     for (; it != begin; --it) {
@@ -1744,6 +1779,7 @@ void ReplaceRefs(Hmx::Object *theirs, Hmx::Object *mine) {
             }
         }
     }
+#endif
 }
 
 // just here temporarily until we match the corresponding funcs these strings belong to

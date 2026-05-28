@@ -195,6 +195,24 @@ if(NOT DEFINED Dawn_DIR)
     set(Dawn_DIR "${REPO_ROOT}/../dc3-decomp-deps/dawn/lib/cmake/Dawn"
         CACHE PATH "Path to Dawn's CMake package config")
 endif()
+
+# W1 — Emscripten/web target wiring. When configured with `emcmake`, force the
+# engine's web platform layer ON and exclude the lifted *_Web.cpp sources from
+# libmilo-engine.a so rb3-web (declared at the bottom of this file) can compile
+# them DIRECTLY with the target's compile flags + force-included canvas-selector
+# header. Building them twice (once in the library, once in rb3-web) would emit
+# duplicate symbols at link time. Mirrors DC3's pattern
+# (dc3-decomp/native/CMakeLists.txt:274-283).
+if(EMSCRIPTEN)
+    set(MILO_BUILD_WEB ON CACHE BOOL "Engine web platform layer (W1)" FORCE)
+    list(APPEND MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
+        File_Web.cpp
+        CDReader_Web.cpp
+        WebAssets.cpp
+        GpuDevice_Web.cpp
+        AudioDevice_Web.cpp
+        ImGuiBackend_Web.cpp)
+endif()
 add_subdirectory(${MILO_ENGINE_PATH} ${CMAKE_BINARY_DIR}/milo-engine)
 
 # ============================================================================
@@ -305,7 +323,12 @@ endforeach()
 # advances the boot (e.g. MetaPanel/Band for the menu DTA flow). Paths are
 # anchored (/Name.cpp$) so e.g. SongSort.cpp doesn't also drop SongSortByPlays.cpp.
 set(_NATIVE_FORK_EXCLUDE
-    BandPatchMesh
+    # V20 (salvage V33): BandPatchMesh un-excluded — its destructor is called
+    # via ObjVector<BandPatchMesh>::resize from OutfitConfig::Load (band player
+    # outfit merge). With BandPatchMesh weak-stubbed, its ObjPtr members hold
+    # garbage and the dtor SEGVs in ObjPtr::~ObjPtr → Object::Release → rbegin().
+    # Requires the V20 #ifndef HX_NATIVE wrappers around the stlpmtx_std
+    # specializations in BandPatchMesh.cpp.
     ClipDistMap DataResults
     SaveLoadManager
     Splash
@@ -330,8 +353,10 @@ set(NATIVE_SHIMS
 # ============================================================================
 # Shared compile/include/link helper applied to each native target.
 # ============================================================================
-find_package(Threads REQUIRED)
-find_package(ZLIB)
+if(NOT EMSCRIPTEN)
+    find_package(Threads REQUIRED)
+    find_package(ZLIB)
+endif()
 
 function(rb3_configure_target tgt)
     target_compile_options(${tgt} PRIVATE ${DECOMP_FLAGS})
@@ -350,19 +375,28 @@ function(rb3_configure_target tgt)
         ${REPO_ROOT}/src/network             # net/ Platform/ Protocol/ online headers
         ${REPO_ROOT}/src/system/oggvorbis
         ${REPO_ROOT}/src/system/synth/tomcrypt)  # tomcrypt's <angled> sibling includes
-    target_link_libraries(${tgt} PRIVATE milo-engine Threads::Threads)
-    target_link_libraries(${tgt} PRIVATE vorbis vorbisfile ogg)
-    if(ZLIB_FOUND)
-        target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
+    target_link_libraries(${tgt} PRIVATE milo-engine)
+    if(NOT EMSCRIPTEN)
+        # Native-only link surface. Under emcc, threads/ZLIB/vorbis/ogg are
+        # supplied by Emscripten ports (-sUSE_ZLIB=1 / -sUSE_OGG=1 / -sUSE_VORBIS=1
+        # — wired in via milo_engine_apply_web_target_options).
+        target_link_libraries(${tgt} PRIVATE Threads::Threads)
+        target_link_libraries(${tgt} PRIVATE vorbis vorbisfile ogg)
+        if(ZLIB_FOUND)
+            target_link_libraries(${tgt} PRIVATE ZLIB::ZLIB)
+        endif()
+        # Off-path symbols (rendering/audio/Bink/MIDI/RSO/Wii managers + their
+        # vtables/typeinfo) are satisfied by the weak no-op stubs in
+        # dta_link_stubs.s — calling one harmlessly returns, reading one yields a
+        # valid non-null pointer. Preferable to --unresolved-symbols=ignore-all,
+        # which leaves null symbols that crash when a global ctor calls one at
+        # static-init time. (wasm-ld has -sERROR_ON_UNDEFINED_SYMBOLS=0 +
+        # missing_stubs.js for the web target — see below.)
+        target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
     endif()
-    # Off-path symbols (rendering/audio/Bink/MIDI/RSO/Wii managers + their
-    # vtables/typeinfo) are satisfied by the weak no-op stubs in
-    # dta_link_stubs.s — calling one harmlessly returns, reading one yields a
-    # valid non-null pointer. Preferable to --unresolved-symbols=ignore-all,
-    # which leaves null symbols that crash when a global ctor calls one at
-    # static-init time.
-    target_link_options(${tgt} PRIVATE -Wl,--allow-multiple-definition)
 endfunction()
+
+if(NOT EMSCRIPTEN)
 
 # ============================================================================
 # rb3-dta (milestone a) — minimal DTA-parse harness. Links the now-fuller
@@ -488,3 +522,121 @@ rb3_configure_target(rb3-native)
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_http_server.cpp
     PROPERTIES COMPILE_OPTIONS
     "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
+
+else() # EMSCRIPTEN — web target
+
+# ============================================================================
+# rb3-web (W1, clear-frame milestone) — Emscripten/WebAssembly boot harness.
+#
+# Mirrors rb3-native's RB3_BOOT=1 path but driven by a browser main loop
+# (emscripten_set_main_loop). State machine:
+#   BOOT_INIT       → WebAssetsInit + WebAssetsFetchBundle
+#   BOOT_FETCHING   → poll WebAssetsAllDone
+#   BOOT_ENGINE_INIT → SystemPreInit("config/band_preinit_keep.dta") +
+#                      SystemInit("config/band_keep.dta") + register factories +
+#                      gBandRnd.InitGpu(W, H, /*headless=*/false)
+#   BOOT_GPU_WAIT   → gBandRnd.Gpu().IsReady() (async WebGPU adapter)
+#   BOOT_GPU_READY  → one BeginFrame/EndFrame to commit the initial clear
+#   BOOT_RUNNING    → per-frame BeginFrame/EndFrame; window.rb3FrameCount = N
+#
+# The lifted engine *_Web.cpp TUs are compiled DIRECTLY here (with the
+# canvas-selector force-included header) — they're excluded from libmilo-engine.a
+# above. The link-stub .s files used by rb3-native are x86 GAS syntax and won't
+# assemble under emcc; we instead rely on the engine's missing_stubs.js pre-js
+# (--pre-js, supplied by milo_engine_apply_web_target_options) which patches
+# Emscripten's abort() to warn instead of crash on missing function calls.
+# `-sERROR_ON_UNDEFINED_SYMBOLS=0` (also from the helper) makes the link succeed
+# despite unresolved references from the matched-fork TUs.
+# ============================================================================
+
+set(RB3_WEB_LIFTED_ENGINE_SOURCES
+    ${MILO_ENGINE_PATH}/src/platform/WebAssets.cpp
+    ${MILO_ENGINE_PATH}/src/platform/File_Web.cpp
+    ${MILO_ENGINE_PATH}/src/platform/CDReader_Web.cpp
+    ${MILO_ENGINE_PATH}/src/platform/GpuDevice_Web.cpp
+    ${MILO_ENGINE_PATH}/src/audio/AudioDevice_Web.cpp
+    ${MILO_ENGINE_PATH}/src/gfx/ImGuiBackend_Web.cpp
+)
+
+# rb3-native-only sources that don't compile under emcc and aren't needed for
+# the clear-frame smoke. Filter them OUT of the source list:
+#   rb3_render_mesh.cpp     — uses POSIX backtrace()/PNG write paths that aren't
+#                             portable under emcc; W1 doesn't render meshes.
+#   rb3_render_tri.cpp      — also CPU-side mesh smoke; W1 just clears.
+#   rb3_http_server.cpp     — vendored cpp-httplib pulls POSIX sockets + threads.
+#   rb3_http_handlers.cpp   — pair of rb3_http_server.cpp.
+#   rb3_synth_native.cpp    — pulls miniaudio (native AudioDevice replaces it).
+#   rb3_stream_receiver_native.cpp — paired with synth.
+#   rb3_vorbis_poll_shim.cpp — vorbis poll shim (system libvorbis path).
+#   rb3_render_hook.cpp     — HamRenderHook glue (registers with engine); not
+#                             needed for clear-frame.
+#   rb3_keychain_native.cpp — MOGG keychain (not needed for clear-frame).
+#   tomcrypt aes/crypt/ctr  — MOGG decryption C (not needed for clear-frame).
+# rb3_band_rnd.cpp is empty (BandRnd graduated to engine) and not in the source
+# list to begin with.
+set(RB3_WEB_NATIVE_GLUE
+    ${CMAKE_SOURCE_DIR}/src/rb3_native_settings.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_platform_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    ${REPO_ROOT}/src/network/net/Synchronize.cpp
+)
+
+# Trim NATIVE_SHIMS for web — native_file.cpp's stdio-backed File is replaced
+# by the engine's File_Web.cpp (MEMFS-backed). dta_link_stubs.s + the other .s
+# files are x86 GAS and won't assemble under emcc — omitted; missing_stubs.js
+# handles the runtime side.
+set(RB3_WEB_SHIMS
+    ${CMAKE_SOURCE_DIR}/src/rvl_shims.cpp
+    ${CMAKE_SOURCE_DIR}/src/native_link_glue.cpp
+)
+
+add_executable(rb3-web
+    ${CMAKE_SOURCE_DIR}/src/main_web.cpp
+    ${RB3_WEB_LIFTED_ENGINE_SOURCES}
+    ${RB3_WEB_NATIVE_GLUE}
+    ${NATIVE_FORK_SOURCES}
+    ${DTA_LEXER}
+    ${RB3_WEB_SHIMS}
+)
+
+# Apply the shared MWCC-compat / include / link helper. This handles the bulk of
+# the compile flags + include paths shared with rb3-native; the link side
+# (-Wl,--allow-multiple-definition) is a no-op under wasm-ld but harmless.
+rb3_configure_target(rb3-web)
+
+# Engine-side helper applies emdawnwebgpu, JSPI, wasm-exceptions, missing_stubs.js
+# pre-js, audio-worklet.js POST_BUILD copy, base -sEXPORTED_FUNCTIONS=["_main"],
+# and -sERROR_ON_UNDEFINED_SYMBOLS=0. Asset dest is native/web/build (where
+# server.py serves wasm/js from).
+milo_engine_apply_web_target_options(rb3-web ${CMAKE_CURRENT_SOURCE_DIR}/web/build)
+
+# Canvas selector — `#` is illegal in -D values, so this routes through a
+# configure_file'd header force-included into every rb3-web TU.
+milo_engine_set_web_canvas_selector(rb3-web "#rb3-canvas")
+
+# RB3-specific compile defs. Note MILO_WEB_AUDIO_NS is an UNQUOTED identifier
+# (used as `window.<ns>Audio` in AudioDevice_Web.cpp); the helper already
+# defines HX_NATIVE=1 / MILO_DEBUG=1 / _DEBUG=1 via the rb3_configure_target
+# call, but we add HX_WEB=1 and the audio namespace here.
+target_compile_definitions(rb3-web PRIVATE
+    HX_WEB=1
+    MILO_WEB_AUDIO_NS=rb3
+)
+
+# Extend the engine helper's base export list with RB3's tick symbol. Later
+# -sEXPORTED_FUNCTIONS / -sJSPI_EXPORTS overrides the helper's earlier value.
+target_link_options(rb3-web PRIVATE
+    -sEXPORTED_FUNCTIONS=[\"_main\",\"_rb3MainLoopTick\"]
+)
+if(MILO_WEB_ASYNC)
+    target_link_options(rb3-web PRIVATE
+        -sJSPI_EXPORTS=[\"_main\",\"_rb3MainLoopTick\",\"rb3MainLoopTick\"]
+    )
+endif()
+
+# rb3-web does not link cpp-httplib / ZLIB / Threads explicitly — the engine
+# helper supplies USE_ZLIB / USE_OGG / USE_VORBIS via Emscripten ports.
+
+endif() # EMSCRIPTEN

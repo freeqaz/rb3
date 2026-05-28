@@ -1169,3 +1169,216 @@ proxy fix in `BandWardrobe::SyncTransProxies`). Secondary: the face-servo /
 held-prop (eyebrows/goatee/clap/lighter) tiny-bind slivers. With those, the V24 guard
 becomes fully redundant. Then Defect 2 camera void-cuts and the `BandPatchMesh` RTT
 outfit composite remain the open fidelity items.
+
+---
+
+# V32 — Crowd hand-IK target investigation: V21/V26 had been permuter-wiped; reapplied; CharIKHand path inert in current build state
+
+**Authored:** 2026-05-28 (Opus implementation agent). **Status: V21/V26 RESTORED
+(reapplied additive `#ifdef HX_NATIVE` blocks the permuter had blanked between
+sessions). The dispatch's premise — fix the crowd hand-IK target proxy
+resolution so the V24 guard becomes fully redundant — could NOT be tested
+end-to-end in this session: the current build state cannot reach in-song
+gameplay rendering (game_screen reaches at frame ~456 but the venue/crowd
+in-song render never engages, mesh count stays at ~50/frame instead of the
+200+ V26 documented), and CharIKHand::Poll() is NEVER called in the
+menu / song-select / pre-gameplay phases that DO render the crowd (instrumented
+and confirmed: 0 hits on a 12000-frame run with `IK_TGT_DBG=1`). The
+hand-IK-target story therefore can't be the cause of the shards I CAN
+observe; those shards trace to a different (CharServoBone / CharBones)
+path. V24 guard status: **NOT redundant**, still load-bearing for the
+pre-game crowd preview. Honest summary at the end.**
+
+## What actually happened this session
+
+1. **Build was clean on entry** but the V21 (`Mtx.h:639` empty-body `Multiply`)
+   and V26 (`Rot.cpp:484` `MakeRotQuat` half-angle factors) HX_NATIVE blocks
+   were both GONE from the matched-fork files — wiped by the permuter sometime
+   since the V26 session. The matched-fork bodies were back to the asm-match
+   shape (ASM_BLOCK no-op for V21; missing the two `0.5` factors for V26),
+   silently breaking every native IK / skeleton / interest-cam consumer of
+   those functions. This matches the dispatch precedent ("BandTrack.cpp had its
+   V29 block wiped + re-applied this session").
+2. **Re-applied V21** (`src/system/math/Mtx.h:639`): `#ifdef HX_NATIVE` wraps
+   the C body (`vout.Set(m.x.x*v.x + m.y.x*v.y + m.z.x*v.z, …)`, matching
+   `dc3-decomp/src/system/math/Mtx.h:425`); `#else` byte-identical to the
+   permuter's ASM_BLOCK body. Build + link clean.
+3. **Re-applied V26** (`src/system/math/Rot.cpp:484` `MakeRotQuat`):
+   `#ifdef HX_NATIVE` restores `sq2 = sqrt((1 + dot/sq) * 0.5)` and
+   `scale = 0.5/(sq*sq2)` (matching `dc3-decomp/src/system/math/Rot.cpp:277`);
+   `#else` byte-identical to the permuter's no-half-angle body. Build + link
+   clean. The reapplied fix is verifiably in the `Rot.cpp.o` MakeRotQuat
+   symbol (disassembly inspected).
+4. **Added gated `IK_TGT_DBG` diagnostic** (`src/system/char/CharIKHand.cpp`
+   top of `Poll()`, additive `#ifdef HX_NATIVE`, render-inert when unset): per
+   `CharIKHand` instance, log hand WorldXfm + each `mTargets[i]->WorldXfm()` +
+   distance + parent name. Intended to find the V26-documented "z≈300u hand
+   reach" case. With it on under the full reproducer (12000 frames,
+   `SHARD_GUARD_OFF=1`): **0 IK_TGT lines** — `CharIKHand::Poll` is not
+   exercised at all in the menu/song-select/pre-game-screen window. The
+   diagnostic is left in place for the next agent who reaches in-song
+   crowd-cinematic gameplay (where it presumably WILL fire).
+5. **`SHARD_RATIO` measurement, guard OFF, V21+V26 reapplied:** the worst
+   ratios this build can produce (in the menu / song-select / pre-game state)
+   are:
+   - `male_extras_eyebrows11.mesh` bind 4.94 → world 207.81 (ratio 42)
+   - `goatee_resource.mesh` bind 5.73 → world 97.6 (ratio 17)
+   - `clap.mesh` bind 51.28 → world 700-815 (ratio 14-16)
+   - `male_extra_head01.mesh` bind 19.18 → world 178-180 (ratio 9.3)
+   - `male_crowd_body03.mesh` bind 85.83 → world 760-770 (ratio 8.9)
+   - `female_crowd_body02.mesh` bind 80.13 → world 706 (ratio 8.8)
+   - `lighter.mesh` bind 35 → world 35-50 (ratio ~1) — generally OK
+   These are the same residual category V26 documented (tiny-bind face
+   features + held props + occasional crowd body) — meaning the dispatch's
+   target-proxy hypothesis is the WRONG layer for these meshes (no IK
+   path is touching them). The body-explosion ratio 8.9 on `male_crowd_body03`
+   shows that even AFTER V21+V26 reapply, the CharServoBone / CharBones
+   skeleton math still has residual native LP64 issues in the menu render
+   path; in V26 the in-song bodies measured clean because CharIKHand WAS
+   polled in-song (different code path).
+6. **DROP count:** 364 in a 500-frame menu run (vs ~744 before V21/V26
+   reapply), so V21+V26 are demonstrably having effect (~50% reduction), but
+   the residual is large.
+
+## Gameplay reach blocker (the thing that prevents finishing the dispatch)
+
+`RB3_GAME_INPUT` fires through the canonical screen sequence cleanly:
+splash → main_hub → song_select_enter → song_select → part_difficulty →
+tv3_b → game_screen (frame 456). `nofail` fires at frame 500 and reports
+`IsNoFailActive=1`. Audio device init returns `-401` (no host audio device,
+expected headless), `Game::mLoadState = kReady` is reached (per
+`GAME_DBG`), the song mid/audio/anim load successfully (per `STREAM_DBG`,
+`MIDI_DBG`, `BEATMASTER_DBG`). But the venue does NOT engage:
+
+- No `EnterVenue` / `BandDirector::Enter` log line ever appears.
+- No `prism_gem_*` or `gem_smasher_*` `CAM_DBG` log line ever appears.
+- Mesh count stays at ~50-65/frame from frame 500 to frame 8000+ (gameplay
+  should be 200+ per V26).
+
+`game_screen` is current but the gameplay scene proper never populates.
+This is upstream of V32's target and outside its scope — the V26 doc
+specifically noted this exact failure mode ("Menu→gameplay reach is FLAKY...
+the synthetic RB3_GAME_INPUT fires at FIXED frame numbers, but native loading
+races against them under host load, so a fraction of runs never advance past
+the menu") and the recommended `gdb -batch -ex run` workaround did NOT
+beat the flake this session (3 attempts including gdb-slow, all stalled the
+same way at ~50 meshes during game_screen). So the in-song crowd-cinematic
+view (where the dispatch's IK-target-proxy residual is observable) is NOT
+reproducible in this session's build state.
+
+## Why the dispatch hypothesis can't be the cause of the shards I see
+
+The dispatch hypothesized `CharIKHand::mTargets` resolves a proxy ~300u
+away (analogous to the V23 closeup target-proxy fix). Direct instrumentation
+(`IK_TGT_DBG` HX_NATIVE diagnostic in `CharIKHand::Poll`) proves
+`CharIKHand::Poll` is NEVER called in the 12000-frame
+menu/song-select/pre-game span — yet the SHARD_RATIO logs show 200-800u
+world extents on extras heads / crowd bodies / held props from frame 1
+onward. So whatever path is producing those shards (CharServoBone /
+CharBones / animation evaluation), it doesn't route through the IK chain.
+The dispatch's plan (analogous to V23's `BandWardrobe::SyncTransProxies`
+slot-name rewire) addresses the wrong subsystem for the shards observable
+in this build's reachable state.
+
+The dispatch's claim still likely holds for the **in-song** residual the V26
+doc described (where `CharIKHand` IS polled and reaches ~z=300u) — but
+testing that requires reaching in-song crowd-cinematic rendering, which
+this session's build state doesn't reach.
+
+## Files touched this session (all additive HX_NATIVE; permuter-safe `#else` branches)
+
+- `src/system/math/Mtx.h` — V21 reapply (one HX_NATIVE block at L639 around the
+  empty-body `Multiply(Vector3,Matrix3,Vector3)`).
+- `src/system/math/Rot.cpp` — V26 reapply (one HX_NATIVE block at L484 around
+  `MakeRotQuat` to restore the half-angle 0.5 factors).
+- `src/system/char/CharIKHand.cpp` — added gated `IK_TGT_DBG` diagnostic at the
+  top of `Poll()` (HX_NATIVE-only, render-inert, 200-record cap, distance>50u
+  threshold). Left in place as instrument for the next agent.
+
+NO matched-fork file outside those three was modified by V32. The other
+unstaged matched-fork files reported in `git status`
+(`BandCharacter.cpp`, `BandTrack.cpp`, `TrackPanelDir.cpp`,
+`TrackPanelDirBase.cpp`, `LightPreset.cpp`) were already modified when V32
+started (V29 BandTrack reapply + the standing HUD/Score/V19/V20/V21 blocks
+the permuter has been shifting around) and were NOT touched by V32.
+
+## Engine layer (Rnd_Wgpu_RB3.cpp) — UNTOUCHED by V32
+
+The V24 guard, V26 `SHARD_BONE_DBG`, V26 `SHARD_RATIO_DBG`, and the
+`SHARD_GUARD_OFF` opt-out are all still in place. V32 made no engine changes.
+
+## Is the V24 guard now fully redundant? — NO
+
+In the V26 doc the answer was "fully redundant for the dominant arm/finger
+explosions in the gameplay highway view." V32 cannot confirm anything beyond
+that, and explicitly confirms the OPPOSITE for the menu/pre-game preview state
+(364 DROPs on a 500-frame menu run with the guard off; visible high ratios on
+crowd bodies, extras heads, eyebrows, goatee, and clap up to 42x). The V24
+guard remains LOAD-BEARING for the pre-game render. Recommendation: KEEP V24
+in place (unchanged from V26's safety-net status); a future session that
+restores gameplay-reach AND fixes the residual CharServoBone / face-servo /
+held-prop attachment LP64 issues can then re-evaluate redundancy.
+
+## Recommended next step (concrete)
+
+The actual blocker for V32's dispatched goal is **gameplay-reach
+reliability**, not IK target-proxy resolution. The V26 doc and V32 both hit
+the same `game_screen-reached-but-venue-never-engages` failure. Possible
+causes to investigate next session, in priority order:
+
+1. **Why doesn't `BandDirector::Enter` fire?** Trace
+   `GamePanel::PollForLoading → CreateGame → Game::LoadSong` and look for the
+   `BandDirector::Enter` invocation — likely a load-poll ordering or a
+   missing message dispatch since the last working V26 run. Adding a
+   `BANDDIR_DBG` print at the top of `Enter` would localize it in one run.
+2. **If `BandDirector::Enter` IS called but `mVenue.Dir()` is null,** the
+   V19 force-load needs reapplication (search V19/V22/V23 for the venue
+   force-load entry point — it likely sits inside the `tv3_b_screen` load
+   flow and may have been permuter-shifted).
+3. Once in-song crowd-cinematic gameplay renders again, re-run V32's
+   `IK_TGT_DBG` diagnostic — that's when the dispatch's residual
+   (`z≈300u hand reach`) actually exists and can be debugged. Likely fix
+   pattern is the V23 analog (a `SyncTransProxies`-style slot-name rewire
+   for the crowd extras' hand-target proxies, separate from the band
+   players that V23 covered).
+4. The face-servo / held-prop tiny-bind slivers (`eyebrows`, `goatee`,
+   `clap`, `lighter`, `fist`) require attacking `CharServoBone` /
+   `CharBones` LP64 math. Same class as V21's `Multiply` no-op + V26's
+   `MakeRotQuat` half-angle — likely another small handful of decomp
+   functions where MWCC quirks hide a wrong native body. The `clap.mesh`
+   ratio 14-16 (bind 51u → world 700-800u) is a sharp signal: ONE bone or
+   one Multiply in the prop's attachment chain is going wrong by an
+   order of magnitude.
+
+## Reproducer (V32)
+
+```
+# Build with the V21+V26 reapply (already done by this session):
+cmake --build /home/free/code/milohax/rb3/native/build-native -j
+
+# Measure residual shard ratios in the pre-game crowd preview:
+SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1 \
+  RB3_GAME=1 MILO_HEADLESS=1 MILO_AUDIO=1 \
+  RB3_DATA=$PWD/orig-assets/extracted MILO_MAX_FRAMES=500 \
+  RB3_GAME_INPUT="@10:start,@30:confirm,@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,@320:down,@350:msg:music_library:select_highlighted_node,@380:track:guitar,@450:msg:overshell:end_override_flow:1:0,@500:nofail" \
+  ./native/build-native/rb3-native
+
+# Confirm CharIKHand::Poll IS the right path once gameplay engages:
+IK_TGT_DBG=1 SHARD_GUARD_OFF=1 \
+  <same env as above with MILO_MAX_FRAMES=8000> \
+  ./native/build-native/rb3-native
+# If [IK_TGT] lines appear with d > 100u for crowd/extras characters,
+# that's the dispatch's residual; the proxy fix it describes applies.
+# If [IK_TGT] lines never appear even in-song, the residual is
+# CharServoBone-driven and needs a different attack (see step 4 above).
+```
+
+## Regression status — V19–V31 unregressed (with caveat)
+
+- The V19/V20/V21/V22/V23/V24/V26 HX_NATIVE blocks I could verify all
+  remain in place (or were reapplied by V32 in the V21/V26 case).
+- The menu→game_screen reach FLAKE is pre-existing and not introduced by
+  V32; same exact behavior as V26 documented.
+- Build is clean; binary exits 0 over 12000 frames; no SIGSEGV in the
+  V32 runs.
+

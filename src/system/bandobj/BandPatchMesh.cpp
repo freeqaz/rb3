@@ -127,6 +127,12 @@ struct SortByPointer {
 
 // Explicit specializations to avoid bool materialization in comparison loops,
 // so CW uses blt/bge directly after fcmpo instead of mfcr/srwi./bne.
+#ifndef HX_NATIVE
+// V20 (salvage V33 re-apply): the explicit stlpmtx_std specializations are
+// asm-match-only — clang's libstdc++ has no `__unguarded_partition` /
+// `__introsort_loop` symbols, so these `template <>` definitions fail with
+// "no function template matches". Same pattern as GameGemList.cpp. The
+// std::sort calls below fall through to the host libstdc++.
 namespace stlpmtx_std {
 
 // --- SortByWorkVertZ specializations ---
@@ -214,6 +220,7 @@ void __introsort_loop<BandPatchMesh::MeshVert **, BandPatchMesh::MeshVert *, lon
 }
 
 } // namespace stlpmtx_std
+#endif // !HX_NATIVE
 
 BandPatchMesh::WorkVerts::WorkVerts(RndMesh *mesh, const Vector2 &v2)
     : unkc(0), mMesh(mesh), unk34(v2), unk3c((1.0f / v2.x), (1.0f / v2.y)) {
@@ -515,6 +522,7 @@ void BandPatchMesh::WorkVerts::Project() {
 // SortByPointer specializations in a second namespace block so that the struct
 // is defined at its original source location, preserving IPA register decisions
 // for the already-100% SortByWorkVertZ functions above.
+#ifndef HX_NATIVE
 namespace stlpmtx_std {
 
 template <>
@@ -569,6 +577,7 @@ void __adjust_heap<BandPatchMesh::MeshVert **, long, BandPatchMesh::MeshVert *, 
 }
 
 } // namespace stlpmtx_std
+#endif // !HX_NATIVE
 
 void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
     std::sort(unk10.begin(), unk10.end(), SortByPointer());

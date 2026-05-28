@@ -692,6 +692,15 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
         Symbol inst = bchar->mInstrumentType;
         BandCharDesc::GetInstrumentFromSym(inst);
         if (inst == "none") inst = "vocals";
+#ifdef HX_NATIVE
+        // V23 (salvage V33 re-apply): the vocalist's mInstrumentType is the `mic`
+        // symbol (gInstNames[3]), but the venue's vocal proxies + the vocal-closeup
+        // BandCamShot targets are named player_vocals0_* (the small_club .milo has
+        // 14681 player_vocals0 refs and ZERO player_mic0), so without this remap
+        // the singer's closeups never matched and collapsed onto a shared
+        // stand-in dir.
+        if (inst == "mic") inst = "vocals";
+#endif
         mVenueNames.names[i] = MakeString("player_%s0", inst);
     }
     StartClipLoads(false, shot);

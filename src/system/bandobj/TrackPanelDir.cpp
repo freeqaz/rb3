@@ -3,8 +3,14 @@
 #include "bandobj/GemTrackDir.h"
 #include "obj/ObjVersion.h"
 #include "rndobj/TexRenderer.h"
+#include "rndobj/TransAnim.h"
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#include "obj/Msg.h"
+#endif
 
 INIT_REVS(TrackPanelDir);
 
@@ -243,6 +249,104 @@ void TrackPanelDir::ConfigureTracks(bool b) {
         Find<RndTransAnim>("scoreboard_to_top.tnm", true)->SetFrame(f19, 1.0f);
         Find<RndTransAnim>("applause_meter_to_top.tnm", true)->SetFrame(f19, 1.0f);
         Find<RndTransAnim>("mtv_overlay_to_top.tnm", true)->SetFrame(f19, 1.0f);
+#ifdef HX_NATIVE
+        // V31 APPLY_HANDLER_FIX: re-center the BandScoreboard plate (top-RIGHT
+        // → top-CENTER) for the single-player lone-track layout.
+        //
+        // ROOT CAUSE (per K9_APPLY_DBG trace, V31): the milo `1_player_<aspect>`
+        // configuration object's `apply` handler is dispatched correctly
+        // (TrackPanelDirBase::SetConfiguration → Object::Handle(apply) returns
+        // kDataNotUnhandled), and it executes the typedef-script `($animate)
+        // {$this update $animate}`. That script's is_active=true branch iterates
+        // mGemTracks calling update_track_position → update_screen_position,
+        // which animates gem-track-internal PropAnims (track_size/track_shift
+        // /track_cam_rect) — those drive highway-track widgets, NOT trackpanel
+        // siblings like the BandScoreboard.
+        //
+        // The BandScoreboard's xfm is set ONLY by `scoreboard_to_top.tnm`
+        // (immediately above): at frame 1.0 the tnm animates `scoreboard.trans`
+        // local=(0,0,4). But scoreboard.trans is parented to `right.grp`
+        // (local=(11.713,0,1.764)) inside aspect_ratio.grp inside draw_order.grp.
+        // The `right.grp` is the AUTHORED multi-player right-edge anchor; in
+        // retail single-player it is supposed to be neutralized to (0,0,*) so
+        // the scoreboard ends up at world x=0 (top-center). The neutralization
+        // is part of the milo asset's authored single-player layout that the
+        // `update` script's `[objects]/[xfms]` else-branch would apply — but
+        // that branch only fires for NON-active configs (and even when it did
+        // fire, K9_APPLY_DBG showed td.objects/td.visibles/td.xfms are size=0
+        // in the loaded milo asset, so the saved-positions data path doesn't
+        // populate anything either).
+        //
+        // FIX: walk the scoreboard.trans parent chain after the apply handler
+        // runs and neutralize `right.grp`'s authored x-offset for single-player
+        // (and analogously `left.grp` for the applause meter). This reproduces
+        // the visual effect of the missing-or-empty saved-objects layout for
+        // the single-player aspect. Gated by RB3_APPLY_HANDLER_FIX_OFF=1 to
+        // allow A/B testing.
+        //
+        // The fix is opt-OUT (default on) because:
+        // 1. It only acts on `*.grp` named `right`/`left` in the scoreboard /
+        //    applause-meter chain when num_players==1, so multi-player layouts
+        //    (which want the multi-player fan-out) are unaffected.
+        // 2. It is idempotent (same value every call) and the rest of the
+        //    gameplay/venue/highway/camera framing — owned by V12 CAMERA_FRAME_FIX
+        //    — is unchanged.
+        if (!getenv("RB3_APPLY_HANDLER_FIX_OFF")) {
+            // Only neutralize for single-player (1 in-use gem track).
+            // unk24c is the in-use count populated above.
+            int nPlayers = (mTrackPanel ? mTrackPanel->GetNumPlayers() : 1);
+            if (nPlayers == 1 && unk24c == 1) {
+                // Helper: given a tnm driving a trans, walk up its parent chain
+                // and zero the x-translation on any group named "right.grp" or
+                // "left.grp" (the authored multi-player anchor groups). Leave
+                // y/z alone so vertical placement / depth keying is preserved.
+                auto neutralizeAnchor = [](RndTransAnim *tnm) {
+                    if (!tnm) return;
+                    static Message qTrans("trans");
+                    DataNode n = tnm->Handle(qTrans.mData, false);
+                    if (n.Type() != kDataObject) return;
+                    Hmx::Object *t = n.UncheckedObj();
+                    RndTransformable *rt = dynamic_cast<RndTransformable *>(t);
+                    if (!rt) return;
+                    int depth = 0;
+                    for (RndTransformable *p = rt->TransParent();
+                         p && depth < 8;
+                         p = p->TransParent(), ++depth) {
+                        const char *nm = p->Name();
+                        if (!nm) continue;
+                        if (std::strcmp(nm, "right.grp") == 0 ||
+                            std::strcmp(nm, "left.grp") == 0) {
+                            Transform lx(p->LocalXfm());
+                            if (lx.v.x != 0.0f) {
+                                lx.v.x = 0.0f;
+                                p->SetLocalXfm(lx);
+                            }
+                            break; // only the nearest anchor
+                        }
+                    }
+                };
+                neutralizeAnchor(Find<RndTransAnim>("scoreboard_to_top.tnm", false));
+                neutralizeAnchor(Find<RndTransAnim>("applause_meter_to_top.tnm", false));
+                neutralizeAnchor(Find<RndTransAnim>("mtv_overlay_to_top.tnm", false));
+            }
+        }
+        // K9_APPLY_DBG trace (compact form retained for re-verification).
+        if (getenv("K9_APPLY_DBG")) {
+            RndTransAnim *sbtt = Find<RndTransAnim>("scoreboard_to_top.tnm", false);
+            if (sbtt) {
+                static Message qTrans("trans");
+                DataNode n = sbtt->Handle(qTrans.mData, false);
+                Hmx::Object *t = (n.Type() == kDataObject) ? n.UncheckedObj() : nullptr;
+                if (RndTransformable *rt = dynamic_cast<RndTransformable *>(t)) {
+                    const Transform &wx = rt->WorldXfm();
+                    MILO_LOG("K9_APPLY: sbtt.trans world=(%.3f,%.3f,%.3f) "
+                             "after-fix=%s\n",
+                             wx.v.x, wx.v.y, wx.v.z,
+                             getenv("RB3_APPLY_HANDLER_FIX_OFF") ? "OFF" : "ON");
+                }
+            }
+        }
+#endif
         bool b15 = true;
         if (mTrackPanel)
             b15 = mTrackPanel->ShowApplauseMeter();
