@@ -181,13 +181,15 @@ void GameGemList::SetGems(
     mGems.clear();
     mGems.reserve(numLoops * gems.size());
     int tickOffset = 0;
+    int tickShift = loopStartTick - startTick;
+    int loopLen = loopEndTick - loopStartTick;
     for (int i = 0; i < numLoops; i++) {
         for (unsigned int j = 0; j < gems.size(); j++) {
             GameGem gem = gems[j];
-            gem.CopyGem((GameGem *)&gems[j], (loopStartTick - startTick) + tickOffset);
+            gem.CopyGem((GameGem *)&gems[j], tickShift + tickOffset);
             mGems.push_back(gem);
         }
-        tickOffset += loopEndTick - loopStartTick;
+        tickOffset += loopLen;
     }
 }
 
