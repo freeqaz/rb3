@@ -381,7 +381,7 @@ void CharBones::ScaleAdd(CharBones &dst, float f) const {
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
-                float fz = (float)sdata[2] * 0.039674062f;
+                float fz = (float)sdata[2] * 0.039674062;
                 float fy = (float)sdata[1] * 0.039674062f;
                 float fx = (float)sdata[0] * 0.039674062f;
                 while (db->name != src->name) {
@@ -459,7 +459,7 @@ add_quat:
                 float sy = (float)sdata[1] * scale;
                 float sz = (float)sdata[2] * scale;
                 float sx = (float)sdata[0] * scale;
-                if (sw * dquat->w + sz * dquat->z + sx * dquat->x + sy * dquat->y < 0.0f) {
+                if ((sy * dquat->y + (sw * dquat->w + (sz * dquat->z + sx * dquat->x))) < 0.0f) {
                     dquat->x -= sx;
                     dquat->y -= sy;
                     dquat->z -= sz;
@@ -745,15 +745,16 @@ blend_rot:
 }
 
 void CharBones::RotateBy(CharBones &dst) const {
-    if (mBones.size() == 0)
+    int _tmp1 = mBones.size();
+    if (_tmp1 == 0)
         return;
     const Bone *src = mBones.begin();
 
     if (mCounts[TYPE_QUAT] > mCounts[TYPE_POS]) {
         const Bone *src_end = src + mCounts[TYPE_QUAT];
-        Vector3 *ddata = (Vector3 *)dst.mStart;
         Bone *db = dst.mBones.begin() + dst.mCounts[TYPE_POS];
         Bone *db_end = dst.mBones.begin() + dst.mCounts[TYPE_QUAT];
+        Vector3 *ddata = (Vector3 *)dst.mStart;
         if (mCompression >= kCompressVects) {
             short *sdata = (short *)mStart;
             while (true) {
