@@ -422,7 +422,7 @@ bool gPreventTriFrameSwitchage;
 #pragma push
 #pragma pool_data off
 void PollTriFrame(float frameMs, float syncMs) {
-    static DataNode &venue_test = DataVariable("venue_test");
+    static const DataNode &venue_test = DataVariable("venue_test");
     if (venue_test == DataNode(1)) {
     } else {
         static float times[6];
@@ -431,9 +431,9 @@ void PollTriFrame(float frameMs, float syncMs) {
         static int syncCount;
         static int trycount;
 
-        times[count % 6] = frameMs;
         syncTimes[(count + 1) % 6] = syncMs;
         gTempTimes[gTempTimesIdx] = frameMs;
+        times[count % 6] = frameMs;
         gTempTimesIdx = (gTempTimesIdx + 1) % 10240;
         count++;
         syncCount++;
