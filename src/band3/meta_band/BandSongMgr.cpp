@@ -557,7 +557,7 @@ bool BandSongMgr::IsInExclusionList(const char *name, int songID) const {
 bool BandSongMgr::AllowContentToBeAdded(DataArray *a, ContentLocT lt) {
     if (lt == kLocationRoot)
         return true;
-    int count = CountSongsInArray(a);
+    unsigned int count = CountSongsInArray(a);
     while (count + GetCurSongCount() >= mMaxSongCount) {
         if (!RemoveOldestCachedContent())
             break;
@@ -572,7 +572,7 @@ bool BandSongMgr::AllowContentToBeAdded(DataArray *a, ContentLocT lt) {
     } else {
         unk13c = false;
     }
-    return !full;
+                                                                return !(full);
 }
 
 int BandSongMgr::GetValidSongs(
