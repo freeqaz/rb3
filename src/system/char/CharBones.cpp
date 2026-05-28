@@ -218,10 +218,10 @@ void CharBones::ScaleDown(CharBones &dst, float f) const {
     zero_quat:
         if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
             Bone *db_begin = dst.mBones.begin();
-            Hmx::Quat *qdata = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
             Bone *db = db_begin + dst.mCounts[TYPE_QUAT];
-            Bone *db_end = db_begin + dst.mCounts[TYPE_ROTX];
+            Hmx::Quat *qdata = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
             const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_ROTX];
             while (true) {
                 while (db->name != src->name) {
                     db++;
@@ -309,10 +309,10 @@ void CharBones::ScaleDown(CharBones &dst, float f) const {
     scale_quat:
         if (mCounts[TYPE_ROTX] > mCounts[TYPE_QUAT]) {
             Bone *db_begin = dst.mBones.begin();
-            Hmx::Quat *qdata = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
             Bone *db = db_begin + dst.mCounts[TYPE_QUAT];
-            Bone *db_end = db_begin + dst.mCounts[TYPE_ROTX];
+            Hmx::Quat *qdata = (Hmx::Quat *)(dst.mStart + dst.mOffsets[TYPE_QUAT]);
             const Bone *src_end = mBones.begin() + mCounts[TYPE_ROTX];
+            Bone *db_end = db_begin + dst.mCounts[TYPE_ROTX];
             while (true) {
                 while (db->name != src->name) {
                     db++;
