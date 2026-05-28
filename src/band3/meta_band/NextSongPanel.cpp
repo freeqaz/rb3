@@ -216,6 +216,7 @@ void NextSongPanel::SetReviewDisplayValue(int slot, int reviewValue) {
     reviewDisplay->SetValues(reviewValue, true);
 }
 
+#pragma pool_data off
 void NextSongPanel::UpdateScrollArrows(int i, bool b) {
     int i7 = unk70[i];
     int i4 = GetMaxScrollPage(i);
@@ -244,6 +245,7 @@ void NextSongPanel::UpdateScrollArrows(int i, bool b) {
         Handle(cMsg, true);
     }
 }
+#pragma pool_data reset
 
 void NextSongPanel::SetScrollExpandedDetails(int i, int j) {
     unk70[i] = j;
