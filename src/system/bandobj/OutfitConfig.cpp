@@ -239,7 +239,8 @@ void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
     RndMesh *headMesh = GetHeadMesh();
     if (!headMesh)
         return;
-    if (headMesh->mGeomOwner->mVerts.size() == 0)
+    int _tmp0 = headMesh->mGeomOwner->mVerts.size();
+    if (_tmp0 == 0)
         return;
     const std::vector<SyncMeshCB::Vert> *beforeVerts = &cb->GetVerts(headMesh);
     if (!beforeVerts)
@@ -256,7 +257,7 @@ void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
         );
         return;
     }
-    for (int i = 0; i < mPieces.size(); i++) {
+    for (int i = 0.0f; i < mPieces.size(); i++) {
         const Piece &piece = mPieces[i];
         if (piece.mVert == -1)
             continue;
@@ -288,9 +289,9 @@ void OutfitConfig::Piercing::Deform(SyncMeshCB *cb) {
                 weights[0] = (float)(packed & 0xff) / 255.0f;
                 weights[1] = (float)((packed >> 8) & 0xff) / 255.0f;
                 weights[2] = 1.0f - weights[0] - weights[1];
-                unsigned short *faceVerts =
-                    &headMesh->mGeomOwner->mFaces[faceIdx].v1;
                 for (int k = 0; k < 3; k++) {
+                    unsigned short *faceVerts =
+                        &headMesh->mGeomOwner->mFaces[faceIdx].v1;
                     unsigned short srcIdx = faceVerts[k];
                     RndMesh::Vert &cur = headMesh->mGeomOwner->mVerts[srcIdx];
                     const SyncMeshCB::Vert &before = (*beforeVerts)[srcIdx];
