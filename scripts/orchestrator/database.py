@@ -213,15 +213,41 @@ def ingest_report(
 
             if existing:
                 if update_existing:
-                    # Update metadata and match percentage
+                    if percent is None:
+                        # No valid measurement for this function in the report
+                        # (e.g. it lives in a NonMatching unit that dtk can't
+                        # score, so neither fuzzy_match_percent nor match_percent
+                        # is present). Previously we wrote the missing percent
+                        # straight into current_percent / best_percent, wiping
+                        # the recorded score to NULL — silently destroying
+                        # progress for any function whose unit isn't currently
+                        # measurable (the "CharEyes sweep" bug). Only refresh
+                        # the cheap metadata; leave the scores and verdict alone.
+                        conn.execute(
+                            """
+                            UPDATE functions SET
+                                demangled = COALESCE(?, demangled),
+                                unit = COALESCE(?, unit),
+                                size = COALESCE(?, size),
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE id = ?
+                            """,
+                            (demangled, unit_name, size, existing["id"]),
+                        )
+                        skipped += 1
+                        continue
+
+                    # We have a real measurement. best_percent stays a
+                    # monotonic max; never let a (lower) new measurement pull
+                    # the recorded best down.
                     new_best = percent
                     old_best = existing["best_percent"]
-                    if old_best is not None and new_best is not None:
+                    if old_best is not None:
                         new_best = max(old_best, new_best)
 
                     # Auto-set verdict for 100% matches
                     verdict = existing["verdict"]
-                    if percent is not None and percent >= 100.0:
+                    if percent >= 100.0:
                         verdict = "COMPLETE"
 
                     conn.execute(
