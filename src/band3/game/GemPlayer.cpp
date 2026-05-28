@@ -2203,7 +2203,7 @@ void GemPlayer::AddHeadPoints(float f1, int i2, int i3, GemHitFlags flags) {
     int i5 = 0;
     if (mGameCymbalLanes != 0) {
         MILO_ASSERT(mUser->GetTrackType() == kTrackDrum, 0xE43);
-        DataNode &node = mDrumCymbalPointBonus->Node(gem.GetSlot() + 1);
+        const DataNode &node = mDrumCymbalPointBonus->Node(gem.GetSlot() + 1);
         if (node.Type() == kDataInt)
             i5 = node.Int();
         else if (node.Type() == kDataArray) {
@@ -2229,10 +2229,10 @@ void GemPlayer::AddHeadPoints(float f1, int i2, int i3, GemHitFlags flags) {
     AddPoints(ivar2, true, true);
     mStats.AddAccuracy(ivar2);
     int rounded = Round(gem.GetMs() - (f1 + mSyncOffset));
+    unk390 -= rounded;
     unk394 += rounded;
     unk398++;
-    unk390 -= rounded;
-    PrintAddHead(rounded, i3, ivar2, unk394 / unk398, unk390 + 0.5f);
+    PrintAddHead(rounded, i3, ivar2, unk394 / unk398, unk390 + 0.5);
 }
 
 void GemPlayer::SetFilling(bool b1, int i2) {
