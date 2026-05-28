@@ -1115,7 +1115,7 @@ void RndParticleSys::UpdateRelativeXfm() {
         return;
 #endif
     float one = 1.0f;
-    if (mRelativeMotion == one) {
+    if (one == mRelativeMotion) {
         mRelativeXfm = mRelativeParent->WorldXfm();
     } else if (mRelativeMotion) {
         Transform &worldXfm = mRelativeParent->WorldXfm();
