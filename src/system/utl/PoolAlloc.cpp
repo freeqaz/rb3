@@ -142,13 +142,17 @@ void ChunkAllocator::UploadDebugStats() {
 }
 
 bool AddrIsInPool(void *addr, PoolType pool) {
+    ChunkAllocator::Hunk *hunks;
+    int n;
+    unsigned int start;
+    unsigned int end;
     for (int i = 0; i < 2; i++) {
         if (gChunkAlloc[i]) {
-            ChunkAllocator::Hunk *hunks = gChunkAlloc[i]->mHunks;
-            int n = gChunkAlloc[i]->mNumHunks;
+            hunks = gChunkAlloc[i]->mHunks;
+            n = gChunkAlloc[i]->mNumHunks;
             for (int j = 0; j < n; j++) {
-                unsigned int start = (unsigned int)hunks->mStart;
-                unsigned int end = start + hunks->mSize;
+                start = (unsigned int)hunks->mStart;
+                end = start + hunks->mSize;
                 if ((unsigned int)addr >= start && (unsigned int)addr <= end) {
                     return true;
                 }
