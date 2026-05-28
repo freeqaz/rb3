@@ -1243,7 +1243,9 @@ void SongParser::PrepareTrack(const char *track_name, PartInfo *info) {
         if (it->ContainsTrackName(track_name)) {
             if (it->NoSongDataTrack()) {
                 if (it->audio_type == kAudioFake) {
-                    mTrack = mNextFakeTrack++ + 100;
+                    int t = mNextFakeTrack;
+                    mNextFakeTrack = t + 1;
+                    mTrack = t + 100;
                 } else {
                     mTrack = mNextRealTrack;
                     mNextRealTrack++;
