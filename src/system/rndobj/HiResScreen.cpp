@@ -225,11 +225,7 @@ void HiResScreen::CurrentTileRect(
 }
 
 void HiResScreen::Accumulate() {
-    if (mCurrTile == 0) {
-        mCurrTile = 1;
-        return;
-    }
-    int prevTile = mCurrTile - 1;
+    int prevTile = mCurrTile;
     if (prevTile >= mTiling * mTiling) {
         return;
     }
@@ -242,8 +238,8 @@ void HiResScreen::Accumulate() {
     int tileY = prevTile / mTiling;
     int left, top, right, bottom;
     GetBorderForTile(tileX, tileY, left, right, top, bottom);
-    int xOff = (TheRnd->mWidth - 480) * tileX;
-    int yOff = (TheRnd->mHeight - 270) * tileY;
+    int xOff = tileX * (TheRnd->mWidth - 480);
+    int yOff = tileY * (TheRnd->mHeight - 270);
     auto _tmp0 = bm.Width();
     Merge(bm, xOff, yOff, left, right, _tmp0, bm.Height(), top, bottom);
     TheRnd->ResetProcCounter();
