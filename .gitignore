@@ -66,6 +66,7 @@ cache.db
 decomp.db
 decomp.db-shm
 decomp.db-wal
+decomp.db.*-backup
 permuter_cache.db
 permuter_cache.db-shm
 permuter_cache.db-wal
@@ -110,3 +111,12 @@ bin/objdiff-cli
 # rust target folders
 tools/*/target/
 .DS_Store
+
+# Native-port screenshot dumps (PNGs only; REVIEW.md / POLISH_REPORT.md stay tracked)
+/screenshots/
+docs/sessions/**/screenshots/**/*.png
+docs/sessions/**/screenshots/**/*.jpg
+docs/sessions/**/screenshots/**/*.jpeg
+
+# Permuter auto-sweep run logs (one dir per fleet run, large attempt dumps)
+logs/permuter/auto_*/
