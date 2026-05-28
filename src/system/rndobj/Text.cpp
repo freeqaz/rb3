@@ -456,7 +456,7 @@ void RndText::Print() {
 RndText::RndText()
     : mFont(this), mWrapWidth(0), mLeading(1), mStyle(mFont, 1, 0, -1, 0),
       mAltStyle(nullptr, 1, 0, -1, 0), mAlign(kTopLeft), mCapsMode(kCapsModeNone),
-      mFixedLength(0), mDeferUpdate(0), unk124b4(0), unk124b4p1(0), unk128(0), unk12c(0),
+      mFixedLength(0), mDeferUpdate(0), unk124b4(0), unk124b4p1(0), unk128(nullptr), unk12c(0),
       unk130(0) {
     mTextMarkup = false;
     unkbp4 = false;
