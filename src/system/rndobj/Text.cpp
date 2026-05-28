@@ -1429,13 +1429,12 @@ int RndText::AddLineUTF8(
     unkbp7 = true;
     float f98 = 0;
     int lineIdx;
-    if (!fp)
-        fp = &f98;
+    fp = fp ? fp : &f98;
 
     const String &_ref0 = mText;
     int _tmp0 = utf8.length();
     int _tmp1 = _ref0.length();
-    if (_tmp0 + _tmp1 > mFixedLength) {
+    if ((unsigned int)(_tmp1 + _tmp0) > (unsigned int)mFixedLength) {
         MILO_WARN(
             "Text %s%s exceeds fixed length of %d, truncating",
             utf8.c_str(),
