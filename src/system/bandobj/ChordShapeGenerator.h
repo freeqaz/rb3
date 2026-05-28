@@ -8,8 +8,6 @@ class ChordShapeGenerator : public Hmx::Object {
 public:
     class Edge {
     public:
-        Edge() {}
-        Edge(unsigned short a, unsigned short b) : mV0(a), mV1(b) {}
         unsigned short mV0; // 0x0
         unsigned short mV1; // 0x2
     };
