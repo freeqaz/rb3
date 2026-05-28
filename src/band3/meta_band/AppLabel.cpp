@@ -706,10 +706,13 @@ void AppLabel::SetPitch(int pitch, int chrom) {
         MILO_FAIL("pitch %d doesn't map to a white key", pitch);
         break;
     }
-    if (c == 1) {
+    switch (c) {
+    case 1:
         buf[1] = '#';
-    } else if (c == -1) {
+        break;
+    case -1:
         buf[1] = 'b';
+        break;
     }
     SetDisplayText(buf, true);
 }
