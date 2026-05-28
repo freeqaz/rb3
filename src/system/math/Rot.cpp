@@ -445,9 +445,11 @@ void RotateAboutX(const Hmx::Matrix3 &min, float f, Hmx::Matrix3 &mout) {
     float yz = min.y.z;
     float zy = min.z.y;
     float yy = min.y.y;
+    float xz = min.x.z;
+    float xy = min.x.y;
     mout.x.x = min.x.x;
-    mout.x.y = min.x.y * fcos - min.x.z * fsin;
-    mout.x.z = min.x.y * fsin + min.x.z * fcos;
+    mout.x.y = xy * fcos - xz * fsin;
+    mout.x.z = xy * fsin + xz * fcos;
     mout.y.x = yx;
     mout.y.y = yy * fcos - yz * fsin;
     mout.y.z = yy * fsin + yz * fcos;
