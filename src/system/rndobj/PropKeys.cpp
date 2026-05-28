@@ -315,8 +315,8 @@ void PropKeys::SetInterpHandler(Symbol sym) {
 int FloatKeys::FloatAt(float frame, float &fl) {
     MILO_ASSERT(size(), 0x188);
     fl = 0.0f;
-    float ref = 0.0f;
     const Key<float> *prev;
+    float ref = 0.0f;
     const Key<float> *next;
     int at = AtFrame(frame, prev, next, ref);
     switch (mInterpolation) {
@@ -330,10 +330,10 @@ int FloatKeys::FloatAt(float frame, float &fl) {
         if (size() < 3 || prev == next) {
             Interp(prev->value, next->value, ref, fl);
         } else {
+            int idx = (prev - begin());
             float points[4];
             points[1] = prev->value;
             points[2] = next->value;
-            int idx = (prev - begin());
             if (idx == 0) {
                 points[0] = prev->value;
             } else {
