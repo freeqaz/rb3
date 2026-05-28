@@ -86,6 +86,10 @@ public:
     virtual bool IsSnappableAtData(int) const;
     virtual DataNode Handle(DataArray *, bool);
     virtual bool SyncProperty(DataNode &, DataArray *, int, PropOp);
+    virtual void OnSynchronized(unsigned int);
+    virtual void SyncSave(BinStream &, unsigned int) const;
+    virtual void SyncLoad(BinStream &, unsigned int);
+    virtual bool HasSyncPermission() const;
     virtual void ContentStarted();
     virtual void ContentMounted(const char *, const char *);
     virtual void ContentDone();
@@ -100,10 +104,6 @@ public:
 #else
     virtual const char *ContentDir() { return nullptr; }
 #endif
-    virtual void SyncSave(BinStream &, unsigned int) const;
-    virtual void SyncLoad(BinStream &, unsigned int);
-    virtual bool HasSyncPermission() const;
-    virtual void OnSynchronized(unsigned int);
 
     std::vector<int> &GetSetlist();
     void AppendToSetlist(int);

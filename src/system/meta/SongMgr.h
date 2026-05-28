@@ -53,7 +53,7 @@ public:
     AddSongData(DataArray *, std::map<int, SongMetadata *> &, const char *, ContentLocT, std::vector<int> &) = 0;
     virtual void AddSongIDMapping(int, Symbol) = 0;
     virtual void ReadCachedMetadataFromStream(BinStream &, int) = 0;
-    virtual void WriteCachedMetadataFromStream(BinStream &) const = 0;
+    virtual void WriteCachedMetadataToStream(BinStream &) const = 0;
 
     bool HasSong(int) const;
     bool HasSong(Symbol, bool) const;

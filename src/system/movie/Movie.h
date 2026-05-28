@@ -34,7 +34,6 @@ public:
         public:
             MovieLoader(const FilePath &, Movie::Impl *);
             virtual ~MovieLoader();
-            virtual const char *DebugText() { return Loader::DebugText(); }
             virtual bool IsLoaded() const;
             virtual const char *StateName() const;
             virtual void PollLoading();

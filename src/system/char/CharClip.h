@@ -140,7 +140,6 @@ public:
     virtual void PreSave(BinStream &);
     virtual void PostSave(BinStream &);
     virtual void Print();
-    virtual void Export(DataArray *, bool);
     virtual void SetTypeDef(DataArray *);
 
     CharBoneDir *GetResource() const;

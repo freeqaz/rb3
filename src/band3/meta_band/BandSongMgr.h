@@ -45,7 +45,7 @@ public:
     AddSongData(DataArray *, std::map<int, SongMetadata *> &, const char *, ContentLocT, std::vector<int> &);
     virtual void AddSongIDMapping(int, Symbol);
     virtual void ReadCachedMetadataFromStream(BinStream &, int);
-    virtual void WriteCachedMetadataFromStream(BinStream &) const;
+    virtual void WriteCachedMetadataToStream(BinStream &) const;
     virtual const char *ContentPattern();
     virtual const char *ContentDir();
     virtual bool HasContentAltDirs() { return !mContentAltDirs.empty(); }
@@ -88,7 +88,6 @@ public:
     int GetPosInRecentList(int);
     bool IsInExclusionList(const char *, int) const;
     bool RemoveOldestCachedContent();
-    void WriteCachedMetadataToStream(BinStream &) const;
     int GetPartDifficulty(Symbol, Symbol) const;
     bool IsSongUnplayable(int, BandUserMgr &, bool) const;
 

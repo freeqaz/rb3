@@ -19,6 +19,8 @@ BufStreamNAND::~BufStreamNAND() {
     DeleteChecksum();
 }
 
+void BufStreamNAND::Flush() {}
+
 int BufStreamNAND::Tell() {
     return mRunningTell;
 }

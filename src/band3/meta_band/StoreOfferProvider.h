@@ -51,12 +51,12 @@ public:
     );
     virtual ~StoreOfferProvider();
     virtual DataNode Handle(DataArray *, bool);
+    virtual void InitData(RndDir *);
     virtual void Text(int, int, UIListLabel *, UILabel *) const;
     virtual RndMat *Mat(int, int, UIListMesh *) const;
     virtual Symbol DataSymbol(int) const;
-    virtual int NumData() const;
     virtual bool IsActive(int) const;
-    virtual void InitData(RndDir *);
+    virtual int NumData() const;
 
     void BuildList(DataArray *);
     void ClearList();

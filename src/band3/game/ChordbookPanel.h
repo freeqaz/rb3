@@ -49,10 +49,10 @@ public:
     virtual void Unload();
     virtual bool IsLoaded() const;
     virtual void FinishLoad();
+    virtual bool SyncProperty(DataNode &, DataArray *, int, PropOp);
     virtual bool Swing(int, bool, bool, bool, bool, GemHitFlags);
     virtual void FretButtonDown(int, int);
     virtual void FretButtonUp(int);
-    virtual bool SyncProperty(DataNode &, DataArray *, int, PropOp);
 
     GemPlayer *GetChordbookPlayer() const;
     void CreateController();

@@ -11,6 +11,7 @@ class BufStreamNAND : public FixedSizeSaveableStream {
 public:
     BufStreamNAND(void*, int, char*, bool);
     ~BufStreamNAND();
+    virtual void Flush();
     int Tell();
     void SetResult(MCResult);
     int GetResult();

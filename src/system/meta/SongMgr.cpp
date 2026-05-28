@@ -243,7 +243,7 @@ int gSongCacheSaveVer = 0xB;
 
 bool SongMgr::SaveCachedSongInfo(BufStream &bs) {
     bs << gSongCacheSaveVer << mSongIDsInContent;
-    WriteCachedMetadataFromStream(bs);
+    WriteCachedMetadataToStream(bs);
     return true;
 }
 
@@ -262,7 +262,7 @@ int SongMgr::GetCachedSongInfoSize() const {
     int rev = 0;
     ms << rev;
     ms << mSongIDsInContent;
-    WriteCachedMetadataFromStream(ms);
+    WriteCachedMetadataToStream(ms);
     return ms.Tell();
 }
 
