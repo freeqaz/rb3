@@ -99,12 +99,13 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
         mPhrases.insert(mPhrases.begin(), phrase);
     }
 
-    int noteIdx = 0;
     float currentMin = 3.4028235E+38f;
+    int noteIdx = 0;
     float currentMax = -3.4028235E+38f;
     int lastRangeBoundingPhrase = -1;
     if (sDump)
         MILO_LOG("parsing phrase data\n");
+    int noteEnd;
     for (int phraseIdx = 1; phraseIdx < mPhrases.size(); phraseIdx++) {
         VocalPhrase &phrase = mPhrases[phraseIdx];
         phrase.unk18 = 0;
@@ -156,7 +157,8 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
             mLyricPhrases.push_back(phrase);
         }
 
-        for (int j = phrase.unk10; j < phrase.unk14; j++) {
+        noteEnd = phrase.unk14;
+        for (int j = phrase.unk10; j < noteEnd; j++) {
             if (!mNotes[j].IsUnpitched()) {
                 phrase.unk18 = 1;
                 phrase.unk24 = Min<float>((float)mNotes[j].StartPitch(), phrase.unk24);
@@ -214,8 +216,9 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
         mNotes.resize(noteIdx);
     }
 
+    int gem;
     for (int i = 0; i < mTambourineGems.size(); i++) {
-        int gem = mTambourineGems[i];
+        gem = mTambourineGems[i];
         int phraseIdx = 0;
         while (phraseIdx < mPhrases.size()
                && gem >= mPhrases[phraseIdx].unk8 + mPhrases[phraseIdx].unkc) {
@@ -354,8 +357,9 @@ void VocalNoteList::DetermineFreestyleSections() {
         }
         atWordBoundary = false;
         sectionStart = note->EndMs();
-        if (note->mText.empty()
-            || (note->mText.rindex(-1) != '-' && note->mText.rindex(-1) != '=')) {
+        String &text = note->mText;
+        if (text.empty()
+            || (text.rindex(-1) != '-' && text.rindex(-1) != '=')) {
             atWordBoundary = true;
         }
     }
