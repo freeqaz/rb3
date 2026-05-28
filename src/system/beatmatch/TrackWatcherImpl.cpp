@@ -488,23 +488,24 @@ void TrackWatcherImpl::CheckForGemsSeen(float ms) {
 }
 
 void TrackWatcherImpl::CheckForPitchBend(float ms) {
-    float whammy = mParent->GetWhammyBar();
+    TrackWatcherParent * &_ref0 = mParent;
+    float whammy = _ref0->GetWhammyBar();
     if (whammy >= -0.34999999f) {
         mPitchBendReady = true;
-        mBiggestWhammy = Max(mBiggestWhammy, whammy);
+        if (mBiggestWhammy < whammy) mBiggestWhammy = whammy;
     }
     if (HasAnyGemInProgress()) {
         if (mPitchBendReady && mBiggestWhammy != -1.0f) {
-            float f3 = (whammy - mBiggestWhammy) / (mBiggestWhammy + 1.0f);
+            float f3 = (whammy - mBiggestWhammy) / (1.0f + mBiggestWhammy);
             SendWhammy(f3);
             float range = (float)mPitchBendRange;
-            mParent->SetPitchBend(mTrack, range *
+            _ref0->SetPitchBend(mTrack, range *
                 (f3 * Clamp<float>(0, 1, (ms - mPitchBendMsHit) / mPitchBendMsToFull)), false);
         } else
             SendWhammy(0);
     } else {
         SendWhammy(0);
-        mParent->SetPitchBend(mTrack, 0, false);
+        _ref0->SetPitchBend(mTrack, 0, false);
         mBiggestWhammy = -1.0f;
     }
 }
