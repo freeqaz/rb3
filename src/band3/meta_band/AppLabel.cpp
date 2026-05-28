@@ -721,6 +721,7 @@ void AppLabel::SetTokenRedemptionString(const TokenRedemptionPanel *panel, int i
 
 void AppLabel::SetFromScoreDisplayData(short mask, int score, int rank, bool amongAll) {
     String icons;
+    Symbol sym;
     for (int i = 0; i < 11; i++) {
         if (mask & (1 << i)) {
             icons += GetFontCharFromScoreType((ScoreType)i, 0);
@@ -731,7 +732,11 @@ void AppLabel::SetFromScoreDisplayData(short mask, int score, int rank, bool amo
             MakeString("%s%s", icons.c_str(), LocalizeSeparatedInt(score)), true
         );
     } else {
-        Symbol sym = amongAll ? ir_among_all : ir_among_friends;
+        if (amongAll) {
+            sym = ir_among_all;
+        } else {
+            sym = ir_among_friends;
+        }
         SetDisplayText(
             MakeString(
                 "<alt>%s</alt> %s (%s %s)",
