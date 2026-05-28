@@ -354,8 +354,13 @@ bool ClipDistMap::FindBestNode(float maxError, float startBeat, float endBeat, N
         if (rowIdx >= 0) {
             do {
                 float cellError = mDists(startCol, rowIdx);
-                bool foundBetter = cellError < node.err;
-                if (foundBetter) node.err = cellError;
+                bool foundBetter;
+                if (cellError < node.err) {
+                    node.err = cellError;
+                    foundBetter = true;
+                } else {
+                    foundBetter = false;
+                }
                 if (foundBetter) {
                     node.curBeat = curBeat;
                     node.nextBeat = mBStart + (float)rowIdx / (float)mSamplesPerBeat;
