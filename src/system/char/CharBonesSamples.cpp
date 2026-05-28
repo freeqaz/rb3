@@ -463,7 +463,7 @@ void CharBonesSamples::ReadCounts(BinStream& bs, int i2){
     unsigned int i = 0;
     int tmp;
     int numTypesToRead = Min(7, i2);
-    for(; i < numTypesToRead; i++){
+    for(; (int)i < numTypesToRead; i++){
         bs >> mCounts[i];
     }
     for(int numTypesRead = i; numTypesRead < i2; numTypesRead++){

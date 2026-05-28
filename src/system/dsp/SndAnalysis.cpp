@@ -23,7 +23,7 @@ void ShiftedDotProduct(const float *buf, int len, float *ss, bool /*unused*/) {
 #ifdef __MWERKS__
         typedef __vec2x32float__ psq;
         register float *out = ss;
-        for (int i = 0; i <= vlen - 2; i += 2) {
+        for (int i = 0.0f; vlen - 2 >= i; i += 2) {
             register psq acc;
             register const float *p = buf;
             register const float *q = buf + i;
