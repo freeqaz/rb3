@@ -630,8 +630,8 @@ DataNode MidiParser::OnGetStart(DataArray *arr) { return GetStart(arr->Int(2)); 
 DataNode MidiParser::OnGetEnd(DataArray *arr) { return GetEnd(arr->Int(2)); }
 
 DataNode MidiParser::OnDebugDraw(DataArray *arr) {
-    float f2 = arr->Float(2);
     float f3 = arr->Float(3);
+    float f2 = arr->Float(2);
     TheRnd->DrawString(Name(), Vector2(0, f2), Hmx::Color(1, 1, 1), true);
     return DisplayEvents(mEvents, f2 + 12.0f, f3);
 }
