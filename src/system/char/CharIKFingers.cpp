@@ -194,7 +194,7 @@ void CharIKFingers::Poll() {
         Multiply(mHand->WorldXfm().m, mtx58, mtx7c);
         Vector3 v88;
         float weight = Weight();
-        if (weight < 1.0) {
+        if ((int)weight < 1.0) {
             if (mOutputTrans) {
                 mOutputTrans->SetWorldXfm(mHand->WorldXfm());
             }
@@ -231,8 +231,8 @@ void CharIKFingers::Poll() {
             }
             if (i3 > 0) {
                 for (int i = 2; i <= 4; i++) {
-                    FingerDesc &prevFinger = mFingers[i - 1];
-                    FingerDesc &curFinger = mFingers[i];
+                    const FingerDesc &prevFinger = mFingers[i - 1];
+                    const FingerDesc &curFinger = mFingers[i];
                     if (!curFinger.unk0) {
                         if (i == 4) {
                             FixSingleFinger(
@@ -273,8 +273,8 @@ void CharIKFingers::CalculateHandDest(int i1, int i2) {
             Hmx::Matrix3 m134;
             Multiply(mtx, mKeyboardRefBone->WorldXfm().m, m134);
             Normalize(m134, mDestHandTrans.m);
-            for (int i = 0; i < 5; i++) {
-                FingerDesc &curDesc = mFingers[i];
+            for (int i = 0; (unsigned int)i < 5; i++) {
+                const FingerDesc &curDesc = mFingers[i];
                 if (curDesc.unk0) {
                     ::Add(curDesc.unk8, v194, v194);
                     Vector3 v1ac;
@@ -360,11 +360,12 @@ void CharIKFingers::MoveFinger(FingerNum num) {
 }
 
 void CharIKFingers::CalculateFingerDest(FingerNum num) {
-    if (mOutputTrans) {
+    ObjPtr<RndTransformable> &_ref0 = mOutputTrans;
+    if (_ref0) {
         FingerDesc &finger = mFingers[num];
         if (finger.unk68) {
             Transform tf78;
-            Multiply(finger.mFinger01->mLocalXfm, mOutputTrans->WorldXfm(), tf78);
+            Multiply(finger.mFinger01->mLocalXfm, _ref0->WorldXfm(), tf78);
             finger.unk78 = tf78.m.x;
             Vector3 v1cc;
             MakeEuler(finger.mFinger02->mLocalXfm.m, v1cc);
@@ -393,8 +394,7 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
                 Multiply(finger.mFinger02->mLocalXfm, tfa8, tfd8);
                 Multiply(finger.mFinger03->mLocalXfm, tfd8, tf108);
                 Multiply(finger.mFingertip->mLocalXfm, tf108, tf138);
-                const Vector3 &v1e4 =
-                    (Distance(tf138.v, finger.unk8) < Distance(tf138.v, finger.unk14))
+                Vector3 v1e4 = (Distance(tf138.v, finger.unk8) < Distance(tf138.v, finger.unk14))
                         ? finger.unk8
                         : finger.unk14;
 
@@ -428,7 +428,7 @@ void CharIKFingers::CalculateFingerDest(FingerNum num) {
                 finger.unk84 = false;
             } else {
                 Transform tf1c0;
-                Multiply(finger.mFinger01->mLocalXfm, mOutputTrans->WorldXfm(), tf1c0);
+                Multiply(finger.mFinger01->mLocalXfm, _ref0->WorldXfm(), tf1c0);
                 finger.unk6c = tf1c0.m.x;
                 Vector3 v24c;
                 MakeEuler(finger.mFinger02->mLocalXfm.m, v24c);

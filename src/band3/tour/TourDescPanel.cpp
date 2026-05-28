@@ -200,11 +200,12 @@ void TourDescPanel::LoadIcons() {
                  TheTour->m_mapTourDesc.begin();
              it != end;
              ++it) {
-            TourDesc *pTourDesc = (*it).second;
+            TourDesc *pTourDesc = it->second;
             Symbol s = (*it).first;
             MILO_ASSERT(pTourDesc, 0x2A7);
             AddTex(pTourDesc->GetArt(), s.Str(), true, false);
-            AddTex(pTourDesc->GetGrayArt(), MakeString("%s_gray", s.Str()), true, false);
+            const char * _tmp0 = MakeString("%s_gray", s.Str());
+            AddTex(pTourDesc->GetGrayArt(), _tmp0, true, false);
         }
     }
     {

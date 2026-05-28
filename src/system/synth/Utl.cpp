@@ -14,7 +14,8 @@ public:
 float CalcSpeedFromTranspose(float f) { return std::pow(2.0f, f / 12.0f); }
 
 const char *CacheWav(const char *file, CacheResourceResult &result) {
-    result = (CacheResourceResult)0;
+    CacheResourceResult &_ref0 = result;
+    _ref0 = (CacheResourceResult)0;
     Platform platform = TheLoadMgr.GetPlatform();
     if (!file || *file == '\0' || platform == kPlatformNone) {
         return nullptr;
@@ -24,12 +25,11 @@ const char *CacheWav(const char *file, CacheResourceResult &result) {
     }
     const char *localized = FileLocalize(file, nullptr);
     Symbol platformSym = PlatformSymbol(platform);
-    const char *ext = FileGetExt(localized);
-    const char *base = FileGetBase(localized, nullptr);
     static char cacheFile[0x100];
+    const char * _tmp0 = MakeString("%s/gen/%s.%s_%s", FileGetPath(localized, nullptr), FileGetBase(localized, nullptr), FileGetExt(localized), platformSym);
     strcpy(
         cacheFile,
-        MakeString("%s/gen/%s.%s_%s", FileGetPath(localized, nullptr), base, ext, platformSym)
+        _tmp0
     );
     bool isLocal = FileIsLocal(localized);
     bool existsOnCD = AsyncFileWii::FileExistsOnCD(cacheFile);
@@ -40,7 +40,7 @@ const char *CacheWav(const char *file, CacheResourceResult &result) {
     String qualifiedName;
     FileQualifiedFilename(qualifiedName, localized);
     CacheResourceResult cacheResult = HolmesClientCacheResource(qualifiedName.c_str(), cacheFile);
-    result = cacheResult;
+    _ref0 = cacheResult;
     if ((int)cacheResult > 0) {
         return nullptr;
     }
