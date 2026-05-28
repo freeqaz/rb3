@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "cfaaa5bc3ddbaaed84f9db6fe6d9517f77e8729c"
+set(MILO_ENGINE_PIN "4077997491c801380cf28e364992c36ae5dc662b"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -595,6 +595,10 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
     ${REPO_ROOT}/src/network/net/Synchronize.cpp
+    # W2a: milo load + walk + draw. The native PNG path (RunRenderMesh /
+    # RenderToPng / _exit) is #ifndef __EMSCRIPTEN__-guarded; the web build only
+    # compiles LoadMiloAndWalk + RenderFrame, which main_web.cpp drives per-frame.
+    ${CMAKE_SOURCE_DIR}/src/rb3_render_mesh.cpp
 )
 
 # Trim NATIVE_SHIMS for web — keep native_file.cpp (its stdio-backed File

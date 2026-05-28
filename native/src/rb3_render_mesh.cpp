@@ -31,6 +31,8 @@
 #include "gfx/Screenshot.h"
 #include "platform/Rnd_Wgpu_RB3.h"
 
+#include "rb3_render_mesh.h"
+
 #include <unistd.h>
 #include <cmath>
 #include <cstdio>
@@ -193,6 +195,170 @@ static RndCam* SynthesizeCamera(const Bounds& b) {
     return cam;
 }
 
+// ---------------------------------------------------------------------------
+// Reusable pieces (shared with the web boot machine via rb3_render_mesh.h).
+// ---------------------------------------------------------------------------
+
+// Inject the empty type-def stubs the legacy short-name milo classes need.
+// Idempotent: only inserts if not already present. Requires gSystemConfig.
+static void InjectTypeDefStubs() {
+    DataArray* objCfg = gSystemConfig ? gSystemConfig->FindArray(Symbol("objects"), false) : nullptr;
+    if (!objCfg) return;
+    // The decomp names the texture/dir classes RndTex/RndDir (OBJ_CLASSNAME),
+    // but the on-disc config's `objects` type-def array is keyed by the legacy
+    // short names. When a loaded "Tex"/"Dir" object runs OBJ_SET_TYPE it does
+    // SystemConfig("objects", StaticClassName()="RndTex", "types"), which
+    // MILO_FAILs ("Couldn't find 'RndTex' in array"). Inject empty
+    // (RndTex (types)) / (RndDir (types)) stubs so that lookup finds an (empty)
+    // types array instead of faulting. Mesh geometry needs no real type-defs.
+    if (objCfg->FindArray(Symbol("RndTex"), false) &&
+        objCfg->FindArray(Symbol("RndDir"), false))
+        return;
+    DataArray* stubs = DataReadString("(RndTex (types)) (RndDir (types))");
+    if (stubs) {
+        objCfg->InsertNodes(objCfg->Size(), stubs);
+        printf("rb3-render: injected RndTex/RndDir type-def stubs\n");
+        stubs->Release();
+    }
+}
+
+WalkResult LoadMiloAndWalk(const char* miloPath) {
+    WalkResult r;
+    if (!miloPath || !*miloPath) {
+        fprintf(stderr, "rb3-render: LoadMiloAndWalk needs a .milo path\n");
+        return r;
+    }
+
+    InjectTypeDefStubs();
+
+    printf("rb3-render: loading '%s'\n", miloPath);
+    ObjectDir* dir = DirLoader::LoadObjects(FilePath(miloPath), nullptr, nullptr);
+    if (!dir) {
+        fprintf(stderr, "rb3-render: DirLoader::LoadObjects returned null\n");
+        return r;
+    }
+    r.dir = dir;
+
+    Bounds bounds;
+    int meshCount = 0, camCount = 0;
+    RndCam* firstCam = nullptr;
+    int total = CountAndBound(dir, bounds, meshCount, camCount, firstCam);
+    r.totalObjects = total;
+    r.meshCount = meshCount;
+    r.camCount = camCount;
+    printf("rb3-render: dir '%s' [%s] — %d objects, %d drawable meshes, %d cams\n",
+           dir->Name() ? dir->Name() : "(unnamed)", dir->ClassName().Str(),
+           total, meshCount, camCount);
+    if (bounds.valid) {
+        printf("rb3-render: scene bounds lo=(%.2f,%.2f,%.2f) hi=(%.2f,%.2f,%.2f)\n",
+               bounds.lo.x, bounds.lo.y, bounds.lo.z, bounds.hi.x, bounds.hi.y, bounds.hi.z);
+    }
+
+    if (meshCount == 0) {
+        fprintf(stderr, "rb3-render: no drawable meshes in this milo; nothing to render\n");
+        return r;
+    }
+
+    // Pick a camera: prefer a synthesized framing camera (loaded scene cameras
+    // often point elsewhere). Use RB3_USE_SCENE_CAM=1 to use the milo's camera.
+    RndCam* cam = nullptr;
+    if (getenv("RB3_USE_SCENE_CAM") && firstCam) {
+        cam = firstCam;
+        printf("rb3-render: using scene camera '%s'\n", cam->Name() ? cam->Name() : "(unnamed)");
+    } else if (bounds.valid) {
+        cam = SynthesizeCamera(bounds);
+    }
+    if (cam) {
+        RndCam::sCurrent = cam;
+        cam->Select();
+    }
+    r.cam = cam;
+    r.ok = true;
+    return r;
+}
+
+void RenderFrame(const WalkResult& walk) {
+    if (!walk.ok || !walk.dir) return;
+    // Re-select the camera each frame (a different milo/cam may have run
+    // BeginDrawing in between on the web App path; keep our framing cam current).
+    if (walk.cam) {
+        RndCam::sCurrent = walk.cam;
+        walk.cam->Select();
+    }
+
+    // For showing meshes, go through RndMesh::DrawShowing (the engine body,
+    // proving the matched-fork virtual dispatch -> BandRnd::DrawMesh). For
+    // hidden template-geometry meshes (the common case for these milos) call
+    // BandRnd::DrawMesh directly so the static scene still renders.
+    bool onlyShowing = getenv("RB3_ONLY_SHOWING") != nullptr;
+    gBandRnd.BeginFrame(walk.cam);
+    for (ObjDirItr<Hmx::Object> it(walk.dir, true); it; ++it) {
+        Hmx::Object* o = it;
+        if (RndMesh* mesh = dynamic_cast<RndMesh*>(o)) {
+            RndMesh* owner = mesh->GeomOwner(); if (!owner) owner = mesh;
+            bool hasGeom = owner->mFaces.size() > 0 &&
+                           (owner->mVerts.size() > 0 || owner->mNumCompressedVerts > 0);
+            if (!hasGeom) continue;
+            if (mesh->Showing())
+                mesh->DrawShowing();          // engine virtual body
+            else if (!onlyShowing)
+                gBandRnd.DrawMesh(mesh);      // hidden template geometry
+        }
+    }
+    gBandRnd.EndFrame();
+}
+
+#ifndef __EMSCRIPTEN__
+// NATIVE-ONLY: render one frame, read it back, write a PNG, and _exit(rc). The
+// PNG readback path needs a headless RGBA8 target; _exit dodges the
+// RB3-ObjectDir-vs-Dawn-device static-destructor race on process exit. This
+// MUST stay out of the web build (the browser loops forever).
+int RenderToPng(const WalkResult& walk) {
+    if (!walk.ok) return 1;
+
+    RenderFrame(walk);
+
+    GpuDevice& gpu = gBandRnd.Gpu();
+    int gw = gpu.WindowWidth(), gh = gpu.WindowHeight();
+    std::vector<uint8_t> pixels((size_t)gw * gh * 4);
+    if (!gpu.ReadbackHeadlessFrame(pixels.data(), pixels.size())) {
+        fprintf(stderr, "rb3-native: readback FAILED\n");
+        return 1;
+    }
+
+    // Clear color ~ (31,36,46). Count non-clear pixels = rendered geometry.
+    int clearR = (int)(0.12f * 255), clearG = (int)(0.14f * 255), clearB = (int)(0.18f * 255);
+    int nonClear = 0;
+    for (size_t i = 0; i < (size_t)gw * gh; i++) {
+        const uint8_t* p = &pixels[i * 4];
+        if (abs((int)p[0] - clearR) > 14 || abs((int)p[1] - clearG) > 14 || abs((int)p[2] - clearB) > 14)
+            nonClear++;
+    }
+    const uint8_t* center = &pixels[((size_t)(gh / 2) * gw + (gw / 2)) * 4];
+    printf("rb3-native: center pixel RGBA=(%u,%u,%u,%u); non-clear pixels=%d / %d (%.1f%%)\n",
+           center[0], center[1], center[2], center[3], nonClear, gw * gh,
+           100.0 * nonClear / (gw * gh));
+
+    const char* outPath = getenv("RB3_RENDER_MESH_PNG");
+    char defPath[] = "/tmp/rb3_render_mesh.png";
+    if (!outPath) outPath = defPath;
+    int rc = 0;
+    if (WritePNG(outPath, pixels.data(), gw, gh)) {
+        printf("rb3-native: wrote mesh frame to %s\n", outPath);
+    } else {
+        fprintf(stderr, "rb3-native: WritePNG FAILED\n");
+        rc = 1;
+    }
+
+    printf("rb3-native: RENDER_MESH %s\n", rc == 0 ? "OK" : "FAILED");
+    // The render + PNG are complete and flushed. Skip the global/static
+    // teardown (RB3 ObjectDir + Dawn device destructors race during exit, which
+    // can fault after a clean render). _exit avoids running those destructors.
+    fflush(stdout); fflush(stderr);
+    _exit(rc);
+    return rc;  // not reached
+}
+
 int RunRenderMesh(int argc, char **argv, const char *miloPath) {
     if (!miloPath) {
         fprintf(stderr, "rb3-native: RENDER_MESH needs a .milo path argument\n");
@@ -246,127 +412,17 @@ int RunRenderMesh(int argc, char **argv, const char *miloPath) {
     printf("rb3-native: config ready — objects-cfg=%p (%d entries)\n",
            (void*)objCfg, objCfg ? objCfg->Size() : -1);
 
-    // The decomp names the texture/dir classes RndTex/RndDir (OBJ_CLASSNAME),
-    // but the on-disc config's `objects` type-def array is keyed by the legacy
-    // short names. When a loaded "Tex"/"Dir" object runs OBJ_SET_TYPE it does
-    // SystemConfig("objects", StaticClassName()="RndTex", "types"), which
-    // MILO_FAILs ("Couldn't find 'RndTex' in array"). Inject empty
-    // (RndTex (types)) / (RndDir (types)) stubs so that lookup finds an (empty)
-    // types array instead of faulting. Mesh geometry needs no real type-defs.
-    if (objCfg) {
-        DataArray* stubs = DataReadString("(RndTex (types)) (RndDir (types))");
-        if (stubs) {
-            if (!objCfg->FindArray(Symbol("RndTex"), false) ||
-                !objCfg->FindArray(Symbol("RndDir"), false)) {
-                objCfg->InsertNodes(objCfg->Size(), stubs);
-                printf("rb3-native: injected RndTex/RndDir type-def stubs\n");
-            }
-            stubs->Release();
-        }
-    }
+    // Inject the legacy short-name type-def stubs BEFORE PreInitRender (matches
+    // the original ordering). LoadMiloAndWalk re-runs this idempotently.
+    InjectTypeDefStubs();
 
     // Register the rndobj factories (after the config boot, since the Init fns
     // read gSystemConfig).
     gBandRnd.PreInitRender();
 
-    // Load the milo.
-    printf("rb3-native: loading '%s'\n", absMilo);
-    ObjectDir* dir = DirLoader::LoadObjects(FilePath(absMilo), nullptr, nullptr);
-    if (!dir) {
-        fprintf(stderr, "rb3-native: DirLoader::LoadObjects returned null\n");
-        return 1;
-    }
-
-    Bounds bounds;
-    int meshCount = 0, camCount = 0;
-    RndCam* firstCam = nullptr;
-    int total = CountAndBound(dir, bounds, meshCount, camCount, firstCam);
-    printf("rb3-native: dir '%s' [%s] — %d objects, %d drawable meshes, %d cams\n",
-           dir->Name() ? dir->Name() : "(unnamed)", dir->ClassName().Str(),
-           total, meshCount, camCount);
-    if (bounds.valid) {
-        printf("rb3-native: scene bounds lo=(%.2f,%.2f,%.2f) hi=(%.2f,%.2f,%.2f)\n",
-               bounds.lo.x, bounds.lo.y, bounds.lo.z, bounds.hi.x, bounds.hi.y, bounds.hi.z);
-    }
-
-    if (meshCount == 0) {
-        fprintf(stderr, "rb3-native: no drawable meshes in this milo; nothing to render\n");
-        return 1;
-    }
-
-    // Pick a camera: prefer a synthesized framing camera (loaded scene cameras
-    // often point elsewhere). Use RB3_USE_SCENE_CAM=1 to use the milo's camera.
-    RndCam* cam = nullptr;
-    if (getenv("RB3_USE_SCENE_CAM") && firstCam) {
-        cam = firstCam;
-        printf("rb3-native: using scene camera '%s'\n", cam->Name() ? cam->Name() : "(unnamed)");
-    } else if (bounds.valid) {
-        cam = SynthesizeCamera(bounds);
-    }
-    if (cam) {
-        RndCam::sCurrent = cam;
-        cam->Select();
-    }
-
-    // --- Draw ---
-    // For showing meshes, go through RndMesh::DrawShowing (the engine body,
-    // proving the matched-fork virtual dispatch -> BandRnd::DrawMesh). For
-    // hidden template-geometry meshes (the common case for these milos) call
-    // BandRnd::DrawMesh directly so the static scene still renders.
-    bool onlyShowing = getenv("RB3_ONLY_SHOWING") != nullptr;
-    gBandRnd.BeginFrame(cam);
-    for (ObjDirItr<Hmx::Object> it(dir, true); it; ++it) {
-        Hmx::Object* o = it;
-        if (RndMesh* mesh = dynamic_cast<RndMesh*>(o)) {
-            RndMesh* owner = mesh->GeomOwner(); if (!owner) owner = mesh;
-            bool hasGeom = owner->mFaces.size() > 0 &&
-                           (owner->mVerts.size() > 0 || owner->mNumCompressedVerts > 0);
-            if (!hasGeom) continue;
-            if (mesh->Showing())
-                mesh->DrawShowing();          // engine virtual body
-            else if (!onlyShowing)
-                gBandRnd.DrawMesh(mesh);      // hidden template geometry
-        }
-    }
-    gBandRnd.EndFrame();
-
-    // --- Readback + PNG ---
-    GpuDevice& gpu = gBandRnd.Gpu();
-    int gw = gpu.WindowWidth(), gh = gpu.WindowHeight();
-    std::vector<uint8_t> pixels((size_t)gw * gh * 4);
-    if (!gpu.ReadbackHeadlessFrame(pixels.data(), pixels.size())) {
-        fprintf(stderr, "rb3-native: readback FAILED\n");
-        return 1;
-    }
-
-    // Clear color ~ (31,36,46). Count non-clear pixels = rendered geometry.
-    int clearR = (int)(0.12f * 255), clearG = (int)(0.14f * 255), clearB = (int)(0.18f * 255);
-    int nonClear = 0;
-    for (size_t i = 0; i < (size_t)gw * gh; i++) {
-        const uint8_t* p = &pixels[i * 4];
-        if (abs((int)p[0] - clearR) > 14 || abs((int)p[1] - clearG) > 14 || abs((int)p[2] - clearB) > 14)
-            nonClear++;
-    }
-    const uint8_t* center = &pixels[((size_t)(gh / 2) * gw + (gw / 2)) * 4];
-    printf("rb3-native: center pixel RGBA=(%u,%u,%u,%u); non-clear pixels=%d / %d (%.1f%%)\n",
-           center[0], center[1], center[2], center[3], nonClear, gw * gh,
-           100.0 * nonClear / (gw * gh));
-
-    const char* outPath = getenv("RB3_RENDER_MESH_PNG");
-    char defPath[] = "/tmp/rb3_render_mesh.png";
-    if (!outPath) outPath = defPath;
-    int rc = 0;
-    if (WritePNG(outPath, pixels.data(), gw, gh)) {
-        printf("rb3-native: wrote mesh frame to %s\n", outPath);
-    } else {
-        fprintf(stderr, "rb3-native: WritePNG FAILED\n");
-        rc = 1;
-    }
-
-    printf("rb3-native: RENDER_MESH %s\n", rc == 0 ? "OK" : "FAILED");
-    // The render + PNG are complete and flushed. Skip the global/static
-    // teardown (RB3 ObjectDir + Dawn device destructors race during exit, which
-    // can fault after a clean render). _exit avoids running those destructors.
-    fflush(stdout); fflush(stderr);
-    _exit(rc);
+    // Load + walk (also injects the type-def stubs), then render to PNG (_exit).
+    WalkResult walk = LoadMiloAndWalk(absMilo);
+    if (!walk.ok) return 1;
+    return RenderToPng(walk);
 }
+#endif  // !__EMSCRIPTEN__

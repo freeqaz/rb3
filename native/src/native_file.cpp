@@ -8,13 +8,33 @@
 #include <cstdio>
 #include <cstring>
 
+#ifdef __EMSCRIPTEN__
+#include "platform/WebAssets.h"
+#endif
+
 namespace {
 class NativeStdioFile : public File {
 public:
     NativeStdioFile(const char *path, int mode) : mFp(nullptr), mFail(true), mLastReadBytes(0) {
         // mode bit 2 (0x2) = read on Wii; otherwise treat as write/append.
-        const char *m = (mode & 2) ? "rb" : ((mode & 0x800) ? "ab" : "wb");
+        bool readMode = (mode & 2) != 0;
+        const char *m = readMode ? "rb" : ((mode & 0x800) ? "ab" : "wb");
         mFp = std::fopen(path, m);
+#ifdef __EMSCRIPTEN__
+        // On-demand asset fetch: under emcc the assets live on the dev server,
+        // not in MEMFS. If a READ open misses (the milo dependency graph pulls
+        // sibling .milo_xbox / texture files lazily as DirLoader::LoadObjects
+        // walks it), fetch the file into MEMFS via a synchronous XHR and retry.
+        // RB3 excludes the engine's AsyncFile_Native.cpp (which normally hosts
+        // this hook for the DC3 build), so it must live here. Pass `path`
+        // unchanged to both calls — WebAssetsFetchSync writes to the same path
+        // it opens (DC3's AsyncFileNative::_OpenAsync uses the same contract).
+        if (!mFp && readMode) {
+            if (WebAssetsFetchSync(path)) {
+                mFp = std::fopen(path, m);
+            }
+        }
+#endif
         mFail = (mFp == nullptr);
     }
     ~NativeStdioFile() override {

@@ -1,24 +1,24 @@
-// RB3 Web Port — W1 (clear-frame) entry point.
+// RB3 Web Port — W2a entry point: drive gBandRnd and render a real .milo.
 //
-// Mirrors rb3-native's RB3_BOOT=1 path (main_native.cpp:447-497) but driven by
-// the browser main loop instead of a single CLI invocation. W1's goal is the
-// smallest end-to-end proof the wasm pipeline runs: download the boot DTA
-// bundle, run SystemPreInit + SystemInit, stand up BandRnd's GpuDevice via the
-// WebGPU canvas surface, and emit a per-frame clear color so a Playwright
-// screenshot can verify it differs from the page background.
+// Mirrors rb3-native's RB3_RENDER_MESH path (rb3_render_mesh.cpp) but driven by
+// the browser main loop instead of a single CLI invocation. W1 stood up a
+// file-static GpuDevice + a clear pass to prove the wasm/WebGPU pipeline; W2a
+// retires that and drives the real BandRnd backend (gBandRnd), loads the milo
+// named by the ?milo= URL param, and walks/draws its meshes every frame.
 //
-// Boot state machine (mirrors dc3 main_web.cpp, simplified):
-//   BOOT_INIT        → WebAssetsInit + WebAssetsFetchBundle
-//   BOOT_FETCHING    → poll WebAssetsAllDone
-//   BOOT_ENGINE_INIT → SystemPreInit/SystemInit + register factories +
-//                      gBandRnd.InitGpu(W, H, /*headless=*/false)
-//   BOOT_GPU_WAIT    → gBandRnd.Gpu().IsReady() (async WebGPU adapter/device)
-//   BOOT_GPU_READY   → one BeginFrame/EndFrame to commit the initial clear
-//   BOOT_RUNNING     → per-frame BeginFrame/EndFrame;
-//                      window.rb3FrameCount = N for Playwright readiness
+// Boot state machine:
+//   BOOT_INIT          → WebAssetsInit + WebAssetsFetchBundle
+//   BOOT_FETCHING      → poll WebAssetsAllDone
+//   BOOT_ENGINE_INIT   → SystemPreInit/SystemInit + register factories +
+//                        gBandRnd.PreInitRender + SetClearColor +
+//                        gBandRnd.StartGpuInit(W, H, /*headless=*/false)
+//   BOOT_GPU_WAIT      → gBandRnd.Gpu().PollEvents() + IsReady() (async device)
+//   BOOT_GPU_READY     → gBandRnd.InitGpuResources()
+//   BOOT_LOADING_MILO  → parse ?milo=, LoadMiloAndWalk(path); emit rb3MilosLoaded
+//   BOOT_RUNNING_RENDER→ per-frame RenderFrame(walk); emit rb3FrameCount
 //
-// W2 swaps the trivial clear loop for a real .milo render; W3 wires input +
-// audio + the full RB3_GAME App flow. W1 deliberately does NOT touch the App.
+// W2b adds full-coverage libc++ shims + pixelmatch; W3 wires input + audio +
+// the full RB3_GAME App flow.
 
 #ifdef __EMSCRIPTEN__
 
@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "obj/Data.h"
 #include "obj/DataFile.h"
@@ -37,14 +38,17 @@
 #include "utl/Loader.h"
 
 #include "platform/WebAssets.h"
-#include "gfx/GpuDevice.h"
+#include "platform/Rnd_Wgpu_RB3.h"  // gBandRnd
+#include "rndobj/Cam.h"
 
-#include <webgpu/webgpu_cpp.h>
+#include "rb3_render_mesh.h"  // LoadMiloAndWalk / RenderFrame / WalkResult
+
 #include <unistd.h>  // chdir
 
 // rndobj + synth object factories so DirLoader can construct the live object
 // graph (SystemInit only registers obj-level factories; mirror RunBoot's
-// RegisterCommonFactories from main_native.cpp).
+// RegisterCommonFactories from main_native.cpp). gBandRnd.PreInitRender()
+// registers the rndobj ones; these add the obj/synth ones the milo graph needs.
 #include "obj/Object.h"
 #include "obj/ObjMacros.h"
 #include "obj/Dir.h"
@@ -66,9 +70,10 @@ extern DataArray *gSystemConfig;
 // TheNativeSettings() sees a populated struct.
 #include "rb3_native_settings.h"
 
-// Mirrors main_native.cpp's RegisterCommonFactories — without these the milo
-// loader silently WARNs on unknown classes. W1 doesn't load a milo, but boot
-// DTA wiring sometimes constructs objects up front; registering early is cheap.
+// Mirrors main_native.cpp's RegisterCommonFactories — the synth/obj factories
+// the milo dependency graph references. gBandRnd.PreInitRender() registers the
+// rndobj ones (Trans/Cam/Mesh/Env/Mat/Tex/Light/MultiMesh/Group/Dir + aliases);
+// these cover the obj/synth side. Duplicate registration is harmless (overwrite).
 static void RegisterCommonFactories() {
     Hmx::Object::Init();
     ObjectDir::Register();
@@ -88,6 +93,21 @@ static void RegisterCommonFactories() {
     REGISTER_OBJ_FACTORY(SfxSeq)
 }
 
+// Read the ?milo= URL query param into a std::string (empty if unset).
+static std::string GetMiloPathFromUrl() {
+    char* s = (char*)EM_ASM_PTR({
+        const params = new URLSearchParams(window.location.search);
+        const p = params.get('milo') || '';
+        const len = lengthBytesUTF8(p) + 1;
+        const buf = _malloc(len);
+        stringToUTF8(p, buf, len);
+        return buf;
+    });
+    std::string out(s ? s : "");
+    free(s);
+    return out;
+}
+
 // ============================================================================
 // Boot state machine
 // ============================================================================
@@ -98,7 +118,8 @@ enum BootState {
     BOOT_ENGINE_INIT,
     BOOT_GPU_WAIT,
     BOOT_GPU_READY,
-    BOOT_RUNNING,
+    BOOT_LOADING_MILO,
+    BOOT_RUNNING_RENDER,
     BOOT_ERROR,
 };
 
@@ -106,16 +127,13 @@ static BootState sBootState = BOOT_INIT;
 static int sFrameCount = 0;
 static int sGpuWaitFrames = 0;
 static const int kGpuWaitTimeout = 600;  // ~10s @ 60fps — Dawn adapter can be slow
+static WalkResult sWalk;
+static int sMilosLoaded = 0;
 
-// W1 dedicates a private GpuDevice + clear color instead of going through
-// BandRnd::InitGpu — the latter does device + pipeline-manager + ring-buffer +
-// default-texture setup in a SINGLE synchronous call that aborts on web
-// because mGpu.IsReady() is false until the async WebGPU adapter callback
-// fires. Splitting BandRnd's monolithic init across BOOT_GPU_WAIT is W2 work
-// (when we need the full backend for milo rendering); for W1 the device + a
-// clear-only render pass is enough to prove the toolchain.
-static GpuDevice sWebGpu;
-static const wgpu::Color kClearColor = {0.2, 0.4, 0.7, 1.0};  // matches smoke
+// Render resolution — fallbacks; GpuDevice_Web reads the canvas element's
+// width/height for the real dims.
+static const int kW = 1280;
+static const int kH = 720;
 
 static void DoEngineInit() {
     // The MEMFS bundle from the dev server unpacks files at /data/<rel>/...,
@@ -150,50 +168,25 @@ static void DoEngineInit() {
     // (SystemInit only registers the obj-level factories via ObjectDir::Init).
     RegisterCommonFactories();
 
-    // Stand up the GpuDevice directly. On web, Init() returns true immediately
-    // after starting the async adapter/device request; we poll IsReady() from
-    // BOOT_GPU_WAIT until the JS callbacks fire. The canvas selector is baked
-    // at compile time via MILO_WEB_CANVAS_SELECTOR (= "#rb3-canvas", set in
-    // CMakeLists via milo_engine_set_web_canvas_selector). Width / height
-    // passed here are fallbacks only — GpuDevice_Web reads the canvas element's
-    // width/height attributes for the real dims.
-    GpuDeviceDesc desc{};
-    desc.headless = false;
-    desc.width = 1280;
-    desc.height = 720;
-    desc.title = "rb3-web W1";
-    printf("RB3 Web: GpuDevice.Init (async)\n");
-    if (!sWebGpu.Init(desc)) {
-        printf("RB3 Web: GpuDevice.Init FAILED (sync error before async dispatch)\n");
+    // Register the rndobj factories the milo loader needs (Trans/Cam/Mesh/Env/
+    // Mat/Tex/Light/MultiMesh/Group/Dir + the legacy Tex/Text/Dir aliases).
+    gBandRnd.PreInitRender();
+
+    // Match the native RB3_RENDER_MESH clear color so the canvas isn't black.
+    gBandRnd.SetClearColor(Hmx::Color(0.12f, 0.14f, 0.18f));
+
+    // Phase 1 of the two-phase GPU bring-up. On web Init() returns true
+    // immediately after dispatching the async adapter/device request; we poll
+    // gBandRnd.Gpu().IsReady() from BOOT_GPU_WAIT until the JS callbacks fire.
+    // The canvas selector is baked at compile time via MILO_WEB_CANVAS_SELECTOR
+    // (= "#rb3-canvas"). Width/height here are fallbacks only.
+    printf("RB3 Web: gBandRnd.StartGpuInit (async)\n");
+    if (!gBandRnd.StartGpuInit(kW, kH, /*headless=*/false)) {
+        printf("RB3 Web: StartGpuInit FAILED (sync error before async dispatch)\n");
         sBootState = BOOT_ERROR;
         return;
     }
-    printf("RB3 Web: GpuDevice.Init returned — waiting for async GPU adapter/device\n");
-}
-
-// Single-pass clear: acquire surface frame, BeginRenderPass with kClearColor,
-// End + Submit. The browser auto-composites on requestAnimationFrame so no
-// explicit Present is needed.
-static void DrawClearFrame() {
-    wgpu::TextureView view = sWebGpu.AcquireNextFrame();
-    if (!view) {
-        // Surface not yet configured / temporarily unavailable — skip this frame.
-        return;
-    }
-    wgpu::CommandEncoder enc = sWebGpu.Device().CreateCommandEncoder();
-    wgpu::RenderPassColorAttachment colorAtt{};
-    colorAtt.view = view;
-    colorAtt.loadOp = wgpu::LoadOp::Clear;
-    colorAtt.storeOp = wgpu::StoreOp::Store;
-    colorAtt.clearValue = kClearColor;
-    wgpu::RenderPassDescriptor rp{};
-    rp.label = "rb3-web W1 clear";
-    rp.colorAttachmentCount = 1;
-    rp.colorAttachments = &colorAtt;
-    wgpu::RenderPassEncoder pass = enc.BeginRenderPass(&rp);
-    pass.End();
-    wgpu::CommandBuffer cmd = enc.Finish();
-    sWebGpu.Queue().Submit(1, &cmd);
+    printf("RB3 Web: StartGpuInit returned — waiting for async GPU adapter/device\n");
 }
 
 static void mainLoop() {
@@ -239,9 +232,10 @@ static void mainLoop() {
     case BOOT_GPU_WAIT: {
         // GpuDevice::Init's RequestAdapter / RequestDevice are async on web; the
         // device only shows up once the JS callbacks fire — usually within a
-        // few RAF ticks of returning from Init. Poll until IsReady().
+        // few RAF ticks of returning from StartGpuInit. Poll until IsReady().
         sGpuWaitFrames++;
-        if (sWebGpu.IsReady()) {
+        gBandRnd.Gpu().PollEvents();
+        if (gBandRnd.Gpu().IsReady()) {
             printf("RB3 Web: GPU ready (after %d frames)\n", sGpuWaitFrames);
             sBootState = BOOT_GPU_READY;
             break;
@@ -254,21 +248,67 @@ static void mainLoop() {
     }
 
     case BOOT_GPU_READY: {
-        // GpuDevice's surface is configured inside the async device callback
-        // (GpuDevice_Web.cpp:132 ConfigureSurface), so by the time IsReady()
-        // returns true the surface is ready to AcquireNextFrame on.
-        printf("RB3 Web: BandRnd ready — entering frame loop\n");
-        sBootState = BOOT_RUNNING;
-        // Fall through to draw frame 0 right away.
-        [[fallthrough]];
+        // Device + surface ready (the surface format was queried in the async
+        // device callback). Phase 2: create pipelines / depth / rings / default
+        // textures. mTargetFmt is latched to the surface format here.
+        printf("RB3 Web: GPU ready — initializing resources...\n");
+        gBandRnd.InitGpuResources();
+        sBootState = BOOT_LOADING_MILO;
+        break;
     }
 
-    case BOOT_RUNNING: {
-        // Smallest possible draw: clear pass against the canvas surface.
-        DrawClearFrame();
+    case BOOT_LOADING_MILO: {
+        std::string milo = GetMiloPathFromUrl();
+        if (milo.empty()) {
+            // No ?milo= specified: nothing to render. Fall through to the render
+            // loop anyway so the canvas shows the clear color and the frame
+            // counter advances (W1-parity behavior).
+            printf("RB3 Web: no ?milo= param — clear-only render loop\n");
+            sBootState = BOOT_RUNNING_RENDER;
+            break;
+        }
+        // Anchor a relative path under /data (the bundle/MEMFS root). The
+        // on-demand fetch hook in native_file.cpp pulls each milo dependency
+        // (sibling _meshes.milo_xbox + textures) lazily as DirLoader walks it.
+        std::string path = (milo[0] == '/') ? milo : ("/data/" + milo);
+        printf("RB3 Web: loading milo '%s'\n", path.c_str());
+        try {
+            sWalk = LoadMiloAndWalk(path.c_str());
+        } catch (...) {
+            printf("RB3 Web: boot error — exception during milo load\n");
+            sBootState = BOOT_ERROR;
+            break;
+        }
+        if (sWalk.ok) {
+            sMilosLoaded++;
+            printf("RB3 Web: milo loaded (%d meshes, %d cams) — entering render loop\n",
+                   sWalk.meshCount, sWalk.camCount);
+        } else {
+            printf("RB3 Web: milo load produced no drawable geometry — clear-only loop\n");
+        }
+        EM_ASM_({ window.rb3MilosLoaded = $0; }, sMilosLoaded);
+        sBootState = BOOT_RUNNING_RENDER;
+        break;
+    }
+
+    case BOOT_RUNNING_RENDER: {
+        // Per-frame: draw the loaded scene (or just clear if nothing loaded).
+        // No Present/Swap — under WebGPU the surface auto-composites when the
+        // requestAnimationFrame callback returns.
+        try {
+            if (sWalk.ok) {
+                RenderFrame(sWalk);
+            } else {
+                // Clear-only frame: BeginFrame/EndFrame with the loaded cam null.
+                gBandRnd.BeginFrame(sWalk.cam);
+                gBandRnd.EndFrame();
+            }
+        } catch (...) {
+            printf("RB3 Web: boot error — exception during render frame\n");
+            sBootState = BOOT_ERROR;
+            break;
+        }
         sFrameCount++;
-        // Surface to Playwright via window.rb3FrameCount so the smoke test can
-        // verify the frame loop is actually running (≥5 frames is the threshold).
         EM_ASM_({ window.rb3FrameCount = $0; }, sFrameCount);
         break;
     }
@@ -292,8 +332,8 @@ void rb3MainLoopTick() {
 
 EMSCRIPTEN_KEEPALIVE
 void rb3_resize_canvas(int w, int h) {
-    if (sWebGpu.IsReady() && w > 0 && h > 0) {
-        sWebGpu.ResizeSurface(w, h);
+    if (gBandRnd.Gpu().IsReady() && w > 0 && h > 0) {
+        gBandRnd.Gpu().ResizeSurface(w, h);
     }
 }
 
@@ -308,7 +348,7 @@ int main(int argc, char **argv) {
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
 
-    printf("RB3 Web Port — W1 clear-frame harness initializing\n");
+    printf("RB3 Web Port — W2a milo-render harness initializing\n");
 
 #ifdef MILO_WEB_ASYNCIFY
     // JSPI mode: JS drives the loop via requestAnimationFrame + await so
@@ -323,7 +363,7 @@ int main(int argc, char **argv) {
     });
     emscripten_exit_with_live_runtime();
 #else
-    // Cooperative main loop fallback (file loads block — fine for W1's bundle).
+    // Cooperative main loop fallback (file loads block — fine for the bundle).
     emscripten_set_main_loop(mainLoop, 0, /*simulate_infinite_loop=*/0);
 #endif
     return EXIT_SUCCESS;
