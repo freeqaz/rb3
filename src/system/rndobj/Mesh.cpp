@@ -177,7 +177,7 @@ float RndMesh::GetDistanceToPlane(const Plane &p, Vector3 &v) {
     bool isEmpty = Verts().empty();
     if (isEmpty)
         return 0;
-    const Transform &world = WorldXfm();
+    Transform &world = WorldXfm();
     Vector3 v58;
     Multiply(Verts()[0].pos, world, v58);
     v = v58;
@@ -185,7 +185,7 @@ float RndMesh::GetDistanceToPlane(const Plane &p, Vector3 &v) {
     FOREACH (it, Verts()) {
         Multiply(it->pos, world, v58);
         float dotted = p.Dot(v58);
-        if (std::fabs(dotted) < std::fabs(dot)) {
+        if (fabs(dotted) < std::fabs(dot)) {
             dot = dotted;
             v = v58;
         }
@@ -1025,13 +1025,14 @@ void RndMesh::OnSync(int flags) {
         return;
     mPatches.clear();
     if (PatchOkay(mVerts.size(), mFaces.size())) {
-        mPatches.push_back(mFaces.size());
+        int _tmp0 = mFaces.size();
+        mPatches.push_back(_tmp0);
     } else if (flags & 0x100U) {
-        u16 u13 = 0xFFFF;
         u16 i12 = 0;
+        u16 u13 = 0xFFFF;
         int i4 = 0;
         FOREACH (it, mFaces) {
-            i12 = Max(it->v3, Max<u16>(i12, it->v1, it->v2));
+            i12 = Max(Max<u16>(i12, it->v1, it->v2), it->v3);
             u13 = Min(Min<u16>(u13, it->v1, it->v2), it->v3);
             if (!PatchOkay((i12 - u13) + 1, i4 + 1)) {
                 mPatches.push_back(i4);
@@ -1052,7 +1053,7 @@ void RndMesh::OnSync(int flags) {
             std::vector<Face>::iterator bestFaceIt = mFaces.begin();
             int u5 = 4;
             float f68 = 0;
-            for (; faceIt != mFaces.end(); ++faceIt) {
+            for (; mFaces.end() != faceIt; ++faceIt) {
                 int uvar16 = !gPatchVerts.HasVert(faceIt->v1)
                     + !gPatchVerts.HasVert(faceIt->v2) + !gPatchVerts.HasVert(faceIt->v3);
                 if (uvar16 < u5) {
