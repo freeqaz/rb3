@@ -1212,11 +1212,11 @@ void RndBitmap::DxtColor(
     int dxt = mOrder & 0x38;
     MILO_ASSERT(dxt != 0, 0x7EE);
 
-    int xQuotient = x / 4;
     int yQuotient = y / 4;
+    int xQuotient = x / 4;
+    int yRemainder = y % 4;
     int i2 = xQuotient + (mWidth >> 2) * yQuotient;
     int xRemainder = x % 4;
-    int yRemainder = y % 4;
 
     if (dxt == 8) {
         DecodeDxtColor(mPixels + i2 * 8, xRemainder, yRemainder, true, r, g, b, a);
