@@ -102,6 +102,25 @@ if [ -f "$MAIN_BUILD/config.json" ]; then
     cp "$MAIN_BUILD/config.json" "$WT_BUILD/config.json"
 fi
 
+# decomp.db — the default `ninja` build runs a `SYNC decomp.db` step
+# (batch_check.py) and the permuter's hill_climber --symbol resolution both
+# read this DB. It's gitignored (~20-40MB) so a fresh worktree has none, and
+# sqlite would silently CREATE an empty 4096-byte stub on first connect —
+# which then fails with "no such table: functions". Seed it from the main
+# repo so the worktree is buildable out of the box.
+#
+# COW REFLINK-COPY (not symlink): the SYNC step and permuter WRITE to
+# decomp.db, so a symlink would let this worktree corrupt the source repo's
+# DB that the concurrent permuter fleet relies on. A reflink gives each
+# worktree its own private, writable copy for free on CoW filesystems.
+if [ -f "$MAIN_REPO/decomp.db" ]; then
+    echo "==> Seeding decomp.db (reflink copy — private writable DB)"
+    cp --reflink=auto "$MAIN_REPO/decomp.db" "$WORKTREE_PATH/decomp.db"
+else
+    echo "WARN: $MAIN_REPO/decomp.db not found — worktree's SYNC decomp.db step" >&2
+    echo "      and permuter --symbol resolution will not work until you seed it." >&2
+fi
+
 # Downloaded tools (compilers, binutils, sjiswrap, dtk)
 for dir in compilers binutils tools; do
     if [ -e "$MAIN_REPO/build/$dir" ]; then
