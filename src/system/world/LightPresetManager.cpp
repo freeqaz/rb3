@@ -55,8 +55,9 @@ void LightPresetManager::Poll() {
     float u30 = unk30;
     float u34 = unk34;
     float blend = mBlend;
-    if (mPresetOverride) {
-        float time = TheTaskMgr.Time(mPresetOverride->Units());
+    LightPreset * &_ref0 = mPresetOverride;
+    if (_ref0) {
+        float time = TheTaskMgr.Time(_ref0->Units());
         float f7;
         if (unk44 > 0.0f) {
             f7 = (time - unk38) / unk44;
@@ -69,12 +70,12 @@ void LightPresetManager::Poll() {
         }
         if (f7 > 0.0f) {
             pprev = pnew;
-            pnew = mPresetOverride;
+            pnew = _ref0;
             u34 = u30;
             u30 = unk38;
             blend = f7;
         } else if (unk48 == 1) {
-            mPresetOverride = 0;
+            _ref0 = 0;
             unk38 = 0;
             unk44 = 0;
             unk48 = 0;
@@ -83,7 +84,7 @@ void LightPresetManager::Poll() {
     if (pnew) {
         float time = TheTaskMgr.Time(pnew->Units());
         float fpu = pnew->FramesPerUnit();
-        float max = Max(0.0f, (time - u30) * fpu);
+        float max = Max(0.0f, fpu * (time - u30));
         if (pprev && pprev != pnew) {
             float time2 = TheTaskMgr.Time(pprev->Units());
             float fpu2 = pprev->FramesPerUnit();
@@ -92,7 +93,8 @@ void LightPresetManager::Poll() {
             pnew->SetFrameEx(max, blend, false);
             unk3c = false;
         } else {
-            pnew->SetFrameEx(max, 1.0f, unk3c);
+            if (pnew)
+                pnew->SetFrameEx(max, 1.0f, unk3c);
             unk3c = true;
         }
     }

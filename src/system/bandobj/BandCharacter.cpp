@@ -832,7 +832,7 @@ void BandCharacter::DrawShowing() {
         Character::DrawShowing();
         static const DataNode &n = DataVariable("bandcharacter.show_slot");
         if (n.Int()) {
-            Transform &headxfm = CharUtlFindBoneTrans("bone_head", this)->WorldXfm();
+            const Transform &headxfm = CharUtlFindBoneTrans("bone_head", this)->WorldXfm();
             Vector3 headPos;
             headPos.x = headxfm.v.x;
             headPos.y = headxfm.v.y;
@@ -842,7 +842,8 @@ void BandCharacter::DrawShowing() {
             if (depth > 0.0f) {
                 const char *dirName = Name();
                 BandWardrobe::TargetNames *targetNames;
-                int charPos = dirName[strlen(dirName) - 1] - '0';
+                int _tmp7 = strlen(dirName);
+                int charPos = dirName[_tmp7 - 1] - '0';
                 if (InVignetteOrCloset()) {
                     targetNames = &TheBandWardrobe->mVignetteNames;
                 } else {
@@ -1769,7 +1770,7 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
         mInstDir->CopyBoundingSphere(dynamic_cast<Character *>(o1));
         mInstDir->RepointSphereBase(this);
     }
-    if (!o2 && o1->ClassName() == AmbientOcclusion)
+    else if (!o2 && o1->ClassName() == AmbientOcclusion)
         return kIgnore;
     if (!o2 && o1->ClassName() == CharWeightSetter)
         return kKeep;
