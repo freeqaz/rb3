@@ -496,13 +496,16 @@ DataNode BandWardrobe::GetUserTrack(int i) {
     msg[0] = DataNode(i);
     return HandleType(msg);
 }
+__declspec(noinline) const char * _outline_Str(Symbol* _obj) {
+    return _obj->Str();
+}
 
 void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
     MILO_ASSERT(DemandLoad() || !shot, 0x45C);
     HandleType(on_loading_characters_msg);
     Symbol playmode = GetPlayMode();
-    Symbol gender = female;
     int instOrderEnd = 5;
+    Symbol gender = female;
     if (shot) {
         int shotflags = GetShotFlags(shot);
         if ((shotflags & 0xFF) != 0xFF) {
@@ -562,7 +565,7 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
                 if (!prefab) {
                     char *suffix = (char *)PrefabSuffix(buf);
                     if (suffix) {
-                        strcpy(suffix + 1, gender.Str());
+                        strcpy(suffix + 1, _outline_Str(&gender));
                         prefab = BandCharDesc::FindPrefab(buf, false);
                     }
                 }
@@ -574,7 +577,12 @@ void BandWardrobe::LoadMainCharacters(BandCamShot *shot) {
                 if (forceInst == instOrderEnd) {
                     gen2 = gender;
                 } else {
-                    const char *gs = (i & 1) ? "male" : "female";
+                    char *gs;
+                    if ((i & 1)) {
+                        gs = "male";
+                    } else {
+                        gs = "female";
+                    }
                     gen2 = Symbol(gs);
                 }
                 prefab = BandCharDesc::FindPrefab(
@@ -1078,7 +1086,8 @@ int BandWardrobe::FindBestScoringHint(Symbol *hints, SlotInfo *info, int &outSlo
             }
             if (!ok)
                 continue;
-            outSlot = HandleType(get_customize_slot_msg).Int();
+            int _tmp0 = HandleType(get_customize_slot_msg).Int();
+            outSlot = _tmp0;
             result = i;
         } else if (strncmp("importance", hint.Str(), 10) == 0) {
             int score = hint.Str()[10] - 0x20;
