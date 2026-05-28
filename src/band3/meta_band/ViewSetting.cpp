@@ -191,8 +191,14 @@ void FilterViewSetting::Text(int, int idx, UIListLabel *slot, UILabel *label)
         DataNode word(fmt);
         DataNode num(LocalizeSeparatedInt(count));
         DataArray *da = new DataArray(2);
-        da->Node(0) = num;
-        da->Node(1) = word;
+        // Node(0) must be the locale-symbol token; Node(1) the substitution arg.
+        // SetTokenFmt calls ForceSym(0) to get the symbol to localize, then
+        // loops from index 1 onward to feed format arguments. The original code
+        // had num first (kDataString) and word second (kDataSymbol), which made
+        // ForceSym(0) intern the count string ("30") as a symbol, fail the
+        // locale lookup, and show the count instead of "30 Songs".
+        da->Node(0) = word;
+        da->Node(1) = num;
         label->SetTokenFmt(da);
         da->Release();
     }

@@ -2,6 +2,7 @@
 #include "decomp.h"
 #include "obj/DataFile.h"
 #include "obj/DataFunc.h"
+#include "obj/DataUtl.h"
 #include "os/Debug.h"
 #include "os/System.h"
 #include "utl/DataPointMgr.h"
@@ -102,6 +103,21 @@ void Locale::Init() {
     {
         std::vector<DataArray *> arrVec(cfg->Size() - 1);
         mNumFilesLoaded = arrVec.size();
+#ifdef HX_NATIVE
+        // LP64 native build is a PC-like platform. Many locale tokens (e.g.
+        // shell_press_start_to_rock, mm_need_a_profile_net_msg, accomplishments)
+        // only have #ifdef HX_PS3 / HX_XBOX / HX_PC variants — no HX_WII entry
+        // exists, so HX_WII-only DataReadFile misses them. Temporarily activate
+        // HX_PC so the PC locale variants are included when reading the locale
+        // files (~70 extra tokens). We unset HX_PC immediately after the reads
+        // so that no other DTA file (overshell_dir.dta, config/*.dta, etc.) picks
+        // up unwanted PC-specific blocks. For the ~58 tokens that have BOTH HX_WII
+        // and HX_PC entries the locale dedup keeps the first-loaded (WII) text —
+        // correct, since WII text says "online" instead of "Xbox LIVE".
+        // DataArrayPtr root(1) with value 1 is the conventional truthy define.
+        DataArrayPtr hx_pc_root(1);
+        DataSetMacro("HX_PC", hx_pc_root.mData);
+#endif
         for (int i = 1; i < cfg->Size(); i++) {
             const char *path = FileMakePath(FileGetPath(cfg->File(), 0), cfg->Str(i), 0);
             arrVec[i - 1] = DataReadFile(path, true);
@@ -110,6 +126,10 @@ void Locale::Init() {
             }
             i10 += arrVec[i - 1]->Size();
         }
+#ifdef HX_NATIVE
+        // Unset HX_PC now that locale files are read — no other DTA should see it.
+        DataSetMacro("HX_PC", nullptr);
+#endif
         chunks = new LocaleChunkSort::OrderedLocaleChunk[i10];
         numChunks = 0;
         for (int j = cfg->Size() - 2; j >= 0; j--) {

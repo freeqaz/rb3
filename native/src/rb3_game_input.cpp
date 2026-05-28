@@ -45,6 +45,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <algorithm>
 
 namespace {
 
@@ -110,6 +111,54 @@ bool gScriptParsed = false;
 Symbol gLastScreen;
 LocalUser *gSynthUser = nullptr;
 
+// === State-driven verb queue ==============================================
+// BOOT RELIABILITY: the original dispatcher fired each verb on an EXACT frame
+// match (frame == @N). On a slow/contended host the targeted screen/object can
+// still be loading at frame N, so the verb fired against a not-yet-existent or
+// mid-transition screen and dereferenced null/garbage -> SIGSEGV in the menu
+// before gameplay. (Agents worked around it by running under gdb, whose
+// slowdown let loading win the race.)
+//
+// We now treat the whole script as ONE ORDERED QUEUE and dispatch it
+// SEQUENTIALLY + READINESS-GATED: a verb fires only once (a) frame >= its @N
+// (now a MINIMUM frame / ordering hint, not an exact trigger), (b) all earlier
+// verbs have already fired, and (c) its readiness predicate holds — for the
+// common case, the UI has a stable current screen (CurrentScreen() != null &&
+// !InTransition()), and for object/component-targeted verbs the target
+// actually resolves. If the predicate is not yet met the verb WAITS and is
+// retried next frame instead of firing blind. A per-verb deadline
+// (kVerbTimeoutFrames past its @N) skips a verb whose target never appears, so
+// a mis-timed/bad script degrades gracefully (LOG + SKIP) rather than hanging
+// or crashing. The documented RB3_GAME_INPUT scripts still drive
+// boot->song-select->load->gameplay->nofail, just robustly to timing.
+enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail };
+
+struct Verb {
+    int        kind;
+    int        minFrame;   // @N — earliest frame this verb may fire (ordering hint)
+    int        origIndex;  // stable tiebreak so equal-@N verbs keep script order
+    // Payload (only the field matching `kind` is meaningful):
+    JoypadAction action = kAction_None;
+    JoypadButton button = kPad_NumButtons;
+    ScriptedSelect sel{0, ""};
+    ScriptedMsg    msg;
+    ScriptedTrack  trk{0, ""};
+};
+
+std::vector<Verb> gVerbs;     // sorted by (minFrame, origIndex)
+size_t gVerbCursor = 0;       // next un-fired verb
+int    gVerbWaitSince = -1;   // frame at which the cursor verb became eligible (>=minFrame)
+int    gLastFiredFrame = -1;  // frame the previous verb was dispatched (button-settle guard)
+
+// How many frames past a verb's eligibility window we keep retrying a not-ready
+// target before giving up and skipping it. Generous: screen loads on a cold
+// host can take a few hundred frames. Tunable via RB3_INPUT_VERB_TIMEOUT.
+int VerbTimeoutFrames() {
+    const char *e = getenv("RB3_INPUT_VERB_TIMEOUT");
+    int v = e ? atoi(e) : 3000;
+    return v > 0 ? v : 3000;
+}
+
 // HTTP-injected verbs (from rb3_http_server.cpp's /api/input). The HTTP handler
 // thread enqueues a raw verb string ("start", "confirm", "select:foo.btn",
 // "msg:obj:action[:arg]...", "track:guitar", "up"/"down"/...); the main-thread
@@ -162,7 +211,10 @@ void ParseScript() {
         if (action.rfind("select:", 0) == 0) {
             ScriptedSelect ss = { frame, action.substr(7) };
             gSelectScript.push_back(ss);
-            MILO_LOG("RB3 input: scheduled @%d -> select '%s'\n", frame, ss.button.c_str());
+            Verb v; v.kind = kVerbSelect; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+            v.sel = ss;
+            gVerbs.push_back(v);
+            MILO_LOG("RB3 input: scheduled @%d (min) -> select '%s'\n", frame, ss.button.c_str());
             continue;
         }
         // "track:<sym>" directive — set the synth user's track type at the given
@@ -171,7 +223,10 @@ void ParseScript() {
         if (action.rfind("track:", 0) == 0) {
             ScriptedTrack st = { frame, action.substr(6) };
             gTrackScript.push_back(st);
-            MILO_LOG("RB3 input: scheduled @%d -> track '%s'\n", frame, st.trackSym.c_str());
+            Verb v; v.kind = kVerbTrack; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+            v.trk = st;
+            gVerbs.push_back(v);
+            MILO_LOG("RB3 input: scheduled @%d (min) -> track '%s'\n", frame, st.trackSym.c_str());
             continue;
         }
         // "nofail" directive — enable band No-Fail at frame F so an
@@ -180,7 +235,9 @@ void ParseScript() {
         if (action == "nofail") {
             ScriptedNoFail nf = { frame };
             gNoFailScript.push_back(nf);
-            MILO_LOG("RB3 input: scheduled @%d -> nofail\n", frame);
+            Verb v; v.kind = kVerbNoFail; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+            gVerbs.push_back(v);
+            MILO_LOG("RB3 input: scheduled @%d (min) -> nofail\n", frame);
             continue;
         }
         // "msg:<object>:<action>[:arg]..." directive — send a message to a named
@@ -204,7 +261,10 @@ void ParseScript() {
                 for (size_t k = 2; k < parts.size(); ++k)
                     sm.args.push_back(parts[k]);
                 gMsgScript.push_back(sm);
-                MILO_LOG("RB3 input: scheduled @%d -> msg {%s %s} (+%d args)\n", frame,
+                Verb v; v.kind = kVerbMsg; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+                v.msg = sm;
+                gVerbs.push_back(v);
+                MILO_LOG("RB3 input: scheduled @%d (min) -> msg {%s %s} (+%d args)\n", frame,
                          sm.object.c_str(), sm.action.c_str(), (int)sm.args.size());
             }
             continue;
@@ -217,8 +277,19 @@ void ParseScript() {
         }
         ScriptedInput si = { frame, act, btn };
         gScript.push_back(si);
-        MILO_LOG("RB3 input: scheduled @%d -> %s (action %d)\n", frame, action.c_str(), act);
+        Verb v; v.kind = kVerbButton; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+        v.action = act; v.button = btn;
+        gVerbs.push_back(v);
+        MILO_LOG("RB3 input: scheduled @%d (min) -> %s (action %d)\n", frame, action.c_str(), act);
     }
+
+    // Stable sort by minFrame so the sequential dispatcher walks verbs in the
+    // intended order even if the script lists them out of @N order. origIndex
+    // breaks ties so equal-@N verbs keep their written order.
+    std::stable_sort(gVerbs.begin(), gVerbs.end(), [](const Verb &a, const Verb &b) {
+        if (a.minFrame != b.minFrame) return a.minFrame < b.minFrame;
+        return a.origIndex < b.origIndex;
+    });
 }
 
 LocalUser *SynthUser() {
@@ -305,8 +376,12 @@ void ExecMsg(const ScriptedMsg &m, UIScreen *cur) {
     }
 }
 
-void ExecSelect(const std::string &button, UIScreen *cur) {
-    LocalUser *user = SynthUser();
+// Resolve a named UIComponent in the current screen (focus panel first, then
+// every panel ref). Shared by ExecSelect AND the readiness predicate, so "is
+// this select target loaded yet?" uses the exact same lookup that will run it.
+// Returns the component (and its owning panel via *ownerOut) or null.
+UIComponent *FindSelectComponent(const std::string &button, UIScreen *cur,
+                                 UIPanel **ownerOut) {
     UIComponent *comp = nullptr;
     UIPanel *ownerPanel = nullptr;
     if (cur) {
@@ -328,6 +403,14 @@ void ExecSelect(const std::string &button, UIScreen *cur) {
             }
         }
     }
+    if (ownerOut) *ownerOut = ownerPanel;
+    return comp;
+}
+
+void ExecSelect(const std::string &button, UIScreen *cur) {
+    LocalUser *user = SynthUser();
+    UIPanel *ownerPanel = nullptr;
+    UIComponent *comp = FindSelectComponent(button, cur, &ownerPanel);
     if (comp) {
         MILO_LOG("RB3 input: SELECT '%s' on screen '%s'\n", button.c_str(),
                  cur ? cur->Name() : "(none)");
@@ -377,6 +460,93 @@ void ExecButton(JoypadAction action, JoypadButton button, UIScreen *cur) {
     MILO_LOG("RB3 input: injecting action %d (button %d) on '%s' focus='%s'\n",
              action, button, cur ? cur->Name() : "(none)", focusBtn);
     TheUI.Handle(msg, false);
+}
+
+// === Readiness predicate ===================================================
+// Decide whether a queued verb may safely fire THIS frame. The dominant crash
+// mode was a verb firing while the UI was mid-transition or before its target
+// screen/object existed; gating on these conditions is what makes plain runs
+// reliable. `reason` (optional) receives a short human string for the wait log.
+bool VerbReady(const Verb &v, UIScreen *cur, const char **reason) {
+    // A stable, loaded current screen is the baseline for every UI-facing verb:
+    // never inject input or drive a SELECT while a screen swap is in flight.
+    bool uiStable = (cur != nullptr) && !TheUI.InTransition();
+
+    switch (v.kind) {
+    case kVerbButton:
+        // start/confirm/dpad: only on a stable current screen (so a transition
+        // verb like song-select 'down'/'confirm' lands on the right screen).
+        if (!uiStable) { if (reason) *reason = "UI in transition / no screen"; return false; }
+        return true;
+
+    case kVerbSelect: {
+        // The named component must actually resolve in the (stable) current
+        // screen before we SendSelect — otherwise the original code logged
+        // "NOT FOUND" and the intended transition simply never happened
+        // (forcing the next verb to fire against the wrong screen).
+        if (!uiStable) { if (reason) *reason = "UI in transition / no screen"; return false; }
+        UIPanel *owner = nullptr;
+        if (!FindSelectComponent(v.sel.button, cur, &owner)) {
+            if (reason) *reason = "select target not loaded on current screen";
+            return false;
+        }
+        return true;
+    }
+
+    case kVerbMsg: {
+        // The target object must exist in ObjectDir::Main() before we Handle()
+        // a message on it (Handle on a null/half-built object is the crash).
+        Hmx::Object *obj = ObjectDir::sMainDir
+            ? ObjectDir::sMainDir->FindObject(v.msg.object.c_str(), false)
+            : nullptr;
+        if (!obj) { if (reason) *reason = "msg target object not present yet"; return false; }
+        // Screen-transition messages (e.g. music_library select_highlighted_node
+        // -> part_difficulty; overshell end_override_flow -> game_screen) must
+        // also start from a stable screen so they don't stack on a transition.
+        if (!uiStable) { if (reason) *reason = "UI in transition"; return false; }
+        return true;
+    }
+
+    case kVerbTrack: {
+        // track:<sym> needs the synth user's BandUser (built once the part flow
+        // is entered) before SetTrackType.
+        LocalUser *user = SynthUser();
+        BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
+        if (!bu) { if (reason) *reason = "BandUser for synth user not ready"; return false; }
+        return true;
+    }
+
+    case kVerbNoFail: {
+        // nofail gates on the song-load -> gameplay handoff: a live
+        // MetaPerformer::Current() exists only once the performance is set up.
+        if (!MetaPerformer::Current()) { if (reason) *reason = "no MetaPerformer (song not loaded)"; return false; }
+        return true;
+    }
+    }
+    return true;
+}
+
+const char *VerbName(const Verb &v) {
+    switch (v.kind) {
+    case kVerbButton: return "button";
+    case kVerbSelect: return "select";
+    case kVerbMsg:    return "msg";
+    case kVerbTrack:  return "track";
+    case kVerbNoFail: return "nofail";
+    }
+    return "?";
+}
+
+// Fire a queued verb through the real engine paths (same helpers the per-type
+// dispatch + HTTP path use).
+void DispatchVerb(const Verb &v, UIScreen *cur) {
+    switch (v.kind) {
+    case kVerbButton: ExecButton(v.action, v.button, cur); break;
+    case kVerbSelect: ExecSelect(v.sel.button, cur);       break;
+    case kVerbMsg:    ExecMsg(v.msg, cur);                  break;
+    case kVerbTrack:  ExecTrack(v.trk.trackSym);           break;
+    case kVerbNoFail: ExecNoFail();                        break;
+    }
 }
 
 // Parse + execute a single verb string (the HTTP /api/input path). Mirrors the
@@ -581,58 +751,61 @@ void RB3GameInputPoll(int frame) {
         }
     }
 
-    // "msg:<object>:<action>" directives — send {action $synthUser} to a named
-    // ObjectDir::Main() object, the real DTA-handler path (e.g. the song-select
-    // {music_library select_highlighted_node $user} that a confirmed song row
-    // ultimately runs -> SelectNode(kNodeSong) -> PlaySetlist -> Game::LoadSong).
-    for (size_t i = 0; i < gMsgScript.size(); i++) {
-        if (gMsgScript[i].frame != frame)
-            continue;
-        MILO_LOG("RB3 input: frame %d  msg {%s %s}\n", frame,
-                 gMsgScript[i].object.c_str(), gMsgScript[i].action.c_str());
-        ExecMsg(gMsgScript[i], cur);
-    }
+    // === State-driven sequential verb dispatch =============================
+    // Walk the ordered verb queue. The CURSOR verb fires only when frame has
+    // reached its @N minimum AND its readiness predicate holds (target screen/
+    // object loaded + UI stable). Otherwise it WAITS (retried next frame) — no
+    // blind dispatch against an unloaded screen/object, which was the SIGSEGV.
+    // After the cursor fires, advance; we fire AT MOST ONE verb per frame so a
+    // transition kicked off by one verb settles before the next is even
+    // evaluated (the per-frame Poll runs between frames). A verb whose target
+    // never appears within kVerbTimeout frames of becoming eligible is skipped
+    // (LOG) so a bad/over-eager script degrades gracefully instead of stalling.
+    if (gVerbCursor < gVerbs.size()) {
+        const Verb &v = gVerbs[gVerbCursor];
+        // Button presses (joypad navigation, down/up/confirm etc.) update UI
+        // focus synchronously but the engine only re-evaluates the focused-node
+        // state on the NEXT Poll(). Gate the next verb: if the PREVIOUS verb was
+        // a button action, wait at least 2 frames after it fired so the UI can
+        // fully propagate the new focus/highlight before we fire a followup msg.
+        // The original exact-frame scripts relied on the 30-frame gaps in their
+        // @N hints for this; the state-driven queue collapsed them to 1 frame,
+        // causing e.g. @320:down + @350:select_highlighted_node to pick the
+        // wrong node (the old focused node, not the one just navigated to).
+        static int gLastButtonFrame = -1;
+        if (gVerbCursor > 0 && gVerbs[gVerbCursor - 1].kind == kVerbButton)
+            gLastButtonFrame = gLastFiredFrame;
+        bool buttonSettled = (gLastButtonFrame < 0 || frame >= gLastButtonFrame + 2);
 
-    // "select:<button>" directives — drive the real SELECT_MSG on a named
-    // UIComponent in the current screen (the same UIComponentSelectMsg a focused
-    // UIButton sends on Confirm). Finds the component anywhere in the current
-    // screen's focus panel dir, sets focus to it, then SendSelect.
-    for (size_t i = 0; i < gSelectScript.size(); i++) {
-        if (gSelectScript[i].frame != frame)
-            continue;
-        MILO_LOG("RB3 input: frame %d  SELECT '%s'\n", frame,
-                 gSelectScript[i].button.c_str());
-        ExecSelect(gSelectScript[i].button, cur);
-    }
-
-    // "track:<sym>" directives — set the synth user's track type at frame F.
-    // Also force-set the difficulty (default Expert) so BandUser::IsFullyInGame()
-    // is true (it's gated on `unk_0xC`, which only SetDifficulty toggles to true).
-    // TrackPanel::CreateTracks filters users on `IsParticipating() &&
-    // IsFullyInGame()` — without a difficulty, the user is dropped from the
-    // track list, GemPlayer::HookupTrack hits its `MILO_ASSERT(mTrack, 0x890)`,
-    // and gameplay never renders gems.
-    for (size_t i = 0; i < gTrackScript.size(); i++) {
-        if (gTrackScript[i].frame != frame)
-            continue;
-        MILO_LOG("RB3 input: frame %d  track set '%s'\n", frame,
-                 gTrackScript[i].trackSym.c_str());
-        ExecTrack(gTrackScript[i].trackSym);
-    }
-
-    // "nofail" directives — enable band No-Fail at frame F.
-    for (size_t i = 0; i < gNoFailScript.size(); i++) {
-        if (gNoFailScript[i].frame != frame)
-            continue;
-        MILO_LOG("RB3 input: frame %d  nofail\n", frame);
-        ExecNoFail();
-    }
-
-    for (size_t i = 0; i < gScript.size(); i++) {
-        if (gScript[i].frame != frame)
-            continue;
-        MILO_LOG("RB3 input: frame %d  button action %d\n", frame, gScript[i].action);
-        ExecButton(gScript[i].action, gScript[i].button, cur);
+        if (frame >= v.minFrame && buttonSettled) {
+            if (gVerbWaitSince < 0)
+                gVerbWaitSince = frame;   // became eligible this frame
+            const char *why = nullptr;
+            if (VerbReady(v, cur, &why)) {
+                MILO_LOG("RB3 input: frame %d  FIRE [%zu/%zu] %s (min @%d) on '%s'\n",
+                         frame, gVerbCursor + 1, gVerbs.size(), VerbName(v), v.minFrame,
+                         cur ? cur->Name() : "(none)");
+                DispatchVerb(v, cur);
+                gLastFiredFrame = frame;
+                gVerbCursor++;
+                gVerbWaitSince = -1;
+            } else {
+                // Not ready yet — wait. Log the first wait + give up after the
+                // deadline so we never hang on a target that never loads.
+                if (frame == gVerbWaitSince)
+                    MILO_LOG("RB3 input: frame %d  WAIT [%zu/%zu] %s (min @%d): %s\n",
+                             frame, gVerbCursor + 1, gVerbs.size(), VerbName(v), v.minFrame,
+                             why ? why : "not ready");
+                if (frame - gVerbWaitSince >= VerbTimeoutFrames()) {
+                    MILO_LOG("RB3 input: frame %d  SKIP [%zu/%zu] %s (min @%d): "
+                             "target never became ready (%s) after %d frames\n",
+                             frame, gVerbCursor + 1, gVerbs.size(), VerbName(v), v.minFrame,
+                             why ? why : "not ready", VerbTimeoutFrames());
+                    gVerbCursor++;
+                    gVerbWaitSince = -1;
+                }
+            }
+        }
     }
 
     // HTTP-injected verbs (RB3HttpServer /api/input). Drain + execute on this
