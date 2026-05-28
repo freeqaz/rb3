@@ -161,8 +161,8 @@ void CharEyes::Highlight() {
 bool matchesFilter;
 #ifdef MILO_DEBUG
     if (GetHead()) {
-        RndTransformable *trans = 0;
         RndGraph *oneframe = RndGraph::GetOneFrame();
+        RndTransformable *trans = 0;
         for (ObjVector<EyeDesc>::iterator it = mEyes.begin(); it != mEyes.end(); ++it) {
             trans = it->mEye->GetSource();
             if (trans) {
@@ -187,7 +187,7 @@ bool matchesFilter;
         if (trans) {
             float f1 = unkc8 ? unkc8->mMaxViewAngleCos : unkb8;
             float f2 = unkb0;
-            bool f2ltf1 = f2 < f1;
+            bool f2ltf1 = f1 > f2;
             if (unk124) {
                 oneframe->AddSphere(
                     unk58, mEyeDartRulesetData.mMaxRadius, Hmx::Color(0.9f, 0.9f, 0.9f)
@@ -216,7 +216,7 @@ bool matchesFilter;
             }
         }
         if (unkd4) {
-            if (unkd4 != unkc8) {
+            if (unkc8 != unkd4) {
                 const char *nametouse = unkc8 ? unkc8->Name() : "GENERATED";
                 oneframe->AddString3D(
                     MakeString("focus = '%s' (looking at %s)", unkd4->Name(), nametouse),
@@ -265,7 +265,8 @@ bool matchesFilter;
                     Vector2 screen;
                     if (RndCam::Current()->WorldToScreen(it->mInterest->WorldXfm().v, screen) > 0.0f) {
                         screen.x = screen.x * TheRnd->Width() - 30.0f;
-                        screen.y = screen.y * -TheRnd->Height() + 15.0f;
+                        screen.y = screen.y * TheRnd->Height() + 15.0f;
+                        screen.y = -screen.y;
                         oneframe->AddString(
                             MakeString("%s", it->mInterest->Name()),
                             screen,
@@ -314,7 +315,7 @@ void CharEyes::UpdateOverlay() {
         *unk9c << Dir()->Name() << ": ";
         if (unkc8) {
             if (unkd4) {
-                if (streq(unkc8->Name(), unkd4->Name())) {
+                if (streq(unkd4->Name(), unkc8->Name())) {
                     *unk9c << "Look(FOC) ";
                     goto lol;
                 }
@@ -560,7 +561,7 @@ void CharEyes::NextLook() {
             extrap.y + facingDir.y,
             extrap.z + facingDir.z
         );
-        float dist = RandomFloat(20.0f, 100.0f);
+        float dist = RandomFloat(100.0f, 20.0f);
         dist *= 12.0f;
         Vector3 proj(dist * newFacing.x, newFacing.y * dist, newFacing.z * dist);
         unk58.x = headXfm.v.x + proj.x;
@@ -569,7 +570,7 @@ void CharEyes::NextLook() {
         RndTransformable *dirTrans = dynamic_cast<RndTransformable *>(Dir());
         if (dirTrans) {
             const Vector3 &dirPos = dirTrans->WorldXfm().v;
-            if (unk58.z < dirPos.z) {
+            if (dirPos.z > unk58.z) {
                 float scale = (dirPos.z - headXfm.v.z) / (unk58.z - headXfm.v.z);
                 float sx = proj.x * scale;
                 float sy = proj.y * scale;
@@ -734,7 +735,7 @@ void CharEyes::Poll() {
     }
     unkc0 = blinkWeight;
 
-    const Transform &headXfm = head->WorldXfm();
+    Transform &headXfm = head->WorldXfm();
 
     Vector3 targetDir;
     Subtract(unk58, headXfm.v, targetDir);
@@ -743,7 +744,7 @@ void CharEyes::Poll() {
     Vector3 facingDir(headXfm.m.y);
     Normalize(facingDir, facingDir);
 
-    float cang = Dot(facingDir, targetDir);
+    float cang = Dot(targetDir, facingDir);
     cang = Clamp<float>(-1.0f, 1.0f, cang);
 
     if (unkb0 != 1e30f) {
@@ -757,7 +758,7 @@ void CharEyes::Poll() {
 
         bool canSeeTarget = cang >= viewAngleCos;
 
-        if (unkb4 <= maxLookTime && !unke4
+        if (maxLookTime >= unkb4 && !unke4
             && (!unkd4 || interest == (CharInterest *)unkd4
                 || ((unkb4 <= 0.4f
                      || !unkd4->IsWithinViewCone(headXfm.v, facingDir))
