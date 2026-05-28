@@ -340,19 +340,18 @@ bool ClipDistMap::FindBestNode(float maxError, float startBeat, float endBeat, N
         return false;
     }
     node.err = maxError;
-    float clipAStart = mAStart;
-    int startCol = (int)((startBeat - mAStart) * mSamplesPerBeat);
+    const float &_ref0 = mAStart;
+    int startCol = (int)((startBeat - _ref0) * mSamplesPerBeat);
     startCol = startCol & ~(startCol >> 31);
-    int endCol = (int)((endBeat - mAStart) * mSamplesPerBeat);
+    int endCol = (int)((endBeat - _ref0) * mSamplesPerBeat);
     int maxCol = endCol;
     if (mDists.mWidth < endCol) {
         maxCol = mDists.mWidth;
     }
-    while (startCol < maxCol) {
-        float curBeat = clipAStart + (float)startCol / (float)mSamplesPerBeat;
+    if (startCol < maxCol) do {
+        float curBeat = _ref0 + (float)startCol / (float)mSamplesPerBeat;
         int rowIdx = mDists.mHeight - 1;
         if (rowIdx >= 0) {
-            int rowCount = rowIdx + 1;
             do {
                 float cellError = mDists(startCol, rowIdx);
                 bool foundBetter = cellError < node.err;
@@ -362,11 +361,10 @@ bool ClipDistMap::FindBestNode(float maxError, float startBeat, float endBeat, N
                     node.nextBeat = mBStart + (float)rowIdx / (float)mSamplesPerBeat;
                 }
                 rowIdx--;
-                rowCount--;
-            } while (rowCount != 0);
+            } while (rowIdx >= 0);
         }
         startCol++;
-    }
+    } while (startCol < maxCol);
     return node.err < maxError;
 }
 
