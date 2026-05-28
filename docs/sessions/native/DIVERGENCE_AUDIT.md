@@ -207,3 +207,155 @@ Ordered by combined impact (boot-path blocking) × bring-up effort (lower = easi
 ---
 
 *Audit performed read-only; no source files modified.*
+
+---
+---
+
+# PART II — Convergence Plan (V12–V33 update, 2026-05-28 evening)
+
+**Date:** 2026-05-28 (read-only convergence-audit subagent, post-V33).
+**Scope of this addendum:** the in-song **venue / characters / camera / HUD**
+divergence hacks introduced V12–V33 (after Part I was written, 2026-05-28
+00:31). Part I above is still accurate for the **boot / audio / song-load**
+layer; this part adds the rendering/gameplay-presentation layer and re-checks
+the Part I "top 5 hacks" for what has since landed.
+
+## A. What changed since Part I
+
+| Part I item | Status now |
+|---|---|
+| **Top hack #1** — direct `TheSongMgr.AddSongs` in `rb3_game_input.cpp` | **FIXED / converged.** Replaced by `NativeContentMgr : ContentMgr` in `native/src/rb3_platform_native.cpp:112` whose `StartRefresh()` override reads `songs/songs.dta` → `BandSongMgr::AddSongs` → fires `ContentDone` to registered callbacks. `rb3_game_input.cpp:677` now calls the real `TheContentMgr->StartRefresh()` entry point. The imperative AddSongs hack is gone. This is the model convergence pattern: a glue-layer subclass that runs the real callback chain. |
+| **Top hack #2** — Instance.cpp cosmetic-venue deferral + InterstitialPanel short-circuits | **STILL OPEN, deeper-than-thought.** `WorldInstance::SyncDir` deferral now lives at `Instance.cpp:361-375` (gated to `world/vignette/` + `world/shared/` via `IsDeferredVenueProxy`). The V5b investigation (documented inline at `Instance.cpp:326-350`) found the single-line `PostLoadInlined` fix is blocked by a many-to-one shared-dir parent problem; deferred to V2. The InterstitialPanel short-circuits were not re-verified this pass (Part I §Pattern-1 still applies; lower priority than the gameplay-presentation hacks below). |
+| **Top hack #5** — native joypad shim | **STILL OPEN.** `rb3_game_input.cpp:327` `pad0->mConnected=true` + `:328` `DebugSetControllerTypeOverride(kControllerGuitar)` + `:314` `JoypadInitCommon` are all still present. |
+| **Top hack #3/#4** — stale link stubs, lenient `DataNode::Int/Sym` | Not re-audited this pass; Part I stands. |
+
+## B. The V12–V33 divergence-hack table
+
+All sites are **committed at HEAD `f8a3a379`** as additive `#ifdef HX_NATIVE`
+blocks (the permuter wiped them between V32/V33; the commit re-applies the
+inseparable set). Classification key: **LB** = legit-bridge (keep until the
+data/real path exists), **PO** = paper-over-to-remove (provably redundant or
+masking nothing), **DD** = data-driven-fix-available (a real asset/script fix
+retires it), **TH** = test-harness, **MF→glue** = movable to permuter-safe glue.
+
+| # | Site (file:line) | What it does | Why it exists (the gap) | Class | Convergence action |
+|---|---|---|---|---|---|
+| **V19a** | `BandDirector.cpp:524-535` `EnterVenue` | Force-loads `world/venue/.../small_club_01.milo` synchronously when `mVenue.Dir()` is null. | Retail's data-driven `load_venue <sym>` dispatch never fires natively — the only DTA `load_venue` is the editor-only `load_and_play_song` preview. So `mVenue`/`mCurWorld`/`TheBandWardrobe` all stay null. | **LB / DD** | The real fix is to find/wire what dispatches `load_venue` for an actual song-start in retail (a game-mode/data path, not editor). The `HANDLE_ACTION(load_venue, ...)` at `BandDirector.cpp:907` already exists — the gap is the **caller**. Until found, this bridge is load-bearing. |
+| **V19b** | `BandDirector.cpp:615` `ReadyForMidiParsers` gate | (gate adjustment for the force-load timing). | Same venue-load gap. | **LB** | Inseparable from V19a. |
+| **V19c** | `Env.h:74` `RndEnviron::SetFogEnable` | Adds `return enable;` to a non-void function whose matched body falls off the end. | Matched-fork `SetFogEnable` is `bool` but the PPC body never returns → clang emits `ud2` SIGILL on the venue light-preset path. | **LB (platform)** | A genuine clang-vs-PPC codegen divergence; equivalent to Part I §Pattern-4 `DataNode::Evaluate`. Keep. Could become permuter-safe if the upstream decomp signature is fixed to actually return. |
+| **V19d** | `BandDirector.cpp:615-620` `GetVenuePath` strstr const-cast | `const char* str = strstr(...)` vs matched `char*`. | Host `<cstring>` `strstr(const char*)` returns `const char*`. | **LB (platform)** | Pure C++ type-correctness; keep. |
+| **V20a** | `BandPatchMesh.cpp:130,518` `#ifndef HX_NATIVE` around `namespace stlpmtx_std` | Excludes the explicit STLport `__introsort_loop`/`__adjust_heap` specializations so `std::sort` falls through to host libstdc++. | clang's libstdc++ has no such symbols → "no function template matches". | **LB (platform)** | Same pattern as `GameGemList.cpp`. Keep. **Interdep:** required by V20b. |
+| **V20b** | `native/CMakeLists.txt:~307` un-exclude `BandPatchMesh` | Removes the TU from `_NATIVE_FORK_EXCLUDE` so strong defs exist. | With the TU stubbed, `ObjVector<BandPatchMesh>::resize` constructs/destructs objects whose ObjPtr members were never constructed (no-op `operator>>` stub) → `~ObjPtr → mRefs.rbegin()` SEGV. | **LB** | Durable (CMake is permuter-safe). **Interdep:** needs V20a's gates or the TU won't compile. Document the linkage (SALVAGE_V33 §Phase-2 item 4). |
+| **V21** | `Mtx.h:640` `Multiply(Vector3,Matrix3,Vector3)` C++ body | Provides a real C++ body. | The matched-fork PPC `ASM_BLOCK` is empty under clang → garbage `vout` → CharServoBone bone-Y runaway to inf. | **LB (platform)** | Inviolable, like the Part I §4 math fixes. Keep. |
+| **V22** | `BandDirector.cpp:317` `DrawShowing` venue-cam-follow | Camera-follow during venue draw. | Camera-ownership conflict from the force-loaded venue. | **LB** | Inseparable from V19/V23. |
+| **V23a** | `BandDirector.cpp:558-563` `EnterVenue` LoadCharacters bridge | Calls `TheBandWardrobe->LoadCharacters(mVenue.Name(), ...)` after the force-load. | Retail runs this from `OnFileLoaded(song)`, but natively `mVenue.Name()` is null at that earlier moment (venue deferred to V19a) → char proxies collapse onto a stand-in. | **LB** | Inseparable from V19a (positioned exactly post-force-load, pre-SetVenueDir). |
+| **V23b** | `BandDirector.cpp:589-595` `EnterVenue` HarvestDircuts re-run | Re-runs `HarvestDircuts()` once `mVenue.Dir()` is real. | The earlier harvest bailed at its `mPropAnim && mVenue.Dir()` gate (venueDir was nil). | **LB** | Inseparable. Retires automatically once V19a's venue-load timing is data-driven (the first harvest would then succeed). |
+| **V23c** | `BandWardrobe.cpp:~694` `LoadMainCharacters` mic→vocals | Adds `if (inst=="mic") inst="vocals";` to the venue-name loop. | Vocalist `mInstrumentType` is `mic` but venue proxies/closeup targets are named `player_vocals0_*` (14681 refs vs 0 `player_mic0`). | **DD** | This is a **data/naming reconciliation** — the 360-ARK venue milo uses `vocals` naming where RB3-Wii code emits `mic`. Could be retired by a name-map driven from data, or accepted as a small platform remap. Low risk; keep. |
+| **V23d** | `BandCharacter.cpp:1730` `ReplaceRefs` realloc-safe | Index-based rewrite of the ref-replace loop (re-reads `Refs()` each iter, walks high→low). | Matched-fork caches `std::vector<ObjRef*>` iterators; `ref->Replace()` erases from `mRefs` → libstdc++ realloc invalidates the cached iterator → dangling deref SIGSEGV. | **LB (platform), broad correctness win** | A genuine STL-ABI difference (MWCC vector ≠ libstdc++ realloc behavior). Semantics identical. Keep — this is a correctness fix, not a hack; arguably move to Part I §4 inviolable list. |
+| **V25** | `GamePanel.cpp:270-285` `StartGame` HUD force-show | `GetTrackPanelDir()->SetShowing(true)` after `mGameState=kGamePlaying`. | At V25 time the milo `play_intro → PlayIntro() → SetShowing(!mPerformanceMode)` fired late/inconsistently, so `draw_order.grp` could stay hidden. | **PO (provably redundant) / MF→glue** | **HUD_DETERMINISM (V30) proved this redundant**: across 22 runs the milo `play_intro` path reliably shows the HUD at frame ~1130 with V25 absent. **QUICK WIN:** delete it, OR (per SALVAGE_V33 §Phase-2 #2) move to a glue per-frame `Poll` hook edge-detecting `kGameNeedStart→kGamePlaying` so it survives the permuter as an idempotent safety net. Either removes one block from the matched-fork wipe surface. |
+| **V26** | `Rot.cpp:485` `MakeRotQuat` half-angle factors | Re-adds the `0.5` half-angle factors. | Matched-fork dropped them → quat √2-too-big → `MakeRotMatrix` det≈8 → CharIKHand flings fingertips → teal shards. | **LB (platform)** | Math correctness fix. Keep / inviolable. |
+| **V29** | `BandTrack.cpp:141,445-457` `solo_percent.lbl` seed | `SetTokenFmt(me_percent_format, 0)` so the label renders `0%` not `%d%%`. | The load-time `SetTextToken` path calls `SetTokenFmtImp` with zero args, leaving the `%d%%` format string unsubstituted. | **DD / PO** | Part I §Pattern-4 class: a text-token substitution gap (cf. TEXT_TOKENS.md). The clean fix is to seed the token through the normal label-load path; this imperative seed is a paper-over. Low risk; low priority. |
+| **V31** | `TrackPanelDir.cpp:294-349` `ConfigureTracks` `right.grp.x` neutralization | Zeros the `right.grp`/`left.grp` anchor x-offset for single-player so the BandScoreboard renders top-CENTER not top-RIGHT. | The milo `1_player_wide` config object's `apply` handler **executes** (returns `kDataObject`) but its authored `[objects]/[visibles]/[xfms]` save-arrays are **EMPTY** in the loaded asset, so nothing neutralizes the authored multi-player `right.grp` offset. | **DD (real fix available) / LB until then** | **The key convergence target.** Root cause is the empty save-arrays (APPLY_HANDLER V31.2). Three hypotheses: (a) author left them empty by design, (b) wrong milo-asset path, (c) the native binstream `PostLoad` is **dropping** them. If (c), populating them lets the authored script position the HUD and **supersedes V31 entirely**. Gated `RB3_APPLY_HANDLER_FIX_OFF=1`. Keep until the save-array question is resolved. |
+| **V12** | `TrackPanelDir.cpp:382-413` `ConfigureTracks` (hide unused pool tracks) + `TrackDir.cpp:208-273` `DrawShowing` (rotater.grp / rotater_roll.grp / screenRect.x camera neutralization) | Two halves: (1) hide unused-pool gem tracks; (2) neutralize the per-player camera fan-out (`rotater.grp.x → camRotX=-4.0`, `rotater_roll.grp → identity`, `mScreenRect.x → 0`) so the lone-player highway renders centered/on-axis. | **Same root cause as V31** — the `apply` handler's `set_track_offset`/`set_side_angle`/`set_screen_rect_x = 0` commands don't execute natively, so each gem track keeps the authored multi-player camera fan-out. | **DD (same fix as V31) / LB until then** | Inseparable from V31 conceptually (both bridge the un-executed `apply` command array). Per HUD_DETERMINISM: once the authored `apply` commands run, **both V12 and V31 become redundant**. **Concern:** `TrackDir.cpp:241` reads `TheNativeSettings().camRotX` — a **glue→matched-fork runtime dependency** baked into a permuter-wiped file; if the permuter wipes TrackDir.cpp the camera fix silently dies. Add `CAMERA_FRAME_FIX_OFF=1` gate (APPLY_HANDLER follow-up #4) for A/B + eventual deletion. |
+| **V32** | `CharIKHand.cpp:31` `IK_TGT_DBG` | env-gated IK-target diagnostic. | debugging the V21/V26 IK math. | **TH / diagnostic** | Cost-free (env-gated). Retire post-V1 with the other `*_DBG` blocks. |
+| **K9_APPLY** | `TrackPanelDirBase.cpp:89` `K9_APPLY_DBG` | env-gated apply-handler dispatch trace. | localizing the V31 apply gap. | **TH / diagnostic** | Keep until the apply-handler save-array question (V31.2) is resolved — it is the instrument for that fix. Then retire. |
+
+## C. Test-harness leakage check (RB3_GAME_INPUT / nofail / synthetic input)
+
+**Result: the synthetic-input harness does NOT leak into game logic.**
+- `RB3GameInputPoll(frame)` is called unconditionally from the native frame
+  loop (`App.cpp:525`, inside the `#ifdef HX_NATIVE` block), but it is **inert
+  without the `RB3_GAME_INPUT` env var** — `ParseScript()` produces no verbs, so
+  no buttons/messages/nofail fire. A normal (env-less) native run is unaffected.
+- `nofail` (`rb3_game_input.cpp:443` `ExecNoFail`) calls the **real**
+  `MetaPerformer::SetBandNoFail(true)` — the same API the retail no-fail cheat
+  uses. It is harness-scheduled but not a game-logic hack.
+- `gHxNativeNumUsedGemTracks` (the one global the V12 fix shares between
+  `TrackPanelDir.cpp` and `TrackDir.cpp`) is set/read **only inside matched-fork
+  HX_NATIVE blocks** — it is part of the V12 camera fix, not the harness, and
+  does not leak from the test layer.
+- The `select:<button>` / `msg:<object>:<action>` directives (Part I
+  §Pattern-7) remain the most-divergent harness pieces but are confined to the
+  harness TU; they don't appear in `src/`.
+
+So the only test-harness items needing convergence are the **Part I §Pattern-7**
+ones (replace `msg:`/`select:` with real input once the joypad shim lands) — no
+new leakage was introduced by V12–V33.
+
+## D. Prioritized cleanup list (convergence value × durability ÷ risk)
+
+### (a) Delete now — provably redundant, zero risk
+1. **V25 `GamePanel::StartGame` HUD force-show.** HUD_DETERMINISM proved it
+   redundant across 22 runs; the milo `play_intro` path reliably shows the HUD.
+   *Either* delete it *or* (preferred, #b below) move it to glue as an
+   idempotent safety net. Removes one matched-fork wipe-surface block.
+
+### (b) Move to glue — permuter-safe, low risk
+2. **V25 → glue Poll hook** (the alternative to deleting). Edge-detect
+   `kGameNeedStart→kGamePlaying` in a per-frame hook in `native/src/` and call
+   `GetTrackPanelDir()->SetShowing(true)`. ~10 LOC. Survives permuter wipes;
+   keeps the safety net without a matched-fork block. (SALVAGE_V33 §Phase-2 #2.)
+3. **Build the durability audit script** (SALVAGE_V33 §Phase-2 #1) —
+   `scripts/native/audit_hx_native_blocks.sh` that greps each session doc's
+   cited `file:line` blocks and reports INTACT/WIPED/SHIFTED. Not a code hack
+   but the highest-leverage durability investment: 8/25 blocks were wiped this
+   session and re-discovery is the dominant re-apply cost.
+
+### (c) Needs a real data-driven fix to retire — high convergence value
+4. **V31 + V12 (the `apply`-handler gap).** Single highest-value convergence
+   target: it retires **three** hacks at once (V31 `right.grp.x`, V12
+   `rotater.grp`/`screenRect`, and the implicit camera fan-out). The work:
+   trace whether the `1_player_wide` config object's empty
+   `[objects]/[visibles]/[xfms]` save-arrays are (c) dropped by the native
+   binstream `PostLoad`. If so, fixing the load makes the authored script
+   position both HUD and camera, and V12+V31 delete cleanly. Use the existing
+   `K9_APPLY_DBG` probe. **Risk:** medium — touches the binstream load path;
+   blast radius includes the V19–V23 highway framing. Gate both with
+   `*_OFF=1` envs first (V31 already has one; add `CAMERA_FRAME_FIX_OFF=1`).
+5. **V19a venue force-load → wire the real `load_venue` caller.** Find what
+   dispatches `load_venue` for a real (non-editor) song-start in retail and
+   wire that path; the `HANDLE_ACTION(load_venue)` handler already exists. This
+   retires V19a/b, V22, V23a/b as a set (they are positioned around the
+   force-load). **Risk:** medium-high; **interdep:** the whole V19/V20/V23
+   cluster is inseparable (SALVAGE_V33) — do not remove piecemeal.
+6. **Instance.cpp cosmetic-venue deferral** (Part I top hack #2 / V5b). The
+   proper fix needs a many-to-one shared-dir parent abstraction;
+   ~1 week, deferred to V2. Until then the deferral + InterstitialPanel
+   short-circuits stay. Lower priority than #4/#5 for V1 (cosmetic backdrops).
+7. **V23c mic→vocals + V29 solo_percent + native joypad shim** — smaller
+   data/naming reconciliations and the Part I top-hack-5 joypad shim. Retire
+   opportunistically.
+
+### (d) Legit — keep / do not regress
+- **V19c SetFogEnable, V19d strstr, V20a stlpmtx gates, V21 Multiply, V23d
+  ReplaceRefs, V26 MakeRotQuat** — all genuine clang-vs-PPC/MWCC platform
+  divergences or STL-ABI correctness fixes. V21/V23d/V26 belong on the Part I §4
+  inviolable list. **V20b** (CMake un-exclude) is already permuter-safe.
+- The `*_DBG` / `K9_APPLY_DBG` / `IK_TGT_DBG` probes are env-gated and
+  cost-free; retire post-V1 (keep K9_APPLY_DBG until #4 lands).
+
+## E. Interdependencies (do not split these)
+- **V19 / V20 / V23 are one inseparable set** (SALVAGE_V33): without V20's
+  `stlpmtx_std` gates + CMake un-exclude, V19/V23's `LoadCharacters` bridge
+  SEGVs in `~ObjPtr → mRefs.rbegin()`. V22/V23a/b are positioned around V19a's
+  force-load.
+- **V12 and V31 share one root cause** (the un-executed milo `apply` command
+  array) but touch **disjoint subtrees** (V12 = camera rig under the gem-track
+  proxy; V31 = HUD plate parents under `draw_order.grp`). A real apply-handler
+  fix retires both; neither can be removed alone without the other's gap
+  resurfacing.
+- **V20a ↔ V20b**: the CMake un-exclude requires the matched-fork `stlpmtx_std`
+  gates; a future agent re-excluding the TU must keep both in sync.
+
+## F. Durability note (the meta-hack)
+The single biggest non-code finding: **8 of 25 matched-fork HX_NATIVE blocks
+were silently wiped by the permuter between V32 and V33** and had to be
+re-applied (committed at `f8a3a379`). Every `(c)`-class fix that can become
+**data-driven** (V31/V12 via the save-arrays; V19 via the real `load_venue`
+caller) removes a matched-fork block from the permuter's wipe surface entirely —
+that is the highest durability payoff, above moving things to glue. Items that
+can't go data-driven should prefer glue (V25) over matched-fork. The audit
+script (D#3) makes the remaining matched-fork blocks cheap to re-verify.
+
+*Part II audit performed read-only; no source files modified, nothing
+committed/staged.*
