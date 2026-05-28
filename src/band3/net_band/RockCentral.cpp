@@ -1301,8 +1301,12 @@ void RockCentral::SyncSetlists(
         for (int i = 0; i < playerIds.size(); i++) {
             char buf[15];
             ADD_BUFFER_PAIR(buf, playerIds[i], "pid%03d", i);
+            int guidIdx = 0;
             for (int j = 0; j < pairs.size(); j++) {
-                MILO_WARN("pid%03d_guid%03d");
+                if (pairs[j].first == playerIds[i]) {
+                    ADD_BUFFER_PAIR(buf, pairs[j].second, "pid%03d_guid%03d", i, guidIdx);
+                    guidIdx++;
+                }
             }
         }
         RECORD_DATA_POINT(0, results, o);
