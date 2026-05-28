@@ -811,6 +811,10 @@ void ProfileMgr::SetWiiFriendsPromptShown() {
     mGlobalOptionsDirty = true;
 }
 
+bool ProfileMgr::GetShouldShowWiiFriendsPrompt() {
+    return !mWiiFriendsPromptShown && !ThePlatformMgr.IsOnlineRestricted();
+}
+
 void ProfileMgr::SetUsingWiiFriends(int i1) {
     mUsingWiiFriends = i1 != 0;
     mGlobalOptionsDirty = true;
