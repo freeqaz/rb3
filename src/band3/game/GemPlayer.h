@@ -226,6 +226,7 @@ class GemPlayer : public Player, public BeatMatchSink {
 public:
     class UpcomingFretRelease {
     public:
+        UpcomingFretRelease() {}
         int unk0; // slot?
         float unk4; // ms?
     };
