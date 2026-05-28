@@ -5,6 +5,8 @@
 MicClientID sNullMicClientID(-1, -1);
 
 MicClientMapper::MicClientMapper() : mMicManager(0), mNumPlayers(2) {
+    int &numPlayers = mNumPlayers;
+    std::vector<PlayerMappingData> &players = mPlayers;
     MicMappingData data;
     PlayerMappingData player;
     for (int i = 0; i < 4; i++) {
@@ -14,10 +16,10 @@ MicClientMapper::MicClientMapper() : mMicManager(0), mNumPlayers(2) {
         data.bLocked = false;
         mMappingData.push_back(data);
     }
-    for (int i = 0; i < mNumPlayers; i++) {
+    for (int i = 0; i < numPlayers; i++) {
         player.iActualMicID = -1;
         player.iPreferredMicID = -1;
-        mPlayers.push_back(player);
+        players.push_back(player);
     }
 }
 
