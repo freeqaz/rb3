@@ -77,7 +77,7 @@ DIFF_CACHE_DIR = Path("/tmp/claude")
 # ---------------------------------------------------------------------------
 OUT_OF_SCOPE_SUBSTR = (
     "sdk/", "network/", "rndwii/", "synthwii/", "/lib/", "system/lib",
-    "system/os/",
+    "system/os/", "usbwii/", "_Wii", "_wii",
 )
 
 # ---------------------------------------------------------------------------
