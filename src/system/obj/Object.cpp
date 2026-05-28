@@ -356,9 +356,9 @@ void Hmx::Object::Copy(const Hmx::Object *o, Hmx::Object::CopyType ty) {
         mTypeProps.Copy(o->mTypeProps, this);
     } else if (o->TypeDef() || TypeDef()) {
         Symbol className = o->ClassName();
+        const char *selfname = Name();
         Symbol selfclass = ClassName();
         const char *objname = o->Name();
-        const char *selfname = Name();
         Symbol typ = o->Type();
         MILO_WARN(
             "Can't copy type \"%s\" or type props of %s to %s, different classes %s and %s",
