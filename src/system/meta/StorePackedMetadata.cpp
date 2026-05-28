@@ -1762,7 +1762,7 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
     const DataArray *data = msg.Data();
     if (data->Node(2).Int(data) == 0) {
         if (mLoadingState == 3) {
-            DataArray *cfg = SystemConfig("store", "title_starting_indices");
+            const DataArray *cfg = SystemConfig("store", "title_starting_indices");
             unk70 += 1;
             if (unk70 < cfg->Size()) {
                 unk74 = cfg->Node(unk70).Int(cfg);
@@ -1772,10 +1772,10 @@ DataNode StoreMetadataManager::OnMsg(const CommerceMgrOpCompleteMsg &msg) {
         } else {
             int errCode = data->Node(3).Int(data);
             switch (errCode) {
-            case -4083: mErrorMsg = 0x66; break;
+            case -4076: mErrorMsg = 0x65; break;
             case -4084:
             case -4086: mErrorMsg = 0x67; break;
-            case -4076: mErrorMsg = 0x65; break;
+            case -4082: mErrorMsg = 0x66; break;
             case -4055: mErrorMsg = 0x68; break;
             case -4056: mErrorMsg = 0x69; break;
             case -4043: mErrorMsg = 3; break;
