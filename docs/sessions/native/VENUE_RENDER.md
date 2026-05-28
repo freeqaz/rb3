@@ -1551,3 +1551,144 @@ RB3_GAME_INPUT="@10:start,@30:confirm,@140:select:pn_quickplay.btn,@220:select:q
 `RB3_CAM_FALLBACK_OFF=1` reproduces the baseline void cuts (A/B). `VOIDCUT_DBG=1`
 logs the per-shot verdict (regression canary). `MILO_SCREENSHOT_DIR` MUST be
 ABSOLUTE and already exist.
+
+# V38 — Residual crowd/extras "sliver" deep-dive: diagnosis hypotheses REFUTED, true root cause localized (NO clean fix; instrumentation landed)
+
+**Status item:** N5 (residual crowd/extras character slivers).
+**Outcome:** the `CROWD_SLIVER_DIAGNOSIS.md` primary hypothesis (2b — a
+`CharBonesSamples::LoadData` cached-360 POS-vs-SCALE padding-stride desync) and
+both alternatives (2c `Hmx::Quat::Set(Matrix3)`, the `CharBones` compressed-quat
+strides) were **disproven by instrumentation**. No single matched-fork additive
+fix removes the residual; the cause is a multi-source character-skeleton
+fidelity gap. V21 (`Mtx.h:640`) and V26 (`Rot.cpp:485`) were re-confirmed present
+and intact throughout. **No behavioral source change shipped** — only env-gated
+(OFF-by-default) diagnostics were added.
+
+## Was the primary hypothesis right? NO.
+
+2b said the cached `LoadData` over- or under-reads the padded Xbox layout,
+desyncing the SCALE channel. Tested directly:
+
+- Added `CBS_DBG=1` (gated, `CharBonesSamples.cpp`) dumping per-clip layout +
+  per-sample consumed bytes vs the DC3-Save trailing-pad formula. It proved the
+  existing padded read (consume a +4 pad float after every uncompressed
+  POS/SCALE `Vector3`, then realign each sample to 16B) is **byte-exact**: the
+  Tell-based realign equals the DC3 `Save` `roundup16(mEndOffset)-mEndOffset`
+  for every clip. The "over-read" the diagnosis predicted is only relative to
+  DC3's *contiguous* reader, which is the layout for assets DC3's own Save
+  produced — NOT these RB3 Xbox assets.
+- Then **experimentally removed the +4 pad** (matching DC3's contiguous reader):
+  the game immediately re-hit the exact `OSFatal: String chars 23173 > 512`
+  desync the original comment warned about, and aborted. → the RB3 Xbox cached
+  char assets ARE per-`Vector3` padded; the existing read is correct. **Reverted.**
+
+So the slivers are NOT a packed-buffer stride/format bug. The pose math is also
+clean: `CBM_DBG2` showed every posed bone's `LocalXfm` is det≈1.0 with a
+normalized quat (quatMag 1.000), and `MakeRotMatrix`/`Normalize(Quat)`/
+`Multiply(Transform,Transform)`/`Multiply(Matrix3,Matrix3)` all have correct
+clang C bodies.
+
+## True root cause (localized via SHARD_M / SHARD_CHAIN / MESH_BONE_DBG)
+
+Engine-side instrumentation (`Rnd_Wgpu_RB3.cpp`, gated) decomposed the skin
+matrix `Multiply(BoneOffsetAt(b), boneWorldXfm)` and walked the parent chain. The
+residual splits into **two distinct, unrelated sub-classes**:
+
+1. **Crowd-body "high ratios" are FALSE POSITIVES (legit scaled crowd members).**
+   `female_crowd_body02` (ratio 8.8, dom `bone_neck`) / `male_crowd_body01`
+   (dom `bone_pelvis`): bind offset det = **1.000** (clean, `MESH_BONE_DBG`),
+   each bone's `LocalXfm` det = **1.000**, but the bone's **WorldXfm** det =
+   **0.533**. `SHARD_CHAIN` walked neck→spine→pelvis→`crowd_female02` (the
+   character root): EVERY node has localDet 1.0 but worldDet 0.533, and the
+   ROOT (`crowd_female02`, no parent, constraint kNone) itself reports
+   worldDet 0.533 while localDet 1.0 — i.e. the **whole character is placed with
+   a uniform det-0.533 (Y-squashed) world transform** by the crowd-spawn /
+   instancing path (its `mWorldXfm` was `SetWorldXfm`'d directly, not derived
+   from `mLocalXfm`). A *uniformly* squashed body is a legit short/stylized crowd
+   member, NOT a sliver — the V24 bind-vs-world AABB **ratio** metric just reads
+   the placement squash as a high ratio. The V24 guard is likely DROPPING some
+   legitimately-placed crowd bodies (worth revisiting the guard's crowd handling).
+
+2. **The actually-visible shards are det-1.0 face-servo + held-prop meshes
+   spanning multiple bones.** `male_extras_eyebrows11` (ratio 42, bind 4.9u),
+   `goatee_resource` (17), `male_extra_head01/03`/`female_extra_head` (lipcorner/
+   brow servos), and `clap`/`lighter` (815u/700u world extent, weighted to
+   `bone_R-thumb02`/`bone_R-hand`): the dominant bone is correctly posed
+   (det 1.0, scale 1.0), but the tiny-bind mesh is weighted across 10-38 face/
+   hand servo bones and ONE servo is mis-posed/far, so the mesh's AABB stretches
+   into a 1-2px triangle fan. This is the **CharFaceServo / hand-servo skeleton
+   posing** the diagnosis named as tertiary — a character-animation fidelity gap,
+   not a stride/math primitive. No clean additive fix; would need CharServo work
+   with high regression risk to the band players.
+
+## Before/after sliver-ratio + DROP count
+
+| Run (500-frame reproducer, `SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1`) | DROP / SHARD_RATIO lines | top ratios |
+|---|---|---|
+| Baseline (V37 tree) | **376** / 870 | eyebrows 42.1, goatee 17.1, clap 15.9, lighter 14.2, crowd_body03 8.9, crowd_body02 8.8 |
+| After V38 (no behavioral change) | **376** (unchanged) | identical |
+
+No fix was applied, so the numbers are unchanged — this section documents the
+**refutation + localization**, not a regression. (An experimental `MakeScale`
+cross-sign fix — `Rot.cpp` `cx` is `-(m.x×m.y).x`, a real divergence from the DC3
+sister — moved DROP only 376→371 and **visibly worsened** the f0540 shards by
+flipping Z-handedness elsewhere, so it was reverted. The MakeScale sign bug is
+real but minor and net-negative to touch in isolation; noted here for a future
+holistic skeleton pass.)
+
+## Regression status
+
+NONE. All V38 changes are `#ifdef HX_NATIVE` env-gated diagnostics that emit
+nothing with the env unset (verified: a no-env run produces 0 lines of
+`CBS_DBG`/`CBM_DBG`/`CBM_DBG2`/`SHARD_M`/`SHARD_CHAIN`/`MESH_BONE_DBG`). The
+cached `LoadData` read and `MakeScale` are byte-identical to the pre-V38 tree.
+Boot → menu → song-select → song-load → gameplay → HUD/highway → venue all
+render and the app exits cleanly (exit 0). V21/V26 intact (`grep -c HX_NATIVE
+src/system/math/Mtx.h src/system/math/Rot.cpp` → 1/1). Band players unaffected.
+
+## Env gates added (all OFF by default)
+
+- `CBS_DBG=1` (`src/system/char/CharBonesSamples.cpp`) — per-clip cached layout
+  + per-sample consumed bytes vs the DC3-Save trailing-pad; proves the padded
+  read is byte-exact.
+- `CBM_DBG=1` / `CBM_DBG2=<bone-substr>` (`src/system/char/CharBonesMeshes.cpp`)
+  — SCALE-channel values + pre-divide row lengths (CBM_DBG); QUAT-bone pre-
+  Normalize magnitude + final LocalXfm det (CBM_DBG2). Proved no SCALE bones and
+  clean det-1 quats.
+- `MESH_BONE_DBG=<mesh-substr>` (`src/system/rndobj/Mesh.cpp`) — each loaded
+  `RndBone` bind-offset det + row lengths. Proved offsets are clean det-1.
+- `SHARD_M=<mesh-substr>` + `SHARD_CHAIN=1` (`Rnd_Wgpu_RB3.cpp`, extends the
+  existing `SHARD_RATIO_DBG`/`SHARD_BONE_DBG`) — worst-vertex dominant bone, its
+  composed skin/world/offset dets, and a full parent-chain det walk. The
+  decisive instrument that localized the det-0.533 to the character-root world
+  placement.
+
+## Reproducer (V38)
+
+```
+# baseline residual measurement (guard off so it isn't masked):
+SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1 \
+RB3_GAME=1 MILO_HEADLESS=1 MILO_AUDIO=1 \
+RB3_DATA=$PWD/orig-assets/extracted MILO_MAX_FRAMES=500 \
+RB3_GAME_INPUT="@10:start,@30:confirm,@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,@320:down,@350:msg:music_library:select_highlighted_node,@380:track:guitar,@450:msg:overshell:end_override_flow:1:0,@500:nofail" \
+./native/build-native/rb3-native
+# localize a specific mesh's bad bone + walk its parent chain:
+#   SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1 SHARD_M=female_crowd_body02 SHARD_CHAIN=1 ...
+# prove the cached char-stream read is byte-exact:  CBS_DBG=1 ...
+```
+
+Screenshots: `docs/sessions/native/screenshots/v38-crowd-slivers/`
+(`baseline-guardoff/` shows the raw shards at f0540/f0560; `after-guardon/` is
+the unchanged production state). The most legible before-shard frame is
+`baseline-guardoff/03_f0540.png` (teal blade top-left + rainbow prop fan center).
+
+## Next step for whoever picks up N5
+
+The residual is NOT a packed-buffer/math primitive — stop chasing
+`CharBonesSamples`/`CharBones`/`Quat`. Two independent threads:
+(a) revisit the V24 ratio-guard so it does not penalize *uniformly* placed
+crowd bodies (compare the mesh's bind AABB to its world AABB AFTER dividing out
+the bone-uniform scale, or gate on per-triangle edge-stretch rather than whole-
+mesh ratio); and (b) the visible shards need the CharFaceServo / hand-servo
+skeleton to pose the face/finger servo bones faithfully — a character-rig task,
+not a one-line fork fix.
