@@ -453,8 +453,10 @@ void GemTrack::DrawFill(FillInfo *info, int i2, int i3) {
 }
 
 void GemTrack::UpdateShifts() {
-    if (!mTrackConfig.IsKeyboardTrack()) {
-        mCurrentRangeShift = mRangeShifts.end();
+    RangeShift * &_ref0 = mCurrentRangeShift;
+    bool _cond = !mTrackConfig.IsKeyboardTrack();
+    if (_cond) {
+        _ref0 = mRangeShifts.end();
     } else {
         mRangeShifts.clear();
         std::vector<RangeSection> &rangeSects = TheSongDB->GetData()->GetKeyRangeSections(
@@ -490,8 +492,8 @@ void GemTrack::UpdateShifts() {
                 );
             }
         } else {
-            int i8c = 16;
             int i90 = 0;
+            int i8c = 16;
             for (int i = 0; i < rangeSects.size(); i++) {
                 RangeSection &curSect = rangeSects[i];
                 MinEq(i8c, SemitoneToWhiteKey(Round(curSect.unk8)));
@@ -500,7 +502,7 @@ void GemTrack::UpdateShifts() {
             MinEq(i90, 16);
             mRangeShifts.push_back(RangeShift(0, 0, i8c, i90 - i8c));
         }
-        mCurrentRangeShift = mRangeShifts.begin();
+        _ref0 = mRangeShifts.begin();
     }
 }
 
