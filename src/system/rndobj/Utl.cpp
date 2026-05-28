@@ -976,13 +976,13 @@ void RandomXfms(RndMultiMesh *) { MILO_ASSERT(0, 3173); }
 DECOMP_FORCEACTIVE(Utl, "\\og\\", "/og/", "\\ng\\", "/ng/", "system", "ng")
 
 void ScrambleXfms(RndMultiMesh *mm) {
-    register float max = 1.0f;
-    register float min = -1.0f;
-    float scrambleMin = 0.0f;
     float scrambleMax = 6.2829999923706055f;
+    float scrambleMin = 0.0f;
+    register float min = -1.0f;
     for (std::list<RndMultiMesh::Instance>::iterator it = mm->mInstances.begin();
          it != mm->mInstances.end();
          ++it) {
+        register float max = 1.0f;
         float randZ = RandomFloat(min, max);
         float randY = RandomFloat(min, max);
         float randX = RandomFloat(min, max);
