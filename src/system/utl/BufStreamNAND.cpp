@@ -329,8 +329,8 @@ int BufStreamNAND::SaveBufferToNAND(bool b1) {
     return file;
 }
 
-bool BufStreamNAND::FinishWrite() {
-    bool result = SaveBufferToNAND(false);
+MCResult BufStreamNAND::FinishWrite() {
+    MCResult result = (MCResult)SaveBufferToNAND(false);
     if(result)
         mFail = true;
     return result;

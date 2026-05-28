@@ -7,7 +7,7 @@ class FixedSizeSaveableStream : public BufStream {
 public:
     FixedSizeSaveableStream(void *, int, bool);
     virtual ~FixedSizeSaveableStream();
-    virtual bool FinishWrite() { return 0; }
+    virtual MCResult FinishWrite() { return kMCNoError; }
     virtual MCResult FinishStream() { return kMCNoError; }
 
     bool HasSymbol(Symbol) const;

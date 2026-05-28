@@ -30,7 +30,7 @@ public:
     int PadToEnd();
     int SaveBufferToNAND(bool);
     int DoSeek(int, BinStream::SeekType);
-    bool FinishWrite();
+    MCResult FinishWrite();
     void SeekImpl(int, BinStream::SeekType);
 
     char *mBuffer; // 0x68
