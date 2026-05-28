@@ -28,6 +28,9 @@ doxygen/
 # Excluded tools
 tools/mwcc_compiler/*
 
+# Local convenience symlink into ../dc3-decomp/tools/compiler_trace
+tools/compiler_trace
+
 # Generated context files
 ctx.c
 ctx.cpp
