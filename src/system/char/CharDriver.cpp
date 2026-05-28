@@ -339,15 +339,15 @@ void CharDriver::Poll() {
     float f17 = mBeatScale * TheTaskMgr.Beat();
     float f13 = mBeatScale * TheTaskMgr.DeltaBeat();
     if (mRealign && f17 > 0) {
-        SongPos &thePos = TheTaskMgr.mSongPos;
+        const SongPos &thePos = TheTaskMgr.mSongPos;
         f17 =
             mBeatScale * ((float)(thePos.GetBeat()) + (float)(thePos.GetTick()) / 480.0f);
         if (mOldBeat == kHugeFloat)
             mOldBeat = f17;
-        if (std::floor(mOldBeat) != std::floor(f17)) {
+        if (std::floor(f17) != std::floor(mOldBeat)) {
             CharClipDriver *playing = FirstPlaying();
             if (playing) {
-                int firstFlags = CharClipDriver::GetUpperFlags(playing->mPlayFlags);
+                unsigned int firstFlags = CharClipDriver::GetUpperFlags(playing->mPlayFlags);
                 int flags = firstFlags;
                 for (CharClipDriver *it = playing->Next(); it != nullptr;
                      it = it->Next()) {
@@ -356,8 +356,8 @@ void CharDriver::Poll() {
                 flags--;
                 if (flags > 0) {
                     int i12 = (int)std::floor(f17) ^ (int)std::floor(mOldBeat) + 1;
-                    CharClipDriver *d = playing;
                     if (i12 & flags) {
+                        CharClipDriver *d = playing;
                         while (d) {
                             d->mPlayFlags &= 0xffff0fff;
                             d = d->Next();
