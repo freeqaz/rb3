@@ -595,16 +595,17 @@ RndMesh *WorldCrowd::BuildBillboard(Character *c, float f) {
 void WorldCrowd::SetLod(int lod) { mLod = Clamp(0, 2, lod); }
 
 void WorldCrowd::SetFullness(float flatFullness, float charFullness) {
+    float &_ref0 = mFlatFullness;
     START_AUTO_TIMER("crowd_set");
-    mFlatFullness = flatFullness;
+    _ref0 = flatFullness;
     mCharFullness = charFullness;
     FOREACH (it, mCharacters) {
         if (it->mMMesh) {
             int instanceCountA = (int)it->mMMesh->mInstances.size();
             int totalCount = instanceCountA + (int)it->mBackup.size();
             int instanceCount = (int)it->mMMesh->mInstances.size();
-            int targetInstances = (int)((float)totalCount * mFlatFullness);
-            if (instanceCount < targetInstances) {
+            int targetInstances = (int)((float)totalCount * _ref0);
+            if (targetInstances > instanceCount) {
                 std::list<RndMultiMesh::Instance>::iterator backIt = it->mBackup.begin();
                 for (; instanceCount < targetInstances; instanceCount++) {
                     ++backIt;
@@ -626,9 +627,7 @@ void WorldCrowd::SetFullness(float flatFullness, float charFullness) {
             }
             unsigned short totalChars3D = it->m3DCharsCreated.size();
             int targetChars3D = (int)(charFullness * (float)totalChars3D);
-            if (targetChars3D >= (int)totalChars3D) {
-                targetChars3D = (int)totalChars3D;
-            }
+            targetChars3D = Min(targetChars3D, (int)totalChars3D);
             int currentChars3D = (int)it->m3DChars.size();
             if (currentChars3D < targetChars3D) {
                 for (; currentChars3D < targetChars3D; currentChars3D++) {
@@ -996,9 +995,8 @@ DataNode WorldCrowd::OnIterateFrac(DataArray *da) {
     int count = 0;
     for (std::list<CharData>::iterator it = mCharacters.begin();
          it != mCharacters.end(); ++it) {
-        Character *c = it->mDef.mChar.mPtr;
-        if (c) {
-            chars[count++] = c;
+        if (it->mDef.mChar.mPtr) {
+            chars[count++] = it->mDef.mChar.mPtr;
         }
     }
 
