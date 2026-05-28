@@ -947,8 +947,8 @@ void SplitHeap(int srcHeap, const char *name, int newHeapNum, int sizeBytes,
 void MemInit() {
     if (gMemInited) return;
     CriticalSection *lock = &sMemLock;
-    gInsideMemFunc = true;
     gMemInited = true;
+    gInsideMemFunc = true;
     gMemLock = lock;
     gMemStackLock = &sMemStackLock;
     if (lock != nullptr) lock->Enter();
@@ -961,8 +961,8 @@ void MemInit() {
     }
     gNumHeaps = numHeaps;
     MILO_ASSERT(gNumHeaps < MAX_HEAPS, 0x704);
-    int totalCombinedBytes = 0;
     HeapDesc *desc = &gHeapData[3];
+    int totalCombinedBytes = 0;
     int singleHeapSplitAccum = 0;
     int idx = 3;
  // unused; placeholder for asm pattern
