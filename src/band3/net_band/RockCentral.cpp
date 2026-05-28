@@ -33,6 +33,7 @@
 #include "net/WiiMessenger.h"
 #include "net_band/DataResults.h"
 #include "net_band/RockCentralJobs.h"
+#include "RevoEX/nwc24/NWC24Config.h"
 #include "net_band/RockCentralMsgs.h"
 #include "obj/Data.h"
 #include "obj/DataFile.h"
@@ -78,7 +79,7 @@ namespace {
     void RockCentralTerminate() { TheRockCentral.Terminate(); }
 }
 
-const char *g_szMachineIdString;
+char g_szMachineIdString[0x18];
 TextFileStream *gDataPointLog;
 RockCentral TheRockCentral;
 String RockCentral::kServerVer = "3";
@@ -241,14 +242,17 @@ DataNode RockCentral::OnMsg(const ServerStatusChangedMsg &msg) {
             MILO_WARN("Couldn't register RB test protocol\n");
         }
         mRBData = new Quazal::RBDataClient();
-        if (!client->RegisterExtraProtocol(mRBBinaryData, 'u')) {
+        if (!client->RegisterExtraProtocol(mRBData, 'u')) {
             MILO_WARN("Couldn't register RB data protocol\n");
         }
         mRBBinaryData = new Quazal::RBBinaryDataClient();
         if (!client->RegisterExtraProtocol(mRBBinaryData, 'v')) {
             MILO_WARN("Couldn't register RB binary data protocol\n");
         }
-        MILO_WARN("%llu"); // something with NWC24GetMyUserId happens here
+        unsigned long long uid = -1;
+        if (NWC24GetMyUserId(uid) == 0) {
+            snprintf(g_szMachineIdString, 0x18, "%llu", uid);
+        }
         INIT_DATAPOINT("config/get");
         ADD_DATA_PAIR(locale, SystemLanguage());
         RecordDataPoint(dataPoint, 0, mConfigResultList, this);
