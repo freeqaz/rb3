@@ -94,9 +94,9 @@ void LightHue::TranslateColor(const Hmx::Color &col, Hmx::Color &res) {
         float cb = col.blue;
         float cg = col.green;
         float cr = col.red;
-        col30.alpha = ca * inv;
+        col30.alpha = inv * ca;
         col30.blue = cb * inv;
-        col30.green = cg * inv;
+        col30.green = inv * cg;
         col30.red = cr * inv;
         float h, s, l;
         float vecx, vecy, vecz;
