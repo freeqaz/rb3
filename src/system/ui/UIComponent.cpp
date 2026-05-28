@@ -233,6 +233,27 @@ void UIComponent::MockSelect() {
 void UIComponent::Update() {
     if (mResourcePath.length() != 0) {
         if (!mResourceDir) {
+#ifdef __EMSCRIPTEN__
+            // Web-only resource-resolution bail (the W2b web-asset-load wall).
+            //
+            // On native this block loads the component's resource milo (the named
+            // one, or the "default" fallback below) SYNCHRONOUSLY and populates
+            // mResourceDir, so it runs once and the component renders its widget.
+            // On web the UI resource manager isn't booted (that's W3): the named
+            // resource never resolves, so we fall to the default fallback, whose
+            // ResourceFileUpdated()->LoadFile()/PostLoad()/Update() chain either
+            // recurses forever ("Maximum call stack size exceeded") or hits the
+            // MILO_FAIL "missing default resource file" abort when the default
+            // milo also can't be found — either way the tab dies. This fires for
+            // the HUD/widget sub-deps the heavy milos pull (track_shared's
+            // band_power_meter.milo, main_hub's pool_info_widget.milo — both full
+            // of BandLabels needing font/icon resources). These UIComponents
+            // contribute NO scene geometry, so on web we simply leave them
+            // resource-less and return, letting the rest of the milo load + the
+            // mesh geometry render. Full UI-resource bring-up is W3.
+            // Guarded out of the matched Wii/native asm (no __EMSCRIPTEN__ there).
+            return;
+#endif
             FileStat stat;
             const char *default_str = "default";
             const char *milo_str =

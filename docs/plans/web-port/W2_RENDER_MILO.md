@@ -364,25 +364,67 @@ subsystem state we don't boot — e.g. `LabelShrinkWrapper::Update` derefs
 `mResource->Dir()` (null without the UI resource manager) and SIGSEGVs if
 registered; left unregistered it ReadDead-skips harmlessly.
 
-**WEB status (NOT yet passing — a SEPARATE web-platform wall, not the desync):**
-the factory fix IS active on web (verified: `OverdriveMeterDir/PanelDir/
-GemTrackDir/UILabelDir/Font/EventTrigger` all register =1 on the wasm build), so
-the runaway-resize desync no longer fires. But `rb3-web` still page-crashes
-~43–44 s into loading BOTH `tracksystem.milo_xbox` AND (now) the single-chunk
-`gem_smasher_guitar.milo_xbox` — with ZERO per-object NOTIFY output in the gap
-(native floods hundreds). Root cause is web-specific, two compounding limits, NOT
-ChunkStream/endianness:
-  1. **512 MB wasm heap cap** (`MAXIMUM_MEMORY=512MB`, engine CMake) — both milos
-     pull the heavy multi-chunk SUBDIR deps `track_shared` (10 MB / 60 chunks) +
-     `ingame_bank` (8 chunks); decompressing/holding that whole tree (tracksystem
-     = 1151 objects, 277 meshes natively) plus mesh geometry can exceed 512 MB in
-     the linear heap (no texture/geom eviction).
-  2. **Main-thread blocking** — `WebAssetsFetchSync` + the synchronous load loop
-     run on the browser main thread; a multi-second blocking load trips the
-     "page unresponsive" kill.
-  *W2b next steps for web:* bump `MAXIMUM_MEMORY` (or add geom/texture eviction),
-  and/or move the load off the main thread (worker / chunked async pump). The
-  native target is the authoritative proof the load logic itself is correct.
+**WEB web-asset-load wall — ROOT-CAUSED 2026-05-28. Both prior hypotheses
+(memory cap, main-thread-block) were WRONG. The real wall is UI-subsystem
+object-Load divergences in the heavy milos' HUD/audio sub-deps.**
+
+*How it was diagnosed (instrumented poll-by-poll trace, console + C-side
+heap/state logging, since a tight-load `page.evaluate` gets starved):*
+- The crash was a SILENT renderer kill at ~40s — NO `abort()`, NO "Cannot enlarge
+  memory", NO `RangeError`, NO wasm trap. The wasm **heap stays flat at 48 MB the
+  entire time** → it is NOT OOM. Bumping `MAXIMUM_MEMORY` to 2 GB did NOT prevent
+  the crash (proves not memory).
+- All deps (tracksystem 833 KB + tracksystem_meshes 1.6 MB + track_shared 10.6 MB
+  + ingame_bank 1.1 MB) are fetched into MEMFS in the FIRST ~1 s (server log) →
+  the fetch is NOT the bottleneck (proves not the `WebAssetsFetchSync` main-thread
+  block the task hypothesized). DC3 uses the SAME blocking sync XHR
+  (`AsyncFile_Native.cpp:40`) and runs the SAME 512 MB cap — it only avoids the
+  wall because its scenes are smaller and don't pull these specific sub-deps.
+- The ~40s gap is pure CPU: ONE synchronous `DirLoader::PollUntilLoaded` (called
+  by `DirLoader::LoadObjects`) drives the whole load with the per-state time-slice
+  DISABLED (`unk1c = 1e30`), so it never yields to the browser. A *yielding*
+  re-implementation of that loop (web-only, in `rb3_render_mesh.cpp
+  LoadMiloDirYielding`: arms an 8 ms `CheckSplit` budget + `emscripten_sleep(0)`
+  per poll, under JSPI) keeps the tab responsive — but exposed that the crash is
+  a chain of per-leaf-class spins/aborts, each in a *sub-dep*:
+  1. **`sfx/gen/ingame_bank.milo`** (audio bank, pulled as a resource dep): with
+     the synth-leaf factories registered, `Sfx`/`SynthSample`/`WaitSeq` CONSTRUCT
+     and their PreLoad/PostLoad spins forever on web (needs the synth subsystem,
+     not booted). **Fixed** by NOT registering the synth-leaf factories in
+     `main_web.cpp::RegisterCommonFactories` — they then hit "Can't make" → NULL →
+     ReadDead-skip, exactly like rb3-native's RB3_RENDER_MESH path (which returns
+     via `RunRenderMesh` BEFORE registering them, and loads full tracksystem fine).
+  2. **`UIComponent::Update` infinite recursion** → "Maximum call stack size
+     exceeded" → tab crash. The default-resource fallback recurses through both
+     `ResourceFileUpdated()->Update()` and the explicit `Update()`; on native it
+     terminates because the default resource loads synchronously, on web it never
+     resolves (UI resource manager not booted). **Fixed** by a web-only top-of-
+     block bail in `UIComponent::Update` (leaves the component resource-less; it
+     contributes no scene geometry).
+  3. **`ui/track/band_power_meter.milo`** (and `main_hub`'s
+     `ui/main/pool_info_widget.milo`) — UI HUD widgets full of `BandLabel`/
+     `UILabel` whose object PreLoad/PostLoad still SPINS on web after the above two
+     fixes (a different UI-subsystem code path, not `ReadDead` — a 16 MiB-bounded
+     web-only `ReadDead` cap did NOT unblock it). **This is the remaining wall.**
+
+*Result of the fixes:* the load advances from crashing at poll ~16 (ingame_bank)
+to reaching poll ~156 (band_power_meter) with NO crash/OOM/recursion — but then
+hangs in the band_power_meter UI-widget Load. Single-chunk
+`gem_smasher_guitar_meshes.milo_xbox` still loads + renders on web (regression
+PASS: milosLoaded=1, frames=52, nonclear=3.69%, 0 errors). Native PNG output
+unchanged (`RENDER_MESH OK`, 1151 objects / 277 meshes).
+
+*Remaining for W2b/W3 (the band_power_meter / pool_info_widget UI-HUD wall):* the
+heavy milos pull UI HUD widget sub-deps whose `BandLabel`/`UILabel` object Load
+needs the UI resource subsystem RB3 does not boot in the render harness (this is
+the exact "leaf widget whose PostLoad needs runtime subsystem state we don't boot"
+caveat under Risk-4 above, now confirmed as the dominant web blocker). Two clean
+paths forward, both W3-adjacent: (a) bring up the UI resource manager on web so
+these widgets load (the real fix; large), or (b) a web-only filter that skips the
+geometry-irrelevant HUD/audio sub-deps at `LoadResources`/`AddLoader` (small but
+heuristic — the geometry is in `tracksystem_meshes` + `track_shared`'s meshes, not
+the HUD overlays). The memory bump (2 GB), the yielding load loop, and the
+`ReadDead`/`UIComponent` web guards are all landed and correct regardless.
 
 **Risk 3 — Texture upload under Dawn-web.**
 `WriteTexture` has a 256-byte `bytesPerRow` alignment requirement that is

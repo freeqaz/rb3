@@ -232,6 +232,86 @@ static void InjectTypeDefStubs() {
 // std::vector<Viewport>::resize -> SIGSEGV / wasm OOM. Idempotent.
 extern void RB3RegisterGameObjectFactories();
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>  // emscripten_sleep (JSPI yield)
+#include <emscripten/heap.h>        // emscripten_get_heap_size
+#include "utl/Loader.h"             // TheLoadMgr / PollFrontLoader
+#include "utl/Std.h"                // ListFind
+
+// Web milo load that YIELDS to the browser mid-load.
+//
+// DirLoader::LoadObjects() calls LoadMgr::PollUntilLoaded(), which pumps the
+// loader to completion in ONE synchronous call with the per-state time-slice
+// split DISABLED (it sets unk1c = 1e30, so CheckSplit() never trips and
+// CreateObjects/LoadObjs process every object in a single PollFrontLoader). On
+// native that's fine (tracksystem loads in ~9s). In the browser that whole
+// load runs inside one rb3MainLoopTick() with NO return to the event loop — and
+// because the split is disabled, even an inter-poll yield can't help: the entire
+// 1100-object multi-chunk milo (tracksystem + its 10MB track_shared dep) is
+// processed in ONE un-interruptible poll of ~38s wasm CPU. The browser then
+// kills the unresponsive renderer tab (verified: the crash carries NO abort /
+// "Cannot enlarge memory" / RangeError, and `window.rb3LoadPolls` stays 0 the
+// whole time → a single in-progress poll, not OOM; bumping MAXIMUM_MEMORY to
+// 2GB does NOT prevent it). This is the W2a/W2b web-asset-load wall.
+//
+// The fix uses the loader's OWN cooperative time-slice — the mechanism the Wii
+// uses to spread a load across frames. We mirror LoadMgr::Poll()'s time-sliced
+// (`#else`) body: set a small split budget (unk1c) and Restart() the split
+// timer before each poll, so CheckSplit() trips after ~8ms and CreateObjects/
+// LoadObjs return mid-load. Between polls we emscripten_sleep(0) — under JSPI
+// (MILO_WEB_ASYNCIFY, default on) this resolves via setTimeout(…,0), yielding a
+// full event-loop turn (paint + input) before the wasm stack resumes. The tab
+// stays responsive and the load completes incrementally. This touches NO
+// matched-fork code (the loop is re-derived from Loader.cpp's PollUntilLoaded /
+// Poll; DirLoader's ctor / GetDir / IsLoaded and LoadMgr's mLoading / mTimer /
+// unk1c are all public API).
+static ObjectDir* LoadMiloDirYielding(const char* miloPath) {
+    // Construct the loader exactly as DirLoader::LoadObjects does. The ctor
+    // self-registers into TheLoadMgr.mLoading (Loader::Loader -> push_front).
+    DirLoader loader(FilePath(miloPath), kLoadFront, NULL, NULL, NULL, false);
+
+    // Per-poll wall-clock budget (ms) before CheckSplit() forces the front
+    // loader's state to bail. Small enough that one poll never hangs the tab,
+    // large enough to make real progress per slice.
+    const float kSliceMs = 8.0f;
+
+    Loader* theLdr = &loader;
+    int polls = 0;
+    while (!theLdr->IsLoaded()) {
+        // Mirror LoadMgr::Poll()'s time-sliced body: arm the split budget and
+        // restart the split timer so CheckSplit() trips after kSliceMs of work.
+        TheLoadMgr.unk1c = kSliceMs;
+        TheLoadMgr.mTimer.Restart();
+
+        TheLoadMgr.PollFrontLoader();
+        polls++;
+
+        // Faithful PollUntilLoaded queue maintenance: a dep (track_shared,
+        // ingame_bank) spawns a new front loader; once it finishes it MUST be
+        // popped or PollFrontLoader keeps re-polling the done loader forever and
+        // our DirLoader never advances (an infinite-poll livelock).
+        if (!ListFind(TheLoadMgr.mLoading, theLdr))
+            break;
+        if (TheLoadMgr.mLoading.front()->IsLoaded())
+            TheLoadMgr.mLoading.pop_front();
+
+        // Expose load progress to the page (and the test harness) every few
+        // polls; throttle the console trace to keep it readable on big loads.
+        if ((polls & 3) == 0)
+            EM_ASM({ window.rb3LoadPolls = $0; }, polls);
+        if ((polls % 50) == 0) {
+            Loader* f = TheLoadMgr.mLoading.empty() ? nullptr : TheLoadMgr.mLoading.front();
+            printf("rb3-render: load poll %d heap=%zuMB front=%s\n",
+                   polls, (size_t)(emscripten_get_heap_size() / (1024 * 1024)),
+                   f ? f->mFile.c_str() : "(empty)");
+        }
+        emscripten_sleep(0);  // JSPI: suspend -> event loop -> resume
+    }
+    printf("rb3-render: yielding load done (%d polls)\n", polls);
+    return loader.GetDir();
+}
+#endif  // __EMSCRIPTEN__
+
 WalkResult LoadMiloAndWalk(const char* miloPath) {
     WalkResult r;
     if (!miloPath || !*miloPath) {
@@ -243,7 +323,13 @@ WalkResult LoadMiloAndWalk(const char* miloPath) {
     RB3RegisterGameObjectFactories();
 
     printf("rb3-render: loading '%s'\n", miloPath);
+#ifdef __EMSCRIPTEN__
+    // Browser: pump the loader with periodic JSPI yields so the page stays
+    // responsive during the long synchronous multi-chunk load (see above).
+    ObjectDir* dir = LoadMiloDirYielding(miloPath);
+#else
     ObjectDir* dir = DirLoader::LoadObjects(FilePath(miloPath), nullptr, nullptr);
+#endif
     if (!dir) {
         fprintf(stderr, "rb3-render: DirLoader::LoadObjects returned null\n");
         return r;

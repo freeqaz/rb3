@@ -82,15 +82,21 @@ static void RegisterCommonFactories() {
     REGISTER_OBJ_FACTORY(RndGroup)
     REGISTER_OBJ_FACTORY(EventTrigger)
     REGISTER_OBJ_FACTORY(RndPropAnim)
-    REGISTER_OBJ_FACTORY(Sfx)
-    REGISTER_OBJ_FACTORY(SynthSample)
-    REGISTER_OBJ_FACTORY(MidiInstrument)
-    REGISTER_OBJ_FACTORY(Sequence)
-    REGISTER_OBJ_FACTORY(WaitSeq)
-    REGISTER_OBJ_FACTORY(RandomGroupSeq)
-    REGISTER_OBJ_FACTORY(SerialGroupSeq)
-    REGISTER_OBJ_FACTORY(ParallelGroupSeq)
-    REGISTER_OBJ_FACTORY(SfxSeq)
+    // NOTE: the synth-leaf factories (Sfx / SynthSample / Sequence / WaitSeq /
+    // *GroupSeq / SfxSeq) are deliberately NOT registered here. RB3's render
+    // milos (tracksystem, main_hub) pull SFX *resource* deps — most notably
+    // sfx/gen/ingame_bank.milo — purely for audio; they contribute no geometry.
+    // If those leaf classes are registered, DirLoader CONSTRUCTS them and then
+    // runs their PreLoad/PostLoad, which on web spins forever in the synth
+    // sample-read path (the load needs synth subsystem state W2 never boots; the
+    // browser then kills the unresponsive tab — the W2b web-asset-load wall).
+    // Leaving them unregistered makes CreateObjects hit "Can't make <class>" and
+    // push a NULL, so LoadObjs ReadDead-skips the leaf's bytes cleanly — exactly
+    // what rb3-native's RB3_RENDER_MESH path does (it returns via RunRenderMesh
+    // BEFORE calling its own RegisterCommonFactories, so it never registers the
+    // synth leaves either, and the full tracksystem load works). Audio/synth
+    // bring-up is W3. Dir CONTAINER factories (which DO desync if absent) are
+    // registered separately by RB3RegisterGameObjectFactories() in LoadMiloAndWalk.
 }
 
 // Read the ?milo= URL query param into a std::string (empty if unset).

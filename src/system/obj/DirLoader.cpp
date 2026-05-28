@@ -594,6 +594,20 @@ void DirLoader::LoadResources() {
 void ReadDead(BinStream &bs) {
     u8 buf;
     bs >> buf;
+#ifdef __EMSCRIPTEN__
+    // Web-only iteration bound (the W2b web-asset-load wall). The Wii/native scan
+    // relies on the 0xADDEADDE end marker always being present before the stream
+    // ends. If a milo desyncs on web — an unmakeable / mis-loaded class whose
+    // serialized extent is skipped wrong, common for the sfx/audio banks and UI
+    // HUD widgets the heavy milos pull as deps — the marker is never reached.
+    // A ChunkStream then keeps yielding bytes (zeros past the logical end, never
+    // RealEof at a chunk boundary), so this scan loops forever and hangs the
+    // browser main thread until the tab is killed. Bound the scan: a real dead
+    // block is a few bytes; anything past a generous cap is a desync, so bail and
+    // let the rest of the stream be skipped instead of crashing the tab. Guarded
+    // out of the matched Wii/native asm (no __EMSCRIPTEN__ there).
+    int kMaxDeadScan = 1 << 24;  // 16 MiB — far beyond any real dead block
+#endif
     while (true) {
         if (buf == 0xAD) {
             if ((bs >> buf, buf == 0xDE) && (bs >> buf, buf == 0xAD)
@@ -603,6 +617,10 @@ void ReadDead(BinStream &bs) {
         } else {
             bs >> buf;
         }
+#ifdef __EMSCRIPTEN__
+        if (bs.Fail() || bs.Eof() == RealEof || --kMaxDeadScan <= 0)
+            break;
+#endif
     }
 }
 

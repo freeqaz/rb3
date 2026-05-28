@@ -701,6 +701,19 @@ target_include_directories(rb3-web PRIVATE
 # Extend the engine helper's base export list with RB3's tick symbol. Later
 # -sEXPORTED_FUNCTIONS / -sJSPI_EXPORTS overrides the helper's earlier value.
 target_link_options(rb3-web PRIVATE
+    # W2b web-asset-load wall: RB3's heavy multi-chunk milos pull large subdir
+    # deps (track_shared ≈ 10MB / 60 chunks + tracksystem_meshes 1.6MB +
+    # ingame_bank 1.1MB) and build a 1100+-object graph in one synchronous load.
+    # Decompressing/holding that whole tree (plus the transient sync-XHR copies
+    # in the JS heap) blows past the engine helper's 512MB MAXIMUM_MEMORY default
+    # → "Cannot enlarge memory arrays" abort → page crash. Override to 2GB (the
+    # last -sMAXIMUM_MEMORY on the wasm-ld line wins, exactly like the
+    # -sEXPORTED_FUNCTIONS override just below). This is an RB3-only override —
+    # the shared engine default (used by DC3, whose scenes are smaller) is
+    # untouched. wasm32's address space ceiling is 4GB; 2GB leaves headroom for
+    # the heavier song-load phase (W3) without risking the browser's per-tab
+    # allocation limits.
+    -sMAXIMUM_MEMORY=2GB
     -sEXPORTED_FUNCTIONS=[\"_main\",\"_rb3MainLoopTick\"]
     # The matched-fork's off-path TUs reference Wii-only globals
     # (TheWiiRnd, TheNetSession, TheMC, TheSynth, RndMesh::sLastCollide,
