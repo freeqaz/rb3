@@ -133,7 +133,7 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
         sHaveLenses = haveLenses;
 
         if ((unsigned int)sNeedBoxMap == (unsigned int)TheRnd->GetFrameID()) {
-            MILO_NOTIFY_ONCE("%s drawn after SpotlightEnder", (char *)PathName(sl));
+            MILO_NOTIFY_ONCE("%s drawn after SpotlightEnder", PathName(sl));
         }
 
         sNeedDraw = true;
