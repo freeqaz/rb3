@@ -699,11 +699,11 @@ void RockCentral::GetBattleLeaderboardByRankRange(
 void RockCentral::UpdateFriendList(
     int i1, std::vector<Friend *> friends, DataResultList &results, Hmx::Object *o
 ) {
-    Server *server = IsConnected(o, -1, false);
-    if (server) {
+    if (IsConnected(o, -1, false)) {
         INIT_DATAPOINT("leaderboards/friends/update");
         ADD_DATA_PAIR(pid, i1);
-        for (int i = 0; i < friends.size(); i++) {
+        unsigned int _tmp5 = friends.size();
+        for (int i = 0; i < _tmp5; i++) {
             String str;
             str = friends[i]->mName.c_str();
             unsigned long long key = (unsigned int)friends[i]->mFriendKey;
@@ -712,7 +712,7 @@ void RockCentral::UpdateFriendList(
             ADD_BUFFER_PAIR(buf, str, "name%03d", i);
             snprintf(buf, 8, "guid%03d", i);
             snprintf(buf2, 0x18, "%lld", key);
-            ADD_DATA_PAIR(buf2, buf);
+            ADD_DATA_PAIR(buf, buf2);
         }
         RECORD_DATA_POINT(0, results, o);
     }
