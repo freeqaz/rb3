@@ -512,10 +512,10 @@ void SongData::ComputeVocalRangeData() {
 }
 
 void SongData::UnflipGems(int i1, int i2, int diff) {
-    std::vector<GameGem> &backup_gems =
-        mBackupTracks[i2]->mGems->GetDiffGemList(diff)->mGems;
     TickedInfoCollection<String> &backup_mixes =
         mBackupTracks[i2]->mMixes->GetMixList(diff);
+    std::vector<GameGem> &backup_gems =
+        mBackupTracks[i2]->mGems->GetDiffGemList(diff)->mGems;
     std::vector<GameGem> &gems = mGemDBs[i1]->GetDiffGemList(diff)->mGems;
     TickedInfoCollection<String> &mixes = mDrumMixDBs[i1]->GetMixList(diff);
     MILO_ASSERT(backup_gems.size() == gems.size(), 0x2CE);
@@ -530,7 +530,8 @@ void SongData::UnflipGems(int i1, int i2, int diff) {
             mixes.SetInfo(0, s);
         }
         int i11 = 1;
-        int i7 = backup_mixes.mInfos.size() == 1 ? 0x7fffffff : backup_mixes.mInfos[1].mTick;
+        int _tmp2 = backup_mixes.mInfos.size();
+        int i7 = _tmp2 == 1 ? 0x7fffffff : backup_mixes.mInfos[1].mTick;
         for (int g = 0; g < gems.size(); g++) {
             MILO_ASSERT(backup_gems[g].GetTick() == gems[g].GetTick(), 0x2F4);
             if (backup_gems[g].GetTick() >= i7) {
