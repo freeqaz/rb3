@@ -48,13 +48,20 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# REPO/SRC are reassigned in main() from --repo so the same sweep runs against
+# any Milo-engine checkout (rb3 Wii, dc3 Xbox360 — both big-endian, both native
+# port targets). Default is the repo this script lives in.
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src"
 
+# Platform/third-party dirs the port replaces wholesale (superset across the
+# rb3 Wii and dc3 Xbox360 trees). Best-effort; use --all to bypass.
 OUT_OF_SCOPE_PREFIXES = (
     "system/rndwii/",
+    "system/rndxenon/",
     "system/os/",
     "sdk/",
+    "xdk/",
     "network/",
     "lib/",
 )
@@ -193,8 +200,12 @@ def collect_endian_surface(include_all: bool) -> list[tuple[str, int, str]]:
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--repo", metavar="ROOT",
+                    help="repo root to sweep (default: this script's repo). Use to "
+                         "run the same sweep against another Milo checkout, e.g. "
+                         "--repo /home/free/code/milohax/dc3-decomp")
     ap.add_argument("--all", action="store_true",
-                    help="include sdk/network/rndwii/os/lib")
+                    help="include sdk/network/rndwii/rndxenon/os/lib")
     ap.add_argument("--risk", choices=["high", "low", "all"], default="all",
                     help="filter bitfield structs by serialization risk")
     ap.add_argument("--filter", help="substring match on class name")
@@ -202,6 +213,15 @@ def main() -> int:
                     help="also print the existing EndianFix/EndianSwap surface")
     ap.add_argument("--json", metavar="FILE", help="write findings to FILE")
     args = ap.parse_args()
+
+    if args.repo:
+        global REPO, SRC
+        REPO = Path(args.repo).resolve()
+        SRC = REPO / "src"
+        if not SRC.is_dir():
+            print(f"no src/ under {REPO}", file=sys.stderr)
+            return 2
+    print(f"[scope] sweeping {SRC}", file=sys.stderr)
 
     structs: list[BitfieldStruct] = []
     for path in SRC.rglob("*.h"):
