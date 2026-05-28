@@ -56,14 +56,15 @@ void HiResScreen::BmpCache::FlushCache() {
     const unsigned int &_ref0 = mCurrLoadedIndex;
     MILO_ASSERT(_ref0 < mTotalNumCacheLines, 0x9C);
     if (mDirtyEnd > mDirtyStart) {
-        File *cacheFile = NewFile(mFileNames[_ref0].c_str(), 1);
+        File *cacheFile = NewFile(mFileNames[_ref0].c_str(), 4);
         MILO_ASSERT(cacheFile, 0xA2);
         cacheFile->Seek(mDirtyStart, 0);
         unsigned int nStart = mDirtyStart;
         unsigned int nEnd = mDirtyEnd;
+        unsigned char *pBuff = mBuffer + nStart;
         unsigned int nBuffRange = nEnd - nStart;
         MILO_ASSERT(nBuffRange <= mByteSize, 0xAA);
-        unsigned int numWritten = cacheFile->Write(mBuffer + nStart, nBuffRange);
+        unsigned int numWritten = cacheFile->Write(pBuff, nBuffRange);
         MILO_ASSERT(numWritten == nBuffRange, 0xAE);
         cacheFile->Flush();
         delete cacheFile;
