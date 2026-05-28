@@ -214,6 +214,7 @@ Symbol BandSongMgr::GetShortNameFromSongID(int songID, bool fail) const {
 }
 
 int BandSongMgr::GetSongIDFromShortName(Symbol shortName, bool fail) const {
+    static const int kSongID_Invalid = 0; // shadow the wrong header constant in this fn (target asm uses cmpwi 0)
     std::map<Symbol, int>::const_iterator it = mSongIDLookup.find(shortName);
     if (it != mSongIDLookup.end()) {
         MILO_ASSERT(it->second != kSongID_Invalid, 0x16D);
