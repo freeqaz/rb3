@@ -1028,13 +1028,13 @@ void RndMesh::OnSync(int flags) {
         int _tmp0 = mFaces.size();
         mPatches.push_back(_tmp0);
     } else if (flags & 0x100U) {
+        int i4 = 0;
         u16 i12 = 0;
         u16 u13 = 0xFFFF;
-        int i4 = 0;
         FOREACH (it, mFaces) {
             i12 = Max(Max<u16>(i12, it->v1, it->v2), it->v3);
             u13 = Min(Min<u16>(u13, it->v1, it->v2), it->v3);
-            if (!PatchOkay((i12 - u13) + 1, i4 + 1)) {
+            if (!PatchOkay(1 + i12 - u13, i4 + 1)) {
                 mPatches.push_back(i4);
                 i12 = Max(it->v1, it->v2, it->v3);
                 u13 = Min(it->v1, it->v2, it->v3);
