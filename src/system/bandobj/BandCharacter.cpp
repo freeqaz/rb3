@@ -1261,8 +1261,9 @@ bool BandCharacter::AddDircut(const FilePath &f) {
             return true;
         }
     }
+    unsigned int mergerSize = mFileMerger->mMergers.size();
     int start = mFileMerger->FindMergerIndex("directed_cut_0", true);
-    unsigned int maxNum = mFileMerger->mMergers.size() - start;
+    unsigned int maxNum = mergerSize - start;
     if (mDircuts.size() >= maxNum)
         return false;
     mDircuts.push_back(f);
