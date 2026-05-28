@@ -83,11 +83,11 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
     if (!sl)
         return;
 
-    Hmx::Color color = sl->mColorOwner->mColor;
+    const Hmx::Color& color = sl->mColorOwner->mColor;
     float intensity = sl->mColorOwner->mIntensity;
 
-    float scaledR = color.red * intensity;
-    float scaledG = color.green * intensity;
+    float scaledR = intensity * color.red;
+    float scaledG = intensity * color.green;
     float scaledB = color.blue * intensity;
     float scaledA = 1.0f;
 
@@ -133,13 +133,13 @@ void SpotlightDrawer::DrawLight(Spotlight *sl) {
         sHaveLenses = haveLenses;
 
         if ((unsigned int)sNeedBoxMap == (unsigned int)TheRnd->GetFrameID()) {
-            MILO_NOTIFY_ONCE("%s drawn after SpotlightEnder", PathName(sl));
+            MILO_NOTIFY_ONCE("%s drawn after SpotlightEnder", (char *)PathName(sl));
         }
 
         sNeedDraw = true;
     }
 
-    RndMesh *mesh = sl->mLightCanMesh;
+    RndMesh *mesh = sl->mLightCanMesh.mPtr;
     if (mesh && !sl->mLightCanSort) {
         bool visible;
         if (!mesh->Showing()) {
