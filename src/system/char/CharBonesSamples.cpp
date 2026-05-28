@@ -460,13 +460,13 @@ void CharBonesSamples::Load(BinStream &bs) {
 }
 
 void CharBonesSamples::ReadCounts(BinStream& bs, int i2){
-    int i = 0;
+    unsigned int i = 0;
+    int tmp;
     int numTypesToRead = Min(7, i2);
     for(; i < numTypesToRead; i++){
         bs >> mCounts[i];
     }
     for(int numTypesRead = i; numTypesRead < i2; numTypesRead++){
-        int tmp;
         bs >> tmp;
         MILO_ASSERT((tmp - mCounts[NUM_TYPES - 1]) == 0, 0x2B2);
     }
