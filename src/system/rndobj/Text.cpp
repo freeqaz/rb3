@@ -1549,8 +1549,7 @@ void RndText::ReplaceLineText(
 ) {
     MILO_ASSERT(idx < mLines.size(), 0x8E5);
     float f3c = 0;
-    if (!fptr)
-        fptr = &f3c;
+    fptr = fptr ? fptr : &f3c;
     int newCharsInBytes = NumCharsInBytes(utf8, style, *fptr, fixedLineLength);
     MILO_ASSERT(newCharsInBytes <= utf8.length(), 0x8EC);
     Line &line = mLines[idx];
@@ -1564,9 +1563,9 @@ void RndText::ReplaceLineText(
         if (mesh) {
             RndMesh::Vert *vertIt = &mesh->Verts().mVerts[line.startIdx * 4];
             RndMesh::Vert *vertEnd = &mesh->Verts().mVerts[line.endIdx * 4];
-            for (int i = vertEnd - vertIt; i > 0; i--, vertIt++) {
-                vertIt->pos.Set(0, 0, 0);
-                vertIt->uv.Set(0, 0);
+            for (RndMesh::Vert *v = vertIt; v < vertEnd; v++) {
+                v->pos.Set(0, 0, 0);
+                v->uv.Set(0, 0);
             }
             curInfo.syncFlags |= 0x1F;
         }
