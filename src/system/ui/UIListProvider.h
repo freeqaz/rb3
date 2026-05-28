@@ -61,7 +61,7 @@ public:
         : mData(0), mOffset(i), mFluidWidth(b1), unkd(b2), mList(ul) {
         SetData(arr);
     }
-    virtual ~DataProvider() {}
+    virtual ~DataProvider() { mData->Release(); }
     virtual void Text(int, int, UIListLabel *, UILabel *) const;
     virtual RndMat *Mat(int, int, UIListMesh *) const;
     virtual Symbol DataSymbol(int) const;
