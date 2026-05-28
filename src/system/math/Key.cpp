@@ -81,6 +81,7 @@ void InterpVector(
     Vector3 &vref,
     Vector3 *vptr
 ) {
+    Vector3 v7c;
     if (keys.size() < 3) {
         spline = false;
         if (keys.size() < 2) {
@@ -96,15 +97,14 @@ void InterpVector(
     int idx = prev - keys.begin();
     if (spline) {
         float fsq = ref * ref;
-        float fcubed = fsq * ref;
         float fsq3 = fsq * 3.0f;
+        float fcubed = fsq * ref;
         float scale0 = fcubed * 2.0f;
         scale0 = scale0 - fsq3;
         scale0 = scale0 + 1.0f;
         Scale(prev->value, scale0, vref);
         Vector3 v70;
         SplineTangent(keys, idx, v70);
-        Vector3 v7c;
         Vector3 v88;
         float scale1 = fsq * 2.0f;
         scale1 = fcubed - scale1;
@@ -189,7 +189,7 @@ void QuatSpline(
             float pp = q88[i];
             float n = nextQuat[i];
             float nn = q58[i];
-            qout[i] = 0.5f * ((fcubed * (nn - (3.0f * n - (3.0f * p - pp))) + (fsq * ((4.0f * n + (2.0f * pp + 5.0f * p)) - nn) + (2.0f * p + ref * (n - pp)))));
+            qout[i] = 0.5f * ((fcubed * (nn - (3.0f * n - (3.0f * p - pp))) + (fsq * ((4.0f * n + (2.0f * pp - 5.0f * p)) - nn) + (2.0f * p + ref * (n - pp)))));
             i++;
         }
         Normalize(qout, qout);
