@@ -431,6 +431,21 @@ void BandTrack::SoloStart() {
     if (!unk1e && !mSoloDisplay) {
         if (mPlayerFeedback)
             mPlayerFeedback->HandleType(start_solo_msg);
+#ifdef HX_NATIVE
+        // The solo overlay's percent label (solo_percent.lbl) is shown the moment
+        // the solo starts, but its live value is only pushed by SoloHit(). Until
+        // the first gem of the solo is hit — and on any path that re-shows the
+        // overlay without running the DTA `set_percent` (e.g. feedback_on while
+        // in_solo) — the label would render its raw localized template "%d%%".
+        // Seed it to a substituted "0%" here so the HUD never shows the format
+        // string. Mirrors the SoloHit() call with i == 0.
+        if (mPlayerFeedback) {
+            UILabel *pctLabel =
+                mPlayerFeedback->Find<UILabel>("solo_percent.lbl", true);
+            if (pctLabel)
+                pctLabel->SetTokenFmt(me_percent_format, 0);
+        }
+#endif
         EventTrigger *trig =
             ThisDir()->Find<EventTrigger>("guitar_solo_start.trig", false);
         if (trig)

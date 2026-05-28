@@ -70,11 +70,21 @@ public:
     virtual void EnterCoda();
     virtual void DisablePlayer(int);
     virtual void SetPlayerLocal(float);
+#ifdef HX_NATIVE
+    // V3 — clang-LP64 ud2 trap; see VocalTrackDir.h for the same pattern.
+    virtual ObjectDir *ThisDir() { return this; }
+    virtual ObjectDir *ThisDir() const { return const_cast<GemTrackDir *>(this); }
+#else
     virtual ObjectDir *ThisDir() {}
     virtual ObjectDir *ThisDir() const {}
+#endif
     virtual void RefreshStreakMeter(int, int, int);
     virtual void SpotlightPhraseSuccess();
+#ifdef HX_NATIVE
+    virtual GemTrackDir *AsGemTrackDir() { return this; }
+#else
     virtual GemTrackDir *AsGemTrackDir() {}
+#endif
     virtual RndDir *AsRndDir() { return AsGemTrackDir(); }
     virtual void SetPerformanceMode(bool);
     virtual void SetInstrument(TrackInstrument);

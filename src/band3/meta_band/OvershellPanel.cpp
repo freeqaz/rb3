@@ -1090,6 +1090,26 @@ void OvershellPanel::FinishLoad() {
         }
         AddSlot(slot, priorityArr->Int(i + 1));
     }
+#ifdef HX_NATIVE
+    // PANEL_DBG=1: dump overshell slot construction so the "4x ghosting" report
+    // (REVIEW_OPUS.md frames 02/06) can be verified at runtime — confirms the
+    // count matches `valid_controllers/normal` (4 entries → 4 slots, with their
+    // own slot{N}mover.grp transforms in overshell.milo). The reviewer's
+    // "stamped 4x horizontally" is retail-correct chrome: each unfilled slot
+    // shows the kState_NoInstrument view (CONNECT CONTROLLER / CHOOSE
+    // INSTRUMENT) at the slot's own milo-baked X position.
+    if (getenv("PANEL_DBG")) {
+        MILO_LOG("PANEL_DBG: OvershellPanel::FinishLoad — %d slots constructed "
+                 "(valid_controllers/normal size=%d, joining_priority size=%d)\n",
+                 (int)mSlots.size(), normalArr->Size(), priorityArr->Size());
+        for (int i = 0; i < (int)mSlots.size(); i++) {
+            OvershellSlot *s = mSlots[i];
+            MILO_LOG("PANEL_DBG:   slot[%d] num=%d priority=%d dir=%p\n",
+                     i, s->GetSlotNum(), mSlotPriorities[i],
+                     (void *)s->GetPanelDir());
+        }
+    }
+#endif
     UpdateAll();
 }
 

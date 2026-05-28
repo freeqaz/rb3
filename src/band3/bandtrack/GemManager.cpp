@@ -473,6 +473,13 @@ void GemManager::SetupGems(int startTick) {
     BandUser *bandUser = const_cast<BandUser *>(mTrackConfig.GetBandUser());
     int trackNum = mTrackConfig.TrackNum();
     const std::vector<GameGem> &gems = TheSongDB->GetGems(trackNum);
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        fprintf(stderr,
+                "[GEM_DBG] GemManager::SetupGems: trackNum=%d gems.size=%u (from TheSongDB->GetGems)\n",
+                trackNum, (unsigned)gems.size());
+    }
+#endif
     TheSongDB->GetSongDurationMs();
     InitRGTuning(bandUser);
     bool tonalityNonZero = metadata->SongTonality() != 0;
@@ -821,6 +828,24 @@ void GemManager::SetupGems(int startTick) {
     }
 
     mTrackDir->DeleteUnusedChordMeshes();
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        fprintf(stderr,
+                "[GEM_DBG] GemManager::SetupGems: EXIT mGems.size=%u\n",
+                (unsigned)mGems.size());
+    }
+    if (getenv("GEM_HIST")) {
+        // Histogram of gem density: gems per 1s bucket of mStart (seconds).
+        int buckets[60] = {0};
+        for (int gi = 0; gi < mGems.size(); gi++) {
+            int b = (int)mGems[gi].GetStart();
+            if (b >= 0 && b < 60) buckets[b]++;
+        }
+        for (int b = 0; b < 30; b++)
+            fprintf(stderr, "[GEM_HIST] sec=%2d gems=%d (per2s=%d)\n",
+                    b, buckets[b], buckets[b] + (b + 1 < 60 ? buckets[b + 1] : 0));
+    }
+#endif
     if (anyRGChord) {
         mTrackDir->SyncObjects();
     } else if (anyRG) {
@@ -888,6 +913,11 @@ bool GemManager::TrillStartsAt(int i1, const GameGem &gem, int &iref) const {
 }
 
 void GemManager::SetGemsEnabled(float f) {
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG"))
+        MILO_LOG("GEM_DBG: SetGemsEnabled f=%.2f (was %.2f) lastPollMs=%.1f\n",
+                 f, mGemsEnabledStart, TheGame ? TheGame->mLastPollMs : -1.0f);
+#endif
     mGemsEnabledStart = f;
     UpdateGemStates();
 }
@@ -1021,6 +1051,19 @@ Symbol GemManager::GetTypeForGem(int gemId) {
     const GameGem &gem = TheSongDB->GetGems(mTrackConfig.TrackNum())[gemId];
     int gemTick = gem.GetTick();
     GemPlayer *player = (GemPlayer *)mTrackConfig.GetBandUser()->GetPlayer();
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        static int sCnt = 0;
+        if ((sCnt++ % 20) == 0) {
+            int gsz = player && player->mGemStatus ? player->mGemStatus->GetSize() : -1;
+            int ign = (player && player->mGemStatus && gsz > gemId) ? (int)player->mGemStatus->GetIgnored(gemId) : -1;
+            int g40 = (player && player->mGemStatus && gsz > gemId) ? (int)player->mGemStatus->Get0x40(gemId) : -1;
+            MILO_LOG("GEM_DBG: GetTypeForGem id=%d gemMs=%.1f enabledStart=%.1f unkb8=%d inFill=%d gsz=%d ign=%d g40=%d\n",
+                     gemId, gem.GetMs(), mGemsEnabledStart, (int)unkb8,
+                     (int)(unkb8 && IsInFill(gemTick)), gsz, ign, g40);
+        }
+    }
+#endif
     if (player) {
         GemStatus *gemStatus = player->mGemStatus;
         if (gemStatus->GetSize() > gemId) {
@@ -1447,6 +1490,18 @@ void GemManager::PollHelper(float ms, const PlayerState &state) {
     while (mBegin < begin) {
         AdvanceBegin();
     }
+#ifdef HX_NATIVE
+    {
+        static bool sK8 = !!getenv("K8_DBG");
+        static int sCnt = 0;
+        if (sK8 && (sCnt++ % 120) == 0) {
+            MILO_LOG("K8_DBG: GemManager::PollHelper ms=%.1f mGems.size=%u "
+                     "mBegin=%d mEnd=%d visible=%d top=%.3f\n",
+                     ms, (unsigned)mGems.size(), mBegin, mEnd,
+                     (mEnd - mBegin), top);
+        }
+    }
+#endif
     if (state.whammyActive) {
         float up = unkc4 + 0.1f;
         unkc4 = std::min(1.0f, up);

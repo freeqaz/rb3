@@ -1,4 +1,11 @@
 #include "GemRepTemplate.h"
+
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#include "game/BandUser.h"
+#endif
+
 #include "bandtrack/GraphicsUtl.h"
 #include "bandtrack/TrackConfig.h"
 #include "beatmatch/TrackType.h"
@@ -45,6 +52,14 @@ GemRepTemplate::~GemRepTemplate() {
 void GemRepTemplate::Init(ObjectDir *dir) {
     mObjectDir = dir;
     int maxslots = mTrackCfg.GetMaxSlots();
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        fprintf(stderr,
+                "[GEM_DBG] GemRepTemplate::Init: dir=%p maxslots=%d trackSym='%s'\n",
+                (void*)dir, maxslots,
+                mTrackCfg.GetBandUser()->GetTrackSym().Str());
+    }
+#endif
     for (int i = 0; i < maxslots; i++) {
         SetSlotMat(0, i, GetMatByTag("tail", i));
     }
@@ -118,15 +133,17 @@ inline int GemRepTemplate::GetRequiredFaceCount(int i) const {
 
 RndMat *GemRepTemplate::GetMatByTag(const char *c, int slot) {
     const char *s = mConfig->FindArray("mat_formats")->FindStr(c);
-    return mObjectDir->Find<RndMat>(
-        MakeString(
-            "%s.mat",
-            MakeString(
-                s, slot < mTrackCfg.GetMaxSlots() ? mTrackCfg.GetSlotColor(slot) : "star"
-            )
-        ),
-        true
-    );
+    const char *slotColor =
+        slot < mTrackCfg.GetMaxSlots() ? mTrackCfg.GetSlotColor(slot) : "star";
+    const char *matName = MakeString("%s.mat", MakeString(s, slotColor));
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        fprintf(stderr,
+                "[GEM_DBG]   GetMatByTag tag='%s' slot=%d color='%s' -> '%s'\n",
+                c, slot, slotColor, matName);
+    }
+#endif
+    return mObjectDir->Find<RndMat>(matName, true);
 }
 
 bool VertLess(const RndMesh::Vert &v1, const RndMesh::Vert &v2) {

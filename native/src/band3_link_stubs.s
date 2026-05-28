@@ -166,26 +166,7 @@ __hmx_band3_noop_stub:
     .set _ZN11ClipDistMap9FindNodesEfff, __hmx_band3_noop_stub
     .weak _ZN11ClipDistMapC1EP8CharClipS1_ffiPK9DataArray
     .set _ZN11ClipDistMapC1EP8CharClipS1_ffiPK9DataArray, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList11AddMultiGemERK12MultiGemInfo
-    .set _ZN11GameGemList11AddMultiGemERK12MultiGemInfo, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList14MergeChordGemsEv
-    .set _ZN11GameGemList14MergeChordGemsEv, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList19RecalculateGemTimesEP8TempoMap
-    .set _ZN11GameGemList19RecalculateGemTimesEP8TempoMap, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList5ClearEv
-    .set _ZN11GameGemList5ClearEv, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList5ResetEv
-    .set _ZN11GameGemList5ResetEv, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList7SetGemsEiiiRKSt6vectorI7GameGemSaIS1_EEi
-    .set _ZN11GameGemList7SetGemsEiiiRKSt6vectorI7GameGemSaIS1_EEi, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList8AddRGGemERK9RGGemInfo
-    .set _ZN11GameGemList8AddRGGemERK9RGGemInfo, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList8CopyFromEPKS_
-    .set _ZN11GameGemList8CopyFromEPKS_, __hmx_band3_noop_stub
-    .weak _ZN11GameGemList8FinalizeEv
-    .set _ZN11GameGemList8FinalizeEv, __hmx_band3_noop_stub
-    .weak _ZN11GameGemListC1Ei
-    .set _ZN11GameGemListC1Ei, __hmx_band3_noop_stub
+    // GameGemList stubs REMOVED — GameGemList.cpp is now compiled and strongly defines all of these.
     // GemTrackDir method stubs REMOVED — GemTrackDir.cpp is now compiled
     // (un-excluded) and strongly defines all of these; the strong defs win.
     .weak _ZN11PlatformMgr14StartProfanityEPPKtiPcPN3Hmx6ObjectE
@@ -228,30 +209,8 @@ __hmx_band3_noop_stub:
     .set _ZN11UIListState8ProviderEv, __hmx_band3_noop_stub
     .weak _ZN11VocalPhraseC1Ev
     .set _ZN11VocalPhraseC1Ev, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer14AddHarmonyStatEi
-    .set _ZN11VocalPlayer14AddHarmonyStatEi, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer15AddAccuracyStatEi
-    .set _ZN11VocalPlayer15AddAccuracyStatEi, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer16AddOverdriveStatEf
-    .set _ZN11VocalPlayer16AddOverdriveStatEf, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer16AddTambourineHitEv
-    .set _ZN11VocalPlayer16AddTambourineHitEv, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer16GetHitPercentageEi
-    .set _ZN11VocalPlayer16GetHitPercentageEi, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer17AddTambourineSeenEv
-    .set _ZN11VocalPlayer17AddTambourineSeenEv, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer17EnablePartScoringEib
-    .set _ZN11VocalPlayer17EnablePartScoringEib, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer18AddScoreStreakStatEf
-    .set _ZN11VocalPlayer18AddScoreStreakStatEf, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer20EndTambourineSectionEi
-    .set _ZN11VocalPlayer20EndTambourineSectionEi, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer21CalculatePhraseRatingEf
-    .set _ZN11VocalPlayer21CalculatePhraseRatingEf, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer23AddBandContributionStatEf
-    .set _ZN11VocalPlayer23AddBandContributionStatEf, __hmx_band3_noop_stub
-    .weak _ZN11VocalPlayer23AddTambourinePointsStatEf
-    .set _ZN11VocalPlayer23AddTambourinePointsStatEf, __hmx_band3_noop_stub
+    // VocalPlayer non-const stubs REMOVED — VocalPlayer.cpp now compiled
+    // (K8 blocker #3); strong defs win.
     .weak _ZN12BandDirector14HarvestDircutsEv
     .set _ZN12BandDirector14HarvestDircutsEv, __hmx_band3_noop_stub
     .weak _ZN12BandDirector19ReadyForMidiParsersEv
@@ -260,122 +219,20 @@ __hmx_band3_noop_stub:
     .set _ZN12BudgetScreenC1Ev, __hmx_band3_noop_stub
     .weak _ZN12MidiReceiver16SkipCurrentTrackEv
     .set _ZN12MidiReceiver16SkipCurrentTrackEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary10GetSetlistEv
-    .set _ZN12MusicLibrary10GetSetlistEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary11ResetFilterE10FilterType
-    .set _ZN12MusicLibrary11ResetFilterE10FilterType, __hmx_band3_noop_stub
+    // MusicLibrary stubs REMOVED — MusicLibrary.cpp is now compiled and strongly defines all of these.
+    // Kept 3 stubs below that still resolve as W (no strong def yet):
     .weak _ZN12MusicLibrary11SetlistSizeEv
     .set _ZN12MusicLibrary11SetlistSizeEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary12ToggleFilterE10FilterType6Symbol
-    .set _ZN12MusicLibrary12ToggleFilterE10FilterType6Symbol, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary13SetlistIsFullEv
-    .set _ZN12MusicLibrary13SetlistIsFullEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary14SetlistHasSongEi
-    .set _ZN12MusicLibrary14SetlistHasSongEi, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary14SetRandomSongsEiRN11SongSortMgr10SongFilterE6Symbolbb
-    .set _ZN12MusicLibrary14SetRandomSongsEiRN11SongSortMgr10SongFilterE6Symbolbb, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary15AppendToSetlistEi
-    .set _ZN12MusicLibrary15AppendToSetlistEi, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary15GetFilterLockedEv
-    .set _ZN12MusicLibrary15GetFilterLockedEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary16GetForcedSetlistEv
-    .set _ZN12MusicLibrary16GetForcedSetlistEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary16MusicLibraryTaskC1Ev
-    .set _ZN12MusicLibrary16MusicLibraryTaskC1Ev, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary16SetTaskScoreTypeE9ScoreType
-    .set _ZN12MusicLibrary16SetTaskScoreTypeE9ScoreType, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary17BuildPartySetlistEv
-    .set _ZN12MusicLibrary17BuildPartySetlistEv, __hmx_band3_noop_stub
     .weak _ZN12MusicLibrary17GetMaxSetlistSizeEv
     .set _ZN12MusicLibrary17GetMaxSetlistSizeEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary18GetCurrentSortNameEb
-    .set _ZN12MusicLibrary18GetCurrentSortNameEb, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary18GetCurrentSortTypeEb
-    .set _ZN12MusicLibrary18GetCurrentSortTypeEb, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary18RefreshNetSetlistsEv
-    .set _ZN12MusicLibrary18RefreshNetSetlistsEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary18SetlistArtFinishedEv
-    .set _ZN12MusicLibrary18SetlistArtFinishedEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary18SongAtSetlistIndexEi
-    .set _ZN12MusicLibrary18SongAtSetlistIndexEi, __hmx_band3_noop_stub
     .weak _ZN12MusicLibrary20CanHeadersBeSelectedEv
     .set _ZN12MusicLibrary20CanHeadersBeSelectedEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary20GetDuplicatesAllowedEv
-    .set _ZN12MusicLibrary20GetDuplicatesAllowedEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary20NetSetlistsSucceededEv
-    .set _ZN12MusicLibrary20NetSetlistsSucceededEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary22RebuildAndSortSetlistsEv
-    .set _ZN12MusicLibrary22RebuildAndSortSetlistsEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary24SetSavedSetlistHighlightEP12SavedSetlist
-    .set _ZN12MusicLibrary24SetSavedSetlistHighlightEP12SavedSetlist, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary25ClientSetPartyShuffleModeEv
-    .set _ZN12MusicLibrary25ClientSetPartyShuffleModeEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary25RemoveLastSongFromSetlistEv
-    .set _ZN12MusicLibrary25RemoveLastSongFromSetlistEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary26SendSetlistToMetaPerformerEv
-    .set _ZN12MusicLibrary26SendSetlistToMetaPerformerEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary6OnLoadEv
-    .set _ZN12MusicLibrary6OnLoadEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary7SetSortE12SongSortType
-    .set _ZN12MusicLibrary7SetSortE12SongSortType, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary7SetTaskERNS_16MusicLibraryTaskE
-    .set _ZN12MusicLibrary7SetTaskERNS_16MusicLibraryTaskE, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary8OnUnloadEv
-    .set _ZN12MusicLibrary8OnUnloadEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary9GetFilterEv
-    .set _ZN12MusicLibrary9GetFilterEv, __hmx_band3_noop_stub
-    .weak _ZN12MusicLibrary9IsExitingEv
-    .set _ZN12MusicLibrary9IsExitingEv, __hmx_band3_noop_stub
-    .weak _ZN12OutfitConfig15SetSkinTexturesEP9ObjectDirS1_P12BandCharDesc
-    .set _ZN12OutfitConfig15SetSkinTexturesEP9ObjectDirS1_P12BandCharDesc, __hmx_band3_noop_stub
-    .weak _ZN12OutfitConfig16CompressTexturesEv
-    .set _ZN12OutfitConfig16CompressTexturesEv, __hmx_band3_noop_stub
-    .weak _ZN12OutfitConfig16RecomposePatchesEi
-    .set _ZN12OutfitConfig16RecomposePatchesEi, __hmx_band3_noop_stub
-    .weak _ZN12OutfitConfig7ApplyAOEP10SyncMeshCB
-    .set _ZN12OutfitConfig7ApplyAOEP10SyncMeshCB, __hmx_band3_noop_stub
-    .weak _ZN12OutfitConfig9RecomposeEv
-    .set _ZN12OutfitConfig9RecomposeEv, __hmx_band3_noop_stub
-    .weak _ZN12OutfitConfig9SetColorsEPKi
-    .set _ZN12OutfitConfig9SetColorsEPKi, __hmx_band3_noop_stub
+    // OutfitConfig stubs REMOVED — OutfitConfig.cpp is now compiled and strongly defines all of these.
     .weak _ZN12SavedSetlist14SetDescriptionEPKc
     .set _ZN12SavedSetlist14SetDescriptionEPKc, __hmx_band3_noop_stub
     .weak _ZN12SavedSetlist8SetTitleEPKc
     .set _ZN12SavedSetlist8SetTitleEPKc, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress11RemoveStarsEi
-    .set _ZN12TourProgress11RemoveStarsEi, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress11SetWonQuestEb
-    .set _ZN12TourProgress11SetWonQuestEb, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress12SetMetaScoreEi
-    .set _ZN12TourProgress12SetMetaScoreEi, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress13ClearNewStarsEv
-    .set _ZN12TourProgress13ClearNewStarsEv, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress13ResetTourDataEv
-    .set _ZN12TourProgress13ResetTourDataEv, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress16FinalizeNewStarsEv
-    .set _ZN12TourProgress16FinalizeNewStarsEv, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress17GetTourPropertiesEv
-    .set _ZN12TourProgress17GetTourPropertiesEv, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress17SetToursPlayedMapERKSt3mapI6SymboliSt4lessIS1_ESaISt4pairIKS1_iEEE
-    .set _ZN12TourProgress17SetToursPlayedMapERKSt3mapI6SymboliSt4lessIS1_ESaISt4pairIKS1_iEEE, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress19SetNumCompletedGigsEi
-    .set _ZN12TourProgress19SetNumCompletedGigsEi, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress19SetTourMostStarsMapERKSt3mapI6SymboliSt4lessIS1_ESaISt4pairIKS1_iEEE
-    .set _ZN12TourProgress19SetTourMostStarsMapERKSt3mapI6SymboliSt4lessIS1_ESaISt4pairIKS1_iEEE, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress23HandleTourRewardAppliedEv
-    .set _ZN12TourProgress23HandleTourRewardAppliedEv, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress24GetPerformancePropertiesEv
-    .set _ZN12TourProgress24GetPerformancePropertiesEv, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress8FakeFillEv
-    .set _ZN12TourProgress8FakeFillEv, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress8SaveSizeEi
-    .set _ZN12TourProgress8SaveSizeEi, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress8SyncLoadER9BinStream
-    .set _ZN12TourProgress8SyncLoadER9BinStream, __hmx_band3_noop_stub
-    .weak _ZN12TourProgress9EarnStarsEi
-    .set _ZN12TourProgress9EarnStarsEi, __hmx_band3_noop_stub
-    .weak _ZN12TourProgressC1Ev
-    .set _ZN12TourProgressC1Ev, __hmx_band3_noop_stub
+    // TourProgress stubs REMOVED — TourProgress.cpp is now compiled and strongly defines all of these.
     .weak _ZN12VoiceChatMgr16ToggleMuteStatusEP4User
     .set _ZN12VoiceChatMgr16ToggleMuteStatusEP4User, __hmx_band3_noop_stub
     .weak _ZN12WiiFriendMgr16EnumerateFriendsEP13WiiFriendListPN3Hmx6ObjectE
@@ -455,34 +312,8 @@ __hmx_band3_noop_stub:
     .set _ZN13PitchDetectorC1Ei, __hmx_band3_noop_stub
     .weak _ZN13PitchDetectorD1Ev
     .set _ZN13PitchDetectorD1Ev, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList13AddLyricShiftEf
-    .set _ZN13VocalNoteList13AddLyricShiftEf, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList15CopyPhrasesFromEPKS_
-    .set _ZN13VocalNoteList15CopyPhrasesFromEPKS_, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList15EndPlayerPhraseEii
-    .set _ZN13VocalNoteList15EndPlayerPhraseEii, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList16AddTambourineGemEi
-    .set _ZN13VocalNoteList16AddTambourineGemEi, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList16CopyLyricPhrasesEv
-    .set _ZN13VocalNoteList16CopyLyricPhrasesEv, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList17StartPlayerPhraseEii
-    .set _ZN13VocalNoteList17StartPlayerPhraseEii, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList20SetFreestyleSectionsERKSt6vectorISt4pairIffESaIS2_EE
-    .set _ZN13VocalNoteList20SetFreestyleSectionsERKSt6vectorISt4pairIffESaIS2_EE, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList23CapLastFreestyleSectionEf
-    .set _ZN13VocalNoteList23CapLastFreestyleSectionEf, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList29UpdatePitchRangeTickDelimitedEiiRfS0_
-    .set _ZN13VocalNoteList29UpdatePitchRangeTickDelimitedEiiRfS0_, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList30RemoveInvalidFreestyleSectionsEv
-    .set _ZN13VocalNoteList30RemoveInvalidFreestyleSectionsEv, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList5ClearEv
-    .set _ZN13VocalNoteList5ClearEv, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList7AddNoteERK9VocalNote
-    .set _ZN13VocalNoteList7AddNoteERK9VocalNote, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteList9NotesDoneERK8TempoMapb
-    .set _ZN13VocalNoteList9NotesDoneERK8TempoMapb, __hmx_band3_noop_stub
-    .weak _ZN13VocalNoteListC1EP8SongData
-    .set _ZN13VocalNoteListC1EP8SongData, __hmx_band3_noop_stub
+    // VocalNoteList non-const stubs REMOVED — VocalNoteList.cpp now compiled
+    // (K8 blocker #3); strong defs win.
     .weak _ZN13WiiContentMgr15UnmountContentsE6Symbol
     .set _ZN13WiiContentMgr15UnmountContentsE6Symbol, __hmx_band3_noop_stub
     .weak _ZN13WiiContentMgr9ContentOfE6Symbol
@@ -586,52 +417,7 @@ __hmx_band3_noop_stub:
     .set _ZN20StoreMetadataManager6UnloadEv, __hmx_band3_noop_stub
     .weak _ZN20StoreMetadataManager8LoadPageEt
     .set _ZN20StoreMetadataManager8LoadPageEt, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager13AddAssetAwardE6SymbolS0_
-    .set _ZN21AccomplishmentManager13AddAssetAwardE6SymbolS0_, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager14AddAwardSourceE6SymbolS0_
-    .set _ZN21AccomplishmentManager14AddAwardSourceE6SymbolS0_, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager15CheatReloadDataEP9DataArray
-    .set _ZN21AccomplishmentManager15CheatReloadDataEP9DataArray, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager17GetMetaScoreValueE6Symbol
-    .set _ZN21AccomplishmentManager17GetMetaScoreValueE6Symbol, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager17GetScaledFanValueEi
-    .set _ZN21AccomplishmentManager17GetScaledFanValueEi, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager17SanityCheckAwardsEv
-    .set _ZN21AccomplishmentManager17SanityCheckAwardsEv, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager18ClearFirstNewAwardEP13LocalBandUser
-    .set _ZN21AccomplishmentManager18ClearFirstNewAwardEP13LocalBandUser, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager18EarnAccomplishmentEP11BandProfile6Symbol
-    .set _ZN21AccomplishmentManager18EarnAccomplishmentEP11BandProfile6Symbol, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager18EarnAccomplishmentEP13LocalBandUser6Symbol
-    .set _ZN21AccomplishmentManager18EarnAccomplishmentEP13LocalBandUser6Symbol, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager20UpdateAssetHintLabelE6SymbolP7UILabel
-    .set _ZN21AccomplishmentManager20UpdateAssetHintLabelE6SymbolP7UILabel, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager22AddGoalAcquisitionInfoE6SymbolPKcS0_
-    .set _ZN21AccomplishmentManager22AddGoalAcquisitionInfoE6SymbolPKcS0_, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager23GetUserForFirstNewAwardEv
-    .set _ZN21AccomplishmentManager23GetUserForFirstNewAwardEv, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager23InqGoalsAcquiredForSongEP8BandUser6SymbolRSt6vectorIS2_SaIS2_EE
-    .set _ZN21AccomplishmentManager23InqGoalsAcquiredForSongEP8BandUser6SymbolRSt6vectorIS2_SaIS2_EE, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager24GetNumOtherGoalsAcquiredEPKc6Symbol
-    .set _ZN21AccomplishmentManager24GetNumOtherGoalsAcquiredEPKc6Symbol, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager25DidUserMakeProgressOnGoalEP13LocalBandUser6Symbol
-    .set _ZN21AccomplishmentManager25DidUserMakeProgressOnGoalEP13LocalBandUser6Symbol, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager32HandleRemoteAccomplishmentEarnedE6SymbolPKcS0_
-    .set _ZN21AccomplishmentManager32HandleRemoteAccomplishmentEarnedE6SymbolPKcS0_, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager33UpdateMostStarsForAllParticipantsE6Symboli
-    .set _ZN21AccomplishmentManager33UpdateMostStarsForAllParticipantsE6Symboli, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager34UpdateTourPlayedForAllParticipantsE6Symbol
-    .set _ZN21AccomplishmentManager34UpdateTourPlayedForAllParticipantsE6Symbol, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager36EarnAccomplishmentForAllParticipantsE6Symbol
-    .set _ZN21AccomplishmentManager36EarnAccomplishmentForAllParticipantsE6Symbol, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager36GetTourSafeDiscSongAtDifficultyIndexEi
-    .set _ZN21AccomplishmentManager36GetTourSafeDiscSongAtDifficultyIndexEi, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager45CheckForFinishedTrainerAccomplishmentsForUserEP13LocalBandUser
-    .set _ZN21AccomplishmentManager45CheckForFinishedTrainerAccomplishmentsForUserEP13LocalBandUser, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManager4InitEP9DataArray
-    .set _ZN21AccomplishmentManager4InitEP9DataArray, __hmx_band3_noop_stub
-    .weak _ZN21AccomplishmentManagerC1Ev
-    .set _ZN21AccomplishmentManagerC1Ev, __hmx_band3_noop_stub
+    // AccomplishmentManager stubs REMOVED — AccomplishmentManager.cpp is now compiled and strongly defines all of these.
     .weak _ZN22MainHubMessageProvider13AddTickerDataE14TickerDataTypeiibb
     .set _ZN22MainHubMessageProvider13AddTickerDataE14TickerDataTypeiibb, __hmx_band3_noop_stub
     .weak _ZN22MainHubMessageProvider15AddUnlinkedMotdEPKc
@@ -789,10 +575,8 @@ __hmx_band3_noop_stub:
     .set _ZN6Quazal6StringD1Ev, __hmx_band3_noop_stub
     .weak _ZN6Quazal8ProtocolC2Ej
     .set _ZN6Quazal8ProtocolC2Ej, __hmx_band3_noop_stub
-    .weak _ZN6Singer17GetFrameMatchTypeEv
-    .set _ZN6Singer17GetFrameMatchTypeEv, __hmx_band3_noop_stub
-    .weak _ZN6Singer19NoteTambourineSwingEf
-    .set _ZN6Singer19NoteTambourineSwingEf, __hmx_band3_noop_stub
+    // Singer non-const stubs REMOVED — Singer.cpp now compiled
+    // (K8 blocker #3); strong defs win.
     .weak _ZN6Splash4PollEv
     .set _ZN6Splash4PollEv, __hmx_band3_noop_stub
     .weak _ZN6WiiRnd12GetSharedTexENS_13SharedTexTypeEb
@@ -941,16 +725,7 @@ __hmx_band3_noop_stub:
     .set _ZNK10NetSession9IsJoiningEv, __hmx_band3_noop_stub
     .weak _ZNK11BandSongMgr29WriteCachedMetadataFromStreamER9BinStream
     .set _ZNK11BandSongMgr29WriteCachedMetadataFromStreamER9BinStream, __hmx_band3_noop_stub
-    .weak _ZNK11GameGemList10TimeAtNextEi
-    .set _ZNK11GameGemList10TimeAtNextEi, __hmx_band3_noop_stub
-    .weak _ZNK11GameGemList16ClosestMarkerIdxEf
-    .set _ZNK11GameGemList16ClosestMarkerIdxEf, __hmx_band3_noop_stub
-    .weak _ZNK11GameGemList25ClosestMarkerIdxAtOrAfterEf
-    .set _ZNK11GameGemList25ClosestMarkerIdxAtOrAfterEf, __hmx_band3_noop_stub
-    .weak _ZNK11GameGemList29ClosestMarkerIdxAtOrAfterTickEi
-    .set _ZNK11GameGemList29ClosestMarkerIdxAtOrAfterTickEi, __hmx_band3_noop_stub
-    .weak _ZNK11GameGemList6TimeAtEi
-    .set _ZNK11GameGemList6TimeAtEi, __hmx_band3_noop_stub
+    // GameGemList const-method stubs REMOVED — GameGemList.cpp strongly defines all of these.
     .weak _ZNK11PlatformMgr11IsPadAGuestEi
     .set _ZNK11PlatformMgr11IsPadAGuestEi, __hmx_band3_noop_stub
     .weak _ZNK11PlatformMgr15IsGuestOnlineIDEPK8OnlineID
@@ -967,72 +742,22 @@ __hmx_band3_noop_stub:
     .set _ZNK11SingerStats11GetRankDataEi, __hmx_band3_noop_stub
     .weak _ZNK11SingerStats21GetPitchDeviationInfoERfS0_
     .set _ZNK11SingerStats21GetPitchDeviationInfoERfS0_, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer11FreestylingEv
-    .set _ZNK11VocalPlayer11FreestylingEv, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer11PhraseScoreEv
-    .set _ZNK11VocalPlayer11PhraseScoreEv, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer13AtFirstPhraseEv
-    .set _ZNK11VocalPlayer13AtFirstPhraseEv, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer13CanDeployCodaEv
-    .set _ZNK11VocalPlayer13CanDeployCodaEv, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer13CurrentPhraseEv
-    .set _ZNK11VocalPlayer13CurrentPhraseEv, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer14ScoringEnabledEv
-    .set _ZNK11VocalPlayer14ScoringEnabledEv, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer15SongSectionOnlyERfS0_
-    .set _ZNK11VocalPlayer15SongSectionOnlyERfS0_, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer19GetNextPhraseMarkerERKPK11VocalPhrase
-    .set _ZNK11VocalPlayer19GetNextPhraseMarkerERKPK11VocalPhrase, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer20FramePhraseMeterFracEi
-    .set _ZNK11VocalPlayer20FramePhraseMeterFracEi, __hmx_band3_noop_stub
-    .weak _ZNK11VocalPlayer25ShowPitchCorrectionNoticeEv
-    .set _ZNK11VocalPlayer25ShowPitchCorrectionNoticeEv, __hmx_band3_noop_stub
-    .weak _ZNK12MusicLibrary12IsPurchasingEv
-    .set _ZNK12MusicLibrary12IsPurchasingEv, __hmx_band3_noop_stub
-    .weak _ZNK12MusicLibrary14GetNetSetlistsERSt6vectorIP15NetSavedSetlistSaIS2_EE
-    .set _ZNK12MusicLibrary14GetNetSetlistsERSt6vectorIP15NetSavedSetlistSaIS2_EE, __hmx_band3_noop_stub
-    .weak _ZNK12MusicLibrary14GetStoreOffersERSt6vectorIP10StoreOfferSaIS2_EE
-    .set _ZNK12MusicLibrary14GetStoreOffersERSt6vectorIP10StoreOfferSaIS2_EE, __hmx_band3_noop_stub
-    .weak _ZNK12MusicLibrary15ActiveScoreTypeEv
-    .set _ZNK12MusicLibrary15ActiveScoreTypeEv, __hmx_band3_noop_stub
+    // VocalPlayer const stubs REMOVED — VocalPlayer.cpp now compiled
+    // (K8 blocker #3); strong defs win.
+    // MusicLibrary const-method stubs REMOVED — MusicLibrary.cpp strongly defines all of these.
+    // Kept 2 stubs below that still resolve as W (no strong def yet):
     .weak _ZNK12MusicLibrary16GetMakingSetlistEb
     .set _ZNK12MusicLibrary16GetMakingSetlistEb, __hmx_band3_noop_stub
-    .weak _ZNK12MusicLibrary18DifficultySortPartEv
-    .set _ZNK12MusicLibrary18DifficultySortPartEv, __hmx_band3_noop_stub
     .weak _ZNK12MusicLibrary18GetHighlightedNodeEv
     .set _ZNK12MusicLibrary18GetHighlightedNodeEv, __hmx_band3_noop_stub
-    .weak _ZNK12OutfitConfig12OverlayFlagsEv
-    .set _ZNK12OutfitConfig12OverlayFlagsEv, __hmx_band3_noop_stub
-    .weak _ZNK12OutfitConfig15NumColorOptionsEv
-    .set _ZNK12OutfitConfig15NumColorOptionsEv, __hmx_band3_noop_stub
+    // OutfitConfig const-method stubs REMOVED — OutfitConfig.cpp strongly defines all of these.
     .weak _ZNK12SavedSetlist8GetOwnerEv
     .set _ZNK12SavedSetlist8GetOwnerEv, __hmx_band3_noop_stub
     .weak _ZNK12SavedSetlist8IsBattleEv
     .set _ZNK12SavedSetlist8IsBattleEv, __hmx_band3_noop_stub
     .weak _ZNK12SavedSetlist9GetArtTexEv
     .set _ZNK12SavedSetlist9GetArtTexEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress11GetNumStarsEv
-    .set _ZNK12TourProgress11GetNumStarsEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress11GetTourDescEv
-    .set _ZNK12TourProgress11GetTourDescEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress14IsTourCompleteEv
-    .set _ZNK12TourProgress14IsTourCompleteEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress16GetCurrentGigNumEv
-    .set _ZNK12TourProgress16GetCurrentGigNumEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress16GetTourMostStarsE6Symbol
-    .set _ZNK12TourProgress16GetTourMostStarsE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress17GetTourPropertiesEv
-    .set _ZNK12TourProgress17GetTourPropertiesEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress19GetNumCompletedGigsEv
-    .set _ZNK12TourProgress19GetNumCompletedGigsEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress20GetTotalStarsForTourEv
-    .set _ZNK12TourProgress20GetTotalStarsForTourEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress24GetNumSongsForCurrentGigEv
-    .set _ZNK12TourProgress24GetNumSongsForCurrentGigEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress24GetPerformancePropertiesEv
-    .set _ZNK12TourProgress24GetPerformancePropertiesEv, __hmx_band3_noop_stub
-    .weak _ZNK12TourProgress8IsOnTourEv
-    .set _ZNK12TourProgress8IsOnTourEv, __hmx_band3_noop_stub
+    // TourProgress const-method stubs REMOVED — TourProgress.cpp strongly defines all of these.
     .weak _ZNK12VoiceChatMgr7IsMutedEP4User
     .set _ZNK12VoiceChatMgr7IsMutedEP4User, __hmx_band3_noop_stub
     .weak _ZNK13BandStatsInfo12GetBandStatsEv
@@ -1093,16 +818,8 @@ __hmx_band3_noop_stub:
     .set _ZNK13MetaPerformer8NumSongsEv, __hmx_band3_noop_stub
     .weak _ZNK13MetaPerformer9HasBattleEv
     .set _ZNK13MetaPerformer9HasBattleEv, __hmx_band3_noop_stub
-    .weak _ZNK13VocalNoteList14HasNoteInRangeEii
-    .set _ZNK13VocalNoteList14HasNoteInRangeEii, __hmx_band3_noop_stub
-    .weak _ZNK13VocalNoteList18GetPracticePhrasesERSt6vectorI11VocalPhraseSaIS1_EEii
-    .set _ZNK13VocalNoteList18GetPracticePhrasesERSt6vectorI11VocalPhraseSaIS1_EEii, __hmx_band3_noop_stub
-    .weak _ZNK13VocalNoteList21GetNumPracticePhrasesERKSt6vectorI11VocalPhraseSaIS1_EE
-    .set _ZNK13VocalNoteList21GetNumPracticePhrasesERKSt6vectorI11VocalPhraseSaIS1_EE, __hmx_band3_noop_stub
-    .weak _ZNK13VocalNoteList30GenerateLegalFreestyleSectionsERSt6vectorISt4pairIffESaIS2_EE
-    .set _ZNK13VocalNoteList30GenerateLegalFreestyleSectionsERSt6vectorISt4pairIffESaIS2_EE, __hmx_band3_noop_stub
-    .weak _ZNK13VocalNoteList8NextNoteEf
-    .set _ZNK13VocalNoteList8NextNoteEf, __hmx_band3_noop_stub
+    // VocalNoteList const stubs REMOVED — VocalNoteList.cpp now compiled
+    // (K8 blocker #3); strong defs win.
     .weak _ZNK13WiiFriendList10GetProfileEi
     .set _ZNK13WiiFriendList10GetProfileEi, __hmx_band3_noop_stub
     .weak _ZNK13WiiFriendList14GetFriendByIdxEi
@@ -1155,40 +872,7 @@ __hmx_band3_noop_stub:
     .set _ZNK20StorePackedOfferBase7GetNameEv, __hmx_band3_noop_stub
     .weak _ZNK20StorePackedOfferBase9GetArtistEv
     .set _ZNK20StorePackedOfferBase9GetArtistEv, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager12HasNewAwardsEv
-    .set _ZNK21AccomplishmentManager12HasNewAwardsEv, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager15IsGroupCompleteEP11BandProfile6Symbol
-    .set _ZNK21AccomplishmentManager15IsGroupCompleteEP11BandProfile6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager17GetAccomplishmentE6Symbol
-    .set _ZNK21AccomplishmentManager17GetAccomplishmentE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager17HasAccomplishmentE6Symbol
-    .set _ZNK21AccomplishmentManager17HasAccomplishmentE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager17IsAvailableToViewE6Symbol
-    .set _ZNK21AccomplishmentManager17IsAvailableToViewE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager18IsCategoryCompleteEP11BandProfile6Symbol
-    .set _ZNK21AccomplishmentManager18IsCategoryCompleteEP11BandProfile6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager19DoesAssetHaveSourceE6Symbol
-    .set _ZNK21AccomplishmentManager19DoesAssetHaveSourceE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager21GetIconHardCoreStatusEi
-    .set _ZNK21AccomplishmentManager21GetIconHardCoreStatusEi, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager22GetAccomplishmentGroupE6Symbol
-    .set _ZNK21AccomplishmentManager22GetAccomplishmentGroupE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager23GetCategoryListForGroupB5cxx11E6Symbol
-    .set _ZNK21AccomplishmentManager23GetCategoryListForGroupB5cxx11E6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager23GetNameForFirstNewAwardEP13LocalBandUser
-    .set _ZNK21AccomplishmentManager23GetNameForFirstNewAwardEP13LocalBandUser, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager25GetAccomplishmentCategoryE6Symbol
-    .set _ZNK21AccomplishmentManager25GetAccomplishmentCategoryE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager25GetReasonForFirstNewAwardEP13LocalBandUser
-    .set _ZNK21AccomplishmentManager25GetReasonForFirstNewAwardEP13LocalBandUser, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager28GetLeaderboardHardcoreStatusEi
-    .set _ZNK21AccomplishmentManager28GetLeaderboardHardcoreStatusEi, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager31GetAccomplishmentSetForCategoryE6Symbol
-    .set _ZNK21AccomplishmentManager31GetAccomplishmentSetForCategoryE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager8GetAwardE6Symbol
-    .set _ZNK21AccomplishmentManager8GetAwardE6Symbol, __hmx_band3_noop_stub
-    .weak _ZNK21AccomplishmentManager8HasAwardE6Symbol
-    .set _ZNK21AccomplishmentManager8HasAwardE6Symbol, __hmx_band3_noop_stub
+    // AccomplishmentManager const-method stubs REMOVED — AccomplishmentManager.cpp strongly defines all of these.
     .weak _ZNK22MainHubMessageProvider15SetMessageLabelEP8AppLabeli
     .set _ZNK22MainHubMessageProvider15SetMessageLabelEP8AppLabeli, __hmx_band3_noop_stub
     // OvershellProfileProvider const stubs REMOVED — native impl in OvershellSlot.cpp.
@@ -1256,10 +940,8 @@ __hmx_band3_noop_stub:
     .set _ZNK5Stats25GetSingerRankedPercentageEii, __hmx_band3_noop_stub
     .weak _ZNK5Stats7GetSoloEv
     .set _ZNK5Stats7GetSoloEv, __hmx_band3_noop_stub
-    .weak _ZNK6Singer14GetMicClientIDEv
-    .set _ZNK6Singer14GetMicClientIDEv, __hmx_band3_noop_stub
-    .weak _ZNK6Singer16AccessScoreCacheEi
-    .set _ZNK6Singer16AccessScoreCacheEi, __hmx_band3_noop_stub
+    // Singer const stubs REMOVED — Singer.cpp now compiled
+    // (K8 blocker #3); strong defs win.
     .weak _ZNK7Profile9GetPadNumEv
     .set _ZNK7Profile9GetPadNumEv, __hmx_band3_noop_stub
     .weak _ZNK8AssetMgr11GetEyebrowsERSt6vectorI6SymbolSaIS1_EES1_
@@ -1343,9 +1025,7 @@ __hmx_band3_noop_stub:
     .set _ZrsR9BinStreamR13BandPatchMesh, __hmx_band3_noop_stub
     .weak _Z8PropSyncR13BandPatchMeshR8DataNodeP9DataArrayi6PropOp
     .set _Z8PropSyncR13BandPatchMeshR8DataNodeP9DataArrayi6PropOp, __hmx_band3_noop_stub
-    // VocalPlayer / GemTrackDir / ChordShapeGenerator (DEFER: T9 song-load gameplay)
-    .weak _ZN11VocalPlayerC1EP8BandUserP10BeatMasterP4BandiP9Performeri
-    .set _ZN11VocalPlayerC1EP8BandUserP10BeatMasterP4BandiP9Performeri, __hmx_band3_noop_stub
+    // VocalPlayer ctor stub REMOVED — VocalPlayer.cpp now compiled (K8 blocker #3).
     // _ZN11GemTrackDirC1Ev REMOVED — GemTrackDir.cpp now compiled (strong ctor).
     // ChordShapeGenerator stubs (ctor/BuildChordMesh/MakeInvertedMesh) REMOVED —
     // ChordShapeGenerator.cpp now compiled (un-excluded); strong defs win.
@@ -1508,9 +1188,8 @@ _ZTI10MidiParser:
     .weak _ZTI11SetlistSort
 _ZTI11SetlistSort:
     .zero 256
-    .weak _ZTI11VocalPlayer
-_ZTI11VocalPlayer:
-    .zero 256
+    // _ZTI11VocalPlayer REMOVED — VocalPlayer.cpp now compiled (real RTTI;
+    // this fixes the K8 dynamic_cast<VocalPlayer*> walking a zeroed RTTI stub).
     .weak _ZTI12OutfitConfig
 _ZTI12OutfitConfig:
     .zero 256

@@ -33,12 +33,25 @@ bool RndDrawable::DrawBudget(float f) {
     if (!mShowing)
         return true;
     else {
+#ifdef HX_NATIVE
+        // SMASHER_DRAW_FIX: frustum culling disabled for the native build, exactly
+        // as in RndDrawable::Draw() above. The WebGPU renderer's frustum does not
+        // match RndCam::sCurrent's, so CompareSphereToWorld wrongly culls visible
+        // drawables. This is the budget-traversal twin of the Draw() patch: every
+        // group/dir that draws via DrawShowingBudget (RndGroup::DrawShowingBudget,
+        // the smasher plate's before_gems/after_gems chain) recurses through
+        // DrawBudget on its members — without this, the gem_smasher / strike-plate
+        // meshes reached DrawBudget but were frustum-culled before DrawShowing, so
+        // they never hit BandRnd::DrawMesh. Over-draw is harmless.
+        return DrawShowingBudget(f);
+#else
         Sphere sphere;
         int worldSphere = MakeWorldSphere(sphere, false);
         if (worldSphere != 0 && RndCam::sCurrent->CompareSphereToWorld(sphere)) {
             return true;
         } else
             return DrawShowingBudget(f);
+#endif
     }
 }
 

@@ -2,6 +2,9 @@
 #include "obj/Data.h"
 #include "utl/VectorSizeDefs.h"
 #include <vector>
+#ifdef HX_NATIVE
+#include <cstdint>
+#endif
 
 class DataEvent {
 public:
@@ -41,7 +44,17 @@ public:
     struct CompEv {
         float start;
         float end;
+#ifdef HX_NATIVE
+        // LP64: a compressed Symbol event stores the Symbol's `const char *mStr`,
+        // which is 8 bytes on 64-bit. The original 32-bit `int value` truncated
+        // that pointer (hi32 lost) -> dangling Symbol::mStr -> SIGSEGV in
+        // Symbol::operator==(char const*) down the MsgSource::Export dispatch.
+        // Widen to pointer-width so both kDataSymbol and kDataInt comp-values
+        // round-trip losslessly.
+        intptr_t value;
+#else
         int value;
+#endif
     };
 
     DataEventList();
@@ -68,5 +81,11 @@ public:
     int mElement; // 0x1c
     mutable DataEvent mTemplate; // 0x20, 0x24, 0x28
     DataType mCompType; // 0x2c
+#ifdef HX_NATIVE
+    // Points at the full 8-byte union of the template node's mValue (offset 0),
+    // so a compressed Symbol/int value writes/reads all pointer-width bits.
+    intptr_t *mValue; // 0x30
+#else
     int *mValue; // 0x30
+#endif
 };

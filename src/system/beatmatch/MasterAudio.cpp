@@ -715,6 +715,31 @@ void MasterAudio::SetVocalState(bool state) {
 
 void MasterAudio::HandleSubmix(int i, const char *cc) {
     AudioTrackNum num = TrackNumAt(i);
+#ifdef HX_NATIVE
+    // V3 — defensive bound check. BeatMaster::ExportInitialSubmixes iterates
+    // BeatMaster's per-track mSubmixIdxs (one entry per non-FakeAudio TrackInfo
+    // from SongData::PostLoadTrack -> bm->AddTrack). MasterAudio::mTrackData is
+    // built independently in SetupTracks from SongInfo.GetTracks() (only
+    // non-empty channel lists are kept) and the mAudioTrackNum stamped onto
+    // TrackInfo by AddTrack's call chain. With the K6 audio-load chain newly
+    // reaching this code path under the V3 fix (screen transition completed →
+    // GamePanel::Enter -> Game::Restart -> mMaster->Reset -> BeatMaster::Reset),
+    // a track-shape mismatch surfaces here: TrackNumAt returns a value past
+    // mTrackData.size(), tripping an std::vector op[] assertion. Real fix is
+    // K7-scope (reconcile mTrackInfos and mTrackData track counts). For V3 we
+    // skip the OOB SetMapping (a per-submix audio-mapping hint) so the rest of
+    // the audio bring-up — MasterAudio::Play() / StandardStream kPlaying — can
+    // proceed.
+    if (num.mVal < 0 || (size_t)num.mVal >= mTrackData.mTrackData.size()) {
+        static bool sWarned = false;
+        if (!sWarned) {
+            MILO_LOG("HANDLESUBMIX_DBG: skipping OOB submix i=%d num=%d trackDataSize=%d cc='%s'\n",
+                     i, num.mVal, (int)mTrackData.mTrackData.size(), cc ? cc : "(null)");
+            sWarned = true;
+        }
+        return;
+    }
+#endif
     mTrackData[num]->SetMapping(cc);
 }
 

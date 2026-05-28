@@ -146,7 +146,19 @@ void GameConfig::AssignTrack(BandUser *u) {
     default:
         break;
     }
-    if (pPerformer->PartPlaysInSong(u->GetTrackSym())) {
+    bool partPlays = pPerformer->PartPlaysInSong(u->GetTrackSym());
+#ifdef HX_NATIVE
+    {
+        static bool sK8 = !!getenv("K8_DBG");
+        if (sK8) {
+            MILO_LOG("K8_DBG: GameConfig::AssignTrack user=%p trackSym=%s ty=%d "
+                     "partPlays=%d net=%d\n",
+                     (void*)u, u->GetTrackSym().Str(), (int)ty, (int)partPlays,
+                     (int)net);
+        }
+    }
+#endif
+    if (partPlays) {
         int slot = TheBandUserMgr->GetSlot(u->GetUserGuid());
         MILO_ASSERT(slot != -1, 0x108);
         mPlayerTrackConfigList->UpdateConfig(

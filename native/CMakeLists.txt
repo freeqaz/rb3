@@ -59,14 +59,15 @@ set(DECOMP_FLAGS
 # matched-fork context (MILO_ENGINE_DECOMP_INCLUDE_DIRS / _COMPAT_FLAGS) so the
 # engine compiles its full (GFX-off) source set against RB3's Milo headers.
 #
-# CRITICAL: RB3 builds the rndobj-FREE WebGPU gfx CORE (MILO_ENGINE_BUILD_GFX ON
-# — GpuDevice/PipelineManager/Screenshot/headless frame; enough for a clear-color
-# frame) but forces the rndobj-COUPLED backends OFF
-# (MILO_ENGINE_BUILD_GPU_BACKENDS). RB3-Wii's 2010-era rndobj/ is structurally
-# older than DC3's, so the coupled gfx TUs (DrawRect2D/DofPass/ShadowPass/… —
-# RndMat/RndCam/RndMesh::Vert shapes) and the 8 Wgpu platform backends (WgpuRnd :
-# NgRnd) cannot compile against RB3 headers (Wave 2.3 finding). The core needs no
-# rndobj, so RB3-native can now stand up a GpuDevice + render a clear frame.
+# CRITICAL: RB3 builds the engine with the `rb3` GPU backend flavor
+# (MILO_ENGINE_GPU_BACKEND=rb3, set below): the rndobj-FREE WebGPU gfx CORE
+# (GpuDevice/PipelineManager/Screenshot/headless frame) PLUS the engine's
+# BandRnd : Rnd backend (src/platform/Rnd_Wgpu_RB3.cpp). The `dc3` flavor —
+# WgpuRnd : NgRnd + the 6 rndobj-coupled gfx TUs (DrawRect2D/DofPass/ShadowPass/…
+# reading DC3's RndMat/RndCam/RndMesh::Vert shapes) — stays OFF for RB3: RB3-Wii's
+# 2010-era rndobj/ is structurally older than DC3's and cannot compile those TUs
+# (Wave 2.3 finding). BandRnd reads RB3's older rndobj instead and renders real
+# RB3 geometry. RB3-variants of the 6 coupled TUs are deferred (roadmap Phase 2).
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
@@ -177,11 +178,14 @@ set(MILO_ENGINE_DECOMP_PLATFORM_EXCLUDE
     FFmpegMovieImpl.cpp
     FFmpegAudioReader.cpp)
 
-# Build the real engine lib: rndobj-FREE gfx CORE ON, rndobj-COUPLED backends
-# OFF (see CRITICAL note above). Sticky CACHE so a stale value can't linger.
+# Build the real engine lib with the `rb3` GPU backend flavor: the rndobj-FREE
+# gfx CORE (GpuDevice/PipelineManager/Screenshot/headless frame) PLUS the engine's
+# BandRnd : Rnd backend (src/platform/Rnd_Wgpu_RB3.cpp — graduated from this dir).
+# This replaces the old BUILD_GFX=ON + BUILD_GPU_BACKENDS=OFF pair: the `dc3`
+# WgpuRnd : NgRnd backend + the 6 rndobj-coupled gfx TUs stay OFF for RB3 (they
+# read DC3's 2012-era rndobj shapes). Sticky CACHE so a stale value can't linger.
 set(MILO_ENGINE_BUILD_GFX ON CACHE BOOL "RB3: build the rndobj-free WebGPU gfx core" FORCE)
-set(MILO_ENGINE_BUILD_GPU_BACKENDS OFF CACHE BOOL
-    "RB3: NgRnd-coupled backends use DC3 rndobj shapes" FORCE)
+set(MILO_ENGINE_GPU_BACKEND rb3 CACHE STRING "RB3: BandRnd : Rnd GPU backend" FORCE)
 
 # The gfx core links Dawn (WebGPU) + glfw. glfw3 is system-installed
 # (find_package(glfw3) works out of the box); Dawn lives in the dc3 deps tree.
@@ -258,7 +262,11 @@ set(NATIVE_FORK_SOURCES
     ${ENGINE_MIDI}
     ${ENGINE_META} ${ENGINE_MOVIE} ${ENGINE_BANDOBJ} ${ENGINE_CHAR}
     ${GAME_METABAND} ${GAME_GAME} ${GAME_NETBAND} ${GAME_TOUR}
-    ${GAME_BANDTRACK} ${GAME_APP})
+    ${GAME_BANDTRACK} ${GAME_APP}
+    # dsp/VibratoDetector: small standalone class (~75 lines, clang-clean) used
+    # by Singer.cpp. Pulled in surgically rather than globbing all of dsp/
+    # (PitchDetector/SndAnalysis are off-path and still stubbed).
+    ${REPO_ROOT}/src/system/dsp/VibratoDetector.cpp)
 
 # Shared exclusions applied to BOTH source sets.
 #
@@ -299,10 +307,10 @@ endforeach()
 set(_NATIVE_FORK_EXCLUDE
     BandPatchMesh
     ClipDistMap DataResults
-    SaveLoadManager Singer
+    SaveLoadManager
     Splash
     StorePackedMetadata TourPerformerLocal
-    VocalNoteList VocalPlayer WaitingUserGate)
+    WaitingUserGate)
 foreach(_tu ${_NATIVE_FORK_EXCLUDE})
     list(FILTER NATIVE_FORK_SOURCES EXCLUDE REGEX "/${_tu}\\.cpp$")
 endforeach()
@@ -332,7 +340,8 @@ function(rb3_configure_target tgt)
     # __wrap_iter STL shim. The engine's include/ is exported BEFORE/SYSTEM by
     # milo-engine.
     target_include_directories(${tgt} SYSTEM BEFORE PRIVATE
-        ${MILO_ENGINE_PATH}/include)
+        ${MILO_ENGINE_PATH}/include
+        ${CMAKE_SOURCE_DIR}/include)         # vendored single-header httplib (cpp-httplib)
     target_include_directories(${tgt} PRIVATE
         ${CMAKE_SOURCE_DIR}/src              # native shims + revolution/* shim headers
         ${REPO_ROOT}/src
@@ -376,13 +385,18 @@ rb3_configure_target(rb3-dta)
 # ============================================================================
 add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/main_native.cpp
+    # Live-tunable render/camera/gem settings (one struct, env-seeded at startup
+    # + name/value mutable for the future HTTP PUT /api/settings endpoint).
+    ${CMAKE_SOURCE_DIR}/src/rb3_native_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_render_hook.cpp
-    # RB3-Wii native GPU rendering backend (Strategy B):
-    #   rb3_render_tri.cpp  — milestone (ii): triangle via engine gfx core
-    #   rb3_band_rnd.cpp    — BandRnd : Rnd + RndMesh/RndMat/RndCam backends (iii)
+    # RB3 GPU rendering backend. The BandRnd : Rnd backend itself
+    # (formerly rb3_band_rnd.cpp) has GRADUATED into the shared engine as
+    # src/platform/Rnd_Wgpu_RB3.cpp, compiled there under MILO_ENGINE_GPU_BACKEND=rb3
+    # (set below). What stays here are the per-decomp HARNESS drivers that exercise
+    # that backend:
+    #   rb3_render_tri.cpp  — triangle via engine gfx core (smoke)
     #   rb3_render_mesh.cpp — boot + load milo + drive BandRnd -> PNG
     ${CMAKE_SOURCE_DIR}/src/rb3_render_tri.cpp
-    ${CMAKE_SOURCE_DIR}/src/rb3_band_rnd.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_render_mesh.cpp
     # X6: native NativeSynth (boots miniaudio AudioDevice + binds the
     # RB3-shaped StreamReceiver factory below)
@@ -409,8 +423,23 @@ add_executable(rb3-native
     # native TheNetSession (`session`): minimal offline concrete NetSession; its
     # real impl lives in the un-globbed network/ Quazal subsystem
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
+    # native WaitingUserGate ctor/dtor/Handle so its vtable is emitted (the .cpp
+    # is in _NATIVE_FORK_EXCLUDE; without this shim `new WaitingUserGate()`
+    # returns a vtable-less object and `RELEASE(mWaitingUserGate)` SIGSEGVs on
+    # the BandUI::Terminate path)
+    ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # embedded HTTP debug server (RB3_HTTP=1): /api/health, /api/screenshot,
+    # /api/dta/eval, /api/input. Background httplib thread + a main-thread command
+    # queue drained from App.cpp's HX_NATIVE frame loop (RB3HttpServerPoll /
+    # *PollScreenshots). Vendored httplib.h is in native/include (added above).
+    ${CMAKE_SOURCE_DIR}/src/rb3_http_server.cpp
+    # main-thread command handlers + frame-loop hooks for the HTTP server (split
+    # from rb3_http_server.cpp because these include decomp headers and so must
+    # use the MWCC compat flags, while the httplib TU must NOT — see the
+    # set_source_files_properties note after rb3_configure_target below).
+    ${CMAKE_SOURCE_DIR}/src/rb3_http_handlers.cpp
     # K5: tomcrypt AES/CTR for v0x10 .mogg decryption. The matched-fork
     # ByteGrinder::HvDecrypt + VorbisReader::DoFileRead path calls
     # rijndael_setup, rijndael_ecb_decrypt, register_cipher, ctr_start,
@@ -438,3 +467,24 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/band3_link_stubs.s
 )
 rb3_configure_target(rb3-native)
+
+# The HTTP server splits across two TUs by compiler-flag need:
+#   rb3_http_server.cpp   — httplib (vendored cpp-httplib) listener thread +
+#                           command queue + endpoint registration. httplib pulls
+#                           <regex>/mmap shared_ptr deleters whose inline
+#                           std::type_info::operator== goes UNDEFINED at link
+#                           under the MWCC compat flags (-fms-compatibility
+#                           changes clang's RTTI ABI). So this TU must compile as
+#                           ordinary clang C++ — hence it includes NO decomp
+#                           headers, only httplib + the std lib + its own header.
+#   rb3_http_handlers.cpp — the main-thread command handlers + frame-loop hooks
+#                           (DTA eval / screenshot readback / input verb / health
+#                           snapshot). These touch decomp headers (obj/Data.h,
+#                           Rnd_Wgpu_RB3.h, ui/UI.h, game/Game.h) and so need the
+#                           target-wide MWCC compat flags — but never include
+#                           httplib, so the RTTI-ABI clash never arises.
+# Both share the std-only rb3_http_server.h (identical class layout under both
+# flag sets). Re-disable MS-compat for the httplib TU only (later flags win).
+set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_http_server.cpp
+    PROPERTIES COMPILE_OPTIONS
+    "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")

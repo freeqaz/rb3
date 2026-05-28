@@ -797,8 +797,21 @@ void UILabel::SetTokenFmtImp(
     else {
         bool b2;
         const char *localized = Localize(mTextToken, &b2);
+#ifdef HX_NATIVE
+        // Debug: trace SetTokenFmtImp — emits the symbol, the localized format,
+        // and the final SetDisplayText input. Gated on MILO_SETTOKEN_DBG.
+        static int s_dbg = -1;
+        if (s_dbg == -1) {
+            const char *e = getenv("MILO_SETTOKEN_DBG");
+            s_dbg = (e && *e) ? 1 : 0;
+        }
+#endif
         if (b2) {
             SuperFormatString str(localized, da1, b);
+#ifdef HX_NATIVE
+            int dbg_iStart = i;
+            int dbg_da2Size = da2 ? da2->Size() : 0;
+#endif
             if (da2) {
                 for (; i < da2->Size(); i++) {
                     const DataNode &n = da2->Evaluate(i);
@@ -813,9 +826,32 @@ void UILabel::SetTokenFmtImp(
                 text = str.RawFmt();
             else
                 text = str.Str();
+#ifdef HX_NATIVE
+            if (s_dbg) {
+                MILO_LOG(
+                    "SETTOKEN_DBG sym=%s loc=\"%s\" hit=1 da1=%d da2sz=%d iStart=%d out=\"%s\"\n",
+                    s.mStr ? s.mStr : "(null)",
+                    localized ? localized : "(null)",
+                    da1 ? 1 : 0,
+                    dbg_da2Size,
+                    dbg_iStart,
+                    text ? text : "(null)"
+                );
+            }
+#endif
             SetDisplayText(text, false);
-        } else
+        } else {
+#ifdef HX_NATIVE
+            if (s_dbg) {
+                MILO_LOG(
+                    "SETTOKEN_DBG sym=%s loc=(missing) hit=0 out=\"%s\"\n",
+                    s.mStr ? s.mStr : "(null)",
+                    localized ? localized : "(null)"
+                );
+            }
+#endif
             SetDisplayText(localized, false);
+        }
     }
 }
 

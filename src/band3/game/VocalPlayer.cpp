@@ -657,7 +657,18 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                         }
                     }
                 }
+#ifdef HX_NATIVE
+                // libstdc++'s vector::iterator is not a raw T**, so erase()
+                // can't accept the raw pointers we threaded through the Duff's
+                // device above. Convert the pointer range back to iterators by
+                // offsetting from begin().
+                {
+                    ptrdiff_t _foundOff = partFound - &partsArray[0];
+                    partsArray.erase(partsArray.begin() + _foundOff, partsArray.end());
+                }
+#else
                 partsArray.erase(partFound, partLast);
+#endif
             }
             {
                 Singer **singerFirst = &singersArray[0];
@@ -700,7 +711,14 @@ void VocalPlayer::Poll(float ms, const SongPos &pos) {
                         }
                     }
                 }
+#ifdef HX_NATIVE
+                {
+                    ptrdiff_t _foundOff = singerFound - &singersArray[0];
+                    singersArray.erase(singersArray.begin() + _foundOff, singersArray.end());
+                }
+#else
                 singersArray.erase(singerFound, singerLast);
+#endif
             }
         } while (!partsArray.empty() && !singersArray.empty());
     }

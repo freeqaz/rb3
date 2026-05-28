@@ -1,4 +1,10 @@
 #include "bandtrack/GemTrack.h"
+
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#endif
+
 #include "GemManager.h"
 #include "bandobj/BandTrack.h"
 #include "bandobj/GemTrackDir.h"
@@ -99,8 +105,25 @@ void GemTrack::PlayerInit() {
         mTrackConfig.SetTrackNum(TheGameConfig->GetTrackNum(pUser->mUserGuid));
         mTrackConfig.SetMaxSlots(player->GetMaxSlots());
         mTrackConfig.SetDisableHopos(pUser->GetControllerType() == kControllerKeys);
+#ifdef HX_NATIVE
+        if (getenv("GEM_DBG")) {
+            fprintf(stderr,
+                    "[GEM_DBG] GemTrack::PlayerInit: user=%p tracksym='%s' "
+                    "tracktype=%d MaxSlots=%d cymlanes=%u\n",
+                    (void*)pUser, pUser->GetTrackSym().Str(),
+                    (int)pUser->GetTrackType(), player->GetMaxSlots(),
+                    mTrackConfig.GetGameCymbalLanes());
+        }
+#endif
         HandleNewSong();
     }
+#ifdef HX_NATIVE
+    else if (getenv("GEM_DBG")) {
+        fprintf(stderr,
+                "[GEM_DBG] GemTrack::PlayerInit: NO GEM PLAYER for user=%p tracksym='%s'\n",
+                (void*)pUser, pUser->GetTrackSym().Str());
+    }
+#endif
 }
 
 void GemTrack::PostInit() {
@@ -639,6 +662,14 @@ void GemTrack::Poll(float f) {
     int bottomTick;
     int kbd;
     Player *player = GetPlayer();
+#ifdef HX_NATIVE
+    static bool sK8 = !!getenv("K8_DBG");
+    static int sCnt = 0;
+    if (sK8 && (sCnt++ % 120) == 0) {
+        MILO_LOG("K8_DBG: GemTrack::Poll f=%.1f player=%p mGemManager=%p\n",
+                 f, (void*)player, (void*)mGemManager);
+    }
+#endif
     if (player) {
         Track::Poll(f);
         MILO_ASSERT(mGemManager, 0x2E4);
@@ -810,7 +841,14 @@ void GemTrack::SetGemsEnabled(float f) {
         mGemManager->SetGemsEnabled(f);
 }
 
-void GemTrack::SetGemsEnabledByPlayer() { SetGemsEnabled(GetPlayer()->mEnableMs); }
+void GemTrack::SetGemsEnabledByPlayer() {
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG"))
+        MILO_LOG("GEM_DBG: SetGemsEnabledByPlayer mEnableMs=%.2f enabledState=%d\n",
+                 GetPlayer()->mEnableMs, (int)GetPlayer()->GetEnabledState());
+#endif
+    SetGemsEnabled(GetPlayer()->mEnableMs);
+}
 
 void GemTrack::UpdateGems() {
     if (mGemManager) {

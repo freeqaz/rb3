@@ -715,7 +715,18 @@ void SongParser::OnGemEnd(int tick, unsigned char pitch) {
                 geminfo.is_cymbal =
                     (info.mGemsInProgress[slot].mCymbalSlots & geminfo.slots)
                     == geminfo.slots;
+#ifdef HX_NATIVE
+                // GEM_STREAM_FIX: dispatch each gem to its actual difficulty
+                // (`num` was computed via PitchToSlot above). The decompiled
+                // original `AddMultiGem(0, ...)` looks like a constant-vs-variable
+                // mis-decomp: it pushes every gem (Easy..Expert) to diff=0 only,
+                // so when GemTrack queries the player's current difficulty
+                // (typically Expert=3) the list is empty. Without this, no
+                // gem_*.mesh notes ever flow down the highway.
+                mSink->AddMultiGem(num, geminfo);
+#else
                 mSink->AddMultiGem(0, geminfo);
+#endif
                 if (mRollInProgress != -1 && abs(mRollInProgress - infotick) < 10
                         && mRollMask & (1 << num) && !mDrumStyleGems
                     || slot != 0) {
@@ -1770,6 +1781,24 @@ void SongParser::AnalyzeTrackList() {
                 mParts[i1].audio_track_num.Set(num);
             }
         }
+#ifdef HX_NATIVE
+        // K8: the matched-fork decomp left out the success-case assignment in the
+        // (num != -1) branch above — without it, AnalyzeTrackList leaves
+        // audio_track_num at the PartInfo ctor default of -1 for every real track.
+        // Game::PostLoad -> MasterAudio::SetTrack then derefs mTrackData[-1] when a
+        // real player is wired up (Player exists with a valid track type). Set it
+        // on the success path so SongData::AddTrack sees a valid AudioTrackNum.
+        // Without this the gameplay crash chain is:
+        //   GemPlayer::SetTrack(playerTrackNum) -> BeatMatcher::SetTrack(i) ->
+        //   MasterAudio::SetTrack(uguid, i) -> mTrackData[TrackNumAt(i)] where
+        //   TrackNumAt(i)==mTrackInfos[i]->mAudioTrackNum (-1) -> vector OOB.
+        // Safe additive HX_NATIVE block — does NOT regress the no-player baseline
+        // (validated: GAME no players -> AssignTrack early-exits via partPlays=0
+        // -> SetTrack/PostLoad never run).
+        else {
+            mParts[i1].audio_track_num.Set(num);
+        }
+#endif
     }
     if (mParts.empty()) {
         MILO_WARN("%s: None of the required PART tracks were found", mFilename);

@@ -29,7 +29,7 @@
 
 #include "gfx/GpuDevice.h"
 #include "gfx/Screenshot.h"
-#include "rb3_band_rnd.h"
+#include "platform/Rnd_Wgpu_RB3.h"
 
 #include <unistd.h>
 #include <cmath>

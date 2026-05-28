@@ -322,6 +322,32 @@ void WorldInstance::SetProxyFile(const FilePath &fp, bool override) {
 // cosmetic world/ venue tree so non-venue proxies (UI panels, etc.) are
 // untouched. Re-enable by fixing the inlined-cached-shared instancing
 // (Instance.cpp SyncDir / Dir.cpp PostLoadInlined object-resolution).
+//
+// 2026-05-28 audit pattern #1 / top hack #2 attempt: tried wiring
+// `sharedDir->HxSetDir(this)` in WorldInstance::PostLoad so SyncDir's later
+// `mDir->Find<Hmx::Object>(name, true)` parent-chain falls through to the
+// proxy (where moved objects live). Two confirmed obstructions surfaced:
+//   (a) `LoadPersistentObjects` save/restores `mDir->Dir()` via SetName
+//       (lines 197/210). Wiring before LoadPersistentObjects causes the
+//       restore to register the shared dir into the proxy's hash table
+//       instead of its own, breaking the self-entry. Wiring after fixes
+//       that pass but...
+//   (b) The shared dir is SHARED across multiple WorldInstance proxies
+//       (DirLoader cache hit at Dir.cpp:407 `iDir.dir = last->GetDir()`).
+//       The "parent" wiring is single-valued; only one proxy can own it.
+//       Whichever proxy wires last wins, breaking the others' lookups and
+//       destruction paths.
+//   (c) `Hmx::Object::NewObject(...)` + `CopyObject(...)` leaves foundObj
+//       with mDir == null (Hmx::Object::Copy doesn't copy mDir), so the
+//       first-pair assert (mDir,this) passes after wiring but subsequent
+//       (foundObj, shared_child) pairs still fail. HxSetDir on foundObj
+//       passes the assert but then RemoveFromDir on destruction looks up
+//       foundObj's name in `this`'s hash (where it isn't registered) and
+//       MILO_FAILs with "No entry for <name> in <this-path>".
+// The audit-recommended single-line fix in PostLoadInlined is structurally
+// non-trivial because of (b); a complete fix needs a many-to-one
+// parent-chain abstraction or per-proxy shadow dirs. Filed as a V2
+// rendering investigation; deferral stays as the working V1 baseline.
 static bool IsDeferredVenueProxy(const FilePath &proxySrc) {
     const char *p = proxySrc.c_str();
     if (!p || !*p)

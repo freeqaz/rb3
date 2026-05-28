@@ -1,4 +1,13 @@
 #include "bandobj/GemTrackDir.h"
+
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#include "rndobj/Mat.h"
+#include "rndobj/Mesh.h"
+#include "rndobj/Tex.h"
+#endif
+
 #include "bandobj/BandButton.h"
 #include "bandobj/GemTrackResourceManager.h"
 #include "obj/ObjVersion.h"
@@ -380,6 +389,18 @@ void GemTrackDir::UpdateSurfaceTexture() {
     if (mSurfaceMat && mSurfaceTexture) {
         mSurfaceMat->SetDiffuseTex(mSurfaceTexture);
     }
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        const char *meshName = mSurfaceMesh ? mSurfaceMesh->Name() : "(null)";
+        const char *matName  = mSurfaceMat  ? mSurfaceMat->Name()  : "(null)";
+        const char *texName  = mSurfaceTexture ? mSurfaceTexture->Name() : "(null)";
+        fprintf(stderr,
+                "[GEM_DBG] GemTrackDir::UpdateSurfaceTexture: this=%p "
+                "instrument=%d mInstrument='%s' mesh='%s' mat='%s' tex='%s'\n",
+                (void*)this, (int)mTrackInstrument, mInstrument.Str(),
+                meshName, matName, texName);
+    }
+#endif
 }
 
 void GemTrackDir::OnUpdateFx(int fx) {

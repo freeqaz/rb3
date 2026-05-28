@@ -94,6 +94,38 @@ bool NetSession::HasUser(const User *user) const {
     return std::find(mUsers.begin(), mUsers.end(), user) != mUsers.end();
 }
 
+// V3 — NetSession::StartGame native impl. The real impl lives in the un-globbed
+// network/net/NetSession.cpp (weak no-op stub otherwise). It drives the
+// kInLobby -> kStartingGame -> (NetSession::Poll watches the start-time clock) ->
+// EnterInGameState() -> SyncStartGameMsg flow. On offline single-player there is
+// no Quazal session clock — IsLocal() short-circuits the timer (delay=0) — but
+// NetSession::Poll is also stubbed here so EnterInGameState never fires and the
+// SyncStartGameMsg the SyncGameStartPanel waits on (mState 4 -> 5) is never
+// delivered. The downstream effect is the part_difficulty -> tv3_* -> game_screen
+// kTransitionTo stalls forever on game_screen->CheckIsLoaded() (the
+// sync_audio_net_panel never reaches mState==5), so GamePanel::Poll never runs,
+// Game::Go() never fires, and MasterAudio::Play() never flips StandardStream to
+// kPlaying — audio never plays. Mirror the offline path of the real StartGame:
+// transition to kStartingGame, then synchronously call EnterInGameState() the way
+// the real NetSession::Poll would (IsLocal()->delay=0->mGameStartTime stays
+// nullptr->b1 true on the next Poll). EnterInGameState sets mGameState =
+// kInLocalGame (the !mOnlineEnabled branch) and Handle()s the SyncStartGameMsg —
+// SyncGameStartPanel::OnMsg sees it and sets mState = 5, unblocking
+// game_screen->CheckIsLoaded().
+void NetSession::StartGame() {
+    if (mGameState != kInLobby) return; // already started — idempotent.
+    mGameState = kStartingGame;
+    EnterInGameState();
+}
+
+// NetSession::EnterInGameState real body lives in un-globbed network/net/NetSession.cpp
+// (weak no-op stub otherwise). Mirror the offline (!mOnlineEnabled) branch.
+void NetSession::EnterInGameState() {
+    mGameState = kInLocalGame;
+    static SyncStartGameMsg start;
+    Handle(start, false);
+}
+
 // --- offline query methods (otherwise weak-stubbed → 0) ---
 // Mirror NetSession::IsLocal's real logic: local iff idle and not online.
 bool NetSession::IsLocal() const { return mState == kIdle && !mOnlineEnabled; }

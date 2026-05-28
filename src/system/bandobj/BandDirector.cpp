@@ -125,7 +125,21 @@ void BandDirector::Enter() {
         mPostProcA = mWorldPostProc;
         mPostProcB = mWorldPostProc;
         mPostProcBlend = 0;
+#ifdef HX_NATIVE
+        // V3 — RB3's extracted config/rnd.dta has no 'motion_blur' entry
+        // (apparently a post-shipped patch/360-platform-specific override
+        // missing from this ARK). The matched-fork SystemConfig fails-hard with
+        // "Couldn't find 'motion_blur' in array (file config/band_keep.dta,
+        // line 38)" the moment BandDirector::Enter fires from the game_screen
+        // world-panel load — which the V3 fix newly reaches. Fall back to the
+        // Wave-2.4 default (0.0f) when the key is absent so the venue Enter
+        // completes and the audio Play() path can run.
+        DataArray *rndCfg = SystemConfig("rnd");
+        DataArray *mb = rndCfg ? rndCfg->FindArray("motion_blur", false) : nullptr;
+        RndPostProc::sMotionBlurBlendAmount = mb ? mb->Float(1) : 0.0f;
+#else
         RndPostProc::sMotionBlurBlendAmount = SystemConfig("rnd", "motion_blur")->Float(1);
+#endif
         mCamPostProc = 0;
         mLightPresetCatA = mLightPresetCatB = gNullStr;
         mLightPresetCatBlend = 0;

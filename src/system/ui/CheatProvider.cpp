@@ -68,6 +68,15 @@ void CheatProvider::Init() {
 }
 
 void CheatProvider::Terminate() {
+#ifdef HX_NATIVE
+    // Init() is conditional on CheatsInitialized() (which evaluates to false on
+    // the native offline boot path), so sInstance is never assigned. The
+    // matched-fork code MILO_ASSERTs sInstance and would abort on the native
+    // shutdown path — guard the assert + RELEASE to a no-op when the symmetric
+    // Init didn't run. The RELEASE on null is a no-op, but the assert fails first.
+    if (!sInstance)
+        return;
+#endif
     MILO_ASSERT(sInstance, 104);
     RELEASE(sInstance);
 }

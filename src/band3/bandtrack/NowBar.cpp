@@ -1,5 +1,10 @@
 #include "NowBar.h"
 
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#endif
+
 #include "GemSmasher.h"
 #include "game/FretHand.h"
 #include "game/SongDB.h"
@@ -18,8 +23,24 @@ NowBar::NowBar(TrackDir *trackDir, const TrackConfig &trackConfig)
     MILO_ASSERT(smasherPlateDir, 0x21);
 
     DataArray *cfg = SystemConfig("track_graphics", "smashers", trackConfig.Type());
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        fprintf(stderr,
+                "[GEM_DBG] NowBar: trackType=%d trackSym='%s' MaxSlots=%d "
+                "smasherPlateDir=%p\n",
+                (int)trackConfig.GetBandUser()->GetTrackType(),
+                trackConfig.Type().Str(), trackConfig.GetMaxSlots(),
+                (void*)smasherPlateDir);
+    }
+#endif
     for (int i = 0; i < trackConfig.GetMaxSlots(); i++) {
         RndDir *newDir = smasherPlateDir->Find<RndDir>(cfg->Str(i + 1), true);
+#ifdef HX_NATIVE
+        if (getenv("GEM_DBG")) {
+            fprintf(stderr, "[GEM_DBG]   NowBar smasher[%d] -> '%s' dir=%p\n",
+                    i, cfg->Str(i + 1), (void*)newDir);
+        }
+#endif
         mSmashers.push_back(new GemSmasher(i, newDir, mTrackCfg.IsKeyboardTrack()));
     }
 }

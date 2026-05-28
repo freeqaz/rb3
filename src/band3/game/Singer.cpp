@@ -25,6 +25,10 @@
 // unrolls 2x). Routing the copy through a POD word-struct that mirrors
 // SingerResultsData's layout in a count-based loop reproduces the target: the
 // 8x unroll and the high-word-first pairing within each 2-word group.
+#ifndef HX_NATIVE
+// stlpmtx_std-internal copy_ptrs / copy_backward_ptrs specializations are
+// asm-match-only — libstdc++ doesn't expose those templates. Gate the whole
+// block (X7b GameGemList precedent).
 namespace stlpmtx_std {
 
 struct _SingerW2 { unsigned int a, b; };
@@ -101,6 +105,7 @@ __copy_ptrs< ::Singer::AmbiguousData*, ::Singer::AmbiguousData*>(
 }
 
 } // namespace stlpmtx_std
+#endif // !HX_NATIVE
 
 MicClientID sNullClientID(-1, -1);
 

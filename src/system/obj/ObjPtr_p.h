@@ -43,6 +43,21 @@ public:
     }
     virtual Hmx::Object *RefOwner() { return mOwner; }
     virtual void Replace(Hmx::Object *o1, Hmx::Object *o2) {
+#ifdef HX_NATIVE
+        // Symmetric guard to ~ObjPtr above. When ~Object iterates mRefs and
+        // calls (*rit)->Replace(this, nullptr), the `mPtr == o1` comparison
+        // here implicitly upcasts mPtr to Hmx::Object* — for virtually-derived
+        // targets (CharBonesObject, RndDrawable subclasses) the upcast reads
+        // the vbase offset out of mPtr's vtable. If mPtr was already freed
+        // (e.g. CharDriver::mBones still referencing a destroyed CharBones-
+        // Object during venue/character teardown), that vtable read SIGSEGVs.
+        // Clear and bail — the dangling pointer's owner is itself going away.
+        extern bool HxAddrWasFreed(const void *);
+        if (mPtr != nullptr && HxAddrWasFreed((const void *)mPtr)) {
+            mPtr = nullptr;
+            return;
+        }
+#endif
         if (mPtr == o1)
             *this = dynamic_cast<T1 *>(o2);
     }

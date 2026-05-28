@@ -1,4 +1,10 @@
 #include "bandtrack/TrackPanel.h"
+
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#endif
+
 #include "Track.h"
 #include "bandobj/BandScoreboard.h"
 #include "bandobj/BandTrack.h"
@@ -329,6 +335,14 @@ void TrackPanel::DoHandleAddPlayer(BandUser *user) {
     TrackInstrument inst = GetTrackInstrument(user->GetTrackSym());
     mTrackSlots[slot].mInstrument = inst;
     mTrackPanelDir->GetBandTrackInSlot(slot)->SetInstrument(inst);
+#ifdef HX_NATIVE
+    if (getenv("GEM_DBG")) {
+        fprintf(stderr,
+                "[GEM_DBG] TrackPanel::DoHandleAddPlayer slot=%d tracksym='%s' "
+                "-> TrackInstrument=%d\n",
+                slot, user->GetTrackSym().Str(), (int)inst);
+    }
+#endif
 }
 
 void TrackPanel::PostHandleAddPlayer(Player *player) {
@@ -541,6 +555,21 @@ void TrackPanel::StartPulseAnims() {
 
 void TrackPanel::Poll() {
     START_AUTO_TIMER("hud_track_poll");
+#ifdef HX_NATIVE
+    // K8 diagnostic — TrackPanel::Poll entry + early-return gates.
+    static bool sK8 = !!getenv("K8_DBG");
+    static int sEntries = 0;
+    static int sLastGate = -1;
+    int gate = 0;
+    if (!TheSongDB || TheSongDB->GetNumTrackData() == 0) gate = 1;
+    else if (!unk5c) gate = 2;
+    if (sK8 && (gate != sLastGate || (sEntries++ % 120) == 0)) {
+        MILO_LOG("K8_DBG: TrackPanel::Poll gate=%d (1=noSongDB,2=!unk5c,0=ok) "
+                 "mTracks.size=%u mScoreboard=%p\n",
+                 gate, (unsigned)mTracks.size(), (void*)mScoreboard.Ptr());
+        sLastGate = gate;
+    }
+#endif
     if (!TheSongDB || TheSongDB->GetNumTrackData() == 0)
         return;
     if (!unk5c)
@@ -550,6 +579,15 @@ void TrackPanel::Poll() {
     auto _tmp0 = TheGame->mMaster->GetAudio()->Fail();
     if (_tmp0)
         return;
+#ifdef HX_NATIVE
+    if (sK8) {
+        static int sBody = 0;
+        if ((sBody++ % 120) == 0) {
+            MILO_LOG("K8_DBG: TrackPanel::Poll BODY ms=%.1f mTracks=%u\n",
+                     ms, (unsigned)mTracks.size());
+        }
+    }
+#endif
     StartPulseAnims();
     bool wasSoloing = unk62;
     bool soloing = false;

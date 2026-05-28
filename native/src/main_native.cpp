@@ -60,6 +60,8 @@
 #include "gfx/GpuDevice.h"
 #include "gfx/Screenshot.h"
 
+#include "rb3_native_settings.h"
+
 extern void InitMakeString();
 
 // ---------------------------------------------------------------------------
@@ -88,6 +90,7 @@ static void RB3SignalHandler(int sig, siginfo_t *info, void *ctx) {
     const char *signame = (sig == SIGSEGV) ? "SIGSEGV"
                         : (sig == SIGABRT) ? "SIGABRT"
                         : (sig == SIGBUS)  ? "SIGBUS"
+                        : (sig == SIGILL)  ? "SIGILL"
                                            : "SIGNAL";
     char buf[256];
     int len = snprintf(buf, sizeof(buf),
@@ -499,7 +502,7 @@ extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_re
 
 // ---------------------------------------------------------------------------
 // RB3_GAME=1 — the REAL game boot. Mirrors dc3 native main: stand up the
-// GpuDevice (BandRnd = TheRnd, via rb3_band_rnd.cpp's strong TheRnd def) BEFORE
+// GpuDevice (BandRnd = TheRnd, via the engine's Rnd_Wgpu_RB3.cpp strong def) BEFORE
 // chdir/boot (Dawn adapter enumeration wants the clean original cwd), then
 // chdir(RB3_DATA), SetSystemArgs, force kPlatformXBox (the extracted assets are
 // 360-ARK big-endian), and construct + Run the real App. App::App() runs the
@@ -521,9 +524,28 @@ extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_re
 //   RB3_SYSCFG=<path>  — override system config DTA path
 // ---------------------------------------------------------------------------
 #include "App.h"
-#include "rb3_band_rnd.h"
+#include "platform/Rnd_Wgpu_RB3.h"
 
 static int RunGame(int argc, char **argv) {
+    // Register the BandRnd shutdown exit callback FIRST so it ends up at the
+    // BOTTOM of the TheDebug exit-callback list (push_front means latest goes to
+    // the head; we want this one to run LAST, after every other Terminate so
+    // nothing else still references the GPU). It runs from Debug::Exit BEFORE
+    // libc's exit(0) → static-destructor phase, which is the whole point: by the
+    // time libc tears down, the Vulkan ICD's .so has been unmapped, and any
+    // surviving wgpu::~ObjectBase that drops the last ref calls vkDestroy* on a
+    // dangling fn ptr (segfault at a libvulkan VMA). Tearing down here keeps the
+    // wgpu handles inside the alive-Dawn window.
+    extern void RB3RegisterBandRndShutdown();
+    RB3RegisterBandRndShutdown();
+
+    // Seed the live-tunable render/camera/gem settings from the environment
+    // ONCE, before any rendering subsystem reads them. Existing CAM_ROTX=...
+    // invocations flow through here into TheNativeSettings().camRotX; the
+    // matched-fork TrackDir camera-frame fix reads it live every frame, and the
+    // (future) HTTP /api/settings endpoint can mutate it at runtime.
+    TheNativeSettings().InitFromEnv();
+
     // Stand up the GpuDevice FIRST (before chdir + RB3 MemMgr boot) — same
     // ordering rationale as RB3_RENDER_MESH.
     bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
@@ -537,6 +559,11 @@ static int RunGame(int argc, char **argv) {
     printf("rb3-native: RB3_GAME — GpuDevice up (%dx%d, %s)\n",
            W, H, headless ? "headless" : "windowed");
     gBandRnd.InitScreenshots(); // reads MILO_SCREENSHOT_DIR / _FRAMES / _NAMES
+    // NOTE: the embedded HTTP debug server (RB3_HTTP=1) is started later, inside
+    // App::RunWithoutDebugging() just before the frame loop — AFTER the App ctor
+    // completes — mirroring DC3 (App.cpp:1070). Starting its background thread
+    // during the heavy boot/ctor caused a boot-time SIGSEGV; deferring to the
+    // steady-state loop avoids that window.
 
     // RB3's 2010 milos serialize text/tex/dir objects under the legacy short
     // class names "Text"/"Tex"/"Dir"; the engine registers RndText/RndTex/RndDir.
@@ -580,6 +607,7 @@ int main(int argc, char **argv) {
     sigaction(SIGSEGV, &sa, nullptr);
     sigaction(SIGABRT, &sa, nullptr);
     sigaction(SIGBUS, &sa, nullptr);
+    sigaction(SIGILL, &sa, nullptr);
 
     // ---- Real game boot (RB3_GAME=1): construct RB3's actual App and Run().
     //      Renders through BandRnd (= TheRnd). ----

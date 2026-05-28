@@ -759,7 +759,14 @@ void SystemInit(const char *config) {
     // rather than gate each site. SystemConfig("net","session") is available now.
     extern void RB3InitNativeNetSession();
     RB3InitNativeNetSession();
-    TheDebug.AddExitCallback(SystemTerminate);
+    // NOTE: SystemTerminate is already registered in SystemPreInit (line ~401).
+    // Re-registering here would push it to the head of mExitCallbacks (push_front),
+    // ahead of SynthTerminate, so it would run FIRST — tearing down TheTaskMgr
+    // (mTimelines = nullptr) before Synth's exit callback calls Synth::Poll(),
+    // which in turn calls TheTaskMgr.Seconds() via RandomIntervalGroupSeqInst::Poll
+    // and crashes on the null mTimelines. The non-HX_NATIVE branch below
+    // (SystemInit's #else) does NOT register SystemTerminate — only SystemPreInit
+    // does. Stay consistent with that for the teardown order to be correct.
 #else
     if (!InitWiiRSO()) MILO_FAIL("_unresolved func.\n");
     if (gUsingCD && !gHostConfig && !gHostLogging) WiiNetworkSocket::Init();

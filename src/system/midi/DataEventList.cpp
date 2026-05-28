@@ -4,6 +4,9 @@
 #include "utl/Std.h"
 #include "utl/TimeConversion.h"
 #include <algorithm>
+#ifdef HX_NATIVE
+#include <cstdint>
+#endif
 
 namespace {
     struct EventTimeComp {
@@ -27,7 +30,13 @@ DataEventList::~DataEventList() {}
 void DataEventList::Compress(DataArray *arr, int i) {
     mElement = i;
     mTemplate.SetMsg(arr);
+#ifdef HX_NATIVE
+    // LP64: target the full 8-byte mValue union (offset 0 == .integer) so a
+    // compressed Symbol pointer round-trips without losing its hi32 bits.
+    mValue = reinterpret_cast<intptr_t *>(&arr->Node(i).mValue.integer);
+#else
     mValue = &arr->Node(i).mValue.integer;
+#endif
 }
 
 // fn_8052AEFC
@@ -41,7 +50,14 @@ void DataEventList::InsertEvent(float start, float end, const DataNode &node, in
         CompEv event;
         event.start = start;
         event.end = end;
+#ifdef HX_NATIVE
+        // LP64: store the full pointer-width union, not just the low 32 bits.
+        // For kDataSymbol this is the Symbol's `const char *mStr` (8 bytes);
+        // truncating it left Symbol::mStr dangling and faulted in operator==.
+        event.value = *reinterpret_cast<const intptr_t *>(&node.mValue.integer);
+#else
         event.value = node.mValue.integer;
+#endif
         if (mSize == 0) {
             mComps.reserve(32);
             mCompType = node.Type();

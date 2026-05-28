@@ -275,6 +275,38 @@ void TrackPanelDir::ConfigureTracks(bool b) {
             mBandScoreMultiplier->Property("last_multiplier", true)->Int(), true
         );
     }
+#ifdef HX_NATIVE
+    // CAMERA_FRAME_FIX: the milo "N_player_<aspect>" configuration object's
+    // `apply` handler script — which is supposed to center the active track(s)
+    // (set_track_offset/set_side_angle/set_screen_rect_x = 0 for a single
+    // player) and hide the unused pool tracks — does not execute its track
+    // commands in the native port (verified: SetTrackOffset/SetSideAngle/
+    // SetScreenRectX are never called). As a result every gem track keeps the
+    // milo's AUTHORED multi-player default: rotater.grp at x=-34.5 with a side
+    // angle, which swings game.cam ~off-axis so the highway renders edge-on at
+    // the right edge; and the unused pool tracks (e.g. the keys-template
+    // 'surface_keys'/'tamb_Background' card) keep drawing in the centre,
+    // occluding the play area.
+    //
+    // Reproduce the apply-handler's intended effect for the visibility half:
+    // hide every UNUSED pool track so its placeholder template surface (the
+    // keys-template 'surface_keys'/'tamb_Background' card that dominates the
+    // centre of the frame) stops drawing. The CAMERA half (centering the used
+    // track's rotater.grp) cannot be done here — a used GemTrackDir is a milo
+    // PROXY and the camera it actually renders through belongs to the proxy
+    // INSTANCE reached via the running TrackDir, not via mGemTracks[i]'s pool
+    // object — so it is applied in TrackDir::DrawShowing instead.
+    extern int gHxNativeNumUsedGemTracks;
+    gHxNativeNumUsedGemTracks = unk24c;  // number of in-use (non-vocal) tracks
+    for (int i = 0; i < mGemTracks.size(); i++) {
+        GemTrackDir *gt = mGemTracks[i];
+        if (!gt) continue;
+        if (gt->mInUse)
+            gt->SetShowing(true);
+        else
+            gt->SetShowing(false);  // suppress unused placeholder surface
+    }
+#endif
     unk2ac = true;
 }
 

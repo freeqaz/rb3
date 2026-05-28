@@ -51,6 +51,29 @@ Band::Band(bool bbb, int i2, BandUser *user, BeatMaster *bm)
     MetaPerformer *perf = MetaPerformer::Current();
     std::vector<BandUser *> users;
     TheBandUserMgr->GetParticipatingBandUsers(users);
+#ifdef HX_NATIVE
+    {
+        // K8 diagnostic — Band ctor user/player wiring
+        std::vector<BandUser *> allUsers;
+        // BandUserMgr exposes mUsers via GetUsers, but we'll iterate via
+        // GetParticipatingBandUsers + count separately.
+        MILO_LOG("K8_DBG: Band::Band participatingUsers=%u perf=%p bbb=%d "
+                 "filterUser=%p autoVocals=%d\n",
+                 (unsigned)users.size(), (void*)perf, (int)bbb, (void*)user,
+                 TheGameConfig && TheGameConfig->GetConfigList()
+                     ? TheGameConfig->GetConfigList()->GetAutoVocals() : -1);
+        for (size_t i = 0; i < users.size(); i++) {
+            BandUser *u = users[i];
+            bool b2 = perf && !perf->PartPlaysInSong(u->GetTrackSym());
+            MILO_LOG("K8_DBG:   user[%zu]=%p trackSym=%s participating=%d "
+                     "partPlays=%d -> %s\n",
+                     i, (void*)u, u->GetTrackSym().Str(),
+                     (int)u->IsParticipating(),
+                     perf ? (int)perf->PartPlaysInSong(u->GetTrackSym()) : -1,
+                     (!b2 && (!bbb || u == user)) ? "ADD" : "SKIP");
+        }
+    }
+#endif
     FOREACH (it, users) {
         BandUser *pUser = *it;
         MILO_ASSERT(pUser, 0x57);
@@ -63,6 +86,10 @@ Band::Band(bool bbb, int i2, BandUser *user, BeatMaster *bm)
         Player *p = AddPlayer(bm, TheBandUserMgr->GetNullUser());
         p->SetQuarantined(true);
     }
+#ifdef HX_NATIVE
+    MILO_LOG("K8_DBG: Band::Band POST mActivePlayers.size=%u\n",
+             (unsigned)mActivePlayers.size());
+#endif
 }
 
 Band::~Band() {
@@ -171,6 +198,21 @@ int Band::GetLongestStreak() const {
 }
 
 void Band::Poll(float f1, SongPos &pos) {
+#ifdef HX_NATIVE
+    {
+        static bool sK8 = !!getenv("K8_DBG");
+        static int sCnt = 0;
+        if (sK8 && (sCnt++ % 120) == 0) {
+            int totalScore = 0;
+            for (int i = 0; i < (int)mActivePlayers.size(); i++)
+                totalScore += mActivePlayers[i]->GetScore();
+            MILO_LOG("K8_DBG: Band::Poll ms=%.1f mActivePlayers.size=%u "
+                     "totalScore=%d bandPerf.score=%d\n",
+                     f1, (unsigned)mActivePlayers.size(), totalScore,
+                     mBandPerformer ? mBandPerformer->GetScore() : -1);
+        }
+    }
+#endif
     for (int i = 0; i < mActivePlayers.size(); i++) {
         mActivePlayers[i]->Poll(f1, pos);
         float rating = mActivePlayers[i]->GetCrowdRating();

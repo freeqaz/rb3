@@ -33,8 +33,33 @@ int FastSort(const void *a, const void *b) {
 }
 template int FastSort<3>(const void *, const void *);
 
+#ifdef HX_NATIVE
+// LP64 sort by full Symbol::mStr pointer — matches the HX_NATIVE binary search
+// in Locale::FindDataIndex. The matched-fork FastSort<3> stepped by 8 bytes per
+// iteration over chunk node1/node2/node3, which on LP64 only walks within
+// node1 (DataNode is 16B not 8B) AND compares only the lower 4 bytes of the
+// 8-byte Symbol pointer — producing an order that didn't match the search
+// (search compares full pointer). Result: some entries that ARE in the table
+// can't be found by FindDataIndex, leaking the raw token name back to the UI.
+int FastSortLP64(const void *a, const void *b) {
+    const OrderedLocaleChunk *ca = (const OrderedLocaleChunk *)a;
+    const OrderedLocaleChunk *cb = (const OrderedLocaleChunk *)b;
+    // node1 holds the symbol as kDataSymbol; mValue.symbol is the interned
+    // Symbol::mStr pointer.
+    const char *as = ca->node1.mValue.symbol;
+    const char *bs = cb->node1.mValue.symbol;
+    if (as < bs) return -1;
+    if (as > bs) return 1;
+    return 0;
+}
+#endif
+
 void Sort(OrderedLocaleChunk *chunks, int count) {
+#ifdef HX_NATIVE
+    qsort(chunks, count, sizeof(OrderedLocaleChunk), FastSortLP64);
+#else
     qsort(chunks, count, sizeof(OrderedLocaleChunk), FastSort<3>);
+#endif
 }
 }
 
@@ -242,6 +267,26 @@ const char *Localize(Symbol token, bool *notify) {
     }
     if (notify)
         *notify = localized;
+#ifdef HX_NATIVE
+    // Debug: trace Localize() for diagnosing format-string / token leaks.
+    // Gated on env var MILO_LOCALE_DBG to avoid spam.
+    {
+        static int s_dbg = -1;
+        if (s_dbg == -1) {
+            const char *e = getenv("MILO_LOCALE_DBG");
+            s_dbg = (e && *e) ? 1 : 0;
+        }
+        if (s_dbg) {
+            MILO_LOG(
+                "LOCALIZE_DBG sym=%s size=%d hit=%d ret=\"%s\"\n",
+                token.mStr ? token.mStr : "(null)",
+                TheLocale.mSize,
+                localized ? 1 : 0,
+                textStr ? textStr : "(null)"
+            );
+        }
+    }
+#endif
     return textStr;
 }
 

@@ -327,6 +327,18 @@ void Game::PostLoad() {
     int i24 = -1;
     std::vector<Player *> &players = GetActivePlayers();
     FOREACH (it, players) {
+#ifdef HX_NATIVE
+        {
+            static bool sK8 = !!getenv("K8_DBG");
+            int tn = TheGameConfig->GetTrackNum((*it)->GetUserGuid());
+            if (sK8) {
+                MILO_LOG("K8_DBG: Game::PostLoad player=%p trackNum=%d "
+                         "userSym=%s\n",
+                         (void*)(*it), tn,
+                         (*it)->GetUser()->GetTrackSym().Str());
+            }
+        }
+#endif
         (*it)->SetTrack(TheGameConfig->GetTrackNum((*it)->GetUserGuid()));
         (*it)->PostLoad(false);
         Extent ext(0, 0);
@@ -375,11 +387,19 @@ void Game::Start() {
 }
 
 void Game::Go() {
+#ifdef HX_NATIVE
+    if (getenv("GAME_DBG"))
+        MILO_LOG("GAME_DBG: *** Game::Go() ENTERED — about to MasterAudio::Play() ***\n");
+#endif
     if (!mMaster->GetAudio()->Fail()) {
         if (unk150) {
             GetTrackPanelDir()->UpdateTrackSpeed();
             unk150 = false;
         }
+#ifdef HX_NATIVE
+        if (getenv("GAME_DBG"))
+            MILO_LOG("GAME_DBG: *** calling mMaster->GetAudio()->Play() ***\n");
+#endif
         mMaster->GetAudio()->Play();
         std::vector<Player *> &players = GetActivePlayers();
         FOREACH (it, players) {
@@ -666,9 +686,24 @@ void Game::EnableWorldPolling(bool b1) {
 void Game::ResetAudio() { mMaster->ResetAudio(); }
 
 void Game::RebuildData() {
-    Player **it = &mAllActivePlayers[0];
-    for (; it != &mAllActivePlayers[0] + mAllActivePlayers.size(); it++) {
-        (*it)->RebuildPhrases();
+#ifdef HX_NATIVE
+    // V3 — empty-vector guard. On Wii/console mAllActivePlayers always has at
+    // least the local-band players by the time Game::Restart fires (the
+    // overshell's slot-grant flow populates BandUserMgr -> Players via
+    // AddBandUser side-effects). On native headless the synthetic-input script
+    // takes the quickplay path WITHOUT going through the per-slot
+    // user-add UI, so by the time GamePanel::Enter -> Game::Restart ->
+    // RebuildData fires, mAllActivePlayers is empty. The matched-fork code
+    // takes &mAllActivePlayers[0] (op[] on size-0 vector) which trips
+    // libstdc++'s debug op[] assertion in clang LP64 builds. Skip the iteration
+    // cleanly so the rest of Restart (audio Play path) can run.
+    if (!mAllActivePlayers.empty())
+#endif
+    {
+        Player **it = &mAllActivePlayers[0];
+        for (; it != &mAllActivePlayers[0] + mAllActivePlayers.size(); it++) {
+            (*it)->RebuildPhrases();
+        }
     }
     mSongDB->RebuildData();
 }
@@ -776,6 +811,17 @@ bool Game::AllowInput() const { return !mPauseTime && !mRealtime && !mNeverAllow
 void Game::SetKickAutoplay(bool autokick) { gKickAutoplay = autokick; }
 
 void Game::SetVocalPercussionBank(Player *p, ObjectDir *dir) {
+#ifdef HX_NATIVE
+    // K8: VocalPlayer is _NATIVE_FORK_EXCLUDE'd → its RTTI is a zeroed-out stub
+    // (rb3_link_stubs.s _ZTI11VocalPlayer). Walking __dynamic_cast through that
+    // stub segfaults during Game::FinishLoad. Gate the cast on a track-type
+    // check first — non-vocal players (the guitar/bass/drum gameplay path) skip
+    // the cast entirely. This is the no-vocals subset that the V1 milestone
+    // explicitly targets; vocals come back online after _NATIVE_FORK_EXCLUDE
+    // for VocalPlayer is lifted (V1 follow-up #1, V1_REMAINING_PLAN §4).
+    if (!p || p->GetTrackType() != kTrackVocals)
+        return;
+#endif
     VocalPlayer *vp = dynamic_cast<VocalPlayer *>(p);
     if (vp) {
         vp->mTambourineManager.SetBank(dir);
@@ -1552,6 +1598,10 @@ void Game::Poll() {
         if (!unk6f && !mIsPaused) {
             unk6f = true;
             if (!mHasIntro) {
+#ifdef HX_NATIVE
+                if (getenv("GAME_DBG"))
+                    MILO_LOG("GAME_DBG: *** Game::Poll calling Go() — audio Play() next ***\n");
+#endif
                 Go();
             }
         }
@@ -1580,6 +1630,16 @@ void Game::Poll() {
             mSongPos = mSongDB->GetData()->CalcSongPos(songMs);
             TheTaskMgr.mSongPos = mSongPos;
         }
+#ifdef HX_NATIVE
+        if (getenv("GAME_DBG")) {
+            static int sLogCounter = 0;
+            if ((sLogCounter++ % 60) == 0) {
+                MILO_LOG("GAME_DBG: Game::Poll songMs=%.1f audioTime=%.1f streamPlaying=%d\n",
+                         songMs, mMaster->GetAudio() ? mMaster->GetAudio()->GetTime() : -1.0f,
+                         (mMaster->GetAudio() && mMaster->GetAudio()->IsStreamPlaying()) ? 1 : 0);
+            }
+        }
+#endif
         if (songMs >= 0.0f) {
             mMaster->Poll(songMs);
             if (!isGameOver) {

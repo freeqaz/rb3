@@ -99,8 +99,17 @@ void BandUI::Init() {
     }
     mVignetteOverlay = RndOverlay::Find(vignette, false);
     mUIOverlay = RndOverlay::Find(ui, false);
+#ifndef HX_NATIVE
+    // WaitingUserGate.cpp is in _NATIVE_FORK_EXCLUDE (CMakeLists.txt), so its
+    // ctor/dtor/Init are weak no-op stubs natively. `new WaitingUserGate()` then
+    // returns memory with an UNINITIALIZED vtable pointer; the symmetric
+    // `RELEASE(mWaitingUserGate)` in Terminate() below dereferences that bogus
+    // vtable and SIGSEGVs at the deleting-dtor virtual call. Skip the alloc on
+    // native; mWaitingUserGate stays null (ctor-default) and `Poll()` already
+    // null-guards it. No multiplayer/lock-step path runs offline-single-player.
     WaitingUserGate::Init();
     mWaitingUserGate = new WaitingUserGate();
+#endif
     mInputInterceptor = new ShellInputInterceptor(TheBandUserMgr);
     TheUIStats->Init();
 }
@@ -114,11 +123,21 @@ void BandUI::Terminate() {
     InputMgr::Terminate();
     UIEventMgr::Terminate();
     NetSync::Terminate();
+#ifndef HX_NATIVE
+    // Symmetric tear-down for the AddSink calls gated out of Init() above —
+    // TheNet/TheNetSession/TheGameMicManager/TheSaveLoadMgr globals live in
+    // subsystems excluded from the native link. Their AddSink wasn't called,
+    // so RemoveSink would either deref null or walk a stub object's sinks.
+    // The native equivalents (ThePlatformMgr, TheRockCentral, TheContentMgr)
+    // remain wired below.
     TheNet.GetNetSession()->RemoveSink(this);
     TheNet.GetSearcher()->RemoveSink(this);
+#endif
     ThePlatformMgr.RemoveSink(this);
+#ifndef HX_NATIVE
     TheGameMicManager->RemoveSink(this);
     TheSaveLoadMgr->RemoveSink(this);
+#endif
     TheRockCentral.RemoveSink(this);
     if (mOvershell) {
         if (TheUIEventMgr) {

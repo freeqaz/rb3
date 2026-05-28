@@ -1,4 +1,15 @@
 #include "track/TrackDir.h"
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <set>
+#include "rb3_native_settings.h"
+// Number of in-use gem tracks for the current game, published by
+// TrackPanelDir::ConfigureTracks. Used by the CAMERA_FRAME_FIX to only center
+// the camera in the single-player layout (multi-track wants the fan-out).
+int gHxNativeNumUsedGemTracks = 0;
+#endif
 #include "compiler_macros.h"
 #include "decomp.h"
 #include "obj/ObjMacros.h"
@@ -194,10 +205,107 @@ void TrackDir::DrawShowing() {
                 MILO_ASSERT(TheLoadMgr.EditMode(), 0x104);
                 i6 = RndCam::sCurrent;
             }
+#ifdef HX_NATIVE
+            // CAMERA_FRAME_FIX: center the gameplay camera. The milo
+            // "N_player_<aspect>" configuration apply-handler that should call
+            // set_track_offset/set_side_angle (= 0 for a lone player, zeroing
+            // rotater.grp's lateral fan-out) does not execute in the native
+            // port, so the camera keeps the authored MULTI-player default —
+            // rotater.grp at x=-34.5 with a side-angle — which swings game.cam
+            // off-axis and renders the highway edge-on at the right frame edge.
+            //
+            // i6 is the EXACT camera this proxy track renders through, so walk
+            // up its parent chain to the rotater.grp genuinely in the chain and
+            // zero the lateral offset, leaving the authored down-the-highway
+            // pitch/height intact. Done once per camera object (the rig is
+            // shared/static across frames). Skipped if this is a multi-track
+            // game (the fan-out is wanted there).
+            {
+                extern int gHxNativeNumUsedGemTracks;  // set in TrackPanelDir
+                if (i6 && gHxNativeNumUsedGemTracks == 1) {
+                    // The per-player FAN-OUT groups (rotater.grp lateral offset +
+                    // rotater_roll.grp side-yaw/roll) carry the milo's authored
+                    // MULTI-player default; the lone-player apply-handler that
+                    // would zero them (set_track_offset/set_side_angle 0) never
+                    // runs natively, so game.cam ends up off-axis. Neutralize
+                    // them on the groups genuinely in the rendered camera's
+                    // chain, preserving the base down-the-highway pitch (which
+                    // lives in scaler.grp + rotater.grp's rotation). Re-applied
+                    // every frame because the proxy/rig re-syncs from the
+                    // template. The lateral centering offset (rotater.grp local
+                    // x) defaults to -4.0 — empirically the value that centres
+                    // the guitar surface. Read LIVE from NativeSettings.camRotX
+                    // (seeded once at startup from the CAM_ROTX env var, then
+                    // mutable at runtime via the HTTP /api/settings endpoint) so
+                    // re-tuning takes effect on the next frame with no rebuild.
+                    const float sRotX = TheNativeSettings().camRotX;
+                    for (RndTransformable *t = i6; t; t = t->TransParent()) {
+                        const char *tn = t->Name();
+                        if (!tn) continue;
+                        if (strcmp(tn, "rotater.grp") == 0) {
+                            Transform lx(t->LocalXfm());
+                            if (lx.v.x != sRotX) {
+                                lx.v.x = sRotX;
+                                t->SetLocalXfm(lx);
+                            }
+                        } else if (strcmp(tn, "rotater_roll.grp") == 0) {
+                            // Per-player camera ROLL group; for a lone player the
+                            // apply-handler leaves it un-rolled. Authored default
+                            // carries a roll/yaw that tilts the highway off
+                            // center — neutralize its rotation (it has no
+                            // translation).
+                            const Transform &rr = t->LocalXfm();
+                            if (rr.m.x.x != 1.0f || rr.m.y.y != 1.0f) {
+                                Transform lx(rr);
+                                lx.m.Identity();
+                                t->SetLocalXfm(lx);
+                            }
+                        }
+                    }
+                    // The authored multi-player viewport offset (screenRect.x,
+                    // ~0.235) shifts the lone player's view to the right of
+                    // frame; set_screen_rect_x 0 from the apply-handler would
+                    // clear it. Reset it on the rendered camera directly.
+                    if (i6->mScreenRect.x != 0.0f) {
+                        i6->mScreenRect.x = 0.0f;
+                        i6->UpdateLocal();
+                    }
+                }
+            }
+            // CAM_DBG: dump the gameplay-camera (game.cam) pose during the
+            // highway draw. The per-frame render trace reports world.cam
+            // (origin) because TrackDir restores the prior cam after this
+            // scope; this is the only point at which game.cam is actually
+            // current. Set CAM_DBG=1 to enable.
+            if (getenv("CAM_DBG")) {
+                static int sCamDbg = 0;
+                if ((sCamDbg++ % 60) == 0 && i6) {
+                    const Transform &wx = i6->WorldXfm();
+                    fprintf(stderr,
+                            "CAM_DBG: dir='%s' cam='%s' pos=(%.2f,%.2f,%.2f) "
+                            "fwd=(%.3f,%.3f,%.3f) up=(%.3f,%.3f,%.3f) "
+                            "yfov=%.3f near=%.1f far=%.1f\n",
+                            Name() ? Name() : "?",
+                            i6->Name() ? i6->Name() : "?",
+                            wx.v.x, wx.v.y, wx.v.z,
+                            wx.m.y.x, wx.m.y.y, wx.m.y.z,
+                            wx.m.z.x, wx.m.z.y, wx.m.z.z,
+                            i6->mYFov, i6->mNearPlane, i6->mFarPlane);
+                }
+            }
+#endif
             PreDraw();
             if (mShowingWhenEnabled->Showing()) {
                 Transform tf50(i6->WorldXfm());
                 float mult = mYPerSecond * TheTaskMgr.Seconds(TaskMgr::kRealTime);
+#ifdef HX_NATIVE
+                if (getenv("CLOCK_DBG")) {
+                    static int sCDbg = 0;
+                    if ((sCDbg++ % 60) == 0)
+                        MILO_LOG("CLOCK_DBG: TrackDir::DrawShowing rt=%.3f mult=%.2f yps=%.2f\n",
+                                 TheTaskMgr.Seconds(TaskMgr::kRealTime), mult, mYPerSecond);
+                }
+#endif
                 Transform tf80(tf50);
                 tf80.v.y += mult;
                 bool b2 = (mKeyShiftStationaryBack->Showing() && mRotatorCam);

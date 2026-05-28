@@ -272,6 +272,29 @@ void RndTransAnim::SetFrame(float frame, float blend) {
     RndAnimatable::SetFrame(frame, blend);
     if (mTrans) {
         Transform tf(mTrans->LocalXfm());
+#ifdef HX_NATIVE
+        // GEM_VISIBLE_FIX: AnimTask::Poll drives every anim as
+        // SetFrame(blend, frame) — i.e. arg0 is the blend WEIGHT (~0..1) and
+        // arg1 is the song FRAME. RndTransAnim::MakeTransform interpolates its
+        // keys at its first arg and Interp/extrapolates by its `blend` arg. With
+        // the AnimTask ordering that makes it sample keys at ~weight (≈1) and
+        // EXTRAPOLATE by the song frame (e.g. 20000), which reads the camera
+        // rig's own local xfm and re-multiplies it every frame — cameras.grp
+        // (game.cam's ancestor) runs away to NaN, so every gem and the highway
+        // under game.cam projects to NaN and never renders.
+        //
+        // The blend weight is by definition in [0,1]; a value outside that range
+        // means the args arrived in AnimTask's (blend, frame) order, so swap them
+        // back to (frame, blend) before sampling. The property-sync path
+        // (SetFrame(mFrame, 1.0f)) keeps blend==1 and is left untouched.
+        if (blend < 0.0f || blend > 1.0f) {
+            float realFrame = blend;
+            float realBlend = (frame < 0.0f) ? 0.0f : (frame > 1.0f ? 1.0f : frame);
+            MakeTransform(realFrame, tf, false, realBlend);
+            mTrans->SetLocalXfm(tf);
+            return;
+        }
+#endif
         MakeTransform(frame, tf, false, blend);
         mTrans->SetLocalXfm(tf);
     }

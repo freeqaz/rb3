@@ -127,6 +127,13 @@ const char *BandUser::GetOvershellFocus() { return mOvershellFocus.c_str(); }
 
 void BandUser::SetTrackType(TrackType ty) {
     MILO_ASSERT(IsLocal(), 0xC1);
+#ifdef HX_NATIVE
+    static bool sK8 = !!getenv("K8_DBG");
+    if (sK8 && mTrackType != ty) {
+        MILO_LOG("K8_DBG: BandUser::SetTrackType user=%p %d -> %d\n",
+                 (void*)this, (int)mTrackType, (int)ty);
+    }
+#endif
     mTrackType = ty;
     UpdateData(1);
 }

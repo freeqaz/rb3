@@ -25,11 +25,13 @@
 #include "os/Joypad.h"
 #include "os/JoypadMsgs.h"
 #include "os/User.h"
+#include "game/BandUser.h"           // BandUser::SetTrackType
 #include "game/BandUserMgr.h"
 #include "game/Defines.h"
+#include "beatmatch/TrackType.h"     // SymToTrackType
 #include "meta_band/ProfileMgr.h"
-#include "meta_band/BandSongMgr.h"
-#include "obj/DataFile.h"
+#include "meta_band/MetaPerformer.h"   // SetBandNoFail (nofail directive)
+#include "os/ContentMgr.h"
 #include "os/System.h"
 #include "obj/Object.h"
 #include "obj/Data.h"
@@ -42,6 +44,7 @@
 #include <cctype>
 #include <string>
 #include <vector>
+#include <mutex>
 
 namespace {
 
@@ -75,12 +78,46 @@ struct ScriptedMsg {
     std::vector<std::string> args; // empty => default {action $user}
 };
 
+// K8: a "track:<sym>" directive sets the synth user's track type at the given
+// frame. Mirrors what OvershellSlot::SelectPart does on the real flow — without
+// it, Band::Band sees mTrackType=kTrackNone (sym=`none`) on every participating
+// user, so MetaPerformer::PartPlaysInSong(none)=false → every user is SKIPPED
+// → mActivePlayers stays empty → no gems, no scoring, no highway notes.
+// Sym is one of: guitar/bass/drum/vocals/keys/real_guitar/real_bass/real_keys.
+struct ScriptedTrack {
+    int frame;
+    std::string trackSym;
+};
+
+// A "nofail" directive enables band No-Fail at the given frame. Without it, a
+// headless demo run (no synthetic note input) drains the crowd meter and the
+// player gets booed off (~song 13s) — Player::CheckCrowdFailure ->
+// SetEnabledState(kPlayerDisabled) -> BandTrack::DisablePlayer ->
+// GemManager::SetGemsEnabled(-1), which makes GemManager::GetTypeForGem return
+// `invisible` for every gem from that point on, so the highway goes empty for
+// the rest of the song. No-Fail (MetaPerformer::SetBandNoFail) is the proper
+// retail switch that gates CheckCrowdFailure, keeping gems flowing.
+struct ScriptedNoFail {
+    int frame;
+};
+
 std::vector<ScriptedInput> gScript;
 std::vector<ScriptedSelect> gSelectScript;
 std::vector<ScriptedMsg> gMsgScript;
+std::vector<ScriptedTrack> gTrackScript;
+std::vector<ScriptedNoFail> gNoFailScript;
 bool gScriptParsed = false;
 Symbol gLastScreen;
 LocalUser *gSynthUser = nullptr;
+
+// HTTP-injected verbs (from rb3_http_server.cpp's /api/input). The HTTP handler
+// thread enqueues a raw verb string ("start", "confirm", "select:foo.btn",
+// "msg:obj:action[:arg]...", "track:guitar", "up"/"down"/...); the main-thread
+// RB3GameInputPoll drains + executes them frame-agnostically (they fire on the
+// next frame after injection, exactly like a scripted directive whose frame
+// matched). Reuses the same execution paths as the RB3_GAME_INPUT script.
+std::mutex gInjectMutex;
+std::vector<std::string> gPendingInject;
 
 JoypadAction ActionFromName(const std::string &name, JoypadButton &btnOut) {
     // Default the raw button to the nav d-pad equivalent so list nav (UIList)
@@ -126,6 +163,24 @@ void ParseScript() {
             ScriptedSelect ss = { frame, action.substr(7) };
             gSelectScript.push_back(ss);
             MILO_LOG("RB3 input: scheduled @%d -> select '%s'\n", frame, ss.button.c_str());
+            continue;
+        }
+        // "track:<sym>" directive — set the synth user's track type at the given
+        // frame so the gameplay-side Band::Band picks the user up as an active
+        // player. K8.
+        if (action.rfind("track:", 0) == 0) {
+            ScriptedTrack st = { frame, action.substr(6) };
+            gTrackScript.push_back(st);
+            MILO_LOG("RB3 input: scheduled @%d -> track '%s'\n", frame, st.trackSym.c_str());
+            continue;
+        }
+        // "nofail" directive — enable band No-Fail at frame F so an
+        // input-less demo run keeps its gems on the highway for the whole song
+        // (otherwise the player is booed off ~13s and gems go invisible).
+        if (action == "nofail") {
+            ScriptedNoFail nf = { frame };
+            gNoFailScript.push_back(nf);
+            MILO_LOG("RB3 input: scheduled @%d -> nofail\n", frame);
             continue;
         }
         // "msg:<object>:<action>[:arg]..." directive — send a message to a named
@@ -207,6 +262,171 @@ LocalUser *SynthUser() {
     return gSynthUser;
 }
 
+// === Verb execution helpers ================================================
+// Extracted from the per-frame script loops so both the RB3_GAME_INPUT script
+// AND the HTTP /api/input injection drive the SAME real engine paths. Each runs
+// on the main thread (script loop or RB3HttpServerPoll). `cur` is the current
+// UIScreen (may be null).
+
+void ExecMsg(const ScriptedMsg &m, UIScreen *cur) {
+    (void)cur;
+    LocalUser *user = SynthUser();
+    Hmx::Object *obj = ObjectDir::sMainDir
+        ? ObjectDir::sMainDir->FindObject(m.object.c_str(), true)
+        : nullptr;
+    if (!obj) {
+        MILO_LOG("RB3 input: msg target '%s' NOT FOUND\n", m.object.c_str());
+        return;
+    }
+    const std::vector<std::string> &args = m.args;
+    if (args.empty()) {
+        MILO_LOG("RB3 input: msg {%s %s $user}\n", m.object.c_str(), m.action.c_str());
+        Message msg(Symbol(m.action.c_str()), DataNode((Hmx::Object *)user));
+        obj->Handle(msg, true);
+    } else {
+        DataArray *da = new DataArray((int)args.size() + 2);
+        da->Node(1) = Symbol(m.action.c_str());
+        std::string argdump;
+        for (size_t k = 0; k < args.size(); ++k) {
+            const std::string &a = args[k];
+            if (a == "$user")
+                da->Node((int)k + 2) = DataNode((Hmx::Object *)user);
+            else if (!a.empty() &&
+                     (isdigit((unsigned char)a[0]) || (a[0] == '-' && a.size() > 1)))
+                da->Node((int)k + 2) = DataNode(atoi(a.c_str()));
+            else
+                da->Node((int)k + 2) = DataNode(Symbol(a.c_str()));
+            argdump += " " + a;
+        }
+        MILO_LOG("RB3 input: msg {%s %s%s}\n", m.object.c_str(), m.action.c_str(),
+                 argdump.c_str());
+        obj->Handle(da, true);
+        da->Release();
+    }
+}
+
+void ExecSelect(const std::string &button, UIScreen *cur) {
+    LocalUser *user = SynthUser();
+    UIComponent *comp = nullptr;
+    UIPanel *ownerPanel = nullptr;
+    if (cur) {
+        UIPanel *fp = cur->FocusPanel();
+        if (fp && fp->LoadedDir()) {
+            comp = fp->LoadedDir()->Find<UIComponent>(button.c_str(), false);
+            if (comp)
+                ownerPanel = fp;
+        }
+        if (!comp) {
+            const std::vector<PanelRef> &refs = cur->GetPanelRefs();
+            for (size_t r = 0; !comp && r < refs.size(); ++r) {
+                UIPanel *p = refs[r].mPanel;
+                if (p && p->LoadedDir()) {
+                    comp = p->LoadedDir()->Find<UIComponent>(button.c_str(), false);
+                    if (comp)
+                        ownerPanel = p;
+                }
+            }
+        }
+    }
+    if (comp) {
+        MILO_LOG("RB3 input: SELECT '%s' on screen '%s'\n", button.c_str(),
+                 cur ? cur->Name() : "(none)");
+        if (ownerPanel)
+            ownerPanel->SetFocusComponent(comp);
+        comp->SendSelect(user);
+    } else {
+        MILO_LOG("RB3 input: SELECT '%s' NOT FOUND on screen '%s'\n", button.c_str(),
+                 cur ? cur->Name() : "(none)");
+    }
+}
+
+void ExecTrack(const std::string &trackSym) {
+    LocalUser *user = SynthUser();
+    BandUser *bu = TheBandUserMgr ? TheBandUserMgr->GetBandUser(user) : nullptr;
+    if (bu) {
+        Symbol sym(trackSym.c_str());
+        TrackType ty = SymToTrackType(sym);
+        bu->SetTrackType(ty);
+        bu->SetDifficulty(kDifficultyExpert);
+        MILO_LOG("RB3 input: track set: user=%p sym='%s' -> TrackType=%d diff=expert "
+                 "(GetTrackSym='%s' IsFullyInGame=%d)\n",
+                 (void *)bu, sym.Str(), (int)ty, bu->GetTrackSym().Str(),
+                 (int)bu->IsFullyInGame());
+    } else {
+        MILO_LOG("RB3 input: track set FAILED: no BandUser for synth user\n");
+    }
+}
+
+void ExecNoFail() {
+    MetaPerformer *mp = MetaPerformer::Current();
+    if (mp) {
+        mp->SetBandNoFail(true);
+        MILO_LOG("RB3 input: nofail enabled -> IsNoFailActive=%d IsBandNoFailSet=%d\n",
+                 (int)mp->IsNoFailActive(), (int)mp->IsBandNoFailSet());
+    } else {
+        MILO_LOG("RB3 input: nofail FAILED: no MetaPerformer::Current()\n");
+    }
+}
+
+void ExecButton(JoypadAction action, JoypadButton button, UIScreen *cur) {
+    LocalUser *user = SynthUser();
+    ButtonDownMsg msg(user, button, action, 0);
+    const char *focusBtn = "(none)";
+    if (cur && cur->FocusPanel() && cur->FocusPanel()->FocusComponent())
+        focusBtn = cur->FocusPanel()->FocusComponent()->Name();
+    MILO_LOG("RB3 input: injecting action %d (button %d) on '%s' focus='%s'\n",
+             action, button, cur ? cur->Name() : "(none)", focusBtn);
+    TheUI.Handle(msg, false);
+}
+
+// Parse + execute a single verb string (the HTTP /api/input path). Mirrors the
+// RB3_GAME_INPUT token grammar, minus the "@frame:" prefix (HTTP verbs fire on
+// the next frame). Returns false (with *err set) on an unparseable verb.
+bool ExecVerb(const std::string &verb, UIScreen *cur, std::string *err) {
+    if (verb.rfind("select:", 0) == 0) {
+        ExecSelect(verb.substr(7), cur);
+        return true;
+    }
+    if (verb.rfind("track:", 0) == 0) {
+        ExecTrack(verb.substr(6));
+        return true;
+    }
+    if (verb == "nofail") {
+        ExecNoFail();
+        return true;
+    }
+    if (verb.rfind("msg:", 0) == 0) {
+        std::string rest = verb.substr(4);
+        std::vector<std::string> parts;
+        size_t p = 0;
+        while (p <= rest.size()) {
+            size_t c = rest.find(':', p);
+            if (c == std::string::npos) { parts.push_back(rest.substr(p)); break; }
+            parts.push_back(rest.substr(p, c - p));
+            p = c + 1;
+        }
+        if (parts.size() < 2) {
+            if (err) *err = "msg verb needs object:action";
+            return false;
+        }
+        ScriptedMsg sm;
+        sm.object = parts[0];
+        sm.action = parts[1];
+        for (size_t k = 2; k < parts.size(); ++k)
+            sm.args.push_back(parts[k]);
+        ExecMsg(sm, cur);
+        return true;
+    }
+    JoypadButton btn;
+    JoypadAction act = ActionFromName(verb, btn);
+    if (act == kAction_None) {
+        if (err) *err = "unknown verb '" + verb + "'";
+        return false;
+    }
+    ExecButton(act, btn, cur);
+    return true;
+}
+
 // === Native DTA-manager stubs (DTA_MANAGER_STUBS §4) =======================
 // Two boot-path managers live in subsystems excluded from the native link:
 //   - saveload_mgr (SaveLoadManager.cpp is _NATIVE_FORK_EXCLUDE'd — it is 2266
@@ -270,31 +490,22 @@ void RB3RegisterNativeManagerStubs() {
     // TimeCalibration), not a DTA/splash edit.
     TheProfileMgr.SetHasSeenFirstTimeCalibration(true);
 
-    // Populate TheSongMgr with the extracted song metadata. On console the songs
-    // come from a disc/content scan via TheContentMgr; that content pipeline isn't
-    // wired natively (WiiContentMgr is stubbed), so the song list would be empty
-    // and song-select reports "no valid songs". Load songs/songs.dta directly
-    // (the same file rb3-dta parses to 138 songs) and feed it through the real
-    // BandSongMgr::AddSongs path so the song-select list + Game::LoadSong flow see
-    // real songs. RB3_DATA roots the extract.
-    {
-        const char *dataRoot = getenv("RB3_DATA");
-        if (dataRoot) {
-            std::string songsPath = std::string(dataRoot) + "/songs/songs.dta";
-            DataArray *songs = DataReadFile(songsPath.c_str(), true);
-            if (songs) {
-                TheSongMgr.AddSongs(songs);
-                std::vector<int> ranked;
-                TheSongMgr.GetRankedSongs(ranked, false, false);
-                MILO_LOG("RB3 native: loaded songs.dta — TheSongMgr now has %d ranked songs\n",
-                         (int)ranked.size());
-                songs->Release();
-            } else {
-                MILO_LOG("RB3 native: could not load %s (song list will be empty)\n",
-                         songsPath.c_str());
-            }
-        }
-    }
+    // Trigger the real DTA-driven content refresh. On console this fires when a
+    // DTA handler sends `{content_mgr start_refresh}` (game.dta:348/376/446/483,
+    // main_hub.dta:102, meta_loading.dta:319, song_select.dta:1879, …) at boot;
+    // ContentMgr::PollRefresh then scans disc/NAND content sources, dispatches
+    // each .dta to its registered Callbacks (BandSongMgr is registered in
+    // BandSongMgr::Init), and settles at RefreshDone()=true. NativeContentMgr
+    // (rb3_platform_native.cpp) overrides StartRefresh() to do exactly that
+    // synchronously against `$RB3_DATA/songs/`: load songs.dta -> TheSongMgr.
+    // AddSongs (which fires ContentDone internally) -> dispatch ContentDone to
+    // every other registered Callback -> settle at kDiscoveryEnumerating. This
+    // call is the same one those DTA handlers eventually make (since this is
+    // the literal `start_refresh` entry point); kicking it once up front
+    // pre-warms TheSongMgr before any DTA gate polls `{content_mgr refresh_done}`,
+    // so song_select / meta_loading / part_difficulty all see a populated set.
+    if (TheContentMgr)
+        TheContentMgr->StartRefresh();
 }
 
 // Called once per frame from App::RunWithoutDebugging's native frame loop, AFTER
@@ -377,47 +588,9 @@ void RB3GameInputPoll(int frame) {
     for (size_t i = 0; i < gMsgScript.size(); i++) {
         if (gMsgScript[i].frame != frame)
             continue;
-        LocalUser *user = SynthUser();
-        Hmx::Object *obj = ObjectDir::sMainDir
-            ? ObjectDir::sMainDir->FindObject(gMsgScript[i].object.c_str(), true)
-            : nullptr;
-        if (obj) {
-            const std::vector<std::string> &args = gMsgScript[i].args;
-            if (args.empty()) {
-                MILO_LOG("RB3 input: frame %d  msg {%s %s $user}\n", frame,
-                         gMsgScript[i].object.c_str(), gMsgScript[i].action.c_str());
-                Message m(Symbol(gMsgScript[i].action.c_str()),
-                          DataNode((Hmx::Object *)user));
-                obj->Handle(m, true);
-            } else {
-                // Build {action arg arg ...} with literal args. mData->Node(0) is
-                // the message Symbol slot the handler macros skip; Node(1)=action,
-                // Node(2..)=args (matching Message's Node layout).
-                DataArray *da = new DataArray((int)args.size() + 2);
-                da->Node(1) = Symbol(gMsgScript[i].action.c_str());
-                std::string argdump;
-                for (size_t k = 0; k < args.size(); ++k) {
-                    const std::string &a = args[k];
-                    if (a == "$user")
-                        da->Node((int)k + 2) = DataNode((Hmx::Object *)user);
-                    else if (!a.empty() &&
-                             (isdigit((unsigned char)a[0]) ||
-                              (a[0] == '-' && a.size() > 1)))
-                        da->Node((int)k + 2) = DataNode(atoi(a.c_str()));
-                    else
-                        da->Node((int)k + 2) = DataNode(Symbol(a.c_str()));
-                    argdump += " " + a;
-                }
-                MILO_LOG("RB3 input: frame %d  msg {%s %s%s}\n", frame,
-                         gMsgScript[i].object.c_str(), gMsgScript[i].action.c_str(),
-                         argdump.c_str());
-                obj->Handle(da, true);
-                da->Release();
-            }
-        } else {
-            MILO_LOG("RB3 input: frame %d  msg target '%s' NOT FOUND\n", frame,
-                     gMsgScript[i].object.c_str());
-        }
+        MILO_LOG("RB3 input: frame %d  msg {%s %s}\n", frame,
+                 gMsgScript[i].object.c_str(), gMsgScript[i].action.c_str());
+        ExecMsg(gMsgScript[i], cur);
     }
 
     // "select:<button>" directives — drive the real SELECT_MSG on a named
@@ -427,61 +600,69 @@ void RB3GameInputPoll(int frame) {
     for (size_t i = 0; i < gSelectScript.size(); i++) {
         if (gSelectScript[i].frame != frame)
             continue;
-        LocalUser *user = SynthUser();
-        UIComponent *comp = nullptr;
-        UIPanel *ownerPanel = nullptr;
-        if (cur) {
-            UIPanel *fp = cur->FocusPanel();
-            if (fp && fp->LoadedDir()) {
-                comp = fp->LoadedDir()->Find<UIComponent>(gSelectScript[i].button.c_str(), false);
-                if (comp)
-                    ownerPanel = fp;
-            }
-            // Fall back: scan all panels of the current screen for the component.
-            if (!comp) {
-                const std::vector<PanelRef> &refs = cur->GetPanelRefs();
-                for (size_t r = 0; !comp && r < refs.size(); ++r) {
-                    UIPanel *p = refs[r].mPanel;
-                    if (p && p->LoadedDir()) {
-                        comp = p->LoadedDir()->Find<UIComponent>(
-                            gSelectScript[i].button.c_str(), false);
-                        if (comp)
-                            ownerPanel = p;
-                    }
-                }
-            }
-        }
-        if (comp) {
-            MILO_LOG("RB3 input: frame %d  SELECT '%s' on screen '%s'\n",
-                     frame, gSelectScript[i].button.c_str(),
-                     cur ? cur->Name() : "(none)");
-            // UIComponent::SendSelect only fires when the component is focused
-            // (mState == kFocused). Focus it through its owning panel first (the
-            // real `set_focus` path), then SendSelect (the real Confirm path).
-            if (ownerPanel)
-                ownerPanel->SetFocusComponent(comp);
-            comp->SendSelect(user);
-        } else {
-            MILO_LOG("RB3 input: frame %d  SELECT '%s' NOT FOUND on screen '%s'\n",
-                     frame, gSelectScript[i].button.c_str(),
-                     cur ? cur->Name() : "(none)");
-        }
+        MILO_LOG("RB3 input: frame %d  SELECT '%s'\n", frame,
+                 gSelectScript[i].button.c_str());
+        ExecSelect(gSelectScript[i].button, cur);
     }
 
-    if (gScript.empty())
-        return;
+    // "track:<sym>" directives — set the synth user's track type at frame F.
+    // Also force-set the difficulty (default Expert) so BandUser::IsFullyInGame()
+    // is true (it's gated on `unk_0xC`, which only SetDifficulty toggles to true).
+    // TrackPanel::CreateTracks filters users on `IsParticipating() &&
+    // IsFullyInGame()` — without a difficulty, the user is dropped from the
+    // track list, GemPlayer::HookupTrack hits its `MILO_ASSERT(mTrack, 0x890)`,
+    // and gameplay never renders gems.
+    for (size_t i = 0; i < gTrackScript.size(); i++) {
+        if (gTrackScript[i].frame != frame)
+            continue;
+        MILO_LOG("RB3 input: frame %d  track set '%s'\n", frame,
+                 gTrackScript[i].trackSym.c_str());
+        ExecTrack(gTrackScript[i].trackSym);
+    }
+
+    // "nofail" directives — enable band No-Fail at frame F.
+    for (size_t i = 0; i < gNoFailScript.size(); i++) {
+        if (gNoFailScript[i].frame != frame)
+            continue;
+        MILO_LOG("RB3 input: frame %d  nofail\n", frame);
+        ExecNoFail();
+    }
 
     for (size_t i = 0; i < gScript.size(); i++) {
         if (gScript[i].frame != frame)
             continue;
-        LocalUser *user = SynthUser();
-        ButtonDownMsg msg(user, gScript[i].button, gScript[i].action, 0);
-        const char *focusBtn = "(none)";
-        if (cur && cur->FocusPanel() && cur->FocusPanel()->FocusComponent())
-            focusBtn = cur->FocusPanel()->FocusComponent()->Name();
-        MILO_LOG("RB3 input: frame %d  injecting action %d (button %d) on '%s' focus='%s'\n",
-                 frame, gScript[i].action, gScript[i].button,
-                 cur ? cur->Name() : "(none)", focusBtn);
-        TheUI.Handle(msg, false);
+        MILO_LOG("RB3 input: frame %d  button action %d\n", frame, gScript[i].action);
+        ExecButton(gScript[i].action, gScript[i].button, cur);
     }
+
+    // HTTP-injected verbs (RB3HttpServer /api/input). Drain + execute on this
+    // (main) thread, frame-agnostic — each fires on the frame it is drained.
+    std::vector<std::string> inject;
+    {
+        std::lock_guard<std::mutex> lk(gInjectMutex);
+        inject.swap(gPendingInject);
+    }
+    for (const std::string &verb : inject) {
+        std::string err;
+        MILO_LOG("RB3 input: frame %d  HTTP verb '%s'\n", frame, verb.c_str());
+        if (!ExecVerb(verb, cur, &err))
+            MILO_LOG("RB3 input: HTTP verb rejected: %s\n", err.c_str());
+    }
+}
+
+// === HTTP /api/input bridge ================================================
+// Called from the HTTP handler thread: enqueue a raw verb string to fire on the
+// next main-thread RB3GameInputPoll. Thread-safe.
+void RB3GameInputInjectVerb(const std::string &verb) {
+    std::lock_guard<std::mutex> lk(gInjectMutex);
+    gPendingInject.push_back(verb);
+}
+
+// Execute a verb directly on the MAIN thread (called from RB3HttpServer's
+// command-queue HandleInput via RB3HttpServerPoll). Resolves CurrentScreen here
+// (main-thread-safe) and runs the real engine path immediately, returning a
+// synchronous ok/err to the HTTP handler. Returns false (+ *err) on a bad verb.
+bool RB3GameInputExecVerbMainThread(const std::string &verb, std::string *err) {
+    UIScreen *cur = TheUI.CurrentScreen();
+    return ExecVerb(verb, cur, err);
 }

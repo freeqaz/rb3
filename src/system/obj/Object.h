@@ -293,6 +293,17 @@ namespace Hmx {
         const DataArray *TypeDef() const { return mTypeDef; }
         const char *Name() const { return mName; }
         class ObjectDir *Dir() const { return mDir; }
+#ifdef HX_NATIVE
+        // Native-only setter for the inherited mDir pointer. Bypasses SetName's
+        // hash-table side-effects (RemoveFromDir + FindEntry(add=true)). Used
+        // by the WorldInstance proxy-instancing investigation
+        // (DIVERGENCE_AUDIT pattern #1, top hack #2 — see the long-form notes
+        // in world/Instance.cpp's IsDeferredVenueProxy() block) to experiment
+        // with parent-Dir wiring on shared inlined sub-dirs. Not currently
+        // exercised on the V1 boot path; kept here so a future shared-dir
+        // proxy-instancing fix has a tested seam.
+        void HxSetDir(class ObjectDir *dir) { mDir = dir; }
+#endif
         const std::vector<ObjRef *> &Refs() const { return mRefs; }
         Symbol Type() const {
             if (mTypeDef)

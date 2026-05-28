@@ -251,7 +251,14 @@ void VocalNoteList::NotesDone(const TempoMap &tmap, bool b) {
 
 void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
     for (unsigned int i = 0; mPhrases.size() != i; i++) {
+#ifdef HX_NATIVE
+        // libstdc++'s vector::iterator is a class type, not a raw pointer, so
+        // (a) we can't assign begin() + i to T*, and (b) vector::insert wants
+        // an iterator argument. Use indexed access + begin()+i for insert.
+        VocalPhrase *phrase = &mPhrases[i];
+#else
         VocalPhrase *phrase = mPhrases.begin() + i;
+#endif
         int prevEnd = 0;
         if (i != 0) {
             prevEnd = phrase[-1].unk8 + phrase[-1].unkc;
@@ -263,7 +270,11 @@ void VocalNoteList::DeterminePhraseTimes(const TempoMap &tmap) {
             newPhrase.unkc = (phrase->unk8 - prevEnd) - 0x280;
             VocalPhrase *insertPos = &mPhrases[i];
             newPhrase.mTambourinePhrase = insertPos[-1].mTambourinePhrase;
+#ifdef HX_NATIVE
+            mPhrases.insert(mPhrases.begin() + i, newPhrase);
+#else
             mPhrases.insert(insertPos, newPhrase);
+#endif
             i--;
         } else {
             phrase->unkc = phrase->unkc + (phrase->unk8 - prevEnd);
@@ -391,11 +402,31 @@ void VocalNoteList::GenerateLegalFreestyleSections(
     out.push_back(std::make_pair(sectionStart, 3.4028235E+38f));
 }
 
+#ifdef HX_NATIVE
+// libstdc++'s std::binder1st instantiates with both T& and const T& overloads,
+// which collapse to the same signature once T already carries a const-ref
+// qualifier — yielding an ambiguous-overload error. Use a small callable that
+// keeps the same call shape (`pred(section)`) the rest of this routine relies on.
+namespace {
+struct IsIllegalFreestylePred_HX {
+    DataArray *arr;
+    IsIllegalFreestylePred_HX(DataArray *a) : arr(a) {}
+    bool operator()(const std::pair<float, float> &s) const {
+        return VocalNoteList::IsIllegalFreestyleSection(arr, s);
+    }
+};
+} // namespace
+#endif
+
 void VocalNoteList::RemoveInvalidFreestyleSections() {
+#ifdef HX_NATIVE
+    IsIllegalFreestylePred_HX pred(mFreestyleMinDuration);
+#else
     std::binder1st<
         std::pointer_to_binary_function<
             DataArray *, const std::pair<float, float> &, bool> >
         pred(std::ptr_fun(IsIllegalFreestyleSection), mFreestyleMinDuration);
+#endif
     std::vector<std::pair<float, float> >::iterator first =
         mFreestyleSections.begin();
     std::vector<std::pair<float, float> >::iterator last =
@@ -459,6 +490,18 @@ VocalNote *VocalNoteList::NextNote(float ms) const {
         return NULL;
     std::vector<VocalNote>::const_iterator it =
         std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
+#ifdef HX_NATIVE
+    // libstdc++'s const_iterator is a wrapper class around the raw pointer, so
+    // C-style cast to T* is rejected. Recover the underlying pointer through
+    // &*it (and const_cast to match the original mutable return contract).
+    if (it == mNotes.begin())
+        return const_cast<VocalNote *>(&*it);
+    if (ms <= it[-1].GetDurationMs() + it[-1].GetMs())
+        return const_cast<VocalNote *>(&*(it - 1));
+    if (it == mNotes.end())
+        return NULL;
+    return const_cast<VocalNote *>(&*it);
+#else
     if (it == mNotes.begin())
         return (VocalNote *)it;
     if (ms <= it[-1].GetDurationMs() + it[-1].GetMs())
@@ -466,6 +509,7 @@ VocalNote *VocalNoteList::NextNote(float ms) const {
     if (it == mNotes.end())
         return NULL;
     return (VocalNote *)it;
+#endif
 }
 
 const VocalNote *VocalNoteList::NoteAt(float ms) const {

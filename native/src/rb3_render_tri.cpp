@@ -14,7 +14,8 @@
 #include "gfx/GpuDevice.h"
 #include "gfx/PipelineManager.h"
 #include "gfx/Screenshot.h"
-#include "rb3_gpu_uniforms.h"
+#include "gfx/UniformStructs.h"   // SceneUniforms/MaterialUniforms/ObjectUniforms/BoneUniforms
+#include "gfx/VertexFormats.h"    // GpuVertex (unpacked static vertex layout)
 
 #include <cstdio>
 #include <cstdlib>
@@ -23,9 +24,9 @@
 #include <webgpu/webgpu_cpp.h>
 
 // Note: the render pipeline takes its vertex layout from the engine's
-// VertexFormats::StaticLayout() (we provide that symbol in rb3_band_rnd.cpp,
-// since the engine's VertexFormats.cpp is excluded for RB3). The hand-built
-// triangle below just matches GpuVertexRB3's byte layout.
+// VertexFormats::StaticLayout() (the engine's rb3 backend, Rnd_Wgpu_RB3.cpp,
+// provides that symbol since the dc3 VertexFormats.cpp is off for RB3). The
+// hand-built triangle below just matches GpuVertex's byte layout.
 
 // Create a 1x1 RGBA texture filled with the given color.
 static wgpu::Texture MakeSolidTexture(GpuDevice& gpu, wgpu::TextureFormat fmt,
@@ -250,8 +251,8 @@ int RunRenderTri() {
     }
 
     // --- Vertex buffer: one triangle in clip space, bright vertex colors ---
-    GpuVertexRB3 verts[3] = {};
-    auto setV = [](GpuVertexRB3& v, float x, float y, float r, float g, float b) {
+    GpuVertex verts[3] = {};
+    auto setV = [](GpuVertex& v, float x, float y, float r, float g, float b) {
         v.pos[0] = x; v.pos[1] = y; v.pos[2] = 0.5f;
         v.norm[2] = 1.0f;
         v.color[0] = r; v.color[1] = g; v.color[2] = b; v.color[3] = 1.0f;

@@ -239,6 +239,15 @@ void CheatsInit() {
 
 void CheatsTerminate() {
     if (!gDisable) {
+#ifdef HX_NATIVE
+        // CheatsInit() is SKIPPED on native (System.cpp:724 — cheats.dta binds
+        // punctuation keys the lexer mis-parses, and cheats are irrelevant to
+        // boot/render). gDisable stays at its zero-init false, so this branch
+        // runs but gCheatsManager is null. The MILO_ASSERT would abort the
+        // shutdown path; bail when the symmetric Init didn't run.
+        if (!gCheatsManager)
+            return;
+#endif
         MILO_ASSERT(gCheatsManager, 0x2D0);
         JoypadUnsubscribe(gCheatsManager);
         KeyboardUnsubscribe(gCheatsManager);

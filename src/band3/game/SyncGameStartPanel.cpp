@@ -39,6 +39,16 @@ bool SyncGameStartPanel::CheckIsSynced() {
 
 void SyncGameStartPanel::PollIsSynced() {
     int state = mState;
+#ifdef HX_NATIVE
+    if (getenv("UISCREEN_DBG")) {
+        static int sLast = -1;
+        if (state != sLast) {
+            MILO_LOG("UISCREEN_DBG: SyncGameStartPanel::PollIsSynced mState=%d theGame=%p inLock=%d extBlock=%d\n",
+                     state, (void *)TheGame, (int)mLockStepMgr.InLock(), (int)mExternalBlock);
+            sLast = state;
+        }
+    }
+#endif
     if (state - 3U > 2) {
         switch (state) {
         case 0:

@@ -30,10 +30,24 @@ public:
     virtual void PlayIntro();
     virtual void Deploy();
     virtual void SetPlayerLocal(float);
+#ifdef HX_NATIVE
+    // V3 — clang/clang-LP64 treats empty-body non-void inline virtuals as
+    // undefined behavior and emits a ud2 (SIGILL) trap. RB3's matched-fork
+    // header uses these as "covariant return placeholders" relying on MWCC's
+    // bug-tolerant fallthrough. Provide a real return: VocalTrackDir IS-A
+    // RndDir IS-A ObjectDir, so `this` is the right self-pointer.
+    virtual ObjectDir *ThisDir() { return this; }
+    virtual ObjectDir *ThisDir() const { return const_cast<VocalTrackDir *>(this); }
+#else
     virtual ObjectDir *ThisDir() {}
     virtual ObjectDir *ThisDir() const {}
+#endif
     virtual void SpotlightPhraseSuccess();
+#ifdef HX_NATIVE
+    virtual VocalTrackDir *AsVocalTrackDir() { return this; }
+#else
     virtual VocalTrackDir *AsVocalTrackDir() {}
+#endif
     virtual RndDir *AsRndDir() { return AsVocalTrackDir(); }
     virtual void Reset();
     virtual void Retract(bool);

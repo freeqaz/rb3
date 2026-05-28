@@ -160,9 +160,16 @@ App::App(int argc, char **argv) {
     // native host, so mDiscErrorMgr is never constructed — skip activating it.
     ThePlatformMgr.mDiscErrorMgr->mActive = true;
 #endif
-#ifdef MILO_DEBUG
+#if defined(MILO_DEBUG) && !defined(HX_NATIVE)
     TheRnd->SetClearColor(Hmx::Color(1, 0, 0));
 #else
+    // Native always clears to black. The (1,0,0) MILO_DEBUG sentinel was
+    // useful when the rasterizer drew nothing — with V4's per-material
+    // alpha-blend mapping, transparent UI/text quads composite over the
+    // clear, so red bleeds through wherever the venue/skybox isn't drawing
+    // (cosmetic venue deferral). Black matches retail RB3's release-build
+    // path and renders gameplay frames as "highway over black void" rather
+    // than "highway over red void".
     TheRnd->SetClearColor(Hmx::Color(0, 0, 0));
 #endif
     TheRnd->Init();
@@ -486,18 +493,37 @@ void App::RunWithoutDebugging() {
     extern bool gDrawJmpBufSet;
     // Native synthetic-input driver + screen-flow trace (rb3_game_input.cpp).
     extern void RB3GameInputPoll(int frame);
+    // Embedded HTTP debug server (rb3_http_server.cpp). The Poll hooks are
+    // no-ops unless RB3_HTTP=1 started the server (TheRB3HttpServer != null), so
+    // a normal run is unaffected. ProcessCommands drains DTA-eval / input verbs
+    // on this (main) thread; ProcessScreenshots reads back AFTER EndDrawing.
+    extern void RB3HttpServerPoll(int frame);
+    extern void RB3HttpServerPollScreenshots();
+    // Start the HTTP debug server HERE (after the App ctor completed), not in
+    // RunGame() — mirrors dc3 App.cpp:1070. Starting its background thread during
+    // the heavy boot/ctor caused a boot-time SIGSEGV. No-op unless RB3_HTTP=1.
+    extern void RB3HttpServerInit();
+    extern void RB3HttpServerShutdown();
+    RB3HttpServerInit();
 
     int maxFrames = 5;
+    bool unbounded = false;
     if (const char *e = getenv("MILO_MAX_FRAMES")) {
         maxFrames = atoi(e);
         if (maxFrames <= 0) maxFrames = 5;
+    } else if (getenv("RB3_HTTP")) {
+        // HTTP keep-alive workflow: with the debug server on and no frame cap,
+        // run indefinitely so an external client can drive the live instance.
+        unbounded = true;
     }
-    MILO_LOG("RB3 Native: entering frame loop — %d frames\n", maxFrames);
+    MILO_LOG("RB3 Native: entering frame loop — %s\n",
+             unbounded ? "unbounded (RB3_HTTP keep-alive)" : "bounded");
 
-    for (int frame = 0; frame < maxFrames; frame++) {
+    for (int frame = 0; unbounded || frame < maxFrames; frame++) {
         SystemPoll(false);
         TheUI.Poll();
         RB3GameInputPoll(frame);
+        RB3HttpServerPoll(frame);
         TheTaskMgr.Poll();
         if (TheSynth)
             TheSynth->Poll();
@@ -514,9 +540,11 @@ void App::RunWithoutDebugging() {
         }
         if (TheRnd)
             TheRnd->EndDrawing();
+        RB3HttpServerPollScreenshots();
         MILO_LOG("RB3 Native: frame %d complete\n", frame);
     }
     MILO_LOG("RB3 Native: %d frames done — exiting frame loop\n", maxFrames);
+    RB3HttpServerShutdown();
     return;
 #endif
     Timer loop_timer;
