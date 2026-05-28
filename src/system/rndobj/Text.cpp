@@ -397,7 +397,7 @@ void RndText::SetAltStyle(
     mAltStyle.color = col ? *col : mStyle.color;
     mAltStyle.zOffset = z;
     mAltStyle.italics = italics;
-    unkbp5 = b;
+    unkbp4 = b;
     UpdateText(true);
 }
 
@@ -549,7 +549,7 @@ RndText::ParseMarkup(const char *cc, RndText::Style *style, float f3, float f4) 
         else
             style->brk = false;
     } else if (strnicmp(ptr, "alt", 3) == 0) {
-        if (b1 || !unkbp5) {
+        if (b1 || !unkbp4) {
             style->color = mStyle.color;
             style->size = f3;
             style->font = mFont;
