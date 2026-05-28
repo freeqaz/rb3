@@ -364,13 +364,13 @@ bool CheatsManager::OnMsg(const ButtonDownMsg &msg) {
                      jt != mLongJoyCheats.end(); ++jt) {
                     jt->unk8 = 0;
                 }
-                return 1;
+                goto done;
             }
         } else {
             it->unk8 = 0;
         }
     }
-
+    done:
     return 1;
 }
 
