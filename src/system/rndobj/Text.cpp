@@ -1145,9 +1145,13 @@ void RndText::UpdateMesh(RndFont *font) {
     MILO_ASSERT(mesh->Verts().size() >= meshInfo->displayableChars * 4, 0x6CF);
     mesh->SetMat(font->GetMat());
     CreateLines(font);
-    //   if (piVar7 != 0x0) {
-    //     (**(*piVar7 + 0xc))(piVar7,this_00);
-    //   }
+    if (unk128) {
+        struct _Callback {
+            virtual void _0() = 0;
+            virtual void Update(RndMesh *) = 0;
+        };
+        static_cast<_Callback *>(unk128)->Update(mesh);
+    }
     mesh->Sync(i8);
     meshInfo->syncFlags = 0;
 }

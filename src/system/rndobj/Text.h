@@ -208,7 +208,7 @@ public:
     int mDeferUpdate : 4; // 0x124
     int unk124b4 : 3; // bits 24-27
     int unk124b4p1 : 1; // ??? bits 23-24
-    int unk128; // 0x128 - actually a ptr to some class
+    void *unk128; // 0x128 - ptr to some callback interface (virtual slot 1)
     float unk12c; // 0x12c
     float unk130; // 0x130
 
