@@ -1117,7 +1117,7 @@ void VocalTrack::UpdateScrolling(float ms) {
         return;
     float trackScale = unk74;
     float trackWidth = unk78;
-    float lookAhead = 64.0f * trackScale + ms;
+    float lookAhead = 64.0 * trackScale + ms;
     float buildAhead =
         trackScale * ((mDir->mTrackLeftX - trackWidth) / trackWidth) + ms;
     if (mPlayer->IsNet()) {
@@ -1140,7 +1140,7 @@ void VocalTrack::UpdateScrolling(float ms) {
                 continue;
             int idx = mNextScrollNote[part];
             while (idx < notes->mNotes.size()) {
-                VocalNote &n = notes->mNotes[idx];
+                const VocalNote &n = notes->mNotes[idx];
                 if (!n.mUnpitchedNote) {
                     mNextScrollNote[part] = idx;
                 }
@@ -1197,7 +1197,7 @@ void VocalTrack::UpdateScrolling(float ms) {
     int phraseIdx = unk104;
     VocalNoteList *leadNotes = GetVocalNoteList(0);
     while (phraseIdx < leadNotes->mPhrases.size()) {
-        VocalPhrase &ph = leadNotes->mPhrases[phraseIdx];
+        const VocalPhrase &ph = leadNotes->mPhrases[phraseIdx];
         float phMs = ph.unk0 + ph.unk4;
         if (phMs < buildAhead
             || (sectionOnly && phMs < (sectionStart - 100.0f))) {
