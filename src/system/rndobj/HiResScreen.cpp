@@ -115,21 +115,19 @@ void HiResScreen::BmpCache::GetPixelColor(
 void HiResScreen::BmpCache::SetPixelColor(
     int x, int y, unsigned char r, unsigned char g, unsigned char b, unsigned char a
 ) {
-    unsigned int nLoadedStart, nLoadedEnd;
+    unsigned int nLoadedStart;
+    unsigned int nLoadedEnd;
     GetLoadedRange(nLoadedStart, nLoadedEnd);
     MILO_ASSERT(y >= nLoadedStart && y <= nLoadedEnd, 0xD1);
-    unsigned int yOffset = nLoadedEnd - y;
-    unsigned int offset = (yOffset * mPixelsPerRow + x) * 4;
     unsigned char newBuf[4];
+    unsigned int offset = ((nLoadedEnd - y) * mPixelsPerRow + x) * 4;
     newBuf[3] = a;
     newBuf[2] = r;
     newBuf[1] = g;
     newBuf[0] = b;
-    unsigned int newPixel = *(unsigned int *)newBuf;
     unsigned char *bufPtr = mBuffer + offset;
-    unsigned int oldPixel = *(unsigned int *)bufPtr;
-    if (newPixel != oldPixel) {
-        *(unsigned int *)bufPtr = newPixel;
+    if ((*(unsigned int *)newBuf) != (*(unsigned int *)bufPtr)) {
+        *(unsigned int *)bufPtr = (*(unsigned int *)newBuf);
         unsigned int dirtyStart = mDirtyStart;
         if (offset < dirtyStart) {
             dirtyStart = offset;
@@ -199,17 +197,15 @@ void HiResScreen::GetBorderForTile(
 void HiResScreen::CurrentTileRect(
     const Hmx::Rect &inRect, Hmx::Rect &outTileRect, Hmx::Rect &outAccumRect
 ) const {
-    int tile = mCurrTile;
-    int tiling = mTiling;
-    int tileY = tile / tiling;
-    int tileX = tile % tiling;
-    float invTiling = 1.0f / (float)tiling;
+    int tileX = mCurrTile % mTiling;
+    int tileY = mCurrTile / mTiling;
+    float invTiling = 1.0f / (float)mTiling;
     float tileXStart = (float)tileX * invTiling;
     float tileYStart = (float)tileY * invTiling;
     float xPlusW = inRect.x + inRect.w;
+    float tileYHeight = (float)tileY * invTiling + invTiling - tileYStart;
     float yPlusH = inRect.y + inRect.h;
     float tileXWidth = (float)tileX * invTiling + invTiling - tileXStart;
-    float tileYHeight = (float)tileY * invTiling + invTiling - tileYStart;
     float x0 = (inRect.x - tileXStart) / tileXWidth;
     x0 = Clamp(0.0f, 1.0f, x0);
     float y0 = (inRect.y - tileYStart) / tileYHeight;
@@ -295,10 +291,11 @@ void HiResScreen::Finish() {
 void HiResScreen::Merge(
     const RndBitmap &bm, int srcX, int srcY, int srcW, int srcH, int dstX, int dstY, int padX, int padY
 ) {
+    int yIter;
     int blendThreshX = dstX - padX;
     int blendThreshY = dstY - padY;
-    for (int i = 0, bmY = srcH; bmY < dstY; i++, bmY++) {
-        int yIter = srcY + i;
+    for (int i = 0.0f, bmY = srcH; bmY < dstY; i++, bmY++) {
+        yIter = srcY + i;
         mCache->LoadCache(yIter);
         for (int j = 0, bmX = srcW; bmX < dstX; j++, bmX++) {
             unsigned char r, g, b, a;
