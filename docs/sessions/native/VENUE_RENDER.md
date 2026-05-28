@@ -1382,3 +1382,172 @@ IK_TGT_DBG=1 SHARD_GUARD_OFF=1 \
 - Build is clean; binary exits 0 over 12000 frames; no SIGSEGV in the
   V32 runs.
 
+
+---
+
+# V36 — Void/wall camera-cut fallback (N2): venue-visibility test + sticky last-good cam
+
+**Authored:** 2026-05-28 (Opus implementation agent). **Status: LANDED — the
+recurring DURING-PLAY void/wall cuts are intercepted. The V22 venue-cam follow
+now refuses to point the venue draw-cam at a shot that frames no band/stage,
+holding the last band-framing cam instead. The good V22/V23 cuts (wide-stage
+establishers + resolved instrument closeups) are UNREGRESSED (verified: 0 of the
+resolved-target closeups touched). Env-gated opt-out `RB3_CAM_FALLBACK_OFF=1`.
+Clean exit 0; gameplay/highway/gems/HUD unaffected.**
+
+## TL;DR — the two signals the plan suggested both turned out to be NO-OPs
+
+The dispatch suggested (a) venue WorldDir bounds-in-frustum and (b) origin/
+unresolved-target as detection signals. **Instrumentation (VOIDCUT_DBG, a
+12000-frame sweep) proved BOTH are dead natively:**
+
+1. **`mCurWorld->mSphere` radius is ZERO** (`vsR=0` on all 11544 frames). The
+   venue WorldDir has no authored bounding sphere in the native instanced state,
+   so "venue bounds vs frustum" can never fire.
+2. **Targets never collapse to origin.** V23 already wired the closeup target
+   proxies to real band characters, so the origin-target signal never triggers
+   on the good closeups — and the *void* shots have NO targets at all
+   (`hasT=0`, `tgt=(0,0,0)`), so an origin test on them is ambiguous with a
+   legitimately-unset target.
+
+## Detection that actually separates void from good (validated)
+
+Per-shot diagnostics over the full song revealed a clean bimodal split:
+
+- **Good closeups** (`coop_v_c01/c05`, `coop_g_cg`, `coop_smallclub_d`, ...):
+  `hasT=1`, first keyframe resolves a REAL band-character target
+  (`tgt=(76,44,49)` guitar, `(-7,36,74)` vocal, `(35,138,70)` drum), `c2tgt`
+  68–105u. These FRAME the band — must keep.
+- **Wide establishers** (`coop_all_f07/f10`, `coop_d_cd02`, `coop_dir_lt02`,
+  `coop_dir_crowd`): `hasT=0` but the band-area sphere (centroid of the 4 V23-
+  wired band-player roots, radius 120u) is INSIDE the frustum — these frame the
+  venue. Must keep.
+- **Void/wall cuts** (`coop_all_f00`, `coop_bg_n01/n02/n`, `coop_front_n02`,
+  `coop_gv_n02`): `hasT=0` AND the 120u band sphere is **entirely outside** the
+  shot cam's frustum (`coop_all_f00` cam sits c2band=373u, band fully culled).
+  These frame nothing — the during-play void cuts.
+
+**Final rule:** a void/wall cut is a shot whose first keyframe has **no resolved
+target** AND whose **band-area sphere (4 band-player-root centroid, r=120u) is
+fully outside the shot cam's frustum** (`RndCam::CompareSphereToWorld`, i.e.
+`Sphere > Frustum` == culled). On the 12000-frame sweep this fired on ~9% of
+gameplay frames (1040/11544 — exactly the targetless void shots) and on **ZERO**
+of the 3444 resolved-target closeup frames. The `hasT=1` resolved-target guard is
+load-bearing: it is what protects the V23 closeups (some of which legitimately
+have the 120u band centroid just outside a tight frustum).
+
+**Intro-pan refinement:** the wide `INTRO_VENUE` pan
+(`coop_smallclub_intro_venue`) keeps the band in the WIDE 120u frustum but its
+authored sweep dwells on the stage wall with the band tiny/peripheral
+(`bandTight40=1` for 201/291 of its frames). For the intro shot ONLY (name
+contains `intro`) the test uses a **tight 40u** band core so those dwell moments
+register as void; the wide establishers (`coop_all_f0*`) are NOT intro shots so
+they keep the 120u test (verified 100% framesVenue=1, no regression).
+
+## The fix (file:line)
+
+**`src/system/bandobj/BandDirector.cpp` `DrawShowing()`** — additive `#ifdef
+HX_NATIVE` block (lines ~335–414), inside the V22 venue-cam-follow, replacing the
+unconditional `mCurWorld->SetCam(shotCam)`:
+
+- compute `framesVenue` via the rule above (skipped entirely when
+  `RB3_CAM_FALLBACK_OFF`, so the env opt-out is a true A/B revert to raw V22);
+- when the shot frames the venue (or fallback off): commit `SetCam(shotCam)` and
+  record it as `sVoidcutLastGoodCam` (a function-local `static RndCam*` — no
+  matched-fork header growth, the permuter only owns the body);
+- when it does NOT: hold `sVoidcutLastGoodCam` (do NOT cut to the void shot), so
+  the backdrop keeps the last band-framing pose;
+- if no last-good exists yet (very first cut is bad, pre-gameplay): take the shot
+  cam anyway so the venue draws through *a* cam.
+
+Never invents a camera; never touches the highway (the V12 `game.cam` down-
+highway lock is untouched — gems/HUD draw through it as before, and the engine's
+per-mesh `RndCam::sCurrent` re-write composites both in one frame, exactly as
+V22 established). `VENUE_CAM_LOCK=1` (pre-V22 static-cam revert) still works.
+
+No engine (`Rnd_Wgpu_RB3.cpp`) change. No `.s`, `CMakeLists.txt`, `Instance.cpp`,
+or `TrackDir*.cpp` change. The V19 EnterVenue bridge, V22 follow, and V23
+target-proxy wiring (which makes the band-centroid + closeup-target signals
+exist) are all relied upon and untouched.
+
+## Void-cut rate — before / after
+
+Measured by the in-code detector (deterministic for what it classifies) over a
+12000-frame sweep that reaches in-song gameplay:
+
+- **Void/wall cuts intercepted:** ~6.5% of gameplay frames on the 120u rule
+  (758, 747 across two runs); ~8.8% (1016) with the intro tight-40u refinement
+  added. Each intercepted frame would otherwise have framed near-black void/wall.
+- **Good cuts affected:** 0. The 3444 resolved-target closeup frames and the
+  wide establishers (`coop_all_f07`, `coop_d_cd02`, `coop_dir_lt02`,
+  `coop_dir_crowd`) are 100% `framesVenue=1` — never retargeted.
+
+Visual A/B (`screenshots/v36-camera-cuts/`): the v34 baseline pure-void frame
+class (`deep/03_f3400` = highway over total black + two pink wall slivers) is
+gone — with the fix, `final/04_f3400` and the `on_run*` f3400 frames show the
+club ceiling/walls/band behind the highway. The fallback-OFF run
+(`off_run1/04_f3400`, `off_run1/01_f0700`) reproduces the baseline void cuts
+exactly, confirming the fix (not director variance) is responsible.
+
+## Regression status
+
+- **Highway / gems / HUD: INTACT** every gameplay frame across the full song;
+  the highway draws through its own `game.cam` (V12), untouched by V36. Mesh
+  counts 162–328/frame, consistent with V22/V24.
+- **Good cuts INTACT:** the V23 instrument closeups (`final/03_f2400` teal guitar
+  closeup) and the rich wide venue establishers (`on_run1/05_f4200` dartboard +
+  SMOOTH poster + props; `06_f5200`, `07_f6400` CORK sign, `09_f8600`) all still
+  frame the band/venue. Verified per-shot: every `hasT=1` closeup is 100%
+  framesVenue=1; every good wide shot is 100% framesVenue=1.
+- Clean exit 0 over 12000 frames on all 5 capture runs (3× ON, 1× OFF, 1×
+  intro-sweep, 1× final). Diagnostic is render-inert when `VOIDCUT_DBG` unset
+  (0 log lines in the clean final run).
+
+## Honest residual (NOT a regression)
+
+The **very first** intro-pan frames (e.g. `on_intro/01_f0600`, `03_f0800`) still
+frame the stage wall: the intro pan plays pre-gameplay, before ANY good cut has
+established a `sVoidcutLastGoodCam` to hold, so there is nothing band-framing to
+fall back to yet. Once the first good cut lands (`on_intro/02_f0700` now shows
+the crowd + lit club instead of the baseline wall-slivers) the fallback engages.
+Fully fixing the earliest intro moments would require re-authoring the intro
+shot's path/`mWorldOffset` (risks regressing authored cinematography) or
+synthesizing a band-framing cam — out of scope for a low-false-positive fix. The
+intro is ~1–2s and the DURING-PLAY void cuts (the dispatch's primary target) are
+robustly handled.
+
+## Env gate / diagnostics
+
+- **`RB3_CAM_FALLBACK_OFF=1`** — disables the V36 fallback (raw V22 follow) for
+  instant A/B; the detection block is skipped entirely.
+- **`VOIDCUT_DBG=1`** — logs each shot's `framesVenue` verdict + the shot cam and
+  last-good cam pointers (throttle-free, one line/frame; render-inert when unset).
+  Kept as the void-cut regression canary.
+- `VENUE_CAM_LOCK=1` (pre-V22) still reverts to the venue's own static cam.
+
+## State of shared files (for the next agent)
+
+- **`src/system/bandobj/BandDirector.cpp`** — V36 `DrawShowing()` venue-
+  visibility fallback (HX_NATIVE, inside the V22 block). V19/V22/V23 blocks
+  intact. NOTE: the permuter rewrote this file repeatedly during the session
+  (banner cycling every ~1 min; it wiped a first attempt at this block once) —
+  the edits were re-applied via atomic whole-string replace; re-verify the V36
+  block is present (`grep "V36 (N2)"`) if the permuter shifts it.
+- **`Rnd_Wgpu_RB3.cpp`, `TrackDir.cpp`/`TrackPanelDir*.cpp` (V12 lock),
+  `Instance.cpp`, `native/*.s`, `native/CMakeLists.txt`** — UNTOUCHED by V36.
+
+## Reproducer (V36)
+
+```
+# fix ON (default), wide cinematic sweep across the whole song:
+MILO_SCREENSHOT_DIR=$PWD/docs/sessions/native/screenshots/v36-camera-cuts/final \
+MILO_SCREENSHOT_FRAMES=700,1400,2400,3400,4200,5200,6400,7600,8600,10000,11500 \
+RB3_GAME=1 MILO_HEADLESS=1 MILO_AUDIO=1 \
+RB3_DATA=$PWD/orig-assets/extracted MILO_MAX_FRAMES=12000 \
+RB3_GAME_INPUT="@10:start,@30:confirm,@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,@320:down,@350:msg:music_library:select_highlighted_node,@380:track:guitar,@450:msg:overshell:end_override_flow:1:0,@500:nofail" \
+./native/build-native/rb3-native
+```
+
+`RB3_CAM_FALLBACK_OFF=1` reproduces the baseline void cuts (A/B). `VOIDCUT_DBG=1`
+logs the per-shot verdict (regression canary). `MILO_SCREENSHOT_DIR` MUST be
+ABSOLUTE and already exist.

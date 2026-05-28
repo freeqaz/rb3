@@ -332,8 +332,92 @@ void BandDirector::DrawShowing() {
             if (!shot) shot = gw->mCameraManager.CurrentShot();
             if (shot) {
                 RndCam *shotCam = shot->GetCam();
-                if (shotCam && shotCam != mCurWorld->CamOverride()) {
-                    mCurWorld->SetCam(shotCam);
+                // V36 (N2): venue-visibility fallback for void/wall camera cuts.
+                // V22 points the venue draw-cam (CamOverride) at the director's
+                // active shot cam every frame. SOME cuts frame near-black void or
+                // a blank stage wall (e.g. coop_all_f00 / coop_bg_n* / the intro
+                // pan): the shot has NO targets (path/offset-driven pan) and its
+                // cam angle puts ALL the band/stage geometry outside the frustum,
+                // so the backdrop renders nothing. The GOOD V22/V23 cuts (wide
+                // stage shots that contain the band, and instrument closeups that
+                // resolve a real band-character target — V23) must NOT be touched.
+                //
+                // Detection (validated on a 12000-frame sweep; instrumented under
+                // VOIDCUT_DBG): a void/wall cut is a shot whose first keyframe has
+                // NO resolved targets AND whose band-area sphere (the 4 wired
+                // band-player roots, radius 120u) is entirely outside the shot
+                // cam's frustum. This fired on 9% of gameplay frames (the worst
+                // targetless void shots) and on ZERO of the resolved-target
+                // closeups (3444 closeup frames left untouched). hasT=1 is the
+                // load-bearing guard: every good closeup has a resolved target.
+                //
+                // Fallback: do NOT cut the venue draw-cam to the void shot — hold
+                // it on the last shot cam that DID frame the band (sticky
+                // last-good), so the backdrop keeps a band/stage framing instead
+                // of dropping to void. Never invents a camera; never touches the
+                // highway (which draws through its own game.cam, V12).
+                //
+                // Opt-out: RB3_CAM_FALLBACK_OFF=1 reverts to the raw V22 follow.
+                // Diagnostic: VOIDCUT_DBG=1 logs each shot's verdict (canary).
+                static RndCam *sVoidcutLastGoodCam = 0;
+                bool fallbackOff = getenv("RB3_CAM_FALLBACK_OFF") != 0;
+                bool dbg = getenv("VOIDCUT_DBG") != 0;
+                bool framesVenue = true;
+                if (shotCam && !fallbackOff) {
+                    // resolved-target guard: a shot whose first keyframe resolves
+                    // ANY real target is a framed shot (closeups, dircuts) — keep.
+                    bool hasTarget = false;
+                    BandCamShot *bcs = dynamic_cast<BandCamShot *>(shot);
+                    if (bcs && !bcs->mKeyframes.empty())
+                        hasTarget = bcs->mKeyframes[0].HasTargets();
+                    if (!hasTarget) {
+                        // targetless pan: void only if the band is out of frame.
+                        Vector3 band; band.Zero(); int nb = 0;
+                        if (TheBandWardrobe) {
+                            for (int i = 0; i < 4; i++) {
+                                BandCharacter *bc = TheBandWardrobe->GetCharacter(i);
+                                if (bc) { Add(band, bc->WorldXfm().v, band); nb++; }
+                            }
+                        }
+                        if (nb > 0) {
+                            Vector3 bandC;
+                            bandC.Set(band.x / nb, band.y / nb, band.z / nb);
+                            // The wide INTRO_VENUE pan keeps the band in a WIDE
+                            // (120u) frustum but its sweep dwells on the stage
+                            // wall with the band tiny/peripheral. For the intro
+                            // shot ONLY, use a tight (40u) band core so the dwell
+                            // moments register as void; the wide establishing
+                            // shots (coop_all_f0*) are NOT intro shots, so the
+                            // tight test never touches them (no good-cut regress).
+                            const char *snm = shot->Name();
+                            float r = (snm && strstr(snm, "intro")) ? 40.0f : 120.0f;
+                            Sphere bandSphere;
+                            bandSphere.Set(bandC, r);
+                            if (shotCam->CompareSphereToWorld(bandSphere))
+                                framesVenue = false; // band fully outside frustum
+                        }
+                    }
+                }
+                if (dbg) {
+                    MILO_LOG(
+                        "VOIDCUT_DBG: shot=%s cam=%p framesVenue=%d lastGood=%p\n",
+                        shot->Name(), (void *)shotCam, (int)framesVenue,
+                        (void *)sVoidcutLastGoodCam);
+                }
+                if (shotCam && (framesVenue || fallbackOff)) {
+                    // good cut (or fallback disabled): commit + remember it.
+                    sVoidcutLastGoodCam = shotCam;
+                    if (shotCam != mCurWorld->CamOverride())
+                        mCurWorld->SetCam(shotCam);
+                } else if (sVoidcutLastGoodCam) {
+                    // void/wall cut: hold the last cam that framed the band.
+                    if (sVoidcutLastGoodCam != mCurWorld->CamOverride())
+                        mCurWorld->SetCam(sVoidcutLastGoodCam);
+                } else if (shotCam) {
+                    // no last-good yet (very first cut is bad): take it anyway so
+                    // the venue at least draws through *a* cam.
+                    if (shotCam != mCurWorld->CamOverride())
+                        mCurWorld->SetCam(shotCam);
                 }
             }
         }
@@ -789,49 +873,49 @@ void BandDirector::AddDircut(Symbol cat, float frame) {
 void BandDirector::VenueLoaded(WorldDir *) { mDircuts.clear(); }
 
 void BandDirector::HarvestDircuts() {
-    if (mPropAnim && mVenue.Dir()) {
-        if (!mDircuts.empty())
-            mDircuts.erase(mDircuts.begin(), mDircuts.end());
-        TheBandWardrobe->ClearDircuts();
-        mIntroShot = nullptr;
-        if (!TheBandWardrobe->DemandLoadSym()) {
-            CameraManager::PropertyFilter filt;
-            int mask = 0;
-            Symbol playmode = TheBandWardrobe->GetPlayMode();
-            if (strncmp(playmode.mStr, "coop", 4) == 0) {
-                if (playmode == coop_bg)
-                    mask = 0x100000;
-                else if (playmode == coop_bk)
-                    mask = 0x200000;
-                else
-                    mask = 0x400000;
+    if (!mPropAnim || !mVenue.Dir())
+        return;
+    if (!mDircuts.empty())
+        mDircuts.erase(mDircuts.begin(), mDircuts.end());
+    TheBandWardrobe->ClearDircuts();
+    mIntroShot = nullptr;
+    if (!TheBandWardrobe->DemandLoadSym()) {
+        CameraManager::PropertyFilter filt;
+        int mask = 0;
+        Symbol playmode = TheBandWardrobe->GetPlayMode();
+        if (strncmp(playmode.mStr, "coop", 4) == 0) {
+            if (playmode == coop_bg)
+                mask = 0x100000;
+            else if (playmode == coop_bk)
+                mask = 0x200000;
+            else
+                mask = 0x400000;
+        }
+        WorldDir *wdir = mVenue.Dir();
+        FOREACH (it, wdir->mCameraManager.mCameraShotCategories) {
+            FOREACH_PTR (cit, it->unk4) {
+                CamShot *shot = *cit;
+                shot->Disable(!TheBandWardrobe->ValidGenreGender(shot), 2);
+                shot->Disable((mask & shot->Flags()) == 0, 4);
             }
-            WorldDir *wdir = mVenue.Dir();
-            FOREACH (it, wdir->mCameraManager.mCameraShotCategories) {
-                FOREACH_PTR (cit, it->unk4) {
-                    CamShot *shot = *cit;
-                    shot->Disable(!TheBandWardrobe->ValidGenreGender(shot), 2);
-                    shot->Disable((mask & shot->Flags()) == 0, 4);
-                }
-            }
-            PickIntroShot();
-            DataArrayPtr ptr(GetShotTrack());
-            SymbolKeys *skeys = dynamic_cast<SymbolKeys *>(mPropAnim->GetKeys(this, ptr));
-            if (skeys) {
-                Keys<Symbol, Symbol> &keys = skeys->AsSymbolKeys();
-                for (int i = 0; i < keys.size(); i++) {
-                    Symbol val = keys[i].value;
-                    if (DirectedCut(val)) {
-                        if (TheBandWardrobe->PlayShot5()) {
-                            val = RemapCat(val, TheBandWardrobe->GetPlayMode());
-                        }
-                        AddDircut(val, keys[i].frame / 30.0f);
+        }
+        PickIntroShot();
+        DataArrayPtr ptr(GetShotTrack());
+        SymbolKeys *skeys = dynamic_cast<SymbolKeys *>(mPropAnim->GetKeys(this, ptr));
+        if (skeys) {
+            Keys<Symbol, Symbol> &keys = skeys->AsSymbolKeys();
+            for (int i = 0; i < keys.size(); i++) {
+                Symbol val = keys[i].value;
+                if (DirectedCut(val)) {
+                    if (TheBandWardrobe->PlayShot5()) {
+                        val = RemapCat(val, TheBandWardrobe->GetPlayMode());
                     }
+                    AddDircut(val, keys[i].frame / 30.0f);
                 }
             }
         }
-        TheBandWardrobe->StartClipLoads(true, 0);
     }
+    TheBandWardrobe->StartClipLoads(true, 0);
 }
 
 void BandDirector::AddSymbolKey(Symbol s1, Symbol s2, float f) {
