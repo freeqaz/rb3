@@ -1256,8 +1256,10 @@ int RndText::NumCharsInBytes(
     while (s4 < len) {
         unsigned short us;
         int decoded = DecodeUTF8(us, str.c_str() + s4);
-        if (i4 > -1 && s4 + decoded > i4)
-            break;
+        if (i4 > -1 && s4 + decoded > i4) {
+            len = s4;
+            goto done;
+        }
         RndFont *support = SupportChar(us, mFont);
         if ((us == 0x20 || us == 9 || us == 10) && len > 0) {
             i5++;
@@ -1270,8 +1272,9 @@ int RndText::NumCharsInBytes(
         }
         s4 += decoded;
     }
+done:
     fref += f8;
-    return s4 - i5;
+    return len - i5;
 }
 
 void RndText::ApplyLineText(
