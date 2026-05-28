@@ -212,15 +212,15 @@ void RndMeshDeform::Print() {
     TheDebug << "mesh_inverse " << mMeshInverse << "\n";
     TheDebug << "skip_inverse " << mSkipInverse << "\n";
     TheDebug << "mesh " << mMesh.Ptr() << "\n";
-    for (unsigned int i = 0; i < mBones.size(); i++) {
+    for (int i = 0; i < mBones.size(); i++) {
         BoneDesc &cur = mBones[i];
         TheDebug << "bone" << (int)i << ":\n";
         TheDebug << "   " << cur.mBone.Ptr() << "\n";
         TheDebug << "   " << cur.unk14 << "\n";
         TheDebug << "   " << cur.unk54 << "\n";
     }
-    int idx = 0;
     u8 *cData = (u8 *)mVerts.mData;
+    int idx = 0;
     while (cData < (u8 *)mVerts.mData + mVerts.mSize) {
         TheDebug << "weights" << idx << ": ";
         u8 *p = cData + 1;
@@ -296,7 +296,7 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
         MemDoTempAllocations mem(1, 0);
         xfms.resize(mBones.size());
     }
-    for (unsigned int i = 0; i < mBones.size(); i++) {
+    for (int i = 0; i < mBones.size(); i++) {
         if (mBones[i].mBone) {
             Transform tmp;
             mBones[i].ExportWorldXfm(tmp);
@@ -306,9 +306,9 @@ void RndMeshDeform::Reskin(SyncMeshCB *cb, bool force) {
             TheDebug << MakeString("%s null bone %d\n", PathName(this), (int)i);
         }
     }
+    int vertIdx = 0;
     int meshNumVerts = mMesh->Verts().size();
     u8 *vertData = (u8 *)mVerts.mData;
-    int vertIdx = 0;
     while (vertData < (u8 *)mVerts.mData + mVerts.mSize) {
         if (vertIdx == meshNumVerts) {
             TheDebug.Notify(MakeString(
