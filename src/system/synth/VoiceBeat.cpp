@@ -28,24 +28,24 @@ void VoiceBeat::Analyze(
             / (double)numSamples;
     }
 
-    double k_a0 = 2666.171709;
-    double k_a1 = -0.9459779362;
-    double k_a2 = 1.9444776578;
-    double k_b0 = 143.5132541;
-    double k_b2 = 1.7041197124;
+    double k_thrEnergy = 0.3;
     double k_c0 = 1.178584698;
+    double k_floorRise = 0.001;
+    double k_c5 = 3.6717290892;
+    double k_c4 = -5.0679983867;
+    double k_b0 = 143.5132541;
+    double k_a0 = 2666.171709;
     double k_c1 = 6.0;
     double k_c2 = -0.7199103273;
-    double k_c4 = -5.0679983867;
-    double k_c5 = 3.6717290892;
-    double k_envFast = 0.03;
-    double k_envSyl = 0.08;
-    double k_floorRise = 0.001;
-    double k_msPerSample = 0.0625f;
+    double k_b2 = 1.7041197124;
     double k_thrSpam = 0.35;
-    double k_thrEnergy = 0.3;
+    double k_envFast = 0.03;
+    double k_a2 = 1.9444776578;
+    double k_a1 = -0.9459779362;
+    double k_msPerSample = 0.0625f;
+    double k_envSyl = 0.08;
 
-    for (int i = 0; i < numSamples; i++) {
+    for (int i = 0.0f; i < numSamples; i++) {
         if (useWindow) {
             *samples *= (float)sin(3.1415927410125732 * ((double)i / (double)numSamples));
         }
@@ -75,7 +75,8 @@ void VoiceBeat::Analyze(
         double newYV = 2.4013168963 * oldYV4
             + (-2.0287939898 * oldYV3
                + (0.7561945957 * oldYV2
-                  + (-0.1330748863 * oldYV1 + -(2.0 * oldXV3 - (oldXV1 + newXV)))));
+                  + (-0.1330748863 * oldYV1 + (2.0 * oldXV3 - (oldXV1 + newXV)))));
+        newYV = -newYV;
         mYVVoice[4] = newYV;
 
         double absYV = fabs(newYV);
