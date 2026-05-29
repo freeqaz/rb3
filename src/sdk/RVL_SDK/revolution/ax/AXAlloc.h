@@ -5,6 +5,5 @@
 
 void __AXAllocInit();
 void __AXAllocQuit();
-void __AXServiceCallbackStack();
 
 #endif
