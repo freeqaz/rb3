@@ -784,4 +784,60 @@ endif()
 # rb3-web does not link cpp-httplib / ZLIB / Threads explicitly — the engine
 # helper supplies USE_ZLIB / USE_OGG / USE_VORBIS via Emscripten ports.
 
+# ============================================================================
+# W4a — size-optimised release build. Default OFF (dev keeps -O0 / -g2 for
+# debug-friendly stack traces); release mode (`scripts/web/build.sh --release`)
+# strips debug info (`-g0`) for the main size win and exposes opt-in knobs:
+#   RB3_WEB_OPT_LEVEL=Oz/Os/O3/O2/O1   — see RB3_WEB_OPT_LEVEL block below;
+#                                        currently BROKEN, defaults to O0
+#   RB3_WEB_CLOSURE=ON                  — also BROKEN, see comment below
+#
+# Order matters in emcc: later -O / -g override earlier ones, so we append to
+# both compile and link. The engine helper's -g2 stays in the command but is
+# overridden by our -g0 appended later. Same for the implicit -O0.
+#
+# `--closure 1` minifies the JS glue. The matched-fork ships a runtime
+# abort-stub patcher in native/web/rb3_pre.js that walks env.* by name and
+# rewrites function bodies whose source contains "missing function". Closure
+# minifies the import names, breaking the source-string match — the patch
+# replaces 0 stubs and boot crashes on the first missing-stub call with
+# `unreachable`. Until rb3_pre.js learns to walk the unminified import map
+# (or closure is configured with --externs for the env imports), keep it off.
+# ============================================================================
+option(RB3_WEB_RELEASE "Size-optimised release build (strip debug info)" OFF)
+option(RB3_WEB_CLOSURE "Run --closure 1 on the JS glue (BROKEN — see comment)" OFF)
+# RB3_WEB_OPT_LEVEL controls the compile/link -O level when RB3_WEB_RELEASE
+# is ON.
+#
+# W4a investigation: ANY -O>0 (-O1, -Os, -Oz, -O3) currently throws an
+# uncaught exception during App construction, right after the missing-stub
+# returns from `SystemConfig(Symbol)`. The matched-fork is brittle to
+# optimizer-driven null-pointer / exception-edge codegen — same class of
+# issue as the W3 missing-stub work. Reproducing the symptom: build with
+# `--release --opt O1` then run smoke; you'll see "boot error — exception
+# during App construction" in the console.
+#
+# Until that's fixed, the default is `O0` — i.e. no -O change vs dev mode.
+# -g0 alone (debug-info stripping) is the major size win that's safe.
+#
+# When the matched-fork is stable at -Os/-Oz, flip the default here.
+set(RB3_WEB_OPT_LEVEL "O0" CACHE STRING
+    "emcc -O level for rb3-web release builds (O0/Oz/Os/O3/O2/O1)")
+set_property(CACHE RB3_WEB_OPT_LEVEL PROPERTY STRINGS O0 Oz Os O3 O2 O1)
+if(RB3_WEB_RELEASE)
+    message(STATUS "rb3-web: RELEASE strip + opt build (-${RB3_WEB_OPT_LEVEL} -g0)")
+    target_compile_options(rb3-web PRIVATE -${RB3_WEB_OPT_LEVEL} -g0)
+    target_link_options(rb3-web PRIVATE
+        -${RB3_WEB_OPT_LEVEL}
+        -g0
+        # NOTE: deliberately leave -sASSERTIONS=1 and -sSTACK_OVERFLOW_CHECK=2
+        # from the engine helper in place — the matched-fork's missing-stubs
+        # surface relies on the runtime abort-patch hooks they install.
+    )
+    if(RB3_WEB_CLOSURE)
+        message(STATUS "rb3-web: --closure 1 enabled (verify exports post-link)")
+        target_link_options(rb3-web PRIVATE --closure 1)
+    endif()
+endif()
+
 endif() # EMSCRIPTEN
