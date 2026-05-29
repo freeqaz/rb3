@@ -1692,3 +1692,261 @@ the bone-uniform scale, or gate on per-triangle edge-stretch rather than whole-
 mesh ratio); and (b) the visible shards need the CharFaceServo / hand-servo
 skeleton to pose the face/finger servo bones faithfully — a character-rig task,
 not a one-line fork fix.
+
+---
+
+# V39 — Implemented thread (a): uniform-scale-normalized ratio-guard. CROWD_GUARD_PLAN premise REFUTED by runtime data (net behavioral no-op; correct as-is).
+
+Implemented exactly what `CROWD_GUARD_PLAN.md` (N5b) specified: normalize the V24
+bind-vs-world AABB ratio by the median per-bone uniform world scale, plus an
+additive per-bone determinant-dispersion gate. Then **ran the game** (the plan was
+authored read-only, no run) with `SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1`. The runtime
+numbers **falsify the plan's core hypothesis** and show the new metric is a measured
+no-op. Documented honestly below; the change is kept because it is strictly *more
+correct* (proper scale-normalized metric + the instrumentation that proved this) and
+carries zero regression risk, but it is **NOT** the crowd-body rescue the plan
+expected — that rescue is mathematically impossible because the bodies are genuinely
+exploding, not benignly squashed.
+
+## The metric change (file:line)
+
+- **File (engine):** `.private-engine/src/platform/Rnd_Wgpu_RB3.cpp` (in the main
+  engine: `milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp`).
+- Added `Det3ColMajor(const float*)` helper (~L135) — det of the column-major
+  skin-matrix 3×3 basis.
+- In the V24 guard's vertex blend loop (~L1431-1453) now also records
+  `bool boneUsed[kMaxBones]` for every bone a sampled vert weights to (w>0.01).
+- After the loop (~L1456-1478): for each contributing bone compute
+  `|det(boneBasis)|`; `sUni = median(cbrt(|det|))`, `maxDet = max|det|`,
+  `medDet = median|det|`, `disp = maxDet/medDet`.
+- **Metric (was L1472):**
+  - OLD: `degenerate = (wext>15) && (lext>0.001) && (wext > 2.0*lext)`
+  - NEW: `ratioNorm = wext / (lext*sUni)`;
+    `degenerate = (wext>15) && (lext>0.001) && (ratioNorm > 2.0 || disp > 4.0)`
+- `SHARD_RATIO_DBG` log line (~L1481) extended to print
+  `sUni / ratioNorm / maxDet / medDet / disp`; `SHARD_DBG` drop line likewise.
+
+## What the runtime data actually shows (plan hypothesis REFUTED)
+
+Per-mesh `SHARD_RATIO` for the false-positive bodies the plan wanted to rescue
+(`female_crowd_body02`, `male_crowd_body01`), 600-frame reproducer:
+
+| state | bindExt | worldExt | raw ratio | maxDet/sUni | ratioNorm | disp | guard |
+|---|---|---|---|---|---|---|---|
+| healthy frames (75% of `male_crowd_body01`) | 87.3 | **~82** | ~1.0 | 1.000 / 1.000 | ~1.0 | 1.00 | KEPT |
+| explosion frames (25%) | 87.3 | **309-700** | 3.5-8.8 | **0.533 / 0.811** | **4.4-10.9** | 1.00 | DROP |
+
+The plan assumed `det≈0.533` was a *stable stylized Y-squash* (body stays small,
+just articulated) so dividing by `sUni=cbrt(0.533)=0.811` would collapse the ratio
+below 2.0. The data says the opposite:
+
+1. The det-0.533 state is the **signature of a per-frame explosion**: bind extent is
+   constant 80-88u, but worldExt blows up to **300-700u** (≈ stage-spanning) on
+   exactly the frames where det drops to 0.533. The same body renders normally
+   (worldExt~80, det 1.0) on most frames. A 600u-diagonal body is a real shard, not a
+   "recognizable short crowd member."
+2. The normalization is mathematically incapable of rescuing them: `ratioNorm =
+   ratio/sUni` with `sUni<1` only **inflates** the ratio (8.0 → 9.9). Even the
+   "correct direction" (divide world by the scale) leaves it ≫ 2.0 because the body
+   truly spans 600u.
+3. The dispersion gate `disp = maxDet/medDet` is **inert**: every exploded body has a
+   *uniform* det across all its bones (`disp = 1.00`), so per-bone dispersion cannot
+   distinguish an exploded body from a healthy one. `disp>4.0` fired on **0 meshes**
+   in the entire run.
+4. The real slivers (`male_extras_eyebrows11` ratio 42, `goatee` 17, `clap` 16,
+   `fingernails` etc.) all have `det=1.0 → sUni=1.0`, so `ratioNorm == raw ratio` for
+   them — unchanged, still dropped. Good, but the normalization did nothing.
+
+Conclusion: the original V24 raw-ratio guard was already optimal for this case. The
+only signal that separates an exploded crowd body (det 0.533, worldExt 600) from a
+healthy one (det 1.0, worldExt 80) is the world extent / ratio itself — which V24
+already used. There is no bone-determinant transform that helps.
+
+## DROP-count + crowd-body ratio before/after
+
+| metric (600-frame reproducer, `SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1`) | value |
+|---|---|
+| SHARD_RATIO lines | 1136 |
+| DROP lines, OLD metric (`raw ratio>2`) | 395 |
+| DROP lines, NEW metric (`ratioNorm>2 \|\| disp>4`) | **396** |
+| meshes NEW drops that OLD did not | **0** |
+| meshes OLD drops that NEW does not (rescued bodies) | **0** |
+| `male_crowd_body01` DROP / KEPT | 25 / 75 (unchanged) |
+| `female_crowd_body02` DROP / KEPT | 69 / (kept on majority) (unchanged) |
+| `crowd_body02` ratioNorm on explosion frames | 9.0-10.9 (>2.0 → still DROP, correct) |
+| `eyebrows11` / `goatee` ratioNorm | 41.9 / 17.1 (>2.0 → still DROP, correct) |
+| `disp>4.0` fires (Design-B gate) | **0 meshes** (inert) |
+
+The 395→396 delta is a single `lext`-floor edge line, not a behavioral change. The
+drop set is **identical** in both directions. Net: a measured no-op.
+
+## Regression status
+
+NONE.
+- Drop set unchanged → no mesh newly dropped; **no band-player body in the drop set**
+  (drops are crowd/extras/props/UI only: `*_crowd_body*`, `*_extras_*`, `clap`,
+  `lighter`, `goatee_resource`, `fingernails_resource`, `*_head*`, `scrollbar_bg`).
+- V21/V26 pre-flight intact: `grep -c HX_NATIVE src/system/math/Mtx.h
+  src/system/math/Rot.cpp` → 1 / 1 (verified; `Multiply(Vector3,Matrix3,Vector3)` C
+  body + `MakeRotQuat` half-angle both present).
+- Crowd dense + recognizable, band players on stage, venue (small_club_01) renders;
+  app exits 0. Highway/HUD are off-camera during the venue cinematic cuts (director
+  behavior, not a regression). Screenshots: `docs/sessions/native/screenshots/
+  v39-crowd-guard/{before(guard-off),after(guard-on)}/` f0505/f0540/f0560/f0570.
+- Residual shards (a few thin dark/teal slivers) still flicker in the after-frames —
+  these are the V24/V38 documented residual (face/finger servo + held-prop slivers,
+  det=1.0 so untouched by this change), NOT the crowd bodies. Fixing them is thread
+  (b) (CharFaceServo rig), explicitly out of scope.
+
+## Env gates (all OFF by default)
+
+- `SHARD_RATIO_DBG=1` — per-mesh log now incl. `sUni ratioNorm maxDet medDet disp`.
+- `SHARD_GUARD_OFF=1` — bypass the DROP (computes + logs ratio but draws everything).
+- `SHARD_DBG=1`, `SHARD_BONE_DBG=1`, `SMASH_DBG=1` — pre-existing, unchanged.
+- No-env run emits zero shard lines; the new code path costs ≤`kMaxBones` det/cbrt
+  ops per skinned mesh (negligible vs the existing ≤256-vert blend loop).
+
+## Reproducer (V39)
+
+```
+SHARD_GUARD_OFF=1 SHARD_RATIO_DBG=1 \
+RB3_GAME=1 MILO_HEADLESS=1 MILO_AUDIO=1 \
+RB3_DATA=$PWD/orig-assets/extracted MILO_MAX_FRAMES=600 \
+RB3_GAME_INPUT="@10:start,@30:confirm,@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,@320:down,@350:msg:music_library:select_highlighted_node,@380:track:guitar,@450:msg:overshell:end_override_flow:1:0,@500:nofail" \
+./native/build-native/rb3-native
+```
+
+## Next step for whoever picks up N5 (revised by V39)
+
+Thread (a) is **closed as not-a-fix**: the V24 raw-ratio guard is already correct for
+the exploded crowd bodies; no scale/dispersion normalization can rescue them because
+they genuinely explode to 300-700u (the det-0.533 is the explosion signature, not a
+placement scale). To make the dropped crowd bodies *render correctly* (rather than be
+dropped) you must fix the **explosion at its source** — i.e. thread (b): why does
+`crowd_female02`/`crowd_male01`'s root `WorldXfm` periodically go to a det-0.533 +
+600u-articulation pose? That is the same CharServo/skeleton-math root-cause as the
+visible slivers, a character-rig task. The guard correctly hides the transient
+explosion frames in the meantime.
+
+---
+
+# V42 — Engine render-to-texture (RTT) for outfit-patch compositing (full 3-layer mechanism landed; opt-in, blocked on one matched-fork bug)
+
+Implements engine render-to-texture so RB3's `OutfitConfig::MatSwap::Compose` outfit
+composite (base color + two-color diffuse/interp/mask tints + projected patch meshes)
+can paint the `kRenderedNoZ` `*_output.tex` render targets instead of falling back to
+flat white. Follows `RTT_OUTFIT_PLAN.md` (full RTT, approach **C2 self-contained**).
+All work is engine-only, in the PRIVATE engine copy
+(`milo-native-engine/src/platform/Rnd_Wgpu_RB3.{cpp,h}`). No matched-fork or glue
+edits. **Default OFF** (one matched-fork crash blocks end-to-end; see below).
+
+## Step 0 — payoff quantification (CHAR_DBG, gameplay venue, default small_club band)
+
+Ran the V20/V21 reproducer with `CHAR_DBG=1` and counted the 51 unique skinned meshes
+that draw in the in-song venue scene:
+
+| type | count | meaning | hasTexView (before) |
+|------|-------|---------|---------------------|
+| `0x1` | 37 | plain textured (bodies/skin/hair/crowd/instruments) | 1 (fine) |
+| `0xffffffff` | 8 | null diffuse (eyebrows, tongue, mic_stand, fingernails, precision01 base, a HUD refract mat…) | 0 |
+| **`0x22` (kRenderedNoZ)** | **6** | **the RTT render targets** | **0 → white fallback** |
+
+The 6 `kRenderedNoZ` targets are all on the **named/lead band character** (NOT the
+crowd extras, which are all `0x1` and fine): `youngozzie_output` / `mohawk_output` /
+`blownback_output` / `bedhead_solid_output` (hair), `lemmy_solid_output` (facial hair),
+`broken_mic_output` (mic prop). **Payoff verdict: MODEST but real** — concentrated on
+the focal band member's hair/facial-hair/mic, which the gameplay director cuts only
+occasionally frame and in dim club lighting the white-vs-tinted hair delta is subtle.
+This is the documented "secondary cosmetic fidelity item," and the disambiguation came
+out clean: these are RTT-texture symptoms (correctly-posed surfaces, flat color,
+`hasTexView=0`), NOT the V24/V26 servo geometry slivers. Chose **full RTT** (the plan's
+L, low-regression path; DC3 reference proven) over the CPU-tint partial because the
+targets are mostly hair `_output` composites whose patches need real RTT anyway.
+
+## What was implemented (full 3-layer RTT, file:line in `.private-engine/...Rnd_Wgpu_RB3.cpp`)
+
+- **Layer A — per-target GPU render target.** Extended `RB3TexEntry` (the `sTexGpu`
+  side-table) with `renderTarget`/`composited`/`rtW`/`rtH`; added
+  `RB3EnsureRenderTarget()` (port of DC3 `EnsureRenderTargetData`): lazily creates a
+  `RenderAttachment|TextureBinding|CopyDst` texture at the tex's `Width()×Height()`
+  (256 default), format = `mTargetFmt`, NO depth (kRenderedNoZ), cleared once to opaque
+  black. `GetRB3TexView()` returns the RT view **only once `composited` latches** —
+  un-composited targets fall through to `mWhiteView` (byte-identical to the prior
+  no-RTT behavior; avoids a "black hair" regression when the driver is off).
+- **Layer B — pass suspend/resume + mid-frame target routing.** Refactored
+  `BeginFrame`'s pass-open into `BeginMainPass(bool clear)` (clear=true first open is
+  byte-identical to the old body; clear=false = `LoadOp::Load` on color AND depth on
+  resume). Added `BeginTexturePass(RndTex*)` (color attachment = target view,
+  `LoadOp::Clear`, no depth), `EndActivePass()`, `RB3SelectRenderTarget` /
+  `RB3FinishRenderTarget`, and `SyncRenderTargetState()` (observes
+  `RndCam::sCurrent->TargetTex()` at draw time — RB3's `Cam::Select`/`SetTargetTex`
+  call `FinishDrawTarget` but never `MakeDrawTarget`, so the begin trigger is the
+  observer, not `MakeDrawTarget`). `RndTex::MakeDrawTarget`/`FinishDrawTarget` no-ops
+  now route to the helpers. DrawMesh pipeline key sets `hasDepth = (mActiveTargetTex ==
+  nullptr)` so the depth-less RTT pass gets depth-less pipelines.
+  **Key correctness find:** the outfit composite runs **between frames** (at
+  character-load/sync via `DrawPreClear`, not mid-frame), when the per-frame
+  `mEncoder` is already `Finish()`'d. So `RB3SelectRenderTarget` detects "no live
+  frame" and bakes on a **dedicated transient `mRtEncoder`** that is `Finish()`+
+  `Submit()`'d immediately on `FinishDrawTarget`; mid-frame composites (e.g. the
+  `clouds_rnd` venue RTT) instead suspend/resume the shared encoder. (First impl
+  without this hit "CommandEncoder already finished" validation spam — now zero.)
+- **Layer C — `BandRnd::DrawRect`** (RB3 signature `(Rect, Color, RndMat*, Color*,
+  Color*)` — color before mat, no ShaderType). Self-contained screen-space
+  textured-quad blit with its own WGSL shader/pipeline/vertex buffer (NOT DC3's
+  `DrawRect2D`, which hard-refs DC3-only globals). Honors all three
+  `RndMat::ColorModFlags`: `kColorModNone`→`fs_fill` (solid material color, base
+  fill), `kColorModModulate`→`fs_modulate` (texel × material color), 
+  `kColorModAlphaUnpackModulate`→`fs_mask` (texture alpha gates the color). Maps
+  `mat->GetBlend()` to the engine blend enum. Active only when a render target is set.
+- **Driver wiring (Layer B begin):** `BandRnd::BeginDrawing` now dispatches
+  `Rnd::DrawPreClear()` before opening the frame pass (gated `RB3_RTT_PRECLEAR`,
+  **default OFF**). The engine `BeginDrawing` override had bypassed the base body, so
+  the registered pre-clear draws (the OutfitConfig composites) were **never driven** —
+  this was the actual reason the composite never ran natively (the plan/diagnosis had
+  assumed it was reached; it was not).
+
+## Verification — composites bake correctly (driver ON), zero GPU errors
+
+With `RB3_RTT_PRECLEAR=1`, `RTT_DBG=1`: all 7 outfit targets bake via the transient
+encoder with **35 `DrawRect` layers** firing the correct base/modulate/mask passes and
+correct authored colors — e.g. `bedhead_solid_output` base fill `color=(0.59,0.37,0.14)`
+(brown hair) then `fs_modulate` with `bedhead_solid_diff.tex`; `eyes_diffuse_output`
+runs fill + diffuse-modulate + interp-modulate + mask. **Zero WebGPU validation
+errors.** CHAR_DBG: all 6 `type=0x22` flip `hasTexView=0 → 1`. Regression canary: main
+scene mesh counts **unchanged** (1010/985/972 max), gem highway/HUD/venue intact.
+
+## Blocker: one matched-fork bug stops the end-to-end visual (out of engine scope)
+
+With the driver ON, the non-patch composites (hair/eyes/mic two-color tints) bake
+correctly, but the patch-projection sub-path then **crashes (SIGILL/ud2) at frame ~456**
+in `BandCharacter::GetPatchDir()` (`BandCharacter.h:74`) reached via
+`BandPatchMesh::PreRender` (`BandPatchMesh.cpp:1109`) ← `OutfitConfig::DrawPreClear`
+(`OutfitConfig.cpp:963`). Root cause: `BandCharacter::GetPatchDir()` is
+`virtual ObjectDir *GetPatchDir() {}` — an **empty body with NO return**, so clang
+emits a trap on return. The base `BandCharDesc::GetPatchDir()` (`BandCharDesc.h:184`)
+correctly `return 0;`. This is a one-line **additive HX_NATIVE matched-fork edit**
+(`{ return 0; }`), explicitly out of this engine-only task's scope. The composite +
+crash happen in the same `DrawPreClear` call at band-load, so no venue frame renders
+between the (correct) bake and the crash — hence no clean after-screenshot of painted
+hair was capturable. **Once `GetPatchDir` is fixed, `RB3_RTT_PRECLEAR=1` lights up the
+full outfit composite** (hair/eyes/mic tints proven; patch tattoos/decals/logo then
+also route through the now-working RTT target).
+
+## Status
+
+- **Engine RTT mechanism: COMPLETE and correct** (Layers A/B/C, GPU-verified). 
+- **Default behavior: byte-identical to before** (driver OFF; render targets fall back
+  to white via the `composited` gate; full 24000-frame pipeline exits 0, zero
+  validation errors, mesh counts unregressed).
+- **Opt-in:** `RB3_RTT_PRECLEAR=1` drives the composite (works for non-patch targets;
+  blocked end-to-end only by the matched-fork `GetPatchDir` ud2).
+- Screenshots: `docs/sessions/native/screenshots/v42-rtt-outfit/` (`before/`,
+  `after/`). Note the band character is small/distant/dim in the gameplay director
+  cuts, so the visible before/after hair delta is subtle even when the composite runs —
+  consistent with the "modest payoff" Step-0 verdict.
+- Changed files (PRIVATE engine, uncommitted):
+  `.private-engine/src/platform/Rnd_Wgpu_RB3.cpp` + `.h`.
+- **Recommended follow-up (separate, matched-fork):** add `{ return 0; }` to
+  `BandCharacter::GetPatchDir()` (HX_NATIVE) to unblock the patch layer + the full
+  outfit composite. Until then the RTT mechanism sits inert-but-ready behind the flag.
