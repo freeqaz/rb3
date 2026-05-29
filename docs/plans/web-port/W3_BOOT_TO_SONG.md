@@ -298,6 +298,19 @@ BOOT_RUNNING     → sApp->RunOneFrame(); window.rb3FrameCount = N  (NEW)
 
 ### W3b — Real keyboard input [SONNET]
 
+> **STATUS 2026-05-29 — DONE.** Real browser keyboard input wired. `window._rb3Keys`
+> bitmask maintained by JS keydown/keyup listeners; `RB3GameInputPoll` edge-detects new
+> presses per frame and calls `ExecButton(action, button, screen)` — the same path the
+> synthetic script and HTTP `/api/input` use. Key→action map: Enter→Confirm, Space→Start,
+> Esc/Backspace→Cancel, Tab→Option, Arrow/WASD→d-pad, Q/E→PageUp/Dn. Smoke test confirms:
+> two Enter presses advance `splash_screen → main_hub_screen` (frame 47 + frame 70). On
+> `main_hub_screen` the next Enter fires on `mb_playnow.btn` (Play Now button). Canvas
+> 56.7% painted with venue+menu geometry. W2 `?milo=` regression: 0.00% pixel diff (PASS).
+> Native build: compiles unchanged (`#ifdef __EMSCRIPTEN__` gate confirmed). Commit: wt-web-w3b.
+> **Next: deeper menu navigation (main_hub → song_select → part_difficulty) is the W3b
+> fuller acceptance; the core input pipeline is working and splash→main_hub is confirmed
+> interactive. W3c (audio) can now be dispatched.**
+
 The App boot makes the menu interactive; W3b feeds real browser keypresses into
 the same input pipeline the synthetic driver uses.
 

@@ -16,7 +16,17 @@
 // Driven by RB3_GAME_INPUT="@30:start,@90:confirm,@120:down,@150:confirm"
 // (frame:action pairs; actions: start/confirm/cancel/up/down/left/right/option).
 //
+// W3b: real browser keyboard input added under #ifdef __EMSCRIPTEN__. JS
+// keydown/keyup listeners maintain window._rb3Keys bitmask; RB3GameInputPoll
+// drains it per-frame (edge-detect) and calls ExecButton() — the same path the
+// synthetic script + HTTP /api/input use. Zero native / Wii-asm impact.
+//
 // Native-only glue — no DTA edits, no matched-fork source edits.
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#include <emscripten/em_asm.h>
+#endif
 
 #include "ui/UI.h"
 #include "ui/UIScreen.h"
@@ -57,6 +67,121 @@
 #include <algorithm>
 
 namespace {
+
+// ============================================================================
+// W3b — Browser keyboard input (web build only)
+// ============================================================================
+// JS keydown/keyup listeners on document maintain window._rb3Keys as a bitmask
+// matching the JoypadButton enum (same bit positions as DC3's _dc3Keys). Read
+// once per frame in RB3GameInputPoll; edge-detected presses call ExecButton()
+// exactly as the synthetic script + HTTP paths do. Zero native impact.
+//
+// Bit positions (matching JoypadButton enum in os/Joypad.h):
+//   kPad_L2=0  kPad_R2=1  kPad_L1=2  kPad_R1=3
+//   kPad_Tri=4 kPad_Circle=5 kPad_X=6 kPad_Square=7
+//   kPad_Select=8 kPad_L3=9 kPad_R3=10 kPad_Start=11
+//   kPad_DUp=12 kPad_DRight=13 kPad_DDown=14 kPad_DLeft=15
+#ifdef __EMSCRIPTEN__
+
+static bool sWebInputInitialized = false;
+static unsigned int sWebPrevButtons = 0;
+
+// Map key → action/button for ExecButton. Returns kAction_None if unmapped.
+// Mirrors ActionFromName() but keyed on JoypadButton bit positions for the
+// bitmask approach; individual button→action pairs match the synthetic driver.
+struct WebKeyMapping {
+    int bit;           // bit index in the _rb3Keys bitmask (= JoypadButton value)
+    JoypadButton btn;
+    JoypadAction action;
+};
+
+static const WebKeyMapping kWebKeyMap[] = {
+    { 6,  kPad_X,      kAction_Confirm  },  // Enter   → X / Confirm
+    { 11, kPad_Start,  kAction_Start    },  // Space   → Start
+    { 5,  kPad_Circle, kAction_Cancel   },  // Escape / Backspace → Circle / Cancel
+    { 8,  kPad_Select, kAction_Option   },  // Tab     → Select / Option
+    { 12, kPad_DUp,    kAction_Up       },  // ArrowUp / W
+    { 14, kPad_DDown,  kAction_Down     },  // ArrowDown / S
+    { 15, kPad_DLeft,  kAction_Left     },  // ArrowLeft / A
+    { 13, kPad_DRight, kAction_Right    },  // ArrowRight / D
+    { 2,  kPad_L1,     kAction_PageUp   },  // Q → L1 / PageUp
+    { 3,  kPad_R1,     kAction_PageDown },  // E → R1 / PageDown
+};
+static const int kWebKeyMapSize = (int)(sizeof(kWebKeyMap) / sizeof(kWebKeyMap[0]));
+
+// Read the current JS key bitmask (set by keydown/keyup listeners).
+static unsigned int GetWebKeyBitmask() {
+    return (unsigned int)EM_ASM_INT({ return window._rb3Keys || 0; });
+}
+
+// Install JS keydown/keyup listeners on document. Called once on first poll.
+static void InitWebInput() {
+    if (sWebInputInitialized) return;
+    sWebInputInitialized = true;
+
+    // Build window._rb3Keys as a bitmask matching JoypadButton enum bits.
+    // EM_ASM JS blocks must not contain C-style comments or unescaped braces
+    // in object literals — use bracket assignment instead.
+    EM_ASM({
+        window._rb3Keys = 0;
+        var m = new Object();
+        // Arrows + WASD → d-pad
+        m['ArrowUp']    = 1<<12;  // kPad_DUp
+        m['ArrowDown']  = 1<<14;  // kPad_DDown
+        m['ArrowLeft']  = 1<<15;  // kPad_DLeft
+        m['ArrowRight'] = 1<<13;  // kPad_DRight
+        m['w'] = 1<<12;
+        m['W'] = 1<<12;
+        m['s'] = 1<<14;
+        m['S'] = 1<<14;
+        m['a'] = 1<<15;
+        m['A'] = 1<<15;
+        m['d'] = 1<<13;
+        m['D'] = 1<<13;
+        // Face / menu buttons
+        m['Enter']     = 1<<6;   // kPad_X → kAction_Confirm
+        m['Escape']    = 1<<5;   // kPad_Circle → kAction_Cancel
+        m['Backspace'] = 1<<5;   // kPad_Circle → kAction_Cancel
+        m[' ']         = 1<<11;  // kPad_Start → kAction_Start
+        m['Tab']       = 1<<8;   // kPad_Select → kAction_Option
+        m['q'] = 1<<2;           // kPad_L1 → kAction_PageUp
+        m['Q'] = 1<<2;
+        m['e'] = 1<<3;           // kPad_R1 → kAction_PageDown
+        m['E'] = 1<<3;
+        // Keys to consume (prevent browser scroll / tab-switch / etc.)
+        var consume = new Object();
+        consume['ArrowUp']    = 1;
+        consume['ArrowDown']  = 1;
+        consume['ArrowLeft']  = 1;
+        consume['ArrowRight'] = 1;
+        consume[' ']          = 1;
+        consume['Tab']        = 1;
+        consume['Escape']     = 1;
+        consume['Backspace']  = 1;
+        document.addEventListener('keydown', function(e) {
+            var bit = m[e.key];
+            if (bit) {
+                window._rb3Keys |= bit;
+                if (consume[e.key]) e.preventDefault();
+            }
+            // AudioContext resume on first user gesture (W3c will hook the real impl).
+            if (window._rb3AudioCtx && window._rb3AudioCtx.state === 'suspended') {
+                window._rb3AudioCtx.resume();
+            }
+        }, true);
+        document.addEventListener('keyup', function(e) {
+            var bit = m[e.key];
+            if (bit) {
+                window._rb3Keys &= ~bit;
+            }
+        }, true);
+        console.log('RB3 Web: keyboard input ready (W3b)');
+    });
+
+    printf("RB3 Web: keyboard input initialized (W3b)\n");
+}
+
+#endif // __EMSCRIPTEN__
 
 struct ScriptedInput {
     int frame;
@@ -746,6 +871,39 @@ void RB3RegisterNativeManagerStubs() {
 void RB3GameInputPoll(int frame) {
     if (!gScriptParsed)
         ParseScript();
+
+#ifdef __EMSCRIPTEN__
+    // W3b: initialize JS key listeners on first poll (lazy, main-thread-safe).
+    InitWebInput();
+
+    // Read the JS bitmask, edge-detect newly-pressed bits, call ExecButton for
+    // each. Only fires on press (rising edge), not while held — matches the
+    // synthetic / HTTP path which always sends a single ButtonDownMsg. The
+    // SynthUser() setup (pad 0 connected, controller=guitar) is shared with the
+    // script/HTTP paths so the overshell add-user / slot-join flow (which gates
+    // splash → main_hub) sees a real, pad-associated user.
+    {
+        unsigned int curButtons = GetWebKeyBitmask();
+        unsigned int newPressed = curButtons & ~sWebPrevButtons;
+        sWebPrevButtons = curButtons;
+
+        if (newPressed) {
+            // Ensure the synth user / pad 0 is wired before dispatching.
+            SynthUser();
+            UIScreen *webCur = TheUI.CurrentScreen();
+            for (int i = 0; i < kWebKeyMapSize; ++i) {
+                if (newPressed & (1u << kWebKeyMap[i].bit)) {
+                    MILO_LOG("RB3 web-input: frame %d  key bit=%d btn=%d action=%d"
+                             " screen='%s'\n",
+                             frame, kWebKeyMap[i].bit, (int)kWebKeyMap[i].btn,
+                             (int)kWebKeyMap[i].action,
+                             webCur ? webCur->Name() : "(none)");
+                    ExecButton(kWebKeyMap[i].action, kWebKeyMap[i].btn, webCur);
+                }
+            }
+        }
+    }
+#endif // __EMSCRIPTEN__
 
     // Screen-flow trace: log every currentScreen change.
     UIScreen *cur = TheUI.CurrentScreen();
