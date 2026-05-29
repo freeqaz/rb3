@@ -24,6 +24,7 @@
 #include "obj/Dir.h"
 #include "utl/Symbols.h"
 #include "game/BandUser.h" // AddUserResultMsg
+#include "game/Game.h"     // GameEndedMsg — fired by NetSession::EndGame (song end)
 #include "meta_band/BandNetGameData.h"
 #include "os/User.h"
 #include <algorithm>
@@ -141,10 +142,53 @@ void NetSession::EnterInGameState() {
     Handle(start, false);
 }
 
+// NetSession::EndGame — the SONG-COMPLETE trigger. Real body lives in the
+// un-globbed network/net/NetSession.cpp (a weak no-op stub in band3_link_stubs.s
+// otherwise → on native EndGame did NOTHING; on web it resolved to a phantom
+// address). This is the second half of the "song never ends / score screen
+// never shows" bug: when Performer::Poll sees the song clock pass the song
+// duration it calls WinGame(0) → CheckGameWon → TrulyWinGame → (gated by
+// GameConfig::CanEndGame, see IsInGame below) Game::SetGameOver(true), which
+// calls TheNetSession->EndGame(GetResult(), false, ms). The REAL EndGame fires
+// a GameEndedMsg back to its sinks; Game registered as one in its ctor
+// (Game.cpp:186 AddSink GameEndedMsg::Type), and Game::OnMsg(GameEndedMsg) is
+// what calls TheGamePanel->SetGameOver() → mGameState=kGameOver and the
+// game_won/game_over exports that drive the UI to the score screen. With the
+// no-op stub that message never fired, so the game stayed in kGamePlaying
+// forever. Mirror the offline host path of the real EndGame + LeaveInGameState
+// (network/net/NetSession.cpp:748,957): offline IsHost()==true with no remote
+// clients to notify and (in kInLocalGame) no online session to tear down, so it
+// reduces to dropping back to the lobby and Handle()ing GameEndedMsg. The Handle
+// dispatch goes through RB3NativeNetSession::Handle (virtual); "game_ended" is
+// not in its intercept list, so it falls through to MsgSource::Handle → the Game
+// sink. Idempotent: SetGameOver guards on !IsGameOver, and once we drop to
+// kInLobby IsInGame() is false so a re-entrant EndGame (e.g. the Game dtor's
+// EndGame(5) quit path) early-returns.
+void NetSession::EndGame(int result, bool reportResult, float endMs) {
+    (void)reportResult; // offline: no ranked end-game stats report
+    if (!IsInGame())
+        return;
+    mGameState = kInLobby;
+    GameEndedMsg msg(result, endMs);
+    Handle(msg, false);
+}
+
 // --- offline query methods (otherwise weak-stubbed → 0) ---
 // Mirror NetSession::IsLocal's real logic: local iff idle and not online.
 bool NetSession::IsLocal() const { return mState == kIdle && !mOnlineEnabled; }
-bool NetSession::IsInGame() const { return false; }
+// Real semantics (network/net/NetSession.cpp:1027): in-game iff the session
+// state machine has entered a game. Offline this is driven by our native
+// StartGame()→EnterInGameState() (mGameState=kInLocalGame) and reset by
+// EndGame()→kInLobby. This was previously hardcoded `false`, which was the
+// FIRST half of the "song never ends" bug: GameConfig::CanEndGame() returns
+// false unless IsInGame(), and CanEndGame gates Performer::TrulyWinGame /
+// LoseGame, so the song-complete path never reached Game::SetGameOver. During
+// the menu/boot path mGameState stays kInLobby, so this still returns false
+// there (same as the old hardcoded value) — it only flips true once a song
+// actually starts, which is exactly when the song-end logic needs it.
+bool NetSession::IsInGame() const {
+    return mGameState == kInLocalGame || mGameState == kInOnlineGame;
+}
 bool NetSession::IsBusy() const { return false; }
 bool NetSession::IsHost() const { return true; }      // single local machine
 bool NetSession::IsOnlineEnabled() const { return false; }

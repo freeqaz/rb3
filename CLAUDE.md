@@ -217,3 +217,4 @@ Available via `/skill-name` in Claude Code:
 - DC3 decomp (shared engine): `/home/free/code/milohax/dc3-decomp/src/system/`
 - RB3 debug ELF with symbols: `/home/free/code/milohax/milo-executable-library/rb3/Wii Proto (Bank 5) (Debug)/band_r_wii.elf`
 - RB3 map file: `orig/SZBE69_B8/files/band_r_wii.map`
+- UI reference screenshots (main menu / song select / gameplay ground-truth for the native+web port; see its `README.md`): `orig-assets/native-refs/rb3-ui/`
