@@ -601,6 +601,11 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # W3a: web-only weak-null definitions for the pointer globals that the native
+    # build gets from the x86 GAS .s link stubs (not assembled under emcc) — e.g.
+    # TheTour / TheSessionMgr / TheSongDB. Without these they're undefined data
+    # symbols → garbage addresses → App-ctor vcall traps. See the TU header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_web_globals.cpp
     # W2b: register band3/bandobj/track/world milo object-class factories so the
     # multi-chunk milos (main_hub, tracksystem) that embed bandobj Dir subclasses
     # load without desyncing. See the TU header for the root-cause writeup.

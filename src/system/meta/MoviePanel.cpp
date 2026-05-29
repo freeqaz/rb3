@@ -203,12 +203,31 @@ void MoviePanel::Draw() {
         if (TheRnd->GetAspect() != Rnd::kWidescreen) {
             mMovie.SetAspect(gTempBS);
         }
+#ifndef HX_WEB
+        // Web has no Bink decoder: Movie::Impl::Draw is an undefined import (the
+        // x86 GAS Bink stub isn't assembled under emcc) and mMovie was never
+        // Begin()'d (ChooseMovie bails on the empty web movie list). Calling it
+        // blits a never-opened movie through a stub → wasm trap. There is no
+        // frame to draw, so skip the movie blit on web; the UIPanel::Draw below
+        // still renders the screen's panels/labels, and Movie::Poll() (already
+        // HX_NATIVE/web-false) fires movie_done to advance past intro_movie.
         mMovie.Draw();
+#endif
     }
     UIPanel::Draw();
 }
 
 void MoviePanel::ChooseMovie() {
+#ifdef HX_WEB
+    // Web: the Bink video files (videos/*) aren't bundled and Movie/Bink is
+    // stubbed (W3a is movie-free). mMovies is therefore empty. On native the
+    // MILO_ASSERT below aborts; on web Debug::Fail is non-fatal and returns, so
+    // execution would fall into the do/while with an empty vector — RandomInt(0,0)
+    // + mMovies[0] is OOB and the `std::find` loop never terminates (the W3a
+    // intro_movie_screen second-frame hang). Bail safely: no movie to choose.
+    if (mMovies.empty())
+        return;
+#endif
     MILO_ASSERT(!mMovies.empty(), 0x13A);
 
     do {

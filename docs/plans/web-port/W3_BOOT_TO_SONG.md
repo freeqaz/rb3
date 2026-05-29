@@ -104,6 +104,21 @@ W3b, then gate W3c on native v1. The hard native-v1 dependency is W3c-only.
 
 ### W3a — App-driven boot + interactive menu [OPUS]
 
+> **STATUS 2026-05-29 — DONE (stable menu renders; interactivity is W3b).** The real `App`
+> boots in-browser via `RunOneFrame`: it advances `intro_movie_screen → splash_screen` and
+> renders a stable frame — the "ROCK BAND 3" logo text + full main-hub venue (829 meshes /
+> 223K tris), `rb3AppBooted==1`, frame count climbs indefinitely, no trap. Master commit
+> (squash of `wt-web-w3a` 29a079f6/1b1ed9ef/69951976). Fixes (all `#ifdef HX_WEB`-gated, zero
+> native/Wii-asm impact): (1) gate the Bink movie-blit in `MoviePanel::Draw`/`TexMovie` (stubbed
+> decoder); (2) register `Fader::Init()`+`BinkClip::Init()` directly (synth is a no-op stub on web);
+> (3) define the undefined object-VALUE `.s`-stub globals (`TheStoreMetadata`/`TheNet`/`TheServer`/
+> `TheMC`/`TheWii*`/…) as zeroed weak `char[4096]` in `rb3_web_globals.cpp`; plus a yielding
+> `LoadMgr::PollUntilLoaded`/`Poll` (`Loader.cpp`) + non-fatal `Debug::Fail` on web.
+> **W3b is the gate to interactivity:** `splash_screen` is RB3's "Press START to Rock" screen —
+> it waits for `button_down … kAction_Confirm` to fire `{ui goto_screen main_hub_screen}`. Wire
+> keyboard input (W3b below) so a Confirm press advances splash → main_hub. No further
+> blocking globals/movie/audio traps expected between splash and main_hub.
+
 Replace the static mesh-walk harness with the real `App` boot. This is the
 critical-path integration. Read
 [`dc3-decomp/docs/plans/web-port/UNIFY_WITH_APP.md`](../../../../dc3-decomp/docs/plans/web-port/UNIFY_WITH_APP.md)

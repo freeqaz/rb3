@@ -119,6 +119,16 @@ void Debug::Notify(const char *msg) {
 #pragma push
 #pragma pool_data off
 void Debug::Fail(const char *msg) {
+#ifdef HX_WEB
+    // Web port: a MILO_FAIL must never abort() the tab. The App boot trips
+    // benign FAILs (dev-only DTA 404s, stub managers, songs missing from
+    // lookup tables) that on Xbox surface a "Continue" dialog. Log and return so
+    // the boot keeps advancing. Mirrors DC3's Debug::Fail HX_WEB early-return.
+    // (Native desktop keeps the real fail path below — fork-only, never compiled
+    // for the Wii MWCC build, which doesn't define HX_WEB.)
+    MILO_LOG("FAIL (non-fatal on web): %s\n", msg);
+    return;
+#endif
     static int x = MemFindHeap("main");
     MemPushHeap(x);
     if (mNoDebug)

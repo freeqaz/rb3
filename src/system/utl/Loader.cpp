@@ -12,6 +12,10 @@
 
 #include "decomp.h"
 
+#ifdef HX_WEB
+#include <emscripten/emscripten.h> // emscripten_sleep — JSPI yield in PollUntilLoaded
+#endif
+
 LoadMgr TheLoadMgr;
 void (*LoadMgr::sFileOpenCallback)(const char *);
 
@@ -127,6 +131,62 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
     SetGPHangDetectEnabled(false, funcName);
     Loader *theLdr = ldr1;
     bool ldr2IsNull = (ldr2 == 0);
+#ifdef HX_WEB
+    // Web port: the matched-fork body below sets unk1c = 1e30f, which DISABLES
+    // the per-state CheckSplit() time-slice and drains the whole loader (and its
+    // dep chain) to completion in ONE un-interruptible call. On native that's
+    // fine; in the browser the App boot drives MANY such loads (splash →
+    // main_hub → song_select chains), and a single multi-chunk milo load runs
+    // ~tens of seconds of wasm CPU with NO return to the event loop, so the
+    // browser kills the unresponsive tab (the W2a/W2b "web-asset-load wall").
+    //
+    // The fix mirrors rb3_render_mesh.cpp's LoadMiloDirYielding (the W2 working
+    // pattern, now generalised here so the App boot's load path inherits it):
+    // use the loader's OWN cooperative time-slice — arm a small split budget +
+    // restart the split timer before each poll so CheckSplit() trips after
+    // ~kSliceMs of work and PollFrontLoader returns mid-load — then
+    // emscripten_sleep(0) yields a full event-loop turn (paint + input) under
+    // JSPI before the wasm stack resumes. A hard iteration cap is a final safety
+    // valve so a stuck loader can't spin the tab forever (mirrors DC3's web cap).
+    const float kSliceMs = 8.0f;
+    int maxIter = 200000; // safety valve; ~big multi-chunk milos finish well under
+    int polls = 0;
+    while (!theLdr->IsLoaded()) {
+        if (--maxIter <= 0) {
+            MILO_WARN("PollUntilLoaded: web iteration cap hit waiting for %s",
+                      ldr1->DebugText());
+            break;
+        }
+        bool noFail = ldr2IsNull || ldr2 != mLoading.front();
+        if (!noFail) {
+#ifdef MILO_DEBUG
+            MILO_FAIL(
+                "PollUntilLoaded circular dependency %s on %s",
+                ldr2->DebugText(),
+                ldr1->DebugText()
+            );
+#endif
+        }
+        // Arm the cooperative slice (instead of the 1e30f drain-to-completion).
+        unk1c = kSliceMs;
+        mTimer.Restart();
+        PollFrontLoader();
+        polls++;
+        if ((polls % 200) == 0) {
+            Loader *f = mLoading.empty() ? nullptr : mLoading.front();
+            MILO_LOG("PollUntilLoaded(web): poll %d front=%s target_loaded=%d\n",
+                     polls, f ? f->mFile.c_str() : "(empty)", theLdr->IsLoaded());
+        }
+        if (!ListFind(mLoading, theLdr))
+            break;
+        if (mLoading.front()->IsLoaded()) {
+            mLoading.pop_front();
+        }
+        emscripten_sleep(0); // JSPI: suspend -> browser event loop -> resume
+    }
+    SetGPHangDetectEnabled(true, funcName);
+    return;
+#endif
     while (!theLdr->IsLoaded()) {
         unk1c = 1e+30f;
         bool noFail = ldr2IsNull || ldr2 != mLoading.front();
@@ -190,6 +250,42 @@ void LoadMgr::Poll() {
         return;
     mTimer.Restart();
     unk1c = mPeriod;
+#ifdef HX_WEB
+    // Web port: like PollUntilLoaded above, the matched-fork / HX_NATIVE drain
+    // below pumps the whole mLoading queue to completion in ONE un-interruptible
+    // call (it disables CheckSplit via unk1c = 1e30f). The App ctor calls this
+    // via PollUntilEmpty(), and individual UI/panel screen transitions also poll
+    // here — on web that freezes the tab. Use the same cooperative slice +
+    // emscripten_sleep(0) yield as PollUntilLoaded so the browser gets event-loop
+    // turns between slices. NOTE: HX_WEB implies HX_NATIVE on this build, so this
+    // arm must come BEFORE the HX_NATIVE block to win.
+    {
+        const float kSliceMs = 8.0f;
+        int polls = 0;
+        int maxIter = 400000; // safety valve (PollUntilEmpty can have long queues)
+        while (!mLoading.empty()) {
+            if (--maxIter <= 0) {
+                MILO_WARN("LoadMgr::Poll(web): iteration cap hit; %d loaders pending",
+                          (int)mLoading.size());
+                break;
+            }
+            unk1c = kSliceMs;
+            mTimer.Restart();
+            PollFrontLoader();
+            polls++;
+            if ((polls % 200) == 0) {
+                Loader *f = mLoading.empty() ? nullptr : mLoading.front();
+                MILO_LOG("LoadMgr::Poll(web): poll %d front=%s pending=%d\n",
+                         polls, f ? f->mFile.c_str() : "(empty)", (int)mLoading.size());
+            }
+            if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
+                mLoading.pop_front();
+            }
+            emscripten_sleep(0);
+        }
+        return;
+    }
+#endif
 #ifdef HX_NATIVE
     // Native = synchronous loading (mirrors DC3's loader native adaptation): drain
     // mLoading to completion in one pass, with the per-state CheckSplit() budget

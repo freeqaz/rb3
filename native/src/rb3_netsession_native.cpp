@@ -28,6 +28,21 @@
 #include "os/User.h"
 #include <algorithm>
 
+#ifdef HX_WEB
+// The `TheNetSession` GLOBAL VARIABLE is defined in network/net/NetSession.cpp,
+// which is excluded from the web build (network/ is not globbed). On native it
+// is supplied as a weak symbol by band3_link_stubs.s — but those x86 GAS stub
+// files are NOT assembled under emcc, so on web `TheNetSession` is an UNDEFINED
+// data symbol. With -sERROR_ON_UNDEFINED_SYMBOLS=0 the linker resolves the
+// reference to a garbage/phantom address: RB3InitNativeNetSession()'s
+// `TheNetSession = this` write is lost, and the first read (BandMatchmaker ctor
+// → TheNetSession->AddSink) walks a garbage MsgSource list and spins forever
+// (the W3a boot freeze in MetaPanel::Init → SessionMgr::Init). Define the global
+// here (web-only — native keeps the .s weak def) so the pointer lives in real
+// BSS and RB3InitNativeNetSession's write/read round-trips correctly.
+NetSession *TheNetSession = nullptr;
+#endif
+
 // --- strong native NetSession base ctor/dtor ---
 // CRITICAL: the real NetSession::NetSession() (network/net/NetSession.cpp:89) is
 // not compiled, so it's a weak no-op stub. A derived ctor that called that stub

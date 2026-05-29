@@ -84,18 +84,28 @@ void TexMovie::BeginMovie(BinStream *bs) {
 }
 
 void TexMovie::DrawToTexture() {
+#ifndef HX_WEB
+    // Web has no Bink decoder (Movie::Impl::Draw is an undefined import on emcc),
+    // and mMovie is never Begin()'d, so there is no frame to blit. mMovie.IsOpen()
+    // is false here anyway, but the guard is web-gated for parity with
+    // DrawShowing below. See MoviePanel::Draw for the full rationale.
     if (!unk_0x38.empty() && mTex && mMovie.Ready() && mMovie.IsOpen()) {
         mTex->MakeDrawTarget();
         mMovie.Draw();
         mTex->FinishDrawTarget();
         TheRnd->MakeDrawTarget();
     }
+#endif
 }
 
 void TexMovie::DrawShowing() {
     if (mTex)
         return;
+#ifndef HX_WEB
+    // No Bink frame on web — skip the movie blit (would trap through the stubbed
+    // Movie::Impl::Draw). This is the intro_movie_screen draw path that crashed.
     mMovie.Draw();
+#endif
 }
 
 void TexMovie::DrawPreClear() {

@@ -43,6 +43,9 @@ SessionMgr::SessionMgr(BandUserMgr *umgr, Matchmaker *mm)
     : Synchronizable("session_mgr"), mBandUserMgr(umgr), mMatchMaker(mm),
       mCritUserListener(0), mBandNetGameData(new BandNetGameData()), mUserLeader(0),
       mInvitesAllowed(0) {
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [SessionMgr ctor] enter\n");
+#endif
     mMachineMgr = new BandMachineMgr(this, mBandUserMgr);
     mCritUserListener = new CriticalUserListener(this);
     mNewPlayer.mUser = 0;
@@ -51,6 +54,9 @@ SessionMgr::SessionMgr(BandUserMgr *umgr, Matchmaker *mm)
     SetName("session_mgr", ObjectDir::Main());
     mBandUserMgr->mSessionMgr = this;
     mSession = TheNetSession;
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [SessionMgr ctor] mSession=%p AddSink chain...\n", (void*)mSession);
+#endif
     mSession->AddSink(this, SessionDisconnectedMsg::Type());
     mSession->AddSink(this, SessionBusyMsg::Type());
     mSession->AddSink(this, SigninChangedMsg::Type());
@@ -59,11 +65,17 @@ SessionMgr::SessionMgr(BandUserMgr *umgr, Matchmaker *mm)
     mSession->AddSink(this, NewRemoteUserMsg::Type());
     mSession->AddSink(this, RemoteUserLeftMsg::Type());
     mSession->AddSink(this, LocalUserLeftMsg::Type());
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [SessionMgr ctor] AddSink chain done\n");
+#endif
     if (TheGameMode) {
         TheGameMode->AddSink(this);
     }
     mActiveRosterSet = false;
     mNetRandomSeed = RandomInt();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [SessionMgr ctor] done\n");
+#endif
 }
 
 SessionMgr::~SessionMgr() {

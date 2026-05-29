@@ -117,10 +117,20 @@ BEGIN_HANDLERS(Matchmaker)
 END_HANDLERS
 
 BandMatchmaker::BandMatchmaker() : mSearching(0), unk32(0), unk6c(0), mDevChannel(0) {
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [BandMatchmaker ctor] enter TheNetSession=%p TheGameMode=%p\n",
+           (void*)TheNetSession, (void*)TheGameMode);
+#endif
     MILO_ASSERT(TheNetSession, 0x108);
     TheNetSession->AddSink(this, join_result);
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [BandMatchmaker ctor] NetSession AddSink done\n");
+#endif
     MILO_ASSERT(TheGameMode, 0x10C);
     TheGameMode->AddSink(this, mode_changed);
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [BandMatchmaker ctor] GameMode AddSink done\n");
+#endif
 #ifndef HX_NATIVE
     // TheNet.GetSearcher() is the Wii online match searcher; null on native (the
     // network/ subsystem is off the link). The matchmaker only matters for online

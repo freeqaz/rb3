@@ -61,6 +61,10 @@
 #endif
 #include "synth/BinkReader.h"
 #include "synth/Synth.h"
+#ifdef HX_WEB
+#include "synth/Faders.h"    // Fader::Init() — web registers the inert synth
+#include "synth/BinkClip.h"  // BinkClip::Init() — UI-object factories directly
+#endif
 #include "band3/tour/QuestManager.h"
 #include "track/Track.h"
 #include "ui/UI.h"
@@ -79,6 +83,10 @@
 #ifdef HX_NATIVE
 #include <csetjmp> // native frame-loop draw guard (sigsetjmp)
 #include <cstdlib> // getenv/atoi (MILO_MAX_FRAMES)
+#endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#include "audio/AudioDevice.h" // RunOneFrame web audio pump (no-op until W3c)
 #endif
 
 #ifdef VERSION_SZBE69_B8
@@ -238,6 +246,22 @@ App::App(int argc, char **argv) {
     csplash.Show();
 #endif // HX_NATIVE (CustomSplash — Wii-only movie/CustomSplash_Wii.h)
     SynthInit();
+#ifdef HX_WEB
+    // Web is audio-free (Synth.cpp is excluded from the build for the codec.h
+    // alloca clash), so SynthInit() resolves to a no-op stub and the synth
+    // object factories it would register never get registered. The boot-path
+    // UI milos (overshell / main_hub / splash) embed two inert synth object
+    // classes — SynthFader (Fader) and BinkClip — and a milo that references an
+    // unregistered class instantiates a null object that downstream code then
+    // derefs → wasm trap (the W3a frame-1 menu-load crash). Both are pure
+    // Hmx::Objects with no audio-device dependency (Fader::Fader is a trivial
+    // ctor; BinkClip allocates a Fader + StartPolling, which only pushes onto a
+    // static list), so registering their factories here is safe and lets the
+    // menu milos load cleanly without pulling in the audio backend. Their TUs
+    // (Faders.cpp / BinkClip.cpp) are already in the web source set.
+    Fader::Init();
+    BinkClip::Init();
+#endif
     Movie::Init();
 #ifndef HX_NATIVE
     csplash.EndShow();
@@ -280,6 +304,13 @@ App::App(int argc, char **argv) {
     UsbMidiGuitar::Init();
     PollTheSplasher();
 #endif // HX_NATIVE (online services + Wii USB peripheral mgrs — no native backing)
+#ifdef __EMSCRIPTEN__
+#define WEB_BOOT_MARK(s) printf("RB3 Web boot: %s\n", s)
+#else
+#define WEB_BOOT_MARK(s) ((void)0)
+#endif
+    WEB_BOOT_MARK("loading sound bank (common)");
+#ifndef __EMSCRIPTEN__
     {
         ObjDirPtr<ObjectDir> oPtr;
         Loader *ldr = nullptr;
@@ -289,22 +320,44 @@ App::App(int argc, char **argv) {
         TheSynth->SetUnk40(oPtr.Ptr());
         PollTheSplasher();
     }
+#else
+    // Web (W3a, audio-free): SKIP the common sound bank load. Synth.cpp /
+    // VorbisReader.cpp are excluded from the web build, so the synth leaf
+    // factories (Sfx / SynthSample / SynthFader / FxSendEQ / *GroupSeq) are not
+    // registered. DirLoader skips them ("Can't make ..."), but the bank's
+    // remaining registered objects enter a PreLoad/PostLoad path that needs the
+    // synth subsystem state that never boots — an un-interruptible spin (the W2
+    // "synth sample-read path" wall, now reached via the App ctor). The menu
+    // renders fine without SFX; W3c recovers the synth + re-enables this load.
+    // TheSynth is null here anyway, so SetUnk40 is a no-op we also skip.
+    WEB_BOOT_MARK("sound bank SKIPPED on web (audio-free W3a)");
+#endif
+    WEB_BOOT_MARK("sound bank done");
 
     SaveLoadManager::Init();
+    WEB_BOOT_MARK("SaveLoadManager::Init done");
     CharInit();
+    WEB_BOOT_MARK("CharInit done");
     PollTheSplasher();
     BeatMatchInit();
+    WEB_BOOT_MARK("BeatMatchInit done");
     PollTheSplasher();
     TrackInit();
+    WEB_BOOT_MARK("TrackInit done");
     PollTheSplasher();
     WorldInit();
+    WEB_BOOT_MARK("WorldInit done");
     PollTheSplasher();
     BandInit();
+    WEB_BOOT_MARK("BandInit done");
     PollTheSplasher();
     TheSongMgr.Init();
+    WEB_BOOT_MARK("TheSongMgr.Init done");
     MetaPanel::Init();
+    WEB_BOOT_MARK("MetaPanel::Init done");
     PollTheSplasher();
     GameInit();
+    WEB_BOOT_MARK("GameInit done");
     PollTheSplasher();
 #ifdef MILO_DEBUG
     // BandOffline::Init()
@@ -313,22 +366,38 @@ App::App(int argc, char **argv) {
     PollTheSplasher();
 #endif
     ContextCheckerInit();
+    WEB_BOOT_MARK("ContextCheckerInit done");
     PollTheSplasher();
+    WEB_BOOT_MARK("post-ContextChecker PollTheSplasher done");
+#ifndef __EMSCRIPTEN__
     TheSynth->SetDolby(0, 1);
+#else
+    if (TheSynth) TheSynth->SetDolby(0, 1);
+#endif
     PollTheSplasher();
+    WEB_BOOT_MARK("before CharCache::Init");
     CharCache::Init();
+    WEB_BOOT_MARK("CharCache::Init done");
     PrefabMgr::Init(nullptr);
+    WEB_BOOT_MARK("PrefabMgr::Init done");
     CharSync::Init(nullptr);
+    WEB_BOOT_MARK("CharSync::Init done");
     AssetMgr::Init();
+    WEB_BOOT_MARK("AssetMgr::Init done");
     LessonMgr::Init();
+    WEB_BOOT_MARK("LessonMgr::Init done");
     ClosetMgr::Init();
+    WEB_BOOT_MARK("ClosetMgr::Init done");
     TrainingMgr::Init();
+    WEB_BOOT_MARK("TrainingMgr::Init done");
     PatchDir::Init();
+    WEB_BOOT_MARK("mgr Init cluster done");
     PollTheSplasher();
 #ifndef HX_NATIVE
     TheWiiProfileMgr.Init(151, 45);
 #endif // HX_NATIVE (Wii NAND profile mgr — no native backing)
     TheUI.Init();
+    WEB_BOOT_MARK("TheUI.Init done");
 #ifdef HX_NATIVE
     // Register the offline DTA-manager stubs whose real subsystems are excluded
     // from the native link (saveload_mgr / net_cache_mgr) so the splash boot
@@ -337,8 +406,10 @@ App::App(int argc, char **argv) {
     RB3RegisterNativeManagerStubs();
 #endif
     TheCharSync->UpdateCharCache();
+    WEB_BOOT_MARK("UpdateCharCache done");
     PollTheSplasher();
     TheQuestMgr.Init(SystemConfig("tour"));
+    WEB_BOOT_MARK("TheQuestMgr.Init done");
     // InitStoreOverlay();
     PollTheSplasher();
 #ifndef HX_NATIVE
@@ -352,7 +423,9 @@ App::App(int argc, char **argv) {
     if (TheArchive != nullptr) {
         TheArchive->SetArchivePermission(1, &charArk);
     }
+    WEB_BOOT_MARK("before PollUntilEmpty");
     TheLoadMgr.PollUntilEmpty();
+    WEB_BOOT_MARK("PollUntilEmpty done");
     float total_time = init_time.SplitMs();
 #ifdef HX_NATIVE
     (void)total_time; // splasher_time/MILO_LOG that consume it are gated out
@@ -387,6 +460,56 @@ App::App(int argc, char **argv) {
 #endif
 
 App::~App() { TheDebug.Exit(0, true); }
+
+#ifdef HX_NATIVE
+// Per-frame core poll + draw. Extracted verbatim from the native frame-loop
+// body (the old RunWithoutDebugging HX_NATIVE branch) so the SAME code drives
+// both the native desktop loop and the web boot machine (main_web.cpp
+// BOOT_RUNNING). The native-desktop-only concerns — HTTP debug server polling,
+// the bounded frame counter, the sigsetjmp draw guard's process-level signal
+// machinery — stay in RunWithoutDebugging / are gated below. This whole method
+// is invisible to the Wii MWCC asm build (HX_NATIVE undefined there).
+void App::RunOneFrame(int frame) {
+    extern void RB3GameInputPoll(int frame);
+
+    SystemPoll(false);
+    TheUI.Poll();
+    RB3GameInputPoll(frame);
+    TheTaskMgr.Poll();
+    if (TheSynth)
+        TheSynth->Poll();
+
+#ifdef __EMSCRIPTEN__
+    // Web audio pump (W3c wires the real AudioDevice_Web ring-buffer push; this
+    // is a no-op until then). Native desktop pumps audio via miniaudio's own
+    // callback thread, so this is web-only. Matches DC3's RunOneFrame.
+    AudioDevice::GetInstance().PumpAudio();
+#endif
+
+    if (TheRnd)
+        TheRnd->BeginDrawing();
+#if defined(HX_NATIVE) && !defined(__EMSCRIPTEN__)
+    // Native desktop: guard Draw() with a SIGSEGV longjmp so a partially-loaded
+    // scene that segfaults skips the frame instead of killing the process. POSIX
+    // signals don't exist under emcc, so on web we call Draw() directly — the
+    // per-frame try/catch in main_web.cpp is the analogous safety net.
+    extern sigjmp_buf gDrawJmpBuf;
+    extern bool gDrawJmpBufSet;
+    if (sigsetjmp(gDrawJmpBuf, 1) == 0) {
+        gDrawJmpBufSet = true;
+        TheUI.Draw();
+        gDrawJmpBufSet = false;
+    } else {
+        gDrawJmpBufSet = false;
+        MILO_LOG("RB3 Native: caught crash in Draw(), skipping frame %d\n", frame);
+    }
+#else
+    TheUI.Draw();
+#endif
+    if (TheRnd)
+        TheRnd->EndDrawing();
+}
+#endif
 
 void App::DrawRegular() {
     if (ThePlatformMgr.mHomeMenuWii->mHomeMenuActive)
@@ -502,10 +625,6 @@ void App::RunWithoutDebugging() {
     // partially-loaded scene that segfaults in Draw() skips the frame instead of
     // crashing the process. Renders through TheRnd (= BandRnd, the Strategy-B
     // backend wired in native/src/rb3_band_rnd.cpp).
-    extern sigjmp_buf gDrawJmpBuf;
-    extern bool gDrawJmpBufSet;
-    // Native synthetic-input driver + screen-flow trace (rb3_game_input.cpp).
-    extern void RB3GameInputPoll(int frame);
     // Embedded HTTP debug server (rb3_http_server.cpp). The Poll hooks are
     // no-ops unless RB3_HTTP=1 started the server (TheRB3HttpServer != null), so
     // a normal run is unaffected. ProcessCommands drains DTA-eval / input verbs
@@ -533,26 +652,15 @@ void App::RunWithoutDebugging() {
              unbounded ? "unbounded (RB3_HTTP keep-alive)" : "bounded");
 
     for (int frame = 0; unbounded || frame < maxFrames; frame++) {
-        SystemPoll(false);
-        TheUI.Poll();
-        RB3GameInputPoll(frame);
+        // The core poll + draw (SystemPoll → UI.Poll → RB3GameInputPoll →
+        // TaskMgr.Poll → Synth.Poll → BeginDrawing → sigsetjmp-guarded UI.Draw →
+        // EndDrawing) lives in RunOneFrame, shared verbatim with the web boot.
+        // The HTTP debug server hooks are native-desktop-only and bracket it
+        // exactly as before: ProcessCommands ran right after RB3GameInputPoll
+        // (so HTTP-injected verbs land on the NEXT frame's RB3GameInputPoll
+        // drain), and the screenshot readback runs after EndDrawing.
+        RunOneFrame(frame);
         RB3HttpServerPoll(frame);
-        TheTaskMgr.Poll();
-        if (TheSynth)
-            TheSynth->Poll();
-
-        if (TheRnd)
-            TheRnd->BeginDrawing();
-        if (sigsetjmp(gDrawJmpBuf, 1) == 0) {
-            gDrawJmpBufSet = true;
-            TheUI.Draw();
-            gDrawJmpBufSet = false;
-        } else {
-            gDrawJmpBufSet = false;
-            MILO_LOG("RB3 Native: caught crash in Draw(), skipping frame %d\n", frame);
-        }
-        if (TheRnd)
-            TheRnd->EndDrawing();
         RB3HttpServerPollScreenshots();
         MILO_LOG("RB3 Native: frame %d complete\n", frame);
     }

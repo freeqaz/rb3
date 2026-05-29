@@ -256,18 +256,39 @@ void MetaPanel::Init() {
     REGISTER_OBJ_FACTORY(UGCPurchasePanel);
     REGISTER_OBJ_FACTORY(VoiceoverPanel);
     OvershellPanel::Init();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [MetaPanel] OvershellPanel::Init done\n");
+#endif
     WiiFriendsScreen::Init();
     REGISTER_OBJ_FACTORY(WiiFriendsScreen);
     TheWiiFriendsProvider.Init();
     TheWiiInvitationsProvider.Init();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [MetaPanel] Wii providers Init done\n");
+#endif
     REGISTER_OBJ_FACTORY(WiiProfilePanel);
     REGISTER_OBJ_FACTORY(WiiFriendsDetailsProvider);
     GameModeInit();
     ModifierMgr::Init();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [MetaPanel] ModifierMgr::Init done\n");
+#endif
     SongSortMgr::Init();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [MetaPanel] SongSortMgr::Init done\n");
+#endif
     SessionMgr::Init();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [MetaPanel] SessionMgr::Init done\n");
+#endif
     TheMemcardMgr.Init();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [MetaPanel] TheMemcardMgr.Init done\n");
+#endif
     TheProfileMgr.Init();
+#ifdef __EMSCRIPTEN__
+    printf("RB3 Web boot: [MetaPanel] TheProfileMgr.Init done\n");
+#endif
     MetaPerformer::Init();
     UploadErrorMgr::Init();
     REGISTER_OBJ_FACTORY(AppInlineHelp);
