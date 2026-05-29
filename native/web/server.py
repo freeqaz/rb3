@@ -7,6 +7,7 @@ Sends required COOP/COEP headers for SharedArrayBuffer (future threading).
 
 API endpoints:
   GET /api/health           — liveness probe (used by smoke-test waitForServer)
+  GET /api/version          — asset version tag for IDB cache invalidation
   GET /api/manifest         — JSON list of all available assets
   GET /api/bundle           — single binary bundle of all .dta/.dtb (boot path)
   GET /api/file/<path>      — raw bytes of an extracted asset file
@@ -127,6 +128,8 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
 
         if path == "/api/health":
             self._serve_health()
+        elif path == "/api/version":
+            self._serve_version()
         elif path == "/api/manifest":
             self._serve_manifest()
         elif path == "/api/bundle":
@@ -139,6 +142,38 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
 
     def _serve_health(self):
         body = json.dumps({"status": "ok"}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
+    def _serve_version(self):
+        """Asset version tag for client-side IDB cache invalidation.
+
+        Combines the assets-dir mtime and the WASM build mtime so the cache
+        is dropped when either the asset set or the engine changes. The tag
+        is opaque — clients only compare for equality.
+        """
+        parts = []
+        if ASSETS_DIR and os.path.isdir(ASSETS_DIR):
+            try:
+                parts.append(str(int(os.path.getmtime(ASSETS_DIR))))
+            except OSError:
+                parts.append("0")
+        else:
+            parts.append("noassets")
+        wasm_path = os.path.join(BUILD_DIR, "rb3-web.wasm")
+        if os.path.isfile(wasm_path):
+            try:
+                parts.append(str(int(os.path.getmtime(wasm_path))))
+            except OSError:
+                parts.append("0")
+        else:
+            parts.append("nowasm")
+        version = "-".join(parts)
+        body = json.dumps({"version": version}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))

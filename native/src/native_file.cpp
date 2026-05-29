@@ -10,7 +10,82 @@
 
 #ifdef __EMSCRIPTEN__
 #include "platform/WebAssets.h"
+#include <emscripten/em_asm.h>
 #include <string>
+
+namespace {
+
+// W4b — IndexedDB asset cache shim. The JS pre-warm in native/web/rb3_pre.js
+// loads cached (path -> bytes) rows into window.__rb3IdbCache at boot. We
+// check that map BEFORE issuing a sync XHR so warm boots skip the network
+// entirely. On a miss, we call the engine's WebAssetsFetchSync (which does
+// the sync XHR + writes MEMFS), then read the bytes back and queue an async
+// IDB write.
+//
+// The cache key is the server-relative path (the same string the engine
+// passes to /api/file/<rel>). We replicate the engine's normalization
+// (WebAssets.cpp WebAssetsFetchSync header) here so the keys agree.
+const char *cacheRelFromMemfsPath(const char *memfsPath) {
+    const char *rel = memfsPath;
+    if (strncmp(rel, "/data/", 6) == 0) return rel + 6;
+    if (strncmp(rel, "/../", 4) == 0) return rel + 4;
+    if (rel[0] == '/') return rel + 1;
+    return rel;
+}
+
+// Sync-read the JS cache and (on hit) write the cached bytes straight into
+// MEMFS. Returns 1 on hit (file ready at memfsPath), 0 on miss. Safe to call
+// when the cache hasn't pre-warmed yet — returns 0.
+int cacheTryHit(const char *cacheKey, const char *memfsPath) {
+    return EM_ASM_INT({
+        try {
+            if (!window.__rb3IdbReady) return 0;
+            if (!window.__rb3IdbCache) return 0;
+            var key = UTF8ToString($0);
+            var memfsPath = UTF8ToString($1);
+            var bytes = window.__rb3IdbCache.get(key);
+            if (!bytes) {
+                window.__rb3CacheStats.misses++;
+                return 0;
+            }
+            // Mkdir parents and write the cached bytes — mirrors
+            // WebAssetsFetchSync's MEMFS write block.
+            var parts = memfsPath.split('/');
+            var dir = '';
+            for (var i = 0; i < parts.length - 1; i++) {
+                if (parts[i] === '') continue;
+                dir += '/' + parts[i];
+                try { FS.mkdir(dir); } catch (e) {}
+            }
+            FS.writeFile(memfsPath, bytes);
+            window.__rb3CacheStats.hits++;
+            window.__rb3CacheStats.bytesFromCache += bytes.byteLength;
+            return 1;
+        } catch (e) {
+            console.log('[rb3-idb] cache-hit write failed: ' + e);
+            return 0;
+        }
+    }, cacheKey, memfsPath);
+}
+
+// Read a freshly-fetched file from MEMFS and put it in the JS cache (which
+// async-writes it through to IDB). Called after a successful network fetch.
+void cachePutAfterFetch(const char *cacheKey, const char *memfsPath) {
+    EM_ASM({
+        try {
+            if (!window.__rb3CachePut) return;
+            var key = UTF8ToString($0);
+            var memfsPath = UTF8ToString($1);
+            var bytes = FS.readFile(memfsPath);
+            window.__rb3CacheStats.bytesFetched += bytes.byteLength;
+            window.__rb3CachePut(key, bytes);
+        } catch (e) {
+            console.log('[rb3-idb] cache-put failed: ' + e);
+        }
+    }, cacheKey, memfsPath);
+}
+
+} // namespace
 #endif
 
 namespace {
@@ -49,8 +124,17 @@ public:
             std::string fetchPath = path;
             if (!fetchPath.empty() && fetchPath[0] != '/')
                 fetchPath = "/data/" + fetchPath;
-            if (WebAssetsFetchSync(fetchPath.c_str())) {
+            // W4b — try the IDB cache first (sync via window.__rb3IdbCache). On
+            // a hit the bytes are written straight to MEMFS and the subsequent
+            // fopen succeeds with no network round-trip. On a miss, fall
+            // through to the engine's sync XHR + queue an async write-back.
+            const char *cacheKey = cacheRelFromMemfsPath(fetchPath.c_str());
+            if (cacheTryHit(cacheKey, fetchPath.c_str())) {
                 mFp = std::fopen(path, m);
+            } else if (WebAssetsFetchSync(fetchPath.c_str())) {
+                mFp = std::fopen(path, m);
+                if (mFp)
+                    cachePutAfterFetch(cacheKey, fetchPath.c_str());
             }
         }
 #endif
