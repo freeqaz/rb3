@@ -525,6 +525,24 @@ extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_re
 // ---------------------------------------------------------------------------
 #include "App.h"
 #include "platform/Rnd_Wgpu_RB3.h"
+#include "audio/AudioDevice.h"
+
+// N9 (teardown SIGSEGV): exit callback that quiesces the audio device FIRST in
+// the Debug::Exit sequence. miniaudio's RT callback runs on a separate thread
+// (on a PipeWire host that's the libpipewire data-loop). ma_device_uninit is
+// the canonical blocking join for that thread; AudioDevice::Terminate() calls
+// it (and is idempotent via its mInitialized guard). Registering this AFTER the
+// BandRnd shutdown callback below puts it at the HEAD of the push_front exit
+// list, so it runs before GPU/BandRnd teardown and before SynthTerminate's
+// TheSynth->Poll(). That makes the rest of teardown single-threaded — no audio
+// callback can be mid-flight in PipeWire's RT machinery while exit() frees /
+// unmaps process state. Safe for every run: when audio was skipped or failed,
+// mInitialized is false and Terminate() is a no-op. The later
+// SynthTerminate → NativeSynth::Terminate → AudioDevice::Terminate then sees
+// mInitialized==false and also no-ops, so there is no double-uninit.
+static void RB3AudioTerminateExitCallback() {
+    AudioDevice::GetInstance().Terminate();
+}
 
 static int RunGame(int argc, char **argv) {
     // Register the BandRnd shutdown exit callback FIRST so it ends up at the
@@ -538,6 +556,11 @@ static int RunGame(int argc, char **argv) {
     // wgpu handles inside the alive-Dawn window.
     extern void RB3RegisterBandRndShutdown();
     RB3RegisterBandRndShutdown();
+
+    // N9: register audio Terminate() AFTER BandRnd so it lands at the HEAD of
+    // the push_front exit list and runs FIRST — joining the miniaudio/PipeWire
+    // RT thread before any GPU teardown or synth Poll. See callback comment.
+    TheDebug.AddExitCallback(RB3AudioTerminateExitCallback);
 
     // Seed the live-tunable render/camera/gem settings from the environment
     // ONCE, before any rendering subsystem reads them. Existing CAM_ROTX=...
