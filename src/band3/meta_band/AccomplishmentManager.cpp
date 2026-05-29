@@ -1837,8 +1837,18 @@ bool AccomplishmentManager::InqGoalsAcquiredForSong(
     MILO_ASSERT(i_symSong != gNullStr, 0xB69);
     MILO_ASSERT(o_rAcquiredGoals.empty(), 0xB6A);
     const char *username = i_pUser->UserName();
+#ifdef HX_NATIVE
+    // Native users carry no platform sign-in name; a default-constructed
+    // RemoteUser/AI mUserName String has a null internal pointer, so UserName()
+    // can return null here and the original strcmp(username,"") derefs it
+    // (SIGSEGV during the endgame NextSongPanel detail fill). A null name means
+    // "no acquired goals for this user" — same outcome as the empty-name guard.
+    if (username == nullptr || strcmp(username, "") == 0)
+        return false;
+#else
     if (strcmp(username, "") == 0)
         return false;
+#endif
     else {
         for (std::vector<GoalAcquisitionInfo>::iterator it =
                  mGoalAcquisitionInfos.begin();

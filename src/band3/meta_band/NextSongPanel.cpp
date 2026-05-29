@@ -162,6 +162,46 @@ void NextSongPanel::InitializeSongReviewDisplay(int i) {
     MILO_ASSERT(dir, 0xD3);
     ReviewDisplay *reviewDisplay = dir->Find<ReviewDisplay>("song_review.rvw", true);
     MILO_ASSERT(reviewDisplay, 0xD5);
+#ifdef HX_NATIVE
+    // The 360-ARK / retail extract authors review.ihp as the base [InlineHelp],
+    // not the proto's [AppInlineHelp] subclass, so dynamic_cast<AppInlineHelp*>
+    // returns null and Find<AppInlineHelp>(...,true) would OSFatal. Look it up as
+    // the base InlineHelp (non-fatal) and drive only the base UIComponent/
+    // RndDrawable show/hide. The AppInlineHelp-only SetOverrideUser (per-user
+    // controller-icon override) is dropped: the review widget still shows/hides
+    // correctly, it just loses app-specific input-status icon behavior. Mirrors
+    // AppScoreDisplay::UpdateDisplay's base-vs-subclass guard.
+    InlineHelp *reviewHelp = dir->Find<InlineHelp>("review.ihp", false);
+    BandUser *user = TheBandUserMgr->GetUserFromSlot(i);
+    if (!user || !user->IsLocal()) {
+        reviewDisplay->SetShowing(false);
+        if (reviewHelp)
+            reviewHelp->SetShowing(false);
+    } else {
+        LocalBandUser *localUser = user->GetLocalBandUser();
+        MILO_ASSERT(localUser, 0xE3);
+        if (TheGame->IsActiveUser(user) && localUser->CanSaveData()) {
+            reviewDisplay->SetShowing(true);
+            if (reviewHelp) {
+                reviewHelp->SetShowing(true);
+                AppInlineHelp *appHelp = dynamic_cast<AppInlineHelp *>(reviewHelp);
+                if (appHelp)
+                    appHelp->SetOverrideUser(localUser);
+            }
+            MetaPerformer *performer = MetaPerformer::Current();
+            MILO_ASSERT(performer, 0xEF);
+            int songID =
+                TheSongMgr.GetSongIDFromShortName(performer->GetCompletedSong(), true);
+            BandProfile *profile = TheProfileMgr.GetProfileForUser(localUser);
+            MILO_ASSERT(profile, 0xF5);
+            reviewDisplay->SetValues(profile->GetSongReview(songID), false);
+        } else {
+            reviewDisplay->SetShowing(false);
+            if (reviewHelp)
+                reviewHelp->SetShowing(false);
+        }
+    }
+#else
     AppInlineHelp *reviewHelp = dir->Find<AppInlineHelp>("review.ihp", true);
     MILO_ASSERT(reviewHelp, 0xD8);
     BandUser *user = TheBandUserMgr->GetUserFromSlot(i);
@@ -187,6 +227,7 @@ void NextSongPanel::InitializeSongReviewDisplay(int i) {
             reviewHelp->SetShowing(false);
         }
     }
+#endif
 }
 
 void NextSongPanel::IncrementSongReview(int i) {
@@ -757,11 +798,45 @@ void NextSongPanel::SetupDetailLine(DataArray *detail, int slot, const char *cc,
         MILO_ASSERT(scoreDisplay, 0x2F8);
         scoreDisplay->SetValues(detail->Int(1), detail->Int(2), 0, false);
     } else if (sym == header_continued) {
+#ifdef HX_NATIVE
+        // The retail/360-ARK extract authors these detail labels as the base
+        // [BandLabel], not the proto's [AppLabel] subclass, so
+        // dynamic_cast<AppLabel*> returns null and the assert would fail. The
+        // calls used here (SetTokenFmt / SetTextToken) are inherited unchanged
+        // from UILabel, so operate via the base UILabel pointer instead.
+        UILabel *label = dynamic_cast<UILabel *>(t);
+        if (label) {
+            MILO_ASSERT(detail->Size() >= 3, 0x300);
+            label->SetTokenFmt(
+                songresults_header_continued, detail->Sym(1), detail->Int(2)
+            );
+        }
+#else
         AppLabel *label = dynamic_cast<AppLabel *>(t);
         MILO_ASSERT(label, 0x2FF);
         MILO_ASSERT(detail->Size() >= 3, 0x300);
         label->SetTokenFmt(songresults_header_continued, detail->Sym(1), detail->Int(2));
+#endif
     } else if (sym == label || sym == left_label || sym == right_label || sym == header) {
+#ifdef HX_NATIVE
+        UILabel *label = dynamic_cast<UILabel *>(t);
+        if (label) {
+            DataNode &node = detail->Node(1);
+            if (node.Type() == kDataSymbol) {
+                if (detail->Size() < 3) {
+                    label->SetTextToken(node.Sym());
+                } else {
+                    detail->Remove(0);
+                    static Message msg(set_token_fmt, 0);
+                    msg[0] = DataNode(detail, kDataArray);
+                    Handle(msg, false);
+                }
+            } else if (node.Type() == kDataString) {
+                label->SetTextToken(node.Str());
+            } else
+                MILO_FAIL("bad type for label detail");
+        }
+#else
         AppLabel *label = dynamic_cast<AppLabel *>(t);
         MILO_ASSERT(label, 0x309);
         DataNode &node = detail->Node(1);
@@ -778,6 +853,7 @@ void NextSongPanel::SetupDetailLine(DataArray *detail, int slot, const char *cc,
             label->SetTextToken(node.Str());
         } else
             MILO_FAIL("bad type for label detail");
+#endif
     }
 }
 
