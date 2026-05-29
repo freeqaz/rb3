@@ -118,11 +118,13 @@ bin/objdiff-cli
 tools/*/target/
 .DS_Store
 
-# Native-port screenshot dumps (PNGs only; REVIEW.md / POLISH_REPORT.md stay tracked)
+# Native-port screenshot dumps (PNGs + generated capture-summary.json;
+# REVIEW.md / POLISH_REPORT.md and other hand-written .md stay tracked)
 /screenshots/
 docs/sessions/**/screenshots/**/*.png
 docs/sessions/**/screenshots/**/*.jpg
 docs/sessions/**/screenshots/**/*.jpeg
+docs/sessions/**/screenshots/**/*.json
 
 # Permuter auto-sweep run logs (one dir per fleet run, large attempt dumps)
 logs/permuter/auto_*/
