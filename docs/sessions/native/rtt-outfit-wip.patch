@@ -1,0 +1,618 @@
+diff --git a/src/platform/Rnd_Wgpu_RB3.cpp b/src/platform/Rnd_Wgpu_RB3.cpp
+index d9d3939..557d40f 100644
+--- a/src/platform/Rnd_Wgpu_RB3.cpp
++++ b/src/platform/Rnd_Wgpu_RB3.cpp
+@@ -193,6 +193,39 @@ void BandRnd::BeginDrawing() {
+     if (!RndCam::sCurrent && mDefaultCam) {
+         mDefaultCam->Select();
+     }
++    // RTT driver: dispatch the registered pre-clear draws (OutfitConfig outfit
++    // composites, TexMovie, TexRenderer) BEFORE opening the frame's main pass.
++    // The original platform Rnd subclass called this at frame start; the engine
++    // BeginDrawing override bypassed the base body, so it was never driven and
++    // the outfit `*_output.tex` render targets stayed unpainted. Running it here
++    // (no live main pass yet → mInPass=false) lets RB3SelectRenderTarget take the
++    // between-frame transient-encoder path to bake each composite into its target.
++    //
++    // DEFAULT OFF: with this on, the non-patch composites (hair/eyes/mic two-color
++    // tints) bake correctly via the engine RTT below, but the patch-projection
++    // sub-path crashes on a MATCHED-FORK bug — `BandCharacter::GetPatchDir()`
++    // (BandCharacter.h:74) is `virtual ObjectDir *GetPatchDir() {}`, an empty body
++    // with NO return, so clang traps (SIGILL) on return inside BandPatchMesh::
++    // PreRender (BandPatchMesh.cpp:1109). The base BandCharDesc::GetPatchDir()
++    // (BandCharDesc.h:184) correctly `return 0;`. Fixing the empty override is a
++    // one-line additive HX_NATIVE matched-fork edit (out of engine scope). Once
++    // that lands, set RB3_RTT_PRECLEAR=1 to light up the full composite (verified:
++    // 35 DrawRect base/modulate/mask layers bake into 7 outfit targets correctly,
++    // no GPU validation errors, before the patch crash).
++    {
++        static int sPreClear = -1;
++        if (sPreClear < 0) {
++            const char* s = getenv("RB3_RTT_PRECLEAR");
++            sPreClear = (s && s[0] == '1') ? 1 : 0;   // default OFF (matched-fork patch crash)
++        }
++        if (sPreClear) {
++            RndCam* saved = RndCam::sCurrent;
++            this->Rnd::DrawPreClear();
++            // DrawPreClear may leave a composite cam selected; restore so the
++            // frame's scene cam is honored by BeginFrame below.
++            if (saved && saved != RndCam::sCurrent) saved->Select();
++        }
++    }
+     RndCam* cam = RndCam::sCurrent ? RndCam::sCurrent : mDefaultCam;
+     BeginFrame(cam);
+ }
+@@ -320,6 +353,20 @@ struct RB3TexEntry {
+     const uint8_t*    lastPixels = nullptr;  // detect bitmap data churn
+     uint32_t          fingerprint = 0;
+     bool              uploaded = false;
++    // --- RTT (render-to-texture) fields ---
++    // When `renderTarget` is set the GPU texture was created with
++    // RenderAttachment usage (so it can be a color attachment for the
++    // OutfitConfig outfit-composite pass) and `view` is its render-target view.
++    // kRenderedNoZ has no Z bit, so RTT targets carry no depth attachment.
++    bool              renderTarget = false;
++    // `composited` latches once the target has actually been painted by a
++    // FinishDrawTarget (the OutfitConfig composite ran). Until then the GPU
++    // texture is just the opaque-black clear, so binding it would render the
++    // body BLACK instead of the prior WHITE fallback — a regression. So
++    // GetRB3TexView only returns the RT view once composited; otherwise it
++    // falls through to the normal (white) path, byte-identical to before.
++    bool              composited = false;
++    uint32_t          rtW = 0, rtH = 0;
+ };
+ static std::unordered_map<RndTex*, RB3TexEntry> sTexGpu;
+ 
+@@ -524,10 +571,72 @@ static wgpu::TextureView UploadRndTexIfNeeded(GpuDevice& gpu, RndTex* tex) {
+     return e.view;
+ }
+ 
++// RTT (Layer A): lazily create/look-up a GPU render-target texture for a
++// kRenderedNoZ RndTex (OutfitConfig outfit-composite output). Mirrors DC3's
++// EnsureRenderTargetData (Tex_Wgpu.cpp:54-102). The texture gets
++// RenderAttachment|TextureBinding|CopyDst usage so it can both be a color
++// attachment (composite pass) AND a sampled diffuse (body draw). No depth
++// attachment — kRenderedNoZ is depth-disabled (the "NoZ"). Cleared once to
++// opaque black on creation so an un-composed target reads black not garbage.
++static RB3TexEntry* RB3EnsureRenderTarget(GpuDevice& gpu, RndTex* tex) {
++    if (!tex || !tex->IsRenderTarget() || !gpu.IsReady()) return nullptr;
++    // Render-target sizes come from the milo; guard zero with a 256 default
++    // (DC3 does the same — DTA set_bitmap/set_rendered may not run natively).
++    uint32_t w = tex->Width()  > 0 ? (uint32_t)tex->Width()  : 256;
++    uint32_t h = tex->Height() > 0 ? (uint32_t)tex->Height() : 256;
++    RB3TexEntry& e = sTexGpu[tex];
++    if (e.renderTarget && e.tex && e.view && e.rtW == w && e.rtH == h)
++        return &e;
++    wgpu::TextureDescriptor td{};
++    td.label = "RB3RenderTarget";
++    td.size = {w, h, 1};
++    // Match the BandRnd main-pass target format so the off-screen quad pipeline
++    // (which keys on mTargetFmt) is valid against this attachment.
++    td.format = gBandRnd.mTargetFmt;
++    td.usage = wgpu::TextureUsage::RenderAttachment |
++               wgpu::TextureUsage::TextureBinding |
++               wgpu::TextureUsage::CopyDst;
++    td.mipLevelCount = 1;
++    wgpu::Texture t = gpu.Device().CreateTexture(&td);
++    if (!t) return nullptr;
++
++    // Clear once to opaque black (WebGPU initial contents are undefined).
++    std::vector<uint8_t> black((size_t)w * h * 4, 0);
++    for (size_t i = 3; i < black.size(); i += 4) black[i] = 255;
++    wgpu::TexelCopyTextureInfo dstInfo{}; dstInfo.texture = t;
++    wgpu::TexelCopyBufferLayout layout{}; layout.bytesPerRow = w * 4;
++    wgpu::Extent3D ext = {w, h, 1};
++    gpu.Queue().WriteTexture(&dstInfo, black.data(), black.size(), &layout, &ext);
++
++    e.tex = t;
++    e.view = t.CreateView();
++    e.renderTarget = true;
++    e.rtW = w; e.rtH = h;
++    e.uploaded = true;        // a render target is "ready" once created
++    e.lastPixels = nullptr;   // not driven by mBitmap CPU churn
++    e.fingerprint = 0;
++    return &e;
++}
++
+ // Public accessor — used by MakeMaterialBindGroup to bind a material's
+ // diffuse texture. Returns an empty view if not yet uploaded.
++//
++// RTT (Layer A): for a render-target RndTex, return the render-target view
++// directly (the composited pixels live only on the GPU; mBitmap is empty so the
++// CPU upload path would yield white). Mirrors DC3 GetGpuTexView.
+ static wgpu::TextureView GetRB3TexView(RndTex* tex) {
+     if (!tex) return {};
++    if (tex->IsRenderTarget()) {
++        // Only bind the render-target view once it has been composited (painted).
++        // An un-composited target is just an opaque-black clear; returning {} here
++        // lets the caller fall back to mWhiteView — byte-identical to the prior
++        // no-RTT behavior (avoids "black hair" regression when the composite
++        // driver is off or hasn't run for this target yet).
++        auto it = sTexGpu.find(tex);
++        if (it != sTexGpu.end() && it->second.renderTarget && it->second.composited)
++            return it->second.view;
++        return {};
++    }
+     auto it = sTexGpu.find(tex);
+     if (it != sTexGpu.end() && it->second.uploaded) return it->second.view;
+     return {};
+@@ -698,6 +807,16 @@ void BandRnd::Shutdown() {
+     mFrameView = nullptr;
+     mSceneBindGroup = nullptr;
+     mInPass = false;
++    mActiveTargetTex = nullptr;
++    mRtEncoder = nullptr;
++    mRtTransientEncoder = false;
++
++    // RTT DrawRect quad-blit resources.
++    mRectVB = nullptr;
++    mRectPL = nullptr;
++    mRectBGL = nullptr;
++    mRectShader = nullptr;
++    mRectReady = false;
+ 
+     // Default textures + samplers + views.
+     mShadowSampler = nullptr;
+@@ -850,19 +969,30 @@ void BandRnd::BeginFrame(RndCam* cam) {
+     WriteSceneUniforms(cam);
+ 
+     mEncoder = mGpu.Device().CreateCommandEncoder();
++    mActiveTargetTex = nullptr;
++    BeginMainPass(true);
++}
++
++// Open (or re-open) the main render pass against mFrameView. `clear=true` is the
++// once-per-frame open from BeginFrame (byte-identical attachment/clear/viewport
++// to the pre-RTT BeginFrame body). `clear=false` (LoadOp::Load on BOTH color AND
++// depth) resumes the main pass after an off-screen RTT composite so the scene +
++// depth drawn before the composite survive. Single mEncoder is shared across both.
++void BandRnd::BeginMainPass(bool clear) {
++    wgpu::LoadOp lop = clear ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
+ 
+     wgpu::RenderPassColorAttachment colorAtt{};
+     colorAtt.view = mFrameView;
+-    colorAtt.loadOp = wgpu::LoadOp::Clear;
++    colorAtt.loadOp = lop;
+     colorAtt.storeOp = wgpu::StoreOp::Store;
+     colorAtt.clearValue = {(double)mClearColor.red, (double)mClearColor.green,
+                            (double)mClearColor.blue, 1.0};
+ 
+     wgpu::RenderPassDepthStencilAttachment depthAtt{};
+     depthAtt.view = mDepthView;
+-    depthAtt.depthLoadOp = wgpu::LoadOp::Clear; depthAtt.depthStoreOp = wgpu::StoreOp::Store;
++    depthAtt.depthLoadOp = lop; depthAtt.depthStoreOp = wgpu::StoreOp::Store;
+     depthAtt.depthClearValue = 1.0f;
+-    depthAtt.stencilLoadOp = wgpu::LoadOp::Clear; depthAtt.stencilStoreOp = wgpu::StoreOp::Store;
++    depthAtt.stencilLoadOp = lop; depthAtt.stencilStoreOp = wgpu::StoreOp::Store;
+     depthAtt.stencilClearValue = 0;
+ 
+     wgpu::RenderPassDescriptor rp{};
+@@ -875,6 +1005,114 @@ void BandRnd::BeginFrame(RndCam* cam) {
+     mPass.SetBindGroup(0, mSceneBindGroup, 0, nullptr);
+ }
+ 
++// End whatever pass is currently open (main or texture). Idempotent.
++void BandRnd::EndActivePass() {
++    if (mInPass) { mPass.End(); mInPass = false; }
++}
++
++// Open an off-screen render pass into a render-target RndTex's GPU texture
++// (Layer B). Color attachment = the target view, LoadOp::Clear (the first
++// DrawRect base-color fill seeds it; subsequent tint layers composite over it
++// via blend), NO depth attachment (kRenderedNoZ). The full-target viewport is
++// the WebGPU default for a pass (whole attachment), so no explicit SetViewport.
++// Uses mRtEncoder when baking between frames, else the shared per-frame mEncoder.
++void BandRnd::BeginTexturePass(RndTex* tex) {
++    RB3TexEntry* rt = RB3EnsureRenderTarget(mGpu, tex);
++    if (!rt || !rt->view) return;
++
++    wgpu::RenderPassColorAttachment colorAtt{};
++    colorAtt.view = rt->view;
++    colorAtt.loadOp = wgpu::LoadOp::Clear;
++    colorAtt.storeOp = wgpu::StoreOp::Store;
++    colorAtt.clearValue = {0.0, 0.0, 0.0, 0.0};
++
++    wgpu::RenderPassDescriptor rp{};
++    rp.label = "BandTexturePass";
++    rp.colorAttachmentCount = 1; rp.colorAttachments = &colorAtt;
++    rp.depthStencilAttachment = nullptr;
++
++    wgpu::CommandEncoder& enc = mRtTransientEncoder ? mRtEncoder : mEncoder;
++    mPass = enc.BeginRenderPass(&rp);
++    mInPass = true;
++    mActiveTargetTex = tex;
++    mActiveTargetW = rt->rtW; mActiveTargetH = rt->rtH;
++    if (getenv("RTT_DBG")) {
++        fprintf(stderr, "[RTT] BeginTexturePass tex='%s' %ux%u transient=%d\n",
++                tex->Name() ? tex->Name() : "(unnamed)", rt->rtW, rt->rtH,
++                mRtTransientEncoder ? 1 : 0);
++    }
++}
++
++// RTT entry (from RndTex::MakeDrawTarget or the SyncRenderTargetState observer):
++// begin the off-screen composite pass into `tex`. If a main frame pass is live,
++// suspend it and reuse the per-frame encoder. If we're BETWEEN frames (the usual
++// case — OutfitConfig bakes outfit textures at character load/sync time, when the
++// per-frame encoder is already finished), spin up a dedicated transient encoder.
++void BandRnd::RB3SelectRenderTarget(RndTex* tex) {
++    if (!mGpuReady || !tex) return;
++    if (mInPass && mEncoder) {
++        // Mid-frame composite: suspend the live main/active pass, reuse mEncoder.
++        mRtTransientEncoder = false;
++        EndActivePass();
++    } else {
++        // Between-frame bake: no live frame — use a one-shot transient encoder.
++        mRtTransientEncoder = true;
++        mRtEncoder = mGpu.Device().CreateCommandEncoder();
++        mInPass = false;
++    }
++    BeginTexturePass(tex);
++}
++
++// RTT exit (from RndTex::FinishDrawTarget, fired by SetTargetTex(nullptr) /
++// prevCam->Select()): end the composite pass. For a mid-frame composite, resume
++// the main pass preserving everything drawn (LoadOp::Load). For a between-frame
++// bake, finish + submit the transient encoder immediately (the baked texture is
++// then a valid sampled view for subsequent body draws).
++void BandRnd::RB3FinishRenderTarget(RndTex* tex) {
++    if (!mGpuReady || mActiveTargetTex != tex) return;
++    EndActivePass();
++    mActiveTargetTex = nullptr;
++    // Latch the target as composited so GetRB3TexView now binds its rendered view.
++    auto it = sTexGpu.find(tex);
++    if (it != sTexGpu.end()) it->second.composited = true;
++    if (mRtTransientEncoder) {
++        if (mRtEncoder) {
++            wgpu::CommandBuffer cmd = mRtEncoder.Finish();
++            mGpu.Queue().Submit(1, &cmd);
++            mRtEncoder = nullptr;
++        }
++        mRtTransientEncoder = false;
++    } else if (mFrameView) {
++        BeginMainPass(false);
++    }
++}
++
++// Reconcile the active pass with the current camera's TargetTex (Layer B begin
++// trigger). OutfitConfig::Compose redirects rendering with sCam->SetTargetTex +
++// sCam->Select (not MakeDrawTarget), so we begin the off-screen pass the first
++// time a draw observes a non-null, renderable TargetTex. The matching teardown
++// is driven by RndTex::FinishDrawTarget (SetTargetTex(nullptr)); this also
++// reconciles defensively if the cam's target changed without that firing.
++bool BandRnd::SyncRenderTargetState() {
++    RndCam* cur = RndCam::sCurrent;
++    RndTex* want = cur ? cur->TargetTex() : nullptr;
++    // Only honor render targets we can actually back with a GPU attachment.
++    if (want && !want->IsRenderTarget()) want = nullptr;
++
++    if (want == mActiveTargetTex) return mActiveTargetTex != nullptr;
++
++    if (mActiveTargetTex && !want) {
++        // Target cleared without FinishDrawTarget — resume the main pass.
++        EndActivePass();
++        mActiveTargetTex = nullptr;
++        if (mFrameView) BeginMainPass(false);
++        return false;
++    }
++    // A (new) target is requested — switch the off-screen composite pass to it.
++    RB3SelectRenderTarget(want);
++    return mActiveTargetTex != nullptr;
++}
++
+ void BandRnd::EndFrame() {
+     if (!mGpuReady) return;
+     if (mInPass) { mPass.End(); mInPass = false; }
+@@ -1016,6 +1254,10 @@ static void BeUByte4(int packed, uint8_t out[4]) {
+ 
+ void BandRnd::DrawMesh(RndMesh* mesh) {
+     if (!mGpuReady || !mInPass || !mesh) return;
++    // RTT (Layer B): if the current cam has a render TargetTex set (OutfitConfig
++    // patch projection), route this draw into the off-screen composite pass.
++    // No-op in the main scene (no TargetTex) — pass stays the main pass.
++    SyncRenderTargetState();
+     RndMesh* owner = mesh->GeomOwner();
+     if (!owner) owner = mesh;
+     if (getenv("RB3_RENDER_DBG")) fprintf(stderr, "[dbg] DrawMesh '%s' owner=%p\n",
+@@ -1594,7 +1836,10 @@ void BandRnd::DrawMesh(RndMesh* mesh) {
+     key.layout = skinned ? VertexLayoutType::Skinned : VertexLayoutType::Static;
+     key.targetFormat = mTargetFmt;
+     key.sampleCount = 1;
+-    key.hasDepth = true;
++    // RTT: the off-screen composite pass (kRenderedNoZ) has NO depth attachment,
++    // so a depth-bearing pipeline would be invalid against it. Drop depth when a
++    // render target is active; the main scene keeps depth as before.
++    key.hasDepth = (mActiveTargetTex == nullptr);
+     key.alphaCut = mat ? mat->mAlphaCut : false;
+     // Mask alpha writes so the framebuffer alpha stays at the clear value (1.0).
+     // RB3 materials often have color.alpha=0 for UI/text fill quads — with Src
+@@ -1636,11 +1881,203 @@ void RndMesh::OnSync(int) {
+     // (we re-upload every draw). No-op.
+ }
+ 
+-// RndTex render-target entry points: not needed for the mesh render path (no
+-// render-to-texture). Provide real no-op bodies so the engine methods
+-// (declared HX_NATIVE virtual) link without the weak stubs.
+-void RndTex::MakeDrawTarget() {}
+-void RndTex::FinishDrawTarget() {}
++// ===========================================================================
++// RTT Layer C: BandRnd::DrawRect — the tint/layer painter.
++//
++// Self-contained screen-space textured-quad blit (the plan's "C2"), NOT the DC3
++// gfx/DrawRect2D helper (which hard-refs DC3-only globals — TheRnd as WgpuRnd&,
++// gWgpuRnd, GetGpuTexView, CurrentTargetFormat — that are OFF for the rb3
++// backend). Builds its own shader/pipeline/vertex buffer, mirroring the DC3
++// DrawRect2D pattern but inline. Paints OutfitConfig's base-color + two-color
++// tint layers into the active render-target pass.
++// ===========================================================================
++static const char* kRB3RectShaderSrc = R"WGSL(
++struct V2D { @location(0) pos: vec2f, @location(1) uv: vec2f, @location(2) color: vec4f, };
++struct VSOut { @builtin(position) pos: vec4f, @location(0) uv: vec2f, @location(1) color: vec4f, };
++@vertex fn vs_rect(in: V2D) -> VSOut {
++    var o: VSOut; o.pos = vec4f(in.pos, 0.0, 1.0); o.uv = in.uv; o.color = in.color; return o;
++}
++@group(0) @binding(0) var rTex: texture_2d<f32>;
++@group(0) @binding(1) var rSmp: sampler;
++// kColorModNone (base fill): solid material color, no texture.
++@fragment fn fs_fill(in: VSOut) -> @location(0) vec4f { return in.color; }
++// kColorModModulate: texel * material color.
++@fragment fn fs_modulate(in: VSOut) -> @location(0) vec4f {
++    return textureSample(rTex, rSmp, in.uv) * in.color;
++}
++// kColorModAlphaUnpackModulate: texture alpha gates the material color
++// (mask layer — the texel's alpha is the per-texel blend weight).
++@fragment fn fs_mask(in: VSOut) -> @location(0) vec4f {
++    let t = textureSample(rTex, rSmp, in.uv);
++    return vec4f(in.color.rgb, in.color.a * t.a);
++}
++)WGSL";
++
++struct RB3RectVert { float pos[2]; float uv[2]; float color[4]; };
++
++void BandRnd::EnsureRectPipeline() {
++    if (mRectReady) return;
++    auto& dev = mGpu.Device();
++
++    wgpu::ShaderSourceWGSL src;
++    src.code = kRB3RectShaderSrc;
++    wgpu::ShaderModuleDescriptor smd{};
++    smd.nextInChain = &src;
++    mRectShader = dev.CreateShaderModule(&smd);
++
++    wgpu::BindGroupLayoutEntry bgle[2] = {};
++    bgle[0].binding = 0; bgle[0].visibility = wgpu::ShaderStage::Fragment;
++    bgle[0].texture.sampleType = wgpu::TextureSampleType::Float;
++    bgle[0].texture.viewDimension = wgpu::TextureViewDimension::e2D;
++    bgle[1].binding = 1; bgle[1].visibility = wgpu::ShaderStage::Fragment;
++    bgle[1].sampler.type = wgpu::SamplerBindingType::Filtering;
++    wgpu::BindGroupLayoutDescriptor bgld{};
++    bgld.entryCount = 2; bgld.entries = bgle;
++    mRectBGL = dev.CreateBindGroupLayout(&bgld);
++
++    wgpu::PipelineLayoutDescriptor pld{};
++    pld.bindGroupLayoutCount = 1; pld.bindGroupLayouts = &mRectBGL;
++    mRectPL = dev.CreatePipelineLayout(&pld);
++
++    wgpu::BufferDescriptor vbd{};
++    vbd.size = 6 * sizeof(RB3RectVert);
++    vbd.usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst;
++    mRectVB = dev.CreateBuffer(&vbd);
++
++    mRectReady = true;
++}
++
++void BandRnd::DrawRect(const Hmx::Rect& rect, const Hmx::Color& color, RndMat* mat,
++                       const Hmx::Color* topRight, const Hmx::Color* botLeft) {
++    if (!mGpuReady) return;
++    // RTT (Layer B): begin/route the off-screen composite pass if the current cam
++    // has a render TargetTex (OutfitConfig base + two-color tint layers). This may
++    // open a between-frame transient pass (mInPass was false), so it must run
++    // BEFORE the mInPass guard below.
++    SyncRenderTargetState();
++    // DrawRect is only meaningful for the outfit composite (off-screen target).
++    // With no active render target there is no consumer in the main scene — skip
++    // (keeps the main scene byte-identical to before).
++    if (!mInPass || !mActiveTargetTex) return;
++    EnsureRectPipeline();
++    auto& dev = mGpu.Device();
++
++    // Coordinate space: OutfitConfig builds rects in TheRnd Width()×Height() pixel
++    // space (rect = full 0,0,W,H). Map [0,W]×[0,H] → NDC [-1,1].
++    float w = (float)Width(), h = (float)Height();
++    if (w <= 0 || h <= 0) return;
++    float x0 = rect.x / w * 2.0f - 1.0f;
++    float y0 = 1.0f - rect.y / h * 2.0f;
++    float x1 = (rect.x + rect.w) / w * 2.0f - 1.0f;
++    float y1 = 1.0f - (rect.y + rect.h) / h * 2.0f;
++
++    // The per-layer tint color lives on the MATERIAL (OutfitConfig sets
++    // sMat->SetColor(palette) then passes baseColor as the `color` arg). Use the
++    // material color so the two-color palette tints actually apply; fall back to
++    // the explicit color arg / vertex-corner colors otherwise.
++    float c[4] = { color.red, color.green, color.blue, color.alpha };
++    if (mat) {
++        const Hmx::Color& mc = mat->GetColor();
++        c[0] = mc.red; c[1] = mc.green; c[2] = mc.blue; c[3] = mc.alpha;
++    }
++    float cTR[4], cBL[4], cBR[4];
++    if (topRight) { cTR[0]=topRight->red; cTR[1]=topRight->green; cTR[2]=topRight->blue; cTR[3]=topRight->alpha; }
++    else          { std::memcpy(cTR, c, sizeof(c)); }
++    if (botLeft)  { cBL[0]=botLeft->red;  cBL[1]=botLeft->green;  cBL[2]=botLeft->blue;  cBL[3]=botLeft->alpha;  }
++    else          { std::memcpy(cBL, c, sizeof(c)); }
++    for (int i = 0; i < 4; i++) cBR[i] = (cTR[i] + cBL[i]) * 0.5f;
++
++    RB3RectVert verts[6] = {
++        {{x0,y0},{0,0},{c[0],c[1],c[2],c[3]}},
++        {{x0,y1},{0,1},{cBL[0],cBL[1],cBL[2],cBL[3]}},
++        {{x1,y0},{1,0},{cTR[0],cTR[1],cTR[2],cTR[3]}},
++        {{x1,y0},{1,0},{cTR[0],cTR[1],cTR[2],cTR[3]}},
++        {{x0,y1},{0,1},{cBL[0],cBL[1],cBL[2],cBL[3]}},
++        {{x1,y1},{1,1},{cBR[0],cBR[1],cBR[2],cBR[3]}},
++    };
++    mGpu.Queue().WriteBuffer(mRectVB, 0, verts, sizeof(verts));
++
++    // Resolve the layer's source texture (two-color diffuse/interp/mask) + mode.
++    int colorMod = mat ? (int)mat->mColorModFlags : (int)RndMat::kColorModNone;
++    wgpu::TextureView texView = mWhiteView;
++    RndTex* dt = mat ? mat->GetDiffuseTex() : nullptr;
++    if (dt) {
++        wgpu::TextureView v = GetRB3TexView(dt);
++        if (!v) v = UploadRndTexIfNeeded(mGpu, dt);
++        if (v) texView = v;
++    }
++
++    const char* fsEntry = "fs_fill";
++    if (colorMod == RndMat::kColorModModulate && dt)            fsEntry = "fs_modulate";
++    else if (colorMod == RndMat::kColorModAlphaUnpackModulate && dt) fsEntry = "fs_mask";
++
++    // Blend: honor the material's blend mode (mapped to the engine blend enum,
++    // identical 1:1 constants 0..7 as DrawMesh). The base layer is kBlendSrc
++    // (overwrite the cleared target); tint layers composite per their blend.
++    WgpuBlend blend = WgpuBlend::Src;
++    if (mat) { int b = (int)mat->GetBlend(); if (b >= 0 && b <= 10) blend = (WgpuBlend)b; }
++    wgpu::BlendState bs = mPipelines.MapBlend(blend);
++
++    wgpu::ColorTargetState ct{};
++    ct.format = mTargetFmt;
++    ct.blend = &bs;
++    ct.writeMask = wgpu::ColorWriteMask::All;
++
++    wgpu::FragmentState frag{};
++    frag.module = mRectShader;
++    frag.entryPoint = fsEntry;
++    frag.targetCount = 1;
++    frag.targets = &ct;
++
++    wgpu::VertexAttribute attrs[3] = {};
++    attrs[0].format = wgpu::VertexFormat::Float32x2; attrs[0].offset = 0;  attrs[0].shaderLocation = 0;
++    attrs[1].format = wgpu::VertexFormat::Float32x2; attrs[1].offset = 8;  attrs[1].shaderLocation = 1;
++    attrs[2].format = wgpu::VertexFormat::Float32x4; attrs[2].offset = 16; attrs[2].shaderLocation = 2;
++    wgpu::VertexBufferLayout vbl{};
++    vbl.arrayStride = sizeof(RB3RectVert);
++    vbl.stepMode = wgpu::VertexStepMode::Vertex;
++    vbl.attributeCount = 3; vbl.attributes = attrs;
++
++    wgpu::RenderPipelineDescriptor pd{};
++    pd.layout = mRectPL;
++    pd.vertex.module = mRectShader;
++    pd.vertex.entryPoint = "vs_rect";
++    pd.vertex.bufferCount = 1;
++    pd.vertex.buffers = &vbl;
++    pd.fragment = &frag;
++    pd.depthStencil = nullptr;   // the RTT pass has no depth attachment
++    pd.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
++    pd.multisample.count = 1;
++    wgpu::RenderPipeline pipe = dev.CreateRenderPipeline(&pd);
++    if (!pipe) return;
++
++    wgpu::BindGroupEntry bge[2] = {};
++    bge[0].binding = 0; bge[0].textureView = texView;
++    bge[1].binding = 1; bge[1].sampler = mSampler;
++    wgpu::BindGroupDescriptor bgd{};
++    bgd.layout = mRectBGL; bgd.entryCount = 2; bgd.entries = bge;
++    wgpu::BindGroup bg = dev.CreateBindGroup(&bgd);
++
++    mPass.SetPipeline(pipe);
++    mPass.SetBindGroup(0, bg, 0, nullptr);
++    mPass.SetVertexBuffer(0, mRectVB, 0, sizeof(verts));
++    mPass.Draw(6, 1, 0, 0);
++    if (getenv("RTT_DBG")) {
++        fprintf(stderr, "[RTT]   DrawRect into '%s' mode=%d entry=%s tex='%s' "
++                        "color=(%.2f,%.2f,%.2f,%.2f) blend=%d\n",
++                mActiveTargetTex && mActiveTargetTex->Name() ? mActiveTargetTex->Name() : "?",
++                colorMod, fsEntry, dt && dt->Name() ? dt->Name() : "(none)",
++                c[0], c[1], c[2], c[3], (int)blend);
++    }
++}
++
++// RndTex render-target entry points (RTT — outfit-patch compositing). RB3 calls
++// FinishDrawTarget from RndCam::Select/SetTargetTex (Cam.cpp:54-55,66-67); the
++// engine begins the off-screen pass on the matching Select via MakeDrawTarget,
++// and ends it (resuming the main pass) on FinishDrawTarget. Active only while a
++// cam TargetTex is set — never in the main scene.
++void RndTex::MakeDrawTarget()   { gBandRnd.RB3SelectRenderTarget(this); }
++void RndTex::FinishDrawTarget() { gBandRnd.RB3FinishRenderTarget(this); }
+ 
+ // V1: SyncBitmap uploads the bitmap data to a GPU texture (CPU-decompresses
+ // DXT to RGBA8). The result is stashed in sTexGpu keyed by `this` and bound
+diff --git a/src/platform/Rnd_Wgpu_RB3.h b/src/platform/Rnd_Wgpu_RB3.h
+index 8435e35..df01531 100644
+--- a/src/platform/Rnd_Wgpu_RB3.h
++++ b/src/platform/Rnd_Wgpu_RB3.h
+@@ -100,6 +100,22 @@ public:
+     // Draw one RndMesh (called from the engine RndMesh::DrawShowing body).
+     void DrawMesh(RndMesh* mesh);
+ 
++    // --- Render-to-texture (outfit-patch compositing, OutfitConfig::Compose) ---
++    // RB3 composites a character's final skin/outfit texture by rendering layers
++    // into a kRenderedNoZ render-target RndTex (base color + two-color tint passes
++    // + projected patch meshes). These honor RndCam::SetTargetTex/Select +
++    // RndTex::MakeDrawTarget/FinishDrawTarget by suspending the single main pass,
++    // running an off-screen pass into the target's GPU texture on the SAME command
++    // encoder, then resuming the main pass with LoadOp::Load. Active ONLY while a
++    // cam TargetTex is set — never in the main scene, so zero regression there.
++    void RB3SelectRenderTarget(RndTex* tex);
++    void RB3FinishRenderTarget(RndTex* tex);
++    // RB3's Rnd::DrawRect signature (color BEFORE mat, no ShaderType). Paints the
++    // base + two-color tint layers into the active render target as a screen-space
++    // quad, honoring the three RndMat::ColorModFlags modes.
++    void DrawRect(const Hmx::Rect& rect, const Hmx::Color& color, RndMat* mat,
++                  const Hmx::Color* topRight, const Hmx::Color* botLeft) override;
++
+     GpuDevice& Gpu() { return mGpu; }
+     wgpu::RenderPassEncoder& Pass() { return mPass; }
+     bool InPass() const { return mInPass; }
+@@ -123,6 +139,26 @@ private:
+     wgpu::BindGroup MakeMaterialBindGroup(uint32_t off, RndMat* mat);
+     wgpu::BindGroup MakeMaterialBindGroupRaw(wgpu::Buffer buf, uint32_t off);
+ 
++    // RTT pass plumbing (Layer B). The single mEncoder is reused across the main
++    // pass and any off-screen texture passes within a frame (multiple
++    // BeginRenderPass/pass.End() on one encoder is valid WebGPU). The main pass is
++    // opened by BeginMainPass: clear=true on the first open of the frame
++    // (byte-identical to the original BeginFrame body), clear=false (LoadOp::Load)
++    // when resuming after an RTT composite so the already-drawn scene + depth survive.
++    void BeginMainPass(bool clear);
++    void BeginTexturePass(RndTex* tex);
++    void EndActivePass();
++    // Reconcile the active pass with RndCam::sCurrent->TargetTex(). RB3's
++    // OutfitConfig composite redirects via SetTargetTex+Select (NOT MakeDrawTarget),
++    // so the engine must observe the cam's TargetTex at draw time and switch the
++    // active pass into / out of the off-screen target. Called at the top of
++    // DrawMesh + DrawRect. Returns true if a render target is currently active.
++    bool SyncRenderTargetState();
++    // Self-contained textured-quad blit used by DrawRect (Layer C). Builds its own
++    // shader/pipeline/vertex buffer lazily (no DC3 DrawRect2D dependency — that
++    // helper hard-refs DC3-only globals that are OFF for the rb3 backend).
++    void EnsureRectPipeline();
++
+ public:
+     GpuDevice mGpu;
+     PipelineManager mPipelines;
+@@ -138,6 +174,27 @@ public:
+     wgpu::TextureView mFrameView;
+     bool mInPass = false;
+ 
++    // --- RTT (render-to-texture) state (Layer B) ---
++    // Non-null only while compositing an outfit render-target inside a frame.
++    // When set, the active pass writes into the target tex's GPU view, the
++    // viewport covers the full target, and DrawRect paints into it. Cleared
++    // (and the main pass resumed with LoadOp::Load) on FinishDrawTarget.
++    RndTex* mActiveTargetTex = nullptr;
++    uint32_t mActiveTargetW = 0, mActiveTargetH = 0;
++    // OutfitConfig bakes outfit textures at load/sync time — BETWEEN frames,
++    // when the per-frame mEncoder is already Finish()'d and no main pass is live.
++    // In that case the texture pass runs on a dedicated transient encoder that is
++    // submitted immediately on FinishDrawTarget (true). When the composite happens
++    // mid-frame, we suspend/resume the shared mEncoder + main pass instead (false).
++    bool mRtTransientEncoder = false;
++    wgpu::CommandEncoder mRtEncoder;   // transient encoder for between-frame bakes
++    // Lazily-built screen-space textured-quad pipeline resources for DrawRect.
++    wgpu::ShaderModule mRectShader;
++    wgpu::BindGroupLayout mRectBGL;
++    wgpu::PipelineLayout mRectPL;
++    wgpu::Buffer mRectVB;
++    bool mRectReady = false;
++
+     wgpu::Texture mDepthTex;
+     wgpu::TextureView mDepthView;
+ 
