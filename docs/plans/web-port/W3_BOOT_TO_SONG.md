@@ -448,8 +448,49 @@ smoke (`--boot-to-song`, see below) drives keys via
 
 ### W3c — Audio recovery + one song end-to-end [OPUS]
 
-> **STATUS 2026-05-29 — Part A DONE; Part B reaches Game::LoadSong (the gem-track
-> `game_screen` handoff) by keyboard.** Branch `wt-web-w3c`.
+> **STATUS 2026-05-29 — DONE. v1 web milestone reached: "20th Century Boy" plays
+> end-to-end in the browser.** Branch `wt-web-w3cfin` (finale on top of `wt-web-w3c`).
+> By keyboard: menu → song_select → part_difficulty → **`game_screen` with the gem
+> highway rendering** (gems scrolling, gem smasher + 2x multiplier drawn, score HUD
+> ticking off 0 → 728+). The `.mogg` fetches (HTTP 200), HvDecrypt yields valid
+> `OggS` magic, the StreamReceiver reaches `kBuffering → kReady`, `Game::mLoadState
+> = kReady`, autohit arms, and the song renders ~30fps (1029→2949 frames over 66s)
+> with no trap. Screenshots: `scripts/web/results/w3c-finish/gameplay/`.
+>
+> **The B2 finale trap (the one remaining blocker) — ROOT-CAUSED + FIXED.**
+> - **Trap 1 (case a — wrong asset dir):** pointing the dev server at
+>   `extracted-xbox-full` 404'd `config/band_preinit_keep.dta` (that dir only has
+>   the compiled `.dtb`), so a boot-time `Debug::Fail` (non-fatal on web) fell
+>   through to a deref → `memory access out of bounds` at the App ctor (~0.9s). FIX:
+>   serve from `orig-assets/extracted` (has the text DTAs **and** the song mogg/mid
+>   as symlinks into `extracted-xbox-full`). Pure run-config; no code change.
+> - **Trap 2 (the real one — autohit readiness gate):** the crash was NOT in
+>   `Game::LoadSong`. Instrumented traces proved the entire `Game` ctor + `LoadSong`
+>   (synchronous MIDI track-list parse, K8 `AnalyzeTrackList` audio_track_num fix
+>   active) complete cleanly. The trap fired one instruction later, when the web
+>   part-select driver's `autohit` verb ran on `tv3_a_screen`: `Player::SetAutoplay`
+>   → `BeatMatcher::SetAutoplay` → **`mWatcher->SetCheating()` with `mWatcher==NULL`**.
+>   `BeatMatcher::mWatcher` (the `TrackWatcher`) is only built in `BeatMatcher::SetTrack`,
+>   which runs in `Game::PostLoad` — the *async* MIDI-parse + audio-bring-up chain
+>   driven by `Game::IsLoaded()`. The old autohit gate (`rb3_game_input.cpp` `VerbReady`)
+>   only required a live `MetaPerformer` + a present player, so it fired the instant
+>   the `Game` ctor finished (`mLoadState==kLoadingSong`, watcher still null) →
+>   null-watcher deref → wasm OOB. FIX (web input glue, no decomp/native impact):
+>   gate `kVerbAutohit` on `TheGame->IsLoaded()` (PostLoad ran ⇒ matchers wired,
+>   watchers built) and defensively skip any player whose `IsReady()` is false in
+>   `ExecAutohit`. With the gate, autohit correctly DEFERS ("WAIT autohit: song
+>   still loading") until the async load completes, the load chain progresses to the
+>   `.mogg` open, and autohit then fires on a live watcher — no trap.
+>
+> **mogg load:** local dev server, the 36MB single sync-XHR fetch + HvDecrypt + first
+> StuffChannels resolved in ~0.5s (75.65s `mAudio->Load()` → 76.15s `kReady`); over a
+> real network the single main-thread sync-XHR will stall multi-seconds (the W4
+> worker-streaming follow-up). Verified via console: `MOGG_DBG ... OggS`, `STREAM_DBG:
+> kBuffering -> kReady`, mixer/decode running (headless = no speakers, same as native v1).
+>
+> **Regressions GREEN:** rb3-native rebuilds + runs `RB3_GAME=1` 900 frames to clean
+> exit (code 0); W2 `?milo=` + W3b/W3c-nav menu flow still pass; the fix is confined
+> to `native/src/rb3_game_input.cpp` (web input glue — not matched decomp).
 >
 > **Part A — audio source recovery (A1 + A2 DONE):**
 > - `codec.h:31-33`'s unguarded `inline void *alloca` is now wrapped in

@@ -613,9 +613,17 @@ void ExecAutohit() {
     int n = 0;
     for (size_t i = 0; i < players.size(); ++i) {
         Player *p = players[i];
-        if (p) {
+        // SetAutoplay -> BeatMatcher::SetAutoplay -> mWatcher->SetCheating(); the
+        // watcher is built in BeatMatcher::SetTrack (Game::PostLoad). Player::
+        // IsReady() (== mMatcher->IsReady(), null-watcher-safe) confirms the load
+        // chain wired this player up. The kVerbAutohit gate already requires
+        // Game::IsLoaded(), but skip-if-not-ready here too so the IsLoaded()
+        // audio-Fail early-true path can never drive a null-watcher deref.
+        if (p && p->IsReady()) {
             p->SetAutoplay(true);
             n++;
+        } else if (p) {
+            MILO_LOG("RB3 input: autohit skipped player %d (not ready / watcher unbuilt)\n", (int)i);
         }
     }
     MILO_LOG("RB3 input: autohit enabled on %d active player(s)\n", n);
@@ -803,13 +811,22 @@ bool VerbReady(const Verb &v, UIScreen *cur, const char **reason) {
     }
 
     case kVerbAutohit: {
-        // autohit needs gameplay to be live: a MetaPerformer::Current() AND at
-        // least one active player (the synth user is only picked up after
-        // track:guitar). Gating on both means SetAutoplay lands on a real
-        // BeatMatcher and never derefs an empty/absent player list.
+        // autohit needs gameplay to be FULLY live, not merely a constructed Game.
+        // SetAutoplay(true) -> BeatMatcher::SetAutoplay -> mWatcher->SetCheating().
+        // BeatMatcher::mWatcher is null until BeatMatcher::SetTrack runs, which
+        // happens in Game::PostLoad (the async MIDI-parse + audio-bring-up chain
+        // driven by Game::IsLoaded). The Game ctor finishes at tv3/game_screen
+        // with mLoadState==kLoadingSong and mWatcher==NULL, so firing autohit the
+        // instant a player exists derefs a null TrackWatcher -> wasm "memory
+        // access out of bounds". Gate on Game::IsLoaded() (== PostLoad ran,
+        // matchers wired, watchers built) so SetAutoplay lands on a live watcher.
         if (!MetaPerformer::Current()) { if (reason) *reason = "no MetaPerformer (song not loaded)"; return false; }
         if (!TheGame || TheGame->GetActivePlayers().empty()) {
             if (reason) *reason = "no active players yet";
+            return false;
+        }
+        if (!TheGame->IsLoaded()) {
+            if (reason) *reason = "song still loading (PostLoad/watchers not built)";
             return false;
         }
         return true;
