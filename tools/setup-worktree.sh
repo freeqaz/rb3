@@ -41,6 +41,23 @@
 #                                           copy. Reflinking it also warm-starts
 #                                           the object cache for fast
 #                                           incremental builds.
+#   <wt>/../milo-native-engine
+#                            symlink        ONE symlink at .claude/worktrees/
+#                                           milo-native-engine -> sibling repo.
+#                                           Makes the relative engine path in
+#                                           native/CMakeLists.txt
+#                                           (${CMAKE_SOURCE_DIR}/../../milo-native-engine)
+#                                           resolve from worktrees the same way
+#                                           it does from the main repo. Without
+#                                           this, cmake configure fails or
+#                                           web/native builds pick the wrong
+#                                           engine tree. Shared by all worktrees.
+#   <wt>/scripts/web/node_modules
+#                            symlink        Shared npm install — avoids a slow
+#                                           reinstall per agent (and silent
+#                                           drift between worktrees). Created
+#                                           only if the main tree already has
+#                                           the node_modules directory.
 #
 # objdiff-cli lives in the sibling repo ../objdiff (build.ninja's report rule
 # uses the relative path "../objdiff/target/release/objdiff-cli"). From a
@@ -146,10 +163,68 @@ done
 # ---- bin/ : symlink (read-only — wraps objdiff-cli + other host tools) ------
 # scripts/permuter/project.py + several analysis scripts hard-code "bin/objdiff-cli"
 # as a cwd-relative path; without this symlink, permuter runs fail in worktrees.
+#
+# The symlink shadows the tracked bin/* files in the worktree, so `git status`
+# would normally report every script as deleted. We mark each indexed bin/*
+# entry --assume-unchanged in this worktree to silence that noise. The flag is
+# per-worktree (lives in the worktree's index), does not affect the main repo,
+# and is reset by `git update-index --no-assume-unchanged bin/*` if needed.
 if [ -d "$MAIN_REPO/bin" ]; then
-    echo "==> bin/  (symlink — read-only host-tool wrappers)"
+    echo "==> bin/  (symlink — read-only host-tool wrappers; bin/* marked assume-unchanged to silence git status)"
     rm -rf "$WORKTREE_PATH/bin"
     ln -s "$MAIN_REPO/bin" "$WORKTREE_PATH/bin"
+    # Silence the bin/* "deleted" noise the symlink overlay creates.
+    # Run from inside the worktree so the flag lands in the worktree's index.
+    (
+        cd "$WORKTREE_PATH"
+        # ls-files reads the worktree's own index — never the main repo's.
+        # `|| true` keeps things idempotent if there are zero bin/ entries.
+        files="$(git ls-files bin/ 2>/dev/null || true)"
+        if [ -n "$files" ]; then
+            # shellcheck disable=SC2086
+            printf '%s\n' $files | xargs git update-index --assume-unchanged 2>/dev/null || true
+        fi
+    )
+fi
+
+# ---- milo-native-engine : single shared symlink (worktree-relative engine path)
+# native/CMakeLists.txt uses `${CMAKE_SOURCE_DIR}/../../milo-native-engine` —
+# from a worktree at `.claude/worktrees/<name>/native/`, that resolves to
+# `.claude/worktrees/milo-native-engine`. Drop one symlink there so every
+# worktree's relative path resolves to the real sibling repo. Idempotent.
+ENGINE_REAL="/home/free/code/milohax/milo-native-engine"
+ENGINE_LINK_DIR="$MAIN_REPO/.claude/worktrees"
+ENGINE_LINK="$ENGINE_LINK_DIR/milo-native-engine"
+if [ -d "$ENGINE_REAL" ]; then
+    mkdir -p "$ENGINE_LINK_DIR"
+    if [ ! -e "$ENGINE_LINK" ] && [ ! -L "$ENGINE_LINK" ]; then
+        echo "==> .claude/worktrees/milo-native-engine  (symlink — shared engine path for all worktrees)"
+        ln -s "$ENGINE_REAL" "$ENGINE_LINK"
+    elif [ -L "$ENGINE_LINK" ]; then
+        # Already a symlink; leave as-is (don't disturb other live worktrees).
+        :
+    else
+        echo "WARN: $ENGINE_LINK exists and is not a symlink — leaving alone; web builds in this worktree may pick the wrong engine path." >&2
+    fi
+else
+    echo "WARN: milo-native-engine sibling repo not found at $ENGINE_REAL — web builds in this worktree will fail to find the engine." >&2
+fi
+
+# ---- node_modules : per-script symlinks (avoid slow per-agent npm install) --
+# Find every node_modules dir in the main tree and symlink each one into the
+# worktree at the same relative path. Silent if none exist.
+if command -v find >/dev/null 2>&1; then
+    # -prune so we don't descend into nested node_modules.
+    while IFS= read -r main_nm; do
+        rel="${main_nm#"$MAIN_REPO/"}"
+        wt_nm="$WORKTREE_PATH/$rel"
+        # Skip if the worktree doesn't have the parent dir (script isn't tracked here).
+        [ -d "$(dirname "$wt_nm")" ] || continue
+        echo "==> $rel  (symlink — shared npm install)"
+        rm -rf "$wt_nm"
+        ln -s "$main_nm" "$wt_nm"
+    done < <(find "$MAIN_REPO" -type d -name node_modules -prune \
+               -not -path "$MAIN_REPO/.claude/worktrees/*" 2>/dev/null)
 fi
 
 # ---- build/<VERSION>/ : reflink copy (build WRITES here; warm cache) --------
@@ -190,13 +265,31 @@ if [ -L "$WT_BUILD" ]; then
     exit 1
 fi
 
+# ---- deterministic dev-server port -----------------------------------------
+# Hash worktree NAME (not path) -> [8500, 8999]. Two agents picking the same
+# name (very unlikely) collide; otherwise every worktree gets a private port
+# without ad-hoc allocation. Persisted to .worktree-port so scripts can read
+# it without re-hashing. Safe to override by editing the file or passing
+# --port to the dev server.
+WT_NAME="$(basename "$WORKTREE_PATH")"
+WT_PORT=$(( 8500 + $(printf '%s' "$WT_NAME" | cksum | cut -d' ' -f1) % 500 ))
+printf '%s\n' "$WT_PORT" > "$WORKTREE_PATH/.worktree-port"
+
 echo ""
 echo "Worktree ready:  $WORKTREE_PATH"
 echo "  branch:        $BRANCH  (from $BASE_COMMIT)"
+echo "  dev port:      $WT_PORT  (deterministic from name; cat .worktree-port; safe to override)"
 echo ""
 echo "Next:"
 echo "  cd $WORKTREE_PATH"
 echo "  tools/ninja-locked build/$VERSION/src/<File>.o   # build one object (warm cache = fast)"
 echo "  build/tools/objdiff-cli diff -u <unit> <symbol> --format json-pretty -o /dev/stdout"
+echo ""
+echo "  # Web dev server (W3+ agents): use the per-worktree port to avoid 8421/8431 collisions:"
+echo "  python3 native/web/server.py --port \$(cat .worktree-port)"
+echo ""
+echo "Note: git status will not show bin/* as deleted — those entries are flagged"
+echo "      assume-unchanged in this worktree's index. The bin/ symlink itself"
+echo "      shows up as untracked once; ignore it or add to .git/info/exclude."
 echo ""
 echo "Remove when done:  git -C $MAIN_REPO worktree remove --force $WORKTREE_PATH"
