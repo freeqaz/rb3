@@ -1,5 +1,24 @@
 # RB3 Native — Status & Next Goals (V34 status review)
 
+> **UPDATE 2026-05-29 — items below are PARTLY STALE. Verified at HEAD `1df5db08`
+> (see `N2_N4_N7_VERIFY_RESULT.md`):**
+> - **N1 MeshIB** — DONE (engine `4077997`).
+> - **N2 void/wall camera cuts** — DONE (`83780743`, V36, gate `RB3_CAM_FALLBACK_OFF`).
+>   `f0700`/`f3400` now framed, not void.
+> - **N3 menu/hub void** — DONE (`3600647a`, gate `RB3_MENU_VOID_FIX_OFF`).
+> - **N4 grey occluder + SAVE panel** — DONE (`9a8a5479`, gate `RB3_NO_DETAILS_FIX`).
+>   SAVE panel gone; grey box now the blank-album "?" placeholder. Remaining is
+>   DATA only (real album art needs `ui/image/` in extraction).
+> - **N6 `%S %I SONGS`** — DONE (`895e0ec6`).
+> - **N7 perceptible load screen** — HONEST NEGATIVE / deferred. The load is instant
+>   AND the `tv3_*` transition renders a black fade on native (no content to
+>   animate); a frame-hold would only show more black. Blocked on vignette-world
+>   rendering (shared root with N3). See result doc.
+>
+> **Still genuinely open:** vignette-world rendering (unblocks N7 + N4-data +
+> N3-residual), N5 crowd slivers (deep CharServo), N8 hit/flame FX, N9 teardown
+> SIGSEGV, N10 audio host output, N11 empty save-arrays.
+
 **Authored:** 2026-05-28 (status & visual-review subagent, Opus, READ-ONLY on
 source — no code edits, no build, no commit).
 **Build reviewed:** `native/build-native/rb3-native` at HX_NATIVE salvage state
