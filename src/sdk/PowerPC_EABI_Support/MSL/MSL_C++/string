@@ -184,6 +184,11 @@ namespace std {
         // The usage of DONT_INLINE_CLASS here is a crutch/fakematch,
         // much easier to analyze things when you can force the right inlining lol
 
+        DONT_INLINE_CLASS const CharT *data() const { return get_pointer(); }
+        DONT_INLINE_CLASS const CharT *c_str() const { return get_pointer(); }
+        int compare(const CharT *str) const;
+        int compare(size_t pos, size_t len, const CharT *str, size_t n) const;
+
         DONT_INLINE_CLASS iterator begin() { return get_pointer(); }
         DONT_INLINE_CLASS const_iterator begin() const { return get_pointer(); }
 

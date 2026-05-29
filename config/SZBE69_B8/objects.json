@@ -2191,7 +2191,7 @@
         "cflags": "sdk/ec",
         "objects": {
             "sdk/ec/src/ec_api.cpp": "NonMatching",
-            "sdk/ec/src/ec_asyncOp.cpp": "MISSING",
+            "sdk/ec/src/ec_asyncOp.cpp": {"status": "NonMatching", "cflags": "sdk/ec/no_ipa"},
             "sdk/ec/src/ec_base64.cpp": "Equivalent",
             "sdk/ec/src/ec_checkECard.cpp": "MISSING",
             "sdk/ec/src/ec_checkReg.cpp": "MISSING",
