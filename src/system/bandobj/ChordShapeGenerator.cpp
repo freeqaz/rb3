@@ -112,56 +112,6 @@ const Transform &ChordShapeGenerator::SlotXfm(int idx) const {
     }
 }
 
-void ChordShapeGenerator::InterpolateXfm(
-    const Transform &a, const Transform &b, float t, Transform &out
-) {
-    if (t > 0.99f) {
-        out = b;
-        return;
-    }
-    if (t < 0.1f) {
-        out = a;
-        return;
-    }
-    float ax = a.v.x;
-    float az = a.v.z;
-    float bx = b.v.x;
-    float bz = b.v.z;
-    Vector3 eulerA;
-    Vector3 eulerB;
-    MakeEuler(a.m, eulerA);
-    MakeEuler(b.m, eulerB);
-    float rA = eulerA.y;
-    float rB = eulerB.y;
-    MILO_ASSERT(rA != rB, 0x331);
-    MILO_ASSERT((abs(rA) < PI) && (abs(rB) < PI), 0x333);
-    float cosA = (float)cos(rA);
-    float slopeA = -(float)sin(rA) / cosA;
-    float cosB = (float)cos(rB);
-    float slopeB = -(float)sin(rB) / cosB;
-    float interceptA = -(slopeA * ax - az);
-    float midY = (a.v.y + b.v.y) * 0.5f;
-    float isectX = (-(slopeB * bx - bz) - interceptA) / (slopeA - slopeB);
-    float isectZ = slopeA * isectX + interceptA;
-    if (t < 0.5f) {
-        out.v.Set(isectX, midY, isectZ);
-        out.v -= a.v;
-        out.v *= 2.0f * t;
-        out.v += a.v;
-    } else {
-        out.v.Set(isectX, midY, isectZ);
-        out.v -= b.v;
-        out.v *= 2.0f * (1.0f - t);
-        out.v += b.v;
-    }
-    Vector3 midEuler(
-        (eulerA.x + eulerB.x) * 0.5f,
-        (eulerA.y + eulerB.y) * 0.5f,
-        (eulerA.z + eulerB.z) * 0.5f
-    );
-    MakeRotMatrix(midEuler, out.m, true);
-}
-
 bool ChordShapeGenerator::CheckParams() const {
     bool missing = false;
     if (!mChordSrcMesh) {
@@ -226,39 +176,41 @@ void ChordShapeGenerator::DumpChordGenData() {
     cycles = 0;
 }
 
-void ChordShapeGenerator::NameMesh(RndMesh *mesh, bool lefty) {
-    MILO_ASSERT(mesh && Dir(), 0x3CF);
-    const char *name = lefty ? "chord_L" : "chord";
-    for (int i = 0; i < mNumSlots; i++) {
-        name = MakeString("%s_%d", name, mStringFrets[i]);
-    }
-    {
-        const char *meshFmt = MakeString("%s.mesh", name);
-        if (dynamic_cast<RndMesh *>(Dir()->FindObject(meshFmt, false))) {
-            int counter;
-            do {
-                                counter = 1;
-                name = MakeString("%s(%d)", name, counter);
-                counter++;
-                meshFmt = MakeString("%s.mesh", name);
-            } while (dynamic_cast<RndMesh *>(
-                Dir()->FindObject(meshFmt, false)
-            ));
-        }
-    }
-    mesh->SetName(MakeString("%s.mesh", name), Dir());
-    Dir()->SyncObjects();
-    Hmx::Object *milo = ObjectDir::Main()->FindObject("milo", false);
-    if (milo) {
-        milo->Handle(Message("update_objects"), true);
-    }
-}
-
 int kMaxVerts = 400;
 int kMaxFaces = 600;
 
 int vertIt;
 unsigned int faceIt;
+
+RndMesh *ChordShapeGenerator::BuildChordMesh(unsigned int ui, int i) {
+    RGUnpackChordShapeID(ui, mStringFrets, &unk64);
+    shapesGenerated++;
+    TIMER_GET_CYCLES(startCycles);
+    RndMesh *ret = BuildChordMesh();
+    TIMER_GET_CYCLES(endCycles);
+    cycles += endCycles - startCycles;
+    return ret;
+}
+
+RndMesh *ChordShapeGenerator::MakeInvertedMesh(const RndMesh *mesh) {
+    RndMesh *ret = NewCopyMesh(mesh);
+    for (int i = 0; i < (int)ret->Verts().size(); i++) {
+        RndMesh::Vert &curvert = ret->Verts()[i];
+        curvert.pos.x = -curvert.pos.x;
+        curvert.norm.x = -curvert.norm.x;
+    }
+    for (int i = 0; i < ret->Faces().size(); i++) {
+        RndMesh::Face &curface = ret->Faces()[i];
+        int temp = curface.v2;
+        curface.v2 = curface.v3;
+        curface.v3 = temp;
+    }
+    if (LOADMGR_EDITMODE) {
+        ret->Sync(0x3F);
+        ret->SetMutable(0);
+    }
+    return ret;
+}
 
 RndMesh *ChordShapeGenerator::BuildChordMesh() {
     RndMesh * &_ref0 = mSource;
@@ -346,34 +298,132 @@ RndMesh *ChordShapeGenerator::BuildChordMesh() {
     return mesh;
 }
 
-RndMesh *ChordShapeGenerator::BuildChordMesh(unsigned int ui, int i) {
-    RGUnpackChordShapeID(ui, mStringFrets, &unk64);
-    shapesGenerated++;
-    TIMER_GET_CYCLES(startCycles);
-    RndMesh *ret = BuildChordMesh();
-    TIMER_GET_CYCLES(endCycles);
-    cycles += endCycles - startCycles;
-    return ret;
+void ChordShapeGenerator::GetCrossSection(float xOffset, CrossSec &cs) {
+    MILO_ASSERT(mSource, 0x17C);
+    cs.mEdges.clear();
+    cs.mVerts.clear();
+    cs.mXOffset = xOffset;
+    RndMesh::VertVector &verts = mSource->Verts();
+#ifdef HX_NATIVE
+    std::vector<RndMesh::Face> faces(mSource->Faces());
+#else
+    std::vector<RndMesh::Face, unsigned short> faces(mSource->Faces());
+#endif
+    float hi = xOffset + 0.1f;
+    float lo = xOffset - 0.1f;
+    for (unsigned int i = 0; i < faces.size(); i++) {
+        RndMesh::Face &f = faces[i];
+        bool outOfBand = false;
+        int outsideVert = -1;
+        for (int j = 0; j < 3; j++) {
+            float x = verts[f[j]].pos.x;
+            if (x < lo) {
+                outOfBand = true;
+                break;
+            } else if (x > hi) {
+                if (outsideVert != -1) {
+                    outOfBand = true;
+                    break;
+                }
+                outsideVert = f[j];
+            }
+        }
+        if (!outOfBand && outsideVert != -1) {
+            Edge edge;
+            for (int j = 0; j < 3; j++) {
+                if (f[j] == outsideVert) {
+                    edge.mV0 = f[(j + 1) % 3];
+                    edge.mV1 = f[(j + 2) % 3];
+                }
+            }
+            cs.mEdges.push_back(edge);
+            cs.mVerts.insert(edge.mV0);
+            cs.mVerts.insert(edge.mV1);
+        }
+    }
 }
 
-RndMesh *ChordShapeGenerator::MakeInvertedMesh(const RndMesh *mesh) {
-    RndMesh *ret = NewCopyMesh(mesh);
-    for (int i = 0; i < (int)ret->Verts().size(); i++) {
-        RndMesh::Vert &curvert = ret->Verts()[i];
-        curvert.pos.x = -curvert.pos.x;
-        curvert.norm.x = -curvert.norm.x;
+void ChordShapeGenerator::BuildEndCap(
+    RndMesh *mesh,
+    std::map<unsigned short, unsigned short> &connectingVerts,
+    int mFret,
+    const Transform &xfm,
+    Symbol orient,
+    Hmx::Color32 col
+) {
+    bool contour = mFret > 0;
+    if (orient == right) {
+        unsigned int expectedVerts =
+            contour ? sec1.mVerts.size() : sec2.mVerts.size();
+        MILO_ASSERT(connectingVerts.size() == expectedVerts, 0x1C4);
+    } else {
+        MILO_ASSERT(orient == left, 0x1C8);
+        connectingVerts.clear();
+        AddVertProfile(
+            mesh, xfm, mFretHeights[mFret], contour ? sec1 : sec2, connectingVerts,
+            Hmx::Color32(col)
+        );
     }
-    for (int i = 0; i < ret->Faces().size(); i++) {
-        RndMesh::Face &curface = ret->Faces()[i];
-        int temp = curface.v2;
-        curface.v2 = curface.v3;
-        curface.v3 = temp;
+    std::map<unsigned short, unsigned short> capMap;
+    RndMesh::VertVector &srcVerts = mSource->Verts();
+    RndMesh::VertVector &meshVerts = mesh->Verts();
+    for (int i = 0; i < (int)srcVerts.size(); i++) {
+        float sx = srcVerts[i].pos.x;
+        if (contour ? (sx < unkcc + 0.1f) : (sx > unkc8 - 0.1f)) {
+            capMap[i] = vertIt++;
+        }
     }
-    if (LOADMGR_EDITMODE) {
-        ret->Sync(0x3F);
-        ret->SetMutable(0);
+    if (vertIt > (int)meshVerts.size()) {
+        unsigned int newsize = meshVerts.size() * 2;
+        MILO_LOG("RG: too few verts for chord shape - increasing to %d", newsize);
+        meshVerts.resize(newsize, true);
     }
-    return ret;
+    float xOffset = contour ? unkcc : unkc8;
+    float xScale = contour ? -1.0f : 1.0f;
+    float fretHeight = mFretHeights[mFret];
+    std::map<unsigned short, unsigned short>::const_iterator vit = capMap.begin();
+    std::map<unsigned short, unsigned short>::const_iterator vend = capMap.end();
+    for (; vit != vend; ++vit) {
+        RndMesh::Vert &curvert = meshVerts[vit->second];
+        curvert = srcVerts[vit->first];
+        TransformVert(curvert, xOffset, xScale, fretHeight, xfm, Hmx::Color32(col));
+    }
+    capMap.insert(connectingVerts.begin(), connectingVerts.end());
+    std::vector<RndMesh::Face> &srcFaces = mSource->Faces();
+    std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
+    for (unsigned int i = 0; i < srcFaces.size(); i++) {
+        const RndMesh::Face &f = srcFaces[i];
+        if (contour) {
+            float minX = srcVerts[f.v1].pos.x;
+            MinEq(minX, srcVerts[f.v2].pos.x);
+            MinEq(minX, srcVerts[f.v3].pos.x);
+            if (!(minX < unkcc - 0.1f))
+                continue;
+        } else {
+            float maxX = srcVerts[f.v1].pos.x;
+            MaxEq(maxX, srcVerts[f.v2].pos.x);
+            MaxEq(maxX, srcVerts[f.v3].pos.x);
+            if (!(maxX > unkc8 + 0.1f))
+                continue;
+        }
+        if (faceIt >= meshFaces.size()) {
+            unsigned int newsize = meshFaces.size() * 2;
+            MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
+            meshFaces.resize(newsize, RndMesh::Face());
+        }
+        RndMesh::Face &mf = meshFaces[faceIt++];
+        MILO_ASSERT(
+            capMap.find(f.v1) != capMap.end() && capMap.find(f.v2) != capMap.end()
+                && capMap.find(f.v3) != capMap.end(),
+            0x223
+        );
+        if (contour) {
+            mf.Set(capMap[f.v1], capMap[f.v3], capMap[f.v2]);
+        } else {
+            mf.Set(capMap[f.v1], capMap[f.v2], capMap[f.v3]);
+        }
+    }
+    connectingVerts.clear();
 }
 
 void ChordShapeGenerator::TransformVert(
@@ -491,10 +541,11 @@ void ChordShapeGenerator::BuildContourCap(
             meshFaces.resize(newsize, RndMesh::Face());
         }
         RndMesh::Face &mf = meshFaces[faceIt++];
-        bool allFound = capMap.find(f.v1) != capMap.end()
-            && capMap.find(f.v2) != capMap.end()
-            && capMap.find(f.v3) != capMap.end();
-        MILO_ASSERT(allFound, 0x2BC);
+        MILO_ASSERT(
+            capMap.find(f.v1) != capMap.end() && capMap.find(f.v2) != capMap.end()
+                && capMap.find(f.v3) != capMap.end(),
+            0x2BC
+        );
         if (invert) {
             mf.Set(capMap[f.v1], capMap[f.v3], capMap[f.v2]);
         } else {
@@ -504,227 +555,6 @@ void ChordShapeGenerator::BuildContourCap(
     connectingVerts.swap(endVerts);
 }
 #pragma pop
-
-void ChordShapeGenerator::AddVertProfile(
-    RndMesh *mesh,
-    const Transform &xfm,
-    float fretHeight,
-    const CrossSec &secSrc,
-    std::map<unsigned short, unsigned short> &newVertMap,
-    Hmx::Color32 col
-) {
-    newVertMap.clear();
-    int numNewVerts = secSrc.mVerts.size();
-    if (numNewVerts + vertIt > (int)mesh->Verts().size()) {
-        unsigned int newsize = mesh->Verts().size() * 2;
-        MILO_LOG("RG: too few verts for chord shape - increasing to %d", newsize);
-        mesh->Verts().resize(newsize, true);
-    }
-    RndMesh::VertVector &meshVerts = mesh->Verts();
-    RndMesh::VertVector &srcVerts = mSource->Verts();
-    std::set<unsigned short>::const_iterator it = secSrc.mVerts.begin();
-    std::set<unsigned short>::const_iterator end = secSrc.mVerts.end();
-    for (; it != end; ++it) {
-        unsigned short srcIdx = *it;
-        unsigned short destIdx = vertIt++;
-        RndMesh::Vert &curvert = meshVerts[destIdx];
-        curvert = srcVerts[srcIdx];
-        curvert.pos.x -= secSrc.mXOffset;
-        float pz = curvert.pos.z;
-        if (pz > unkd0) {
-            curvert.pos.z = fretHeight * (pz - unkd0) + unkd0;
-        }
-        curvert.color = col;
-        Multiply(curvert.pos, xfm, curvert.pos);
-        newVertMap[srcIdx] = destIdx;
-    }
-}
-
-void ChordShapeGenerator::BuildEndCap(
-    RndMesh *mesh,
-    std::map<unsigned short, unsigned short> &connectingVerts,
-    int mFret,
-    const Transform &xfm,
-    Symbol orient,
-    Hmx::Color32 col
-) {
-    bool contour = mFret > 0;
-    if (orient == right) {
-        unsigned int expectedVerts =
-            contour ? sec1.mVerts.size() : sec2.mVerts.size();
-        MILO_ASSERT(connectingVerts.size() == expectedVerts, 0x1C4);
-    } else {
-        MILO_ASSERT(orient == left, 0x1C8);
-        connectingVerts.clear();
-        AddVertProfile(
-            mesh, xfm, mFretHeights[mFret], contour ? sec1 : sec2, connectingVerts,
-            Hmx::Color32(col)
-        );
-    }
-    std::map<unsigned short, unsigned short> capMap;
-    RndMesh::VertVector &srcVerts = mSource->Verts();
-    RndMesh::VertVector &meshVerts = mesh->Verts();
-    for (int i = 0; i < (int)srcVerts.size(); i++) {
-        float sx = srcVerts[i].pos.x;
-        if (contour ? (sx < unkcc + 0.1f) : (sx > unkc8 - 0.1f)) {
-            capMap[i] = vertIt++;
-        }
-    }
-    if (vertIt > (int)meshVerts.size()) {
-        unsigned int newsize = meshVerts.size() * 2;
-        MILO_LOG("RG: too few verts for chord shape - increasing to %d", newsize);
-        meshVerts.resize(newsize, true);
-    }
-    float xOffset = contour ? unkcc : unkc8;
-    float xScale = contour ? -1.0f : 1.0f;
-    float fretHeight = mFretHeights[mFret];
-    std::map<unsigned short, unsigned short>::const_iterator vit = capMap.begin();
-    std::map<unsigned short, unsigned short>::const_iterator vend = capMap.end();
-    for (; vit != vend; ++vit) {
-        RndMesh::Vert &curvert = meshVerts[vit->second];
-        curvert = srcVerts[vit->first];
-        TransformVert(curvert, xOffset, xScale, fretHeight, xfm, Hmx::Color32(col));
-    }
-    capMap.insert(connectingVerts.begin(), connectingVerts.end());
-    std::vector<RndMesh::Face> &srcFaces = mSource->Faces();
-    std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
-    for (unsigned int i = 0; i < srcFaces.size(); i++) {
-        const RndMesh::Face &f = srcFaces[i];
-        if (contour) {
-            float minX = srcVerts[f.v1].pos.x;
-            MinEq(minX, srcVerts[f.v2].pos.x);
-            MinEq(minX, srcVerts[f.v3].pos.x);
-            if (!(minX < unkcc - 0.1f))
-                continue;
-        } else {
-            float maxX = srcVerts[f.v1].pos.x;
-            MaxEq(maxX, srcVerts[f.v2].pos.x);
-            MaxEq(maxX, srcVerts[f.v3].pos.x);
-            if (!(maxX > unkc8 + 0.1f))
-                continue;
-        }
-        if (faceIt >= meshFaces.size()) {
-            unsigned int newsize = meshFaces.size() * 2;
-            MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
-            meshFaces.resize(newsize, RndMesh::Face());
-        }
-        RndMesh::Face &mf = meshFaces[faceIt++];
-        bool allFound = capMap.find(f.v1) != capMap.end()
-            && capMap.find(f.v2) != capMap.end()
-            && capMap.find(f.v3) != capMap.end();
-        MILO_ASSERT(allFound, 0x223);
-        if (contour) {
-            mf.Set(capMap[f.v1], capMap[f.v3], capMap[f.v2]);
-        } else {
-            mf.Set(capMap[f.v1], capMap[f.v2], capMap[f.v3]);
-        }
-    }
-    connectingVerts.clear();
-}
-
-void ChordShapeGenerator::GetCrossSection(float xOffset, CrossSec &cs) {
-    MILO_ASSERT(mSource, 0x17C);
-    cs.mEdges.clear();
-    cs.mVerts.clear();
-    cs.mXOffset = xOffset;
-    RndMesh::VertVector &verts = mSource->Verts();
-#ifdef HX_NATIVE
-    std::vector<RndMesh::Face> faces(mSource->Faces());
-#else
-    std::vector<RndMesh::Face, unsigned short> faces(mSource->Faces());
-#endif
-    float hi = xOffset + 0.1f;
-    float lo = xOffset - 0.1f;
-    for (unsigned int i = 0; i < faces.size(); i++) {
-        RndMesh::Face &f = faces[i];
-        bool outOfBand = false;
-        int outsideVert = -1;
-        for (int j = 0; j < 3; j++) {
-            float x = verts[f[j]].pos.x;
-            if (x < lo) {
-                outOfBand = true;
-                break;
-            } else if (x > hi) {
-                if (outsideVert != -1) {
-                    outOfBand = true;
-                    break;
-                }
-                outsideVert = f[j];
-            }
-        }
-        if (!outOfBand && outsideVert != -1) {
-            Edge edge;
-            for (int j = 0; j < 3; j++) {
-                if (f[j] == outsideVert) {
-                    edge.mV0 = f[(j + 1) % 3];
-                    edge.mV1 = f[(j + 2) % 3];
-                }
-            }
-            cs.mEdges.push_back(edge);
-            cs.mVerts.insert(edge.mV0);
-            cs.mVerts.insert(edge.mV1);
-        }
-    }
-}
-
-void ChordShapeGenerator::ExtendProfile(
-    RndMesh *mesh,
-    std::map<unsigned short, unsigned short> &connectingVerts,
-    const Transform &tfA,
-    const Transform &tfB,
-    float t,
-    float fretHeight,
-    const CrossSec &crossSec,
-    Hmx::Color32 col1,
-    Hmx::Color32 col2
-) {
-    std::map<unsigned short, unsigned short> profileVerts;
-    Transform interp;
-    InterpolateXfm(tfA, tfB, t, interp);
-    Hmx::Color32 col(col1);
-    col.g = col1.g + (int)(t * (col2.g - col1.g));
-    col.r = col1.r + (int)(t * (col2.r - col1.r));
-    col.a = col1.a + (int)(t * (col2.a - col1.a));
-    col.b = col1.b + (int)(t * (col2.b - col1.b));
-    AddVertProfile(mesh, interp, fretHeight, crossSec, profileVerts, Hmx::Color32(col));
-    ConnectVertProfiles(mesh, connectingVerts, profileVerts, crossSec);
-    connectingVerts.swap(profileVerts);
-}
-
-void ChordShapeGenerator::ConnectVertProfiles(
-    RndMesh *mesh,
-    const std::map<unsigned short, unsigned short> &leftMap,
-    const std::map<unsigned short, unsigned short> &rightMap,
-    const CrossSec &crossSec
-) {
-    unsigned int numVerts = crossSec.mVerts.size();
-    MILO_ASSERT(leftMap.size() == numVerts && rightMap.size() == numVerts, 0x393);
-    unsigned int numNewFaces = crossSec.mEdges.size() * 2;
-    if (faceIt + numNewFaces > mesh->Faces().size()) {
-        unsigned int newsize = mesh->Faces().size() * 2;
-        MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
-        mesh->Faces().resize(newsize, RndMesh::Face());
-    }
-    std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
-    std::vector<Edge>::const_iterator it = crossSec.mEdges.begin();
-    std::vector<Edge>::const_iterator end = crossSec.mEdges.end();
-    for (; it != end; ++it) {
-        unsigned short a = it->mV0;
-        unsigned short b = it->mV1;
-        MILO_ASSERT(
-            leftMap.find(a) != leftMap.end() && leftMap.find(b) != leftMap.end(), 0x3A8
-        );
-        MILO_ASSERT(
-            rightMap.find(a) != rightMap.end() && rightMap.find(b) != rightMap.end(), 0x3A9
-        );
-        meshFaces[faceIt++].Set(
-            leftMap.find(a)->second, leftMap.find(b)->second, rightMap.find(a)->second
-        );
-        meshFaces[faceIt++].Set(
-            rightMap.find(b)->second, rightMap.find(a)->second, leftMap.find(b)->second
-        );
-    }
-}
 
 void ChordShapeGenerator::BuildSpan(
     RndMesh *mesh,
@@ -781,6 +611,150 @@ void ChordShapeGenerator::BuildSpan(
     );
 }
 
+void ChordShapeGenerator::ExtendProfile(
+    RndMesh *mesh,
+    std::map<unsigned short, unsigned short> &connectingVerts,
+    const Transform &tfA,
+    const Transform &tfB,
+    float t,
+    float fretHeight,
+    const CrossSec &crossSec,
+    Hmx::Color32 col1,
+    Hmx::Color32 col2
+) {
+    std::map<unsigned short, unsigned short> profileVerts;
+    Transform interp;
+    InterpolateXfm(tfA, tfB, t, interp);
+    Hmx::Color32 col(col1);
+    col.g = col1.g + (int)(t * (col2.g - col1.g));
+    col.r = col1.r + (int)(t * (col2.r - col1.r));
+    col.a = col1.a + (int)(t * (col2.a - col1.a));
+    col.b = col1.b + (int)(t * (col2.b - col1.b));
+    AddVertProfile(mesh, interp, fretHeight, crossSec, profileVerts, Hmx::Color32(col));
+    ConnectVertProfiles(mesh, connectingVerts, profileVerts, crossSec);
+    connectingVerts.swap(profileVerts);
+}
+
+void ChordShapeGenerator::InterpolateXfm(
+    const Transform &a, const Transform &b, float t, Transform &out
+) {
+    if (t > 0.99f) {
+        out = b;
+        return;
+    }
+    if (t < 0.1f) {
+        out = a;
+        return;
+    }
+    float ax = a.v.x;
+    float az = a.v.z;
+    float bx = b.v.x;
+    float bz = b.v.z;
+    Vector3 eulerA;
+    Vector3 eulerB;
+    MakeEuler(a.m, eulerA);
+    MakeEuler(b.m, eulerB);
+    float rA = eulerA.y;
+    float rB = eulerB.y;
+    MILO_ASSERT(rA != rB, 0x331);
+    MILO_ASSERT((abs(rA) < PI) && (abs(rB) < PI), 0x333);
+    float cosA = (float)cos(rA);
+    float slopeA = -(float)sin(rA) / cosA;
+    float cosB = (float)cos(rB);
+    float slopeB = -(float)sin(rB) / cosB;
+    float interceptA = -(slopeA * ax - az);
+    float midY = (a.v.y + b.v.y) * 0.5f;
+    float isectX = (-(slopeB * bx - bz) - interceptA) / (slopeA - slopeB);
+    float isectZ = slopeA * isectX + interceptA;
+    if (t < 0.5f) {
+        out.v.Set(isectX, midY, isectZ);
+        out.v -= a.v;
+        out.v *= 2.0f * t;
+        out.v += a.v;
+    } else {
+        out.v.Set(isectX, midY, isectZ);
+        out.v -= b.v;
+        out.v *= 2.0f * (1.0f - t);
+        out.v += b.v;
+    }
+    Vector3 midEuler(
+        (eulerA.x + eulerB.x) * 0.5f,
+        (eulerA.y + eulerB.y) * 0.5f,
+        (eulerA.z + eulerB.z) * 0.5f
+    );
+    MakeRotMatrix(midEuler, out.m, true);
+}
+
+void ChordShapeGenerator::AddVertProfile(
+    RndMesh *mesh,
+    const Transform &xfm,
+    float fretHeight,
+    const CrossSec &secSrc,
+    std::map<unsigned short, unsigned short> &newVertMap,
+    Hmx::Color32 col
+) {
+    newVertMap.clear();
+    int numNewVerts = secSrc.mVerts.size();
+    if (numNewVerts + vertIt > (int)mesh->Verts().size()) {
+        unsigned int newsize = mesh->Verts().size() * 2;
+        MILO_LOG("RG: too few verts for chord shape - increasing to %d", newsize);
+        mesh->Verts().resize(newsize, true);
+    }
+    RndMesh::VertVector &meshVerts = mesh->Verts();
+    RndMesh::VertVector &srcVerts = mSource->Verts();
+    std::set<unsigned short>::const_iterator it = secSrc.mVerts.begin();
+    std::set<unsigned short>::const_iterator end = secSrc.mVerts.end();
+    for (; it != end; ++it) {
+        unsigned short srcIdx = *it;
+        unsigned short destIdx = vertIt++;
+        RndMesh::Vert &curvert = meshVerts[destIdx];
+        curvert = srcVerts[srcIdx];
+        curvert.pos.x -= secSrc.mXOffset;
+        float pz = curvert.pos.z;
+        if (pz > unkd0) {
+            curvert.pos.z = fretHeight * (pz - unkd0) + unkd0;
+        }
+        curvert.color = col;
+        Multiply(curvert.pos, xfm, curvert.pos);
+        newVertMap[srcIdx] = destIdx;
+    }
+}
+
+void ChordShapeGenerator::ConnectVertProfiles(
+    RndMesh *mesh,
+    const std::map<unsigned short, unsigned short> &leftMap,
+    const std::map<unsigned short, unsigned short> &rightMap,
+    const CrossSec &crossSec
+) {
+    unsigned int numVerts = crossSec.mVerts.size();
+    MILO_ASSERT(leftMap.size() == numVerts && rightMap.size() == numVerts, 0x393);
+    unsigned int numNewFaces = crossSec.mEdges.size() * 2;
+    if (faceIt + numNewFaces > mesh->Faces().size()) {
+        unsigned int newsize = mesh->Faces().size() * 2;
+        MILO_LOG("RG: too few faces for chord shape - increasing to %d", (int)newsize);
+        mesh->Faces().resize(newsize, RndMesh::Face());
+    }
+    std::vector<RndMesh::Face> &meshFaces = mesh->Faces();
+    std::vector<Edge>::const_iterator it = crossSec.mEdges.begin();
+    std::vector<Edge>::const_iterator end = crossSec.mEdges.end();
+    for (; it != end; ++it) {
+        unsigned short a = it->mV0;
+        unsigned short b = it->mV1;
+        MILO_ASSERT(
+            leftMap.find(a) != leftMap.end() && leftMap.find(b) != leftMap.end(), 0x3A8
+        );
+        MILO_ASSERT(
+            rightMap.find(a) != rightMap.end() && rightMap.find(b) != rightMap.end(), 0x3A9
+        );
+        meshFaces[faceIt++].Set(
+            leftMap.find(a)->second, leftMap.find(b)->second, rightMap.find(a)->second
+        );
+        meshFaces[faceIt++].Set(
+            rightMap.find(b)->second, rightMap.find(a)->second, leftMap.find(b)->second
+        );
+    }
+}
+
 DataNode ChordShapeGenerator::OnGenerate(const DataArray *da) {
     RndMesh *mesh = BuildChordMesh();
     NameMesh(mesh, false);
@@ -795,6 +769,34 @@ DataNode ChordShapeGenerator::OnInvert(const DataArray *da) {
         return DataNode(mesh);
     } else
         return DataNode(0);
+}
+
+void ChordShapeGenerator::NameMesh(RndMesh *mesh, bool lefty) {
+    MILO_ASSERT(mesh && Dir(), 0x3CF);
+    const char *name = lefty ? "chord_L" : "chord";
+    for (int i = 0; i < mNumSlots; i++) {
+        name = MakeString("%s_%d", name, mStringFrets[i]);
+    }
+    {
+        const char *meshFmt = MakeString("%s.mesh", name);
+        if (dynamic_cast<RndMesh *>(Dir()->FindObject(meshFmt, false))) {
+            int counter;
+            do {
+                                counter = 1;
+                name = MakeString("%s(%d)", name, counter);
+                counter++;
+                meshFmt = MakeString("%s.mesh", name);
+            } while (dynamic_cast<RndMesh *>(
+                Dir()->FindObject(meshFmt, false)
+            ));
+        }
+    }
+    mesh->SetName(MakeString("%s.mesh", name), Dir());
+    Dir()->SyncObjects();
+    Hmx::Object *milo = ObjectDir::Main()->FindObject("milo", false);
+    if (milo) {
+        milo->Handle(Message("update_objects"), true);
+    }
 }
 
 DataNode ChordShapeGenerator::OnSetStringFret(const DataArray *da) {
