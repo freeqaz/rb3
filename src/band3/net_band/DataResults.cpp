@@ -57,6 +57,9 @@ void DataResultList::Update(Message *msg) {
                 for (uint k = 0; k < nNumFields; k++) {
                     DataNode ne0;
                     tmpJsonObject = jc.GetElement(currentRow, k);
+// clang C++17 requires braces around switch cases that declare variables
+// (jump-over-init). The MWCC decomp path is preserved verbatim below.
+#ifndef HX_NATIVE
                     switch (jsonStr1[k]) {
                     case 'd':
                         MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Int, 0x74);
@@ -77,6 +80,31 @@ void DataResultList::Update(Message *msg) {
                         MILO_FAIL("Unsupported type!");
                         break;
                     }
+#else
+                    switch (jsonStr1[k]) {
+                    case 'd': {
+                        MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Int, 0x74);
+                        JsonInt *jInt = (JsonInt *)tmpJsonObject;
+                        ne0 = jInt->GetValue();
+                        break;
+                    }
+                    case 'f': {
+                        MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Double, 0x79);
+                        JsonDouble *jFloat = (JsonDouble *)tmpJsonObject;
+                        ne0 = (float)jFloat->GetValue();
+                        break;
+                    }
+                    case 's': {
+                        MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_String, 0x7E);
+                        JsonString *jStr = (JsonString *)tmpJsonObject;
+                        ne0 = jStr->GetValue();
+                        break;
+                    }
+                    default:
+                        MILO_FAIL("Unsupported type!");
+                        break;
+                    }
+#endif
                     tmpJsonObject = jc.GetElement(jsonFieldNames, k);
                     MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_String, 0x88);
                     String pairStr = tmpJsonObject->GetObjectAsString();

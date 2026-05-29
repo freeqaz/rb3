@@ -337,11 +337,9 @@ set(_NATIVE_FORK_EXCLUDE
     # garbage and the dtor SEGVs in ObjPtr::~ObjPtr → Object::Release → rbegin().
     # Requires the V20 #ifndef HX_NATIVE wrappers around the stlpmtx_std
     # specializations in BandPatchMesh.cpp.
-    ClipDistMap DataResults
     SaveLoadManager
     Splash
-    StorePackedMetadata TourPerformerLocal
-    WaitingUserGate)
+    StorePackedMetadata TourPerformerLocal)
 foreach(_tu ${_NATIVE_FORK_EXCLUDE})
     list(FILTER NATIVE_FORK_SOURCES EXCLUDE REGEX "/${_tu}\\.cpp$")
 endforeach()
@@ -466,11 +464,6 @@ add_executable(rb3-native
     # native TheNetSession (`session`): minimal offline concrete NetSession; its
     # real impl lives in the un-globbed network/ Quazal subsystem
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
-    # native WaitingUserGate ctor/dtor/Handle so its vtable is emitted (the .cpp
-    # is in _NATIVE_FORK_EXCLUDE; without this shim `new WaitingUserGate()`
-    # returns a vtable-less object and `RELEASE(mWaitingUserGate)` SIGSEGVs on
-    # the BandUI::Terminate path)
-    ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
     # embedded HTTP debug server (RB3_HTTP=1): /api/health, /api/screenshot,
@@ -592,7 +585,6 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_native_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_platform_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
-    ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
     ${REPO_ROOT}/src/network/net/Synchronize.cpp
 )

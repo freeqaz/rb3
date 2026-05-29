@@ -15,6 +15,7 @@
 #include "ui/UIScreen.h"
 #include "utl/BinStream.h"
 #include "utl/HxGuid.h"
+#include "utl/VectorSizeDefs.h"
 #include <vector>
 
 // EnterFlowMsg: tells a remote machine to transition to a particular UI flow.
@@ -42,11 +43,11 @@ namespace {
         void Save(BinStream &) const;
         virtual void Load(BinStream &);
 
-        void GetWaitingUsers(std::vector<BandUser *, unsigned short> &) const;
-        void GetCurrentScreenState(std::vector<UIScreen *, unsigned short> &) const;
+        void GetWaitingUsers(std::vector<BandUser * VECTOR_SIZE_SMALL> &) const;
+        void GetCurrentScreenState(std::vector<UIScreen * VECTOR_SIZE_SMALL> &) const;
 
-        std::vector<UserGuid, unsigned short> mWaitingUsers; // 0x8
-        std::vector<UIScreen *, unsigned short> mCurrentScreenState; // 0x10
+        std::vector<UserGuid VECTOR_SIZE_SMALL> mWaitingUsers; // 0x8
+        std::vector<UIScreen * VECTOR_SIZE_SMALL> mCurrentScreenState; // 0x10
     };
 
     class OpenWaitingGateMsg : public StartLockMsg {
@@ -96,7 +97,7 @@ void EnterFlowMsg::Dispatch() {
         TheGameMode->SetMode(mMode);
         UIScreen *entry = TheBandUI.GetJoinEntryPointForFlowType(mFlow);
         if (entry) {
-            std::vector<UIScreen *, unsigned short> dst;
+            std::vector<UIScreen * VECTOR_SIZE_SMALL> dst;
             dst.push_back(entry);
             JoinEntryPointEvent *ev = new JoinEntryPointEvent(
                 TheNetSync, *(std::vector<UIScreen *> *)&dst, mFlow
@@ -134,19 +135,16 @@ void OpenGateData::Load(BinStream &bs) {
 }
 
 void OpenGateData::GetWaitingUsers(
-    std::vector<BandUser *, unsigned short> &out
+    std::vector<BandUser * VECTOR_SIZE_SMALL> &out
 ) const {
     unsigned int i;
-    int byteOffset;
-    for (i = 0, byteOffset = 0; i < mWaitingUsers.size(); i++, byteOffset += 0x10) {
-        out.push_back(TheBandUserMgr->GetBandUser(
-            *(const UserGuid *)((const char *)mWaitingUsers.begin() + byteOffset), true
-        ));
+    for (i = 0; i < mWaitingUsers.size(); i++) {
+        out.push_back(TheBandUserMgr->GetBandUser(mWaitingUsers[i], true));
     }
 }
 
 void OpenGateData::GetCurrentScreenState(
-    std::vector<UIScreen *, unsigned short> &out
+    std::vector<UIScreen * VECTOR_SIZE_SMALL> &out
 ) const {
     out = mCurrentScreenState;
 }
@@ -195,7 +193,7 @@ DataNode WaitingUserGate::OnMsg(const LockStepCompleteMsg &) {
 
 DataNode WaitingUserGate::OnMsg(const ProcessedJoinRequestMsg &) {
     UIFlowType flow = TheBandUI.GetCurrentFlowType();
-    std::vector<RemoteBandUser *, unsigned short> waiting;
+    std::vector<RemoteBandUser * VECTOR_SIZE_SMALL> waiting;
     TheSessionMgr->GetWaitingUsers(*(std::vector<RemoteBandUser *> *)&waiting);
     EnterFlowMsg msg(flow, TheGameMode->GetMode());
     TheSessionMgr->SendMsg(
@@ -209,7 +207,7 @@ DataNode WaitingUserGate::OnMsg(const LockStepStartMsg &msg) {
     TheBandUI.GetOvershell()->SetBlockAllInput(true);
     LockData *ld = msg.GetLockData();
     OpenGateData *gd = dynamic_cast<OpenGateData *>(ld);
-    std::vector<BandUser *, unsigned short> waiting;
+    std::vector<BandUser * VECTOR_SIZE_SMALL> waiting;
     gd->GetWaitingUsers(waiting);
     int anyLocal = 0;
     for (int i = 0; (unsigned int)i < waiting.size(); i++) {
@@ -219,7 +217,7 @@ DataNode WaitingUserGate::OnMsg(const LockStepStartMsg &msg) {
         }
     }
     if (anyLocal) {
-        std::vector<UIScreen *, unsigned short> dst;
+        std::vector<UIScreen * VECTOR_SIZE_SMALL> dst;
         gd->GetCurrentScreenState(dst);
         NonDestructiveTransitionEvent *ev = new NonDestructiveTransitionEvent(
             TheNetSync, *(std::vector<UIScreen *> *)&dst
