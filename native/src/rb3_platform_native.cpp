@@ -127,6 +127,16 @@ public:
     // re-load the DTA file.
     virtual void StartRefresh() {
         const char *dataRoot = ::getenv("RB3_DATA");
+#ifdef __EMSCRIPTEN__
+        // On web there is no RB3_DATA env var: the boot machine (main_web.cpp's
+        // DoEngineInit) chdir's to /data, where WebAssets unpacked the MEMFS
+        // bundle — including songs/songs.dta. Default the data root to /data so
+        // song discovery finds the same songs.dta native reads via $RB3_DATA.
+        // Without this the web song_select list is empty (the no-op branch
+        // below). W3c-nav.
+        if (!dataRoot)
+            dataRoot = "/data";
+#endif
         if (!dataRoot) {
             MILO_LOG("NativeContentMgr: RB3_DATA unset — refresh is a no-op\n");
             mState = kDiscoveryEnumerating;

@@ -58,6 +58,10 @@
 
 #include "ui/UI.h"          // TheUI — current-screen poll for window.rb3CurrentScreen
 #include "ui/UIScreen.h"
+#include "ui/UIPanel.h"
+#include "ui/UIComponent.h"
+#include "meta_band/BandSongMgr.h"  // TheSongMgr — song-list population probe (W3c-nav)
+#include <vector>
 
 #include "rb3_render_mesh.h"  // LoadMiloAndWalk / RenderFrame / WalkResult
 
@@ -168,12 +172,31 @@ static const int kH = 720;
 // screen-flow progress (splash/startup → menu). No-op if TheUI has no screen.
 static void PublishCurrentScreen() {
     const char* name = "";
+    const char* focus = "";
     UIScreen* scr = TheUI.CurrentScreen();
     if (scr && scr->Name())
         name = scr->Name();
+    // The currently-focused UI component name (the button a Confirm acts on) —
+    // lets the W3c-nav smoke verify the focus chain (mb_playnow → pn_quickplay
+    // → qp_quickplay) as it drives the menu.
+    if (scr && scr->FocusPanel() && scr->FocusPanel()->FocusComponent() &&
+        scr->FocusPanel()->FocusComponent()->Name())
+        focus = scr->FocusPanel()->FocusComponent()->Name();
     EM_ASM({
         window.rb3CurrentScreen = UTF8ToString($0);
-    }, name);
+        window.rb3FocusButton  = UTF8ToString($1);
+    }, name, focus);
+}
+
+// Publish the discovered song count so the smoke can confirm the song DB is
+// populated on web (W3c-nav: NativeContentMgr::StartRefresh reads
+// /data/songs/songs.dta). GetRankedSongs returns the menu-visible set.
+static void PublishSongCount() {
+    int n = 0;
+    std::vector<int> ranked;
+    TheSongMgr.GetRankedSongs(ranked, false, false);
+    n = (int)ranked.size();
+    EM_ASM_({ window.rb3SongCount = $0; }, n);
 }
 
 static void DoEngineInit() {
@@ -326,8 +349,10 @@ static void mainLoop() {
         EM_ASM_({ window.rb3FrameCount = $0; }, sFrameCount);
         // Publish the current screen name periodically (cheap; every frame is
         // fine but throttle the EM_ASM to keep the JS bridge light).
-        if ((sFrameCount & 7) == 0)
+        if ((sFrameCount & 7) == 0) {
             PublishCurrentScreen();
+            PublishSongCount();
+        }
         break;
     }
 

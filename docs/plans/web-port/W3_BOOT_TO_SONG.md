@@ -311,6 +311,68 @@ BOOT_RUNNING     → sApp->RunOneFrame(); window.rb3FrameCount = N  (NEW)
 > fuller acceptance; the core input pipeline is working and splash→main_hub is confirmed
 > interactive. W3c (audio) can now be dispatched.**
 
+#### W3c-nav — full menu→gameplay-entry flow by keyboard [2026-05-29, DONE up to part_difficulty]
+
+> **STATUS 2026-05-29 — keyboard drives the WHOLE menu spine to `part_difficulty_screen`
+> with the 83-song library populated and the selected song resolved.** Branch
+> `wt-web-w3cnav`. Deepest screen: **`part_difficulty_screen`** (the seldiff part/difficulty
+> picker), reached purely by keyboard from a cold boot. Stops there: the part_difficulty →
+> gameplay transition is **audio/native-v1-gated** (`Game.cpp:774`
+> `MILO_ASSERT(GetSongStream())` — the gem-track `game_screen` hard-requires a decoded MOGG
+> song stream, which is exactly W3c Step 3, gated on native v1 + audio recovery).
+>
+> **Full key sequence (cold boot → deepest screen):**
+> | Screen | Key | Result |
+> |---|---|---|
+> | `splash_screen` | **Space** (Start) | fires splash start.btn → overshell add-user |
+> | `splash_screen` | **Enter** (Confirm) | overshell continue-without-profile → `main_hub_screen` |
+> | `main_hub_screen` | **Enter** | focus `mb_playnow.btn` → `set_state kMainHubState_PlayNow` (focus → `pn_quickplay.btn`) |
+> | `main_hub_screen` | **Enter** | `pn_quickplay.btn` → `kMainHubState_Quickplay` (focus → `qp_quickplay.btn`) |
+> | `main_hub_screen` | **Enter** | `qp_quickplay.btn` → set_override Waiting → `song_select_enter_screen` → **`song_select_screen`** (83 songs) |
+> | `song_select_screen` | **↓ (ArrowDown)** | navigate `song.lst` |
+> | `song_select_screen` | **Enter** | confirm song → **`part_difficulty_screen`** (song "1. 20th Century Boy — T. Rex", part picker shows GUITAR/BASS) |
+> | `part_difficulty_screen` | (further) | **STOP — overshell part-select → `Game::LoadSong` is audio-gated** |
+>
+> **The minimum-win blocker that was fixed — empty song list on web.**
+> `NativeContentMgr::StartRefresh()` (`native/src/rb3_platform_native.cpp`) keyed song
+> discovery on `getenv("RB3_DATA")`, which is **unset on web** (the boot machine `chdir`s to
+> `/data` MEMFS instead). So the web song_select list was empty and a song-confirm bounced to
+> `no_valid_songs_screen`. Fix (one `#ifdef __EMSCRIPTEN__` block): default `dataRoot` to
+> `/data` on web, where `WebAssets` unpacks `songs/songs.dta`. Result:
+> `StartRefresh loaded /data/songs/songs.dta — TheSongMgr now has 83 ranked songs`. The
+> populated list renders (MUSIC LIBRARY header + song rows + scores 0/10·0/5·0/30★ + album-art
+> box) and a song-confirm now correctly enters `part_difficulty_screen`.
+>
+> **New JS signals** (`main_web.cpp`, all `#ifdef __EMSCRIPTEN__` / web-only): `window.rb3SongCount`
+> (GetRankedSongs size — confirms DB populated), `window.rb3FocusButton` (current focused
+> UIComponent name — verifies the focus chain mb_playnow→pn_quickplay→qp_quickplay).
+>
+> **Engine concurrency note:** the live engine tree had **uncommitted in-progress RTT
+> (render-to-texture) code** in `Rnd_Wgpu_RB3.cpp` (`BeginDrawTarget`/`EndDrawTarget`/
+> `mRtActiveTex`) that threw `beginRenderPass ... depthClearValue non-finite` at frame 2 and
+> **froze the RAF loop** (W3b baseline FAILED against the live engine: painted=0%, screen stuck
+> empty). This is NOT in the pin `4077997`. Built against an isolated pin worktree
+> (`/tmp/milo-engine-pin-4077997`) per the concurrency protocol → no page error, the loop runs
+> and `window.rb3CurrentScreen` publishes. **`MILO_ENGINE_PIN` should stay at `4077997` until
+> the RTT work lands cleanly.**
+>
+> **Regressions GREEN:** W2 `?milo=ui/track/gen/gem_smasher_guitar_meshes.milo_xbox` renders
+> (milosLoaded=1, 45 frames, 3.69% nonClear, center 200,200,200 — PASS). splash→main_hub
+> (W3b) still works (Space+Enter). Native `rb3-native RB3_GAME=1` builds + runs unchanged
+> (the song-discovery fix is `#ifdef __EMSCRIPTEN__`, zero native impact; `git diff` confirms).
+>
+> **Test:** `scripts/web/w3cnav-test.mjs` — boots App, drives the key sequence above, polls
+> `rb3CurrentScreen`/`rb3SongCount`, screenshots each milestone →
+> `scripts/web/results/web-w3cnav/{song_select,gameplay}/`.
+>
+> **Next blocker (independently fixable vs gated):** the only thing between here and the gem
+> highway is (1) the overshell part-select keyboard nav on `part_difficulty_screen` (the part
+> picker is shown but the synth user's slot doesn't consume the screen-level Confirm — focus is
+> `(none)`; native crosses this with synthetic `track:guitar` + `msg:overshell:end_override_flow`
+> verbs, not raw nav) — *independently fixable*, and (2) `Game::LoadSong`'s song-stream assert —
+> **audio/native-v1-gated (W3c)**. Even with (1) solved, (2) blocks the actual gem_screen until
+> W3c lands audio.
+
 The App boot makes the menu interactive; W3b feeds real browser keypresses into
 the same input pipeline the synthetic driver uses.
 
