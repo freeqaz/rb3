@@ -49,19 +49,6 @@ static bool Tv3SeqShotDbg() {
         s = getenv("RB3_TV3SEQ_DBG") ? 1 : 0;
     return s != 0;
 }
-// Default-on under HX_NATIVE: CamShotFrame::Interp builds the SECOND keyframe
-// transform from the OTHER frame (frame.BuildTransform), matching the verified-
-// correct sibling decomps (dc3-decomp/rb3-xenon: other.BuildTransform). The rb3
-// (MWCC) matched fork calls this->BuildTransform twice, which collapses a single-
-// keyframe shot to nullFrame(0,0,0) -> camera at origin -> black tv3. This is a
-// general single-keyframe-CamShot fix, not tv3-specific. Escape via
-// RB3_TV3_PLAY_OFF if a regression appears (returns to the buggy MWCC behavior).
-static bool Tv3Play() {
-    static int s = -1;
-    if (s < 0)
-        s = getenv("RB3_TV3_PLAY_OFF") ? 0 : 1;
-    return s != 0;
-}
 static bool IsTv3Shot(class ObjectDir *d) {
     if (!d)
         return false;
@@ -1120,19 +1107,7 @@ void CamShotFrame::Interp(const CamShotFrame &frame, float f1, float f2, RndCam 
     Transform tfd0;
     BuildTransform(cam, tfd0, !sameTargets);
     Transform tf100;
-#ifdef HX_NATIVE
-    // The rb3 matched fork lost the `frame.` qualifier on the second build; the
-    // sibling decomps (dc3/rb3-xenon) call other.BuildTransform here. Without it,
-    // a single-keyframe shot (Interp called as nullFrame.Interp(*frame50)) builds
-    // BOTH transforms from nullFrame -> (0,0,0). Default-on under HX_NATIVE.
-    // Escape via RB3_TV3_PLAY_OFF to revert to the buggy MWCC behavior.
-    if (Tv3Play())
-        frame.BuildTransform(cam, tf100, !sameTargets);
-    else
-        BuildTransform(cam, tf100, !sameTargets);
-#else
-    BuildTransform(cam, tf100, !sameTargets);
-#endif
+    frame.BuildTransform(cam, tf100, !sameTargets);
     Transform tf130;
     ::Interp(tfd0.v, tf100.v, d11, tf130.v);
     ::Interp(tfd0.m, tf100.m, d11, tf130.m);
