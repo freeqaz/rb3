@@ -49,6 +49,9 @@ orig/*
 
 # Extracted asset tree (~4 GB; produced by scripts/milo/extract_ark.sh)
 orig-assets/
+# Exception: checked-in native reference renders for pixelmatch regression guard.
+!orig-assets/native-refs/
+!orig-assets/native-refs/**
 
 # Used to persist certain empty folders
 # Search patterns covering folders that need to be persisted must end with an asterisk,
