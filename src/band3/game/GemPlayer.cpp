@@ -459,7 +459,16 @@ void GemPlayer::Hit(
     block_96:
         unk3c0 = 0;
         SetRemoteAnnoyingMode(false);
+#ifdef HX_NATIVE
+        // msg[3] below writes mData->Node(5) (Message::operator[](i) == Node(i+2)),
+        // but the 3-arg ctor only allocates DataArray(5) (nodes 0-4). On PPC the
+        // out-of-bounds Node(5) read/write is benign; native's bounds-checked
+        // DataArray::Node OSFatals ("Array doesn't have node 5"). Allocate one more
+        // arg slot (DataArray(6)) so Node(5) is in-bounds.
+        static Message msg("hit", 0, 0, 0, 0.0f);
+#else
         static Message msg("hit", 0, 0, 0.0f);
+#endif
         float numTotalF = (float)GameGem::CountBitsInSlotType(gemSlots);
         float numHitF = (float)GameGem::CountBitsInSlotType(gem_hit_slots);
         float ratio = numHitF / numTotalF;
@@ -500,13 +509,27 @@ void GemPlayer::Hit(
                 HandleSoloGem(gem_id, true, ms, ((unsigned int)flags >> 1) & 1);
             }
             if (TheGame->mProperties.mInDrumTrainer) {
+#ifdef HX_NATIVE
+                // dtmsg[1] writes Node(3) but the 1-arg ctor only allocates
+                // DataArray(3) (nodes 0-2); add one arg slot so Node(3) is in-bounds
+                // (same Message::operator[](i)==Node(i+2) overrun as "hit"/"send_hit").
+                static Message dtmsg("drum_trainer_unmute", 0, 0);
+#else
                 static Message dtmsg("drum_trainer_unmute", 0);
+#endif
                 dtmsg[1] = gem.GetSlot();
                 Export(dtmsg, false);
             }
         }
         if (IsLocal()) {
+#ifdef HX_NATIVE
+            // msg[3] writes Node(5) but the 3-arg ctor only allocates DataArray(5)
+            // (nodes 0-4); add one arg slot so Node(5) is in-bounds (see the "hit"
+            // Message above — same Message::operator[](i)==Node(i+2) overrun).
+            static Message msg("send_hit", 0, 0, 0, 0.0f);
+#else
             static Message msg("send_hit", 0, 0, 0.0f);
+#endif
             msg[1] = mStats.GetCurrentStreak();
             msg[2] = (int)mScore;
             msg[3] = mCrowd->GetDisplayValue();

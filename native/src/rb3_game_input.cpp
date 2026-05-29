@@ -33,6 +33,8 @@
 #include "os/User.h"
 #include "game/BandUser.h"           // BandUser::SetTrackType
 #include "game/BandUserMgr.h"
+#include "game/Game.h"               // TheGame, Game::GetActivePlayers (autohit)
+#include "game/Player.h"             // Player::SetAutoplay/IsAutoplay (autohit)
 #include "game/Defines.h"
 #include "beatmatch/TrackType.h"     // SymToTrackType
 #include "meta_band/ProfileMgr.h"
@@ -138,7 +140,7 @@ LocalUser *gSynthUser = nullptr;
 // a mis-timed/bad script degrades gracefully (LOG + SKIP) rather than hanging
 // or crashing. The documented RB3_GAME_INPUT scripts still drive
 // boot->song-select->load->gameplay->nofail, just robustly to timing.
-enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail };
+enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail, kVerbAutohit };
 
 struct Verb {
     int        kind;
@@ -245,6 +247,18 @@ void ParseScript() {
             Verb v; v.kind = kVerbNoFail; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
             gVerbs.push_back(v);
             MILO_LOG("RB3 input: scheduled @%d (min) -> nofail\n", frame);
+            continue;
+        }
+        // "autohit" directive — turn on autoplay (the retail kiosk/E3 path) for
+        // every active player at frame F, so the engine auto-hits gems at the
+        // strike window: SetAutoplay(true) -> BeatMatcher::SetCheating(true) ->
+        // TrackWatcherImpl::CheckForAutoplay fires HitGem -> GemSmasher::Hit ->
+        // hit.trig particles + score tick. Exercises the hit-FX path a passive
+        // (nofail-only) run never reaches.
+        if (action == "autohit") {
+            Verb v; v.kind = kVerbAutohit; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+            gVerbs.push_back(v);
+            MILO_LOG("RB3 input: scheduled @%d (min) -> autohit\n", frame);
             continue;
         }
         // "msg:<object>:<action>[:arg]..." directive — send a message to a named
@@ -458,6 +472,28 @@ void ExecNoFail() {
     }
 }
 
+// Turn on autoplay for every active player — the retail kiosk/E3 path mirrored
+// from Game::E3CheatAutoplayAccuracy (Game.cpp:1041). SetAutoplay(true) flows to
+// BeatMatcher::SetCheating(true); TrackWatcherImpl::CheckForAutoplay then auto-
+// hits each gem at the strike window (HitGem -> GemSmasher::Hit -> hit.trig
+// particles), which both fires the gameplay hit-FX and ticks the score off 0.
+void ExecAutohit() {
+    if (!TheGame) {
+        MILO_LOG("RB3 input: autohit FAILED: no TheGame\n");
+        return;
+    }
+    std::vector<Player *> &players = TheGame->GetActivePlayers();
+    int n = 0;
+    for (size_t i = 0; i < players.size(); ++i) {
+        Player *p = players[i];
+        if (p) {
+            p->SetAutoplay(true);
+            n++;
+        }
+    }
+    MILO_LOG("RB3 input: autohit enabled on %d active player(s)\n", n);
+}
+
 void ExecButton(JoypadAction action, JoypadButton button, UIScreen *cur) {
     LocalUser *user = SynthUser();
     ButtonDownMsg msg(user, button, action, 0);
@@ -529,6 +565,19 @@ bool VerbReady(const Verb &v, UIScreen *cur, const char **reason) {
         if (!MetaPerformer::Current()) { if (reason) *reason = "no MetaPerformer (song not loaded)"; return false; }
         return true;
     }
+
+    case kVerbAutohit: {
+        // autohit needs gameplay to be live: a MetaPerformer::Current() AND at
+        // least one active player (the synth user is only picked up after
+        // track:guitar). Gating on both means SetAutoplay lands on a real
+        // BeatMatcher and never derefs an empty/absent player list.
+        if (!MetaPerformer::Current()) { if (reason) *reason = "no MetaPerformer (song not loaded)"; return false; }
+        if (!TheGame || TheGame->GetActivePlayers().empty()) {
+            if (reason) *reason = "no active players yet";
+            return false;
+        }
+        return true;
+    }
     }
     return true;
 }
@@ -540,6 +589,7 @@ const char *VerbName(const Verb &v) {
     case kVerbMsg:    return "msg";
     case kVerbTrack:  return "track";
     case kVerbNoFail: return "nofail";
+    case kVerbAutohit: return "autohit";
     }
     return "?";
 }
@@ -553,6 +603,7 @@ void DispatchVerb(const Verb &v, UIScreen *cur) {
     case kVerbMsg:    ExecMsg(v.msg, cur);                  break;
     case kVerbTrack:  ExecTrack(v.trk.trackSym);           break;
     case kVerbNoFail: ExecNoFail();                        break;
+    case kVerbAutohit: ExecAutohit();                      break;
     }
 }
 
@@ -570,6 +621,10 @@ bool ExecVerb(const std::string &verb, UIScreen *cur, std::string *err) {
     }
     if (verb == "nofail") {
         ExecNoFail();
+        return true;
+    }
+    if (verb == "autohit") {
+        ExecAutohit();
         return true;
     }
     if (verb.rfind("msg:", 0) == 0) {

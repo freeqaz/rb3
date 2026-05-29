@@ -102,7 +102,14 @@ public:
     virtual void CheckForTrills(float ms, int, unsigned int slots);
     virtual void PollHook(float ms);
     virtual void JumpHook(float ms);
+#ifdef HX_NATIVE
+    // Empty non-void body ud2's under clang on fall-off-end; return is ignored by
+    // the caller (TrackWatcherImpl::HitGem). Same fix as the JoypadTrackWatcherImpl
+    // override. (Reached for non-Joypad watchers that don't override this.)
+    virtual float HitGemHook(float ms, int gemID, GemHitFlags flags) { return 0.0f; }
+#else
     virtual float HitGemHook(float ms, int gemID, GemHitFlags flags) {}
+#endif
     virtual bool ShouldAutoplayGem(float ms, int gemID);
     virtual bool GemCanBePassed(int gemID) { return true; }
     virtual int NextGemAfter(int gemID, bool timeout);

@@ -125,6 +125,12 @@ void JoypadTrackWatcherImpl::TryToCompleteChord(float f, int i) {
 void JoypadTrackWatcherImpl::FretButtonUp(int i) { KillSustainForSlot(i); }
 float JoypadTrackWatcherImpl::HitGemHook(float, int, GemHitFlags) {
     ResetChordInProgress();
+#ifdef HX_NATIVE
+    // Non-void fn with no return: clang traps (ud2/SIGILL) on fall-off-end; MWCC/PPC
+    // returns the garbage in the return register and the caller
+    // (TrackWatcherImpl::HitGem) discards it. Return a defined value for native.
+    return 0.0f;
+#endif
 }
 void JoypadTrackWatcherImpl::JumpHook(float f) { ResetChordInProgress(); }
 void JoypadTrackWatcherImpl::PollHook(float f) { CheckForChordTimeout(f); }
