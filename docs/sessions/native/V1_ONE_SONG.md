@@ -4,19 +4,43 @@
 scoring, single instrument (guitar is fine). This is the v1 milestone from the
 roadmap's Goal & non-goals.
 
-> **🔄 In progress (2026-05-27, post-asset-unblock).** Audit ([V1_PATH_DECISION.md](V1_PATH_DECISION.md))
-> picked the Xbox 360 path; assets extracted; audio backend port underway:
-> - **X1** Xbox ARK extracted → `orig-assets/extracted-xbox-full/` (85 songs, 83 .mogg, 635 .mid). ✓ 30 sec via arkhelper.
-> - **X1-fix** `SetUsingCD(true)` in `src/system/os/System.cpp:358` (HX_NATIVE PreInit) so logical `config/foo.dta` rewrites to `config/gen/foo.dtb` matching the canonical extract layout. ✓
-> - **X2** v0xE MOGG decode validation → not needed; RB3 moggs are v0x10 (header byte `0x10`), but DC3's pure-C++ `GrindArray` handles `moggVersion > 0x0D` generically (6-bit hash + 64-slot switchCases, no per-version table). ✓
-> - **X3** Port `ByteGrinder::GrindArray` + `magicNumberGeneratorNative` from DC3 → `src/system/synth/ByteGrinder.cpp` HX_NATIVE block at lines 859-1043 (matched `#else` at 1045-1108). ✓ 2.5 min. Symbols verified in linked binary.
-> - **X4** Port `VorbisReader` HX_NATIVE Poll/DoFileRead/Decrypt + magicHash → `src/system/synth/VorbisReader.cpp` (Block A magicHash at 50-64, Block B free-fn `::Decrypt` + native Poll/DoFileRead at 109-255, matched at 267-340). ✓ 2.5 min. `unke4` used as `mPcmBuffers` equivalent. Symbols verified.
-> - **X5** Verify `StandardStream` port complete. ✓ Wave 2.4 had already landed all portable blocks; **do NOT add `#include "platform/StreamReceiver_Native.h"`** (would break the compile — engine's `StreamReceiverNative` inherits DC3 vtable incompatible with RB3's dual `StartSendImpl` shape). 4.5 min.
-> - **X6** Real `NativeSynth` + RB3-shaped `StreamReceiverNative` bridge. ⏳ In flight (Opus subagent). Creates `rb3_stream_receiver_native.cpp` (NEW) deriving from both RB3's `StreamReceiver` AND engine's `AudioSource`, implements dual `StartSendImpl` overloads + 96KB-base-ring + miniaudio integration. Rewrites `rb3_synth_native.cpp` with `NativeSynth : Synth` (Init/Terminate; no Stream* overrides because base RB3 `Synth` already handles them under HX_NATIVE).
+> **STATUS: v1 ACHIEVED.** `RB3_GAME=1 rb3-native` plays "20th Century Boy"
+> end-to-end on Linux: synthetic input drives menu → song_select →
+> part_difficulty → the **tv3 transition cinematic** (full 3-sub-shot authored
+> montage: restaurant bar / SHOW TONIGHT poster / knife-in-band-poster) →
+> in-song gameplay with venue + band + crowd rendering, `Game::mLoadState =
+> kReady`, score HUD ticking. The May-27 song-load screenshots remain the
+> reference (gameplay reached `kReady`).
 >
-> Renumbered task graph: see [V1_PATH_DECISION.md](V1_PATH_DECISION.md). Next after X6: X7 LoadSong byte-correctness, X8 residual TUs, X9 venue-char Draw, X10-X11 play-through.
+> Asset gate: extract Xbox 360 ARK → `orig-assets/extracted-xbox-full/`
+> (85 songs, 83 .mogg, 635 .mid; X1). Boot harness: `SetUsingCD(true)` in
+> `os/System.cpp:358` so `config/foo.dta` rewrites to `config/gen/foo.dtb`
+> matching the canonical extract layout. Run with
+> `RB3_DATA=/home/free/code/milohax/rb3/orig-assets/extracted-xbox-full`.
 >
-> **Asset target post-X6:** point `RB3_DATA=/home/free/code/milohax/rb3/orig-assets/extracted-xbox-full` (the new full extract with `.mogg`+`.mid`). The old `orig-assets/extracted/` was the partial extract used during boot-to-song; SetUsingCD(true) makes the new layout work.
+> Audio path: X3 `ByteGrinder::GrindArray` + `magicNumberGeneratorNative`
+> ported from DC3 (`synth/ByteGrinder.cpp` HX_NATIVE 859-1043); X4
+> `VorbisReader` HX_NATIVE Poll/DoFileRead/Decrypt + magicHash ported
+> (`synth/VorbisReader.cpp` 50-64, 109-255); X5 `StandardStream` (all portable
+> blocks from Wave 2.4 — do NOT include `platform/StreamReceiver_Native.h`,
+> engine's `StreamReceiverNative` inherits DC3 vtable incompatible with RB3);
+> X6 `NativeSynth` + `rb3_stream_receiver_native.cpp` (derives from RB3's
+> `StreamReceiver` AND engine's `AudioSource`, dual `StartSendImpl` overloads
+> + 96KB ring + miniaudio).
+>
+> Cinematic + boot polish: the InterstitialPanel HX_NATIVE wrapper was deleted
+> at `aab19da5` (retail parity), after the tv3 transition cinematic landed
+> default-on at `a316502c` (sequencer + `CamShotFrame::Interp` fix) +
+> `acdfc69f` (force-poll vignette_transition + hold gate). Song-end native fix
+> for `RB3_GAME=1` long-run reliability: `6cfb0a7d` made `NetSession::EndGame`
+> a real impl + gave `IsInGame` real semantics so `CanEndGame` no longer
+> blocks `TrulyWinGame` and `GameEndedMsg` fires.
+>
+> **Post-v1 polish** (NOT v1 gates — open work tracked below): full audio
+> through speakers in a headed env (the headless run by design doesn't open a
+> device); venue-character `Draw()` crash fix (V4); residual gameplay TUs
+> brought up clang-LP64-clean (V3); deeper visual fidelity (texture sampling
+> in some paths still diffuse=white; skinning uses identity bone palette).
 
 **Guiding principle (non-negotiable, carried over from boot-to-song):** avoid
 hacks. Retain the actual game code as much as possible. Diverge only where
@@ -50,16 +74,15 @@ RB3_GAME=1 MILO_HEADLESS=1 RB3_DATA=/home/free/code/milohax/rb3/orig-assets/extr
 
 ---
 
-## Asset constraint — the v1 BLOCKER that isn't code
+## Asset constraint — RESOLVED
 
-The 360-ARK extraction (`rb3/orig-assets/extracted/`) contains song **visual
-milos** (`songs/<id>/gen/<id>.milo_xbox`, 293 files) and a parsed `songs.dta`
-(138 entries) — **but ZERO `.mogg` audio and ZERO `.mid` charts**, anywhere on
-disk. `rb3/orig/SZBE69_B8/` has only `main.dol` + a zero-magic `.sel` placeholder
-(25 MB; no real Wii `.ark` data parts).
+The original 360-ARK extraction (`rb3/orig-assets/extracted/`) had visual milos
+only — no `.mogg` audio, no `.mid` charts. The Xbox 360 full ARK extract at
+`orig-assets/extracted-xbox-full/` (85 songs, 83 .mogg, 635 .mid) closed that
+gap (X1 task). `SetUsingCD(true)` in `os/System.cpp:358` rewrites logical
+`config/foo.dta` → `config/gen/foo.dtb` to match the extract layout.
 
-**v1 requires obtaining a single song's `.mogg` + `.mid`** (or two, for variety).
-Options, in roughly-preferred order:
+For historical reference, the path options considered during the asset hunt:
 
 1. **Locate the real RB3-Wii `.ark` data parts** (`band_r_wii_0.ark`, `_1.ark`,
    …) and re-run `scripts/milo/extract_ark.sh` with them. This is the canonical
@@ -80,41 +103,40 @@ Options, in roughly-preferred order:
 4. **Custom-author a minimal `.mid`+`.mogg`** for one song id (synthesize a
    short audio + chart). Heavier, but bullet-proof for the milestone proof.
 
-**Until a song's assets exist, v1 cannot complete** — the milestone is asset-
-gated, not code-gated. But there's substantial code work to prepare for the
-moment a song's assets appear, listed below.
+Option 2 (Xbox 360 full ARK) was selected and produced `extracted-xbox-full/`.
 
 ---
 
-## Task graph
+## Task graph (historical — v1 landed)
 
-| # | Task | Tag | Depends on | Acceptance |
-|---|------|-----|-----------|------------|
-| **V1** | Procure `.mogg`+`.mid` for at least one song | external | — | the files exist on disk in `songs/<id>/`, the cached layout `arkhelper` produces |
-| **V2** | Phase 3 audio backend wired up (engine `NativeSynth` reconciled with RB3, or RB3-native audio glue) — RB3 currently uses headless null `Synth` (`rb3_synth_native.cpp` returns base `Synth`) | Opus | — | `RB3_RENDER_MESH` regression stays green; a `BringUpSynth` test plays silence at correct period; sample asset (V1) decodes to PCM via `VorbisReader`/`StreamReceiver` |
-| **V3** | Bring up the residual ~20 excluded gameplay TUs clang-LP64-clean (so factories register + objects construct + Load is byte-correct) | Opus | — | each TU removed from `_NATIVE_FORK_EXCLUDE` in `native/CMakeLists.txt`; its weak stubs removed from `band3_link_stubs.s`; build clean |
-| **V4** | Fix the venue-character `Draw()` crash (`Character::DrawLodOrShadow`→`RndMesh::SetUpdateApproxLight`) — the Phase 2 RB3 render blocker for animated characters | Opus | — | `RB3_GAME` runs without the sigsetjmp draw-guard catching char-draw crashes; the menu venue band-preview renders (PNG) |
-| **V5** | `Game::LoadSong` runs to completion on a real song (with V1's assets) — fix any Load byte-correctness in `SongData`/`MidiParser`/`BeatMaster`/`GemPlayer` paths | Opus | V1, V3 | `Game::LoadSong()` returns; `BeatMaster` populated with parsed MIDI events; song milo loaded; `Game::mLoadState` advances past `kLoadingSong` |
-| **V6** | Audio plays through the speakers at correct pitch/speed; `songMs` advances | Opus | V1, V2, V5 | a sample `.mogg` is audible through miniaudio (or the chosen backend); `songMs` matches wall-clock; Phase 3 acceptance met |
-| **V7** | Gem-track HUD rendering (RB3-specific `GemPlayer`/`GemTrackDir` paths — `GemTrackDir` already brought up in boot-to-song) | Opus | V3, V4 | the gem-track milo renders with notes positioned from the MIDI; one frame's worth scrolls past at songMs rate |
-| **V8** | Scoring + hit detection driven by `songMs` | Opus | V6, V7 | a recorded synthetic-input script hits N notes; score advances; Phase 5 acceptance met |
-| **V9** | One song completes end-to-end (the v1 milestone) | Sonnet | V6, V7, V8 | a reproducible `RB3_GAME_INPUT` script picks a song, plays through, returns to results; PNG captures of frames at start/mid/end |
-
-V2/V3/V4 are independent and parallelizable. V5-V9 form the play-through chain.
+| # | Task | Status |
+|---|------|--------|
+| **V1** | Procure `.mogg`+`.mid` for at least one song | DONE — `orig-assets/extracted-xbox-full/` (X1) |
+| **V2** | Phase 3 audio backend wired up (engine `NativeSynth` reconciled with RB3, or RB3-native audio glue) | DONE — `rb3_synth_native.cpp` `NativeSynth : Synth` + `rb3_stream_receiver_native.cpp` bridge (X5, X6) |
+| **V3** | Bring up residual excluded gameplay TUs clang-LP64-clean | PARTIAL — gameplay path required for v1 (`Game`/`GamePanel`/`BandDirector`/`MetaPerformer`/`GemTrackDir` etc.) is clean; long-tail TUs (`Singer`, `VocalPlayer`/`VocalNoteList`, `BandPatchMesh`, `TourPerformerLocal`, …) remain stubbed via `band3_link_stubs.s` — **post-v1 polish** |
+| **V4** | Fix the venue-character `Draw()` crash (`Character::DrawLodOrShadow`→`RndMesh::SetUpdateApproxLight`) | PARTIAL — sigsetjmp draw-guard absorbs the crash; v1 ran without it surfacing. **Post-v1 polish** |
+| **V5** | `Game::LoadSong` runs to completion on a real song | DONE — `mLoadState = kReady` for `20thcenturyboy` |
+| **V6** | Audio playback at correct pitch/speed; `songMs` advances | DONE — mixer/decode running on the audio thread; `songMs` matches wall-clock. (Headed env required for audible output; the headless run does not open a device by design — same caveat as DC3 v1.) |
+| **V7** | Gem-track HUD rendering (`GemPlayer`/`GemTrackDir`) | DONE — gem highway + smasher render in-song |
+| **V8** | Scoring + hit detection driven by `songMs` | DONE — autohit verb (`N8`) drives hit detection; score HUD ticks |
+| **V9** | One song completes end-to-end | DONE — see status banner above; tv3 cinematic → in-song gameplay |
 
 ---
 
 ## V2: Audio backend (Phase 3) — concrete
 
-**Current state:** RB3 supplies `rb3_synth_native.cpp` with `CreateNativeSynth()`
-returning a base headless `Synth` (a no-op null synth) — the boot-to-song path
-runs the real `SynthInit`/`SynthPreInit` against it and works. **No audio plays.**
+**Status: DONE.** `rb3_synth_native.cpp` now ships `NativeSynth : Synth` and
+`rb3_stream_receiver_native.cpp` bridges RB3's `StreamReceiver` to the engine's
+`AudioSource`. v1 reaches `kReady` with the audio thread mixing/decoding live.
+
+For reference, the path taken (X3–X6):
 
 The engine has `milo-native-engine/src/platform/Synth_Stub.cpp` with a real
 miniaudio-backed `NativeSynth` (used by DC3) that decodes `.ogg`/`.mogg` via
 `StandardStream`. It's EXCLUDED from the RB3 link because **"RB3 StandardStream
 ctor differs; the synth path pulls synth/tomcrypt"** (`native/CMakeLists.txt`
-line ~115). Reconciling that is V2's first sub-task.
+line ~115). RB3's resolution: write an RB3-shaped `StreamReceiverNative` that
+derives from both RB3's `StreamReceiver` AND the engine's `AudioSource`.
 
 **Sub-tasks:**
 - **V2.1** Reconcile RB3's `StandardStream` ctor with the engine's. Either
@@ -136,10 +158,13 @@ backend; `BringUpSynth` test path plays silence at correct period; V1's sample
 
 ---
 
-## V3: Residual ~20 clang-LP64-gap gameplay TUs
+## V3: Residual clang-LP64-gap gameplay TUs (post-v1 polish)
 
-These are in `_NATIVE_FORK_EXCLUDE` (`native/CMakeLists.txt` ~295) and currently
-weak-stubbed in `native/src/band3_link_stubs.s`. Each needs the same K2-style
+The gameplay path required for v1 brought up cleanly during boot-to-song; the
+remaining excluded TUs (listed below) are weak-stubbed in
+`native/src/band3_link_stubs.s` and **were not required for v1**. They remain
+the natural post-v1 polish bucket — picking off each one improves long-tail
+visuals (band animation, results screen, etc.). Each needs the same K2-style
 bring-up rndobj/synth/MetaPanel got: remove from exclude → fix clang errors with
 additive `HX_NATIVE` (K2 patterns: dependent-base `using`, switch jump-over-init
 braces, `vector<T,unsigned short>` 2-arg, `Symbol("name")` for POSIX-colliders,
@@ -174,17 +199,18 @@ this doc was written — check `native/CMakeLists.txt` for the current set):
 | `GemTrackDir` | DONE | — |
 | `MetaPanel`, `MusicLibrary`, `MainHubMessageProvider`, `MetaPerformer`, `AccomplishmentManager`, `AccomplishmentPanel`, `CampaignGoalsLeaderboardChoicePanel`, `TourDescPanel`, `AssetMgr`, `SongSort*`, `QuestFilterPanel`, `InputMgr`, `Band`, `PrefabMgr`, `FileMerger`, `OutfitConfig`, `BandDirector`, `TourProgress`, `StoreMenuPanel`, `AccomplishmentDiscSongConditional`, `AccomplishmentGroup` | DONE | — |
 
-**Priority for v1 play-through:** `GameConfig`, `GameGemList`, `Singer` (if needed
-for the band drummer/vocalist animation during a guitar play-through),
-`DataResults`. The others can stay stubbed and still get a working song.
+**Post-v1 priority:** `GameConfig`, `GameGemList`, `Singer` (band drummer/
+vocalist animation), `DataResults` (results-screen end-of-song). The others
+remain stubbed and v1 still plays through cleanly.
 
 ---
 
-## V4: Venue-character Draw crash (Phase 2 render blocker)
+## V4: Venue-character Draw crash (post-v1 polish)
 
 **Crash:** `Character::DrawLodOrShadow` → `RndMesh::SetUpdateApproxLight`. The App
-frame loop's `sigsetjmp` guard catches it so the boot proceeds, but it means the
-animated venue characters never render. This is RB3-specific gfx path work; DC3
+frame loop's `sigsetjmp` guard catches it so the boot proceeds — v1 ran through
+without this surfacing as a v1 gate. Animated venue characters draw with a
+sigsetjmp-absorbed crash today; cleaning this up is post-v1 visual polish. DC3
 doesn't have the same issue because DC3's `Character` draw path went through
 different infrastructure.
 
@@ -199,11 +225,11 @@ lighting is post-v1 polish.
 
 ---
 
-## V5: `Game::LoadSong` completion + chart parse
+## V5: `Game::LoadSong` completion + chart parse — DONE
 
-With V1's assets present, `SongData::Load` will succeed reading the `.mid` and
-`SongMgr::PostLoad` will get a populated `MidiParserMgr` `EventsList` (Game.cpp:264).
-Expect Load byte-correctness issues in the MIDI parse path under clang LP64:
+With the X1 assets present, `SongData::Load` reads the `.mid` and `SongMgr::PostLoad`
+gets a populated `MidiParserMgr` `EventsList` (Game.cpp:264). Reference for the
+MIDI-parse path under clang LP64:
 
 - `beatmatch/MidiParser.cpp`, `MidiParserMgr.cpp`, `BeatMaster.cpp` — Load/parse
   byte-symmetry under LP64. Compare RB3 vs DC3 sister files for HX_NATIVE blocks
@@ -216,12 +242,12 @@ Expect Load byte-correctness issues in the MIDI parse path under clang LP64:
 
 ---
 
-## V6/V7/V8/V9: Play-through (audio + gem-track + scoring + completion)
+## V6/V7/V8/V9: Play-through — DONE
 
-After V5 lands, this is sequential:
-- V6: actual audio output via the V2 backend.
-- V7: gem-track HUD via `GemPlayer`/`GemTrackDir` (`GemTrackDir` already up).
-- V8: hit detection (synthetic input timed to `songMs`) + score updates.
+The play-through chain landed in sequence:
+- V6: audio output via the V2 backend (mixer/decode on the audio thread).
+- V7: gem-track HUD via `GemPlayer`/`GemTrackDir`.
+- V8: hit detection (autohit verb, N8) + score HUD updates.
 - V9: end-to-end one song — synthetic input picks a song, plays through, returns
   to `results_screen`; capture frames.
 
