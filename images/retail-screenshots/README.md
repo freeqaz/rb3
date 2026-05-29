@@ -2,8 +2,10 @@
 
 Ground-truth captures of the real **Rock Band 3** game, for validating the
 native/web port's rendering of the main menu, song select, and gameplay against
-how the shipped game actually looks. Drop new references here; this directory is
-the one git-tracked path under `orig-assets/` (see `.gitignore`).
+how the shipped game actually looks. Drop new references here
+(`images/retail-screenshots/`). This is a small, curated set kept deliberately
+*outside* the gigabyte-scale `orig-assets/` tree (which is gitignored) so these
+stay safely committable.
 
 **Platform note:** the build we target is the **Wii** debug binary (`SZBE69_B8`).
 RB3's menu / song-select / HUD *layout* is identical across Wii / Xbox 360 / PS3

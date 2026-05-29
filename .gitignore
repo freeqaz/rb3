@@ -48,10 +48,8 @@ orig/*
 *.nkit.iso
 
 # Extracted asset tree (~4 GB; produced by scripts/milo/extract_ark.sh)
-# Ignore the *contents* (not the dir itself) so child negations can re-include
-# subdirs — `orig-assets/` would block descent into native-refs/ subfolders.
-orig-assets/*
-# Exception: checked-in native reference renders + UI ground-truth screenshots.
+orig-assets/
+# Exception: checked-in native reference renders for pixelmatch regression guard.
 !orig-assets/native-refs/
 !orig-assets/native-refs/**
 

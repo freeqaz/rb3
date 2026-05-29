@@ -26,7 +26,7 @@ which pre-date the tv3 vignette and CamShotFrame::Interp fixes.
 
 ---
 
-## Comparison against `orig-assets/native-refs/rb3-ui/`
+## Comparison against `images/retail-screenshots/`
 
 ### `02_main_hub.png` vs `yt_mhKNp9uAT48_menu_hub.png`
 - **Present in web:** Neon signs, MUSIC label, basic scene geometry rendered with lighting.

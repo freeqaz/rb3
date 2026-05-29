@@ -33,7 +33,7 @@ engine pin `5fda7f0`):
 | `07_gameplay_t15s.png`    | (none) | Score (e.g. "78 250"), streak counter, star-power indicator, energy bar, song-progress |
 
 Even the "visible" text is washed-out / low-contrast, not the crisp white the native
-references show (`orig-assets/native-refs/rb3-ui/`).
+references show (`images/retail-screenshots/`).
 
 The 2026-05-27 native review (`docs/sessions/native/screenshots/song-load-2026-05-27/REVIEW.md`)
 calls this "white-on-white"; the actual rendered colour is closer to **black-on-dark** /
@@ -160,7 +160,7 @@ That is sufficient to make alpha-only-font text legible on every screen.
 
 **Test:** Re-run `scripts/web/w4-baseline-capture.mjs` and compare the four
 text-bearing screens (`02_main_hub`, `03_song_select`, `04_part_difficulty`,
-`07_gameplay_t15s`) against `orig-assets/native-refs/rb3-ui/`. Acceptance is
+`07_gameplay_t15s`) against `images/retail-screenshots/`. Acceptance is
 visual: song names, menu labels, and HUD numbers must appear at all (colour
 fidelity is a Phase-2 concern).
 
