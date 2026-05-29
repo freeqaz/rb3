@@ -9,7 +9,7 @@ fuses three existing scanners into one fixability score and emits a ranked list.
 The three fused signals (all read from already-cached data — NO per-function
 objdiff is run):
 
-  1. ``scripts.permuter.pattern_scan`` — AST pattern hits gated by asm signal.
+  1. ``decomp_synth.pattern_scan`` — AST pattern hits gated by asm signal.
      A hit with ``confidence == asm_signal_match`` means the pattern's
      ``relevant(diagnosis)`` confirmed the asm mismatch is the kind the pattern
      fixes. Structural patterns (switch_case_reorder, variable_extraction,
@@ -57,13 +57,13 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 # --- Reuse library entry points from the three scanners (no shelling out). ---
-from scripts.permuter import pattern_scan as ps_mod
-from scripts.permuter.classifier import (
+from decomp_synth import pattern_scan as ps_mod
+from decomp_synth.classifier import (
     count_multi_instruction_fpr_swap_pairs,
     is_fpr_cascade_dominated,
 )
-from scripts.permuter.diagnosis import diagnose_baseline
-from scripts.permuter.patterns import get_pattern
+from decomp_synth.diagnosis import diagnose_baseline
+from decomp_synth.patterns import get_pattern
 from scripts.analysis import regswap_classify as rs_mod
 # function_health: reuse its mismatch classifier (cheap, no objdiff) for ceiling.
 from scripts.analysis.function_health import _classify_mismatches as fh_classify

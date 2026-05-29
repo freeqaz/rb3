@@ -13,16 +13,16 @@ The user provides a mangled symbol name. Run the permuter from the RB3 repo root
 
 ```bash
 # Basic permutation (generates variants, scores each)
-python3 -m scripts.permuter --symbol "SYMBOL" --max-variants 20
+python3 -m decomp_synth --symbol "SYMBOL" --max-variants 20
 
 # Hill climber (iteratively improves, keeps best)
-python3 -m scripts.permuter.hill_climber --symbol "SYMBOL"
+python3 -m decomp_synth.hill_climber --symbol "SYMBOL"
 
 # With explicit source file
-python3 -m scripts.permuter --symbol "SYMBOL" --source src/path/to/file.cpp --max-variants 20
+python3 -m decomp_synth --symbol "SYMBOL" --source src/path/to/file.cpp --max-variants 20
 
 # Dry run (show variants without compiling)
-python3 -m scripts.permuter --symbol "SYMBOL" --dry-run
+python3 -m decomp_synth --symbol "SYMBOL" --dry-run
 ```
 
 ## How It Works
@@ -36,6 +36,6 @@ python3 -m scripts.permuter --symbol "SYMBOL" --dry-run
 ## Notes
 
 - The permuter auto-detects RB3 vs DC3 based on the working directory
-- Symlinked from DC3's `scripts/permuter/` — shared codebase
+- Provided by the installed `decomp_synth` package (shared via the `venv` symlink to dc3-decomp)
 - Best used on functions in the 70-95% range where small source changes can push the match higher
 - If a variant scores better, apply its changes to the source file and verify with `ninja` + `mcp__orchestrator__run_objdiff`

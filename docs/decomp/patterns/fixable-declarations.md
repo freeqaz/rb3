@@ -235,4 +235,4 @@ while (d.size() != 0) { ... d.pop_front(); }
 
 **Example:** `VocalTrack::UpdateScrolling` 73.1% → 79.1% via 5 swap sites on `deque<RangeShift>`, `deque<LyricShift>`, `deque<LyricPlate*>`. Try one site at a time. Never apply inside `MILO_ASSERT(...)` — regressed in testing. `deque<TambourineGem*>` also regressed (some pointer-deques don't benefit even when the signature matches).
 
-The permuter `empty_size_swap` pattern (`scripts/permuter/patterns/empty_size_swap.py`) auto-detects all three signatures: `divw/divwu/mulli` in `diff_ops` and the clustered `subf+srawi` / `mulhw+srawi` in TGT-only-delete or BASE-only-insert groups.
+The permuter `empty_size_swap` pattern (`decomp_synth/patterns/empty_size_swap.py`) auto-detects all three signatures: `divw/divwu/mulli` in `diff_ops` and the clustered `subf+srawi` / `mulhw+srawi` in TGT-only-delete or BASE-only-insert groups.

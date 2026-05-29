@@ -44,7 +44,7 @@ When the diagnosis is unavailable for a function (no cached diff, no `report.jso
 
 ### Implementation hints
 - Look at how `scan_and_permute.py` already does this fusion (read it end-to-end). The same logic should be lifted into `pattern_scan.py` as an optional mode.
-- Reuse `scripts/permuter/diagnosis.py` for loading per-fn diagnoses from `report.json` / cached diffs.
+- Reuse `decomp_synth/diagnosis.py` for loading per-fn diagnoses from `report.json` / cached diffs.
 - The slow path (per-fn fresh objdiff) should be opt-in via `--fresh-objdiff`; default uses only cached.
 
 ### CLI changes
@@ -85,7 +85,7 @@ Update `docs/decomp/patterns/INDEX.md` (or add a new `scanner-confidence.md`) wi
 
 **Files changed.**
 - `scripts/analysis/regswap_classify.py` — full rewrite of `main()` and addition of IPA helpers (`_load_unit_ipa_map`, `_resolve_unit`, `_ipa_penalty_class`, ~lines 130-205). New `single_pair_records` rich dict alongside the legacy tuples to keep verbose output compatible. Added `--ipa-aware/--no-ipa-aware`, `--show-ipa-penalty`, and `--json` flags.
-- `scripts/permuter/pattern_scan.py` — added `confidence` field to `ScanHit`; new helpers `_diff_filename_for_symbol`, `_build_diff_index`, `_load_diagnosis_for_symbol` (~lines 195-285); CLI flags `--require-asm-signal`, `--include-unmatched-asm`, `--fresh-objdiff`, `--diff-cache-dir`; main loop applies gating per hit and tracks `confidence_counter`. Output JSON gains `summary.by_confidence` and `metadata.{require_asm_signal,…}`. Per-hit JSON gains `confidence`. Also fixed pre-existing `_load_match_info` schema bug (column is `current_percent`, with legacy `match_percent` fallback) — this was load-bearing because the asm gate keys lookups by `hit.symbol` which was always empty without the fix.
+- `decomp_synth/pattern_scan.py` — added `confidence` field to `ScanHit`; new helpers `_diff_filename_for_symbol`, `_build_diff_index`, `_load_diagnosis_for_symbol` (~lines 195-285); CLI flags `--require-asm-signal`, `--include-unmatched-asm`, `--fresh-objdiff`, `--diff-cache-dir`; main loop applies gating per hit and tracks `confidence_counter`. Output JSON gains `summary.by_confidence` and `metadata.{require_asm_signal,…}`. Per-hit JSON gains `confidence`. Also fixed pre-existing `_load_match_info` schema bug (column is `current_percent`, with legacy `match_percent` fallback) — this was load-bearing because the asm gate keys lookups by `hit.symbol` which was always empty without the fix.
 - `docs/decomp/patterns/scanner-confidence.md` — new (49 lines).
 - `docs/plans/permuter-mechanization-roadmap.md` — appended F2 outcome-log row.
 

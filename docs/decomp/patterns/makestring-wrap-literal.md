@@ -1,6 +1,6 @@
 # makestring_wrap_literal
 
-**Pattern file**: `scripts/permuter/patterns/makestring_wrap_literal.py`
+**Pattern file**: `decomp_synth/patterns/makestring_wrap_literal.py`
 **Status**: B2 (new; proven by hand on `RndText::UpdateScrolling` 69.5% -> 71.9% in one edit).
 
 ## What
@@ -53,4 +53,4 @@ offset shifts on every other stack slot.
 ## Repo footprint
 
 10 hit functions (~50 sites) at time of authoring — see
-`python -m scripts.permuter.pattern_scan --patterns makestring_wrap_literal`.
+`python -m decomp_synth.pattern_scan --patterns makestring_wrap_literal`.

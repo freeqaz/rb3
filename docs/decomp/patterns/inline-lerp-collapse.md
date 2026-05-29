@@ -1,7 +1,7 @@
 # Pattern: inline_lerp_collapse
 
 **Permuter pattern**: `inline_lerp_collapse`
-**File**: `scripts/permuter/patterns/inline_lerp_collapse.py`
+**File**: `decomp_synth/patterns/inline_lerp_collapse.py`
 **Status**: ported from MEMORY (`feedback_inline_lerp_no_intermediate`); detection validated against a synthetic candidate. No in-tree candidates remain — the two known wins were already applied in commit `e1aea8bf`.
 
 ## What it does

@@ -1,6 +1,6 @@
 # `switch_case_reorder` pattern
 
-**File**: `scripts/permuter/patterns/switch_case_reorder.py`
+**File**: `decomp_synth/patterns/switch_case_reorder.py`
 **Wave**: B5 of the [permuter mechanization roadmap](../../plans/permuter-mechanization-roadmap.md)
 **Origin**: MEMORY `feedback_switch_case_emission_order.md`. Canonical win is
 `SaveLoadManager::Poll` 64.1% -> 88.2% (+24pp) from a pure case-clause reorder.
@@ -93,7 +93,7 @@ least 0.5 when the function actually contains a reorderable switch.
 ## Use it
 
 ```bash
-python -m scripts.permuter.pattern_scan --patterns switch_case_reorder \
+python -m decomp_synth.pattern_scan --patterns switch_case_reorder \
     --source src/band3/meta_band/SaveLoadManager.cpp --show-variants
 ```
 

@@ -102,7 +102,7 @@ work-driving tooling was already honest; only dashboards were inflated.
 
 | Reader | Field read | Verdict |
 |---|---|---|
-| `scripts/permuter/scorer.py` | CLI `fuzzy_match_percent` = reloc-pair raw | **honest** — fleets unaffected by tweak |
+| `decomp_synth/scorer.py` | CLI `fuzzy_match_percent` = reloc-pair raw | **honest** — fleets unaffected by tweak |
 | `scripts/orchestrator/database.py` | `report.json` per-fn `fuzzy_match_percent` = raw `match_percent` | **honest** |
 | `report.json` `matched_code_percent` | raw == 100 gated | **honest** |
 | `report.json` `matched_functions_percent` | **normalized** == 100 gated | **inflated +1.79pp** |

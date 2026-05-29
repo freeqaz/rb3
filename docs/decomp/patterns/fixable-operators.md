@@ -37,7 +37,7 @@ unsigned int packed = (state << 31) | ((pad << 28) & 0x70000000) |
 
 **Example:** `UIStats::EventLog` 97.9% -> 99.8% (+1.9pp) — reorder collapsed an r28<->r31 register cascade.
 
-**Permuter:** `scripts/permuter/patterns/bitpack_or_reorder.py` (pattern name `bitpack_or_reorder`). Triggered on `rlwimi`/`slwi`/`or`-family diff ops.
+**Permuter:** `decomp_synth/patterns/bitpack_or_reorder.py` (pattern name `bitpack_or_reorder`). Triggered on `rlwimi`/`slwi`/`or`-family diff ops.
 
 ## Direct .Set() vs Constructor Assignment
 

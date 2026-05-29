@@ -1,6 +1,6 @@
 # return_this_op_assign
 
-**Pattern file**: `scripts/permuter/patterns/return_this_op_assign.py`
+**Pattern file**: `decomp_synth/patterns/return_this_op_assign.py`
 **Status**: B1 (new; manually proven on `FileMerger::Merger::operator=` 64.6% -> 100% in commit `f1998277`).
 
 ## What
@@ -59,7 +59,7 @@ src/system/rndobj/MatAnim.cpp        RndMatAnim::TexKeys::operator=
 src/system/rndobj/Mesh.cpp           RndMesh::VertVector::operator=
 ```
 
-Scan with `python -m scripts.permuter.pattern_scan --patterns return_this_op_assign`.
+Scan with `python -m decomp_synth.pattern_scan --patterns return_this_op_assign`.
 
 ## Cross-reference
 

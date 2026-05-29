@@ -11,10 +11,10 @@ Usage:
     python -m scripts.analysis.reclassify_at_limit --min-pct 90            # Filter by match %
     python -m scripts.analysis.reclassify_at_limit --json -o report.json   # JSON output
 
-NOTE: scripts/permuter is a symlink to dc3-decomp/scripts/permuter, so all
-module-level state in batch_triage (REPO_ROOT, _project, DECOMP_DB) points
-to DC3's repo. This script overrides build_object, run_objdiff, and
-load_unit_source_map to use the correct RB3 paths.
+NOTE: decomp_synth is the shared installed package, so all module-level state
+in batch_triage (REPO_ROOT, _project, DECOMP_DB) points to DC3's repo. This
+script overrides build_object, run_objdiff, and load_unit_source_map to use
+the correct RB3 paths.
 """
 
 from __future__ import annotations
@@ -28,9 +28,9 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from scripts.permuter.diagnosis import diagnose_baseline, is_all_noise
-from scripts.permuter.batch_triage import classify
-from scripts.permuter.types import extract_qualified_name
+from decomp_synth.diagnosis import diagnose_baseline, is_all_noise
+from decomp_synth.batch_triage import classify
+from decomp_synth.types import extract_qualified_name
 
 # ---------------------------------------------------------------------------
 # RB3-specific paths (REPO_ROOT must be computed from THIS file's real path,

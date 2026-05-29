@@ -20,13 +20,13 @@ cd /home/free/code/milohax/rb3 && tools/setup-worktree.sh wave-f3-investigate
 cd ../wt-wave-f3-investigate
 
 # Run the permuter on the target symbol and capture log output
-python3 -m scripts.permuter.hill_climber \
+python3 -m decomp_synth.hill_climber \
     --symbol "HandleRGGemStart__10SongParserFiRQ210SongParser14DifficultyInfoUcUcUci" \
     --rounds 6 \
     --verbose 2>&1 | tee /tmp/f3-permuter.log
 ```
 
-(Check the actual CLI flags — `--verbose`, `--keep-builds`, or similar — by reading `scripts/permuter/hill_climber.py:__main__` and `scripts/permuter/__main__.py`.)
+(Check the actual CLI flags — `--verbose`, `--keep-builds`, or similar — by reading `decomp_synth/hill_climber.py:__main__` and `decomp_synth/__main__.py`.)
 
 Look for:
 - Lines containing "BUILD FAILED" / "compile error" / "syntax error".
@@ -51,7 +51,7 @@ But ANY pattern could be buggy. Don't anchor on suspects — let the log tell yo
 Once the buggy pattern is identified and fixed:
 
 ### Add a syntax-validation pre-filter
-In `scripts/permuter/generator.py` (or wherever variants get yielded), add a tree-sitter parse check on the synthesized source. If the parse fails or yields an ERROR node count above the baseline, drop the variant **before** dispatching it to the build queue.
+In `decomp_synth/generator.py` (or wherever variants get yielded), add a tree-sitter parse check on the synthesized source. If the parse fails or yields an ERROR node count above the baseline, drop the variant **before** dispatching it to the build queue.
 
 Pseudocode:
 ```python
@@ -64,7 +64,7 @@ def validate_syntax(source_bytes: bytes, original_error_nodes: int) -> bool:
 This isn't a full compile (too slow), but it catches the obvious cases (unbalanced braces, malformed statements). Cheap pre-filter.
 
 ### Add a regression test
-Once a buggy pattern is fixed, add a test in `scripts/permuter/tests/` that:
+Once a buggy pattern is fixed, add a test in `decomp_synth/tests/` that:
 - Constructs a `FunctionContext` from a minimal source snippet that previously triggered the bug.
 - Asserts the pattern's `generate()` either skips it or produces parseable output.
 
@@ -74,7 +74,7 @@ This prevents the same class of regression from sneaking back in.
 
 - The buggy pattern(s) identified with concrete file:line evidence.
 - Fix applied; patterns/*.py file modified with a clear `# Fix:` comment explaining what changed and why.
-- Regression test added to `scripts/permuter/tests/`.
+- Regression test added to `decomp_synth/tests/`.
 - Syntax pre-filter added (only if the bug class warrants it — if it's a one-off, skip the pre-filter).
 - Update `docs/plans/permuter-mechanization-roadmap.md` outcome log: "Wave F3 — fixed <pattern>; <N> BUILD FAILED variants now caught upstream".
 - Brief design note appended to this doc.
@@ -93,13 +93,13 @@ This prevents the same class of regression from sneaking back in.
 ## Findings (Wave F3, 2026-05-28)
 
 ### Root cause
-`scripts/permuter` is a symlink to the shared `dc3-decomp` permuter codebase, so all fixes apply globally. libclang's `is_available()` only checks that `clang.cindex` imports — it does NOT check that a compile_commands.json compdb exists. In the wave-f3 worktree (and presumably in the batch_auto runs that triggered this investigation) `_find_compdb_dir()` returns `None`, so `resolve_call_return_type()` returns `None` for every call. The existing pattern guards key off `return_type is not None`, so they never fired.
+`decomp_synth` is a symlink to the shared `dc3-decomp` permuter codebase, so all fixes apply globally. libclang's `is_available()` only checks that `clang.cindex` imports — it does NOT check that a compile_commands.json compdb exists. In the wave-f3 worktree (and presumably in the batch_auto runs that triggered this investigation) `_find_compdb_dir()` returns `None`, so `resolve_call_return_type()` returns `None` for every call. The existing pattern guards key off `return_type is not None`, so they never fired.
 
 ### Two buggy patterns identified
 
 **1. `variable_extraction` — `int _tmp = X(...)` for record-returning calls**
 
-`scripts/permuter/patterns/variable_extraction.py:123-127` (pre-fix). The "emit untyped" decision treated `return_type is None` as "unknown — keep emitting", but in the no-compdb regime `None` is the only outcome. Result: for `info.mRGGemsInfo[uc - 24] = RGGemInfo(tick, info.mActivePlayers, GetFret(data), channel);` the pattern emitted
+`decomp_synth/patterns/variable_extraction.py:123-127` (pre-fix). The "emit untyped" decision treated `return_type is None` as "unknown — keep emitting", but in the no-compdb regime `None` is the only outcome. Result: for `info.mRGGemsInfo[uc - 24] = RGGemInfo(tick, info.mActivePlayers, GetFret(data), channel);` the pattern emitted
 
 ```cpp
 int _tmp0 = RGGemInfo(tick, info.mActivePlayers, GetFret(data), channel);
@@ -110,7 +110,7 @@ info.mRGGemsInfo[uc - 24] = _tmp0;
 
 **2. `bool_cast` Pattern 3 — wrapping an assignment RHS in `bool(...)`**
 
-`scripts/permuter/patterns/bool_cast.py:149-172` (pre-fix). The pattern wrapped *any* call-shaped RHS in `bool(...)`. For the same SongParser line that produces:
+`decomp_synth/patterns/bool_cast.py:149-172` (pre-fix). The pattern wrapped *any* call-shaped RHS in `bool(...)`. For the same SongParser line that produces:
 
 ```cpp
 info.mRGGemsInfo[uc - 24] = bool(RGGemInfo(tick, info.mActivePlayers, GetFret(data), channel));
@@ -125,8 +125,8 @@ Both fixes are pure syntactic gates that fire only in the no-compdb regime; the 
 - **`bool_cast.py`**: added `_bool_assignable_lvalue()` — Pattern 3 only emits when the assignment LHS is a plain `identifier`. Subscript / field-expression / arrow LHS is rejected (no libclang required). Comment tag: `# Fix (Wave F3)`.
 
 ### Regression tests
-- `scripts/permuter/tests/test_variable_extraction_record_guard.py` — 8 tests: helper unit tests for PascalCase / scalar-prefix / lowercase / method-call detection, plus end-to-end emission tests for the SongParser bug shape AND counter-tests asserting that `GetFret(data)` and `obj.GetCount()` extractions are NOT over-blocked.
-- `scripts/permuter/tests/test_bool_cast_lvalue_guard.py` — 7 tests: helper unit tests for identifier / subscript / field-access / arrow LHS, plus emission tests asserting the SongParser shape no longer wraps, while `bool flag = IsActive()` shape still does.
+- `decomp_synth/tests/test_variable_extraction_record_guard.py` — 8 tests: helper unit tests for PascalCase / scalar-prefix / lowercase / method-call detection, plus end-to-end emission tests for the SongParser bug shape AND counter-tests asserting that `GetFret(data)` and `obj.GetCount()` extractions are NOT over-blocked.
+- `decomp_synth/tests/test_bool_cast_lvalue_guard.py` — 7 tests: helper unit tests for identifier / subscript / field-access / arrow LHS, plus emission tests asserting the SongParser shape no longer wraps, while `bool flag = IsActive()` shape still does.
 
 All 14 new tests pass. The pre-existing failure in `test_header_variable_extraction_bridge` (asserts `auto _tmp0` but mwcc emits `int _tmp0`) is unchanged — that test was broken before this wave by dc3 commit `f985916b`.
 
@@ -144,7 +144,7 @@ Hill_climber 2-round run (`--max-rounds 2 --max-variants 200 --workers 4`) after
 Both bugs were *syntactically valid* C++ (tree-sitter parses `int x = RGGemInfo(...);` and `arr[i] = bool(RGGemInfo(...))` cleanly). The errors are semantic (MWCC's type system). A tree-sitter ERROR-node count check would not have caught either bug, so adding one wouldn't help here. The narrow syntactic gates inside each pattern are the right layer to fix the failure class. Left as future work: a libclang-backed validator that runs once per variant when `clang_types.is_available() AND _find_compdb_dir() is not None` — but that requires a working native build with `compile_commands.json`, which isn't a given in worktrees.
 
 ### Files touched (worktree → shared via symlink)
-- `scripts/permuter/patterns/variable_extraction.py`
-- `scripts/permuter/patterns/bool_cast.py`
-- `scripts/permuter/tests/test_variable_extraction_record_guard.py` (new)
-- `scripts/permuter/tests/test_bool_cast_lvalue_guard.py` (new)
+- `decomp_synth/patterns/variable_extraction.py`
+- `decomp_synth/patterns/bool_cast.py`
+- `decomp_synth/tests/test_variable_extraction_record_guard.py` (new)
+- `decomp_synth/tests/test_bool_cast_lvalue_guard.py` (new)

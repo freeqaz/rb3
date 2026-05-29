@@ -1,6 +1,6 @@
 # pragma_pool_data_wrap
 
-**Pattern file**: `scripts/permuter/patterns/pragma_pool_data_wrap.py`
+**Pattern file**: `decomp_synth/patterns/pragma_pool_data_wrap.py`
 **Status**: B3b (new; opt-in. Proven on `CacheWii::WriteAsync` 85.5 -> 100%
 and `CustomizePanel::RotatePatch` 92.9 -> 99.4%).
 
@@ -53,7 +53,7 @@ pool, the pattern is `opt_in = True`: it is **never** picked up by default
 batch sweeps. Trigger it explicitly via:
 
 ```bash
-python -m scripts.permuter.pattern_scan --patterns pragma_pool_data_wrap
+python -m decomp_synth.pattern_scan --patterns pragma_pool_data_wrap
 ```
 
 …or by listing it in `--patterns` on `hill_climber` / `batch_auto`.

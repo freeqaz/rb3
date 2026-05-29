@@ -1,6 +1,6 @@
 # lwzu_idiom
 
-**Pattern file**: `scripts/permuter/patterns/lwzu_idiom.py`
+**Pattern file**: `decomp_synth/patterns/lwzu_idiom.py`
 **Status**: B3a (new; proven on `Synth::returnMasterKey` 94.5% -> 99.9%).
 
 ## What
@@ -62,7 +62,7 @@ src/system/synth/Synth.cpp                  Synth::returnMasterKey
 src/sdk/RVL_SDK/src/usbmic/usbmic.c         (manual)
 ```
 
-Scan with `python -m scripts.permuter.pattern_scan --patterns lwzu_idiom`.
+Scan with `python -m decomp_synth.pattern_scan --patterns lwzu_idiom`.
 
 ## Cross-reference
 

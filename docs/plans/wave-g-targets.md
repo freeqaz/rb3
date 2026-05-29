@@ -6,7 +6,7 @@
 ## Scan command
 
 ```bash
-python3 -m scripts.permuter.pattern_scan \
+python3 -m decomp_synth.pattern_scan \
   --patterns return_this_op_assign,makestring_wrap_literal,switch_case_reorder,member_readback,positive_branch_invert,demorgan_guard,abs_empty_else_negate,store_then_compound_add,cache_repeated_call,bitpack_or_reorder,symbol_str_compare,empty_size_swap \
   --incomplete-only --min-pct 80 --max-pct 99.9 \
   --require-asm-signal --json > /tmp/wave-g/tight_ast.json

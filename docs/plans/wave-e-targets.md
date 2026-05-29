@@ -131,7 +131,7 @@ tools/setup-worktree.sh wave-e-rs99
 ```bash
 tools/setup-worktree.sh wave-e-geo && \
   cd ../wt-wave-e-geo && \
-  python3 -m scripts.permuter.batch_auto --target unit --unit 'system/math/Geo' --limit 90
+  python3 -m decomp_synth.batch_auto --target unit --unit 'system/math/Geo' --limit 90
 ```
 Rationale: 12 candidates, avg 10% headroom, FMA fixable hits on `Intersect` and `MultiplyEq`. math/Geo is self-contained (no header hotspots).
 
@@ -147,7 +147,7 @@ Rationale: 12 candidates, avg 10% headroom, FMA fixable hits on `Intersect` and 
 ```bash
 tools/setup-worktree.sh wave-e-gem && \
   cd ../wt-wave-e-gem && \
-  python3 -m scripts.permuter.batch_auto --target unit --unit 'band3/bandtrack/GemManager' --limit 90
+  python3 -m decomp_synth.batch_auto --target unit --unit 'band3/bandtrack/GemManager' --limit 90
 ```
 Rationale: 37 AST hits including 6 `symbol_str_compare` (proven quick win from MEMORY: `.Str()` pattern fixes). `Hit__10GemManagerFfii` at 89.57% and `PartialHit__10GemManagerFfiUii` at 86.84% are structural targets.
 
@@ -162,7 +162,7 @@ Rationale: 37 AST hits including 6 `symbol_str_compare` (proven quick win from M
 ```bash
 tools/setup-worktree.sh wave-e-parser && \
   cd ../wt-wave-e-parser && \
-  python3 -m scripts.permuter.batch_auto --target unit --unit 'system/beatmatch/SongParser' --limit 90
+  python3 -m decomp_synth.batch_auto --target unit --unit 'system/beatmatch/SongParser' --limit 90
 ```
 Rationale: 56 AST hits (most of any in-scope unit), 11 candidates, `switch_case_reorder` × 6 (strong track record from VocalPlayer). `HandleRGGemStart` at 80% has FMA signal from cached diffs. `AnalyzeTrackList` at 98.8% has a fixable r17↔r18 regswap.
 
@@ -198,7 +198,7 @@ These candidates appeared in the top 50 but show structural blockers from functi
 ## Wave F7 — `system/bandobj/BandPatchMesh` sweep (2026-05-28)
 
 **Worktree**: `wt-wave-f7-patchmesh`
-**Command**: `python3 -m scripts.permuter.batch_auto --target unit --unit 'system/bandobj/BandPatchMesh' --limit 90`
+**Command**: `python3 -m decomp_synth.batch_auto --target unit --unit 'system/bandobj/BandPatchMesh' --limit 90`
 **Wall-clock**: 160.4s (~2.7 min)
 
 **Results**: 0 wins / 14 processed. +0.00% total.
@@ -215,7 +215,7 @@ All 14 candidates exhausted with no improvements:
 ## Wave F6 — `system/movie/Movie` sweep (2026-05-28)
 
 **Worktree**: `wt-wave-f6-movie`  
-**Command**: `python3 -m scripts.permuter.batch_auto --target unit --unit 'system/movie/Movie' --limit 90`  
+**Command**: `python3 -m decomp_synth.batch_auto --target unit --unit 'system/movie/Movie' --limit 90`  
 **Wall-clock**: 116.6s (~1.9 min)
 
 **Results**: 0 wins / 25 processed. +0.00% total.

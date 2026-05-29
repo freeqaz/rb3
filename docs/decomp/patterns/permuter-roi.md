@@ -7,14 +7,14 @@ permuter first. This page is the deep-link target from objdiff verdicts that poi
 
 ## TL;DR
 
-The permuter at `scripts/permuter/` is a semantics-preserving source mutator. It hill-climbs
+The permuter at `decomp_synth/` is a semantics-preserving source mutator. It hill-climbs
 across a large family of mutation patterns (declaration reorder, scope widening, bool-cast
 insertion, comma split, FMA reorder, branch polarity, etc. — and the catalog grows
 constantly), recompiles with MWCC each variant, scores against the target via objdiff, and
 keeps the best. Most "the asm shape is wrong but the C looks right" mismatches collapse to a
 single-edit win the permuter finds in minutes; a unit sweep finishes in tens of minutes.
 Conversion rate empirically runs ~5-10% of attempted functions improved per sweep, with
-occasional 0 -> 100% wins. Invoke via `python -m scripts.permuter.batch_auto` (see
+occasional 0 -> 100% wins. Invoke via `python -m decomp_synth.batch_auto` (see
 [How to invoke](#how-to-invoke)).
 
 Compiler is MWCC for Wii (Gekko/Broadway PowerPC, `mwcceppc 4.3.172`, `-O4,p -inline noauto
@@ -103,7 +103,7 @@ The permuter cannot help with these. Don't burn a sweep slot on them.
 
 ## How to invoke
 
-The CLI lives at `scripts/permuter/batch_auto.py` and is invoked as a module from the repo
+The CLI lives at `decomp_synth/batch_auto.py` and is invoked as a module from the repo
 root. `--target` selects scope: `unit` for a single source file (or glob fragment),
 `workable` for the whole backlog. There is no `--target single`/`--symbol` mode — the
 sweeper works in unit batches and picks workable functions out of `decomp.db`. To attack
@@ -113,20 +113,20 @@ the unit sweep cover it.
 
 ```bash
 # Whole-unit sweep — the most common form
-python -m scripts.permuter.batch_auto --target unit --unit "system/rndobj/Part"
+python -m decomp_synth.batch_auto --target unit --unit "system/rndobj/Part"
 
 # Restrict to one function inside a unit by bracketing its current %
-python -m scripts.permuter.batch_auto --target unit --unit "system/rndobj/Part" \
+python -m decomp_synth.batch_auto --target unit --unit "system/rndobj/Part" \
     --min-pct 92 --max-pct 92.5
 
 # Sweep all workable functions, capped (e.g. an idle-cores background sweep)
-python -m scripts.permuter.batch_auto --target workable --limit 200
+python -m decomp_synth.batch_auto --target workable --limit 200
 
 # Dry run — print triage and the list of functions that would be attempted
-python -m scripts.permuter.batch_auto --target unit --unit "system/char/" --dry-run
+python -m decomp_synth.batch_auto --target unit --unit "system/char/" --dry-run
 
 # Resume an interrupted run
-python -m scripts.permuter.batch_auto --resume logs/permuter/auto_YYYYMMDD_HHMMSS
+python -m decomp_synth.batch_auto --resume logs/permuter/auto_YYYYMMDD_HHMMSS
 ```
 
 Defaults worth knowing:
@@ -171,7 +171,7 @@ A sweep returning 0 improvements is information, not failure. In order:
 2. **Try a second sweep after baseline changes.** Hill-climbing is greedy and stops at local
    optima. A header tweak, a neighboring-function fix, or a new permuter pattern landing can
    re-open the candidate space. Re-sweep after meaningful repo changes — especially after
-   pulling new patterns from `scripts/permuter/patterns/`.
+   pulling new patterns from `decomp_synth/patterns/`.
 3. **Escalate to manual structural analysis.** Run `/analyze-function SYMBOL` to get
    objdiff + Ghidra + m2c side by side. If the diff is structural rather than scheduling
    (wrong branch shape, missing call, transposed loop), the permuter was never going to
@@ -185,7 +185,7 @@ A sweep returning 0 improvements is information, not failure. In order:
 ## Cache & coordination
 
 - The permuter caches scoring results per `(symbol, source_md5, dep_set)` in
-  `scripts/permuter/cache.db` (SQLite, `busy_timeout` 30s). Stale rows auto-evict when a
+  `decomp_synth/cache.db` (SQLite, `busy_timeout` 30s). Stale rows auto-evict when a
   dependency file changes, so concurrent sweeps on disjoint units share the cache safely.
 - Do not dispatch overlapping waves on the same unit. Before starting a sweep, check
   `ps -ef | grep batch_auto` and `ls logs/permuter/auto_*` for an in-flight run. Two

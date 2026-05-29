@@ -457,12 +457,12 @@ budgeted 1-2 days to "port" BSF, asserting that RB3 has "basic source
 permuter integration" and that BSF's tracing logic is "compiler-agnostic."
 Verification on 2026-05-12 found:
 
-1. **No RB3 permuter substrate.** `scripts/permuter/` does not exist in
-   RB3. RB3 appears to invoke upstream `decomp-permuter` via the
-   `/permute` skill (witnessed by `permuter_cache.db` and
-   `.permuter_work_*.d` files in the working tree), but the framework
-   that DC3's BSF plugs into (~50 files, ~24K LOC under
-   `dc3-decomp/scripts/permuter/`) is absent here.
+1. **No RB3 permuter substrate** (as of 2026-05-12). At the time of this
+   spike RB3 had no in-tree permuter framework. RB3 appears to invoke
+   upstream `decomp-permuter` via the `/permute` skill (witnessed by
+   `permuter_cache.db` and `.permuter_work_*.d` files in the working tree),
+   but the framework that DC3's BSF plugs into (~50 files, ~24K LOC, now
+   shipped as the `decomp_synth` package) was absent here.
 2. **BSF is heavily MSVC-coupled.**
    `dc3-decomp/tools/compiler_trace/bsf_trace.py` hardcodes MSVC `c2.dll`
    RVAs (e.g. `0x026780`, `0x027242`), requires MSVC `/FAs` assembly
@@ -481,7 +481,7 @@ that, do a spike to scope the unknowns.
 Source: `/home/free/code/milohax/dc3-decomp/docs/permuter/bsf-engine.md`
 (177 lines, verified 2026-05-12) and the implementation under
 `dc3-decomp/tools/compiler_trace/` (15 files including `bsf_trace.py`,
-`asm_diff.py`) and `dc3-decomp/scripts/permuter/regmap_solver.py` (~850
+`asm_diff.py`) and `dc3-decomp/tools/compiler_trace/regmap_solver.py` (~850
 LOC; the BSF integration point). Understand the color → GPR mapping, the
 c2.dll instrumentation point, and how it integrates with the rest of the
 permuter.
@@ -623,6 +623,6 @@ External references:
 - DC3 BSF engine reference: `/home/free/code/milohax/dc3-decomp/docs/permuter/bsf-engine.md`
 - DC3 BSF implementation: `/home/free/code/milohax/dc3-decomp/tools/compiler_trace/bsf_trace.py`
   (note MSVC c2.dll RVA hardcoding — see Phase 3)
-- DC3 permuter framework: `/home/free/code/milohax/dc3-decomp/scripts/permuter/`
-  (~50 files, ~24K LOC; absent in RB3 — see Phase 3 Step 3.2)
+- Permuter framework: the `decomp_synth` package (~50 files, ~24K LOC; was
+  absent in RB3 at the time of this spike — see Phase 3 Step 3.2)
 - DC3 pattern catalog (cross-pollination): `/home/free/code/milohax/dc3-decomp/docs/decomp/patterns/INDEX.md`

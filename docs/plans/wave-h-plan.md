@@ -28,7 +28,7 @@ Two-stage filter in `pattern_scan.py`:
 ### Validation
 Re-run on the Wave G in-scope set:
 ```bash
-python3 -m scripts.permuter.pattern_scan \
+python3 -m decomp_synth.pattern_scan \
   --patterns switch_case_reorder,cache_repeated_call,member_readback,positive_branch_invert,demorgan_guard,store_then_compound_add,bitpack_or_reorder,symbol_str_compare \
   --incomplete-only --min-pct 80 --max-pct 99.9 \
   --require-asm-signal --json > /tmp/wave-h/h1_validation.json
@@ -70,7 +70,7 @@ python3 -m scripts.permuter.pattern_scan \
 ```bash
 cd /home/free/code/milohax/rb3 && tools/setup-worktree.sh wave-h3-chord
 cd ../wt-wave-h3-chord
-python3 -m scripts.permuter.batch_auto --target unit --unit 'system/bandobj/ChordShapeGenerator' --limit 90
+python3 -m decomp_synth.batch_auto --target unit --unit 'system/bandobj/ChordShapeGenerator' --limit 90
 ```
 
 30-min cap. Commit each win individually.
@@ -81,13 +81,13 @@ python3 -m scripts.permuter.batch_auto --target unit --unit 'system/bandobj/Chor
 ```bash
 cd /home/free/code/milohax/rb3 && tools/setup-worktree.sh wave-h4-camera
 cd ../wt-wave-h4-camera
-python3 -m scripts.permuter.batch_auto --target unit --unit 'system/world/CameraShot' --limit 90
+python3 -m decomp_synth.batch_auto --target unit --unit 'system/world/CameraShot' --limit 90
 ```
 
 30-min cap. Commit each win individually.
 
 ## Concurrency notes
-- H1 modifies `scripts/permuter/pattern_scan.py` only — safe parallel to H2/H3/H4.
+- H1 modifies `decomp_synth/pattern_scan.py` only — safe parallel to H2/H3/H4.
 - H2 reads decomp.db + writes to `/tmp/claude/diff_*.json` — safe parallel.
 - H3/H4 in worktrees — safe parallel.
 
@@ -97,7 +97,7 @@ python3 -m scripts.permuter.batch_auto --target unit --unit 'system/world/Camera
 
 Hill_climber's runtime `relevant(diagnosis)` already runs per-symbol so it correctly rejected these — the divergence was only at the scan stage.
 
-**Fix** in `scripts/permuter/pattern_scan.py`:
+**Fix** in `decomp_synth/pattern_scan.py`:
 - New `_load_match_info_multi()` returns `dict[qname, list[(pct, symbol, unit)]]` sorted by ascending match%.
 - New `_resolve_hit_candidate(name, source_path, candidates)` filters to in-TU candidates (via `_unit_matches_source` stem compare), picks the lowest sub-100% match, and flags `ambiguous` when >1 sub-100% overload remains.
 - `_scan_file()` accepts `match_info_multi` and resolves per AST-hit, attaching the new `ScanHit.ambiguous_overload` flag.
@@ -118,7 +118,7 @@ Hill_climber's runtime `relevant(diagnosis)` already runs per-symbol so it corre
 
 Spot-check via `bin/analyze-function`: `AddCrowdChars__12CamShotCrowdF...list<...>` confirmed at 97.0% with real diff (stack-offset 0x10↔0x18 shifts + replace/delete clusters) — pattern_scan now correctly attributes the hit to this overload, not its 100% sibling `AddCrowdChars__12CamShotCrowdFv`.
 
-**Tests** — `scripts/permuter/tests/test_pattern_scan_asm_signal.py` (12 cases, all pass): single-candidate, sub-100/100% overload pair, multi-sub-100% ambiguity, cross-TU template-instantiation preference, fallback paths, `_unit_matches_source` stem normalization.
+**Tests** — `decomp_synth/tests/test_pattern_scan_asm_signal.py` (12 cases, all pass): single-candidate, sub-100/100% overload pair, multi-sub-100% ambiguity, cross-TU template-instantiation preference, fallback paths, `_unit_matches_source` stem normalization.
 
 ## Outcome log
 | Wave | Item | Agent | Status | Outcome |
