@@ -4,6 +4,54 @@
 **Depends on:** [`W3_BOOT_TO_SONG.md`](W3_BOOT_TO_SONG.md) (a song plays in the browser).
 **Blocks:** nothing — last phase.
 
+---
+
+## W4 Baseline (2026-05-29)
+
+**Commit:** `6cfb0a7d` (master HEAD — W3c complete, one song e2e in browser)
+**Engine pin:** `5fda7f0`
+**Build tool:** emcc 5.0.2, default flags (debug `-O0 -g2`)
+**Screenshots:** [`docs/sessions/web/screenshots/baseline-2026-05-29/`](../../sessions/web/screenshots/baseline-2026-05-29/README.md)
+
+### WASM + JS artifact sizes
+
+| Artifact | Raw | gzip -9 | brotli -11 |
+|---|---|---|---|
+| `rb3-web.wasm` | 28,433,918 B (27.1 MB) | 5,342,743 B (5.1 MB) | 3,265,585 B (3.1 MB) |
+| `rb3-web.js` | 377,291 B | 83,819 B | 67,805 B |
+| `index.html` | 7,836 B | — | — |
+| `audio-worklet.js` | 2,340 B | — | — |
+| **Total dist** | **28,821,385 B (27.5 MB)** | — | — |
+
+The gzipped wasm (5.1 MB) is already under the 10 MB must-hit target. The `-Oz` / `-g0` strip
+work in W4a can cut this further (DC3 achieves 5.4 MB gzip on a comparable build). Brotli
+gets it to 3.1 MB, well inside the target.
+
+### Memory
+
+| Moment | WASM heap |
+|---|---|
+| Post-boot (before splash interaction) | 119.6 MB |
+| During gameplay (frame ~1820, ~15s into song) | 206.8 MB |
+
+Heap is within the 256 MB must-hit target even with debug symbols present. A release build
+(`-Oz -g0`) will reduce this. Full per-frame profiling (W4d.0) still needed.
+
+### Visual state (vs native refs)
+
+Full analysis in the screenshot README. Key deficits ranked by impact:
+
+1. **Song list text not rendering** — song names blank in `song_select_screen`. Font texture / text material gap.
+2. **Main hub menu labels absent** — "PLAY NOW / CAREER / TRAINING" etc. not rendering over the 3D hub scene.
+3. **Gameplay HUD missing** — score, streak, star power, progress bar all absent. UI overlay pipeline gap.
+4. **Album art not loading** — placeholder `?` icon shown instead of cover art.
+5. **Splash background black** — intro movie not playing (BinkVideo stubbed; expected).
+
+The 3D scene geometry and gem highway render correctly. The deficit is entirely in the UI/HUD
+overlay layer (text + 2D panels).
+
+---
+
 ## Goal
 
 The browser tab loads quickly, runs at stable 30+ fps during gameplay, and
