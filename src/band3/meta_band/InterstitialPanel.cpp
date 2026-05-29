@@ -31,16 +31,25 @@ bool InterstitialPanel::Exiting() const {
     // treat the cosmetic camshot as immediately done so the screen-flow advances
     // to game_screen (where Game::LoadSong runs).
     bool baseEx = UIPanel::Exiting();
-    if (getenv("INTERSTITIAL_DBG")) {
+    // RB3_TV3_PLAY: opt-in HOLD experiment — restore the retail gate so the tv3
+    // transition screen is NOT torn down until the vignette sequencer fires
+    // transition_camshot_done (-> SetCamshotDone) and 3 post-camshot Draws pass.
+    // Default-off: byte-identical to the prior native short-circuit (return baseEx).
+    static int sPlay = -1;
+    if (sPlay < 0)
+        sPlay = getenv("RB3_TV3_PLAY") ? 1 : 0;
+    bool ret = sPlay ? (baseEx || !mCamshotDone || unk88 < 3) : baseEx;
+    if (getenv("INTERSTITIAL_DBG") || getenv("RB3_TV3SEQ_DBG")) {
         static int sLastFlags = -1;
-        int flags = (baseEx ? 1 : 0) | (mCamshotDone ? 2 : 0) | ((unk88 & 0xF) << 4);
+        int flags = (baseEx ? 1 : 0) | (mCamshotDone ? 2 : 0) | ((unk88 & 0xF) << 4)
+            | (ret ? 0x100 : 0);
         if (flags != sLastFlags) {
-            MILO_LOG("INTERSTITIAL_DBG: InterstitialPanel::Exiting %s baseEx=%d camshotDone=%d unk88=%d -> %d\n",
-                     Name(), baseEx ? 1 : 0, mCamshotDone ? 1 : 0, unk88, baseEx ? 1 : 0);
+            MILO_LOG("RB3_TV3SEQ_DBG: InterstitialPanel::Exiting %s baseEx=%d camshotDone=%d unk88=%d play=%d -> %d\n",
+                     Name(), baseEx ? 1 : 0, mCamshotDone ? 1 : 0, unk88, sPlay, ret ? 1 : 0);
             sLastFlags = flags;
         }
     }
-    return baseEx;
+    return ret;
 #else
     return UIPanel::Exiting() || !mCamshotDone || unk88 < 3;
 #endif

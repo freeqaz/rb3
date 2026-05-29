@@ -488,6 +488,37 @@ DataNode Hmx::Object::HandleType(DataArray *msg) {
         if (handler)
             found = true;
     }
+#ifdef HX_NATIVE
+    // tv3 transition-vignette sequencer probe (default-off; gated on RB3_TV3SEQ_DBG).
+    // Logs whether the data-driven sequencer messages (enter/select_camera/
+    // next_camera/do_transition/vignette_start/vignette_seq_*) are dispatched to a
+    // tv3 milo object's type handlers, and whether they are found. Pure observation.
+    {
+        static int sDbg = -1;
+        if (sDbg < 0)
+            sDbg = getenv("RB3_TV3SEQ_DBG") ? 1 : 0;
+        if (sDbg) {
+            const char *ts = t.mStr;
+            if (ts
+                && (!strcmp(ts, "enter") || !strcmp(ts, "select_camera")
+                    || !strcmp(ts, "next_camera") || !strcmp(ts, "do_transition")
+                    || !strcmp(ts, "vignette_start") || !strcmp(ts, "vignette_end")
+                    || !strcmp(ts, "force_camera") || !strcmp(ts, "vignette_seq_start")
+                    || !strcmp(ts, "vignette_seq_end")
+                    || !strcmp(ts, "transition_camshot_done"))) {
+                const char *pn = PathName(this);
+                if (pn && (strstr(pn, "tv3") || strstr(pn, "transition"))) {
+                    MILO_LOG(
+                        "RB3_TV3SEQ_DBG: HandleType msg='%s' obj='%s' found=%d\n",
+                        ts,
+                        pn,
+                        found ? 1 : 0
+                    );
+                }
+            }
+        }
+    }
+#endif
     if (found) {
         MessageTimer timer(this, t);
         return handler->ExecuteScript(1, this, (const DataArray *)msg, 2);

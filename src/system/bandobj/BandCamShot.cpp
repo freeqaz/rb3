@@ -16,6 +16,10 @@
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 #include <cfloat>
+#ifdef HX_NATIVE
+#include <cstdlib>
+#include <cstring>
+#endif
 
 INIT_REVS(BandCamShot)
 
@@ -324,6 +328,33 @@ void BandCamShot::StartAnim() {
     }
     ResetNextShot();
     CamShot::StartAnim();
+#ifdef HX_NATIVE
+    // tv3 probe (default-off; RB3_TV3SEQ_DBG): dump this BandCamShot's authored
+    // Target struct names + whether they resolve, to distinguish "no authored
+    // target" from "named target fails native resolve".
+    {
+        static int sDbg = -1;
+        if (sDbg < 0)
+            sDbg = getenv("RB3_TV3SEQ_DBG") ? 1 : 0;
+        const char *dp = Dir() ? Dir()->GetPathName() : nullptr;
+        if (sDbg && dp && (strstr(dp, "tv3") || strstr(dp, "/transition/"))) {
+            MILO_LOG(
+                "RB3_TV3SEQ_DBG: BandCamShot::StartAnim '%s' dir='%s' nTargets=%d\n",
+                Name(), dp, (int)mTargets.size()
+            );
+            FOREACH (it, mTargets) {
+                RndTransformable *rt = FindTarget(it->mTarget, false);
+                MILO_LOG(
+                    "RB3_TV3SEQ_DBG:   bcsTarget='%s' resolved=%s wpos=(%.2f,%.2f,%.2f) "
+                    "animGrp='%s'\n",
+                    it->mTarget.Str(), rt ? rt->Name() : "(NULL)",
+                    rt ? rt->WorldXfm().v.x : 0.f, rt ? rt->WorldXfm().v.y : 0.f,
+                    rt ? rt->WorldXfm().v.z : 0.f, it->mAnimGroup.Str()
+                );
+            }
+        }
+    }
+#endif
     int numChars = 0;
     Character *chars[32];
     FOREACH (it, mTargets) {

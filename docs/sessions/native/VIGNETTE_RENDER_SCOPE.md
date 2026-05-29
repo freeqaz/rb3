@@ -51,6 +51,75 @@
 >   EventTrigger + InterstitialMgr screen-flow timing = multi-session. Probe code discarded
 >   (default-off was byte-identical + regression-clean; the opt-in is a proven stall).
 
+> **PROBE UPDATE 3 (implementation pass, 2026-05-29, branch `nwt-tv3seq`) — the
+> "HOLD stalls permanently" verdict (UPDATE 2) is PARTIALLY OVERTURNED on the
+> current build (engine pin 9f635b7 / RndTex). Env-gated work (default-off,
+> byte-identical) on `nwt-tv3seq` (commits 451da7c2 / 96061a5f / e2792685):**
+> - **The sequencer DOES advance + complete when held.** `RB3_TV3_PLAY=1` restores
+>   the retail `InterstitialPanel::Exiting` gate. With the tv3 screen held, the
+>   data-driven `vignette_transition` sequencer (defined in
+>   `world/world_objects.dta` as the `vignette_transition` WorldDir type, NOT C++)
+>   runs to completion: the WorldDir `enter` handler fires `do_transition(0)`
+>   (sets `trans_index=0`, `new_index=1`); `WorldDir::Poll`'s
+>   `HandleType(select_camera_msg)` runs the `select_camera` handler (fires
+>   `vignette_start` + `force_camera` on the current sub-shot); each sub-shot's
+>   `BandCamShot.shot` (`StartAnim`, dur≈25-35) reaches `mDuration` →
+>   `CamShot::SetShotOver` (`shot_over_msg`) → data `next_camera` → advances
+>   `trans_index` 0→1→2(→3). After the last sub-shot, `next_camera` hits the
+>   no-more-trans branch → `{ui transition_camshot_done}` → `SetCamshotDone` →
+>   `unk88` counts 0..3 in Draw → `Exiting()` returns false → screen swaps to
+>   `game_screen`. Observed completing at ~f1023 (tv3_b) → reaches gameplay,
+>   exit 0. So **steps "advance trans_index" + "decouple the swap" both work; no
+>   permanent stall** (every run exits 0 with forward progress).
+> - **Two genuinely-open remaining gaps (clearly scoped, NOT stalls):**
+>   1. **Held-panel poll-starvation makes completion-timing unreliable.** The held
+>      tv3 WorldDir is polled only ~70-130×/1500-2400 frames (the shot `CalcFrame`
+>      only advances when `WorldDir::Poll`'s `kProcessPost` flag is set; during the
+>      held game_screen load it is throttled). So some vignettes complete fast
+>      (tv3_b@f1023) while others poll-starve and exceed a 4000-frame budget. Making
+>      the swap reliably bounded needs the held-panel shot clock to advance steadily
+>      (UI poll/clock path — regression-sensitive).
+>   2. **Vignette cameras are authored at/near origin → geometry instances but is
+>      not framed → black.** `CamShotFrame::BuildTransform` for the `_ao` closeup
+>      sub-shots reads `mWorldOffset=(0,0,0)`, `parent=(none)`, `nTargets=0`,
+>      `path=(nil)` → `tf.v=(0,0,0)`. The intended props DO draw (`amp.mesh`,
+>      `prop_guitarcord`, `microphone`, `mic_stand`… — confirmed via DrawMesh) but
+>      the origin camera doesn't frame them. Same family as the V22/V23 venue
+>      closeup target-resolution work. (3 traces left default-off under
+>      `RB3_TV3SEQ_DBG`: `WorldDir::Poll`, `Hmx::Object::HandleType`,
+>      `CamShot::StartAnim/SetShotOver/BuildTransform`.)
+> - **Default-off regression: CLEAN.** With no env, tv3 swaps fast (f453→f456,
+>   unchanged) and boot→gameplay is byte-identical, exit 0; zero trace output.
+
+> **PROBE UPDATE 4 (FIX, 2026-05-29, branch `nwt-tv3seq`, commit 7018c1bc) — the
+> "_ao closeup cameras authored at origin" verdict (UPDATE 3 gap #2) is OVERTURNED.
+> The cameras were NEVER authored at origin; a matched-fork decomp bug collapsed
+> them. The tv3 cinematic now FRAMES its scene (non-black).**
+> - **Root cause (decisive):** `CamShotFrame::Interp` builds two keyframe transforms
+>   and interpolates. The rb3 (MWCC) matched fork calls `this->BuildTransform` TWICE
+>   (`CameraShot.cpp` ~L1108-1110); the verified-correct sibling decomps
+>   (`dc3-decomp`/`rb3-xenon` CameraShot.cpp:513-515) call `other.BuildTransform`
+>   for the SECOND. For a single-keyframe shot, `CamShot::SetFrame` invokes
+>   `nullFrame.Interp(*frame50)`, so BOTH builds came from `nullFrame`
+>   (`mWorldOffset=0`) → camera at origin → black. The keyframe IS authored:
+>   `key[0] wOff=(18.59,-86.90,85.72)` (tv3_a) / non-zero for every sub-shot; the
+>   `BandCamShot` resolves 4 targets (`player0..3`) at non-origin world positions.
+> - **Fix:** HX_NATIVE, opt-in `RB3_TV3_PLAY`, default-off byte-identical (`#else`
+>   keeps the asm-matched double-`this` build). When set, the second build is
+>   `frame.BuildTransform`.
+> - **RESULT (RB3_TV3_PLAY=1, canonical flow):** tv3 `postnobills_closeup` /
+>   `ampplugin`/`footpedal`/`guitarstrum`/`miccheck` sub-shots POSE `world.cam` to
+>   non-origin (e.g. `(-85.77,89.59,40.26)`, animating) and FRAME the authored props
+>   (mic/mic_stand/water-bottle/cymbal/amp). tv3 frames render **110-124 KB content**
+>   (was 36970-byte black). With a 6000-frame budget the sequencer advances
+>   trans_index 0→1→2→3 through all sub-shots and reaches `game_screen` (exit 0).
+> - **Default-off: CLEAN.** No env → boot→gameplay byte-identical, fast tv3 swap
+>   (f453→game_screen f456), exit 0.
+> - **Remaining (gap #1, unchanged):** the held-panel completes only with a large
+>   frame budget (poll-starvation throttles the held shot clock); NOT a stall — every
+>   run exits 0 with forward progress. Bounding the swap reliably is the regression-
+>   sensitive UI-clock piece, left for a follow-up.
+
 **Authored:** 2026-05-29 (Opus deep-investigation subagent, READ-ONLY: no source
 edits, no build, no commit; ran the game read-only for diagnostics).
 **Reproducer:** the canonical `RB3_GAME_INPUT` boot→song flow (see §6); evidence
