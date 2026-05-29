@@ -39,24 +39,6 @@ Hmx::Object *CamShot::sAnimTarget;
 
 INIT_REVS(CamShot);
 
-#ifdef HX_NATIVE
-// tv3 transition-vignette sequencer probe (default-off; gated on RB3_TV3SEQ_DBG).
-// Confirms whether a tv3 sub-shot starts + reaches shot_over (which the milo data
-// wires to next_camera -> advance trans_index). Pure observation.
-static bool Tv3SeqShotDbg() {
-    static int s = -1;
-    if (s < 0)
-        s = getenv("RB3_TV3SEQ_DBG") ? 1 : 0;
-    return s != 0;
-}
-static bool IsTv3Shot(class ObjectDir *d) {
-    if (!d)
-        return false;
-    const char *p = d->GetPathName();
-    return p && (strstr(p, "tv3") || strstr(p, "/transition/"));
-}
-#endif
-
 CamShot::CamShot()
     : mKeyframes(this), mLoopKeyframe(0), mNear(1.0f), mFar(1000.0f), mFilter(0.9f),
       mClampHeight(-1.0f), mCategory(), mAnims(this), mPath(this), mDrawOverrides(this),
@@ -86,39 +68,6 @@ Hmx::Object *CamShot::AnimTarget() { return sAnimTarget; }
 // matches in retail
 void CamShot::StartAnim() {
     START_AUTO_TIMER("cam_switch");
-#ifdef HX_NATIVE
-    if (Tv3SeqShotDbg() && IsTv3Shot(Dir())) {
-        MILO_LOG(
-            "RB3_TV3SEQ_DBG: CamShot::StartAnim shot='%s' dir='%s' dur=%f looping=%d "
-            "nKeys=%d\n",
-            Name(),
-            Dir() ? Dir()->GetPathName() : "(nodir)",
-            mDuration,
-            mLooping,
-            (int)mKeyframes.size()
-        );
-        for (int ki = 0; ki < (int)mKeyframes.size(); ki++) {
-            CamShotFrame &kf = mKeyframes[ki];
-            MILO_LOG(
-                "RB3_TV3SEQ_DBG:   key[%d] wOff=(%.2f,%.2f,%.2f) parent='%s' "
-                "nTargets=%d useParent=%d\n",
-                ki, kf.mWorldOffset.v.x, kf.mWorldOffset.v.y, kf.mWorldOffset.v.z,
-                kf.mParent ? kf.mParent->Name() : "(none)", (int)kf.mTargets.size(),
-                kf.mUseParentNotation ? 1 : 0
-            );
-            int ti = 0;
-            FOREACH (it, kf.mTargets) {
-                MILO_LOG(
-                    "RB3_TV3SEQ_DBG:     key[%d].target[%d]='%s' wpos=(%.2f,%.2f,%.2f)\n",
-                    ki, ti++, (*it) ? (*it)->Name() : "(null)",
-                    (*it) ? (*it)->WorldXfm().v.x : 0.f,
-                    (*it) ? (*it)->WorldXfm().v.y : 0.f,
-                    (*it) ? (*it)->WorldXfm().v.z : 0.f
-                );
-            }
-        }
-    }
-#endif
     HandleType(start_shot_msg);
     WorldDir *wdir = dynamic_cast<WorldDir *>(Dir());
     if (wdir)
@@ -298,16 +247,6 @@ void CamShot::SetFrame(float frame, float blend) {
 float CamShot::EndFrame() { return mDuration; }
 
 void CamShot::SetShotOver() {
-#ifdef HX_NATIVE
-    if (Tv3SeqShotDbg() && IsTv3Shot(Dir())) {
-        MILO_LOG(
-            "RB3_TV3SEQ_DBG: CamShot::SetShotOver shot='%s' dir='%s' -> shot_over_msg "
-            "(should drive next_camera)\n",
-            Name(),
-            Dir() ? Dir()->GetPathName() : "(nodir)"
-        );
-    }
-#endif
     HandleType(shot_over_msg);
     mShotOver = true;
 }
@@ -1357,26 +1296,6 @@ void CamShotFrame::BuildTransform(RndCam *cam, Transform &tf, bool b3) const {
         screenOffsetVec.z = (mScreenOffset.y * length) / cam->LocalProjectXfm().m.z.y;
         Multiply(screenOffsetVec, tf, tf.v);
     }
-#ifdef HX_NATIVE
-    if (Tv3SeqShotDbg() && mCamShot && IsTv3Shot(mCamShot->Dir())) {
-        static int sC = 0;
-        if ((sC++ % 20) == 0) {
-            MILO_LOG(
-                "RB3_TV3SEQ_DBG: BuildTransform dir='%s' wOff=(%.2f,%.2f,%.2f) "
-                "parent='%s' nTargets=%d useParent=%d path=%p\n",
-                mCamShot->Dir() ? mCamShot->Dir()->GetPathName() : "(nodir)",
-                mWorldOffset.v.x, mWorldOffset.v.y, mWorldOffset.v.z,
-                mParent ? mParent->Name() : "(none)", (int)mTargets.size(),
-                mUseParentNotation ? 1 : 0, (void *)mCamShot->mPath
-            );
-            MILO_LOG(
-                "RB3_TV3SEQ_DBG:   targetPos=(%.2f,%.2f,%.2f) -> tf.v=(%.2f,%.2f,%.2f)\n",
-                mLastTargetPos.x, mLastTargetPos.y, mLastTargetPos.z, tf.v.x, tf.v.y,
-                tf.v.z
-            );
-        }
-    }
-#endif
 }
 
 DataNode CamShot::OnGetOccluded(DataArray *da) { return 0; }
