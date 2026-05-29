@@ -1,5 +1,12 @@
 # W1 — RB3 clear-color frame in browser
 
+**STATUS: DONE — rb3 `4183f495`.** `rb3-web` builds (Emscripten), boots,
+runs `SystemPreInit`/`SystemInit`, brings up the file-static `sWebGpu` +
+`DrawClearFrame` path, and ticks the canvas with a non-default clear colour.
+The headed Playwright smoke (`scripts/web/smoke-test.mjs`) reports
+`result: pass`. The `BandRnd` wire-up was deliberately deferred to W2 because
+the monolithic `BandRnd::InitGpu` aborts on web (resolved by W2's engine split).
+
 **Parent plan:** [`PLAN.md`](PLAN.md). Read it for context.
 **Depends on:** [`W0_ENGINE_EXTRACTION.md`](W0_ENGINE_EXTRACTION.md) (engine `MILO_BUILD_WEB` must be a real switch).
 **Blocks:** W2.

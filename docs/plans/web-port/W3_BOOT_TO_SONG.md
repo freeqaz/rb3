@@ -1,5 +1,13 @@
 # W3 — App-driven boot to song in browser
 
+**STATUS: DONE.** Real `App` boots in browser end-to-end:
+- **W3a** App-driven boot + stable menu render — rb3 `52e95b60`.
+- **W3b** Real browser keyboard input — splash → main_hub interactive — rb3 `7aef003a`.
+- **W3c-nav** Keyboard drives menu → song_select (83-song library) → part_difficulty — rb3 `75d35cf5`.
+- **W3c audio** VorbisReader/Synth/StreamReceiver recovery + reach `Game::LoadSong` by keyboard — rb3 `bca377ac`.
+- **W3c-finish** One song end-to-end ("20th Century Boy") — rb3 `f21547d9`. Fix was the autohit null-watcher trap (`BeatMatcher::mWatcher` not yet built when the web part-select driver fired `autohit`); gating `kVerbAutohit` on `TheGame->IsLoaded()` defers it until `Game::PostLoad` wires the watcher.
+- Engine RTT depth fix (web `depthClearValue` was non-finite at frame 2 against the live engine, freezing RAF): engine `5fda7f0` + rb3 pin `95c125af`.
+
 **Parent plan:** [`PLAN.md`](PLAN.md). Read it for context.
 **Depends on:**
 - [`W2_RENDER_MILO.md`](W2_RENDER_MILO.md) — **DONE.** Browser renders RB3
@@ -7,11 +15,10 @@
   native) via the **static mesh-walk harness**.
 - **Native v1 milestone** —
   [`rb3/docs/sessions/native/V1_ONE_SONG.md`](../../sessions/native/V1_ONE_SONG.md).
-  **Hard blocker for W3c only.** As of 2026-05-29 native v1 is *in progress*
-  (X6 NativeSynth/StreamReceiver bridge in flight; X7–X11 ahead). W3a and W3b
-  can land with stubbed audio while native v1 finishes; **W3c (one-song
-  integration) cannot start until native v1 demonstrably plays the chosen song
-  end-to-end on Linux.**
+  Native v1 reached `kReady` for "20th Century Boy" on Linux (gem highway
+  rendering, score HUD ticking); the InterstitialPanel HX_NATIVE wrapper was
+  unwrapped at `aab19da5` once the tv3 transition cinematic landed
+  (`a316502c` + `acdfc69f`).
 **Blocks:** W4 polish.
 
 ## Goal
@@ -306,10 +313,10 @@ BOOT_RUNNING     → sApp->RunOneFrame(); window.rb3FrameCount = N  (NEW)
 > two Enter presses advance `splash_screen → main_hub_screen` (frame 47 + frame 70). On
 > `main_hub_screen` the next Enter fires on `mb_playnow.btn` (Play Now button). Canvas
 > 56.7% painted with venue+menu geometry. W2 `?milo=` regression: 0.00% pixel diff (PASS).
-> Native build: compiles unchanged (`#ifdef __EMSCRIPTEN__` gate confirmed). Commit: wt-web-w3b.
-> **Next: deeper menu navigation (main_hub → song_select → part_difficulty) is the W3b
-> fuller acceptance; the core input pipeline is working and splash→main_hub is confirmed
-> interactive. W3c (audio) can now be dispatched.**
+> Native build: compiles unchanged (`#ifdef __EMSCRIPTEN__` gate confirmed). Commit:
+> rb3 `7aef003a`. **The deeper menu spine (main_hub → song_select → part_difficulty)
+> landed under W3c-nav (`75d35cf5`); the W3c finale (one song end-to-end) landed at
+> `f21547d9`. See the banners below.**
 
 #### W3c-nav — full menu→gameplay-entry flow by keyboard [2026-05-29, DONE up to part_difficulty]
 
@@ -547,30 +554,11 @@ smoke (`--boot-to-song`, see below) drives keys via
 >   (navigates to 20th Century Boy) → part_difficulty → arms the crossing →
 >   game-load. Screenshots → `scripts/web/results/web-w3c/gameplay/`.
 >
-> **The one remaining gap (B2 finale, precise follow-up blocker):** with the
-> target pinned to 20th Century Boy, the crossing fires cleanly and the song's
-> `20thcenturyboy.milo_xbox` + `20thcenturyboy.mid` are fetched (HTTP 200) and the
-> MIDI chart parses (note events log). `Game::LoadSong` then runs its heavy
-> SYNCHRONOUS MIDI-driven gem-track / BeatMaster setup on the WASM main thread and
-> **HARD-TRAPS (wasm `unreachable`) before the `.mogg` is ever opened** (the
-> server never sees a `20thcenturyboy.mogg` GET). So the crash is NOT the 35MB MOGG
-> decode (that path is never reached) — it is in the chart/gem/beatmatch
-> construction. The signature matches the SongSort class of bug: a `MILO_FAIL`
-> that is non-fatal on web (returns) followed by an out-of-bounds / null deref in
-> the same function. The fix is to find that specific call site in the
-> gem/beatmatch setup chain (`Game::LoadSong → BeatMaster/GemManager/TrackWatcher`
-> setup) and add the same `#ifdef HX_WEB` graceful-return guard SongSort got.
-> Deepest screen reached by keyboard: `tv3_b_screen`/`tv3_a_screen` (the gameplay
-> venue transition) + `BandDirector::OnLoadSong` — one trap short of the gem
-> highway painting. **NOTE the boot-time SongSort FAILs are now SURVIVED** (the
-> `#ifdef HX_WEB` GetNode guard turned the former intermittent splash trap into a
-> non-fatal log), which is what let the run reach the song load at all.
->
-> Separately, the 35MB MOGG over the on-demand SINGLE sync-XHR fetch on the main
-> thread is W4 streaming territory: once the LoadSong trap is fixed, expect a
-> multi-second main-thread stall during the MOGG fetch+decode (the same stall
-> native v1 absorbs off-thread via miniaudio). A worker-backed streaming fetch is
-> the W4 follow-up.
+> The 35MB MOGG over the on-demand SINGLE sync-XHR fetch on the main thread
+> remains a W4 streaming follow-up: on the local dev server it resolves in
+> ~0.5s, but over a real network the single main-thread sync-XHR will stall
+> multi-seconds during the MOGG fetch+decode (the same stall native v1 absorbs
+> off-thread via miniaudio). A worker-backed streaming fetch is the W4 task.
 >
 > **Regressions GREEN:** rb3-native builds + runs `RB3_GAME=1` to gameplay
 > (`Game::LoadSong() ENTERED — song='20thcenturyboy'`, gem track + MIDI load,

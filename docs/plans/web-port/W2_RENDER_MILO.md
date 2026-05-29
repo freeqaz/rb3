@@ -1,5 +1,23 @@
 # W2 — Render one .milo in browser
 
+**STATUS: DONE.** Geometry renders in-browser via WebGPU:
+- **W2a** (rb3 `2c14d893`) — split `BandRnd::InitGpu` into `StartGpuInit` +
+  `InitGpuResources` (engine), wire `gBandRnd` into `main_web.cpp`, on-demand
+  fetch hook, mesh-walk refactor — first `.milo` renders.
+- **W2b** — full coverage. The multi-chunk milo fault was root-caused as
+  missing object-factory registration (NOT a `ChunkStream`/endianness bug); fix
+  in rb3 `70873c4a`. Heavy-milo crash was the relative-resource MEMFS-path bug
+  (rb3 `4ef00c69`), NOT memory / fetch / UI-subsystem. Pixelmatch regression
+  guard at rb3 `2a89343e`.
+
+Status of the originally-named acceptance milos:
+- `tracksystem.milo_xbox`, `gem_smasher_guitar.milo_xbox`,
+  `main_hub.milo_xbox` — all load + render in-browser after the multi-chunk
+  + MEMFS-path fixes; the `?milo=<path>` mesh-walk smoke is the durable W3+
+  regression guard.
+- Full menu **text labels** (`RndText`) need the real `App` boot — handed to
+  W3a (the static mesh-walk harness never invoked `RndText::Draw`).
+
 **Parent plan:** [`PLAN.md`](PLAN.md). Read it for context.
 **Depends on:** [`W1_CLEAR_FRAME.md`](W1_CLEAR_FRAME.md) (browser clears canvas, ticks frames).
 **Blocks:** W3.

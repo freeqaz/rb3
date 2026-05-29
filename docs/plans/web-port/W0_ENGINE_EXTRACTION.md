@@ -1,5 +1,10 @@
 # W0 — Engine Extraction (lift DC3's web infra into milo-native-engine)
 
+**STATUS: DONE — 2026-05-28.** DC3's web infra lifted into `milo-native-engine`
+under `MILO_BUILD_WEB`, parameterised by `MILO_WEB_CANVAS_SELECTOR` /
+`MILO_WEB_AUDIO_NS`. DC3 web build remains green; RB3 pins the new engine SHA.
+Engine `cfaaa5b`, dc3 `c800138e`, rb3 `7f62c2af`.
+
 **Parent plan:** [`PLAN.md`](PLAN.md). Read it for context.
 **Depends on:** nothing.
 **Blocks:** W1, W2, W3, W4.
