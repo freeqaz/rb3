@@ -107,21 +107,6 @@ void WorldDir::RestoreDeltas(float *f) {
 }
 
 #ifdef HX_NATIVE
-// tv3 transition-vignette sequencer probe (default-off; gated on RB3_TV3SEQ_DBG).
-// The tv3_* transition cinematic is a DATA-DRIVEN sequencer in the milo
-// (vignette_transition WorldDir type in world/world_objects.dta): its `enter`
-// handler calls do_transition(0) -> sets trans_index/new_index; WorldDir::Poll's
-// HandleType(select_camera_msg) runs the `select_camera` handler which (when
-// new_index) fires vignette_start on the current sub-shot + force_camera; the
-// shot's shot_over fires next_camera which advances trans_index. This trace
-// confirms whether the tv3 WorldDir is polled and whether trans_index ever
-// advances natively. Pure observation; no behaviour change.
-static bool Tv3SeqDbg() {
-    static int s = -1;
-    if (s < 0)
-        s = getenv("RB3_TV3SEQ_DBG") ? 1 : 0;
-    return s != 0;
-}
 static bool IsTv3Dir(ObjectDir *d) {
     if (!d)
         return false;
@@ -164,25 +149,6 @@ void WorldDir::Poll() {
 #endif
     if (b) {
         ExtendDeltas();
-#ifdef HX_NATIVE
-        if (Tv3SeqDbg() && IsTv3Dir(this)) {
-            const DataNode *ti = Property(Symbol("trans_index"), false);
-            const DataNode *ni = Property(Symbol("new_index"), false);
-            CamShot *cs = mCameraManager.CurrentShot();
-            static int sCnt = 0;
-            if ((sCnt++ % 15) == 0) {
-                MILO_LOG(
-                    "RB3_TV3SEQ_DBG: WorldDir::Poll tv3 dir='%s' pollCam=%d "
-                    "trans_index=%d new_index=%d curShot='%s'\n",
-                    GetPathName(),
-                    mPollCamera,
-                    ti ? ti->Int() : -999,
-                    ni ? ni->Int() : -999,
-                    cs ? cs->Name() : "(none)"
-                );
-            }
-        }
-#endif
         HandleType(select_camera_msg);
         if (mPollCamera)
             mCameraManager.PrePoll();
