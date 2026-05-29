@@ -339,9 +339,13 @@ set(_NATIVE_FORK_EXCLUDE
     # specializations in BandPatchMesh.cpp.
     # ClipDistMap: stlpmtx_std specializations wrapped #ifndef HX_NATIVE (V34)
     # DataResults: switch jump-over-init guarded #ifndef HX_NATIVE (V34)
-    SaveLoadManager
+    # TourPerformerLocal: only a logic warn (operator precedence); compiles clean
+    #   with -fms-compatibility -w. Un-excluded V34.
+    # SaveLoadManager: #pragma dont_inline → silently ignored (-w). Switch cases
+    #   with int declarations cross case labels — -fms-compatibility converts
+    #   err_switch_into_protected_scope → warning, suppressed by -w. Un-excluded V34.
     Splash
-    StorePackedMetadata TourPerformerLocal
+    StorePackedMetadata
     WaitingUserGate)
 foreach(_tu ${_NATIVE_FORK_EXCLUDE})
     list(FILTER NATIVE_FORK_SOURCES EXCLUDE REGEX "/${_tu}\\.cpp$")
