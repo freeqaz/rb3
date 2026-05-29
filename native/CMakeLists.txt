@@ -615,6 +615,28 @@ set(RB3_WEB_NATIVE_GLUE
     # RenderToPng / _exit) is #ifndef __EMSCRIPTEN__-guarded; the web build only
     # compiles LoadMiloAndWalk + RenderFrame, which main_web.cpp drives per-frame.
     ${CMAKE_SOURCE_DIR}/src/rb3_render_mesh.cpp
+    # W3c Part A: audio bring-up on web. These are gated #ifdef HX_NATIVE, which
+    # the web build defines, so they compile under emcc. The engine's
+    # AudioDevice_Web.cpp (already in RB3_WEB_LIFTED_ENGINE_SOURCES) is the output
+    # device — no miniaudio on web; the AudioSource/AddSource/RemoveSource
+    # interface in rb3_stream_receiver_native.cpp is shared between native and web.
+    #   rb3_synth_native.cpp — NativeSynth: AudioDevice::Init(44100) + binds
+    #     StreamReceiver::sFactory to RB3CreateNativeStreamReceiver.
+    #   rb3_stream_receiver_native.cpp — RB3-shaped StreamReceiver/AudioSource
+    #     bridge (producer = synth Poll on main thread; consumer = RenderAudio via
+    #     AudioDevice::PumpAudio, also on the main thread under emcc).
+    #   rb3_keychain_native.cpp — .mogg decryption keys (class-static int KeyChain).
+    #   rb3_vorbis_poll_shim.cpp — HMX vorbis_synthesis_poll -> vorbis_synthesis.
+    ${CMAKE_SOURCE_DIR}/src/rb3_synth_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_stream_receiver_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_keychain_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_vorbis_poll_shim.cpp
+    # W3c Part A: tomcrypt AES/CTR for v0x10 .mogg decryption (LANGUAGE C; see the
+    # set_source_files_properties block after milo_engine_apply_web_target_options
+    # — they need -fno-ms-* like rb3-native + DC3-web).
+    ${REPO_ROOT}/src/system/synth/tomcrypt/aes.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/crypt.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/ctr.c
 )
 
 # Trim NATIVE_SHIMS for web — keep native_file.cpp (its stdio-backed File
@@ -641,12 +663,12 @@ set(RB3_WEB_NATIVE_FORK_EXCLUDE
     # libc++ list::iterator value-init from 0 (now-private explicit ctor)
     Gen
     MultiMeshProxy
-    # RB3-bundled oggvorbis codec.h declares `inline void *alloca(size_t)` which
-    # clang under emcc treats as a clash with __builtin_alloca. emcc's
-    # -sUSE_VORBIS=1 ports vorbis natively; the matched-fork synth/Vorbis* paths
-    # aren't needed for W1 clear-frame. Exclude the two TUs that include codec.h.
-    VorbisReader
-    Synth
+    # W3c Part A: VorbisReader + Synth are now RE-INCLUDED. The codec.h alloca
+    # clash is fixed by the #ifndef HX_NATIVE guard in src/system/oggvorbis/codec.h
+    # (the web build defines HX_NATIVE=1, so __builtin_alloca is used). emcc's
+    # -sUSE_OGG=1 -sUSE_VORBIS=1 ports supply ogg_*/vorbis_* symbols; the
+    # vorbis_synthesis_poll HMX entry-point comes from rb3_vorbis_poll_shim.cpp
+    # (added to RB3_WEB_NATIVE_GLUE).
 )
 set(RB3_WEB_FORK_SOURCES ${NATIVE_FORK_SOURCES})
 foreach(_tu ${RB3_WEB_NATIVE_FORK_EXCLUDE})
@@ -701,6 +723,18 @@ target_compile_definitions(rb3-web PRIVATE
 # matched fork, but pulling the headers lets Codec.h (used by network/) compile.
 target_include_directories(rb3-web PRIVATE
     ${REPO_ROOT}/src/system/speex/include
+)
+
+# W3c Part A: tomcrypt C files (.mogg decryption). LANGUAGE C, and they need
+# -fno-ms-* — rb3_configure_target applies -fms-compatibility target-wide, which
+# makes <signal.h>'s __sigbits emit as a non-inline global (duplicate symbol
+# across the three TUs). Mirrors rb3-native + DC3-web's tomcrypt handling.
+set_source_files_properties(
+    ${REPO_ROOT}/src/system/synth/tomcrypt/aes.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/crypt.c
+    ${REPO_ROOT}/src/system/synth/tomcrypt/ctr.c
+    PROPERTIES LANGUAGE C
+               COMPILE_OPTIONS "-fno-ms-extensions;-fno-ms-compatibility"
 )
 
 # Extend the engine helper's base export list with RB3's tick symbol. Later

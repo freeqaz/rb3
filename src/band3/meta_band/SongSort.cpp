@@ -49,6 +49,16 @@ SortNode *NodeSort::GetNode(int idx) const {
     int count = GetDataCount();
     if (idx >= count) {
         MILO_FAIL("Trying to access item %i in list of %i items!", idx, count);
+#ifdef HX_WEB
+        // On web MILO_FAIL is non-fatal (returns), so the original
+        // `return mList[idx]` would index an empty/short vector and HARD-TRAP
+        // (wasm `unreachable`). This fires during boot when a song-sort preview
+        // queries the highlighted node before the sort is populated (a load-order
+        // race the bigger/slower web build exposes). Return null so the caller
+        // bails gracefully instead of killing the tab. Web-only; the PPC matched
+        // build keeps the original out-of-bounds deref (MILO_FAIL aborts there).
+        return idx < count ? mList[idx] : nullptr;
+#endif
     }
     return mList[idx];
 }

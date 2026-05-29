@@ -61,6 +61,8 @@
 #include "ui/UIPanel.h"
 #include "ui/UIComponent.h"
 #include "meta_band/BandSongMgr.h"  // TheSongMgr — song-list population probe (W3c-nav)
+#include "meta_band/MusicLibrary.h"   // TheMusicLibrary — highlighted-song probe (W3c)
+#include "meta_band/SongSortNode.h"   // SortNode::GetType/GetToken (W3c)
 #include <vector>
 
 #include "rb3_render_mesh.h"  // LoadMiloAndWalk / RenderFrame / WalkResult
@@ -197,6 +199,32 @@ static void PublishSongCount() {
     TheSongMgr.GetRankedSongs(ranked, false, false);
     n = (int)ranked.size();
     EM_ASM_({ window.rb3SongCount = $0; }, n);
+}
+
+// W3c Part B: publish the currently-highlighted song-list node so the gameplay
+// smoke can navigate the music library deterministically to a *specific* song
+// (e.g. 20th Century Boy) instead of guessing key-press offsets. On a song row
+// GetType()==kNodeSong and GetToken() is the song shortname Symbol (the value
+// the music_library select_highlighted_node handler resolves); on a header/
+// function row we publish the token too (so the smoke can tell a non-song row
+// apart — confirming a header node null-derefs OwnedSongSortNode and traps).
+// window.rb3HighlightedSong = "<token>", window.rb3HighlightedType = <int type>.
+static void PublishHighlightedSong() {
+    const char *token = "";
+    int type = -1;
+    if (TheMusicLibrary) {
+        SortNode *node = TheMusicLibrary->GetHighlightedNode();
+        if (node) {
+            type = (int)node->GetType();
+            Symbol t = node->GetToken();
+            if (t.Str())
+                token = t.Str();
+        }
+    }
+    EM_ASM_({
+        window.rb3HighlightedSong = UTF8ToString($0);
+        window.rb3HighlightedType = $1;
+    }, token, type);
 }
 
 static void DoEngineInit() {
@@ -352,6 +380,7 @@ static void mainLoop() {
         if ((sFrameCount & 7) == 0) {
             PublishCurrentScreen();
             PublishSongCount();
+            PublishHighlightedSong();
         }
         break;
     }

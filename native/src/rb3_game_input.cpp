@@ -36,6 +36,8 @@
 #include "rndobj/Text.h"  // RndText::RawText — detect the raw %S %I SONGS leak
 #include "meta_band/BandSongMgr.h"        // TheSongMgr (N6 song+artist text)
 #include "meta_band/BandSongMetadata.h"   // BandSongMetadata Title/Artist (N6)
+#include "meta_band/MusicLibrary.h"       // TheMusicLibrary::TryToSetHighlight (W3c)
+#include "meta_band/SongSortNode.h"       // kNodeSong (W3c)
 #include "utl/Locale.h"                   // Localize (N6 song_artist_fmt)
 #include "utl/MakeString.h"               // MakeString (N6)
 #include "os/Joypad.h"
@@ -630,6 +632,115 @@ void ExecButton(JoypadAction action, JoypadButton button, UIScreen *cur) {
     TheUI.Handle(msg, false);
 }
 
+#ifdef __EMSCRIPTEN__
+// === W3c Part B — web part-select advance ==================================
+// On part_difficulty_screen the overshell part-select sub-flow does NOT consume
+// the screen-level Confirm (the synth user's slot focus is "(none)"), so a raw
+// ExecButton(Confirm) never crosses part_difficulty -> game_screen. Native v1
+// crosses it with the same synthetic verbs the RB3_GAME_INPUT script uses:
+//   track:guitar                       (set the synth user's track type so the
+//                                        part is committed and the user is
+//                                        IsFullyInGame)
+//   msg:overshell:end_override_flow:1:0 ({overshell end_override_flow
+//                                        kOverrideFlow_SongSettings FALSE} —
+//                                        commits the part-select override flow,
+//                                        which fires Game::LoadSong and brings up
+//                                        game_screen)
+// then, once gameplay is live, two headless-playback verbs so the song actually
+// plays through (no physical instrument to hit gems):
+//   nofail   (MetaPerformer::SetBandNoFail — keeps gems flowing past the crowd
+//             meter so a no-input run doesn't get booed off ~13s in)
+//   autohit  (Player::SetAutoplay on every active player — auto-hits each gem at
+//             its strike window, ticking the score HUD and firing hit-FX)
+//
+// Driven by a small per-frame state machine: when the user presses Confirm on
+// part_difficulty_screen we ARM the sequence; each subsequent frame fires AT MOST
+// ONE verb, readiness-gated via VerbReady (same gate the script queue uses), so a
+// verb never lands on a half-loaded screen/object. Mirrors the native readiness
+// loop, scoped to the part-select crossing only. Zero native impact (web-only).
+//
+// Forward decls: the readiness gate + dispatch helpers are defined further down.
+struct Verb;
+bool VerbReady(const Verb &v, UIScreen *cur, const char **reason);
+const char *VerbName(const Verb &v);
+void DispatchVerb(const Verb &v, UIScreen *cur);
+
+enum WebPartStage {
+    kWebPartIdle = 0,   // not on part_difficulty / not armed
+    kWebPartTrack,      // fire track:guitar
+    kWebPartEndFlow,    // fire msg:overshell:end_override_flow:1:0
+    kWebPartNoFail,     // fire nofail (once gameplay live)
+    kWebPartAutohit,    // fire autohit (once players active)
+    kWebPartDone,
+};
+static int sWebPartStage = kWebPartIdle;
+
+// Build a Verb for the readiness gate, then fire it via the same path as the
+// script queue. Returns true if it fired (or is unconditionally safe), false if
+// the readiness predicate says "wait" (retry next frame).
+static bool WebFireGatedVerb(const Verb &v, UIScreen *cur) {
+    const char *why = nullptr;
+    if (!VerbReady(v, cur, &why)) {
+        MILO_LOG("RB3 web part-select: WAIT %s: %s\n", VerbName(v), why ? why : "not ready");
+        return false;
+    }
+    MILO_LOG("RB3 web part-select: FIRE %s on '%s'\n", VerbName(v),
+             cur ? cur->Name() : "(none)");
+    DispatchVerb(v, cur);
+    return true;
+}
+
+// Drive the part-select crossing one step per frame. Called from the web input
+// poll once the sequence is armed.
+static void WebDrivePartSelect(int frame, UIScreen *cur) {
+    if (sWebPartStage == kWebPartIdle || sWebPartStage == kWebPartDone)
+        return;
+
+    switch (sWebPartStage) {
+    case kWebPartTrack: {
+        Verb v;
+        v.kind = kVerbTrack;
+        v.trk.trackSym = "guitar";
+        if (WebFireGatedVerb(v, cur))
+            sWebPartStage = kWebPartEndFlow;
+        break;
+    }
+    case kWebPartEndFlow: {
+        Verb v;
+        v.kind = kVerbMsg;
+        v.msg.object = "overshell";
+        v.msg.action = "end_override_flow";
+        v.msg.args.clear();
+        v.msg.args.push_back("1");   // kOverrideFlow_SongSettings
+        v.msg.args.push_back("0");   // FALSE
+        if (WebFireGatedVerb(v, cur))
+            sWebPartStage = kWebPartNoFail;
+        break;
+    }
+    case kWebPartNoFail: {
+        // Wait for the song to actually finish loading (game_screen up + a live
+        // MetaPerformer) before enabling no-fail; gate via the nofail predicate.
+        Verb v;
+        v.kind = kVerbNoFail;
+        if (WebFireGatedVerb(v, cur))
+            sWebPartStage = kWebPartAutohit;
+        break;
+    }
+    case kWebPartAutohit: {
+        Verb v;
+        v.kind = kVerbAutohit;
+        if (WebFireGatedVerb(v, cur)) {
+            sWebPartStage = kWebPartDone;
+            MILO_LOG("RB3 web part-select: sequence complete (frame %d)\n", frame);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+#endif // __EMSCRIPTEN__
+
 // === Readiness predicate ===================================================
 // Decide whether a queued verb may safely fire THIS frame. The dominant crash
 // mode was a verb firing while the UI was mid-transition or before its target
@@ -891,17 +1002,70 @@ void RB3GameInputPoll(int frame) {
             // Ensure the synth user / pad 0 is wired before dispatching.
             SynthUser();
             UIScreen *webCur = TheUI.CurrentScreen();
+            const char *webScr = webCur ? webCur->Name() : "(none)";
+            // strcmp (not Symbol == Symbol): the screen name and a fresh
+            // Symbol("...") need not intern to the same pointer on web, so the
+            // pointer-equality operator== silently misses. Compare the strings.
+            bool onPartDiff = webCur && strcmp(webScr, "part_difficulty_screen") == 0;
+            bool onSongSelect = webCur && strcmp(webScr, "song_select_screen") == 0;
             for (int i = 0; i < kWebKeyMapSize; ++i) {
                 if (newPressed & (1u << kWebKeyMap[i].bit)) {
                     MILO_LOG("RB3 web-input: frame %d  key bit=%d btn=%d action=%d"
                              " screen='%s'\n",
                              frame, kWebKeyMap[i].bit, (int)kWebKeyMap[i].btn,
-                             (int)kWebKeyMap[i].action,
-                             webCur ? webCur->Name() : "(none)");
-                    ExecButton(kWebKeyMap[i].action, kWebKeyMap[i].btn, webCur);
+                             (int)kWebKeyMap[i].action, webScr);
+                    // W3c Part B: a Confirm on part_difficulty_screen arms the
+                    // part-select crossing verb sequence (track:guitar ->
+                    // end_override_flow -> nofail -> autohit) instead of (only) a
+                    // raw ButtonDownMsg the overshell part-select won't consume.
+                    if (onPartDiff && kWebKeyMap[i].action == kAction_Confirm) {
+                        if (sWebPartStage == kWebPartIdle) {
+                            sWebPartStage = kWebPartTrack;
+                            MILO_LOG("RB3 web part-select: armed on part_difficulty "
+                                     "(frame %d)\n", frame);
+                        }
+                    } else if (onSongSelect && kWebKeyMap[i].action == kAction_Confirm) {
+                        // W3c Part B: a Confirm on song_select_screen confirms a
+                        // song via the same DTA handler the native RB3_GAME_INPUT
+                        // script uses ({music_library select_highlighted_node
+                        // $user}). To reach the W3c target song (20th Century Boy)
+                        // DETERMINISTICALLY — without blind keyboard list nav that
+                        // can land on a non-song header node (a null-deref ->
+                        // wasm trap in MusicLibrary::SelectNode's
+                        // dynamic_cast<OwnedSongSortNode*>) — first pin the
+                        // highlight to the target song via TryToSetHighlight, then
+                        // select. The target defaults to 20thcenturyboy (the only
+                        // W3c-required playable song); window.rb3WebTargetSong can
+                        // override it for testing other songs.
+                        char tgt[64] = "20thcenturyboy";
+                        EM_ASM({
+                            var s = window.rb3WebTargetSong;
+                            if (s && s.length && s.length < 63)
+                                stringToUTF8(s, $0, 64);
+                        }, tgt);
+                        if (TheMusicLibrary && tgt[0]) {
+                            MILO_LOG("RB3 web song-select: pinning highlight to "
+                                     "'%s' (frame %d)\n", tgt, frame);
+                            TheMusicLibrary->TryToSetHighlight(Symbol(tgt), kNodeSong, false);
+                        }
+                        ScriptedMsg m;
+                        m.object = "music_library";
+                        m.action = "select_highlighted_node";
+                        m.args.clear();
+                        MILO_LOG("RB3 web song-select: confirm via "
+                                 "music_library:select_highlighted_node (frame %d)\n",
+                                 frame);
+                        ExecMsg(m, webCur);
+                    } else {
+                        ExecButton(kWebKeyMap[i].action, kWebKeyMap[i].btn, webCur);
+                    }
                 }
             }
         }
+
+        // W3c Part B: drive the armed part-select sequence one verb/frame.
+        UIScreen *webCur2 = TheUI.CurrentScreen();
+        WebDrivePartSelect(frame, webCur2);
     }
 #endif // __EMSCRIPTEN__
 

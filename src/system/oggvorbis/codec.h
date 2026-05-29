@@ -28,9 +28,15 @@ extern "C"
 
 /* inline compiler intrinsics go here */
 
+/* The native (clang/emcc, HX_NATIVE=1) toolchain treats `alloca` as the
+ * `__builtin_alloca` intrinsic and rejects this redefinition. The PPC MWCC
+ * build (which does NOT define HX_NATIVE) needs the explicit __alloca
+ * forwarder, so keep it under the guard. Mirrors DC3's codec.h. */
+#ifndef HX_NATIVE
 inline void *alloca(size_t size){
   return __alloca(size);
 }
+#endif
 
 typedef struct vorbis_info{
   int version;

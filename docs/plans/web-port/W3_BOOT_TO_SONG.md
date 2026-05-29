@@ -448,6 +448,95 @@ smoke (`--boot-to-song`, see below) drives keys via
 
 ### W3c — Audio recovery + one song end-to-end [OPUS]
 
+> **STATUS 2026-05-29 — Part A DONE; Part B reaches Game::LoadSong (the gem-track
+> `game_screen` handoff) by keyboard.** Branch `wt-web-w3c`.
+>
+> **Part A — audio source recovery (A1 + A2 DONE):**
+> - `codec.h:31-33`'s unguarded `inline void *alloca` is now wrapped in
+>   `#ifndef HX_NATIVE` (web defines `HX_NATIVE=1`, so `__builtin_alloca` is used;
+>   the PPC MWCC build still takes the explicit forwarder — matched-fork-safe).
+> - `VorbisReader.cpp` + `Synth.cpp` removed from `RB3_WEB_NATIVE_FORK_EXCLUDE`;
+>   they now compile into `rb3-web.wasm` with no codec.h/alloca error.
+> - Audio glue re-added to `RB3_WEB_NATIVE_GLUE`: `rb3_synth_native.cpp`,
+>   `rb3_stream_receiver_native.cpp`, `rb3_keychain_native.cpp`,
+>   `rb3_vorbis_poll_shim.cpp` + tomcrypt `aes.c`/`crypt.c`/`ctr.c` (LANGUAGE C,
+>   `-fno-ms-*`). All are gated `#ifdef HX_NATIVE` (web defines it), so they
+>   compile under emcc unchanged. **A1: rb3-web links (28MB wasm).**
+> - **The stream-receiver maps onto the web AudioSource with ZERO adaptation.**
+>   The engine `AudioDevice`/`AudioSource` interface (`AddSource`/`RemoveSource`/
+>   `RenderAudio`/`IsFinished`) is shared between native (miniaudio) and web
+>   (`AudioDevice_Web.cpp`, AudioWorklet + SAB ring). On web, BOTH the producer
+>   (synth `Poll` writes the ring) and the consumer (`RenderAudio` via
+>   `AudioDevice::PumpAudio()` from `App::RunOneFrame`, `#ifdef __EMSCRIPTEN__`)
+>   run on the main thread; the `std::atomic` back-pressure in
+>   `rb3_stream_receiver_native.cpp` is single-threaded but correct. No
+>   `#ifdef HX_WEB` divergence was needed in the receiver.
+> - **A2:** `SynthPreInit` reads `(use_null_synth FALSE)` from the real config
+>   and selects `CreateNativeSynth() → NativeSynth::Init() → AudioDevice::Init(44100)`.
+>   Console confirms `AudioDevice: initialized (web) -- 44100 Hz, ring 32768 frames`
+>   + `AudioDevice: AudioWorklet connected (44100 Hz)` on every boot — the web
+>   audio backend is live + the worklet streams from the SAB ring.
+>
+> **Part B — reach the gameplay screen (B1 DONE; B2 at the LoadSong handoff):**
+> - **Part-select advance (`rb3_game_input.cpp`, `#ifdef __EMSCRIPTEN__`):** a
+>   Confirm on `part_difficulty_screen` ARMS a per-frame, readiness-gated verb
+>   sequence replicating native v1's part-select crossing:
+>   `track:guitar → msg:overshell:end_override_flow:1:0 → nofail → autohit`
+>   (`WebDrivePartSelect`). Console shows `armed → FIRE track → FIRE msg → FIRE
+>   nofail → FIRE autohit`, the screen crosses `part_difficulty_screen →
+>   tv3_b_screen`, and `BandDirector::OnLoadSong` + `Game::LoadSong` run to
+>   `SongData::Load`. **The `Game.cpp:774 MILO_ASSERT(GetSongStream())` is PASSED**
+>   — LoadSong proceeds past it into the MIDI/MOGG load (audio recovery satisfied
+>   the assert).
+> - **Song-select confirm:** a Confirm on `song_select_screen` now fires
+>   `{music_library select_highlighted_node}` (the native verb), not a raw
+>   ButtonDownMsg — deterministic song-confirm to `part_difficulty_screen`.
+> - **`window.rb3HighlightedSong` / `rb3HighlightedType`** added to `main_web.cpp`
+>   (a `TheMusicLibrary->GetHighlightedNode()` probe) so the gameplay smoke can
+>   observe the library highlight.
+> - **`NodeSort::GetNode` web hardening (`SongSort.cpp`, `#ifdef HX_WEB`):** the
+>   out-of-bounds branch `MILO_FAIL(...)` is non-fatal on web (returns), so the
+>   original `return mList[idx]` then indexed an empty vector and HARD-TRAPPED
+>   (wasm `unreachable`). This fired intermittently at boot when a song-sort
+>   preview queried the highlighted node before the sort was populated (a
+>   load-order race the bigger audio-laden web build exposes). The web arm returns
+>   `nullptr` instead so the caller bails gracefully. **The PPC matched build is
+>   byte-identical** (verified — the `#ifdef HX_WEB` block is invisible to MWCC).
+> - **Test:** `scripts/web/w3c-gameplay-test.mjs` boots → menu → song_select
+>   (navigates to 20th Century Boy) → part_difficulty → arms the crossing →
+>   game-load. Screenshots → `scripts/web/results/web-w3c/gameplay/`.
+>
+> **The one remaining gap (B2 finale, precise follow-up blocker):** with the
+> target pinned to 20th Century Boy, the crossing fires cleanly and the song's
+> `20thcenturyboy.milo_xbox` + `20thcenturyboy.mid` are fetched (HTTP 200) and the
+> MIDI chart parses (note events log). `Game::LoadSong` then runs its heavy
+> SYNCHRONOUS MIDI-driven gem-track / BeatMaster setup on the WASM main thread and
+> **HARD-TRAPS (wasm `unreachable`) before the `.mogg` is ever opened** (the
+> server never sees a `20thcenturyboy.mogg` GET). So the crash is NOT the 35MB MOGG
+> decode (that path is never reached) — it is in the chart/gem/beatmatch
+> construction. The signature matches the SongSort class of bug: a `MILO_FAIL`
+> that is non-fatal on web (returns) followed by an out-of-bounds / null deref in
+> the same function. The fix is to find that specific call site in the
+> gem/beatmatch setup chain (`Game::LoadSong → BeatMaster/GemManager/TrackWatcher`
+> setup) and add the same `#ifdef HX_WEB` graceful-return guard SongSort got.
+> Deepest screen reached by keyboard: `tv3_b_screen`/`tv3_a_screen` (the gameplay
+> venue transition) + `BandDirector::OnLoadSong` — one trap short of the gem
+> highway painting. **NOTE the boot-time SongSort FAILs are now SURVIVED** (the
+> `#ifdef HX_WEB` GetNode guard turned the former intermittent splash trap into a
+> non-fatal log), which is what let the run reach the song load at all.
+>
+> Separately, the 35MB MOGG over the on-demand SINGLE sync-XHR fetch on the main
+> thread is W4 streaming territory: once the LoadSong trap is fixed, expect a
+> multi-second main-thread stall during the MOGG fetch+decode (the same stall
+> native v1 absorbs off-thread via miniaudio). A worker-backed streaming fetch is
+> the W4 follow-up.
+>
+> **Regressions GREEN:** rb3-native builds + runs `RB3_GAME=1` to gameplay
+> (`Game::LoadSong() ENTERED — song='20thcenturyboy'`, gem track + MIDI load,
+> clean exit) — the codec.h guard + glue are `#ifndef HX_NATIVE`/`#ifdef
+> __EMSCRIPTEN__`-gated, zero native/Wii-asm impact. W2 `?milo=` + W3b menu-nav
+> still pass.
+
 **HARD-GATED on native v1** (`V1_ONE_SONG.md`): do not start until native plays
 the chosen song end-to-end on Linux. The audio source recovery (Step 1) can be
 done earlier since it's a compile-only change, but the song integration (Step 3)
