@@ -47,7 +47,16 @@ typedef struct _GXData {
     u32 dstAlpha;  // at 0x224
     u32 zMode;     // at 0x228
     u32 zControl;  // at 0x22C
-    char UNK_0x230[0x254 - 0x230];
+    u32 dispCopySrcXY;  // at 0x230 (BP 0x49)
+    u32 dispCopySrcWH;  // at 0x234 (BP 0x4A)
+    u32 dispCopyDst;    // at 0x238 (BP 0x4D)
+    u32 dispCopyCtrl;   // at 0x23C (copy control: frame2field, clamp, gamma, yScale)
+    u32 texCopySrcXY;   // at 0x240 (BP 0x49)
+    u32 texCopySrcWH;   // at 0x244 (BP 0x4A)
+    u32 texCopyDst;     // at 0x248 (BP 0x4B)
+    u32 texCopyCtrl;    // at 0x24C (BP 0x4B copy control: fmt, wrap, etc.)
+    u8 texCopyMipmap;   // at 0x250
+    char PAD_0x251[3];  // padding
     u32 genMode; // at 0x254
     char UNK_0x258[0x520 - 0x258];
     GXAttrType normalType;     // at 0x520
