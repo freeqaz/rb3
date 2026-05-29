@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RB3 — WebGPU (W3b keyboard input)</title>
+    <title>Rock Band 3</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -28,6 +28,79 @@
             height: 100%;
             display: block;
         }
+
+        /* ── Loading overlay ──────────────────────────────────────────────── */
+        #loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: #0a0a0f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            z-index: 10;
+            transition: opacity 0.4s ease;
+        }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loading-logo {
+            font-size: clamp(22px, 4vw, 42px);
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            /* RB3 brand: purple-blue with white text shadow — matches title screen */
+            color: #ffffff;
+            text-shadow:
+                0 0 20px #5533ff,
+                0 0 40px #3311cc,
+                2px 2px 0 #220088,
+                -1px -1px 0 #220088;
+            margin-bottom: 32px;
+            user-select: none;
+        }
+        .loading-logo span {
+            color: #a288ff;
+        }
+        .progress-track {
+            width: 60%;
+            min-width: 200px;
+            max-width: 480px;
+            height: 6px;
+            background: #1a1a2a;
+            border-radius: 3px;
+            border: 1px solid #2a2a4a;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #5533ff 0%, #9966ff 60%, #cc99ff 100%);
+            border-radius: 3px;
+            transition: width 0.25s ease;
+        }
+        /* Indeterminate pulse when total is unknown */
+        .progress-fill.indeterminate {
+            width: 35% !important;
+            animation: pulse-slide 1.4s ease-in-out infinite;
+        }
+        @keyframes pulse-slide {
+            0%   { transform: translateX(-100%); opacity: 0.7; }
+            50%  { opacity: 1; }
+            100% { transform: translateX(300%); opacity: 0.7; }
+        }
+        .loading-status {
+            font-size: 12px;
+            color: #555;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            min-height: 16px;
+        }
+
+        /* ── Status bar below canvas ─────────────────────────────────────── */
         #status {
             margin-top: 12px;
             font-size: 14px;
@@ -69,6 +142,15 @@
 <body>
     <div id="canvas-container">
         <canvas id="rb3-canvas" width="1280" height="720" tabindex="0"></canvas>
+
+        <!-- Loading overlay — sits on top of the canvas during boot -->
+        <div id="loading-overlay">
+            <div class="loading-logo">Rock <span>Band</span> 3</div>
+            <div class="progress-track">
+                <div class="progress-fill indeterminate" id="progress-fill"></div>
+            </div>
+            <div class="loading-status" id="loading-status">Loading WASM...</div>
+        </div>
     </div>
     <div id="status">Initializing...</div>
     <div id="controls">
@@ -84,6 +166,9 @@
     <script>
         const status = document.getElementById('status');
         const logDiv = document.getElementById('console');
+        const overlay = document.getElementById('loading-overlay');
+        const progressFill = document.getElementById('progress-fill');
+        const loadingStatus = document.getElementById('loading-status');
 
         function log(text, isErr) {
             const line = document.createElement('div');
@@ -93,7 +178,86 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        // WebGPU gate — refuse to boot if the runtime won't actually render.
+        // ── Loading overlay management ────────────────────────────────────────
+
+        // Phase labels for each boot stage (matched to boot state transitions)
+        var loadingPhase = 'wasm';   // 'wasm' | 'assets' | 'engine' | 'done'
+
+        function setLoadingPhase(phase) {
+            if (phase === loadingPhase) return;
+            loadingPhase = phase;
+            switch (phase) {
+            case 'wasm':
+                loadingStatus.textContent = 'Loading WASM...';
+                progressFill.classList.add('indeterminate');
+                break;
+            case 'assets':
+                loadingStatus.textContent = 'Downloading assets...';
+                progressFill.classList.add('indeterminate');
+                break;
+            case 'engine':
+                loadingStatus.textContent = 'Booting engine...';
+                break;
+            case 'done':
+                hideOverlay();
+                break;
+            }
+        }
+
+        function setProgress(loaded, total) {
+            if (total > 0) {
+                progressFill.classList.remove('indeterminate');
+                var pct = Math.min(100, Math.round(loaded / total * 100));
+                progressFill.style.width = pct + '%';
+                loadingStatus.textContent = 'Assets: ' + loaded + ' / ' + total;
+            } else if (loaded > 0) {
+                // Total unknown yet — keep indeterminate but show count
+                loadingStatus.textContent = 'Assets: ' + loaded + ' loaded...';
+            }
+        }
+
+        function hideOverlay() {
+            overlay.classList.add('hidden');
+            // Remove from DOM after fade so it doesn't block clicks
+            overlay.addEventListener('transitionend', function() {
+                overlay.remove();
+            }, { once: true });
+        }
+
+        // Poll window.rb3* signals from the WASM boot loop
+        var overlayPoller = setInterval(function() {
+            var booted = window.rb3AppBooted;
+            var frameCount = window.rb3FrameCount || 0;
+            var loaded = window.rb3AssetsLoaded || 0;
+            var total = window.rb3AssetsTotal || 0;
+
+            if (booted || frameCount > 2) {
+                // App is running — hide overlay after a brief delay so the first
+                // frame is already visible when the overlay fades out.
+                clearInterval(overlayPoller);
+                setLoadingPhase('done');
+                return;
+            }
+
+            // Update progress bar from asset counters
+            if (loaded > 0 || total > 0) {
+                if (loadingPhase === 'wasm' || loadingPhase === 'assets') {
+                    setLoadingPhase('assets');
+                    setProgress(loaded, total);
+                }
+            }
+
+            // Transition to 'engine' phase once assets are done (total > 0 means
+            // BOOT_FETCHING completed and set the total).
+            if (total > 0 && loaded >= total && loadingPhase === 'assets') {
+                setLoadingPhase('engine');
+                progressFill.classList.remove('indeterminate');
+                progressFill.style.width = '95%';
+            }
+        }, 100);  // 10 Hz poll — lightweight
+
+        // ── WebGPU gate ───────────────────────────────────────────────────────
+
         if (!navigator.gpu) {
             const ua = navigator.userAgent;
             const isFirefox = /Firefox/.test(ua);
@@ -110,6 +274,10 @@
             status.style.maxWidth = '900px';
             status.style.textAlign = 'center';
             log('WebGPU not available — refusing to boot engine (would render black)', true);
+            // Update overlay to show the error state
+            loadingStatus.textContent = 'WebGPU not available — see status below';
+            progressFill.classList.remove('indeterminate');
+            progressFill.style.width = '0%';
             throw new Error('WebGPU unavailable');
         }
         {
@@ -124,6 +292,8 @@
                     console.log('RUNTIME_INIT_OK');
                     status.textContent = 'Downloading assets...';
                     status.className = 'loading';
+                    // Advance overlay phase to show asset progress
+                    setLoadingPhase('assets');
                 },
                 print: function(text) {
                     console.log(text);
@@ -131,6 +301,7 @@
                     if (text.includes('assets ready')) {
                         status.textContent = 'Assets loaded, booting engine...';
                         status.className = 'loading';
+                        setLoadingPhase('engine');
                     }
                     if (text.includes('GPU ready')) {
                         status.textContent = 'Rendering';
@@ -163,6 +334,8 @@
                 console.error('WASM_JS_ERROR: ' + e);
                 status.textContent = 'Failed to load rb3-web.js — build first (scripts/web/build.sh)';
                 status.className = 'error';
+                loadingStatus.textContent = 'Failed to load rb3-web.js';
+                progressFill.classList.remove('indeterminate');
             };
             document.body.appendChild(script);
         }

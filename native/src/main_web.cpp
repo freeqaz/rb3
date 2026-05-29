@@ -281,17 +281,27 @@ static void mainLoop() {
         printf("RB3 Web: downloading assets (bundle)...\n");
         WebAssetsInit();
         WebAssetsFetchBundle();
+        // Signal to the loading screen that asset fetch has started.
+        EM_ASM({ window.rb3AssetsLoaded = 0; window.rb3AssetsTotal = 0; });
         sBootState = BOOT_FETCHING;
         break;
     }
 
     case BOOT_FETCHING: {
+        // Publish incremental progress for the loading bar on every poll tick.
+        {
+            int loaded = WebAssetsCompletedCount();
+            int failed = WebAssetsFailedCount();
+            EM_ASM_({ window.rb3AssetsLoaded = $0 + $1; }, loaded, failed);
+        }
         if (!WebAssetsAllDone()) break;
         int ok = WebAssetsCompletedCount();
         int fail = WebAssetsFailedCount();
         printf("RB3 Web: assets ready (%d files, %d errors)\n", ok, fail);
         if (fail > 0)
             printf("RB3 Web: WARNING — %d asset fetch errors; continuing\n", fail);
+        // Signal total so the loading bar can show 100% for a moment.
+        EM_ASM_({ window.rb3AssetsTotal = $0; }, ok + fail);
         // Decide the boot mode now (before engine init): ?milo= → W2 harness,
         // else → App-driven boot.
         sMiloPath = GetMiloPathFromUrl();
