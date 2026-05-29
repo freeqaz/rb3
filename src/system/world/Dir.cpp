@@ -144,6 +144,24 @@ void WorldDir::Poll() {
     if (!_ref0 && !(TheRnd->ProcCmds() & kProcessPost))
         b = false;
     _ref0 = false;
+#ifdef HX_NATIVE
+    // Force-poll transition vignette WorldDirs every frame. The retail kProcessPost
+    // throttle (nominally ~1/3 frames, far lower in practice under TheLoadMgr
+    // competition during the game_screen background load — observed ~70-130 ticks
+    // per 1500-2400 frames) starves the data-driven sequencer's
+    // HandleType(select_camera_msg) tick — so transition_camshot_done firing was
+    // unreliable enough to require the RB3_TV3_PLAY opt-in. Bypassing the throttle
+    // here is scoped strictly to vignette_transition dirs (path match: tv3,
+    // /transition/), so no other WorldDir is affected. Sequencer completion is now
+    // bounded by the authored sub-shot durations. Escape via RB3_TV3_PLAY_OFF.
+    if (!b && IsTv3Dir(this)) {
+        static int sOff = -1;
+        if (sOff < 0)
+            sOff = getenv("RB3_TV3_PLAY_OFF") ? 1 : 0;
+        if (!sOff)
+            b = true;
+    }
+#endif
     if (b) {
         ExtendDeltas();
 #ifdef HX_NATIVE

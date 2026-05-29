@@ -20,32 +20,26 @@ void InterstitialPanel::Enter() {
 
 bool InterstitialPanel::Exiting() const {
 #ifdef HX_NATIVE
-    // The transition vignette (e.g. tv3_*, the difficulty->game cab-ride video +
-    // venue camera move) gates Exiting() on mCamshotDone (set by the venue camera
-    // animation's transition_camshot_done .trg) and unk88>=3 (3 post-camshot
-    // Draws). Headless/native has no working venue render+anim for these cosmetic
-    // shell vignettes (deferred — see WorldInstance::SyncDir / BackdropPanel),
-    // so transition_camshot_done never fires and Exiting() stays true forever →
-    // the part_difficulty -> tv3 -> game_screen transition stalls in kTransitionTo.
-    // Same seam + rationale as BackdropPanel::Exiting()'s native outro fix below:
-    // treat the cosmetic camshot as immediately done so the screen-flow advances
-    // to game_screen (where Game::LoadSong runs).
-    bool baseEx = UIPanel::Exiting();
-    // RB3_TV3_PLAY: opt-in HOLD experiment — restore the retail gate so the tv3
-    // transition screen is NOT torn down until the vignette sequencer fires
+    // Default-on under HX_NATIVE: restore the retail Exiting() gate so the tv3
+    // transition vignette is NOT torn down until the data-driven sequencer fires
     // transition_camshot_done (-> SetCamshotDone) and 3 post-camshot Draws pass.
-    // Default-off: byte-identical to the prior native short-circuit (return baseEx).
-    static int sPlay = -1;
-    if (sPlay < 0)
-        sPlay = getenv("RB3_TV3_PLAY") ? 1 : 0;
-    bool ret = sPlay ? (baseEx || !mCamshotDone || unk88 < 3) : baseEx;
+    // Now safe to default-on because WorldDir::Poll force-polls vignette_transition
+    // dirs every frame (Dir.cpp HX_NATIVE block), so the sequencer is no longer
+    // poll-starved by the kProcessPost throttle / game_screen LoadMgr competition.
+    // The original native short-circuit (return baseEx) is available via
+    // RB3_TV3_PLAY_OFF for regression escape.
+    bool baseEx = UIPanel::Exiting();
+    static int sOff = -1;
+    if (sOff < 0)
+        sOff = getenv("RB3_TV3_PLAY_OFF") ? 1 : 0;
+    bool ret = sOff ? baseEx : (baseEx || !mCamshotDone || unk88 < 3);
     if (getenv("INTERSTITIAL_DBG") || getenv("RB3_TV3SEQ_DBG")) {
         static int sLastFlags = -1;
         int flags = (baseEx ? 1 : 0) | (mCamshotDone ? 2 : 0) | ((unk88 & 0xF) << 4)
             | (ret ? 0x100 : 0);
         if (flags != sLastFlags) {
-            MILO_LOG("RB3_TV3SEQ_DBG: InterstitialPanel::Exiting %s baseEx=%d camshotDone=%d unk88=%d play=%d -> %d\n",
-                     Name(), baseEx ? 1 : 0, mCamshotDone ? 1 : 0, unk88, sPlay, ret ? 1 : 0);
+            MILO_LOG("RB3_TV3SEQ_DBG: InterstitialPanel::Exiting %s baseEx=%d camshotDone=%d unk88=%d off=%d -> %d\n",
+                     Name(), baseEx ? 1 : 0, mCamshotDone ? 1 : 0, unk88, sOff, ret ? 1 : 0);
             sLastFlags = flags;
         }
     }
