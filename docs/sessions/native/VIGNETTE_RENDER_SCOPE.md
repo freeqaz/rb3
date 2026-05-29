@@ -24,6 +24,32 @@
 > play its full sub-shot sequence) — a larger, multi-step effort — NOT a one-block
 > camera pose. Probe code was discarded (matched-fork wipe surface); findings kept here.
 > The engine-RTT cloud-dome item (§3, §5 end) remains the other separate larger piece.
+>
+> **PROBE UPDATE 2 (sequencer attempt, 2026-05-29) — confirms tv3 is a MULTI-SESSION
+> data-sequencer rework, NOT a screen-hold.** A second probe (`RB3_TV3_PLAY` +
+> `RB3_TV3SEQ_DBG` in `InterstitialPanel.cpp`) established:
+> - The tv3 sub-shot sequencer is **data-driven inside `tv3_a.milo`** — an `EventTrigger`
+>   `vignette_transition` (`trans0..trans4`/`trans_index`/`new_index`) maps an index to
+>   the 3 sub-shots (`postnobills_closeup_01/02/03_ao`) and re-points `world.cam`. It is
+>   NOT C++ (`trans_index`/`vignette_transition` appear in no source file). Screen wiring
+>   is `ui/vignettes.dta` `new_transition_vignette`.
+> - **What advances the transition natively is NOT the InterstitialPanel gate** — it's
+>   `game_screen` finishing its load. `BandUI::GetTargetScreen` redirects `goto game_screen`
+>   → `tv3_a_screen`; the swap completes when `game_screen` (game + sync_audio_net panels)
+>   loads — ~3 frames headless vs seconds on console (which is why retail has time to play
+>   the cinematic). So tv3 is `cur` only f453-455 by default.
+> - **HOLD experiment (decisive):** restoring the retail gate (`RB3_TV3_PLAY=1`,
+>   `!mCamshotDone || unk88<3`) holds the panel but **STALLS PERMANENTLY** — across ~250
+>   held frames `SetCamshotDone` NEVER fires, `world.cam` stays at origin, all frames black.
+>   The `vignette_transition` EventTrigger sequencer **never advances `trans_index`** — its
+>   advance mechanism does not tick natively (no `vignette_start.trig` kick; the WorldDir
+>   sub-shot sequencer is never driven). So the gate is a STALL, not a fix.
+> - **To actually fix tv3:** drive the milo's `vignette_transition` EventTrigger sequencer
+>   (fire `vignette_start.trig` on screen-enter → advance `trans_index` through posed
+>   sub-shots → post `transition_camshot_done`) AND decouple the tv3→game swap from
+>   `game_screen`'s instant headless load. That spans WorldDir/CameraManager/BandCamShot/
+>   EventTrigger + InterstitialMgr screen-flow timing = multi-session. Probe code discarded
+>   (default-off was byte-identical + regression-clean; the opt-in is a proven stall).
 
 **Authored:** 2026-05-29 (Opus deep-investigation subagent, READ-ONLY: no source
 edits, no build, no commit; ran the game read-only for diagnostics).
