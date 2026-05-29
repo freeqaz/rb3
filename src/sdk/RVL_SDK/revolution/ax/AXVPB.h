@@ -6,5 +6,7 @@
 void __AXVPBInit();
 void __AXVPBInitSpecifyMem(u32, u32);
 void __AXVPBQuit();
+u32 __AXGetNumVoices(void);
+void __AXSyncPBs(void *param);
 
 #endif

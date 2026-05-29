@@ -1832,7 +1832,7 @@
             "sdk/RVL_SDK/src/ax/AXAux.c": "MISSING",
             "sdk/RVL_SDK/src/ax/AXCL.c": "NonMatching",
             "sdk/RVL_SDK/src/ax/AXComp.c": "Matching",
-            "sdk/RVL_SDK/src/ax/AXOut.c": "MISSING",
+            "sdk/RVL_SDK/src/ax/AXOut.c": "NonMatching",
             "sdk/RVL_SDK/src/ax/AXProf.c": "NonMatching",
             "sdk/RVL_SDK/src/ax/AXSPB.c": "MISSING",
             "sdk/RVL_SDK/src/ax/AXVPB.c": "NonMatching",
