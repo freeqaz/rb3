@@ -337,7 +337,8 @@ set(_NATIVE_FORK_EXCLUDE
     # garbage and the dtor SEGVs in ObjPtr::~ObjPtr → Object::Release → rbegin().
     # Requires the V20 #ifndef HX_NATIVE wrappers around the stlpmtx_std
     # specializations in BandPatchMesh.cpp.
-    ClipDistMap DataResults
+    # ClipDistMap: stlpmtx_std specializations wrapped #ifndef HX_NATIVE (V34)
+    # DataResults: switch jump-over-init guarded #ifndef HX_NATIVE (V34)
     SaveLoadManager
     Splash
     StorePackedMetadata TourPerformerLocal
