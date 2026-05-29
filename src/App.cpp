@@ -170,7 +170,20 @@ App::App(int argc, char **argv) {
     // (cosmetic venue deferral). Black matches retail RB3's release-build
     // path and renders gameplay frames as "highway over black void" rather
     // than "highway over red void".
+#ifdef HX_NATIVE
+    // RB3_CLEAR_COLOR=r,g,b lets a diagnostic distinguish "void is empty
+    // (clear-color shows through)" from "void is opaque geometry rendering
+    // black". This is the AUTHORITATIVE clear-color setter for the game (it
+    // runs after main_native's). Default black.
+    {
+        float cr = 0, cg = 0, cb = 0;
+        const char *cc = getenv("RB3_CLEAR_COLOR");
+        if (cc) sscanf(cc, "%f,%f,%f", &cr, &cg, &cb);
+        TheRnd->SetClearColor(Hmx::Color(cr, cg, cb));
+    }
+#else
     TheRnd->SetClearColor(Hmx::Color(0, 0, 0));
+#endif
 #endif
     TheRnd->Init();
 #ifndef HX_NATIVE

@@ -551,7 +551,16 @@ static int RunGame(int argc, char **argv) {
     bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
     int W = getenv("MILO_WIDTH")  ? atoi(getenv("MILO_WIDTH"))  : 1280;
     int H = getenv("MILO_HEIGHT") ? atoi(getenv("MILO_HEIGHT")) : 720;
-    gBandRnd.SetClearColor(Hmx::Color(0, 0, 0));
+    // BandRnd uses its own clear color (the generic Rnd_Wgpu MILO_CLEAR_COLOR
+    // path does NOT apply to BandRnd). Default black; RB3_CLEAR_COLOR=r,g,b lets
+    // a diagnostic distinguish "void is geometry rendering black" from "void is
+    // empty (clear-color) frustum" without a rebuild.
+    {
+        float cr = 0, cg = 0, cb = 0;
+        const char* cc = getenv("RB3_CLEAR_COLOR");
+        if (cc) sscanf(cc, "%f,%f,%f", &cr, &cg, &cb);
+        gBandRnd.SetClearColor(Hmx::Color(cr, cg, cb));
+    }
     if (!gBandRnd.InitGpu(W, H, headless)) {
         fprintf(stderr, "rb3-native: RB3_GAME — GpuDevice init FAILED\n");
         return 1;
