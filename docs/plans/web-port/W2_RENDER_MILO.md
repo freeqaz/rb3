@@ -426,6 +426,77 @@ heuristic — the geometry is in `tracksystem_meshes` + `track_shared`'s meshes,
 the HUD overlays). The memory bump (2 GB), the yielding load loop, and the
 `ReadDead`/`UIComponent` web guards are all landed and correct regardless.
 
+**WEB UI-HUD wall — RESOLVED 2026-05-29 (branch `wt-web-subsys`). It was NOT a
+UI-subsystem bring-up gap. The real bug is a one-line MEMFS-path mismatch in the
+on-demand fetch hook — `band_power_meter`/`pool_info_widget` load on web with NO
+new subsystem.**
+
+*Diagnosis (instrumented `w2a-probe.mjs`, full console captured to file — the
+prior "hang at poll ~156" was actually a clean `abort()` the tight `page.evaluate`
+loop was starving out):* the load reached `pentatonic_regularsmall.milo_xbox` (the
+font resource milo a HUD `BandLabel` pulls via `UIComponent::ResourceFileUpdated`
+→ `mResourceDir.LoadFile` → nested `PollUntilLoaded`), then died at:
+
+```
+WebAssets: XHR exception: ErrnoError: No such file or directory
+WebAssets: FAILED on-demand fetch ui/resource/fonts/gen/pentatonic_regularsmall.milo_xbox
+OSFatal: UILabel.cpp Line 974 (=0x3CE) Error: ResourceDir()   ← MILO_ASSERT in LabelUpdate
+```
+
+The server returns HTTP **200** for that URL every time — the failure is the
+MEMFS write, not the network. `WebAssetsFetchSync(path)` (engine `WebAssets.cpp`)
+runs `FS.mkdir` for each **absolute** parent (`/ui`, `/ui/resource`, …) then
+`FS.writeFile(path)`. The font/icon resource milos arrive as **relative** paths
+(`FileRoot()` is `"."` on web, and `UIComponent::ResourceFileUpdated` builds
+`ui/resource/.../foo.milo_xbox`), so the mkdir loop created `/ui/...` while
+`FS.writeFile` resolved the relative path against the FS cwd (`/data`), i.e.
+`/data/ui/...`, whose parents were never made → `ErrnoError` → null
+`ResourceDir()` → assert → `abort()`. The earlier multi-MB *dep* milos
+(tracksystem_meshes, track_shared, ingame_bank) worked only because they arrive
+absolute (`/data/`-prefixed); every relative resource fetch (fonts, icons) hit
+this.
+
+*Fix (durable, RB3-side, `__EMSCRIPTEN__`-gated — `native/src/native_file.cpp`):*
+in `NativeStdioFile`'s ctor fetch fallback, anchor a relative `path` to `/data/`
+before calling `WebAssetsFetchSync`, so the fetch's mkdir/writeFile and the
+retry `fopen` (still using the original relative path, which resolves to the same
+`/data/...` file under cwd `/data`) agree on one absolute MEMFS location. One
+`if`/string-prefix. No engine change, no new subsystem, no decomp-read-logic
+touch; native `.o` is byte-identical (edit is inside `#ifdef __EMSCRIPTEN__`).
+
+*Result:* **`tracksystem.milo_xbox` loads + renders on web** — `dir 'GemTrackDir'
+— 1151 objects, 277 drawable meshes, 2 cams` (identical to native), `BandRnd:
+frame drawn — 277 meshes, 60164 tris` (matches native's mesh/tri count),
+`milosLoaded=1, frames=56, nonClear=5.46%, error_count=0`; the white track
+surface + colored gem grid + HUD widget panels + pitch arrow are all visible
+(`scripts/web/results/web-subsys/tracksystem/canvas.png`). **`main_hub.milo_xbox`
+loads + renders** — `dir 'main_hub' [PanelDir] — 170 objects, 11 drawable meshes`,
+`milosLoaded=1, frames=41, nonClear=1.73%, error_count=0`; the menu panel/bar
+geometry is visible (`…/web-subsys/main_hub/canvas.png`). Regressions hold:
+single-chunk `gem_smasher_guitar_meshes` still PASS (frames=43, nonClear=3.69%);
+native `RB3_RENDER_MESH=1` on tracksystem still `RENDER_MESH OK` (1151/277/7.3%).
+
+*Why the prior diagnosis was off:* native loads these exact resource milos fine
+(verified: `band_power_meter.milo` loads with only benign `couldn't find *.pl`
+NOTIFYs), so the UI resource manager was never the blocker — the harness already
+constructs `UILabel`/`BandLabel` and resolves their font dirs via the ordinary
+`DirLoader`/`PollUntilLoaded` path. The only web-vs-native divergence was the
+MEMFS path bug. The prior `main_web.cpp` synth-leaf de-registration, the
+`UIComponent::Update` web bail, the `ReadDead` EOF guard, the 2 GB cap, and the
+`LoadMiloDirYielding` loop all remain in place and correct (the yielding loop is
+what keeps the tab responsive during the now-completing load); none of them were
+sufficient alone because the font fetch died regardless.
+
+*Remaining for full menu fidelity (W3, not blocking):* main_hub renders only its
+11 panel/background meshes — the menu's **text labels** (`RndText` glyph quads)
+and dynamic widget content are not drawn by the static mesh-walk render harness
+(`RenderFrame` walks `RndMesh`es only; `RndText` draws via its own path the
+harness doesn't invoke). Full menu text + interactivity needs the real `App` boot
+(`App::RunOneFrame`, as DC3's `main_web.cpp` does) so `UIScreen`/`UIPanel` poll +
+draw their components — that is the W3 boot-to-menu task. This font-fetch fix is
+exactly the groundwork W3 needs: every UI resource milo now loads on web, so an
+`App`-driven boot will resolve its font/icon resources the same way.
+
 **Risk 3 — Texture upload under Dawn-web.**
 `WriteTexture` has a 256-byte `bytesPerRow` alignment requirement that is
 enforced more strictly in the browser's Dawn validation than in native Vulkan

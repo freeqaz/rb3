@@ -10,6 +10,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include "platform/WebAssets.h"
+#include <string>
 #endif
 
 namespace {
@@ -30,7 +31,25 @@ public:
         // unchanged to both calls — WebAssetsFetchSync writes to the same path
         // it opens (DC3's AsyncFileNative::_OpenAsync uses the same contract).
         if (!mFp && readMode) {
-            if (WebAssetsFetchSync(path)) {
+            // WebAssetsFetchSync writes the fetched bytes into MEMFS using the
+            // path it is handed: it runs `FS.mkdir` for each ABSOLUTE parent dir
+            // (`/ui`, `/ui/resource`, …) then `FS.writeFile(path)`. If `path` is
+            // RELATIVE (FileRoot() is "." on web, so most resource milos —
+            // fonts, icons — arrive as `ui/resource/.../foo.milo_xbox`), the
+            // mkdir loop creates `/ui/...` while writeFile resolves the relative
+            // path against the FS cwd (`/data`), i.e. `/data/ui/...`, whose
+            // parent dirs were never made → `ErrnoError: No such file or
+            // directory` and a failed fetch (e.g. pentatonic_regularsmall.milo
+            // for the HUD BandLabels → UILabel.cpp:522 ResourceDir() abort).
+            // Anchor a relative path under /data (the MEMFS asset root, == cwd)
+            // so the fetch's mkdir/writeFile and this fopen agree on one
+            // absolute location. The subsequent fopen still uses the original
+            // (relative) `path`, which resolves to the same `/data/...` file.
+            // Guarded out of the matched Wii/native asm (no __EMSCRIPTEN__).
+            std::string fetchPath = path;
+            if (!fetchPath.empty() && fetchPath[0] != '/')
+                fetchPath = "/data/" + fetchPath;
+            if (WebAssetsFetchSync(fetchPath.c_str())) {
                 mFp = std::fopen(path, m);
             }
         }
