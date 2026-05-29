@@ -1,0 +1,12 @@
+{
+  "name": "rb3",
+  "compiler": "mwcc",
+  "build_id": "SZBE69_B8",
+  "obj_extension": ".o",
+  "output_flag": "-o",
+  "uses_cd_prefix": false,
+  "obj_layout": "mirror",
+  "objdiff_cli": "bin/objdiff-cli",
+  "m2c_target": "ppc",
+  "_comment": "RB3 builds with MetroWerks CodeWarrior (C++98). Patterns emitting C++11+ syntax (auto, decltype) must look up concrete types from headers instead."
+}

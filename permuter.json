@@ -1,4 +1,0 @@
-{
-  "compiler": "mwcc",
-  "_comment": "RB3 builds with MetroWerks CodeWarrior (C++98). Patterns emitting C++11+ syntax (auto, decltype) must look up concrete types from headers instead."
-}

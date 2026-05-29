@@ -1,6 +1,6 @@
 # RB3 Web Port — Browser via WebAssembly + WebGPU
 
-**Status:** planning. No code yet.
+**Status:** W0+W1 done; W2a done (single milo renders in-browser, rb3 `2c14d893`); multi-chunk milo load fixed natively (factory registration, rb3 `70873c4a`). W2b in progress: blocked on the web async-asset-load wall (512MB wasm heap cap + main-thread-blocking sync fetch of heavy chunk deps crashes the page on heavy multi-chunk milos; load logic is proven correct on native).
 
 This directory holds the RB3 web-port plan, split into per-phase docs so each
 can be delegated to a focused subagent. The plan mirrors DC3's web port
@@ -38,9 +38,9 @@ These cut across every phase and must be respected:
 
 | Phase | Doc | Acceptance | Depends on |
 |---|---|---|---|
-| **W0** | [`W0_ENGINE_EXTRACTION.md`](W0_ENGINE_EXTRACTION.md) | DC3's `dc3-web` build is functionally unchanged after web infra is lifted into the engine under `MILO_BUILD_WEB`. | — |
-| **W1** | [`W1_CLEAR_FRAME.md`](W1_CLEAR_FRAME.md) | `rb3-web` builds, boots, runs `SystemPreInit`/`SystemInit` (config DTAs), clears canvas, reaches `BOOT_RUNNING`, ticks ≥5 frames; Playwright screenshot proves non-default canvas. | W0 |
-| **W2** | [`W2_RENDER_MILO.md`](W2_RENDER_MILO.md) | `tracksystem.milo_xbox`, gem-smasher, and a UI panel render in-browser visibly matching the native `RB3_RENDER_MESH` PNGs. | W1 |
+| **W0** | [`W0_ENGINE_EXTRACTION.md`](W0_ENGINE_EXTRACTION.md) | DC3's `dc3-web` build is functionally unchanged after web infra is lifted into the engine under `MILO_BUILD_WEB`. Done — engine cfaaa5b, dc3 c800138e, rb3 7f62c2af. | — |
+| **W1** | [`W1_CLEAR_FRAME.md`](W1_CLEAR_FRAME.md) | `rb3-web` builds, boots, runs `SystemPreInit`/`SystemInit` (config DTAs), clears canvas, reaches `BOOT_RUNNING`, ticks ≥5 frames; Playwright screenshot proves non-default canvas. Done — rb3 4183f495. | W0 |
+| **W2** | [`W2_RENDER_MILO.md`](W2_RENDER_MILO.md) | `tracksystem.milo_xbox`, gem-smasher, and a UI panel render in-browser visibly matching the native `RB3_RENDER_MESH` PNGs. BandRnd backend already compiles into rb3-web.wasm (engine rb3 flavor); W2 unblocks it by splitting BandRnd::InitGpu async + on-demand milo fetch hook. Split into W2a (render first milo) / W2b (full coverage + pixelmatch). | W1 |
 | **W3** | [`W3_BOOT_TO_SONG.md`](W3_BOOT_TO_SONG.md) | One song plays end-to-end (audio + gem track + scoring) in the browser. Same v1 bar as native. | W2 + native v1 |
 | **W4** | [`W4_POLISH.md`](W4_POLISH.md) | WASM size <15MB compressed; loading screen; IndexedDB cache; memory tuning. | W3 |
 
