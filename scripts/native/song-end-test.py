@@ -29,9 +29,12 @@ USAGE
 -----
     python3 scripts/native/song-end-test.py [--port N] [--data DIR]
             [--bin PATH] [--song SYM] [--verbose] [--keep-log]
+            [--require-endgame]
 
-Exit 0 = song ended and an endgame screen was reached. Exit 1 = bug present /
-timed out / boot failed.
+Exit 0 = song ended and game-over was reached (default), or — with
+--require-endgame — the endgame/results screen additionally loaded and stayed
+rendering for a sustained window without aborting. Exit 1 = bug present /
+crashed / timed out / boot failed.
 """
 
 import argparse
@@ -67,6 +70,16 @@ SERVER_READY_TIMEOUT = 40
 GAMEPLAY_TIMEOUT = 200   # boot + nav + cinematic intro pre-roll
 GAMEOVER_TIMEOUT = 60    # jump -> endgame screen transition
 GAMEPLAY_SONGMS = 2000.0 # song clock past the intro = gameplay underway
+
+# --require-endgame: after game-over, keep the process running and prove the
+# endgame/results screen loads AND stays up (no abort) for this window. The
+# endgame milos (coop_player_widget / coop_endgame) used to abort on base-vs-
+# subclass casts (review.ihp as base InlineHelp, detail labels as base
+# BandLabel, null AI UserName). Poll for STATE, never hardcode frame numbers —
+# headless frame rate varies a lot run-to-run.
+ENDGAME_REACH_TIMEOUT = 30    # game-over -> endgame/results screen seen
+ENDGAME_STABLE_SECONDS = 25   # must keep rendering this long without exiting
+ENDGAME_MIN_FRAME_ADVANCE = 30  # frames must advance (screen live, not frozen)
 
 
 def log(msg):
@@ -168,6 +181,9 @@ def main():
     ap.add_argument("--song", default=None, help="(unused yet) target song symbol")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--keep-log", action="store_true", help="keep the engine stdout/stderr log")
+    ap.add_argument("--require-endgame", action="store_true",
+                    help="after game-over, also require the endgame/results screen to "
+                         "load AND stay up (no abort) — the full score-screen guard")
     args = ap.parse_args()
 
     if not os.path.exists(args.bin):
@@ -235,21 +251,27 @@ def main():
         # 4) The fix: song-end must flip the game into kGameOver. We assert on the
         #    GamePanel game-over STATE (stable for ~100+ frames while the win
         #    animation plays) rather than the endgame SCREEN name (which only
-        #    flashes for a few frames and then — in this build — aborts on a
-        #    missing endgame milo asset, `review.ihp` in coop_player_widget.milo,
-        #    a separate UI-content gap unrelated to the song-end fix). We accept
+        #    flashes for a few frames before the endgame milos load). We accept
         #    three positive signals; any one means the song ended:
         #      (a) {game is_game_over} == 1   (primary, crash-free, stable)
         #      (b) an endgame/results screen seen in /api/health  (secondary)
-        #      (c) the process aborts AFTER the jump  (the known endgame-content
+        #      (c) the process aborts AFTER the jump  (a downstream endgame-content
         #          crash — only reachable once the game-over transition fired)
+        #
+        #    With --require-endgame the bar is higher: (c) becomes a FAIL (the whole
+        #    point is that the score screen no longer aborts), and we additionally
+        #    require the endgame screen to load AND stay rendering (stage 5).
         deadline = time.time() + GAMEOVER_TIMEOUT
         verdict = None
         while time.time() < deadline:
             if proc.poll() is not None:
                 if proc.returncode in (134, 139, -6, -11):  # SIGABRT/SIGSEGV
+                    if args.require_endgame:
+                        log(f"FAIL: process aborted (code {proc.returncode}) after jump — "
+                            f"the endgame/results screen crashed (--require-endgame).")
+                        return 1
                     verdict = ("crash", f"process exited {proc.returncode} after jump "
-                                        f"(known endgame-content crash — song-end fired)")
+                                        f"(downstream endgame-content crash — song-end fired)")
                 else:
                     log(f"FAIL: process exited {proc.returncode} after jump without game-over")
                     return 1
@@ -273,10 +295,65 @@ def main():
 
         kind, detail = verdict
         log(f"PASS: song ended -> game-over reached [{kind}: {detail}]")
+
+        # 5) --require-endgame: prove the endgame/results screen actually loads and
+        #    stays up. Reach an endgame screen, then watch it render frames for a
+        #    sustained window without the process exiting/aborting. Poll for STATE
+        #    (screen name + frame advance + proc.poll), never a fixed frame count.
+        if args.require_endgame:
+            reach_dl = time.time() + ENDGAME_REACH_TIMEOUT
+            reached = None
+            while time.time() < reach_dl:
+                if proc.poll() is not None:
+                    log(f"FAIL: process exited (code {proc.returncode}) before the "
+                        f"endgame screen loaded (--require-endgame).")
+                    return 1
+                cur = health(port)
+                if cur and is_endgame_screen(cur[2]):
+                    reached = cur
+                    break
+                if args.verbose and cur:
+                    log(f"  ...endgame-reach: frame={cur[0]} screen='{cur[2]}'")
+                time.sleep(0.3)
+            if reached is None:
+                cur = health(port)
+                screen = cur[2] if cur else "(unreachable)"
+                log(f"FAIL: never reached an endgame/results screen (last '{screen}') "
+                    f"within {ENDGAME_REACH_TIMEOUT}s of game-over.")
+                return 1
+            log(f"endgame screen reached: frame={reached[0]} screen='{reached[2]}'")
+
+            # Stability watch: it must keep rendering (frame advancing) and NOT
+            # exit for ENDGAME_STABLE_SECONDS.
+            start_frame = reached[0]
+            last_screen = reached[2]
+            stable_dl = time.time() + ENDGAME_STABLE_SECONDS
+            last_frame = start_frame
+            while time.time() < stable_dl:
+                if proc.poll() is not None:
+                    log(f"FAIL: endgame screen aborted (code {proc.returncode}) "
+                        f"after ~{ENDGAME_STABLE_SECONDS - (stable_dl - time.time()):.0f}s "
+                        f"(was on '{last_screen}', frame {last_frame}).")
+                    return 1
+                cur = health(port)
+                if cur:
+                    last_frame, last_screen = cur[0], cur[2]
+                    if args.verbose:
+                        log(f"  ...endgame-stable: frame={cur[0]} screen='{cur[2]}'")
+                time.sleep(1.0)
+            advanced = last_frame - start_frame
+            if advanced < ENDGAME_MIN_FRAME_ADVANCE:
+                log(f"FAIL: endgame screen alive but frozen — only {advanced} frames "
+                    f"advanced in {ENDGAME_STABLE_SECONDS}s (need >= "
+                    f"{ENDGAME_MIN_FRAME_ADVANCE}). screen='{last_screen}'.")
+                return 1
+            log(f"PASS: endgame screen STABLE for {ENDGAME_STABLE_SECONDS}s "
+                f"(screen='{last_screen}', {advanced} frames advanced, no abort).")
+
         if kind == "crash":
-            log("      NOTE: the endgame results screen then aborted on a missing "
-                "milo asset (review.ihp) — a separate UI-content gap, not the "
-                "song-end bug. The song-end → game-over transition itself works.")
+            log("      NOTE: the endgame results screen then aborted on downstream "
+                "endgame-content gaps — run with --require-endgame to gate that. "
+                "The song-end → game-over transition itself works.")
         rc = 0
         return 0
     finally:
