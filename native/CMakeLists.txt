@@ -480,6 +480,12 @@ add_executable(rb3-native
     # std::vector<Viewport>::resize -> SIGSEGV. See the TU header for the full
     # root-cause writeup.
     ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
+    # Disc base-class -> App* subclass label/inline-help factory remap so the
+    # retail-disc BandLabel/InlineHelp milo objects handle the proto's set_*
+    # dynamic-text messages (song/player/intro names, star rating, MOTD).
+    # Injects supplemental (AppLabel)/(AppInlineHelp) objects-config entries first
+    # so the ClassName()-keyed fatal config lookups still resolve (boot-safe).
+    ${CMAKE_SOURCE_DIR}/src/rb3_disc_label_classes.cpp
     # embedded HTTP debug server (RB3_HTTP=1): /api/health, /api/screenshot,
     # /api/dta/eval, /api/input. Background httplib thread + a main-thread command
     # queue drained from App.cpp's HX_NATIVE frame loop (RB3HttpServerPoll /
@@ -610,6 +616,9 @@ set(RB3_WEB_NATIVE_GLUE
     # multi-chunk milos (main_hub, tracksystem) that embed bandobj Dir subclasses
     # load without desyncing. See the TU header for the root-cause writeup.
     ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
+    # Disc base-class -> App* subclass label/inline-help factory remap (set_*
+    # dynamic text). Same as the native list entry — see that TU's header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_disc_label_classes.cpp
     ${REPO_ROOT}/src/network/net/Synchronize.cpp
     # W2a: milo load + walk + draw. The native PNG path (RunRenderMesh /
     # RenderToPng / _exit) is #ifndef __EMSCRIPTEN__-guarded; the web build only

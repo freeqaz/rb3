@@ -304,6 +304,22 @@ void MetaPanel::Init() {
     DataRegisterFunc("toggle_unlock_all", ToggleUnlockAll);
     DataRegisterFunc("toggle_playtest_flag", ToggleIsPlaytest);
     DataRegisterFunc("toggle_launched_goal_msgs_only", ToggleLaunchedGoalMsgsOnly);
+#ifdef HX_NATIVE
+    // The retail-disc milos author .lbl/.ihp objects as the BASE classes
+    // BandLabel/InlineHelp (the SZBE69_B8 proto this decomp matches used the
+    // AppLabel/AppInlineHelp game subclasses). Remap the engine factory so the
+    // disc base-class objects construct as the App* subclasses, so they handle
+    // the dynamic-text messages (set_user_name/set_song_name/set_intro_name/
+    // set_star_rating/...) instead of dropping them as "unhandled" and rendering
+    // blank. The App* factories were just registered above (under their own
+    // names) and SystemInit has loaded the objects config; the glue also injects
+    // supplemental (AppLabel)/(AppInlineHelp) config entries so the
+    // ClassName()-keyed fatal config lookups still resolve (boot-safe). All real
+    // logic lives in native glue (native/src/rb3_disc_label_classes.cpp) so this
+    // matched TU only gains one gated call. MWCC (no HX_NATIVE) never sees this.
+    extern void RB3UpgradeDiscLabelClasses();
+    RB3UpgradeDiscLabelClasses();
+#endif
 }
 
 MetaPanel::MetaPanel()
