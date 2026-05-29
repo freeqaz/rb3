@@ -22,6 +22,12 @@
 #include "ui/UIScreen.h"
 #include "ui/UIPanel.h"
 #include "ui/UIComponent.h"
+#include "ui/UILabel.h"   // UILabel — N6 seldiff raw-token clear
+#include "rndobj/Text.h"  // RndText::RawText — detect the raw %S %I SONGS leak
+#include "meta_band/BandSongMgr.h"        // TheSongMgr (N6 song+artist text)
+#include "meta_band/BandSongMetadata.h"   // BandSongMetadata Title/Artist (N6)
+#include "utl/Locale.h"                   // Localize (N6 song_artist_fmt)
+#include "utl/MakeString.h"               // MakeString (N6)
 #include "os/Joypad.h"
 #include "os/JoypadMsgs.h"
 #include "os/User.h"
@@ -720,6 +726,102 @@ void RB3GameInputPoll(int frame) {
                     dynamic_cast<RndDrawable *>(pd->FindObject("song_select_details", true));
                 if (d && d->Showing())
                     d->SetShowing(false);
+            }
+        }
+    }
+
+    // N6 fix — seldiff `%S %I SONGS` raw setlist-token leak.  The on-screen leak
+    // is the marquee song-preview label `song_preview.lbl`, NOT `setlist_title.lbl`
+    // (the latter resolves correctly via update_setlist_label — confirmed by
+    // walking every UILabel in the panel dir; only `song_preview.lbl` carries a
+    // raw `%` at the seldiff frame).  The seldiff milo bakes a default
+    // `text_token = set_list_named_title` ("%s <alt>%i songs</alt>") on
+    // `song_preview.lbl`; UILabel::PostLoad fires SetTextToken with NO format args,
+    // so SuperFormatString leaves the literal `%s`/`%i` and RndText kForceUpper
+    // renders the raw "%S" / "%I SONGS".  Retail fills it via the
+    // `update_preview_song` DTA handler → `set_song_and_artist_name_from_sym`,
+    // which is an *AppLabel* handler — but this object loads as a base BandLabel
+    // (class='BandLabel'), so that message is unhandled and the song name is never
+    // set, leaving the baked default on screen.  Enforce the retail intent
+    // directly: when `song_preview.lbl` still shows a raw `%`-token, fill it with
+    // the current song+artist text — computed exactly as
+    // AppLabel::SetSongAndArtistNameFromSymbol does — via the base
+    // UILabel::SetDisplayText (class-agnostic).  We act only on the raw-token
+    // state, so a legitimately-substituted preview is never clobbered.
+    // Glue-layer, permuter-safe; opt-out via RB3_NO_SETLIST_FIX.
+    // NumSongs()/GetSongSymbol() are the real strong MetaPerformer defs (the weak
+    // .s stubs are overridden).
+    if (!getenv("RB3_NO_SETLIST_FIX") && cur
+        && curName == Symbol("part_difficulty_screen") && ObjectDir::sMainDir) {
+        UIPanel *sdp =
+            ObjectDir::sMainDir->Find<UIPanel>("part_difficulty_panel", false);
+        ObjectDir *pd = sdp ? (ObjectDir *)sdp->LoadedDir() : nullptr;
+        if (getenv("RB3_SETLIST_DBG") && pd && (frame % 40) == 0) {
+            // Diag: report any UILabel in the panel dir whose RAW text still
+            // carries a `%` specifier (an on-screen raw-token leak).
+            for (ObjDirItr<UILabel> it(pd, true); it != nullptr; ++it) {
+                RndText *dt = it->TextObj();
+                const char *r = dt ? dt->RawText() : nullptr;
+                if (r && strchr(r, '%'))
+                    MILO_LOG("RB3 N6 diag: frame %d LABEL '%s' class='%s' "
+                             "raw='%s' showing=%d\n",
+                             frame, it->Name(), it->ClassName().Str(), r,
+                             (int)it->Showing());
+            }
+        }
+        if (pd && sdp->GetState() == UIPanel::kUp) {
+            UILabel *prev =
+                dynamic_cast<UILabel *>(pd->FindObject("song_preview.lbl", true));
+            RndText *txt = prev ? prev->TextObj() : nullptr;
+            // Copy the current raw text — RawText() aliases RndText::mText, which
+            // SetDisplayText below reallocates (the alias would dangle).
+            String rawText = txt ? txt->RawText() : "";
+            const char *raw = rawText.c_str();
+            // Raw token leak iff the displayed text still carries a `%` specifier.
+            if (raw && strchr(raw, '%')) {
+                MetaPerformer *mp = MetaPerformer::Current();
+                int numsongs = mp ? mp->NumSongs() : 0;
+                if (mp && numsongs > 0) {
+                    // Compose the song+artist string exactly as
+                    // AppLabel::SetSongAndArtistNameFromSymbol (AppLabel.cpp:206):
+                    // title + (master ? artist : "as made famous by <artist>"),
+                    // joined via the song_artist_fmt[_number] locale template.
+                    Symbol song = mp->GetSongSymbol(0);
+                    int songID = TheSongMgr.GetSongIDFromShortName(song, true);
+                    BandSongMetadata *data =
+                        (BandSongMetadata *)TheSongMgr.Data(songID);
+                    String titleStr, artistStr;
+                    if (!data) {
+                        titleStr = Localize(Symbol("unknown_song"), (bool *)0);
+                    } else {
+                        titleStr = data->Title();
+                        if (!data->IsMasterRecording())
+                            artistStr = MakeString(
+                                "%s %s", Localize(Symbol("store_famous_by"), (bool *)0),
+                                data->Artist());
+                        else
+                            artistStr = data->Artist();
+                    }
+                    int idx = numsongs > 1 ? 1 : 0;  // multi-song marquee → "N."
+                    if (idx <= 0)
+                        prev->SetDisplayText(
+                            MakeString(Localize(Symbol("song_artist_fmt"), (bool *)0),
+                                       titleStr.c_str(), artistStr.c_str()),
+                            true);
+                    else
+                        prev->SetDisplayText(
+                            MakeString(
+                                Localize(Symbol("song_artist_fmt_number"), (bool *)0),
+                                idx, titleStr.c_str(), artistStr.c_str()),
+                            true);
+                } else {
+                    // No song known — blank rather than leave the raw token.
+                    prev->SetDisplayText("", true);
+                }
+                RndText *t2 = prev->TextObj();
+                MILO_LOG("RB3 N6: frame %d replaced seldiff song_preview.lbl raw "
+                         "token '%s' -> '%s' (numsongs=%d)\n",
+                         frame, raw, t2 ? t2->RawText() : "(none)", numsongs);
             }
         }
     }

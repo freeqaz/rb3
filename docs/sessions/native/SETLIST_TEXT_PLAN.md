@@ -48,7 +48,7 @@ locale work), `ViewSetting.cpp`, `UILabel.cpp`, `SelectDifficultyPanel.cpp`,
 
 | # | String on screen | Screen / frame | Expected | Status | Root cause |
 |---|---|---|---|---|---|
-| T3 | `%S %I SONGS` (large, two-line `%S` over `%I SONGS`) | seldiff / SelectDifficultyPanel — `v34/07_f0360`, `v37/07_f0360` | "SETLIST (N SONGS)" (or hidden for a single song) | **OPEN — the one real remaining leak** | Top-level `setlist_title.lbl` baked-default `text_token=set_list_named_title` = `"%s <alt>%i songs</alt>"`; `PostLoad`→`SetTextToken` with no args leaves `%s`/`%i` literal; `kForceUpper`. No enter-time handler overwrites it in the native quickplay path; hiding `setlist_label.grp` doesn't help (label is top-level, not a group child). |
+| T3 | `%S %I SONGS` (large, two-line `%S` over `%I SONGS`) | seldiff / SelectDifficultyPanel — `v34/07_f0360`, `v37/07_f0360`; fixed in `v40/07_f0360` | song title + artist (the marquee song-preview) | **FIXED (V40, glue) — see "Implemented" below** | Leak is on the marquee `song_preview.lbl` (NOT `setlist_title.lbl` as first thought) — it bakes default `text_token=set_list_named_title`; the `update_preview_song`→`set_song_and_artist_name_from_sym` handler is an `AppLabel` method but the object loads as base `BandLabel`, so the baked `%s`/`%i` default is never overwritten. Fixed by glue in `rb3_game_input.cpp` filling the song+artist via base `UILabel::SetDisplayText`. |
 | T1 | `SHELL_PRESS_START_TO_ROCK` (sideways, left overshell slot) | overshell / preloading | "PRESS START" | **FIXED (V28)** — verified absent in `v34/f3400` (correctly-localized) | Token only in HX_PC/PS3/XBOX locale blocks, no HX_WII variant; native reads with HX_WII only → locale miss → raw symbol. Fixed by scoped `DataSetMacro("HX_PC", …)` around the DTA read in `Locale::Init()`. |
 | T2 | `%S %I SONGS` (filter-view song-count) | song-select filter view | "N SONGS" | **FIXED (V28)** | `FilterViewSetting::Text()` passed the count string at `Node(0)`; `ForceSym(0)` interned "83" as a symbol → locale miss. Fixed by swapping so the locale symbol is `Node(0)`. |
 | P1 | `%d%%` (solo percent) | gameplay HUD | "0%" | **FIXED (V29)** | `solo_percent.lbl` bakes `text_token=solo_percent_fmt` ("%d%%"); raw at load. Seeded "0%" at load in `BandTrack.cpp`. |
@@ -259,6 +259,63 @@ sweep.** This keeps it fully concurrent-safe with N1 (engine MeshIB), N2/N3/N5
    Screens that matter: seldiff (`07`), song-select (`06`), gameplay HUD (`10`).
 
 ---
+
+## Implemented (V40, glue approach B) — 2026-05-29
+
+**Status N6 — FIXED.** Implemented as the durable, tracked, isolated **glue**
+fix (approach B), not the asset edit (A): the asset dir is shared / gitignored /
+non-durable across worktrees, so the fix lives in tracked source.
+
+- **File:** `native/src/rb3_game_input.cpp` — in `RB3GameInputPoll(int frame)`,
+  a per-frame block immediately after the N4 details-pane block
+  (label `// N6 fix …`, ~line 733). Env opt-out: **`RB3_NO_SETLIST_FIX=1`**
+  (mirrors `RB3_NO_DETAILS_FIX`). Opt-in diag: `RB3_SETLIST_DBG=1` (logs any
+  panel-dir label still carrying a raw `%`, and the replacement when it fires).
+  Added includes: `ui/UILabel.h`, `rndobj/Text.h`, `meta_band/BandSongMgr.h`,
+  `meta_band/BandSongMetadata.h`, `utl/Locale.h`, `utl/MakeString.h`.
+
+- **CORRECTION to §2 root-cause label identity.** The plan asserted the leak was
+  on `setlist_title.lbl`. It is NOT — at the seldiff frame `setlist_title.lbl`
+  resolves correctly to `SETLIST <ALT>(2 SONGS)</ALT>` via `update_setlist_label`.
+  Walking every `UILabel` in `part_difficulty_panel`'s loaded dir showed the only
+  label carrying a raw `%` is the marquee song-preview label **`song_preview.lbl`**.
+  It bakes a default `text_token = set_list_named_title` ("%s <alt>%i songs</alt>")
+  → `PostLoad`→`SetTextToken` with no args → literal `%s`/`%i` → kForceUpper →
+  `%S` / `%I SONGS`. Retail fills it via the `update_preview_song` DTA handler →
+  `set_song_and_artist_name_from_sym`, **but that is an `AppLabel` handler and the
+  object loads here as a base `BandLabel`** (verified `ClassName()=='BandLabel'`),
+  so the message is unhandled and the baked default is never overwritten. (So the
+  asset edit A — clearing `setlist_title.lbl` — would NOT have fixed the actual
+  on-screen string; B targeting `song_preview.lbl` is what was needed.)
+
+- **What the glue does:** on `currentScreen == part_difficulty_screen`, find
+  `part_difficulty_panel` (via `ObjectDir::sMainDir`), require `GetState()==kUp`,
+  find `song_preview.lbl` (base `UILabel`). If its `RndText::RawText()` still
+  contains `%` (the raw-token state — so a legitimately substituted preview is
+  never clobbered), fill it with the current song+artist text computed exactly as
+  `AppLabel::SetSongAndArtistNameFromSymbol` (title + master/`store_famous_by`
+  artist, joined via `song_artist_fmt[_number]`), applied through the class-
+  agnostic base `UILabel::SetDisplayText`. NumSongs/GetSongSymbol are the strong
+  MetaPerformer defs. (A use-after-free was avoided by copying `RawText()` into a
+  `String` before `SetDisplayText` reallocates `RndText::mText`.)
+
+- **Before / after (frame 352, the first eligible seldiff frame; screenshot frame
+  07_f0360):**
+  - before: `song_preview.lbl` raw = `%S <ALT>%I SONGS</ALT>` → on screen
+    `%S` / `%I SONGS`.
+  - after: `1. 20TH CENTURY BOY <ALT>T. REX</ALT>` → on screen
+    `1. 20TH CENTURY BOY  T. REX` (song title + artist); the legit "SETLIST"
+    header below is unchanged.
+  - opt-out (`RB3_NO_SETLIST_FIX=1`) reproduces the raw `%S %I SONGS` — confirming
+    the glue is solely responsible.
+  - Screenshots: `docs/sessions/native/screenshots/v40-setlist-text/` (07_f0360 =
+    seldiff fixed).
+
+- **Regression sweep:** full boot→menu→song-select→seldiff→gameplay
+  (`MILO_MAX_FRAMES=24000`, the standard input script) exits 0, 24001 frames
+  drawn, no assert/fail/segv. Music-library filter counts (`0/10`, `0/5`,
+  `0/30★`, frame 06), gameplay highway + HUD (frame 10) and in-song venue
+  background (frame 11) all render unchanged. No other label regressed.
 
 ## Appendix — what was confirmed fixed (do not re-open)
 
