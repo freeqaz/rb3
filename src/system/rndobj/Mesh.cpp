@@ -23,6 +23,12 @@
 #include "utl/Loader.h"
 #include "utl/MemMgr.h"
 #include "utl/Std.h"
+#ifdef HX_NATIVE
+#include <cmath>   // V38: MESH_BONE_DBG-gated bind-offset instrumentation
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#endif
 #include "utl/Symbols.h"
 #include <vector>
 
@@ -824,6 +830,31 @@ void RndMesh::PostLoad(BinStream &bs) {
         bool b;
         bs >> b;
     }
+#ifdef HX_NATIVE
+    // V38 probe (env-gated, OFF by default). MESH_BONE_DBG=<substr> dumps each
+    // loaded RndBone's bind-offset determinant + row lengths for matching meshes,
+    // to check whether the crowd-body det-0.53 squash is an authored bind offset
+    // or a mis-read. (The skin matrix = BoneOffsetAt * boneWorldXfm; a det-0.53
+    // offset that the det-1 skeleton world xfm does not cancel squashes the mesh.)
+    if (const char* f = getenv("MESH_BONE_DBG")) {
+        const char* nm = Name() ? Name() : "?";
+        if (strstr(nm, f)) {
+            for (int i = 0; i < (int)mBones.size(); i++) {
+                const Hmx::Matrix3& m = mBones[i].mOffset.m;
+                float det = m.x.x*(m.y.y*m.z.z-m.y.z*m.z.y)
+                          - m.x.y*(m.y.x*m.z.z-m.y.z*m.z.x)
+                          + m.x.z*(m.y.x*m.z.y-m.y.y*m.z.x);
+                float lx=std::sqrt(m.x.x*m.x.x+m.x.y*m.x.y+m.x.z*m.x.z);
+                float ly=std::sqrt(m.y.x*m.y.x+m.y.y*m.y.y+m.y.z*m.y.z);
+                float lz=std::sqrt(m.z.x*m.z.x+m.z.y*m.z.y+m.z.z*m.z.z);
+                RndTransformable* b = mBones[i].mBone;
+                fprintf(stderr, "[MESH_BONE_DBG] mesh='%s' bone[%d]='%s' "
+                    "offDet=%.3f offRowLen=(%.3f,%.3f,%.3f)\n",
+                    nm, i, b && b->Name() ? b->Name() : "?", det, lx, ly, lz);
+            }
+        }
+    }
+#endif
     Sync(0xBF);
     if (gAltRev < 3 && NumBones() > 1) {
         MILO_WARN(

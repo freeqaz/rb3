@@ -8,6 +8,10 @@
 #include "utl/BinStream.h"
 #include "utl/MemMgr.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstdio>  // V38: fprintf for CBS_DBG-gated layout instrumentation
+#include <cstdlib> // V38: getenv for CBS_DBG-gated layout instrumentation
+#endif
 
 int gVer;
 
@@ -566,9 +570,37 @@ void CharBonesSamples::LoadData(BinStream& bs){
     // (ReadEndian HX_NATIVE), so per-element values come out correct; we only
     // need to also consume the cached padding bytes. The in-memory mRawData
     // layout stays UNPADDED (Vector3 at the offsets RecomputeSizes computed).
+    //
+    // V38 — this padded read was AUDITED as a suspected cause of the residual
+    // crowd/extras "sliver" artifacts (CROWD_SLIVER_DIAGNOSIS.md primary
+    // hypothesis 2b). CBS_DBG instrumentation + an experimental pad-removal
+    // REFUTED that: removing the +4 pad immediately re-triggers the
+    // "String chars 23173 > 512" desync above (the assets ARE padded; this read
+    // is byte-correct and the stream stays aligned through the full crowd render).
+    // The residual slivers were traced elsewhere (see VENUE_RENDER V38): a
+    // crowd-body bind-offset-vs-skeleton SCALE mismatch (skin det 0.53, no SCALE
+    // channel in the clip) + face-servo posing on tiny-bind meshes — NOT a
+    // packed-buffer stride bug. Leave this branch as-is.
     bool cached = bs.Cached() &&
         (bs.GetPlatform() == kPlatformXBox || bs.GetPlatform() == kPlatformPS3);
     if (cached && gVer > 0xE) {
+        // V38 instrumentation (env-gated, OFF by default). Set CBS_DBG=1 to dump
+        // the packed-buffer layout vs. the bytes actually consumed from the cached
+        // stream, proving whether the per-element read desyncs from the DC3 Save
+        // layout. mTotalSize is the contiguous (16-byte-rounded) per-sample size.
+        const bool _cbsDbg = getenv("CBS_DBG") != 0;
+        if (_cbsDbg) {
+            int nVec3 = (mCompression < kCompressVects)
+                ? (mQuatOffset / (int)sizeof(Vector3))
+                : -1;
+            fprintf(stderr,
+                "[CBS_DBG] clip nSamp=%d totalSize=%d posOff=%d scaleOff=%d "
+                "quatOff=%d rotXOff=%d endOff=%d comp=%d nUncompVec3=%d "
+                "diskExpect(DC3 contig)=%d\n",
+                mNumSamples, mTotalSize, mPosOffset, mScaleOffset, mQuatOffset,
+                mRotXOffset, mEndOffset, (int)mCompression, nVec3,
+                mTotalSize);
+        }
         for (int i = 0; i < mNumSamples; i++) {
             SetStartFromRawData(Min(i, mNumSamples - 1));
             int _t0 = bs.Tell();
@@ -619,12 +651,26 @@ void CharBonesSamples::LoadData(BinStream& bs){
                 }
             }
 
-            // per-sample 16-byte alignment padding: the cached sample block (with
-            // the per-Vector3 padding floats already consumed above) is rounded
-            // out to a 16-byte boundary on disk. Compute the pad from the actual
-            // bytes consumed for this sample.
+            // per-sample 16-byte alignment padding: the cached sample block is
+            // rounded out to a 16-byte boundary on disk. With no per-element pad,
+            // `consumed` now equals the unpadded mEndOffset, so this matches the
+            // DC3 Save trailing pad (roundup16(mEndOffset) - mEndOffset) exactly.
             int consumed = bs.Tell() - _t0;
             int delta = ((consumed + 0xF) & ~0xF) - consumed;
+            if (_cbsDbg && i < 4) {
+                // DC3 Save computes the trailing pad ONCE from the unpadded
+                // mEndOffset, NOT from padded consumed bytes:
+                //   dataSize = mEndOffset; deltaDC3 = roundup16(dataSize)-dataSize
+                int dc3DataSize = mEndOffset - mPosOffset;
+                int dc3Delta = ((dc3DataSize + 0xF) & ~0xF) - dc3DataSize;
+                fprintf(stderr,
+                    "[CBS_DBG]   sample %d: consumed(padded)=%d realign(Tell)=%d "
+                    "=> readStride=%d | DC3 diskStride=%d (dataSize=%d trail=%d) "
+                    "| DELTA=%d\n",
+                    i, consumed, delta, consumed + delta,
+                    dc3DataSize + dc3Delta, dc3DataSize, dc3Delta,
+                    (consumed + delta) - (dc3DataSize + dc3Delta));
+            }
             for (int d = 0; d < delta; d++) {
                 char pb;
                 bs >> pb;
