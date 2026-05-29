@@ -385,6 +385,7 @@ __hmx_band3_noop_stub:
     .set _ZN15WaitingUserGateC1Ev, __hmx_band3_noop_stub
     .weak _ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE
     .set _ZN17NetMessageFactory18RegisterNetMessageE6StringPFP10NetMessagevE, __hmx_band3_noop_stub
+    // TourPerformerLocal.cpp now compiled (V36); strong defs supersede these.
     .weak _ZN18TourPerformerLocal17ClearCurrentQuestEv
     .set _ZN18TourPerformerLocal17ClearCurrentQuestEv, __hmx_band3_noop_stub
     .weak _ZN18TourPerformerLocal23ClearCurrentQuestFilterEv
@@ -997,7 +998,7 @@ __hmx_band3_noop_stub:
     // MetaPanel/MusicLibrary/MetaPerformer/AccomplishmentManager/Band/SongSort/
     // OutfitConfig/AccomplishmentPanel/TourDescPanel/QuestFilterPanel were
     // un-excluded. These belong to DEFERRED gameplay/char/Wii TUs (BandPatchMesh,
-    // VocalPlayer, GemTrackDir, ChordShapeGenerator, TourPerformerLocal,
+    // VocalPlayer, GemTrackDir, ChordShapeGenerator,
     // AccomplishmentDiscSongConditional, AssetMgr::EquipAssets) or Wii-online-only
     // classes (Wii friends/invites/profile panels, MemcardMgr) that the menu DTA
     // parse never instantiates. Weak no-op so the boot links; a real bring-up of
@@ -1029,17 +1030,9 @@ __hmx_band3_noop_stub:
     // _ZN11GemTrackDirC1Ev REMOVED — GemTrackDir.cpp now compiled (strong ctor).
     // ChordShapeGenerator stubs (ctor/BuildChordMesh/MakeInvertedMesh) REMOVED —
     // ChordShapeGenerator.cpp now compiled (un-excluded); strong defs win.
-    // TourPerformerLocal (DEFER) + AccomplishmentDiscSongConditional + AssetMgr
-    .weak _ZN18TourPerformerLocal15SetCurrentQuestE6Symbol
-    .set _ZN18TourPerformerLocal15SetCurrentQuestE6Symbol, __hmx_band3_noop_stub
-    .weak _ZN18TourPerformerLocal17CheatCycleSetlistEv
-    .set _ZN18TourPerformerLocal17CheatCycleSetlistEv, __hmx_band3_noop_stub
-    .weak _ZN18TourPerformerLocal19CheatCycleChallengeEv
-    .set _ZN18TourPerformerLocal19CheatCycleChallengeEv, __hmx_band3_noop_stub
-    .weak _ZN18TourPerformerLocal21SetCurrentQuestFilterE6Symbol15TourSetlistType
-    .set _ZN18TourPerformerLocal21SetCurrentQuestFilterE6Symbol15TourSetlistType, __hmx_band3_noop_stub
-    .weak _ZN18TourPerformerLocal23SanityCheckQuestFiltersEv
-    .set _ZN18TourPerformerLocal23SanityCheckQuestFiltersEv, __hmx_band3_noop_stub
+    // TourPerformerLocal stubs REMOVED — TourPerformerLocal.cpp now compiled
+    // (un-excluded V36); strong defs override the weak stubs below.
+    // The early stubs (lines 388-393) remain as weak aliases but are superseded.
     // AccomplishmentDiscSongConditional + AssetMgr brought up (compiled) — their
     // symbols are now strong defs; stubs removed.
     // Wii online-only: MemcardMgr + WiiFriend query never offline. (The
@@ -1202,9 +1195,7 @@ _ZTI12WiiMultiMesh:
     // _ZTI13CharForeTwist REMOVED — CharForeTwist.cpp now compiled (real RTTI).
     // _ZTI14Synchronizable REMOVED — Synchronize.cpp now compiled (real RTTI);
     // the zeroed stub crashed __dynamic_cast through OvershellPanel's MI hierarchy.
-    .weak _ZTI18TourPerformerLocal
-_ZTI18TourPerformerLocal:
-    .zero 256
+    // _ZTI18TourPerformerLocal REMOVED — TourPerformerLocal.cpp now compiled (real RTTI).
     .weak _ZTI33AccomplishmentDiscSongConditional
 _ZTI33AccomplishmentDiscSongConditional:
     .zero 256

@@ -29,10 +29,11 @@
 #include "utl/Symbols2.h"
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
+#include "utl/VectorSizeDefs.h"
 
 class SaveMemcardAction : public MemcardAction {
 public:
-    SaveMemcardAction(std::vector<BandProfile *, unsigned short> *);
+    SaveMemcardAction(std::vector<BandProfile * VECTOR_SIZE_SMALL> *);
     virtual ~SaveMemcardAction();
     virtual void PreAction();
     virtual void Action();
@@ -43,13 +44,13 @@ public:
 
 class LoadMemcardAction : public MemcardAction {
 public:
-    LoadMemcardAction(std::vector<BandProfile *, unsigned short> *);
+    LoadMemcardAction(std::vector<BandProfile * VECTOR_SIZE_SMALL> *);
     virtual ~LoadMemcardAction();
     virtual void PreAction();
     virtual void Action();
     virtual void PostAction();
     int unk24; // 0x24
-    std::vector<BandProfile *, unsigned short> *mProfiles; // 0x28
+    std::vector<BandProfile * VECTOR_SIZE_SMALL> *mProfiles; // 0x28
 };
 
 SaveLoadManager *TheSaveLoadMgr;
