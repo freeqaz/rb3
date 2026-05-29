@@ -4,7 +4,19 @@
 **Depends on:** baseline screenshots from [`W4_POLISH.md`](W4_POLISH.md).
 **Blocks:** any text-bearing screen (song select, main hub, gameplay HUD, store, results, etc.).
 
-**Status:** ROOT CAUSE IDENTIFIED — engine + RB3 both touched. Implementation pending.
+**Status:** IMPLEMENTED (Phase 1 + Phase 2) — `8397fa6` on
+`milo-native-engine` branch `w5-text-mesh-fix` (pending merge to engine/main +
+RB3 `MILO_ENGINE_PIN` bump by orchestrator).
+
+Verification screenshots: [`/docs/sessions/web/screenshots/w5-text-fix/`](../../sessions/web/screenshots/w5-text-fix/)
+(side-by-side with the W4 baseline). Recovered text:
+- `02_main_hub`: news-ticker text on lower half of screen
+- `03_song_select`: "FRIEND RANKINGS" + 4× bottom button labels ("CHOOSE INSTRUMENT")
+- `04_part_difficulty`: "RIGHTY MODE" + difficulty-dot labels
+- `07_gameplay_t15s`: "COOL" HUD panel + side-strip text
+
+Phase 3 (residual dimness on song-row titles + gameplay score digits) is a
+material-colour follow-up — see "Phase 3 — long-tail material colour" below.
 
 ---
 

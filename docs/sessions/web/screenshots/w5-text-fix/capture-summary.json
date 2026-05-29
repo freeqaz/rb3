@@ -1,0 +1,77 @@
+{
+  "captured": "2026-05-29T23:06:22.672Z",
+  "commit": "6cfb0a7d",
+  "engine_pin": "5fda7f0",
+  "port": 8434,
+  "appBooted": 1,
+  "final_screen": "game_screen",
+  "final_frame": 1846,
+  "wasmHeap_boot_bytes": 125435904,
+  "wasmHeap_gameplay_bytes": 216858624,
+  "flow": [
+    {
+      "filename": "01_splash.png",
+      "label": "splash_screen",
+      "screen": "splash_screen",
+      "frame": 46,
+      "painted": 0.92,
+      "avgRGB": "2,2,1",
+      "path": "/home/free/code/milohax/rb3/docs/sessions/web/screenshots/w5-text-fix/01_splash.png"
+    },
+    {
+      "filename": "02_main_hub.png",
+      "label": "main_hub_screen",
+      "screen": "main_hub_screen",
+      "frame": 314,
+      "painted": 59.56,
+      "avgRGB": "31,22,23",
+      "path": "/home/free/code/milohax/rb3/docs/sessions/web/screenshots/w5-text-fix/02_main_hub.png"
+    },
+    {
+      "filename": "03_song_select.png",
+      "label": "song_select_screen",
+      "screen": "song_select_screen",
+      "frame": 1242,
+      "painted": 90.69,
+      "avgRGB": "28,32,33",
+      "path": "/home/free/code/milohax/rb3/docs/sessions/web/screenshots/w5-text-fix/03_song_select.png"
+    },
+    {
+      "filename": "04_part_difficulty.png",
+      "label": "part_difficulty_screen",
+      "screen": "part_difficulty_screen",
+      "frame": 1512,
+      "painted": 93.97,
+      "avgRGB": "69,71,71",
+      "path": "/home/free/code/milohax/rb3/docs/sessions/web/screenshots/w5-text-fix/04_part_difficulty.png"
+    },
+    {
+      "filename": "05_game_screen_entry.png",
+      "label": "game_screen_entry",
+      "screen": "tv3_b_screen",
+      "frame": 1537,
+      "painted": 5.59,
+      "avgRGB": "2,1,3",
+      "path": "/home/free/code/milohax/rb3/docs/sessions/web/screenshots/w5-text-fix/05_game_screen_entry.png"
+    },
+    {
+      "filename": "06_gameplay_t5s.png",
+      "label": "gameplay_5s",
+      "screen": "tv3_b_screen",
+      "frame": 1711,
+      "painted": 0.61,
+      "avgRGB": "0,1,1",
+      "path": "/home/free/code/milohax/rb3/docs/sessions/web/screenshots/w5-text-fix/06_gameplay_t5s.png"
+    },
+    {
+      "filename": "07_gameplay_t15s.png",
+      "label": "gameplay_15s",
+      "screen": "game_screen",
+      "frame": 1843,
+      "painted": 68.25,
+      "avgRGB": "34,17,23",
+      "path": "/home/free/code/milohax/rb3/docs/sessions/web/screenshots/w5-text-fix/07_gameplay_t15s.png"
+    }
+  ],
+  "errors": []
+}
