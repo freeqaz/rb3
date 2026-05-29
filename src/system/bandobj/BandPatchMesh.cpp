@@ -974,10 +974,11 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
         return false;
     }
     unsigned short *faceBase = (unsigned short *)&mesh->Faces()[0];
-    unsigned short *endFace = faceBase + mesh->Faces().size() * 3;
+    unsigned short *searchEnd = faceBase + mesh->Faces().size() * 3;
+    unsigned short *endFace = searchEnd;
     {
         float zero = 0.0f;
-        while (faceBase != endFace) {
+        while (faceBase != searchEnd) {
             unsigned short lastIdx = faceBase[2];
             RndMesh::Vert *v0 = &mesh->Verts(lastIdx);
             int matched = 0;
@@ -1007,10 +1008,10 @@ bool BandPatchMesh::FindXfm(RndMesh *mesh, const Vector2 &uv, Transform &xfm) {
             faceBase += 3;
         }
     }
-    if (endFace == endFace) {
+    if (endFace == searchEnd) {
         float minDistSq = 1e30f;
-        unsigned short *facePtr = faceBase;
-        while (facePtr != endFace) {
+        unsigned short *facePtr = (unsigned short *)&mesh->Faces()[0];
+        while (facePtr != searchEnd) {
             unsigned short lastIdx = facePtr[2];
             RndMesh::Vert *v0 = &mesh->Verts(lastIdx);
             unsigned short *iter = facePtr;
