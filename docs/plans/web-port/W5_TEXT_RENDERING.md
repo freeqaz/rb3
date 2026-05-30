@@ -532,6 +532,73 @@ decomp side.
 Defer Tier 3 (data override) until/unless Tier 2's reduced
 focused/unfocused contrast is itself a problem.
 
+---
+
+## Phase 3 Reassessment — 2026-05-30 (W8)
+
+**STATUS: STILL DIM — quantitative confirmation.**
+
+### Method
+
+Fresh build from master HEAD `3daf7100` (engine pin `e6c8f86`, includes W7 Phase 3 Tier 1
+predicate widening at `33cf117` and W7-HUD SetGeomOwner fix). Captured the three
+previously-flagged screens on port 8430 against `orig-assets/extracted`, saved to
+`docs/sessions/web/screenshots/w8-phase3-reassess/`. Measurements use luma
+`= 0.299R + 0.587G + 0.114B`; "bright" = luma ≥ 153 (0.6 normalised);
+"dim" = luma ≤ 102 (0.4 normalised).
+
+### Per-screen measurements
+
+| Screen | avgRGB | avgLuma | bright% | dim% | Verdict |
+|---|---|---|---|---|---|
+| `03_song_select.png` | 31,35,38 | 34.1 | 2.48% | 95.63% | **DIM** |
+| `04_part_difficulty.png` | 64,64,63 | 63.9 | 5.18% | 75.1% | MIXED/OK |
+| `07_gameplay_t15s.png` | 24,16,16 | 18.4 | 1.73% | 97.6% | **DIM** |
+
+**Retail Wii reference** (`images/retail-screenshots/yt_qSRJ8HHPXzM_song_select_wii.png`):
+avgRGB 77,92,112, avgLuma **89.8**, bright% **21.0%** — roughly 2.6× brighter than the port.
+
+**Delta vs w7-phase3 baseline:** pixel-identical on song_select (31,36,38 → 31,35,38,
+Δluma < 1). The W7 Phase 3 Tier 1 predicate-widening + colour floor made no measurable
+difference to song-row or HUD brightness, confirming the Tier-2 analysis: the
+`isTextMeshHeur` predicate is not firing on the actually-dim widgets, OR the
+dimness is delivered through a different route (Tier 2 colour lift was a no-op for
+the same reason).
+
+`04_part_difficulty` (instrument labels: "GUITAR", "BASS", etc.) is borderline — avgLuma
+63.9 and 5% bright pixels. Visually legible but not crisp white. Unchanged from baseline.
+
+### Conclusion
+
+**Phase 3 is CONFIRMED STILL DIM as of master `3daf7100` (2026-05-30).**
+
+All W5/W6/W7 text-rendering fixes (W5 useAlphaAsRGB, W6-V1 plain-UILabel fallback,
+W7 Phase 3 Tier 1 predicate widening) are already merged. They improved text
+VISIBILITY (glyph mask was zeroing RGB before W5) but did NOT solve the colour
+brightness problem. The song-row avgLuma of 34 vs the retail 90 is a ~2.6× gap that
+hasn't moved across any of these fixes.
+
+Two live hypotheses remain:
+
+1. **The `isTextMeshHeur` predicate doesn't fire on the dim text quads.** Both the
+   Tier-2 colour lift (worktree `w5-phase3-color-lift`, no-op) and the Tier-1 predicate
+   widening (`33cf117`, also no-op) confirm this. The song-row title meshes may have
+   non-empty names or arrive via a draw path that bypasses `BandRnd::DrawMesh`.
+2. **The brightness is being consumed by a post-draw step** — compositor blend,
+   W4-era `Mask alpha writes` workaround, or a per-frame canvas clear with
+   insufficient alpha.
+
+**Recommended next step (W8 or later):** unconditional mesh-name log at
+`DrawMesh` entry (dump `mesh->Name()` for every draw call for 1 frame), filtered
+to unique names. That will reveal whether ANY draw calls with the song-row
+material are even entering `BandRnd::DrawMesh`, and if so, what their names are.
+This is the one empirical test that was blocked by the stdout-buffering issue
+documented in the investigation note above — use `fprintf(stderr, ...)` flushed
+explicitly, or a WebAssembly-side circular buffer read from JS after the frame.
+
+Phase 3 remains **open**. Song-row titles and HUD overlay are substantially dimmer
+than retail.
+
 ### STATUS — 2026-05-30 — Tier 2 attempted, did NOT change output
 
 **Engine branch:** `w5-phase3-color-lift` (local, unpushed)
