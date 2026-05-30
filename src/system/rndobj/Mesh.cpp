@@ -295,6 +295,17 @@ void RndMesh::SetMat(RndMat *m) { mMat = m; }
 void RndMesh::SetGeomOwner(RndMesh *m) {
     MILO_ASSERT(m, 487);
     mGeomOwner = m;
+#ifdef HX_NATIVE
+    // W7-HUD fix: invalidate the native GPU cache entry for `this`. The
+    // engine's MeshGpuCache keys uploads by the mesh pointer that gets
+    // drawn, but reads vertices from mesh->GetGeomOwner(). Swapping the
+    // owner without invalidating leaves the prior owner's geometry on
+    // the GPU, so e.g. BandScoreboard's `num%d.mesh` digit slots never
+    // update from their initial (empty) state to the live digit source
+    // mesh. See docs/plans/web-port/W6_VISUAL_POLISH.md V5/W7-HUD.
+    extern void InvalidateGpuMesh(RndMesh *);
+    InvalidateGpuMesh(this);
+#endif
 }
 
 void RndMesh::ScaleBones(float f) {
