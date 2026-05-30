@@ -48,6 +48,7 @@ can be symlinks (cheapest).
 | `build/SZBE69_B8/` | reflink copy | the build dir. `split` (`dtk dol split`) rewrites `config.json` + `obj/` into it, and every compiled `.o` lands in `src/` here. Must be private. Reflinking it also warm-starts the object cache. |
 | `.claude/worktrees/milo-native-engine` | symlink | ONE symlink shared across all worktrees → sibling `milo-native-engine` repo. See "engine path" below. |
 | `scripts/web/node_modules/`, others | symlink | shared npm install — avoids slow per-agent reinstall. Created only if main tree has it. |
+| `orig-assets/` | symlink | reference screenshots + extracted song assets (`orig-assets/extracted`, `orig-assets/native-refs`). Build never writes here; symlink is safe. Web capture/test agents use it without needing `--assets-dir` absolute paths. Created only if main tree has it. |
 
 `objdiff-cli` is referenced in `build.ninja` via the relative `../objdiff/...`
 (sibling repo), which won't resolve from a worktree under `.claude/worktrees/`.

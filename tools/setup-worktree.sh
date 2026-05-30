@@ -58,6 +58,16 @@
 #                                           drift between worktrees). Created
 #                                           only if the main tree already has
 #                                           the node_modules directory.
+#   <wt>/orig-assets/extracted/
+#   <wt>/orig-assets/wii/    symlinks       Gitignored heavy subdirs of
+#   (and siblings)                          orig-assets/ (extracted content,
+#                                           wii/xbox zips). orig-assets/ itself
+#                                           is partially tracked (native-refs/
+#                                           committed), so we symlink each
+#                                           gitignored subdir individually.
+#                                           Avoids agents needing --assets-dir
+#                                           absolute paths. Created only if
+#                                           present in the main tree.
 #
 # objdiff-cli lives in the sibling repo ../objdiff (build.ninja's report rule
 # uses the relative path "../objdiff/target/release/objdiff-cli"). From a
@@ -160,31 +170,23 @@ for d in compilers tools; do
     ln -s "$MAIN_REPO/build/$d" "$WORKTREE_PATH/build/$d"
 done
 
-# ---- bin/ : symlink (read-only — wraps objdiff-cli + other host tools) ------
-# scripts/permuter/project.py + several analysis scripts hard-code "bin/objdiff-cli"
-# as a cwd-relative path; without this symlink, permuter runs fail in worktrees.
+# ---- bin/objdiff-cli : single symlink inside the worktree's real bin/ -------
+# scripts/permuter/project.py + several analysis scripts hard-code
+# "bin/objdiff-cli" as a cwd-relative path; without it, permuter runs fail in
+# worktrees. Earlier versions of this script replaced the whole `bin/` dir
+# with a symlink to main/bin — that shadowed the 9 tracked bin/* scripts and
+# created phantom `D bin/*` entries in git status that needed an
+# `--assume-unchanged` dance to silence (which sometimes failed).
 #
-# The symlink shadows the tracked bin/* files in the worktree, so `git status`
-# would normally report every script as deleted. We mark each indexed bin/*
-# entry --assume-unchanged in this worktree to silence that noise. The flag is
-# per-worktree (lives in the worktree's index), does not affect the main repo,
-# and is reset by `git update-index --no-assume-unchanged bin/*` if needed.
-if [ -d "$MAIN_REPO/bin" ]; then
-    echo "==> bin/  (symlink — read-only host-tool wrappers; bin/* marked assume-unchanged to silence git status)"
-    rm -rf "$WORKTREE_PATH/bin"
-    ln -s "$MAIN_REPO/bin" "$WORKTREE_PATH/bin"
-    # Silence the bin/* "deleted" noise the symlink overlay creates.
-    # Run from inside the worktree so the flag lands in the worktree's index.
-    (
-        cd "$WORKTREE_PATH"
-        # ls-files reads the worktree's own index — never the main repo's.
-        # `|| true` keeps things idempotent if there are zero bin/ entries.
-        files="$(git ls-files bin/ 2>/dev/null || true)"
-        if [ -n "$files" ]; then
-            # shellcheck disable=SC2086
-            printf '%s\n' $files | xargs git update-index --assume-unchanged 2>/dev/null || true
-        fi
-    )
+# DC3's setup_worktree.sh has the right shape: let git own the real bin/
+# directory (so the tracked wrappers are real files), then drop a single
+# symlink for bin/objdiff-cli, which is itself a symlink in main pointing to
+# the externally-built objdiff-cli binary. The tracked scripts use
+# $(dirname $0)/../tools/... so they work fine from the worktree's bin/.
+if [ -e "$MAIN_REPO/bin/objdiff-cli" ]; then
+    echo "==> bin/objdiff-cli  (single symlink — host objdiff binary; rest of bin/ is real git checkout)"
+    mkdir -p "$WORKTREE_PATH/bin"
+    ln -sfn "$OBJDIFF" "$WORKTREE_PATH/bin/objdiff-cli"
 fi
 
 # ---- milo-native-engine : single shared symlink (worktree-relative engine path)
@@ -208,6 +210,30 @@ if [ -d "$ENGINE_REAL" ]; then
     fi
 else
     echo "WARN: milo-native-engine sibling repo not found at $ENGINE_REAL — web builds in this worktree will fail to find the engine." >&2
+fi
+
+# ---- orig-assets/ subdirs : symlinks for gitignored heavy content -----------
+# orig-assets/ is partially tracked in git (native-refs/ is committed), so the
+# worktree already has a real orig-assets/ directory from the checkout. We can't
+# replace it with a symlink. Instead, symlink each gitignored heavy subdir
+# (extracted/, extracted-xbox-full/, wii/, wii-extracted/, xbox-zip/) from the
+# main tree into the worktree's orig-assets/ so web capture/test agents find
+# assets at the standard relative path without needing --assets-dir absolute
+# paths. Idempotent; skips any subdir that doesn't exist in the main tree.
+ORIG_ASSETS_REAL="$MAIN_REPO/orig-assets"
+if [ -d "$ORIG_ASSETS_REAL" ]; then
+    mkdir -p "$WORKTREE_PATH/orig-assets"
+    for sub in extracted extracted-xbox-full wii wii-extracted xbox-zip; do
+        src="$ORIG_ASSETS_REAL/$sub"
+        dst="$WORKTREE_PATH/orig-assets/$sub"
+        [ -d "$src" ] || continue   # skip if main tree doesn't have it
+        if [ ! -e "$dst" ] && [ ! -L "$dst" ]; then
+            echo "==> orig-assets/$sub  (symlink — shared gitignored asset dir)"
+            ln -s "$src" "$dst"
+        elif [ -L "$dst" ]; then
+            : # Already a symlink; leave as-is.
+        fi
+    done
 fi
 
 # ---- node_modules : per-script symlinks (avoid slow per-agent npm install) --
@@ -275,6 +301,21 @@ WT_NAME="$(basename "$WORKTREE_PATH")"
 WT_PORT=$(( 8500 + $(printf '%s' "$WT_NAME" | cksum | cut -d' ' -f1) % 500 ))
 printf '%s\n' "$WT_PORT" > "$WORKTREE_PATH/.worktree-port"
 
+# ---- silence the script's own infrastructure files in `git status` ----------
+# .worktree-port is per-worktree dev-server bookkeeping; node_modules symlinks
+# are agent-shared npm caches. Neither belongs in the worktree's commit history
+# or the main repo's .gitignore. The per-worktree exclude file at
+# .git/info/exclude is the right place — it only affects this worktree's index.
+# (Resolve the worktree's gitdir via `git rev-parse --git-path` so this works
+# whether the worktree is a linked worktree or the main repo itself.)
+WT_GITDIR="$(git -C "$WORKTREE_PATH" rev-parse --git-path info 2>/dev/null || true)"
+if [ -n "$WT_GITDIR" ] && [ -d "$WT_GITDIR" ]; then
+    EXCLUDE_FILE="$WT_GITDIR/exclude"
+    for pat in '/.worktree-port' '/scripts/web/node_modules'; do
+        grep -qxF "$pat" "$EXCLUDE_FILE" 2>/dev/null || printf '%s\n' "$pat" >> "$EXCLUDE_FILE"
+    done
+fi
+
 echo ""
 echo "Worktree ready:  $WORKTREE_PATH"
 echo "  branch:        $BRANCH  (from $BASE_COMMIT)"
@@ -287,9 +328,5 @@ echo "  build/tools/objdiff-cli diff -u <unit> <symbol> --format json-pretty -o 
 echo ""
 echo "  # Web dev server (W3+ agents): use the per-worktree port to avoid 8421/8431 collisions:"
 echo "  python3 native/web/server.py --port \$(cat .worktree-port)"
-echo ""
-echo "Note: git status will not show bin/* as deleted — those entries are flagged"
-echo "      assume-unchanged in this worktree's index. The bin/ symlink itself"
-echo "      shows up as untracked once; ignore it or add to .git/info/exclude."
 echo ""
 echo "Remove when done:  git -C $MAIN_REPO worktree remove --force $WORKTREE_PATH"
