@@ -360,3 +360,78 @@ All three above stay empty because the gameplay scoring loop doesn't get input �
 **V1 (song-row titles missing).** It is the single thing most preventing a tester from picking a song without keyboard-mashing through a blank list. The Phase 3 dimness agent owns "text is dim"; V1 is "text isn't there at all" so the two don't collide. The investigation likely reuses the W5-fix probe machinery, which is fresh in the engine repo. Expected outcome: discover whether this is a list-binder bug (rb3-side, fixable here) or a sibling of Phase 3 with a different style slot (engine-side, hand to engine).
 
 Once V1 has a hypothesis, V2 (hub menu) and V3 (HUD digits) likely benefit from the same probe — dispatch them in parallel as a follow-up wave once the probe is in place.
+
+---
+
+## V6 — W8 HUD meters investigation (2026-05-30) — DEFERRED, three separate engine-side gaps
+
+**Status:** INVESTIGATION ONLY — no source fix landed. Probes instrumented + reverted on `wt-web-w8-meters` (no commit). Root causes documented for engine-side handoff.
+
+### Symptom
+
+Post-V5 (W7-HUD), score digit ("0|0FF" → ticks up to 6,694 over 30s) renders correctly. But the streak meter `×N` counter, OD meter fill, and 5 multiplier-dot icons all stay empty during gameplay, even with autohit firing and the scoring loop accumulating points correctly.
+
+### Method
+
+Built rb3-web release with always-on `MILO_LOG("[HUD_DBG] ...")` probes at every meter call site in the chain:
+- `BandTrack::ResetStreakMeter`, `BandTrack::Reset` (init + post-Reset visibility gate)
+- `BandTrack::RefreshStreakMeter`, `BandTrack::RefreshOverdrive` (one-time refresh)
+- `BandTrack::SetMultiplier`, `BandTrack::SetStreak` (per-streak-change propagation)
+- `Track::Poll` (per-frame change-detector that drives SetStreak)
+- `TrackPanel::Poll`'s `SetMultiplier(em)` (per-frame band-multiplier propagation)
+- `StreakMeter::SetMultiplier`, `StreakMeter::UpdateMultiplierText` (widget data write)
+- `OverdriveMeter::SetEnergy`, `OverdriveMeter::Reset` (fill setter)
+- `Player::SetEnergyAutomatically`, `Player::SetEnergy` (energy data source)
+
+Ran `w3c-gameplay-test.mjs` against worktree port 8719 (release build), captured 30s of gameplay, harvested `console.jsonl`.
+
+### Findings — three independent gaps
+
+**1. Streak `×N` text — DATA REACHES THE LABEL, WIDGET DOES NOT RENDER.**
+- Per probe: `StreakMeter::SetMultiplier(2)` fires at t≈97s as streak hits the 2x threshold (`UpdateMultiplierText(2)` confirmed); `SetMultiplier(3)` fires at t≈100s (`UpdateMultiplierText(3)` confirmed); `SetMultiplier(4)` fires at t≈103s. `mMultiplierLabel` and `mXLabel` pointers are non-null and stable.
+- `BandTrack::Reset` confirms `HasPlayer=1, showing=1, mShowOverDriveMeter=1, !unk1b` — the streak meter parent dir IS shown.
+- Yet the `×N` text never appears on screen. Same class as the W6 V1 song-list `AppLabel` failure (label text bound but not rendering) — but on a `BandLabel`/`UILabel` path that's distinct from V1's `set_score_or_stars` engine fix landed in V5. Likely needs the **same engine-side label-rendering refresh-on-SetTokenFmt** that V5 added for the score-digit mesh-swap, but applied to the `BandLabel::SetTokenFmt → mesh upload` path. **Engine-side fix required.**
+
+**2. OD meter fill — `mBandEnergy` is RESET TO 0 every frame by an unidentified caller.**
+- `Player::SetEnergyAutomatically(this=0x93b99c0, f=0.000)` fires ~30 times/sec on the active player throughout gameplay (270+ calls captured), with `cur=0.000` every time — the function sets `mBandEnergy = f`, so any energy accrued by `CompleteCommonPhrase → AddEnergy` gets stomped on the next frame.
+- `Player::SetEnergy` is NEVER called in the captured period (zero `HUD_DBG] Player::SetEnergy` events).
+- Therefore the per-frame caller is either `Player::SetEnergyFromNet` (via `remote_update_energy` action handler) or the `set_energy_automatically` action message — neither of which has any in-source caller, so the source must be a net-message loop or a DTA handler chain not in the extracted assets. **Needs further probing of `Player::SetEnergyFromNet` and `HandleType` dispatch to identify the per-frame caller, then suppress on `HX_NATIVE` (or gate behind a "is networked" predicate that's true on native by default but should be false in singleplayer-web).**
+- Side-effect: even when `Player::mBandEnergy` does transiently reach 0.251 (as observed via `Track::Poll` probe at frame 360), the next `SetEnergyAutomatically(0)` zeros it out before the next `meter->SetEnergy` call lands.
+
+**3. Multiplier 5-dot icons — `mMultiMeterAnim->SetFrame(mult)` is NEVER called in source.**
+- Grep across all `src/`: zero references to `mMultiMeterAnim->SetFrame` or any setter. The `RndTransAnim` is only `Find`-bound in `StreakMeter::SyncObjects` and never driven.
+- Retail behavior must be DTA-script-driven (a handler on `set_multiplier` or `set_streak` that fires `mMultiMeterAnim->SetFrame(mult)`), but the trigger is missing from the extracted assets we have. **Either an extraction gap or a milo-internal trigger that needs to be hooked from the C++ side in `BandTrack::SetMultiplier`/`SetStreak`.**
+
+### Confirmed (NOT the bug)
+
+- **`HasPlayer` gate** (W7-HUD doc suspect) — fires correctly. Active player's `showing=1` after Reset; `mStreakMeter`/`mStarPowerMeter` pointers stable and non-null.
+- **Score increment** — confirmed working: `mainScore=0 → 7166` over 720 frames (per `TrackPanel::Poll` probe). `mStats.GetCurrentStreak()` also rising (0 → 47+).
+- **`BandTrack::SetMultiplier` propagation** — `Track::Poll` correctly detects `curstreak != mLastStreakCount` and fires `bandtrack->SetStreak(streak, mult, notes, false)` which descends to `StreakMeter::SetMultiplier(mult)`.
+- **Smoke test (`w3c-gameplay-test.mjs`)** — PASS on release build with probes; reaches `game_screen`, autohit fires, song plays 30s+ at 30-35 fps.
+
+### Why not a single rb3-side patch
+
+Each gap is a separate mechanism:
+- (1) is engine-side `BandLabel::SetTokenFmt → mesh refresh` (label render path).
+- (2) is an unidentified net/handler per-frame caller (needs deeper probing to find).
+- (3) is a missing DTA handler or C++ hook to `mMultiMeterAnim`.
+
+None of (1)/(3) can be fixed from `BandTrack`/`StreakMeter`/`OverdriveMeter` source while preserving decomp match. (2) might be HX_NATIVE-gateable once the caller is identified, but the identification itself is the bulk of the remaining work and would need additional probes (`Player::SetEnergyFromNet`, `Player::HandleType` for `set_energy_automatically`) plus a re-build/re-capture cycle.
+
+### Capture
+
+- Screenshots: `docs/sessions/web/screenshots/w8-meters/` (8 frames, post-build baseline + smoke run results in `scripts/web/results/web-w3c/gameplay/`).
+- The most informative is `05_gameplay_t30s.png` (score "6,694" visible top-center, left vertical bar shows only a small white tick at top, right OD bar empty, no `×N` label).
+
+### Files read
+
+- `src/system/bandobj/{StreakMeter,OverdriveMeter,BandTrack,GemTrackDir}.{cpp,h}`
+- `src/band3/bandtrack/{Track,TrackPanel,GemTrack,TrackConfig}.{cpp,h}`
+- `src/band3/game/{Player,GemPlayer,Performer,Band,BandUser}.{cpp,h}`
+- `src/system/beatmatch/{TrackWatcherImpl,BeatMatcher}.{cpp,h}`
+- `native/src/rb3_game_input.cpp` (autohit chain)
+- `orig-assets/extracted/config/player.dta`, `player_net.dta` (handler audit)
+
+### Recommended next step
+
+Defer until either (a) the W6-V1-class label-render fix family is generalized engine-side to cover `BandLabel::SetTokenFmt` (which would fix gap (1) "for free"), or (b) a focused probe-and-grep session is run on `Player::SetEnergyFromNet` + the `set_energy_automatically` handler dispatch to find the per-frame zero-energy caller for gap (2). Gap (3) (multi-meter dots) is the smallest and might land as a 5-line `HX_NATIVE` hook in `BandTrack::SetMultiplier` once gap (1) is sorted (so the change is visible).
