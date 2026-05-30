@@ -1,0 +1,11 @@
+#include "types.h"
+
+s32 AssignID__Q26Quazal17MethodIDGeneratorFQ26Quazal6String(void) { return 0; }
+s32 GetID__Q26Quazal17MethodIDGeneratorFQ26Quazal6String(void) { return 0; }
+s32 CleanupMethodIDTable__Q26Quazal17MethodIDGeneratorFv(void) { return 0; }
+s32 _M_erase__Q211stlpmtx_std323_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std26pair<CQ26Quazal6String,Us>,Q211stlpmtx_std55_Select1st<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q29stlp_priv56_MapTraitsT<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q26Quazal57MemAllocator<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>>FPQ211stlpmtx_std18_Rb_tree_node_base(void) { return 0; }
+s32 insert_unique__Q211stlpmtx_std323_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std26pair<CQ26Quazal6String,Us>,Q211stlpmtx_std55_Select1st<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q29stlp_priv56_MapTraitsT<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q26Quazal57MemAllocator<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>>FQ211stlpmtx_std133_Rb_tree_iterator<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>,Q29stlp_priv56_MapTraitsT<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>>RCQ211stlpmtx_std26pair<CQ26Quazal6String,Us>(void) { return 0; }
+s32 _M_insert__Q211stlpmtx_std323_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std26pair<CQ26Quazal6String,Us>,Q211stlpmtx_std55_Select1st<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q29stlp_priv56_MapTraitsT<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q26Quazal57MemAllocator<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>>FPQ211stlpmtx_std18_Rb_tree_node_baseRCQ211stlpmtx_std26pair<CQ26Quazal6String,Us>PQ211stlpmtx_std18_Rb_tree_node_basePQ211stlpmtx_std18_Rb_tree_node_base(void) { return 0; }
+s32 insert_unique__Q211stlpmtx_std323_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std26pair<CQ26Quazal6String,Us>,Q211stlpmtx_std55_Select1st<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q29stlp_priv56_MapTraitsT<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>,Q26Quazal57MemAllocator<Q211stlpmtx_std26pair<CQ26Quazal6String,Us>>>FRCQ211stlpmtx_std26pair<CQ26Quazal6String,Us>(void) { return 0; }
+s32 __sinit_\MethodIDGenerator_cpp(void) { return 0; }
+s32 __dt__Q26Quazal25qMap<Q26Quazal6String,Us>Fv(void) { return 0; }

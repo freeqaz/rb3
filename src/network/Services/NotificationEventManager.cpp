@@ -1,0 +1,7 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal24NotificationEventManagerFPQ26Quazal24NotificationEventManager(void) { return 0; }
+s32 __dt__Q26Quazal24NotificationEventManagerFv(void) { return 0; }
+s32 Clone__Q26Quazal24NotificationEventManagerCFv(void) { return 0; }
+s32 ProcessNotificationEvent__Q26Quazal24NotificationEventManagerFRCQ26Quazal17NotificationEvent(void) { return 0; }
+s32 _M_erase__Q211stlpmtx_std334_Rb_tree<PQ26Quazal24NotificationEventHandler,Q211stlpmtx_std42less<PQ26Quazal24NotificationEventHandler>,PQ26Quazal24NotificationEventHandler,Q211stlpmtx_std47_Identity<PQ26Quazal24NotificationEventHandler>,Q29stlp_priv49_SetTraitsT<PQ26Quazal24NotificationEventHandler>,Q26Quazal50MemAllocator<PQ26Quazal24NotificationEventHandler>>FPQ211stlpmtx_std18_Rb_tree_node_base(void) { return 0; }

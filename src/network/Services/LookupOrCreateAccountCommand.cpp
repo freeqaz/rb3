@@ -1,0 +1,5 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal28LookupOrCreateAccountCommandFRCQ26Quazal11DebugStringPQ26Quazal31AccountManagementProtocolClientRCQ26Quazal6StringRCQ26Quazal6StringRCQ26Quazal6StringUiPQ26Quazal48AnyObjectHolder<Q26Quazal4Data,Q26Quazal6String>PUi(void) { return 0; }
+s32 __dt__Q26Quazal28LookupOrCreateAccountCommandFv(void) { return 0; }
+s32 InvokeImpl__Q26Quazal28LookupOrCreateAccountCommandFPQ26Quazal19ProtocolCallContext(void) { return 0; }

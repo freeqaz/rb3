@@ -1,0 +1,6 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal11StationInfoFv(void) { return 0; }
+s32 __dt__Q26Quazal11StationInfoFv(void) { return 0; }
+s32 InitMachineUniqueID__Q26Quazal11StationInfoFv(void) { return 0; }
+s32 GetMachineUniqueID__Q26Quazal11StationInfoCFv(void) { return 0; }

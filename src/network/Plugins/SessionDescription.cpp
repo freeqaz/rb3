@@ -1,0 +1,19 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal18SessionDescriptionFv(void) { return 0; }
+s32 __dt__Q26Quazal18SessionDescriptionFv(void) { return 0; }
+s32 SetApplicationTitle__Q26Quazal18SessionDescriptionFPCc(void) { return 0; }
+s32 SetSessionName__Q26Quazal18SessionDescriptionFPCc(void) { return 0; }
+s32 SetStationURL__Q26Quazal18SessionDescriptionFPCc(void) { return 0; }
+s32 SetSessionDiscoveryType__Q26Quazal18SessionDescriptionFPCc(void) { return 0; }
+s32 SetSessionDiscoveryContext__Q26Quazal18SessionDescriptionFPc(void) { return 0; }
+s32 StreamAttributesOut__Q26Quazal18SessionDescriptionCFPcUi(void) { return 0; }
+s32 StreamAttributesIn__Q26Quazal18SessionDescriptionFPc(void) { return 0; }
+s32 AddSourceTo__Q26Quazal18SessionDescriptionCFPQ26Quazal10ByteStream(void) { return 0; }
+s32 ExtractFrom__Q26Quazal18SessionDescriptionFPQ26Quazal10ByteStream(void) { return 0; }
+s32 _Destroy<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>__11stlpmtx_stdFPQ211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>_v(void) { return 0; }
+s32 Trace__Q26Quazal18SessionDescriptionCFUi(void) { return 0; }
+s32 _M_erase__Q211stlpmtx_std379_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>,Q211stlpmtx_std69_Select1st<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q29stlp_priv70_MapTraitsT<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q26Quazal71MemAllocator<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>>FPQ211stlpmtx_std18_Rb_tree_node_base(void) { return 0; }
+s32 insert_unique__Q211stlpmtx_std379_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>,Q211stlpmtx_std69_Select1st<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q29stlp_priv70_MapTraitsT<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q26Quazal71MemAllocator<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>>FQ211stlpmtx_std161_Rb_tree_iterator<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>,Q29stlp_priv70_MapTraitsT<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>>RCQ211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>(void) { return 0; }
+s32 _M_insert__Q211stlpmtx_std379_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>,Q211stlpmtx_std69_Select1st<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q29stlp_priv70_MapTraitsT<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q26Quazal71MemAllocator<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>>FPQ211stlpmtx_std18_Rb_tree_node_baseRCQ211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>PQ211stlpmtx_std18_Rb_tree_node_basePQ211stlpmtx_std18_Rb_tree_node_base(void) { return 0; }
+s32 insert_unique__Q211stlpmtx_std379_Rb_tree<Q26Quazal6String,Q211stlpmtx_std22less<Q26Quazal6String>,Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>,Q211stlpmtx_std69_Select1st<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q29stlp_priv70_MapTraitsT<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>,Q26Quazal71MemAllocator<Q211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>>>FRCQ211stlpmtx_std40pair<CQ26Quazal6String,Q26Quazal6String>(void) { return 0; }

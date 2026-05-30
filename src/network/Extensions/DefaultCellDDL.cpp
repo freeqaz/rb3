@@ -1,0 +1,36 @@
+#include "types.h"
+
+s32 Create__Q26Quazal16_DOC_DefaultCellFv(void) { return 0; }
+s32 __dt__Q26Quazal15_DO_DefaultCellFv(void) { return 0; }
+s32 Delete__Q26Quazal16_DOC_DefaultCellFPQ26Quazal16DuplicatedObject(void) { return 0; }
+s32 __dt__Q26Quazal11DefaultCellFv(void) { return 0; }
+s32 GetClassNameString__Q26Quazal16_DOC_DefaultCellCFv(void) { return 0; }
+s32 ApproveFaultRecovery__Q26Quazal16_DOC_DefaultCellFPQ26Quazal16DuplicatedObject(void) { return 0; }
+s32 ApproveFaultRecovery__Q26Quazal11DefaultCellFv(void) { return 0; }
+s32 ApproveEmigration__Q26Quazal16_DOC_DefaultCellFPQ26Quazal16DuplicatedObjectUi(void) { return 0; }
+s32 ApproveEmigration__Q26Quazal11DefaultCellFUi(void) { return 0; }
+s32 Trace__Q26Quazal16_DOC_DefaultCellFPQ26Quazal16DuplicatedObjectUi(void) { return 0; }
+s32 IsAKindOf__Q26Quazal16_DOC_DefaultCellFUi(void) { return 0; }
+s32 DataSetsOperation__Q26Quazal16_DOC_DefaultCellFUi(void) { return 0; }
+s32 FormatVariableValue__Q26Quazal16_DOC_DefaultCellCFPCQ26Quazal16DuplicatedObjectPQ26Quazal8VariablePQ26Quazal8VariablePQ26Quazal6String(void) { return 0; }
+s32 DispatchAction__Q26Quazal16_DOC_DefaultCellFPQ26Quazal16DuplicatedObjectUsPQ26Quazal7Message(void) { return 0; }
+s32 DispatchRMCCall__Q26Quazal16_DOC_DefaultCellFRCQ26Quazal19CallMethodOperation(void) { return 0; }
+s32 DispatchRMCResult__Q26Quazal16_DOC_DefaultCellFPQ26Quazal10RMCContext(void) { return 0; }
+s32 FillDupSpacesInfo__Q26Quazal16_DOC_DefaultCellFQ36Quazal8DupSpace5_RolePUiPUi(void) { return 0; }
+s32 GetDatasetNameString__Q26Quazal16_DOC_DefaultCellCFUc(void) { return 0; }
+s32 InitDOClass__Q26Quazal15_DO_DefaultCellFUi(void) { return 0; }
+s32 CallOperationOnDatasets__Q26Quazal15_DO_DefaultCellFPQ26Quazal11DOOperationQ36Quazal9Operation6_Event(void) { return 0; }
+s32 HasGlobalDOProperty__Q26Quazal15_DO_DefaultCellCFv(void) { return 0; }
+s32 IsACoreDO__Q26Quazal15_DO_DefaultCellCFv(void) { return 0; }
+s32 UsesSpecialInnerUpdateLoop__Q26Quazal52BasicUpdateProtocol<Q26Quazal20DefaultCellParameter>Fv(void) { return 0; }
+s32 GetCommunicationFlags__Q26Quazal52BasicUpdateProtocol<Q26Quazal20DefaultCellParameter>FPQ26Quazal16DuplicatedObjectPvUc(void) { return 0; }
+s32 AddToMessage__Q26Quazal52BasicUpdateProtocol<Q26Quazal20DefaultCellParameter>FPQ26Quazal16DuplicatedObjectPvUcQ26Quazal4TimePQ26Quazal7Messageb(void) { return 0; }
+s32 ExtractFromMessage__Q26Quazal52BasicUpdateProtocol<Q26Quazal20DefaultCellParameter>FPQ26Quazal16DuplicatedObjectPvUcPQ26Quazal7Messageb(void) { return 0; }
+s32 SpecificUpdate__Q26Quazal66DOClassTemplate<Q26Quazal15_DO_DefaultCell,Q26Quazal11_DOC_RootDO>FPQ26Quazal16DuplicatedObjectPQ26Quazal7DataSetRCQ26Quazal4Time(void) { return 0; }
+s32 SpecificRefresh__Q26Quazal66DOClassTemplate<Q26Quazal15_DO_DefaultCell,Q26Quazal11_DOC_RootDO>FPQ26Quazal16DuplicatedObjectPQ26Quazal7DataSetRCQ26Quazal4Time(void) { return 0; }
+s32 SpecificAddDSToDiscoveryMessage__Q26Quazal66DOClassTemplate<Q26Quazal15_DO_DefaultCell,Q26Quazal11_DOC_RootDO>FPQ26Quazal16DuplicatedObjectPQ26Quazal7StationPQ26Quazal7Message(void) { return 0; }
+s32 SpecificExtractDSFromDiscoveryMessage__Q26Quazal66DOClassTemplate<Q26Quazal15_DO_DefaultCell,Q26Quazal11_DOC_RootDO>FPQ26Quazal16DuplicatedObjectPQ26Quazal7Message(void) { return 0; }
+s32 SpecificExtractADataset__Q26Quazal66DOClassTemplate<Q26Quazal15_DO_DefaultCell,Q26Quazal11_DOC_RootDO>FPQ26Quazal16DuplicatedObjectPQ26Quazal7MessageUc(void) { return 0; }
+s32 ValidCastTowards__Q26Quazal66DOClassTemplate<Q26Quazal15_DO_DefaultCell,Q26Quazal11_DOC_RootDO>FUi(void) { return 0; }
+s32 __dt__Q26Quazal16_DOC_DefaultCellFv(void) { return 0; }
+s32 __dt__Q26Quazal52BasicUpdateProtocol<Q26Quazal20DefaultCellParameter>Fv(void) { return 0; }

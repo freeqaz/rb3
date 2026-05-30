@@ -1,0 +1,5 @@
+#include "types.h"
+
+s32 PrepareConnectionRequest__Q26Quazal22KerberosAuthenticationFPQ26Quazal9BitStreamPQ26Quazal20AuthenticationClientPQ26Quazal6TicketPUi(void) { return 0; }
+s32 ValidateConnectionRequest__Q26Quazal22KerberosAuthenticationFPQ26Quazal9BitStreamPQ26Quazal9BitStreamPQ26Quazal20AuthenticationClientPUiPPQ26Quazal6Ticket(void) { return 0; }
+s32 ValidateConnectionResponse__Q26Quazal22KerberosAuthenticationFPQ26Quazal9BitStreamUi(void) { return 0; }

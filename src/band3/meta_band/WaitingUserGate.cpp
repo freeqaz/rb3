@@ -1,244 +1,37 @@
-#include "WaitingUserGate.h"
-#include "BandUI.h"
-#include "LockStepMgr.h"
-#include "SessionMgr.h"
-#include "UIEvent.h"
-#include "UIEventMgr.h"
-#include "game/BandUser.h"
-#include "game/BandUserMgr.h"
-#include "game/GameMode.h"
-#include "meta_band/LockMessages.h"
-#include "net/NetMessage.h"
-#include "net/NetSession.h"
-#include "obj/Data.h"
-#include "obj/ObjMacros.h"
-#include "ui/UIScreen.h"
-#include "utl/BinStream.h"
-#include "utl/HxGuid.h"
-#include <vector>
+#include "types.h"
 
-// EnterFlowMsg: tells a remote machine to transition to a particular UI flow.
-class EnterFlowMsg : public NetMessage {
-public:
-    EnterFlowMsg() {}
-    EnterFlowMsg(UIFlowType flow, Symbol mode) : mFlow(flow), mMode(mode) {}
-    virtual ~EnterFlowMsg() {}
-    virtual void Save(BinStream &) const;
-    virtual void Load(BinStream &);
-    virtual void Dispatch();
-    NETMSG_BYTECODE(EnterFlowMsg);
-    NETMSG_NAME(EnterFlowMsg);
-    NETMSG_NEWNETMSG(EnterFlowMsg);
-
-    UIFlowType mFlow; // 0x4
-    Symbol mMode; // 0x8
-};
-
-namespace {
-    class OpenGateData : public LockData {
-    public:
-        OpenGateData() {}
-        virtual ~OpenGateData() {}
-        void Save(BinStream &) const;
-        virtual void Load(BinStream &);
-
-        void GetWaitingUsers(std::vector<BandUser *, unsigned short> &) const;
-        void GetCurrentScreenState(std::vector<UIScreen *, unsigned short> &) const;
-
-        std::vector<UserGuid, unsigned short> mWaitingUsers; // 0x8
-        std::vector<UIScreen *, unsigned short> mCurrentScreenState; // 0x10
-    };
-
-    class OpenWaitingGateMsg : public StartLockMsg {
-    public:
-        OpenWaitingGateMsg() {}
-        virtual ~OpenWaitingGateMsg() {}
-        virtual void Save(BinStream &) const;
-        virtual void Load(BinStream &);
-        virtual LockData *GetLockData() { return &mData; }
-        NETMSG_BYTECODE(OpenWaitingGateMsg);
-        NETMSG_NAME(OpenWaitingGateMsg);
-        NETMSG_NEWNETMSG(OpenWaitingGateMsg);
-
-        OpenGateData mData; // 0x14
-    };
-}
-
-// JoinEntryPointEvent: extends NonDestructiveTransitionEvent to remember which
-// flow type to mark as joined when dismissed.
-class JoinEntryPointEvent : public NonDestructiveTransitionEvent {
-public:
-    JoinEntryPointEvent(NetSync *ns, const std::vector<UIScreen *> &dst, UIFlowType flow)
-        : NonDestructiveTransitionEvent(ns, dst), mFlow(flow) {}
-    virtual ~JoinEntryPointEvent() {}
-    virtual void OnDismiss();
-
-    UIFlowType mFlow; // 0x1C
-};
-
-// --- EnterFlowMsg ---------------------------------------------------------
-
-void EnterFlowMsg::Save(BinStream &bs) const {
-    unsigned char b = (unsigned char)mFlow;
-    bs.Write(&b, 1);
-    bs << mMode;
-}
-
-void EnterFlowMsg::Load(BinStream &bs) {
-    unsigned char b;
-    bs.Read(&b, 1);
-    mFlow = (UIFlowType)b;
-    bs >> mMode;
-}
-
-void EnterFlowMsg::Dispatch() {
-    if ((int)mFlow != TheBandUI.GetCurrentFlowType()) {
-        TheGameMode->SetMode(mMode);
-        UIScreen *entry = TheBandUI.GetJoinEntryPointForFlowType(mFlow);
-        if (entry) {
-            std::vector<UIScreen *, unsigned short> dst;
-            dst.push_back(entry);
-            JoinEntryPointEvent *ev = new JoinEntryPointEvent(
-                TheNetSync, *(std::vector<UIScreen *> *)&dst, mFlow
-            );
-            TheUIEventMgr->TriggerEvent(ev);
-        }
-    }
-}
-
-NetMessage *EnterFlowMsg::NewNetMessage() { return new EnterFlowMsg(); }
-
-// --- OpenGateData ---------------------------------------------------------
-
-void OpenGateData::Save(BinStream &bs) const {
-    bs << mWaitingUsers;
-    int n = (unsigned char)mCurrentScreenState.size();
-    unsigned char nb = (unsigned char)n;
-    bs.Write(&nb, 1);
-    for (int i = 0; i < n; i++) {
-        String name(mCurrentScreenState[i]->Name());
-        bs << name;
-    }
-}
-
-void OpenGateData::Load(BinStream &bs) {
-    bs >> mWaitingUsers;
-    unsigned char n;
-    bs.Read(&n, 1);
-    for (int i = 0; i < n; i++) {
-        String name;
-        bs >> name;
-        UIScreen *screen = ObjectDir::Main()->Find<UIScreen>(name.c_str(), true);
-        mCurrentScreenState.push_back(screen);
-    }
-}
-
-void OpenGateData::GetWaitingUsers(
-    std::vector<BandUser *, unsigned short> &out
-) const {
-    unsigned int i;
-    int byteOffset;
-    for (i = 0, byteOffset = 0; i < mWaitingUsers.size(); i++, byteOffset += 0x10) {
-        out.push_back(TheBandUserMgr->GetBandUser(
-            *(const UserGuid *)((const char *)mWaitingUsers.begin() + byteOffset), true
-        ));
-    }
-}
-
-void OpenGateData::GetCurrentScreenState(
-    std::vector<UIScreen *, unsigned short> &out
-) const {
-    out = mCurrentScreenState;
-}
-
-// --- OpenWaitingGateMsg ---------------------------------------------------
-
-void OpenWaitingGateMsg::Save(BinStream &bs) const {
-    StartLockMsg::Save(bs);
-    mData.Save(bs);
-}
-
-void OpenWaitingGateMsg::Load(BinStream &bs) {
-    StartLockMsg::Load(bs);
-    mData.Load(bs);
-}
-
-NetMessage *OpenWaitingGateMsg::NewNetMessage() { return new OpenWaitingGateMsg(); }
-
-// --- WaitingUserGate ------------------------------------------------------
-
-void WaitingUserGate::Init() {
-    EnterFlowMsg::Register();
-    OpenWaitingGateMsg::Register();
-}
-
-WaitingUserGate::WaitingUserGate() {
-    mLockStepMgr = new LockStepMgr("waiting_room_lock", this);
-    if (TheSessionMgr) {
-        TheSessionMgr->AddSink(this, ProcessedJoinRequestMsg::Type());
-    }
-}
-
-WaitingUserGate::~WaitingUserGate() {
-    if (TheSessionMgr) {
-        TheSessionMgr->RemoveSink(this, ProcessedJoinRequestMsg::Type());
-    }
-}
-
-void WaitingUserGate::Poll() {}
-
-DataNode WaitingUserGate::OnMsg(const LockStepCompleteMsg &) {
-    TheNetSync->Enable();
-    TheBandUI.GetOvershell()->SetBlockAllInput(false);
-    return 1;
-}
-
-DataNode WaitingUserGate::OnMsg(const ProcessedJoinRequestMsg &) {
-    UIFlowType flow = TheBandUI.GetCurrentFlowType();
-    std::vector<RemoteBandUser *, unsigned short> waiting;
-    TheSessionMgr->GetWaitingUsers(*(std::vector<RemoteBandUser *> *)&waiting);
-    EnterFlowMsg msg(flow, TheGameMode->GetMode());
-    TheSessionMgr->SendMsg(
-        *(std::vector<RemoteBandUser *> *)&waiting, msg, kReliable
-    );
-    TheSessionMgr->ClearWaitingUsers();
-    return 1;
-}
-
-DataNode WaitingUserGate::OnMsg(const LockStepStartMsg &msg) {
-    TheBandUI.GetOvershell()->SetBlockAllInput(true);
-    LockData *ld = msg.GetLockData();
-    OpenGateData *gd = dynamic_cast<OpenGateData *>(ld);
-    std::vector<BandUser *, unsigned short> waiting;
-    gd->GetWaitingUsers(waiting);
-    int anyLocal = 0;
-    for (int i = 0; (unsigned int)i < waiting.size(); i++) {
-        if (waiting[i]->IsLocal()) {
-            anyLocal = 1;
-            break;
-        }
-    }
-    if (anyLocal) {
-        std::vector<UIScreen *, unsigned short> dst;
-        gd->GetCurrentScreenState(dst);
-        NonDestructiveTransitionEvent *ev = new NonDestructiveTransitionEvent(
-            TheNetSync, *(std::vector<UIScreen *> *)&dst
-        );
-        TheUIEventMgr->TriggerEvent(ev);
-    } else {
-        mLockStepMgr->RespondToLock(true);
-    }
-    return 1;
-}
-
-BEGIN_HANDLERS(WaitingUserGate)
-    HANDLE_MESSAGE(LockStepStartMsg)
-    HANDLE_MESSAGE(LockStepCompleteMsg)
-    HANDLE_MESSAGE(ProcessedJoinRequestMsg)
-    HANDLE_SUPERCLASS(Hmx::Object)
-    HANDLE_CHECK(0x148)
-END_HANDLERS
-
-// --- JoinEntryPointEvent --------------------------------------------------
-
-void JoinEntryPointEvent::OnDismiss() { TheBandUI.TriggerOnFinishedJoin(mFlow); }
+s32 NewNetMessage__12EnterFlowMsgFv(void) { return 0; }
+s32 Save__12EnterFlowMsgCFR9BinStream(void) { return 0; }
+s32 Load__12EnterFlowMsgFR9BinStream(void) { return 0; }
+s32 Dispatch__12EnterFlowMsgFv(void) { return 0; }
+s32 NewNetMessage__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgFv(void) { return 0; }
+s32 __dt__Q229@unnamed@WaitingUserGate_cpp@12OpenGateDataFv(void) { return 0; }
+s32 Save__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgCFR9BinStream(void) { return 0; }
+s32 Load__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgFR9BinStream(void) { return 0; }
+s32 GetWaitingUsers__Q229@unnamed@WaitingUserGate_cpp@12OpenGateDataCFRQ211stlpmtx_std63vector<P8BandUser,Us,Q211stlpmtx_std24StlNodeAlloc<P8BandUser>>(void) { return 0; }
+s32 GetCurrentScreenState__Q229@unnamed@WaitingUserGate_cpp@12OpenGateDataCFRQ211stlpmtx_std63vector<P8UIScreen,Us,Q211stlpmtx_std24StlNodeAlloc<P8UIScreen>>(void) { return 0; }
+s32 Save__Q229@unnamed@WaitingUserGate_cpp@12OpenGateDataCFR9BinStream(void) { return 0; }
+s32 __ls<8UserGuid,Us>__FR9BinStreamRCQ211stlpmtx_std61vector<8UserGuid,Us,Q211stlpmtx_std23StlNodeAlloc<8UserGuid>>_R9BinStream(void) { return 0; }
+s32 Load__Q229@unnamed@WaitingUserGate_cpp@12OpenGateDataFR9BinStream(void) { return 0; }
+s32 __rs<8UserGuid,Us>__FR9BinStreamRQ211stlpmtx_std61vector<8UserGuid,Us,Q211stlpmtx_std23StlNodeAlloc<8UserGuid>>_R9BinStream(void) { return 0; }
+s32 Init__15WaitingUserGateFv(void) { return 0; }
+s32 __ct__15WaitingUserGateFv(void) { return 0; }
+s32 __dt__15WaitingUserGateFv(void) { return 0; }
+s32 Poll__15WaitingUserGateFv(void) { return 0; }
+s32 OnMsg__15WaitingUserGateFRC16LockStepStartMsg(void) { return 0; }
+s32 OnMsg__15WaitingUserGateFRC19LockStepCompleteMsg(void) { return 0; }
+s32 OnMsg__15WaitingUserGateFRC23ProcessedJoinRequestMsg(void) { return 0; }
+s32 __dt__12EnterFlowMsgFv(void) { return 0; }
+s32 Handle__15WaitingUserGateFP9DataArrayb(void) { return 0; }
+s32 GetLockData__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgFv(void) { return 0; }
+s32 Name__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgCFv(void) { return 0; }
+s32 ByteCode__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgCFv(void) { return 0; }
+s32 Name__12EnterFlowMsgCFv(void) { return 0; }
+s32 ByteCode__12EnterFlowMsgCFv(void) { return 0; }
+s32 OnDismiss__19JoinEntryPointEventFv(void) { return 0; }
+s32 _M_fill_insert__Q211stlpmtx_std67_Vector_impl<8UserGuid,Us,Q211stlpmtx_std23StlNodeAlloc<8UserGuid>>FP8UserGuidUlRC8UserGuid(void) { return 0; }
+s32 __dt__19JoinEntryPointEventFv(void) { return 0; }
+s32 __dt__Q229@unnamed@WaitingUserGate_cpp@18OpenWaitingGateMsgFv(void) { return 0; }
+s32 _M_fill_insert_aux__Q211stlpmtx_std67_Vector_impl<8UserGuid,Us,Q211stlpmtx_std23StlNodeAlloc<8UserGuid>>FP8UserGuidUlRC8UserGuidRCQ211stlpmtx_std12__false_type(void) { return 0; }
+s32 @24@28@Load__Q229@unnamed@WaitingUserGate_cpp@12OpenGateDataFR9BinStream(void) { return 0; }
+s32 @24@28@__dt__Q229@unnamed@WaitingUserGate_cpp@12OpenGateDataFv(void) { return 0; }

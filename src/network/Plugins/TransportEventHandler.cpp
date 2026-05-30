@@ -1,0 +1,8 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal21TransportEventHandlerFv(void) { return 0; }
+s32 __dt__Q26Quazal21TransportEventHandlerFv(void) { return 0; }
+s32 Receive__Q26Quazal21TransportEventHandlerFPQ26Quazal24ConnectionOrientedStreamPQ26Quazal6BufferPCQ26Quazal10StationURL(void) { return 0; }
+s32 ReceiveBroadcast__Q26Quazal21TransportEventHandlerFPQ26Quazal24ConnectionOrientedStreamPQ26Quazal6BufferPCQ26Quazal10StationURL(void) { return 0; }
+s32 DeviceDiscovery__Q26Quazal21TransportEventHandlerFPQ26Quazal24ConnectionOrientedStreamPc(void) { return 0; }
+s32 ConnectionRequest__Q26Quazal21TransportEventHandlerFPQ26Quazal24ConnectionOrientedStreamPCQ26Quazal10StationURLPQ26Quazal6BufferPQ26Quazal8EndPoint(void) { return 0; }

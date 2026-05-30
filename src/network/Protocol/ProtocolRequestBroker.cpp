@@ -1,0 +1,22 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal21ProtocolRequestBroker(void) { return 0; }
+s32 __dt__Q26Quazal21ProtocolRequestBrokerFv(void) { return 0; }
+s32 GetProtocol__Q26Quazal21ProtocolRequestBrokerFUc(void) { return 0; }
+s32 Receive__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal8EndPointPQ26Quazal6Buffer(void) { return 0; }
+s32 ProcessMessage__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal27CallProtocolMethodOperationPQ26Quazal8EndPointPQ26Quazal6Buffer(void) { return 0; }
+s32 ProcessMessageCore__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal27CallProtocolMethodOperationPQ26Quazal8EndPointPQ26Quazal6Buffer(void) { return 0; }
+s32 DispatchLocalRMC__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal7MessagePQ26Quazal14ClientProtocolPQ26Quazal14ServerProtocolPQ26Quazal8EndPoint(void) { return 0; }
+s32 DispatchThreadSafeLocalRMC__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal7MessagePQ26Quazal14ClientProtocolPQ26Quazal14ServerProtocolPQ26Quazal8EndPoint(void) { return 0; }
+s32 ProcessLocalCallRequest__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal14ServerProtocolPQ26Quazal7MessagePQ26Quazal7MessagePbPQ26Quazal8EndPoint(void) { return 0; }
+s32 ProcessCallRequest__Q26Quazal21ProtocolRequestBrokerFUcPQ26Quazal7MessagePQ26Quazal7MessagePbPQ26Quazal8EndPoint(void) { return 0; }
+s32 PeerDisconnected__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal8EndPoint(void) { return 0; }
+s32 FaultDetection__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal8EndPointUi(void) { return 0; }
+s32 RegisterProtocol__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal8Protocol(void) { return 0; }
+s32 UnregisterProtocol__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal8Protocol(void) { return 0; }
+s32 InitMessage__Q26Quazal21ProtocolRequestBrokerFPQ26Quazal7MessageUcQ36Quazal8Protocol5_Type(void) { return 0; }
+s32 ChangeType__Q26Quazal21ProtocolRequestBrokerFUc(void) { return 0; }
+s32 _M_erase__Q211stlpmtx_std306_Rb_tree<Uc,Q211stlpmtx_std8less<Uc>,Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>,Q211stlpmtx_std58_Select1st<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q29stlp_priv59_MapTraitsT<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q26Quazal60MemAllocator<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>>FPQ211stlpmtx_std18_Rb_tree_node_base(void) { return 0; }
+s32 insert_unique__Q211stlpmtx_std306_Rb_tree<Uc,Q211stlpmtx_std8less<Uc>,Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>,Q211stlpmtx_std58_Select1st<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q29stlp_priv59_MapTraitsT<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q26Quazal60MemAllocator<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>>FQ211stlpmtx_std139_Rb_tree_iterator<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>,Q29stlp_priv59_MapTraitsT<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>>RCQ211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>(void) { return 0; }
+s32 _M_insert__Q211stlpmtx_std306_Rb_tree<Uc,Q211stlpmtx_std8less<Uc>,Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>,Q211stlpmtx_std58_Select1st<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q29stlp_priv59_MapTraitsT<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q26Quazal60MemAllocator<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>>FPQ211stlpmtx_std18_Rb_tree_node_baseRCQ211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>PQ211stlpmtx_std18_Rb_tree_node_basePQ211stlpmtx_std18_Rb_tree_node_base(void) { return 0; }
+s32 insert_unique__Q211stlpmtx_std306_Rb_tree<Uc,Q211stlpmtx_std8less<Uc>,Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>,Q211stlpmtx_std58_Select1st<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q29stlp_priv59_MapTraitsT<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>,Q26Quazal60MemAllocator<Q211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>>>FRCQ211stlpmtx_std29pair<CUc,PQ26Quazal8Protocol>(void) { return 0; }

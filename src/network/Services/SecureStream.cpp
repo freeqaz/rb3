@@ -1,0 +1,29 @@
+#include "types.h"
+
+s32 SecureStreamConnectionFilter__6QuazalFRCQ26Quazal11UserContextPQ26Quazal6BufferPQ26Quazal6BufferPQ26Quazal8EndPoint(void) { return 0; }
+s32 __ct__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 __dt__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 SetAssociatedStream__Q26Quazal12SecureStreamFPQ26Quazal24ConnectionOrientedStream(void) { return 0; }
+s32 ResponsibleForURL__Q26Quazal12SecureStreamFPCQ26Quazal10StationURL(void) { return 0; }
+s32 GetURLType__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 CreateEndPoint__Q26Quazal12SecureStreamFPCQ26Quazal10StationURL(void) { return 0; }
+s32 CloseEndPoint__Q26Quazal12SecureStreamFPQ26Quazal8EndPoint(void) { return 0; }
+s32 OpenEndPoint__Q26Quazal12SecureStreamFPCQ26Quazal10StationURL(void) { return 0; }
+s32 OpenEndPoint__Q26Quazal12SecureStreamFUi(void) { return 0; }
+s32 FindEndPointByPID__Q26Quazal12SecureStreamFUi(void) { return 0; }
+s32 FindEndPointByCID__Q26Quazal12SecureStreamFUi(void) { return 0; }
+s32 GetEndPointNumber__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 LockEndPointMap__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 UnlockEndPointMap__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 ReceiveIncomingPacket__Q26Quazal12SecureStreamFUsUcPQ26Quazal6Packet(void) { return 0; }
+s32 DoWork__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 GetNbLocalURL__Q26Quazal12SecureStreamFv(void) { return 0; }
+s32 GetLocalURL__Q26Quazal12SecureStreamFUi(void) { return 0; }
+s32 ReleaseURL__Q26Quazal12SecureStreamFPQ26Quazal10StationURL(void) { return 0; }
+s32 BuildURL__Q26Quazal12SecureStreamFUiUi(void) { return 0; }
+s32 FilterIncomingConnection__Q26Quazal12SecureStreamFPQ26Quazal6BufferPQ26Quazal6BufferPQ26Quazal8EndPoint(void) { return 0; }
+s32 GetOption__Q26Quazal12SecureStreamFUiRQ26Quazal11UserContext(void) { return 0; }
+s32 SetOption__Q26Quazal12SecureStreamFUiRCQ26Quazal11UserContext(void) { return 0; }
+s32 IsCapable__Q26Quazal12SecureStreamFUi(void) { return 0; }
+s32 Send__Q26Quazal12SecureStreamFPQ26Quazal10StationURLPQ26Quazal6Buffer(void) { return 0; }
+s32 Send__Q26Quazal12SecureStreamFPQ26Quazal10StationURLPQ26Quazal6BufferPFPQ26Quazal24ConnectionOrientedStreamPQ26Quazal6BufferUiPQ26Quazal11UserContext_vRCQ26Quazal11UserContext(void) { return 0; }

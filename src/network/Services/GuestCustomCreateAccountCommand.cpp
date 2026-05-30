@@ -1,0 +1,5 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal31GuestCustomCreateAccountCommandFRCQ26Quazal11DebugStringRCQ26Quazal21SandboxConnectionInfoRCQ26Quazal6StringRCQ26Quazal6StringRCQ26Quazal6StringUiPQ26Quazal48AnyObjectHolder<Q26Quazal4Data,Q26Quazal6String>PUi(void) { return 0; }
+s32 __dt__Q26Quazal31GuestCustomCreateAccountCommandFv(void) { return 0; }
+s32 InvokeImpl__Q26Quazal31GuestCustomCreateAccountCommandFPQ26Quazal19ProtocolCallContext(void) { return 0; }

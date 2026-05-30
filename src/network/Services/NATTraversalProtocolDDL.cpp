@@ -1,0 +1,7 @@
+#include "types.h"
+
+s32 CallRequestProbeInitiation__Q26Quazal26NATTraversalProtocolClientFPQ26Quazal19ProtocolCallContextRCQ26Quazal28qList<Q26Quazal10StationURL>(void) { return 0; }
+s32 CallRequestProbeInitiationExt__Q26Quazal26NATTraversalProtocolClientFPQ26Quazal19ProtocolCallContextRCQ26Quazal28qList<Q26Quazal10StationURL>RCQ26Quazal10StationURL(void) { return 0; }
+s32 DispatchProtocolMessage__Q26Quazal33_Proto_NATTraversalProtocolServerFPQ26Quazal7MessagePQ26Quazal7MessagePbPQ26Quazal8EndPoint(void) { return 0; }
+s32 ExtractCallSpecificResults__Q26Quazal26NATTraversalProtocolClientFPQ26Quazal7MessagePQ26Quazal19ProtocolCallContext(void) { return 0; }
+s32 __dt__Q26Quazal26NATTraversalProtocolClientFv(void) { return 0; }

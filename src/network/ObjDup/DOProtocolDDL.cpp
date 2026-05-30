@@ -1,0 +1,10 @@
+#include "types.h"
+
+s32 MigrateObject_PrepareRequest__Q26Quazal16DOProtocolClientFPQ26Quazal19ProtocolCallContextPQ26Quazal7MessageRCUsRCQ26Quazal8DOHandleRCQ26Quazal8DOHandleRCQ26Quazal8DOHandleRCUcRCQ26Quazal25qList<Q26Quazal8DOHandle>(void) { return 0; }
+s32 CreateDuplica_PrepareRequest__Q26Quazal16DOProtocolClientFPQ26Quazal19ProtocolCallContextPQ26Quazal7MessageRCQ26Quazal8DOHandleRCQ26Quazal8DOHandleRCUcRCQ26Quazal6Buffer(void) { return 0; }
+s32 CreateAndPromoteDuplica_PrepareRequest__Q26Quazal16DOProtocolClientFPQ26Quazal19ProtocolCallContextPQ26Quazal7MessageRCUsRCQ26Quazal8DOHandleRCQ26Quazal8DOHandleRCUcRCQ26Quazal6BufferRCQ26Quazal25qList<Q26Quazal8DOHandle>(void) { return 0; }
+s32 DispatchProtocolMessage__Q26Quazal23_Proto_DOProtocolServerFPQ26Quazal7MessagePQ26Quazal7MessagePbPQ26Quazal8EndPoint(void) { return 0; }
+s32 GetProtocolType__Q26Quazal14ClientProtocolCFv(void) { return 0; }
+s32 IsAKindOf__Q26Quazal14ClientProtocolCFPCc(void) { return 0; }
+s32 GetType__Q26Quazal14ClientProtocolCFv(void) { return 0; }
+s32 EnforceDeclareSysComponentMacro__Q26Quazal14ClientProtocolFv(void) { return 0; }

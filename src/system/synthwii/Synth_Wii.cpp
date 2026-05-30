@@ -1,11 +1,82 @@
-#include "os/BufFile.h"
-#include "utl/MakeString.h"
+#include "types.h"
 
-bool BufFile::Eof() {
-    return (mPos - mBuf) >= mSize;
-}
-
-String BufFile::Filename() const {
-    FormatString fs("--memory (BufFile)--");
-    return String(fs.Str());
-}
+s32 New__5SynthFv(void) { return 0; }
+s32 __ct__8SynthWiiFv(void) { return 0; }
+s32 __dt__5SynthFv(void) { return 0; }
+s32 __dt__11ByteGrinderFv(void) { return 0; }
+s32 PreInit__8SynthWiiFv(void) { return 0; }
+s32 Init__8SynthWiiFv(void) { return 0; }
+s32 Terminate__8SynthWiiFv(void) { return 0; }
+s32 GetNextAvailableMicID__8SynthWiiCFv(void) { return 0; }
+s32 GetPartyMic__8SynthWiiFv(void) { return 0; }
+s32 IsMicConnected__8SynthWiiCFi(void) { return 0; }
+s32 CaptureMic__8SynthWiiFi(void) { return 0; }
+s32 ReleaseMic__8SynthWiiFi(void) { return 0; }
+s32 ReleaseAllMics__8SynthWiiFv(void) { return 0; }
+s32 DidMicsChange__8SynthWiiCFv(void) { return 0; }
+s32 ResetMicsChanged__8SynthWiiFv(void) { return 0; }
+s32 Poll__8SynthWiiFv(void) { return 0; }
+s32 GetMic__8SynthWiiFi(void) { return 0; }
+s32 GetMicFX__8SynthWiiCFv(void) { return 0; }
+s32 SetMicFX__8SynthWiiFb(void) { return 0; }
+s32 SetMicVolume__8SynthWiiFf(void) { return 0; }
+s32 GetNumConnectedMics__8SynthWiiFv(void) { return 0; }
+s32 GetMicVolume__8SynthWiiCFv(void) { return 0; }
+s32 AssignUSBMic__8SynthWiiFii(void) { return 0; }
+s32 OnDebug__8SynthWiiFPC9DataArray(void) { return 0; }
+s32 NewStream__8SynthWiiFPCcffb(void) { return 0; }
+s32 NewBufStream__8SynthWiiFPCvi6Symbolfb(void) { return 0; }
+s32 NewStreamDecoder__8SynthWiiFP4FileP14StandardStream6Symbol(void) { return 0; }
+s32 NewStreamFile__8SynthWiiFPCcRP4FileR6Symbol(void) { return 0; }
+s32 PauseVoices__8SynthWiiFb(void) { return 0; }
+s32 HomePauseVoices__8SynthWiiFb(void) { return 0; }
+s32 HomeMenuOpen__8SynthWiiFb(void) { return 0; }
+s32 HomeMenuClose__8SynthWiiFb(void) { return 0; }
+s32 KeyboardOpen__8SynthWiiFv(void) { return 0; }
+s32 KeyboardClose__8SynthWiiFv(void) { return 0; }
+s32 DiscErrorStart__8SynthWiiFv(void) { return 0; }
+s32 DiscErrorEnd__8SynthWiiFv(void) { return 0; }
+s32 FrameCallback(void) { return 0; }
+s32 Handle__8SynthWiiFP9DataArrayb(void) { return 0; }
+s32 GetFileHandle__7BufFileFRP11DVDFileInfo(void) { return 0; }
+s32 ReadDone__7BufFileFRi(void) { return 0; }
+s32 UncompressedSize__7BufFileFv(void) { return 0; }
+s32 Size__7BufFileFv(void) { return 0; }
+s32 Fail__7BufFileFv(void) { return 0; }
+s32 Eof__7BufFileFv(void) { return 0; }
+s32 Flush__7BufFileFv(void) { return 0; }
+s32 Tell__7BufFileFv(void) { return 0; }
+s32 Seek__7BufFileFii(void) { return 0; }
+s32 Write__7BufFileFPCvi(void) { return 0; }
+s32 ReadAsync__7BufFileFPvi(void) { return 0; }
+s32 Read__7BufFileFPvi(void) { return 0; }
+s32 Filename__7BufFileCFv(void) { return 0; }
+s32 EnableLevels__5SynthFb(void) { return 0; }
+s32 GetSecureOutput__5SynthFv(void) { return 0; }
+s32 ResumeMics__5SynthFv(void) { return 0; }
+s32 SuspendMics__5SynthFv(void) { return 0; }
+s32 GetChatVoiceGain__5SynthFi(void) { return 0; }
+s32 SetChatVoiceGain__5SynthFif(void) { return 0; }
+s32 GetFXChain__5SynthCFv(void) { return 0; }
+s32 SetFXChain__5SynthFb(void) { return 0; }
+s32 GetFXFeedback__5SynthCFi(void) { return 0; }
+s32 SetFXFeedback__5SynthFif(void) { return 0; }
+s32 GetFXDelay__5SynthCFi(void) { return 0; }
+s32 SetFXDelay__5SynthFif(void) { return 0; }
+s32 GetFXVolume__5SynthCFi(void) { return 0; }
+s32 SetFXVolume__5SynthFif(void) { return 0; }
+s32 GetFXMode__5SynthCFi(void) { return 0; }
+s32 SetFXMode__5SynthFi6FXMode(void) { return 0; }
+s32 HasPendingVoices__5SynthFv(void) { return 0; }
+s32 Fail__5SynthFv(void) { return 0; }
+s32 SetMono__5SynthFb(void) { return 0; }
+s32 __dt__8SynthWiiFv(void) { return 0; }
+s32 __dt__7BufFileFv(void) { return 0; }
+s32 @28@UpdateOverlay__5SynthFP10RndOverlayf(void) { return 0; }
+s32 @28@__dt__8SynthWiiFv(void) { return 0; }
+s32 @108@HomeMenuClose__8SynthWiiFb(void) { return 0; }
+s32 @108@HomeMenuOpen__8SynthWiiFb(void) { return 0; }
+s32 @112@KeyboardClose__8SynthWiiFv(void) { return 0; }
+s32 @112@KeyboardOpen__8SynthWiiFv(void) { return 0; }
+s32 @116@DiscErrorEnd__8SynthWiiFv(void) { return 0; }
+s32 @116@DiscErrorStart__8SynthWiiFv(void) { return 0; }

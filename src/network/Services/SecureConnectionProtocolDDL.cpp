@@ -1,0 +1,9 @@
+#include "types.h"
+
+s32 CallRegister__Q26Quazal30SecureConnectionProtocolClientFPQ26Quazal19ProtocolCallContextPQ26Quazal7qResultRCQ26Quazal28qList<Q26Quazal10StationURL>PUiPQ26Quazal10StationURL(void) { return 0; }
+s32 CallRequestConnectionData__Q26Quazal30SecureConnectionProtocolClientFPQ26Quazal19ProtocolCallContextPbRCUiRCUiPQ26Quazal32qList<Q26Quazal14ConnectionData>(void) { return 0; }
+s32 CallRequestURLs__Q26Quazal30SecureConnectionProtocolClientFPQ26Quazal19ProtocolCallContextPbRCUiRCUiPQ26Quazal28qList<Q26Quazal10StationURL>(void) { return 0; }
+s32 CallRegisterEx__Q26Quazal30SecureConnectionProtocolClientFPQ26Quazal19ProtocolCallContextPQ26Quazal7qResultRCQ26Quazal28qList<Q26Quazal10StationURL>PUiPQ26Quazal10StationURLRCQ26Quazal48AnyObjectHolder<Q26Quazal4Data,Q26Quazal6String>(void) { return 0; }
+s32 ExtractCallSpecificResults__Q26Quazal30SecureConnectionProtocolClientFPQ26Quazal7MessagePQ26Quazal19ProtocolCallContext(void) { return 0; }
+s32 __dt__Q26Quazal19_DDL_ConnectionDataFv(void) { return 0; }
+s32 __dt__Q26Quazal14ConnectionDataFv(void) { return 0; }

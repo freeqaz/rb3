@@ -1,0 +1,5 @@
+#include "types.h"
+
+s32 CallDeliverMessage__Q26Quazal29MessageDeliveryProtocolClientFPQ26Quazal19ProtocolCallContextRCQ26Quazal48AnyObjectHolder<Q26Quazal4Data,Q26Quazal6String>(void) { return 0; }
+s32 DispatchProtocolMessage__Q26Quazal36_Proto_MessageDeliveryProtocolServerFPQ26Quazal7MessagePQ26Quazal7MessagePbPQ26Quazal8EndPoint(void) { return 0; }
+s32 ExtractCallSpecificResults__Q26Quazal29MessageDeliveryProtocolClientFPQ26Quazal7MessagePQ26Quazal19ProtocolCallContext(void) { return 0; }

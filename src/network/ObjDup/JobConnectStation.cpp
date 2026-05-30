@@ -1,0 +1,32 @@
+#include "types.h"
+
+s32 __ct__Q26Quazal17JobConnectStationFQ26Quazal8DOHandle(void) { return 0; }
+s32 __dt__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 SetDefaultPostExecutionState__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 CheckExceptions__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 TestSuspendedJobState__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ConnectCallback__31@unnamed@JobConnectStation_cpp@FPQ26Quazal8EndPointQ26Quazal7qResultPCQ26Quazal11UserContext(void) { return 0; }
+s32 SelectConnectionTechnique__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 TryConnectViaUndelete__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 TryConnectViaInitialEndPoint__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 TryConnectViaIncomingEndPoint__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 TryConnectViaIncomingEndPointImpl__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ProcessIncomingConnectionResult__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 TryConnectViaURLs__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 RetrieveURLs__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 WaitForURLs__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 PrepareURLs__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 DirectConnectViaURLs__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ProcessConnectionResult__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 TryWaitingForIncomingEndPoint__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 QueueOperation__Q26Quazal17JobConnectStationFPQ26Quazal11DOOperation(void) { return 0; }
+s32 QueueJob__Q26Quazal17JobConnectStationFPQ26Quazal3Job(void) { return 0; }
+s32 CompleteConnection__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ConnectOrphanStation__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ProcessConnectOrphanResult__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ConnectionCancelled__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ConnectionFailed__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 ConnectionSucceeded__Q26Quazal17JobConnectStationFv(void) { return 0; }
+s32 Trace__Q26Quazal17JobConnectStationFUi(void) { return 0; }
+s32 GetTargetConnectionState__Q26Quazal17JobConnectStationCFv(void) { return 0; }
+s32 GetType__Q26Quazal17JobConnectStationCFv(void) { return 0; }

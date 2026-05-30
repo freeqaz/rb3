@@ -1,0 +1,32 @@
+#include "types.h"
+
+s32 SetKeepAliveTimeout__Q26Quazal13PRUDPEndPointFUi(void) { return 0; }
+s32 __ct__Q26Quazal13PRUDPEndPointFPQ26Quazal24ConnectionOrientedStreamPCQ26Quazal10StationURL(void) { return 0; }
+s32 SetPeerDisconnected__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 __dt__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 _Connect__Q26Quazal13PRUDPEndPointFPQ26Quazal6BufferPQ26Quazal6BufferPFPQ26Quazal8EndPointQ26Quazal7qResultPCQ26Quazal11UserContext_vRCQ26Quazal11UserContextUi(void) { return 0; }
+s32 PeerIsConnected__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 IsConnecting__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 IsConnected__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 _Disconnect__Q26Quazal13PRUDPEndPointFPFPQ26Quazal8EndPointQ26Quazal7qResultPCQ26Quazal11UserContext_vRCQ26Quazal11UserContextUi(void) { return 0; }
+s32 IsDisconnecting__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 IsNotConnected__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 Frag__Q26Quazal13PRUDPEndPointFPQ26Quazal6BufferUiUiUcb(void) { return 0; }
+s32 _Send__Q26Quazal13PRUDPEndPointFPQ26Quazal6BufferUi(void) { return 0; }
+s32 Send__Q26Quazal13PRUDPEndPointFPQ26Quazal9PacketOut(void) { return 0; }
+s32 Defrag__Q26Quazal13PRUDPEndPointFPQ26Quazal8PacketIn(void) { return 0; }
+s32 SignalFaultEvent__Q26Quazal13PRUDPEndPointFUib(void) { return 0; }
+s32 ServiceIncomingPacket__Q26Quazal13PRUDPEndPointFPQ26Quazal8PacketIn(void) { return 0; }
+s32 SetPeerConnected__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 PacketAcknowledged__Q26Quazal13PRUDPEndPointFPQ26Quazal6Packet(void) { return 0; }
+s32 ServiceTimeout__Q26Quazal13PRUDPEndPointFPQ26Quazal9PacketOut(void) { return 0; }
+s32 GetConnectionState__Q26Quazal13PRUDPEndPointCFv(void) { return 0; }
+s32 GetKeepAliveTimeout__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 TimeToPing__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 GetMaxSilenceTime__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 SetConnectionState__Q26Quazal13PRUDPEndPointFQ36Quazal8EndPoint16_ConnectionState(void) { return 0; }
+s32 SetMaxSilenceTime__Q26Quazal13PRUDPEndPointFUi(void) { return 0; }
+s32 PeerIsDisconnected__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 IsFaulty__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 GetRTTAverage__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
+s32 GetRTT__Q26Quazal13PRUDPEndPointFv(void) { return 0; }
