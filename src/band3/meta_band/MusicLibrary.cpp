@@ -1048,13 +1048,92 @@ void MusicLibrary::InitData(RndDir *dir) {
 void MusicLibrary::Text(int, int idx, UIListLabel *slot, UILabel *label) const {
     AppLabel *p9_label = dynamic_cast<AppLabel *>(label);
 #ifdef HX_NATIVE
-    // The 360-ARK song_select.milo song.lst uses plain UILabels for some slots
+    // The 360-ARK song_select.milo authors several list slots as plain UILabels
     // rather than the AppLabel the RB3-Wii code expects; the cast then yields
-    // null. The list-text formatting (song/artist/count display) is cosmetic for
-    // the boot-to-song flow — skip it for a non-AppLabel slot instead of
-    // aborting. The list still populates (the song nodes drive selection).
-    if (!p9_label)
+    // null. The Wii path expects AppLabel and asserts. On native/web we fall
+    // back to writing the underlying text via the base UILabel API so song
+    // titles, headers, and setlist names render instead of being silently
+    // dropped (W6 V1). The fallback loses some localized formatting (e.g.
+    // "<title> by <artist>") but the alternative is empty rows.
+    if (!p9_label) {
+        SortNode *sortNode = GetCurrentSort()->GetNode(idx);
+        switch (sortNode->GetType()) {
+        case kNodeHeader: {
+            HeaderSortNode *hsn = dynamic_cast<HeaderSortNode *>(sortNode);
+            if (hsn->mCover) {
+                if (slot->Matches("famousby")) {
+                    label->SetTextToken(store_famous_by);
+                } else if (slot->Matches("famousby_group")) {
+                    label->SetTextToken(hsn->GetToken());
+                }
+            } else if (slot->Matches("group") && unkdc != 3 && unkdc != 7) {
+                label->SetTextToken(hsn->GetToken());
+            } else if (slot->Matches("song_count")
+                       && !SongSortMgr::IsSetlistSort(unkdc)) {
+                label->SetInt(hsn->GetSongCount(), true);
+            }
+            break;
+        }
+        case kNodeSubheader: {
+            SubheaderSortNode *subheaderNode =
+                dynamic_cast<SubheaderSortNode *>(sortNode);
+            if (slot->Matches("song_count")
+                && !SongSortMgr::IsSetlistSort(unkdc)) {
+                label->SetInt(subheaderNode->GetSongCount(), true);
+            } else if (slot->Matches("subgroup")) {
+                label->SetTextToken(subheaderNode->GetToken());
+            }
+            break;
+        }
+        case kNodeSong: {
+            OwnedSongSortNode *osn = dynamic_cast<OwnedSongSortNode *>(sortNode);
+            if (slot->Matches("song")) {
+                const char *title = osn->GetTitle();
+                const char *artist = osn->GetArtist();
+                if (unkdc != 1 && artist && *artist) {
+                    label->SetDisplayText(
+                        MakeString("%s - %s", title, artist), true
+                    );
+                } else {
+                    label->SetDisplayText(title, true);
+                }
+            } else if (slot->Matches("difficulty")) {
+                SongRecord *record = osn->GetSongRecord();
+                if (record->IsNotBand() && record->GetScore() > 0) {
+                    label->SetTextToken(record->GetShortDifficultySym());
+                }
+            } else if (slot->Matches("percentage")) {
+                SongRecord *record = osn->GetSongRecord();
+                if (record->IsNotBand() && record->GetScore() > 0) {
+                    label->SetTokenFmt(
+                        endgame_player_noteshit_fmt, record->GetNotesPct()
+                    );
+                }
+            }
+            break;
+        }
+        case kNodeFunction: {
+            FunctionSortNode *fsn = dynamic_cast<FunctionSortNode *>(sortNode);
+            if (slot->Matches("function") && fsn) {
+                label->SetTextToken(fsn->GetToken());
+            }
+            break;
+        }
+        case kNodeSetlist: {
+            SetlistSortNode *ssn = dynamic_cast<SetlistSortNode *>(sortNode);
+            SavedSetlist *setlist = ssn->GetSetlistRecord()->GetSetlist();
+            if (slot->Matches("setlist_name")) {
+                const char *name = setlist->GetTitle();
+                label->SetDisplayText(name ? name : gNullStr, true);
+            }
+            break;
+        }
+        default:
+            label->SetTextToken(gNullStr);
+            break;
+        }
         return;
+    }
 #else
     MILO_ASSERT(p9_label, 0x638);
 #endif

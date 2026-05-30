@@ -385,10 +385,15 @@ void ViewSettingsProvider::Text(int, int row, UIListLabel *slot, UILabel *label)
     } else if (slot->Matches("status") && !setting->IsHeader()) {
         AppLabel *al = dynamic_cast<AppLabel *>(label);
 #ifdef HX_NATIVE
-        // 360-ARK milo uses a plain UILabel here; cosmetic status text — skip if
-        // not an AppLabel (same pattern as MusicLibrary::Text).
-        if (al)
+        // 360-ARK milo authors the status slot as a plain UILabel; the Wii
+        // path asserts. Fall back to writing the status string via the base
+        // UILabel API so view-settings rows show their current value instead
+        // of being empty (W6 V1).
+        if (al) {
             al->SetViewSettingStatus(setting);
+        } else {
+            label->SetDisplayText(setting->GetCurrentStatus(), true);
+        }
 #else
         MILO_ASSERT(al, 0x1e2);
         al->SetViewSettingStatus(setting);
