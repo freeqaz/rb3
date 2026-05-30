@@ -57,7 +57,7 @@ void CharClipGroup::Replace(Hmx::Object *from, Hmx::Object *to) {
             if (mWhich > idx) {
                 mWhich--;
             } else if (mWhich == s) {
-                mWhich = Min<int>(0, s - 1);
+                mWhich = Max<int>(0, s - 1);
             }
             MILO_ASSERT(mWhich < s, 0x5A);
             return;
