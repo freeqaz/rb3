@@ -26,7 +26,7 @@ Ordered by impact (highest first). "Side" = engine (= `milo-native-engine`), rb3
 |---|---|---|---|---|---|---|
 | **V1** | Song-row titles entirely missing in song select — list rows are visually empty (just `0/10` / `0/5` / `0/30` score columns + grey row backgrounds). The Wii ref shows each row as `<song name> <artist>  N SONGS  <stars>`. | `03_song_select.png` vs `yt_qRagnZCIMzk_song_select_list.png` | P0 | engine (most likely) | L | Different failure from the known Phase-3 dimness. Phase 3 explains "title text renders dim grey"; here the title text isn't rendering at all. Probably a separate `UIListLabel` slot / list-item refresh path that never builds its `RndText` sub-mesh on web, OR a `WebAssets`-style asset fetch that returns the song-list data but never delivers it to the UI binder. **First check:** add a probe in `BandRnd::DrawMesh` to count un-named (text) sub-meshes drawn per frame on the song-select screen vs the song-select baseline; if count is the same, it's a colour/state issue; if W5-fix has fewer than the native ref's expected count, it's a list-binding miss. |
 | **V2** | Main-hub menu list missing — no `PLAY NOW / CAREER / TRAINING / CUSTOMIZE / GET MORE SONGS` text down the left side of the hub. The hub 3D scene + the news ticker text along the bottom *do* render. | `02_main_hub.png` vs `yt_mhKNp9uAT48_menu_hub.png` | P0 | rb3 | S | **ROOT-CAUSED 2026-05-30** — `AnimTask::Poll()` arg-swap (`SetFrame(blend, frame)` vs retail-asm `(frame, blend)`) freezes every reveal anim at frame 1. Buttons are technically `Showing=true` but their PropAnim (`01_main_button_reveal.anim`, frames 0→80) never advances → buttons render at the start "off-screen / hidden" pose. Fix: 1-line HX_NATIVE swap in `src/system/rndobj/Anim.cpp:378`. See `## V2 investigation (2026-05-30)` below. |
-| **V3** | Gameplay HUD numerics absent — score, streak, multiplier digits, star-power gauge, energy bar, and song-progress bar are all missing during gameplay. The W5 fix added the "COOL" multiplier-ring panel and the left-edge text strip, but the *numbers* (Wii ref `78 250`) and the star meter still aren't there. | `07_gameplay_t15s.png` vs `yt_qRagnZCIMzk_gameplay_guitar.png` | P0 | engine + rb3 | L | Likely the same Phase-3 dimness root cause for the digits (font material colour) — `UIDigitalLabel` carries its own style. The bars / gauges are mesh-based, not text-based, so they're a separate failure. **First check:** dump a list of `Rnd*` panels active on the `game_screen` (probe `RndDir::ListPanels`) and cross-reference vs the Wii HUD inventory. |
+| **V3** | Gameplay HUD numerics absent — score, streak, multiplier digits, star-power gauge, energy bar, and song-progress bar are all missing during gameplay. The W5 fix added the "COOL" multiplier-ring panel and the left-edge text strip, but the *numbers* (Wii ref `78 250`) and the star meter still aren't there. | `07_gameplay_t15s.png` vs `yt_qRagnZCIMzk_gameplay_guitar.png` | P0 | engine + rb3 | L | **DIGIT SUB-FIX LANDED 2026-05-30** — the score digit slot was a `SetGeomOwner` GPU-cache miss in the native engine: `MeshGpuCache::EnsureMeshUploaded()` keyed uploads by the drawn mesh pointer but read verts from `mesh->GetGeomOwner()`; the cache returned `true` on every re-upload even after `BandScoreboard::SetScore` swapped owners to `%d_source.mesh`. New `InvalidateGpuMesh()` plus a 5-line `HX_NATIVE` hook in `RndMesh::SetGeomOwner` clears the cache flag so the next draw re-uploads from the new owner. Score "0" now renders top-center at t=30s gameplay (`w7-hud/08_gameplay_t30s.png`). See `## V5 — W7-HUD SetGeomOwner cache fix (2026-05-30)` below. *Streak counter / SP fill / energy bar fills are PropAnim-driven and stay empty because no gems have been hit (score=0 → meters stay at frame 0) — a separate gameplay-input issue, not a render miss.* |
 | **V4** | Album art shows `?` placeholder instead of cover art (known carry-over from baseline; W5 did not address it). Affects the entire song-select experience. | `03_song_select.png` vs `yt_qRagnZCIMzk_song_select_album_art.png` | P1 | server | S | **PLUMBING-FIXED 2026-05-30** — root cause was the dev-server's `extracted/` asset dir is a *curated* slice that omits per-song `_keep.png_xbox` cover art (and other long-tail textures). The full extraction at `orig-assets/extracted-xbox-full/` ships all 261 song-art textures. Fix: `native/web/server.py` now probes `extracted-xbox-full/` as a secondary root when the primary 404s — backward-compatible, no engine changes. Verified end-to-end: `/api/file/songs/20thcenturyboy/gen/20thcenturyboy_keep.png_xbox` → 200 (43680 bytes); placeholder `?` only persists for unmounted UGC songs (per retail DTA logic). See `## V4 implementation (2026-05-30)` below. |
 | **V5** | Intro cinematic plays against a pure-black backdrop (`05_game_screen_entry.png` shows only the microphones, lit from behind). The Wii intro cinematic has the lit-venue 3D scene visible behind the props. | `05_game_screen_entry.png` vs Wii longplay intros | P1 | engine | L | Likely the tv3 cinematic's vignette / clear-colour state from the recent `acdfc69f` "tv3 transition cinematic default-on" series. The vignette may be over-darkening the venue background, or the camera frustum cull/blackout is too aggressive. The fact that *only* the props are visible suggests the venue mesh is z-rejected or the clear colour is full black with no background draw call. **First check:** does the baseline `05_game_screen_entry.png` show the venue? No — it shows the stage gear lit on black at a different camera angle. So this has been a problem since baseline; the W5 capture happened on a different cinematic frame, not a regression. |
 | **V6** | Splash background is pure black (no intro Bink movie). Known stub. The `PRESS START` text is now bright yellow on black, which makes the missing movie more obvious. | `01_splash.png` vs `title_screen_360_tcrf.png` | P2 | engine | L | BinkVideo decode is stubbed (documented). Replacing with a still-image fallback is cheap and would dramatically improve first-impression. Alternatives: extract intro to MP4/WebM and play via HTMLVideoElement; or render a static venue-billboard. Not a regression. |
@@ -225,6 +225,66 @@ The probe edits are large enough that I'll commit them on `wt-web-w6-v2-probe` f
 2. **If venue never loads during cinematic:** the cinematic uses an isolated camera/scene by design and the props are the only thing the camera sees — in which case "black backdrop" is correct and we should chase **better stage lighting** on the props (V13) instead.
 3. **If venue *does* load** but is z-rejected / overdrawn by black: investigate the vignette pass from commit `acdfc69f`.
 4. **Files to read first:** `native/src/rb3_netsession_native.cpp` (recent tv3 fixes are nearby), `src/band3/game/IntroCinematic.cpp` (if it exists), `milo-native-engine/src/scene/` vignette code.
+
+---
+
+## V5 — W7-HUD SetGeomOwner cache fix (2026-05-30)
+
+**Status:** sub-fix LANDED on `wt-web-w7-hud`. Engine branch `w7-hud-setgeomowner` (`e6c8f86`); rb3 5-line `HX_NATIVE` hook in `src/system/rndobj/Mesh.cpp::SetGeomOwner`. The BandScoreboard digit slot (`num%d.mesh`) now renders the live score on web — verified by `docs/sessions/web/screenshots/w7-hud/08_gameplay_t30s.png` showing "0|0FF" top-center where the baseline `w7-phase3/07_gameplay_t15s.png` had an empty plate.
+
+### Root cause
+
+`MeshGpuCache.cpp::EnsureMeshUploaded(mesh)` keyed uploaded GPU buffers by the **drawn mesh pointer** but read vertices/indices from `mesh->GetGeomOwner()`:
+
+```cpp
+auto it = sMeshGpuData.find(mesh);
+if (it != sMeshGpuData.end() && it->second.uploaded && !isTextMesh)
+    return true;                       // <- short-circuits forever
+RndMesh* geomOwner = mesh->GetGeomOwner();
+...
+```
+
+RB3's `BandScoreboard::SetScore()` hot-swaps the digit slots by calling `mNumMeshes[i]->SetGeomOwner(mSrcMeshes[digit])`. `RndMesh::SetGeomOwner` only updates the pointer; it never calls `Sync()`. So the first upload of e.g. `num0.mesh` captured its self-owned (empty) geometry, and the cache returned `true` on every subsequent call — the swap to `5_source.mesh` never reached the GPU.
+
+The same bug latent in the other 4 SetGeomOwner sites (`Tail.cpp`, `VocalTrack.cpp`, `ArpeggioShape.cpp`, `NoteTube.cpp`); all benefit from the single fix.
+
+### Fix
+
+Two pieces, mirroring the existing `CleanupGpuMesh()` weak-link pattern in `RndMesh::~RndMesh`:
+
+1. **Engine** (`milo-native-engine` commit `e6c8f86`, branch `w7-hud-setgeomowner`):
+   - Add `void InvalidateGpuMesh(RndMesh*)` to `src/platform/MeshGpuCache.{h,cpp}`. Marks `sMeshGpuData[mesh].uploaded = false` without dropping buffers; the next `EnsureMeshUploaded()` re-reads from the new owner.
+
+2. **rb3** (`src/system/rndobj/Mesh.cpp::SetGeomOwner`):
+   ```cpp
+   void RndMesh::SetGeomOwner(RndMesh *m) {
+       MILO_ASSERT(m, 487);
+       mGeomOwner = m;
+   #ifdef HX_NATIVE
+       extern void InvalidateGpuMesh(RndMesh *);
+       InvalidateGpuMesh(this);
+   #endif
+   }
+   ```
+
+Decomp match unchanged (`HX_NATIVE` is a port-only guard, ignored by MWCC).
+
+### Verification
+
+| Screen | Pre-fix (`w7-phase3/`) | Post-fix (`w7-hud/`) |
+|---|---|---|
+| `07_gameplay_t15s` | empty score plate top-center | empty score plate (camera still cinematic-left at this frame) |
+| `08_gameplay_t30s` | n/a (capture stopped at 15s) | **"0|0FF" score digit clearly visible top-center** |
+
+Smoke regression: `scripts/web/w3c-gameplay-test.mjs` PASS — boots, navigates main_hub → song_select → part_difficulty → game_screen, runs gameplay for 30+ seconds at 34 fps, ends on `game_screen` with no crash.
+
+### What this does NOT fix (deferred)
+
+- **Streak counter** (right-side multiplier digits) — same `SetGeomOwner` path? No, the streak meter uses `BandLabel::SetTokenFmt(streak_multiplier_fmt, mult)` (a UILabel, not a mesh swap). Stays blank because `MultiplierChanged()` only writes the label when mult > 1, and mult stays at 1 with no gem hits.
+- **OD fill / energy meter fill** — `OverdriveMeter::SetEnergy` calls `mExtendAnimGroup->SetFrame(energy)`. PropAnim → property → mesh material UV setter, which DOES go through Sync (and thus the cache invalidation that's been in place since W2). Fill stays empty because `BandTrack::RefreshOverdrive(energy)` is gated on player gem-hit events that don't fire when no gems are auto-hit on web.
+- **Multiplier-dot icons** (5 small ring dots) — `mMultiMeterAnim->SetFrame(mult)`; same story as the fill.
+
+All three above stay empty because the gameplay scoring loop doesn't get input — they would self-fill the moment a gem-hit increments `mScore`. That gap is a separate input/scoring issue, NOT a render miss. Confirmed by the score going from `-1` (initial) to `0` (rendered via this fix) — the BandScoreboard IS being called every Poll cycle in `TrackPanel.cpp:611`.
 
 ---
 
