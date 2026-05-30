@@ -1,60 +1,18 @@
-#include "revolution/os/OSInterrupt.h"
-#include "revolution/rvl/so.h"
-#include "revolution/OS.h"
+#include "types.h"
 
-unsigned char soState;
-int soError, soRegistered;
-SOSysWork soWork;
-
-int SOiPrepare(const char *c, s32 *i) {
-    /*BOOL ints = OSDisableInterrupts();
-
-
-
-    OSRestoreInterrupts(ints);*/
-    int result = SO_OK;
-    int enabled = OSDisableInterrupts();
-    SOSysWork* sw;
-
-    switch (soState) {
-    case SO_INTERNAL_STATE_TERMINATED:
-        result = SO_ENETRESET;
-        break;
-    case SO_INTERNAL_STATE_READY:
-    default:
-        result = SO_EINVAL;
-        break;
-    case SO_INTERNAL_STATE_ACTIVE:
-        sw = &soWork;
-        if (sw->rmState < SO_INTERNAL_RM_STATE_OPENED) {
-            result = SO_EBUSY;
-            break;
-        } else if (!OSGetCurrentThread()) {
-            result = SO_EFATAL;
-            break;
-        }
-        *i = sw->rmFd;
-        break;
-    }
-
-    if (result != SO_OK) {
-        OSThread *cur = OSGetCurrentThread();
-        if (cur)
-            cur->error = result;
-        else
-            soError = result;
-    }
-    (void)OSRestoreInterrupts(enabled);
-    return result;
-}
-
-int SOiConclude(const char *funcName, int result) {
-    int enabled = OSDisableInterrupts();
-    OSThread *cur = OSGetCurrentThread();
-    if (cur)
-        cur->error = result;
-    else
-        soError = result;
-    (void)OSRestoreInterrupts(enabled);
-    return result;
-}
+s32 SOInit(void) { return 0; }
+s32 SOFinish(void) { return 0; }
+s32 SOStartup(void) { return 0; }
+s32 SOiStartupCore(void) { return 0; }
+s32 SOCleanup(void) { return 0; }
+s32 SOGetLastError(void) { return 0; }
+s32 SOiGetSysWork(void) { return 0; }
+s32 SOiIsBufferAddrCheck(void) { return 0; }
+s32 SOiIsInitialized(void) { return 0; }
+s32 SOiAlloc(void) { return 0; }
+s32 SOiFree(void) { return 0; }
+s32 SOiPrepare(void) { return 0; }
+s32 SOiConclude(void) { return 0; }
+s32 SOiPrepareTempRm(void) { return 0; }
+s32 SOiConcludeTempRm(void) { return 0; }
+s32 SOiWaitForDHCPEx(void) { return 0; }

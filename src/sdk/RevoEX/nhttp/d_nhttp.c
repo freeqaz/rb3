@@ -1,0 +1,29 @@
+#include "types.h"
+
+s32 NHTTPStartup(void) { return 0; }
+s32 NHTTPCleanupAsync(void) { return 0; }
+s32 NHTTPGetError(void) { return 0; }
+s32 NHTTPSSLGetError(void) { return 0; }
+s32 NHTTPi_TemplateConnectionCallback(void) { return 0; }
+s32 __NHTTPCreateRequestEx(void) { return 0; }
+s32 NHTTPCreateRequest(void) { return 0; }
+s32 NHTTPCreateConnection(void) { return 0; }
+s32 NHTTPDeleteRequest(void) { return 0; }
+s32 NHTTPAddHeaderField(void) { return 0; }
+s32 NHTTPAddPostDataAscii(void) { return 0; }
+s32 NHTTPAddPostDataRaw(void) { return 0; }
+s32 NHTTPSendRequestAsync(void) { return 0; }
+s32 NHTTPCancelRequestAsync(void) { return 0; }
+s32 NHTTPGetProgress(void) { return 0; }
+s32 NHTTPDestroyResponse(void) { return 0; }
+s32 NHTTPGetHeaderAll(void) { return 0; }
+s32 NHTTPGetBodyAll(void) { return 0; }
+s32 NHTTPGetResultCode(void) { return 0; }
+s32 NHTTPSetVerifyOption(void) { return 0; }
+s32 NHTTPSetProxy(void) { return 0; }
+s32 NHTTPSetProxyDefault(void) { return 0; }
+s32 NHTTPSetRootCA(void) { return 0; }
+s32 NHTTPDisableVerifyOptionForDebug(void) { return 0; }
+s32 NHTTPSetBuiltinClientCert(void) { return 0; }
+s32 NHTTPSetRootCADefault(void) { return 0; }
+s32 NHTTPSetClientCertDefault(void) { return 0; }

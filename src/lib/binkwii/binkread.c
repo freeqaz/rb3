@@ -1,0 +1,35 @@
+#include "types.h"
+
+s32 BinkGetError(void) { return 0; }
+s32 BinkSetSoundSystem(void) { return 0; }
+s32 dosilence(void) { return 0; }
+s32 checksound(void) { return 0; }
+s32 GotoFrame(void) { return 0; }
+s32 BinkSetIO(void) { return 0; }
+s32 BinkSetSoundTrack(void) { return 0; }
+s32 high1secrate(void) { return 0; }
+s32 bink_get_priority_sound(void) { return 0; }
+s32 bink_sound_callback(void) { return 0; }
+s32 BinkGetFrameBuffersInfo(void) { return 0; }
+s32 BinkRegisterFrameBuffers(void) { return 0; }
+s32 BinkOpen(void) { return 0; }
+s32 shouldskip(void) { return 0; }
+s32 start_do_frame(void) { return 0; }
+s32 end_do_frame(void) { return 0; }
+s32 decompress_sound(void) { return 0; }
+s32 BinkDoFramePlane(void) { return 0; }
+s32 BinkDoFrame(void) { return 0; }
+s32 BinkShouldSkip(void) { return 0; }
+s32 BinkNextFrame(void) { return 0; }
+s32 BinkGetKeyFrame(void) { return 0; }
+s32 BinkGoto(void) { return 0; }
+s32 BinkClose(void) { return 0; }
+s32 BinkWait(void) { return 0; }
+s32 BinkPause(void) { return 0; }
+s32 BinkGetSummary(void) { return 0; }
+s32 BinkOpenTrack(void) { return 0; }
+s32 BinkCloseTrack(void) { return 0; }
+s32 BinkGetTrackData(void) { return 0; }
+s32 BinkSetVideoOnOff(void) { return 0; }
+s32 BinkSetSoundOnOff(void) { return 0; }
+s32 BinkSetMemory(void) { return 0; }

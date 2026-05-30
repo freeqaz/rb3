@@ -1,2 +1,3 @@
-#include "RevoEX/ncd/ncdsystem.h"
-void NETGetWirelessMacAddress(void) { NCDiGetWirelessMacAddress(); }
+#include "types.h"
+
+s32 NETGetWirelessMacAddress(void) { return 0; }
