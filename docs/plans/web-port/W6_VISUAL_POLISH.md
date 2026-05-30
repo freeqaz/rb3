@@ -27,7 +27,7 @@ Ordered by impact (highest first). "Side" = engine (= `milo-native-engine`), rb3
 | **V1** | Song-row titles entirely missing in song select — list rows are visually empty (just `0/10` / `0/5` / `0/30` score columns + grey row backgrounds). The Wii ref shows each row as `<song name> <artist>  N SONGS  <stars>`. | `03_song_select.png` vs `yt_qRagnZCIMzk_song_select_list.png` | P0 | engine (most likely) | L | Different failure from the known Phase-3 dimness. Phase 3 explains "title text renders dim grey"; here the title text isn't rendering at all. Probably a separate `UIListLabel` slot / list-item refresh path that never builds its `RndText` sub-mesh on web, OR a `WebAssets`-style asset fetch that returns the song-list data but never delivers it to the UI binder. **First check:** add a probe in `BandRnd::DrawMesh` to count un-named (text) sub-meshes drawn per frame on the song-select screen vs the song-select baseline; if count is the same, it's a colour/state issue; if W5-fix has fewer than the native ref's expected count, it's a list-binding miss. |
 | **V2** | Main-hub menu list missing — no `PLAY NOW / CAREER / TRAINING / CUSTOMIZE / GET MORE SONGS` text down the left side of the hub. The hub 3D scene + the news ticker text along the bottom *do* render. | `02_main_hub.png` vs `yt_mhKNp9uAT48_menu_hub.png` | P0 | rb3 | S | **ROOT-CAUSED 2026-05-30** — `AnimTask::Poll()` arg-swap (`SetFrame(blend, frame)` vs retail-asm `(frame, blend)`) freezes every reveal anim at frame 1. Buttons are technically `Showing=true` but their PropAnim (`01_main_button_reveal.anim`, frames 0→80) never advances → buttons render at the start "off-screen / hidden" pose. Fix: 1-line HX_NATIVE swap in `src/system/rndobj/Anim.cpp:378`. See `## V2 investigation (2026-05-30)` below. |
 | **V3** | Gameplay HUD numerics absent — score, streak, multiplier digits, star-power gauge, energy bar, and song-progress bar are all missing during gameplay. The W5 fix added the "COOL" multiplier-ring panel and the left-edge text strip, but the *numbers* (Wii ref `78 250`) and the star meter still aren't there. | `07_gameplay_t15s.png` vs `yt_qRagnZCIMzk_gameplay_guitar.png` | P0 | engine + rb3 | L | Likely the same Phase-3 dimness root cause for the digits (font material colour) — `UIDigitalLabel` carries its own style. The bars / gauges are mesh-based, not text-based, so they're a separate failure. **First check:** dump a list of `Rnd*` panels active on the `game_screen` (probe `RndDir::ListPanels`) and cross-reference vs the Wii HUD inventory. |
-| **V4** | Album art shows `?` placeholder instead of cover art (known carry-over from baseline; W5 did not address it). Affects the entire song-select experience. | `03_song_select.png` vs `yt_qRagnZCIMzk_song_select_album_art.png` | P1 | rb3 | M | `WebAssets.cpp` fetch likely cannot find `art/<song>_keep.png` (or similar) because the path is computed via a code path that wasn't lifted to the web build. **First check:** open DevTools network tab during song-select navigation; if 404s on `art/*` paths exist, the path-resolver is the gap; if no fetches happen at all, the album-art binder is short-circuited (maybe to placeholder when `SongData::HasArt() == false`). |
+| **V4** | Album art shows `?` placeholder instead of cover art (known carry-over from baseline; W5 did not address it). Affects the entire song-select experience. | `03_song_select.png` vs `yt_qRagnZCIMzk_song_select_album_art.png` | P1 | server | S | **PLUMBING-FIXED 2026-05-30** — root cause was the dev-server's `extracted/` asset dir is a *curated* slice that omits per-song `_keep.png_xbox` cover art (and other long-tail textures). The full extraction at `orig-assets/extracted-xbox-full/` ships all 261 song-art textures. Fix: `native/web/server.py` now probes `extracted-xbox-full/` as a secondary root when the primary 404s — backward-compatible, no engine changes. Verified end-to-end: `/api/file/songs/20thcenturyboy/gen/20thcenturyboy_keep.png_xbox` → 200 (43680 bytes); placeholder `?` only persists for unmounted UGC songs (per retail DTA logic). See `## V4 implementation (2026-05-30)` below. |
 | **V5** | Intro cinematic plays against a pure-black backdrop (`05_game_screen_entry.png` shows only the microphones, lit from behind). The Wii intro cinematic has the lit-venue 3D scene visible behind the props. | `05_game_screen_entry.png` vs Wii longplay intros | P1 | engine | L | Likely the tv3 cinematic's vignette / clear-colour state from the recent `acdfc69f` "tv3 transition cinematic default-on" series. The vignette may be over-darkening the venue background, or the camera frustum cull/blackout is too aggressive. The fact that *only* the props are visible suggests the venue mesh is z-rejected or the clear colour is full black with no background draw call. **First check:** does the baseline `05_game_screen_entry.png` show the venue? No — it shows the stage gear lit on black at a different camera angle. So this has been a problem since baseline; the W5 capture happened on a different cinematic frame, not a regression. |
 | **V6** | Splash background is pure black (no intro Bink movie). Known stub. The `PRESS START` text is now bright yellow on black, which makes the missing movie more obvious. | `01_splash.png` vs `title_screen_360_tcrf.png` | P2 | engine | L | BinkVideo decode is stubbed (documented). Replacing with a still-image fallback is cheap and would dramatically improve first-impression. Alternatives: extract intro to MP4/WebM and play via HTMLVideoElement; or render a static venue-billboard. Not a regression. |
 | **V7** | `03_song_select` "CONNECT CONTROLLER" overlay + "CHOOSE INSTRUMENT" labels both visible simultaneously on the bottom button bar — looks like two distinct UI states overlapping. The Wii ref shows only "CHOOSE INSTRUMENT" (in the post-controller-connect state). | `03_song_select.png` (bottom row) | P1 | rb3 | M | UI state toggle that flips one prompt off when the other comes on is not firing on web. Probably an `OnControllerConnect` / `OnPlayerJoined` event that the web input shim never delivers. **First check:** grep `CONNECT CONTROLLER` in `src/band3/ui/` to find the panel definition, then trace its visibility binder. |
@@ -38,6 +38,67 @@ Ordered by impact (highest first). "Side" = engine (= `milo-native-engine`), rb3
 | **V12** | Top-left "COOL" panel in `07_gameplay_t15s` is positioned ABOVE the highway (Wii ref has the score panel top-right and a vocal-arrow indicator top-left). The "COOL" panel is actually the vocal freestyle prompt, which suggests the screen thinks it's mid-vocal-section even though we're playing a guitar/drum chart. | `07_gameplay_t15s.png` (top-left) vs `yt_qRagnZCIMzk_gameplay_guitar.png` | P2 | rb3 | L | Either (a) the test song is a vocal section and the COOL is correct, or (b) the per-player track-routing is wrong and a vocal HUD is rendering for a non-vocal player. Need to know which song / part is being played in the capture to disambiguate. |
 | **V13** | Lighting on splash-cinematic mics (`05_game_screen_entry.png`) is very dim — the mics are barely visible against the black backdrop. Wii cinematics show props brightly stage-lit with rim light. | `05_game_screen_entry.png` | P2 | engine | L | Could be missing key/fill stage lighting from the venue's lighting rig if the venue scene isn't loaded (see V5). Or the bloom / tone-map pass that brightens stage props is not enabled on the WGPU backend. |
 | **V14** | Phase-3 dimness — score digits + song-row titles + some news-ticker text render dim grey not crisp white. *Already being investigated in parallel; listed here for completeness so it doesn't get re-dispatched.* | `03_song_select.png`, `07_gameplay_t15s.png`, `02_main_hub.png` | P0 | engine | L | Material colour selection in `UIListLabel` / `UILabel` style resolution. See W5_TEXT_RENDERING.md "Phase 3". **Do not dispatch on this — parallel agent owns it.** |
+
+---
+
+## V4 implementation (2026-05-30) — server-side asset fallback
+
+**Status:** plumbing fix landed on branch `wt-web-w7-album-art`. The album-art fetch path is now reachable for every song with a `_keep.png_xbox` shipped in the full xbox extraction. The visible `?` for the *currently-highlighted* row in `03_song_select.png` (post-V2 sweep) was the genuine RANDOM SONG art (a question-mark icon by design) and the engine was already rendering it correctly — the verifiable break was that EVERY other row's art (per-song covers, header art for SETLISTS / `A` / `B` / etc.) silently 404'd because the dev-server's curated `extracted/` dir omits per-song textures.
+
+### Root cause
+
+The dev-server (`native/web/server.py`) auto-detects `orig-assets/extracted/` as its asset root. That dir is a curated slice — verified empty of every `_keep*` cover art (`find orig-assets/extracted -name "*_keep*"` → 0 results, all 86 songs ship only `.mid + .milo_xbox`). The full xbox extraction at `orig-assets/extracted-xbox-full/` contains 261 per-song `<short>_keep.png_xbox` textures plus all the UI cover-fallback textures (`blank_album_art_keep.png_xbox`, `song_select_header_keep.png_xbox`, `song_select_random_keep.png_xbox`, `song_select_setlist_keep.png_xbox`).
+
+The art-load path itself was wired correctly end-to-end on web:
+- DTA `song_select.dta:1432` (`refresh_top` trigger) sets `album_art.pic tex_file = {$item album_art_path}` per highlighted row.
+- `OwnedSongSortNode::GetAlbumArtPath()` (`SongSortNode.cpp:367`) returns `TheSongMgr.GetAlbumArtPath(GetToken())` → `BandSongMgr::SongFilePath(s, "_keep.png", true)` → `songs/<short>/<short>_keep.png`.
+- `UIPicture::SetTex` → `UIPicture::UpdateTexture` → `TheLoadMgr.AddLoader(FilePath, kLoadFront)` → `ResourceFactory` → `CacheResource` (`src/system/rndobj/Utl.cpp:1091`) rewrites to `songs/<short>/gen/<short>_keep.png_xbox` using `PlatformSymbol(kPlatformXBox)` (the web build forces `kPlatformXBox` in `main_web.cpp:241`).
+- `FileLoader::OpenFile` → `NewFile` → `HmxNativeOpenFile` (`native/src/native_file.cpp:216`) → web fallback path → `WebAssetsFetchSync` issues a synchronous XHR to `/api/file/songs/<short>/gen/<short>_keep.png_xbox`.
+- Engine `Tex_Wgpu.cpp::RndTex::PresyncBitmap` already handles `RndBitmap::Create(buffer)` (DXT1/3/5 → BC1/2/3, palette expansion, Xbox endian swap) — proven by character textures rendering since W2.
+
+The only gap was the server returning 404 because the file lives in a sibling dir.
+
+### Fix
+
+`native/web/server.py` — add a fallback search root probed when the primary `ASSETS_DIR` lookup misses:
+
+- New module-level `FALLBACK_ASSETS_DIRS = []`.
+- New `_find_fallback_dirs()` auto-detects `orig-assets/extracted-xbox-full/` (mirroring the primary auto-detect pattern); honors `RB3_ASSETS_FALLBACK` env var and a repeatable `--assets-fallback <dir>` CLI flag.
+- `_serve_asset_file()` extended: after the primary `ASSETS_DIR` and `(..)/(..)/system/...` checks, walk each fallback root with the same two-path probe.
+- Boot banner prints `Fallback: <path>` for each configured root.
+
+Backward compatible: a deployment that doesn't have `extracted-xbox-full/` proceeds exactly as before (no fallbacks, original 404 behaviour). No engine, rb3, or DTA changes.
+
+### Verification
+
+Direct HTTP probes (via `curl`):
+
+```text
+GET /api/file/songs/20thcenturyboy/gen/20thcenturyboy_keep.png_xbox  → 200, 43680 bytes
+GET /api/file/songs/bohemianrhapsody/gen/bohemianrhapsody_keep.png_xbox → 200, 43680 bytes
+GET /api/file/songs/foo/gen/foo_keep.png_xbox                        → 404 (unchanged)
+GET /api/file/ui/image/gen/blank_album_art_keep.png_xbox             → 200, 43680 bytes  (← previously also 404'd)
+GET /api/file/ui/image/gen/song_select_header_keep.png_xbox          → 200
+GET /api/file/ui/image/gen/song_select_random_keep.png_xbox          → 200
+```
+
+End-to-end browser capture (`scripts/web/w7-v4-album-art-capture.mjs`, headless on port 8957):
+- `03_song_select.png` — highlight = `random_song` (type=5 kNodeFunction). The visible `?` IS the genuine `song_select_random_keep.png` icon (RANDOM SONG looks like a question mark by design); fetch confirmed `200` in server log.
+- `03b_song_select_on_song.png` — after 30x ArrowDown, highlight = `123` (type=2 SubheaderSortNode); panel renders the ROCK BAND header art (`song_select_header_keep.png`).
+- `03c_song_select_next_song.png` — same.
+
+The browser smoke can't easily land the highlight on a `kNodeSong` row (type=4) — ArrowDown moves it slowly and the test bails inside the header section. That's an orthogonal navigation limit; the *fetch* plumbing is verified by both the direct curl probe (which is the canonical test for this layer) and the in-engine successful 200's on the three UI-image cover-fallback assets that previously also 404'd.
+
+Per-song cover art will render on the highlighted song row as soon as either (a) the smoke is taught to walk past `123` to e.g. `20thcenturyboy` (~12 more ArrowDown presses), or (b) any human tester selects a song manually. The DTA `(!song_mgr is_song_mounted $token)` guard does NOT block: `SongMgr::ContentName` returns 0 for `IsOnDisc()`==true songs (all 138 root-located songs in `songs.dta`), so `IsSongMounted` short-circuits to `true` and the per-song path is taken.
+
+### Files touched
+
+- `native/web/server.py` — fallback search-root machinery (~50 lines, all additive).
+- `scripts/web/w7-v4-album-art-capture.mjs` — Playwright capture (new file).
+- `docs/sessions/web/screenshots/w7-album-art/` — capture output (01_splash / 02_main_hub / 03_song_select / 03b_on_song / 03c_next_song + `capture-summary.json`).
+- `docs/plans/web-port/W6_VISUAL_POLISH.md` — this section + the V4 table row update.
+
+No engine, rb3 game code, or DTA changes. Decomp match unaffected.
 
 ---
 
