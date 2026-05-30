@@ -1281,27 +1281,14 @@ def generate_build_ninja(
     n.comment("Split DOL into relocatable objects")
     n.rule(
         name="split",
-        # dtk *always* rewrites config.json with a fresh mtime, even when the
-        # split output is byte-identical (it is deterministic; it just rewrites
-        # the file each run). `restat=True` alone is therefore a no-op for this
-        # rule: ninja re-stats config.json, sees a newer mtime, and re-fires the
-        # `configure` generator -- regenerating build.ninja and spinning the
-        # infinite SPLIT->configure manifest-regeneration loop (stray _CL_<hash>
-        # PCH litter + zero-size .obj files).
-        #
-        # Fix: preserve config.json's ORIGINAL mtime when content is unchanged.
-        # `cp -p` snapshots it *with its timestamp* into .prev; after dtk
-        # rewrites it, if the bytes match (`cmp -s`) we restore the original
-        # mtime (`touch -r`). restat then sees a true no-change. NOTE: `-p` is
-        # load-bearing -- plain `cp` stamps .prev with *now*, so touch -r would
-        # advance the mtime anyway and the guard would do nothing.
-        command=f"cp -p $out_dir/config.json $out_dir/config.json.prev 2>/dev/null; "
-                f"{dtk} dol split $in $out_dir && "
-                f"if cmp -s $out_dir/config.json $out_dir/config.json.prev; then "
-                f"touch -r $out_dir/config.json.prev $out_dir/config.json; fi; "
-                f"rm -f $out_dir/config.json.prev",
+        command=f"{dtk} dol split $in $out_dir",
         description="SPLIT $in",
         depfile="$out_dir/dep",
+        # restat: dtk split is deterministic, so re-running it with an
+        # unchanged config.yml produces an identical config.json. restat lets
+        # ninja keep the old mtime and avoid re-triggering the `configure`
+        # generator rule -- which otherwise causes an infinite
+        # SPLIT->configure manifest-regeneration loop.
         restat=True,
     )
     n.build(
