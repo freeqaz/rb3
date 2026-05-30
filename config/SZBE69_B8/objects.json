@@ -1795,7 +1795,7 @@
       "sdk/PowerPC_EABI_Support/MetroTRK/custconn/cc_gdev.c": "NonMatching",
       "sdk/PowerPC_EABI_Support/MetroTRK/custconn/CircleBuffer.c": "NonMatching",
       "sdk/PowerPC_EABI_Support/MetroTRK/custconn/MWCriticalSection_gc.c": "Matching",
-      "sdk/PowerPC_EABI_Support/MetroTRK/__exception.s": "MISSING",
+      "sdk/PowerPC_EABI_Support/MetroTRK/__exception.s": "NonMatching",
       "sdk/PowerPC_EABI_Support/MetroTRK/dispatch.c": "NonMatching",
       "sdk/PowerPC_EABI_Support/MetroTRK/dolphin_trk_glue.c": "NonMatching",
       "sdk/PowerPC_EABI_Support/MetroTRK/dolphin_trk.c": "NonMatching",
