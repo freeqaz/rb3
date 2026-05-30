@@ -592,3 +592,102 @@ Tier 2 is permanently parked as a non-fix; Tier 3 (data override)
 remains the fallback if Tier 1 hunt rules out a code-path bug and
 confirms the data really is dim.
 
+### W7 Phase 3 Tier 1 — 2026-05-30 — predicate broadening + colour floor (SHIPPED)
+
+**Engine branch:** `w7-phase3-tier1` (worktree `/tmp/milo-engine-w7p3`)
+**Engine commit:** `33cf1179b781318954b729dd5798be1a7021cdbd`
+**RB3 worktree:** `wt-web-w7-phase3` (`.worktree-port=8570`, no rb3-side .cpp changes)
+**Capture:** `docs/sessions/web/screenshots/w7-phase3/` (vs `post-v2-sweep/` baseline).
+
+**Static-analysis trace (was the predicate even firing on dim text?):**
+
+The Tier-2 failure proved the empty-name predicate does NOT cover the
+residual dim widgets. The trace that found the missed paths:
+
+| Widget | Mesh creation path | Name? | Caught by W5 predicate? |
+|---|---|---|---|
+| News-ticker, FRIEND RANKINGS, button labels (W5 wins) | `UILabel`→`RndText::UpdateMesh` (Text.cpp:1146) → `Hmx::Object::New<RndMesh>()` (Text.cpp:1766) | empty (gNullStr default) | YES |
+| Song-row titles (W6 V1 fix path) | same as above | empty | YES (but matcol already > 0.6) |
+| Artist sub-text in song rows | same as above | empty | YES (but matcol already > 0.6) |
+| `BandScoreboard` HUD digits (V3-digits target) | `Find<RndMesh>("num%d.mesh"/"%d_source.mesh"/"thousands_comma.mesh"/"millions_comma.mesh")` loaded from .milo (`BandScoreboard.cpp:79-91`) | **NAMED** (`num0.mesh`, etc.) | **NO** |
+| Generic `UILabel` widgets in the .milo | named `*.lbl` | named | NO |
+
+The HUD digit meshes use a NORMAL RGB diffuse texture (digit-sprite sheet,
+swapped via `RndMesh::SetGeomOwner(srcMesh)`), NOT an alpha-only font atlas.
+So `useAlphaAsRGB=1` would zero their RGB and break them — the broader
+predicate intentionally does NOT touch useAlphaAsRGB/prelit/zMode, only
+the colour FLOOR.
+
+**Predicate (Rnd_Wgpu_RB3.cpp:1665+):**
+
+```cpp
+bool isTextMeshHeur = mesh->Name() && mesh->Name()[0] == '\0';
+const char* meshName = mesh->Name();
+const char* matName = (mat && mat->Name()) ? mat->Name() : "";
+bool isLikelyUiText = isTextMeshHeur;
+if (!isLikelyUiText && meshName && meshName[0]) {
+    if ((meshName[0] == 'n' && std::strncmp(meshName, "num", 3) == 0) ||
+        std::strstr(meshName, "_source.mesh") ||
+        std::strstr(meshName, "_comma.mesh")) {
+        isLikelyUiText = true;
+    } else if (std::strstr(meshName, ".lbl")) {
+        isLikelyUiText = true;
+    }
+}
+if (!isLikelyUiText && matName[0]) {
+    if (std::strstr(matName, "font") || std::strstr(matName, "label")) {
+        isLikelyUiText = true;
+    }
+}
+// ... in the `if (mat)` block, after writing mu.color[0..3]:
+if (isLikelyUiText) {
+    mu.color[0] = std::max(0.6f, mu.color[0]);
+    mu.color[1] = std::max(0.6f, mu.color[1]);
+    mu.color[2] = std::max(0.6f, mu.color[2]);
+}
+```
+
+**Verification — w7-phase3 vs post-v2-sweep:**
+
+| Screen | avgRGB w7p3 | avgRGB postv2 | Visual delta |
+|---|---|---|---|
+| 01_splash | 32,22,33 | 32,22,32 | no change |
+| 02_main_hub | 41,32,30 | 40,30,29 | +1,+2,+1 (very minor brightening — within timing noise) |
+| 03_song_select | 31,36,38 | 31,35,38 | song titles + artists unchanged (already > 0.6) |
+| 04_part_difficulty | 67,67,66 | 67,68,68 | identical |
+| 07_gameplay_t15s | 27,15,20 | 33,17,23 | different camera angle / scene state |
+
+**Result: NO visual regression, NO visible recovery of the HUD digits.**
+The HUD score / streak / multiplier-digit text is still absent in
+`07_gameplay_t15s.png`. The HUD bar panel + multiplier "O" circle
+render the same as before; the digit slots inside the bar are blank.
+
+**Conclusion:** The colour floor + broader predicate compile and run
+correctly (verified the wasm contains the `_source.mesh` / `_comma.mesh`
+constants and `MILO_ENGINE_PATH=/tmp/milo-engine-w7p3` was wired in
+the CMakeCache). The lift is safe — already-bright text is unaffected
+(std::max() no-ops). But the absent HUD digits aren't a colour-dim
+problem at all — they are NOT-DRAWN, which is a different failure
+mode (likely: `BandScoreboard::SetScore` is never called with
+score>=0 because the V3-digits `set_score_or_stars` plumbing only
+covered `score.lbl` not the scoreboard sub-mesh swap, OR the
+scoreboard's `RndMesh::SetGeomOwner(srcMesh)` doesn't take effect on
+the web GPU backend because shared geometry references aren't
+resolved at draw time).
+
+**Recommendation — pin bump destination:** ship `33cf1179` to engine
+main as the W7-Phase3-Tier1 baseline. The predicate widening is
+strictly additive and any future investigation of the HUD-digit
+no-draw or other dim widgets can layer on top. The lift is a no-op
+for the screens it currently can't help — no harm.
+
+**Phase 3 next steps (out of scope here):**
+
+1. Audit `BandScoreboard::SetScore` / `SetGeomOwner` web path —
+   does the score `RndMesh` ever transition from `mScore = -1` to a
+   real value? Does `SetGeomOwner` actually swap the rendered
+   geometry? (Probe via per-mesh-name draw-count log.)
+2. Audit the `set_score_or_stars` → scoreboard chain on the
+   plain-UILabel side — is the digit-side widget reachable from the
+   handler the W6 V3-digits commit (`56d3dd7d`) added?
+
