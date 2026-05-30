@@ -501,6 +501,13 @@ void RGTrainerPanel::HandleLegendLefty(bool b) {
     }
     RndDir *legendDir = mDir->Find<RndDir>("chord_legend", true);
     RndAnimatable *leftyAnim = legendDir->Find<RndAnimatable>("lefty_flip.anim", true);
+    // TODO(W8-argswap): asm diff suggests the decomp transcribed both calls with
+    // their float args duplicated/swapped; retail asm implies
+    //   Animate(f12, f2, kTaskUISeconds, 0, 0)
+    //   SetFrame(f2,  1.0f)
+    // The current 97.7% match hides the mistranscription. Not visible on the
+    // W3c boot path (Pro/Real-Guitar trainer is not entered); fix when the
+    // RG trainer panel is exercised. See docs/plans/web-port/W8_MWCC_ARG_SWAP.md.
     if (b) {
         leftyAnim->Animate(f12, f12, kTaskUISeconds, 0, 0);
     } else {
