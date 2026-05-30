@@ -14,7 +14,7 @@ void ShiftedDotProduct(const float *buf, int len, float *ss, bool /*unused*/) {
     START_AUTO_TIMER("SHIFT_DOT_PROD");
 
     int vlen = len / 2;
-    MILO_ASSERT((vlen && 15) == 0, 0x135);
+    MILO_ASSERT((vlen & 15) == 0, 0x135);
 
     if ((vlen & 15) == 0) {
         // Fast path: paired computation of ss[i] and ss[i+1] via Gekko paired
