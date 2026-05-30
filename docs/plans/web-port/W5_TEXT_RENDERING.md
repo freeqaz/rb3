@@ -531,3 +531,64 @@ decomp side.
 
 Defer Tier 3 (data override) until/unless Tier 2's reduced
 focused/unfocused contrast is itself a problem.
+
+### STATUS — 2026-05-30 — Tier 2 attempted, did NOT change output
+
+**Engine branch:** `w5-phase3-color-lift` (local, unpushed)
+**Engine commit:** `08b3932` — applies the proposed `std::max(0.6f, mu.color[0..2])`
+gated on `isTextMeshHeur` directly after the W5 useAlphaAsRGB block at
+`Rnd_Wgpu_RB3.cpp:1693`.
+
+**RB3 branch:** `wt-web-w5p3-impl` (worktree, unpushed)
+**Capture:** `docs/sessions/web/screenshots/w5p3-color-lift/` (post-fix shots)
+vs `docs/sessions/web/screenshots/w6-v1-fix/` (W6-V1 baseline).
+
+**Verification — fix code IS executing but visible delta is ~0:**
+
+Confirmed the compiled `.o` for the rebuilt engine contains the 0.6f
+constant (`0x3f19999a` / `0x1.333334p-1`) three times in DrawMesh's body
+followed by `call 534` (std::max<float> out-of-line at -O0), so the lift
+is wired into the rendered code path. But quantitative per-stripe
+brightness analysis of `03_song_select.png` (where dim song titles live)
+shows **bright-pixel%(>180 luma) is byte-identical to baseline in every
+40px horizontal stripe** — `1.23→1.23`, `2.08→2.08`, `2.31→2.32`,
+`3.80→3.80`, etc. Δluma is in the ±0.1 noise floor. Same story on the
+HUD digit band in `07_gameplay_t15s.png`. Side-by-side visual
+inspection of song-row titles, group headers, and HUD overlay shows no
+perceptible brightening.
+
+**Conclusion: the color path is upstream of `mu.color`.** Either the
+`isTextMeshHeur = mesh->Name() && mesh->Name()[0] == '\0'` predicate
+fails to fire on the actually-dim widget meshes (most likely — some
+UILabel sub-meshes may carry a non-empty name), or the dimness is
+delivered through a route the lift can't see (vertex color override,
+post-shader blend, or a separate fast-path the W5 Phase 1+2 patch
+doesn't cover). This matches the earlier empirical-probe note
+(printf gated on the same predicate also failed to appear) — the
+predicate itself is the suspect, not `mu.color`.
+
+**Call for Tier 1 hunt next.** Concretely:
+
+1. **Audit the isTextMeshHeur predicate.** Add an unconditional
+   `mesh->Name()` log at DrawMesh entry (not gated on the heuristic)
+   and dump the unique names. The current name-based heuristic was
+   inferred from DC3's `MaterialSetup.cpp` and may miss RB3 text
+   sub-meshes whose owning RndText was renamed or whose UILabel font
+   material carries the dim color but is *not* the only mesh in the
+   widget's draw chain.
+2. **Trace the actual color delivery path.** Once we have the mesh-name
+   inventory, walk it back: which mesh draws the song-title quad?
+   Does its `mat->GetColor()` actually read the dim value, or is the
+   color baked into vertex.color (in which case the static analysis
+   above was wrong about `RndText::CreateLines` always writing
+   `style.color = white`).
+3. **Re-examine the Tier 1 shader-side hypothesis.** The Phase 3
+   doc above proposed Tier 1 = "downstream of mu.color"
+   (`compressHighlights`/`alpha-fringe-fade`/W4 mask-alpha). If the
+   color arrives at the shader as expected white-on-glyph but the
+   pixel writes are dim, that's the shader-blend path, not data.
+
+Tier 2 is permanently parked as a non-fix; Tier 3 (data override)
+remains the fallback if Tier 1 hunt rules out a code-path bug and
+confirms the data really is dim.
+
