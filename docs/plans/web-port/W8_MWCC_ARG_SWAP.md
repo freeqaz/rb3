@@ -168,19 +168,33 @@ high match%:
 Functions in scope matching this fingerprint that were spot-checked but
 not deeply asm-diffed:
 
-| File                                      | Function                                | Match % | Notes |
-|------------------------------------------:|:----------------------------------------|--------:|:------|
-| `src/system/char/CharLipSyncDriver.cpp`   | `CharLipSyncDriver::Poll`               | 95.18%  | Audio-driven; not on visible W3c path. |
-| `src/system/char/CharEyes.cpp`            | `CharEyes::Poll`                        | 95.70%  | Char-eye gaze; subtle but visible if wrong. |
-| `src/system/char/CharIKSliderMidi.cpp`    | `CharIKSliderMidi::Poll`                | 95.77%  | IK slider; SetFraction(float, float) candidate. |
-| `src/system/char/CharLookAt.cpp`          | `CharLookAt::Poll`                      | 95.96%  | Head-look-at; subtle. |
-| `src/system/char/CharBoneTwist.cpp`       | `CharBoneTwist::Poll`                   | 96.17%  | Bone twist; subtle if wrong. |
-| `src/system/rndobj/Line.cpp`              | `UpdateLine(Point*, Point*)`            | 97.13%  | **RULED OUT** (W8-rndobj-game sweep) — no `bctrl`/virtual-call float args; 50 diff_args are inlined Vec2/fold-angle math (`f0↔f1` FPR cascade inside Phase 2/3 loops). Same class as Vec.h cascade. |
-| `src/system/rndobj/Line.cpp`              | `UpdateLine(const Transform&, float)`   | 96.04%  | **RULED OUT** (W8-rndobj-game sweep) — Interp is inlined; 121-instr `f0↔f1` cascade lives inside inlined Multiply/Transpose/Vec.h math. Only float arg `nearPlane` is correctly saved to f29 once. Permuter-class. |
-| `src/band3/game/CrowdRating.cpp`          | `CrowdRating::Update(float, float)`     | 96.97%  | **RULED OUT** (W8-rndobj-game sweep) — only `bl` calls are `Current()`/`CalculateValue()` (no float args). 3-instr diff is constant-pool layout (`@34494/@34495` vs base `@32283/...`) + `f0↔f2` choice for materializing the stored value. No arg-swap fingerprint. |
-| `src/band3/game/CrowdRating.cpp`          | `CrowdRating::UpdatePhrase(float, float)` | 96.97%  | **RULED OUT** (W8-rndobj-game sweep) — identical shape to `::Update`; same constant-pool layout diff (`@34520/@34521`). No virtual-call float-arg site. |
-| `src/band3/game/GemPlayer.cpp`            | `UpdateGameCymbalLanes()`               | 97.50%  | **RULED OUT** (W8-rndobj-game sweep) — `void()`, no float args anywhere. 25-instr `r30↔r31` callee-saved register-coloring cascade only. |
-| `src/band3/game/Player.cpp`               | `UpdateSectionStats(float, float)`      | 96.86%  | **RULED OUT** (W8-rndobj-game sweep) — single `beq↔bne` polarity diff + 1 `b` delete on the early-return guard chain; only `bl` is to non-virtual `Stats::SetSectionInfo` (no `fmr` before it — float args flow through f1/f2 untouched). |
+| File                                      | Function                                | Match % | Verdict | Evidence |
+|------------------------------------------:|:----------------------------------------|--------:|:--------|:---------|
+| `src/system/char/CharLipSyncDriver.cpp`   | `CharLipSyncDriver::Poll`               | 95.18%  | **RULED-OUT** | Only 1 `bctrl` in target asm (AutoTimer dtor, single-arg). 92-instr cascade is `r28↔r30` regalloc on `this` + `_savegpr_20`/`_savegpr_19` prologue diff — pure regalloc. |
+| `src/system/char/CharEyes.cpp`            | `CharEyes::Poll`                        | 95.70%  | **RULED-OUT** | 2 `bctrl`s, both single-arg (`Enter`, `it->mEye->Poll()`). 147-instr cascade is Vec.h `psq_l`/`ps_madd`/`frsqrte` FPR scheduling — same class as Geo/Utl/Mesh.cpp at-limit family. |
+| `src/system/char/CharIKSliderMidi.cpp`    | `CharIKSliderMidi::Poll`                | 95.77%  | **RULED-OUT** | **Zero** `bctrl` in target asm. `SetFraction(float, float)` is NOT called from `Poll()` (only from `HANDLE_ACTION(set_fraction, ...)` DTA dispatcher). 142-instr cascade is `f1↔f2` from inlined `Interp`/`Sigmoid` math. |
+| `src/system/char/CharLookAt.cpp`          | `CharLookAt::Poll`                      | 95.96%  | **RULED-OUT** | **Zero** `bctrl` in target asm. 124-instr cascade is `r30↔r31` for `this` + `_savegpr_27` prologue range — pure regalloc, no vcalls to misload. |
+| `src/system/char/CharBoneTwist.cpp`       | `CharBoneTwist::Poll`                   | 96.17%  | **RULED-OUT** | **Zero** `bctrl` in target asm. 217-instr cascade is `f0↔f2` from inlined Vec.h math (Add/Subtract/Scale/Normalize/Cross/Interp). Same at-limit family as Mesh.cpp / Geo. |
+| `src/system/rndobj/Line.cpp`              | `UpdateLine(Point*, Point*)`            | 97.13%  | **RULED-OUT** | No `bctrl`/virtual-call float args; 50 diff_args are inlined Vec2/fold-angle math (`f0↔f1` FPR cascade inside Phase 2/3 loops). Same class as Vec.h cascade. |
+| `src/system/rndobj/Line.cpp`              | `UpdateLine(const Transform&, float)`   | 96.04%  | **RULED-OUT** | Interp is inlined; 121-instr `f0↔f1` cascade lives inside inlined Multiply/Transpose/Vec.h math. Only float arg `nearPlane` is correctly saved to f29 once. Permuter-class. |
+| `src/band3/game/CrowdRating.cpp`          | `CrowdRating::Update(float, float)`     | 96.97%  | **RULED-OUT** | Only `bl` calls are `Current()`/`CalculateValue()` (no float args). 3-instr diff is constant-pool layout (`@34494/@34495` vs base `@32283/...`) + `f0↔f2` choice for materializing the stored value. No arg-swap fingerprint. |
+| `src/band3/game/CrowdRating.cpp`          | `CrowdRating::UpdatePhrase(float, float)` | 96.97%  | **RULED-OUT** | Identical shape to `::Update`; same constant-pool layout diff (`@34520/@34521`). No virtual-call float-arg site. |
+| `src/band3/game/GemPlayer.cpp`            | `UpdateGameCymbalLanes()`               | 97.50%  | **RULED-OUT** | `void()`, no float args anywhere. 25-instr `r30↔r31` callee-saved register-coloring cascade only. |
+| `src/band3/game/Player.cpp`               | `UpdateSectionStats(float, float)`      | 96.86%  | **RULED-OUT** | Single `beq↔bne` polarity diff + 1 `b` delete on the early-return guard chain; only `bl` is to non-virtual `Stats::SetSectionInfo` (no `fmr` before it — float args flow through f1/f2 untouched). |
+
+**All 9 candidates RULED-OUT (2026-05-30).** The MWCC arg-swap fingerprint
+requires `fmr fN, fM` (or `mr rN, rM` for ints) immediately preceding a
+multi-arg `bctrl`. The hunt across `src/system/char/`, `src/system/rndobj/`,
+and `src/band3/game/` found ZERO new instances:
+- Five Char Polls: three have zero `bctrl`; two have only single-arg `bctrl`.
+- Two RndLine overloads: cascade lives inside inlined Vec.h/Mtx.h math.
+- Two CrowdRating + one GemPlayer + one Player: no virtual-call float-arg
+  sites at all; gaps are constant-pool layout, polarity, or regalloc.
+
+The arg-swap class is genuinely narrow — restricted to anim drivers like
+`AnimTask::Poll` (V2 fix `ca671682`) and the documented `RGTrainerPanel`
+TODO. The 95-99% match band is dominated by permuter-class regalloc/FPR
+scheduling, NOT runtime-meaningful arg mistranscription.
 
 These functions each require ~30 minutes of asm-side analysis to confirm
 or rule out a swap. None are blocking the W3c boot path; none manifest as
