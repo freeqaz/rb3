@@ -25,6 +25,11 @@ import urllib.parse
 PORT = 8421
 BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build")
 ASSETS_DIR = None  # Set via --assets-dir, RB3_ASSETS env, or auto-detect
+# Optional fallback asset roots probed when a file is missing from ASSETS_DIR.
+# W7-V4: album art (and other "long-tail" assets) live only in the full xbox
+# extraction. The curated ASSETS_DIR is kept as the primary so on-disc smoke
+# tests stay deterministic; the fallback fills the gap for art / chars / etc.
+FALLBACK_ASSETS_DIRS = []
 
 
 class RB3Handler(http.server.SimpleHTTPRequestHandler):
@@ -267,6 +272,22 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             if os.path.isfile(alt):
                 full_path = alt
 
+        # W7-V4: long-tail asset fallback (album art, character textures, etc.)
+        # The curated ASSETS_DIR doesn't ship per-song _keep.png_xbox files —
+        # only the full xbox extraction does. Probe the configured fallback
+        # roots before 404-ing so song_select can render real cover art.
+        if not os.path.isfile(full_path):
+            for fb_root in FALLBACK_ASSETS_DIRS:
+                fb_path = os.path.join(fb_root, safe)
+                if os.path.isfile(fb_path):
+                    full_path = fb_path
+                    break
+                if safe.startswith("system/"):
+                    fb_alt = os.path.join(fb_root, "(..)", "(..)", safe)
+                    if os.path.isfile(fb_alt):
+                        full_path = fb_alt
+                        break
+
         if not os.path.isfile(full_path):
             self._json_error(404, f"Not found: {relpath}")
             return
@@ -357,8 +378,36 @@ def _find_assets_dir():
     return None
 
 
+def _find_fallback_dirs():
+    """Auto-detect fallback asset directories (W7-V4 album art etc.).
+
+    The full xbox extraction has per-song _keep.png_xbox cover art that the
+    curated default `extracted/` dir strips. We probe it as a secondary root
+    so song_select can render real album art without disturbing the primary
+    dataset used by smoke tests."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(script_dir, "../../orig-assets/extracted-xbox-full"),
+        os.path.join(script_dir, "../../../orig-assets/extracted-xbox-full"),
+    ]
+    env = os.environ.get("RB3_ASSETS_FALLBACK")
+    if env:
+        for p in env.split(os.pathsep):
+            if p:
+                candidates.insert(0, p)
+    found = []
+    seen = set()
+    for c in candidates:
+        if os.path.isdir(c):
+            real = os.path.realpath(c)
+            if real not in seen:
+                seen.add(real)
+                found.append(real)
+    return found
+
+
 def main():
-    global ASSETS_DIR
+    global ASSETS_DIR, FALLBACK_ASSETS_DIRS
 
     parser = argparse.ArgumentParser(description="RB3 Web Dev Server")
     parser.add_argument(
@@ -366,10 +415,26 @@ def main():
         default=None,
         help="Path to extracted game assets (default: RB3_ASSETS env or auto-detect)",
     )
+    parser.add_argument(
+        "--assets-fallback",
+        action="append",
+        default=None,
+        help=(
+            "Additional asset directory probed when a file is missing from "
+            "--assets-dir (repeatable; default: RB3_ASSETS_FALLBACK env or "
+            "orig-assets/extracted-xbox-full for album art / long-tail assets)."
+        ),
+    )
     parser.add_argument("--port", type=int, default=PORT)
     args = parser.parse_args()
 
     ASSETS_DIR = args.assets_dir or _find_assets_dir()
+    if args.assets_fallback:
+        FALLBACK_ASSETS_DIRS = [
+            os.path.realpath(p) for p in args.assets_fallback if os.path.isdir(p)
+        ]
+    else:
+        FALLBACK_ASSETS_DIRS = _find_fallback_dirs()
 
     if not os.path.isdir(BUILD_DIR):
         print(f"Build directory not found: {BUILD_DIR}")
@@ -382,6 +447,9 @@ def main():
         print(f"  Assets:  {ASSETS_DIR}")
     else:
         print("  Assets:  NOT CONFIGURED (set --assets-dir or RB3_ASSETS)")
+    if FALLBACK_ASSETS_DIRS:
+        for fb in FALLBACK_ASSETS_DIRS:
+            print(f"  Fallback: {fb}")
     print(f"  URL:     http://0.0.0.0:{args.port} (accessible remotely)")
     print(f"  API:     http://0.0.0.0:{args.port}/api/manifest")
     print(f"  COOP/COEP headers enabled")
