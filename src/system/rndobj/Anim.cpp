@@ -375,7 +375,13 @@ void AnimTask::Poll(float time) {
     } else {
         frame = Clamp<float>(mMin, mMax, time);
     }
+#ifdef HX_NATIVE
+    // W6-V2 EXPERIMENT: the decomp has args swapped relative to retail asm
+    // (which calls SetFrame(f1=frame, f2=blend)). Test the corrected order.
+    mAnim->SetFrame(frame, blend);
+#else
     mAnim->SetFrame(blend, frame);
+#endif
     if (!mAnimTarget
         || (!mLoop && !mBlending && !_ref0)
             && ((time > mMax || time < mMin) || (mScale == 0))) {

@@ -1,0 +1,37 @@
+[error] [V2_DBG] MainHubPanel::Enter() — mHubState=1 mHubOverride=0
+[error] [V2_DBG] TriggerSelf trig='enter.trg' dir='main_hub' mAnims=1 mShows=0 mHideDelays=0 mProxyCalls=0
+[error] [V2_DBG]   anim 'enter.trg' enable=0 start=0 end=0 period=0
+[error] [V2_DBG] UpdateStateView state=1 old=1 override=0 oldOverride=0
+[error] [V2_DBG] TriggerSelf trig='override_none.trg' dir='main_hub' mAnims=0 mShows=2 mHideDelays=2 mProxyCalls=0
+[error] [V2_DBG]   show 'message_area.grp' (showing=1)
+[error] [V2_DBG]   show 'main_menu.grp' (showing=1)
+[error] [V2_DBG]   hide 'waiting.grp' (showing=0)
+[error] [V2_DBG]   hide 'finding.grp' (showing=0)
+[error] [V2_DBG] UpdateStateView HandleType returned type=6
+[error] [V2_DBG] UpdateStateView state=1 old=0 override=0 oldOverride=0
+[error] [V2_DBG] TriggerSelf trig='override_none.trg' dir='main_hub' mAnims=0 mShows=2 mHideDelays=2 mProxyCalls=0
+[error] [V2_DBG]   show 'message_area.grp' (showing=1)
+[error] [V2_DBG]   show 'main_menu.grp' (showing=1)
+[error] [V2_DBG]   hide 'waiting.grp' (showing=0)
+[error] [V2_DBG]   hide 'finding.grp' (showing=0)
+[error] [V2_DBG] TriggerSelf trig='none_to_main.trg' dir='main_hub' mAnims=1 mShows=0 mHideDelays=0 mProxyCalls=0
+[error] [V2_DBG]   anim '01_main_button_reveal.anim' enable=0 start=0 end=80 period=0
+[error] [V2_DBG] UpdateStateView HandleType returned type=6
+[error] [V2_DBG] hub-find 'main_menu.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'menu_buttons.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_playnow.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_career.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_trainers.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_musicstore.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_shop.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_tour.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_playnow.btn' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_career.btn' = found (showing=1)
+[error] [V2_DBG] hub-find 'mb_trainers.btn' = found (showing=1)
+[error] [V2_DBG] hub-find 'main_bg.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'bar_all.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'playnow.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'career.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'training.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'customize.grp' = found (showing=1)
+[error] [V2_DBG] hub-find 'store.grp' = found (showing=1)
