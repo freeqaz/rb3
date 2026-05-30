@@ -1,11 +1,37 @@
 # W6 V1/V2/V3 — Missing-text root-cause analysis
 
+> **STATUS: V1 + V3-digits IMPLEMENTED** on branch `wt-web-w6-v1-impl` (pending merge — orchestrator integrates).
+> Sites patched: 5 (4 rb3 binders + 1 engine UILabel handler).
+> Verification: [`/docs/sessions/web/screenshots/w6-v1-fix/`](../../sessions/web/screenshots/w6-v1-fix/) — song titles now render on song_select; W3c gameplay regression passes (game_screen reached, song plays 33 s, no crash).
+> **V2 remains DEFERRED** — root cause not pinned, needs runtime probe.
+
 **Parent plan:** [`PLAN.md`](PLAN.md) → [`W6_VISUAL_POLISH.md`](W6_VISUAL_POLISH.md) (top three P0 entries).
 **Builds on:** [`W5_TEXT_RENDERING.md`](W5_TEXT_RENDERING.md) (Phase 1+2 — `useAlphaAsRGB` + `zMode=Disable` for unnamed RndText sub-meshes in the engine's `BandRnd::DrawMesh`).
 **Audit anchor:** rb3 master `92ff7768`, engine main `8397fa6` (W5 fix commit).
 **Investigation scope:** root-cause only. No code changes shipped; this doc proposes the concrete fix and risk.
 
 > **NOTE on Phase 3:** A separate agent owns `W5_TEXT_RENDERING.md` Phase 3 (the "dim, hard to read" residual). V1/V2/V3 are NOT that — they are *entirely absent*, with a different root cause. The two investigations do not overlap. This doc does not touch `W5_TEXT_RENDERING.md`.
+
+---
+
+## Implementation summary (V1 + V3-digits) — 2026-05-30
+
+All edits inside existing `#ifdef HX_NATIVE` blocks — Wii decomp match unaffected (the matched path retains its `MILO_ASSERT(p9_label, …)`).
+
+| File | Site | Category | Before (HX_NATIVE) | After (HX_NATIVE) |
+| --- | --- | --- | --- | --- |
+| `src/band3/meta_band/MusicLibrary.cpp:1048` | `MusicLibrary::Text` | song list | `if (!p9_label) return;` | Switch on `SortNode::GetType()` and write `SetTextToken`/`SetDisplayText`/`SetInt`/`SetTokenFmt` directly on the base `UILabel*` for kNodeHeader, kNodeSubheader, kNodeSong, kNodeFunction, kNodeSetlist. |
+| `src/band3/meta_band/SongSetlistProvider.cpp:13` | `SetlistProvider::Text` | setlist rows | `if (!appLabel) return;` | `label->SetDisplayText(MakeString("%d. %s", data+1, meta->Title()), true);` (with "choosing"/empty-slot variants). |
+| `src/band3/meta_band/AppScoreDisplay.cpp:6` | `AppScoreDisplay::UpdateDisplay` | score tile | `if (!label) return;` | Fall through to `dynamic_cast<UILabel*>(mCombinedLabel)->SetInt(mScore, true);` |
+| `src/band3/meta_band/ViewSetting.cpp:386` | `ViewSettingsProvider::Text` | status column | `if (al) al->SetViewSettingStatus(setting);` | Same, with `else label->SetDisplayText(setting->GetCurrentStatus(), true);` |
+| `src/system/ui/UILabel.cpp:944` | `UILabel::Handle` (engine) | HUD score digits | (no handler — silently unhandled) | `HANDLE_ACTION_STATIC(set_score_or_stars, SetInt(_msg->Int(3), true))` (V3-digits) |
+
+Verification:
+
+- Visual: `docs/sessions/web/screenshots/w6-v1-fix/03_song_select.png` shows song titles + group headers + song-count badges (vs the all-blank `../w5-text-fix/03_song_select.png` baseline).
+- Regression: `scripts/web/w3c-gameplay-test.mjs --port 8679` PASS (game_screen reached, 33.8 fps for 33 s, no crash).
+
+`NextSongPanel.cpp` already had a working `dynamic_cast<UILabel*>` HX_NATIVE pattern for `header_continued`/`label`/`left_label`/`right_label`/`header` slots — pre-existing, no new edit needed.
 
 ---
 
