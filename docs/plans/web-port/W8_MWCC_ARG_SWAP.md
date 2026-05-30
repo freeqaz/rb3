@@ -175,15 +175,42 @@ not deeply asm-diffed:
 | `src/system/char/CharIKSliderMidi.cpp`    | `CharIKSliderMidi::Poll`                | 95.77%  | IK slider; SetFraction(float, float) candidate. |
 | `src/system/char/CharLookAt.cpp`          | `CharLookAt::Poll`                      | 95.96%  | Head-look-at; subtle. |
 | `src/system/char/CharBoneTwist.cpp`       | `CharBoneTwist::Poll`                   | 96.17%  | Bone twist; subtle if wrong. |
-| `src/system/rndobj/Line.cpp`              | `UpdateLine` overloads                  | 96.04–97.13% | RndLine point lerping; sub-frame precision. |
-| `src/band3/game/CrowdRating.cpp`          | `CrowdRating::UpdatePhrase/Update`      | 96.97%  | (float, float) args — `(score, target?)` or similar. |
-| `src/band3/game/GemPlayer.cpp`            | `UpdateGameCymbalLanes`                 | 97.50%  | Cymbal lane visibility; testable on drums. |
-| `src/band3/game/Player.cpp`               | `UpdateSectionStats(float, float)`      | 96.86%  | Section-stat tracking; subtle. |
+| `src/system/rndobj/Line.cpp`              | `UpdateLine(Point*, Point*)`            | 97.13%  | **RULED OUT** (W8-rndobj-game sweep) — no `bctrl`/virtual-call float args; 50 diff_args are inlined Vec2/fold-angle math (`f0↔f1` FPR cascade inside Phase 2/3 loops). Same class as Vec.h cascade. |
+| `src/system/rndobj/Line.cpp`              | `UpdateLine(const Transform&, float)`   | 96.04%  | **RULED OUT** (W8-rndobj-game sweep) — Interp is inlined; 121-instr `f0↔f1` cascade lives inside inlined Multiply/Transpose/Vec.h math. Only float arg `nearPlane` is correctly saved to f29 once. Permuter-class. |
+| `src/band3/game/CrowdRating.cpp`          | `CrowdRating::Update(float, float)`     | 96.97%  | **RULED OUT** (W8-rndobj-game sweep) — only `bl` calls are `Current()`/`CalculateValue()` (no float args). 3-instr diff is constant-pool layout (`@34494/@34495` vs base `@32283/...`) + `f0↔f2` choice for materializing the stored value. No arg-swap fingerprint. |
+| `src/band3/game/CrowdRating.cpp`          | `CrowdRating::UpdatePhrase(float, float)` | 96.97%  | **RULED OUT** (W8-rndobj-game sweep) — identical shape to `::Update`; same constant-pool layout diff (`@34520/@34521`). No virtual-call float-arg site. |
+| `src/band3/game/GemPlayer.cpp`            | `UpdateGameCymbalLanes()`               | 97.50%  | **RULED OUT** (W8-rndobj-game sweep) — `void()`, no float args anywhere. 25-instr `r30↔r31` callee-saved register-coloring cascade only. |
+| `src/band3/game/Player.cpp`               | `UpdateSectionStats(float, float)`      | 96.86%  | **RULED OUT** (W8-rndobj-game sweep) — single `beq↔bne` polarity diff + 1 `b` delete on the early-return guard chain; only `bl` is to non-virtual `Stats::SetSectionInfo` (no `fmr` before it — float args flow through f1/f2 untouched). |
 
 These functions each require ~30 minutes of asm-side analysis to confirm
 or rule out a swap. None are blocking the W3c boot path; none manifest as
 visible bugs in the current capture. **Recommended cadence:** investigate
 on demand when a specific visible bug suggests this class of failure.
+
+### W8-rndobj-game sweep (2026-05-30) — verdicts
+
+All four rndobj+game candidates were asm-diffed against the V2 fingerprint
+(`fmr fN, fM` immediately before `bctrl` at a virtual `Set*(float, float)`
+call site). **Result: 0 confirmed, 0 latent, 6 ruled-out** (Line.cpp has two
+overloads). Root causes summarized in the Open-candidates table above:
+
+- `RndLine::UpdateLine` (both overloads) — inlined Vec.h/Vec2 math FPR
+  cascade. No `bctrl` float-arg site exists. Permuter-class, not arg-swap.
+- `CrowdRating::Update` + `UpdatePhrase` — pure float-math leaves; only
+  `bl` calls are zero-arg (`Current`, `CalculateValue`). The diff is
+  constant-pool layout, not call-site argument order.
+- `GemPlayer::UpdateGameCymbalLanes` — `void()`, no float args. Pure
+  callee-saved regalloc cascade.
+- `Player::UpdateSectionStats(float, float)` — only call is non-virtual
+  `Stats::SetSectionInfo`; f1/f2 flow through untouched (no `fmr` before
+  the `bl`). Diff is one branch polarity on the early-return guard chain.
+
+No source changes applied. The hint in the prompt that these functions
+were "(float, float) arg-swap candidates" was based on signature pattern
+alone; the asm refutes the hypothesis in every case. The arg-swap class
+remains restricted to virtual-`Set*(float, float)` call sites in
+animation drivers (AnimTask::Poll, RGTrainerPanel::HandleLegendLefty —
+already documented above).
 
 ## Risk
 
