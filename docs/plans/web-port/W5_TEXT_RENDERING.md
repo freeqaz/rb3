@@ -282,3 +282,252 @@ git checkout src/platform/Rnd_Wgpu_RB3.cpp
 ```
 
 Confirmed on 2026-05-29 with engine pin `5fda7f0`.
+
+---
+
+## Phase 3 Investigation (2026-05-30)
+
+Phase 1+2 (engine `8397fa6`) make text legible. Residual dimness is now
+diagnosed.
+
+### Targets
+
+- **Song-row titles** in `song_select_screen` (`docs/sessions/web/screenshots/w5-text-fix/03_song_select.png`) — flat grey instead of crisp white.
+- **HUD score / streak digits** in `tv3_*_screen` / `game_screen` (`docs/sessions/web/screenshots/w5-text-fix/07_gameplay_t15s.png`) — same issue (in the
+  20s screenshot the score numerals aren't even visible; in the 5s screenshot
+  the left-edge "LAST STRIKE" caption is a faint blue-grey).
+
+### Pixel-path trace (confirmed read-only, no engine edits committed)
+
+The fragment shader (`milo-native-engine/src/gfx/standard_wgsl.inc:633`) does
+
+```wgsl
+var baseColor = vec4f(material.color.rgb * surfaceInput.color.rgb,
+                      materialAlpha * surfaceInput.color.a);
+if (isEnabled(material.useTexture)) {
+    let diffuseSample = textureSample(diffuseTex, diffuseSampler, surfaceInput.uv);
+    if (isEnabled(material.useAlphaAsRGB)) {              // ← W5 fix turns this on
+        baseColor = vec4f(baseColor.rgb * diffuseSample.a,
+                          baseColor.a   * diffuseSample.a);
+    } ...
+}
+```
+
+The two inputs that decide text colour are:
+
+1. **`material.color`** — `mu.color[0..3]` in `BandRnd::DrawMesh`
+   (`Rnd_Wgpu_RB3.cpp:1668`), copied verbatim from `mat->GetColor()` of the
+   `RndMesh::Mat()` pointer. For a text sub-mesh, `mat` is the FONT's material
+   (`RndText::UpdateMesh` at `src/system/rndobj/Text.cpp:1146` does
+   `mesh->SetMat(font->GetMat())`).
+2. **`surfaceInput.color`** — per-vertex colour from
+   `RndMesh::Vert::color` (`Hmx::Color32`, 32-bit packed `aabbggrr`),
+   unpacked in `Rnd_Wgpu_RB3.cpp:1289` as
+   `g.color[i] = v.color.fr() / fg() / fb() / fa()`. For text quads,
+   `RndText::CreateLines` writes
+   `vert[0..3].color = style.color` (`src/system/rndobj/Text.cpp:1191`).
+   `Style.color` is initialised from `mStyle.color = Hmx::Color32(-1)` —
+   i.e. `0xFFFFFFFF` → `(1,1,1,1)`. **Vertex colour is always white** for the
+   default RndText style.
+
+So `baseColor.rgb = material.color.rgb * 1.0 * glyphAlpha`.
+**The dimness is entirely in `material.color.rgb`.**
+
+### Where the font material's colour comes from
+
+`UILabel::DrawShowing` (`src/system/ui/UILabel.cpp:266-291`) sets the
+font material's colour ON EVERY DRAW, before falling through to
+`mText->DrawShowing()`:
+
+```cpp
+if (mColorOverride) {
+    fontMat->SetColor(mColorOverride->GetColor());   // (A) per-element override
+} else {
+    Hmx::Color color;
+    mLabelDir->GetStateColor((UIComponent::State)mState, color);
+    fontMat->SetColor(color);                        // (B) state-colour fallback
+}
+```
+
+The renderer is a synchronous-encode path (each `DrawMesh` call writes its
+own `MaterialUniforms` into `mMaterialRing` and emits its draw command in
+the same statement; no deferred queue), so the material colour set
+immediately before `mText->DrawShowing()` is the colour that gets uploaded.
+That means even though multiple labels share the same font material, each
+label's draw sees its own colour.
+
+Two ways the colour can end up dim:
+
+- **(A) The override `UIColor` is dim.** `UIListLabelElement::Draw` at
+  `src/system/ui/UIListLabel.cpp:83` calls
+  `mLabel->SetColorOverride(col)` where `col` is supplied by
+  `UIListSlot::Draw` from `DisplayColor(elemState, listState)`
+  (`UIListSlot.cpp:81`,
+  `UIListWidget.cpp:63-75`). That resolves to
+  `mColors[element_state][list_state]` — a 2D matrix of `UIColor*` configured
+  in the song-select `UIList` milo. If `mColors[normal][unfocused]` (or the
+  unconfigured-cell fallback `mDefaultColor`) is a dim grey, every row of
+  the song list draws dim.
+
+- **(B) `UILabelDir::GetStateColor` falls through.** When `mColorOverride`
+  is null, `UILabelDir::GetStateColor`
+  (`src/system/ui/UILabelDir.cpp:20`) returns
+  `mColors[state]->GetColor()`, or `mDefaultColor->GetColor()`, or
+  `Hmx::Color::Reset()` (white) if both are null. A configured-as-dim entry
+  in either slot dims the text.
+
+Both (A) and (B) are **DTA / milo-data driven** — the colours live in the
+shipping `.milo` files (e.g. `ui/song_select/gen/song_select.milo_xbox`),
+not in any source we'd patch. The text-mesh code is correct; the data says
+"draw this grey."
+
+### Native-port context — why DC3 isn't dim and we are
+
+DC3's web port renders bright white text in the same screens. Two known
+deltas worth verifying before shipping a fix:
+
+1. **`MaterialSetup::BuildMaterialParams`** (DC3 path) does the same
+   `matUni.color[0..3] = mat->GetColor().{r,g,b,a}` copy
+   (`milo-native-engine/src/platform/MaterialSetup.cpp:58-62`). No special
+   text-colour boost. So DC3 is not relying on a hidden brightening step.
+2. **Lighting**. The Phase-1 fix forces `prelit |= isTextMesh`, so the
+   shader skips ambient/diffuse multiplication for text. That matches DC3.
+   Not a lighting issue.
+
+The remaining differential must therefore be either:
+
+- DC3's UI milo data has brighter UIColors / mDefaultColors for the
+  equivalent widgets (data difference, not engine), OR
+- DC3's web port has a colour-source override we don't (engine difference,
+  but not in `Mesh_Wgpu.cpp` / `MaterialSetup.cpp` based on read-through).
+
+Quick way to disambiguate: in an engine worktree, add a one-shot
+`fprintf(stderr, ...)` next to `mu.color[...] = c.{red,green,blue,alpha}`
+gated on `isTextMeshHeur` (one log per unique font-material pointer) and
+re-capture. The expected log per row is something like
+`[TEXT] mat=foo matcol=(0.20,0.20,0.20,1.0) vert0col=(1,1,1,1)`. If
+matcol is dim, it's data; if matcol is white but pixels are dim, it's
+shader/blend.
+
+> Empirical-test note (2026-05-30): a worktree build that added an
+> always-on `printf`/`fprintf(stderr, ...)` probe at the top of
+> `BandRnd::DrawMesh` was constructed and deployed, but the probe
+> output never appeared in the captured Playwright console even
+> though `BandRnd::frame drawn — 30 meshes` (a `printf` from
+> `EndFrame`) appeared 1700+ times. The wasm disassembly confirms
+> the probe code is present in `DrawMesh` (sentinel constants 1 / 100
+> / 5000 visible in the body). Cause not isolated — possibly a stdout-
+> buffering / re-entry / scope issue worth a follow-up in W6 if the
+> fix below doesn't pan out. The static analysis is unambiguous on
+> the colour source even without the empirical confirmation.
+
+### Root cause (high confidence)
+
+**The shipping milo data carries dim grey UIColors for the song-row
+"normal/unfocused" slot and (likely) for the in-gameplay HUD digit labels.
+The engine and the RB3 widget code are doing exactly what the data tells
+them to.** The W5 Phase 1+2 fix made the text VISIBLE (glyph mask was
+multiplying RGB to zero before); Phase 3 dimness is the data telling the
+text to render dim.
+
+This is consistent with the RB3 retail look on real hardware where unfocused
+rows ARE dim and brighten on focus. The web/native port screenshots we treat
+as "bug" might be functionally correct — the screenshots we're comparing
+against (`orig-assets/native-refs/rb3-ui/`) may have happened to capture
+focused rows, while ours captured unfocused rows.
+
+**Confidence: medium-high.** The pixel-path trace and per-frame
+SetColor logic are confirmed by static reading. The DC3 brightness
+differential is the one piece I haven't pinned a precise cause for
+without the live colour log.
+
+### Proposed fix — three tiers, pick after the empirical probe lands
+
+Tier the fix against what the colour-log proves:
+
+#### Tier 1 (no engine change, no rb3 change — verify first)
+
+If the colour log shows `matcol=(0.95..1.0, ..., 1.0)` for a row that
+RENDERS dim, then dimness is downstream of `mu.color` — investigate the
+shader's `compressHighlights` / `alpha-fringe-fade` / pre-mult-alpha path
+or the W4-era `Mask alpha writes` workaround
+(`Rnd_Wgpu_RB3.cpp:1780-1795`) which keeps FB alpha at 1.0 but might be
+darkening text RGB. **Scope: S** (engine, ~5 LoC). **Risk to decomp:
+zero** (engine-only).
+
+#### Tier 2 — engine-side text-colour booster (data-agnostic fix)
+
+If the log shows `matcol=(0.2..0.5, ..., 1.0)` (dim by data) but it's
+unacceptable visually, force-brighten text material colour in
+`BandRnd::DrawMesh` only when `isTextMeshHeur`:
+
+```cpp
+// W5 Phase 3 — brighten dim font material colour for legibility on web.
+// Retail RB3 rendered unfocused rows in a saturated dark grey that read
+// fine on a 480i CRT; on a 1280x720 web canvas the same RGB looks
+// muddy. Map (0..1) → max(0.6, c.rgb) when isTextMeshHeur, keeping
+// alpha (used as fade) intact.
+if (isTextMeshHeur) {
+    mu.color[0] = std::max(0.6f, c.red);
+    mu.color[1] = std::max(0.6f, c.green);
+    mu.color[2] = std::max(0.6f, c.blue);
+}
+```
+
+This is a **port-only quality fix** — it changes the rendered look
+relative to retail RB3. **Scope: S** (engine, ~5 LoC). **Decomp risk:
+zero** (engine-only). Trade-off: focused/unfocused contrast is reduced.
+
+#### Tier 3 — fix the milo data (correct but invasive)
+
+The "right" fix is to override the relevant UIColors at app boot. In RB3
+source, do something like (sketch — needs the actual UIColor object
+names from the song-select milo):
+
+```cpp
+// rb3/native/src/rb3_app_init.cpp (new) — after the main UI milo loads.
+if (UIColor* c = dynamic_cast<UIColor*>(TheUI.Find("song_row_normal_unfocused_color"))) {
+    c->SetColor(Hmx::Color(0.85f, 0.85f, 0.85f, 1.0f));
+}
+// repeat for HUD score / streak labels
+```
+
+This needs an asset-side audit (`bin/walk-milo` on
+`ui/song_select/gen/song_select.milo_xbox` and the in-game HUD milo) to
+list every text-bearing UIColor and pick the ones that need brightening.
+
+**Scope: M** (rb3 + asset audit, 30-100 LoC). **Decomp risk: low** (the
+override lives in native-only code; no matched `.cpp` touched).
+
+### Files touched in investigation (read-only)
+
+- `milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp` (Phase 1+2 fix already
+  there at lines 1665, 1685, 1692, 1759 — read to trace the colour path)
+- `milo-native-engine/src/platform/MaterialSetup.cpp` (DC3 reference at
+  lines 52-244, especially 167-174)
+- `milo-native-engine/src/gfx/standard_wgsl.inc` (shader, lines 625-746)
+- `milo-native-engine/src/gfx/VertexFormats.cpp` (vertex unpack, lines 85-115)
+- `src/system/rndobj/Text.cpp` (`UpdateMesh`, `CreateLines`,
+  `vert.color = style.color` at 1191)
+- `src/system/math/Color.h` (Color32 layout + `fr()/fg()/fb()/fa()`)
+- `src/system/rndobj/Mat.h` (`SetColor` preserves alpha)
+- `src/system/ui/UILabel.cpp` (`DrawShowing` SetColor per draw, lines 266-291)
+- `src/system/ui/UILabelDir.cpp` (`GetStateColor`, lines 20-29)
+- `src/system/ui/UIColor.cpp` (default `(1,1,1,1)`)
+- `src/system/ui/UIListLabel.cpp` (`SetColorOverride`, line 83)
+- `src/system/ui/UIListSlot.cpp` (`Draw`, calls `DisplayColor`, line 81)
+- `src/system/ui/UIListWidget.cpp` (`DisplayColor`, lines 63-75)
+- `src/system/ui/LabelNumberTicker.cpp` (HUD digits wrap UILabel)
+
+### Recommendation
+
+Land the **colour-log probe** (Tier 0 empirical) first, in an engine
+worktree, and re-capture `03_song_select.png` + `07_gameplay_t15s.png`.
+That will pin Tier 1 vs Tier 2 vs Tier 3 unambiguously. The most likely
+outcome based on the static trace is **Tier 2**: matcol is dim by data,
+and a one-line `std::max(0.6f, c.rgb)` lift in the engine's text path
+brightens song titles and HUD digits without changing anything on the
+decomp side.
+
+Defer Tier 3 (data override) until/unless Tier 2's reduced
+focused/unfocused contrast is itself a problem.
