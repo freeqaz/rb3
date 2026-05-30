@@ -949,6 +949,15 @@ BEGIN_HANDLERS(UILabel)
     HANDLE(set_token_fmt, OnSetTokenFmt)
     HANDLE(set_int, OnSetInt)
     HANDLE_ACTION(set_float, SetFloat(_msg->Str(2), _msg->Float(3)))
+#ifdef HX_NATIVE
+    // The 360-ARK scoreboard.dta sends `set_score_or_stars` to score.lbl,
+    // which on Wii is an AppLabel (defined in band3). The 360-ARK milos
+    // author score.lbl as a plain UILabel; without this handler the message
+    // is silently unhandled, so the HUD score digits never update (W6 V3).
+    // Fall back to SetInt(score) — the AppLabel impl is just SetInt anyway
+    // for the no-stars case (see AppLabel::SetScoreOrStars).
+    HANDLE_ACTION_STATIC(set_score_or_stars, SetInt(_msg->Int(3), true))
+#endif
     HANDLE_ACTION(
         center_with_label,
         CenterWithLabel(_msg->Obj<UILabel>(2), _msg->Int(3), _msg->Float(4))
