@@ -53,7 +53,7 @@
 #include "utl/Symbols4.h"
 #include <cstddef>
 
-MicClientID sNullMicClientID;
+static MicClientID sNullMicClientID;
 
 OvershellSlot::OvershellSlot(
     int i, OvershellPanel *panel, OvershellDir *dir, BandUserMgr *umgr, SessionMgr *smgr

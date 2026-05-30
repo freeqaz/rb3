@@ -4,7 +4,7 @@
 #include "beatmatch/TrackWatcherParent.h"
 #include <algorithm>
 
-bool gKickAutoplay;
+extern bool gKickAutoplay;
 
 DrumTrackWatcherImpl::DrumTrackWatcherImpl(
     int track,
