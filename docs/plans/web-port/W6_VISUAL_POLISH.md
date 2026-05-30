@@ -38,6 +38,7 @@ Ordered by impact (highest first). "Side" = engine (= `milo-native-engine`), rb3
 | **V12** | Top-left "COOL" panel in `07_gameplay_t15s` is positioned ABOVE the highway (Wii ref has the score panel top-right and a vocal-arrow indicator top-left). The "COOL" panel is actually the vocal freestyle prompt, which suggests the screen thinks it's mid-vocal-section even though we're playing a guitar/drum chart. | `07_gameplay_t15s.png` (top-left) vs `yt_qRagnZCIMzk_gameplay_guitar.png` | P2 | rb3 | L | Either (a) the test song is a vocal section and the COOL is correct, or (b) the per-player track-routing is wrong and a vocal HUD is rendering for a non-vocal player. Need to know which song / part is being played in the capture to disambiguate. |
 | **V13** | Lighting on splash-cinematic mics (`05_game_screen_entry.png`) is very dim — the mics are barely visible against the black backdrop. Wii cinematics show props brightly stage-lit with rim light. | `05_game_screen_entry.png` | P2 | engine | L | Could be missing key/fill stage lighting from the venue's lighting rig if the venue scene isn't loaded (see V5). Or the bloom / tone-map pass that brightens stage props is not enabled on the WGPU backend. |
 | **V14** | Phase-3 dimness — score digits + song-row titles + some news-ticker text render dim grey not crisp white. *Already being investigated in parallel; listed here for completeness so it doesn't get re-dispatched.* | `03_song_select.png`, `07_gameplay_t15s.png`, `02_main_hub.png` | P0 | engine | L | Material colour selection in `UIListLabel` / `UILabel` style resolution. See W5_TEXT_RENDERING.md "Phase 3". **Do not dispatch on this — parallel agent owns it.** |
+| **V15** | Main-hub menu buttons are vertically cramped — PLAY NOW + CAREER + TRAINING + CUSTOMIZE + GET MORE SONGS are visible (V2 fix landed) but the per-button vertical spacing is ~half of retail, so the unfocused labels overlap each other. | `02_main_hub_baseline.png` vs `yt_mhKNp9uAT48_menu_hub.png` | P1 | **engine** | L | **ROOT-CAUSED 2026-05-30 (W7 button-stack investigation, branch `wt-web-w7-button-stack`)** — NOT an anim/AnimTask/PropAnim bug. `01_main_button_reveal.anim` only animates booleans (`LabelShrinkWrapper.m_pShow`) + a `kDirEvent` on the panel, NOT positions. Probe shows the .btn world positions ARE spread out by ~29 units in z (mb_playnow.btn world z=104.4, mb_career.btn z=75.4, mb_trainers.btn z=46.7 — matching retail spacing). Yet they render at ~half-spacing on screen. This points to an engine-side world-Z-to-screen-Y mapping (camera frustum / FOV / orthographic scale) that compresses vertical world units more than retail does. **Hand off to engine.** See `## V15 investigation (2026-05-30)` below for the probe output. |
 
 ---
 
@@ -173,6 +174,72 @@ The W3c gameplay-test script (`scripts/web/w3c-gameplay-test.mjs`) should pass u
 - `scripts/web/w6-v2-probe.mjs` — minimal capture script (boots → main_hub → screenshots + console logs). Useful keepsake for future V2-class investigations.
 
 The probe edits are large enough that I'll commit them on `wt-web-w6-v2-probe` for traceability, but the orchestrator should land *only* the 1-line `Anim.cpp` change (manually cherry-picked from the branch). The probes are noise for production.
+
+---
+
+## V15 investigation (2026-05-30) — NOT an anim bug; engine-side world-to-screen mapping
+
+**Status:** root-caused via runtime probe on branch `wt-web-w7-button-stack`. No fix shipped from rb3 side — hand off to engine.
+
+**TL;DR:** The post-V2 visual "stacking" of CAREER / TRAINING / CUSTOMIZE / GET MORE SONGS is NOT caused by `01_main_button_reveal.anim` mis-targeting all 5 buttons (the W7-cursor-hud hypothesis). The reveal anim only animates booleans on `LabelShrinkWrapper`s (per-button highlight box visibility) plus a `kDirEvent` on the main_hub PanelDir. It does NOT animate transforms. The button-group transforms are static-loaded from the milo binary and ARE correctly spread out in world space — yet they render at ~half the per-button vertical spacing of retail. Root cause is engine-side (camera frustum / projection / orthographic-to-screen mapping), not rb3 code.
+
+### Probe (instrumentation reverted in final tree)
+
+Two HX_NATIVE probes added temporarily:
+1. `RndPropAnim::SetFrame` — log every `PropKeys` target/class/type for any anim whose name matches `*button_reveal*`. Output:
+   ```
+   PROPANIM_DBG anim='01_main_button_reveal.anim' frame=0.00 keys=8
+     PK target='career.lsw'       class='LabelShrinkWrapper' ktype=3 (kBool) xcept=0
+     PK target='customize.lsw'    class='LabelShrinkWrapper' ktype=3 (kBool) xcept=0
+     PK target='music_store.lsw'  class='LabelShrinkWrapper' ktype=3 (kBool) xcept=0
+     PK target='playnow.lsw'      class='LabelShrinkWrapper' ktype=3 (kBool) xcept=0
+     PK target='pn_quickplay.lsw' class='LabelShrinkWrapper' ktype=3 (kBool) xcept=0
+     PK target='pn_tour.lsw'      class='LabelShrinkWrapper' ktype=3 (kBool) xcept=0
+     PK target='training.lsw'     class='LabelShrinkWrapper' ktype=3 (kBool) xcept=0
+     PK target='main_hub'         class='PanelDir'           ktype=2 (kObject) xcept=4 (kDirEvent)
+   ```
+   **Conclusion:** reveal anim drives per-button highlight-box visibility (bool show/hide on each `LabelShrinkWrapper`), plus a DirEvent trigger at frame 0. NO position keys, NO `Vector3Keys`. The buttons are NEVER position-animated.
+
+2. `MainHubPanel::Enter()` — log local/world `RndTransformable::LocalXfm`/`WorldXfm` for every `mb_*.grp` + `mb_*.btn` + `.lsw`. Output:
+   ```
+   BTNPROBE menu_buttons.grp local pos=(-401.830 0.000  32.404)  world pos=(-401.830 0.000  32.404)
+   BTNPROBE mb_playnow.grp   local pos=(   0.000 0.000   0.000)  world pos=(-401.830 0.000  32.404)
+   BTNPROBE mb_career.grp    local pos=( 371.545 0.000 -29.757)  world pos=( -30.286 0.000   2.647)
+   BTNPROBE mb_trainers.grp  local pos=( 371.545 0.000 -29.757)  world pos=( -30.286 0.000   2.647)
+   BTNPROBE mb_shop.grp      local pos=( 371.545 0.000 -29.757)  world pos=( -30.286 0.000   2.647)
+   BTNPROBE mb_musicstore.grp local pos=( 371.545 0.000 -29.757)  world pos=( -30.286 0.000   2.647)
+   BTNPROBE mb_playnow.btn   local pos=(  25.000 0.000  72.000)  world pos=(-376.830 0.000 104.404)
+   BTNPROBE mb_career.btn    local pos=(-346.540 -0.120 72.750)  world pos=(-376.826 -0.120 75.397)
+   BTNPROBE mb_trainers.btn  local pos=(-346.540  1.250 44.067)  world pos=(-376.826  1.250 46.713)
+   ```
+   The 4 non-playnow `mb_*.grp` groups share identical local positions (this is intended — they're authored at the same anchor in the milo, the differentiation happens in their `.btn` children). The `.btn` children DO have distinct world Z values (104.4 → 75.4 → 46.7 → ...) with ~29-unit spacing between adjacent items, matching the retail menu's vertical layout proportions.
+
+### What this implies
+
+The button positions in world space are CORRECT and match retail's vertical spacing. The rendering compresses world-Z to screen-Y at ~half the rate of retail, which is why our build shows ~half the per-button visual gap. Possibilities (engine investigation needed):
+
+1. **Camera frustum / `y_fov`:** `RndCam::SetFrustum` parameters from the main_hub camera's `.cam` object may load differently in the native build (different y_fov, near/far plane, or aspect handling).
+2. **Aspect / viewport scale:** Our canvas is 1024×576 (16:9) vs retail 1280×720. Same aspect, but the camera's expected reference resolution may be different, leading to a Y-scale during projection.
+3. **Orthographic vs perspective:** If the menu is rendered via an ortho camera, the world-unit-to-pixel scale is set explicitly — and could be off by ~2×.
+4. **DPI / device-pixel-ratio:** A canvas DPR mismatch could halve the effective vertical extent.
+
+### Why this is NOT in scope for an rb3-side fix
+
+- The transform data being read out of the milo binary is CORRECT (positions match retail layout proportions).
+- The PropAnim system is working CORRECTLY (V2 fix landed; reveal anim runs, the bool show/hide on each `LabelShrinkWrapper` fires at the staggered keyframes).
+- The decomp code in `src/system/rndobj/` (Anim, PropAnim, PropKeys, Group, Trans) is doing exactly what its retail counterpart does.
+
+The fix is in `milo-native-engine/src/platform/` (camera/projection setup, viewport scale, or `NativeSettings::fovScale` defaulting). That repo already exposes a runtime `fovScale` knob via `DebugPanel.cpp` + `HttpServer.cpp`; the right fix is probably auto-deriving the scale from the menu camera's intended reference resolution rather than fixing it per-screen.
+
+### Files touched in the worktree experiment (probes only — reverted)
+
+- `src/system/rndobj/PropAnim.cpp` — PROPANIM_DBG probe in `SetFrame` (reverted in final tree).
+- `src/band3/meta_band/MainHubPanel.cpp` — BTNPROBE in `Enter()` (reverted in final tree).
+- `scripts/web/quick-capture.mjs` — minimal Playwright capture script for main_hub (kept as a future probing tool).
+
+### Risk to decomp match
+
+**ZERO.** No source-code changes shipped. All probes were HX_NATIVE-gated, and even those are reverted in the final commit. Only docs + the capture script were committed.
 
 ---
 
