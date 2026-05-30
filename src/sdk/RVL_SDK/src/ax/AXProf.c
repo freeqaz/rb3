@@ -1,9 +1,9 @@
 #include "types.h"
 
-uint __AXProfile;
-uint __AXMaxProfiles;
-uint __AXCurrentProfile;
 BOOL __AXProfileInitialized;
+uint __AXCurrentProfile;
+uint __AXMaxProfiles;
+uint __AXProfile;
 
 int __AXGetCurrentProfile(void) {
     if (__AXProfileInitialized) {

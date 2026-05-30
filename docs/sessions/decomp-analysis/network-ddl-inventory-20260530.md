@@ -230,6 +230,32 @@ These contain `DOClassTemplate<_DO_X, _DOC_RootDO>` instantiations with methods:
 
 ---
 
+---
+
+## Special Case: VoiceChannelDDL.cpp (6944 bytes, NonMatching, vastly incomplete)
+
+The current source has only 2 lines (a bss `s_uiClassID` definition and constructor).
+The file requires **44 functions** across 5 class types:
+
+| Class | Functions needed |
+|---|---|
+| `_DOC_VoiceChannel` | Create, Delete, GetClassNameString, ApproveFaultRecovery, ApproveEmigration, Trace, ctor (364 bytes!), dtor, IsAKindOf, DataSetsOperation (496 bytes), FormatVariableValue (176 bytes), DispatchAction, DispatchRMCCall **(1216 bytes)**, DispatchRMCResult (260 bytes), FillDupSpacesInfo, GetDatasetNameString |
+| `_DO_VoiceChannel` | ctor (92 bytes), InitDOClass (88 bytes), CreateWellKnown (100 bytes), CallOperationOnDatasets (324 bytes), GetAvailableStreamReturnStub (120 bytes), HandleJoinReturnStub (104 bytes), CallHandleVoicePacket (300 bytes), CallReclaimStream (272 bytes) |
+| `BasicUpdateProtocol<ChannelMembers>` | UsesSpecialInnerUpdateLoop, GetCommunicationFlags, AddToMessage (64 bytes), ExtractFromMessage (316 bytes), dtor (64 bytes) |
+| `BasicUpdateProtocol<ChannelInfo>` | Same 5 functions as above but smaller |
+| `DOClassTemplate<_DO_VoiceChannel, _DOC_RootDO>` | SpecificUpdate (428 bytes), SpecificRefresh (168 bytes), SpecificAddDSToDiscoveryMessage (320 bytes), SpecificExtractDSFromDiscoveryMessage (292 bytes), SpecificExtractADataset (328 bytes), ValidCastTowards (36 bytes), dtor (96 bytes) |
+
+**Requires full Ghidra analysis.** This is one of the most complex MISSING implementations.
+Start with RootDODDL.cpp → SessionDDL.cpp → StationDDL.cpp to understand the
+`DOClassTemplate<>` and `_DOC_X` patterns before tackling VoiceChannelDDL.
+
+Similarly incomplete (NonMatching but missing most body):
+
+- `MessageBrokerDDL_Wii.cpp` (1680 bytes): needs `_DOC_MessageBroker` + `DOClassTemplate<>`
+  instantiations; current source has `s_uiClassID` + constructor only.
+
+---
+
 ## NonMatching Network Files by Size (excluding DDL)
 
 Top 10 smallest NonMatching non-DDL files (highest-ROI for quick wins):
