@@ -226,14 +226,13 @@
 
         // Poll window.rb3* signals from the WASM boot loop
         var overlayPoller = setInterval(function() {
-            var booted = window.rb3AppBooted;
             var frameCount = window.rb3FrameCount || 0;
             var loaded = window.rb3AssetsLoaded || 0;
             var total = window.rb3AssetsTotal || 0;
 
-            if (booted || frameCount > 2) {
-                // App is running — hide overlay after a brief delay so the first
-                // frame is already visible when the overlay fades out.
+            if (frameCount >= 2) {
+                // Primary trigger: at least 2 rendered frames means the GPU
+                // surface is live — hiding now avoids any black-flash mid-init.
                 clearInterval(overlayPoller);
                 setLoadingPhase('done');
                 return;
