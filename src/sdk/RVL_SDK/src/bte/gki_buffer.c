@@ -1,0 +1,19 @@
+#include "types.h"
+s32 gki_init_free_queue(void) { return 0; }
+s32 gki_buffer_init(void) { return 0; }
+s32 GKI_init_q(void) { return 0; }
+s32 GKI_getbuf(void) { return 0; }
+s32 GKI_getpoolbuf(void) { return 0; }
+s32 GKI_freebuf(void) { return 0; }
+s32 GKI_get_buf_size(void) { return 0; }
+s32 GKI_send_msg(void) { return 0; }
+s32 GKI_read_mbox(void) { return 0; }
+s32 GKI_enqueue(void) { return 0; }
+s32 GKI_enqueue_head(void) { return 0; }
+s32 GKI_dequeue(void) { return 0; }
+s32 GKI_remove_from_queue(void) { return 0; }
+s32 GKI_getfirst(void) { return 0; }
+s32 GKI_getnext(void) { return 0; }
+s32 GKI_queue_is_empty(void) { return 0; }
+s32 GKI_create_pool(void) { return 0; }
+s32 GKI_delete_pool(void) { return 0; }

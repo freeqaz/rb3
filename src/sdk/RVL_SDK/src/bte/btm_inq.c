@@ -1,0 +1,26 @@
+#include "types.h"
+s32 BTM_SetDiscoverability(void) { return 0; }
+s32 BTM_SetInquiryScanType(void) { return 0; }
+s32 BTM_SetPageScanType(void) { return 0; }
+s32 BTM_SetInquiryMode(void) { return 0; }
+s32 BTM_SetConnectability(void) { return 0; }
+s32 BTM_IsInquiryActive(void) { return 0; }
+s32 BTM_CancelInquiry(void) { return 0; }
+s32 BTM_StartInquiry(void) { return 0; }
+s32 BTM_ReadRemoteDeviceName(void) { return 0; }
+s32 BTM_CancelRemoteDeviceName(void) { return 0; }
+s32 BTM_InqDbRead(void) { return 0; }
+s32 BTM_InqDbFirst(void) { return 0; }
+s32 BTM_InqDbNext(void) { return 0; }
+s32 BTM_ClearInqDb(void) { return 0; }
+s32 btm_inq_db_reset(void) { return 0; }
+s32 btm_inq_db_init(void) { return 0; }
+s32 btm_inq_find_bdaddr(void) { return 0; }
+s32 btm_inq_db_new(void) { return 0; }
+s32 btm_set_inq_event_filter(void) { return 0; }
+s32 btm_event_filter_complete(void) { return 0; }
+s32 btm_process_inq_results(void) { return 0; }
+s32 btm_process_inq_complete(void) { return 0; }
+s32 btm_initiate_rem_name(void) { return 0; }
+s32 btm_process_remote_name(void) { return 0; }
+s32 btm_inq_rmt_name_failed(void) { return 0; }

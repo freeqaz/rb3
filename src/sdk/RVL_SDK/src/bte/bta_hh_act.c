@@ -1,0 +1,19 @@
+#include "types.h"
+s32 bta_hh_api_enable(void) { return 0; }
+s32 bta_hh_api_disable(void) { return 0; }
+s32 bta_hh_disc_cmpl(void) { return 0; }
+s32 bta_hh_sdp_cback(void) { return 0; }
+s32 bta_hh_start_sdp(void) { return 0; }
+s32 bta_hh_sdp_cmpl(void) { return 0; }
+s32 bta_hh_api_disc_act(void) { return 0; }
+s32 bta_hh_open_cmpl_act(void) { return 0; }
+s32 bta_hh_open_act(void) { return 0; }
+s32 bta_hh_data_act(void) { return 0; }
+s32 bta_hh_handsk_act(void) { return 0; }
+s32 bta_hh_ctrl_dat_act(void) { return 0; }
+s32 bta_hh_close_act(void) { return 0; }
+s32 bta_hh_get_dscp_act(void) { return 0; }
+s32 bta_hh_maint_dev_act(void) { return 0; }
+s32 bta_hh_get_acl_q_info(void) { return 0; }
+s32 bta_hh_write_dev_act(void) { return 0; }
+s32 bta_hh_cback(void) { return 0; }

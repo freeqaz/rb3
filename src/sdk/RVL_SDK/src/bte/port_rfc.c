@@ -1,0 +1,19 @@
+#include "types.h"
+s32 PORT_StartCnf(void) { return 0; }
+s32 PORT_StartInd(void) { return 0; }
+s32 PORT_ParNegInd(void) { return 0; }
+s32 PORT_ParNegCnf(void) { return 0; }
+s32 PORT_DlcEstablishInd(void) { return 0; }
+s32 PORT_DlcEstablishCnf(void) { return 0; }
+s32 PORT_PortNegInd(void) { return 0; }
+s32 PORT_PortNegCnf(void) { return 0; }
+s32 PORT_ControlInd(void) { return 0; }
+s32 PORT_ControlCnf(void) { return 0; }
+s32 PORT_LineStatusInd(void) { return 0; }
+s32 PORT_DlcReleaseInd(void) { return 0; }
+s32 PORT_CloseInd(void) { return 0; }
+s32 Port_TimeOutCloseMux(void) { return 0; }
+s32 PORT_DataInd(void) { return 0; }
+s32 PORT_FlowInd(void) { return 0; }
+s32 port_rfc_send_tx_data(void) { return 0; }
+s32 port_rfc_closed(void) { return 0; }
