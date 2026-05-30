@@ -25,7 +25,7 @@ Ordered by impact (highest first). "Side" = engine (= `milo-native-engine`), rb3
 | ID | Description | Screenshot | Priority | Side | Cx | Root-cause hypothesis |
 |---|---|---|---|---|---|---|
 | **V1** | Song-row titles entirely missing in song select — list rows are visually empty (just `0/10` / `0/5` / `0/30` score columns + grey row backgrounds). The Wii ref shows each row as `<song name> <artist>  N SONGS  <stars>`. | `03_song_select.png` vs `yt_qRagnZCIMzk_song_select_list.png` | P0 | engine (most likely) | L | Different failure from the known Phase-3 dimness. Phase 3 explains "title text renders dim grey"; here the title text isn't rendering at all. Probably a separate `UIListLabel` slot / list-item refresh path that never builds its `RndText` sub-mesh on web, OR a `WebAssets`-style asset fetch that returns the song-list data but never delivers it to the UI binder. **First check:** add a probe in `BandRnd::DrawMesh` to count un-named (text) sub-meshes drawn per frame on the song-select screen vs the song-select baseline; if count is the same, it's a colour/state issue; if W5-fix has fewer than the native ref's expected count, it's a list-binding miss. |
-| **V2** | Main-hub menu list missing — no `PLAY NOW / CAREER / TRAINING / CUSTOMIZE / GET MORE SONGS` text down the left side of the hub. The hub 3D scene + the news ticker text along the bottom *do* render. | `02_main_hub.png` vs `yt_mhKNp9uAT48_menu_hub.png` | P0 | rb3 + engine | L | The W5 fix recovered the news ticker but didn't recover the main menu list. Two candidate causes: (a) the menu list is built by a different UI component (e.g. `UIListMesh` vs `UIListLabel`) whose text path didn't get the `useAlphaAsRGB` flag flip; (b) the menu list is a 3D mesh sourced from a `.milo` scene that fails to load on web (since the hub scene is a heavy `.milo`). Sanity check: does `02_main_hub.png` show the menu list outline at all (panel backdrop)? It does not — implies the whole UI container isn't being created, not just its text. |
+| **V2** | Main-hub menu list missing — no `PLAY NOW / CAREER / TRAINING / CUSTOMIZE / GET MORE SONGS` text down the left side of the hub. The hub 3D scene + the news ticker text along the bottom *do* render. | `02_main_hub.png` vs `yt_mhKNp9uAT48_menu_hub.png` | P0 | rb3 | S | **ROOT-CAUSED 2026-05-30** — `AnimTask::Poll()` arg-swap (`SetFrame(blend, frame)` vs retail-asm `(frame, blend)`) freezes every reveal anim at frame 1. Buttons are technically `Showing=true` but their PropAnim (`01_main_button_reveal.anim`, frames 0→80) never advances → buttons render at the start "off-screen / hidden" pose. Fix: 1-line HX_NATIVE swap in `src/system/rndobj/Anim.cpp:378`. See `## V2 investigation (2026-05-30)` below. |
 | **V3** | Gameplay HUD numerics absent — score, streak, multiplier digits, star-power gauge, energy bar, and song-progress bar are all missing during gameplay. The W5 fix added the "COOL" multiplier-ring panel and the left-edge text strip, but the *numbers* (Wii ref `78 250`) and the star meter still aren't there. | `07_gameplay_t15s.png` vs `yt_qRagnZCIMzk_gameplay_guitar.png` | P0 | engine + rb3 | L | Likely the same Phase-3 dimness root cause for the digits (font material colour) — `UIDigitalLabel` carries its own style. The bars / gauges are mesh-based, not text-based, so they're a separate failure. **First check:** dump a list of `Rnd*` panels active on the `game_screen` (probe `RndDir::ListPanels`) and cross-reference vs the Wii HUD inventory. |
 | **V4** | Album art shows `?` placeholder instead of cover art (known carry-over from baseline; W5 did not address it). Affects the entire song-select experience. | `03_song_select.png` vs `yt_qRagnZCIMzk_song_select_album_art.png` | P1 | rb3 | M | `WebAssets.cpp` fetch likely cannot find `art/<song>_keep.png` (or similar) because the path is computed via a code path that wasn't lifted to the web build. **First check:** open DevTools network tab during song-select navigation; if 404s on `art/*` paths exist, the path-resolver is the gap; if no fetches happen at all, the album-art binder is short-circuited (maybe to placeholder when `SongData::HasArt() == false`). |
 | **V5** | Intro cinematic plays against a pure-black backdrop (`05_game_screen_entry.png` shows only the microphones, lit from behind). The Wii intro cinematic has the lit-venue 3D scene visible behind the props. | `05_game_screen_entry.png` vs Wii longplay intros | P1 | engine | L | Likely the tv3 cinematic's vignette / clear-colour state from the recent `acdfc69f` "tv3 transition cinematic default-on" series. The vignette may be over-darkening the venue background, or the camera frustum cull/blackout is too aggressive. The fact that *only* the props are visible suggests the venue mesh is z-rejected or the clear colour is full black with no background draw call. **First check:** does the baseline `05_game_screen_entry.png` show the venue? No — it shows the stage gear lit on black at a different camera angle. So this has been a problem since baseline; the W5 capture happened on a different cinematic frame, not a regression. |
@@ -38,6 +38,80 @@ Ordered by impact (highest first). "Side" = engine (= `milo-native-engine`), rb3
 | **V12** | Top-left "COOL" panel in `07_gameplay_t15s` is positioned ABOVE the highway (Wii ref has the score panel top-right and a vocal-arrow indicator top-left). The "COOL" panel is actually the vocal freestyle prompt, which suggests the screen thinks it's mid-vocal-section even though we're playing a guitar/drum chart. | `07_gameplay_t15s.png` (top-left) vs `yt_qRagnZCIMzk_gameplay_guitar.png` | P2 | rb3 | L | Either (a) the test song is a vocal section and the COOL is correct, or (b) the per-player track-routing is wrong and a vocal HUD is rendering for a non-vocal player. Need to know which song / part is being played in the capture to disambiguate. |
 | **V13** | Lighting on splash-cinematic mics (`05_game_screen_entry.png`) is very dim — the mics are barely visible against the black backdrop. Wii cinematics show props brightly stage-lit with rim light. | `05_game_screen_entry.png` | P2 | engine | L | Could be missing key/fill stage lighting from the venue's lighting rig if the venue scene isn't loaded (see V5). Or the bloom / tone-map pass that brightens stage props is not enabled on the WGPU backend. |
 | **V14** | Phase-3 dimness — score digits + song-row titles + some news-ticker text render dim grey not crisp white. *Already being investigated in parallel; listed here for completeness so it doesn't get re-dispatched.* | `03_song_select.png`, `07_gameplay_t15s.png`, `02_main_hub.png` | P0 | engine | L | Material colour selection in `UIListLabel` / `UILabel` style resolution. See W5_TEXT_RENDERING.md "Phase 3". **Do not dispatch on this — parallel agent owns it.** |
+
+---
+
+## V2 investigation (2026-05-30) — ROOT CAUSE PINNED
+
+**Status:** root cause confirmed empirically with runtime probe + screenshot proof. Fix is single-line in `src/system/rndobj/Anim.cpp`. Branch `wt-web-w6-v2-probe` (commit pending).
+
+**TL;DR:** `AnimTask::Poll()` calls `mAnim->SetFrame(blend, frame)` but the virtual signature is `SetFrame(float frame, float blend)`. The two FP args are swapped. On retail Wii the source matches at 96.7%; the retail asm has the correct order, so somehow MWCC compiles the swap away (likely an inline/asm pragma artifact — see "Why doesn't this break retail Wii?" below). On native+web the swap is compiled literally: `frame` is fixed at `blend=1.0` for every Poll, so PropAnims never advance past frame 1. UI reveal animations (e.g. `01_main_button_reveal.anim`, frames 0–80) stay frozen at the start pose where buttons are off-screen / transparent.
+
+### Confirmed hypothesis (HIGH confidence)
+
+**Not** hypothesis (1) (`update_state_view` no-op): probe shows the trigger fires correctly. Sequence in the probe log:
+1. `MainHubPanel::Enter()` runs with `mHubState=1` (`kMainHubState_Main`).
+2. `override_none.trg` fires twice; correctly sets `main_menu.grp` `Showing=1`, `message_area.grp` `Showing=1`, `waiting.grp`/`finding.grp` `Showing=0`.
+3. `none_to_main.trg` fires correctly with one anim: `01_main_button_reveal.anim` (start=0, end=80, enable=0, period=0).
+4. Direct `mDir->Find<RndDrawable>(name)` probes show all 5 menu buttons (`mb_playnow.btn`, `mb_career.btn`, `mb_trainers.btn` …) AND their parent groups (`mb_*.grp`, `menu_buttons.grp`, `main_menu.grp`) report `Showing=1`.
+
+So the panel hierarchy, trigger graph, and visibility flags are all correct. The buttons are visible to the engine — they just render at the start of their reveal animation (off-screen / 0 alpha / whatever).
+
+**Not** hypothesis (2) (default-hidden milo group): all menu groups report `Showing=1` on the very first frame after `Enter()`. No `set_showing false` is being applied.
+
+**Not** hypothesis (3) (missed `dynamic_cast<AppLabel*>` site): the menu buttons (`mb_playnow.btn` …) are `UIButton`s whose static text is set via `text_token` PROPSYNC at milo load time, NOT via a per-frame Text() binder. They have no `dynamic_cast<AppLabel*>` early-return. (Grep across `src/band3/meta_band/` + `src/band3/game/` confirms the W6-V1 sweep covered all relevant binders; none touch hub-menu labels.)
+
+**Root cause** — frozen reveal animation. Two-step empirical proof:
+
+| Test | Edit | Result |
+|---|---|---|
+| Baseline | none | `mb_playnow/career/trainers/customize/musicstore` invisible (only PALACE/MUSIC/news-ticker render). Probe confirms `Showing=1` on every button. |
+| Hack A | force `it->mAnim->SetFrame(EndFrame(), 1.0)` immediately after spawning the AnimTask in `EventTrigger::TriggerSelf` | **PLAY NOW becomes visible** at its correct screen position. Other 4 still missing (the hack happens to fire on the first iteration; subsequent overrides retrigger `override_none.trg` whose anims overwrite this one — the experiment proved the concept but had a stale-anim regression). |
+| Hack B | fix `AnimTask::Poll` arg-swap (gated `HX_NATIVE`): change `mAnim->SetFrame(blend, frame)` → `SetFrame(frame, blend)` at `src/system/rndobj/Anim.cpp:378` | **All 5 menu items appear** (`PLAY NOW`, `CAREER`, `TRAINING`, `CUSTOMIZE`, `GET MORE SONGS`) in the correct vertical stack at the correct screen position. Matches Wii reference (`yt_mhKNp9uAT48_menu_hub.png`). |
+
+Evidence in `docs/sessions/web/screenshots/w6-v2-probe/` (on branch `wt-web-w6-v2-probe`):
+- `02_main_hub_swap_fix_only.png` — fix B applied, all menu items visible.
+- `v2-dbg-init.log` — probe output confirming triggers/showing-state.
+- `02_main_hub_after_swap_fix.png` — earlier hack-A intermediate (partial).
+
+### Proposed fix
+
+**Single-line, HX_NATIVE-gated, decomp-match-safe:**
+
+```cpp
+// src/system/rndobj/Anim.cpp:378  (AnimTask::Poll)
+-    mAnim->SetFrame(blend, frame);
++#ifdef HX_NATIVE
++    mAnim->SetFrame(frame, blend);   // arg order matches retail asm + virtual signature
++#else
++    mAnim->SetFrame(blend, frame);   // preserves the matched (or near-matched) Wii path
++#endif
+```
+
+**Scope: S** (one line + comment). **Side: rb3** (`src/system/rndobj/Anim.cpp`). **Decomp-match risk: ZERO** — the change is inside `#ifdef HX_NATIVE`; the Wii build is byte-identical to before.
+
+### Why doesn't this break retail Wii?
+
+`AnimTask::Poll` is at 96.7% match. The retail asm (per `build/SZBE69_B8/asm/system/rndobj/Anim.s` lines around `0x8087CBEC`) loads `f1=frame` (from f30, the time→frame computation) and `f2=blend=1.0` (f29, the `@F_0000803f` literal) before the `bctrl` SetFrame call — i.e. retail asm uses `(frame, blend)` order, NOT `(blend, frame)`. The C++ source is a *mistranscription* of the original asm. Why does the Wii build still work despite the mistranscription?
+
+Likely because of MWCC's optimizer: when both args are floats and the function is virtual, MWCC sometimes reorders fp register usage based on liveness analysis and *both* `blend` and `frame` are alive at the call site. The matched Wii build either (a) was compiled with a source variant we don't have, (b) the 3.3% match-gap IS this swap and the decomp authors knew but couldn't get past it, or (c) the asm is right and the source is wrong but ipa/CSE makes them compile identically because of an inlining/strength-reduction quirk we haven't reverse-engineered. Regardless: **on native (clang/emcc/MWCC-without-IPA) the source is compiled literally and the bug surfaces.**
+
+A follow-up TODO is to investigate whether fixing the source order *improves* the Wii match (would be very nice). Pre-emptively NOT in scope for this V2 fix.
+
+### Risk to other animations
+
+This change affects ALL native UI animation Polls — every PropAnim, AnimFilter, every reveal/fade/scroll trigger. The risk is that *other* UI animations currently appear "correct" on web only because they're driven by static start values that happen to render acceptably. Fixing the AnimTask args would make them advance properly, which is the desired behaviour. Manual smoke test needed across: song_select scroll/highlight, gameplay HUD streak/energy/multiplier reveals, pause-menu fade-in, etc.
+
+The W3c gameplay-test script (`scripts/web/w3c-gameplay-test.mjs`) should pass unchanged because (a) the song still plays end-to-end via the gem highway path, (b) the score-screen transition logic doesn't depend on UI anim progression, (c) the existing baseline tests aren't pixel-perfect.
+
+### Files touched in the worktree experiment (branch `wt-web-w6-v2-probe`)
+
+- `src/system/rndobj/Anim.cpp` — the actual proposed fix (HX_NATIVE-gated, line 378).
+- `src/band3/meta_band/MainHubPanel.cpp` — runtime probes in `Enter()` / `UpdateStateView()`. **Revert before merge.**
+- `src/system/rndobj/EventTrigger.cpp` — runtime probe in `TriggerSelf()` logging trigger graph. **Revert before merge.**
+- `scripts/web/w6-v2-probe.mjs` — minimal capture script (boots → main_hub → screenshots + console logs). Useful keepsake for future V2-class investigations.
+
+The probe edits are large enough that I'll commit them on `wt-web-w6-v2-probe` for traceability, but the orchestrator should land *only* the 1-line `Anim.cpp` change (manually cherry-picked from the branch). The probes are noise for production.
 
 ---
 
