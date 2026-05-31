@@ -126,7 +126,30 @@ void Debug::Fail(const char *msg) {
     // the boot keeps advancing. Mirrors DC3's Debug::Fail HX_WEB early-return.
     // (Native desktop keeps the real fail path below — fork-only, never compiled
     // for the Wii MWCC build, which doesn't define HX_WEB.)
-    MILO_LOG("FAIL (non-fatal on web): %s\n", msg);
+    //
+    // Throttle: some benign FAILs recur every frame (e.g. SongSort out-of-range
+    // during menu nav). A synchronous console.log() per frame in the browser
+    // tanks FPS, so log each distinct message only a few times, then suppress.
+    {
+        static std::vector<String> sSeen;
+        static std::vector<int> sCount;
+        const int kMaxLogsPerMsg = 3;
+        String m(msg ? msg : "");
+        int idx = -1;
+        for (int i = 0; i < (int)sSeen.size(); i++) {
+            if (sSeen[i] == m) { idx = i; break; }
+        }
+        if (idx < 0) {
+            sSeen.push_back(m);
+            sCount.push_back(0);
+            idx = (int)sSeen.size() - 1;
+        }
+        if (sCount[idx] < kMaxLogsPerMsg) {
+            sCount[idx]++;
+            MILO_LOG("FAIL (non-fatal on web): %s%s\n", msg,
+                     sCount[idx] == kMaxLogsPerMsg ? " [further repeats suppressed]" : "");
+        }
+    }
     return;
 #endif
     static int x = MemFindHeap("main");

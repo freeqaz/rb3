@@ -664,6 +664,34 @@ DataNode DataArray::Execute() {
     String sn;
     node.Print(sn, true);
 
+#ifdef HX_NATIVE
+    // Web/native port: a DTA command that resolves to neither a function nor an
+    // object (e.g. the Wii-only `stagekit_*` lighting cues, stubbed out here)
+    // warns from this hot per-frame script-execution path. A synchronous
+    // console.log() per frame tanks browser FPS, so throttle identical messages:
+    // log each distinct "<sym> at file:line" a few times, then suppress.
+    {
+        static std::vector<String> sSeen;
+        static std::vector<int> sCount;
+        const int kMaxLogsPerMsg = 3;
+        String key = MakeString("%s|%s:%d", s.c_str(), mFile.Str(), mLine);
+        int idx = -1;
+        for (int i = 0; i < (int)sSeen.size(); i++) {
+            if (sSeen[i] == key) { idx = i; break; }
+        }
+        if (idx < 0) { sSeen.push_back(key); sCount.push_back(0); idx = (int)sSeen.size() - 1; }
+        if (sCount[idx] < kMaxLogsPerMsg) {
+            sCount[idx]++;
+            const char *tail = (sCount[idx] == kMaxLogsPerMsg) ? " [further repeats suppressed]" : "";
+            if (s == sn) {
+                MILO_WARN("%s not function or object (file %s, line %d)%s", s.c_str(), mFile, mLine, tail);
+            } else {
+                MILO_WARN("%s = %s not function or object (file %s, line %d)%s",
+                          s.c_str(), sn.c_str(), mFile, mLine, tail);
+            }
+        }
+    }
+#else
     if (s == sn) {
         MILO_WARN("%s not function or object (file %s, line %d)", s.c_str(), mFile, mLine);
     } else {
@@ -675,6 +703,7 @@ DataNode DataArray::Execute() {
             mLine
         );
     }
+#endif
 
     return 0;
 }
