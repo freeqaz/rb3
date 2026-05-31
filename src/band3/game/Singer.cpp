@@ -258,8 +258,8 @@ void Singer::HandlePhraseEnd(float, const std::vector<float> &phraseMaxPoints) {
         float maxPoints = phraseMaxPoints[i];
         float accuracy = mResultsData[i].targetPitchAccuracy;
         if (maxPoints > 0.0f) {
-            mResultsData[i].phraseScore +=
-                std::max(std::min(accuracy / maxPoints, 1.0f), 0.0f);
+            float clamped = std::max(std::min(accuracy / maxPoints, 1.0f), 0.0f);
+            mResultsData[i].phraseScore += clamped;
             mResultsData[i].scoreFrameCount++;
         }
         mResultsData[i].targetPitchAccuracy = 0.0f;
@@ -267,8 +267,8 @@ void Singer::HandlePhraseEnd(float, const std::vector<float> &phraseMaxPoints) {
         mResultsData[i].centsDeviation = 0.0f;
         float hitScore = mResultsData[i].targetPitchHitScore;
         if (maxPoints > 0.0f) {
-            mResultsData[i].micPitchHitScore +=
-                std::max(std::min(hitScore / maxPoints, 1.0f), 0.0f);
+            float clamped = std::max(std::min(hitScore / maxPoints, 1.0f), 0.0f);
+            mResultsData[i].micPitchHitScore += clamped;
             mResultsData[i].phraseCount++;
         }
         mResultsData[i].targetPitchHitScore = 0.0f;
@@ -416,10 +416,10 @@ int Singer::SuddenOctaveShift(float pitch) const {
 }
 
 void Singer::UpdatePitchDeviation(float pitch) {
-    float mean = mPitchDeviationMean;
     int count = mPitchDeviationFrameCount + 1;
-    float dev = mPitchDeviationDev;
     mPitchDeviationFrameCount = count;
+    float dev = mPitchDeviationDev;
+    float mean = mPitchDeviationMean;
     float newMean = mean + (pitch - mean) / (float)count;
     mPitchDeviationMean = newMean;
     mPitchDeviationDev = dev + (std::fabs(pitch - newMean) - dev) / (float)count;
