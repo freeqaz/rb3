@@ -75,7 +75,37 @@ public:
     RndFont *NextFont() const { return mNextFont; }
     bool IsMonospace() const { return mMonospace; }
     bool IsPacked() const { return mPacked; }
+#ifdef HX_NATIVE
+    // CellDiff is the glyph cell height/width aspect, used to size text glyph
+    // geometry (glyphH = textSize * CellDiff). The native port runs the Xbox
+    // assets (TheLoadMgr.mPlatform = kPlatformXBox), whose higher-res font
+    // atlases are sometimes non-square — notably the hub menu font
+    // Pentatonic_Regular_(9_00)4x, packed into a 512x1024 atlas (2x TALLER than
+    // the Wii's square 512x512). RndFont::Load bakes mCellSize = trueCell *
+    // atlasDim, so mCellSize.y/mCellSize.x carries a spurious atlasH/atlasW
+    // factor that is 1.0 only for SQUARE atlases. On the Wii (square) the matched
+    // formula is exact; on a 2:1-TALL Xbox atlas it DOUBLES the glyph height, so
+    // the big-font main-hub menu labels (PLAY NOW / CAREER / ...) render ~2x too
+    // tall and overlap into an unreadable pile. Recover the true,
+    // platform-independent aspect from the UV cell (mTexCellSize * atlasDim).
+    //
+    // Scoped to atlasH > atlasW (the proven over-tall case): square atlases and
+    // WIDER-than-tall atlases keep the matched formula untouched, so every other
+    // font's glyph sizing is unchanged and only the over-tall hub font is fixed.
+    float CellDiff() const {
+        if (mTexCellSize.x > 0.f && mTexCellSize.y > 0.f) {
+            RndTex *t = ValidTexture();
+            if (t) {
+                int w = t->Width(), h = t->Height();
+                if (w > 0 && h > w)
+                    return (mTexCellSize.y * (float)h) / (mTexCellSize.x * (float)w);
+            }
+        }
+        return mCellSize.y / mCellSize.x;
+    }
+#else
     float CellDiff() const { return mCellSize.y / mCellSize.x; }
+#endif
     RndFont *TextureOwner() const { return mTextureOwner; }
     float BaseKerning() const { return mBaseKerning; }
     float DeprecatedSize() const { return mDeprecatedSize; }
