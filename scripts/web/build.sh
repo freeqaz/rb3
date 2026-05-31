@@ -2,7 +2,7 @@
 # Build the RB3 Emscripten/WebAssembly target and deploy artifacts next to
 # native/web/index.html so server.py can serve them.
 #
-# Requires: emsdk activated (`source ~/emsdk/emsdk_env.sh`)
+# Emscripten: auto-activates from $EMSDK or ~/emsdk if emcc isn't on PATH yet.
 #
 # Usage:
 #   scripts/web/build.sh                          # dev build (-O0 -g2, debuggable)
@@ -58,6 +58,26 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+# Ensure the Emscripten toolchain is on PATH. The build needs emcc/emcmake; if
+# they aren't already active, source emsdk_env.sh from $EMSDK (set by a prior
+# activation) or the default ~/emsdk checkout, so the script runs from a fresh
+# shell without a manual `source ~/emsdk/emsdk_env.sh` first.
+if ! command -v emcc >/dev/null 2>&1; then
+    EMSDK_DIR="${EMSDK:-$HOME/emsdk}"
+    if [ -f "$EMSDK_DIR/emsdk_env.sh" ]; then
+        echo "==> Activating emsdk from $EMSDK_DIR"
+        set +u                       # emsdk_env.sh references unset vars under -u
+        # shellcheck disable=SC1091
+        source "$EMSDK_DIR/emsdk_env.sh" >/dev/null 2>&1 || true
+        set -u
+    fi
+fi
+if ! command -v emcc >/dev/null 2>&1; then
+    echo "ERROR: emcc not found. Install emsdk or point \$EMSDK at your emsdk dir." >&2
+    echo "       (looked for emsdk_env.sh under \${EMSDK:-\$HOME/emsdk})" >&2
+    exit 1
+fi
 
 # Try ../../milo-native-engine relative to native/; that path is correct in the
 # main repo but breaks in .claude/worktrees/<name>/. Probe both, fall back

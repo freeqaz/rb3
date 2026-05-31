@@ -18,6 +18,27 @@ tools/ninja-locked build/SZBE69_B8/report.json  # Build + generate progress repo
 build/tools/objdiff-cli diff -u "main/App" "AppInit__Fv" --format json-pretty -o /dev/stdout
 ```
 
+## Web Build (Emscripten/WASM)
+
+The native port's browser target. `scripts/web/build.sh` is the one entry point —
+it auto-activates emsdk (from `$EMSDK` or `~/emsdk`), configures, builds `rb3-web`,
+and deploys `rb3-web.{js,wasm}` (+ brotli/gzip) and `index.html` to
+`native/web/build/`. No need to `source emsdk_env.sh` first.
+
+```bash
+scripts/web/build.sh                 # dev build (-O0 -g2, debuggable) — the default
+scripts/web/build.sh --release       # size-opt build (-O0 -g0) + precompressed artifacts
+scripts/web/build.sh --reconfigure   # force a fresh cmake configure
+scripts/web/build.sh --help          # full flag list (--opt / --closure are BROKEN as of W4a)
+
+python3 native/web/server.py         # serve on http://localhost:8421 (auto-detects assets)
+```
+
+- Use a non-default emsdk by exporting `EMSDK=/path/to/emsdk` first.
+- The `undefined symbol` warnings at link time are the expected store/network/
+  PlatformMgr stubs (out of scope per the port roadmap), not build errors.
+- Build dir `native/build-web/`; the slow step is brotli `-q 11` on the 28M wasm.
+
 ## Orchestrator MCP Tools
 
 Use the `mcp__orchestrator__` tools for all decomp analysis.
