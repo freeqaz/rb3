@@ -158,6 +158,23 @@ void StreakMeter::Reset() {
     for (int i = 0; i < mPartWipeAnims.size(); i++) {
         SetPartPct(i, 0, false);
     }
+#ifdef HX_NATIVE
+    // The streak_meter milo bakes text_token=streak_multiplier_fmt ("%d") into
+    // multiplier.lbl, so the load-time SetTextToken path renders the raw format
+    // (a stale placeholder, e.g. "4") until the game first updates or hides it.
+    // At a fresh song the multiplier is 1, so MultiplierChanged() short-circuits
+    // (mult==unk2d4==1) and never fires mHideMultiplierTrig — leaving the baked
+    // placeholder on screen as a bogus maxed-out multiplier. Force the hide on
+    // every reset so the song starts with no spurious "x4" label (mirrors the
+    // mult<=1 branch of MultiplierChanged and the solo_percent.lbl seed fix in
+    // BandTrack::Reset). x86/host-libc only — the Wii path is unaffected.
+    if (mHideMultiplierTrig)
+        mHideMultiplierTrig->Trigger();
+    if (mMultiplierLabel)
+        mMultiplierLabel->SetShowing(false);
+    if (mXLabel)
+        mXLabel->SetShowing(false);
+#endif
 }
 
 void StreakMeter::SetWipe(float f) { mMeterWipeAnim->SetFrame(f, 1.0f); }
