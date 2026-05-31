@@ -1048,6 +1048,19 @@ void MusicLibrary::InitData(RndDir *dir) {
 void MusicLibrary::Text(int, int idx, UIListLabel *slot, UILabel *label) const {
     AppLabel *p9_label = dynamic_cast<AppLabel *>(label);
 #ifdef HX_NATIVE
+    // Reset the slot's label to empty before the type-specific code below writes
+    // (only) the slot(s) that apply to this node type. UIListDir::FillElement
+    // re-fills every visible row's slots from a small recycled element pool as
+    // the list scrolls, and this override (unlike the base UIListProvider::Text
+    // it replaces) never clears slots it doesn't write. On the Wii layout that
+    // was fine — unused slots were authored hidden — but the 360-ARK
+    // song_select.milo this port loads draws them, so a row widget that last
+    // showed a header keeps its stale group-letter + "N SONGS" count when reused
+    // for a song. That is the "songs render as group headers / overlapping text"
+    // artifact (a song row gets a leftover "M"/"3 SONGS" laid over its title).
+    // Clearing here restores the base provider's clear-then-write contract.
+    label->SetTextToken(gNullStr);
+
     // The 360-ARK song_select.milo authors several list slots as plain UILabels
     // rather than the AppLabel the RB3-Wii code expects; the cast then yields
     // null. The Wii path expects AppLabel and asserts. On native/web we fall
