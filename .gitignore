@@ -86,6 +86,9 @@ AddBoneInternal__*
 DrawShowing__*
 PollFrontLoader__*
 ReadCounts__*
+DropUser__*
+Execute__9*
+Handle__13*
 MD5Transform
 OSSuspendThread
 __ct__*
