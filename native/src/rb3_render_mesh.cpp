@@ -44,6 +44,23 @@ extern DataArray *gSystemConfig;
 
 #include <algorithm>
 
+// ---------------------------------------------------------------------------
+// InvalidateGpuMesh — rb3 (BandRnd) GPU-backend variant.
+//
+// RndMesh::SetGeomOwner() calls ::InvalidateGpuMesh(this) under HX_NATIVE (added
+// in a9f9973a for the W7-HUD BandScoreboard digit-slot fix). That symbol is
+// defined by the engine's DC3-flavor renderer in platform/MeshGpuCache.cpp,
+// which keys GPU uploads by mesh pointer and therefore must be told when a
+// mesh's GeomOwner is swapped. rb3-native and rb3-web use the rb3 BandRnd
+// backend (platform/Rnd_Wgpu_RB3.cpp), which compiles MeshGpuCache.cpp out and
+// has NO pointer-keyed cache — rb3_render_mesh.cpp re-reads mesh->GeomOwner()
+// fresh on every draw (see lines ~106/~395), so a GeomOwner swap is already
+// picked up next frame and there is nothing to invalidate. This is therefore a
+// correct no-op, not just a stub. Providing it resolves the undefined reference
+// that otherwise breaks the rb3-native link; on web the missing function was
+// silently auto-stubbed, so this also replaces that abort-stub with a real def.
+void InvalidateGpuMesh(RndMesh *) {}
+
 // 36-byte Xbox compressed vertex (only pos[0..2] needed for bounds here).
 struct XboxCVertHdr { int pos[3]; int color; int uv; int norm; int tan; int b0; int b1; };
 
