@@ -20,6 +20,18 @@ build/tools/objdiff-cli diff -u "main/App" "AppInit__Fv" --format json-pretty -o
 
 ## Web Build (Emscripten/WASM)
 
+> **Debug with the native build, not web.** The web build is slow to iterate
+> (`scripts/web/build.sh` brotli-compresses a 28M wasm — minutes), whereas
+> `rb3-native` rebuilds in ~3s and runs headless. Both compile the same shared
+> `src/` + engine, so visual/logic bugs reproduce **identically** in native.
+> Workflow: `cmake --build native/build-native --target rb3-native`, then drive it
+> headless over its HTTP debug API (`RB3_HTTP=1`: `/api/health`, `/api/screenshot`
+> → PNG, `/api/input` nav verbs, `/api/dta/eval` for live engine state). See
+> `scripts/native/song-end-test.py` and `scripts/native/song-select-capture.py`
+> for the harness pattern. **Only debug the web build for genuinely web-specific
+> issues** (Emscripten/WASM link-stubs, browser fetch/MEMFS, WebGPU-in-browser,
+> JS glue) — and confirm a fix there once, after iterating in native.
+
 The native port's browser target. `scripts/web/build.sh` is the one entry point —
 it auto-activates emsdk (from `$EMSDK` or `~/emsdk`), configures, builds `rb3-web`,
 and deploys `rb3-web.{js,wasm}` (+ brotli/gzip) and `index.html` to
