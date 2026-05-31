@@ -337,10 +337,10 @@ set(_NATIVE_FORK_EXCLUDE
     # garbage and the dtor SEGVs in ObjPtr::~ObjPtr → Object::Release → rbegin().
     # Requires the V20 #ifndef HX_NATIVE wrappers around the stlpmtx_std
     # specializations in BandPatchMesh.cpp.
-    ClipDistMap DataResults
+    ClipDistMap
     SaveLoadManager
     Splash
-    StorePackedMetadata TourPerformerLocal
+    StorePackedMetadata
     WaitingUserGate)
 foreach(_tu ${_NATIVE_FORK_EXCLUDE})
     list(FILTER NATIVE_FORK_SOURCES EXCLUDE REGEX "/${_tu}\\.cpp$")
