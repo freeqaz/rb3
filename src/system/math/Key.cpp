@@ -94,7 +94,11 @@ void InterpVector(
             return;
         }
     }
+#ifdef HX_NATIVE
+    int idx = prev - keys.data();
+#else
     int idx = prev - keys.begin();
+#endif
     if (spline) {
         float fsq = ref * ref;
         float fsq3 = fsq * 3.0f;

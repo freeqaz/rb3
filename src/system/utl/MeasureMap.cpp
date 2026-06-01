@@ -8,9 +8,15 @@ MeasureMap::MeasureMap() : mTimeSigChanges() {
 }
 
 int MeasureMap::MeasureBeatTickToTick(int measure, int beat, int tick) const {
+#ifdef HX_NATIVE
+    auto change = std::upper_bound(
+        mTimeSigChanges.begin(), mTimeSigChanges.end(), measure, CompareMeasure
+    );
+#else
     const TimeSigChange *change = std::upper_bound(
         mTimeSigChanges.begin(), mTimeSigChanges.end(), measure, CompareMeasure
     );
+#endif
     if (change != mTimeSigChanges.begin())
         change--;
     int meas_diff = measure - change->mMeasure;
@@ -26,9 +32,15 @@ void MeasureMap::TickToMeasureBeatTick(int tick, int &oMeasure, int &oBeat, int 
 void MeasureMap::TickToMeasureBeatTick(
     int tick, int &oMeasure, int &oBeat, int &oTick, int &oBeatsPerMeasure
 ) const {
+#ifdef HX_NATIVE
+    auto change = std::upper_bound(
+        mTimeSigChanges.begin(), mTimeSigChanges.end(), tick, CompareTick
+    );
+#else
     const TimeSigChange *change = std::upper_bound(
         mTimeSigChanges.begin(), mTimeSigChanges.end(), tick, CompareTick
     );
+#endif
     if (change != mTimeSigChanges.begin())
         change--;
     int div = (change->mNum * 1920) / change->mDenom;

@@ -329,7 +329,11 @@ DECOMP_FORCEACTIVE(Geo, "tMax > 0.0f && tMin < 1.0f");
 bool Intersect(const Transform &tf, const Hmx::Polygon &poly, const BSPNode *node) {
     bool front = false;
     bool back = false;
+#ifdef HX_NATIVE
+    for (auto i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
+#else
     for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
+#endif
         Vector3 v(i->x, i->y, 0.0f);
         Multiply(v, tf, v);
         float dot = node->plane.Dot(v);
@@ -608,7 +612,11 @@ void BSPFace::OnSide(const Plane &plane, bool &front, bool &back) {
     front = false;
     back = false;
     Vector3 pt;
+#ifdef HX_NATIVE
+    auto it = p.mPoints.begin();
+#else
     const Vector2 *it = p.mPoints.begin();
+#endif
     while (it != p.mPoints.end()) {
         pt.x = it->x;
         pt.y = it->y;
@@ -624,9 +632,15 @@ void BSPFace::OnSide(const Plane &plane, bool &front, bool &back) {
 void BSPFace::Update() {
     MILO_ASSERT(p.mPoints.size() > 2, 0x696);
 
+#ifdef HX_NATIVE
+    auto anchor = p.mPoints.begin();
+    auto prev = anchor + 1;
+    auto curr = prev + 1;
+#else
     const Vector2 *anchor = p.mPoints.begin();
     const Vector2 *prev = anchor + 1;
     const Vector2 *curr = prev + 1;
+#endif
     area = 0.0f;
     while (curr != p.mPoints.end()) {
         area += (curr->y * anchor->x - anchor->x * prev->y - anchor->y * prev->x +
@@ -656,7 +670,11 @@ void BSPFace::Update() {
     Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
     Multiply(prevPt, t, prevPt);
 
+#ifdef HX_NATIVE
+    for (auto it = p.mPoints.begin(); it != p.mPoints.end(); it++) {
+#else
     for (const Vector2 *it = p.mPoints.begin(); it != p.mPoints.end(); it++) {
+#endif
         bool notXYZ = false;
         bool notXY = false;
         Vector3 curPt(it->x, it->y, 0.0f);
@@ -958,7 +976,11 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
 
     newPoints->reserve(poly.mPoints.size() * 2);
 
+#ifdef HX_NATIVE
+    auto lastPoint = poly.mPoints.cend() - 1;
+#else
     const Vector2 *lastPoint = &poly.mPoints.back();
+#endif
     const Vector2 *dirPtr = &ray.dir;
     float baseX = ray.base.x;
     float yDiff = lastPoint->y - ray.base.y;
@@ -966,7 +988,11 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
     float lastDot = xDiff * dirPtr->x + yDiff * dirPtr->y;
 
     Vector2 v;
+#ifdef HX_NATIVE
+    for (auto i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
+#else
     for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
+#endif
         float yDelta = i->y - ray.base.y;
         float dot = (i->x - ray.base.x) * dirPtr->x + yDelta * dirPtr->y;
 

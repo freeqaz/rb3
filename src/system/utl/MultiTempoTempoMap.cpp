@@ -11,7 +11,11 @@ MultiTempoTempoMap::~MultiTempoTempoMap() {}
 
 float MultiTempoTempoMap::GetTempo(int tick) const {
     const TempoInfoPoint *pt = PointForTick(tick);
+#ifdef HX_NATIVE
+    if (pt != nullptr)
+#else
     if (pt != mTempoPoints.end())
+#endif
         return (float)pt->mTempo / 1000.0f;
     else
         return 800.0f;
@@ -19,7 +23,11 @@ float MultiTempoTempoMap::GetTempo(int tick) const {
 
 int MultiTempoTempoMap::GetTempoInMicroseconds(int tick) const {
     const TempoInfoPoint *pt = PointForTick(tick);
+#ifdef HX_NATIVE
+    if (pt != nullptr)
+#else
     if (pt != mTempoPoints.end())
+#endif
         return pt->mTempo;
     else
         return 800000;
@@ -50,7 +58,11 @@ float MultiTempoTempoMap::TickToTime(float tick) const {
 
     if (startTick < 0.0f || tick <= mEndLoopTick) {
         const TempoInfoPoint *pt = PointForTick(tick);
+#ifdef HX_NATIVE
+        if (pt == nullptr)
+#else
         if (pt == mTempoPoints.end())
+#endif
             return 0.0f;
         else
             return pt->mMs
@@ -191,16 +203,27 @@ const MultiTempoTempoMap::TempoInfoPoint *MultiTempoTempoMap::PointForTick(float
 
     if (mTempoPoints.empty()) {
         MILO_WARN("Tempo map is empty; at least one tempo map entry is required");
+#ifdef HX_NATIVE
+        return nullptr;
+#else
         return mTempoPoints.end();
+#endif
     }
 
+#ifdef HX_NATIVE
+    auto it2 =
+        std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTick);
+    if (it2 != mTempoPoints.begin())
+        it2--;
+    return &*it2;
+#else
     const TempoInfoPoint *pt2 =
         std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTick);
     if (pt2 != mTempoPoints.begin()) {
         pt2--;
     }
-
     return pt2;
+#endif
 }
 
 const MultiTempoTempoMap::TempoInfoPoint *MultiTempoTempoMap::PointForTime(float time
@@ -209,13 +232,20 @@ const MultiTempoTempoMap::TempoInfoPoint *MultiTempoTempoMap::PointForTime(float
     pt.mMs = time;
     MILO_ASSERT(mTempoPoints.size() >= 1, 0x121);
 
+#ifdef HX_NATIVE
+    auto it2 =
+        std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTime);
+    if (it2 != mTempoPoints.begin())
+        it2--;
+    return &*it2;
+#else
     const TempoInfoPoint *pt2 =
         std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTime);
     if (pt2 != mTempoPoints.begin()) {
         pt2--;
     }
-
     return pt2;
+#endif
 }
 
 bool MultiTempoTempoMap::CompareTick(

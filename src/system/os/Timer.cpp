@@ -6,7 +6,9 @@
 #include "math/Utl.h"
 #include "os/System.h"
 #include "revolution/os/OSTime.h"
+#ifndef HX_NATIVE
 #include "stl/_pair.h"
+#endif
 #include <list>
 
 #ifdef HX_NATIVE
