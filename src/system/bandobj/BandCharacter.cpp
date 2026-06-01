@@ -1869,8 +1869,36 @@ BandCharacter::Filter(Hmx::Object *o1, Hmx::Object *o2, ObjectDir *dir) {
     return action;
 }
 
-MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *) {
+MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir) {
+#ifdef HX_NATIVE
+    // Native load-order fix (char textures rendering white). A shared external
+    // resource milo (its own file on disk, e.g. char/main/shared/colorpalettes.milo
+    // — the base skin/cloth texture palette referenced by every character) is
+    // loaded ONCE and referenced as a subdir by many milos via share=true. The
+    // matched action for such a subdir under mSubdirs=kAllSubdirs is kMerge, which
+    // MOVES (SetName) its texture objects into THIS character dir, draining the
+    // shared instance. On Wii each referencing milo finishes its atomic load (its
+    // materials resolving textures against the still-intact subdir) before any
+    // merge drains it. On native the loader advances one state per poll, so a
+    // concurrent character merge drains the shared palette mid-load of a sibling
+    // milo — that sibling's materials then resolve their RndTex ObjPtrs to null
+    // (the "couldn't find dummy_torso.tex" cascade) and render with the white
+    // fallback texture. Keep an external shared resource subdir as a REFERENCE
+    // (kReplace appends it as a subdir of the character) instead of draining it:
+    // the palette stays intact, every character's materials resolve their textures
+    // through the kept shared subdir, regardless of native load interleaving.
+    // Scoped to subdirs that are their own on-disk milo (non-empty stored file) —
+    // truly-inline subdirs (embedded, empty stored file) still merge normally.
+    // Guarded so the Wii-matched path below is byte-identical to the original.
+    MergeFilter::Action act =
+        DefaultSubdirAction(o1, (Subdirs)mFileMerger->mFilesPending.front()->mSubdirs);
+    if (act == MergeFilter::kMerge && o1 && !o1->mStoredFile.empty()) {
+        act = MergeFilter::kReplace;
+    }
+    return act;
+#else
     return DefaultSubdirAction(o1, (Subdirs)mFileMerger->mFilesPending.front()->mSubdirs);
+#endif
 }
 
 DataNode BandCharacter::OnInstallFilter(DataArray *da) {
