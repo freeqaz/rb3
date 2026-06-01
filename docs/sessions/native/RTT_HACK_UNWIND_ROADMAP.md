@@ -24,10 +24,27 @@ details-pane PropAnim hack. Per-feature implementation specs are in the appendix
 >   for now — removing it safely needs verifying the *open-details → navigate-away* flow,
 >   not just the enter flow the check covered. (Likely made inert by a later engine
 >   PropAnim/SetFrame fix.)
-> - ⏸️ **drawrect**, **postproc-rtt** — DEFERRED (engine work; see below). `postproc-rtt`
->   is bigger than first scoped: `PostProcPass`/`Bloom`/`Dof` are **OFF for the RB3
->   backend** (rndobj-coupled to DC3's shapes, `native/CMakeLists.txt:66,185`), so it needs
->   a self-contained composite in `BandRnd`, not a `PostProcPass` reuse → L/XL.
+> - ✅ **drawrect** — LANDED (engine `5cfaf30`). Self-contained `BandRnd::DrawRect` +
+>   shared 2D-quad pipeline; rect-composite layers now paint. Verified (fires + group-0
+>   restore + `RB3_RTT_OFF` no-crash; live RTT-outfit path uses the planned fallback).
+> - ✅ **postproc-rtt** — LANDED (engine `f7e0fd6`). `BandRnd` now honors
+>   `RndPostProc::Current()` per-screen via an offscreen intermediate + grade composite
+>   (self-contained — `PostProcPass`/`Bloom`/`Dof` are OFF for the RB3 backend,
+>   `native/CMakeLists.txt:66,185`; grade WGSL ported verbatim). Noise v1-skipped (env
+>   postprocs use a tiled noise *texture* at intensity 3.0; procedural fallback washes
+>   gray — proper grain is v2). `RB3_PP_OFF`/`RB3_RTT_OFF` A/B gates. Canary clean
+>   (neutral-postproc identity passthrough), clouds RTT intact, zero Dawn aborts.
+> - ✅ **smear-removal Stage 3** — LANDED (rb3 `017c20ef`). Removed the `etched_art`
+>   hide + the `App.cpp` per-frame call. Verified hide-OFF on the **web** swapchain with
+>   a real cover (Marilyn Manson): cover present, no center smear, etched groups showing.
+>   A controlled A/B (proved `getenv` reads `Module.ENV` via `RB3_SMEAR_DBG`) confirmed
+>   the clean capture was genuinely hide-off. The prior center-left smear does NOT
+>   reproduce on the merged engine.
+>
+> Both engine features merged to engine `main` `c70be2a`; rb3 pin bumped (`15f166cc`).
+> **All song_select album hacks are now retired.** Remaining v2 follow-ups (non-blocking):
+> texture-driven PostProc noise grain; optional bloom; the now-inert details-pane hack
+> (safe to delete after an open-details→navigate verify).
 
 Feature slugs:
 - **drawrect** — `BandRnd::DrawRect` (engine, M)
