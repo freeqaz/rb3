@@ -8,6 +8,27 @@ This sequences the 5 scoped features into a dependency-ordered, risk-minimized p
 whose end-state removes the `RB3SongSelectHideAlbumSmear` hack family and the
 details-pane PropAnim hack. Per-feature implementation specs are in the appendix.
 
+> **IMPLEMENTATION STATUS (2026-06-01).**
+> - ✅ **capture-hygiene** — LANDED (`88cc9d52`). `RB3RenderFreshHeadlessFrame()` renders
+>   a fresh frame before each `/api/screenshot`; same-batch consecutive captures proven
+>   byte-identical. Native visual verification is now trustworthy.
+> - ✅ **smear-removal Stage 1** — LANDED (`bb077020`). Native-only album cover-hide
+>   deleted; depth-6 top-right now shows the cover correctly (was blanked grey). Etched
+>   hide + `App.cpp` call kept (await postproc-rtt).
+> - ❎ **propanim-snap** — NOT NEEDED. Empirical root-cause check **disconfirmed** the
+>   hypothesis: the terminal `showing=FALSE` keyframe **already applies** natively (the
+>   `song_select_details.anim` range is `0→0.01`, `mScale<0`, so its single poll lands
+>   `frame=0.0=mMin=terminal`). With the glue hack disabled the pane is **already hidden**
+>   (`showing=0`, verified). So the `AnimTask::Poll` terminal-snap is unnecessary, and the
+>   **details-pane hack is now inert/redundant** (not load-bearing). Conservatively kept
+>   for now — removing it safely needs verifying the *open-details → navigate-away* flow,
+>   not just the enter flow the check covered. (Likely made inert by a later engine
+>   PropAnim/SetFrame fix.)
+> - ⏸️ **drawrect**, **postproc-rtt** — DEFERRED (engine work; see below). `postproc-rtt`
+>   is bigger than first scoped: `PostProcPass`/`Bloom`/`Dof` are **OFF for the RB3
+>   backend** (rndobj-coupled to DC3's shapes, `native/CMakeLists.txt:66,185`), so it needs
+>   a self-contained composite in `BandRnd`, not a `PostProcPass` reuse → L/XL.
+
 Feature slugs:
 - **drawrect** — `BandRnd::DrawRect` (engine, M)
 - **postproc-rtt** — PostProc-driven offscreen intermediate + composite in BandRnd (engine, M)
@@ -159,8 +180,8 @@ propanim-snap touches `Anim.cpp` (different file) → can proceed in parallel.
 | native-only cover hide + `SetHookTex(false)` — `rb3_game_input.cpp:1097-1127` | HACK (active regression) | smear-removal | **2 (St.1)** |
 | etched-group hide — `rb3_game_input.cpp:1086-1095` | HACK | postproc-rtt → smear-removal | **5→6 (St.3)** |
 | `App::RunOneFrame` per-frame call — `src/App.cpp:528-532` | HACK | postproc-rtt → smear-removal | **6 (St.3)** (maybe St.1 if etched never re-shows) |
-| details-pane hide (`RB3_NO_DETAILS_FIX`) — `rb3_game_input.cpp:~1235-1261` | HACK | propanim-snap | **4** |
-| etched_art `01` transform/swap PropAnim | HACK (partial) | propanim-snap (swap) + postproc-rtt (grade) | **4→5** |
+| details-pane hide (`RB3_NO_DETAILS_FIX`) — `rb3_game_input.cpp:~1235-1261` | HACK → **now inert/redundant** | (no fix needed — engine already applies the terminal keyframe) | **deferred** — safe to delete once the open-details→navigate flow is verified |
+| etched_art `01` transform/swap PropAnim | n/a | (terminal keyframes already apply natively — not actually a gap) | — |
 | CPU-composite fallback (`CHAR_OUTFIT_DIAGNOSIS.md §3`) | pre-empted | drawrect | **3** |
 | headless readback-retention quirk (§2/§5-item3) | measurement | capture-hygiene | **1** |
 | `ui/image/` + `<song>_keep.png_xbox` populate | GLUE | smear-removal St.2 (promote into extraction) | **2 (companion)** |
