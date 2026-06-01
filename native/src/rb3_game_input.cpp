@@ -994,75 +994,25 @@ void RB3RegisterNativeManagerStubs() {
         TheContentMgr->StartRefresh();
 }
 
-// N8 fix — song-select album-art smear bleeding over the song list.  When a SONG
-// is highlighted, a stale, colorful image bleeds across the center / full width of
-// the Music Library list (behind/over the row text), absent on non-song rows.  The
-// retail reference shows a CLEAN dark backdrop behind the list with album art only
-// in the small top-right panel.  Two distinct draw-objects produce the smear
-// natively, both rooted in the same documented render-to-texture / char-bone-
-// deformation no-op (cf. the BandPatchMesh / OutfitConfig RTT-dead notes in
-// CHAR_OUTFIT_DIAGNOSIS.md — RTT + char-bone deformation are no-ops at every native
-// engine layer):
+// song-select "etched glass" album-region hide.  In retail the album region's
+// "etched glass" look is a full-frame `RndPostProc` colour-grade (`B+W_film02.pp`,
+// Selected each Poll by `MetaPanel::UpdatePostProc`).  The native BandRnd backend
+// does not yet honor `RndPostProc::Current()`, so the etched-art source meshes
+// (`etched_art.grp` / `etched_art01.grp`) draw raw/ungraded.  Until the postproc-rtt
+// feature lands (render the main frame into an offscreen intermediate and run the
+// engine's existing PostProcPass — see RTT_HACK_UNWIND_ROADMAP.md), we hide those
+// etched-art groups so the ungraded geometry does not show.
 //
-//  (1) `etched_art.grp` / `etched_art01.grp` — the "etched glass" RTT /
-//      environment-reflection SOURCE groups for the album region.  In retail their
-//      contents are composited as a subtle reflection into the top-right panel via
-//      an offscreen render target; they are never drawn opaquely.  Natively the RTT
-//      is a no-op, so `etched_art.grp`'s geometry leaks straight onto the main
-//      screen at its own transform position (world ~x=-115, i.e. center-left).  Its
-//      `01` sibling is parked off-screen (x=+1150); the PropAnim that would
-//      swap/move the pair never runs natively, so the visible group stays pinned
-//      center-left at every scroll depth.  Bisection-confirmed: this is the smear
-//      on songs whose real cover texture has not loaded.
-//
-//  (2) the bone-deformed 3-D album-cover surface chain
-//      `bone_album_group.mesh` -> `album_art.grp` -> `bone_album.mesh` ->
-//      `album.mesh` (where `album.mesh` is the mesh DRIVEN by the `album_art.pic`
-//      UIPicture — i.e. there is no separate flat thumbnail; the picture renders
-//      THROUGH this mesh).  Retail uses char-bone deformation to fold/scale the
-//      surface into the small top-right thumbnail.  This is the ONE place the two
-//      port targets diverge: on WEB char-bone skinning works, so `album.mesh` IS
-//      the correct top-right cover and must be LEFT ALONE (hiding it removes the
-//      album art — verified: doing so blanked the Marilyn Manson / RIOT! covers on
-//      web).  On NATIVE skinning is a no-op, so for a song whose cover loaded the
-//      mesh renders at full undeformed extent — a screen-spanning quad behind the
-//      list — and the top-right thumbnail is empty; since bone-deformed art can't
-//      be positioned natively, the retail-matching choice there is to hide it (the
-//      top-right then shows just `album_frame01.mesh` + the blank placeholder, as
-//      an art-less song already does).  The cover texture is drawn by both
-//      `bone_album.mesh` and its child `album.mesh`, so both plus the
-//      `bone_album_group.mesh` cage are hidden — but ONLY under `#ifndef
-//      __EMSCRIPTEN__` (native).  When native skinning lands this becomes moot.
-//
-// The cover mesh's re-show is killed at its SOURCE (NATIVE only): `album.mesh` is
-// the mesh DRIVEN by the `album_art.pic` UIPicture, and that picture re-shows it via
-// `UIPicture::FinishLoading -> HookupMesh -> mMesh->SetShowing(true)` (UIPicture.cpp
-// :158) every time the album-art texture finishes loading (i.e. on each highlight
-// change to a song whose cover loads).  That completion fires asynchronously from
-// the load machinery — sometimes while the panel is still entering — so merely
-// hiding the mesh by flag each frame loses a 1-frame race on the load-completion
-// frame.  We instead call `album_art.pic->SetHookTex(false)`, which makes
-// HookupMesh's `if (mMesh && mHookTex)` guard fail so the picture NEVER re-shows the
-// mesh.  That is a one-shot persistent state (nothing on song_select re-enables
-// hook_tex), so the race window is closed at the root.  We still SetShowing(false)
-// on the meshes and the etched groups to clear any already-shown state and to handle
-// the etched RTT groups (which `album_art.pic` does not own).
+// native album cover-hide removed (smear-removal St.1, RTT_HACK_UNWIND_ROADMAP.md);
+// etched hide stays until postproc-rtt lands.  The native-only `album.mesh` /
+// `bone_album*.mesh` cover-hide that used to live here was a PROVEN REGRESSION: it
+// premised "char-bone skinning is a native no-op", which is no longer true — skinning
+// and mesh-RTT both work now, so `album.mesh` renders correctly positioned in the
+// top-right thumbnail and hiding it blanked correct art (OFFSCREEN_RTT_INVESTIGATION.md
+// §2).  The etched-group hide below is the only remaining purpose of this function.
 //
 // Belt-and-suspenders, the function is also called a second time per frame right
 // before Draw (App::RunOneFrame) so any residual show is cleared before render.
-//
-// VERIFIED: with this fix the smear meshes are provably hidden (showing=0) on every
-// drawn frame (checked live via RB3_SMEAR_DBG over the whole song_select session).
-// NOTE ON THE HEADLESS CAPTURE HARNESS (scripts/native/song-select-capture.py): the
-// headless WebGPU readback target can RETAIN pixels from the brief (~1-2 frame)
-// transient where the cover drew during the initial scroll past a mounted song —
-// the capture saturation drifts up/down over idle time while the mesh is provably
-// hidden the whole time, i.e. it is decoupled from the live mesh state.  That is a
-// headless-readback/accumulation artifact in the pinned engine's GpuDevice headless
-// path, NOT a live render of these meshes, and it does not occur on the real
-// double-buffered web/native swapchain (which presents a freshly cleared+drawn frame
-// each frame).  Eliminating it fully would require an engine-side change (clearing
-// the headless readback/accumulation target) and is out of scope for this glue fix.
 //
 // Glue-layer, permuter-safe, force-HIDE only (never shows), scoped to
 // song_select_screen.  Opt-out via RB3_NO_ETCHED_ART_FIX.
@@ -1093,38 +1043,6 @@ void RB3SongSelectHideAlbumSmear(UIScreen *cur, Symbol curName) {
         if (d && d->Showing())
             d->SetShowing(false);
     }
-
-#ifndef __EMSCRIPTEN__
-    // NATIVE ONLY. The album cover (album.mesh, bone-deformed via bone_album*) is
-    // folded into the small top-right thumbnail by char-bone skinning. On WEB
-    // skinning works, so album.mesh IS the correct top-right cover — leave it
-    // alone (hiding it there removes the album art, the very thing we want shown).
-    // On the native target skinning is a no-op, so album.mesh renders undeformed at
-    // full screen-spanning extent (the cover-shaped smear) and the top-right
-    // thumbnail is empty — so here we hide the cover meshes and stop album_art.pic
-    // from re-showing them on async cover load (SetHookTex(false) makes
-    // HookupMesh's `if (mMesh && mHookTex)` guard fail; persistent one-shot since
-    // nothing on song_select re-enables hook_tex). When native skinning lands this
-    // whole block becomes unnecessary.
-    UIPicture *pic = dynamic_cast<UIPicture *>(pd->FindObject("album_art.pic", true));
-    if (dbg)
-        MILO_LOG("RB3 N8 smear: album_art.pic found=%d hookTex=%d\n",
-                 (int)(pic != nullptr), pic ? (int)pic->mHookTex : -1);
-    if (pic && pic->mHookTex)
-        pic->SetHookTex(false);
-
-    static const char *const kCoverObjects[] = {
-        "album.mesh", "bone_album.mesh", "bone_album_group.mesh"};
-    for (int i = 0; i < 3; ++i) {
-        RndDrawable *d =
-            dynamic_cast<RndDrawable *>(pd->FindObject(kCoverObjects[i], true));
-        if (dbg)
-            MILO_LOG("RB3 N8 smear: %s found=%d showing=%d\n", kCoverObjects[i],
-                     (int)(d != nullptr), d ? (int)d->Showing() : -1);
-        if (d && d->Showing())
-            d->SetShowing(false);
-    }
-#endif
 }
 
 // Called once per frame from App::RunWithoutDebugging's native frame loop, AFTER
