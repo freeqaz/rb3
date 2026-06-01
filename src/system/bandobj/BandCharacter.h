@@ -71,7 +71,21 @@ public:
     virtual RndMesh *GetPatchMesh(Patch &);
     virtual RndTex *GetBandLogo();
     virtual void Compress(RndTex *, bool);
+#ifdef HX_NATIVE
+    // The Wii build leaves this empty (4-byte `blr`, matching the target): on
+    // PPC it returns whatever is in r3, which the patch-pre-render path tolerates.
+    // On native a non-void function that falls off the end is UB — the optimizer
+    // emits a trap (x86 `ud2` → SIGILL), which crashes OutfitConfig::DrawPreClear's
+    // BandPatchMesh::PreRender loop the moment a band character with patch meshes
+    // composes its outfit. BandCharacter IS an ObjectDir (via Character→RndDir→
+    // ObjectDir) and is the dir GetPatchMesh()/GetPatchTex() search for patch
+    // meshes/textures, so the character's own dir is the correct patch dir.
+    virtual ObjectDir *GetPatchDir() {
+        return static_cast<ObjectDir *>(static_cast<Character *>(this));
+    }
+#else
     virtual ObjectDir *GetPatchDir() {}
+#endif
     virtual void AddOverlays(BandPatchMesh &);
     virtual void MiloReload();
     virtual Action Filter(Hmx::Object *, Hmx::Object *, ObjectDir *);
