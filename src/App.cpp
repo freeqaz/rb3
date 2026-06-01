@@ -6,6 +6,7 @@
 #endif
 #include "beatmatch/BeatMatch.h"
 #include "bandobj/Band.h"
+#include "bandobj/BandDirector.h"
 #include "bandobj/PatchDir.h"
 #include "char/Char.h"
 #include "decomp.h"
@@ -474,6 +475,38 @@ void App::RunOneFrame(int frame) {
 
     SystemPoll(false);
     TheUI.Poll();
+#ifdef HX_NATIVE
+    // VENUE POLL FIX: drive the gameplay venue band-director tick every frame.
+    //
+    // The gameplay venue WorldDir lives on TheBandDirector->mCurWorld (e.g.
+    // small_club_01), brought up separate from the world_panel PanelDir (V19
+    // deferred-proxy bring-up), with world_panel->mLoaded = true. UIPanel::Poll()'s
+    // `if (mDir && !mLoaded) mDir->Poll()` guard therefore SKIPS the venue
+    // WorldDir::Poll, and the retail poll chain that would otherwise reach it
+    // (GamePanel::Poll -> Game::Poll -> world poll) does not run in the native flow
+    // (GamePanel never goes Active; the HUD/gem track is ticked elsewhere). So
+    // nothing polls the venue. WorldDir::Poll is what runs the entire venue tick:
+    //   (a) HandleType(select_camera_msg) -> BandDirector::OnSelectCamera, which
+    //       selects/plays the camera shots that FRAME the band (without it the venue
+    //       draws through a fixed default cam aimed at scenery, never the band),
+    //   (b) mCameraManager PrePoll/Poll, which animates the active shot's camera,
+    //   (c) RndDir::Poll, which polls the BandCharacters + their CharDriverMidi so
+    //       the song's char clips animate the skeletons (without it the band draws
+    //       frozen at its static load / bind pose — a T-pose).
+    // The DRAW side is already compensated (BandDirector::DrawShowing draws
+    // mCurWorld every frame); this is the missing POLL twin, placed right after
+    // TheUI.Poll() so the game's song clock (TheTaskMgr) is current for the
+    // director's mPropAnim->SetFrame(songTime*30) + char-clip advance.
+    // BandDirector::Poll is internally gated on unke5 (EnableWorldPolling), so it is
+    // a no-op outside active gameplay. Opt-out: RB3_VENUE_POLL_OFF=1.
+    {
+        static int sVenuePollOff = -1;
+        if (sVenuePollOff < 0)
+            sVenuePollOff = getenv("RB3_VENUE_POLL_OFF") ? 1 : 0;
+        if (!sVenuePollOff && TheBandDirector)
+            TheBandDirector->Poll();
+    }
+#endif
     RB3GameInputPoll(frame);
     TheTaskMgr.Poll();
     if (TheSynth)

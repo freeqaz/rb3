@@ -18,6 +18,12 @@
 #include "ui/UI.h"
 #include "utl/Std.h"
 #include "utl/Messages.h"
+#ifdef HX_NATIVE
+// For the native band-character draw bridge in WorldDir::DrawShowing (below):
+// TheBandWardrobe / BandCharacter::DrawShowing.
+#include "bandobj/BandWardrobe.h"
+#include "bandobj/BandCharacter.h"
+#endif
 
 INIT_REVS(WorldDir)
 
@@ -413,6 +419,47 @@ void WorldDir::DrawShowing() {
         }
         if (!shot || shot->mDrawOverrides.empty()) {
             RndDir::DrawShowing();
+#ifdef HX_NATIVE
+            // Native band-character draw bridge.
+            //
+            // In retail RB3 the four band members (player0..player3) render every
+            // frame on stage because their character geometry is part of the venue
+            // draw graph (RndDir::DrawShowing above enumerates it). In the native
+            // port the band characters are instanced from world/shared/
+            // world_chars.milo into a SEPARATE dir (BandDirector::mChars /
+            // TheBandWardrobe->Dir()) and positioned into the venue only via the
+            // venue's player*_base.tp RndTransProxy nodes — which re-parent the
+            // character TRANSFORM but, being RndTransformables (not RndDrawables),
+            // never DRAW it. So the band only appeared during closeup shots, whose
+            // shot->mDrawOverrides explicitly DrawShowing() the targeted member
+            // (the branch above). On every wide/stage shot the band was invisible.
+            //
+            // Bridge: when a venue world draws its world graph with no closeup
+            // override active, draw the four wired band characters here, inside the
+            // venue's selected world camera + environment scope (so they pose,
+            // light, and self-shadow exactly as the venue geometry does). The
+            // skeletons are posed + animated by the venue WorldDir::Poll tick — see
+            // the companion App::RunOneFrame TheBandDirector->Poll() fix, which is
+            // what drives CharBones/CharClipDriver (without it the band drew here at
+            // its static bind pose). This bridge only adds the missing DRAW
+            // submission. Guarded so it only runs for the live venue world
+            // (TheWorld == this) during the world process pass; RndDrawable::Draw()
+            // re-checks each character's Showing.
+            if (TheWorld == this && (TheRnd->ProcCmds() & kProcessWorld) &&
+                TheBandWardrobe) {
+                for (int bi = 0; bi < 4; bi++) {
+                    BandCharacter *bandChar = TheBandWardrobe->GetCharacter(bi);
+                    // Use DrawShowing() (not Draw()): the band-member BandCharacter
+                    // objects keep mShowing=false and an identity WorldXfm — their
+                    // visible geometry lives in mOutfitDir / mInstDir, positioned by
+                    // the bone proxies. The closeup path (shot->mDrawOverrides above)
+                    // likewise calls DrawShowing() directly, bypassing the showing
+                    // flag; mirror that here so wide/stage shots draw the full band.
+                    if (bandChar)
+                        bandChar->DrawShowing();
+                }
+            }
+#endif
         }
         if (TheRnd->ProcCmds() & kProcessWorld && shot) {
             Spotlight *spot = shot->GlowSpot();
