@@ -3,6 +3,7 @@
 #ifdef HX_NATIVE
 #include <cstdio>
 #include <cstdlib>
+#include "rndobj/Rnd.h"  // TheRnd->ClearDepthForOverlay() — see TrackPanel::Draw
 #endif
 
 #include "Track.h"
@@ -641,8 +642,24 @@ int Performer::CodaScore() const { return 0; }
 
 void TrackPanel::Draw() {
     START_AUTO_TIMER("hud_track_draw");
-    if (unk5c)
+    if (unk5c) {
+#ifdef HX_NATIVE
+        // Note highway depth-composite fix. The venue WorldDir (band characters
+        // + stage) has already drawn into the shared depth buffer with the venue
+        // camera; the track below draws the highway/gems with game.cam, a
+        // separate camera with its own near/far. Without resetting depth here,
+        // venue geometry near the venue camera gets a smaller NDC-z than the
+        // highway and occludes it (chairs clipping the lane, a band member's arm
+        // over the top of the track). Clear depth (color preserved) so the
+        // highway always composites on top, exactly as in the retail game.
+        // BandRnd::ClearDepthForOverlay implements this; the base Rnd no-op makes
+        // it a harmless call on backends that don't (Wii match build skips this
+        // whole block). Opt-out: RB3_NO_TRACK_DEPTH_CLEAR=1.
+        if (TheRnd)
+            TheRnd->ClearDepthForOverlay();
+#endif
         UIPanel::Draw();
+    }
 }
 
 DECOMP_FORCEACTIVE(
