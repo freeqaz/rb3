@@ -33,6 +33,7 @@
 #include "ui/UIPanel.h"
 #include "ui/UIComponent.h"
 #include "ui/UILabel.h"   // UILabel — N6 seldiff raw-token clear
+#include "ui/UIPicture.h" // UIPicture::SetHookTex — N8 album-art smear re-show kill
 #include "rndobj/Text.h"  // RndText::RawText — detect the raw %S %I SONGS leak
 #include "meta_band/BandSongMgr.h"        // TheSongMgr (N6 song+artist text)
 #include "meta_band/BandSongMetadata.h"   // BandSongMetadata Title/Artist (N6)
@@ -993,6 +994,139 @@ void RB3RegisterNativeManagerStubs() {
         TheContentMgr->StartRefresh();
 }
 
+// N8 fix — song-select album-art smear bleeding over the song list.  When a SONG
+// is highlighted, a stale, colorful image bleeds across the center / full width of
+// the Music Library list (behind/over the row text), absent on non-song rows.  The
+// retail reference shows a CLEAN dark backdrop behind the list with album art only
+// in the small top-right panel.  Two distinct draw-objects produce the smear
+// natively, both rooted in the same documented render-to-texture / char-bone-
+// deformation no-op (cf. the BandPatchMesh / OutfitConfig RTT-dead notes in
+// CHAR_OUTFIT_DIAGNOSIS.md — RTT + char-bone deformation are no-ops at every native
+// engine layer):
+//
+//  (1) `etched_art.grp` / `etched_art01.grp` — the "etched glass" RTT /
+//      environment-reflection SOURCE groups for the album region.  In retail their
+//      contents are composited as a subtle reflection into the top-right panel via
+//      an offscreen render target; they are never drawn opaquely.  Natively the RTT
+//      is a no-op, so `etched_art.grp`'s geometry leaks straight onto the main
+//      screen at its own transform position (world ~x=-115, i.e. center-left).  Its
+//      `01` sibling is parked off-screen (x=+1150); the PropAnim that would
+//      swap/move the pair never runs natively, so the visible group stays pinned
+//      center-left at every scroll depth.  Bisection-confirmed: this is the smear
+//      on songs whose real cover texture has not loaded.
+//
+//  (2) the bone-deformed 3-D album-cover surface chain
+//      `bone_album_group.mesh` -> `album_art.grp` -> `bone_album.mesh` ->
+//      `album.mesh` (where `album.mesh` is the mesh DRIVEN by the `album_art.pic`
+//      UIPicture — i.e. there is no separate flat thumbnail; the picture renders
+//      THROUGH this mesh).  Retail uses char-bone deformation to fold/scale the
+//      surface into the small top-right thumbnail.  This is the ONE place the two
+//      port targets diverge: on WEB char-bone skinning works, so `album.mesh` IS
+//      the correct top-right cover and must be LEFT ALONE (hiding it removes the
+//      album art — verified: doing so blanked the Marilyn Manson / RIOT! covers on
+//      web).  On NATIVE skinning is a no-op, so for a song whose cover loaded the
+//      mesh renders at full undeformed extent — a screen-spanning quad behind the
+//      list — and the top-right thumbnail is empty; since bone-deformed art can't
+//      be positioned natively, the retail-matching choice there is to hide it (the
+//      top-right then shows just `album_frame01.mesh` + the blank placeholder, as
+//      an art-less song already does).  The cover texture is drawn by both
+//      `bone_album.mesh` and its child `album.mesh`, so both plus the
+//      `bone_album_group.mesh` cage are hidden — but ONLY under `#ifndef
+//      __EMSCRIPTEN__` (native).  When native skinning lands this becomes moot.
+//
+// The cover mesh's re-show is killed at its SOURCE (NATIVE only): `album.mesh` is
+// the mesh DRIVEN by the `album_art.pic` UIPicture, and that picture re-shows it via
+// `UIPicture::FinishLoading -> HookupMesh -> mMesh->SetShowing(true)` (UIPicture.cpp
+// :158) every time the album-art texture finishes loading (i.e. on each highlight
+// change to a song whose cover loads).  That completion fires asynchronously from
+// the load machinery — sometimes while the panel is still entering — so merely
+// hiding the mesh by flag each frame loses a 1-frame race on the load-completion
+// frame.  We instead call `album_art.pic->SetHookTex(false)`, which makes
+// HookupMesh's `if (mMesh && mHookTex)` guard fail so the picture NEVER re-shows the
+// mesh.  That is a one-shot persistent state (nothing on song_select re-enables
+// hook_tex), so the race window is closed at the root.  We still SetShowing(false)
+// on the meshes and the etched groups to clear any already-shown state and to handle
+// the etched RTT groups (which `album_art.pic` does not own).
+//
+// Belt-and-suspenders, the function is also called a second time per frame right
+// before Draw (App::RunOneFrame) so any residual show is cleared before render.
+//
+// VERIFIED: with this fix the smear meshes are provably hidden (showing=0) on every
+// drawn frame (checked live via RB3_SMEAR_DBG over the whole song_select session).
+// NOTE ON THE HEADLESS CAPTURE HARNESS (scripts/native/song-select-capture.py): the
+// headless WebGPU readback target can RETAIN pixels from the brief (~1-2 frame)
+// transient where the cover drew during the initial scroll past a mounted song —
+// the capture saturation drifts up/down over idle time while the mesh is provably
+// hidden the whole time, i.e. it is decoupled from the live mesh state.  That is a
+// headless-readback/accumulation artifact in the pinned engine's GpuDevice headless
+// path, NOT a live render of these meshes, and it does not occur on the real
+// double-buffered web/native swapchain (which presents a freshly cleared+drawn frame
+// each frame).  Eliminating it fully would require an engine-side change (clearing
+// the headless readback/accumulation target) and is out of scope for this glue fix.
+//
+// Glue-layer, permuter-safe, force-HIDE only (never shows), scoped to
+// song_select_screen.  Opt-out via RB3_NO_ETCHED_ART_FIX.
+void RB3SongSelectHideAlbumSmear(UIScreen *cur, Symbol curName) {
+    if (getenv("RB3_NO_ETCHED_ART_FIX") || !cur
+        || curName != Symbol("song_select_screen") || !ObjectDir::sMainDir)
+        return;
+    UIPanel *ssp = ObjectDir::sMainDir->Find<UIPanel>("song_select_panel", false);
+    ObjectDir *pd = ssp ? (ObjectDir *)ssp->LoadedDir() : nullptr;
+    // NOTE: deliberately NOT gated on UIPanel::kUp.  The cover re-show can land
+    // while the panel is still entering (state != kUp); a kUp gate would skip the
+    // fix on exactly those frames.  Acting whenever the panel dir is loaded is
+    // race-free and equally safe (we only ever HIDE / disable a hook).
+    if (!pd)
+        return;
+    bool dbg = getenv("RB3_SMEAR_DBG") != nullptr;
+
+    // The "etched glass" RTT reflection source leaks straight onto the screen on
+    // BOTH port targets (offscreen-RTT compositing is a port no-op), drawing a
+    // stale album reflection pinned center-left over the list. Hide it everywhere.
+    static const char *const kEtchedObjects[] = {"etched_art.grp", "etched_art01.grp"};
+    for (int i = 0; i < 2; ++i) {
+        RndDrawable *d =
+            dynamic_cast<RndDrawable *>(pd->FindObject(kEtchedObjects[i], true));
+        if (dbg)
+            MILO_LOG("RB3 N8 smear: %s found=%d showing=%d\n", kEtchedObjects[i],
+                     (int)(d != nullptr), d ? (int)d->Showing() : -1);
+        if (d && d->Showing())
+            d->SetShowing(false);
+    }
+
+#ifndef __EMSCRIPTEN__
+    // NATIVE ONLY. The album cover (album.mesh, bone-deformed via bone_album*) is
+    // folded into the small top-right thumbnail by char-bone skinning. On WEB
+    // skinning works, so album.mesh IS the correct top-right cover — leave it
+    // alone (hiding it there removes the album art, the very thing we want shown).
+    // On the native target skinning is a no-op, so album.mesh renders undeformed at
+    // full screen-spanning extent (the cover-shaped smear) and the top-right
+    // thumbnail is empty — so here we hide the cover meshes and stop album_art.pic
+    // from re-showing them on async cover load (SetHookTex(false) makes
+    // HookupMesh's `if (mMesh && mHookTex)` guard fail; persistent one-shot since
+    // nothing on song_select re-enables hook_tex). When native skinning lands this
+    // whole block becomes unnecessary.
+    UIPicture *pic = dynamic_cast<UIPicture *>(pd->FindObject("album_art.pic", true));
+    if (dbg)
+        MILO_LOG("RB3 N8 smear: album_art.pic found=%d hookTex=%d\n",
+                 (int)(pic != nullptr), pic ? (int)pic->mHookTex : -1);
+    if (pic && pic->mHookTex)
+        pic->SetHookTex(false);
+
+    static const char *const kCoverObjects[] = {
+        "album.mesh", "bone_album.mesh", "bone_album_group.mesh"};
+    for (int i = 0; i < 3; ++i) {
+        RndDrawable *d =
+            dynamic_cast<RndDrawable *>(pd->FindObject(kCoverObjects[i], true));
+        if (dbg)
+            MILO_LOG("RB3 N8 smear: %s found=%d showing=%d\n", kCoverObjects[i],
+                     (int)(d != nullptr), d ? (int)d->Showing() : -1);
+        if (d && d->Showing())
+            d->SetShowing(false);
+    }
+#endif
+}
+
 // Called once per frame from App::RunWithoutDebugging's native frame loop, AFTER
 // TheUI.Poll() (so a transition kicked off by a prior frame's input has advanced
 // before the next input fires).
@@ -1042,27 +1176,29 @@ void RB3GameInputPoll(int frame) {
                                      "(frame %d)\n", frame);
                         }
                     } else if (onSongSelect && kWebKeyMap[i].action == kAction_Confirm) {
-                        // W3c Part B: a Confirm on song_select_screen confirms a
-                        // song via the same DTA handler the native RB3_GAME_INPUT
-                        // script uses ({music_library select_highlighted_node
-                        // $user}). To reach the W3c target song (20th Century Boy)
-                        // DETERMINISTICALLY — without blind keyboard list nav that
-                        // can land on a non-song header node (a null-deref ->
-                        // wasm trap in MusicLibrary::SelectNode's
-                        // dynamic_cast<OwnedSongSortNode*>) — first pin the
-                        // highlight to the target song via TryToSetHighlight, then
-                        // select. The target defaults to 20thcenturyboy (the only
-                        // W3c-required playable song); window.rb3WebTargetSong can
-                        // override it for testing other songs.
-                        char tgt[64] = "20thcenturyboy";
+                        // A Confirm on song_select_screen confirms a song via the
+                        // same DTA handler the native RB3_GAME_INPUT script uses
+                        // ({music_library select_highlighted_node $user}), which
+                        // selects whatever the player has highlighted — i.e. the
+                        // song their Up/Down navigation already moved the cursor to.
+                        //
+                        // We must NOT re-pin the highlight here in normal play: the
+                        // original W3c code force-pinned it to 20thcenturyboy so the
+                        // automated capture harness could reach one song
+                        // deterministically, but that override clobbered real user
+                        // selection (every confirm landed on 20th Century Boy). The
+                        // pin is now opt-in ONLY: it fires when window.rb3WebTargetSong
+                        // is set (the capture scripts set it). Empty default => no
+                        // re-pin => the user's actual highlight is selected.
+                        char tgt[64] = "";
                         EM_ASM({
                             var s = window.rb3WebTargetSong;
                             if (s && s.length && s.length < 63)
                                 stringToUTF8(s, $0, 64);
                         }, tgt);
                         if (TheMusicLibrary && tgt[0]) {
-                            MILO_LOG("RB3 web song-select: pinning highlight to "
-                                     "'%s' (frame %d)\n", tgt, frame);
+                            MILO_LOG("RB3 web song-select: TEST override — pinning "
+                                     "highlight to '%s' (frame %d)\n", tgt, frame);
                             TheMusicLibrary->TryToSetHighlight(Symbol(tgt), kNodeSong, false);
                         }
                         ScriptedMsg m;
@@ -1123,6 +1259,12 @@ void RB3GameInputPoll(int frame) {
             }
         }
     }
+
+    // N8 fix — song-select album-art smear bleeding over the song list.  Enforced
+    // in RB3SongSelectHideAlbumSmear(), called from here AND once more just before
+    // Draw (App::RunOneFrame), because the offending re-show is async — see the full
+    // root-cause writeup at that function.
+    RB3SongSelectHideAlbumSmear(cur, curName);
 
     // N6 fix — seldiff `%S %I SONGS` raw setlist-token leak.  The on-screen leak
     // is the marquee song-preview label `song_preview.lbl`, NOT `setlist_title.lbl`

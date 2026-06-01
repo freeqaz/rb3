@@ -486,6 +486,18 @@ void App::RunOneFrame(int frame) {
     AudioDevice::GetInstance().PumpAudio();
 #endif
 
+    // N8 fix — re-hide the song-select album-art smear meshes JUST before Draw.
+    // The cover mesh is re-shown asynchronously by UIPicture::FinishLoading after
+    // RB3GameInputPoll already ran this frame; this second call (same function,
+    // idempotent force-HIDE) closes that 1-frame race so the leak never reaches the
+    // framebuffer. No-op off song_select / opt-out via RB3_NO_ETCHED_ART_FIX. See
+    // the full root-cause writeup in native/src/rb3_game_input.cpp.
+    {
+        extern void RB3SongSelectHideAlbumSmear(UIScreen *, Symbol);
+        UIScreen *ssCur = TheUI.CurrentScreen();
+        RB3SongSelectHideAlbumSmear(ssCur, ssCur ? ssCur->Name() : Symbol());
+    }
+
     if (TheRnd)
         TheRnd->BeginDrawing();
 #if defined(HX_NATIVE) && !defined(__EMSCRIPTEN__)
