@@ -994,56 +994,13 @@ void RB3RegisterNativeManagerStubs() {
         TheContentMgr->StartRefresh();
 }
 
-// song-select "etched glass" album-region hide.  In retail the album region's
-// "etched glass" look is a full-frame `RndPostProc` colour-grade (`B+W_film02.pp`,
-// Selected each Poll by `MetaPanel::UpdatePostProc`).  The native BandRnd backend
-// does not yet honor `RndPostProc::Current()`, so the etched-art source meshes
-// (`etched_art.grp` / `etched_art01.grp`) draw raw/ungraded.  Until the postproc-rtt
-// feature lands (render the main frame into an offscreen intermediate and run the
-// engine's existing PostProcPass — see RTT_HACK_UNWIND_ROADMAP.md), we hide those
-// etched-art groups so the ungraded geometry does not show.
-//
-// native album cover-hide removed (smear-removal St.1, RTT_HACK_UNWIND_ROADMAP.md);
-// etched hide stays until postproc-rtt lands.  The native-only `album.mesh` /
-// `bone_album*.mesh` cover-hide that used to live here was a PROVEN REGRESSION: it
-// premised "char-bone skinning is a native no-op", which is no longer true — skinning
-// and mesh-RTT both work now, so `album.mesh` renders correctly positioned in the
-// top-right thumbnail and hiding it blanked correct art (OFFSCREEN_RTT_INVESTIGATION.md
-// §2).  The etched-group hide below is the only remaining purpose of this function.
-//
-// Belt-and-suspenders, the function is also called a second time per frame right
-// before Draw (App::RunOneFrame) so any residual show is cleared before render.
-//
-// Glue-layer, permuter-safe, force-HIDE only (never shows), scoped to
-// song_select_screen.  Opt-out via RB3_NO_ETCHED_ART_FIX.
-void RB3SongSelectHideAlbumSmear(UIScreen *cur, Symbol curName) {
-    if (getenv("RB3_NO_ETCHED_ART_FIX") || !cur
-        || curName != Symbol("song_select_screen") || !ObjectDir::sMainDir)
-        return;
-    UIPanel *ssp = ObjectDir::sMainDir->Find<UIPanel>("song_select_panel", false);
-    ObjectDir *pd = ssp ? (ObjectDir *)ssp->LoadedDir() : nullptr;
-    // NOTE: deliberately NOT gated on UIPanel::kUp.  The cover re-show can land
-    // while the panel is still entering (state != kUp); a kUp gate would skip the
-    // fix on exactly those frames.  Acting whenever the panel dir is loaded is
-    // race-free and equally safe (we only ever HIDE / disable a hook).
-    if (!pd)
-        return;
-    bool dbg = getenv("RB3_SMEAR_DBG") != nullptr;
-
-    // The "etched glass" RTT reflection source leaks straight onto the screen on
-    // BOTH port targets (offscreen-RTT compositing is a port no-op), drawing a
-    // stale album reflection pinned center-left over the list. Hide it everywhere.
-    static const char *const kEtchedObjects[] = {"etched_art.grp", "etched_art01.grp"};
-    for (int i = 0; i < 2; ++i) {
-        RndDrawable *d =
-            dynamic_cast<RndDrawable *>(pd->FindObject(kEtchedObjects[i], true));
-        if (dbg)
-            MILO_LOG("RB3 N8 smear: %s found=%d showing=%d\n", kEtchedObjects[i],
-                     (int)(d != nullptr), d ? (int)d->Showing() : -1);
-        if (d && d->Showing())
-            d->SetShowing(false);
-    }
-}
+// (Former RB3SongSelectHideAlbumSmear removed.) The song-select "etched glass"
+// album-region hide is gone: with the engine now honoring RndPostProc per-screen
+// (postproc-rtt, engine c70be2a) plus working char-bone skinning + mesh-RTT, the
+// etched-art groups and the album cover render correctly. Verified hide-OFF on the
+// web swapchain with a real cover (The Beautiful People / Marilyn Manson): cover
+// present, no center smear, etched groups showing. See RTT_HACK_UNWIND_ROADMAP.md
+// (Stage 3) and OFFSCREEN_RTT_INVESTIGATION.md.
 
 // Called once per frame from App::RunWithoutDebugging's native frame loop, AFTER
 // TheUI.Poll() (so a transition kicked off by a prior frame's input has advanced
@@ -1177,12 +1134,6 @@ void RB3GameInputPoll(int frame) {
             }
         }
     }
-
-    // N8 fix — song-select album-art smear bleeding over the song list.  Enforced
-    // in RB3SongSelectHideAlbumSmear(), called from here AND once more just before
-    // Draw (App::RunOneFrame), because the offending re-show is async — see the full
-    // root-cause writeup at that function.
-    RB3SongSelectHideAlbumSmear(cur, curName);
 
     // N6 fix — seldiff `%S %I SONGS` raw setlist-token leak.  The on-screen leak
     // is the marquee song-preview label `song_preview.lbl`, NOT `setlist_title.lbl`
