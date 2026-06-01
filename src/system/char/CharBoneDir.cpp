@@ -13,7 +13,7 @@
 
 INIT_REVS(CharBoneDir)
 
-ObjectDir *sResources;
+static ObjectDir *sResources;
 DataArray *CharBoneDir::sCharClipTypes;
 
 DataNode GetClipTypes(DataArray *da) { return CharBoneDir::GetClipTypes(); }

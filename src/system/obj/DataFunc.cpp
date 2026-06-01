@@ -27,7 +27,7 @@ DataThisPtr gDataThisPtr;
 static DataArray *sFileMsg;
 static bool sOldNoModal;
 static ModalCallbackFunc *sOldModalCallback;
-DataArray *sNotifyMsg;
+static DataArray *sNotifyMsg;
 
 // Force ~MergeFilter() to generate here
 DECOMP_FORCEDTOR(DataFunc, MergeFilter);

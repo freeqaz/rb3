@@ -8,7 +8,7 @@ namespace Quazal {
 
     DateTime::DateTime(const DateTime &dt) : m_ui64Value(dt.m_ui64Value) {}
 
-    DateTime &DateTime::operator=(const DateTime &dt) { m_ui64Value = dt.m_ui64Value; }
+    DateTime &DateTime::operator=(const DateTime &dt) { m_ui64Value = dt.m_ui64Value; return *this; }
 
     DateTime::operator unsigned long long() const { return m_ui64Value; }
 
