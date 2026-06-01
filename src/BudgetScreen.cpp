@@ -26,6 +26,7 @@
 #include "network/net/Net.h"
 
 #include "system/utl/Symbols2.h"
+#include "system/utl/Symbols4.h"
 
 #include <algorithm>
 #include "decomp.h"
@@ -592,9 +593,6 @@ int BudgetScreen::HeapFreeSize(const char *name) {
     }
     return total;
 }
-
-Symbol end_test("end_test");
-Symbol next_test("next_test");
 
 BEGIN_HANDLERS(BudgetScreen)
     HANDLE_ACTION(end_test, EndTest())
