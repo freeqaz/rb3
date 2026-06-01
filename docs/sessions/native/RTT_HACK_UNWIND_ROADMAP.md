@@ -15,15 +15,17 @@ details-pane PropAnim hack. Per-feature implementation specs are in the appendix
 > - ✅ **smear-removal Stage 1** — LANDED (`bb077020`). Native-only album cover-hide
 >   deleted; depth-6 top-right now shows the cover correctly (was blanked grey). Etched
 >   hide + `App.cpp` call kept (await postproc-rtt).
-> - ❎ **propanim-snap** — NOT NEEDED. Empirical root-cause check **disconfirmed** the
->   hypothesis: the terminal `showing=FALSE` keyframe **already applies** natively (the
->   `song_select_details.anim` range is `0→0.01`, `mScale<0`, so its single poll lands
->   `frame=0.0=mMin=terminal`). With the glue hack disabled the pane is **already hidden**
->   (`showing=0`, verified). So the `AnimTask::Poll` terminal-snap is unnecessary, and the
->   **details-pane hack is now inert/redundant** (not load-bearing). Conservatively kept
->   for now — removing it safely needs verifying the *open-details → navigate-away* flow,
->   not just the enter flow the check covered. (Likely made inert by a later engine
->   PropAnim/SetFrame fix.)
+> - ⚠️ **propanim-snap** — STILL OPEN; details-pane hack is **LOAD-BEARING** (kept).
+>   CORRECTION (2026-06-01, v2 details stage): the earlier "terminal keyframe already
+>   applies / hack is inert" claim was **WRONG** — it came from a misleading DTA query
+>   (bare `{song_select_details showing}` returns 0 because the symbol doesn't resolve at
+>   root). The proper nested probe `{{song_select_panel find song_select_details} showing}`
+>   shows that with the hack disabled, a TRIGGERED terminal `showing=FALSE` keyframe
+>   (`details_hide.trg`) does **NOT** apply natively (pane stays `showing=1` after
+>   `{details_hide.trg trigger}` AND `play_end_of_anims`). So the `RB3_NO_DETAILS_FIX`
+>   glue hack is genuinely needed and was KEPT. (Note: the *continuously-driven* ObjectKeys
+>   postproc interp DOES work natively — see the gameplay grade below — so the gap is
+>   specific to one-shot *triggered* terminal keyframes, a real future engine fix.)
 > - ✅ **drawrect** — LANDED (engine `5cfaf30`). Self-contained `BandRnd::DrawRect` +
 >   shared 2D-quad pipeline; rect-composite layers now paint. Verified (fires + group-0
 >   restore + `RB3_RTT_OFF` no-crash; live RTT-outfit path uses the planned fallback).
@@ -42,9 +44,35 @@ details-pane PropAnim hack. Per-feature implementation specs are in the appendix
 >   reproduce on the merged engine.
 >
 > Both engine features merged to engine `main` `c70be2a`; rb3 pin bumped (`15f166cc`).
-> **All song_select album hacks are now retired.** Remaining v2 follow-ups (non-blocking):
-> texture-driven PostProc noise grain; optional bloom; the now-inert details-pane hack
-> (safe to delete after an open-details→navigate verify).
+> **All song_select album hacks are now retired.**
+>
+> **V2 + Tier-2 LANDED (2026-06-01, engine `main` `dc95098`, rb3 pin `67b59ef7`).**
+> - ✅ **PostProc noise grain** (engine `960f804`) — binds the real tiled noise texture +
+>   `kNoiseGain` attenuation + midtone mask; subtle film grain, **no gray-wash**.
+> - ✅ **Bloom** (engine `2c2ee04`) — `BloomPass` wired into the composite; localized glow,
+>   no blowout.
+> - ✅ **outfit-RTT verify** (`RB3_PRECLEAR` seam, engine `d8608e4` + rb3 `e8352ca`) —
+>   `DrawRect` RTT-outfit tint proven correct (`mod==matColor`); dispatch gated (off by
+>   default — the default `BeginFrame` doesn't call `DrawPreClear`).
+> - ✅ **Tier-2 venue-only grade layering** (engine `132add5`, merged via `dc95098`) — the
+>   grade applies to the VENUE only; the gem-highway + fret-buttons + HUD draw OVER the
+>   composite **ungraded**. Merged with the concurrent note-highway depth fix (`6498fab`);
+>   the Tier-2 `ClearDepthForOverlay` subsumes it (venue-grade flush + depth-clear, with a
+>   plain depth-clear fallback). Verified: during an authored B&W camera shot the venue is
+>   B&W while the gem highway/fret-buttons render in **color** on top (strike-plate sat 0.09
+>   vs venue 0.01); steady-state gameplay fully colored; song_select/menus unchanged.
+>
+> **CORRECTION — there was NO gameplay color regression.** A mid-investigation alarm
+> ("gameplay renders grayscale") was a **misdiagnosis**: captures were taken during the
+> song's *authored* intro B&W camera shots. Tier-1 instrumentation proved the venue
+> postproc saturation holds the correctly-authored value at all times (0 at steady-state =
+> fully colored; −100 only during authored intro B&W). No value fix was needed. Tier-2 is
+> still a genuine improvement (gameplay HUD/gems stay colored even under an authored B&W
+> venue grade, matching retail layering).
+>
+> Remaining v2 follow-ups (non-blocking): texture-driven PostProc noise at full fidelity
+> (grain is in but tuned conservatively); enabling the outfit `DrawPreClear` dispatch by
+> default; the triggered-terminal-PropAnim engine fix (would retire the details-pane hack).
 
 Feature slugs:
 - **drawrect** — `BandRnd::DrawRect` (engine, M)
@@ -197,8 +225,8 @@ propanim-snap touches `Anim.cpp` (different file) → can proceed in parallel.
 | native-only cover hide + `SetHookTex(false)` — `rb3_game_input.cpp:1097-1127` | HACK (active regression) | smear-removal | **2 (St.1)** |
 | etched-group hide — `rb3_game_input.cpp:1086-1095` | HACK | postproc-rtt → smear-removal | **5→6 (St.3)** |
 | `App::RunOneFrame` per-frame call — `src/App.cpp:528-532` | HACK | postproc-rtt → smear-removal | **6 (St.3)** (maybe St.1 if etched never re-shows) |
-| details-pane hide (`RB3_NO_DETAILS_FIX`) — `rb3_game_input.cpp:~1235-1261` | HACK → **now inert/redundant** | (no fix needed — engine already applies the terminal keyframe) | **deferred** — safe to delete once the open-details→navigate flow is verified |
-| etched_art `01` transform/swap PropAnim | n/a | (terminal keyframes already apply natively — not actually a gap) | — |
+| details-pane hide (`RB3_NO_DETAILS_FIX`) — `rb3_game_input.cpp:~1235-1261` | HACK — **LOAD-BEARING** (kept) | triggered-terminal-PropAnim engine fix (NOT done) | open — a TRIGGERED terminal `showing=FALSE` keyframe is not applied natively (verified via the proper nested DTA probe); the hack stays until that engine fix lands |
+| etched_art `01` transform/swap PropAnim | n/a | (n/a — etched hide already removed in St.3 via postproc-rtt) | — |
 | CPU-composite fallback (`CHAR_OUTFIT_DIAGNOSIS.md §3`) | pre-empted | drawrect | **3** |
 | headless readback-retention quirk (§2/§5-item3) | measurement | capture-hygiene | **1** |
 | `ui/image/` + `<song>_keep.png_xbox` populate | GLUE | smear-removal St.2 (promote into extraction) | **2 (companion)** |
