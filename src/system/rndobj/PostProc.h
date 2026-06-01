@@ -114,6 +114,12 @@ public:
     float GetNoiseIntensity() const { return mNoiseIntensity; }
     bool GetNoiseMidtone() const { return mNoiseMidtone; }
     bool GetNoiseStationary() const { return mNoiseStationary; }
+    // The real RB3 grain: a tiled noise BITMAP (mNoiseMap) sampled at the
+    // mNoiseBaseScale tiling, midtone-overlay blended, scaled by intensity.
+    // (See DC3 NgPostProc::CheckNoise — same fields drive kPS_NoiseParams.)
+    RndTex *GetNoiseMap() const { return mNoiseMap.Ptr(); }
+    const Vector2 &GetNoiseBaseScale() const { return mNoiseBaseScale; }
+    float GetNoiseTopScale() const { return mNoiseTopScale; }
     const Vector2 &GetFlickerModBounds() const { return mFlickerModBounds; }
     const Vector2 &GetFlickerTimeBounds() const { return mFlickerTimeBounds; }
     float GetFlickerSeconds() const { return mFlickerSeconds.x; }
