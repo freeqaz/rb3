@@ -123,7 +123,7 @@ void SongMgr::ContentLoaded(Loader *loader, ContentLocT loct, Symbol s) {
     DataArray *data = d->Data();
     if (data) {
         if (AllowContentToBeAdded(data, loct)) {
-            if (!streq(s.mStr, ".")) {
+            if (s != ".") {
                 CacheSongData(data, d, loct, s);
             } else {
                 AddSongData(data, d, loct);
