@@ -51,7 +51,7 @@ static bool sDumpLyricPlates;
 static bool sDumpPlateStates;
 bool gDebugSpew;
 
-MicClientID sNullMicClientID(-1, -1);
+static MicClientID sNullMicClientID(-1, -1);
 
 inline TambourineGemPool::TambourineGemPool() {
     for (int i = 0; i < 25; i++) {

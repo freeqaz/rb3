@@ -34,7 +34,7 @@
 #include "utl/Symbols.h"
 #include "KeyChain.h"
 
-MicClientID sNullClientID(-1, -1);
+static MicClientID sNullClientID(-1, -1);
 
 namespace {
     struct DebugGraph {

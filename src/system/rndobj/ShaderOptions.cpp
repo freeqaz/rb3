@@ -3,7 +3,7 @@
 
 #include "decomp.h"
 
-Symbol sShaderTypes[26];
+static Symbol sShaderTypes[26];
 
 void InitShaderOptions() {
     sShaderTypes[0] = "bloom";
