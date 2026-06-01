@@ -98,7 +98,9 @@ jobs:
             cmake \
             ninja-build \
             pkg-config \
-            zlib1g-dev
+            zlib1g-dev \
+            libvorbis-dev \
+            libogg-dev
           clang --version
           cmake --version
           ninja --version
