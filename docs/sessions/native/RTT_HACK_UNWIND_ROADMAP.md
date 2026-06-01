@@ -70,9 +70,16 @@ details-pane PropAnim hack. Per-feature implementation specs are in the appendix
 > still a genuine improvement (gameplay HUD/gems stay colored even under an authored B&W
 > venue grade, matching retail layering).
 >
-> Remaining v2 follow-ups (non-blocking): texture-driven PostProc noise at full fidelity
-> (grain is in but tuned conservatively); enabling the outfit `DrawPreClear` dispatch by
-> default; the triggered-terminal-PropAnim engine fix (would retire the details-pane hack).
+> **Outfit `DrawPreClear` now ON BY DEFAULT** (engine `1a1f84e`, rb3 pin `4b17f1da`) —
+> character-outfit RTT two-color tints render by default (`OutfitConfig::MatSwap::Compose`
+> → `BandRnd::DrawRect` into the `kRenderedNoZ` outfit diffuse); verified regression-safe
+> across boot/main_hub/song_select/gameplay; opt-out `RB3_NO_PRECLEAR=1`. Web rebuilt at
+> `1a1f84e` and verified.
+>
+> Remaining follow-ups (non-blocking, low-ROI): texture-driven PostProc noise at full
+> fidelity (grain is in but tuned conservatively, `kNoiseGain=0.04`); the
+> triggered-terminal-PropAnim fix (would retire the `RB3_NO_DETAILS_FIX` details-pane hack
+> — in progress; gated on being low-regression since PropAnim drives all animation).
 
 Feature slugs:
 - **drawrect** — `BandRnd::DrawRect` (engine, M)
