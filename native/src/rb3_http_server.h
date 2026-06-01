@@ -103,3 +103,9 @@ void RB3HttpServerInit();      // start if RB3_HTTP=1 (else no-op)
 void RB3HttpServerShutdown();
 void RB3HttpServerPoll(int frame);          // drain commands + notify state (pre-draw)
 void RB3HttpServerPollScreenshots();        // drain screenshot queue (post-EndDrawing)
+
+// Capture hygiene: render one fresh full frame into the single-buffered headless
+// target (BeginDrawing/UI.Draw/EndDrawing, no PresentFrame) so /api/screenshot
+// readbacks reflect current poll-side state instead of a 1-2-frame-stale alias.
+// No-op in windowed mode (!IsHeadless()). MUST be called on the main thread.
+void RB3RenderFreshHeadlessFrame();

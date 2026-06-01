@@ -61,6 +61,63 @@ static std::string HJsonEscape(const std::string& s) {
 }
 
 // ---------------------------------------------------------------------------
+// Capture-hygiene — render one fresh full frame into the single-buffered
+// headless target immediately before each readback.
+//
+// ROOT CAUSE of the headless readback-retention quirk: GpuDevice::mHeadlessTex
+// is created once and reused (single-buffered). The main pass already clears it
+// every frame (BandRnd::BeginFrame loadOp=Clear), so this is NOT a missing
+// LoadOp — it is capture-vs-draw TIMING. /api/screenshot is serviced from a
+// queue; ReadbackHeadlessFrame returns whatever the one persistent texture held
+// at the last submitted EndFrame, which can be one frame behind the poll-side
+// state change (an input verb landed this frame but the visible frame submitted
+// in RunOneFrame still reflects the pre-verb state, so a transient lingers 1-2
+// captures). Fix: re-render a fresh full frame into the headless target right
+// here — on the MAIN thread, after this frame's RunOneFrame EndDrawing — so the
+// readback below always reflects current poll-side state.
+//
+// THREAD-SAFETY (the critical correctness check): HandleScreenshot runs on the
+// MAIN / render thread. The httplib endpoint only QueueAndWait()s the request;
+// the actual handler is drained by RB3HttpServerPollScreenshots() ->
+// ProcessScreenshots() from App::RunWithoutDebugging's frame loop (App.cpp ~709),
+// AFTER RunOneFrame's EndDrawing(). No draw is in flight, so issuing a fresh
+// BeginDrawing/UI.Draw/EndDrawing here is safe — no pending-flag indirection is
+// needed.
+//
+// We deliberately use the lighter BeginDrawing/UI.Draw/EndDrawing trio rather
+// than full RunOneFrame: RunOneFrame also drives TheTaskMgr/Synth poll and the
+// game clock, which already ran this iteration — re-running it would double-poll
+// and advance the song clock twice per loop. We also do NOT call PresentFrame:
+// this is the headless capture path; the readback reads mHeadlessTex directly,
+// and PresentFrame is the windowed-swapchain present (untouched here). The
+// windowed path is wholly unaffected — this helper is a no-op when !IsHeadless().
+// ---------------------------------------------------------------------------
+extern sigjmp_buf gDrawJmpBuf;   // native draw guard (defined in main_native.cpp)
+extern bool gDrawJmpBufSet;
+
+void RB3RenderFreshHeadlessFrame() {
+    if (!gBandRnd.mGpuReady || !gBandRnd.Gpu().IsHeadless())
+        return;  // windowed mode (or pre-init): leave the swapchain path alone
+    if (!TheRnd)
+        return;
+
+    // Same sigsetjmp draw-guard used in App::RunOneFrame (App.cpp ~543): a
+    // partially-loaded scene that segfaults in Draw() skips the frame instead of
+    // killing the process / the HTTP server.
+    TheRnd->BeginDrawing();
+    if (sigsetjmp(gDrawJmpBuf, 1) == 0) {
+        gDrawJmpBufSet = true;
+        TheUI.Draw();
+        gDrawJmpBufSet = false;
+    } else {
+        gDrawJmpBufSet = false;
+        MILO_LOG("RB3 Native: caught crash in fresh-headless-frame Draw(), skipping\n");
+    }
+    TheRnd->EndDrawing();
+    // NOTE: no PresentFrame() — readback reads mHeadlessTex directly.
+}
+
+// ---------------------------------------------------------------------------
 // Screenshot — read back the just-rendered headless frame to PNG bytes.
 // ---------------------------------------------------------------------------
 void RB3HttpServer::HandleScreenshot(Command& cmd) {
@@ -68,6 +125,13 @@ void RB3HttpServer::HandleScreenshot(Command& cmd) {
         cmd.result.error = "Renderer not initialized";
         return;
     }
+
+    // Capture hygiene: render a fresh frame into the single-buffered headless
+    // target so the readback reflects current poll-side state, not a 1-2-frame-
+    // stale alias. No-op (returns immediately) in windowed mode. Safe here
+    // because HandleScreenshot runs on the main thread after EndDrawing.
+    RB3RenderFreshHeadlessFrame();
+
     int w = gBandRnd.Gpu().WindowWidth();
     int h = gBandRnd.Gpu().WindowHeight();
     size_t pixelSize = (size_t)w * h * 4;
