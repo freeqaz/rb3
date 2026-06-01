@@ -42,8 +42,8 @@
 #include "utl/Symbols4.h"
 #include "utl/TimeConversion.h"
 
-bool sEnableShift = true;
-bool sUpdateShifting;
+static bool sEnableShift = true;
+static bool sUpdateShifting;
 
 static inline void MinEqPtr(int &x, const int &y) {
     const int *p = &x;

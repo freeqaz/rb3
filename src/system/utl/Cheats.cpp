@@ -7,7 +7,7 @@
 #include "utl/Symbols.h"
 
 CheatsManager *gCheatsManager;
-bool sKeyCheatsEnabled = true;
+static bool sKeyCheatsEnabled = true;
 bool gDisable;
 
 CheatsManager::CheatsManager() : mKeyCheatsEnabled(sKeyCheatsEnabled) {

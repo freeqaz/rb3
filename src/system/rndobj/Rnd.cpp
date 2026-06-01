@@ -451,8 +451,8 @@ void Rnd::RemovePointTest(RndFlare *flare) {
     }
 }
 
-Hmx::Object *sTexture;
-bool sCompressDone;
+static Hmx::Object *sTexture;
+static bool sCompressDone;
 
 float Rnd::DrawTimers(float f) {
     static DataArray *timerScript = SystemConfig("rnd")->FindArray("timer_script", false);
