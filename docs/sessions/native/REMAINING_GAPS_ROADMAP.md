@@ -109,6 +109,11 @@ continuously yet produce no flames → the FX are absent, not merely unphotograp
       hidden by the force-hide in StreakMeter.cpp:161-177)? 5-star-vs-1-disc
       scoreboard = separate, entangled w/ out-of-scope top-center HUD camera-frame.
       Full plan: `A2_A3_A4_glow_diagnosis.md`. **[Opus]** then Sonnet for wiring.
+  - **2026-06-02 UPDATE (worktree probe):** the safe non-glow A3 parts ALREADY WORK —
+    the multiplier `3x`/`4x` number (BandLabel text path) and the progressive 5-star
+    scoreboard both render correctly; the "missing" was a low-score-capture artifact
+    (verify HUD at ≥60s / mult>1 / ≥1 star). Only the cyan streak/SP **glow ring**
+    remains — blocked on venue-env / scene-lighting (parked with A2/A4).
 - [~] **A4 — Highway lane lighting / glow. DIAGNOSED 2026-06-02 (workflow, MED conf).**
       Confirmed SAME emissive root as A2 (shared fix lights now_bar_glow/overdrive_glow/
       spotlight_guitar_track_emmissive). PLUS two A4-specific causes for full lit-lane
