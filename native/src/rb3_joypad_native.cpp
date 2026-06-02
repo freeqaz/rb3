@@ -18,21 +18,45 @@
 // the gameplay GuitarController (already JoypadSubscribe'd). One path, one
 // poll: live menu + live gameplay, no plastic instrument.
 //
-// KEYMAP — derived from the real config chain on the Wii native build:
-//   - Pad 0's controller breed is pinned to `wii_guitar` (kJoypadWiiHxGuitar),
-//     the guitar breed present in joypad.dta's HX_WII `controllers` block.
-//   - joypad.dta controller_mapping maps `wii_guitar` -> instrument `guitar`,
-//     so GemPlayer::ResetController -> NewController builds a 5-lane
-//     GuitarController, and the cfg it receives is beatmatch_controller.dta's
-//     `guitar` block:
+// KEYMAP / BREED — derived from the LIVE config chain in this port.
+//
+//   The DTA preprocessor define is `HX_WII` (System.cpp:223 calls
+//   DataSetMacro("HX_WII") unconditionally — matched-fork Wii decomp code we
+//   must not touch). So the loaded SystemConfig("joypad") `controllers` /
+//   `button_meanings` / `adapters` arrays are the HX_WII branch, whose guitar
+//   breeds are `wii_guitar`, `wii_guitar_rb2`, `wii_roguitar` — NOT the Xbox
+//   `ro_guitar` family. The per-frame GuitarController::Poll + ::GetWhammyBar
+//   both do `SystemConfig("joypad")->FindArray("controllers", <breed>)` with the
+//   FATAL (two-arg) FindArray, so the pinned breed MUST live in that HX_WII
+//   `controllers` block or gameplay OSFatals every frame. => we pin `wii_guitar`.
+//
+//   BUT the loaded `controller_mapping` / `instrument_mapping` arrays come from a
+//   DIFFERENT, Xbox-flavoured joypad.dta fragment merged under (joypad ...) (via
+//   band_keep.dta's `#include joypad.dta`). That fragment only lists Xbox/PS3
+//   breeds and has NO `wii_guitar`, so GameConfig::GetController (controller_
+//   mapping) and LocalBandUser::ConnectedControllerType (instrument_mapping)
+//   would assert. This is a pure ASSET inconsistency (HX_WII controllers vs
+//   Xbox mappings). Since we can't edit assets / matched-fork / the engine, the
+//   glue injects the two missing mapping rows at JoypadInit time (EnsureWii
+//   GuitarMapped below): `(wii_guitar guitar)` into controller_mapping and
+//   `(wii_guitar kControllerGuitar)` into instrument_mapping. Runtime DataArray
+//   wiring only — no source/asset edits.
+//
+//   With the rows present the chain is:
+//   - JoypadControllerTypePadNum(0) returns the pinned `wii_guitar`.
+//   - controller_mapping maps `wii_guitar` -> instrument `guitar`, so
+//     GemPlayer::ResetController -> NewController builds a 5-lane GuitarController
+//     whose cfg is beatmatch_controller.dta's `guitar` block:
 //        (slots kPad_R2 0  kPad_Circle 1  kPad_Tri 2  kPad_X 3  kPad_Square 4)
 //        (force_mercury kPad_Select)
 //     i.e. frets target JoypadButtons R2/Circle/Tri/X/Square (NOT the menu's
-//     X=confirm meaning — these are the controller's `slots`).
+//     X=confirm meaning — these are the controller's `slots`). The existing
+//     keymap below already targets exactly these slots, so it is unchanged.
+//   - instrument_mapping maps `wii_guitar` -> kControllerGuitar.
 //   - Strum is GuitarController's default mStrumBarButtons = kPad_DUp/kPad_DDown.
 //   - Star power / overdrive ("mercury") = force_mercury = kPad_Select.
 //
-//   Desktop keymap (conflict-free; menu actions come from the wii_guitar
+//   Desktop keymap (conflict-free; menu actions come from the joypad
 //   button_meanings, gameplay slots from beatmatch_controller.dta guitar):
 //     Fret Green  (slot0) : 1 / A   -> kPad_R2     (menu: none)
 //     Fret Red    (slot1) : 2 / S   -> kPad_Circle (menu: Cancel)
@@ -55,9 +79,9 @@
 //   Whammy: GuitarController::GetWhammyBar (GuitarController.cpp:86) picks the
 //   axis from the controller cfg (ly_whammy -> GetLY, negative_rx_whammy_val ->
 //   -GetRX, traditional_whammy_val -> -(GetRX()+1)/2), clamped min(0, val). The
-//   `wii_guitar` cfg lists no whammy macro, so for v1 whammy is inert for that
-//   breed; we still drive both LY and RX from the Space key so any breed that
-//   DOES read an axis sees the engaged value. Documented as a v1 caveat.
+//   HX_WII `wii_guitar` cfg carries TRADITIONAL_WHAMMY_VAL, so whammy reads
+//   -(GetRX()+1)/2: holding Space drives RX = +1 -> whammy = -1 (engaged). We
+//   drive both LY and RX from Space so the axis the cfg reads sees the value.
 //
 // Native-only glue — gated HX_NATIVE; no matched-fork (a) edits, no engine (b)
 // edits. The Wii MWCC build never sees this file (HX_NATIVE undefined there);
@@ -120,6 +144,39 @@ const unsigned int kBtnPageDown = 1u << kPad_R1;
 bool sLibInit = false;     // JoypadInit ran (JoypadInitCommon done)
 bool sWebInputInit = false; // web JS listeners installed
 
+// Add the two `wii_guitar` rows the HX_WII config is missing from its
+// controller_mapping / instrument_mapping (see the BREED note up top). The
+// loaded SystemConfig("joypad") has HX_WII `controllers` (which DO list
+// wii_guitar) but an Xbox-flavoured controller_mapping/instrument_mapping that
+// does NOT — so GameConfig::GetController + ConnectedControllerType would
+// OSFatal on the pinned breed. We inject the rows once, idempotently, as a
+// 2-node child array each (mirroring the dta `(wii_guitar guitar)` /
+// `(wii_guitar kControllerGuitar)` rows). Runtime DataArray wiring only.
+void EnsureWiiGuitarMapped() {
+    static const Symbol kWiiGuitar("wii_guitar");
+    DataArray *joypad = SystemConfig(Symbol("joypad"));
+    if (!joypad)
+        return;
+    // controller_mapping: (wii_guitar guitar)
+    DataArray *cm = joypad->FindArray(Symbol("controller_mapping"), false);
+    if (cm && !cm->FindArray(kWiiGuitar, false)) {
+        DataArray *row = new DataArray(2);
+        row->Node(0) = DataNode(kWiiGuitar);
+        row->Node(1) = DataNode(Symbol("guitar"));
+        cm->Insert(cm->Size(), DataNode(row, kDataArray));
+        row->Release();
+    }
+    // instrument_mapping: (wii_guitar kControllerGuitar)  (kControllerGuitar==1)
+    DataArray *im = joypad->FindArray(Symbol("instrument_mapping"), false);
+    if (im && !im->FindArray(kWiiGuitar, false)) {
+        DataArray *row = new DataArray(2);
+        row->Node(0) = DataNode(kWiiGuitar);
+        row->Node(1) = DataNode((int)kControllerGuitar);
+        im->Insert(im->Size(), DataNode(row, kDataArray));
+        row->Release();
+    }
+}
+
 // Wire pad 0: associate the first local BandUser, mark connected, pin a guitar
 // breed so JoypadControllerTypePadNum(0) -> wii_guitar -> NewController builds a
 // GuitarController. Idempotent — runs once, and is compatible with the lazy
@@ -137,8 +194,12 @@ void EnsurePad0Wired() {
     }
     if (!d->mConnected)
         d->mConnected = true;
-    // Pin the controller breed/type so the whole resolution chain (GetController
-    // -> controller_mapping -> beatmatch_controller `guitar`) is deterministic.
+    // Pin the controller breed/type so the whole resolution chain is
+    // deterministic. `wii_guitar` is the HX_WII 5-lane guitar breed present in
+    // the loaded `controllers` block (its detect type is kJoypadWiiHxGuitar),
+    // which the per-frame GuitarController::Poll/GetWhammyBar require. The
+    // controller_mapping/instrument_mapping rows for it are injected by
+    // EnsureWiiGuitarMapped() (called from JoypadInit).
     if (d->mControllerType.Null()) {
         d->mControllerType = Symbol("wii_guitar");
         d->mType = kJoypadWiiHxGuitar;
@@ -227,6 +288,11 @@ void JoypadInit() {
     // gJoypadLibInitialized internally, so it is safe even if SynthUser() in
     // rb3_game_input.cpp already ran it.
     JoypadInitCommon(SystemConfig(Symbol("joypad")));
+    // The loaded joypad config is HX_WII (controllers) but ships an Xbox-only
+    // controller_mapping/instrument_mapping; add the wii_guitar rows so the
+    // breed we pin resolves through GameConfig::GetController + instrument
+    // lookup without OSFatal. Must run after the config is loaded.
+    EnsureWiiGuitarMapped();
     JoypadReset();
 }
 
@@ -283,9 +349,9 @@ void JoypadPoll() {
 #ifdef __EMSCRIPTEN__
     InitWebGameplayKeys();
     btns = ReadWebButtons() | ReadWebGamepadButtons();
-    // Web whammy: Space is mapped to kPad_Start in InitWebInput; treat a held
+    // Web whammy: Space is mapped to kPad_Start in InitWebInput; treating a held
     // Start on a gameplay screen as whammy too is risky (it pauses), so for web
-    // v1 we leave whammy to the (inert-for-wii_guitar) axis default. Documented.
+    // v1 we leave whammy to its axis default (RX/LY untouched here). Documented.
     (void)whammyHeld;
 #else
     GLFWwindow *w = gBandRnd.Gpu().Window();
@@ -328,8 +394,9 @@ void JoypadPoll() {
     if (glfwGetKey(w, GLFW_KEY_TAB)       == GLFW_PRESS) btns |= kBtnStar;    // mercury/OD
     if (glfwGetKey(w, GLFW_KEY_Q)         == GLFW_PRESS) btns |= kBtnPageUp;
     if (glfwGetKey(w, GLFW_KEY_E)         == GLFW_PRESS) btns |= kBtnPageDown;
-    // Whammy: hold Space (desktop). Inert for the wii_guitar breed (no whammy
-    // axis in its cfg) but drives the axis for any breed that reads one.
+    // Whammy: hold Space (desktop). wii_guitar uses TRADITIONAL_WHAMMY_VAL ->
+    // -(RX+1)/2, so driving RX below engages whammy; we set both axes so any
+    // breed (ly_whammy / negative_rx_whammy / traditional) reads the value.
     if (glfwGetKey(w, GLFW_KEY_SPACE) == GLFW_PRESS) whammyHeld = true;
 
     // Drive both whammy axes so whichever the controller cfg reads sees it.
