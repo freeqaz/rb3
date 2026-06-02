@@ -140,6 +140,13 @@ float BaseGuitarTrackWatcherImpl::HitGemHook(float f, int i, GemHitFlags flags) 
     }
     mMostRecentHit = f;
     ResetGemNotFretted();
+#ifdef HX_NATIVE
+    // Non-void fn with no return: clang traps (ud2/SIGILL) on fall-off-end; MWCC/PPC
+    // returns garbage in the return register and the caller (TrackWatcherImpl::HitGem)
+    // discards it. Return a defined value for native. Same fix as JoypadTrackWatcherImpl
+    // and TrackWatcherImpl base. THIS is the active watcher for guitar/bass/keys.
+    return 0.0f;
+#endif
 }
 
 bool BaseGuitarTrackWatcherImpl::GemCanBePassed(int i) { return i != mGemNotFretted; }
