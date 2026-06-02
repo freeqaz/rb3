@@ -316,6 +316,14 @@ static void WebSplashAdvanceHook() {
     if (!onSplash)
         return;
 
+    // Diagnostic A/B: window.rb3NoSplashHook=1 disables this verb-inject aid so a
+    // harness can test whether the RAW keyboard path (JoypadPoll ->
+    // SendButtonMessages) crosses splash on its own.
+    static int sNoHook = -1;
+    if (sNoHook < 0) sNoHook = (int)EM_ASM_INT({ return (window.rb3NoSplashHook ? 1 : 0); });
+    if (sNoHook)
+        return;
+
     const unsigned int kStartBit   = 1u << 11;  // kPad_Start
     const unsigned int kConfirmBit  = 1u << 6;   // kPad_X (Confirm)
     if (pressed & kStartBit) {
