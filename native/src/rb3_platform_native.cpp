@@ -159,22 +159,33 @@ public:
 
         if (!mRefreshed) {
             mRefreshed = true;
-            std::string songsPath = std::string(dataRoot) + "/songs/songs.dta";
+            // The engine has already chdir'd INTO the data root (main_native.cpp
+            // RunBoot chdir($RB3_DATA); main_web.cpp DoEngineInit chdir(/data)),
+            // and the matched-fork resolves every config/ + ui/ path RELATIVE to
+            // that cwd. The songs DTA must use the SAME relative-to-cwd path —
+            // prepending $RB3_DATA again double-counts when RB3_DATA is relative
+            // (e.g. "orig-assets/extracted"): the resulting
+            // "orig-assets/extracted/songs/songs.dta" misses (cwd is already the
+            // data root) and DataReadFile returns an EMPTY array, so 0 songs ever
+            // load. Use the cwd-relative "songs/songs.dta" — correct for both
+            // native and web since both chdir into the data root first.
+            const char *songsPath = "songs/songs.dta";
+            (void)dataRoot;
             // DataReadFile parses a .dta file -> DataArray. The matched-fork
             // BandSongMgr::AddSongs path then calls AddSongData() + ContentDone()
             // (BandSongMgr.cpp:796), so a single AddSongs is exactly what a
             // post-mount per-file dispatch would produce.
-            DataArray *songs = DataReadFile(songsPath.c_str(), true);
+            DataArray *songs = DataReadFile(songsPath, true);
             if (songs) {
                 TheSongMgr.AddSongs(songs);
                 std::vector<int> ranked;
                 TheSongMgr.GetRankedSongs(ranked, false, false);
                 MILO_LOG("NativeContentMgr: StartRefresh loaded %s — TheSongMgr now "
-                         "has %d ranked songs\n", songsPath.c_str(), (int)ranked.size());
+                         "has %d ranked songs\n", songsPath, (int)ranked.size());
                 songs->Release();
             } else {
                 MILO_LOG("NativeContentMgr: StartRefresh could not load %s (song "
-                         "list will be empty)\n", songsPath.c_str());
+                         "list will be empty)\n", songsPath);
             }
         }
 

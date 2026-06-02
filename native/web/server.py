@@ -25,6 +25,13 @@ import urllib.parse
 PORT = 8421
 BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build")
 ASSETS_DIR = None  # Set via --assets-dir, RB3_ASSETS env, or auto-detect
+# DTA overlay dir (native/dta/). Mirrors the native disk overlay in
+# native/src/native_file.cpp: when an asset path is shadowed by an overlay
+# file (native/dta/<path>), serve THAT file instead of the extracted original
+# in both /api/file and /api/bundle, so the web build's MEMFS receives the
+# overlay copy (e.g. config/joypad.dta with its button_meanings block). The
+# extracted assets stay pristine. See docs/native/DTA_OVERLAY_ENGINE.md.
+OVERLAY_DIR = None  # Set via --overlay-dir, RB3_DTA_OVERLAY env, or auto-detect
 # Optional fallback asset roots probed when a file is missing from ASSETS_DIR.
 # W7-V4: album art (and other "long-tail" assets) live only in the full xbox
 # extraction. The curated ASSETS_DIR is kept as the primary so on-disc smoke
@@ -214,6 +221,19 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(body)
 
+    @staticmethod
+    def _overlay_path(safe_rel):
+        """Return the overlay file path for a relative asset path if an overlay
+        shadows it, else None. The overlay is keyed on the archive-relative
+        layout (e.g. "config/joypad.dta"); a key containing ".." would escape
+        the overlay tree (the bundle restores "(..)" -> ".." for system/run
+        files), so reject those to mirror the native ResolveOverlay() guard and
+        keep the overlay strictly inside native/dta/."""
+        if not OVERLAY_DIR or ".." in safe_rel.replace("\\", "/").split("/"):
+            return None
+        cand = os.path.join(OVERLAY_DIR, safe_rel)
+        return cand if os.path.isfile(cand) else None
+
     def _serve_bundle(self):
         """All boot-path DTA/DTB files as a single binary bundle.
         Format: uint32 count, then for each file:
@@ -237,7 +257,13 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
                 full = os.path.join(root, f)
                 rel = os.path.relpath(full, ASSETS_DIR)
                 rel = rel.replace("(..)", "..")
-                with open(full, "rb") as fh:
+                # DTA overlay: if native/dta/<rel> exists, bundle THAT copy in
+                # place of the extracted original (same relative key). This is
+                # what gets the joypad.dta button_meanings block into the web
+                # boot bundle (config/joypad.dta is a boot-path DTA).
+                ov = self._overlay_path(rel)
+                src = ov if ov else full
+                with open(src, "rb") as fh:
                     data = fh.read()
                 entries.append((rel, data))
         entries.sort(key=lambda x: x[0])
@@ -269,7 +295,10 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             self._json_error(403, "Path traversal denied")
             return
 
-        full_path = os.path.join(ASSETS_DIR, safe)
+        # DTA overlay: a native/dta/<path> file shadows the extracted original
+        # for on-demand /api/file fetches too (the boot bundle covers the boot
+        # path; this covers any lazily-fetched config DTA). Checked first.
+        full_path = self._overlay_path(safe) or os.path.join(ASSETS_DIR, safe)
 
         # Ark extraction stores ".." as "(..)" in directory names.
         # Files under system/run/ live at (..)/(..)/system/run/ on disk.
@@ -424,6 +453,29 @@ def _find_fallback_dirs():
     return found
 
 
+def _find_overlay_dir():
+    """Auto-detect the DTA overlay directory (native/dta/).
+
+    The overlay holds small git-tracked DTA patches (e.g. config/joypad.dta
+    with its button_meanings block) that shadow the extracted originals. The
+    server prefers overlay copies in /api/bundle and /api/file. Overridable via
+    RB3_DTA_OVERLAY; returns None gracefully if absent (no overlay = plain
+    extracted assets, identical to pre-overlay behavior)."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        # server.py lives at native/web/, so the overlay is one dir up: native/dta
+        os.path.join(script_dir, "..", "dta"),
+        os.path.join(script_dir, "../../native/dta"),
+    ]
+    env = os.environ.get("RB3_DTA_OVERLAY")
+    if env:
+        candidates.insert(0, env)
+    for c in candidates:
+        if os.path.isdir(c):
+            return os.path.realpath(c)
+    return None
+
+
 def _find_sidecar_dir():
     """Auto-detect the offline XMA->PCM sidecar directory (web-xma).
 
@@ -447,7 +499,7 @@ def _find_sidecar_dir():
 
 
 def main():
-    global ASSETS_DIR, FALLBACK_ASSETS_DIRS, SIDECAR_DIR
+    global ASSETS_DIR, FALLBACK_ASSETS_DIRS, SIDECAR_DIR, OVERLAY_DIR
 
     parser = argparse.ArgumentParser(description="RB3 Web Dev Server")
     parser.add_argument(
@@ -474,10 +526,25 @@ def main():
             "orig-assets/derived/sfx_pcm). Served at /api/file/sfx/gen/xma_pcm/."
         ),
     )
+    parser.add_argument(
+        "--overlay-dir",
+        default=None,
+        help=(
+            "DTA overlay directory whose files shadow the extracted assets in "
+            "/api/bundle and /api/file (default: RB3_DTA_OVERLAY env or "
+            "native/dta). Holds small git-tracked DTA patches (e.g. "
+            "config/joypad.dta button_meanings)."
+        ),
+    )
     parser.add_argument("--port", type=int, default=PORT)
     args = parser.parse_args()
 
     ASSETS_DIR = args.assets_dir or _find_assets_dir()
+    OVERLAY_DIR = (
+        os.path.realpath(args.overlay_dir)
+        if args.overlay_dir and os.path.isdir(args.overlay_dir)
+        else _find_overlay_dir()
+    )
     if args.assets_fallback:
         FALLBACK_ASSETS_DIRS = [
             os.path.realpath(p) for p in args.assets_fallback if os.path.isdir(p)
@@ -504,6 +571,8 @@ def main():
     if FALLBACK_ASSETS_DIRS:
         for fb in FALLBACK_ASSETS_DIRS:
             print(f"  Fallback: {fb}")
+    if OVERLAY_DIR:
+        print(f"  Overlay: {OVERLAY_DIR} (DTA overlay; shadows extracted assets)")
     if SIDECAR_DIR:
         print(f"  Sidecars: {SIDECAR_DIR} (XMA->PCM, served on demand)")
     print(f"  URL:     http://0.0.0.0:{args.port} (accessible remotely)")

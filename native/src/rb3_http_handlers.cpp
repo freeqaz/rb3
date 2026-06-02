@@ -31,6 +31,14 @@
 #include "platform/Rnd_Wgpu_RB3.h"
 #include "gfx/Screenshot.h"
 
+// Native-only diagnosis: walk the synth user's overshell slot so a headless
+// harness can read its current view symbol + focus list over /api/dta/eval.
+#include "meta_band/OvershellPanel.h"
+#include "meta_band/OvershellSlot.h"
+#include "meta_band/BandUI.h"
+#include "game/BandUserMgr.h"
+#include "os/User.h"
+
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -256,7 +264,10 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
                 break;
             }
             case kDataString: {
-                const char* s = result.UncheckedStr();
+                // kDataString stores mValue.array (a DataArray*), NOT a raw
+                // char*; UncheckedStr() would reinterpret that pointer as a
+                // string (garbage). Str() dereferences the array correctly.
+                const char* s = result.Str();
                 cmd.result.jsonData = "{\"type\":\"string\",\"value\":\"" +
                     HJsonEscape(s ? s : "") + "\"}";
                 break;
@@ -326,8 +337,38 @@ static DataNode RB3DtaSetSetting(DataArray* a) {
     return DataNode(1);
 }
 
+// Native-only state probe: {rb3_overshell} -> a "view:<v>|track:<t>|diff:<d>"
+// string for the pad-0 user's overshell slot. Lets the headless pure-keyboard
+// harness watch the part/difficulty sub-flow advance (kState_ChoosePart ->
+// kState_ChooseDiff -> kState_ReadyToPlay) without any input aids. Read-only.
+static std::string sOvershellProbe;
+static DataNode RB3DtaOvershellState(DataArray*) {
+    if (!TheBandUserMgr) { sOvershellProbe = "view:no_usermgr"; return DataNode(sOvershellProbe.c_str()); }
+    // Walk the overshell's slots for the FIRST local user with a slot — the
+    // synth pad-0 user. JoypadGetUserFromPadNum can lag the BandUser wiring, so
+    // prefer resolving the BandUser straight off a slot.
+    OvershellPanel* ov = TheBandUI.GetOvershell();
+    if (!ov) { sOvershellProbe = "view:no_overshell"; return DataNode(sOvershellProbe.c_str()); }
+    BandUser* bu = nullptr;
+    OvershellSlot* slot = nullptr;
+    for (int i = 0; i < 4; i++) {
+        OvershellSlot* s = ov->GetSlot(i);
+        if (s && s->GetUser() && s->GetUser()->IsLocal()) { slot = s; bu = s->GetUser(); break; }
+    }
+    if (!slot) { sOvershellProbe = "view:no_local_slot"; return DataNode(sOvershellProbe.c_str()); }
+    Symbol v = slot->GetCurrentView();
+    const char* view = v.Str() ? v.Str() : "?";
+    const char* track = bu ? bu->GetTrackSym().Str() : "?";
+    const char* diff = bu ? bu->GetDifficultySym().Str() : "?";
+    sOvershellProbe = std::string("view:") + view +
+                      "|track:" + (track ? track : "?") +
+                      "|diff:" + (diff ? diff : "?");
+    return DataNode(sOvershellProbe.c_str());
+}
+
 void RB3HttpRegisterDtaFuncs() {
     DataRegisterFunc(Symbol("rb3_set"), RB3DtaSetSetting);
+    DataRegisterFunc(Symbol("rb3_overshell"), RB3DtaOvershellState);
 }
 
 // ---------------------------------------------------------------------------

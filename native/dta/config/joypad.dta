@@ -1,0 +1,113 @@
+; ===========================================================================
+; native/dta/config/joypad.dta — DTA OVERLAY (native + web port)
+;
+; Full-file shadow of config/joypad.dta. The overlay engine (native disk
+; intercept in native/src/native_file.cpp; web server intercept in
+; native/web/server.py) opens THIS file in place of the extracted
+; orig-assets/extracted/config/joypad.dta whenever the engine reads
+; "config/joypad.dta" (the band_keep.dta `#include joypad.dta` arrives here as
+; that relative path). The extracted original is left PRISTINE.
+;
+; The shipped Xbox-flavoured joypad.dta has NO `button_meanings` block, so
+; gButtonMeanings is NULL and Joypad's ButtonToAction returns kAction_None for
+; every menu key — menus never advance. This overlay re-adds the block. It is a
+; tiny hand-maintained controller config (the accepted overlay use-case), not
+; bulk game assets. See docs/native/DTA_OVERLAY_ENGINE.md.
+;
+; Lines 1-63 below are byte-identical to the extracted joypad.dta; the
+; `button_meanings` block at the bottom is the native/web addition.
+; ===========================================================================
+(ignore)
+(hold_ms 1000)
+(repeat_ms 80)
+(midi_joypad
+   (disable FALSE))
+(controller_mapping
+   (ro_guitar guitar)
+   (ro_guitar_xbox ro_guitar_xbox)
+   (strat_xbox ro_guitar_xbox)
+   (strat_xbox_rb2 ro_guitar_xbox)
+   (hx_guitar_ps3 hx_guitar_ps3)
+   (ps3_rb2_guitar hx_guitar_ps3)
+   (ro_guitar_ps3 ro_guitar_ps3)
+   (hx_midi_guitar_xbox real_guitar)
+   (hx_midi_keys_xbox keys)
+   (hx_midi_guitar_ps3 real_guitar)
+   (hx_midi_keys_ps3 keys)
+   (hx_midi_guitar_wii real_guitar)
+   (hx_midi_keys_wii keys)
+   (midi midi_drums)
+   (hx_drums_xbox hx_drums_xbox)
+   (hx_drums_xbox_rb2 hx_drums_xbox_rb2)
+   (ro_drums_xbox ro_drums_xbox)
+   (hx_drums_ps3 hx_drums_ps3)
+   (hx_drums_ps3_rb2 hx_drums_ps3)
+   (ro_drums_ps3_ghwt ro_drums_ps3)
+   (konami_drums_ps3_rr hx_drums_ps3)
+   (ps3_rb2_drums hx_drums_ps3)
+   (hx_xbox joypad_guitar_xbox)
+   (digital joypad)
+   (analog joypad)
+   (dualshock joypad)
+   (stagekit_xbox joypad)
+   (none joypad))
+(instrument_mapping
+   (ro_guitar kControllerGuitar)
+   (ro_guitar_xbox kControllerGuitar)
+   (strat_xbox kControllerGuitar)
+   (strat_xbox_rb2 kControllerGuitar)
+   (hx_guitar_ps3 kControllerGuitar)
+   (ps3_rb2_guitar kControllerGuitar)
+   (ro_guitar_ps3 kControllerGuitar)
+   (hx_midi_guitar_xbox kControllerRealGuitar)
+   (hx_midi_keys_xbox kControllerKeys)
+   (hx_midi_guitar_ps3 kControllerRealGuitar)
+   (hx_midi_keys_ps3 kControllerKeys)
+   (hx_midi_guitar_wii kControllerRealGuitar)
+   (hx_midi_keys_wii kControllerKeys)
+   (midi kControllerDrum)
+   (hx_drums_xbox kControllerDrum)
+   (hx_drums_xbox_rb2 kControllerDrum)
+   (ro_drums_xbox kControllerDrum)
+   (hx_drums_ps3 kControllerDrum)
+   (hx_drums_ps3_rb2 kControllerDrum)
+   (ro_drums_ps3_ghwt kControllerDrum)
+   (konami_drums_ps3_rr kControllerDrum)
+   (ps3_rb2_drums kControllerDrum)
+   (hx_xbox kControllerVocals)
+   (digital kControllerVocals)
+   (analog kControllerVocals)
+   (dualshock kControllerVocals)
+   (stagekit_xbox kControllerVocals)
+   (none kControllerNone))
+; --- HX_NATIVE/HX_WEB: button_meanings (absent from the Xbox-flavoured
+; --- extracted joypad.dta). Without it gButtonMeanings is NULL and
+; --- ButtonToAction returns kAction_None for every menu key -> menus never
+; --- advance. Keys = JoypadButton ints, values = JoypadAction ints (raw; no
+; --- kPad_/kAction_ macros exist in the loaded config). The wii_guitar map
+; --- mirrors rb3_game_input.cpp kWebKeyMap (the proven menu baseline).
+; --- Row legend: keys  X=6 Circle=5 Tri=4 Square=7 L1=2 R1=3 Select=8
+; ---             Start=11 DUp=12 DRight=13 DDown=14 DLeft=15
+; ---            vals  Confirm=1 Cancel=2 Option=3 Start=4 ViewModify=5
+; ---             Up=6 Right=7 Down=8 Left=9 PageUp=10 PageDown=11
+(button_meanings
+   (wii_guitar
+      (6 1)
+      (5 2)
+      (4 3)
+      (11 4)
+      (8 3)
+      (12 6)
+      (13 7)
+      (14 8)
+      (15 9)
+      (2 10)
+      (3 11))
+   (analog
+      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
+   (digital
+      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
+   (dualshock
+      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
+   (none
+      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11)))

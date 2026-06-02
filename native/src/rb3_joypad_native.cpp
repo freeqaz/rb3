@@ -110,6 +110,7 @@
 #endif
 
 #include <cstdlib>
+#include <cstring>
 
 // Defined non-static (external linkage) in os/Joypad.cpp:321 but not declared
 // in any header — the engine broadcast chokepoint we drive.
@@ -143,6 +144,50 @@ const unsigned int kBtnPageDown = 1u << kPad_R1;
 
 bool sLibInit = false;     // JoypadInit ran (JoypadInitCommon done)
 bool sWebInputInit = false; // web JS listeners installed
+
+// --- Runtime pad-press queue (headless pure-keyboard harness) ----------------
+// A `pad:<bit>` HTTP verb enqueues a single button bit here; JoypadPoll() holds
+// it down for kPadHoldPolls polls, then forces a clean release for kPadGapPolls
+// polls before the next queued press, so SendButtonMessages edge-detects a real
+// 0->1->0 press cycle (the same a physical Wii guitar button generates). This is
+// the FAITHFUL headless equivalent of a keypress — it drives SendButtonMessages,
+// NOT TheUI.Handle()/ExecButton — so menu nav (focus routing, override-flow
+// SELECT_MSG dispatch, slot input gating) is exercised exactly as a real
+// controller would. The script-driven RB3_JOYPAD_SEQ remains for fixed runs;
+// this queue is for adaptive HTTP-driven runs (press, then poll state, repeat).
+const int kPadHoldPolls = 4;   // polls a press is held down (matches SEQ hold)
+const int kPadGapPolls  = 3;   // forced-release polls AFTER a press (clean edge)
+
+struct PadPress { int bit; };
+PadPress sPadQueue[128];
+volatile int sPadQHead = 0;    // next slot to consume
+volatile int sPadQTail = 0;    // next slot to fill (enqueue)
+int sPadHoldLeft = 0;          // polls remaining in the current hold
+int sPadGapLeft  = 0;          // polls remaining in the current release gap
+int sPadCurBit   = -1;         // bit currently held (-1 == none)
+
+} // namespace (reopened below)
+
+// External enqueue — called from the HTTP input verb (`pad:<bit>`), main thread.
+// Returns false if the queue is full. Bits are JoypadButton indices (kPad_*).
+extern "C" bool RB3JoypadEnqueuePad(int bit) {
+    if (bit < 0 || bit >= kPad_NumButtons)
+        return false;
+    int next = (sPadQTail + 1) % 128;
+    if (next == sPadQHead)
+        return false; // full
+    sPadQueue[sPadQTail].bit = bit;
+    sPadQTail = next;
+    return true;
+}
+
+// True while the pad queue still has presses pending or a hold/gap in flight —
+// lets the harness know when a press has fully drained (clean release seen).
+extern "C" bool RB3JoypadPadQueueBusy() {
+    return sPadQHead != sPadQTail || sPadHoldLeft > 0 || sPadGapLeft > 0;
+}
+
+namespace {
 
 // Add the two `wii_guitar` rows the HX_WII config is missing from its
 // controller_mapping / instrument_mapping (see the BREED note up top). The
@@ -344,6 +389,87 @@ void JoypadPoll() {
             SendButtonMessages(0, 1u << sTestBtn);
             return;
         }
+    }
+
+    // Headless SEQUENCE injector (off by default): RB3_JOYPAD_SEQ="f:bit,f:bit,..."
+    // presses the given JoypadButton bit at poll-count f, holds it for a few polls,
+    // then releases — so SendButtonMessages edge-detects a real press/release pair.
+    // Drives the EXACT same real path (SendButtonMessages -> ButtonToAction ->
+    // gJoypadMsgSource -> TheUI's JoypadClient) a live keyboard would, with no
+    // window. Purely a test harness; env-gated; no effect when unset. Each press
+    // is held kSeqHold polls so the UI sees a stable down then a clean up.
+    {
+        struct SeqEntry { int at; int bit; };
+        static SeqEntry sSeq[64];
+        static int sSeqCount = -2;
+        static int sPoll = 0;
+        const int kSeqHold = 4; // polls a press is held before release
+        if (sSeqCount == -2) {
+            sSeqCount = 0;
+            const char *e = getenv("RB3_JOYPAD_SEQ");
+            if (e && *e) {
+                const char *p = e;
+                while (*p && sSeqCount < 64) {
+                    int at = atoi(p);
+                    const char *colon = strchr(p, ':');
+                    if (!colon) break;
+                    int bit = atoi(colon + 1);
+                    sSeq[sSeqCount].at = at;
+                    sSeq[sSeqCount].bit = bit;
+                    sSeqCount++;
+                    const char *comma = strchr(colon, ',');
+                    if (!comma) break;
+                    p = comma + 1;
+                }
+                MILO_LOG("RB3 joypad SEQ: parsed %d entries (hold=%d)\n",
+                         sSeqCount, kSeqHold);
+            }
+        }
+        if (sSeqCount > 0) {
+            unsigned int seqBtns = 0;
+            for (int i = 0; i < sSeqCount; i++) {
+                if (sPoll >= sSeq[i].at && sPoll < sSeq[i].at + kSeqHold &&
+                    sSeq[i].bit >= 0 && sSeq[i].bit < kPad_NumButtons)
+                    seqBtns |= 1u << sSeq[i].bit;
+            }
+            SendButtonMessages(0, seqBtns);
+            sPoll++;
+            return;
+        }
+    }
+
+    // Runtime pad-press queue (the `pad:<bit>` HTTP verb). Drives a clean
+    // 0->1->0 edge per queued press through the real SendButtonMessages path.
+    // When empty AND idle this falls through to the normal keyboard read below,
+    // so a windowed run is unaffected unless presses are queued.
+    if (sPadHoldLeft > 0) {
+        // Currently holding a press down.
+        unsigned int bits = (sPadCurBit >= 0) ? (1u << sPadCurBit) : 0u;
+        SendButtonMessages(0, bits);
+        if (--sPadHoldLeft == 0) {
+            sPadGapLeft = kPadGapPolls; // begin forced release
+        }
+        return;
+    }
+    if (sPadGapLeft > 0) {
+        // Forced release between presses — guarantees a clean falling edge.
+        SendButtonMessages(0, 0u);
+        --sPadGapLeft;
+        if (sPadGapLeft == 0)
+            sPadCurBit = -1;
+        return;
+    }
+    if (sPadQHead != sPadQTail) {
+        // Pop the next queued press and begin its hold.
+        sPadCurBit = sPadQueue[sPadQHead].bit;
+        sPadQHead = (sPadQHead + 1) % 128;
+        sPadHoldLeft = kPadHoldPolls;
+        unsigned int bits = (sPadCurBit >= 0) ? (1u << sPadCurBit) : 0u;
+        SendButtonMessages(0, bits);
+        --sPadHoldLeft;
+        if (sPadHoldLeft == 0)
+            sPadGapLeft = kPadGapPolls;
+        return;
     }
 
 #ifdef __EMSCRIPTEN__

@@ -75,6 +75,7 @@
 #include "obj/Object.h"
 #include "obj/Data.h"
 #include "obj/Dir.h"
+#include "obj/Msg.h"        // MsgSource — NativeRockCentralStub base (add_sink/remove_sink)
 #include "utl/Symbol.h"
 #include "rndobj/Draw.h"    // RndDrawable — N4 song-select details-pane hide
 
@@ -278,6 +279,9 @@ std::vector<ScriptedNoFail> gNoFailScript;
 bool gScriptParsed = false;
 Symbol gLastScreen;
 LocalUser *gSynthUser = nullptr;
+
+// Raw pad-press queue feeder (rb3_joypad_native.cpp) — `pad:<bit>` HTTP verb.
+extern "C" bool RB3JoypadEnqueuePad(int bit);
 
 // === Difficulty selection ==================================================
 // The native boot path used to hard-code kDifficultyExpert when a part was
@@ -1148,6 +1152,21 @@ bool ExecVerb(const std::string &verb, UIScreen *cur, std::string *err) {
         ExecDifficulty(d);
         return true;
     }
+    // pad:<bit> — enqueue a RAW joypad button press (kPad_* index) into the
+    // headless pad queue (rb3_joypad_native.cpp). Unlike `confirm`/`start`/etc.
+    // (which inject a ButtonDownMsg straight into TheUI.Handle via ExecButton),
+    // this drives the REAL SendButtonMessages broadcast with a clean 0->1->0
+    // edge — the faithful equivalent of a physical guitar button press. Use it
+    // to exercise menu nav (focus routing, override-flow SELECT_MSG dispatch,
+    // slot input gating) exactly as a controller would, with no input aids.
+    if (verb.rfind("pad:", 0) == 0) {
+        int bit = atoi(verb.c_str() + 4);
+        if (!RB3JoypadEnqueuePad(bit)) {
+            if (err) *err = "pad queue full or bad bit '" + verb.substr(4) + "'";
+            return false;
+        }
+        return true;
+    }
     if (verb == "nofail") {
         ExecNoFail();
         return true;
@@ -1267,6 +1286,43 @@ public:
     }
 };
 
+// rock_central — the online Rock Central service (RockCentral.cpp, public
+// MsgSource). The real TheRockCentral GLOBAL is constructed, but its Init()
+// (RockCentral.cpp:115 — SetName("rock_central", sMainDir) + ContextWrapperPool
+// + AddSinks) is gated `#ifndef HX_NATIVE` at its sole caller (App.cpp:298), so
+// natively the object is never NAMED in sMainDir. DTA scripts that address it —
+// song_select.dta:38 `{rock_central add_sink $this (server_status_changed)}`,
+// :99 `{rock_central remove_sink ...}`, :976 / song_select_extras.dta:375
+// `{rock_central is_online}` — therefore resolve to nothing: DataNode::GetObj
+// FindObject returns null and the engine emits the benign "rock_central not
+// function or object" NOTIFY (reproduced: no crash, but the song_select_panel's
+// sink bookkeeping silently no-ops and is_online falls through to a default 0).
+//
+// We register a minimal NativeRockCentralStub : MsgSource under that name. It
+// answers the offline-meaningful queries with the same values the real
+// RockCentral would offline (RockCentral.cpp:1885 is_online => IsOnline() =>
+// mState==2 => false; ForceLogout()/BlockLoginToggle() are no-ops at mState 0),
+// and delegates `add_sink`/`remove_sink` (and anything else) to MsgSource::Handle
+// so the panel's `add_sink $this (server_status_changed)` registers a real sink
+// on a real (empty) sink list — proper bookkeeping, never a SIGILL. Mirrors the
+// NativeSaveLoadStub / NativeNetCacheMgrStub precedent; offline-safe, never
+// reaches any Wii net/Quazal code (that all lived behind the gated Init()).
+class NativeRockCentralStub : public MsgSource {
+public:
+    virtual DataNode Handle(DataArray *msg, bool warn) {
+        Symbol s = msg->Sym(1);
+        // Offline answers (match the real RockCentral::Handle's offline values).
+        if (s == "is_online")          return DataNode(0); // signed-out / offline
+        if (s == "state")              return DataNode(0); // mState == 0 (idle)
+        if (s == "force_logout")       return DataNode(0); // no-op at mState 0
+        if (s == "toggle_block_login") return DataNode(0); // bool flip, harmless
+        if (s == "block_login")        return DataNode(0);
+        // add_sink / remove_sink (+ everything else) go through the MsgSource
+        // base: real sink-list bookkeeping on a properly-constructed (empty) list.
+        return MsgSource::Handle(msg, warn);
+    }
+};
+
 } // namespace
 
 // C3: clean-exit request flag. A `quit` input verb sets it; App's HX_NATIVE
@@ -1288,6 +1344,12 @@ void RB3RegisterNativeManagerStubs() {
     };
     registerStub("saveload_mgr",  new NativeSaveLoadStub());
     registerStub("net_cache_mgr", new NativeNetCacheMgrStub());
+    // rock_central: the real TheRockCentral global exists but is never NAMED
+    // natively (its Init() is HX_NATIVE-gated). Register an offline MsgSource
+    // stub so song_select.dta's `{rock_central add_sink/remove_sink/is_online}`
+    // resolve to a real (offline-safe) object instead of the "not function or
+    // object" NOTIFY. registerStub no-ops if a real singleton ever claims it.
+    registerStub("rock_central",  new NativeRockCentralStub());
 
     // Mark first-time calibration as already seen. The splash kSplashScreen_End
     // Overshell step does `{cond ({! {profile_mgr get_has_seen_first_time_
@@ -1356,8 +1418,18 @@ void RB3GameInputPoll(int frame) {
             // strcmp (not Symbol == Symbol): the screen name and a fresh
             // Symbol("...") need not intern to the same pointer on web, so the
             // pointer-equality operator== silently misses. Compare the strings.
-            bool onPartDiff = webCur && strcmp(webScr, "part_difficulty_screen") == 0;
-            bool onSongSelect = webCur && strcmp(webScr, "song_select_screen") == 0;
+            // Pure-keyboard is the DEFAULT: a raw Confirm flows through
+            // SendButtonMessages (JoypadPoll) exactly like native, so song-select
+            // confirm, choose_part, choose_diff and ready all work as real button
+            // presses now that the engine gates are fixed (offline-guest overshell
+            // join, single-user part-resolve loop, RG chord_name overflow, song-DB
+            // path). The legacy synthetic-verb aids (select_highlighted_node msg +
+            // the track:/end_override_flow WebDrivePartSelect sequence) are kept
+            // ONLY for the deterministic capture harness, opt-in via
+            // window.rb3WebUseAids=1; off by default so menu nav is pure keyboard.
+            bool useAids = (bool)EM_ASM_INT({ return (window.rb3WebUseAids ? 1 : 0); });
+            bool onPartDiff = useAids && webCur && strcmp(webScr, "part_difficulty_screen") == 0;
+            bool onSongSelect = useAids && webCur && strcmp(webScr, "song_select_screen") == 0;
             for (int i = 0; i < kWebKeyMapSize; ++i) {
                 if (newPressed & (1u << kWebKeyMap[i].bit)) {
                     MILO_LOG("RB3 web-input: frame %d  key bit=%d btn=%d action=%d"

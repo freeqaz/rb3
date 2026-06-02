@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "1a1f84eb7b8bb6fa36fe4a477bfc7676abce1555"
+set(MILO_ENGINE_PIN "3b18fed35f58d78a63bc60a150e8ec5c88e44d0a"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD

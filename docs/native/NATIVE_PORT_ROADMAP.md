@@ -366,6 +366,28 @@ scheduled `ButtonDownMsg`/`select:`/`msg:` via `Automator`/`TheUI.Handle`).
 RB3 controller mappings (guitar/drum face buttons, vocal mic) for actual
 keyboard play.
 
+**Real keyboard/gamepad menu nav (2026-06-02):** The native+web build now drives
+the *real* engine input path — `JoypadPoll` → `SendButtonMessages(0, btns)` →
+`ButtonToAction` → `TheUI`'s `JoypadClient`. Pad 0 is pinned to the `wii_guitar`
+breed so the same keyboard plays guitar in-song. The loaded Xbox
+`config/joypad.dta` ships **no** `button_meanings` block (the only variant with
+one is the non-loaded Wii `system/run/config/joypad.dta`), so `gButtonMeanings`
+was NULL and `ButtonToAction` returned `kAction_None` for every menu key →
+menus never advanced off `splash_screen`. Fix: we append a `button_meanings`
+block (`wii_guitar` + `analog`/`digital`/`dualshock`/`none`, **raw integer keys
+and values** — no `kPad_`/`kAction_` macros exist in the loaded config) to
+`orig-assets/extracted/config/joypad.dta` so the real path resolves menu actions
+(Confirm/Cancel/Option/Start/Up/Down/Left/Right/PageUp/PageDown). The
+`wii_guitar` map mirrors `rb3_game_input.cpp`'s `kWebKeyMap` (the proven menu
+baseline). **Gameplay is unaffected**: `GuitarController` resolves frets by
+physical button→slot (`beatmatch_controller.dta`) and ignores `button_meanings`.
+This is a zero-C++ data fix that works for both native and web (same config
+dir). **This edit must be re-applied if extracted assets are regenerated from
+the ARK** (it lives in a gitignored extraction tree). Note that `gButtonMeanings`
+is a `Joypad.cpp` file-static cached at `JoypadInitCommon` (before
+`EnsureWiiGuitarMapped`), so it cannot be re-pointed from native glue — the data
+must exist in the file at parse time.
+
 Phase 4 is structured around the DTA-loading work because that is the recurring blocker:
 
 #### 4a — Input pipeline

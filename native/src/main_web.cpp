@@ -63,6 +63,10 @@
 #include "meta_band/BandSongMgr.h"  // TheSongMgr — song-list population probe (W3c-nav)
 #include "meta_band/MusicLibrary.h"   // TheMusicLibrary — highlighted-song probe (W3c)
 #include "meta_band/SongSortNode.h"   // SortNode::GetType/GetToken (W3c)
+#include "meta_band/BandUI.h"         // TheBandUI — overshell-slot view probe (pure-kbd nav)
+#include "meta_band/OvershellPanel.h"
+#include "meta_band/OvershellSlot.h"
+#include "game/BandUser.h"
 #include <vector>
 
 #include "rb3_render_mesh.h"  // LoadMiloAndWalk / RenderFrame / WalkResult
@@ -201,10 +205,36 @@ static void PublishCurrentScreen() {
     if (scr && scr->FocusPanel() && scr->FocusPanel()->FocusComponent() &&
         scr->FocusPanel()->FocusComponent()->Name())
         focus = scr->FocusPanel()->FocusComponent()->Name();
+    // Pure-keyboard nav diagnosis: publish the first local overshell slot's
+    // current view symbol + track + difficulty (web mirror of native's
+    // {rb3_overshell} probe), so the headless web harness can watch the
+    // part/difficulty sub-flow (choose_part_guitar -> choose_diff ->
+    // ready_to_play -> hidden) advance under real keypresses.
+    const char* ovView = "none";
+    const char* ovTrack = "?";
+    const char* ovDiff = "?";
+    OvershellPanel* ovp = TheBandUI.GetOvershell();
+    if (ovp) {
+        for (int i = 0; i < 4; i++) {
+            OvershellSlot* s = ovp->GetSlot(i);
+            if (s && s->GetUser() && s->GetUser()->IsLocal()) {
+                Symbol v = s->GetCurrentView();
+                ovView = v.Str() ? v.Str() : "?";
+                ovTrack = s->GetUser()->GetTrackSym().Str();
+                ovDiff = s->GetUser()->GetDifficultySym().Str();
+                break;
+            }
+        }
+    } else {
+        ovView = "no_overshell";
+    }
     EM_ASM({
         window.rb3CurrentScreen = UTF8ToString($0);
         window.rb3FocusButton  = UTF8ToString($1);
-    }, name, focus);
+        window.rb3OvershellView = UTF8ToString($2);
+        window.rb3OvershellTrack = UTF8ToString($3);
+        window.rb3OvershellDiff = UTF8ToString($4);
+    }, name, focus, ovView, ovTrack ? ovTrack : "?", ovDiff ? ovDiff : "?");
 }
 
 // Publish the discovered song count so the smoke can confirm the song DB is

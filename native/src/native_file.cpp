@@ -2,11 +2,38 @@
 // The RB3-Wii File backends (ArkFile / AsyncFile / FileCache / CDReader) target
 // the disc/ARK and aren't on the DTA-parse path. NewFile() (os/File.cpp, under
 // HX_NATIVE) routes here for synchronous reads from the host filesystem.
+//
+// DTA OVERLAY ENGINE (ported from DC3's platform/File_Native.cpp):
+//   A tracked `native/dta/` directory in the repo mirrors the archive's path
+//   structure. When the engine opens a file for READ, this backend checks the
+//   overlay dir FIRST: if `native/dta/<rel>` exists on disk, it opens that copy
+//   instead of the on-disc/extracted original. This lets the port ship small,
+//   git-tracked DTA patches (e.g. config/joypad.dta with a `button_meanings`
+//   block the Xbox-flavoured config lacks) without modifying the gitignored
+//   extracted assets. See docs/native/DTA_OVERLAY_ENGINE.md.
+//
+//   RB3's native NewFile() (os/File.cpp) routes straight here with the path the
+//   matched-fork passes — relative to the data dir cwd (the native boot chdir's
+//   to RB3_DATA, so `config/joypad.dta` etc. are relative). DTA #include resolves
+//   the include name against the including file's dir (DataFile.cpp:64
+//   FileMakePath(FileGetPath(gFile), c)) before calling NewFile, so includes such
+//   as `#include joypad.dta` from config/band_keep.dta arrive here as the relative
+//   `config/joypad.dta` — exactly the overlay key. The intercept is therefore the
+//   single chokepoint covering both top-level DTA loads and #include opens.
+//
+//   On web (__EMSCRIPTEN__) the overlay is served at a higher layer: the dev
+//   server (native/web/server.py) prefers `native/dta/<path>` over the extracted
+//   asset in both /api/bundle and /api/file, so the bytes that reach MEMFS are
+//   already the overlay copy. The C++ disk-overlay below is therefore native-only.
 #ifdef HX_NATIVE
 
 #include "os/File.h"
 #include <cstdio>
 #include <cstring>
+#ifndef __EMSCRIPTEN__
+#include <cstdlib>      // getenv
+#include <sys/stat.h>   // stat (overlay existence probe)
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include "platform/WebAssets.h"
@@ -240,7 +267,116 @@ private:
 };
 } // namespace
 
+#ifndef __EMSCRIPTEN__
+// --- DTA overlay directory resolution (native disk overlay) ----------------
+//
+// Mirrors DC3's NativeDetectOverlayDir(): find `native/dta/` relative to the
+// data dir / repo. On RB3 the boot chdir's to RB3_DATA (default
+// <repo>/orig-assets/extracted), so the overlay lives at
+// "<RB3_DATA>/../../native/dta". We also honour an explicit RB3_DTA_OVERLAY env
+// override and probe a couple of CWD-relative fallbacks. Detection runs lazily
+// on the first open and is cached. Empty cache string => no overlay (every open
+// falls through to the plain extracted-asset read, exactly as before this TU).
+namespace {
+
+bool FileExistsRaw(const char *p) {
+    struct stat st;
+    return p && *p && ::stat(p, &st) == 0;
+}
+
+const char *OverlayDir() {
+    static char sDir[1024];
+    static int sResolved = 0; // 0 = not yet, 1 = resolved (sDir may be empty)
+    if (sResolved)
+        return sDir[0] ? sDir : nullptr;
+    sResolved = 1;
+    sDir[0] = '\0';
+
+    // 1) Explicit override.
+    if (const char *env = ::getenv("RB3_DTA_OVERLAY"); env && *env) {
+        if (FileExistsRaw(env)) {
+            std::snprintf(sDir, sizeof(sDir), "%s", env);
+            std::fprintf(stderr, "RB3 native: DTA overlay dir = %s (RB3_DTA_OVERLAY)\n", sDir);
+            return sDir;
+        }
+    }
+
+    // 2) Relative to RB3_DATA: "<RB3_DATA>/../../native/dta". The native boot
+    //    chdir's INTO RB3_DATA, so this also works as a relative CWD probe
+    //    ("../../native/dta") — but resolve against the env value when present so
+    //    detection is independent of when (before/after chdir) it first runs.
+    if (const char *data = ::getenv("RB3_DATA"); data && *data) {
+        char buf[1024];
+        std::snprintf(buf, sizeof(buf), "%s/../../native/dta", data);
+        if (FileExistsRaw(buf)) {
+            std::snprintf(sDir, sizeof(sDir), "%s", buf);
+            std::fprintf(stderr, "RB3 native: DTA overlay dir = %s\n", sDir);
+            return sDir;
+        }
+    }
+
+    // 3) CWD-relative fallbacks (running from the repo root, or post-chdir into
+    //    orig-assets/extracted which is two dirs deep under the repo root).
+    static const char *cands[] = {
+        "../../native/dta", // post-chdir into orig-assets/extracted
+        "native/dta",       // repo root
+        nullptr,
+    };
+    for (const char **c = cands; *c; ++c) {
+        if (FileExistsRaw(*c)) {
+            std::snprintf(sDir, sizeof(sDir), "%s", *c);
+            std::fprintf(stderr, "RB3 native: DTA overlay dir = %s\n", sDir);
+            return sDir;
+        }
+    }
+
+    return nullptr; // no overlay (optional) — log once for clarity
+}
+
+// If `path` (a read-mode relative path) is shadowed by an overlay file, return
+// the overlay path in `out` and true; else false. Absolute paths and write-mode
+// opens never use the overlay. Paths containing ".." are rejected: the overlay
+// is keyed on the archive-relative layout (e.g. "config/joypad.dta"), so a path
+// like "../../system/run/config/macros.dta" would, joined to the overlay dir,
+// `..`-escape back out to the repo's real system/run tree — a false-positive
+// "hit" that opens the same bytes the plain path would. Reject `..` so the
+// overlay only shadows files that genuinely live INSIDE native/dta/.
+bool ResolveOverlay(const char *path, char *out, size_t outSize) {
+    if (!path || !*path || path[0] == '/')
+        return false; // absolute or empty: not an overlay candidate
+    if (std::strstr(path, ".."))
+        return false; // escapes the overlay tree — not a real overlay key
+    const char *dir = OverlayDir();
+    if (!dir)
+        return false;
+    char buf[1024];
+    std::snprintf(buf, sizeof(buf), "%s/%s", dir, path);
+    if (!FileExistsRaw(buf))
+        return false;
+    std::snprintf(out, outSize, "%s", buf);
+    return true;
+}
+
+} // namespace
+#endif // !__EMSCRIPTEN__
+
 File *HmxNativeOpenFile(const char *path, int mode) {
+#ifndef __EMSCRIPTEN__
+    // DTA overlay: for READ opens (Wii mode bit 0x2), if native/dta/<path>
+    // exists, open that copy instead. Write/append opens are never overlaid.
+    if ((mode & 2) != 0 && path) {
+        char overlayPath[1024];
+        if (ResolveOverlay(path, overlayPath, sizeof(overlayPath))) {
+            NativeStdioFile *of = new NativeStdioFile(overlayPath, mode);
+            if (!of->Fail()) {
+                std::fprintf(stderr, "RB3 native: DTA overlay HIT: '%s' -> %s\n",
+                             path, overlayPath);
+                return of; // overlay hit
+            }
+            delete of; // overlay stat'd but open failed — fall through
+        }
+    }
+#endif
     NativeStdioFile *f = new NativeStdioFile(path, mode);
     return f; // NewFile callers check ->Fail() and release on failure
 }
