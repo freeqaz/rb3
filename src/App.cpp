@@ -248,18 +248,16 @@ App::App(int argc, char **argv) {
 #endif // HX_NATIVE (CustomSplash — Wii-only movie/CustomSplash_Wii.h)
     SynthInit();
 #ifdef HX_WEB
-    // Web is audio-free (Synth.cpp is excluded from the build for the codec.h
-    // alloca clash), so SynthInit() resolves to a no-op stub and the synth
-    // object factories it would register never get registered. The boot-path
-    // UI milos (overshell / main_hub / splash) embed two inert synth object
+    // Web audio is LIVE since W3c: Synth.cpp is re-included in the web build (the
+    // codec.h alloca clash is fixed by the #ifndef HX_NATIVE guard), so the
+    // SynthInit() above runs the real NativeSynth (AudioDevice_Web AudioWorklet
+    // ring-buffer path; PumpAudio is driven from RunOneFrame). These two Init()
+    // calls remain ONLY as inert object-factory registration: the boot-path UI
+    // milos (overshell / main_hub / splash) embed two non-audio synth object
     // classes — SynthFader (Fader) and BinkClip — and a milo that references an
-    // unregistered class instantiates a null object that downstream code then
-    // derefs → wasm trap (the W3a frame-1 menu-load crash). Both are pure
-    // Hmx::Objects with no audio-device dependency (Fader::Fader is a trivial
-    // ctor; BinkClip allocates a Fader + StartPolling, which only pushes onto a
-    // static list), so registering their factories here is safe and lets the
-    // menu milos load cleanly without pulling in the audio backend. Their TUs
-    // (Faders.cpp / BinkClip.cpp) are already in the web source set.
+    // unregistered class instantiates a null object that downstream code derefs →
+    // wasm trap (the W3a frame-1 menu-load crash). Both are pure Hmx::Objects with
+    // no audio-device dependency, so registering their factories here is safe.
     Fader::Init();
     BinkClip::Init();
 #endif

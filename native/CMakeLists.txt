@@ -447,6 +447,10 @@ add_executable(rb3-native
     # X6: RB3-shaped StreamReceiver bridging the matched-fork synth onto
     # AudioDevice. Bound to StreamReceiver::sFactory inside NativeSynth::Init.
     ${CMAKE_SOURCE_DIR}/src/rb3_stream_receiver_native.cpp
+    # RB3-shaped SampleInst (SynthSample::NewInst) for one-shot menu/UI/MIDI SFX —
+    # mirrors the StreamReceiver bridge. Engine SampleInst_Native.cpp is DC3-shaped
+    # (platform-excluded); strong def wins over the weak rndobj_synth_link_stubs.s no-op.
+    ${CMAKE_SOURCE_DIR}/src/rb3_sampleinst_native.cpp
     # X6: RB3-shaped KeyChain (class-static, int) — provides the 12 .mogg
     # decryption keys. Engine's Keygen_Stub.cpp is a DC3-shaped namespace and
     # is platform-excluded for RB3; the matched-fork keygen_wii.cpp lives
@@ -638,6 +642,9 @@ set(RB3_WEB_NATIVE_GLUE
     #   rb3_vorbis_poll_shim.cpp — HMX vorbis_synthesis_poll -> vorbis_synthesis.
     ${CMAKE_SOURCE_DIR}/src/rb3_synth_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_stream_receiver_native.cpp
+    #   rb3_sampleinst_native.cpp — RB3-shaped SampleInst (SynthSample::NewInst) for
+    #     menu/UI/MIDI one-shot SFX; same AudioSource bridge as the StreamReceiver.
+    ${CMAKE_SOURCE_DIR}/src/rb3_sampleinst_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_keychain_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_vorbis_poll_shim.cpp
     # W3c Part A: tomcrypt AES/CTR for v0x10 .mogg decryption (LANGUAGE C; see the

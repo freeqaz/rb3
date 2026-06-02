@@ -83,19 +83,12 @@
 // Same global gSystemConfig pointer the engine and matched-fork share.
 extern DataArray *gSystemConfig;
 
-// --- Web-only global definitions for excluded-TU symbols ---
-// Synth.cpp is excluded from the web build (audio-free W3a; the codec.h alloca
-// clash, see W3c). Its `Synth *TheSynth;` global is therefore undefined on web.
-// On native a weak `.s` stub (dta_link_stubs.s) supplies it, but those x86 GAS
-// stubs are NOT assembled under emcc — so without an explicit definition here
-// `-sERROR_ON_UNDEFINED_SYMBOLS=0` resolves TheSynth to a GARBAGE address. The
-// App ctor's `if (TheSynth) TheSynth->SetDolby(...)` then sees garbage != 0,
-// calls through a junk vtable, and the wasm runtime traps ("table index out of
-// bounds"). Defining it null here makes the guard work (same class of fix as
-// the TheNetSession global in rb3_netsession_native.cpp). W3c links the real
-// Synth and removes this.
-class Synth;
-Synth *TheSynth = nullptr;
+// NOTE: `Synth *TheSynth;` is defined by src/system/synth/Synth.cpp:58, which IS
+// compiled into rb3-web since W3c re-included Synth.cpp (see RB3_WEB_NATIVE_FORK_EXCLUDE
+// in native/CMakeLists.txt). The W3a-era duplicate definition that used to live here
+// was removed — it only survived link via -Wl,--allow-multiple-definition and was a
+// first-definition-wins footgun (one link-order change from binding TheSynth reads to
+// a stale nullptr). The real global's static-init runs before the App ctor's guarded use.
 
 // Live-tunable camera/gem settings — seed once from the (empty) browser env.
 #include "rb3_native_settings.h"

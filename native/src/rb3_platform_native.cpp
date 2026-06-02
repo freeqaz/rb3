@@ -58,7 +58,7 @@ PlatformMgr::PlatformMgr()
       unk43a2(false), unk43a3(false), mCheckingProfanity(false), unkca11(false),
       mProfanityAllowed(true), unkca14(0), mHomeMenuDisabled(0),
       mNetworkPlay(false), unkce56(false), mIsRestarting(false),
-      mPartyMicAllowed(false), mEnableSFX(false), unkce5a(false),
+      mPartyMicAllowed(false), mEnableSFX(true), unkce5a(false),
       mEnumerateFriendsCallback(0), mSendMsgCallback(0), mSignInUserCallback(0),
       mIsOnlineRestricted(true), unkce69(false), mIgnorePowerOperations(false) {
     // HomeMenu / DiscErrorMgrWii ctors are Wii-SDK-bound. Give mHomeMenuWii a
@@ -68,6 +68,14 @@ PlatformMgr::PlatformMgr()
     mDiscErrorMgr = nullptr;
     mProfaneWord = 0;
     ClearNetError();
+
+    // SFX one-shot samples (menu blips/confirms, gameplay hits) are now decodable
+    // natively via SynthSample::NewInst (rb3_sampleinst_native.cpp), so default to
+    // loading their payloads — AreSFXEnabled() gates SampleData::Load. RB3_NO_SFX=1
+    // restores the retail-disabled behavior (payloads seeked past → silent, lower
+    // memory/load) for A/B or if a bank ships an unsupported (XMA/etc) format.
+    if (const char *e = ::getenv("RB3_NO_SFX"); e && e[0] && e[0] != '0')
+        mEnableSFX = false;
 }
 
 PlatformMgr::~PlatformMgr() {
