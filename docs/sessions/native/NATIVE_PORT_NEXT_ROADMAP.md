@@ -9,11 +9,28 @@
 > - **Loader stalls** (`3cef2790`) — QW-1 time-budget (`RB3_LOADER_BUDGET_MS`) + QW-2
 >   buffering; main_hub 9.9s→7.8s, boot worst-case 8→13 fps.
 >
-> All native-verified; web builds clean with all three. **Open follow-ups:** windowed
-> gameplay key-press + in-browser audibility (no `$DISPLAY`/audio output here); web XMA-SFX
-> serving (180MB sidecars → on-demand fetch, not bundled); DC3 sidecar generation (blocked
-> by a pre-existing dc3 build-env issue). **Still unstarted:** difficulty/instrument-select
-> + the completeness-audit track.
+> All native-verified; web builds clean with all three.
+>
+> ## LANDED 2026-06-02 (batch 2 — pushed, master `1d6aa7d4`)
+> - **Difficulty + instrument select** (`3ffa6ff9`) — `difficulty:<easy|med|hard|expert>` verb,
+>   un-hardcoded forced Expert, real overshell part-select (glue-only).
+> - **Web XMA-SFX serving** (`5da36eeb`) — on-demand sidecar fetch (lazy XHR per SFX, no 180MB
+>   upfront) + `server.py` serves the derived tree.
+> - **Teardown SIGSEGV** (`3424b4e1`) — `AudioDevice::Suspend()` quiesces the audio RT thread
+>   before `Debug::Exit`; 30/30 clean exits. (completeness-audit C4 = DONE.)
+> - **Gameplay-start OSFatal fix** (`1d6aa7d4`) — the input breed-pin (`wii_guitar`) crashed at
+>   song start. NON-OBVIOUS ROOT CAUSE: native uses the `HX_WII` DTA define, so the loaded
+>   `joypad.dta` is a MERGE of an HX_WII fragment (`controllers`/`button_meanings` — has
+>   `wii_guitar`; `GuitarController::Poll` fatal-looks-it-up EVERY FRAME) and an Xbox-flavoured
+>   fragment (`controller_mapping`/`instrument_mapping` — NO `wii_guitar`). No single 5-lane
+>   breed is in both. Fix = glue-only runtime DataArray injection (`EnsureWiiGuitarMapped()` in
+>   rb3_joypad_native.cpp adds the two missing rows). **`song-end-test.py` PASSES** — gameplay
+>   starts, songMs advances, clean exit.
+>
+> **Open follow-ups:** windowed gameplay key-press + in-browser audibility (no `$DISPLAY`/audio
+> output here); DC3 sidecar generation + landing (blocked by a pre-existing dc3 build-env issue,
+> committed on `wt-xma-dc3`, NOT pushed). **Still unstarted:** the rest of the completeness-audit
+> track (results screen, persistence, A/V calibration, options/pause, vocals, multiplayer).
 
 This is the master handoff that consolidates the five investigator specs written into
 [`roadmap-2026-06-02/`](roadmap-2026-06-02/) on 2026-06-02, building on the prior
