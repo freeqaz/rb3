@@ -720,7 +720,23 @@ void OvershellPanel::ResolveSlotStates() {
                 } else if (curSlot->GetState()->GetStateID() < 200) {
                     // goto-into-else folds the "guest" branch tail and the "loaded-unlocked
                     // non-guest" branch tail into one block; rewrite regresses match.
+#if defined(HX_NATIVE)
+                    // The native/web port has no Wii profile manager (TheWiiProfileMgr
+                    // is a zeroed no-op stub: mPadProfileIndex[]/mWiiProfiles[] flags
+                    // are all 0). So IsPadAGuest() reads -2!=0 -> FALSE and the
+                    // non-guest branch below would route the profileless guest's slot
+                    // into kState_WaitWii (0x81) forever — its view never becomes
+                    // choose_part, so the SongSettings override flow stalls and the
+                    // player can never pick a part/difficulty. On the disc a guest pad
+                    // (no Wii profile) IS a guest: IsPadAGuest TRUE -> the `therest`
+                    // path runs ShowSongOptions() -> kState_ChoosePart. Our offline
+                    // guest (splash fix lands it in kState_JoinedDefault) is exactly
+                    // that case, so take the guest branch. Faithful to the disc's
+                    // "guest continues into the part-select flow" outcome.
+                    if (false) {
+#else
                     if (!TheWiiProfileMgr.IsPadAGuest(curLocalUser->GetPadNum())) {
+#endif
                         int padIdx =
                             TheWiiProfileMgr.GetIndexForPad(curLocalUser->GetPadNum());
                         if (padIdx >= 0) {
@@ -949,6 +965,27 @@ void OvershellPanel::ResolvePartWaitStates() {
                 }
                 UpdateAll();
             } else if (allWaiting) {
+#if defined(HX_NATIVE)
+                // The part resolver decides which of SEVERAL users contending for
+                // the SAME representative part gets a ChoosePartWarn ("you won the
+                // part, others wanted it — confirm"). With no contention
+                // (priorityUsers empty — the common single-player / lone-guitarist
+                // case), `resolvingUsers` is just this user, so the resolver
+                // trivially "picks" them and shows a spurious ChoosePartWarn whose
+                // confirm-yes (-> ShowChoosePartWait) lands right back in
+                // ChoosePartWait -> here -> ChoosePartWarn: an inescapable loop
+                // that strands the player on part_difficulty (confirm_action) and
+                // never reaches choose_diff. There is genuinely nothing to resolve
+                // for a lone uncontested player, so resolve the part directly to
+                // kState_ChooseDiff — the faithful outcome (the part stands; the
+                // disc shows no warn when no one else wants it). The multi-user
+                // contention path (priorityUsers non-empty) is unchanged.
+                if (priorityUsers.empty()) {
+                    user->SetOvershellSlotState(kState_ChooseDiff);
+                    UpdateAll();
+                } else
+#endif
+                {
                 mPartResolver.Seed(mPartResolverSeed);
                 std::vector<BandUser *> resolvingUsers;
                 for (int s = 0; s < mSlots.size(); s++) {
@@ -968,6 +1005,7 @@ void OvershellPanel::ResolvePartWaitStates() {
                 if (picked->IsLocal()) {
                     picked->SetOvershellSlotState(kState_ChoosePartWarn);
                     UpdateAll();
+                }
                 }
             }
         }

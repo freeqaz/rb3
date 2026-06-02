@@ -1561,7 +1561,30 @@ DataNode OvershellSlot::OnMsg(const AddLocalUserResultMsg &msg) {
             BeginOverrideFlow(kOverrideFlow_SongSettings, true);
         } else {
             MILO_ASSERT(!InGame(), 0xAF4);
+#if defined(HX_NATIVE)
+            // Offline single-player add-user: the disc shows kState_ChooseProfile
+            // so the player can pick a saved Wii profile or choose "continue
+            // without profile" (slot_states.dta -> {$this leave_options} ->
+            // ShowState(kState_JoinedDefault)). The native/web port has no Wii
+            // profiles and the splash never hands the overshell input focus, so
+            // a profileless guest would park in kState_ChooseProfile forever —
+            // its slot_states entry has no `allows_input_to_shell`, so the
+            // overshell never emits `overshell_allowing_input TRUE` and the
+            // splash_panel stalls in kSplashScreen_WaitOvershell, never reaching
+            // main_hub_screen. Land directly in kState_JoinedDefault, which is
+            // exactly the state "continue without profile" produces — the
+            // faithful offline outcome of a guest pressing Start with no profile.
+            // (`allows_input_to_shell TRUE` on kState_JoinedDefault then lets the
+            // overshell signal the splash to advance.)
+            if (mSessionMgr->IsLocal()
+                && !TheProfileMgr.GetProfileForUser(pUser)) {
+                pUser->SetOvershellSlotState(kState_JoinedDefault);
+            } else {
+                pUser->SetOvershellSlotState(kState_ChooseProfile);
+            }
+#else
             pUser->SetOvershellSlotState(kState_ChooseProfile);
+#endif
         }
         mOvershell->UpdateAll();
         static NewOvershellLocalUserMsg newUserMsg(pUser);

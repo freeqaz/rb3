@@ -36,8 +36,15 @@ GameGem::GameGem(const RGGemInfo &info)
         }
     }
     PackRealGuitarData();
+#if defined(HX_NATIVE)
+    // chord_name is char[64] on native (see GemInfo.h); test the first byte and
+    // pass the array (decays to char*) to Symbol.
+    if (info.chord_name[0] != 0)
+        mChordNameOverride = Symbol(info.chord_name);
+#else
     if (info.chord_name != 0)
         mChordNameOverride = Symbol(&info.chord_name);
+#endif
     mForceStrum |= RightHandTap();
 }
 

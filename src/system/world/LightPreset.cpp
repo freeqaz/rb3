@@ -1159,13 +1159,9 @@ void LightPreset::EnvironmentEntry::Animate(
 ) {
     if (entry.mFogEnable) {
         float thisStart = mFogStart;
-        float entryStart = entry.mFogStart;
         float thisEnd = mFogEnd;
-        float entryEnd = entry.mFogEnd;
-        float diffStart = entryStart - thisStart;
-        float diffEnd = entryEnd - thisEnd;
-        mFogStart = f2 * diffStart + thisStart;
-        mFogEnd = f2 * diffEnd + thisEnd;
+        mFogStart = f2 * (entry.mFogStart - thisStart) + thisStart;
+        mFogEnd = f2 * (entry.mFogEnd - thisEnd) + thisEnd;
     } else {
         float far = RndCam::sCurrent ? RndCam::sCurrent->FarPlane() : FLT_MAX;
         Interp(mFogStart, far, f2, mFogStart);

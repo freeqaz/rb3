@@ -65,7 +65,19 @@ struct RGGemInfo {
     RGStrumType strum_type;
     unsigned char hand_position;
     unsigned char root_note;
+#if defined(HX_NATIVE)
+    // SongParser::HandleRGGemStop does `strcpy(&chord_name, info.mRGChordText)`
+    // where mRGChordText is char[64]. The Wii decomp captured this trailing field
+    // as a single `char` (the struct's tail inline buffer is declared as its first
+    // byte), so on native the strcpy smashes the stack frame -> __stack_chk_fail
+    // the instant a song with a real_guitar chord-name event loads (every RB3 song
+    // with a Pro Guitar part). Give it the full 64-byte buffer it always was on
+    // disc. GameGem reads it as a C string (Symbol(&info.chord_name)); &chord_name
+    // is unchanged, so all consumers are unaffected.
+    char chord_name[64];
+#else
     char chord_name;
+#endif
 };
 
 #endif
