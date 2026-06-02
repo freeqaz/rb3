@@ -93,7 +93,7 @@
 #ifdef VERSION_SZBE69_B8
 DECOMP_FORCEACTIVE(App, "_unresolved func.\n")
 #endif
-u64 sNullMicClientID;
+static MicClientID sNullMicClientID;
 ModalCallbackFunc *gRealCallback;
 
 #ifdef HX_NATIVE

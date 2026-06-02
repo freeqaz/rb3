@@ -5,7 +5,7 @@
 #include "synth/MicManagerInterface.h"
 #include "utl/TimeConversion.h"
 
-MicClientID sNullClientID(-1, -1);
+static MicClientID sNullClientID(-1, -1);
 
 TambourineDetector::TambourineDetector(TambourineManager &mgr, Singer *singer)
     : mManager(mgr), mSinger(singer), unk8(0), unkc(0), unk10(1.0f) {
