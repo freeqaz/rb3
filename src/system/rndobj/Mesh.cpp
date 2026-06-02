@@ -424,13 +424,7 @@ RndMesh::VertVector &RndMesh::VertVector::operator=(const RndMesh::VertVector &c
             *myVerts++ = *otherVerts++;
         }
     }
-#ifdef HX_NATIVE
-    // Matched src falls off the end of this non-void operator=; clang emits a
-    // `ud2` trap there. Returning *this matches the obvious intent (and the
-    // contemporaneous Rnd vector helpers) without changing asm-match output
-    // under MWCC/MSVC-PPC, which is gated out.
     return *this;
-#endif
 }
 
 void RndMesh::PreLoadVertices(BinStream &bs) {

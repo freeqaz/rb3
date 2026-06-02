@@ -287,7 +287,7 @@ void SongUpgradeMgr::GetUpgradeSongsInContent(Symbol key, std::vector<int> &upgr
 void SongUpgradeMgr::AddUpgradeData(
     DataArray *arr, DataLoader *loader, ContentLocT loc, Symbol s
 ) {
-    if (!streq(s.Str(), ".")) {
+    if (s != ".") {
         std::vector<int> upgradesongs;
         GetUpgradeSongsInContent(s, upgradesongs);
         if (!upgradesongs.empty())
@@ -311,7 +311,7 @@ void SongUpgradeMgr::AddUpgradeData(
             }
         }
     }
-    if (!streq(s.Str(), ".")) {
+    if (s != ".") {
         std::vector<int> songs;
         for (int i = 0; i < arr->Size(); i++) {
             int songID = arr->Array(i)->FindInt(song_id);
