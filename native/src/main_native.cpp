@@ -641,6 +641,14 @@ static int RunGame(int argc, char **argv) {
     // App.cpp RunWithoutDebugging (HX_NATIVE frame-loop exit, before return).
     TheDebug.AddExitCallback(RB3AudioTerminateExitCallback);
 
+    // C2 (persistence): write ProfileMgr global options + profile-0 GameplayOptions
+    // to a host file on the clean code-0 exit path. Touches only ProfileMgr + the
+    // host FS (no GPU/synth) so it is teardown-safe; the matching LOAD runs after
+    // the App ctor below (RB3SaveLoadGlobalOptions).
+    extern void RB3SaveLoadGlobalOptions();
+    extern void RB3SaveSaveGlobalOptions();
+    TheDebug.AddExitCallback(RB3SaveSaveGlobalOptions);
+
     // Seed the live-tunable render/camera/gem settings from the environment
     // ONCE, before any rendering subsystem reads them. Existing CAM_ROTX=...
     // invocations flow through here into TheNativeSettings().camRotX; the
@@ -699,6 +707,12 @@ static int RunGame(int argc, char **argv) {
     printf("rb3-native: RB3_GAME — constructing App...\n");
     App app(argc, argv);
     printf("rb3-native: RB3_GAME — App constructed; calling Run()...\n");
+
+    // C2 (persistence): the App ctor ran ProfileMgr::Init (TheProfileMgr now alive,
+    // 4 BandProfiles populated, TheModifierMgr up). Restore persisted global options
+    // + profile-0 GameplayOptions BEFORE the frame loop reads any option.
+    RB3SaveLoadGlobalOptions();
+
     app.Run();
     printf("rb3-native: RB3_GAME — Run() returned; exiting cleanly.\n");
     return 0;

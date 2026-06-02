@@ -506,6 +506,11 @@ add_executable(rb3-native
     # use the MWCC compat flags, while the httplib TU must NOT — see the
     # set_source_files_properties note after rb3_configure_target below).
     ${CMAKE_SOURCE_DIR}/src/rb3_http_handlers.cpp
+    # C2: save/profile/settings persistence (keystone). Host-FS blob store behind
+    # IPersistBackend, backing ProfileMgr's self-contained global-options +
+    # profile-0 GameplayOptions serializers. Bypasses the EXCLUDED Wii
+    # SaveLoadManager/MemcardMgr async state machine (never Poll()'d natively).
+    ${CMAKE_SOURCE_DIR}/src/rb3_save_native.cpp
     # K5: tomcrypt AES/CTR for v0x10 .mogg decryption. The matched-fork
     # ByteGrinder::HvDecrypt + VorbisReader::DoFileRead path calls
     # rijndael_setup, rijndael_ecb_decrypt, register_cipher, ctr_start,
