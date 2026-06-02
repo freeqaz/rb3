@@ -25,6 +25,15 @@ void (*LoadMgr::sFileOpenCallback)(const char *);
 
 Timer gPollFrontLoaderTimer;
 
+#ifdef HX_NATIVE
+// TRACK-B (loadperf) attribution counters — native-only, read by the App.cpp
+// frame instrument (RB3_FRAME_INSTRUMENT). Each accumulates ms spent THIS frame
+// in the named entry point; App.cpp zeroes them at frame start and reports them.
+// Zero runtime cost when the instrument is off (the App-side reads are gated).
+float gLoadPollMsThisFrame = 0.0f;        // SystemPoll -> TheLoadMgr.Poll() (budgeted)
+float gLoadPollUntilMsThisFrame = 0.0f;   // PollUntilLoaded + PollUntilEmpty (sync drains)
+#endif
+
 struct LoaderGlitchContext {
     String file;           // 0x0  (vtable + mCap + mStr = 12 bytes)
     const char *name;      // 0xC
@@ -191,6 +200,13 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
     SetGPHangDetectEnabled(true, funcName);
     return;
 #endif
+#ifdef HX_NATIVE
+    // TRACK-B attribution: time this synchronous-contract drain into the
+    // sync-drain bucket so the App-side frame instrument can show how much of a
+    // long frame is unavoidable blocking load vs. the budgeted background Poll().
+    Timer pulTimer;
+    pulTimer.Restart();
+#endif
     while (!theLdr->IsLoaded()) {
         unk1c = 1e+30f;
         bool noFail = ldr2IsNull || ldr2 != mLoading.front();
@@ -210,6 +226,10 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
             mLoading.pop_front();
         }
     }
+#ifdef HX_NATIVE
+    pulTimer.Split();
+    gLoadPollUntilMsThisFrame += Timer::CyclesToMs(pulTimer.mCycles);
+#endif
     SetGPHangDetectEnabled(true, funcName);
 }
 
@@ -219,9 +239,21 @@ void LoadMgr::PollUntilEmpty() {
     float savedPeriod = TheLoadMgr.mPeriod;
     TheLoadMgr.unk1c = 1e+30f;
     TheLoadMgr.mPeriod = 1e+30f;
+#ifdef HX_NATIVE
+    // TRACK-B: PollUntilEmpty forces the unbudgeted drain (period = 1e30) so
+    // Poll()'s budget never trips — its time should be attributed to the
+    // synchronous-drain bucket, not the budgeted background bucket. Snapshot the
+    // Poll bucket and move the delta over so the App-side attribution is honest.
+    float prePollMs = gLoadPollMsThisFrame;
+#endif
     TheLoadMgr.Poll();
     TheLoadMgr.mPeriod = savedPeriod;
     TheLoadMgr.unk1c = savedPeriod;
+#ifdef HX_NATIVE
+    float delta = gLoadPollMsThisFrame - prePollMs;
+    gLoadPollMsThisFrame = prePollMs;       // un-attribute from background bucket
+    gLoadPollUntilMsThisFrame += delta;     // re-attribute to sync-drain bucket
+#endif
     SetGPHangDetectEnabled(true, funcName);
 }
 
@@ -255,17 +287,51 @@ void LoadMgr::Poll() {
     mTimer.Restart();
     unk1c = mPeriod;
 #ifdef HX_WEB
-    // Web port: like PollUntilLoaded above, the matched-fork / HX_NATIVE drain
-    // below pumps the whole mLoading queue to completion in ONE un-interruptible
-    // call (it disables CheckSplit via unk1c = 1e30f). The App ctor calls this
-    // via PollUntilEmpty(), and individual UI/panel screen transitions also poll
-    // here — on web that freezes the tab. Use the same cooperative slice +
-    // emscripten_sleep(0) yield as PollUntilLoaded so the browser gets event-loop
-    // turns between slices. NOTE: HX_WEB implies HX_NATIVE on this build, so this
-    // arm must come BEFORE the HX_NATIVE block to win.
+    // Web port (TRACK-B smooth-load): this is the per-FRAME background loader
+    // drain, called once per RunOneFrame from SystemPoll. The matched-fork /
+    // HX_NATIVE drain below pumps the WHOLE mLoading queue to completion in one
+    // un-interruptible call (it disables CheckSplit via unk1c = 1e30f). The old
+    // web arm did better — it sliced and emscripten_sleep(0)'d between slices —
+    // but it STILL looped `while (!mLoading.empty())`, i.e. it drained the entire
+    // queue before returning. Returning is what matters: only when this Poll()
+    // RETURNS does the rest of RunOneFrame run (TheUI.Draw() repaints the loading
+    // UI) and does mainLoop() return to JS so requestAnimationFrame can schedule
+    // the next tick and the browser composites the CSS loading overlay. Draining
+    // the whole queue here meant a multi-second background load (e.g. the song
+    // milo chain) ran across one RunOneFrame: the canvas froze on its last frame
+    // and the overlay's compositor animation could stall — the perceived freeze.
+    //
+    // Fix: bound the work to a small per-FRAME budget (RB3_LOADER_BUDGET_MS,
+    // default 8) and RETURN once exceeded, exactly like the native arm below.
+    // The queue is re-entered next frame. emscripten_sleep(0) is kept as a
+    // within-frame courtesy yield between slices (cheap under JSPI), but the
+    // budget break is the load-bearing change: it caps a single frame's load CPU.
+    //
+    // NOTE: HX_WEB implies HX_NATIVE on this build, so this arm must come BEFORE
+    // the HX_NATIVE block to win. PollUntilEmpty (which sets mPeriod = 1e30f as
+    // an "unbudgeted, drain-to-empty" sentinel) deliberately bypasses the
+    // per-frame budget break — it has a synchronous contract and must empty the
+    // queue — but it STILL slices + emscripten_sleep(0)'s so the tab keeps
+    // compositing while it drains. Only the SystemPoll-driven background Poll()
+    // (mPeriod = mPeriodNormal, a small number) is frame-bounded.
     {
-        const float kSliceMs = 8.0f;
-        int polls = 0;
+        static float sBudgetMs = -1.0f;
+        if (sBudgetMs < 0.0f) {
+            sBudgetMs = 8.0f;
+            if (const char *e = ::getenv("RB3_LOADER_BUDGET_MS")) {
+                if (e[0])
+                    sBudgetMs = (float)atof(e);
+            }
+            if (sBudgetMs <= 0.0f)
+                sBudgetMs = 8.0f;
+        }
+        // mPeriod >= sentinel ⇒ PollUntilEmpty's unbudgeted drain: empty the
+        // whole queue (no per-frame break), but still slice + yield each pass.
+        bool drainToEmpty = (mPeriod >= 1e29f);
+        // Per-iteration mTimer drives each state func's internal CheckSplit();
+        // a separate timer bounds the cumulative per-frame cost.
+        Timer budgetTimer;
+        budgetTimer.Restart();
         int maxIter = 400000; // safety valve (PollUntilEmpty can have long queues)
         while (!mLoading.empty()) {
             if (--maxIter <= 0) {
@@ -273,19 +339,20 @@ void LoadMgr::Poll() {
                           (int)mLoading.size());
                 break;
             }
-            unk1c = kSliceMs;
+            unk1c = sBudgetMs;
             mTimer.Restart();
             PollFrontLoader();
-            polls++;
-            if ((polls % 200) == 0) {
-                Loader *f = mLoading.empty() ? nullptr : mLoading.front();
-                MILO_LOG("LoadMgr::Poll(web): poll %d front=%s pending=%d\n",
-                         polls, f ? f->mFile.c_str() : "(empty)", (int)mLoading.size());
-            }
             if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
                 mLoading.pop_front();
             }
-            emscripten_sleep(0);
+            budgetTimer.Split();
+            if (!drainToEmpty && Timer::CyclesToMs(budgetTimer.mCycles) > sBudgetMs) {
+                // Budget spent for this frame — yield the event loop once and
+                // return so RunOneFrame repaints the overlay and RAF re-ticks.
+                emscripten_sleep(0);
+                break;
+            }
+            emscripten_sleep(0); // within-frame courtesy yield between slices
         }
         return;
     }
@@ -320,6 +387,10 @@ void LoadMgr::Poll() {
             if (sBudgetMs <= 0.0f)
                 sBudgetMs = 8.0f;
         }
+        // mPeriod >= sentinel ⇒ PollUntilEmpty's unbudgeted drain: empty the whole
+        // queue this call (synchronous contract). Otherwise this is the per-frame
+        // background drain and the budget break returns to the frame loop.
+        bool drainToEmpty = (mPeriod >= 1e29f);
         // Cumulative wall-clock across the whole Poll() call: mTimer is restarted
         // per-iteration (so each state func's CheckSplit() sees a fresh slice), so
         // a separate timer is needed to bound the total per-frame cost.
@@ -344,9 +415,11 @@ void LoadMgr::Poll() {
                 mLoading.pop_front();
             }
             budgetTimer.Split();
-            if (Timer::CyclesToMs(budgetTimer.mCycles) > sBudgetMs)
+            if (!drainToEmpty && Timer::CyclesToMs(budgetTimer.mCycles) > sBudgetMs)
                 break;
         }
+        budgetTimer.Split();
+        gLoadPollMsThisFrame += Timer::CyclesToMs(budgetTimer.mCycles);
         return;
     }
 #endif
