@@ -192,9 +192,10 @@ void TryDemangleParams(String &s1, String &s2, String s3, String s4) {
     }
 
     // Base case: no more params - strip trailing ", " and assemble result
-    int needCleanup = 0;
     int doStrip = 0;
-    if (strlen(s2.c_str()) > 1) {
+    int needCleanup = 0;
+    int _tmp7 = strlen(s2.c_str());
+    if (_tmp7 > 1) {
         needCleanup = 1;
         if (s2.substr(strlen(s2.c_str()) - 2, strlen(s2.c_str())) == ", ") {
             doStrip = 1;

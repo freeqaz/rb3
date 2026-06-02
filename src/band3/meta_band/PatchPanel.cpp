@@ -409,12 +409,17 @@ DataNode PatchPanel::OnMsg(const ButtonUpMsg &msg) {
 #pragma push
 #pragma pool_data on
 void PatchPanel::Poll() {
+    StickerProvider * _mStickerProvider = this->mStickerProvider;
+    PatchDir * _mPatch = this->mPatch;
+    int& _mEditLayerIdx = this->mEditLayerIdx;
+    float& _mMoveVelX = this->mMoveVelX;
+    int& _mMoveX = this->mMoveX;
     UIPanel::Poll();
-    int numLoading = mPatch->NumLoadingStickers();
+    int numLoading = _mPatch->NumLoadingStickers();
     if (numLoading != 0) {
-        mPatch->Poll();
-        if (mPatch->NumLoadingStickers() < numLoading) {
-            mStickerProvider->StickerLoaded();
+        _mPatch->Poll();
+        if (_mPatch->NumLoadingStickers() < numLoading) {
+            _mStickerProvider->StickerLoaded();
             unk51 = true;
         }
     }
@@ -422,12 +427,12 @@ void PatchPanel::Poll() {
         unk51 = false;
         HandleType(update_char_preview_msg);
     }
-    PatchLayer &layer = mPatch->Layer(mEditLayerIdx);
+    PatchLayer &layer = _mPatch->Layer(_mEditLayerIdx);
     if (layer.HasSticker()) {
-        mMoveVelX = CalcMotion(mMoveVelX, mMoveX);
+        _mMoveVelX = CalcMotion(_mMoveVelX, _mMoveX);
         mMoveVelY = CalcMotion(mMoveVelY, mMoveY);
         Vector3 pos = layer.Position();
-        pos.x = mMoveVelX * unk58 + pos.x;
+        pos.x = _mMoveVelX * unk58 + pos.x;
         pos.z = mMoveVelY * unk58 + pos.z;
         if (pos.x < -250.0f)
             pos.x = -250.0f;
@@ -476,7 +481,7 @@ void PatchPanel::Poll() {
         else if (newDeform > unk84)
             newDeform = unk84;
         layer.SetDeformFrame(newDeform);
-        if (mMoveVelX != 0.0f || mMoveVelY != 0.0f || mRotVel != 0.0f
+        if (_mMoveVelX != 0.0f || mMoveVelY != 0.0f || mRotVel != 0.0f
             || mScaleVelX != 0.0f || mScaleVelY != 0.0f || mDeformVel != 0.0f) {
             unk50 = true;
         }

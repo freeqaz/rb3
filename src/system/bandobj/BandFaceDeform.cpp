@@ -61,6 +61,7 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
     float sp18, sp1C, sp20;
     signed char sp8, sp9, spA;
 
+    void * &_ref0 = mData;
     while ((unsigned short)end < pos.size()) {
         // Skip leading zero-delta vertices
         int byteOff = start * 0xC;
@@ -146,7 +147,7 @@ void BandFaceDeform::DeltaArray::AppendDeltas(
         if (start < pos.size()) {
             int count = end - start;
             char *rec = (char *)MemResizeElem(
-                mData, mSize, (char *)mData + mSize, 0, count * 3 + 4, "BandFaceDeform"
+                _ref0, mSize, (char *)_ref0 + mSize, 0, count * 3 + 4, "BandFaceDeform"
             );
 
             *(unsigned short *)(rec + 0) = start;

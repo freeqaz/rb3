@@ -1512,7 +1512,7 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
     }
 
     std::map<FontKey, MeshInfo>::iterator it2 = mMeshMap.begin();
-    for (int i = 0; i < mMeshMap.size(); i++) {
+    for (int i = 0; i < mMeshMap.size(); i++, ++it2) {
         RndFont *curFont = (RndFont *)it2->first;
         unsigned int idx = curLine.startIdx;
         unsigned int min = std::min<unsigned int>(curLine.endIdx, mFixedLength);
@@ -1534,7 +1534,6 @@ void RndText::UpdateLineColor(unsigned int idx, const Hmx::Color32 &col, bool *b
             }
             idx += decoded;
         }
-        ++it2;
     }
 
     curLine.lineStyle.color = col;
