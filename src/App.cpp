@@ -683,7 +683,14 @@ void App::RunWithoutDebugging() {
     MILO_LOG("RB3 Native: entering frame loop — %s\n",
              unbounded ? "unbounded (RB3_HTTP keep-alive)" : "bounded");
 
-    for (int frame = 0; unbounded || frame < maxFrames; frame++) {
+    // C3: a `quit` input verb (rb3_game_input.cpp) sets this; breaking the loop
+    // here returns from RunWithoutDebugging() so App::~App()'s TheDebug.Exit(0)
+    // fires the exit-callback chain (incl. RB3SaveSaveGlobalOptions), giving an
+    // HTTP-driven clean exit that persists state — unlike SIGTERM/SIGKILL.
+    extern bool RB3CleanExitRequested();
+
+    for (int frame = 0; (unbounded || frame < maxFrames) && !RB3CleanExitRequested();
+         frame++) {
         // The core poll + draw (SystemPoll → UI.Poll → RB3GameInputPoll →
         // TaskMgr.Poll → Synth.Poll → BeginDrawing → sigsetjmp-guarded UI.Draw →
         // EndDrawing) lives in RunOneFrame, shared verbatim with the web boot.

@@ -319,6 +319,17 @@ void MetaPanel::Init() {
     // matched TU only gains one gated call. MWCC (no HX_NATIVE) never sees this.
     extern void RB3UpgradeDiscLabelClasses();
     RB3UpgradeDiscLabelClasses();
+
+    // C3 (A/V calibration persistence): TheProfileMgr.Init() above runs
+    // SetExcessVideoLag(0) (ProfileMgr.cpp:111), which resets the persisted
+    // sync/audio-lag offsets back to neutral. The C2 boot-time load
+    // (main_native.cpp RB3SaveLoadGlobalOptions, called before App::Run) is
+    // therefore clobbered here. Re-apply the persisted global options NOW —
+    // after Init's reset — so calibration offsets survive a restart. No-op on
+    // first run (no file); idempotent (exact-size-gated reader). Pure native
+    // glue; MWCC (no HX_NATIVE) never sees this.
+    extern void RB3SaveLoadGlobalOptions();
+    RB3SaveLoadGlobalOptions();
 #endif
 }
 

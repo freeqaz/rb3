@@ -89,6 +89,11 @@
 
 namespace {
 
+// C3: set by the `quit` input verb; read by App's HX_NATIVE frame loop via the
+// RB3CleanExitRequested() accessor below the namespace. volatile because the
+// loop polls it each frame after the input drain.
+volatile bool gCleanExitRequested = false;
+
 // ============================================================================
 // W3b — Browser keyboard input (web build only)
 // ============================================================================
@@ -616,10 +621,16 @@ void ExecMsg(const ScriptedMsg &m, UIScreen *cur) {
         std::string argdump;
         for (size_t k = 0; k < args.size(); ++k) {
             const std::string &a = args[k];
+            bool numeric = !a.empty() &&
+                (isdigit((unsigned char)a[0]) || (a[0] == '-' && a.size() > 1));
             if (a == "$user")
                 da->Node((int)k + 2) = DataNode((Hmx::Object *)user);
-            else if (!a.empty() &&
-                     (isdigit((unsigned char)a[0]) || (a[0] == '-' && a.size() > 1)))
+            else if (numeric && a.find('.') != std::string::npos)
+                // C3: a fractional token (e.g. -45.5) carries a float so the
+                // msg: verb can drive sub-ms lag offsets. Int args still take the
+                // atoi branch; Float() coerces int->float for the int-arg case.
+                da->Node((int)k + 2) = DataNode((float)atof(a.c_str()));
+            else if (numeric)
                 da->Node((int)k + 2) = DataNode(atoi(a.c_str()));
             else
                 da->Node((int)k + 2) = DataNode(Symbol(a.c_str()));
@@ -1145,6 +1156,26 @@ bool ExecVerb(const std::string &verb, UIScreen *cur, std::string *err) {
         ExecAutohit();
         return true;
     }
+    // C3: `quit` — request a clean exit. The HX_NATIVE frame loop breaks on the
+    // next iteration, so the App dtor's TheDebug.Exit fires the save callbacks
+    // (RB3SaveSaveGlobalOptions). Lets a headless test persist + exit code 0
+    // without SIGTERM (which skips the callback chain).
+    if (verb == "quit") {
+        gCleanExitRequested = true;
+        MILO_LOG("RB3 input: clean-exit requested\n");
+        return true;
+    }
+    // C3: `nav:cal` — sugar over {ui goto_screen cal_welcome_screen}. Routes the
+    // A/V calibration welcome screen through the same ExecMsg goto_screen path as
+    // msg:ui:goto_screen:cal_welcome_screen. Optional ergonomic alias.
+    if (verb == "nav:cal") {
+        ScriptedMsg sm;
+        sm.object = "ui";
+        sm.action = "goto_screen";
+        sm.args.push_back("cal_welcome_screen");
+        ExecMsg(sm, cur);
+        return true;
+    }
     if (verb.rfind("msg:", 0) == 0) {
         std::string rest = verb.substr(4);
         std::vector<std::string> parts;
@@ -1237,6 +1268,13 @@ public:
 };
 
 } // namespace
+
+// C3: clean-exit request flag. A `quit` input verb sets it; App's HX_NATIVE
+// frame loop polls RB3CleanExitRequested() and breaks out, returning from
+// RunWithoutDebugging() so App::~App() -> TheDebug.Exit(0,true) fires the exit
+// callbacks (incl. RB3SaveSaveGlobalOptions). SIGTERM/SIGKILL skip that chain,
+// so the persistence harness MUST use this verb (or MILO_MAX_FRAMES) to exit.
+bool RB3CleanExitRequested() { return gCleanExitRequested; }
 
 void RB3RegisterNativeManagerStubs() {
     auto registerStub = [](const char *name, Hmx::Object *obj) {
