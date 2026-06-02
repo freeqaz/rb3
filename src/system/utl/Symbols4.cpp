@@ -858,8 +858,13 @@ Symbol point_test("point_test");
 Symbol point_value("point_value");
 Symbol pointer_position("pointer_position");
 Symbol points("points");
-#ifndef HX_NATIVE
-Symbol poll("poll"); // native: collides with POSIX poll() — miniaudio's ALSA worker calls libc poll()
+#if !defined(HX_NATIVE) || defined(__EMSCRIPTEN__)
+// native-desktop: omitted — collides with POSIX poll() (miniaudio's ALSA worker
+// calls libc poll(), and ELF tolerates the data/func clash). The web build is
+// also HX_NATIVE but uses WebAudio (no ALSA → nothing pulls libc poll), and
+// strict wasm-ld errors on the undefined `poll` resolving to libc's poll() — so
+// it MUST be defined there. The Wii matched build (!HX_NATIVE) is unaffected.
+Symbol poll("poll");
 #endif
 Symbol polls("polls");
 Symbol pool_category("pool_category");
