@@ -58,6 +58,7 @@ void DataResultList::Update(Message *msg) {
                     DataNode ne0;
                     tmpJsonObject = jc.GetElement(currentRow, k);
                     switch (jsonStr1[k]) {
+#ifndef HX_NATIVE
                     case 'd':
                         MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Int, 0x74);
                         JsonInt *jInt = (JsonInt *)tmpJsonObject;
@@ -73,6 +74,26 @@ void DataResultList::Update(Message *msg) {
                         JsonString *jStr = (JsonString *)tmpJsonObject;
                         ne0 = jStr->GetValue();
                         break;
+#else
+                    case 'd': {
+                        MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Int, 0x74);
+                        JsonInt *jInt = (JsonInt *)tmpJsonObject;
+                        ne0 = jInt->GetValue();
+                        break;
+                    }
+                    case 'f': {
+                        MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_Double, 0x79);
+                        JsonDouble *jFloat = (JsonDouble *)tmpJsonObject;
+                        ne0 = (float)jFloat->GetValue();
+                        break;
+                    }
+                    case 's': {
+                        MILO_ASSERT(tmpJsonObject->GetType() == JsonObject::kType_String, 0x7E);
+                        JsonString *jStr = (JsonString *)tmpJsonObject;
+                        ne0 = jStr->GetValue();
+                        break;
+                    }
+#endif
                     default:
                         MILO_FAIL("Unsupported type!");
                         break;

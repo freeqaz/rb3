@@ -13,7 +13,7 @@
 
 RndCam *RndCam::sCurrent = 0;
 int CAM_REV = 12;
-Transform sFlipYZ(Hmx::Matrix3(1, 0, 0, 0, 0, 1, 0, 1, 0), Vector3(0, 0, 0));
+static Transform sFlipYZ(Hmx::Matrix3(1, 0, 0, 0, 0, 1, 0, 1, 0), Vector3(0, 0, 0));
 
 float RndCam::WorldToScreen(const Vector3 &w, Vector2 &s) const {
     Vector3 projectedVec;

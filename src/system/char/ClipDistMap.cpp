@@ -18,6 +18,7 @@
 // Explicit specializations to avoid bool materialization in the comparison
 // loop, so CW uses blt directly after fcmpo instead of mfcr/srwi./bne,
 // and to use float registers for the struct swap.
+#ifndef HX_NATIVE
 namespace stlpmtx_std {
 template <>
 inline void swap<ClipDistMap::Node>(ClipDistMap::Node& __a, ClipDistMap::Node& __b) {
@@ -51,6 +52,7 @@ ClipDistMap::Node* __unguarded_partition<ClipDistMap::Node*, ClipDistMap::Node, 
 }
 
 } // namespace stlpmtx_std
+#endif // !HX_NATIVE
 
 void FindWeights(
     std::vector<RndTransformable *> &transes,
