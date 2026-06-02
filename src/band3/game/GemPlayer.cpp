@@ -829,6 +829,16 @@ void GemPlayer::FilteredWhammyBar(float val) {
     if (!IsLocal() || !TheGame->mProperties.mEnableWhammy)
         return;
     else {
+#ifdef HX_NATIVE
+        // Native robustness: val (f3 from TrackWatcherImpl::CheckForPitchBend,
+        // (whammy - mBiggestWhammy) / (1 + mBiggestWhammy)) is analytically in
+        // [-1, 0], but float rounding at the -1.0 boundary can slip just past -1
+        // and some controller breeds can drive whammy below -1 / leave it
+        // uninitialized (GuitarController::GetWhammyBar). On native a MILO_FAIL ->
+        // Debug::Fail -> PlatformDebugBreak (abort/SIGABRT, exit 134) where the Wii
+        // build only shows a Continue dialog. Clamp so the bounds assert holds.
+        val = Clamp<float>(-1.0f, 0.0f, val);
+#endif
         MILO_ASSERT_RANGE_EQ(val, -1, 0, 0x4EE);
         HeldNote *note = FindFirstActiveHeldNote();
         if (note != nullptr && mWhammyOverdriveEnabled) {
