@@ -78,8 +78,8 @@
 #include <cstring>
 #include <list>
 
-float gSyncAvg;
-float gAvg;
+extern float gSyncAvg;
+extern float gAvg;
 int gCurHeap = -1;
 bool gNotifyKeepGoing;
 bool gFailKeepGoing;
