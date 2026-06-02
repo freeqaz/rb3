@@ -5,9 +5,9 @@
 #include <cmath>
 
 INIT_REVS(RndWind)
-float sWindField[0x401] = { 0 }, sWhiteField[0x400] = { 0 };
-Rand *sRand;
-Vector3 sOffset(0.0f, 0.3384f, 0.66843998f);
+static float sWindField[0x401] = { 0 }, sWhiteField[0x400] = { 0 };
+static Rand *sRand;
+static Vector3 sOffset(0.0f, 0.3384f, 0.66843998f);
 
 void SetWind(int start, int end, float startVal, float endVal, float amplitude) {
     sWindField[start] = startVal;

@@ -10,7 +10,7 @@
 #endif
 #include "utl/Symbols.h"
 
-bool sForceSerialSequences;
+static bool sForceSerialSequences;
 
 namespace {
     float RandomVal(float f1, float f2) {

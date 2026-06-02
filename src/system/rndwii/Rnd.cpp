@@ -34,24 +34,24 @@ int gGPHangDetectDisabled;
 RndTex *WiiRnd::mSharedTexture[WiiRnd::kNumSharedTexTypes];
 WiiRnd TheWiiRnd;
 Rnd *TheRnd = &TheWiiRnd;
-std::list<void *> sDelayedFreeLists[4];
-int sDelayedFreeListIndex;
+static std::list<void *> sDelayedFreeLists[4];
+static int sDelayedFreeListIndex;
 
 NgStats gNgStats[3] __attribute__((aligned(8)));
 NgStats *TheNgStats = &gNgStats[0];
-OSThreadQueue sThreadQueue;
+static OSThreadQueue sThreadQueue;
 OSThreadQueue netThreadQueue;
 OSThreadQueue drawDoneThreadQueue;
-int sDoneCount;
+static int sDoneCount;
 bool gInBegin, gBeginIntState;
-void *sDispFB, *sCopyFB;
-Timer sFrameTimer;
-long long sFrameQueue[0xA0 / 8]; // 0xA0 bytes, alignment 8
-int sCurrentFrame;
-int sFreeFrame;
-int sRenderingFrame;
-void *sAlignedfifoBase;
-void *sAlignedfifoEnd;
+static void *sDispFB, *sCopyFB;
+static Timer sFrameTimer;
+static long long sFrameQueue[0xA0 / 8]; // 0xA0 bytes, alignment 8
+static int sCurrentFrame;
+static int sFreeFrame;
+static int sRenderingFrame;
+static void *sAlignedfifoBase;
+static void *sAlignedfifoEnd;
 int gDumpThisFrameRightNow;
 int gLastQueueSize;
 int gMainThread;
@@ -63,9 +63,9 @@ int gDebugPrio;
 long long gDeferredCalls[0x200 / 8] __attribute__((aligned(8))); // 0x200 bytes
 int gDeferredCallsCount;
 int gShouldDiagnose;
-int sOnGXBreakpointT;
-int sOnGXBreakpointT0;
-int sOnGXBreakpointT1;
+static int sOnGXBreakpointT;
+static int sOnGXBreakpointT0;
+static int sOnGXBreakpointT1;
 int gSuppressPointTest;
 Timer gTriFrameTimer;
 

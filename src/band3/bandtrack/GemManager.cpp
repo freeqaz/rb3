@@ -31,7 +31,7 @@
 #include "utl/Symbols4.h"
 #include "utl/TimeConversion.h"
 
-int sBeardThreshold = 480;
+static int sBeardThreshold = 480;
 
 int GetBeardThreshold() { return sBeardThreshold; }
 
