@@ -250,6 +250,14 @@ public:
     RndMat *GetMat() const { return mMat; }
     int MaxParticles() const { return mMaxParticles; }
     RndParticle *ActiveParticles() const { return mActiveParticles; }
+#ifdef HX_NATIVE
+    // Particle positions are stored in the system's relative frame (see
+    // MakeLocToRel / InitParticle); world pos = mRelativeXfm * p->pos. The native
+    // billboard renderer (Part_Wgpu.cpp) needs this to place relative-motion FX
+    // (e.g. the gem-smasher hit flames) at the strike line instead of near origin.
+    // Absolute systems keep mRelativeXfm == identity, so this is a no-op for them.
+    const Transform &RelativeXfm() const { return mRelativeXfm; }
+#endif
 
     float CalcFrame() {
         if (mFrameDrive)

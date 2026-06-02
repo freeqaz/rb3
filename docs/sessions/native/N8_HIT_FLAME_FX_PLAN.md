@@ -1,5 +1,47 @@
 # N8 — Gameplay hit / flame FX — implementation plan
 
+> **⚠️ 2026-06-02 CORRECTION (A1 runtime diagnosis, Opus).** The §1 analysis below
+> is WRONG on its central claim. The render path is NOT "already complete." Verified
+> at runtime (autohit gameplay, `fprintf` probes through the whole chain):
+>
+> 1. **Simulation works end-to-end.** autohit → `GemPlayer::Hit` → `GemSmasher::Hit`
+>    → `hit.trig` (8 PartLaunchers, `mAnims`) → `RndPartLauncher::LaunchParticles`
+>    (570×/song) → `ExplicitParticles` spawns particles (showing=1, up to 24 active).
+> 2. **ROOT CAUSE A (FIXED, verified):** the per-lane smasher hit-FX particle systems
+>    are collected by `setup_draworder` (smasher_plate.dta) into `after_gems.grp`,
+>    wrapped by `after_hide.grp`. `GemTrackDir.cpp:497-498` does
+>    `afterhide->SetShowing(false)` (retail composites them via the track's
+>    `smasher_fx.grp` path, inert on native), so the whole FX layer is skipped by the
+>    draw traversal. **Fix landed:** additive `#ifdef HX_NATIVE` keeping
+>    `after_hide.grp` shown (`GemTrackDir.cpp`). After the fix `after_gems.grp` draws
+>    and `RndParticleSys::DrawShowing` fires for every flame system (was 0).
+> 3. **ROOT CAUSE B (NOT YET DONE — the real renderer gap):** on the RB3 BandRnd
+>    backend `DrawParticlesBillboard` is a **weak no-op stub**
+>    (`native/src/rndobj_synth_link_stubs.s:67`). `RndParticleSys` particles do not
+>    render at all. The §1 claim that `Part_Wgpu.cpp` draws them is the **dc3** path —
+>    that TU is in `MILO_ENGINE_GPU_PLATFORM_SOURCES` (WgpuRnd:NgRnd) and is **not
+>    compiled for RB3** (RB3 uses `Rnd_Wgpu_RB3.cpp` / BandRnd). Even the venue
+>    fog/stars `.part` systems render nothing; the visible venue is meshes/skybox.
+>
+> **Remaining work = implement a particle billboard renderer in BandRnd**
+> (`milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp`): add a strong
+> `DrawParticlesBillboard(RndParticleSys*)` (overrides the weak stub) → new `BandRnd`
+> method. Reference: `Part_Wgpu.cpp::DrawParticlesBillboard` (billboard vertex gen,
+> camera axes, UV tiling) + `BandRnd::DrawRect` (resource/texture/blend pattern — all
+> helpers exist: `mGpu`/`mPass`/`mInPass`/`mSceneBindGroup` group0=viewProj,
+> `GetRB3TexView`/`UploadRndTexIfNeeded`, `mPipelines.MapBlend`, `mWhiteView`,
+> `mTargetFmt`/`mRtFmt`/`mRtActiveTex`). Apply `sys->RelativeXfm()` to particle
+> positions (world = mRelativeXfm·p->pos; particles are stored relative — see
+> `MakeLocToRel`/`InitParticle`; absolute systems keep identity so venue is
+> unaffected). Accessor `RndParticleSys::RelativeXfm()` already added (Part.h,
+> HX_NATIVE). **Build the engine with `cmake --build native/build-native` — the
+> `milo-engine` lib is a SEPARATE target that `--target rb3-native` does NOT rebuild.**
+> Verify with the burst-screenshot harness (`/tmp/a1_drive.py` pattern; `fprintf`
+> probes, not MILO_LOG which is swallowed; `grep -a` the logs). See memory
+> `project-a1-hit-flame-fx-diagnosis`.
+
+---
+
 **Authored:** 2026-05-29 (READ-ONLY planning subagent, Opus). No source edited,
 no build, no commit. This doc is the only write.
 

@@ -64,23 +64,68 @@ compositing is correct (highway on top, full-color gems over the graded venue), 
 the gameplay *FX layer* is largely missing. Captures used **autohit**, so hits fire
 continuously yet produce no flames → the FX are absent, not merely unphotographed.
 
-- [ ] **A1 — Hit/flame FX at the strike line.** No flame burst on gem hit despite
-      autohit. Roadmap marks N8/C8 "landed" (`a8924538`) but that was the
-      whammy/SIGILL crash fix — the *visual* flames do not render. Re-verify, then
-      implement. Refs: `docs/sessions/native/N8_HIT_FLAME_FX_PLAN.md`. **[Opus]**
-      (diagnosis: is the FX milo/emitter loaded? drawn? culled? — cross-camera/RTT
-      aware).
-- [ ] **A2 — Gem / fret-button glow.** Gems and fret buttons render flat-shaded;
-      retail gems/buttons glow (prelit/additive). Likely a material/blend or
-      missing additive-glow submesh path in the rb3 backend. **[Opus]** (engine
-      material/blend).
-- [ ] **A3 — Star-power / multiplier HUD gauge.** The retail 4-diamond multiplier +
-      SP gauge (top-right) is missing/!thin. Confirm which HUD milo elements draw vs
-      are stubbed. Refs: `docs/sessions/native/SCORE_HUD.md`, `SCORE_PCT.md`.
-      **[Opus→Sonnet]** (Opus scopes which elements; Sonnet wires draws).
-- [ ] **A4 — Highway lane lighting / glow.** Highway reads matte vs retail's lit
-      lanes. Lower priority cosmetic; bundle with A2 if same root (prelit/material).
-      **[Opus]**.
+- [x] **A1 — Hit/flame FX at the strike line. DONE 2026-06-02 (Opus workflow + adversarial
+      verify + main-loop image adjudication).** fix-A (`after_hide.grp` kept shown,
+      GemTrackDir.cpp) + fix-B (real `BandRnd::DrawParticles` billboard renderer in
+      `Rnd_Wgpu_RB3.cpp`, strong def displacing the no-op `DrawParticlesBillboard` stub;
+      applies `RndParticleSys::RelativeXfm()`). Verified: pink radial-flares + white spark
+      bursts render AT the strike line on hits (mark_06000/burst_08), correct z-order
+      (depthWrite=off/LessEqual), no regression, clean link; venue `.part` systems un-stubbed
+      as a benign bonus. (One reviewer false-FAILED by mistaking band-character costume geometry
+      for particle blowout + tracing the uncompiled dc3 Part_Wgpu.cpp — adjudicated by direct
+      image review.) Minor follow-up: flare color reads pink vs retail's blue/white (per-asset
+      tint check, non-blocking). All engine+fork changes uncommitted in the working tree.
+      ~~half fixed~~
+
+  <details><summary>(prior diagnosis state)</summary>
+
+  **DIAGNOSED 2026-06-02 (Opus); half fixed.** Two root causes (see the ⚠️ correction atop
+      `N8_HIT_FLAME_FX_PLAN.md` + memory `project-a1-hit-flame-fx-diagnosis`):
+      **(A, FIXED)** the FX particle layer (`after_gems.grp`/`after_hide.grp`) was
+      hidden by `GemTrackDir.cpp:498` — additive HX_NATIVE keep-shown landed (working
+      tree, uncommitted); verified `after_gems.grp` now draws + DrawShowing fires for
+      all flame systems. **(B, OPEN — the real renderer gap)** `DrawParticlesBillboard`
+      is a **no-op weak stub** on the RB3 BandRnd backend (`Part_Wgpu.cpp` is dc3-only,
+      not compiled) → `RndParticleSys` particles never render. **Next:** implement a
+      particle billboard renderer in `Rnd_Wgpu_RB3.cpp` (references + helper list in
+      the N8 doc; `Part.h::RelativeXfm()` accessor already added). Build with
+      `cmake --build native/build-native` (engine = separate `milo-engine` target).
+      **[Opus]** — substantial GPU/engine work.
+  </details>
+- [~] **A2 — Gem / fret-button glow. DIAGNOSED 2026-06-02 (workflow, HIGH conf).**
+      Shared root cause with A4 (+A3 glow): `BandRnd::DrawMesh` drops the material
+      EMISSIVE feature — never reads `mEmissiveMultiplier`/`mEmissiveMap`, and
+      `MakeMaterialBindGroup` hardcodes the emissive slot to black; the WGSL shader
+      already implements emissive. Fix (small, engine): bind `mEmissiveMap` + set
+      `emissiveMultiplier` (guarded `mEmissiveMap ? mult : 0`) in
+      `Rnd_Wgpu_RB3.cpp`. **MUST probe-confirm** gem mats carry emissive first (A1
+      lesson). Full plan: `roadmap-2026-06-02/A2_A3_A4_glow_diagnosis.md`. **[Opus]**.
+- [~] **A3 — Star-power / multiplier HUD gauge. DIAGNOSED 2026-06-02 (workflow, MED
+      conf).** Data feed WORKS (score accumulates; StreakMeter runs natively). Glow
+      gap = same emissive/additive-glow family as A2/A4 (streak_meter_blue_glow.mat,
+      overdrive_glow.mat, multiplier_meter_glow). Item-specific unknowns to PROBE
+      before editing: (i) do glow/glass/multiplier.lbl meshes reach DrawMesh showing?
+      (ii) is per-track `StreakMeter::SetMultiplier` fed natively (else label stays
+      hidden by the force-hide in StreakMeter.cpp:161-177)? 5-star-vs-1-disc
+      scoreboard = separate, entangled w/ out-of-scope top-center HUD camera-frame.
+      Full plan: `A2_A3_A4_glow_diagnosis.md`. **[Opus]** then Sonnet for wiring.
+- [~] **A4 — Highway lane lighting / glow. DIAGNOSED 2026-06-02 (workflow, MED conf).**
+      Confirmed SAME emissive root as A2 (shared fix lights now_bar_glow/overdrive_glow/
+      spotlight_guitar_track_emmissive). PLUS two A4-specific causes for full lit-lane
+      parity: (2) `WriteSceneUniforms` (Rnd_Wgpu_RB3.cpp:877-885) hardcodes one white
+      light + flat 0.45 ambient, never reads `RndEnviron`/`RndLight` (DC3 does) →
+      no dark-surface/bright-lane contrast; (3) possible vertex-color suppression on
+      non-prelit surface mesh. Scene-lighting port is RISKY (regresses chars/venue;
+      WASM hang via ObjDirItr — use LightsApprox only, env-gated). Full plan:
+      `A2_A3_A4_glow_diagnosis.md`. **[Opus]**.
+  - **2026-06-02 BLOCKED (probe-first, Opus):** scene-lighting can't be ported —
+    `RndEnviron::sCurrent` at gameplay is DEGENERATE (ambient (1,1,1) white, ZERO
+    lights) because the venue `.milo` is deferred natively (`WorldInstance::SyncDir`
+    defers `world/vignette/` + `world/shared/` proxies, `Instance.cpp:304-374` — a
+    known-hard V2 inlined-proxy instancing gap, prior-session-stuck). Porting
+    `WriteSceneUniforms` would WHITE-flood, not darken. **⇒ the whole glow/lighting
+    track (A2 + A4 + A3-glow) is blocked on venue-environ bring-up** (deep
+    world-subsystem task). See memory `project-a4-scene-lighting-env-empty`.
 - [ ] **A5 — Crowd slivers (N5).** Residual char-IK slivers suppressed by an engine
       extent-ratio guard; decide screenshot-diff vs char-IK bring-up. Refs:
       `CROWD_SLIVER_DIAGNOSIS.md`, `CROWD_GUARD_PLAN.md`. **[Opus]**, low stakes.

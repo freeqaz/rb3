@@ -495,7 +495,21 @@ void GemTrackDir::SetupSmasherPlate() {
                 RndGroup *afterhide =
                     mSmasherPlate->Find<RndGroup>("after_hide.grp", false);
                 if (afterhide)
+#ifdef HX_NATIVE
+                    // A1 hit-flame FX fix. The per-lane smasher hit-FX particle
+                    // systems are collected (setup_draworder) into after_gems.grp,
+                    // which is wrapped by after_hide.grp. Retail hides after_hide.grp
+                    // because it composites the FX through the track's smasher_fx.grp
+                    // draw path; on the native WgpuRnd backend that path never draws
+                    // after_gems.grp (its DrawShowingBudget is never reached), so the
+                    // flames are simulated but never rendered. Keep after_hide.grp
+                    // shown on native — its only draw path here — so the hit flames
+                    // composite on top of the gems. (Drawn once; the retail path is
+                    // inert on native, so no double-draw.) See N8_HIT_FLAME_FX_PLAN.
+                    afterhide->SetShowing(true);
+#else
                     afterhide->SetShowing(false);
+#endif
             }
             if (mTrackInstrument == kInstRealKeys) {
                 unk654 = mSmasherPlate->Find<RndAnimatable>("shift.anim", true);
