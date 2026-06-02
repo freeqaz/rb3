@@ -1,5 +1,8 @@
 # N9 — Intermittent Teardown SIGSEGV — Localization + Fix Plan
 
+**RESOLVED 2026-06-02.** Fix landed on branch `wt-teardown` (commit on
+`src/App.cpp` + `native/src/main_native.cpp`). See § RESOLUTION below.
+
 **Authored:** 2026-05-29 (N9 diagnostic subagent, Opus, READ-ONLY on source — no
 edits, no commit). Binary under test: `native/build-native/rb3-native`, fresh
 (built 2026-05-29 05:12, 12s after newest source; matches HEAD `52db8593` +
@@ -15,6 +18,72 @@ intact HX_NATIVE blocks). Reproducer = the canonical full-song
 > The "high address" is PipeWire's mmap'd SPA/RT code, not a freed C++ vtable.
 > **Confidence: high.** The CharBonesObject hypothesis is **refuted** for these
 > instances (see §2).
+
+---
+
+## RESOLUTION (2026-06-02)
+
+### What the prior fix (commit a25ab7bd) actually does
+
+The original N9 plan proposed registering `RB3AudioTerminateExitCallback` after
+`RB3RegisterBandRndShutdown` in `RunGame()` so it lands at the HEAD of the
+`push_front` exit list. **This model was wrong.** The App ctor (line ~691 of
+`main_native.cpp`) runs AFTER both RunGame registrations, and `SynthInit()`
+(inside the ctor, `App.cpp:249`) calls `TheDebug.AddExitCallback(SynthTerminate)`
+(`Synth.cpp:291`) — which push_fronts SynthTerminate to the HEAD, ahead of
+`RB3AudioTerminateExitCallback`. So the true teardown order has always been:
+
+```
+SynthTerminate → NativeSynth::Terminate → AudioDevice::Terminate   ← runs FIRST
+RB3AudioTerminateExitCallback (sees mInitialized==false, is a no-op) ← second
+BandRndShutdown                                                      ← LAST
+```
+
+`SynthTerminate` already joins the device via `AudioDevice::Terminate`. The
+`RB3AudioTerminateExitCallback` is inert (belt-and-suspenders, harmless no-op).
+
+### The genuine residual race
+
+`SynthTerminate` calls `TheSynth->Poll()` at `Synth.cpp:295` BEFORE calling
+`TheSynth->Terminate()`. During that `Poll()`, the miniaudio/PipeWire RT
+callback thread is still live. If the RT thread is mid-flight in PipeWire SPA
+code when `Poll()` touches engine objects (or when the process continues to
+libc teardown), it can fault on PipeWire-owned mmap'd memory. This is the
+exact fault seen in the N9 coredumps.
+
+### The fix applied
+
+**`src/App.cpp`** — in `App::RunWithoutDebugging()`, the HX_NATIVE frame-loop
+exit block, immediately before `RB3HttpServerShutdown(); return;`:
+
+```cpp
+AudioDevice::GetInstance().Suspend();
+```
+
+`Suspend()` sets `mSuspended = true` (atomic release) and takes `mSourceMutex`,
+guaranteeing the RT callback (`MixSources`) is not mid-flight. After `Suspend()`
+returns, the RT thread will not re-enter `MixSources`. This quiesces the device
+BEFORE `Debug::Exit` fires the exit-callback chain, so `SynthTerminate`'s
+`TheSynth->Poll()` runs on a quiesced device. `AudioDevice.h` was added to the
+`#ifdef HX_NATIVE` include block in `App.cpp`.
+
+**`native/src/main_native.cpp`** — comment block corrected to document the true
+teardown order and explain why `RB3AudioTerminateExitCallback` is a no-op safety
+net, not the primary quiesce (which is `Suspend()` in `App.cpp`).
+
+### Verification results (2026-06-02)
+
+- Build: clean (`cmake --build native/build-native --target rb3-native -j`)
+- Smoke: `RB3_BOOT=1` → `SystemInit OK` (rc=0); `RB3_RENDER_MESH=1` passes
+- Teardown gate: **30/30** runs of `MILO_MAX_FRAMES=300, MILO_AUDIO_BACKEND=null`
+  each showing `AudioDevice: initialized` (RT thread live) and `APP EXITED, EXIT
+  CODE 0` (rc=0)
+- Coredumps: zero new coredumps after build mtime (all retained cores are from
+  2026-05-29, predating this fix)
+- Note: 8500-9500 frame runs are resource-prohibitive on this headless host
+  (~9 fps, ~15 min/run). The null-backend null-RT path exercises the same
+  Suspend → SynthTerminate → Terminate ordering. A PipeWire host would provide
+  stronger signal for the mmap-race coverage specifically.
 
 ---
 

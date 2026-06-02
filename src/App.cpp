@@ -84,6 +84,7 @@
 #ifdef HX_NATIVE
 #include <csetjmp> // native frame-loop draw guard (sigsetjmp)
 #include <cstdlib> // getenv/atoi (MILO_MAX_FRAMES)
+#include "audio/AudioDevice.h" // N9: AudioDevice::Suspend() at frame-loop exit
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -696,6 +697,17 @@ void App::RunWithoutDebugging() {
         MILO_LOG("RB3 Native: frame %d complete\n", frame);
     }
     MILO_LOG("RB3 Native: %d frames done — exiting frame loop\n", maxFrames);
+    // N9 (teardown SIGSEGV): quiesce the audio RT thread BEFORE Debug::Exit
+    // fires the exit-callback chain. AudioDevice::Suspend() sets mSuspended and
+    // takes mSourceMutex, guaranteeing MixSources is not mid-flight when
+    // SynthTerminate (push_front head, runs first) calls TheSynth->Poll() and
+    // then AudioDevice::Terminate() -> ma_device_uninit. Without this, the
+    // PipeWire/ALSA RT callback thread can be executing PipeWire SPA code
+    // that the process is about to unmap — the exact fault seen in N9 coredumps
+    // (thread in ma_device_audio_thread__default_read_write in PipeWire mmap pages).
+    // Suspend() is a no-op when audio was skipped (mInitialized=false path is
+    // fine — mSuspended is still set, Terminate/SynthTerminate see it harmlessly).
+    AudioDevice::GetInstance().Suspend();
     RB3HttpServerShutdown();
     return;
 #endif

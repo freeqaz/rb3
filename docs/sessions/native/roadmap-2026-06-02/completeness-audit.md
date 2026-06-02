@@ -155,13 +155,15 @@ produce an audible click on the real (non-null) synth in a headed/web env (b/c);
 (`ProfileMgr::GetPadExtraLag`→beatmatcher) and persists (depends on C2). **Needs its
 own spec**; gated behind C2 for persistence.
 
-### C4 — Teardown SIGSEGV (N9)  ·  P1  ·  ~0.5 person-day  ·  no spec needed (plan exists)
-Open. PipeWire/miniaudio RT thread torn down last; fix fully root-caused and
-build-ready in `N9_TEARDOWN_SIGSEGV_PLAN.md` §3-4: register an
-`AudioDevice::GetInstance().Terminate()` exit callback AFTER `RB3RegisterBandRndShutdown()`
-in `main_native.cpp::RunGame()` (~line 539) so audio uninit runs FIRST. **Why it
-matters:** single-digit-% crash-on-exit erodes the "it just works" polish + corrupts
-any future save-on-exit (compounds with C2). Layer (c) only, isolated. **Quick win.**
+### C4 — Teardown SIGSEGV (N9)  ·  P1  ·  **DONE 2026-06-02**  ·  wt-teardown
+Fixed. The prior exit-callback reorder (`a25ab7bd`) was INERT — App-ctor-registered
+`SynthTerminate` (push_front) always ran first and already joined the device. The genuine
+residual was `SynthTerminate`'s `TheSynth->Poll()` racing the live PipeWire RT thread.
+Fix: `AudioDevice::GetInstance().Suspend()` added in `App.cpp RunWithoutDebugging()`
+HX_NATIVE frame-loop exit (before `RB3HttpServerShutdown(); return;`) — quiesces the RT
+thread before Debug::Exit fires. Comment in `main_native.cpp` corrected. 30/30 clean exits
+with live null-backend RT thread; zero new coredumps. See `N9_TEARDOWN_SIGSEGV_PLAN.md`
+§ RESOLUTION for full ordering analysis.
 
 ### C5 — Vocals / mic input path  ·  P2  ·  ~5-8 person-days  ·  [needs-dedicated-spec]
 Gameplay vocal TUs now compile (Singer/VocalPlayer/VocalNoteList un-stubbed) but

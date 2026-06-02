@@ -597,19 +597,26 @@ extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_re
 #include "platform/Rnd_Wgpu_RB3.h"
 #include "audio/AudioDevice.h"
 
-// N9 (teardown SIGSEGV): exit callback that quiesces the audio device FIRST in
-// the Debug::Exit sequence. miniaudio's RT callback runs on a separate thread
-// (on a PipeWire host that's the libpipewire data-loop). ma_device_uninit is
-// the canonical blocking join for that thread; AudioDevice::Terminate() calls
-// it (and is idempotent via its mInitialized guard). Registering this AFTER the
-// BandRnd shutdown callback below puts it at the HEAD of the push_front exit
-// list, so it runs before GPU/BandRnd teardown and before SynthTerminate's
-// TheSynth->Poll(). That makes the rest of teardown single-threaded — no audio
-// callback can be mid-flight in PipeWire's RT machinery while exit() frees /
-// unmaps process state. Safe for every run: when audio was skipped or failed,
-// mInitialized is false and Terminate() is a no-op. The later
-// SynthTerminate → NativeSynth::Terminate → AudioDevice::Terminate then sees
-// mInitialized==false and also no-ops, so there is no double-uninit.
+// N9 (teardown SIGSEGV): belt-and-suspenders exit callback — calls
+// AudioDevice::Terminate() which is idempotent (guarded by mInitialized).
+//
+// TRUE TEARDOWN ORDER (why the original N9 ordering comment was wrong):
+// The two RunGame() registrations below run BEFORE the App ctor on line ~691.
+// AddExitCallback is push_front, so later registrations go to the HEAD and run
+// FIRST in Debug::Exit. The App ctor calls SynthInit() (App.cpp:249), which
+// calls TheDebug.AddExitCallback(SynthTerminate) (Synth.cpp:291) — AFTER this
+// callback is registered. Therefore the actual exit order is:
+//
+//   [SynthTerminate → NativeSynth::Terminate → AudioDevice::Terminate]  ← FIRST
+//   [RB3AudioTerminateExitCallback]    ← sees mInitialized==false, is a no-op
+//   [BandRndShutdown]                  ← LAST (registered first = tail)
+//
+// The REAL quiesce happens in SynthTerminate, which already joins the device.
+// The genuine residual race — SynthTerminate's TheSynth->Poll() racing the live
+// RT thread — is closed by AudioDevice::Suspend() called at the frame-loop exit
+// in App.cpp RunWithoutDebugging (HX_NATIVE block) BEFORE Debug::Exit fires.
+// This callback is kept as a safety net: if somehow Terminate() was never called
+// earlier, it ensures the device is stopped before control returns to libc.
 static void RB3AudioTerminateExitCallback() {
     AudioDevice::GetInstance().Terminate();
 }
@@ -627,9 +634,11 @@ static int RunGame(int argc, char **argv) {
     extern void RB3RegisterBandRndShutdown();
     RB3RegisterBandRndShutdown();
 
-    // N9: register audio Terminate() AFTER BandRnd so it lands at the HEAD of
-    // the push_front exit list and runs FIRST — joining the miniaudio/PipeWire
-    // RT thread before any GPU teardown or synth Poll. See callback comment.
+    // N9: belt-and-suspenders Terminate() callback. See long comment above for
+    // the true exit order — SynthTerminate (registered later, in App ctor) runs
+    // FIRST and already joins the device; this callback is a no-op safety net.
+    // The primary quiesce for the PipeWire RT race is AudioDevice::Suspend() in
+    // App.cpp RunWithoutDebugging (HX_NATIVE frame-loop exit, before return).
     TheDebug.AddExitCallback(RB3AudioTerminateExitCallback);
 
     // Seed the live-tunable render/camera/gem settings from the environment
