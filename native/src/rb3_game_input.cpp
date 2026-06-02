@@ -21,6 +21,21 @@
 // drains it per-frame (edge-detect) and calls ExecButton() — the same path the
 // synthetic script + HTTP /api/input use. Zero native / Wii-asm impact.
 //
+// C6: overshell:<action>[:arg] verb — resolves the synth user's OvershellSlot
+// and calls slot->Handle({action, args...}), routing through the real
+// OvershellSlot BEGIN_HANDLERS:
+//   overshell:show_options        → kState_Options (pause-menu options list)
+//   overshell:show_game_options   → kState_GameOptions (Lefty/VocalStyle in-song)
+//   overshell:leave_options       → dismiss options / return to gameplay
+//   overshell:toggle_lefty_flip   → ToggleLeftyFlip (in-session; SESSION-ONLY,
+//                                   not persisted until C2 SaveLoadManager)
+//   overshell:toggle_vocal_style  → ToggleVocalStyle (same session-only note)
+//   overshell:show_state:<int>    → ShowState(id) generic
+//
+// GameplayOptions persistence: Lefty/VocalStyle changes take effect immediately
+// in-session via GameplayOptions members but are NOT saved across restart until
+// C2 (SaveLoadManager) lands — the SaveLoadManager is a no-op stub natively.
+//
 // Native-only glue — no DTA edits, no matched-fork source edits.
 
 #ifdef __EMSCRIPTEN__
@@ -219,6 +234,14 @@ struct ScriptedMsg {
     std::vector<std::string> args; // empty => default {action $user}
 };
 
+// C6: an "overshell:<action>[:arg]..." directive — resolves the synth user's
+// OvershellSlot and routes the message through slot->Handle().
+struct ScriptedOvershell {
+    int frame;
+    std::string action;
+    std::vector<std::string> args;
+};
+
 // K8: a "track:<sym>" directive sets the synth user's track type at the given
 // frame. Mirrors what OvershellSlot::SelectPart does on the real flow — without
 // it, Band::Band sees mTrackType=kTrackNone (sym=`none`) on every participating
@@ -306,7 +329,7 @@ const char *DifficultyName(Difficulty d) {
 // a mis-timed/bad script degrades gracefully (LOG + SKIP) rather than hanging
 // or crashing. The documented RB3_GAME_INPUT scripts still drive
 // boot->song-select->load->gameplay->nofail, just robustly to timing.
-enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail, kVerbAutohit, kVerbDifficulty };
+enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail, kVerbAutohit, kVerbDifficulty, kVerbOvershell };
 
 struct Verb {
     int        kind;
@@ -319,6 +342,7 @@ struct Verb {
     ScriptedMsg    msg;
     ScriptedTrack  trk{0, ""};
     Difficulty     diff = kDifficultyExpert;  // payload for kVerbDifficulty
+    ScriptedOvershell overshell;              // payload for kVerbOvershell
 };
 
 std::vector<Verb> gVerbs;     // sorted by (minFrame, origIndex)
@@ -471,6 +495,33 @@ void ParseScript() {
                 gVerbs.push_back(v);
                 MILO_LOG("RB3 input: scheduled @%d (min) -> msg {%s %s} (+%d args)\n", frame,
                          sm.object.c_str(), sm.action.c_str(), (int)sm.args.size());
+            }
+            continue;
+        }
+        // "overshell:<action>[:arg]..." directive — resolve the synth user's
+        // OvershellSlot and route the action through slot->Handle().
+        // C6 pause/options navigation.
+        if (action.rfind("overshell:", 0) == 0) {
+            std::string rest = action.substr(10);
+            std::vector<std::string> parts;
+            size_t p = 0;
+            while (p <= rest.size()) {
+                size_t c = rest.find(':', p);
+                if (c == std::string::npos) { parts.push_back(rest.substr(p)); break; }
+                parts.push_back(rest.substr(p, c - p));
+                p = c + 1;
+            }
+            if (!parts.empty() && !parts[0].empty()) {
+                ScriptedOvershell so;
+                so.frame = frame;
+                so.action = parts[0];
+                for (size_t k = 1; k < parts.size(); ++k)
+                    so.args.push_back(parts[k]);
+                Verb v; v.kind = kVerbOvershell; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+                v.overshell = so;
+                gVerbs.push_back(v);
+                MILO_LOG("RB3 input: scheduled @%d (min) -> overshell {%s} (+%d args)\n", frame,
+                         so.action.c_str(), (int)so.args.size());
             }
             continue;
         }
@@ -759,6 +810,54 @@ void ExecAutohit() {
     MILO_LOG("RB3 input: autohit enabled on %d active player(s)\n", n);
 }
 
+// C6: route an overshell:<action>[:arg...] verb through the synth user's
+// OvershellSlot. Resolves the slot via the same path as ExecOvershellSelect
+// (TheBandUI.GetOvershell()->GetSlot(bu)). Builds a DataArray for the message
+// and sends it via slot->Handle(), mirroring ExecMsg for named-object targets.
+void ExecOvershellVerb(const ScriptedOvershell &ov) {
+    LocalUser *user = SynthUser();
+    BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
+    if (!bu) {
+        MILO_LOG("RB3 input: overshell '%s' FAILED: no BandUser for synth user\n",
+                 ov.action.c_str());
+        return;
+    }
+    OvershellPanel *ovp = TheBandUI.GetOvershell();
+    if (!ovp) {
+        MILO_LOG("RB3 input: overshell '%s' FAILED: no OvershellPanel\n",
+                 ov.action.c_str());
+        return;
+    }
+    OvershellSlot *slot = ovp->GetSlot(bu);
+    if (!slot) {
+        MILO_LOG("RB3 input: overshell '%s' FAILED: no OvershellSlot for BandUser %p\n",
+                 ov.action.c_str(), (void *)bu);
+        return;
+    }
+    const std::vector<std::string> &args = ov.args;
+    if (args.empty()) {
+        MILO_LOG("RB3 input: overshell {%s}\n", ov.action.c_str());
+        Message msg(Symbol(ov.action.c_str()));
+        slot->Handle(msg, true);
+    } else {
+        DataArray *da = new DataArray((int)args.size() + 1);
+        da->Node(0) = DataNode(Symbol(ov.action.c_str()));
+        std::string argdump;
+        for (size_t k = 0; k < args.size(); ++k) {
+            const std::string &a = args[k];
+            if (!a.empty() && (isdigit((unsigned char)a[0]) ||
+                               (a[0] == '-' && a.size() > 1 && isdigit((unsigned char)a[1]))))
+                da->Node((int)k + 1) = DataNode(atoi(a.c_str()));
+            else
+                da->Node((int)k + 1) = DataNode(Symbol(a.c_str()));
+            argdump += " " + a;
+        }
+        MILO_LOG("RB3 input: overshell {%s%s}\n", ov.action.c_str(), argdump.c_str());
+        slot->Handle(da, true);
+        da->Release();
+    }
+}
+
 void ExecButton(JoypadAction action, JoypadButton button, UIScreen *cur) {
     LocalUser *user = SynthUser();
     ButtonDownMsg msg(user, button, action, 0);
@@ -971,6 +1070,19 @@ bool VerbReady(const Verb &v, UIScreen *cur, const char **reason) {
         }
         return true;
     }
+
+    case kVerbOvershell: {
+        // overshell:<action> needs the synth user's OvershellSlot to exist.
+        // The slot is allocated when the user joins the overshell (part flow
+        // entered) — the same readiness gate as ExecOvershellSelect uses.
+        LocalUser *user = SynthUser();
+        BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
+        if (!bu) { if (reason) *reason = "BandUser for synth user not ready"; return false; }
+        OvershellPanel *ovp = TheBandUI.GetOvershell();
+        if (!ovp) { if (reason) *reason = "OvershellPanel not available"; return false; }
+        if (!ovp->GetSlot(bu)) { if (reason) *reason = "OvershellSlot not allocated for BandUser"; return false; }
+        return true;
+    }
     }
     return true;
 }
@@ -984,6 +1096,7 @@ const char *VerbName(const Verb &v) {
     case kVerbNoFail: return "nofail";
     case kVerbAutohit: return "autohit";
     case kVerbDifficulty: return "difficulty";
+    case kVerbOvershell: return "overshell";
     }
     return "?";
 }
@@ -999,6 +1112,7 @@ void DispatchVerb(const Verb &v, UIScreen *cur) {
     case kVerbNoFail: ExecNoFail();                        break;
     case kVerbAutohit: ExecAutohit();                      break;
     case kVerbDifficulty: ExecDifficulty(v.diff);          break;
+    case kVerbOvershell: ExecOvershellVerb(v.overshell);   break;
     }
 }
 
@@ -1051,6 +1165,28 @@ bool ExecVerb(const std::string &verb, UIScreen *cur, std::string *err) {
         for (size_t k = 2; k < parts.size(); ++k)
             sm.args.push_back(parts[k]);
         ExecMsg(sm, cur);
+        return true;
+    }
+    // C6: overshell:<action>[:arg...] — OvershellSlot navigation (pause/options).
+    if (verb.rfind("overshell:", 0) == 0) {
+        std::string rest = verb.substr(10);
+        std::vector<std::string> parts;
+        size_t p = 0;
+        while (p <= rest.size()) {
+            size_t c = rest.find(':', p);
+            if (c == std::string::npos) { parts.push_back(rest.substr(p)); break; }
+            parts.push_back(rest.substr(p, c - p));
+            p = c + 1;
+        }
+        if (parts.empty() || parts[0].empty()) {
+            if (err) *err = "overshell verb needs an action (e.g. overshell:show_options)";
+            return false;
+        }
+        ScriptedOvershell so;
+        so.action = parts[0];
+        for (size_t k = 1; k < parts.size(); ++k)
+            so.args.push_back(parts[k]);
+        ExecOvershellVerb(so);
         return true;
     }
     JoypadButton btn;

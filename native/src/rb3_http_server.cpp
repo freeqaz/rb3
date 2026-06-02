@@ -309,7 +309,14 @@ void RB3HttpServer::RegisterEndpoints() {
 
     // POST /api/input — inject a synthetic-input verb (rb3_game_input vocabulary:
     // start / confirm / cancel / up / down / left / right / option /
-    // select:<comp> / msg:<obj>:<action>[:arg...] / track:<sym>).
+    // select:<comp> / msg:<obj>:<action>[:arg...] / track:<sym> /
+    // overshell:<action>[:arg...]  — C6 pause/options slot navigation:
+    //   overshell:show_options       → kState_Options (pause-menu options list)
+    //   overshell:show_game_options  → kState_GameOptions (in-song Lefty/Vocal)
+    //   overshell:leave_options      → dismiss options, return to gameplay
+    //   overshell:toggle_lefty_flip  → toggle Lefty Flip (session-only until C2)
+    //   overshell:toggle_vocal_style → toggle Vocal Style (session-only until C2)
+    //   overshell:show_state:<int>   → ShowState(id) generic).
     // Body: raw verb text, or JSON {"verb":"..."}.
     svr->Post("/api/input", [this](const httplib::Request& req, httplib::Response& res) {
         std::string verb;
