@@ -61,8 +61,8 @@ typedef void (*SplashFunc)(void);
 
 float gLimitUVRange;
 int gDxtCacher;
-class ObjectDir *sSphereDir;
-RndMesh *sSphereMesh;
+static class ObjectDir *sSphereDir;
+static RndMesh *sSphereMesh;
 std::list<BuildPoly> gChildPolys;
 std::list<BuildPoly> gParentPolys;
 SplashFunc gSplashPoll;
