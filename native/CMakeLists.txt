@@ -477,6 +477,12 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # REAL live input: keyboard (+ USB gamepad) -> JoypadData -> SendButtonMessages.
+    # Strong JoypadInit/Poll/Reset/Terminate defs override the weak no-op stubs in
+    # dta_link_stubs.s; SystemPoll(false) -> JoypadPoll() (System.cpp:673) drives it
+    # every frame. Lets a player play guitar/bass/keys with the keyboard, no plastic
+    # instrument — feeds BOTH menu nav and the gameplay GuitarController.
+    ${CMAKE_SOURCE_DIR}/src/rb3_joypad_native.cpp
     # band3/bandobj/track/world milo object-class factory registration. Without
     # these, a multi-chunk milo containing a bandobj Dir subclass (e.g.
     # OverdriveMeterDir in tracksystem.milo_xbox) can't construct the class, the
@@ -611,6 +617,11 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # REAL live input on web: keyboard -> JoypadData -> SendButtonMessages (same
+    # TU as native; its #ifdef __EMSCRIPTEN__ branch reads window._rb3Keys +
+    # navigator.getGamepads()). Strong JoypadPoll etc. drive frets/strum through
+    # the gameplay GuitarController, one path. See the TU header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_joypad_native.cpp
     # W3a: web-only weak-null definitions for the pointer globals that the native
     # build gets from the x86 GAS .s link stubs (not assembled under emcc) — e.g.
     # TheTour / TheSessionMgr / TheSongDB. Without these they're undefined data

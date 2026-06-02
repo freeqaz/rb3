@@ -1085,7 +1085,18 @@ void RB3GameInputPoll(int frame) {
                                  frame);
                         ExecMsg(m, webCur);
                     } else {
-                        ExecButton(kWebKeyMap[i].action, kWebKeyMap[i].btn, webCur);
+                        // DOUBLE-FIRE GUARD (Phase 2): live keys now flow through
+                        // the REAL joypad path — rb3_joypad_native.cpp's JoypadPoll()
+                        // reads the SAME window._rb3Keys bitmask and calls
+                        // SendButtonMessages(0, btns), which broadcasts ButtonDownMsg
+                        // through gJoypadMsgSource -> TheUI's JoypadClient -> TheUI
+                        // (the same menu nav this ExecButton->TheUI.Handle injection
+                        // used to fake). Routing the key here too would deliver the
+                        // menu event twice. So we no longer raw-inject menu keys;
+                        // JoypadPoll owns them. The part_difficulty arming and the
+                        // song_select select_highlighted_node crossing above are NOT
+                        // raw button injection (they arm a flow / send a DTA msg), so
+                        // they stay and do not double-fire with SendButtonMessages.
                     }
                 }
             }
