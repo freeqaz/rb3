@@ -103,11 +103,21 @@ void DataEventList::Reset(float f) {
     EventTimeComp comp;
 
     if (mElement >= 0) {
-        CompEv *lower = std::lower_bound(mComps.begin(), mComps.end(), f, compcomp);
-        mCurIndex = lower - mComps.begin();
+        CompEv *lower =
+#ifdef HX_NATIVE
+            mComps.data() + (std::lower_bound(mComps.begin(), mComps.end(), f, compcomp) - mComps.begin());
+#else
+            std::lower_bound(mComps.begin(), mComps.end(), f, compcomp);
+#endif
+        mCurIndex = lower - mComps.data();
     } else {
-        DataEvent *lower = std::lower_bound(mEvents.begin(), mEvents.end(), f, comp);
-        mCurIndex = lower - mEvents.begin();
+        DataEvent *lower =
+#ifdef HX_NATIVE
+            mEvents.data() + (std::lower_bound(mEvents.begin(), mEvents.end(), f, comp) - mEvents.begin());
+#else
+            std::lower_bound(mEvents.begin(), mEvents.end(), f, comp);
+#endif
+        mCurIndex = lower - mEvents.data();
     }
 }
 

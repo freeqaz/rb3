@@ -41,16 +41,22 @@ CameraManager::~CameraManager() {
 ObjPtrList<CamShot> &CameraManager::FindOrAddCategory(Symbol cat) {
     Category targetCat;
     targetCat.unk0 = cat;
-    Category *lowerCat = std::lower_bound(
-        mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat
-    );
-    if (lowerCat == mCameraShotCategories.end() || lowerCat->unk0 != cat) {
+    Category *lowerCat =
+#ifdef HX_NATIVE
+        mCameraShotCategories.data() + (std::lower_bound(mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat) - mCameraShotCategories.begin());
+#else
+        std::lower_bound(mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat);
+#endif
+    if (lowerCat == mCameraShotCategories.data() + mCameraShotCategories.size() || lowerCat->unk0 != cat) {
         targetCat.unk4 = new ObjPtrList<CamShot>(mParent);
         mCameraShotCategories.push_back(targetCat);
         std::sort(mCameraShotCategories.begin(), mCameraShotCategories.end());
-        lowerCat = std::lower_bound(
-            mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat
-        );
+        lowerCat =
+#ifdef HX_NATIVE
+            mCameraShotCategories.data() + (std::lower_bound(mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat) - mCameraShotCategories.begin());
+#else
+            std::lower_bound(mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat);
+#endif
     }
     return *lowerCat->unk4;
 }
