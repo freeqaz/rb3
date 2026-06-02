@@ -72,7 +72,7 @@
 #include <cstdio>
 
 class DeltaTracker;
-DeltaTracker *sTracker = nullptr;
+static DeltaTracker *sTracker = nullptr;
 
 static DataNode OnEnableDeltas(DataArray *array) {
     bool enable = array->Int(1);

@@ -13,9 +13,9 @@ int gCopyMax;
 long long gOldSkoolResults[0x4000];
 long long gWGPResults[0x4000];
 long long gNoWGPResults[0x4000];
-std::list<String> sFilePaths;
-std::list<Symbol> sFiles;
-FileCallbackFunc *sCBack;
+static std::list<String> sFilePaths;
+static std::list<Symbol> sFiles;
+static FileCallbackFunc *sCBack;
 
 DECOMP_FORCEACTIVE(Utl, "mem_copy", "fast", "main", "%d,%d,%d,%d\n")
 

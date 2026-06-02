@@ -22,13 +22,13 @@
 
 INIT_REVS(BandCharacter)
 
-ObjectDir *sBoneMergeDir;
-ObjectDir *sOutfitDir;
-ObjectDir *sResourceDir;
-ObjectDir *sCharSharedDir;
-ObjectDir *sInstrumentDir;
-ObjectDir *sInstResourceDir;
-ObjectDir *sToDir;
+static ObjectDir *sBoneMergeDir;
+static ObjectDir *sOutfitDir;
+static ObjectDir *sResourceDir;
+static ObjectDir *sCharSharedDir;
+static ObjectDir *sInstrumentDir;
+static ObjectDir *sInstResourceDir;
+static ObjectDir *sToDir;
 
 const char *BandIntensityString(int num) {
     if (num != 0) {
@@ -713,7 +713,7 @@ void BandCharacter::SyncObjects() {
 }
 #pragma pop
 
-float sDrawOrder = -1.0f;
+static float sDrawOrder = -1.0f;
 
 void BandCharacter::SetClipTypes(Symbol s1, Symbol s2) {
     if (mDriver) {

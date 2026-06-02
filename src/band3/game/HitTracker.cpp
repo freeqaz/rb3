@@ -3,7 +3,7 @@
 #include "os/Debug.h"
 #include <algorithm>
 
-const char *sHitTypeNames[] = { "Green pad",       "Red pad",          "Yellow pad",
+static const char *sHitTypeNames[] = { "Green pad",       "Red pad",          "Yellow pad",
                                 "Blue pad",        "Green fret",       "Red fret",
                                 "Yellow fret",     "Blue fret",        "Orange fret",
                                 "High Green fret", "High Red fret",    "High Yellow fret",

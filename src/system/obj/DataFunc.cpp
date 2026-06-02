@@ -25,9 +25,9 @@ std::map<Symbol, DataFunc *> gDataFuncs;
 DataThisPtr gDataThisPtr;
 
 static DataArray *sFileMsg;
-bool sOldNoModal;
-ModalCallbackFunc *sOldModalCallback;
-DataArray *sNotifyMsg;
+static bool sOldNoModal;
+static ModalCallbackFunc *sOldModalCallback;
+static DataArray *sNotifyMsg;
 
 // Force ~MergeFilter() to generate here
 DECOMP_FORCEDTOR(DataFunc, MergeFilter);
