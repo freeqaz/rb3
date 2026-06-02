@@ -130,7 +130,7 @@ try {
         const text = msg.text();
         logs.push({ elapsed: elapsed(), type: msg.type(), text });
         consoleLogs.push(text);
-        if (/AudioDevice|audio|capture|pump|source|SAB|MOGG|mogg|StreamReceiver|CaptureAudio|DownloadAudio|pumpCount|nonZero/.test(text)
+        if (/AudioDevice|audio|capture|pump|source|SAB|MOGG|mogg|StreamReceiver|stream ch|sfx |CaptureAudio|DownloadAudio|pumpCount|nonZero/.test(text)
             || msg.type() === 'error') {
             console.log(`  [${elapsed()}s ${msg.type()}] ${text}`);
         }
@@ -142,6 +142,10 @@ try {
     const url = `http://127.0.0.1:${opts.port}/`;
     console.log(`Loading ${url}`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.evaluate(() => {
+        window.rb3WebUseAids = 1;
+        window.rb3WebTargetSong = '20thcenturyboy';
+    });
 
     // --- Wait for app boot ---
     console.log('Waiting for rb3AppBooted...');
@@ -266,7 +270,10 @@ try {
 
         // === song_select → part_difficulty ===
         if (s === 'song_select_screen') {
-            await page.evaluate(() => { window.rb3WebTargetSong = '20thcenturyboy'; });
+            await page.evaluate(() => {
+                window.rb3WebUseAids = 1;
+                window.rb3WebTargetSong = '20thcenturyboy';
+            });
             await new Promise(r => setTimeout(r, 1000));
             console.log('[song_select -> part_difficulty] confirm pinned song...');
             for (let i = 0; i < 4; i++) {
@@ -295,10 +302,10 @@ try {
                 await new Promise(r => setTimeout(r, 1200));
                 const cur = await getScreen(page);
                 console.log(`  part confirm #${i+1}: screen='${cur}' (${elapsed()}s)`);
-                if (cur !== 'part_difficulty_screen') { s = cur; break; }
+                if (cur === 'game_screen') { s = cur; break; }
             }
             console.log('  waiting for game_screen (MOGG load may take a while)...');
-            s = await waitScreen(page, { targets: ['game_screen'], from: 'part_difficulty_screen', timeoutMs: LOADSONG_TIMEOUT_MS });
+            s = await waitScreen(page, { targets: ['game_screen'], timeoutMs: LOADSONG_TIMEOUT_MS });
             s = await getScreen(page);
             console.log(`  after crossing: screen='${s}' (${elapsed()}s)`);
         }

@@ -35,9 +35,16 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 namespace {
+
+static inline void ComputePanGains(float volume, float pan, float &left, float &right) {
+    pan = std::max(-1.0f, std::min(1.0f, pan));
+    left = volume * (pan <= 0.0f ? 1.0f : 1.0f - pan);
+    right = volume * (pan >= 0.0f ? 1.0f : 1.0f + pan);
+}
 
 class RB3StreamReceiverNative : public StreamReceiver, public AudioSource {
 public:
@@ -172,8 +179,9 @@ public:
         if (framesToRender < 0) framesToRender = 0;
 
         // Volume + pan (constant-amplitude-ish: just scale L/R independently).
-        const float volL = mVolume * std::max(0.0f, 1.0f - mPan);
-        const float volR = mVolume * std::max(0.0f, 1.0f + mPan);
+        float volL = 0.0f;
+        float volR = 0.0f;
+        ComputePanGains(mVolume, mPan, volL, volR);
 
         int readPos = mAudioReadPos.load(std::memory_order_acquire);
         const int16_t *ringS16 = reinterpret_cast<const int16_t *>(mBuffer);
@@ -213,6 +221,19 @@ public:
         if (mSendActive.load(std::memory_order_acquire)) return false;
         return mDoneBufferCounter > mNumBuffers + 2;
     }
+
+#ifdef HX_WEB
+    void DebugDescribe(char *buf, size_t bufSize) const override {
+        if (bufSize == 0) return;
+        std::snprintf(buf, bufSize,
+                      "stream ch=%d this=%p state=%d registered=%d paused=%d "
+                      "read=%d send=%d/%d done=%d",
+                      mChannel, (const void *)this, (int)mState, (int)mRegistered,
+                      (int)mPaused, mAudioReadPos.load(std::memory_order_acquire),
+                      mBytesConsumedSinceSend.load(std::memory_order_acquire),
+                      mSendSize, mDoneBufferCounter);
+    }
+#endif
 
 private:
     int mSampleRate;

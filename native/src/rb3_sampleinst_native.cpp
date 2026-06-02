@@ -69,6 +69,12 @@ static inline float LerpMono(const int16_t *data, int total, double pos, bool be
     return s0 + frac * (s1 - s0);
 }
 
+static inline void ComputePanGains(float volume, float pan, float &left, float &right) {
+    pan = std::max(-1.0f, std::min(1.0f, pan));
+    left = volume * (pan <= 0.0f ? 1.0f : 1.0f - pan);
+    right = volume * (pan >= 0.0f ? 1.0f : 1.0f + pan);
+}
+
 class RB3SampleInstNative : public SampleInst, public AudioSource {
 public:
     RB3SampleInstNative(SynthSample *sample, bool loop, int startSample, int endSample)
@@ -122,9 +128,16 @@ public:
 #ifdef HX_WEB
     void DebugDescribe(char *buf, size_t bufSize) const override {
         if (bufSize == 0) return;
-        std::snprintf(buf, bufSize, "sfx %s %d/%d @%dHz%s",
+        const char *name = (mSampleObj && mSampleObj->Name()) ? mSampleObj->Name() : "";
+        const char *file = mSampleObj ? mSampleObj->mFile.c_str() : "";
+        std::snprintf(buf, bufSize,
+                      "sfx this=%p sample=%p name='%s' file='%s' %s registered=%d paused=%d "
+                      "pos=%d/%d @%dHz vol=%.2f pan=%.2f speed=%.2f%s",
+                      (const void *)this, (const void *)mSampleObj, name, file,
                       mPlaying.load(std::memory_order_acquire) ? "play" : "stop",
+                      (int)mRegistered, (int)mPaused,
                       static_cast<int>(mPlayPos), mEndSample, mSrcSampleRate,
+                      mInstVolume, mInstPan, mInstSpeed,
                       mLoop ? " loop" : "");
     }
 #endif
@@ -252,8 +265,9 @@ int RB3SampleInstNative::RenderAudio(float *output, int frameCount) {
     }
 
     const int endPos = (mEndSample > 0) ? mEndSample : mPCMSamples;
-    const float volL = mInstVolume * std::max(0.0f, 1.0f - mInstPan);
-    const float volR = mInstVolume * std::max(0.0f, 1.0f + mInstPan);
+    float volL = 0.0f;
+    float volR = 0.0f;
+    ComputePanGains(mInstVolume, mInstPan, volL, volR);
     // Source samples consumed per output sample (rate conversion + speed).
     const double rateRatio =
         static_cast<double>(mSrcSampleRate) / static_cast<double>(kOutputSampleRate) *

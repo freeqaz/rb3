@@ -544,6 +544,10 @@ bool Player::CanDeployOverdrive() const {
 bool Player::IsDeployingBandEnergy() const { return mDeployingBandEnergy; }
 
 void Player::StopDeployingBandEnergy(bool b) {
+#ifdef HX_NATIVE
+    if (!mDeployingBandEnergy)
+        return;
+#endif
     int i1 = 0;
     int i2 = 0;
     int i3 = 0;

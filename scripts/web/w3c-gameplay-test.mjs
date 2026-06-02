@@ -134,6 +134,10 @@ try {
     const url = `http://127.0.0.1:${opts.port}/`;
     console.log(`Loading ${url} (W3c gameplay)`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.evaluate(() => {
+        window.rb3WebUseAids = 1;
+        window.rb3WebTargetSong = '20thcenturyboy';
+    });
 
     console.log('Waiting for rb3AppBooted...');
     let appBooted = 0, deadline = Date.now() + BOOT_TIMEOUT_MS;
@@ -201,7 +205,10 @@ try {
         // (20th Century Boy) via MusicLibrary::TryToSetHighlight before selecting
         // — deterministic, no blind list nav, no trap on a non-song header node.
         // Set the target explicitly (default is 20thcenturyboy anyway).
-        await page.evaluate(() => { window.rb3WebTargetSong = '20thcenturyboy'; });
+        await page.evaluate(() => {
+            window.rb3WebUseAids = 1;
+            window.rb3WebTargetSong = '20thcenturyboy';
+        });
         const TARGET = '20thcenturyboy';
         await new Promise(r => setTimeout(r, 1000));
         await snap(page, '02b_song_top');
@@ -236,10 +243,10 @@ try {
             await new Promise(r => setTimeout(r, 1200));
             const cur = await getScreen(page);
             console.log(`  part confirm #${i+1}: screen='${cur}' (${elapsed()}s)`);
-            if (cur !== 'part_difficulty_screen') { s = cur; break; }
+            if (cur === 'game_screen') { s = cur; break; }
         }
         console.log(`  waiting for game_screen (MOGG load may take a while)...`);
-        const g = await waitScreen(page, { targets: ['game_screen'], from: 'part_difficulty_screen', timeoutMs: LOADSONG_TIMEOUT_MS });
+        const g = await waitScreen(page, { targets: ['game_screen'], timeoutMs: LOADSONG_TIMEOUT_MS });
         s = await getScreen(page);
         console.log(`  after crossing: screen='${s}' (${elapsed()}s)`);
         await snap(page, '04_after_crossing');
