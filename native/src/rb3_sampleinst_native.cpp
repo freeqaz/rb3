@@ -33,11 +33,13 @@
 #include "synth/ADSR.h"
 #include "synth/FxSend.h"
 #include "audio/AudioDevice.h"
+#include "rb3_xma_sidecar.h"  // offline XMA->PCM sidecar loader (native + web)
 
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 namespace {
@@ -86,13 +88,20 @@ public:
           mInstPan(0.0f),
           mInstSpeed(1.0f),
           mSrcSampleRate(kOutputSampleRate),
-          mFxSend(nullptr) {}
+          mFxSend(nullptr),
+          mOwnedPCM(nullptr) {}
 
     ~RB3SampleInstNative() override {
         // Always detach from the mixer — the audio thread (native) may still hold
         // us in its source list after RenderAudio set mPlaying=false.
         AudioDevice::GetInstance().RemoveSource(this);
         mPlaying.store(false, std::memory_order_release);
+        // Free any sidecar PCM we decoded for a kXMA sample (the bank-resident
+        // mData is owned by SampleData; mOwnedPCM is ours).
+        if (mOwnedPCM) {
+            std::free(mOwnedPCM);
+            mOwnedPCM = nullptr;
+        }
     }
 
     // ----------------------- SampleInst vtable (RB3 shape) -----------------------
@@ -137,6 +146,7 @@ private:
     float mInstSpeed;
     int mSrcSampleRate;
     FxSend *mFxSend;
+    int16_t *mOwnedPCM;        // sidecar PCM we own (kXMA path); nullptr otherwise
 };
 
 void RB3SampleInstNative::StartImpl() {
@@ -148,10 +158,55 @@ void RB3SampleInstNative::StartImpl() {
     if (!data.mData || data.mNumSamples <= 0) return;
 
     SampleData::Format fmt = data.GetFormat();
+
+    // kXMA (Xbox-360 compressed SFX): the bank's mData is raw XMA, not host-
+    // decodable at runtime (no ffmpeg on web). Load the offline-converted PCM
+    // sidecar (rb3-xma-convert) keyed by a content hash of the raw payload. If a
+    // sidecar exists, play it as little-endian mono PCM; otherwise skip (the
+    // bank wasn't converted yet — warn once). Native + web (HX_NATIVE).
+    if (fmt == SampleData::kXMA) {
+        rb3_xma::SidecarPCM side =
+            rb3_xma::TryLoad(data.mData, data.mSizeBytes, data.GetSampleRate());
+        if (!side.data) {
+            static int sLoggedXma = 0;
+            if (!sLoggedXma) {
+                std::printf("rb3 SFX: kXMA sample has no PCM sidecar key=%016llx "
+                            "(run scripts/assets/convert_xma_banks.sh; set "
+                            "RB3_SFX_PCM_DIR=%s) — SFX skipped\n",
+                            (unsigned long long)rb3_xma::PayloadKey(
+                                data.mData, data.mSizeBytes, data.GetSampleRate()),
+                            rb3_xma::SidecarDir().c_str());
+                sLoggedXma = 1;
+            }
+            return;
+        }
+        if (mOwnedPCM) std::free(mOwnedPCM);
+        mOwnedPCM = side.data; // freed in dtor
+        mBigEndian = false;    // sidecar PCM is little-endian
+        mSrcSampleRate = side.sampleRate > 0 ? side.sampleRate : kOutputSampleRate;
+        mPCMData = mOwnedPCM;
+        mPCMSamples = side.numSamples;  // mono sample count
+        if (mEndSample <= 0 || mEndSample > mPCMSamples) mEndSample = mPCMSamples;
+        if (mPlayPos < 0.0 || mPlayPos >= static_cast<double>(mPCMSamples)) mPlayPos = 0.0;
+
+        static bool sLoggedXmaOk = false;
+        if (!sLoggedXmaOk) {
+            std::printf("rb3 SFX: playing XMA->PCM sidecar (%d samples @ %d Hz)\n",
+                        mPCMSamples, mSrcSampleRate);
+            sLoggedXmaOk = true;
+        }
+        mPlaying.store(true, std::memory_order_release);
+        if (!mRegistered) {
+            AudioDevice::GetInstance().AddSource(this);
+            mRegistered = true;
+        }
+        return;
+    }
+
     if (fmt != SampleData::kPCM && fmt != SampleData::kBigEndPCM) {
         static int sLoggedFmt = -2;
         if (fmt != sLoggedFmt) {
-            std::printf("rb3 SFX: unsupported sample format %d (XMA/VAG/ADPCM/etc "
+            std::printf("rb3 SFX: unsupported sample format %d (VAG/ADPCM/etc "
                         "not host-decodable) — SFX skipped\n", static_cast<int>(fmt));
             sLoggedFmt = fmt;
         }
