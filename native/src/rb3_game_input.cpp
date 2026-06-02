@@ -1107,33 +1107,17 @@ void RB3GameInputPoll(int frame) {
         gLastScreen = curName;
     }
 
-    // N4 fix — song-select stray SAVE/details pane.  On the Music Library
-    // (song_select) screen, the `song_select_details` sub-pane (the song-detail /
-    // leaderboard view with the "view gamer card" + save-prompt widgets) is only
-    // meant to be visible while the panel is in `details_mode` (player pressed
-    // Options on a song).  Retail hides it via the `details_hide.trg` PropAnim,
-    // whose terminal `showing=FALSE` keyframe does not apply natively (the same
-    // class of PropAnim/transform-keyframe gap seen elsewhere), so it is left
-    // drawing over the right of the list — the documented "overlapping SAVE
-    // panel".  Enforce the retail invariant directly: details pane visible iff
-    // details_mode.  We only force-HIDE when details_mode is off, so opening the
-    // details view later (which sets details_mode=1 and runs details_show.trg)
-    // is unaffected.  Glue-layer, permuter-safe; opt-out via RB3_NO_DETAILS_FIX.
-    if (!getenv("RB3_NO_DETAILS_FIX") && cur
-        && curName == Symbol("song_select_screen") && ObjectDir::sMainDir) {
-        UIPanel *ssp = ObjectDir::sMainDir->Find<UIPanel>("song_select_panel", false);
-        ObjectDir *pd = ssp ? (ObjectDir *)ssp->LoadedDir() : nullptr;
-        if (pd && ssp->GetState() == UIPanel::kUp) {
-            const DataNode *dm = ssp->Property(Symbol("details_mode"), false);
-            bool detailsMode = dm && dm->Int();
-            if (!detailsMode) {
-                RndDrawable *d =
-                    dynamic_cast<RndDrawable *>(pd->FindObject("song_select_details", true));
-                if (d && d->Showing())
-                    d->SetShowing(false);
-            }
-        }
-    }
+    // N4 stray SAVE/details pane: RETIRED. The `song_select_details` sub-pane was
+    // left showing with details_mode=0 because the original native engine (pin
+    // cfaaa5bc) ran AnimTask::Poll with the SetFrame args swapped — the
+    // `details_hide.trg` PropAnim was advanced with frame=blend(=1.0) instead of
+    // its terminal end frame, so the terminal `showing=FALSE` BoolKeys keyframe
+    // never applied. The W6-V2 arg-swap fix (Anim.cpp ca671682, HX_NATIVE
+    // `SetFrame(frame, blend)`) corrected that, so the triggered-terminal keyframe
+    // now applies and the engine hides the pane on its own (verified: the nested
+    // probe `{{song_select_panel find song_select_details} showing}` returns 0
+    // after `hide_details` / `details_hide.trg`). The force-hide glue is therefore
+    // redundant and has been removed.
 
     // N6 fix — seldiff `%S %I SONGS` raw setlist-token leak.  The on-screen leak
     // is the marquee song-preview label `song_preview.lbl`, NOT `setlist_title.lbl`
