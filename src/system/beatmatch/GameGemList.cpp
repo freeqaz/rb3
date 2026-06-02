@@ -118,36 +118,50 @@ bool GameGemList::AddRGGem(const RGGemInfo &info) {
 }
 
 int GameGemList::ClosestMarkerIdx(float ms) const {
-    const GameGem *it = std::lower_bound(mGems.begin(), mGems.end(), ms, GameGemCmp);
-    if (it == mGems.begin())
+    const GameGem *it =
+#ifdef HX_NATIVE
+        mGems.data() + (std::lower_bound(mGems.begin(), mGems.end(), ms, GameGemCmp) - mGems.begin());
+#else
+        std::lower_bound(mGems.begin(), mGems.end(), ms, GameGemCmp);
+#endif
+    if (it == mGems.data())
         return 0;
-    if (it == mGems.end())
+    if (it == mGems.data() + mGems.size())
         return mGems.size() - 1;
     MILO_ASSERT(ms <= it->GetMs(), 0x83);
     const GameGem *prev_it = it - 1;
     MILO_ASSERT(ms >= prev_it->GetMs(), 0x84);
     if (fabsf(ms - prev_it->mMs) < fabsf(ms - it->mMs))
         it--;
-    return it - mGems.begin();
+    return it - mGems.data();
 }
 
 int GameGemList::ClosestMarkerIdxAtOrAfter(float f) const {
-    const GameGem *theGem = std::lower_bound(mGems.begin(), mGems.end(), f, GameGemCmp);
-    if (theGem == mGems.begin())
+    const GameGem *theGem =
+#ifdef HX_NATIVE
+        mGems.data() + (std::lower_bound(mGems.begin(), mGems.end(), f, GameGemCmp) - mGems.begin());
+#else
+        std::lower_bound(mGems.begin(), mGems.end(), f, GameGemCmp);
+#endif
+    if (theGem == mGems.data())
         return 0;
-    if (theGem == mGems.end())
+    if (theGem == mGems.data() + mGems.size())
         return -1;
-    return theGem - mGems.begin();
+    return theGem - mGems.data();
 }
 
 int GameGemList::ClosestMarkerIdxAtOrAfterTick(int tick) const {
     const GameGem *theGem =
+#ifdef HX_NATIVE
+        mGems.data() + (std::lower_bound(mGems.begin(), mGems.end(), tick, GameGemTickCmp) - mGems.begin());
+#else
         std::lower_bound(mGems.begin(), mGems.end(), tick, GameGemTickCmp);
-    if (theGem == mGems.begin())
+#endif
+    if (theGem == mGems.data())
         return 0;
-    if (theGem == mGems.end())
+    if (theGem == mGems.data() + mGems.size())
         return -1;
-    return theGem - mGems.begin();
+    return theGem - mGems.data();
 }
 
 bool GameGemCmp(const GameGem &gem, float ms) { return gem.mMs < ms; }

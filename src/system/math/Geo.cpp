@@ -329,7 +329,7 @@ DECOMP_FORCEACTIVE(Geo, "tMax > 0.0f && tMin < 1.0f");
 bool Intersect(const Transform &tf, const Hmx::Polygon &poly, const BSPNode *node) {
     bool front = false;
     bool back = false;
-    for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
+    for (const Vector2 *i = poly.mPoints.data(); i != poly.mPoints.data() + poly.mPoints.size(); i++) {
         Vector3 v(i->x, i->y, 0.0f);
         Multiply(v, tf, v);
         float dot = node->plane.Dot(v);
@@ -608,8 +608,8 @@ void BSPFace::OnSide(const Plane &plane, bool &front, bool &back) {
     front = false;
     back = false;
     Vector3 pt;
-    const Vector2 *it = p.mPoints.begin();
-    while (it != p.mPoints.end()) {
+    const Vector2 *it = p.mPoints.data();
+    while (it != p.mPoints.data() + p.mPoints.size()) {
         pt.x = it->x;
         pt.y = it->y;
         pt.z = 0.0f;
@@ -624,11 +624,11 @@ void BSPFace::OnSide(const Plane &plane, bool &front, bool &back) {
 void BSPFace::Update() {
     MILO_ASSERT(p.mPoints.size() > 2, 0x696);
 
-    const Vector2 *anchor = p.mPoints.begin();
+    const Vector2 *anchor = p.mPoints.data();
     const Vector2 *prev = anchor + 1;
     const Vector2 *curr = prev + 1;
     area = 0.0f;
-    while (curr != p.mPoints.end()) {
+    while (curr != p.mPoints.data() + p.mPoints.size()) {
         area += (curr->y * anchor->x - anchor->x * prev->y - anchor->y * prev->x +
                  prev->x * curr->y - prev->y * curr->x +
                  curr->x * anchor->y) * 0.5f;
@@ -656,7 +656,7 @@ void BSPFace::Update() {
     Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
     Multiply(prevPt, t, prevPt);
 
-    for (const Vector2 *it = p.mPoints.begin(); it != p.mPoints.end(); it++) {
+    for (const Vector2 *it = p.mPoints.data(); it != p.mPoints.data() + p.mPoints.size(); it++) {
         bool notXYZ = false;
         bool notXY = false;
         Vector3 curPt(it->x, it->y, 0.0f);
@@ -966,7 +966,7 @@ void Clip(const Hmx::Polygon &poly, const Hmx::Ray &ray, Hmx::Polygon &out) {
     float lastDot = xDiff * dirPtr->x + yDiff * dirPtr->y;
 
     Vector2 v;
-    for (const Vector2 *i = poly.mPoints.begin(); i != poly.mPoints.end(); i++) {
+    for (const Vector2 *i = poly.mPoints.data(); i != poly.mPoints.data() + poly.mPoints.size(); i++) {
         float yDelta = i->y - ray.base.y;
         float dot = (i->x - ray.base.x) * dirPtr->x + yDelta * dirPtr->y;
 

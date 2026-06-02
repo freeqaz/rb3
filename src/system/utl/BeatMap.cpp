@@ -35,7 +35,11 @@ float BeatMap::Beat(int tick) const {
                 i2 = mInfos.size() - 2;
             else {
                 const BeatInfo *lowerInfo =
+#ifdef HX_NATIVE
+                    mInfos.data() + (std::lower_bound(mInfos.begin(), mInfos.end(), tick, BeatInfoCmp) - mInfos.begin());
+#else
                     std::lower_bound(mInfos.begin(), mInfos.end(), tick, BeatInfoCmp);
+#endif
                 i2 = lowerInfo - &mInfos.front() - 1;
             }
         }
@@ -57,7 +61,11 @@ float BeatMap::Beat(float tick) const {
     else {
         int sp08 = i2;
         const BeatInfo *lowerInfo =
+#ifdef HX_NATIVE
+            mInfos.data() + (std::lower_bound(mInfos.begin(), mInfos.end(), sp08, BeatInfoCmp) - mInfos.begin());
+#else
             std::lower_bound(mInfos.begin(), mInfos.end(), sp08, BeatInfoCmp);
+#endif
         i2 = lowerInfo - &mInfos.front() - 1;
     }
     return Interpolate(tick, i2);

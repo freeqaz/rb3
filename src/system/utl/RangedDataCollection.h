@@ -136,10 +136,13 @@ public:
             return nullptr;
         else {
             const std::vector<RangedData<T> > &vec = mRangeDataArray[dataIdx];
-            const RangedData<T> *data = std::upper_bound(
-                vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeStarts
-            );
-            if (data == mRangeDataArray[dataIdx].begin())
+            const RangedData<T> *data =
+#ifdef HX_NATIVE
+                vec.data() + (std::upper_bound(vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeStarts) - vec.begin());
+#else
+                std::upper_bound(vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeStarts);
+#endif
+            if (data == vec.data())
                 return nullptr;
             else {
                 const RangedData<T> *before = &data[-1];
@@ -163,10 +166,13 @@ public:
             return nullptr;
         else {
             const std::vector<RangedData<T> > &vec = mRangeDataArray[dataIdx];
-            const RangedData<T> *data = std::upper_bound(
-                vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeEnds
-            );
-            if (data == mRangeDataArray[dataIdx].end())
+            const RangedData<T> *data =
+#ifdef HX_NATIVE
+                vec.data() + (std::upper_bound(vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeEnds) - vec.begin());
+#else
+                std::upper_bound(vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeEnds);
+#endif
+            if (data == vec.data() + vec.size())
                 return nullptr;
             else
                 return data;

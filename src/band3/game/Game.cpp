@@ -473,7 +473,7 @@ float Game::GetSongMs() const { return mMaster->GetAudio()->GetTime(); }
 Symbol Game::GetSectionAtMs(float ms) const {
     int tick = (int)MsToTick(ms);
     SongDB *songDB = TheSongDB;
-    const PracticeSection *begin = songDB->mPracticeSections.begin();
+    const PracticeSection *begin = songDB->mPracticeSections.data();
     const PracticeSection *end = begin + songDB->mPracticeSections.size();
     for (const PracticeSection *it = begin; it != end; it++) {
         if (tick < it->unk8) {

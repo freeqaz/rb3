@@ -11,7 +11,7 @@ MultiTempoTempoMap::~MultiTempoTempoMap() {}
 
 float MultiTempoTempoMap::GetTempo(int tick) const {
     const TempoInfoPoint *pt = PointForTick(tick);
-    if (pt != mTempoPoints.end())
+    if (pt != mTempoPoints.data() + mTempoPoints.size())
         return (float)pt->mTempo / 1000.0f;
     else
         return 800.0f;
@@ -19,7 +19,7 @@ float MultiTempoTempoMap::GetTempo(int tick) const {
 
 int MultiTempoTempoMap::GetTempoInMicroseconds(int tick) const {
     const TempoInfoPoint *pt = PointForTick(tick);
-    if (pt != mTempoPoints.end())
+    if (pt != mTempoPoints.data() + mTempoPoints.size())
         return pt->mTempo;
     else
         return 800000;
@@ -50,7 +50,7 @@ float MultiTempoTempoMap::TickToTime(float tick) const {
 
     if (startTick < 0.0f || tick <= mEndLoopTick) {
         const TempoInfoPoint *pt = PointForTick(tick);
-        if (pt == mTempoPoints.end())
+        if (pt == mTempoPoints.data() + mTempoPoints.size())
             return 0.0f;
         else
             return pt->mMs
@@ -191,11 +191,19 @@ const MultiTempoTempoMap::TempoInfoPoint *MultiTempoTempoMap::PointForTick(float
 
     if (mTempoPoints.empty()) {
         MILO_WARN("Tempo map is empty; at least one tempo map entry is required");
+#ifdef HX_NATIVE
+        return mTempoPoints.data() + mTempoPoints.size();
+#else
         return mTempoPoints.end();
+#endif
     }
 
     const TempoInfoPoint *pt2 =
+#ifdef HX_NATIVE
+        mTempoPoints.data() + (std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTick) - mTempoPoints.begin());
+#else
         std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTick);
+#endif
     if (pt2 != mTempoPoints.begin()) {
         pt2--;
     }
@@ -210,7 +218,11 @@ const MultiTempoTempoMap::TempoInfoPoint *MultiTempoTempoMap::PointForTime(float
     MILO_ASSERT(mTempoPoints.size() >= 1, 0x121);
 
     const TempoInfoPoint *pt2 =
+#ifdef HX_NATIVE
+        mTempoPoints.data() + (std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTime) - mTempoPoints.begin());
+#else
         std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTime);
+#endif
     if (pt2 != mTempoPoints.begin()) {
         pt2--;
     }

@@ -23,26 +23,26 @@ bool FillInfo::AddFill(int start, int duration, bool bre) {
 }
 
 bool FillInfo::FillAt(int tick, bool include_end) const {
-    const FillExtent *ext = std::lower_bound(
-        mFills.begin(),
-        mFills.end(),
-        tick,
-        include_end ? FillExtentCmpIncludingEnd : FillExtentCmp
-    );
-    if (ext == mFills.end())
+    const FillExtent *ext =
+#ifdef HX_NATIVE
+        mFills.data() + (std::lower_bound(mFills.begin(), mFills.end(), tick, include_end ? FillExtentCmpIncludingEnd : FillExtentCmp) - mFills.begin());
+#else
+        std::lower_bound(mFills.begin(), mFills.end(), tick, include_end ? FillExtentCmpIncludingEnd : FillExtentCmp);
+#endif
+    if (ext == mFills.data() + mFills.size())
         return false;
     else
         return ext->CheckBounds(tick);
 }
 
 bool FillInfo::FillAt(int tick, FillExtent &outExtent, bool include_end) const {
-    const FillExtent *e = std::lower_bound(
-        mFills.begin(),
-        mFills.end(),
-        tick,
-        include_end ? FillExtentCmpIncludingEnd : FillExtentCmp
-    );
-    if (e == mFills.end())
+    const FillExtent *e =
+#ifdef HX_NATIVE
+        mFills.data() + (std::lower_bound(mFills.begin(), mFills.end(), tick, include_end ? FillExtentCmpIncludingEnd : FillExtentCmp) - mFills.begin());
+#else
+        std::lower_bound(mFills.begin(), mFills.end(), tick, include_end ? FillExtentCmpIncludingEnd : FillExtentCmp);
+#endif
+    if (e == mFills.data() + mFills.size())
         return false;
     else if (!e->CheckBounds(tick))
         return false;
@@ -83,10 +83,13 @@ bool FillInfo::FillExtentAtOrBefore(int tick, FillExtent &outExtent) const {
 bool FillInfo::AddLanes(int tick, int lanes) { return mLanes.AddInfo(tick, lanes); }
 
 int FillInfo::LanesAt(int tick) const {
-    const TickedInfo<int> *info = std::upper_bound(
-        mLanes.mInfos.begin(), mLanes.mInfos.end(), tick, TickedInfoCollection<int>::Cmp
-    );
-    if (info != mLanes.mInfos.begin())
+    const TickedInfo<int> *info =
+#ifdef HX_NATIVE
+        mLanes.mInfos.data() + (std::upper_bound(mLanes.mInfos.begin(), mLanes.mInfos.end(), tick, TickedInfoCollection<int>::Cmp) - mLanes.mInfos.begin());
+#else
+        std::upper_bound(mLanes.mInfos.begin(), mLanes.mInfos.end(), tick, TickedInfoCollection<int>::Cmp);
+#endif
+    if (info != mLanes.mInfos.data())
         info--;
     return info->mInfo;
 }
