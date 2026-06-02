@@ -19,7 +19,7 @@ NAV_SCRIPT = (
     "@10:start,@30:confirm,"
     "@140:select:pn_quickplay.btn,@220:select:qp_quickplay.btn,"
     "@320:down,@350:msg:music_library:select_highlighted_node,"
-    "@380:track:guitar,@450:msg:overshell:end_override_flow:1:0,"
+    "@380:track:guitar,@390:difficulty:expert,@450:msg:overshell:end_override_flow:1:0,"
     "@500:nofail,@520:autohit"
 )
 

@@ -52,6 +52,9 @@
 #include "beatmatch/TrackType.h"     // SymToTrackType
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/MetaPerformer.h"   // SetBandNoFail (nofail directive)
+#include "meta_band/BandUI.h"          // TheBandUI.GetOvershell() (difficulty/part select)
+#include "meta_band/OvershellPanel.h"  // OvershellPanel::GetSlot / EndOverrideFlow
+#include "meta_band/OvershellSlot.h"   // OvershellSlot::SelectPart / kOverrideFlow_SongSettings
 #include "os/ContentMgr.h"
 #include "os/System.h"
 #include "obj/Object.h"
@@ -248,6 +251,41 @@ bool gScriptParsed = false;
 Symbol gLastScreen;
 LocalUser *gSynthUser = nullptr;
 
+// === Difficulty selection ==================================================
+// The native boot path used to hard-code kDifficultyExpert when a part was
+// chosen. The player can now CHOOSE a difficulty (Easy/Medium/Hard/Expert) via
+// the `difficulty:<easy|medium|hard|expert|0-3>` verb (script or HTTP /api/input)
+// — this file-static holds the current choice and the chosen value is what
+// flows through BandUser::SetDifficulty (which flips the unk_0xC IsFullyInGame
+// bit TrackPanel::CreateTracks filters note gems on). Default stays Expert so
+// existing capture/regression harnesses are byte-for-behavior unchanged.
+Difficulty gSelectedDifficulty = kDifficultyExpert;
+
+// Parse a difficulty token: easy/medium/hard/expert OR the numeric 0-3. We do
+// NOT call the game's SymToDifficulty for the numeric form — it asserts on a
+// bad sym. Returns true (and writes *out) on a recognized token.
+bool ParseDifficulty(const std::string &tok, Difficulty &out) {
+    if (tok == "easy")   { out = kDifficultyEasy;   return true; }
+    if (tok == "medium") { out = kDifficultyMedium; return true; }
+    if (tok == "hard")   { out = kDifficultyHard;   return true; }
+    if (tok == "expert") { out = kDifficultyExpert; return true; }
+    if (tok.size() == 1 && tok[0] >= '0' && tok[0] <= '3') {
+        out = (Difficulty)(tok[0] - '0');
+        return true;
+    }
+    return false;
+}
+
+const char *DifficultyName(Difficulty d) {
+    switch (d) {
+    case kDifficultyEasy:   return "easy";
+    case kDifficultyMedium: return "medium";
+    case kDifficultyHard:   return "hard";
+    case kDifficultyExpert: return "expert";
+    default: return "?";
+    }
+}
+
 // === State-driven verb queue ==============================================
 // BOOT RELIABILITY: the original dispatcher fired each verb on an EXACT frame
 // match (frame == @N). On a slow/contended host the targeted screen/object can
@@ -268,7 +306,7 @@ LocalUser *gSynthUser = nullptr;
 // a mis-timed/bad script degrades gracefully (LOG + SKIP) rather than hanging
 // or crashing. The documented RB3_GAME_INPUT scripts still drive
 // boot->song-select->load->gameplay->nofail, just robustly to timing.
-enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail, kVerbAutohit };
+enum VerbKind { kVerbButton, kVerbSelect, kVerbMsg, kVerbTrack, kVerbNoFail, kVerbAutohit, kVerbDifficulty };
 
 struct Verb {
     int        kind;
@@ -280,6 +318,7 @@ struct Verb {
     ScriptedSelect sel{0, ""};
     ScriptedMsg    msg;
     ScriptedTrack  trk{0, ""};
+    Difficulty     diff = kDifficultyExpert;  // payload for kVerbDifficulty
 };
 
 std::vector<Verb> gVerbs;     // sorted by (minFrame, origIndex)
@@ -364,6 +403,23 @@ void ParseScript() {
             v.trk = st;
             gVerbs.push_back(v);
             MILO_LOG("RB3 input: scheduled @%d (min) -> track '%s'\n", frame, st.trackSym.c_str());
+            continue;
+        }
+        // "difficulty:<easy|medium|hard|expert|0-3>" directive — choose the
+        // difficulty the synth user's part is played at. Sets gSelectedDifficulty
+        // (consumed by the part-commit path) and, if the BandUser is already live,
+        // re-applies immediately. Fire it AFTER track: so it lands on the user.
+        if (action.rfind("difficulty:", 0) == 0) {
+            Difficulty d;
+            if (!ParseDifficulty(action.substr(11), d)) {
+                MILO_LOG("RB3 input: bad difficulty '%s' in RB3_GAME_INPUT\n",
+                         action.substr(11).c_str());
+                continue;
+            }
+            Verb v; v.kind = kVerbDifficulty; v.minFrame = frame; v.origIndex = (int)gVerbs.size();
+            v.diff = d;
+            gVerbs.push_back(v);
+            MILO_LOG("RB3 input: scheduled @%d (min) -> difficulty '%s'\n", frame, DifficultyName(d));
             continue;
         }
         // "nofail" directive — enable band No-Fail at frame F so an
@@ -572,20 +628,93 @@ void ExecSelect(const std::string &button, UIScreen *cur) {
     }
 }
 
+// Phase 1 — drive the REAL overshell slot part-select for the synth user, the
+// exact methods the SELECT_MSG DTA fires (OvershellSlot.cpp:1912-1914). Each
+// internally validates PartPlaysInSong/PartPlaysInSet (routing to a denial slot
+// state rather than crashing if the part isn't in the song). Then applies the
+// chosen difficulty via BandUser::SetDifficulty (flips unk_0xC IsFullyInGame).
+// Returns true if the slot was resolved and driven; false if not ready yet.
+//
+// NOTE: we deliberately do NOT call slot->SelectDifficulty() — in quickplay
+// `skip_choose_diff_prompt` is FALSE (modes.dta default), so SelectDifficulty
+// routes to kState_ChooseDiffConfirm / CancelSongSettings rather than committing
+// the load. The load is committed explicitly by the existing
+// `msg:overshell:end_override_flow:1:0` crossing (OvershellPanel::EndOverrideFlow
+// (kOverrideFlow_SongSettings, cancel=false)), which fires seldiff.dta
+// override_ended -> goto_screen preloading.
+bool ExecOvershellSelect(TrackType ty, Difficulty d, BandUser *bu) {
+    OvershellPanel *ov = TheBandUI.GetOvershell();
+    if (!ov) {
+        MILO_LOG("RB3 input: overshell-select FAILED: no overshell panel\n");
+        return false;
+    }
+    OvershellSlot *slot = ov->GetSlot(bu);
+    if (!slot) {
+        MILO_LOG("RB3 input: overshell-select WAIT: no slot for BandUser %p "
+                 "(part flow not entered yet)\n", (void *)bu);
+        return false;
+    }
+    // Route through the real handlers so the visible part_difficulty UI/state
+    // machine transitions exactly as a console part-pick would.
+    switch (ty) {
+    case kTrackVocals:
+        slot->SelectVocalPart(false);  // harmony=false
+        break;
+    case kTrackDrum:
+        slot->SelectDrumPart(false);   // proDrums=false
+        break;
+    default:
+        slot->SelectPart(ty);          // guitar/bass/keys/real_*
+        break;
+    }
+    bu->SetDifficulty(d);
+    MILO_LOG("RB3 input: overshell-select: user=%p TrackType=%d diff='%s' "
+             "(GetTrackSym='%s' IsFullyInGame=%d)\n",
+             (void *)bu, (int)ty, DifficultyName(d), bu->GetTrackSym().Str(),
+             (int)bu->IsFullyInGame());
+    return true;
+}
+
 void ExecTrack(const std::string &trackSym) {
     LocalUser *user = SynthUser();
     BandUser *bu = TheBandUserMgr ? TheBandUserMgr->GetBandUser(user) : nullptr;
-    if (bu) {
-        Symbol sym(trackSym.c_str());
-        TrackType ty = SymToTrackType(sym);
+    if (!bu) {
+        MILO_LOG("RB3 input: track set FAILED: no BandUser for synth user\n");
+        return;
+    }
+    Symbol sym(trackSym.c_str());
+    TrackType ty = SymToTrackType(sym);
+    // Phase 1: drive the real overshell slot (visible part_difficulty UI). If the
+    // overshell slot isn't resolvable yet (part flow not entered), fall back to a
+    // direct SetTrackType so the user is still picked up by Band::Band as an
+    // active player — the same effect the slot's SelectPartImpl has, minus the
+    // UI state transition.
+    if (!ExecOvershellSelect(ty, gSelectedDifficulty, bu)) {
         bu->SetTrackType(ty);
-        bu->SetDifficulty(kDifficultyExpert);
-        MILO_LOG("RB3 input: track set: user=%p sym='%s' -> TrackType=%d diff=expert "
-                 "(GetTrackSym='%s' IsFullyInGame=%d)\n",
-                 (void *)bu, sym.Str(), (int)ty, bu->GetTrackSym().Str(),
+        bu->SetDifficulty(gSelectedDifficulty);
+        MILO_LOG("RB3 input: track set (direct fallback): user=%p sym='%s' "
+                 "-> TrackType=%d diff='%s' (GetTrackSym='%s' IsFullyInGame=%d)\n",
+                 (void *)bu, sym.Str(), (int)ty, DifficultyName(gSelectedDifficulty),
+                 bu->GetTrackSym().Str(), (int)bu->IsFullyInGame());
+    }
+}
+
+// Choose the difficulty for subsequent part commits. If the synth user's
+// BandUser already exists (track already chosen), re-apply immediately so a
+// `difficulty:` verb sent after `track:` updates the live user.
+void ExecDifficulty(Difficulty d) {
+    gSelectedDifficulty = d;
+    LocalUser *user = SynthUser();
+    BandUser *bu = TheBandUserMgr ? TheBandUserMgr->GetBandUser(user) : nullptr;
+    if (bu) {
+        bu->SetDifficulty(d);
+        MILO_LOG("RB3 input: difficulty set: user=%p diff='%s' "
+                 "(GetDifficulty=%d IsFullyInGame=%d)\n",
+                 (void *)bu, DifficultyName(d), (int)bu->GetDifficulty(),
                  (int)bu->IsFullyInGame());
     } else {
-        MILO_LOG("RB3 input: track set FAILED: no BandUser for synth user\n");
+        MILO_LOG("RB3 input: difficulty pending '%s' (no live BandUser yet)\n",
+                 DifficultyName(d));
     }
 }
 
@@ -804,6 +933,16 @@ bool VerbReady(const Verb &v, UIScreen *cur, const char **reason) {
         return true;
     }
 
+    case kVerbDifficulty: {
+        // difficulty:<n> needs the synth user's BandUser to apply the chosen
+        // difficulty (same readiness gate as track:). gSelectedDifficulty is set
+        // regardless inside ExecDifficulty so a later part-commit still honors it.
+        LocalUser *user = SynthUser();
+        BandUser *bu = (TheBandUserMgr && user) ? TheBandUserMgr->GetBandUser(user) : nullptr;
+        if (!bu) { if (reason) *reason = "BandUser for synth user not ready"; return false; }
+        return true;
+    }
+
     case kVerbNoFail: {
         // nofail gates on the song-load -> gameplay handoff: a live
         // MetaPerformer::Current() exists only once the performance is set up.
@@ -844,6 +983,7 @@ const char *VerbName(const Verb &v) {
     case kVerbTrack:  return "track";
     case kVerbNoFail: return "nofail";
     case kVerbAutohit: return "autohit";
+    case kVerbDifficulty: return "difficulty";
     }
     return "?";
 }
@@ -858,6 +998,7 @@ void DispatchVerb(const Verb &v, UIScreen *cur) {
     case kVerbTrack:  ExecTrack(v.trk.trackSym);           break;
     case kVerbNoFail: ExecNoFail();                        break;
     case kVerbAutohit: ExecAutohit();                      break;
+    case kVerbDifficulty: ExecDifficulty(v.diff);          break;
     }
 }
 
@@ -871,6 +1012,15 @@ bool ExecVerb(const std::string &verb, UIScreen *cur, std::string *err) {
     }
     if (verb.rfind("track:", 0) == 0) {
         ExecTrack(verb.substr(6));
+        return true;
+    }
+    if (verb.rfind("difficulty:", 0) == 0) {
+        Difficulty d;
+        if (!ParseDifficulty(verb.substr(11), d)) {
+            if (err) *err = "bad difficulty '" + verb.substr(11) + "' (easy/medium/hard/expert/0-3)";
+            return false;
+        }
+        ExecDifficulty(d);
         return true;
     }
     if (verb == "nofail") {
