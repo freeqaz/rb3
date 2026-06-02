@@ -39,6 +39,7 @@ struct SampleBlob {
     int numSamples = 0;
     int sampleRate = 0;
     int sizeBytes = 0;    // payload size (raw codec bytes)
+    int numChannels = 1;  // SampleData::mNumChannels (RB3=1; DC3 rev>=0x10 stores it)
     size_t dataOffset = 0; // offset of payload within the milo object stream
 };
 
@@ -139,6 +140,112 @@ inline bool scan_bank(const uint8_t* file, size_t fileLen,
         out.push_back(b);
         // Skip past the payload so we don't re-scan its bytes.
         i = o + sz - 1;
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// DC3 (.milo_xbox) SampleData layout
+// ---------------------------------------------------------------------------
+//
+// DC3's SynthSample (rev 6) and SampleData (rev up to 0x10) differ from RB3:
+//
+//   * SynthSample::PreLoad writes `mFile` then SampleData directly — there is NO
+//     RB3-style mIsLooped/mLoopStartSamp/mLoopEndSamp tail (those exist only at
+//     SynthSample rev <= 5). So the fixed RB3 string-offset parser does not fit.
+//   * SampleData (DC3, rev 0x10) is:
+//       int  rev (packed revs; low16 = rev)
+//       int  mCRC                 (ONLY when rev > 0xE)
+//       int  fmt
+//       int  mNumSamples
+//       int  mSampleRate
+//       int  mSizeBytes
+//       bool hasData              (rev >= 0xB)
+//       [payload]                 (hasData)
+//       SampleMarker[] mMarkers   (rev >= 0xE): int count, then count * {String name, int sample}
+//       int  mNumChannels         (rev >= 0x10)  <-- needed for the decode (mono/stereo)
+//
+// The content-hash KEY (payload_key) uses only the payload bytes + mSizeBytes +
+// mSampleRate, all of which precede the payload — so numChannels is NOT in the
+// key (matching dc3_xma::PayloadKey / rb3_xma::PayloadKey exactly). numChannels
+// IS needed to feed DecodeXMAToPCM the right XMA2 channel mask.
+//
+// Rather than reconstruct the exact object-stream framing (directory headers,
+// per-object class/name entries, ADDEADDE sentinels), this scans the object
+// stream for a self-consistent SampleData header and validates it strictly by
+// fully parsing through markers + numChannels. The strict multi-field validation
+// (rev==0x10, valid fmt, plausible rate, in-bounds size, parseable markers,
+// 1<=numChannels<=8) makes false positives vanishingly unlikely, and the parser
+// resumes after each accepted blob's numChannels so payload bytes are never
+// re-scanned. Verified across all 25 DC3 sfx/gen banks (mono + stereo mix).
+inline bool scan_bank_dc3(const uint8_t* file, size_t fileLen,
+                          std::vector<SampleBlob>& out) {
+    if (fileLen < 0x810 + 4) return false;
+    uint32_t id = rd_le32(file);
+    if (id != 0xCABEDEAFu) return false; // uncompressed milo only
+    uint32_t infoSize = rd_le32(file + 4);
+    if (infoSize >= fileLen) return false;
+
+    const uint8_t* p = file + infoSize;
+    size_t n = fileLen - infoSize;
+
+    for (size_t i = 0; i + 24 < n; i++) {
+        // rev (low 16 bits of the packed-revs int). DC3 SampleData tops out at
+        // 0x10; require exactly the channel-bearing rev so the parse below is
+        // unambiguous (mCRC present, markers present, numChannels present).
+        int rev = (int)rd_be32(p + i);
+        if (rev != 0x10) continue;
+        size_t q = i + 4 + 4; // skip rev + mCRC (mCRC present since rev > 0xE)
+        if (q + 16 > n) continue;
+        int fmt = (int)rd_be32(p + q);
+        int ns = (int)rd_be32(p + q + 4);
+        int sr = (int)rd_be32(p + q + 8);
+        int sz = (int)rd_be32(p + q + 12);
+        if (fmt < 0 || fmt > 6) continue;
+        if (ns <= 0 || ns > 200000000) continue;
+        if (sr < 4000 || sr > 48000) continue;
+        if (sz < 256 || (size_t)sz > n) continue; // skip tiny/implausible
+
+        size_t o = q + 16;
+        if (o >= n) continue;
+        int hasData = p[o]; o += 1; // rev >= 0xB
+        if (hasData != 1) continue; // require an embedded payload
+        if (o + (size_t)sz > n) continue;
+        size_t payloadOff = o;
+        size_t after = o + (size_t)sz;
+
+        // mMarkers (rev >= 0xE): int count, then count * { String name, int sample }.
+        if (after + 4 > n) continue;
+        int mcount = (int)rd_be32(p + after); after += 4;
+        if (mcount < 0 || mcount > 4096) continue;
+        bool ok = true;
+        for (int m = 0; m < mcount; m++) {
+            if (after + 4 > n) { ok = false; break; }
+            uint32_t nameLen = rd_be32(p + after); after += 4;
+            if (nameLen > 1024) { ok = false; break; }
+            after += nameLen;
+            if (after + 4 > n) { ok = false; break; } // int sample
+            after += 4;
+        }
+        if (!ok) continue;
+
+        // mNumChannels (rev >= 0x10).
+        if (after + 4 > n) continue;
+        int nch = (int)rd_be32(p + after); after += 4;
+        if (nch < 1 || nch > 8) continue;
+
+        SampleBlob b;
+        b.file = "";          // DC3 SampleData carries no inline file path here
+        b.rev = rev;
+        b.format = fmt;
+        b.numSamples = ns;
+        b.sampleRate = sr;
+        b.sizeBytes = sz;
+        b.numChannels = nch;
+        b.dataOffset = payloadOff; // within object stream (add infoSize for file offset)
+        out.push_back(b);
+        // Resume just past numChannels so the payload bytes are never re-scanned.
+        i = after - 1;
     }
     return true;
 }

@@ -107,27 +107,41 @@ const char* basename_of(const char* p) {
 } // namespace
 
 int main(int argc, char** argv) {
-    if (argc < 3) {
+    // Optional leading mode flag. --dc3 selects DC3's SampleData layout (rev 0x10
+    // with mCRC + per-blob numChannels) instead of RB3's (rev <= 0xE, mono, with
+    // a SynthSample loop tail). Default (no flag) = RB3. Either way the sidecar
+    // key + file format are identical, so one shared out-dir serves both engines.
+    bool dc3 = false;
+    int argi = 1;
+    if (argc > 1 && std::strcmp(argv[1], "--dc3") == 0) { dc3 = true; argi = 2; }
+    else if (argc > 1 && std::strcmp(argv[1], "--rb3") == 0) { dc3 = false; argi = 2; }
+    if (getenv("XMA_CONVERT_DC3")) dc3 = true;
+
+    if (argc - argi < 2) {
         fprintf(stderr,
-                "usage: %s <out-dir> <bank.milo_xbox> [<bank2.milo_xbox> ...]\n"
+                "usage: %s [--dc3|--rb3] <out-dir> <bank.milo_xbox> [<bank2> ...]\n"
                 "  Decodes every kXMA SampleData blob to a <hexkey>.pcm sidecar\n"
-                "  in <out-dir>; writes <out-dir>/manifest.txt. Originals untouched.\n",
+                "  in <out-dir>; writes <out-dir>/manifest.txt. Originals untouched.\n"
+                "  --dc3 : parse DC3 SampleData (rev 0x10, mCRC, per-blob channels)\n"
+                "  --rb3 : parse RB3 SampleData (default; mono SFX banks)\n",
                 argv[0]);
         return 2;
     }
-    std::string outDir = argv[1];
+    std::string outDir = argv[argi++];
     mkdir(outDir.c_str(), 0755); // ignore EEXIST
 
-    int channelsArg = 1; // RB3 banks are mono. (override via RB3_XMA_CHANNELS)
+    // RB3 banks are mono; DC3 carries per-blob numChannels (used directly below).
+    // For RB3 the channel count can still be overridden via RB3_XMA_CHANNELS.
+    int channelsArg = 1;
     if (const char* c = getenv("RB3_XMA_CHANNELS")) channelsArg = atoi(c);
     if (channelsArg < 1) channelsArg = 1;
 
     std::string manifest;
-    manifest += "# bank\tsample\tformat\tnumSamples\tsampleRate\tdecodedSamples\trms\tkey\n";
+    manifest += "# bank\tsample\tformat\tnumSamples\tsampleRate\tchannels\tdecodedSamples\trms\tkey\n";
 
     int totalBanks = 0, totalXma = 0, converted = 0, failed = 0, silent = 0;
 
-    for (int ai = 2; ai < argc; ai++) {
+    for (int ai = argi; ai < argc; ai++) {
         const char* bankPath = argv[ai];
         std::vector<uint8_t> bank = read_file(bankPath);
         if (bank.empty()) {
@@ -135,7 +149,10 @@ int main(int argc, char** argv) {
             continue;
         }
         std::vector<milo_scan::SampleBlob> blobs;
-        if (!milo_scan::scan_bank(bank.data(), bank.size(), blobs)) {
+        bool scanned = dc3
+            ? milo_scan::scan_bank_dc3(bank.data(), bank.size(), blobs)
+            : milo_scan::scan_bank(bank.data(), bank.size(), blobs);
+        if (!scanned) {
             fprintf(stderr, "WARN: not an uncompressed milo (skipped): %s\n", bankPath);
             continue;
         }
@@ -153,12 +170,18 @@ int main(int argc, char** argv) {
             uint32_t infoSize = milo_scan::rd_le32(bank.data() + 4);
             const uint8_t* xmaPtr = bank.data() + infoSize + b.dataOffset;
 
+            // DC3: numChannels parsed per blob. RB3: mono (or RB3_XMA_CHANNELS).
+            // The KEY never uses channels (matches the runtime PayloadKey), only
+            // the payload bytes + sizeBytes + sampleRate.
+            int chans = dc3 ? b.numChannels : channelsArg;
+            if (chans < 1) chans = 1;
+
             uint64_t key = milo_scan::payload_key(xmaPtr, b.sizeBytes, b.sampleRate);
 
             void* pcm = nullptr;
             int pcmSize = 0;
             bool ok = DecodeXMAToPCM(xmaPtr, b.sizeBytes, b.numSamples,
-                                     b.sampleRate, channelsArg, &pcm, &pcmSize);
+                                     b.sampleRate, chans, &pcm, &pcmSize);
             if (!ok || !pcm || pcmSize <= 0) {
                 fprintf(stderr,
                         "FAIL decode: %s :: %s (xma %d bytes, %d samples @ %d Hz)\n",
@@ -186,21 +209,22 @@ int main(int argc, char** argv) {
             // XMA encodes in blocks so the decoded count can exceed mNumSamples
             // by up to ~one frame (512) per stream; warn (don't fail) if it is
             // wildly off (>2x or <0.5x), which signals a misparse.
-            int monoDecoded = decodedSamples / channelsArg;
+            int perChanDecoded = decodedSamples / chans;
             if (b.numSamples > 0 &&
-                (monoDecoded > b.numSamples * 2 + 4096 ||
-                 monoDecoded < b.numSamples / 2)) {
+                (perChanDecoded > b.numSamples * 2 + 4096 ||
+                 perChanDecoded < b.numSamples / 2)) {
                 fprintf(stderr,
                         "WARN count: %s :: %s decoded=%d stored=%d (>2x mismatch)\n",
-                        bankName, b.file.c_str(), monoDecoded, b.numSamples);
+                        bankName, b.file.c_str(), perChanDecoded, b.numSamples);
             }
 
-            // Sidecar: header + PCM.
+            // Sidecar: header + PCM. numChannels matches the decode (DC3 stereo
+            // round-trips; the runtime reads it back as side.numChannels).
             std::vector<uint8_t> sidecar;
             sidecar.insert(sidecar.end(), {'R','B','3','P','C','M','0','1'});
             put_le32(sidecar, (uint32_t)b.sampleRate);
-            put_le32(sidecar, (uint32_t)monoDecoded);   // per-channel sample count
-            put_le32(sidecar, (uint32_t)channelsArg);
+            put_le32(sidecar, (uint32_t)perChanDecoded);   // per-channel sample count
+            put_le32(sidecar, (uint32_t)chans);
             put_le32(sidecar, 0);
             const uint8_t* pcmBytes = (const uint8_t*)pcm;
             sidecar.insert(sidecar.end(), pcmBytes, pcmBytes + pcmSize);
@@ -217,9 +241,9 @@ int main(int argc, char** argv) {
 
             char line[512];
             snprintf(line, sizeof(line),
-                     "%s\t%s\t%s\t%d\t%d\t%d\t%.4f\t%s\n",
+                     "%s\t%s\t%s\t%d\t%d\t%d\t%d\t%.4f\t%s\n",
                      bankName, b.file.c_str(), fmt_name(b.format),
-                     b.numSamples, b.sampleRate, monoDecoded, rms, keyHex);
+                     b.numSamples, b.sampleRate, chans, perChanDecoded, rms, keyHex);
             manifest += line;
 
             converted++;
