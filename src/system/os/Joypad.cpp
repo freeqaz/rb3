@@ -248,7 +248,24 @@ int ButtonToVelocityBucket(JoypadData *data, JoypadButton btn) {
 
 void JoypadInitCommon(DataArray *joypad_config) {
     int i;
+#if defined(HX_NATIVE)
+    // The native/web port calls JoypadInitCommon more than once: once from
+    // SystemPreInit's JoypadInit(), then again from rb3_game_input.cpp's
+    // SynthUser() (which (re)loads the config tables for the headless synth
+    // user). On disc JoypadInitCommon runs exactly once, so it unconditionally
+    // `new`s gJoypadMsgSource. Re-running it here would create a SECOND
+    // MsgSource and orphan the FIRST — the one TheUI's JoypadClient already
+    // subscribed to in UIManager::UseJoypad. The result: gJoypadMsgSource has
+    // ZERO sinks, so SendButtonMessages broadcasts every menu ButtonDownMsg into
+    // the void and NO keyboard nav past the screen that re-init'd it works
+    // (e.g. web stalls on main_hub: Confirm fires but mb_playnow.btn never
+    // selects). Create the source only once; reuse it on re-init so the existing
+    // subscription survives.
+    if (!gJoypadMsgSource)
+        gJoypadMsgSource = Hmx::Object::New<MsgSource>();
+#else
     gJoypadMsgSource = Hmx::Object::New<MsgSource>();
+#endif
     float thresh;
     joypad_config->FindData("threshold", thresh, true);
     joypad_config->FindData("keepalive_ms", gKeepaliveThresholdMs, true);
