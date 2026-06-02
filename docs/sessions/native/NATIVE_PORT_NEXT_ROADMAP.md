@@ -1,5 +1,20 @@
 # RB3 Native/Web — Next Roadmap (2026-06-02)
 
+> ## LANDED 2026-06-02 (3 of the tracks below)
+> - **Web audio / SFX** — dup `TheSynth` removed; RB3 `SampleInst` plays PCM SFX;
+>   **XMA→PCM offline sidecar conversion** (`1c5c187c`, the genuine "port from DC3"):
+>   1706 kXMA blobs converted (677 sidecars), native logs `playing XMA->PCM sidecar`.
+> - **Keyboard/gamepad input** (`ce2cab80`) — `native/src/rb3_joypad_native.cpp` real
+>   `JoypadPoll`→`SendButtonMessages`; breed `wii_guitar`→5-lane GuitarController.
+> - **Loader stalls** (`3cef2790`) — QW-1 time-budget (`RB3_LOADER_BUDGET_MS`) + QW-2
+>   buffering; main_hub 9.9s→7.8s, boot worst-case 8→13 fps.
+>
+> All native-verified; web builds clean with all three. **Open follow-ups:** windowed
+> gameplay key-press + in-browser audibility (no `$DISPLAY`/audio output here); web XMA-SFX
+> serving (180MB sidecars → on-demand fetch, not bundled); DC3 sidecar generation (blocked
+> by a pre-existing dc3 build-env issue). **Still unstarted:** difficulty/instrument-select
+> + the completeness-audit track.
+
 This is the master handoff that consolidates the five investigator specs written into
 [`roadmap-2026-06-02/`](roadmap-2026-06-02/) on 2026-06-02, building on the prior
 RTT/PostProc bring-up captured in
