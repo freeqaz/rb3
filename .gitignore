@@ -90,6 +90,9 @@ MD5Transform
 OSSuspendThread
 __ct__*
 function_analysis/
+DropUser__*
+Execute__*
+Handle__*
 
 # Source permuter scratch / work files
 .permuter_work_*

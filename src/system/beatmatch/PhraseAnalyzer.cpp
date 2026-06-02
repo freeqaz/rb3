@@ -146,7 +146,7 @@ int PhraseAnalyzer::GetPhraseTracks(int idx) const {
 bool PhraseAnalyzer::IsUnisonPhrase(int idx) const {
     MILO_ASSERT(mPerformedAnalysis, 0xF2);
     bool ret;
-    if (idx < 0 || idx > mPhrases.size())
+    if (idx < 0 || idx >= (int)mPhrases.size())
         ret = 0;
     else
         ret = mPhrases[idx].mUnison;
