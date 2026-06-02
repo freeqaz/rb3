@@ -67,9 +67,19 @@ These apply to every task spawned from this roadmap:
 > port needed. **Venue-environ itself also landed** (rb3 `d988a301`): it was a one-line
 > transposed `ObjPair` ctor in `WorldInstance::SyncDir` (match-neutral), NOT a deep instancing
 > gap — supersedes A4's "BLOCKED" note below. See `roadmap-2026-06-02/A2_A3_A4_glow_diagnosis.md`
-> (✅ banner) + `VENUE_ENV_FEASIBILITY_2026-06-03.md`. **Deferred follow-ups:** gem bloom-halo
-> (highway-layer bloom pass), SP blue track overlay (`peakstate_plane`), lane blue-tint, the
-> venue backdrop's own `world.cam` lighting.
+> (✅ banner) + `VENUE_ENV_FEASIBILITY_2026-06-03.md`.
+>
+> **POLISH PASS (2026-06-02, engine `71f21d0` / pin `a8e0d222`) — see
+> `SESSION_2026-06-02_track-A-polish.md`:** ✅ **lane blue-tint (P3)** + ✅ **SP blue track
+> overlay (P2)** shipped default-on (P2 was a capture artifact — the `peakstate_plane`
+> overlay only fades in at 4× streak; ×2.0 brighten makes it vivid). 🟡 **venue
+> point-lights (P4)** shipped opt-in `RB3_VENUE_LIGHT=1`, default-off (works — the
+> silhouette point lights ARE in `mLightsApprox` at gameplay — but reads washed/grey on
+> wall-dominated venues + dims band/crowd; needs colour/exposure tuning). ⛔ **gem
+> bloom-halo (P1) DEFERRED** — the separate-buffer over-composite washes the dark highway
+> (confirmed via `RB3_HIGHWAY_BLOOM_BLEND=0`); needs an additive-halo-only redesign (infra
+> on engine branch `trackA-bloom` `332dfba5`). **Still genuinely open:** highway-layer
+> gem bloom-halo (additive-only), P4 venue colour/exposure tuning.
 
 Empirically confirmed (2026-06-02) by comparing `gameplay-depth-capture.py` output
 against `images/retail-screenshots/yt_qRagnZCIMzk_gameplay_guitar.png`. Depth/
