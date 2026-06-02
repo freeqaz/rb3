@@ -689,6 +689,23 @@ void App::RunWithoutDebugging() {
     // HTTP-driven clean exit that persists state — unlike SIGTERM/SIGKILL.
     extern bool RB3CleanExitRequested();
 
+    // TRACK-B load-perf instrumentation (env-gated, native-only). With
+    // RB3_FRAME_INSTRUMENT=1 every RunOneFrame is wall-timed; frames over a
+    // threshold (default 20ms) are logged with their wall ms so the long-frame
+    // load tail is visible, and a running max + over-threshold count are kept.
+    // This mirrors the web freeze (one RunOneFrame on web blocks the browser
+    // exactly as long as it blocks this native frame loop — same CPU work), so a
+    // collapse of the native tail predicts a smooth web tab. Zero cost when off.
+    static int sFrameInstrument = -1;
+    static float sLongFrameThreshMs = 20.0f;
+    if (sFrameInstrument < 0) {
+        sFrameInstrument = getenv("RB3_FRAME_INSTRUMENT") ? 1 : 0;
+        if (const char *t = getenv("RB3_FRAME_INSTRUMENT_THRESH_MS"))
+            if (t[0]) sLongFrameThreshMs = (float)atof(t);
+    }
+    float sMaxFrameMs = 0.0f;
+    int sLongFrameCount = 0;
+
     for (int frame = 0; (unbounded || frame < maxFrames) && !RB3CleanExitRequested();
          frame++) {
         // The core poll + draw (SystemPoll → UI.Poll → RB3GameInputPoll →
@@ -698,7 +715,30 @@ void App::RunWithoutDebugging() {
         // exactly as before: ProcessCommands ran right after RB3GameInputPoll
         // (so HTTP-injected verbs land on the NEXT frame's RB3GameInputPoll
         // drain), and the screenshot readback runs after EndDrawing.
-        RunOneFrame(frame);
+        if (sFrameInstrument) {
+            extern float gLoadPollMsThisFrame;
+            extern float gLoadPollUntilMsThisFrame;
+            gLoadPollMsThisFrame = 0.0f;
+            gLoadPollUntilMsThisFrame = 0.0f;
+            Timer frameTimer;
+            frameTimer.Restart();
+            RunOneFrame(frame);
+            frameTimer.Split();
+            float ms = Timer::CyclesToMs(frameTimer.mCycles);
+            if (ms > sMaxFrameMs) sMaxFrameMs = ms;
+            if (ms > sLongFrameThreshMs) {
+                sLongFrameCount++;
+                UIScreen *scr = TheUI.CurrentScreen();
+                MILO_LOG("RB3 FRAME-INSTRUMENT: frame %d LONG %.1f ms "
+                         "(poll=%.1f pollUntil=%.1f screen=%s) "
+                         "[max=%.1f longCount=%d]\n",
+                         frame, ms, gLoadPollMsThisFrame, gLoadPollUntilMsThisFrame,
+                         (scr && scr->Name()) ? scr->Name() : "?",
+                         sMaxFrameMs, sLongFrameCount);
+            }
+        } else {
+            RunOneFrame(frame);
+        }
         RB3HttpServerPoll(frame);
         RB3HttpServerPollScreenshots();
         MILO_LOG("RB3 Native: frame %d complete\n", frame);
