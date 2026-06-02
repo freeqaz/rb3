@@ -5,10 +5,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "smoke-test": "node smoke-test.mjs"
+    "smoke-test": "node smoke-test.mjs",
+    "web:smoke-test": "node smoke-test.mjs",
+    "web:splash-diag": "node splash-diag.mjs",
+    "web:menuhub-probe": "node menuhub-probe.mjs",
+    "web:quick-capture": "node quick-capture.mjs",
+    "web:pixelmatch": "node pixelmatch-test.mjs"
   },
   "dependencies": {
     "playwright": "^1.58.2",
-    "pixelmatch": "^7.1.0"
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0"
   }
 }
