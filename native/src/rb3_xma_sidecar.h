@@ -18,6 +18,15 @@
 #include <cstring>
 #include <string>
 
+#ifdef __EMSCRIPTEN__
+// Web-only: the sidecar files are not bundled into the wasm/preload (180MB).
+// They are served live by native/web/server.py and fetched ON DEMAND into
+// MEMFS the first time a given XMA SFX plays. WebAssetsFetchSync is the same
+// synchronous-XHR hook native_file.cpp uses for the rest of the web asset path
+// (engine-exported header; resolves via milo-engine's PUBLIC src include dir).
+#include "platform/WebAssets.h"
+#endif
+
 namespace rb3_xma {
 
 // FNV-1a over the raw codec payload, mixed with size + sample rate. MUST match
@@ -67,6 +76,25 @@ inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
     std::string path = SidecarDir() + "/" + keyHex + ".pcm";
 
     FILE *f = std::fopen(path.c_str(), "rb");
+#ifdef __EMSCRIPTEN__
+    // Web on-demand fetch: under emcc the sidecar lives on the dev server, not
+    // in MEMFS, so the first open misses. Fetch it (one synchronous XHR per
+    // distinct SFX — sidecars are 19KB-1.5MB) into MEMFS and retry. A warm
+    // MEMFS (already-fetched this session) skips the XHR entirely. Mirrors the
+    // miss-then-fetch ordering in native_file.cpp. Compiled out natively.
+    if (!f) {
+        // WebAssetsFetchSync writes the fetched bytes to the MEMFS path it is
+        // handed and mkdir's the ABSOLUTE parent chain (/data/sfx/...). The
+        // default web SidecarDir() is relative ("sfx/gen/xma_pcm"), which fopen
+        // resolves against the FS cwd (/data). Anchor the fetch path under /data
+        // so the mkdir/writeFile and this fopen agree on one absolute location.
+        std::string fetchPath = path;
+        if (!fetchPath.empty() && fetchPath[0] != '/')
+            fetchPath = "/data/" + fetchPath;
+        if (WebAssetsFetchSync(fetchPath.c_str()))
+            f = std::fopen(path.c_str(), "rb");
+    }
+#endif
     if (!f) return out;
 
     // Header: magic(8) sampleRate(i32) numSamples(i32) numChannels(i32) rsvd(i32)
