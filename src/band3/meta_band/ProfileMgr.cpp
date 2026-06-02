@@ -43,7 +43,7 @@
 #include "utl/Symbols4.h"
 
 INIT_REVS(ProfileMgr);
-MicClientID sNullMicClientID;
+static MicClientID sNullMicClientID(-1, -1);
 ProfileMgr TheProfileMgr;
 
 typedef void (Game::*GameFunc)(float);

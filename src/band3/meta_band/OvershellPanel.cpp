@@ -44,7 +44,7 @@
 #include "utl/Locale.h"
 #include "utl/Symbols.h"
 
-MicClientID sNullMicClientID;
+static MicClientID sNullMicClientID(-1, -1);
 
 NewOvershellLocalUserMsg::NewOvershellLocalUserMsg(LocalBandUser *user)
     : Message(Type(), user) {}

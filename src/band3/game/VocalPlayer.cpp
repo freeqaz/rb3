@@ -50,7 +50,7 @@
 #include <functional>
 #include <utility>
 
-MicClientID sNullMicClientID;
+static MicClientID sNullMicClientID(-1, -1);
 
 VocalPlayer::VocalPlayer(
     BandUser *user, BeatMaster *bmaster, Band *band, int tracknum, Performer *perf, int i7
