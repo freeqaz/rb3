@@ -89,15 +89,34 @@ public:
     // tall and overlap into an unreadable pile. Recover the true,
     // platform-independent aspect from the UV cell (mTexCellSize * atlasDim).
     //
-    // Scoped to atlasH > atlasW (the proven over-tall case): square atlases and
-    // WIDER-than-tall atlases keep the matched formula untouched, so every other
-    // font's glyph sizing is unchanged and only the over-tall hub font is fixed.
+    // Scoped to NON-SQUARE atlases (atlasH != atlasW): square atlases (the Wii
+    // path, and any square Xbox atlas) keep the matched formula untouched, so
+    // only fonts whose Xbox atlas is non-square get the corrected aspect. Both
+    // the over-TALL (hub, 512x1024) and over-WIDE (overshell slot text /
+    // instrument-icon, 512x256) cases are now handled — see below.
     float CellDiff() const {
         if (mTexCellSize.x > 0.f && mTexCellSize.y > 0.f) {
             RndTex *t = ValidTexture();
             if (t) {
                 int w = t->Width(), h = t->Height();
-                if (w > 0 && h > w)
+                // The matched-fork CellDiff (mCellSize.y/mCellSize.x) carries a
+                // spurious (atlasH/atlasW) factor, exact (==1) only on a SQUARE
+                // atlas. Recover the true, platform-independent glyph cell
+                // aspect from the normalized UV cell scaled by the atlas pixel
+                // dims: (texCell.y*h)/(texCell.x*w). This is correct for ANY
+                // non-square atlas. Two real Xbox cases:
+                //   * TALLER-than-wide (512x1024) — the hub font
+                //     Pentatonic_Regular_(9_00)4x, ~2x too TALL with the matched
+                //     formula (commit 3cb8a41a).
+                //   * WIDER-than-tall (512x256) — the overshell bottom-bar slot
+                //     fonts Pentatonic_Bold_(3_00)4x ("CONNECT CONTROLLER" /
+                //     "MENU") and the instrument-icon glyph font
+                //     instrument_icons_small*, whose CellDiff comes out HALF the
+                //     true aspect -> glyphs render condensed/short (the squished
+                //     bottom-bar slot text + collapsed icon). Apply the UV-cell
+                //     recovery for both, leaving SQUARE atlases (the Wii path)
+                //     on the byte-matched formula.
+                if (w > 0 && h > 0 && h != w)
                     return (mTexCellSize.y * (float)h) / (mTexCellSize.x * (float)w);
             }
         }
