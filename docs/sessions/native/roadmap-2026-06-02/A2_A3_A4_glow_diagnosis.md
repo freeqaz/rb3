@@ -1,5 +1,39 @@
 # A2 / A3 / A4 — gameplay glow/HUD diagnosis (2026-06-02, Opus workflow)
 
+> ## ✅ RESOLVED + LANDED 2026-06-02 (read this first — supersedes the "blocked/coupled" conclusion below)
+>
+> The glow track shipped. **It was NOT blocked on venue-environ bring-up, and the emissive
+> fix was NOT net-negative** — both of those prior conclusions were wrong because they
+> assumed scene-lighting was the lever. The real lever is that the gameplay highway/gems
+> draw under their **own camera (`game.cam`)**, fully decoupled from the venue (`world.cam`).
+>
+> **Shipped (engine `milo-native-engine` `f5ee015`, pin rb3 `7e2fe9a9`; default-on, `RB3_TRACK_LIGHT_OFF=1` opt-out), all scoped to `game.cam`:**
+> 1. Darken the **prelit** `surface.mat` highway ×0.12 → dark track (the gray was its prelit
+>    base, NOT ambient — so no `RndEnviron`/scene-lighting port was needed).
+> 2. Re-enable material **emissive** (`mu.emissiveMultiplier = mEmissiveMap ? mult : 0`; bind
+>    `mEmissiveMap` to slot 5) — lights gem cores (`prism_gem_emissive`), strike-line glow,
+>    surface watermark. The dark surface gives it the contrast that made it net-POSITIVE (the
+>    earlier revert tested emissive against the *bright* surface).
+> 3. **Lit lanes**: force `rails.mat` prelit (softened ×0.7) — `rails.tex` was a non-prelit lit
+>    mesh rendering as near-black dividers.
+> 4. Brighter now-bar (boost additive `gem_smasher_glow` emissive).
+>
+> Verified by a 3-agent adversarial review: clear_improvement, **zero regressions**, no blowout
+> (saturation up, gem hue preserved, white-clip 0.15%→0.28%), HUD/fret-buttons pixel-identical,
+> scoping provably inert off `game.cam`.
+>
+> **Venue-environ** (the supposed blocker) turned out to be a **one-line transposed `ObjPair`
+> ctor** in `WorldInstance::SyncDir` — match-neutral, removed the 69-line deferral hack, venue
+> backdrop renders. Landed rb3 `d988a301`. See `VENUE_ENV_FEASIBILITY_2026-06-03.md`.
+>
+> **Deferred (not done):** gem bloom-halo (needs a highway-layer bloom pass — current bloom runs
+> only on the venue intermediate), SP blue track overlay (`peakstate_plane`, SP-deploy only),
+> lanes read white vs retail's bluer/subtler, the venue backdrop's own `world.cam` lighting.
+>
+> ---
+>
+> _(Original diagnosis below — kept for the probe data + material facts, which are accurate.)_
+
 Produced by a 3-agent parallel diagnosis workflow (read-only) comparing fresh native
 gameplay captures (`/tmp/trackA-shots/`, BandRnd backend, A1 `after_hide` fix applied)
 against retail refs `images/retail-screenshots/yt_qRagnZCIMzk_gameplay_{guitar,drums_starpower}.png`.

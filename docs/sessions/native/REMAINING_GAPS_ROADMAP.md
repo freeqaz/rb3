@@ -58,6 +58,19 @@ These apply to every task spawned from this roadmap:
 
 ## A. Gameplay FX + HUD visual parity  — biggest *visible* gap
 
+> **UPDATE 2026-06-02 — A2 + A4 + A3-glow LANDED; the "blocked on venue-env" premise was wrong.**
+> The gameplay glow/lighting track shipped via **`game.cam`-scoped track-lighting** in BandRnd
+> (engine `f5ee015`, pin rb3 `7e2fe9a9`; default-on, `RB3_TRACK_LIGHT_OFF=1` opt-out): dark
+> prelit `surface.mat` ×0.12 + re-enabled material emissive + lit lanes (`rails.mat` prelit) +
+> brighter now-bar. 3-agent adversarially verified (clear_improvement, no regressions). The
+> highway is lit by the *track's own camera*, fully decoupled from the venue — no `RndEnviron`
+> port needed. **Venue-environ itself also landed** (rb3 `d988a301`): it was a one-line
+> transposed `ObjPair` ctor in `WorldInstance::SyncDir` (match-neutral), NOT a deep instancing
+> gap — supersedes A4's "BLOCKED" note below. See `roadmap-2026-06-02/A2_A3_A4_glow_diagnosis.md`
+> (✅ banner) + `VENUE_ENV_FEASIBILITY_2026-06-03.md`. **Deferred follow-ups:** gem bloom-halo
+> (highway-layer bloom pass), SP blue track overlay (`peakstate_plane`), lane blue-tint, the
+> venue backdrop's own `world.cam` lighting.
+
 Empirically confirmed (2026-06-02) by comparing `gameplay-depth-capture.py` output
 against `images/retail-screenshots/yt_qRagnZCIMzk_gameplay_guitar.png`. Depth/
 compositing is correct (highway on top, full-color gems over the graded venue), but
