@@ -858,7 +858,9 @@ Symbol point_test("point_test");
 Symbol point_value("point_value");
 Symbol pointer_position("pointer_position");
 Symbol points("points");
-Symbol poll("poll");
+#ifndef HX_NATIVE
+Symbol poll("poll"); // native: collides with POSIX poll() — miniaudio's ALSA worker calls libc poll()
+#endif
 Symbol polls("polls");
 Symbol pool_category("pool_category");
 Symbol pool_debug("pool_debug");
