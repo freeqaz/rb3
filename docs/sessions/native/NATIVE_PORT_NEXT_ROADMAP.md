@@ -27,10 +27,26 @@
 >   rb3_joypad_native.cpp adds the two missing rows). **`song-end-test.py` PASSES** — gameplay
 >   starts, songMs advances, clean exit.
 >
-> **Open follow-ups:** windowed gameplay key-press + in-browser audibility (no `$DISPLAY`/audio
-> output here); DC3 sidecar generation + landing (blocked by a pre-existing dc3 build-env issue,
-> committed on `wt-xma-dc3`, NOT pushed). **Still unstarted:** the rest of the completeness-audit
-> track (results screen, persistence, A/V calibration, options/pause, vocals, multiplayer).
+ ## LANDED 2026-06-02 (batch 3 — completeness, pushed master `a8924538`)
+> - **C1 results screen** — already worked (`coop_endgame_screen`, stars/%/score, stable).
+> - **C2 save/profile persistence** (`cfc674cc`) — ProfileMgr global options + profile-0
+>   GameplayOptions survive restart via host-FS blob store (swappable backend; web IndexedDB
+>   plugs in later). SaveLoadManager stays excluded (its async Poll machine is never polled).
+> - **C3 A/V calibration** (`d87f613d`) — offsets set/read, reach gem-timing, **persist across
+>   restart**; fixed a ProfileMgr::Init clobber + added a `quit` verb for clean-exit saves.
+> - **C6 options/pause** (`36371a76`) — `overshell:` verb (pause/unpause, options, lefty, quit-early).
+> - **C8 HitGemHook SIGILL** (`740760ac`) + **whammy MILO_FAIL** (`a8924538`) — two real gameplay
+>   crashes fixed (no-return float fn; out-of-domain assert). Whammy fix is objdiff-confirmed
+>   100% Wii match. Sustained autohit gameplay now runs past 16s+ (was crashing at 2.8s/5.8s).
+> - **DC3 XMA sidecars** — `--dc3` converter (`a0d60eb1`) generated 6.3G of sidecars, byte-for-byte
+>   key-matched to DC3 runtime (2278/2278 resolve); DC3 runtime read-path is on dc3 main.
+> - **AUDIO-WORKS PROVEN on this headless box** — null-backend WAV capture shows menu SFX + the
+>   song MOGG playing loud (RMS 20k–25k in gameplay). No sudo / no physical sink needed.
+>
+> **Deferred / flagged (honest):** interactive calibration test-tone (cal_welcome UIList headless
+> SIGSEGV — needs real audio/input or engine UI bring-up); real vocals/mic (C5, roadmap-deferred);
+> local co-op (C7); PostProc noise full-fidelity (C9, shared-engine); in-browser audibility
+> (manual). Web build clean with the whole batch.
 
 This is the master handoff that consolidates the five investigator specs written into
 [`roadmap-2026-06-02/`](roadmap-2026-06-02/) on 2026-06-02, building on the prior
