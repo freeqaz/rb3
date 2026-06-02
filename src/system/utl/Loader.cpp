@@ -16,6 +16,10 @@
 #include <emscripten/emscripten.h> // emscripten_sleep — JSPI yield in PollUntilLoaded
 #endif
 
+#ifdef HX_NATIVE
+#include <cstdlib> // QW-1: getenv/atof for RB3_LOADER_BUDGET_MS (guarded out of Wii asm)
+#endif
+
 LoadMgr TheLoadMgr;
 void (*LoadMgr::sFileOpenCallback)(const char *);
 
@@ -287,23 +291,64 @@ void LoadMgr::Poll() {
     }
 #endif
 #ifdef HX_NATIVE
-    // Native = synchronous loading (mirrors DC3's loader native adaptation): drain
-    // mLoading to completion in one pass, with the per-state CheckSplit() budget
-    // disabled (unk1c huge). On the Wii this is time-sliced across frames (the
-    // `#else`-equivalent body below); on a fast host that time-slicing only causes
-    // a freshly-front loader's internal LoadObjs/CreateObjects CheckSplit() to bail
-    // after one object per Poll pass — making panel milos take dozens of frames or
-    // never finish within MILO_MAX_FRAMES (the splash `meta_panel.milo` stall). A
-    // single synchronous drain matches DC3's behavior (panel milos load fully when
-    // the screen transition polls them).
-    unk1c = 1e+30f;
-    while (!mLoading.empty()) {
-        PollFrontLoader();
-        if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
-            mLoading.pop_front();
+    // QW-1 (loader-performance.md): time-budget the native drain. The old native
+    // arm set unk1c = 1e30f and drained the WHOLE mLoading queue per frame, which
+    // froze the frame loop at boot (App-ctor PollUntilEmpty), at per-song loads
+    // (tv3 -> game_screen), and during the splash crowd/extras merge burst
+    // (~14fps observed). This is the SAME cooperative-slice shape the WEB arm
+    // above and the Wii `#else` path below use, minus emscripten_sleep: arm a
+    // small per-state split budget so a state func's internal CheckSplit() trips
+    // and PollFrontLoader returns mid-load, accumulate wall time across the whole
+    // Poll, and break once the per-frame budget is exceeded so we return to the
+    // frame loop (re-entering Poll next frame). Bytes still arrive synchronously
+    // (LW-1 moves I/O off-thread), but the per-frame loss is bounded.
+    //
+    // PollUntilEmpty / PollUntilLoaded keep their synchronous-contract drain
+    // (they set unk1c = 1e30f themselves) — only the global SystemPoll ->
+    // TheLoadMgr.Poll() goes through this budgeted path.
+    //
+    // The budget is env-gated (RB3_LOADER_BUDGET_MS, default 8). Set it huge
+    // (e.g. 100000) to restore the old unbudgeted drain-to-completion behavior.
+    {
+        static float sBudgetMs = -1.0f;
+        if (sBudgetMs < 0.0f) {
+            sBudgetMs = 8.0f;
+            if (const char *e = ::getenv("RB3_LOADER_BUDGET_MS")) {
+                if (e[0])
+                    sBudgetMs = (float)atof(e);
+            }
+            if (sBudgetMs <= 0.0f)
+                sBudgetMs = 8.0f;
         }
+        // Cumulative wall-clock across the whole Poll() call: mTimer is restarted
+        // per-iteration (so each state func's CheckSplit() sees a fresh slice), so
+        // a separate timer is needed to bound the total per-frame cost.
+        Timer budgetTimer;
+        budgetTimer.Restart();
+        // Safety valve: if a freshly-front loader's state func lacks a CheckSplit()
+        // yield it could spin within one PollFrontLoader; cap iterations so a stuck
+        // loader can't peg the frame loop (mirrors the web arm's cap).
+        int maxIter = 400000;
+        while (!mLoading.empty()) {
+            if (--maxIter <= 0) {
+                MILO_WARN(
+                    "LoadMgr::Poll(native): iteration cap hit; %d loaders pending",
+                    (int)mLoading.size()
+                );
+                break;
+            }
+            unk1c = sBudgetMs;
+            mTimer.Restart();
+            PollFrontLoader();
+            if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
+                mLoading.pop_front();
+            }
+            budgetTimer.Split();
+            if (Timer::CyclesToMs(budgetTimer.mCycles) > sBudgetMs)
+                break;
+        }
+        return;
     }
-    return;
 #endif
     while (!mLoading.empty()) {
         PollFrontLoader();

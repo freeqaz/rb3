@@ -91,9 +91,11 @@ void cachePutAfterFetch(const char *cacheKey, const char *memfsPath) {
 namespace {
 class NativeStdioFile : public File {
 public:
-    NativeStdioFile(const char *path, int mode) : mFp(nullptr), mFail(true), mLastReadBytes(0) {
+    NativeStdioFile(const char *path, int mode)
+        : mFp(nullptr), mFail(true), mLastReadBytes(0), mReadMode(false), mSize(-1) {
         // mode bit 2 (0x2) = read on Wii; otherwise treat as write/append.
         bool readMode = (mode & 2) != 0;
+        mReadMode = readMode;
         const char *m = readMode ? "rb" : ((mode & 0x800) ? "ab" : "wb");
         mFp = std::fopen(path, m);
 #ifdef __EMSCRIPTEN__
@@ -139,6 +141,25 @@ public:
         }
 #endif
         mFail = (mFp == nullptr);
+        if (mFp) {
+            // QW-2 (loader-performance.md): coalesce the loader's 64 KiB chunk
+            // reads into fewer host syscalls with a fully-buffered 64 KiB stdio
+            // buffer. setvbuf must run before any I/O on the stream.
+            std::setvbuf(mFp, nullptr, _IOFBF, 1 << 16);
+            // QW-2: cache the file length once for read-mode files (the loader
+            // hot path opens read-only and never writes), so Size()/Eof() skip
+            // the per-call fseek(END)/ftell/fseek(back) dance. Write/append files
+            // keep the live computation (mSize == -1) since their length grows.
+            if (mReadMode) {
+                long cur = std::ftell(mFp);
+                if (std::fseek(mFp, 0, SEEK_END) == 0) {
+                    long end = std::ftell(mFp);
+                    std::fseek(mFp, cur < 0 ? 0 : cur, SEEK_SET);
+                    if (end >= 0)
+                        mSize = end;
+                }
+            }
+        }
     }
     ~NativeStdioFile() override {
         if (mFp)
@@ -189,6 +210,10 @@ public:
     int Size() override {
         if (!mFp)
             return 0;
+        // QW-2: cached for read-mode files (set once in the ctor); fall back to
+        // the live fseek dance for write/append files whose length changes.
+        if (mSize >= 0)
+            return (int)mSize;
         long cur = std::ftell(mFp);
         std::fseek(mFp, 0, SEEK_END);
         long end = std::ftell(mFp);
@@ -210,6 +235,8 @@ private:
     std::FILE *mFp;
     bool mFail;
     int mLastReadBytes;
+    bool mReadMode; // QW-2: only read-mode files cache mSize
+    long mSize;     // QW-2: cached file length (-1 = not cached / recompute live)
 };
 } // namespace
 
