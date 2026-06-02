@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "3b18fed35f58d78a63bc60a150e8ec5c88e44d0a"
+set(MILO_ENGINE_PIN "1a1f84eb7b8bb6fa36fe4a477bfc7676abce1555"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -669,6 +669,15 @@ set(RB3_WEB_NATIVE_GLUE
     ${REPO_ROOT}/src/system/synth/tomcrypt/aes.c
     ${REPO_ROOT}/src/system/synth/tomcrypt/crypt.c
     ${REPO_ROOT}/src/system/synth/tomcrypt/ctr.c
+    # B3 (web persistence): the C2 ProfileMgr save/load glue (rb3_save_native.cpp,
+    # platform-agnostic — its HostFsBackend just goes unused on web) PLUS the
+    # web-only IndexedDB-backed IPersistBackend (rb3_save_web.cpp, #ifdef HX_WEB).
+    # main_web.cpp installs the IDB backend before the App ctor; same two keys
+    # (globaloptions.bin, gameplayopts_0.bin), same exact-size Read gate.
+    ${CMAKE_SOURCE_DIR}/src/rb3_save_native.cpp
+    ${CMAKE_SOURCE_DIR}/src/rb3_save_web.cpp
+    # guarded #ifndef HX_NATIVE for the native ALSA crash. Web also defines
+    # caller, so re-defining it is safe. #ifdef HX_WEB.
 )
 
 # Trim NATIVE_SHIMS for web — keep native_file.cpp (its stdio-backed File

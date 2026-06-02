@@ -30,7 +30,23 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#ifndef __EMSCRIPTEN__
 #include <sys/stat.h>
+#endif
+
+// On web (B3) the storage layer is the IndexedDB-backed WebIdbBackend
+// (rb3_save_web.cpp), installed via RB3SetPersistBackend before any use, so the
+// HostFsBackend below is dead code on web. We compile it out under
+// __EMSCRIPTEN__ for two reasons: (1) its fopen/stat/mkdir would operate on the
+// volatile MEMFS (lost on reload — wrong semantics), and (2) pulling libc's
+// <sys/stat.h> stat/mkdir into the wasm link transitively forces libc's poll.o,
+// which collides with the engine's `Symbol poll` (rndobj/Poll.cpp) at link time
+// (wasm-ld symbol-type-mismatch: DATA vs FUNCTION). Gating it out keeps the web
+// link clean without any --pre-js/CMake symbol surgery. The ProfileMgr glue
+// (RB3SaveLoadGlobalOptions/RB3SaveSaveGlobalOptions + the gameplay-options
+// helpers + gPersist plumbing) below is fully platform-agnostic and compiles
+// into both targets.
+#ifndef __EMSCRIPTEN__
 
 // ---------------------------------------------------------------------------
 // Host-filesystem dir/path helpers (idioms ported from DC3's proven
@@ -142,16 +158,28 @@ public:
 };
 
 HostFsBackend gHostFsBackend;
+
+} // namespace
+
+#endif // !__EMSCRIPTEN__
+
+// ---------------------------------------------------------------------------
+// Backend selection + key names — platform-agnostic (compiled on native AND
+// web). On web gPersist is set by RB3SetPersistBackend (WebIdbBackend) before
+// any use; on native the lazy default is the HostFsBackend above.
+// ---------------------------------------------------------------------------
+namespace {
 IPersistBackend *gPersist = nullptr;
 
 const char *kGlobalOptionsKey = "globaloptions.bin";
 const char *kGameplayOptionsKey0 = "gameplayopts_0.bin";
-
 } // namespace
 
 IPersistBackend *RB3PersistBackend() {
+#ifndef __EMSCRIPTEN__
     if (!gPersist)
         gPersist = &gHostFsBackend;
+#endif
     return gPersist;
 }
 
@@ -201,6 +229,11 @@ static void LoadGameplayOptions0() {
 // Global options. Mirrors SaveLoadManager state 0x33 (write) / 0x32 (read).
 // ---------------------------------------------------------------------------
 void RB3SaveSaveGlobalOptions() {
+    // Web: gPersist may be null if no backend was installed (should never happen
+    // post-boot, but a null-deref here would crash the frame loop). Native lazily
+    // constructs the HostFsBackend so this is always non-null there.
+    if (!RB3PersistBackend())
+        return;
     // SaveGlobalOptions reads TheModifierMgr (gRev>=7) — alive in the standard
     // boot. The buffer protocol is byte-identical to SaveLoadManager.cpp:1110-1120.
     int sz = TheProfileMgr.GetGlobalOptionsSize();
@@ -218,6 +251,9 @@ void RB3SaveSaveGlobalOptions() {
 }
 
 void RB3SaveLoadGlobalOptions() {
+    // Web: bail if no backend (see RB3SaveSaveGlobalOptions). Native: non-null.
+    if (!RB3PersistBackend())
+        return;
     // Mark the save-state loaded so GlobalOptionsNeedsSave()/asserts behave.
     // ctor inits mGlobalOptionsSaveState = kMetaProfileUnloaded, and
     // SetGlobalOptionsSaveState only asserts state != kMetaProfileUnchanged, so

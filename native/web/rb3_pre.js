@@ -256,4 +256,140 @@
             window.__rb3IdbReady = 1;  // Don't keep callers waiting forever.
         });
     })();
+
+    // =======================================================================
+    // B3 — IndexedDB SAVE persistence (separate from the asset cache above).
+    //
+    // The C2 IPersistBackend Read(key,buf,len) is SYNCHRONOUS (called mid-App-
+    // ctor by MetaPanel's RB3SaveLoadGlobalOptions re-apply) but IndexedDB is
+    // async — same async->sync problem the asset cache solves above, so we use
+    // the SAME prefetch-to-JS-Map bridge. The C++ WebIdbBackend
+    // (native/src/rb3_save_web.cpp) reads window.__rb3SaveCache synchronously
+    // via EM_ASM_INT and writes via window.__rb3SavePut.
+    //
+    // CRITICAL: a SEPARATE DB ('rb3-web-saves') with NO version gate. The asset
+    // cache above clearStore()s its files on an asset version-bump; saves must
+    // NEVER be wiped by that, so they live in their own database. The two save
+    // blobs are tiny (globaloptions.bin ~tens of bytes, gameplayopts_0.bin = 9
+    // bytes), so the prewarm completes ~instantly and wins the race with the
+    // App ctor.
+    //
+    // The whole block is wrapped in try/catch and every async path resolves
+    // __rb3SaveReady=1 (even on failure) so a missing/blocked IndexedDB
+    // degrades to no-persistence (empty Map, first-run defaults) and NEVER
+    // blocks boot.
+    // =======================================================================
+    (function() {
+        var SAVE_DB_NAME = 'rb3-web-saves';
+        var SAVE_DB_VERSION = 1;
+        var SAVE_STORE = 'saves';
+
+        window.__rb3SaveCache = new Map();
+        window.__rb3SaveReady = 0;
+        window.__rb3SaveStats = { puts: 0, writeErrors: 0, rows: 0 };
+        var sSaveDb = null;
+        var sSavePending = [];
+
+        function openSaveDb() {
+            return new Promise(function(resolve, reject) {
+                var req = indexedDB.open(SAVE_DB_NAME, SAVE_DB_VERSION);
+                req.onupgradeneeded = function(e) {
+                    var db = e.target.result;
+                    if (!db.objectStoreNames.contains(SAVE_STORE))
+                        db.createObjectStore(SAVE_STORE);
+                };
+                req.onsuccess = function(e) { resolve(e.target.result); };
+                req.onerror = function(e) { reject(e.target.error); };
+            });
+        }
+
+        function loadAllSaveRows(db) {
+            return new Promise(function(resolve, reject) {
+                var tx = db.transaction(SAVE_STORE, 'readonly');
+                var store = tx.objectStore(SAVE_STORE);
+                var rows = 0;
+                var cursorReq = store.openCursor();
+                cursorReq.onsuccess = function(e) {
+                    var c = e.target.result;
+                    if (!c) { resolve(rows); return; }
+                    var v = c.value;
+                    if (v && v.byteLength != null) {
+                        var u8 = v instanceof Uint8Array ? v : new Uint8Array(v);
+                        window.__rb3SaveCache.set(c.key, u8);
+                        rows++;
+                    }
+                    c.continue();
+                };
+                cursorReq.onerror = function() { reject(cursorReq.error); };
+            });
+        }
+
+        // Deferred batched put — mirrors flushPendingWrites (asset block, ~186-220).
+        function flushSavePending() {
+            if (!sSaveDb || sSavePending.length === 0) return;
+            var batch = sSavePending;
+            sSavePending = [];
+            try {
+                var tx = sSaveDb.transaction(SAVE_STORE, 'readwrite');
+                var store = tx.objectStore(SAVE_STORE);
+                for (var i = 0; i < batch.length; i++)
+                    store.put(batch[i].bytes, batch[i].key);
+                tx.onerror = function() { window.__rb3SaveStats.writeErrors += batch.length; };
+            } catch (e) {
+                window.__rb3SaveStats.writeErrors += batch.length;
+            }
+        }
+
+        // Single-key put — called by the WebIdbBackend (via EM_ASM) on Write().
+        // The Map.set is synchronous (the engine's sync Read sees it immediately
+        // on the next boot AND in-session); the IDB transaction is a deferred
+        // microtask so a burst of writes shares one tx.
+        window.__rb3SavePut = function(key, bytes) {
+            if (!key || !bytes) return;
+            // Take a copy — the caller's HEAP view may move on next allocation.
+            var copy = new Uint8Array(bytes.byteLength);
+            copy.set(bytes);
+            window.__rb3SaveCache.set(key, copy);
+            window.__rb3SaveStats.puts++;
+            if (!sSaveDb) return;  // No DB (fallback) — Map-only, lost on reload.
+            sSavePending.push({ key: key, bytes: copy });
+            if (sSavePending.length === 1)
+                Promise.resolve().then(flushSavePending);
+        };
+
+        // Page-lifecycle save trigger. visibilitychange:hidden fires reliably
+        // before a tab is closed/backgrounded (pagehide is the belt-and-
+        // suspenders for navigation). The wasm main loop polls
+        // __rb3SaveRequested each frame and runs RB3SaveSaveGlobalOptions().
+        try {
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden')
+                    window.__rb3SaveRequested = 1;
+            });
+            window.addEventListener('pagehide', function() {
+                window.__rb3SaveRequested = 1;
+            });
+        } catch (e) { /* no document (worker) — harmless */ }
+
+        // Pre-warm. Race the WASM download; cursor all rows into the Map then
+        // flip __rb3SaveReady=1. Any failure path also sets ready=1 with an
+        // empty Map (graceful no-persistence; never blocks boot).
+        try {
+            openSaveDb().then(function(db) {
+                sSaveDb = db;
+                return loadAllSaveRows(db).then(function(rows) {
+                    window.__rb3SaveStats.rows = rows;
+                    window.__rb3SaveReady = 1;
+                    console.log('[rb3-idb-save] loaded ' + rows + ' save row(s)');
+                });
+            }).catch(function(err) {
+                console.warn('[rb3-idb-save] init failed: ' + err + ' — no persistence this session');
+                window.__rb3SaveReady = 1;
+            });
+        } catch (e) {
+            // indexedDB undefined / threw synchronously — graceful no-persistence.
+            console.warn('[rb3-idb-save] indexedDB unavailable — no persistence this session');
+            window.__rb3SaveReady = 1;
+        }
+    })();
 })();

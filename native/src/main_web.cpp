@@ -99,6 +99,30 @@ extern DataArray *gSystemConfig;
 // aliases). Safe to call any time before a milo loads.
 extern void RB3RegisterLegacyRndAliases();
 
+// B3 (web persistence): ProfileMgr global-options + profile-0 GameplayOptions
+// persistence. The bodies are in native/src/rb3_save_native.cpp (now compiled
+// into rb3-web alongside the IDB backend in rb3_save_web.cpp); these are just
+// the externs we call from the boot machine. RB3InstallWebPersistBackend slots
+// the IndexedDB-backed IPersistBackend behind the C2 interface BEFORE the App
+// ctor, so MetaPanel's in-ctor RB3SaveLoadGlobalOptions re-apply reads from IDB.
+extern void RB3InstallWebPersistBackend();
+extern void RB3SaveLoadGlobalOptions();
+extern void RB3SaveSaveGlobalOptions();
+// Live A/V-calibration probe/poke for the headless round-trip test (B3 VERIFY).
+// Read-only published value (window.rb3ExcessVideoLag) + a polled set command
+// (window.rb3SetExcessVideoLag) — same JS-bridge style as window.rb3CurrentScreen,
+// so the test never needs an EXPORTED_FUNCTIONS change.
+#include "meta_band/ProfileMgr.h"
+// W3b-splash: the thread-safe verb-inject bridge defined by
+// native/src/rb3_game_input.cpp. Enqueues a raw verb string ("start" /
+// "confirm" / ...) drained next frame by RB3GameInputPoll -> ExecVerb ->
+// ExecButton -> TheUI.Handle(ButtonDownMsg(...)) — the SAME path /api/input
+// uses (proven on native: one `start` advances splash_state, one `confirm`
+// crosses to main_hub_screen). We only declare it here (no include of the
+// concurrently-owned rb3_game_input.cpp) and only CALL it from the web-only
+// splash-advance hook below.
+extern void RB3GameInputInjectVerb(const std::string &verb);
+
 // ============================================================================
 // HARNESS-mode factory registration (W2). Only used when ?milo= is present —
 // the App-boot path registers factories via the App ctor (Rnd::PreInit /
@@ -219,6 +243,61 @@ static void PublishHighlightedSong() {
         window.rb3HighlightedType = $1;
     }, token, type);
 }
+
+#ifdef HX_WEB
+// W3b-splash: route the splash menu's Start/Confirm keys through the proven
+// direct-injection verb path, web-only.
+//
+// WHY: on web, live keyboard presses flow through the REAL joypad path
+// (rb3_joypad_native.cpp JoypadPoll -> SendButtonMessages -> gJoypadMsgSource
+// -> TheUI). rb3_game_input.cpp's per-frame edge-detect loop therefore
+// deliberately does NOT raw-inject menu keys (its "DOUBLE-FIRE GUARD") — it
+// lets JoypadPoll own them. But that JoypadPoll path does not advance the
+// boot splash_screen (the splash's overshell add-user / WaitOvershell gate
+// never fires from a bare SendButtonMessages there), so the page stalls on
+// 'splash_screen'. The HTTP /api/input path — RB3GameInputInjectVerb("start"
+// /"confirm") -> ExecVerb -> ExecButton -> TheUI.Handle(ButtonDownMsg) —
+// DOES advance it (proven on native: `start` then `confirm` -> main_hub).
+//
+// So, only while on splash_screen, edge-detect Start(bit 11 = kPad_Start) and
+// Confirm(bit 6 = kPad_X) on window._rb3Keys and inject the matching verb.
+// Scoping to splash_screen keeps us off every other screen (where JoypadPoll
+// works), so we never double-fire menu nav. The verb is enqueued thread-safe
+// and drained by the NEXT frame's RB3GameInputPoll — the exact same queue the
+// HTTP bridge uses.
+static void WebSplashAdvanceHook() {
+    // Only act on the boot splash; PublishCurrentScreen already mirrors
+    // TheUI.CurrentScreen()->Name() into window.rb3CurrentScreen, but read the
+    // engine directly here (authoritative, no JS round-trip lag).
+    UIScreen *scr = TheUI.CurrentScreen();
+    const char *name = (scr && scr->Name()) ? scr->Name() : "";
+    bool onSplash = (std::strcmp(name, "splash_screen") == 0);
+
+    // _rb3Keys is a bitmask whose bits ARE JoypadButton values (see
+    // rb3_joypad_native.cpp / rb3_game_input.cpp InitWebInput). Read it once.
+    unsigned int keys = (unsigned int)EM_ASM_INT({ return window._rb3Keys || 0; });
+
+    // Per-bit rising-edge latch (own prev-mask, independent of the joypad/input
+    // layers' own latches so we don't perturb them).
+    static unsigned int sPrevKeys = 0;
+    unsigned int pressed = keys & ~sPrevKeys;
+    sPrevKeys = keys;
+
+    if (!onSplash)
+        return;
+
+    const unsigned int kStartBit   = 1u << 11;  // kPad_Start
+    const unsigned int kConfirmBit  = 1u << 6;   // kPad_X (Confirm)
+    if (pressed & kStartBit) {
+        printf("RB3 Web splash: Start edge -> inject verb 'start'\n");
+        RB3GameInputInjectVerb("start");
+    }
+    if (pressed & kConfirmBit) {
+        printf("RB3 Web splash: Confirm edge -> inject verb 'confirm'\n");
+        RB3GameInputInjectVerb("confirm");
+    }
+}
+#endif  // HX_WEB
 
 static void DoEngineInit() {
     // The MEMFS bundle unpacks files at /data/<rel>/..., mirroring the on-disc
@@ -356,7 +435,18 @@ static void mainLoop() {
         printf("RB3 Web: registering legacy rnd aliases + constructing App...\n");
         try {
             RB3RegisterLegacyRndAliases();
+            // B3: slot the IndexedDB-backed persist backend BEFORE the App ctor,
+            // so gPersist is the web backend before MetaPanel's in-ctor
+            // RB3SaveLoadGlobalOptions re-apply (MetaPanel.cpp:332) fires its
+            // first Read. The save-cache prewarm (rb3_pre.js) is tiny and is
+            // already ready by now, so that Read returns the persisted blob.
+            RB3InstallWebPersistBackend();
             sApp = new App(0, nullptr);
+            // B3: idempotent belt-and-suspenders load AFTER the ctor returns —
+            // mirrors main_native.cpp:714. The in-ctor MetaPanel re-apply is the
+            // authoritative load; this also covers profile-0 GameplayOptions and
+            // is exact-size-gated, so it's harmless if MetaPanel already loaded.
+            RB3SaveLoadGlobalOptions();
         } catch (...) {
             printf("RB3 Web: boot error — exception during App construction\n");
             sBootState = BOOT_ERROR;
@@ -376,8 +466,45 @@ static void mainLoop() {
             sBootState = BOOT_ERROR;
             break;
         }
+#ifdef HX_WEB
+        // W3b-splash: after the frame's RB3GameInputPoll has drained any verb we
+        // injected last frame, edge-detect splash Start/Confirm and enqueue the
+        // verb for the NEXT frame's poll. Web-only; no-op off splash_screen.
+        WebSplashAdvanceHook();
+#endif
         sFrameCount++;
         EM_ASM_({ window.rb3FrameCount = $0; }, sFrameCount);
+
+        // B3: polled-flag exit save. The rb3_pre.js visibilitychange:hidden /
+        // pagehide listeners set window.__rb3SaveRequested; we clear it and run
+        // RB3SaveSaveGlobalOptions here on the main thread. Write() is sync into
+        // the JS Map (the IDB put is a queued microtask), so the bytes + a queued
+        // put exist before the tab unloads. This replaces native's
+        // TheDebug.AddExitCallback(RB3SaveSaveGlobalOptions) (main_native.cpp:650),
+        // which never fires on web (runtime kept alive, no exit()).
+        if (EM_ASM_INT({ return window.__rb3SaveRequested ? 1 : 0; })) {
+            EM_ASM({ window.__rb3SaveRequested = 0; });
+            RB3SaveSaveGlobalOptions();
+        }
+
+        // B3 VERIFY: process a pending live A/V-calibration poke (test-only),
+        // then publish the current value. window.rb3SetExcessVideoLag is a magic
+        // sentinel (NaN = "no command"); the test sets it to a finite float, we
+        // apply it via SetExcessVideoLag and clear the sentinel. The exact field
+        // MetaPanel re-applies, so a reload round-trip exercises the real path.
+        {
+            double cmd = EM_ASM_DOUBLE({
+                return (typeof window.rb3SetExcessVideoLag === 'number')
+                    ? window.rb3SetExcessVideoLag : NaN;
+            });
+            if (cmd == cmd) {  // not-NaN
+                TheProfileMgr.SetExcessVideoLag((float)cmd);
+                EM_ASM({ window.rb3SetExcessVideoLag = undefined; });
+            }
+            EM_ASM_({ window.rb3ExcessVideoLag = $0; },
+                    (double)TheProfileMgr.GetExcessVideoLag());
+        }
+
         // Publish the current screen name periodically (cheap; every frame is
         // fine but throttle the EM_ASM to keep the JS bridge light).
         if ((sFrameCount & 7) == 0) {
