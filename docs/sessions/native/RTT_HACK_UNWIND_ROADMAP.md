@@ -15,17 +15,20 @@ details-pane PropAnim hack. Per-feature implementation specs are in the appendix
 > - ✅ **smear-removal Stage 1** — LANDED (`bb077020`). Native-only album cover-hide
 >   deleted; depth-6 top-right now shows the cover correctly (was blanked grey). Etched
 >   hide + `App.cpp` call kept (await postproc-rtt).
-> - ⚠️ **propanim-snap** — STILL OPEN; details-pane hack is **LOAD-BEARING** (kept).
->   CORRECTION (2026-06-01, v2 details stage): the earlier "terminal keyframe already
->   applies / hack is inert" claim was **WRONG** — it came from a misleading DTA query
->   (bare `{song_select_details showing}` returns 0 because the symbol doesn't resolve at
->   root). The proper nested probe `{{song_select_panel find song_select_details} showing}`
->   shows that with the hack disabled, a TRIGGERED terminal `showing=FALSE` keyframe
->   (`details_hide.trg`) does **NOT** apply natively (pane stays `showing=1` after
->   `{details_hide.trg trigger}` AND `play_end_of_anims`). So the `RB3_NO_DETAILS_FIX`
->   glue hack is genuinely needed and was KEPT. (Note: the *continuously-driven* ObjectKeys
->   postproc interp DOES work natively — see the gameplay grade below — so the gap is
->   specific to one-shot *triggered* terminal keyframes, a real future engine fix.)
+> - ✅ **propanim-snap — RESOLVED; `RB3_NO_DETAILS_FIX` hack REMOVED** (rb3 `0f42c529`).
+>   FINAL truth (after TWO wrong intermediate conclusions, both **DTA-root measurement
+>   artifacts**): the engine **already** applies triggered terminal keyframes — the
+>   `AnimTask::Poll` SetFrame arg-swap fix (`ca671682`, W6-V2, 2026-05-30) made
+>   `details_hide.trg`'s terminal `showing=FALSE` apply. The hack (added 2026-05-28) has
+>   been **redundant** since that fix; nobody re-checked. Both flip-flops came from querying
+>   **bare symbols at DTA root**, which silently no-op: `{song_select_details showing}`
+>   returns 0 (→ wrong "inert") and `{details_hide.trg trigger}` doesn't fire (→ wrong
+>   "load-bearing"). Using **panel-relative** paths
+>   (`{{song_select_panel find song_select_details} showing}`, `{song_select_panel
+>   hide_details}`) the engine hides the pane correctly: baseline 0 → `show_details` 1 →
+>   `hide_details` 0. Hack removed; canaries (gameplay + menu transitions) pass.
+>   **LESSON: never probe song_select objects/triggers by bare symbol at DTA root — always
+>   panel-relative.**
 > - ✅ **drawrect** — LANDED (engine `5cfaf30`). Self-contained `BandRnd::DrawRect` +
 >   shared 2D-quad pipeline; rect-composite layers now paint. Verified (fires + group-0
 >   restore + `RB3_RTT_OFF` no-crash; live RTT-outfit path uses the planned fallback).
@@ -76,10 +79,11 @@ details-pane PropAnim hack. Per-feature implementation specs are in the appendix
 > across boot/main_hub/song_select/gameplay; opt-out `RB3_NO_PRECLEAR=1`. Web rebuilt at
 > `1a1f84e` and verified.
 >
-> Remaining follow-ups (non-blocking, low-ROI): texture-driven PostProc noise at full
-> fidelity (grain is in but tuned conservatively, `kNoiseGain=0.04`); the
-> triggered-terminal-PropAnim fix (would retire the `RB3_NO_DETAILS_FIX` details-pane hack
-> — in progress; gated on being low-regression since PropAnim drives all animation).
+> **`RB3_NO_DETAILS_FIX` details-pane hack RETIRED** (rb3 `0f42c529`) — the engine already
+> hides the pane (no engine change needed; see the propanim-snap entry above).
+>
+> Remaining follow-ups (optional, low-ROI): texture-driven PostProc noise at full fidelity
+> (grain is in but tuned conservatively, `kNoiseGain=0.04`). That's the only open item.
 
 Feature slugs:
 - **drawrect** — `BandRnd::DrawRect` (engine, M)
@@ -232,7 +236,7 @@ propanim-snap touches `Anim.cpp` (different file) → can proceed in parallel.
 | native-only cover hide + `SetHookTex(false)` — `rb3_game_input.cpp:1097-1127` | HACK (active regression) | smear-removal | **2 (St.1)** |
 | etched-group hide — `rb3_game_input.cpp:1086-1095` | HACK | postproc-rtt → smear-removal | **5→6 (St.3)** |
 | `App::RunOneFrame` per-frame call — `src/App.cpp:528-532` | HACK | postproc-rtt → smear-removal | **6 (St.3)** (maybe St.1 if etched never re-shows) |
-| details-pane hide (`RB3_NO_DETAILS_FIX`) — `rb3_game_input.cpp:~1235-1261` | HACK — **LOAD-BEARING** (kept) | triggered-terminal-PropAnim engine fix (NOT done) | open — a TRIGGERED terminal `showing=FALSE` keyframe is not applied natively (verified via the proper nested DTA probe); the hack stays until that engine fix lands |
+| details-pane hide (`RB3_NO_DETAILS_FIX`) — `rb3_game_input.cpp` | HACK — **RETIRED** (rb3 `0f42c529`) | (none — engine `ca671682` AnimTask arg-swap already applies the terminal keyframe) | **closed** — hack was redundant; both "inert" and "load-bearing" intermediates were DTA-root probe artifacts (use panel-relative paths) |
 | etched_art `01` transform/swap PropAnim | n/a | (n/a — etched hide already removed in St.3 via postproc-rtt) | — |
 | CPU-composite fallback (`CHAR_OUTFIT_DIAGNOSIS.md §3`) | pre-empted | drawrect | **3** |
 | headless readback-retention quirk (§2/§5-item3) | measurement | capture-hygiene | **1** |
