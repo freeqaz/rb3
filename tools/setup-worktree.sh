@@ -216,14 +216,16 @@ fi
 # orig-assets/ is partially tracked in git (native-refs/ is committed), so the
 # worktree already has a real orig-assets/ directory from the checkout. We can't
 # replace it with a symlink. Instead, symlink each gitignored heavy subdir
-# (extracted/, extracted-xbox-full/, wii/, wii-extracted/, xbox-zip/) from the
+# (extracted/, extracted-xbox-full/, wii/, wii-extracted/, xbox-zip/, and
+# derived/ — the XMA->PCM SFX sidecars server.py serves on demand at
+# sfx/gen/xma_pcm/; without it a worktree web server 404s every SFX) from the
 # main tree into the worktree's orig-assets/ so web capture/test agents find
 # assets at the standard relative path without needing --assets-dir absolute
 # paths. Idempotent; skips any subdir that doesn't exist in the main tree.
 ORIG_ASSETS_REAL="$MAIN_REPO/orig-assets"
 if [ -d "$ORIG_ASSETS_REAL" ]; then
     mkdir -p "$WORKTREE_PATH/orig-assets"
-    for sub in extracted extracted-xbox-full wii wii-extracted xbox-zip; do
+    for sub in extracted extracted-xbox-full wii wii-extracted xbox-zip derived; do
         src="$ORIG_ASSETS_REAL/$sub"
         dst="$WORKTREE_PATH/orig-assets/$sub"
         [ -d "$src" ] || continue   # skip if main tree doesn't have it
