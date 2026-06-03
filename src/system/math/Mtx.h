@@ -288,7 +288,7 @@ public:
     Hmx::Quat &GetRot(Hmx::Quat &) const;
     void Reset();
     Transform &ToTransform(Transform &) const;
-    TransformNoScale &operator=(const TransformNoScale &t) { Set(t); }
+    TransformNoScale &operator=(const TransformNoScale &t) { Set(t); return *this; }
 
     ShortQuat q; // 0x0/2/4/6
     class Vector3 v; // 0x8
