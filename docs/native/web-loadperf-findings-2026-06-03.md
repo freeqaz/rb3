@@ -83,6 +83,19 @@ buffer ctors (~0.7 s), `BinStream::Read` + `DataArray::FindArray` +
    decompress on the CPU is a candidate to move to the GPU (sample compressed
    textures directly) — a real-GPU win independent of headless.
 
+## Native cross-check (real GPU)
+
+`rb3-native` shares the exact same App ctor but runs on the **real RTX 3090** with
+**synchronous** file I/O. It boots to the first screen in **~5.2 s** total
+(process start + GPU init + full App ctor) — vs the web App ctor *alone* at
+~12.5 s. So the web App-ctor overhead is real and large, but it conflates two
+causes that native avoids together: **(1) SwiftShader software shader compile**
+(headless web) and **(2) async-I/O / JSPI yield model** (web reads suspend the
+stack; native reads are a synchronous memcpy). Web-on-a-real-GPU would land
+somewhere between native's 5 s and headless web's 13 s. To split (1) from (2),
+instrument the App-ctor sub-phases (time in `createRenderPipeline`/shader compile
+vs time in file-load Poll) — that's the next measurement, before optimizing.
+
 ## Caveats
 
 - All numbers are **headless SwiftShader** (software Vulkan via ANGLE). Real users
