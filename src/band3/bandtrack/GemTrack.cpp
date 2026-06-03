@@ -128,7 +128,7 @@ void GemTrack::PlayerInit() {
 
 void GemTrack::PostInit() {
     UpdateShifts();
-    RangeShift *shift = mRangeShifts.end();
+    RangeShift *shift = mRangeShifts.data() + mRangeShifts.size();
     if (mCurrentRangeShift != shift) {
         ApplyShiftImmediately(*mCurrentRangeShift);
         mCurrentRangeShift++;
@@ -519,7 +519,7 @@ void GemTrack::DrawBeatLine(Symbol s1, int i2, int i3, bool b4) {
         mTrackDir->MakeSecondsXfm(i8, tf68);
         w->AddInstance(tf68, 0);
     }
-    if (!b4 && mCurrentRangeShift != mRangeShifts.end()) {
+    if (!b4 && mCurrentRangeShift != mRangeShifts.data() + mRangeShifts.size()) {
         if (TheGame->InTrainer()) {
             i2 = TickToBeat(GetLoopTick(i3));
         }
@@ -879,7 +879,7 @@ void GemTrack::UpdateSlotXfms() {
 }
 
 void GemTrack::RefreshCurrentShift() {
-    if (mCurrentRangeShift != mRangeShifts.end()) {
+    if (mCurrentRangeShift != mRangeShifts.data() + mRangeShifts.size()) {
         mCurrentRangeShift->unk10 = -1.0f;
         mCurrentRangeShift->unk8 = -1.0f;
     }
