@@ -3,7 +3,7 @@
 #include "obj/Data.h"
 #include "obj/DataFunc.h"
 
-float gBigSinTable[0x200];
+static float gBigSinTable[0x200];
 
 void TrigTableInit() {
     float *temp_r30 = gBigSinTable;

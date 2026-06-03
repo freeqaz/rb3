@@ -43,9 +43,9 @@ void UpdateOfferStateFromEc(
 
 StoreMetadataManager TheStoreMetadata;
 std::vector<int> StoreMetadataManager::mSetlistOffers;
-bool gDebugMakeAllSongsAvailable;
-bool gDebugDontRelyOnCommerceServer;
-int gStoreUseCompressedFiles;
+static bool gDebugMakeAllSongsAvailable;
+static bool gDebugDontRelyOnCommerceServer;
+static int gStoreUseCompressedFiles;
 const char *gStoreMetadataManagerLoadStepName[12] = {
     "None",
     "Init",

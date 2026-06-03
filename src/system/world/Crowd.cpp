@@ -29,10 +29,10 @@
 #include "utl/Symbols.h"
 #include "world/ColorPalette.h"
 
-RndCam *gImpostorCamera;
-RndMat *gImpostorMat;
-int gNumCrowd;
-WorldCrowd *gParent;
+static RndCam *gImpostorCamera;
+static RndMat *gImpostorMat;
+static int gNumCrowd;
+static WorldCrowd *gParent;
 
 INIT_REVS(WorldCrowd)
 

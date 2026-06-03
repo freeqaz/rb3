@@ -9,9 +9,9 @@
 #include <map>
 #include "decomp.h"
 
-std::map<Symbol, DataNode> gDataVars;
-DataNode gEvalNode[8];
-int gEvalIndex;
+static std::map<Symbol, DataNode> gDataVars;
+static DataNode gEvalNode[8];
+static int gEvalIndex;
 
 DataNode &DataVariable(Symbol s) { return gDataVars[s]; }
 

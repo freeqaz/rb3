@@ -12,9 +12,9 @@
 #include "utl/MemMgr.h"
 #include "utl/Symbol.h"
 
-int gIndent;
+static int gIndent;
 
-std::list<bool> gDataArrayConditional;
+static std::list<bool> gDataArrayConditional;
 
 Symbol DataArray::gFile;
 DataFunc *DataArray::sDefaultHandler;
@@ -25,11 +25,11 @@ int gPreExecuteLevel;
 DataArray *gCallStack[HANDLE_STACK_SIZE];
 DataArray **gCallStackPtr = gCallStack;
 
-char *gLinearNodesMem;
-char *gLinearNodesMemPos;
-int gNumLinearAllocs;
-int gLinearNodesMemSize;
-bool gNodesLinearAlloc;
+static char *gLinearNodesMem;
+static char *gLinearNodesMemPos;
+static int gNumLinearAllocs;
+static int gLinearNodesMemSize;
+static bool gNodesLinearAlloc;
 
 class DataCallStackFrame {
 public:

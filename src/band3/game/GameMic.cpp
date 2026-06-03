@@ -25,7 +25,7 @@ extern "C" void AnalyzeBlock__13PitchDetectorFPCcPsiffRfRfRf(
     float &outc
 );
 
-bool gIdxTaken[6];
+static bool gIdxTaken[6];
 
 DECOMP_FORCEBLOCK(GameMic, (Mic *m), { void (Mic::*mfp)(bool) = &Mic::SetMute; (void)mfp; (void)m; })
 

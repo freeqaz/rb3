@@ -12,7 +12,7 @@
 
 INIT_REVS(UIComponent)
 int UIComponent::sSelectFrames = 0;
-bool gResettingType;
+static bool gResettingType;
 
 Symbol UIComponentStateToSym(UIComponent::State s) {
     static Symbol syms[5] = { "normal", "focused", "disabled", "selecting", "selected" };

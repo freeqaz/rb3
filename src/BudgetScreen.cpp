@@ -106,7 +106,7 @@ void __introsort_loop<float*, float, long, less<float> >(
 
 
 extern int gMainFree;
-bool gUseSsv;
+static bool gUseSsv;
 
 DECOMP_FORCEACTIVE(BudgetScreen, " ", "\n")
 

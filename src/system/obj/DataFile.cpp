@@ -38,15 +38,15 @@ DataArray *gArray; // 0x28
 int gNode; // 0x2c
 Symbol gFile; // 0x30
 BinStream *gBinStream; // 0x34
-int gOpenArray = kDataTokenFinished; // 0x38 ?
+static int gOpenArray = kDataTokenFinished; // 0x38 ?
 std::list<ConditionalInfo> gConditional; // 0x48 - actually a list of ConditionalInfo
                                          // structs
 int gDataLine; // 0x50
 std::map<String, DataNode> gReadFiles; // 0x60
 
-bool gCompressCached;
-bool gCachingFile;
-bool gReadingFile;
+static bool gCompressCached;
+static bool gCachingFile;
+static bool gReadingFile;
 
 #ifdef HX_NATIVE
 // Bound recursive DTA parsing so malformed/adversarial input can't overflow the
