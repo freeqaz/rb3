@@ -59,15 +59,15 @@
 
 typedef void (*SplashFunc)(void);
 
-float gLimitUVRange;
-int gDxtCacher;
-class ObjectDir *sSphereDir;
-RndMesh *sSphereMesh;
-std::list<BuildPoly> gChildPolys;
-std::list<BuildPoly> gParentPolys;
-SplashFunc gSplashPoll;
-SplashFunc gSplashSuspend;
-SplashFunc gSplashResume;
+static float gLimitUVRange;
+static int gDxtCacher;
+static class ObjectDir *sSphereDir;
+static RndMesh *sSphereMesh;
+static std::list<BuildPoly> gChildPolys;
+static std::list<BuildPoly> gParentPolys;
+static SplashFunc gSplashPoll;
+static SplashFunc gSplashSuspend;
+static SplashFunc gSplashResume;
 
 DECOMP_FORCEACTIVE(Utl, __FILE__, "i->from->Dir()")
 

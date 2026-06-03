@@ -11,9 +11,9 @@
 
 FileMergerOrganizer *TheFileMergerOrganizer;
 std::map<Symbol, CatData> gCatPriority;
-int gNextCatPriority = 1;
-bool gOrganizing;
-bool gGenderChirality;
+static int gNextCatPriority = 1;
+static bool gOrganizing;
+static bool gGenderChirality;
 
 bool FileMergerSort(const FileMerger::Merger *m1, const FileMerger::Merger *m2) {
     CatData &m1data = gCatPriority[m1->mName];

@@ -15,8 +15,8 @@
 
 const char *Locale::sIgnoreMissingText;
 Locale TheLocale;
-int gDbgLocaleNumEntries;
-int gDbgLocaleStringsSize;
+static int gDbgLocaleNumEntries;
+static int gDbgLocaleStringsSize;
 bool Locale::sVerboseNotify;
 
 namespace LocaleChunkSort {
@@ -313,9 +313,9 @@ const char *Localize(Symbol token, bool *notify) {
 DECOMP_FORCEACTIVE(Locale, "locale_mmsshh")
 
 char gSepIntBufs[4][0x32];
-int gNextSepIntBuf;
+static int gNextSepIntBuf;
 char gFloatBufs[4][0x32];
-int gNextFloatBuf;
+static int gNextFloatBuf;
 
 const char *LocalizeSeparatedInt(int num) {
     char digit[2];

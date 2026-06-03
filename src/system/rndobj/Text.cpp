@@ -21,9 +21,9 @@
 #include <string.h>
 
 std::set<RndText *> RndText::mTextMeshSet;
-float gSuperscriptScale = 0.7f;
-float gGuitarScale = 0.7f;
-float gGuitarZOffset = 1.0f;
+static float gSuperscriptScale = 0.7f;
+static float gGuitarScale = 0.7f;
+static float gGuitarZOffset = 1.0f;
 
 INIT_REVS(RndText)
 

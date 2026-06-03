@@ -80,10 +80,10 @@
 
 float gSyncAvg;
 float gAvg;
-int gCurHeap = -1;
-bool gNotifyKeepGoing;
-bool gFailKeepGoing;
-bool gFailRestartConsole;
+static int gCurHeap = -1;
+static bool gNotifyKeepGoing;
+static bool gFailKeepGoing;
+static bool gFailRestartConsole;
 
 void MemPrintOverview(int, TextStream &);
 

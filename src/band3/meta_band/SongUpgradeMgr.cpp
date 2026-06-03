@@ -7,8 +7,8 @@
 #include "os/File.h"
 #include "utl/Symbols.h"
 
-String *gMidiFileResult;
-bool gMidiFileFound;
+static String *gMidiFileResult;
+static bool gMidiFileFound;
 
 void RecurseMidiFileCallback(const char *c1, const char *c2);
 

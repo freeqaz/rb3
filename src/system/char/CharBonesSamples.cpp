@@ -13,7 +13,7 @@
 #include <cstdlib> // V38: getenv for CBS_DBG-gated layout instrumentation
 #endif
 
-int gVer;
+static int gVer;
 
 DECOMP_FORCEACTIVE(
     CharBonesSamples,

@@ -39,7 +39,7 @@ END_COPYS
 
 SAVE_OBJ(Song, 0x38)
 
-bool gSongLoadBool;
+static bool gSongLoadBool;
 
 BEGIN_LOADS(Song)
     int x;

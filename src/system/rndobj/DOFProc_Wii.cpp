@@ -1,7 +1,7 @@
 #include "rndobj/DOFProc_Wii.h"
 #include "rndobj/Rnd.h"
 
-bool gTempDOFEnabled;
+static bool gTempDOFEnabled;
 
 WiiDOFProc::WiiDOFProc() {
     TheRnd->RegisterPostProcessor(this);

@@ -28,9 +28,9 @@ void *MemHeapStartAddr(int heap);
 
 RsoInitFunc gRsoIniters[MAX_RSO_INITERS];
 RsoDeinitFunc gRsoDeiniters[MAX_RSO_INITERS];
-int gRsoIniterCount;
-void *staticRso;
-void *g_jumpCodeBuffer;
+static int gRsoIniterCount;
+static void *staticRso;
+static void *g_jumpCodeBuffer;
 
 extern void *g_pRSOReserveBuf;
 uint g_RSOBufOffset;
@@ -38,7 +38,7 @@ uint g_RSOBufOffset;
 extern void *g_pDefaultRSOBuf;
 uint g_DefaultRSOBufOffset;
 
-bool gbCleanBuffersOnPreInit = true;
+static bool gbCleanBuffersOnPreInit = true;
 
 DECOMP_FORCEACTIVE(Rso_Utl, "_unresolved func.\n")
 

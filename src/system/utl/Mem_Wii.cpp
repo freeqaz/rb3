@@ -7,9 +7,9 @@
 #include "revolution/os/OSThread.h"
 #include "utl/MemMgr.h"
 
-bool gHeapInitialized = false;
-MEMiHeapHead *gMEM1Heap = NULL;
-MEMiHeapHead *gMEM2Heap = NULL;
+static bool gHeapInitialized = false;
+static MEMiHeapHead *gMEM1Heap = NULL;
+static MEMiHeapHead *gMEM2Heap = NULL;
 
 void InitDefaultHeap() {
     CritSecTracker cst(gMemLock);

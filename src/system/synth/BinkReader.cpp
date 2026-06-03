@@ -20,9 +20,9 @@ extern bool gDebugFullQuota;
 
 int BinkReader::mPlaying;
 int BinkReader::sHeap = 1;
-int gTempLastDecodeSize = -1;
-int gTempPrevFrameSize = -1;
-int gTempCurFrameSize;
+static int gTempLastDecodeSize = -1;
+static int gTempPrevFrameSize = -1;
+static int gTempCurFrameSize;
 
 struct BinkHeapEntry {
     void *ptr;

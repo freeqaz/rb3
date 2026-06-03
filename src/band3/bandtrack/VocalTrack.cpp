@@ -42,14 +42,14 @@
 #include "utl/TimeConversion.h"
 #include <utility>
 
-int maxPlatesQueued;
-int maxVertsInPlate;
-int maxFacesInPlate;
-int maxNumLyricPlates;
-bool dumpLyricShifts;
-bool sDumpLyricPlates;
-bool sDumpPlateStates;
-bool gDebugSpew;
+static int maxPlatesQueued;
+static int maxVertsInPlate;
+static int maxFacesInPlate;
+static int maxNumLyricPlates;
+static bool dumpLyricShifts;
+static bool sDumpLyricPlates;
+static bool sDumpPlateStates;
+static bool gDebugSpew;
 
 MicClientID sNullMicClientID(-1, -1);
 

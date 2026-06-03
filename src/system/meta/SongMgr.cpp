@@ -239,7 +239,7 @@ void SongMgr::StartSongCacheWrite() {
     }
 }
 
-int gSongCacheSaveVer = 0xB;
+static int gSongCacheSaveVer = 0xB;
 
 bool SongMgr::SaveCachedSongInfo(BufStream &bs) {
     bs << gSongCacheSaveVer << mSongIDsInContent;

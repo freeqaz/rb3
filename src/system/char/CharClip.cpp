@@ -24,7 +24,7 @@ INIT_REVS(CharClip);
 
 CharClip::FacingSet::FacingBones CharClip::FacingSet::sFacingPos;
 CharClip::FacingSet::FacingBones CharClip::FacingSet::sFacingRotAndPos;
-int gOldRev;
+static int gOldRev;
 
 const char *CharClip::BeatAlignString(int mask) {
     switch (mask & 0xF600) {

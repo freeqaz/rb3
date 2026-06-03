@@ -15,7 +15,7 @@
 #include "utl/Symbols.h"
 
 int GROUP_REV = 14;
-bool gInReplace;
+static bool gInReplace;
 
 RndGroup::RndGroup()
     : mObjects(this, kObjListOwnerControl), mEnv(this), mDrawOnly(this), mLod(this),

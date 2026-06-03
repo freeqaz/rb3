@@ -15,7 +15,7 @@
 #include "utl/UTF8.h"
 #include <map>
 
-int gTotalFontSize;
+static int gTotalFontSize;
 INIT_REVS(RndFont)
 const char theChars[96] =
     " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";

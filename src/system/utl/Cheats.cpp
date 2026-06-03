@@ -8,7 +8,7 @@
 
 CheatsManager *gCheatsManager;
 bool sKeyCheatsEnabled = true;
-bool gDisable;
+static bool gDisable;
 
 CheatsManager::CheatsManager() : mKeyCheatsEnabled(sKeyCheatsEnabled) {
     mLastButtonTime.Start();
