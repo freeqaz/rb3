@@ -1155,7 +1155,7 @@ void GemTrackDir::DeleteUnusedChordMeshes() {
 
 float GemTrackDir::GetFretPosOffset(int idx) const {
     float f;
-    if (idx > mFretPosOffsets.size()) {
+    if (idx >= (int)mFretPosOffsets.size()) {
         if (idx > 0)
             MILO_WARN(
                 "fret position %d is unhandled - must be in [-1,%d]",

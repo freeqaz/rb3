@@ -9,7 +9,7 @@
 #include <string.h>
 
 // dtk-extracted helpers in SndAnalysis.cpp
-float ShiftedDotProduct(const float *buf, int len, float *out, bool extra);
+void ShiftedDotProduct(const float *buf, int len, float *out, bool extra);
 int FindCCPeak(const float *autocorr, const float *peaks, int len, int minPeriod);
 float RefinePeriod2(const float *buf, const float *autocorr, const float *peaks, int len, int period);
 

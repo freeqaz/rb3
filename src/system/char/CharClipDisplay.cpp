@@ -83,7 +83,7 @@ CharClipDisplay::SetStartEnd(float start, float end, bool resetZoom) {
         float textOffset = unk64 + unk14 + margin;
         unkc = unk1c - (((float)width * 0.5f - textOffset) * zoomRange) / (float)width;
         unk10 = ((((float)width - margin) - textOffset) * zoomRange)
-                / (float)TheRnd->Width() + unkc;
+                / (float)width + unkc;
         GetX(unk1c);
     } else {
         // (float)(double)x casts force CW to emit `frsp` (single-precision round)
