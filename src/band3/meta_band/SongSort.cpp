@@ -120,45 +120,45 @@ void SongSort::BuildSongTree(
         Init();
         FOREACH_POST (it, records) {
             SongSortNode *newSong = NewSongNode(&it->second);
-            std::pair<ShortcutNode **, ShortcutNode **> found;
-            found =
-                std::equal_range(mTree.begin(), mTree.end(), newSong, CompareShortcuts());
-            ShortcutNode *shortcut;
-            if (found.first != found.second) {
-                shortcut = *found.first;
-                MILO_ASSERT(0 == newSong->Compare(shortcut, kNodeShortcut), 0xCD);
-            } else {
-                shortcut = NewShortcutNode(newSong);
+            {
+                ShortcutNode **tb = mTree.data(), **te = tb + mTree.size();
+                std::pair<ShortcutNode **, ShortcutNode **> found =
+                    std::equal_range(tb, te, newSong, CompareShortcuts());
+                ShortcutNode *shortcut;
+                if (found.first != found.second) {
+                    shortcut = *found.first;
+                    MILO_ASSERT(0 == newSong->Compare(shortcut, kNodeShortcut), 0xCD);
+                } else {
+                    shortcut = NewShortcutNode(newSong);
 #ifdef HX_NATIVE
-                // host vector::insert needs an iterator; found.first is the raw
-                // ShortcutNode** from equal_range (STLport iterator == pointer).
-                mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
+                    mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
 #else
-                mTree.insert(found.first, shortcut);
+                    mTree.insert(found.first, shortcut);
 #endif
+                }
+                shortcut->Insert(newSong, this);
             }
-            shortcut->Insert(newSong, this);
         }
         FOREACH (it, offers) {
             SongSortNode *newSong = NewSongNode(*it);
-            std::pair<ShortcutNode **, ShortcutNode **> found;
-            found =
-                std::equal_range(mTree.begin(), mTree.end(), newSong, CompareShortcuts());
-            ShortcutNode *shortcut;
-            if (found.first != found.second) {
-                shortcut = *found.first;
-                MILO_ASSERT(0 == newSong->Compare(shortcut, kNodeShortcut), 0xE8);
-            } else {
-                shortcut = NewShortcutNode(newSong);
+            {
+                ShortcutNode **tb = mTree.data(), **te = tb + mTree.size();
+                std::pair<ShortcutNode **, ShortcutNode **> found =
+                    std::equal_range(tb, te, newSong, CompareShortcuts());
+                ShortcutNode *shortcut;
+                if (found.first != found.second) {
+                    shortcut = *found.first;
+                    MILO_ASSERT(0 == newSong->Compare(shortcut, kNodeShortcut), 0xE8);
+                } else {
+                    shortcut = NewShortcutNode(newSong);
 #ifdef HX_NATIVE
-                // host vector::insert needs an iterator; found.first is the raw
-                // ShortcutNode** from equal_range (STLport iterator == pointer).
-                mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
+                    mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
 #else
-                mTree.insert(found.first, shortcut);
+                    mTree.insert(found.first, shortcut);
 #endif
+                }
+                shortcut->Insert(newSong, this);
             }
-            shortcut->Insert(newSong, this);
         }
         FOREACH (it, mTree) {
             (*it)->FinishSort(this);
@@ -244,22 +244,24 @@ void SetlistSort::BuildSetlistTree(std::map<Symbol, SetlistRecord> &records) {
     Init();
     FOREACH (it, records) {
         SetlistSortNode *newSetlist = NewSetlistNode(&it->second);
-        std::pair<ShortcutNode **, ShortcutNode **> found;
-        found =
-            std::equal_range(mTree.begin(), mTree.end(), newSetlist, CompareShortcuts());
-        ShortcutNode *shortcut;
-        if (found.first != found.second) {
-            shortcut = *found.first;
-            MILO_ASSERT(0 == newSetlist->Compare(shortcut, kNodeShortcut), 0x16B);
-        } else {
-            shortcut = NewShortcutNode(newSetlist);
+        {
+            ShortcutNode **tb = mTree.data(), **te = tb + mTree.size();
+            std::pair<ShortcutNode **, ShortcutNode **> found =
+                std::equal_range(tb, te, newSetlist, CompareShortcuts());
+            ShortcutNode *shortcut;
+            if (found.first != found.second) {
+                shortcut = *found.first;
+                MILO_ASSERT(0 == newSetlist->Compare(shortcut, kNodeShortcut), 0x16B);
+            } else {
+                shortcut = NewShortcutNode(newSetlist);
 #ifdef HX_NATIVE
-            mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
+                mTree.insert(mTree.begin() + (found.first - mTree.data()), shortcut);
 #else
-            mTree.insert(found.first, shortcut);
+                mTree.insert(found.first, shortcut);
 #endif
+            }
+            shortcut->Insert(newSetlist, this);
         }
-        shortcut->Insert(newSetlist, this);
     }
     FunctionSortNode *fsn = nullptr;
     if (TheMusicLibrary->NetSetlistsFailed()) {

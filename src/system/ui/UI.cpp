@@ -811,9 +811,9 @@ UIResource *UIManager::FindResource(const DataArray *array) {
     if (fileArray) {
         FilePath path(FileGetPath(fileArray->mFile.Str(), nullptr), fileArray->Str(1));
 
-        std::pair<UIResource **, UIResource **> asdf = std::equal_range(
-            mResources.begin(), mResources.end(), path.c_str(), UIResource::Compare()
-        );
+        UIResource **rb = mResources.data(), **re = rb + mResources.size();
+        std::pair<UIResource **, UIResource **> asdf =
+            std::equal_range(rb, re, path.c_str(), UIResource::Compare());
 
         if (asdf.first != asdf.second) {
             return *asdf.first;
