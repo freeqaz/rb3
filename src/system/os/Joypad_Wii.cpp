@@ -106,7 +106,7 @@ void JoypadReset() {
     unsigned int padNum = 0;
     do {
         if (padNum < users.size()) {
-            AssociateUserAndPad(*(LocalUser **)((char *)users.begin() + userOff), padNum);
+            AssociateUserAndPad(*(LocalUser **)((char *)users.data() + userOff), padNum);
         }
         gWiiJoypads[padNum].Init();
         padNum += 1;

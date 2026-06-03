@@ -1818,7 +1818,7 @@ void SaveLoadManager::StartSaveAction(bool b) {
     UpdateStatus(kSaveLoadMgrStatus_Saving);
     mTimer.Restart();
     MILO_ASSERT(mState == kS_SaveOverwrite || mState == kS_SaveNoOverwrite, 0x9c9);
-    for (BandProfile **p = (BandProfile **)mUploadProfiles.begin(); p != (BandProfile **)mUploadProfiles.end(); p++) {
+    for (BandProfile **p = (BandProfile **)mUploadProfiles.data(); p != (BandProfile **)mUploadProfiles.data() + mUploadProfiles.size(); p++) {
         TheWiiProfileMgr.SetLocked(*p, true);
     }
     mWaiting = true;

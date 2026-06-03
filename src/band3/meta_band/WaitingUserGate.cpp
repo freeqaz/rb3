@@ -140,7 +140,7 @@ void OpenGateData::GetWaitingUsers(
     int byteOffset;
     for (i = 0, byteOffset = 0; i < mWaitingUsers.size(); i++, byteOffset += 0x10) {
         out.push_back(TheBandUserMgr->GetBandUser(
-            *(const UserGuid *)((const char *)mWaitingUsers.begin() + byteOffset), true
+            *(const UserGuid *)((const char *)mWaitingUsers.data() + byteOffset), true
         ));
     }
 }
