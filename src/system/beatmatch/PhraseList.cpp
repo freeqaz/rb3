@@ -22,9 +22,10 @@ void PhraseList::AddPhrase(float ms, int ticks, float dur_ms, int dur_ticks) {
 }
 
 bool PhraseList::IsTickInPhrase(int tick) const {
-    const Phrase *p =
-        std::lower_bound(mPhrases.begin(), mPhrases.end(), tick, PhraseTickCmp);
-    if (p == mPhrases.end())
+    const Phrase *beg = mPhrases.data();
+    const Phrase *end = mPhrases.data() + mPhrases.size();
+    const Phrase *p = std::lower_bound(beg, end, tick, PhraseTickCmp);
+    if (p == end)
         return false;
     else
         return p->GetTick() <= tick && tick <= p->GetTick() + p->GetDurationTicks();

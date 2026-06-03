@@ -484,9 +484,10 @@ float CharClip::SampleToBeat(int sample) const {
     if (mFull.mFrames.empty()) {
         return FrameToBeat(sample);
     } else {
-        const float *lower =
-            std::lower_bound(mFull.mFrames.begin(), mFull.mFrames.end(), (float)sample);
-        return FrameToBeat(lower - mFull.mFrames.begin());
+        const float *beg = mFull.mFrames.data();
+        const float *end = mFull.mFrames.data() + mFull.mFrames.size();
+        const float *lower = std::lower_bound(beg, end, (float)sample);
+        return FrameToBeat(lower - beg);
     }
 }
 

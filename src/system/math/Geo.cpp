@@ -656,7 +656,7 @@ void BSPFace::Update() {
     Vector3 prevPt(p.mPoints.back().x, p.mPoints.back().y, 0.0f);
     Multiply(prevPt, t, prevPt);
 
-    for (const Vector2 *it = p.mPoints.begin(); it != p.mPoints.end(); it++) {
+    for (const Vector2 *it = p.mPoints.data(); it != p.mPoints.data() + p.mPoints.size(); it++) {
         bool notXYZ = false;
         bool notXY = false;
         Vector3 curPt(it->x, it->y, 0.0f);

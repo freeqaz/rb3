@@ -23,26 +23,30 @@ bool FillInfo::AddFill(int start, int duration, bool bre) {
 }
 
 bool FillInfo::FillAt(int tick, bool include_end) const {
+    const FillExtent *beg = mFills.data();
+    const FillExtent *end = mFills.data() + mFills.size();
     const FillExtent *ext = std::lower_bound(
-        mFills.begin(),
-        mFills.end(),
+        beg,
+        end,
         tick,
         include_end ? FillExtentCmpIncludingEnd : FillExtentCmp
     );
-    if (ext == mFills.end())
+    if (ext == end)
         return false;
     else
         return ext->CheckBounds(tick);
 }
 
 bool FillInfo::FillAt(int tick, FillExtent &outExtent, bool include_end) const {
+    const FillExtent *beg = mFills.data();
+    const FillExtent *end = mFills.data() + mFills.size();
     const FillExtent *e = std::lower_bound(
-        mFills.begin(),
-        mFills.end(),
+        beg,
+        end,
         tick,
         include_end ? FillExtentCmpIncludingEnd : FillExtentCmp
     );
-    if (e == mFills.end())
+    if (e == end)
         return false;
     else if (!e->CheckBounds(tick))
         return false;
@@ -54,8 +58,9 @@ bool FillInfo::FillAt(int tick, FillExtent &outExtent, bool include_end) const {
 }
 
 bool FillInfo::NextFillExtents(int tick, FillExtent &outExtent) const {
-    for (std::vector<FillExtent>::const_iterator it = mFills.begin(); it != mFills.end();
-         ++it) {
+    const FillExtent *beg = mFills.data();
+    const FillExtent *end = mFills.data() + mFills.size();
+    for (const FillExtent *it = beg; it != end; ++it) {
         if (tick <= it->start) {
             outExtent.start = it->start;
             outExtent.end = it->end;
@@ -66,10 +71,12 @@ bool FillInfo::NextFillExtents(int tick, FillExtent &outExtent) const {
 }
 
 bool FillInfo::FillExtentAtOrBefore(int tick, FillExtent &outExtent) const {
-    std::vector<FillExtent>::const_iterator it;
-    for (it = mFills.begin(); it != mFills.end() && it->start <= tick; ++it)
+    const FillExtent *beg = mFills.data();
+    const FillExtent *end = mFills.data() + mFills.size();
+    const FillExtent *it;
+    for (it = beg; it != end && it->start <= tick; ++it)
         ;
-    if (it == mFills.begin())
+    if (it == beg)
         return false;
     else {
         --it;
@@ -83,10 +90,12 @@ bool FillInfo::FillExtentAtOrBefore(int tick, FillExtent &outExtent) const {
 bool FillInfo::AddLanes(int tick, int lanes) { return mLanes.AddInfo(tick, lanes); }
 
 int FillInfo::LanesAt(int tick) const {
+    const TickedInfo<int> *beg = mLanes.mInfos.data();
+    const TickedInfo<int> *end = mLanes.mInfos.data() + mLanes.mInfos.size();
     const TickedInfo<int> *info = std::upper_bound(
-        mLanes.mInfos.begin(), mLanes.mInfos.end(), tick, TickedInfoCollection<int>::Cmp
+        beg, end, tick, TickedInfoCollection<int>::Cmp
     );
-    if (info != mLanes.mInfos.begin())
+    if (info != beg)
         info--;
     return info->mInfo;
 }

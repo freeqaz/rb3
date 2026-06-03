@@ -94,7 +94,7 @@ void InterpVector(
             return;
         }
     }
-    int idx = prev - keys.begin();
+    int idx = prev - keys.data();
     if (spline) {
         float fsq = ref * ref;
         float fsq3 = fsq * 3.0f;
