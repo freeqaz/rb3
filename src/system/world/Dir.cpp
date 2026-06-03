@@ -82,7 +82,7 @@ void WorldDir::Enter() {
     mFirstPoll = true;
     TheRnd->SetProcAndLock(false);
     TheRnd->ResetProcCounter();
-    mDrawItr = mDraws.begin();
+    mDrawItr = mDraws.data();
     if (TheWorld == this)
         SetTheWorld(nullptr);
 }
@@ -352,7 +352,7 @@ void WorldDir::SyncObjects() {
     }
     if (mHud)
         VectorRemove(mDraws, mHud);
-    mDrawItr = mDraws.begin();
+    mDrawItr = mDraws.data();
 }
 
 CamShotCrowd *FindCrowd(ObjVector<CamShotCrowd> &vec, WorldCrowd *crowd) {
@@ -499,9 +499,9 @@ bool WorldDir::DrawShowingBudget(float fff) {
     timer.Start();
     RndEnvironTracker tracker(mEnv, &WorldXfm().v);
     if (TheRnd->ProcCmds() & kProcessWorld) {
-        mDrawItr = mDraws.begin();
+        mDrawItr = mDraws.data();
     }
-    for (; mDrawItr != mDraws.end(); ++mDrawItr) {
+    for (; mDrawItr != mDraws.data() + mDraws.size(); ++mDrawItr) {
         float f1 = kHugeFloat;
         if (TheRnd->ProcCmds() & kProcessWorld) {
             float startMs = 0.0f;

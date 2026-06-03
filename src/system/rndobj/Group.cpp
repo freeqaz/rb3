@@ -88,7 +88,7 @@ void RndGroup::AddObject(Hmx::Object *o1, Hmx::Object *o2) {
             RndDrawable *draw = dynamic_cast<RndDrawable *>(o1);
             if (draw)
                 mDraws.push_back(draw);
-            mDrawItr = mDraws.begin();
+            mDrawItr = mDraws.data();
         }
     }
 }
@@ -241,10 +241,10 @@ bool RndGroup::DrawShowingBudget(float f1) {
     } else {
         Timer timer;
         timer.Start();
-        if (mDrawItr == mDraws.end()) {
-            mDrawItr = mDraws.begin();
+        if (mDrawItr == mDraws.data() + mDraws.size()) {
+            mDrawItr = mDraws.data();
         }
-        while (mDrawItr != mDraws.end()) {
+        while (mDrawItr != mDraws.data() + mDraws.size()) {
             timer.Split();
             float splitMs = Timer::CyclesToMs(timer.mCycles);
             if (splitMs > f1)
