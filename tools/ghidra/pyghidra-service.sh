@@ -97,6 +97,7 @@ cmd_start() {
     # --port 8001 to avoid conflicting with DC3 on port 8000.
     setsid nohup uv run --python 3.10 --project "$PYGHIDRA_MCP" pyghidra-mcp \
         --transport streamable-http \
+        --host "$HOST" \
         --port "$PORT" \
         --project-path "$PROJECT_PATH" \
         --wait-for-analysis \
