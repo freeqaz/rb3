@@ -2600,11 +2600,10 @@ void VocalTrack::Restart(VocalPlayer *player, float f1, float f2) {
 }
 
 void VocalTrack::HitTambourineGem(int id) {
-    std::deque<TambourineGem *> &gems = mTambourineGemPool->mUsedGems;
-    for (int i = 0; i != gems.size(); i++) {
-        if (id == gems[i]->unk4) {
-            gems[i]->unk8 = 1;
-            gems[i];
+    for (int i = 0; i != mTambourineGemPool->mUsedGems.size(); i++) {
+        if (id == mTambourineGemPool->mUsedGems[i]->unk4) {
+            mTambourineGemPool->mUsedGems[i]->unk8 = 1;
+            mTambourineGemPool->mUsedGems[i];
             break;
         }
     }

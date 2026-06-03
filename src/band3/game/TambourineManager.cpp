@@ -205,7 +205,7 @@ void TambourineManager::LocalTambourineSoloEnd(int pct, int numGems) {
     mPlayerRef.AddTambourinePointsStat((float)total);
     BandTrack *track = mPlayerRef.GetBandTrack();
     if (track) {
-        Symbol awardSymCopy = awardSym;
+        const Symbol &awardSymCopy = awardSym;
         GetTrackPanelDir()->SoloEnd(track, total, awardSymCopy);
     }
 }
@@ -342,7 +342,7 @@ DataNode TambourineManager::OnPlayTambourine(DataArray *d) {
 void TambourineManager::OnRemoteTambourineSucceeding(DataArray *msg) {
     int succeeding = msg->Int(2);
     int pct = msg->Int(3);
-    if ((unk48 = succeeding != 0)) {
+    if ((unk48 = 0 != succeeding)) {
         BandTrack *track = mPlayerRef.GetBandTrack();
         if (track) {
             track->SoloHit(pct);

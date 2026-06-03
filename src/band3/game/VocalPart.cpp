@@ -380,7 +380,7 @@ bool VocalPart::InTambourinePhrase() const {
 }
 
 float VocalPart::FramePhraseMeterFrac() const {
-    bool _cond = !mPlayer->IsNet();
+    bool _cond = bool(!mPlayer->IsNet());
     if (_cond) {
         float ratio = 0.0f;
         if (mPhraseScoreMax != 0.0f)

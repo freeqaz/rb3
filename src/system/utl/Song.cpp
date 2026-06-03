@@ -208,7 +208,7 @@ void Song::SyncState() {
     if (!_ref0)
         return;
 
-    bool wasPaused = 0;
+    bool wasPaused = false;
     if (_ref0)
         wasPaused = _ref0->GetHxAudio()->Paused();
     float savedVolume = TheSynth->GetMasterVolume();

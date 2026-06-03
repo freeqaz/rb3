@@ -175,8 +175,7 @@ void CacheMgrWii::PollSearch() {
         EndSearch(kCache_ErrorUnknown);
         return;
     }
-    auto _tmp0 = IsDone();
-    MILO_ASSERT(_tmp0, 0x13e);
+    MILO_ASSERT(IsDone(), 0x13e);
     String vfDir = String(kCacheMgrVFDir) + "/" + mVar1;
     char foundName[0x80];
     int searchResult = VFFileSearchFirst(foundName, _outline_c_str(&vfDir), 0x7f);
