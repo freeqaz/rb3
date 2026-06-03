@@ -27,8 +27,8 @@
 bool gSplashing = false;
 Splash *TheSplasher;
 
-const char *kSplashMovie = "splash.tmov";
-const char *kSplashCam = "splash.cam";
+static const char *kSplashMovie = "splash.tmov";
+static const char *kSplashCam = "splash.cam";
 
 int Splash::ThreadStart(void *spl) {
     ((Splash *)spl)->UpdateThread();

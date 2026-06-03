@@ -27,8 +27,8 @@
 #include "utl/Symbols4.h"
 
 INIT_REVS(CharClipSet)
-const char *kHighThresholdGroups[] = { "close" };
-const char *kLowThresholdGroups[] = { "fail", "revive", "ending", "lose", "win" };
+static const char *kHighThresholdGroups[] = { "close" };
+static const char *kLowThresholdGroups[] = { "fail", "revive", "ending", "lose", "win" };
 
 CharClipSet::CharClipSet()
     : mCharFilePath(), mPreviewChar(this), mPreviewClip(this), mStillClip(this) {

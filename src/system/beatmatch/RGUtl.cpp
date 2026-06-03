@@ -4,17 +4,17 @@
 #include <stdio.h>
 #include "decomp.h"
 
-const char *gNoteNames[] = { "C",  "C#", "D",  "D#", "E",  "F",
-                             "F#", "G",  "G#", "A",  "A#", "B" };
-const char *gNoteFlatNames[] = { "C",  "Db", "D",  "Eb", "E",  "F",
-                                 "Gb", "G",  "Ab", "A",  "Bb", "B" };
-unsigned char gStringNotes[6] = { 0x28, 0x2D, 0x32, 0x37, 0x3B, 0x40 };
-unsigned char gTunedNotes[6] = { 0x28, 0x2D, 0x32, 0x37, 0x3B, 0x40 };
-int gSlashNote = -1;
-int gSlashString = -1;
-int gSlashFret = -1;
-bool gSuperscriptStarted;
-const char **gCurrNoteNames;
+static const char *gNoteNames[] = { "C",  "C#", "D",  "D#", "E",  "F",
+                                    "F#", "G",  "G#", "A",  "A#", "B" };
+static const char *gNoteFlatNames[] = { "C",  "Db", "D",  "Eb", "E",  "F",
+                                        "Gb", "G",  "Ab", "A",  "Bb", "B" };
+static unsigned char gStringNotes[6] = { 0x28, 0x2D, 0x32, 0x37, 0x3B, 0x40 };
+static unsigned char gTunedNotes[6] = { 0x28, 0x2D, 0x32, 0x37, 0x3B, 0x40 };
+static int gSlashNote = -1;
+static int gSlashString = -1;
+static int gSlashFret = -1;
+static bool gSuperscriptStarted;
+static const char **gCurrNoteNames;
 
 void RGSetTuning(const std::vector<int> &vec) {
     unsigned char *stringPtr = gStringNotes;

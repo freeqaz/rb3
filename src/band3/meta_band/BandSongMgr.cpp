@@ -36,7 +36,7 @@ BandSongMgr &TheSongMgr = gSongMgr;
 
 bool BandSongMgr::sFakeSongsAllowed;
 
-const char *OLD_DLC_DIR = "songs/updates/";
+static const char *OLD_DLC_DIR = "songs/updates/";
 
 struct ExclusionEntry {
     const char *name;

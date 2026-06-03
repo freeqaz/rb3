@@ -43,7 +43,7 @@ namespace {
     const char *PACK_INCLUDES = "This pack includes";
 }
 
-const char *gGenreStrs[] = { "alternative", "blues",        "classicrock",
+static const char *gGenreStrs[] = { "alternative", "blues",        "classicrock",
                              "country",     "emo",          "fusion",
                              "glam",        "grunge",       "indierock",
                              "jazz",        "metal",        "new_wave",
@@ -54,7 +54,7 @@ const char *gGenreStrs[] = { "alternative", "blues",        "classicrock",
                              "jrock",       "latin",        "popdanceelectronic",
                              "rbsoulfunk",  "reggaeska",    "world" };
 
-const char *gSubGenreStrs[] = { "subgenre_acapella",
+static const char *gSubGenreStrs[] = { "subgenre_acapella",
                                 "subgenre_acidjazz",
                                 "subgenre_acoustic",
                                 "subgenre_alternative",

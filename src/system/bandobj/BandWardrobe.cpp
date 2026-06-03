@@ -67,7 +67,7 @@ loop_check:
     return str;
 }
 
-const char *gGenres[4] = { "rocker", "dramatic", "banger", "spazz" };
+static const char *gGenres[4] = { "rocker", "dramatic", "banger", "spazz" };
 
 int GetGenreGenderFlags(Symbol s1, Symbol s2) {
     int gv = 0;
@@ -396,7 +396,7 @@ void BandWardrobe::SendMessage(Symbol s1, Symbol s2, bool b) {
     }
 }
 
-const int gInstFocus[] = { 0x20000, 0x8000, 0x10000, 0x40000, 0x80000 };
+static const int gInstFocus[] = { 0x20000, 0x8000, 0x10000, 0x40000, 0x80000 };
 
 bool BandWardrobe::ValidGenreGender(CamShot *shot) {
     int flags = shot->Flags();

@@ -25,7 +25,7 @@ DataArray *BandDirector::sPropArr;
 BandDirector *TheBandDirector;
 bool gIsLoadingDlc;
 
-const char *gVenues[5] = { "arena", "big_club", "festival", "small_club", "video" };
+static const char *gVenues[5] = { "arena", "big_club", "festival", "small_club", "video" };
 
 BandDirector::VenueLoader::VenueLoader() : mDir(0), mLoader(0) {}
 
