@@ -477,7 +477,7 @@ DataNode Tour::OnMsg(const PrimaryProfileChangedMsg& msg) {
     int isPostScreen = 0;
     UIScreen *pScreen = TheUI.CurrentScreen();
     if (pScreen) {
-        isPostScreen = streq(pScreen->Name(), tour_customize_post_screen.Str());
+        isPostScreen = pScreen->Name() == tour_customize_post_screen;
     }
     bool shouldSignOut = false;
     if (isPostScreen) {
