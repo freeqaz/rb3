@@ -136,10 +136,12 @@ public:
             return nullptr;
         else {
             const std::vector<RangedData<T> > &vec = mRangeDataArray[dataIdx];
+            const RangedData<T> *beg = vec.data();
+            const RangedData<T> *end = vec.data() + vec.size();
             const RangedData<T> *data = std::upper_bound(
-                vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeStarts
+                beg, end, tick, RangedData<T>::CompareRangeStarts
             );
-            if (data == mRangeDataArray[dataIdx].begin())
+            if (data == beg)
                 return nullptr;
             else {
                 const RangedData<T> *before = &data[-1];
@@ -163,10 +165,12 @@ public:
             return nullptr;
         else {
             const std::vector<RangedData<T> > &vec = mRangeDataArray[dataIdx];
+            const RangedData<T> *beg = vec.data();
+            const RangedData<T> *end = vec.data() + vec.size();
             const RangedData<T> *data = std::upper_bound(
-                vec.begin(), vec.end(), tick, RangedData<T>::CompareRangeEnds
+                beg, end, tick, RangedData<T>::CompareRangeEnds
             );
-            if (data == mRangeDataArray[dataIdx].end())
+            if (data == end)
                 return nullptr;
             else
                 return data;
