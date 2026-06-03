@@ -27,8 +27,8 @@ public:
             if (mCur <= 999)
                 num = mCur;
             fvec.resize(num);
-            memcpy(fvec.begin(), mDeltas, num * sizeof(float));
-            std::sort(fvec.begin(), fvec.begin() + num);
+            memcpy(fvec.data(), mDeltas, num * sizeof(float));
+            std::sort(fvec.data(), fvec.data() + num);
             for (int i = 0; i < num; i++) {
                 MILO_LOG("%d %.3f\n", i, fvec[i]);
             }
