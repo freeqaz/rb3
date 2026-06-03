@@ -581,11 +581,11 @@ void App::Draw() {
 
 float gAvg;
 float gSyncAvg;
-float gTempThresh;
-float gSleepAmt;
-float gTempTimes[10240];
-int gTempTimesIdx;
-bool gPreventTriFrameSwitchage;
+static float gTempThresh;
+static float gSleepAmt;
+static float gTempTimes[10240];
+static int gTempTimesIdx;
+static bool gPreventTriFrameSwitchage;
 
 #pragma push
 #pragma pool_data off

@@ -6,8 +6,8 @@
 #include "os/UserMgr.h"
 #include <algorithm>
 
-float gDefaultHoldMs = -1.0f;
-float gDefaultRepeatMs = -1.0f;
+static float gDefaultHoldMs = -1.0f;
+static float gDefaultRepeatMs = -1.0f;
 
 namespace {
     bool gInited = false;

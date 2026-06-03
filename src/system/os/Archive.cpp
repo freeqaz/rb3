@@ -14,7 +14,7 @@
 #include <algorithm>
 
 Archive *TheArchive;
-bool gDebugArkOrder = false;
+static bool gDebugArkOrder = false;
 int kArkBlockSize = 0x10000;
 
 void ArchiveInit() {

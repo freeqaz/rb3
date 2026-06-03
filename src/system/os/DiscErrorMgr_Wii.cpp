@@ -8,7 +8,7 @@
 
 extern "C" BOOL DVDIsDiskIdentified();
 
-bool gInDiscError;
+static bool gInDiscError;
 
 void DiscErrorMgrWii::InitDiscError() {
     const char *lang = "eng";

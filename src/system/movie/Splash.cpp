@@ -24,7 +24,7 @@
 #include <revolution/VI.h> // Wii video interface; gated out on native (no VI)
 #endif
 
-bool gSplashing = false;
+static bool gSplashing = false;
 Splash *TheSplasher;
 
 static const char *kSplashMovie = "splash.tmov";

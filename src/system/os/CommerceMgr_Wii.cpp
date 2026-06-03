@@ -3,7 +3,7 @@
 #include "system/meta/StorePackedMetadata.h"
 #include "revolution/ec/ec.h"
 
-char gMakeTitleIdString[5];
+static char gMakeTitleIdString[5];
 
 const char *WiiCommerceMgr::mOpName[15] = {
     "connect", "list_title_contents", "list_content_sets_price", "download_contents",

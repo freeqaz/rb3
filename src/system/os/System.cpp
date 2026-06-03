@@ -198,7 +198,7 @@ bool PlatformLittleEndian(Platform p) {
 
 Platform ConsolePlatform() { return kPlatformWii; }
 
-bool gReadingSystemConfig;
+static bool gReadingSystemConfig;
 
 DataArray *ReadSystemConfig(const char *path) {
     gReadingSystemConfig = true;

@@ -81,7 +81,7 @@ namespace {
     void RockCentralTerminate() { TheRockCentral.Terminate(); }
 }
 
-char g_szMachineIdString[0x18];
+static char g_szMachineIdString[0x18];
 static TextFileStream *gDataPointLog;
 RockCentral TheRockCentral;
 String RockCentral::kServerVer = "3";

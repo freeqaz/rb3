@@ -11,15 +11,15 @@
 #define kNumBlockBuffers 4
 
 BlockMgr TheBlockMgr;
-int gLastBlockNum = -1;
-int gLastArkNum = -1;
+static int gLastBlockNum = -1;
+static int gLastArkNum = -1;
 static char *gBuffers;
-int gCurrBuffNum;
+static int gCurrBuffNum;
 int Block::sCurrTimestamp = 0;
-int gNumPolls;
+static int gNumPolls;
 Timer gReadTime;
-int gSeekCount;
-float gSeekTimeMs;
+static int gSeekCount;
+static float gSeekTimeMs;
 
 namespace {
     bool gReadHD = false;

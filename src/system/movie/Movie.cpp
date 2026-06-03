@@ -41,8 +41,8 @@ extern "C" {
 }
 
 extern int kNoHandle;
-int gBinkCore0 = -1;
-int gBinkCore1 = -1;
+static int gBinkCore0 = -1;
+static int gBinkCore1 = -1;
 
 static const unsigned int kNoThread = 0;
 
@@ -149,12 +149,12 @@ static DataNode OnMovieSetTrack(DataArray *arr) {
 
 std::list<Movie::Impl *> Movie::openMovieFiles;
 
-float gsw;
-float gsh;
-float gmw;
-float gmh;
-float gdw;
-float gdh;
+static float gsw;
+static float gsh;
+static float gmw;
+static float gmh;
+static float gdw;
+static float gdh;
 
 Movie::Movie() {
     mImpl = new Movie::Impl();

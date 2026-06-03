@@ -36,7 +36,7 @@ const char *Timer::sSlowFrameReason;
 
 bool AutoTimer::sCriticalFrame;
 bool AutoTimer::sCollectingStats;
-bool gGlitchCallback;
+static bool gGlitchCallback;
 
 static DataArray *tempArray = new DataArray(1);
 static std::list<Symbol> sConditionalTimersEnabled;
