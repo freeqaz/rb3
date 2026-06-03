@@ -92,8 +92,12 @@ These apply to every task spawned from this roadmap:
 > never re-composited (so `BLEND=0` is a true no-op). Verified: confined gem/now-bar glow, track
 > black-point preserved, clean HUD. (Methodology: the closing gate's quantitative visual 'wash' FAIL was
 > a camera/venue-desync false positive across misaligned cross-boot frames — refuted by frame-stat +
-> matched-frame adjudication; A/B on this venue REQUIRES matched frames.) **Still genuinely open:**
-> per-environ venue exposure tuning (some envs still read bright/flat — non-blocking polish).
+> matched-frame adjudication; A/B on this venue REQUIRES matched frames.)
+>
+> **DEPRIORITIZED (2026-06-03, user call):** per-environ venue **exposure tuning** (some envs read
+> bright/flatter than the moody ones — purely subjective polish, regression-risky, one-venue-verifiable
+> headlessly). NOT worth a cycle now — **parity BUGS are the priority** ("bigger fish to fry to get full
+> parity"). Revisit exposure tuning only after the parity-bug backlog is down.
 
 Empirically confirmed (2026-06-02) by comparing `gameplay-depth-capture.py` output
 against `images/retail-screenshots/yt_qRagnZCIMzk_gameplay_guitar.png`. Depth/
