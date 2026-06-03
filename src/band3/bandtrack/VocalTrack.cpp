@@ -723,14 +723,15 @@ void VocalTrack::RebuildHUD() {
             BuildPhrase(cur->unk0 + cur->unk4, next->unk0 + next->unk4);
         } else {
             std::vector<VocalPhrase> &phrases = notes->mPhrases;
-            if (cur != &*phrases.end()) {
-                const VocalPhrase *prev = &*phrases.begin();
-                while (prev != &*phrases.end()) {
+            const VocalPhrase *phrasesEnd = phrases.data() + phrases.size();
+            if (cur != phrasesEnd) {
+                const VocalPhrase *prev = phrases.data();
+                while (prev != phrasesEnd) {
                     if (mPlayer->GetNextPhraseMarker(prev) == cur)
                         break;
                     prev++;
                 }
-                if (prev != &*phrases.end()) {
+                if (prev != phrasesEnd) {
                     if (!IsScrolling()) {
                         mPhraseEndMs = prev->unk0;
                         BuildPhrase(
@@ -740,7 +741,7 @@ void VocalTrack::RebuildHUD() {
                     mPhraseEndMs = prev->unk0 + prev->unk4;
                     float curEnd = cur->unk0 + cur->unk4;
                     float endMs;
-                    if (next == &*phrases.end()) {
+                    if (next == phrasesEnd) {
                         endMs = TheSongDB->GetSongDurationMs();
                     } else {
                         endMs = next->unk0 + next->unk4;
