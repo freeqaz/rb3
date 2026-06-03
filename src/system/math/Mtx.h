@@ -288,7 +288,14 @@ public:
     Hmx::Quat &GetRot(Hmx::Quat &) const;
     void Reset();
     Transform &ToTransform(Transform &) const;
-    TransformNoScale &operator=(const TransformNoScale &t) { Set(t); }
+    TransformNoScale &operator=(const TransformNoScale &t) {
+        Set(t);
+#ifdef HX_NATIVE
+        // Matched src falls off the end of this non-void operator=; gated out
+        // for MWCC asm-match (HX_WII), returned for the native/clang port.
+        return *this;
+#endif
+    }
 
     ShortQuat q; // 0x0/2/4/6
     class Vector3 v; // 0x8
