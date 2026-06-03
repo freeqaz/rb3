@@ -22,13 +22,13 @@
 
 INIT_REVS(BandCharacter)
 
-ObjectDir *sBoneMergeDir;
-ObjectDir *sOutfitDir;
-ObjectDir *sResourceDir;
-ObjectDir *sCharSharedDir;
-ObjectDir *sInstrumentDir;
-ObjectDir *sInstResourceDir;
-ObjectDir *sToDir;
+static ObjectDir *sBoneMergeDir;
+static ObjectDir *sOutfitDir;
+static ObjectDir *sResourceDir;
+static ObjectDir *sCharSharedDir;
+static ObjectDir *sInstrumentDir;
+static ObjectDir *sInstResourceDir;
+static ObjectDir *sToDir;
 
 const char *BandIntensityString(int num) {
     if (num != 0) {

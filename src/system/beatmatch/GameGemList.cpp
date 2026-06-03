@@ -118,36 +118,41 @@ bool GameGemList::AddRGGem(const RGGemInfo &info) {
 }
 
 int GameGemList::ClosestMarkerIdx(float ms) const {
-    const GameGem *it = std::lower_bound(mGems.begin(), mGems.end(), ms, GameGemCmp);
-    if (it == mGems.begin())
+    const GameGem *beg = mGems.data();
+    const GameGem *end = mGems.data() + mGems.size();
+    const GameGem *it = std::lower_bound(beg, end, ms, GameGemCmp);
+    if (it == beg)
         return 0;
-    if (it == mGems.end())
+    if (it == end)
         return mGems.size() - 1;
     MILO_ASSERT(ms <= it->GetMs(), 0x83);
     const GameGem *prev_it = it - 1;
     MILO_ASSERT(ms >= prev_it->GetMs(), 0x84);
     if (fabsf(ms - prev_it->mMs) < fabsf(ms - it->mMs))
         it--;
-    return it - mGems.begin();
+    return it - beg;
 }
 
 int GameGemList::ClosestMarkerIdxAtOrAfter(float f) const {
-    const GameGem *theGem = std::lower_bound(mGems.begin(), mGems.end(), f, GameGemCmp);
-    if (theGem == mGems.begin())
+    const GameGem *beg = mGems.data();
+    const GameGem *end = mGems.data() + mGems.size();
+    const GameGem *theGem = std::lower_bound(beg, end, f, GameGemCmp);
+    if (theGem == beg)
         return 0;
-    if (theGem == mGems.end())
+    if (theGem == end)
         return -1;
-    return theGem - mGems.begin();
+    return theGem - beg;
 }
 
 int GameGemList::ClosestMarkerIdxAtOrAfterTick(int tick) const {
-    const GameGem *theGem =
-        std::lower_bound(mGems.begin(), mGems.end(), tick, GameGemTickCmp);
-    if (theGem == mGems.begin())
+    const GameGem *beg = mGems.data();
+    const GameGem *end = mGems.data() + mGems.size();
+    const GameGem *theGem = std::lower_bound(beg, end, tick, GameGemTickCmp);
+    if (theGem == beg)
         return 0;
-    if (theGem == mGems.end())
+    if (theGem == end)
         return -1;
-    return theGem - mGems.begin();
+    return theGem - beg;
 }
 
 bool GameGemCmp(const GameGem &gem, float ms) { return gem.mMs < ms; }

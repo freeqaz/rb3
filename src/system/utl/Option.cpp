@@ -37,12 +37,13 @@ void OptionInit() {
 }
 
 static char **FindOption(const char *option) {
-    std::vector<char *>::iterator it;
-    for (it = TheSystemArgs.begin(); it != TheSystemArgs.end(); it++) {
+    char **beg = TheSystemArgs.data();
+    char **end = beg + TheSystemArgs.size();
+    for (char **it = beg; it != end; it++) {
         if (**it == '-' && (strcmp(*it + 1, option) == 0))
-            break;
+            return it;
     }
-    return it;
+    return end;
 }
 
 #ifdef HX_NATIVE
@@ -56,7 +57,7 @@ static inline std::vector<char *>::iterator OptIter(char **p) {
 
 bool OptionBool(const char *option, bool def) {
     char **opt = FindOption(option);
-    if (opt == TheSystemArgs.end())
+    if (opt == TheSystemArgs.data() + TheSystemArgs.size())
         return def;
     else {
 #ifdef HX_NATIVE
@@ -70,17 +71,17 @@ bool OptionBool(const char *option, bool def) {
 
 const char *OptionStr(const char *option, const char *def) {
     char **i = FindOption(option);
-    if (i == TheSystemArgs.end())
+    if (i == TheSystemArgs.data() + TheSystemArgs.size())
         return def;
     else {
 #ifdef HX_NATIVE
         char **erased = &*TheSystemArgs.erase(OptIter(i));
-        MILO_ASSERT(i != TheSystemArgs.end(), 0x5C);
+        MILO_ASSERT(i != TheSystemArgs.data() + TheSystemArgs.size(), 0x5C);
         def = *i;
         TheSystemArgs.erase(OptIter(erased));
 #else
         char **erased = TheSystemArgs.erase(i);
-        MILO_ASSERT(i != TheSystemArgs.end(), 0x5C);
+        MILO_ASSERT(i != TheSystemArgs.data() + TheSystemArgs.size(), 0x5C);
         def = *i;
         TheSystemArgs.erase(erased);
 #endif

@@ -35,8 +35,8 @@ float BeatMap::Beat(int tick) const {
                 i2 = mInfos.size() - 2;
             else {
                 const BeatInfo *lowerInfo =
-                    std::lower_bound(mInfos.begin(), mInfos.end(), tick, BeatInfoCmp);
-                i2 = lowerInfo - &mInfos.front() - 1;
+                    std::lower_bound(mInfos.data(), mInfos.data() + mInfos.size(), tick, BeatInfoCmp);
+                i2 = lowerInfo - mInfos.data() - 1;
             }
         }
         return Interpolate(tick, i2);
@@ -57,8 +57,8 @@ float BeatMap::Beat(float tick) const {
     else {
         int sp08 = i2;
         const BeatInfo *lowerInfo =
-            std::lower_bound(mInfos.begin(), mInfos.end(), sp08, BeatInfoCmp);
-        i2 = lowerInfo - &mInfos.front() - 1;
+            std::lower_bound(mInfos.data(), mInfos.data() + mInfos.size(), sp08, BeatInfoCmp);
+        i2 = lowerInfo - mInfos.data() - 1;
     }
     return Interpolate(tick, i2);
 }

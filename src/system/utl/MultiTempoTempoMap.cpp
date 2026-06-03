@@ -11,7 +11,7 @@ MultiTempoTempoMap::~MultiTempoTempoMap() {}
 
 float MultiTempoTempoMap::GetTempo(int tick) const {
     const TempoInfoPoint *pt = PointForTick(tick);
-    if (pt != mTempoPoints.end())
+    if (pt != mTempoPoints.data() + mTempoPoints.size())
         return (float)pt->mTempo / 1000.0f;
     else
         return 800.0f;
@@ -19,7 +19,7 @@ float MultiTempoTempoMap::GetTempo(int tick) const {
 
 int MultiTempoTempoMap::GetTempoInMicroseconds(int tick) const {
     const TempoInfoPoint *pt = PointForTick(tick);
-    if (pt != mTempoPoints.end())
+    if (pt != mTempoPoints.data() + mTempoPoints.size())
         return pt->mTempo;
     else
         return 800000;
@@ -50,7 +50,7 @@ float MultiTempoTempoMap::TickToTime(float tick) const {
 
     if (startTick < 0.0f || tick <= mEndLoopTick) {
         const TempoInfoPoint *pt = PointForTick(tick);
-        if (pt == mTempoPoints.end())
+        if (pt == mTempoPoints.data() + mTempoPoints.size())
             return 0.0f;
         else
             return pt->mMs
@@ -189,14 +189,16 @@ const MultiTempoTempoMap::TempoInfoPoint *MultiTempoTempoMap::PointForTick(float
     TempoInfoPoint pt;
     pt.mMs = tick;
 
+    const TempoInfoPoint *beg = mTempoPoints.data();
+    const TempoInfoPoint *end = mTempoPoints.data() + mTempoPoints.size();
+
     if (mTempoPoints.empty()) {
         MILO_WARN("Tempo map is empty; at least one tempo map entry is required");
-        return mTempoPoints.end();
+        return end;
     }
 
-    const TempoInfoPoint *pt2 =
-        std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTick);
-    if (pt2 != mTempoPoints.begin()) {
+    const TempoInfoPoint *pt2 = std::upper_bound(beg, end, pt.mMs, CompareTick);
+    if (pt2 != beg) {
         pt2--;
     }
 
@@ -209,9 +211,10 @@ const MultiTempoTempoMap::TempoInfoPoint *MultiTempoTempoMap::PointForTime(float
     pt.mMs = time;
     MILO_ASSERT(mTempoPoints.size() >= 1, 0x121);
 
-    const TempoInfoPoint *pt2 =
-        std::upper_bound(mTempoPoints.begin(), mTempoPoints.end(), pt.mMs, CompareTime);
-    if (pt2 != mTempoPoints.begin()) {
+    const TempoInfoPoint *beg = mTempoPoints.data();
+    const TempoInfoPoint *end = mTempoPoints.data() + mTempoPoints.size();
+    const TempoInfoPoint *pt2 = std::upper_bound(beg, end, pt.mMs, CompareTime);
+    if (pt2 != beg) {
         pt2--;
     }
 

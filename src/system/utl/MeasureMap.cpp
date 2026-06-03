@@ -8,10 +8,11 @@ MeasureMap::MeasureMap() : mTimeSigChanges() {
 }
 
 int MeasureMap::MeasureBeatTickToTick(int measure, int beat, int tick) const {
+    const TimeSigChange *beg = mTimeSigChanges.data();
     const TimeSigChange *change = std::upper_bound(
-        mTimeSigChanges.begin(), mTimeSigChanges.end(), measure, CompareMeasure
+        beg, beg + mTimeSigChanges.size(), measure, CompareMeasure
     );
-    if (change != mTimeSigChanges.begin())
+    if (change != beg)
         change--;
     int meas_diff = measure - change->mMeasure;
     return (meas_diff * change->mNum * 1920) / change->mDenom + change->mTick + beat * 480 + tick;
@@ -26,10 +27,11 @@ void MeasureMap::TickToMeasureBeatTick(int tick, int &oMeasure, int &oBeat, int 
 void MeasureMap::TickToMeasureBeatTick(
     int tick, int &oMeasure, int &oBeat, int &oTick, int &oBeatsPerMeasure
 ) const {
+    const TimeSigChange *beg = mTimeSigChanges.data();
     const TimeSigChange *change = std::upper_bound(
-        mTimeSigChanges.begin(), mTimeSigChanges.end(), tick, CompareTick
+        beg, beg + mTimeSigChanges.size(), tick, CompareTick
     );
-    if (change != mTimeSigChanges.begin())
+    if (change != beg)
         change--;
     int div = (change->mNum * 1920) / change->mDenom;
     int tickOff = tick - change->mTick;
