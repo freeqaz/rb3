@@ -5,10 +5,10 @@
 #include "rndobj/Utl.h"
 #include <list>
 
-RndGraph *sOneFrame;
-std::list<RndGraph *> *sGraphs;
-std::list<FakeGraph> sFakes;
-ObjPtr<RndCam> sCam(nullptr);
+static RndGraph *sOneFrame;
+static std::list<RndGraph *> *sGraphs;
+static std::list<FakeGraph> sFakes;
+static ObjPtr<RndCam> sCam(nullptr);
 
 static DataNode OnGraphReset(DataArray *) {
     RndGraph::ResetAll();

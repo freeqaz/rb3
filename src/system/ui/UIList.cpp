@@ -24,7 +24,7 @@
 
 bool gGCNewLists = true;
 static bool gLoading = false;
-std::list<UIList *> sUIListSet;
+static std::list<UIList *> sUIListSet;
 
 INIT_REVS(UIList)
 

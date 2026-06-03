@@ -6,7 +6,7 @@
 #include "os/Debug.h"
 #include "synth/MicManagerInterface.h"
 
-MicClientID sNullMicClientID;
+static MicClientID sNullMicClientID;
 
 VocalOverlay::VocalOverlay() : unk20(0), unk24(0) {}
 

@@ -12,10 +12,10 @@
 #include "utl/Symbols.h"
 
 INIT_REVS(RndPropAnim)
-DataNode sKeyReplace;
-float sFrameReplace;
-bool sReplaceKey;
-bool sReplaceFrame;
+static DataNode sKeyReplace;
+static float sFrameReplace;
+static bool sReplaceKey;
+static bool sReplaceFrame;
 
 RndPropAnim::RndPropAnim() : mLastFrame(0.0f), mInSetFrame(0), mLoop(0) {}
 

@@ -2,7 +2,7 @@
 #include "os/Debug.h"
 #include "synth/Synth.h"
 
-MicClientID sNullMicClientID(-1, -1);
+static MicClientID sNullMicClientID(-1, -1);
 
 MicClientMapper::MicClientMapper() : mMicManager(0), mNumPlayers(2) {
     int &numPlayers = mNumPlayers;

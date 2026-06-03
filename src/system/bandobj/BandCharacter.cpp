@@ -713,7 +713,7 @@ void BandCharacter::SyncObjects() {
 }
 #pragma pop
 
-float sDrawOrder = -1.0f;
+static float sDrawOrder = -1.0f;
 
 void BandCharacter::SetClipTypes(Symbol s1, Symbol s2) {
     if (mDriver) {

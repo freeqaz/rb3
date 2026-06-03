@@ -5,7 +5,7 @@
 
 INIT_REVS(MicInputArrow);
 
-MicClientID sNullMicClientID(-1, -1);
+static MicClientID sNullMicClientID(-1, -1);
 
 void MicInputArrow::Init() {
     Register();
