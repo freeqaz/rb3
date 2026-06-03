@@ -195,15 +195,16 @@ DECOMP_FORCEACTIVE(
 
 void GemTrack::UpdateShiftsToTick(int tick) {
     UpdateShifts();
-    std::vector<RangeShift>::iterator it = mRangeShifts.begin();
+    RangeShift *it = mRangeShifts.data();
+    RangeShift *end = mRangeShifts.data() + mRangeShifts.size();
     mCurrentRangeShift = it;
-    for (; it != mRangeShifts.end(); ++it) {
+    for (; it != end; ++it) {
         if (it->unk0 <= tick) {
             mCurrentRangeShift = it;
         } else
             break;
     }
-    if (mCurrentRangeShift != mRangeShifts.end()) {
+    if (mCurrentRangeShift != end) {
         ApplyShiftImmediately(*mCurrentRangeShift);
         mCurrentRangeShift++;
     }
@@ -214,19 +215,20 @@ void GemTrack::CheckShifts(float ms, int topTick) {
     int tickOffset = 0;
     if (TheGame->InTrainer()) {
         nowTick = GetLoopTick(nowTick, tickOffset);
-        mCurrentRangeShift = mRangeShifts.begin();
+        mCurrentRangeShift = mRangeShifts.data();
     }
+    RangeShift *rangeShiftsEnd = mRangeShifts.data() + mRangeShifts.size();
     float newRange = -1.0f;
     float newOffset = -1.0f;
-    while (mCurrentRangeShift != mRangeShifts.end()
+    while (mCurrentRangeShift != rangeShiftsEnd
            && mCurrentRangeShift->unk4 < nowTick) {
         newRange = mCurrentRangeShift->unk14;
         newOffset = mCurrentRangeShift->unkc;
         mCurrentRangeShift++;
-        if (mCurrentRangeShift != mRangeShifts.end())
+        if (mCurrentRangeShift != rangeShiftsEnd)
             mCurrentRangeShift->unk18 = false;
     }
-    if (mCurrentRangeShift != mRangeShifts.end()) {
+    if (mCurrentRangeShift != rangeShiftsEnd) {
         RangeShift &shift = *mCurrentRangeShift;
         if (shift.unk0 + tickOffset < topTick && !shift.unk18) {
             shift.unk18 = true;
@@ -456,7 +458,7 @@ void GemTrack::UpdateShifts() {
     RangeShift * &_ref0 = mCurrentRangeShift;
     bool _cond = !mTrackConfig.IsKeyboardTrack();
     if (_cond) {
-        _ref0 = mRangeShifts.end();
+        _ref0 = mRangeShifts.data() + mRangeShifts.size();
     } else {
         mRangeShifts.clear();
         std::vector<RangeSection> &rangeSects = TheSongDB->GetData()->GetKeyRangeSections(
@@ -502,7 +504,7 @@ void GemTrack::UpdateShifts() {
             MinEq(i90, 16);
             mRangeShifts.push_back(RangeShift(0, 0, i8c, i90 - i8c));
         }
-        _ref0 = mRangeShifts.begin();
+        _ref0 = mRangeShifts.data();
     }
 }
 
@@ -778,7 +780,7 @@ void GemTrack::Jump(float f) {
             mTrackDir->ClearAllWidgets();
             mGemManager->SetGemsEnabled(0);
         }
-        mCurrentRangeShift = mRangeShifts.begin();
+        mCurrentRangeShift = mRangeShifts.data();
     }
 }
 

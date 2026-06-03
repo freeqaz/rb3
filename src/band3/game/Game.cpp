@@ -981,8 +981,8 @@ void Game::ResetVoiceChatState() {
     TheSynth->RequirePushToTalk(false, -1);
     std::vector<LocalBandUser *> users;
     TheBandUserMgr->GetLocalBandUsersInSession(users);
-    LocalBandUser **it = users.begin();
-    for (; it != users.end(); it++) {
+    LocalBandUser **it = users.data();
+    for (; it != users.data() + users.size(); it++) {
         LocalBandUser *user = *it;
         if (user->GetTrackType() == kTrackVocals) {
             TheSynth->RequirePushToTalk(true, user->GetPadNum());

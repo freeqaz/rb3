@@ -186,7 +186,7 @@ bool Track::PlayerDisabled() const {
 void Track::DTSPopup(bool show) const {
     if (TheGame) {
         std::vector<Player *> &players = TheGame->GetActivePlayers();
-        Player **it = players.begin();
+        Player **it = players.data();
         Player **end = it + players.size();
         for (; it != end; ++it) {
             Player *player = *it;

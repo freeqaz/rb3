@@ -118,8 +118,8 @@ void StoreOfferContentsProvider::BuildList(StoreOffer *offer, ListType type) {
 }
 
 void StoreOfferContentsProvider::ClearList() {
-    Element **start = mElements.begin();
-    Element **end = mElements.end();
+    Element **start = mElements.data();
+    Element **end = mElements.data() + mElements.size();
     while (start != end) {
         delete *start;
         ++start;

@@ -100,7 +100,7 @@ void RndGroup::RemoveObject(Hmx::Object *o) {
     if (mDrawOnly == o && !gInReplace) {
         mDrawOnly = nullptr;
     }
-    mDrawItr = mDraws.begin();
+    mDrawItr = mDraws.data();
 }
 
 void RndGroup::ClearObjects() {
@@ -121,7 +121,7 @@ void RndGroup::AddObjectAtFront(Hmx::Object *o) {
         RndDrawable *draw = dynamic_cast<RndDrawable *>(o);
         if (draw)
             mDraws.insert(mDraws.begin(), draw);
-        mDrawItr = mDraws.begin();
+        mDrawItr = mDraws.data();
     }
 }
 
@@ -148,7 +148,7 @@ void RndGroup::Update() {
         mDrawOnly = nullptr;
     }
     UpdateLODState();
-    mDrawItr = mDraws.begin();
+    mDrawItr = mDraws.data();
 }
 
 void RndGroup::UpdateLODState() {

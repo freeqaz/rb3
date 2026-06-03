@@ -773,7 +773,7 @@ void SaveLoadManager::SetState(State newState) {
     case 0xb: // kS_AutoloadStartLoad
     {
         mTimer.Restart();
-        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+        for (BandProfile **pp = mUploadProfiles.data(); pp != mUploadProfiles.data() + mUploadProfiles.size(); pp++) {
             (*pp)->PreLoad();
         }
         if (TheWiiProfileMgr.NeedsLoading()) TheWiiProfileMgr.PreLoad();
@@ -1174,7 +1174,7 @@ void SaveLoadManager::SetState(State newState) {
     {
         unk7c = 0;
         TheMemcardMgr.DisableWriting(true);
-        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+        for (BandProfile **pp = mUploadProfiles.data(); pp != mUploadProfiles.data() + mUploadProfiles.size(); pp++) {
             TheMemcardMgr.SaveLoadProfileComplete(*pp, 2);
         }
         TheProfileMgr.SetGlobalOptionsSaveState(kMetaProfileLoaded);
@@ -1189,7 +1189,7 @@ void SaveLoadManager::SetState(State newState) {
     {
         unk7c = 0;
         int saveResult = (newState == (State)0x43) ? 1 : -1;
-        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+        for (BandProfile **pp = mUploadProfiles.data(); pp != mUploadProfiles.data() + mUploadProfiles.size(); pp++) {
             TheMemcardMgr.SaveLoadProfileComplete(*pp, saveResult);
         }
         TheProfileMgr.SetGlobalOptionsSaveState((ProfileSaveState)saveResult);
@@ -1374,7 +1374,7 @@ void SaveLoadManager::SetState(State newState) {
     }
     case 0x64:
     {
-        for (BandProfile **pp = mUploadProfiles.begin(); pp != mUploadProfiles.end(); pp++) {
+        for (BandProfile **pp = mUploadProfiles.data(); pp != mUploadProfiles.data() + mUploadProfiles.size(); pp++) {
             (*pp)->PreLoad();
         }
         mWaiting = true;
