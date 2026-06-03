@@ -11,7 +11,7 @@ template <class T>
 class TickedInfo {
 public:
     TickedInfo(int i, T t) : mTick(i), mInfo(t) {}
-    TickedInfo<T> &operator=(const T &item) { mInfo = item; }
+    TickedInfo<T> &operator=(const T &item) { mInfo = item; return *this; }
     int mTick;
     T mInfo;
 };
@@ -43,9 +43,10 @@ public:
     static bool Cmp(int tick, const TickedInfo<T> &info) { return tick < info.mTick; }
     const TickedInfo<T> *IteratorAt(int tick, bool clamp) const {
         int clampedTick = clamp ? (tick & ~(tick >> 31)) : tick;
-        const TickedInfo<T> *it =
-            std::upper_bound(mInfos.begin(), mInfos.end(), clampedTick, Cmp);
-        if (it == mInfos.begin()) {
+        const TickedInfo<T> *beg = mInfos.data();
+        const TickedInfo<T> *end = mInfos.data() + mInfos.size();
+        const TickedInfo<T> *it = std::upper_bound(beg, end, clampedTick, Cmp);
+        if (it == beg) {
             MILO_FAIL("No information available at tick %d, fix MIDI file", clampedTick);
         } else {
             --it;

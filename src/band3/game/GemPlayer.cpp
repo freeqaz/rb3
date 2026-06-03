@@ -1993,13 +1993,12 @@ void GemPlayer::UpdateCrowdMeter(float noteScore, int gem_id) {
             const char *mappingStr = mDrumSlotWeightMapping.mStr;
             if (submixes.mInfos.size() != 0) {
                 int gemTick = gem.GetTick();
+                const TickedInfo<String> *beg = submixes.mInfos.data();
+                const TickedInfo<String> *end = submixes.mInfos.data() + submixes.mInfos.size();
                 const TickedInfo<String> *it = std::upper_bound(
-                    submixes.mInfos.begin(),
-                    submixes.mInfos.end(),
-                    gemTick,
-                    TickedInfoCollection<String>::Cmp
+                    beg, end, gemTick, TickedInfoCollection<String>::Cmp
                 );
-                if (it != submixes.mInfos.begin()) {
+                if (it != beg) {
                     --it;
                 }
                 mappingStr = it->mInfo.mStr;
