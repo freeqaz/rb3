@@ -73,13 +73,21 @@ These apply to every task spawned from this roadmap:
 > `SESSION_2026-06-02_track-A-polish.md`:** ✅ **lane blue-tint (P3)** + ✅ **SP blue track
 > overlay (P2)** shipped default-on (P2 was a capture artifact — the `peakstate_plane`
 > overlay only fades in at 4× streak; ×2.0 brighten makes it vivid). 🟡 **venue
-> point-lights (P4)** shipped opt-in `RB3_VENUE_LIGHT=1`, default-off (works — the
-> silhouette point lights ARE in `mLightsApprox` at gameplay — but reads washed/grey on
-> wall-dominated venues + dims band/crowd; needs colour/exposure tuning). ⛔ **gem
-> bloom-halo (P1) DEFERRED** — the separate-buffer over-composite washes the dark highway
-> (confirmed via `RB3_HIGHWAY_BLOOM_BLEND=0`); needs an additive-halo-only redesign (infra
-> on engine branch `trackA-bloom` `332dfba5`). **Still genuinely open:** highway-layer
-> gem bloom-halo (additive-only), P4 venue colour/exposure tuning.
+> point-lights (P4)** shipped opt-in `RB3_VENUE_LIGHT=1`, default-off.
+> **→ NOW DEFAULT-ON (2026-06-03, engine `8528923`) via per-environ lighting — see
+> `SESSION_2026-06-03_venue-perenv-lighting.md`.** The "wash" was NOT white lights: the
+> scene uniforms were only re-written on CAMERA change, so the whole venue used ONE
+> environ (the venue scopes ~20 RndEnvirons to mesh-groups/frame); fix = also re-write on
+> `RndEnviron::sCurrent` change under world.cam, + only add the grey fallback key when an
+> env has NO lights (`dl==0 && pl==0`). Result = dark moody coloured stage-lit venue
+> matching retail. Opt out `RB3_VENUE_LIGHT_OFF=1`. (Also: ring buffer 16KB→64KB — a code
+> reviewer caught + RB3_RING_PROBE measured a busy frame doing 24 scene writes > the 16KB
+> ring's ~21 slots → mid-frame clobber.) Verified: gameplay win, song-select unchanged,
+> menu moodier. ⛔ **gem bloom-halo (P1) DEFERRED** — the separate-buffer over-composite
+> washes the dark highway (confirmed via `RB3_HIGHWAY_BLOOM_BLEND=0`); needs an
+> additive-halo-only redesign (infra on engine branch `trackA-bloom` `332dfba5`). **Still
+> genuinely open:** highway-layer gem bloom-halo (additive-only); per-environ venue
+> exposure tuning (some envs still read bright/flat — non-blocking polish).
 
 Empirically confirmed (2026-06-02) by comparing `gameplay-depth-capture.py` output
 against `images/retail-screenshots/yt_qRagnZCIMzk_gameplay_guitar.png`. Depth/
