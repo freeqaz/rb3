@@ -483,6 +483,11 @@ add_executable(rb3-native
     # every frame. Lets a player play guitar/bass/keys with the keyboard, no plastic
     # instrument — feeds BOTH menu nav and the gameplay GuitarController.
     ${CMAKE_SOURCE_DIR}/src/rb3_joypad_native.cpp
+    # Fullscreen-cinematic backend (intro_movie_screen / win_credits). RB3's
+    # matched Movie::Impl is the Wii Bink decoder; under HX_NATIVE the public
+    # Movie lifecycle routes here. Web plays a <video> overlay; native desktop
+    # skips by default (RB3_INTRO_SECS virtual-plays for headless flow tests).
+    ${CMAKE_SOURCE_DIR}/src/rb3_movie_native.cpp
     # band3/bandobj/track/world milo object-class factory registration. Without
     # these, a multi-chunk milo containing a bandobj Dir subclass (e.g.
     # OverdriveMeterDir in tracksystem.milo_xbox) can't construct the class, the
@@ -627,6 +632,11 @@ set(RB3_WEB_NATIVE_GLUE
     # navigator.getGamepads()). Strong JoypadPoll etc. drive frets/strum through
     # the gameplay GuitarController, one path. See the TU header.
     ${CMAKE_SOURCE_DIR}/src/rb3_joypad_native.cpp
+    # Intro cinematic on web: drives a fullscreen <video> overlay (the .bik path
+    # is rewritten to the pre-transcoded .webm sidecar, streamed from
+    # /api/file/videos/...). Routed from the matched Movie under HX_NATIVE. Native
+    # desktop skips. See the TU header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_movie_native.cpp
     # W3a: web-only weak-null definitions for the pointer globals that the native
     # build gets from the x86 GAS .s link stubs (not assembled under emcc) — e.g.
     # TheTour / TheSessionMgr / TheSongDB. Without these they're undefined data

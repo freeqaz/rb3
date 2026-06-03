@@ -204,13 +204,10 @@ void MoviePanel::Draw() {
             mMovie.SetAspect(gTempBS);
         }
 #ifndef HX_WEB
-        // Web has no Bink decoder: Movie::Impl::Draw is an undefined import (the
-        // x86 GAS Bink stub isn't assembled under emcc) and mMovie was never
-        // Begin()'d (ChooseMovie bails on the empty web movie list). Calling it
-        // blits a never-opened movie through a stub → wasm trap. There is no
-        // frame to draw, so skip the movie blit on web; the UIPanel::Draw below
-        // still renders the screen's panels/labels, and Movie::Poll() (already
-        // HX_NATIVE/web-false) fires movie_done to advance past intro_movie.
+        // On web the intro plays through a browser <video> overlay (composited
+        // over the WebGPU canvas by rb3_movie_native.cpp), so there is no engine
+        // frame to blit here — Movie::Draw()/Movie::Impl::Draw is the Bink GX path
+        // and is skipped. UIPanel::Draw below still renders the screen's panels.
         mMovie.Draw();
 #endif
     }
@@ -219,12 +216,12 @@ void MoviePanel::Draw() {
 
 void MoviePanel::ChooseMovie() {
 #ifdef HX_WEB
-    // Web: the Bink video files (videos/*) aren't bundled and Movie/Bink is
-    // stubbed (W3a is movie-free). mMovies is therefore empty. On native the
-    // MILO_ASSERT below aborts; on web Debug::Fail is non-fatal and returns, so
-    // execution would fall into the do/while with an empty vector — RandomInt(0,0)
-    // + mMovies[0] is OOB and the `std::find` loop never terminates (the W3a
-    // intro_movie_screen second-frame hang). Bail safely: no movie to choose.
+    // The intro now plays via a <video> overlay (rb3_movie_native.cpp) when the
+    // videos config is present, so mMovies is normally populated here. Keep this
+    // as a safety guard: if the videos config failed to load, mMovies is empty
+    // and on web Debug::Fail is non-fatal, so the do/while below would index an
+    // empty vector — RandomInt(0,0) + mMovies[0] is OOB and the `std::find` loop
+    // never terminates (the original intro_movie_screen second-frame hang). Bail.
     if (mMovies.empty())
         return;
 #endif

@@ -44,6 +44,21 @@ extern int kNoHandle;
 int gBinkCore0 = -1;
 int gBinkCore1 = -1;
 
+#ifdef HX_NATIVE
+// Native/web fullscreen-cinematic backend (native/src/rb3_movie_native.cpp).
+// RB3 has no native Bink decoder; on HX_NATIVE the public Movie lifecycle routes
+// here instead. Web plays a <video> overlay; native desktop skips (or virtual-
+// plays under RB3_INTRO_SECS). See that TU's header for the full rationale.
+extern "C" {
+    int RB3MovieNativeBegin(const char *path, int loop, float volumeDb);
+    int RB3MovieNativeReady(void);
+    int RB3MovieNativePoll(void);
+    void RB3MovieNativeSetPaused(int paused);
+    void RB3MovieNativeEnd(void);
+    int RB3MovieNativeIsOpen(void);
+}
+#endif
+
 static const unsigned int kNoThread = 0;
 
 // MILO_ASSERT stringifies #cond verbatim. mThreadId is unsigned int but
@@ -206,12 +221,12 @@ void Movie::Terminate() {
 bool Movie::Poll() {
     START_AUTO_TIMER("movie");
 #ifdef HX_NATIVE
-    // No native Bink decoder (the intro_movie.milo asset is absent too). Treat any
-    // movie as instantly ended: Poll() returns false so MoviePanel::Poll fires
-    // movie_done_msg -> {ui goto_screen splash_screen}, advancing past the
-    // intro_movie_screen. Paired with Ready()->true below so the screen loads first.
-    // (DTA_MANAGER_STUBS.md §5.3.)
-    return false;
+    // Routed to the native/web cinematic backend. Web: true while the <video>
+    // overlay plays, false once it ends -> MoviePanel fires movie_done_msg ->
+    // {ui goto_screen splash_screen}. When no real movie is in flight (native
+    // skip, or a non-cinematic TexMovie), this returns false immediately, which
+    // is the prior instant-advance behaviour. (DTA_MANAGER_STUBS.md §5.3.)
+    return RB3MovieNativePoll() != 0;
 #endif
     return mImpl->Poll();
 }
@@ -221,8 +236,13 @@ void Movie::Draw() {
     mImpl->Draw();
 }
 
+#ifdef HX_NATIVE
+void Movie::End() { RB3MovieNativeEnd(); }
+bool Movie::IsOpen() const { return RB3MovieNativeIsOpen() != 0; }
+#else
 void Movie::End() { mImpl->End(); }
 bool Movie::IsOpen() const { return mImpl->IsOpen(); }
+#endif
 bool Movie::IsLoading() const { return mImpl->IsLoading(); }
 bool Movie::CheckOpen(bool b) { return mImpl->CheckOpen(b); }
 void Movie::LockThread() { mImpl->LockThread(); }
@@ -230,17 +250,29 @@ void Movie::UnlockThread() { mImpl->UnlockThread(); }
 int Movie::GetFrame() const { return mImpl->GetFrame(); }
 float Movie::MsPerFrame() const { return mImpl->MsPerFrame(); }
 int Movie::NumFrames() const { return mImpl->NumFrames(); }
+#ifdef HX_NATIVE
+void Movie::SetPaused(bool b) { RB3MovieNativeSetPaused(b ? 1 : 0); }
+#else
 void Movie::SetPaused(bool b) { mImpl->SetPaused(b); }
+#endif
 bool Movie::Paused() const { return mImpl->Paused(); }
 void Movie::Begin(const char *file, float aspect, bool b1, bool b2, bool b3, bool b4, int i, BinStream *bs) {
     MILO_ASSERT(gInitialized, 0x65A);
+#ifdef HX_NATIVE
+    // b2 is the loop flag (Impl::Begin's 4th param). Route to the native/web
+    // cinematic backend; the matched Bink Impl::Begin is a no-op on native
+    // (TheLoadMgr.mPlatform == 0) so nothing is lost.
+    RB3MovieNativeBegin(file, b2 ? 1 : 0, 0.0f);
+    return;
+#endif
     mImpl->Begin(file, aspect, b1, b2, b3, b4, i, bs);
 }
 #ifdef HX_NATIVE
-// No native Bink decoder — report Ready immediately so MoviePanel::IsLoaded()
-// (gated on mMovie.Ready()) returns true and intro_movie_screen finishes loading,
-// then Movie::Poll()->false fires movie_done and advances to splash_screen.
-bool Movie::Ready() const { return true; }
+// Routed to the native/web cinematic backend: web reports Ready once the <video>
+// metadata loads (so intro_movie_screen finishes loading), native reports Ready
+// immediately. When nothing is playing it returns true so the screen still
+// loads, then Poll()->false advances to splash_screen.
+bool Movie::Ready() const { return RB3MovieNativeReady() != 0; }
 #else
 bool Movie::Ready() const { return mImpl->Ready(); }
 #endif

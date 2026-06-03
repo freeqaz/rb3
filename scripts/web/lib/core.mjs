@@ -103,7 +103,7 @@ const CANVAS_ID = 'rb3-canvas';
  * @param {string} [o.query] extra URL query (e.g. 'milo=...') appended with `?`
  * @param {{width:number,height:number}} [o.viewport]
  */
-export async function launchBrowser(port, { query = '', viewport = { width: 1280, height: 720 } } = {}) {
+export async function launchBrowser(port, { query = '', viewport = { width: 1280, height: 720 }, noGoto = false } = {}) {
     const browser = await chromium.launch({
         headless: !process.env.DISPLAY,
         args: [
@@ -125,9 +125,13 @@ export async function launchBrowser(port, { query = '', viewport = { width: 1280
     const page = await context.newPage();
 
     const url = `http://127.0.0.1:${port}/${query ? `?${query}` : ''}`;
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // noGoto lets a caller install init scripts / start a CDP trace BEFORE the
+    // page navigates (so boot-time instrumentation captures the whole boot).
+    if (!noGoto) {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    }
 
-    return { browser, context, page };
+    return { browser, context, page, url };
 }
 
 // ---------------------------------------------------------------------------
