@@ -19,7 +19,7 @@
 
 INIT_REVS(TrackPanelDirBase);
 
-bool gShowHUD = true;
+static bool gShowHUD = true;
 
 DataNode ToggleHUD(DataArray *da) {
     gShowHUD = gShowHUD == 0;

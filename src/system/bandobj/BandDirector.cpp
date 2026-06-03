@@ -23,7 +23,7 @@ INIT_REVS(BandDirector)
 
 DataArray *BandDirector::sPropArr;
 BandDirector *TheBandDirector;
-bool gIsLoadingDlc;
+static bool gIsLoadingDlc;
 
 static const char *gVenues[5] = { "arena", "big_club", "festival", "small_club", "video" };
 

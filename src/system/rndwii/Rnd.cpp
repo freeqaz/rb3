@@ -29,43 +29,43 @@
 #include <cstdarg>
 #include <list>
 
-int gFrameCount;
-int gGPHangDetectDisabled;
+static int gFrameCount;
+static int gGPHangDetectDisabled;
 RndTex *WiiRnd::mSharedTexture[WiiRnd::kNumSharedTexTypes];
 WiiRnd TheWiiRnd;
 Rnd *TheRnd = &TheWiiRnd;
-std::list<void *> sDelayedFreeLists[4];
-int sDelayedFreeListIndex;
+static std::list<void *> sDelayedFreeLists[4];
+static int sDelayedFreeListIndex;
 
-NgStats gNgStats[3] __attribute__((aligned(8)));
+static NgStats gNgStats[3] __attribute__((aligned(8)));
 NgStats *TheNgStats = &gNgStats[0];
-OSThreadQueue sThreadQueue;
-OSThreadQueue netThreadQueue;
-OSThreadQueue drawDoneThreadQueue;
-int sDoneCount;
-bool gInBegin, gBeginIntState;
-void *sDispFB, *sCopyFB;
-Timer sFrameTimer;
-long long sFrameQueue[0xA0 / 8]; // 0xA0 bytes, alignment 8
-int sCurrentFrame;
-int sFreeFrame;
-int sRenderingFrame;
-void *sAlignedfifoBase;
-void *sAlignedfifoEnd;
-int gDumpThisFrameRightNow;
-int gLastQueueSize;
-int gMainThread;
-long long gActiveThreadNames[0x80 / 8] __attribute__((aligned(8))); // 0x80 bytes
-int gNumActiveThreads;
-long long onVIPreRetraceBuffer[0x100 / 8] __attribute__((aligned(8))); // 0x100 bytes
-int gCur;
-int gDebugPrio;
-long long gDeferredCalls[0x200 / 8] __attribute__((aligned(8))); // 0x200 bytes
-int gDeferredCallsCount;
-int gShouldDiagnose;
-int sOnGXBreakpointT;
-int sOnGXBreakpointT0;
-int sOnGXBreakpointT1;
+static OSThreadQueue sThreadQueue;
+static OSThreadQueue netThreadQueue;
+static OSThreadQueue drawDoneThreadQueue;
+static int sDoneCount;
+static bool gInBegin, gBeginIntState;
+static void *sDispFB, *sCopyFB;
+static Timer sFrameTimer;
+static long long sFrameQueue[0xA0 / 8]; // 0xA0 bytes, alignment 8
+static int sCurrentFrame;
+static int sFreeFrame;
+static int sRenderingFrame;
+static void *sAlignedfifoBase;
+static void *sAlignedfifoEnd;
+static int gDumpThisFrameRightNow;
+static int gLastQueueSize;
+static int gMainThread;
+static long long gActiveThreadNames[0x80 / 8] __attribute__((aligned(8))); // 0x80 bytes
+static int gNumActiveThreads;
+static long long onVIPreRetraceBuffer[0x100 / 8] __attribute__((aligned(8))); // 0x100 bytes
+static int gCur;
+static int gDebugPrio;
+static long long gDeferredCalls[0x200 / 8] __attribute__((aligned(8))); // 0x200 bytes
+static int gDeferredCallsCount;
+static int gShouldDiagnose;
+static int sOnGXBreakpointT;
+static int sOnGXBreakpointT0;
+static int sOnGXBreakpointT1;
 int gSuppressPointTest;
 Timer gTriFrameTimer;
 
