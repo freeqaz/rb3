@@ -95,7 +95,7 @@
 DECOMP_FORCEACTIVE(App, "_unresolved func.\n")
 #endif
 u64 sNullMicClientID;
-ModalCallbackFunc *gRealCallback;
+static ModalCallbackFunc *gRealCallback;
 
 #ifdef HX_NATIVE
 // Declared in rndwii/Rnd.h (Wii GX renderer), which is gated out on native.

@@ -51,7 +51,7 @@ void *cntsdCode;
 
 MEMAllocator gCNTAllocator;
 
-Timer gLastPlatformErrorTimer;
+static Timer gLastPlatformErrorTimer;
 
 struct CNTSDProgress {
     int unk0;

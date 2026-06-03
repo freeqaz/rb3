@@ -241,8 +241,8 @@ namespace {
     void FinishResponse() { gPendingResponse = Holmes::kInvalidOpcode; }
 }
 
-String gLastCachedResource;
-u32 gLastCacheResult;
+static String gLastCachedResource;
+static u32 gLastCacheResult;
 extern bool gHostConfig;
 extern bool gHostLogging;
 

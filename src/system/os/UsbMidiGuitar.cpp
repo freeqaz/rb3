@@ -4,7 +4,7 @@
 #include "os/Debug.h"
 #include "os/UsbMidiGuitarMsgs.h"
 
-CriticalSection gCritSection;
+static CriticalSection gCritSection;
 Queue gQueue(0x32);
 Timer UsbMidiGuitar::mTimer;
 UsbMidiGuitar *TheGuitar;

@@ -45,7 +45,7 @@ inline void Triangle::Set(const Vector3 &v0, const Vector3 &v1, const Vector3 &v
     );
 }
 
-PatchVerts gPatchVerts;
+static PatchVerts gPatchVerts;
 int MESH_REV_SEP_COLOR = 0x25;
 
 #ifdef HX_NATIVE

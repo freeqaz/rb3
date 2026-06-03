@@ -26,8 +26,8 @@ void *MemHeapStartAddr(int heap);
 #define kDefaultRSOBufferSize 0x89460
 #define kPostProcBufferSize 0x10EC00
 
-RsoInitFunc gRsoIniters[MAX_RSO_INITERS];
-RsoDeinitFunc gRsoDeiniters[MAX_RSO_INITERS];
+static RsoInitFunc gRsoIniters[MAX_RSO_INITERS];
+static RsoDeinitFunc gRsoDeiniters[MAX_RSO_INITERS];
 static int gRsoIniterCount;
 static void *staticRso;
 static void *g_jumpCodeBuffer;

@@ -7,7 +7,7 @@
 #include "os/File.h"
 #include "utl/FileStream.h"
 
-HiResScreen gHiResScreen;
+static HiResScreen gHiResScreen;
 HiResScreen &TheHiResScreen = gHiResScreen;
 
 HiResScreen::BmpCache::BmpCache(unsigned int ui1, unsigned int ui2) {

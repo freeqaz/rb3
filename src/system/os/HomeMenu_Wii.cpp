@@ -16,7 +16,7 @@ struct HomeMenuInfo {
     int unk1C;
     char pad20[0x20];
 };
-HomeMenuInfo gHomeMenuInfo;
+static HomeMenuInfo gHomeMenuInfo;
 
 struct RSOObjectHeader;
 
