@@ -22,8 +22,11 @@ the data says to optimize (and what it says NOT to bother with).
   appctor_start, appctor_done). The profiler prints the per-phase deltas.
 - **URL-param knobs** — `?loaderYieldMs=`, `?loaderBudgetMs=`, `?frameInstrument=1`
   (`main_web.cpp` `ApplyUrlLoaderEnv` → setenv before the first Poll).
+- **`scripts/web/gpu-boot-probe.mjs`** — reports the actual WebGPU adapter (real
+  GPU vs SwiftShader) + App-ctor time per backend (`--backend bundled|real|swift`).
+  Used to prove the App ctor is GPU-independent. Needs Bash `dangerouslyDisableSandbox`.
 
-## The numbers (headless, localhost, cold cache)
+## The numbers (localhost, cold cache, real GPU)
 
 Boot to first screen ≈ **13–20 s**. The phase timeline splits it cleanly:
 
@@ -61,15 +64,28 @@ buffer ctors (~0.7 s), `BinStream::Read` + `DataArray::FindArray` +
 
 ## What the data points AT (ranked)
 
-1. **App-ctor async wait (~7 s, the biggest single chunk).** `new App()` runs the
-   boot spine + `PollUntilEmpty` boot loads synchronously, and ~7 s of it is the
-   wasm suspended (idle in the CPU profile), independent of yield tuning. Leading
-   suspects, in order: **(a) WebGPU pipeline/shader compilation** for the boot
-   UI/font/track milos — under headless this is **SwiftShader software compile**,
-   which is slow and almost certainly inflated vs a real GPU; **(b)** genuinely
-   async boot-character loads (`FileMerger`). Next step: instrument the App-ctor
-   sub-phases (shader-compile count/time vs file-load time) to split (a) from (b).
-   **Caveat: re-measure on a real GPU before optimizing — much of (a) may vanish.**
+1. **App-ctor async I/O / JSPI overhead (~7 s, the biggest single chunk).**
+   `new App()` runs the boot spine + `PollUntilEmpty` boot loads synchronously, and
+   ~7 s of it is the wasm **suspended** (idle in the CPU profile) — independent of
+   yield tuning AND **independent of the GPU**. This is the key validated result
+   (`scripts/web/gpu-boot-probe.mjs`, run with the Bash sandbox disabled):
+
+   | WebGPU adapter | App-ctor time |
+   |---|---|
+   | **real GPU** — `vendor=nvidia arch=ampere` (RTX 3090), `isFallback=false` | **12.26–12.30 s** |
+   | **SwiftShader** — `vendor=google arch=swiftshader` (software) | **12.29–12.30 s** |
+
+   **Identical.** The App ctor is *not* GPU-bound — not shader compile, not pipeline
+   creation. (The earlier "headless SwiftShader inflates it" hypothesis was wrong:
+   the bundled-chromium web scripts already get the real GPU with no DISPLAY, via
+   Vulkan + the `/dev/dri` render node.) The ~7 s is the **web async-file-I/O / JSPI
+   model**: the boot loads issue async reads (`ReadAsync`/`ReadDone`) and the loader
+   `emscripten_sleep(0)`s (JSPI suspends the wasm stack) waiting for each to land —
+   thousands of event-loop round-trips. Native does the same reads as a synchronous
+   memcpy from disk, with no suspension (see cross-check below). **The fix is to
+   make boot reads synchronous when the bytes are already in MEMFS** (bundle / IDB
+   cache), avoiding the async round-trip; next step is to confirm the boot files are
+   actually in the eager bundle and trace the `ReadAsync` path in `native_file.cpp`.
 2. **wasm cold-compile latency (bimodal pre-fetch, ~7.5 s when cold).** The
    28 MB **-O0 -g2 dev build** is the cost. `native/web/rb3_pre.js` was switched to
    **`WebAssembly.instantiateStreaming`** (compile-while-download; server already
@@ -81,27 +97,35 @@ buffer ctors (~0.7 s), `BinStream::Read` + `DataArray::FindArray` +
    smaller download. Worth a dedicated pass; the dev build keeps -g2 for debugging.
 3. **App-ctor CPU work (~5 s).** DTA lexing + DXT decompress + buffer ctors. DXT
    decompress on the CPU is a candidate to move to the GPU (sample compressed
-   textures directly) — a real-GPU win independent of headless.
+   textures directly). This is the *floor* once the async-I/O wait (#1) is removed.
 
-## Native cross-check (real GPU)
+## Native cross-check (both on the real GPU)
 
-`rb3-native` shares the exact same App ctor but runs on the **real RTX 3090** with
-**synchronous** file I/O. It boots to the first screen in **~5.2 s** total
-(process start + GPU init + full App ctor) — vs the web App ctor *alone* at
-~12.5 s. So the web App-ctor overhead is real and large, but it conflates two
-causes that native avoids together: **(1) SwiftShader software shader compile**
-(headless web) and **(2) async-I/O / JSPI yield model** (web reads suspend the
-stack; native reads are a synchronous memcpy). Web-on-a-real-GPU would land
-somewhere between native's 5 s and headless web's 13 s. To split (1) from (2),
-instrument the App-ctor sub-phases (time in `createRenderPipeline`/shader compile
-vs time in file-load Poll) — that's the next measurement, before optimizing.
+`rb3-native` shares the exact same App ctor but runs with **synchronous** file
+I/O. It boots to the first screen in **~5.2 s** total (process start + GPU init +
+full App ctor) — vs the web App ctor *alone* at ~12.3 s. Since web and native both
+use the **same real RTX 3090** (validated above), and web's App ctor is
+GPU-independent, the entire native↔web gap is the **synchronous-vs-async I/O
+model**: native reads are a memcpy with no suspension; web reads suspend the wasm
+stack (JSPI) per async read. That ~7 s is the addressable prize.
+
+## Running the GPU probe
+
+```bash
+python3 native/web/server.py --port 8421 &
+# Bash tool: dangerouslyDisableSandbox (Chromium needs the /dev/dri GPU device)
+node scripts/web/gpu-boot-probe.mjs --backend bundled  # real GPU, the default config
+node scripts/web/gpu-boot-probe.mjs --backend swift     # forced software, for contrast
+```
+No `DISPLAY` / xvfb needed — bundled chromium + `--use-angle=vulkan
+--enable-features=Vulkan` reaches the NVIDIA GPU through the render node headless.
 
 ## Caveats
 
-- All numbers are **headless SwiftShader** (software Vulkan via ANGLE). Real users
-  on real GPUs will see a much faster App ctor if (1a) dominates. **Re-measure on
-  hardware** (display + `--use-angle` default, or a non-headless run) before
-  investing in shader-compile reduction.
+- **Real GPU is already in use** for all numbers here (validated: `nvidia`/`ampere`,
+  `isFallback=false`). Real users on real GPUs will *not* boot faster than this —
+  the App ctor is not GPU-bound. (A weaker GPU won't help; a faster CPU + sync I/O
+  will.)
 - Ephemeral browser context per run ⇒ **cold IDB cache** (worst case). Warm-cache
   boots (returning users) skip the sync XHRs entirely.
 - The intro cinematic now holds `intro_movie_screen` for 68 s, so the passive

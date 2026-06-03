@@ -335,8 +335,9 @@ void LoadMgr::Poll() {
             // a full event-loop turn (~4-16ms). NOTE: measurement (see
             // docs/native/web-loadperf-findings-2026-06-03.md) showed this is
             // NEUTRAL for total boot time — the boot bottleneck is the App ctor's
-            // ~7s async wait (GPU shader compile under headless SwiftShader +
-            // async boot loads), not loader-yield overhead. Kept as a clarity +
+            // ~7s async wait, which is GPU-INDEPENDENT (validated: real RTX 3090 ==
+            // SwiftShader == 12.3s App ctor) and is the web async-file-I/O / JSPI
+            // suspend-per-read model, not loader-yield overhead. Kept as a clarity +
             // spin-overhead refactor + the RB3_LOADER_YIELD_MS tunable.
             sYieldMs = 16.0f;
             if (const char *e = ::getenv("RB3_LOADER_YIELD_MS")) {
