@@ -492,34 +492,23 @@ bool VocalNoteCmp(float ms, const VocalNote &note) { return ms < note.GetMs(); }
 VocalNote *VocalNoteList::NextNote(float ms) const {
     if (0 == mNotes.size())
         return NULL;
-    std::vector<VocalNote>::const_iterator it =
-        std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
-#ifdef HX_NATIVE
-    // libstdc++'s const_iterator is a wrapper class around the raw pointer, so
-    // C-style cast to T* is rejected. Recover the underlying pointer through
-    // &*it (and const_cast to match the original mutable return contract).
-    if (it == mNotes.begin())
-        return const_cast<VocalNote *>(&*it);
+    const VocalNote *beg = mNotes.data();
+    const VocalNote *end = mNotes.data() + mNotes.size();
+    const VocalNote *it = std::upper_bound(beg, end, ms, VocalNoteCmp);
+    if (it == beg)
+        return const_cast<VocalNote *>(it);
     if (ms <= it[-1].GetDurationMs() + it[-1].GetMs())
-        return const_cast<VocalNote *>(&*(it - 1));
-    if (it == mNotes.end())
+        return const_cast<VocalNote *>(it - 1);
+    if (it == end)
         return NULL;
-    return const_cast<VocalNote *>(&*it);
-#else
-    if (it == mNotes.begin())
-        return (VocalNote *)it;
-    if (ms <= it[-1].GetDurationMs() + it[-1].GetMs())
-        return (VocalNote *)(it - 1);
-    if (it == mNotes.end())
-        return NULL;
-    return (VocalNote *)it;
-#endif
+    return const_cast<VocalNote *>(it);
 }
 
 const VocalNote *VocalNoteList::NoteAt(float ms) const {
-    const VocalNote *it =
-        std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
-    if (it == mNotes.begin())
+    const VocalNote *beg = mNotes.data();
+    const VocalNote *end = mNotes.data() + mNotes.size();
+    const VocalNote *it = std::upper_bound(beg, end, ms, VocalNoteCmp);
+    if (it == beg)
         return NULL;
     --it;
     MILO_ASSERT((*it).GetMs() <= ms, 0x22f);
@@ -529,9 +518,10 @@ const VocalNote *VocalNoteList::NoteAt(float ms) const {
 }
 
 float VocalNoteList::PitchAt(float ms) const {
-    const VocalNote *it =
-        std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
-    if (it == mNotes.begin())
+    const VocalNote *beg = mNotes.data();
+    const VocalNote *end = mNotes.data() + mNotes.size();
+    const VocalNote *it = std::upper_bound(beg, end, ms, VocalNoteCmp);
+    if (it == beg)
         return 0.0;
     --it;
     MILO_ASSERT(it->GetMs() <= ms, 0x1ff);
@@ -587,9 +577,10 @@ int VocalNoteList::GetNumPracticePhrases(const std::vector<VocalPhrase> &phrases
 }
 
 void VocalNoteList::AddLyricShift(float ms) {
-    std::vector<VocalNote>::iterator it =
-        std::upper_bound(mNotes.begin(), mNotes.end(), ms, VocalNoteCmp);
-    if (it == mNotes.begin()) {
+    VocalNote *beg = mNotes.data();
+    VocalNote *end = mNotes.data() + mNotes.size();
+    VocalNote *it = std::upper_bound(beg, end, ms, VocalNoteCmp);
+    if (it == beg) {
         MILO_WARN(
             "%s: Added lyric shift before lyrics at time %f",
             mSongData->SongFullPath(),
