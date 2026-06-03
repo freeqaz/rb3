@@ -68,17 +68,17 @@ extern bool (*ParseStack)(const char *, unsigned int *, int, char *);
 
 const char *gNullStr = "";
 
-Symbol gSystemLanguage;
-DataArray *gSystemConfig;
-DataArray *gSystemTitles;
+static Symbol gSystemLanguage;
+static DataArray *gSystemConfig;
+static DataArray *gSystemTitles;
 
-int gUsingCD;
-GfxMode gGfxMode;
+static int gUsingCD;
+static GfxMode gGfxMode;
 
-int gSystemMs;
-float gSystemFrac;
-Timer gSystemTimer;
-bool gNetUseTimedSleep;
+static int gSystemMs;
+static float gSystemFrac;
+static Timer gSystemTimer;
+static bool gNetUseTimedSleep;
 
 std::vector<char *> TheSystemArgs;
 const char *gHostFile;

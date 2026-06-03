@@ -35,7 +35,7 @@ namespace {
 }
 
 ObjectDir *ObjectDir::sMainDir;
-ObjectDir *gDir;
+static ObjectDir *gDir;
 
 INIT_REVS(ObjectDir);
 

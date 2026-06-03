@@ -11,7 +11,7 @@ extern "C" const StorePackedRBNOffer *RbnOffer__9StorePageCFi(
     const StorePage *page, int idx
 );
 
-DataArray *gStoreOfferDescriptionArray;
+static DataArray *gStoreOfferDescriptionArray;
 
 void StorePurchaseable::GetContentIndexes(std::vector<unsigned short> &vec, bool b) const {
     vec.clear();

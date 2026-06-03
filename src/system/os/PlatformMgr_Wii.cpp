@@ -26,20 +26,20 @@ extern "C" int SOGetLastError();
 #include "utl/UTF8.h"
 #include "utl/Symbols.h"
 
-bool gDNSRunning;
-char gReadBuf[256];
-int gSeekSpot;
+static bool gDNSRunning;
+static char gReadBuf[256];
+static int gSeekSpot;
 namespace PlatformMgrWii {
     CriticalSection gCrit;
 }
-CriticalSection gCrit2;
-const char *gDNSRequest;
-int gDNSError;
-int gPowerCallback;
-void *gSOHeapMem;
-MEMiHeapHead *gSOHeapHandle;
-int gSOTotalAlloc;
-int gSOMaxTotalAlloc;
+static CriticalSection gCrit2;
+static const char *gDNSRequest;
+static int gDNSError;
+static int gPowerCallback;
+static void *gSOHeapMem;
+static MEMiHeapHead *gSOHeapHandle;
+static int gSOTotalAlloc;
+static int gSOMaxTotalAlloc;
 
 int gSOHeapSize = 0x20000;
 

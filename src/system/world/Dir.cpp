@@ -28,9 +28,9 @@
 INIT_REVS(WorldDir)
 
 WorldDir *TheWorld;
-WorldDir *gLastWorld;
-std::vector<FilePath> gOldChars;
-ObjectDir *gOldTexDir;
+static WorldDir *gLastWorld;
+static std::vector<FilePath> gOldChars;
+static ObjectDir *gOldTexDir;
 
 WorldDir::WorldDir()
     : mPresetOverrides(this), mBitmapOverrides(this), mMatOverrides(this),
