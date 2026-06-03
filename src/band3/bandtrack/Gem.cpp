@@ -52,7 +52,7 @@ Gem &Gem::operator=(const Gem &g) {
     mIsRepeatChord = g.mIsRepeatChord;
     mInArpeggio = g.mInArpeggio;
     mKeyFingerNumber = g.mKeyFingerNumber;
-    return (Gem &)g;
+    return *this;
 }
 
 bool Gem::OnScreen(float ms) {
