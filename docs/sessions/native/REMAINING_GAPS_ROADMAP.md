@@ -83,11 +83,17 @@ These apply to every task spawned from this roadmap:
 > matching retail. Opt out `RB3_VENUE_LIGHT_OFF=1`. (Also: ring buffer 16KB→64KB — a code
 > reviewer caught + RB3_RING_PROBE measured a busy frame doing 24 scene writes > the 16KB
 > ring's ~21 slots → mid-frame clobber.) Verified: gameplay win, song-select unchanged,
-> menu moodier. ⛔ **gem bloom-halo (P1) DEFERRED** — the separate-buffer over-composite
-> washes the dark highway (confirmed via `RB3_HIGHWAY_BLOOM_BLEND=0`); needs an
-> additive-halo-only redesign (infra on engine branch `trackA-bloom` `332dfba5`). **Still
-> genuinely open:** highway-layer gem bloom-halo (additive-only); per-environ venue
-> exposure tuning (some envs still read bright/flat — non-blocking polish).
+> menu moodier. ✅ **gem bloom-halo (P1) LANDED (2026-06-03, engine `59b7307`, default-on,
+> opt-out `RB3_HIGHWAY_BLOOM_OFF`) — see `SESSION_2026-06-03_p1-gem-bloom.md`.** Additive-halo-ONLY
+> redesign (Design B capture-and-replay): DrawMesh captures per-draw GPU state incl. the live
+> pose-baked scene bind-group HANDLE for emissive gem/now-bar meshes (IsHaloSourceMat excludes the
+> full-quad surface.mat + HUD meter-glass — that over-selection was the wash), EndFrame replays them
+> into a transparent buffer → 2nd BloomPass → ADDITIVE-blit ONLY the halo onto mFrameView. Base track
+> never re-composited (so `BLEND=0` is a true no-op). Verified: confined gem/now-bar glow, track
+> black-point preserved, clean HUD. (Methodology: the closing gate's quantitative visual 'wash' FAIL was
+> a camera/venue-desync false positive across misaligned cross-boot frames — refuted by frame-stat +
+> matched-frame adjudication; A/B on this venue REQUIRES matched frames.) **Still genuinely open:**
+> per-environ venue exposure tuning (some envs still read bright/flat — non-blocking polish).
 
 Empirically confirmed (2026-06-02) by comparing `gameplay-depth-capture.py` output
 against `images/retail-screenshots/yt_qRagnZCIMzk_gameplay_guitar.png`. Depth/
