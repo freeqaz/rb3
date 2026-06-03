@@ -185,12 +185,15 @@ continuously yet produce no flames → the FX are absent, not merely unphotograp
 
 Native is well ahead of *verified* web.
 
-- [ ] **B1 — In-browser audibility proof (web-audio Phase 1).** "Song plays on web"
-      has never been confirmed audible in a real tab — only that the decode/mix loop
-      runs headless. Add a capture-WAV assert using the existing
-      `rb3CaptureAudio()`/`rb3DownloadAudio()` hooks (no source change). Refs:
-      `roadmap-2026-06-02/web-audio.md` (Phase 1). **[Sonnet]** (test only; Opus
-      reviews any waveform/spectrogram image).
+- [~] **B1 — Song audio.** ROOT BUG FIXED 2026-06-03 (rb3 `10af87ab`): song audio
+      was SILENT (not "unproven") — a producer/consumer **deadlock** + slip-gate in
+      `native/src/rb3_stream_receiver_native.cpp` (shared native+web). Fix =
+      continuous-play ring consumer + `mSlipEnabled=false`; verified song RMS
+      0→~8000 sustained on the native null backend (main-loop + independent capture).
+      The prior "B1 audibility PROVEN" was a `sMixBuffer`-hook artifact, NOT real
+      output. See `SESSION_2026-06-03_song-audio-silence-fix.md`. **REMAINING: confirm
+      once in a real browser tab** (web PumpAudio path argued correct by construction,
+      not run live this session) — the original B1 "audible in a real tab" check.
 - [ ] **B2 — C10 web-parity sweep.** Confirm each native fix renders on web —
       **including the depth/grade fix and the gameplay-FX work from track A.**
       Capture web screenshots; **Opus reviews** the visual parity. Refs:
