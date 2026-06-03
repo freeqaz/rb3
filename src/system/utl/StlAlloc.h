@@ -53,7 +53,7 @@ namespace STLPORT {
 #endif
 
         template <class T2>
-        StlNodeAlloc<T> &operator=(const StlNodeAlloc<T2> &right) {}
+        StlNodeAlloc<T> &operator=(const StlNodeAlloc<T2> &right) { return *this; }
 
         template <class T2>
         bool operator==(const StlNodeAlloc<T2> &) const {

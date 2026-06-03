@@ -45,7 +45,7 @@ namespace Quazal {
 #endif
 
         template <class T2>
-        MemAllocator<T> &operator=(const MemAllocator<T2> &right) {}
+        MemAllocator<T> &operator=(const MemAllocator<T2> &right) { return *this; }
 
         template <class T2>
         bool operator==(const MemAllocator<T2> &) const {
