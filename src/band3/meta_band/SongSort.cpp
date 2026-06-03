@@ -271,8 +271,10 @@ void SetlistSort::BuildSetlistTree(std::map<Symbol, SetlistRecord> &records) {
         fsn = NewFunctionNode(net_setlists_getting);
 
     if (fsn) {
-        std::pair<ShortcutNode **, ShortcutNode **> found;
-        found = std::equal_range(mTree.begin(), mTree.end(), fsn, CompareShortcuts());
+        ShortcutNode **treeBegin = mTree.data();
+        ShortcutNode **treeEnd = mTree.data() + mTree.size();
+        std::pair<ShortcutNode **, ShortcutNode **> found =
+            std::equal_range(treeBegin, treeEnd, fsn, CompareShortcuts());
         ShortcutNode *shortcut;
         if (found.first != found.second) {
             shortcut = *found.first;
