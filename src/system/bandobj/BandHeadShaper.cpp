@@ -10,10 +10,10 @@ int BandHeadShaper::sEyeNum;
 int BandHeadShaper::sMouthNum;
 int BandHeadShaper::sNoseNum;
 int BandHeadShaper::sShapeNum;
-ObjectDir *gHeadMale;
-std::vector<int> gHeadMaleMapping;
-ObjectDir *gHeadFemale;
-std::vector<int> gHeadFemaleMapping;
+static ObjectDir *gHeadMale;
+static std::vector<int> gHeadMaleMapping;
+static ObjectDir *gHeadFemale;
+static std::vector<int> gHeadFemaleMapping;
 ObjDirPtr<ObjectDir> gVisemes[4] = { ObjDirPtr<ObjectDir>(0),
                                      ObjDirPtr<ObjectDir>(0),
                                      ObjDirPtr<ObjectDir>(0),

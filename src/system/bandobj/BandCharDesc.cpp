@@ -7,10 +7,10 @@
 #include "utl/Symbols.h"
 
 INIT_REVS(BandCharDesc)
-ObjectDir *gPrefabs;
-ObjectDir *gDeforms;
-Symbol gInstNames[6] = { Symbol(), Symbol(), Symbol(), Symbol(), Symbol(), Symbol() };
-BandCharDesc *gBandCharDescMe;
+static ObjectDir *gPrefabs;
+static ObjectDir *gDeforms;
+static Symbol gInstNames[6] = { Symbol(), Symbol(), Symbol(), Symbol(), Symbol(), Symbol() };
+static BandCharDesc *gBandCharDescMe;
 
 const char *BandCharDesc::sDrumVenueMappings[] = { "small_club", "small_club", "arena",
                                                    "big_club",   "big_club",   "big_club",

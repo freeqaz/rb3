@@ -2,7 +2,7 @@
 #include "decomp.h"
 #include "utl/Symbols.h"
 
-EventAnim *gEventAnimOwner;
+static EventAnim *gEventAnimOwner;
 
 INIT_REVS(EventAnim)
 

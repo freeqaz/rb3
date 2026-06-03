@@ -82,7 +82,7 @@ namespace {
 }
 
 char g_szMachineIdString[0x18];
-TextFileStream *gDataPointLog;
+static TextFileStream *gDataPointLog;
 RockCentral TheRockCentral;
 String RockCentral::kServerVer = "3";
 ContextWrapperPool *RockCentral::mContextWrapperPool;

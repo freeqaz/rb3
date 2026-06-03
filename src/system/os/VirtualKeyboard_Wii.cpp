@@ -1,8 +1,8 @@
 #include "os/VirtualKeyboard.h"
 #include "os/File.h"
 
-File *gKeyboardFontFile = 0;
-void *gKeyboardFont = 0;
+static File *gKeyboardFontFile = 0;
+static void *gKeyboardFont = 0;
 
 void VirtualKeyboard::PlatformTerminate() {}
 

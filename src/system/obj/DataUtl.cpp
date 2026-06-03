@@ -20,8 +20,8 @@ struct VarStack {
     DataNode *var;
     DataNode value;
 };
-VarStack gVarStack[VAR_STACK_SIZE];
-VarStack *gVarStackPtr = gVarStack;
+static VarStack gVarStack[VAR_STACK_SIZE];
+static VarStack *gVarStackPtr = gVarStack;
 
 Loader *DataFactory(const FilePath &f, LoaderPos l) { return new DataLoader(f, l, true); }
 

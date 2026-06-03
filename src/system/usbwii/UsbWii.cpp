@@ -1,7 +1,7 @@
 #include "usbwii/UsbWii.h"
 #include "utl/MemMgr.h"
 
-UsbWii *gsTheUsbWii;
+static UsbWii *gsTheUsbWii;
 
 // static u32 UsbWii::sUSBOpenCloseResult = 0;
 

@@ -30,7 +30,7 @@
 
 INIT_REVS(Character)
 
-Character *gCharMe;
+static Character *gCharMe;
 int CharPollableSorter::sSearchID;
 
 DECOMP_FORCEACTIVE(Character, "ObjPtr_p.h", "f.Owner()", "")

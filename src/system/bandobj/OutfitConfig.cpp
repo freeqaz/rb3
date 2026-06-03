@@ -23,7 +23,7 @@ INIT_REVS(OutfitConfig);
 RndMat *OutfitConfig::sMat;
 RndCam *OutfitConfig::sCam;
 BandCharDesc *OutfitConfig::sBandCharDesc;
-OutfitConfig *gOutfitConfigOwner;
+static OutfitConfig *gOutfitConfigOwner;
 
 OutfitConfig::MatSwap::MatSwap(Hmx::Object *o)
     : mMat(o, 0), mResourceMat(o, 0), mTwoColorDiffuse(o, 0), mTwoColorInterp(o, 0),

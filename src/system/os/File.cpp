@@ -17,16 +17,16 @@
 #include <ctype.h>
 
 int File::sOpenCount;
-std::vector<File *> gFiles(0x80); // 0x10...?
-File *gOpenCaptureFile; // 0x18
-int gCaptureFileMode;
+static std::vector<File *> gFiles(0x80); // 0x10...?
+static File *gOpenCaptureFile; // 0x18
+static int gCaptureFileMode;
 static char gRoot[256]; // 0x20
 static char gExecRoot[256]; // 0x120
 static char gSystemRoot[256]; // 0x220
-std::vector<String> gDirList;
+static std::vector<String> gDirList;
 int kNoHandle;
-DataArray *gFrameRateArray;
-bool gNullFiles;
+static DataArray *gFrameRateArray;
+static bool gNullFiles;
 const int File::MaxFileNameLen = 0x100;
 
 void DirListCB(const char *cc1, const char *cc2) { gDirList.push_back(String(cc2)); }

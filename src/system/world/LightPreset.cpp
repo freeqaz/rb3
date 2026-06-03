@@ -21,7 +21,7 @@
 #include <cfloat>
 
 INIT_REVS(LightPreset)
-LightPreset *gEditPreset;
+static LightPreset *gEditPreset;
 std::deque<std::pair<LightPreset::KeyframeCmd, float> > LightPreset::sManualEvents;
 
 float ComputeSpotBlend(int i, float f) {

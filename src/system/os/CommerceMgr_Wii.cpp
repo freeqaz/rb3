@@ -15,14 +15,14 @@ const char *WiiCommerceMgr::mOpName[15] = {
 int gLastErrorReturnValue;
 char gLastErrorDesc[0x80];
 
-bool gAllowNeedSyncReturn = true;
+static bool gAllowNeedSyncReturn = true;
 
-char *gCommerceFilterName_OfferType = "offer_type";
-char *gCommerceFilterValue_Album = "album";
-char *gCommerceFilterValue_Everything = "*";
-char *gCommerceFilterValue_Pack = "pack";
-char *gCommerceFilterValue_Song = "song";
-char *gCommerceFilterValuePurchasable = "PURCHASABLE";
+static char *gCommerceFilterName_OfferType = "offer_type";
+static char *gCommerceFilterValue_Album = "album";
+static char *gCommerceFilterValue_Everything = "*";
+static char *gCommerceFilterValue_Pack = "pack";
+static char *gCommerceFilterValue_Song = "song";
+static char *gCommerceFilterValuePurchasable = "PURCHASABLE";
 
 WiiCommerceMgr::WiiCommerceMgr()
     : mCommerceAsyncOpId(-1), mOpTimeoutMs(59000.0f), mProgressPercent(0),

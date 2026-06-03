@@ -23,8 +23,8 @@
 #include "utl/Symbols.h"
 
 INIT_REVS(CharHair)
-CharHair *gHair;
-CharHair::Strand *gStrand;
+static CharHair *gHair;
+static CharHair::Strand *gStrand;
 
 #pragma push
 #pragma dont_inline on

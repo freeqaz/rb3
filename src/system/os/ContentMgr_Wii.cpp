@@ -59,12 +59,12 @@ struct CNTSDProgress {
     int unk8;
     int unkC;
 };
-CNTSDProgress gCNTSDProgress;
+static CNTSDProgress gCNTSDProgress;
 
-void *gCNTThreadStackBuffer;
-void *gCNTThreadWorkBuffer;
+static void *gCNTThreadStackBuffer;
+static void *gCNTThreadWorkBuffer;
 
-CNTSDThreadInfo *gCNTThreadInfo;
+static CNTSDThreadInfo *gCNTThreadInfo;
 
 WiiContentMgr TheWiiContentMgr;
 ContentMgr *TheContentMgr;

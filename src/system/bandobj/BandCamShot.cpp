@@ -24,7 +24,7 @@
 INIT_REVS(BandCamShot)
 
 std::list<BandCamShot::TargetCache> BandCamShot::sCache;
-BandCamShot *gBandCamShotOwner;
+static BandCamShot *gBandCamShotOwner;
 
 std::list<BandCamShot::TargetCache>::iterator BandCamShot::CreateTargetCache(Symbol s) {
     sCache.push_front(TargetCache());

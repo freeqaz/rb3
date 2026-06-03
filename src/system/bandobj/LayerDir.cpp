@@ -29,7 +29,7 @@ DECOMP_FORCEACTIVE(
 )
 
 RndCam *LayerDir::sCam;
-LayerDir *gLayerDirOwner;
+static LayerDir *gLayerDirOwner;
 
 void LayerDir::Init() {
     sCam = Hmx::Object::New<RndCam>();

@@ -27,7 +27,7 @@
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
-Hmx::Object *gClick;
+static Hmx::Object *gClick;
 INIT_REVS(CharacterTest)
 
 CharacterTest::CharacterTest(class Character *thechar)
