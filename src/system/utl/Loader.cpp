@@ -316,6 +316,7 @@ void LoadMgr::Poll() {
     // (mPeriod = mPeriodNormal, a small number) is frame-bounded.
     {
         static float sBudgetMs = -1.0f;
+        static float sYieldMs = -1.0f;
         if (sBudgetMs < 0.0f) {
             sBudgetMs = 8.0f;
             if (const char *e = ::getenv("RB3_LOADER_BUDGET_MS")) {
@@ -324,14 +325,37 @@ void LoadMgr::Poll() {
             }
             if (sBudgetMs <= 0.0f)
                 sBudgetMs = 8.0f;
+            // Yield interval for the synchronous drain (PollUntilLoaded/Empty).
+            // Decouples work-slice granularity (sBudgetMs, drives CheckSplit
+            // responsiveness) from browser-yield frequency (sYieldMs): the drain
+            // does real work for sYieldMs of wall-clock between emscripten_sleep(0)
+            // yields, instead of the old code's yield-on-EVERY-slice. The win is
+            // avoiding pathological sub-millisecond yield spam when PollFrontLoader
+            // returns fast (front loader blocked) — each emscripten_sleep(0) costs
+            // a full event-loop turn (~4-16ms). NOTE: measurement (see
+            // docs/native/web-loadperf-findings-2026-06-03.md) showed this is
+            // NEUTRAL for total boot time — the boot bottleneck is the App ctor's
+            // ~7s async wait (GPU shader compile under headless SwiftShader +
+            // async boot loads), not loader-yield overhead. Kept as a clarity +
+            // spin-overhead refactor + the RB3_LOADER_YIELD_MS tunable.
+            sYieldMs = 16.0f;
+            if (const char *e = ::getenv("RB3_LOADER_YIELD_MS")) {
+                if (e[0])
+                    sYieldMs = (float)atof(e);
+            }
+            if (sYieldMs < sBudgetMs)
+                sYieldMs = sBudgetMs;
         }
         // mPeriod >= sentinel ⇒ PollUntilEmpty's unbudgeted drain: empty the
-        // whole queue (no per-frame break), but still slice + yield each pass.
+        // whole queue (no per-frame break), yielding only every sYieldMs.
         bool drainToEmpty = (mPeriod >= 1e29f);
         // Per-iteration mTimer drives each state func's internal CheckSplit();
-        // a separate timer bounds the cumulative per-frame cost.
+        // budgetTimer bounds the cumulative per-frame cost; sinceYield gates how
+        // often we pay for a browser composite yield.
         Timer budgetTimer;
         budgetTimer.Restart();
+        Timer sinceYield;
+        sinceYield.Restart();
         int maxIter = 400000; // safety valve (PollUntilEmpty can have long queues)
         while (!mLoading.empty()) {
             if (--maxIter <= 0) {
@@ -347,12 +371,18 @@ void LoadMgr::Poll() {
             }
             budgetTimer.Split();
             if (!drainToEmpty && Timer::CyclesToMs(budgetTimer.mCycles) > sBudgetMs) {
-                // Budget spent for this frame — yield the event loop once and
-                // return so RunOneFrame repaints the overlay and RAF re-ticks.
-                emscripten_sleep(0);
+                // Per-frame background budget spent — RETURN so RunOneFrame
+                // repaints + mainLoop returns + RAF re-ticks (the frame return is
+                // the composite yield; no manual sleep needed here).
                 break;
             }
-            emscripten_sleep(0); // within-frame courtesy yield between slices
+            // Synchronous drain: yield to the browser only every sYieldMs of
+            // accumulated work, not on every slice (avoids sub-ms yield spam).
+            sinceYield.Split();
+            if (Timer::CyclesToMs(sinceYield.mCycles) >= sYieldMs) {
+                emscripten_sleep(0);
+                sinceYield.Restart();
+            }
         }
         return;
     }

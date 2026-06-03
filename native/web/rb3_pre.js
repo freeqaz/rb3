@@ -74,15 +74,34 @@
         }
         // Default Emscripten path — fetch + compile + instantiate ourselves.
         var wasmPath = (origModule.locateFile ? origModule.locateFile('rb3-web.wasm') : 'rb3-web.wasm');
-        return fetch(wasmPath)
-            .then(function(resp) { return resp.arrayBuffer(); })
-            .then(function(bytes) { return WebAssembly.instantiate(bytes, imports); })
-            .then(function(result) {
-                successCallback(result.instance, result.module);
-            })
-            .catch(function(err) {
-                console.error('[rb3-pre] instantiateWasm failed: ' + err);
-            });
+        // Prefer STREAMING compilation: compile the 28MB wasm while it downloads
+        // instead of download-then-compile (the old arrayBuffer path). The server
+        // sends Content-Type: application/wasm (+ Content-Encoding br/gz, which the
+        // browser transparently decompresses into the streaming compiler). This
+        // attacks the pre-boot wasm-compile phase (measured bimodal 0.5–8s in
+        // loadperf-profile.mjs). Falls back to arrayBuffer if streaming is
+        // unavailable or the MIME type isn't honoured.
+        var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+        function viaArrayBuffer() {
+            return fetch(wasmPath)
+                .then(function(resp) { return resp.arrayBuffer(); })
+                .then(function(bytes) { return WebAssembly.instantiate(bytes, imports); })
+                .then(function(result) { successCallback(result.instance, result.module); });
+        }
+        if (typeof WebAssembly.instantiateStreaming === 'function') {
+            return WebAssembly.instantiateStreaming(fetch(wasmPath), imports)
+                .then(function(result) {
+                    console.log('[rb3-pre] wasm instantiateStreaming ' + ((performance.now() - t0) | 0) + 'ms');
+                    successCallback(result.instance, result.module);
+                })
+                .catch(function(err) {
+                    console.warn('[rb3-pre] instantiateStreaming failed (' + err + '); falling back to arrayBuffer');
+                    return viaArrayBuffer();
+                });
+        }
+        return viaArrayBuffer().catch(function(err) {
+            console.error('[rb3-pre] instantiateWasm failed: ' + err);
+        });
     };
 
     if (typeof Module === 'undefined') {

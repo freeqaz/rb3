@@ -158,6 +158,40 @@ static std::string GetMiloPathFromUrl() {
     return out;
 }
 
+// Plumb a small set of loader/perf knobs from URL query params into the process
+// environment so the web build is tunable without a rebuild (the wasm reads them
+// via getenv). Must run before the first LoadMgr::Poll (BOOT_APP_CTOR), so it is
+// called at BOOT_INIT. Lets loadperf-profile.mjs A/B e.g. ?loaderYieldMs=16 vs
+// =100 to measure boot-smoothness trade-offs directly. Recognised params:
+//   loaderYieldMs   -> RB3_LOADER_YIELD_MS   (drain yield interval, default 50)
+//   loaderBudgetMs  -> RB3_LOADER_BUDGET_MS  (per-frame loader budget, default 8)
+//   frameInstrument -> RB3_FRAME_INSTRUMENT  (per-frame timing log)
+static void ApplyUrlLoaderEnv() {
+    static const char *kPairs[][2] = {
+        {"loaderYieldMs", "RB3_LOADER_YIELD_MS"},
+        {"loaderBudgetMs", "RB3_LOADER_BUDGET_MS"},
+        {"frameInstrument", "RB3_FRAME_INSTRUMENT"},
+    };
+    for (auto &p : kPairs) {
+        char *v = (char *)EM_ASM_PTR({
+            const params = new URLSearchParams(window.location.search);
+            const val = params.get(UTF8ToString($0));
+            if (val === null) return 0;
+            const len = lengthBytesUTF8(val) + 1;
+            const buf = _malloc(len);
+            stringToUTF8(val, buf, len);
+            return buf;
+        }, p[0]);
+        if (v) {
+            if (v[0]) {
+                ::setenv(p[1], v, 1);
+                printf("RB3 Web: env %s=%s (from ?%s)\n", p[1], v, p[0]);
+            }
+            free(v);
+        }
+    }
+}
+
 // ============================================================================
 // Boot state machine
 // ============================================================================
@@ -385,9 +419,24 @@ static void DoEngineInit() {
     printf("RB3 Web: StartGpuInit returned — waiting for async GPU adapter/device\n");
 }
 
+// Emit a boot-phase timestamp to the JS perf timeline (performance.mark) and
+// window.rb3BootPhase, so loadperf-profile.mjs can attribute boot time to the
+// exact phase (fetch / engine-init / GPU / App-ctor). Cheap; always on.
+static void BootMark(const char *phase) {
+    EM_ASM_({
+        var p = UTF8ToString($0);
+        try { performance.mark('rb3:boot:' + p); } catch (e) {}
+        window.rb3BootPhase = p;
+        if (!window.rb3BootPhaseLog) window.rb3BootPhaseLog = [];
+        window.rb3BootPhaseLog.push([p, +performance.now().toFixed(1)]);
+    }, phase);
+}
+
 static void mainLoop() {
     switch (sBootState) {
     case BOOT_INIT: {
+        ApplyUrlLoaderEnv();  // URL-param loader/perf knobs (before first Poll)
+        BootMark("fetch_start");
         printf("RB3 Web: downloading assets (bundle)...\n");
         WebAssetsInit();
         WebAssetsFetchBundle();
@@ -407,6 +456,7 @@ static void mainLoop() {
         if (!WebAssetsAllDone()) break;
         int ok = WebAssetsCompletedCount();
         int fail = WebAssetsFailedCount();
+        BootMark("fetch_done");
         printf("RB3 Web: assets ready (%d files, %d errors)\n", ok, fail);
         if (fail > 0)
             printf("RB3 Web: WARNING — %d asset fetch errors; continuing\n", fail);
@@ -431,6 +481,7 @@ static void mainLoop() {
             break;
         }
         if (sBootState != BOOT_ERROR) {
+            BootMark("engine_init_done");
             sBootState = BOOT_GPU_WAIT;
             printf("RB3 Web: waiting for GPU...\n");
         }
@@ -458,8 +509,10 @@ static void mainLoop() {
         // Phase 2: pipelines / depth / rings / default textures. After this the
         // GpuDevice is fully usable, so the App ctor's Rnd::PreInit (which
         // creates default rndobj objects) and any milo load can proceed.
+        BootMark("gpu_ready");
         printf("RB3 Web: GPU ready — initializing resources...\n");
         gBandRnd.InitGpuResources();
+        BootMark("appctor_start");
         sBootState = sHarnessMode ? BOOT_LOADING_MILO : BOOT_APP_CTOR;
         break;
     }
@@ -490,6 +543,7 @@ static void mainLoop() {
             sBootState = BOOT_ERROR;
             break;
         }
+        BootMark("appctor_done");
         printf("RB3 Web: App constructed — entering RunOneFrame loop\n");
         EM_ASM({ window.rb3AppBooted = 1; });
         sBootState = BOOT_RUNNING;
