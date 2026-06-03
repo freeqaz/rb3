@@ -4,7 +4,7 @@
 #include "utl/Locale.h"
 
 WiiProfileMgr TheWiiProfileMgr;
-const int kWiiProfileNameBufferSize = 46;
+static const int kWiiProfileNameBufferSize = 46;
 
 int WiiProfileMgr::sSaveVersion = -1;
 int WiiProfileMgr::sSaveVersionWii = -1;

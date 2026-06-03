@@ -196,7 +196,7 @@ lol:
     return;
 }
 
-float gTempBS = 0.55263156f;
+static float gTempBS = 0.55263156f;
 
 void MoviePanel::Draw() {
     if (GetState() != kUnloaded) {

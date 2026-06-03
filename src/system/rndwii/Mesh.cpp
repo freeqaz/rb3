@@ -23,13 +23,13 @@ extern "C" {
 
 #define kTempSize 0x40000
 
-int NUM_BUFFERS = 4;
-bool gToggleAO = true;
-void *gVertexCache[4];
-void *gNrmCache[4];
-void *gBoneWeightCache[4];
-void *gBoneIndexCache[4];
-void *gBoneTransformCache;
+static int NUM_BUFFERS = 4;
+static bool gToggleAO = true;
+static void *gVertexCache[4];
+static void *gNrmCache[4];
+static void *gBoneWeightCache[4];
+static void *gBoneIndexCache[4];
+static void *gBoneTransformCache;
 void *DisplayList::sTemp;
 void *DisplayList::sCurr;
 

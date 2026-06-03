@@ -7,7 +7,7 @@
 #include "utl/Symbols.h"
 #include "utl/ClassSymbols.h"
 
-int gREV = 9;
+static int gREV = 9;
 
 #define HEIGHT_SD 480.0f
 #define HEIGHT_HD 720.0f

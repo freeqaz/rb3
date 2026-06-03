@@ -85,7 +85,7 @@ int DbgGetFrameID();
 
 bool WiiMat::sOverrideAlphaWrite = 0;
 bool WiiMat::sCurrentZCompLoc = 1;
-bool bDoMatLightHackBS = 1;
+static bool bDoMatLightHackBS = 1;
 
 WiiMat *WiiMat::sCurrent = nullptr;
 Transform *WiiMat::sCurrentModelXfm = nullptr;

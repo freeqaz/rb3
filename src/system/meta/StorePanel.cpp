@@ -15,7 +15,7 @@
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 
-bool gStoreAllowBandShotForceShowing = true;
+static bool gStoreAllowBandShotForceShowing = true;
 
 StorePanel::StorePanel()
     : mLoadOK(0), mShowTestOffers(1), mPendingArtLoader(0),

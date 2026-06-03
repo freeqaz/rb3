@@ -2,8 +2,8 @@
 #include "math/Color.h"
 #include "rndobj/Group.h"
 
-int kMaxLyricPlateChars = 0x64;
-int kMaxLyricPlateLines = 0x1E;
+static int kMaxLyricPlateChars = 0x64;
+static int kMaxLyricPlateLines = 0x1E;
 
 LyricPlate::LyricPlate(RndText *t1, const RndText *t2, const RndText *t3)
     : mWidthX(0), mNumCharsUsed(0), mText(t1), mSyllables(), mPreviewColor(),

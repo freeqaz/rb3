@@ -81,7 +81,7 @@ void GuitarController::Disable(bool b) {
         ReconcileFretState();
 }
 
-float guitarwhammyprobs = 0.0f;
+static float guitarwhammyprobs = 0.0f;
 
 float GuitarController::GetWhammyBar() const {
     if (!mUser->IsLocal())

@@ -9,7 +9,7 @@ namespace {
     int gPendingFile = -1;
 }
 
-int gRetryAttempts = 0x14;
+static int gRetryAttempts = 0x14;
 
 int CDGetError() { return 0; }
 

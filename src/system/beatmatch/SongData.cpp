@@ -37,7 +37,7 @@
 #include "utl/SongInfoCopy.h"
 #include "utl/TickedInfo.h"
 
-const int kHarm3VocalNoteList = 3;
+static const int kHarm3VocalNoteList = 3;
 
 DECOMP_FORCEACTIVE(SongData, ".vfv")
 

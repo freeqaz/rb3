@@ -13,7 +13,7 @@
 #include "utl/Symbols.h"
 
 INIT_REVS(PanelDir)
-bool gSendFocusMsg = true;
+static bool gSendFocusMsg = true;
 bool PanelDir::sAlwaysNeedFocus = true;
 
 PanelDir::PanelDir()
