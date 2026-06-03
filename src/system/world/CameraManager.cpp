@@ -41,16 +41,16 @@ CameraManager::~CameraManager() {
 ObjPtrList<CamShot> &CameraManager::FindOrAddCategory(Symbol cat) {
     Category targetCat;
     targetCat.unk0 = cat;
-    Category *lowerCat = std::lower_bound(
-        mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat
-    );
-    if (lowerCat == mCameraShotCategories.end() || lowerCat->unk0 != cat) {
+    Category *beg = mCameraShotCategories.data();
+    Category *end = mCameraShotCategories.data() + mCameraShotCategories.size();
+    Category *lowerCat = std::lower_bound(beg, end, targetCat);
+    if (lowerCat == end || lowerCat->unk0 != cat) {
         targetCat.unk4 = new ObjPtrList<CamShot>(mParent);
         mCameraShotCategories.push_back(targetCat);
         std::sort(mCameraShotCategories.begin(), mCameraShotCategories.end());
-        lowerCat = std::lower_bound(
-            mCameraShotCategories.begin(), mCameraShotCategories.end(), targetCat
-        );
+        beg = mCameraShotCategories.data();
+        end = mCameraShotCategories.data() + mCameraShotCategories.size();
+        lowerCat = std::lower_bound(beg, end, targetCat);
     }
     return *lowerCat->unk4;
 }
