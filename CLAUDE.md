@@ -142,15 +142,15 @@ The native port is tracked in **[docs/native/NATIVE_PORT_ROADMAP.md](docs/native
 
 ### Current match (build/SZBE69_B8/report.json)
 
-Overall: **59.58% code / 75.54% functions** (31,163 / 41,254).
+Overall: **62.88% code / ~31,949 functions** (last verified 2026-06-03 via commit `79d55e3`; per-category breakdown below is from an earlier snapshot and may be slightly stale).
 
 | Category | Match % | Funcs |
 |---|---|---|
-| Game Code (`band3/`) | 71.09% | 9,935 / 11,249 |
-| Milo Engine (`system/`) | 69.00% | 18,588 / 20,752 |
-| Third-Party Libraries (`lib/`) | 62.06% | 393 / 543 |
-| SDK (`sdk/`) | 18.91% | 969 / 4,131 |
-| Networking (`network/`) | 16.13% | 1,278 / 4,579 |
+| Game Code (`band3/`) | ~71% | ~9,935 / 11,249 |
+| Milo Engine (`system/`) | ~69% | ~18,588 / 20,752 |
+| Third-Party Libraries (`lib/`) | ~62% | ~393 / 543 |
+| SDK (`sdk/`) | ~19% | ~969 / 4,131 |
+| Networking (`network/`) | ~16% | ~1,278 / 4,579 |
 
 ### Focus here — the port surface
 
