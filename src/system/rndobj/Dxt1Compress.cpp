@@ -345,7 +345,7 @@ void Dxt1Compress::fancybasecolorsearch(
     }
 
     if (((testcolor[0][0] & 0xf8) << 8 | (testcolor[0][1] & 0xfc) << 3 | testcolor[0][2] >> 3) <
-        ((testcolor[1][0] & 0xf8) << 8 | (testcolor[1][1] & 0xfc) << 3 | testcolor[1][2]) >> 3) {
+        ((testcolor[1][0] & 0xf8) << 8 | (testcolor[1][1] & 0xfc) << 3 | testcolor[1][2] >> 3)) {
         for (i = 0; i < 3; i++) {
             bestcolor[0][i] = testcolor[0][i];
             bestcolor[1][i] = testcolor[1][i];
