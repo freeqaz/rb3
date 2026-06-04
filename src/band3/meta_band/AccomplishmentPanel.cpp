@@ -48,58 +48,32 @@
 #include "utl/Symbols4.h"
 #include <vector>
 
-// Explicit specialization of _Temporary_buffer for Symbol iterators to use
-// game allocator (_MemAlloc/_MemFree) instead of stdlib malloc/free.
 #ifndef HX_NATIVE
-// Host STL has no STLport _Temporary_buffer; native std::sort uses host allocator.
-_STLP_BEGIN_NAMESPACE
+// STLport-internal _Temporary_buffer<Symbol*> specialization (std::sort scratch
+// via _MemAlloc). Host STL has no stlpmtx_std namespace.
+namespace stlpmtx_std {
+
 template <>
-class _Temporary_buffer<Symbol *, Symbol> {
-private:
-    ptrdiff_t _M_original_len;
-    ptrdiff_t _M_len;
-    Symbol *_M_buffer;
-
-    void _M_allocate_buffer() {
-        _M_original_len = _M_len;
-        _M_buffer = 0;
-        if (_M_len > (ptrdiff_t)(INT_MAX / sizeof(Symbol)))
-            _M_len = INT_MAX / sizeof(Symbol);
-        while (_M_len > 0) {
-            _M_buffer = (Symbol *)_MemAlloc(_M_len * sizeof(Symbol), 0);
-            if (_M_buffer)
-                break;
-            _M_len /= 2;
-        }
+inline void _Temporary_buffer<Symbol *, Symbol>::_M_allocate_buffer() {
+    _M_original_len = _M_len;
+    _M_buffer = 0;
+    if (_M_len > (ptrdiff_t)(INT_MAX / sizeof(Symbol)))
+        _M_len = INT_MAX / sizeof(Symbol);
+    while (_M_len > 0) {
+        _M_buffer = (Symbol *)_MemAlloc(_M_len * sizeof(Symbol), 0);
+        if (_M_buffer)
+            break;
+        _M_len /= 2;
     }
+}
 
-    void _M_initialize_buffer(const Symbol &val, const __false_type &) {
-        uninitialized_fill_n(_M_buffer, _M_len, val);
-    }
+template <>
+inline _Temporary_buffer<Symbol *, Symbol>::~_Temporary_buffer() {
+    _STLP_STD::_Destroy_Range(_M_buffer, _M_buffer + _M_len);
+    _MemFree(_M_buffer);
+}
 
-public:
-    ptrdiff_t size() const { return _M_len; }
-    ptrdiff_t requested_size() const { return _M_original_len; }
-    Symbol *begin() { return _M_buffer; }
-    Symbol *end() { return _M_buffer + _M_len; }
-
-    _Temporary_buffer(Symbol *__first, Symbol *__last) {
-        _M_len = __last - __first;
-        _M_allocate_buffer();
-        if (_M_len > 0)
-            _M_initialize_buffer(*__first, __false_type());
-    }
-
-    ~_Temporary_buffer() {
-        _STLP_STD::_Destroy_Range(_M_buffer, _M_buffer + _M_len);
-        _MemFree(_M_buffer);
-    }
-
-private:
-    _Temporary_buffer(const _Temporary_buffer<Symbol *, Symbol> &) {}
-    void operator=(const _Temporary_buffer<Symbol *, Symbol> &) {}
-};
-_STLP_END_NAMESPACE
+} // namespace stlpmtx_std
 #endif
 
 AccomplishmentGroupCmp::AccomplishmentGroupCmp(const AccomplishmentManager *mgr)
