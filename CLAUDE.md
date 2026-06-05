@@ -142,15 +142,17 @@ The native port is tracked in **[docs/native/NATIVE_PORT_ROADMAP.md](docs/native
 
 ### Current match (build/SZBE69_B8/report.json)
 
-Overall: **59.58% code / 75.54% functions** (31,163 / 41,254).
+Overall: **62.88% code / 77.44% functions** (31,949 / 41,254). _(last refreshed 2026-06-05; categories below are report.json's own buckets, which split out the Wii-only subsets.)_
 
 | Category | Match % | Funcs |
 |---|---|---|
-| Game Code (`band3/`) | 71.09% | 9,935 / 11,249 |
-| Milo Engine (`system/`) | 69.00% | 18,588 / 20,752 |
-| Third-Party Libraries (`lib/`) | 62.06% | 393 / 543 |
-| SDK (`sdk/`) | 18.91% | 969 / 4,131 |
-| Networking (`network/`) | 16.13% | 1,278 / 4,579 |
+| Game Code | 78.37% | 10,429 / 11,024 |
+| Game Code (Wii-only) | 22.22% | 50 / 225 |
+| Milo Engine Code | 75.23% | 17,377 / 18,488 |
+| Milo Engine Code (Wii-only) | 35.43% | 1,254 / 2,264 |
+| Third-Party Libraries | 62.06% | 392 / 543 |
+| SDK Code | 20.28% | 1,182 / 4,131 |
+| Networking Code | 16.18% | 1,265 / 4,579 |
 
 ### Focus here — the port surface
 
