@@ -1915,7 +1915,7 @@
             "sdk/RVL_SDK/src/bte/uusb_ppc.c": "MISSING",
             "sdk/RVL_SDK/src/bte/wbt_ext.c": "MISSING",
             "sdk/RVL_SDK/src/cnt/cnt.c": "NonMatching",
-            "sdk/RVL_SDK/src/cnt/cntFatal.c": "MISSING",
+            "sdk/RVL_SDK/src/cnt/cntFatal.c": "NonMatching",
             "sdk/RVL_SDK/src/dsp/dsp_debug.c": "Matching",
             "sdk/RVL_SDK/src/dsp/dsp_task.c": "NonMatching",
             "sdk/RVL_SDK/src/dsp/dsp.c": "Matching",
@@ -1986,7 +1986,7 @@
             "sdk/RVL_SDK/src/nand/nand.c": "NonMatching",
             "sdk/RVL_SDK/src/nand/NANDCheck.c": "NonMatching",
             "sdk/RVL_SDK/src/nand/NANDCore.c": "NonMatching",
-            "sdk/RVL_SDK/src/nand/NANDErrorMessage.c": "MISSING",
+            "sdk/RVL_SDK/src/nand/NANDErrorMessage.c": "NonMatching",
             "sdk/RVL_SDK/src/nand/NANDLogging.c": "NonMatching",
             "sdk/RVL_SDK/src/nand/NANDOpenClose.c": "Matching",
             "sdk/RVL_SDK/src/nand/NANDSecret.c": "NonMatching",
@@ -2191,7 +2191,10 @@
         "cflags": "sdk/ec",
         "objects": {
             "sdk/ec/src/ec_api.cpp": "NonMatching",
-            "sdk/ec/src/ec_asyncOp.cpp": {"status": "NonMatching", "cflags": "sdk/ec/no_ipa"},
+            "sdk/ec/src/ec_asyncOp.cpp": {
+                "status": "NonMatching",
+                "cflags": "sdk/ec/no_ipa"
+            },
             "sdk/ec/src/ec_base64.cpp": "Equivalent",
             "sdk/ec/src/ec_checkECard.cpp": "MISSING",
             "sdk/ec/src/ec_checkReg.cpp": "MISSING",
