@@ -27,8 +27,46 @@
     concentrated in the song_select_panel's OWN milo + ~17 nested Includes (one CheckLoad).
     Panel-level staggering can't split one panel's milo tree. REAL FIX = milo-Include-level
     / DirLoader staggering or async parse (loader workstream) — deeper than a UIScreen edit.
-- **DECISION POINT (user): pursue the deeper perf fixes (native frustum correct / loader
-  Include-staggering) or stop here? Audio is done; perf is measured+attributed.**
+- **Wave 03b — WEB stutter verification (real GPU, `scripts/web/web-stutter-probe.mjs`):
+  BOTH stutters are REAL on web (refutes the "splash = headless artifact" caveat).**
+  rAF inter-frame gaps, ANGLE-Vulkan (real GPU, not SwiftShader):
+  - **splash: p50 100 ms (~10 fps!), max 117 ms — SUSTAINED** while the user sits on
+    "PRESS START." The venue over-draw is a genuine, visible web stutter, NOT just the
+    headless Submit+WaitAny artifact. THE BIGGER WIN.
+  - main_hub→song_select transition: a **~150 ms one-shot hitch** (the song_select.milo
+    parse; ~3× the native 46 ms because wasm parses milo slower). Real hitch.
+  - steady-state (song_select, scroll): smooth 60 fps (16.7 ms). Gameplay not re-probed
+    but expected smooth (native steady-state was).
+- **USER DIRECTION: #1 commit (DONE) → #2 verify-web (DONE) → #3 deeper perf (NEXT).**
+  Re-prioritized by the web data: splash venue over-draw first (sustained), then the
+  ENTER milo-parse hitch.
+
+## Wave 04 (deeper perf — #3) DONE — root-caused; implementation BLOCKED/PARTIAL, reverted
+- **Splash frustum: ROOT CAUSE FOUND (verify 0/3 refuted).** The native world.cam frustum
+  is NOT wrong — it matches the WebGPU projection at 16:9. The real defect is the **baked
+  Xbox bounding SPHERES**: native venue meshes ship GPU-vertex-compressed with EMPTY CPU
+  Verts, so `MakeWorldSphere` can't recompute the bound and the baked Xbox `mSphere` is
+  wrong-centered/undersized → a correct frustum culls VISIBLE meshes. FIX (A1, high-conf):
+  recompute a tight local sphere from the unpacked verts + `SetSphere`, then re-enable the
+  world.cam-scoped cull (Draw.cpp seam). **BLOCKED on implementation:** the recompute must
+  go in RB3's vertex-upload path = `milo-native-engine/src/platform/Rnd_Wgpu_RB3.cpp`
+  (`MeshGpuCache.cpp`/`Mesh_Wgpu.cpp` are DC3-only, EXCLUDED for RB3 by the Gpu/Wgpu CMake
+  filter — A1 named the wrong file). Rnd_Wgpu_RB3.cpp is **concurrent-modified by the
+  char-skinning agent** (BandRnd::DrawMesh 2812-3293) → not safe to edit now. AND per A3
+  the win is only **~30%** (visible skyline is genuinely far, 8539u; little is off-screen).
+  Tried Option A in MeshGpuCache.cpp + the Draw.cpp seam → MeshGpuCache.cpp not compiled for
+  RB3 → no effect → REVERTED clean. READY SPEC, defer until the concurrent work settles.
+  (Throttling draw-rate is NOT a fix: it inserts idle frames; the heavy frame still renders
+  the venue slowly, so perceived smoothness is unchanged.)
+- **ENTER hitch (A2, feasible, deferred):** in-place Include staggering is NOT feasible
+  (inline dirs share one BinStream; ObjectDir::PostLoad is non-re-entrant). The fix is
+  **PREWARM song_select.milo during main_hub's idle dwell** (RB3_PREWARM_SCREENS) +
+  optional GPU prewarm — targets the web ~150 ms → sub-30 ms. More involved (prewarm
+  mechanism + next-screen mapping); ready spec, not yet implemented.
+
+## Status: audio DONE+committed+validated(native+web)+user-improved(instant-attack, uncommitted).
+## Perf: fully measured + web-verified + root-caused; both fixes have exact specs but
+## implementation is blocked (concurrent file) / partial (~30% splash) / involved (prewarm).
 
 ## Confirmed facts
 - **AUDIO ROOT CAUSE (H1, confirmed):** 11–15 song stems each a separate additive
