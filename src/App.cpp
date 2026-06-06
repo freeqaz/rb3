@@ -505,6 +505,25 @@ void App::RunOneFrame(int frame) {
         if (!sVenuePollOff && TheBandDirector)
             TheBandDirector->Poll();
     }
+    // MUSIC-LIBRARY POLL FIX: the native frame loop (App::RunWithoutDebugging's
+    // HX_NATIVE branch) delegates per-frame work to RunOneFrame and never reaches
+    // the retail `inclusive_ui_poll` block (RunWithoutDebugging retail path,
+    // below) that runs TheMusicLibrary->Poll() every frame. MusicLibrary::Poll
+    // drives CheckSongPreview() — the song_select hover->preview state machine
+    // (start timer on highlight change, then SongPreview::Start/Poll ->
+    // TheSynth->NewStream) — plus the net-setlist art loader. Without this poll
+    // the preview timer starts but is never checked, so the song-select AUDIO
+    // PREVIEW never fires (silent hover). Runs before TheSynth->Poll() below so a
+    // preview stream created this frame is decoded/refilled the same frame.
+    // Null-guarded: TheMusicLibrary is only created once song_select is entered
+    // (MusicLibrary::Init). Opt-out: RB3_NO_LIBRARY_POLL=1.
+    {
+        static int sNoLibPoll = -1;
+        if (sNoLibPoll < 0)
+            sNoLibPoll = getenv("RB3_NO_LIBRARY_POLL") ? 1 : 0;
+        if (!sNoLibPoll && TheMusicLibrary)
+            TheMusicLibrary->Poll();
+    }
 #endif
     RB3GameInputPoll(frame);
     TheTaskMgr.Poll();
@@ -706,6 +725,20 @@ void App::RunWithoutDebugging() {
     float sMaxFrameMs = 0.0f;
     int sLongFrameCount = 0;
 
+    // TASK A4 frame-trace (audio-perf-investigation): a separate, machine-
+    // readable JSONL per-frame tracer gated on RB3_FRAME_TRACE=<path>. It
+    // records EVERY frame (dt + loader/stream asset events + screen) so a
+    // profiler can build a full histogram and cluster stutters on asset events,
+    // independent of the LONG-only RB3_FRAME_INSTRUMENT log above. Both share the
+    // same wall-clock timing + load-attribution globals when either is on.
+    static int sFrameTrace = -1;
+    if (sFrameTrace < 0)
+        sFrameTrace = getenv("RB3_FRAME_TRACE") ? 1 : 0;
+    extern void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
+                                    float loadPollUntilMs, const char *screen,
+                                    int pendingLoaders);
+    const bool wallTime = (sFrameInstrument || sFrameTrace);
+
     for (int frame = 0; (unbounded || frame < maxFrames) && !RB3CleanExitRequested();
          frame++) {
         // The core poll + draw (SystemPoll → UI.Poll → RB3GameInputPoll →
@@ -715,7 +748,7 @@ void App::RunWithoutDebugging() {
         // exactly as before: ProcessCommands ran right after RB3GameInputPoll
         // (so HTTP-injected verbs land on the NEXT frame's RB3GameInputPoll
         // drain), and the screenshot readback runs after EndDrawing.
-        if (sFrameInstrument) {
+        if (wallTime) {
             extern float gLoadPollMsThisFrame;
             extern float gLoadPollUntilMsThisFrame;
             gLoadPollMsThisFrame = 0.0f;
@@ -726,15 +759,20 @@ void App::RunWithoutDebugging() {
             frameTimer.Split();
             float ms = Timer::CyclesToMs(frameTimer.mCycles);
             if (ms > sMaxFrameMs) sMaxFrameMs = ms;
-            if (ms > sLongFrameThreshMs) {
+            UIScreen *scr = TheUI.CurrentScreen();
+            const char *scrName = (scr && scr->Name()) ? scr->Name() : "?";
+            if (sFrameInstrument && ms > sLongFrameThreshMs) {
                 sLongFrameCount++;
-                UIScreen *scr = TheUI.CurrentScreen();
                 MILO_LOG("RB3 FRAME-INSTRUMENT: frame %d LONG %.1f ms "
                          "(poll=%.1f pollUntil=%.1f screen=%s) "
                          "[max=%.1f longCount=%d]\n",
                          frame, ms, gLoadPollMsThisFrame, gLoadPollUntilMsThisFrame,
-                         (scr && scr->Name()) ? scr->Name() : "?",
-                         sMaxFrameMs, sLongFrameCount);
+                         scrName, sMaxFrameMs, sLongFrameCount);
+            }
+            if (sFrameTrace) {
+                RB3FrameTraceRecord(frame, ms, gLoadPollMsThisFrame,
+                                    gLoadPollUntilMsThisFrame, scrName,
+                                    (int)TheLoadMgr.mLoading.size());
             }
         } else {
             RunOneFrame(frame);

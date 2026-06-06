@@ -535,6 +535,15 @@ END_HANDLERS
 
 Stream *Synth::NewStream(const char *filename, float f1, float f2, bool) {
 #ifdef HX_NATIVE
+    // TASK A4 frame-trace asset-event hook: count new audio streams (song
+    // preview / gameplay mogg) opened this frame. The per-frame recorder in
+    // rb3_frame_trace.cpp reads + zeros it. One branch when tracing is off.
+    {
+        extern bool gFrameTraceActive;
+        extern int gFrameTraceStreamOpens;
+        if (gFrameTraceActive)
+            gFrameTraceStreamOpens++;
+    }
     File *file;
     Symbol ext;
     NewStreamFile(filename, file, ext);

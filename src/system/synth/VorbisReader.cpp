@@ -631,7 +631,23 @@ void VorbisReader::DoRawSeek(int byte) {
     mFile->Seek(byte + mHdrSize, 0);
     if (mCtrState) {
         MILO_ASSERT(byte%16 == 0, 0x402);
+        // CTR counter re-key for the seek. The tomcrypt CTR counter is
+        // LITTLE-ENDIAN: ctr_encrypt increments ctr->ctr[0] first and carries
+        // upward (tomcrypt/ctr.c), so the AES-block index (byte/16) must land in
+        // the nonce LSB-first (mNonce[0] = lowest byte). On the big-endian
+        // Xbox/Wii original, storing `EndianSwap(idx)` through a word write yields
+        // exactly that LSB-first layout. On the LITTLE-ENDIAN native/web build the
+        // same EndianSwap+word-store byte-reverses a second time, producing the
+        // WRONG counter (e.g. idx 747520 -> bytes 00 0B 68 00 instead of the
+        // correct 00 68 0B 00) — the decrypt after a mid-song seek then yields
+        // garbage Ogg, the reader hits a phantom EOF, EndData fires, and the song
+        // preview (which seeks to the chorus) plays silence. Write the index
+        // directly so a native little-endian word store lands it LSB-first.
+#ifdef HX_NATIVE
+        *(unsigned int*)mNonce = (unsigned int)(byte / 16);
+#else
         *(unsigned int*)mNonce = EndianSwap((unsigned int)(byte / 16));
+#endif
         int ret = ctr_reinit(gCipher, mNonce, mCtrState);
         MILO_ASSERT(ret == 0, 0x405);
     }
