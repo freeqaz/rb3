@@ -1,0 +1,28 @@
+{
+  "file": "/tmp/rb3_gp_default.wav",
+  "sr": 44100,
+  "ch": 2,
+  "dur_s": 28.0,
+  "peak": 32767.0,
+  "rms": 6730.9,
+  "crest_db": 13.75,
+  "clip_ratio": 0.0054,
+  "flat_top_run": 4,
+  "overflow_wraps": 876,
+  "wrap_rate": 31.29,
+  "mean_abs_step": 1368.7,
+  "spectral_flatness": 0.6454,
+  "zcr": 0.1935,
+  "pitch_strength": 0.167,
+  "pitch_ms": 3.4,
+  "dyn_range_db": 25.8,
+  "dc_offset": -0.0015,
+  "verdicts": {
+    "railed_peak": true,
+    "clipping": true,
+    "overflow_wrapping": true,
+    "noise_like": false,
+    "low_dynamics": false,
+    "degraded": true
+  }
+}
