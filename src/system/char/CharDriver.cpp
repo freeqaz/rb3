@@ -1,4 +1,5 @@
 #include "char/CharDriver.h"
+#include <cstdlib>
 #include "CharClipDisplay.h"
 #include "char/CharBoneDir.h"
 #include "char/CharClip.h"
@@ -336,6 +337,26 @@ void CharDriver::SetBeatScale(float beatscale, bool) {
 }
 
 void CharDriver::Poll() {
+#ifdef HX_NATIVE
+    { static int g = -1; if (g < 0) g = getenv("RB3_NO_CLIP") ? 1 : 0; if (g) return; }
+    // wave-07 CHARDRV_PROBE: confirm CharDriver::Poll runs + whether a clip is
+    // playing (mFirst non-null) for the named clip-type. Default OFF. Match a
+    // driver by ClipType() substring or "*".
+    {
+        const char *dp = getenv("CHARDRV_PROBE");
+        if (dp) {
+            const char *ct = mClipType.Str();
+            if (dp[0] == '*' || (ct && strstr(ct, dp))) {
+                static int n = 0;
+                if ((n++ % 60) == 0)
+                    fprintf(stderr,
+                        "[CHARDRV] this=%p clipType='%s' mFirst=%p bones=%p beat=%.3f apply=%d\n",
+                        (void *)this, ct ? ct : "?", (void *)mFirst, (void *)mBones,
+                        mBeatScale * TheTaskMgr.Beat(), (int)mApply);
+            }
+        }
+    }
+#endif
     float f17 = mBeatScale * TheTaskMgr.Beat();
     float f13 = mBeatScale * TheTaskMgr.DeltaBeat();
     if (mRealign && f17 > 0) {
@@ -396,6 +417,26 @@ void CharDriver::Poll() {
         f13 = -(f14 * f13 - 1.0f);
         if (mPlayMultipleClips)
             f13 = f14;
+#ifdef HX_NATIVE
+        // wave-07 CHARDRV_APPLY: did we reach the ScaleAdd(*mBones) apply for a
+        // driver with a real playing clip? Reports weight f14 + whether mBones set.
+        {
+            const char *dp = getenv("CHARDRV_PROBE");
+            if (dp) {
+                const char *ct = mClipType.Str();
+                if (dp[0] == '*' || (ct && strstr(ct, dp))) {
+                    static int m = 0;
+                    if ((m++ % 60) == 0)
+                        fprintf(stderr,
+                            "[CHARDRV_APPLY] this=%p clipType='%s' mBones=%p weight=%.3f "
+                            "apply=%d clip='%s'\n",
+                            (void *)this, ct ? ct : "?", (void *)mBones, f14, (int)mApply,
+                            mFirst->GetClip() && mFirst->GetClip()->Name()
+                                ? mFirst->GetClip()->Name() : "?");
+                }
+            }
+        }
+#endif
         if (mBones) {
             if (mApply == kApplyBlend || mApply == kApplyBlendWeights) {
                 if (mInternalBones) {

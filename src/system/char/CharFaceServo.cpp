@@ -1,4 +1,5 @@
 #include "char/CharFaceServo.h"
+#include <cstdlib>
 #include "char/CharClip.h"
 #include "char/CharBoneDir.h"
 #include "os/Debug.h"
@@ -55,6 +56,9 @@ void CharFaceServo::ReallocateInternal() { CharBonesMeshes::ReallocateInternal()
 
 // matches in retail
 void CharFaceServo::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_FACE")?1:0; if(g)return; }
+#endif
     START_AUTO_TIMER("faceservo");
     if (mBaseClip) {
         TryScaleDown();

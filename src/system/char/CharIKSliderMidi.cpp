@@ -1,4 +1,5 @@
 #include "char/CharIKSliderMidi.h"
+#include <cstdlib>
 #include "math/Utl.h"
 #include "obj/Task.h"
 #include "rndobj/Utl.h"
@@ -51,6 +52,9 @@ void CharIKSliderMidi::SetFraction(float f1, float f2) {
 }
 
 void CharIKSliderMidi::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     Transform tf48;
     if (!mTarget || !mFirstSpot || !mSecondSpot)
         return;

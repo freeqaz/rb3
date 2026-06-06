@@ -1,4 +1,5 @@
 #include "char/CharIKHand.h"
+#include <cstdlib>
 #include "decomp.h"
 #include "math/Color.h"
 #include "math/Rot.h"
@@ -22,6 +23,9 @@ CharIKHand::~CharIKHand() {}
 #pragma dont_inline on
 // fn_804E02E4 - https://decomp.me/scratch/5zJNZ
 void CharIKHand::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     float charWeight = Weight();
     RndTransformable *trans = mHand;
     if (!trans || mTargets.empty())

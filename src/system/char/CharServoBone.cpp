@@ -39,8 +39,47 @@ void CharServoBone::SetClipType(Symbol sym) {
 }
 
 void CharServoBone::Poll() {
+#ifdef HX_NATIVE
+    // wave-07 SERVO_PROBE: does the body bones object actually Poll + PoseMeshes,
+    // and does a bone's LocalXfm CHANGE? Match by mClipType substring or "*".
+    const char *svp = getenv("SERVO_PROBE");
+    bool svEmit = false;
+    Vector3 prePos(0, 0, 0);
+    RndTransformable *svBone = nullptr;
+    if (svp) {
+        const char *ct = mClipType.Str();
+        if (svp[0] == '*' || (ct && strstr(ct, svp))) {
+            static int s = 0;
+            svEmit = ((s++ % 60) == 0);
+            if (!mMeshes.empty()) {
+                // pick a mid-chain bone (arm region) if present, else mesh[0]
+                for (int i = 0; i < (int)mMeshes.size(); i++) {
+                    const char *nm = mMeshes[i]->Name();
+                    if (nm && strstr(nm, "upperArm")) { svBone = mMeshes[i]; break; }
+                }
+                if (!svBone) svBone = mMeshes[0];
+                prePos = svBone->LocalXfm().v;
+            }
+        }
+    }
+#endif
     if (!mMeshes.empty()) {
         PoseMeshes();
+#ifdef HX_NATIVE
+        if (svEmit) {
+            Vector3 postPos = svBone ? svBone->LocalXfm().v : Vector3(0, 0, 0);
+            Vector3 d;
+            Subtract(postPos, prePos, d);
+            fprintf(stderr,
+                "[SERVO] this=%p clipType='%s' meshes=%d bone='%s' "
+                "preLocal=(%.4f,%.4f,%.4f) postLocal=(%.4f,%.4f,%.4f) moved=%.6f\n",
+                (void *)this, mClipType.Str() ? mClipType.Str() : "?",
+                (int)mMeshes.size(),
+                svBone ? (svBone->Name() ? svBone->Name() : "?") : "(null)",
+                prePos.x, prePos.y, prePos.z, postPos.x, postPos.y, postPos.z,
+                Length(d));
+        }
+#endif
         if (mFacingPosDelta) {
             if (!mMoveSelf) {
                 if (mDeltaChanged) {

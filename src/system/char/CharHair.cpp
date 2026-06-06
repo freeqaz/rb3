@@ -1,4 +1,5 @@
 #include "char/CharHair.h"
+#include <cstdlib>
 #include "char/CharCollide.h"
 #include "decomp.h"
 #include "math/Mtx.h"
@@ -442,6 +443,9 @@ void CharHair::SetName(const char *cc, ObjectDir *dir) {
 }
 
 void CharHair::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_FACE")?1:0; if(g)return; }
+#endif
     if (mMe) {
         if (mMe->GetPollState() == Character::kCharSyncObject)
             Hookup();

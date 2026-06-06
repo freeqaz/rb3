@@ -1,4 +1,5 @@
 #include "char/CharIKHead.h"
+#include <cstdlib>
 #include "decomp.h"
 #include "math/Mtx.h"
 #include "math/Rot.h"
@@ -25,6 +26,9 @@ void CharIKHead::SetName(const char *name, ObjectDir *dir) {
 }
 
 void CharIKHead::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     if (!mHead || !mTarget || !mSpine)
         return;
     UpdatePoints(false);

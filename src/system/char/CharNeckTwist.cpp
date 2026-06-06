@@ -1,4 +1,5 @@
 #include "char/CharNeckTwist.h"
+#include <cstdlib>
 #include "math/Rot.h"
 #include "utl/Symbols.h"
 #include "obj/PropSync_p.h"
@@ -8,6 +9,9 @@ INIT_REVS(CharNeckTwist);
 CharNeckTwist::CharNeckTwist() : mTwist(this, 0), mHead(this, 0) {}
 
 void CharNeckTwist::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     if (!mHead || !mTwist || !mTwist->TransParent())
         return;
     RndTransformable *trans;

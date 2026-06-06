@@ -1,4 +1,14 @@
 #include "bandobj/BandCharacter.h"
+#include <cstdlib>
+#ifdef HX_NATIVE
+#include <cstdio>
+#include <cmath>
+#include <vector>
+#include <list>
+#include <algorithm>
+#include "rndobj/Mesh.h"
+#include "rndobj/Dir.h"
+#endif
 #include "bandobj/BandHeadShaper.h"
 #include "bandobj/BandWardrobe.h"
 #include "char/CharCollide.h"
@@ -85,6 +95,11 @@ BandCharacter::BandCharacter()
     unk734->SetStrictRadiusDelta(5.0f);
     unk734->SetAngRadius(0.17453292f);
     unk734->SetStrictAngDelta(0.2617994f);
+#ifdef HX_NATIVE
+    mNativeReboundOnce = 0;
+    mNativeReboundQuiet = 0;
+    mNativeReboundBody = 0;
+#endif
 }
 
 #pragma push
@@ -403,8 +418,78 @@ void BandCharacter::Poll() {
                 mInstDir->mMinLod = mMinLod;
             }
 
+#ifdef HX_NATIVE
+            // wave-07 BAND_ANIM_PROBE: trace the per-frame band animation chain to
+            // find WHERE the on-stage band skeleton fails to move. Env-gated, default
+            // OFF. BAND_ANIM_PROBE=<substr> matches a member by its dir name (or "*").
+            // Captures: driver presence, the playing clip, and a named bone's worldPos
+            // BEFORE vs AFTER Character::Poll() (the actual skeleton-drive sweep).
+            const char *banimEnv = getenv("BAND_ANIM_PROBE");
+            bool banim = false;
+            RndTransformable *probeBone = nullptr;
+            Vector3 bonePre(0, 0, 0);
+            if (banimEnv) {
+                const char *myName = Name() ? Name() : "?";
+                if (banimEnv[0] == '*' || (myName && strstr(myName, banimEnv)))
+                    banim = true;
+            }
+            if (banim) {
+                const char *bn = getenv("BAND_ANIM_BONE");
+                if (!bn || !bn[0]) bn = "bone_R-upperArm.mesh";
+                probeBone = Find<RndTransformable>(bn, false);
+                if (!probeBone) probeBone = Find<RndTransformable>("bone_pelvis.mesh", false);
+                if (probeBone) bonePre = probeBone->WorldXfm().v;
+            }
+#endif
+
             // Poll base character
             Character::Poll();
+
+#ifdef HX_NATIVE
+            if (banim) {
+                static int frameCt = 0;
+                // throttle: print at most every ~30 frames to keep logs readable
+                bool emit = (frameCt++ % 30) == 0;
+                if (emit) {
+                    const char *myName = Name() ? Name() : "?";
+                    CharDriver *drv = mDriver;
+                    CharClipDriver *fp = drv ? drv->FirstPlaying() : nullptr;
+                    CharClip *clip = drv ? drv->FirstPlayingClip() : nullptr;
+                    CharDriver *u454 = unk454;
+                    CharClip *u454clip = u454 ? u454->FirstPlayingClip() : nullptr;
+                    Vector3 bonePost(0, 0, 0);
+                    if (probeBone) bonePost = probeBone->WorldXfm().v;
+                    float moved = 0.0f;
+                    {
+                        Vector3 d;
+                        Subtract(bonePost, bonePre, d);
+                        moved = Length(d);
+                    }
+                    fprintf(stderr,
+                        "[BAND_ANIM] member='%s' grp='%s' mDriver=%p clipType='%s' "
+                        "FirstPlaying=%p clip='%s' | unk454=%p u454clip='%s' bones=%p | "
+                        "bonePtr=%p "
+                        "bone='%s' pre=(%.4f,%.4f,%.4f) post=(%.4f,%.4f,%.4f) moved=%.6f\n",
+                        myName, mGroupName[0] ? mGroupName : "(none)", (void *)drv,
+                        drv ? drv->ClipType().Str() : "?", (void *)fp,
+                        clip ? (clip->Name() ? clip->Name() : "?") : "(none)",
+                        (void *)u454,
+                        u454clip ? (u454clip->Name() ? u454clip->Name() : "?") : "(none)",
+                        drv ? (void *)drv->GetBones() : nullptr,
+                        (void *)probeBone,
+                        probeBone ? (probeBone->Name() ? probeBone->Name() : "?") : "(null)",
+                        bonePre.x, bonePre.y, bonePre.z,
+                        bonePost.x, bonePost.y, bonePost.z, moved);
+                }
+            }
+
+            // wave-08: now that Character::Poll() has posed the per-member skeleton
+            // for THIS frame (the animated bones are live), repoint the outfit skin
+            // meshes onto them. Runs once per member (mNativeReboundOnce); retries
+            // each Poll until the moving instance is reachable. Must come AFTER
+            // Character::Poll() (skeleton posed) and BEFORE the outfit meshes draw.
+            RebindOutfitBonesToOwnSkeleton();
+#endif
 
             // Poll child characters
             if (mOutfitDir) {
@@ -587,6 +672,249 @@ void BandCharacter::RemoveDrawAndPoll(Character *c) {
     }
 }
 
+#ifdef HX_NATIVE
+// wave-08: rebind this band member's outfit skin meshes from the static shared
+// char/main/skeleton magnet onto the member's OWN animated per-member skeleton.
+//
+// GROUND TRUTH (wave-07 BAND_ANIM_PROBE, built+measured): at Poll time
+// Find<RndTransformable>("bone_R-upperArm.mesh") from THIS BandCharacter resolves
+// to the LIVE per-member skeleton bone (e.g. player0 0x..429c00) which MOVES
+// 100-187u/frame (a real venue clip is playing). The outfit skin meshes, however,
+// are bound at parse/merge time to a DIFFERENT, STATIC shared magnet
+// (char/main/skeleton.milo, 0x..924ec0, worldPos (7.4,-0.8,57.5)). So the band
+// renders static AND the female (trackjacket) flings (her female-authored
+// inverse-bind offset lands on the male-bind static magnet -> skinPos 19.8u).
+//
+// FIX: for each outfit skin bone, look up its animated counterpart BY NAME and
+// SetBone(b, own, /*calcOffset=*/false) — keeping the authored gender-correct
+// offset while repointing to the moving instance. This fixes BOTH the static band
+// (the bone now animates) AND the female fling (her female offset now composes
+// against her female-posed per-member bone -> skinPos ~0). Runs once per member,
+// after the per-member skeleton is live (guarded by mNativeReboundOnce). Only
+// touches bones whose Find resolves to a DIFFERENT instance than the bound one
+// (own != bound) so already-correct binds are left alone.
+//
+// SUPERSEDES the wave-06 renderer SKEL_REBAKE (which rebakes against the static
+// magnet and would CONFLICT): each rebound mesh sets RndMesh::mNativeBonesRebound,
+// which the renderer's rebake AND fling-clamp both skip (the clamp would freeze a
+// now-correctly-animating arm). The clamp stays live for crowd/extras + any
+// dynamic hair/face bones we don't rebind.
+//
+// DEFAULT-ON, TORSO-SCOPED (opt-out RB3_NO_SKEL_REBIND=1) — see the wave-08 finding.
+// The rebind repoints the outfit skin meshes from the static shared char/main/
+// skeleton magnet onto the member's OWN animated per-member skeleton bone (resolved
+// by name via Find, which at Poll time returns the LIVE moving instance), so the
+// band ANIMATES: the OUTFIT-bound bone_R-upperArm worldPos goes from byte-identical-
+// static to 744+ distinct values, up to ~200u/frame (MEASURED), and the female
+// trackjacket stops flinging (skin-to-bone delta 50-65u limb extent, clean — was a
+// ~20u static bind mismatch before).
+//
+// SCOPE = TORSO CLOTHING ONLY (trackjacket / vestdenim / plaidshirt / shred + _skin).
+// The high-bone head/hands/face meshes are DELIBERATELY NOT rebound: their long-thin
+// geometry (hair strands, fingers) shards when skinned to the animated bone, because
+// the animated per-member bone's rotation BASIS differs from the static magnet the
+// authored offsets were baked against (bone ORIGINS map correctly — translation
+// delta <65u — but a basis mismatch flings vertices far from the bone origin into
+// thin radiating shards; calcOffset=true shards too, since the skeleton is already
+// animating when first reachable so there is no rest frame to re-bake). The compact
+// torso/arm clothing has no such long-thin geometry, so it rebinds CLEANLY and
+// animates. Head/hands stay coherent-static via the wave-06 rebake (which still runs
+// on the non-rebound meshes). Full-scope rebind (incl. head/hands) is available for
+// study via RB3_SKEL_REBIND_FULL=1 (it animates the whole body but shards thin geo).
+// Opt-out the whole rebind with RB3_NO_SKEL_REBIND=1 (-> wave-06 coherent static).
+void BandCharacter::RebindOutfitBonesToOwnSkeleton() {
+    static int sDisabled = -1;
+    if (sDisabled < 0) sDisabled = getenv("RB3_NO_SKEL_REBIND") ? 1 : 0;
+    if (sDisabled) return;
+    if (mNativeReboundOnce) return; // fully rebound: never scan again
+
+    bool probe = getenv("SKEL_REBIND_PROBE") != 0;
+    int meshes = 0, slots = 0, reboundBones = 0, reboundMeshes = 0;
+    int sawAnimated = 0;  // bones whose Find result differs from the bound magnet
+    int gotBodyMesh = 0;  // rebound at least one high-bone (>=20) body/face mesh
+
+    // Collect every skinned mesh the band member draws. The face/hand/tongue/teeth
+    // skin meshes live in mOutfitDir's hashtable (reached by ObjDirItr), but the
+    // BODY clothing meshes (trackjacket / vestdenim / plaidshirt / shred + _skin.N)
+    // are merged resources with an EMPTY dir name — NOT in any hashtable — and are
+    // only reachable by walking the dir's DRAW tree (mDraws -> RndGroup patch.grp ->
+    // nested meshes), via the engine-native RndDrawable::ListDrawChildren recursion.
+    std::vector<RndMesh *> targets;
+    // OUTFIT scope only: `this` (member props) + mOutfitDir (clothing/face/hands).
+    // mInstDir (guitar / mic / drums) is DELIBERATELY excluded — instruments attach
+    // to specific hand/prop bones, not the gender skeleton; rebinding their bones to
+    // animated character bones distorts the prop (thin radiating shards).
+    Character *drawChars[2] = { this, (Character *)mOutfitDir };
+    // worklist of drawables to expand (start with each dir's top draw list)
+    std::vector<RndDrawable *> work;
+    for (int d = 0; d < 2; d++) {
+        Character *dc = drawChars[d];
+        if (!dc) continue;
+        RndDir *dd = dc;
+        // (1) hashtable objects (face/hands/etc.)
+        for (ObjDirItr<RndMesh> mit(dd, true); mit != 0; ++mit) {
+            RndMesh *m = mit;
+            if (m && m->NumBones() != 0 &&
+                std::find(targets.begin(), targets.end(), m) == targets.end())
+                targets.push_back(m);
+        }
+        // (2) seed the draw-tree walk from the dir's own draw list
+        for (std::vector<RndDrawable *>::iterator it = dd->mDraws.begin();
+             it != dd->mDraws.end(); ++it)
+            work.push_back(*it);
+        // (3) seed from every LOD's draw group + trans group — this is where the
+        // BODY CLOTHING (trackjacket / vestdenim / plaidshirt / shred + _skin.N)
+        // actually lives (Character::DrawLodOrShadow draws curLod->Group()). It is
+        // NOT in mDraws, so without this the female torso mesh is never reached.
+        for (int li = 0; li < dc->mLods.size(); li++) {
+            if (dc->mLods[li].Group()) work.push_back(dc->mLods[li].Group());
+            if (dc->mLods[li].TransGroup()) work.push_back(dc->mLods[li].TransGroup());
+        }
+    }
+    // (3) recurse the draw tree (groups -> nested clothing meshes). Bounded by a
+    // visited set so a cyclic/shared group reference cannot loop forever.
+    std::vector<RndDrawable *> visited;
+    while (!work.empty()) {
+        RndDrawable *dr = work.back();
+        work.pop_back();
+        if (!dr) continue;
+        if (std::find(visited.begin(), visited.end(), dr) != visited.end()) continue;
+        visited.push_back(dr);
+        RndMesh *m = dynamic_cast<RndMesh *>(dr);
+        if (m) {
+            if (m->NumBones() != 0 &&
+                std::find(targets.begin(), targets.end(), m) == targets.end())
+                targets.push_back(m);
+        }
+        std::list<RndDrawable *> kids;
+        dr->ListDrawChildren(kids);
+        for (std::list<RndDrawable *>::iterator k = kids.begin(); k != kids.end(); ++k)
+            if (*k && std::find(visited.begin(), visited.end(), *k) == visited.end())
+                work.push_back(*k);
+    }
+
+    // TORSO-CLOTHING-ONLY by default (the clean scope — see header comment). Rebind
+    // only the body clothing meshes (which have compact geometry and rebind without
+    // shards), skipping the high-bone head/hands/face whose long-thin geometry shards
+    // under the rotation-basis mismatch. RB3_SKEL_REBIND_FULL=1 rebinds everything
+    // (animates the whole body but shards thin geo — for study only).
+    static int sTorsoOnly = -1;
+    if (sTorsoOnly < 0) sTorsoOnly = getenv("RB3_SKEL_REBIND_FULL") ? 0 : 1;
+    for (std::vector<RndMesh *>::iterator mi = targets.begin();
+         mi != targets.end(); ++mi) {
+        RndMesh *mesh = *mi;
+        if (mesh->mNativeBonesRebound) continue; // already rebound: don't re-touch
+        if (sTorsoOnly) {
+            const char *mn = mesh->Name();
+            bool torso = mn && (strstr(mn, "trackjacket") || strstr(mn, "vestdenim") ||
+                                strstr(mn, "plaidshirt") || strstr(mn, "shred"));
+            if (!torso) continue;
+        }
+        meshes++;
+        if (probe && meshes <= 16) {
+            fprintf(stderr, "[SKEL_REBIND]   mesh='%s' numBones=%d\n",
+                    mesh->Name() ? mesh->Name() : "?", mesh->NumBones());
+        }
+        int meshRebound = 0;
+        for (int b = 0; b < mesh->NumBones(); b++) {
+            RndTransformable *bound = mesh->BoneTransAt(b);
+            if (!bound || !bound->Name()) continue;
+            slots++;
+            RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
+            if (!own) continue;
+            if (own == bound) continue; // already bound to resolvable instance
+            sawAnimated++;
+            static int sCalc = -1;
+            if (sCalc < 0) sCalc = getenv("RB3_SKEL_REBIND_CALCOFF") ? 1 : 0;
+            mesh->SetBone(b, own, sCalc != 0);
+            reboundBones++;
+            meshRebound++;
+            if (probe && reboundBones <= 8) {
+                fprintf(stderr,
+                    "[SKEL_REBIND] member='%s' mesh='%s' bone='%s' magnet=%p -> own=%p\n",
+                    Name() ? Name() : "?", mesh->Name() ? mesh->Name() : "?",
+                    bound->Name(), (void *)bound, (void *)own);
+            }
+        }
+        if (meshRebound > 0) {
+            mesh->mNativeBonesRebound = true; // renderer: skip rebake + clamp
+            reboundMeshes++;
+            // Latch gate: any torso clothing mesh (>=11 bones) counts as "body
+            // caught". Some torso meshes (vestdenim_resource=18, shred_resource=19,
+            // trackjacket_skin.2=11) are <20 bones, so a >=20 gate could miss a
+            // member; >=11 covers every torso outfit mesh while still excluding
+            // low-bone props/instruments.
+            if (mesh->NumBones() >= 11) gotBodyMesh = 1;
+            // Optional post-rebind verification (gated SKEL_REBIND_SKINPOS=1). The
+            // TRUE skinning-correctness metric is |skinWorld - boneWorld| — how far a
+            // bone's composed skin places its vertices from the bone itself. For clean
+            // skinning this is bounded by limb/joint extent (~40-65u, MEASURED); a
+            // broken bind would fling it to hundreds/thousands. NOTE: a skinned mesh's
+            // own WorldXfm is identity (the renderer convention — the palette already
+            // carries world space), so a "mesh-local" (skin * inv(meshWorld)) measure
+            // is NOT a bind-mismatch — it just reads back the character's world
+            // position (~hundreds of u from origin) and is misleading; use the
+            // bone-relative delta below.
+            if (getenv("SKEL_REBIND_SKINPOS")) {
+                float worst = 0.f;
+                const char *worstBone = "?";
+                for (int b2 = 0; b2 < mesh->NumBones(); b2++) {
+                    RndTransformable *bt = mesh->BoneTransAt(b2);
+                    if (!bt) continue;
+                    Transform skin;
+                    Multiply(mesh->BoneOffsetAt(b2), bt->WorldXfm(), skin);
+                    Vector3 d;
+                    Subtract(skin.v, bt->WorldXfm().v, d);
+                    float dd = d.x * d.x + d.y * d.y + d.z * d.z;
+                    if (dd > worst) {
+                        worst = dd;
+                        worstBone = bt->Name() ? bt->Name() : "?";
+                    }
+                }
+                fprintf(stderr,
+                    "[SKEL_REBIND_SKINPOS] member='%s' mesh='%s' worstBone='%s' "
+                    "skinToBoneDelta=%.3fu (clean<~65u limb extent; fling=hundreds)\n",
+                    Name() ? Name() : "?", mesh->Name() ? mesh->Name() : "?",
+                    worstBone, std::sqrt(worst));
+            }
+        }
+    }
+
+    // LATCH only once the rebind is COMPLETE. The body clothing + face/hands skin
+    // meshes (>=20 bones) can become reachable a few frames AFTER the hair props,
+    // so an early latch on the FIRST rebound bone would freeze before the body is
+    // caught (regression: female torso/arm left flung). Strategy: keep scanning each
+    // Poll; whenever a scan rebinds something new, reset the quiet counter; once we
+    // have rebound a high-bone body/face mesh AND a later scan finds nothing new for
+    // several consecutive Polls, latch and stop scanning. Meshes already rebound are
+    // skipped above, so re-scans only cost the dir/draw-tree walk (bounded).
+    if (gotBodyMesh) mNativeReboundBody = 1;
+    if (reboundBones > 0) {
+        mNativeReboundQuiet = 0;
+    } else {
+        mNativeReboundQuiet++;
+        // Only latch after the body was caught AND a sustained quiet period (late
+        // LOD pieces — shoes / pants / accessories — stream in a second or more
+        // after the torso, so a short quiet window would latch before they bind and
+        // leave them to the fling-clamp). ~90 quiet Polls (>1s) covers the streaming
+        // tail. Fallback long grace for members with no >=20-bone outfit (low-LOD /
+        // instrument-only dirs) so scanning still stops. The per-mesh
+        // mNativeBonesRebound skip keeps the re-scan cost bounded meanwhile.
+        if ((mNativeReboundBody && mNativeReboundQuiet >= 90) ||
+            mNativeReboundQuiet >= 600)
+            mNativeReboundOnce = 1;
+    }
+
+    if (probe && (meshes > 0 || reboundBones > 0)) {
+        fprintf(stderr,
+            "[SKEL_REBIND] member='%s' meshes=%d slots=%d reboundBones=%d "
+            "reboundMeshes=%d body=%d quiet=%d latched=%d\n",
+            Name() ? Name() : "?", meshes, slots, reboundBones, reboundMeshes,
+            mNativeReboundBody, mNativeReboundQuiet, mNativeReboundOnce);
+    }
+}
+#endif
+
 #pragma push
 #pragma pool_data off
 void BandCharacter::SyncObjects() {
@@ -645,6 +973,80 @@ void BandCharacter::SyncObjects() {
         (*it)->Hookup(unk5e0);
     }
     Character::SyncObjects();
+#ifdef HX_NATIVE
+    // SKEL_REBIND (wave-06): DIAGNOSTIC ONLY, default OFF. A per-member skin-bone
+    // rebind onto whatever Find<RndTransformable>(boneName) resolves to in THIS
+    // member's dir tree. PROVEN A NO-OP this wave: Find from the BandCharacter dir
+    // returns the SAME shared char/main/skeleton.milo magnet the outfit meshes are
+    // already bound to (SKEL_REBIND_PROBE: reboundDiff=0 same=4; only ONE
+    // bone_R-upperArm instance reachable in the member subtree). There is no live,
+    // per-member, female-posed skeleton to rebind to — the char pose pipeline
+    // (CharUtlFindBoneTrans -> dir->Find) also resolves to that one magnet, which is
+    // STATIC (never animated). So the faithful "rebind to own live skeleton" path is
+    // not reachable without a deep, crowd-affecting loader un-share. The shipped fix
+    // is the renderer-side static-pose offset rebake (Rnd_Wgpu_RB3.cpp SKEL_REBAKE).
+    // This block stays purely as a probe (enable with SET_SKEL_REBIND=1). The Wii
+    // path is byte-identical (HX_NATIVE).
+    {
+        static int sRebind = -1;
+        if (sRebind < 0) sRebind = getenv("SET_SKEL_REBIND") ? 1 : 0;
+        bool probe = getenv("SKEL_REBIND_PROBE") != 0;
+        if (sRebind || probe) {
+        int meshes = 0, rebound = 0, same = 0, nullown = 0, slots = 0, logged = 0;
+        for (ObjDirItr<RndMesh> mit(this, true); mit != 0; ++mit) {
+            RndMesh *mesh = mit;
+            if (!mesh || mesh->NumBones() == 0) continue;
+            meshes++;
+            for (int b = 0; b < mesh->NumBones(); b++) {
+                RndTransformable *bound = mesh->BoneTransAt(b);
+                if (!bound || !bound->Name()) continue;
+                slots++;
+                RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
+                if (!own) { nullown++; continue; }
+                if (own != bound) {
+                    if (probe && logged < 6) {
+                        fprintf(stderr,
+                            "[SKEL_REBIND] member='%s' mesh='%s' bone='%s' bound=%p own=%p REBIND\n",
+                            Name() ? Name() : "?", mesh->Name() ? mesh->Name() : "?",
+                            bound->Name(), (void *)bound, (void *)own);
+                        logged++;
+                    }
+                    if (sRebind) mesh->SetBone(b, own, false);
+                    rebound++;
+                } else {
+                    same++;
+                }
+            }
+        }
+        // Probe whether any per-member skeleton instance distinct from the bound
+        // magnet exists in this member's subtree (for the key arm bone).
+        if (probe && meshes > 0) {
+            int distinct = 0; void *seen[16]; int ns = 0;
+            for (ObjDirItr<RndTransformable> tit(this, true); tit != 0; ++tit) {
+                RndTransformable *t = tit;
+                if (!t || !t->Name() || strstr(t->Name(), "bone_R-upperArm") == 0)
+                    continue;
+                bool dup = false;
+                for (int k = 0; k < ns; k++) if (seen[k] == (void *)t) dup = true;
+                if (!dup && ns < 16) { seen[ns++] = (void *)t; distinct++;
+                    ObjectDir *d = t->Dir();
+                    fprintf(stderr,
+                        "[SKEL_REBIND]   upperArm instance=%p dirFile='%s'\n", (void *)t,
+                        (d && !d->mStoredFile.empty()) ? d->mStoredFile.c_str() : "-");
+                }
+            }
+            fprintf(stderr,
+                "[SKEL_REBIND]   distinct upperArm instances in member subtree=%d\n",
+                distinct);
+        }
+        if (probe) {
+            fprintf(stderr,
+                "[SKEL_REBIND] member='%s' skinMeshes=%d slots=%d reboundDiff=%d same=%d nullOwn=%d\n",
+                Name() ? Name() : "?", meshes, slots, rebound, same, nullown);
+        }
+        } // if (sRebind || probe)
+    }
+#endif
     for (ObjPtrList<CharBoneOffset, ObjectDir>::iterator it = unk640.begin();
          it != unk640.end();
          ++it) {
@@ -1080,6 +1482,9 @@ void BandCharacter::SyncOutfitConfig(OutfitConfig *cfg) {
 }
 
 void BandCharacter::SetDeformation() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_DEFORM")?1:0; if(g)return; }
+#endif
     CharClip *clip = BandCharDesc::GetDeformClip(mGender);
     if (clip) {
         CharBonesMeshes meshes;
@@ -1873,23 +2278,46 @@ MergeFilter::Action BandCharacter::FilterSubdir(ObjectDir *o1, ObjectDir *toDir)
 #ifdef HX_NATIVE
     // Native load-order fix (char textures rendering white). A shared external
     // resource milo (its own file on disk, e.g. char/main/shared/colorpalettes.milo
-    // — the base skin/cloth texture palette referenced by every character) is
-    // loaded ONCE and referenced as a subdir by many milos via share=true. The
-    // matched action for such a subdir under mSubdirs=kAllSubdirs is kMerge, which
-    // MOVES (SetName) its texture objects into THIS character dir, draining the
-    // shared instance. On Wii each referencing milo finishes its atomic load (its
-    // materials resolving textures against the still-intact subdir) before any
-    // merge drains it. On native the loader advances one state per poll, so a
-    // concurrent character merge drains the shared palette mid-load of a sibling
-    // milo — that sibling's materials then resolve their RndTex ObjPtrs to null
-    // (the "couldn't find dummy_torso.tex" cascade) and render with the white
-    // fallback texture. Keep an external shared resource subdir as a REFERENCE
-    // (kReplace appends it as a subdir of the character) instead of draining it:
-    // the palette stays intact, every character's materials resolve their textures
-    // through the kept shared subdir, regardless of native load interleaving.
-    // Scoped to subdirs that are their own on-disk milo (non-empty stored file) —
-    // truly-inline subdirs (embedded, empty stored file) still merge normally.
-    // Guarded so the Wii-matched path below is byte-identical to the original.
+    // — the base skin/cloth texture palette referenced by every character) is loaded
+    // ONCE and referenced as a subdir by many milos via share=true. The matched
+    // action for such a subdir under mSubdirs=kAllSubdirs is kMerge, which MOVES
+    // (SetName) its texture objects into THIS character dir, draining the shared
+    // instance. On Wii each referencing milo finishes its atomic load (its materials
+    // resolving textures against the still-intact subdir) before any merge drains it.
+    // On native the loader advances one state per poll, so a concurrent character
+    // merge drains the shared palette mid-load of a sibling milo — that sibling's
+    // materials then resolve their RndTex ObjPtrs to null (the "couldn't find
+    // dummy_torso.tex" cascade) and render with the white fallback texture. Keep an
+    // external shared resource subdir as a REFERENCE (kReplace appends it as a subdir
+    // of the character) instead of draining it: the palette stays intact, every
+    // character's materials resolve their textures through the kept shared subdir,
+    // regardless of native load interleaving. Scoped to subdirs that are their own
+    // on-disk milo (non-empty stored file). Guarded so the Wii-matched path below is
+    // byte-identical to the original.
+    //
+    // NOTE (mixed-gender band-member skinning deformation): the deform is NOT fixed
+    // here, and it is NOT caused by this shim. ROOT CAUSE (2026-06-06, hard-evidenced,
+    // engine BAND_DRAW_PROBE / SKEL_LOAD_PROBE / INSTALL_PROBE): all four band outfit
+    // meshes bind to ONE shared char/main/skeleton_unshared.milo instance (parent==nil
+    // root) at the MALE bind. That shared root is established by NAME RESOLUTION, not by
+    // this merge: each char RESOURCE milo (vocal/viseme/guitar/..._resource.milo) lists
+    // `char/main/skeleton.milo` as a share=true non-inlined subdir, so the FIRST loader
+    // creates it and every subsequent reference (DirLoader::Find) shares it
+    // (ObjectDir::LoadSubDir, Dir.cpp). The per-member main.milo skeleton DOES load
+    // fresh per member (kInlineCached, 4 distinct instances) but the OUTFIT meshes never
+    // bind to it — they bind to the shared skeleton.milo root. The female member
+    // (player1, trackjacket: inverse-binds baked for the FEMALE bind) therefore lands on
+    // the male-bind shared skeleton and flings ~20u (skinPos=(19.8,3.8,0.4)). PROVEN
+    // dead-ends: scoping this shim to kInlineNever palettes (outfits kMerge) — band
+    // still binds the shared root, female still flung; full shim-off (retail kMerge) —
+    // same shared root + white textures; pruning char_shared's `../skeleton.milo`
+    // subdir — strips ALL outfit bones (they had already consolidated onto it). The
+    // faithful fix must un-share `char/main/skeleton.milo` for the band at the
+    // name-resolution / share layer (broad, high-risk; would also touch the crowd) AND
+    // pose each per-member skeleton to its outfit's gender bind (skeleton_unshared.milo
+    // is itself male-bind; the gender pose comes from the outfit/clip). The renderer
+    // fling clamp (RB3_NO_SKIN_CLAMP) is the shipped fix. See
+    // docs/native/CHAR_SKINNING_DEFORM_INVESTIGATION.md.
     MergeFilter::Action act =
         DefaultSubdirAction(o1, (Subdirs)mFileMerger->mFilesPending.front()->mSubdirs);
     if (act == MergeFilter::kMerge && o1 && !o1->mStoredFile.empty()) {

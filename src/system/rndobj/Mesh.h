@@ -369,6 +369,14 @@ public:
     unsigned int mNumCompressedVerts; // 0x118
     FileLoader *mFileLoader; // 0x11c
     GXColor mBoxLightColorsCached[6]; // 0x120
+#ifdef HX_NATIVE
+    // Native-only: set when BandCharacter has rebound this mesh's bones to the
+    // band member's own gender-correct skeleton, so the renderer's fling-clamp
+    // (Rnd_Wgpu_RB3.cpp) skips this mesh — its arm bones now animate correctly
+    // and must not be frozen to bind. Appended after the matched layout so the
+    // Wii image is byte-identical. Default false.
+    bool mNativeBonesRebound;
+#endif
 };
 
 BinStream &operator>>(BinStream &, RndMesh::Vert &);

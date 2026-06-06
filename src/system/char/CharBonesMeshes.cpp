@@ -96,6 +96,13 @@ void CharBonesMeshes::AcquirePose() {
 
 // fn_804B0C60 - pose meshes
 void CharBonesMeshes::PoseMeshes() {
+#ifdef HX_NATIVE
+    // Q1 DECISIVE TEST: skip writing CharBones channel data back into bone
+    // LocalXfms. Bones stay at their loaded/bind LocalXfm. If chars render
+    // clean -> PoseMeshes (channel partition) is the deformer.
+    if (getenv("RB3_NO_POSEMESHES"))
+        return;
+#endif
     ObjOwnerPtr<RndTransformable> *curMesh = &mMeshes[0];
     Vector3 *end = (Vector3 *)ScaleOffset();
     for (Vector3 *p = (Vector3 *)Start(); p < end; p++, curMesh++) {
@@ -110,7 +117,7 @@ void CharBonesMeshes::PoseMeshes() {
             if (getenv("CBM_DBG2")) {
                 const char* bn = (*curMesh)->Name() ? (*curMesh)->Name() : "?";
                 const char* f = getenv("CBM_DBG2");
-                if (strstr(bn, f)) {
+                if (f[0]=='*' || strstr(bn, f)) {
                     float mag = std::sqrt(p->x*p->x+p->y*p->y+p->z*p->z+p->w*p->w);
                     fprintf(stderr, "[CBM_DBG2] QUAT bone='%s' quatMag=%.4f\n", bn, mag);
                 }

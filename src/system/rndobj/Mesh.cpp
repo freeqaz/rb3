@@ -331,6 +331,9 @@ RndMesh::RndMesh()
     mKeepMeshData = false;
     mUseCachedBoxLightColors = true;
     mForceNoQuantize = false;
+#ifdef HX_NATIVE
+    mNativeBonesRebound = false;
+#endif
 }
 
 RndMesh::~RndMesh() {
@@ -478,6 +481,11 @@ void RndMesh::PostLoadVertices(BinStream &bsIn) {
         // mCompressedVerts (count * loadedCompressedSize bytes) and let the
         // engine mesh backend (rb3/native) unpack it (Xbox DEC4N/half-float).
         // mGeomOwner->mVerts stays empty; the backend uses mCompressedVerts.
+        if (getenv("STRIDE_PROBE")) {
+            fprintf(stderr, "[STRIDE_PROBE] mesh='%s' count=%d perVertSize=%u ver=%u skinned=%d\n",
+                    Name() ? Name() : "?", count, loadedCompressedSize, loadedVersion,
+                    (int)!mBones.empty());
+        }
         if (loadedCompressedSize > 0 && count > 0) {
             mNumCompressedVerts = count;
             unsigned int blobSize = loadedCompressedSize * (unsigned int)count;

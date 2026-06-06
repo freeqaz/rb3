@@ -1,4 +1,5 @@
 #include "char/CharLookAt.h"
+#include <cstdlib>
 #include "math/Mtx.h"
 #include "math/Utl.h"
 #include "math/Rot.h"
@@ -68,6 +69,9 @@ void CharLookAt::Highlight() {
 #pragma push
 #pragma dont_inline on
 void CharLookAt::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     RndTransformable *srcTrans = GetSource();
     float deltasecs = TheTaskMgr.DeltaSeconds();
     if (mDest && mPivot) {

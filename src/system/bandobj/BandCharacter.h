@@ -105,6 +105,16 @@ public:
     void SetInstrumentType(Symbol);
     void SetGroupName(const char *);
     void SetHeadLookatWeight(float);
+#ifdef HX_NATIVE
+    // wave-08 native-only: repoint this band member's outfit skin meshes from the
+    // static shared char/main/skeleton magnet onto the member's OWN animated
+    // per-member skeleton bones (resolved by name via Find<RndTransformable>). Keeps
+    // the authored gender-correct inverse-bind offset (SetBone calcOffset=false) so
+    // the female stops flinging AND the band animates. Idempotent (runs once per
+    // member, mNativeReboundOnce guard). Called from Poll once Find resolves to the
+    // moving instance. No-op on Wii (HX_NATIVE only). Opt-out RB3_NO_SKEL_REBIND=1.
+    void RebindOutfitBonesToOwnSkeleton();
+#endif
     CharClipDriver *SetState(const char *, int, int, bool, bool);
     bool InVignetteOrCloset() const;
     void RemoveDrawAndPoll(Character *);
@@ -231,4 +241,16 @@ public:
     unsigned int unk738; // 0x738
     ObjPtrList<RndMesh, ObjectDir> unk73c; // 0x73c
     ObjPtrList<RndMesh, ObjectDir> unk74c; // 0x74c
+#ifdef HX_NATIVE
+    // wave-08 native-only: rebind bookkeeping for RebindOutfitBonesToOwnSkeleton
+    // (called from Poll). mNativeReboundOnce latches to 1 once the rebind is COMPLETE
+    // (the body clothing + face/hands have been repointed AND a later scan finds
+    // nothing new), after which Poll skips the scan entirely. mNativeReboundQuiet
+    // counts consecutive no-new-rebind scans since the last rebind, so a late-loading
+    // body mesh is still caught before latching. Appended after the matched layout so
+    // the Wii image stays byte-identical. Default 0.
+    int mNativeReboundOnce;
+    int mNativeReboundQuiet;
+    int mNativeReboundBody; // ever rebound a >=20-bone body/face mesh (latch gate)
+#endif
 };

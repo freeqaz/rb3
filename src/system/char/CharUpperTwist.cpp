@@ -1,4 +1,5 @@
 #include "char/CharUpperTwist.h"
+#include <cstdlib>
 #include "math/Rot.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
@@ -12,6 +13,9 @@ CharUpperTwist::~CharUpperTwist() {}
 
 // fn_804FAB0C - poll
 void CharUpperTwist::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     if (!mTwist2 || !mTwist1 || !mUpperArm)
         return;
     Transform &twist2parentworld = mTwist2->TransParent()->WorldXfm();

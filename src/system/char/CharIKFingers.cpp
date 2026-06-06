@@ -1,4 +1,5 @@
 #include "char/CharIKFingers.h"
+#include <cstdlib>
 #include "math/Color.h"
 #include "math/Mtx.h"
 #include "math/Rot.h"
@@ -185,6 +186,9 @@ void CharIKFingers::SetName(const char *name, ObjectDir *dir) {
 #pragma pop
 
 void CharIKFingers::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     if (!mHand || !mIsSetup)
         return;
     else {

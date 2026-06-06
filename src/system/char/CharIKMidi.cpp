@@ -1,4 +1,5 @@
 #include "char/CharIKMidi.h"
+#include <cstdlib>
 #include "char/Char.h"
 #include "math/Rot.h"
 #include "math/Utl.h"
@@ -48,6 +49,9 @@ void CharIKMidi::NewSpot(RndTransformable *t, float f) {
 }
 
 void CharIKMidi::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     if (mBone) {
         if (mSpotChanged) {
             mSpotChanged = false;

@@ -6,6 +6,7 @@
 #define CHARHAIR_LOCAL_MULTIPLY
 #endif
 #include "char/CharForeTwist.h"
+#include <cstdlib>
 #include "math/Rot.h"
 #include "obj/ObjMacros.h"
 #include "obj/Object.h"
@@ -140,6 +141,9 @@ inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 
 CharForeTwist::CharForeTwist() : mHand(this), mTwist2(this), mOffset(0.0f), mBias(0.0f) {}
 
 void CharForeTwist::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     if (!mHand || !mTwist2 || !mHand->TransParent() || !mTwist2->TransParent())
         return;
     Transform &parentxfm = mHand->TransParent()->WorldXfm();

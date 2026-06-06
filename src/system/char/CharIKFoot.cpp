@@ -1,4 +1,5 @@
 #include "char/CharIKFoot.h"
+#include <cstdlib>
 #include "utl/Symbols.h"
 
 INIT_REVS(CharIKFoot)
@@ -83,6 +84,9 @@ void CharIKFoot::DoFSM(Transform &tf) {
 }
 
 void CharIKFoot::Poll() {
+#ifdef HX_NATIVE
+    { static int g=-1; if(g<0)g=getenv("RB3_NO_IK")?1:0; if(g)return; }
+#endif
     if (!mFinger || !mHand || !mData)
         return;
     mTargets.clear();
