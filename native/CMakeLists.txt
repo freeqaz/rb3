@@ -477,6 +477,10 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # TASK A4 (audio-perf): per-frame JSONL stutter tracer (RB3_FRAME_TRACE=<path>).
+    # Defines the asset-event counters (gFrameTrace*) incremented from the engine
+    # choke points (LoadMgr::AddLoader, Synth::NewStream) + RB3FrameTraceRecord.
+    ${CMAKE_SOURCE_DIR}/src/rb3_frame_trace.cpp
     # REAL live input: keyboard (+ USB gamepad) -> JoypadData -> SendButtonMessages.
     # Strong JoypadInit/Poll/Reset/Terminate defs override the weak no-op stubs in
     # dta_link_stubs.s; SystemPoll(false) -> JoypadPoll() (System.cpp:673) drives it
@@ -564,6 +568,49 @@ rb3_configure_target(rb3-native)
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_http_server.cpp
     PROPERTIES COMPILE_OPTIONS
     "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
+
+# ============================================================================
+# rb3-tests — native convergence/regression test suite (GoogleTest).
+#
+# Mirrors dc3-decomp/native/tests' milo-tests target: it compiles the SAME
+# object set as rb3-native (so static-init object-factory registration stays
+# live — a static lib would drop unreferenced factory TUs) MINUS main_native.cpp
+# (gtest_main provides main()), then links GTest. Tests live in native/tests/.
+#
+# DRY: instead of duplicating rb3-native's ~40-entry source list, read it back
+# off the target and drop its main(). Both targets therefore always share the
+# exact same engine/glue surface.
+# ============================================================================
+option(BUILD_TESTS "Build the rb3-native gtest convergence suite" ON)
+if(BUILD_TESTS)
+    find_package(GTest REQUIRED)
+    enable_testing()
+
+    get_target_property(_RB3_NATIVE_SRCS rb3-native SOURCES)
+    list(REMOVE_ITEM _RB3_NATIVE_SRCS ${CMAKE_SOURCE_DIR}/src/main_native.cpp)
+
+    add_executable(rb3-tests
+        ${CMAKE_SOURCE_DIR}/tests/test_helpers.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_binstream.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_subsystems.cpp
+        ${_RB3_NATIVE_SRCS}
+    )
+    rb3_configure_target(rb3-tests)
+    target_include_directories(rb3-tests PRIVATE ${CMAKE_SOURCE_DIR}/tests)
+    target_link_libraries(rb3-tests PRIVATE GTest::gtest GTest::gtest_main)
+
+    include(GoogleTest)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tmp")
+    # PRE_TEST discovery: enumerate at ctest time, not build time, so a build
+    # never blocks on (or fails from) running the freshly-linked binary. The
+    # engine is a process-global singleton, so serialize the in-process tests.
+    gtest_discover_tests(rb3-tests
+        DISCOVERY_MODE PRE_TEST
+        PROPERTIES
+            ENVIRONMENT "TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/tmp"
+            RESOURCE_LOCK "rb3_engine_singleton"
+            TIMEOUT 180)
+endif()
 
 else() # EMSCRIPTEN — web target
 
