@@ -30,6 +30,11 @@ python3 scripts/native/audio_verify.py /tmp/cap.wav \
 
 # 2b. single reference — full metric report + verdict
 python3 scripts/native/audio_verify.py /tmp/cap.wav --song 20thcenturyboy --section gameplay
+
+# 3. TIGHT rate bound (numeric, < 0.1%) — not the flat-curve argument above
+python3 scripts/native/audio_drift.py --selftest                 # prove recovery first
+python3 scripts/native/audio_drift.py /tmp/cap.wav --ref /tmp/cap.wav   # self-ref drift (no clock drift?)
+python3 scripts/native/audio_drift.py /tmp/cap.wav --song 20thcenturyboy --ratefit  # rule out a uniform chipmunk
 ```
 
 Verdicts: **MATCH** (same song, right rate, not clipped) · **DEGRADED**
@@ -59,9 +64,40 @@ chroma/speed sweep is the rate gate.
 native MOGG_DBG) → ffmpeg multichannel decode → the game's exact pan/vol downmix
 (`StreamReceiver_Native.cpp` linear pan law), no clamp (full headroom). Sections:
 `--section gameplay` (whole song) or `--section preview` (the `(preview a b)`
-window). **Only 3 songs have an extracted `.mogg`** today —
-`20thcenturyboy` (15ch), `25or6to4` (11ch), `antibodies` (11ch) — so `--song` /
-`--rank` are limited to those; `--ref WAV` works for any pre-decoded reference.
+window). **83 of 84 songs now have an extracted `.mogg`** (symlinked under
+`orig-assets/extracted/songs/<id>/<id>.mogg`), so `--song` / `--rank` work for the
+whole on-disk roster; the always-present trio is `20thcenturyboy` (15ch),
+`25or6to4` (11ch), `antibodies` (11ch); `--ref WAV` works for any pre-decoded ref.
+
+**`--same-mix` (post-limiter reference).** `decode_reference.py <song> --same-mix`
+ALSO applies a faithful Python port of the engine's master bus
+(`AudioDevice.cpp PumpAudio`: pre-gain + stereo-linked one-pole peak limiter,
+INSTANT attack, `kLimThreshold=0.90` / `kLimReleaseMs=80` / `kSoftKnee=0.95`
+tanh saturator) and makes THAT the primary WAV (the no-clamp downmix is kept under
+a `_noclamp` suffix; `--pre-gain` mirrors `DC3_AUDIO_GAIN`). This is the game's
+ACTUAL post-limiter mix — its peak lands on 0.900 exactly like the native capture,
+proving the chain. **But it is chroma-/fingerprint-NEUTRAL**: the limiter changes
+dynamics, not which pitch-classes sound per frame, and chroma is L2-normalised +
+mean-centred, so same-mix does NOT raise the identity ceiling (verified:
+no-clamp↔same-mix references are 0.997 per-frame chroma-identical; preview chroma
+0.537→0.538, gameplay 0.532→0.531; fp_ber actually nudges *worse* +0.005..0.012).
+Use `--same-mix` for the dynamics-sensitive metrics (clip / crest / spec-div), NOT
+to improve identity — that needs matching the game's per-stem level/subset.
+
+**Rate bound — `audio_drift.py`.** `audio_verify`'s `speed_ratio` is low-confidence
+on real captures (weak onset lock vs a different-mix reference → "rate inconclusive",
+a flat-curve argument, not a tight bound). `scripts/native/audio_drift.py` bounds the
+rate numerically two complementary ways: per-window TIME-DRIFT slope (sample-tight
+but needs a strong-locking reference — use the capture-vs-ITSELF self-control) and a
+`--ratefit` constant-rate chroma fit (tolerates a weak/divergent reference but only a
+uniform rate). `--selftest` PROVES it recovers injected 1.000× / 1.05× / 1.088× /
+0.97×. Native result: self-ref drift **0.99995× ± 0.036 % (< 0.1 %)** so no clock
+drift; `--ratefit` collapses the 1.088× chipmunk → ruled out. CAVEAT: the self-ref
+control measures internal time-CONSISTENCY only — it cannot catch a *constant* rate
+error vs the source (a forced chipmunk capture still self-refs "correct"); the
+constant-rate fit is what rules out a uniform chipmunk, and the per-window
+drift-vs-source mode honestly reports INCONCLUSIVE (peaks < 0.45) rather than a
+spurious off-rate when the reference diverges too far.
 
 ## How to read it
 
@@ -94,9 +130,11 @@ window). **Only 3 songs have an extracted `.mogg`** today —
 
 ## Reference
 - Tool: `scripts/native/audio_verify.py` (self-contained; `--selftest`).
-- Ground truth: `scripts/native/{decrypt_mogg,decode_reference}.py`.
+- Rate bound: `scripts/native/audio_drift.py` (self-control drift + `--ratefit`; `--selftest`).
+- Ground truth: `scripts/native/{decrypt_mogg,decode_reference}.py` (`--same-mix` for the post-limiter mix).
 - Capture: `scripts/native/{capture_gameplay_audio,song-preview-audio-test}.py`.
-- Findings + design lessons: `docs/native/audio-perf-loop/AUDIO_VERIFY_2026-06-08.md`.
+- Findings + design lessons: `docs/native/audio-perf-loop/AUDIO_VERIFY_2026-06-08.md`,
+  `docs/native/audio-perf-loop/SAMEMIX_RATEDRIFT_2026-06-08.md` (same-mix + rate-bound hardening).
 - Reference-free coherence (audible/clipped, no source needed):
   `scripts/native/audio_coherence.py`.
 - Deeper audio-fidelity *investigation* loop (multi-wave, orchestrated):

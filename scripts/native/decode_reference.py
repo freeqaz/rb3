@@ -162,6 +162,88 @@ def downmix_reference(channels, pans, vols):
 
 
 # ---------------------------------------------------------------------------
+# SAME-MIX master bus — a FAITHFUL Python port of the native engine's master DSP
+# (milo-native-engine/src/audio/AudioDevice.cpp PumpAudio, lines ~399-423 +
+# constants ~33-51). This turns the headroom-preserved no-clamp downmix into the
+# game's ACTUAL post-limiter output, so a reference built with it matches the
+# captured game audio far more tightly (chroma/fingerprint ceiling rises from a
+# moderate rank toward a strong match). Constants are mirrored verbatim:
+#
+#   sPreGain       = 1.0    (default; DC3_AUDIO_GAIN env override at runtime)
+#   kLimThreshold  = 0.90   (begin gain reduction when stereo-linked |peak| > this)
+#   kLimReleaseMs  = 80.0   (slow one-pole release, no pumping)
+#   INSTANT attack (no kLimAttack constant — the engine comment documents that any
+#                   finite attack let the first sample of a fast transient rail, so
+#                   the gain drops IMMEDIATELY to the exact value holding the post-
+#                   gain sample at threshold: `if desired < env: env = desired`)
+#   kSoftKnee      = 0.95   (soft-knee saturator safety net above the knee)
+#
+# The chain is, per sample, stereo-LINKED (one envelope driven by max(|L|,|R|) so
+# the stereo image stays stable):
+#   l,r  = L*sPreGain, R*sPreGain
+#   level   = max(|l|, |r|)
+#   desired = kLimThreshold/level if level > kLimThreshold else 1.0
+#   env     = desired                       (instant attack)  if desired < env
+#           = aRel*env + (1-aRel)*desired   (one-pole release) otherwise
+#   out     = SoftClip(l*env), SoftClip(r*env)
+# where aRel = exp(-1 / (rate * kLimReleaseMs/1000)) and env starts at 1.0
+# (mLimiterEnv, reset to 1.0 on resume). All math is done in float32 to match the
+# engine's float pipeline exactly.
+# ---------------------------------------------------------------------------
+LIM_PREGAIN = 1.0
+LIM_THRESHOLD = 0.90
+LIM_RELEASE_MS = 80.0
+SOFT_KNEE = 0.95
+
+
+def soft_clip(a):
+    """Vectorised port of AudioDevice.cpp SoftClip() — transparent below kSoftKnee,
+    tanh-compresses the region above toward (never reaching) full scale. `a` is a
+    float32 array; returns the saturated array (same sign, |out| < 1.0)."""
+    a = a.astype(np.float32, copy=False)
+    mag = np.abs(a)
+    out = a.copy()
+    above = mag > SOFT_KNEE
+    if np.any(above):
+        k = np.float32(SOFT_KNEE)
+        one = np.float32(1.0)
+        shaped = k + (one - k) * np.tanh((mag[above] - k) / (one - k))
+        out[above] = np.sign(a[above]).astype(np.float32) * shaped.astype(np.float32)
+    return out
+
+
+def apply_master_bus(stereo, rate, pre_gain=LIM_PREGAIN):
+    """Apply the native master bus (pre-gain + stereo-linked one-pole peak limiter
+    with INSTANT attack + soft-knee saturator) to a (2, n) float stereo signal at
+    `rate` Hz. Returns the post-limiter (2, n) float32 — the game's actual mix.
+
+    The peak-envelope recurrence (env[f] depends on env[f-1]) is inherently serial,
+    so it runs as a per-sample loop; the soft-knee output is then vectorised."""
+    L = (stereo[0] * pre_gain).astype(np.float32)
+    R = (stereo[1] * pre_gain).astype(np.float32)
+    n = L.shape[0]
+    level = np.maximum(np.abs(L), np.abs(R))              # stereo-linked peak
+    thr = np.float32(LIM_THRESHOLD)
+    desired = np.where(level > thr, thr / np.maximum(level, np.float32(1e-30)),
+                       np.float32(1.0)).astype(np.float32)
+    aRel = np.float32(np.exp(-1.0 / (rate * (LIM_RELEASE_MS / 1000.0))))
+    one_minus = np.float32(1.0) - aRel
+    env = np.empty(n, dtype=np.float32)
+    e = np.float32(1.0)                                   # mLimiterEnv start = 1.0
+    d = desired                                           # local alias for speed
+    for f in range(n):
+        df = d[f]
+        if df < e:
+            e = df                                        # instant attack
+        else:
+            e = aRel * e + one_minus * df                 # one-pole release
+        env[f] = e
+    outL = soft_clip(L * env)
+    outR = soft_clip(R * env)
+    return np.vstack([outL, outR]).astype(np.float32)
+
+
+# ---------------------------------------------------------------------------
 # WAV I/O + stats (float32 WAV via wave module is awkward; write 16-bit + f32)
 # ---------------------------------------------------------------------------
 def write_wav_f32(path, stereo, rate):
@@ -224,6 +306,17 @@ def main():
                     help="also write a per-channel multichannel WAV")
     ap.add_argument("--keep-ogg", action="store_true",
                     help="keep the decrypted .ogg")
+    ap.add_argument("--same-mix", action="store_true",
+                    help="ALSO apply the native engine's master bus (pre-gain + "
+                         "stereo-linked one-pole peak limiter + soft-knee saturator, "
+                         "a faithful port of AudioDevice.cpp PumpAudio) AFTER the "
+                         "pan/vol downmix, and make THAT the primary reference WAV. "
+                         "This is the game's ACTUAL post-limiter mix (chroma/fp "
+                         "ceiling rises toward a strong match). The no-clamp WAV is "
+                         "still written alongside (suffix _noclamp).")
+    ap.add_argument("--pre-gain", type=float, default=LIM_PREGAIN,
+                    help="pre-limiter trim for --same-mix (mirrors DC3_AUDIO_GAIN; "
+                         "default 1.0 = native unity)")
     args = ap.parse_args()
 
     sid = args.song_id
@@ -268,20 +361,55 @@ def main():
 
     # 4. write reference WAVs + stats
     base = "rb3_ref_%s_%s" % (sid, section_tag)
-    wav_f32 = os.path.join(args.out_dir, base + ".wav")          # float, headroom
-    wav_s16 = os.path.join(args.out_dir, base + "_s16.wav")      # clamped 16-bit
-    write_wav_f32(wav_f32, stereo, rate)
-    write_wav_s16(wav_s16, stereo, rate)
-    st = stats(stereo)
-    print("[ref] reference stereo (no clamp, float WAV): %s" % wav_f32)
-    print("[ref]   rate=%d channels=2 peak=%.4f rms=%.5f clip_ratio=%.6f crest=%.2fdB"
-          % (rate, st["peak"], st["rms"], st["clip_ratio"], st["crest_db"]))
-    print("[ref] clamped 16-bit listening copy: %s" % wav_s16)
 
-    result = {"song_id": sid, "section": section_tag, "rate": rate, "channels": 2,
-              "wav_f32": wav_f32, "wav_s16": wav_s16,
-              "decrypt": "standalone", "stats": st,
-              "pans": meta["pans"], "vols": meta["vols"]}
+    if args.same_mix:
+        # SAME-MIX path: the primary reference is the game's ACTUAL post-limiter mix
+        # (port of AudioDevice.cpp's master bus). The no-clamp downmix is kept too,
+        # under a *_noclamp suffix, so both can be compared.
+        wav_noclamp = os.path.join(args.out_dir, base + "_noclamp.wav")
+        write_wav_f32(wav_noclamp, stereo, rate)
+        st_noclamp = stats(stereo)
+        print("[ref] no-clamp stereo (headroom, float WAV): %s" % wav_noclamp)
+        print("[ref]   peak=%.4f rms=%.5f clip_ratio=%.6f crest=%.2fdB"
+              % (st_noclamp["peak"], st_noclamp["rms"],
+                 st_noclamp["clip_ratio"], st_noclamp["crest_db"]))
+
+        mixed = apply_master_bus(stereo, rate, pre_gain=args.pre_gain).astype(np.float64)
+        wav_f32 = os.path.join(args.out_dir, base + ".wav")        # SAME-MIX = primary
+        wav_s16 = os.path.join(args.out_dir, base + "_s16.wav")
+        write_wav_f32(wav_f32, mixed, rate)
+        write_wav_s16(wav_s16, mixed, rate)
+        st = stats(mixed)
+        print("[ref] SAME-MIX stereo (native master bus, float WAV): %s" % wav_f32)
+        print("[ref]   pre_gain=%.2f thr=%.2f releaseMs=%.0f knee=%.2f"
+              % (args.pre_gain, LIM_THRESHOLD, LIM_RELEASE_MS, SOFT_KNEE))
+        print("[ref]   rate=%d channels=2 peak=%.4f rms=%.5f clip_ratio=%.6f crest=%.2fdB"
+              % (rate, st["peak"], st["rms"], st["clip_ratio"], st["crest_db"]))
+        print("[ref] clamped 16-bit listening copy: %s" % wav_s16)
+
+        result = {"song_id": sid, "section": section_tag, "rate": rate, "channels": 2,
+                  "wav_f32": wav_f32, "wav_s16": wav_s16,
+                  "wav_noclamp": wav_noclamp,
+                  "decrypt": "standalone", "mix": "same-mix",
+                  "master_bus": {"pre_gain": args.pre_gain, "threshold": LIM_THRESHOLD,
+                                 "release_ms": LIM_RELEASE_MS, "soft_knee": SOFT_KNEE},
+                  "stats": st, "stats_noclamp": st_noclamp,
+                  "pans": meta["pans"], "vols": meta["vols"]}
+    else:
+        wav_f32 = os.path.join(args.out_dir, base + ".wav")          # float, headroom
+        wav_s16 = os.path.join(args.out_dir, base + "_s16.wav")      # clamped 16-bit
+        write_wav_f32(wav_f32, stereo, rate)
+        write_wav_s16(wav_s16, stereo, rate)
+        st = stats(stereo)
+        print("[ref] reference stereo (no clamp, float WAV): %s" % wav_f32)
+        print("[ref]   rate=%d channels=2 peak=%.4f rms=%.5f clip_ratio=%.6f crest=%.2fdB"
+              % (rate, st["peak"], st["rms"], st["clip_ratio"], st["crest_db"]))
+        print("[ref] clamped 16-bit listening copy: %s" % wav_s16)
+
+        result = {"song_id": sid, "section": section_tag, "rate": rate, "channels": 2,
+                  "wav_f32": wav_f32, "wav_s16": wav_s16,
+                  "decrypt": "standalone", "mix": "no-clamp", "stats": st,
+                  "pans": meta["pans"], "vols": meta["vols"]}
 
     if args.keep_channels:
         # interleaved float WAV of all channels (post pan-applied? no — raw decode)

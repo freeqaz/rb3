@@ -66,8 +66,9 @@ USAGE
 
   audio_verify.py --selftest        # synthetic proof the verdicts are correct
 
-Only 3 songs ship an extracted .mogg today (20thcenturyboy, 25or6to4, antibodies)
-— the --song path needs one of those; --ref works for any pre-decoded WAV.
+83 of 84 songs now have an extracted .mogg (symlinked from orig-assets/extracted-
+xbox-full into orig-assets/extracted/songs/<id>/<id>.mogg), so --song / --rank work
+for the whole on-disk roster; --ref works for any pre-decoded WAV.
 """
 import argparse
 import json
@@ -554,7 +555,17 @@ def verify(cap_path, ref_path, do_fp=True):
 
     # rate-CORRECT the (trimmed) capture so identity is judged on the song, not the
     # speed error: a chipmunk capture is still the SAME song (flagged wrong-rate).
-    if abs(speed - 1.0) > 1e-3:
+    # GUARD: only resample when the rate estimate is CONFIDENT (peak_o >= the same
+    # RATE_CONF_MIN we gate the rate verdict on). Real game-vs-different-mix captures
+    # align weakly (peak ~0.1); the speed estimate is then unreliable, and resampling
+    # the capture by a SPURIOUS ratio mangles its chroma — which made a same-mix
+    # reference (a faithful post-limiter mix whose perturbed onset envelope flips the
+    # weak rate-search to a wrong ratio, e.g. 0.93x) spuriously read WRONG-SIGNAL even
+    # though its chroma is 0.997-identical to the no-clamp mix. When the rate is not
+    # confident we leave the capture at 1.0x for the chroma/spectral stages; the rate
+    # verdict already isn't asserted below RATE_CONF_MIN, so nothing is lost.
+    rate_confident = peak_o >= RATE_CONF_MIN
+    if rate_confident and abs(speed - 1.0) > 1e-3:
         cap_corr = signal.resample(cap_a, int(round(len(cap_a) * speed)))
     else:
         cap_corr = cap_a
@@ -565,7 +576,8 @@ def verify(cap_path, ref_path, do_fp=True):
     off_s = off_o / fps_o                 # seconds into the reference
 
     # --- chroma identity: GLOBAL chroma cross-correlation (mix-robust, locks even
-    #     when the onset envelope doesn't) on the rate-corrected capture ---
+    #     when the onset envelope doesn't) on the (rate-corrected when confident)
+    #     capture ---
     Ccap, fps_c = chroma(cap_corr, sr)
     Cref, _ = chroma(ref_mono, sr)
     chroma_mean, chroma_med, chroma_n, chroma_null, chroma_lift, best_cf = \
