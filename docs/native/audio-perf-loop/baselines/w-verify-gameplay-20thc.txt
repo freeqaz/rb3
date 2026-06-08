@@ -1,0 +1,23 @@
+
+  capture   : /tmp/verify_gameplay45.wav  (45.0s)
+  reference : /tmp/rb3_ref_20thcenturyboy_gameplay.wav  (236.11s)
+  ----------------------------------------------------------------
+  metric                                   value   interpretation
+  align lag / peak                +131.9s / 0.10   >= 0.15 = locked
+  chroma corr (identity)                    0.54   >= 0.45 = same song [26s ovl]
+  fingerprint BER                           0.33   <= 0.3 = same recording
+  speed ratio                             1.040x   1.000 +/-0.005 (conf 0.10)
+  pitch ratio                             1.023x   1.000 = same pitch
+  clip-ratio / flat-top                0.00% / 0   < 0.5% / < 8
+  fs-pin / wrap-rate              0.000% / 0.0/s   rail dwell / overflow
+  crest / spec-div                 16.8dB / 0.54   spec-div < 1.5
+  HF/THD ratio                             5.05x   < 2.0
+  flatness / zcr                   0.585 / 0.168   flat>0.3&zcr>0.2 = noise
+
+  ===========  VERDICT: MATCH  ===========
+    - SAME song [LIKELY]: chroma corr 0.54 (26s overlap), fp BER 0.33
+    - rate inconclusive: best 1.040x but alignment weak (conf 0.10) — no clear off-rate peak, so not a chipmunk
+    - note: pitch-ratio 1.023x vs reference (informational — chroma 0.54 stays high, so likely a mix difference, not a pitch bug)
+    - clean: not clipped (clip 0.00%, crest 16.8dB), rate not off
+
+  json -> docs/native/audio-perf-loop/baselines/w-verify-gameplay-20thc.json
