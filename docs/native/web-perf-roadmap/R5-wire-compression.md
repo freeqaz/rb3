@@ -1,13 +1,29 @@
 # R5 — Wire compression for `/api/file` (`.milo_xbox` gzip/brotli)
 
-**Verdict up front: YES, worthwhile — but as a *secondary*, on-demand-cached server
-change, not a build-time pre-generate-everything change.** Measured on the real nav
-working set, brotli cuts the on-demand `.milo_xbox` transfer **79 MB → 36 MB (45 %)**,
-which at 50 Mbit/s is roughly **12 s → 5.4 s** of synchronous milo freeze time. It does
-*not* touch the single worst hitch (the 37 MB `.mogg`, which is already Ogg → ~0 % gain),
-so it complements but does not replace R1/R2 (kill the sync XHR / per-screen prefetch).
+**Verdict up front: YES, worthwhile — ship-as-is with two pre-merge fixes (see below) —
+as a *secondary*, on-demand-cached server change, not a build-time
+pre-generate-everything change.** Measured on the real nav working set (ratios re-derived
+here with the **brotli CLI**, `brotli 1.2.0`), brotli q11 cuts the on-demand `.milo_xbox`
+transfer **79 MB → 36 MB (45 %)**, which at 50 Mbit/s is roughly **12 s → 5.4 s** of
+synchronous milo freeze time. It does *not* touch the single worst hitch (the 37 MB
+`.mogg`, which is already Ogg → ~0 % gain — that surface belongs to **R4**, not R5), so
+it complements but does not replace R1/R2 (kill the sync XHR / per-screen prefetch).
 It is transparent to the C++ engine — **server.py-only** — because the browser
 decompresses `Content-Encoding` before the engine's XHR/fetch ever sees the bytes.
+
+**Two pre-merge fixes (both verified against this machine):**
+
+1. **Encode via the brotli CLI, not the Python `brotli` module.** `import brotli` *fails
+   here* (the module is absent). Use the `brotli` CLI binary (`/usr/bin/brotli`, the same
+   one `build.sh` already shells out to) as the **primary** encoder, with `gzip` (CLI or
+   stdlib) as the always-available fallback. The Python `brotli` module is only an
+   *optional* in-process fast-path if it happens to be installed. Ratios above were
+   re-derived with the CLI and match the original table.
+2. **Make the on-demand cache write atomic.** The server is a `ThreadingHTTPServer`
+   (`server.py:618`), so two concurrent requests for the same uncached asset race to
+   compress it. Write to a unique temp file in the cache dir and `os.rename()` it into
+   place (atomic on the same filesystem); a partially-written `.br`/`.gz` must never be
+   read as complete.
 
 ## Problem & data
 
@@ -20,9 +36,12 @@ short-circuits **only** `.wasm`/`.js` (which have `.br`/`.gz` siblings from `bui
 everything under `/api/file/` falls straight through to `_serve_asset_file` with no
 `Content-Encoding`.
 
-**Measured compression ratios (this machine: brotli 1.2.0, gzip 1.14, zstd 1.5.7).**
-The big milos vary enormously because they embed already-DXT-compressed textures
-(incompressible) mixed with DTA/scene-graph/object data (very compressible):
+**Measured compression ratios (this machine, via the `brotli`/`gzip`/`zstd` CLIs —
+brotli 1.2.0, gzip 1.14, zstd 1.5.7).** Re-derived with the CLI (the Python `brotli`
+module is not installed here): `main_hub` → 6.7 % brotli q11 / 29.1 % gzip,
+`colorpalettes` → 40.3 % brotli q11 (22.1 s wall) / 45.9 % q5 / 51.9 % gzip — matching
+the table below. The big milos vary enormously because they embed already-DXT-compressed
+textures (incompressible) mixed with DTA/scene-graph/object data (very compressible):
 
 | file | size | gzip -9 | **brotli q11** | brotli q5 | zstd-19 | character |
 |---|---|---|---|---|---|---|
@@ -71,6 +90,15 @@ Data flow for a `GET /api/file/<rel>` request:
 4. **Cache miss** → compress the source file once into the cache dir (brotli q5 by
    default — fast enough to do inline on the first request; the cost is paid once, then
    amortized across every later fetch + every page reload), then serve it as in (3).
+   **Encode via the `brotli` CLI** (`subprocess.run(["brotli", "-q", "5", "-c", src]`,
+   capture stdout) — the Python `brotli` module is absent on this machine, so the CLI is
+   the primary encoder and `gzip` (CLI or `gzip.compress`) is the always-available
+   fallback. **The write is atomic:** compress to a unique temp file in the cache dir
+   (e.g. `<rel>.<ext>.<pid>.<rand>.tmp`) and `os.rename()` it onto the final cache path.
+   `ThreadingHTTPServer` (`server.py:618`) means two requests can miss the same asset at
+   once; the rename guarantees a reader never sees a half-written body, and a duplicate
+   compress just loses the rename race harmlessly (last writer wins; both temp files are
+   complete).
 5. **Anything not in the allowlist, or a `Range` request, or the client sent no
    `Accept-Encoding`** → the existing raw `_serve_asset_file` path, byte-identical to
    today. This is the safe fallback that guarantees no regression.
@@ -122,9 +150,16 @@ No C++ / wasm rebuild.
     or client `Accept-Encoding` advertises neither `br` nor `gzip`.
   - Pick encoding by preference (`br` > `gzip`) intersected with `Accept-Encoding`.
   - Compute cache path `ENCODE_CACHE_DIR/<safe_rel>.<ext>`; if stale/missing, compress
-    `full_path` → cache (use the `brotli`/`gzip` Python modules; brotli is `import
-    brotli` — add a graceful fallback to gzip-only if the module is absent, mirroring
-    `build.sh`'s "brotli not installed" branch).
+    `full_path` → a **temp file in the cache dir**, then `os.rename()` it onto the final
+    path (atomic; survives the `ThreadingHTTPServer` parallel-miss race). **Encoder
+    selection:** prefer the `brotli` CLI (`subprocess.run(["brotli", "-q",
+    str(ENCODE_LEVEL_BROTLI), "-c", full_path]`, stdout→temp), exactly as `build.sh`
+    invokes it (`build.sh:191`); `gzip` (CLI or `gzip.compress`) is the always-available
+    fallback. The Python `brotli` module is **absent here** (`import brotli` fails), so it
+    is at most an *optional* in-process fast-path — do **not** make it the primary path.
+    Probe `shutil.which("brotli")` once at startup; if neither brotli is available, fall
+    back to gzip-only (mirroring `build.sh`'s "brotli not installed" branch at
+    `build.sh:193`).
   - Serve via the **existing `_serve_encoded(cache_path, full_path, enc, head_only)`**
     (already sets `Content-Type` from base, `Content-Encoding`, `Content-Length`,
     `Vary`). Return `True`.
@@ -136,14 +171,17 @@ No C++ / wasm rebuild.
 **Phase 2 — cache management + CLI.**
 - `--encode-cache DIR`, `--no-encode` (disable, for A/B), `--encode-level N` args in
   `main()`, mirroring the existing `--assets-dir` / `--sidecar-dir` wiring.
-- Startup banner line printing the cache dir + brotli-availability, like the
-  `Sidecars:` / `Overlay:` lines.
+- Startup banner line printing the cache dir + the resolved encoder (CLI brotli path
+  from `shutil.which`, or "gzip-only"), like the `Sidecars:` / `Overlay:` lines. Surfaces
+  the brotli-absent case loudly instead of silently degrading to gzip.
 - mtime/size-keyed staleness check in the cache lookup; optional `--encode-purge`.
 
 **Phase 3 (optional, later, depends on R2) — build-time pre-warm of the boot set.**
 - `scripts/web/precompress-assets.py <manifest>`: brotli **q11** the boot + first-screen
-  working set into the same cache dir, so the first cold request is best-ratio. Wire an
-  opt-in call from `build.sh` (guard behind a flag so the default fast build stays fast).
+  working set into the same cache dir (same `brotli` CLI as Phase 1, just `-q 11`), so the
+  first cold request is best-ratio. Wire an opt-in call from `build.sh` (guard behind a
+  flag so the default fast build stays fast). Writes go through the same temp+rename so a
+  pre-warm racing a live on-demand miss is safe.
 - Reuses the same cache layout, so the server transparently picks up the q11 siblings.
 
 ## Key files & call sites (verified)
@@ -154,14 +192,20 @@ No C++ / wasm rebuild.
   - `_serve_encoded` — `server.py:149` (**reuse as-is** for the asset path; sets
     `Content-Encoding`/`Content-Length`/`Vary`, `Content-Type` from base).
   - `_serve_asset_file` — `server.py:322` (insert the compressed-asset hook here, after
-    `full_path` is resolved, before the `Range` branch at `server.py:383` and the raw
-    `200` at `server.py:386`).
+    `full_path` is resolved, before the `Range` branch at `server.py:381`–`383` and the
+    raw `200` at `server.py:386`).
   - `_serve_range` — `server.py:399` (the path that must stay raw — Range ⊕ compression).
   - `guess_type` — `server.py:91` (Content-Type stays the base type; unaffected).
-  - `main()` arg wiring — `server.py:536`–`593` (add `--encode-cache` / `--encode-level`
-    / `--no-encode` next to `--sidecar-dir`).
-- `scripts/web/build.sh:186`–`196` — existing `.wasm`/`.js` `brotli -q 11` + `gzip -9`
-  block; the Phase 3 pre-warm hook lives near here (opt-in).
+  - `main()` arg wiring — `server.py:540`–`575` (the `parser.add_argument` block ending at
+    `args = parser.parse_args()` on `:575`; add `--encode-cache` / `--encode-level` /
+    `--no-encode` next to `--sidecar-dir` at `:556` / `--overlay-dir` at `:565`).
+  - `ThreadingHTTPServer` — `server.py:618` (why the cache write must be atomic:
+    concurrent requests run on separate threads and can miss the same uncached asset).
+- `scripts/web/build.sh:183`–`195` — existing `.wasm`/`.js` compression block: the brotli
+  CLI at `build.sh:191` (`brotli -q 11 -f -k -o "$src.br" "$src"`, guarded by
+  `command -v brotli` at `:190`, gzip-only fallback message at `:193`) + `gzip -9` at
+  `:195`. **Reuse this exact `brotli` CLI invocation** as R5's primary encoder (it is the
+  proven, present-on-this-machine path); the Phase 3 pre-warm hook lives near here (opt-in).
 - `milo-native-engine/src/platform/WebAssets.cpp`
   - `WebAssetsFetchSync` — `WebAssets.cpp:261` (sync XHR; `xhr.open(...,false)` at `:292`,
     `overrideMimeType` at `:293`, `responseText` at `:301`) — **no Range header → safe to
@@ -194,9 +238,19 @@ No C++ / wasm rebuild.
 - **Weak gain on DXT-heavy venues** (`small_club` 60 %, `kit03_bank` 66 %): still a real
   ~35 % cut, just not the headline 6.7 % some files hit. Allowlist by extension, not by
   expected ratio — measuring per-file isn't worth it, and even 60 % helps the freeze.
-- **`brotli` Python module may be absent.** Graceful fallback to gzip-only (same pattern
-  `build.sh` already uses for the CLI). gzip alone still gets colorpalettes to 52 %,
-  main_hub to 29 % — meaningful, just below brotli.
+- **Python `brotli` module is absent here (confirmed).** `import brotli` fails on this
+  machine. *Mitigation:* the **brotli CLI** (`/usr/bin/brotli`, 1.2.0 — already used by
+  `build.sh`) is the primary encoder; the Python module is only an optional in-process
+  fast-path. If *neither* brotli is found, fall back to gzip-only (graceful, same as
+  `build.sh`'s "brotli not installed" branch) — gzip alone still gets colorpalettes to
+  52 %, main_hub to 29 %, meaningful if below brotli. The startup banner prints which
+  encoder resolved so a brotli-less host is obvious, not silent.
+- **Concurrent compress of the same uncached asset (`ThreadingHTTPServer`).** Two threads
+  can miss the same file at once and both compress it. *Mitigation:* each writes to a
+  unique temp file in the cache dir and `os.rename()`s onto the final path (atomic on the
+  same FS). A reader never sees a partial body; the duplicate compress just wastes one
+  CPU burst and the loser's rename harmlessly overwrites with an identical complete file.
+  Without this, a half-written `.br` could be served (corrupt) or read mid-write.
 - **Does NOT fix the worst hitch.** The 37 MB mogg (6.76 s freeze) is incompressible; R5
   is explicitly secondary to R1/R2/R3. Set expectations accordingly.
 
@@ -232,12 +286,29 @@ No C++ / wasm rebuild.
    would surface as a missing/garbled scene.
 4. **Cache behavior.** Hit a file twice; confirm second request is served from the cache
    dir (no recompress) and that touching the source asset triggers a recompress.
+5. **Atomic write under the parallel-miss race.** Cold cache, fire many concurrent
+   requests for the *same* uncached asset and assert every response decodes
+   bit-identically to the source — and that the cache dir holds no leftover `*.tmp` files
+   after:
+   ```bash
+   rm -rf native/web/.cache/encoded
+   ref=$(sha256sum orig-assets/extracted/char/main/shared/gen/colorpalettes.milo_xbox | cut -d' ' -f1)
+   seq 16 | xargs -P16 -I{} sh -c \
+     "curl -s -H 'Accept-Encoding: br' 'http://localhost:8421/api/file/char/main/shared/gen/colorpalettes.milo_xbox' | brotli -d | sha256sum | cut -d' ' -f1" \
+     | sort -u                                  # -> exactly one hash, == $ref
+   find native/web/.cache/encoded -name '*.tmp'  # -> empty (rename cleaned up)
+   ```
+6. **Encoder resolution.** Start the server and confirm the banner reports the brotli CLI
+   path (or "gzip-only" on a brotli-less host) — never a crash from `import brotli`.
 
 ## Effort, impact & dependencies
 
 - **Effort: S.** ~one helper + a few config globals + arg wiring in `server.py`, plus an
-  optional small pre-warm script. Reuses `_serve_encoded` wholesale. No C++/wasm rebuild,
-  no engine change. A day or less.
+  optional small pre-warm script. Reuses `_serve_encoded` wholesale. The helper shells out
+  to the `brotli` CLI (subprocess, the proven `build.sh` invocation) and does a
+  temp-file + `os.rename` write — both small, both already-decided. No C++/wasm rebuild,
+  no engine change. A day or less, including the two pre-merge fixes (CLI encoder, atomic
+  write).
 - **Impact: medium.** Cuts the on-demand milo transfer ~45 % (79 MB → 36 MB on the nav
   set), shaving the milo freeze budget roughly in half (~12 s → 5.4 s at 50 Mbit). Real,
   measurable, and it stacks with everything else. But it is **secondary**: it does not
@@ -264,12 +335,39 @@ No C++ / wasm rebuild.
 - **Which extensions beyond `.milo_xbox`?** Start with `.milo_xbox` (the measured
   offenders). Are `.png_xbox`/texture sidecars DXT (incompressible, deny) or sometimes
   raw (compressible)? Spot-measure a few before widening the allowlist.
-- **q5 vs q9 default on demand?** q5 is 0.23 s and keeps ~90 % of the win; q9 is 3.9 s for
-  ~5 pp more on the mixed files. q5 is the right default for the first-request path; q9/q11
-  belong in the optional pre-warm. Confirm with one A/B if disk/CPU allows.
+- **q5 vs q9 default on demand?** (recorded as the one tuning question to settle in
+  implementation.) q5 is 0.23 s and keeps ~90 % of the win; q9 is 3.9 s for ~5 pp more on
+  the mixed files (colorpalettes: q5 45.9 % vs q11 40.3 %, all CLI-measured here). q5 is
+  the right default for the first-request path since it is paid inline on the freezing
+  request; q9/q11 belong in the optional pre-warm. Confirm with one A/B if disk/CPU allows.
+- **(Resolved) Encoder mechanism.** Settled: brotli **CLI** primary (Python `brotli`
+  module absent here), gzip fallback, atomic temp+rename write — see the two pre-merge
+  fixes at the top.
 - **Interaction with the W4b IndexedDB warm cache.** The IDB cache stores the
   *decompressed* MEMFS bytes (post-decode), so warm boots already skip the network and are
   unaffected by R5. R5 strictly improves the *cold* path — confirm no double-work (it
   doesn't: IDB hit short-circuits before the XHR in `native_file.cpp`).
 - **Should the cache dir live under `orig-assets/derived/` instead of `native/web/.cache/`?**
   Both are gitignored derived trees; pick whichever the asset-prep tooling already cleans.
+
+## Review corrections applied
+
+(Adversarial review, verified against the code on 2026-06-08. Verdict: ship-as-is with two
+pre-merge fixes; the rest stood.)
+
+- **Encoder: brotli CLI, not the Python `brotli` module.** Confirmed `import brotli` fails
+  here; CLI `brotli 1.2.0` is present. Rewrote the verdict, Architecture step 4,
+  Implementation Phase 1, banner, Key files, and Risks to make the CLI the primary encoder
+  (reusing `build.sh`'s exact invocation) with the Python module as an optional fast-path.
+- **Atomic on-demand cache write.** Added temp-file + `os.rename` everywhere the cache is
+  written (Architecture, Phase 1, Phase 3, Risks) to survive the `ThreadingHTTPServer`
+  (`server.py:618`) parallel-miss race; added a concurrent-fetch verification step.
+- **Re-derived ratios with the CLI.** main_hub 6.7 %/29.1 %, colorpalettes 40.3 % q11
+  (22.1 s) / 45.9 % q5 / 51.9 % gzip — match the original table; annotated as CLI-measured.
+- **mogg → R4, not R5.** Made explicit the mogg gains ~0 (already Ogg) and is R4's surface,
+  not touched here.
+- **q5-vs-q9 default recorded** as the one tuning question to settle in implementation;
+  encoder-mechanism question marked resolved.
+- **Fixed drifted citations:** `main()` arg wiring `server.py:540`–`575` (was `536`–`593`),
+  Range branch `:381`–`383`, raw-200 `:386`; `build.sh:183`–`195` with the brotli-CLI line
+  at `:191` and gzip at `:195`. All spot-checked against the current files.

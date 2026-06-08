@@ -1,6 +1,6 @@
 # R1 — Async on-demand fetch: remove `WebAssetsFetchSync` main-thread blocking
 
-**Status:** design (handoff to implementation agent)
+**Status:** design — re-scoped per adversarial review (see "Review corrections applied")
 **Owner doc:** this file
 **Data source:** `docs/native/web-netperf-findings-2026-06-08.md`
 **Verification tool:** `scripts/web/netperf-suite.mjs`
@@ -17,9 +17,16 @@ link: `freeze ≈ bytes ÷ throughput`.
 The single chokepoint is `WebAssetsFetchSync()` in
 `milo-native-engine/src/platform/WebAssets.cpp:261`, which does
 `xhr.open(GET, url, false)` (synchronous) inside an `EM_ASM_INT` block
-(`WebAssets.cpp:287-323`). It is called from exactly one place in RB3:
+(`WebAssets.cpp:287-323`). It fires from a **single leaf** —
 `native/src/native_file.cpp:163`, inside `NativeStdioFile`'s constructor, after a
-MEMFS `fopen` miss on a read-mode open.
+MEMFS `fopen` miss on a read-mode open — but that leaf is reached from **three
+distinct callers** that each need their own fix (see Architecture): the `.milo_xbox`
+path (`DirLoader::OpenFile` → `new ChunkStream` → `NewFile`), the 37 MB `.mogg` path
+(`Synth::NewStreamFile` → direct `NewFile`, **deferred to R4**), and the dta/dtx path
+(`FileLoader::OpenFile` → `NewFile`). The original draft of this doc rewired
+`FileLoader::OpenFile` as the fix point, but **none of the named offenders below load
+through `FileLoader`** — they are `.milo_xbox` (DirLoader/ChunkStream) and `.mogg`
+(Synth). This doc has been re-scoped accordingly.
 
 Measured cost (from the findings doc, cold IndexedDB cache, 50 Mbit/s "low" profile):
 
@@ -67,47 +74,92 @@ fetch reports "not done" instead of blocking.
 
 ## Architecture
 
-### The two layers that must change
+### Where the measured freeze actually enters the File layer (re-scoped)
 
-The miss happens deep inside a synchronous open. Two layers sit above it:
+The original draft of this doc rewired `FileLoader::OpenFile`. That is the **wrong
+fix point**: **none** of the measured offenders (`.milo_xbox` venue/palette/shell
+milos, the 37 MB `.mogg`) load through `FileLoader`. Verified against the code, the
+sync-XHR miss is reached through **three distinct surfaces**, in descending share of
+the measured freeze:
 
-1. **`FileLoader` state machine** (`src/system/utl/Loader.cpp:556-672`) — the
-   loader the milo dependency walk creates per file. It runs
-   `OpenFile → LoadFile → DoneLoading` driven by `PollLoading()`. `OpenFile()`
-   (`Loader.cpp:583`) calls `NewFile(fname, mFlags|2)` (`Loader.cpp:594`), which
-   reaches `NativeStdioFile`'s ctor → the sync XHR. `OpenFile()` then immediately
-   calls `mFile->ReadAsync(...)` and advances to `LoadFile`; `LoadFile()`
+1. **`.milo_xbox` → `DirLoader::OpenFile` → `new ChunkStream(...)` (PRIMARY).** This
+   is the bulk of the boot + transition freeze (every `colorpalettes.milo_xbox`,
+   `small_club_01.milo_xbox`, `sv*_a.milo_xbox`). `DirLoader::OpenFile`
+   (`src/system/obj/DirLoader.cpp:357`) constructs `mStream = new ChunkStream(path,
+   kRead, 0x10000, …)` (`DirLoader.cpp:392`), then **immediately** checks
+   `mStream->Fail()` (`DirLoader.cpp:401`). Inside the `ChunkStream` ctor
+   (`src/system/utl/ChunkStream.cpp:51`): `mFile = NewFile(file, 2)`
+   (`ChunkStream.cpp:69`) — *this* is the call that reaches `NativeStdioFile`'s ctor →
+   the sync XHR; then `mFail = !mFile || mFile->Fail()` (`ChunkStream.cpp:77`) and a
+   **synchronous header read** `mFile->ReadAsync(&mChunkInfo, 0x810)` with
+   `mChunkInfoPending = true` (`ChunkStream.cpp:90`). So the milo surface needs **two**
+   things made pending-aware: a re-entrant `DirLoader::OpenFile`, **and** a
+   pending-aware `ChunkStream` whose `Fail()` (`ChunkStream.cpp:287`) and header-read
+   contract tolerate a not-yet-resident file. `FileLoader` is not involved here.
+
+2. **The 37 MB `.mogg` → `Synth::NewStreamFile` (DEFERRED to R4).** The mogg opens via
+   a **direct** `file = NewFile(path.c_str(), 2)` in `Synth::NewStreamFile`
+   (`src/system/synth/Synth.cpp:569`, called from `NewStream` →
+   `new StandardStream(file, …)` at `Synth.cpp:549-550`), **outside any LoadMgr /
+   FileLoader / DirLoader state machine** — there is no `OpenFile` to re-enter and no
+   poll cadence to thread "pending" through. R1's re-entrant-open model **does not
+   reach this surface.** The practical fix for the mogg is **R4's async prefetch** (warm
+   the bytes into MEMFS before the open) — R1 explicitly hands the mogg to R4 and does
+   not attempt a re-entrant open here.
+
+3. **`FileLoader` state machine (SECONDARY, minority share).** `FileLoader`
+   (`src/system/utl/Loader.cpp:556-672`) is the loader the milo dependency walk creates
+   for **dta/dtx and the no-factory raw-buffer fallback** — a real but **minority**
+   share of the measured freeze (the named offenders are all milos+mogg, not these).
+   It runs `OpenFile → LoadFile → DoneLoading` driven by `PollLoading()`. `OpenFile()`
+   (`Loader.cpp:583`) calls `NewFile(fname, mFlags|2)` (`Loader.cpp:594`) → the sync
+   XHR, then `mFile->ReadAsync(...)` and advances to `LoadFile`; `LoadFile()`
    (`Loader.cpp:622`) calls `mFile->ReadDone(asdf)` and, when done, advances to
-   `DoneLoading`. `IsLoaded()` returns `mState == &DoneLoading` (`Loader.cpp:654`).
+   `DoneLoading`. `IsLoaded()` returns `mState == &DoneLoading` (`Loader.cpp:654`). R1
+   keeps this surface, but it is the smaller win.
 
-2. **`NativeStdioFile`** (`native/src/native_file.cpp:119-267`) — RB3's own `File`
-   backend. Its **constructor** is where the open happens, and where the IDB-cache
-   try + sync XHR fall-through live (`native_file.cpp:137-168`). `Read()`/`ReadAsync()`
-   are plain `fread` from MEMFS (`native_file.cpp:196-204`); `ReadDone()` always
-   returns `true` (`native_file.cpp:251`).
+**`NativeStdioFile`** (`native/src/native_file.cpp:119-267`) — RB3's own `File`
+backend — is the **shared leaf** under all three: its **constructor** is where the
+open happens and where the IDB-cache try + sync-XHR fall-through live
+(`native_file.cpp:137-168`). `Read()`/`ReadAsync()` are plain `fread` from MEMFS
+(`native_file.cpp:196-204`); `ReadDone()` always returns `true`
+(`native_file.cpp:251`). Making *this leaf* pending-aware is what every surface above
+shares; the per-surface work is making each **caller** tolerate a pending leaf.
 
-### The control-flow change
+### The control-flow change (applied to DirLoader/ChunkStream as the primary)
+
+The same kick-off / completion-poll split applies at each surface. Shown for the
+**primary** (DirLoader → ChunkStream); the `FileLoader` variant is identical with
+`FileLoader::OpenFile` in place of `DirLoader::OpenFile`. The mogg surface is **out of
+scope for R1** (R4).
 
 Today, `NewFile()` is a blocking call: it does not return until the file is in
-MEMFS. R1 splits the open into **kick-off** and **completion-poll**, and threads
-"still pending" back up through the loader's existing poll cadence:
+MEMFS, and the `ChunkStream` ctor follows it with a synchronous `Fail()` check and a
+synchronous header read. R1 splits the open into **kick-off** and **completion-poll**,
+and threads "still pending" back up through `DirLoader`'s existing poll cadence
+(`DirLoader::PollLoading`, which re-enters `mState` = `&DirLoader::OpenFile`):
 
 ```
-FileLoader::OpenFile()              (was: NewFile blocks on sync XHR)
-  └─ NewFile() → NativeStdioFile ctor
-        MEMFS fopen miss?
-          ├─ IDB cache hit  → write MEMFS, fopen succeeds   (unchanged, sync, instant)
-          └─ miss           → WebAssetsFetch(rel)  [ASYNC, returns fetchId]
-                              record fetchId on the File, mark "pending open"
-                              return a File that reports Fail()==false but Pending()==true
-  └─ if file Pending → DO NOT call ReadAsync; stay in OpenFile state, return.
+DirLoader::OpenFile()              (was: new ChunkStream blocks on sync XHR + sync header)
+  └─ new ChunkStream(path, kRead, …)
+        ctor: mFile = NewFile(path, 2) → NativeStdioFile ctor
+          MEMFS fopen miss?
+            ├─ IDB cache hit → write MEMFS, fopen succeeds   (unchanged, sync, instant)
+            └─ miss          → WebAssetsFetch(rel)  [ASYNC, returns fetchId]
+                               record fetchId on the File, mark "pending open"
+                               File reports Fail()==false AND Pending()==true
+        ctor: if mFile Pending → set ChunkStream pending; DO NOT issue the
+              synchronous header ReadAsync(&mChunkInfo, 0x810); leave mFail=false.
+  └─ if mStream->Pending() → DO NOT treat as loaded; stay in OpenFile state, return.
+     (The existing mStream->Fail() check at DirLoader.cpp:401 must NOT fire on pending.)
 
-FileLoader::PollLoading()  (next poll, after emscripten_sleep yielded the browser)
-  └─ OpenFile() re-entered:
-        WebAssetsFetchDone(fetchId)?
+DirLoader::PollLoading()  (next poll, after emscripten_sleep yielded the browser)
+  └─ OpenFile() re-entered, mStream already exists & is pending:
+        ChunkStream::TryFinishOpen() → WebAssetsFetchDone(fetchId)?
           ├─ no   → still pending, return (loader stays not-loaded; LoadMgr yields)
-          └─ yes  → fopen the now-resident MEMFS file, size it,
-                    ReadAsync(buffer), advance to LoadFile  (unchanged from here)
+          └─ yes  → fopen now-resident MEMFS file, NOW issue the header
+                    ReadAsync(&mChunkInfo, 0x810); proceed through the existing
+                    Fail()/header-decode path  (unchanged from here)
 ```
 
 The crucial property: **between the fetch kick-off and its completion, the wasm
@@ -121,12 +173,25 @@ freeze becomes a sequence of cheap "still pending?" polls.
 ### Where the async state lives
 
 `NativeStdioFile` already exists per-open and is the natural home for the pending
-fetch id. Add three members and two methods (`Pending()`, and a re-probe the ctor's
-miss path is refactored into). The `FileLoader` does **not** need new members —
-re-entrancy of `OpenFile()` keyed on `mFile->Pending()` carries the state. But
-`OpenFile()` must become re-enterable: today it unconditionally creates `mFile`
-and advances state. It must instead: if `mFile` already exists and is pending,
-re-probe; only create-or-advance when there is no pending fetch.
+fetch id — it is the **shared leaf** under DirLoader/ChunkStream and FileLoader, so
+making it pending-aware once serves both surfaces. Add three members and two methods
+(`Pending()`, and a re-probe the ctor's miss path is refactored into).
+
+For the **primary (DirLoader/ChunkStream)** surface, the pending state must propagate
+one extra level: `ChunkStream` must (a) not issue its synchronous header
+`ReadAsync(&mChunkInfo, 0x810)` (`ChunkStream.cpp:90`) while `mFile->Pending()`, (b)
+expose `ChunkStream::Pending()` so `DirLoader::OpenFile` can avoid the
+`mStream->Fail()` check (`DirLoader.cpp:401`) firing on a pending open, and (c) finish
+the header read on `TryFinishOpen()` once the fetch lands. `DirLoader` itself needs no
+new members — re-entrancy of `OpenFile()` keyed on `mStream->Pending()` carries the
+state; `mStream` already persists across polls (it's only constructed when
+`mStream == nullptr`, `DirLoader.cpp:371`).
+
+For the **secondary (FileLoader)** surface, re-entrancy of `OpenFile()` keyed on
+`mFile->Pending()` carries the state with no new `FileLoader` members. In both cases
+`OpenFile()` must become re-enterable: today it unconditionally creates the
+stream/file and advances state. It must instead: if the stream/file already exists and
+is pending, re-probe; only create-or-advance when there is no pending fetch.
 
 ### Interaction with the IDB cache and loader budget
 
@@ -158,6 +223,14 @@ non-blocking already collapses the freeze (the throughput is unchanged, the *fra
 ownership* changes). Parallel prefetch of the next screen's working set is **R2/R3**,
 which build on R1's async primitive; R1 deliberately stops at "one async open, not
 blocking."
+
+### Surfaces R1 does NOT cover
+
+The 37 MB mogg open (`Synth::NewStreamFile`, `Synth.cpp:569`) is **not** behind any
+poll cadence, so the kick-off/completion-poll split above has nowhere to unwind to.
+R1 does not touch it; **R4's async prefetch is the fix for the mogg** (warm it into
+MEMFS before the open, so the direct `NewFile` hits a resident file). This is recorded
+again under Effort/dependencies and Open questions.
 
 ---
 
@@ -204,34 +277,73 @@ In `native/src/native_file.cpp`:
   `setvbuf`/`mSize` caching block (`native_file.cpp:174-188`), run
   `cachePutAfterFetch`, clear `mPending`, and return true. If still pending, return
   false. Set `mFail` only if the fetch completed but `fopen` still missed (real 404).
-- `Fail()` (`native_file.cpp:236`) must return false while `mPending` (so the loader
-  doesn't treat a pending open as a load failure). Add a `Pending()` accessor to the
-  `File` vtable **or** keep it off-vtable and have the loader query via a
-  web-only downcast/free function (see Phase 3 note).
+- `Fail()` (`native_file.cpp:236`) must return false while `mPending` (so neither
+  `ChunkStream` nor the loader treats a pending open as a load failure). Add a
+  `Pending()` accessor to the `File` vtable **or** keep it off-vtable and have callers
+  query via a web-only downcast/free function (see Phase 3c).
+- This leaf is **shared** by all R1 surfaces (DirLoader/ChunkStream and FileLoader),
+  so this phase is written once and consumed by both. It is **also** what R4 will reuse
+  for the mogg prefetch leaf — but R1 does not wire the mogg's `Synth::NewStreamFile`
+  open here.
 
-### Phase 3 — Make `FileLoader::OpenFile` re-enterable on a pending open
+### Phase 3a — PRIMARY: make `ChunkStream` + `DirLoader::OpenFile` pending-aware
 
-In `src/system/utl/Loader.cpp`, guarded by `HX_WEB`:
+This is the bulk of the win (the `.milo_xbox` surface). Two edits, both `HX_WEB`-gated.
+
+**`src/system/utl/ChunkStream.cpp`** — make the ctor and `Fail()` tolerate a pending
+leaf:
+- In the ctor (`ChunkStream.cpp:51`), after `mFile = NewFile(file, 2)`
+  (`ChunkStream.cpp:69`): if `mFile->Pending()`, set a new `bool mOpenPending = true`,
+  leave `mFail = false`, and **skip** the synchronous header read
+  `mFile->ReadAsync(&mChunkInfo, 0x810)` (`ChunkStream.cpp:90`) — there is nothing to
+  read yet. (Keep the matched `#else` arm and the existing `mFail = !mFile ||
+  mFile->Fail()` native logic at `ChunkStream.cpp:77` for the non-pending case.)
+- Add `bool ChunkStream::Pending()` returning `mOpenPending`.
+- Add `bool ChunkStream::TryFinishOpen()`: if `mOpenPending`, call
+  `mFile->TryFinishOpen()`; if the leaf finished, clear `mOpenPending`, re-evaluate
+  `mFail` (`= mFile->Fail()`), and — if not failed — issue the deferred header
+  `mChunkInfoPending = true; mFile->ReadAsync(&mChunkInfo, 0x810);`. Return whether the
+  open is now resolved (resident-or-failed). Note `Fail()` (`ChunkStream.cpp:287`)
+  needs no change — it returns `mFail`, which stays `false` while pending.
+
+**`src/system/obj/DirLoader.cpp`** — make `OpenFile` re-enterable:
+- `OpenFile()` (`DirLoader.cpp:357`) already only constructs `mStream` when
+  `mStream == nullptr` (`DirLoader.cpp:371`), so re-entry naturally reuses the existing
+  stream. After the `new ChunkStream(...)` (`DirLoader.cpp:392`), if
+  `mStream->Pending()`, **do not** run the `if (mStream->Fail())` cleanup
+  (`DirLoader.cpp:401`); leave `mState = &DirLoader::OpenFile` and return so
+  `PollLoading` re-enters next tick.
+- On re-entry with an existing pending `mStream`: call `mStream->TryFinishOpen()`. If
+  still pending, return. If resolved, fall through to the existing `mStream->Fail()`
+  path (now meaningful — a real 404 sets `mFail`, an empty/valid stream proceeds).
+
+### Phase 3b — SECONDARY: make `FileLoader::OpenFile` re-enterable (minority share)
+
+The dta/dtx + raw-buffer-fallback surface. Same pattern, in
+`src/system/utl/Loader.cpp`, guarded by `HX_WEB`:
 
 - After `mFile = NewFile(fname, mFlags|2)` (`Loader.cpp:594`), if the returned file
   reports **pending** (not failed, not yet open), **do not** call `ReadAsync` /
   advance to `LoadFile`. Leave `mState = &OpenFile` and return. The loader stays
   not-loaded; `LoadMgr::Poll`/`PollUntilLoaded` will re-`PollLoading()` it next tick.
 - On re-entry to `OpenFile()` with an existing pending `mFile`: call
-  `TryFinishOpen()`. If still pending, return. If finished, fall into the existing
-  `if (mFile && !mFile->Fail())` block (`Loader.cpp:608`) → `ReadAsync` → advance.
-- **How does the loader ask "pending?"** Cleanest: add a non-pure virtual
-  `bool File::Pending() { return false; }` to `src/system/os/File.h` (default false
-  → zero behaviour change for every other backend and for the Wii matched build,
-  since nothing reads it there). `NativeStdioFile::Pending()` overrides it. Gate the
-  `OpenFile` re-entry logic on `#ifdef HX_WEB`. **Caution:** adding a virtual to
-  `File` shifts the vtable — but `File` is RB3-native/web-only here (the matched Wii
-  asm of `File` methods is not what the port matches), and the added virtual goes at
-  the *end* of the declared virtuals, after `Truncate` (`File.h:33`). Confirm no
-  matched TU depends on `File`'s vtable layout (it shouldn't — File is engine glue);
-  if it does, fall back to a `#ifdef HX_WEB` free function
-  `bool NativeFileIsPending(File*)` that `dynamic_cast`/type-tags instead of a vtable
-  slot.
+  `mFile->TryFinishOpen()`. If still pending, return. If finished, fall into the
+  existing `if (mFile && !mFile->Fail())` block (`Loader.cpp:608`) → `ReadAsync` →
+  advance.
+
+### Phase 3c — the shared "pending?" hook on `File`
+
+Both 3a and 3b ask the leaf "pending?". Cleanest: add a non-pure virtual
+`bool File::Pending() { return false; }` to `src/system/os/File.h` (default false →
+zero behaviour change for every other backend and for the Wii matched build, since
+nothing reads it there). `NativeStdioFile::Pending()` overrides it. Gate all callers
+on `#ifdef HX_WEB`. **Caution:** adding a virtual to `File` shifts the vtable — but
+`File` is RB3-native/web-only here (the matched Wii asm of `File` methods is not what
+the port matches), and the added virtual goes at the *end* of the declared virtuals,
+after `Truncate` (`File.h:33`). **This vtable touch is the top open question** —
+confirm via objdiff spot-check that no matched Wii TU regresses (see Open questions);
+if it does, fall back to a `#ifdef HX_WEB` free function `bool NativeFileIsPending(File*)`
+that `dynamic_cast`/type-tags instead of a vtable slot.
 
 ### Phase 4 — Verify the boot spine and budget interplay
 
@@ -253,9 +365,11 @@ In `src/system/utl/Loader.cpp`, guarded by `HX_WEB`:
 
 ### Phase 5 — Remove (or keep as fallback) `WebAssetsFetchSync`
 
-Once the async path is verified, `WebAssetsFetchSync` is dead on the RB3 path. Keep
-it compiled (DC3's `AsyncFile_Native.cpp:40` still calls it, and it's a useful
-last-resort) but ensure RB3's `native_file.cpp` no longer calls it on the hot path.
+Once the async path is verified, `WebAssetsFetchSync` is dead on the RB3 milo/dta hot
+path. Keep it compiled (DC3's `AsyncFile_Native.cpp:40` still calls it, it's a useful
+last-resort, **and the 37 MB mogg open in `Synth::NewStreamFile` keeps using the sync
+leaf until R4 lands its prefetch** — R1 does not make the mogg open async). Ensure
+RB3's milo/dta opens (DirLoader/ChunkStream + FileLoader) no longer block on it.
 Optionally gate a `RB3_SYNC_FETCH=1` env to restore the old blocking path for A/B.
 
 ---
@@ -272,16 +386,32 @@ Verified against the working tree (2026-06-08):
   `:92` `onFetchError` — async callbacks that write MEMFS + bump counters.
 - `milo-native-engine/src/platform/WebAssets.h` — add `WebAssetsFetchAsync` decl.
 - `rb3/native/src/native_file.cpp:119` — `NativeStdioFile` (ctor at `:121`,
-  miss path `:137-168`, the `WebAssetsFetchSync` call at `:163`). **Primary edit.**
+  miss path `:137-168`, the `WebAssetsFetchSync` call at `:163`). **Shared-leaf edit
+  (consumed by all three surfaces).**
 - `rb3/native/src/native_file.cpp:66` `cacheTryHit` / `:100` `cachePutAfterFetch` —
   IDB cache (keep instant; reuse in completion branch).
 - `rb3/native/src/native_file.cpp:196` `Read`/`:201` `ReadAsync`/`:236` `Fail`/
   `:251` `ReadDone` — make `Fail()` honour pending; add `Pending()`/`TryFinishOpen()`.
 - `rb3/native/src/native_file.cpp:363` `HmxNativeOpenFile` — the `NewFile` body that
-  constructs `NativeStdioFile`; returns the (possibly pending) handle.
-- `rb3/src/system/utl/Loader.cpp:583` `FileLoader::OpenFile` — make re-enterable on
-  pending; `:611` `ReadAsync`; `:622` `LoadFile`; `:656` `PollLoading`; `:654`
-  `IsLoaded`. **Primary loader edit (HX_WEB-gated).**
+  constructs `NativeStdioFile`; returns the (possibly pending) handle. **Shared leaf
+  for all R1 surfaces.**
+- **PRIMARY (`.milo_xbox`):** `rb3/src/system/obj/DirLoader.cpp:357`
+  `DirLoader::OpenFile` — constructs `mStream = new ChunkStream(...)` at `:392`, checks
+  `mStream->Fail()` at `:401`; `mStream` is only built when null (`:371`) so it
+  persists across polls. **Make re-enterable on `mStream->Pending()` (HX_WEB-gated).**
+- **PRIMARY (`.milo_xbox`):** `rb3/src/system/utl/ChunkStream.cpp:51`
+  `ChunkStream` ctor — `mFile = NewFile(file, 2)` at `:69` (reaches the sync XHR),
+  `mFail = !mFile || mFile->Fail()` at `:77`, **synchronous header read**
+  `mFile->ReadAsync(&mChunkInfo, 0x810)` at `:90`, `ChunkStream::Fail()` at `:287`.
+  **Add `mOpenPending`/`Pending()`/`TryFinishOpen()`; defer the header read while
+  pending (HX_WEB-gated).**
+- **DEFERRED to R4 (`.mogg`):** `rb3/src/system/synth/Synth.cpp:565`
+  `Synth::NewStreamFile` — direct `file = NewFile(path.c_str(), 2)` at `:569`, called
+  from `NewStream` (`:549`-`550`), **outside any loader/LoadMgr** → no `OpenFile` to
+  re-enter. R1 does **not** edit this; R4's prefetch warms the bytes first.
+- **SECONDARY (dta/dtx, minority share):** `rb3/src/system/utl/Loader.cpp:583`
+  `FileLoader::OpenFile` — make re-enterable on pending; `:611` `ReadAsync`; `:622`
+  `LoadFile`; `:656` `PollLoading`; `:654` `IsLoaded`. **(HX_WEB-gated.)**
 - `rb3/src/system/utl/Loader.cpp:163` `PollUntilLoaded` (yield at `:219`),
   `:257` `PollUntilEmpty`, `:305` `Poll` (budget loop `:382-408`, yield `:405`) —
   the JSPI yield spine; verify pending-loader interplay.
@@ -302,10 +432,11 @@ Reference (do **not** edit, model only):
   synchronously, and `_OpenAsync` itself calls the blocking `WebAssetsFetchSync`
   (`AsyncFile_Native.cpp:40`). So DC3 gives the *interface* (`_OpenAsync`/`_OpenDone`
   poll split) but **not** a non-blocking implementation — R1 must supply the real
-  non-blocking behaviour at the `FileLoader` level, because `AsyncFile::Init`'s
-  internal spin can't be made cooperative without a deeper rewrite. RB3 routes file
-  opens through `NativeStdioFile` (not `AsyncFile`), which is *why* R1 can land the
-  fix cleanly in `native_file.cpp` + `Loader.cpp` without touching `AsyncFile`.
+  non-blocking behaviour at the `DirLoader`/`ChunkStream` and `FileLoader` levels,
+  because `AsyncFile::Init`'s internal spin can't be made cooperative without a deeper
+  rewrite. RB3 routes the measured milo/dta opens through `NativeStdioFile` (not
+  `AsyncFile`), which is *why* R1 can land the fix cleanly in `native_file.cpp` +
+  `ChunkStream.cpp` + `DirLoader.cpp` + `Loader.cpp` without touching `AsyncFile`.
 
 ---
 
@@ -319,11 +450,14 @@ Reference (do **not** edit, model only):
    `Truncate`, and the whole pending mechanism is `#ifdef HX_WEB`; if any regression
    appears, switch to a free-function `NativeFileIsPending(File*)` with no vtable change.
 
-2. **Re-enterable `OpenFile` correctness.** `OpenFile()` currently assumes one-shot.
-   Making it re-enter on pending must not double-allocate `mBuffer` or re-issue the
-   fetch. Guard strictly: re-entry only probes `TryFinishOpen()`; allocation/`ReadAsync`
-   happen exactly once, after the fetch resolves. Cover with a unit assert that
-   `mFetchId` is issued at most once per loader.
+2. **Re-enterable `OpenFile` correctness (both surfaces).** `DirLoader::OpenFile` and
+   `FileLoader::OpenFile` currently assume one-shot. Making them re-enter on pending
+   must not re-construct the stream, double-allocate `mBuffer`, re-issue the fetch, or
+   re-issue the deferred `ChunkStream` header read. Guard strictly: re-entry only probes
+   `TryFinishOpen()`; stream/buffer allocation + the header `ReadAsync` happen exactly
+   once, after the fetch resolves. For `DirLoader` the existing `if (mStream == nullptr)`
+   guard (`DirLoader.cpp:371`) already prevents re-construction — lean on it. Cover with
+   an assert that `mFetchId` is issued at most once per leaf.
 
 3. **A genuinely missing file (404) must still fail, not spin forever.** Today a sync
    XHR 404 returns false → `mFail` → loader goes to `DoneLoading` with an empty
@@ -375,17 +509,25 @@ node scripts/web/netperf-suite.mjs --scenario nav --profiles low,normal --runs 3
 
 **Pass criteria (the win is in the blocked/gap columns, not wall):**
 
-- `part_difficulty → game` **main-thread blocked** drops from ~11.4 s → low single
-  digits at 50 Mbit; **worst RAF gap** from 6.7 s → well under 1 s (target: no single
-  freeze > ~200 ms, since each poll tick yields).
-- `boot → main_hub` blocked drops from 15.5 s toward the CPU floor.
+- `part_difficulty → game` **main-thread blocked** drops substantially at 50 Mbit as
+  the venue/palette `.milo_xbox` opens go async — but note the **6.7 s worst RAF gap on
+  this transition is the 37 MB mogg**, which R1 does **not** fix (deferred to R4). So
+  R1 alone collapses the *milo* component of the 11.4 s; the mogg's ~6.7 s freeze
+  remains until R4. Measure the milo opens' contribution separately (the trace shows
+  per-asset task durations). For the milo opens themselves: no single freeze > ~200 ms,
+  since each poll tick yields.
+- `boot → main_hub` blocked drops from 15.5 s toward the CPU floor (boot is
+  milo-dominated — no mogg — so R1 takes the full win here).
 - Boot **main-thread blocked** collapses toward the loopback `~0.9 s` floor across
   all three throttle tiers (the findings doc's stated goal: "throughput tiers
   collapse toward the loopback numbers").
 - Total **bytes / request count unchanged** (same 71 MB / ~98 fetches) — confirms R1
   changed *delivery model*, not *what* is fetched. (Bytes-down is R2/R3/R5.)
 - `--trace`/`--cpuprofile` on the `game` transition shows the long blocking
-  `WebAssetsFetchSync` task replaced by many short poll tasks interleaved with RAF.
+  `WebAssetsFetchSync` tasks for the **milo** opens (the `.milo_xbox` venue/palette
+  loads via DirLoader/ChunkStream) replaced by many short poll tasks interleaved with
+  RAF. **The 37 MB mogg freeze (6.76 s) will STILL be present after R1** — it is
+  deferred to R4; do not expect R1 alone to move the mogg column.
 
 **Negative/regression checks:**
 
@@ -400,17 +542,23 @@ node scripts/web/netperf-suite.mjs --scenario nav --profiles low,normal --runs 3
 - `rb3-tests` gtest target (`docs` note `native_hack_audit_testsuite`) builds green —
   the `File::Pending()` header addition must not break the engine test link.
 - Matched-asm: spot-check a few `File`-touching TUs via objdiff after the `File.h`
-  virtual is added (Risk 1). Expect no movement (File is engine glue, HX_NATIVE).
+  virtual is added (Risk 1 — **this is the top open question**). Expect no movement
+  (File is engine glue, HX_NATIVE), but a vtable shift could ripple; if it does, switch
+  to the `NativeFileIsPending(File*)` free-function fallback (Phase 3c).
 
 ---
 
 ## Effort, impact & dependencies
 
 - **Effort:** **M.** The async primitive (`WebAssetsFetch`/`WebAssetsFetchDone`)
-  already exists; the work is (a) a re-enterable `OpenFile` (HX_WEB), (b) a
-  pending-aware `NativeStdioFile`, (c) one new `WebAssetsFetchAsync` wrapper, (d) the
-  `File::Pending()` hook. No new infra (JSPI/FETCH already on). Bounded, but touches
-  the loader spine, so careful verification is the bulk of the cost.
+  already exists; the work is (a) a pending-aware `NativeStdioFile` leaf shared by all
+  surfaces (HX_WEB), (b) the **PRIMARY** surface: a pending-aware `ChunkStream` (defer
+  the header read) + re-enterable `DirLoader::OpenFile` — the `.milo_xbox` bulk of the
+  freeze, (c) the **SECONDARY** surface: re-enterable `FileLoader::OpenFile` for dta/dtx
+  (minority share), (d) one new `WebAssetsFetchAsync` wrapper, (e) the `File::Pending()`
+  hook. **The 37 MB mogg surface (`Synth::NewStreamFile`) is NOT in R1 — it is delegated
+  to R4.** No new infra (JSPI/FETCH already on). Bounded, but touches the loader spine
+  + ChunkStream's header contract, so careful verification is the bulk of the cost.
 - **Impact:** **critical.** This is *the* root-cause fix for mid-session jank and
   boot freeze named in the findings doc. It directly removes the 6.7 s / 3.7 s /
   3.5 s single-frame freezes. Every other roadmap item (prefetch, bundle, compress)
@@ -424,8 +572,11 @@ node scripts/web/netperf-suite.mjs --scenario nav --profiles low,normal --runs 3
   - **R2 (idle prefetch of next screen)** and **R3 (per-screen async bundle)** —
     both need the non-blocking fetch primitive R1 exposes to overlap downloads with
     interactivity instead of blocking on them.
-  - **R4 (progressive mogg streaming)** — depends on R1's async-open model to fetch
-    the 37 MB mogg without a blocking open (and then stream/decode it incrementally).
+  - **R4 (mogg prefetch + progressive streaming) — OWNS the mogg surface.** R1 does
+    **not** make the `Synth::NewStreamFile` open async (it's outside any poll cadence).
+    R4 reuses R1's pending-aware `NativeStdioFile` leaf + `WebAssetsFetchAsync` primitive
+    to prefetch the 37 MB mogg into MEMFS before the open, then streams/decodes it
+    incrementally. The 6.7 s mogg freeze closes in R4, not R1.
   - **R5 (wire compression of `/api/file` milos)** and **R6 (asset format/BC)** are
     *independent* of R1 (they cut bytes), but compose with it: R1 makes the transfer
     non-blocking, R5/R6 make it smaller. Combined, the 50 Mbit tier approaches the
@@ -435,25 +586,36 @@ node scripts/web/netperf-suite.mjs --scenario nav --profiles low,normal --runs 3
 
 ## Open questions
 
-1. **DTA/`.dtb` opens — async or keep sync?** Proposed: keep small boot-path DTA on
-   the sync fallback (they're boot-bundled, misses are rare and tiny, and the flex
-   lexer reads the `File` directly so a pending DTA would complicate the lexer). Gate
-   async to large binary extensions. **Confirm** no large/late DTA exists on a hot
-   transition (grep the `nav` waterfall for `.dta`/`.dtb` misses — the findings show
-   the offenders are all `.milo_xbox` + `.mogg`, so this is likely safe).
+1. **[TOP] `File::Pending()` virtual vs. free-function downcast.** Default-false virtual
+   (`bool File::Pending() { return false; }`, appended after `Truncate` at `File.h:33`)
+   is cleanest but **touches the `File` vtable** — a header-driven vtable shift that
+   could ripple into matched Wii TUs (cf. the "BandCharacter::Filter header regression"
+   memory note). **Decide after an objdiff spot-check** of a few `File`-touching TUs
+   (Risk 1, Phase 3c). If any matched TU moves, use the `NativeFileIsPending(File*)`
+   HX_WEB free function (no vtable change). This is the single design decision that gates
+   the whole re-entrant-open mechanism.
 
-2. **`File::Pending()` virtual vs. free-function downcast.** Default-false virtual is
-   cleanest but touches the `File` vtable. Decide after a quick objdiff spot-check
-   (Risk 1). If any matched TU moves, use `NativeFileIsPending(File*)` (HX_WEB free
-   function, no vtable change).
+2. **Mogg surface deferred to R4 — confirmed out of R1's reach.** `Synth::NewStreamFile`
+   (`Synth.cpp:569`) opens the 37 MB mogg via a direct `NewFile` with no surrounding
+   poll cadence, so R1's kick-off/completion-poll split has nowhere to unwind. **R1 does
+   not touch it.** R4 prefetches it warm. (Recorded here so the implementation run does
+   not try to retrofit a re-entrant open into `Synth`.)
 
-3. **Budget-loop yield on pending front loader.** Should `LoadMgr::Poll`'s budget loop
+3. **DTA/`.dtb` opens — async or keep sync? (SECONDARY surface)** Proposed: keep small
+   boot-path DTA on the sync fallback (they're boot-bundled, misses are rare and tiny,
+   and the flex lexer reads the `File` directly so a pending DTA would complicate the
+   lexer). Gate async to large binary extensions. **Confirm** no large/late DTA exists
+   on a hot transition (grep the `nav` waterfall for `.dta`/`.dtb` misses — the findings
+   show the offenders are all `.milo_xbox` + `.mogg`, so this is likely safe). This is
+   why the `FileLoader` (dta) surface is the *minority* share.
+
+4. **Budget-loop yield on pending front loader.** Should `LoadMgr::Poll`'s budget loop
    `emscripten_sleep(0); break;` *immediately* when the front loader is web-pending
    (Phase 4), or rely on the existing `sinceYield` gate? Immediate-yield is more
    responsive but adds a web-only branch in a hot loop. Measure both with
    `netperf-suite` (`--profiles low`) and pick the lower worst-RAF-gap.
 
-4. **Multiple in-flight fetches.** R1 keeps one async open at a time (the loader spine
+5. **Multiple in-flight fetches.** R1 keeps one async open at a time (the loader spine
    serialises). Is there a transition where two independent front loaders could each
    want a different large file concurrently (e.g. DirLoader spawning sibling
    FileLoaders)? If so, R1 still works (each suspends independently) but won't overlap
@@ -461,7 +623,39 @@ node scripts/web/netperf-suite.mjs --scenario nav --profiles low,normal --runs 3
    front-to-back (it does: `mLoading.front()` only, `Loader.cpp:493`) so there's no
    correctness issue, only a missed-overlap opportunity deferred to R2/R3.
 
-5. **JSPI stack depth under the deepest chain.** Does suspending at the open inside a
+6. **JSPI stack depth under the deepest chain.** Does suspending at the open inside a
    deep DirLoader→FileLoader chain ever approach `-sSTACK_SIZE`? Instrument the
    part_difficulty→game path with `-sSTACK_OVERFLOW_CHECK=2` under the `low` profile
    and watch for asserts (Risk 5).
+
+---
+
+## Review corrections applied
+
+Folded in from the verified adversarial review (2026-06-08); each line = one change:
+
+- **Re-scoped the fix point off `FileLoader`** — none of the measured offenders load
+  through `FileLoader`; rewrote Architecture around **three surfaces** (DirLoader/
+  ChunkStream primary, FileLoader secondary, mogg→R4).
+- **PRIMARY surface = `.milo_xbox` via `DirLoader::OpenFile` → `new ChunkStream` →
+  `NewFile`** (`DirLoader.cpp:357/392/401`, `ChunkStream.cpp:51/69/77/90/287`) — added
+  as the bulk of the freeze; needs a re-entrant `DirLoader::OpenFile` **and** a
+  pending-aware `ChunkStream` (defer its synchronous header read).
+- **Mogg (37 MB) DEFERRED to R4** — opens via a direct `NewFile` in
+  `Synth::NewStreamFile` (`Synth.cpp:565/569`) outside any poll cadence; R1's
+  re-entrant-open model cannot reach it. Recorded in Architecture, Verification,
+  Effort, and Open questions.
+- **`FileLoader` kept but marked SECONDARY / minority share** (dta/dtx + raw-buffer
+  fallback), not the headline win.
+- **Split the Implementation plan** Phase 3 → 3a (ChunkStream+DirLoader), 3b
+  (FileLoader), 3c (the shared `File::Pending()` hook).
+- **Promoted `File::Pending()` vtable touch to the TOP open question** — needs an
+  objdiff spot-check that no matched Wii TU regresses; HX_WEB `NativeFileIsPending(File*)`
+  free-function downcast is the fallback.
+- **Adjusted Pass criteria / trace expectations** — R1 collapses the *milo* component
+  of `part_difficulty → game`; the ~6.7 s mogg freeze remains until R4. Boot (milo-only)
+  takes the full win.
+- **Kept all infra premises unchanged** (single-threaded build → `emscripten_fetch`/
+  `-sFETCH=1` genuinely async; `MILO_WEB_ASYNC`/JSPI on; `emscripten_sleep(0)` yield
+  spine; `WebAssetsFetch`/`WebAssetsFetchDone` exist + currently uncalled) — all verified
+  correct.

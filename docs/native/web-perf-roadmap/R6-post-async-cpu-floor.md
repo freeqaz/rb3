@@ -1,9 +1,11 @@
 # R6 — Post-async CPU floor: GPU BC (DXT) decode + decode-pipeline trims
 
-> **Status:** design, LATER / lower priority. Depends on R1–R4 landing first
-> (the synchronous on-demand fetch must already be off the main thread, see
-> `docs/native/web-netperf-findings-2026-06-08.md`). This doc is the handoff for
-> the implementation agent.
+> **Status:** design, **Wave 3 / post-async** (lower priority). Depends on R1–R4
+> landing first (the synchronous on-demand fetch must already be off the main
+> thread, see `docs/native/web-netperf-findings-2026-06-08.md`) — until the
+> network freeze is gone, the per-transition A/B is noise. This is a
+> **per-transition CPU + peak-memory + VRAM win, NOT a boot-wall win.** This doc
+> is the handoff for the implementation agent.
 
 ## Problem & data
 
@@ -93,11 +95,18 @@ the engine already proved in `TextureConvert.cpp`.** Data/control flow:
    require 256-byte `bytesPerRow` alignment** (that constraint is only for
    `CopyB2T` via a GPUBuffer), and DC3 ships this raw value — so no padding
    logic is needed.
-5. **Fallback.** When `HasBCCompression()` is false (no `texture-compression-bc`
-   adapter feature — rare on desktop browsers, possible on some mobile/SwiftShader
-   and the **headless null backend used in CI**), fall through to the existing
-   CPU decode unchanged. This is why R6 keeps the CPU path: it's the correctness
-   floor and the CI-identical path.
+5. **Explicit CPU fallback (load-bearing).** When `HasBCCompression()` is false
+   (no `texture-compression-bc` adapter feature — possible on some mobile GPUs and
+   software/SwiftShader adapters), the BC branch is skipped entirely and the
+   existing CPU `DecompressDXT*` → RGBA8 path runs **unchanged**. This is the
+   correctness floor and must stay: R6 *adds* a branch, it never *removes* the CPU
+   decoder. Note: the capability is queried per-adapter at device init
+   (`GpuDevice_Web.cpp:74` web / `GpuDevice.cpp:120` native), so the branch is
+   selected once and is stable for the process. **Caveat for verification:** the
+   native screenshot harness here runs on a **real BC-capable Vulkan adapter**, so
+   `HasBCCompression()` is *true* there — BC is **live, not inert**, in CI/native
+   screenshots. Do not assume the fallback keeps native baselines byte-identical
+   (see Verification — the diff needs a tolerance).
 
 The decode-pipeline trim is a second, independent lever on the same function and
 on `WebAssets`: cut the transient `std::vector<uint8_t>` churn (the RGBA8
@@ -129,16 +138,17 @@ Phased, smallest-blast-radius first. All edits are in the **shared engine**
 
 **Phase 2 — correctness guards.**
 - **Font atlases (DXT5 glyph-in-alpha).** The text path
-  (`Rnd_Wgpu_RB3.cpp:3646`, `useAlphaAsRGB`) samples `texture.a`. BC3 stores
+  (`Rnd_Wgpu_RB3.cpp:3797`, `useAlphaAsRGB`) samples `texture.a`. BC3 stores
   alpha at full 8-bit in its dedicated alpha block, so font atlases render
   identically under BC3-direct — **no special-casing needed**, but the
   verification step must include a text-heavy screen (song list / HUD) to prove
   glyphs aren't black.
 - **DXN / BC5 normal maps (`0x20`).** Keep these on the **CPU path**: the engine
-  comment (`TextureConvert.cpp:381`) documents that `BC5RGUnorm` yields B=0 →
-  flipped normal Z, which the shader's DXT5nm heuristic mis-decodes. RB3's
-  current decoder doesn't even handle DXN (leaves it white at
-  `Rnd_Wgpu_RB3.cpp:492`), so `IsBCDirectable` must return false for `0x20` and
+  comment (`TextureConvert.cpp:377–379`) documents that `BC5RGUnorm` yields
+  `(R,G,0,1)` → B=0 → flipped normal Z, which the shader's DXT5nm heuristic
+  mis-decodes. RB3's current decoder doesn't even handle DXN (the `default` case
+  leaves the 0xFF-initialized buffer opaque white at `Rnd_Wgpu_RB3.cpp:492–494`),
+  so `IsBCDirectable` must return false for `0x20` and
   the CPU branch keeps current (wrong-but-unchanged) behavior — R6 must not
   regress it, and fixing DXN is out of scope.
 - **Mip handling.** Current RB3 upload is `mipLevelCount = 1` (single level,
@@ -180,15 +190,19 @@ open question).
   `553–556`, side-table `sTexGpu` at `340`.
 - `milo-native-engine/src/gfx/TextureConvert.cpp:369` — `MapBitmapFormat`
   (the **reference implementation** of the DXT→BC mapping, incl. the DXN caveat
-  at 381); `CreateFromBitmap:394` does the BC-direct upload R6 mirrors
-  (`bytesPerRow = blockW*blockBytes` at 521–525). **DC3 ships this** — proof the
-  BC queue-upload path is correct.
+  at 377–379); `CreateFromBitmap:394` does the BC-direct upload R6 mirrors
+  (`blockBytes = (dxt==kDXT1)?8:16`, `bytesPerRow = blockW*blockBytes` at 524–525).
+  **DC3 ships this** — proof the BC queue-upload path is correct (but **not** that
+  it reproduces RB3's CPU decoder bit-for-bit; see Verification).
 - `milo-native-engine/src/gfx/GpuDevice.h:74,119` — `HasBCCompression()` /
   `mHasBCCompression`.
 - `milo-native-engine/src/platform/GpuDevice_Web.cpp:74–82` — web adapter sets
   `mHasBCCompression` + requests the `TextureCompressionBC` device feature.
   **Already linked into rb3-web** (`rb3/native/CMakeLists.txt:650`).
-- `milo-native-engine/src/gfx/GpuDevice.cpp:120,133–137` — native equivalent.
+- `milo-native-engine/src/gfx/GpuDevice.cpp:120,134–135` — native equivalent
+  (`mHasBCCompression = adapter.HasFeature(TextureCompressionBC)` at 120; requests
+  the feature at 134–135). **The native screenshot harness uses this adapter and
+  it advertises BC** — so BC-direct is exercised, not bypassed, in native CI.
 - `milo-native-engine/CMakeLists.txt:100,277–287` — the `rb3` backend flavor that
   **excludes `TextureConvert.cpp`** ("BandRnd does its own DXT decompress … for
   now"). R6 closes that "for now".
@@ -200,18 +214,27 @@ open question).
 
 ## Risks & tradeoffs
 
-- **Adapter feature availability.** `texture-compression-bc` is universal on
-  desktop D3D12/Vulkan/Metal browsers, but **not guaranteed** on some mobile GPUs
-  or software adapters, and notably the **headless null backend used in CI/native
-  screenshots may not advertise it**. Mitigation: the CPU path stays as the
-  fallback, gated on `HasBCCompression()`. CI screenshots keep using CPU decode →
-  **byte-identical** to today (this is exactly why BandRnd hardcoded CPU decode;
-  R6 must preserve that property on the null backend).
-- **Visual regression surface.** BC1/2/3 *are* DXT1/3/5 bit-for-bit, so a correct
-  BC-direct upload is pixel-identical to a correct CPU decode (the GPU's block
-  decoder is the spec'd reference). The real risk is a **block-layout / endian /
-  bytesPerRow bug** producing scrambled textures. Mitigation: the env opt-out for
-  instant A/B, and screenshot diffs on a texture-heavy + a text-heavy screen.
+- **Adapter feature availability.** `texture-compression-bc` is broadly available
+  on desktop D3D12/Vulkan/Metal browsers, but **not guaranteed** on some mobile
+  GPUs or software/SwiftShader adapters. Mitigation: the CPU path stays as the
+  fallback, gated on `HasBCCompression()`. **Note — the native screenshot harness
+  here DOES advertise BC** (`GpuDevice.cpp:120,134–135`), so native CI runs the BC
+  branch, not the CPU fallback. The old assumption that CI stays "byte-identical
+  to today" is **false** — see the next bullet and Verification.
+- **Visual regression surface — and a real (sub-LSB) baseline shift.** BC1/2/3
+  *are* the DXT1/3/5 block formats, so a correct BC-direct upload is **visually**
+  equivalent to a correct CPU decode. But the GPU's hardware block decoder is
+  **not bit-for-bit identical** to RB3's inline `DecompressDXT*`, which is a
+  *truncating integer* decoder (no rounding) — the two legitimately differ by a
+  few LSBs per channel, especially on DXT1's 2/3–1/3 color interpolation and
+  DXT3's 4-bit alpha. Because the native harness runs on a BC-capable adapter, the
+  switch to BC-direct **will shift the existing screenshot baselines sub-LSB** —
+  this is expected, not a bug. The diff must therefore use a **per-channel
+  tolerance (±2 LSB)**, never an exact/byte-identical compare (see Verification).
+  The *actual* regression to catch is a **block-layout / endian / bytesPerRow
+  bug** producing scrambled or color-swapped textures — a gross, obvious diff well
+  outside ±2 LSB. Mitigation: the env opt-out for instant A/B, and tolerant
+  screenshot diffs on a texture-heavy + a text-heavy screen.
 - **DXN must not be touched.** Routing DXN through BC5 would flip normals
   (engine-documented). `IsBCDirectable` returning false for `0x20` is load-bearing.
 - **Two divergent code paths to maintain.** BandRnd now has a CPU decoder *and* a
@@ -248,13 +271,32 @@ Compare, per the suite's `summary.json` / `REPORT.md`:
 texture-heavy transition (or read `performance.memory` in the harness) and
 confirm peak transient allocation drops on the BC run (no 4–8× RGBA8 buffers).
 
-**Correctness — screenshot diff (native, fast loop).** Per
+**Correctness — tolerant screenshot diff (native, fast loop).** Per
 `scripts/native/song-select-capture.py` / the `/api/screenshot` harness, capture
 a **texture-heavy** screen (venue/gameplay) and a **text-heavy** screen (song
-list / HUD) with BC on vs `RB3_NO_GPU_BC=1`, and pixel-diff. On a desktop adapter
-that advertises BC, the two **must be visually identical** (BCn == DXTn). On the
-headless null backend the BC branch should be inert (feature absent → CPU path),
-so existing CI screenshots stay byte-identical.
+list / HUD) with BC on (default) vs `RB3_NO_GPU_BC=1` (CPU decode), and diff.
+
+**The compare MUST be a per-channel tolerance, NOT exact/byte-identical.** The
+native harness runs on a **real BC-capable Vulkan adapter** (`GpuDevice.cpp:120`
+advertises `TextureCompressionBC`), so BC-direct is genuinely exercised — and the
+GPU hardware block decoder differs from RB3's *truncating integer* `DecompressDXT*`
+by a few LSBs per channel. So:
+- Pass condition: **max per-channel abs delta ≤ 2 LSB** (and ideally
+  mean abs delta < 0.5) between the BC-on and CPU-decode screenshots. A clean
+  BC-direct upload lands well inside this band.
+- Fail condition: a *gross* diff (color-swapped channels, scrambled blocks, black
+  glyphs/textures, large structured regions off by ≫ 2 LSB) — that signals a
+  block-layout / endian (`ByteSwapDXT16`) / `bytesPerRow` bug, not the expected
+  decoder rounding difference.
+- **Do not reuse a byte-identical golden** from before R6: switching the default
+  to BC-direct legitimately shifts the native baselines sub-LSB. Re-baseline the
+  golden from a BC-on capture, or always compare BC-on vs `RB3_NO_GPU_BC=1`
+  within-run under the ±2-LSB tolerance (preferred — it self-references and needs
+  no stored golden).
+
+If a deployment target genuinely lacks BC (`HasBCCompression()==false`), that
+adapter takes the CPU fallback and *is* byte-identical to today — but that is the
+exception path, not the harness's path; do not design the verification around it.
 
 **Unit-ish.** If `rb3-tests` (the gtest target) is convenient, add a check that
 `MapRB3DxtToBC` returns the expected `{format, blockBytes}` for 0x08/0x10/0x18 and
@@ -269,10 +311,14 @@ so existing CI screenshots stay byte-identical.
   texture-heavy loads, and it's the *only* lever for the gzip-incompressible
   offenders R5 can't help. Low on boot-wall.
 - **Risk: low–medium.** Bounded by the env opt-out + the engine-proven reference;
-  the main risk is a block-layout bug, caught immediately by the screenshot diff.
-- **Depends on:** R1–R4 (the async-fetch removal) — R6 only matters *after* the
-  sync-fetch idle is gone; until then the network freeze dwarfs any CPU win and
-  the A/B would be noise. R6 is explicitly the "post-async floor" item.
+  the main risk is a block-layout / endian / `bytesPerRow` bug, caught immediately
+  by the **tolerant (±2-LSB)** screenshot diff. (A correct upload is *not*
+  byte-identical to the old CPU decode — expect a sub-LSB baseline shift, see
+  Verification.)
+- **Depends on:** R1–R4 (the async-fetch removal) — **Wave 3 / post-async.** R6
+  only matters *after* the sync-fetch idle is gone; until then the network freeze
+  dwarfs any CPU win and the A/B would be pure noise. R6 is explicitly the
+  "post-async floor" item.
 - **Relationship to R5 (wire compression):** **complementary, non-overlapping.**
   R5 cannot compress the texture-heavy milos (measured ~1.0 gzip ratio); R6 is the
   mechanism that shrinks them (on GPU/VRAM/CPU). If both land, R5 covers the
@@ -283,10 +329,14 @@ so existing CI screenshots stay byte-identical.
 
 ## Open questions
 
-- **Does the production web adapter advertise `texture-compression-bc`?** Confirm
-  on the actual target browsers (Chrome/Firefox desktop are yes; verify whatever
-  mobile/low-end set the port cares about). If a meaningful slice of users lack
-  it, R6's win is correspondingly narrower (they stay on CPU decode).
+- **[TOP] Do the production target browsers/GPUs advertise
+  `texture-compression-bc` — especially mobile/low-end?** This sizes R6's whole
+  payoff. Chrome/Firefox desktop on D3D12/Vulkan/Metal are yes; the unknowns are
+  the **mobile and low-end** set the port cares about (some mobile GPUs and any
+  software/SwiftShader adapter may lack BC). Every user without it stays on CPU
+  decode and gets *zero* R6 benefit, so if a meaningful slice lacks it, R6's win
+  is correspondingly narrower. Confirm against the real target matrix before
+  treating R6's per-transition/memory win as universal.
 - **Asset-prep pre-swap.** Could the extractor emit BC blocks already
   little-endian (drop `ByteSwapDXT16` from the runtime hot path entirely)? That's
   an asset-side change in `scripts/web/` and would also let the milo be uploaded
@@ -305,3 +355,29 @@ so existing CI screenshots stay byte-identical.
   DC3-era `RndBitmap` shapes — needs an audit that RB3's older `rndobj/Bitmap.h`
   satisfies its API (`Order/Bpp/RowBytes/PixelBytes/nextMip/PixelColor`). The
   inline patch is the lower-risk first cut.
+
+## Review corrections applied
+
+- **Verification claim fixed (the core revise):** dropped the false
+  "byte-identical / visually identical" compare. BC hardware decode is *visually*
+  but **not pixel-exact** vs RB3's truncating integer CPU decoder — Verification +
+  Risks now mandate a **per-channel ±2-LSB tolerance**, not an exact diff.
+- **CI/native-harness premise corrected:** the native screenshot harness runs on a
+  **real BC-capable Vulkan adapter** (`GpuDevice.cpp:120,134–135` advertise +
+  request `TextureCompressionBC`), so BC-direct is *live, not inert*, in CI and
+  the existing baselines shift sub-LSB. Removed the "null backend keeps it
+  byte-identical" assumption from Architecture, Risks, and Verification.
+- **CPU fallback made explicit:** Architecture point 5 + a dedicated bullet state
+  that when `HasBCCompression()==false` the CPU `DecompressDXT*` path runs
+  unchanged (R6 *adds* a branch, never removes the decoder).
+- **Status / sequencing:** marked R6 as **Wave 3 / post-async**, a per-transition
+  CPU + peak-memory + VRAM win (NOT a boot-wall win), depending on R1–R4 so the
+  A/B isn't noise.
+- **Top open question recorded:** whether production target browsers/GPUs (esp.
+  mobile/low-end) advertise `texture-compression-bc` — promoted to `[TOP]`.
+- **Citations corrected against source:** `useAlphaAsRGB` `3646`→`3797`; DXN
+  caveat `TextureConvert.cpp:381`→`377–379`; DXN white-fill `492`→`492–494`
+  (`default` case); native `GpuDevice.cpp:120,133–137`→`120,134–135`;
+  `TextureConvert.cpp` BC-upload block `521–525`→`524–525`. Spot-checked the
+  upload function (`Rnd_Wgpu_RB3.cpp:453`, RGBA8 alloc `479`, decode `488–495`,
+  `bytesPerRow=w*4` `539`, `mipLevelCount=1` `534`) — all confirmed accurate.

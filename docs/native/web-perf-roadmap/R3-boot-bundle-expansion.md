@@ -1,10 +1,14 @@
 # R3 — Eager boot-bundle expansion: pre-pack the boot `.milo_xbox` working set into the async bundle
 
 > Status: design / handoff. Author: investigation pass 2026-06-08.
+> Revised 2026-06-08 to fold in adversarial-review must-fixes (W4b/IDB warm-boot
+> regression; corrected gzip ratios; combined-vs-separate route). See
+> "Review corrections applied" at the end.
 > Verification tool: `scripts/web/netperf-suite.mjs` (CDP-throttled boot waterfall).
-> Sibling items: depends on nothing (R1-independent); overlaps R2 (per-screen
-> prefetch — boot is "screen 0") and R5 (wire compression — the boot set
-> gzips ~46%, so the two compose).
+> Sibling items: depends on nothing (**fully independent of R1**); overlaps R2
+> (per-screen prefetch — boot is "screen 0") and R5 (wire compression — the boot
+> set gzips *better* than the venue milos, so the two compose strongly). R3 is the
+> recommended early win after R5.
 
 ## Problem & data
 
@@ -75,6 +79,46 @@ Data/control flow:
    so the `WebAssetsFetchSync` fallback in `native_file.cpp` is **never reached for
    boot-set files** — the freeze is gone. The sync path stays as the correctness
    backstop for anything not in the manifest (and for misses past boot).
+5. **IDB write-back (mandatory — closes the W4b warm-boot regression)**: as
+   `onBundleSuccess` unpacks each file into MEMFS it must **also** persist it to the
+   W4b IndexedDB cache, exactly as the sync path does. This is not optional polish —
+   without it R3 is a **net regression for returning users** (see below).
+
+### W4b / IndexedDB warm-boot regression — must-fix, not a nicety
+
+Today the *sync* miss path is also the IDB write-through path: after a successful
+`WebAssetsFetchSync`, `native_file.cpp` (L160-167) computes a cache key
+(`cacheRelFromMemfsPath`) and calls `cachePutAfterFetch` (`native_file.cpp:100` →
+`window.__rb3CachePut`), so a **second** cold boot serves all ~94 boot milos from
+local IndexedDB with **zero network** (the boot opens hit `cacheTryHit`,
+`native_file.cpp:66` → `window.__rb3IdbCache`, before they ever reach the XHR).
+
+`onBundleSuccess` (`milo-native-engine/src/platform/WebAssets.cpp:156`) writes
+straight to MEMFS (`fopen`/`fwrite`, L224-227) and **never** calls
+`cachePutAfterFetch` / `window.__rb3CachePut` — those helpers live only in
+`native/src/native_file.cpp`, on the sync miss path. So a naïve R3 that just routes
+the boot set through the bundle would **bypass IDB entirely**: warm/repeat boots
+would **re-download the entire ~54 MB boot bundle** every time, regressing the W4b
+warm-cache win for exactly the returning-user case it was built for.
+
+**R3 therefore must do one of (prefer the first):**
+- **(a) Write each unpacked file back to IDB during unpack.** In `onBundleSuccess`,
+  after the MEMFS `fwrite` succeeds, persist the file to the W4b cache using the same
+  key derivation the sync path uses (`cacheRelFromMemfsPath(memfsPath)` →
+  `window.__rb3CachePut(key, bytes)`). Since `onBundleSuccess` already holds the file
+  bytes in `data`, it can hand them to `__rb3CachePut` directly — no extra
+  `FS.readFile`. This is engine-shared code (DC3 also calls `WebAssetsFetchBundle`),
+  so the write-back must be **HX_WEB/RB3-gated** or guarded on the presence of
+  `window.__rb3CachePut` (DC3 may not define it) so it is a no-op where the hook is
+  absent. **The key derivation must match the sync path's exactly** or warm boots
+  miss the cache they just populated.
+- **(b) Gate the bundle off when the boot set is already IDB-resident.** Before firing
+  `/api/bundle/boot`, query `window.__rb3IdbCache` for the manifest entries; if all
+  (or a high fraction) are present, skip the bundle and let the warm sync opens serve
+  from IDB at ~zero cost. Simpler to reason about, but it re-introduces the per-file
+  sync-open path on warm boots (cheap — IDB hits don't touch the network — but it
+  forgoes the single-unpack efficiency). (a) is preferred; (b) is an acceptable
+  fallback if writing through the shared engine path proves awkward.
 
 Why this shape:
 - **Reuses the entire async + unpack path** (`emscripten_fetch` → `onBundleSuccess`
@@ -85,11 +129,18 @@ Why this shape:
 - **Manifest, not extension**: the full extracted set is **4455 `.milo_xbox` / ~4 GB**
   — gating the bundle by extension is impossible. The boot set must be an explicit
   curated list (54 MB), which is exactly what a manifest gives.
-- **R5 composes for free**: the boot milos gzip to ~46% (`colorpalettes` is in R2,
-  but the boot UI/track milos are texture/mesh data that compresses), so serving the
-  boot bundle with `Content-Encoding: gzip` (or pre-gzipping it) roughly halves the
-  ~54 MB → ~25 MB on the wire. Venue milos (R2) gzip to ~98% — useless — which is
-  another reason R3 (boot) and R2 (venues) are separate.
+- **R5 composes strongly**: the boot milos are texture/mesh/scene-graph data that
+  compresses well, so serving the boot bundle with `Content-Encoding: gzip` (or
+  pre-gzipping it) meaningfully shrinks the ~54 MB on the wire. **Gzip ratio is
+  milo-DEPENDENT** — measured: `colorpalettes.milo_xbox` (the 20.8 MB boot offender)
+  gzips to **~52%**, `small_club_01.milo_xbox` (a venue, R2's territory) to **~68%**;
+  a different, already-DXT-packed milo can be ~99% (the DXT block payload is
+  near-incompressible — that residual is R6's job, GPU BC upload). So the earlier flat
+  "boot set gzips ~46% / venues gzip ~98% — useless" claim was **wrong on both
+  counts**: R5 *does* help the venue milos, and R3's boot set compresses *better* than
+  the stated ~46% (closer to ~50% on the dominant entries). R3 (boot) and R2 (venues)
+  remain separate for *prefetch-timing* reasons (boot vs. screen transition), **not**
+  because venues are incompressible.
 
 ## Implementation plan (high-level, phased)
 
@@ -112,19 +163,44 @@ Why this shape:
   `_emit_bundle(entries)` that takes an explicit `[(rel, bytes)]` list and writes
   the existing binary format. Keep `/api/bundle` calling it with the
   `BUNDLE_EXTS`-filtered tree walk (unchanged behavior).
-- Add `_serve_boot_bundle()` (route `/api/bundle/boot`): read
-  `native/web/boot-assets.manifest`, resolve each path with the existing
+- Add `_serve_boot_bundle()` on a **separate route** `/api/bundle/boot` (decision:
+  separate route, *not* appended to the existing `/api/bundle` — see Open questions):
+  read `native/web/boot-assets.manifest`, resolve each path with the existing
   overlay/fallback/`(..)` logic from `_serve_asset_file`, and call `_emit_bundle`.
+  Keeping it a distinct per-set route lets the config bundle stay byte-identical for
+  non-graphical tools, and gives **R2 a reusable `/api/bundle/<set>` convention** to
+  generalize per screen.
 - Optional: gzip the boot-bundle body and set `Content-Encoding: gzip` when the
   client `Accept-Encoding` allows it (this is the R5 hook; can land later — the
   format inside is unchanged, the browser inflates before `onBundleSuccess` sees it).
+  The boot set compresses ~50% (corrected ratio), so this is a real ~54 MB → ~27 MB win.
 
-**Phase 2 — engine: parameterize the bundle fetch.**
+**Phase 2 — engine: parameterize the bundle fetch *and* add IDB write-back.**
 - In `milo-native-engine/src/platform/WebAssets.{h,cpp}`, change
-  `WebAssetsFetchBundle()` to `WebAssetsFetchBundle(const char *url = "/api/bundle")`
-  (default keeps every existing caller, incl. DC3, working). The body is identical
-  except the URL string. `onBundleSuccess`/`onBundleError`/`sPending` are unchanged
-  and already handle N concurrent bundles via the shared counter.
+  `WebAssetsFetchBundle()` (`WebAssets.cpp:245`, currently hardcodes `/api/bundle` at
+  L253) to `WebAssetsFetchBundle(const char *url = "/api/bundle")` (default keeps
+  every existing caller, incl. DC3, working). The body is identical except the URL
+  string. `onBundleError`/`sPending` are unchanged and already handle N concurrent
+  bundles via the shared counter.
+- **In `onBundleSuccess` (`WebAssets.cpp:156`), add the W4b IDB write-back** (the
+  must-fix). After the successful MEMFS `fwrite` (L224-228), persist the file to the
+  W4b cache so warm boots don't re-download the bundle. Two options for *where* the
+  write-back lives, since `cachePutAfterFetch`/`__rb3CachePut` are defined in RB3's
+  `native/src/native_file.cpp`, not in the engine:
+  - **(preferred) an RB3-provided hook**: declare a weak/overridable
+    `RB3BundleCacheWriteThrough(const char *memfsPath, const void *bytes, size_t n)`
+    that `onBundleSuccess` calls per file; RB3 implements it in `native_file.cpp`
+    (deriving the key via `cacheRelFromMemfsPath` and calling `__rb3CachePut`), and it
+    is a **no-op / absent for DC3**. This keeps the engine free of RB3-specific cache
+    semantics.
+  - **(alt) inline, guarded on the JS hook**: have `onBundleSuccess` call
+    `EM_ASM`-style `if (window.__rb3CachePut) window.__rb3CachePut(key, bytes)` directly,
+    computing the same key the sync path uses. Simpler but bakes RB3's key scheme into
+    shared code.
+  Either way the **key derivation MUST match the sync path's exactly**
+  (`cacheRelFromMemfsPath` over the resolved `/data/...` memfsPath) or warm boots miss
+  the cache they just filled. Add this even if the bundle gzip lands later — the
+  write-back is correctness, not perf.
 
 **Phase 3 — client: fire the boot bundle in BOOT_INIT.**
 - In `native/src/main_web.cpp` `BOOT_INIT`, after `WebAssetsFetchBundle()` (config),
@@ -141,12 +217,16 @@ Why this shape:
 **Phase 4 — verify & tune (see Verification).** Confirm the 94 sync XHRs collapse
 to one async bundle, boot-blocked ms drops toward the `local` floor, and no
 boot-set file still hits `WebAssetsFetchSync` (instrument `native_file.cpp`).
+**Crucially, add a WARM/persisted-IDB run** (boot once to populate IDB, then boot
+again *with the network throttled and the HTTP cache cleared*) and assert the boot
+bundle is **not** re-downloaded — this is the only run that surfaces the W4b
+regression; the cold-only netperf matrix never does.
 
 ## Key files & call sites (verified)
 
 - `milo-native-engine/src/platform/WebAssets.cpp`
-  - `WebAssetsFetchBundle()` — L245-255: hardcodes `emscripten_fetch(&attr, "/api/bundle")`; **parameterize the URL here**.
-  - `onBundleSuccess()` — L156-236: parses `uint32 count` (L172) then per-file `pathLen/path/dataLen/data` (L176-191), `..`-resolves (L197-214), mkdir + `fopen`/`fwrite` into MEMFS (L216-229), bumps `sCompleted` (L233). **Reused unchanged** for the boot bundle.
+  - `WebAssetsFetchBundle()` — L245: hardcodes the URL at `emscripten_fetch(&attr, "/api/bundle")` (L253); **parameterize the URL here** (default arg).
+  - `onBundleSuccess()` — L156-236: parses `uint32 count` (L172) then per-file `pathLen/path/dataLen/data` (L176-190), `..`-resolves (L195-214), mkdir + `fopen`/`fwrite` into MEMFS (L224-227), bumps `sCompleted` (L233). **Reused for the boot bundle, but NOT unchanged — add the W4b IDB write-back per file** right after the `fwrite` succeeds (L228). It does **not** currently call `cachePutAfterFetch`/`__rb3CachePut` — that gap is the warm-boot regression.
   - `WebAssetsFetchSync()` — L261-329: the blocking `xhr.open(...,false)` (L292) this item eliminates for boot-set files. Stays as the backstop.
   - `sPending`/`WebAssetsAllDone()` — L32, L331: shared counter; supports 2 concurrent bundles with no change.
 - `native/web/server.py`
@@ -160,12 +240,23 @@ boot-set file still hits `WebAssetsFetchSync` (instrument `native_file.cpp`).
   - `BOOT_APP_CTOR` case — L521-551: `new App(0,nullptr)` — the consumer whose sync milo reads now hit warm MEMFS.
   - `ApplyUrlLoaderEnv()` — L169-193: URL→env knob plumbing; **add `bootBundle`→`RB3_BOOT_BUNDLE_OFF`**.
 - `native/src/native_file.cpp`
-  - `NativeStdioFile` ctor fopen-miss path — L137-168: `cacheTryHit` → `WebAssetsFetchSync` → retry. **The freeze this item removes; add a one-shot log/counter to prove boot-set files no longer reach it.**
+  - `NativeStdioFile` ctor fopen-miss path — L137-168: `cacheTryHit` (L161) → `WebAssetsFetchSync` (L163) → retry, then `cachePutAfterFetch` (L166) on success. **The freeze this item removes; add a one-shot log/counter to prove boot-set files no longer reach it.**
+  - **IDB write-through helpers R3 must reuse** — `cacheRelFromMemfsPath` (L55, key derivation from a `/data/...` path), `cacheTryHit` (L66 → `window.__rb3IdbCache`, L70-73), `cachePutAfterFetch` (L100 → `window.__rb3CachePut`, L103-108). These live **only here** (the sync path), which is exactly why `onBundleSuccess` bypasses IDB today. R3's bundle write-back must call the same key derivation + `__rb3CachePut`, either by exposing an RB3 hook the engine calls or by inlining the `__rb3CachePut` call in `onBundleSuccess` (DC3-safe-guarded).
 - `native/CMakeLists.txt` — L642 (`WebAssets.cpp` in the web TU list), L874 (`rb3_pre.js` pre-js). No source-list change needed unless the manifest generator is added as a target.
 - `scripts/web/netperf-suite.mjs` — `trackNetwork()` L125-, waterfall emit L338 (`network-waterfall.json`). The verification + manifest-source tool.
 
 ## Risks & tradeoffs
 
+- **W4b warm-boot regression (the headline risk — mitigated by design, not optional).**
+  If R3 ships *without* the IDB write-back, returning users re-download the ~54 MB
+  boot bundle on every boot, regressing the shipped W4b warm cache (which today serves
+  all ~94 boot milos from IndexedDB with zero network on a 2nd boot). The sync path
+  writes through to IDB (`cachePutAfterFetch`); `onBundleSuccess` does not. Mitigation
+  is in the design (Architecture step 5 + Phase 2): write each unpacked file to IDB
+  during unpack, OR gate the bundle off when the boot set is already IDB-resident — and
+  the warm-boot verification run above must pass before R3 lands. **This must be in the
+  first cut, not a follow-up**; a returning-user regression is worse than the cold-boot
+  win for the population that boots more than once.
 - **Manifest staleness.** A hand-authored list rots as the UI/boot graph changes,
   silently re-introducing sync misses. Mitigation: **generate from the netperf
   waterfall** (Phase 0), regenerate in CI, and add a netperf assertion that
@@ -219,6 +310,15 @@ boot-set file still hits `WebAssetsFetchSync` (instrument `native_file.cpp`).
   `engineState`.
 - **A/B knob.** `?bootBundle=0` (→ `RB3_BOOT_BUNDLE_OFF`) restores the sync path for
   the control run, so the same build proves the delta.
+- **Warm-boot / persisted-IDB run (mandatory — guards the W4b regression).** The
+  cold-only matrix above CANNOT see the IDB regression. Add a two-boot run: (1) boot
+  once with the bundle to populate IndexedDB; (2) clear the HTTP cache, throttle the
+  link, and boot again. Assert the boot bundle (`/api/bundle/boot`) is **not**
+  re-requested (network waterfall shows 0 bytes for it / served from IDB), and that
+  warm-boot wall time is at/near the `local` floor. Without the IDB write-back this
+  run fails (the full ~54 MB re-downloads), which is precisely the returning-user
+  regression. The harness can also read `window.__rb3IdbCache` size via `engineState`
+  to confirm the boot set was persisted.
 - **Correctness / no-regression.** A normal cold boot must still reach the first
   interactive screen with the same screen name + song count
   (`window.rb3CurrentScreen`, `window.rb3SongCount`) — the existing boot smoke
@@ -230,10 +330,13 @@ boot-set file still hits `WebAssetsFetchSync` (instrument `native_file.cpp`).
 
 ## Effort, impact & dependencies
 
-- **Effort: M.** Engine change is a one-line URL parameterization + default arg.
-  Server change is a refactor of an existing method + one route. Client change is
-  one extra call + one env knob. The manifest generator is the only genuinely new
-  piece, and it reads an artifact the netperf suite already emits.
+- **Effort: M.** Engine change is a URL parameterization + default arg, **plus the
+  W4b IDB write-back in `onBundleSuccess`** (a per-file `__rb3CachePut` call reusing
+  the sync path's key derivation, DC3-guarded) — small but correctness-critical, not
+  the original "one-liner". Server change is a refactor of an existing method + one
+  route. Client change is one extra call + one env knob. The manifest generator and
+  the warm-boot verification run are the genuinely new pieces; the manifest reads an
+  artifact the netperf suite already emits.
 - **Impact: high.** Removes the dominant cold-boot freeze (the 94 sync XHRs / 54 MB
   / up to 10 s blocked at 50 Mbit) and converts it to one overlapped async download
   that hides behind GPU bring-up. This is the single biggest first-load win that
@@ -247,9 +350,14 @@ boot-set file still hits `WebAssetsFetchSync` (instrument `native_file.cpp`).
     manifest-driven-async-bundle pattern R2 then generalizes per screen. They share
     the manifest-generator and the parameterized-bundle plumbing — build those in
     R3 to be reusable by R2.
-  - **Composes with R5** (wire compression): the boot set gzips ~46%, so gzipping
-    `/api/bundle/boot` roughly halves its transfer; the format inside is unchanged.
-  - **Unblocks** a clean per-screen-bundle convention for R2.
+  - **Composes with R5** (wire compression): the boot set compresses well (~50% on
+    the dominant entries, e.g. `colorpalettes` ~52%), so gzipping `/api/bundle/boot`
+    roughly halves its transfer; the format inside is unchanged. (R5 *also* helps the
+    venue milos R2 handles — the old "venues gzip ~98% — useless" claim was wrong; the
+    near-incompressible residual is the DXT payload, which is R6's territory.)
+  - **Unblocks** a clean per-set `/api/bundle/<set>` convention for R2 (one of the
+    reasons R3 uses a separate `/api/bundle/boot` route rather than appending to the
+    existing config bundle — see Open questions).
 
 ## Open questions
 
@@ -257,11 +365,15 @@ boot-set file still hits `WebAssetsFetchSync` (instrument `native_file.cpp`).
   newline-delimited) vs an entry in an existing JSON manifest vs generated into the
   build dir. Committed text is simplest and diff-reviewable; confirm it doesn't
   collide with the `/api/manifest` (full asset list) endpoint semantics.
-- **One combined bundle vs two concurrent.** Should the boot milos be appended to
-  the *existing* `/api/bundle` (one request, simplest gate) or kept a separate
-  `/api/bundle/boot` (lets R2 reuse the per-set route, and lets the config bundle
-  stay the same for non-graphical tools)? Leaning two; verify the extra request's
-  RTT cost is negligible vs the 54 MB body (it is, at any realistic link).
+- **One combined bundle vs a separate `/api/bundle/boot` route — DECIDED: separate.**
+  Appending the boot milos to the *existing* `/api/bundle` is one request / simplest
+  gate, but a **separate `/api/bundle/boot`** is the recommendation: it lets R2 reuse
+  a per-set `/api/bundle/<set>` convention, keeps the config bundle byte-identical for
+  non-graphical tools (which don't want 54 MB of milos), and lets the boot bundle be
+  gated/skipped independently on warm boots (the IDB-resident gate). The extra
+  request's RTT is negligible vs the 54 MB body at any realistic link, and both fire
+  concurrently in `BOOT_INIT` so there is no added serialization. Recorded as the lean
+  decision; revisit only if the per-set route proves to cost a measurable RTT.
 - **Gzip now or in R5.** Pre-gzip the boot bundle to a static `.gz` in `build.sh`
   (cacheable, no per-request CPU) vs on-the-fly gzip in the server vs defer entirely
   to R5. Pre-baking is the production-shaped answer but adds a build step.
@@ -277,3 +389,30 @@ boot-set file still hits `WebAssetsFetchSync` (instrument `native_file.cpp`).
 - **Manifest determinism across runs.** Does the boot fetch set vary run-to-run
   (timing-dependent lazy loads)? Generate from a `--runs 3` union to be safe, and
   diff successive generations in CI to catch drift.
+
+## Review corrections applied
+
+(Adversarial-review pass 2026-06-08; all verified against the code before folding in.)
+
+- **W4b/IDB warm-boot regression — now a first-class must-fix.** Added Architecture
+  step 5 + a dedicated "W4b / IndexedDB warm-boot regression" subsection: `onBundleSuccess`
+  (`WebAssets.cpp:156`) writes to MEMFS but never calls `cachePutAfterFetch`/`__rb3CachePut`
+  (those live only in `native/src/native_file.cpp`, the sync miss path, L100/L160-167), so a
+  naïve R3 re-downloads the 54 MB bundle on warm boots. R3 must write each unpacked file back
+  to IDB (preferred) or gate the bundle when the set is already IDB-resident.
+- **Phase 2 rewritten** from "one-line URL parameterization" to URL param **plus** the IDB
+  write-back in `onBundleSuccess`, with the exact-key-match requirement and DC3-guard.
+- **Verification + Phase 4 + Effort** updated to require a **warm/persisted-IDB run** (the
+  cold-only matrix can't surface the regression) and to reflect the added correctness work.
+- **Gzip claim corrected.** Replaced the flat "boot gzips ~46% / venues gzip ~98% — useless"
+  with the measured, milo-dependent reality: `colorpalettes.milo_xbox` ~52%, `small_club_01`
+  ~68%, some already-DXT-packed milos ~99% (R6's residual). R5 *does* help the venues; R3's
+  boot set compresses *better* than the stated ~46%. Fixed in Architecture, Open questions,
+  and Dependencies.
+- **Combined-vs-separate route — recorded as DECIDED (separate `/api/bundle/boot`)** so R2
+  reuses the per-set convention; noted in Phase 1, Open questions, and Dependencies.
+- **R1 independence + early-win status** clarified in the header and Dependencies (R3 is the
+  recommended early win after R5, fully independent of R1).
+- **Line citations corrected** where the doc had drifted (`onBundleSuccess` MEMFS write
+  L224-227, not L216-229; `WebAssetsFetchBundle` URL hardcode at L253; added the
+  `native_file.cpp` IDB-helper call sites `cacheRelFromMemfsPath`/`cacheTryHit`/`cachePutAfterFetch`).
