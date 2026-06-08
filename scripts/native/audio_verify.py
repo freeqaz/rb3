@@ -79,15 +79,19 @@ import tempfile
 import wave
 
 import numpy as np
-from scipy import signal
+from scipy import signal, ndimage
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # ---------------------------------------------------------------------------
 # Thresholds (documented; self-test pins them).
 # ---------------------------------------------------------------------------
-CHROMA_SAME = 0.45        # peak centered-chroma correlation -> same song (calibrated
-                          #   on real RB3 captures: true song ~0.54, wrong songs <=0.42)
+CHROMA_SMOOTH_S = 1.0     # temporal chroma-smoothing window (s); de-noises per-frame
+                          #   chroma so the chord progression drives identity (lifts a
+                          #   true match ~0.6->0.9, leaves a different song ~0.3)
+CHROMA_SAME = 0.65        # smoothed peak chroma correlation -> same song. Recalibrated
+                          #   for smoothing: true song ~0.82-0.95 (real ref ~0.93),
+                          #   wrong song ~0.30-0.35. (Was 0.45 pre-smoothing.)
 ALIGN_MIN_PEAK = 0.15     # onset-envelope xcorr peak below this -> alignment untrusted
 RATE_TOL = 0.005          # |speed_ratio - 1| above this -> wrong playback rate (0.5%)
 PITCH_TOL = 0.01          # |pitch_ratio - 1| above this with OK tempo -> pitch shift
@@ -202,10 +206,14 @@ def onset_env(x, sr, hop=512, win=2048):
     return flux, sr / hop
 
 
-def chroma(x, sr, hop=2048, win=4096):
-    """12-bin pitch-class chromagram, L2-normalised per frame. Octave-folding +
-    per-frame normalisation make it robust to timbre/EQ/gain/mix-balance, so it
-    isolates 'which notes are sounding' = song identity. Returns (C [12,T], fps)."""
+def chroma(x, sr, hop=2048, win=4096, smooth_s=CHROMA_SMOOTH_S):
+    """12-bin pitch-class chromagram, L2-normalised per frame, then TEMPORALLY
+    SMOOTHED over ~smooth_s. Octave-folding + per-frame normalisation make it robust
+    to timbre/EQ/gain/mix-balance; the smoothing averages out per-frame (46ms) noise
+    so the underlying CHORD PROGRESSION (which changes on ~1s timescales) drives the
+    correlation. This is the real song identity: it lifts a true match from ~0.6 to
+    ~0.9 while leaving a different song near ~0.3 (the gap WIDENS, measured on real
+    RB3 captures: web-vs-native 0.70->0.93, different 0.24->0.32). Returns (C[12,T], fps)."""
     if len(x) < win:
         return np.zeros((12, 1)), sr / hop
     f, t, Z = signal.stft(x, fs=sr, nperseg=win, noverlap=win - hop,
@@ -230,7 +238,16 @@ def chroma(x, sr, hop=2048, win=4096):
     C = C - C.mean(axis=0, keepdims=True)
     norm = np.linalg.norm(C, axis=0, keepdims=True)
     norm[norm == 0] = 1.0
-    return C / norm, sr / hop
+    C = C / norm
+    # temporal smoothing (moving average over ~smooth_s), then re-normalise columns
+    fps = sr / hop
+    w = max(1, int(round(smooth_s * fps)))
+    if w > 1 and C.shape[1] > w:
+        C = ndimage.uniform_filter1d(C, w, axis=1, mode="nearest")
+        norm = np.linalg.norm(C, axis=0, keepdims=True)
+        norm[norm == 0] = 1.0
+        C = C / norm
+    return C, fps
 
 
 # ---------------------------------------------------------------------------

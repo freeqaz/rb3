@@ -101,10 +101,21 @@ spurious off-rate when the reference diverges too far.
 
 ## How to read it
 
-- **Prefer `--rank`.** The clean reference is only a *moderate* match to the
-  game's mix (true song chroma ~0.55), so a per-reference absolute threshold is
-  thin. Relative ranking is robust: the right song wins, the margin grades
-  confidence (CONFIDENT ≥ 0.08 over #2).
+- **Chroma is TEMPORALLY SMOOTHED (~1 s, `CHROMA_SMOOTH_S`)** so the chord
+  PROGRESSION drives identity, not per-frame noise. This lifts a true match to a
+  convincing absolute number: same song **~0.82–0.93**, a different-key song
+  ~0.30. (Before smoothing it was only ~0.55, which read as ambiguous.)
+- **Use a GOLDEN reference for the strongest call.** Comparing a capture against
+  the game's actual mix — i.e. a known-good *real capture* of the same song
+  (native is the bar) via `--ref native_capture.wav` — beats the synthetic downmix:
+  web-vs-native scores **~0.89** where web-vs-downmix is ~0.82, because it's the
+  same real recording, not an independent mix. For "is the audio correct", this is
+  the test: capture ≈ golden (high chroma + not clipped + same rate) ⇒ correct.
+- **`--rank` still helps pick WHICH song**, but two genuinely similar songs (e.g.
+  20thcenturyboy vs 25or6to4 share a key) only separate by ~0.06 — chroma can't
+  split them alone, smoothed or not. Corroborate with the fingerprint BER and the
+  golden reference. Capture **long** (≥20 s): a 3 s clip is too short for fpcalc and
+  for a stable rate/identity read.
 - **MATCH with "rate inconclusive"** is the healthy native result: a flat
   speed-curve means no chipmunk (the onset alignment is weak vs a different-mix
   reference, so the exact speed can't be pinned — but there is no off-1.0 peak).
