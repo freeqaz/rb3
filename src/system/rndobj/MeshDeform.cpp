@@ -166,7 +166,16 @@ RndMeshDeform *RndMeshDeform::FindDeform(RndMesh *m) {
 
 bool RndMeshDeform::IsExoBone(RndTransformable *t) {
     if (!t) return false;
+#ifdef HX_NATIVE
+    // The Wii path reads the object's name through a hard-coded vtable-slot offset
+    // (`vtable[0][3]`), an ABI-specific trick that aliases Hmx::Object::Name() on
+    // the Wii image. Under clang LP64 the vtable layout differs, so that raw read
+    // returns garbage and faults. Use the portable accessor — same semantics
+    // (an "exo_"-prefixed bone name). Wii path below is byte-identical.
+    return strnicmp("exo_", t->Name(), 4) == 0;
+#else
     return strnicmp("exo_", ((const char **)((void **)(*(void ***)t))[0])[3], 4) == 0;
+#endif
 }
 
 void RndMeshDeform::BoneDesc::ExportWorldXfm(Transform &xfm) {

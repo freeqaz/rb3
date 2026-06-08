@@ -1,5 +1,8 @@
 #include "bandobj/BandCharDesc.h"
 #include "BandCharDesc.h"
+#ifdef HX_NATIVE
+#include <cstdlib>
+#endif
 #include "bandobj/BandHeadShaper.h"
 #include "math/Mtx.h"
 #include "obj/DataFunc.h"
@@ -91,15 +94,27 @@ void BandCharDesc::Init() {
             gDeforms = DirLoader::LoadObjects(FilePath(dfpath), 0, 0);
             MemPopHeap();
 #else
-            // The band-character deform milo loads CharClip/CharBonesSamples
-            // objects whose Load() is not yet native byte-correct (CharBonesSamples
-            // version-desync, CharBonesSamples.cpp:457 assert) — deferred T9 char-
-            // Load work. gDeforms is null-tolerated by its only consumer
-            // (GetDeformClip returns 0 when null), and band-character deforms are
-            // off the boot-to-menu path. Defer the load (mirrors CharCache::InitMe's
-            // deferred world/shared/chars.milo). Re-enable once char Load is
-            // native-correct.
+            // The band-character deform milo (char/main/shared/deform.milo) holds
+            // the per-gender CharClips ("male"/"female") that BandCharacter::
+            // SetDeformation applies as a VERTEX morph — the gender body/face/cuff
+            // SHAPE (not bone pose). The gross skeleton fling/shatter is a SEPARATE
+            // problem, already handled by BandCharacter::RebindOutfitBonesToOwnSkeleton
+            // + the engine fling-clamp (which work with this load on OR off; measured
+            // skinToBoneDelta is clean either way). This load was previously deferred
+            // (gDeforms=0) as a native-only hack, over a fear the CharClip/
+            // CharBonesSamples Load wasn't native byte-correct. That fear is
+            // unfounded: it loads cleanly (no version assert) and renders coherently;
+            // the only native blocker was a raw-vtable name read in
+            // RndMeshDeform::IsExoBone (fixed there, HX_NATIVE). Enabling it removes
+            // the hack and converges toward the original's gender deformation.
+            // Opt-out RB3_NO_DEFORM_LOAD reverts to the old deferred behavior.
             gDeforms = 0;
+            if (!getenv("RB3_NO_DEFORM_LOAD")) {
+                static int _x = MemFindHeap("char");
+                MemPushHeap(_x);
+                gDeforms = DirLoader::LoadObjects(FilePath(dfpath), 0, 0);
+                MemPopHeap();
+            }
 #endif
         }
     }
