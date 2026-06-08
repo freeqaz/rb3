@@ -395,16 +395,14 @@ void SongData::SendGems(int track) {
 }
 
 void SongData::PostLoadVocals() {
-#ifdef HX_NATIVE
-    // Vocals subsystem (VocalNoteList/VocalPlayer/Singer) is still in
-    // _NATIVE_FORK_EXCLUDE — calling methods on stub-vtable VocalNoteList*
-    // dereferences invalid memory. For V1 (one song end-to-end, single
-    // instrument), skip vocal post-load entirely. When the vocals TUs come
-    // up clang-LP64-clean, drop this guard.
-    if (mVocalNoteLists.empty()) return;
-    MILO_LOG("PostLoadVocals: HX_NATIVE skip (vocal TUs not yet brought up)\n");
-    return;
-#endif
+    // (Previously HX_NATIVE early-returned here, over a now-stale fear that the
+    // vocals TUs — VocalNoteList/VocalPlayer/Singer — were in _NATIVE_FORK_EXCLUDE
+    // with stub vtables. They are NOT excluded; they compile as real clang-LP64
+    // symbols, and the sibling ComputeVocalRangeData below already makes the same
+    // mPlayerTrackConfigList vcall. The body is byte-identical to the Wii path, so
+    // running it natively is convergence-positive — vocal charts now finish
+    // loading (mRangeSections / freestyle sections populate). Single-source for
+    // native + web.)
     for (int i = 0; i < mVocalNoteLists.size(); i++) {
         VocalNoteList *curList = mVocalNoteLists[i];
         bool b = i == 0 || i == 1;
