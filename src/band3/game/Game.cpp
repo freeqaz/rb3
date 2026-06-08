@@ -811,17 +811,6 @@ bool Game::AllowInput() const { return !mPauseTime && !mRealtime && !mNeverAllow
 void Game::SetKickAutoplay(bool autokick) { gKickAutoplay = autokick; }
 
 void Game::SetVocalPercussionBank(Player *p, ObjectDir *dir) {
-#ifdef HX_NATIVE
-    // K8: VocalPlayer is _NATIVE_FORK_EXCLUDE'd → its RTTI is a zeroed-out stub
-    // (rb3_link_stubs.s _ZTI11VocalPlayer). Walking __dynamic_cast through that
-    // stub segfaults during Game::FinishLoad. Gate the cast on a track-type
-    // check first — non-vocal players (the guitar/bass/drum gameplay path) skip
-    // the cast entirely. This is the no-vocals subset that the V1 milestone
-    // explicitly targets; vocals come back online after _NATIVE_FORK_EXCLUDE
-    // for VocalPlayer is lifted (V1 follow-up #1, V1_REMAINING_PLAN §4).
-    if (!p || p->GetTrackType() != kTrackVocals)
-        return;
-#endif
     VocalPlayer *vp = dynamic_cast<VocalPlayer *>(p);
     if (vp) {
         vp->mTambourineManager.SetBank(dir);
