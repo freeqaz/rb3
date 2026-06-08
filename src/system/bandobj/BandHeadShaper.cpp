@@ -158,8 +158,8 @@ void BandHeadShaper::Init() {
     if (_tmp1 && genderpath[0] != 0) {
         static int _x = MemFindHeap("char");
         MemPushHeap(_x);
-        gHeadMale = DirLoader::LoadObjects(FilePath(genderpath), 0, 0);
-        SetMeshAnim(gHeadMale, gHeadMaleMapping);
+        gHeadFemale = DirLoader::LoadObjects(FilePath(genderpath), 0, 0);
+        SetMeshAnim(gHeadFemale, gHeadFemaleMapping);
         GetNum("chin", 5, gHeadFemale, sChinNum);
         GetNum("eye", 7, gHeadFemale, sEyeNum);
         GetNum("mouth", 5, gHeadFemale, sMouthNum);
