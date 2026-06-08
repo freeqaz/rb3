@@ -1,5 +1,10 @@
 # RB3 Native Port — Hack Audit & Convergence Plan (2026-06-08)
 
+> **Update (2026-06-08, same day):** a validation sweep re-checked every "blocked"
+> item and **corrected two conclusions in this doc** (theme A and theme B below).
+> See [`BLOCKER_VALIDATION_2026-06-08.md`](BLOCKER_VALIDATION_2026-06-08.md) for the
+> verified verdicts and what landed.
+
 A systematic audit of the native/web port for **"hacks": places where, on
 `HX_NATIVE`, we disable / skip / stub something the original game does** — the
 `gDeforms=0` class of "refuse to run faithful code over a (often stale) fear,"
@@ -38,10 +43,11 @@ the prerequisite that turns each fix into a permanent guard.
 | 1 | gtest harness + CMake test target | `native/CMakeLists.txt`, `native/tests/` | LOW | ✅ **done** (`f51ab466`) |
 | 2 | `PostLoadVocals` — remove stale `HX_NATIVE` skip | `beatmatch/SongData.cpp` | MED | ✅ **done** (`082bcea4`) |
 | 3 | `GameMicManager::Init` — un-gate (latent null-deref SIGSEGV) | `App.cpp` | MED | ✅ **done** (`8d300cd7`) |
-| 4 | `VocalPlayer` RTTI-cast guard delete (RTTI now real) | `band3/game/Game.cpp:813` | LOW | ⏳ next (hygiene) |
-| 5 | BandHeadShaper head milos + female-branch `gHeadMale` typo | `bandobj/BandHeadShaper.cpp:137,156,161` | MED-HIGH | 🚧 **blocked** on theme A |
-| 6 | Re-verify-then-delete worldcenter backdrop-mesh deletion | `rndobj/Draw.cpp:79` | MED | ⏳ needs RTT visual A/B |
-| 7 | chars.milo band-preview cache (`CharCache::InitMe`) | `meta_band/CharCache.cpp:50` | MED | 🚧 **blocked** on theme B |
+| 4 | `VocalPlayer` RTTI-cast guard delete (RTTI now real) | `band3/game/Game.cpp:813` | LOW | ✅ **done** (`579e7416`) |
+| 5a | BandHeadShaper female-branch `gHeadMale` typo (decomp bug, separable) | `bandobj/BandHeadShaper.cpp:161` | LOW | ✅ **done** (`4e49ef34`, match-positive) |
+| 5b | BandHeadShaper head-milo load (`_tmp0/_tmp1` gates) | `bandobj/BandHeadShaper.cpp:137,156` | MED-HIGH | 🚧 **blocked** on `CharClip`/`CharBonesSamples` Load (NOT BandFaceDeform) |
+| 6 | worldcenter backdrop-mesh skip | `rndobj/Draw.cpp:79` | MED | ✅ **KEEP** — RTT fixed but orthogonal (box is a depth-occluder) |
+| 7 | chars.milo band-preview cache (`CharCache::InitMe`) | `meta_band/CharCache.cpp:50` | MED | 📋 **re-designed** — see validation doc theme B |
 
 `Hmx::Object::PreLoad` (P1) was flagged but is **already correctly shimmed** (the
 strong `void PreLoad(BinStream&){Load(bs);}` def displaces the weak stub — binary-
@@ -49,8 +55,8 @@ verified); no action needed. Optional: converge to DC3's inline-in-header form.
 
 ## Blocked themes (need new native code)
 
-- **A. Packed big-endian `BandFaceDeform::DeltaArray::Load` reader** (`bandobj/BandFaceDeform.cpp:284-297`, effort MED). Gates BandHeadShaper (faces + viseme lip-sync). The `.milo_xbox` Delta stream uses two *overlapping* 2-byte reads over a `{char unk0; ushort num}` struct; `BinStream::ReadEndian` byte-swaps both on the LE host, corrupting the boundary byte and desyncing `thisoffset()` → the raw blob read takes the wrong length and desyncs the whole stream. Needs an `HX_NATIVE` branch reading `unk0` (1 byte, no swap) and `num` (2-byte, swap) as separate non-overlapping reads. No DC3 analog (RB3-specific). **Verify byte-for-byte vs the Wii path before enabling the head load.**
-- **B. Character-preview Poll path: chars.milo + CharSync + per-frame `BandCharacter::Poll`** (`meta_band/CharCache.cpp:50`, `char/CharSync.cpp:59`, effort HIGH). The new surface is not the `.milo` parse (same object types as the working `world_chars` path) but the per-frame Poll of 4 idle preview chars + the unguarded `CharSync.cpp:179` `GetCharacter(n)->InCloset()` deref chain. Load order is critical: gDeforms (done) → chars.milo+Poll → head → CharSync. Closet/customize previews stay broken until this lands.
+- **A. ~~Packed big-endian `BandFaceDeform::DeltaArray::Load` reader~~ — CORRECTED: NOT a blocker.** The validation sweep proved the current shared `DeltaArray::Load` is **already byte-correct on the LE host** (38/38 records of `head_male.milo_xbox` frame[1] decode identically). The two `>>` reads are **non-overlapping** (start-index `u16` @0-1, `num` @2-3 — `char unk0` is a misnomer for the start index's high byte), so `num`/`thisoffset()` never corrupt and the stream stays synced; the proposed "read `unk0` as 1 byte" fix would have *desynced* it. Locked by gtest `NativeSubsystems.BandFaceDeformDeltaArrayLoadBE` (`15e3c048`). The real BandHeadShaper head-milo blocker is `CharClip`/`CharBonesSamples`/`CharBones` `Load` (version-desync + string-len overflow), tracked as item 5b. See validation doc theme A.
+- **B. Character-customize preview cache: chars.milo + `CharSync::UpdateCharCache` + per-frame `BandCharacter::Poll`** (`meta_band/CharCache.cpp:50`, `meta_band/CharSync.cpp`, effort HIGH). **Re-designed** — see [validation doc theme B](BLOCKER_VALIDATION_2026-06-08.md). Corrections vs the original framing: (1) the "same object types as the working `world_chars` path" premise is **false** — `world_chars.milo` has zero BandCharacters (TransProxies); the real working path is the venue milo via `BandWardrobe`. (2) Un-gating `UpdateCharCache` runs it **menu-wide on every screen transition**, not just customize. (3) The highest-risk site is a **hard crash** — `BandCharacter::StartLoad:1359` derefs `mFileMerger` unconditionally (runtime-gate: confirm `chars.milo` players carry a `FileMerger.fm` child before un-gating). Guard list widened to CharCache:65/120 + CharSync:179. gDeforms prereq is satisfied.
 - **C. Native-desktop intro cinematic (FFmpeg-shaped Bink backend)** (`rb3_movie_native.cpp:198`, effort MED-HIGH). Web already plays the intro via a `<video>` overlay; native-desktop instant-skips. Least-valuable surface.
 - **D. Whammy slip (guitar/bass pitch-bend) send-loop architecture** (`rb3_stream_receiver_native.cpp:145`, effort HIGH). Slip channels stall the cursor-gated refill ring after the ~1.1 s prime. Fix DC3-style: decouple the send loop from the cursor gate (raise `mWantToSend` off ring back-pressure), then implement the bend resampling. Land in the shared engine so DC3 inherits. Common case (no whammy) is already faithful.
 - **E. Single-player scoreboard top-center milo** (`ui/TrackPanelDir.cpp:294`, effort MED). The native synthetic `right.grp`/`left.grp` X-neutralization is a stopgap; the prior "empty `[xfms]`" root cause was a misdiagnosis (real positions live in `mTypeProps`/`mConfigurableObjects`). Benign to shipping (correct visual) but divergent in mechanism — diagnostic-first.
