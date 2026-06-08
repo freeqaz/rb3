@@ -304,6 +304,18 @@ App::App(int argc, char **argv) {
     UsbMidiGuitar::Init();
     PollTheSplasher();
 #endif // HX_NATIVE (online services + Wii USB peripheral mgrs — no native backing)
+#ifdef HX_NATIVE
+    // GameMicManager was mis-grouped in the #ifndef block above with online
+    // services + Wii USB peripheral mgrs that genuinely lack native backing.
+    // It HAS full native backing (Synth::Init registers every FxSend factory;
+    // sfx/mic_fx.milo loads), and the no-device Init chain is a guarded no-op
+    // (GetMicCount()==0). Leaving it gated keeps TheGameMicManager NULL while the
+    // now-compiled VocalPlayer/Singer code unguarded-derefs it — a latent SIGSEGV
+    // the instant a vocal player is added. Init it natively too (UsbMidi* + the
+    // online services stay gated). Audit bring-online; opt-out RB3_NO_MIC_MGR.
+    if (!getenv("RB3_NO_MIC_MGR"))
+        GameMicManager::Init();
+#endif
 #ifdef __EMSCRIPTEN__
 #define WEB_BOOT_MARK(s) printf("RB3 Web boot: %s\n", s)
 #else
