@@ -1,4 +1,8 @@
 #pragma once
+#ifdef HX_NATIVE
+#include <map>
+#include <string>
+#endif
 #include "char/Character.h"
 #include "char/CharCollide.h"
 #include "char/CharCuff.h"
@@ -114,6 +118,16 @@ public:
     // member, mNativeReboundOnce guard). Called from Poll once Find resolves to the
     // moving instance. No-op on Wii (HX_NATIVE only). Opt-out RB3_NO_SKEL_REBIND=1.
     void RebindOutfitBonesToOwnSkeleton();
+    // native-only (C7/C8): rebind the head/hair/hands/face (+ remaining non-torso)
+    // skin meshes onto the member's OWN per-member skeleton, baking an EXACT
+    // inverse-bind against each bone's REST WorldXfm captured at the first Poll
+    // (before Character::Poll applies any clip, so the per-member skeleton still holds
+    // the SetDeformation gender-bind rest pose). The thin head/hair/finger geometry
+    // SHARDS under the authored magnet offset (rotation-basis mismatch, R*sin(theta));
+    // an exact rest-baked offset against the LIVE per-member bone -> coherent AND it
+    // animates. Complements RebindOutfitBonesToOwnSkeleton (which owns the torso).
+    // Opt-out RB3_NO_HEAD_REBIND=1. No-op on Wii (HX_NATIVE only).
+    void RebindHeadHandsAtRest();
 #endif
     CharClipDriver *SetState(const char *, int, int, bool, bool);
     bool InVignetteOrCloset() const;
@@ -252,5 +266,15 @@ public:
     int mNativeReboundOnce;
     int mNativeReboundQuiet;
     int mNativeReboundBody; // ever rebound a >=20-bone body/face mesh (latch gate)
+    // C7/C8 head/hands rest-pose rebind bookkeeping (RebindHeadHandsAtRest).
+    // mNativeRestPose snapshots each per-member bone's REST WorldXfm at the first Poll
+    // (before Character::Poll), so late-streamed head meshes still rebake against the
+    // true rest (not a mid-animation pose). mNativeHeadReboundOnce latches when no
+    // head/hands mesh remains to rebind for a quiet window. Appended after the matched
+    // layout so the Wii image stays byte-identical. Default 0/false/empty.
+    int mNativeHeadReboundOnce;
+    int mNativeHeadReboundQuiet;
+    bool mNativeRestCaptured;
+    std::map<std::string, Transform> mNativeRestPose;
 #endif
 };
