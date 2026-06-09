@@ -682,7 +682,7 @@ void BandPatchMesh::WorkVerts::SetVertsAndFaces(RndMesh *mesh, bool b) {
             MeshVert *cur = unk10[i];
             Vector2 v40(0, 0);
             Vector2 v48(0, 0);
-            ExtendTwin((const MeshVert *)this, v40, v48);
+            ExtendTwin(cur, v40, v48);
             v40 += cur->mVert->uv;
             v48 += cur->unk1c;
             SetRenderToVert(mesh->Verts(i), v40, v48);
