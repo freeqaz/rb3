@@ -17,27 +17,59 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-PORT=8001
 HOST=ghidra.local
+PORT=8001
 PROJECT_PATH="$PROJECT_DIR/ghidra_projects/RB3/RB3"
-MILOHAX_DIR="$(cd "$PROJECT_DIR/.." && pwd)"
-PYGHIDRA_MCP="$MILOHAX_DIR/pyghidra-mcp"
 PIDFILE="/tmp/claude/pyghidra-mcp-rb3.pid"
 LOGFILE="/tmp/claude/pyghidra-mcp-rb3.log"
+MILOHAX_DIR="$(cd "$PROJECT_DIR/.." && pwd)"
+PYGHIDRA_MCP="$MILOHAX_DIR/pyghidra-mcp"
 
-# Prefer the ELF with full debug symbols (39MB, from debug build)
-# Fall back to the retail DOL if not available
+# ---------------------------------------------------------------------------
+# TWO binaries, ONE server. pyghidra-mcp is multi-binary: a single project holds
+# several programs and every tool call selects one by `binary_name`. So this one
+# service on port 8001 exposes BOTH eras of RB3, and the caller picks per call:
+#
+#   * band_r_wii  (Bank 5 DWARF ELF, ~mid-2009) — rich DWARF TYPES + source intent,
+#     but the body is wrong-era for ~20% of functions (e.g. BandHeadShaper::Init
+#     is 840B here vs 3084B in the target). DEFAULT binary for back-compat.
+#   * bank8_target (the real orig/ Bank 8 DOL, ~2010) — TARGET-ACCURATE body
+#     (names from the CodeWarrior map, no DWARF types). Use when bank_divergence
+#     says MISLEADING. bin/analyze-function --bank8 selects this program.
+#
+# Ghidra does NOT auto-correlate the two programs; our tooling routes per call.
+# Gauge per-symbol trust with scripts/analysis/bank_divergence.py <SYMBOL>.
+# Skip the heavier Bank 8 import with RB3_GHIDRA_NO_BANK8=1 (Bank 5 only).
+# ---------------------------------------------------------------------------
 ELF_PATH="$MILOHAX_DIR/milo-executable-library/rb3/Wii Proto (Bank 5) (Debug)/band_r_wii.elf"
 DOL_PATH="$PROJECT_DIR/orig/SZBE69_B8/sys/main.dol"
 MAP_FILE="$PROJECT_DIR/orig/SZBE69_B8/files/band_r_wii.map"
+BANK8_ELF="$PROJECT_DIR/build/SZBE69_B8/ghidra/bank8_target.elf"
 
+BINARY_PATHS=()
 if [[ -f "$ELF_PATH" ]]; then
-    BINARY_PATH="$ELF_PATH"
-    echo "Using ELF with debug symbols: $ELF_PATH"
+    BINARY_PATHS+=("$ELF_PATH")
+    echo "Bank 5 DWARF (types/source intent): $ELF_PATH"
 else
-    BINARY_PATH="$DOL_PATH"
-    echo "Using DOL (no debug symbols): $DOL_PATH"
+    BINARY_PATHS+=("$DOL_PATH")
+    echo "Bank 5 ELF missing; using Bank 8 DOL only."
 fi
+
+if [[ "${RB3_GHIDRA_NO_BANK8:-0}" != "1" && -f "$DOL_PATH" ]]; then
+    # Transcode the Bank 8 DOL -> symbolized Gekko ELF (idempotent; rebuilds when
+    # the DOL or map changes). pyghidra-mcp then imports it like any ELF and
+    # auto-selects PowerPC:BE:32:Gekko_Broadway from its 0x8xxxxxxx entry point.
+    # Only (re)build on start/restart so status/stop/logs stay instant.
+    if [[ "${1:-}" =~ ^(start|restart)$ && ( ! -f "$BANK8_ELF" || "$DOL_PATH" -nt "$BANK8_ELF" || "$MAP_FILE" -nt "$BANK8_ELF" ) ]]; then
+        echo "Building Bank 8 target ELF (DOL->ELF via gamecube_dol)..."
+        mkdir -p "$(dirname "$BANK8_ELF")"
+        PYTHONPATH="$PYGHIDRA_MCP/src" python3 -m pyghidra_mcp.gamecube_dol \
+            "$DOL_PATH" -m "$MAP_FILE" -o "$BANK8_ELF" || echo "  (bank8 ELF build failed; serving Bank 5 only)"
+    fi
+    [[ -f "$BANK8_ELF" ]] && BINARY_PATHS+=("$BANK8_ELF") && echo "Bank 8 TARGET (real body): $BANK8_ELF"
+fi
+
+BINARY_PATH="${BINARY_PATHS[0]}"  # for log/status lines below
 
 export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
 # Use stock Ghidra (the VMX128 fork is Xbox-specific, not needed for Wii/Gekko)
@@ -85,16 +117,17 @@ cmd_start() {
 
     echo "Starting pyghidra-mcp service for RB3..."
     echo "  Project: $PROJECT_PATH"
-    echo "  Binary: $BINARY_PATH"
+    echo "  Binaries: ${BINARY_PATHS[*]}"
     echo "  Port: $PORT (DC3 is on 8000)"
     echo "  Log: $LOGFILE"
 
-    # Note: --map-file is NOT used because pyghidra-mcp only supports MSVC maps.
-    # The CodeWarrior map will be imported separately via the map import script.
-    # The ELF already contains full DWARF symbols so Ghidra will auto-import them.
+    # --map-file is NOT used: pyghidra-mcp's --map-file only parses MSVC maps. The
+    # Bank 5 ELF carries full DWARF; the Bank 8 program carries CodeWarrior-map
+    # symbols baked into the synthetic ELF's .symtab (see pyghidra_mcp.gamecube_dol),
+    # so Ghidra auto-imports both without a runtime map.
     #
-    # --wait-for-analysis ensures full analysis completes before accepting queries.
-    # --port 8001 to avoid conflicting with DC3 on port 8000.
+    # Multiple positional binaries -> one project, multiple programs (select per
+    # tool call via binary_name). --wait-for-analysis blocks until BOTH are ready.
     setsid nohup uv run --python 3.10 --project "$PYGHIDRA_MCP" pyghidra-mcp \
         --transport streamable-http \
         --host "$HOST" \
@@ -103,7 +136,7 @@ cmd_start() {
         --wait-for-analysis \
         --cache-dir "$PROJECT_DIR" \
         --log-file "$LOGFILE" \
-        "$BINARY_PATH" \
+        "${BINARY_PATHS[@]}" \
         > "$LOGFILE" 2>&1 &
 
     PID=$!

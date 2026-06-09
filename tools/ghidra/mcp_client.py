@@ -48,6 +48,29 @@ class MCPClient:
             self._resolve_binary()
         return self._binary or "band_r_wii.elf"  # Fallback
 
+    def select_binary(self, pattern: str) -> str:
+        """Pin this client to the loaded program whose name contains `pattern`.
+
+        The server holds multiple programs (e.g. Bank 5 `band_r_wii` and Bank 8
+        `bank8_target`); program names are `<file>-<sha6>`, so callers match by
+        substring. Returns the resolved full name; raises MCPError if not found.
+        """
+        binaries = self.list_binaries()
+        if isinstance(binaries, dict):
+            binary_list = binaries.get("binaries") or binaries.get("programs") or []
+        else:
+            binary_list = binaries or []
+        for entry in binary_list:
+            name = entry.get("name", "") if isinstance(entry, dict) else str(entry)
+            if pattern in name:
+                self._binary = name.lstrip("/")
+                self._binary_resolved = True
+                return self._binary
+        loaded = [
+            (e.get("name", "") if isinstance(e, dict) else str(e)) for e in binary_list
+        ]
+        raise MCPError(f"no loaded program matches '{pattern}'; loaded: {loaded}")
+
     def _resolve_binary(self) -> None:
         """Resolve binary name by querying list_binaries."""
         if self._binary_resolved:
