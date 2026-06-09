@@ -23,6 +23,12 @@ So when Bank 5 diverges: trust m2c + objdiff, distrust Ghidra source intent.
 
 This tool quantifies that per-symbol so the workflow can warn automatically.
 
+UPGRADE: when a ghidriff run has been distilled (tools/ghidra/distill_ghidriff.py
+-> build/SZBE69_B8/ghidra/ghidriff/divergence_index.json), lookup() prefers its
+INSTRUCTION-LEVEL verdict (mnemonic/byte ratios) over the body-size delta below.
+The size heuristic remains the fallback for symbols absent from that index
+(byte-identical matches, which are correctly TRUST).
+
 USAGE
 -----
   scripts/analysis/bank_divergence.py SYMBOL          # verdict for one symbol
@@ -42,6 +48,7 @@ LIB = ROOT.parent / "milo-executable-library" / "rb3"
 B8_MAP = ROOT / "orig" / "SZBE69_B8" / "files" / "band_r_wii.map"
 B5_MAP = LIB / "Wii Proto (Bank 5) (Debug)" / "band_r_wii.map"
 CACHE = ROOT / "build" / "SZBE69_B8" / "bank_divergence.json"
+GH_INDEX = ROOT / "build" / "SZBE69_B8" / "ghidra" / "ghidriff" / "divergence_index.json"
 
 # CW map symbol line: "  OFF SIZE ADDR FILEOFF ALIGN SYMBOL \t lib path"
 _LINE = re.compile(
@@ -118,10 +125,86 @@ def _load_index(refresh: bool = False) -> dict:
 
 
 _INDEX = None
+_GH = None  # None=unloaded, False=absent/bad, dict=ghidriff "functions" map
+
+
+def _load_ghidriff() -> dict | None:
+    """The ghidriff distilled index ('functions' map keyed by Bank 8 mangled
+    symbol), or None if no ghidriff run has been distilled."""
+    global _GH
+    if _GH is None:
+        try:
+            _GH = json.loads(GH_INDEX.read_text()).get("functions", {}) if GH_INDEX.exists() else False
+        except (OSError, json.JSONDecodeError):
+            _GH = False
+    return _GH or None
+
+
+_B5NAMES = None
+
+
+def _in_bank5(symbol: str) -> bool:
+    """Is this mangled symbol present in the Bank 5 map by name? (If so, its DWARF
+    types port by name even when the body diverged.)"""
+    global _B5NAMES
+    if _B5NAMES is None:
+        try:
+            _B5NAMES = set(_parse_map(B5_MAP))
+        except OSError:
+            _B5NAMES = set()
+    return symbol in _B5NAMES
+
+
+def _ghidriff_lookup(symbol: str) -> dict | None:
+    """Instruction-level verdict for a symbol, or None if no index / not present."""
+    gh = _load_ghidriff()
+    if not gh:
+        return None
+    rec = gh.get(symbol)
+    if rec is None:
+        return None
+    verdict = rec.get("verdict", "UNKNOWN")
+    b5, b8 = rec.get("b5_len"), rec.get("b8_len")
+    out = {"verdict": verdict, "source": "ghidriff",
+           "i_ratio": rec.get("i_ratio"), "m_ratio": rec.get("m_ratio"),
+           "b_ratio": rec.get("b_ratio")}
+    if b5 is not None:
+        out["b5"] = b5
+    if b8 is not None:
+        out["b8"] = b8
+    if b5 is not None and b8 is not None:
+        out["delta"] = b8 - b5
+    if rec.get("is_rename"):
+        out["rename_of"] = rec.get("b5_sym")
+    if verdict == "NO_DWARF":
+        # ghidriff "added" = no STRUCTURAL match. But if the symbol still exists in
+        # Bank 5 by NAME (body diverged too far to match — e.g. BandHeadShaper::Init,
+        # 840B -> 3084B), Bank 5 DWARF TYPES still port by name; only the BODY is
+        # wrong-era. That is MISLEADING (types usable, body not), not NO_DWARF.
+        if _in_bank5(symbol):
+            out["verdict"] = "MISLEADING"
+            out["note"] = ("name exists in Bank 5 but body diverged past structural match "
+                           "(different era); Bank 5 TYPES still port by name — IGNORE its "
+                           "body, use m2c (Bank 8 asm)")
+        else:
+            out["note"] = rec.get("note", "Bank 8 only; no Bank 5 DWARF — use m2c/objdiff")
+    else:
+        guide = {"TRUST": "Bank 5 mnemonic stream near-identical — source intent reliable",
+                 "CAUTION": "some divergence — cross-check against m2c/objdiff",
+                 "MISLEADING": "real rewrite — IGNORE Ghidra body, use m2c (Bank 8 asm)"}
+        out["note"] = (f"ghidriff m_ratio={rec.get('m_ratio')} i_ratio={rec.get('i_ratio')}; "
+                       + guide.get(verdict, ""))
+    return out
 
 
 def lookup(symbol: str, refresh: bool = False) -> dict:
-    """Return the divergence verdict dict for one symbol. Safe to import."""
+    """Return the divergence verdict dict for one symbol. Safe to import.
+
+    Prefers the ghidriff instruction-level index when present; otherwise falls
+    back to the body-size-delta heuristic (which is TRUST for identical bodies)."""
+    gh = _ghidriff_lookup(symbol)
+    if gh is not None:
+        return gh
     global _INDEX
     if _INDEX is None or refresh:
         _INDEX = _load_index(refresh)
@@ -139,6 +222,9 @@ def warning_banner(symbol: str) -> str | None:
         return None
     if verdict == "NO_DWARF":
         return f"[bank-divergence] {symbol}: {v['note']}."
+    if v.get("source") == "ghidriff":
+        extra = f" [renamed from {v['rename_of']}]" if v.get("rename_of") else ""
+        return f"[bank-divergence: {verdict}] {v['note']}.{extra}"
     return (
         f"[bank-divergence: {verdict}] Bank 5 (Ghidra/DWARF) body is "
         f"{v['b5']}B vs Bank 8 (target) {v['b8']}B ({v['delta']:+d}). {v['note']}."
