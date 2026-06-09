@@ -6,6 +6,16 @@
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 
+#ifdef HX_NATIVE
+#include "obj/Dir.h"
+#include "obj/DirLoader.h"
+#include "utl/Loader.h"
+#include <set>
+#include <map>
+#include <string>
+#include <cstdlib>
+#endif
+
 typedef std::vector<PanelRef>::iterator iterator;
 typedef std::vector<PanelRef>::const_iterator const_iterator;
 typedef std::vector<PanelRef>::reverse_iterator reverse_iterator;
@@ -130,6 +140,173 @@ bool UIScreen::Unloading() const {
     return false;
 }
 
+#ifdef HX_NATIVE
+// --- song_select-prewarm (handoff 07 / wave-04 §A2) -------------------------
+//
+// While the user dwells on main_hub, issue the next screen's panel milos as
+// kLoadBack (budgeted background, rides TheLoadMgr.Poll's RB3_LOADER_BUDGET_MS
+// 8ms/frame). When the user ENTERs the next screen, UIPanel::Load adopts the
+// prewarmed-and-finished DirLoader (HX_NATIVE branch) instead of re-`new`ing a
+// loader that re-parses the ~2.8MB milo on the transition frame. All gated
+// behind RB3_PREWARM_SCREENS (default OFF); no struct members are added — the
+// "already prewarmed this screen" bit lives in a file-static set keyed by the
+// screen pointer (erased in Exit so re-entry re-prewarms the *next* screen).
+namespace {
+std::set<UIScreen *> &PrewarmedScreens() {
+    static std::set<UIScreen *> s;
+    return s;
+}
+
+// Per-screen record of the panel milos we issued a prewarm DirLoader for, so a
+// LATER prewarm pass can evict an OLD generation's loaders that are no longer
+// wanted. Without this, a finished kLoadBack DirLoader + its parsed PanelDir
+// would sit in TheLoadMgr.mLoaders forever (nothing GCs an unowned loaded
+// loader). Keyed by the SOURCE screen pointer (the one that prewarmed).
+//
+// Eviction is GENERATIONAL (at re-prewarm time), NOT eager-on-Exit: the
+// main_hub -> song_select path routes through an intermediate
+// song_select_enter_screen, so a prewarmed loader is legitimately still
+// unadopted across the first Exit and an Exit-time sweep would wrongly kill it.
+// And it only evicts loaders NOT in the new wanted-set — anything still wanted
+// is kept for adoption (killing + reissuing would re-parse the milo for
+// nothing). In the steady case (fixed source->target mapping ⇒ same panel set
+// every dwell) nothing is ever evicted. The only residual is one stale set if
+// the user prewarms once and never returns — bounded, default-OFF, freed at
+// exit.
+std::map<UIScreen *, std::vector<FilePath> > &PrewarmedFiles() {
+    static std::map<UIScreen *, std::vector<FilePath> > m;
+    return m;
+}
+
+// Free any loader `screen` prewarmed on a prior dwell that is (a) NOT in `keep`
+// (the new target set), (b) still resident + finished, and (c) unadopted
+// (mAccessed == false ⇒ no panel ever took its dir). An ADOPTED loader was
+// already `delete`d in UIPanel::Load, so DirLoader::Find won't find it. An
+// in-flight loader (!IsLoaded) is left alone — deleting mid-load would
+// Cleanup/abort it.
+void EvictPriorPrewarm(UIScreen *screen, const std::vector<FilePath> &keep) {
+    std::map<UIScreen *, std::vector<FilePath> > &files = PrewarmedFiles();
+    std::map<UIScreen *, std::vector<FilePath> >::iterator e = files.find(screen);
+    if (e == files.end())
+        return;
+    bool dbg = ::getenv("RB3_PREWARM_SCREENS") != NULL;
+    for (std::vector<FilePath>::iterator it = e->second.begin(); it != e->second.end();
+         ++it) {
+        bool stillWanted = false;
+        for (std::vector<FilePath>::const_iterator k = keep.begin(); k != keep.end();
+             ++k) {
+            if (*k == *it) {
+                stillWanted = true;
+                break;
+            }
+        }
+        if (stillWanted)
+            continue;
+        DirLoader *dl = DirLoader::Find(*it);
+        if (dl && dl->IsLoaded() && !dl->mAccessed) {
+            if (dbg)
+                MILO_LOG("RB3_PREWARM: evicting stale prewarm dir %s\n", it->c_str());
+            delete dl; // ~DirLoader RELEASEs mDir (mAccessed false) ⇒ no leak
+        }
+    }
+    // record is rewritten by the caller (issued = wanted)
+}
+
+// Parse RB3_PREWARM_NEXT into a current-screen -> next-screen map once. Multiple
+// pairs may be comma-separated, e.g.
+// "main_hub_screen:song_select_screen,song_select_screen:song_options_screen".
+const std::map<std::string, std::string> &PrewarmNextMap() {
+    static std::map<std::string, std::string> m;
+    static bool init = false;
+    if (!init) {
+        init = true;
+        // Default maps the real UIScreen object NAMES (band_ui.dta:
+        // main_hub_screen / song_select_screen), not the milo basenames. Override
+        // with RB3_PREWARM_NEXT="from_screen:to_screen[,from2:to2,...]".
+        const char *spec = ::getenv("RB3_PREWARM_NEXT");
+        std::string s = (spec && spec[0]) ? spec : "main_hub_screen:song_select_screen";
+        size_t pos = 0;
+        while (pos < s.size()) {
+            size_t comma = s.find(',', pos);
+            std::string pair =
+                s.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+            size_t colon = pair.find(':');
+            if (colon != std::string::npos) {
+                std::string from = pair.substr(0, colon);
+                std::string to = pair.substr(colon + 1);
+                if (!from.empty() && !to.empty())
+                    m[from] = to;
+            }
+            if (comma == std::string::npos)
+                break;
+            pos = comma + 1;
+        }
+    }
+    return m;
+}
+
+void DoPrewarmNextScreen(UIScreen *screen) {
+    bool ddbg = ::getenv("RB3_PREWARM_DBG") != NULL;
+    const char *myName = screen->Name();
+    if (!myName)
+        return;
+    const std::map<std::string, std::string> &nextMap = PrewarmNextMap();
+    std::map<std::string, std::string>::const_iterator nit = nextMap.find(myName);
+    if (nit == nextMap.end()) {
+        if (ddbg)
+            MILO_LOG("RB3_PREWARM_DBG: no next-screen mapping for '%s'\n", myName);
+        return;
+    }
+
+    // Non-fatal lookup (parentDirs=false ⇒ returns null if the screen object
+    // isn't resident yet, rather than MILO_FAIL).
+    UIScreen *next = ObjectDir::Main()->Find<UIScreen>(nit->second.c_str(), false);
+    if (!next) {
+        if (ddbg)
+            MILO_LOG("RB3_PREWARM_DBG: next screen '%s' not resident yet\n",
+                     nit->second.c_str());
+        return;
+    }
+    if (ddbg)
+        MILO_LOG("RB3_PREWARM_DBG: '%s' -> prewarming '%s' (%d panels)\n", myName,
+                 nit->second.c_str(), (int)next->mPanelList.size());
+
+    bool dbg = ::getenv("RB3_PREWARM_SCREENS") != NULL;
+
+    // Resolve the panel-milo set this prewarm targets. Mirror LoadPanels' load
+    // predicate: only panels the next screen will actually load (mLoaded is
+    // meaningless until LoadPanels runs, so gate on mAlwaysLoad / IsReferenced).
+    std::vector<FilePath> wanted;
+    for (std::vector<PanelRef>::iterator it = next->mPanelList.begin();
+         it != next->mPanelList.end();
+         ++it) {
+        if (!(it->mAlwaysLoad || it->mPanel->IsReferenced()))
+            continue;
+        FilePath fp = it->mPanel->GetPanelFilePath();
+        if (!fp.empty())
+            wanted.push_back(fp);
+    }
+
+    // Reap loaders this screen prewarmed on a PRIOR dwell that are no longer in
+    // the wanted set (the next-screen target changed) — anything still wanted is
+    // KEPT so it can be adopted (the DirLoader::Find dedup below preserves it; we
+    // must not kill+reissue it, which would re-parse the milo for nothing).
+    EvictPriorPrewarm(screen, wanted);
+
+    std::vector<FilePath> &issued = PrewarmedFiles()[screen];
+    issued = wanted; // record this generation's target set
+    for (std::vector<FilePath>::iterator it = wanted.begin(); it != wanted.end(); ++it) {
+        if (DirLoader::Find(*it))
+            continue; // already loaded or in-flight (incl. a still-live prewarm)
+        if (dbg)
+            MILO_LOG("RB3_PREWARM: %s -> prewarming %s panel milo %s\n", myName,
+                     nit->second.c_str(), it->c_str());
+        TheLoadMgr.AddLoader(*it, kLoadBack);
+    }
+}
+} // namespace
+#endif
+
 void UIScreen::Poll() {
     HandleType(poll_msg);
 
@@ -138,6 +315,29 @@ void UIScreen::Poll() {
             it->mPanel->Poll();
         }
     }
+
+#ifdef HX_NATIVE
+    // song_select-prewarm gate (handoff 07). Only after THIS screen is fully
+    // loaded (so we ride its idle dwell, not its own load) and only once per
+    // screen instance (re-armed in Exit). CheckIsLoaded() is side-effect-free
+    // here: a fully-loaded screen's panels are all past kUnloaded, so the call
+    // is a pure read.
+    if (::getenv("RB3_PREWARM_SCREENS")) {
+        bool loaded = CheckIsLoaded();
+        if (::getenv("RB3_PREWARM_DBG")) {
+            static std::set<UIScreen *> sSeen;
+            if (sSeen.find(this) == sSeen.end()) {
+                sSeen.insert(this);
+                MILO_LOG("RB3_PREWARM_DBG: Poll screen '%s' checkLoaded=%d\n",
+                         Name() ? Name() : "(null)", (int)loaded);
+            }
+        }
+        if (loaded && PrewarmedScreens().find(this) == PrewarmedScreens().end()) {
+            PrewarmedScreens().insert(this);
+            DoPrewarmNextScreen(this);
+        }
+    }
+#endif
 }
 
 #pragma push
@@ -231,6 +431,10 @@ bool UIScreen::AddPanel(class UIPanel *panel, bool alwaysLoad) {
 }
 
 void UIScreen::Exit(UIScreen *to) {
+#ifdef HX_NATIVE
+    // Re-arm prewarm for the next dwell on this screen (handoff 07).
+    PrewarmedScreens().erase(this);
+#endif
     static Message msg("exit", 0);
     msg[0] = to;
     HandleType(msg);
