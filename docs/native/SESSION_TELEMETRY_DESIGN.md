@@ -871,6 +871,26 @@ Additive `chk` event (no `hdr.v` bump), computed at the proven per-frame hook `r
 
 > _Audit 2026-06-09 (3-agent read-only determinism audit + synthesis). Recommendation: land the two seams + `{dt,songMs}` capture + a `chk` event + minimal `trace-diff` chk-mode, then prove ONE real song end-to-end (nav exact, final score exact, chk within ε) as the go/no-go before the full CI gate._
 
+### Prototype results (Waves 5–8, 2026-06-09)
+
+The thin prototype was **built and tested end-to-end**. Verdict: **infrastructure proven; the residual is isolated to audio-lifecycle determinism (maintainer-owned, band3/game + audio).**
+
+**Proven (committed, `21199f1b`→`6add56e8`):**
+- **Both clock seams land Wii-safe.** `Task.cpp` (seam 1), `Game.cpp` (seam 2), `App.cpp`, `System.cpp`, `Debug.cpp` are all `HX_NATIVE`-gated; their Wii `.o` are **byte-identical** (match% unchanged) after rebuild. The only delta is a 1-byte `__LINE__`-derived FORCEACTIVE *scaffold* symbol name on the already-NonMatching `App.o` — matched functions unchanged.
+- **Menu/UI clock is frame-perfect**: per-frame song-ms drift is **exactly 0** for the entire menu + pre-song phase (6+ consecutive byte-identical per-screen `chk` hashes).
+- **Nav is bit-exact end-to-end** once the boot **RNG seed** is captured+replayed (fixes the `InterstitialMgr` venue-cut) and the **autoplay/nofail run-state** is captured+replayed (re-armed at the identical frame).
+- **A real nonzero score reproduces** (rec 15300 → replay 15400, **99.4%**) — the score *path* works under fixed clock; the inputs, RNG, run-state, menu clock, and per-frame `clk` capture are all deterministic.
+- Tooling: `chk` event (FNV-1a over quantized {scr,focus,taskSec,beat,songMs,score,nPlayers} + raw fields) + `trace-diff.py` chk/milestone tiered-tolerance mode; per-frame un-decimated `clk` stream; 36/36 gtest.
+
+**Residual (the last boss — maintainer-owned per the contract):** the **song audio-start frame itself is non-deterministic** run-to-run (±frames, *either sign* — observed −21 and +5), and the song-body **BeatMaster clock has rate jitter**. The fixed-clock seam feeds the recorded `songMs` by frame, and milestone-anchoring cancels a *fixed* audio-start offset, but neither handles the **sign/magnitude variance of the audio-start latch** nor body-clock rate jitter → ~±100 score / ~1.5 s end-of-song drift. This is exactly the audit's flagged risk: *"the audio mixer is the one true wall-clock-independent component; it must be slaved to (or replayed from) the recorded clock."*
+
+**Path to bit-exact score (next, when the maintainer picks it up):**
+1. **Gate `Go()` / audio-start on the recorded frame** (or slave the miniaudio mixer cursor to the recorded `songMs`) so the song *lifecycle*, not just the clock value, is frame-deterministic — closes the ±-frame audio-start variance.
+2. **Either-sign per-segment frame re-sync** in the replay clock (a replay-frame→recorded-frame remap that re-aligns at each milestone), absorbing body-clock rate jitter.
+3. Record to a **natural song-end** (the prototype runs were `SIGTERM`-cut mid-song, making "final score" a moving cutoff).
+
+The seams, capture (`{dt,songMs,clk}` + seed + run-state), `chk` verification, and `trace-diff` gate **all already exist on the branch** — the remaining work builds on them.
+
 ---
 
 ## 10. Milestones
@@ -881,7 +901,7 @@ Additive `chk` event (no `hdr.v` bump), computed at the proven per-frame hook `r
 | M1 | Input capture + **Tier-1 replay** | record a native session, replay it, matching `nav`/`song`/score |
 | M2 | Web egress (always-on) + SQLite ingest | play in a browser → session lands in `sessions.db`; tail survives tab close (beacon) |
 | M3 | Analysis + replay tooling | `trace-report.py`, `trace-replay.mjs`, `repro` |
-| M4 | **Tier-2** deterministic replay + determinism testing | ✅ audit done (CONDITIONAL GO, see the M4 section above): two HX_NATIVE clock seams + {dt,songMs} capture + `chk` event; acceptance = one real song reproduces (nav+score exact, chk within ε) |
+| M4 | **Tier-2** deterministic replay + determinism testing | 🟡 **prototype built + tested** (Waves 5–8, see the M4 section): clock seams Wii-safe, menu clock frame-perfect, nav exact, nonzero score reproduced 99.4%. Residual = audio-lifecycle determinism (audio-start ±-frame variance + body-clock jitter) → **maintainer-owned** (band3/game + audio); acceptance (score bit-exact) not yet met |
 
 ---
 
