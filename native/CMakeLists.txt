@@ -477,6 +477,15 @@ add_executable(rb3-native
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     # native headless synthetic-input driver + screen-flow trace (RB3_GAME_INPUT)
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # OPT-IN native HACK (RB3_GUEST_PROFILE=1): fake pad-0 guest profile,
+    # called late (main_hub-reached) from rb3_game_input.cpp so customize/manage-band
+    # are reachable without real sign-in. Uses the REAL natively-compiled
+    # TheWiiProfileMgr + TheProfileMgr. Roadmap C11; kill switch RB3_NO_GUEST_PROFILE.
+    ${CMAKE_SOURCE_DIR}/src/rb3_guestprofile_native.cpp
+    # Faithful native OFFLINE TheServer (online server): real vtable, GetPlayerID->0,
+    # not-connected. Replaces the zeroed weak stub so profile-driven ticker/score
+    # paths short-circuit instead of deref-crashing. See the TU header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_server_native.cpp
     # TASK A4 (audio-perf): per-frame JSONL stutter tracer (RB3_FRAME_TRACE=<path>).
     # Defines the asset-event counters (gFrameTrace*) incremented from the engine
     # choke points (LoadMgr::AddLoader, Synth::NewStream) + RB3FrameTraceRecord.
@@ -674,6 +683,11 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_netsession_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_waitinguser_gate_native.cpp
     ${CMAKE_SOURCE_DIR}/src/rb3_game_input.cpp
+    # OPT-IN native HACK (RB3_GUEST_PROFILE=1): fake pad-0 guest profile (web HX_NATIVE).
+    # Roadmap C11; kill switch RB3_NO_GUEST_PROFILE. See native source list above.
+    ${CMAKE_SOURCE_DIR}/src/rb3_guestprofile_native.cpp
+    # Faithful native OFFLINE TheServer (see native list above) — web is HX_NATIVE.
+    ${CMAKE_SOURCE_DIR}/src/rb3_server_native.cpp
     # REAL live input on web: keyboard -> JoypadData -> SendButtonMessages (same
     # TU as native; its #ifdef __EMSCRIPTEN__ branch reads window._rb3Keys +
     # navigator.getGamepads()). Strong JoypadPoll etc. drive frets/strum through

@@ -1514,6 +1514,16 @@ void RB3GameInputPoll(int frame) {
         gLastScreen = curName;
     }
 
+    // HACK/TODO(guest-profile, roadmap C11): once the splash OvershellSlot add-user
+    // flow has parked pad 0 in kState_JoinedDefault and we have REACHED main_hub,
+    // install the fake pad-0 guest profile (one-shot inside the callee). Doing it
+    // earlier would flip GetProfileForUser non-null DURING the add-user flow and
+    // route the user to kState_ChooseProfile, stalling splash->main_hub.
+    if (cur && strcmp(cur->Name(), "main_hub_screen") == 0) {
+        extern void RB3InstallGuestProfile();
+        RB3InstallGuestProfile();
+    }
+
     // N4 stray SAVE/details pane: RETIRED. The `song_select_details` sub-pane was
     // left showing with details_mode=0 because the original native engine (pin
     // cfaaa5bc) ran AnimTask::Poll with the SetFrame args swapped — the
