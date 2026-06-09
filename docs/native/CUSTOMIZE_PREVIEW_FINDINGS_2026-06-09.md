@@ -47,7 +47,32 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
-## ⛔ UPDATE 6 (2026-06-09) — Gap B bottomed out: it is a CORE native-loader subdir-timing issue
+## 🔬 UPDATE 7 (2026-06-09) — Gap B root cause CORRECTED: bones LOAD FINE; it's a merge/instance issue
+Direct empirical instrumentation overturned UPDATE 5/6's load-order theory (and the planning workflow's).
+New probes (all HX_NATIVE, env-gated, committed): `BONE_LOAD_DBG` (Mesh.cpp, counts bones loaded vs null at
+the strip point), `BONE_CLEAR_DBG` (Mesh.cpp CopyBones), `CHAR_PROBE_DUMP` (rb3_char_probe per-mesh dump).
+Findings, in the closet:
+1. **The preview char's outfit/body meshes LOAD THEIR BONES CORRECTLY.** `BONE_LOAD_DBG` shows
+   `trackjacket_resource.mesh loaded=24 null=0`, `vestdenim_resource=18/0`, `head.mesh=33/0`,
+   `hands_naked=38/0`, `shred=19/0`, `plaidshirt=24/0`, … — across the WHOLE run, EVERY mesh is `null=0`
+   (zero bone-ObjPtr resolution failures anywhere). ⇒ It is NOT a load-order / scope / resolution problem.
+   `RemoveInvalidBones` is a no-op (nothing null). Preload/skip-strip/sort were all chasing a non-bug.
+2. **Nothing clears the bones via CopyBones** — `BONE_CLEAR_DBG` caught ZERO `CopyBones(0)` wipes on body
+   meshes.
+3. **But the char's reachable meshes have no bones.** `CHAR_PROBE_DUMP` of `ObjDirItr<RndMesh>(bc,true)` for
+   slot0 shows ONLY `female/male_placement_head_*`, `*_tattoo_head`, `*_wrinkle_*` meshes — all `NumBones=0`.
+   The bone-carrying body meshes (`trackjacket_resource` etc.) are NOT in the char's hashtable/subdir, and
+   the SKEL_REBIND draw-tree walk also finds `skinMeshes=0`.
+⇒ CORRECTED ROOT CAUSE: the FileMerger loads the bodypart resource milos WITH bones (24/33/38…), but those
+bone-bearing instances do not end up as the char's drawn/reachable skinned meshes — the merge yields a char
+whose drawable meshes are the boneless placement/tattoo/wrinkle set. Gameplay's merge keeps skinned meshes
+(skinMeshes=4); the preview merge does not. NEXT: trace the FileMerger merge (FileMerger.cpp Merger /
+FileMergerOrganizer / BandCharacter::OnInstallFilter SubdirAction) for WHERE the loaded bone-bearing
+bodypart meshes go vs the char's LOD/draw groups — i.e. why the merged/drawn outfit instance is boneless
+for the preview char but skinned for the gameplay band. This is a much narrower, merge-mechanics question
+than "core loader order" (UPDATE 6 superseded). Regression guard unchanged: gameplay band stays skinMeshes=4.
+
+## ⛔ UPDATE 6 (2026-06-09) — Gap B bottomed out: it is a CORE native-loader subdir-timing issue (SUPERSEDED by U7)
 Exhaustive root-cause. Every scoped/tractable fix was investigated and ruled out; the only remaining fix is
 a core ObjectDir/DirLoader change that governs EVERY milo load in the game (broadest possible regression
 surface), so it is the legitimate stop-for-review boundary. Proven, in order:

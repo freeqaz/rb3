@@ -387,11 +387,21 @@ static DataNode RB3DtaCharProbe(DataArray *da) {
         return DataNode(sCharProbe.c_str());
     }
     int meshes = 0, skinned = 0, verts = 0;
+    bool dump = ::getenv("CHAR_PROBE_DUMP") != nullptr;
     for (ObjDirItr<RndMesh> it(bc, true); it != 0; ++it) {
         meshes++;
         if (it->NumBones() > 0)
             skinned++;
         verts += (int)it->Verts().size();
+        if (dump) {
+            const char *mn = it->Name() ? it->Name() : "?";
+            // log outfit/body-relevant meshes + any with bones
+            if (it->NumBones() > 0 || strstr(mn, "trackjacket") || strstr(mn, "vestdenim")
+                || strstr(mn, "plaidshirt") || strstr(mn, "shred") || strstr(mn, "resource")
+                || strstr(mn, "head") || strstr(mn, "hands") || strstr(mn, "skin."))
+                fprintf(stderr, "[CHAR_PROBE_DUMP] slot%d mesh='%s' NumBones=%d verts=%d\n",
+                        slot, mn, it->NumBones(), (int)it->Verts().size());
+        }
     }
     char buf[160];
     snprintf(

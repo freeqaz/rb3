@@ -808,6 +808,20 @@ void RndMesh::PostLoad(BinStream &bs) {
         } else
             mBones.clear();
     }
+#ifdef HX_NATIVE
+    // Gap B probe (BONE_LOAD_DBG): how many bones did this mesh load from the file,
+    // and how many resolved null — BEFORE RemoveInvalidBones strips them. Decides
+    // whether skinned=0 is a resolution failure (loaded>0, null>0) or no-bone-data
+    // (loaded==0). Only meshes that loaded >=1 bone are interesting.
+    if (::getenv("BONE_LOAD_DBG") && !mBones.empty()) {
+        int nullct = 0;
+        for (int bi = 0; bi < (int)mBones.size(); bi++)
+            if (!mBones[bi].mBone)
+                nullct++;
+        fprintf(stderr, "[BONE_LOAD_DBG] mesh='%s' loaded=%d null=%d\n",
+                Name() ? Name() : "?", (int)mBones.size(), nullct);
+    }
+#endif
 #ifdef MILO_DEBUG
     RemoveInvalidBones();
 #endif
@@ -951,6 +965,16 @@ BinStream &operator>>(BinStream &bs, RndMesh::Vert &v) {
 }
 
 void RndMesh::CopyBones(const RndMesh *mesh) {
+#ifdef HX_NATIVE
+    // Gap B probe (BONE_CLEAR_DBG): catch any CopyBones(0) that wipes a non-empty
+    // bone list off a BODY/outfit mesh (the preview char loads bones fine but reports
+    // skinned=0 later -> something clears them post-load).
+    if (::getenv("BONE_CLEAR_DBG") && !mesh && !mBones.empty()) {
+        const char *nm = Name() ? Name() : "?";
+        fprintf(stderr, "[BONE_CLEAR] CopyBones(0) wiping %d bones on '%s'\n",
+                (int)mBones.size(), nm);
+    }
+#endif
     if (mesh)
         mBones = mesh->mBones;
     else
