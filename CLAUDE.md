@@ -213,12 +213,31 @@ Prefer high-value areas. Use `/progress` and `scripts/dc3_compare.py` for per-un
 
 ### Ghidra
 Ghidra MCP runs on `http://ghidra.local:8001/mcp` (port 8001, separate from DC3's port 8000).
-- Language: PowerPC:BE:32:default (Gekko/Broadway)
-- Service script: `tools/ghidra/pyghidra-service.sh`
-- Start: `./tools/ghidra/pyghidra-service.sh start`
-- Uses the debug ELF with full DWARF symbols — decompilation is symbol-rich
+- Language: PowerPC:BE:32:Gekko_Broadway (paired-single capable)
+- Service script: `tools/ghidra/pyghidra-service.sh` — `./… start`
 - **Not** wired into `.mcp.json`; call via Python or `bin/analyze-function`
 - Network sandbox is configured to allow `ghidra.local` — do NOT use `--no-ghidra`
+
+**Two binaries, one server.** The 8001 service loads BOTH RB3 builds as separate
+programs (select per tool call via `binary_name`):
+- `bank8_target` — the **Bank 8 target** (~2010, the real `orig/` DOL): TARGET-
+  ACCURATE body for 100% of functions, names from the CodeWarrior map. Built by
+  transcoding the DOL→symbolized Gekko ELF (`pyghidra_mcp.gamecube_dol`, in our
+  fork). **`bin/analyze-function` DEFAULTS to this.** Skip with
+  `RB3_GHIDRA_NO_BANK8=1`. Bank 5's DWARF **types** are ported onto it by
+  `tools/ghidra/port_dwarf_types.py` (match by mangled name, apply signatures →
+  `ObjectDir *dir` typed params on the real body); re-run after a rebuild.
+- `band_r_wii` — **Bank 5** DWARF ELF (~mid-2009): rich types + named locals, but
+  the *body* is wrong-era for ~20% of functions. Get it via
+  `bin/analyze-function --bank5 SYMBOL`.
+
+`bin/analyze-function SYMBOL` shows the Bank 8 body + a per-symbol hint: for
+agreeing functions it points you to `--bank5` for DWARF types; for divergent ones
+it confirms Bank 8 is the faithful view. Gauge the era match directly with
+`scripts/analysis/bank_divergence.py <SYMBOL>` → TRUST / CAUTION / MISLEADING.
+Standalone (no service): `tools/ghidra/bank8_decompile.py SYMBOL`. m2c
+(`bin/decompile`) is always Bank-8-accurate (reads `build/SZBE69_B8/asm`).
+See `docs/decomp/bank-divergence-2026-06-09.md`.
 
 ### m2c
 - Located at `../m2c/m2c.py` (i.e. `/home/free/code/milohax/m2c/m2c.py`)
