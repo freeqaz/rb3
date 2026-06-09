@@ -448,9 +448,14 @@ def query_functions(
     exclude_patterns: list[str] | None = None,
     max_attempts: int | None = DEFAULT_MAX_ATTEMPTS,
     skip_boilerplate: bool = False,
+    stubs_only: bool = False,
 ) -> list[dict[str, Any]]:
     """
     Query multiple functions matching criteria.
+
+    stubs_only: restrict to functions flagged is_stub=1 (no real body in our
+    build — MISSING, or a trivial placeholder that links). Maintained by
+    scripts/analysis/find_stubs.py --update-db.
 
     Returns list of function dicts.
     """
@@ -469,6 +474,9 @@ def query_functions(
           AND (current_percent IS NULL OR (current_percent >= ? AND current_percent <= ?))
     """
     params: list[Any] = glob_params + [min_percent, max_percent]
+
+    if stubs_only:
+        query += " AND is_stub = 1"
 
     if exclude_locked:
         query += " AND locked_by IS NULL"

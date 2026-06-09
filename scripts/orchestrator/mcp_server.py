@@ -287,8 +287,8 @@ class DecompMCPServer:
                             },
                             "status": {
                                 "type": "string",
-                                "description": "Filter by function status: 'workable' (default), 'all', 'complete', 'at_limit'",
-                                "enum": ["workable", "all", "complete", "at_limit"],
+                                "description": "Filter by function status: 'workable' (default), 'all', 'complete', 'at_limit', 'stub' (no real body in our build — empty/placeholder or never implemented)",
+                                "enum": ["workable", "all", "complete", "at_limit", "stub"],
                             },
                         },
                     },
@@ -573,6 +573,7 @@ class DecompMCPServer:
         limit = args.get("limit", 20)
         status = args.get("status", "workable")
 
+        stubs_only = False
         if status == "all":
             exclude_complete = False
             exclude_at_limit = False
@@ -585,6 +586,14 @@ class DecompMCPServer:
             exclude_complete = True
             exclude_at_limit = False
             verdict_filter = "AT_LIMIT"
+        elif status == "stub":
+            # Functions with no real body in our build (is_stub=1) — empty/
+            # placeholder stubs that link, plus never-implemented ones. Set by
+            # scripts/analysis/find_stubs.py --update-db.
+            exclude_complete = True
+            exclude_at_limit = False
+            verdict_filter = None
+            stubs_only = True
         else:  # "workable"
             exclude_complete = True
             exclude_at_limit = True
@@ -599,6 +608,7 @@ class DecompMCPServer:
             verdict_filter=verdict_filter,
             limit=limit,
             db_path=self.db_path,
+            stubs_only=stubs_only,
         )
 
         # Check for hidden functions when filtering by unit
