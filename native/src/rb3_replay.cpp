@@ -69,6 +69,20 @@ struct ReplayState {
     // => the trace carried no seed (older trace / recorder-core) => no re-seed.
     int  seed       = 0;
     bool seedSet    = false;
+    // ── M4 (T3) — in-song milestone anchoring ────────────────────────────────
+    // The recorded curve's song-start frame: the FIRST recorded clk/fr sample
+    // whose songMs >= 0 (in-song begins). -1 if the trace never enters a song
+    // (pure-menu trace) -> anchoring stays disabled and the lookup is pure menus.
+    // Computed once in Finalize() from the same table RB3ReplaySongMsForFrame reads.
+    int  recSongStartFrame    = -1;
+    // The replay's own song-start frame, LATCHED lazily the first time
+    // RB3ReplaySongMsForFrame is asked at an absolute frame the recorded curve
+    // calls in-song (i.e. the seam fires under TheGamePanel->unk150 AND the
+    // recorded song-ms-vs-frame curve has reached in-song). -1 until latched.
+    // The ~5-frame absolute phase shift between record and replay song-start lives
+    // entirely in (replaySongStartFrame - recSongStartFrame); indexing the recorded
+    // curve RELATIVE to each side's start cancels it.
+    int  replaySongStartFrame = -1;
 };
 
 ReplayState gReplay;
@@ -312,6 +326,30 @@ void Finalize() {
                              return a.frame < b.frame;
                          });
     }
+    // M4 (T3) — compute the recorded AUDIO-START frame: the FIRST sample (in the
+    // SAME table RB3ReplaySongMsForFrame reads — prefer clk, fall back to fr) whose
+    // songMs is strictly > 0, i.e. the song clock has actually begun ADVANCING.
+    //
+    // Why > 0 and not >= 0: a real gameplay trace pins songMs at exactly 0.0 for a
+    // long pre-roll/countdown plateau (e.g. frames 1777..4697 in the gate trace)
+    // BEFORE the audio Play() callback latches and the clock advances. That plateau
+    // is deterministic (the unk150 seam onset is the same absolute frame on both
+    // sides), so it needs NO anchoring. The non-deterministic ~5-frame phase shift
+    // is precisely WHERE the clock starts advancing (rec 4698 vs replay 4703) — so
+    // the audio-start (first sm>0) is the milestone the in-song curve is anchored
+    // against. The plateau (sm==0) and menus (sm<0) use the absolute curve, which is
+    // already aligned. -1 if the trace never advances a song clock (pure menus).
+    {
+        const std::vector<ReplayFrameSample> &tbl =
+            !gReplay.clocks.empty() ? gReplay.clocks : gReplay.frames;
+        gReplay.recSongStartFrame = -1;
+        for (size_t i = 0; i < tbl.size(); ++i) {
+            if (tbl[i].songMs > 0.0f) {
+                gReplay.recSongStartFrame = tbl[i].frame;
+                break;
+            }
+        }
+    }
     // Sort run-aid applications by frame (M4 GAP 2) so the per-frame re-apply walk
     // fires them in order. Stable so same-frame aids keep recorded order.
     if (!gReplay.aids.empty()) {
@@ -505,13 +543,129 @@ const ReplayFrameSample *ClockSampleForFrame(int frame) {
 }  // namespace
 
 float RB3ReplayDtForFrame(int frame) {
+    // Menu/UI clock — UNCHANGED from Wave 7: absolute-frame lookup, drift-0 in
+    // menus. (Only the in-song song-ms is milestone-anchored below; the per-frame
+    // sim-dt the menu/UI clock accumulates is correct against the absolute frame.)
     const ReplayFrameSample *s = ClockSampleForFrame(frame);
     return s ? s->sdt : 0.0f;  // 0 => no menu-clock advance (default/before first sample)
 }
 
+namespace {
+// The recorded song-ms curve sampled at an ABSOLUTE recorded frame (the Wave-7
+// behavior): exact per-frame from clk, carry-forward from the decimated fr
+// fallback, holds the final sample past the last recorded frame, -1 before the
+// first recorded sample. Used to read the recorded value at the translated index
+// AND as the FALLBACK audio-start signal when the live accessor is unavailable.
+float RecordedSongMsAtAbsFrame(int absFrame) {
+    const ReplayFrameSample *s = ClockSampleForFrame(absFrame);
+    return s ? s->songMs : -1.0f;
+}
+}  // namespace
+
+// The LIVE song-ms (TheGame->GetBeatMaster()->GetAudio()->GetTime(), null-guarded)
+// — the replay's OWN audio clock, which free-runs on the miniaudio callback thread
+// even under the fixed-clock seam (design §M4: the mixer still free-runs; the sim
+// reads the recorded songMs). Its first ADVANCE past 0 marks the replay's true
+// audio-start — the replay-side signal that defeats the pre-roll-plateau ambiguity
+// (the recorded curve alone can't tell the replay's longer plateau from its
+// advancing region). Defined in rb3_trace_taps.cpp (linked into BOTH rb3-native and
+// rb3-tests); returns -1 when unbooted (TheGame==NULL), so the unit tests safely
+// fall back to the recorded-curve signal below.
+extern float RB3TraceCurrentSongMs();
+
+namespace {
+// Test-only injection of the live audio clock so a gtest can exercise the
+// live-signal audio-start latch (the real-engine path) without booting audio.
+// -2 = "use the real RB3TraceCurrentSongMs()" (production default). Any other
+// value overrides it. Set via RB3ReplaySetLiveSongMsForTest below.
+float gReplayLiveSongMsOverride = -2.0f;
+
+// The replay-side live audio clock, honoring the test override when armed.
+float ReplayLiveSongMs() {
+    if (gReplayLiveSongMsOverride > -2.0f)
+        return gReplayLiveSongMsOverride;
+    return RB3TraceCurrentSongMs();
+}
+}  // namespace
+
+// Test-only: inject the live audio clock value the next audio-start latch reads.
+// Pass -2 to restore the real accessor. Not in the public header (the test
+// forward-declares it). No-op in normal runs (never called).
+void RB3ReplaySetLiveSongMsForTest(float ms) {
+    gReplayLiveSongMsOverride = ms;
+}
+
+// ── M4 (T3) — milestone-anchored in-song song-ms ─────────────────────────────
+// Wave-7 fed the recorded curve at the ABSOLUTE frame straight into SetSeconds.
+// But the song AUDIO-START (when the song clock begins advancing) fires at a
+// non-deterministic absolute frame — record vs replay differ by ~5 frames of
+// async audio-callback latency (gate trace: rec 4698 vs replay 4703) — so the
+// recorded song-ms-vs-frame curve was indexed against a phase-shifted replay
+// song lifecycle and drifted to ~-754 ms in-song. T3 cancels that phase shift by
+// indexing the recorded curve RELATIVE to each side's AUDIO-START:
+//
+//   * Menus (recorded curve < 0 at this replay frame): return -1 — seam-2 then
+//     keeps the live-audio path. (Aligned; no anchoring needed.)
+//   * Pre-roll plateau (recorded curve == 0.0, before the clock advances): pass
+//     the absolute 0.0 straight through. The plateau onset (the unk150 seam) is
+//     the SAME absolute frame on both sides, so it is already aligned — no
+//     anchoring, and the song clock is correctly pinned at 0 during the countdown.
+//   * Audio-start: the FIRST replay frame the replay's OWN live audio clock has
+//     advanced past 0 (RB3TraceCurrentSongMs() > 0) — the replay-side signal that
+//     correctly fires at the replay's longer-plateau end, NOT where the recorded
+//     curve happens to advance at the same absolute frame. (Unbooted unit tests:
+//     fall back to the recorded curve advancing at this absolute frame.) Latch
+//     replaySongStartFrame = that frame. recSongStartFrame is the recorded analogue
+//     (first recorded sample sm>0, computed in Finalize). The ~5-frame phase shift
+//     is now (replaySongStart - recSongStart).
+//   * In-song (clock advancing): return the recorded curve at the RELATIVE index
+//     recSongStartFrame + (frame - replaySongStartFrame), so record and replay
+//     read the same point on the recorded song-ms curve regardless of which
+//     absolute frame each side's audio actually began on. Hold/clamp at the end.
 float RB3ReplaySongMsForFrame(int frame) {
-    const ReplayFrameSample *s = ClockSampleForFrame(frame);
-    return s ? s->songMs : -1.0f;  // -1 => menus / not in a song
+    // Pure-menu trace (song clock never advances) -> never anchors. Pass the
+    // absolute curve through unchanged (menus -1; an all-zero plateau stays 0).
+    if (gReplay.recSongStartFrame < 0)
+        return RecordedSongMsAtAbsFrame(frame);
+
+    if (gReplay.replaySongStartFrame < 0) {
+        // Not yet latched (pre audio-start on the replay side). Until the replay's
+        // OWN audio clock begins advancing, mirror the absolute recorded curve
+        // (menus -1 / aligned plateau 0). The seam only reaches here under unk150,
+        // so the replay's live audio advancing past 0 means its OWN audio just
+        // began — the milestone we anchor the relative index against.
+        float here = RecordedSongMsAtAbsFrame(frame);
+        if (here < 0.0f)
+            return -1.0f;                           // menus -> seam keeps live audio
+        // Replay-side audio-start signal. PREFER the live audio clock: it free-runs
+        // independently, so its advance past 0 marks the replay's OWN audio-start
+        // regardless of the recorded curve's (phase-shifted) absolute frame. The
+        // recorded-curve advance is a FALLBACK used ONLY when the live accessor is
+        // unavailable (live < 0: unbooted unit test, or audio not yet live) — never
+        // when the engine is live, so it can't latch early on the recorded curve's
+        // earlier (rec-side) audio-start during the replay's longer plateau.
+        float live = ReplayLiveSongMs();
+        bool audioStarted = (live > 0.0f) || (live < 0.0f && here > 0.0f);
+        if (!audioStarted)
+            return 0.0f;                            // plateau: feed the aligned 0
+        gReplay.replaySongStartFrame = frame;       // LATCH the replay audio-start
+    }
+
+    // A replay frame BEFORE the latched audio-start is still pre-advance -> mirror
+    // the absolute curve (the aligned plateau/menus). (In a live monotonic replay
+    // frames never go backwards past the latch; this also keeps the boundary exact
+    // when a lookup is queried out of order.)
+    if (frame < gReplay.replaySongStartFrame)
+        return RecordedSongMsAtAbsFrame(frame);
+
+    // In-song (clock advancing): index the recorded curve relative to each side's
+    // audio-start so the absolute phase shift (replaySongStart - recSongStart)
+    // cancels. Frames at-or-after recSongStartFrame are all in the advancing
+    // segment, so RecordedSongMsAtAbsFrame(relIndex) is a valid positive value
+    // (and holds the final recorded sample past the recorded end).
+    int relIndex = gReplay.recSongStartFrame +
+                   (frame - gReplay.replaySongStartFrame);
+    return RecordedSongMsAtAbsFrame(relIndex);
 }
 
 // ── M4 GAP 1 — boot RNG seed re-seed ─────────────────────────────────────────
@@ -572,6 +726,7 @@ bool RB3ReplayHasAids() {
 // runs (never called).
 void RB3ReplayResetForTest() {
     gReplay = ReplayState();
+    gReplayLiveSongMsOverride = -2.0f;   // restore the real live-audio accessor
 }
 
 #endif  // HX_NATIVE

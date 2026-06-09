@@ -81,6 +81,7 @@ int          RB3ReplayPendingAids(int frame, const char **outAids, int maxAids);
 void         RB3ReplayMarkAidApplied(const char *aid);
 bool         RB3ReplayHasAids();
 void         RB3ReplayResetForTest();   // clear the latched global replay state
+void         RB3ReplaySetLiveSongMsForTest(float ms);  // inject the live audio clock
 
 // ===========================================================================
 // Minimal NDJSON test harness — strict-enough to prove the wire contract
@@ -989,6 +990,148 @@ TEST(SessionReplay, ClockFallsBackToFrRows) {
     EXPECT_NEAR(RB3ReplaySongMsForFrame(115), 1000.0f, 0.01f) << "fr carry-forward";
     EXPECT_NEAR(RB3ReplaySongMsForFrame(130), 1500.0f, 0.01f);
     EXPECT_LT(RB3ReplaySongMsForFrame(50), 0.0f) << "before first fr -> menus";
+
+    unsetenv("RB3_REPLAY");
+    std::remove(path.c_str());
+}
+
+// ---------------------------------------------------------------------------
+// (M4-T3) MILESTONE ANCHORING — faithful repro of the Wave-7 gate trace shape:
+// a long pre-roll PLATEAU where songMs is pinned at exactly 0.0 (the countdown,
+// SAME absolute frame on both sides), then the AUDIO-START where the clock begins
+// advancing at a NON-deterministic absolute frame (gate trace: rec 4698 vs replay
+// 4703, a +5-frame async audio-callback phase shift). The in-song replay clock is
+// indexed RELATIVE to each side's audio-start so that phase shift cancels (the
+// Wave-7 residual drifted in-song to ~-754 ms because the recorded curve was read
+// at the phase-shifted ABSOLUTE frame).
+//
+// Recorded curve: menus < f100, plateau sm==0 at f100..109, audio-start (sm>0) at
+// f110 advancing 16 ms/frame (1000,1016,...). recSongStartFrame = 110 (first sm>0).
+// The REPLAY's plateau runs 5 frames LONGER: its OWN audio clock (injected via
+// RB3ReplaySetLiveSongMsForTest — the real-engine live-audio signal) stays 0
+// through replay frame 114 and advances at frame 115 (the +5 phase shift). The
+// latch must fire at 115 (the replay's audio-start), NOT 110 (where the recorded
+// curve advances at the same absolute frame), so the relative index cancels the
+// shift. This is the case the pure-recorded-curve signal CANNOT resolve and is
+// exactly why the latch reads the live audio clock.
+// ---------------------------------------------------------------------------
+TEST(SessionReplay, InSongMilestoneAnchoredToReplayLiveAudioStart) {
+    std::string path = kAbsTempBase + "rb3_replay_anchor_" +
+                       std::to_string((long)getpid()) + ".jsonl";
+    std::remove(path.c_str());
+
+    {
+        std::ofstream f(path.c_str());
+        f << "{\"k\":\"hdr\",\"v\":1,\"sid\":\"a5a5a5a5a5a5a5a5\",\"platform\":\"native\"}\n";
+        // Pre-roll PLATEAU: sm pinned at exactly 0.0 (countdown), frames 100..109.
+        for (int fr = 100; fr <= 109; ++fr)
+            f << "{\"t\":" << fr << ".0,\"f\":" << fr
+              << ",\"sm\":0.0,\"cs\":" << (fr - 99) << ",\"k\":\"clk\",\"sdt\":0.016}\n";
+        // AUDIO-START: clock advances at frame 110 (recSongStart), sm=1000+(fr-110)*16.
+        for (int fr = 110; fr <= 140; ++fr) {
+            int sm = 1000 + (fr - 110) * 16;
+            f << "{\"t\":" << (fr + 1000) << ".0,\"f\":" << fr << ",\"sm\":" << sm
+              << ".0,\"cs\":" << (fr + 100) << ",\"k\":\"clk\",\"sdt\":0.016}\n";
+        }
+        f << "{\"t\":9000.0,\"f\":100,\"cs\":900,\"k\":\"in\",\"pad\":0,\"b\":1,\"dn\":1,\"up\":0}\n";
+        f.close();
+    }
+
+    RB3ReplayResetForTest();
+    setenv("RB3_REPLAY", path.c_str(), 1);
+    RB3ReplayInit();
+    ASSERT_TRUE(RB3ReplayActive());
+
+    // Drive the replay's OWN live audio clock: 0 during ITS plateau (frames
+    // 100..114, 5 frames longer than the recording), then advancing from 115. At
+    // the audio-start frame 115 the clock has already ticked off 0 (rec[110]=1000's
+    // analogue is rec[110]'s 1000 but the LIVE clock just needs to be > 0 to signal
+    // the start), so 115 yields a small positive value.
+    auto liveAt = [](int fr) -> float {
+        if (fr < 115) return 0.0f;          // replay still in its (longer) plateau
+        return 16.0f * (fr - 115) + 0.9f;   // replay's own audio advancing (>0 at 115)
+    };
+
+    // Before the recorded curve exists (menus) -> -1, no matter the live clock.
+    RB3ReplaySetLiveSongMsForTest(liveAt(99));
+    EXPECT_LT(RB3ReplaySongMsForFrame(99), 0.0f) << "before plateau -> menus";
+
+    // PLATEAU on the replay side: the recorded curve is 0.0 AND the live clock is 0,
+    // so frames 100..114 feed the aligned 0.0 and DO NOT latch — even at 110..114
+    // where the RECORDED curve has already gone positive (the rec-side audio-start).
+    // The live clock (still 0) correctly keeps the replay in plateau.
+    for (int fr = 100; fr <= 114; ++fr) {
+        RB3ReplaySetLiveSongMsForTest(liveAt(fr));
+        EXPECT_NEAR(RB3ReplaySongMsForFrame(fr), 0.0f, 0.01f)
+            << "replay plateau frame " << fr
+            << " feeds 0.0 (live clock still 0) — no early latch on the rec curve";
+    }
+
+    // AUDIO-START on the replay side at f115: the live clock advances (> 0) -> latch
+    // replaySongStart=115. relIndex = recSongStart(110) + (115-115) = 110 ->
+    // recorded 1000 (the recorded audio-start value), NOT the absolute-frame value
+    // rec[115]=1080 (the Wave-7 +5-frame-ahead drift).
+    RB3ReplaySetLiveSongMsForTest(liveAt(115));
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(115), 1000.0f, 0.01f)
+        << "replay live audio-start latches; reads recorded audio-start 1000, "
+           "NOT the +5-frame-ahead absolute rec[115]=1080 (the Wave-7 drift)";
+    // Thereafter the recorded curve is indexed RELATIVE to audio-start:
+    // replay 116 -> recorded 111 -> 1016, replay 120 -> recorded 115 -> 1080.
+    RB3ReplaySetLiveSongMsForTest(liveAt(116));
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(116), 1016.0f, 0.01f);
+    RB3ReplaySetLiveSongMsForTest(liveAt(120));
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(120), 1080.0f, 0.01f)
+        << "replay 120 -> recorded 110+(120-115)=115 -> 1080";
+    // The +5-frame (80 ms) phase shift removed: anchored replay-115 (1000) + 80 ms
+    // == the absolute rec[115] (1080) it replaces, proving the IN-SONG drift cancels.
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(115) + 80.0f, 1080.0f, 0.01f)
+        << "anchored 1000 + 80 ms phase == absolute rec[115] 1080 (in-song drift gone)";
+
+    // Past the recorded end: relIndex 110+(150-115)=145 > last recorded f140; holds
+    // the final recorded sample (1000+(140-110)*16=1480), no snap-back to menus.
+    RB3ReplaySetLiveSongMsForTest(liveAt(150));
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(150), 1480.0f, 0.01f)
+        << "past recorded end holds final sample";
+
+    RB3ReplaySetLiveSongMsForTest(-2.0f);   // restore the real accessor
+    unsetenv("RB3_REPLAY");
+    std::remove(path.c_str());
+}
+
+// ---------------------------------------------------------------------------
+// (M4-T3-b) ANCHOR INVARIANT — when the replay audio-start coincides with the
+// recorded audio-start (zero phase shift), the anchored lookup is IDENTICAL to the
+// absolute-frame value. This is the no-op case the menu/plateau path relies on and
+// the reason the existing per-frame-exact test (ClockPerFrameExactSongMs) stays
+// green: latching at the recorded audio-start makes relIndex == askFrame.
+// ---------------------------------------------------------------------------
+TEST(SessionReplay, AnchorZeroPhaseEqualsAbsolute) {
+    std::string path = kAbsTempBase + "rb3_replay_anchor0_" +
+                       std::to_string((long)getpid()) + ".jsonl";
+    std::remove(path.c_str());
+
+    {
+        std::ofstream f(path.c_str());
+        f << "{\"k\":\"hdr\",\"v\":1,\"sid\":\"b6b6b6b6b6b6b6b6\",\"platform\":\"native\"}\n";
+        for (int fr = 200; fr <= 205; ++fr) {  // advancing song clock from frame 200
+            int sm = 5000 + (fr - 200) * 16;   // all > 0 -> audio-start at 200
+            f << "{\"t\":" << fr << ".0,\"f\":" << fr << ",\"sm\":" << sm
+              << ".0,\"cs\":" << (fr - 199) << ",\"k\":\"clk\",\"sdt\":0.016}\n";
+        }
+        f << "{\"t\":300.0,\"f\":200,\"cs\":99,\"k\":\"in\",\"pad\":0,\"b\":1,\"dn\":1,\"up\":0}\n";
+        f.close();
+    }
+
+    RB3ReplayResetForTest();
+    setenv("RB3_REPLAY", path.c_str(), 1);
+    RB3ReplayInit();
+    ASSERT_TRUE(RB3ReplayActive());
+
+    // First advancing ask is at the recorded audio-start frame 200 -> latch=200 ->
+    // zero phase shift -> relIndex == askFrame -> identical to the absolute curve.
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(200), 5000.0f, 0.01f);
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(201), 5016.0f, 0.01f);
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(205), 5080.0f, 0.01f);
 
     unsetenv("RB3_REPLAY");
     std::remove(path.c_str());
