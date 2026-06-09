@@ -52,6 +52,8 @@ void RB3RecordCheckpoint(const char *scr, const char *focus,
                          long scoreSum, const int *scores, int nScores,
                          int nPlayers, int pct);
 void RB3TraceSetSongMs(float ms);
+void RB3TraceSetSeed(int seed);                  // M4 GAP 1 — boot RNG seed capture
+void RB3TraceRecordAid(const char *aid);          // M4 GAP 2 — run-aid capture
 void RB3TraceFlush();
 void RB3TraceShutdown();
 void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
@@ -69,6 +71,12 @@ void         RB3ReplayInit();
 bool         RB3ReplayActive();
 unsigned int RB3ReplayBitsForFrame(int frame);
 int          RB3ReplayLastFrame();
+// M4 GAP 1 / GAP 2 replay accessors.
+bool         RB3ReplaySeed(int *out);
+int          RB3ReplayPendingAids(int frame, const char **outAids, int maxAids);
+void         RB3ReplayMarkAidApplied(const char *aid);
+bool         RB3ReplayHasAids();
+void         RB3ReplayResetForTest();   // clear the latched global replay state
 
 // ===========================================================================
 // Minimal NDJSON test harness — strict-enough to prove the wire contract
@@ -644,6 +652,158 @@ TEST_F(SessionTrace, CheckpointRowAndHash) {
 }
 
 // ---------------------------------------------------------------------------
+// (M4-GAP1-a) RB3TraceSetSeed stamps the boot RNG seed into the hdr `seed`. The
+//        hdr is written LAZILY (the seed is set during the App ctor, AFTER
+//        RB3TraceInit), so a seed set BEFORE the first event must still land in
+//        the hdr. With NO seed set, the hdr omits `seed` entirely.
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, HeaderCarriesSeedWhenSet) {
+    RB3TraceInit();
+    // Boot path sets the seed before any event (mirrors System.cpp SeedRand site).
+    RB3TraceSetSeed(1234567);
+    RB3TraceSetFrame(1);
+    RB3RecordBootMark("engine_init_done");   // first event -> flushes the hdr
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_FALSE(lines.empty());
+    const std::string &h = lines[0];
+    EXPECT_EQ(GetRaw(h, "k"), "hdr");
+    ASSERT_TRUE(HasKey(h, "seed")) << "hdr must carry the captured seed: " << h;
+    EXPECT_EQ(std::atoi(GetRaw(h, "seed").c_str()), 1234567);
+}
+
+TEST_F(SessionTrace, HeaderOmitsSeedWhenUnset) {
+    RB3TraceInit();
+    RB3TraceSetFrame(1);
+    RB3RecordBootMark("engine_init_done");
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_FALSE(lines.empty());
+    EXPECT_FALSE(HasKey(lines[0], "seed")) << "no seed set => hdr omits seed: " << lines[0];
+}
+
+// ---------------------------------------------------------------------------
+// (M4-GAP1-b) A hdr-only session (no events) is still a valid trace: the lazy
+//        hdr is flushed on shutdown so a seed-bearing run with no events is
+//        readable. (Regression guard for the deferred-hdr change.)
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, HeaderFlushedOnShutdownWithNoEvents) {
+    RB3TraceInit();
+    RB3TraceSetSeed(42);
+    RB3TraceShutdown();   // no events recorded at all
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_EQ(lines.size(), 1u) << "hdr-only trace must have exactly the hdr line";
+    EXPECT_EQ(GetRaw(lines[0], "k"), "hdr");
+    EXPECT_EQ(std::atoi(GetRaw(lines[0], "seed").c_str()), 42);
+}
+
+// ---------------------------------------------------------------------------
+// (M4-GAP2-a) RB3TraceRecordAid emits a one-shot replayable mark{tag:"aid",
+//        note:<name>} at the current frame AND folds the aid into hdr.flags.aids.
+//        De-duped: re-applying the same aid records the mark once.
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, RunAidMarkAndHeaderFlag) {
+    RB3TraceInit();
+    RB3TraceSetSeed(7);             // so the hdr is interesting too
+    RB3TraceSetFrame(900);
+    RB3TraceRecordAid("autohit");   // first event -> flushes hdr (aids summary set)
+    RB3TraceSetFrame(905);
+    RB3TraceRecordAid("autohit");   // duplicate -> NO second mark
+    RB3TraceSetFrame(910);
+    RB3TraceRecordAid("nofail");
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 3u);
+
+    // The aid marks: exactly TWO (autohit once + nofail once), tag "aid".
+    int aidMarks = 0;
+    bool sawAutohit = false, sawNofail = false;
+    int autohitFrame = -1;
+    for (size_t i = 1; i < lines.size(); ++i) {
+        if (GetRaw(lines[i], "k") == "mark" && GetRaw(lines[i], "tag") == "aid") {
+            aidMarks++;
+            std::string note = GetRaw(lines[i], "note");
+            if (note == "autohit") { sawAutohit = true; autohitFrame = std::atoi(GetRaw(lines[i], "f").c_str()); }
+            if (note == "nofail")  sawNofail = true;
+        }
+    }
+    EXPECT_EQ(aidMarks, 2) << "autohit de-duped -> 2 aid marks total";
+    EXPECT_TRUE(sawAutohit);
+    EXPECT_TRUE(sawNofail);
+    EXPECT_EQ(autohitFrame, 900) << "aid mark stamps the frame it was applied at";
+
+    // hdr.flags.aids summary carries both (the hdr was written when the first aid
+    // fired; autohit was already set, nofail comes later so it may or may not be
+    // in the summary — autohit MUST be).
+    const std::string &h = lines[0];
+    std::string flags = GetObject(h, "flags");
+    ASSERT_FALSE(flags.empty()) << "hdr must carry flags{}: " << h;
+    EXPECT_NE(flags.find("autohit"), std::string::npos)
+        << "hdr.flags.aids must list autohit (set before the hdr flushed): " << flags;
+}
+
+// ---------------------------------------------------------------------------
+// (M4-GAP1-c) The replay side parses the hdr `seed`; RB3ReplaySeed returns it.
+//        And the run-aid marks parse into RB3ReplayPendingAids with the recorded
+//        frame + the latch (RB3ReplayMarkAidApplied) one-shot semantics.
+//        Standalone (own temp file + RB3_REPLAY env), independent of the fixture.
+// ---------------------------------------------------------------------------
+TEST(SessionReplay, SeedAndAidsFromTrace) {
+    std::string p = kAbsTempBase + "rb3_replay_gap_" +
+                    std::to_string((long)getpid()) + ".jsonl";
+    std::remove(p.c_str());
+    {
+        std::ofstream f(p.c_str());
+        // hdr carries a seed + an aids flag; two aid marks at known frames; one
+        // `in` edge so replay also arms (not required for seed/aids, but realistic).
+        f << "{\"k\":\"hdr\",\"v\":1,\"sid\":\"abcdef0123456789\",\"platform\":\"native\",\"seed\":-559038737,\"flags\":{\"aids\":[\"autohit\",\"nofail\"]}}\n";
+        f << "{\"t\":10.0,\"f\":300,\"cs\":1,\"k\":\"mark\",\"tag\":\"aid\",\"note\":\"nofail\"}\n";
+        f << "{\"t\":20.0,\"f\":360,\"cs\":2,\"k\":\"mark\",\"tag\":\"aid\",\"note\":\"autohit\"}\n";
+        f << "{\"t\":30.0,\"f\":360,\"cs\":3,\"k\":\"in\",\"pad\":0,\"b\":1,\"dn\":1,\"up\":0}\n";
+        f.close();
+    }
+
+    RB3ReplayResetForTest();   // clear any latched state from a prior replay test
+    setenv("RB3_REPLAY", p.c_str(), 1);
+    RB3ReplayInit();
+
+    // GAP 1: the seed parsed back exactly (signed; -559038737 == 0xDEADBEEF).
+    int seed = 0;
+    ASSERT_TRUE(RB3ReplaySeed(&seed)) << "trace carried a seed -> RB3ReplaySeed true";
+    EXPECT_EQ(seed, -559038737);
+
+    // GAP 2: two aid markers parsed; ordered by frame (nofail@300 before autohit@360).
+    ASSERT_TRUE(RB3ReplayHasAids());
+    const char *due[4] = {nullptr, nullptr, nullptr, nullptr};
+
+    // Before the first aid frame -> nothing due.
+    EXPECT_EQ(RB3ReplayPendingAids(299, due, 4), 0);
+
+    // At frame 300 -> nofail due (not autohit yet).
+    int n = RB3ReplayPendingAids(300, due, 4);
+    ASSERT_EQ(n, 1);
+    EXPECT_STREQ(due[0], "nofail");
+    // Not latched until we confirm it applied: still due if we re-poll.
+    EXPECT_EQ(RB3ReplayPendingAids(300, due, 4), 1) << "unlatched aid stays pending";
+    RB3ReplayMarkAidApplied("nofail");
+    EXPECT_EQ(RB3ReplayPendingAids(300, due, 4), 0) << "latched aid no longer pending";
+
+    // At frame 360 -> autohit due; latch it.
+    n = RB3ReplayPendingAids(360, due, 4);
+    ASSERT_EQ(n, 1);
+    EXPECT_STREQ(due[0], "autohit");
+    RB3ReplayMarkAidApplied("autohit");
+    EXPECT_EQ(RB3ReplayPendingAids(100000, due, 4), 0) << "all aids latched";
+
+    unsetenv("RB3_REPLAY");
+    std::remove(p.c_str());
+}
+
+// ---------------------------------------------------------------------------
 // (13) Tier-1 REPLAY carry-forward semantics (rb3_replay.cpp).
 //
 // Write a tiny `in`-trace fixture with two edges at KNOWN frames, point
@@ -682,8 +842,9 @@ TEST(SessionReplay, BitsForFrameCarryForward) {
         f.close();
     }
 
+    RB3ReplayResetForTest();   // clear any latched state from a prior replay test
     setenv("RB3_REPLAY", path.c_str(), 1);
-    RB3ReplayInit();   // idempotent; first + only caller in this process
+    RB3ReplayInit();
     EXPECT_TRUE(RB3ReplayActive()) << "two `in` edges must arm replay";
     EXPECT_EQ(RB3ReplayLastFrame(), 20) << "lastFrame is the last `in` edge's f";
 

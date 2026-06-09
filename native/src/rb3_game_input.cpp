@@ -79,6 +79,9 @@
 #include "utl/Symbol.h"
 #include "rndobj/Draw.h"    // RndDrawable — N4 song-select details-pane hide
 
+#include "rb3_session_trace.h"  // RB3TraceRecordAid — capture out-of-band run aids (M4 GAP 2)
+#include "rb3_replay.h"         // RB3ReplayPendingAids — re-apply recorded aids on replay (M4 GAP 2)
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -784,15 +787,23 @@ void ExecDifficulty(Difficulty d) {
     }
 }
 
-void ExecNoFail() {
+// Returns true iff the aid took effect (a live MetaPerformer existed). On replay
+// a false return leaves the aid pending so it is retried next frame.
+bool ExecNoFail() {
     MetaPerformer *mp = MetaPerformer::Current();
     if (mp) {
         mp->SetBandNoFail(true);
         MILO_LOG("RB3 input: nofail enabled -> IsNoFailActive=%d IsBandNoFailSet=%d\n",
                  (int)mp->IsNoFailActive(), (int)mp->IsBandNoFailSet());
-    } else {
-        MILO_LOG("RB3 input: nofail FAILED: no MetaPerformer::Current()\n");
+        // M4 GAP 2: capture the out-of-band aid into the trace as a one-shot,
+        // replayable mark (the HTTP/script verb that enabled it is NOT an `in`
+        // edge). De-duped + no-op when not tracing. RB3ReplayPendingAids re-fires
+        // this on replay; recording the re-applied aid again is harmless (deduped).
+        RB3TraceRecordAid("nofail");
+        return true;
     }
+    MILO_LOG("RB3 input: nofail FAILED: no MetaPerformer::Current()\n");
+    return false;
 }
 
 // Turn on autoplay for every active player — the retail kiosk/E3 path mirrored
@@ -800,10 +811,13 @@ void ExecNoFail() {
 // BeatMatcher::SetCheating(true); TrackWatcherImpl::CheckForAutoplay then auto-
 // hits each gem at the strike window (HitGem -> GemSmasher::Hit -> hit.trig
 // particles), which both fires the gameplay hit-FX and ticks the score off 0.
-void ExecAutohit() {
+// Returns true iff autoplay armed >=1 ready player (the score-producing effect).
+// On replay a false return (no game / no ready player yet) leaves the aid pending
+// so it is retried next frame until the load chain wires the players up.
+bool ExecAutohit() {
     if (!TheGame) {
         MILO_LOG("RB3 input: autohit FAILED: no TheGame\n");
-        return;
+        return false;
     }
     std::vector<Player *> &players = TheGame->GetActivePlayers();
     int n = 0;
@@ -823,6 +837,15 @@ void ExecAutohit() {
         }
     }
     MILO_LOG("RB3 input: autohit enabled on %d active player(s)\n", n);
+    // M4 GAP 2: capture autohit into the trace ONLY when it actually took effect
+    // (>=1 player armed). The autoplay is what produced the recorded score; the
+    // one-shot replayable mark lets replay re-arm it at this frame so the same
+    // gems auto-hit -> same score. De-duped + no-op when not tracing. Recording it
+    // only on success means a replay won't re-fire it before players are ready
+    // (the n==0 case is retried by the same readiness path it took at record time).
+    if (n > 0)
+        RB3TraceRecordAid("autohit");
+    return n > 0;
 }
 
 // C6: route an overshell:<action>[:arg...] verb through the synth user's
@@ -1794,6 +1817,33 @@ void RB3GameInputPoll(int frame) {
                     gVerbWaitSince = -1;
                 }
             }
+        }
+    }
+
+    // M4 GAP 2: re-apply recorded run aids (autohit/nofail) on replay. The aids
+    // were toggled out-of-band at record time (HTTP verb / script), so they are
+    // NOT in the replayed `in` stream — without this a recorded autoplay score
+    // (e.g. 110) replays to 0. RB3ReplayPendingAids returns the aids whose recorded
+    // frame has been reached (one-shot per aid). We route each through the SAME
+    // ExecAutohit/ExecNoFail path the live HTTP verb drives, so the autoplay re-
+    // arms identically -> same gem hits -> same score. Cheap no-op for aid-free
+    // traces (RB3ReplayHasAids gate). ExecAutohit self-gates on player readiness;
+    // if a player isn't ready yet at the recorded frame, RB3ReplayPendingAids has
+    // already marked it applied, so we retry-arm here on the next due frames via a
+    // pending-until-effective latch.
+    if (RB3ReplayHasAids()) {
+        const char *due[4];
+        int nd = RB3ReplayPendingAids(frame, due, 4);
+        for (int i = 0; i < nd; ++i) {
+            bool ok = false;
+            if (std::strcmp(due[i], "autohit") == 0)      ok = ExecAutohit();
+            else if (std::strcmp(due[i], "nofail") == 0)  ok = ExecNoFail();
+            else                                          ok = true;  // unknown: latch
+            if (ok) {
+                MILO_LOG("RB3 input: frame %d  REPLAY aid '%s' applied\n", frame, due[i]);
+                RB3ReplayMarkAidApplied(due[i]);   // latch one-shot once effective
+            }
+            // else: not ready yet (load-skew) -> stays pending, retried next frame.
         }
     }
 

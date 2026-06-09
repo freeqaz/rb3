@@ -377,8 +377,26 @@ void SystemPreInit(const char *config) {
     DateTimeInit();
     DateTime dt;
     GetDateAndTime(dt);
-    SeedRand(dt.mSec + dt.mMin * 60 + dt.mHour * 3600);
-    srand(RandomInt());
+    // Session-telemetry M4 GAP 1 (HX_NATIVE only): gRand is the single boot-seeded
+    // RNG that drives nav-affecting consumers (e.g. InterstitialMgr venue-cut
+    // mRandomSelection). The live seed below is wall-clock-derived, so two runs
+    // pick different venue cuts and the replayed nav diverges from the recording.
+    // On replay (RB3ReplaySeed true) re-seed gRand with the RECORDED seed so every
+    // gRand consumer reproduces; otherwise use the live time. Either way, stamp
+    // the ACTUAL seed used into the trace hdr (RB3TraceSetSeed) so a future replay
+    // can reproduce it. Forward-declared (native/src hooks; no engine header dep);
+    // both are no-ops when telemetry/replay are off.
+    {
+        extern bool RB3ReplaySeed(int *out);
+        extern void RB3TraceSetSeed(int seed);
+        int seed = dt.mSec + dt.mMin * 60 + dt.mHour * 3600;
+        int replaySeed = 0;
+        if (RB3ReplaySeed(&replaySeed))
+            seed = replaySeed;
+        SeedRand(seed);
+        RB3TraceSetSeed(seed);
+        srand(RandomInt());
+    }
     TheDebug.Init();
     DataInit();
     // DataInit()->ObjectDir::PreInit() only enables DirLoader cache-mode when

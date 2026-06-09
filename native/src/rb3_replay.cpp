@@ -40,13 +40,29 @@ struct ReplayFrameSample {
     float songMs;  // song ms this frame; -1 when absent (menus)
 };
 
+// M4 GAP 2 — one recorded run-aid application: the aid name ("autohit"/"nofail")
+// and the frame it was applied at. Parsed from the one-shot mark{tag:"aid"} rows
+// the recorder emits (rb3_session_trace RB3TraceRecordAid). On replay the
+// game-input poll re-applies each aid once its frame is reached, reproducing the
+// autoplay that produced the recorded score.
+struct ReplayAid {
+    int         frame;
+    std::string name;
+    bool        applied;   // re-applied during this replay (one-shot)
+};
+
 struct ReplayState {
     std::vector<ReplaySample> samples;  // sorted ascending by frame (`in` events)
     std::vector<ReplayFrameSample> frames;  // sorted ascending by frame (`fr` rows)
+    std::vector<ReplayAid> aids;        // recorded run-aid applications (GAP 2)
     bool inited = false;                // RB3ReplayInit has run (parse attempted)
     bool active = false;                // armed: >= 1 `in` event loaded
     int  lastFrame = 0;                 // frame of the last `in` event
     int  fixedClock = -1;               // RB3_REPLAY_FIXED_CLOCK: -1 unchecked, 0/1
+    // M4 GAP 1 — boot RNG seed captured from the trace hdr (`seed`). seedSet=false
+    // => the trace carried no seed (older trace / recorder-core) => no re-seed.
+    int  seed       = 0;
+    bool seedSet    = false;
 };
 
 ReplayState gReplay;
@@ -120,6 +136,60 @@ bool IsFrameLine(const char *line) {
     return std::strstr(line, "\"k\":\"fr\"") != nullptr;
 }
 
+// Is this the header line? Match `"k":"hdr"`.
+bool IsHeaderLine(const char *line) {
+    return std::strstr(line, "\"k\":\"hdr\"") != nullptr;
+}
+
+// Is this a run-aid one-shot marker? mark{tag:"aid"} (M4 GAP 2).
+bool IsAidMarkLine(const char *line) {
+    return std::strstr(line, "\"k\":\"mark\"") != nullptr &&
+           std::strstr(line, "\"tag\":\"aid\"") != nullptr;
+}
+
+// Pull a quoted string field value into `out` (no escape handling beyond a copy;
+// the aid names are simple identifiers). Returns false if the key is absent or
+// not a quoted string.
+bool ParseStrField(const char *line, const char *key, std::string *out) {
+    const char *p = FindKeyValue(line, key);
+    if (!p || *p != '"')
+        return false;
+    ++p;  // past the opening quote
+    out->clear();
+    bool esc = false;
+    for (; *p; ++p) {
+        char c = *p;
+        if (esc) { out->push_back(c); esc = false; continue; }
+        if (c == '\\') { esc = true; continue; }
+        if (c == '"') return true;
+        out->push_back(c);
+    }
+    return false;  // unterminated
+}
+
+// Ingest the header's `seed` field (M4 GAP 1). Absent => seedSet stays false.
+void IngestHeaderLine(const char *line) {
+    long seed = 0;
+    if (ParseIntField(line, "seed", &seed)) {
+        gReplay.seed    = (int)seed;
+        gReplay.seedSet = true;
+    }
+}
+
+// Ingest a run-aid marker (M4 GAP 2): note=<aid name>, f=<frame applied>.
+void IngestAidMarkLine(const char *line) {
+    long frame = 0;
+    std::string name;
+    if (!ParseStrField(line, "note", &name) || name.empty())
+        return;
+    ParseIntField(line, "f", &frame);   // absent => frame 0 (apply ASAP)
+    ReplayAid a;
+    a.frame   = (int)frame;
+    a.name    = name;
+    a.applied = false;
+    gReplay.aids.push_back(a);
+}
+
 // Ingest an `fr` row's clock fields (Tier-2 fixed clock). Needs `f`; `sdt`/`sm`
 // are optional (the recorder omits `sdt` at 0 and `sm` in menus). Carries 0/-1
 // defaults so the carry-forward lookups behave (no sim advance, not-in-a-song).
@@ -144,6 +214,14 @@ void IngestLine(const char *line) {
         ++line;
     if (*line == '\0' || *line == '#')
         return;
+    if (IsHeaderLine(line)) {
+        IngestHeaderLine(line);   // M4 GAP 1: capture the boot RNG seed
+        return;
+    }
+    if (IsAidMarkLine(line)) {
+        IngestAidMarkLine(line);  // M4 GAP 2: capture a run-aid application
+        return;
+    }
     if (IsFrameLine(line)) {
         IngestFrameLine(line);
         return;
@@ -190,6 +268,14 @@ void Finalize() {
                              return a.frame < b.frame;
                          });
     }
+    // Sort run-aid applications by frame (M4 GAP 2) so the per-frame re-apply walk
+    // fires them in order. Stable so same-frame aids keep recorded order.
+    if (!gReplay.aids.empty()) {
+        std::stable_sort(gReplay.aids.begin(), gReplay.aids.end(),
+                         [](const ReplayAid &a, const ReplayAid &b) {
+                             return a.frame < b.frame;
+                         });
+    }
     if (gReplay.samples.empty())
         return;
     std::stable_sort(gReplay.samples.begin(), gReplay.samples.end(),
@@ -205,7 +291,13 @@ void Finalize() {
 void RB3ReplayInit() {
     if (gReplay.inited)
         return;
-    gReplay.inited = true;
+
+    // Only LATCH inited once a replay source is actually present. M4 GAP 1 made
+    // the engine boot (System.cpp SystemInit -> RB3ReplaySeed) an early caller;
+    // if RB3_REPLAY / window.__rb3ReplayData is not set yet at that point, leave
+    // inited=false so a later real caller (JoypadPoll, or a re-armed env in a
+    // gtest) re-attempts. The per-call env read is cheap.
+    bool foundSource = false;
 
 #ifdef __EMSCRIPTEN__
     // Web: rb3_pre.js fetches GET /api/telemetry/<sid> into window.__rb3ReplayData
@@ -221,6 +313,7 @@ void RB3ReplayInit() {
         return ptr;
     });
     if (data) {
+        foundSource = true;
         IngestBuffer(data, std::strlen(data));
         std::free(data);
         std::printf("[rb3-replay] web: loaded %zu input edges from "
@@ -231,6 +324,7 @@ void RB3ReplayInit() {
     // a few hundred KB at most) and ingest.
     const char *path = std::getenv("RB3_REPLAY");
     if (path && *path) {
+        foundSource = true;
         FILE *f = std::fopen(path, "rb");
         if (!f) {
             std::fprintf(stderr, "[rb3-replay] could not open RB3_REPLAY='%s'\n",
@@ -251,6 +345,12 @@ void RB3ReplayInit() {
         }
     }
 #endif
+
+    // Latch only if a source was present; otherwise stay un-inited so a later call
+    // (env armed afterwards) re-attempts. Once a source is found we always latch,
+    // even if it parsed to zero events (a malformed/empty trace shouldn't loop).
+    if (foundSource)
+        gReplay.inited = true;
 
     Finalize();
     if (gReplay.active) {
@@ -349,6 +449,66 @@ float RB3ReplayDtForFrame(int frame) {
 float RB3ReplaySongMsForFrame(int frame) {
     const ReplayFrameSample *s = FrameSampleAtOrBefore(frame);
     return s ? s->songMs : -1.0f;  // -1 => menus / not in a song
+}
+
+// ── M4 GAP 1 — boot RNG seed re-seed ─────────────────────────────────────────
+
+bool RB3ReplaySeed(int *out) {
+    // Self-arming: the seed lives in the hdr, which the boot path needs BEFORE the
+    // lazy JoypadPoll RB3ReplayInit. RB3ReplayInit is idempotent, so trigger it
+    // here so the seed is available even when the boot path is the first caller.
+    if (!gReplay.inited)
+        RB3ReplayInit();
+    if (!gReplay.seedSet)
+        return false;
+    if (out)
+        *out = gReplay.seed;
+    return true;
+}
+
+// ── M4 GAP 2 — run-aid re-application ────────────────────────────────────────
+
+int RB3ReplayPendingAids(int frame, const char **outAids, int maxAids) {
+    if (gReplay.aids.empty())
+        return 0;
+    int n = 0;
+    // Return aids whose recorded frame has been reached and that have NOT yet
+    // taken effect. We deliberately do NOT latch here: an aid (autohit) can no-op
+    // if players aren't ready yet at the recorded frame (load-skew), so the caller
+    // confirms effectiveness via RB3ReplayMarkAidApplied. Until then the aid stays
+    // pending and is re-offered every frame (idempotent re-apply is harmless).
+    for (size_t i = 0; i < gReplay.aids.size() && n < maxAids; ++i) {
+        ReplayAid &a = gReplay.aids[i];
+        if (!a.applied && frame >= a.frame)
+            outAids[n++] = a.name.c_str();
+    }
+    return n;
+}
+
+void RB3ReplayMarkAidApplied(const char *aid) {
+    if (!aid)
+        return;
+    // Latch the earliest still-pending aid of this name (one-shot). Re-applying an
+    // already-latched aid on a later frame is then skipped.
+    for (size_t i = 0; i < gReplay.aids.size(); ++i) {
+        ReplayAid &a = gReplay.aids[i];
+        if (!a.applied && a.name == aid) {
+            a.applied = true;
+            return;
+        }
+    }
+}
+
+bool RB3ReplayHasAids() {
+    return !gReplay.aids.empty();
+}
+
+// Test-only: clear ALL replay state so a gtest can RB3ReplayInit a fresh fixture
+// repeatedly (the global gReplay latches `inited` once a source is parsed). Not
+// declared in the public header; the test forward-declares it. No-op in normal
+// runs (never called).
+void RB3ReplayResetForTest() {
+    gReplay = ReplayState();
 }
 
 #endif  // HX_NATIVE

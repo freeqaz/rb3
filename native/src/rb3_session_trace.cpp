@@ -176,7 +176,24 @@ struct Recorder {
     std::string startedIso;   // hdr.started
     std::string buildGit;     // hdr.build.git
     std::string platform = "native";  // hdr.platform ("web" under __EMSCRIPTEN__)
+
+    // M4 GAP 1 — boot RNG seed (gRand). Stamped into the hdr `seed` field so a
+    // replay can re-seed gRand identically. seedSet=false => the boot path never
+    // reached the SeedRand site (e.g. a recorder-core gtest with no engine) => the
+    // hdr omits `seed`.
+    int         randSeed       = 0;
+    bool        seedSet        = false;
+
+    // M4 GAP 2 — active run aids (autohit/nofail) the recording enabled. Out-of-
+    // band toggles (HTTP /api/input verb, or the RB3_GAME_INPUT script) that are
+    // NOT replayable `in` edges; summarized in hdr.flags.aids so a reader sees
+    // them, and emitted per-aid as a one-shot `mark{tag:"aid"}` at the applied
+    // frame (the replayable record — see RB3TraceRecordAid). Bit 0 = autohit,
+    // bit 1 = nofail.
+    unsigned    aids           = 0;
 };
+
+enum { RB3_AID_AUTOHIT = 1u << 0, RB3_AID_NOFAIL = 1u << 1 };
 
 Recorder gRec;
 
@@ -535,7 +552,29 @@ void WriteHeader() {
     AppendQuotedKV(out, "started", gRec.startedIso.c_str());
     out += ",\"build\":{";
     AppendQuotedKV(out, "git", gRec.buildGit.c_str());
-    out += "},\"flags\":{}}\n";
+    out += "}";
+    // M4 GAP 1 — boot RNG seed (gRand). Additive; omitted if the boot path never
+    // set it (recorder-core tests with no engine). A replay reads this back to
+    // re-seed gRand before the first RandomInt (rb3_replay.cpp RB3ReplaySeed).
+    if (gRec.seedSet) {
+        char sb[32];
+        std::snprintf(sb, sizeof(sb), ",\"seed\":%d", gRec.randSeed);
+        out += sb;
+    }
+    // flags{} — summarizes out-of-band run state for a human reader. aids carries
+    // the run aids (autohit/nofail) that were enabled; the per-aid replay record
+    // is the one-shot mark{tag:"aid"} events (RB3TraceRecordAid). aids is the
+    // bitmask AT FLUSH/SHUTDOWN time; since aids only ever turn ON in a session,
+    // the hdr's snapshot is a best-effort summary and the marks are authoritative.
+    out += ",\"flags\":{";
+    if (gRec.aids) {
+        out += "\"aids\":[";
+        bool first = true;
+        if (gRec.aids & RB3_AID_AUTOHIT) { out += "\"autohit\""; first = false; }
+        if (gRec.aids & RB3_AID_NOFAIL)  { if (!first) out += ','; out += "\"nofail\""; }
+        out += "]";
+    }
+    out += "}}\n";
     if (gRec.sink) {
         std::fwrite(out.data(), 1, out.size(), gRec.sink);
         std::fflush(gRec.sink);
@@ -733,7 +772,13 @@ void RB3TraceInit() {
     gRB3TraceActive  = true;
     gFrameTraceActive = true;
 
-    WriteHeader();
+    // NOTE: the hdr is written LAZILY on the first event (PushEvent calls
+    // WriteHeader). M4 GAP 1 requires the boot RNG seed — set by SeedRand deep in
+    // the App ctor's SystemInit, which runs AFTER RB3TraceInit — to land in the
+    // hdr. So we deliberately DO NOT eagerly write the hdr here; the first real
+    // event (a boot mark recorded post-ctor, see main_native.cpp) flushes a hdr
+    // that already carries the seed. Recorder-core gtests that never set a seed
+    // simply omit the `seed` field (seedSet stays false).
 }
 
 void RB3TraceSetFrame(int frame) {
@@ -881,6 +926,42 @@ void RB3RecordMark(const char *tag, const char *note) {
 }
 
 // ---------------------------------------------------------------------------
+// M4 GAP 1 — boot RNG seed. The boot path (System.cpp HX_NATIVE SeedRand site)
+// hands us the EXACT scalar it fed to gRand. Stored for the lazily-written hdr's
+// `seed` field. Always recorded (even when tracing is off-armed but seedSet is
+// only read in WriteHeader, which no-ops when not armed) so the value is captured
+// regardless of arm-order; the seed must be set BEFORE the first event so the hdr
+// carries it. Idempotent-ish: a later call overwrites (the boot path calls once).
+// ---------------------------------------------------------------------------
+void RB3TraceSetSeed(int seed) {
+    gRec.randSeed = seed;
+    gRec.seedSet  = true;
+}
+
+// ---------------------------------------------------------------------------
+// M4 GAP 2 — run aid (autohit/nofail) capture. Called from the native game-input
+// path the instant an aid is actually applied (ExecAutohit/ExecNoFail). Records:
+//   (a) a one-shot mark{tag:"aid",note:<aid>} at the CURRENT frame — the
+//       authoritative, replayable record (replay re-applies the aid when it
+//       reaches this frame; see rb3_replay.cpp RB3ReplayAids), and
+//   (b) sets the hdr.flags.aids summary bit (best-effort: only reflected in the
+//       hdr if the hdr is still unwritten, but the mark is always emitted).
+// De-duped: the same aid re-applied (HTTP verb fired twice) records once.
+// ---------------------------------------------------------------------------
+void RB3TraceRecordAid(const char *aid) {
+    if (!gRB3TraceActive || !aid) return;
+    unsigned bit = 0;
+    if (std::strcmp(aid, "autohit") == 0)     bit = RB3_AID_AUTOHIT;
+    else if (std::strcmp(aid, "nofail") == 0) bit = RB3_AID_NOFAIL;
+    if (bit && (gRec.aids & bit)) return;   // already recorded this aid
+    gRec.aids |= bit;
+    // One-shot session marker at the current frame. tag "aid" + note=<aid name>.
+    // RB3RecordMark interns + stamps t/f/cs and pushes (which lazily writes the
+    // hdr if still pending — by which point seed/aids summary are already set).
+    RB3RecordMark("aid", aid);
+}
+
+// ---------------------------------------------------------------------------
 // M4 checkpoint helpers (file-local). FNV-1a over the quantized state tuple, so
 // run-to-run equality survives benign x86-vs-x86 float drift while the exact
 // integer scoreSum + nPlayers stay un-quantized (a 1-point score divergence must
@@ -975,12 +1056,18 @@ void RB3TraceSetSimDt(float seconds) {
 
 void RB3TraceFlush() {
     if (gRec.state != 1) return;
+    // The hdr is written lazily (M4 GAP 1: deferred so the boot RNG seed lands in
+    // it). Ensure it is emitted even if no event was ever recorded, so a session
+    // with only a hdr is still a valid trace.
+    if (!gRec.hdrWritten) WriteHeader();
     DrainRing();
     if (gRec.sink) std::fflush(gRec.sink);
 }
 
 void RB3TraceShutdown() {
     if (gRec.state == 1) {
+        // Flush a hdr even if nothing was recorded (lazy-hdr; see RB3TraceFlush).
+        if (!gRec.hdrWritten) WriteHeader();
         DrainRing();   // flush the remaining ring to the active sink (file or web)
     }
     if (gRec.sink) {
@@ -1009,6 +1096,9 @@ void RB3TraceShutdown() {
     gRec.platform      = "native";
     gRec.startedIso.clear();
     gRec.buildGit.clear();
+    gRec.randSeed      = 0;
+    gRec.seedSet       = false;
+    gRec.aids          = 0;
 
     gRB3TraceActive   = false;
     gFrameTraceActive = false;

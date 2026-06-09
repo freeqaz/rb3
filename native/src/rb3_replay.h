@@ -75,5 +75,43 @@ float RB3ReplayDtForFrame(int frame);
 // (Game.cpp) feeds this into SetSeconds, bypassing live audio + DeJitter.
 float RB3ReplaySongMsForFrame(int frame);
 
+// ── M4 GAP 1 — boot RNG seed re-seed ─────────────────────────────────────────
+// The engine's global gRand is boot-seeded from wall-clock time (System.cpp
+// HX_NATIVE SeedRand), so its consumers (InterstitialMgr venue-cut selection,
+// etc.) diverge run-to-run -> recorded nav != replayed nav. On replay the boot
+// path asks RB3ReplaySeed for the RECORDED seed (captured from the trace hdr's
+// `seed` field) and feeds it to SeedRand instead of the live time, so every
+// gRand consumer reproduces. This SELF-ARMS replay (idempotently calls
+// RB3ReplayInit) because it runs during boot, before the lazy JoypadPoll init.
+//
+// Returns true + writes *out iff the loaded trace carried a `seed` (a replay run
+// of a seed-bearing trace); false otherwise (no replay, or an older trace with no
+// seed) -> the boot path keeps its live time-derived seed.
+bool RB3ReplaySeed(int *out);
+
+// ── M4 GAP 2 — run-aid (autohit/nofail) re-application ───────────────────────
+// The recorded run aids are out-of-band (HTTP verb / script), NOT replayable `in`
+// edges, so replay must re-apply them itself. The recorder emitted each as a
+// one-shot mark{tag:"aid",note:<name>} at the frame it was applied. The native
+// game-input poll calls RB3ReplayPendingAids(frame, ...) each frame to collect
+// the aids whose recorded frame has been reached (and not yet re-applied this
+// run), then re-applies each via the same ExecAutohit/ExecNoFail path the live
+// HTTP verb drives — reproducing the autoplay -> same gem hits -> same score.
+//
+// Fills outAids[0..n) with up to maxAids aid-name C-strings (owned by the replay
+// table; valid for the process lifetime) that just became due, marks them applied
+// (one-shot), and returns n. Cheap no-op (returns 0) when the trace has no aids.
+int  RB3ReplayPendingAids(int frame, const char **outAids, int maxAids);
+
+// Latch a pending aid as APPLIED once it actually took effect (one-shot). The
+// caller calls this only after the re-apply confirmed success (e.g. ExecAutohit
+// armed >=1 player); an aid that no-ops on an early frame (players not ready yet)
+// stays pending and is re-offered next frame until it lands. Idempotent.
+void RB3ReplayMarkAidApplied(const char *aid);
+
+// True iff the loaded trace carried at least one run-aid marker. Lets the poll
+// skip the per-frame check entirely for aid-free traces.
+bool RB3ReplayHasAids();
+
 #endif // HX_NATIVE
 #endif // RB3_REPLAY_H

@@ -150,6 +150,30 @@ void RB3RecordCheckpoint(const char *scr, const char *focus,
                          long scoreSum, const int *scores, int nScores,
                          int nPlayers, int pct);
 
+// M4 (Tier-2) GAP 1 — RNG seed capture. The engine's global RNG `gRand`
+// (src/system/math/Rand.cpp) is boot-seeded with a time-derived scalar
+// (System.cpp HX_NATIVE branch: SeedRand(dt.mSec + dt.mMin*60 + dt.mHour*3600)).
+// That single scalar drives every RandomInt consumer (e.g. InterstitialMgr's
+// venue-cut mRandomSelection), so two runs pick different cuts -> nav diverges.
+// The boot path calls RB3TraceSetSeed(seed) at the exact SeedRand site to stamp
+// the seed into the trace HEADER (`seed` field). On replay the same seam re-seeds
+// gRand with the captured value BEFORE the first RandomInt (see rb3_replay.h
+// RB3ReplaySeed), making gRand consumers reproduce. Emitting `seed` is additive
+// (does NOT bump hdr.v). Call it BEFORE the first recorded event so the lazily-
+// written hdr carries it (RB3TraceInit no longer eagerly writes the hdr).
+void RB3TraceSetSeed(int seed);
+
+// M4 (Tier-2) GAP 2 — run-aid capture. The run aids (autohit/nofail) are toggled
+// OUT OF BAND — via the HTTP /api/input verb or the RB3_GAME_INPUT script, NOT a
+// replayable `in` edge — so a recorded session whose score came from autoplay
+// would replay to score 0 (the autohit never re-fires). Call this the instant an
+// aid is applied (ExecAutohit/ExecNoFail) with aid ∈ {"autohit","nofail"}: it
+// emits a one-shot replayable mark{tag:"aid",note:<aid>} at the current frame +
+// folds the aid into hdr.flags.aids. On replay (rb3_replay.cpp) the same aid is
+// re-applied at that frame so the autoplay reproduces -> same gem hits -> same
+// score. De-duped per aid (a re-applied aid records once).
+void RB3TraceRecordAid(const char *aid);
+
 // Set the current song-ms (D2 §4.5). Frame/input (and all) events pick this up
 // for the envelope `sm`, which is emitted only when ms >= 0 (menus pass < 0 to
 // omit `sm` entirely). Wave 2 wires the real GetBeatMaster()->GetAudio()->

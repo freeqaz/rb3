@@ -707,16 +707,27 @@ static int RunGame(int argc, char **argv) {
 
     // SESSION-TELEMETRY: arm the recorder (RB3_SESSION_TRACE / RB3_FRAME_TRACE)
     // before the App ctor so a native run gets boot marks. Native has no web
-    // BootMark(); these two marks (engine_init_done = everything up to the ctor,
-    // appctor_done = after the ctor's *::Init cluster + TheUI.Init) give the
-    // headless trace a `boot` timeline. Idempotent (the frame tap re-calls it).
+    // BootMark(); these two marks (engine_init_done = everything up to/through the
+    // ctor's SystemInit, appctor_done = after the ctor's *::Init cluster +
+    // TheUI.Init) give the headless trace a `boot` timeline. Idempotent (the frame
+    // tap re-calls it).
+    //
+    // M4 GAP 1 ORDERING: RB3TraceInit no longer eagerly writes the hdr — the hdr
+    // is flushed lazily on the FIRST recorded event. The boot RNG seed is set by
+    // SeedRand deep in the App ctor's SystemInit (RB3TraceSetSeed), AFTER this
+    // RB3TraceInit. So the first boot mark MUST come AFTER the ctor, otherwise the
+    // hdr would be written before the seed is known and lose the `seed` field.
+    // Hence engine_init_done is recorded post-ctor (it still measures boot-to-ctor
+    // wall time via the recorder's monotonic clock, just flushed a moment later).
     RB3TraceInit();
-    RB3RecordBootMark("engine_init_done");
 
     printf("rb3-native: RB3_GAME — constructing App...\n");
     App app(argc, argv);
     printf("rb3-native: RB3_GAME — App constructed; calling Run()...\n");
 
+    // First recorded events — flush the hdr (now carrying the seed set during the
+    // ctor's SystemInit) + the boot marks.
+    RB3RecordBootMark("engine_init_done");
     RB3RecordBootMark("appctor_done");
     // Register the nav sink now that TheBandUI (the real TheUI) exists, so the
     // earliest screen transitions are captured. Idempotent + no-op when tracing
