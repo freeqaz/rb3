@@ -60,6 +60,15 @@ __hmx_rndsynth_noop_stub:
     .set TheUI, __hmx_rndsynth_noop_stub
     .weak TheWiiRnd
     .set TheWiiRnd, __hmx_rndsynth_noop_stub
+    # _Z14CleanupGpuMeshP7RndMesh (CleanupGpuMesh): no-op for the RB3 backend.
+    # RndMesh::~RndMesh (HX_NATIVE, Mesh.cpp:353) calls it on every mesh
+    # destruction, but the RB3 GPU backend (Rnd_Wgpu_RB3.cpp::DrawMesh) creates
+    # its vbuf/ibuf FRESH PER DRAW as scope-local wgpu::Buffer RAII handles —
+    # there is NO per-mesh GPU cache (no sMeshGpu) to release, so nothing to
+    # clean. (DC3's MeshGpuCache.cpp DOES cache per-mesh + needs cleanup, but it
+    # is in the `dc3` backend group, not built for RB3.) If RB3 ever adds a
+    # per-mesh GPU buffer cache, give it a strong CleanupGpuMesh in the RB3
+    # backend and remove this stub.
     .weak _Z14CleanupGpuMeshP7RndMesh
     .set _Z14CleanupGpuMeshP7RndMesh, __hmx_rndsynth_noop_stub
     # _Z17CreateNativeSynthv (CreateNativeSynth) now strongly defined in
