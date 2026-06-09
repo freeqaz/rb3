@@ -150,20 +150,29 @@ serving pre-enrichment decompilations. **Clear `cache.db` (service stopped) afte
 any enrichment** for the changes to show via `analyze-function`. (Fork TODO:
 invalidate the cache on program-modification, or add a clear-cache MCP tool.)
 
-### Version Tracking — the remaining increment (global var TYPES + comments)
+### Version Tracking — global var TYPES + comments (supported headless path)
 
-`tools/ghidra/version_track.py` drives VT's `SymbolNameProgramCorrelator` to port
-markup (it's a superset of the signature port: also global-variable *types*,
-labels, comments) with `FunctionNameMarkupType` excluded to keep our mangled names.
-**Caveat: hand-rolled headless VT hits a `LockException` at `VTSessionDB`
-construction** (`addSynchronizedDomainObject` wants exclusive control of the dest
-program, which the `GhidraProject.openProgram` consumer model doesn't give). The
-**supported** headless path is `support/analyzeHeadless <proj> RB3 -process
-bank8_target… -postScript <opts-with-FUNCTION_NAME=EXCLUDE> -postScript
-AutoVersionTrackingScript.java "/vt" "b5_to_b8" "/band_r_wii…"` (see GH discussion
-#5362 re: the `ServiceProviderStub` the GUI task expects). The signature port +
-SDA fix already deliver typed params + named globals; VT adds global var *types* and
-ported comments on top.
+VT ports markup from Bank 5 → Bank 8 — a superset of the signature port: also
+global-variable *types*, labels, and comments — with `FunctionNameMarkupType`
+excluded to keep our mangled names.
+
+Hand-rolling the session in pyghidra does **not** work headless: `VTSessionDB`
+construction throws `LockException` at `addSynchronizedDomainObject` (it wants
+exclusive control of the dest program, which the `GhidraProject.openProgram`
+consumer model doesn't grant — cf. GH discussion #5362). The **supported** path is
+`analyzeHeadless`, which runs `AutoVersionTrackingTask` inside a headless tool that
+supplies the `ServiceProvider` the task expects. Wrapped up as:
+```
+tools/ghidra/pyghidra-service.sh stop
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk tools/ghidra/run_version_tracking.sh
+# auto-detects program names; SetRB3VTOptionsScript sets FUNCTION_NAME=EXCLUDE +
+# the correlators; RB3AutoVersionTrackingScript runs the task. Then:
+rm -f rb3/cache.db   # bust the stale decompile cache (see SDA gotcha above)
+tools/ghidra/pyghidra-service.sh start
+```
+GOTCHA: the Ghidra domain-file session name can't contain `>` (use `_`). Run with
+JDK 21 (Ghidra 12.1). The signature port + SDA fix already deliver typed params +
+named globals; VT layers global-var *types* + comments on top.
 
 ## Method (reproducible)
 
