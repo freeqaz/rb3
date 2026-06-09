@@ -622,3 +622,44 @@
         }
     })();
 })();
+
+// ─── SESSION-TELEMETRY TIER-1 REPLAY (web source) ────────────────────────────
+// When the URL carries ?replay=<sid>, fetch the recorded session's NDJSON from
+// GET /api/telemetry/<sid> (the server-side fetch-back, reconstructed from the
+// SQLite `events` log) into window.__rb3ReplayData BEFORE the wasm reads it.
+// rb3_replay.cpp's RB3ReplayInit() (called from the JoypadPoll hook, lazily) then
+// reads this string via EM_ASM and parses the `in` events into its frame->bits
+// table — identical data shape to the native RB3_REPLAY=<file> path.
+//
+// This is best-effort + compile-guarded; BROWSER RUN-VERIFICATION IS DEFERRED
+// (no web build this wave). It only arms when ?replay= is present, so a normal
+// web session is unaffected. The fetch is fire-and-forget: it kicks off at
+// page-load and resolves into __rb3ReplayData well before boot reaches the first
+// JoypadPoll. If it is still pending at first poll, replay simply stays inactive
+// that run (RB3ReplayInit is once-only) — acceptable for v1 / deferred verify.
+(function() {
+    try {
+        var m = /[?&]replay=([^&]+)/.exec(location.search || '');
+        if (!m) return;
+        var sid = decodeURIComponent(m[1]);
+        if (!sid) return;
+        window.__rb3ReplayData = '';   // present-but-empty until the fetch lands
+        var url = '/api/telemetry/' + encodeURIComponent(sid);
+        fetch(url, { method: 'GET', headers: { 'Accept': 'application/x-ndjson' } })
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function(text) {
+                window.__rb3ReplayData = text || '';
+                var lines = (text ? text.split('\n').length : 0);
+                console.log('[rb3-replay] loaded session ' + sid + ' (' +
+                    lines + ' lines) into window.__rb3ReplayData');
+            })
+            .catch(function(e) {
+                console.warn('[rb3-replay] fetch of ' + url + ' failed: ' + e);
+            });
+    } catch (e) {
+        console.warn('[rb3-replay] setup failed: ' + e);
+    }
+})();

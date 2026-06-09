@@ -499,6 +499,15 @@ add_executable(rb3-native
     # avoids. The frame/input/boot taps are inline edits at App::RunOneFrame /
     # JoypadPoll / BootMark; this TU owns only the nav sink + song-ms chain.
     ${CMAKE_SOURCE_DIR}/src/rb3_trace_taps.cpp
+    # Session telemetry TIER-1 REPLAY: loads a recorded trace's `in` events into
+    # an ordered (frame, bits) carry-forward table (RB3_REPLAY=<path> on native;
+    # ?replay=<sid> -> window.__rb3ReplayData on web). The JoypadPoll hook in
+    # rb3_joypad_native.cpp asks RB3ReplayBitsForFrame(gRB3TraceFrame) for the held
+    # bitmask each poll and re-drives SendButtonMessages — the SAME chokepoint the
+    # `in` recorder tap fires on (the verb layer bypasses it), so the replayed
+    # input is re-recorded for a record->replay->compare round-trip. See
+    # docs/native/SESSION_TELEMETRY_DESIGN.md §8 "Tier 1".
+    ${CMAKE_SOURCE_DIR}/src/rb3_replay.cpp
     # REAL live input: keyboard (+ USB gamepad) -> JoypadData -> SendButtonMessages.
     # Strong JoypadInit/Poll/Reset/Terminate defs override the weak no-op stubs in
     # dta_link_stubs.s; SystemPoll(false) -> JoypadPoll() (System.cpp:673) drives it

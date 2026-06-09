@@ -58,6 +58,14 @@ void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
 extern int gFrameTraceLoaderAdds;
 extern int gFrameTraceStreamOpens;
 
+// ---- Tier-1 replay API under test (rb3_replay.cpp) ------------------------
+// RB3ReplayInit parses RB3_REPLAY=<path> into an ordered (frame,bits) table;
+// RB3ReplayBitsForFrame is the carry-forward lookup the JoypadPoll hook drives.
+void         RB3ReplayInit();
+bool         RB3ReplayActive();
+unsigned int RB3ReplayBitsForFrame(int frame);
+int          RB3ReplayLastFrame();
+
 // ===========================================================================
 // Minimal NDJSON test harness — strict-enough to prove the wire contract
 // without a JSON library. Each line is validated brace/string-balanced and
@@ -559,4 +567,66 @@ TEST_F(SessionTrace, SongStringsEscaped) {
     std::string id = GetRaw(s, "id");
     EXPECT_NE(id.find("\\n"), std::string::npos) << "newline escaped: " << id;
     EXPECT_NE(id.find("\\\""), std::string::npos) << "quote escaped: " << id;
+}
+
+// ---------------------------------------------------------------------------
+// (13) Tier-1 REPLAY carry-forward semantics (rb3_replay.cpp).
+//
+// Write a tiny `in`-trace fixture with two edges at KNOWN frames, point
+// RB3_REPLAY at it, arm replay (RB3ReplayInit), and assert RB3ReplayBitsForFrame
+// is the edge-only carry-forward the JoypadPoll hook re-drives:
+//   - 0 before the first edge,
+//   - the edge's `b` AT and AFTER its frame,
+//   - HELD until the next edge supersedes it (and held forever past the last).
+// The fixture mirrors the live recorder's `in` line shape exactly
+// ("k":"in", "f":<frame>, "b":<bits>), with non-`in` and comment lines mixed in
+// to prove the tolerant scanner skips them.
+//
+// NB: RB3ReplayInit is idempotent (it latches on first call) and is otherwise
+// only invoked from JoypadPoll, which these recorder-core tests never reach — so
+// this is the single, first, and only caller in the process. It is registered
+// AFTER the SessionTrace fixture tests, but it does not depend on the fixture
+// (it owns its own temp file + env), so ordering is irrelevant.
+// ---------------------------------------------------------------------------
+TEST(SessionReplay, BitsForFrameCarryForward) {
+    // Build the fixture path next to the other temp traces (absolute, chdir-safe).
+    std::string path = kAbsTempBase + "rb3_replay_test_" +
+                       std::to_string((long)getpid()) + ".jsonl";
+    std::remove(path.c_str());
+
+    // Two edges: bits 0x40 held from frame 10, bits 0x1000 held from frame 20.
+    // Interleave a hdr, a non-`in` row, a comment, and a blank to exercise the
+    // tolerant line scanner (it must ingest ONLY the two `in` rows).
+    {
+        std::ofstream f(path.c_str());
+        f << "{\"k\":\"hdr\",\"v\":1,\"sid\":\"deadbeefdeadbeef\",\"platform\":\"native\"}\n";
+        f << "# a comment line the scanner must skip\n";
+        f << "{\"t\":100.0,\"f\":5,\"cs\":1,\"k\":\"nav\",\"from\":\"a\",\"to\":\"b\"}\n";
+        f << "{\"t\":200.0,\"f\":10,\"cs\":2,\"k\":\"in\",\"pad\":0,\"b\":64,\"dn\":64,\"up\":0}\n";
+        f << "\n";  // blank line
+        f << "{\"t\":400.0,\"f\":20,\"cs\":3,\"k\":\"in\",\"pad\":0,\"b\":4096,\"dn\":4096,\"up\":64}\n";
+        f.close();
+    }
+
+    setenv("RB3_REPLAY", path.c_str(), 1);
+    RB3ReplayInit();   // idempotent; first + only caller in this process
+    EXPECT_TRUE(RB3ReplayActive()) << "two `in` edges must arm replay";
+    EXPECT_EQ(RB3ReplayLastFrame(), 20) << "lastFrame is the last `in` edge's f";
+
+    // Before the first edge -> 0 (default carry-forward base).
+    EXPECT_EQ(RB3ReplayBitsForFrame(0), 0u);
+    EXPECT_EQ(RB3ReplayBitsForFrame(9), 0u) << "frame just before first edge holds 0";
+
+    // AT and AFTER the first edge -> 0x40, held until the next edge's frame.
+    EXPECT_EQ(RB3ReplayBitsForFrame(10), 0x40u) << "edge applies AT its own frame";
+    EXPECT_EQ(RB3ReplayBitsForFrame(11), 0x40u) << "held forward";
+    EXPECT_EQ(RB3ReplayBitsForFrame(19), 0x40u) << "held right up to the next edge";
+
+    // AT and AFTER the second edge -> 0x1000, held forever past the last edge.
+    EXPECT_EQ(RB3ReplayBitsForFrame(20), 0x1000u) << "second edge supersedes at its frame";
+    EXPECT_EQ(RB3ReplayBitsForFrame(21), 0x1000u) << "held forward";
+    EXPECT_EQ(RB3ReplayBitsForFrame(100000), 0x1000u) << "last edge holds indefinitely";
+
+    unsetenv("RB3_REPLAY");
+    std::remove(path.c_str());
 }

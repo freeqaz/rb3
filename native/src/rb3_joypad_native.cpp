@@ -99,6 +99,7 @@
 #include "game/BandUserMgr.h"
 #include "game/Defines.h"   // ControllerType / kControllerGuitar
 #include "rb3_session_trace.h" // RB3RecordInput (session-telemetry input tap)
+#include "rb3_replay.h"        // Tier-1 replay: override live input from a trace
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/em_asm.h>
@@ -387,6 +388,44 @@ void JoypadPoll() {
         EnsurePad0Wired();
         if (!d->mConnected)
             return;
+    }
+
+    // ── TIER-1 REPLAY ────────────────────────────────────────────────────────
+    // When RB3_REPLAY=<trace.jsonl> (native) or ?replay=<sid> (web) is set, drive
+    // the joypad from the RECORDED input timeline instead of the live keyboard /
+    // USB gamepad / pad-queue. The held bitmask at this frame is the carry-forward
+    // of the trace's edge-only `in` events; we re-assert it through the SAME
+    // SendButtonMessages chokepoint a live press uses, so it re-derives the down/up
+    // edges internally AND the recorder tap re-records the replayed input as fresh
+    // `in` rows (that record->replay->compare round-trip is the Tier-1 bar). We
+    // read gRB3TraceFrame — set by the frame tap at App::RunOneFrame entry BEFORE
+    // SystemPoll->JoypadPoll runs this poll — so the frame index is current.
+    //
+    // Init is lazy + once (RB3ReplayInit is idempotent), invoked here so no
+    // App.cpp/main edit is needed; it parses the trace the first time JoypadPoll
+    // runs (after RB3_DATA chdir, so a relative RB3_REPLAY path resolves) and is a
+    // cheap no-op thereafter. RB3ReplayActive() stays false unless replay is armed,
+    // so a normal run is unaffected (one predicted branch).
+    {
+        static bool sReplayInit = false;
+        if (!sReplayInit) {
+            sReplayInit = true;
+            RB3ReplayInit();
+        }
+        if (RB3ReplayActive()) {
+            unsigned int rbits = RB3ReplayBitsForFrame(gRB3TraceFrame);
+            // Re-record the replayed edge (edge-only inside RB3RecordInput) so the
+            // replay's own trace reproduces the `in` rows for the compare step.
+            // Skip the leading all-zero polls before the first recorded press: the
+            // live recording never emits a leading 0-edge (its first poll bits==prev==0
+            // coalesces), so suppressing it here makes the replay in-stream byte-match
+            // the recording (trace-diff exit 0), not carry one spurious f=0/b=0 row.
+            static bool sReplayStarted = false;
+            if (rbits != 0u) sReplayStarted = true;
+            if (sReplayStarted) RB3JoypadTraceInput(rbits, 0.0f);
+            SendButtonMessages(0, rbits);
+            return;  // ignore live keyboard / gamepad / harness injectors
+        }
     }
 
     unsigned int btns = 0;
