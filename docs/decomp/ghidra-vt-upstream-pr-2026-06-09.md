@@ -32,8 +32,10 @@ See also: [ghidra-vt-handoff-2026-06-09.md](ghidra-vt-handoff-2026-06-09.md),
   re-check time) → exit 0, for the final state of all three branches **and** for PR 2's
   intermediate commit (`369a37441f`) so the branch is bisectable. The single "uses or overrides
   a deprecated API" note also fires on the **stock** `nsa/master` version of the correlator file
-  (pre-existing, not introduced). A full `gradle prepDev` build and the VT test suite were *not*
-  run (the machine is in use by concurrent agents); see the pre-submission checklist.
+  (pre-existing, not introduced). A full `gradle prepDev` build was *not* run (the machine is
+  in use by concurrent agents); see the pre-submission checklist. **The test suites have since
+  been run (2026-06-09): `:VersionTracking:test` 63/63, `:Generic:test` 551/552 with the one
+  failure verified pre-existing on stock base — see "Test-suite run results (2026-06-09)".**
 
 ## CONTRIBUTING.md requirements (digest)
 
@@ -182,9 +184,13 @@ a stock Ghidra 12.1.2 runtime: duplicate phase 2,487 ms → 164 ms on the same i
 ### Test plan
 
 - Done: targeted `javac` compile check of the patched file against a built runtime classpath
-  (exit 0; the only compiler note is pre-existing). The full `:VersionTracking:test` suite is
-  queued to run before submission (a gated pre-submission task exists for it) — it has **not**
-  been run on this branch yet and the PR must not claim otherwise until it has.
+  (exit 0; the only compiler note is pre-existing).
+- **Done (2026-06-09): `gradle :VersionTracking:test` — 63/63 pass** (all 8 concrete unit-test
+  classes), including `VTAssociationDBTest` **19/19** — the patched class's direct unit test
+  (`testGetRelatedAssociations` et al. build the related-association sets that exercise the new
+  `equals`/`hashCode`). Run on the combined branch `vt-perf-fixes` (file contents verified
+  identical to this branch's layout). Full environment + triage in
+  "Test-suite run results (2026-06-09)" below.
 - Benchmark above (synthetic duplicate-group generator + `AutoVersionTrackingTask` run) —
   unpatched vs patched timing, identical resulting match/association sets.
 - Full `AutoVersionTrackingTask` run on a real 40k×40k-function program pair: identical applied
@@ -315,10 +321,21 @@ Without this commit the parallelization would be a memory regression, so the two
 
 - Done: targeted `javac` compile check of the patched file (final state **and** the
   intermediate commit) against a built runtime classpath (exit 0; the only compiler note is
-  pre-existing on stock `nsa/master`). The full `:VersionTracking:test` suite (plus
-  `:Generic:test` for the `ConcurrentQ`-adjacent usage) is queued to run before submission (a
-  gated pre-submission task exists for it) — it has **not** been run on this branch yet and the
-  PR must not claim otherwise until it has.
+  pre-existing on stock `nsa/master`).
+- **Done (2026-06-09): `gradle :VersionTracking:test` — 63/63 pass; `:Generic:test` — 551/552
+  pass.** The one `:Generic:test` failure
+  (`ghidra.util.classfinder.ClassSearcherTest.testForNameSafeNoClinit`) is **pre-existing**:
+  it fails identically on a clean checkout of stock base `430465776d` in the same environment
+  (JDK-26 static-initializer behavior; package unrelated to this patch).
+  `generic.concurrent.ConcurrentQTest` **19/19** and `ConcurrentGraphQTest` **1/1** pass.
+- **Not runnable here:** the `test.slow` correlator integration tests
+  (`:VersionTracking:integrationTest` — `VTFunctionReferenceCorrelator_*`,
+  `VTDataReferenceCorrelator_*`, `VTCombinedFunctionDataReferenceCorrelator_*`,
+  `VTAutoVersionTrackingTest`) require `.gzf` test programs
+  (`VersionTracking/WallaceSrc.gzf`, `WallaceVersion2.gzf`, `helloWorld32/64.gzf`) from the
+  **non-public** `Ghidra/Test/TestResources/data` directory — all 40 fail in setup with
+  missing-test-data NPEs, **identically on stock base** (verified). Upstream CI must run these;
+  external contributors cannot. Details in "Test-suite run results (2026-06-09)" below.
 - Serial-vs-parallel A/B digest equality + 3-run determinism (harness described above).
 - Negative control for the memory bound: unchunked variant OOMs a 2G heap; chunked does not,
   same inputs.
@@ -343,10 +360,14 @@ Without this commit the parallelization would be a memory regression, so the two
       commits to one** per CONTRIBUTING, titled `#NNNN: <description>` (the amended messages are
       written so the squash message can be assembled from them; keep the corrected
       monitor/digest wording, not the old "byte-identical" claim).
-- [ ] **Run the VT test suite** (`:VersionTracking:test`, plus `:Generic:test` for the
-      ConcurrentQ-adjacent change) on the branch **before** opening the PRs — the PR bodies'
-      test plans now explicitly say this is queued, not done; flip that wording once it has run.
-      This is the gated task the bodies reference.
+- [x] **Run the VT test suite** (`:VersionTracking:test`, plus `:Generic:test` for the
+      ConcurrentQ-adjacent change) — **done 2026-06-09** on `vt-perf-fixes` in
+      `/tmp/claude/ghidra-vt-pr`: VT 63/63 pass, Generic 551/552 pass (the 1 failure is
+      pre-existing on stock base `430465776d`, verified — see "Test-suite run results" below).
+      The PR bodies' test-plan wording has been flipped accordingly. **Residual gap:** the
+      `test.slow` correlator integration tests need the non-public
+      `Ghidra/Test/TestResources/data` `.gzf` programs and cannot run outside NSA/upstream CI
+      (40/40 fail identically on stock base); upstream CI will cover them on PR submission.
 - [ ] **Full build verification** upstream expects: `gradle -I gradle/support/fetchDependencies.gradle`
       + `gradle prepDev` + a module build in a clean clone of the branch (our check was
       javac-against-runtime-classpath only; do NOT gradle-build the main fork tree while the
@@ -363,6 +384,48 @@ Without this commit the parallelization would be a memory regression, so the two
       (CONTRIBUTING forbids self-generated binaries, but these are source scripts).
 - [ ] After upstreaming, the local `/opt` deploy story is unchanged (see
       [ghidra-vt-handoff-2026-06-09.md](ghidra-vt-handoff-2026-06-09.md) — 12.1.2 ABI gotcha).
+
+---
+
+## Test-suite run results (2026-06-09)
+
+Run in the PR worktree `/tmp/claude/ghidra-vt-pr` on branch `vt-perf-fixes`
+(= base `430465776d` + `fb3a5e94f3`/`67c4040982`/`670d599c59`; testing it covers both PR
+layouts since the file contents were verified identical across branches).
+
+**Environment:** OpenJDK 26.0.1 (`JAVA_HOME=/usr/lib/jvm/java-26-openjdk`; repo requires 21+,
+Gradle accepts 26); host Gradle 9.5.1 (the repo's `gradlew` wrapper jar is only installed by
+`fetchDependencies`, not present); `dependencies/` symlinked from the previously-fetched main
+checkout (`ln -s /home/free/code/milohax/ghidra/dependencies`); `xvfb-run -a` (Ghidra test JVMs
+set `-Djava.awt.headless=false`, no host DISPLAY); `--max-workers=4` (concurrent jobs on the
+machine). Note: Ghidra's test tasks set `ignoreFailures=true`, so `BUILD SUCCESSFUL` does not
+imply tests passed — counts below are aggregated from the JUnit XML reports.
+
+| Task | Result | Notes |
+|---|---|---|
+| `:Generic:test` | **551/552 pass** (78 classes, 0 errors, 0 skipped) | 1 failure, pre-existing (below). `generic.concurrent.ConcurrentQTest` 19/19, `ConcurrentGraphQTest` 1/1 — the `ConcurrentQ` machinery PR 2 builds on. |
+| `:VersionTracking:test` | **63/63 pass** (8 classes — all concrete unit-test classes in `src/test`) | Includes `VTAssociationDBTest` 19/19, the patched `VTAssociationDB`'s direct test (related-association set building exercises the new `equals`/`hashCode`). |
+| `:VersionTracking:integrationTest` (filtered: `*Correlator*` + `VTAutoVersionTrackingTest`) | **40/40 fail — environmental, NOT introduced** | All fail in setup (NPE on null `Program`) because the required `.gzf` test programs are absent from the public repo (below). |
+
+**Failure triage (both verified against a detached base worktree of stock `nsa/master`
+`430465776d` at `/tmp/claude/ghidra-vt-base`, same environment, same commands):**
+
+1. `ghidra.util.classfinder.ClassSearcherTest.testForNameSafeNoClinit`
+   (`expected:<ALIVE> but was:<DEAD>`) — **pre-existing.** Fails identically on stock base.
+   The test asserts `ClassSearcher.forNameSafe` triggers no static initializers; under JDK
+   26.0.1 the canary's `<clinit>` runs early. Unrelated package; our patches touch only
+   `Ghidra/Features/VersionTracking` and `Generic` has no dependency on it.
+2. VT `test.slow` integration tests (17 `VTAutoVersionTrackingTest` + 23 correlator-provider
+   tests) — **pre-existing/environmental.** Every failure is a setup NPE preceded by
+   `Test data file not found: VersionTracking/WallaceSrc.gzf|WallaceVersion2.gzf|`
+   `helloWorld32.gzf|helloWorld64.gzf` (128 such warnings): `Ghidra/Test/TestResources` in the
+   public repo has no `data/` directory — the binary test programs are not publicly
+   distributed. Base run: identical 40/40 failures, identical 128 warnings. These are the
+   tests that directly exercise `VTAbstractReferenceProgramCorrelator`; they can only run in
+   upstream CI / NSA-internal environments with the test-data repo present.
+
+**Net: zero failures introduced by the patches.** Every test that can run in a public clone
+passes; both observed failure groups reproduce bit-identically on the unpatched base.
 
 ---
 
