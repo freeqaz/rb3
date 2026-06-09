@@ -14,8 +14,9 @@
 // path). The boot machine forks on `?milo=` at BOOT_ENGINE_INIT:
 //
 //   ── shared ──
-//   BOOT_INIT          → WebAssetsInit + WebAssetsFetchBundle
-//   BOOT_FETCHING      → poll WebAssetsAllDone
+//   BOOT_INIT          → WebAssetsInit + WebAssetsFetchBundle (config .dta/.dtb)
+//                        + WebAssetsFetchBundle("/api/bundle/boot") (R3 boot milos)
+//   BOOT_FETCHING      → poll WebAssetsAllDone (waits for BOTH bundles)
 //   BOOT_ENGINE_INIT   → chdir(/data) + platform=XBox + settings;
 //                        HARNESS mode also runs SystemPreInit/SystemInit +
 //                        RegisterCommonFactories + PreInitRender here (the App
@@ -171,6 +172,10 @@ static void ApplyUrlLoaderEnv() {
         {"loaderYieldMs", "RB3_LOADER_YIELD_MS"},
         {"loaderBudgetMs", "RB3_LOADER_BUDGET_MS"},
         {"frameInstrument", "RB3_FRAME_INSTRUMENT"},
+        // R3 — opt out of the eager boot-milo bundle so the netperf A/B can
+        // measure the boot with/without it (control = the old sync-XHR path).
+        // ?bootBundle=0 -> RB3_BOOT_BUNDLE_OFF=0 (any value present disables).
+        {"bootBundle", "RB3_BOOT_BUNDLE_OFF"},
     };
     for (auto &p : kPairs) {
         char *v = (char *)EM_ASM_PTR({
@@ -192,12 +197,58 @@ static void ApplyUrlLoaderEnv() {
     }
 }
 
+// True once rb3_pre.js's IndexedDB pre-warm has finished loading (or decided to
+// skip). Until then the warm-boot gate can't tell warm from cold, so BOOT waits
+// a bounded number of ticks for this before deciding the boot bundle.
+static bool IdbReady() {
+    return EM_ASM_INT({ return window.__rb3IdbReady ? 1 : 0; }) != 0;
+}
+
+// R3 / W4b warm-boot gate. Returns true iff the boot-critical .milo_xbox set is
+// already resident in the IndexedDB warm cache (window.__rb3IdbCache, pre-warmed
+// by rb3_pre.js and written through on a prior boot by onBundleSuccess's
+// bundleCacheWriteThrough). When true, BOOT_DECIDE_BOOT_BUNDLE skips the
+// /api/bundle/boot re-download and the App ctor's per-file opens serve from IDB
+// via native_file.cpp's cacheTryHit() — zero network for the boot set on warm
+// boots.
+//
+// We probe a few of the LARGEST boot milos (the dominant cold-boot offenders); if
+// they're all present the cache is populated for this asset version (rb3_pre.js
+// version-pins + clears the store on an asset/wasm change, so a stale partial set
+// can't be present). On a cold boot (empty/not-yet-ready IDB) this returns false
+// and the bundle fetch fires as normal. The keys are the server-relative paths —
+// the exact cache keys both the bundle write-back and the sync path derive.
+static bool BootSetAlreadyCached() {
+    // NOTE: the JS body is a SINGLE EM_ASM_INT argument, so it must contain no
+    // top-level commas (the C preprocessor splits macro args on commas even
+    // inside JS [..] brackets). The sentinel list is therefore a '|'-delimited
+    // string split at runtime, not a comma array literal.
+    return EM_ASM_INT({
+        try {
+            if (!window.__rb3IdbReady) return 0;       // pre-warm not done → cold
+            var c = window.__rb3IdbCache;
+            if (!c || c.size === 0) return 0;
+            // Sentinels: the heaviest boot milos. If these are resident, the boot
+            // bundle was written through on a prior boot for this asset version.
+            var keys = ('ui/track/gen/track_shared.milo_xbox'
+                + '|ui/track/gen/trackpanel.milo_xbox'
+                + '|ui/overshell/gen/overshell_player_common.milo_xbox'
+                + '|sfx/gen/common_bank.milo_xbox').split('|');
+            for (var i = 0; i < keys.length; i++) {
+                if (!c.has(keys[i])) return 0;
+            }
+            return 1;
+        } catch (e) { return 0; }
+    });
+}
+
 // ============================================================================
 // Boot state machine
 // ============================================================================
 
 enum BootState {
     BOOT_INIT,
+    BOOT_DECIDE_BOOT_BUNDLE,  // R3: wait (bounded) for IDB readiness, then warm-gate the boot bundle
     BOOT_FETCHING,
     BOOT_ENGINE_INIT,
     BOOT_GPU_WAIT,
@@ -214,6 +265,7 @@ enum BootState {
 static BootState sBootState = BOOT_INIT;
 static int sFrameCount = 0;
 static int sGpuWaitFrames = 0;
+static int sIdbWaitFrames = 0;  // R3: bounded wait for the IDB pre-warm before deciding the boot bundle
 static const int kGpuWaitTimeout = 600;  // ~10s @ 60fps — Dawn adapter can be slow
 static App *sApp = nullptr;
 static bool sHarnessMode = false;       // true iff ?milo= present
@@ -439,9 +491,55 @@ static void mainLoop() {
         BootMark("fetch_start");
         printf("RB3 Web: downloading assets (bundle)...\n");
         WebAssetsInit();
-        WebAssetsFetchBundle();
+        WebAssetsFetchBundle();  // config bundle (.dta/.dtb) — /api/bundle
         // Signal to the loading screen that asset fetch has started.
         EM_ASM({ window.rb3AssetsLoaded = 0; window.rb3AssetsTotal = 0; });
+        // R3 — defer the boot-milo bundle decision one phase so the IDB pre-warm
+        // (rb3_pre.js, racing the wasm download) can finish: the warm-boot gate
+        // needs __rb3IdbReady to tell warm from cold. The config bundle above is
+        // already in flight, so this short bounded wait overlaps it (no time lost
+        // on a cold boot, and it's what lets a warm boot skip the 60 MB bundle).
+        sIdbWaitFrames = 0;
+        sBootState = BOOT_DECIDE_BOOT_BUNDLE;
+        break;
+    }
+
+    case BOOT_DECIDE_BOOT_BUNDLE: {
+        // Fire (or skip) the boot-critical .milo_xbox bundle (/api/bundle/boot).
+        // Both bundles are async and bump the engine's shared sPending counter,
+        // so BOOT_FETCHING's WebAssetsAllDone() gate waits for whichever fire.
+        // With the boot milos resident in MEMFS, the App ctor's sync milo reads
+        // hit warm MEMFS instead of freezing the wasm thread on a per-file
+        // synchronous XHR (the dominant cold-boot stall).
+        //
+        // Wait (bounded, ~0.5s @60fps) for the IDB pre-warm before deciding, so
+        // a warm boot is correctly detected; if it never readies, fall through
+        // and fetch the bundle (cold path — correct, just no warm skip).
+        static const int kIdbWaitTimeout = 30;
+        bool off = getenv("RB3_BOOT_BUNDLE_OFF") != nullptr;
+        if (!off && !IdbReady() && ++sIdbWaitFrames < kIdbWaitTimeout)
+            break;  // keep waiting; config bundle keeps downloading meanwhile
+
+        // Opt out with ?bootBundle=0 (RB3_BOOT_BUNDLE_OFF) for the A/B control.
+        // The boot bundle is ON by default; passing ?bootBundle=0 sets the env
+        // var (ApplyUrlLoaderEnv ran in BOOT_INIT), so its presence == "disable".
+        if (off) {
+            const char *v = getenv("RB3_BOOT_BUNDLE_OFF");
+            printf("RB3 Web: boot-milo bundle DISABLED (RB3_BOOT_BUNDLE_OFF=%s)\n", v ? v : "");
+        } else if (BootSetAlreadyCached()) {
+            // W4b warm-boot: the boot milos are already in the IndexedDB warm
+            // cache (written through on a previous boot by onBundleSuccess's
+            // bundleCacheWriteThrough). Skip the ~60 MB bundle re-download and let
+            // the App ctor's per-file opens hit IDB via native_file.cpp's
+            // cacheTryHit() — zero network for the boot set on repeat boots.
+            // (Design alt (b): gate the bundle when the set is IDB-resident.
+            // (a) write-back makes the set AVAILABLE in IDB; (b) the gate is what
+            // actually prevents the re-download, so both are needed.)
+            printf("RB3 Web: boot-milo set is IDB-resident — skipping bundle (warm boot)\n");
+        } else {
+            printf("RB3 Web: fetching boot-milo bundle (/api/bundle/boot)...\n");
+            WebAssetsFetchBundle("/api/bundle/boot");
+        }
         sBootState = BOOT_FETCHING;
         break;
     }

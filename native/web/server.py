@@ -10,20 +10,35 @@ API endpoints:
   GET /api/version          — asset version tag for IDB cache invalidation
   GET /api/manifest         — JSON list of all available assets
   GET /api/bundle           — single binary bundle of all .dta/.dtb (boot path)
+  GET /api/bundle/boot      — binary bundle of the boot-critical .milo_xbox set
+                              (R3: native/web/boot-assets.manifest)
   GET /api/file/<path>      — raw bytes of an extracted asset file
   GET /                     — index.html (build artifacts)
   GET /rb3-web.{js,wasm}    — WASM build output
 """
 
 import argparse
+import gzip as gzip_mod
 import http.server
 import json
 import os
+import random
+import shutil
+import subprocess
 import sys
 import urllib.parse
 
 PORT = 8421
 BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build")
+# R3 — boot-assets bundle manifest. A newline-delimited, comment-tolerant list of
+# server-relative .milo_xbox paths the App ctor reads before the first interactive
+# screen (see docs/native/web-perf-roadmap/R3-boot-bundle-expansion.md). Served as
+# one async binary bundle by /api/bundle/boot so those reads hit warm MEMFS instead
+# of freezing the wasm thread on a synchronous XHR. Generated, not hand-authored —
+# scripts/web/gen-boot-manifest.mjs derives it from a cold-boot netperf waterfall.
+BOOT_MANIFEST_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "boot-assets.manifest"
+)
 ASSETS_DIR = None  # Set via --assets-dir, RB3_ASSETS env, or auto-detect
 # DTA overlay dir (native/dta/). Mirrors the native disk overlay in
 # native/src/native_file.cpp: when an asset path is shadowed by an overlay
@@ -43,6 +58,41 @@ FALLBACK_ASSETS_DIRS = []
 # and are served on demand here when the web build fetches one via
 # /api/file/sfx/gen/xma_pcm/<hex>.pcm (lazily, one per distinct SFX that plays).
 SIDECAR_DIR = None  # auto-detected (orig-assets/derived/sfx_pcm) or RB3_SFX_PCM_DIR
+
+# R5 — on-demand wire compression for /api/file (see
+# docs/native/web-perf-roadmap/R5-wire-compression.md). The big .milo_xbox
+# assets are fetched via a *synchronous* XHR that freezes the wasm main thread
+# for the whole transfer, so fewer wire bytes = proportionally less freeze.
+# We compress compressible assets on demand with the brotli CLI (gzip fallback),
+# cache the artifact to disk, and serve it via standard Content-Encoding
+# negotiation — the browser decompresses before the engine's XHR sees the bytes,
+# so this is fully transparent to the C++ engine (server.py-only change).
+#
+# Auto-detected at native/web/.cache/encoded/ (env RB3_ENCODE_CACHE,
+# --encode-cache flag). Created on first use.
+ENCODE_CACHE_DIR = None
+ENCODE_ENABLED = True  # --no-encode disables (raw path, for A/B)
+# Compressible asset extensions (scene-graph / DTA / object data). Conservative
+# start with the measured offenders (.milo_xbox + the DTA family). Deny wins
+# over allow. Already-compressed payloads (.mogg/.ogg/DXT textures/webm) gain
+# ~0 and are explicitly denied — the mogg is R4's surface, never touched here.
+COMPRESSIBLE_EXTS = {
+    ".milo_xbox", ".milo", ".milo_ps3", ".milo_wii",
+    ".dta", ".dtb", ".dtb_ps3",
+}
+INCOMPRESSIBLE_EXTS = {
+    ".mogg", ".ogg", ".webm", ".pcm",
+    ".png_xbox", ".bmp_xbox", ".jpg", ".jpeg", ".png", ".gz", ".br",
+}
+# brotli q5 keeps ~90% of q11's win at ~1/100th the CPU (colorpalettes 45.9% vs
+# 40.3%, 0.23s vs 22.1s), and the cost is paid inline on the first (freezing)
+# request — so q5 is the right on-demand default. q11 is reserved for the
+# optional build-time pre-warm. gzip -6 is the fallback level.
+ENCODE_LEVEL_BROTLI = 5
+ENCODE_LEVEL_GZIP = 6
+# Resolved encoder binaries (probed once in main()); None if absent.
+BROTLI_BIN = None
+GZIP_BIN = None
 
 
 class RB3Handler(http.server.SimpleHTTPRequestHandler):
@@ -167,6 +217,131 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
                     break
                 self.wfile.write(chunk)
 
+    def _maybe_compressed_asset(self, full_path, safe_rel, head_only):
+        """R5 — on-demand wire compression for /api/file. If `full_path` is a
+        compressible asset and the client advertises br/gzip, compress it once
+        into ENCODE_CACHE_DIR (atomic temp+rename) and serve the cached artifact
+        with the matching Content-Encoding. Returns True if a response was sent
+        (caller bails), False to fall through to the raw path.
+
+        Transparent to the engine: the browser decompresses Content-Encoding
+        before the wasm XHR/fetch sees the bytes, so the C++ side still receives
+        the original uncompressed milo. See R5-wire-compression.md.
+
+        Bails (→ raw path) for: compression disabled, a Range request (Range ⊕
+        Content-Encoding is invalid), no encoder available, an ext not in the
+        allowlist or in the deny set, or a client that advertised neither br nor
+        gzip. The raw fallback guarantees no regression."""
+        if not (ENCODE_ENABLED and ENCODE_CACHE_DIR):
+            return False
+        if self.headers.get("Range"):
+            return False
+        # Deny wins over allow. Lowercase the extension for the membership test.
+        _root, ext = os.path.splitext(safe_rel)
+        ext = ext.lower()
+        if ext in INCOMPRESSIBLE_EXTS or ext not in COMPRESSIBLE_EXTS:
+            return False
+
+        accept = (self.headers.get("Accept-Encoding") or "").lower()
+        # Prefer brotli over gzip; intersect preference with the client's
+        # Accept-Encoding and with which encoder binaries actually resolved.
+        if "br" in accept and BROTLI_BIN:
+            enc, cache_ext = "br", ".br"
+        elif "gzip" in accept and GZIP_BIN:
+            enc, cache_ext = "gzip", ".gz"
+        else:
+            return False
+
+        cache_path = os.path.join(ENCODE_CACHE_DIR, safe_rel + cache_ext)
+        # mtime/size-keyed staleness: if the cached artifact predates the source
+        # or the source changed, recompress. A sidecar .meta records (size,mtime)
+        # of the source the artifact was built from; cheap stat-and-compare.
+        if not self._encoded_cache_valid(cache_path, full_path):
+            if not self._encode_to_cache(full_path, cache_path, enc):
+                return False  # encode failed → fall through to raw
+        # Final safety: a cache entry must exist and be non-stale now. If a
+        # concurrent purge/race left it missing, fall through to raw rather than
+        # 500.
+        if not os.path.isfile(cache_path):
+            return False
+
+        self._serve_encoded(cache_path, full_path, enc, head_only)
+        return True
+
+    @staticmethod
+    def _encoded_cache_valid(cache_path, src_path):
+        """True if `cache_path` exists and was built from the current `src_path`
+        (size + mtime match the sidecar .meta). Recompress on any drift."""
+        if not os.path.isfile(cache_path):
+            return False
+        meta_path = cache_path + ".meta"
+        try:
+            st = os.stat(src_path)
+            with open(meta_path, "r") as fh:
+                meta = fh.read().strip()
+            return meta == f"{st.st_size}:{int(st.st_mtime)}"
+        except OSError:
+            return False
+
+    def _encode_to_cache(self, src_path, cache_path, enc):
+        """Compress `src_path` into `cache_path` using the brotli/gzip CLI.
+
+        The write is ATOMIC: compress to a unique temp file in the cache dir and
+        os.rename() it onto the final path (atomic on the same filesystem). The
+        server is a ThreadingHTTPServer, so two requests can miss the same asset
+        at once; the rename guarantees a reader never sees a half-written body,
+        and a duplicate compress just loses the rename race harmlessly (both
+        temp files are complete; last writer wins). A sidecar .meta records the
+        source (size,mtime) for staleness checks; it is written the same way.
+
+        Returns True on success, False on any failure (caller falls through to
+        the raw path — no regression)."""
+        cache_dir = os.path.dirname(cache_path)
+        try:
+            os.makedirs(cache_dir, exist_ok=True)
+        except OSError:
+            return False
+
+        tmp_suffix = f".{os.getpid()}.{random.randrange(1 << 32):08x}.tmp"
+        tmp_path = cache_path + tmp_suffix
+        try:
+            if enc == "br":
+                cmd = [BROTLI_BIN, "-q", str(ENCODE_LEVEL_BROTLI),
+                       "-c", src_path]
+            else:  # gzip
+                cmd = [GZIP_BIN, f"-{ENCODE_LEVEL_GZIP}", "-c", src_path]
+            with open(tmp_path, "wb") as out:
+                proc = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE)
+            if proc.returncode != 0:
+                self._unlink_quiet(tmp_path)
+                return False
+            # Capture source identity BEFORE the rename, so the .meta describes
+            # the exact bytes we compressed (not a racing rewrite of the source).
+            st = os.stat(src_path)
+            os.rename(tmp_path, cache_path)
+        except OSError:
+            self._unlink_quiet(tmp_path)
+            return False
+
+        # Best-effort sidecar .meta (also atomic). A missing/failed .meta just
+        # forces a recompress next time — correct, only mildly wasteful.
+        meta_path = cache_path + ".meta"
+        meta_tmp = meta_path + tmp_suffix
+        try:
+            with open(meta_tmp, "w") as fh:
+                fh.write(f"{st.st_size}:{int(st.st_mtime)}")
+            os.rename(meta_tmp, meta_path)
+        except OSError:
+            self._unlink_quiet(meta_tmp)
+        return True
+
+    @staticmethod
+    def _unlink_quiet(path):
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
     def _handle_api(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
@@ -177,6 +352,8 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_version()
         elif path == "/api/manifest":
             self._serve_manifest()
+        elif path == "/api/bundle/boot":
+            self._serve_boot_bundle()
         elif path == "/api/bundle":
             self._serve_bundle()
         elif path.startswith("/api/file/"):
@@ -269,13 +446,39 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
         cand = os.path.join(OVERLAY_DIR, safe_rel)
         return cand if os.path.isfile(cand) else None
 
-    def _serve_bundle(self):
-        """All boot-path DTA/DTB files as a single binary bundle.
+    def _emit_bundle(self, entries):
+        """Write `entries` ([(rel, bytes), ...]) as the binary bundle the engine's
+        onBundleSuccess (milo-native-engine/src/platform/WebAssets.cpp) parses.
+
         Format: uint32 count, then for each file:
           uint32 path_len, path (UTF-8), uint32 data_len, data (bytes)
-        Integers are little-endian (Emscripten host order)."""
+        Integers are little-endian (Emscripten host order).
+
+        Shared by /api/bundle (the .dta/.dtb config bundle) and /api/bundle/boot
+        (the R3 boot-milo bundle). Entries are emitted sorted by path for a stable
+        body. HEAD sends headers only."""
         import struct
 
+        entries = sorted(entries, key=lambda x: x[0])
+        chunks = [struct.pack("<I", len(entries))]
+        for path, data in entries:
+            path_bytes = path.encode("utf-8")
+            chunks.append(struct.pack("<I", len(path_bytes)))
+            chunks.append(path_bytes)
+            chunks.append(struct.pack("<I", len(data)))
+            chunks.append(data)
+
+        body = b"".join(chunks)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
+    def _serve_bundle(self):
+        """All boot-path DTA/DTB files as a single binary bundle (see
+        _emit_bundle for the format)."""
         if not ASSETS_DIR:
             self._json_error(503, "No assets directory configured")
             return
@@ -301,23 +504,94 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
                 with open(src, "rb") as fh:
                     data = fh.read()
                 entries.append((rel, data))
-        entries.sort(key=lambda x: x[0])
 
-        chunks = [struct.pack("<I", len(entries))]
-        for path, data in entries:
-            path_bytes = path.encode("utf-8")
-            chunks.append(struct.pack("<I", len(path_bytes)))
-            chunks.append(path_bytes)
-            chunks.append(struct.pack("<I", len(data)))
-            chunks.append(data)
+        self._emit_bundle(entries)
 
-        body = b"".join(chunks)
-        self.send_response(200)
-        self.send_header("Content-Type", "application/octet-stream")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        if self.command != "HEAD":
-            self.wfile.write(body)
+    def _resolve_asset_path(self, rel):
+        """Resolve a server-relative asset path to an on-disk file, mirroring
+        _serve_asset_file's resolution order: DTA overlay → curated ASSETS_DIR →
+        the "(..)/(..)" system/run layout → the fallback asset roots. Returns the
+        absolute path, or None if the asset is missing everywhere.
+
+        Lifted out of _serve_asset_file so the boot-bundle path resolver shares
+        the exact same logic (overlay shadowing, the ark "(..)" restore, the
+        long-tail fallback roots) as the on-demand /api/file path."""
+        # DTA overlay shadows the extracted original (boot manifest is milos, not
+        # DTAs, but keep the parity so a future manifest entry resolves the same).
+        full_path = self._overlay_path(rel) or os.path.join(ASSETS_DIR, rel)
+
+        # Files under system/run/ live at (..)/(..)/system/run/ on disk.
+        if not os.path.isfile(full_path) and rel.startswith("system/"):
+            alt = os.path.join(ASSETS_DIR, "(..)", "(..)", rel)
+            if os.path.isfile(alt):
+                full_path = alt
+
+        # Long-tail fallback roots (album art / chars / patchcreator milos that
+        # ship only in the full xbox extraction, not the curated set).
+        if not os.path.isfile(full_path):
+            for fb_root in FALLBACK_ASSETS_DIRS:
+                fb_path = os.path.join(fb_root, rel)
+                if os.path.isfile(fb_path):
+                    full_path = fb_path
+                    break
+                if rel.startswith("system/"):
+                    fb_alt = os.path.join(fb_root, "(..)", "(..)", rel)
+                    if os.path.isfile(fb_alt):
+                        full_path = fb_alt
+                        break
+
+        return full_path if os.path.isfile(full_path) else None
+
+    @staticmethod
+    def _read_boot_manifest():
+        """Read native/web/boot-assets.manifest → list of server-relative paths.
+        Blank lines and '#'-comment lines are ignored. Returns [] if the manifest
+        is absent (the boot bundle then emits an empty bundle — the client's sync
+        path still serves every boot milo, just without the R3 prefetch win)."""
+        paths = []
+        try:
+            with open(BOOT_MANIFEST_PATH, "r") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    paths.append(line)
+        except OSError:
+            pass
+        return paths
+
+    def _serve_boot_bundle(self):
+        """R3 — the boot-critical .milo_xbox working set as one binary bundle.
+
+        Reads native/web/boot-assets.manifest, resolves each path with the same
+        overlay/fallback/"(..)" logic as /api/file, and emits the shared bundle
+        format. A manifest entry that resolves to nothing is logged and SKIPPED
+        (mirroring onBundleSuccess's skip-on-write-fail tolerance) so one missing
+        asset never fails the whole boot bundle — the client's sync path is the
+        backstop for anything not delivered here."""
+        if not ASSETS_DIR:
+            self._json_error(503, "No assets directory configured")
+            return
+
+        entries = []
+        missing = 0
+        for rel in self._read_boot_manifest():
+            full = self._resolve_asset_path(rel)
+            if not full:
+                missing += 1
+                self.log_message("boot-bundle: missing %s (skipped)", rel)
+                continue
+            with open(full, "rb") as fh:
+                data = fh.read()
+            entries.append((rel, data))
+
+        total = sum(len(d) for _r, d in entries)
+        self.log_message(
+            "boot-bundle: %d files, %.1f MB%s",
+            len(entries), total / 1e6,
+            (f", {missing} missing" if missing else ""),
+        )
+        self._emit_bundle(entries)
 
     def _serve_asset_file(self, relpath):
         if not ASSETS_DIR:
@@ -383,10 +657,23 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_range(full_path, size, range_hdr, content_type)
             return
 
+        # R5 — on-demand wire compression. Compress + cache compressible assets
+        # (.milo_xbox etc.) and serve them via Content-Encoding negotiation when
+        # the client supports it. Transparent to the engine (browser decodes
+        # before the wasm XHR sees the bytes). Bails to the raw path below for
+        # non-compressible exts, Range requests, identity-only clients, or if no
+        # encoder is available — so there is no regression. `safe` is the
+        # normpath'd archive-relative key (the cache is keyed on it).
+        if self._maybe_compressed_asset(full_path, safe, head_only):
+            return
+
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(size))
         self.send_header("Accept-Ranges", "bytes")
+        # Vary so shared/proxy caches don't hand a compressed body (served above
+        # for br/gzip clients) to an identity-only client, and vice versa.
+        self.send_header("Vary", "Accept-Encoding")
         self.end_headers()
         if not head_only:
             with open(full_path, "rb") as f:
@@ -533,8 +820,23 @@ def _find_sidecar_dir():
     return None
 
 
+def _default_encode_cache_dir():
+    """Default on-demand compression cache dir: native/web/.cache/encoded/.
+
+    Gitignored derived state (like orig-assets/derived/); a fresh checkout
+    starts cold and warms itself. Overridable via RB3_ENCODE_CACHE or
+    --encode-cache. Returns the path (not created here — made on first use)."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    env = os.environ.get("RB3_ENCODE_CACHE")
+    if env:
+        return os.path.abspath(env)
+    return os.path.join(script_dir, ".cache", "encoded")
+
+
 def main():
     global ASSETS_DIR, FALLBACK_ASSETS_DIRS, SIDECAR_DIR, OVERLAY_DIR
+    global ENCODE_CACHE_DIR, ENCODE_ENABLED, ENCODE_LEVEL_BROTLI
+    global BROTLI_BIN, GZIP_BIN
 
     parser = argparse.ArgumentParser(description="RB3 Web Dev Server")
     parser.add_argument(
@@ -571,6 +873,30 @@ def main():
             "config/joypad.dta button_meanings)."
         ),
     )
+    parser.add_argument(
+        "--encode-cache",
+        default=None,
+        help=(
+            "Cache dir for on-demand-compressed assets (R5 wire compression; "
+            "default: RB3_ENCODE_CACHE env or native/web/.cache/encoded). "
+            ".milo_xbox etc. are brotli/gzip-compressed once and served via "
+            "Content-Encoding negotiation."
+        ),
+    )
+    parser.add_argument(
+        "--encode-level",
+        type=int,
+        default=None,
+        help=(
+            "brotli quality for on-demand compression (default 5 — keeps ~90%% "
+            "of q11's win at ~1/100th the CPU, paid inline on the first fetch)."
+        ),
+    )
+    parser.add_argument(
+        "--no-encode",
+        action="store_true",
+        help="Disable on-demand wire compression (serve assets raw; for A/B).",
+    )
     parser.add_argument("--port", type=int, default=PORT)
     args = parser.parse_args()
 
@@ -592,6 +918,24 @@ def main():
         else _find_sidecar_dir()
     )
 
+    # R5 — on-demand wire compression config + encoder probe.
+    ENCODE_ENABLED = not args.no_encode
+    ENCODE_CACHE_DIR = (
+        os.path.abspath(args.encode_cache)
+        if args.encode_cache
+        else _default_encode_cache_dir()
+    )
+    if args.encode_level is not None:
+        ENCODE_LEVEL_BROTLI = args.encode_level
+    # Probe the encoder binaries once. brotli (primary) reuses build.sh's exact
+    # CLI; gzip (CLI) is the always-available fallback. Python `brotli` module is
+    # absent on this machine, so the CLI is the only brotli path. If neither
+    # brotli is found we degrade to gzip-only (mirrors build.sh's fallback).
+    BROTLI_BIN = shutil.which("brotli")
+    GZIP_BIN = shutil.which("gzip")
+    if ENCODE_ENABLED and not (BROTLI_BIN or GZIP_BIN):
+        ENCODE_ENABLED = False  # no encoder → raw path everywhere
+
     if not os.path.isdir(BUILD_DIR):
         print(f"Build directory not found: {BUILD_DIR}")
         print("Run scripts/web/build.sh first.")
@@ -610,6 +954,18 @@ def main():
         print(f"  Overlay: {OVERLAY_DIR} (DTA overlay; shadows extracted assets)")
     if SIDECAR_DIR:
         print(f"  Sidecars: {SIDECAR_DIR} (XMA->PCM, served on demand)")
+    if not ENCODE_ENABLED:
+        print("  Encode:  DISABLED (assets served raw)")
+    elif BROTLI_BIN:
+        print(
+            f"  Encode:  brotli q{ENCODE_LEVEL_BROTLI} (CLI {BROTLI_BIN})"
+            f" + gzip fallback -> {ENCODE_CACHE_DIR}"
+        )
+    else:
+        print(
+            f"  Encode:  gzip-only -{ENCODE_LEVEL_GZIP} (brotli CLI NOT found)"
+            f" -> {ENCODE_CACHE_DIR}"
+        )
     print(f"  URL:     http://0.0.0.0:{args.port} (accessible remotely)")
     print(f"  API:     http://0.0.0.0:{args.port}/api/manifest")
     print(f"  COOP/COEP headers enabled")
