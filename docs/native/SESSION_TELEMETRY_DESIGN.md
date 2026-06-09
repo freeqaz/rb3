@@ -1,6 +1,6 @@
 # Session Telemetry & Replay — Design
 
-**Status:** DRAFT — all 7 sections filled by the multi-agent design deep-dive (2026-06-09); **6 cross-section reconciliations + 19 open questions flagged below — resolve the 🔴 build-blockers before M0.**
+**Status:** **v1 CONTRACT LOCKED** (2026-06-09). §3–§9 are the multi-agent deep-dive (design provenance); the 6 reconciliations + OQ register are resolved into the authoritative **[Locked v1 contract](#locked-v1-contract-authoritative)** below — that section wins wherever §3–§9 conflict. **Ready for M0.** Capture scope: local now, remote-ready.
 **Author:** skeleton by Claude; §3–§9 by a multi-agent code-grounded design deep-dive, 2026-06-09
 **Audience:** RB3 native+web port maintainers.
 
@@ -35,7 +35,10 @@ in-memory footprint so it costs ~nothing during normal play.
 | Replay fidelity | **Tier 1 first** (diagnostic trace + scenario re-drive), **Tier 2 after** (deterministic frame-perfect), **then testing** to measure how deterministic we actually are. |
 | Capture default | **Always-on, toggleable** (env var / URL param to disable). |
 | Trace storage | server.py ingests uploads and writes to **SQLite** (not flat JSONL files). |
-| Doc workflow | This skeleton → ultracode multi-agent deep dive fills the stubs → maintainer review. |
+| Capture scope | **Local dev now, remote-ready** — loopback bind by default; one opt-in flag (+ shared-secret) flips to a network bind for remote playtesters. Schema/egress unchanged when remote is enabled. |
+| Post-M0 priority | **Perf reporting before replay** — after M0: report tooling (M3), *then* bug-repro replay (M1). |
+| Report delivery | **CLI/markdown first** (`trace-report.py`); browser session-dashboard is a later add. |
+| Doc workflow | Skeleton → multi-agent deep dive (§3–§9) → synthesis reconciliation → **Locked v1 contract** (authoritative). |
 
 ---
 
@@ -85,6 +88,96 @@ The 7 deep dives below are each internally grounded in real code, but the synthe
 - JoypadButton BIT→NAME DECODE TABLE. D7's input/APM per-button histogram needs a canonical bit→button-name map (and which bits are analog vs digital). D7 flags it should be generated from the C++ enum (os/Joypad.cpp / rb3_joypad_native.cpp) rather than hardcoded, and assigns generation to 'D2 (schema)'. D2 never specifies this table or its generation. The report's input histogram has no defined symbol source.
 
 - tilt/sensors CAPTURE IS DEAD IN v1. D2 §4.4 reserves sx/sy/sz but states the native port never synthesizes tilt (mSensors stay 0, no keybind). D6 replay reconstruction and D1's POD likewise don't carry sensors. So the schema reserves tilt but nothing produces it — acceptable for v1 but no section owns the 'tilt is a no-op until a Wii pad / keybind exists' caveat being surfaced to the report tool (D7 would render constant-zero sx/sy/sz if ever present).
+
+## Locked v1 contract (authoritative)
+
+This section freezes the v1 contract by resolving the 6 reconciliations + the OQ
+register, folding in the maintainer's direction calls. **Where §3–§9 disagree
+with this section, this section wins**; the deep-dive sections remain as design
+provenance and detail. Each resolution cites the OQ / contradiction it closes.
+
+### Identity & ordering
+- **`sid` is owned by C++ on both platforms** (closes contradiction 6 / OQ3).
+  `RB3TraceInit` mints it (monotonic clock + pid/counter; same code path on web).
+  The web pre-js reads it back via `EM_ASM` into `window.__rb3Sid` so the
+  `POST /api/telemetry/<sid>` route, the `hdr` line, and the SQLite PK all agree.
+  Native file traces + `repro` therefore have a real session identity.
+- **`client_seq`** — a monotonic per-session `uint64`, stamped by the recorder on
+  **every** emitted line (incl. `hdr`) — is added to the common envelope (closes
+  contradiction 4 / OQ1). It survives chunk boundaries + `sendBeacon` tail
+  duplication; ingest upserts on `(sid, client_seq)`. It is *the* idempotency +
+  ordering key (`t`/`f` are not unique enough). D1 POD, D1 `Record*`, D2 §4.2
+  envelope, and D5 egress all carry it.
+
+### Input axes (closes contradiction 1 / OQ2)
+- v1 captures only the axes the port actually produces: **whammy** (live at the
+  `JoypadPoll` tap via `mSticks` LY/RX) + a reserved **tilt** slot (always 0
+  until a Wii pad / keybind exists). The C++ POD carries a fixed `int16 axes[2]`
+  (whammy, tilt), values ×1000 — this is the canonical size, **not** D2's 9-axis
+  set.
+- The wire `ax{}` is **sparse**: only non-zero axes serialize, under keys `wh`
+  (whammy) / `ti` (tilt). The `lx/ly/rx/ry/lt/rt/sx/sy/sz` namespace stays
+  *reserved* (documented) but unproduced in v1. D6 replay writes back only the
+  captured axes; the report renders only populated axes (no constant-zero cols).
+
+### Nav (closes contradiction 2 / OQ6)
+- Nav is captured by a real **`UIScreenChangeMsg` sink on `TheUI`** (D4's model),
+  not the passive `PublishCurrentScreen` detector — exact `from`/`to`/`wentBack`,
+  no missed A→B→A. **`wentBack` is added** to the nav POD + the `nav` wire schema.
+  The recorder registers the sink at init, before the first `GotoScreen`.
+
+### Frame metrics (closes contradiction 5 / OQ4, OQ10, OQ11)
+- The **frame tap moves into `App::RunOneFrame`** so one tap covers native *and*
+  web (web bypasses the old `RunWithoutDebugging` site). The `frameTimer.Split()`
+  read is gated behind `gRB3TraceActive` → zero-cost when off. Owner: the M0
+  implementer (small `src/band3/App.cpp` edit).
+- The denormalized `frames` hot table gains **`ld`, `st`** (loader-adds /
+  stream-opens) + `t_ms`, `song_ms`, so the long-frame ↔ asset-spike query runs
+  off the hot table. The events PK column is **`client_seq`** everywhere (fixes
+  D7's `seq` drift / OQ11).
+- **Native boot + native nav are in M0 scope** (closes OQ5): hoist a shared
+  `RB3TraceCheckNav()` + a native `BootMark` equivalent out of `main_web.cpp`, so
+  a native headless run emits `hdr+fr+nav+boot` (the M0 acceptance bar).
+
+### Capture scope — local now, remote-ready (closes OQ13; OQ12)
+- Default bind stays **loopback** (`127.0.0.1`); the telemetry POST route also
+  enforces a localhost client check. One opt-in flag (`--telemetry-bind <addr>` /
+  env) flips to a network bind for remote playtesters, at which point a
+  **shared-secret header** is required. The `hdr` already carries enough to
+  attribute a remote session (build sha, asset version, UA). **No field changes
+  are needed to enable remote** — it is config, not a rewrite.
+- DB durability: **`synchronous=NORMAL` + WAL** (OQ12) — correct for a
+  dev/playtest tool; a host crash loses at most the last unflushed tail.
+
+### `log` flood control (closes OQ8)
+- The `Debug::Print` tap applies a **severity allowlist (WARN/ASSERT/ERROR by
+  default) + per-message-key rate-limit** before recording, so always-on capture
+  can't be flooded by `GAME_DBG`/per-frame spam. Raisable to full verbosity for a
+  focused repro.
+
+### Reporting (closes OQ18)
+- **CLI/markdown first** (`trace-report.py`, extends `frame_profiler.py`),
+  pull-based. A browser session-dashboard (served by `server.py`) is a **later**
+  add once data is flowing — not in the first tooling pass.
+
+### Deferred to their milestone (not v1-blocking)
+- **`au` audio-underrun capture** (OQ9) — web-only; needs a `milo-native-engine`
+  glue hook on the worklet `onmessage`. Lands with **M2**.
+- **`song.end` score/pct accessor** (OQ7) — pin the exact `Game`/`Performer`
+  accessor when song-lifecycle capture lands (**M1/M3**).
+- **Tier-2 gameplay determinism** (OQ14, OQ15, OQ19) — the `Game::Poll`
+  replay-clock seam + divergence tolerance + milestone anchoring are **M4**, owned
+  by the native-port maintainer (band3/game + audio).
+- **`RB3CurrentFrame()` for the replay branch** (OQ16) + **JoypadButton bit→name
+  table** (OQ17) — implementer details for **M1/M3**.
+
+> **Sequencing (maintainer priority):** M0 (trace core, native traces) →
+> **M3 report tooling** (runs on native traces immediately) → **M2 web egress**
+> (real human web sessions into SQLite) → **M1 Tier-1 replay** → **M4 Tier-2**.
+> Perf reporting is prioritized ahead of replay per the direction call; M2 slots
+> in because real "human playing" perf data needs the web egress path.
+
+---
 
 ## 2. Why this is mostly plumbing, not new engine work
 
@@ -749,13 +842,20 @@ This is the "bug-repro bundle": the trace is self-describing (build+asset+flags 
 - **Determinism is unproven** — Tier 1 is robust; Tier 2 is gated on the D6 audit.
 - **Always-on overhead** — must stay ~zero when nothing's wrong; the ring +
   edge-only input + frame decimation are the levers (validate in D1).
-- **Privacy/scope** — this is a *local dev* tool (localhost server, no external
-  upload). Not a production analytics pipeline. (Confirm in Q5.)
+- **Privacy/scope** — **local dev now, remote-ready**: loopback by default, no
+  external upload; an opt-in network bind (+ shared-secret) enables remote
+  playtester capture without schema changes. Not a production analytics pipeline.
 - **Trace size** — a long session must not blow memory or the DB; bound + prune.
 
 ---
 
 ## Open Questions register (post-deep-dive)
+
+**Resolution status:** OQ1–OQ6, OQ8, OQ10–OQ13, OQ18 are **RESOLVED** in the
+**[Locked v1 contract](#locked-v1-contract-authoritative)** above (the 🔴/🟠
+build-blockers are all closed). OQ7, OQ9, OQ14–OQ17, OQ19 are **DEFERRED** to
+their milestone (M1/M2/M3/M4) as noted there. The full table is retained below
+for traceability — read the Locked v1 contract for the decision on each.
 
 The skeleton's original Q1–Q10 were **answered inline** in the §3–§9 sections (see each section's resolved-questions). The deep dive surfaced these consolidated questions; priority tags: 🔴 blocks M0 trace emission · 🟠 blocks M0 acceptance · 🟡 blocks a later milestone · 🔵 human/maintainer judgment · ⚪ implementer detail.
 
