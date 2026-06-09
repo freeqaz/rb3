@@ -1,7 +1,7 @@
 #ifdef HX_NATIVE
-// rb3_guestprofile_native.cpp — OPT-IN native HACK (RB3_GUEST_PROFILE=1): fake a
-// valid pad-0 "guest" profile so the customize / manage-band flows are reachable
-// WITHOUT a real sign-in.
+// rb3_guestprofile_native.cpp — DEFAULT-ON native HACK (opt-out RB3_NO_GUEST_PROFILE):
+// fake a valid pad-0 "guest" profile + flip the customize gates so the customize
+// closet is reachable and renders a character WITHOUT a real sign-in.
 //
 // HACK/TODO(guest-profile): real native sign-in (PlatformMgr signin +
 // WiiProfileMgr NAND load, via decomp of PlatformMgr_Wii/WiiProfileMgr or a
@@ -13,27 +13,32 @@
 // short-circuiting them. The whole TU is HX_NATIVE-only and lives only on the
 // native/web link line, so no shared/Wii decomp code changes.
 //
-// WHY OPT-IN (not default-on as first planned): enabling the guest profile makes
-// a PRIMARY profile EXIST, which wakes a cascade of profile-driven paths that
-// crash on hollow profile data / zeroed offline stubs. Confirmed by negative
-// control (boot-to-gameplay is clean with this OFF, crashes with it ON):
+// WAS OPT-IN, NOW DEFAULT-ON: the feared "default-on cascade" was fully root-caused
+// (2026-06-09) and resolved. The dominoes:
 //   1. MainHubPanel::ReloadMessages -> TheServer.GetPlayerID(): TheServer was a
 //      zeroed stub -> FIXED by rb3_server_native.cpp (faithful offline Server).
-//   2. RndMat::SyncProperty -> PropSync<RndTex> (material patch-texture sync):
-//      still open; more dominoes likely.
-// Until that cascade is fully resolved (roadmap C11 deeper work), this stays
-// default-OFF so the native+web build boots clean. Set RB3_GUEST_PROFILE=1 to
-// exercise/iterate it.
+//   2. The "RndMat::SyncProperty / PropSync<RndTex>" SIGSEGV theory was a RED
+//      HERRING. The real crash was BandPatchMesh::ProjectPatches writing
+//      RndMesh::sRawCollide into READ-ONLY .text (the static had no out-of-line
+//      definition; the native link aliased it to a weak no-op .text stub) the
+//      moment a tattooed char composited -> FIXED ed9a3e92 (real .bss defs).
+// With (1)+(2) fixed and the gate predicates flipped by real engine APIs (steps
+// 5/6 below), the guest profile boots clean to gameplay AND reaches the customize
+// closet, so it is on by default — the web build cannot set env, so default-on is
+// what makes the customize flow testable there.
 //
-// WHY THIS ALONE DOES NOT make the closet show a character: the customize preview
-// characters from world/shared/chars.milo are bodyless shells (no FileMerger /
-// outfit children), so even with a valid profile the closet renders nothing until
-// the body-source work lands (roadmap C13).
+// WHAT THIS MAKES THE CLOSET SHOW: world/shared/chars.milo's player0..3 are NOT
+// bodyless — they are milo PROXIES of char/main/main.milo (C13), so with the
+// preview cache on (default, CharCache::InitMe) each loads a full body (FileMerger
+// + 13 bodyparts, 140 meshes) and the closet renders a standing character. OPEN:
+// the closet preview char is static-posed (skinned=0, not Character::Poll'd into a
+// live skeleton) + head deform (C7/C8) — tracked in NATIVE_PORT_ROADMAP.
 #include "os/PlatformMgr.h"
 #include "meta/WiiProfileMgr.h"
 #include "meta/Profile.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/BandProfile.h"
+#include "meta_band/PrefabMgr.h"
 #include "os/Debug.h"
 #include <cstdlib>
 
@@ -42,9 +47,14 @@ void RB3InstallGuestProfile() {
     static bool sDone = false;
     if (sDone)
         return;
-    // OPT-IN (default OFF): only install when RB3_GUEST_PROFILE is set. See the
-    // header — default-on cascades into profile-driven crash paths.
-    if (const char *e = ::getenv("RB3_GUEST_PROFILE"); !(e && e[0] && e[0] != '0')) {
+    // NOW DEFAULT-ON (opt-out RB3_NO_GUEST_PROFILE). The feared "default-on cascade"
+    // was root-caused and resolved: it was (1) gate predicates the install now flips
+    // via real engine APIs (steps 5/6 below) and (2) a genuine decomp bug — the
+    // tattoo-patch projection wrote RndMesh::sRawCollide into read-only .text (fixed
+    // ed9a3e92). With those resolved the guest profile boots clean to gameplay AND
+    // reaches the customize closet without a real sign-in, so it is on by default so
+    // the web build (which cannot set env) can exercise the customize flow.
+    if (const char *e = ::getenv("RB3_NO_GUEST_PROFILE"); e && e[0] && e[0] != '0') {
         sDone = true;
         return;
     }
@@ -76,8 +86,28 @@ void RB3InstallGuestProfile() {
         if (p->GetSaveState() != kMetaProfileLoaded)
             p->SetSaveState(kMetaProfileLoaded);
     }
+    // (5) Flip the PRIMARY profile via the real engine API. With BandProfile[0]
+    //     now HasValidSaveData (step 4 + WiiProfileMgr idx0 valid), UpdatePrimaryProfile
+    //     -> ChooseNewPrimaryProfile picks mProfiles[0] -> SetPrimaryProfile, which
+    //     fires PrimaryProfileChangedMsg -> CharSync::UpdateCharCache, EXACTLY as a
+    //     real Wii signin would. This flips {profile_mgr has_primary_profile}=1 (was 0)
+    //     -> unblocks customize_band.btn AND makes CustomizePanel::Load's
+    //     GetProfileForUser non-null. (SetPrimaryProfile asserts TheSessionMgr->
+    //     GetMachineMgr() at 0xA2A — relies on the native BandMachineMgr being live.)
+    TheProfileMgr.UpdatePrimaryProfile();
+    // (6) Make the default prefab character customizable so customize_character.btn
+    //     takes the closet branch ({$user is_char_customizable}, main_hub.dta:133 ->
+    //     {closet_mgr set_user $user} -> customize_clothing_screen). PrefabChar::
+    //     IsCustomizable() == gPrefabIsCustomizable (PrefabMgr.cpp:25, default false,
+    //     game-shipped as the `prefab_toggle_customizable` cheat). Flip it ON via the
+    //     real registered toggle (idempotent: the toggle XORs, so only flip if off).
+    //     HACK/TODO(C11): a real signed-in user customizes a saved TourChar (always
+    //     customizable); for the offline guest we surface the default prefab instead.
+    if (!PrefabMgr::PrefabIsCustomizable())
+        PrefabMgr::OnPrefabToggleCustomizable(nullptr);
     MILO_LOG("RB3 native HACK: installed pad-0 guest profile (signinMask|=1, "
-             "WiiProfileMgr idx0 valid, BandProfile[0]=Loaded)\n");
+             "WiiProfileMgr idx0 valid, BandProfile[0]=Loaded, primary profile set, "
+             "prefab customizable)\n");
     sDone = true;
 }
 #endif // HX_NATIVE

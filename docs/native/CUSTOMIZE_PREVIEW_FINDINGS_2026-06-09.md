@@ -47,6 +47,66 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
+## 🎯 UPDATE 3 (2026-06-09) — CLOSET REACHED: char STANDS in the closet, no sign-in, NO crash
+
+Empirical breakthrough. The "domino ② cascade crash" is **confirmed stale** — it does
+NOT reproduce on the current build. Booting `RB3_GUEST_PROFILE=1` and navigating to
+customize is clean; we simply hit `dialog_need_signin_screen`. The real blocker was
+never a crash — it was three DTA **gate predicates** the guest profile doesn't flip.
+
+### Empirical truth table (`RB3_GUEST_PROFILE=1`, at `main_hub_screen`, via DTA eval)
+`scripts/native/profile-gate-probe.py`:
+```
+{profile_mgr has_primary_profile}                          => 0   (blocks customize_band -> manage_band)
+{{user_mgr get_user_from_pad_num 0} can_save_data}         => 1   (guest profile DID flip CanSaveData)
+{{user_mgr get_user_from_pad_num 0} is_char_customizable}  => 0   (blocks customize_character -> closet)
+{profile_mgr get_profile <user>}                           => null (profile not associated with the user)
+{platform_mgr is_user_a_guest <user>}                      => 0
+```
+
+### The closet route WORKS (verified end-to-end, `scripts/native/closet-reach-test.py`)
+`is_char_customizable` flips 0→**1** after a single `{prefab_toggle_customizable}`
+(confirms the guest user's `mChar` is a `PrefabChar`, whose `IsCustomizable()` ==
+`gPrefabIsCustomizable`, a default-false anon-ns global in `PrefabMgr.cpp:25`).
+Then firing the real `customize_character.btn` true branch over the HTTP/DTA API:
+```
+{prefab_toggle_customizable}
+{critical_user_listener set_critical_user <user>}
+{closet_mgr set_user <user>}
+{ui goto_screen customize_clothing_enter_screen}
+```
+→ transitions through `tv11_a_screen` → settles on **`customize_clothing_screen`**
+(THE closet) and **stays there with NO crash** (clothing_base.milo loads; the
+`reflection_01.cube` NOTIFYs are non-fatal). **A character renders, standing,
+holding an instrument, with the CUSTOMIZE menu** (`/tmp/rb3-closet*/`).
+
+So C11 (reach the closet without sign-in) + C6/C13 (char body on screen) are
+**substantially achieved**. Route = guest profile (existing) + `gPrefabIsCustomizable=true`
++ the customize_character flow (which `main_hub.dta` fires automatically once
+`is_char_customizable=1`).
+
+### What's NOT yet right (the remaining quality gap)
+`scripts/native/closet-anim-verify.py` (pixel-diff burst):
+- **`skinned=0` on all 4 CharCache chars** even in the closet (bodies loaded:
+  140 meshes/15395 verts). The closet renders the char in **static pose** (baked
+  PoseMeshes), NOT driven by a live skeleton → **no idle body animation**. The
+  motion the diff sees is the closet's **orbiting camera**, not the char.
+- **Head is shard-deformed** (top-center mesh explodes into spikes) — the C7/C8
+  head-skinning / face-bone rebind bug, now visible in the closet.
+- ROOT (to chase): the closet `PreviewCharacter → CharCache::Request → Poll →
+  GetCharacter` path loads the body but the char is **not being Character::Poll'd
+  into a bound+posed skeleton** in the closet (the C13 assumption that "the closet
+  UI Polls it for free" is **empirically false** — skinned stays 0). Fixing
+  skinned>0 should yield both idle animation AND correct (un-sharded) deform,
+  since both come from the live skeleton bind (cf RebindOutfitBonesToOwnSkeleton,
+  gameplay band is skinned+animating).
+
+### New tools (this session)
+- `scripts/native/cascade-crash-capture.py` — gdb-batch fault capture (proved no crash).
+- `scripts/native/profile-gate-probe.py` — runtime gate truth table.
+- `scripts/native/closet-reach-test.py` — drives the closet route + screenshots.
+- `scripts/native/closet-anim-verify.py` — pixel-diff burst anim verdict + per-slot skinned probe.
+
 ## ✅✅ UPDATE 2 — Stage 1/2/3 LANDED: preview chars load full bodies natively
 Beyond the gate: the full opt-in (`RB3_CHAR_PREVIEW=1`) body-load is committed +
 verified in the real boot via the new `{rb3_char_probe N}` DTA func:

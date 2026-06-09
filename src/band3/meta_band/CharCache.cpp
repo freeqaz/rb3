@@ -48,14 +48,15 @@ void CharCache::InitMe() {
     // C13 (roadmap): the band-member preview cache. world/shared/chars.milo's
     // player0..3 are milo PROXIES (mProxyFile = ../../char/main/main.milo) — the
     // proxy-load binds mFileMerger (main.milo has FileMerger.fm + outfit + IK +
-    // body_clips), the same body machinery the gameplay band uses. OPT-IN
-    // (RB3_CHAR_PREVIEW=1) for now: un-defer the load + probe whether the
-    // proxy-load actually binds mFileMerger natively (the Stage-0 gate that the
-    // headless gtest could not run — the full rndobj/char/band factory cluster
-    // only exists in the real App boot). Default-off keeps the menu path unchanged
-    // (GetCharacter returns null, tolerated). Verified here in the real boot;
-    // the full enable (UpdateCharCache un-defer + deref hardening) follows.
-    if (getenv("RB3_CHAR_PREVIEW")) {
+    // body_clips), the same body machinery the gameplay band uses. NOW DEFAULT-ON
+    // (verified: all 4 proxy-load mFileMerger -> 140 meshes/char, and the customize
+    // closet renders+reaches without sign-in via the guest-profile gate flips). The
+    // load must happen here at boot (before any UpdateCharCache), so this is the
+    // canonical enable point. Opt-out RB3_NO_CHAR_PREVIEW for a lean gameplay-only
+    // boot. HACK/TODO(C11/C13): the closet preview char is still static-posed
+    // (skinned=0, not Character::Poll'd into a live skeleton) + the head deform is
+    // open (C7/C8) — tracked in NATIVE_PORT_ROADMAP.
+    if (!getenv("RB3_NO_CHAR_PREVIEW")) {
         unk1c.LoadFile(
             FilePath("../world/shared/chars.milo"), false, true, kLoadFront, false
         );
