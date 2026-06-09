@@ -992,5 +992,22 @@ BEGIN_HANDLERS(BandProfile)
 END_HANDLERS
 #pragma pop
 
+#ifdef HX_NATIVE
+// domino-② fix: on native there is NO online profile-picture pipeline —
+// ProfilePicture::ReceiveUserPicture() (ProfilePicture_Wii.cpp) always returns
+// false, so mUserPicture is *never* validly assigned (it stays the ctor's 0 and
+// is the only writer). The native hollow guest profile (rb3_guestprofile_native)
+// gets promoted to PRIMARY, which makes the menu-wide song_select refresh_summary
+// DTA run {profile_picture.mat set diffuse_tex {$profile get_picture_tex}}. With
+// the char-preview composite also active, the guest profile's ProfilePicture
+// sub-object is corrupted (its mUserPicture slot reads back a non-object pointer
+// e.g. 0x30 — verified under gdb: SIGSEGV in libstdc++ __dynamic_cast reading the
+// bogus object's vtable, in RndMat::SyncProperty's PropSync<RndTex>). Returning a
+// null tex WITHOUT touching the (possibly clobbered) ProfilePicture makes the DTA
+// take its safe `default_profile_picture.tex` branch — correct, since native has
+// no fetched picture to show. A real online build would have a live mUserPicture.
+RndTex *BandProfile::GetPictureTex() { return nullptr; }
+#else
 RndTex *BandProfile::GetPictureTex() { return mProfilePicture->mUserPicture; }
+#endif
 void BandProfile::AutoFakeFill(int n) { unk18 = n; }

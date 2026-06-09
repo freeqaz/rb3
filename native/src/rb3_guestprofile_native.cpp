@@ -47,18 +47,17 @@ void RB3InstallGuestProfile() {
     static bool sDone = false;
     if (sDone)
         return;
-    // OPT-IN again (RB3_GUEST_PROFILE=1, default OFF). Default-on was attempted but
-    // REVERTED: guest-profile + char-preview BOTH on flakily-then-consistently SIGSEGVs
-    // on the song_select transition — the long-open "domino ②": a menu DTA drives
-    // RndMat::Handle -> OnSet -> SetProperty -> RndMat::SyncProperty -> PropSync<RndTex>
-    // (PropSync_p.h:124) -> dynamic_cast on a DANGLING object (node.GetObj() returns a
-    // freed/garbage Hmx::Object* -> vtable read faults). Each flag ALONE is safe; only
-    // the combination crashes (the guest profile makes char-preview composite materials
-    // a menu DTA then re-touches). Until that dangling-DataNode crash is fixed, this
-    // stays opt-in so the gameplay path is regression-free. The customize closet still
-    // works with RB3_GUEST_PROFILE=1 RB3_CHAR_PREVIEW=1 (verified: reachable, char
-    // skinned + animating). Roadmap C11 = fix domino ② -> restore default-on (for web).
-    if (const char *e = ::getenv("RB3_GUEST_PROFILE"); !(e && e[0] && e[0] != '0')) {
+    // DEFAULT-ON again (opt-out RB3_NO_GUEST_PROFILE). "domino ②" — the song_select
+    // SIGSEGV that forced this back to opt-in (92fcb32c) — is FIXED: it was
+    // RndMat::SyncProperty -> PropSync<RndTex> -> dynamic_cast on a garbage object,
+    // and that garbage object was {$profile get_picture_tex} == the primary (guest)
+    // profile's corrupted ProfilePicture::mUserPicture. BandProfile::GetPictureTex()
+    // now returns null on native (no online picture pipeline; HX_NATIVE), so the
+    // song_select refresh_summary DTA takes its safe default-picture branch instead
+    // of casting the garbage. Verified crash-free with BOTH flags on (6/6 reach
+    // song_select under gdb). The web build cannot set env, so default-on is what
+    // makes the customize flow testable there.
+    if (const char *e = ::getenv("RB3_NO_GUEST_PROFILE"); e && e[0] && e[0] != '0') {
         sDone = true;
         return;
     }
@@ -113,9 +112,21 @@ void RB3InstallGuestProfile() {
     //     customizable); for the offline guest we surface the default prefab instead.
     if (!PrefabMgr::PrefabIsCustomizable())
         PrefabMgr::OnPrefabToggleCustomizable(nullptr);
+    // NOTE on "domino ②" (the song_select SIGSEGV that blocked default-on): step (4)'s
+    //   SetSaveState(kMetaProfileLoaded) fires a ProfileChangedMsg ->
+    //   ProfileMgr::UpdatePrimaryProfile() -> ChooseNewPrimaryProfile(), which DOES
+    //   promote this hollow guest to PRIMARY (so the step-5 comment's "do not make
+    //   primary" was wrong about the net state). A primary profile makes the menu-wide
+    //   song_select refresh_summary DTA run {profile_picture.mat set diffuse_tex
+    //   {$profile get_picture_tex}}; on native get_picture_tex (BandProfile.cpp) now
+    //   returns null (no online picture pipeline + the sub-object is corrupted by the
+    //   char-preview composite), so the DTA takes its safe default-picture branch
+    //   instead of dynamic_cast'ing a garbage object. That single-line null is the
+    //   actual fix (verified: song_select reached crash-free with guest primary). We
+    //   intentionally do NOT also force the guest non-primary here — keeping primary
+    //   matches a real signin and is needed by other customize flows.
     MILO_LOG("RB3 native HACK: installed pad-0 guest profile (signinMask|=1, "
-             "WiiProfileMgr idx0 valid, BandProfile[0]=Loaded, primary profile set, "
-             "prefab customizable)\n");
+             "WiiProfileMgr idx0 valid, BandProfile[0]=Loaded, prefab customizable)\n");
     sDone = true;
 }
 #endif // HX_NATIVE

@@ -52,15 +52,15 @@ void CharSync::UpdateCharCache() {
 #ifdef HX_NATIVE
     // C13: Band-member character PREVIEW cache update (runs on every screen-transition
     // complete). It builds BandCharDescs from profile/prefab CharData and Requests them
-    // into TheCharCache -> StartLoad -> FileMerger loads the 13 bodyparts. OPT-IN again
-    // (RB3_CHAR_PREVIEW=1, default OFF) — runs menu-wide, and WITH the guest profile its
-    // material composite hits the domino-② PropSync<RndTex> dangling-object SIGSEGV on
-    // song_select (default-on reverted; see CUSTOMIZE_PREVIEW_FINDINGS UPDATE 8). The
-    // no-user/prefab branch needs no signed-in profile: gPrefabs is populated
+    // into TheCharCache -> StartLoad -> FileMerger loads the 13 bodyparts. DEFAULT-ON
+    // again (opt-out RB3_NO_CHAR_PREVIEW) — runs menu-wide. The "domino ②" song_select
+    // SIGSEGV that forced this to opt-in is FIXED at its source (the menu DTA's
+    // {$profile get_picture_tex} now returns null on native, BandProfile::GetPictureTex).
+    // The no-user/prefab branch needs no signed-in profile: gPrefabs is populated
     // unconditionally (BandCharDesc::Init -> ReloadPrefabs, a5999979) so GetDefaultPrefab
     // feeds prefabsBySlot. The sRawCollide tattoo-patch SIGSEGV is separately fixed
     // (ed9a3e92). The #else Wii body is unchanged.
-    if (!getenv("RB3_CHAR_PREVIEW"))
+    if (getenv("RB3_NO_CHAR_PREVIEW"))
         return;
 #endif
     OvershellPanel *overshell = TheBandUI.GetOvershell();

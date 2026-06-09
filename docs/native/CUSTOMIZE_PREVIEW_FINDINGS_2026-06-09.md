@@ -1,5 +1,59 @@
 # Customize-Preview (C6/C11–C13) — Deep Findings & Next Steps (2026-06-09)
 
+## ✅ UPDATE 9 (2026-06-09) — "domino ②" FIXED; guest-profile + char-preview DEFAULT-ON restored
+
+The song_select SIGSEGV that forced both flags back to opt-in (`92fcb32c`) is fixed
+at its source. Re-confirmed the crash under gdb (NOT a guess), then root-caused and
+fixed it.
+
+**Confirmed fault (gdb, real backtrace).** SIGSEGV at `__dynamic_cast+36`
+(`mov (%rdi),%rax`, reading the object's vtable) with `rdi` = a non-object pointer
+(observed `0x30`, `0xffab`, `0x574b00000002`). Exact stack:
+`MusicLibrary::OnEnter` → `UpdateHeaderData` → `PushHeaderDataToScreen` →
+`SendMessageToSongSelectPanel(refresh_summary_msg)` → song_select.dta `refresh_summary`
+→ `{profile_picture.mat set diffuse_tex {$profile get_picture_tex}}` →
+`RndMat::Handle`/`OnSet`/`SetProperty` → `RndMat::SyncProperty` (Mat.cpp:472,
+`diffuse_tex`) → `PropSync<RndTex>` → `dynamic_cast<RndTex*>(node.GetObj())`. So the
+prior "PropSync<RndTex> dynamic_cast on a bad object" mechanism was CORRECT — and the
+bad object is precisely `{$profile get_picture_tex}` ==
+`primaryProfile->mProfilePicture->mUserPicture`.
+
+**Why the combo.** Step (4) of the guest install (`SetSaveState(kMetaProfileLoaded)`)
+fires `ProfileChangedMsg` → `ProfileMgr::UpdatePrimaryProfile` →
+`ChooseNewPrimaryProfile`, which promotes the hollow guest to PRIMARY (the step-5
+"deliberately not primary" comment was WRONG about the net state). A primary profile
+makes the menu-wide `refresh_summary` DTA take its `{has_header_data}`=TRUE `do` branch
+and read `get_picture_tex`. Char-preview's `UpdateCharCache` composite is what corrupts
+the guest's per-profile `ProfilePicture` (gdb: 4 BandProfile ctors / 0 dtors / 0
+ProfilePicture dtors — the object is NOT freed via destructor; its memory is overwritten
+in place by adjacent UI/locale-string allocations — the clobbered block literally
+contained "You have changed the storage devices…" / "Select Style"). So `mUserPicture`,
+which native code NEVER validly assigns (`ProfilePicture::ReceiveUserPicture` always
+returns false on native; the ctor's `=0` is the only writer), reads back garbage. Each
+flag alone misses one of {primary exists, composite corrupts the picture}.
+
+**Fix (RB3 game code only — NO engine change, DC3-safe).** `BandProfile::GetPictureTex()`
+returns `nullptr` on native (`#ifdef HX_NATIVE`, byte-identical `#else`): native has no
+online profile-picture pipeline, so the correct value is always null, and returning null
+*without dereferencing the (possibly clobbered) ProfilePicture* makes the DTA take its
+safe `default_profile_picture.tex` branch instead of `dynamic_cast`-ing garbage. We did
+NOT touch the shared `PropSync_p.h` — a generic pointer-liveness guard there would be
+unsound (no live-object registry) and risk DC3. We also did NOT force the guest
+non-primary (tried it; primary gets re-promoted, and it's not the clean lever).
+
+**Re-enabled default-on** (reverse of `92fcb32c`): guest profile (opt-out
+`RB3_NO_GUEST_PROFILE`), CharCache preview load + `CharSync::UpdateCharCache` (opt-out
+`RB3_NO_CHAR_PREVIEW`).
+
+**Verified (native).** ≥18 song_select reaches, 0 crashes (6 default-on + 6 explicit-flag
++ 6 under gdb). Closet still renders a standing character holding an instrument
+(`customize_clothing_screen`, 140 meshes, 90% non-black frame). Files:
+`src/band3/meta_band/BandProfile.cpp`, `CharCache.cpp`, `CharSync.cpp`,
+`native/src/rb3_guestprofile_native.cpp`. (RESIDUAL, separate: the in-place
+ProfilePicture/heap corruption from the char composite still exists but is no longer
+reachable by this path; and the `back→manage_band` route hits an unrelated
+`CharProvider.cpp:143 pLocalChar` assert — both tracked separately, not domino ②.)
+
 Continues [`BLOCKER_VALIDATION_2026-06-08.md`](BLOCKER_VALIDATION_2026-06-08.md)
 theme B and roadmap rows C6/C11–C13. Produced by two multi-agent deep-work
 workflows (each adversarially verified) plus empirical native runs.
