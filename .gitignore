@@ -67,6 +67,14 @@ ignored/
 *.ignore.*
 *.ignored.*
 
+# Repo-local scratch (throwaway captures, temp audio, etc.)
+tmp/
+
+# audio-perf-loop baseline measurement dumps (per-run capture JSON; the .md
+# writeups + STATE.md stay tracked). These are reproducible measurement
+# artifacts, not source.
+docs/native/audio-perf-loop/baselines/*.json
+
 # Analysis databases
 cache.db
 decomp.db
