@@ -20,14 +20,20 @@
 #    (If the install ever stops being editable, reinstall with:
 #      build/SZBE69_B8/ghidra/ghidriff-venv/bin/python -m pip install -e /home/free/code/milohax/ghidriff)
 #
-# FLAG RATIONALE (2026-06-09, see docs/decomp/ghidriff-improvement-plan-2026-06-09.md):
+# FLAG RATIONALE (2026-06-09, see docs/decomp/ghidriff-improvement-plan-2026-06-09.md
+# and the measured per-correlator precision in docs/decomp/ghidriff-calibration-2026-06-09.md):
 #   --bsim (default on; --no-bsim removed)  first scored correlator in the cascade
 #   --min-func-len 16                       keeps the 8-byte stub ocean out of every stage
-#   --skip-correlators BulkBasicBlockMnemonicHash
-#                                           kills the 11.1M-tag one-to-many explosion
-#   --implied-min-ratio 0.5                 gates implied matches on mnemonic similarity;
-#                                           0.5 is PROVISIONAL pending the calibration table in
-#                                           docs/decomp/ghidriff-calibration-2026-06-09.md
+#                                           (calibration: ExactBytes <16B = 63% precision)
+#   --skip-correlators BulkBasicBlockMnemonicHash (11.1M-tag explosion, ~0% precision),
+#                      SigCallingCalledHasher (1.4% precision = garbage),
+#                      StructuralGraphExactHash (46.7% = coin flip even at 256B+;
+#                        also currently auto-TRUSTed by distill_ghidriff.py — poison)
+#   --implied-min-ratio 0.9                 calibrated: 0.9 -> 63.9% exact (1:1-unique
+#                                           subset 90.4%); 0.5 was only 38.7%. distill
+#                                           post-filter should additionally 1:1-dedupe.
+#   KNOWN-BAD, NOT YET SKIPPABLE: the final Decomp Match stage scored 0% (15/15 wrong)
+#   in calibration — discard 'Decomp Match' pairs in post-processing.
 #
 # USAGE
 # -----
@@ -87,8 +93,8 @@ GHIDRA_USER_HOME=/tmp/claude/ghidra_user_bank8 \
     --project-name "rb3-b5-b8-diff" \
     --force-diff \
     --min-func-len 16 \
-    --skip-correlators BulkBasicBlockMnemonicHash \
-    --implied-min-ratio 0.5 \
+    --skip-correlators BulkBasicBlockMnemonicHash,SigCallingCalledHasher,StructuralGraphExactHash \
+    --implied-min-ratio 0.9 \
     --no-symbols \
     --log-level INFO \
     --log-path "${OUT_DIR}/ghidriff.log"
