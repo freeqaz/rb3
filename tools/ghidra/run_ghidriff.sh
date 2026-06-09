@@ -20,9 +20,11 @@
 #
 # POST-PROCESS
 # ------------
-# After completion, use bank_divergence_ghidriff.py to query results:
-#   python3 scripts/analysis/bank_divergence_ghidriff.py --report
-#   python3 scripts/analysis/bank_divergence_ghidriff.py Init__14BandHeadShaperFv
+# After completion, distill the ~3 GB pdiff into the small per-symbol index:
+#   build/SZBE69_B8/ghidra/ghidriff-venv/bin/python tools/ghidra/distill_ghidriff.py
+# (writes divergence_index.json + renames.json). Per-symbol verdicts are then served
+# by bank_divergence.py, which prefers that index over the body-size heuristic:
+#   python3 scripts/analysis/bank_divergence.py Init__14BandHeadShaperFv
 
 set -euo pipefail
 
@@ -78,5 +80,7 @@ echo ""
 echo "[run_ghidriff] Done. Output in: ${OUT_DIR}"
 echo "JSON files: ${OUT_DIR}/json/"
 echo ""
-echo "To query results:"
-echo "  python3 ${RB3_ROOT}/scripts/analysis/bank_divergence_ghidriff.py --report"
+echo "To distill into the per-symbol divergence index + rename map:"
+echo "  ${VENV_PYTHON} ${RB3_ROOT}/tools/ghidra/distill_ghidriff.py"
+echo "Then query verdicts via:"
+echo "  python3 ${RB3_ROOT}/scripts/analysis/bank_divergence.py SYMBOL"

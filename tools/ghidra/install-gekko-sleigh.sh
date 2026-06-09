@@ -41,6 +41,12 @@ done
 touch "$DEST"/*.sla
 
 echo
-echo "Done. Restart the pyghidra service to pick up the new variant:"
-echo "  rm -rf /home/free/code/milohax/rb3/ghidra_projects/RB3   # force re-import under Gekko_Broadway"
+echo "Done. The Gekko_Broadway language is restored in ppc.ldefs (the .sla was already"
+echo "compiled). If a pyghidra project already has programs analyzed under Gekko_Broadway,"
+echo "they open again as-is -- just restart the service to pick up the language:"
 echo "  tools/ghidra/pyghidra-service.sh restart"
+echo
+echo "A full re-import is NOT needed to recover an existing project, and it is"
+echo "destructive (loses analysis + any VT/type enrichment, ~hours to rebuild)."
+echo "Only blow the project away if you specifically WANT to re-analyze from scratch:"
+echo "  rm -rf /home/free/code/milohax/rb3/ghidra_projects/RB3   # fresh re-import (rarely needed)"
