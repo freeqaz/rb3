@@ -47,7 +47,24 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
-## The decisive next step — Stage-0 runtime gate (WRITTEN, verification BLOCKED)
+## ✅ UPDATE — Stage-0 gate PASSED (verified in the real App boot)
+The build blocker cleared (the concurrent `App.cpp`/`BandOffline` WIP was committed,
+`db54b18f`). The in-process gtest was **retired** — a headless test can't run the GPU
+`Rnd::Init` rndobj-factory cluster (`RndCam`/`RndLight`/`RndEnviron`/… are registered
+inside the GPU render init), so loading a full real milo there is impractical.
+Instead the gate is an **opt-in Stage-1 load + probe in `CharCache::InitMe`**
+(`RB3_CHAR_PREVIEW=1`, committed), verified in the real boot:
+```
+C13_PROBE: player0 char=<non-null>  FileMerger.fm=<non-null>
+C13_PROBE: player1..3  … same …      (no crash, no "Unknown class")
+```
+→ chars.milo loads natively, the proxy-load of `char/main/main.milo` binds
+`mFileMerger` for all 4 players, and `BandCharacter::StartLoad`'s `mFileMerger`
+deref is safe. **C13 route confirmed.** Stage 2 (harden derefs) + Stage 3 (un-gate
+`UpdateCharCache` → StartLoad → FileMerger loads 13 bodyparts → animate) are next,
+with a headless body/anim probe that decouples from the guest-profile cascade.
+
+## (historical) The decisive next step — Stage-0 runtime gate (WRITTEN, verification BLOCKED)
 Before un-deferring anything, prove the proxy-load actually binds `mFileMerger`
 natively (chars.milo's own parse on the clang/LE engine is otherwise unproven;
 `world_chars.milo` does NOT prove it — it's 0 BandCharacters/TransProxies).
