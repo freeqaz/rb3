@@ -171,11 +171,12 @@
         const loadingStatus = document.getElementById('loading-status');
 
         function log(text, isErr) {
+            const atBottom = logDiv.scrollHeight - logDiv.clientHeight - logDiv.scrollTop < 4;
             const line = document.createElement('div');
             line.textContent = text;
             if (isErr) line.className = 'err';
             logDiv.appendChild(line);
-            logDiv.scrollTop = logDiv.scrollHeight;
+            if (atBottom) logDiv.scrollTop = logDiv.scrollHeight;
         }
 
         // ── Loading overlay management ────────────────────────────────────────
@@ -323,20 +324,60 @@
                 }
             };
 
-            console.log('LOADING_WASM_JS');
-            var script = document.createElement('script');
-            script.src = 'rb3-web.js';
-            script.onload = function() {
-                console.log('WASM_JS_LOADED');
-            };
-            script.onerror = function(e) {
-                console.error('WASM_JS_ERROR: ' + e);
-                status.textContent = 'Failed to load rb3-web.js — build first (scripts/web/build.sh)';
-                status.className = 'error';
-                loadingStatus.textContent = 'Failed to load rb3-web.js';
-                progressFill.classList.remove('indeterminate');
-            };
-            document.body.appendChild(script);
+            // ── Build selection: release (default, cached) vs debug ──────────
+            // scripts/web/build.sh deploys two builds into sibling subdirs:
+            //   release/  — size-opt, -g0, served immutable (fast reloads)
+            //   debug/    — -O0 -g2, served no-store (fast iteration)
+            // ?debug=true (or ?debug=1) loads debug and bypasses the HTTP cache;
+            // anything else loads release. The release URLs are version-stamped
+            // with ?v=<token> from /api/version so a rebuilt release wasm busts
+            // the immutable cache (the server keys caching off the /release/ path,
+            // ignoring the query). If the chosen build isn't deployed we fall
+            // back to the other one, so http://host:8421/ works whichever you
+            // built.
+            var dbgParam = new URLSearchParams(location.search).get('debug');
+            var wantDebug = dbgParam !== null &&
+                            dbgParam !== '0' && dbgParam !== 'false' && dbgParam !== 'off';
+
+            function loadBuild(dir, version, isFallback) {
+                // Only the cached release build needs the version token; debug is
+                // no-store so a stale URL can never be served.
+                var q = (dir === 'release/' && version) ? ('?v=' + encodeURIComponent(version)) : '';
+                Module.locateFile = function(path) { return dir + path + q; };
+                console.log('LOADING_WASM_JS (' + dir + (q || '') + ')');
+                var script = document.createElement('script');
+                script.src = dir + 'rb3-web.js' + q;
+                script.onload = function() {
+                    console.log('WASM_JS_LOADED (' + dir + ')');
+                };
+                script.onerror = function(e) {
+                    if (!isFallback) {
+                        var other = (dir === 'release/') ? 'debug/' : 'release/';
+                        console.warn('[rb3] ' + dir + ' build not deployed — falling back to ' + other);
+                        loadBuild(other, version, true);
+                        return;
+                    }
+                    console.error('WASM_JS_ERROR: ' + e);
+                    status.textContent = 'No build deployed — run scripts/web/build.sh';
+                    status.className = 'error';
+                    loadingStatus.textContent = 'No build deployed';
+                    progressFill.classList.remove('indeterminate');
+                };
+                document.body.appendChild(script);
+            }
+
+            var primaryDir = wantDebug ? 'debug/' : 'release/';
+            // Grab the cache-bust token before loading release. Tiny + no-store;
+            // worst case (server hiccup) we load with no ?v= and the browser
+            // still revalidates. Debug skips the fetch entirely.
+            if (wantDebug) {
+                loadBuild(primaryDir, '', false);
+            } else {
+                fetch('/api/version')
+                    .then(function(r) { return r.json(); })
+                    .then(function(j) { loadBuild(primaryDir, (j && j.version) ? String(j.version) : '', false); })
+                    .catch(function() { loadBuild(primaryDir, '', false); });
+            }
         }
 
         // Canvas resize — match canvas resolution to display size so the WebGPU

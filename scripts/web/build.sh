@@ -1,28 +1,46 @@
 #!/usr/bin/env bash
-# Build the RB3 Emscripten/WebAssembly target and deploy artifacts next to
+# Build the RB3 Emscripten/WebAssembly target(s) and deploy artifacts next to
 # native/web/index.html so server.py can serve them.
+#
+# DUAL BUILD: this script produces TWO deployable builds you can switch between
+# at runtime via a URL param:
+#   - release/  — size-opt, debug-info-stripped (-g0). Served with long-lived
+#                 immutable HTTP caching (server.py), so RELOADS ARE FAST: the
+#                 browser reuses the cached + already-compiled wasm. This is what
+#                 http://host:8421/ loads by default.
+#   - debug/    — full debug info (-O0 -g2), served no-store for fast iteration.
+#                 Loaded by http://host:8421/?debug=true (bypasses the cache).
 #
 # Emscripten: auto-activates from $EMSDK or ~/emsdk if emcc isn't on PATH yet.
 #
 # Usage:
-#   scripts/web/build.sh                          # dev build (-O0 -g2, debuggable)
-#   scripts/web/build.sh --release                # W4a size-opt build (-O0 -g0)
-#   scripts/web/build.sh --release --opt Os       # opt-in to higher -O (BROKEN as of W4a;
-#                                                 # matched-fork throws during App ctor at -O>0)
-#   scripts/web/build.sh --release --closure      # opt-in to --closure 1 (BROKEN as of W4a;
-#                                                 # closure renames break rb3_pre.js stub patch)
+#   scripts/web/build.sh                # build BOTH release + debug (default)
+#   scripts/web/build.sh --release      # build release only
+#   scripts/web/build.sh --debug        # build debug only (fast iteration loop)
+#   scripts/web/build.sh --reconfigure  # force a fresh cmake configure
+#   scripts/web/build.sh --opt Os       # higher -O for release (BROKEN as of W4a;
+#                                       # matched-fork throws during App ctor at -O>0)
+#   scripts/web/build.sh --closure      # --closure 1 (BROKEN as of W4a; renames
+#                                       # break rb3_pre.js stub patch)
 #
-# All --release builds pre-compress .wasm + .js with brotli (-q 11) and gzip
-# (-9) so server.py can negotiate Content-Encoding without runtime CPU cost.
+# The release build pre-compresses .wasm + .js with brotli (-q 11) and gzip (-9)
+# so server.py negotiates Content-Encoding with no runtime CPU cost. The debug
+# build only gzips (brotli q11 on the 28M -g2 wasm is the multi-minute step, and
+# debug is served no-store for local iteration anyway).
 #
 # Output:
-#   native/build-web/rb3-web.{js,wasm}  — emcc build outputs
-#   native/web/build/{rb3-web.js, rb3-web.wasm, rb3-web.wasm.br, rb3-web.wasm.gz,
-#                     rb3-web.js.br,  rb3-web.js.gz,
-#                     index.html, audio-worklet.js}
+#   native/build-web/         — emcc build dir for debug   (RB3_WEB_RELEASE=OFF)
+#   native/build-web-release/ — emcc build dir for release (RB3_WEB_RELEASE=ON)
+#   native/web/build/
+#     index.html, audio-worklet.js          — shared, served from the root
+#     release/{rb3-web.js,.wasm,.br,.gz}     — cached (immutable)
+#     debug/{rb3-web.js,.wasm,.gz}           — no-store
 #
-# The audio-worklet.js POST_BUILD copy is handled by
-# milo_engine_apply_web_target_options in native/CMakeLists.txt.
+# The audio-worklet.js POST_BUILD copy (to web/build/ root) is handled by
+# milo_engine_apply_web_target_options in native/CMakeLists.txt. It stays at the
+# root because the engine loads it via a document-relative
+# `audioWorklet.addModule('audio-worklet.js')`, which must resolve for BOTH
+# builds regardless of which subdir the wasm came from.
 #
 # Worktree note: `${CMAKE_SOURCE_DIR}/../../milo-native-engine` (in
 # native/CMakeLists.txt) DOES NOT resolve from .claude/worktrees/<name>/.
@@ -32,23 +50,26 @@
 set -euo pipefail
 NATIVE_DIR="$(cd "$(dirname "$0")/../../native" && pwd)"
 REPO_ROOT="$(cd "$NATIVE_DIR/.." && pwd)"
-BUILD_DIR="$NATIVE_DIR/build-web"
 DEPLOY_DIR="$NATIVE_DIR/web/build"
 
-# Default flags; --release / --closure flip them on.
-RELEASE=OFF
+# Which builds to produce. Default: both (so ?debug=true switching works out of
+# the box). --release / --debug narrow it for a faster single-build loop.
+BUILD_DEBUG=1
+BUILD_RELEASE=1
 CLOSURE=OFF
 OPT_LEVEL=""
 FORCE_RECONFIGURE=0
 while [ $# -gt 0 ]; do
     case "$1" in
-        --release)  RELEASE=ON ;;
-        --closure)  CLOSURE=ON ;;
+        --release)     BUILD_DEBUG=0; BUILD_RELEASE=1 ;;
+        --debug)       BUILD_DEBUG=1; BUILD_RELEASE=0 ;;
+        --both|--all)  BUILD_DEBUG=1; BUILD_RELEASE=1 ;;
+        --closure)     CLOSURE=ON ;;
         --reconfigure) FORCE_RECONFIGURE=1 ;;
-        --opt) shift; OPT_LEVEL="$1" ;;
-        --opt=*) OPT_LEVEL="${1#--opt=}" ;;
+        --opt)         shift; OPT_LEVEL="$1" ;;
+        --opt=*)       OPT_LEVEL="${1#--opt=}" ;;
         -h|--help)
-            sed -n '2,18p' "$0"
+            sed -n '2,33p' "$0"
             exit 0
             ;;
         *)
@@ -102,58 +123,94 @@ fi
 
 mkdir -p "$DEPLOY_DIR"
 
-CMAKE_ARGS=(
-    -DMILO_ENGINE_PATH="$MILO_ENGINE_PATH"
-    -DRB3_WEB_RELEASE="$RELEASE"
-    -DRB3_WEB_CLOSURE="$CLOSURE"
-)
-if [ -n "$OPT_LEVEL" ]; then
-    CMAKE_ARGS+=(-DRB3_WEB_OPT_LEVEL="$OPT_LEVEL")
-fi
+# Remove stale flat artifacts from the pre-dual-build layout. The deploy now
+# lives under release/ and debug/; orphaned root-level rb3-web.* would just
+# confuse (and the old /api/version fallback path). Harmless if already gone.
+rm -f "$DEPLOY_DIR"/rb3-web.js "$DEPLOY_DIR"/rb3-web.js.br "$DEPLOY_DIR"/rb3-web.js.gz \
+      "$DEPLOY_DIR"/rb3-web.wasm "$DEPLOY_DIR"/rb3-web.wasm.br "$DEPLOY_DIR"/rb3-web.wasm.gz
 
-# Reconfigure if release-mode flag changed since last configure. CMake won't
-# pick up new -D values otherwise (option() honours the cache).
-NEEDS_CONFIGURE=0
-if [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
-    NEEDS_CONFIGURE=1
-elif [ "$FORCE_RECONFIGURE" = "1" ]; then
-    NEEDS_CONFIGURE=1
-else
-    CACHED_RELEASE="$(grep -E '^RB3_WEB_RELEASE:BOOL=' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo OFF)"
-    CACHED_CLOSURE="$(grep -E '^RB3_WEB_CLOSURE:BOOL=' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo OFF)"
-    CACHED_OPT="$(grep -E '^RB3_WEB_OPT_LEVEL:STRING=' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo Os)"
-    if [ "$CACHED_RELEASE" != "$RELEASE" ] || [ "$CACHED_CLOSURE" != "$CLOSURE" ] || ( [ -n "$OPT_LEVEL" ] && [ "$CACHED_OPT" != "$OPT_LEVEL" ] ); then
-        echo "==> RB3_WEB_RELEASE/CLOSURE/OPT_LEVEL changed; reconfiguring + relinking"
-        # Force re-link by removing the wasm so cmake rebuilds it with new flags.
-        rm -f "$BUILD_DIR/rb3-web.wasm" "$BUILD_DIR/rb3-web.js"
-        NEEDS_CONFIGURE=1
+# Build one configuration (mode = release | debug) into its own emcc build dir
+# and deploy it to web/build/<mode>/. Each build dir is pinned to its mode, so we
+# only reconfigure when the cache is missing, the mode flag drifted (e.g. an old
+# single-dir build), or --reconfigure was passed.
+build_one() {
+    local mode="$1"
+    local release_flag bdir ddir
+    if [ "$mode" = "release" ]; then
+        release_flag=ON
+        bdir="$NATIVE_DIR/build-web-release"
+    else
+        release_flag=OFF
+        bdir="$NATIVE_DIR/build-web"
     fi
-fi
+    ddir="$DEPLOY_DIR/$mode"
+    mkdir -p "$ddir"
 
-if [ "$NEEDS_CONFIGURE" = "1" ]; then
-    emcmake cmake -S "$NATIVE_DIR" -B "$BUILD_DIR" "${CMAKE_ARGS[@]}"
-fi
+    local cmake_args=(
+        -DMILO_ENGINE_PATH="$MILO_ENGINE_PATH"
+        -DRB3_WEB_RELEASE="$release_flag"
+        -DRB3_WEB_CLOSURE="$CLOSURE"
+    )
+    if [ -n "$OPT_LEVEL" ]; then
+        cmake_args+=(-DRB3_WEB_OPT_LEVEL="$OPT_LEVEL")
+    fi
 
-cmake --build "$BUILD_DIR" -- -j"$(nproc)" rb3-web
+    local need_configure=0
+    if [ ! -f "$bdir/CMakeCache.txt" ] || [ "$FORCE_RECONFIGURE" = "1" ]; then
+        need_configure=1
+    else
+        local cached_release cached_closure cached_opt
+        cached_release="$(grep -E '^RB3_WEB_RELEASE:BOOL=' "$bdir/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo OFF)"
+        cached_closure="$(grep -E '^RB3_WEB_CLOSURE:BOOL=' "$bdir/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo OFF)"
+        cached_opt="$(grep -E '^RB3_WEB_OPT_LEVEL:STRING=' "$bdir/CMakeCache.txt" 2>/dev/null | cut -d= -f2 || echo O0)"
+        if [ "$cached_release" != "$release_flag" ] || [ "$cached_closure" != "$CLOSURE" ] \
+           || { [ -n "$OPT_LEVEL" ] && [ "$cached_opt" != "$OPT_LEVEL" ]; }; then
+            echo "==> [$mode] build flags changed; reconfiguring + relinking"
+            rm -f "$bdir/rb3-web.wasm" "$bdir/rb3-web.js"
+            need_configure=1
+        fi
+    fi
 
-cp "$BUILD_DIR/rb3-web.js" "$BUILD_DIR/rb3-web.wasm" "$DEPLOY_DIR/"
+    if [ "$need_configure" = "1" ]; then
+        emcmake cmake -S "$NATIVE_DIR" -B "$bdir" "${cmake_args[@]}"
+    fi
+
+    echo "==> [$mode] building rb3-web"
+    cmake --build "$bdir" -- -j"$(nproc)" rb3-web
+
+    cp "$bdir/rb3-web.js" "$bdir/rb3-web.wasm" "$ddir/"
+
+    # Compression. Release gets brotli q11 (best wire size, ~10x slower at build)
+    # + gzip fallback; debug gets gzip only (brotli q11 on the big -g2 wasm is the
+    # multi-minute step we skip for the fast-iteration build).
+    echo "==> [$mode] pre-compressing artifacts"
+    local f src
+    for f in rb3-web.wasm rb3-web.js; do
+        src="$ddir/$f"
+        if [ "$mode" = "release" ] && command -v brotli >/dev/null 2>&1; then
+            brotli -q 11 -f -k -o "$src.br" "$src"
+        elif [ "$mode" = "release" ]; then
+            echo "  brotli not installed — skipping .br (gzip fallback only)"
+        fi
+        gzip -9 -k -f "$src"  # produces $src.gz, keeps the original
+    done
+}
+
+[ "$BUILD_RELEASE" = "1" ] && build_one release
+[ "$BUILD_DEBUG" = "1" ]   && build_one debug
+
+# Shared, served from the root. index.html picks release/ or debug/ at runtime.
 cp "$NATIVE_DIR/web/index.html" "$DEPLOY_DIR/"
 
-# W4a — pre-generate gzip + brotli for the wasm + js so server.py can serve
-# Content-Encoding: br / gzip without re-compressing on every request. The
-# .br is sized with `-q 11` (max compression; ~10x slower at build time but
-# halves the wire transfer vs gzip for wasm). The .gz at `-9` is the fallback
-# for browsers without brotli support.
-echo "==> Pre-compressing artifacts (brotli q11 + gzip -9)"
-for f in rb3-web.wasm rb3-web.js; do
-    src="$DEPLOY_DIR/$f"
-    if command -v brotli >/dev/null 2>&1; then
-        brotli -q 11 -f -k -o "$src.br" "$src"
-    else
-        echo "  brotli not installed — skipping .br"
-    fi
-    gzip -9 -k -f "$src"  # produces $src.gz, keeps the original
-done
-
+echo ""
 echo "Deployed to $DEPLOY_DIR"
-ls -lh "$DEPLOY_DIR"/rb3-web.{js,wasm}{,.br,.gz} 2>/dev/null | awk '{printf "  %-32s %s\n", $9, $5}'
+if [ "$BUILD_RELEASE" = "1" ]; then
+    ( cd "$DEPLOY_DIR" && ls -lh release/rb3-web.{js,wasm}{,.br,.gz} 2>/dev/null | awk '{printf "  %-30s %s\n", $NF, $5}' )
+fi
+if [ "$BUILD_DEBUG" = "1" ]; then
+    ( cd "$DEPLOY_DIR" && ls -lh debug/rb3-web.{js,wasm}{,.gz} 2>/dev/null | awk '{printf "  %-30s %s\n", $NF, $5}' )
+fi
+echo ""
+echo "  Serve:  python3 native/web/server.py"
+echo "  Play:   http://localhost:8421/            (release, cached — fast reloads)"
+echo "  Debug:  http://localhost:8421/?debug=true (debug, no-store)"
