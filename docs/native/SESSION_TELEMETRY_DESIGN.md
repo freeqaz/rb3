@@ -826,6 +826,53 @@ This is the "bug-repro bundle": the trace is self-describing (build+asset+flags 
 
 **Q10 — ANSWERED:** extend (lift+share `frame_profiler.report()`), don't fork; new `trace-report.py` is a SQLite/jsonl reader; report format + per-metric queries specified above.
 
+## M4 (Tier-2) — feasibility + implementation plan
+
+**Verdict: CONDITIONAL GO.** Frame-perfect replay is feasible. The gameplay sim is a deterministic function of `(inputs + injected song-ms)` for normal human play — the entire scoring/hit-detection path reads **no RNG** (ScoreTracker/ScoreUtl/StatCollector/GemManager grep-confirmed 0 calls; gem layout is fixed MIDI), and all in-song polls consume the single `songMs` that `Game::Poll` pushes into `TheTaskMgr`. The conditions are bounded and named below; none is blocking.
+
+### Clock injection — two seams, both `HX_NATIVE` + `RB3_REPLAY_FIXED_CLOCK`
+
+1. **Menu/UI (one edit):** `TaskMgr::Poll` (`src/system/obj/Task.cpp:369-380`) is the single per-frame sim time-advance (called at `App.cpp:561`, right after `RB3GameInputPoll(frame)`). Today its `mAutoSecondsBeats` branch derives seconds from accumulated wall-clock cycles. Under the gate, advance a new accumulator (`mReplaySeconds += recordedDt`) and drive `mTimelines[kTaskSeconds]/[kTaskBeats].SetTime(...)` from it instead of `mTime.Split()`. The native loop has **no frame pacing/vsync/sleep** to undo (free-running today), so this strictly removes nondeterminism.
+
+2. **Gameplay (the hard half):** `Game::Poll` re-overrides `kTaskSeconds` every in-song frame at `Game.cpp:1606-1615`: `audioMs = mMaster->GetAudio()->GetTime()` → `+ GetSongToTaskMgrMs()` → `mDeJitter.Apply(...)` → `TheTaskMgr.SetSeconds(songMs/1000, false)`. Under the gate, feed the **recorded post-DeJitter `songMs`** directly into `SetSeconds`, bypassing `GetTime()` (kills audio-thread dependence), `DeJitter.Apply` (kills the stateful 32-sample median ring), and PitchMucker's `rand()`-driven `SetSpeed` perturbation. After this, `mMaster/mBand/mTrackerManager` polls (`Game.cpp:1632-1636`) and `mSongPos` (`:1618-1620`) are pure functions of the injected `songMs`.
+
+The audio **mixer** still free-runs on miniaudio's callback thread (`rb3_stream_receiver_native.cpp:187-208`); in replay the sim reads recorded `songMs` and never reads the live position back, so audible playback may drift/mute without affecting the trace.
+
+### Capture additions (on top of Tier-1's nav/song/input + frame index)
+
+- **Per-frame:** `dt` (drives seam 1) and `songMs` (drives seam 2; record the value actually fed to `SetSeconds`, `-1`/omit in menus). For plain human play, **this is the only new capture.**
+- **Header (conditional):** `gRand` boot seed *only* if cheat/autoplay scoring is in scope (`TrackWatcherImpl` autoplay reads RNG). `mPartResolverSeed` is **already serialized** (free) for instrument-contention. `mNetRandomSeed` is network-only → out of scope. No per-frame seed needed; gem/camera/context RNG are deterministic or cosmetic-only on the in-song path.
+
+### Verification — `chk` event + milestone anchoring + tiered tolerance
+
+Additive `chk` event (no `hdr.v` bump), computed at the proven per-frame hook `rb3_http_handlers.cpp:427-445` (the site `/api/health` already samples safely boot-through-gameplay). Emit every `RB3_TRACE_CHK_EVERY` (default 30 in-song, +1 per nav). Carry **both** a fast-path hash and raw fields:
+
+- `h` = FNV-1a over the quantized tuple `{scr, focus, q(taskSec,1ms), q(beat,0.01), q(songMs,1ms), q(mSongPos.mBeat,0.01), Σ Player(Performer)::GetScore() exact, nPlayers}`. Accessors: `TheUI.CurrentScreen()->Name()`, `TaskMgr::Seconds(kRealTime)`/`Beat()`, `Game::GetBand()->GetActivePlayers()->Player::GetScore()`, `Performer::GetPercentComplete()` — all verified present/reachable.
+- Raw fields alongside `h` (`scr, focus, sec, beat, sm, score[], pct`) for field-level ε classification on hash mismatch.
+- Quantize floats **before** hashing (1ms / 0.01) to absorb benign x86-vs-x86 drift.
+
+**Anchoring (required):** the replay clock is milestone-relative to defeat async-load frame-skew (`Loader.cpp:56` wall-clock budget). Milestones = recorded `nav` transitions + `song` lifecycle. Input frame indices stored relative-to-last-milestone; at each milestone the replay **blocks** (reusing the `VerbReady` readiness gate) until the host reaches the same logical state, re-zeroes the offset, then advances by recorded `dt`. `trace-diff` aligns by segment, not absolute frame.
+
+**Tiered tolerance:** nav sequence EXACT (hard fail on reorder/miss); final score EXACT integer, pct EXACT or ±1; screen-ready within ±K frames (K=8); clocks/positions within ε after quantization (`chk.h` fast equality, raw-field ε fallback classifies benign-drift vs real). First true divergence = first segment with a hard-fail OR ≥M consecutive `chk` ε-breaches.
+
+### CI gate (greenfield — neither file exists yet)
+
+- `trace-diff.py`: pure reader — align by milestone, apply tiered tolerance, exit non-zero on first hard-fail or sustained ε breach.
+- `trace-replay.mjs`: reuses `scripts/web/lib/core.mjs` wholesale (`engineState`/`waitScreen`/`captureCanvasStats` for black-frame auto-flag).
+- Harness shape proven by `song-end-test.py` / `song-select-capture.py`: boot headless, `RB3_REPLAY` a recorded trace with capture on, diff the new `chk`/`nav`/`song` stream vs source.
+
+### Conditions & risks (acceptance experiment)
+
+1. Audit that no in-song sim consumer reads the **live audio position** instead of the injected `songMs` (the one truly thread-independent component). 2. Confirm the `GetTime()`+`DeJitter`+`PitchMucker` bypass is unconditional under the replay gate. 3. Milestone anchoring must hold across load-skew (the ±8 screen-ready tolerance is the backstop). 4. Scope cheat/autoplay/multiplayer explicitly (those need the `gRand` seed); default to single-attempt human play. 5. The gate measures **run-to-run** reproducibility on the same build, **not** Wii paired-single parity — hence the quantization tolerance.
+
+### Recommendation
+
+**Build a thin prototype first**, then the full design. Land seam 1 + seam 2 behind `RB3_REPLAY_FIXED_CLOCK`, capture `{dt, songMs}`, add the `chk` event + a minimal `trace-diff.py`, and validate replay of **one real song end-to-end** (record → replay → diff: nav exact, final score exact, `chk` within ε). The DeJitter-bypass × milestone-anchoring interaction is the highest-uncertainty piece and is the right go/no-go signal before committing the rest of M4. Tier-1 infra (`rb3_frame_trace.cpp`, the readiness-gated verb queue) already exists, so the prototype is small.
+
+> _Audit 2026-06-09 (3-agent read-only determinism audit + synthesis). Recommendation: land the two seams + `{dt,songMs}` capture + a `chk` event + minimal `trace-diff` chk-mode, then prove ONE real song end-to-end (nav exact, final score exact, chk within ε) as the go/no-go before the full CI gate._
+
+---
+
 ## 10. Milestones
 
 | # | Milestone | Deliverable / acceptance |
@@ -834,7 +881,7 @@ This is the "bug-repro bundle": the trace is self-describing (build+asset+flags 
 | M1 | Input capture + **Tier-1 replay** | record a native session, replay it, matching `nav`/`song`/score |
 | M2 | Web egress (always-on) + SQLite ingest | play in a browser → session lands in `sessions.db`; tail survives tab close (beacon) |
 | M3 | Analysis + replay tooling | `trace-report.py`, `trace-replay.mjs`, `repro` |
-| M4 | **Tier-2** deterministic replay + determinism testing | clock injection + checkpoint hashing; measured divergence report (the go/no-go) |
+| M4 | **Tier-2** deterministic replay + determinism testing | ✅ audit done (CONDITIONAL GO, see the M4 section above): two HX_NATIVE clock seams + {dt,songMs} capture + `chk` event; acceptance = one real song reproduces (nav+score exact, chk within ε) |
 
 ---
 
