@@ -151,6 +151,10 @@ def main():
                     help="DDown presses in song_select before confirming a song")
     ap.add_argument("--out", default="/tmp/rb3-kbd2game")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--game-burst", type=int, default=0,
+                    help="after game_screen, capture this many extra shots "
+                         "(catches venue cameras cutting to band closeups)")
+    ap.add_argument("--burst-interval", type=float, default=0.8)
     args = ap.parse_args()
 
     if not os.path.exists(args.bin):
@@ -291,6 +295,17 @@ def main():
         log(f"  is_playing={is_playing} songMs={h[1]:.0f} (start={start_ms:.0f}) overshell={ov}")
         screenshot(port, os.path.join(args.out, "07_playing.png"))
         mark(port, "playing")
+
+        # Sustained game-screen burst: the venue cameras cut between wide shots
+        # and band-member closeups, so a single frame rarely frames the band.
+        for i in range(args.game_burst):
+            verb(port, "autohit")
+            h = health(port)
+            if h is None:
+                log(f"  [game-burst] engine died at shot {i}"); break
+            ok = screenshot(port, os.path.join(args.out, f"burst_{i:02d}.png"))
+            log(f"  [game-burst] shot {i:02d} ok={ok} songMs={h[1]:.0f}")
+            time.sleep(args.burst_interval)
 
         eff_diff = ov[2]
         if is_playing and h[1] > 0 and eff_diff == args.diff:
