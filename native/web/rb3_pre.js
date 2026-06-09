@@ -219,17 +219,33 @@
     }
 
     // Single-row put — called by the native shim (via EM_ASM) after a successful
-    // sync XHR. The write to IDB is fire-and-forget; we batch by deferring the
-    // actual transaction commit to the next microtask so a burst of misses
-    // shares one tx.
+    // sync XHR (cachePutAfterFetch) AND by the engine bundle unpack
+    // (bundleCacheWriteThrough). The write to IDB is fire-and-forget; we batch by
+    // deferring the actual transaction commit to the next microtask so a burst of
+    // misses shares one tx.
+    //
+    // OOM FIX: do NOT retain the bytes in the in-memory __rb3IdbCache map here.
+    // Every caller of __rb3CachePut has ALREADY written the file to MEMFS (the
+    // sync path opens it after the XHR; the bundle path fwrites it before caching),
+    // so for the rest of THIS session every re-open is served by MEMFS and the
+    // in-memory entry is never read again (cacheTryHit is only consulted on a MEMFS
+    // miss = the first open). The only consumer of the in-memory map is the
+    // *next* session's synchronous warm-boot path, which is repopulated from IDB by
+    // loadAllRows() — not by these runtime puts. Retaining a 2nd copy of every
+    // fetched asset in the renderer's ArrayBuffer heap therefore bought nothing and
+    // grew unbounded: navigating to song_select pulls ~470 milos/textures (~190 MB),
+    // a full redundant duplicate of MEMFS, which OOM-crashed the renderer
+    // ("Page crashed" / hang-on-black) the moment the song-select milo burst landed.
+    // Keep only the IDB write-through so warm boots still benefit.
     window.__rb3CachePut = function(path, bytes) {
         if (!path || !bytes) return;
-        // Take a copy — the caller's HEAP view may move on next allocation.
-        var copy = new Uint8Array(bytes.byteLength);
-        copy.set(bytes);
-        window.__rb3IdbCache.set(path, copy);
         window.__rb3CacheStats.puts++;
         if (!sDb) return;
+        // Take a copy — the caller's HEAP view may move on next allocation. The
+        // copy is referenced only until flushPendingWrites() hands it to IDB, then
+        // released (no in-memory map retention — see OOM FIX above).
+        var copy = new Uint8Array(bytes.byteLength);
+        copy.set(bytes);
         sPendingWrites.push({ key: path, bytes: copy });
         // Flush soon — Promise.resolve is the smallest deferral that still
         // lets a burst of misses share a transaction.
