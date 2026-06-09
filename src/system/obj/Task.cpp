@@ -16,6 +16,8 @@
 
 #ifdef HX_NATIVE
 #include <unordered_set>
+#include "rb3_replay.h"            // RB3ReplayFixedClock/Active/RB3ReplayDtForFrame
+#include "rb3_session_trace.h"     // gRB3TraceFrame (current frame index)
 // Set of currently-live Task pointers. A Task removes itself in ~Task(), so a
 // pointer absent from this set has been deleted (possibly via self-delete from
 // inside its own Poll()).
@@ -27,6 +29,19 @@ static std::unordered_set<Task *> &LiveTasks() {
 Task::Task() { LiveTasks().insert(this); }
 Task::~Task() { LiveTasks().erase(this); }
 bool Task::IsLive(Task *t) { return LiveTasks().count(t) > 0; }
+
+// SESSION-TELEMETRY replay SEAM 1 — fixed-clock menu/UI clock (M4, Tier-2).
+// Under RB3_REPLAY_FIXED_CLOCK + active replay, TaskMgr::Poll drives the seconds
+// timeline from the RECORDED per-frame sim dt (RB3ReplayDtForFrame) instead of
+// the wall-clock-derived mTime.Split()/CyclesToMs, making the menu/UI sim a
+// deterministic function of the recorded frame timeline. The accumulator is a
+// file-static (NOT a TaskMgr member — adding one would change the matched Wii
+// struct layout). gRB3TraceFrame is set each frame by the App::RunOneFrame tap.
+static double sReplaySeconds = 0.0;   // accumulated replay seconds (kTaskSeconds)
+static int    sReplayLastFrame = -1;  // last frame we accumulated (avoid double-add)
+static inline bool RB3TaskReplayFixedClock() {
+    return RB3ReplayFixedClock() && RB3ReplayActive();
+}
 #endif
 
 TaskMgr TheTaskMgr;
@@ -368,6 +383,27 @@ float TaskMgr::DeltaTutorialSeconds() const {
 
 void TaskMgr::Poll() {
     START_AUTO_TIMER("anim");
+#ifdef HX_NATIVE
+    // SESSION-TELEMETRY replay SEAM 1 (M4, Tier-2): under RB3_REPLAY_FIXED_CLOCK +
+    // active replay, advance kTaskSeconds/kTaskBeats by the RECORDED per-frame sim
+    // dt instead of the wall-clock mTime.Split()/CyclesToMs, so the menu/UI sim
+    // replays deterministically. Accumulate at most once per frame index (the tap
+    // bumps gRB3TraceFrame each App::RunOneFrame). Everything outside this branch
+    // is the original Wii path, byte-identical.
+    if (RB3TaskReplayFixedClock() && mAutoSecondsBeats) {
+        if (gRB3TraceFrame != sReplayLastFrame) {
+            sReplaySeconds += (double)RB3ReplayDtForFrame(gRB3TraceFrame);
+            sReplayLastFrame = gRB3TraceFrame;
+        }
+        float secs = (float)sReplaySeconds;
+        mTimelines[kTaskSeconds].SetTime(secs, false);
+        mTimelines[kTaskBeats].SetTime(secs * 2.0f, false);
+        for (int i = 0; i < kTaskNumUnits; i++) {
+            mTimelines[i].Poll();
+        }
+        return;
+    }
+#endif
     mTime.Split();
     if (mAutoSecondsBeats) {
         float secs = Timer::CyclesToMs(mTime.mCycles) / 1000.0f;

@@ -425,6 +425,15 @@ void RB3HttpRegisterDtaFuncs() {
 // Drain non-screenshot commands + refresh the /api/health state snapshot.
 // Called once per frame BEFORE Draw() (after the input poll) on the main thread.
 void RB3HttpServerPoll(int frame) {
+    // Session-telemetry M4 replay CHECKPOINT (chk). Sampled on THIS proven
+    // main-thread, boot-through-gameplay-safe site, but BEFORE the HTTP-server
+    // guard below — checkpoints must fire whenever tracing is armed (e.g. a
+    // headless RB3_REPLAY run with no RB3_HTTP). No-op when tracing is off. The
+    // sampler is in-song-only periodic (RB3_TRACE_CHK_EVERY); nav transitions emit
+    // their own chk from the nav sink (rb3_trace_taps.cpp).
+    extern void RB3TraceCheckpointFrame(int frame);
+    RB3TraceCheckpointFrame(frame);
+
     if (!TheRB3HttpServer) return;
 
     UIScreen* cur = TheUI.CurrentScreen();

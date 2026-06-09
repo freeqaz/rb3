@@ -27,16 +27,23 @@
 #include "rb3_session_trace.h"
 
 #include "game/Game.h"             // Game *TheGame, Game::GetBeatMaster()
+#include "game/Player.h"           // Player (Performer subclass) GetScore/GetPercentComplete
+#include "game/Performer.h"        // Performer::GetScore/GetPercentComplete
 #include "beatmatch/BeatMaster.h"  // BeatMaster::GetAudio()
 #include "beatmatch/MasterAudio.h" // MasterAudio::GetTime()
 
+#include "ui/UI.h"                 // UIManager &TheUI, CurrentScreen()
 #include "meta_band/BandUI.h"      // BandUI TheBandUI (the real TheUI; a MsgSource)
 #include "ui/UIScreen.h"           // UIScreen, UIScreenChangeMsg, FocusPanel()
 #include "ui/UIPanel.h"            // UIPanel::FocusComponent()
 #include "ui/UIComponent.h"        // UIComponent::Name()
 #include "obj/Object.h"            // Hmx::Object
+#include "obj/Task.h"              // TaskMgr TheTaskMgr, Seconds(kRealTime)/Beat()
 #include "obj/Data.h"              // DataArray, DataNode, kDataUnhandled
 #include "obj/Msg.h"               // MsgSource::AddSink
+
+#include <cstdlib>                 // getenv, atoi
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Song ms. Walk TheGame->GetBeatMaster()->GetAudio()->GetTime() with explicit
@@ -53,6 +60,96 @@ float RB3TraceCurrentSongMs() {
     if (!ma)
         return -1.0f;
     return ma->GetTime();
+}
+
+// ---------------------------------------------------------------------------
+// CHECKPOINT sampler (M4, Tier-2 replay verification).
+//
+// Samples the replay-divergence state vector — screen + focus, the TaskMgr
+// real-time clock + beat, the in-song clock, and every active player's exact
+// score + percent-complete — under FULL null guards (this runs boot-through-
+// gameplay, where TheGame / GetBand / players are NULL in menus), then hands the
+// pulled scalars to RB3RecordCheckpoint, which computes the FNV-1a fast-equality
+// hash and emits the additive `chk` event. Same safe sampling site as
+// /api/health (rb3_http_handlers.cpp:427-445).
+//
+// Called every RB3_TRACE_CHK_EVERY frames WHILE IN A SONG from the per-frame
+// hook (RB3TraceCheckpointFrame below) + once on each nav transition (the nav
+// sink, force=true). In menus the periodic path is skipped (a menu has no song
+// clock to diverge); nav-transition checkpoints still fire there as the menu
+// milestone anchors trace-diff aligns on.
+// ---------------------------------------------------------------------------
+void RB3TraceSampleCheckpoint() {
+    if (!gRB3TraceActive)
+        return;
+
+    // Screen + focus (the same chain the nav sink / main_web.cpp publishes).
+    UIScreen *scr = TheUI.CurrentScreen();
+    const char *scrName = (scr && scr->Name()) ? scr->Name() : "";
+    const char *focus = "";
+    if (scr && scr->FocusPanel() && scr->FocusPanel()->FocusComponent() &&
+        scr->FocusPanel()->FocusComponent()->Name()) {
+        focus = scr->FocusPanel()->FocusComponent()->Name();
+    }
+
+    // Sim clocks. TheTaskMgr is a global; Seconds(kRealTime)/Beat() are always
+    // safe to read (they read the timeline members, no song dependency).
+    float taskSec = TheTaskMgr.Seconds(TaskMgr::kRealTime);
+    float beat    = TheTaskMgr.Beat();
+
+    // In-song clock (-1 in menus -> RB3RecordCheckpoint omits the envelope sm).
+    float songMs = RB3TraceCurrentSongMs();
+
+    // Per-player exact scores + percent-complete. NULL/empty in menus.
+    long scoreSum = 0;
+    int  scores[RB3_CHK_MAX_SCORES];
+    int  nScores = 0;
+    int  nPlayers = 0;
+    int  pct = -1;
+    if (TheGame) {
+        std::vector<Player *> &players = TheGame->GetActivePlayers();
+        nPlayers = (int)players.size();
+        for (int i = 0; i < nPlayers; ++i) {
+            Player *p = players[i];
+            if (!p)
+                continue;
+            int s = p->GetScore();
+            scoreSum += s;
+            if (nScores < RB3_CHK_MAX_SCORES)
+                scores[nScores++] = s;
+            if (i == 0)
+                pct = p->GetPercentComplete();
+        }
+    }
+
+    RB3RecordCheckpoint(scrName, focus, taskSec, beat, songMs, scoreSum,
+                        scores, nScores, nPlayers, pct);
+}
+
+// Per-frame entry: emit a periodic checkpoint every N in-song frames. N is
+// RB3_TRACE_CHK_EVERY (default 30; <=0 disables the periodic path, nav-transition
+// chk still fires). Skipped entirely in menus (no song clock to diverge); the
+// nav-transition checkpoints anchor the menu milestones. Cheap no-op when off.
+namespace {
+int sChkEvery = -1;   // parsed once: -1 unchecked, then the resolved cadence
+}
+void RB3TraceCheckpointFrame(int frame) {
+    if (!gRB3TraceActive)
+        return;
+    if (sChkEvery < 0) {
+        const char *v = std::getenv("RB3_TRACE_CHK_EVERY");
+        sChkEvery = (v && v[0]) ? std::atoi(v) : 30;
+        if (sChkEvery < 0) sChkEvery = 0;
+    }
+    if (sChkEvery == 0)
+        return;   // periodic path disabled
+    // In-song only: no master audio clock => no periodic checkpoint (the nav
+    // sink still emits one per transition for the menu milestones).
+    if (RB3TraceCurrentSongMs() < 0.0f)
+        return;
+    if ((frame % sChkEvery) != 0)
+        return;
+    RB3TraceSampleCheckpoint();
 }
 
 // ---------------------------------------------------------------------------
@@ -101,6 +198,10 @@ public:
             }
 
             RB3RecordNav(from, to, focus, wentBack);
+            // One checkpoint per nav transition (the milestone anchor trace-diff
+            // aligns segments on). Fires in menus too (where the periodic in-song
+            // path is skipped), so every milestone boundary has a chk.
+            RB3TraceSampleCheckpoint();
         }
         return DataNode(kDataUnhandled, 0);
     }

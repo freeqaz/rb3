@@ -47,6 +47,10 @@ void RB3RecordSong(const char *ev, const char *id, const char *track,
 void RB3RecordAudio(int under, int frames);
 void RB3RecordLog(const char *lvl, const char *msg, const char *src);
 void RB3RecordMark(const char *tag, const char *note);
+void RB3RecordCheckpoint(const char *scr, const char *focus,
+                         float taskSec, float beat, float songMs,
+                         long scoreSum, const int *scores, int nScores,
+                         int nPlayers, int pct);
 void RB3TraceSetSongMs(float ms);
 void RB3TraceFlush();
 void RB3TraceShutdown();
@@ -567,6 +571,76 @@ TEST_F(SessionTrace, SongStringsEscaped) {
     std::string id = GetRaw(s, "id");
     EXPECT_NE(id.find("\\n"), std::string::npos) << "newline escaped: " << id;
     EXPECT_NE(id.find("\\\""), std::string::npos) << "quote escaped: " << id;
+}
+
+// ---------------------------------------------------------------------------
+// (M4-a) RB3RecordCheckpoint emits a chk row carrying the fast-equality hash `h`
+//        + RAW state fields (scr/focus/sec/beat/score/scores[]/np/pct). In a song
+//        the envelope carries sm; in menus (songMs<0) sm is omitted. The hash is
+//        DETERMINISTIC for an identical tuple and PERTURBED by a 1-point score
+//        change (the integer scoreSum is un-quantized).
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, CheckpointRowAndHash) {
+    RB3TraceInit();
+
+    // In-song checkpoint: 2 players, exact scores 1000 + 500.
+    int scores[2] = {1000, 500};
+    RB3TraceSetFrame(30);
+    RB3RecordCheckpoint("game", "trk_focus", /*taskSec*/ 4.250f, /*beat*/ 8.00f,
+                        /*songMs*/ 4250.0f, /*scoreSum*/ 1500, scores, 2,
+                        /*nPlayers*/ 2, /*pct*/ 42);
+    // Identical tuple again -> identical hash (determinism).
+    RB3TraceSetFrame(60);
+    RB3RecordCheckpoint("game", "trk_focus", 4.250f, 8.00f, 4250.0f, 1500,
+                        scores, 2, 2, 42);
+    // One point higher score -> hash MUST differ (exact-int score in the hash).
+    int scores2[2] = {1001, 500};
+    RB3TraceSetFrame(90);
+    RB3RecordCheckpoint("game", "trk_focus", 4.250f, 8.00f, 4250.0f, 1501,
+                        scores2, 2, 2, 42);
+    // Menu checkpoint: no song -> sm omitted, empty scores, np=0.
+    RB3TraceSetFrame(120);
+    RB3RecordCheckpoint("main_hub", "play_btn", 9.000f, 0.0f, /*songMs*/ -1.0f,
+                        0, nullptr, 0, 0, -1);
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 5u);
+    const std::string &c0 = lines[1];
+    const std::string &c1 = lines[2];
+    const std::string &c2 = lines[3];
+    const std::string &cm = lines[4];
+
+    // Shape: k=chk, hash h, raw fields.
+    EXPECT_TRUE(LineIsWellFormed(c0)) << c0;
+    EXPECT_EQ(GetRaw(c0, "k"), "chk");
+    EXPECT_EQ(GetRaw(c0, "scr"), "game");
+    EXPECT_EQ(GetRaw(c0, "focus"), "trk_focus");
+    EXPECT_FALSE(GetRaw(c0, "h").empty()) << "chk must carry the hash h: " << c0;
+    EXPECT_EQ(GetRaw(c0, "h").size(), 16u) << "h is 16 hex chars (u64)";
+    EXPECT_EQ(std::atoll(GetRaw(c0, "score").c_str()), 1500);
+    EXPECT_EQ(std::atoi(GetRaw(c0, "np").c_str()), 2);
+    EXPECT_EQ(std::atoi(GetRaw(c0, "pct").c_str()), 42);
+    ASSERT_TRUE(HasKey(c0, "sm")) << "in-song chk carries sm: " << c0;
+    EXPECT_NEAR(std::atof(GetRaw(c0, "sm").c_str()), 4250.0, 0.1);
+    EXPECT_NE(c0.find("\"scores\":[1000,500]"), std::string::npos)
+        << "raw per-player scores array: " << c0;
+
+    // Determinism: identical tuple -> identical hash.
+    EXPECT_EQ(GetRaw(c0, "h"), GetRaw(c1, "h"))
+        << "identical state tuple must hash identically";
+    // Sensitivity: a 1-point score bump -> different hash.
+    EXPECT_NE(GetRaw(c0, "h"), GetRaw(c2, "h"))
+        << "a 1-point score change must perturb the hash";
+
+    // Menu chk: sm omitted, np=0, empty scores, pct omitted.
+    EXPECT_EQ(GetRaw(cm, "k"), "chk");
+    EXPECT_FALSE(HasKey(cm, "sm")) << "menu chk omits sm: " << cm;
+    EXPECT_EQ(cm.find("\"sm\":-1"), std::string::npos) << "never emit sm:-1";
+    EXPECT_EQ(std::atoi(GetRaw(cm, "np").c_str()), 0);
+    EXPECT_NE(cm.find("\"scores\":[]"), std::string::npos)
+        << "menu chk has an empty scores array: " << cm;
+    EXPECT_FALSE(HasKey(cm, "pct")) << "pct omitted when <0: " << cm;
 }
 
 // ---------------------------------------------------------------------------

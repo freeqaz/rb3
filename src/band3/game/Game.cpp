@@ -69,6 +69,15 @@
 #include "utl/TempoMap.h"
 #include "utl/TimeConversion.h"
 
+#ifdef HX_NATIVE
+// SESSION-TELEMETRY replay SEAM 2 (M4, Tier-2): under RB3_REPLAY_FIXED_CLOCK +
+// active replay, Game::Poll feeds the RECORDED song-ms straight into
+// TheTaskMgr.SetSeconds, bypassing live audio + DeJitter. See
+// docs/native/SESSION_TELEMETRY_DESIGN.md "M4 (Tier-2)".
+#include "rb3_replay.h"        // RB3ReplayFixedClock/Active/RB3ReplaySongMsForFrame
+#include "rb3_session_trace.h" // gRB3TraceFrame (current frame index)
+#endif
+
 class TrainerPanel;
 extern TrainerPanel *TheTrainerPanel;
 
@@ -1598,6 +1607,26 @@ void Game::Poll() {
         bool isGameOver = (TheGamePanel->mGameState == kGameOver);
         float songMs = 0.0f;
         if (TheGamePanel->unk150) {
+#ifdef HX_NATIVE
+            // SESSION-TELEMETRY replay SEAM 2 (M4, Tier-2): under
+            // RB3_REPLAY_FIXED_CLOCK + active replay, feed the RECORDED post-DeJitter
+            // song-ms straight into SetSeconds — bypassing GetAudio()->GetTime()
+            // (audio-thread dependence), the GetSongToTaskMgrMs add, and
+            // mDeJitter.Apply (the stateful median ring) — so the in-song sim is a
+            // pure function of the injected song-ms. The mRealtime (practice) path is
+            // left alone. When NOT replaying, rb3ReplaySong stays < 0 and the original
+            // live-audio path runs unchanged in the `else` below. This whole #ifdef
+            // contributes ZERO tokens to the Wii MWCC build (which sees only the
+            // original unbraced body inside `if(unk150){ }`).
+            float rb3ReplaySong = -1.0f;
+            if (RB3ReplayFixedClock() && RB3ReplayActive() && !mRealtime)
+                rb3ReplaySong = RB3ReplaySongMsForFrame(gRB3TraceFrame);
+            if (rb3ReplaySong >= 0.0f) {
+                songMs = rb3ReplaySong;
+                TheGamePanel->SetDejitteredTime(songMs);
+                TheTaskMgr.SetSeconds(songMs / 1000.0f, false);
+            } else {
+#endif
             float audioMs;
             if (mRealtime) {
                 audioMs = mTimeOffset
@@ -1613,6 +1642,9 @@ void Game::Poll() {
             songMs = TheGamePanel->mDeJitter.Apply(audioMs, rawMs);
             TheGamePanel->SetDejitteredTime(songMs);
             TheTaskMgr.SetSeconds(songMs / 1000.0f, false);
+#ifdef HX_NATIVE
+            }
+#endif
         }
         if ((!isGameOver && !mIsPaused && !mRealtime && IsReady()) || mProperties.mInDrumTrainer) {
             songMs = 1000.0f * TheTaskMgr.Seconds(TaskMgr::kRealTime);

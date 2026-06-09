@@ -67,7 +67,10 @@ struct TraceEvent {
     uint8_t kind;       // RB3TraceKind
     uint8_t pad;        // joypad index (input) / unused
     union {
-        struct { float dt, lp, lpu; uint16_t pend; uint16_t scrId; int ld, st; } fr;
+        // sdt = sim dt in SECONDS (the menu/UI clock advance this frame, from the
+        // TaskMgr.mTime cycle delta), captured so RB3_REPLAY_FIXED_CLOCK can drive
+        // seam 1 (Task.cpp) deterministically. Serialized only when > 0.
+        struct { float dt, lp, lpu, sdt; uint16_t pend; uint16_t scrId; int ld, st; } fr;
         struct { uint32_t bits, dn, up; int16_t whammy, tilt; } in;
         struct { uint16_t fromId, toId, focusId; uint8_t wentBack; } nav;
         struct { uint16_t phaseId; } boot;
@@ -79,6 +82,18 @@ struct TraceEvent {
         struct { uint16_t lvlId, msgId, srcId; } log;
         // mark: tag interned; note interned (0 = omit).
         struct { uint16_t tagId, noteId; } mark;
+        // chk (M4 replay checkpoint): the fast-equality hash + RAW fields. scr/
+        // focus interned; taskSec/beat/pct + per-player scores carried raw; the
+        // exact scoreSum/nPlayers feed the hash. `sm` rides the envelope (e.sm).
+        struct {
+            uint64_t h;            // FNV-1a over the quantized state tuple
+            int64_t  scoreSum;     // exact sum of all active Player::GetScore()
+            int      scores[RB3_CHK_MAX_SCORES];  // per-player raw (capped)
+            float    taskSec, beat;
+            int32_t  pct;          // GetPercentComplete (-1 = omit)
+            uint16_t scrId, focusId;
+            uint8_t  nScores, nPlayers;
+        } chk;
     };
 };
 
@@ -152,6 +167,11 @@ struct Recorder {
     // Current song ms (D2 §4.5); < 0 => not in a song => envelope omits `sm`.
     // Wave 2 / D6 set this each frame via RB3TraceSetSongMs.
     float       songMs         = -1.0f;
+
+    // Current sim dt in SECONDS (menu/UI clock advance this frame), set by the
+    // frame tap via RB3TraceSetSimDt from the TaskMgr.mTime cycle delta. Stamped
+    // into the fr row so RB3_REPLAY_FIXED_CLOCK seam 1 can replay it. <= 0 => omit.
+    float       simDt          = 0.0f;
 
     std::string startedIso;   // hdr.started
     std::string buildGit;     // hdr.build.git
@@ -308,6 +328,7 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
         case TK_AU:    out += "au";   break;
         case TK_LOG:   out += "log";  break;
         case TK_MARK:  out += "mark"; break;
+        case TK_CHK:   out += "chk";  break;
         default:       out += "?";    break;
     }
     out += '"';
@@ -318,6 +339,9 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
             out += ",\"dt\":";  AppendNum3(out, e.fr.dt);
             out += ",\"lp\":";  AppendNum3(out, e.fr.lp);
             out += ",\"lpu\":"; AppendNum3(out, e.fr.lpu);
+            // sdt = sim seconds advanced this frame (menu/UI clock); replay seam 1
+            // drives kTaskSeconds from it under RB3_REPLAY_FIXED_CLOCK. Omitted at 0.
+            if (e.fr.sdt > 0.0f) { out += ",\"sdt\":"; AppendNum3(out, e.fr.sdt); }
             out += ",\"scr\":\"";
             JsonEscape(out, gRec.interner.str(e.fr.scrId));
             out += '"';
@@ -401,6 +425,37 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
                 out += ",\"note\":\"";
                 JsonEscape(out, gRec.interner.str(e.mark.noteId));
                 out += '"';
+            }
+            break;
+        }
+        case TK_CHK: {
+            // chk: the fast-equality hash `h` (hex) + RAW state fields. `sm` rides
+            // the envelope (omitted in menus). scr/focus/sec/beat/score[]/pct are
+            // emitted RAW so trace-diff can ε-classify a hash mismatch field-by-field.
+            std::snprintf(num, sizeof(num), ",\"h\":\"%016llx\"",
+                          (unsigned long long)e.chk.h);
+            out += num;
+            out += ",\"scr\":\"";   JsonEscape(out, gRec.interner.str(e.chk.scrId));   out += '"';
+            out += ",\"focus\":\""; JsonEscape(out, gRec.interner.str(e.chk.focusId)); out += '"';
+            out += ",\"sec\":";  AppendNum3(out, e.chk.taskSec);
+            out += ",\"beat\":"; AppendNum3(out, e.chk.beat);
+            std::snprintf(num, sizeof(num), ",\"score\":%lld",
+                          (long long)e.chk.scoreSum);
+            out += num;
+            // Per-player raw scores (array). Empty array in menus (nScores=0).
+            out += ",\"scores\":[";
+            for (int i = 0; i < (int)e.chk.nScores && i < RB3_CHK_MAX_SCORES; ++i) {
+                if (i) out += ',';
+                std::snprintf(num, sizeof(num), "%d", e.chk.scores[i]);
+                out += num;
+            }
+            out += ']';
+            std::snprintf(num, sizeof(num), ",\"np\":%u", (unsigned)e.chk.nPlayers);
+            out += num;
+            // pct raw only when >= 0 (omit when unknown, mirroring song.pct).
+            if (e.chk.pct >= 0) {
+                std::snprintf(num, sizeof(num), ",\"pct\":%d", (int)e.chk.pct);
+                out += num;
             }
             break;
         }
@@ -713,6 +768,7 @@ void RB3RecordFrame(float dt, float lp, float lpu, const char *scr, int pend) {
     e.fr.dt  = dt;
     e.fr.lp  = lp;
     e.fr.lpu = lpu;
+    e.fr.sdt = gRec.simDt;   // sim seconds this frame (replay seam 1 source)
     e.fr.pend = (uint16_t)(pend < 0 ? 0 : (pend > 0xFFFF ? 0xFFFF : pend));
     e.fr.scrId = gRec.interner.intern(scr ? scr : "?");
     e.fr.ld = ld;
@@ -824,8 +880,97 @@ void RB3RecordMark(const char *tag, const char *note) {
     PushEvent(e);
 }
 
+// ---------------------------------------------------------------------------
+// M4 checkpoint helpers (file-local). FNV-1a over the quantized state tuple, so
+// run-to-run equality survives benign x86-vs-x86 float drift while the exact
+// integer scoreSum + nPlayers stay un-quantized (a 1-point score divergence must
+// trip the hash). MUST stay byte-stable across record + replay runs of the same
+// build, so it hashes a fixed-width little-endian byte stream (no struct padding,
+// no host-endian ambiguity).
+// ---------------------------------------------------------------------------
+namespace {
+
+const uint64_t kFnvOffset = 1469598103934665603ULL;
+const uint64_t kFnvPrime  = 1099511628257ULL;
+
+void FnvBytes(uint64_t &h, const void *p, size_t n) {
+    const unsigned char *b = (const unsigned char *)p;
+    for (size_t i = 0; i < n; ++i) {
+        h ^= (uint64_t)b[i];
+        h *= kFnvPrime;
+    }
+}
+void FnvStr(uint64_t &h, const char *s) {
+    if (s) FnvBytes(h, s, std::strlen(s));
+    h ^= 0; h *= kFnvPrime;   // NUL terminator: separates "ab"|"c" from "a"|"bc"
+}
+void FnvI64(uint64_t &h, int64_t v) {
+    unsigned char le[8];
+    uint64_t u = (uint64_t)v;
+    for (int i = 0; i < 8; ++i) le[i] = (unsigned char)((u >> (8 * i)) & 0xFF);
+    FnvBytes(h, le, 8);
+}
+// Quantize a float to integer units of `step` (e.g. 1ms => step=1.0 over ms,
+// 0.01 beat => step=0.01), then hash the int64. round-half-away-from-zero.
+void FnvQuant(uint64_t &h, float v, float step) {
+    double q = (double)v / (double)step;
+    int64_t qi = (int64_t)(q >= 0 ? q + 0.5 : q - 0.5);
+    FnvI64(h, qi);
+}
+
+} // namespace
+
+void RB3RecordCheckpoint(const char *scr, const char *focus,
+                         float taskSec, float beat, float songMs,
+                         long scoreSum, const int *scores, int nScores,
+                         int nPlayers, int pct) {
+    if (!gRB3TraceActive) return;
+
+    // Fast-equality hash over the quantized tuple (task contract order):
+    //   [ scr, focus, q(taskSec,1ms), q(beat,0.01), q(songMs,1ms),
+    //     scoreSum(exact), nPlayers ]
+    // taskSec is in SECONDS -> quantize to 1ms == step 0.001s. songMs is already
+    // in ms -> step 1.0. < 0 songMs (menus) hashes as -1 (sentinel) so a
+    // menu->song transition perturbs the hash.
+    uint64_t h = kFnvOffset;
+    FnvStr(h, scr ? scr : "");
+    FnvStr(h, focus ? focus : "");
+    FnvQuant(h, taskSec, 0.001f);                 // 1ms
+    FnvQuant(h, beat, 0.01f);                      // 0.01 beat
+    FnvI64(h, songMs >= 0.0f ? (int64_t)(songMs + 0.5f) : (int64_t)-1);  // 1ms
+    FnvI64(h, (int64_t)scoreSum);                  // exact
+    FnvI64(h, (int64_t)nPlayers);                  // exact
+
+    TraceEvent e;
+    std::memset(&e, 0, sizeof(e));
+    e.kind = TK_CHK;
+    e.f    = gRB3TraceFrame;
+    // Hash uses the caller-supplied songMs; the envelope `sm` follows the same
+    // value (so a chk row's sm is the checkpointed song clock, not a stale frame
+    // snapshot). < 0 => menus => omitted from the wire.
+    e.sm   = songMs;
+    e.chk.h        = h;
+    e.chk.scoreSum = (int64_t)scoreSum;
+    e.chk.taskSec  = taskSec;
+    e.chk.beat     = beat;
+    e.chk.pct      = pct;
+    e.chk.scrId    = gRec.interner.intern(scr ? scr : "");
+    e.chk.focusId  = gRec.interner.intern(focus ? focus : "");
+    int n = nScores;
+    if (n < 0) n = 0;
+    if (n > RB3_CHK_MAX_SCORES) n = RB3_CHK_MAX_SCORES;
+    for (int i = 0; i < n; ++i) e.chk.scores[i] = scores ? scores[i] : 0;
+    e.chk.nScores  = (uint8_t)n;
+    e.chk.nPlayers = (uint8_t)(nPlayers < 0 ? 0 : (nPlayers > 255 ? 255 : nPlayers));
+    PushEvent(e);
+}
+
 void RB3TraceSetSongMs(float ms) {
     gRec.songMs = ms;
+}
+
+void RB3TraceSetSimDt(float seconds) {
+    gRec.simDt = seconds;
 }
 
 void RB3TraceFlush() {
@@ -860,6 +1005,7 @@ void RB3TraceShutdown() {
     gRec.lastInputBits = 0;
     gRec.haveInput     = false;
     gRec.songMs        = -1.0f;
+    gRec.simDt         = 0.0f;
     gRec.platform      = "native";
     gRec.startedIso.clear();
     gRec.buildGit.clear();

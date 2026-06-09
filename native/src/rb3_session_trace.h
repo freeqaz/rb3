@@ -46,8 +46,15 @@ enum RB3TraceKind {
     TK_SONG,      // song lifecycle (song)
     TK_AU,        // audio underrun (au) — web, deferred
     TK_LOG,       // diagnostic log line (log)
-    TK_MARK       // user/bug marker (mark)
+    TK_MARK,      // user/bug marker (mark)
+    TK_CHK        // M4 checkpoint (chk) — replay-divergence state hash + raw fields
 };
+
+// Max per-player scores carried RAW in a `chk` event (the hash uses the exact
+// sum of all active players, but the raw score[] array is capped for the fixed
+// POD). 4 covers a full RB3 band (4 instruments); excess players still fold into
+// the hashed scoreSum (so the hash is correct even past 4 players).
+enum { RB3_CHK_MAX_SCORES = 4 };
 
 // ---------------------------------------------------------------------------
 // Toggle gate + frame counter. One exported global each, mirroring the existing
@@ -114,11 +121,47 @@ void RB3RecordLog(const char *lvl, const char *msg, const char *src);
 // non-null.
 void RB3RecordMark(const char *tag, const char *note);
 
+// ---------------------------------------------------------------------------
+// M4 (Tier-2) replay CHECKPOINT (chk). Additive — does NOT bump hdr.v. The
+// caller (the engine-typed tap in rb3_trace_taps.cpp) samples the state vector
+// (screen/focus/clocks/scores) under null guards, then hands the already-pulled
+// scalars here; the recorder computes the FNV-1a fast-equality hash + emits the
+// chk event carrying BOTH the hash and the RAW fields (for field-level ε
+// classification on a hash mismatch). The hashed tuple (per the M4 design /
+// task contract) is:
+//   [ scr, focus, q(taskSec,1ms), q(beat,0.01), q(songMs,1ms),
+//     scoreSum (exact int), nPlayers ]
+// Quantize-before-hash absorbs benign x86-vs-x86 float drift; the exact integer
+// scoreSum + nPlayers stay un-quantized so a 1-point score divergence trips it.
+//
+//   scr/focus : current screen + focus-component name ("" in null/menu states).
+//   taskSec   : TheTaskMgr.Seconds(kRealTime).
+//   beat      : TheTaskMgr.Beat().
+//   songMs    : the in-song clock (< 0 in menus -> hashed as -1, raw sm omitted).
+//   scoreSum  : exact sum of every active Player::GetScore().
+//   scores    : the first nScores per-player exact scores (RAW, capped at
+//               RB3_CHK_MAX_SCORES; the hash still uses the full scoreSum).
+//   nScores   : count of valid entries in scores[] (<= nPlayers).
+//   nPlayers  : active-player count (0 in menus).
+//   pct       : Performer::GetPercentComplete() of player 0 (-1 when unknown);
+//               RAW only (not hashed — it is derivable from the score timeline).
+void RB3RecordCheckpoint(const char *scr, const char *focus,
+                         float taskSec, float beat, float songMs,
+                         long scoreSum, const int *scores, int nScores,
+                         int nPlayers, int pct);
+
 // Set the current song-ms (D2 §4.5). Frame/input (and all) events pick this up
 // for the envelope `sm`, which is emitted only when ms >= 0 (menus pass < 0 to
 // omit `sm` entirely). Wave 2 wires the real GetBeatMaster()->GetAudio()->
 // GetTime() chain into this; the core defaults to "not in a song".
 void RB3TraceSetSongMs(float ms);
+
+// Set the current sim dt in SECONDS — the menu/UI clock advance for this frame,
+// derived by the frame tap from the TaskMgr.mTime cycle delta. Stamped into the
+// fr row as the optional `sdt` field so RB3_REPLAY_FIXED_CLOCK (seam 1, Task.cpp)
+// can replay the recorded per-frame menu-clock advance deterministically. The
+// core defaults to 0 (omitted from the wire) until the frame tap sets it.
+void RB3TraceSetSimDt(float seconds);
 
 // Append the ring to the file sink + fflush, so a SIGTERM mid-run leaves valid
 // NDJSON. Cheap no-op when not armed.

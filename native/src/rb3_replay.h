@@ -52,5 +52,28 @@ unsigned int RB3ReplayBitsForFrame(int frame);
 // at least this many frames to replay the whole input timeline). 0 if none.
 int RB3ReplayLastFrame();
 
+// ── Tier-2 fixed-clock replay (M4) ──────────────────────────────────────────
+// When RB3_REPLAY_FIXED_CLOCK is set AND replay is active, two HX_NATIVE clock
+// seams (Task.cpp seam 1, Game.cpp seam 2) drive the sim clock from the RECORDED
+// per-frame {sdt, sm} instead of wall-clock / live audio, making gameplay a
+// deterministic function of (recorded input + recorded song-ms). See
+// docs/native/SESSION_TELEMETRY_DESIGN.md "M4 (Tier-2)".
+
+// True iff RB3_REPLAY_FIXED_CLOCK is set (parsed once). Only MEANINGFUL when
+// RB3ReplayActive() — the seams gate on (RB3ReplayFixedClock() && RB3ReplayActive()).
+bool RB3ReplayFixedClock();
+
+// The recorded sim dt (SECONDS) to advance the menu/UI clock by at `frame` —
+// the `sdt` of the recorded fr at-or-before `frame` (carry-forward; fr rows are
+// decimated so this is the nearest preceding sample). 0 before the first fr or
+// when no fr carried `sdt`. Seam 1 (Task.cpp) accumulates this each frame.
+float RB3ReplayDtForFrame(int frame);
+
+// The recorded song-ms to feed straight into TheTaskMgr.SetSeconds at `frame` —
+// the `sm` of the recorded fr at-or-before `frame` (carry-forward). -1 when the
+// nearest preceding fr had no `sm` (i.e. menus / not in a song). Seam 2
+// (Game.cpp) feeds this into SetSeconds, bypassing live audio + DeJitter.
+float RB3ReplaySongMsForFrame(int frame);
+
 #endif // HX_NATIVE
 #endif // RB3_REPLAY_H

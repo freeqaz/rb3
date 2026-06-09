@@ -81,9 +81,11 @@
 #include "utl/Loader.h"
 #ifdef HX_NATIVE
 // Session-telemetry recorder API (RB3TraceInit / RB3RecordFrame / gRB3TraceActive
-// / RB3TraceSetFrame / RB3TraceSetSongMs). The frame tap lives in RunOneFrame.
-// native/src is on the native include path (CMAKE_SOURCE_DIR}/src).
+// / RB3TraceSetFrame / RB3TraceSetSongMs / RB3TraceSetSimDt). The frame tap lives
+// in RunOneFrame. native/src is on the native include path (CMAKE_SOURCE_DIR}/src).
 #include "rb3_session_trace.h"
+#include "rb3_replay.h" // RB3ReplayFixedClock/Active (fixed-clock replay status log)
+#include "obj/Task.h"   // TheTaskMgr.mTime.mCycles (session-telemetry sim-dt capture)
 #endif
 #include "utl/Magnu.h"
 #include "utl/MakeString.h"
@@ -636,6 +638,22 @@ void App::RunOneFrame(int frame) {
         float rb3FrameMs = Timer::CyclesToMs(rb3FrameTimer.mCycles);
         UIScreen *rb3Scr = TheUI.CurrentScreen();
         const char *rb3ScrName = (rb3Scr && rb3Scr->Name()) ? rb3Scr->Name() : "?";
+        // SIM-DT capture (replay seam 1 source): the menu/UI clock advance this
+        // frame in SECONDS, from the TheTaskMgr.mTime accumulated-cycles delta
+        // (TaskMgr::Poll did mTime.Split() at line ~590). This is the exact value
+        // RB3_REPLAY_FIXED_CLOCK replays in Task.cpp seam 1. First frame / wrap
+        // produces a non-positive delta, which we clamp to 0 (omitted on the wire).
+        static double sRb3LastSimMs = 0.0;
+        static bool   sRb3HaveSimMs = false;
+        double rb3SimMsNow = (double)Timer::CyclesToMs(TheTaskMgr.mTime.mCycles);
+        float rb3SimDt = 0.0f;
+        if (sRb3HaveSimMs) {
+            double d = rb3SimMsNow - sRb3LastSimMs;
+            if (d > 0.0) rb3SimDt = (float)(d / 1000.0);
+        }
+        sRb3LastSimMs = rb3SimMsNow;
+        sRb3HaveSimMs = true;
+        RB3TraceSetSimDt(rb3SimDt);
         RB3TraceSetSongMs(RB3TraceCurrentSongMs());
         RB3RecordFrame(rb3FrameMs, gLoadPollMsThisFrame, gLoadPollUntilMsThisFrame,
                        rb3ScrName, (int)TheLoadMgr.mLoading.size());
