@@ -47,6 +47,35 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
+## ✅✅ UPDATE 2 — Stage 1/2/3 LANDED: preview chars load full bodies natively
+Beyond the gate: the full opt-in (`RB3_CHAR_PREVIEW=1`) body-load is committed +
+verified in the real boot via the new `{rb3_char_probe N}` DTA func:
+```
+player0..3  meshes=140  skinned=0  verts=15395  loading=0   (no crash)
+```
+- **Stage 2** — hardened every `GetCharacter`/`mFileMerger` deref (HX_NATIVE, byte-
+  identical `#else`): `BandCharacter::StartLoad`, `CharCache::Request`/`RecomposePatches`/
+  `CharactersAreLoading`, `CharSync` InCloset, `ClosetMgr::Poll` (0x62).
+- **Stage 3** — un-gated `CharSync::UpdateCharCache` behind `RB3_CHAR_PREVIEW`; the
+  no-user/prefab branch (no sign-in) satisfies asserts 0x114/0x128/0x12D (gPrefabs
+  populated via `ReloadPrefabs`). Menu-wide firing → `Request` → `StartLoad` →
+  `FileMerger` loads the 13 bodyparts → 140 meshes. **No crash, decoupled from the
+  guest-profile cascade.**
+- `skinned=0` is **pre-Poll** (the skeleton binds at `Character::Poll`). The bodies
+  are loaded; posing/animation happens when the char is Polled.
+
+### Remaining to the on-screen "standing + animating in the closet"
+1. **Animation is NOT a standalone headless poke** — calling `bc->SetContext("closet")
+   + bc->Poll()` raw **SIGSEGVs** (the char needs `ClosetMgr::SetUser`/`PreviewCharacter`
+   setup first). It happens *for free* once the **closet UI** Polls the chars via the
+   milo proxy. So animation is gated on reaching the closet, not separate work.
+2. **Reaching the closet UI** needs the **C11 guest-profile cascade** resolved.
+   Cascade domino ② (`PropSync<RndTex>`) root cause is still OPEN — the freed-ring
+   theory was refuted; re-root-cause empirically (boot `RB3_GUEST_PROFILE=1 RB3_HTTP=1`,
+   capture whether it's a `MILO_ASSERT`/`MILO_FAIL` or a raw SIGSEGV + the exact null,
+   instrument `ObjPtr<RndTex>::operator=`). `MILO_DEBUG` is ON natively, so asserts are
+   live (not no-ops — a prior analysis assumed wrongly).
+
 ## ✅ UPDATE — Stage-0 gate PASSED (verified in the real App boot)
 The build blocker cleared (the concurrent `App.cpp`/`BandOffline` WIP was committed,
 `db54b18f`). The in-process gtest was **retired** — a headless test can't run the GPU
