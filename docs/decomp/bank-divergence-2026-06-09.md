@@ -129,20 +129,26 @@ tools/ghidra/pyghidra-service.sh start
 After this, `bin/analyze-function SYMBOL` (default Bank 8) shows the target body
 **with types**.
 
-### Small-data-area register fix — works in-session, persist needs re-analysis
+### Small-data-area register fix — LANDED + persists (verified)
 
 Our synthetic Bank 8 ELF never ran a GameCube loader, so Ghidra didn't know the
 Gekko SDA bases; CodeWarrior addresses small-data globals as `r13 + off` / `r2 + off`,
 which decompiled as noise (`*(char *)(unaff_r13 + -0x6400)`). `tools/ghidra/enrich_bank8.py`
-reads `_SDA_BASE_`/`_SDA2_BASE_` from the map and sets them as program-wide register
-context. **In-session this works: r13-noise in `BandHeadShaper::Init` went 9 → 0.**
-GOTCHA: it does **not** survive save+reload — setting the context value alone isn't
-enough; the decompiler re-reads it but the persistent global *references* aren't
-materialized. The fix (what GCAnalyzer does) is to follow `setValue` with a
-constant/reference **re-analysis** pass over the code so the `r13+off → global`
-references are written to the DB. TODO in `enrich_bank8.py`. NOTE: absolute-addressed
-globals (`gHeadMale`, `sChinNum`) are named regardless of SDA — only `.sdata`/`.sbss`
-(r13/r2-relative) accesses need this.
+reads `_SDA_BASE_`/`_SDA2_BASE_` from the map, sets them as program-wide register
+context, **then runs the PowerPC Constant Reference Analyzer** (`PowerPCAddressAnalyzer.added()`)
+over the executable blocks so the `r13/r2+off → global` *references* are materialized
+to the program DB — that is what makes the fix survive save+reload (setting the
+context value alone is transient). **Verified: r13-noise in `BandHeadShaper::Init`
+is 0 in a fresh `--verify-only` reload.** (Absolute-addressed globals like `gHeadMale`,
+`sChinNum` are named regardless; only `.sdata`/`.sbss` need this.)
+
+GOTCHA — decompile cache staleness: pyghidra-mcp's decompile cache
+(`rb3/cache.db`) keys by `(address, ELF-file-hash)`. In-project enrichment
+(SDA/signatures/VT) modifies the PROGRAM, not the ELF file, so the hash is
+unchanged and `invalidate_on_binary_change` never fires — the live server keeps
+serving pre-enrichment decompilations. **Clear `cache.db` (service stopped) after
+any enrichment** for the changes to show via `analyze-function`. (Fork TODO:
+invalidate the cache on program-modification, or add a clear-cache MCP tool.)
 
 ### Version Tracking — the remaining increment (global var TYPES + comments)
 
