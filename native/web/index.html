@@ -163,6 +163,17 @@
     </div>
     <div id="console"></div>
 
+    <!-- Session-telemetry WEB EGRESS (Task F / D5 §7) lives in rb3_pre.js's
+         "D5 — session-telemetry egress" IIFE block, NOT here. rb3_pre.js is wired
+         as a --pre-js (native/CMakeLists.txt) so it is bundled into the deployed
+         release/ + debug/ rb3-web.js and runs before _main — early enough to set
+         window.__rb3TraceOn from the URL (?trace=0 / ?notrace) before the C++
+         recorder reads it back, and to have window.__rb3Trace present when the
+         recorder pushes its first NDJSON chunk. Putting it in the already-deployed
+         pre-js (rather than a standalone <script src>) avoids a second served file
+         + build.sh deploy step. The block drains __rb3Trace to
+         POST /api/telemetry/<sid> on a ~5s timer + a sendBeacon tail on teardown. -->
+
     <script>
         const status = document.getElementById('status');
         const logDiv = document.getElementById('console');

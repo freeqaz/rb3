@@ -98,6 +98,7 @@
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
 #include "game/Defines.h"   // ControllerType / kControllerGuitar
+#include "rb3_session_trace.h" // RB3RecordInput (session-telemetry input tap)
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/em_asm.h>
@@ -144,6 +145,24 @@ const unsigned int kBtnPageDown = 1u << kPad_R1;
 
 bool sLibInit = false;     // JoypadInit ran (JoypadInitCommon done)
 bool sWebInputInit = false; // web JS listeners installed
+
+// ── SESSION-TELEMETRY input tap helper ───────────────────────────────────────
+// Records one input edge into the trace at a SendButtonMessages(0, btns)
+// chokepoint: the same `btns` the engine broadcasts. Called at EVERY real
+// broadcast site in JoypadPoll — the keyboard/gamepad read AND the runtime
+// pad-press queue (the `pad:<bit>` / HTTP-`/api/input` / RB3_GAME_INPUT verb
+// path), so a HEADLESS replay/HTTP-driven session also records what the player
+// (or the replay) did, not just a windowed keyboard run. Edge-only: the recorder
+// drops the call when `btns` is unchanged, so calling it at multiple sites is
+// safe (it dedups against the last RECORDED edge, not per-site). dn/up are
+// computed here against a file-static prev. Whammy is read live from the LY stick
+// (mSticks[0][1]); tilt is 0 (no native keybind yet — reserved). gRB3TraceActive
+// gates inside RB3RecordInput → one predicted branch when tracing is off.
+void RB3JoypadTraceInput(unsigned int btns, float whammy) {
+    static unsigned int sPrevBtns = 0;
+    RB3RecordInput(0, btns, btns & ~sPrevBtns, ~btns & sPrevBtns, whammy, 0.0f);
+    sPrevBtns = btns;
+}
 
 // --- Runtime pad-press queue (headless pure-keyboard harness) ----------------
 // A `pad:<bit>` HTTP verb enqueues a single button bit here; JoypadPoll() holds
@@ -445,6 +464,7 @@ void JoypadPoll() {
     if (sPadHoldLeft > 0) {
         // Currently holding a press down.
         unsigned int bits = (sPadCurBit >= 0) ? (1u << sPadCurBit) : 0u;
+        RB3JoypadTraceInput(bits, 0.0f); // session-telemetry (pad-queue/HTTP path)
         SendButtonMessages(0, bits);
         if (--sPadHoldLeft == 0) {
             sPadGapLeft = kPadGapPolls; // begin forced release
@@ -453,6 +473,7 @@ void JoypadPoll() {
     }
     if (sPadGapLeft > 0) {
         // Forced release between presses — guarantees a clean falling edge.
+        RB3JoypadTraceInput(0u, 0.0f);  // session-telemetry (release edge)
         SendButtonMessages(0, 0u);
         --sPadGapLeft;
         if (sPadGapLeft == 0)
@@ -465,6 +486,7 @@ void JoypadPoll() {
         sPadQHead = (sPadQHead + 1) % 128;
         sPadHoldLeft = kPadHoldPolls;
         unsigned int bits = (sPadCurBit >= 0) ? (1u << sPadCurBit) : 0u;
+        RB3JoypadTraceInput(bits, 0.0f); // session-telemetry (pad-queue press edge)
         SendButtonMessages(0, bits);
         --sPadHoldLeft;
         if (sPadHoldLeft == 0)
@@ -530,6 +552,9 @@ void JoypadPoll() {
     d->mSticks[0][1] = whammyHeld ? -1.0f : 0.0f; // LY  (ly_whammy)
     d->mSticks[1][0] = whammyHeld ?  1.0f : 0.0f; // RX  (negative_rx_whammy -> -RX)
 #endif // __EMSCRIPTEN__
+
+    // SESSION-TELEMETRY input tap (keyboard / USB-gamepad path).
+    RB3JoypadTraceInput(btns, d ? d->mSticks[0][1] : 0.0f);
 
     // The single broadcast: diffs against mButtons, fills mNewPressed/Released,
     // and sends ButtonDownMsg/ButtonUpMsg through gJoypadMsgSource to every

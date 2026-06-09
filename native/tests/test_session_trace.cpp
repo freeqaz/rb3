@@ -42,6 +42,12 @@ void RB3RecordInput(int pad, unsigned bits, unsigned dn, unsigned up,
 void RB3RecordNav(const char *from, const char *to, const char *focus,
                   bool wentBack);
 void RB3RecordBootMark(const char *phase);
+void RB3RecordSong(const char *ev, const char *id, const char *track,
+                   const char *diff, float score, float pct);
+void RB3RecordAudio(int under, int frames);
+void RB3RecordLog(const char *lvl, const char *msg, const char *src);
+void RB3RecordMark(const char *tag, const char *note);
+void RB3TraceSetSongMs(float ms);
 void RB3TraceFlush();
 void RB3TraceShutdown();
 void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
@@ -59,14 +65,38 @@ extern int gFrameTraceStreamOpens;
 // ===========================================================================
 namespace {
 
-std::string TempTracePath() {
+// Resolve the temp-dir base to an ABSOLUTE path, captured at static-init time
+// (before any test body runs). The full rb3-tests binary also runs engine-backed
+// tests (NativeSubsystems) whose boot `chdir`s into RB3_DATA (native_file.cpp);
+// a *relative* TMPDIR (the ctest ENVIRONMENT default is `build-native/tmp`) would
+// then no longer resolve from the new cwd, so RB3TraceInit's fopen would ENOENT
+// and every SessionTrace test that ran AFTER an engine test would fail. Snapshot
+// cwd+TMPDIR once, up front, so the path is stable regardless of later chdir.
+std::string AbsTempBase() {
     const char *dir = std::getenv("TMPDIR");
     std::string base = (dir && dir[0]) ? std::string(dir) : std::string("/tmp");
-    if (!base.empty() && base[base.size() - 1] != '/') base += '/';
+    if (!base.empty() && base[0] != '/') {
+        // Relative TMPDIR — anchor it to the cwd as it is RIGHT NOW (static init,
+        // before the engine chdir).
+        char cwd[4096];
+        if (getcwd(cwd, sizeof(cwd))) {
+            std::string abs(cwd);
+            if (abs.empty() || abs[abs.size() - 1] != '/') abs += '/';
+            base = abs + base;
+        }
+    }
+    if (base.empty() || base[base.size() - 1] != '/') base += '/';
+    return base;
+}
+
+// Captured at program start (before the engine boot's chdir).
+const std::string kAbsTempBase = AbsTempBase();
+
+std::string TempTracePath() {
     static int sCounter = 0;
     std::ostringstream os;
-    os << base << "rb3_trace_test_" << (long)getpid() << "_" << (++sCounter)
-       << ".jsonl";
+    os << kAbsTempBase << "rb3_trace_test_" << (long)getpid() << "_"
+       << (++sCounter) << ".jsonl";
     return os.str();
 }
 
@@ -369,4 +399,164 @@ TEST_F(SessionTrace, FrameTraceAliasFullCapture) {
     std::vector<std::string> lines = ReadLines(path);
     ASSERT_GE(lines.size(), 2u) << "alias must full-capture (decimate=1)";
     EXPECT_EQ(GetRaw(lines[1], "k"), "fr");
+}
+
+// ---------------------------------------------------------------------------
+// (7) RB3RecordSong emits song{ev,id,track,diff}. score/pct are present when
+//     >=0 and OMITTED when -1 (the OQ7-deferred accessor passes -1).
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, SongScorePctOmittedWhenNegative) {
+    RB3TraceInit();
+    RB3TraceSetFrame(1);
+    // start: score/pct unknown -> pass -1 -> omitted.
+    RB3RecordSong("start", "song_abc", "guitar", "expert", -1.0f, -1.0f);
+    RB3TraceSetFrame(2);
+    // end: real score + pct (0..1 fraction).
+    RB3RecordSong("end", "song_abc", "guitar", "expert", 98250.0f, 0.873f);
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 3u);
+    const std::string &s0 = lines[1];
+    const std::string &s1 = lines[2];
+
+    // Reader-expected keys: k=song, ev/id/track/diff.
+    EXPECT_TRUE(LineIsWellFormed(s0)) << s0;
+    EXPECT_EQ(GetRaw(s0, "k"), "song");
+    EXPECT_EQ(GetRaw(s0, "ev"), "start");
+    EXPECT_EQ(GetRaw(s0, "id"), "song_abc");
+    EXPECT_EQ(GetRaw(s0, "track"), "guitar");
+    EXPECT_EQ(GetRaw(s0, "diff"), "expert");
+    // score/pct OMITTED when -1 (never serialize "score":-1).
+    EXPECT_FALSE(HasKey(s0, "score")) << "score omitted when <0: " << s0;
+    EXPECT_FALSE(HasKey(s0, "pct")) << "pct omitted when <0: " << s0;
+
+    // end row carries score + pct.
+    EXPECT_EQ(GetRaw(s1, "ev"), "end");
+    ASSERT_TRUE(HasKey(s1, "score")) << "score present when >=0: " << s1;
+    ASSERT_TRUE(HasKey(s1, "pct")) << "pct present when >=0: " << s1;
+    EXPECT_NEAR(std::atof(GetRaw(s1, "score").c_str()), 98250.0, 0.5);
+    EXPECT_NEAR(std::atof(GetRaw(s1, "pct").c_str()), 0.873, 0.001);
+}
+
+// ---------------------------------------------------------------------------
+// (8) RB3RecordAudio emits au{under,frames} (both always present).
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, AudioUnderrunRow) {
+    RB3TraceInit();
+    RB3TraceSetFrame(5);
+    RB3RecordAudio(2, 384);
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 2u);
+    const std::string &au = lines[1];
+    EXPECT_TRUE(LineIsWellFormed(au)) << au;
+    EXPECT_EQ(GetRaw(au, "k"), "au");
+    EXPECT_EQ(std::atoi(GetRaw(au, "under").c_str()), 2);
+    EXPECT_EQ(std::atoi(GetRaw(au, "frames").c_str()), 384);
+}
+
+// ---------------------------------------------------------------------------
+// (9) RB3RecordLog emits log{lvl,msg} + src only when non-null.
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, LogRowSrcOptional) {
+    RB3TraceInit();
+    RB3TraceSetFrame(1);
+    RB3RecordLog("warn", "low memory", "Heap.cpp:204");   // with src
+    RB3TraceSetFrame(2);
+    RB3RecordLog("assert", "bad index", nullptr);          // no src
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 3u);
+    const std::string &l0 = lines[1];
+    const std::string &l1 = lines[2];
+
+    EXPECT_TRUE(LineIsWellFormed(l0)) << l0;
+    EXPECT_EQ(GetRaw(l0, "k"), "log");
+    EXPECT_EQ(GetRaw(l0, "lvl"), "warn");
+    EXPECT_EQ(GetRaw(l0, "msg"), "low memory");
+    EXPECT_EQ(GetRaw(l0, "src"), "Heap.cpp:204");
+
+    EXPECT_EQ(GetRaw(l1, "lvl"), "assert");
+    EXPECT_EQ(GetRaw(l1, "msg"), "bad index");
+    EXPECT_FALSE(HasKey(l1, "src")) << "null src must omit the key: " << l1;
+}
+
+// ---------------------------------------------------------------------------
+// (10) RB3RecordMark emits mark{tag} + note only when non-null.
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, MarkRowNoteOptional) {
+    RB3TraceInit();
+    RB3TraceSetFrame(1);
+    RB3RecordMark("repro_start", "stutter on entering hub");   // with note
+    RB3TraceSetFrame(2);
+    RB3RecordMark("checkpoint", nullptr);                       // no note
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 3u);
+    const std::string &m0 = lines[1];
+    const std::string &m1 = lines[2];
+
+    EXPECT_TRUE(LineIsWellFormed(m0)) << m0;
+    EXPECT_EQ(GetRaw(m0, "k"), "mark");
+    EXPECT_EQ(GetRaw(m0, "tag"), "repro_start");
+    EXPECT_EQ(GetRaw(m0, "note"), "stutter on entering hub");
+
+    EXPECT_EQ(GetRaw(m1, "tag"), "checkpoint");
+    EXPECT_FALSE(HasKey(m1, "note")) << "null note must omit the key: " << m1;
+}
+
+// ---------------------------------------------------------------------------
+// (11) RB3TraceSetSongMs(>=0) makes the envelope carry `sm`; setting it back to
+//      <0 omits `sm` again. Replaces the hardcoded -1 CurrentSongMs in the core.
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, SongMsEnvelopePresentThenOmitted) {
+    RB3TraceInit();
+    RB3TraceSetFrame(1);
+    // No song yet -> sm omitted.
+    RB3RecordMark("before", nullptr);
+    // In a song now.
+    RB3TraceSetSongMs(12345.5f);
+    RB3TraceSetFrame(2);
+    RB3RecordMark("during", nullptr);
+    // Song ended (menus) -> back to <0 -> omit.
+    RB3TraceSetSongMs(-1.0f);
+    RB3TraceSetFrame(3);
+    RB3RecordMark("after", nullptr);
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 4u);
+    const std::string &before = lines[1];
+    const std::string &during = lines[2];
+    const std::string &after  = lines[3];
+
+    EXPECT_FALSE(HasKey(before, "sm")) << "no song yet => no sm: " << before;
+    ASSERT_TRUE(HasKey(during, "sm")) << "song-ms set => sm present: " << during;
+    EXPECT_NEAR(std::atof(GetRaw(during, "sm").c_str()), 12345.5, 0.1);
+    EXPECT_FALSE(HasKey(after, "sm")) << "song ended (<0) => sm omitted: " << after;
+    EXPECT_EQ(after.find("\"sm\":-1"), std::string::npos) << "never emit sm:-1";
+}
+
+// ---------------------------------------------------------------------------
+// (12) A song id with a quote + newline round-trips as ONE valid JSON line
+//      (proves the typed song recorder json_escapes its strings too).
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, SongStringsEscaped) {
+    RB3TraceInit();
+    RB3TraceSetFrame(1);
+    const char *nastyId = "song\"x\\y\nz";
+    RB3RecordSong("load", nastyId, "drum", "hard", -1.0f, -1.0f);
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_EQ(lines.size(), 2u) << "embedded newline must not split the event";
+    const std::string &s = lines[1];
+    EXPECT_TRUE(LineIsWellFormed(s)) << s;
+    std::string id = GetRaw(s, "id");
+    EXPECT_NE(id.find("\\n"), std::string::npos) << "newline escaped: " << id;
+    EXPECT_NE(id.find("\\\""), std::string::npos) << "quote escaped: " << id;
 }

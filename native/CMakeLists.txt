@@ -493,6 +493,12 @@ add_executable(rb3-native
     # so src/App.cpp's frame tap still links. See
     # docs/native/SESSION_TELEMETRY_DESIGN.md "Locked v1 contract".
     ${CMAKE_SOURCE_DIR}/src/rb3_session_trace.cpp
+    # Session telemetry engine TAPS: the UIScreenChangeMsg nav sink + the
+    # null-guarded song-ms helper (RB3TraceCurrentSongMs). Pulls in the engine
+    # types (Game/BeatMaster/BandUI/UIScreen) the recorder core deliberately
+    # avoids. The frame/input/boot taps are inline edits at App::RunOneFrame /
+    # JoypadPoll / BootMark; this TU owns only the nav sink + song-ms chain.
+    ${CMAKE_SOURCE_DIR}/src/rb3_trace_taps.cpp
     # REAL live input: keyboard (+ USB gamepad) -> JoypadData -> SendButtonMessages.
     # Strong JoypadInit/Poll/Reset/Terminate defs override the weak no-op stubs in
     # dta_link_stubs.s; SystemPoll(false) -> JoypadPoll() (System.cpp:673) drives it

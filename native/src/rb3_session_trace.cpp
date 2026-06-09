@@ -30,6 +30,13 @@
 #define RB3_GETPID() getpid()
 #endif
 
+// Web egress (D5 §7): the browser build pushes serialized NDJSON chunks into a
+// JS-side array (window.__rb3Trace) that the pre-js flusher drains over a POST.
+// Fully guarded so the NATIVE build is byte-unaffected (no emscripten symbols).
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 // ---------------------------------------------------------------------------
 // Engine-side counters — DEFINED in src/system/utl/Loader.cpp. The increments
 // live behind gFrameTraceActive, so the recorder arms that flag when it opens a
@@ -64,7 +71,14 @@ struct TraceEvent {
         struct { uint32_t bits, dn, up; int16_t whammy, tilt; } in;
         struct { uint16_t fromId, toId, focusId; uint8_t wentBack; } nav;
         struct { uint16_t phaseId; } boot;
-        struct { uint16_t aId; uint32_t u32; float val; } gen;
+        // song: ev/id/track/diff interned; score/pct omitted when < 0.
+        struct { uint16_t evId, idId, trackId, diffId; float score, pct; } song;
+        // au: underrun event count + underrun-frame count.
+        struct { int under, frames; } au;
+        // log: lvl/msg interned; src interned (0 = omit).
+        struct { uint16_t lvlId, msgId, srcId; } log;
+        // mark: tag interned; note interned (0 = omit).
+        struct { uint16_t tagId, noteId; } mark;
     };
 };
 
@@ -135,8 +149,13 @@ struct Recorder {
     uint32_t    lastInputBits = 0;
     bool        haveInput      = false;
 
+    // Current song ms (D2 §4.5); < 0 => not in a song => envelope omits `sm`.
+    // Wave 2 / D6 set this each frame via RB3TraceSetSongMs.
+    float       songMs         = -1.0f;
+
     std::string startedIso;   // hdr.started
     std::string buildGit;     // hdr.build.git
+    std::string platform = "native";  // hdr.platform ("web" under __EMSCRIPTEN__)
 };
 
 Recorder gRec;
@@ -342,29 +361,46 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
             out += '"';
             break;
         }
-        case TK_SONG:
-        case TK_AU:
-        case TK_LOG:
-        case TK_MARK: {
-            // Generic payload: interned string + u32 + val. Field name keyed by
-            // kind to match the v1 schema's first field (song.ev / log.msg /
-            // mark.tag). Numeric extras are emitted as u/val when set.
-            const char *strKey =
-                (e.kind == TK_LOG)  ? "msg" :
-                (e.kind == TK_MARK) ? "tag" :
-                (e.kind == TK_SONG) ? "ev"  : "k2";
-            out += ",\"";
-            out += strKey;
-            out += "\":\"";
-            JsonEscape(out, gRec.interner.str(e.gen.aId));
-            out += '"';
-            if (e.gen.u32 != 0) {
-                std::snprintf(num, sizeof(num), ",\"u\":%u", (unsigned)e.gen.u32);
-                out += num;
+        case TK_SONG: {
+            // song{ev,id,track,diff} + score/pct only when >= 0 (OQ7-deferred).
+            out += ",\"ev\":\"";    JsonEscape(out, gRec.interner.str(e.song.evId));    out += '"';
+            out += ",\"id\":\"";    JsonEscape(out, gRec.interner.str(e.song.idId));    out += '"';
+            out += ",\"track\":\""; JsonEscape(out, gRec.interner.str(e.song.trackId)); out += '"';
+            out += ",\"diff\":\"";  JsonEscape(out, gRec.interner.str(e.song.diffId));  out += '"';
+            if (e.song.score >= 0.0f) {
+                out += ",\"score\":";
+                AppendNum3(out, e.song.score);
             }
-            if (e.gen.val != 0.0f) {
-                out += ",\"val\":";
-                AppendNum3(out, e.gen.val);
+            if (e.song.pct >= 0.0f) {
+                out += ",\"pct\":";
+                AppendNum3(out, e.song.pct);
+            }
+            break;
+        }
+        case TK_AU: {
+            // au{under,frames}.
+            std::snprintf(num, sizeof(num), ",\"under\":%d", e.au.under);   out += num;
+            std::snprintf(num, sizeof(num), ",\"frames\":%d", e.au.frames); out += num;
+            break;
+        }
+        case TK_LOG: {
+            // log{lvl,msg} + src when present.
+            out += ",\"lvl\":\""; JsonEscape(out, gRec.interner.str(e.log.lvlId)); out += '"';
+            out += ",\"msg\":\""; JsonEscape(out, gRec.interner.str(e.log.msgId)); out += '"';
+            if (e.log.srcId != 0) {
+                out += ",\"src\":\"";
+                JsonEscape(out, gRec.interner.str(e.log.srcId));
+                out += '"';
+            }
+            break;
+        }
+        case TK_MARK: {
+            // mark{tag} + note when present.
+            out += ",\"tag\":\""; JsonEscape(out, gRec.interner.str(e.mark.tagId)); out += '"';
+            if (e.mark.noteId != 0) {
+                out += ",\"note\":\"";
+                JsonEscape(out, gRec.interner.str(e.mark.noteId));
+                out += '"';
             }
             break;
         }
@@ -374,33 +410,95 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
 }
 
 // ---------------------------------------------------------------------------
-// Header line. k=hdr,v=1,sid,cs=0,platform="native",started,build{git},flags{}.
-// No t/f/sm. cs is 0 (the first stamped client_seq).
+// Web egress sink (D5 §7) — FROZEN JS-global contract for agent F's pre-js
+// flusher: window.__rb3Sid (string), window.__rb3Trace (array of NDJSON-string
+// chunks), window.__rb3TraceOn (bool). On native these are no-ops (no
+// emscripten symbols), so the native build is byte-unaffected.
+// ---------------------------------------------------------------------------
+
+// True when the web build should emit (web sink active). Native: always false
+// here — native uses the FILE* sink. (gRec.sink stays null on web.)
+bool HaveWebSink() {
+#ifdef __EMSCRIPTEN__
+    return true;
+#else
+    return false;
+#endif
+}
+
+// Publish the C++-minted sid to window.__rb3Sid (string) so the pre-js POST
+// route, the hdr line, and the SQLite PK all agree. Read window.__rb3TraceOn
+// (default true) → return whether tracing should be armed.
+bool WebEgressPublishSidAndReadToggle(const char *sid) {
+#ifdef __EMSCRIPTEN__
+    // Publish sid; create __rb3Trace as a plain array if pre-js hasn't yet.
+    EM_ASM({
+        var s = UTF8ToString($0);
+        window.__rb3Sid = s;
+        if (!Array.isArray(window.__rb3Trace)) window.__rb3Trace = [];
+    }, sid);
+    // __rb3TraceOn defaults to true when unset.
+    int on = EM_ASM_INT({
+        return (typeof window.__rb3TraceOn === 'undefined' ||
+                window.__rb3TraceOn) ? 1 : 0;
+    });
+    return on != 0;
+#else
+    (void)sid;
+    return false;
+#endif
+}
+
+// Push one serialized NDJSON chunk (one-or-more '\n'-terminated lines) into the
+// window.__rb3Trace array that the pre-js flusher drains.
+void WebEgressPush(const std::string &chunk) {
+#ifdef __EMSCRIPTEN__
+    EM_ASM({
+        var t = window.__rb3Trace;
+        if (!Array.isArray(t)) { t = window.__rb3Trace = []; }
+        t.push(UTF8ToString($0, $1));
+    }, chunk.data(), (int)chunk.size());
+#else
+    (void)chunk;
+#endif
+}
+
+// ---------------------------------------------------------------------------
+// Header line. k=hdr,v=1,sid,cs=0,platform,started,build{git},flags{}.
+// No t/f/sm. cs is 0 (the first stamped client_seq). Goes to whichever sink is
+// active (native FILE* or the web __rb3Trace array).
 // ---------------------------------------------------------------------------
 void WriteHeader() {
-    if (!gRec.sink || gRec.hdrWritten) return;
+    if (gRec.hdrWritten) return;
+    if (!gRec.sink && !HaveWebSink()) return;
     std::string out;
     out += "{\"k\":\"hdr\",\"v\":1,";
     AppendQuotedKV(out, "sid", gRec.sid.c_str());
     out += ",\"cs\":0,";
-    AppendQuotedKV(out, "platform", "native");
+    AppendQuotedKV(out, "platform", gRec.platform.c_str());
     out += ',';
     AppendQuotedKV(out, "started", gRec.startedIso.c_str());
     out += ",\"build\":{";
     AppendQuotedKV(out, "git", gRec.buildGit.c_str());
     out += "},\"flags\":{}}\n";
-    std::fwrite(out.data(), 1, out.size(), gRec.sink);
-    std::fflush(gRec.sink);
+    if (gRec.sink) {
+        std::fwrite(out.data(), 1, out.size(), gRec.sink);
+        std::fflush(gRec.sink);
+    } else {
+        WebEgressPush(out);
+    }
     gRec.hdrWritten = true;
     // hdr consumes cs=0; subsequent events start at cs=1.
     if (gRec.clientSeq == 0) gRec.clientSeq = 1;
 }
 
 // ---------------------------------------------------------------------------
-// Drain the ring to the file sink (oldest first), then fflush.
+// Drain the ring to the active sink (oldest first): native FILE* (+fflush) or
+// the web __rb3Trace array (one pushed chunk per drain).
 // ---------------------------------------------------------------------------
 void DrainRing() {
-    if (!gRec.sink || gRec.ringCount == 0) return;
+    if (gRec.ringCount == 0) return;
+    if (!gRec.sink && !HaveWebSink()) return;
     std::string out;
     out.reserve(gRec.ringCount * 64);
     size_t start = (gRec.ringHead + gRec.ringCap - gRec.ringCount) % gRec.ringCap;
@@ -408,8 +506,12 @@ void DrainRing() {
         const TraceEvent &e = gRec.ring[(start + i) % gRec.ringCap];
         SerializeEvent(out, e);
     }
-    std::fwrite(out.data(), 1, out.size(), gRec.sink);
-    std::fflush(gRec.sink);
+    if (gRec.sink) {
+        std::fwrite(out.data(), 1, out.size(), gRec.sink);
+        std::fflush(gRec.sink);
+    } else {
+        WebEgressPush(out);
+    }
     gRec.ringCount = 0;
 }
 
@@ -452,7 +554,11 @@ bool MakeRoom() {
 }
 
 // ---------------------------------------------------------------------------
-// Push one event into the ring (stamps t/cs), then (native) drain to the sink.
+// Push one event into the ring (stamps t/cs), then drain to the active sink.
+//  - Native: stream to the FILE* each push so a SIGTERM leaves valid NDJSON.
+//  - Web: amortize the EM_ASM crossing — accumulate in the ring and only drain
+//    a multi-line chunk to window.__rb3Trace once it half-fills (RB3TraceFlush,
+//    driven by the pre-js timer, drains the remainder on cadence). (D5 §7)
 // ---------------------------------------------------------------------------
 void PushEvent(TraceEvent &e) {
     if (!gRec.hdrWritten) WriteHeader();
@@ -462,14 +568,18 @@ void PushEvent(TraceEvent &e) {
     gRec.ring[gRec.ringHead] = e;
     gRec.ringHead = (gRec.ringHead + 1) % gRec.ringCap;
     if (gRec.ringCount < gRec.ringCap) gRec.ringCount++;
-    // Native: stream to the file each push so a SIGTERM leaves valid NDJSON.
-    if (gRec.sink) DrainRing();
+    if (gRec.sink) {
+        DrainRing();
+    } else if (HaveWebSink() && gRec.ringCount * 2 >= gRec.ringCap) {
+        DrainRing();
+    }
 }
 
-// Snapshot the current song ms (Wave 2 wires the real accessor; v1 core has no
-// engine dependency, so default to "not in a song" = omit sm).
+// Snapshot the current song ms. RB3TraceSetSongMs stores the latest value
+// (Wave 2 wires the real GetBeatMaster()->GetAudio()->GetTime() chain into it);
+// < 0 => "not in a song" => the envelope omits `sm` (D2 §4.5).
 float CurrentSongMs() {
-    return -1.0f;
+    return gRec.songMs;
 }
 
 int ParseIntEnv(const char *name, int def) {
@@ -491,10 +601,25 @@ float ParseFloatEnv(const char *name, float def) {
 
 void RB3TraceInit() {
     if (gRec.state == 1) return;   // already armed
-    // Resolve the master toggle: RB3_SESSION_TRACE, else RB3_FRAME_TRACE alias.
+
+    bool frameAlias = false;
+    gRec.platform = "native";
+
+#ifdef __EMSCRIPTEN__
+    // ----- Web sink (D5 §7): no file. Mint sid in C++, publish it to JS, read
+    // the JS opt-out toggle. The pre-js flusher drains window.__rb3Trace. -----
+    gRec.sid = MintSid();
+    bool armed = WebEgressPublishSidAndReadToggle(gRec.sid.c_str());
+    if (!armed) {
+        gRec.state = -1;     // ?notrace / __rb3TraceOn=false
+        return;
+    }
+    gRec.platform = "web";
+    gRec.sink = nullptr;     // web has no FILE* sink
+#else
+    // ----- Native sink: RB3_SESSION_TRACE, else RB3_FRAME_TRACE alias. -----
     const char *sessPath = std::getenv("RB3_SESSION_TRACE");
     const char *framePath = std::getenv("RB3_FRAME_TRACE");
-    bool frameAlias = false;
     const char *path = nullptr;
     if (sessPath && sessPath[0]) {
         path = sessPath;
@@ -517,6 +642,8 @@ void RB3TraceInit() {
         gRec.state = -1;     // open failed; never retry
         return;
     }
+    gRec.sid = MintSid();
+#endif
 
     gRec.state = 1;
 
@@ -531,9 +658,8 @@ void RB3TraceInit() {
     gRec.frameDecim  = ParseIntEnv("RB3_TRACE_FRAME_DECIMATE", 30);
     if (frameAlias) gRec.frameDecim = 1;   // back-compat: every frame
 
-    // Identity + header fields.
+    // Identity + header fields. (sid is minted per-sink above.)
     gRec.clientSeq  = 0;
-    gRec.sid        = MintSid();
     gRec.startedIso = IsoUtcNow();
     const char *git = std::getenv("RB3_BUILD_SHA");
     gRec.buildGit   = (git && git[0]) ? std::string(git) : std::string();
@@ -542,6 +668,7 @@ void RB3TraceInit() {
     gRec.interner.reset();
     gRec.lastInputBits = 0;
     gRec.haveInput     = false;
+    gRec.songMs        = -1.0f;
 
     // Pin the monotonic clock base now (t=0 at init).
     gRec.clockBaseSet = false;
@@ -641,17 +768,64 @@ void RB3RecordBootMark(const char *phase) {
     PushEvent(e);
 }
 
-void RB3RecordEvent(RB3TraceKind k, const char *sym, uint32_t u32, float val) {
+void RB3RecordSong(const char *ev, const char *id, const char *track,
+                   const char *diff, float score, float pct) {
     if (!gRB3TraceActive) return;
     TraceEvent e;
     std::memset(&e, 0, sizeof(e));
-    e.kind = (uint8_t)k;
+    e.kind = TK_SONG;
     e.f    = gRB3TraceFrame;
     e.sm   = CurrentSongMs();
-    e.gen.aId = gRec.interner.intern(sym);
-    e.gen.u32 = u32;
-    e.gen.val = val;
+    e.song.evId    = gRec.interner.intern(ev);
+    e.song.idId    = gRec.interner.intern(id);
+    e.song.trackId = gRec.interner.intern(track);
+    e.song.diffId  = gRec.interner.intern(diff);
+    e.song.score   = score;   // < 0 => omitted by the serializer
+    e.song.pct     = pct;      // < 0 => omitted by the serializer
     PushEvent(e);
+}
+
+void RB3RecordAudio(int under, int frames) {
+    if (!gRB3TraceActive) return;
+    TraceEvent e;
+    std::memset(&e, 0, sizeof(e));
+    e.kind = TK_AU;
+    e.f    = gRB3TraceFrame;
+    e.sm   = CurrentSongMs();
+    e.au.under  = under;
+    e.au.frames = frames;
+    PushEvent(e);
+}
+
+void RB3RecordLog(const char *lvl, const char *msg, const char *src) {
+    if (!gRB3TraceActive) return;
+    TraceEvent e;
+    std::memset(&e, 0, sizeof(e));
+    e.kind = TK_LOG;
+    e.f    = gRB3TraceFrame;
+    e.sm   = CurrentSongMs();
+    e.log.lvlId = gRec.interner.intern(lvl);
+    e.log.msgId = gRec.interner.intern(msg);
+    // src is optional: a null pointer interns to id 0 => the serializer omits it.
+    e.log.srcId = src ? gRec.interner.intern(src) : 0;
+    PushEvent(e);
+}
+
+void RB3RecordMark(const char *tag, const char *note) {
+    if (!gRB3TraceActive) return;
+    TraceEvent e;
+    std::memset(&e, 0, sizeof(e));
+    e.kind = TK_MARK;
+    e.f    = gRB3TraceFrame;
+    e.sm   = CurrentSongMs();
+    e.mark.tagId  = gRec.interner.intern(tag);
+    // note is optional: null => id 0 => omitted.
+    e.mark.noteId = note ? gRec.interner.intern(note) : 0;
+    PushEvent(e);
+}
+
+void RB3TraceSetSongMs(float ms) {
+    gRec.songMs = ms;
 }
 
 void RB3TraceFlush() {
@@ -661,8 +835,10 @@ void RB3TraceFlush() {
 }
 
 void RB3TraceShutdown() {
+    if (gRec.state == 1) {
+        DrainRing();   // flush the remaining ring to the active sink (file or web)
+    }
     if (gRec.sink) {
-        DrainRing();
         std::fflush(gRec.sink);
         std::fclose(gRec.sink);
     }
@@ -683,6 +859,8 @@ void RB3TraceShutdown() {
     gRec.clockBaseSet  = false;
     gRec.lastInputBits = 0;
     gRec.haveInput     = false;
+    gRec.songMs        = -1.0f;
+    gRec.platform      = "native";
     gRec.startedIso.clear();
     gRec.buildGit.clear();
 

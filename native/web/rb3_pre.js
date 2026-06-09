@@ -427,4 +427,198 @@
             window.__rb3SaveReady = 1;
         }
     })();
+
+    // =======================================================================
+    // D5 — SESSION-TELEMETRY WEB EGRESS (consumer half; Task F / SESSION_
+    // TELEMETRY_DESIGN.md §7).
+    //
+    // The wasm recorder (native/src/rb3_session_trace.cpp) is the PRODUCER: it
+    // owns serialization and publishes a FROZEN window-global contract that this
+    // block drains over HTTP. We are the CONSUMER — batching + network only.
+    //
+    //   window.__rb3Sid      string  — C++-minted session id; the POST route key
+    //                                  (/api/telemetry/<sid>). Set once mid-boot
+    //                                  by WebEgressPublishSidAndReadToggle (EM_ASM).
+    //   window.__rb3Trace    Array   — pending NDJSON-string CHUNKS to drain. Each
+    //                                  element is one-or-more '\n'-terminated lines
+    //                                  (the recorder pushes a multi-line chunk per
+    //                                  ring drain to amortize the EM crossing).
+    //   window.__rb3TraceOn  bool    — master toggle. Default ON (always-on); we
+    //                                  set it FALSE up-front on URL opt-out
+    //                                  (?trace=0 / ?notrace), which the recorder
+    //                                  reads back (EM_ASM_INT) to disarm itself.
+    //
+    // This runs in pre-js — before _main, so the URL opt-out is honored before
+    // the recorder reads __rb3TraceOn, and __rb3Trace exists before the first
+    // push. Same-origin (relative URLs): the server's COOP/COEP impose no extra
+    // requirement and there is no CSP. The server handler
+    // (server.py do_POST -> _handle_telemetry_post) expects exactly
+    //   POST /api/telemetry/<sid>   Content-Type: application/x-ndjson   body=NDJSON
+    // and its localhost gate passes for same-origin dev. We match that contract.
+    //
+    // The whole block is best-effort: any failure leaves capture disarmed and
+    // never blocks boot.
+    // =======================================================================
+    (function() {
+        // ---- URL opt-out (?trace=0 / ?notrace). Always-on otherwise. -------
+        // Set __rb3TraceOn FIRST so the C++ recorder reads the opt-out and never
+        // arms. Force false only on opt-out; leave an explicit value alone; else
+        // default-arm.
+        var traceOff = false;
+        try {
+            var qs = new URLSearchParams(location.search);
+            var traceParam = qs.get('trace');     // ?trace=0 / =false / =off
+            var noTrace = qs.has('notrace');       // ?notrace (presence)
+            if (noTrace ||
+                (traceParam !== null &&
+                 (traceParam === '0' || traceParam === 'false' || traceParam === 'off'))) {
+                traceOff = true;
+            }
+        } catch (e) { /* no URLSearchParams — default on */ }
+
+        if (traceOff) {
+            window.__rb3TraceOn = false;
+            console.log('[rb3-trace] disabled via URL (?trace=0 / ?notrace)');
+        } else if (typeof window.__rb3TraceOn === 'undefined') {
+            window.__rb3TraceOn = true;             // always-on default
+        }
+
+        // Ensure the producer array exists before the recorder creates it, so a
+        // push never lands on `undefined` and our drain can splice safely.
+        window.__rb3Trace = window.__rb3Trace || [];
+
+        // ---- Tunables ------------------------------------------------------
+        var FLUSH_MS = 5000;                     // periodic timer cadence
+        var MAX_RETAIN_BYTES = 5 * 1024 * 1024;  // bounded retry buffer (~5MB)
+        var BEACON_CAP = 60 * 1024;              // headroom under the ~64KB cap
+
+        // Single in-flight POST guard: keeps ordering simple and avoids parallel
+        // writers against the stdlib ThreadingHTTPServer (it funnels to one
+        // SQLite writer thread). New chunks accumulate during the POST.
+        var posting = false;
+        var droppedBytes = 0;
+        var droppedWarned = false;
+
+        function endpoint() {
+            return '/api/telemetry/' + encodeURIComponent(window.__rb3Sid);
+        }
+        function pendingBytes(chunks) {
+            var n = 0;
+            for (var i = 0; i < chunks.length; i++) n += chunks[i].length;
+            return n;
+        }
+
+        // Re-prepend chunks after a failed POST so a transient server-down doesn't
+        // lose data — bounded: if the retain buffer would exceed MAX_RETAIN_BYTES,
+        // drop OLDEST (front) chunks until back under cap, warn once. Recent/crash
+        // window is preferred over stale.
+        function reprepend(chunks) {
+            var t = window.__rb3Trace;
+            if (!Array.isArray(t)) { t = window.__rb3Trace = []; }
+            for (var i = chunks.length - 1; i >= 0; i--) t.unshift(chunks[i]);
+            var total = pendingBytes(t);
+            var dropped = 0;
+            while (total > MAX_RETAIN_BYTES && t.length > 1) {
+                var gone = t.shift();
+                total -= gone.length;
+                dropped += gone.length;
+            }
+            if (dropped > 0) {
+                droppedBytes += dropped;
+                if (!droppedWarned) {
+                    console.warn('[rb3-trace] retain buffer over ' +
+                        (MAX_RETAIN_BYTES / 1048576).toFixed(0) +
+                        'MB while server unreachable — dropping oldest telemetry (' +
+                        droppedBytes + ' bytes so far)');
+                    droppedWarned = true;
+                }
+            }
+        }
+
+        // Periodic flusher: drain ALL pending chunks into one NDJSON body + POST.
+        function flush() {
+            if (!window.__rb3TraceOn) return;
+            if (!window.__rb3Sid) return;        // recorder hasn't minted sid yet
+            if (posting) return;                 // single in-flight
+            var t = window.__rb3Trace;
+            if (!Array.isArray(t) || t.length === 0) return;
+
+            // Splice OUT pending chunks so events pushed during the POST queue up
+            // separately and ship next tick. Chunks are already '\n'-terminated
+            // NDJSON fragments — concatenation is valid NDJSON (no extra seps).
+            var batch = t.splice(0, t.length);
+            var body = batch.join('');
+            if (!body) return;
+
+            posting = true;
+            fetch(endpoint(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-ndjson' },
+                body: body,
+                keepalive: true
+            }).then(function(r) {
+                posting = false;
+                if (!r || !r.ok) reprepend(batch);   // 4xx/5xx -> retry next tick
+            }).catch(function() {
+                posting = false;
+                reprepend(batch);                    // network fail -> retry next tick
+            });
+        }
+
+        // ---- Teardown — beacon the tail on hide/close ----------------------
+        // visibilitychange:hidden is the PRIMARY tail flush (fires reliably on
+        // tab-hide/close while the page can still send); pagehide is the belt-
+        // and-suspenders for navigation. sendBeacon survives unload where fetch
+        // may not; it hard-rejects bodies over the UA cap (~64KB) by returning
+        // false, so we split the tail into multiple <=60KB beacons.
+        function beaconTail() {
+            if (!window.__rb3TraceOn) return;
+            if (!window.__rb3Sid) return;
+            var t = window.__rb3Trace;
+            if (!Array.isArray(t) || t.length === 0) return;
+            if (!navigator.sendBeacon) { flush(); return; }  // no beacon -> fetch
+            var batch = t.splice(0, t.length);
+            var url = endpoint();
+
+            // Pack chunks into <=BEACON_CAP bodies; one beacon each. Always take
+            // at least one chunk so we make progress even if a single chunk > cap.
+            var i = 0;
+            while (i < batch.length) {
+                var parts = [];
+                var size = 0;
+                do {
+                    parts.push(batch[i]);
+                    size += batch[i].length;
+                    i++;
+                } while (i < batch.length && (size + batch[i].length) <= BEACON_CAP);
+                var body = parts.join('');
+                try {
+                    var ok = navigator.sendBeacon(
+                        url, new Blob([body], { type: 'application/x-ndjson' }));
+                    if (!ok) {
+                        // Beacon refused (over cap / queue full) -> keepalive fetch.
+                        fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-ndjson' },
+                            body: body,
+                            keepalive: true
+                        }).catch(function() { /* unload — nothing else to do */ });
+                    }
+                } catch (e) { /* unload race — ignore */ }
+            }
+        }
+
+        // ---- Wire it up ----------------------------------------------------
+        try {
+            setInterval(flush, FLUSH_MS);
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') beaconTail();
+            });
+            window.addEventListener('pagehide', beaconTail);
+            console.log('[rb3-trace] egress consumer armed (on=' +
+                (window.__rb3TraceOn ? '1' : '0') + ', flush=' + FLUSH_MS + 'ms)');
+        } catch (e) {
+            console.warn('[rb3-trace] egress wiring failed: ' + e);
+        }
+    })();
 })();

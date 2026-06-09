@@ -79,6 +79,12 @@
 #include "ui/UIList.h"
 #include "utl/Cheats.h"
 #include "utl/Loader.h"
+#ifdef HX_NATIVE
+// Session-telemetry recorder API (RB3TraceInit / RB3RecordFrame / gRB3TraceActive
+// / RB3TraceSetFrame / RB3TraceSetSongMs). The frame tap lives in RunOneFrame.
+// native/src is on the native include path (CMAKE_SOURCE_DIR}/src).
+#include "rb3_session_trace.h"
+#endif
 #include "utl/Magnu.h"
 #include "utl/MakeString.h"
 #include "utl/MemMgr.h"
@@ -504,6 +510,29 @@ App::~App() { TheDebug.Exit(0, true); }
 void App::RunOneFrame(int frame) {
     extern void RB3GameInputPoll(int frame);
 
+    // ── SESSION-TELEMETRY frame tap ──────────────────────────────────────────
+    // The single per-frame metrics tap, placed in RunOneFrame (NOT the native
+    // RunWithoutDebugging loop) so ONE tap covers BOTH the native desktop loop
+    // AND the web boot driver (main_web.cpp:653 calls RunOneFrame directly,
+    // bypassing RunWithoutDebugging). RB3TraceInit() is lazy + idempotent (reads
+    // RB3_SESSION_TRACE / RB3_FRAME_TRACE once); gRB3TraceActive is the single
+    // predicted branch when tracing is off, so the timer + load-poll resets are
+    // zero-cost in a normal run. The matching RB3RecordFrame call is at the
+    // bottom of this method. See docs/native/SESSION_TELEMETRY_DESIGN.md
+    // "Locked v1 contract" (Frame metrics).
+    extern float gLoadPollMsThisFrame;
+    extern float gLoadPollUntilMsThisFrame;
+    RB3TraceInit();
+    Timer rb3FrameTimer;
+    if (gRB3TraceActive) {
+        RB3TraceSetFrame(frame);
+        // Reset the per-frame load-attribution counters before the polls below
+        // accumulate into them (Loader.cpp adds during SystemPoll/TheLoadMgr.Poll).
+        gLoadPollMsThisFrame = 0.0f;
+        gLoadPollUntilMsThisFrame = 0.0f;
+        rb3FrameTimer.Restart();
+    }
+
     SystemPoll(false);
     TheUI.Poll();
 #ifdef HX_NATIVE
@@ -591,6 +620,27 @@ void App::RunOneFrame(int frame) {
 #endif
     if (TheRnd)
         TheRnd->EndDrawing();
+
+    // ── SESSION-TELEMETRY frame tap (record side) ────────────────────────────
+    // Matches the entry tap above. Reads the frame ms (this RunOneFrame body
+    // under the timer), the live screen name, and the pending-loader count, sets
+    // the envelope song-ms (null-guarded chain via RB3TraceCurrentSongMs — -1 in
+    // menus), then records the fr row (RB3RecordFrame applies the §4.7 decimation
+    // + reads/zeroes the engine ld/st counters). Also lazily registers the nav
+    // sink now that TheBandUI is alive (idempotent backstop; native main also
+    // registers it right after the App ctor). All gated behind gRB3TraceActive.
+    if (gRB3TraceActive) {
+        extern float RB3TraceCurrentSongMs();
+        extern void RB3TraceEnsureNavSink();
+        rb3FrameTimer.Split();
+        float rb3FrameMs = Timer::CyclesToMs(rb3FrameTimer.mCycles);
+        UIScreen *rb3Scr = TheUI.CurrentScreen();
+        const char *rb3ScrName = (rb3Scr && rb3Scr->Name()) ? rb3Scr->Name() : "?";
+        RB3TraceSetSongMs(RB3TraceCurrentSongMs());
+        RB3RecordFrame(rb3FrameMs, gLoadPollMsThisFrame, gLoadPollUntilMsThisFrame,
+                       rb3ScrName, (int)TheLoadMgr.mLoading.size());
+        RB3TraceEnsureNavSink();
+    }
 }
 #endif
 
@@ -761,19 +811,14 @@ void App::RunWithoutDebugging() {
     float sMaxFrameMs = 0.0f;
     int sLongFrameCount = 0;
 
-    // TASK A4 frame-trace (audio-perf-investigation): a separate, machine-
-    // readable JSONL per-frame tracer gated on RB3_FRAME_TRACE=<path>. It
-    // records EVERY frame (dt + loader/stream asset events + screen) so a
-    // profiler can build a full histogram and cluster stutters on asset events,
-    // independent of the LONG-only RB3_FRAME_INSTRUMENT log above. Both share the
-    // same wall-clock timing + load-attribution globals when either is on.
-    static int sFrameTrace = -1;
-    if (sFrameTrace < 0)
-        sFrameTrace = getenv("RB3_FRAME_TRACE") ? 1 : 0;
-    extern void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
-                                    float loadPollUntilMs, const char *screen,
-                                    int pendingLoaders);
-    const bool wallTime = (sFrameInstrument || sFrameTrace);
+    // SESSION-TELEMETRY frame-trace (RB3_SESSION_TRACE / RB3_FRAME_TRACE) is now
+    // emitted by the tap INSIDE RunOneFrame (so one tap serves both the native
+    // loop and the web RunOneFrame driver). This loop no longer records `fr`
+    // rows — that would double-emit. RB3FrameTraceRecord stays a back-compat
+    // symbol in rb3_session_trace.cpp; it is simply not called here anymore.
+    // Only RB3_FRAME_INSTRUMENT (the human-readable LONG-frame MILO_LOG) still
+    // needs the loop's own wall-clock timing below.
+    const bool wallTime = (sFrameInstrument != 0);
 
     for (int frame = 0; (unbounded || frame < maxFrames) && !RB3CleanExitRequested();
          frame++) {
@@ -804,11 +849,6 @@ void App::RunWithoutDebugging() {
                          "[max=%.1f longCount=%d]\n",
                          frame, ms, gLoadPollMsThisFrame, gLoadPollUntilMsThisFrame,
                          scrName, sMaxFrameMs, sLongFrameCount);
-            }
-            if (sFrameTrace) {
-                RB3FrameTraceRecord(frame, ms, gLoadPollMsThisFrame,
-                                    gLoadPollUntilMsThisFrame, scrName,
-                                    (int)TheLoadMgr.mLoading.size());
             }
         } else {
             RunOneFrame(frame);

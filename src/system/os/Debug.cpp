@@ -19,6 +19,41 @@
 
 #include "decomp.h"
 
+#ifdef HX_NATIVE
+// Session-telemetry LOG tap (HX_NATIVE only — the Wii MWCC build never sees this,
+// so its matched asm is byte-identical). Records WARN/ASSERT/ERROR diagnostics
+// into the trace, with a per-message-key rate-limit so always-on capture can't
+// be flooded by a FAIL/WARN that recurs every frame.
+#include "rb3_session_trace.h"
+#include "utl/Str.h"  // String (this TU uses the engine String, not std::string)
+namespace {
+// Rate-limit: log each distinct message at most kMaxPerMsg times (keyed by the
+// raw message text), so a per-frame benign FAIL/WARN doesn't spam the ring.
+// Uses the engine String (Debug.cpp's MWCC-compat context has no <string>).
+void RB3TraceLogRateLimited(const char *lvl, const char *msg) {
+    if (!gRB3TraceActive || !msg)
+        return;
+    const int kMaxPerMsg = 5;
+    static std::vector<String> sKeys;
+    static std::vector<int> sCounts;
+    String m(msg);
+    int idx = -1;
+    for (int i = 0; i < (int)sKeys.size(); i++) {
+        if (sKeys[i] == m) { idx = i; break; }
+    }
+    if (idx < 0) {
+        sKeys.push_back(m);
+        sCounts.push_back(0);
+        idx = (int)sKeys.size() - 1;
+    }
+    if (sCounts[idx] >= kMaxPerMsg)
+        return;
+    sCounts[idx]++;
+    RB3RecordLog(lvl, msg, nullptr);
+}
+} // namespace
+#endif
+
 const char *kAssertStr = "File: %s Line: %d Error: %s\n";
 Debug TheDebug;
 jmp_buf TheDebugJump;
@@ -114,11 +149,21 @@ void Debug::Notify(const char *msg) {
         else
             MILO_LOG("NOTIFY: %s\n", msg);
     }
+#ifdef HX_NATIVE
+    // Session-telemetry: a Notify is a WARN-class diagnostic (MILO_WARN / NOTIFY).
+    RB3TraceLogRateLimited("warn", msg);
+#endif
 }
 
 #pragma push
 #pragma pool_data off
 void Debug::Fail(const char *msg) {
+#ifdef HX_NATIVE
+    // Session-telemetry: a Fail is an ASSERT-class diagnostic (MILO_FAIL /
+    // MILO_ASSERT). Tapped before the HX_WEB early-return so it lands on both the
+    // web and native ports.
+    RB3TraceLogRateLimited("assert", msg);
+#endif
 #ifdef HX_WEB
     // Web port: a MILO_FAIL must never abort() the tab. The App boot trips
     // benign FAILs (dev-only DTA 404s, stub managers, songs missing from

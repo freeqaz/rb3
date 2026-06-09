@@ -89,9 +89,36 @@ void RB3RecordNav(const char *from, const char *to, const char *focus,
 // Boot phase mark (e.g. "engine_init_done").
 void RB3RecordBootMark(const char *phase);
 
-// Generic song/au/log/mark event. `sym` is an interned string (song id / log
-// msg / mark tag); u32 + val carry the kind-specific numeric payload.
-void RB3RecordEvent(RB3TraceKind k, const char *sym, uint32_t u32, float val);
+// ---------------------------------------------------------------------------
+// Typed per-kind recorders (D2 §4.3 wire schema). These replace the Wave-1
+// generic RB3RecordEvent stub: each emits exactly the reader-expected keys
+// (scripts/telemetry/trace-report.py + native/web/telemetry/db.py).
+// ---------------------------------------------------------------------------
+
+// Song lifecycle. ev ∈ load/start/end; id/track/diff are interned strings.
+// score/pct are emitted ONLY when >= 0 (callers pass -1 to omit — the exact
+// score/pct accessor is OQ7-deferred to M1/M3). pct is a 0..1 fraction (the
+// report renders pct*100); score is the raw points value.
+void RB3RecordSong(const char *ev, const char *id, const char *track,
+                   const char *diff, float score, float pct);
+
+// Audio underrun (web; native may omit). under = underrun-event count this
+// row, frames = underrun-frame count. Both always serialized.
+void RB3RecordAudio(int under, int frames);
+
+// Diagnostic log line. lvl ∈ warn/assert/error/info; msg is the message text;
+// src (optional file:line) is emitted only when non-null.
+void RB3RecordLog(const char *lvl, const char *msg, const char *src);
+
+// User/bug marker. tag is the marker tag; note (optional) is emitted only when
+// non-null.
+void RB3RecordMark(const char *tag, const char *note);
+
+// Set the current song-ms (D2 §4.5). Frame/input (and all) events pick this up
+// for the envelope `sm`, which is emitted only when ms >= 0 (menus pass < 0 to
+// omit `sm` entirely). Wave 2 wires the real GetBeatMaster()->GetAudio()->
+// GetTime() chain into this; the core defaults to "not in a song".
+void RB3TraceSetSongMs(float ms);
 
 // Append the ring to the file sink + fflush, so a SIGTERM mid-run leaves valid
 // NDJSON. Cheap no-op when not armed.

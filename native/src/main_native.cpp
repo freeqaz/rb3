@@ -596,6 +596,7 @@ extern int RunRenderMesh(int argc, char **argv, const char *miloPath); // rb3_re
 #include "App.h"
 #include "platform/Rnd_Wgpu_RB3.h"
 #include "audio/AudioDevice.h"
+#include "rb3_session_trace.h"  // session-telemetry boot marks + nav-sink register
 
 // N9 (teardown SIGSEGV): belt-and-suspenders exit callback — calls
 // AudioDevice::Terminate() which is idempotent (guarded by mInitialized).
@@ -704,9 +705,24 @@ static int RunGame(int argc, char **argv) {
     TheLoadMgr.mPlatform = kPlatformXBox;
     SetSystemArgs(argc, argv);
 
+    // SESSION-TELEMETRY: arm the recorder (RB3_SESSION_TRACE / RB3_FRAME_TRACE)
+    // before the App ctor so a native run gets boot marks. Native has no web
+    // BootMark(); these two marks (engine_init_done = everything up to the ctor,
+    // appctor_done = after the ctor's *::Init cluster + TheUI.Init) give the
+    // headless trace a `boot` timeline. Idempotent (the frame tap re-calls it).
+    RB3TraceInit();
+    RB3RecordBootMark("engine_init_done");
+
     printf("rb3-native: RB3_GAME — constructing App...\n");
     App app(argc, argv);
     printf("rb3-native: RB3_GAME — App constructed; calling Run()...\n");
+
+    RB3RecordBootMark("appctor_done");
+    // Register the nav sink now that TheBandUI (the real TheUI) exists, so the
+    // earliest screen transitions are captured. Idempotent + no-op when tracing
+    // is off; the frame tap also calls this as a backstop.
+    extern void RB3TraceEnsureNavSink();
+    RB3TraceEnsureNavSink();
 
     // C2 (persistence): the App ctor ran ProfileMgr::Init (TheProfileMgr now alive,
     // 4 BandProfiles populated, TheModifierMgr up). Restore persisted global options

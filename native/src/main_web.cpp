@@ -98,6 +98,10 @@ extern DataArray *gSystemConfig;
 // Live-tunable camera/gem settings — seed once from the (empty) browser env.
 #include "rb3_native_settings.h"
 
+// Session-telemetry recorder — BootMark() taps RB3RecordBootMark for the boot
+// timeline. (HX_NATIVE-guarded internally.)
+#include "rb3_session_trace.h"
+
 // Engine: register the legacy short milo class names (Tex/Text/Dir). The native
 // RunGame calls this before any UI milo loads; the App-boot path must too (the
 // App ctor's Rnd::PreInit registers the prefixed RndXxx names but not the
@@ -482,6 +486,12 @@ static void BootMark(const char *phase) {
         if (!window.rb3BootPhaseLog) window.rb3BootPhaseLog = [];
         window.rb3BootPhaseLog.push([p, +performance.now().toFixed(1)]);
     }, phase);
+    // SESSION-TELEMETRY boot tap: emit a `boot` row for this phase. RB3TraceInit
+    // is idempotent; the recorder gates on gRB3TraceActive. On web the sink is
+    // armed lazily once the JS toggle is read, so an early phase that fires
+    // before init simply no-ops (acceptable — the bulk of boot phases land after).
+    RB3TraceInit();
+    RB3RecordBootMark(phase);
 }
 
 static void mainLoop() {
