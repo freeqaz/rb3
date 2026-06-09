@@ -446,7 +446,7 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
         cand = os.path.join(OVERLAY_DIR, safe_rel)
         return cand if os.path.isfile(cand) else None
 
-    def _emit_bundle(self, entries):
+    def _emit_bundle(self, entries, cache_name=None):
         """Write `entries` ([(rel, bytes), ...]) as the binary bundle the engine's
         onBundleSuccess (milo-native-engine/src/platform/WebAssets.cpp) parses.
 
@@ -456,8 +456,17 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
 
         Shared by /api/bundle (the .dta/.dtb config bundle) and /api/bundle/boot
         (the R3 boot-milo bundle). Entries are emitted sorted by path for a stable
-        body. HEAD sends headers only."""
+        body. HEAD sends headers only.
+
+        R3<->R5 fix: when `cache_name` is given and the client accepts br/gzip, the
+        bundle body is compressed on the wire (Content-Encoding) with a persistent
+        disk cache. Without this the boot bundle shipped ~60 MB RAW — bypassing
+        R5's per-file compression and putting the full uncompressed transfer on the
+        cold-boot critical path. The browser decodes Content-Encoding before the
+        engine's fetch sees the bytes, so onBundleSuccess still parses the raw
+        bundle (transparent, same as /api/file)."""
         import struct
+        import hashlib
 
         entries = sorted(entries, key=lambda x: x[0])
         chunks = [struct.pack("<I", len(entries))]
@@ -469,12 +478,84 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             chunks.append(data)
 
         body = b"".join(chunks)
+
+        enc, cache_ext = self._pick_encoding()
+        if enc and cache_name and self.command != "HEAD":
+            # Fingerprint the entry set+sizes (cheap — no 60 MB hash); a changed
+            # asset set / size rebuilds the cached artifact.
+            fp = hashlib.sha1(
+                (f"{len(entries)}|" + "|".join(
+                    f"{r}:{len(d)}" for r, d in entries)).encode()
+            ).hexdigest()[:16]
+            comp = self._bundle_encoded(cache_name, fp, body, enc, cache_ext)
+            if comp is not None:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Encoding", enc)
+                self.send_header("Content-Length", str(len(comp)))
+                self.send_header("Vary", "Accept-Encoding")
+                self.end_headers()
+                self.wfile.write(comp)
+                return
+
+        # Raw fallback (HEAD, no encoder advertised, or encode failed).
         self.send_response(200)
         self.send_header("Content-Type", "application/octet-stream")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Vary", "Accept-Encoding")
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
+
+    def _pick_encoding(self):
+        """('br'|'gzip', ext) per Accept-Encoding + available encoders + the
+        ENCODE_ENABLED toggle, else (None, None). Prefers brotli. Mirrors the
+        negotiation in _maybe_compressed_asset for the in-memory bundle path."""
+        if not (ENCODE_ENABLED and ENCODE_CACHE_DIR):
+            return None, None
+        accept = (self.headers.get("Accept-Encoding") or "").lower()
+        if "br" in accept and BROTLI_BIN:
+            return "br", ".br"
+        if "gzip" in accept and GZIP_BIN:
+            return "gzip", ".gz"
+        return None, None
+
+    def _bundle_encoded(self, cache_name, fp, body, enc, cache_ext):
+        """Get-or-build the compressed bundle artifact, cached under
+        ENCODE_CACHE_DIR/_bundles/<name>.<fp><ext> (the fingerprint is in the
+        filename, so a changed asset set rebuilds). Compresses the in-memory body
+        via the brotli/gzip CLI (stdin), atomic temp+rename. Returns the compressed
+        bytes, or None on failure (caller serves raw — no regression)."""
+        try:
+            cache_dir = os.path.join(ENCODE_CACHE_DIR, "_bundles")
+            os.makedirs(cache_dir, exist_ok=True)
+        except OSError:
+            return None
+        cache_path = os.path.join(cache_dir, f"{cache_name}.{fp}{cache_ext}")
+        if os.path.isfile(cache_path):
+            try:
+                with open(cache_path, "rb") as fh:
+                    return fh.read()
+            except OSError:
+                pass  # fall through and rebuild
+        tmp = cache_path + f".{os.getpid()}.{random.randrange(1 << 32):08x}.tmp"
+        try:
+            if enc == "br":
+                cmd = [BROTLI_BIN, "-q", str(ENCODE_LEVEL_BROTLI), "-c"]
+            else:  # gzip
+                cmd = [GZIP_BIN, f"-{ENCODE_LEVEL_GZIP}", "-c"]
+            proc = subprocess.run(cmd, input=body, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+            if proc.returncode != 0:
+                return None
+            comp = proc.stdout
+            with open(tmp, "wb") as out:
+                out.write(comp)
+            os.rename(tmp, cache_path)  # atomic; duplicate builders race harmlessly
+            return comp
+        except OSError:
+            self._unlink_quiet(tmp)
+            return None
 
     def _serve_bundle(self):
         """All boot-path DTA/DTB files as a single binary bundle (see
@@ -505,7 +586,7 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
                     data = fh.read()
                 entries.append((rel, data))
 
-        self._emit_bundle(entries)
+        self._emit_bundle(entries, cache_name="config")
 
     def _resolve_asset_path(self, rel):
         """Resolve a server-relative asset path to an on-disk file, mirroring
@@ -591,7 +672,7 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             len(entries), total / 1e6,
             (f", {missing} missing" if missing else ""),
         )
-        self._emit_bundle(entries)
+        self._emit_bundle(entries, cache_name="boot")
 
     def _serve_asset_file(self, relpath):
         if not ASSETS_DIR:
