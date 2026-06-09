@@ -47,6 +47,42 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
+## 🎬 UPDATE 4 (2026-06-09) — ANIMATION root-caused (Gap A closed, Gap B is the deeper blocker)
+A 3-trace + Opus-synthesis workflow root-caused why the closet char doesn't animate. TWO additive gaps:
+
+**Gap A — the preview char was never Enter()'d / Poll()'d. ✅ CLOSED (`58d9c8e5`).**
+The CharCache preview chars live in `TheCharCache->unk1c`, which is NOT in any polled tree
+(`TheWorld`/`TheBandDirector`). The gameplay band animates because `BandWardrobe` `Enter()`s each member
+and `App::RunOneFrame` polls `TheBandDirector->mCurWorld` — but those are a DIFFERENT BandCharacter set
+(`mTargets`), so that poll never reaches the preview chars. Fix: `Enter()` the loaded preview char in
+`ClosetMgr::CharacterFinishedLoading` + `Poll()` it per frame in `ClosetMgr::Poll` (HX_NATIVE, default-on,
+opt-out `RB3_NO_CLOSET_POLL`, scoped to `mCurrentClosetPanel`). VERIFIED via `BAND_ANIM_PROBE='*'` in the
+closet: `mDriver=<non-null> clipType='shell' bones=<non-null>`, `bone_R-upperArm moved=0.90` across
+`Character::Poll` (was: no Poll at all).
+
+**Still no idle LOOP (clip not started).** `BAND_ANIM` shows `clip='(none)' FirstPlaying=(nil) grp='(none)'`:
+`SetContext("closet")` sets `SetClipTypes("shell","shell")` + blend width but does NOT set `mGroupName` or
+`driver->SetClips`. The gameplay closet does `driver->SetClips(closetMilo->Find("clips"))` in
+`BandWardrobe::OnEnterCloset` (BandWardrobe.cpp:988) — the CharCache path never wires the shell clips. So
+`PlayMainClip` (needs `mGroupName[0]!=0`, BandCharacter.cpp:203) plays nothing → char poses static, no loop.
+NEXT: wire the closet shell clips + a group to the preview char's driver.
+
+**Gap B — skinned=0 (the body meshes have NO bones). ⬜ OPEN, C7/C8-class, broad/high-risk.**
+`NumBones()=mBones.size()`; `mBones` is populated ONLY at mesh LOAD (`RndMesh::Load` `bs >> mBones`, each
+bone an `ObjPtr<RndTransformable>` resolved BY NAME against the mesh's dir; `RemoveInvalidBones` ERASES
+bones that resolve null — and it IS compiled natively, `MILO_DEBUG=1`). The gameplay outfit meshes get
+`NumBones()!=0` because the bone names resolve against `char/main/skeleton.milo`, established when each
+`*_resource.milo` loads it as a `share=true` subdir (BandCharacter.cpp:2305-2330). In the proxy/FileMerger
+preview path that namespace is NOT established before the bodypart meshes load → every bone resolves null →
+stripped → `skinned=0`. `RebindOutfitBonesToOwnSkeleton` CANNOT fix this (its loop `for(b=0;b<NumBones();b++)`
+runs zero times when `NumBones()==0` — it only REPOINTS existing bones). So even once an idle clip plays,
+the body geometry won't deform until Gap B is fixed at the LOAD/share layer (establish skeleton.milo before
+the body Select() runs). The engine itself flags this region broad/high-risk (BandCharacter.cpp:2322-2324) —
+do it as a careful separate effort, preview/band-scoped, not touching the working gameplay band/crowd.
+(Probe caveat: `{rb3_char_probe N}` walks bc's hashtable+subdir-hashtables, reaching the face/hand skin
+meshes — so skinned=0 is a TRUE bone gap there — but NOT the draw-tree-only body clothing meshes; extend
+the probe to walk the draw tree to fully measure Gap B before/after a fix.)
+
 ## 🎯 UPDATE 3 (2026-06-09) — CLOSET REACHED: char STANDS in the closet, no sign-in, NO crash
 
 Empirical breakthrough. The "domino ② cascade crash" is **confirmed stale** — it does
