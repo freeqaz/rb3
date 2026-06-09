@@ -157,6 +157,19 @@ std::set<UIScreen *> &PrewarmedScreens() {
     return s;
 }
 
+// The exact set of Loader* the prewarm hook itself issued (via AddLoader). This
+// is the ownership boundary: UIPanel::Load only adopts+deletes a loader whose
+// pointer is in this set, and EvictPriorPrewarm only frees loaders in this set.
+// Identity (the pointer), not the FilePath, is the key — a foreign loader for
+// the same milo (another component's still-live DirLoader, or a concurrently-
+// loading panel's own completed mLoader) has a DIFFERENT pointer and is never
+// touched. With RB3_PREWARM_SCREENS off this set is never populated, so the
+// adoption branch is inert and the stock new-DirLoader path always runs.
+std::set<Loader *> &IssuedPrewarmLoaders() {
+    static std::set<Loader *> s;
+    return s;
+}
+
 // Per-screen record of the panel milos we issued a prewarm DirLoader for, so a
 // LATER prewarm pass can evict an OLD generation's loaders that are no longer
 // wanted. Without this, a finished kLoadBack DirLoader + its parsed PanelDir
@@ -203,9 +216,16 @@ void EvictPriorPrewarm(UIScreen *screen, const std::vector<FilePath> &keep) {
         if (stillWanted)
             continue;
         DirLoader *dl = DirLoader::Find(*it);
-        if (dl && dl->IsLoaded() && !dl->mAccessed) {
+        // ONLY free a loader the prewarm itself issued (pointer identity). A
+        // foreign loader for the same milo — e.g. a concurrently-loading panel's
+        // own completed mLoader — has a different pointer and must not be deleted
+        // (doing so would dangle that panel's mLoader). mAccessed==false means no
+        // panel ever adopted OUR loader (an adopted one was already deleted in
+        // UIPanel::Load and erased from the issued set).
+        if (dl && IssuedPrewarmLoaders().count(dl) && dl->IsLoaded() && !dl->mAccessed) {
             if (dbg)
                 MILO_LOG("RB3_PREWARM: evicting stale prewarm dir %s\n", it->c_str());
+            IssuedPrewarmLoaders().erase(dl);
             delete dl; // ~DirLoader RELEASEs mDir (mAccessed false) ⇒ no leak
         }
     }
@@ -301,10 +321,26 @@ void DoPrewarmNextScreen(UIScreen *screen) {
         if (dbg)
             MILO_LOG("RB3_PREWARM: %s -> prewarming %s panel milo %s\n", myName,
                      nit->second.c_str(), it->c_str());
-        TheLoadMgr.AddLoader(*it, kLoadBack);
+        // Record the EXACT loader we issued so only we adopt/evict it. A null
+        // return (shouldn't happen for a non-resident fp) is simply not tracked.
+        if (Loader *ldr = TheLoadMgr.AddLoader(*it, kLoadBack))
+            IssuedPrewarmLoaders().insert(ldr);
     }
 }
 } // namespace
+
+// Bridge for UIPanel::Load (separate TU): is `ldr` a loader the prewarm hook
+// issued? Only such a loader may be adopted+deleted by the panel-load path. When
+// RB3_PREWARM_SCREENS is off the issued set is empty, so this is always false and
+// the adoption branch never fires (stock new-DirLoader path runs). NOT in the
+// anon namespace so UIPanel.cpp can extern-declare and call it.
+bool RB3PrewarmIssuedLoader(Loader *ldr) {
+    return ldr != NULL && IssuedPrewarmLoaders().count(ldr) != 0;
+}
+
+// The panel adopted `ldr` and is about to delete it; drop it from the issued set
+// so EvictPriorPrewarm never re-finds a freed pointer.
+void RB3PrewarmForgetLoader(Loader *ldr) { IssuedPrewarmLoaders().erase(ldr); }
 #endif
 
 void UIScreen::Poll() {

@@ -9,6 +9,16 @@
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 
+#ifdef HX_NATIVE
+// Defined in UIScreen.cpp (the prewarm hook owns the issued-loader set). Gate the
+// adoption branch below on these so the panel only ever adopts+deletes a loader
+// the RB3_PREWARM_SCREENS hook itself issued — never a foreign loader owned by
+// another component. With the flag off the issued set is empty ⇒ always false.
+// (Loader is a complete type here via obj/DirLoader.h -> utl/Loader.h.)
+bool RB3PrewarmIssuedLoader(Loader *);
+void RB3PrewarmForgetLoader(Loader *);
+#endif
+
 int UIPanel::sMaxPanelId = 0;
 
 UIPanel::UIPanel()
@@ -131,9 +141,20 @@ void UIPanel::Load() {
             // panel had loaded it itself. If we never adopt (user never enters
             // the prewarmed screen), the prewarm loader's own ~DirLoader frees
             // its dir (mAccessed stays false) — no leak, no double-delete.
+            //
+            // CRITICAL ownership gate: only adopt a loader the prewarm hook
+            // ISSUED (RB3PrewarmIssuedLoader, pointer identity). DirLoader::Find
+            // can legitimately return a loader owned by ANOTHER component (e.g.
+            // an ObjDirPtr<T>::LoadFile loader still in flight, or a second
+            // panel's own completed-but-not-yet-polled mLoader for the same
+            // milo) — stealing+`delete`ing that is a use-after-free for its
+            // owner. The issued set is only ever populated by the
+            // RB3_PREWARM_SCREENS hook, so with the flag OFF this is always
+            // false and the stock new-DirLoader path below runs unchanged
+            // (flag-off = byte/behavior identical, the acceptance criterion).
             if (mLoadRefs == 1) {
                 if (DirLoader *prewarmed = DirLoader::Find(fp)) {
-                    if (prewarmed->IsLoaded()) {
+                    if (RB3PrewarmIssuedLoader(prewarmed) && prewarmed->IsLoaded()) {
                         class PanelDir *pDir =
                             dynamic_cast<class PanelDir *>(prewarmed->GetDir());
                         if (pDir) {
@@ -142,6 +163,7 @@ void UIPanel::Load() {
                                     "RB3_PREWARM: UIPanel %s adopted prewarmed dir for %s\n",
                                     Name(), fp.c_str());
                             SetLoadedDir(pDir, false);
+                            RB3PrewarmForgetLoader(prewarmed);
                             delete prewarmed;
                             MemPopHeap();
                             return;

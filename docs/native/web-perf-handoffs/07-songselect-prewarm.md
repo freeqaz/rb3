@@ -189,3 +189,52 @@ warming the file in cache + shared inline dirs, not from skipping the top-level 
 Keep landed (default-OFF, Wii-clean, mechanism correct, neutral on native). Flip default-ON
 only after a WEB A/B confirms the win there (where the parse is on the critical frame). The
 native residual hitch is GPU-upload — pursue follow-up 4b if that frame matters.
+
+## FIX ROUND (2026-06-09) — adoption-branch ownership gate
+
+A reviewer BLOCKED the first landing (`ad3b7e61`) on one correctness issue: the
+`UIPanel::Load()` prewarm-adoption branch was gated **only** on `mLoadRefs == 1`, NOT on the
+prewarm feature — the `getenv("RB3_PREWARM_SCREENS")` at the old UIPanel.cpp:140 only gated the
+MILO_LOG, so the steal-and-`delete` ran on EVERY `HX_NATIVE` panel load by default. With the
+flag off, any `DirLoader::Find(fp)` hit is by definition a loader owned by ANOTHER component
+(`ObjDirPtr<T>::LoadFile`'s mLoader, or a second panel's completed-but-unpolled mLoader),
+and adopting+`delete`ing it is a use-after-free. EvictPriorPrewarm had the symmetric hazard:
+its `DirLoader::Find(*it)` could return and `delete` a foreign loader for the same milo.
+
+**Fix (robust variant the reviewer recommended): pointer-identity ownership boundary.**
+
+- `UIScreen.cpp`: new file-static `std::set<Loader *> IssuedPrewarmLoaders()` records the EXACT
+  `Loader*` each `TheLoadMgr.AddLoader(...)` returns in `DoPrewarmNextScreen`. Two
+  global-linkage bridge functions (outside the anon namespace, `#ifdef HX_NATIVE`):
+  `bool RB3PrewarmIssuedLoader(Loader *)` and `void RB3PrewarmForgetLoader(Loader *)`.
+  `EvictPriorPrewarm` now deletes a found loader only if it is in the issued set (identity, not
+  FilePath) — a foreign loader for the same milo has a different pointer and is left alone — and
+  erases it from the set on delete.
+- `UIPanel.cpp`: the adoption branch is now `if (RB3PrewarmIssuedLoader(prewarmed) &&
+  prewarmed->IsLoaded())` and calls `RB3PrewarmForgetLoader(prewarmed)` before `delete`. Because
+  the issued set is ONLY ever populated by the `RB3_PREWARM_SCREENS` hook, with the flag OFF the
+  set is empty ⇒ `RB3PrewarmIssuedLoader` is always false ⇒ the branch is inert and the stock
+  `new DirLoader` path runs unchanged. **Flag-off = byte/behavior identical restored.**
+
+This is strictly stronger than the "minimal" env-gate (it also blocks adoption of a foreign
+loader for the same milo on the flag-ON path, the second hazard the reviewer flagged).
+
+### Re-verification (this round)
+
+- **Build:** `rb3-native` + `rb3-tests` rebuilt green under `/tmp/rb3-native-build.lock`.
+- **rb3-tests: 13/13 PASS.**
+- **Flag OFF** (`song-select-capture.py`, env scrubbed of all RB3_PREWARM*): reached
+  `song_select_screen`; engine log has **ZERO** `RB3_PREWARM` / `adopted prewarmed dir` /
+  `evicting` lines and **zero** asserts/fails — the adoption branch is fully inert (the fix's
+  core acceptance: flag-off byte/behavior identical).
+- **Flag ON** (`RB3_PREWARM_SCREENS=1 RB3_PREWARM_DBG=1`): reached `song_select_screen`;
+  **5 prewarm-issued milos, 4 adoptions** (sv4_panel + song_select/shortcut/filter; the meta
+  panel shares sv4_d.milo), **0 evictions, 0 asserts/fails** — feature still works through the
+  gated `RB3PrewarmIssuedLoader` path.
+- **Matched-TU safety:** all edits inside `#ifdef HX_NATIVE`; `git diff` confirms no
+  non-HX_NATIVE line touched; UIPanel.h unchanged this round (no struct/vtable change). The
+  Wii-match claim (`main/system/ui/UIScreen` 100% 29/29, `main/system/ui/UIPanel` 100% 27/27)
+  is preserved because mwcc sees identical source.
+
+Files touched this round (rb3): `src/system/ui/UIScreen.cpp`, `src/system/ui/UIPanel.cpp`,
+this doc. No engine-repo change; `MILO_ENGINE_PIN` untouched.
