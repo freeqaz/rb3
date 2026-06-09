@@ -51,9 +51,23 @@
 ### stray `src++` (gated `#ifndef HX_NATIVE` so the Wii source stays byte-identical → match preserved). REMEASURED native:
 ### E>11k 13.4%→0.0%, E>16k 9.5%→0.0%, spectrogram upper-half static GONE, chroma identity 0.69→0.985 CONFIDENT. Affects
 ### BOTH native + web (shared rb3 src). cf [[project_audio_verify_tool]] (correct its "native verified correct" claim).
-### REMAINING: (1) USER ear-confirm the FIXED clip. (2) Rebuild WEB (same src fixes it) + user confirm in browser. (3) Land
-###   the SFX ring-depth cap (probe D, ~685ms→63ms) in that web build. (4) The web 48000-resample MAY add a small residual
-###   HF on top (user m4a 1.2% vs native 0.4% PRE-fix) — re-check AFTER the decimation fix; likely now moot.
+### LANDED (committed): decimation fix rb3 08ec1442; engine 5a810c2 (SFX ring cap → ADAPTIVE) pinned in rb3.
+### SFX LATENCY — ADAPTIVE BUFFER (supersedes the static 100ms cap). PumpAudio now self-tunes the queued ring depth to
+###   the worklet's underrun feedback (js_audio_underrun_stats): start 120ms, GROW +30ms per stall-report (cap 500ms),
+###   ease -10ms per ~180 clean pumps (floor 50ms). Baselines past the boot backlog so it doesn't over-grow at start.
+###   Env: RB3_AUDIO_LATENCY_MS pins a FIXED target (disables adapt); RB3_AUDIO_LAT_MIN_MS/_MAX_MS set bounds. Headless
+###   verified: mechanism grows/shrinks correctly (but headless's bursty harness cadence pins it to max — NOT the user's
+###   smooth-rAF case; real-browser equilibrium will be far lower). User reported "a few" stutters at static 100ms → the
+###   adaptive target will grow past their stall depth and settle there. Final feel = user real-browser test.
+### OFF-MAIN-THREAD MIX (the bigger latency lever — assessed, NOT attempted): today main thread runs engine+PumpAudio
+###   (mix→resample→SAB ring); a pure-JS worklet just reads the ring, so main-thread stalls starve it (the whole reason a
+###   buffer is needed). Moving MixSources into the Audio Worklet (Option A, audio-clock-driven like native miniaudio →
+###   ~1 quantum 2.7ms floor) or a dedicated wasm-worker pump (Option B) both need -sAUDIO_WORKLET/-sWASM_WORKER +
+###   SHARED_MEMORY (-pthread). BLOCKER: the web build is JSPI + single-threaded, NO -pthread/SHARED_MEMORY (confirmed
+###   native/CMakeLists.txt ~867-892); -pthread makes the ENTIRE heap shared (all-or-nothing) and its interaction with the
+###   JSPI async stack-switching the engine relies on is non-trivial/untested → a real risk of breaking the working build.
+###   COOP/COEP already set (SAB available). RECOMMENDATION: ship the adaptive buffer (no build-config risk, self-tuning);
+###   greenlight the off-thread mix as a dedicated build spike only if the adaptive floor isn't snappy enough.
 
 ## NEW GOAL (2026-06-06, user): (1) song audio 100% correct for GAMEPLAY + PREVIEW;
 ## (2) character animations render correctly in the venue (crowd + on-stage).
