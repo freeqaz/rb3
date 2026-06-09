@@ -123,3 +123,70 @@ edited.
   (the fault is not per-TU codegen; 37 defining TUs) and strictly worse than
   `-fno-inline`. Steps 4 (JSPI rule-out) and 6 (walk-up) subsumed by the O2
   PASS.
+
+## IMPLEMENTED — SHIP attempt (2026-06-09) — boot fix landed, -O>0 default DEFERRED
+
+Acting on the SHIP-NOW recommendation. Wired the `-fno-inline` boot fix into the
+real build (`native/CMakeLists.txt` RB3_WEB_RELEASE block) + un-broke the `--opt`
+knob in `build.sh`, and flowed the default through `build.sh --release` (no
+`--opt` required). Built BOTH release + debug under the repo's flock lock.
+
+**The boot crash is FIXED and verified on the real build.** `-fno-inline` at
+-O>0 restores the import table to the -O0 set (measured here: O0=339, plain
+-O1=449, **-O2 -fno-inline=337, -O1 -fno-inline=340**), `SystemConfig(Symbol)`
+is no longer a stub, and the App ctor passes — boot reaches the same ~78 s
+venue-load point as O0 (the only `[rb3-stub]` hits past boot are the known-benign
+W3 set: DiscErrorMgrWii / WiiRnd / etc., zero SystemConfig). The diagnosis above
+is fully confirmed.
+
+**But a SECOND, distinct fault blocks shipping -O>0 as the default here.** Under
+`node scripts/web/smoke-test.mjs` on this (loaded) box, every -O>0 build crashes
+the **headless-Chromium renderer** (`[CRASH] Page crashed!`) deterministically at
+the main_hub venue-vignette + char-extras load (~79 s, right after the `tv11`
+transition milos / `male_extras11`), while -O0 passes:
+
+| build | smoke runs | result |
+|---|---|---|
+| -O0 -fno-inline (release default) | 2 | **PASS** (main_hub, 83 songs, ~87 s) |
+| -O0 (deployed debug `?debug=true`) | 1 | **PASS** (main_hub, 83 songs, 86.7 s) |
+| -O1 -fno-inline | 2 | **CRASH** at ~78.9 s (renderer) |
+| -O2 -fno-inline | 2 | **CRASH** at ~78.7 s (renderer) |
+
+This is render-time, not boot: the crash is downstream of the now-fixed
+SystemConfig path, and host GPUs are idle (2×24 GB, 410 MiB used) so it is not
+host-OOM — it is a per-renderer GPU/process crash at the venue draw burst. The 03
+diagnosis saw `-O1/-O2 -fno-inline` smoke **PASS** on a quiet isolated box; here,
+under load avg ~7-8 with a rogue `python` at 281 % CPU, the optimized build's
+faster boot pacing appears to hit the render burst harder. **Unresolved whether
+this is box/contention pacing or a genuine -O>0 codegen issue in the render
+path.** Per the task fallback rule I tried O1 -fno-inline (also verified by 03);
+it crashed too (2/2), so I did NOT ship either -O>0 as default.
+
+**Shipped:** release default **stays O0**, but with the boot fix mechanism fully
+wired and ready: `-fno-inline` is unconditional (harmless at O0), `RB3_WEB_OPT_LEVEL`
+defaults O0 and is overridable via `build.sh --release --opt O2`, and the
+CMake/build.sh comments document the real root cause (boot) + the new render-time
+blocker. So `--opt O2` produces the small `-fno-inline` build for a one-command
+re-test on a quiet box.
+
+### Sizes (raw / brotli q11 / gzip -9, deployed release wasm)
+
+| build | raw | brotli | gzip |
+|---|---|---|---|
+| O0 (before, baseline) | 16,698,323 (16 M) | 2,386,970 (2.3 M) | 4,098,981 (4.0 M) |
+| O2 -fno-inline | 6,229,405 (6.0 M) | 1,495,717 (1.5 M) | 2,062,617 (2.0 M) |
+| O1 -fno-inline | 9,035,850 (8.6 M) | 1,876,986 (1.8 M) | 2,727,027 (2.6 M) |
+
+(O2 -fno-inline is ~63 % smaller raw / ~37 % smaller brotli than O0 — a strong
+prize once the render crash is resolved. Debug build unchanged at -O0 -g2, ~29 M.)
+
+### Next step to actually ship -O>0
+
+Re-run `smoke-test.mjs` against `build.sh --release --opt O2` on a QUIET box (no
+other WebGPU/headless contention). If it passes, flip the `RB3_WEB_OPT_LEVEL`
+default to O2 — the one-line change. If it still crashes, bisect the render path
+at -O1 (the venue/vignette material upload + char-extras skinned-mesh draw is the
+suspect frame) or pursue the source-true inline fix (03 §2) which lets us drop
+`-fno-inline` entirely and re-evaluate whether plain `-flto=thin` (03 §3,
+cross-TU-inlining-preserving) sidesteps it. Closure remains separately broken
+(untouched).

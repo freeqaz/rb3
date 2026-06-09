@@ -898,12 +898,16 @@ endif()
 # helper supplies USE_ZLIB / USE_OGG / USE_VORBIS via Emscripten ports.
 
 # ============================================================================
-# W4a — size-optimised release build. Default OFF (dev keeps -O0 / -g2 for
+# Size-optimised release build. Default OFF (dev keeps -O0 / -g2 for
 # debug-friendly stack traces); release mode (`scripts/web/build.sh --release`)
-# strips debug info (`-g0`) for the main size win and exposes opt-in knobs:
-#   RB3_WEB_OPT_LEVEL=Oz/Os/O3/O2/O1   — see RB3_WEB_OPT_LEVEL block below;
-#                                        currently BROKEN, defaults to O0
-#   RB3_WEB_CLOSURE=ON                  — also BROKEN, see comment below
+# strips debug info (`-g0`) for the main safe size win. -O>0 (with the
+# -fno-inline boot fix) shrinks the wasm a lot more but currently crashes the
+# renderer at the main_hub load — see the RB3_WEB_OPT_LEVEL note below; the
+# shipped default stays O0. Opt-in knobs:
+#   RB3_WEB_OPT_LEVEL=Oz/Os/O3/O2/O1/O0 — -O level; defaults to O0 (release).
+#                                         `--opt L` on build.sh overrides it,
+#                                         always adding -fno-inline at -O>0.
+#   RB3_WEB_CLOSURE=ON                  — BROKEN, see comment below
 #
 # Order matters in emcc: later -O / -g override earlier ones, so we append to
 # both compile and link. The engine helper's -g2 stays in the command but is
@@ -920,26 +924,44 @@ endif()
 option(RB3_WEB_RELEASE "Size-optimised release build (strip debug info)" OFF)
 option(RB3_WEB_CLOSURE "Run --closure 1 on the JS glue (BROKEN — see comment)" OFF)
 # RB3_WEB_OPT_LEVEL controls the compile/link -O level when RB3_WEB_RELEASE
-# is ON.
+# is ON. Default O0 — see the "why not -O>0 yet" note below.
 #
-# W4a investigation: ANY -O>0 (-O1, -Os, -Oz, -O3) currently throws an
-# uncaught exception during App construction, right after the missing-stub
-# returns from `SystemConfig(Symbol)`. The matched-fork is brittle to
-# optimizer-driven null-pointer / exception-edge codegen — same class of
-# issue as the W3 missing-stub work. Reproducing the symptom: build with
-# `--release --opt O1` then run smoke; you'll see "boot error — exception
-# during App construction" in the console.
+# BOOT crash (the old "W4a BROKEN" note) is ROOT-CAUSED and FIXED by the
+# `-fno-inline` below. It was NOT optimizer UB: 109 functions are defined
+# `inline`/`FORCE_LOCAL_INLINE` in .cpp files but called cross-TU (the decomp
+# matching idiom — an ODR violation C++ tolerates). At -O0 clang emits the
+# linkonce_odr bodies so wasm-ld resolves them; at any -O>0 clang inlines +
+# DISCARDS those bodies, so the cross-TU calls become undefined symbols, which
+# `-sERROR_ON_UNDEFINED_SYMBOLS=0` silently turns into env imports that
+# rb3_pre.js stubs to warn-and-return-undefined. The first such stub whose value
+# matters — `SystemConfig(Symbol)` (src/system/os/System.cpp) — returns NULL on
+# the boot path → deref → the "exception during App construction". `-fno-inline`
+# keeps the bodies out-of-line, restoring the import table to exactly the -O0 set
+# (verified: O0=339 imports, plain -O1=449, but -O1/-O2 -fno-inline back to
+# 340/337; SystemConfig stub gone; App ctor passes). Source-true fix
+# (HX_NATIVE-gate the `inline`, drop the flag) is the follow-up; see
+# docs/native/web-perf-handoffs/03-diagnosis-results.md.
 #
-# Until that's fixed, the default is `O0` — i.e. no -O change vs dev mode.
-# -g0 alone (debug-info stripping) is the major size win that's safe.
-#
-# When the matched-fork is stable at -Os/-Oz, flip the default here.
+# WHY DEFAULT IS STILL O0 (2026-06-09 ship attempt): with -fno-inline the boot
+# crash is gone AND the wasm shrinks a lot (O2 6.0M / O1 8.6M raw vs O0 16.7M;
+# brotli 1.50M/1.88M vs 2.39M). BUT a SECOND, distinct fault appears at -O>0: a
+# headless-Chromium renderer "Page crashed" deterministically fires during the
+# main_hub venue-vignette + char-extras load (~79s into smoke-test.mjs), for both
+# -O1 -fno-inline (2/2) and -O2 -fno-inline (2/2), while -O0 PASSES (2/2) under
+# the identical box load. Boot is NOT the issue (it reaches the same 78s point as
+# O0); the crash is render-time. Until that's diagnosed (it may be box/contention
+# pacing — the 03 diagnosis saw O1/O2 -fno-inline PASS on a quiet isolated box —
+# or a genuine -O>0 codegen issue in the render path), keep the SHIPPED default at
+# O0. The mechanism + --opt knob below are ready: `build.sh --release --opt O2`
+# produces the small -fno-inline build for re-testing on a quiet box.
 set(RB3_WEB_OPT_LEVEL "O0" CACHE STRING
     "emcc -O level for rb3-web release builds (O0/Oz/Os/O3/O2/O1)")
 set_property(CACHE RB3_WEB_OPT_LEVEL PROPERTY STRINGS O0 Oz Os O3 O2 O1)
 if(RB3_WEB_RELEASE)
-    message(STATUS "rb3-web: RELEASE strip + opt build (-${RB3_WEB_OPT_LEVEL} -g0)")
-    target_compile_options(rb3-web PRIVATE -${RB3_WEB_OPT_LEVEL} -g0)
+    message(STATUS "rb3-web: RELEASE strip + opt build (-${RB3_WEB_OPT_LEVEL} -fno-inline -g0)")
+    # -fno-inline is REQUIRED at -O>0 (cross-TU inline-discard boot fix above);
+    # harmless at -O0. Kept unconditionally so flipping --opt needs no other edit.
+    target_compile_options(rb3-web PRIVATE -${RB3_WEB_OPT_LEVEL} -fno-inline -g0)
     target_link_options(rb3-web PRIVATE
         -${RB3_WEB_OPT_LEVEL}
         -g0

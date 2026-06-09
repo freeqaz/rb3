@@ -18,8 +18,16 @@
 #   scripts/web/build.sh --release      # build release only
 #   scripts/web/build.sh --debug        # build debug only (fast iteration loop)
 #   scripts/web/build.sh --reconfigure  # force a fresh cmake configure
-#   scripts/web/build.sh --opt Os       # higher -O for release (BROKEN as of W4a;
-#                                       # matched-fork throws during App ctor at -O>0)
+#   scripts/web/build.sh --opt O2       # override the release -O level (default
+#                                       # O0). Release always adds -fno-inline,
+#                                       # which FIXES the old -O>0 App-ctor boot
+#                                       # crash (cross-TU inline-discard). NOTE:
+#                                       # -O>0 currently still crashes the
+#                                       # renderer at the main_hub venue load
+#                                       # (2026-06-09), so the shipped default is
+#                                       # O0 — use --opt to re-test the small
+#                                       # build on a quiet box. See
+#                                       # native/CMakeLists.txt + 03-diagnosis-results.md.
 #   scripts/web/build.sh --closure      # --closure 1 (BROKEN as of W4a; renames
 #                                       # break rb3_pre.js stub patch)
 #
@@ -69,7 +77,7 @@ while [ $# -gt 0 ]; do
         --opt)         shift; OPT_LEVEL="$1" ;;
         --opt=*)       OPT_LEVEL="${1#--opt=}" ;;
         -h|--help)
-            sed -n '2,33p' "$0"
+            sed -n '2,37p' "$0"
             exit 0
             ;;
         *)
