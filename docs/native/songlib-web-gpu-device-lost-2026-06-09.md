@@ -267,9 +267,29 @@ the dangling read corrupting GPU-command state (native shows the direct in-proce
 with the readable PropSync stack). The buffer leak is real but orthogonal — a perf issue.
 
 - Fix for the user-facing crash: the shipped revert `92fcb32c` (preview → opt-in). Correct + sufficient.
-- The mesh-buffer cache (`/tmp/eng-meshcache` `a0f98ad`) is a PERF win only (buffer mem ~2768MB→22MB,
-  no rendering regression: native song_select perceptual 83.6 vs baseline; web hub 47.9 ≥ stock 44.2).
-  It does NOT re-enable default-on char preview — that needs the PropSync<RndTex> use-after-free
-  (roadmap C11 "domino ②") fixed first.
+  (Superseded later the same day: the underlying corruption was root-caused to BandPatchMesh LP64
+  offsets and fixed on master — `3d00d1dd` + `65f7f0e6` + `cc047050` — and preview is DEFAULT-ON again.)
+- The mesh-buffer cache (`/tmp/eng-meshcache` `a0f98ad`) is a PERF win only (buffer mem ~2768MB→22MB).
+  It does NOT re-enable default-on char preview — that needed the corruption fixed (done, see above).
 - Visual-diff automation built: `scripts/analysis/visual_diff.py` (+ capture driver, doc
   `docs/native/visual-diff-tooling.md`) — westworld-style canonical max-channel-Δ + perceptual mode.
+
+## MESH CACHE GATE: FAILED strict A/B — NOT promotable as-is (2026-06-09, later)
+The promotion gate (strict frame-pinned native A/B, `visual_diff_capture.py --mode strict`,
+stock vs `a0f98ad`, tol=2 / 0.10%) **caught a real rendering regression** the earlier
+perceptual checks missed: **darkened song_select list rows** (mean per-channel Δ ≈
+−7/−11/−12, localized exactly to the rows in the heatmap; reproducible across reruns;
+main_hub/gameplay at PASS level).
+
+**Mechanism:** `a0f98ad` gives each mesh ONE persistent uniform buffer set
+(`MeshObjUB`/`MeshMatUB`/`MeshBoneUB`) + ONE bind group, with per-frame
+`queue.WriteBuffer` updates. WebGPU executes all `WriteBuffer`s before the frame's
+submit, so when the SAME `RndMesh` is drawn MULTIPLE times per frame with different
+object/material state (the song-list rows), every instance renders with the LAST
+instance's uniforms. The VB/IB caching itself is sound — the uniform collapse is the
+bug. Also `RB3_NO_MESH_CACHE=1` only reverts the VB/IB path, not the uniform path.
+
+**Status:** fix-v2 in progress on engine branch `fix-rb3-meshcache-v2` (per-draw-correct
+uniforms + kept VB/IB cache + full opt-out), to be re-gated strict-~0% before the
+coordinator ff-merges + bumps `MILO_ENGINE_PIN`. Lesson recorded: perceptual mode is a
+rendered-vs-blank gate; ONLY the strict frame-pinned diff is a promotion gate.
