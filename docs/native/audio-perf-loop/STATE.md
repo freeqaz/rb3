@@ -59,6 +59,25 @@
 ###   verified: mechanism grows/shrinks correctly (but headless's bursty harness cadence pins it to max — NOT the user's
 ###   smooth-rAF case; real-browser equilibrium will be far lower). User reported "a few" stutters at static 100ms → the
 ###   adaptive target will grow past their stall depth and settle there. Final feel = user real-browser test.
+### SFX LATENCY — ADAPTIVE BUFFER v2 (2026-06-09, user: "too aggressive growing; one-off LOAD stutter grows it
+###   to huge numbers before a song even starts; needs to shrink back + flag ~80%"). REWORKED the control law
+###   (engine 58901477, pinned in rb3): (1) TRANSIENT REJECTION — fixed-point 'pressure' accumulator +1.0 per
+###   underrun window, x0.5 decay per clean window; GROW only at pressure>=2.0 (>=2 CONSECUTIVE underrun windows)
+###   so a lone load stutter (pressure 1.0, decays away) leaves the target FLAT. (2) SUSTAINED GROWTH — while
+###   pressure>=2.0, +40ms/window (still climbs to ceiling under a real burst). (3) RESPONSIVE SHRINK — each clean
+###   window moves 25% of (target-floor) toward floor (min 10ms): geometric, large values fall fast, eases near
+###   floor (no oscillation); a 240ms spike recovers to the 50ms floor in a few seconds. (4) HEADROOM CAP —
+###   effective max <=80% of RING_FRAMES (always >=20% slack) + a THROTTLED "latency HIGH ~X ms (near ceiling) —
+###   holding ring headroom" log fires once on crossing the top band. Env knobs unchanged (RB3_AUDIO_LATENCY_MS
+###   fixed; RB3_AUDIO_LAT_MIN_MS/_MAX_MS bounds); boot-backlog baselining unchanged. HOST-SIM (latency_sim.py,
+###   the real proof — headless harness cadence pins high, a known artifact) asserts all 4 ACs: isolated spike =>
+###   peak==120ms start, ZERO growth, decays to 50ms floor; 12 sustained windows => 120->500ms (+380ms); recovery
+###   from 500ms ceiling => <200ms in ~2s (4 clean windows), realistic 200ms spike fully recovers in ~4.5s; target
+###   capped at 26214f = 80% ring even with a 2000ms env max + 80 relentless underrun windows. Web build clean;
+###   new "latency GROW -> N ms (sustained underrun, pressure P/256)" log confirmed in-browser. NOTE: audio-clean
+###   re-capture BLOCKED — both web (song_select.milo parse) AND native (frame-242 __dynamic_cast SIGSEGV) crash at
+###   the main_hub->song_select transition (pre-existing shared-engine instability, NOT this audio change which is
+###   web-only AudioDevice_Web.cpp); decode-fix E>11k~0% holds by source (08ec1442 untouched).
 ### OFF-MAIN-THREAD MIX (the bigger latency lever — assessed, NOT attempted): today main thread runs engine+PumpAudio
 ###   (mix→resample→SAB ring); a pure-JS worklet just reads the ring, so main-thread stalls starve it (the whole reason a
 ###   buffer is needed). Moving MixSources into the Audio Worklet (Option A, audio-clock-driven like native miniaudio →
