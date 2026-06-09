@@ -1,4 +1,7 @@
 #include "meta_band/ClosetMgr.h"
+#ifdef HX_NATIVE
+#include <cstdlib> // C6/anim: getenv(RB3_NO_CLOSET_POLL)
+#endif
 #include "bandobj/BandCharDesc.h"
 #include "bandobj/BandCharacter.h"
 #include "decomp.h"
@@ -66,6 +69,20 @@ void ClosetMgr::Poll() {
             CharacterFinishedLoading();
         }
     }
+#ifdef HX_NATIVE
+    // C6/anim (Gap A): drive the previewed char's skeleton every frame. Nothing else
+    // polls the CharCache preview chars (not in TheWorld/TheBandDirector), so without
+    // this the char draws frozen at its load/bind pose. Scoped to when the closet UI
+    // is up (mCurrentClosetPanel) + the slot is loaded. BandCharacter::Poll() ->
+    // Character::Poll() advances the clip + drives bones (and runs the torso rebind).
+    // Default-on, opt-out RB3_NO_CLOSET_POLL (same toggle as the Enter above).
+    static int sNoClosetPoll = -1;
+    if (sNoClosetPoll < 0)
+        sNoClosetPoll = ::getenv("RB3_NO_CLOSET_POLL") ? 1 : 0;
+    if (!sNoClosetPoll && mCurrentClosetPanel && mBandCharacter
+        && !mBandCharacter->IsLoading())
+        mBandCharacter->Poll();
+#endif
 }
 
 DataNode ClosetMgr::OnMsg(const ProfileSwappedMsg &msg) {
@@ -310,6 +327,20 @@ void ClosetMgr::MakeProfileDirty() {
 void ClosetMgr::CharacterFinishedLoading() {
     if (mCurrentOutfitPiece && !mCurrentOutfitConfig)
         UpdateCurrentOutfitConfig();
+#ifdef HX_NATIVE
+    // C6/anim (Gap A): the CharCache preview char lives in TheCharCache->unk1c, which
+    // is NOT in any polled tree (TheWorld/TheBandDirector), so unlike the gameplay band
+    // (BandWardrobe Enter()s each member + App polls TheBandDirector->mCurWorld) it was
+    // never Enter()'d -> its idle clip/driver was never armed -> static bind-pose render.
+    // Enter() it here on load-complete (CharDriver::Enter seeds the default clip;
+    // Character::Enter + SetState arm the idle), then ClosetMgr::Poll drives it per
+    // frame. Default-on, opt-out RB3_NO_CLOSET_POLL. (Wii path unchanged.)
+    static int sNoClosetPoll = -1;
+    if (sNoClosetPoll < 0)
+        sNoClosetPoll = ::getenv("RB3_NO_CLOSET_POLL") ? 1 : 0;
+    if (!sNoClosetPoll && mBandCharacter && !mBandCharacter->IsLoading())
+        mBandCharacter->Enter();
+#endif
     static CharacterFinishedLoadingMsg msg;
     Export(msg, true);
 }
