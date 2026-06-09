@@ -12,6 +12,22 @@
 # 3. ghidriff venv must be installed (already done):
 #      /home/free/code/milohax/rb3/build/SZBE69_B8/ghidra/ghidriff-venv/bin/python \
 #        -c "import ghidriff; print(ghidriff.__version__)"
+# 4. The flags --skip-correlators / --implied-min-ratio require the `rb3-improvements`
+#    branch of the local ghidriff checkout. The venv installed ghidriff EDITABLE from
+#    /home/free/code/milohax/ghidriff (verified: __editable__.ghidriff-1.0.0.pth), so
+#    just check out the branch there — no reinstall needed:
+#      git -C /home/free/code/milohax/ghidriff checkout rb3-improvements
+#    (If the install ever stops being editable, reinstall with:
+#      build/SZBE69_B8/ghidra/ghidriff-venv/bin/python -m pip install -e /home/free/code/milohax/ghidriff)
+#
+# FLAG RATIONALE (2026-06-09, see docs/decomp/ghidriff-improvement-plan-2026-06-09.md):
+#   --bsim (default on; --no-bsim removed)  first scored correlator in the cascade
+#   --min-func-len 16                       keeps the 8-byte stub ocean out of every stage
+#   --skip-correlators BulkBasicBlockMnemonicHash
+#                                           kills the 11.1M-tag one-to-many explosion
+#   --implied-min-ratio 0.5                 gates implied matches on mnemonic similarity;
+#                                           0.5 is PROVISIONAL pending the calibration table in
+#                                           docs/decomp/ghidriff-calibration-2026-06-09.md
 #
 # USAGE
 # -----
@@ -70,8 +86,9 @@ GHIDRA_USER_HOME=/tmp/claude/ghidra_user_bank8 \
     --project-location "${PROJ_DIR}" \
     --project-name "rb3-b5-b8-diff" \
     --force-diff \
-    --no-bsim \
-    --min-func-len 4 \
+    --min-func-len 16 \
+    --skip-correlators BulkBasicBlockMnemonicHash \
+    --implied-min-ratio 0.5 \
     --no-symbols \
     --log-level INFO \
     --log-path "${OUT_DIR}/ghidriff.log"
