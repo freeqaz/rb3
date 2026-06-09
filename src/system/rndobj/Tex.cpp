@@ -38,7 +38,13 @@ RndTex::RndTex()
     : mMipMapK(-8.0f), mType(kRegular), mWidth(0), mHeight(0), mBpp(32), mFilepath(),
       mNumMips(0), mOptimizeForPS3(0), mLoader(0) {}
 
-RndTex::~RndTex() { RELEASE(mLoader); }
+RndTex::~RndTex() {
+    RELEASE(mLoader);
+#ifdef HX_NATIVE
+    extern void CleanupGpuTex(RndTex *);
+    CleanupGpuTex(this);
+#endif
+}
 
 void RndTex::PlatformBppOrder(const char *path, int &bpp, int &order, bool hasAlpha) {
     Platform plat = TheLoadMgr.GetPlatform();
