@@ -37,19 +37,30 @@ it auto-activates emsdk (from `$EMSDK` or `~/emsdk`), configures, builds `rb3-we
 and deploys `rb3-web.{js,wasm}` (+ brotli/gzip) and `index.html` to
 `native/web/build/`. No need to `source emsdk_env.sh` first.
 
+**Dual build (release + debug).** `build.sh` produces two deployable builds into
+sibling subdirs (`native/web/build/{release,debug}/`) that you switch between at
+runtime via a URL param. `index.html` loads release by default and `?debug=true`
+loads debug; the server caches release (`immutable`, version-busted) but never
+caches debug — so **release reloads reuse the cached + already-compiled wasm**
+(no re-download, no recompile), while debug stays fast to iterate.
+
 ```bash
-scripts/web/build.sh                 # dev build (-O0 -g2, debuggable) — the default
-scripts/web/build.sh --release       # size-opt build (-O0 -g0) + precompressed artifacts
+scripts/web/build.sh                 # build BOTH release + debug (default)
+scripts/web/build.sh --release       # release only (-O0 -g0, brotli+gzip, cached)
+scripts/web/build.sh --debug         # debug only  (-O0 -g2, gzip, no-store) — fast loop
 scripts/web/build.sh --reconfigure   # force a fresh cmake configure
 scripts/web/build.sh --help          # full flag list (--opt / --closure are BROKEN as of W4a)
 
 python3 native/web/server.py         # serve on http://localhost:8421 (auto-detects assets)
+#   http://localhost:8421/            → release build, HTTP-cached (fast reloads)
+#   http://localhost:8421/?debug=true → debug build, no-store (bypasses the cache)
 ```
 
 - Use a non-default emsdk by exporting `EMSDK=/path/to/emsdk` first.
 - The `undefined symbol` warnings at link time are the expected store/network/
   PlatformMgr stubs (out of scope per the port roadmap), not build errors.
-- Build dir `native/build-web/`; the slow step is brotli `-q 11` on the 28M wasm.
+- Build dirs: `native/build-web/` (debug) + `native/build-web-release/` (release).
+  The slow step is brotli `-q 11`, now release-only (debug skips it, gzip only).
 
 ## Orchestrator MCP Tools
 
@@ -185,6 +196,15 @@ Prefer high-value areas. Use `/progress` and `scripts/dc3_compare.py` for per-un
 
 ## Git Actions
 
+- Commit when a unit of work is done and at a reasonable level of polish — you
+  don't need to ask first. Build/verify before committing; a focused commit with
+  a descriptive message is the goal, not a WIP dump.
+- Stage only the files YOU changed (`git add <path>...`). Concurrent agents
+  routinely have unrelated unstaged edits in the same repo — never `git add -A`
+  / `git add .` / `git commit -a`, which would fold their work into your commit.
+- Engine fixes live in `../milo-native-engine` (its own repo): commit there
+  first, then bump `MILO_ENGINE_PIN` in `native/CMakeLists.txt` to the new SHA
+  in a matching rb3 commit.
 - Do not run `git stash` in the main repo (concurrent agents may be working)
 - Do not include `Co-Authored-By` lines in commit messages
 - Use worktrees for isolated experiments. A bare `git worktree add` is unbuildable here (build inputs/toolchain are gitignored); run `tools/setup-worktree.sh <name>` to get a buildable + diffable worktree in ~1.5s via CoW reflinks (see docs/decomp/worktree-setup.md)
