@@ -47,6 +47,35 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
+## ⛔ UPDATE 6 (2026-06-09) — Gap B bottomed out: it is a CORE native-loader subdir-timing issue
+Exhaustive root-cause. Every scoped/tractable fix was investigated and ruled out; the only remaining fix is
+a core ObjectDir/DirLoader change that governs EVERY milo load in the game (broadest possible regression
+surface), so it is the legitimate stop-for-review boundary. Proven, in order:
+1. **Bones cannot re-resolve after load.** `ObjPtr<T>::Load` (ObjPtr_p.h:537-542) reads the target name into
+   a LOCAL `buf` and discards it after `dir->FindObject(buf)`. A bone that resolves null keeps NO name, so
+   no later `SyncObjects` pass can recover it. ⇒ bones MUST resolve at mesh-load; "skip/defer
+   RemoveInvalidBones" is useless (would just leave permanently-null bones → render risk).
+2. **The skeleton is not loaded by the char's own FileMerger.** The `"rigging"` merger is `Select`ed with an
+   EMPTY path (BandCharacter.cpp:2458 `fp88("")` → :2562). The outfit bones resolve against the
+   `share=true char/main/skeleton.milo` subdir embedded in each bodypart `*_resource.milo`.
+3. **Load order is NOT the lever.** `FileMerger::StartLoadInternal` sorts pending loads by `FileMergerSort`
+   (FileMerger.cpp:110 → FileMergerOrganizer.cpp:18, a `gCatPriority[mName]` category sort) — IDENTICAL for
+   gameplay and preview (same FileMerger, same categories). So intra-char order can't explain gameplay=4 vs
+   preview=0.
+4. **Residency is NOT sufficient** (UPDATE 5): holding `skeleton.milo` resident doesn't make the preview
+   outfit bones resolve.
+⇒ ROOT: native's one-state-per-poll loader wires each bodypart milo's `share=true` `skeleton.milo` subdir
+INTO scope AFTER that milo's own meshes have already loaded + resolved (+stripped) their bones. Gameplay
+escapes it only by external timing (some earlier load establishes `skeleton.milo` first); the preview char
+(loaded at boot via CharCache, no prior char load) does not. The faithful fix is to make the core loader
+fully load/wire a milo's shared subdirs BEFORE resolving the milo's own objects' ObjPtrs — in
+`ObjectDir::Load`/`DirLoader`/`PreLoad`, affecting ALL milo loading. NOT attemptable safely without a
+dedicated, heavily regression-tested effort (every char, menu, venue, crowd milo). Regression guard for any
+attempt: gameplay venue band stays `skinMeshes=4`; preview becomes `>0`; no boot/menu/gameplay load breakage.
+NEXT-SESSION investigation: frame-by-frame trace of `char/main/skeleton.milo`'s load-state vs a bodypart
+mesh's bone-resolve, gameplay vs preview, to find the exact timing divergence + the minimal core-loader
+ordering guarantee.
+
 ## 🧩 UPDATE 5 (2026-06-09) — Gap B narrowed to MERGE LOAD-ORDER (preload-resident PROVEN insufficient)
 Tested the planned Stage-1 fix (hold `char/main/skeleton.milo` + `char_shared.milo` resident in
 `CharCache::InitMe`, mirroring the `preload_subdirs.dta` CHAR_HEAP entries native skips — that whole file
