@@ -1,4 +1,9 @@
 #include "App.h"
+#ifndef HX_NATIVE
+// Wii-only (pulls STLPORT map allocators). Only BandOffline::Init() needs it,
+// and that call below is itself HX_NATIVE-gated.
+#include "BandOffline.h"
+#endif
 #include "BudgetScreen.h"
 #include "ChecksumData_wii.h"
 #ifndef HX_NATIVE
@@ -26,6 +31,7 @@
 #include "meta_band/LessonMgr.h"
 #include "meta_band/MetaPanel.h"
 #include "meta_band/MusicLibrary.h"
+#include "meta_band/PassiveMessenger.h"
 #include "meta_band/PrefabMgr.h"
 #include "meta_band/ProfileMgr.h"
 #include "meta_band/SaveLoadManager.h"
@@ -61,6 +67,7 @@
 #include "rndwii/Rnd.h"
 #endif
 #include "synth/BinkReader.h"
+#include "synth/MicManagerInterface.h" // MicClientID (sNullMicClientID sentinel)
 #include "synth/Synth.h"
 #ifdef HX_WEB
 #include "synth/Faders.h"    // Fader::Init() — web registers the inert synth
@@ -79,6 +86,7 @@
 #include "utl/Option.h"
 #include "world/World.h"
 #ifndef HX_NATIVE
+#include <list>            // gPlatformErrorMsg (std::list<DataArrayPtr>)
 #include <revolution/VI.h> // Wii VI* (VISetBlack/VIFlush); gated out on native
 #endif
 #ifdef HX_NATIVE
@@ -94,7 +102,7 @@
 #ifdef VERSION_SZBE69_B8
 DECOMP_FORCEACTIVE(App, "_unresolved func.\n")
 #endif
-u64 sNullMicClientID;
+MicClientID sNullMicClientID(-1, -1);
 ModalCallbackFunc *gRealCallback;
 
 #ifdef HX_NATIVE
@@ -114,33 +122,39 @@ extern int gCooldown;
 extern Timer gTriFrameTimer;
 extern void MemCheckConsistency(const char *, int);
 static void CheckForPassivePlatformErrors();
+#ifndef HX_NATIVE
+// Queue of platform-error DataArrays, drained into the passive-message UI.
+// Defined in os/ContentMgr_Wii.cpp (Wii-only — no header), excluded from the
+// native build, so both the extern and the drain loop are gated out on native.
+extern std::list<DataArrayPtr> gPlatformErrorMsg;
+#endif
 
 #ifdef VERSION_SZBE69
 #pragma push
 #pragma dont_inline on
 #endif
-void AppDebugModal(bool &b, char *abc, bool b2) {
+void AppDebugModal(bool &b, char *msg, bool b2) {
     if (!b) {
         static DataNode &notify_level = DataVariable("notify_level");
         int notif_lvl = notify_level.Int();
         if (notif_lvl == 2) {
-            gRealCallback(b, abc, b2);
+            gRealCallback(b, msg, b2);
             return;
         } else if (notif_lvl == 1) {
             Hmx::Object *disp = ObjectDir::sMainDir->FindObject("cheat_display", false);
             if (disp) {
                 static Message show("show_prio", 0, 0);
-                show[0] = DataNode(abc);
+                show[0] = DataNode(msg);
                 show[1] = DataNode(200);
                 disp->Handle(show, 0);
             } else
-                goto asdf;
+                goto log_notify;
         } else {
-        asdf:
-            MILO_LOG("%s\n", abc);
+        log_notify:
+            MILO_LOG("%s\n", msg);
         }
     } else
-        gRealCallback(b, abc, b2);
+        gRealCallback(b, msg, b2);
 }
 
 App::App(int argc, char **argv) {
@@ -322,28 +336,30 @@ App::App(int argc, char **argv) {
 #define WEB_BOOT_MARK(s) ((void)0)
 #endif
     WEB_BOOT_MARK("loading sound bank (common)");
-#ifndef __EMSCRIPTEN__
+    // The common SFX bank loads on ALL targets, web included. The old web skip
+    // here (W3a "audio-free") was made stale by the W3c audio bring-up: Synth.cpp
+    // + VorbisReader.cpp are now compiled into rb3-web, the SynthInit() above runs
+    // the real NativeSynth (AudioDevice_Web), and every leaf factory the bank
+    // embeds (Sfx / SynthSample / *GroupSeq / Fader / FxSend*) is registered before
+    // this load. The synchronous LoadFile drains through the cooperative HX_WEB
+    // PollUntilLoaded slice (Loader.cpp), so there is no longer an un-interruptible
+    // spin. Xbox-360 SFX samples (kXMA) play via the offline PCM sidecars
+    // (rb3_xma_sidecar / rb3_sampleinst_native); drum-kit banks (kBigEndPCM) decode
+    // directly. native/web/server.py serves the sidecars on demand.
     {
         ObjDirPtr<ObjectDir> oPtr;
-        Loader *ldr = nullptr;
         oPtr.LoadFile(
             SystemConfig("sound", "banks", "common")->Str(1), 0, 1, kLoadFront, 0
         );
-        TheSynth->SetUnk40(oPtr.Ptr());
+#ifndef __EMSCRIPTEN__
+        TheSynth->SetDir(oPtr.Ptr());
+#else
+        // Web: TheSynth is the live NativeSynth (W3c), but null-guard defensively
+        // to mirror the SetDolby pattern further below.
+        if (TheSynth) TheSynth->SetDir(oPtr.Ptr());
+#endif
         PollTheSplasher();
     }
-#else
-    // Web (W3a, audio-free): SKIP the common sound bank load. Synth.cpp /
-    // VorbisReader.cpp are excluded from the web build, so the synth leaf
-    // factories (Sfx / SynthSample / SynthFader / FxSendEQ / *GroupSeq) are not
-    // registered. DirLoader skips them ("Can't make ..."), but the bank's
-    // remaining registered objects enter a PreLoad/PostLoad path that needs the
-    // synth subsystem state that never boots — an un-interruptible spin (the W2
-    // "synth sample-read path" wall, now reached via the App ctor). The menu
-    // renders fine without SFX; W3c recovers the synth + re-enables this load.
-    // TheSynth is null here anyway, so SetUnk40 is a no-op we also skip.
-    WEB_BOOT_MARK("sound bank SKIPPED on web (audio-free W3a)");
-#endif
     WEB_BOOT_MARK("sound bank done");
 
     SaveLoadManager::Init();
@@ -372,7 +388,11 @@ App::App(int argc, char **argv) {
     WEB_BOOT_MARK("GameInit done");
     PollTheSplasher();
 #ifdef MILO_DEBUG
-    // BandOffline::Init()
+#ifndef HX_NATIVE
+    // BandOffline.cpp is Wii-only (not in the native build); it just registers
+    // the make_charbudget data func, which the native debug tools don't use.
+    BandOffline::Init();
+#endif
     PollTheSplasher();
     BudgetScreen::Register();
     PollTheSplasher();
@@ -422,7 +442,7 @@ App::App(int argc, char **argv) {
     PollTheSplasher();
     TheQuestMgr.Init(SystemConfig("tour"));
     WEB_BOOT_MARK("TheQuestMgr.Init done");
-    // InitStoreOverlay();
+    InitStoreOverlay();
     PollTheSplasher();
 #ifndef HX_NATIVE
 #ifdef VERSION_SZBE69_B8
@@ -612,7 +632,8 @@ void App::Draw() {
 
 float gAvg;
 float gSyncAvg;
-float gTempThresh;
+float gTempThreshHigh = 16.8f;
+float gTempThresh = gTempThreshHigh - 2.84f;
 float gSleepAmt;
 float gTempTimes[10240];
 int gTempTimesIdx;
@@ -649,7 +670,10 @@ void PollTriFrame(float frameMs, float syncMs) {
                 TheWiiRnd.SetTriFrameRendering(false);
                 WiiEnviron::mbEnableShadows = false;
             } else {
-                u8 triFrameOn = *(reinterpret_cast<u8 *>(&TheWiiRnd) + 0x149);
+                // WiiRnd's tri-frame-rendering-enabled flag. This member (+0x149)
+                // isn't mapped in rndwii/Rnd.h yet, so read it through the object
+                // base to match the target.
+                u8 triFrameOn = reinterpret_cast<u8 *>(&TheWiiRnd)[0x149];
                 if (gCooldown++ < 8) {
                     trycount = 0;
                 } else if (triFrameOn) {
@@ -850,6 +874,20 @@ void App::RunWithoutDebugging() {
 }
 #pragma pop
 
-// Stub: original implementation (.text:0x80010420, size 0xF8) not yet decompiled.
-// Empty body unblocks the link; behavior diff is a no-op poll path.
-static void CheckForPassivePlatformErrors() {}
+// Drain any pending platform-error DataArrays (queued by the Wii content
+// manager on a disc/NAND failure) into the passive-message UI, then clear the
+// queue. Wii-only: gPlatformErrorMsg lives in the Wii content manager, which is
+// excluded from the native build (the loop never runs there anyway — native
+// returns early from RunWithoutDebugging before the poll path that calls this).
+static void CheckForPassivePlatformErrors() {
+#ifndef HX_NATIVE
+    std::list<DataArrayPtr>::iterator it = gPlatformErrorMsg.begin();
+    while (it != gPlatformErrorMsg.end()) {
+        ThePassiveMessenger->TriggerMessage(
+            *it, (PassiveMessageType)0, nullptr, false, gNullStr,
+            0x800, 0, 0, 0, 0, gNullStr, gNullStr, gNullStr, 0
+        );
+        it = gPlatformErrorMsg.erase(it);
+    }
+#endif
+}
