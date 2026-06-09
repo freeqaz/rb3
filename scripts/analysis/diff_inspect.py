@@ -1222,6 +1222,10 @@ def run_objdiff_for_symbol(symbol, project_dir=None, unit=None):
     # Also create a readable slug
     slug = re.sub(r'[^a-zA-Z0-9]+', '_', symbol)[:40].strip('_').lower()
     json_path = f"/tmp/claude/diff_{slug}_{h}.json"
+    # /tmp is a tmpfs; the dir can be absent on a fresh boot or after a
+    # systemd-tmpfiles sweep. objdiff-cli's `-o` does File::create with no
+    # mkdir, so ENOENT here surfaces as a misleading "Failed to create file".
+    os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
     # Find project root (where objdiff.json lives)
     # objdiff binary is always resolved from the project root
