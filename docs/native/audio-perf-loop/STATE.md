@@ -1,5 +1,105 @@
 # audio-perf-loop — STATE (canonical living brief)
 
+## WAVE 09 (2026-06-09) — web static PERSISTS after wave-08 carry-all fix; RE-DIAGNOSED.
+### User: web song audio = "static mixed with chipmunks, wayyy too high frequency" + SFX latency ~few-hundred-ms.
+### DECISIVE NEW MEASUREMENTS (orchestrator inline; user-provided REAL browser capture `fucked-audio1.m4a` = "Beast and the Harlot", 11.3s):
+### - UNDERRUNS = 0 over 30s (user console log; frame p50~20ms, one 85ms blip) → NOT a buffering/ring-starvation problem.
+###   The dedicated-audio-thread redesign is SHELVED (it would not touch this symptom).
+### - audio_verify(capture vs beastandtheharlot mogg): RIGHT song (chroma 0.69, fp BER 0.34), RIGHT pitch/speed
+###   (speed 1.003x — NOT a chipmunk), NOT clipped (clip 0.00%, crest 19dB) — BUT **HF/THD 6.08x** (thr<2.0) +
+###   **flatness 0.62** = BROADBAND HIGH-FREQUENCY STATIC layered on otherwise-correct music. The "chipmunk"
+###   PERCEPTION is the HF harshness, not an actual pitch/rate shift.
+### - Noise characterization of the capture: **0 clicks / 0 discontinuities** (wave-08 seam-CLICK theory is DEAD),
+###   steady-ish HF hiss (HF>8kHz frac mean .035, cv .75), **strong spectral peak at exactly 11025 Hz = 44100/4**.
+### - carry-all resampler fix IS deployed (engine pin bd695fb=HEAD; release build 21:09 == AudioDevice_Web.cpp 21:09)
+###   → it is running and is NOT the bug. Wave-08 over-claimed "fixed."
+### - Resampler (AudioDevice_Web.cpp:560-666) is clean continuous LINEAR interp 44100→ctx (step=44100/ctx; ctx=48000
+###   per earlier rb3_audio_stats ⇒ UPSAMPLING). Linear upsample is a mild LOW-pass — it should NOT manufacture 6x HF.
+###   ⇒ static is either UPSTREAM of the resampler (mix/limiter/decode; "native clean" was only ever shown on
+###   20thcenturyboy, a DIFFERENT song), OR the linear-interp imaging is worse than expected, OR ctx forces a
+###   downsample path without anti-aliasing. THIS is what wave-09 fans out to localize.
+### WAVE-09 RESULT (converged, adversarially verified + orchestrator cross-check):
+### - RESAMPLER EXONERATED (probe B host-test): the exact linear-interp+carry, jittered, = 0.919x HF vs scipy resample_poly
+###   (BELOW a good resampler) on real music. Cannot manufacture 6x HF. Also: artifact line is at 11025=44100/4, NOT
+###   12000=48000/4 ⇒ born in the 44100 domain, not the 48000 resample. (Don't replace the resampler.)
+### - LIMITER EXONERATED (orchestrator native A/B, RB3_LIM_BYPASS/RB3_LIM_ATTACK_MS knobs added to AudioDevice.cpp):
+###   bypassing the limiter ENTIRELY leaves fs/4 HF unchanged (band-E: instant 0.26% / BYPASS 0.43% / 3ms 0.39%; peak
+###   16-19x floor in all three). The artifact is in the RAW ADDITIVE STEM SUM, before the limiter.
+### - SHARED ENGINE, NOT WEB-PATH-ONLY (probe A + orchestrator cross-check): the elevated upper-mid HF is present in EVERY
+###   engine capture, native AND web (native gameplay peak 16-57x floor / band-E 0.26-1.2%), but ABSENT in the clean
+###   ffmpeg decode of the same mogg (2.4x / 0.10%). So it is engine-injected at the 44100 mix rate, in the per-stem
+###   DECODE/RENDER (VorbisReader / StandardStream ConsumeData->WriteData / RB3StreamReceiverNative). RenderAudio itself
+###   is a clean 1:1 int16->float copy (inspected) — suspect is the DECODE filling mBuffer.
+### - CONFOUNDS (be honest): native HF measured vs a FILTERED reference downmix; the user's m4a went through tab-capture
+###   ->48000->44100->AAC (lossy, may add HF); peak freq TRACKS the song (beast 11047 / default 11326) = more like content
+###   HF than a fixed injected tone. ⇒ Unresolved: is native a real bug or faithful-music-HF-vs-filtered-ref, and is the
+###   web 0.4%->1.2% step real engine or capture-chain? RESOLVING via USER EAR TEST (native render A/B) before committing
+###   a wave direction.
+### - SFX LATENCY (probe D, confirmed 0 refutes): greedy SAB ring fill — PumpAudio queries free once then while(free>0)
+###   fills ALL of it ⇒ ring sits at ~RING_FRAMES-1=32767 frames = ~673ms @48000 output-latency floor; delays EVERY sound
+###   incl. SFX. No prefill/target cap anywhere. FIX READY (web-only, underruns=0 so safe): cap fill to a target depth
+###   ~ctx/10=4800 frames=100ms ⇒ keydown->audio ~685ms -> ~63ms (~10.8x). Bundle into the next web build.
+### NEXT: (1) USER ear-test native render to localize shared-decode vs web-output. (2) Then either native decode-bisect
+###   (single-stem vs ffmpeg sample-diff) OR web-output wave (force ctx=48000 headless to reproduce 6x; test ctx=44100
+###   true-context to let the browser's good SRC do output instead of our path). (3) Land SFX ring-cap in that web build.
+
+## NEW GOAL (2026-06-06, user): (1) song audio 100% correct for GAMEPLAY + PREVIEW;
+## (2) character animations render correctly in the venue (crowd + on-stage).
+## Role = COORDINATOR; subagents implement; hand off via docs.
+### Audio status now: limiter fixed the gain-clipping, BUT user reports preview is
+###   "music but TOO FAST (chipmunks) + clipping a lot." => a SEPARATE sample-RATE bug
+###   (H3, reopened). mogg = 44100 Hz / 15 ch (ffprobe of decrypted ogg). Native likely
+###   OK (miniaudio config.sampleRate=44100 → internal resample to device). Suspected
+###   WEB-specific: AudioContext requested 44100 may be CLAMPED to 48000 by the browser
+###   with NO resampler in the SAB→worklet path → 48000/44100 = 1.088x fast + ring drift
+###   (the "clipping" may be drift glitches, OR the deployed web build still has the
+###   3ms-attack limiter not the user's instant-attack — undeployed). MEASURE the exact
+###   ratio (read back ctx.sampleRate + capture real browser output) before fixing.
+### Char status: deep prior investigation in docs/native/CHAR_SKINNING_DEFORM_INVESTIGATION.md
+###   — SHIPPED fling-clamp mitigation; FAITHFUL fix BLOCKED at name-resolution: all band
+###   outfit meshes bind to ONE shared char/main/skeleton.milo at the MALE bind (female
+###   trackjacket → skinPos (19.8,3.8,0.4) FLUNG). ~15 char files + BoneSetup.cpp +
+###   Rnd_Wgpu_RB3.cpp are DORMANT uncommitted WIP (no live agent) — build on them.
+### Wave 05 DONE: AUDIO FIXED+VERIFIED+COMMITTED (b458b18: web resampler 44100→ctx rate;
+###   440Hz tone @ forced ctx=48000 → 440.00Hz; chipmunk gone; 0 flat-top runs). Native
+###   correct by construction. AUDIO GOAL MET (pending user ear-confirm on fresh web build).
+### Wave 08 DONE (2026-06-08, user re-report "WEB sounds like static that's clipping"):
+###   ROOT-CAUSED to the wave-05 resampler ITSELF (that "fix" was buggy). 4-lane ultracode
+###   wave + adversarial verify: (1) MIX/limiter EXONERATED — dc3-compare + rb3-mix-vols both
+###   REFUTED: RB3 faithfully applies songs.dta vols/pans; the 3.9x multi-stem sum is content-
+###   inherent (15 stems vs DC3's 2ch pre-mix) and the instant-attack limiter ALREADY tames it
+###   to 0% clip / 0 flat-top. NOT masking a bug. (2) resampler-static CONFIRMED (survived 3/3
+###   refute, 0 refuted): the web 44100→ctx LINEAR resampler carried only ONE sample between
+###   PumpAudio chunks while MixSources DESTRUCTIVELY pulls `newMix` frames → on ~8.1% of
+###   *jittered* chunks it silently DROPS one input frame = a 1-sample click. ~4.7 ticks/s @
+###   60fps. Constant cadence → 0 skips (why wave-05's steady sine + headless capture MISSED it;
+###   real browsers jitter under render load → audible crackle). (3) lane-A headless music
+###   capture of the deployed build came back CLEAN (0 clip, no chipmunk 0.992x, no boot crash,
+###   right song chroma 0.94) — but that's the steady-cadence artifact (didn't jitter → ran the
+###   bug-free path), consistent with the bug being jitter-gated. FIX LANDED (engine, UNCOMMITTED
+###   pending user ear-confirm): AudioDevice_Web.cpp PumpAudio now carries ALL unconsumed frames
+###   (mResampleCarry[]/mResampleCarryN replace the single mResampleLast*). Host unit test:
+###   jittered chunks seam-anomalies 139(old)→0(new), maxDelta 1.92→0.9188(=step). SHARED engine
+###   → DC3-web benefits too. Web rebuilt+redeployed (also defeats stale immutable-cache).
+###   OPEN: lane C (ring underrun on real-hardware worklet scheduling) NOT exercised end-to-end —
+###   if static persists after the user hard-reloads the fresh build, that's the next wave.
+### CHAR: both quick fixes (SyncObjects rebind / offset rebake) REFUTED 2/2 on EMPIRICAL
+###   grounds — there is NO live female-posed per-member skeleton to bind to. Runtime fact
+###   (doc probes): per-member skeletons load (8-9 distinct) but are UNUSED; the char
+###   pipeline poses ONE SHARED, MALE-BIND skeleton (CharBoneDir::FindResource → shared
+###   sResources). So a rebind gives no-op (own==shared) OR a dormant static male-bind
+###   skeleton (still flung + un-animated). REAL FIX (doc + refutation agree): each band
+###   member needs its OWN skeleton, posed by its OWN pipeline to ITS gender bind (the
+###   female's female-bind) — i.e. surgical band-only loader UN-SHARE + per-member deform
+###   pose. Refutation's bar: a BUILD+PROBE proving own!=shared AND own is female-posed-LIVE
+###   (skinPos 19.8→0 WITH clip+IK, no re-fling, animated not frozen). Wave 06 = design the
+###   surgical un-share → implement+probe (owns build) → adversarially verify the MEASURED
+###   result. Shipped fling-clamp stays as backstop. Diagnostics live: XBONE, SHARD_CATCH,
+###   BONE_PROBE, RB3_NO_{CLIP,IK,DEFORM,POSEMESHES,FACE}, char-burst-capture.py.
+
+---
+
+
 > Orchestrator owns this file; rewritten at the end of every converge phase.
 > Per-wave detail in `wave-NN-*.md` (wave-01 = `docs/native/audio-perf-investigation/phase1-*.md`).
 
@@ -128,6 +228,17 @@
   confirm lpu stays 0. (Boot-splash venue-cull = separate render workstream, flag only.)
 
 ## Tooling index
+- **`scripts/native/audio_verify.py` (2026-06-08, NEW — reference-vs-output verifier;
+  `/audio-verify` skill).** Proves the captured game audio is the SAME song + played
+  correctly: mix-robust **chroma** xcorr + **Chromaprint fpcalc** BER (identity),
+  onset **resample-search** speed ratio (chipmunk/rate), reference-free clip/flat-top/
+  wrap (distortion), flatness+zcr (noise), silence. Verdicts MATCH/DEGRADED/WRONG-SIGNAL/
+  SILENT. `--rank s1,s2,s3` = robust relative identity (right song wins). `--selftest`
+  = 6/6 synthetic proof. RESULT (native, default song): GAMEPLAY+PREVIEW = 20thcenturyboy
+  CONFIDENT (chroma 0.54/0.55, fp 0.33/0.31, margin +0.13/+0.22), **not clipped, not
+  chipmunk** (flat speed curve). Doc: AUDIO_VERIFY_2026-06-08.md. Only 3 songs have moggs
+  (20thcenturyboy/25or6to4/antibodies). Moderate chroma (~0.55) = our no-clamp downmix ≠
+  game mix, NOT a bug.
 - Fix files: `../milo-native-engine/src/audio/AudioDevice.{h,cpp}` + `AudioDevice_Web.cpp`.
 - `scripts/native/audio_correlate.py` (clip/crest/spectral; trust the clip-run metrics),
   `decode_reference.py`+`decrypt_mogg.py`, `capture_gameplay_audio.py OUT --secs N [--gain G]`,
@@ -136,3 +247,21 @@
   (+`RB3_HTTP=1 RB3_HTTP_PORT=P`). Build: `cmake --build native/build-native -j$(nproc)`.
 - **Build contention:** ONE native build dir — orchestrator builds; never edit source
   during the web build. Fan-out agents may RUN the binary, not BUILD.
+
+---
+## WAVE 06 RESULT + WAVE 07 PLAN (2026-06-06, char)
+- (1) SHARDS/FLING **FIXED+MEASURED+2/3-verified** (uncommitted, entangled w/ dormant char WIP):
+  un-share is inert/crash-prone (prior sessions) so the implementer did a CONSTANT OFFSET
+  REBAKE — Rnd_Wgpu_RB3.cpp BandRnd::DrawMesh SKEL_REBAKE pre-pass (default-on, opt-out
+  RB3_NO_SKEL_REBAKE), band-only (skeleton_unshared.milo dir scope), static arm/twist bones
+  only, dynamic hair/face stay on the clamp; + Mesh.h mNativeBonesRebound member (HX_NATIVE,
+  byte-identical, match% 62.01/77.31 unchanged). MEASURED: trackjacket bone_R-upperArm skinPos
+  (19.80,3.84,0.36)→(0,0,0); 3 males stay 0; clamp 0× on her; crowd/males/venue unchanged.
+  => On-stage chars now RENDER coherently (no shards).
+- (2) BAND STATIC — the deeper "animations" gap. NEW FACT: bone_R-upperArm worldPos BYTE-
+  IDENTICAL across 1424 draws / whole song WITH clip+IK, MALES TOO (males look right only
+  because invBind==static male bind). NOT a default-on gate. Drive path exists
+  (CharClipDriver/PlayMainClip/FirstPlayingClip) but never moves the skeleton. Crowd DOES
+  animate (own skeletons).
+- WAVE 07 = DIAGNOSE why the on-stage band skeleton is static + SCOPE (tractable drive/clip-
+  assignment gap vs large unported BandDirector choreography) + fix path. Read-heavy + probe.
