@@ -602,6 +602,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_helpers.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_binstream.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_subsystems.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_bandpatchmesh.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)
