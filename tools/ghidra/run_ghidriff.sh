@@ -34,6 +34,14 @@
 #                                           post-filter should additionally 1:1-dedupe.
 #   KNOWN-BAD, NOT YET SKIPPABLE: the final Decomp Match stage scored 0% (15/15 wrong)
 #   in calibration — discard 'Decomp Match' pairs in post-processing.
+#   --language PowerPC:BE:32:Gekko_Broadway
+#       pins the import language. REQUIRED: /opt's fork-lineage ppc.ldefs has a
+#       PowerPC:BE:64:Xenon entry with size=32 that hijacks auto-detection for
+#       32-bit PPC ELFs — run 1 (2026-06-09 08:21) imported BOTH banks as
+#       Xenon:default (no paired-single decode; and unopenable once the dangling
+#       Xenon sleigh entry broke). A fresh Gekko_Broadway import decodes psq_*
+#       correctly. The run-1 proj/ was deleted as poisoned (artifacts archived
+#       in run1-archive/).
 #
 # USAGE
 # -----
@@ -95,6 +103,7 @@ GHIDRA_USER_HOME=/tmp/claude/ghidra_user_bank8 \
     --min-func-len 16 \
     --skip-correlators BulkBasicBlockMnemonicHash,SigCallingCalledHasher,StructuralGraphExactHash \
     --implied-min-ratio 0.9 \
+    --language PowerPC:BE:32:Gekko_Broadway \
     --no-symbols \
     --log-level INFO \
     --log-path "${OUT_DIR}/ghidriff.log"
