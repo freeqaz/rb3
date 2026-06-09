@@ -69,7 +69,7 @@ def main() -> int:
         if "band_r_wii" in n:
             b5 = project.openProgram("/", n, True)
         elif "bank8_target" in n:
-            b8 = project.openProgram("/", n, not args.dry)  # writable unless dry
+            b8 = project.openProgram("/", n, args.dry)  # readOnly=args.dry: writable on apply, RO on --dry
     if b5 is None or b8 is None:
         print("error: need both Bank 5 and Bank 8 programs in the project", file=sys.stderr)
         return 2
