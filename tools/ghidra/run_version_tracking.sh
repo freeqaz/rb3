@@ -52,8 +52,10 @@ SESSION_FOLDER="${RB3_VT_SESSION_FOLDER:-/}"
 # Ghidra domain-file names cannot contain '>' — 'b5->b8' triggers InvalidNameException.
 SESSION_NAME="${RB3_VT_SESSION_NAME:-RB3_b5_to_b8_autoVT}"
 
-# Headless JVM heap: VT across two ~40k-symbol programs wants more than the 2G default.
-export GHIDRA_HEADLESS_MAXMEM="${GHIDRA_HEADLESS_MAXMEM:-8G}"
+# Headless JVM heap: the full AutoVT correlator set (incl. Duplicate-Function, which
+# builds a large match set) OOM'd at 8G across two ~40k-symbol programs. Default high;
+# the host has plenty (override with GHIDRA_HEADLESS_MAXMEM=...).
+export GHIDRA_HEADLESS_MAXMEM="${GHIDRA_HEADLESS_MAXMEM:-48G}"
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}"
 # Keep our headless run off the service's user dir to avoid any settings collision.
 export GHIDRA_USER_HOME="${GHIDRA_USER_HOME:-/tmp/claude/ghidra_user_vt}"

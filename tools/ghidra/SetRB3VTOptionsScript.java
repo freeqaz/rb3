@@ -42,6 +42,11 @@ public class SetRB3VTOptionsScript extends GhidraScript {
 
 		// Run every correlator: exact symbol (all shared mangled names) + exact data +
 		// exact function bytes/instructions/mnemonics + duplicate-function + references.
+		// ALL AutoVT correlators enabled. The earlier OOM in the Duplicate-Function
+		// phase was a heap limit (8G), not a reason to drop the correlator — run with a
+		// large heap instead (run_version_tracking.sh: GHIDRA_HEADLESS_MAXMEM=48G).
+		// Reference + Implied are speculative; MIN_VOTES=2 / MAX_CONFLICTS=0 /
+		// REF_MIN_SCORE=0.95 / REF_MIN_CONF=10 keep their false-positive rate low.
 		optionsValues.defineBoolean(VTOptionDefines.CREATE_IMPLIED_MATCHES_OPTION_TEXT, true);
 		optionsValues.defineBoolean(VTOptionDefines.RUN_EXACT_SYMBOL_OPTION_TEXT, true);
 		optionsValues.defineBoolean(VTOptionDefines.RUN_EXACT_DATA_OPTION_TEXT, true);
