@@ -38,9 +38,55 @@
 #ifdef __EMSCRIPTEN__
 #include "platform/WebAssets.h"
 #include <emscripten/em_asm.h>
+#include <cstdlib> // getenv (RB3_BOOT_IO_STATS)
 #include <string>
 
+// --- Boot I/O instrumentation (Step 0, handoff 02-boot-sync-read) ----------
+// Env-gated (RB3_BOOT_IO_STATS=1) counters that attribute every READ-mode open
+// to the path it took, so we can quantify how much of the ~7s App-ctor idle is
+// blocking sync-XHR fetches vs already-resident MEMFS reads. Plain global ints
+// (web build is single-threaded). main_web.cpp dumps them at appctor_done via
+// RB3BootIoStatsDump(). Always compiled but zero-cost unless the env flag is set
+// (the counters tick regardless — they're a handful of int adds; the gate only
+// controls whether they're printed).
+int gBootIoOpensRead = 0;       // total read-mode opens seen by this backend
+int gBootIoFirstTry = 0;        // fopen succeeded on the first try (already in MEMFS)
+int gBootIoResidentSkip = 0;    // Fix A: FS.analyzePath said resident → fopen, no fetch
+int gBootIoCacheHit = 0;        // cacheTryHit() warm IDB hit → fopen
+int gBootIoFetchSync = 0;       // WebAssetsFetchSync() blocking sync-XHR → fopen
+int gBootIoStillFail = 0;       // all paths exhausted, open still failed
+
 namespace {
+
+// Fix A — residency short-circuit. Before paying for a cache lookup or a
+// blocking sync XHR, ask MEMFS whether the file is already present (it usually
+// is: the eager boot bundle wrote the boot-critical set through to MEMFS before
+// the App ctor). If resident, the caller just re-fopen's and skips both slow
+// paths. Cannot regress the warm IDB cache: the bundle's own onBundleSuccess
+// writes bundled files through to IDB independently of this block, and the
+// per-file cachePutAfterFetch only runs on the WebAssetsFetchSync miss path
+// (which a resident file never reaches). Returns 1 if resident, 0 otherwise
+// (including on any JS error → fall through to the existing paths).
+int memfsResident(const char *memfsPath) {
+    // A/B gate (measurement only): RB3_BOOT_NO_RESIDENCY_SKIP=1 disables Fix A so
+    // the same build can measure the pre-Fix-A open distribution. Default = on.
+    static int sDisabled = -1;
+    if (sDisabled < 0) {
+        const char *e = ::getenv("RB3_BOOT_NO_RESIDENCY_SKIP");
+        sDisabled = (e && e[0] && e[0] != '0') ? 1 : 0;
+    }
+    if (sDisabled)
+        return 0;
+    return EM_ASM_INT({
+        try {
+            var p = UTF8ToString($0);
+            var a = FS.analyzePath(p);
+            return (a && a.exists) ? 1 : 0;
+        } catch (e) {
+            return 0;
+        }
+    }, memfsPath);
+}
 
 // W4b — IndexedDB asset cache shim. The JS pre-warm in native/web/rb3_pre.js
 // loads cached (path -> bytes) rows into window.__rb3IdbCache at boot. We
@@ -113,6 +159,38 @@ void cachePutAfterFetch(const char *cacheKey, const char *memfsPath) {
 }
 
 } // namespace
+
+// Loader-side yield counters (defined in src/system/utl/Loader.cpp HX_WEB arm).
+// Declared here so the boot-I/O dump can print the full picture in one place.
+extern int gLoaderPollYields;            // Poll()/PollUntilEmpty throttled yields
+extern double gLoaderPollYieldMs;        // wall-ms spent in those yields
+extern int gLoaderPullSliceYields;       // PollUntilLoaded per-slice yields
+extern double gLoaderPullSliceYieldMs;   // wall-ms spent in those yields
+extern int gLoaderPullCalls;             // PollUntilLoaded invocations
+
+// Called from main_web.cpp at appctor_done. Gated on RB3_BOOT_IO_STATS so it is
+// silent on a normal boot but prints the Step-0 attribution when measuring.
+extern "C" void RB3BootIoStatsDump(const char *tag) {
+    const char *e = ::getenv("RB3_BOOT_IO_STATS");
+    if (!e || !e[0] || e[0] == '0')
+        return;
+    std::fprintf(stderr,
+        "[boot-io-stats %s] reads=%d firstTry=%d residentSkip=%d cacheHit=%d "
+        "fetchSync=%d stillFail=%d | loaderPollYields=%d (%.0fms) "
+        "pullSliceYields=%d (%.0fms) pullCalls=%d\n",
+        tag ? tag : "appctor_done",
+        gBootIoOpensRead, gBootIoFirstTry, gBootIoResidentSkip, gBootIoCacheHit,
+        gBootIoFetchSync, gBootIoStillFail,
+        gLoaderPollYields, gLoaderPollYieldMs,
+        gLoaderPullSliceYields, gLoaderPullSliceYieldMs, gLoaderPullCalls);
+}
+#else  // !__EMSCRIPTEN__
+// Native (non-web) build: the boot-I/O stats are a web-only concept (the sync
+// XHR / IDB cache paths don't exist), so provide a no-op so main_web.cpp can
+// call it unconditionally. (main_web.cpp is only compiled for the web target,
+// but keep the symbol resolvable for any shared TU.)
+#include <cstdio>
+extern "C" void RB3BootIoStatsDump(const char *) {}
 #endif
 
 namespace {
@@ -134,6 +212,10 @@ public:
         // this hook for the DC3 build), so it must live here. Pass `path`
         // unchanged to both calls — WebAssetsFetchSync writes to the same path
         // it opens (DC3's AsyncFileNative::_OpenAsync uses the same contract).
+        if (readMode)
+            ++gBootIoOpensRead;
+        if (mFp && readMode)
+            ++gBootIoFirstTry; // already resident in MEMFS — no fetch needed
         if (!mFp && readMode) {
             // WebAssetsFetchSync writes the fetched bytes into MEMFS using the
             // path it is handed: it runs `FS.mkdir` for each ABSOLUTE parent dir
@@ -158,13 +240,30 @@ public:
             // fopen succeeds with no network round-trip. On a miss, fall
             // through to the engine's sync XHR + queue an async write-back.
             const char *cacheKey = cacheRelFromMemfsPath(fetchPath.c_str());
-            if (cacheTryHit(cacheKey, fetchPath.c_str())) {
-                mFp = std::fopen(path, m);
-            } else if (WebAssetsFetchSync(fetchPath.c_str())) {
+            // Fix A (handoff 02): if the file is ALREADY resident in MEMFS,
+            // re-fopen and skip both the IDB lookup and the blocking sync XHR.
+            // The first fopen above used the original (possibly relative) `path`;
+            // residency is keyed off the anchored `fetchPath` (== /data/<rel>),
+            // which is where the boot bundle / a prior fetch wrote it. This is a
+            // pure short-circuit: when not resident it falls through unchanged.
+            if (memfsResident(fetchPath.c_str())) {
                 mFp = std::fopen(path, m);
                 if (mFp)
-                    cachePutAfterFetch(cacheKey, fetchPath.c_str());
+                    ++gBootIoResidentSkip;
             }
+            if (!mFp && cacheTryHit(cacheKey, fetchPath.c_str())) {
+                mFp = std::fopen(path, m);
+                if (mFp)
+                    ++gBootIoCacheHit;
+            } else if (!mFp && WebAssetsFetchSync(fetchPath.c_str())) {
+                mFp = std::fopen(path, m);
+                if (mFp) {
+                    ++gBootIoFetchSync;
+                    cachePutAfterFetch(cacheKey, fetchPath.c_str());
+                }
+            }
+            if (!mFp && readMode)
+                ++gBootIoStillFail;
         }
 #endif
         mFail = (mFp == nullptr);

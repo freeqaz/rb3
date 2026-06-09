@@ -113,6 +113,10 @@ extern void RB3RegisterLegacyRndAliases();
 extern void RB3InstallWebPersistBackend();
 extern void RB3SaveLoadGlobalOptions();
 extern void RB3SaveSaveGlobalOptions();
+// Boot I/O attribution dump (handoff 02-boot-sync-read, Step 0). Prints open
+// outcomes + per-path loader yield counts at appctor_done when RB3_BOOT_IO_STATS
+// is set. Defined in native_file.cpp; no-op otherwise.
+extern "C" void RB3BootIoStatsDump(const char *tag);
 // Live A/V-calibration probe/poke for the headless round-trip test (B3 VERIFY).
 // Read-only published value (window.rb3ExcessVideoLag) + a polled set command
 // (window.rb3SetExcessVideoLag) — same JS-bridge style as window.rb3CurrentScreen,
@@ -176,6 +180,14 @@ static void ApplyUrlLoaderEnv() {
         // measure the boot with/without it (control = the old sync-XHR path).
         // ?bootBundle=0 -> RB3_BOOT_BUNDLE_OFF=0 (any value present disables).
         {"bootBundle", "RB3_BOOT_BUNDLE_OFF"},
+        // Handoff 02 (boot sync-read) Step-0 instrumentation + A/B knobs.
+        //   ?bootIoStats=1            -> RB3_BOOT_IO_STATS (dump open/yield counts)
+        //   ?bootNoResidencySkip=1    -> RB3_BOOT_NO_RESIDENCY_SKIP (disable Fix A)
+        //   ?loaderMinYieldMs=16      -> RB3_LOADER_MIN_YIELD_MS (PollUntilLoaded
+        //                                per-slice yield throttle; 0 = original)
+        {"bootIoStats", "RB3_BOOT_IO_STATS"},
+        {"bootNoResidencySkip", "RB3_BOOT_NO_RESIDENCY_SKIP"},
+        {"loaderMinYieldMs", "RB3_LOADER_MIN_YIELD_MS"},
     };
     for (auto &p : kPairs) {
         char *v = (char *)EM_ASM_PTR({
@@ -642,6 +654,7 @@ static void mainLoop() {
             break;
         }
         BootMark("appctor_done");
+        RB3BootIoStatsDump("appctor_done"); // Step 0 attribution (gated)
         printf("RB3 Web: App constructed — entering RunOneFrame loop\n");
         EM_ASM({ window.rb3AppBooted = 1; });
         sBootState = BOOT_RUNNING;
