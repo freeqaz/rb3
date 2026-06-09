@@ -946,7 +946,6 @@ void BandCharacter::RebindHeadHandsAtRest() {
     if (sDisabled < 0) sDisabled = getenv("RB3_NO_HEAD_REBIND") ? 1 : 0;
     if (sDisabled) return;
     if (mNativeHeadReboundOnce) return;
-    bool firstPass = !mNativeRestCaptured;
     bool probe = getenv("HEAD_REBIND_PROBE") != 0;
 
     // Collect every skinned mesh the member draws — same draw-tree walk as the torso
@@ -1003,6 +1002,14 @@ void BandCharacter::RebindHeadHandsAtRest() {
         if (mn && (strstr(mn, "trackjacket") || strstr(mn, "vestdenim") ||
                    strstr(mn, "plaidshirt") || strstr(mn, "shred")))
             continue;
+        // Only touch SELF-OWNED meshes: the engine builds the GPU bone palette from
+        // owner=mesh->GeomOwner() (owner->BoneOffsetAt/BoneTransAt). For a mesh whose
+        // geometry is owned by another, writing this mesh's bone array has no GPU
+        // effect yet setting mNativeBonesRebound would still disable its fling-clamp
+        // -> a HARDER shard. Leave shared-geometry meshes to the clamp.
+        RndMesh *go = mesh->GeomOwner();
+        if (go && go != mesh)
+            continue;
         int meshRebound = 0, miss = 0;
         for (int b = 0; b < mesh->NumBones(); b++) {
             RndTransformable *bound = mesh->BoneTransAt(b);
@@ -1010,20 +1017,25 @@ void BandCharacter::RebindHeadHandsAtRest() {
             slots++;
             RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
             if (!own || own == bound) { miss++; continue; } // per-member not reachable yet
-            // resolve this bone's REST world: from the snapshot, or capture it now if
-            // this is the first pass (skeleton provably at rest before Character::Poll).
+            // resolve this bone's REST world: from the snapshot, or capture it the
+            // FIRST time this bone resolves to a distinct per-member instance. This
+            // method runs pre-Character::Poll(), so a freshly-resolvable per-member
+            // bone still holds its load/rest pose — capturing on first-resolve (rather
+            // than gating on the literal first Poll) also covers per-member skeletons
+            // that stream in a few frames late (else those bones were abandoned ->
+            // permanent shard, and the scan never latched). Reject a non-finite / huge
+            // rest xfm (a broken bone) so Invert can't produce NaN — the engine clamp
+            // is disabled for rebound meshes, so there is no backstop.
             std::map<std::string, Transform>::iterator rp =
                 mNativeRestPose.find(bound->Name());
             Transform rest;
             if (rp != mNativeRestPose.end()) {
                 rest = rp->second;
-            } else if (firstPass) {
-                rest = own->WorldXfm();
-                mNativeRestPose[bound->Name()] = rest;
             } else {
-                // bone never seen at rest (late, unshared) — leave it to the clamp
-                miss++;
-                continue;
+                rest = own->WorldXfm();
+                if (!(std::fabs(rest.v.x) < 1e5f && std::fabs(rest.v.y) < 1e5f &&
+                      std::fabs(rest.v.z) < 1e5f)) { miss++; continue; }
+                mNativeRestPose[bound->Name()] = rest;
             }
             // bake mOffset = meshWorld * inverse(restWorld), bind to the LIVE bone.
             mesh->SetBone(b, own, false);
@@ -1042,10 +1054,16 @@ void BandCharacter::RebindHeadHandsAtRest() {
     }
     mNativeRestCaptured = true;
 
-    // Latch once nothing is pending for a sustained quiet window (late LOD streaming).
-    if (pending == 0) mNativeHeadReboundQuiet++;
+    // Latch when the scan makes NO PROGRESS for a sustained window. This covers BOTH
+    // "fully rebound" (nothing left to do) AND "stuck" (some mesh's bones never resolve
+    // to a distinct per-member instance — own==bound forever — and stay on the engine
+    // clamp). Without this fallback such a member would re-walk its whole draw tree
+    // every Poll for the entire song (the torso rebind has the same fallback). Quiet
+    // counts consecutive no-new-rebind scans; a late-streamed mesh that DOES rebind
+    // resets it, so the streaming tail is still caught before latching.
+    if (reboundBones == 0) mNativeHeadReboundQuiet++;
     else mNativeHeadReboundQuiet = 0;
-    if (mNativeHeadReboundQuiet >= 90) mNativeHeadReboundOnce = 1;
+    if (mNativeHeadReboundQuiet >= 120) mNativeHeadReboundOnce = 1;
 
     if (probe && (reboundBones > 0 || pending > 0)) {
         fprintf(stderr,
@@ -1500,6 +1518,20 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     }
 
 #ifdef HX_NATIVE
+    // Re-arm the native skinning rebinds on every (re)load. The CharCache reuses one
+    // persistent BandCharacter per slot across closet/salon outfit edits, so a new
+    // head/torso mesh streamed by an outfit change has mNativeBonesRebound=false but
+    // the Poll-time rebinds have already LATCHED (mNative*ReboundOnce) and would skip
+    // it -> it shards. Clear the latches + the stale per-member rest snapshot so the
+    // new meshes rebind/rebake against the freshly-(re)posed skeleton. (The first Poll
+    // after this re-load re-captures rest before Character::Poll applies a clip.)
+    mNativeReboundOnce = 0;
+    mNativeReboundQuiet = 0;
+    mNativeReboundBody = 0;
+    mNativeHeadReboundOnce = 0;
+    mNativeHeadReboundQuiet = 0;
+    mNativeRestCaptured = false;
+    mNativeRestPose.clear();
     // C13 backstop: mFileMerger is bound by the proxy-load of char/main/main.milo
     // (verified non-null for the chars.milo preview players); guard anyway so a
     // FileMerger-less char can't hard-crash here. Wii always has a FileMerger.
