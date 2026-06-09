@@ -2,6 +2,10 @@
 #include "bandobj/BandCharDesc.h"
 #include "bandobj/BandCharacter.h"
 #include "bandobj/BandWardrobe.h"
+#ifdef HX_NATIVE
+#include "char/FileMerger.h" // C13 probe: Find<FileMerger>("FileMerger.fm")
+#include <cstdlib>           // getenv (RB3_CHAR_PREVIEW)
+#endif
 #include "bandobj/PatchDir.h"
 #include "game/BandUser.h"
 #include "game/BandUserMgr.h"
@@ -40,7 +44,30 @@ CharCache::CharCache() : unk28(0) {}
 void CharCache::InitMe() {
     FilePathTracker tracker("char");
     SetName("char_cache", ObjectDir::Main());
-#ifndef HX_NATIVE
+#ifdef HX_NATIVE
+    // C13 (roadmap): the band-member preview cache. world/shared/chars.milo's
+    // player0..3 are milo PROXIES (mProxyFile = ../../char/main/main.milo) — the
+    // proxy-load binds mFileMerger (main.milo has FileMerger.fm + outfit + IK +
+    // body_clips), the same body machinery the gameplay band uses. OPT-IN
+    // (RB3_CHAR_PREVIEW=1) for now: un-defer the load + probe whether the
+    // proxy-load actually binds mFileMerger natively (the Stage-0 gate that the
+    // headless gtest could not run — the full rndobj/char/band factory cluster
+    // only exists in the real App boot). Default-off keeps the menu path unchanged
+    // (GetCharacter returns null, tolerated). Verified here in the real boot;
+    // the full enable (UpdateCharCache un-defer + deref hardening) follows.
+    if (getenv("RB3_CHAR_PREVIEW")) {
+        unk1c.LoadFile(
+            FilePath("../world/shared/chars.milo"), false, true, kLoadFront, false
+        );
+        for (int i = 0; i < 4; i++) {
+            BandCharacter *bc = GetCharacter(i);
+            FileMerger *fm = bc ? bc->Find<FileMerger>("FileMerger.fm", false) : nullptr;
+            MILO_LOG(
+                "C13_PROBE: player%d char=%p FileMerger.fm=%p\n", i, (void *)bc, (void *)fm
+            );
+        }
+    }
+#else
     // world/shared/chars.milo is the band-member character preview cache. It opens
     // natively but its BandCharDesc/BandCharacter object stream desyncs (deferred
     // char-Load correctness, T9 territory). The band-character previews aren't on
