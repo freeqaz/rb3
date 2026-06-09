@@ -624,14 +624,14 @@ void BSPFace::OnSide(const Plane &plane, bool &front, bool &back) {
 void BSPFace::Update() {
     MILO_ASSERT(p.mPoints.size() > 2, 0x696);
 
-    const Vector2 *anchor = p.mPoints.begin();
-    const Vector2 *prev = anchor + 1;
-    const Vector2 *curr = prev + 1;
+    const Vector2 *curr = p.mPoints.begin();
+    const Vector2 *anchor = curr++;
+    const Vector2 *prev = curr++;
     area = 0.0f;
     while (curr != p.mPoints.end()) {
-        area += (curr->y * anchor->x - anchor->x * prev->y - anchor->y * prev->x +
-                 prev->x * curr->y - prev->y * curr->x +
-                 curr->x * anchor->y) * 0.5f;
+        area += ((anchor->x * prev->y - anchor->y * prev->x) +
+                 (prev->x * curr->y - prev->y * curr->x) +
+                 (curr->x * anchor->y - curr->y * anchor->x)) * 0.5f;
         prev = curr;
         curr++;
     }
@@ -640,8 +640,8 @@ void BSPFace::Update() {
 
     float fvx = t.v.x;
     float fvy = t.v.y;
-    float fc = t.m.z.z;
     Plane facePlane;
+    float fc = t.m.z.z;
     facePlane.a = t.m.z.x;
     facePlane.b = t.m.z.y;
     facePlane.c = fc;

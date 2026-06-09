@@ -171,10 +171,8 @@ void BandHeadShaper::Init() {
         MemPopHeap();
     }
     for (int i = 0; i < 4; i++) {
-#ifdef HX_NATIVE
         if (!gVisemes[i]) // FindSubdir returns null when its head dir was null
             continue;
-#endif
         gVisemes[i]->SetName("", 0);
     }
 }
