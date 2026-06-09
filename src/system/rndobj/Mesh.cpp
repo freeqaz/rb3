@@ -50,6 +50,16 @@ int MESH_REV_SEP_COLOR = 0x25;
 
 #ifdef HX_NATIVE
 bool RndMesh::sUpdateApproxLight = false;
+// Decomp gap: sLastCollide / sRawCollide are USED (RndMesh::CollideShowing here +
+// BandPatchMesh::ProjectPatches, the char outfit-patch/tattoo projection) but were
+// never given out-of-line definitions. The native link previously resolved them
+// via a weak no-op stub aliased into read-only .text (rndobj_synth_link_stubs.s),
+// so `RndMesh::sRawCollide = true` wrote into .text and SIGSEGV'd the moment a
+// tattooed char was composited (DrawPreClear -> OutfitConfig -> ProjectPatches).
+// Define them for real (writable .bss). HX_NATIVE-only -> the Wii decomp link is
+// byte-identical (mirrors sUpdateApproxLight above).
+int RndMesh::sLastCollide;
+bool RndMesh::sRawCollide;
 #endif
 
 Vector3 TransformNormal(const Vector3 &normal, const Hmx::Matrix3 &mat) {

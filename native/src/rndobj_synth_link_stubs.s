@@ -102,10 +102,10 @@ __hmx_rndsynth_noop_stub:
     .set _ZN6WiiRnd18GetProgressiveScanEv, __hmx_rndsynth_noop_stub
     .weak _ZN7RndMesh11DrawShowingEv
     .set _ZN7RndMesh11DrawShowingEv, __hmx_rndsynth_noop_stub
-    .weak _ZN7RndMesh11sRawCollideE
-    .set _ZN7RndMesh11sRawCollideE, __hmx_rndsynth_noop_stub
-    .weak _ZN7RndMesh12sLastCollideE
-    .set _ZN7RndMesh12sLastCollideE, __hmx_rndsynth_noop_stub
+    // sRawCollide / sLastCollide are DATA (writable bool/int), NOT functions —
+    // aliasing them to the read-only no-op .text stub made `sRawCollide = true`
+    // (BandPatchMesh::ProjectPatches) write into .text and SIGSEGV. They now have
+    // real out-of-line definitions in Mesh.cpp (HX_NATIVE), so the stubs are gone.
     .weak _ZN7RndMesh6OnSyncEi
     .set _ZN7RndMesh6OnSyncEi, __hmx_rndsynth_noop_stub
     .weak _ZN7Striper4InitER13STRIPERCREATE
