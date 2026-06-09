@@ -79,5 +79,13 @@ Torso untouched (complement scope); no crash full song.
 - [x] Diagnosis+design 8-agent ultracode workflow (`gameplay-char-head-shard-diagnose`) — root cause = C8 skinning bind.
 - [x] A/B: shard is independent of the rebind (torso-only) AND of gDeforms (NO_DEFORM_LOAD still shards) → it's the bind.
 - [x] **Implement head-skinning fix (`0de768a1`).**
-- [ ] Adversarial verify (code review + empirical regression).
-- [ ] Land uncommitted domino ② attempt in `rb3_guestprofile_native.cpp` (coordinate with domino2-fix).
+- [x] **Adversarial verify** — 5-agent review (verdict: ship-with-followups); must-fix + high-value should-fixes landed (`2580e128`): fallback latch, capture-on-first-resolve, finite guard, GeomOwner skip, StartLoad re-entry reset. Re-verified: all 4 members `latched=1`, REBIND_DRAW_FLING=0, coherent closeups, torso animates, full song no crash.
+- [x] **Domino ② landed by concurrent domino2-fix agent (`65f7f0e6`)** — song_select UAF fixed at source, guest-profile + char-preview restored to default-on. My head-fix build is a child of it; default-on gameplay+closet verified safe.
+- [x] Closet char fully coherent via real nav (default-on, no flags): `/tmp/rb3-realnav/closet_23.png`.
+
+## Remaining follow-ups (noted, non-blocking)
+- Partition torso/head by a structural property (bone count / bone-name set) instead of 4 hardcoded
+  outfit names (trackjacket/vestdenim/plaidshirt/shred); verify a 2nd differently-customized band outfit.
+- 1 residual `own==bound`-forever mesh per member stays on the engine clamp (latch now stops the rescan).
+- `unordered_set` for the draw-tree collector (O(N²) now, harmless once latched).
+- BandHeadShaper head-milo morph (cosmetic gender face shape) still deferred — separate from the shard.
