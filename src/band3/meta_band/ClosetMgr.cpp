@@ -54,7 +54,13 @@ void ClosetMgr::Poll() {
         int slot = GetUserSlot();
         MILO_ASSERT(slot != -1, 0x60);
         mBandCharacter = TheCharCache->GetCharacter(slot);
+#ifdef HX_NATIVE
+        // C13: the opt-in preview cache may be mid-load / deferred -> tolerate null.
+        if (!mBandCharacter)
+            return;
+#else
         MILO_ASSERT(mBandCharacter, 0x62);
+#endif
         if (!mBandCharacter->IsLoading()) {
             mCharacterLoading = false;
             CharacterFinishedLoading();

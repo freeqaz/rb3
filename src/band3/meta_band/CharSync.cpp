@@ -20,6 +20,9 @@
 #include "os/Debug.h"
 #include "rndwii/Tex.h"
 #include "ui/UI.h"
+#ifdef HX_NATIVE
+#include <cstdlib> // C13: getenv(RB3_CHAR_PREVIEW)
+#endif
 #include "ui/UIScreen.h"
 #include "utl/Std.h"
 #include "utl/Symbols.h"
@@ -47,16 +50,18 @@ CharSync::~CharSync() {
 #pragma dont_inline on
 void CharSync::UpdateCharCache() {
 #ifdef HX_NATIVE
-    // Band-member character PREVIEW cache update (runs on every screen-transition
-    // complete). It builds BandCharDescs from profile/prefab CharData and Requests
-    // them into TheCharCache. On native the underlying char data is DEFERRED — the
-    // chars.milo preview cache (CharCache::InitMe), char-deform (BandCharDesc::Init)
-    // and head (BandHeadShaper::Init) loads are all #ifndef HX_NATIVE because their
-    // CharClip/CharBonesSamples Loads version-desync (T9). So prefabMgr's CharData
-    // has a garbage BandCharDesc (CopyCharDesc derefs a bad ptr -> SetPrefab crash).
-    // The char previews can't render without those milos anyway, and the menu text/
-    // layout renders fine without them. Defer to match the existing char deferrals.
-    return;
+    // C13: Band-member character PREVIEW cache update (runs on every screen-transition
+    // complete). It builds BandCharDescs from profile/prefab CharData and Requests them
+    // into TheCharCache -> StartLoad -> FileMerger loads the 13 bodyparts. OPT-IN
+    // (RB3_CHAR_PREVIEW=1, same flag as the CharCache::InitMe chars.milo load). The
+    // no-user/prefab branch needs no signed-in profile: gPrefabs is populated
+    // unconditionally (BandCharDesc::Init -> ReloadPrefabs, a5999979) so GetDefaultPrefab
+    // feeds prefabsBySlot and asserts 0x114/0x128/0x12D are satisfied. (The old
+    // "garbage BandCharDesc" fear was stale — gDeforms is enabled; heads stay default/
+    // un-shaped via the null-safe BandHeadShaper::Start.) Default-off keeps the menu
+    // path byte-identical to before; the #else Wii body is unchanged.
+    if (!getenv("RB3_CHAR_PREVIEW"))
+        return;
 #endif
     OvershellPanel *overshell = TheBandUI.GetOvershell();
     MILO_ASSERT(overshell, 0x47);
@@ -176,7 +181,13 @@ void CharSync::UpdateCharCache() {
                     continue;
             }
             if (curUser && curUser->HasChar()) {
+#ifdef HX_NATIVE
+                // C13: preview cache may be mid-load / deferred -> tolerate null.
+                BandCharacter *cc = TheCharCache->GetCharacter(n);
+                inCloset = cc ? cc->InCloset() : false;
+#else
                 inCloset = TheCharCache->GetCharacter(n)->InCloset();
+#endif
                 descs70.push_back(curUser->GetChar()->GetBandCharDesc());
             } else {
                 CharData *npc;

@@ -1356,6 +1356,13 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
         unk6bd = b4;
     }
 
+#ifdef HX_NATIVE
+    // C13 backstop: mFileMerger is bound by the proxy-load of char/main/main.milo
+    // (verified non-null for the chars.milo preview players); guard anyway so a
+    // FileMerger-less char can't hard-crash here. Wii always has a FileMerger.
+    if (!mFileMerger)
+        return;
+#endif
     if (!mFileMerger->StartLoad(b1) && (_ref0 || (bvar1 && !_ref0))) {
         mFileMerger->Select("blank", FilePath(""), true);
         mFileMerger->StartLoad(b1);

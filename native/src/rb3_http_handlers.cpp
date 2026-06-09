@@ -38,6 +38,10 @@
 #include "meta_band/BandUI.h"
 #include "game/BandUserMgr.h"
 #include "os/User.h"
+#include "meta_band/CharCache.h"      // C13 probe: TheCharCache->GetCharacter
+#include "bandobj/BandCharacter.h"    // C13 probe
+#include "rndobj/Mesh.h"             // C13 probe: ObjDirItr<RndMesh>, NumBones/Verts
+#include "obj/Dir.h"                 // ObjDirItr
 
 #include <cstdio>
 #include <cstring>
@@ -366,9 +370,42 @@ static DataNode RB3DtaOvershellState(DataArray*) {
     return DataNode(sOvershellProbe.c_str());
 }
 
+// C13 probe: {rb3_char_probe <slot>} -> "playerN meshes=M skinned=S verts=V loading=L"
+// for a CharCache preview char. Confirms the opt-in (RB3_CHAR_PREVIEW) Stage-1/2/3
+// enable actually loaded a BODY (the proxy-load of char/main/main.milo +
+// FileMerger's 13 bodyparts) headlessly, decoupled from the closet UI. Read-only.
+static std::string sCharProbe;
+static DataNode RB3DtaCharProbe(DataArray *da) {
+    int slot = da->Size() > 1 ? da->Int(1) : 0;
+    if (!TheCharCache) {
+        sCharProbe = "no_charcache";
+        return DataNode(sCharProbe.c_str());
+    }
+    BandCharacter *bc = TheCharCache->GetCharacter(slot);
+    if (!bc) {
+        sCharProbe = "null_char (preview cache off? set RB3_CHAR_PREVIEW=1)";
+        return DataNode(sCharProbe.c_str());
+    }
+    int meshes = 0, skinned = 0, verts = 0;
+    for (ObjDirItr<RndMesh> it(bc, true); it != 0; ++it) {
+        meshes++;
+        if (it->NumBones() > 0)
+            skinned++;
+        verts += (int)it->Verts().size();
+    }
+    char buf[160];
+    snprintf(
+        buf, sizeof(buf), "player%d meshes=%d skinned=%d verts=%d loading=%d", slot,
+        meshes, skinned, verts, bc->IsLoading() ? 1 : 0
+    );
+    sCharProbe = buf;
+    return DataNode(sCharProbe.c_str());
+}
+
 void RB3HttpRegisterDtaFuncs() {
     DataRegisterFunc(Symbol("rb3_set"), RB3DtaSetSetting);
     DataRegisterFunc(Symbol("rb3_overshell"), RB3DtaOvershellState);
+    DataRegisterFunc(Symbol("rb3_char_probe"), RB3DtaCharProbe);
 }
 
 // ---------------------------------------------------------------------------

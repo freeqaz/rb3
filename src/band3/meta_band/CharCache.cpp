@@ -83,13 +83,26 @@ void CharCache::Request(
 ) {
     if (!unk28) {
         BandCharacter *bchar = GetCharacter(idx);
+#ifdef HX_NATIVE
+        // C13: chars.milo is opt-in (RB3_CHAR_PREVIEW); GetCharacter is null when
+        // the preview cache is deferred or a slot is mid-load. Wii never sees null.
+        if (!bchar)
+            return;
+#endif
         bchar->CopyCharDesc(descs.front());
         bchar->StartLoad(true, b1, b2);
     }
 }
 
 void CharCache::RecomposePatches(int idx, BandCharDesc *desc, int i2) {
+#ifdef HX_NATIVE
+    BandCharacter *bchar = GetCharacter(idx);
+    if (!bchar)
+        return;
+    bchar->RecomposePatches(desc, i2);
+#else
     GetCharacter(idx)->RecomposePatches(desc, i2);
+#endif
 }
 
 void CharCache::RecomposeCharsWithPatchIx(int idx) {
@@ -144,8 +157,14 @@ void CharCache::Lock(bool lock, bool forceUpdate) {
 
 bool CharCache::CharactersAreLoading() {
     for (int i = 0; i < 4; i++) {
+#ifdef HX_NATIVE
+        BandCharacter *bchar = GetCharacter(i);
+        if (bchar && bchar->IsLoading())
+            return true;
+#else
         if (GetCharacter(i)->IsLoading())
             return true;
+#endif
     }
     return false;
 }
