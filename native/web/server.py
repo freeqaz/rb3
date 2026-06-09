@@ -22,14 +22,36 @@ import gzip as gzip_mod
 import http.server
 import json
 import os
+import queue
 import random
 import shutil
 import subprocess
 import sys
 import urllib.parse
 
+# Session-telemetry SQLite store (D3 / SESSION_TELEMETRY_DESIGN.md §5). Importing
+# the sibling package: server.py lives in native/web/, telemetry/ is next to it.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from telemetry import db as telemetry_db  # noqa: E402
+
 PORT = 8421
 BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build")
+
+# --- Session telemetry ingest config (§5.3) --------------------------------- #
+# The shared store handle (writer thread + queue). Created + started in main().
+TELEMETRY_STORE = None
+# Per-request body cap (§5.3). sendBeacon / fetch-keepalive flushes are small
+# (D5 batches ~64 KB coalesced); 8 MiB is generous and bounds memory.
+TELEMETRY_MAX_BODY = 8 * 1024 * 1024
+# Capture scope — local now, remote-ready (Locked v1 contract). The telemetry
+# routes enforce a localhost client check by default even though the server
+# binds 0.0.0.0; --telemetry-bind-any (default OFF) opens them to remote
+# playtesters, at which point a shared secret header is required.
+TELEMETRY_BIND_ANY = False
+# Shared secret required ONLY when TELEMETRY_BIND_ANY is on (remote capture).
+# Localhost requests never need it. Set via --telemetry-secret / env.
+TELEMETRY_SECRET = None
+_LOCALHOST_ADDRS = {"127.0.0.1", "::1", "::ffff:127.0.0.1", "localhost"}
 # R3 — boot-assets bundle manifest. A newline-delimited, comment-tolerant list of
 # server-relative .milo_xbox paths the App ctor reads before the first interactive
 # screen (see docs/native/web-perf-roadmap/R3-boot-bundle-expansion.md). Served as
@@ -168,6 +190,20 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
         if self._maybe_serve_precompressed(head_only=True):
             return
         super().do_HEAD()
+
+    def do_POST(self):
+        # The first non-GET route on this server (§5.3): telemetry ingest. Any
+        # other POST 404s (mirrors do_GET's /api/ short-circuit).
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        if path == "/api/telemetry/prune":
+            self._handle_telemetry_prune()
+            return
+        if path.startswith("/api/telemetry/"):
+            sid = path[len("/api/telemetry/"):]
+            self._handle_telemetry_post(sid)
+            return
+        self._json_error(404, "Unknown API endpoint")
 
     def _maybe_serve_precompressed(self, head_only=False):
         """W4a — serve a pre-compressed .br or .gz next to the requested
@@ -356,11 +392,200 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_boot_bundle()
         elif path == "/api/bundle":
             self._serve_bundle()
+        elif path == "/api/telemetry":
+            self._handle_telemetry_list()
+        elif path.startswith("/api/telemetry/"):
+            sid = path[len("/api/telemetry/"):]
+            self._handle_telemetry_get(sid, parsed)
         elif path.startswith("/api/file/"):
             rel = path[len("/api/file/"):]
             self._serve_asset_file(rel)
         else:
             self._json_error(404, "Unknown API endpoint")
+
+    # --- Session telemetry ingest (§5.3) ---------------------------------- #
+
+    def _drain_body(self, length):
+        """Read and discard `length` bytes from the request body in chunks. Used
+        when rejecting a POST (413) so the socket is left in a clean state and the
+        client receives the status line instead of a reset connection."""
+        remaining = length
+        while remaining > 0:
+            chunk = self.rfile.read(min(65536, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+
+    def _telemetry_gate(self):
+        """Enforce the §5.3 access policy: localhost-only by default; when
+        --telemetry-bind-any is on, allow remote clients but require the shared
+        secret header. Returns True if the request may proceed; on rejection it
+        has already written the error response and returns False."""
+        client = self.client_address[0] if self.client_address else ""
+        is_local = client in _LOCALHOST_ADDRS
+        if not TELEMETRY_BIND_ANY:
+            if not is_local:
+                self._json_error(403, "Telemetry is localhost-only")
+                return False
+            return True
+        # Remote capture enabled. Localhost still goes through without a secret
+        # (so local dev never needs the header); remote must present it.
+        if is_local:
+            return True
+        if not TELEMETRY_SECRET:
+            self._json_error(403, "Remote telemetry requires a configured secret")
+            return False
+        presented = self.headers.get("X-Telemetry-Secret")
+        if not presented or presented != TELEMETRY_SECRET:
+            self._json_error(403, "Bad or missing X-Telemetry-Secret")
+            return False
+        return True
+
+    def _telemetry_sid_ok(self, sid):
+        """Validate the route <sid>. The recorder mints it (clock + pid/counter)
+        — keep it to a sane charset/length so it can't be a path-traversal or an
+        unbounded key. Writes the error + returns False on rejection."""
+        sid = urllib.parse.unquote(sid)
+        if not sid or len(sid) > 128:
+            self._json_error(400, "Missing or oversized sid")
+            return None
+        # alnum + the few separators a UUID-slice / native id uses.
+        if not all(c.isalnum() or c in "-_.:" for c in sid):
+            self._json_error(400, "Invalid sid")
+            return None
+        return sid
+
+    def _handle_telemetry_post(self, sid):
+        if TELEMETRY_STORE is None:
+            self._json_error(503, "Telemetry store not initialized")
+            return
+        if not self._telemetry_gate():
+            return
+        sid = self._telemetry_sid_ok(sid)
+        if sid is None:
+            return
+
+        # Body read + size guard (§5.3). Require Content-Length; reject over the
+        # cap before reading the body so an oversized POST can't exhaust memory.
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except (TypeError, ValueError):
+            self._json_error(400, "Bad Content-Length")
+            return
+        if length <= 0:
+            self._json_error(400, "Empty body")
+            return
+        if length > TELEMETRY_MAX_BODY:
+            # Drain (and discard) the oversized body before replying so the
+            # client gets a clean 413 instead of a connection reset mid-write.
+            self._drain_body(length)
+            self._json_error(413, "Body exceeds telemetry max size")
+            return
+        raw = self.rfile.read(length)
+        body_text = raw.decode("utf-8", "replace")
+
+        try:
+            result = TELEMETRY_STORE.ingest_ndjson(sid, body_text, byte_len=len(raw))
+        except queue.Full:
+            # Writer is saturated → backpressure (D5 client retries the chunk).
+            self._json_error(503, "Telemetry writer busy; retry")
+            return
+        except Exception as exc:  # noqa: BLE001
+            self._json_error(500, f"Ingest failed: {exc}")
+            return
+
+        if result["ingested"] == 0 and result["dup"] == 0 \
+                and not result["is_hdr"] and result["malformed"] > 0:
+            # Body had only unparseable lines → 400 (§5.3 last bullet).
+            self._json_error(400, "No parseable telemetry lines")
+            return
+
+        body = json.dumps({
+            "ok": True,
+            "sid": sid,
+            "ingested": result["ingested"],
+            "dup": result["dup"],
+            "malformed": result["malformed"],
+            "client_seq_hi": result["client_seq_hi"],
+        }).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _handle_telemetry_get(self, sid, parsed):
+        if TELEMETRY_STORE is None:
+            self._json_error(503, "Telemetry store not initialized")
+            return
+        if not self._telemetry_gate():
+            return
+        sid = self._telemetry_sid_ok(sid)
+        if sid is None:
+            return
+        q = urllib.parse.parse_qs(parsed.query)
+        # ?format=json → a single summary object (sessions row + counts) for D7.
+        if q.get("format", [""])[0] == "json":
+            summary = TELEMETRY_STORE.session_summary(sid)
+            if summary is None:
+                self._json_error(404, f"No such session: {sid}")
+                return
+            body = json.dumps(summary).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
+            return
+
+        # Default: reconstruct the byte-faithful NDJSON stream (hdr + events in
+        # client_seq order) for replay (D6) / trace-report.py (D7).
+        summary = TELEMETRY_STORE.session_summary(sid)
+        if summary is None:
+            self._json_error(404, f"No such session: {sid}")
+            return
+        body = "\n".join(TELEMETRY_STORE.iter_ndjson(sid))
+        if body:
+            body += "\n"
+        encoded = body.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/x-ndjson")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(encoded)
+
+    def _handle_telemetry_list(self):
+        if TELEMETRY_STORE is None:
+            self._json_error(503, "Telemetry store not initialized")
+            return
+        if not self._telemetry_gate():
+            return
+        sessions = TELEMETRY_STORE.list_sessions()
+        body = json.dumps({"sessions": sessions, "count": len(sessions)}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
+    def _handle_telemetry_prune(self):
+        # Pruning is a write-side maintenance op; localhost-gated like the rest.
+        if TELEMETRY_STORE is None:
+            self._json_error(503, "Telemetry store not initialized")
+            return
+        if not self._telemetry_gate():
+            return
+        # prune is out of v1 scope for this handler; acknowledge as a no-op so the
+        # route exists (the retention helper lands with the report tooling, D7).
+        body = json.dumps({"ok": True, "pruned": 0, "note": "prune is a no-op in v1"}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _serve_health(self):
         body = json.dumps({"status": "ok"}).encode()
@@ -918,6 +1143,7 @@ def main():
     global ASSETS_DIR, FALLBACK_ASSETS_DIRS, SIDECAR_DIR, OVERLAY_DIR
     global ENCODE_CACHE_DIR, ENCODE_ENABLED, ENCODE_LEVEL_BROTLI
     global BROTLI_BIN, GZIP_BIN
+    global TELEMETRY_STORE, TELEMETRY_BIND_ANY, TELEMETRY_SECRET
 
     parser = argparse.ArgumentParser(description="RB3 Web Dev Server")
     parser.add_argument(
@@ -978,6 +1204,33 @@ def main():
         action="store_true",
         help="Disable on-demand wire compression (serve assets raw; for A/B).",
     )
+    parser.add_argument(
+        "--telemetry-db",
+        default=None,
+        help=(
+            "Path to the session-telemetry SQLite store (default: "
+            "RB3_TELEMETRY_DB env or native/web/telemetry/sessions.db)."
+        ),
+    )
+    parser.add_argument(
+        "--telemetry-bind-any",
+        action="store_true",
+        help=(
+            "Open the /api/telemetry routes to non-localhost clients (remote "
+            "playtest capture). OFF by default — telemetry is localhost-only. "
+            "When on, a shared secret (--telemetry-secret) is required for "
+            "remote requests."
+        ),
+    )
+    parser.add_argument(
+        "--telemetry-secret",
+        default=None,
+        help=(
+            "Shared secret required in the X-Telemetry-Secret header for REMOTE "
+            "telemetry requests when --telemetry-bind-any is set (default: "
+            "RB3_TELEMETRY_SECRET env). Localhost never needs it."
+        ),
+    )
     parser.add_argument("--port", type=int, default=PORT)
     args = parser.parse_args()
 
@@ -1017,6 +1270,21 @@ def main():
     if ENCODE_ENABLED and not (BROTLI_BIN or GZIP_BIN):
         ENCODE_ENABLED = False  # no encoder → raw path everywhere
 
+    # Session-telemetry ingest (§5). Open the store + start its single writer
+    # thread before serving. The DB path defaults to native/web/telemetry/
+    # sessions.db (gitignored runtime state).
+    TELEMETRY_BIND_ANY = args.telemetry_bind_any
+    TELEMETRY_SECRET = args.telemetry_secret or os.environ.get(
+        "RB3_TELEMETRY_SECRET"
+    )
+    telemetry_db_path = (
+        args.telemetry_db
+        or os.environ.get("RB3_TELEMETRY_DB")
+        or telemetry_db.DEFAULT_DB_PATH
+    )
+    TELEMETRY_STORE = telemetry_db.TelemetryStore(db_path=telemetry_db_path)
+    TELEMETRY_STORE.start()
+
     if not os.path.isdir(BUILD_DIR):
         print(f"Build directory not found: {BUILD_DIR}")
         print("Run scripts/web/build.sh first.")
@@ -1047,6 +1315,9 @@ def main():
             f"  Encode:  gzip-only -{ENCODE_LEVEL_GZIP} (brotli CLI NOT found)"
             f" -> {ENCODE_CACHE_DIR}"
         )
+    scope = ("REMOTE+localhost (shared secret for remote)"
+             if TELEMETRY_BIND_ANY else "localhost-only")
+    print(f"  Telemetry: {telemetry_db_path} ({scope})")
     print(f"  URL:     http://0.0.0.0:{args.port} (accessible remotely)")
     print(f"  API:     http://0.0.0.0:{args.port}/api/manifest")
     print(f"  COOP/COEP headers enabled")
@@ -1058,6 +1329,9 @@ def main():
     except KeyboardInterrupt:
         print("\nShutting down.")
         server.shutdown()
+    finally:
+        if TELEMETRY_STORE is not None:
+            TELEMETRY_STORE.stop()
 
 
 if __name__ == "__main__":

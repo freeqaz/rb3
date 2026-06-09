@@ -294,6 +294,7 @@ This keeps always-on cost flat (one `if` + one array write when on, one predicte
 | `f` | int | frame index (the loop counter, `src/App.cpp:778`) |
 | `sm` | number | song ms — **emitted only when ≥ 0**; omitted entirely in menus (see 4.5). 1 decimal. |
 | `k` | string | event kind |
+| `cs` | int | **client_seq** — monotonic per-session counter on **every** line incl `hdr` (`hdr`=0, events 1…). The `(sid, cs)` idempotency + ordering key for SQLite ingest. **Canonical wire key = `cs`** (prose elsewhere says `client_seq`; ingest maps `cs`→column `client_seq`). |
 
 ### 4.3 Per-kind field set
 | `k` | fields (beyond envelope) | source / notes |
@@ -302,7 +303,7 @@ This keeps always-on cost flat (one `if` + one array write when on, one predicte
 | `boot` | `ph` (phase string) | the 6 `BootMark()` phases at `main_web.cpp:477` (`fetch_start`,`fetch_done`,`engine_init_done`,`gpu_ready`,`appctor_start`,`appctor_done`). Native synthesizes equivalents. |
 | `fr` | `dt`,`lp`,`lpu`,`scr`,`ld`,`st`,`pend` | exact fields the tracer already writes (`rb3_frame_trace.cpp:88`): `dt`=frame ms, `lp`=LoadMgr.Poll ms, `lpu`=PollUntil ms, `scr`=screen, `ld`=loader adds, `st`=stream opens, `pend`=pending loaders. **Decimated** (4.6). |
 | `in` | `pad`,`b`,`dn`,`up`,`ax`(optional) | edge-only input (4.4) |
-| `nav` | `from`,`to`,`focus`,`ov`(optional `{view,track,diff}`) | emit on change of the tuple PublishCurrentScreen already computes (`main_web.cpp:282`); it publishes every frame, so the recorder diffs and emits only on transition |
+| `nav` | `from`,`to`,`focus`,`wb`(optional, `true` on a back/cancel transition),`ov`(optional `{view,track,diff}`) | emitted by the `UIScreenChangeMsg` sink (Locked v1 contract) — exact `from`/`to`/`wentBack`. **Canonical wire key = `wb`** (prose says `wentBack`). |
 | `song` | `ev`(`load`/`start`/`end`),`id`,`track`,`diff`,`score`(end),`pct`(end) | lifecycle hooks pinned by D4 |
 | `au` | `under`,`frames` | worklet underrun postMessage (web); native may omit |
 | `log` | `lvl`(`assert`/`warn`/`info`),`msg`,`src`(optional file:line) | chokepoint pinned by D4 |

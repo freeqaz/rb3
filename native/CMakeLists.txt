@@ -486,10 +486,13 @@ add_executable(rb3-native
     # not-connected. Replaces the zeroed weak stub so profile-driven ticker/score
     # paths short-circuit instead of deref-crashing. See the TU header.
     ${CMAKE_SOURCE_DIR}/src/rb3_server_native.cpp
-    # TASK A4 (audio-perf): per-frame JSONL stutter tracer (RB3_FRAME_TRACE=<path>).
-    # Defines the asset-event counters (gFrameTrace*) incremented from the engine
-    # choke points (LoadMgr::AddLoader, Synth::NewStream) + RB3FrameTraceRecord.
-    ${CMAKE_SOURCE_DIR}/src/rb3_frame_trace.cpp
+    # Session telemetry recorder CORE (RB3_SESSION_TRACE=<path|1>, RB3_FRAME_TRACE
+    # alias). Unified NDJSON event stream (hdr/fr/in/nav/boot/song/log/mark) with
+    # a string interner + bounded ring + monotonic client_seq/sid. Subsumes the
+    # old rb3_frame_trace.cpp; keeps RB3FrameTraceRecord as the back-compat shim
+    # so src/App.cpp's frame tap still links. See
+    # docs/native/SESSION_TELEMETRY_DESIGN.md "Locked v1 contract".
+    ${CMAKE_SOURCE_DIR}/src/rb3_session_trace.cpp
     # REAL live input: keyboard (+ USB gamepad) -> JoypadData -> SendButtonMessages.
     # Strong JoypadInit/Poll/Reset/Terminate defs override the weak no-op stubs in
     # dta_link_stubs.s; SystemPoll(false) -> JoypadPoll() (System.cpp:673) drives it
@@ -602,6 +605,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_helpers.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_binstream.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_subsystems.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_session_trace.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)
