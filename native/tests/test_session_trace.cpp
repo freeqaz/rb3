@@ -51,6 +51,7 @@ void RB3RecordCheckpoint(const char *scr, const char *focus,
                          float taskSec, float beat, float songMs,
                          long scoreSum, const int *scores, int nScores,
                          int nPlayers, int pct);
+void RB3RecordClock(float simDt, float songMs);  // M4 — per-frame un-decimated clock
 void RB3TraceSetSongMs(float ms);
 void RB3TraceSetSeed(int seed);                  // M4 GAP 1 — boot RNG seed capture
 void RB3TraceRecordAid(const char *aid);          // M4 GAP 2 — run-aid capture
@@ -71,6 +72,9 @@ void         RB3ReplayInit();
 bool         RB3ReplayActive();
 unsigned int RB3ReplayBitsForFrame(int frame);
 int          RB3ReplayLastFrame();
+// M4 Tier-2 fixed-clock per-frame lookups (clk stream; fr fallback).
+float        RB3ReplayDtForFrame(int frame);
+float        RB3ReplaySongMsForFrame(int frame);
 // M4 GAP 1 / GAP 2 replay accessors.
 bool         RB3ReplaySeed(int *out);
 int          RB3ReplayPendingAids(int frame, const char **outAids, int maxAids);
@@ -652,6 +656,42 @@ TEST_F(SessionTrace, CheckpointRowAndHash) {
 }
 
 // ---------------------------------------------------------------------------
+// (M4-clk-a) RB3RecordClock emits an UN-decimated clk{f,sdt,sm} row EVERY frame
+//        (no §4.7 decimation — even off-multiple frames), carrying sdt always and
+//        sm only in a song. This is the per-frame clock that frame-locks the
+//        fixed-clock replay (vs the decimated fr stream's stale carry-forward).
+// ---------------------------------------------------------------------------
+TEST_F(SessionTrace, ClockRowsEmittedEveryFrame) {
+    RB3TraceInit();
+    // Default decimate=30, so frames 7/13 would NOT emit an fr row — but clk must.
+    // Frame 7: in a menu (songMs < 0 -> no sm).
+    RB3TraceSetFrame(7);
+    RB3RecordClock(0.016f, -1.0f);
+    // Frame 13: in a song (songMs >= 0 -> sm present).
+    RB3TraceSetFrame(13);
+    RB3RecordClock(0.017f, 4250.0f);
+    RB3TraceShutdown();
+
+    std::vector<std::string> lines = ReadLines(path);
+    ASSERT_GE(lines.size(), 3u) << "two clk rows + hdr";
+    const std::string &c0 = lines[1];
+    const std::string &c1 = lines[2];
+
+    EXPECT_TRUE(LineIsWellFormed(c0)) << c0;
+    EXPECT_EQ(GetRaw(c0, "k"), "clk");
+    EXPECT_EQ(std::atoi(GetRaw(c0, "f").c_str()), 7) << "clk is un-decimated (frame 7)";
+    EXPECT_NEAR(std::atof(GetRaw(c0, "sdt").c_str()), 0.016, 0.001);
+    EXPECT_FALSE(HasKey(c0, "sm")) << "menu clk omits sm: " << c0;
+    EXPECT_EQ(c0.find("\"sm\":-1"), std::string::npos) << "never emit sm:-1";
+
+    EXPECT_EQ(GetRaw(c1, "k"), "clk");
+    EXPECT_EQ(std::atoi(GetRaw(c1, "f").c_str()), 13);
+    EXPECT_NEAR(std::atof(GetRaw(c1, "sdt").c_str()), 0.017, 0.001);
+    ASSERT_TRUE(HasKey(c1, "sm")) << "in-song clk carries sm: " << c1;
+    EXPECT_NEAR(std::atof(GetRaw(c1, "sm").c_str()), 4250.0, 0.1);
+}
+
+// ---------------------------------------------------------------------------
 // (M4-GAP1-a) RB3TraceSetSeed stamps the boot RNG seed into the hdr `seed`. The
 //        hdr is written LAZILY (the seed is set during the App ctor, AFTER
 //        RB3TraceInit), so a seed set BEFORE the first event must still land in
@@ -861,6 +901,94 @@ TEST(SessionReplay, BitsForFrameCarryForward) {
     EXPECT_EQ(RB3ReplayBitsForFrame(20), 0x1000u) << "second edge supersedes at its frame";
     EXPECT_EQ(RB3ReplayBitsForFrame(21), 0x1000u) << "held forward";
     EXPECT_EQ(RB3ReplayBitsForFrame(100000), 0x1000u) << "last edge holds indefinitely";
+
+    unsetenv("RB3_REPLAY");
+    std::remove(path.c_str());
+}
+
+// ---------------------------------------------------------------------------
+// (M4-clk-b) The replay clock prefers the PER-FRAME `clk` stream so
+// RB3ReplaySongMsForFrame(N) returns the EXACT recorded sm at frame N — NO stale
+// carry-forward between decimated samples. The fixture carries a clk row at EVERY
+// frame plus a single (decimated) fr row whose sm would carry forward stale; the
+// per-frame clk lookup must return each frame's own value, not the fr value.
+// ---------------------------------------------------------------------------
+TEST(SessionReplay, ClockPerFrameExactSongMs) {
+    std::string path = kAbsTempBase + "rb3_replay_clk_" +
+                       std::to_string((long)getpid()) + ".jsonl";
+    std::remove(path.c_str());
+
+    // clk at frames 100..104, sm advancing 16 ms/frame (1000,1016,...). A single
+    // (decimated) fr row at frame 100 with a STALE sm=1000 — if the lookup used the
+    // fr carry-forward it would wrongly return 1000 for frames 101..104. One `in`
+    // edge so replay arms (clk drives the clock even with no input, but be realistic).
+    {
+        std::ofstream f(path.c_str());
+        f << "{\"k\":\"hdr\",\"v\":1,\"sid\":\"c1c1c1c1c1c1c1c1\",\"platform\":\"native\"}\n";
+        f << "{\"t\":1.0,\"f\":100,\"sm\":1000.0,\"cs\":1,\"k\":\"fr\",\"dt\":16.0,\"lp\":0,\"lpu\":0,\"sdt\":0.016,\"scr\":\"game\",\"ld\":0,\"st\":0,\"pend\":0}\n";
+        f << "{\"t\":2.0,\"f\":100,\"sm\":1000.0,\"cs\":2,\"k\":\"clk\",\"sdt\":0.016}\n";
+        f << "{\"t\":3.0,\"f\":101,\"sm\":1016.0,\"cs\":3,\"k\":\"clk\",\"sdt\":0.016}\n";
+        f << "{\"t\":4.0,\"f\":102,\"sm\":1032.0,\"cs\":4,\"k\":\"clk\",\"sdt\":0.016}\n";
+        f << "{\"t\":5.0,\"f\":103,\"sm\":1048.0,\"cs\":5,\"k\":\"clk\",\"sdt\":0.016}\n";
+        f << "{\"t\":6.0,\"f\":104,\"sm\":1064.0,\"cs\":6,\"k\":\"clk\",\"sdt\":0.016}\n";
+        f << "{\"t\":7.0,\"f\":100,\"cs\":7,\"k\":\"in\",\"pad\":0,\"b\":1,\"dn\":1,\"up\":0}\n";
+        f.close();
+    }
+
+    RB3ReplayResetForTest();
+    setenv("RB3_REPLAY", path.c_str(), 1);
+    RB3ReplayInit();
+    ASSERT_TRUE(RB3ReplayActive());
+
+    // EXACT per-frame song-ms — each frame returns ITS OWN recorded value, NOT the
+    // fr's stale 1000. This is the frame-lock the decimated fr stream could not give.
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(100), 1000.0f, 0.01f);
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(101), 1016.0f, 0.01f)
+        << "per-frame clk must give 1016, NOT the carried-forward fr 1000";
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(102), 1032.0f, 0.01f);
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(103), 1048.0f, 0.01f);
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(104), 1064.0f, 0.01f);
+    // sdt likewise comes from the per-frame clk.
+    EXPECT_NEAR(RB3ReplayDtForFrame(102), 0.016f, 0.0001f);
+    // Past the last clk frame -> holds the final sample (no snap-back to menus).
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(200), 1064.0f, 0.01f);
+    // Before the first recorded frame -> menus (-1).
+    EXPECT_LT(RB3ReplaySongMsForFrame(50), 0.0f);
+
+    unsetenv("RB3_REPLAY");
+    std::remove(path.c_str());
+}
+
+// ---------------------------------------------------------------------------
+// (M4-clk-c) FALLBACK: an OLDER trace with NO clk stream still drives the
+// fixed-clock replay from the decimated `fr` rows (carry-forward), so the seam
+// keeps working on pre-clk traces.
+// ---------------------------------------------------------------------------
+TEST(SessionReplay, ClockFallsBackToFrRows) {
+    std::string path = kAbsTempBase + "rb3_replay_frfallback_" +
+                       std::to_string((long)getpid()) + ".jsonl";
+    std::remove(path.c_str());
+
+    // Only fr rows (decimated), NO clk. sm at frame 100 = 1000, next fr at 130 = 1500.
+    {
+        std::ofstream f(path.c_str());
+        f << "{\"k\":\"hdr\",\"v\":1,\"sid\":\"f0f0f0f0f0f0f0f0\",\"platform\":\"native\"}\n";
+        f << "{\"t\":1.0,\"f\":100,\"sm\":1000.0,\"cs\":1,\"k\":\"fr\",\"dt\":16.0,\"lp\":0,\"lpu\":0,\"sdt\":0.016,\"scr\":\"game\",\"ld\":0,\"st\":0,\"pend\":0}\n";
+        f << "{\"t\":2.0,\"f\":130,\"sm\":1500.0,\"cs\":2,\"k\":\"fr\",\"dt\":16.0,\"lp\":0,\"lpu\":0,\"sdt\":0.016,\"scr\":\"game\",\"ld\":0,\"st\":0,\"pend\":0}\n";
+        f << "{\"t\":3.0,\"f\":100,\"cs\":3,\"k\":\"in\",\"pad\":0,\"b\":1,\"dn\":1,\"up\":0}\n";
+        f.close();
+    }
+
+    RB3ReplayResetForTest();
+    setenv("RB3_REPLAY", path.c_str(), 1);
+    RB3ReplayInit();
+    ASSERT_TRUE(RB3ReplayActive());
+
+    // No clk -> fr carry-forward: frames 100..129 hold 1000, 130+ hold 1500.
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(100), 1000.0f, 0.01f);
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(115), 1000.0f, 0.01f) << "fr carry-forward";
+    EXPECT_NEAR(RB3ReplaySongMsForFrame(130), 1500.0f, 0.01f);
+    EXPECT_LT(RB3ReplaySongMsForFrame(50), 0.0f) << "before first fr -> menus";
 
     unsetenv("RB3_REPLAY");
     std::remove(path.c_str());

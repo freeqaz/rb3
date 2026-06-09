@@ -94,6 +94,12 @@ struct TraceEvent {
             uint16_t scrId, focusId;
             uint8_t  nScores, nPlayers;
         } chk;
+        // clk (M4 per-frame clock): the un-decimated sim-dt + song-ms for THIS
+        // frame. sdt = menu/UI sim seconds advanced this frame (replay seam 1);
+        // `sm` rides the envelope (e.sm, < 0 => omitted in menus). Emitted every
+        // frame (no decimation) so the replay can feed the EXACT recorded clock at
+        // each frame N (vs the decimated fr table's stale carry-forward).
+        struct { float sdt; } clk;
     };
 };
 
@@ -346,6 +352,7 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
         case TK_LOG:   out += "log";  break;
         case TK_MARK:  out += "mark"; break;
         case TK_CHK:   out += "chk";  break;
+        case TK_CLK:   out += "clk";  break;
         default:       out += "?";    break;
     }
     out += '"';
@@ -474,6 +481,14 @@ void SerializeEvent(std::string &out, const TraceEvent &e) {
                 std::snprintf(num, sizeof(num), ",\"pct\":%d", (int)e.chk.pct);
                 out += num;
             }
+            break;
+        }
+        case TK_CLK: {
+            // clk: the un-decimated per-frame clock. `f` rides the envelope; `sm`
+            // rides the envelope too (omitted in menus). `sdt` is the sim seconds
+            // advanced this frame (replay seam 1) — ALWAYS emitted (even at 0) so
+            // the replay's exact per-frame lookup never has to guess a missing dt.
+            out += ",\"sdt\":"; AppendNum3(out, e.clk.sdt);
             break;
         }
         default: break;
@@ -624,11 +639,13 @@ bool IsProtectedKind(uint8_t k) {
 // Make room for one event. Returns true if a slot is free to write at ringHead.
 bool MakeRoom() {
     if (gRec.ringCount < gRec.ringCap) return true;
-    // Full. First: scan oldest->newest for an fr to drop (decimate fr first).
+    // Full. First: scan oldest->newest for an fr/clk to drop (decimate the high-
+    // volume statistical kinds first; clk is per-frame like fr, so it is equally
+    // droppable under pressure — never a protected replay/diagnostic kind).
     size_t start = (gRec.ringHead + gRec.ringCap - gRec.ringCount) % gRec.ringCap;
     for (size_t i = 0; i < gRec.ringCount; ++i) {
         size_t idx = (start + i) % gRec.ringCap;
-        if (gRec.ring[idx].kind == TK_FRAME) {
+        if (gRec.ring[idx].kind == TK_FRAME || gRec.ring[idx].kind == TK_CLK) {
             // Compact: shift everything after idx back by one, freeing a slot.
             for (size_t j = i; j + 1 < gRec.ringCount; ++j) {
                 size_t a = (start + j) % gRec.ringCap;
@@ -1052,6 +1069,29 @@ void RB3TraceSetSongMs(float ms) {
 
 void RB3TraceSetSimDt(float seconds) {
     gRec.simDt = seconds;
+}
+
+// ---------------------------------------------------------------------------
+// M4 PER-FRAME CLOCK SAMPLE (clk). Emitted EVERY frame (no §4.7 decimation) so a
+// fixed-clock replay (RB3_REPLAY_FIXED_CLOCK) feeds the EXACT recorded {sdt, sm}
+// at each frame, instead of carrying a STALE decimated-fr sample forward (which
+// drifts the song clock ~1.5s by song end -> gem-strike vs autoplay desync). The
+// fr stream stays decimated as-is. Tiny (~30 bytes/frame): just the envelope
+// (t/f/cs) + sdt + the song-ms `sm` (omitted in menus). The passed simDt/songMs
+// are also mirrored into the recorder cache so a later fr row this same frame
+// carries the matching sdt/sm even if the tap order differs.
+// ---------------------------------------------------------------------------
+void RB3RecordClock(float simDt, float songMs) {
+    if (!gRB3TraceActive) return;
+    gRec.simDt  = simDt;     // keep the cache coherent with this frame's clock
+    gRec.songMs = songMs;
+    TraceEvent e;
+    std::memset(&e, 0, sizeof(e));
+    e.kind     = TK_CLK;
+    e.f        = gRB3TraceFrame;
+    e.sm       = songMs;     // < 0 => envelope omits "sm" (menus)
+    e.clk.sdt  = simDt;
+    PushEvent(e);
 }
 
 void RB3TraceFlush() {

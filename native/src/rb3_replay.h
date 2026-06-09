@@ -63,16 +63,19 @@ int RB3ReplayLastFrame();
 // RB3ReplayActive() — the seams gate on (RB3ReplayFixedClock() && RB3ReplayActive()).
 bool RB3ReplayFixedClock();
 
-// The recorded sim dt (SECONDS) to advance the menu/UI clock by at `frame` —
-// the `sdt` of the recorded fr at-or-before `frame` (carry-forward; fr rows are
-// decimated so this is the nearest preceding sample). 0 before the first fr or
-// when no fr carried `sdt`. Seam 1 (Task.cpp) accumulates this each frame.
+// The recorded sim dt (SECONDS) to advance the menu/UI clock by at `frame` — the
+// `sdt` of the recorded PER-FRAME `clk` sample at frame N (the un-decimated clock
+// stream -> an EXACT per-frame value). Falls back to the decimated `fr` table
+// (carry-forward, nearest preceding sample) for older traces with no clk stream.
+// 0 before the first sample. Seam 1 (Task.cpp) accumulates this each frame.
 float RB3ReplayDtForFrame(int frame);
 
 // The recorded song-ms to feed straight into TheTaskMgr.SetSeconds at `frame` —
-// the `sm` of the recorded fr at-or-before `frame` (carry-forward). -1 when the
-// nearest preceding fr had no `sm` (i.e. menus / not in a song). Seam 2
-// (Game.cpp) feeds this into SetSeconds, bypassing live audio + DeJitter.
+// the `sm` of the recorded PER-FRAME `clk` sample at frame N (un-decimated, so the
+// replay's song clock tracks the recording frame-for-frame with NO carry-forward
+// staleness). Falls back to the decimated `fr` table (carry-forward) for older
+// traces with no clk stream. -1 in menus / not in a song. Seam 2 (Game.cpp) feeds
+// this into SetSeconds, bypassing live audio + DeJitter.
 float RB3ReplaySongMsForFrame(int frame);
 
 // ── M4 GAP 1 — boot RNG seed re-seed ─────────────────────────────────────────

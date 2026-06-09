@@ -36,7 +36,11 @@ chk rows, else nav).
 
 Forward-compat parsing (mirrors trace-report.py / gen-synth-trace.py): skip
 '#'-comment and blank lines, tolerate unknown keys, and a `hdr.v` ahead of the
-known version parses best-effort (flagged `version_ahead`).
+known version parses best-effort (flagged `version_ahead`). Unknown event KINDS
+are also tolerated — e.g. the M4 per-frame `clk` clock sample (the un-decimated
+{f,sdt,sm} that frame-locks the fixed-clock replay) is bucketed but NOT gated by
+either mode: nav mode compares nav/in/song, chk mode segments on nav/song +
+chk, so clk rows are informational (they appear in the per-side event counts).
 
 Usage:
   python3 scripts/telemetry/trace-diff.py A.jsonl B.jsonl

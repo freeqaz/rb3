@@ -47,7 +47,8 @@ enum RB3TraceKind {
     TK_AU,        // audio underrun (au) — web, deferred
     TK_LOG,       // diagnostic log line (log)
     TK_MARK,      // user/bug marker (mark)
-    TK_CHK        // M4 checkpoint (chk) — replay-divergence state hash + raw fields
+    TK_CHK,       // M4 checkpoint (chk) — replay-divergence state hash + raw fields
+    TK_CLK        // M4 per-frame clock sample (clk) — un-decimated {sdt, sm}
 };
 
 // Max per-player scores carried RAW in a `chk` event (the hash uses the exact
@@ -186,6 +187,21 @@ void RB3TraceSetSongMs(float ms);
 // can replay the recorded per-frame menu-clock advance deterministically. The
 // core defaults to 0 (omitted from the wire) until the frame tap sets it.
 void RB3TraceSetSimDt(float seconds);
+
+// M4 (Tier-2) PER-FRAME CLOCK SAMPLE (clk). The `fr` row carries {sdt, sm} too,
+// but `fr` is DECIMATED (RB3_TRACE_FRAME_DECIMATE, default 30) so the recorded
+// clock only survives at ~1 Hz — RB3ReplaySongMsForFrame then carries a STALE sm
+// forward between samples and the fixed-clock replay's song clock drifts (~1.5s
+// by song end), so gem-strike vs autoplay isn't frame-locked. This records a
+// TINY, UN-decimated `clk{f, sdt, sm}` event EVERY frame (emitted whenever
+// gRB3TraceActive — ~30 bytes/frame), so the replay can feed the EXACT recorded
+// song-ms / sim-dt at each frame. The fr stream stays decimated as-is (this does
+// NOT touch fr). simDt is the per-frame menu/UI clock advance in SECONDS (seam 1
+// source); songMs is the in-song clock in MS, < 0 in menus (omits the wire `sm`).
+// Call once per frame from the frame tap, AFTER RB3TraceSetSimDt/SetSongMs (it
+// reads the same recorder-cached values, so passing them is optional — the args
+// are explicit for clarity at the tap). A no-op when tracing is off.
+void RB3RecordClock(float simDt, float songMs);
 
 // Append the ring to the file sink + fflush, so a SIGTERM mid-run leaves valid
 // NDJSON. Cheap no-op when not armed.

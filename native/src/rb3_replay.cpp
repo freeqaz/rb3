@@ -30,10 +30,11 @@ struct ReplaySample {
     unsigned int bits;
 };
 
-// One recorded fr row's replay-relevant clock fields (Tier-2 fixed clock). `sdt`
+// One recorded clock sample's replay-relevant fields (Tier-2 fixed clock). `sdt`
 // = the menu/UI sim seconds advanced THAT frame; `songMs` = the song-ms fed to
-// SetSeconds that frame (-1 in menus). fr rows are decimated, so these are sparse
-// and consumed by RB3ReplayDtForFrame / RB3ReplaySongMsForFrame via carry-forward.
+// SetSeconds that frame (-1 in menus). Populated from BOTH the `clk` stream (one
+// per frame, un-decimated -> an EXACT per-frame lookup) and, as a fallback for
+// older traces with no clk, the decimated `fr` rows (sparse -> carry-forward).
 struct ReplayFrameSample {
     int   frame;
     float sdt;     // sim seconds this frame; 0 when absent
@@ -53,7 +54,12 @@ struct ReplayAid {
 
 struct ReplayState {
     std::vector<ReplaySample> samples;  // sorted ascending by frame (`in` events)
-    std::vector<ReplayFrameSample> frames;  // sorted ascending by frame (`fr` rows)
+    // Per-frame clock from the un-decimated `clk` stream (sorted ascending by
+    // frame). When non-empty, RB3ReplayDtForFrame / RB3ReplaySongMsForFrame do an
+    // EXACT per-frame lookup here (no carry-forward staleness) so the fixed-clock
+    // replay's song clock tracks the recording frame-for-frame.
+    std::vector<ReplayFrameSample> clocks;
+    std::vector<ReplayFrameSample> frames;  // sorted ascending by frame (`fr` rows; FALLBACK)
     std::vector<ReplayAid> aids;        // recorded run-aid applications (GAP 2)
     bool inited = false;                // RB3ReplayInit has run (parse attempted)
     bool active = false;                // armed: >= 1 `in` event loaded
@@ -136,6 +142,11 @@ bool IsFrameLine(const char *line) {
     return std::strstr(line, "\"k\":\"fr\"") != nullptr;
 }
 
+// Is this line a `clk` (per-frame clock) event? Match `"k":"clk"` exactly.
+bool IsClockLine(const char *line) {
+    return std::strstr(line, "\"k\":\"clk\"") != nullptr;
+}
+
 // Is this the header line? Match `"k":"hdr"`.
 bool IsHeaderLine(const char *line) {
     return std::strstr(line, "\"k\":\"hdr\"") != nullptr;
@@ -190,9 +201,10 @@ void IngestAidMarkLine(const char *line) {
     gReplay.aids.push_back(a);
 }
 
-// Ingest an `fr` row's clock fields (Tier-2 fixed clock). Needs `f`; `sdt`/`sm`
-// are optional (the recorder omits `sdt` at 0 and `sm` in menus). Carries 0/-1
-// defaults so the carry-forward lookups behave (no sim advance, not-in-a-song).
+// Ingest an `fr` row's clock fields (Tier-2 fixed clock FALLBACK for older traces
+// with no clk stream). Needs `f`; `sdt`/`sm` are optional (the recorder omits
+// `sdt` at 0 and `sm` in menus). Carries 0/-1 defaults so the carry-forward
+// lookups behave (no sim advance, not-in-a-song).
 void IngestFrameLine(const char *line) {
     long frame = 0;
     if (!ParseIntField(line, "f", &frame))
@@ -204,6 +216,24 @@ void IngestFrameLine(const char *line) {
     ParseFloatField(line, "sdt", &s.sdt);  // absent => stays 0 (no menu advance)
     ParseFloatField(line, "sm", &s.songMs);  // absent => stays -1 (menus)
     gReplay.frames.push_back(s);
+}
+
+// Ingest a `clk` (per-frame clock) row — the EXACT per-frame {sdt, sm} the
+// fixed-clock replay feeds at frame N. Un-decimated (one per recorded frame), so
+// the per-frame lookups find the exact recorded value and never carry a stale
+// decimated-fr sample forward. Needs `f`; `sdt` is always present (recorder emits
+// it even at 0); `sm` is omitted in menus (stays -1).
+void IngestClockLine(const char *line) {
+    long frame = 0;
+    if (!ParseIntField(line, "f", &frame))
+        return;
+    ReplayFrameSample s;
+    s.frame  = (int)frame;
+    s.sdt    = 0.0f;
+    s.songMs = -1.0f;
+    ParseFloatField(line, "sdt", &s.sdt);
+    ParseFloatField(line, "sm", &s.songMs);  // absent => stays -1 (menus)
+    gReplay.clocks.push_back(s);
 }
 
 // Parse one already-trimmed line. `in` rows append an input sample; `fr` rows
@@ -222,8 +252,12 @@ void IngestLine(const char *line) {
         IngestAidMarkLine(line);  // M4 GAP 2: capture a run-aid application
         return;
     }
+    if (IsClockLine(line)) {
+        IngestClockLine(line);   // M4: per-frame un-decimated clock (exact lookup)
+        return;
+    }
     if (IsFrameLine(line)) {
-        IngestFrameLine(line);
+        IngestFrameLine(line);   // FALLBACK clock for traces with no clk stream
         return;
     }
     if (!IsInputLine(line))
@@ -262,6 +296,16 @@ void IngestBuffer(const char *buf, size_t len) {
 // sorted whether or not any `in` events exist (fixed-clock replay can drive the
 // menu clock from fr rows alone), but `active` still requires >= 1 `in` event.
 void Finalize() {
+    // Per-frame clk table (preferred): sort ascending by frame for the exact
+    // lookup. Stable so same-frame dupes keep recorded order (last one wins on a
+    // tie via upper_bound). The clk stream drives the fixed-clock replay when
+    // present; fr is the fallback for older traces.
+    if (!gReplay.clocks.empty()) {
+        std::stable_sort(gReplay.clocks.begin(), gReplay.clocks.end(),
+                         [](const ReplayFrameSample &a, const ReplayFrameSample &b) {
+                             return a.frame < b.frame;
+                         });
+    }
     if (!gReplay.frames.empty()) {
         std::stable_sort(gReplay.frames.begin(), gReplay.frames.end(),
                          [](const ReplayFrameSample &a, const ReplayFrameSample &b) {
@@ -354,15 +398,19 @@ void RB3ReplayInit() {
 
     Finalize();
     if (gReplay.active) {
-        std::printf("[rb3-replay] ARMED — %zu edges, %zu fr clock samples, "
-                    "lastFrame=%d. Live input is overridden; replayed input is "
-                    "re-recorded as fresh `in` rows.\n",
-                    gReplay.samples.size(), gReplay.frames.size(),
-                    gReplay.lastFrame);
+        std::printf("[rb3-replay] ARMED — %zu edges, %zu clk samples, "
+                    "%zu fr clock samples (fallback), lastFrame=%d. Live input is "
+                    "overridden; replayed input is re-recorded as fresh `in` rows.\n",
+                    gReplay.samples.size(), gReplay.clocks.size(),
+                    gReplay.frames.size(), gReplay.lastFrame);
         if (RB3ReplayFixedClock()) {
             std::printf("[rb3-replay] FIXED CLOCK — RB3_REPLAY_FIXED_CLOCK set: "
-                        "sim clock driven from recorded {sdt,sm} (Task.cpp seam 1 "
-                        "+ Game.cpp seam 2), bypassing wall-clock + live audio.\n");
+                        "sim clock driven from recorded {sdt,sm} via the %s "
+                        "(Task.cpp seam 1 + Game.cpp seam 2), bypassing wall-clock "
+                        "+ live audio.\n",
+                        gReplay.clocks.empty()
+                            ? "DECIMATED fr stream (older trace, no clk)"
+                            : "per-frame clk stream (frame-locked)");
         }
     }
 }
@@ -418,11 +466,16 @@ bool RB3ReplayFixedClock() {
     return gReplay.fixedClock != 0;
 }
 
-// Carry-forward lookup over the sorted fr clock table: the fr sample at-or-before
-// `frame`, or nullptr if `frame` precedes the first fr (or no fr rows exist).
+// Carry-forward lookup over a sorted (frame,sdt,songMs) table: the sample
+// at-or-before `frame`, or nullptr if `frame` precedes the first sample (or the
+// table is empty). For the un-decimated clk table this resolves to the EXACT
+// recorded sample at frame N (every frame has one); past the last recorded frame
+// it holds the final sample (so a replay that runs a few frames long doesn't snap
+// the clock back to menus). For the decimated fr fallback it is a true
+// carry-forward (the nearest preceding decimated sample).
 namespace {
-const ReplayFrameSample *FrameSampleAtOrBefore(int frame) {
-    const std::vector<ReplayFrameSample> &v = gReplay.frames;
+const ReplayFrameSample *SampleAtOrBefore(const std::vector<ReplayFrameSample> &v,
+                                          int frame) {
     if (v.empty())
         return nullptr;
     ReplayFrameSample key;
@@ -435,19 +488,29 @@ const ReplayFrameSample *FrameSampleAtOrBefore(int frame) {
             return a.frame < b.frame;
         });
     if (it == v.begin())
-        return nullptr;  // before the first recorded fr
+        return nullptr;  // before the first recorded sample
     --it;
     return &*it;
+}
+
+// The clock sample for `frame`: PREFER the un-decimated clk table (exact per-frame
+// value, frame-locked to the recording), FALL BACK to the decimated fr table for
+// older traces that carry no clk stream. nullptr only when neither table has a
+// sample at-or-before `frame` (i.e. before the first recorded frame).
+const ReplayFrameSample *ClockSampleForFrame(int frame) {
+    if (!gReplay.clocks.empty())
+        return SampleAtOrBefore(gReplay.clocks, frame);
+    return SampleAtOrBefore(gReplay.frames, frame);
 }
 }  // namespace
 
 float RB3ReplayDtForFrame(int frame) {
-    const ReplayFrameSample *s = FrameSampleAtOrBefore(frame);
-    return s ? s->sdt : 0.0f;  // 0 => no menu-clock advance (default/before first fr)
+    const ReplayFrameSample *s = ClockSampleForFrame(frame);
+    return s ? s->sdt : 0.0f;  // 0 => no menu-clock advance (default/before first sample)
 }
 
 float RB3ReplaySongMsForFrame(int frame) {
-    const ReplayFrameSample *s = FrameSampleAtOrBefore(frame);
+    const ReplayFrameSample *s = ClockSampleForFrame(frame);
     return s ? s->songMs : -1.0f;  // -1 => menus / not in a song
 }
 

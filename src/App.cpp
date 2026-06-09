@@ -80,9 +80,10 @@
 #include "utl/Cheats.h"
 #include "utl/Loader.h"
 #ifdef HX_NATIVE
-// Session-telemetry recorder API (RB3TraceInit / RB3RecordFrame / gRB3TraceActive
-// / RB3TraceSetFrame / RB3TraceSetSongMs / RB3TraceSetSimDt). The frame tap lives
-// in RunOneFrame. native/src is on the native include path (CMAKE_SOURCE_DIR}/src).
+// Session-telemetry recorder API (RB3TraceInit / RB3RecordFrame / RB3RecordClock
+// / gRB3TraceActive / RB3TraceSetFrame / RB3TraceSetSongMs / RB3TraceSetSimDt).
+// The frame tap lives in RunOneFrame. native/src is on the native include path
+// (CMAKE_SOURCE_DIR}/src).
 #include "rb3_session_trace.h"
 #include "rb3_replay.h" // RB3ReplayFixedClock/Active (fixed-clock replay status log)
 #include "obj/Task.h"   // TheTaskMgr.mTime.mCycles (session-telemetry sim-dt capture)
@@ -653,8 +654,15 @@ void App::RunOneFrame(int frame) {
         }
         sRb3LastSimMs = rb3SimMsNow;
         sRb3HaveSimMs = true;
+        float rb3SongMs = RB3TraceCurrentSongMs();
         RB3TraceSetSimDt(rb3SimDt);
-        RB3TraceSetSongMs(RB3TraceCurrentSongMs());
+        RB3TraceSetSongMs(rb3SongMs);
+        // PER-FRAME CLOCK SAMPLE (M4): emit a tiny, UN-decimated clk{f,sdt,sm}
+        // EVERY frame so RB3_REPLAY_FIXED_CLOCK feeds the EXACT recorded song-ms /
+        // sim-dt at each frame N. The fr row below stays decimated (§4.7), so its
+        // {sdt,sm} only survive at ~1 Hz and carry forward stale; the clk stream is
+        // what frame-locks the fixed-clock replay's song clock to the recording.
+        RB3RecordClock(rb3SimDt, rb3SongMs);
         RB3RecordFrame(rb3FrameMs, gLoadPollMsThisFrame, gLoadPollUntilMsThisFrame,
                        rb3ScrName, (int)TheLoadMgr.mLoading.size());
         RB3TraceEnsureNavSink();
