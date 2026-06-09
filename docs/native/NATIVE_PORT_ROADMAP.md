@@ -498,11 +498,14 @@ guard — every bring-online lands with a test.
 | C3 | VocalPlayer RTTI-cast guard delete | ✅ done (`579e7416`) | — |
 | C4 | BandHeadShaper `gHeadMale` typo | ✅ done (`4e49ef34`, match-positive) | — |
 | C5 | BandFaceDeform BE decode | ✅ verified-correct + gtest (`15e3c048`) | false alarm — no reader needed |
-| C6 | **char-customize previews** (chars.milo + CharSync Poll) | 📋 designed, runtime-gated | **next**: Stage-0 FileMerger gate → staged enable (validation doc theme B); focused workflow + headless customize harness |
+| C6 | **char-customize previews** (chars.milo + CharSync Poll) | 🚧 **blocked on body-source** (see C13) | reaching+populating the closet is designed (C11+C12); the preview chars are bodyless shells → C13 is the real blocker |
 | C7 | BandHeadShaper head-milo load | 🚧 blocked | `CharClip`/`CharBonesSamples`/`CharBones` `Load` native byte-correctness |
 | C8 | char head/hands/face rebind residual | 🚧 blocked, concrete lead | per-member bind-frame basis correction (no Xbox ref needed) — see char-skinning doc |
 | C9 | worldcenter occluder | ✅ KEEP | depth-occluder, orthogonal to the (fixed) RTT; A/B recipe in validation doc |
 | C10 | SP scoreboard X-neutralization | ✅ KEEP | correct stopgap; diagnostic-only convergence |
+| C11 | **native sign-in / profile gate** (customize requires `CanSaveData`; sign-in is a stubbed redirect-back) | 📋 designed | guest-profile hack (`#2`: `mSigninMask\|=1` + strong `WiiProfileMgr::IsIndexValid` + loaded `BandProfile`, pad-0, default-on) verified SAFE for the closet path; `customize_band` roster also needs `SetPrimaryProfile`→`BandMachineMgr` chain. **Real work**: bring up sign-in via decomp (`PlatformMgr_Wii`/`WiiProfileMgr`) or reimplementation. |
+| C12 | customize closet reachability | 📋 designed | `PrefabMgr::PrefabIsCustomizable()`→true (HX_NATIVE default-on, HACK/TODO) routes `customize_character`→closet; needs C11 (else `CustomizePanel::Load` null-profile asserts) + C13 |
+| C13 | **band-char preview BODY source** (the real blocker) | 🚧 **open question** | shipped `chars.milo` `player0..3` are **bodyless shells** (zero `FileMerger`/outfit children, verified by inflating the 3.4 MB asset). `BandCharacter::StartLoad:1359` derefs a null `mFileMerger`. The gameplay band (commit `acd9c19a`) *does* render+animate, so the body/FileMerger-attach mechanism exists and runs natively — **trace how the working gameplay BandCharacter gets its FileMerger and replicate for the CharCache preview shells.** Until resolved, enabling CharCache yields a crash-free **invisible** closet (+ a 3.4 MB boot load + crowd-body instantiation needing a Character/CharDriver/CharCollide/BandWardrobe/RndMotionBlur factory cluster). |
 | — | whammy slip / intro cinematic | 🚧 blocked | themes D/C (effort HIGH / low-value) |
 
 ---
