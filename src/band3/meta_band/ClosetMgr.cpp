@@ -338,8 +338,20 @@ void ClosetMgr::CharacterFinishedLoading() {
     static int sNoClosetPoll = -1;
     if (sNoClosetPoll < 0)
         sNoClosetPoll = ::getenv("RB3_NO_CLOSET_POLL") ? 1 : 0;
-    if (!sNoClosetPoll && mBandCharacter && !mBandCharacter->IsLoading())
+    if (!sNoClosetPoll && mBandCharacter && !mBandCharacter->IsLoading()) {
         mBandCharacter->Enter();
+        // C6/anim (Gap D): the char is fully SKINNED (SKIN_PROBE: 81 SKINNED-PATH
+        // meshes incl. head=33/hands=38 bones) but poses STATIC because no clip plays
+        // (BAND_ANIM: clip=none, mGroupName empty). Drive a looping idle so the skinned
+        // body visibly animates. SetContext("venue") gives the driver body_clips (the
+        // "closet" context sets clip TYPES but never SetClips); SetState("stand"/"sit",
+        // realtime_idle intensity 0x1000) plays the idle group + loops via ClosetMgr::Poll.
+        // Opt-out RB3_NO_CLOSET_IDLE.
+        if (!::getenv("RB3_NO_CLOSET_IDLE")) {
+            mBandCharacter->SetContext("venue");
+            mBandCharacter->SetState("stand", 0x1000, 2, true, true);
+        }
+    }
 #endif
     static CharacterFinishedLoadingMsg msg;
     Export(msg, true);

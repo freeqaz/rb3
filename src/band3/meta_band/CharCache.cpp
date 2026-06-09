@@ -48,26 +48,17 @@ void CharCache::InitMe() {
     // C13 (roadmap): the band-member preview cache. world/shared/chars.milo's
     // player0..3 are milo PROXIES (mProxyFile = ../../char/main/main.milo) — the
     // proxy-load binds mFileMerger (main.milo has FileMerger.fm + outfit + IK +
-    // body_clips), the same body machinery the gameplay band uses. NOW DEFAULT-ON
-    // (verified: all 4 proxy-load mFileMerger -> 140 meshes/char, and the customize
-    // closet renders+reaches without sign-in via the guest-profile gate flips). The
-    // load must happen here at boot (before any UpdateCharCache), so this is the
-    // canonical enable point. Opt-out RB3_NO_CHAR_PREVIEW for a lean gameplay-only
-    // boot. HACK/TODO(C11/C13): the closet preview char is still static-posed
-    // (skinned=0, not Character::Poll'd into a live skeleton) + the head deform is
-    // open (C7/C8) — tracked in NATIVE_PORT_ROADMAP.
-    if (!getenv("RB3_NO_CHAR_PREVIEW")) {
-        // NOTE (Gap B, skinned=0): preloading char/main/skeleton.milo + char_shared.milo
-        // resident here (the preload_subdirs.dta CHAR_HEAP entries that native skips,
-        // being #ifndef HX_WII) was tried and PROVEN INSUFFICIENT — skeleton.milo is
-        // already in the outfit's scope (the loader even WARNs "subdir Character
-        // (char/main/skeleton.milo) included more than once", 80x, with the preload OFF),
-        // yet the preview char's outfit skin meshes STILL load with NumBones()==0. So the
-        // bone strip is NOT a missing-resident-skeleton problem; it is the deeper native
-        // merge/load-interleaving issue (shared subdir drained mid-load before the meshes
-        // resolve their bone ObjPtrs — cf BandCharacter.cpp:2286-2336, the kReplace
-        // texture fix; the analogous fix for the skeleton Character subdir is the C7/C8
-        // remaining work). See CUSTOMIZE_PREVIEW_FINDINGS UPDATE 5.
+    // body_clips), the same body machinery the gameplay band uses. OPT-IN
+    // (RB3_CHAR_PREVIEW=1, default OFF). Default-on was attempted + REVERTED: WITH the
+    // guest profile, the menu-wide char-material composite hits the domino-②
+    // PropSync<RndTex> dangling-object SIGSEGV on the song_select transition (see
+    // rb3_guestprofile_native.cpp + CUSTOMIZE_PREVIEW_FINDINGS UPDATE 8). Only useful
+    // WITH the guest profile (which gates the closet), so both are opt-in together until
+    // domino ② is fixed. The load must happen here at boot (before any UpdateCharCache).
+    // NOTE: the closet preview char IS fully skinned at draw (SKIN_PROBE: 81 SKINNED-PATH
+    // meshes; the old "skinned=0" was a probe-traversal artifact) and animates when
+    // ClosetMgr drives an idle clip; the head deform is the separate C7/C8 item.
+    if (getenv("RB3_CHAR_PREVIEW")) {
         unk1c.LoadFile(
             FilePath("../world/shared/chars.milo"), false, true, kLoadFront, false
         );

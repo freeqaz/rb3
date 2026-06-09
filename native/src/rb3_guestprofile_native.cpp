@@ -47,14 +47,18 @@ void RB3InstallGuestProfile() {
     static bool sDone = false;
     if (sDone)
         return;
-    // NOW DEFAULT-ON (opt-out RB3_NO_GUEST_PROFILE). The feared "default-on cascade"
-    // was root-caused and resolved: it was (1) gate predicates the install now flips
-    // via real engine APIs (steps 5/6 below) and (2) a genuine decomp bug — the
-    // tattoo-patch projection wrote RndMesh::sRawCollide into read-only .text (fixed
-    // ed9a3e92). With those resolved the guest profile boots clean to gameplay AND
-    // reaches the customize closet without a real sign-in, so it is on by default so
-    // the web build (which cannot set env) can exercise the customize flow.
-    if (const char *e = ::getenv("RB3_NO_GUEST_PROFILE"); e && e[0] && e[0] != '0') {
+    // OPT-IN again (RB3_GUEST_PROFILE=1, default OFF). Default-on was attempted but
+    // REVERTED: guest-profile + char-preview BOTH on flakily-then-consistently SIGSEGVs
+    // on the song_select transition — the long-open "domino ②": a menu DTA drives
+    // RndMat::Handle -> OnSet -> SetProperty -> RndMat::SyncProperty -> PropSync<RndTex>
+    // (PropSync_p.h:124) -> dynamic_cast on a DANGLING object (node.GetObj() returns a
+    // freed/garbage Hmx::Object* -> vtable read faults). Each flag ALONE is safe; only
+    // the combination crashes (the guest profile makes char-preview composite materials
+    // a menu DTA then re-touches). Until that dangling-DataNode crash is fixed, this
+    // stays opt-in so the gameplay path is regression-free. The customize closet still
+    // works with RB3_GUEST_PROFILE=1 RB3_CHAR_PREVIEW=1 (verified: reachable, char
+    // skinned + animating). Roadmap C11 = fix domino ② -> restore default-on (for web).
+    if (const char *e = ::getenv("RB3_GUEST_PROFILE"); !(e && e[0] && e[0] != '0')) {
         sDone = true;
         return;
     }
@@ -86,15 +90,19 @@ void RB3InstallGuestProfile() {
         if (p->GetSaveState() != kMetaProfileLoaded)
             p->SetSaveState(kMetaProfileLoaded);
     }
-    // (5) Flip the PRIMARY profile via the real engine API. With BandProfile[0]
-    //     now HasValidSaveData (step 4 + WiiProfileMgr idx0 valid), UpdatePrimaryProfile
-    //     -> ChooseNewPrimaryProfile picks mProfiles[0] -> SetPrimaryProfile, which
-    //     fires PrimaryProfileChangedMsg -> CharSync::UpdateCharCache, EXACTLY as a
-    //     real Wii signin would. This flips {profile_mgr has_primary_profile}=1 (was 0)
-    //     -> unblocks customize_band.btn AND makes CustomizePanel::Load's
-    //     GetProfileForUser non-null. (SetPrimaryProfile asserts TheSessionMgr->
-    //     GetMachineMgr() at 0xA2A — relies on the native BandMachineMgr being live.)
-    TheProfileMgr.UpdatePrimaryProfile();
+    // (5) DELIBERATELY DO NOT make this hollow guest profile PRIMARY. (An earlier
+    //     version called TheProfileMgr.UpdatePrimaryProfile() here to flip
+    //     has_primary_profile=1 / unblock customize_band. REGRESSION: a primary
+    //     profile makes CharSync::UpdateCharCache (which runs menu-wide, default-on
+    //     with char-preview) read profile->GetStandIn(i) (CharSync.cpp:82-87) — but
+    //     this guest profile's StandIns are uninitialized/empty, so it crashes flakily
+    //     (SIGSEGV +0x30) on the song_select transition. With NO primary profile,
+    //     GetPrimaryProfile()==null and UpdateCharCache falls back to GetDefaultPrefab
+    //     -> the 4 default band prefabs, which is exactly what we want AND crash-free.
+    //     The closet route (customize_character) needs only is_char_customizable
+    //     (step 6), NOT has_primary_profile, so the closet still opens. customize_band /
+    //     manage_band stay gated (acceptable — no 4-up customize view exists anyway).
+    //     A real signed-in profile (roadmap C11) has valid StandIns and WOULD be primary.)
     // (6) Make the default prefab character customizable so customize_character.btn
     //     takes the closet branch ({$user is_char_customizable}, main_hub.dta:133 ->
     //     {closet_mgr set_user $user} -> customize_clothing_screen). PrefabChar::

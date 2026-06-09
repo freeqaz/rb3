@@ -52,14 +52,15 @@ void CharSync::UpdateCharCache() {
 #ifdef HX_NATIVE
     // C13: Band-member character PREVIEW cache update (runs on every screen-transition
     // complete). It builds BandCharDescs from profile/prefab CharData and Requests them
-    // into TheCharCache -> StartLoad -> FileMerger loads the 13 bodyparts. NOW DEFAULT-ON
-    // (same enable as the CharCache::InitMe chars.milo load). The no-user/prefab branch
-    // needs no signed-in profile: gPrefabs is populated unconditionally (BandCharDesc::Init
-    // -> ReloadPrefabs, a5999979) so GetDefaultPrefab feeds prefabsBySlot and asserts
-    // 0x114/0x128/0x12D are satisfied. The tattoo-patch projection that used to SIGSEGV
-    // here (RndMesh::sRawCollide write into read-only .text) is fixed (ed9a3e92). Opt-out
-    // RB3_NO_CHAR_PREVIEW. The #else Wii body is unchanged.
-    if (getenv("RB3_NO_CHAR_PREVIEW"))
+    // into TheCharCache -> StartLoad -> FileMerger loads the 13 bodyparts. OPT-IN again
+    // (RB3_CHAR_PREVIEW=1, default OFF) — runs menu-wide, and WITH the guest profile its
+    // material composite hits the domino-② PropSync<RndTex> dangling-object SIGSEGV on
+    // song_select (default-on reverted; see CUSTOMIZE_PREVIEW_FINDINGS UPDATE 8). The
+    // no-user/prefab branch needs no signed-in profile: gPrefabs is populated
+    // unconditionally (BandCharDesc::Init -> ReloadPrefabs, a5999979) so GetDefaultPrefab
+    // feeds prefabsBySlot. The sRawCollide tattoo-patch SIGSEGV is separately fixed
+    // (ed9a3e92). The #else Wii body is unchanged.
+    if (!getenv("RB3_CHAR_PREVIEW"))
         return;
 #endif
     OvershellPanel *overshell = TheBandUI.GetOvershell();

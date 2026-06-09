@@ -47,7 +47,35 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
-## 🔬 UPDATE 7 (2026-06-09) — Gap B root cause CORRECTED: bones LOAD FINE; it's a merge/instance issue
+## ✅/⚠️ UPDATE 8 (2026-06-09) — char RENDERS + ANIMATES (opt-in); default-on reverted (real domino ②)
+THE GOAL IS MET via opt-in flags, and "Gap B" turned out to be a non-issue:
+- **The char is FULLY SKINNED.** `SKIN_PROBE` (engine draw-time ground truth) shows **81 SKINNED-PATH meshes**
+  (head=33, hands_naked=38, sleevelesstee=27, parkajacket=21…). The earlier `skinned=0` was a **probe-traversal
+  artifact** — `rb3_char_probe`/`SKEL_REBIND` walk the char's dirs but not the FileMerger-merged drawn meshes;
+  the renderer skins them fine. Gap B (UPDATE 5/6/7's "load-order"/"merge-instance") was chasing a measurement
+  artifact. No engine change was needed for skinning.
+- **The char ANIMATES (Gap D solved, closet-scoped).** `ClosetMgr::CharacterFinishedLoading` now, after Enter(),
+  calls `SetContext("venue")` (gives the driver `body_clips`) + `SetState("stand", 0x1000, …)` to play a
+  looping idle. Verified: `BAND_ANIM` shows a real clip playing (`player0_m`/`idle_shell_01_m`) and the bone
+  worldPos CHANGES across frames; the skinned body deforms with it. Opt-out `RB3_NO_CLOSET_IDLE`. (HACK: uses
+  the venue context for clips; a proper closet would wire the closet milo's `clips` dir — polish TODO.)
+- **NET:** with `RB3_GUEST_PROFILE=1 RB3_CHAR_PREVIEW=1` the customize closet is reachable and shows a
+  **standing, skinned, animating character** without sign-in, no crash. (Head deform = separate C7/C8.)
+
+**Default-on REVERTED — the real domino ②.** Making guest-profile + char-preview default-on regressed the
+GAMEPLAY path: `song_select` SIGSEGVs (flaky→consistent) ONLY when BOTH are on. Exact backtrace
+(addr2line): `DataArray::Execute` (a menu DTA) → `RndMat::Handle` → `Hmx::Object::OnSet` → `SetProperty` →
+`RndMat::SyncProperty` (Mat.cpp:472) → `PropSync<RndTex>` (PropSync_p.h:124) → `dynamic_cast` on a DANGLING
+`node.GetObj()` (freed/garbage Hmx::Object* → null-vtable fault). This IS the long-open "domino ②" the prior
+session named — now precisely backtraced. Each flag ALONE is safe; the guest profile makes char-preview
+composite materials that a menu DTA then re-touches with a stale object ref. Until that dangling-DataNode
+crash is fixed, **both flags are OPT-IN** (default OFF → gameplay regression-free, verified 3/3 game_screen).
+The closet still works with the two flags. NEXT (roadmap C11): fix the PropSync<RndTex> dangling-object
+crash (guard the dynamic_cast / find the freed-object source in the menu char-material composite) → then
+restore default-on for the web build. Probe note: `rb3_char_probe`'s `skinned=` is unreliable (dir-walk
+misses merged meshes) — use the engine `SKIN_PROBE` for true skin status.
+
+## 🔬 UPDATE 7 (2026-06-09) — Gap B root cause CORRECTED: bones LOAD FINE; it's a merge/instance issue (skinned=0 was a PROBE ARTIFACT — see U8)
 Direct empirical instrumentation overturned UPDATE 5/6's load-order theory (and the planning workflow's).
 New probes (all HX_NATIVE, env-gated, committed): `BONE_LOAD_DBG` (Mesh.cpp, counts bones loaded vs null at
 the strip point), `BONE_CLEAR_DBG` (Mesh.cpp CopyBones), `CHAR_PROBE_DUMP` (rb3_char_probe per-mesh dump).
