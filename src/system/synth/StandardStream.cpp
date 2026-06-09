@@ -428,7 +428,17 @@ int StandardStream::ConsumeData(void **v, int numSamples, int startSamp) {
                     else if (f < -32767.0f)
                         f = -32767.0f;
                     *dst = (short)f;
+#ifndef HX_NATIVE
+                    // Wii-match ONLY: the original loop indexes src[j] AND advances src,
+                    // so it actually reads src[2j] — decimation-by-2. DEAD on Wii because
+                    // Tremor decodes to int16 (mFloatSamples=false → the else branch runs),
+                    // so this never executed there and the decomp matched. On native
+                    // (libvorbis → mFloatSamples=true) this branch IS live; the double
+                    // advance halves the sample rate → 2x-pitch "chipmunk" chirps +
+                    // broadband aliasing static across the whole upper spectrum. DC3's
+                    // identical code reads [j] only (StandardStream.cpp:893). Drop src++.
                     src++;
+#endif
                     dst++;
                 }
                 mChannels[chIdx]->WriteData(convBuf, samplesToConsume << 1);

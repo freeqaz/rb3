@@ -39,9 +39,21 @@
 ###   fills ALL of it ⇒ ring sits at ~RING_FRAMES-1=32767 frames = ~673ms @48000 output-latency floor; delays EVERY sound
 ###   incl. SFX. No prefill/target cap anywhere. FIX READY (web-only, underruns=0 so safe): cap fill to a target depth
 ###   ~ctx/10=4800 frames=100ms ⇒ keydown->audio ~685ms -> ~63ms (~10.8x). Bundle into the next web build.
-### NEXT: (1) USER ear-test native render to localize shared-decode vs web-output. (2) Then either native decode-bisect
-###   (single-stem vs ffmpeg sample-diff) OR web-output wave (force ctx=48000 headless to reproduce 6x; test ctx=44100
-###   true-context to let the browser's good SRC do output instead of our path). (3) Land SFX ring-cap in that web build.
+### *** ROOT CAUSE FOUND + FIXED (2026-06-09) ***
+### USER EAR confirmed the NATIVE render is ALSO "totally hosed, staticy, only chipmunk chirps recognizable" → SHARED engine,
+### and audio_verify's "MATCH/right-song" verdict was a FALSE POSITIVE (chroma identity is too robust — it matched the song
+### THROUGH heavy corruption; this is why prior sessions wrongly logged "native audio verified correct"). Spectrogram + raw
+### sample diagnostic showed SEVERE broadband HF: E>11k=13-15%, E>16k=11% (clean ref 0.3%/0.0%), upper-half full of static.
+### BUG: src/system/synth/StandardStream.cpp ConsumeData float→int16 loop read `src[j]` AND did `src++` ⇒ effectively
+### reads src[2j] = DECIMATION-BY-2 → 2x-pitch chipmunk + broadband aliasing static. NATIVE-ONLY in practice: Wii uses
+### integer Tremor (mFloatSamples=false → the else branch), so the decomp matched and it never showed on Wii. DC3's
+### identical loop reads [j] only (dc3 StandardStream.cpp:893) — which is why DC3, same engine, sounds fine. FIX: drop the
+### stray `src++` (gated `#ifndef HX_NATIVE` so the Wii source stays byte-identical → match preserved). REMEASURED native:
+### E>11k 13.4%→0.0%, E>16k 9.5%→0.0%, spectrogram upper-half static GONE, chroma identity 0.69→0.985 CONFIDENT. Affects
+### BOTH native + web (shared rb3 src). cf [[project_audio_verify_tool]] (correct its "native verified correct" claim).
+### REMAINING: (1) USER ear-confirm the FIXED clip. (2) Rebuild WEB (same src fixes it) + user confirm in browser. (3) Land
+###   the SFX ring-depth cap (probe D, ~685ms→63ms) in that web build. (4) The web 48000-resample MAY add a small residual
+###   HF on top (user m4a 1.2% vs native 0.4% PRE-fix) — re-check AFTER the decimation fix; likely now moot.
 
 ## NEW GOAL (2026-06-06, user): (1) song audio 100% correct for GAMEPLAY + PREVIEW;
 ## (2) character animations render correctly in the venue (crowd + on-stage).
