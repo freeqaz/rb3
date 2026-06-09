@@ -51,10 +51,33 @@ stops `pkill -f` from matching its own command line — a self-kill that returns
 - `.claude/worktrees/exp-previewon`: preview-on experiment.
 - Other worktrees: audio-perf, web GPU/IDB, decomp sweeps — unrelated files.
 
+## ✅ FIX LANDED (`0de768a1`) — head/hair/hands coherent + animating in gameplay
+`BandCharacter::RebindHeadHandsAtRest()` (called from `Poll()` BEFORE `Character::Poll()`):
+on the first Poll the per-member skeleton still holds the SetDeformation gender-bind
+**rest** pose; snapshot each per-member bone's rest WorldXfm, then for the
+head/hair/hands/face (+ non-torso) skin meshes bake `mOffset = meshWorld · inverse(restWorld)`
+and bind to the **live** per-member bone. At rest → identity (coherent); as the bone
+animates (Character::Poll / CharHair / CharFaceServo drive the SAME per-member skeleton)
+the verts follow → coherent AND animating. The rest snapshot covers late-streamed meshes.
+Default-on, opt-out `RB3_NO_HEAD_REBIND=1`, diag `HEAD_REBIND_PROBE=1`. HX_NATIVE-only.
+
+**Why it works where the prior attempts didn't:** the torso rebind (calcOffset=false at
+Poll) can't fix thin head/hair geometry (residual basis error → R·sin θ shard); calcOffset
+at the Poll site shards too (bone already mid-animation). The rest snapshot gives an EXACT
+offset. Binding to the per-member skeleton (which CharHair/CharFaceServo drive) means the
+"hair fights the rebake" concern of a static-magnet rebake does NOT apply.
+
+**Verified:** REBIND_DRAW_FLING = **0** (no rebound mesh >120u); REBIND_DRAW_SKINPOS **37-65u**
+(clean) incl. hair (hippyfringe 64u), fingernails (47u), legs/jacket; 17 meshes/~200 bones
+rebound per member, ~108 rest poses captured. Closeups coherent (was: white-feather explosions
+— `/tmp/rb3-contact-DEFAULT.png` vs `/tmp/rb3-contact-HEADFIX.png`, `/tmp/rb3-headfix-closeups.png`).
+Torso untouched (complement scope); no crash full song.
+
 ## Status
-- [x] Build green (restored `CleanupGpuMesh` no-op stub — RB3 backend has no per-mesh GPU cache; `936bd8f4`).
-- [x] Ground truth: head/hair shards on closeup (screenshots).
-- [ ] Diagnosis+design workflow (`gameplay-char-head-shard-diagnose`) running.
-- [ ] Head A/B (`RB3_NO_SKEL_REBIND=1`) — does the head shard independently of the rebind?
-- [ ] Implement head-skinning fix.
+- [x] Build green (`936bd8f4`).
+- [x] Ground truth: head/hair shards on closeup.
+- [x] Diagnosis+design 8-agent ultracode workflow (`gameplay-char-head-shard-diagnose`) — root cause = C8 skinning bind.
+- [x] A/B: shard is independent of the rebind (torso-only) AND of gDeforms (NO_DEFORM_LOAD still shards) → it's the bind.
+- [x] **Implement head-skinning fix (`0de768a1`).**
+- [ ] Adversarial verify (code review + empirical regression).
 - [ ] Land uncommitted domino ② attempt in `rb3_guestprofile_native.cpp` (coordinate with domino2-fix).
