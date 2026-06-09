@@ -57,6 +57,17 @@ void CharCache::InitMe() {
     // (skinned=0, not Character::Poll'd into a live skeleton) + the head deform is
     // open (C7/C8) — tracked in NATIVE_PORT_ROADMAP.
     if (!getenv("RB3_NO_CHAR_PREVIEW")) {
+        // NOTE (Gap B, skinned=0): preloading char/main/skeleton.milo + char_shared.milo
+        // resident here (the preload_subdirs.dta CHAR_HEAP entries that native skips,
+        // being #ifndef HX_WII) was tried and PROVEN INSUFFICIENT — skeleton.milo is
+        // already in the outfit's scope (the loader even WARNs "subdir Character
+        // (char/main/skeleton.milo) included more than once", 80x, with the preload OFF),
+        // yet the preview char's outfit skin meshes STILL load with NumBones()==0. So the
+        // bone strip is NOT a missing-resident-skeleton problem; it is the deeper native
+        // merge/load-interleaving issue (shared subdir drained mid-load before the meshes
+        // resolve their bone ObjPtrs — cf BandCharacter.cpp:2286-2336, the kReplace
+        // texture fix; the analogous fix for the skeleton Character subdir is the C7/C8
+        // remaining work). See CUSTOMIZE_PREVIEW_FINDINGS UPDATE 5.
         unk1c.LoadFile(
             FilePath("../world/shared/chars.milo"), false, true, kLoadFront, false
         );

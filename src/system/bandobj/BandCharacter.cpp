@@ -1041,8 +1041,8 @@ void BandCharacter::SyncObjects() {
         }
         if (probe) {
             fprintf(stderr,
-                "[SKEL_REBIND] member='%s' skinMeshes=%d slots=%d reboundDiff=%d same=%d nullOwn=%d\n",
-                Name() ? Name() : "?", meshes, slots, rebound, same, nullown);
+                "[SKEL_REBIND] member='%s' path='%s' skinMeshes=%d slots=%d reboundDiff=%d same=%d nullOwn=%d\n",
+                Name() ? Name() : "?", PathName(this), meshes, slots, rebound, same, nullown);
         }
         } // if (sRebind || probe)
     }

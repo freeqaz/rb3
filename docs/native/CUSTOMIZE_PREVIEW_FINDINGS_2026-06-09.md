@@ -47,6 +47,31 @@ inoperative — the ring is populated from exactly one site, `CharBones.cpp:1342
 The real null-`RndTex`/material source must still be traced. Domino ① (`MainHubPanel`
 ticker → `TheServer`) is fixed (`rb3_server_native.cpp`, committed `2bb6d944`).
 
+## 🧩 UPDATE 5 (2026-06-09) — Gap B narrowed to MERGE LOAD-ORDER (preload-resident PROVEN insufficient)
+Tested the planned Stage-1 fix (hold `char/main/skeleton.milo` + `char_shared.milo` resident in
+`CharCache::InitMe`, mirroring the `preload_subdirs.dta` CHAR_HEAP entries native skips — that whole file
+is `#ifndef HX_WII` and native defines `HX_WII`, System.cpp:223). **Result: REVERTED — it does NOT fix
+skinned=0.** Empirics:
+- With the preload ON: `skinMeshes=0` still; loader WARNs `subdir Character (char/main/skeleton.milo)
+  included more than once`.
+- With the preload OFF (`RB3_NO_PREVIEW_SKEL_PRELOAD=1`): `skinMeshes=0` still, AND the "included more than
+  once" WARN **still fires 80×**. So that WARN is pre-existing (`ObjectDir::SyncObjects`, Dir.cpp:76, a
+  harmless `MILO_DEBUG` diagnostic) — NOT caused by the preload. The preload is **neutral** (no help, no harm).
+- CONCLUSION: `char/main/skeleton.milo` is ALREADY in the preview char's subdir scope (included, even
+  multiply) — yet the outfit skin meshes STILL load with `NumBones()==0`. So Gap B is **NOT** a
+  missing-resident-skeleton problem. It is the deeper **native merge LOAD-ORDER** issue: at the precise
+  moment each bodypart resource milo's meshes load (FileMerger Select), `skeleton.milo` is not yet in their
+  dir's `NextSubDir` resolution chain (the merge wires it later), so `RndMesh::Load`'s by-name bone ObjPtrs
+  resolve null and `RemoveInvalidBones` (Mesh.cpp:811) strips them. This is the same class as the native
+  texture-drain interleaving the kReplace shim fixes (BandCharacter.cpp:2286-2336) — the analogous fix for
+  the **skeleton Character subdir** is the remaining C7/C8 work. It lives in the SHARED char merge/load path
+  (BandCharacter::OnInstallFilter / SubdirAction / FileMerger), so it is broad/high-risk (could affect the
+  gameplay band + crowd) and must be done with a gameplay regression guard (venue band must stay
+  `skinMeshes=4`, per the char-skinning doc), preview-scoped if at all possible. NOT closed this session.
+- DIAGNOSTIC ADDED: `[SKEL_REBIND] … path='…'` now prints `PathName(this)` so preview chars
+  (`char/main/main.milo`) can be told apart in logs. Regression reference: gameplay venue band =
+  `skinMeshes=4` (CHAR_SKINNING_DEFORM doc); preview chars = `skinMeshes=0` (this work).
+
 ## 🎬 UPDATE 4 (2026-06-09) — ANIMATION root-caused (Gap A closed, Gap B is the deeper blocker)
 A 3-trace + Opus-synthesis workflow root-caused why the closet char doesn't animate. TWO additive gaps:
 
