@@ -153,6 +153,38 @@ static bool MenuVoidDrawHook(RndDrawable *d) {
     }
     return false;
 }
+
+// === Venue frustum cull (P2.3 / wave-04 §A1) ===============================
+//
+// Native disables frustum culling entirely (see the Draw()/DrawBudget() arms
+// below) because the baked Xbox mSphere bounds were wrong-centered/undersized,
+// so correct culling dropped visible meshes. The engine now recomputes a tight
+// LOCAL sphere from the unpacked GPU verts (Rnd_Wgpu_RB3.cpp DrawMesh), so we
+// can cull again — but ONLY under world.cam (the splash/menu 3D venue that draws
+// behind the 2D UI at ~10 fps). game.cam (gameplay highway), UI cams, and the
+// 2D overlay are untouched by construction.
+//
+// Default OFF — enable with RB3_VENUE_FRUSTUM_CULL=1; flip to default-ON with an
+// _OFF opt-out in a follow-up once acceptance passes (same rollout pattern as
+// track-lighting / bloom).
+//
+// SEMANTICS: RndCam::CompareSphereToWorld(s) returns `s > mWorldFrustum`, i.e.
+// true => the sphere is FULLY OUTSIDE the frustum => CULL (skip draw); false =>
+// visible/intersecting => DRAW. So returning CompareSphereToWorld directly as
+// "true => skip" is correct (do NOT invert).
+static bool RB3VenueFrustumCull(RndDrawable *d) {
+    static int sOn = -1;
+    if (sOn < 0) {
+        const char *e = getenv("RB3_VENUE_FRUSTUM_CULL");
+        sOn = (e && e[0] && e[0] != '0') ? 1 : 0;
+    }
+    if (!sOn) return false;
+    RndCam *cam = RndCam::sCurrent;
+    if (!cam || !cam->Name() || strcmp(cam->Name(), "world.cam") != 0) return false;
+    Sphere s;
+    if (!d->MakeWorldSphere(s, false)) return false; // no sphere / radius 0 -> never cull
+    return cam->CompareSphereToWorld(s);             // true -> fully outside -> skip
+}
 #endif
 
 HighlightStyle RndDrawable::sHighlightStyle;
@@ -166,9 +198,11 @@ void RndDrawable::Draw() {
     if (mShowing) {
 #ifdef HX_NATIVE
         if (MenuVoidDrawHook(this)) return;
-        // Frustum culling disabled for the native build: the WebGPU renderer's
-        // camera/frustum setup does not yet match RndCam::sCurrent's, so culling
-        // here would wrongly drop visible drawables. Over-draw is harmless.
+        // Frustum culling is OFF by default for the native build (the baked Xbox
+        // mSphere was wrong, so culling dropped visible meshes). RB3VenueFrustumCull
+        // re-enables it ONLY under world.cam and ONLY when RB3_VENUE_FRUSTUM_CULL=1,
+        // using the engine's recomputed tight sphere. Otherwise over-draw (harmless).
+        if (RB3VenueFrustumCull(this)) return;
         DrawShowing();
 #else
         Sphere sphere;
@@ -186,15 +220,14 @@ bool RndDrawable::DrawBudget(float f) {
     else {
 #ifdef HX_NATIVE
         if (MenuVoidDrawHook(this)) return true;
-        // SMASHER_DRAW_FIX: frustum culling disabled for the native build, exactly
-        // as in RndDrawable::Draw() above. The WebGPU renderer's frustum does not
-        // match RndCam::sCurrent's, so CompareSphereToWorld wrongly culls visible
-        // drawables. This is the budget-traversal twin of the Draw() patch: every
-        // group/dir that draws via DrawShowingBudget (RndGroup::DrawShowingBudget,
-        // the smasher plate's before_gems/after_gems chain) recurses through
-        // DrawBudget on its members — without this, the gem_smasher / strike-plate
-        // meshes reached DrawBudget but were frustum-culled before DrawShowing, so
-        // they never hit BandRnd::DrawMesh. Over-draw is harmless.
+        // SMASHER_DRAW_FIX: frustum culling is OFF by default for the native build,
+        // exactly as in RndDrawable::Draw() above (the baked Xbox sphere was wrong,
+        // so culling dropped visible drawables — e.g. the gem_smasher / strike-plate
+        // meshes that recurse through DrawBudget via RndGroup::DrawShowingBudget).
+        // RB3VenueFrustumCull re-enables it ONLY under world.cam and ONLY when
+        // RB3_VENUE_FRUSTUM_CULL=1; returning true matches the Wii arm's culled path
+        // (skip the draw, budget not exhausted). Otherwise over-draw (harmless).
+        if (RB3VenueFrustumCull(this)) return true;
         return DrawShowingBudget(f);
 #else
         Sphere sphere;
