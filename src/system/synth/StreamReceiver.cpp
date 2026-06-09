@@ -18,6 +18,22 @@ StreamReceiver::StreamReceiver(int numBuffers, bool slip)
     mRingWritePos = 0;
     mRingSize = 0x18000;
     mRingWrittenSpace = 0;
+#ifdef HX_NATIVE
+    // The native/web bridge plays mBuffer directly as the ring (see
+    // StreamReceiver.h). Size the PHYSICAL ring to mNumBuffers chunks so it
+    // matches the base send-target cursor math AND buffers enough of the
+    // multitrack decode that 11-15 stems don't underrun -> zero-fill (dropout/
+    // "static"). The Wii build keeps the fixed 0x18000 (2-chunk) DSP-staging ring.
+    {
+        const int kMaxChunks = (int)(sizeof(mBuffer) / 0xC000);
+        int chunks = numBuffers;
+        if (chunks < 2) chunks = 2;
+        if (chunks > kMaxChunks) chunks = kMaxChunks;
+        mNumBuffers = chunks;
+        mRingSize = chunks * 0xC000;
+        mRingFreeSpace = mRingSize;
+    }
+#endif
 }
 
 StreamReceiver::~StreamReceiver() {}

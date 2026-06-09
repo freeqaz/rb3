@@ -4,6 +4,9 @@
 #include "os/Debug.h"
 #include <functional>
 #ifdef HX_NATIVE
+#include <cstdlib> // getenv/atof for the RB3_STREAM_BUF_SECS native ring-depth knob
+#endif
+#ifdef HX_NATIVE
 // std::mem_fun was removed in C++17; std::mem_fn is the LP64 replacement.
 #define mem_fun mem_fn
 #endif
@@ -12,6 +15,92 @@
 
 #ifdef HX_NATIVE
 float StandardStream::sAudioOffsetMs = 0.0f;
+#endif
+
+#ifdef HX_NATIVE
+// ---------------------------------------------------------------------------
+// Per-stem decoded-PCM dump (SAMPLE-ACCURATE verification hook).
+//
+// When env RB3_DUMP_STEMS=<dir> is set, every decoded ConsumeData() call appends
+// each channel's mono int16 PCM (exactly the samples handed to the audio ring) to
+// <dir>/stem_<NN>.s16, sample-aligned across channels (all channels advance by the
+// same samplesToConsume per call). A <dir>/stems.json manifest records the sample
+// rate, real vs virtual channel count, and the per-stem sample count so an offline
+// tool can decode the SAME mogg channel and measure direct-waveform correlation.
+//
+// Entirely #ifdef HX_NATIVE and a no-op unless the env var is set (the dumper is
+// only constructed on first decode when getenv() returns non-NULL), so the Wii
+// decomp match build is byte-identical and there is zero overhead otherwise.
+// ---------------------------------------------------------------------------
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <vector>
+namespace {
+class StemDumper {
+public:
+    static StemDumper *Get(int numChannels, int realChannels, int sampleRate) {
+        static StemDumper *sInst = NULL;
+        static bool sTried = false;
+        if (!sTried) {
+            sTried = true;
+            const char *dir = getenv("RB3_DUMP_STEMS");
+            if (dir && dir[0]) {
+                sInst = new StemDumper(dir, numChannels, realChannels, sampleRate);
+            }
+        }
+        return sInst;
+    }
+
+    StemDumper(const char *dir, int numChannels, int realChannels, int sampleRate)
+        : mDir(dir), mNumChannels(numChannels), mRealChannels(realChannels),
+          mSampleRate(sampleRate), mTotalSamples(0) {
+        mFiles.resize(numChannels, NULL);
+        for (int i = 0; i < numChannels; i++) {
+            char path[1024];
+            snprintf(path, sizeof(path), "%s/stem_%02d.s16", mDir.c_str(), i);
+            mFiles[i] = fopen(path, "wb");
+        }
+        fprintf(stderr,
+                "[STEM_DUMP] dir=%s channels=%d real=%d rate=%d (RB3_DUMP_STEMS)\n",
+                mDir.c_str(), numChannels, realChannels, sampleRate);
+    }
+
+    // Append `count` int16 samples for channel `ch`.
+    void Write(int ch, const short *samples, int count) {
+        if (ch >= 0 && ch < (int)mFiles.size() && mFiles[ch])
+            fwrite(samples, sizeof(short), (size_t)count, mFiles[ch]);
+    }
+
+    // Called once per ConsumeData after all channels written (advances clock).
+    void Advance(int count) {
+        mTotalSamples += count;
+        // Flush manifest periodically so the python tool can read it even if the
+        // process is SIGKILLed by the capture harness before clean shutdown.
+        if ((mTotalSamples & 0xFFFF) < (unsigned)count) WriteManifest();
+    }
+
+    void WriteManifest() {
+        char path[1024];
+        snprintf(path, sizeof(path), "%s/stems.json", mDir.c_str());
+        FILE *f = fopen(path, "wb");
+        if (!f) return;
+        fprintf(f,
+                "{\"sample_rate\": %d, \"num_channels\": %d, \"real_channels\": %d, "
+                "\"total_samples\": %d, \"bytes_per_sample\": 2, \"format\": \"s16le\"}\n",
+                mSampleRate, mNumChannels, mRealChannels, mTotalSamples);
+        fclose(f);
+    }
+
+private:
+    std::string mDir;
+    int mNumChannels;
+    int mRealChannels;
+    int mSampleRate;
+    int mTotalSamples;
+    std::vector<FILE *> mFiles;
+};
+} // namespace
 #endif
 
 StandardStream::ChannelParams::ChannelParams()
@@ -41,6 +130,25 @@ void StandardStream::Init(float f1, float f2, Symbol sym, bool b) {
     if (mBufSecs == 0.0f) {
         SystemConfig("synth")->FindData("stream_buf_size", mBufSecs, true);
     }
+#ifdef HX_NATIVE
+    // The Wii's 1.2s stream_buf_size assumed a hardware DSP buffering mNumBuffers
+    // slots behind the 0x18000 staging ring. The native/web bridge has no DSP and
+    // plays the ring directly, so the ring depth IS mBufSecs. 1.2s leaves almost
+    // no slack for the multitrack mix (11-15 vorbis stems decoded on the game/
+    // PumpAudio thread) to stay ahead of real-time, and any transient deficit
+    // underruns -> zero-fill (dropout/"static"). Deepen it (default 4s; env
+    // RB3_STREAM_BUF_SECS overrides). The ring array (mBuffer, 16 chunks ~9.1s)
+    // caps the realised depth. Preview (1 stream) was never affected.
+    {
+        float minSecs = 4.0f;
+        const char *envSecs = getenv("RB3_STREAM_BUF_SECS");
+        if (envSecs && envSecs[0]) {
+            float v = (float)atof(envSecs);
+            if (v > 0.0f) minSecs = v;
+        }
+        if (mBufSecs < minSecs) mBufSecs = minSecs;
+    }
+#endif
     mFileStartMs = f1;
     mStartMs = f1;
     mLastStreamTime = f1;
@@ -304,6 +412,10 @@ int StandardStream::ConsumeData(void **v, int numSamples, int startSamp) {
             memcpy(pcm[mapIt->second], pcm[mapIt->first], copySize);
         }
 
+#ifdef HX_NATIVE
+        StemDumper *stemDump =
+            StemDumper::Get(numChannels, realChannels, mSampleRate);
+#endif
         short convBuf[0x800];
         for (int chIdx = 0; chIdx < numChannels; chIdx++) {
             if (mFloatSamples) {
@@ -320,10 +432,20 @@ int StandardStream::ConsumeData(void **v, int numSamples, int startSamp) {
                     dst++;
                 }
                 mChannels[chIdx]->WriteData(convBuf, samplesToConsume << 1);
+#ifdef HX_NATIVE
+                if (stemDump) stemDump->Write(chIdx, convBuf, samplesToConsume);
+#endif
             } else {
                 mChannels[chIdx]->WriteData(pcm[chIdx], samplesToConsume << 1);
+#ifdef HX_NATIVE
+                if (stemDump)
+                    stemDump->Write(chIdx, (const short *)pcm[chIdx], samplesToConsume);
+#endif
             }
         }
+#ifdef HX_NATIVE
+        if (stemDump) stemDump->Advance(samplesToConsume);
+#endif
     }
 
     mCurrentSamp += samplesToConsume;

@@ -52,7 +52,21 @@ public:
     static StreamReceiverFactoryFunc *sFactory;
 
     bool mSlipEnabled; // 0x4
+#ifdef HX_NATIVE
+    // Native/web bridge (rb3_stream_receiver_native.cpp) plays mBuffer DIRECTLY
+    // as the audio ring — there is no Wii DSP staging buffer. The ring must be
+    // mNumBuffers chunks (0xC000 each) deep, NOT the Wii's fixed 2-chunk 0x18000
+    // size, because (a) the base send/cursor math indexes mSendTarget over
+    // [0,mNumBuffers) and activeBuf = playCursor/0xC000, so a 2-chunk ring with
+    // mNumBuffers>2 desyncs that bookkeeping, and (b) ~1.1s is far too little to
+    // keep 11-15 decoded stems buffered ahead of real-time — the multitrack mix
+    // underruns, RenderAudio zero-fills, and you get the dropout (native) /
+    // crackle-"static" (web) bug. Actual ring size is set in the ctor (mRingSize
+    // = mNumBuffers*0xC000), capped by this array. 0xC0000 = 16 chunks ~= 9.1s.
+    unsigned char mBuffer[0xC0000];
+#else
     unsigned char mBuffer[0x18000]; // 0x5
+#endif
     int mNumBuffers; // 0x18008
     int mRingSize; // 0x1800c
     int mRingWritePos; // 0x18010

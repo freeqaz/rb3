@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <sys/stat.h> // stat (native sidecar-dir auto-probe)
 
 #ifdef __EMSCRIPTEN__
 // Web-only: the sidecar files are not bundled into the wasm/preload (180MB).
@@ -55,12 +56,34 @@ struct SidecarPCM {
     int byteSize = 0;        // total PCM byte size
 };
 
-// Sidecar directory, relative to the current working dir (the engine chdir's to
-// RB3_DATA at boot, so "sfx/gen/xma_pcm" sits next to the banks). Override with
-// RB3_SFX_PCM_DIR (absolute or cwd-relative).
+// Sidecar directory. Override with RB3_SFX_PCM_DIR (absolute or cwd-relative);
+// otherwise resolved per-platform below.
 inline std::string SidecarDir() {
     if (const char *d = getenv("RB3_SFX_PCM_DIR")) return std::string(d);
+#ifdef __EMSCRIPTEN__
+    // Web: the path is virtual. server.py rewrites any ".../xma_pcm/<hex>.pcm"
+    // request to the real sidecar dir, and the on-demand fetch in TryLoad anchors
+    // it under /data (MEMFS is empty until that first fetch, so do NOT probe it).
     return std::string("sfx/gen/xma_pcm");
+#else
+    // Native: the sidecars live in a DERIVED tree that is NOT next to the banks
+    // (cwd is RB3_DATA = .../orig-assets/extracted, but the sidecars are at
+    // .../orig-assets/derived/sfx_pcm). Resolve once by probing a few known
+    // locations relative to cwd so SFX play out-of-box without an env override.
+    static const std::string resolved = [] {
+        const char *candidates[] = {
+            "sfx/gen/xma_pcm",             // legacy: sidecars dropped beside the banks
+            "../derived/sfx_pcm",          // repo layout: extracted/ + derived/ are siblings
+            "orig-assets/derived/sfx_pcm", // run from the repo root
+        };
+        struct stat st;
+        for (const char *c : candidates)
+            if (stat(c, &st) == 0 && S_ISDIR(st.st_mode))
+                return std::string(c);
+        return std::string("sfx/gen/xma_pcm"); // legacy default if nothing resolves
+    }();
+    return resolved;
+#endif
 }
 
 // Try to load a sidecar for the given raw XMA payload. Returns a SidecarPCM with

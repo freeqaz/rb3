@@ -32,6 +32,16 @@ Timer gPollFrontLoaderTimer;
 // Zero runtime cost when the instrument is off (the App-side reads are gated).
 float gLoadPollMsThisFrame = 0.0f;        // SystemPoll -> TheLoadMgr.Poll() (budgeted)
 float gLoadPollUntilMsThisFrame = 0.0f;   // PollUntilLoaded + PollUntilEmpty (sync drains)
+
+// TASK A4 frame-trace asset-event counters (audio-perf-investigation). Defined
+// HERE so any native target that compiles this TU links them (rb3-native links
+// the recorder rb3_frame_trace.cpp; the minimal rb3-dta tool does not, but still
+// compiles Loader.cpp/Synth.cpp's increment hooks). gFrameTraceActive stays
+// false until RB3FrameTraceRecord opens a trace file, so the hooks are a single
+// not-taken branch otherwise.
+bool gFrameTraceActive = false;
+int  gFrameTraceLoaderAdds = 0;
+int  gFrameTraceStreamOpens = 0;
 #endif
 
 struct LoaderGlitchContext {
@@ -124,6 +134,17 @@ Loader *LoadMgr::GetLoader(const FilePath &fp) const {
 Loader *LoadMgr::AddLoader(const FilePath &file, LoaderPos pos) {
     if (file.empty())
         return NULL;
+#ifdef HX_NATIVE
+    // TASK A4 frame-trace asset-event hook (rb3_frame_trace.cpp). Count every
+    // file/dir/texture/milo loader started this frame; the per-frame recorder
+    // reads + zeros the counter. One branch when tracing is off.
+    {
+        extern bool gFrameTraceActive;
+        extern int gFrameTraceLoaderAdds;
+        if (gFrameTraceActive)
+            gFrameTraceLoaderAdds++;
+    }
+#endif
     if (sFileOpenCallback != NULL) {
         sFileOpenCallback(file.c_str());
     }
