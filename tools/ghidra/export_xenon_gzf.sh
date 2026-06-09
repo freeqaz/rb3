@@ -33,14 +33,16 @@
 # GHIDRA_INSTALL_DIR pointed at the fork build too (both Ghidras carry the
 # PowerPC:BE:64:Xenon language; they are the same fork lineage).
 #
-# BEFORE FIRST RUN: verify the project/program names (we could not inspect
-# ghidra_projects/ while the BSim agent owned it):
-#   ls /home/free/code/milohax/rb3-xenon/ghidra_projects/*.gpr
-# and adjust XENON_PROJ_LOC / XENON_PROJ_NAME / XENON_PROGRAM below (env
-# overrides) if they differ. rb3-xenon/tools/ghidra/import-xex.sh created
-# location=ghidra_projects name=RB3Xenon program=default.xex; the pyghidra
-# service script's --project-path suggests ghidra_projects/RB3Xenon may be
-# the location instead.
+# PROJECT PATH (resolved 2026-06-09 via filesystem read — TWO projects exist):
+#   A) ghidra_projects/RB3Xenon.gpr                       (top-level)
+#   B) ghidra_projects/RB3Xenon/RB3Xenon/RB3Xenon.gpr     (nested)
+# The LIVE pyghidra/BSim service runs with
+#   --project-path .../ghidra_projects/RB3Xenon/RB3Xenon
+# i.e. the NESTED project (B) — that's the one BinDiff analyzed, so its function
+# addresses are what seeds.json / holdout.json / bindiff_match.json reference.
+# Defaults below target (B). Once :8002 frees, CONFIRM the program leaf name with:
+#   ls "${XENON_PROJ_LOC}/${XENON_PROJ_NAME}.rep" 2>/dev/null   # and the .gpr exists
+# then override XENON_PROGRAM if it's not literally 'default.xex'.
 #
 # USAGE
 #   ./tools/ghidra/export_xenon_gzf.sh            # export to the ghidriff-xenon dir
@@ -56,7 +58,8 @@ XENON_ROOT="${XENON_ROOT:-$(cd "${RB3_ROOT}/.." && pwd)/rb3-xenon}"
 GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-$(cd "${RB3_ROOT}/.." && pwd)/ghidra/build/ghidra}"
 JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}"
 
-XENON_PROJ_LOC="${XENON_PROJ_LOC:-${XENON_ROOT}/ghidra_projects}"
+# Nested project (B) — the one the live BSim/pyghidra service uses (see header).
+XENON_PROJ_LOC="${XENON_PROJ_LOC:-${XENON_ROOT}/ghidra_projects/RB3Xenon/RB3Xenon}"
 XENON_PROJ_NAME="${XENON_PROJ_NAME:-RB3Xenon}"
 XENON_PROGRAM="${XENON_PROGRAM:-default.xex}"
 
