@@ -502,3 +502,99 @@ which is what `RB3_ASYNC_OPEN_OFF=1` disables.
 - **`gDtaParseMsThisFrame` wire-in** (declared + reset-wired by T1 but stays 0):
   RB3 parses DTA inline via `DataReadFile` in `src/system/obj/DataFile.cpp`; a
   2-line timing wrap there finishes the counter (outside T1's file scope).
+
+## Wave 3 results (2026-06-10)
+
+Wave 3 landed **T9** (A2 per-screen dependency bundles + Q10 prewarm
+default-flip for web) and **A5** (pipeline pre-warm). Single engine pin bump
+`MILO_ENGINE_PIN fb23b5e → a0848b1` (rb3 `ead85adb`) pulls in the A5 engine
+commit. Full release+debug web build redeployed to `native/web/build/`. T10
+(Q11 sliced audio prime) was **NOT** taken — M1's measurement verdict was
+`t10_go=false` (see "what remains"). Gates measured against the deployed
+**release** build on a dedicated localhost server, and under CDP
+`Network.emulateNetworkConditions` 20 Mbps / 40 ms RTT (E3); native A5 A/B via
+`RB3_FRAME_TRACE` headless. Artifacts in `/tmp/rb3perf-w3-integ/`.
+
+> **Measurement-harness blocker found+fixed in this wave (rb3 `5dea9a6e`):** the
+> committed T9 verify harnesses navigated to `/?env=...` with no `?debug=true`,
+> so they loaded the *feature-less release* build (release didn't contain T9 yet
+> at review time) — every arm reported `bundles=NONE`, a non-discriminating A/B.
+> Fixed to `/?debug=true&env=...` + a hard end-of-run gate (`exit 2` when an arm
+> that should fire a bundle fired none). For the **integration release gate**
+> below the bundle feature *is* now in the shipped release wasm
+> (`strings release/rb3-web.wasm | grep -c api/bundle/screen` == 1), so the gate
+> drives the release build directly (no `?debug`) and the A/B discriminates.
+
+### Per-task landed table
+
+| Task | Lever | Status | Default | Opt-out flag | Commit(s) |
+|---|---|---|---|---|---|
+| T9 (A2) | Per-screen dependency bundles — `main_hub`/`song_select` manifests fired async at transition-start (`/api/bundle/screen/<name>`, MEMFS-primed) | LANDED | **ON for web** (`RB3_SCREEN_BUNDLES_OFF` default OFF) | `RB3_SCREEN_BUNDLES_OFF` (truthy disables; `=0` forces ON); `RB3_SCREEN_BUNDLE_NEXT="from:to,…"` tunes the current→next map | rb3 `bc651674` |
+| T9 (Q10) | `RB3_PREWARM_SCREENS` default-flip — next-screen loader pre-warm | LANDED | **ON for web** (native UNCHANGED: opt-in) | `RB3_PREWARM_SCREENS` (`=0`/`false`/`no`/`off`/`OFF` disable on web) | rb3 `e6fae130` (+ flag-spelling fix `6fa304fc`) |
+| A5 | Pipeline pre-warm — `PipelineManager::PreWarm(mainFmt,rtFmt)` sweeps the draw-time key space at the first post-GPU-ready `BeginFrame`, moving the splash→hub pipeline-compile spike off the venue-build frame into the boot dwell | LANDED | ON | `RB3_PIPELINE_PREWARM_OFF` (`=1` restores on-transition compile); `RB3_PREWARM_DBG` prints created-count+ms | engine `a0848b1`; pin bump rb3 `ead85adb` |
+| — | T9 verify harnesses must load the DEBUG build (`?debug=true`) + discriminating gate | LANDED | n/a | n/a | rb3 `5dea9a6e` |
+| — | `RB3_PREWARM_SCREENS` `off`/`OFF` now disables as documented (was checking only `0/f/F/n/N`) | LANDED | n/a | n/a | rb3 `6fa304fc` |
+| — | Single `MILO_ENGINE_PIN` bump `fb23b5e → a0848b1` (A5) | LANDED | n/a | n/a | rb3 `ead85adb` |
+
+### Gate results
+
+| Gate | Criterion | Result | Verdict |
+|---|---|---|---|
+| Wii build | byte-identical, no regression | `tools/ninja-locked`: **31951 funcs / 62.884%** (== wave-2 baseline); UIScreen.o rebuilds SHA `7bd85a37` (no-op) | PASS |
+| Native build | engine(`a0848b1`)+rb3-native+rb3-tests link clean | `PipelineManager::PreWarm` symbol present; "no work to do" (already built against engine HEAD) | PASS |
+| Native tests | `rb3-tests` gtest | **13/13** | PASS |
+| Native smoke | boot→game_screen→song-end | `game_screen` reached, song plays, `{game is_game_over}==1` after jump | PASS |
+| 5a smoke (release) | `smoke-test.mjs` main_hub + song DB + no pageerror | main_hub, **83 songs**, no pageerror | PASS |
+| 5a keyboard→gameplay (release) | reaches `game_screen` by pure keyboard | `game_screen`, guitar/hard, frame advancing | PASS |
+| 5b E3 boot→hub (20 Mbps) | longest rAF gap, over100 (wave-2: 62 ms, over100=0) | **longest 68 ms, over100=0** | PASS |
+| 5b E3 cold preview hover (20 Mbps) | cold freeze ≤ 100 ms, Range model intact (wave-2: longest 20 ms, frozen 0 ms, ~4 MB) | **longest 37 ms, over100=0, frozen 20 ms; mogg = 4 Range / 4.00 MB** | PASS |
+| 5c T9 bundles A/B (release, cold IDB) | bundles ON fires both manifests + collapses per-file reqs; control fires none | **ON**: main_hub(8.36 MB)+song_select(8.62 MB), splash→hub fileReqs 12→4, hub→select 20→1; **control**: NONE, 12/20; both over100=0; GATE PASSED | PASS |
+| 5c Q10 prewarm A/B (release) | shipping default + opt-out both transition clean | **default** (bundles+prewarm ON): hub→select **fileReqs=0**; **prewarmoff** (all OFF): fileReqs=20, both reach song_select | PASS |
+| 5e A5 splash→hub worst frame (native A/B) | pipeline spike removed from venue-build frame | **OFF**: f=13 dt=165.3 ms, pipeMs=86.6, pipeN=13 (run-total pipeN=24/167.2 ms). **ON**: f=13 **dt=82.0 ms (−50%), pipeMs=0, pipeN=0** (run-total pipeN=0); splash→hub frozen Σ 274→178 ms | PASS |
+| 5e A5 visual no-op (native) | A5 doesn't change pixels | main_hub OFF-vs-ON diff (MAD 27.0 / 81.8 %) **below** the OFF-vs-OFF animation-phase noise floor (MAD 28.0 / 83.7 %); structurally a same-key cache pre-fill (run-total pipeN=0 ON ⇒ every draw is a cache hit) | PASS |
+| 5f flag A/B (release, ?env bridge) | each new flag's opt-out boots + transitions clean | `RB3_PIPELINE_PREWARM_OFF=1`, `RB3_SCREEN_BUNDLES_OFF=1`, `RB3_PREWARM_SCREENS=0/off/OFF`, `RB3_SCREEN_BUNDLE_NEXT=…` — all reach song_select, 0 pageerrors | PASS |
+
+### Before/after headline
+
+- **A5 (native, the decisive win):** the splash→main_hub venue-build frame's
+  synchronous pipeline-compile spike (≈14 pipelines, **86.6 ms** of compile on a
+  single **165 ms** frame) is **fully removed** — that frame drops to **82 ms**
+  (−50 %) with **pipeMs=0 / pipeN=0**, every pipeline-create absorbed by the
+  boot-dwell pre-warm. Run-total draw-time pipeline-create cost **167 ms → 0 ms**;
+  zero recorded draw-time `GetPipeline` cache misses ⇒ the swept key set is a
+  verified superset. On web the same compile is async (≈4 ms dispatch) so the win
+  there is the removed residue, not a recorded frame.
+- **T9 (web, cold IDB, the request-collapse win):** firing the screen's whole
+  dependency bundle async at transition-start replaces the per-file on-demand
+  read storm: **splash→hub 12 → 4** file requests, **hub→select 20 → 1** (and
+  **→ 0** with Q10 prewarm also on). At 20 Mbps this also recovers wall time on
+  the cold hub→select transition (default ≈16 s vs all-off ≈24 s). Canvas stays
+  live throughout (over100 = 0 on every arm).
+
+### What remains (Wave 4+)
+
+- **T10 — Q11 sliced audio prime / A3 completion slicing: NOT TAKEN
+  (`t10_go=false`).** M1's fresh per-frame counter trace showed no residual
+  >16 ms song-start frames attributable to audio-prime work once waves 0–2 +
+  A5 are in — the `primeMs`/`texMs` fields did not surface a spike worth a
+  slicing lever. Revisit only if the T1 counters show >16 ms `prime`/`tex`
+  frames during song start on the full asset set.
+- **A4 — pre-converted assets at extraction time** (offline DXT→BC / vert-unpack
+  bake) and **A6 — cached unpacked verts**: separate offline-tooling
+  workstreams, pursue only where the T1 counters still attribute >16 ms frames
+  after A5. A5 (`a5_go=true`, landed) already removed the dominant shared
+  splash→hub spike that A4/A6 were also aimed at, so their priority drops.
+- **`gDtaParseMsThisFrame` wire-in** (still 0 — see Wave-2 note; 2-line timing
+  wrap in `DataFile.cpp::DataReadFile`).
+- **Non-blocking carry-overs from the wave-3 reviews:** (a) A5 native pre-warm is
+  a real ~0.64 s synchronous main-thread burst (`created 240 pipelines in
+  ~642 ms`) during the idle boot dwell — produces no *recorded* frame spike
+  (lands before the tracer's f=0) but is a one-time boot-dwell hitch; a future
+  cleanup could chunk it across frames. (b) `PipelineKeyHash` omits
+  `k.stencil`/`k.alphaWrite` (pre-existing; `operator==` still disambiguates, so
+  correct but a slightly degraded bucket) — out of A5 scope. (c) A5's swept
+  blend/zMode ranges are hardcoded magic literals against the `WgpuBlend`/
+  `WgpuZMode` enums; a shared `kMaxBlend`/`kMaxZMode` or `static_assert` would
+  couple them so a future new key can't silently miss the warm. (d) the
+  T9/A2 server allowlist + traversal guards (`..%2f` → 400, unknown screen → 200
+  empty 4-byte count=0) were independently re-verified contamination-free.
