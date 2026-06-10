@@ -147,11 +147,40 @@ bool UIScreen::Unloading() const {
 // kLoadBack (budgeted background, rides TheLoadMgr.Poll's RB3_LOADER_BUDGET_MS
 // 8ms/frame). When the user ENTERs the next screen, UIPanel::Load adopts the
 // prewarmed-and-finished DirLoader (HX_NATIVE branch) instead of re-`new`ing a
-// loader that re-parses the ~2.8MB milo on the transition frame. All gated
-// behind RB3_PREWARM_SCREENS (default OFF); no struct members are added — the
-// "already prewarmed this screen" bit lives in a file-static set keyed by the
-// screen pointer (erased in Exit so re-entry re-prewarms the *next* screen).
+// loader that re-parses the ~2.8MB milo on the transition frame.
+//
+// Enablement (Q10, incremental-load-perf PLAN.md T9): default ON for WEB
+// (__EMSCRIPTEN__), opt out with RB3_PREWARM_SCREENS=0; default OFF (opt-in) for
+// native, where the A/B was neutral (the byte fetch is local, so warming the
+// parse during dwell wins little). The web A/B showed a win — the next screen's
+// milo fetch+parse is hidden in the dwell instead of freezing the transition
+// frame — so it ships default-on there. PrewarmEnabled() is the single gate;
+// RB3_PREWARM_DBG still keys the verbose logging off the env var's presence so
+// default-on doesn't spam. No struct members are added — the "already prewarmed
+// this screen" bit lives in a file-static set keyed by the screen pointer
+// (erased in Exit so re-entry re-prewarms the *next* screen).
 namespace {
+// The single prewarm enablement gate. getenv once into a static (house style).
+//   web:    default ON; RB3_PREWARM_SCREENS=0 opts out.
+//   native: default OFF; any RB3_PREWARM_SCREENS value (incl. "0") opts in,
+//           preserving the prior opt-in semantics for native A/B work.
+bool PrewarmEnabled() {
+    static int s = -1;
+    if (s < 0) {
+        const char *e = ::getenv("RB3_PREWARM_SCREENS");
+#ifdef __EMSCRIPTEN__
+        // Default ON; only an explicit "0" (or "off"/"false") disables.
+        s = 1;
+        if (e && (e[0] == '0' || e[0] == 'f' || e[0] == 'F' || e[0] == 'n' ||
+                  e[0] == 'N'))
+            s = 0;
+#else
+        // Native: unchanged opt-in — present (non-null) means on.
+        s = (e != nullptr) ? 1 : 0;
+#endif
+    }
+    return s != 0;
+}
 std::set<UIScreen *> &PrewarmedScreens() {
     static std::set<UIScreen *> s;
     return s;
@@ -357,8 +386,8 @@ void UIScreen::Poll() {
     // loaded (so we ride its idle dwell, not its own load) and only once per
     // screen instance (re-armed in Exit). CheckIsLoaded() is side-effect-free
     // here: a fully-loaded screen's panels are all past kUnloaded, so the call
-    // is a pure read.
-    if (::getenv("RB3_PREWARM_SCREENS")) {
+    // is a pure read. Q10: default ON for web, opt-in for native (PrewarmEnabled).
+    if (PrewarmEnabled()) {
         bool loaded = CheckIsLoaded();
         if (::getenv("RB3_PREWARM_DBG")) {
             static std::set<UIScreen *> sSeen;
