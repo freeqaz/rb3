@@ -530,12 +530,6 @@ add_executable(rb3-native
     # use the MWCC compat flags, while the httplib TU must NOT — see the
     # set_source_files_properties note after rb3_configure_target below).
     ${CMAKE_SOURCE_DIR}/src/rb3_http_handlers.cpp
-    # milo-trace W9 replay API (RB3_REPLAY_API=1): /api/memory + /api/call +
-    # /api/replay/info. The native-side half of milo-trace mode (c) differential
-    # replay (run the SHIPPING native code vs a captured guest-BE record). Ordinary
-    # clang C++ (no decomp headers, no httplib) — needs the same MS-compat-OFF
-    # override as rb3_http_server.cpp (set below) because it uses normal RTTI/dlfcn.
-    ${CMAKE_SOURCE_DIR}/src/rb3_replay_api.cpp
     # C2: save/profile/settings persistence (keystone). Host-FS blob store behind
     # IPersistBackend, backing ProfileMgr's self-contained global-options +
     # profile-0 GameplayOptions serializers. Bypasses the EXCLUDED Wii
@@ -587,11 +581,6 @@ rb3_configure_target(rb3-native)
 # Both share the std-only rb3_http_server.h (identical class layout under both
 # flag sets). Re-disable MS-compat for the httplib TU only (later flags win).
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_http_server.cpp
-    PROPERTIES COMPILE_OPTIONS
-    "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
-# rb3_replay_api.cpp is the same kind of std-only / dlfcn TU — no decomp headers,
-# normal RTTI ABI; compile it MS-compat-OFF too (later flags win).
-set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_replay_api.cpp
     PROPERTIES COMPILE_OPTIONS
     "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
 
