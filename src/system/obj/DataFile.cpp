@@ -22,6 +22,24 @@
 #include "utl/MakeString.h"
 #include <map>
 
+#ifdef HX_NATIVE
+// Incremental-load-perf (PLAN.md T1) frame-trace: charge the top-level DTA
+// file parse to gDtaParseMsThisFrame. Wraps DataReadFile at the outermost
+// entry only (gReadingFile == false), so recursive #include/.dta embeds are
+// not double-counted. HX_NATIVE-only; the Wii build is byte-identical. Read
+// + zeroed by RB3FrameTraceRecord (native/src/rb3_frame_trace.cpp).
+#include <chrono>
+extern bool  gFrameTraceActive;
+extern float gDtaParseMsThisFrame;
+namespace {
+    inline double DtaParseNowMs() {
+        return std::chrono::duration<double, std::milli>(
+                   std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    }
+}
+#endif
+
 DECOMP_FORCEBLOCK(DataFile, (const char *c, char *p, const char *pc), MakeString(c, p, pc);)
 
 struct ConditionalInfo {
@@ -648,6 +666,9 @@ DataArray *DataReadFile(const char *file, bool warn) {
     bool b;
     const char *cached = CachedDataFile(buf, b);
     DataNode *node;
+#ifdef HX_NATIVE
+    double ftDta = (gFrameTraceActive && !gReadingFile) ? DtaParseNowMs() : 0.0;
+#endif
     if (gReadingFile) {
         node = &gReadFiles[cached];
         if (node->Type() == kDataArray) {
@@ -664,6 +685,9 @@ DataArray *DataReadFile(const char *file, bool warn) {
     if (fs.Fail()) {
         if (warn)
             MILO_WARN("DataReadFile: Can't open %s", buf);
+#ifdef HX_NATIVE
+        if (ftDta) gDtaParseMsThisFrame += (float)(DtaParseNowMs() - ftDta);
+#endif
         return nullptr;
     } else {
         DataArray *ret;
@@ -691,6 +715,9 @@ DataArray *DataReadFile(const char *file, bool warn) {
             *node = DataNode(ret, kDataArray);
         } else
             FinishDataRead();
+#ifdef HX_NATIVE
+        if (ftDta) gDtaParseMsThisFrame += (float)(DtaParseNowMs() - ftDta);
+#endif
         return ret;
     }
 }
