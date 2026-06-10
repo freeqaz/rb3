@@ -364,3 +364,141 @@ song start. Opt-out: `RB3_PRIME_SLICE_OFF`.
 - Boot App-ctor: no regression (≤ 3.9 s localhost release).
 - Steady-state main_hub/song_select: no frame > 33 ms attributable to
   load/upload counters.
+
+---
+
+## Implementation results (2026-06-10)
+
+Waves 0–2 landed and integrated. Single engine pin bump
+`MILO_ENGINE_PIN → fb23b5e` (rb3 `d71aadc3`). Full release+debug web build
+deployed to `native/web/build/`. Gates measured against the deployed release
+build on localhost (port 8434, instrumented netlog server) and under CDP
+`Network.emulateNetworkConditions` 20 Mbps / 40 ms RTT (E3). All artifacts in
+`/tmp/rb3perf-integ/` (waterfall, preview-hover, throttled before/after,
+flagcheck, screenshots).
+
+### Per-task landed table
+
+| Task | Lever | Status | Default | Opt-out flag | Commit(s) |
+|---|---|---|---|---|---|
+| T1 | Frame-trace attribution counters | LANDED | on (under `gFrameTraceActive`) | n/a | engine `e60b4ce`; rb3 `9984e794` |
+| T2 | E1 fake-async de-risk probe | LANDED | off | `RB3_FAKE_ASYNC_OPEN_MS` (opt-in) | rb3 `43c7a713` |
+| T3 | Preview-hover prefetch + deferred stream construction | LANDED | on | `RB3_PREVIEW_PREFETCH_OFF` | rb3 `91235980` |
+| T4 | MetaMusic deferred FX wiring (Q7); XMA per-bank prefetch (Q8); venue-sync flag (Q9) | LANDED | Q7/Q8 on; **Q9 kept SYNC (no-op lever)** | `RB3_METAMUSIC_SYNC`, `RB3_XMA_PREFETCH_OFF`, `RB3_VENUE_SYNC` (=0 opts into experimental async) | rb3 `3eaccc25` |
+| T5 | Q5 JSPI async-fetch sync fallback; Q6 IDB pre-warm cap | LANDED | on | `RB3_SYNC_XHR_LEGACY` (one-release legacy XHR) | engine `84a6792`; rb3 `ab42d242` |
+| T6 | A1 pending-File async open (manifest oracle + ensure-resident) | LANDED | on | `RB3_ASYNC_OPEN_OFF` | engine `fa89954` (+UAF fix `fb23b5e`); rb3 `79cb7a54` |
+| T7 | Q3 Range-backed mogg File (HTTP 206) | LANDED | on | `RB3_MOGG_RANGE_OFF` | engine `fa89954`; rb3 `79cb7a54` |
+| T8 | Q4 BC-native DXT texture upload | LANDED | on | `RB3_BC_TEX_OFF` | engine `6c45e96` |
+| — | CMakeLists un-wire of untracked `rb3_replay_api.cpp` (T3 contamination) | LANDED | n/a | n/a | rb3 `dd584cdc` |
+| — | Single `MILO_ENGINE_PIN` bump to `fb23b5e` | LANDED | n/a | n/a | rb3 `d71aadc3` |
+
+Deferred to Wave 3+ (not in this integration): A2 per-screen bundles + Q10
+prewarm flip (T9), Q11 sliced audio prime / A3 completion slicing (T10,
+conditional on Q1 counter data), A4/A5/A6.
+
+### Gate results
+
+| Gate | Criterion | Result | Verdict |
+|---|---|---|---|
+| Wii build | byte-identical, no regression | `tools/ninja-locked`: 31951 funcs / 62.88% (== wave baseline) | PASS |
+| Native build | engine+rb3-native+rb3-tests link | clean (built from clean checkout of `d71aadc3` in CoW worktree — main tree is link-blocked only by a *concurrent* agent's uncommitted replay edits, see Known issues) | PASS |
+| Native tests | rb3-tests gtest | 13/13 | PASS |
+| Native smoke | boot→menu→part_difficulty→gameplay→song-end | `game_screen` reached, song plays, game-over reached | PASS |
+| 5a smoke | `smoke-test.mjs` reaches main_hub, song DB populated, no pageerror | main_hub, 83 songs, no pageerror | PASS |
+| 5a keyboard→gameplay | reaches `game_screen` by pure keyboard, song playing | `game_screen` (guitar/hard), frame advancing | PASS |
+| 5b boot waterfall (localhost, 3-run median) | appBooted ≤ 3.9 s | **3.62 s** (vs 05 baseline 3.82 s) | PASS |
+| 5b boot frozen (localhost) | — | boot frozen Σ 806 ms (vs 05 baseline 1.24 s); intro 3.74 s, splash 5.02 s; splash→hub longest single gap **69 ms < 100 ms** | PASS |
+| 5c preview hover (localhost, cold×3) | cold freeze ≈ warm, no >100 ms gap | cold longest 20–50 ms, frozen 0–24 ms, **over100 = 0**; mogg = **14 Range (206) reqs, 1 MB chunks**, zero whole-file | PASS |
+| 5d throttled boot→hub (20 Mbps) | canvas never frozen >100 ms contiguous | splash→hub **longest 62 ms, over100 = 0** | PASS |
+| 5d throttled cold hover (20 Mbps) | cold hover frozen ≤ 100 ms | `beencaughtstealing` cold: **longest 20 ms, frozen 0 ms, over100 = 0**; 4 MB Range (1–12 ms/chunk) | PASS |
+| 5e flag A/B | page boots + hover works on each legacy path | `RB3_ASYNC_OPEN_OFF` / `RB3_MOGG_RANGE_OFF` / `RB3_BC_TEX_OFF` / `RB3_PREVIEW_PREFETCH_OFF` — all 4 PASS (main_hub + song_select + hover, no pageerror) | PASS |
+| 5f T8 BC visual | no gross texture corruption on web device | main_hub + song_select render clean (BC-ON ≈ BC-OFF; menu chrome identical, no decode artifacts) — Dawn advertises TextureCompressionBC | PASS |
+
+### Before/after headline (E3, 20 Mbps / 40 ms RTT)
+
+The decisive change is the **cold-preview transfer model**, measured directly:
+
+| | Cold preview mogg | Per-request transfer | Canvas |
+|---|---|---|---|
+| **BEFORE** (`RB3_ASYNC_OPEN_OFF=1` + `RB3_MOGG_RANGE_OFF=1`) | **whole-file 200**, 5.0–8.75 MB each | **7.5–12.0 s** per mogg | sync-XHR open blocks the frame for the full transfer at the File seam |
+| **AFTER** (default) | **Range 206**, ~4 MB (4×1 MB chunks) per hover | **1–12 ms** per chunk, async | rAF longest 20 ms, frozen 0 ms, over100 = 0 |
+
+≈ **2–9× fewer bytes per cold hover** and the multi-second blocking transfer is
+eliminated; the canvas stays live (no >100 ms freeze) at 20 Mbps. Title→main_hub
+at 20 Mbps: longest single rAF gap 62 ms (< 100 ms), titleToHub wall ≈ 3.7 s.
+
+Honest caveat on the BEFORE rAF number: in the BEFORE run the cold-hover rAF
+freeze also read ~0 ms *within the measured hover window*, because T3's prefetch
+still warms the highlighted song and the harness's measured song was resident by
+hover time. The unambiguous before/after delta is therefore in the **bytes +
+transfer model** (whole-file 5–8.75 MB @ 10 s vs Range 4 MB @ ms) and the
+WebGPU netlog (200 whole-file vs 206 Range), not the single rAF figure — the
+mechanism that keeps the canvas live regardless is A1's async File seam (T6),
+which is what `RB3_ASYNC_OPEN_OFF=1` disables.
+
+### Known issues / nonblocking findings (carried from wave reviews)
+
+- **Working-tree build contamination (not ours, MUST resolve before any
+  `native/build-native` build of the main tree):** a concurrent milo-trace
+  agent has uncommitted edits to `native/src/rb3_http_server.cpp/.h` +
+  `native/CMakeLists.txt` (wires untracked `rb3_replay_capture.cpp`) and two
+  untracked files `rb3_replay_api.cpp` / `rb3_replay_capture.cpp`. The
+  `http_server` edits call `RB3ReplayApiEnabled()/Handle()` whose definitions
+  live in the *un-wired* `rb3_replay_api.cpp`, so the **main working tree
+  link-fails** (`undefined reference to RB3ReplayApiEnabled()`). A clean
+  checkout of `master` (the committed state) builds + runs fine — verified in a
+  CoW worktree. The milo-trace agent must commit their `replay_api.cpp{,.h}` +
+  re-add its CMakeLists ref + their `http_server` edits as one self-contained
+  feature.
+- **T8 BC (Q4):** no guard against non-multiple-of-4 DXT dimensions; empirically
+  never fires (all 360-extracted DXT textures are 4-aligned; zero WebGPU
+  validation errors on native + web), but a cheap `if ((w%4)||(h%4)) → CPU path`
+  guard is recommended for future odd-size assets. DXN/BC5 deliberately stays on
+  the RGBA8 CPU path.
+- **T4 Q9 (EnterVenue) is a no-op lever as shipped** — kept default-sync because
+  async is unsafe until `BandDirector::Enter()`'s tail is split into a
+  multi-frame poll (`TheBandWardrobe`-before-Enter ordering). Delivers zero perf
+  win by default; the prerequisite Enter()-split is the future work.
+- **T4 Q7 (MetaMusic) is web-only-observable** — `MetaPanel::Load()` skips the
+  MetaMusic FILE load on the native 360-ARK extract (no `metamusic_loop` in the
+  extract's `synth.dta`), so the "6-file sync chain gone" is confirmable only on
+  the full web asset set (`RB3_METAMUSIC_DBG` log hook in `PollFxWiring`).
+- **T6 in-flight resource vectors** (`sFetchRequests`, `sRangeRequests`,
+  `sEnsureInFlight`) grow without compaction over a long session; bounded by
+  Drop for Range but the FetchRequest leak is pre-existing — minor latent growth.
+- **T6 Range header buffer** is a single `static thread_local` shared across
+  requests; safe today (emscripten_fetch copies headers synchronously) but
+  fragile — prefer a per-request buffer.
+- **T3 residency probe is MEMFS-only** (`/data/<rel>`); an IDB-warm-but-not-MEMFS
+  mogg's first hover fetches from network instead of IDB. Not a regression
+  (today's first touch also networks). T6 may want to route prefetch residency
+  through the IDB cache (research 03§1 option (b)).
+- **A1 eager `AllocBuffer`:** a *pending non-mogg* FileLoader reserves the full
+  manifest size up front for the whole fetch (moggs take the Range path so they
+  are exempt). Transient, released on loader completion — not a leak, but worth
+  watching peak heap under E3.
+- **`?env` URL→ENV bridge fix is load-bearing:** T1 seeded `Module.ENV` but
+  Emscripten's `getEnvStrings` reads its own internal `ENV`; T6 fixed it in
+  `main_web.cpp` (drains `window.__rb3ExtraEnv` via `::setenv` at BOOT_INIT).
+  Every `RB3_*` flag set via `?env=` depends on this — verified working for all
+  four Wave-2 flags in gate 5e.
+- **Range-fetch cancel-mid-fetch (UAF abandon path) is not yet harness-covered.**
+  Engine `fb23b5e` fixes the UAF (abandon in-flight on Drop), and it compiles
+  under real emcc; a browser cancel-mid-fetch case (hover A → switch to B before
+  A's first chunk lands) should be added to `t6t7-async-open-verify.mjs` to
+  exercise it live.
+
+### What remains (Wave 3+)
+
+- **T9 — A2 per-screen dependency bundles** (`main_hub`/`song_select` manifests
+  fired async at transition-start) + **Q10 `RB3_PREWARM_SCREENS` default-ON for
+  web** after a web A/B (infra + UAF fix `585ad0f8` already landed).
+- **T10 (conditional on Q1 counter data) — Q11 sliced audio prime / A3
+  completion slicing.** Gate on the frame-trace `prime`/`tex` fields; only
+  pursue where counters still show >16 ms frames during song start.
+- **A4/A5/A6** — pre-converted assets at extraction, pipeline/scene pre-warm for
+  the shared ~170 ms hub spike, cached unpacked verts — separate workstreams,
+  only where the T1 counters still attribute >16 ms frames.
+- **`gDtaParseMsThisFrame` wire-in** (declared + reset-wired by T1 but stays 0):
+  RB3 parses DTA inline via `DataReadFile` in `src/system/obj/DataFile.cpp`; a
+  2-line timing wrap there finishes the counter (outside T1's file scope).
