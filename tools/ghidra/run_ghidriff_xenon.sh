@@ -114,11 +114,14 @@
 #                            as suspect — eval_xenon_matches.py flags them and
 #                            excludes them from new-coverage counts.
 #
-# GHIDRA INSTALL: defaults to /opt/ghidra (12.1.2 DEV, patched VT jar). If the
-# exported gzf turns out to be a 12.2-format DB (project served by the fork
-# build — see export_xenon_gzf.sh header), point GHIDRA_INSTALL_DIR at
-# /home/free/code/milohax/ghidra/build/ghidra instead (same fork lineage; its
-# VT already has Tier-1+Tier-2 natively).
+# GHIDRA INSTALL: MUST be the fork dist (/home/free/code/milohax/ghidra/build/ghidra,
+# Ghidra 12.2_DEV) — the Xenon gzf and Bank8 gzf are 12.2-format project DBs that
+# ONLY open under the fork build.  /opt/ghidra (12.1.2) cannot read them.
+# The fork ships PowerPC:BE:64:Xenon (ppc.ldefs:335), VT Tier-1+Tier-2 natively,
+# and the BSim patches (bsim-xenon-patches branch, jar-swapped into the dist —
+# see docs/decomp/xenon-hardening/task-T3-impl.md).
+# Default is now the fork path; override with GHIDRA_INSTALL_DIR=/opt/ghidra only
+# if you know the gzfs have been migrated to 12.1.2 format.
 #
 # USAGE
 #   ./tools/ghidra/run_ghidriff_xenon.sh             # the real run (GATED, hours)
@@ -136,7 +139,7 @@ set -euo pipefail
 
 RB3_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VENV_PYTHON="${RB3_ROOT}/build/SZBE69_B8/ghidra/ghidriff-venv/bin/python"
-GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-/opt/ghidra}"
+GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-/home/free/code/milohax/ghidra/build/ghidra}"
 JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}"
 
 OUT_DIR="${RB3_ROOT}/build/SZBE69_B8/ghidra/ghidriff-xenon"
@@ -215,13 +218,24 @@ CMD=(env JAVA_HOME="${JAVA_HOME}"
      --project-name "rb3-wii-xenon-diff"
      --force-diff
      --seed-matches "${SEEDS}"
-     # BSim default OFF for this cross-binary run: on the 2026-06-10 attempt it
-     # decompiled both programs then entered a SINGLE-THREADED similarity-compute
-     # phase that pegged one core for 70+ min with no log output and no end (65k
-     # stripped Xenon funcs, many with decompiler timeouts) — and it gates the
-     # VTCombinedReference stage behind it. Re-enable with RB3_XENON_BSIM=1 only
-     # if you can give it hours. The scored VT correlator (below) does NOT
-     # decompile, so it sidesteps that cost.
+     # BSim: RECOMMENDED ON for the next run (default ON, toggle off with
+     # RB3_XENON_BSIM=0 / unset RB3_XENON_BSIM is treated as ON).
+     # STATUS: BSim completed in 152s on the 2026-06-10 seeded run (1,186 accepted
+     # pairs fed as seeds → effective unmatched pool ~54k, well below the O(n×m)
+     # stall threshold).  Patches bsim-topk-cap + bsim-parallel-aggregation applied
+     # on ghidra fork branch bsim-xenon-patches and jar-swapped into the dist
+     # (see docs/decomp/xenon-hardening/task-T3-impl.md); the patches add top-K
+     # truncation + parallel Phase-B aggregation for correctness/perf on near-dup
+     # families and observability Msg.info after aggregation.  BSim precision is
+     # UNMEASURED (first run was killed before eval; ~20-50% expected cross-compiler).
+     # The old stall was caused by decomp_correlate (see --no-decomp-correlate below),
+     # NOT BSim.  Toggle: RB3_XENON_BSIM=1 (force on), leave unset (default on),
+     # or RB3_XENON_BSIM=0 (force off via the else branch below).
+     # Recommended full invocation:
+     #   GHIDRA_INSTALL_DIR=/home/free/code/milohax/ghidra/build/ghidra \
+     #     JAVA_HOME=/usr/lib/jvm/java-17-openjdk \
+     #     RB3_XENON_BSIM=1 \
+     #     ./tools/ghidra/run_ghidriff_xenon.sh
      ${RB3_XENON_BSIM:+--bsim}
      ${RB3_XENON_BSIM:---no-bsim}
      --vt-ref-correlators
@@ -229,6 +243,7 @@ CMD=(env JAVA_HOME="${JAVA_HOME}"
      --min-func-len 16
      --implied-min-ratio 0.9
      --skip-correlators "BulkBasicBlockMnemonicHash,SigCallingCalledHasher,StructuralGraphExactHash"
+     --no-decomp-correlate
      --decompiler-timeout "${RB3_XENON_DECOMP_TIMEOUT:-20}"
      --log-level INFO
      --log-path "${OUT_DIR}/ghidriff.log")
