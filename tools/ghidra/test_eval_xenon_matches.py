@@ -15,12 +15,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from eval_xenon_matches import (  # noqa: E402
+    _class_tokens_alias,
+    _credit_aliased,
     categorize_tu,
     evaluate,
+    is_agree,
     judge_agreement,
     parse_addr,
+    parse_sweep,
     parse_wii_map_index,
     tu_stem,
+    verdict_bucket,
 )
 
 BAND3_TU = "lib.a C:\\hproj\\band3_wii\\band3\\src\\game\\wii_release\\Game.o"
@@ -274,6 +279,209 @@ class TestEvaluate(unittest.TestCase):
         sc = self.rep["lists"]["seed_conflicts"]
         self.assertEqual(len(sc), 1)
         self.assertEqual(sc[0]["p2_addr"], "0x82990000")
+
+
+# ---------------------------------------------------------------------------
+# T4: platform-alias + arity-tolerance crediting
+# ---------------------------------------------------------------------------
+class TestPlatformAliasCrediting(unittest.TestCase):
+    def test_class_token_alias_table(self):
+        # explicit twins
+        self.assertTrue(_class_tokens_alias("WiiMovie", "DxMovie"))
+        self.assertTrue(_class_tokens_alias("BandCamShot", "HamCamShot"))
+        # prefix-swap forms
+        self.assertTrue(_class_tokens_alias("WiiPostProc", "NgPostProc"))
+        self.assertTrue(_class_tokens_alias("BandSongMetadata", "HamSongMetadata"))
+        self.assertTrue(_class_tokens_alias("WiiDOFProc", "NgDOFProc"))
+        # identical
+        self.assertTrue(_class_tokens_alias("Foo", "Foo"))
+        # NOT aliases — genuinely different classes
+        self.assertFalse(_class_tokens_alias("Foo", "Bar"))
+        self.assertFalse(_class_tokens_alias("CamShot", "RndMovie"))
+
+    def test_credit_aliased_platform_twin(self):
+        # WiiMovie::SetTex(RndTex*) <-> DxMovie::SetTex(RndTex*) — same arity
+        k1 = (("WiiMovie",), "SetTex", 1, False)
+        k2 = (("DxMovie",), "SetTex", 1, False)
+        self.assertEqual(_credit_aliased(k1, k2), "platform-alias")
+
+    def test_credit_aliased_arity_tolerant(self):
+        # QuatKeys::SetFrame: Wii (float,float)=2  vs  MSVC MMM (float,float,
+        # float)=3 — the EXACT documented Fff/MMM arity case (forensics §1D V2)
+        k1 = (("QuatKeys",), "SetFrame", 2, False)
+        k2 = (("QuatKeys",), "SetFrame", 3, False)
+        self.assertEqual(_credit_aliased(k1, k2), "arity-tolerant")
+
+    def test_credit_aliased_both(self):
+        k1 = (("BandCamShot",), "Foo", 1, False)
+        k2 = (("HamCamShot",), "Foo", 2, False)
+        self.assertEqual(_credit_aliased(k1, k2), "platform-alias+arity-tolerant")
+
+    def test_credit_aliased_rejects_different_template_instantiation(self):
+        # KeylessHash<char,char> vs KeylessHash<AllocInfo,void> — NOT a rename;
+        # the eval must keep this 'disagree'.
+        k1 = (("KeylessHash<*,*,char,char,const,const>",), "#ctor", 4, False)
+        k2 = (("KeylessHash<*,*,AllocInfo,void>",), "#ctor", 4, False)
+        self.assertIsNone(_credit_aliased(k1, k2))
+
+    def test_credit_aliased_rejects_large_arity_gap(self):
+        k1 = (("Foo",), "Bar", 1, False)
+        k2 = (("Foo",), "Bar", 5, False)
+        self.assertIsNone(_credit_aliased(k1, k2))
+
+    def test_credit_aliased_rejects_constness_mismatch(self):
+        k1 = (("Foo",), "Bar", 1, False)
+        k2 = (("Foo",), "Bar", 1, True)
+        self.assertIsNone(_credit_aliased(k1, k2))
+
+    def test_credit_aliased_rejects_method_mismatch(self):
+        k1 = (("WiiMovie",), "SetTex", 1, False)
+        k2 = (("DxMovie",), "GetTex", 1, False)
+        self.assertIsNone(_credit_aliased(k1, k2))
+
+    def test_judge_agreement_gated_off_by_default(self):
+        # Wii QuatKeys::SetFrame(float,float) vs DC3 (float,float,float): with
+        # crediting OFF (the default) this stays 'disagree'.
+        wd = {"SetFrame__8QuatKeysFff": "QuatKeys::SetFrame(float, float)"}
+        md = {"?SetFrame@QuatKeys@@UAAXMMM@Z":
+              "public: virtual void __cdecl QuatKeys::SetFrame(float, float, float)"}
+        v, _ = judge_agreement("SetFrame__8QuatKeysFff",
+                               "?SetFrame@QuatKeys@@UAAXMMM@Z", wd, md)
+        self.assertEqual(v, "disagree")
+        # ...and 'agree (arity-tolerant)' when credited.
+        v2, _ = judge_agreement("SetFrame__8QuatKeysFff",
+                                "?SetFrame@QuatKeys@@UAAXMMM@Z", wd, md,
+                                credit_aliases=True)
+        self.assertEqual(v2, "agree (arity-tolerant)")
+        self.assertTrue(is_agree(v2))
+
+    def test_judge_agreement_platform_alias_credited(self):
+        wd = {"SetTex__8WiiMovieFP6RndTex": "WiiMovie::SetTex(RndTex*)"}
+        md = {"?SetTex@DxMovie@@UAAXPAVRndTex@@@Z":
+              "public: virtual void __cdecl DxMovie::SetTex(RndTex*)"}
+        v, _ = judge_agreement("SetTex__8WiiMovieFP6RndTex",
+                               "?SetTex@DxMovie@@UAAXPAVRndTex@@@Z", wd, md,
+                               credit_aliases=True)
+        self.assertEqual(v, "agree (platform-alias)")
+
+    def test_verdict_bucket(self):
+        self.assertEqual(verdict_bucket("agree"), "agree")
+        self.assertEqual(verdict_bucket("agree (platform-alias)"), "agree_alias")
+        self.assertEqual(verdict_bucket("agree (arity-tolerant)"), "agree_alias")
+        self.assertEqual(verdict_bucket("disagree"), "disagree")
+        self.assertEqual(verdict_bucket("unjudgeable"), "unjudgeable")
+
+
+# ---------------------------------------------------------------------------
+# T4: exclude-match-types, optional scores field, min-vt-score, low-trust-stub
+# ---------------------------------------------------------------------------
+# A focused fixture: a Wii map with one Mesh fn, and matches that carry the
+# optional `scores` field for the min-vt-score path.
+SCORE_MAP = (
+    ".text section layout\n"
+    f"  00000000 000100 80010000 00010000 16 A__7RndMeshFv \t{SYSTEM_TU} \n"   # 256B
+    f"  00000100 000040 80010100 00010100 16 B__7RndMeshFv \t{SYSTEM_TU} \n"   # 64B (stub-ish)
+    f"  00000200 000100 80010200 00010200 16 C__7RndMeshFv \t{SYSTEM_TU} \n"
+)
+
+
+def _score_map(tmpdir: Path) -> Path:
+    p = tmpdir / "score.map"
+    p.write_text(SCORE_MAP)
+    return p
+
+
+class TestExcludeAndScoreFilters(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as td:
+            cls.idx = parse_wii_map_index(_score_map(Path(td)))
+
+    def test_map_carries_size(self):
+        self.assertEqual(self.idx[0x80010000]["size"], 0x100)
+        self.assertEqual(self.idx[0x80010100]["size"], 0x40)
+
+    def test_exclude_match_types_drops_pure_noise_pairs(self):
+        fm = [
+            {"p1_addr": "80010000", "p2_addr": "82000000",
+             "match_types": ["StringsRefsHasher"]},                  # dropped
+            {"p1_addr": "80010100", "p2_addr": "82000100",
+             "match_types": ["VTCombinedReference", "StringsRefsHasher"]},  # survives via VT
+            {"p1_addr": "80010200", "p2_addr": "82000200",
+             "match_types": ["VTCombinedReference"]},                # survives
+        ]
+        rep = evaluate(fm, [], [], [], self.idx,
+                       exclude_match_types={"StringsRefsHasher"})
+        self.assertEqual(rep["totals"]["scored_pairs"], 2)
+        self.assertEqual(rep["totals"]["filtered_excluded_match_types"], 1)
+        # the surviving mixed pair lost the excluded type
+        nc = {r["xenon_addr"]: r for r in rep["lists"]["new_coverage"]}
+        self.assertEqual(nc["0x82000100"]["match_types"], ["VTCombinedReference"])
+
+    def test_scores_field_optional_backward_compat(self):
+        # No `scores` field + a min_vt_score floor => filter inactive (the pair
+        # is KEPT). This is the old-artifact backward-compat guarantee.
+        fm = [{"p1_addr": "80010000", "p2_addr": "82000000",
+               "match_types": ["VTCombinedReference"]}]
+        rep = evaluate(fm, [], [], [], self.idx, min_vt_score=99.0)
+        self.assertEqual(rep["totals"]["scored_pairs"], 1)
+        self.assertEqual(rep["totals"]["vt_below_min_score_culled"], 0)
+
+    def test_min_vt_score_culls_when_scores_present(self):
+        fm = [
+            {"p1_addr": "80010000", "p2_addr": "82000000",
+             "match_types": ["VTCombinedReference"],
+             "scores": {"VTCombinedReference": {"product": 8.0}}},     # below 9.5 -> culled
+            {"p1_addr": "80010100", "p2_addr": "82000100",
+             "match_types": ["VTCombinedReference"],
+             "scores": {"VTCombinedReference": {"product": 12.0}}},    # above -> kept
+            {"p1_addr": "80010200", "p2_addr": "82000200",
+             "match_types": ["VTCombinedReference", "Implied Match"],
+             "scores": {"VTCombinedReference": {"product": 1.0}}},     # VT culled, pair survives via Implied
+        ]
+        rep = evaluate(fm, [], [], [], self.idx, min_vt_score=9.5)
+        self.assertEqual(rep["totals"]["vt_below_min_score_culled"], 2)
+        # pair 0 dropped entirely (VT was its only type); pairs 1 & 2 survive
+        self.assertEqual(rep["totals"]["scored_pairs"], 2)
+        nc = {r["xenon_addr"]: r for r in rep["lists"]["new_coverage"]}
+        self.assertNotIn("0x82000000", nc)
+        self.assertEqual(nc["0x82000200"]["match_types"], ["Implied Match"])
+
+    def test_low_trust_stub_buckets_tiny_disagrees(self):
+        # A bindiff DISAGREE on a 64-byte Wii fn => low-trust (not hard-wrong).
+        wd = {"B__7RndMeshFv": "RndMesh::B(void)"}
+        md = {"?Z@Other@@QAAXXZ": "public: void __cdecl Other::Z(void)"}
+        fm = [{"p1_addr": "80010100", "p2_addr": "82000100",
+               "match_types": ["VTCombinedReference"]}]
+        bindiff = [{"rb3_addr": "0x82000100", "dc3_name": "?Z@Other@@QAAXXZ",
+                    "similarity": 1.0, "confidence": 0.99}]
+        rep = evaluate(fm, [], [], bindiff, self.idx, wd, md,
+                       low_trust_stub=True, stub_size_max=88)
+        d = rep["dc3_agreement"]["high_conf"]
+        self.assertEqual(d["low_trust_stub"], 1)
+        self.assertEqual(d["disagree"], 0)         # NOT counted as hard-wrong
+        # and it is excluded from the judged precision proxy
+        self.assertNotIn("VTCombinedReference", rep["precision_by_match_type"])
+
+    def test_stratify_emits_per_category(self):
+        fm = [{"p1_addr": "80010000", "p2_addr": "82000000",
+               "match_types": ["VTCombinedReference"]}]
+        # make 0x82000000 a holdout that matches correctly (system/Mesh stem)
+        holdout = [{"addr": "0x82000000", "stem": "Mesh"}]
+        rep = evaluate(fm, [], holdout, [], self.idx, stratify=True)
+        self.assertIn("precision_by_match_type_by_category", rep)
+        self.assertIn("system", rep["precision_by_match_type_by_category"])
+
+
+class TestParseSweep(unittest.TestCase):
+    def test_empty(self):
+        self.assertIsNone(parse_sweep(""))
+
+    def test_comma_list(self):
+        self.assertEqual(parse_sweep("9.5,11,13"), [9.5, 11.0, 13.0])
+
+    def test_range(self):
+        self.assertEqual(parse_sweep("9.5:12:1.25"), [9.5, 10.75, 12.0])
 
 
 if __name__ == "__main__":

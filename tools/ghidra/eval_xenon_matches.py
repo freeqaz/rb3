@@ -68,6 +68,125 @@ from build_xenon_seeds import (  # noqa: E402
 RB3 = TOOLS_DIR.parents[1]
 XENON = RB3.parent / "rb3-xenon"
 
+# ---------------------------------------------------------------------------
+# Wii<->Xbox platform-class rename aliasing (forensics §1D V1 + scout 4 §4)
+#
+# The same Harmonix source class is renamed between the Wii (MWCC) build and
+# the Xbox 360 (MSVC/DC3) build. ghidriff/VT correctly pairs the *function*
+# but the eval's class-name join can't bridge the rename, so the pair is
+# falsely judged 'disagree'. We credit these as agree but tag them distinctly
+# ('agree (platform-alias)') so they stay auditable and never masquerade as a
+# real name-key match.
+#
+# The mechanism: normalize the FIRST scope (class) token on each side by
+# stripping/mapping a known platform prefix, then re-compare the keys. A
+# rename is credited ONLY when, after prefix normalization, scope+method+
+# arity+constness ALL match — i.e. the rename is the *sole* difference. This
+# refuses to alias genuinely-different functions (e.g. KeylessHash<char,char>
+# vs KeylessHash<AllocInfo,void> share no method+arity coincidence to launder).
+#
+# Two complementary tables:
+#   _PLATFORM_PREFIXES — generic prefix pairs applied to the bare class stem
+#                        (Wii<->Dx, Wii<->Ng, Wii<->Xbox, Band<->Ham, ...).
+#   _CLASS_ALIASES     — explicit full-name pairs for the documented twins,
+#                        as a belt-and-suspenders backstop / audit anchor.
+# ---------------------------------------------------------------------------
+_PLATFORM_PREFIXES = [
+    ("Wii", "Dx"),
+    ("Wii", "Ng"),
+    ("Wii", "Xbox"),
+    ("Wii", ""),
+    ("Band", "Ham"),
+    ("Band", ""),
+]
+
+# Explicit class-rename twins called out in the forensics doc (forensics §1D
+# V1). Stored canonicalized (sorted) so lookup is order-independent.
+_CLASS_ALIASES_RAW = [
+    ("WiiMovie", "DxMovie"),
+    ("BandCamShot", "HamCamShot"),
+    ("BandSongMetadata", "HamSongMetadata"),
+    ("BandIKEffector", "HamIKEffector"),
+    ("WiiPostProc", "NgPostProc"),
+    ("WiiDOFProc", "NgDOFProc"),
+    ("WiiMovie", "DxMovie"),
+]
+_CLASS_ALIAS_PAIRS = {frozenset(p) for p in _CLASS_ALIASES_RAW}
+
+# Default tolerance for cross-compiler arity drift on an otherwise-identical
+# (same scope, method, constness) identity. The same source function can
+# demangle to differing arity across MWCC vs MSVC — e.g. QuatKeys::SetFrame is
+# (float,float) on Wii but (float,float,float) on Xbox (forensics §1D V2: the
+# Xbox build took an extra float; bindiff sim=1.0 conf=0.993). This is NOT a
+# normalize_demangled parse bug — both manglings parse correctly; the arity
+# genuinely differs. Credited only on a tiny delta so unrelated overloads that
+# happen to share a class+method don't get laundered.
+ARITY_TOLERANCE = 1
+
+
+def _strip_platform_prefix(stem: str) -> Set[str]:
+    """All plausible platform-prefix-normalized forms of a bare class stem.
+
+    Returns a set that always includes `stem` itself plus, for every known
+    prefix pair (a,b), the result of swapping an `a`-prefix to `b` and vice
+    versa (and dropping a bare prefix). Used to test whether two class stems
+    are the same source class under a platform rename.
+    """
+    forms = {stem}
+    for a, b in _PLATFORM_PREFIXES:
+        if a and stem.startswith(a) and len(stem) > len(a):
+            forms.add(b + stem[len(a):])
+        if b and stem.startswith(b) and len(stem) > len(b):
+            forms.add(a + stem[len(b):])
+    return forms
+
+
+def _class_tokens_alias(t1: str, t2: str) -> bool:
+    """Do two class-scope tokens denote the same source class under a known
+    Wii<->Xbox rename? True if equal, in the explicit alias table, or unified
+    by a platform-prefix swap."""
+    if t1 == t2:
+        return True
+    if frozenset((t1, t2)) in _CLASS_ALIAS_PAIRS:
+        return True
+    return bool(_strip_platform_prefix(t1) & _strip_platform_prefix(t2))
+
+
+def _scope_aliases(s1: Tuple[str, ...], s2: Tuple[str, ...]) -> bool:
+    """Two scope tuples are platform-alias-equal when they have the same
+    length and each component pair aliases (only the class tokens ever differ
+    in practice, but we check every component for safety)."""
+    if len(s1) != len(s2):
+        return False
+    return all(_class_tokens_alias(a, b) for a, b in zip(s1, s2))
+
+
+def _credit_aliased(key1, key2) -> Optional[str]:
+    """If two normalized identity keys disagree ONLY by a Wii<->Xbox class
+    rename and/or a tolerated arity drift, return a credit tag string;
+    otherwise None. key = (scope_tuple, method, argc, is_const)."""
+    s1, m1, a1, c1 = key1
+    s2, m2, a2, c2 = key2
+    if m1 != m2 or c1 != c2:
+        return None
+    arity_ok = (a1 == a2) or (a1 is not None and a2 is not None
+                              and abs(a1 - a2) <= ARITY_TOLERANCE)
+    if not arity_ok:
+        return None
+    scope_same = s1 == s2
+    scope_alias = (not scope_same) and _scope_aliases(s1, s2)
+    if not (scope_same or scope_alias):
+        return None
+    tags = []
+    if scope_alias:
+        tags.append("platform-alias")
+    if a1 != a2:
+        tags.append("arity-tolerant")
+    if not tags:
+        return None  # identical key — caller already handled it as a match
+    return "+".join(tags)
+
+
 DEFAULT_RUN_DIR = RB3 / "build" / "SZBE69_B8" / "ghidra" / "ghidriff-xenon"
 DEFAULT_SEEDS = RB3 / "build" / "SZBE69_B8" / "ghidra" / "xenon-seeds" / "seeds.json"
 DEFAULT_HOLDOUT = RB3 / "build" / "SZBE69_B8" / "ghidra" / "xenon-seeds" / "holdout.json"
@@ -141,8 +260,9 @@ def tu_stem(tu_basename: Optional[str]) -> Optional[str]:
 
 
 def parse_wii_map_index(map_path: Path) -> Dict[int, dict]:
-    """CodeWarrior map -> {vaddr: {symbol, tu, category}} for .text/.init
-    function symbols (size > 0). First symbol at an address wins."""
+    """CodeWarrior map -> {vaddr: {symbol, tu, category, size}} for .text/.init
+    function symbols (size > 0). First symbol at an address wins. `size` is the
+    CW map's byte size column (used for the BinDiff-stub oracle-trust gate)."""
     out: Dict[int, dict] = {}
     in_code = False
     with map_path.open("r", encoding="utf-8", errors="replace") as f:
@@ -156,7 +276,8 @@ def parse_wii_map_index(map_path: Path) -> Dict[int, dict]:
             m = _MAP_LINE_TU.match(stripped)
             if not m:
                 continue
-            if int(m.group(2), 16) == 0:
+            size = int(m.group(2), 16)
+            if size == 0:
                 continue
             sym = m.group(4)
             if sym[0] in "@*.":
@@ -165,20 +286,46 @@ def parse_wii_map_index(map_path: Path) -> Dict[int, dict]:
             if addr in out:
                 continue
             tu, category = categorize_tu(m.group(5) or "")
-            out[addr] = {"symbol": sym, "tu": tu, "category": category}
+            out[addr] = {"symbol": sym, "tu": tu, "category": category,
+                         "size": size}
     return out
 
 
 # ---------------------------------------------------------------------------
 # Identity-agreement judgment (build_xenon_seeds join logic, applied pairwise)
 # ---------------------------------------------------------------------------
+def is_agree(verdict: str) -> bool:
+    """True for any agreement verdict, plain or aliased
+    ('agree', 'agree (platform-alias)', 'agree (arity-tolerant)', ...)."""
+    return verdict == "agree" or verdict.startswith("agree (")
+
+
+def verdict_bucket(verdict: str) -> str:
+    """Collapse a (possibly tagged) verdict into a counter bucket:
+    'agree' (plain key/name match), 'agree_alias' (credited via a Wii<->Xbox
+    rename and/or arity tolerance), 'disagree', or 'unjudgeable'."""
+    if verdict == "agree":
+        return "agree"
+    if verdict.startswith("agree ("):
+        return "agree_alias"
+    return verdict if verdict in ("disagree", "unjudgeable") else "unjudgeable"
+
+
 def judge_agreement(wii_symbol: str, dc3_name: str,
-                    wii_dem: Dict[str, str], msvc_dem: Dict[str, str]) -> Tuple[str, str]:
+                    wii_dem: Dict[str, str], msvc_dem: Dict[str, str],
+                    credit_aliases: bool = False) -> Tuple[str, str]:
     """Does the matched Wii symbol denote the same function identity as the
     DC3 (MSVC) name, under the seed builder's normalize-join?
 
     Returns (verdict, detail) where verdict is one of:
       'agree' / 'disagree' / 'unjudgeable'
+    or, when credit_aliases is True and the only difference is a Wii<->Xbox
+    class rename and/or a tolerated arity drift, a tagged
+      'agree (platform-alias)' / 'agree (arity-tolerant)' /
+      'agree (platform-alias+arity-tolerant)'.
+
+    credit_aliases defaults False so the eval is byte-identical to the legacy
+    report unless the operator opts in (--credit-platform-alias).
     wii_dem / msvc_dem: mangled -> demangled maps (injected; main() fills
     them with the real batch demanglers, tests inject fixtures).
     """
@@ -209,6 +356,13 @@ def judge_agreement(wii_symbol: str, dc3_name: str,
         return "unjudgeable", f"normalize: wii={cause1} msvc={cause2}"
     if key1 == key2:
         return "agree", "key_match"
+    # Same source function, Wii<->Xbox class rename and/or cross-compiler
+    # arity drift only? Credit it but tag the verdict distinctly so the report
+    # can audit (and so it never looks like a clean name-key match).
+    if credit_aliases:
+        tag = _credit_aliased(key1, key2)
+        if tag is not None:
+            return f"agree ({tag})", f"aliased {key1!r} ~= {key2!r}"
     return "disagree", f"key {key1!r} != {key2!r}"
 
 
@@ -223,7 +377,36 @@ def evaluate(function_matches: List[dict],
              wii_dem: Optional[Dict[str, str]] = None,
              msvc_dem: Optional[Dict[str, str]] = None,
              bindiff_min_sim: float = 1.0,
-             bindiff_min_conf: float = 0.95) -> dict:
+             bindiff_min_conf: float = 0.95,
+             credit_aliases: bool = False,
+             exclude_match_types: Optional[Set[str]] = None,
+             min_vt_score: Optional[float] = None,
+             low_trust_stub: bool = False,
+             stub_size_max: int = 88,
+             stratify: bool = False) -> dict:
+    """Score a ghidriff Wii<->Xenon run.
+
+    New optional behaviours (all DEFAULT-OFF so the report is byte-identical
+    to the legacy one when unset):
+      credit_aliases      — credit Wii<->Xbox class renames + arity drift as
+                            agreement (forensics §1D V1/V2); tagged distinctly.
+      exclude_match_types — drop matches whose ENTIRE type set lies within this
+                            set BEFORE any metric (e.g. the StringsRefsHasher
+                            noise). A pair keeps surviving if it carries any
+                            non-excluded type.
+      min_vt_score        — if a pair's exported VTCombinedReference
+                            scores.product is below this floor, drop the VT
+                            type from the pair (and the pair if VT was its only
+                            type). Inactive when the scores field is absent.
+      low_trust_stub      — enable the BinDiff-stub oracle-trust gate below.
+      stub_size_max       — DC3-oracle low-trust threshold: bindiff 'disagree'
+                            verdicts on Wii functions of size <= this are
+                            BinDiff-untrustworthy stub shapes (forensics §1B);
+                            bucketed separately, not scored as hard-wrong.
+      stratify            — also emit precision_by_match_type broken down per
+                            wii_category (band3/system/network/sdk/main).
+    """
+    exclude_match_types = exclude_match_types or set()
     wii_dem = wii_dem or {}
     msvc_dem = msvc_dem or {}
 
@@ -255,6 +438,8 @@ def evaluate(function_matches: List[dict],
     n_seed = 0
     seed_conflicts = []  # non-seed claim re-using a seeded endpoint (SymbolsHash etc.)
     n_bad_addr = 0
+    n_filtered_types = 0   # whole pair dropped: all types excluded / VT culled
+    n_vt_culled = 0        # VT type stripped below --min-vt-score (pair survived)
     for m in function_matches:
         p1 = parse_addr(m.get("p1_addr"))
         p2 = parse_addr(m.get("p2_addr"))
@@ -269,6 +454,22 @@ def evaluate(function_matches: List[dict],
             seed_conflicts.append({"p1_addr": hex(p1), "p2_addr": hex(p2),
                                    "match_types": mtypes})
             continue
+        # --- optional offline filters (all no-ops at default args) ---------
+        # The exported per-match scores (PLAN.md §3 schema) are OPTIONAL; the
+        # field is absent in legacy matches.json, in which case min_vt_score
+        # is inactive and the pair replays byte-identically.
+        scores = m.get("scores") or {}
+        if (min_vt_score is not None and "VTCombinedReference" in mtypes):
+            vt = scores.get("VTCombinedReference") or {}
+            prod = vt.get("product")
+            if prod is not None and prod < min_vt_score:
+                mtypes = [t for t in mtypes if t != "VTCombinedReference"]
+                n_vt_culled += 1
+        if exclude_match_types:
+            mtypes = [t for t in mtypes if t not in exclude_match_types]
+        if not mtypes:
+            n_filtered_types += 1
+            continue
         wii = wii_index.get(p1)
         pairs.append({
             "p1": p1, "p2": p2, "match_types": mtypes,
@@ -276,6 +477,7 @@ def evaluate(function_matches: List[dict],
             "wii_symbol": wii["symbol"] if wii else None,
             "wii_tu": wii["tu"] if wii else None,
             "wii_category": wii["category"] if wii else None,
+            "wii_size": wii["size"] if wii else None,
             "suspect_symbolshash": mtypes == ["SymbolsHash"],
         })
 
@@ -353,12 +555,21 @@ def evaluate(function_matches: List[dict],
             verdict, detail = "unjudgeable", "wii_addr_not_in_map"
         else:
             verdict, detail = judge_agreement(pair["wii_symbol"], entry["dc3_name"],
-                                              wii_dem, msvc_dem)
-        b_all[verdict] += 1
+                                              wii_dem, msvc_dem,
+                                              credit_aliases=credit_aliases)
+        # Oracle-trust: a BinDiff 'disagree' on a tiny stub-shaped Wii function
+        # (<= stub_size_max bytes) is untrustworthy — BinDiff pairs identical
+        # 'return Symbol(...)' shapes arbitrarily (forensics §1B). Bucket those
+        # separately instead of scoring them as hard-wrong. DEFAULT OFF.
+        low_trust = (low_trust_stub and verdict == "disagree"
+                     and pair["wii_size"] is not None
+                     and pair["wii_size"] <= stub_size_max)
+        bucket = "low_trust_stub" if low_trust else verdict_bucket(verdict)
+        b_all[bucket] += 1
         if high_conf:
-            b_high[verdict] += 1
-            if verdict in ("agree", "disagree"):
-                judged.append((pair, verdict == "agree"))
+            b_high[bucket] += 1
+            if bucket in ("agree", "agree_alias", "disagree"):
+                judged.append((pair, is_agree(verdict)))
         dc3_rows.append({
             "xenon_addr": hex(pair["p2"]), "wii_addr": hex(pair["p1"]),
             "wii_symbol": pair["wii_symbol"], "dc3_name": entry["dc3_name"],
@@ -369,12 +580,22 @@ def evaluate(function_matches: List[dict],
         })
 
     def _agree_stats(c: Counter) -> dict:
-        judged_n = c["agree"] + c["disagree"]
-        return {
-            "agree": c["agree"], "disagree": c["disagree"],
+        agree_total = c["agree"] + c["agree_alias"]
+        judged_n = agree_total + c["disagree"]
+        out = {
+            "agree": agree_total,
+            "disagree": c["disagree"],
             "unjudgeable": c["unjudgeable"],
-            "agreement_rate": (c["agree"] / judged_n) if judged_n else None,
+            "agreement_rate": (agree_total / judged_n) if judged_n else None,
         }
+        # Extra, audit-only sub-buckets — emitted only when the producing
+        # feature is active so the default report is byte-identical to legacy.
+        if credit_aliases:
+            out["agree_exact"] = c["agree"]
+            out["agree_platform_alias"] = c["agree_alias"]
+        if low_trust_stub:
+            out["low_trust_stub"] = c["low_trust_stub"]
+        return out
 
     dc3_metrics = {
         "matched_in_bindiff": len(dc3_rows),
@@ -416,28 +637,47 @@ def evaluate(function_matches: List[dict],
     }
 
     # ---- (d) per-match-type precision proxy --------------------------------
-    d_tally: Dict[str, Counter] = defaultdict(Counter)
-    for pair, correct in judged:
-        d_tally["OVERALL"]["correct" if correct else "wrong"] += 1
-        for t in pair["match_types"]:
-            d_tally[t]["correct" if correct else "wrong"] += 1
-    precision_by_type = {}
-    for t, c in sorted(d_tally.items(), key=lambda kv: -(kv[1]["correct"] + kv[1]["wrong"])):
-        n = c["correct"] + c["wrong"]
-        precision_by_type[t] = {
-            "judged": n, "correct": c["correct"], "wrong": c["wrong"],
-            "precision": (c["correct"] / n) if n else None,
-        }
+    def _tally_to_precision(tally: Dict[str, Counter]) -> dict:
+        out = {}
+        for t, c in sorted(tally.items(),
+                           key=lambda kv: -(kv[1]["correct"] + kv[1]["wrong"])):
+            n = c["correct"] + c["wrong"]
+            out[t] = {
+                "judged": n, "correct": c["correct"], "wrong": c["wrong"],
+                "precision": (c["correct"] / n) if n else None,
+            }
+        return out
 
-    return {
-        "totals": {
-            "function_matches": len(function_matches),
-            "seed_pairs_in_output": n_seed,
-            "seed_conflicts": len(seed_conflicts),
-            "bad_addresses": n_bad_addr,
-            "scored_pairs": len(pairs),
-            "wii_addr_resolved": sum(1 for p in pairs if p["wii_symbol"]),
-        },
+    d_tally: Dict[str, Counter] = defaultdict(Counter)
+    # per-category stratification (scout 4 §4: VT ~0-20% band3 vs 40-54% engine)
+    d_strat: Dict[str, Dict[str, Counter]] = defaultdict(lambda: defaultdict(Counter))
+    for pair, correct in judged:
+        k = "correct" if correct else "wrong"
+        d_tally["OVERALL"][k] += 1
+        cat = pair["wii_category"] or "unresolved"
+        d_strat[cat]["OVERALL"][k] += 1
+        for t in pair["match_types"]:
+            d_tally[t][k] += 1
+            d_strat[cat][t][k] += 1
+    precision_by_type = _tally_to_precision(d_tally)
+
+    totals = {
+        "function_matches": len(function_matches),
+        "seed_pairs_in_output": n_seed,
+        "seed_conflicts": len(seed_conflicts),
+        "bad_addresses": n_bad_addr,
+        "scored_pairs": len(pairs),
+        "wii_addr_resolved": sum(1 for p in pairs if p["wii_symbol"]),
+    }
+    # Filter bookkeeping — only surfaced when a filter is actually active, so
+    # the default report stays byte-identical to legacy.
+    if exclude_match_types:
+        totals["filtered_excluded_match_types"] = n_filtered_types
+    if min_vt_score is not None:
+        totals["vt_below_min_score_culled"] = n_vt_culled
+
+    rep = {
+        "totals": totals,
         "holdout_recovery": holdout_metrics,
         "dc3_agreement": dc3_metrics,
         "new_coverage": new_metrics,
@@ -450,6 +690,11 @@ def evaluate(function_matches: List[dict],
             "seed_conflicts": seed_conflicts,
         },
     }
+    if stratify:
+        rep["precision_by_match_type_by_category"] = {
+            cat: _tally_to_precision(d_strat[cat]) for cat in sorted(d_strat)
+        }
+    return rep
 
 
 # ---------------------------------------------------------------------------
@@ -528,7 +773,13 @@ def print_summary(rep: dict) -> None:
         s = d[k]
         ar = s["agreement_rate"]
         ar_s = f"{ar:.3f}" if ar is not None else "n/a"
-        print(f"  {k}: agree {s['agree']} / disagree {s['disagree']} "
+        extra = ""
+        if "agree_platform_alias" in s:
+            extra = (f" [exact {s['agree_exact']} + alias "
+                     f"{s['agree_platform_alias']}]")
+        if "low_trust_stub" in s:
+            extra += f" (low-trust-stub {s['low_trust_stub']})"
+        print(f"  {k}: agree {s['agree']}{extra} / disagree {s['disagree']} "
               f"/ unjudgeable {s['unjudgeable']}  (agreement {ar_s})")
 
     n = rep["new_coverage"]
@@ -548,6 +799,60 @@ def print_summary(rep: dict) -> None:
     if overall is not None:
         bar = "PASS" if overall > 0.32 else "FAIL"
         print(f"\nEXPERIMENT 1 bar (precision > 0.32): {overall:.3f} -> {bar}")
+
+    strat = rep.get("precision_by_match_type_by_category")
+    if strat:
+        print("\n--- (e) precision by match type, stratified by wii_category ---")
+        for cat in sorted(strat):
+            print(f"  [{cat}]")
+            for t_name, s in strat[cat].items():
+                p = s["precision"]
+                p_s = f"{p:.3f}" if p is not None else "n/a"
+                print(f"    {t_name:<26} {s['judged']:>5} {s['correct']:>7} "
+                      f"{s['wrong']:>5} {p_s:>9}")
+
+
+def parse_sweep(spec: str) -> Optional[List[float]]:
+    """'9.5,11,13' -> [9.5,11.0,13.0]; 'lo:hi:step' -> inclusive range; ''
+    -> None (sweep mode off)."""
+    spec = spec.strip()
+    if not spec:
+        return None
+    if ":" in spec:
+        lo, hi, step = (float(x) for x in spec.split(":"))
+        vals, v = [], lo
+        # accumulate to avoid float drift past hi
+        n = 0
+        while v <= hi + 1e-9:
+            vals.append(round(v, 6))
+            n += 1
+            v = lo + n * step
+        return vals
+    return [float(x) for x in spec.split(",")]
+
+
+def run_vt_sweep(eval_fn, thresholds: List[float]) -> None:
+    """For each VT score threshold, run the eval with --min-vt-score set and
+    print the VTCombinedReference judged precision + yield (matches kept).
+    Consumes the §3 exported scores; if matches.json has no scores, every
+    threshold is identical to the baseline (VT never culled) — which the
+    printout makes obvious (constant 'kept')."""
+    print(f"{'min_vt_score':>12}  {'VT judged':>9}  {'correct':>7}  "
+          f"{'wrong':>5}  {'precision':>9}  {'VT culled':>9}")
+    base = eval_fn(None)
+    base_vt = base["precision_by_match_type"].get("VTCombinedReference", {})
+    base_kept = base_vt.get("judged", 0)
+    print(f"{'(none)':>12}  {base_kept:>9}  {base_vt.get('correct',0):>7}  "
+          f"{base_vt.get('wrong',0):>5}  "
+          f"{(base_vt.get('precision') or 0):>9.3f}  {0:>9}")
+    for thr in thresholds:
+        rep = eval_fn(thr)
+        vt = rep["precision_by_match_type"].get("VTCombinedReference", {})
+        culled = rep["totals"].get("vt_below_min_score_culled", 0)
+        p = vt.get("precision")
+        p_s = f"{p:.3f}" if p is not None else "n/a"
+        print(f"{thr:>12.3f}  {vt.get('judged',0):>9}  {vt.get('correct',0):>7}  "
+              f"{vt.get('wrong',0):>5}  {p_s:>9}  {culled:>9}")
 
 
 def main() -> int:
@@ -569,7 +874,33 @@ def main() -> int:
                     help="high-conf bindiff subset gate (default 0.95, the seed filter)")
     ap.add_argument("--no-demangle", action="store_true",
                     help="skip the external demanglers (mangled joins become unjudgeable)")
+    # --- new offline-tunable features (all default-off => byte-identical) ---
+    ap.add_argument("--credit-platform-alias", action="store_true",
+                    help="credit Wii<->Xbox class renames + cross-compiler arity "
+                         "drift as agreement (tagged 'agree (platform-alias)'); "
+                         "raises measured VT precision (forensics §1D V1/V2)")
+    ap.add_argument("--exclude-match-types", default="",
+                    help="comma-separated match types to drop before scoring "
+                         "(e.g. StringsRefsHasher,StrUniqueFuncRefsHasher); a "
+                         "pair survives if it carries any non-excluded type")
+    ap.add_argument("--stratify", action="store_true",
+                    help="also emit precision_by_match_type_by_category "
+                         "(band3/system/network/sdk) — the aggregate misleads")
+    ap.add_argument("--low-trust-stub", action="store_true",
+                    help="bucket BinDiff 'disagree' verdicts on Wii functions "
+                         "<= --stub-size-max bytes as low-trust (not hard-wrong)")
+    ap.add_argument("--stub-size-max", type=int, default=88,
+                    help="Wii byte-size ceiling for the --low-trust-stub gate")
+    ap.add_argument("--min-vt-score", type=float, default=None,
+                    help="drop VTCombinedReference below this scores.product "
+                         "floor (PLAN.md §3 schema; inactive if scores absent)")
+    ap.add_argument("--sweep-vt-score", default="",
+                    help="comma-separated VT score thresholds (or lo:hi:step) — "
+                         "print VT precision/yield per threshold vs the judged "
+                         "set and exit, instead of writing a report")
     args = ap.parse_args()
+
+    exclude_types = {t.strip() for t in args.exclude_match_types.split(",") if t.strip()}
 
     matches_path = args.matches or find_matches_json(args.run_dir)
     print(f"[eval] matches: {matches_path}", file=sys.stderr)
@@ -601,10 +932,26 @@ def main() -> int:
                 need_msvc.add(e["dc3_name"])
     wii_dem, msvc_dem = build_demangle_maps(need_wii, need_msvc, args.no_demangle)
 
-    rep = evaluate(function_matches, seeds, holdout_entries, bindiff_entries,
-                   wii_index, wii_dem, msvc_dem,
-                   bindiff_min_sim=args.bindiff_min_sim,
-                   bindiff_min_conf=args.bindiff_min_conf)
+    def _eval(min_vt: Optional[float]) -> dict:
+        return evaluate(
+            function_matches, seeds, holdout_entries, bindiff_entries,
+            wii_index, wii_dem, msvc_dem,
+            bindiff_min_sim=args.bindiff_min_sim,
+            bindiff_min_conf=args.bindiff_min_conf,
+            credit_aliases=args.credit_platform_alias,
+            exclude_match_types=exclude_types,
+            min_vt_score=min_vt,
+            low_trust_stub=args.low_trust_stub,
+            stub_size_max=args.stub_size_max,
+            stratify=args.stratify)
+
+    # ---- VT score-sweep mode (no report written) -------------------------
+    sweep = parse_sweep(args.sweep_vt_score)
+    if sweep is not None:
+        run_vt_sweep(_eval, sweep)
+        return 0
+
+    rep = _eval(args.min_vt_score)
     rep["inputs"] = {
         "matches": str(matches_path), "seeds": str(args.seeds),
         "holdout": str(args.holdout), "bindiff": str(args.bindiff),

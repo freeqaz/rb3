@@ -77,6 +77,8 @@ RB3 = Path(__file__).resolve().parents[2]
 XENON = RB3.parent / "rb3-xenon"
 
 DEFAULT_BINDIFF = XENON / "tools" / "bindiff_match.json"
+DEFAULT_RB3WII = XENON / "unified_id_rb3wii.json"
+DEFAULT_RTTI = XENON / "unified_id_rtti.json"
 DEFAULT_HOLDOUT = XENON / "docs" / "decomp" / "gameid" / "crossval_agree.json"
 DEFAULT_WII_MAP = RB3 / "orig" / "SZBE69_B8" / "files" / "band_r_wii.map"
 DEFAULT_XENON_SYMS = XENON / "config" / "45410914" / "symbols.txt"
@@ -422,6 +424,146 @@ def xex_text_range(symbols_txt: Path) -> Tuple[int, int]:
 
 
 # ---------------------------------------------------------------------------
+# Direct rb3wii / RTTI seed ingestion (name-join to the Bank 8 wii_by_key)
+# ---------------------------------------------------------------------------
+def _normalize_rb3wii_name(name: str) -> str:
+    """The rb3wii BinDiff renders demangled names with '_' where the demangler
+    we normalize against uses ' ' (arg separators, '_const' suffix). Translate
+    so normalize_demangled parses constness + arity identically."""
+    s = name
+    # '..)_const' const-qualifier suffix -> ' const'
+    s = re.sub(r"\)_const\b", ") const", s)
+    # ',_' arg separator -> ', '
+    s = s.replace(",_", ", ")
+    return s
+
+
+def _resolve_wii_name_to_bank8(name: str,
+                               wii_by_key: Dict[tuple, Set[int]]) -> Tuple[Optional[int], str]:
+    """Re-resolve a demangled Wii function name to its Bank 8 virtual address
+    via the 1:1-unique normalize-join. Returns (addr, cause)."""
+    key, cause = normalize_demangled(_normalize_rb3wii_name(name))
+    if key is None:
+        return None, "normalize_" + cause
+    wa = wii_by_key.get(key)
+    if not wa:
+        return None, "no_bank8_addr_for_name"
+    if len(wa) > 1:
+        return None, "ambiguous_bank8_multi_addr"
+    return next(iter(wa)), "ok"
+
+
+def _ingest_rb3wii_seeds(args, pairs: List[dict],
+                         wii_by_key: Dict[tuple, Set[int]],
+                         drops: Counter, stats: dict) -> int:
+    """Append direct Wii<->Xenon anchors from unified_id_rb3wii.json, joining
+    by NAME to the Bank 8 address (not the file's Bank 5 wii_addr). Dedups
+    against already-collected pairs by both endpoints. Holdout exclusion +
+    range checks are applied later in the shared pipeline."""
+    path = args.rb3wii
+    if not path.is_file():
+        print(f"[WARN] rb3wii file not found: {path} — skipping direct seeds",
+              file=sys.stderr)
+        stats["rb3wii_total"] = 0
+        return 0
+    data = json.loads(path.read_text())
+    stats["rb3wii_total"] = len(data)
+    filt = [e for e in data
+            if e.get("similarity", 0) >= args.rb3wii_min_sim
+            and e.get("confidence", 0) >= args.rb3wii_min_conf]
+    stats["rb3wii_filtered"] = len(filt)
+
+    used_p1 = {p["p1"] for p in pairs}
+    used_p2 = {p["p2"] for p in pairs}
+    added = 0
+    for e in filt:
+        p2 = int(e["rb3_addr"], 16)
+        if p2 in used_p2:
+            drops["rb3wii_dup_existing_p2"] += 1
+            continue
+        b8, cause = _resolve_wii_name_to_bank8(e["wii_name"], wii_by_key)
+        if b8 is None:
+            drops["rb3wii_" + cause] += 1
+            continue
+        if b8 in used_p1:
+            drops["rb3wii_dup_existing_p1"] += 1
+            continue
+        pairs.append({
+            "p1": b8, "p2": p2, "wii": e["wii_name"], "xen": e["rb3_fn"],
+            "key": (("#rb3wii",), e["wii_name"], None, False),
+            "prov": "rb3wii-direct",
+        })
+        used_p1.add(b8)
+        used_p2.add(p2)
+        added += 1
+    return added
+
+
+def _ingest_rtti_seeds(args, pairs: List[dict],
+                       wii_by_key: Dict[tuple, Set[int]],
+                       drops: Counter, stats: dict) -> int:
+    """OPTIONAL (default-off): RTTI-derived identities from
+    unified_id_rtti.json. Joins the DC3 MSVC name -> Wii Bank 8 addr via the
+    normalize-join. Skips compiler-synthesized deleting destructors."""
+    path = args.rtti_ids
+    if not path.is_file():
+        print(f"[WARN] rtti file not found: {path} — skipping RTTI seeds",
+              file=sys.stderr)
+        stats["rtti_total"] = 0
+        return 0
+    data = json.loads(path.read_text())
+    stats["rtti_total"] = len(data)
+    mangled = sorted({e["dc3_name"] for e in data
+                      if e.get("dc3_name", "").startswith("?")
+                      and "deleting destructor" not in e.get("dc3_name_demangled", "")})
+    dem = demangle_msvc_batch(mangled)
+    used_p1 = {p["p1"] for p in pairs}
+    used_p2 = {p["p2"] for p in pairs}
+    added = 0
+    for e in data:
+        name = e.get("dc3_name", "")
+        if not name.startswith("?"):
+            drops["rtti_not_mangled"] += 1
+            continue
+        if "deleting destructor" in e.get("dc3_name_demangled", ""):
+            drops["rtti_deleting_dtor"] += 1
+            continue
+        p2 = int(e["rb3_addr"], 16)
+        if p2 in used_p2:
+            drops["rtti_dup_existing_p2"] += 1
+            continue
+        d = dem.get(name)
+        if not d:
+            drops["rtti_undemangleable"] += 1
+            continue
+        key, cause = normalize_demangled(d)
+        if key is None:
+            drops["rtti_normalize_" + cause] += 1
+            continue
+        wa = wii_by_key.get(key)
+        if not wa:
+            drops["rtti_no_wii_addr"] += 1
+            continue
+        if len(wa) > 1:
+            drops["rtti_ambiguous_wii"] += 1
+            continue
+        b8 = next(iter(wa))
+        if b8 in used_p1:
+            drops["rtti_dup_existing_p1"] += 1
+            continue
+        pairs.append({
+            "p1": b8, "p2": p2, "wii": e.get("dc3_name_demangled", name),
+            "xen": e.get("rb3_fn", hex(p2)),
+            "key": (("#rtti",), e.get("rtti_class", ""), None, False),
+            "prov": "rtti",
+        })
+        used_p1.add(b8)
+        used_p2.add(p2)
+        added += 1
+    return added
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 def main() -> int:
@@ -435,6 +577,17 @@ def main() -> int:
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--min-sim", type=float, default=1.0)
     ap.add_argument("--min-conf", type=float, default=0.95)
+    # Direct Wii<->Xenon BinDiff anchors (band3 game code the DC3 oracle can't
+    # reach). Re-resolved by NAME to the Bank 8 address (see module helpers).
+    ap.add_argument("--rb3wii", type=Path, default=DEFAULT_RB3WII,
+                    help="unified_id_rb3wii.json (direct Wii<->Xenon pairs)")
+    ap.add_argument("--rb3wii-min-sim", type=float, default=1.0)
+    ap.add_argument("--rb3wii-min-conf", type=float, default=0.95)
+    # RTTI-derived identities — OPTIONAL stretch, default OFF.
+    ap.add_argument("--rtti-seeds", action="store_true",
+                    help="also ingest RTTI-named methods (unified_id_rtti.json)")
+    ap.add_argument("--rtti-ids", type=Path, default=DEFAULT_RTTI,
+                    help="unified_id_rtti.json (used only with --rtti-seeds)")
     ap.add_argument("--spot", type=int, default=10,
                     help="print N random spot-check pairs (default 10)")
     ap.add_argument("--seed", type=int, default=20260609,
@@ -527,7 +680,7 @@ def main() -> int:
             "p1": next(iter(wa)), "p2": next(iter(xa)),
             "wii": sorted(wii_key_names[key])[0],
             "xen": sorted(xen_key_names[key])[0],
-            "key": key,
+            "key": key, "prov": "dc3-bindiff-cpp",
         })
 
     plain_joined = set(xen_plain) & set(wii_plain)
@@ -543,7 +696,28 @@ def main() -> int:
         pairs.append({
             "p1": next(iter(wa)), "p2": next(iter(xa)),
             "wii": name, "xen": name, "key": (("#C",), name, None, False),
+            "prov": "dc3-bindiff-plain",
         })
+
+    # ---- Direct Wii<->Xenon BinDiff seeds (rb3wii) -----------------------
+    # rb3-xenon/unified_id_rb3wii.json carries direct RB3-Xenon<->RB3-Wii
+    # BinDiff pairs WITH a Wii address — but that wii_addr is in the *Bank 5*
+    # ELF address space (the only DWARF build BinDiff could run against), NOT
+    # the Bank 8 target ghidriff diffs against. Bank5!=Bank8 layout drift makes
+    # the raw wii_addr point at the WRONG Bank 8 function (verified:
+    # rb3wii wii=0x8013cd10 'GemManager::SetInCoda' is, in the Bank 8 map,
+    # RebuildBeats__8GemTrack; the real SetInCoda lives at 0x80134e60). So we
+    # IGNORE wii_addr and re-resolve the rb3wii wii_NAME to its Bank 8 address
+    # via the same normalize-join used for the DC3 seeds — making this source
+    # immune to the bank drift. These anchor band3/ game code the DC3 oracle
+    # (engine-only overlap) cannot reach.
+    n_rb3wii = _ingest_rb3wii_seeds(
+        args, pairs, wii_by_key, drops, stats)
+    stats["rb3wii_added"] = n_rb3wii
+
+    if args.rtti_seeds:
+        n_rtti = _ingest_rtti_seeds(args, pairs, wii_by_key, drops, stats)
+        stats["rtti_added"] = n_rtti
 
     # ---- Holdout exclusion ------------------------------------------------
     holdout_entries: List[dict] = []
@@ -581,6 +755,8 @@ def main() -> int:
     assert len({p["p2"] for p in pairs}) == len(pairs), "duplicate p2 in seeds"
     pairs.sort(key=lambda p: p["p1"])
     stats["final_seeds"] = len(pairs)
+    stats["seeds_by_provenance"] = dict(
+        Counter(p.get("prov", "dc3-bindiff-cpp") for p in pairs).most_common())
     stats["drops"] = dict(drops.most_common())
 
     # ---- Outputs -----------------------------------------------------------
@@ -592,6 +768,7 @@ def main() -> int:
     # provenance sidecar (NOT consumed by ghidriff; human/eval use)
     detail = [{"p1_addr": f"0x{p['p1']:08x}", "p2_addr": f"0x{p['p2']:08x}",
                "wii_symbol": p["wii"], "xenon_dc3_name": p["xen"],
+               "prov": p.get("prov", "dc3-bindiff-cpp"),
                "key": [list(p["key"][0]), p["key"][1], p["key"][2], p["key"][3]]}
               for p in pairs]
     (out_dir / "seeds_detail.json").write_text(json.dumps(detail, indent=1) + "\n")
