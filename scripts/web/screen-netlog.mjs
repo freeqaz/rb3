@@ -72,9 +72,11 @@ async function waitScreen(page, pred, timeoutMs, label) {
   cdp.on('Network.responseReceived', (e) => { const r = byId.get(e.requestId); if (r) r.status = e.response.status; });
   cdp.on('Network.dataReceived', (e) => { const r = byId.get(e.requestId); if (r) r.bytes += e.dataLength || 0; });
 
-  // Screen-bundles OFF for discovery so we see the raw per-file reads, not the
-  // bundle prefetch we're populating. (?env bridge → ::setenv in main_web.cpp.)
-  const url = `http://127.0.0.1:${PORT}/?env=RB3_SCREEN_BUNDLES_OFF=1;RB3_PREWARM_SCREENS=0`;
+  // Load the DEBUG build (?debug=true): only build.sh --debug deploys the T9
+  // per-screen code; index.html defaults to the feature-less release build
+  // otherwise. Screen-bundles OFF for discovery so we see the raw per-file reads,
+  // not the bundle prefetch we're populating. (?env bridge → ::setenv in main_web.cpp.)
+  const url = `http://127.0.0.1:${PORT}/?debug=true&env=RB3_SCREEN_BUNDLES_OFF=1;RB3_PREWARM_SCREENS=0`;
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   page.on('console', (m) => { if (m.type() === 'error') console.log('  [err]', m.text()); });
 

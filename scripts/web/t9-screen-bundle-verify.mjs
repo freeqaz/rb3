@@ -96,7 +96,12 @@ async function runArm(armName, runIdx) {
   });
   cdp.on('Network.dataReceived', (e) => { const r = byId.get(e.requestId); if (r) r.bytes += e.dataLength || 0; });
 
-  const url = `http://127.0.0.1:${PORT}/?env=${encodeURIComponent(env)}`;
+  // MUST load the DEBUG build: only build.sh --debug deploys the T9 per-screen
+  // bundle code (release is built later by integration). index.html defaults to
+  // release without ?debug=true, so without this the bundles NEVER fire and the
+  // A/B is non-discriminating (every arm reports bundles=NONE on the feature-less
+  // release wasm). ?debug=true&env=... chains the env bridge after the build sel.
+  const url = `http://127.0.0.1:${PORT}/?debug=true&env=${encodeURIComponent(env)}`;
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   for (let i = 0; i < 600; i++) { if (await getBooted(page)) break; await sleep(500); }
   await startRafProbe(page);
@@ -163,13 +168,26 @@ async function runArm(armName, runIdx) {
   // Aggregate (median) per arm.
   console.log('\n===================== SUMMARY (median per arm) =====================');
   const med = (a) => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+  // Which arms are EXPECTED to fire a bundle (RB3_SCREEN_BUNDLES_OFF unset/=0).
+  const expectBundles = (arm) => !/RB3_SCREEN_BUNDLES_OFF=1/.test(ARM_ENV[arm] || '');
+  const failures = [];
   for (const arm of ARMS) {
     const rs = results.filter((r) => r.arm === arm && !r.error);
-    if (!rs.length) { console.log(`${arm}: ALL RUNS FAILED`); continue; }
+    if (!rs.length) { console.log(`${arm}: ALL RUNS FAILED`); failures.push(`${arm}: all runs failed`); continue; }
     const firedAny = rs.some((r) => r.bundleReqs && r.bundleReqs.length);
-    console.log(`${arm}: bundlesFired=${firedAny}`);
+    console.log(`${arm}: bundlesFired=${firedAny} (expected=${expectBundles(arm)})`);
     console.log(`   splash->hub  wall=${med(rs.map((r) => r.hub.wallMs))}ms  rafMax=${med(rs.map((r) => r.hub.rafMaxMs))}ms  over100=${med(rs.map((r) => r.hub.rafOver100))}  fileReqs=${med(rs.map((r) => r.hub.fileReqs))}`);
     console.log(`   hub->select  wall=${med(rs.map((r) => r.ss.wallMs))}ms  rafMax=${med(rs.map((r) => r.ss.rafMaxMs))}ms  over100=${med(rs.map((r) => r.ss.rafOver100))}  fileReqs=${med(rs.map((r) => r.ss.fileReqs))}`);
+    // GATE: an arm that SHOULD fire bundles but fired NONE means we measured a
+    // feature-less build (e.g. release without ?debug=true) — a non-discriminating
+    // A/B must not silently pass. Conversely an OFF arm that fired a bundle is also wrong.
+    if (expectBundles(arm) && !firedAny) failures.push(`${arm}: expected a /api/bundle/screen/ request but NONE fired (wrong build? need ?debug=true)`);
+    if (!expectBundles(arm) && firedAny) failures.push(`${arm}: RB3_SCREEN_BUNDLES_OFF=1 but a bundle still fired`);
   }
   console.log(JSON.stringify(results));
+  if (failures.length) {
+    console.error('\n[t9-verify] GATE FAILED:\n  - ' + failures.join('\n  - '));
+    process.exit(2);
+  }
+  console.log('\n[t9-verify] GATE PASSED: bundle firing matches expectation for every arm.');
 })().catch((e) => { console.error(e); process.exit(1); });
