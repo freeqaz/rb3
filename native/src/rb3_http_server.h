@@ -40,6 +40,11 @@ public:
         kCmdScreenshot,   // Capture framebuffer as PNG (after EndDrawing)
         kCmdDtaEval,      // Evaluate a DTA expression
         kCmdInput,        // Inject a synthetic-input verb (rb3_game_input.cpp)
+        // milo-trace W9 replay API (gated by RB3_REPLAY_API=1; handlers live in
+        // rb3_replay_api.cpp). param1 carries the JSON request body.
+        kCmdReplayMemory, // /api/memory   — sandboxed arena alloc/read/write/clear
+        kCmdReplayCall,   // /api/call     — resolve + invoke a native symbol
+        kCmdReplayInfo,   // /api/replay/info — PIE load bias + arena geometry
     };
 
     struct CommandResult {

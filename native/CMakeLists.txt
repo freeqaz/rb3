@@ -530,6 +530,24 @@ add_executable(rb3-native
     # use the MWCC compat flags, while the httplib TU must NOT — see the
     # set_source_files_properties note after rb3_configure_target below).
     ${CMAKE_SOURCE_DIR}/src/rb3_http_handlers.cpp
+    # milo-trace W9 replay API (RB3_REPLAY_API=1): /api/memory + /api/call +
+    # /api/replay/info. The native-side half of milo-trace mode (c) differential
+    # replay (run the SHIPPING native code vs a captured guest-BE record). Ordinary
+    # clang C++ (no decomp headers, no httplib) — needs the same MS-compat-OFF
+    # override as rb3_http_server.cpp (set below) because it uses normal RTTI/dlfcn.
+    # NOTE: commit this entry ATOMICALLY with src/rb3_replay_api.cpp + the
+    # rb3_http_server.{h,cpp} call sites (dd584cdc un-wired it while untracked).
+    ${CMAKE_SOURCE_DIR}/src/rb3_replay_api.cpp
+    # milo-trace W9B native-side INPUT capture (RB3_REPLAY_CAPTURE=<out.ndjson>):
+    # the CAPTURE half of the inverted-direction port-fidelity campaign. Records
+    # real-gameplay-distribution function-entry inputs for the high-risk leaf
+    # surfaces (endian/string/hash/math) from live engine state during a headless
+    # session; tools/w9_campaign.py replays them on the Wii DOL + the native port
+    # and diffs. Includes decomp headers (obj/Data.h, math/Vec.h, ui/UI.h,
+    # obj/Task.h) so it uses the target-wide MWCC compat flags (NOT the
+    # MS-compat-OFF override rb3_replay_api.cpp needs). One exported entry point
+    # (rb3rc_capture_sweep), reached over the existing /api/call endpoint.
+    ${CMAKE_SOURCE_DIR}/src/rb3_replay_capture.cpp
     # C2: save/profile/settings persistence (keystone). Host-FS blob store behind
     # IPersistBackend, backing ProfileMgr's self-contained global-options +
     # profile-0 GameplayOptions serializers. Bypasses the EXCLUDED Wii
@@ -581,6 +599,11 @@ rb3_configure_target(rb3-native)
 # Both share the std-only rb3_http_server.h (identical class layout under both
 # flag sets). Re-disable MS-compat for the httplib TU only (later flags win).
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_http_server.cpp
+    PROPERTIES COMPILE_OPTIONS
+    "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
+# rb3_replay_api.cpp is the same kind of std-only / dlfcn TU — no decomp headers,
+# normal RTTI ABI; compile it MS-compat-OFF too (later flags win).
+set_source_files_properties(${CMAKE_SOURCE_DIR}/src/rb3_replay_api.cpp
     PROPERTIES COMPILE_OPTIONS
     "-fno-ms-compatibility;-fno-ms-extensions;-fno-delayed-template-parsing")
 
