@@ -85,6 +85,12 @@ DEFAULT_TIER_CONFIG = {
     "vt_max_spread_ratio": 10.0,
     # optional: minimum VT score (from T2's score export); 0 = disabled
     "min_vt_score": 0.0,
+    # optional: BSim sim*conf promotion threshold; 0 = disabled. BSim matches
+    # at/above this are promoted to ACCEPT (holdout-calibrated 2026-06-10 on
+    # run 3: simconf>=15 -> 0.933 precision @ 922 pop, >=10 -> 0.887 @ 1969).
+    # Below-threshold BSim stays CAUTION (~0.5 measured below 10 — cross-check,
+    # don't discard).
+    "min_bsim_simconf": 0.0,
 }
 
 # ---------------------------------------------------------------------------
@@ -326,6 +332,7 @@ def vet(
     vt_max_ratio = tier_config.get("vt_max_spread_ratio",
                                    DEFAULT_TIER_CONFIG["vt_max_spread_ratio"])
     min_vt_score = tier_config.get("min_vt_score", 0.0)
+    min_bsim_simconf = tier_config.get("min_bsim_simconf", 0.0)
 
     # First pass: build VT entry list for cluster analysis (skip seeds)
     vt_candidates = []
@@ -374,6 +381,7 @@ def vet(
             mtype_set, p2, vt_tier_map,
             accept_types, reject_types,
             min_vt_score, m.get("scores"),
+            min_bsim_simconf,
         )
 
         # rb3wii cross-check (name-level via Bank 5 ELF)
@@ -437,6 +445,7 @@ def vet(
             "vt_max_xenon_spread": vt_max_xenon,
             "vt_max_spread_ratio": vt_max_ratio,
             "min_vt_score": min_vt_score,
+            "min_bsim_simconf": min_bsim_simconf,
         },
     }
     return entries, summary
@@ -450,6 +459,7 @@ def _assign_tier(
     reject_types: set,
     min_vt_score: float,
     scores,
+    min_bsim_simconf: float = 0.0,
 ) -> str:
     # ACCEPT: contains any accept-type
     if mtype_set & accept_types:
@@ -458,6 +468,15 @@ def _assign_tier(
     # REJECT: contains any reject-type (and no accept-type)
     if mtype_set & reject_types:
         return "REJECT"
+
+    # BSim: promote high sim*conf matches into ACCEPT (gate only promotes;
+    # below-threshold falls through to CAUTION, never REJECT)
+    if "BSIM" in mtype_set and min_bsim_simconf > 0 and scores:
+        bs = scores.get("BSIM", {})
+        sim = bs.get("similarity")
+        conf = bs.get("confidence")
+        if sim is not None and conf is not None and sim * conf >= min_bsim_simconf:
+            return "ACCEPT"
 
     # VT: use cluster coherence result
     if "VTCombinedReference" in mtype_set:
@@ -566,6 +585,13 @@ def main(argv=None):
              "0 = disabled (default). Requires scores field in matches.json.",
     )
     p.add_argument(
+        "--min-bsim-simconf", type=float, default=None,
+        help="Promote BSim matches with similarity*confidence >= this into "
+             "ACCEPT (holdout-calibrated: 15 -> 0.933 precision, 10 -> 0.887). "
+             "0 = disabled (default). Below-threshold BSim stays CAUTION. "
+             "Requires scores field in matches.json.",
+    )
+    p.add_argument(
         "--bank5-elf", type=Path, default=DEFAULT_BANK5_ELF,
         help="Path to the Bank 5 Wii debug ELF (band_r_wii.elf). Used to "
              "bridge rb3wii wii_addr (Bank 5 addresses) to mangled names for "
@@ -593,6 +619,8 @@ def main(argv=None):
         )
     if args.min_vt_score is not None:
         tier_config["min_vt_score"] = args.min_vt_score
+    if args.min_bsim_simconf is not None:
+        tier_config["min_bsim_simconf"] = args.min_bsim_simconf
 
     # --- locate matches.json ---
     matches_path = args.matches

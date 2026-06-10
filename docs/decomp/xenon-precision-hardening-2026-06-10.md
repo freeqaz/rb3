@@ -244,3 +244,72 @@ Implied 0.750 (3/4) · holdout recall 20.6% (90.6% precision on recovered) · ru
    duplicate of gated SRH — 10 survivors, 6 shared). Not required.
 5. After the run: re-baseline `test_replay_stl_exclusion_over_real_vt_pool` if the VT pool changed
    (T2-verify note); ingest results into the divergence/identity tooling in rb3-xenon.
+
+---
+
+## 7. RUN 3 RESULTS (2026-06-10 evening — the validating re-run)
+
+Run 3 executed with everything above live: fork dist + BSim jar swap, BSim ON, `--no-decomp-correlate`,
+gated string hashers (T1), score export + STL gate (T2), 1,213 seeds (T4). Wall clock: matching ~8 min
+(BSim stage 135.5s — the top-K cap works at 36k×65k scale; this stage previously stalled 70+ min),
+post-match diff/report ~1h50m (scales with the 3.2× matched pool — the new bottleneck, optional output).
+
+### Headline vs baseline (run 2)
+
+| Metric | Run 2 | Run 3 |
+|---|---|---|
+| Total matches | 2,645 | **8,527** (3.2×) |
+| Holdout recovery (recall) | 20.6% | **63.8%** (90/141 correct) |
+| Holdout precision on recovered | 0.906 | 0.833 |
+| New identities (no prior) | 1,032 | 5,997 |
+| **Vetted ACCEPT tier** | n/a (~70 trustworthy) | **2,207 (997 new: 309 band3 / 438 system / 216 network)** |
+
+### Per-correlator (run-3 log + eval)
+
+- **BSim: 5,939 matches** (first cross-binary measurement). Holdout precision 0.800 raw.
+  **sim×conf is the discriminative axis** (similarity alone is useless — flat ~0.15 even at 0.99):
+  ≥10 → 0.887 (1,969 pop), **≥15 → 0.933 (922 pop)**, ≥20 → 0.964 (522 pop). Below 10 ≈ 0.5 → CAUTION.
+- **VTCombinedReference: 1,093 accepted** (9,758 candidates; 227 STL-excluded by T2 gate; 541 min-len).
+  Judged precision DROPPED (0.109 raw / 0.236 alias-credited) — VT propagated from the BSim-contaminated
+  seed graph; its product score does not rescue it (0.25 @ ≥100). VT is now the weak link; treat as CAUTION.
+- **Gated StringsRefsHasher: 191** (was 610 ungated); judged set is only the 3 known oracle-error pairs
+  (mechanical 0.000, predicted in advance — NOT gate failure). True precision still unmeasured.
+- ExactInstructions 61 @ 0.935-0.958; Implied 8 (2/2 judged); the 3 sub-mode-B addrs behaved as predicted.
+
+### Oracle conflict (important for reading any future eval)
+
+The dc3-BinDiff "high-conf disagree" oracle reads BSim at 0.193-0.319 while the clean holdout reads
+0.800-0.964 at the same thresholds. The bindiff oracle counts every semantic-vs-structural disagreement
+as OUR error; with platform-alias crediting 22 verdicts already flipped. Trust the holdout; use bindiff
+agreement directionally only. (Both can't be right: at sim×conf≥15 holdout=0.933 vs dc3=0.512.)
+
+### Vetted export (the deliverable)
+
+`vet_xenon_identities.py` (post-T5-fix `4c9541e0` + new `--min-bsim-simconf` gate) over run 3 with
+`--min-bsim-simconf 15`:
+
+```
+ACCEPT 2,207   (seeds 1,210 + BSim simconf≥15 922 + ExactInstr 61 + Implied 8 + SwitchSig 5 + SymbolsHash 1)
+CAUTION 5,881  (sub-threshold BSim ~0.5, VT cluster-coherent, etc.)
+FILTERED_VT 233 / REJECT 206
+```
+
+Output: `build/SZBE69_B8/ghidra/ghidriff-xenon/vetted_identities.json` (run-2 artifacts archived in
+`run2-baseline-archive/`). Expected ACCEPT-tier precision ≈ 0.93-0.96 (seeds ≈1.0, BSim block 0.933±CI,
+exacts 0.94+). Holdout n is modest (45 kept at ≥15) — CI is wide; the point estimate clears 0.85.
+
+### Verdict
+
+The plan's central bet — a score-thresholded ≥0.85-precision high-confidence tier — is **CONFIRMED on
+the holdout oracle**, delivered by BSim sim×conf (not VT, which the plan expected to be the workhorse).
+Cross-compiler porting Wii→Xenon is now a working lever: ~1,000 new vetted identities per run, recall
+3.1× the baseline.
+
+### Open follow-ups
+
+1. VT precision collapse under a BSim-seeded graph: either feed VT only ACCEPT-tier seeds (two-pass run)
+   or accept VT as a CAUTION-tier feeder. 2. band3 stratum is BSim's weakest (0.193 on the pessimistic
+   oracle; holdout band3 subset too small to read) — vet band3 CAUTION entries before use. 3. Holdout n
+   should grow (cheap: promote vetted ACCEPT identities to next run's holdout). 4. sdk stratum is 0.000 —
+   exclude sdk from ACCEPT consumers (already only 12 entries). 5. rb3wii cross-check shows possible
+   Bank5-vs-Bank8 mangling-spelling false-contradictions (e.g. GetLocalParticipants) — annotation only.
