@@ -169,10 +169,10 @@ bool PrewarmEnabled() {
     if (s < 0) {
         const char *e = ::getenv("RB3_PREWARM_SCREENS");
 #ifdef __EMSCRIPTEN__
-        // Default ON; only an explicit "0" (or "off"/"false") disables.
+        // Default ON; only an explicit "0" (or "off"/"false"/"no") disables.
         s = 1;
         if (e && (e[0] == '0' || e[0] == 'f' || e[0] == 'F' || e[0] == 'n' ||
-                  e[0] == 'N'))
+                  e[0] == 'N' || e[0] == 'o' || e[0] == 'O'))
             s = 0;
 #else
         // Native: unchanged opt-in — present (non-null) means on.
