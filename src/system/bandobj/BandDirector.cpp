@@ -17,6 +17,25 @@
 // venue-cam-follow.
 #include "world/CameraShot.h"
 #include "rndobj/Cam.h"
+#include <cstdlib> // Q9: getenv for RB3_VENUE_SYNC (guarded out of Wii build)
+
+// Q9 (incremental-load): RB3_VENUE_SYNC gates the native-synthetic EnterVenue
+// venue force-load (BandDirector::EnterVenue). Defaults to 1 (sync) because the
+// load's side effect (instancing TheBandWardrobe + mVenue.Dir()) is consumed
+// SYNCHRONOUSLY by the rest of BandDirector::Enter() on the same frame. Setting
+// RB3_VENUE_SYNC=0 opts into an experimental async load (unsafe until Enter() is
+// split into a multi-frame poll — see the note at the call site). Read once.
+static bool NativeVenueSync() {
+    static int sSync = -1;
+    if (sSync < 0) {
+        sSync = 1; // default: keep the venue load synchronous (correct ordering)
+        if (const char *e = ::getenv("RB3_VENUE_SYNC")) {
+            if (e[0] == '0')
+                sSync = 0;
+        }
+    }
+    return sSync != 0;
+}
 #endif
 
 INIT_REVS(BandDirector)
@@ -612,8 +631,24 @@ void BandDirector::EnterVenue() {
         if (getenv("VENUE_DBG"))
             MILO_LOG("VENUE_DBG: EnterVenue force-loading venue='%s'\n",
                      venueSym.mStr ? venueSym.mStr : "(null)");
+        // Q9 (incremental-load): this native-synthetic venue force-load must stay
+        // SYNCHRONOUS for correctness. The retail `load_venue` data dispatch never
+        // fires natively, so this bridge force-loads the venue here; the load is the
+        // side-effect that instances TheBandWardrobe and populates mVenue.Dir(). The
+        // ENCLOSING BandDirector::Enter() then unconditionally dereferences
+        // TheBandWardrobe (->GetPlayMode(), BandDirector.cpp:174) and walks the venue
+        // groups on the SAME frame, with no re-entry/poll. So forcing this load async
+        // here would null-deref TheBandWardrobe and skip the whole wardrobe path.
+        //
+        // A truly-async venue load requires splitting Enter()'s tail (lines ~160-198)
+        // and EnterVenue's wardrobe path into a multi-frame poll gated on venue-load
+        // completion — out of scope for the T4 small-fixes bundle (the wardrobe-
+        // ordering invariant the verifier flagged at :604-607 cannot be preserved at
+        // this single site). RB3_VENUE_SYNC=0 opts INTO the experimental async path
+        // for that future work; it is UNSAFE until Enter() is split, so default = sync.
         bool prevAsync = mAsyncLoad;
-        mAsyncLoad = false;
+        if (NativeVenueSync())
+            mAsyncLoad = false;
         LoadVenue(venueSym, kLoadStayBack);
         mAsyncLoad = prevAsync;
     }

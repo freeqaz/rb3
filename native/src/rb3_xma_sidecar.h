@@ -26,6 +26,9 @@
 // synchronous-XHR hook native_file.cpp uses for the rest of the web asset path
 // (engine-exported header; resolves via milo-engine's PUBLIC src include dir).
 #include "platform/WebAssets.h"
+#include <map>
+#include <set>
+#include <vector>
 #endif
 
 namespace rb3_xma {
@@ -86,6 +89,144 @@ inline std::string SidecarDir() {
 #endif
 }
 
+#ifdef __EMSCRIPTEN__
+// ---------------------------------------------------------------------------
+// Q8 (incremental-load): per-bank async sidecar prefetch.
+//
+// Without this, the first play of each distinct XMA SFX does one BLOCKING sync
+// XHR (19KB-1.5MB) on the wasm main thread (the WebAssetsFetchSync miss path in
+// TryLoad) — one frame hitch per distinct SFX. With it: the first sidecar
+// request from a bank triggers an ASYNC fetch (WebAssetsFetch, off the main
+// thread, lands in MEMFS) of every sidecar that bank converted, so by the time
+// later SFX in that bank play the bytes are already resident and the sync miss
+// path short-circuits (warm MEMFS). The sync fetch stays as the per-key
+// fallback for the very first request (and any mispredicted/uncovered key).
+//
+// The converter (native/tools/xma_repack) emits manifest.txt next to the
+// sidecars: tab-separated `bank<TAB>sample<TAB>fmt<TAB>...<TAB>keyHex`. We load
+// it once (small, one sync fetch) to learn each bank's key set, then prefetch
+// per bank on demand. RB3_XMA_PREFETCH_OFF disables (default ON).
+//
+// State lives in inline-function-local statics (single instance across TUs per
+// the inline-function ODR), so this stays header-only — no .cpp / CMake change.
+inline bool PrefetchEnabled() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) {
+        sEnabled = 1; // default ON
+        if (const char *e = getenv("RB3_XMA_PREFETCH_OFF"))
+            if (e[0] && e[0] != '0')
+                sEnabled = 0;
+    }
+    return sEnabled != 0;
+}
+
+// keyHex -> bank name (parsed from manifest.txt), and bank name -> all its
+// keyHexes. Loaded lazily on the first sidecar request.
+struct BankIndex {
+    std::map<std::string, std::string> keyToBank;
+    std::map<std::string, std::vector<std::string> > bankToKeys;
+    std::set<std::string> prefetchedBanks;  // banks already async-prefetched
+    std::set<std::string> prefetchedKeys;   // keys already async-requested
+    bool loaded = false;
+    bool loadFailed = false;
+};
+inline BankIndex &TheBankIndex() {
+    static BankIndex idx;
+    return idx;
+}
+
+// MEMFS server-path for a sidecar key (relative; resolves under /data cwd).
+inline std::string SidecarServerPath(const std::string &keyHex) {
+    return SidecarDir() + "/" + keyHex + ".pcm";
+}
+
+// Load + parse manifest.txt once (small sync fetch). Returns false if absent (a
+// checkout without converted sidecars) so prefetch silently no-ops.
+inline bool EnsureManifestLoaded() {
+    BankIndex &idx = TheBankIndex();
+    if (idx.loaded || idx.loadFailed)
+        return idx.loaded;
+
+    std::string rel = SidecarDir() + "/manifest.txt";
+    std::string memfs = rel;
+    if (!memfs.empty() && memfs[0] != '/')
+        memfs = "/data/" + memfs;
+
+    FILE *f = std::fopen(rel.c_str(), "rb");
+    if (!f) {
+        // Not yet in MEMFS — one small sync fetch (manifest is a few KB-100s KB,
+        // tiny vs the per-sidecar 19KB-1.5MB it lets us prefetch ahead of need).
+        if (WebAssetsFetchSync(memfs.c_str()))
+            f = std::fopen(rel.c_str(), "rb");
+    }
+    if (!f) {
+        idx.loadFailed = true;
+        return false;
+    }
+
+    std::string content;
+    char buf[4096];
+    size_t n;
+    while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0)
+        content.append(buf, n);
+    std::fclose(f);
+
+    // Parse: bank<TAB>...<TAB>keyHex per line; skip '#' comment header.
+    size_t pos = 0;
+    while (pos < content.size()) {
+        size_t eol = content.find('\n', pos);
+        if (eol == std::string::npos)
+            eol = content.size();
+        std::string line = content.substr(pos, eol - pos);
+        pos = eol + 1;
+        if (line.empty() || line[0] == '#')
+            continue;
+        size_t firstTab = line.find('\t');
+        size_t lastTab = line.rfind('\t');
+        if (firstTab == std::string::npos || lastTab == firstTab)
+            continue;
+        std::string bank = line.substr(0, firstTab);
+        std::string keyHex = line.substr(lastTab + 1);
+        // trim trailing CR/whitespace from keyHex
+        while (!keyHex.empty() &&
+               (keyHex.back() == '\r' || keyHex.back() == ' ' || keyHex.back() == '\t'))
+            keyHex.pop_back();
+        if (bank.empty() || keyHex.empty())
+            continue;
+        idx.keyToBank[keyHex] = bank;
+        idx.bankToKeys[bank].push_back(keyHex);
+    }
+    idx.loaded = true;
+    return true;
+}
+
+// On the first sidecar request from a bank, async-prefetch the whole bank's
+// sidecars so later SFX from it are already MEMFS-resident. Cheap + idempotent.
+inline void MaybePrefetchBank(const std::string &keyHex) {
+    if (!PrefetchEnabled())
+        return;
+    if (!EnsureManifestLoaded())
+        return;
+    BankIndex &idx = TheBankIndex();
+    std::map<std::string, std::string>::const_iterator bit = idx.keyToBank.find(keyHex);
+    if (bit == idx.keyToBank.end())
+        return; // key not in manifest — sync fallback handles it
+    const std::string &bank = bit->second;
+    if (!idx.prefetchedBanks.insert(bank).second)
+        return; // already prefetched this bank
+    std::map<std::string, std::vector<std::string> >::const_iterator kit =
+        idx.bankToKeys.find(bank);
+    if (kit == idx.bankToKeys.end())
+        return;
+    for (size_t i = 0; i < kit->second.size(); i++) {
+        const std::string &k = kit->second[i];
+        if (!idx.prefetchedKeys.insert(k).second)
+            continue; // already requested
+        WebAssetsFetch(SidecarServerPath(k).c_str()); // async, lands in MEMFS
+    }
+}
+#endif // __EMSCRIPTEN__
+
 // Try to load a sidecar for the given raw XMA payload. Returns a SidecarPCM with
 // data==nullptr if none is found (caller falls back to skipping the sample).
 inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
@@ -106,6 +247,14 @@ inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
     // MEMFS (already-fetched this session) skips the XHR entirely. Mirrors the
     // miss-then-fetch ordering in native_file.cpp. Compiled out natively.
     if (!f) {
+        // Q8: kick an async prefetch of this key's whole bank (idempotent) so the
+        // NEXT distinct SFX from this bank is already MEMFS-resident and skips the
+        // blocking sync XHR below. The current key may already be in flight from a
+        // prior MaybePrefetchBank — but it is not guaranteed ready yet, so we still
+        // do the sync fetch as the per-key miss fallback (it short-circuits if the
+        // async prefetch already landed these bytes in MEMFS).
+        MaybePrefetchBank(std::string(keyHex));
+
         // WebAssetsFetchSync writes the fetched bytes to the MEMFS path it is
         // handed and mkdir's the ABSOLUTE parent chain (/data/sfx/...). The
         // default web SidecarDir() is relative ("sfx/gen/xma_pcm"), which fopen
