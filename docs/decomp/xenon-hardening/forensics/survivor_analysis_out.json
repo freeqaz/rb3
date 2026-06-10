@@ -1,0 +1,827 @@
+{
+ "srh": {
+  "total": 610,
+  "survivors": 283,
+  "killed": 327,
+  "survived_via_unique_single_string": 155,
+  "survived_via_multi_string": 128,
+  "survivor_examples": [
+   [
+    "80309490",
+    "82584338",
+    [
+     "ds \"ComponentFocusNetMsg\"",
+     "ds \"ComponentScrollNetMsg\"",
+     "ds \"ComponentSelectNetMsg\"",
+     "ds \"NetGotoScreenMsg\"",
+     "ds \"NetPopScreenMsg\"",
+     "ds \"NetPushScreenMsg\"",
+     "ds \"NetSyncScreenMsg\""
+    ]
+   ],
+   [
+    "8032db50",
+    "825c1410",
+    [
+     "ds \"overshell_select.cue\""
+    ]
+   ],
+   [
+    "80460e30",
+    "82749010",
+    [
+     "ds \"bad # directive\"",
+     "ds \"fatal flex scanner internal error--no action found\""
+    ]
+   ],
+   [
+    "80093010",
+    "82acb850",
+    [
+     "ds \"JobDisconnectStation::CompleteCancellation\"",
+     "ds \"JobDisconnectStation::CompleteCancellation\""
+    ]
+   ],
+   [
+    "8035bcf0",
+    "82516f68",
+    [
+     "ds \"no_device_chosen\""
+    ]
+   ],
+   [
+    "80232db0",
+    "825e3610",
+    [
+     "ds \"categories.lst\"",
+     "ds \"details.lst\"",
+     "ds \"groups.lst\""
+    ]
+   ],
+   [
+    "803a8bc0",
+    "82596270",
+    [
+     "ds \"EnterFlowMsg\"",
+     "ds \"OpenWaitingGateMsg\""
+    ]
+   ],
+   [
+    "805f3c90",
+    "82340bc0",
+    [
+     "ds \"bre_success.trig\"",
+     "ds \"rock_ending\""
+    ]
+   ],
+   [
+    "80630d80",
+    "82772d70",
+    [
+     "ds \"keyboard_wide_frets\""
+    ]
+   ],
+   [
+    "80928b70",
+    "8241a0f0",
+    [
+     "ds \" value is \"",
+     "ds \"Unable to set key value pair for \""
+    ]
+   ],
+   [
+    "801caba0",
+    "826affc0",
+    [
+     "ds \"practice_sections\""
+    ]
+   ],
+   [
+    "80685410",
+    "823a29a8",
+    [
+     "ds \"CharClip\"",
+     "ds \"objects\"",
+     "ds \"resource\"",
+     "ds \"types\""
+    ]
+   ],
+   [
+    "808d2ae0",
+    "8244ec98",
+    [
+     "ds \" value:\"",
+     "ds \"(frame:\"",
+     "ds \"<null>\""
+    ]
+   ],
+   [
+    "80022a30",
+    "82adae30",
+    [
+     "ds \"Thread \""
+    ]
+   ],
+   [
+    "8062fcc0",
+    "82775cb8",
+    [
+     "ds \"dpad_for_navigation\""
+    ]
+   ],
+   [
+    "80946db0",
+    "82442120",
+    [
+     "ds \"   align: \"",
+     "ds \"   capsMode: \"",
+     "ds \"   color: \"",
+     "ds \"   font: \"",
+     "ds \"   italics: \"",
+     "ds \"   leading: \"",
+     "ds \"   markup: \"",
+     "ds \"   size: \"",
+     "ds \"   text: \"",
+     "ds \"   wrap width: \"",
+     "ds \"<null>\""
+    ]
+   ],
+   [
+    "801f2e80",
+    "826b57f0",
+    [
+     "ds \"send_tracker_player_display\""
+    ]
+   ],
+   [
+    "800a6700",
+    "82b01438",
+    [
+     "ds \"m_uiFirst\"",
+     "ds \"m_uiLast\""
+    ]
+   ],
+   [
+    "8020c740",
+    "826c5bd0",
+    [
+     "ds \"phrase_value\"",
+     "ds \"pitch_margin\"",
+     "ds \"scoring\"",
+     "ds \"synapse_focus_harm\"",
+     "ds \"synapse_focus_solo\"",
+     "ds \"synapse_proximity_harm\"",
+     "ds \"synapse_proximity_solo\"",
+     "ds \"vocals\""
+    ]
+   ],
+   [
+    "80547d20",
+    "8226eae0",
+    [
+     "ds \"blinktrack.lipsync\"",
+     "ds \"song.lipdrv\""
+    ]
+   ],
+   [
+    "80137f90",
+    "82b7bb00",
+    [
+     "ds \"tail_alpha_smoothing\"",
+     "ds \"tail_fade_distance\"",
+     "ds \"tail_max_alpha\"",
+     "ds \"tail_max_amp\"",
+     "ds \"tail_max_freq\"",
+     "ds \"tail_max_length\"",
+     "ds \"tail_min_alpha\"",
+     "ds \"tail_min_amp\"",
+     "ds \"tail_min_freq\"",
+     "ds \"tail_offset_x\"",
+     "ds \"tail_pulse_rate\"",
+     "ds \"tail_pulse_smoothing\"",
+     "ds \"track_graphics\""
+    ]
+   ],
+   [
+    "802d7050",
+    "825aa950",
+    [
+     "ds \"SyncLocalMachineMsg\"",
+     "ds \"SyncMachineMsg\""
+    ]
+   ],
+   [
+    "80102e80",
+    "823d4498",
+    [
+     "ds \"AddUserRequestMsg\"",
+     "ds \"AddUserResponseMsg\"",
+     "ds \"BeginArbitrationMsg\"",
+     "ds \"DataArrayMsg\"",
+     "ds \"EndGameMsg\"",
+     "ds \"FinishedArbitrationMsg\"",
+     "ds \"JoinRequestMsg\"",
+     "ds \"JoinResponseMsg\"",
+     "ds \"NewUserMsg\"",
+     "ds \"StartGameOnTimeMsg\"",
+     "ds \"UpdateUserDataMsg\"",
+     "ds \"UserLeftMsg\"",
+     "ds \"VoiceDataMsg\""
+    ]
+   ],
+   [
+    "809c0300",
+    "826dece0",
+    [
+     "ds \"spu_buffers\"",
+     "ds \"synth\""
+    ]
+   ],
+   [
+    "80441a70",
+    "824fd608",
+    [
+     "ds \"gfx_mode\""
+    ]
+   ],
+   [
+    "80309740",
+    "82583258",
+    [
+     "ds \"ui_lock_step\""
+    ]
+   ],
+   [
+    "805d7db0",
+    "822d6020",
+    [
+     "ds \"guitar_fx_%1d.btn\"",
+     "ds \"set_showing\""
+    ]
+   ],
+   [
+    "806845a0",
+    "823a3ad8",
+    [
+     "ds \"bone_facing.pos\"",
+     "ds \"bone_facing.rotz\"",
+     "ds \"bone_facing_delta.pos\"",
+     "ds \"bone_facing_delta.rotz\""
+    ]
+   ],
+   [
+    "804601f0",
+    "82744270",
+    [
+     "ds \"no_macro_warn\""
+    ]
+   ],
+   [
+    "8027f2f0",
+    "825254d8",
+    [
+     "ds \"wipe_out\""
+    ]
+   ],
+   [
+    "80170070",
+    "826ce288",
+    [
+     "ds \"send_fail_unison_phrase\""
+    ]
+   ],
+   [
+    "8034b300",
+    "825321e8",
+    [
+     "ds \"slider\"",
+     "ds \"slider_voicechat\"",
+     "ds \"sound\"",
+     "ds \"sound\""
+    ]
+   ],
+   [
+    "804b2ef0",
+    "8279c1b0",
+    [
+     "ds \"option_bool\"",
+     "ds \"option_str\"",
+     "ds \"option_sym\""
+    ]
+   ],
+   [
+    "8014f580",
+    "82b779f8",
+    [
+     "ds \"vocal_jitter_debug\""
+    ]
+   ],
+   [
+    "8034b4a0",
+    "82532d60",
+    [
+     "ds \"ratio_sliders\"",
+     "ds \"sound\""
+    ]
+   ],
+   [
+    "80053e70",
+    "82a80218",
+    [
+     "ds \"Forwarded bits xmit\"",
+     "ds \"Forwarded packets xmit\"",
+     "ds \"Routed bits xmit\"",
+     "ds \"Routed packets xmit\"",
+     "ds \"bits received\"",
+     "ds \"bits sent\"",
+     "ds \"packets lost\"",
+     "ds \"packets received\"",
+     "ds \"packets sent\"",
+     "ds \"reliable packets rexmit\"",
+     "ds \"reliable packets xmit\"",
+     "ds \"unreliable packets xmit\""
+    ]
+   ],
+   [
+    "80273140",
+    "8255df90",
+    [
+     "ds \"blackholesun\"",
+     "ds \"danicalifornia\""
+    ]
+   ],
+   [
+    "809662b0",
+    "824292e0",
+    [
+     "ds \"%s/%s.%s\"",
+     "ds \"%s/gen/%s.%s_%s\""
+    ]
+   ],
+   [
+    "802723b0",
+    "8255e450",
+    [
+     "ds \"_keep.png\""
+    ]
+   ],
+   [
+    "803c9d80",
+    "82355c08",
+    [
+     "ds \"%s_welcome\""
+    ]
+   ],
+   [
+    "80780e20",
+    "827c5ed8",
+    [
+     "ds \"beatmatcher\"",
+     "ds \"finish_loading\"",
+     "ds \"midi_parsers\""
+    ]
+   ],
+   [
+    "803e0870",
+    "824e78d0",
+    [
+     "ds \"entities/linkcode/get\""
+    ]
+   ],
+   [
+    "80756620",
+    "8278abd0",
+    [
+     "ds \"videos/%s\""
+    ]
+   ],
+   [
+    "804b79f0",
+    "827a1500",
+    [
+     "ds \"song_begin\""
+    ]
+   ],
+   [
+    "8015a310",
+    "82b6ed10",
+    [
+     "ds \"scrolling\"",
+     "ds \"static\""
+    ]
+   ],
+   [
+    "805f2df0",
+    "8233cc18",
+    [
+     "ds \"bfb_reset.trig\""
+    ]
+   ],
+   [
+    "80619910",
+    "822f86b8",
+    [
+     "ds \"show_view\""
+    ]
+   ],
+   [
+    "800add80",
+    "82a63b50",
+    [
+     "ds \"SessionInfo\"",
+     "ds \"SessionState\"",
+     "ds \"SharedSessionDescription\"",
+     "ds \"UserDefinedState\""
+    ]
+   ],
+   [
+    "804b0b40",
+    "827a9800",
+    [
+     "ds \"net_cache_mgr\""
+    ]
+   ],
+   [
+    "8010f270",
+    "823d9288",
+    [
+     "ds \"bandwidth\"",
+     "ds \"dropprob\"",
+     "ds \"emulator\"",
+     "ds \"emulator\"",
+     "ds \"jitter\"",
+     "ds \"latency\""
+    ]
+   ],
+   [
+    "8076f570",
+    "827868a8",
+    [
+     "ds \"save_load_all_complete_msg\""
+    ]
+   ],
+   [
+    "80090dd0",
+    "82a88e90",
+    [
+     "ds \"JobConnectStation::DirectConnectViaURLs\"",
+     "ds \"JobConnectStation::DirectConnectViaURLs\""
+    ]
+   ],
+   [
+    "805f1f90",
+    "82342068",
+    [
+     "ds \"end_game_start_inst\""
+    ]
+   ],
+   [
+    "807340b0",
+    "82380f50",
+    [
+     "ds \"change_files\""
+    ]
+   ],
+   [
+    "809c96f0",
+    "82b83dc8",
+    [
+     "ds \"No spot in cipher descriptor table.\""
+    ]
+   ],
+   [
+    "8048e380",
+    "8279d7e0",
+    [
+     "ds \"cheats_buffer\""
+    ]
+   ],
+   [
+    "805471e0",
+    "82274a08",
+    [
+     "ds \"face.faceservo\"",
+     "ds \"song.lipdrv\"",
+     "ds \"vignette.lipdrv\"",
+     "ds \"vignette_visemes\"",
+     "ds \"visemes\""
+    ]
+   ],
+   [
+    "80179e80",
+    "8269c7c8",
+    [
+     "ds \"applause.cue\"",
+     "ds \"applause_sexy.cue\"",
+     "ds \"applause_ultra.cue\""
+    ]
+   ],
+   [
+    "80092640",
+    "82acb010",
+    [
+     "ds \"JobDisconnectStation::ReleaseSystemReferences\"",
+     "ds \"JobDisconnectStation::ReleaseSystemReferences\""
+    ]
+   ],
+   [
+    "8002e330",
+    "82aa1608",
+    [
+     "ds \", suppl=\""
+    ]
+   ]
+  ]
+ },
+ "stu": {
+  "total": 45,
+  "survivors": 10,
+  "killed": 35,
+  "survived_via_unique_single_string": 4,
+  "survived_via_multi_string": 6,
+  "survivor_examples": [
+   [
+    "800d20d0",
+    "82ae3de8",
+    [
+     "ds \"JobManageAccount::CallAccountManagementCommand\"",
+     "ds \"JobManageAccount::CallChangePassword\"",
+     "ds \"JobManageAccount::CallChangePasswordByGuest\"",
+     "ds \"JobManageAccount::CallCreateAccount\"",
+     "ds \"JobManageAccount::CallCreateAccountWithCustomData\"",
+     "ds \"JobManageAccount::CallCustomCreateAccount\"",
+     "ds \"JobManageAccount::CallUpdateAccount\"",
+     "ds \"JobManageAccount::CompleteJob\""
+    ]
+   ],
+   [
+    "8005a130",
+    "82accb60",
+    [
+     "ds \"PRUDP Connections [DO]\"",
+     "ds \"PRUDP Connections [NATEcho]\"",
+     "ds \"PRUDP Connections [NAT]\"",
+     "ds \"PRUDP Connections [RVAuthentication]\"",
+     "ds \"PRUDP Connections [RVSecure]\"",
+     "ds \"PRUDP Connections [Routing]\"",
+     "ds \"PRUDP Connections [SandBoxMgmt]\"",
+     "ds \"PRUDP Connections [SessionDiscovery]\"",
+     "ds \"PRUDP Connections\""
+    ]
+   ],
+   [
+    "8009a6a0",
+    "82af6350",
+    [
+     "ds \"JobTerminateDOCore::SyncTermination\""
+    ]
+   ],
+   [
+    "809b6180",
+    "826e6788",
+    [
+     "ds \"max_slip\"",
+     "ds \"synth\""
+    ]
+   ],
+   [
+    "80098830",
+    "82ac1098",
+    [
+     "ds \"JobProcessJoinRequest::CompleteConnection\"",
+     "ds \"JobProcessJoinRequest::JoinFailed\""
+    ]
+   ],
+   [
+    "8009b4b0",
+    "82af6af0",
+    [
+     "ds \"JobTerminateDOCore::GenericExecutionStep\""
+    ]
+   ],
+   [
+    "800f9820",
+    "82abb9d8",
+    [
+     "ds \"JobTerminateFacade::CompleteAllJobs\""
+    ]
+   ],
+   [
+    "800d1050",
+    "82ae0238",
+    [
+     "ds \"JobLoginOrCreateAccount::CreateAccount\""
+    ]
+   ],
+   [
+    "804423f0",
+    "82734d38",
+    [
+     "ds \"editor\"",
+     "ds \"objects\"",
+     "ds \"types\""
+    ]
+   ],
+   [
+    "80099520",
+    "82ac1940",
+    [
+     "ds \"JobProcessJoinRequest::DuplicateOnSessionMaster\"",
+     "ds \"JobProcessJoinRequest::JoinFailed\""
+    ]
+   ]
+  ]
+ },
+ "submode_b_check": {
+  "ui_trigger_complete": {
+   "survived": true,
+   "wii_key": [
+    "ds \"ui_trigger_complete\""
+   ],
+   "xenon_key": [
+    "ds \"ui_trigger_complete\""
+   ]
+  },
+  "component_scroll_start": {
+   "survived": true,
+   "wii_key": [
+    "ds \"component_scroll_start\""
+   ],
+   "xenon_key": [
+    "ds \"component_scroll_start\""
+   ]
+  },
+  "component_scroll_select": {
+   "survived": true,
+   "wii_key": [
+    "ds \"component_scroll_select\""
+   ],
+   "xenon_key": [
+    "ds \"component_scroll_select\""
+   ]
+  }
+ },
+ "judged_wrong_srh_check": {
+  "LayerDir": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  },
+  "EndingBonus": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"EndingBonusDir\""
+   ]
+  },
+  "LightHue": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"LightHue\""
+   ]
+  },
+  "BandList": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  },
+  "BandTrack": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"BandTrack\""
+   ]
+  },
+  "MidiInstrument": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"MidiInstrument\""
+   ]
+  },
+  "VocalTrackDir": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"VocalTrackDir\""
+   ]
+  },
+  "CamShot": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"CamShot\""
+   ]
+  },
+  "RndPartLauncher": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  },
+  "ParallelGroupSeq": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"ParallelGroupSeq\""
+   ]
+  },
+  "VocalTrainerPanel": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"VocalTrainerPanel\""
+   ]
+  },
+  "WorldReflection": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"WorldReflection\""
+   ]
+  },
+  "UIPanel": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  },
+  "EventTrigger": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"EventTrigger\""
+   ]
+  },
+  "EditSetlistPanel": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"EditSetlistPanel\""
+   ]
+  },
+  "WorldCrowd": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  },
+  "StreakMeter": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"StreakMeterDir\""
+   ]
+  },
+  "WorldInstance": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  },
+  "RandomIntervalGroupSeq": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"RandomIntervalGroupSeq\""
+   ]
+  },
+  "LightPreset": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"LightPreset\""
+   ]
+  },
+  "user_login": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"user_login\""
+   ]
+  },
+  "RndMeshAnim": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"MeshAnim\""
+   ]
+  },
+  "TrackPanelDir": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": [
+    "ds \"TrackPanelDir\""
+   ]
+  }
+ },
+ "judged_wrong_stu_check": {
+  "RndParticleSys": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  },
+  "InstrumentDifficultyDisplay": {
+   "survived": false,
+   "wii_key": null,
+   "xenon_key": null
+  }
+ }
+}
