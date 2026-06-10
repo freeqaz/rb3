@@ -31,12 +31,20 @@
 // touches NO matched decomp read logic, and is identical in intent to what the
 // real game boot does via App.cpp's BandInit()/TrackInit()/WorldInit() calls.
 //
-// NOT AN ENDIANNESS BUG: the .milo_xbox chunk header is little-endian on disk
-// (so EndianSwapEq<int> being a native no-op stub is CORRECT for it) and the
-// milo *body* is big-endian (swapped correctly by BinStream::ReadEndian when
-// mLittleEndian=false). Both single- and multi-chunk milos decode the same way;
-// single-chunk happened to work only because gem_smasher_guitar.milo_xbox's
-// object classes were all already registered.
+// NOT AN ENDIANNESS BUG (multi-chunk decode): the .milo_xbox chunk header is
+// little-endian on disk and the milo *body* is big-endian (swapped correctly by
+// BinStream::ReadEndian when mLittleEndian=false). Both single- and multi-chunk
+// milos decode the same way; single-chunk happened to work only because
+// gem_smasher_guitar.milo_xbox's object classes were all already registered.
+//
+// (Endian footnote, corrected per milo-trace W9B: EndianSwapEq<int> used to be a
+// native no-op stub. That was correct-by-luck for the LE .milo_xbox header but
+// made the <int> primitive behave OPPOSITELY to its byteswapping <unsigned int>
+// sibling — a latent hazard for any genuine BE int field. The primitive is now a
+// REAL byteswap on native (dta_link_stubs.s, matching the DOL + the sibling), and
+// the host-LE correctness of the LE ChunkStream header is preserved by an
+// HX_NATIVE guard on the now-real swap in ChunkStream::Eof()/~ChunkStream — the
+// same host-aware split BinStream::ReadEndian already uses.)
 
 #include "bandobj/OverdriveMeter.h"
 #include "bandobj/GemTrackDir.h"

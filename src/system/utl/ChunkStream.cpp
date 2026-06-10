@@ -128,6 +128,11 @@ ChunkStream::~ChunkStream() {
             );
         mFile->Seek(0, 0);
         int *chunks = mChunkInfo.mChunks;
+        // The ChunkInfo header is written LITTLE-ENDIAN on disk. The big-endian
+        // Wii host byteswaps to produce LE bytes; a little-endian native host's
+        // in-memory ints are already LE, so no swap is needed (Wii-only — the
+        // write-side mirror of the Eof() read split above).
+#ifndef HX_NATIVE
         for (int i = 0; i < mChunkInfo.mNumChunks; i++) {
             EndianSwapEq(chunks[i]);
         }
@@ -135,6 +140,9 @@ ChunkStream::~ChunkStream() {
         EndianSwapEq(mChunkInfo.mChunkInfoSize);
         EndianSwapEq(mChunkInfo.mNumChunks);
         EndianSwapEq(mChunkInfo.mMaxChunkSize);
+#else
+        (void)chunks;
+#endif
         memset(
             (void *)&mChunkInfo.mChunks[mChunkInfo.mNumChunks],
             0,
@@ -224,6 +232,15 @@ EofType ChunkStream::Eof() {
         if (mFile->ReadDone(x) == 0)
             return TempEof;
         mChunkInfoPending = false;
+        // The ChunkInfo header is stored LITTLE-ENDIAN on disk (e.g. the leading
+        // bytes are `af de be ca` = 0xCABEDEAF in LE). The Wii host is big-endian,
+        // so it must byteswap the header ints to get the host value (the matched
+        // path below). A little-endian native host reads the LE header correctly
+        // WITHOUT swapping — so the swaps are Wii-only. (Mirrors the host-aware
+        // BinStream::ReadEndian HX_NATIVE split: now that EndianSwapEq<int> is a
+        // real byteswap on native too, this read must skip it for the LE header,
+        // exactly as it would have before EndianSwapEq<int> stopped being a no-op.)
+#ifndef HX_NATIVE
         EndianSwapEq(mChunkInfo.mID);
         EndianSwapEq(mChunkInfo.mChunkInfoSize);
         EndianSwapEq(mChunkInfo.mNumChunks);
@@ -231,6 +248,7 @@ EofType ChunkStream::Eof() {
         for (int i = 0; i < mChunkInfo.mNumChunks; i++) {
             EndianSwapEq(mChunkInfo.mChunks[i]);
         }
+#endif
         if ((mChunkInfo.mID & 0xf0ffffff) != kChunkIDMask) {
             mChunkInfo.mID = 0xCABEDEAF;
             mChunkInfo.mChunkInfoSize = 0;

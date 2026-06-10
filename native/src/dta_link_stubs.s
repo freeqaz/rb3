@@ -9,6 +9,30 @@
 __hmx_native_noop_stub:
     xorl %eax, %eax
     ret
+
+    // EndianSwapEq<int>(int&) — a REAL in-place 4-byte byteswap, NOT a no-op.
+    //
+    // The source (os/AsyncFile.cpp) defines this specialization as a plain
+    // delegate to EndianSwapEq<unsigned int>, i.e. an unconditional, host-
+    // endianness-INDEPENDENT byte reversal (the same arithmetic the <unsigned
+    // int> sibling in os/Endian.h emits). AsyncFile.cpp is excluded from the
+    // native build (it drags in the RVL_SDK cnt.h chain), so the strong def is
+    // missing and the symbol used to resolve to the no-op stub above — making
+    // EndianSwapEq<int> behave OPPOSITELY to its <unsigned int> sibling, a
+    // latent port-fidelity hazard (milo-trace W9B: 12/12 real-gameplay inputs
+    // DIVERGENT vs the Bank-8 DOL, which byteswaps). This restores the faithful
+    // primitive: it now matches the DOL + the <unsigned int> sibling exactly.
+    //
+    // SysV x86-64: the int& is in %rdi. bswap the dword in place.
+    // (Weak so any future strong C++ instantiation still wins.)
+    .p2align 4
+__rb3_endian_swap_eq_int:
+    movl  (%rdi), %eax
+    bswap %eax
+    movl  %eax, (%rdi)
+    ret
+    .weak _Z12EndianSwapEqIiEvRT_
+    .set  _Z12EndianSwapEqIiEvRT_, __rb3_endian_swap_eq_int
     // rb3-dta compiles os/System.cpp (whose native SystemInit now calls
     // RB3InitNativeNetSession) but does not link rb3_netsession_native.cpp; rb3-dta
     // never calls SystemInit, so this weak no-op never executes. rb3-native links
@@ -97,8 +121,8 @@ __hmx_native_noop_stub:
     .set _Z11JoypadResetv, __hmx_native_noop_stub
     .weak _Z11UsingHolmesi
     .set _Z11UsingHolmesi, __hmx_native_noop_stub
-    .weak _Z12EndianSwapEqIiEvRT_
-    .set _Z12EndianSwapEqIiEvRT_, __hmx_native_noop_stub
+    // _Z12EndianSwapEqIiEvRT_ (EndianSwapEq<int>) is defined as a REAL byteswap
+    // above (__rb3_endian_swap_eq_int) — NOT a no-op. See the comment there.
     .weak _Z12KeyboardInitv
     .set _Z12KeyboardInitv, __hmx_native_noop_stub
     .weak _Z12KeyboardPollv
