@@ -30,6 +30,7 @@
 #include "os/File.h"
 #include <cstdio>
 #include <cstring>
+#include <chrono>      // steady_clock (RB3_FAKE_ASYNC_OPEN_MS timer)
 #ifndef __EMSCRIPTEN__
 #include <cstdlib>      // getenv
 #include <sys/stat.h>   // stat (overlay existence probe)
@@ -364,6 +365,124 @@ private:
     bool mReadMode; // QW-2: only read-mode files cache mSize
     long mSize;     // QW-2: cached file length (-1 = not cached / recompute live)
 };
+
+// --- RB3_FAKE_ASYNC_OPEN_MS — A1 (pending-File async open) de-risk probe ------
+//
+// Dev-only experiment E1 (docs/native/incremental-load-perf/PLAN.md §4 E1, §5
+// T2). DEFAULT OFF. When RB3_FAKE_ASYNC_OPEN_MS=<n> (n>0) is set, every READ-mode
+// File returned by this backend is wrapped in a FakeAsyncFile: a delegating File
+// that answers open / Size() / Fail() / Eof() / Seek() IMMEDIATELY from the real
+// stdio file (mirroring what A1's WebPendingFile would learn from the manifest
+// oracle), but whose ReadDone() returns false for n ms after each ReadAsync()
+// before signalling completion. The actual bytes are read synchronously inside
+// ReadAsync() (the host disk is instant) — we only DEFER the completion signal,
+// which is exactly the observable the real async-fetch seam will introduce.
+//
+// This exercises, with NO network and NO web build, every loader path that polls
+// the async-read contract:
+//   * FileLoader::OpenFile/LoadFile  — Size()+Fail()+AllocBuffer() at open, then
+//     ReadDone() poll (Loader.cpp:666-669, :682).
+//   * ChunkStream::Eof()             — returns TempEof while mFile->ReadDone()==0
+//     (ChunkStream.cpp:205-209, :268-281), feeding LoadStream's
+//     MILO_ASSERT(t==TempEof) spins (Loader.cpp:735, :755).
+//   * VorbisReader::Poll             — ReadAsync(hdr/4k) + ReadDone()/Fail()/Eof()
+//     poll (VorbisReader.cpp:103-104, :208-218, :329-355, :405).
+//
+// PER-READ timing (not per-file): each ReadAsync starts a fresh n-ms timer. This
+// best mimics a real async fetch where every read of a chunk completes after a
+// round trip — the loader/stream machinery issues many ReadAsyncs over a file's
+// life (ChunkStream reads each compressed chunk; VorbisReader streams 16 KB at a
+// time), and we want each of them to spend time "in flight" so multi-frame opens
+// AND multi-frame streaming are both stressed, not just the first read.
+
+long FakeAsyncOpenMs() {
+    // Read once via static init + getenv (Loader.cpp:217-226 pattern). <=0 / unset
+    // => disabled (sentinel -1 distinguishes "not yet read"). Works on native
+    // (getenv) and web (the T1 URL-param->ENV bridge surfaces it through getenv).
+    static long sMs = -1;
+    if (sMs == -1) {
+        const char *e = ::getenv("RB3_FAKE_ASYNC_OPEN_MS");
+        long v = (e && e[0]) ? std::atol(e) : 0;
+        sMs = v > 0 ? v : 0;
+    }
+    return sMs;
+}
+
+// Delegating File that defers ReadDone() completion by FakeAsyncOpenMs() ms per
+// read. Owns the wrapped delegate. Everything except ReadAsync/ReadDone forwards
+// straight through, so open/stat/Size()/Fail()/Eof()/Seek()/Tell() are all exact
+// and immediate — the only lie is WHEN the read reports done.
+class FakeAsyncFile : public File {
+public:
+    explicit FakeAsyncFile(File *delegate, long delayMs)
+        : mDelegate(delegate), mDelayMs(delayMs), mPendingResult(0),
+          mPending(false) {}
+    ~FakeAsyncFile() override { delete mDelegate; }
+
+    class String Filename() const override { return mDelegate->Filename(); }
+    int Read(void *buf, int n) override { return mDelegate->Read(buf, n); }
+
+    bool ReadAsync(void *buf, int n) override {
+        // Do the real read NOW (host disk is instant), but stash the result and
+        // start the per-read timer; ReadDone() won't surface it until the delay
+        // elapses. Mirrors a fetch that has the bytes queued but not "arrived".
+        bool full = mDelegate->ReadAsync(buf, n);
+        int result = 0;
+        mDelegate->ReadDone(result); // drain the delegate's instant completion
+        mPendingResult = result;
+        mPending = true;
+        mReadIssuedAt = std::chrono::steady_clock::now();
+        return full;
+    }
+
+    bool ReadDone(int &result) override {
+        if (!mPending) {
+            // No read in flight (e.g. polled before any ReadAsync) — report the
+            // delegate's idle state, which is "done, 0 bytes".
+            return mDelegate->ReadDone(result);
+        }
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::steady_clock::now() - mReadIssuedAt)
+                           .count();
+        if (elapsed < mDelayMs) {
+            // Still "in flight": the caller must keep polling. result is left
+            // untouched / 0 — callers (ChunkStream/VorbisReader/FileLoader) gate
+            // on the bool and don't consume result until it returns true.
+            result = 0;
+            return false;
+        }
+        result = mPendingResult;
+        mPending = false;
+        return true;
+    }
+
+    int Write(const void *buf, int n) override { return mDelegate->Write(buf, n); }
+    bool WriteAsync(const void *buf, int n) override {
+        return mDelegate->WriteAsync(buf, n);
+    }
+    int Seek(int offset, int whence) override {
+        return mDelegate->Seek(offset, whence);
+    }
+    int Tell() override { return mDelegate->Tell(); }
+    void Flush() override { mDelegate->Flush(); }
+    bool Eof() override { return mDelegate->Eof(); }
+    bool Fail() override { return mDelegate->Fail(); }
+    int Size() override { return mDelegate->Size(); }
+    int UncompressedSize() override { return mDelegate->UncompressedSize(); }
+    bool WriteDone(int &i) override { return mDelegate->WriteDone(i); }
+    int GetFileHandle(DVDFileInfo *&info) override {
+        return mDelegate->GetFileHandle(info);
+    }
+    int Truncate(int n) override { return mDelegate->Truncate(n); }
+
+private:
+    File *mDelegate;
+    long mDelayMs;
+    int mPendingResult;
+    bool mPending;
+    std::chrono::steady_clock::time_point mReadIssuedAt;
+};
+
 } // namespace
 
 #ifndef __EMSCRIPTEN__
@@ -459,6 +578,22 @@ bool ResolveOverlay(const char *path, char *out, size_t outSize) {
 } // namespace
 #endif // !__EMSCRIPTEN__
 
+// E1 de-risk probe: wrap a successfully-opened READ-mode File so its ReadDone()
+// reports completion only after RB3_FAKE_ASYNC_OPEN_MS ms (default off → no-op,
+// returns the delegate unchanged). Never wrap a failed open (callers check
+// Fail() and the wrapper must answer Fail() truthfully, which it does — but a
+// failed open has nothing to delay) nor a write-mode open.
+static File *MaybeWrapFakeAsync(File *f, int mode) {
+    long delay = FakeAsyncOpenMs();
+    if (delay <= 0 || !f)
+        return f;
+    if ((mode & 2) == 0) // write/append: not on the async-read contract
+        return f;
+    if (f->Fail()) // nothing to defer on a failed open
+        return f;
+    return new FakeAsyncFile(f, delay);
+}
+
 File *HmxNativeOpenFile(const char *path, int mode) {
 #ifndef __EMSCRIPTEN__
     // DTA overlay: for READ opens (Wii mode bit 0x2), if native/dta/<path>
@@ -470,14 +605,14 @@ File *HmxNativeOpenFile(const char *path, int mode) {
             if (!of->Fail()) {
                 std::fprintf(stderr, "RB3 native: DTA overlay HIT: '%s' -> %s\n",
                              path, overlayPath);
-                return of; // overlay hit
+                return MaybeWrapFakeAsync(of, mode); // overlay hit
             }
             delete of; // overlay stat'd but open failed — fall through
         }
     }
 #endif
     NativeStdioFile *f = new NativeStdioFile(path, mode);
-    return f; // NewFile callers check ->Fail() and release on failure
+    return MaybeWrapFakeAsync(f, mode); // NewFile callers check ->Fail() and release on failure
 }
 
 #endif // HX_NATIVE
