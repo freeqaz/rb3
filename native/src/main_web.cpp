@@ -207,6 +207,51 @@ static void ApplyUrlLoaderEnv() {
             free(v);
         }
     }
+
+    // Generic ?env=NAME=VALUE;... bridge drain (incremental-load-perf PLAN T1).
+    // rb3_pre.js parses the single `?env` param into window.__rb3ExtraEnv (an
+    // allowlisted RB3_* map) and ALSO seeds Module.ENV — but Emscripten's
+    // getEnvStrings reads its OWN internal `var ENV={}`, never Module.ENV, so the
+    // JS seed never reaches getenv(). The reliable path is a C++ ::setenv() (which
+    // writes the live musl `environ` that getenv reads), done HERE at BOOT_INIT
+    // before any flag is first read. This makes ANY RB3_* flag (e.g.
+    // RB3_ASYNC_OPEN_OFF, RB3_MOGG_RANGE_OFF, RB3_BC_TEX_OFF) toggleable from the
+    // browser with no rebuild and no per-flag allowlist entry above.
+    char *blob = (char *)EM_ASM_PTR({
+        try {
+            var m = window.__rb3ExtraEnv;
+            if (!m) return 0;
+            var parts = [];
+            for (var k in m) { if (m.hasOwnProperty(k)) parts.push(k + "=" + m[k]); }
+            if (!parts.length) return 0;
+            var s = parts.join("\n");
+            var len = lengthBytesUTF8(s) + 1;
+            var buf = _malloc(len);
+            stringToUTF8(s, buf, len);
+            return buf;
+        } catch (e) { return 0; }
+    });
+    if (blob) {
+        char *p = blob;
+        while (*p) {
+            char *eq = strchr(p, '=');
+            char *nl = strchr(p, '\n');
+            if (!eq || (nl && eq > nl)) {  // malformed line: skip to next
+                if (!nl) break;
+                p = nl + 1;
+                continue;
+            }
+            *eq = '\0';
+            if (nl)
+                *nl = '\0';
+            ::setenv(p, eq + 1, 1);
+            printf("RB3 Web: env %s=%s (from ?env)\n", p, eq + 1);
+            if (!nl)
+                break;
+            p = nl + 1;
+        }
+        free(blob);
+    }
 }
 
 // True once rb3_pre.js's IndexedDB pre-warm has finished loading (or decided to

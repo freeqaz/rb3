@@ -39,8 +39,12 @@
 #ifdef __EMSCRIPTEN__
 #include "platform/WebAssets.h"
 #include <emscripten/em_asm.h>
+#include <emscripten/emscripten.h> // emscripten_sleep (JSPI sync-read fallback)
 #include <cstdlib> // getenv (RB3_BOOT_IO_STATS)
 #include <string>
+#include <map>     // WebRangeFile chunk cache
+#include <vector>  // WebRangeFile chunk bytes
+#include <cstdint> // uint8_t
 
 // --- Boot I/O instrumentation (Step 0, handoff 02-boot-sync-read) ----------
 // Env-gated (RB3_BOOT_IO_STATS=1) counters that attribute every READ-mode open
@@ -157,6 +161,43 @@ void cachePutAfterFetch(const char *cacheKey, const char *memfsPath) {
             console.log('[rb3-idb] cache-put failed: ' + e);
         }
     }, cacheKey, memfsPath);
+}
+
+// ===========================================================================
+// A1 (PLAN.md T6/T7) — async-open File backends.
+//
+// Today every MEMFS miss blocks the wasm thread on a synchronous XHR inside the
+// NativeStdioFile ctor (the single canvas-freeze chokepoint). T6 replaces that
+// for manifest-known files with a WebPendingFile that kicks the engine's async
+// fetch and reports ReadDone()=false until the bytes land — the frame loop keeps
+// running. T7 additionally serves *.mogg via HTTP Range so a 31-36 MB mogg is
+// never whole-filed into MEMFS just to play a 15 s preview.
+//
+// Both are forward-declared here; their factory (MaybeOpenAsync) and the
+// flag readers follow the class bodies. The plain-synchronous NativeStdioFile
+// below stays the fast path for already-resident files (boot bundles!) and the
+// manifest-miss fallback, so boot does not regress.
+// ===========================================================================
+
+// RB3_ASYNC_OPEN_OFF=1 restores the sync-XHR open path wholesale (T6 + T7 off).
+static bool AsyncOpenEnabled() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) {
+        const char *e = ::getenv("RB3_ASYNC_OPEN_OFF");
+        sEnabled = (e && e[0] && e[0] != '0') ? 0 : 1;
+    }
+    return sEnabled != 0;
+}
+
+// RB3_MOGG_RANGE_OFF=1 falls back to T6's whole-file pending fetch for moggs
+// (no Range streaming). Default ON.
+static bool MoggRangeEnabled() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) {
+        const char *e = ::getenv("RB3_MOGG_RANGE_OFF");
+        sEnabled = (e && e[0] && e[0] != '0') ? 0 : 1;
+    }
+    return sEnabled != 0;
 }
 
 } // namespace
@@ -365,6 +406,435 @@ private:
     bool mReadMode; // QW-2: only read-mode files cache mSize
     long mSize;     // QW-2: cached file length (-1 = not cached / recompute live)
 };
+
+#ifdef __EMSCRIPTEN__
+// ===========================================================================
+// WebPendingFile — A1 (T6): the async-open seam fix.
+//
+// On a MEMFS miss for a manifest-known file, HmxNativeOpenFile returns one of
+// these instead of blocking the wasm thread on a sync XHR. It:
+//   * kicks the engine's async fetch (WebAssetsEnsureResidentAsync) at ctor;
+//   * answers Size()/Fail() IMMEDIATELY from the boot-loaded manifest oracle
+//     (so ChunkStream's ctor `mFail = mFile->Fail()` and DirLoader::OpenFile's
+//     `mStream->Fail()` check see "exists, not failed" while bytes are pending,
+//     and FileLoader::OpenFile's Size()+AllocBuffer() get the real size up
+//     front — the accepted v1 cost is a pending 36 MB mogg holding its buffer
+//     during the fetch, but moggs take the WebRangeFile path below, not this);
+//   * reports ReadDone()=false until the fetch lands (WebAssetsEnsureStatus),
+//     then lazily opens the real NativeStdioFile and satisfies reads from MEMFS;
+//   * if the fetch fails (status 2), flips mFail so the loader cleans up.
+//
+// The cooperative loader stack (FileLoader LoadFile poll, ChunkStream TempEof,
+// VorbisReader ReadDone poll — all the Wii ReadAsync contract) was BUILT for
+// this and is exercised by the E1 fake-async probe; this just supplies real
+// bytes instead of a timer.
+// ===========================================================================
+class WebPendingFile : public File {
+public:
+    // openPath: the path NewFile was called with (for the eventual real open).
+    // serverRel: the server-relative key for the manifest + async fetch.
+    // size: the manifest-reported byte length (>= 0).
+    WebPendingFile(const char *openPath, const std::string &serverRel, long size)
+        : mOpenPath(openPath ? openPath : ""), mServerRel(serverRel), mSize(size),
+          mReal(nullptr), mFail(false), mPendingResult(0), mReadPending(false),
+          mPendingBuf(nullptr), mPendingLen(0) {
+        // Kick the async fetch now (idempotent / deduped in the engine). If it is
+        // already resident (a prefetch or prior open landed it), open immediately.
+        if (WebAssetsIsResident(mServerRel.c_str()))
+            TryOpenReal();
+        else
+            WebAssetsEnsureResidentAsync(mServerRel.c_str());
+    }
+    ~WebPendingFile() override { delete mReal; }
+
+    int Read(void *buf, int n) override {
+        // Synchronous Read on a still-pending file: block until resident (rare —
+        // DTA-lexer-style paths, which are bundle-prefetched anyway). The engine's
+        // ensure-async already kicked; busy-poll status (the loader/JSPI yields
+        // elsewhere keep the tab alive). Bounded by the fetch completing.
+        if (!mReal && !mFail)
+            BlockUntilReadyOrFail();
+        if (mReal)
+            return mReal->Read(buf, n);
+        return -1;
+    }
+
+    bool ReadAsync(void *buf, int n) override {
+        if (mReal)
+            return mReal->ReadAsync(buf, n);
+        // Not resident yet: record the request; ReadDone() will service it once
+        // the fetch lands. Mirrors the Wii DVD ReadAsync→ReadDone(false) contract.
+        mPendingBuf = buf;
+        mPendingLen = n;
+        mReadPending = true;
+        return false;  // not full yet
+    }
+
+    bool ReadDone(int &result) override {
+        if (mReal) {
+            // Already opened: delegate. If a read was queued while pending, run it
+            // now (one-shot) so the first post-landing poll returns the bytes.
+            if (mReadPending) {
+                mReal->ReadAsync(mPendingBuf, mPendingLen);
+                mReadPending = false;
+            }
+            return mReal->ReadDone(result);
+        }
+        if (mFail) {
+            result = 0;
+            return true;  // done (failed) — caller checks Fail()
+        }
+        int st = WebAssetsEnsureStatus(mServerRel.c_str());
+        if (st == 1) {
+            TryOpenReal();
+            if (mReal) {
+                if (mReadPending) {
+                    mReal->ReadAsync(mPendingBuf, mPendingLen);
+                    mReadPending = false;
+                }
+                return mReal->ReadDone(result);
+            }
+            // open failed despite residency → fail
+            mFail = true;
+            result = 0;
+            return true;
+        }
+        if (st == 2) {
+            mFail = true;
+            result = 0;
+            return true;
+        }
+        // st == 0: still pending. Re-kick is cheap + deduped; covers the
+        // not-yet-ensured edge.
+        WebAssetsEnsureResidentAsync(mServerRel.c_str());
+        result = 0;
+        return false;
+    }
+
+    int Write(const void *, int) override { return -1; }
+    int Seek(int offset, int whence) override {
+        if (!mReal && !mFail)
+            BlockUntilReadyOrFail();
+        return mReal ? mReal->Seek(offset, whence) : -1;
+    }
+    int Tell() override { return mReal ? mReal->Tell() : 0; }
+    void Flush() override {
+        if (mReal)
+            mReal->Flush();
+    }
+    bool Eof() override {
+        // Pre-open: not at EOF (bytes are coming). Post-open: delegate.
+        return mReal ? mReal->Eof() : false;
+    }
+    bool Fail() override { return mFail; }
+    int Size() override {
+        if (mReal)
+            return mReal->Size();
+        return mSize >= 0 ? (int)mSize : 0;  // manifest oracle
+    }
+    int UncompressedSize() override { return Size(); }
+    int GetFileHandle(DVDFileInfo *&info) override {
+        info = nullptr;
+        return 0;
+    }
+
+private:
+    void TryOpenReal() {
+        mReal = new NativeStdioFile(mOpenPath.c_str(), 2 /*read*/);
+        if (mReal->Fail()) {
+            delete mReal;
+            mReal = nullptr;
+        }
+    }
+    void BlockUntilReadyOrFail() {
+        // Suspend-and-retry until the fetch resolves. emscripten_sleep keeps the
+        // tab compositing (JSPI) — same primitive the loader's yield throttle
+        // already uses; only reached on a rare synchronous Read of a pending file.
+        for (;;) {
+            int st = WebAssetsEnsureStatus(mServerRel.c_str());
+            if (st == 1) {
+                TryOpenReal();
+                if (!mReal)
+                    mFail = true;
+                return;
+            }
+            if (st == 2) {
+                mFail = true;
+                return;
+            }
+            WebAssetsEnsureResidentAsync(mServerRel.c_str());
+            emscripten_sleep(4);
+        }
+    }
+
+    std::string mOpenPath;   // path to fopen once resident
+    std::string mServerRel;  // server-relative key for manifest + fetch
+    long mSize;              // manifest size (>= 0)
+    File *mReal;            // lazily-opened resident file (null while pending)
+    bool mFail;
+    int mPendingResult;
+    bool mReadPending;
+    void *mPendingBuf;
+    int mPendingLen;
+};
+
+// ===========================================================================
+// WebRangeFile — Q3 (T7): HTTP Range-backed *.mogg File.
+//
+// A 31-36 MB mogg should never be whole-filed into MEMFS just to play a preview.
+// VorbisReader's access pattern (60 KB header read, seek-map jump via
+// Seek(byteOffset), then sequential 0x4000 reads — VorbisReader.cpp:103,208,631)
+// touches only a few MB. This File serves reads from a chunked LRU cache of
+// fixed-size byte windows fetched over HTTP 206, kicking a range fetch on a miss
+// and reporting ReadDone()=false until it lands. Size() comes from the manifest.
+// Bytes are returned exactly at the requested offset, byte-identical to a
+// full-file read — the AES-CTR decrypt downstream in VorbisReader is unaffected
+// (it decrypts whatever bytes it receives at whatever file offset it sought to).
+//
+// NOTE on the read contract: callers do ReadAsync(buf,n) then poll ReadDone().
+// We service the read out of the cache when the covering chunk(s) are resident;
+// on a miss we kick the fetch and ReadDone() stays false until the chunk lands,
+// then the SAME ReadAsync is retried internally and completed.
+// ===========================================================================
+class WebRangeFile : public File {
+    static const int kChunkSize = 1 << 20;   // 1 MB range windows
+    static const int kMaxChunks = 6;         // LRU window (~6 MB resident)
+
+public:
+    WebRangeFile(const std::string &serverRel, long size)
+        : mServerRel(serverRel), mSize(size), mPos(0), mFail(false),
+          mReqId(0), mReqChunk(-1),
+          mPendingBuf(nullptr), mPendingLen(0), mPendingDone(0),
+          mReadActive(false), mLru(0) {}
+    ~WebRangeFile() override {
+        if (mReqId)
+            WebAssetsRangeDrop(mReqId);
+    }
+
+    int Read(void *buf, int n) override {
+        // Synchronous read: block on each missing chunk (rare). Returns bytes
+        // copied (clamped at EOF), or -1 on failure.
+        if (mFail || n < 0)
+            return mFail ? -1 : 0;
+        long clamped = ClampLen(mPos, n);
+        char *out = (char *)buf;
+        long got = 0;
+        while (got < clamped) {
+            int chunk = (int)((mPos + got) / kChunkSize);
+            if (!ChunkResident(chunk)) {
+                if (!BlockFetchChunk(chunk))
+                    return mFail ? -1 : (int)got;
+            }
+            got += CopyFromChunk(chunk, mPos + got, out + got, clamped - got);
+        }
+        mPos += got;
+        return (int)got;
+    }
+
+    bool ReadAsync(void *buf, int n) override {
+        mPendingBuf = buf;
+        mPendingLen = (int)ClampLen(mPos, n);
+        mPendingDone = 0;
+        mReadActive = true;
+        // Try to satisfy immediately from cache; if a chunk is missing this kicks
+        // the fetch and returns false (ReadDone keeps polling).
+        return ServicePendingRead() && mPendingDone == mPendingLen;
+    }
+
+    bool ReadDone(int &result) override {
+        if (!mReadActive) {
+            result = 0;
+            return true;
+        }
+        if (mFail) {
+            result = mPendingDone;
+            mReadActive = false;
+            return true;
+        }
+        ServicePendingRead();
+        if (mPendingDone >= mPendingLen) {
+            mPos += mPendingDone;
+            result = mPendingDone;
+            mReadActive = false;
+            return true;
+        }
+        result = 0;
+        return false;
+    }
+
+    int Write(const void *, int) override { return -1; }
+    int Seek(int offset, int whence) override {
+        long base = (whence == 1) ? mPos : (whence == 2) ? mSize : 0;
+        mPos = base + offset;
+        if (mPos < 0)
+            mPos = 0;
+        return (int)mPos;
+    }
+    int Tell() override { return (int)mPos; }
+    void Flush() override {}
+    bool Eof() override { return mPos >= mSize; }
+    bool Fail() override { return mFail; }
+    int Size() override { return (int)mSize; }
+    int UncompressedSize() override { return (int)mSize; }
+    int GetFileHandle(DVDFileInfo *&info) override {
+        info = nullptr;
+        return 0;
+    }
+
+private:
+    struct Chunk {
+        std::vector<uint8_t> data;  // exactly the bytes for [index*kChunkSize, ..)
+        long lru;
+    };
+
+    long ClampLen(long pos, long n) const {
+        if (n < 0)
+            n = 0;
+        if (pos + n > mSize)
+            n = mSize - pos;
+        if (n < 0)
+            n = 0;
+        return n;
+    }
+
+    bool ChunkResident(int chunk) {
+        return mChunks.find(chunk) != mChunks.end();
+    }
+
+    long ChunkByteLen(int chunk) const {
+        long start = (long)chunk * kChunkSize;
+        long len = kChunkSize;
+        if (start + len > mSize)
+            len = mSize - start;
+        return len < 0 ? 0 : len;
+    }
+
+    long CopyFromChunk(int chunk, long fileOff, char *dst, long want) {
+        auto it = mChunks.find(chunk);
+        if (it == mChunks.end())
+            return 0;
+        long chunkStart = (long)chunk * kChunkSize;
+        long off = fileOff - chunkStart;
+        long avail = (long)it->second.data.size() - off;
+        long n = want < avail ? want : avail;
+        if (n <= 0)
+            return 0;
+        memcpy(dst, it->second.data.data() + off, n);
+        it->second.lru = ++mLru;
+        return n;
+    }
+
+    // Issue (or continue) a Range fetch for `chunk`. Returns true if the chunk is
+    // now resident, false if the fetch is still pending (or kicked just now).
+    bool PollChunkFetch(int chunk) {
+        if (ChunkResident(chunk))
+            return true;
+        if (mReqId == 0 || mReqChunk != chunk) {
+            // No fetch in flight for this chunk: kick one. (Drop a stale in-flight
+            // request for a different chunk — VorbisReader reads strictly forward
+            // within a window, so superseding is correct and cheap.)
+            if (mReqId)
+                WebAssetsRangeDrop(mReqId);
+            long start = (long)chunk * kChunkSize;
+            int len = (int)ChunkByteLen(chunk);
+            if (len <= 0)
+                return false;  // zero-length chunk at/after EOF — nothing to fetch
+            mReqId = WebAssetsRangeFetch(mServerRel.c_str(), start, len);
+            mReqChunk = chunk;
+            if (mReqId == 0) {
+                mFail = true;
+                return false;
+            }
+            return false;
+        }
+        int bytes = 0;
+        bool ok = false;
+        if (!WebAssetsRangeDone(mReqId, &bytes, &ok))
+            return false;  // still in flight
+        if (!ok) {
+            WebAssetsRangeDrop(mReqId);
+            mReqId = 0;
+            mReqChunk = -1;
+            mFail = true;
+            return false;
+        }
+        // Landed: take the bytes into the cache.
+        Chunk &c = mChunks[chunk];
+        c.data.resize(bytes);
+        WebAssetsRangeTake(mReqId, c.data.data(), bytes);
+        c.lru = ++mLru;
+        mReqId = 0;
+        mReqChunk = -1;
+        EvictIfNeeded();
+        return true;
+    }
+
+    void EvictIfNeeded() {
+        while ((int)mChunks.size() > kMaxChunks) {
+            int victim = -1;
+            long oldest = 0;
+            for (auto &kv : mChunks) {
+                if (victim < 0 || kv.second.lru < oldest) {
+                    oldest = kv.second.lru;
+                    victim = kv.first;
+                }
+            }
+            if (victim < 0)
+                break;
+            mChunks.erase(victim);
+        }
+    }
+
+    bool BlockFetchChunk(int chunk) {
+        for (;;) {
+            if (PollChunkFetch(chunk))
+                return true;
+            if (mFail)
+                return false;
+            emscripten_sleep(4);
+        }
+    }
+
+    // Service the active ReadAsync from cache, copying as many contiguous bytes
+    // as are resident and kicking a fetch for the first missing chunk. Returns
+    // true if any progress was possible without an error.
+    bool ServicePendingRead() {
+        while (mPendingDone < mPendingLen) {
+            long fileOff = mPos + mPendingDone;
+            int chunk = (int)(fileOff / kChunkSize);
+            if (!ChunkResident(chunk)) {
+                PollChunkFetch(chunk);  // kick / advance; not resident yet
+                if (mFail) {
+                    mReadActive = false;
+                    return false;
+                }
+                return true;  // pending — ReadDone keeps polling
+            }
+            long n = CopyFromChunk(chunk, fileOff,
+                                   (char *)mPendingBuf + mPendingDone,
+                                   mPendingLen - mPendingDone);
+            if (n <= 0)
+                break;  // defensive
+            mPendingDone += (int)n;
+        }
+        return true;
+    }
+
+    std::string mServerRel;
+    long mSize;
+    long mPos;
+    bool mFail;
+    int mReqId;     // in-flight range request id (0 = none)
+    int mReqChunk;  // chunk index the in-flight request covers
+    std::map<int, Chunk> mChunks;  // chunk index -> bytes
+    // active ReadAsync state
+    void *mPendingBuf;
+    int mPendingLen;
+    int mPendingDone;
+    bool mReadActive;
+    long mLru;
+};
+#endif // __EMSCRIPTEN__
 
 // --- RB3_FAKE_ASYNC_OPEN_MS — A1 (pending-File async open) de-risk probe ------
 //
@@ -578,6 +1048,59 @@ bool ResolveOverlay(const char *path, char *out, size_t outSize) {
 } // namespace
 #endif // !__EMSCRIPTEN__
 
+#ifdef __EMSCRIPTEN__
+// A1 (T6/T7) async-open factory. For a READ open on web that MISSES MEMFS but is
+// known to the manifest, return an async File (WebRangeFile for *.mogg with Range
+// enabled, else WebPendingFile) instead of blocking the wasm thread on a sync
+// XHR. Returns nullptr to signal "use the legacy synchronous path" (the file is
+// already resident, the manifest doesn't know it — so a fallback root might —,
+// or the async path is flag-disabled).
+//
+// The residency fast path is preserved: an already-resident file (boot bundle,
+// prior fetch, IDB warm-write) opens synchronously below, so boot does NOT
+// regress — only genuine network misses take the async path.
+static File *MaybeOpenAsync(const char *path, int mode) {
+    if ((mode & 2) == 0)         // write/append: never async
+        return nullptr;
+    if (!AsyncOpenEnabled())     // RB3_ASYNC_OPEN_OFF=1 → legacy sync path
+        return nullptr;
+    if (!path || !path[0])
+        return nullptr;
+
+    // Server-relative key: strip a leading "/data/" or "/" (mirrors the engine's
+    // normalization; the manifest/fetch helpers re-strip defensively).
+    std::string rel = path;
+    if (rel.compare(0, 6, "/data/") == 0)
+        rel = rel.substr(6);
+    else if (!rel.empty() && rel[0] == '/')
+        rel = rel.substr(1);
+
+    // Already resident? Use the sync fast path (cheap fopen below). The engine's
+    // residency probe keys off /data/<rel>, which is where the boot bundle and
+    // prior fetches wrote it.
+    if (WebAssetsIsResident(rel.c_str()))
+        return nullptr;
+
+    // Manifest oracle: a non-negative size means the file is a real ASSETS_DIR
+    // asset → safe to serve async. A -1 is NOT a definitive 404 (fallback roots /
+    // sidecars aren't in the manifest), so fall back to the legacy sync path,
+    // which probes those and matches today's 404 semantics exactly.
+    long size = WebAssetsManifestSize(rel.c_str());
+    if (size < 0)
+        return nullptr;
+
+    // *.mogg → Range-backed streaming (touches a few MB, not the whole 31-36 MB),
+    // unless RB3_MOGG_RANGE_OFF — then it falls through to the whole-file pending
+    // fetch (WebPendingFile) like any other large asset.
+    size_t n = rel.size();
+    bool isMogg = n >= 5 && rel.compare(n - 5, 5, ".mogg") == 0;
+    if (isMogg && MoggRangeEnabled())
+        return new WebRangeFile(rel, size);
+
+    return new WebPendingFile(path, rel, size);
+}
+#endif // __EMSCRIPTEN__
+
 // E1 de-risk probe: wrap a successfully-opened READ-mode File so its ReadDone()
 // reports completion only after RB3_FAKE_ASYNC_OPEN_MS ms (default off → no-op,
 // returns the delegate unchanged). Never wrap a failed open (callers check
@@ -610,6 +1133,12 @@ File *HmxNativeOpenFile(const char *path, int mode) {
             delete of; // overlay stat'd but open failed — fall through
         }
     }
+#endif
+#ifdef __EMSCRIPTEN__
+    // A1 (T6/T7): async open for manifest-known MEMFS misses. nullptr => use the
+    // sync path below (resident file, manifest miss, or flag-disabled).
+    if (File *async = MaybeOpenAsync(path, mode))
+        return async;  // already on the async ReadAsync/ReadDone contract; no FakeAsync wrap
 #endif
     NativeStdioFile *f = new NativeStdioFile(path, mode);
     return MaybeWrapFakeAsync(f, mode); // NewFile callers check ->Fail() and release on failure

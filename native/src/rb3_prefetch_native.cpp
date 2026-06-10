@@ -35,6 +35,27 @@ bool RB3PreviewPrefetchEnabled() {
     return sEnabled != 0;
 }
 
+// T7 coordination (PLAN.md): when the Range-backed mogg File is active
+// (RB3_ASYNC_OPEN + RB3_MOGG_RANGE, both default ON), the preview must NOT
+// whole-file the 31-36 MB mogg into MEMFS — the WebRangeFile (native_file.cpp)
+// streams it from a few-MB Range window instead. So the preview prefetch becomes
+// a no-op for moggs and the residency gate is satisfied by manifest knowledge
+// (the stream construction is non-blocking once the open returns a WebRangeFile).
+// Mirrors native_file.cpp's AsyncOpenEnabled()/MoggRangeEnabled() (same env, read
+// once). Off web, or with either flag disabled, the legacy whole-file prefetch
+// path below is unchanged.
+static bool RB3MoggRangeActive() {
+    static int sActive = -1;
+    if (sActive < 0) {
+        const char *ao = ::getenv("RB3_ASYNC_OPEN_OFF");
+        const char *mr = ::getenv("RB3_MOGG_RANGE_OFF");
+        bool asyncOn = !(ao && ao[0] && ao[0] != '0');
+        bool rangeOn = !(mr && mr[0] && mr[0] != '0');
+        sActive = (asyncOn && rangeOn) ? 1 : 0;
+    }
+    return sActive != 0;
+}
+
 #ifdef __EMSCRIPTEN__
 
 namespace {
@@ -83,6 +104,12 @@ int memfsExists(const char *memfsPath) {
 void RB3PrefetchMogg(const char *serverRelMoggPath) {
     if (!RB3PreviewPrefetchEnabled())
         return;
+    // T7: with the Range-backed mogg File active, do NOT whole-file the mogg.
+    // The WebRangeFile streams it on demand; this avoids the 31-36 MB MEMFS+IDB
+    // write the legacy prefetch did. (The first VorbisReader read warms the Range
+    // header window — one ~64 KB-2 MB 206 request — instead.)
+    if (RB3MoggRangeActive())
+        return;
     std::string rel = toServerRel(serverRelMoggPath);
     if (rel.empty())
         return;
@@ -104,6 +131,15 @@ bool RB3MoggResident(const char *serverRelMoggPath) {
     std::string rel = toServerRel(serverRelMoggPath);
     if (rel.empty())
         return true; // never wedge on a bad path
+    // T7: with Range active, the stream construction is non-blocking (NewFile
+    // returns a WebRangeFile that streams over 206), so SongPreview should NOT
+    // wait for whole-file MEMFS residency — it would wait forever, since the
+    // mogg is never whole-filed. Treat "manifest knows it" (or already resident
+    // from a prior whole-file path) as ready. The manifest oracle is loaded at
+    // WebAssetsInit; if it isn't ready yet, fall through to the residency check
+    // (the preview just defers one more frame, harmless).
+    if (RB3MoggRangeActive() && WebAssetsManifestSize(rel.c_str()) >= 0)
+        return true;
     std::string memfs = std::string("/data/") + rel;
     return memfsExists(memfs.c_str()) != 0;
 }

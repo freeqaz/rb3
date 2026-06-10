@@ -151,6 +151,46 @@
     }
 
     // -----------------------------------------------------------------------
+    // A1 (incremental-load-perf PLAN.md T6) — manifest size/existence oracle.
+    //
+    // The async-open seam (native_file.cpp WebPendingFile/WebRangeFile) needs a
+    // SYNCHRONOUS answer to "does this asset exist, and how big is it?" the
+    // instant the engine's File ctor runs, with zero network. /api/manifest
+    // already enumerates every curated asset with its size (server.py:414-435);
+    // we pre-warm it into window.__rb3ManifestSizes (Map<path, sizeBytes>) racing
+    // the wasm download — the same pattern as the IDB cache below. The engine's
+    // WebAssetsManifestLoad() copies this Map across the wasm boundary in one
+    // EM_ASM at WebAssetsInit(); if it isn't ready in time, the engine falls back
+    // to a one-shot synchronous /api/manifest fetch (no correctness loss, just a
+    // slightly later first answer). Keys are server-relative ('ui/gen/x.milo_xbox',
+    // 'songs/x/x.mogg', '(..)/(..)/system/run/...'); the engine de-mangles the
+    // '(..)/' system prefix to match its request form.
+    window.__rb3ManifestSizes = new Map();
+    window.__rb3ManifestReady = 0;
+    (function preWarmManifest() {
+        try {
+            fetch('/api/manifest')
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(j) {
+                    if (j && j.files) {
+                        for (var i = 0; i < j.files.length; i++) {
+                            window.__rb3ManifestSizes.set(j.files[i].path, j.files[i].size);
+                        }
+                        console.log('[rb3-pre] manifest oracle: ' + window.__rb3ManifestSizes.size + ' assets');
+                    }
+                    window.__rb3ManifestReady = 1;
+                })
+                .catch(function(e) {
+                    console.warn('[rb3-pre] manifest prewarm failed: ' + e);
+                    window.__rb3ManifestReady = 1;
+                });
+        } catch (e) {
+            console.warn('[rb3-pre] manifest prewarm threw: ' + e);
+            window.__rb3ManifestReady = 1;
+        }
+    })();
+
+    // -----------------------------------------------------------------------
     // W4b — IndexedDB asset cache.
     //
     // Design constraints. The engine's WebAssetsFetchSync is a synchronous
