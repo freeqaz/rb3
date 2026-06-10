@@ -69,6 +69,8 @@
 #include "meta_band/OvershellSlot.h"
 #include "game/BandUser.h"
 #include <vector>
+#include <set>
+#include <map>
 
 #include "rb3_render_mesh.h"  // LoadMiloAndWalk / RenderFrame / WalkResult
 
@@ -480,6 +482,107 @@ static void WebSplashAdvanceHook() {
 }
 #endif  // HX_WEB
 
+// ============================================================================
+// A2 (incremental-load-perf PLAN.md T9) — per-screen dependency bundles.
+//
+// When the user ENTERs a screen, fire an ASYNC fetch of the NEXT screen's
+// dependency bundle (/api/bundle/screen/<name>) so its extra .milo_xbox/.dta
+// land in warm MEMFS during the dwell, BEFORE that screen's panel loaders ask
+// for them. This reuses the exact boot-bundle async fetch+unpack path
+// (WebAssetsFetchBundle): the bundle is downloaded off-thread and unpacked into
+// /data/<rel>, and the engine's File ctor serves the now-resident bytes from
+// MEMFS instead of freezing the wasm thread on a per-file sync XHR.
+//
+// The current->next mapping mirrors UIScreen.cpp's prewarm default
+// (splash->main_hub, main_hub->song_select). A screen whose bundle manifest is
+// absent emits an empty bundle (server.py), so an unmapped/unknown screen is a
+// harmless no-op. We fire each screen's bundle at most once per session (a
+// file-static seen-set), keyed by the predicted-next screen name.
+//
+// Default ON for web; opt out with RB3_SCREEN_BUNDLES_OFF (any value disables).
+// Tunable mapping via RB3_SCREEN_BUNDLE_NEXT="from:to,from2:to2" (same syntax as
+// RB3_PREWARM_NEXT). This is the prefetch counterpart to the UIScreen kLoadBack
+// prewarm (Q10): bundles warm MEMFS at the byte layer; prewarm warms the parsed
+// PanelDir at the loader layer. They compose.
+static const char *kDefaultScreenBundleMap =
+    "splash_screen:main_hub,main_hub_screen:song_select";
+
+static bool ScreenBundlesEnabled() {
+    // Default ON; opt out with a TRUTHY RB3_SCREEN_BUNDLES_OFF. A literal "0"
+    // (or empty) means "not disabled" so the ?env= A/B bridge can pass
+    // RB3_SCREEN_BUNDLES_OFF=0 to force ON without ambiguity (mirrors the engine
+    // RB3_PP_OFF / RB3_PIPELINE_PREWARM_OFF idiom). getenv once into a static.
+    static int s = -1;
+    if (s < 0) {
+        const char *e = ::getenv("RB3_SCREEN_BUNDLES_OFF");
+        s = (e && e[0] && e[0] != '0') ? 0 : 1;  // truthy OFF flag => disabled
+    }
+    return s != 0;
+}
+
+// Resolve the bundle name to fetch when entering `fromScreen`, or "" if none.
+// Parsed once from RB3_SCREEN_BUNDLE_NEXT (or the default). Keys are UIScreen
+// object names; values are the server bundle <name> (screen-<name>.manifest).
+static std::string NextScreenBundleName(const char *fromScreen) {
+    static std::map<std::string, std::string> sMap;
+    static bool sInit = false;
+    if (!sInit) {
+        sInit = true;
+        const char *spec = ::getenv("RB3_SCREEN_BUNDLE_NEXT");
+        std::string s = (spec && spec[0]) ? spec : kDefaultScreenBundleMap;
+        size_t pos = 0;
+        while (pos < s.size()) {
+            size_t comma = s.find(',', pos);
+            std::string pair = s.substr(
+                pos, comma == std::string::npos ? std::string::npos : comma - pos);
+            size_t colon = pair.find(':');
+            if (colon != std::string::npos) {
+                std::string from = pair.substr(0, colon);
+                std::string to = pair.substr(colon + 1);
+                if (!from.empty() && !to.empty())
+                    sMap[from] = to;
+            }
+            if (comma == std::string::npos)
+                break;
+            pos = comma + 1;
+        }
+    }
+    if (!fromScreen)
+        return "";
+    std::map<std::string, std::string>::const_iterator it = sMap.find(fromScreen);
+    return it == sMap.end() ? "" : it->second;
+}
+
+// Called each frame from BOOT_RUNNING. On a change of current screen, fire the
+// matching screen bundle once. Cheap (a strcmp + a static-set lookup) when the
+// screen hasn't changed or has no mapping.
+static void WebScreenBundleHook() {
+    if (!ScreenBundlesEnabled())
+        return;
+    UIScreen *scr = TheUI.CurrentScreen();
+    const char *name = (scr && scr->Name()) ? scr->Name() : "";
+    if (!name[0])
+        return;
+
+    static std::string sLastScreen;
+    if (sLastScreen == name)
+        return;  // no transition this frame
+    sLastScreen = name;
+
+    std::string bundle = NextScreenBundleName(name);
+    if (bundle.empty())
+        return;
+
+    static std::set<std::string> sFired;
+    if (sFired.count(bundle))
+        return;  // one fetch per bundle per session
+    sFired.insert(bundle);
+
+    std::string url = "/api/bundle/screen/" + bundle;
+    printf("RB3 Web: screen '%s' entered -> prefetch bundle %s\n", name, url.c_str());
+    WebAssetsFetchBundle(url.c_str());
+}
+
 static void DoEngineInit() {
     // The MEMFS bundle unpacks files at /data/<rel>/..., mirroring the on-disc
     // layout. chdir so the matched-fork's relative paths resolve like rb3-native.
@@ -707,8 +810,38 @@ static void mainLoop() {
     }
 
     case BOOT_RUNNING: {
+        // Wave-3 / M1 measurement: the per-frame JSONL frame-trace
+        // (RB3_FRAME_TRACE=<path>, native/src/rb3_frame_trace.cpp) is normally
+        // driven from App::RunWithoutDebugging's frame loop — which the WEB build
+        // never enters (Emscripten can't block in a C++ for-loop; this main-loop
+        // tick calls RunOneFrame directly). So on web the recorder + the
+        // gFrameTraceActive-gated attribution counters never fire. Mirror the
+        // native frame-trace wrap here, web-only + env-gated, so the same
+        // counter-attributed trace JSONL is produced in the browser. Costs one
+        // static branch when RB3_FRAME_TRACE is unset.
+        static int sFrameTrace = -1;
+        if (sFrameTrace < 0)
+            sFrameTrace = getenv("RB3_FRAME_TRACE") ? 1 : 0;
+        extern void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
+                                        float loadPollUntilMs, const char *screen,
+                                        int pendingLoaders);
+        extern float gLoadPollMsThisFrame;
+        extern float gLoadPollUntilMsThisFrame;
         try {
-            sApp->RunOneFrame(sFrameCount);
+            if (sFrameTrace) {
+                gLoadPollMsThisFrame = 0.0f;
+                gLoadPollUntilMsThisFrame = 0.0f;
+                double t0 = emscripten_get_now();
+                sApp->RunOneFrame(sFrameCount);
+                float ms = (float)(emscripten_get_now() - t0);
+                UIScreen *scr = TheUI.CurrentScreen();
+                const char *scrName = (scr && scr->Name()) ? scr->Name() : "?";
+                RB3FrameTraceRecord(sFrameCount, ms, gLoadPollMsThisFrame,
+                                    gLoadPollUntilMsThisFrame, scrName,
+                                    (int)TheLoadMgr.mLoading.size());
+            } else {
+                sApp->RunOneFrame(sFrameCount);
+            }
         } catch (...) {
             printf("RB3 Web: boot error — exception during RunOneFrame\n");
             sBootState = BOOT_ERROR;
@@ -720,6 +853,10 @@ static void mainLoop() {
         // verb for the NEXT frame's poll. Web-only; no-op off splash_screen.
         WebSplashAdvanceHook();
 #endif
+        // A2 (T9): on a screen change, async-prefetch the next screen's
+        // dependency bundle into MEMFS during the dwell. No-op when disabled
+        // (RB3_SCREEN_BUNDLES_OFF) or the screen has no next-bundle mapping.
+        WebScreenBundleHook();
         sFrameCount++;
         EM_ASM_({ window.rb3FrameCount = $0; }, sFrameCount);
 

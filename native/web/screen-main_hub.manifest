@@ -1,0 +1,16 @@
+# RB3 web screen-main_hub dependency manifest (A2) — GENERATED, do not hand-edit.
+# Source: scripts/web/gen-boot-manifest.mjs --screen main_hub <netlog.json>
+# The extra .milo_xbox/.dta the 'main_hub' screen ENTER reads (boot-bundle
+# entries already MEMFS-resident are subtracted), served as one async bundle by
+# server.py /api/bundle/screen/main_hub fired at transition-START so the
+# reads hit warm MEMFS instead of freezing the wasm thread on a sync XHR.
+# Venue/vignette/song milos are excluded (lazily streamed during dwell).
+# 8 files. Regenerate when this screen's load graph changes.
+ui/accomplishments/gen/accomplishment_status.milo_xbox
+ui/main/gen/main_hub.milo_xbox
+ui/resource/fonts/gen/icons_quest.milo_xbox
+ui/resource/fonts/gen/rats.milo_xbox
+ui/resource/gen/inline_help_start_large.milo_xbox
+ui/resource/gen/label_shrink_wrapper_main.milo_xbox
+ui/resource/gen/label_shrink_wrapper_main2.milo_xbox
+ui/resource/list/gen/list_main_hub_messages.milo_xbox

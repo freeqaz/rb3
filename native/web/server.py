@@ -12,6 +12,9 @@ API endpoints:
   GET /api/bundle           — single binary bundle of all .dta/.dtb (boot path)
   GET /api/bundle/boot      — binary bundle of the boot-critical .milo_xbox set
                               (R3: native/web/boot-assets.manifest)
+  GET /api/bundle/screen/<name>
+                            — per-screen dependency bundle (A2: the extra milos a
+                              screen ENTER reads; native/web/screen-<name>.manifest)
   GET /api/file/<path>      — raw bytes of an extracted asset file
   GET /                     — index.html (build artifacts)
   GET /rb3-web.{js,wasm}    — WASM build output
@@ -39,6 +42,23 @@ BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build")
 BOOT_MANIFEST_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "boot-assets.manifest"
 )
+# A2 (incremental-load-perf PLAN.md T9) — per-screen dependency bundles. The
+# boot bundle (above) pre-packs the App-ctor working set; these pack the EXTRA
+# .milo_xbox/.dta the App reads when ENTERing a specific screen (main_hub,
+# song_select, ...) so a first-visit transition lands those bytes in warm MEMFS
+# instead of freezing the wasm thread on a per-file sync XHR. Same generated,
+# comment-tolerant, newline-delimited format as the boot manifest. Served by
+# /api/bundle/screen/<name> from native/web/screen-<name>.manifest, fired async
+# at transition-START by main_web.cpp's screen-prewarm hook. Generated, not
+# hand-authored: scripts/web/gen-boot-manifest.mjs --screen <name> distills the
+# read set from a clean transition netlog (see the same script's header).
+SCREEN_MANIFEST_DIR = os.path.dirname(os.path.abspath(__file__))
+# Screen-name allowlist: the <name> in /api/bundle/screen/<name> must match this
+# (a strict [a-z0-9_] form) so the route can never be coerced into a path-
+# traversal of the manifest dir. Any name passing this still resolves to exactly
+# native/web/screen-<name>.manifest; a missing manifest emits an empty bundle.
+import re as _re
+_SCREEN_NAME_RE = _re.compile(r"^[a-z0-9_]+$")
 ASSETS_DIR = None  # Set via --assets-dir, RB3_ASSETS env, or auto-detect
 # DTA overlay dir (native/dta/). Mirrors the native disk overlay in
 # native/src/native_file.cpp: when an asset path is shadowed by an overlay
@@ -354,6 +374,8 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             self._serve_manifest()
         elif path == "/api/bundle/boot":
             self._serve_boot_bundle()
+        elif path.startswith("/api/bundle/screen/"):
+            self._serve_screen_bundle(path[len("/api/bundle/screen/"):])
         elif path == "/api/bundle":
             self._serve_bundle()
         elif path.startswith("/api/file/"):
@@ -624,14 +646,16 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
         return full_path if os.path.isfile(full_path) else None
 
     @staticmethod
-    def _read_boot_manifest():
-        """Read native/web/boot-assets.manifest → list of server-relative paths.
-        Blank lines and '#'-comment lines are ignored. Returns [] if the manifest
-        is absent (the boot bundle then emits an empty bundle — the client's sync
-        path still serves every boot milo, just without the R3 prefetch win)."""
+    def _read_manifest(manifest_path):
+        """Read a newline-delimited, comment-tolerant manifest → list of server-
+        relative paths. Blank lines and '#'-comment lines are ignored. Returns []
+        if the manifest is absent (the bundle then emits an empty bundle — the
+        client's sync path still serves every milo, just without the prefetch
+        win). Shared by the boot bundle and the A2 per-screen bundles so the
+        freshness/format story is identical for both."""
         paths = []
         try:
-            with open(BOOT_MANIFEST_PATH, "r") as fh:
+            with open(manifest_path, "r") as fh:
                 for line in fh:
                     line = line.strip()
                     if not line or line.startswith("#"):
@@ -640,6 +664,11 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
         except OSError:
             pass
         return paths
+
+    @classmethod
+    def _read_boot_manifest(cls):
+        """Read native/web/boot-assets.manifest → list of server-relative paths."""
+        return cls._read_manifest(BOOT_MANIFEST_PATH)
 
     def _serve_boot_bundle(self):
         """R3 — the boot-critical .milo_xbox working set as one binary bundle.
@@ -673,6 +702,51 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             (f", {missing} missing" if missing else ""),
         )
         self._emit_bundle(entries, cache_name="boot")
+
+    def _serve_screen_bundle(self, name):
+        """A2 — a single named screen's dependency working set as one binary
+        bundle (the format _emit_bundle produces, identical to the boot bundle).
+
+        `name` is the screen identifier from /api/bundle/screen/<name> (e.g.
+        "main_hub" or "song_select"); it is validated against _SCREEN_NAME_RE so
+        it can only ever resolve to native/web/screen-<name>.manifest (no path
+        traversal). A missing or empty manifest emits an EMPTY bundle (count=0) —
+        the client unpacks nothing and the engine's per-file sync path remains the
+        backstop, so an unknown/absent screen never errors the transition.
+
+        Freshness matches the boot bundle exactly: _emit_bundle fingerprints the
+        entry set+sizes into the cache key, so a changed manifest (or a changed
+        asset behind it) rebuilds the compressed artifact. Each screen gets its
+        own cache_name so the bundles never collide in the _bundles cache dir."""
+        if not ASSETS_DIR:
+            self._json_error(503, "No assets directory configured")
+            return
+        if not _SCREEN_NAME_RE.match(name or ""):
+            self._json_error(400, "Invalid screen name")
+            return
+
+        manifest_path = os.path.join(SCREEN_MANIFEST_DIR, f"screen-{name}.manifest")
+        entries = []
+        missing = 0
+        for rel in self._read_manifest(manifest_path):
+            full = self._resolve_asset_path(rel)
+            if not full:
+                missing += 1
+                self.log_message("screen-bundle[%s]: missing %s (skipped)", name, rel)
+                continue
+            with open(full, "rb") as fh:
+                data = fh.read()
+            entries.append((rel, data))
+
+        total = sum(len(d) for _r, d in entries)
+        self.log_message(
+            "screen-bundle[%s]: %d files, %.1f MB%s",
+            name, len(entries), total / 1e6,
+            (f", {missing} missing" if missing else ""),
+        )
+        # cache_name is per-screen so each screen's compressed artifact is
+        # distinct; the fingerprint inside _emit_bundle still rebuilds on drift.
+        self._emit_bundle(entries, cache_name=f"screen-{name}")
 
     def _serve_asset_file(self, relpath):
         if not ASSETS_DIR:
