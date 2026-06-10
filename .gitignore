@@ -124,6 +124,7 @@ bin/objdiff-cli
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+.claude/workflows/
 
 # rust target folders
 tools/*/target/
