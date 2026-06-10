@@ -15,7 +15,7 @@
 import java.io.File;
 
 import ghidra.app.script.GhidraScript;
-import ghidra.app.util.exporter.GzfExporter;
+import ghidra.framework.model.DomainFile;
 
 public class ExportProgramGzf extends GhidraScript {
 
@@ -31,11 +31,16 @@ public class ExportProgramGzf extends GhidraScript {
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
             throw new RuntimeException("cannot create output dir: " + parent);
         }
-        GzfExporter exporter = new GzfExporter();
-        boolean ok = exporter.export(out, currentProgram, null, monitor);
-        if (!ok) {
-            printerr("GzfExporter failed for " + currentProgram.getName());
-            throw new RuntimeException("gzf export failed (see log)");
+        // Use DomainFile.packFile() rather than GzfExporter: the exporter returns
+        // false silently in headless read-only mode, while packFile() is the
+        // canonical pack primitive (it IS the .gzf format) and works read-only.
+        DomainFile df = currentProgram.getDomainFile();
+        if (df == null) {
+            throw new RuntimeException("currentProgram has no DomainFile: " + currentProgram.getName());
+        }
+        df.packFile(out, monitor);
+        if (!out.exists() || out.length() == 0) {
+            throw new RuntimeException("packFile produced no/empty output: " + out.getAbsolutePath());
         }
         println("Exported " + currentProgram.getName() + " (" +
                 currentProgram.getLanguageID() + ") -> " + out.getAbsolutePath() +

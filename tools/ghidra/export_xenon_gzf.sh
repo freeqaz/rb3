@@ -61,7 +61,9 @@ JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}"
 # Nested project (B) — the one the live BSim/pyghidra service uses (see header).
 XENON_PROJ_LOC="${XENON_PROJ_LOC:-${XENON_ROOT}/ghidra_projects/RB3Xenon/RB3Xenon}"
 XENON_PROJ_NAME="${XENON_PROJ_NAME:-RB3Xenon}"
-XENON_PROGRAM="${XENON_PROGRAM:-default.xex}"
+# pyghidra-mcp names the program <binary>-<hash> (verified from project index +
+# service log: default.xex-35adb6), NOT the bare filename.
+XENON_PROGRAM="${XENON_PROGRAM:-default.xex-35adb6}"
 
 OUT_GZF="${OUT_GZF:-${RB3_ROOT}/build/SZBE69_B8/ghidra/ghidriff-xenon/rb3_xenon_default_xex.gzf}"
 SCRIPT_DIR="${RB3_ROOT}/tools/ghidra"
