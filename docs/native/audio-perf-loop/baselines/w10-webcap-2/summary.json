@@ -1,0 +1,94 @@
+{
+  "tag": "w10-webcap-2",
+  "phase": "gameplay",
+  "box_loadavg": null,
+  "playSecs": 50,
+  "ctxRate": 44100,
+  "bufFrames": 32768,
+  "finalUnderruns": {
+    "type": "underrun-stats",
+    "underrunEvents": 7706,
+    "underrunFrames": 978132,
+    "totalQuanta": 40482,
+    "totalFrames": 5181696
+  },
+  "steadyWindow": {
+    "startPerfMs": 67570.1,
+    "endPerfMs": 118273.8,
+    "secs": 50.7
+  },
+  "clockAlign": {
+    "offsetUs": 106138253644,
+    "offsetUs2": 106138253932,
+    "driftMsPerSec": 0.004430296552206152,
+    "traceEvents": 111327,
+    "gcEventsTotal": 46,
+    "gcEventsSteady": 37,
+    "alignMark": {
+      "name": "__jit_align_tuu69lsbm4s",
+      "perf": 53310.84499999881,
+      "epoch": 1780994454672
+    },
+    "alignMark2": {
+      "name": "__jit_align2_0vexyet7dzm",
+      "perf": 118317.78000000119,
+      "epoch": 1780994519679
+    }
+  },
+  "jitter": {
+    "n": 1305,
+    "p50": 33.33,
+    "p95": 66.66,
+    "p99": 83.33,
+    "max": 133.33,
+    "gapsOver33": 1184,
+    "gapsOver50": 126,
+    "gapsOver100": 2,
+    "windowSecs": 50.7
+  },
+  "underruns": {
+    "perSec": 17.537,
+    "framesPerSec": 2126.2,
+    "eventsDelta": 879,
+    "framesDelta": 106567,
+    "samples": 91
+  },
+  "heapSlope": {
+    "jsMBperMin": 0,
+    "wasmMBperMin": 0,
+    "idbMBperMin": 0,
+    "jsFirstMB": 9.5,
+    "jsLastMB": 9.5,
+    "wasmFirstMB": 190.5,
+    "wasmLastMB": 190.5,
+    "idbFirstMB": 0,
+    "idbLastMB": 0,
+    "idbN": 0,
+    "samples": 142
+  },
+  "crux": {
+    "coincWindowMs": 50,
+    "bigGaps_over33": 1184,
+    "bigGapsNearGc": 128,
+    "bigGapFracNearGc": 0.108,
+    "urIncrements": 47,
+    "urIncrNearGc": 18,
+    "urIncrFracNearGc": 0.383,
+    "gc": {
+      "totalSteady": 37,
+      "major": 10,
+      "minor": 27,
+      "majorDurMs": {
+        "p50": 4.07,
+        "max": 29.33,
+        "sum": 79.4
+      },
+      "minorDurMs": {
+        "p50": 11.7,
+        "max": 16.11,
+        "sum": 330.36
+      },
+      "gcDurMaxMs": 29.33
+    }
+  }
+}

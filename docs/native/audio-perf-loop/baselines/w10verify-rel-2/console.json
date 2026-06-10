@@ -1,0 +1,1602 @@
+[
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (105) at 4:1:000"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (65) at 4:2:240"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (64) at 9:1:060"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (59) at 12:4:270"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (61) at 13:1:060"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (57) at 13:2:180"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (1) at 13:4:196"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (60) at 13:4:270"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (55) at 16:1:030"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (52) at 16:3:270"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (56) at 16:4:302"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (116) at 20:3:420"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (54) at 24:1:051"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (50) at 25:3:240"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (47) at 32:4:030"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (62) at 57:3:270"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (67) at 59:4:240"
+  },
+  {
+    "t": "47.79",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (66) at 63:3:030"
+  },
+  {
+    "t": "47.80",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "47.80",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (49) at 85:3:300"
+  },
+  {
+    "t": "47.80",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (68) at 99:4:240"
+  },
+  {
+    "t": "47.80",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (53) at 110:4:270"
+  },
+  {
+    "t": "47.80",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (PART VOCALS): Double note-on (58) at 114:4:450"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (105) at 4:1:000"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (65) at 4:2:240"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (64) at 9:1:060"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (59) at 12:4:270"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (61) at 13:1:060"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (57) at 13:2:180"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (1) at 13:4:193"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (60) at 13:4:270"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (55) at 16:1:030"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (52) at 16:3:270"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (56) at 16:4:302"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (116) at 20:3:420"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (54) at 24:1:051"
+  },
+  {
+    "t": "47.81",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (50) at 25:3:240"
+  },
+  {
+    "t": "47.81",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (47) at 32:4:030"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (62) at 57:3:270"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (67) at 59:4:240"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (66) at 63:3:030"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (49) at 85:3:300"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (68) at 99:4:240"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (53) at 110:4:270"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM1): Double note-on (58) at 114:4:450"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (105) at 4:1:000"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (65) at 4:2:240"
+  },
+  {
+    "t": "47.82",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (71) at 9:1:060"
+  },
+  {
+    "t": "47.83",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (73) at 13:1:060"
+  },
+  {
+    "t": "47.83",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (64) at 28:3:300"
+  },
+  {
+    "t": "47.83",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (67) at 28:3:450"
+  },
+  {
+    "t": "47.83",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (69) at 28:4:270"
+  },
+  {
+    "t": "47.83",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (68) at 29:3:300"
+  },
+  {
+    "t": "47.83",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (66) at 31:2:000"
+  },
+  {
+    "t": "47.83",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (62) at 31:3:270"
+  },
+  {
+    "t": "47.83",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (74) at 59:4:240"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (76) at 65:2:000"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM2): Double note-on (79) at 67:4:240"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (68) at 9:1:057"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (69) at 13:1:060"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (64) at 28:3:300"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (67) at 28:3:450"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (71) at 29:2:030"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (73) at 30:2:030"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (66) at 31:2:000"
+  },
+  {
+    "t": "47.84",
+    "text": "NOTIFY: songs/20thcenturyboy/20thcenturyboy.mid (HARM3): Double note-on (62) at 31:3:270"
+  },
+  {
+    "t": "47.84",
+    "text": "BEATMASTER_DBG: MIDI parsed -> mLoaded=true; calling FinishLoad"
+  },
+  {
+    "t": "47.85",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "47.85",
+    "text": "BEATMASTER_DBG: LoaderPoll #2455 phase=2 mLoaded=1 unk2d=0"
+  },
+  {
+    "t": "47.85",
+    "text": "BEATMASTER_DBG: calling mAudio->Load() -- entering audio bring-up phase"
+  },
+  {
+    "t": "48.26",
+    "text": "BEATMASTER_DBG: mAudio->Load() returned; mSongStream=0x98727c0"
+  },
+  {
+    "t": "48.27",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "48.27",
+    "text": "VORBIS_DBG: Poll #1 hdr=0 fail=0 done=0"
+  },
+  {
+    "t": "48.27",
+    "text": "VORBIS_DBG:   ch=-1 rate=-1 eof=0 queued=0"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: pre-HvDecrypt stuff=6357cd6cb7271a6012f5b07ad70fb671 mKeyIndex(raw)=9"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: post-HvDecrypt mKeyMask=c10e3e13641b32940e86f942f5d0b4bd"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: setupCypher entry moggVersion=0x10 mKeyIndex=9 mMagicA=0x7DBB9925 mMagicB=0x771BC747"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: mNonce=00000000c2fedc4b1f4f15166ac47caf"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: mKeyMask=c10e3e13641b32940e86f942f5d0b4bd"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: masterKey[0:16]=39a2bf537d881d033538a3804524eeca"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: gKey AFTER getKey=a4222a5c8cb3b9aafd0113736b4fa138"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: gKey AFTER GrindArray=28d6f504771dca2b8b5f733dd87e3d67"
+  },
+  {
+    "t": "48.27",
+    "text": "MOGG_DBG: gKey FINAL (XOR mKeyMask)=e9d8cb171306f8bf85d98a7f2dae89da"
+  },
+  {
+    "t": "48.28",
+    "text": "MOGG_DBG: DoFileRead got 16384 bytes BEFORE decrypt[0:32]=2c5f04f51fcc36aee71488c4be3e315b6740807538c85a65bc5b657c7454c590"
+  },
+  {
+    "t": "48.28",
+    "text": "MOGG_DBG: AFTER decrypt[0:32]=4f67675300020000000000000000462f00000000000090aff231011e01766f72 (ASCII: OggS)"
+  },
+  {
+    "t": "48.28",
+    "text": "VORBIS_DBG: All 3 headers read! ch=15 rate=44100 — entering audio decode phase"
+  },
+  {
+    "t": "48.28",
+    "text": "STREAM_DBG: StandardStream::PollStream state -99 -> 1 (chans=15)"
+  },
+  {
+    "t": "48.33",
+    "text": "BEATMASTER_DBG: LoaderPoll #2456 phase=3 mLoaded=1 unk2d=1"
+  },
+  {
+    "t": "48.33",
+    "text": "VORBIS_DBG: Poll #2 hdr=3 fail=0 done=0"
+  },
+  {
+    "t": "48.33",
+    "text": "VORBIS_DBG:   ch=15 rate=44100 eof=0 queued=13051"
+  },
+  {
+    "t": "48.33",
+    "text": "MOGG_DBG: DoFileRead got 16384 bytes BEFORE decrypt[0:32]=e334aea867c4bef2a99a10a812baa418b0681323687f8b020ae487a10d98025c"
+  },
+  {
+    "t": "48.33",
+    "text": "MOGG_DBG: AFTER decrypt[0:32]=23791b55094dc2e5f4d178aaaacd471a9cb7caa86f49a1b9314bd15c0a33c7c2 (ASCII: #y\u001bU)"
+  },
+  {
+    "t": "48.34",
+    "text": "MOGG_DBG: DoFileRead got 16384 bytes BEFORE decrypt[0:32]=c81e194d9128bba786a46d3a7f4d3e7bd3d2242d95646c906af1c5fcdc679d3f"
+  },
+  {
+    "t": "48.34",
+    "text": "Invalid UTF-8 leading byte 0xffffffa9 encountered when deserializing a UTF-8 string in wasm memory to a JS string!"
+  },
+  {
+    "t": "48.34",
+    "text": "MOGG_DBG: AFTER decrypt[0:32]=a940395b9cb4aa87fd94e6b88c5b32771058224121799f7a2a945b2e49607735 (ASCII: 񀹛)"
+  },
+  {
+    "t": "48.35",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "48.35",
+    "text": "AudioDevice: latency GROW -> 90 ms (sustained underrun, pressure 560/256)"
+  },
+  {
+    "t": "48.37",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "48.39",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "48.42",
+    "text": "RB3 web part-select: WAIT autohit: song still loading (PostLoad/watchers not built)"
+  },
+  {
+    "t": "48.43",
+    "text": "STREAM_DBG: kBuffering -> kReady (StuffChannels returned true)"
+  },
+  {
+    "t": "48.44",
+    "text": "STREAM_DBG: StandardStream::PollStream state 1 -> 2 (chans=15)"
+  },
+  {
+    "t": "48.44",
+    "text": "BEATMASTER_DBG: mAudio->IsLoaded()=true; RELEASE(mLoader)"
+  },
+  {
+    "t": "48.44",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "48.44",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "48.44",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "48.44",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "48.44",
+    "text": "GAME_DBG: *** Game::mLoadState = kReady — audio loaded, PushAllOptions next ***"
+  },
+  {
+    "t": "48.44",
+    "text": "[rb3-stub] env._ZN12WiiFriendMgr17UseConsoleFriendsEb"
+  },
+  {
+    "t": "48.44",
+    "text": "RB3 web part-select: FIRE autohit on 'tv3_a_screen'"
+  },
+  {
+    "t": "48.44",
+    "text": "RB3 input: autohit enabled on 1 active player(s)"
+  },
+  {
+    "t": "48.44",
+    "text": "RB3 web part-select: sequence complete (frame 2418)"
+  },
+  {
+    "t": "48.52",
+    "text": "AudioDevice: latency GROW -> 130 ms (sustained underrun, pressure 816/256)"
+  },
+  {
+    "t": "48.89",
+    "text": "RB3 web-input: frame 2446  key bit=6 btn=6 action=1 screen='tv3_a_screen'"
+  },
+  {
+    "t": "50.39",
+    "text": "game_panel_load: 3001.08"
+  },
+  {
+    "t": "50.39",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "50.39",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "50.39",
+    "text": "mChanParams.size() == 15"
+  },
+  {
+    "t": "50.39",
+    "text": "mChannels.size() == 15"
+  },
+  {
+    "t": "50.93",
+    "text": "[rb3-stub] env._ZN13BandCharacter15NameToDrumVenueEPKc"
+  },
+  {
+    "t": "50.94",
+    "text": "NOTIFY: stagekit_reset not function or object (file world/world_objects.dta, line 1303)"
+  },
+  {
+    "t": "50.94",
+    "text": "NOTIFY: memcardmgr not function or object (file ui/overshell/overshell.dta, line 219)"
+  },
+  {
+    "t": "50.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/system/obj/Object.cpp(742): main/saveload_mgr unhandled msg: add_sink"
+  },
+  {
+    "t": "50.94",
+    "text": "NOTIFY: crowd_intro.mogg not found in small_club_01_bank.milo"
+  },
+  {
+    "t": "50.95",
+    "text": "[rb3-stub] env._ZN10TrackPanel19TrackerDisplayResetEv"
+  },
+  {
+    "t": "50.96",
+    "text": "NOTIFY: player1 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "50.96",
+    "text": ""
+  },
+  {
+    "t": "50.96",
+    "text": "NOTIFY: player3 (char/main/main.milo) could not find group sit in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "50.96",
+    "text": ""
+  },
+  {
+    "t": "50.96",
+    "text": "NOTIFY: player0 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "50.96",
+    "text": ""
+  },
+  {
+    "t": "50.96",
+    "text": "NOTIFY: player2 (char/main/main.milo) could not find group stand in body_clips (char/main/main.milo)"
+  },
+  {
+    "t": "50.96",
+    "text": ""
+  },
+  {
+    "t": "50.96",
+    "text": "RB3 screen: frame 2536  currentScreen = 'game_screen'"
+  },
+  {
+    "t": "51.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.05",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.05",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.05",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.05",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.05",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.05",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.06",
+    "text": "AudioDevice: latency GROW -> 123 ms (sustained underrun, pressure 614/256)"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.08",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.10",
+    "text": "NOTIFY: player3 (char/main/main.milo) no clip w. flags IR in body_clips/sit"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.13",
+    "text": "NOTIFY: main_add.drv (char/main/main.milo) could not find still clip"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.16",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.19",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.20",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.37",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.37",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.37",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.37",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.37",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.37",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.37",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.38",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.46",
+    "text": "NOTIFY: player0 (char/main/main.milo) no clip w. flags IR|0x100000 in body_clips/stand"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.56",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.64",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.70",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.70",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.70",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.71",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.81",
+    "text": "NOTIFY: mDoNotCompress ms_idle_norm_med_01 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.81",
+    "text": ""
+  },
+  {
+    "t": "51.81",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_b_med_02 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.81",
+    "text": ""
+  },
+  {
+    "t": "51.84",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_b_med_03 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.84",
+    "text": ""
+  },
+  {
+    "t": "51.84",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_mel_c_med_04 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.84",
+    "text": ""
+  },
+  {
+    "t": "51.84",
+    "text": "NOTIFY: mDoNotCompress ms_stand_idle_norm_b_med_05 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.84",
+    "text": ""
+  },
+  {
+    "t": "51.86",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.86",
+    "text": ""
+  },
+  {
+    "t": "51.87",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_local_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.87",
+    "text": ""
+  },
+  {
+    "t": "51.87",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_right_ext_med (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.87",
+    "text": ""
+  },
+  {
+    "t": "51.87",
+    "text": "NOTIFY: mDoNotCompress msd_tilt_right_ext_med_02 (char/main/anim/mic/body/male/medium_rocker.milo)"
+  },
+  {
+    "t": "51.87",
+    "text": ""
+  },
+  {
+    "t": "51.89",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.89",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.89",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.89",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.90",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "51.90",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "51.90",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "51.90",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "51.95",
+    "text": "NOTIFY: player2 (char/main/main.milo) no clip w. flags IR in body_clips/stand"
+  },
+  {
+    "t": "52.01",
+    "text": "NOTIFY: mDoNotCompress ms_stand_lose_c_05 (char/main/anim/mic/body/male/realtime_rocker.milo)"
+  },
+  {
+    "t": "52.01",
+    "text": ""
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.04",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.24",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.27",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.30",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.34",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_long_l (char/main/anim/rigging/drum/stick_left_female.milo)"
+  },
+  {
+    "t": "52.34",
+    "text": ""
+  },
+  {
+    "t": "52.34",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_med_l (char/main/anim/rigging/drum/stick_left_female.milo)"
+  },
+  {
+    "t": "52.34",
+    "text": ""
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_short_l (char/main/anim/rigging/drum/stick_left_female.milo)"
+  },
+  {
+    "t": "52.35",
+    "text": ""
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.35",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.40",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_long_r (char/main/anim/rigging/drum/stick_right_female.milo)"
+  },
+  {
+    "t": "52.40",
+    "text": ""
+  },
+  {
+    "t": "52.40",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_med_r (char/main/anim/rigging/drum/stick_right_female.milo)"
+  },
+  {
+    "t": "52.40",
+    "text": ""
+  },
+  {
+    "t": "52.40",
+    "text": "NOTIFY: mDoNotCompress snare_sticktwirl_short_r (char/main/anim/rigging/drum/stick_right_female.milo)"
+  },
+  {
+    "t": "52.40",
+    "text": ""
+  },
+  {
+    "t": "52.43",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.43",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.43",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.44",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.50",
+    "text": "NOTIFY: bass_bolt_base.mat (char/main/bass/boltbass_resource.milo) couldn't find instruments.cube in boltbass_resource (char/main/bass/boltbass_resource.milo)"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: bolt_strings.mesh (char/main/bass/boltbass_resource.milo)"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.51",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.52",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.54",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  },
+  {
+    "t": "52.54",
+    "text": "WebAssets: XHR failed /api/file/char/main/drum/gen/goth_gold_(null).milo_xbox status=404"
+  },
+  {
+    "t": "52.54",
+    "text": "WebAssets: FAILED on-demand fetch char/main/drum/gen/goth_gold_(null).milo_xbox"
+  },
+  {
+    "t": "52.54",
+    "text": "NOTIFY: Could not load: char/main/drum/gen/goth_gold_(null).milo_xbox"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.55",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.62",
+    "text": "NOTIFY: guitar_chainsaw_base.mat (char/main/guitar/chainsaw_resource.milo) couldn't find instruments.cube in chainsaw_resource (char/main/guitar/chainsaw_resource.milo)"
+  },
+  {
+    "t": "52.62",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: chainsaw_strings.mesh (char/main/guitar/chainsaw_resource.milo)"
+  },
+  {
+    "t": "52.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.62",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.63",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.63",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.63",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.63",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: sm57_mic.mat (char/main/mic/sm57_resource.milo) couldn't find instruments.cube in sm57_resource (char/main/mic/sm57_resource.milo)"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: --->Arvin/Diana: Skinned mesh needs to be re-exported: mic_stand.mesh (char/main/mic/sm57_resource.milo)"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir ObjectDir (char/main/shared/char_shared.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir RndDir (char/main/shared/colorpalettes.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton.milo) included more than once"
+  },
+  {
+    "t": "52.68",
+    "text": "NOTIFY: outfit (char/main/outfit.milo): subdir Character (char/main/skeleton_unshared.milo) included more than once"
+  },
+  {
+    "t": "57.62",
+    "text": "STREAM_DBG: StandardStream::PollStream state 2 -> 3 (chans=15)"
+  },
+  {
+    "t": "57.65",
+    "text": "[rb3-stub] env._ZN5WiiFX8IsReverbEi"
+  },
+  {
+    "t": "57.76",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5)"
+  },
+  {
+    "t": "57.87",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11)"
+  },
+  {
+    "t": "57.87",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5)"
+  },
+  {
+    "t": "57.97",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 5) [further repeats suppressed]"
+  },
+  {
+    "t": "58.09",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15)"
+  },
+  {
+    "t": "58.09",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11)"
+  },
+  {
+    "t": "58.32",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 11) [further repeats suppressed]"
+  },
+  {
+    "t": "58.55",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15)"
+  },
+  {
+    "t": "59.02",
+    "text": "NOTIFY: stagekit_left_right not function or object (file config/beatmatcher.dta, line 15) [further repeats suppressed]"
+  },
+  {
+    "t": "62.65",
+    "text": "NOTIFY: crowd_good.mogg not found in small_club_01_bank.milo"
+  },
+  {
+    "t": "70.73",
+    "text": "NOTIFY: crowd_peak.mogg not found in small_club_01_bank.milo"
+  }
+]
