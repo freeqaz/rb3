@@ -598,3 +598,88 @@ commit. Full release+debug web build redeployed to `native/web/build/`. T10
   couple them so a future new key can't silently miss the warm. (d) the
   T9/A2 server allowlist + traversal guards (`..%2f` → 400, unknown screen → 200
   empty 4-byte count=0) were independently re-verified contamination-free.
+
+## Wave 4 results (2026-06-10) — network fixes
+
+Wave 4 implements the ranked fixes from the **network-restricted benchmark
+matrix** (`research/07-network-matrix.md`): the matrix proved that the
+shipped 20 Mbps/40 ms gate (c1) **cannot see** the user's real symptom —
+~85 MB of asset fetches run **100 % serially** (0/38 big-milo overlaps), so
+screen transitions wall-clock-hang for tens of seconds at 4–8 Mbps and the
+journey DNFs at 1.5 Mbps. The canvas never freezes (the wave-1 yield gate holds
+at every condition); the problem is **fetch pipelining**, not yield. No engine
+pin bump (engine HEAD == pin `a0848b1`); all four fixes are rb3-side. Gates run
+against the freshly-redeployed **release** build, at the **new harsh
+conditions** the matrix identified (8 Mbps/80 ms = cheapest condition that
+exposes the wall; 4 Mbps/150 ms = the user-symptom regime). Harness:
+`scripts/web/_netmatrix.mjs`; artifacts in `/tmp/rb3perf-w4-integ/`; baselines
+in `/tmp/rb3perf-netmatrix/c{1,3,4}-run1/`.
+
+### Per-task landed table
+
+| Task | Lever | Status | Default | Opt-out flag | Commit(s) |
+|---|---|---|---|---|---|
+| N1 (matrix #1) | **Loader-queue fetch read-ahead** — kick `WebAssetsEnsureResidentAsync` for the next N (default 6) queued loaders' files so file k+1…k+N download while file k downloads+parses, turning the 85 MB serial chain into a pipelined one (engine fetch machinery already async + deduped via `sEnsureInFlight`) | LANDED | **ON for web** (k=6) | `RB3_LOADER_READAHEAD=0` (disable; any N sets depth); `RB3_READAHEAD_DEBUG` (queue-depth/kick diagnostic) | rb3 `f07a365c` |
+| N2 (matrix #2) | **Mogg Range read-ahead slot + cross-open chunk cache** — `WebRangeFile` gains a 2nd in-flight slot to prefetch chunk N+1 (VorbisReader reads strictly forward), and a process-wide `MoggChunkCache` so gameplay's fresh stream reuses chunks the preview already fetched (kills the chunk 0–1 re-download) | LANDED | ON | `RB3_MOGG_READAHEAD_OFF=1` (single-slot); `RB3_MOGG_CACHE_MB=0` (no cross-open cache; default 24); `RB3_MOGG_CACHE_DBG` | rb3 `654ac73e` |
+| N3 (matrix #3) | **Yield in `StandardStream::Resync` ReadDone wait** — the zero-yield `while(!ReadDone)` spin would deadlock the web tab if a seek/jump fired over a stalled WebRangeFile (the fetch callback needs an event-loop turn); now routes through the same `emscripten_sleep(0)` JSPI yield PollUntilLoaded/Play use, with a 2M-iter watchdog cap | LANDED | ON | `RB3_RESYNC_YIELD_OFF=1` (bare spin); `RB3_LOADER_MIN_YIELD_MS` tunes yield cadence | rb3 `06777103` |
+| N4 (matrix #4) | **Land `rb3_frame_trace.cpp` into the web build + parent-dir mkdir guard** — the per-frame fetch/dta/obj/prime/tex/mesh/pipe attribution counters were unreadable on web (recorder lived only in `App::RunWithoutDebugging`, which the web loop bypasses); now wired so `?env=RB3_FRAME_TRACE=/trace.jsonl` captures | LANDED | opt-in (`RB3_FRAME_TRACE=<path>`) | n/a (diagnostic) | rb3 `acb306c1` |
+| — | No `MILO_ENGINE_PIN` bump (engine HEAD == pin `a0848b1`) | n/a | n/a | n/a | — |
+
+### Gate results (NEW harsh-condition gates)
+
+| Gate | Criterion | Result | Verdict |
+|---|---|---|---|
+| Wii build | byte-identical, no matched-TU leak | `tools/ninja-locked`: **31951 funcs / 62.88397 %** (== baseline exactly; broad band3 recompile was benign dep-timestamp churn, numbers unchanged) | PASS |
+| Native build | engine(`a0848b1`)+rb3-native+rb3-tests link clean | already built against engine HEAD ("no work to do") | PASS |
+| Native tests | `rb3-tests` gtest | **13/13** | PASS |
+| Native smoke (N3 seek path) | boot→`game_screen`→`{game jump 600000}`→game-over | `{game is_game_over}==1` after jump; **no hang/crash on the Resync seek** | PASS |
+| Audio (N2+N3 data path) | `audio_verify --selftest`, then fresh gameplay capture `--rank` | selftest **6/6**; capture (song `beforeiforget`) verdict **MATCH** — chroma 0.81, pitch 1.000×, clip 0.00 %, no distortion (rank winner self-identified, MATCH) | PASS |
+| **8 Mbps/80 ms (c3) — N1 overlap** | netlog shows overlapping `/api/file` big-milo fetches (baseline peakConcurrent=2, serial) | **peakConcurrent 2→6, overlappingMilos 2→15** — serial chain now pipelined (read-ahead depth 6 visibly kicking); maxSingleMilo 19.5→17.4 s; journey completes, canvas frozenΣ=0 | PASS |
+| **8 Mbps/80 ms (c3) — N2 reuse** | cold-hover preview→gameplay chunk reuse, no chunk re-download | **chunkReDownloads 1→0** (combatbaby chunk-0 cross-open re-download eliminated) | PASS |
+| **4 Mbps/150 ms (c4) — completes** | journey reaches `game_screen`; chunk reuse visible | reached `game_screen`; **chunkReDownloads 1→0**; peakConcurrent 2→6, overlappingMilos 2→16; maxSingleMilo **45.2→35.5 s** (~22 % smaller); hovers frozenΣ=0 | PASS (partial win — see note) |
+| **20 Mbps/40 ms (c1) — regression** | boot→hub longest rAF gap ≤100 ms, cold hover frozen ~0 (wave-3: 68 / 37 ms) | appBooted 19.62 s (== 19.84 baseline); transitions longest ≤89 ms, over100=0; **hovers longest 20–25 ms, frozenΣ=0**; boot 454 ms over250=1 (RTT-invariant GPU pipeline-compile floor, not network) | PASS (no regression) |
+| N4 frame-trace on web | `?env=RB3_FRAME_TRACE=1` → non-empty trace with counters | **5363/7895/4001 records** across the three runs, 23 well-formed counter fields each (was `ERR:No such file` in the matrix build) | PASS |
+| Flag A/B opt-out | each new flag's off value boots→`song_select` clean | `RB3_LOADER_READAHEAD=0`, `RB3_MOGG_READAHEAD_OFF=1`, `RB3_MOGG_CACHE_MB=0`, `RB3_RESYNC_YIELD_OFF=1` — **all reach song_select, 83 songs, 0 pageerror/trap** | PASS |
+| UAF stress | 10× hover-switch-before-load at 4 Mbps/150 ms — no crash | **10 switches, 0 errors/0 traps, alive** (abandoned kicked fetches + Range-chunk drops + engine UAF fix are switch-safe) | PASS |
+
+### Before/after vs the matrix baselines (8 Mbps/80 ms and 4 Mbps/150 ms)
+
+| Metric | c3 baseline | c3 wave-4 | c4 baseline | c4 wave-4 |
+|---|--:|--:|--:|--:|
+| big-milo peakConcurrent | 2 (serial) | **6** | 2 (serial) | **6** |
+| big-milo overlappingMilos | 2 | **15** | 2 | **16** |
+| maxSingleMilo (s) | 19.5 | 17.4 | 45.2 | **35.5** |
+| mogg chunk re-downloads | 1 | **0** | 1 | **0** |
+| reached gameplay | yes | yes | yes | yes |
+| canvas frozenΣ (hovers/transitions) | 0 | 0 | 0 | 0 |
+
+> **Honest result note.** N1 demonstrably pipelines the previously-serial fetch
+> chain (concurrency 2→6, overlaps 2→15/16 — the matrix's #1 fix is doing exactly
+> what it was designed to). But the **40–50 % wall-clock cut the matrix
+> *projected* does NOT fully materialise** at these bandwidth-saturated
+> conditions: with 6 concurrent fetches sharing one throttled pipe, each
+> individual fetch is slower (bandwidth split N ways), so aggregate transfer
+> stays bounded by `total-bytes / bandwidth` regardless of concurrency, and
+> `maxSingleMilo` shrinks only ~22 % rather than collapsing. The projection
+> assumed parse-time-dominated overlap; at pure bandwidth saturation the wall is
+> throughput-bound. This corroborates the N1 reviewer's caveat ("did not
+> reproduce the 40–50 % cut; queue depth shallow"). The wins that *are* robust:
+> (a) the canvas-never-freezes property holds at every condition, (b) the journey
+> completes at 4 Mbps (DNF remains only at 1.5 Mbps, same as baseline — that
+> condition is throughput-unplayable regardless of any client fix short of
+> smaller assets), (c) mogg cross-open re-downloads are eliminated, and (d) N3
+> removes a latent web tab-hang on seek. `miloSerialΣ` (sum of durations) is **no
+> longer a valid wall-clock proxy once fetches overlap** — it inflates with
+> concurrency (c3 96.7→167.8 s, c4 185.7→337.1 s) precisely *because* fetches now
+> run in parallel; peakConcurrent / overlappingMilos are the correct N1 signals.
+
+### Future perf-gate policy
+
+Per matrix ranked fix #5: **future incremental-load perf work gates at ≥2
+network points** — **8 Mbps/80 ms** (cheapest condition that exposes the
+serial-fetch wall; the 20 Mbps/40 ms gate provably cannot see it) and
+**4 Mbps/150 ms** (the user-symptom regime). 20 Mbps/40 ms is retained only as a
+regression backstop. Use `scripts/web/_netmatrix.mjs` (cold-IDB per arm) +
+`/tmp/rb3perf-w4-integ/analyze_net.py` for the overlap/chunk-reuse signals;
+`peakConcurrent` and `chunkReDownloads`, not `miloSerialΣ`, are the trustworthy
+columns once any pipelining is active.
