@@ -900,11 +900,11 @@ endif()
 # ============================================================================
 # Size-optimised release build. Default OFF (dev keeps -O0 / -g2 for
 # debug-friendly stack traces); release mode (`scripts/web/build.sh --release`)
-# strips debug info (`-g0`) for the main safe size win. -O>0 (with the
-# -fno-inline boot fix) shrinks the wasm a lot more but currently crashes the
-# renderer at the main_hub load — see the RB3_WEB_OPT_LEVEL note below; the
-# shipped default stays O0. Opt-in knobs:
-#   RB3_WEB_OPT_LEVEL=Oz/Os/O3/O2/O1/O0 — -O level; defaults to O0 (release).
+# now ships -O2 -fno-inline -g0 — raw wasm 16.7M -> 6.2M, brotli 2.39M -> 1.50M.
+# Two -O>0 faults were root-caused + fixed to get here (boot inline-discard via
+# -fno-inline, and a render-time GPU crash isolated to OutfitConfig.cpp pinned to
+# -O0 — both documented below). Opt-in knobs:
+#   RB3_WEB_OPT_LEVEL=Oz/Os/O3/O2/O1/O0 — -O level; defaults to O2 (release).
 #                                         `--opt L` on build.sh overrides it,
 #                                         always adding -fno-inline at -O>0.
 #   RB3_WEB_CLOSURE=ON                  — BROKEN, see comment below
@@ -924,7 +924,7 @@ endif()
 option(RB3_WEB_RELEASE "Size-optimised release build (strip debug info)" OFF)
 option(RB3_WEB_CLOSURE "Run --closure 1 on the JS glue (BROKEN — see comment)" OFF)
 # RB3_WEB_OPT_LEVEL controls the compile/link -O level when RB3_WEB_RELEASE
-# is ON. Default O0 — see the "why not -O>0 yet" note below.
+# is ON. Default O2 — both historical -O>0 blockers are now fixed (below).
 #
 # BOOT crash (the old "W4a BROKEN" note) is ROOT-CAUSED and FIXED by the
 # `-fno-inline` below. It was NOT optimizer UB: 109 functions are defined
@@ -942,19 +942,20 @@ option(RB3_WEB_CLOSURE "Run --closure 1 on the JS glue (BROKEN — see comment)"
 # (HX_NATIVE-gate the `inline`, drop the flag) is the follow-up; see
 # docs/native/web-perf-handoffs/03-diagnosis-results.md.
 #
-# WHY DEFAULT IS STILL O0 (2026-06-09 ship attempt): with -fno-inline the boot
-# crash is gone AND the wasm shrinks a lot (O2 6.0M / O1 8.6M raw vs O0 16.7M;
-# brotli 1.50M/1.88M vs 2.39M). BUT a SECOND, distinct fault appears at -O>0: a
-# headless-Chromium renderer "Page crashed" deterministically fires during the
-# main_hub venue-vignette + char-extras load (~79s into smoke-test.mjs), for both
-# -O1 -fno-inline (2/2) and -O2 -fno-inline (2/2), while -O0 PASSES (2/2) under
-# the identical box load. Boot is NOT the issue (it reaches the same 78s point as
-# O0); the crash is render-time. Until that's diagnosed (it may be box/contention
-# pacing — the 03 diagnosis saw O1/O2 -fno-inline PASS on a quiet isolated box —
-# or a genuine -O>0 codegen issue in the render path), keep the SHIPPED default at
-# O0. The mechanism + --opt knob below are ready: `build.sh --release --opt O2`
-# produces the small -fno-inline build for re-testing on a quiet box.
-set(RB3_WEB_OPT_LEVEL "O0" CACHE STRING
+# RENDER crash (2026-06-10): a SECOND, distinct -O>0 fault — a headless-Chromium
+# renderer "Page crashed" (GPU-process death, no WebGPU validation error) that
+# fired deterministically (NOT box-contention: reproduced 3/3 at load avg 2.6,
+# and with --disable-gpu-watchdog) ~78s into smoke-test.mjs, during the
+# tv11/ridingincab transition-vignette char-extras draw. Isolated by a per-TU
+# -O0 binary search (15 builds) to a SINGLE translation unit:
+# src/system/bandobj/OutfitConfig.cpp. At -O>0 (both -O1 and -O2) it miscompiles
+# the outfit-mesh deform/AO data feeding the char-extras draw, corrupting a GPU
+# buffer → process death; at -O0 the venue loads cleanly. Pinned to -O0 below
+# (one ~1.1k-line TU; negligible size cost). Root-causing the exact UB/codegen
+# trigger so the pin can be dropped is a follow-up (see
+# docs/native/web-perf-handoffs/03-diagnosis-results.md). NOT the boot bug above
+# (that's -fno-inline, global); this is one TU's render-data codegen.
+set(RB3_WEB_OPT_LEVEL "O2" CACHE STRING
     "emcc -O level for rb3-web release builds (O0/Oz/Os/O3/O2/O1)")
 set_property(CACHE RB3_WEB_OPT_LEVEL PROPERTY STRINGS O0 Oz Os O3 O2 O1)
 if(RB3_WEB_RELEASE)
@@ -972,6 +973,22 @@ if(RB3_WEB_RELEASE)
     if(RB3_WEB_CLOSURE)
         message(STATUS "rb3-web: --closure 1 enabled (verify exports post-link)")
         target_link_options(rb3-web PRIVATE --closure 1)
+    endif()
+    # -O>0 RENDER-CRASH WORKAROUND: OutfitConfig.cpp miscompiles at -O>0 (both
+    # -O1/-O2), corrupting the char-extras outfit-mesh draw data → GPU-process
+    # death at the tv11 vignette load. Pin it to -O0 (COMPILE_OPTIONS appends
+    # after the target's -O${LEVEL}; emcc honors the last -O). Bisect-confirmed:
+    # this one TU at -O0 (rest -O2) makes smoke-test.mjs PASS. Drop this once the
+    # underlying codegen/UB is root-caused. Harmless at RB3_WEB_OPT_LEVEL=O0.
+    set_source_files_properties(
+        ${REPO_ROOT}/src/system/bandobj/OutfitConfig.cpp
+        PROPERTIES COMPILE_OPTIONS "-O0")
+    # Escape hatch for re-testing the underlying fault / further bisects:
+    # cmake -DRB3_WEB_O0_GLOB="<paths-or-globs>" forces extra TUs to -O0.
+    if(RB3_WEB_O0_GLOB)
+        file(GLOB _rb3_o0_srcs ${RB3_WEB_O0_GLOB})
+        set_source_files_properties(${_rb3_o0_srcs} PROPERTIES COMPILE_OPTIONS "-O0")
+        message(STATUS "rb3-web: extra -O0 on ${RB3_WEB_O0_GLOB} (${_rb3_o0_srcs})")
     endif()
 endif()
 

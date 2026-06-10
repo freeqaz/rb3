@@ -190,3 +190,39 @@ suspect frame) or pursue the source-true inline fix (03 §2) which lets us drop
 `-fno-inline` entirely and re-evaluate whether plain `-flto=thin` (03 §3,
 cross-TU-inlining-preserving) sidesteps it. Closure remains separately broken
 (untouched).
+
+## RESOLVED (2026-06-10) — O2 SHIPPED; render crash root-caused to OutfitConfig.cpp
+
+The `-O>0` render-time GPU-process crash is **fixed and shipped**. `RB3_WEB_OPT_LEVEL`
+now defaults to **O2** (`scripts/web/build.sh --release`), with one TU pinned to `-O0`.
+
+**Refuted contention theory:** the crash reproduced **3/3 on a quiet box** (load avg
+2.6) and with `--disable-gpu-watchdog` — deterministic, not box pacing. It was a genuine
+`-O>0` codegen fault.
+
+**Isolation (per-TU `-O0` binary search, ~15 web builds):** the crash is a GPU-process
+death (no WebGPU validation error, no oversized texture — engine-side `[TEXDIAG]` probe
+ruled out giant dims) during the `world/vignette/transition/tv11/.../ridingincab` draw of
+retargeted char-extras. Bisected: engine lib is `-O0` (stable); rb3-web is `-O2`. Ruled
+out in order: `-fno-strict-aliasing` (no), GPU watchdog (no), rndobj/ (no), `*_Web.cpp`
+(no) → scene half (world/char/bandobj/meta/movie/ui/obj) PASS → bandobj/ → 12-file char
+cluster → **`src/system/bandobj/OutfitConfig.cpp`** (single TU; `-O0` on it alone makes
+smoke PASS). It miscompiles the outfit-mesh deform/AO data (`Piercing::Deform` /
+`MeshAO::Apply` / `SetSkinTextures`) feeding the char-extras draw → corrupt GPU buffer.
+
+**Fix:** `set_source_files_properties(.../OutfitConfig.cpp PROPERTIES COMPILE_OPTIONS
+"-O0")` in `native/CMakeLists.txt` (one ~1.1k-line TU; negligible size cost). An
+`RB3_WEB_O0_GLOB` cache var remains as an escape hatch for further bisects / root-cause.
+
+**Validation (real brotli release build):** `smoke-test.mjs` PASS (main_hub, 83 songs,
+no pageerror — past the tv11 crash point); `keyboard-to-gameplay.mjs` reaches
+`game_screen` and plays (through the tv3 vignette) — no other `-O>0` crash in the
+menu→gameplay path.
+
+**Sizes (deployed release wasm, O0 baseline → O2):** raw 16.70M → **6.13M (−62%)**;
+brotli q11 (wire) 2.39M → **1.51M (−37%)**; gzip 4.10M → **2.08M (−49%)**.
+
+**Open follow-up:** root-cause the exact OutfitConfig.cpp `-O>0` codegen/UB trigger (O0 vs
+O2 disasm diff of the deform path) so the per-TU `-O0` pin can be dropped. `--closure`
+remains separately broken (rb3_pre.js stub-name matching). Same `-fno-inline` + (likely)
+OutfitConfig-class fix should transfer to DC3 (also pinned `-O0`).
