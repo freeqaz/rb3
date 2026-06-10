@@ -14,6 +14,23 @@ namespace {
     std::list<DecompressTask> gDecompressionQueue;
 }
 
+#ifdef HX_NATIVE
+// Incremental-load-perf (PLAN.md T1) frame-trace: charge ChunkStream inflate
+// (zlib/lzx decompress of each milo chunk — the byte-shovel bucket) to
+// gStreamReadMsThisFrame. HX_NATIVE-only; the Wii build is byte-identical. Read
+// + zeroed by RB3FrameTraceRecord (native/src/rb3_frame_trace.cpp).
+#include <chrono>
+extern bool  gFrameTraceActive;
+extern float gStreamReadMsThisFrame;
+namespace {
+    inline double StreamReadNowMs() {
+        return std::chrono::duration<double, std::milli>(
+                   std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    }
+}
+#endif
+
 BinStream &MarkChunk(BinStream &bs) {
     ChunkStream *cs = dynamic_cast<ChunkStream *>(&bs);
     if (cs)
@@ -402,6 +419,9 @@ void DecompressMemHelper(
 }
 
 void ChunkStream::DecompressChunk(DecompressTask &task) {
+#ifdef HX_NATIVE
+    double ftInflate = gFrameTraceActive ? StreamReadNowMs() : 0.0;
+#endif
     MILO_ASSERT(*task.mState == kDecompressing, 955);
     int data = *task.mChunkSize;
     int dataMsk = data & 0x00ffffff;
@@ -425,6 +445,10 @@ void ChunkStream::DecompressChunk(DecompressTask &task) {
     }
     *task.mChunkSize = out_len;
     *task.mState = kReady;
+#ifdef HX_NATIVE
+    if (gFrameTraceActive)
+        gStreamReadMsThisFrame += (float)(StreamReadNowMs() - ftInflate);
+#endif
 }
 
 ChunkStream::ChunkInfo::ChunkInfo(bool isCompressed) {

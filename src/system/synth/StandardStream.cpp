@@ -18,6 +18,23 @@ float StandardStream::sAudioOffsetMs = 0.0f;
 #endif
 
 #ifdef HX_NATIVE
+// Incremental-load-perf (PLAN.md T1) frame-trace: charge the Play() Vorbis prime
+// pump (the 500 header-pump + 20 ring-prefill PollStream loops) to
+// gAudioPrimeMsThisFrame. HX_NATIVE-only; the Wii build is byte-identical. Read
+// + zeroed by RB3FrameTraceRecord (native/src/rb3_frame_trace.cpp).
+#include <chrono>
+extern bool  gFrameTraceActive;
+extern float gAudioPrimeMsThisFrame;
+namespace {
+    inline double AudioPrimeNowMs() {
+        return std::chrono::duration<double, std::milli>(
+                   std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    }
+}
+#endif
+
+#ifdef HX_NATIVE
 // ---------------------------------------------------------------------------
 // Per-stem decoded-PCM dump (SAMPLE-ACCURATE verification hook).
 //
@@ -480,9 +497,12 @@ void StandardStream::Play() {
     // stream creation and Play(). On native there's no decode thread, so we
     // must pump the reader until the stream transitions from kInit -> kReady.
     if (mState == kInit && mRdr) {
+        double ftPrime = gFrameTraceActive ? AudioPrimeNowMs() : 0.0;
         for (int i = 0; i < 500 && !IsReady(); i++) {
             PollStream();
         }
+        if (gFrameTraceActive)
+            gAudioPrimeMsThisFrame += (float)(AudioPrimeNowMs() - ftPrime);
     }
 #endif
     MILO_ASSERT(IsReady() || mState == kSuspended, 0x227);
@@ -492,8 +512,13 @@ void StandardStream::Play() {
     // IsReady pump above only runs until header parsing completes (kReady);
     // without pre-filling, the first audio callback fires on empty buffers,
     // causing an audible gap and delayed timing.
-    for (int i = 0; i < 20; i++) {
-        PollStream();
+    {
+        double ftFill = gFrameTraceActive ? AudioPrimeNowMs() : 0.0;
+        for (int i = 0; i < 20; i++) {
+            PollStream();
+        }
+        if (gFrameTraceActive)
+            gAudioPrimeMsThisFrame += (float)(AudioPrimeNowMs() - ftFill);
     }
 #endif
     std::for_each(mChannels.begin(), mChannels.end(), std::mem_fun(&StreamReceiver::Play));

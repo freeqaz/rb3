@@ -111,6 +111,46 @@
     }
 
     // -----------------------------------------------------------------------
+    // Generic URL-param -> ENV bridge (incremental-load-perf PLAN.md T1).
+    //
+    // The existing per-flag bridge lives in native/src/main_web.cpp
+    // (ApplyUrlLoaderEnv: ?loaderBudgetMs=8 -> RB3_LOADER_BUDGET_MS, a fixed
+    // allowlist). To let ANY RB3_* flag be toggled in a browser without a
+    // rebuild or a code edit per flag, this parses a single generic param:
+    //
+    //     ?env=RB3_FRAME_TRACE=/trace.jsonl;RB3_BC_TEX_OFF=1
+    //
+    // Pairs are ';'-separated, each "NAME=VALUE". We seed Module.ENV (Emscripten
+    // copies it into `environ` before main, so the wasm's getenv() sees it) AND
+    // stash the same map on window.__rb3ExtraEnv as a hook for any C++-side
+    // draining a later wave may add (the existing main_web.cpp ApplyUrlLoaderEnv
+    // is a fixed per-flag allowlist; this generic path complements it). Names
+    // are restricted to /^RB3_[A-Z0-9_]+$/ so a stray param can't clobber
+    // arbitrary process env (e.g. PATH).
+    try {
+        var __envParam = new URLSearchParams(window.location.search).get('env');
+        if (__envParam) {
+            origModule.ENV = origModule.ENV || {};
+            window.__rb3ExtraEnv = window.__rb3ExtraEnv || {};
+            __envParam.split(';').forEach(function(pair) {
+                if (!pair) return;
+                var eq = pair.indexOf('=');
+                var name = (eq < 0 ? pair : pair.slice(0, eq)).trim();
+                var val = (eq < 0 ? '1' : pair.slice(eq + 1)).trim();
+                if (!/^RB3_[A-Z0-9_]+$/.test(name)) {
+                    console.warn('[rb3-pre] ignoring non-RB3 env param: ' + name);
+                    return;
+                }
+                window.__rb3ExtraEnv[name] = val;
+                origModule.ENV[name] = val;
+                console.log('[rb3-pre] env ' + name + '=' + val + ' (from ?env)');
+            });
+        }
+    } catch (e) {
+        console.warn('[rb3-pre] ?env bridge failed: ' + e);
+    }
+
+    // -----------------------------------------------------------------------
     // W4b — IndexedDB asset cache.
     //
     // Design constraints. The engine's WebAssetsFetchSync is a synchronous

@@ -32,6 +32,38 @@ namespace {
     int gMalloced = 0;
 }
 
+#ifdef HX_NATIVE
+// Incremental-load-perf (PLAN.md T1) frame-trace hooks: charge per-object
+// PreLoad/PostLoad time to gObjLoadMsThisFrame and remember the single slowest
+// object (class+name) this frame. All HX_NATIVE-only; the Wii build is
+// byte-identical (this whole block is excluded). Read + zeroed by
+// RB3FrameTraceRecord (native/src/rb3_frame_trace.cpp).
+#include <chrono>
+#include <cstdio>
+#include <cstring>
+extern bool  gFrameTraceActive;
+extern float gObjLoadMsThisFrame;
+extern float gObjLoadWorstMs;
+extern char  gObjLoadWorstName[64];
+namespace {
+    inline double ObjLoadNowMs() {
+        return std::chrono::duration<double, std::milli>(
+                   std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    }
+    // Accumulate `ms` and, if it's the slowest single phase seen this frame,
+    // record the offending object's "class:name".
+    inline void ObjLoadTrace(double ms, const char *cls, const char *name) {
+        gObjLoadMsThisFrame += (float)ms;
+        if ((float)ms > gObjLoadWorstMs) {
+            gObjLoadWorstMs = (float)ms;
+            std::snprintf(gObjLoadWorstName, sizeof(gObjLoadWorstName), "%s:%s",
+                          cls ? cls : "?", name ? name : "?");
+        }
+    }
+}
+#endif
+
 void BeginTrackObjMem(const char *cc1, const char *cc2) {
     if (DirLoader::mbTrackObjMem) {
         *gTrackMemStackPtr = MemPoint();
@@ -663,14 +695,30 @@ void DirLoader::LoadObjs() {
             if (obj) {
                 if (!mPostLoad) {
                     BeginTrackObjMem(obj->ClassName().mStr, obj->Name());
+#ifdef HX_NATIVE
+                    double ftPre = gFrameTraceActive ? ObjLoadNowMs() : 0.0;
+#endif
                     obj->PreLoad(*mStream);
+#ifdef HX_NATIVE
+                    if (gFrameTraceActive)
+                        ObjLoadTrace(ObjLoadNowMs() - ftPre,
+                                     obj->ClassName().mStr, obj->Name());
+#endif
                     mPostLoad = true;
                     EndTrackObjMem(obj, mProxyName, obj->Name());
                 }
                 if (TheLoadMgr.GetFirstLoading() != this)
                     return;
                 BeginTrackObjMem(obj->ClassName().mStr, obj->Name());
+#ifdef HX_NATIVE
+                double ftPost = gFrameTraceActive ? ObjLoadNowMs() : 0.0;
+#endif
                 obj->PostLoad(*mStream);
+#ifdef HX_NATIVE
+                if (gFrameTraceActive)
+                    ObjLoadTrace(ObjLoadNowMs() - ftPost,
+                                 obj->ClassName().mStr, obj->Name());
+#endif
                 EndTrackObjMem(obj, mProxyName, obj->Name());
                 mPostLoad = false;
                 if (mRev > 1) {

@@ -55,6 +55,28 @@ float gLoadPollUntilMsThisFrame = 0.0f;   // PollUntilLoaded + PollUntilEmpty (s
 bool gFrameTraceActive = false;
 int  gFrameTraceLoaderAdds = 0;
 int  gFrameTraceStreamOpens = 0;
+
+// Incremental-load-perf (PLAN.md T1) per-frame attribution counters. STRONG
+// definitions here (every native target links Loader.cpp); the engine TUs carry
+// matching WEAK defs (milo-native-engine PipelineManager.cpp) so the engine
+// links standalone, with these strong defs winning at the rb3 final link. Each
+// g*MsThisFrame accumulates ms spent THIS frame in one choke point; read +
+// zeroed by RB3FrameTraceRecord. See engine platform/FrameTraceCounters.h.
+float  gFetchSyncMsThisFrame = 0.0f;
+int    gFetchSyncCountThisFrame = 0;
+double gFetchSyncBytesThisFrame = 0.0;
+float  gDtaParseMsThisFrame = 0.0f;
+float  gObjLoadMsThisFrame = 0.0f;
+float  gObjLoadWorstMs = 0.0f;
+char   gObjLoadWorstName[64] = {0};
+float  gAudioPrimeMsThisFrame = 0.0f;
+float  gTexUploadMsThisFrame = 0.0f;
+int    gTexUploadCountThisFrame = 0;
+float  gMeshUploadMsThisFrame = 0.0f;
+int    gMeshUploadCountThisFrame = 0;
+float  gPipelineCreateMsThisFrame = 0.0f;
+int    gPipelineCreateCountThisFrame = 0;
+float  gStreamReadMsThisFrame = 0.0f;
 #endif
 
 struct LoaderGlitchContext {
