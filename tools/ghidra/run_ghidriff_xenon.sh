@@ -140,7 +140,16 @@ set -euo pipefail
 RB3_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VENV_PYTHON="${RB3_ROOT}/build/SZBE69_B8/ghidra/ghidriff-venv/bin/python"
 GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-/home/free/code/milohax/ghidra/build/ghidra}"
+# JAVA_HOME is effectively unused: pyghidra's launcher resolves the JDK via
+# PATH/LaunchSupport against the dist's requirements (fork dist needs >= 21).
+# Kept defined only so `env JAVA_HOME=...` below survives set -u.
 JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}"
+
+# BSim toggle (T3 verify fix): ON by default; RB3_XENON_BSIM=0 forces OFF.
+# The old `${RB3_XENON_BSIM:+--bsim} ${RB3_XENON_BSIM:---no-bsim}` expansions
+# produced `--bsim 1` (argparse exit 2) for =1 and silent OFF when unset.
+BSIM_FLAG="--bsim"
+[[ "${RB3_XENON_BSIM:-1}" == "0" ]] && BSIM_FLAG="--no-bsim"
 
 OUT_DIR="${RB3_ROOT}/build/SZBE69_B8/ghidra/ghidriff-xenon"
 PROJ_DIR="${OUT_DIR}/proj"
@@ -229,15 +238,11 @@ CMD=(env JAVA_HOME="${JAVA_HOME}"
      # families and observability Msg.info after aggregation.  BSim precision is
      # UNMEASURED (first run was killed before eval; ~20-50% expected cross-compiler).
      # The old stall was caused by decomp_correlate (see --no-decomp-correlate below),
-     # NOT BSim.  Toggle: RB3_XENON_BSIM=1 (force on), leave unset (default on),
-     # or RB3_XENON_BSIM=0 (force off via the else branch below).
-     # Recommended full invocation:
-     #   GHIDRA_INSTALL_DIR=/home/free/code/milohax/ghidra/build/ghidra \
-     #     JAVA_HOME=/usr/lib/jvm/java-17-openjdk \
-     #     RB3_XENON_BSIM=1 \
-     #     ./tools/ghidra/run_ghidriff_xenon.sh
-     ${RB3_XENON_BSIM:+--bsim}
-     ${RB3_XENON_BSIM:---no-bsim}
+     # NOT BSim.  Toggle (BSIM_FLAG above): leave unset or RB3_XENON_BSIM=1 -> --bsim
+     # (default ON); RB3_XENON_BSIM=0 -> --no-bsim.
+     # Recommended full invocation (fork GHIDRA_INSTALL_DIR + BSim ON are the defaults):
+     #   ./tools/ghidra/run_ghidriff_xenon.sh
+     "${BSIM_FLAG}"
      --vt-ref-correlators
      --vt-ref-min-score 9.5
      --min-func-len 16
