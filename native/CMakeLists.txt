@@ -718,6 +718,13 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_guestprofile_native.cpp
     # Faithful native OFFLINE TheServer (see native list above) — web is HX_NATIVE.
     ${CMAKE_SOURCE_DIR}/src/rb3_server_native.cpp
+    # Wave-3/M1 measurement: per-frame JSONL frame-trace recorder
+    # (RB3_FRAME_TRACE=<path>). Web defines HX_NATIVE so the recorder + the
+    # gFrameTraceActive-gated attribution counters compile; the web run loop in
+    # main_web.cpp calls RB3FrameTraceRecord (App::RunWithoutDebugging's native
+    # frame loop is never entered on web). Without this the symbol resolves to a
+    # no-op JS link-stub and the trace file is never created.
+    ${CMAKE_SOURCE_DIR}/src/rb3_frame_trace.cpp
     # REAL live input on web: keyboard -> JoypadData -> SendButtonMessages (same
     # TU as native; its #ifdef __EMSCRIPTEN__ branch reads window._rb3Keys +
     # navigator.getGamepads()). Strong JoypadPoll etc. drive frets/strum through

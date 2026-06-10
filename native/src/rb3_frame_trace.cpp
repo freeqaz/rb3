@@ -51,6 +51,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <sys/stat.h>
 
 // ---------------------------------------------------------------------------
 // Event counters — DEFINED in src/system/utl/Loader.cpp (always linked into any
@@ -96,6 +98,21 @@ void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
     if (sTraceState == 0) {
         const char *path = getenv("RB3_FRAME_TRACE");
         if (path && path[0]) {
+            // Ensure the parent directory exists so fopen("w") doesn't fail
+            // with ENOENT on MEMFS when the path is e.g. /tmp/rb3/trace.jsonl.
+            // For the common /trace.jsonl case the parent is "/" which always
+            // exists; this is a no-op. For deeper paths it creates only the
+            // immediate parent (one level — callers use simple paths).
+            {
+                char parentBuf[512];
+                strncpy(parentBuf, path, sizeof(parentBuf) - 1);
+                parentBuf[sizeof(parentBuf) - 1] = '\0';
+                char *slash = strrchr(parentBuf, '/');
+                if (slash && slash != parentBuf) {
+                    *slash = '\0';
+                    mkdir(parentBuf, 0777);  // ignore EEXIST
+                }
+            }
             sTraceFile = fopen(path, "w");
             if (sTraceFile) {
                 sTraceState = 1;
