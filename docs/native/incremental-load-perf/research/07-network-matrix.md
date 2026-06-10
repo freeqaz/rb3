@@ -39,29 +39,28 @@ rendering stalls.
   duration; `miloSerialΣ` = sum of whole-file milo (>0.5 MB) fetch durations
   (the clean, nav-cadence-free network-cost signal); per-gap in-flight-request
   correlation (`hoverGapNet` in result.json).
-- 2 runs per condition (c1–c4 variance <2 % on appBoot/miloSerialΣ; c3's two
-  appBooted values were identical to 0.01 s). c5 ran with an extended timeout
-  (the standard 420 s cap cannot contain the journey at 1.5 Mbps).
+- 2 runs per condition c1–c4 (variance <5 % on appBoot/miloSerialΣ; c3's two
+  appBooted values identical to 0.01 s, c4's to 0.01 s); c5 = 1 valid full run
+  with an extended 30-min cap (the standard 420 s cap cannot contain the
+  journey at 1.5 Mbps) — single-run, but its boot/splash timings were
+  independently corroborated by a concurrent agent's partial run (footnote ‡).
 - **Caveat:** `splash→hub` / `hub→songsel` *wall* numbers include scripted
   key-press pacing (±5–15 s run-to-run); they are directionally right but noisy.
   `appBooted`, `miloSerialΣ`, per-chunk durations, and the rAF stats are the
   trustworthy columns.
-- **Frame-trace counters did NOT capture on web (env-timing, not a missing wire
-  — correction to an earlier draft of this doc).** The recorder *is* wired into
-  the web loop: `main_web.cpp:727-738` mirrors `App::RunWithoutDebugging`'s
-  trace wrap, env-gated on `getenv("RB3_FRAME_TRACE")`, and `rb3_frame_trace.cpp`
-  `fopen(path,"w")`s + `fflush`es after every record (lines 99,156). Yet the
-  harness read of `/trace.jsonl` returned `ERR:ErrnoError: No such file or
-  directory` in **every** run, i.e. the file was never opened. Root cause is an
-  env-bridge ordering issue: `RB3_FRAME_TRACE` arrives via the `?env=…` URL param
-  drained by `::setenv` (main_web.cpp:204/247), but the trace-init `getenv`
-  (and `main_web.cpp:721`'s `sFrameTrace` latch) can run before that drain on the
-  deployed build, so the trace stays disabled. **Consequence for this study:**
-  per-frame fetch/dta/obj/prime/tex/mesh/pipe attribution counters are
-  unavailable, so the gap decomposition below uses the CDP network timeline +
-  rAF correlation + code reading instead. Fix is a one-liner (drain the `?env=`
-  bridge before any `getenv`-latching static init, or move the `sFrameTrace`
-  latch after the drain) — flagged as ranked fix #4.
+- **Frame-trace counters did NOT capture on web.** In the **deployed build that
+  every matrix run measured** (built 09:16 from `d71aadc3`), the recorder
+  `RB3FrameTraceRecord` is called only from `App::RunWithoutDebugging`
+  (src/App.cpp:809), while the web loop calls `sApp->RunOneFrame()` directly
+  (the committed `native/src/main_web.cpp:711`) — so `RB3_FRAME_TRACE` never
+  opens its file and the harness read of `/trace.jsonl` returned
+  `ERR:ErrnoError: No such file or directory` in every run. (Note: an
+  **uncommitted working-tree edit by a concurrent Wave-3 agent** adds the wiring
+  at main_web.cpp:819-833; it is NOT in the measured build, and this doc makes
+  no claims about it.) **Consequence for this study:** per-frame
+  fetch/dta/obj/prime/tex/mesh/pipe attribution counters were unavailable, so
+  the gap decomposition below uses the CDP network timeline + rAF correlation +
+  code reading instead — flagged as ranked fix #4.
 
 ## 2. Matrix
 
@@ -76,30 +75,35 @@ All runs release build, cold cache. "hover worst" = worst of the 3 cold hovers.
 | **c3 — 8 Mbps / 80 ms** (typical remote) | 1 | 43.78 | 96.7 | 19.5 | 1087 | 36.0 / 0 / 0 | 86.9 / 0 | yes |
 | | 2 | 43.78 | 99.6 | 19.1 | 1087 | 36.0 / 0 / 0 | 71.1 / 0 | yes |
 | **c4 — 4 Mbps / 150 ms** (bad WiFi/hotel) | 1 | 84.30 | 185.7 | **45.2** | 2161 | 37.0 / 0 / 0 | 85.7 / 0 | yes |
-| | 2† | 84.31 | boot-only | — | — | — | — | — |
-| **c5 — 1.5 Mbps / 300 ms** (3G-class) | 1‡ | ~217 | boot-only (salvage) | — | ~5600 | canvas clean (frames advancing) | — | streaming | 
+| | 2† | 84.31 | 194.9 | 44.1 | 2163 | 37.0 / 0 / 0 | 89.9 / 0 | yes |
+| **c5 — 1.5 Mbps / 300 ms** (3G-class) | 1‡ | 215.54 | 286.9 (through splash only) | **135.9** | — (song_select never reached) | — (journey DNF) | — | **no — DNF** |
 
-† **c4-run2 is boot-only.** The batch's own server (port 8441) died during this
-run's song_select phase → `netSummary.failed = 336` (mass ECONNREFUSED),
-`hovers=[]`, `startSong=null`. Its `appBooted=84.31` corroborates run1's 84.30
-exactly; everything after boot is discarded. **The same server death killed both
-batched c5 runs** (`page.goto … ERR_CONNECTION_REFUSED`, zero artifacts) — so the
-batched c5 rows are a server-lifetime casualty, NOT a client/engine fault. Most
-likely cause: memory growth from on-the-fly brotli of the large milo set into
-`native/web/.cache/encoded/` across 8 prior runs (that cache is now warm, so a
-re-run no longer recompresses).
+† **c4-run2 is a re-run.** The batch's original c4-run2 was invalidated when
+the matrix server (port 8441) died mid-run (`netSummary.failed = 336`, mass
+ECONNREFUSED; quarantined as `c4-run2-INVALID-serverdied/` — its
+boot-only `appBooted=84.31` already corroborated run1). The same server death
+made the batch's two 420 s-capped c5 attempts fail instantly. The server log
+ends cleanly (no traceback/MemoryError); the box runs concurrent agents and an
+external kill is the most consistent explanation. A health-check watchdog
+(auto-restart) was armed and run2 + c5 were re-run cleanly (1 failed request
+each — an album-art 404; the watchdog never fired). The re-run reproduces run1
+almost exactly (appBoot 84.31 vs 84.30; chunk p50 2163 vs 2161 ms).
 
-‡ **c5 salvage** — re-run alone against a fresh own-server (port 8445) with a
-20-min cap (the batch's `timeout 420` cannot contain a 1.5 Mbps journey). At
-write-time the run had reached, with the canvas advancing normally throughout:
-intro at **216.7 s**, splash (title) at **306.7 s**, and was still inside the
-**single splash→main_hub transition at +120 s and counting** (downloading the
-~85 MB char/venue milo set serially at 1.5 Mbps) — itself the clearest possible
-demonstration of the thesis: one screen transition takes **minutes** at
-3G-class bandwidth. Per-1 MB mogg chunk ≈ 5.6 s (1 MB / 1.5 Mbps + 0.3 s RTT),
-so preview/playback audio cannot keep up (mogg stream ≈ 1.2 Mbps vs ~1.4 Mbps
-achievable → chronic underrun). Single-run boot/transition timings only; the §3
-harsh-network extrapolations are the load-bearing claim, not this row.
+‡ **c5 = journey Did-Not-Finish** (complete artifacts in
+`/tmp/rb3perf-netmatrix/c5-run2/`, 30-min cap; 1 failed request total — clean
+run, server watchdog never fired). appBooted **215.5 s** (10.9× the c1
+baseline); intro at 216.2 s; splash (title) at **298.8 s**; intro→splash alone
+took 82.6 s wall; **a single venue milo took 135.9 s**; main_hub was NEVER
+reached — the harness's 180 s main_hub wait expired mid splash→hub transition
+(~85 MB of serial milos at 1.5 Mbps needs ≳450 s of transfer), so hovers and
+song-start never ran. The canvas stayed live the whole time (longest rAF gap
+397.8 ms across the 215 s boot; one gap >250 ms total). A concurrent agent's
+independent partial run (own server on :8445) corroborates: intro 216.7 s /
+splash 306.7 s, still inside splash→hub at +120 s when observed. Per-1 MB mogg
+chunk at this condition ≈ 5.6 s (1 MB/1.5 Mbps + 0.3 s RTT), so preview audio
+would need ~17 s to start and playback (mogg ≈ 1.2 Mbps) cannot sustain —
+3G-class is effectively unplayable regardless of any client fix short of
+drastically smaller assets.
 
 **Packet loss (condition 6): SKIPPED.** CDP cannot emulate loss;
 `sudo tc qdisc … netem` requires a password in this environment
@@ -109,28 +113,33 @@ harsh-network extrapolations are the load-bearing claim, not this row.
 
 - **The shipped gate re-baselines cleanly** (c1 ≈ the E3 results: cold hover
   longest ≤36 ms, frozen-Σ 0) → the deployed build is NOT stale.
-- **frozen-Σ = 0 and #gaps>250 ms = 0 at every condition.** The wave-1
+- **frozen-Σ = 0 and #gaps>250 ms = 0 in every post-boot phase (transitions,
+  hovers, song start) at every condition.** The wave-1
   `RB3_LOADER_MIN_YIELD_MS=16` yield gate (src/system/utl/Loader.cpp:198-300)
-  genuinely keeps the canvas compositing at any bandwidth.
+  genuinely keeps the canvas compositing at any bandwidth. The only >100 ms
+  gaps anywhere are a fixed boot-time cluster (~390/210/110 ms; max 1 gap
+  >250 ms) whose magnitude is **RTT/bandwidth-invariant across all five
+  conditions** — first-render GPU pipeline-compile class, not network.
 - **What scales is wall time, ~inverse-bandwidth + 1 RTT per serial request:**
   - appBooted: 19.8 → 24.9 (+110 ms RTT × 49 serial boot requests [measured:
     49 requests / 39.1 MB finish before appBooted] = +5.0 s, bandwidth
-    unchanged!) → 43.8 (8 Mbps) → **84.3 (4 Mbps)** → **~199 (1.5 Mbps)**.
+    unchanged!) → 43.8 (8 Mbps) → **84.3 (4 Mbps)** → **215.5 (1.5 Mbps)**.
     20→4 Mbps = 5× bandwidth drop ⇒ 4.3× boot — almost pure inverse-bandwidth.
   - miloSerialΣ: 38.4 → 42.6 (+~40 × 110 ms RTT) → 98 s (8 Mbps; 2.5×) →
     **186 s (4 Mbps; ~4.8× = pure inverse bandwidth)** — serial chain, so the
     sum *is* the wait.
   - max single milo (the largest venue/char milo on a transition): 5.1 s
-    (20 Mbps) → 19.5 s (8 Mbps) → **45.2 s (4 Mbps)** → ~67 s extrapolated at
-    1.5 Mbps — during which that transition shows nothing new (canvas
-    compositing at 60 fps, zero >100 ms rAF gaps). **This 45 s "frozen" screen
-    transition is the user's reported "hang."**
+    (20 Mbps) → 19.5 s (8 Mbps) → **45.2 s (4 Mbps)** → **135.9 s measured at
+    1.5 Mbps** — during which that transition shows nothing new (canvas
+    compositing at 60 fps, zero >100 ms rAF gaps). **This 45–136 s "frozen"
+    screen transition is the user's reported "hang."** At 1.5 Mbps the journey
+    outright DNFs (main_hub unreachable within a 180 s wait).
 
 ## 3. Per-suspect verdicts
 
 ### (a) Range-chunk serialization — **CONFIRMED**, quantified
 
-`WebRangeFile` (native/src/rb3 `native/src/native_file.cpp:599-`) keeps **at
+`WebRangeFile` (`native/src/native_file.cpp:599-845`) keeps **at
 most ONE Range request in flight** — `mReqId`/`mReqChunk` are single slots, and
 `PollChunkFetch` (native_file.cpp:729) *drops* any in-flight request when a
 different chunk is needed. `ServicePendingRead` (native_file.cpp:801) only ever
@@ -211,17 +220,20 @@ the stream opens. At high RTT/low bandwidth that's the full cold-chunk latency
 "start song" and gameplay audio.
 
 **Audio underruns are present at EVERY condition, including c1 (20 Mbps/40 ms):**
-the console emits 11–25 `AudioDevice: latency GROW … (sustained underrun)` per
-run. Mapped against the journey, the c1 underruns cluster at **screen-transition
+the console emits 17–29 `AudioDevice: latency GROW … (sustained underrun)` lines
+per full-journey run. Mapped against the journey, the c1 underruns cluster at **screen-transition
 boundaries** (≈41–49 s → main_hub menu-music load; ≈62–65 s → song_select;
 ≈106–116 s → part_difficulty→game), not at steady-state playback — i.e. the menu
 / preview audio ring starves while the main thread is busy draining a serial load
 chain, then the AudioDevice grows its buffer (90→330 ms) to compensate. So
 underruns are a **second symptom of the same serial-load transition stalls**, not
-an independent bug, and they get worse as bandwidth drops (the load drains take
-longer). The audio path never blocks the main thread (VorbisReader is fully
-async, §a) — it drops out instead. Practical read: the user hears the "static /
-dropouts" at the same moments they see the transition "hang."
+an independent bug. Measured GROW-event *counts* are flat across conditions
+(17–29 per run at c1→c4, no bandwidth trend): the underruns are tied to the transition *events*
+(which occur at every bandwidth), while what scales with bandwidth is how long
+each starved transition lasts. The audio path never blocks the main thread
+(VorbisReader is fully async, §a) — it drops out instead. Practical read: the
+user hears the "static / dropouts" at the same moments they see the transition
+"hang."
 
 ### (e) Server-side head-of-line blocking — **REFUTED**
 
@@ -270,18 +282,18 @@ failed request per run in the netlogs (an album-art 404), no degradation.
    (the same `#ifdef HX_WEB` slice+yield pattern PollUntilLoaded uses). Low
    effort, removes a real tab-hang class on any seek/jump over a stalled
    stream.
-4. **Fix the web frame-trace env-bridge ordering so `RB3_FRAME_TRACE`
-   actually captures.** The recorder IS already wired into the web loop
-   (`main_web.cpp:727-738`) and `rb3_frame_trace.cpp` flushes per record, but
-   the trace file never opened in any run (`/trace.jsonl` =
-   `ERR:ErrnoError`) because the `?env=` → `::setenv` drain
-   (main_web.cpp:204/247) can run *after* the trace-init `getenv` /
-   `sFrameTrace` latch (main_web.cpp:721). Drain the env bridge before any
-   `getenv`-latching static init (or move the `sFrameTrace` read past the
-   drain). One-liner; without it the per-frame fetch/dta/obj/prime/tex/mesh/pipe
-   attribution counters — all incremented engine-wide already — stay unreadable
-   on web, forcing the indirect attribution used here and hiding any future
-   web-only regression.
+4. **Wire `RB3FrameTraceRecord` into the web frame loop and verify it
+   captures.** In the deployed build the recorder lives only in
+   `App::RunWithoutDebugging` (src/App.cpp:809); the web loop
+   (main_web.cpp:711) bypasses it, so the per-frame
+   fetch/dta/obj/prime/tex/mesh/pipe attribution counters — all incremented
+   engine-wide already — are unreadable on web. That gap forced the indirect
+   attribution used in this study and will hide any future web-only
+   regression. A concurrent agent's uncommitted working-tree edit
+   (main_web.cpp:819-833) already adds this wiring — land it, then confirm
+   `?env=RB3_FRAME_TRACE=/trace.jsonl` produces records (and that the `?env=`
+   → `::setenv` drain at main_web.cpp:204/247 runs before the recorder's
+   first `getenv` latch).
 5. **(Realism, not a code fix) gate future perf work at ≥2 network points** —
    the 20 Mbps/40 ms gate provably cannot see any of the above (c1 row is
    clean); 8 Mbps/80 ms (c3) is the cheapest condition that exposes the wall
@@ -297,16 +309,12 @@ python3 native/web/server.py --port 8441
 cd scripts/web && node _netmatrix.mjs --port 8441 \
   --out /tmp/rb3perf-netmatrix/c3-run1 --mbps 8 --rtt 80 --label c3 --run 1
 
-# whole matrix (sequential, 2 runs/condition)
+# whole matrix (sequential, 2 runs/condition; c1-c4 only — 420 s/run cap)
 bash scripts/web/_netmatrix_batch.sh   # writes /tmp/rb3perf-netmatrix/
-# NOTE: the batch's per-run `timeout 420` cannot contain c5 (1.5 Mbps); run c5
-# alone with a longer cap + a FRESH server (the long batch can exhaust the
-# matrix server, which kills later runs with ERR_CONNECTION_REFUSED):
-python3 native/web/server.py --port 8445 &   # warm .cache/encoded first
-cd scripts/web && timeout 1200 node _netmatrix.mjs --port 8445 \
-  --out /tmp/rb3perf-netmatrix/c5-run1-salvage --mbps 1.5 --rtt 300 --label c5 --run 1
+# slow conditions need extended caps (c4 900 s, c5 1800 s):
+bash scripts/web/_netmatrix_slow.sh c4 c5
 
-# aggregate table (basic stub + the enhanced aggregator written for this study)
+# aggregate table (basic + the enhanced aggregator)
 python3 /tmp/rb3perf-netmatrix/aggregate.py
 python3 /tmp/rb3perf-netmatrix/aggregate2.py   # matrix + RTT/bw scaling + underrun tally
 
@@ -314,10 +322,10 @@ python3 /tmp/rb3perf-netmatrix/aggregate2.py   # matrix + RTT/bw scaling + under
 for i in 0 1 2 3 4 5; do off=$((i*1048576)); \
   curl -s -o /dev/null -H "Range: bytes=$off-$((off+1048575))" \
   "http://127.0.0.1:8441/api/file/songs/20thcenturyboy/20thcenturyboy.mogg" & done; wait
-# (measured: 8 parallel ≈ 4× faster than 8 serial → server is genuinely threaded)
+# (measured: 6 parallel = 7.9 ms vs 6 serial = 30.1 ms → genuinely threaded)
 ```
 
-Raw artifacts: `/tmp/rb3perf-netmatrix/{c1..c4}-run{1,2}/` +
-`c5-run1-salvage/` (`result.json`, `raf.json`, `net.ndjson`, `console.ndjson`) +
-`aggregate.py` / `aggregate2.py`. c5 batched rows + c4-run2's post-boot data are
-absent (server died — see table footnotes † / ‡).
+Raw artifacts: `/tmp/rb3perf-netmatrix/{c1..c5}-run*/` (`result.json`,
+`raf.json`, `net.ndjson`, `console.ndjson`) + `aggregate.py` / `aggregate2.py`.
+The server-death casualty is quarantined as `c4-run2-INVALID-serverdied/`
+(see footnote †); the valid c4 run2 is the re-run.
