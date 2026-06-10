@@ -293,3 +293,17 @@ bug. Also `RB3_NO_MESH_CACHE=1` only reverts the VB/IB path, not the uniform pat
 uniforms + kept VB/IB cache + full opt-out), to be re-gated strict-~0% before the
 coordinator ff-merges + bumps `MILO_ENGINE_PIN`. Lesson recorded: perceptual mode is a
 rendered-vs-blank gate; ONLY the strict frame-pinned diff is a promotion gate.
+
+## FINAL STATUS (closed)
+- Bug (song_select crash) FIXED: UAF root cause (BandPatchMesh LP64 OOB write → dangling
+  PropSync<RndTex> dynamic_cast) fixed by `3d00d1dd` + `65f7f0e6`; char preview re-enabled DEFAULT-ON.
+- `cc047050` — ExtendTwin(cur,…) fix: closes the residual ~1/12 char-composite boot abort,
+  match 95.46→95.8%, DC3-safe shared code.
+- JS-heap leak fixed: `b79cbafa`.
+- Mesh-buffer cache FIXED + PROMOTED: `a0f98ad` (VB/IB cache) had a per-mesh-uniform
+  collapse → darkened song-list rows (caught by the strict visual A/B); `b5309b3` fixes it
+  with per-INSTANCE uniform slots (recycled per frame). rb3 pin bumped → `91468cd5`.
+  Independently re-verified: song_select rows ~0% vs stock, buffers/bindGroups bounded
+  (0 creates/frame steady-state), default-on preview crash-free, gameplay OK, RB3_NO_MESH_CACHE
+  a true revert, Wii/dc3 untouched.
+- Visual-diff tooling committed (`8c0b2c52`); crash-smoke + WGPU-interposer probes (`1842c93e`).
