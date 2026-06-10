@@ -43,6 +43,9 @@
 #include <cstdlib> // getenv (RB3_BOOT_IO_STATS)
 #include <string>
 #include <map>     // WebRangeFile chunk cache
+#include <unordered_map> // cross-open chunk cache (N2: shared across WebRangeFile instances)
+#include <list>    // cross-open LRU ordering
+#include <memory>  // shared_ptr (copy-on-read chunk lifetime across eviction)
 #include <vector>  // WebRangeFile chunk bytes
 #include <cstdint> // uint8_t
 
@@ -198,6 +201,36 @@ static bool MoggRangeEnabled() {
         sEnabled = (e && e[0] && e[0] != '0') ? 0 : 1;
     }
     return sEnabled != 0;
+}
+
+// N2 (matrix fix #2, part A): RB3_MOGG_READAHEAD_OFF=1 disables the read-ahead
+// slot — chunk N+1 is no longer prefetched while chunk N is being consumed, so
+// every chunk boundary pays a full RTT + transfer serially (the pre-N2 behavior).
+// Default ON.
+static bool MoggReadAheadEnabled() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) {
+        const char *e = ::getenv("RB3_MOGG_READAHEAD_OFF");
+        sEnabled = (e && e[0] && e[0] != '0') ? 0 : 1;
+    }
+    return sEnabled != 0;
+}
+
+// N2 (matrix fix #2, part B): cross-open chunk cache byte budget in MB. Shared
+// across WebRangeFile instances for the same URL so gameplay's fresh stream reuses
+// the chunks the preview already fetched (chunks 0-1 + the seek window). 0 disables
+// the cross-open cache entirely (each instance is back to its own per-object LRU).
+// Default 24 MB. env RB3_MOGG_CACHE_MB.
+static long MoggCacheBytes() {
+    static long sBytes = -1;
+    if (sBytes < 0) {
+        const char *e = ::getenv("RB3_MOGG_CACHE_MB");
+        long mb = (e && e[0]) ? std::atol(e) : 24;
+        if (mb < 0)
+            mb = 0;
+        sBytes = mb * (1L << 20);
+    }
+    return sBytes;
 }
 
 } // namespace
@@ -579,6 +612,105 @@ private:
 };
 
 // ===========================================================================
+// MoggChunkCache — N2 (matrix fix #2, part B): process-wide, cross-open chunk
+// cache keyed by (serverRel, chunkIdx).
+//
+// The per-WebRangeFile LRU dies with the instance. The preview stream and the
+// gameplay stream open SEPARATE WebRangeFile objects for the same mogg, so the
+// gameplay stream re-fetched chunks 0-1 (header) + the seek window the preview
+// already pulled (07-network-matrix.md §3a, "bonus finding"). This static cache
+// lets the second open reuse the first's chunks.
+//
+// LIFETIME / EVICTION SAFETY: chunk bytes are held by shared_ptr<const vector>.
+// A live WebRangeFile that has pulled a chunk holds its OWN shared_ptr; the cache
+// holds another. Eviction only drops the cache's reference — bytes a live reader
+// is using stay alive until that reader drops them (copy-on-read via refcount, no
+// deep copy). So eviction can NEVER free a chunk a live instance is reading.
+// ===========================================================================
+typedef std::shared_ptr<const std::vector<uint8_t> > ChunkBytes;
+
+class MoggChunkCache {
+public:
+    static MoggChunkCache &Instance() {
+        static MoggChunkCache sInst;
+        return sInst;
+    }
+
+    static bool Dbg() {
+        static int s = -1;
+        if (s < 0) { const char *e = ::getenv("RB3_MOGG_CACHE_DBG"); s = (e && e[0] && e[0] != '0') ? 1 : 0; }
+        return s != 0;
+    }
+
+    // Look up a cached chunk. Returns the bytes (shared, refcounted) or null on
+    // miss. On hit, the entry is moved to MRU.
+    ChunkBytes Get(const std::string &url, int chunk) {
+        if (MoggCacheBytes() <= 0)
+            return ChunkBytes();
+        Key k(url, chunk);
+        auto it = mMap.find(k);
+        if (it == mMap.end()) {
+            if (Dbg()) printf("[moggcache] MISS %s#%d (have %d entries)\n", url.c_str(), chunk, (int)mMap.size());
+            return ChunkBytes();
+        }
+        mOrder.splice(mOrder.begin(), mOrder, it->second.pos);  // touch -> MRU
+        if (Dbg()) printf("[moggcache] HIT  %s#%d\n", url.c_str(), chunk);
+        return it->second.bytes;
+    }
+
+    // Insert (or refresh) a chunk. Evicts LRU entries to stay within budget.
+    void Put(const std::string &url, int chunk, const ChunkBytes &bytes) {
+        long budget = MoggCacheBytes();
+        if (budget <= 0 || !bytes)
+            return;
+        Key k(url, chunk);
+        auto it = mMap.find(k);
+        if (it != mMap.end()) {
+            // Replace bytes, move to MRU.
+            mBytes -= (long)it->second.bytes->size();
+            it->second.bytes = bytes;
+            mBytes += (long)bytes->size();
+            mOrder.splice(mOrder.begin(), mOrder, it->second.pos);
+        } else {
+            mOrder.push_front(k);
+            Entry e;
+            e.bytes = bytes;
+            e.pos = mOrder.begin();
+            mMap[k] = e;
+            mBytes += (long)bytes->size();
+            if (Dbg()) printf("[moggcache] PUT  %s#%d (now %d entries, %ld KB)\n", url.c_str(), chunk, (int)mMap.size(), mBytes / 1024);
+        }
+        // Evict LRU until within budget. Bytes a live reader still references stay
+        // alive via its own shared_ptr; we only drop the cache's reference.
+        while (mBytes > budget && !mOrder.empty()) {
+            Key victim = mOrder.back();
+            auto vit = mMap.find(victim);
+            if (vit != mMap.end()) {
+                mBytes -= (long)vit->second.bytes->size();
+                mMap.erase(vit);
+            }
+            mOrder.pop_back();
+        }
+    }
+
+private:
+    MoggChunkCache() : mBytes(0) {}
+    typedef std::pair<std::string, int> Key;
+    struct KeyHash {
+        size_t operator()(const Key &k) const {
+            return std::hash<std::string>()(k.first) ^ (std::hash<int>()(k.second) * 2654435761u);
+        }
+    };
+    struct Entry {
+        ChunkBytes bytes;
+        std::list<Key>::iterator pos;  // position in mOrder (MRU front)
+    };
+    std::list<Key> mOrder;  // front = MRU, back = LRU
+    std::unordered_map<Key, Entry, KeyHash> mMap;
+    long mBytes;  // total resident bytes in the cache
+};
+
+// ===========================================================================
 // WebRangeFile — Q3 (T7): HTTP Range-backed *.mogg File.
 //
 // A 31-36 MB mogg should never be whole-filed into MEMFS just to play a preview.
@@ -603,12 +735,29 @@ class WebRangeFile : public File {
 public:
     WebRangeFile(const std::string &serverRel, long size)
         : mServerRel(serverRel), mSize(size), mPos(0), mFail(false),
-          mReqId(0), mReqChunk(-1),
           mPendingBuf(nullptr), mPendingLen(0), mPendingDone(0),
-          mReadActive(false), mLru(0) {}
+          mReadActive(false), mLru(0) {
+        // Slot 0 = primary (the chunk the reader is consuming); slot 1 = read-ahead
+        // (chunk N+1, kicked while N is being served). Both are dropped on teardown.
+        for (int i = 0; i < kNumSlots; ++i) {
+            mSlot[i].reqId = 0;
+            mSlot[i].chunk = -1;
+        }
+    }
     ~WebRangeFile() override {
-        if (mReqId)
-            WebAssetsRangeDrop(mReqId);
+        // Teardown of BOTH slots. For each slot:
+        //  - if its fetch already LANDED, harvest the bytes into the cross-open
+        //    cache before releasing (so a read-ahead chunk that completed but was
+        //    never consumed — e.g. the preview ends right after the header read —
+        //    is preserved for the next open instead of being re-fetched).
+        //  - if still in flight, WebAssetsRangeDrop abandons it safely (engine
+        //    fb23b5e RangeRequest::abandoned) so the running fetch self-reclaims
+        //    without UAF (preview-cancel).
+        for (int i = 0; i < kNumSlots; ++i) {
+            if (!mSlot[i].reqId)
+                continue;
+            HarvestOrDropSlot(i);
+        }
     }
 
     int Read(void *buf, int n) override {
@@ -621,7 +770,7 @@ public:
         long got = 0;
         while (got < clamped) {
             int chunk = (int)((mPos + got) / kChunkSize);
-            if (!ChunkResident(chunk)) {
+            if (!EnsureResidentFromCache(chunk)) {
                 if (!BlockFetchChunk(chunk))
                     return mFail ? -1 : (int)got;
             }
@@ -682,9 +831,14 @@ public:
     }
 
 private:
+    static const int kNumSlots = 2;  // [0] = primary, [1] = read-ahead (N+1)
     struct Chunk {
-        std::vector<uint8_t> data;  // exactly the bytes for [index*kChunkSize, ..)
+        ChunkBytes data;  // shared bytes for [index*kChunkSize, ..) (refcounted)
         long lru;
+    };
+    struct Slot {
+        int reqId;  // in-flight range request id (0 = none)
+        int chunk;  // chunk index the in-flight request covers (-1 = none)
     };
 
     long ClampLen(long pos, long n) const {
@@ -697,8 +851,26 @@ private:
         return n;
     }
 
+    // True if the chunk's bytes are usable directly from this instance's map.
     bool ChunkResident(int chunk) {
         return mChunks.find(chunk) != mChunks.end();
+    }
+
+    // Make `chunk` resident in mChunks if possible WITHOUT a network fetch: either
+    // it's already here, or the cross-open cache (another WebRangeFile for the same
+    // URL — e.g. the preview's chunks 0-1) has it. The cached bytes are shared by
+    // refcount (no deep copy), so eviction from the cache never frees what we hold.
+    bool EnsureResidentFromCache(int chunk) {
+        if (ChunkResident(chunk))
+            return true;
+        ChunkBytes cached = MoggChunkCache::Instance().Get(mServerRel, chunk);
+        if (!cached)
+            return false;
+        Chunk &c = mChunks[chunk];
+        c.data = cached;
+        c.lru = ++mLru;
+        EvictIfNeeded();
+        return true;
     }
 
     long ChunkByteLen(int chunk) const {
@@ -709,64 +881,168 @@ private:
         return len < 0 ? 0 : len;
     }
 
+    int NumChunks() const {
+        return (int)((mSize + kChunkSize - 1) / kChunkSize);
+    }
+
     long CopyFromChunk(int chunk, long fileOff, char *dst, long want) {
         auto it = mChunks.find(chunk);
-        if (it == mChunks.end())
+        if (it == mChunks.end() || !it->second.data)
             return 0;
+        const std::vector<uint8_t> &bytes = *it->second.data;
         long chunkStart = (long)chunk * kChunkSize;
         long off = fileOff - chunkStart;
-        long avail = (long)it->second.data.size() - off;
+        long avail = (long)bytes.size() - off;
         long n = want < avail ? want : avail;
         if (n <= 0)
             return 0;
-        memcpy(dst, it->second.data.data() + off, n);
+        memcpy(dst, bytes.data() + off, n);
         it->second.lru = ++mLru;
         return n;
     }
 
-    // Issue (or continue) a Range fetch for `chunk`. Returns true if the chunk is
-    // now resident, false if the fetch is still pending (or kicked just now).
-    bool PollChunkFetch(int chunk) {
-        if (ChunkResident(chunk))
-            return true;
-        if (mReqId == 0 || mReqChunk != chunk) {
-            // No fetch in flight for this chunk: kick one. (Drop a stale in-flight
-            // request for a different chunk — VorbisReader reads strictly forward
-            // within a window, so superseding is correct and cheap.)
-            if (mReqId)
-                WebAssetsRangeDrop(mReqId);
-            long start = (long)chunk * kChunkSize;
-            int len = (int)ChunkByteLen(chunk);
-            if (len <= 0)
-                return false;  // zero-length chunk at/after EOF — nothing to fetch
-            mReqId = WebAssetsRangeFetch(mServerRel.c_str(), start, len);
-            mReqChunk = chunk;
-            if (mReqId == 0) {
-                mFail = true;
-                return false;
-            }
+    // Poll the request in slot `i`. If it has landed, move the bytes into mChunks
+    // AND publish them to the cross-open cache, then free the slot. Returns true if
+    // a chunk landed (now resident), false otherwise. Sets mFail on fetch error.
+    bool PollSlot(int i) {
+        Slot &s = mSlot[i];
+        if (s.reqId == 0)
             return false;
-        }
         int bytes = 0;
         bool ok = false;
-        if (!WebAssetsRangeDone(mReqId, &bytes, &ok))
+        if (!WebAssetsRangeDone(s.reqId, &bytes, &ok))
             return false;  // still in flight
         if (!ok) {
-            WebAssetsRangeDrop(mReqId);
-            mReqId = 0;
-            mReqChunk = -1;
+            WebAssetsRangeDrop(s.reqId);
+            s.reqId = 0;
+            s.chunk = -1;
+            // A primary-slot (i==0) error fails the read; a read-ahead-slot (i==1)
+            // error is purely speculative — just free the slot. The primary slot
+            // will re-fetch the chunk for real when the cursor reaches it.
+            if (i == 0)
+                mFail = true;
+            return false;
+        }
+        // Landed: take the bytes into a shared buffer, store in both caches.
+        std::shared_ptr<std::vector<uint8_t> > buf =
+            std::make_shared<std::vector<uint8_t> >(bytes);
+        WebAssetsRangeTake(s.reqId, buf->data(), bytes);
+        ChunkBytes shared = buf;  // const view, shared by refcount
+        int chunk = s.chunk;
+        if (MoggChunkCache::Dbg()) printf("[moggcache] LANDED slot%d %s#%d bytes=%d\n", i, mServerRel.c_str(), chunk, bytes);
+        Chunk &c = mChunks[chunk];
+        c.data = shared;
+        c.lru = ++mLru;
+        MoggChunkCache::Instance().Put(mServerRel, chunk, shared);
+        s.reqId = 0;
+        s.chunk = -1;
+        EvictIfNeeded();
+        return true;
+    }
+
+    // Teardown/supersede helper: if slot `i`'s fetch has already LANDED, take its
+    // bytes into the cross-open cache so the next open of this URL can reuse them
+    // (without re-fetching); then release the request either way. Used by the dtor
+    // and the supersede path so a completed-but-unconsumed read-ahead chunk is never
+    // thrown away. Does NOT touch mChunks (safe to call mid-destruction).
+    void HarvestOrDropSlot(int i) {
+        Slot &s = mSlot[i];
+        if (s.reqId == 0)
+            return;
+        int bytes = 0;
+        bool ok = false;
+        if (MoggCacheBytes() > 0 && WebAssetsRangeDone(s.reqId, &bytes, &ok) && ok &&
+            bytes > 0) {
+            std::shared_ptr<std::vector<uint8_t> > buf =
+                std::make_shared<std::vector<uint8_t> >(bytes);
+            int taken = WebAssetsRangeTake(s.reqId, buf->data(), bytes);  // frees req
+            if (taken == bytes)
+                MoggChunkCache::Instance().Put(mServerRel, s.chunk, buf);
+        } else {
+            // Still in flight (or cache disabled / error): abandon safely.
+            WebAssetsRangeDrop(s.reqId);
+        }
+        s.reqId = 0;
+        s.chunk = -1;
+    }
+
+    // Ensure a fetch is in flight (or resident) for `chunk` using slot `i`. If the
+    // slot is busy with a DIFFERENT chunk it is superseded (VorbisReader reads
+    // strictly forward within a window). Returns true if `chunk` is now resident.
+    bool KickSlot(int i, int chunk) {
+        if (EnsureResidentFromCache(chunk))
+            return true;
+        Slot &s = mSlot[i];
+        if (s.reqId != 0 && s.chunk == chunk)
+            return PollSlot(i);  // already fetching this chunk: advance it
+        // If the OTHER slot is already fetching this chunk, don't start a duplicate
+        // request — just poll the other slot (it may land here). Common case: the
+        // read-ahead slot pre-fetched chunk N+1, then the cursor advances and the
+        // primary slot is asked for N+1.
+        int other = i ^ 1;
+        if (other >= 0 && other < kNumSlots && mSlot[other].reqId != 0 &&
+            mSlot[other].chunk == chunk) {
+            return PollSlot(other);
+        }
+        if (s.reqId != 0) {
+            // Slot busy with a stale chunk: if it already landed, harvest it into the
+            // cross-open cache before releasing (otherwise abandon — UAF-safe).
+            HarvestOrDropSlot(i);
+        }
+        long start = (long)chunk * kChunkSize;
+        int len = (int)ChunkByteLen(chunk);
+        if (len <= 0)
+            return false;  // zero-length chunk at/after EOF — nothing to fetch
+        s.reqId = WebAssetsRangeFetch(mServerRel.c_str(), start, len);
+        s.chunk = chunk;
+        if (s.reqId == 0) {
             mFail = true;
             return false;
         }
-        // Landed: take the bytes into the cache.
-        Chunk &c = mChunks[chunk];
-        c.data.resize(bytes);
-        WebAssetsRangeTake(mReqId, c.data.data(), bytes);
-        c.lru = ++mLru;
-        mReqId = 0;
-        mReqChunk = -1;
-        EvictIfNeeded();
-        return true;
+        return false;
+    }
+
+    // Primary-slot fetch for the chunk under the read cursor. Returns true if the
+    // chunk is now resident.
+    bool PollChunkFetch(int chunk) {
+        // Advance ALL slots first so a previously-kicked read-ahead can land (it may
+        // already hold the chunk we now want), then ensure the primary chunk.
+        for (int i = 0; i < kNumSlots; ++i)
+            if (mSlot[i].reqId)
+                PollSlot(i);
+        if (mFail)
+            return false;
+        if (ChunkResident(chunk))
+            return true;
+        return KickSlot(0, chunk);
+    }
+
+    // Read-ahead: while serving reads from chunk N, ensure N+1 is being fetched (or
+    // already resident) on the read-ahead slot so the next chunk boundary never
+    // costs a full RTT+transfer. No-op if N+1 is the chunk the primary slot is
+    // already fetching, or past EOF, or read-ahead is disabled.
+    void KickReadAhead(int currentChunk) {
+        if (!MoggReadAheadEnabled())
+            return;
+        int next = currentChunk + 1;
+        if (next >= NumChunks())
+            return;
+        if (ChunkResident(next))
+            return;
+        if (mSlot[0].reqId && mSlot[0].chunk == next)
+            return;  // primary is already on it
+        // Don't supersede an in-flight read-ahead fetch. If slot 1 is already busy
+        // (e.g. it pre-fetched chunk K right before VorbisReader seeked forward),
+        // let that fetch COMPLETE and be cached — abandoning it to chase the new
+        // N+1 would (a) waste the bytes already on the wire and (b) drop a chunk the
+        // next open (gameplay) is likely to need. Advance it first; only kick the
+        // new read-ahead once the slot frees.
+        if (mSlot[1].reqId) {
+            PollSlot(1);          // try to land the in-flight read-ahead now
+            if (mSlot[1].reqId)
+                return;           // still in flight — leave it; don't supersede
+        }
+        KickSlot(1, next);  // slot free: kick the speculative N+1 (ignore result)
     }
 
     void EvictIfNeeded() {
@@ -802,12 +1078,13 @@ private:
         while (mPendingDone < mPendingLen) {
             long fileOff = mPos + mPendingDone;
             int chunk = (int)(fileOff / kChunkSize);
-            if (!ChunkResident(chunk)) {
-                PollChunkFetch(chunk);  // kick / advance; not resident yet
+            if (!EnsureResidentFromCache(chunk)) {
+                PollChunkFetch(chunk);  // poll slots / kick primary; not resident yet
                 if (mFail) {
                     mReadActive = false;
                     return false;
                 }
+                KickReadAhead(chunk);  // overlap N+1 fetch with this stall
                 return true;  // pending — ReadDone keeps polling
             }
             long n = CopyFromChunk(chunk, fileOff,
@@ -816,6 +1093,7 @@ private:
             if (n <= 0)
                 break;  // defensive
             mPendingDone += (int)n;
+            KickReadAhead(chunk);  // chunk N is resident & being consumed: prefetch N+1
         }
         return true;
     }
@@ -824,8 +1102,7 @@ private:
     long mSize;
     long mPos;
     bool mFail;
-    int mReqId;     // in-flight range request id (0 = none)
-    int mReqChunk;  // chunk index the in-flight request covers
+    Slot mSlot[kNumSlots];  // [0] primary, [1] read-ahead
     std::map<int, Chunk> mChunks;  // chunk index -> bytes
     // active ReadAsync state
     void *mPendingBuf;
