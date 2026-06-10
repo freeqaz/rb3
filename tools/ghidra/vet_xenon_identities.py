@@ -2,13 +2,13 @@
 """Vetting protocol for Wii<->Xenon ghidriff matches.
 
 Reads a ghidriff matches.json, the Wii CW map (for TU + size + category
-attribution), and unified_id_rb3wii.json (for ADDRESS-based cross-checks) and
-produces vetted_identities.json: a tiered, annotated export of every match.
+attribution), the Bank 5 ELF (for rb3wii cross-check name bridging), and
+unified_id_rb3wii.json (for cross-checks) and produces vetted_identities.json:
+a tiered, annotated export of every match.
 
 Tier definitions (CLI-overridable via --tier-config):
   ACCEPT        — high-precision match types: SeedMatch, ExactInstructions-
-                  FunctionHasher, SymbolsHash, Implied Match, SwitchSigHasher,
-                  ExactMnemonicsFunctionHasher
+                  FunctionHasher, SymbolsHash, Implied Match, SwitchSigHasher
   FILTERED_VT   — VTCombinedReference pairs that pass the TU-cluster coherence
                   test: group by Wii TU; for groups with >= 2 members:
                   xenon_spread / max(wii_spread, 1) < 10 AND xenon_spread < 50000
@@ -18,10 +18,12 @@ Tier definitions (CLI-overridable via --tier-config):
                   uniqueness gate), and any future unmeasured type unless
                   allowlisted via --accept-types
 
-rb3wii cross-check (by Xenon address, no name normalization):
-  confirmed     — Xenon addr in unified_id_rb3wii.json AND Wii addrs agree
-  contradicted  — Xenon addr in unified_id_rb3wii.json AND Wii addrs disagree
-  absent        — Xenon addr not in unified_id_rb3wii.json
+rb3wii cross-check (name-level join via Bank 5 ELF):
+  confirmed     — Xenon addr in unified_id_rb3wii.json AND Bank5-ELF-mangled-
+                  name at rb3wii's wii_addr == Bank8-map-symbol at ghidriff's p1
+  contradicted  — Xenon addr in unified_id_rb3wii.json AND names disagree
+  absent        — Xenon addr not in unified_id_rb3wii.json (or Bank 5 ELF
+                  lookup fails)
 
 Usage:
   python3 tools/ghidra/vet_xenon_identities.py
@@ -39,6 +41,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -47,10 +50,13 @@ from typing import Dict, List, Optional, Tuple
 TOOLS_DIR = Path(__file__).resolve().parent
 RB3 = TOOLS_DIR.parents[1]
 XENON = RB3.parent / "rb3-xenon"
+MILO_LIB = RB3.parent / "milo-executable-library"
 
 DEFAULT_RUN_DIR = RB3 / "build" / "SZBE69_B8" / "ghidra" / "ghidriff-xenon"
 DEFAULT_WII_MAP = RB3 / "orig" / "SZBE69_B8" / "files" / "band_r_wii.map"
 DEFAULT_RB3WII = XENON / "unified_id_rb3wii.json"
+DEFAULT_BANK5_ELF = (MILO_LIB / "rb3" / "Wii Proto (Bank 5) (Debug)"
+                     / "band_r_wii.elf")
 DEFAULT_OUT = DEFAULT_RUN_DIR / "vetted_identities.json"
 
 # ---------------------------------------------------------------------------
@@ -58,13 +64,16 @@ DEFAULT_OUT = DEFAULT_RUN_DIR / "vetted_identities.json"
 # ---------------------------------------------------------------------------
 DEFAULT_TIER_CONFIG = {
     # match_types in this set always get tier ACCEPT
+    # NOTE: ExactMnemonicsFunctionHasher is intentionally excluded — it is
+    # unmeasured cross-compiler and the brief's rule is "REJECT unless
+    # allowlisted via --accept-types". Use --accept-types ExactMnemonicsFunctionHasher
+    # to promote it once precision is established.
     "accept_types": [
         "SeedMatch",
         "ExactInstructionsFunctionHasher",
         "SymbolsHash",
         "Implied Match",
         "SwitchSigHasher",
-        "ExactMnemonicsFunctionHasher",
     ],
     # match_types in this set get tier REJECT (regardless of cluster coherence)
     "reject_types": [
@@ -135,11 +144,8 @@ def parse_wii_map_index(map_path: Path) -> Dict[int, dict]:
     """CodeWarrior map -> {vaddr: {symbol, tu, category, size}} for .text/.init
     function symbols (size > 0). First symbol at an address wins.
 
-    NOTE: categorize_tu here does NOT distinguish 'system'/'network' (those
-    would need deeper path inspection). For band3 vs non-band3 split, 'band3'
-    and 'main' are the game-code categories; everything else is sdk/unresolved.
-    To match eval_xenon_matches.py's category names, we post-process the TU
-    path to detect 'system' and 'network' prefixes.
+    Uses _categorize_full (mirrors eval_xenon_matches.py's categorize_tu) so
+    category values are: 'band3', 'system', 'network', 'main', 'sdk', or None.
     """
     out: Dict[int, dict] = {}
     in_code = False
@@ -171,27 +177,64 @@ def parse_wii_map_index(map_path: Path) -> Dict[int, dict]:
 
 
 def _categorize_full(tu_field: str) -> Tuple[Optional[str], Optional[str]]:
-    """Extended categorize_tu that also detects 'system' and 'network'."""
+    """Map TU column -> (tu_basename, category).
+
+    Faithfully mirrors eval_xenon_matches.py's categorize_tu: extracts the
+    <module> path component that follows 'band3_wii\\' in the full CW source
+    path (e.g. 'band3_wii\\system\\src\\...' -> category='system',
+    'band3_wii\\band3\\src\\...' -> category='band3',
+    'band3_wii\\network\\src\\...' -> category='network').
+
+    Categories:
+      'band3' / 'system' / 'network' / 'sdk' — from the map path
+      'main'  — bare single-token objects (App.o, Main.o, ...)
+    """
     if not tu_field:
         return None, None
     t = tu_field.strip()
     if not t:
         return None, None
     low = t.replace("/", "\\")
-    for prefix, cat in (
-        ("band3_wii\\", "band3"),
-        ("system_wii\\", "system"),
-        ("network_wii\\", "network"),
-    ):
-        if prefix in low:
-            basename = low.rsplit("\\", 1)[-1].strip()
-            return basename, cat
+    if "band3_wii\\" in low:
+        rest = low.split("band3_wii\\", 1)[1]
+        module = rest.split("\\", 1)[0]
+        basename = low.rsplit("\\", 1)[-1].strip()
+        return basename, module
     parts = t.split()
     if len(parts) == 1:
         return parts[0], "main"
     if parts[-1].endswith(".o"):
         return parts[-1], "sdk"
     return None, None
+
+
+# ---------------------------------------------------------------------------
+# Bank 5 ELF symbol table (for rb3wii cross-check name bridging)
+# ---------------------------------------------------------------------------
+def load_bank5_syms(elf_path: Path) -> Dict[int, str]:
+    """Run `nm` on the Bank 5 ELF and return {addr: mangled_symbol} for
+    text-section (T) symbols only.  Returns {} if the file is absent or nm
+    fails (caller degrades rb3wii cross-check to 'absent' for all entries).
+    """
+    if not elf_path.exists():
+        return {}
+    try:
+        result = subprocess.run(
+            ["nm", str(elf_path)],
+            capture_output=True, text=True, timeout=30,
+        )
+    except Exception:
+        return {}
+    out: Dict[int, str] = {}
+    for line in result.stdout.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) >= 3 and parts[1] == "T":
+            try:
+                addr = int(parts[0], 16)
+                out[addr] = parts[2].strip()
+            except ValueError:
+                pass
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -260,12 +303,22 @@ def vet(
     wii_index: Dict[int, dict],
     rb3wii_index: Dict[int, dict],
     tier_config: dict,
+    bank5_syms: Optional[Dict[int, str]] = None,
 ) -> Tuple[List[dict], dict]:
     """Apply the tier protocol to all matches.
 
     Returns (entries, summary) where entries is the per-match list and
     summary contains per-tier and per-category counts.
+
+    bank5_syms: {addr: mangled_symbol} from `nm` on the Bank 5 ELF.  Used to
+    bridge the rb3wii address-space gap: rb3wii.wii_addr is a Bank 5 address,
+    but ghidriff's p1 is a Bank 8 address.  We look up the Bank 5 symbol at
+    rb3wii.wii_addr and compare it to the Bank 8 map symbol at p1.  If
+    bank5_syms is None or empty, the cross-check degrades to 'absent' for
+    entries whose Bank 5 lookup would be needed.
     """
+    if bank5_syms is None:
+        bank5_syms = {}
     accept_types = set(tier_config.get("accept_types", DEFAULT_TIER_CONFIG["accept_types"]))
     reject_types = set(tier_config.get("reject_types", DEFAULT_TIER_CONFIG["reject_types"]))
     vt_max_xenon = tier_config.get("vt_max_xenon_spread",
@@ -323,16 +376,18 @@ def vet(
             min_vt_score, m.get("scores"),
         )
 
-        # rb3wii cross-check
+        # rb3wii cross-check (name-level via Bank 5 ELF)
         rb3wii_entry = rb3wii_index.get(p2)
+        bank8_sym = wii["symbol"] if wii else None
         rb3wii_check, rb3wii_wii_addr = _rb3wii_check(
-            p1, rb3wii_entry
+            p1, bank8_sym, rb3wii_entry, bank5_syms
         )
 
         entry: dict = {
             "xenon_addr": hex(p2),
-            "wii_addr": hex(p1) if wii else None,
-            "wii_symbol": wii["symbol"] if wii else None,
+            # Always emit wii_addr: use map lookup if available, else raw p1_addr
+            "wii_addr": hex(p1),
+            "wii_symbol": bank8_sym,
             "tier": tier,
             "match_types": mtypes,
             "tu": wii["tu"] if wii else None,
@@ -418,15 +473,36 @@ def _assign_tier(
     return "CAUTION"
 
 
-def _rb3wii_check(p1: int, rb3wii_entry) -> Tuple[str, Optional[str]]:
-    """Return (check_status, rb3wii_wii_addr_hex or None)."""
+def _rb3wii_check(
+    p1: int,
+    bank8_sym: Optional[str],
+    rb3wii_entry,
+    bank5_syms: Dict[int, str],
+) -> Tuple[str, Optional[str]]:
+    """Return (check_status, rb3wii_wii_addr_hex or None).
+
+    Name-level join via Bank 5 ELF:
+      1. Look up rb3wii.wii_addr in bank5_syms to get the Bank 5 mangled name.
+      2. Compare with the Bank 8 map symbol at p1 (bank8_sym).
+      3. confirmed iff names agree; contradicted iff names disagree; absent if
+         the rb3wii entry is missing, the Bank 5 ELF lacks the address, or
+         the Bank 8 map lacks the Bank 8 symbol.
+    """
     if rb3wii_entry is None:
         return "absent", None
     rb_wii = parse_addr(rb3wii_entry.get("wii_addr"))
     rb_hex = hex(rb_wii) if rb_wii is not None else None
     if rb_wii is None:
-        return "absent", None
-    if rb_wii == p1:
+        return "absent", rb_hex
+    # Resolve Bank 5 mangled name at the rb3wii wii_addr
+    bank5_sym = bank5_syms.get(rb_wii)
+    if bank5_sym is None:
+        # Bank 5 ELF doesn't cover this address (or ELF not loaded); degrade
+        return "absent", rb_hex
+    # Resolve Bank 8 map symbol at p1
+    if bank8_sym is None:
+        return "absent", rb_hex
+    if bank5_sym == bank8_sym:
         return "confirmed", rb_hex
     return "contradicted", rb_hex
 
@@ -490,6 +566,12 @@ def main(argv=None):
              "0 = disabled (default). Requires scores field in matches.json.",
     )
     p.add_argument(
+        "--bank5-elf", type=Path, default=DEFAULT_BANK5_ELF,
+        help="Path to the Bank 5 Wii debug ELF (band_r_wii.elf). Used to "
+             "bridge rb3wii wii_addr (Bank 5 addresses) to mangled names for "
+             "the name-level rb3wii cross-check.",
+    )
+    p.add_argument(
         "--selftest", action="store_true",
         help="Run synthetic fixtures and exit. Does not read any real files.",
     )
@@ -538,8 +620,20 @@ def main(argv=None):
     rb3wii_index = load_rb3wii_index(args.rb3wii)
     print(f"  {len(rb3wii_index):,} rb3wii entries indexed.", file=sys.stderr)
 
+    # --- load Bank 5 ELF for rb3wii name-bridging ---
+    print(f"Reading Bank 5 ELF: {args.bank5_elf}", file=sys.stderr)
+    bank5_syms = load_bank5_syms(args.bank5_elf)
+    if bank5_syms:
+        print(f"  {len(bank5_syms):,} Bank 5 text symbols loaded.", file=sys.stderr)
+    else:
+        print("  WARNING: Bank 5 ELF not found or nm failed; "
+              "rb3wii cross-check will report 'absent' for all entries.",
+              file=sys.stderr)
+
     # --- vet ---
-    entries, summary = vet(function_matches, wii_index, rb3wii_index, tier_config)
+    entries, summary = vet(
+        function_matches, wii_index, rb3wii_index, tier_config, bank5_syms
+    )
 
     # --- output ---
     out = {
@@ -557,8 +651,8 @@ def main(argv=None):
         n = summary["tier_counts"].get(tier, 0)
         print(f"  {tier:<14} {n:>5}")
     print()
-    print("=== PER CATEGORY (game-code rows) ===")
-    for cat in ("band3", "main"):
+    print("=== PER CATEGORY ===")
+    for cat in ("band3", "system", "network", "main", "sdk", "unresolved"):
         ctiers = summary["per_category"].get(cat, {})
         if ctiers:
             print(f"  {cat}:")
@@ -596,12 +690,27 @@ def run_selftests():
         0x80400000: {"symbol": "AccAcc__6AccMgrFv","tu":"AccMgr.o","category":"band3","size":80},
         0x80400200: {"symbol": "AccB__6AccMgrFv",  "tu":"AccMgr.o","category":"band3","size":80},
     }
-    # rb3wii index: 0x82100010 confirms, 0x82200020 contradicts
+    # rb3wii index: 0x82100010 confirms, 0x82200020 contradicts.
+    # Bank 5 wii_addrs are different from Bank 8 wii_addrs (different builds).
+    # We use synthetic Bank 5 addrs: 0x90100000 for Foo (confirmed), 0x90999999
+    # for the contradicted entry (Bank 5 ELF will say a different symbol there).
     rb3wii_index = {
-        0x82100010: {"rb3_addr": "0x82100010", "wii_addr": hex(0x80100000),
+        # confirmed: rb3wii points to Bank5 0x90100000 which nm says "Foo__3BarFv"
+        # matches Bank8 symbol at p1=0x80100000 -> "Foo__3BarFv" -> confirmed
+        0x82100010: {"rb3_addr": "0x82100010", "wii_addr": hex(0x90100000),
                      "wii_name": "Bar::Foo()", "similarity": 1.0, "confidence": 0.96},
-        0x82200020: {"rb3_addr": "0x82200020", "wii_addr": "0x80999999",
+        # contradicted: rb3wii points to Bank5 0x90999999 which nm says "Other__Fn"
+        # mismatches Bank8 symbol at p1=0x80100080 -> "Baz__3BarFv" -> contradicted
+        0x82200020: {"rb3_addr": "0x82200020", "wii_addr": "0x90999999",
                      "wii_name": "SomeOther::Fn()", "similarity": 1.0, "confidence": 0.96},
+    }
+
+    # Synthetic Bank 5 symbol table (addr -> mangled name)
+    # 0x90100000: "Foo__3BarFv" -> matches Bank8 at 0x80100000 -> confirmed
+    # 0x90999999: "Other__Fn"   -> mismatches Bank8 at 0x80100080 -> contradicted
+    bank5_syms = {
+        0x90100000: "Foo__3BarFv",
+        0x90999999: "Other__Fn",
     }
 
     matches = [
@@ -644,7 +753,9 @@ def run_selftests():
          "match_types": ["StrUniqueFuncRefsHasher"], "p1_name": "Sys__5EngineFv", "p2_name": "FN10"},
     ]
 
-    entries, summary = vet(matches, wii_index, rb3wii_index, DEFAULT_TIER_CONFIG)
+    entries, summary = vet(
+        matches, wii_index, rb3wii_index, DEFAULT_TIER_CONFIG, bank5_syms
+    )
 
     # Build lookup by p2 for assertions
     by_p2 = {parse_addr(e["xenon_addr"]): e for e in entries}
@@ -660,7 +771,8 @@ def run_selftests():
         if e["rb3wii_check"] != expected_rb3wii:
             errors.append(f"{p2_hex}: rb3wii_check {e['rb3wii_check']!r} != expected {expected_rb3wii!r}")
 
-    # SeedMatch -> ACCEPT, rb3wii: p2=0x82100010, wii agrees 0x80100000 -> confirmed
+    # SeedMatch -> ACCEPT; rb3wii: p2=0x82100010, Bank5[0x90100000]="Foo__3BarFv"
+    # == Bank8 symbol at p1=0x80100000 -> confirmed
     check("82100010", "ACCEPT", "confirmed")
     # ExactInstructions -> ACCEPT, not in rb3wii -> absent
     check("82100020", "ACCEPT", "absent")
@@ -679,15 +791,14 @@ def run_selftests():
     check("82b00000", "REJECT", "absent")
 
     # rb3wii contradicted: p2=0x82200020, wii by ghidriff=0x80100080 (Baz),
-    # rb3wii says 0x80999999 -> contradicted
-    check("82100010", "ACCEPT", "confirmed")
-    # Manually test the contradicted case by inserting a VT entry
+    # rb3wii points to Bank5 0x90999999 = "Other__Fn" != "Baz__3BarFv" -> contradicted
+    # Manually test the contradicted case by inserting an ExactInstr entry
     matches2 = [
         {"p1_addr": "80100080", "p2_addr": "82200020",
          "match_types": ["ExactInstructionsFunctionHasher"],
          "p1_name": "Baz__3BarFv", "p2_name": "FN_TEST"},
     ]
-    entries2, _ = vet(matches2, wii_index, rb3wii_index, DEFAULT_TIER_CONFIG)
+    entries2, _ = vet(matches2, wii_index, rb3wii_index, DEFAULT_TIER_CONFIG, bank5_syms)
     if not entries2:
         errors.append("Contradicted test: no entries produced")
     else:
@@ -695,10 +806,43 @@ def run_selftests():
         if e2["rb3wii_check"] != "contradicted":
             errors.append(f"Contradicted test: got {e2['rb3wii_check']!r}, expected 'contradicted'")
 
+    # Test wii_addr emitted unconditionally even when p1 not in wii_index
+    matches_novel = [
+        {"p1_addr": "80ff0000", "p2_addr": "82cc0000",
+         "match_types": ["SeedMatch"], "p1_name": "Novel__Fn", "p2_name": "FN_NOVEL"},
+    ]
+    entries_novel, _ = vet(matches_novel, wii_index, rb3wii_index, DEFAULT_TIER_CONFIG, bank5_syms)
+    if not entries_novel:
+        errors.append("wii_addr-always test: no entries produced")
+    else:
+        en = entries_novel[0]
+        if en.get("wii_addr") != "0x80ff0000":
+            errors.append(f"wii_addr-always: got {en.get('wii_addr')!r}, expected '0x80ff0000'")
+
+    # Test ExactMnemonicsFunctionHasher is NOT in default ACCEPT (goes to CAUTION)
+    matches_mnem = [
+        {"p1_addr": "80100000", "p2_addr": "82dd0000",
+         "match_types": ["ExactMnemonicsFunctionHasher"], "p1_name": "Foo__3BarFv", "p2_name": "FN_MNEM"},
+    ]
+    entries_mnem, _ = vet(matches_mnem, wii_index, rb3wii_index, DEFAULT_TIER_CONFIG, bank5_syms)
+    if not entries_mnem:
+        errors.append("ExactMnemonics default CAUTION test: no entries produced")
+    else:
+        em = entries_mnem[0]
+        if em["tier"] != "CAUTION":
+            errors.append(f"ExactMnemonics default: tier {em['tier']!r} != 'CAUTION'")
+    # And confirm --accept-types ExactMnemonicsFunctionHasher promotes it to ACCEPT
+    cfg_mnem = dict(DEFAULT_TIER_CONFIG)
+    cfg_mnem["accept_types"] = list(set(cfg_mnem["accept_types"]) | {"ExactMnemonicsFunctionHasher"})
+    entries_mnem2, _ = vet(matches_mnem, wii_index, rb3wii_index, cfg_mnem, bank5_syms)
+    if not entries_mnem2 or entries_mnem2[0]["tier"] != "ACCEPT":
+        errors.append(f"ExactMnemonics via --accept-types: expected ACCEPT, got "
+                      f"{entries_mnem2[0]['tier'] if entries_mnem2 else 'nothing'!r}")
+
     # Test --accept-types override: adding StringsRefsHasher to accept
     cfg2 = dict(DEFAULT_TIER_CONFIG)
     cfg2["accept_types"] = list(set(cfg2["accept_types"]) | {"StringsRefsHasher"})
-    entries3, _ = vet(matches, wii_index, rb3wii_index, cfg2)
+    entries3, _ = vet(matches, wii_index, rb3wii_index, cfg2, bank5_syms)
     by_p2_cfg2 = {parse_addr(e["xenon_addr"]): e for e in entries3}
     srh_e = by_p2_cfg2.get(parse_addr("82a00000"))
     if srh_e is None:
@@ -719,7 +863,7 @@ def run_selftests():
     ]
     cfg4 = dict(DEFAULT_TIER_CONFIG)
     cfg4["min_vt_score"] = 10.0
-    entries4, _ = vet(matches4, wii_index, rb3wii_index, cfg4)
+    entries4, _ = vet(matches4, wii_index, rb3wii_index, cfg4, bank5_syms)
     by_p2_4 = {parse_addr(e["xenon_addr"]): e for e in entries4}
     low_e = by_p2_4.get(parse_addr("82200000"))
     high_e = by_p2_4.get(parse_addr("82200100"))
@@ -731,13 +875,23 @@ def run_selftests():
         if high_e["tier"] not in ("FILTERED_VT", "CAUTION"):
             errors.append(f"min_vt_score high: tier {high_e['tier']!r} unexpected")
 
+    # Count total checks
+    n_checks = (
+        10  # tier+rb3wii for main 10 entries
+        + 1  # contradicted explicit test
+        + 1  # wii_addr-always
+        + 2  # ExactMnemonics default CAUTION + via --accept-types
+        + 1  # --accept-types SRH override
+        + 2  # min_vt_score low+high
+    )
+
     if errors:
         print("SELFTEST FAILURES:")
         for err in errors:
             print(f"  FAIL: {err}")
         sys.exit(1)
     else:
-        print(f"SELFTEST: all {10 + 3} checks passed.")
+        print(f"SELFTEST: all {n_checks} checks passed.")
 
 
 if __name__ == "__main__":
