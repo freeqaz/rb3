@@ -220,21 +220,58 @@
             tx.onerror = function() { reject(tx.error); };
         });
     }
+    // Q6 (incremental-load-perf PLAN §5 T5) — IDB pre-warm cap.
+    //
+    // loadAllRows() pulls every cached row into window.__rb3IdbCache, a JS Map
+    // held in the renderer's ArrayBuffer heap, BEFORE wasm even starts. The
+    // synchronous warm-boot path (native_file.cpp cacheTryHit) needs that Map
+    // because IDB can't be read synchronously inside the File ctor. But a hovered
+    // preview/gameplay mogg is 31-36 MB; hover ten songs and the NEXT boot would
+    // eager-load ~360 MB into JS memory — a latent OOM (the same heap-growth class
+    // as the runtime-put OOM FIX above, but on the boot path).
+    //
+    // Fix: exclude oversized rows (and .mogg keys, which are always oversized)
+    // from the eager Map. These are NEVER on the synchronous boot-critical path —
+    // the warm-boot Map exists to satisfy the small milo/texture/dta opens the App
+    // ctor does; large moggs are opened later (preview hover / song start), off the
+    // boot frame. An excluded row stays in IDB (not deleted); its first
+    // session-touch misses cacheTryHit and falls to the network exactly as a
+    // never-cached asset's first touch does today (one fetch → MEMFS-resident for
+    // the rest of the session → written back through to IDB), so correctness is
+    // unchanged. Only the unbounded eager-load is removed. Q2/Q3/A1 (range moggs +
+    // hover prefetch) are the real fix for the mogg fetch cost; this just stops the
+    // cache from OOMing the renderer at boot.
+    var PREWARM_MAX_ROW_BYTES = 4 * 1024 * 1024; // 4 MB — boot-critical assets are
+                                                 // well under this; moggs are far over.
+    function isOversizedKey(key) {
+        // .mogg (and any future large-media key) is excluded by name as a belt-and-
+        // suspenders even if its byteLength were somehow missing.
+        return typeof key === 'string' && /\.mogg$/i.test(key);
+    }
     function loadAllRows(db) {
         return new Promise(function(resolve, reject) {
             var tx = db.transaction(STORE, 'readonly');
             var store = tx.objectStore(STORE);
-            var bytes = 0, rows = 0;
+            var bytes = 0, rows = 0, skipped = 0, skippedBytes = 0;
             var cursorReq = store.openCursor();
             cursorReq.onsuccess = function(e) {
                 var c = e.target.result;
-                if (!c) { resolve({ rows: rows, bytes: bytes }); return; }
+                if (!c) {
+                    resolve({ rows: rows, bytes: bytes, skipped: skipped, skippedBytes: skippedBytes });
+                    return;
+                }
                 var v = c.value;
                 if (v && v.byteLength != null) {
-                    var u8 = v instanceof Uint8Array ? v : new Uint8Array(v);
-                    window.__rb3IdbCache.set(c.key, u8);
-                    bytes += u8.byteLength;
-                    rows++;
+                    if (v.byteLength > PREWARM_MAX_ROW_BYTES || isOversizedKey(c.key)) {
+                        // Oversized: leave it in IDB, keep it out of the heap Map.
+                        skipped++;
+                        skippedBytes += v.byteLength;
+                    } else {
+                        var u8 = v instanceof Uint8Array ? v : new Uint8Array(v);
+                        window.__rb3IdbCache.set(c.key, u8);
+                        bytes += u8.byteLength;
+                        rows++;
+                    }
                 }
                 c.continue();
             };
@@ -323,7 +360,10 @@
                 }
                 return loadAllRows(db).then(function(stats) {
                     window.__rb3IdbReady = 1;
-                    console.log('[rb3-idb] loaded ' + stats.rows + ' rows (' + (stats.bytes/1048576).toFixed(2) + ' MB) — version=' + liveVersion);
+                    var msg = '[rb3-idb] loaded ' + stats.rows + ' rows (' + (stats.bytes/1048576).toFixed(2) + ' MB) — version=' + liveVersion;
+                    if (stats.skipped)
+                        msg += '; skipped ' + stats.skipped + ' oversized row(s) (' + (stats.skippedBytes/1048576).toFixed(2) + ' MB, lazy via network on first touch)';
+                    console.log(msg);
                 });
             });
         }).catch(function(err) {
