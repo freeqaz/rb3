@@ -31,6 +31,12 @@ int gLoaderPullCalls = 0;            // PollUntilLoaded invocations (web arm)
 
 #ifdef HX_NATIVE
 #include <cstdlib> // QW-1: getenv/atof for RB3_LOADER_BUDGET_MS (guarded out of Wii asm)
+#include <cstring> // N1: strncmp/strlen for the read-ahead path normalization
+#include "obj/DirLoader.h" // N1: detect a DirLoader's pre-open state (mStream == 0)
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include "platform/WebAssets.h" // N1: WebAssetsEnsureResidentAsync — async, in-flight-deduped
 #endif
 
 LoadMgr TheLoadMgr;
@@ -248,6 +254,10 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
     }
     Timer sinceYield;
     sinceYield.Restart();
+    // N1: kick the next K queued loaders' fetches up front so the rest of the
+    // pending chain (e.g. the splash → main_hub → song_select milo sequence the
+    // App boot drives through this path) starts downloading while file k loads.
+    KickReadAhead();
     while (!theLdr->IsLoaded()) {
         if (--maxIter <= 0) {
             MILO_WARN("PollUntilLoaded: web iteration cap hit waiting for %s",
@@ -291,6 +301,9 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
             ++gLoaderPullSliceYields;
             gLoaderPullSliceYieldMs += Timer::CyclesToMs(yieldTimer.mCycles);
             sinceYield.Restart();
+            // N1: re-kick (deduped) so loaders that the front's dep chain pushed
+            // onto mLoading since the last kick also start fetching.
+            KickReadAhead();
         }
     }
     SetGPHangDetectEnabled(true, funcName);
@@ -377,6 +390,150 @@ int LoadMgr::AsyncUnload() const { return mAsyncUnload; }
 void LoadMgr::StartAsyncUnload() { mAsyncUnload++; }
 void LoadMgr::FinishAsyncUnload() { mAsyncUnload--; }
 
+#ifdef HX_NATIVE
+// ===========================================================================
+// N1 — loader-queue fetch read-ahead (07-network-matrix.md ranked fix #1).
+//
+// LoadMgr only ever advances mLoading.front(), and a file's network fetch is
+// only kicked when its WebPendingFile is *constructed* (native_file.cpp's
+// MaybeOpenAsync, reached only when the loader becomes front and calls
+// OpenFile). So on web every whole-file milo download is strictly serial:
+// queued-but-not-front loaders have ZERO fetch in flight (the matrix measured
+// 0/38 overlapping downloads), and each file pays its full transfer + 1 RTT
+// back-to-back, turning ~85 MB of per-journey milos into a tens-of-seconds
+// (minutes at low bandwidth) serial chain.
+//
+// Fix: each Poll()/PollUntilLoaded turn, walk the next K queued loaders that
+// have NOT yet opened their file and kick the engine's already-async,
+// already-deduped fetch for their paths (WebAssetsEnsureResidentAsync). This
+// overlaps download of file k+1..k+N with the download+parse of file k,
+// pipelining the chain. We only kick the fetch — we never call OpenFile early
+// nor mutate loader state, so MEMFS is simply warm by the time each loader's
+// turn comes and its normal open path takes the resident fast path.
+//
+// Constraints honored: (1) only loaders that have NOT opened yet (a FileLoader
+// with mFile != 0 / a DirLoader with mStream != 0 has already kicked its own
+// fetch); (2) .mogg is skipped — it takes the Range-streaming path and
+// whole-filing it would re-download tens of MB; (3) the actual fetch call is
+// __EMSCRIPTEN__-only (WebAssets.h is web-only) — on plain native this whole
+// helper is a cheap no-op (RB3_LOADER_READAHEAD default still parsed, but the
+// per-loader body does nothing). Env: RB3_LOADER_READAHEAD (default 6, 0 = off).
+//
+// EVERY added line is inside #ifdef HX_NATIVE — the Wii build is byte-identical.
+
+static int LoaderReadAheadCount() {
+    static int sCount = -1;
+    if (sCount < 0) {
+        sCount = 6; // default: pipeline up to 6 queued loaders ahead of front
+        if (const char *e = ::getenv("RB3_LOADER_READAHEAD")) {
+            if (e[0])
+                sCount = atoi(e);
+        }
+        if (sCount < 0)
+            sCount = 0;
+    }
+    return sCount;
+}
+
+#ifdef __EMSCRIPTEN__
+// Normalize an OPEN path (the exact string the loader will pass to NewFile) to
+// the server-relative key MaybeOpenAsync uses (strip a leading "/data/" or
+// "/"), then kick the async fetch unless it is a .mogg (Range path). Mirrors
+// native_file.cpp:1073-1099 so the warmed MEMFS key matches the loader's later
+// open probe.
+static void LoaderKickFetch(const char *path) {
+    if (!path || !path[0])
+        return;
+    const char *rel = path;
+    if (std::strncmp(rel, "/data/", 6) == 0)
+        rel += 6;
+    else if (rel[0] == '/')
+        rel += 1;
+    size_t n = std::strlen(rel);
+    if (n >= 5 && std::strcmp(rel + n - 5, ".mogg") == 0)
+        return; // Range-streamed: warming the whole file would re-download MBs
+    // Already resident (boot bundle / prior fetch / prior warm) → nothing to do;
+    // skip the manifest probe too. Cheap C-side map lookup.
+    if (WebAssetsIsResident(rel))
+        return;
+    // Only warm files the loader's own open would async-fetch: a manifest-known
+    // ASSETS_DIR asset (size >= 0). A -1 means "not a manifest-backed async-open
+    // candidate" — for those MaybeOpenAsync falls back to the legacy sync path
+    // (fallback roots / extraction-gap 404s), so warming them would just issue a
+    // redundant/404 fetch (e.g. patchcreator/og/gen/patch_warpmesh.milo_xbox,
+    // which is absent on the server). This gates the warm to exactly the set the
+    // real open takes the async path for, and kills speculative 404 traffic.
+    if (WebAssetsManifestSize(rel) < 0)
+        return;
+    WebAssetsEnsureResidentAsync(rel);
+}
+#endif
+
+// Classify a queued loader for read-ahead. Returns the OPEN path the loader
+// will use (the same string that reaches NewFile/HmxNativeOpenFile) if the
+// loader has NOT opened its backing file/stream yet and so would benefit from a
+// fetch kick; returns NULL if it has already opened (its own fetch is in flight
+// / resident) or is an unwarmable subclass. CRITICAL: a cache-mode DirLoader
+// rewrites foo.milo -> foo/gen/foo.milo_<plat> via DirLoader::CachedPath before
+// opening, so we warm THAT key (matching the real open) — warming the bare
+// foo.milo would 404 and miss the real fetch.
+static const char *LoaderReadAheadOpenPath(Loader *ldr) {
+    if (FileLoader *fl = dynamic_cast<FileLoader *>(ldr)) {
+        if (fl->mFile != NULL)
+            return NULL; // already opened (fetch already kicked at OpenFile)
+        return ldr->LoaderFile().c_str(); // FileLoader opens its path verbatim
+    }
+    if (DirLoader *dl = dynamic_cast<DirLoader *>(ldr)) {
+        if (dl->mStream != NULL)
+            return NULL; // ChunkStream already created → fetch already kicked
+        // Same transform DirLoader::OpenFile applies (CachedPath), so the warmed
+        // key == the eventual open key under cache mode.
+        return DirLoader::CachedPath(ldr->LoaderFile().c_str(), false);
+    }
+    // Unknown subclass (e.g. NullLoader) — nothing to warm.
+    return NULL;
+}
+
+// Kick async fetches for the next K queued loaders that have not opened yet.
+// Fetch-kick ONLY: never opens a file early nor touches loader state. A no-op
+// when K==0, when nothing is queued, or (on plain native) per-loader.
+void LoadMgr::KickReadAhead() {
+    int k = LoaderReadAheadCount();
+    if (k <= 0 || mLoading.empty())
+        return;
+    int kicked = 0;
+    int queueDepth = 0;
+    for (std::list<Loader *>::iterator it = mLoading.begin();
+         it != mLoading.end() && kicked < k;
+         ++it) {
+        ++queueDepth;
+        const char *openPath = LoaderReadAheadOpenPath(*it);
+        if (!openPath)
+            continue; // already fetching/resident, or unwarmable — skip
+        ++kicked;
+#ifdef __EMSCRIPTEN__
+        LoaderKickFetch(openPath);
+#endif
+    }
+    // Diagnostic (opt-in, RB3_READAHEAD_DEBUG): how deep is the queue when we
+    // run, and how many of the head loaders were actually warmable? If the
+    // dependency milos are enqueued one-at-a-time (queueDepth ~1), there is
+    // nothing to read ahead and the chain stays serial — which is what the
+    // counts will show. Single getenv-latched static; zero cost when off.
+    static int sDbg = -1;
+    if (sDbg < 0) {
+        sDbg = 0;
+        if (const char *e = ::getenv("RB3_READAHEAD_DEBUG"))
+            if (e[0] && e[0] != '0')
+                sDbg = 1;
+    }
+    if (sDbg && (queueDepth > 1 || kicked > 0)) {
+        MILO_LOG("[readahead] queueDepth=%d kicked=%d (k=%d)\n", queueDepth,
+                 kicked, k);
+    }
+}
+#endif // HX_NATIVE
+
 void LoadMgr::Poll() {
     if (mPeriod <= 0)
         return;
@@ -446,6 +603,10 @@ void LoadMgr::Poll() {
         // mPeriod >= sentinel ⇒ PollUntilEmpty's unbudgeted drain: empty the
         // whole queue (no per-frame break), yielding only every sYieldMs.
         bool drainToEmpty = (mPeriod >= 1e29f);
+        // N1: pipeline the queue — kick the next K queued loaders' fetches once
+        // per Poll() turn so file k+1..k+N download while file k loads. Fetch-
+        // kick only (no early open, no state mutation). See KickReadAhead.
+        KickReadAhead();
         // Per-iteration mTimer drives each state func's internal CheckSplit();
         // budgetTimer bounds the cumulative per-frame cost; sinceYield gates how
         // often we pay for a browser composite yield.
