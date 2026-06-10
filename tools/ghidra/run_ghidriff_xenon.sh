@@ -215,7 +215,15 @@ CMD=(env JAVA_HOME="${JAVA_HOME}"
      --project-name "rb3-wii-xenon-diff"
      --force-diff
      --seed-matches "${SEEDS}"
-     --bsim
+     # BSim default OFF for this cross-binary run: on the 2026-06-10 attempt it
+     # decompiled both programs then entered a SINGLE-THREADED similarity-compute
+     # phase that pegged one core for 70+ min with no log output and no end (65k
+     # stripped Xenon funcs, many with decompiler timeouts) — and it gates the
+     # VTCombinedReference stage behind it. Re-enable with RB3_XENON_BSIM=1 only
+     # if you can give it hours. The scored VT correlator (below) does NOT
+     # decompile, so it sidesteps that cost.
+     ${RB3_XENON_BSIM:+--bsim}
+     ${RB3_XENON_BSIM:---no-bsim}
      --vt-ref-correlators
      --vt-ref-min-score 9.5
      --min-func-len 16
