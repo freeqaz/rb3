@@ -7,6 +7,41 @@
 #include "utl/Symbols.h"
 #include "utl/Messages.h"
 
+#ifdef HX_NATIVE
+// TASK T3 (incremental-load-perf): defer the (web-blocking) NewStream open until
+// the preview mogg is MEMFS-resident. On web, TheSynth->NewStream -> NewFile does
+// a synchronous XHR of the full 32-37 MB mogg; doing that inside PrepareSong
+// freezes the canvas for the whole network round-trip. Instead PrepareSong now
+// computes the exact mogg path it would open, and if the bytes aren't resident
+// it kicks an async prefetch and stays in kPreparingSong with mStream==0; the
+// kPreparingSong poll constructs the stream once the bytes land. On native the
+// host file is always resident so the stream is built immediately (identical to
+// pre-T3 behavior). Flag RB3_PREVIEW_PREFETCH_OFF restores synchronous open.
+#include "rb3_prefetch_native.h"
+
+namespace {
+// Single tracked pending preview (one SongPreview instance is live at a time —
+// MusicLibrary::mSongPreview). Holds the exact server-relative mogg path the
+// deferred NewStream will open so the residency gate and the open agree.
+String gPendingMoggRel;
+bool gPendingActive = false;
+
+// Drop the deferred-construction state on any preview exit (selection change,
+// stop, content failure, terminate). Must be called on EVERY path that leaves
+// kPreparingSong before the stream is constructed, so a later mogg arrival can't
+// resurrect a stale preview (DC3 L6 ownership: never act on a fetch you no longer
+// own). The in-flight fetch itself can't be aborted; its bytes harmlessly warm
+// MEMFS. Idempotent.
+void RB3ClearPendingPreview() {
+    if (gPendingActive || !gPendingMoggRel.empty()) {
+        gPendingActive = false;
+        gPendingMoggRel = String();
+        RB3PrefetchCancel();
+    }
+}
+} // namespace
+#endif
+
 SongPreview::SongPreview(const SongMgr &mgr)
     : mSongMgr(mgr), mStream(0), mFader(0), mMusicFader(0), mCrowdSingFader(0), unk34(0),
       mAttenuation(0.0f), mState(kIdle), mStartMs(0.0f), mEndMs(0.0f),
@@ -16,6 +51,9 @@ SongPreview::SongPreview(const SongMgr &mgr)
 SongPreview::~SongPreview() { Terminate(); }
 
 void SongPreview::Init() {
+#ifdef HX_NATIVE
+    RB3ClearPendingPreview();
+#endif
     mSong = Symbol(0);
     mSongContent = Symbol(0);
     RELEASE(mStream);
@@ -33,6 +71,9 @@ void SongPreview::Init() {
 }
 
 void SongPreview::Terminate() {
+#ifdef HX_NATIVE
+    RB3ClearPendingPreview();
+#endif
     DetachFaders();
     mSong = Symbol(0);
     mSongContent = Symbol(0);
@@ -48,6 +89,12 @@ void SongPreview::Terminate() {
 
 void SongPreview::Start(Symbol sym) {
     MILO_ASSERT(mFader && mMusicFader && mCrowdSingFader, 0x65);
+#ifdef HX_NATIVE
+    // T3: a new Start (selection change or stop) supersedes any pending preview
+    // fetch — drop the deferred-construction state so a late mogg arrival can't
+    // resurrect the old hover. The new song re-prefetches via PrepareSong's gate.
+    RB3ClearPendingPreview();
+#endif
     if (sym.Null()) {
         unk70 = false;
         unk64 = false;
@@ -134,6 +181,9 @@ void SongPreview::ContentFailed(const char *contentName) {
         mSong = Symbol(0);
         mSongContent = Symbol(0);
         mState = kIdle;
+#ifdef HX_NATIVE
+        RB3ClearPendingPreview();
+#endif
     }
 }
 
@@ -197,6 +247,16 @@ void SongPreview::Poll() {
         break;
     }
     case kPreparingSong:
+#ifdef HX_NATIVE
+        // T3: while the preview mogg fetch is pending, mStream is still null —
+        // retry construction (PrepareSong's gate builds the stream once the bytes
+        // are MEMFS-resident). On native this never trips (resident immediately).
+        if (mStream == 0) {
+            if (gPendingActive)
+                PrepareSong(mSong);
+            break;
+        }
+#endif
         if (mStream->IsReady()) {
             mFader->SetVal(-48.0f);
             mFader->DoFade(0.0f, mFadeTime);
@@ -205,6 +265,9 @@ void SongPreview::Poll() {
         }
         break;
     case kDeletingSong:
+#ifdef HX_NATIVE
+        RB3ClearPendingPreview(); // covers kPreparingSong(pending) -> kDeletingSong
+#endif
         delete mStream;
         mStream = 0;
         mState = kIdle;
@@ -285,6 +348,38 @@ void SongPreview::PrepareSong(Symbol s) {
     RELEASE(mStream);
     SongInfo *data = mSongMgr.SongAudioData(s);
     const char *filename = data->GetBaseFileName();
+#ifdef HX_NATIVE
+    // T3 residency gate. Compute the exact server-relative mogg path this call
+    // will open (mirrors the construction below) and, on web, defer the blocking
+    // NewStream until the bytes are MEMFS-resident. The deferral keeps mStream==0
+    // and state kPreparingSong; SongPreview::Poll re-enters here once resident.
+    // On native (resident == true) and with RB3_PREVIEW_PREFETCH_OFF this is a
+    // straight pass-through to today's synchronous construction.
+    if (RB3PreviewPrefetchEnabled()) {
+        String moggRel;
+        if (!unk71) {
+            String p(filename);
+            if (p.find("dlc/") == 0)
+                p.erase(0xc, 5);
+            moggRel = p + "_prev.mogg";
+        } else {
+            moggRel = String(filename) + ".mogg";
+        }
+        if (!RB3MoggResident(moggRel.c_str())) {
+            RB3PrefetchMogg(moggRel.c_str());
+            gPendingMoggRel = moggRel;
+            gPendingActive = true;
+            MILO_LOG("Preview: deferring NewStream for %s (mogg fetch pending)\n",
+                     moggRel.c_str());
+            return; // stay in kPreparingSong with mStream==0; Poll retries.
+        }
+        if (gPendingActive)
+            MILO_LOG("Preview: mogg resident, constructing stream for %s\n",
+                     moggRel.c_str());
+        gPendingActive = false;
+        gPendingMoggRel = String();
+    }
+#endif
     if (!unk71) {
         String str(filename);
         if (str.find("dlc/") == 0) {

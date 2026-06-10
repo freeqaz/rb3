@@ -70,6 +70,16 @@
 #include "utl/Symbols3.h"
 #include "utl/Symbols4.h"
 
+#ifdef HX_NATIVE
+// TASK T3 (incremental-load-perf): preview-hover mogg prefetch. Warm the hovered
+// song's mogg async during the ~1 s preview debounce window so SongPreview's
+// later (blocking on web) NewStream open finds the bytes already MEMFS-resident.
+// Guarded out of the matched Wii build. SongInfo::GetBaseFileName is reachable
+// here via the meta/SongPreview.h -> SongMgr -> SongMetadata -> SongInfoCopy
+// transitive include chain.
+#include "rb3_prefetch_native.h"
+#endif
+
 MusicLibrary *TheMusicLibrary;
 
 class WiiFriendsProvider {
@@ -480,10 +490,46 @@ void MusicLibrary::ClearSongPreview() {
     mSongPreview.Start(gNullStr);
 }
 
+#ifdef HX_NATIVE
+namespace {
+// Resolve the highlighted node to a real song token (mirrors CheckSongPreview's
+// subheader -> first-child-song fallback) and async-prefetch its preview mogg.
+// Best-effort: the authoritative residency gate is in SongPreview::PrepareSong,
+// which fetches whatever exact path it ends up opening. On native this is a
+// no-op (RB3PrefetchMogg short-circuits) so behavior is unchanged.
+void RB3PrefetchHighlightedPreview(SortNode *node) {
+    if (!RB3PreviewPrefetchEnabled() || !node)
+        return;
+    if (node->GetType() == kNodeSubheader) {
+        SubheaderSortNode *ssn = dynamic_cast<SubheaderSortNode *>(node);
+        if (ssn)
+            node = ssn->GetFirstChildSong();
+    }
+    if (!node || node->GetType() != kNodeSong)
+        return;
+    Symbol token = node->GetToken();
+    if (!TheSongMgr.HasSong(token, true))
+        return;
+    if (TheSongMgr.IsRestricted(TheSongMgr.GetSongIDFromShortName(token, true)))
+        return;
+    SongInfo *info = TheSongMgr.SongAudioData(token);
+    if (!info)
+        return;
+    const char *base = info->GetBaseFileName();
+    if (base && base[0])
+        RB3PrefetchMogg(MakeString("%s.mogg", base));
+}
+} // namespace
+#endif
+
 void MusicLibrary::StartSongPreview() {
     if (TheMusicLibrary->GetHighlightedNode()->GetToken() != mLastSongPreview) {
         ClearSongPreview();
         mSongPreviewTimer.Start();
+#ifdef HX_NATIVE
+        // Warm the hovered song's mogg during the debounce window (see helper).
+        RB3PrefetchHighlightedPreview(TheMusicLibrary->GetHighlightedNode());
+#endif
     }
 }
 
