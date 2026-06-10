@@ -6,6 +6,10 @@
 #ifdef HX_NATIVE
 #include <cstdlib> // getenv/atof for the RB3_STREAM_BUF_SECS native ring-depth knob
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h> // emscripten_sleep — JSPI yield in Resync's ReadDone wait
+#include "os/Timer.h"              // throttle the yield like Loader.cpp PollUntilLoaded
+#endif
 #ifdef HX_NATIVE
 // std::mem_fun was removed in C++17; std::mem_fn is the LP64 replacement.
 #define mem_fun mem_fn
@@ -542,8 +546,68 @@ void StandardStream::Stop() {
 
 void StandardStream::Resync(float f) {
     int bytes;
+#ifdef HX_NATIVE
+    // Resync must wait for any in-flight read to drain before it Destroy()s the
+    // reader and re-Seek()s the file — that contract is unchanged. What changes
+    // is HOW we wait. The matched Wii body is `while (!mFile->ReadDone(bytes));`,
+    // a zero-yield spin. On native that completes (synchronous stdio I/O), but
+    // on the web build mFile may be a WebRangeFile whose ReadDone() can only flip
+    // to true after the browser event loop runs the emscripten_fetch callback —
+    // and this loop never returns control to the event loop, so the tab hangs
+    // forever (latent web deadlock; matrix doc 07 suspect c). Route the wait
+    // through the same JSPI yield pattern Loader.cpp's PollUntilLoaded uses:
+    // throttle a full event-loop turn (emscripten_sleep(0)) into the wait so the
+    // fetch can land, gated to ~one yield per RB3_LOADER_MIN_YIELD_MS of spin so
+    // the canvas keeps compositing without pathological suspend churn. A hard
+    // iteration cap is a final safety valve. On plain native (no __EMSCRIPTEN__)
+    // the wait is the original spin, byte-faithful in spirit (I/O is sync there).
+    // Escape hatch: RB3_RESYNC_YIELD_OFF=1 restores the bare spin.
+#ifdef __EMSCRIPTEN__
+    static int sYieldOff = -1;
+    if (sYieldOff < 0) {
+        const char *e = ::getenv("RB3_RESYNC_YIELD_OFF");
+        sYieldOff = (e && e[0] && e[0] != '0') ? 1 : 0;
+    }
+    static float sMinYieldMs = -1.0f;
+    if (sMinYieldMs < 0.0f) {
+        sMinYieldMs = 16.0f; // mirror Loader.cpp PollUntilLoaded's default
+        if (const char *e = ::getenv("RB3_LOADER_MIN_YIELD_MS")) {
+            if (e[0])
+                sMinYieldMs = (float)atof(e);
+        }
+        if (sMinYieldMs < 0.0f)
+            sMinYieldMs = 0.0f;
+    }
+    if (sYieldOff) {
+        while (!mFile->ReadDone(bytes))
+            ;
+    } else {
+        int maxIter = 2000000; // safety valve: a permanently-stalled fetch can't
+                               // hang the tab forever (watchdog-class backstop)
+        Timer sinceYield;
+        sinceYield.Restart();
+        while (!mFile->ReadDone(bytes)) {
+            if (--maxIter <= 0) {
+                MILO_WARN("StandardStream::Resync: ReadDone wait cap hit");
+                break;
+            }
+            sinceYield.Split();
+            if (Timer::CyclesToMs(sinceYield.mCycles) >= sMinYieldMs) {
+                emscripten_sleep(0); // JSPI: suspend -> event loop (fetch lands) -> resume
+                sinceYield.Restart();
+            }
+        }
+    }
+#else
+    // Plain native: synchronous I/O makes ReadDone complete promptly; keep the
+    // bare spin (matches the Wii contract, no event loop to yield to).
     while (!mFile->ReadDone(bytes))
         ;
+#endif
+#else
+    while (!mFile->ReadDone(bytes))
+        ;
+#endif
     Destroy();
     mFile->Seek(0, 0);
     float f88 = mJumpFromMs;
