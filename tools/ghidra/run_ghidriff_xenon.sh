@@ -229,6 +229,7 @@ CMD=(env JAVA_HOME="${JAVA_HOME}"
      --min-func-len 16
      --implied-min-ratio 0.9
      --skip-correlators "BulkBasicBlockMnemonicHash,SigCallingCalledHasher,StructuralGraphExactHash"
+     --decompiler-timeout "${RB3_XENON_DECOMP_TIMEOUT:-20}"
      --log-level INFO
      --log-path "${OUT_DIR}/ghidriff.log")
 
