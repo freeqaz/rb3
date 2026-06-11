@@ -683,3 +683,80 @@ regression backstop. Use `scripts/web/_netmatrix.mjs` (cold-IDB per arm) +
 `/tmp/rb3perf-w4-integ/analyze_net.py` for the overlap/chunk-reuse signals;
 `peakConcurrent` and `chunkReDownloads`, not `miloSerialΣ`, are the trustworthy
 columns once any pipelining is active.
+
+---
+
+## Wave 5 results
+
+Wave 4 established the pipe is **bandwidth-saturated** at 4–8 Mbps (wall ≈
+totalBytes / bandwidth), so Wave 5 attacked the two remaining levers it named:
+**(1) BYTES on the wire** (research/08) and **(2) the game_screen first-frame
+reveal hitch** (research/09). Integration bumped `MILO_ENGINE_PIN`
+f75339a→**8fb669d** (one commit, `38c5ca7e`).
+
+### Landed (per task)
+
+| Task | What | Repo / commit | Status | Flag (default ON) |
+|---|---|---|---|---|
+| W5-T1 | Server q11 offline pre-warm + close compression coverage holes (.pcm/.png_xbox/.mid/manifest) | rb3 `2b9d8e64` | landed | `--no-encode` off-switch; `--prewarm`; `prewarm_encode_cache.py` |
+| W5-T2 | Vorbis SFX sidecars — replace ~59 MB raw PCM wire with vorbis `.ogg` | rb3 `e5728fc0` | landed | `RB3_SFX_OGG_OFF`; converter `--no-ogg` / `RB3_OGG_QUALITY` |
+| W5-T3 | Wire-byte census tool (`_netbytes.py`) + integrated byte gates | rb3 `78e4d074`, `b104b383` | landed | — |
+| T1 | Engine: L1 vertex-unpack cache + `WarmGpuForDir` API | engine `8fb669d`, rb3 trace `dbaa7b41` | landed | `RB3_UNPACK_CACHE_OFF` |
+| T2 | rb3: vignette-dwell GPU-warm driver + reveal-drain pre-kick | rb3 `2850b9b1`, `9cde0dba` | landed-partial (L2 sweep default-OFF) | `RB3_GAMEWARM_OFF` (+ `_HOLD`/`_DBG`/tuning) |
+| T3 | Web `lp`/`lpu` timing wiring + `firstframe-gate.mjs` | rb3 `c816bb6d` | landed | — |
+| pin | Engine pin bump | rb3 `38c5ca7e` | landed | — |
+
+### Gates (cold per arm, release build, own server :8446 after full q11 prewarm)
+
+| Gate | Condition | Result | Verdict |
+|---|---|---|---|
+| Wii byte-identical | `report.json` | 31951 / 41254 funcs @ 62.88397% == baseline | **PASS** |
+| Native | build + `rb3-tests` + song-end | tests 13/13; song-end reaches game_screen→game-over | **PASS** |
+| Audio (W5-T2 SFX path) | `audio_verify --selftest`; gameplay `--rank` | selftest 6/6; rank WINNER `20thcenturyboy` chroma 0.961 (+0.104 margin) = MATCH | **PASS** |
+| G-c4 (primary) | 4 Mbps / 150 ms | journey **COMPLETES** (game_screen @ 248 s); **wire 115.49 MB** vs ~181 MB W4 baseline (−36 %) | **PASS** |
+| G-c3 | 8 Mbps / 80 ms | game_screen @ 151 s; 123.0 MB; no freeze regression (boot frozenΣ 323) | **PASS** |
+| G-c1 (backstop) | 20 Mbps / 40 ms | game_screen @ 91 s; splash→hub longest 33 ms; **3 cold hovers frozenΣ=0** | **PASS** |
+| G-c5 (retry) | 1.5 Mbps / 300 ms | **boot + song_select + 3 cold hovers (frozenΣ=0) + part_difficulty reached** (was DNF at W4); game_screen NOT reached within harness window (nav-cadence at 300 ms RTT, not a hang) | **partial — major improvement over W4 DNF** |
+| G-firstframe (release) | unthrottled reveal | reveal dt **600.4 ms** (in baseline band [400,1200]); attributed objMs 67.7 + texMs 34.5 + meshMs 1.6 + **unpackMs 1.2** (one-time, T1 cache proven); residue ~495 ms | **at-baseline (120 ms target needs deferred L2/L3)** |
+| Flag A/B | all 3 new opt-outs | `RB3_SFX_OGG_OFF` / `RB3_UNPACK_CACHE_OFF` / `RB3_GAMEWARM_OFF`: boot+song_select on web release via `?env=` bridge (env-echo confirmed); reach game_screen+game-over on native | **PASS** |
+| Visual | gameplay @ songMs 4284 | highway/gems/now-bar/venue render clean (small_club, score 185) | **PASS** |
+
+### Byte census (c4 4 Mbps/150 ms cold journey, `_netbytes.py`)
+
+| Category | W5 wire | vs baseline | note |
+|---|---|---|---|
+| milo | 75.13 MB | 85.4 → q11-weighted (~0.89×) | brotli-q11; `Content-Encoding: br`, decodes to exact source size (verified 11.67 MB→19.43 MB on `small_club_01`) |
+| SFX (ogg) | **8.50 MB** | ~59 MB raw PCM → ogg (W5-T2) | **the 10× lever**; well under the 25 MB gate (677/677 pairs, ch=1) |
+| mogg | 14.69 MB | Range chunks (unchanged) | — |
+| bundle | 14.99 MB | 17.9 raw → compressed | — |
+| misc | 2.18 MB | png/mid/txt/manifest now compressed | — |
+| **TOTAL** | **115.49 MB** | **~181 MB → −36 %** | matches P1 projection (~116.6 MB) |
+
+maxSingleMilo = `small_club_01` at **11.67 MB** wire (was 12.88 MB q5; matches P1).
+
+### Honest misses / what remains
+
+- **First-frame reveal still ~600 ms** (release). T1 (L1 vertex-unpack cache) and
+  T3 (lp/lpu attribution) landed and are *proven* (steady `unpackMs`≈1.2 ms, one-
+  time; `lpu` now correctly attributed). But T2's **L2 warm-sweep is default-OFF**
+  (documented harmful on native; kept behind `RB3_GAMEWARM_HOLD=1` for a future
+  resident-dwell flow) and the **L3 in-frame-drain removal did not land**, so the
+  ~495 ms first-draw/pipeline residue persists. The 120 ms `firstframe-gate`
+  target is the *post-full-stack* aspiration; today's reveal sits at the
+  documented baseline band, no regression. The byte-reduction wave (P1) is the
+  landed Wave-5 win.
+- **q11 artifacts are not durable** under on-demand q5 serve traffic (last-writer-
+  wins at the cache path). Gates were run **after a full prewarm-to-completion**
+  (4455/4455 milo_xbox.br at br11). Operationally: re-run `prewarm_encode_cache.py
+  --level 11` after any q5-warming session before measuring. A sticky-q11 mitigation
+  (on-demand q5 writer skips when a fresh higher-level artifact exists) is suggested
+  but not yet implemented.
+- **1.5 Mbps remains throughput-constrained**: dramatically better than W4 DNF
+  (now playable through song_select + hovers + part_difficulty, all freeze-free),
+  but full game_screen entry didn't complete within the harness at 300 ms RTT.
+  Smaller assets (further byte reduction) are the only lever left for this regime.
+- 1 "failed" request per journey is the intro-cinematic `.webm` Range being
+  abandoned on nav-skip (by-design UAF-fix abandon), not a real failure.
+
+Artifacts: `/tmp/rb3perf-w5-integ/` (c1/c3/c4/c5 `result.json`+`net.ndjson`,
+firstframe-release `result.json`+`trace.jsonl`, gameplay screenshot, prewarm log).
