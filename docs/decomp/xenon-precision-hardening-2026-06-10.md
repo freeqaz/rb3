@@ -313,3 +313,83 @@ Cross-compiler porting Wii→Xenon is now a working lever: ~1,000 new vetted ide
    should grow (cheap: promote vetted ACCEPT identities to next run's holdout). 4. sdk stratum is 0.000 —
    exclude sdk from ACCEPT consumers (already only 12 entries). 5. rb3wii cross-check shows possible
    Bank5-vs-Bank8 mangling-spelling false-contradictions (e.g. GetLocalParticipants) — annotation only.
+
+---
+
+## ROUND 2 RESULTS (2026-06-11)
+
+Full synthesis: `docs/decomp/xenon-hardening/round2/SYNTHESIS.md` (read it first; this
+section is the digest). Round-2 docs: `docs/decomp/xenon-hardening/round2/` (PLAN, 3 scouts,
+T1–T4 impl + adversarial verify docs, 30 evidence packs + judge verdicts under `forensics/`).
+Note: the standalone round-2 record `docs/decomp/xenon-hardening-round2-2026-06-11.md`
+(commit `0d3afded`) has CORRECT measurements but a STALE status narrative ("T1/T2/T3 did not
+execute") — it raced the concurrent tasks by minutes; trust its verifier addendum + the
+synthesis, not its §1/§2b,c/§4/§6.
+
+### 1. First human-judged precision (30-pair stratified band3 ACCEPT sample)
+
+**Overall 0.900 (27/30) · BSim 0.905 (19/21) · non-BSim 0.889 (8/9).** Per stratum:
+BSIM≥30 6/6, BSIM 20–30 7/8, BSIM 15–20 6/7, ExactInstr 5/5, SwitchSig 2/3, Implied 1/1.
+**The 0.933 holdout calibration HOLDS** (0.905 n=21 vs 0.933 n=45, within CI) — and the
+dc3-BinDiff pessimistic oracle (0.19–0.32 at the same thresholds) is refuted as arbiter.
+The 3 wrong pairs (13/16/29) share ONE failure mode — **same-TU sibling aliasing**: template/
+sibling bodies identical except a type-tag immediate or node-size literal (pair-16: Xenon
+writes kDataFloat=1, claimed Wii sibling writes kDataInt=6; true partner `__ct<PCc,f>`), or
+a hash-shape match refuted by strings (pair-29 → `BandTrack::SetInstrument`,
+`src/system/bandobj/BandTrack.cpp:544`). Caveat: band3-only; system/network unmeasured at
+human quality.
+
+### 2. Two-pass VT rescue — hypothesis REFUTED (run 4)
+
+Seeding the cascade from ONLY the vetted ACCEPT tier (2,130 1:1 anti-leak seeds ≈0.93) did
+NOT rescue VTCombinedReference. Same eval flags as run 3 (`--credit-platform-alias
+--stratify`, plus the mandatory `--seeds seeds_accept_run3.json`):
+**VT 0.236→0.222 alias, 0.109→0.093 raw** (marginally worse); holdout meter stable
+(0.603/0.825 vs 0.638/0.833). Product-score sweep over VT's real range (20–820): no
+operating point ≥0.85 at meaningful yield (the 1.000 at floor 260 is n=1 — sample
+exhaustion, not signal). **VT's weakness is intrinsic to the MWCC→MSVC reference graph, not
+seed contamination. VT is demoted to CAUTION-tier feeder PERMANENTLY** (resolves run-3 open
+follow-up #1 in the negative; the mid-band seeds+exacts fallback is not indicated, 0.22≪0.4).
+Byproducts: `--matches-only` fork flag (ghidriff `e52d935`) cuts a run from ~115 min to
+**~8 min**; run-4 re-vet grew ACCEPT to 2,246 (+39); ExactInstr held 0.967.
+
+### 3. rb3-xenon ingest LANDED (gate 0.905 ≥ 0.85 → full)
+
+`rb3-xenon/ghidriff_identities.json` — **978 entries** (913 BSIM simconf≥15 / 54 ExactInstr /
+8 Implied / 3 SwitchSig; system 438 / band3 306 / network 216 / Bink 14 / main 4), from the
+immutable run3-archive; excludes 1,210 SeedMatch-only + 9 sdk + 7 null-symbol + 3
+judged-WRONG. fn_resolver tier **T4b `ghidriff_wii_b8`** (between fuzzy_pairs and
+bindiff_dc3; conf 0.94/0.93/0.90). Verified 978/978 `wii_addr_bank8` agree with the Bank-8
+CW map; target_symbol_map untouched. Commits: rb3 `6a4779b2`/`6793c59a`, rb3-xenon `7bdae6c`.
+
+### 4. Holdout grown 146→158 + first known-negatives
+
+27 judged-correct → 4 already-in-holdout + deterministic XOR split: **12 → holdout**
+(exact-Bank-8-addr scored) / **11 → reserved** (`reserved_seed_candidates_round2.json`,
+unconsumed); **3 judged-wrong → `known_negatives.json`** with a new eval oracle.
+`build_xenon_seeds.py` union-merge + extra-holdout exclusion and eval exact-addr/known-neg
+modes are default-off and byte-identical-replay proven vs run3-archive (44/44 tests). rb3
+`4daa00fa`.
+
+### 5. Known deviations (all accounted, none metric-contaminating)
+
+- **T1↔T3 race:** `seeds_accept_run3.json` was built against the pre-growth 146 holdout →
+  on disk it contains 12 grown-holdout addrs AND the 3 known-negative pairs as givens.
+  Eval-neutralized (run-4 report: `eligible 146, excluded_as_seeds 12`; seeded matches never
+  scored) **iff** `--seeds seeds_accept_run3.json` is passed. Round 3 must rebuild seeds
+  post-growth — `build_accept_seeds.py` currently hard-asserts 73 holdout drops (now 85) and
+  will crash, fail-safe.
+- 85 of the 978 ingested xenon addrs overlap the 158 holdout — harmless now; exclude holdout
+  addrs if `ghidriff_identities.json` ever feeds a seed builder.
+- `eval_report.json` is last-writer-wins; compare against `run3-archive/` copies only.
+- Run-3 archive intact throughout: `run3-archive/vetted_identities.json` md5
+  `dbc440b6b2b67b964b208a7c17af625e`.
+
+### Round-3 priorities
+
+1. Rebuild ACCEPT seeds against the grown holdout (fix `build_accept_seeds.py`: derive drops,
+   exclude known-negatives). 2. System/network judged sample (closes the band3 extrapolation
+   gating 654 ingested identities). 3. Sibling-aliasing vet check (immediate/literal diff on
+   near-identical same-TU bodies — would have caught all 3 wrong pairs); SwitchSig audit n≥10.
+4. Refresh ingest from run-4's 2,246 ACCEPTs once seeds are rebuilt. 5. Upstream ghidriff PRs:
+   `--matches-only` + O(n×m) dedup hash-join. 6. NO further VT investment.
