@@ -351,6 +351,30 @@ extern "C" bool RB3GameWarmPollDwell(ObjectDir* selfDir, ObjectDir* trackDir) {
             MILO_LOG("RB3_GAMEWARM: armed (UIPanel::IsLoaded) — sweeping gameplay roots\n");
     }
 
+    // DEFAULT PATH = TRUE NO-OP. With the blocking hold OFF (the shipped default),
+    // BOTH levers are inert: the L2 warm sweep would upload object instances the
+    // reveal frame doesn't draw (cache miss — Enter-state-dependent, see the
+    // RB3GameWarmHoldEnabled() comment), and the L3 pre-kick re-AddLoader()s the
+    // gameplay roots' proxy subdirs (trackpanel/chars/world subdirs) that are
+    // ALREADY resident inside their parent dirs — TheLoadMgr.GetLoader(fp)
+    // under-detects them (an inline-loaded proxy subdir has no standalone top-level
+    // loader), so kLoadFront re-downloads + re-parses each one at the meta->game
+    // transition. Measured: 23 redundant kicks → ~173 extra milo re-parse notifies
+    // vs the OFF baseline, with the venue arena milo (the only thing the reveal
+    // frame actually pays for) never on the kicked path → ZERO benefit, pure waste
+    // on a saturated web pipe. So with the hold disabled we do NOTHING but mark the
+    // dwell drained and release immediately — the transition behaves exactly as
+    // RB3_GAMEWARM_OFF (no collect, no kick, no warm). Both levers are gated behind
+    // RB3_GAMEWARM_HOLD=1 for flows where the gameplay dirs ARE resident across a
+    // real dwell (web / future) or for experimentation.
+    if (!RB3GameWarmHoldEnabled()) {
+        gWarm.drained = true;
+        if (RB3GameWarmDbg())
+            MILO_LOG("RB3_GAMEWARM: hold disabled — no-op (no warm, no pre-kick), "
+                     "releasing immediately\n");
+        return false;
+    }
+
     // Max-hold safety — never block the transition longer than the budget.
     double elapsed = NowMs() - gWarm.startMs;
     if (elapsed > RB3GameWarmMaxHoldMs()) {
@@ -456,20 +480,13 @@ extern "C" bool RB3GameWarmPollDwell(ObjectDir* selfDir, ObjectDir* trackDir) {
     for (int i = 0; i < kMaxRoots; i++) if (roots[i]) nRoots++;
     float budgetEach = RB3GameWarmBudgetMs() / (nRoots > 0 ? (float)nRoots : 1.0f);
 
-    // Run the GPU warm sweep only when the blocking hold is enabled. With the hold
-    // OFF (default) the warm would upload resources on the single kReady frame that
-    // — in the measured native flow — are DIFFERENT object instances than the
-    // reveal frame draws (the venue arena_* + the post-Enter-sync track instances),
-    // so the upload is wasted work + memory and adds cost to the kReady frame for
-    // no reveal-frame win. So default = L3 pre-kick only (cheap, may shave the
-    // Enter drain); the warm sweep is gated behind RB3_GAMEWARM_HOLD=1 for flows
-    // where the gameplay dirs ARE resident across a real dwell (web / future).
+    // Run the GPU warm sweep. We only reach here with RB3_GAMEWARM_HOLD=1 (the
+    // default no-op path returned above); the warm only makes sense when the
+    // gameplay dirs are resident across a real dwell (web / future / experiment).
     int uploadedThisFrame = 0;
-    if (RB3GameWarmHoldEnabled()) {
-        for (int i = 0; i < kMaxRoots; i++) {
-            if (!roots[i]) continue;
-            uploadedThisFrame += gBandRnd.WarmGpuForDir(roots[i], budgetEach);
-        }
+    for (int i = 0; i < kMaxRoots; i++) {
+        if (!roots[i]) continue;
+        uploadedThisFrame += gBandRnd.WarmGpuForDir(roots[i], budgetEach);
     }
 
     gWarm.frames++;
@@ -493,21 +510,6 @@ extern "C" bool RB3GameWarmPollDwell(ObjectDir* selfDir, ObjectDir* trackDir) {
                  "idle=%d, kickedLoading=%d, %.0f ms)\n",
                  gWarm.frames, nRoots, uploadedThisFrame, gWarm.totalUploaded,
                  gWarm.idleFrames, (int)kickedLoading, elapsed);
-
-    // When the hold is OFF (default): we ran one opportunistic warm pass + kicked
-    // the proxy files this frame; never block the transition. The warm still
-    // accrues across however many natural dwell frames the vignette runs (the
-    // sweep re-arms each call via gWarm.active and walks the roots again), but we
-    // never delay audio-start. Drain immediately.
-    if (!RB3GameWarmHoldEnabled()) {
-        gWarm.drained = true;
-        DoPrekick();
-        if (RB3GameWarmDbg())
-            MILO_LOG("RB3_GAMEWARM: hold disabled — warmed %d this pass (total=%d), "
-                     "pre-kicked, releasing immediately\n",
-                     uploadedThisFrame, gWarm.totalUploaded);
-        return false;
-    }
 
     bool fullyWarm = (uploadedThisFrame == 0 && !kickedLoading);
     bool idleGiveUp = (gWarm.idleFrames >= RB3GameWarmIdleReleaseFrames() && !kickedLoading);
