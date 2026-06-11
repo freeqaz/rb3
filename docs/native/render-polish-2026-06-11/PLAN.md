@@ -72,3 +72,14 @@ artifacts between agents (`scout-<key>.md`, `task-<key>-impl.md`, `verify-<key>.
 ## Status log
 
 - 2026-06-11: campaign opened; wave 1 (9 agents) dispatched.
+- 2026-06-11: `fret-held` scout DONE (`scout-fret-held.md`). ROOT CAUSE: NOT
+  input — the full message→GuitarController→GemSmasher::SetGlowing(true) chain
+  works in native (proven via FRET_DBG worktree probe: 40 presses → 40 OnMsg →
+  40 SetGlowing b=1, glow mesh non-null + showing). The glow is invisible because
+  `gem_smasher_glow.mat` is `color=(0,0,0)` + **no diffuse texture bound** +
+  `kBlendAdd`, so the standard shader's `baseColor = matColor*texture` → 0 →
+  additive contributes nothing. Upstream: the per-slot recolor
+  (`set_color`/`particle_slot_colors.anim` binding `square_smasher_bright_*.tex`)
+  isn't landing on the glow material on native (A1-hit-flame-class FX gap).
+  Needs an engine-repo change (anim→material apply, or additive-glow shader
+  safety net). Same neighborhood as the emissive-glow work.
