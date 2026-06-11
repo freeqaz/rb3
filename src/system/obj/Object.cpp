@@ -94,7 +94,17 @@ bool Hmx::Object::RegisteredFactory(Symbol s) {
     return it != sFactories.end();
 }
 
-Hmx::Object::Object() : mTypeDef(0), mName(gNullStr), mDir(0) {}
+Hmx::Object::Object() : mTypeDef(0), mName(gNullStr), mDir(0) {
+#ifdef HX_NATIVE
+    // A new live object constructed at this address proves any stale entry in the
+    // HxAddrWasFreed set is an ABA alias (a freed CharBonesObject's memory was
+    // recycled here). Clear it so the ObjPtr_p.h guards cannot skip Release on a
+    // LIVE pointee — which would strand a dangling ObjRef in our mRefs and corrupt
+    // the ~Object ref walk. Root cause of the char-Load 5b head-shaper un-gate
+    // crash; see docs/native/char-load-5b/viseme-uaf-plan.md.
+    HxNoteReusedAddr((const void *)this);
+#endif
+}
 
 Hmx::Object &Hmx::Object::operator=(const Hmx::Object &obj) {
     mName = obj.mName;

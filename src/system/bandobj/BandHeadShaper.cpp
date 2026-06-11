@@ -4,6 +4,9 @@
 #include "os/Debug.h"
 #include "utl/Symbols.h"
 #include <list>
+#ifdef HX_NATIVE
+#include <cstdlib> // getenv for the RB3_NO_HEAD_SHAPER opt-out
+#endif
 
 int BandHeadShaper::sChinNum;
 int BandHeadShaper::sEyeNum;
@@ -128,13 +131,10 @@ void BandHeadShaper::Init() {
     DataArray *cfg = SystemConfig("objects", "BandCharDesc");
     auto _tmp0 = cfg->FindData("head_male_path", genderpath, false);
 #ifdef HX_NATIVE
-    // The head-shaper male/female milos contain CharClip/CharBonesSamples objects
-    // whose Load() is not yet native byte-correct (CharClip::Load version-desync,
-    // CharBonesSamples.cpp:457 / CharBones.cpp:1354 string-len overflow) — deferred
-    // T9 char-Load work. Head/face shaping is off the boot-to-menu path; gHeadMale/
-    // gHeadFemale stay null and the existing HX_NATIVE null-guards (GetNum/FindSubdir/
-    // gVisemes loop) handle it. Mirrors BandCharDesc::Init / CharCache::InitMe.
-    _tmp0 = false;
+    // char-Load 5b: serialization is byte-correct on LE (CharLoad5b gtest); head
+    // shapes now load by default on native. RB3_NO_HEAD_SHAPER=1 opts back out.
+    if (getenv("RB3_NO_HEAD_SHAPER"))
+        _tmp0 = false;
 #endif
     if (_tmp0 && genderpath[0] != 0) {
         static int _x = MemFindHeap("char");
@@ -153,7 +153,8 @@ void BandHeadShaper::Init() {
     }
     auto _tmp1 = cfg->FindData("head_female_path", genderpath, false);
 #ifdef HX_NATIVE
-    _tmp1 = false; // deferred — see head_male_path note above
+    if (getenv("RB3_NO_HEAD_SHAPER")) // see head_male_path note above
+        _tmp1 = false;
 #endif
     if (_tmp1 && genderpath[0] != 0) {
         static int _x = MemFindHeap("char");
