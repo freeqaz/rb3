@@ -122,6 +122,14 @@ public:
         }
         return mCellSize.y / mCellSize.x;
     }
+    // The byte-matched (Wii) glyph aspect, i.e. CellDiff() WITHOUT the non-square
+    // atlas correction. The wide-atlas correction grows the corrected glyph
+    // height relative to this; SetupCharVerts uses the delta to re-center the
+    // grown glyph quad on its (milo-authored) anchor for the icon font, so the
+    // instrument-icon glyph centers on the difficulty-dot rows instead of
+    // hanging below them. Square atlases (the Wii path) return CellDiff()==this,
+    // so the delta is 0 and nothing shifts.
+    float RawCellDiff() const { return mCellSize.y / mCellSize.x; }
 #else
     float CellDiff() const { return mCellSize.y / mCellSize.x; }
 #endif
