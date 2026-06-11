@@ -336,8 +336,6 @@ __hmx_band3_noop_stub:
     .set _ZN12WiiMessenger11SendMessageEiPKcS1_PN3Hmx6ObjectEi, __hmx_band3_noop_stub
     .weak _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE
     .set _ZN12WiiMessenger17EnumerateMessagesEP14WiiMessageListPN3Hmx6ObjectE, __hmx_band3_noop_stub
-    .weak _ZN13BandCharacter15NameToDrumVenueEPKc
-    .set _ZN13BandCharacter15NameToDrumVenueEPKc, __hmx_band3_noop_stub
     .weak _ZN13BandPatchMesh13ConstructQuadEP6RndTex
     .set _ZN13BandPatchMesh13ConstructQuadEP6RndTex, __hmx_band3_noop_stub
     .weak _ZN13CharacterTest4DrawEv
