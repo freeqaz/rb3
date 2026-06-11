@@ -39,6 +39,9 @@
 //   primeMs StandardStream::Play Vorbis prime pump ms
 //   texMs/texN   UploadRndTexIfNeeded decode+upload ms / count
 //   meshMs/meshN DrawMesh needUpload VB/IB write ms / count
+//   unpackMs/unpackN  DrawMesh CPU vertex unpack ms / # meshes unpacked (the
+//           uncounted reveal-frame residue: per-draw Be*/Half2Float verts). With
+//           the L1 unpack cache ON this drops to ~0 on steady frames.
 //   pipeMs/pipeN PipelineManager::GetPipeline cache-miss compile ms / count
 //   inflMs  ChunkStream inflate (zlib/lzx byte-shovel) ms
 //
@@ -80,6 +83,8 @@ extern float  gTexUploadMsThisFrame;
 extern int    gTexUploadCountThisFrame;
 extern float  gMeshUploadMsThisFrame;
 extern int    gMeshUploadCountThisFrame;
+extern float  gVertUnpackMsThisFrame;
+extern int    gVertUnpackCountThisFrame;
 extern float  gPipelineCreateMsThisFrame;
 extern int    gPipelineCreateCountThisFrame;
 extern float  gStreamReadMsThisFrame;
@@ -124,7 +129,7 @@ void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
                         "lpu=pollUntilMs scr=screen ld=loaderAdds st=streamOpens "
                         "pend=pendingLoaders fetchMs/fetchN/fetchB dtaMs objMs "
                         "objWMs/objWNm primeMs texMs/texN meshMs/meshN "
-                        "pipeMs/pipeN inflMs\n");
+                        "unpackMs/unpackN pipeMs/pipeN inflMs\n");
                 fflush(sTraceFile);
             } else {
                 sTraceState = -1;   // open failed; never retry
@@ -159,7 +164,8 @@ void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
             "\"fetchMs\":%.3f,\"fetchN\":%d,\"fetchB\":%.0f,"
             "\"dtaMs\":%.3f,\"objMs\":%.3f,\"objWMs\":%.3f,\"objWNm\":\"%s\","
             "\"primeMs\":%.3f,\"texMs\":%.3f,\"texN\":%d,"
-            "\"meshMs\":%.3f,\"meshN\":%d,\"pipeMs\":%.3f,\"pipeN\":%d,"
+            "\"meshMs\":%.3f,\"meshN\":%d,\"unpackMs\":%.3f,\"unpackN\":%d,"
+            "\"pipeMs\":%.3f,\"pipeN\":%d,"
             "\"inflMs\":%.3f}\n",
             frame, dtMs, loadPollMs, loadPollUntilMs, screen,
             gFrameTraceLoaderAdds, gFrameTraceStreamOpens, pendingLoaders,
@@ -167,6 +173,7 @@ void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
             gDtaParseMsThisFrame, gObjLoadMsThisFrame, gObjLoadWorstMs, wname,
             gAudioPrimeMsThisFrame, gTexUploadMsThisFrame, gTexUploadCountThisFrame,
             gMeshUploadMsThisFrame, gMeshUploadCountThisFrame,
+            gVertUnpackMsThisFrame, gVertUnpackCountThisFrame,
             gPipelineCreateMsThisFrame, gPipelineCreateCountThisFrame,
             gStreamReadMsThisFrame);
     // Flush each frame so a SIGTERM mid-run still leaves a complete trace.
@@ -186,6 +193,8 @@ void RB3FrameTraceRecord(int frame, float dtMs, float loadPollMs,
     gTexUploadCountThisFrame = 0;
     gMeshUploadMsThisFrame = 0.0f;
     gMeshUploadCountThisFrame = 0;
+    gVertUnpackMsThisFrame = 0.0f;
+    gVertUnpackCountThisFrame = 0;
     gPipelineCreateMsThisFrame = 0.0f;
     gPipelineCreateCountThisFrame = 0;
     gStreamReadMsThisFrame = 0.0f;
