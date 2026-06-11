@@ -9,6 +9,9 @@
 #include "os/File.h"
 #include "os/Endian.h"
 #include "decomp.h"
+#ifdef HX_NATIVE
+#include "mtrace_wrap.h"  // milo-trace W5 per-call-site capture (env-gated, no-op unless RB3_MTRACE_WRAP=1)
+#endif
 
 namespace {
     std::list<DecompressTask> gDecompressionQueue;
@@ -248,6 +251,16 @@ EofType ChunkStream::Eof() {
         for (int i = 0; i < mChunkInfo.mNumChunks; i++) {
             EndianSwapEq(mChunkInfo.mChunks[i]);
         }
+#endif
+#ifdef HX_NATIVE
+        // milo-trace W5 chunk-header decode site. Captures the as-decoded logical
+        // header values (after the Wii-only byteswap above) BEFORE the magic-mask
+        // fixup that synthesizes a default header on a non-chunked file. This is
+        // the deep-struct loader state the leaf campaign cannot reach.
+        MTRACE_WRAP_CHUNKHEADER(
+            (unsigned int)mChunkInfo.mID, mChunkInfo.mChunkInfoSize,
+            mChunkInfo.mNumChunks, mChunkInfo.mMaxChunkSize,
+            mFilename.c_str(), &mChunkInfo.mChunks[0]);
 #endif
         if ((mChunkInfo.mID & 0xf0ffffff) != kChunkIDMask) {
             mChunkInfo.mID = 0xCABEDEAF;

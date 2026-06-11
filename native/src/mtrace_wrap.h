@@ -158,6 +158,134 @@ static void MtwrapEmitSeekNonce(
     ::fflush(fp);
 }
 
+// ---------------------------------------------------------------------------
+// W5 extension sites (WRAPPER-EXT lane). All env-gated through MtwrapSink().
+// Each emitter writes one self-describing NDJSON record; the milo-trace
+// tools/w3_wrapper_diff.py oracle classifies it. These reach deep-struct /
+// seek / write state the leaf campaign cannot (in-process, marshaller-immune).
+// ---------------------------------------------------------------------------
+
+// helper: append a "key":int pair
+static void MtwrapKvInt(std::string& line, const char* key, long long v) {
+    char buf[32];
+    line += ",\"";
+    line += key;
+    line += "\":";
+    snprintf(buf, sizeof(buf), "%lld", v);
+    line += buf;
+}
+
+// helper: append a "key":uint(as decimal) pair (for 32-bit unsigned magic ids)
+static void MtwrapKvU32(std::string& line, const char* key, uint32_t v) {
+    char buf[32];
+    line += ",\"";
+    line += key;
+    line += "\":";
+    snprintf(buf, sizeof(buf), "%u", v);
+    line += buf;
+}
+
+// ChunkStream::Eof header-decode site. Deep-struct milo-loader chunk header.
+// Captures the ChunkInfo header ints AFTER the (Wii-only) byteswap step, i.e.
+// the logical host values both targets must agree on. The oracle checks the
+// magic-id consistency the loader itself uses + chunk-count sanity.
+static void MtwrapEmitChunkHeader(
+        uint64_t seq, uint32_t id, int chunk_info_size, int num_chunks,
+        int max_chunk_size, const char* fname,
+        const void* chunk0_pre, int chunk0_len) {
+    FILE* fp = MtwrapSink();
+    if (!fp) return;
+    std::string line;
+    line.reserve(256);
+    line += "{\"site\":\"ChunkStream::ChunkHeader\"";
+    MtwrapKvInt(line, "seq", (long long)seq);
+    MtwrapKvU32(line, "id", id);
+    MtwrapKvInt(line, "chunk_info_size", chunk_info_size);
+    MtwrapKvInt(line, "num_chunks", num_chunks);
+    MtwrapKvInt(line, "max_chunk_size", max_chunk_size);
+    line += ",\"fname\":\"";
+    line += MtwrapEscape(fname ? fname : "?");
+    line += "\",\"chunk0\":\"";
+    line += MtwrapHex(chunk0_pre, chunk0_len);
+    line += "\"}\n";
+    ::fputs(line.c_str(), fp);
+    ::fflush(fp);
+}
+
+// BinStream::ReadString site. Length-prefixed read; the length was decoded via
+// operator>> (ReadEndian → host swap). Captures the decoded length, the buffer
+// cap, the class, and a short prefix of the read bytes. Oracle: 0 <= len < cap.
+static void MtwrapEmitReadString(
+        uint64_t seq, int len, int cap, const char* cls,
+        const void* prefix, int prefix_len) {
+    FILE* fp = MtwrapSink();
+    if (!fp) return;
+    std::string line;
+    line.reserve(256);
+    line += "{\"site\":\"BinStream::ReadString\"";
+    MtwrapKvInt(line, "seq", (long long)seq);
+    MtwrapKvInt(line, "len", len);
+    MtwrapKvInt(line, "cap", cap);
+    line += ",\"cls\":\"";
+    line += MtwrapEscape(cls ? cls : "?");
+    line += "\",\"prefix\":\"";
+    line += MtwrapHex(prefix, prefix_len);
+    line += "\"}\n";
+    ::fputs(line.c_str(), fp);
+    ::fflush(fp);
+}
+
+// BinStream::WriteEndian site — write-side mirror of ReadEndian. Captures the
+// caller's source bytes (pre) and the bytes that get written to the stream
+// (post = what SwapData produced, or the source verbatim when no swap). Oracle:
+// native must byteswap iff !mLittleEndian (the inverted-swap bug class on save).
+static void MtwrapEmitWriteEndian(
+        uint64_t seq, bool le_flag, int n, const char* cls,
+        const void* pre_buf, const void* post_buf) {
+    FILE* fp = MtwrapSink();
+    if (!fp) return;
+    std::string line;
+    line.reserve(200);
+    line += "{\"site\":\"BinStream::WriteEndian\"";
+    MtwrapKvInt(line, "seq", (long long)seq);
+    line += ",\"le_flag\":";
+    line += (le_flag ? "true" : "false");
+    MtwrapKvInt(line, "n", n);
+    line += ",\"cls\":\"";
+    line += MtwrapEscape(cls ? cls : "?");
+    line += "\",\"pre\":\"";
+    line += MtwrapHex(pre_buf, n);
+    line += "\",\"post\":\"";
+    line += MtwrapHex(post_buf, n);
+    line += "\"}\n";
+    ::fputs(line.c_str(), fp);
+    ::fflush(fp);
+}
+
+// BinStream::Seek site — SeekType offset arithmetic (DoRawSeek-class state,
+// generalized). Captures requested offset, seek type, and Tell() before/after.
+// Oracle: state-consistency (kSeekBegin: tell_after==offset; kSeekCur:
+// tell_after-tell_before==offset; kSeekEnd: not size-checkable → flagged).
+static void MtwrapEmitSeek(
+        uint64_t seq, int offset, int seek_type, int tell_before,
+        int tell_after, const char* cls) {
+    FILE* fp = MtwrapSink();
+    if (!fp) return;
+    std::string line;
+    line.reserve(200);
+    line += "{\"site\":\"BinStream::Seek\"";
+    MtwrapKvInt(line, "seq", (long long)seq);
+    MtwrapKvInt(line, "offset", offset);
+    MtwrapKvInt(line, "seek_type", seek_type);
+    MtwrapKvInt(line, "tell_before", tell_before);
+    MtwrapKvInt(line, "tell_after", tell_after);
+    line += ",\"cls\":\"";
+    line += MtwrapEscape(cls ? cls : "?");
+    line += "\"}\n";
+    ::fputs(line.c_str(), fp);
+    ::fflush(fp);
+}
+
 }  // namespace (anonymous)
 
 // ---------------------------------------------------------------------------
@@ -222,6 +350,100 @@ static void MtwrapEmitSeekNonce(
                 (nonce_ptr),                                                                     \
                 (nonce_len));                                                                     \
         }                                                                                        \
+    } while (0)
+
+// ---------------------------------------------------------------------------
+// W5 extension macros (WRAPPER-EXT lane).
+// ---------------------------------------------------------------------------
+
+// ChunkStream::ChunkHeader site — single macro placed in ChunkStream::Eof()
+// immediately AFTER the header has been (Wii-only) byteswapped and BEFORE the
+// magic-mask fixup, so the captured ints are the decoded logical header values.
+//   MTRACE_WRAP_CHUNKHEADER(id, chunk_info_size, num_chunks, max_chunk_size,
+//                           fname_cstr, chunk0_ptr)
+// chunk0_ptr points at mChunkInfo.mChunks (the first chunk word); we snapshot 4
+// bytes of it (or none if num_chunks <= 0).
+#define MTRACE_WRAP_CHUNKHEADER(id_val, cis_val, nc_val, mcs_val, fname_cstr, chunk0_ptr)  \
+    do {                                                                                    \
+        if (MtwrapSink()) {                                                                 \
+            uint64_t _seq = MtwrapSeq().fetch_add(1, std::memory_order_relaxed);            \
+            int _c0len = ((nc_val) > 0) ? 4 : 0;                                            \
+            MtwrapEmitChunkHeader(_seq,                                                     \
+                static_cast<uint32_t>(id_val),                                              \
+                static_cast<int>(cis_val),                                                  \
+                static_cast<int>(nc_val),                                                   \
+                static_cast<int>(mcs_val),                                                  \
+                (fname_cstr),                                                               \
+                (chunk0_ptr), _c0len);                                                      \
+        }                                                                                  \
+    } while (0)
+
+// BinStream::ReadString site — single macro placed AFTER Read(c, a) (and after
+// the c[a]=0 terminator), capturing the decoded length, buffer cap, the class,
+// and up to 8 bytes of the read string.
+//   MTRACE_WRAP_READSTRING(len, cap, this_ref, buf_ptr)
+#define MTRACE_WRAP_READSTRING(len_val, cap_val, this_ref, buf_ptr)                         \
+    do {                                                                                     \
+        if (MtwrapSink()) {                                                                  \
+            uint64_t _seq = MtwrapSeq().fetch_add(1, std::memory_order_relaxed);             \
+            int _plen = static_cast<int>(len_val);                                           \
+            if (_plen < 0) _plen = 0;                                                         \
+            if (_plen > 8) _plen = 8;                                                         \
+            MtwrapEmitReadString(_seq,                                                       \
+                static_cast<int>(len_val),                                                   \
+                static_cast<int>(cap_val),                                                   \
+                typeid(this_ref).name(),                                                     \
+                (buf_ptr), _plen);                                                           \
+        }                                                                                   \
+    } while (0)
+
+// BinStream::WriteEndian site — two macros, mirroring the ReadEndian pair:
+//   MTRACE_WRAP_WRITEENDIAN_PRE(src_ptr, byte_count)
+//     Place at the TOP of the function body (before the swap decision); snapshots
+//     the caller's source bytes into `_mtwrap_we_pre`.
+//   MTRACE_WRAP_WRITEENDIAN_POST(out_ptr, byte_count, le_flag, this_ref)
+//     Place after the swap decision, passing the buffer actually written
+//     (the swapped `output` buffer, or the source `void_data` verbatim).
+#define MTRACE_WRAP_WRITEENDIAN_PRE(src_ptr, byte_count)                                    \
+    uint8_t _mtwrap_we_pre[8] = {};                                                          \
+    uint64_t _mtwrap_we_seq = 0;                                                             \
+    do {                                                                                     \
+        if (MtwrapSink() && (byte_count) >= 2 && (byte_count) <= 8) {                       \
+            _mtwrap_we_seq = MtwrapSeq().fetch_add(1, std::memory_order_relaxed);            \
+            ::memcpy(_mtwrap_we_pre, (src_ptr), (byte_count));                               \
+        }                                                                                   \
+    } while (0)
+
+#define MTRACE_WRAP_WRITEENDIAN_POST(out_ptr, byte_count, le_flag, this_ref)                \
+    do {                                                                                     \
+        if (MtwrapSink() && (byte_count) >= 2 && (byte_count) <= 8) {                       \
+            MtwrapEmitWriteEndian(_mtwrap_we_seq,                                            \
+                static_cast<bool>(le_flag),                                                  \
+                static_cast<int>(byte_count),                                                \
+                typeid(this_ref).name(),                                                     \
+                _mtwrap_we_pre,                                                              \
+                (out_ptr));                                                                  \
+        }                                                                                   \
+    } while (0)
+
+// BinStream::Seek site — single macro placed in BinStream::Seek() AFTER the
+// SeekImpl(offset, type) call. Captures the requested offset + seek type + the
+// class. Tell() is intentionally NOT called here: it is virtual and MILO_FAILs
+// on WRITE streams (ChunkStream), so a Tell() readback could abort the session.
+// The DoRawSeek-class state surface is the offset/type arithmetic intent, which
+// is what the oracle checks (seek-type sanity + non-negative forward offsets).
+// tell_before/tell_after are recorded as -1 (unread) for safety.
+//   MTRACE_WRAP_SEEK(offset, type, this_ref)
+#define MTRACE_WRAP_SEEK(offset_val, type_val, this_ref)                                    \
+    do {                                                                                     \
+        if (MtwrapSink()) {                                                                  \
+            uint64_t _seq = MtwrapSeq().fetch_add(1, std::memory_order_relaxed);             \
+            MtwrapEmitSeek(_seq,                                                             \
+                static_cast<int>(offset_val),                                                \
+                static_cast<int>(type_val),                                                  \
+                -1, -1,                                                                      \
+                typeid(this_ref).name());                                                    \
+        }                                                                                   \
     } while (0)
 
 #endif  // HX_NATIVE
