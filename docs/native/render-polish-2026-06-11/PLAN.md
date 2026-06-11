@@ -95,6 +95,22 @@ artifacts between agents (`scout-<key>.md`, `task-<key>-impl.md`, `verify-<key>.
   Rnd_Wgpu_RB3.cpp in different regions → sequential cherry-pick + single pin bump).
 - Reference screenshots requested from user: see `REFERENCE_SCREENSHOTS_NEEDED.md`
   (P0: GP-1 approach-tail, FH-1 held-fret glow, ML-1 Wii hub loop, ML-2 ARCADE neon closeup).
+- 2026-06-11: **wave 2 COMPLETE — 9/10 verified, all LANDED.** rb3 master `5248158d..cca1869a`
+  (highway camRotX, vocal-crash TheNet+Singer+VocalTrack, diff-grid icon centering, crowd
+  inverse-bind rebake −89.5% drops, char reload-re-entrant rebind, Part.cpp InitParticle
+  decomp fix 95.3→97.7 — the "neon slab" was actually runaway street-fog particles);
+  engine main `eda796d..469c550` (mesh-cache owner-gen → approach tails, outer-halo bloom →
+  saturated gems, unlit+emissive-all-cams → menu lighting, smasher glow → held frets,
+  shard-guard diagnostics); single pin bump `cca1869a`. All cherry-picks clean, Wii report
+  regenerated, smoke boot-to-gameplay green on the composed build.
+  - `char-render` is PARTIAL: bodies/heads/hands render + persist now, but own==bound
+    garments still guard-hidden — root cause = C8 pose-pipeline rotation-basis divergence
+    (follow-up below). Levers in place: RB3_BOUND_REBAKE, RB3_GUARD_EXEMPT_REBOUND, SHARD_DBG.
+- New follow-ups queued for wave 3+: C8 rotation-basis deep dive; gem-flicker re-triage
+  (post-fix); venue pink-wash adjudication (authored stage lighting vs emissive blowout?);
+  song-select FRIEND-RANKINGS overlay + grey album-art box obscuring the grid; endgame
+  SIGABRT (`ui/endgame/endgame_helpers.dta(64):meta_performer`, seen by crowd scout);
+  crowd residual ~6.7k drops; crowd Fix B (2D imposters) + Fix C (venue bridge) deferred.
 - 2026-06-11: `fret-held` scout DONE (`scout-fret-held.md`). ROOT CAUSE: NOT
   input — the full message→GuitarController→GemSmasher::SetGlowing(true) chain
   works in native (proven via FRET_DBG worktree probe: 40 presses → 40 OnMsg →
