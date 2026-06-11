@@ -1,0 +1,272 @@
+[
+  {
+    "pair_id": "01",
+    "wii_symbol": "RebuildSharedSongData__12MusicLibraryFv",
+    "wii_addr": "0x80303300",
+    "xenon_addr": "0x8252a9f0",
+    "match_type": "BSIM",
+    "simconf": 35.635,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-01.md"
+  },
+  {
+    "pair_id": "02",
+    "wii_symbol": "SaveForEndGame__5StatsCFR9BinStream",
+    "wii_addr": "0x801e3a20",
+    "xenon_addr": "0x82679b40",
+    "match_type": "BSIM",
+    "simconf": 41.09,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-02.md"
+  },
+  {
+    "pair_id": "03",
+    "wii_symbol": "UpdateState__13OvershellSlotFv",
+    "wii_addr": "0x803290c0",
+    "xenon_addr": "0x825c1698",
+    "match_type": "BSIM",
+    "simconf": 47.199,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-03.md"
+  },
+  {
+    "pair_id": "04",
+    "wii_symbol": "Poll__7NetSyncFv",
+    "wii_addr": "0x8030a270",
+    "xenon_addr": "0x82586258",
+    "match_type": "BSIM",
+    "simconf": 40.168,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-04.md"
+  },
+  {
+    "pair_id": "05",
+    "wii_symbol": "Poll__15GemTrainerPanelFv",
+    "wii_addr": "0x801a2ab0",
+    "xenon_addr": "0x8268d410",
+    "match_type": "BSIM",
+    "simconf": 31.46,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-05.md"
+  },
+  {
+    "pair_id": "06",
+    "wii_symbol": "Poll__7TrackerFf",
+    "wii_addr": "0x801eeae0",
+    "xenon_addr": "0x826b1f50",
+    "match_type": "BSIM",
+    "simconf": 40.282,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-06.md"
+  },
+  {
+    "pair_id": "07",
+    "wii_symbol": "ProcessStaticLyrics__10VocalTrackFbP5LyricRfRfRP5LyricRP5LyricRfbP10LyricPlate",
+    "wii_addr": "0x80157d00",
+    "xenon_addr": "0x82b6e140",
+    "match_type": "BSIM",
+    "simconf": 21.823,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-07.md"
+  },
+  {
+    "pair_id": "08",
+    "wii_symbol": "SendSongsToMetaPerformer__17SetlistMergePanelFRCQ211stlpmtx_std45vector<i,Us,Q211stlpmtx_std15StlNodeAlloc<i>>",
+    "wii_addr": "0x80365020",
+    "xenon_addr": "0x82617830",
+    "match_type": "BSIM",
+    "simconf": 23.666,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-08.md"
+  },
+  {
+    "pair_id": "09",
+    "wii_symbol": "SetGameOver__4GameFb",
+    "wii_addr": "0x80181720",
+    "xenon_addr": "0x8265a168",
+    "match_type": "BSIM",
+    "simconf": 28.524,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-09.md"
+  },
+  {
+    "pair_id": "10",
+    "wii_symbol": "UpdateVocalStyle__10VocalTrackFv",
+    "wii_addr": "0x801529a0",
+    "xenon_addr": "0x82b743e8",
+    "match_type": "BSIM",
+    "simconf": 22.293,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-10.md"
+  },
+  {
+    "pair_id": "11",
+    "wii_symbol": "ResolveSlotStates__14OvershellPanelFv",
+    "wii_addr": "0x8031c470",
+    "xenon_addr": "0x8259df90",
+    "match_type": "BSIM",
+    "simconf": 23.996,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-11.md"
+  },
+  {
+    "pair_id": "12",
+    "wii_symbol": "UpdateGameCymbalLanes__9GemPlayerFv",
+    "wii_addr": "0x8019c600",
+    "xenon_addr": "0x8269ea00",
+    "match_type": "BSIM",
+    "simconf": 26.925,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-12.md"
+  },
+  {
+    "pair_id": "13",
+    "wii_symbol": "clear__Q211stlpmtx_std120_List_base<Q211stlpmtx_std21pair<6Symbol,6Symbol>,Q211stlpmtx_std52StlNodeAlloc<Q211stlpmtx_std21pair<6Symbol,6Symbol>>>Fv",
+    "wii_addr": "0x80246770",
+    "xenon_addr": "0x82518de0",
+    "match_type": "BSIM",
+    "simconf": 20.79,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-13.md"
+  },
+  {
+    "pair_id": "14",
+    "wii_symbol": "Hit__4TailFv",
+    "wii_addr": "0x80144ea0",
+    "xenon_addr": "0x82b7e618",
+    "match_type": "BSIM",
+    "simconf": 23.693,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-14.md"
+  },
+  {
+    "pair_id": "15",
+    "wii_symbol": "Unload__21CampaignSongInfoPanelFv",
+    "wii_addr": "0x8028b9c0",
+    "xenon_addr": "0x826035a8",
+    "match_type": "BSIM",
+    "simconf": 17.746,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-15.md"
+  },
+  {
+    "pair_id": "16",
+    "wii_symbol": "__ct<PCc,i>__Q211stlpmtx_std24pair<C6Symbol,8DataNode>FRCQ211stlpmtx_std11pair<PCc,i>_Pv",
+    "wii_addr": "0x803e12b0",
+    "xenon_addr": "0x824e51e0",
+    "match_type": "BSIM",
+    "simconf": 16.656,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-16.md"
+  },
+  {
+    "pair_id": "17",
+    "wii_symbol": "Load__Q226@unnamed@MainHubPanel_cpp@17MainHubAdvanceMsgFR9BinStream",
+    "wii_addr": "0x802e0320",
+    "xenon_addr": "0x82603958",
+    "match_type": "BSIM",
+    "simconf": 16.738,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-17.md"
+  },
+  {
+    "pair_id": "18",
+    "wii_symbol": "SetLoadedPrefabChar__8BandUserFi",
+    "wii_addr": "0x80162c30",
+    "xenon_addr": "0x8266ecb0",
+    "match_type": "BSIM",
+    "simconf": 16.152,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-18.md"
+  },
+  {
+    "pair_id": "19",
+    "wii_symbol": "SaveGlobalOptions__10ProfileMgrFR23FixedSizeSaveableStream",
+    "wii_addr": "0x8034aa60",
+    "xenon_addr": "0x82532b48",
+    "match_type": "BSIM",
+    "simconf": 17.482,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-19.md"
+  },
+  {
+    "pair_id": "20",
+    "wii_symbol": "__ct__14PlayerBehaviorFv",
+    "wii_addr": "0x801c7380",
+    "xenon_addr": "0x826d0108",
+    "match_type": "BSIM",
+    "simconf": 15.772,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-20.md"
+  },
+  {
+    "pair_id": "21",
+    "wii_symbol": "CreateController__14ChordbookPanelFv",
+    "wii_addr": "0x8016c4c0",
+    "xenon_addr": "0x826966f0",
+    "match_type": "BSIM",
+    "simconf": 17.353,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-21.md"
+  },
+  {
+    "pair_id": "22",
+    "wii_symbol": "SetPrimaryMetaScore__16LocalBandMachineFi",
+    "wii_addr": "0x802d6050",
+    "xenon_addr": "0x825a8520",
+    "match_type": "ExactInstructionsFunctionHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-22.md"
+  },
+  {
+    "pair_id": "23",
+    "wii_symbol": "PitchNote__5LyricCFv",
+    "wii_addr": "0x80142cf0",
+    "xenon_addr": "0x82b7d078",
+    "match_type": "ExactInstructionsFunctionHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-23.md"
+  },
+  {
+    "pair_id": "24",
+    "wii_symbol": "GlobalOptionsNeedsSave__10ProfileMgrFv",
+    "wii_addr": "0x8034aa10",
+    "xenon_addr": "0x82532198",
+    "match_type": "ExactInstructionsFunctionHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-24.md"
+  },
+  {
+    "pair_id": "25",
+    "wii_symbol": "GetFrameMatchType__6SingerFv",
+    "wii_addr": "0x801d96b0",
+    "xenon_addr": "0x826d99b0",
+    "match_type": "ExactInstructionsFunctionHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-25.md"
+  },
+  {
+    "pair_id": "26",
+    "wii_symbol": "TambourineGems__17TambourineManagerCFv",
+    "wii_addr": "0x801ebda0",
+    "xenon_addr": "0x826dbaa8",
+    "match_type": "ExactInstructionsFunctionHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-26.md"
+  },
+  {
+    "pair_id": "27",
+    "wii_symbol": "DifficultySortPart__12MusicLibraryCFv",
+    "wii_addr": "0x80300e10",
+    "xenon_addr": "0x8252c728",
+    "match_type": "SwitchSigHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-27.md"
+  },
+  {
+    "pair_id": "28",
+    "wii_symbol": "TrackTypeToScoreType__F9TrackTypebb",
+    "wii_addr": "0x80171cd0",
+    "xenon_addr": "0x82670e70",
+    "match_type": "SwitchSigHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-28.md"
+  },
+  {
+    "pair_id": "29",
+    "wii_symbol": "ActiveScoreType__12MusicLibraryCFv",
+    "wii_addr": "0x80300f00",
+    "xenon_addr": "0x8233afb0",
+    "match_type": "SwitchSigHasher",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-29.md"
+  },
+  {
+    "pair_id": "30",
+    "wii_symbol": "GetRankData__11SingerStatsCFi",
+    "wii_addr": "0x801e68a0",
+    "xenon_addr": "0x826798b0",
+    "match_type": "Implied Match",
+    "simconf": -1.0,
+    "evidence_path": "/home/free/code/milohax/rb3/docs/decomp/xenon-hardening/round2/evidence/pair-30.md"
+  }
+]

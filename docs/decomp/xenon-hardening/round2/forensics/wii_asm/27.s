@@ -1,0 +1,73 @@
+# MusicLibrary::DifficultySortPart() const
+.fn DifficultySortPart__12MusicLibraryCFv, global
+/* 80300E10 002F5830  94 21 F7 E0 */	stwu r1, -0x820(r1)
+/* 80300E14 002F5834  7C 08 02 A6 */	mflr r0
+/* 80300E18 002F5838  90 01 08 24 */	stw r0, 0x824(r1)
+/* 80300E1C 002F583C  48 00 00 E5 */	bl ActiveScoreType__12MusicLibraryCFv
+/* 80300E20 002F5840  28 03 00 0A */	cmplwi r3, 0xa
+/* 80300E24 002F5844  41 81 00 88 */	bgt .L_80300EAC
+/* 80300E28 002F5848  3C 80 80 BA */	lis r4, "@72368"@ha
+/* 80300E2C 002F584C  54 60 10 3A */	slwi r0, r3, 2
+/* 80300E30 002F5850  38 84 9E F0 */	addi r4, r4, "@72368"@l
+/* 80300E34 002F5854  7C 84 00 2E */	lwzx r4, r4, r0
+/* 80300E38 002F5858  7C 89 03 A6 */	mtctr r4
+/* 80300E3C 002F585C  4E 80 04 20 */	bctr
+.L_80300E40:
+/* 80300E40 002F5860  3C 60 80 D1 */	lis r3, band@ha
+/* 80300E44 002F5864  80 63 21 10 */	lwz r3, band@l(r3)
+/* 80300E48 002F5868  48 00 00 A4 */	b .L_80300EEC
+.L_80300E4C:
+/* 80300E4C 002F586C  3C 60 80 D1 */	lis r3, guitar@ha
+/* 80300E50 002F5870  80 63 41 D4 */	lwz r3, guitar@l(r3)
+/* 80300E54 002F5874  48 00 00 98 */	b .L_80300EEC
+.L_80300E58:
+/* 80300E58 002F5878  3C 60 80 D1 */	lis r3, bass@ha
+/* 80300E5C 002F587C  80 63 21 9C */	lwz r3, bass@l(r3)
+/* 80300E60 002F5880  48 00 00 8C */	b .L_80300EEC
+.L_80300E64:
+/* 80300E64 002F5884  3C 60 80 D1 */	lis r3, drum@ha
+/* 80300E68 002F5888  80 63 2F 98 */	lwz r3, drum@l(r3)
+/* 80300E6C 002F588C  48 00 00 80 */	b .L_80300EEC
+.L_80300E70:
+/* 80300E70 002F5890  3C 60 80 D1 */	lis r3, vocals@ha
+/* 80300E74 002F5894  80 63 15 7C */	lwz r3, vocals@l(r3)
+/* 80300E78 002F5898  48 00 00 74 */	b .L_80300EEC
+.L_80300E7C:
+/* 80300E7C 002F589C  3C 60 80 D1 */	lis r3, keys@ha
+/* 80300E80 002F58A0  80 63 4B F4 */	lwz r3, keys@l(r3)
+/* 80300E84 002F58A4  48 00 00 68 */	b .L_80300EEC
+.L_80300E88:
+/* 80300E88 002F58A8  3C 60 80 D1 */	lis r3, real_guitar@ha
+/* 80300E8C 002F58AC  80 63 61 00 */	lwz r3, real_guitar@l(r3)
+/* 80300E90 002F58B0  48 00 00 5C */	b .L_80300EEC
+.L_80300E94:
+/* 80300E94 002F58B4  3C 60 80 D1 */	lis r3, real_bass@ha
+/* 80300E98 002F58B8  80 63 60 F4 */	lwz r3, real_bass@l(r3)
+/* 80300E9C 002F58BC  48 00 00 50 */	b .L_80300EEC
+.L_80300EA0:
+/* 80300EA0 002F58C0  3C 60 80 D1 */	lis r3, real_keys@ha
+/* 80300EA4 002F58C4  80 63 61 30 */	lwz r3, real_keys@l(r3)
+/* 80300EA8 002F58C8  48 00 00 44 */	b .L_80300EEC
+.L_80300EAC:
+/* 80300EAC 002F58CC  3C 80 80 BA */	lis r4, "@stringBase0"@ha
+/* 80300EB0 002F58D0  38 61 00 0C */	addi r3, r1, 0xc
+/* 80300EB4 002F58D4  38 84 A4 E4 */	addi r4, r4, "@stringBase0"@l
+/* 80300EB8 002F58D8  38 84 05 07 */	addi r4, r4, 0x507
+/* 80300EBC 002F58DC  48 19 BC 95 */	bl __ct__12FormatStringFPCc
+/* 80300EC0 002F58E0  38 61 00 0C */	addi r3, r1, 0xc
+/* 80300EC4 002F58E4  48 19 CC 8D */	bl Str__12FormatStringFv
+/* 80300EC8 002F58E8  3C A0 80 C9 */	lis r5, TheDebug@ha
+/* 80300ECC 002F58EC  7C 64 1B 78 */	mr r4, r3
+/* 80300ED0 002F58F0  38 65 73 D8 */	addi r3, r5, TheDebug@l
+/* 80300ED4 002F58F4  48 11 DA ED */	bl Fail__5DebugFPCc
+/* 80300ED8 002F58F8  3C 80 80 BB */	lis r4, gNullStr@ha
+/* 80300EDC 002F58FC  38 61 00 08 */	addi r3, r1, 0x8
+/* 80300EE0 002F5900  80 84 5D 30 */	lwz r4, gNullStr@l(r4)
+/* 80300EE4 002F5904  48 1B C2 DD */	bl __ct__6SymbolFPCc
+/* 80300EE8 002F5908  80 63 00 00 */	lwz r3, 0x0(r3)
+.L_80300EEC:
+/* 80300EEC 002F590C  80 01 08 24 */	lwz r0, 0x824(r1)
+/* 80300EF0 002F5910  7C 08 03 A6 */	mtlr r0
+/* 80300EF4 002F5914  38 21 08 20 */	addi r1, r1, 0x820
+/* 80300EF8 002F5918  4E 80 00 20 */	blr
+.endfn DifficultySortPart__12MusicLibraryCFv
