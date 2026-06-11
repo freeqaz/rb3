@@ -4,6 +4,26 @@
 > item and **corrected two conclusions in this doc** (theme A and theme B below).
 > See [`BLOCKER_VALIDATION_2026-06-08.md`](BLOCKER_VALIDATION_2026-06-08.md) for the
 > verified verdicts and what landed.
+>
+> **Update (2026-06-11):** a fresh fact-check (4-lane investigation, see
+> [`char-load-5b/`](char-load-5b/)) found **two more stale conclusions**:
+> (1) **Item 5b is NOT a serialization blocker.** The named char-Load functions
+> (`CharClip::Load`, `CharBonesSamples::Load`, `>>CharBones::Bone`) are **already
+> byte-correct on the LE host** — the real BE head milos load clean via the exact
+> `BandHeadShaper.cpp:142` path (locked by gtest `CharLoad5b`, 4/4, commit `6e67c2e3`).
+> The string-len overflow the gate comment feared was fixed earlier; the gate is
+> **stale**. The *real* obstacle to a general char-load is the `Character →
+> CharacterTest → "char_test" overlay` boot dependency (`Character.cpp:188`
+> unconditional `new CharacterTest`), which does NOT lie on the head-shaper milo
+> path. Lifting the `BandHeadShaper.cpp:137/156` gate is tracked separately
+> (un-gate + boot-verify).
+> (2) **Theme B is DONE** — the staged char-customize-cache rollout landed in the
+> C13 series (`89ff46a1`/`5a5edee8`/`65f7f0e6`), default-on (opt-out
+> `RB3_NO_CHAR_PREVIEW`), `mFileMerger` deref already guarded. The only residual is
+> the intermittent ~1/19 `BandPatchMesh::SetMeshVerts` OOB (separate mesh-desync).
+> **Bonus latent bug found:** `MILO_TRY/MILO_CATCH` is broken on LP64 —
+> `Debug::Fail` longjmps the `const char* msg` as `int`, truncating the 64-bit
+> pointer → SIGSEGV on catch. Worth its own `HX_NATIVE` fix.
 
 A systematic audit of the native/web port for **"hacks": places where, on
 `HX_NATIVE`, we disable / skip / stub something the original game does** — the
