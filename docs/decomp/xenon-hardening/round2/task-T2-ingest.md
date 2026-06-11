@@ -260,7 +260,7 @@ cd /home/free/code/milohax/rb3-xenon && python3 tools/fn_resolver.py resolve 0x8
 - `bsim_simconf` is `null` for all non-BSIM entries (correct)
 - SwitchSigHasher output count is 3 (one wrong excluded from 5-entry pool minus 1 null_sym)
 
-### Commit SHAs (filled in after commits below)
+### Commit SHAs
 
-- rb3: see below
-- rb3-xenon: see below
+- rb3 (master): `6a4779b2` — tools(ghidra): ingest_ghidriff_accepts.py
+- rb3-xenon (main): `7bdae6c` — tools(fn_resolver): add T4b ghidriff_wii_b8 tier
