@@ -92,6 +92,9 @@ void CharCache::Request(
             return;
 #endif
         bchar->CopyCharDesc(descs.front());
+#ifdef HX_NATIVE
+        gNativeStartLoadTag = "CharCache::Request";
+#endif
         bchar->StartLoad(true, b1, b2);
     }
 }

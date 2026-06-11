@@ -1,7 +1,9 @@
 #pragma once
 #ifdef HX_NATIVE
 #include <map>
+#include <set>
 #include <string>
+#include <vector>
 #endif
 #include "char/Character.h"
 #include "char/CharCollide.h"
@@ -27,6 +29,14 @@
 #include "obj/Utl.h"
 #include "rndobj/Rnd.h"
 #include "rndobj/MeshDeform.h"
+
+#ifdef HX_NATIVE
+// render-polish 2026-06-11 (char-render): StartLoad caller-attribution tag for the
+// RELOAD_PROBE diagnostics. Every BandCharacter::StartLoad call site sets this just
+// before the call; StartLoad prints + resets it. Diagnostics only (probe-gated
+// output); harmless single pointer write when probes are off.
+extern const char *gNativeStartLoadTag;
+#endif
 
 class BandCharacter : public Character,
                       public BandCharDesc,
@@ -128,6 +138,18 @@ public:
     // animates. Complements RebindOutfitBonesToOwnSkeleton (which owns the torso).
     // Opt-out RB3_NO_HEAD_REBIND=1. No-op on Wii (HX_NATIVE only).
     void RebindHeadHandsAtRest();
+    // render-polish 2026-06-11 (char-render): shared skinned-mesh collector used by
+    // both Poll-time rebinds and the SyncObjects rest-pose seeding — hashtable
+    // objects + each dir's mDraws + every LOD Group/TransGroup, recursing
+    // RndDrawable::ListDrawChildren. Scope = {this, mOutfitDir}; mInstDir excluded.
+    void NativeCollectSkinnedMeshes(std::vector<RndMesh *> &out);
+    // render-polish 2026-06-11 (char-render): deterministic rest-pose seeding,
+    // called from SyncObjects() right after SetDeformation() (the deform clip's
+    // PoseMeshes leaves the skeleton at the weighted gender-bind REST pose). Seeds
+    // mNativeRestPose for skin-mesh bones that resolve to a DISTINCT live
+    // per-member instance and aren't snapshotted yet, so meshes (re)merged
+    // mid-song bake against true rest instead of a mid-clip Poll pose.
+    void NativeCaptureRestPoseAfterDeform();
 #endif
     CharClipDriver *SetState(const char *, int, int, bool, bool);
     bool InVignetteOrCloset() const;
@@ -275,5 +297,11 @@ public:
     int mNativeHeadReboundQuiet;
     bool mNativeRestCaptured;
     std::map<std::string, Transform> mNativeRestPose;
+    // render-polish 2026-06-11 (char-render): provenance for mNativeRestPose
+    // entries. A bone name in this set was captured from a DISTINCT per-member
+    // resolve (own != bound — the authoritative rest basis). Entries seeded while
+    // own == bound (post-deform SyncObjects seeding, which may have resolved the
+    // shared magnet) are overwritten ONCE by the first distinct resolve.
+    std::set<std::string> mNativeRestDistinct;
 #endif
 };

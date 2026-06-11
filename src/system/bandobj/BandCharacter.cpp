@@ -32,6 +32,24 @@
 
 INIT_REVS(BandCharacter)
 
+#ifdef HX_NATIVE
+// render-polish 2026-06-11 (char-render): reload-churn probe plumbing.
+// gNativeStartLoadTag attributes each BandCharacter::StartLoad to its trigger
+// (set by every call site: RecomposePatches / MiloReload / start_load DTA /
+// in_closet propsync / CharCache::Request / BandWardrobe paths) so RELOAD_PROBE
+// can answer "what reloads the band mid-song?". gNativeBandCharPollSerial is a
+// monotonic Poll counter shared by all members, printed by the probes for log
+// correlation. Diagnostics only — all output gated on RELOAD_PROBE=1.
+const char *gNativeStartLoadTag = "?";
+int gNativeBandCharPollSerial = 0;
+static bool NativeReloadProbe() {
+    static int sOn = -1;
+    if (sOn < 0)
+        sOn = getenv("RELOAD_PROBE") ? 1 : 0;
+    return sOn != 0;
+}
+#endif
+
 ObjectDir *sBoneMergeDir;
 ObjectDir *sOutfitDir;
 ObjectDir *sResourceDir;
@@ -331,6 +349,9 @@ bool BandCharacter::AllowOverride(const char *cc) {
 
 void BandCharacter::Poll() {
     START_AUTO_TIMER("cc_poll");
+#ifdef HX_NATIVE
+    gNativeBandCharPollSerial++; // probe log correlation (RELOAD_PROBE)
+#endif
     if (unk5a2) {
         Teleport(unk594);
         unk5a2 = false;
@@ -685,6 +706,157 @@ void BandCharacter::RemoveDrawAndPoll(Character *c) {
 }
 
 #ifdef HX_NATIVE
+// render-polish 2026-06-11 (char-render): shared skinned-mesh collector (factored
+// out of the two Poll-time rebinds, which had identical copies; also used by the
+// SyncObjects rest-pose seeding). Collects every skinned mesh the band member
+// draws. The face/hand/tongue/teeth skin meshes live in mOutfitDir's hashtable
+// (reached by ObjDirItr), but the BODY clothing meshes (trackjacket / vestdenim /
+// plaidshirt / shred + _skin.N) are merged resources with an EMPTY dir name — NOT
+// in any hashtable — and are only reachable by walking the dir's DRAW tree
+// (mDraws -> RndGroup patch.grp -> nested meshes, plus every LOD's
+// Group()/TransGroup(), which is where Character::DrawLodOrShadow actually draws
+// from), via the engine-native RndDrawable::ListDrawChildren recursion.
+// Scope = {this, mOutfitDir}; mInstDir (guitar / mic / drums) is DELIBERATELY
+// excluded — instruments attach to specific hand/prop bones, not the gender
+// skeleton; rebinding their bones to animated character bones distorts the prop.
+void BandCharacter::NativeCollectSkinnedMeshes(std::vector<RndMesh *> &targets) {
+    Character *drawChars[2] = { this, (Character *)mOutfitDir };
+    // worklist of drawables to expand (start with each dir's top draw list)
+    std::vector<RndDrawable *> work;
+    for (int d = 0; d < 2; d++) {
+        Character *dc = drawChars[d];
+        if (!dc) continue;
+        RndDir *dd = dc;
+        // (1) hashtable objects (face/hands/etc.)
+        for (ObjDirItr<RndMesh> mit(dd, true); mit != 0; ++mit) {
+            RndMesh *m = mit;
+            if (m && m->NumBones() != 0 &&
+                std::find(targets.begin(), targets.end(), m) == targets.end())
+                targets.push_back(m);
+        }
+        // (2) seed the draw-tree walk from the dir's own draw list
+        for (std::vector<RndDrawable *>::iterator it = dd->mDraws.begin();
+             it != dd->mDraws.end(); ++it)
+            work.push_back(*it);
+        // (3) seed from every LOD's draw group + trans group — this is where the
+        // BODY CLOTHING actually lives. It is NOT in mDraws, so without this the
+        // female torso mesh is never reached.
+        for (int li = 0; li < dc->mLods.size(); li++) {
+            if (dc->mLods[li].Group()) work.push_back(dc->mLods[li].Group());
+            if (dc->mLods[li].TransGroup()) work.push_back(dc->mLods[li].TransGroup());
+        }
+    }
+    // (4) recurse the draw tree (groups -> nested clothing meshes). Bounded by a
+    // visited set so a cyclic/shared group reference cannot loop forever.
+    std::vector<RndDrawable *> visited;
+    while (!work.empty()) {
+        RndDrawable *dr = work.back();
+        work.pop_back();
+        if (!dr) continue;
+        if (std::find(visited.begin(), visited.end(), dr) != visited.end()) continue;
+        visited.push_back(dr);
+        RndMesh *m = dynamic_cast<RndMesh *>(dr);
+        if (m && m->NumBones() != 0 &&
+            std::find(targets.begin(), targets.end(), m) == targets.end())
+            targets.push_back(m);
+        std::list<RndDrawable *> kids;
+        dr->ListDrawChildren(kids);
+        for (std::list<RndDrawable *>::iterator k = kids.begin(); k != kids.end(); ++k)
+            if (*k && std::find(visited.begin(), visited.end(), *k) == visited.end())
+                work.push_back(*k);
+    }
+}
+
+// render-polish 2026-06-11 (char-render step 2): deterministic rest-pose seeding.
+// Called from SyncObjects() IMMEDIATELY after SetDeformation(), where the gender
+// deform clip's PoseMeshes() has just left every deform-driven bone at the
+// character's weighted REST pose — the exact basis the head/hands rest rebind
+// bakes its inverse-bind against. Seeds mNativeRestPose for any skin-mesh bone
+// that already resolves to a DISTINCT live per-member instance (own != bound)
+// and isn't snapshotted yet (first capture wins, never overwritten), so a mesh
+// (re)merged MID-SONG gets a true-rest bake basis instead of relying on the
+// Poll-time fallback (which would capture a mid-clip pose for a bone that is
+// already animating). Bones still resolving to the shared magnet (own == bound)
+// are skipped — the SyncObjects-time Find caveat in
+// CHAR_SKINNING_DEFORM_INVESTIGATION.md — and remain covered by the Poll-time
+// first-DISTINCT-resolve capture in RebindHeadHandsAtRest.
+void BandCharacter::NativeCaptureRestPoseAfterDeform() {
+    static int sDisabled = -1;
+    if (sDisabled < 0) sDisabled = getenv("RB3_NO_HEAD_REBIND") ? 1 : 0;
+    if (sDisabled) return;
+    // Poison guard: SetDeformation() poses only the DEFORM-CLIP bones to rest. If a
+    // venue clip is already playing (the mid-song StartClipLoads churn), any bone
+    // OUTSIDE the deform clip (props / hair / mic-stand) is at a MID-CLIP pose right
+    // now — seeding it as "rest" would bake a wrong basis. Seed only while no clip
+    // plays (initial-load SyncObjects — where ALL bones hold load/deform rest).
+    // Empirically all mid-song seeds were added=0 anyway (bones already snapshotted
+    // at load); genuinely-new late bones stay covered by the Poll-time
+    // first-distinct-resolve capture.
+    if (mDriver && mDriver->FirstPlaying()) {
+        if (NativeReloadProbe())
+            fprintf(stderr,
+                    "[REST_SEED] poll=%d char='%s' SKIPPED (clip playing) restPose=%d\n",
+                    gNativeBandCharPollSerial, Name() ? Name() : "?",
+                    (int)mNativeRestPose.size());
+        return;
+    }
+    std::vector<RndMesh *> targets;
+    NativeCollectSkinnedMeshes(targets);
+    int added = 0, distinct = 0;
+    for (std::vector<RndMesh *>::iterator mi = targets.begin();
+         mi != targets.end(); ++mi) {
+        RndMesh *mesh = *mi;
+        for (int b = 0; b < mesh->NumBones(); b++) {
+            RndTransformable *bound = mesh->BoneTransAt(b);
+            if (!bound || !bound->Name()) continue;
+            RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
+            if (!own) continue;
+            std::string bname(bound->Name());
+            bool isDistinct = (own != bound);
+            if (isDistinct) distinct++;
+            // capture policy: a DISTINCT resolve (own != bound — the live
+            // per-member instance) is the authoritative rest basis; it is captured
+            // once and never overwritten. An own==bound resolve (mesh already bound
+            // to whatever Find returns — live bone OR the shared magnet) is seeded
+            // only if nothing better exists, and stays overwritable by the first
+            // later distinct resolve (mNativeRestDistinct provenance).
+            bool haveDistinct =
+                mNativeRestDistinct.find(bname) != mNativeRestDistinct.end();
+            if (haveDistinct) continue;
+            if (!isDistinct && mNativeRestPose.find(bname) != mNativeRestPose.end())
+                continue;
+            Transform rest = own->WorldXfm();
+            // same finite/sane guard as the Poll-time capture (the engine clamp is
+            // disabled for rebound meshes, so a NaN inverse-bind has no backstop)
+            if (!(std::fabs(rest.v.x) < 1e5f && std::fabs(rest.v.y) < 1e5f &&
+                  std::fabs(rest.v.z) < 1e5f))
+                continue;
+            mNativeRestPose[bname] = rest;
+            if (isDistinct) mNativeRestDistinct.insert(bname);
+            added++;
+        }
+    }
+    if (NativeReloadProbe()) {
+        fprintf(stderr,
+                "[REST_SEED] poll=%d char='%s' meshes=%d distinctSlots=%d added=%d "
+                "restPose=%d\n",
+                gNativeBandCharPollSerial, Name() ? Name() : "?", (int)targets.size(),
+                distinct, added, (int)mNativeRestPose.size());
+        // one-shot full target inventory per member: attributes guard-dropped mesh
+        // names to band members vs venue extras/crowd (whose meshes are NOT in any
+        // BandCharacter draw tree).
+        for (std::vector<RndMesh *>::iterator mi = targets.begin();
+             mi != targets.end(); ++mi) {
+            RndMesh *m = *mi;
+            RndMesh *go = m->GeomOwner();
+            fprintf(stderr,
+                    "[CHAR_MESH] char='%s' mesh='%s' bones=%d rebound=%d shared=%d\n",
+                    Name() ? Name() : "?", m->Name() ? m->Name() : "?", m->NumBones(),
+                    (int)m->mNativeBonesRebound, (int)(go && go != m));
+        }
+    }
+}
+
 // wave-08: rebind this band member's outfit skin meshes from the static shared
 // char/main/skeleton magnet onto the member's OWN animated per-member skeleton.
 //
@@ -745,65 +917,10 @@ void BandCharacter::RebindOutfitBonesToOwnSkeleton() {
     int sawAnimated = 0;  // bones whose Find result differs from the bound magnet
     int gotBodyMesh = 0;  // rebound at least one high-bone (>=20) body/face mesh
 
-    // Collect every skinned mesh the band member draws. The face/hand/tongue/teeth
-    // skin meshes live in mOutfitDir's hashtable (reached by ObjDirItr), but the
-    // BODY clothing meshes (trackjacket / vestdenim / plaidshirt / shred + _skin.N)
-    // are merged resources with an EMPTY dir name — NOT in any hashtable — and are
-    // only reachable by walking the dir's DRAW tree (mDraws -> RndGroup patch.grp ->
-    // nested meshes), via the engine-native RndDrawable::ListDrawChildren recursion.
+    // Collect every skinned mesh the band member draws (shared collector — see
+    // NativeCollectSkinnedMeshes for the hashtable + draw-tree + LOD-group walk).
     std::vector<RndMesh *> targets;
-    // OUTFIT scope only: `this` (member props) + mOutfitDir (clothing/face/hands).
-    // mInstDir (guitar / mic / drums) is DELIBERATELY excluded — instruments attach
-    // to specific hand/prop bones, not the gender skeleton; rebinding their bones to
-    // animated character bones distorts the prop (thin radiating shards).
-    Character *drawChars[2] = { this, (Character *)mOutfitDir };
-    // worklist of drawables to expand (start with each dir's top draw list)
-    std::vector<RndDrawable *> work;
-    for (int d = 0; d < 2; d++) {
-        Character *dc = drawChars[d];
-        if (!dc) continue;
-        RndDir *dd = dc;
-        // (1) hashtable objects (face/hands/etc.)
-        for (ObjDirItr<RndMesh> mit(dd, true); mit != 0; ++mit) {
-            RndMesh *m = mit;
-            if (m && m->NumBones() != 0 &&
-                std::find(targets.begin(), targets.end(), m) == targets.end())
-                targets.push_back(m);
-        }
-        // (2) seed the draw-tree walk from the dir's own draw list
-        for (std::vector<RndDrawable *>::iterator it = dd->mDraws.begin();
-             it != dd->mDraws.end(); ++it)
-            work.push_back(*it);
-        // (3) seed from every LOD's draw group + trans group — this is where the
-        // BODY CLOTHING (trackjacket / vestdenim / plaidshirt / shred + _skin.N)
-        // actually lives (Character::DrawLodOrShadow draws curLod->Group()). It is
-        // NOT in mDraws, so without this the female torso mesh is never reached.
-        for (int li = 0; li < dc->mLods.size(); li++) {
-            if (dc->mLods[li].Group()) work.push_back(dc->mLods[li].Group());
-            if (dc->mLods[li].TransGroup()) work.push_back(dc->mLods[li].TransGroup());
-        }
-    }
-    // (3) recurse the draw tree (groups -> nested clothing meshes). Bounded by a
-    // visited set so a cyclic/shared group reference cannot loop forever.
-    std::vector<RndDrawable *> visited;
-    while (!work.empty()) {
-        RndDrawable *dr = work.back();
-        work.pop_back();
-        if (!dr) continue;
-        if (std::find(visited.begin(), visited.end(), dr) != visited.end()) continue;
-        visited.push_back(dr);
-        RndMesh *m = dynamic_cast<RndMesh *>(dr);
-        if (m) {
-            if (m->NumBones() != 0 &&
-                std::find(targets.begin(), targets.end(), m) == targets.end())
-                targets.push_back(m);
-        }
-        std::list<RndDrawable *> kids;
-        dr->ListDrawChildren(kids);
-        for (std::list<RndDrawable *>::iterator k = kids.begin(); k != kids.end(); ++k)
-            if (*k && std::find(visited.begin(), visited.end(), *k) == visited.end())
-                work.push_back(*k);
-    }
+    NativeCollectSkinnedMeshes(targets);
 
     // TORSO-CLOTHING-ONLY by default (the clean scope — see header comment). Rebind
     // only the body clothing meshes (which have compact geometry and rebind without
@@ -948,122 +1065,191 @@ void BandCharacter::RebindHeadHandsAtRest() {
     if (mNativeHeadReboundOnce) return;
     bool probe = getenv("HEAD_REBIND_PROBE") != 0;
 
-    // Collect every skinned mesh the member draws — same draw-tree walk as the torso
-    // rebind: hashtable (ObjDirItr) + each dir's mDraws + each LOD's Group()/TransGroup,
-    // recursing RndDrawable::ListDrawChildren. Scope = {this, mOutfitDir}; mInstDir
-    // (guitar/mic/drums) is EXCLUDED (props attach to prop bones, not the gender skel).
+    // Collect every skinned mesh the member draws (shared collector — same walk as
+    // the torso rebind; see NativeCollectSkinnedMeshes).
     std::vector<RndMesh *> targets;
-    Character *drawChars[2] = { this, (Character *)mOutfitDir };
-    std::vector<RndDrawable *> work;
-    for (int d = 0; d < 2; d++) {
-        Character *dc = drawChars[d];
-        if (!dc) continue;
-        RndDir *dd = dc;
-        for (ObjDirItr<RndMesh> mit(dd, true); mit != 0; ++mit) {
-            RndMesh *m = mit;
-            if (m && m->NumBones() != 0 &&
-                std::find(targets.begin(), targets.end(), m) == targets.end())
-                targets.push_back(m);
-        }
-        for (std::vector<RndDrawable *>::iterator it = dd->mDraws.begin();
-             it != dd->mDraws.end(); ++it)
-            work.push_back(*it);
-        for (int li = 0; li < dc->mLods.size(); li++) {
-            if (dc->mLods[li].Group()) work.push_back(dc->mLods[li].Group());
-            if (dc->mLods[li].TransGroup()) work.push_back(dc->mLods[li].TransGroup());
-        }
-    }
-    std::vector<RndDrawable *> visited;
-    while (!work.empty()) {
-        RndDrawable *dr = work.back();
-        work.pop_back();
-        if (!dr) continue;
-        if (std::find(visited.begin(), visited.end(), dr) != visited.end()) continue;
-        visited.push_back(dr);
-        RndMesh *m = dynamic_cast<RndMesh *>(dr);
-        if (m && m->NumBones() != 0 &&
-            std::find(targets.begin(), targets.end(), m) == targets.end())
-            targets.push_back(m);
-        std::list<RndDrawable *> kids;
-        dr->ListDrawChildren(kids);
-        for (std::list<RndDrawable *>::iterator k = kids.begin(); k != kids.end(); ++k)
-            if (*k && std::find(visited.begin(), visited.end(), *k) == visited.end())
-                work.push_back(*k);
-    }
+    NativeCollectSkinnedMeshes(targets);
 
     int reboundMeshes = 0, pending = 0, slots = 0, reboundBones = 0;
     for (std::vector<RndMesh *>::iterator mi = targets.begin();
          mi != targets.end(); ++mi) {
         RndMesh *mesh = *mi;
         if (mesh->mNativeBonesRebound) continue; // owned by torso rebind or already done
-        // COMPLEMENT of the torso scope: skip the torso clothing (owned by the Poll
-        // rebind) — everything else (head/hair/hands/face/legs/feet/accessories) here.
+        // render-polish 2026-06-11 (char-render): the own==bound rest-rebake below
+        // can be A/B-disabled (falls back to the pre-2026-06-11 behavior: those
+        // meshes stay on the engine clamp/V24 guard -> invisible bodies).
+        static int sNoBoundRebake = -1;
+        if (sNoBoundRebake < 0)
+            sNoBoundRebake = getenv("RB3_NO_BOUND_REBAKE") ? 1 : 0;
         const char *mn = mesh->Name();
-        if (mn && (strstr(mn, "trackjacket") || strstr(mn, "vestdenim") ||
-                   strstr(mn, "plaidshirt") || strstr(mn, "shred")))
+        bool torsoName = mn && (strstr(mn, "trackjacket") || strstr(mn, "vestdenim") ||
+                                strstr(mn, "plaidshirt") || strstr(mn, "shred"));
+        // COMPLEMENT of the torso scope: a torso mesh with any DISTINCT-resolving
+        // bone (own != bound) is owned by the Poll torso rebind
+        // (RebindOutfitBonesToOwnSkeleton, authored offsets) — skip it here. But a
+        // torso mesh whose bones ALL resolve own==bound can never be repointed by
+        // the torso rebind (it needs a distinct instance); pre-2026-06-11 such
+        // meshes fell to the engine clamp/guard -> invisible torso. They now fall
+        // through to the own==bound rest-rebake below.
+        if (torsoName && !sNoBoundRebake) {
+            bool anyDistinct = false;
+            for (int b = 0; b < mesh->NumBones(); b++) {
+                RndTransformable *bound = mesh->BoneTransAt(b);
+                if (!bound || !bound->Name()) continue;
+                RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
+                if (own && own != bound) { anyDistinct = true; break; }
+            }
+            if (anyDistinct) continue; // torso rebind's lane
+        } else if (torsoName) {
             continue;
-        // Only touch SELF-OWNED meshes: the engine builds the GPU bone palette from
-        // owner=mesh->GeomOwner() (owner->BoneOffsetAt/BoneTransAt). For a mesh whose
-        // geometry is owned by another, writing this mesh's bone array has no GPU
-        // effect yet setting mNativeBonesRebound would still disable its fling-clamp
-        // -> a HARDER shard. Leave shared-geometry meshes to the clamp.
+        }
+        // GeomOwner-shared meshes: the engine builds the GPU bone palette from
+        // owner=mesh->GeomOwner() (owner->BoneOffsetAt/BoneTransAt), so writing this
+        // mesh's bone array has no GPU effect. If the OWNER has been rebound its
+        // palette is already correct — propagate the flag so the drawn mesh is also
+        // exempted from the fling-clamp (which would otherwise freeze its
+        // legitimately-animating rest-baked palette to bind). If the owner is NOT
+        // (yet) rebound, leave the mesh to the clamp (flagging it would disable the
+        // only backstop -> a HARDER shard).
         RndMesh *go = mesh->GeomOwner();
-        if (go && go != mesh)
+        if (go && go != mesh) {
+            if (go->mNativeBonesRebound) {
+                mesh->mNativeBonesRebound = true;
+                reboundMeshes++;
+                reboundBones++; // counts as progress: keeps the quiet counter armed
+            } else {
+                pending++;
+            }
             continue;
-        int meshRebound = 0, miss = 0;
-        for (int b = 0; b < mesh->NumBones(); b++) {
+        }
+        // TWO-PASS apply (render-polish 2026-06-11): NEVER mutate a mesh that
+        // cannot COMPLETE. A partial rebake (some bones rest-baked, some left
+        // authored, mesh unflagged) hands the engine clamp a MIXED palette that
+        // the V24 ratio guard then drops every frame — worse than untouched.
+        // Pass A resolves every bone slot and validates a rest basis; only if ALL
+        // slots resolve does pass B repoint + rebake + flag the mesh.
+        int nb = mesh->NumBones();
+        std::vector<RndTransformable *> owns((size_t)nb, (RndTransformable *)0);
+        std::vector<Transform> rests((size_t)nb);
+        std::vector<unsigned char> apply((size_t)nb, 0);
+        int resolvable = 0, miss = 0;
+        const char *missBone = 0;
+        const char *missWhy = "";
+        for (int b = 0; b < nb; b++) {
             RndTransformable *bound = mesh->BoneTransAt(b);
-            if (!bound || !bound->Name()) continue;
+            if (!bound || !bound->Name()) continue; // empty slot (engine: identity)
             slots++;
             RndTransformable *own = Find<RndTransformable>(bound->Name(), false);
-            if (!own || own == bound) { miss++; continue; } // per-member not reachable yet
-            // resolve this bone's REST world: from the snapshot, or capture it the
-            // FIRST time this bone resolves to a distinct per-member instance. This
-            // method runs pre-Character::Poll(), so a freshly-resolvable per-member
-            // bone still holds its load/rest pose — capturing on first-resolve (rather
-            // than gating on the literal first Poll) also covers per-member skeletons
-            // that stream in a few frames late (else those bones were abandoned ->
-            // permanent shard, and the scan never latched). Reject a non-finite / huge
-            // rest xfm (a broken bone) so Invert can't produce NaN — the engine clamp
-            // is disabled for rebound meshes, so there is no backstop.
-            std::map<std::string, Transform>::iterator rp =
-                mNativeRestPose.find(bound->Name());
+            if (!own) {
+                miss++;
+                if (!missBone) { missBone = bound->Name(); missWhy = "unresolvable"; }
+                continue;
+            }
+            std::string bname(bound->Name());
+            std::map<std::string, Transform>::iterator rp = mNativeRestPose.find(bname);
+            bool haveDistinct =
+                mNativeRestDistinct.find(bname) != mNativeRestDistinct.end();
             Transform rest;
-            if (rp != mNativeRestPose.end()) {
+            if (own == bound) {
+                // render-polish 2026-06-11 (char-render): the mesh is ALREADY bound
+                // to the instance Find resolves (a per-member live bone — or the
+                // shared magnet when no live instance exists). Pre-2026-06-11 these
+                // were skipped -> never rebound -> the engine clamp froze some bones
+                // (>12u) while others passed -> mixed palette -> V24 ratio guard
+                // dropped the whole mesh EVERY frame (invisible legs/feet/hands —
+                // the dominant "only teeth/eyes render" symptom; ~46 never-rebound
+                // meshes/run measured, bone0 at STAGE coords). Fix: same rest-pose
+                // rebake as the distinct case, against the post-deform rest
+                // snapshot (seeded at load-time SyncObjects, where SetDeformation
+                // just posed THIS bone): at rest the composed skin is identity ->
+                // coherent; as the bone animates the verts follow. No repoint
+                // needed (already bound to it).
+                if (sNoBoundRebake || rp == mNativeRestPose.end()) {
+                    miss++;
+                    if (!missBone) {
+                        missBone = bound->Name();
+                        missWhy = sNoBoundRebake ? "boundRebakeOff" : "noRest(own==bound)";
+                    }
+                    continue;
+                }
+                rest = rp->second;
+            } else if (rp != mNativeRestPose.end() && haveDistinct) {
                 rest = rp->second;
             } else {
+                // FIRST distinct resolve of this bone: this method runs
+                // pre-Character::Poll(), so a freshly-resolvable per-member bone
+                // still holds its load/rest pose — capturing on first-resolve (not
+                // just the literal first Poll) covers per-member skeletons that
+                // stream in late. It also OVERWRITES an own==bound-seeded entry
+                // (which may have captured the shared magnet): the distinct live
+                // instance is the authoritative basis (mNativeRestDistinct). Reject
+                // a non-finite / huge rest xfm (a broken bone) so Invert can't
+                // produce NaN — the engine clamp is disabled for rebound meshes,
+                // so there is no backstop. The capture is KEPT even if this mesh
+                // fails to complete (it is the authoritative basis for every mesh).
                 rest = own->WorldXfm();
                 if (!(std::fabs(rest.v.x) < 1e5f && std::fabs(rest.v.y) < 1e5f &&
-                      std::fabs(rest.v.z) < 1e5f)) { miss++; continue; }
-                mNativeRestPose[bound->Name()] = rest;
+                      std::fabs(rest.v.z) < 1e5f)) {
+                    miss++;
+                    if (!missBone) { missBone = bound->Name(); missWhy = "nonFiniteRest"; }
+                    continue;
+                }
+                mNativeRestPose[bname] = rest;
+                mNativeRestDistinct.insert(bname);
             }
-            // bake mOffset = meshWorld * inverse(restWorld), bind to the LIVE bone.
-            mesh->SetBone(b, own, false);
-            Transform invRest;
-            Invert(rest, invRest);
-            Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b));
-            meshRebound++;
-            reboundBones++;
+            owns[b] = own;
+            rests[b] = rest;
+            apply[b] = 1;
+            resolvable++;
         }
-        if (meshRebound > 0 && miss == 0) {
+        if (miss == 0 && resolvable > 0) {
+            // pass B: all bones validated — repoint + bake
+            // mOffset = meshWorld * inverse(restWorld), bind to the LIVE bone.
+            for (int b = 0; b < nb; b++) {
+                if (!apply[b]) continue;
+                if (owns[b] != mesh->BoneTransAt(b))
+                    mesh->SetBone(b, owns[b], false);
+                Transform invRest;
+                Invert(rests[b], invRest);
+                Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b));
+                reboundBones++;
+            }
             mesh->mNativeBonesRebound = true; // engine skips rebake + fling-clamp
             reboundMeshes++;
-        } else if (meshRebound > 0 || miss > 0) {
-            pending++; // partially bound / not yet reachable — retry next frame
+        } else if (miss > 0) {
+            pending++; // not yet completable — mesh left UNTOUCHED; retry next frame
+            if (probe) {
+                static std::map<std::string, int> sPendSeen; // throttle per mesh
+                std::string key = std::string(Name() ? Name() : "?") + "/" +
+                                  (mesh->Name() ? mesh->Name() : "?");
+                if (sPendSeen[key]++ % 120 == 0)
+                    fprintf(stderr,
+                            "[HEAD_REBIND_PENDING] member='%s' mesh='%s' miss=%d "
+                            "resolvable=%d/%d firstMiss='%s' why=%s\n",
+                            Name() ? Name() : "?", mesh->Name() ? mesh->Name() : "?",
+                            miss, resolvable, nb, missBone ? missBone : "-", missWhy);
+            }
         }
     }
     mNativeRestCaptured = true;
 
-    // Latch when the scan makes NO PROGRESS for a sustained window. This covers BOTH
-    // "fully rebound" (nothing left to do) AND "stuck" (some mesh's bones never resolve
-    // to a distinct per-member instance — own==bound forever — and stay on the engine
-    // clamp). Without this fallback such a member would re-walk its whole draw tree
-    // every Poll for the entire song (the torso rebind has the same fallback). Quiet
-    // counts consecutive no-new-rebind scans; a late-streamed mesh that DOES rebind
-    // resets it, so the streaming tail is still caught before latching.
+    // Latch policy (render-polish 2026-06-11, char-render step 3). The old fixed
+    // 120-quiet "give-up" latched while reload churn was still streaming meshes, so
+    // anything arriving later never got a correct bind and lived on the clamp/guard
+    // for the whole song. New policy: latch as COMPLETE only when no UNREBOUND
+    // in-scope mesh remains (pending==0) and the scan made no progress for a short
+    // sustained window (>=30 Polls — covers intra-merge streaming gaps where a new
+    // mesh appears a few frames later without any StartLoad/SyncObjects event).
+    // Members with a permanently-unresolvable mesh (own==bound forever — the known
+    // 1-residual-mesh-per-member case, which correctly stays on the engine clamp)
+    // never satisfy pending==0, so keep a LONG give-up fallback (600 Polls ≈ 10s)
+    // purely to bound the per-Poll draw-tree rescan cost. StartLoad AND SyncObjects
+    // both re-arm this latch, so reloads/merges always trigger a fresh scan pass.
     if (reboundBones == 0) mNativeHeadReboundQuiet++;
     else mNativeHeadReboundQuiet = 0;
-    if (mNativeHeadReboundQuiet >= 120) mNativeHeadReboundOnce = 1;
+    if ((pending == 0 && mNativeHeadReboundQuiet >= 30) ||
+        mNativeHeadReboundQuiet >= 600)
+        mNativeHeadReboundOnce = 1;
 
     if (probe && (reboundBones > 0 || pending > 0)) {
         fprintf(stderr,
@@ -1099,6 +1285,22 @@ void BandCharacter::SyncObjects() {
             t->SetTransParent(this, false);
     }
     SetDeformation();
+#ifdef HX_NATIVE
+    // render-polish 2026-06-11 (char-render steps 2+3): SetDeformation() has just
+    // posed the skeleton at the weighted gender-bind REST pose — the one
+    // deterministic rest point in the flow. (a) Seed the rest-pose snapshot for any
+    // newly-resolvable per-member bones (a mid-song merge's meshes then bake
+    // against true rest, not a mid-clip Poll pose). (b) Re-arm both Poll-time
+    // rebind latches: a SyncObjects pass means merge/deform state changed (meshes
+    // re-stuffed / re-skinned), so the next Polls must re-scan for new or
+    // re-merged meshes (idempotent for meshes already rebound, which keep
+    // RndMesh::mNativeBonesRebound).
+    NativeCaptureRestPoseAfterDeform();
+    mNativeReboundOnce = 0;
+    mNativeReboundQuiet = 0;
+    mNativeHeadReboundOnce = 0;
+    mNativeHeadReboundQuiet = 0;
+#endif
     RndMat *feetmat = Find<RndMat>("feet_socks_skin.mat", false);
     if (feetmat) {
         RndMat *legmat = mOutfitDir->Find<RndMat>("legs_socks_swap.mat", false);
@@ -1518,20 +1720,42 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     }
 
 #ifdef HX_NATIVE
+    if (NativeReloadProbe())
+        fprintf(stderr,
+                "[STARTLOAD] poll=%d char='%s' caller='%s' inCloset(was->now)=%d->%d "
+                "b1=%d b3=%d restPose=%d headLatched=%d torsoLatched=%d\n",
+                gNativeBandCharPollSerial, Name() ? Name() : "?", gNativeStartLoadTag,
+                (int)bvar1, (int)mInCloset, (int)b1, (int)b3,
+                (int)mNativeRestPose.size(), mNativeHeadReboundOnce,
+                mNativeReboundOnce);
+    gNativeStartLoadTag = "?";
     // Re-arm the native skinning rebinds on every (re)load. The CharCache reuses one
     // persistent BandCharacter per slot across closet/salon outfit edits, so a new
     // head/torso mesh streamed by an outfit change has mNativeBonesRebound=false but
     // the Poll-time rebinds have already LATCHED (mNative*ReboundOnce) and would skip
-    // it -> it shards. Clear the latches + the stale per-member rest snapshot so the
-    // new meshes rebind/rebake against the freshly-(re)posed skeleton. (The first Poll
-    // after this re-load re-captures rest before Character::Poll applies a clip.)
+    // it -> it shards. Un-latch so new meshes get scanned (already-rebound meshes are
+    // skipped via RndMesh::mNativeBonesRebound, so the re-scan is idempotent).
     mNativeReboundOnce = 0;
     mNativeReboundQuiet = 0;
-    mNativeReboundBody = 0;
     mNativeHeadReboundOnce = 0;
     mNativeHeadReboundQuiet = 0;
-    mNativeRestCaptured = false;
-    mNativeRestPose.clear();
+    // render-polish 2026-06-11 (char-render): do NOT blanket-clear the per-member
+    // rest-pose snapshot here. StartLoad re-fires repeatedly through the gameplay
+    // flow (venue clip/dircut loads, patch recompose, scripts — 5-6x per member,
+    // including mid-song) while the per-member skeleton BONES persist mid-animation
+    // (scout-char-render §2c: REBIND_STALE=0). Clearing made the next rebind scan
+    // re-capture "rest" from a MID-CLIP pose -> garbage inverse-bind -> shard fans
+    // and V24-guard-dropped invisible bodies. The captured rest WorldXfms remain
+    // the correct bake basis across these reloads; SyncObjects additionally
+    // re-seeds NEW bones right after SetDeformation() (deterministic rest pose).
+    // ONLY a closet transition needs the full reset: a closet outfit/gender swap
+    // re-poses (or re-genders) the skeleton, so the old snapshot really is stale.
+    if (mInCloset || bvar1) {
+        mNativeReboundBody = 0;
+        mNativeRestCaptured = false;
+        mNativeRestPose.clear();
+        mNativeRestDistinct.clear();
+    }
     // C13 backstop: mFileMerger is bound by the proxy-load of char/main/main.milo
     // (verified non-null for the chars.milo preview players); guard anyway so a
     // FileMerger-less char can't hard-crash here. Wii always has a FileMerger.
@@ -1666,6 +1890,11 @@ void BandCharacter::SyncOutfitConfig(OutfitConfig *cfg) {
 void BandCharacter::SetDeformation() {
 #ifdef HX_NATIVE
     { static int g=-1; if(g<0)g=getenv("RB3_NO_DEFORM")?1:0; if(g)return; }
+    if (NativeReloadProbe())
+        fprintf(stderr,
+                "[SETDEFORM] poll=%d char='%s' inCloset=%d restCaptured=%d restPose=%d\n",
+                gNativeBandCharPollSerial, Name() ? Name() : "?", (int)mInCloset,
+                (int)mNativeRestCaptured, (int)mNativeRestPose.size());
 #endif
     CharClip *clip = BandCharDesc::GetDeformClip(mGender);
     if (clip) {
@@ -2062,6 +2291,9 @@ void BandCharacter::RecomposePatches(BandCharDesc *desc, int i) {
     CopyCharDesc(desc);
     if (!mInCloset) {
         unk224 |= 1;
+#ifdef HX_NATIVE
+        gNativeStartLoadTag = "RecomposePatches";
+#endif
         StartLoad(true, mInCloset, true);
     } else {
         for (ObjPtrList<OutfitConfig, ObjectDir>::iterator it = unk620.begin();
@@ -2088,7 +2320,12 @@ void BandCharacter::ClearGroup() {
         mAddDriver->Clear();
 }
 
-void BandCharacter::MiloReload() { StartLoad(false, mInCloset, false); }
+void BandCharacter::MiloReload() {
+#ifdef HX_NATIVE
+    gNativeStartLoadTag = "MiloReload";
+#endif
+    StartLoad(false, mInCloset, false);
+}
 
 void BandCharacter::SetLipSync(CharLipSync *sync) {
     CharLipSyncDriver *driver = Find<CharLipSyncDriver>("song.lipdrv", false);
@@ -2121,10 +2358,18 @@ BEGIN_HANDLERS(BandCharacter)
     HANDLE(change_face_group, OnChangeFaceGroup)
     HANDLE_ACTION(clear_group, ClearGroup())
     HANDLE(set_play, OnSetPlay)
+#ifdef HX_NATIVE
+    HANDLE_ACTION(
+        start_load,
+        (gNativeStartLoadTag = "start_load_dta",
+         StartLoad(_msg->Int(2), _msg->Size() > 3 ? _msg->Int(3) : mInCloset, false))
+    )
+#else
     HANDLE_ACTION(
         start_load,
         StartLoad(_msg->Int(2), _msg->Size() > 3 ? _msg->Int(3) : mInCloset, false)
     )
+#endif
     HANDLE_EXPR(is_loading, IsLoading())
     HANDLE_EXPR(flag_string, FlagString(_msg->Int(2)))
     HANDLE(cam_teleport, OnCamTeleport)
@@ -2768,6 +3013,19 @@ DataNode BandCharacter::OnPostMerge(DataArray *da) {
     unk68c = Find<RndMesh>("drum_L-stick.mesh", false);
     unk698 = Find<RndMesh>("drum_R-stick.mesh", false);
     unk6a4 = Find<RndMesh>("guitar_pick.mesh", false);
+#ifdef HX_NATIVE
+    // render-polish 2026-06-11 (char-render): merge-completion probe — attributes
+    // the per-frame SyncObjects/SetDeformation churn to its merger category.
+    if (NativeReloadProbe())
+        fprintf(stderr,
+                "[POSTMERGE] poll=%d char='%s' cat='%s' loadingLoad=%d asyncLoad=%d "
+                "unk6bd=%d noTextures=%d -> sync=%d\n",
+                gNativeBandCharPollSerial, Name() ? Name() : "?", category.Str(),
+                (int)mFileMerger->mLoadingLoad, (int)mFileMerger->mAsyncLoad,
+                (int)unk6bd, (int)noTextures,
+                (int)(!mFileMerger->mLoadingLoad
+                      && (noTextures || (mFileMerger->mAsyncLoad && !unk6bd))));
+#endif
     if (!mFileMerger->mLoadingLoad
         && (noTextures || (mFileMerger->mAsyncLoad && !unk6bd))) {
         SyncObjects();
@@ -2867,7 +3125,15 @@ BEGIN_PROPSYNCS(BandCharacter)
         mHeadLookAt ? mHeadLookAt->Weight() : 0,
         SetHeadLookatWeight(_val.Float())
     )
+#ifdef HX_NATIVE
+    SYNC_PROP_SET(
+        in_closet,
+        mInCloset,
+        (gNativeStartLoadTag = "in_closet_propsync", StartLoad(false, _val.Int(), false))
+    )
+#else
     SYNC_PROP_SET(in_closet, mInCloset, StartLoad(false, _val.Int(), false))
+#endif
     SYNC_PROP(test_prefab, mTestPrefab)
     SYNC_PROP(use_mic_stand_clips, mUseMicStandClips)
     SYNC_PROP(in_tour_ending, mInTourEnding)

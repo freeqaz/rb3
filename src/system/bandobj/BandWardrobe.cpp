@@ -724,8 +724,12 @@ void BandWardrobe::StartClipLoads(bool b, BandCamShot *shot) {
             mTargets[i]->CopyCharDesc(desc);
             delete desc;
             b = false;
-        } else
+        } else {
+#ifdef HX_NATIVE
+            gNativeStartLoadTag = "Wardrobe::StartClipLoads";
+#endif
             mTargets[i]->StartLoad(unk7c, mTargets[i]->mInCloset, false);
+        }
     }
     FileMerger *merger = Dir()->Find<FileMerger>("crowd_clips.fm", false);
     if (merger) {
@@ -827,6 +831,9 @@ void BandWardrobe::LoadPrefabPrefs() {
                 BandCharacter *bchar = mTargets[i];
                 bchar->SetInstrumentType(bchar->mInstrumentType);
                 if (bchar->SetPrefab(desc)) {
+#ifdef HX_NATIVE
+                    gNativeStartLoadTag = "Wardrobe::LoadPrefabPrefs";
+#endif
                     bchar->StartLoad(false, false, false);
                 }
             }
@@ -945,6 +952,9 @@ DataNode BandWardrobe::OnUnloadVenue(DataArray *da) {
             bc->ClearDircuts();
             bc->SetTempoGenreVenue(Symbol(), Symbol(), "");
             bc->SetInstrumentType(Symbol());
+#ifdef HX_NATIVE
+            gNativeStartLoadTag = "Wardrobe::OnUnloadVenue";
+#endif
             bc->StartLoad(false, bc->mInCloset, true);
         }
     }
