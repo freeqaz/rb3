@@ -7,6 +7,9 @@
 #include "utl/TextStream.h"
 #include "os/Debug.h"
 #include "os/Endian.h"
+#ifdef HX_NATIVE
+#include "mtrace_wrap.h"  // milo-trace W3 per-call-site capture (env-gated, no-op unless RB3_MTRACE_WRAP=1)
+#endif
 
 #define BIN_STREAM_BUF_SIZE 0x200U
 
@@ -161,6 +164,7 @@ inline void SwapData(const void *v1, void *v2, int num_bytes) {
 void BinStream::ReadEndian(void *data, int bytes) {
     Read(data, bytes);
 #ifdef HX_NATIVE
+    MTRACE_WRAP_READENDIAN_PRE(data, bytes);
     // mLittleEndian describes the FILE's endianness, not the host's.
     // On a little-endian host (x86_64/clang LP64), the file matches the host when
     // it is LE, so we only swap when the file is big-endian (!mLittleEndian).
@@ -169,6 +173,7 @@ void BinStream::ReadEndian(void *data, int bytes) {
     if (!mLittleEndian) {
         SwapData(data, data, bytes);
     }
+    MTRACE_WRAP_READENDIAN_POST(data, bytes, mLittleEndian, Tell(), *this);
 #else
     if (mLittleEndian) {
         SwapData(data, data, bytes);

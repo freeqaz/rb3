@@ -5,6 +5,9 @@
 #include "utl/BufStream.h"
 #include "os/Endian.h"
 #include "decomp.h"
+#ifdef HX_NATIVE
+#include "mtrace_wrap.h"  // milo-trace W3 per-call-site capture (env-gated, no-op unless RB3_MTRACE_WRAP=1)
+#endif
 
 namespace {
     static unsigned char gKey[256];
@@ -644,7 +647,13 @@ void VorbisReader::DoRawSeek(int byte) {
         // preview (which seeks to the chorus) plays silence. Write the index
         // directly so a native little-endian word store lands it LSB-first.
 #ifdef HX_NATIVE
-        *(unsigned int*)mNonce = (unsigned int)(byte / 16);
+        MTRACE_WRAP_SEEKNONCE(
+            mSeekTarget,                       /* requested sample (already -1 after DoSeek) */
+            byte,                              /* file byte offset from OggMap::GetSeekPos */
+            mNonce,                            /* nonce pointer (16 bytes) */
+            16,                                /* nonce length */
+            (*(unsigned int*)mNonce = (unsigned int)(byte / 16))  /* original write */
+        );
 #else
         *(unsigned int*)mNonce = EndianSwap((unsigned int)(byte / 16));
 #endif
