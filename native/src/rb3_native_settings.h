@@ -28,10 +28,12 @@ struct NativeSettings {
     // ---------------------------------------------------------------------
 
     // Lateral centering offset applied to rotater.grp's local X for the lone
-    // player (the V12 CAMERA_FRAME_FIX). -4.0 is the empirically-centred value
-    // for the single guitar surface; this is the field the old `CAM_ROTX` env
-    // var seeded. Larger negative = camera shifts further left of frame.
-    float camRotX = -4.0f;
+    // player (the V12 CAMERA_FRAME_FIX). 0.0 aligns the camera with the highway
+    // centerline (now-bar and surface meshes sit at world x=0); the old -4.0
+    // default was an empirical overshoot that left game.cam at world x=-4,
+    // projecting the highway right of screen center. This is the field the old
+    // `CAM_ROTX` env var seeded. Larger negative = camera shifts further left.
+    float camRotX = 0.0f;
 
     // Additional pose offsets applied on top of the centred camera. These are
     // wired as neutral (0) defaults — they are the ready-to-tune knobs the
