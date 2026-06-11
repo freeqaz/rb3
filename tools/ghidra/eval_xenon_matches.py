@@ -190,6 +190,8 @@ def _credit_aliased(key1, key2) -> Optional[str]:
 DEFAULT_RUN_DIR = RB3 / "build" / "SZBE69_B8" / "ghidra" / "ghidriff-xenon"
 DEFAULT_SEEDS = RB3 / "build" / "SZBE69_B8" / "ghidra" / "xenon-seeds" / "seeds.json"
 DEFAULT_HOLDOUT = RB3 / "build" / "SZBE69_B8" / "ghidra" / "xenon-seeds" / "holdout.json"
+DEFAULT_KNOWN_NEGATIVES = (RB3 / "build" / "SZBE69_B8" / "ghidra" / "xenon-seeds"
+                           / "known_negatives.json")
 DEFAULT_BINDIFF = XENON / "tools" / "bindiff_match.json"
 DEFAULT_WII_MAP = RB3 / "orig" / "SZBE69_B8" / "files" / "band_r_wii.map"
 
@@ -383,7 +385,8 @@ def evaluate(function_matches: List[dict],
              min_vt_score: Optional[float] = None,
              low_trust_stub: bool = False,
              stub_size_max: int = 88,
-             stratify: bool = False) -> dict:
+             stratify: bool = False,
+             known_negatives: Optional[List[dict]] = None) -> dict:
     """Score a ghidriff Wii<->Xenon run.
 
     New optional behaviours (all DEFAULT-OFF so the report is byte-identical
@@ -405,10 +408,27 @@ def evaluate(function_matches: List[dict],
                             bucketed separately, not scored as hard-wrong.
       stratify            — also emit precision_by_match_type broken down per
                             wii_category (band3/system/network/sdk/main).
+      known_negatives     — round-2 human-judged-WRONG (xenon_addr -> wii_addr)
+                            identity pairs. A scored match that recurs the EXACT
+                            (p1,p2) pair counts WRONG in per-type precision and a
+                            new 'known_negatives' report section. The SAME p2
+                            matched to a DIFFERENT p1 is NOT penalized (it may be
+                            the true identity). DEFAULT-OFF (None/[] => no-op,
+                            byte-identical report).
     """
     exclude_match_types = exclude_match_types or set()
     wii_dem = wii_dem or {}
     msvc_dem = msvc_dem or {}
+
+    # known-negative (p2 -> {p1, ...}) index. A pair is a known-negative recur
+    # only when BOTH endpoints match an entry (the wrong p1 for that p2).
+    kn_by_p2: Dict[int, Set[int]] = defaultdict(set)
+    kn_entries = known_negatives or []
+    for e in kn_entries:
+        kp2 = parse_addr(e.get("xenon_addr"))
+        kp1 = parse_addr(e.get("wii_addr_bank8") or e.get("wii_addr"))
+        if kp2 is not None and kp1 is not None:
+            kn_by_p2[kp2].add(kp1)
 
     seed_p1 = {parse_addr(s["p1_addr"]) for s in seeds}
     seed_p2 = {parse_addr(s["p2_addr"]) for s in seeds}
@@ -486,26 +506,48 @@ def evaluate(function_matches: List[dict],
         by_p2[p["p2"]].append(p)
 
     # ---- (a) holdout recovery --------------------------------------------
-    # Some holdout TU stems are Xenon-only (no Wii TU of that name exists, e.g.
-    # 360-specific files): a matched pair can never TU-agree there, so those
-    # entries are reported but excluded from correct/wrong scoring.
+    # Two scoring modes per holdout entry:
+    #   EXACT-ADDR  — when the entry carries `wii_addr_bank8` (round-2 judged
+    #                 identities): correctness = the matched Wii p1 equals that
+    #                 exact Bank-8 address. Stronger than the TU-stem heuristic
+    #                 (a stem-correct match to a different function in the same
+    #                 file would falsely count correct). Always scoreable.
+    #   TU-STEM     — the legacy mode for the original 146 (Xenon addr + stem
+    #                 only). Some holdout TU stems are Xenon-only (no Wii TU of
+    #                 that name exists, e.g. 360-specific files): a matched pair
+    #                 can never TU-agree there, so those entries are reported
+    #                 but excluded from correct/wrong scoring.
     wii_stems = {tu_stem(v["tu"]) for v in wii_index.values() if v["tu"]}
     holdout_rows = []
     a_counts = Counter()
     judged = []  # (pair, correct?) feeding metric (d)
     for addr in sorted(eligible_holdout):
         entry = holdout_by_addr[addr]
-        scoreable = entry["stem"] in wii_stems
+        exact_wii = parse_addr(entry["wii_addr_bank8"]) \
+            if entry.get("wii_addr_bank8") else None
+        scoreable = (exact_wii is not None) or (entry["stem"] in wii_stems)
         cands = by_p2.get(addr, [])
         if not cands:
             result = "unmatched" if scoreable else "unmatched_unscoreable_stem"
             a_counts[result] += 1
-            holdout_rows.append({"xenon_addr": hex(addr), "stem": entry["stem"],
-                                 "result": result})
+            row = {"xenon_addr": hex(addr), "stem": entry["stem"], "result": result}
+            if exact_wii is not None:   # round-2 entry: tag the scoring mode
+                row["score_mode"] = "exact"
+            holdout_rows.append(row)
             continue
         pair = cands[0]  # accepted matches are one-to-one per p2
         stem = tu_stem(pair["wii_tu"])
-        if not scoreable:
+        if exact_wii is not None:
+            # exact Bank-8 address agreement (round-2 judged holdout)
+            if pair["p1"] == exact_wii:
+                a_counts["recovered_correct"] += 1
+                result = "recovered_correct"
+                judged.append((pair, True))
+            else:
+                a_counts["recovered_wrong"] += 1
+                result = "recovered_wrong"
+                judged.append((pair, False))
+        elif not scoreable:
             a_counts["recovered_unscoreable_stem"] += 1
             result = "recovered_unscoreable_stem"
         elif pair["wii_symbol"] is None:
@@ -519,11 +561,14 @@ def evaluate(function_matches: List[dict],
             a_counts["recovered_wrong"] += 1
             result = "recovered_wrong"
             judged.append((pair, False))
-        holdout_rows.append({
+        row = {
             "xenon_addr": hex(addr), "stem": entry["stem"], "result": result,
             "wii_addr": hex(pair["p1"]), "wii_symbol": pair["wii_symbol"],
             "wii_tu": pair["wii_tu"], "match_types": pair["match_types"],
-        })
+        }
+        if exact_wii is not None:   # round-2 entry: tag the scoring mode
+            row["score_mode"] = "exact"
+        holdout_rows.append(row)
     n_eligible = len(eligible_holdout)
     n_scoreable = n_eligible - (a_counts["recovered_unscoreable_stem"] +
                                 a_counts["unmatched_unscoreable_stem"])
@@ -636,6 +681,26 @@ def evaluate(function_matches: List[dict],
         "suspect_symbolshash_only": len(suspect_rows),
     }
 
+    # ---- (b') known-negatives oracle ---------------------------------------
+    # A scored match that recurs an EXACT human-judged-WRONG (p2,p1) pair is a
+    # hard error: count it WRONG in per-type precision (via `judged`) and list
+    # it. The SAME p2 matched to a DIFFERENT p1 is NOT penalized — that may be
+    # the true identity the round-2 judge implied. Emitted only when the oracle
+    # is supplied, so the default report stays byte-identical.
+    kn_rows = []
+    kn_recur = 0
+    if kn_by_p2:
+        for pair in pairs:
+            wrong_p1s = kn_by_p2.get(pair["p2"])
+            if wrong_p1s and pair["p1"] in wrong_p1s:
+                kn_recur += 1
+                judged.append((pair, False))  # hard-wrong in metric (d)
+                kn_rows.append({
+                    "xenon_addr": hex(pair["p2"]), "wii_addr": hex(pair["p1"]),
+                    "wii_symbol": pair["wii_symbol"],
+                    "match_types": pair["match_types"],
+                })
+
     # ---- (d) per-match-type precision proxy --------------------------------
     def _tally_to_precision(tally: Dict[str, Counter]) -> dict:
         out = {}
@@ -690,6 +755,17 @@ def evaluate(function_matches: List[dict],
             "seed_conflicts": seed_conflicts,
         },
     }
+    # Known-negatives report — only present when the oracle is supplied, so the
+    # default/legacy report is byte-identical.
+    if kn_by_p2:
+        rep["known_negatives"] = {
+            "oracle_pairs": sum(len(v) for v in kn_by_p2.values()),
+            "recurred_exact": kn_recur,
+            "note": "matches recurring an exact human-judged-WRONG (p2->p1) pair "
+                    "(counted WRONG in precision_by_match_type); a different p1 "
+                    "for the same p2 is NOT penalized",
+        }
+        rep["lists"]["known_negative_recurrences"] = kn_rows
     if stratify:
         rep["precision_by_match_type_by_category"] = {
             cat: _tally_to_precision(d_strat[cat]) for cat in sorted(d_strat)
@@ -800,6 +876,12 @@ def print_summary(rep: dict) -> None:
         bar = "PASS" if overall > 0.32 else "FAIL"
         print(f"\nEXPERIMENT 1 bar (precision > 0.32): {overall:.3f} -> {bar}")
 
+    kn = rep.get("known_negatives")
+    if kn:
+        print("\n--- (b') known-negatives oracle ---")
+        print(f"oracle pairs: {kn['oracle_pairs']}   exact recurrences "
+              f"(counted WRONG): {kn['recurred_exact']}")
+
     strat = rep.get("precision_by_match_type_by_category")
     if strat:
         print("\n--- (e) precision by match type, stratified by wii_category ---")
@@ -864,6 +946,14 @@ def main() -> int:
                     help="explicit path to the .matches.json (overrides --run-dir)")
     ap.add_argument("--seeds", type=Path, default=DEFAULT_SEEDS)
     ap.add_argument("--holdout", type=Path, default=DEFAULT_HOLDOUT)
+    ap.add_argument("--known-negatives", type=Path, default=DEFAULT_KNOWN_NEGATIVES,
+                    help="round-2 known-negatives oracle (judged-WRONG p2->p1 "
+                         "pairs); a match recurring an exact pair counts WRONG. "
+                         "Auto-loaded if present; --no-known-negatives disables.")
+    ap.add_argument("--no-known-negatives", dest="known_negatives",
+                    action="store_const", const=None,
+                    help="disable the known-negatives oracle (byte-identical to "
+                         "the legacy report)")
     ap.add_argument("--bindiff", type=Path, default=DEFAULT_BINDIFF)
     ap.add_argument("--wii-map", type=Path, default=DEFAULT_WII_MAP)
     ap.add_argument("--out", type=Path, default=None,
@@ -911,8 +1001,17 @@ def main() -> int:
     holdout_entries = holdout.get("entries", holdout) if isinstance(holdout, dict) else holdout
     bindiff_entries = json.loads(args.bindiff.read_text())
     wii_index = parse_wii_map_index(args.wii_map)
+
+    # Known-negatives oracle (round 2): auto-loaded if the file exists, unless
+    # --no-known-negatives. Absent file => None => byte-identical legacy report.
+    known_negatives: Optional[List[dict]] = None
+    if args.known_negatives is not None and args.known_negatives.is_file():
+        kn_doc = json.loads(args.known_negatives.read_text())
+        known_negatives = (kn_doc.get("entries", kn_doc)
+                           if isinstance(kn_doc, dict) else kn_doc)
     print(f"[eval] wii map: {len(wii_index)} function addrs; seeds: {len(seeds)}; "
-          f"holdout: {len(holdout_entries)}; bindiff: {len(bindiff_entries)}",
+          f"holdout: {len(holdout_entries)}; bindiff: {len(bindiff_entries)}; "
+          f"known-negatives: {len(known_negatives) if known_negatives else 0}",
           file=sys.stderr)
 
     # demangle only what judgment (b) will actually look at
@@ -943,7 +1042,8 @@ def main() -> int:
             min_vt_score=min_vt,
             low_trust_stub=args.low_trust_stub,
             stub_size_max=args.stub_size_max,
-            stratify=args.stratify)
+            stratify=args.stratify,
+            known_negatives=known_negatives)
 
     # ---- VT score-sweep mode (no report written) -------------------------
     sweep = parse_sweep(args.sweep_vt_score)
@@ -957,6 +1057,10 @@ def main() -> int:
         "holdout": str(args.holdout), "bindiff": str(args.bindiff),
         "wii_map": str(args.wii_map),
     }
+    # only surface the oracle path when it actually contributed (byte-identical
+    # to legacy otherwise)
+    if known_negatives:
+        rep["inputs"]["known_negatives"] = str(args.known_negatives)
 
     print_summary(rep)
 

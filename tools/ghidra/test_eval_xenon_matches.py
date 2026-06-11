@@ -473,6 +473,141 @@ class TestExcludeAndScoreFilters(unittest.TestCase):
         self.assertIn("system", rep["precision_by_match_type_by_category"])
 
 
+# ---------------------------------------------------------------------------
+# T3 (round 2): exact-addr holdout scoring + known-negatives oracle
+# ---------------------------------------------------------------------------
+class TestExactAddrHoldout(unittest.TestCase):
+    """A holdout entry carrying `wii_addr_bank8` is scored by EXACT Wii p1
+    agreement, not the TU-stem heuristic. The original 146 (no wii_addr_bank8)
+    keep the stem path and stay byte-identical."""
+
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as td:
+            cls.idx = parse_wii_map_index(write_mini_map(Path(td)))
+
+    def test_exact_addr_correct(self):
+        # round-2 holdout: xenon 0x82002000 must map to Wii 0x80010000 exactly.
+        holdout = [{"addr": "0x82002000", "stem": "Game",
+                    "wii_addr_bank8": "0x80010000",
+                    "wii_symbol": "GameFn__4GameFv",
+                    "source": "judged-round2-correct"}]
+        fm = [{"p1_addr": "80010000", "p2_addr": "82002000",
+               "match_types": ["BSIM"]}]
+        rep = evaluate(fm, [], holdout, [], self.idx)
+        h = rep["holdout_recovery"]
+        self.assertEqual(h["recovered_correct"], 1)
+        self.assertEqual(h["recovered_wrong"], 0)
+        rows = {r["xenon_addr"]: r for r in rep["lists"]["holdout"]}
+        self.assertEqual(rows["0x82002000"]["score_mode"], "exact")
+
+    def test_exact_addr_wrong_even_when_stem_agrees(self):
+        # The matched Wii fn (NewFn__4GameFv @0x80010700) is ALSO Game.o, so the
+        # stem heuristic would call it CORRECT — but the exact addr differs, so
+        # exact scoring correctly marks it WRONG. This is the strength of exact.
+        holdout = [{"addr": "0x82002000", "stem": "Game",
+                    "wii_addr_bank8": "0x80010000",
+                    "wii_symbol": "GameFn__4GameFv",
+                    "source": "judged-round2-correct"}]
+        fm = [{"p1_addr": "80010700", "p2_addr": "82002000",   # different Game.o fn
+               "match_types": ["BSIM"]}]
+        rep = evaluate(fm, [], holdout, [], self.idx)
+        h = rep["holdout_recovery"]
+        self.assertEqual(h["recovered_correct"], 0)
+        self.assertEqual(h["recovered_wrong"], 1)
+
+    def test_stem_path_unchanged_without_field(self):
+        # No wii_addr_bank8 => legacy stem scoring, and NO score_mode key in the
+        # row (byte-identical to the legacy report).
+        holdout = [{"addr": "0x82002000", "stem": "Game"}]
+        fm = [{"p1_addr": "80010000", "p2_addr": "82002000",
+               "match_types": ["BSIM"]}]
+        rep = evaluate(fm, [], holdout, [], self.idx)
+        self.assertEqual(rep["holdout_recovery"]["recovered_correct"], 1)
+        row = rep["lists"]["holdout"][0]
+        self.assertNotIn("score_mode", row)
+
+    def test_exact_addr_unmatched(self):
+        holdout = [{"addr": "0x82002000", "stem": "Game",
+                    "wii_addr_bank8": "0x80010000",
+                    "wii_symbol": "GameFn__4GameFv",
+                    "source": "judged-round2-correct"}]
+        rep = evaluate([], [], holdout, [], self.idx)
+        h = rep["holdout_recovery"]
+        self.assertEqual(h["unmatched"], 1)
+        # exact entries are always scoreable (a known Wii addr exists)
+        self.assertEqual(h["scoreable"], 1)
+
+
+class TestKnownNegatives(unittest.TestCase):
+    """A scored match recurring an EXACT judged-WRONG (p2,p1) pair counts WRONG;
+    the same p2 matched to a DIFFERENT p1 is NOT penalized."""
+
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as td:
+            cls.idx = parse_wii_map_index(write_mini_map(Path(td)))
+
+    def test_exact_pair_recurrence_flagged_wrong(self):
+        kn = [{"xenon_addr": "0x82006000", "wii_addr_bank8": "0x80010700",
+               "wii_symbol": "NewFn__4GameFv", "source": "judged-round2-wrong"}]
+        fm = [{"p1_addr": "80010700", "p2_addr": "82006000",   # the WRONG pair
+               "match_types": ["BSIM"]}]
+        rep = evaluate(fm, [], [], [], self.idx, known_negatives=kn)
+        self.assertIn("known_negatives", rep)
+        self.assertEqual(rep["known_negatives"]["recurred_exact"], 1)
+        # it is counted WRONG in per-type precision
+        self.assertEqual(rep["precision_by_match_type"]["BSIM"]["wrong"], 1)
+        self.assertEqual(rep["precision_by_match_type"]["BSIM"]["correct"], 0)
+        recs = rep["lists"]["known_negative_recurrences"]
+        self.assertEqual(recs[0]["xenon_addr"], "0x82006000")
+        self.assertEqual(recs[0]["wii_addr"], "0x80010700")
+
+    def test_same_p2_different_p1_not_flagged(self):
+        # Known-negative says (0x82006000 -> 0x80010700) is wrong. A match of the
+        # SAME p2 to a DIFFERENT p1 (0x80010000) must NOT be penalized — it may
+        # be the true identity.
+        kn = [{"xenon_addr": "0x82006000", "wii_addr_bank8": "0x80010700",
+               "wii_symbol": "NewFn__4GameFv", "source": "judged-round2-wrong"}]
+        fm = [{"p1_addr": "80010000", "p2_addr": "82006000",   # DIFFERENT p1
+               "match_types": ["BSIM"]}]
+        rep = evaluate(fm, [], [], [], self.idx, known_negatives=kn)
+        self.assertEqual(rep["known_negatives"]["recurred_exact"], 0)
+        # not in the judged set at all (no holdout/bindiff), so no precision row
+        self.assertNotIn("BSIM", rep["precision_by_match_type"])
+        self.assertEqual(rep["lists"]["known_negative_recurrences"], [])
+
+    def test_absent_oracle_byte_identical(self):
+        # No known_negatives => no 'known_negatives' section, no extra list key.
+        fm = [{"p1_addr": "80010700", "p2_addr": "82006000",
+               "match_types": ["BSIM"]}]
+        rep_off = evaluate(fm, [], [], [], self.idx)
+        rep_empty = evaluate(fm, [], [], [], self.idx, known_negatives=[])
+        self.assertNotIn("known_negatives", rep_off)
+        self.assertNotIn("known_negatives", rep_empty)
+        self.assertNotIn("known_negative_recurrences", rep_off["lists"])
+
+
+class TestNoRegressionReplay(unittest.TestCase):
+    """The default report (new flags off) is byte-identical to one produced with
+    the new parameters explicitly disabled — guards round-1 T4 discipline."""
+
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as td:
+            cls.idx = parse_wii_map_index(write_mini_map(Path(td)))
+
+    def test_default_equals_explicit_off(self):
+        import json as _json
+        base = evaluate(FUNCTION_MATCHES, SEEDS, HOLDOUT, BINDIFF,
+                        self.idx, WII_DEM, MSVC_DEM)
+        explicit = evaluate(FUNCTION_MATCHES, SEEDS, HOLDOUT, BINDIFF,
+                            self.idx, WII_DEM, MSVC_DEM,
+                            known_negatives=None)
+        self.assertEqual(_json.dumps(base, sort_keys=True),
+                         _json.dumps(explicit, sort_keys=True))
+
+
 class TestParseSweep(unittest.TestCase):
     def test_empty(self):
         self.assertIsNone(parse_sweep(""))

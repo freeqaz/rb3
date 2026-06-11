@@ -80,11 +80,18 @@ DEFAULT_BINDIFF = XENON / "tools" / "bindiff_match.json"
 DEFAULT_RB3WII = XENON / "unified_id_rb3wii.json"
 DEFAULT_RTTI = XENON / "unified_id_rtti.json"
 DEFAULT_HOLDOUT = XENON / "docs" / "decomp" / "gameid" / "crossval_agree.json"
+DEFAULT_OUT_DIR = RB3 / "build" / "SZBE69_B8" / "ghidra" / "xenon-seeds"
+# The grown holdout (round-2 judged identities appended to the crossval 146)
+# lives in the out dir. Its addrs MUST be excluded from seeds too — otherwise a
+# judged-round2 holdout pair would be seeded AND scored, leaking the metric.
+DEFAULT_EXTRA_HOLDOUT = DEFAULT_OUT_DIR / "holdout.json"
+# The round-2 reserved-for-seeds pool. Asserted DISJOINT from holdout but NOT
+# excluded from seeds (it is the future-seed candidate set, not holdout).
+DEFAULT_RESERVED = DEFAULT_OUT_DIR / "reserved_seed_candidates_round2.json"
 DEFAULT_WII_MAP = RB3 / "orig" / "SZBE69_B8" / "files" / "band_r_wii.map"
 DEFAULT_XENON_SYMS = XENON / "config" / "45410914" / "symbols.txt"
 DEFAULT_BANK8_ELF = RB3 / "build" / "SZBE69_B8" / "ghidra" / "bank8_target.elf"
 BATCH_DEMANGLE = RB3 / "tools" / "batch-demangle" / "target" / "release" / "rb3-batch-demangle"
-DEFAULT_OUT_DIR = RB3 / "build" / "SZBE69_B8" / "ghidra" / "xenon-seeds"
 
 # Fallback executable ranges if the artifacts are unavailable at run time.
 # bank8_target.elf PROGBITS+X sections (readelf -S), xex .text from symbols.txt.
@@ -564,13 +571,65 @@ def _ingest_rtti_seeds(args, pairs: List[dict],
 
 
 # ---------------------------------------------------------------------------
+# Holdout readers (the crossval SOURCE vs the grown holdout.json differ in shape)
+# ---------------------------------------------------------------------------
+def _read_holdout_entries(path: Path) -> Tuple[List[dict], str]:
+    """Read a holdout file accepting BOTH shapes:
+      - crossval source: {"agree_fns": [{addr, stem, ...}]}  (build's --holdout)
+      - grown holdout:   {"entries":  [{addr, stem, ...}]}    (eval's holdout.json)
+      - a bare list of entries.
+    Returns (entries, shape) where shape in {'agree_fns','entries','list'}.
+    Entries with an 'addr' field are the unit; addr in '0x..' hex."""
+    data = json.loads(path.read_text())
+    if isinstance(data, list):
+        return data, "list"
+    if isinstance(data, dict):
+        if "entries" in data:
+            return data["entries"], "entries"
+        if "agree_fns" in data:
+            return data["agree_fns"], "agree_fns"
+    return [], "empty"
+
+
+def _holdout_p2_addrs(entries: List[dict]) -> Set[int]:
+    out: Set[int] = set()
+    for e in entries:
+        a = e.get("addr")
+        if a is None:
+            continue
+        try:
+            out.add(int(a, 16) if isinstance(a, str) else int(a))
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--bindiff", type=Path, default=DEFAULT_BINDIFF)
-    ap.add_argument("--holdout", type=Path, default=DEFAULT_HOLDOUT)
+    ap.add_argument("--holdout", type=Path, default=DEFAULT_HOLDOUT,
+                    help="crossval holdout SOURCE (key 'agree_fns'); excluded "
+                         "from seeds AND copied into the union-merged holdout.json")
+    ap.add_argument("--extra-holdout", type=Path, default=DEFAULT_EXTRA_HOLDOUT,
+                    help="grown holdout.json (key 'entries', incl. judged-round2 "
+                         "identities); its p2 addrs are ALSO excluded from seeds, "
+                         "and its judged-round2 entries are preserved by the "
+                         "union-merge. --no-extra-holdout to disable.")
+    ap.add_argument("--no-extra-holdout", dest="extra_holdout",
+                    action="store_const", const=None,
+                    help="disable the grown-holdout exclusion + union-merge "
+                         "(legacy clobber behaviour)")
+    ap.add_argument("--reserved", type=Path, default=DEFAULT_RESERVED,
+                    help="round-2 reserved-for-seeds pool; asserted DISJOINT "
+                         "from holdout but NOT excluded from seeds. "
+                         "--no-reserved to skip the assertion.")
+    ap.add_argument("--no-reserved", dest="reserved",
+                    action="store_const", const=None,
+                    help="skip the reserved-list disjointness assertion")
     ap.add_argument("--wii-map", type=Path, default=DEFAULT_WII_MAP)
     ap.add_argument("--xenon-symbols", type=Path, default=DEFAULT_XENON_SYMS)
     ap.add_argument("--bank8-elf", type=Path, default=DEFAULT_BANK8_ELF)
@@ -720,19 +779,52 @@ def main() -> int:
         stats["rtti_added"] = n_rtti
 
     # ---- Holdout exclusion ------------------------------------------------
-    holdout_entries: List[dict] = []
+    # Exclude TWO holdouts from seeds:
+    #   1. the crossval SOURCE (--holdout, key 'agree_fns') — the original 146.
+    #   2. the GROWN holdout.json (--extra-holdout, key 'entries') — which adds
+    #      the round-2 judged-correct identities. Both p2-addr sets must be
+    #      excluded or a holdout pair would be both seeded and scored (leak).
+    holdout_entries: List[dict] = []   # crossval source entries (for the merge)
     holdout_p2: Set[int] = set()
     holdout_found = args.holdout.is_file()
     if holdout_found:
-        hd = json.loads(args.holdout.read_text())
-        holdout_entries = hd.get("agree_fns", [])
-        holdout_p2 = {int(e["addr"], 16) for e in holdout_entries}
+        holdout_entries, _shape = _read_holdout_entries(args.holdout)
+        holdout_p2 = _holdout_p2_addrs(holdout_entries)
     else:
         print(f"[WARN] HOLDOUT FILE NOT FOUND: {args.holdout} — proceeding "
               f"without exclusion; subtract later!", file=sys.stderr)
+
+    extra_holdout_entries: List[dict] = []
+    extra_holdout_p2: Set[int] = set()
+    if args.extra_holdout and args.extra_holdout.is_file():
+        extra_holdout_entries, _shape = _read_holdout_entries(args.extra_holdout)
+        extra_holdout_p2 = _holdout_p2_addrs(extra_holdout_entries)
+        stats["extra_holdout_entries"] = len(extra_holdout_entries)
+        stats["extra_holdout_addrs"] = len(extra_holdout_p2)
+    elif args.extra_holdout:
+        print(f"[WARN] extra-holdout not found: {args.extra_holdout} — only the "
+              f"crossval source is excluded from seeds", file=sys.stderr)
+
+    all_holdout_p2 = holdout_p2 | extra_holdout_p2
     before = len(pairs)
-    pairs = [p for p in pairs if p["p2"] not in holdout_p2]
+    pairs = [p for p in pairs if p["p2"] not in all_holdout_p2]
     drops["excluded_eval_holdout"] = before - len(pairs)
+    stats["holdout_p2_total_excluded"] = len(all_holdout_p2)
+
+    # ---- Reserved-pool invariant (NOT excluded from seeds) ----------------
+    # The round-2 reserved-for-seeds list is the FUTURE-seed candidate pool: it
+    # must NOT be subtracted from seeds (assert that none of its addrs were just
+    # dropped as holdout), but it MUST be disjoint from the (grown) holdout.
+    if args.reserved and args.reserved.is_file():
+        res_entries, _shape = _read_holdout_entries(args.reserved)
+        res_p2 = {int(e["xenon_addr"], 16) for e in res_entries
+                  if "xenon_addr" in e}
+        res_p2 |= _holdout_p2_addrs(res_entries)  # tolerate 'addr' key too
+        leaked = res_p2 & all_holdout_p2
+        assert not leaked, (
+            "reserved-for-seeds pool overlaps the holdout exclusion set "
+            f"(would wrongly drop future seeds / double-count): {sorted(hex(a) for a in leaked)}")
+        stats["reserved_addrs"] = len(res_p2)
 
     # ---- Range checks ------------------------------------------------------
     wranges = wii_exec_ranges(args.bank8_elf)
@@ -753,6 +845,11 @@ def main() -> int:
     # invariants: each address used at most once
     assert len({p["p1"] for p in pairs}) == len(pairs), "duplicate p1 in seeds"
     assert len({p["p2"] for p in pairs}) == len(pairs), "duplicate p2 in seeds"
+    # anti-leak: no seed p2 may be a holdout addr (crossval OR grown).
+    seed_p2_set = {p["p2"] for p in pairs}
+    leaked_holdout = seed_p2_set & all_holdout_p2
+    assert not leaked_holdout, (
+        f"seeds leak into holdout: {sorted(hex(a) for a in leaked_holdout)}")
     pairs.sort(key=lambda p: p["p1"])
     stats["final_seeds"] = len(pairs)
     stats["seeds_by_provenance"] = dict(
@@ -773,14 +870,42 @@ def main() -> int:
               for p in pairs]
     (out_dir / "seeds_detail.json").write_text(json.dumps(detail, indent=1) + "\n")
     if holdout_found:
-        (out_dir / "holdout.json").write_text(json.dumps({
+        # UNION-MERGE (never clobber): the holdout.json on disk may already carry
+        # round-2 judged-correct entries (source='judged-round2-correct', written
+        # by grow_xenon_holdout.py) which are NOT in the crossval source. Re-emit
+        # the crossval entries (authoritative for the 146) and PRESERVE every
+        # existing entry whose addr the crossval source does not provide — i.e.
+        # the grown entries. Output order: crossval entries first (as-is), then
+        # the preserved grown entries appended in their existing order.
+        holdout_path = out_dir / "holdout.json"
+        crossval_addrs = _holdout_p2_addrs(holdout_entries)
+        preserved: List[dict] = []
+        if holdout_path.is_file():
+            existing_entries, _shape = _read_holdout_entries(holdout_path)
+            for e in existing_entries:
+                a = e.get("addr")
+                try:
+                    ai = int(a, 16) if isinstance(a, str) else int(a)
+                except (ValueError, TypeError):
+                    ai = None
+                if ai is None or ai not in crossval_addrs:
+                    preserved.append(e)  # grown / non-crossval entry: keep
+        merged_entries = list(holdout_entries) + preserved
+        note = ("146 cross-validated BinDiff∩BSim Wii<->Xenon identities "
+                "(95% precision) — EVAL HOLDOUT, excluded from seeds.json "
+                "by p2 address. Carries Xenon addr + TU stem only; no "
+                "Wii-side address.")
+        if preserved:
+            note += (f" | UNION-MERGED with {len(preserved)} round-2 judged "
+                     "identities (source='judged-round2-correct'); those carry "
+                     "wii_addr_bank8 + wii_symbol for exact-addr eval scoring.")
+        holdout_path.write_text(json.dumps({
             "source": str(args.holdout),
-            "note": "146 cross-validated BinDiff∩BSim Wii<->Xenon identities "
-                    "(95% precision) — EVAL HOLDOUT, excluded from seeds.json "
-                    "by p2 address. Carries Xenon addr + TU stem only; no "
-                    "Wii-side address.",
-            "entries": holdout_entries,
+            "note": note,
+            "entries": merged_entries,
         }, indent=1) + "\n")
+        stats["holdout_written_entries"] = len(merged_entries)
+        stats["holdout_grown_preserved"] = len(preserved)
     (out_dir / "stats.json").write_text(json.dumps(stats, indent=1) + "\n")
 
     # ---- Report ------------------------------------------------------------
