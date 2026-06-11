@@ -1075,12 +1075,21 @@ void BandCharacter::RebindHeadHandsAtRest() {
          mi != targets.end(); ++mi) {
         RndMesh *mesh = *mi;
         if (mesh->mNativeBonesRebound) continue; // owned by torso rebind or already done
-        // render-polish 2026-06-11 (char-render): the own==bound rest-rebake below
-        // can be A/B-disabled (falls back to the pre-2026-06-11 behavior: those
-        // meshes stay on the engine clamp/V24 guard -> invisible bodies).
+        // render-polish 2026-06-11 (char-render): own==bound rest-rebake is
+        // OPT-IN (RB3_BOUND_REBAKE=1), default OFF. EXPERIMENT OUTCOME (measured,
+        // this wave): rebaking the never-rebound own==bound garments anchors their
+        // translation (draw-time |skinWorld-boneWorld| <= 92u, zero >120u flings,
+        // no mixed anchors) but does NOT repair the native rotation-basis
+        // divergence — verts far from bone origins smear by R*sin(theta) to
+        // PERSISTENT 200-460u world extents (gloves/fingernails/jackets; a
+        // character is ~70u tall), i.e. the V24 guard was correctly hiding
+        // genuinely broken poses, and exempting them drew full-screen slabs.
+        // The faithful fix for those meshes is the CharBones/pose-pipeline basis
+        // root-cause (C8), not a bind-side bake. Default OFF = those meshes stay
+        // on the engine clamp/V24 guard exactly as pre-2026-06-11.
         static int sNoBoundRebake = -1;
         if (sNoBoundRebake < 0)
-            sNoBoundRebake = getenv("RB3_NO_BOUND_REBAKE") ? 1 : 0;
+            sNoBoundRebake = getenv("RB3_BOUND_REBAKE") ? 0 : 1;
         const char *mn = mesh->Name();
         bool torsoName = mn && (strstr(mn, "trackjacket") || strstr(mn, "vestdenim") ||
                                 strstr(mn, "plaidshirt") || strstr(mn, "shred"));
@@ -1205,6 +1214,7 @@ void BandCharacter::RebindHeadHandsAtRest() {
         if (miss == 0 && resolvable > 0) {
             // pass B: all bones validated — repoint + bake
             // mOffset = meshWorld * inverse(restWorld), bind to the LIVE bone.
+            int anchoredMine = 0, anchoredForeign = 0;
             for (int b = 0; b < nb; b++) {
                 if (!apply[b]) continue;
                 if (owns[b] != mesh->BoneTransAt(b))
@@ -1213,6 +1223,30 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 Invert(rests[b], invRest);
                 Multiply(mesh->WorldXfm(), invRest, mesh->BoneOffsetAt(b));
                 reboundBones++;
+                if (probe) {
+                    // anchor diagnosis: is this bone a trans-descendant of THIS
+                    // member (live per-member skeleton) or foreign (the shared
+                    // magnet / another root)? A mesh mixing both anchors smears
+                    // between the stage and the authored location.
+                    bool mine = false;
+                    int guard = 0;
+                    for (RndTransformable *p = owns[b]; p && guard < 64;
+                         p = p->TransParent(), guard++)
+                        if (p == (RndTransformable *)this) { mine = true; break; }
+                    if (mine) anchoredMine++;
+                    else anchoredForeign++;
+                }
+            }
+            if (probe && anchoredForeign > 0) {
+                static std::map<std::string, int> sMixSeen;
+                std::string key = std::string(Name() ? Name() : "?") + "/" +
+                                  (mesh->Name() ? mesh->Name() : "?");
+                if (sMixSeen[key]++ % 120 == 0)
+                    fprintf(stderr,
+                            "[HEAD_REBIND_ANCHOR] member='%s' mesh='%s' mine=%d "
+                            "foreign=%d (mixed anchors -> smear candidate)\n",
+                            Name() ? Name() : "?", mesh->Name() ? mesh->Name() : "?",
+                            anchoredMine, anchoredForeign);
             }
             mesh->mNativeBonesRebound = true; // engine skips rebake + fling-clamp
             reboundMeshes++;
