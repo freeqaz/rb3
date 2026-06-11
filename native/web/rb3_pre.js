@@ -137,7 +137,13 @@
                 var eq = pair.indexOf('=');
                 var name = (eq < 0 ? pair : pair.slice(0, eq)).trim();
                 var val = (eq < 0 ? '1' : pair.slice(eq + 1)).trim();
-                if (!/^RB3_[A-Z0-9_]+$/.test(name)) {
+                // RB3_* flags pass freely; a fixed second list admits the
+                // engine's draw-path diagnostic probes (read via getenv in
+                // milo-native-engine Rnd_Wgpu_RB3.cpp) so visual bugs can be
+                // probed in-browser without a rebuild. Anything else (PATH,
+                // HOME, ...) is still rejected.
+                var dbgProbes = /^(SKIN_PROBE|SHARD_CATCH|SKIN_CLAMP_PROBE|GEM_VTX|SLOT_PROBE|CAM_DBG|XBONE|XBONE_TRACK|BAND_ANIM_PROBE|REBIND_DRAW_SKINPOS|REBIND_DRAW_FLING)$/;
+                if (!/^RB3_[A-Z0-9_]+$/.test(name) && !dbgProbes.test(name)) {
                     console.warn('[rb3-pre] ignoring non-RB3 env param: ' + name);
                     return;
                 }
