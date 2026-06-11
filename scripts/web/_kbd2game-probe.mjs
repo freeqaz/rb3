@@ -20,7 +20,7 @@
  * Usage: node scripts/web/keyboard-to-gameplay.mjs [--port 8421] [--diff hard]
  */
 import { chromium } from 'playwright';
-import { mkdirSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -31,7 +31,7 @@ const PORT = parseInt(arg('--port', '8421'), 10) || 8421;
 const QUERY = arg('--query', '');   // e.g. 'env=RB3_LOADER_READAHEAD%3D0' — raw query string appended to /
 const DIFF = arg('--diff', 'hard');
 const SONG_DOWNS = parseInt(arg('--song-downs', '3'), 10);
-const OUT = resolve(__dirname, 'results/kbd2game');
+const OUT = '/tmp/web-probe';
 mkdirSync(OUT, { recursive: true });
 
 const DIFF_IDX = { easy: 0, medium: 1, hard: 2, expert: 3 };
@@ -178,9 +178,15 @@ try {
   await page.locator('#rb3-canvas').screenshot({ path: resolve(OUT, '05_game_screen.png') });
 
   // Confirm it's truly playing: frame advancing on game_screen, song clock moving.
-  await sleep(4000);
-  const playing = await mark(page, 'playing');
-  await page.locator('#rb3-canvas').screenshot({ path: resolve(OUT, '06_playing.png') });
+  // Long timeline: the song intro cinematic runs ~25s with songMs=0 before the
+  // track slides in — capture well past it so intro frames aren't mistaken for
+  // steady-state gameplay.
+  let playing = null;
+  for (let t = 5; t <= 60; t += 5) {
+    await sleep(5000);
+    playing = await mark(page, `playing+${t}s`);
+    await page.locator('#rb3-canvas').screenshot({ path: resolve(OUT, `06_playing_${String(t).padStart(2,'0')}s.png`) });
+  }
 
   if (playing.screen === 'game_screen' && playing.diff === DIFF) {
     console.log(`PASS: game_screen reached by pure keyboard, diff='${playing.diff}'`);
@@ -196,7 +202,8 @@ try {
   for (const [label, s] of TIMELINE)
     console.log(`  ${label.padStart(20)}: screen='${s.screen}' view='${s.view}' track='${s.track}' diff='${s.diff}'`);
   console.log('=== last 40 engine console lines ===');
-  for (const l of logs.slice(-40)) console.log('  |', l);
+  writeFileSync('/tmp/web-probe/console.log', logs.join('\n'));
+  console.log('console log lines:', logs.length, '-> /tmp/web-probe/console.log');
   await Promise.race([browser.close(), sleep(3000)]);
 }
 process.exit(rc);
