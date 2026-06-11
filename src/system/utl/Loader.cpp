@@ -80,6 +80,8 @@ float  gTexUploadMsThisFrame = 0.0f;
 int    gTexUploadCountThisFrame = 0;
 float  gMeshUploadMsThisFrame = 0.0f;
 int    gMeshUploadCountThisFrame = 0;
+float  gVertUnpackMsThisFrame = 0.0f;
+int    gVertUnpackCountThisFrame = 0;
 float  gPipelineCreateMsThisFrame = 0.0f;
 int    gPipelineCreateCountThisFrame = 0;
 float  gStreamReadMsThisFrame = 0.0f;
@@ -254,6 +256,13 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
     }
     Timer sinceYield;
     sinceYield.Restart();
+    // T3 (wave-5 lpu wire-in): time the entire synchronous drain so the web
+    // frame-trace recorder produces non-zero lpu on drain frames (same as the
+    // HX_NATIVE arm below). Accumulated into gLoadPollUntilMsThisFrame, which
+    // main_web.cpp passes to RB3FrameTraceRecord as loadPollUntilMs. This block
+    // is inside #ifdef HX_WEB, so the Wii build is byte-identical.
+    Timer pulWebTimer;
+    pulWebTimer.Restart();
     // N1: kick the next K queued loaders' fetches up front so the rest of the
     // pending chain (e.g. the splash → main_hub → song_select milo sequence the
     // App boot drives through this path) starts downloading while file k loads.
@@ -306,6 +315,10 @@ void LoadMgr::PollUntilLoaded(Loader *ldr1, Loader *ldr2) {
             KickReadAhead();
         }
     }
+    // T3: accumulate wall time (including JSPI suspend cost) into the sync-drain
+    // attribution bucket so the frame-trace lpu field is non-zero on web.
+    pulWebTimer.Split();
+    gLoadPollUntilMsThisFrame += Timer::CyclesToMs(pulWebTimer.mCycles);
     SetGPHangDetectEnabled(true, funcName);
     return;
 #endif
@@ -647,6 +660,14 @@ void LoadMgr::Poll() {
                 sinceYield.Restart();
             }
         }
+        // T3 (wave-5 lp wire-in): attribute budgeted background load time to
+        // gLoadPollMsThisFrame so the frame-trace lp field is non-zero on web.
+        // PollUntilEmpty (drainToEmpty) calls Poll() with mPeriod=1e30f; its own
+        // #ifdef HX_NATIVE re-attribution block (above, compiled on web since
+        // HX_NATIVE is set) snapshots+moves the delta to the sync-drain bucket,
+        // so accumulating unconditionally here is correct for both paths.
+        budgetTimer.Split();
+        gLoadPollMsThisFrame += Timer::CyclesToMs(budgetTimer.mCycles);
         return;
     }
 #endif
