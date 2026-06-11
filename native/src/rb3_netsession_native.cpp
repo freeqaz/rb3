@@ -21,6 +21,7 @@
 #ifdef HX_NATIVE
 
 #include "net/NetSession.h"
+#include "net/Net.h" // TheNet — wire TheNet.mSession to the native session
 #include "obj/Dir.h"
 #include "utl/Symbols.h"
 #include "game/BandUser.h" // AddUserResultMsg
@@ -294,6 +295,15 @@ void BandNetGameData::Poll() {}
 void RB3InitNativeNetSession() {
     if (!TheNetSession)
         new RB3NativeNetSession(); // ctor sets TheNetSession = this
+    // On console Net::Init() sets TheNet.mSession = NetSession::New() (the same
+    // object whose ctor sets the TheNetSession global). network/Net.cpp is NOT
+    // compiled natively, so TheNet is a zero-filled weak blob and
+    // TheNet.GetNetSession() returns null. The vocal path
+    // (Singer::CreateMicClientID -> TheNet.GetNetSession()->HasUser()) then
+    // null-derefs (SIGSEGV at 0x48). Mirror Net::Init's wiring so
+    // TheNet.GetNetSession() == the valid session — fixes all 7
+    // TheNet.GetNetSession() call sites at once.
+    TheNet.mSession = TheNetSession;
 }
 
 #endif // HX_NATIVE
