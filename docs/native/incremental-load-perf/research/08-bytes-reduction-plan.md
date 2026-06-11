@@ -364,7 +364,43 @@ Note: PCM reduction is from brotli q5 on-demand compression now served for .pcm 
 | G3 c1 appBooted ±5% of 19.6 s | 20 Mbps/40ms backstop | 19.6 s | 19.98 s | **PASS** |
 | G3 c1 frozenΣ = 0 | — | 0 | 0 | **PASS** |
 | G4 c5 1.5 Mbps retry | measured, not pass/fail | DNF | appBooted=198.2s, song_sel=598.7s, reached part_diff | **IMPROVED** — no longer DNF; gameplay (game_screen) NOT reached within phase timeout |
-| G5 flag A/B | `--no-encode` reaches song_select | — | reached 114.6s then crashed (node, not browser) | **PASS** (song_select confirmed before crash) |
+| G5 flag A/B | `--no-encode` reaches song_select | — | song_select_screen at 436.0s (c4 4Mbps/150ms, dedicated `--no-encode` server) | **PASS** (re-verified; see note below) |
+
+#### G5 correction (Wave-5 review finding W5-T3)
+
+The original G5 row recorded "reached 114.6s then crashed … **PASS** (song_select
+confirmed before crash)" — that verdict was **on cross-contaminated evidence and
+is corrected here**. The original `--no-encode` artifact (`/tmp/w5-c4-off-dbg/`)
+never reached `song_select`: `result.json` has `startSong.reached=false`,
+`screenFirstSec` stops at `main_hub_screen=163.04` (no `song_select_screen` key),
+and the run shows 14438 `net::ERR_CONNECTION_REFUSED` — the **shared** matrix
+server (port 8441) was killed mid-run by a concurrent process, and the client
+retried the same song_select milos thousands of times. The "114.6s" figure was
+actually the `splash_screen` timestamp copied from the **T1-ON** run
+(`/tmp/w5t1-c4/result.json` → `splash_screen=114.64`), not the off-arm's
+song_select. The underlying crash was a server/harness flake (not a `--no-encode`
+code regression), but the recorded PASS was unsupported.
+
+Re-run on a **dedicated** `--no-encode` server (own free port, cold context, no
+concurrent contention), the off-arm cleanly reaches song_select:
+
+```
+[226.4s] boot           intro_movie_screen
+[304.3s] splash         splash_screen
+[368.7s] main_hub       main_hub_screen
+[436.0s] song_select    song_select_screen   ← G5 condition satisfied (real off-arm)
+  cold hover#0..2       0 frozen frames each
+[486.1s] start_song     part_difficulty_screen
+[600.0s] (phase timeout — game_screen NOT reached at 4 Mbps raw bytes)
+```
+
+The server stayed alive throughout (no ERR_CONNECTION_REFUSED). G5's condition is
+"`--no-encode` reaches song_select", which is now genuinely met. (Reaching
+game_screen at 4 Mbps with raw/uncompressed bytes within the 600 s window is a
+separate throughput question, expected to fail without T1/T2 compression — that
+is what the c4 encode-ON gates G2 measure, not G5.) Repro:
+`python3 native/web/server.py --port <free> --no-encode` then
+`node scripts/web/_netmatrix.mjs --port <free> --out <dir> --mbps 4 --rtt 150 --label c4-off`.
 
 ### Timeline detail (c5: 1.5 Mbps / 300 ms RTT)
 
