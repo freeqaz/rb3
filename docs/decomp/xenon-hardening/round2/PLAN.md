@@ -215,3 +215,21 @@ archive intact, commits present on the right branches.
 2. Run T2 (rb3-xenon ingest) — gate already passes on judge data
 3. Run T3 (holdout growth, known-negatives) — 27 correct + 3 wrong pairs ready
 4. System/network stratum judged sample — closes band3-extrapolation caveat
+
+### STATUS ADDENDUM (T4 verifier, 2026-06-11 ~10:40 UTC)
+
+The table above was a stale snapshot: T1/T2/T3 executed concurrently around the T4
+record's commit (10:27:14). Verified state:
+
+| Task | Actual status | Evidence |
+|---|---|---|
+| T1 | run-4 IN FLIGHT (started 10:27:30, `--matches-only`, 2,130 ACCEPT seeds loaded) | log `SeedMatch: pre-accepted 2130`; ps cmdline; rb3 `e1693918`; ghidriff `e52d935` |
+| T2 | COMPLETE — 978 entries ingested, 0 sdk, 0 judged-wrong, gitignored | rb3 `6a4779b2`/`6793c59a`; rb3-xenon `7bdae6c`; task-T2-ingest.md |
+| T3 | COMPLETE — holdout 146→158, known_negatives (3), reserved (11) | rb3 `4daa00fa`; task-T3-impl.md |
+| T4 | record committed (`0d3afded`) but its task-status sections are superseded | task-T4-verify.md |
+
+Judge numbers + invariants (a,d,e) in the record verified correct; (b)/(c) re-checked
+non-vacuously: PASS. One accounted artifact: `seeds_accept_run3.json` ∩ grown holdout
+= 12 addrs (seeds built against the original 146 before T3 grew it) — neutralized by
+eval's seed-exclusion (eval_xenon_matches.py:443) **iff** eval gets
+`--seeds seeds_accept_run3.json`. Full audit: `round2/task-T4-verify.md`.

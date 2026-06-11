@@ -310,6 +310,18 @@ No T1/T2/T3 commits exist for round 2. All round-1 commits confirmed on their br
 
 ---
 
+## VERIFIER ADDENDUM (2026-06-11 ~10:40 UTC) — task-status sections superseded
+
+This record was a stale snapshot at publication: T1/T2/T3 executed concurrently
+(artifacts at 10:23–10:25 predate this record's 10:27:14 commit; commits landed
+10:26:52–10:35:19). Superseded sections: §1 (all three "NOT COMPLETED" verdicts),
+§2(b)/(c) ("vacuous"), §4 ("Not tested" — run-4 started 10:27:30), §6 ledger.
+The judged-precision numbers (§3), calibration analysis, and invariant probe RESULTS
+remain correct; (b)/(c) re-checked non-vacuously = PASS. One new accounted finding:
+`seeds_accept_run3.json` ∩ grown holdout = 12 addrs (eval-neutralized iff
+`--seeds seeds_accept_run3.json` is passed). Full audit + timeline:
+`docs/decomp/xenon-hardening/round2/task-T4-verify.md`.
+
 ## For the verifier
 
 1. All invariants (a)–(e) probed directly above with exact commands and outputs.
