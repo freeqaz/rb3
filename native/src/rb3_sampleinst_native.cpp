@@ -33,7 +33,14 @@
 #include "synth/ADSR.h"
 #include "synth/FxSend.h"
 #include "audio/AudioDevice.h"
-#include "rb3_xma_sidecar.h"  // offline XMA->PCM sidecar loader (native + web)
+
+// W5-T2: this TU owns the single stb_vorbis IMPLEMENTATION for the whole port.
+// rb3_xma_sidecar.h (below) includes stb_vorbis.h in header-only mode everywhere
+// it is pulled in (App.cpp / main_native.cpp); defining RB3_STB_VORBIS_IMPL here
+// makes rb3_xma_sidecar.h emit the implementation in exactly this one TU, so the
+// decoder symbols link once. Keep this define BEFORE the sidecar include.
+#define RB3_STB_VORBIS_IMPL 1
+#include "rb3_xma_sidecar.h"  // offline XMA->{PCM,OGG} sidecar loader (native + web)
 
 #include <algorithm>
 #include <atomic>

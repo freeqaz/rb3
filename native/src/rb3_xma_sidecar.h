@@ -18,6 +18,28 @@
 #include <cstring>
 #include <string>
 #include <sys/stat.h> // stat (native sidecar-dir auto-probe)
+#include <vector>     // ogg read-into-memory buffer
+
+// W5-T2: vorbis SFX sidecars. The offline converter emits a <hexkey>.ogg next to
+// each <hexkey>.pcm (libvorbis q4, ~10% of the raw PCM bytes), keyed by the SAME
+// PayloadKey. We try the .ogg first and decode it with vendored stb_vorbis into
+// the identical SidecarPCM contract, falling back to .pcm on miss/decode-fail.
+//
+// stb_vorbis.h is header-only by default; the SINGLE TU that defines
+// RB3_STB_VORBIS_IMPL (rb3_sampleinst_native.cpp) compiles the implementation so
+// the decoder symbols link exactly once. All other includers (App.cpp,
+// main_native.cpp) get just the declarations. We use only the pulldata
+// open-memory API (we read the file/MEMFS bytes ourselves), so push-data + the
+// stdio file API are compiled out to keep the impl lean.
+#define STB_VORBIS_NO_PUSHDATA_API
+#define STB_VORBIS_NO_STDIO
+#ifndef RB3_STB_VORBIS_IMPL
+#define STB_VORBIS_HEADER_ONLY
+#endif
+#include "stb_vorbis.h"
+#ifdef STB_VORBIS_HEADER_ONLY
+#undef STB_VORBIS_HEADER_ONLY
+#endif
 
 #ifdef __EMSCRIPTEN__
 // Web-only: the sidecar files are not bundled into the wasm/preload (180MB).
@@ -58,6 +80,20 @@ struct SidecarPCM {
     int sampleRate = 0;
     int byteSize = 0;        // total PCM byte size
 };
+
+// W5-T2 flag: prefer the compact <hex>.ogg sidecar (default ON). Set
+// RB3_SFX_OGG_OFF=1 to force the legacy raw .pcm path (A/B arm). getenv-once.
+// The web URL bridge (?env=RB3_SFX_OGG_OFF=1) sets this getenv before boot.
+inline bool SfxOggEnabled() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) {
+        sEnabled = 1; // default ON
+        if (const char *e = getenv("RB3_SFX_OGG_OFF"))
+            if (e[0] && e[0] != '0')
+                sEnabled = 0;
+    }
+    return sEnabled != 0;
+}
 
 // Sidecar directory. Override with RB3_SFX_PCM_DIR (absolute or cwd-relative);
 // otherwise resolved per-platform below.
@@ -136,8 +172,12 @@ inline BankIndex &TheBankIndex() {
 }
 
 // MEMFS server-path for a sidecar key (relative; resolves under /data cwd).
+// W5-T2: prefetch the same extension the warm-load path will open first — .ogg
+// when the vorbis sidecars are enabled, else the legacy raw .pcm — so the
+// already-resident bytes match the format the sync miss path expects.
 inline std::string SidecarServerPath(const std::string &keyHex) {
-    return SidecarDir() + "/" + keyHex + ".pcm";
+    const char *ext = SfxOggEnabled() ? ".ogg" : ".pcm";
+    return SidecarDir() + "/" + keyHex + ext;
 }
 
 // Load + parse manifest.txt once (small sync fetch). Returns false if absent (a
@@ -227,25 +267,13 @@ inline void MaybePrefetchBank(const std::string &keyHex) {
 }
 #endif // __EMSCRIPTEN__
 
-// Try to load a sidecar for the given raw XMA payload. Returns a SidecarPCM with
-// data==nullptr if none is found (caller falls back to skipping the sample).
-inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
-    SidecarPCM out;
-    if (!xmaData || sizeBytes <= 0) return out;
-
-    uint64_t key = PayloadKey(xmaData, sizeBytes, sampleRate);
-    char keyHex[24];
-    std::snprintf(keyHex, sizeof(keyHex), "%016llx",
-                  static_cast<unsigned long long>(key));
-    std::string path = SidecarDir() + "/" + keyHex + ".pcm";
-
+// Open a sidecar file by full path, returning a FILE* (caller fclose's) or null.
+// On web, a MEMFS miss triggers one synchronous XHR into MEMFS and a retry — the
+// same miss-then-fetch ordering native_file.cpp uses; compiled out natively.
+// keyHex is only used to drive the per-bank async prefetch (web).
+inline FILE *OpenSidecarFile(const std::string &path, const char *keyHex) {
     FILE *f = std::fopen(path.c_str(), "rb");
 #ifdef __EMSCRIPTEN__
-    // Web on-demand fetch: under emcc the sidecar lives on the dev server, not
-    // in MEMFS, so the first open misses. Fetch it (one synchronous XHR per
-    // distinct SFX — sidecars are 19KB-1.5MB) into MEMFS and retry. A warm
-    // MEMFS (already-fetched this session) skips the XHR entirely. Mirrors the
-    // miss-then-fetch ordering in native_file.cpp. Compiled out natively.
     if (!f) {
         // Q8: kick an async prefetch of this key's whole bank (idempotent) so the
         // NEXT distinct SFX from this bank is already MEMFS-resident and skips the
@@ -253,7 +281,8 @@ inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
         // prior MaybePrefetchBank — but it is not guaranteed ready yet, so we still
         // do the sync fetch as the per-key miss fallback (it short-circuits if the
         // async prefetch already landed these bytes in MEMFS).
-        MaybePrefetchBank(std::string(keyHex));
+        if (keyHex)
+            MaybePrefetchBank(std::string(keyHex));
 
         // WebAssetsFetchSync writes the fetched bytes to the MEMFS path it is
         // handed and mkdir's the ABSOLUTE parent chain (/data/sfx/...). The
@@ -266,7 +295,112 @@ inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
         if (WebAssetsFetchSync(fetchPath.c_str()))
             f = std::fopen(path.c_str(), "rb");
     }
+#else
+    (void)keyHex;
 #endif
+    return f;
+}
+
+// Read an entire open file into a byte buffer (used for the whole-stream ogg
+// decode). Returns false on read error.
+inline bool ReadAllBytes(FILE *f, std::vector<uint8_t> &buf) {
+    if (std::fseek(f, 0, SEEK_END) != 0) return false;
+    long sz = std::ftell(f);
+    if (std::fseek(f, 0, SEEK_SET) != 0) return false;
+    if (sz <= 0) return false;
+    buf.resize(static_cast<size_t>(sz));
+    return std::fread(buf.data(), 1, buf.size(), f) == buf.size();
+}
+
+// Decode a whole in-memory Ogg/Vorbis stream into the SidecarPCM contract
+// (16-bit interleaved malloc'd buffer). Returns an empty SidecarPCM on any
+// decode failure so the caller falls back to .pcm. The vorbis sidecar carries no
+// RB3PCM01 header — channels/rate come from the stream itself (the converter
+// encoded the SAME per-channel sample count / rate / channels as the .pcm).
+inline SidecarPCM DecodeOggBuffer(const uint8_t *bytes, int len) {
+    SidecarPCM out;
+    if (!bytes || len <= 0) return out;
+    int err = 0;
+    stb_vorbis *v = stb_vorbis_open_memory(bytes, len, &err, nullptr);
+    if (!v) return out;
+    stb_vorbis_info info = stb_vorbis_get_info(v);
+    int ch = info.channels;
+    int sr = static_cast<int>(info.sample_rate);
+    if (ch <= 0 || ch > 8 || sr <= 0) {
+        stb_vorbis_close(v);
+        return out;
+    }
+    unsigned int perChan = stb_vorbis_stream_length_in_samples(v);
+    if (perChan == 0 || perChan > 0x7fffffffu / static_cast<unsigned int>(ch)) {
+        stb_vorbis_close(v);
+        return out;
+    }
+    int total = static_cast<int>(perChan) * ch; // total interleaved shorts
+    int16_t *pcm = static_cast<int16_t *>(std::malloc(total * sizeof(int16_t)));
+    if (!pcm) {
+        stb_vorbis_close(v);
+        return out;
+    }
+    // get_samples_short_interleaved fills up to num_shorts and returns the number
+    // of per-channel frames written; it may stop a frame or two short of the
+    // reported stream length, so zero-pad any tail and trust the written count.
+    int framesWritten =
+        stb_vorbis_get_samples_short_interleaved(v, ch, pcm, total);
+    stb_vorbis_close(v);
+    if (framesWritten <= 0) {
+        std::free(pcm);
+        return out;
+    }
+    if (framesWritten < static_cast<int>(perChan)) {
+        int writtenShorts = framesWritten * ch;
+        std::memset(pcm + writtenShorts, 0,
+                    (total - writtenShorts) * sizeof(int16_t));
+    }
+    out.data = pcm;
+    out.numSamples = static_cast<int>(perChan); // per-channel count
+    out.numChannels = ch;
+    out.sampleRate = sr;
+    out.byteSize = total * static_cast<int>(sizeof(int16_t));
+    return out;
+}
+
+// Try to load the compact <hex>.ogg vorbis sidecar. Empty SidecarPCM on miss or
+// decode failure (caller falls back to .pcm). Web fetch-on-miss is handled by
+// OpenSidecarFile exactly like the .pcm path.
+inline SidecarPCM TryLoadOgg(const std::string &keyHex) {
+    SidecarPCM out;
+    std::string path = SidecarDir() + "/" + keyHex + ".ogg";
+    FILE *f = OpenSidecarFile(path, keyHex.c_str());
+    if (!f) return out;
+    std::vector<uint8_t> bytes;
+    bool ok = ReadAllBytes(f, bytes);
+    std::fclose(f);
+    if (!ok) return out;
+    return DecodeOggBuffer(bytes.data(), static_cast<int>(bytes.size()));
+}
+
+// Try to load a sidecar for the given raw XMA payload. Returns a SidecarPCM with
+// data==nullptr if none is found (caller falls back to skipping the sample).
+// W5-T2: prefer the compact <hex>.ogg vorbis sidecar (default ON); on miss/
+// decode-fail fall through to the legacy raw <hex>.pcm. RB3_SFX_OGG_OFF=1 skips
+// the .ogg attempt entirely (A/B arm — byte-identical to the pre-W5 .pcm path).
+inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
+    SidecarPCM out;
+    if (!xmaData || sizeBytes <= 0) return out;
+
+    uint64_t key = PayloadKey(xmaData, sizeBytes, sampleRate);
+    char keyHex[24];
+    std::snprintf(keyHex, sizeof(keyHex), "%016llx",
+                  static_cast<unsigned long long>(key));
+
+    if (SfxOggEnabled()) {
+        SidecarPCM ogg = TryLoadOgg(std::string(keyHex));
+        if (ogg.data) return ogg;
+        // miss/decode-fail → fall through to the raw .pcm sidecar below.
+    }
+
+    std::string path = SidecarDir() + "/" + keyHex + ".pcm";
+    FILE *f = OpenSidecarFile(path, keyHex);
     if (!f) return out;
 
     // Header: magic(8) sampleRate(i32) numSamples(i32) numChannels(i32) rsvd(i32)
