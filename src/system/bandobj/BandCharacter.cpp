@@ -767,6 +767,37 @@ void BandCharacter::NativeCollectSkinnedMeshes(std::vector<RndMesh *> &targets) 
     }
 }
 
+// scout-c8 (render-polish 2026-06-11): CHARACTER-SPACE rest capture.
+// The C8 deep-dive proved the "rotation-basis divergence" was actually a rest-
+// bake SPACE error: the rest snapshot stored own->WorldXfm() — which includes
+// the member's stage/venue PLACEMENT (and is captured after the member root has
+// been positioned, e.g. x=-18.5/y=24 measured) — while the skinned meshes' verts
+// are authored in MODEL space at the origin (raw locality audit: verts sit
+// 5-9u from their authored bind bones, but 27-60u == |placement| from the
+// world-space-baked rests). Baking offset = inv(worldRest) then makes every
+// vert swing on a |placement|-length lever arm as the bone rotates -> the
+// R*sin(theta) smear (200-460u extents) the V24 guard hides. Fix: store the
+// rest RELATIVE to the bone's trans-chain ROOT (the member instance), i.e.
+// L_rest = world_rest * inv(rootWorld). Then offset = meshWorld(=I) * inv(L_rest)
+// composes to inv(authoredBindLocal) * L(t) * M(t) — placement-independent and
+// correct through animation. Bones rooted at the static magnet (root world ==
+// identity) are unaffected (rel == world there).
+static Transform NativeCharSpaceRestXfm(RndTransformable *own) {
+    Transform rest = own->WorldXfm();
+    RndTransformable *root = own;
+    int guard = 0;
+    while (root->TransParent() && guard++ < 64)
+        root = root->TransParent();
+    if (root != own) {
+        Transform invRoot;
+        Invert(root->WorldXfm(), invRoot);
+        Transform rel;
+        Multiply(rest, invRoot, rel);
+        return rel;
+    }
+    return rest;
+}
+
 // render-polish 2026-06-11 (char-render step 2): deterministic rest-pose seeding.
 // Called from SyncObjects() IMMEDIATELY after SetDeformation(), where the gender
 // deform clip's PoseMeshes() has just left every deform-driven bone at the
@@ -825,7 +856,9 @@ void BandCharacter::NativeCaptureRestPoseAfterDeform() {
             if (haveDistinct) continue;
             if (!isDistinct && mNativeRestPose.find(bname) != mNativeRestPose.end())
                 continue;
-            Transform rest = own->WorldXfm();
+            // scout-c8: capture in CHARACTER space (placement divided out), not
+            // world space — see NativeCharSpaceRestXfm.
+            Transform rest = NativeCharSpaceRestXfm(own);
             // same finite/sane guard as the Poll-time capture (the engine clamp is
             // disabled for rebound meshes, so a NaN inverse-bind has no backstop)
             if (!(std::fabs(rest.v.x) < 1e5f && std::fabs(rest.v.y) < 1e5f &&
@@ -1196,7 +1229,20 @@ void BandCharacter::RebindHeadHandsAtRest() {
                 // produce NaN — the engine clamp is disabled for rebound meshes,
                 // so there is no backstop. The capture is KEPT even if this mesh
                 // fails to complete (it is the authoritative basis for every mesh).
-                rest = own->WorldXfm();
+                //
+                // scout-c8: (a) capture in CHARACTER space (placement divided
+                // out); (b) NEVER capture while a clip is playing — a mid-song
+                // first-resolve (after the reload-churn re-arm) used to snapshot
+                // a mid-clip/IK pose (measured: a guitar-FRET-hand pose baked as
+                // "rest" for the fingernail bones) which is a POSE poison the
+                // space fix cannot repair. Such bones stay pending (mesh stays
+                // on the guard — status quo) until a clip-free capture happens.
+                if (mDriver && mDriver->FirstPlaying()) {
+                    miss++;
+                    if (!missBone) { missBone = bound->Name(); missWhy = "clipPlaying"; }
+                    continue;
+                }
+                rest = NativeCharSpaceRestXfm(own);
                 if (!(std::fabs(rest.v.x) < 1e5f && std::fabs(rest.v.y) < 1e5f &&
                       std::fabs(rest.v.z) < 1e5f)) {
                     miss++;
