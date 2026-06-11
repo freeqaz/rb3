@@ -72,6 +72,15 @@
 class TrainerPanel;
 extern TrainerPanel *TheTrainerPanel;
 
+#ifdef HX_NATIVE
+// incremental-load-perf Wave 5 (task T2) — loading-dwell GPU warm driver
+// (native/src/rb3_gamewarm_native.cpp). Called from Game::IsLoaded() once
+// mLoadState==kReady to sweep the gameplay dir roots through
+// BandRnd::WarmGpuForDir during the vignette dwell. Returns true while still
+// warming (hold the vignette). See the TU header + GamePanel.cpp. RB3_GAMEWARM_OFF.
+extern "C" bool RB3GameWarmPollDwell(class ObjectDir *selfDir, class ObjectDir *trackDir);
+#endif
+
 Game *TheGame;
 bool gDebugFullQuota;
 bool gKickAutoplay;
@@ -272,8 +281,26 @@ bool Game::IsLoaded() {
         }
     }
 #endif
-    if (mLoadState == kReady)
+    if (mLoadState == kReady) {
+#ifdef HX_NATIVE
+        // Wave 5 / T2: Game::IsLoaded() is the per-frame poll that actually
+        // drives the tv3_* loading vignette -> game_screen transition in the
+        // headless/native flow (GamePanel::PollForLoading short-circuits via
+        // UIPanel::CheckIsLoaded when mState != kUnloaded, so its arm never fires
+        // here). Now that mLoadState == kReady (song + audio + MIDI + chars all
+        // parsed), sweep the gameplay dir roots through BandRnd::WarmGpuForDir
+        // during the remaining vignette dwell so the venue first-draw GPU work
+        // (97 tex + 113 mesh uploads + CPU unpack) + the Enter ForceGetLoader
+        // drain happen here (idle frames) instead of all at once on the reveal
+        // frame. Hold not-loaded until the sweep drains (bounded by a ~2 s
+        // max-hold inside the driver). Opt-out RB3_GAMEWARM_OFF=1.
+        if (RB3GameWarmPollDwell(
+                TheGamePanel ? TheGamePanel->LoadedDir() : nullptr,
+                GetTrackPanelDir()))
+            return false; // still warming — keep the vignette up one more frame
+#endif
         return true;
+    }
     else if (mMaster && mMaster->GetAudio()->GetSongStream()
              && mMaster->GetAudio()->Fail()) {
         return true;

@@ -490,6 +490,12 @@ add_executable(rb3-native
     # Defines the asset-event counters (gFrameTrace*) incremented from the engine
     # choke points (LoadMgr::AddLoader, Synth::NewStream) + RB3FrameTraceRecord.
     ${CMAKE_SOURCE_DIR}/src/rb3_frame_trace.cpp
+    # TASK T2 (incremental-load-perf Wave 5): loading-dwell GPU warm driver +
+    # reveal-frame drain pre-kick. GamePanel.cpp's HX_NATIVE arm calls
+    # RB3GameWarmPollDwell during the vignette to sweep the gameplay dir roots
+    # through BandRnd::WarmGpuForDir (move 97 tex + 113 mesh uploads off the
+    # reveal frame) + pre-kick the Enter ForceGetLoader drain. Flag RB3_GAMEWARM_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_gamewarm_native.cpp
     # TASK T3 (incremental-load-perf): preview-hover mogg prefetch + residency
     # primitives. The matched SongPreview/MusicLibrary HX_NATIVE arms call these to
     # warm the preview mogg async during the ~1 s debounce window and to defer the
@@ -725,6 +731,13 @@ set(RB3_WEB_NATIVE_GLUE
     # frame loop is never entered on web). Without this the symbol resolves to a
     # no-op JS link-stub and the trace file is never created.
     ${CMAKE_SOURCE_DIR}/src/rb3_frame_trace.cpp
+    # TASK T2 (incremental-load-perf Wave 5): loading-dwell GPU warm driver +
+    # reveal-frame drain pre-kick. Same TU as native — GamePanel.cpp's HX_NATIVE
+    # arm (web defines HX_NATIVE) calls RB3GameWarmPollDwell during the vignette to
+    # move the venue first-draw GPU work (97 tex + 113 mesh uploads + CPU unpack)
+    # off the reveal frame into the idle dwell, killing the ~0.7-1.0 s web
+    # game-content freeze. Flag RB3_GAMEWARM_OFF. See the TU header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_gamewarm_native.cpp
     # REAL live input on web: keyboard -> JoypadData -> SendButtonMessages (same
     # TU as native; its #ifdef __EMSCRIPTEN__ branch reads window._rb3Keys +
     # navigator.getGamepads()). Strong JoypadPoll etc. drive frets/strum through
