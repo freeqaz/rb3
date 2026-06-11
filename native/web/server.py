@@ -92,27 +92,312 @@ SIDECAR_DIR = None  # auto-detected (orig-assets/derived/sfx_pcm) or RB3_SFX_PCM
 # --encode-cache flag). Created on first use.
 ENCODE_CACHE_DIR = None
 ENCODE_ENABLED = True  # --no-encode disables (raw path, for A/B)
-# Compressible asset extensions (scene-graph / DTA / object data). Conservative
-# start with the measured offenders (.milo_xbox + the DTA family). Deny wins
-# over allow. Already-compressed payloads (.mogg/.ogg/DXT textures/webm) gain
-# ~0 and are explicitly denied — the mogg is R4's surface, never touched here.
+# Compressible asset extensions (scene-graph / DTA / object data). Deny wins
+# over allow. Already-compressed payloads (.mogg/.ogg/.webm) gain ~0 and are
+# explicitly denied — the mogg is R4's surface, never touched here.
+#
+# W5-T1 coverage expansion (research/08 §2 measurements, this machine):
+#   .pcm      raw 16-bit XMA->PCM SFX sidecars — 59 MB/journey, served 100% raw
+#             today; br q11 = 70-76% (q5 ~88%). The 10x lever (vorbis) is T2's
+#             arm; q11 here is the RB3_SFX_OGG_OFF fallback so they're never raw.
+#   .png_xbox/.bmp_xbox album art / textures — q11 ~70%.
+#   .mid      song MIDI — q11 ~8% (highly compressible).
+#   .txt      misc text — generically compressible.
+# These were previously in the deny set and served raw.
 COMPRESSIBLE_EXTS = {
     ".milo_xbox", ".milo", ".milo_ps3", ".milo_wii",
     ".dta", ".dtb", ".dtb_ps3",
+    ".pcm", ".png_xbox", ".bmp_xbox", ".mid", ".txt",
 }
 INCOMPRESSIBLE_EXTS = {
-    ".mogg", ".ogg", ".webm", ".pcm",
-    ".png_xbox", ".bmp_xbox", ".jpg", ".jpeg", ".png", ".gz", ".br",
+    # Lossy/already-compressed media (measured br ratio ~100%): never compress.
+    ".mogg", ".ogg", ".webm", ".jpg", ".jpeg", ".png", ".gz", ".br",
 }
 # brotli q5 keeps ~90% of q11's win at ~1/100th the CPU (colorpalettes 45.9% vs
 # 40.3%, 0.23s vs 22.1s), and the cost is paid inline on the first (freezing)
 # request — so q5 is the right on-demand default. q11 is reserved for the
-# optional build-time pre-warm. gzip -6 is the fallback level.
+# offline pre-warm (scripts/web/prewarm_encode_cache.py). gzip -6 is fallback.
 ENCODE_LEVEL_BROTLI = 5
 ENCODE_LEVEL_GZIP = 6
 # Resolved encoder binaries (probed once in main()); None if absent.
 BROTLI_BIN = None
 GZIP_BIN = None
+
+
+# ---------------------------------------------------------------------------
+# Module-level encode primitives + bundle body builders.
+#
+# These are the ONE source of truth shared by the running server (RB3Handler)
+# and the offline pre-warm (scripts/web/prewarm_encode_cache.py imports them).
+# Keeping the bundle entry-set + fingerprint logic here — not duplicated in the
+# script — is what guarantees the prewarmed bundle artifact has the exact same
+# cache key the server looks for at request time (no fingerprint drift).
+# ---------------------------------------------------------------------------
+
+
+def encode_meta_text(src_size, src_mtime, enc=None, level=None):
+    """Render a cache .meta line for a source of (size,mtime).
+
+    Two forms, both keyed on the source identity:
+      "<size>:<mtime>"              — legacy (pre-W5) q5 entry; level unknown.
+      "<size>:<mtime>:<enc><level>" — W5 3-field; records the encode level so the
+                                      pre-warm can decide whether to upgrade
+                                      (e.g. "br11", "gz6").
+    `enc`/`level` omitted ⇒ legacy 2-field form (back-compat writer)."""
+    base = f"{src_size}:{int(src_mtime)}"
+    if enc and level is not None:
+        return f"{base}:{enc}{level}"
+    return base
+
+
+def parse_meta_text(text):
+    """Parse a .meta line → (src_size:int, src_mtime:int, enc:str|None,
+    level:int|None). Back-compat: a 2-field legacy entry returns (size, mtime,
+    None, None) — the level is unknown, treated as the on-demand q5 default by
+    callers. Returns None on a malformed line."""
+    parts = (text or "").strip().split(":")
+    if len(parts) < 2:
+        return None
+    try:
+        size = int(parts[0])
+        mtime = int(parts[1])
+    except ValueError:
+        return None
+    enc, level = None, None
+    if len(parts) >= 3 and parts[2]:
+        tail = parts[2]
+        # split a leading alpha encoder name from a trailing numeric level
+        i = 0
+        while i < len(tail) and tail[i].isalpha():
+            i += 1
+        enc = tail[:i] or None
+        try:
+            level = int(tail[i:]) if tail[i:] else None
+        except ValueError:
+            level = None
+    return size, mtime, enc, level
+
+
+def meta_is_valid_for(meta_text, src_size, src_mtime):
+    """True if a .meta line describes the current source (size+mtime match).
+    Back-compat: legacy 2-field q5 entries validate identically — the warm q5
+    cache stays valid (NOT re-compressed) until the pre-warm upgrades it."""
+    parsed = parse_meta_text(meta_text)
+    if parsed is None:
+        return False
+    size, mtime, _enc, _level = parsed
+    return size == src_size and mtime == int(src_mtime)
+
+
+def _unlink_quiet(path):
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _atomic_write(path, data):
+    """Write `data` (bytes) to `path` atomically (unique temp + rename on the
+    same filesystem). Returns True on success."""
+    tmp = path + f".{os.getpid()}.{random.randrange(1 << 32):08x}.tmp"
+    try:
+        with open(tmp, "wb") as out:
+            out.write(data)
+        os.rename(tmp, path)
+        return True
+    except OSError:
+        _unlink_quiet(tmp)
+        return False
+
+
+def encode_bytes(data, enc, level):
+    """Compress `data` (bytes) via the brotli/gzip CLI at `level`. Returns the
+    compressed bytes, or None on failure. enc ∈ {'br','gzip'}."""
+    if enc == "br":
+        if not BROTLI_BIN:
+            return None
+        cmd = [BROTLI_BIN, "-q", str(level), "-c"]
+    elif enc == "gzip":
+        if not GZIP_BIN:
+            return None
+        cmd = [GZIP_BIN, f"-{level}", "-c"]
+    else:
+        return None
+    try:
+        proc = subprocess.run(cmd, input=data, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    return proc.stdout
+
+
+def encode_file_to_cache(src_path, cache_path, enc, level):
+    """Compress the file `src_path` into `cache_path` at `enc`/`level`, writing
+    an atomic body + a 3-field `.meta` recording the source identity AND the
+    encode level. Used by both the inline server path and the offline pre-warm,
+    so the .meta level is always written (the server's old writer wrote a 2-field
+    line; this writes 3-field — both validate the same way).
+
+    Streams the brotli/gzip CLI src->stdout (avoids holding the body in RAM for
+    big venue milos). Returns True on success, False on any failure (caller
+    falls through to the raw path — no regression)."""
+    cache_dir = os.path.dirname(cache_path)
+    try:
+        os.makedirs(cache_dir, exist_ok=True)
+    except OSError:
+        return False
+
+    if enc == "br":
+        if not BROTLI_BIN:
+            return False
+        cmd = [BROTLI_BIN, "-q", str(level), "-c", src_path]
+    elif enc == "gzip":
+        if not GZIP_BIN:
+            return False
+        cmd = [GZIP_BIN, f"-{level}", "-c", src_path]
+    else:
+        return False
+
+    tmp_suffix = f".{os.getpid()}.{random.randrange(1 << 32):08x}.tmp"
+    tmp_path = cache_path + tmp_suffix
+    try:
+        with open(tmp_path, "wb") as out:
+            proc = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE)
+        if proc.returncode != 0:
+            _unlink_quiet(tmp_path)
+            return False
+        # Capture source identity BEFORE the rename so .meta describes the exact
+        # bytes compressed (not a racing rewrite of the source).
+        st = os.stat(src_path)
+        os.rename(tmp_path, cache_path)
+    except OSError:
+        _unlink_quiet(tmp_path)
+        return False
+
+    meta_path = cache_path + ".meta"
+    _atomic_write(meta_path,
+                  encode_meta_text(st.st_size, st.st_mtime, enc, level).encode())
+    return True
+
+
+def serialize_bundle(entries):
+    """Serialize bundle `entries` ([(rel, bytes), ...]) into the binary bundle
+    body the engine's onBundleSuccess parses:
+        uint32 count, then per file: uint32 path_len, path, uint32 data_len, data
+    Integers little-endian (Emscripten host order). Entries are sorted by path
+    for a stable body. ONE source of truth — used by the server and the pre-warm
+    so both produce byte-identical bodies (and thus identical fingerprints)."""
+    import struct
+    entries = sorted(entries, key=lambda x: x[0])
+    chunks = [struct.pack("<I", len(entries))]
+    for path, data in entries:
+        path_bytes = path.encode("utf-8")
+        chunks.append(struct.pack("<I", len(path_bytes)))
+        chunks.append(path_bytes)
+        chunks.append(struct.pack("<I", len(data)))
+        chunks.append(data)
+    return b"".join(chunks)
+
+
+def bundle_fingerprint(entries):
+    """16-hex fingerprint of a bundle's entry set+sizes (cheap — no payload
+    hash). A changed asset set / size rebuilds the cached artifact. Entries are
+    sorted to match serialize_bundle so the fingerprint is order-independent.
+    ONE source of truth — the server's request-time key and the pre-warm's
+    written key MUST agree."""
+    import hashlib
+    ents = sorted(entries, key=lambda x: x[0])
+    return hashlib.sha1(
+        (f"{len(ents)}|" + "|".join(
+            f"{r}:{len(d)}" for r, d in ents)).encode()
+    ).hexdigest()[:16]
+
+
+def overlay_path(safe_rel):
+    """Overlay file path for a relative asset path if an overlay shadows it, else
+    None. Module-level twin of RB3Handler._overlay_path so the offline pre-warm
+    resolves bundle entries identically to the server."""
+    if not OVERLAY_DIR or ".." in safe_rel.replace("\\", "/").split("/"):
+        return None
+    cand = os.path.join(OVERLAY_DIR, safe_rel)
+    return cand if os.path.isfile(cand) else None
+
+
+def resolve_asset_path(rel):
+    """Resolve a server-relative asset path to an on-disk file: overlay →
+    ASSETS_DIR → the "(..)/(..)" system/run layout → fallback roots. Returns the
+    absolute path or None. Module-level twin of RB3Handler._resolve_asset_path —
+    ONE source of truth shared by the server bundle routes and the pre-warm so
+    the entry sets (and thus the bundle fingerprint) never drift."""
+    full_path = overlay_path(rel) or os.path.join(ASSETS_DIR, rel)
+    if not os.path.isfile(full_path) and rel.startswith("system/"):
+        alt = os.path.join(ASSETS_DIR, "(..)", "(..)", rel)
+        if os.path.isfile(alt):
+            full_path = alt
+    if not os.path.isfile(full_path):
+        for fb_root in FALLBACK_ASSETS_DIRS:
+            fb_path = os.path.join(fb_root, rel)
+            if os.path.isfile(fb_path):
+                full_path = fb_path
+                break
+            if rel.startswith("system/"):
+                fb_alt = os.path.join(fb_root, "(..)", "(..)", rel)
+                if os.path.isfile(fb_alt):
+                    full_path = fb_alt
+                    break
+    return full_path if os.path.isfile(full_path) else None
+
+
+def read_manifest(manifest_path):
+    """Newline-delimited, comment-tolerant manifest → [server-relative paths].
+    Module-level twin of RB3Handler._read_manifest."""
+    paths = []
+    try:
+        with open(manifest_path, "r") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                paths.append(line)
+    except OSError:
+        pass
+    return paths
+
+
+def build_config_bundle_entries():
+    """Build the /api/bundle (config DTA/DTB) entry set exactly as the server's
+    _serve_bundle does — walks ASSETS_DIR for .dta/.dtb, restores "(..)"→"..",
+    applies the DTA overlay. Returns [(rel, bytes), ...]."""
+    BUNDLE_EXTS = {".dta", ".dtb"}
+    entries = []
+    for root, _dirs, filenames in os.walk(ASSETS_DIR):
+        for f in filenames:
+            _name, ext = os.path.splitext(f)
+            if ext.lower() not in BUNDLE_EXTS:
+                continue
+            full = os.path.join(root, f)
+            rel = os.path.relpath(full, ASSETS_DIR).replace("(..)", "..")
+            ov = overlay_path(rel)
+            src = ov if ov else full
+            with open(src, "rb") as fh:
+                entries.append((rel, fh.read()))
+    return entries
+
+
+def build_manifest_bundle_entries(manifest_path):
+    """Build a boot / per-screen bundle entry set from a manifest, resolving each
+    path with resolve_asset_path (skipping the unresolved, as the server does).
+    Returns [(rel, bytes), ...]."""
+    entries = []
+    for rel in read_manifest(manifest_path):
+        full = resolve_asset_path(rel)
+        if not full:
+            continue
+        with open(full, "rb") as fh:
+            entries.append((rel, fh.read()))
+    return entries
 
 
 class RB3Handler(http.server.SimpleHTTPRequestHandler):
@@ -291,7 +576,12 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
     @staticmethod
     def _encoded_cache_valid(cache_path, src_path):
         """True if `cache_path` exists and was built from the current `src_path`
-        (size + mtime match the sidecar .meta). Recompress on any drift."""
+        (size + mtime match the sidecar .meta). Recompress on any drift.
+
+        Back-compat: validates BOTH the legacy 2-field (`size:mtime`, q5) and the
+        W5 3-field (`size:mtime:<enc><level>`) .meta forms — see
+        meta_is_valid_for — so the warm pre-W5 q5 cache stays valid (never
+        re-compressed inline) until the offline pre-warm upgrades it to q11."""
         if not os.path.isfile(cache_path):
             return False
         meta_path = cache_path + ".meta"
@@ -299,68 +589,25 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             st = os.stat(src_path)
             with open(meta_path, "r") as fh:
                 meta = fh.read().strip()
-            return meta == f"{st.st_size}:{int(st.st_mtime)}"
         except OSError:
             return False
+        return meta_is_valid_for(meta, st.st_size, st.st_mtime)
 
     def _encode_to_cache(self, src_path, cache_path, enc):
-        """Compress `src_path` into `cache_path` using the brotli/gzip CLI.
+        """Compress `src_path` into `cache_path` at the on-demand q5 level via the
+        shared encode_file_to_cache primitive (atomic body + 3-field .meta).
 
-        The write is ATOMIC: compress to a unique temp file in the cache dir and
-        os.rename() it onto the final path (atomic on the same filesystem). The
-        server is a ThreadingHTTPServer, so two requests can miss the same asset
-        at once; the rename guarantees a reader never sees a half-written body,
-        and a duplicate compress just loses the rename race harmlessly (both
-        temp files are complete; last writer wins). A sidecar .meta records the
-        source (size,mtime) for staleness checks; it is written the same way.
-
-        Returns True on success, False on any failure (caller falls through to
-        the raw path — no regression)."""
-        cache_dir = os.path.dirname(cache_path)
-        try:
-            os.makedirs(cache_dir, exist_ok=True)
-        except OSError:
-            return False
-
-        tmp_suffix = f".{os.getpid()}.{random.randrange(1 << 32):08x}.tmp"
-        tmp_path = cache_path + tmp_suffix
-        try:
-            if enc == "br":
-                cmd = [BROTLI_BIN, "-q", str(ENCODE_LEVEL_BROTLI),
-                       "-c", src_path]
-            else:  # gzip
-                cmd = [GZIP_BIN, f"-{ENCODE_LEVEL_GZIP}", "-c", src_path]
-            with open(tmp_path, "wb") as out:
-                proc = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE)
-            if proc.returncode != 0:
-                self._unlink_quiet(tmp_path)
-                return False
-            # Capture source identity BEFORE the rename, so the .meta describes
-            # the exact bytes we compressed (not a racing rewrite of the source).
-            st = os.stat(src_path)
-            os.rename(tmp_path, cache_path)
-        except OSError:
-            self._unlink_quiet(tmp_path)
-            return False
-
-        # Best-effort sidecar .meta (also atomic). A missing/failed .meta just
-        # forces a recompress next time — correct, only mildly wasteful.
-        meta_path = cache_path + ".meta"
-        meta_tmp = meta_path + tmp_suffix
-        try:
-            with open(meta_tmp, "w") as fh:
-                fh.write(f"{st.st_size}:{int(st.st_mtime)}")
-            os.rename(meta_tmp, meta_path)
-        except OSError:
-            self._unlink_quiet(meta_tmp)
-        return True
+        The server is a ThreadingHTTPServer, so two requests can miss the same
+        asset at once; the atomic rename guarantees a reader never sees a
+        half-written body and a duplicate compress loses the rename race
+        harmlessly. Returns True on success, False on any failure (caller falls
+        through to the raw path — no regression)."""
+        level = ENCODE_LEVEL_BROTLI if enc == "br" else ENCODE_LEVEL_GZIP
+        return encode_file_to_cache(src_path, cache_path, enc, level)
 
     @staticmethod
     def _unlink_quiet(path):
-        try:
-            os.unlink(path)
-        except OSError:
-            pass
+        _unlink_quiet(path)
 
     def _handle_api(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -447,26 +694,46 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
 
         files.sort(key=lambda x: x["path"])
         body = json.dumps({"files": files, "count": len(files)}, indent=1).encode()
+        # W5-T1 — the manifest is on the boot critical path (rb3_pre.js races it
+        # against the wasm compile). ~462 KB raw JSON → ~50 KB br. Serve it
+        # through the same Content-Encoding negotiation as the bundles (in-memory
+        # compress; the browser decodes before the JSON parse, transparent).
+        self._serve_json_body(body)
 
+    def _serve_json_body(self, body):
+        """Serve an in-memory JSON `body` (bytes) with Content-Encoding
+        negotiation (br/gzip via the shared encode_bytes), falling back to raw
+        on HEAD / no-encoder / encode-failure. Small bodies are compressed
+        inline every request (cheap: <1 ms for tens of KB at q5)."""
+        enc, _cache_ext = self._pick_encoding()
+        if enc and self.command != "HEAD":
+            level = ENCODE_LEVEL_BROTLI if enc == "br" else ENCODE_LEVEL_GZIP
+            comp = encode_bytes(body, enc, level)
+            if comp is not None:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Encoding", enc)
+                self.send_header("Content-Length", str(len(comp)))
+                self.send_header("Vary", "Accept-Encoding")
+                self.end_headers()
+                self.wfile.write(comp)
+                return
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Vary", "Accept-Encoding")
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
 
     @staticmethod
     def _overlay_path(safe_rel):
-        """Return the overlay file path for a relative asset path if an overlay
-        shadows it, else None. The overlay is keyed on the archive-relative
-        layout (e.g. "config/joypad.dta"); a key containing ".." would escape
-        the overlay tree (the bundle restores "(..)" -> ".." for system/run
-        files), so reject those to mirror the native ResolveOverlay() guard and
-        keep the overlay strictly inside native/dta/."""
-        if not OVERLAY_DIR or ".." in safe_rel.replace("\\", "/").split("/"):
-            return None
-        cand = os.path.join(OVERLAY_DIR, safe_rel)
-        return cand if os.path.isfile(cand) else None
+        """Overlay file path for a relative asset path if an overlay shadows it,
+        else None. Delegates to the module-level overlay_path (one source of
+        truth shared with the offline pre-warm); the overlay is keyed on the
+        archive-relative layout (e.g. "config/joypad.dta") and a ".." key is
+        rejected to keep the overlay strictly inside native/dta/."""
+        return overlay_path(safe_rel)
 
     def _emit_bundle(self, entries, cache_name=None):
         """Write `entries` ([(rel, bytes), ...]) as the binary bundle the engine's
@@ -486,29 +753,16 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
         R5's per-file compression and putting the full uncompressed transfer on the
         cold-boot critical path. The browser decodes Content-Encoding before the
         engine's fetch sees the bytes, so onBundleSuccess still parses the raw
-        bundle (transparent, same as /api/file)."""
-        import struct
-        import hashlib
+        bundle (transparent, same as /api/file).
 
-        entries = sorted(entries, key=lambda x: x[0])
-        chunks = [struct.pack("<I", len(entries))]
-        for path, data in entries:
-            path_bytes = path.encode("utf-8")
-            chunks.append(struct.pack("<I", len(path_bytes)))
-            chunks.append(path_bytes)
-            chunks.append(struct.pack("<I", len(data)))
-            chunks.append(data)
-
-        body = b"".join(chunks)
+        Body + fingerprint come from the module-level serialize_bundle /
+        bundle_fingerprint so the offline pre-warm produces byte-identical
+        artifacts under the SAME cache key (no fingerprint drift)."""
+        body = serialize_bundle(entries)
 
         enc, cache_ext = self._pick_encoding()
         if enc and cache_name and self.command != "HEAD":
-            # Fingerprint the entry set+sizes (cheap — no 60 MB hash); a changed
-            # asset set / size rebuilds the cached artifact.
-            fp = hashlib.sha1(
-                (f"{len(entries)}|" + "|".join(
-                    f"{r}:{len(d)}" for r, d in entries)).encode()
-            ).hexdigest()[:16]
+            fp = bundle_fingerprint(entries)
             comp = self._bundle_encoded(cache_name, fp, body, enc, cache_ext)
             if comp is not None:
                 self.send_response(200)
@@ -545,9 +799,12 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
     def _bundle_encoded(self, cache_name, fp, body, enc, cache_ext):
         """Get-or-build the compressed bundle artifact, cached under
         ENCODE_CACHE_DIR/_bundles/<name>.<fp><ext> (the fingerprint is in the
-        filename, so a changed asset set rebuilds). Compresses the in-memory body
-        via the brotli/gzip CLI (stdin), atomic temp+rename. Returns the compressed
-        bytes, or None on failure (caller serves raw — no regression)."""
+        filename, so a changed asset set rebuilds). On a miss, compresses the
+        in-memory body at the server's on-demand level (q5) via the shared
+        encode_bytes; the offline pre-warm writes the SAME path at q11, so a
+        prewarmed bundle is served straight from disk here. Returns the
+        compressed bytes, or None on failure (caller serves raw — no
+        regression)."""
         try:
             cache_dir = os.path.join(ENCODE_CACHE_DIR, "_bundles")
             os.makedirs(cache_dir, exist_ok=True)
@@ -560,24 +817,12 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
                     return fh.read()
             except OSError:
                 pass  # fall through and rebuild
-        tmp = cache_path + f".{os.getpid()}.{random.randrange(1 << 32):08x}.tmp"
-        try:
-            if enc == "br":
-                cmd = [BROTLI_BIN, "-q", str(ENCODE_LEVEL_BROTLI), "-c"]
-            else:  # gzip
-                cmd = [GZIP_BIN, f"-{ENCODE_LEVEL_GZIP}", "-c"]
-            proc = subprocess.run(cmd, input=body, stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-            if proc.returncode != 0:
-                return None
-            comp = proc.stdout
-            with open(tmp, "wb") as out:
-                out.write(comp)
-            os.rename(tmp, cache_path)  # atomic; duplicate builders race harmlessly
-            return comp
-        except OSError:
-            self._unlink_quiet(tmp)
+        level = ENCODE_LEVEL_BROTLI if enc == "br" else ENCODE_LEVEL_GZIP
+        comp = encode_bytes(body, enc, level)
+        if comp is None:
             return None
+        _atomic_write(cache_path, comp)  # atomic; duplicate builders race harmlessly
+        return comp
 
     def _serve_bundle(self):
         """All boot-path DTA/DTB files as a single binary bundle (see
@@ -586,89 +831,28 @@ class RB3Handler(http.server.SimpleHTTPRequestHandler):
             self._json_error(503, "No assets directory configured")
             return
 
-        # Ark extraction stores ".." as "(..)" in directory names — restore them
-        # so the matched-fork's #include paths resolve.
-        BUNDLE_EXTS = {".dta", ".dtb"}
-        entries = []
-        for root, _dirs, filenames in os.walk(ASSETS_DIR):
-            for f in filenames:
-                _name, ext = os.path.splitext(f)
-                if ext.lower() not in BUNDLE_EXTS:
-                    continue
-                full = os.path.join(root, f)
-                rel = os.path.relpath(full, ASSETS_DIR)
-                rel = rel.replace("(..)", "..")
-                # DTA overlay: if native/dta/<rel> exists, bundle THAT copy in
-                # place of the extracted original (same relative key). This is
-                # what gets the joypad.dta button_meanings block into the web
-                # boot bundle (config/joypad.dta is a boot-path DTA).
-                ov = self._overlay_path(rel)
-                src = ov if ov else full
-                with open(src, "rb") as fh:
-                    data = fh.read()
-                entries.append((rel, data))
-
-        self._emit_bundle(entries, cache_name="config")
+        # Entry set comes from the module-level builder (one source of truth
+        # shared with the offline pre-warm so the bundle fingerprint never drifts).
+        self._emit_bundle(build_config_bundle_entries(), cache_name="config")
 
     def _resolve_asset_path(self, rel):
         """Resolve a server-relative asset path to an on-disk file, mirroring
         _serve_asset_file's resolution order: DTA overlay → curated ASSETS_DIR →
-        the "(..)/(..)" system/run layout → the fallback asset roots. Returns the
-        absolute path, or None if the asset is missing everywhere.
-
-        Lifted out of _serve_asset_file so the boot-bundle path resolver shares
-        the exact same logic (overlay shadowing, the ark "(..)" restore, the
-        long-tail fallback roots) as the on-demand /api/file path."""
-        # DTA overlay shadows the extracted original (boot manifest is milos, not
-        # DTAs, but keep the parity so a future manifest entry resolves the same).
-        full_path = self._overlay_path(rel) or os.path.join(ASSETS_DIR, rel)
-
-        # Files under system/run/ live at (..)/(..)/system/run/ on disk.
-        if not os.path.isfile(full_path) and rel.startswith("system/"):
-            alt = os.path.join(ASSETS_DIR, "(..)", "(..)", rel)
-            if os.path.isfile(alt):
-                full_path = alt
-
-        # Long-tail fallback roots (album art / chars / patchcreator milos that
-        # ship only in the full xbox extraction, not the curated set).
-        if not os.path.isfile(full_path):
-            for fb_root in FALLBACK_ASSETS_DIRS:
-                fb_path = os.path.join(fb_root, rel)
-                if os.path.isfile(fb_path):
-                    full_path = fb_path
-                    break
-                if rel.startswith("system/"):
-                    fb_alt = os.path.join(fb_root, "(..)", "(..)", rel)
-                    if os.path.isfile(fb_alt):
-                        full_path = fb_alt
-                        break
-
-        return full_path if os.path.isfile(full_path) else None
+        the "(..)/(..)" system/run layout → the fallback asset roots. Delegates
+        to the module-level resolve_asset_path (one source of truth with the
+        offline pre-warm)."""
+        return resolve_asset_path(rel)
 
     @staticmethod
     def _read_manifest(manifest_path):
-        """Read a newline-delimited, comment-tolerant manifest → list of server-
-        relative paths. Blank lines and '#'-comment lines are ignored. Returns []
-        if the manifest is absent (the bundle then emits an empty bundle — the
-        client's sync path still serves every milo, just without the prefetch
-        win). Shared by the boot bundle and the A2 per-screen bundles so the
-        freshness/format story is identical for both."""
-        paths = []
-        try:
-            with open(manifest_path, "r") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    paths.append(line)
-        except OSError:
-            pass
-        return paths
+        """Newline-delimited, comment-tolerant manifest → [server-relative paths].
+        Delegates to the module-level read_manifest."""
+        return read_manifest(manifest_path)
 
     @classmethod
     def _read_boot_manifest(cls):
         """Read native/web/boot-assets.manifest → list of server-relative paths."""
-        return cls._read_manifest(BOOT_MANIFEST_PATH)
+        return read_manifest(BOOT_MANIFEST_PATH)
 
     def _serve_boot_bundle(self):
         """R3 — the boot-critical .milo_xbox working set as one binary bundle.
@@ -988,6 +1172,39 @@ def _default_encode_cache_dir():
     return os.path.join(script_dir, ".cache", "encoded")
 
 
+def _spawn_prewarm():
+    """Spawn scripts/web/prewarm_encode_cache.py nice-d in the background, passing
+    the server's resolved roots + encode cache so the warmed artifacts land under
+    the exact dir the server reads. Best-effort: a failed spawn is logged and the
+    server still starts (on-demand q5 covers everything)."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    prewarm_py = os.path.join(script_dir, "..", "..", "scripts", "web",
+                              "prewarm_encode_cache.py")
+    prewarm_py = os.path.normpath(prewarm_py)
+    if not os.path.isfile(prewarm_py):
+        print(f"  Prewarm: SKIPPED (script not found: {prewarm_py})")
+        return
+    roots = []
+    if ASSETS_DIR:
+        roots.append(ASSETS_DIR)
+    roots.extend(FALLBACK_ASSETS_DIRS)
+    if SIDECAR_DIR:
+        roots.append(SIDECAR_DIR)
+    cmd = ["nice", "-n", "19", sys.executable, prewarm_py,
+           "--encode-cache", ENCODE_CACHE_DIR]
+    for r in roots:
+        cmd += ["--roots", r]
+    log_path = os.path.join(ENCODE_CACHE_DIR, "prewarm.log")
+    try:
+        os.makedirs(ENCODE_CACHE_DIR, exist_ok=True)
+        log_fh = open(log_path, "ab")
+        subprocess.Popen(cmd, stdout=log_fh, stderr=subprocess.STDOUT,
+                         close_fds=True)
+        print(f"  Prewarm: q11 cache warming in background (log: {log_path})")
+    except OSError as e:
+        print(f"  Prewarm: FAILED to spawn ({e}); on-demand q5 still active")
+
+
 def main():
     global ASSETS_DIR, FALLBACK_ASSETS_DIRS, SIDECAR_DIR, OVERLAY_DIR
     global ENCODE_CACHE_DIR, ENCODE_ENABLED, ENCODE_LEVEL_BROTLI
@@ -1051,6 +1268,16 @@ def main():
         "--no-encode",
         action="store_true",
         help="Disable on-demand wire compression (serve assets raw; for A/B).",
+    )
+    parser.add_argument(
+        "--prewarm",
+        action="store_true",
+        help=(
+            "On startup, spawn scripts/web/prewarm_encode_cache.py nice-d in the "
+            "background to pre-build the q11 encode cache (assets + bundles). The "
+            "server starts serving immediately; on-demand q5 covers anything not "
+            "yet warm. The script is also runnable standalone."
+        ),
     )
     parser.add_argument("--port", type=int, default=PORT)
     args = parser.parse_args()
@@ -1124,6 +1351,9 @@ def main():
     print(f"  URL:     http://0.0.0.0:{args.port} (accessible remotely)")
     print(f"  API:     http://0.0.0.0:{args.port}/api/manifest")
     print(f"  COOP/COEP headers enabled")
+
+    if args.prewarm:
+        _spawn_prewarm()
     print()
 
     server = http.server.ThreadingHTTPServer(("0.0.0.0", args.port), RB3Handler)
