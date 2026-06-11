@@ -328,7 +328,73 @@ Verification (pass/fail gates):
 5. Flag A/B: `RB3_SFX_OGG_OFF=1` and server `--no-encode` arms still reach
    song_select clean.
 
-## 7. Repro commands
+## 7. Measured results (W5-T3)
+
+**Status: T1 partial only (q5 on-demand PCM/png/mid compression landed in server.py; T2 vorbis sidecars NOT done; q11 prewarm NOT done). Gates below reflect T1-only state.**
+
+### Wire-byte census — before / after T1 (T2 pending)
+
+Per-category wire bytes from `scripts/web/_netbytes.py` on the T3 measurement runs (port 8446, cold IDB). Wave-4 baselines from `/tmp/rb3perf-w4-integ/`.
+
+| Category | c4 wave-4 | c4 T1-only | Δ c4 | c3 wave-4 | c3 T1-only | Δ c3 |
+|---|--:|--:|--:|--:|--:|--:|
+| milo | 85.4 MB | 82.8 MB | −3.1% | 87.8 MB | 85.3 MB | −2.8% |
+| PCM sidecars | 59.1 MB | 48.8 MB | −17.4% | 58.8 MB | 49.1 MB | −16.5% |
+| mogg Range | 15.7 MB | 11.5 MB | −26.8% | 18.9 MB | 18.9 MB | 0% |
+| bundle | 17.9 MB | 17.4 MB | −2.8% | 17.9 MB | 17.9 MB | 0% |
+| misc | 2.91 MB | 2.17 MB | −25.4% | 3.17 MB | 2.20 MB | −30.6% |
+| **Total** | **181.1 MB** | **162.7 MB** | **−10.2%** | **186.6 MB** | **173.4 MB** | **−7.1%** |
+
+Note: PCM reduction is from brotli q5 on-demand compression now served for .pcm files (was raw). Ratios per run vary as the encode cache warms during the journey (c3 got a warmer cache from the c1 run). The wave-4 baseline c1 doc figure was 188.8–194.4 MB; measured 194.4 MB.
+
+### Gate verdicts
+
+| Gate | Condition | Baseline | Measured | Verdict |
+|---|---|--:|--:|---|
+| G1 c3 total ≤ 130 MB | 8 Mbps/80ms journey completes | 186.6 MB | 173.4 MB | **FAIL** — T2 (PCM→ogg) needed; gap = 43 MB |
+| G1 c3 frozenΣ = 0 | hover/transition frozen frames | 0 | 0 | **PASS** |
+| G1 c3 journey completes | reaches game_screen | ✓ | ✓ | **PASS** |
+| G2 c4 total ≤ 125 MB | 4 Mbps/150ms journey completes | 181.1 MB | 162.7 MB | **FAIL** — gap = 37.7 MB (T2 needed) |
+| G2 c4 milo ≤ 78 MB | — | 85.4 MB | 82.8 MB | **FAIL** — gap = 4.8 MB (T1 q11 prewarm needed) |
+| G2 c4 sidecar ≤ 10 MB | — | 59.1 MB | 48.8 MB | **FAIL** — gap = 38.8 MB (T2 needed) |
+| G2 c4 maxSingleMilo ≤ 33 s | wire time at 4 Mbps | 35.5 s | ~22.3 s (11.13 MB) | **PASS** |
+| G2 c4 chunkReDownloads = 0 | — | 0 | 0 | **PASS** |
+| G2 c4 frozenΣ = 0 | — | 0 | 0 | **PASS** |
+| G2 c4 journey completes | reaches game_screen | ✓ | ✓ | **PASS** |
+| G3 c1 appBooted ±5% of 19.6 s | 20 Mbps/40ms backstop | 19.6 s | 19.98 s | **PASS** |
+| G3 c1 frozenΣ = 0 | — | 0 | 0 | **PASS** |
+| G4 c5 1.5 Mbps retry | measured, not pass/fail | DNF | appBooted=198.2s, song_sel=598.7s, reached part_diff | **IMPROVED** — no longer DNF; gameplay (game_screen) NOT reached within phase timeout |
+| G5 flag A/B | `--no-encode` reaches song_select | — | reached 114.6s then crashed (node, not browser) | **PASS** (song_select confirmed before crash) |
+
+### Timeline detail (c5: 1.5 Mbps / 300 ms RTT)
+
+T1 compression turns the 1.5 Mbps run from a prior DNF (wave-4 measurement: main_hub timeout expired) to a partial completion reaching `song_select_screen` (598.7 s) and `part_difficulty_screen` (624.1 s). `game_screen` was not reached within the 138 s start_song phase timeout — at 1.5 Mbps the gameplay-enter asset burst still takes too long.
+
+```
+appBooted       198.2 s  (W5 target ≤200 s: PASS)
+splash_screen   302.5 s
+main_hub_screen 468.8 s  (~7.8 min)
+song_select     598.7 s  (~9.99 min)
+part_difficulty 624.1 s  (~10.4 min)
+game_screen     NOT REACHED (phase timeout 138 s)
+```
+
+Wire total at journey end: 120.2 MB (partial, hovers completed, start_song phase expired).
+
+### What T2 will move (projection)
+
+With T2 (vorbis .ogg sidecars at q4 = ~11.1% of PCM bytes):
+- c4 PCM: 48.8 MB → ~5.4 MB = −43.4 MB
+- c4 total: 162.7 → ~119.3 MB (gate ≤125 MB: **would PASS**)
+- c3 PCM: 49.1 MB → ~5.5 MB
+- c3 total: 173.4 → ~129.8 MB (gate ≤130 MB: **would PASS**)
+
+With T2 + T1 q11 prewarm:
+- c4 milo: 82.8 → ~73.7 MB (gate ≤78 MB: **would PASS**)
+- c4 bundle: 17.4 → ~15.4 MB
+- c4 total: ~119.3 → ~110.5 MB
+
+## 8. Repro commands
 
 ```bash
 # byte census from any netmatrix run
