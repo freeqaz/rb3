@@ -153,7 +153,11 @@ BSIM_FLAG="--bsim"
 
 OUT_DIR="${RB3_ROOT}/build/SZBE69_B8/ghidra/ghidriff-xenon"
 PROJ_DIR="${OUT_DIR}/proj"
-SEEDS="${RB3_ROOT}/build/SZBE69_B8/ghidra/xenon-seeds/seeds.json"
+# Seed set: default = the canonical 1,213-pair seeds.json. Override with
+# RB3_XENON_SEEDS=/abs/path to feed a different seed set (e.g. ACCEPT-only seeds
+# for the two-pass VT rescue experiment). The eval tool MUST be passed the same
+# --seeds path or the seed-exclusion/holdout-eligibility math is wrong.
+SEEDS="${RB3_XENON_SEEDS:-${RB3_ROOT}/build/SZBE69_B8/ghidra/xenon-seeds/seeds.json}"
 
 # p1 — Wii Bank 8. Prefer the ALREADY-ANALYZED gzf from the Bank5<->Bank8 run
 # (same program the calibration was measured on; skips ~30-60 min analysis),
@@ -252,6 +256,13 @@ CMD=(env JAVA_HOME="${JAVA_HOME}"
      --decompiler-timeout "${RB3_XENON_DECOMP_TIMEOUT:-20}"
      --log-level INFO
      --log-path "${OUT_DIR}/ghidriff.log")
+
+# --matches-only: skip the ~107-min post-match report stage and write only
+# matches.json (the only file our pipeline reads). Set RB3_XENON_MATCHES_ONLY=1
+# to enable; unset preserves the full-report path. Appended only when set so an
+# empty arg is never passed to argparse.
+MATCHES_ONLY_FLAG="${RB3_XENON_MATCHES_ONLY:+--matches-only}"
+[[ -n "${MATCHES_ONLY_FLAG}" ]] && CMD+=("${MATCHES_ONLY_FLAG}")
 
 if [[ "${DRY_RUN}" == "1" ]]; then
     printf '[run_ghidriff_xenon] DRY RUN. Would execute:\n  %q' "${CMD[0]}"
