@@ -22,6 +22,12 @@
 const char *kAssertStr = "File: %s Line: %d Error: %s\n";
 Debug TheDebug;
 jmp_buf TheDebugJump;
+#ifdef HX_NATIVE
+// MILO_TRY message passed out-of-band. longjmp's int value truncates a 64-bit
+// `const char*` on LP64, so the fail path stashes the message here right before
+// the longjmp and MILO_TRY reads it back (instead of recovering a garbage ptr).
+const char *TheDebugFailMsg = 0;
+#endif
 DebugNotifier TheDebugNotifier;
 DebugFailer TheDebugFailer;
 
@@ -170,7 +176,10 @@ void Debug::Fail(const char *msg) {
             mTry--;
 #ifdef HX_NATIVE
             // glibc longjmp takes jmp_buf (array, decays to ptr); MWCC took &buf.
-            longjmp(TheDebugJump, (int)msg);
+            // (int)msg would truncate the 64-bit ptr on LP64 -> garbage in
+            // MILO_CATCH; pass it out-of-band and longjmp a non-zero sentinel.
+            TheDebugFailMsg = msg;
+            longjmp(TheDebugJump, 1);
 #else
             longjmp(&TheDebugJump, (int)msg);
 #endif
