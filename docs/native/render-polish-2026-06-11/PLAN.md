@@ -160,6 +160,14 @@ regression (mitigated by `RB3_FRET_GLOW_OFF=1`). **Open for wave 4:** (1) hand+l
 unbounded lighting sum in the shared standard shader; (4) menu fog density (Part.cpp × menu);
 (5) endgame abort `endgame_helpers.dta(64):meta_performer` (pre-existing, instrument-agnostic).
 Worktree teardown (scout-*, task-*, c8-deep-dive in both repos) pending campaign close.
+- 2026-06-14: **wave 4 implement dispatched** — 5 Opus agents (investigate + fix + self-verify
+  in isolated worktrees), one per open issue: `ik-mispose` (engine; the C8 residual — hand+leg
+  IK-apply; may land partial = diagnosis), `fret-sphere` (engine; venue-dependent white-ball
+  glow), `venue-blowout` (engine; clamp/tone-map the unbounded lighting sum in standard_wgsl.inc
+  — HIGH blast radius, multi-scene gate), `menu-fog` (engine/rb3; revived fog too dense), and
+  `endgame-abort` (rb3; the meta_performer SIGABRT, gdb-backtrace first). Three touch the engine
+  shader/Rnd files → orchestrator lands sequentially with one pin bump (wave-2 pattern). Review
+  wave to follow on the composed build.
 - 2026-06-11: `fret-held` scout DONE (`scout-fret-held.md`). ROOT CAUSE: NOT
   input — the full message→GuitarController→GemSmasher::SetGlowing(true) chain
   works in native (proven via FRET_DBG worktree probe: 40 presses → 40 OnMsg →
