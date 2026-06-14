@@ -150,16 +150,47 @@ artifacts between agents (`scout-<key>.md`, `task-<key>-impl.md`, `verify-<key>.
     venue pink-wash blowout (separate WAVE3 FAIL) makes lit-venue garment screenshots hard →
     the drop-rate metric is the authoritative garment gate, not hero closeups.
 
+## Wave 4 review — ALL 4 CONFIRM (2026-06-14)
+
+Independent Opus reviewers on the composed master build (pin `58254f7`), each with a true
+pre-fix A/B and a full-nav interaction sweep. `verify-{fret-sphere,venue-blowout,menu-fog,endgame}.md`.
+
+- **fret-sphere CONFIRM** — sphere gone in the 20th-Century-Boy repro + 2 other venues; ISO-mesh
+  A/B is decisive (RB3_SMASHER_HALO=1 = 2.1× footprint, proving bloom was the amplifier); per-slot
+  glow survives, gem-core halo still fires 52/52, RB3_FRET_GLOW_OFF still disables. interactionsOk.
+- **venue-blowout CONFIRM** — built a true pre-fix binary (no runtime opt-out): blowout real
+  (max clipW 32.2%, detail destroyed) → tamed (max 4.3%), median clipW byte-equal 0.37→0.38 = zero
+  dimming. Independently AGREES the `06_game_screen` red wash is a clear-color load transient (still
+  open, out of scope for the shader). interactionsOk.
+- **menu-fog CONFIRM** — wash 36.3%→4.02% (within retail 3.4-3.8% band); the matColor.a<0.999 guard
+  exempts gameplay FX (hit-flame brightness statistically identical p99 0.970 vs 0.972). interactionsOk.
+- **endgame CONFIRM** — SIGABRT fixed for guitar AND vocals; both reach coop_endgame_popups_screen,
+  stable across 4 runs; `song-end-test --require-endgame` PASSES (FAILED pre-fix). interactionsOk.
+
+The 3 brightness-shifting fixes (venue soft-clip, fret bloom/emissive, menu fog) **compose cleanly** —
+no interaction regression in any reviewer's menu→song-select→gameplay→score sweep.
+
+### Wave-5 backlog (from wave-4 reviews; none are regressions)
+- **IK / pose-fling** — the char residual (refuted-premise diagnosis; = DC3 feet-in-floor sibling). Hardest.
+- **`06_game_screen` clear-color pink first-frame transient** — venue draw ordering, NOT lighting.
+- **menu hub contrast** still ~2.6:1 vs retail ~10:1 — deferred ue=1 venue-heuristic floor-lighting (wave-3 Fix 3).
+- **song-select header garbage digits** `1843121372` after "SORTED BY SONG NAME" + FRIEND RANKINGS overlay + grey album box.
+- **score-detail/star-breakdown screen** un-exercised headless (needs a confirm-driven probe past the popup).
+- **endgame celebration crowd** greenish/dark tint (same class as crowd-render + venue lighting residuals).
+- Deferred backlog: crowd Fix B (2D imposters) + Fix C (venue bridge), `/api/dta/eval` Color sub-property crash, crowd ~6.7k residual.
+- Env hygiene: `/tmp` tmpfs hit its 38GB user quota (sibling wave evidence dirs) — clean `/tmp/rp*` between waves.
+
 ## Campaign standing (2026-06-14)
 
-8 user-reported issues: **7 fixed + verified** (highway, vocals/all-instruments, diff-grid,
-crowd, gem tails, gem colors, fret-held*) and **char-render now substantially fixed + landed**
-(C8 space-bake; residual = IK follow-up). *fret-held has a venue-dependent white-sphere
-regression (mitigated by `RB3_FRET_GLOW_OFF=1`). **Open for wave 4:** (1) hand+leg IK mispose
-(the C8 residual); (2) fret-held white-sphere; (3) venue lighting blowout = clamp/tone-map the
-unbounded lighting sum in the shared standard shader; (4) menu fog density (Part.cpp × menu);
-(5) endgame abort `endgame_helpers.dta(64):meta_performer` (pre-existing, instrument-agnostic).
-Worktree teardown (scout-*, task-*, c8-deep-dive in both repos) pending campaign close.
+**All 8 user-reported issues fixed + independently verified** (highway, vocals/all-instruments,
+diff-grid, crowd, gem tails, gem colors, fret-held incl. the wave-4 white-sphere fix, menu lighting,
+and char-render via the C8 land). The two wave-2/3 follow-on regressions (fret white-sphere, menu fog)
+are also fixed + CONFIRM'd, the venue lighting blowout is fixed, and the endgame abort is fixed —
+all Wii byte-identical. The ONLY remaining character gap is the pose-fling (precisely diagnosed,
+wave 5 = DC3 feet-in-floor sibling). See the wave-5 backlog above for the residual polish list.
+Worktree teardown: the 4 landed wave-4 task worktrees torn down post-merge; `wt-task-ik-mispose`
+(IK_SHARD_VERT probe) + `c8-deep-dive` (engine C8_PROBE) KEPT for wave 5; scout-*/older task-*
+worktrees still pending a campaign-close sweep.
 - 2026-06-14: **wave 4 implement dispatched** — 5 Opus agents (investigate + fix + self-verify
   in isolated worktrees), one per open issue: `ik-mispose` (engine; the C8 residual — hand+leg
   IK-apply; may land partial = diagnosis), `fret-sphere` (engine; venue-dependent white-ball
