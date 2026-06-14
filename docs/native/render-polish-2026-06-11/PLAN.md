@@ -132,6 +132,34 @@ artifacts between agents (`scout-<key>.md`, `task-<key>-impl.md`, `verify-<key>.
     pre-existing), (4) endgame abort (pre-existing, instrument-agnostic).
   - Wave-3 verify worktrees + the `c8-deep-dive` worktrees (rb3 + engine) left in place;
     the C8 branches hold un-landed work — do NOT prune before landing/teardown.
+- 2026-06-14: **C8 fix LANDED + independently reviewed (CONFIRM_WITH_RESIDUALS).** master
+  `491288ec` (character-space rest-bake, BandCharacter.cpp +48/−2, HX_NATIVE-only) +
+  `d4c42fa8` land record + `dc1fdadd` independent verify. Engine pin unchanged (469c550 —
+  the engine probe `6a324be` is diagnostics-only, NOT landed). Wii match-neutral CONFIRMED
+  two ways (BandCharacter fuzzy stays 99.67018; `.text/.rodata/.data/.sdata` + rela byte-
+  identical). Drops: implementer 27.2→23.0/frame (−15%, bimodal — clip-free-capture boots
+  reach 16-17); reviewer's cleaner true-pre-C8 A/B 31.2→20.6/frame (−34%). 0 crashes / NaN /
+  regressions in 9+ runs; crowd + head/hands still coherent. `task-c8-land-impl.md` +
+  `verify-c8-land.md` on disk.
+  - **Residual sharpened by review:** the remaining drops are an IK-apply class — and it's
+    HAND/FINGER IK as much as left-limb legwear: `fingernails_resource.mesh` is the single
+    largest contributor and collapses ~18-30k→2166 under `RB3_NO_IK=1` (which takes the whole
+    residual to ~5-7.6/frame). The wave-4 IK follow-up is hand+leg IK (likely an engine-side
+    IK-apply / L-R-handedness bug; cf. DC3 feet-in-floor).
+  - Reviewer nits: master HEAD is a docs commit atop `491288ec` (code state IS the fix);
+    venue pink-wash blowout (separate WAVE3 FAIL) makes lit-venue garment screenshots hard →
+    the drop-rate metric is the authoritative garment gate, not hero closeups.
+
+## Campaign standing (2026-06-14)
+
+8 user-reported issues: **7 fixed + verified** (highway, vocals/all-instruments, diff-grid,
+crowd, gem tails, gem colors, fret-held*) and **char-render now substantially fixed + landed**
+(C8 space-bake; residual = IK follow-up). *fret-held has a venue-dependent white-sphere
+regression (mitigated by `RB3_FRET_GLOW_OFF=1`). **Open for wave 4:** (1) hand+leg IK mispose
+(the C8 residual); (2) fret-held white-sphere; (3) venue lighting blowout = clamp/tone-map the
+unbounded lighting sum in the shared standard shader; (4) menu fog density (Part.cpp × menu);
+(5) endgame abort `endgame_helpers.dta(64):meta_performer` (pre-existing, instrument-agnostic).
+Worktree teardown (scout-*, task-*, c8-deep-dive in both repos) pending campaign close.
 - 2026-06-11: `fret-held` scout DONE (`scout-fret-held.md`). ROOT CAUSE: NOT
   input — the full message→GuitarController→GemSmasher::SetGlowing(true) chain
   works in native (proven via FRET_DBG worktree probe: 40 presses → 40 OnMsg →
