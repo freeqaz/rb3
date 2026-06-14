@@ -111,6 +111,27 @@ artifacts between agents (`scout-<key>.md`, `task-<key>-impl.md`, `verify-<key>.
   song-select FRIEND-RANKINGS overlay + grey album-art box obscuring the grid; endgame
   SIGABRT (`ui/endgame/endgame_helpers.dta(64):meta_performer`, seen by crowd scout);
   crowd residual ~6.7k drops; crowd Fix B (2D imposters) + Fix C (venue bridge) deferred.
+- 2026-06-11: wave 3 dispatched — 7 adversarial verifiers (composed build) + C8 deep dive.
+- 2026-06-14: **wave 3 RECOVERED after a multi-day pause** (Fable now unavailable). All 7
+  verify docs + the recovered `scout-c8-rotation-basis.md` are on disk; synthesis in
+  **`WAVE3_RESULTS.md`**. Scoreboard: highway/diff-grid/crowd/gems(×4) **PASS**, vocals
+  **PASS** (caveat: pre-existing endgame abort), menu-lighting/neon-slab **PARTIAL**
+  (Part.cpp fix revived menu fog → wash; contrast win didn't reproduce), char-render
+  **PARTIAL** (C8 root-caused + fix ready), venue-wash **FAIL** (lighting blowout, shared
+  shader, wave-2 exonerated).
+  - **C8 root cause** (refutes the old "rotation-basis" framing): rest captured in WORLD
+    space (incl. member stage placement) vs model-space verts → `R·sinθ` smear → guard
+    drops. Fix = capture rest in CHARACTER space + never capture mid-clip. Measured
+    locality 27–60u→5–12u, band drops 25.2→20.4/frame, Wii byte-identical. Committed
+    `wt-c8-deep-dive` rb3 `41ff9e97` + engine probe `6a324be` — **NOT landed** (needs
+    composed-build visual sign-off). Residual after fix = left-limb IK mispose
+    (`RB3_NO_IK` A/B → 4.9/frame): separate follow-up.
+  - **4 new issues** for wave 4: (1) fret-held white-sphere regression (venue-dependent;
+    `RB3_FRET_GLOW_OFF=1` mitigates), (2) menu fog wash (Part.cpp × menu interaction),
+    (3) venue lighting blowout (unbounded lighting sum in shared standard shader,
+    pre-existing), (4) endgame abort (pre-existing, instrument-agnostic).
+  - Wave-3 verify worktrees + the `c8-deep-dive` worktrees (rb3 + engine) left in place;
+    the C8 branches hold un-landed work — do NOT prune before landing/teardown.
 - 2026-06-11: `fret-held` scout DONE (`scout-fret-held.md`). ROOT CAUSE: NOT
   input — the full message→GuitarController→GemSmasher::SetGlowing(true) chain
   works in native (proven via FRET_DBG worktree probe: 40 presses → 40 OnMsg →
