@@ -168,6 +168,37 @@ Worktree teardown (scout-*, task-*, c8-deep-dive in both repos) pending campaign
   `endgame-abort` (rb3; the meta_performer SIGABRT, gdb-backtrace first). Three touch the engine
   shader/Rnd files → orchestrator lands sequentially with one pin bump (wave-2 pattern). Review
   wave to follow on the composed build.
+- 2026-06-14: **wave 4 implement COMPLETE — 4/5 done+verified, LANDED; 1 diagnosis.** Engine main
+  `1abd595..58254f7` (venue soft-clip + fret-sphere + menu-fog), rb3 master `c9c2cad8` (endgame) +
+  pin bump `9660215b` → engine `58254f7`. All 4 Wii byte-identical (no Wii-compiled source touched:
+  endgame=native/src, engine=native-only platform/gfx; report unchanged 81.865%). Composed build
+  rebuilt + smoke-verified (venue normally lit, no fret white-sphere, gems saturated).
+  - **fret-sphere** (engine `20b38a7`): gem_smasher_glow.mat was a halo-bloom SOURCE (a now-bar
+    plate with a soft radial glow tex, not a gem core) so additive-halo bloom blew it into a ~110px
+    sphere; + the wave-2 ×2.0 boost clamped its core white. Fix = exclude it from IsHaloSourceMat
+    (opt-in `RB3_SMASHER_HALO=1`) + boost ×2.0→×1.25. Per-slot color restored, sphere gone.
+  - **venue-blowout** (engine `1abd595`): GX-faithful `softClipLighting` (Reinhard rolloff, knee 1.0
+    → ceiling 1.05) on the shared shader lighting sum. Hot club clipW 4.0%→0.3% with detail kept;
+    menu/song-select < boot-to-boot noise (no dimming). **Re-diagnosis:** the DOMINANT smoke-frame
+    red "wash" (`06_game_screen`) is ~80% untagged CLEAR-COLOR BACKGROUND (venue not yet drawn in
+    the first game frame) — a load-transient, NOT a blowout → SEPARATE follow-up; genuine over-drive
+    is fixed.
+  - **menu-fog** (engine `58254f7`): `BandRnd::DrawParticles` drew `tex × p->col` and DROPPED the
+    material register color, so authored-thin street-fog (a=0.10/0.50) rendered up to 10× opacity.
+    Fix = fold matColor RGBA into per-vertex color + 0.35 haze-alpha scale + near-camera fade,
+    env-gated, no-op for matColor==1 (gameplay FX / A1 flames untouched).
+  - **endgame-abort** (rb3 `c9c2cad8`): `MetaPerformer::UpdateScores` `MILO_ASSERT(TheNet.GetServer())`
+    OSFatal'd because `TheNet.mServer` was never wired natively. Fix = one line
+    `TheNet.mServer = &TheServer` (offline `NativeOfflineServer`) in `rb3_netsession_native.cpp`,
+    mirroring `Net::Init` — fixes all ~15 GetServer() derefs. Guitar + vocals reach the score screen.
+  - **ik-mispose** (NOT landed — diagnosis): **refuted its premise.** The C8 residual is NOT IK — it's
+    the RAW ANIMATED POSE flinging extremity bones to impossible world coords (finger→Y=123, foot→
+    Y=−108 while hip Y=+78 = 186u leg); the fling is BYTE-IDENTICAL with `RB3_NO_IK=1` (IK only
+    amplifies spread, 1313 vs 27 flung frames → earlier "IK" read was the drop-count artifact). C8
+    offset re-derived + proven correct (`Trans.cpp:138`); `CharBonesMeshes::PoseMeshes → skeleton
+    WorldXfm` produces a geometrically impossible pose. **RB3 sibling of the unfixed DC3 feet-in-floor
+    pose/space bug** (186u fling vs 4u sink). Probes (`IK_SHARD_VERT`) on engine branch
+    `wt-task-ik-mispose` for wave 5. See `task-ik-mispose-impl.md`.
 - 2026-06-11: `fret-held` scout DONE (`scout-fret-held.md`). ROOT CAUSE: NOT
   input — the full message→GuitarController→GemSmasher::SetGlowing(true) chain
   works in native (proven via FRET_DBG worktree probe: 40 presses → 40 OnMsg →
