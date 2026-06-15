@@ -180,6 +180,18 @@ no interaction regression in any reviewer's menu→song-select→gameplay→scor
 - Deferred backlog: crowd Fix B (2D imposters) + Fix C (venue bridge), `/api/dta/eval` Color sub-property crash, crowd ~6.7k residual.
 - Env hygiene: `/tmp` tmpfs hit its 38GB user quota (sibling wave evidence dirs) — clean `/tmp/rp*` between waves.
 
+## Wave 5 dispatched (2026-06-15)
+
+6 Opus agents (investigate + fix + self-verify in isolated worktrees): `pose-fling` (THE marquee —
+the char residual = DC3 feet-in-floor sibling; cross-ref the DC3 trail; fix or rigorous diagnosis),
+`first-frame-flash` (the `06_game_screen` clear-color pink transient = venue draw ordering),
+`songselect-ui` (header garbage digits + FRIEND RANKINGS overlay + grey album box), `menu-contrast`
+(the deferred ue=1 venue-heuristic floor-lighting = wave-3 menu Fix 3), `score-detail` (drive past
+the endgame popup to the star/score breakdown, fix native gaps), `endgame-crowd-tint` (greenish/dark
+endgame crowd — attribute to crowd-rebind vs fog vs venue-light residual). Engine-touching ones land
+sequentially + one pin bump; review wave to follow. Deferred to a later wave: crowd Fix B (2D
+imposters) + Fix C (venue bridge), `/api/dta/eval` Color sub-property crash.
+
 ## Campaign standing (2026-06-14)
 
 **All 8 user-reported issues fixed + independently verified** (highway, vocals/all-instruments,
