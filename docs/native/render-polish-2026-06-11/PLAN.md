@@ -237,10 +237,44 @@ gameplay centered/lit.
   `small_club_01.milo`; "green" screenshots just caught the green phase (~20% periodic). A/B decisive
   (`RB3_VENUE_LIGHT_OFF` removes it). Optional future taste lever: raise the crowd ambient floor.
 
-### Wave-6 backlog
-- score-detail may expose further screens past the breakdown (the agent fixed the blocker; document any chain).
-- menu hub final contrast tuning vs retail (after the floor lower); the optional endgame green-peak softening (taste).
-- Deferred: crowd Fix B (2D imposters) + Fix C (venue bridge), `/api/dta/eval` Color sub-property crash.
+### Wave 5 review — 1 CONFIRM + 4 CONFIRM_WITH_RESIDUALS, 0 REJECT, interactions clean (2026-06-15)
+Independent Opus reviewers, each with a true pre-fix A/B + full-nav interaction sweep
+(`verify-{pose-fling,first-frame-flash,songselect-ui,menu-contrast,score-detail}.md`):
+- **pose-fling CONFIRM_W_RESIDUALS** — own A/B (RB3_NO_SKEL_WORLDFIX) drops 16.18→2.89/frame (−82%,
+  more conservative than impl's −94.6% from different venue sampling); visual A/B unambiguous
+  (skeletal-flung → solid dressed band); 0 crowd/head/hand drops, 0 crashes/12k frames. Residual:
+  footwear/gloves still drop on some frames (small-bind-extent garments clear the 2.0 shard ratio on a
+  normal pose curl — bone0 at SANE body height, NOT flung; needs a tighter guard, wave 6).
+- **first-frame-flash CONFIRM_W_RESIDUALS** — pre-fix binary N=6 A/B: 6/6 boots blown → 0/6, steady-state
+  luminance UNCHANGED (51.0 vs 46.6, not dimmed). Residual: native lit-path runs the song-start reveal
+  HOT (peak lum ~200, red tint) so the first frame is saturated-but-readable rather than washed —
+  structural venue-exposure residual (the soft-clip is the correct robust bound; underlying over-bright
+  reveal = venue-lighting exposure backlog).
+- **songselect-ui CONFIRM** — header_career_stars=0 (was 1843121372), no FRIEND RANKINGS overlay,
+  blank-art placeholder not grey box, wave-2 diff-grid centering intact, mini-leaderboard correctly gated
+  to IsReady()+HasRows().
+- **menu-contrast CONFIRM_W_RESIDUALS** — contrast 2.3:1→6.8:1 (toward retail 10.2:1; impl's 8.4 was the
+  optimistic edge of run-to-run spread), dark cells 0.17→0.054, 45/50 frames ≥5:1; gameplay NOT crushed
+  (unlit backdrop zones darken as retail does, authored-lit zones carried by lights, detail-proxy std
+  rises). Residual: small_club far-backdrop crush% 6.2→10.9% (no genuine detail-loss; distributional A/B —
+  a single-camera frame-matched gate would be cleaner).
+- **score-detail CONFIRM_W_RESIDUALS** — popup auto-advances (no input) to coop_endgame_screen for guitar
+  AND vocals, per-player score/star widget renders, drains to 0, no crash; objdiff Poll = 100.0%
+  (diff_score 0). Residuals = pre-documented wave-6 follow-ups.
+
+### Wave-6 backlog (from wave-5 reviews)
+- **NEW — track-load SIGABRT**: several songs crash on track load (`SongData::TrackInfo` vector OOB);
+  pre-existing + song-specific (reproduces with old env values too, NOT a lighting regression). Worth a
+  fix — it makes some songs unplayable.
+- **pose-fling footwear/gloves residual** — small-bind-extent garments (lowtopsneaks/kidgloves/eightholedocs,
+  ratio 2.2-3.5) clear the 2.0 shard guard on a normal pose curl though the bone is at sane body height;
+  tighten the guard / per-mesh handling.
+- **venue-lighting exposure** — native lit-path song-start reveal runs hotter than Wii GX (first-frame
+  residual + the broader exposure-tuning item).
+- **score-detail chain**: zero autohit score, over-press `load_nextsong` SIGSEGV, endgame backdrop tint.
+- **menu hub final contrast** vs retail (6.8 → ~10); optional endgame green-peak soften (taste).
+- **`/api/dta/eval` Color/sub-property SIGSEGV** — debug-tool-only, caught-in-handler non-fatal; deferred.
+- Deferred features: crowd Fix B (2D imposters) + Fix C (venue bridge).
 
 ## Campaign standing (2026-06-14)
 
