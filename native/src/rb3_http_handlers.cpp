@@ -16,6 +16,7 @@
 #include "obj/DataFile.h"   // DataReadString
 #include "obj/DataFunc.h"   // DataRegisterFunc — live camera-tweak DTA func
 #include "obj/Object.h"
+#include "os/Debug.h"       // MILO_TRY/MILO_CATCH + TheDebug — clean eval-fail recovery
 
 #include "rb3_native_settings.h"  // TheNativeSettings() — live render/camera knobs
 
@@ -219,12 +220,32 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
     sInDtaEval = 1;
     sDtaEvalSignal = 0;
 
+    // Snapshot the engine's global FAIL / data-call-stack state so we can RESTORE
+    // it on the recovery path. This is the fix for the "latent SIGSEGV across
+    // waves": when the sigsetjmp below catches an abort, the C-level siglongjmp
+    // unwinds out of the recursive DataArray::Execute WITHOUT running the
+    // ~DataCallStackFrame dtors that pop gCallStackPtr, and the Debug::Fail that
+    // reached Modal leaves mTry / mFailing dirty. Left uncorrected, gCallStackPtr
+    // stays advanced at stale DataArray* and mFailing stays true, so the NEXT
+    // eval's DataCallStackFrame ctor / DataAppendStackTrace walks freed pointers
+    // -> a delayed crash. Restoring this snapshot in the recovery block leaves
+    // the engine in the exact pre-eval state, so a recovered eval never bleeds
+    // corruption into the next one.
+    DataArray** const savedCallStackPtr = gCallStackPtr;
+    const int savedTry = TheDebug.mTry;
+    const bool savedFailing = TheDebug.mFailing;
+
     if (sigsetjmp(sDtaEvalJmpBuf, 1) != 0) {
         sInDtaEval = 0;
         sigaction(SIGSEGV, &old_segv, nullptr);
         sigaction(SIGBUS,  &old_bus,  nullptr);
         sigaction(SIGFPE,  &old_fpe,  nullptr);
         sigaction(SIGABRT, &old_abrt, nullptr);
+        // Undo the skipped ~DataCallStackFrame pops + the dirty Debug fail flags
+        // so the next eval starts clean (no latent corruption).
+        gCallStackPtr = savedCallStackPtr;
+        TheDebug.mTry = savedTry;
+        TheDebug.mFailing = savedFailing;
         const char* sigName = "unknown signal";
         switch (sDtaEvalSignal) {
             case SIGSEGV: sigName = "SIGSEGV (null pointer or bad memory access)"; break;
@@ -232,7 +253,16 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
             case SIGFPE:  sigName = "SIGFPE (arithmetic error)"; break;
             case SIGABRT: sigName = "SIGABRT (abort)"; break;
         }
-        cmd.result.error = std::string("DTA eval crashed: ") + sigName;
+        // A miss / bad-type read that tripped a hard MILO_FAIL is a graceful
+        // outcome for this debug tool, not a server fault: report it as a clean
+        // 400 error (not a 500 "crashed") with a null value so callers can
+        // distinguish it from a real crash and keep inspecting.
+        cmd.result.ok = false;
+        cmd.result.httpStatus = 400;
+        cmd.result.error =
+            std::string("DTA eval hit a hard fail (") + sigName +
+            ") — likely a missing key or a type-mismatched property read; "
+            "value is null";
         fprintf(stderr, "[RB3HttpServer] DTA eval recovered from %s for: %.200s\n",
                 sigName, cmd.param1.c_str());
         return;
@@ -246,47 +276,88 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
         goto cleanup;
     }
     {
-        DataNode result(0);
-        for (int i = 0; i < parsed->Size(); i++)
-            result = parsed->Evaluate(i);
-        parsed->Release();
+        // A bad eval (a {find ...} miss, an {exists <expr>} whose sub-expr
+        // executes an object handler that reads an out-of-range arg, a
+        // Color/Array/Str sub-property read on a wrong-typed node) reaches a
+        // hard MILO_FAIL deep inside DataArray::Execute / DataNode::Str /
+        // DataNode::Array. On native, Debug::Fail with NO try-scope active
+        // rides the full Debug::Modal path, where formatting the fail message
+        // (String temporaries on the failing heap) can ABORT inside _MemFree /
+        // hit OSFatal. The sigsetjmp guard catches the signal, but recovering
+        // from a glibc malloc-abort leaves the allocator lock held -> the MAIN
+        // THREAD then WEDGES on its next malloc (observed: every later eval
+        // times out with "main thread not polling"). So we must avoid reaching
+        // Modal at all for the common miss.
+        //
+        // MILO_TRY sets TheDebug.mTry, so Debug::Fail takes its clean
+        // longjmp-back branch BEFORE Modal -> no Modal, no heap abort, no main-
+        // thread wedge; we land in MILO_CATCH with the fail message and return a
+        // graceful 400. The longjmp skips the in-flight ~DataCallStackFrame
+        // pops, so we restore gCallStackPtr (snapshotted above) in the catch.
+        // The sigsetjmp guard remains a backstop for a genuine non-MILO_FAIL
+        // fault (stack overflow, a real null-deref) and also restores state.
+        MILO_TRY {
+            DataNode result(0);
+            for (int i = 0; i < parsed->Size(); i++)
+                result = parsed->Evaluate(i);
 
-        cmd.result.ok = true;
-        switch (result.Type()) {
-            case kDataInt:
-                cmd.result.jsonData = "{\"type\":\"int\",\"value\":" +
-                    std::to_string(result.UncheckedInt()) + "}";
-                break;
-            case kDataFloat:
-                cmd.result.jsonData = "{\"type\":\"float\",\"value\":" +
-                    std::to_string(result.Float()) + "}";
-                break;
-            case kDataSymbol: {
-                const char* s = result.UncheckedStr();
-                cmd.result.jsonData = "{\"type\":\"symbol\",\"value\":\"" +
-                    HJsonEscape(s ? s : "") + "\"}";
-                break;
+            cmd.result.ok = true;
+            switch (result.Type()) {
+                case kDataInt:
+                    cmd.result.jsonData = "{\"type\":\"int\",\"value\":" +
+                        std::to_string(result.UncheckedInt()) + "}";
+                    break;
+                case kDataFloat:
+                    cmd.result.jsonData = "{\"type\":\"float\",\"value\":" +
+                        std::to_string(result.Float()) + "}";
+                    break;
+                case kDataSymbol: {
+                    const char* s = result.UncheckedStr();
+                    cmd.result.jsonData = "{\"type\":\"symbol\",\"value\":\"" +
+                        HJsonEscape(s ? s : "") + "\"}";
+                    break;
+                }
+                case kDataString: {
+                    // kDataString stores mValue.array (a DataArray*), NOT a raw
+                    // char*; UncheckedStr() would reinterpret that pointer as a
+                    // string (garbage). Str() dereferences the array correctly.
+                    const char* s = result.Str();
+                    cmd.result.jsonData = "{\"type\":\"string\",\"value\":\"" +
+                        HJsonEscape(s ? s : "") + "\"}";
+                    break;
+                }
+                case kDataObject: {
+                    // A node CAN carry kDataObject with a NULL object pointer
+                    // (e.g. a missing {... find <key>} or {find_obj} returns a
+                    // null kDataObject). GetObj() returns null then; report a
+                    // clean "null" rather than dereferencing it.
+                    Hmx::Object* obj = result.GetObj(nullptr);
+                    const char* name = obj ? obj->Name() : "null";
+                    cmd.result.jsonData = "{\"type\":\"object\",\"value\":\"" +
+                        HJsonEscape(name ? name : "null") + "\"}";
+                    break;
+                }
+                default:
+                    cmd.result.jsonData = "{\"type\":" +
+                        std::to_string((int)result.Type()) + ",\"value\":null}";
+                    break;
             }
-            case kDataString: {
-                // kDataString stores mValue.array (a DataArray*), NOT a raw
-                // char*; UncheckedStr() would reinterpret that pointer as a
-                // string (garbage). Str() dereferences the array correctly.
-                const char* s = result.Str();
-                cmd.result.jsonData = "{\"type\":\"string\",\"value\":\"" +
-                    HJsonEscape(s ? s : "") + "\"}";
-                break;
-            }
-            case kDataObject: {
-                Hmx::Object* obj = result.GetObj(nullptr);
-                const char* name = obj ? obj->Name() : "null";
-                cmd.result.jsonData = "{\"type\":\"object\",\"value\":\"" +
-                    HJsonEscape(name ? name : "null") + "\"}";
-                break;
-            }
-            default:
-                cmd.result.jsonData = "{\"type\":" +
-                    std::to_string((int)result.Type()) + ",\"value\":null}";
-                break;
+            parsed->Release();
+        } MILO_CATCH(failMsg) {
+            // Debug::Fail longjmped here (clean — never reached Modal). Restore
+            // the data-call-stack pointer the longjmp skipped, then report a
+            // graceful error. (mTry is reset by MILO_CATCH's SetTry(false);
+            // mFailing was never set since we never reached the mFailing branch
+            // of Debug::Fail.) parsed leaks on this path: the longjmp skipped
+            // its release and re-touching the heap is avoided for safety — one
+            // small DataArray per bad eval is an acceptable debug-tool trade.
+            gCallStackPtr = savedCallStackPtr;
+            cmd.result.ok = false;
+            cmd.result.httpStatus = 400;
+            cmd.result.error = std::string("DTA eval failed: ") +
+                (failMsg ? failMsg : "missing key or type-mismatched read");
+            fprintf(stderr, "[RB3HttpServer] DTA eval MILO_FAIL for %.200s: %s\n",
+                    cmd.param1.c_str(), failMsg ? failMsg : "(no message)");
         }
     }
 
