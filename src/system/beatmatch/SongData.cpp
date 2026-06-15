@@ -56,11 +56,25 @@ SongData::SongData()
       mLoadingVocalNoteListIndex(0), mTempoMap(0), mMeasureMap(0), mBeatMap(0),
       mTuningOffsetList(0), mLastGemTime(0), mMemStream(0), mSongParser(0),
       mPlayerTrackConfigList(0), mGems(0), mHopoThreshold(0), mDetailedGrid(0) {
+#ifdef HX_NATIVE
+    mHxEmptyGemList = 0;
+#endif
     mVocalNoteLists.reserve(4);
     mVocalNoteLists.push_back(new VocalNoteList(this));
 }
 
+#ifdef HX_NATIVE
+GameGemList *SongData::HxEmptyGemList() {
+    if (!mHxEmptyGemList)
+        mHxEmptyGemList = new GameGemList(mHopoThreshold);
+    return mHxEmptyGemList;
+}
+#endif
+
 SongData::~SongData() {
+#ifdef HX_NATIVE
+    RELEASE(mHxEmptyGemList); // native-only no-chart fallback list
+#endif
     ResetTheTempoMap();
     ResetTheBeatMap();
     for (int i = 0; i < mTrackInfos.size(); i++) {
@@ -1159,10 +1173,20 @@ void SongData::EnableGems(int i1, float f1, float f2) {
 #pragma push
 #pragma force_active on
 inline GameGemList *SongData::GetGemListByDiff(int track, int diff) {
+#ifdef HX_NATIVE
+    // No-chart native guard: empty mGemDBs -> OOB abort. Hand back the shared
+    // empty gem list (see SongData.h). Wii always has a chart -> never empty.
+    if (track < 0 || (size_t)track >= mGemDBs.size())
+        return HxEmptyGemList();
+#endif
     return mGemDBs[track]->GetDiffGemList(diff);
 }
 
 inline GameGemList *SongData::GetGemList(int track) {
+#ifdef HX_NATIVE
+    if (track < 0 || (size_t)track >= mTrackDifficulties.size())
+        return HxEmptyGemList();
+#endif
     return GetGemListByDiff(track, mTrackDifficulties[track]);
 }
 #pragma pop

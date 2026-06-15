@@ -249,4 +249,14 @@ public:
     GameGemList *mGems; // 0x118
     int mHopoThreshold; // 0x11c
     bool mDetailedGrid; // 0x120
+#ifdef HX_NATIVE
+    // No-chart native fallback. A song whose .mid is absent from the extract has
+    // empty mGemDBs/mTrackDifficulties; GetGemList()/GetGemListByDiff() would
+    // index them OOB and SIGABRT (reached via the TrackPanel/GemManager visual
+    // init). When the chart is missing we hand back this shared, valid, EMPTY
+    // gem list so every gem query degrades to "0 gems" instead of aborting.
+    // (Appended after the matched layout + HX_NATIVE-only — Wii is unaffected.)
+    GameGemList *mHxEmptyGemList; // native-only
+    GameGemList *HxEmptyGemList();
+#endif
 };
