@@ -311,8 +311,25 @@ All expected rb3/native-side, match-neutral or match-improving. Review wave to f
     `TriggerSongCompletion` snapshots it. New harness `scripts/native/scoring-test.py` plays to NATURAL
     EOF (no jump) → score-detail renders **156,973 pts + 5 stars** (verified visually + 2 runs). Nothing
     broken in the scorer; +13-line HX_NATIVE getenv-gated probe in MetaPerformer (100% match preserved).
+- 2026-06-15: **track-load-crash LANDED** (rb3 master `7f7262d0`, re-run after the rate-limit). Root
+  cause: **~80 of 83 songs are missing their `.mid` chart from the extract** — `SongData::Load` returns
+  early at the native missing-asset boundary leaving `mTrackInfos`/`mTrackDifficulties`/`mGemDBs` empty +
+  a null tempo map, and the gameplay/gem/track pipeline then indexes them and SIGABRTs in a ~6-layer
+  cascade (proven by iterative gdb). Fix = a primary gate in `Game::IsLoaded()` (hold load incomplete
+  when `GetNumTracks()==0`) + defense-in-depth null/OOB guards in `Game::PostLoad/Restart/Poll`,
+  `BeatMatcher` mWatcher derefs, and `SongData::GetGemList[ByDiff]`. 4 files (Game.cpp, BeatMatcher.cpp,
+  SongData.cpp/.h), all `#ifdef HX_NATIVE`, Wii byte-identical (overall 81.86505 unchanged). Result:
+  chartless songs HOLD SAFELY at the loading screen (app alive) instead of crashing; the 3 charted songs
+  (20thcenturyboy, 25or6to4, antibodies) still play. **Scope note:** this fixes the CRASH, not
+  playability — the ~80 songs have no chart data in the extract so they can't play; making them playable
+  is an ASSET issue (get the `.mid` charts into the extract), not code. UX follow-up: route a chartless
+  selection back to song-select instead of holding on the loading vignette.
 
-## Campaign standing (2026-06-14)
+### Wave 6 standing
+All 4 blocking bugs resolved: 3 crashes fixed (score over-press synth off-by-one, dta-eval MILO_TRY,
+track-load no-chart gate) + scoring confirmed working (negative result). Two were match-IMPROVING decomp
+fixes (SerialGroupSeqInst::Poll 99.38→100%). Review wave over all 4 to follow. Surfaced: the extract is
+missing most song charts (asset gap, not code) — worth flagging for whoever owns asset extraction.
 
 ## Campaign standing (2026-06-14)
 
