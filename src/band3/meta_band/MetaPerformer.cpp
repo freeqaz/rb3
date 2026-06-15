@@ -91,6 +91,19 @@ void PerformerStatsInfo::Update(
     else
         mScore = performer->GetIndividualScore();
     mStars = performer->GetNumStars();
+#ifdef HX_NATIVE
+    // wave-6 scoring-verify probe: log the exact score/stars captured into the
+    // endgame results widget at the instant they are read (this IS the value the
+    // coop_endgame score.scr/stars.sd binds show). Debug log only, env-gated; the
+    // Wii MWCC build never sees this (HX_NATIVE undefined there).
+    if (getenv("RB3_SCORE_PROBE"))
+        MILO_LOG("RB3 SCORE_PROBE: PerformerStatsInfo::Update ty=%d perf=%p "
+                 "GetScore=%d GetIndividualScore=%d -> mScore=%d mStars=%d "
+                 "streak=%d awesomes=%d\n",
+                 (int)ty, (void *)performer, performer->GetScore(),
+                 performer->GetIndividualScore(), mScore, mStars,
+                 stats.GetLongestStreak(), stats.GetHitCount());
+#endif
     mAccuracy = performer->GetNotesHitFraction(0) * 100.0f;
     mStreak = stats.GetLongestStreak();
     mAwesomes = stats.GetHitCount();
