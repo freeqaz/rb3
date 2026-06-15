@@ -192,6 +192,56 @@ endgame crowd — attribute to crowd-rebind vs fog vs venue-light residual). Eng
 sequentially + one pin bump; review wave to follow. Deferred to a later wave: crowd Fix B (2D
 imposters) + Fix C (venue bridge), `/api/dta/eval` Color sub-property crash.
 
+## Wave 5 implement COMPLETE — 5 landed, 1 "not-a-bug" (2026-06-15)
+
+Engine main `58254f7..15ce606` (menu-contrast + first-frame-flash + pose-fling), rb3 master
+`9096f309`/`f04b9f99` + pin bump `40a4dd8a` → engine `15ce606`. Native rebuilt + boots. Wii report
+regenerated: **improved** (PassiveMessageQueue::Poll 98.8%→**100%**, a decomp-bug fix; overall
+81.86496→81.86505); all other touched units ~100%, no regression. Eyeballed: song select clean,
+gameplay centered/lit.
+
+- **pose-fling SOLVED** (engine `15ce606`, the marquee): NOT IK and NOT a decode bug — a STALE
+  `mWorldXfm` CACHE on the per-member skeleton's LEAF bones. Native's multi-pass (reload-re-entrant +
+  IK) posing left a leaf ankle's cached world composed against an earlier flung intermediate pose and
+  never re-read after a later pass fixed the parent (probe: ankle cacheW Z=−33.5 vs correct +9.2,
+  wasDirty=0). Fix = force a fresh top-down `WorldXfm_Force` of each referenced bone's parent chain in
+  `BandRnd::DrawMesh` before reading the bone palette. Band garment guard-drops **186073→10027
+  (−94.6%)**, ankle Z −33→+4 (at floor), all 4 members standing fully dressed, crowd unchanged, 0
+  crashes. Opt-out `RB3_NO_SKEL_WORLDFIX=1`. Engine-only; Wii untouched. (Probes `C8_PROBE`/
+  `IK_SHARD_VERT` came along on `15ce606`'s parents — inert, env-gated.)
+- **first-frame-flash** (engine `c064ff4`): CORRECTS the wave-4 re-diagnosis again — the gameplay-entry
+  pink/red flash is the postproc COMPOSITE over-brightening the FULLY-DRAWN venue during the song-start
+  lighting reveal (clear IS black, ~349 meshes drawn), NOT a clear-color transient. Proven by N=16
+  interleaved A/B: composite-ON blows out 9/16 boots (max 83% clipW) vs `RB3_PP_OFF` 0/16. Fix = soft-
+  clip the venue composite OUTPUT (Reinhard knee 0.82→ceiling 0.97) in `fs_postproc`. First-frame
+  blowout 9-15/16→0/16, steady-state unchanged. (This is the POSTPROC stage; wave-4 venue-blowout was
+  the LIT path in standard_wgsl.inc — they compose.)
+- **songselect-ui** (rb3 `9096f309`): all 3 fixed, HX_NATIVE, Wii byte-identical. (1) garbage digits =
+  `SongStatusMgr::mCachedTotalStars` POD array uninitialized (Wii fills via profile/save before read;
+  native boots profile-less) → zeroed in ctor; (2) FRIEND RANKINGS overlay = `live_lb.grp` shown-by-
+  default + native renderer ignores the Wii `leaderboard_hide.trg` env-alpha fade → toggle SetShowing
+  directly (show only when online+rows); (3) grey album box = no per-song `_keep.png` art → stat()-check
+  + fall back to `blank_album_art_keep.png`.
+- **menu-contrast** (engine `facaa6a`): venue-light heuristic floored ambient too bright (0.07 floor,
+  0.25 clamp, 0.6 grey key) → lifted unlit (ue=1) hub geometry to flat grey, contrast 2.6:1 vs retail
+  ~10:1. Fix = lower the three floors (0.07→0.008, 0.25→0.09, 0.6→0.22, each env-tunable) in
+  `WriteSceneUniforms`. (Brightness change to ALL venue ambient floors — review must confirm gameplay
+  venues not crushed.)
+- **score-detail** (rb3 `f04b9f99`): `PassiveMessageQueue::Poll` had an INVERTED timer test
+  (`if (running` vs Bank-8 `!running`) → the toast queue never drained → `coop_endgame_popups_screen`
+  never advanced to the results breakdown. Flip to `!running` is byte-faithful (**98.8%→100%**, the
+  match-improving exception). Draining then exposed a debug `MILO_ASSERT(mMeterAnimValue>=0)` in
+  `AddAnim` → `#ifndef HX_NATIVE`-guarded. Auto-advance to score detail unblocked.
+- **endgame-crowd-tint** (NOT a bug, nothing landed): the greenish tint is FAITHFUL authored behavior —
+  the crowd stage light `main_crowd.lit` is a PropAnim disco color-wheel (pink→green→yellow→pink) in
+  `small_club_01.milo`; "green" screenshots just caught the green phase (~20% periodic). A/B decisive
+  (`RB3_VENUE_LIGHT_OFF` removes it). Optional future taste lever: raise the crowd ambient floor.
+
+### Wave-6 backlog
+- score-detail may expose further screens past the breakdown (the agent fixed the blocker; document any chain).
+- menu hub final contrast tuning vs retail (after the floor lower); the optional endgame green-peak softening (taste).
+- Deferred: crowd Fix B (2D imposters) + Fix C (venue bridge), `/api/dta/eval` Color sub-property crash.
+
 ## Campaign standing (2026-06-14)
 
 **All 8 user-reported issues fixed + independently verified** (highway, vocals/all-instruments,
