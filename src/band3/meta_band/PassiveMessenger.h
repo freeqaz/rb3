@@ -37,7 +37,20 @@ public:
     virtual ~PassiveMessage() { mText->Release(); }
 
     void AddAnim(int delta) {
+        // The earned-accomplishment coalesce path (GetAndPreProcessFirstMessage)
+        // sums (mMeterAnimValue - unk14) across every queued accomplishment. When
+        // >= 4 are earned at once (e.g. a full-combo expert pass earns many
+        // "first time" goals simultaneously), the running fan-meter delta goes
+        // negative, tripping this debug-only invariant. The RETAIL (non-debug)
+        // build compiles MILO_ASSERT out and proceeds with a negative meter (a
+        // cosmetic over-fill at worst); on native we run with asserts ON, so
+        // mirror retail here rather than OSFatal — otherwise the popups screen's
+        // accomplishment toast aborts before it can hand off to the score-detail
+        // (coop_endgame) screen. Wii build is byte-identical (HX_NATIVE-gated).
+        // Same rationale + precedent as MILO_FAIL_DTA in os/Debug.h.
+#ifndef HX_NATIVE
         MILO_ASSERT(mMeterAnimValue >= 0, 0x4A);
+#endif
         mMeterAnimValue += delta;
     }
 

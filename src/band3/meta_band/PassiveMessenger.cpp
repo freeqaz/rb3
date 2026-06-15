@@ -30,7 +30,7 @@ void PassiveMessageQueue::Poll() {
         }
     }
     bool running = mTimer.Running();
-    if (running && mCallback->Handle(is_message_hiding_msg, true).Int() == 0) {
+    if (!running && mCallback->Handle(is_message_hiding_msg, true).Int() == 0) {
         if (!mQueue.empty()) {
             PassiveMessage *message = GetAndPreProcessFirstMessage();
             MILO_ASSERT(message, 0x33);
