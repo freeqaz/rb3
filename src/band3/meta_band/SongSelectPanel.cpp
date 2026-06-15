@@ -18,6 +18,9 @@
 #include "utl/Messages2.h"
 #include "utl/Symbols.h"
 #include "utl/Symbols3.h"
+#ifdef HX_NATIVE
+#include "rndobj/Group.h"
+#endif
 
 SongSelectPanel::SongSelectPanel()
     : mLeaderboard(0), unk48(0), unk4c(0), unk50(0), unk54(0), unk58(-1) {}
@@ -47,7 +50,29 @@ void SongSelectPanel::FinishLoad() {
 #endif
     unk4c = TypeDef()->FindFloat("mini_leaderboard_rotation_off");
     unk50 = TypeDef()->FindFloat("mini_leaderboard_rotation_on");
+#ifdef HX_NATIVE
+    // The mini-leaderboard panel group (live_lb.grp, "FRIEND RANKINGS" title +
+    // online score rows) is authored showing-by-default in the milo. On the Wii
+    // the leaderboard_hide.trg EventTrigger anim fades it out (env alpha) until
+    // the rotation timer swaps it in once online scores enumerate. The native
+    // renderer doesn't honor that env-alpha fade for hide, so the group stays
+    // fully visible and overlaps the difficulty grid — and offline it should
+    // never appear at all (online enumerate never completes). Force the same
+    // initial state the rotation expects: leaderboard hidden, difficulty grid
+    // shown. The Poll() show-path (set_mini_leaderboard_showing 1) re-shows it
+    // explicitly when an online leaderboard actually becomes ready.
+    SetMiniLeaderboardGroupShowing(false);
+#endif
 }
+
+#ifdef HX_NATIVE
+void SongSelectPanel::SetMiniLeaderboardGroupShowing(bool showing) {
+    if (RndGroup *lb = mDir->Find<RndGroup>("live_lb.grp", false))
+        lb->SetShowing(showing);
+    if (RndGroup *diffs = mDir->Find<RndGroup>("live_diffs.grp", false))
+        diffs->SetShowing(!showing);
+}
+#endif
 
 bool SongSelectPanel::Exiting() const {
     return UIPanel::Exiting() || TheMusicLibrary->IsExiting();
@@ -118,6 +143,11 @@ void SongSelectPanel::Poll() {
             unk54 = true;
             msg[0] = 1;
             HandleType(msg);
+#ifdef HX_NATIVE
+            // Online + ready: swap the leaderboard group in (env-alpha anim alone
+            // doesn't reveal it natively). Only reached when scores enumerate.
+            SetMiniLeaderboardGroupShowing(true);
+#endif
         } else if (unk54 && diff > unk50) {
             RestartLeaderboardTimer();
         }
@@ -130,6 +160,9 @@ void SongSelectPanel::RestartLeaderboardTimer() {
     unk54 = false;
     msg[0] = 0;
     HandleType(msg);
+#ifdef HX_NATIVE
+    SetMiniLeaderboardGroupShowing(false);
+#endif
 }
 
 void SongSelectPanel::CancelLeaderboardTimer() {
@@ -138,6 +171,9 @@ void SongSelectPanel::CancelLeaderboardTimer() {
     unk54 = false;
     msg[0] = 0;
     HandleType(msg);
+#ifdef HX_NATIVE
+    SetMiniLeaderboardGroupShowing(false);
+#endif
 }
 
 BEGIN_HANDLERS(SongSelectPanel)

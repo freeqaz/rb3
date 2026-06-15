@@ -84,6 +84,23 @@ void AppMiniLeaderboardDisplay::SetLeaderboardStatus(LeaderboardStatus status) {
 }
 
 void AppMiniLeaderboardDisplay::UpdateLeaderboardOnline(int songID) {
+#ifdef HX_NATIVE
+    // Offline (no RockCentral session) there is no server to enumerate friend
+    // scores from, so StartEnumerate() would push the leaderboard into the
+    // kEnumState2 "waiting on server" state that never completes — leaving the
+    // "FRIEND RANKINGS" panel faded-in and stuck over the song list / difficulty
+    // grid. On the Wii the offline enumerate fails fast; here we mirror that by
+    // failing immediately, which fades the panel out (kLeaderboardError ->
+    // mFadeOutTrigger). Online play still takes the real path below.
+    if (!TheRockCentral.IsOnline()) {
+        SetLeaderboardStatus(kLeaderboardLoading);
+        mLeaderboardList->SetProvider(mLeaderboardList);
+        delete mLeaderboard;
+        mLeaderboard = nullptr;
+        ResultFailure();
+        return;
+    }
+#endif
     SetLeaderboardStatus(kLeaderboardLoading);
     BandProfile *p = TheProfileMgr.GetPrimaryProfile();
     mLeaderboardList->SetProvider(mLeaderboardList);
