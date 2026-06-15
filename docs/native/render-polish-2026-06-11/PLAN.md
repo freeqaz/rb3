@@ -285,6 +285,34 @@ fix), `score-overpress-crash` (Confirm on the quickplay score screen null-derefs
 bit reviewers across waves — make the debug eval handler null/type-safe), and `scoring-verify` (settle
 whether native scoring works: autohit yields 0 — build a real-note-hit path / fix the scorer if broken).
 All expected rb3/native-side, match-neutral or match-improving. Review wave to follow.
+- 2026-06-15: **wave 6 — 3/4 landed+verified** (track-load-crash hit a transient API rate-limit, NOT a
+  real failure → re-dispatched, running). Landed on rb3 master `b4bcbe39`/`3d2356b8`/`736d89d5`. Native
+  rebuilt; Wii report IMPROVED again.
+  - **score-overpress-crash** (rb3 `b4bcbe39`, SOLVED): the wave-5 hypothesis (next-song-load UI path)
+    was WRONG. Real cause = a synth off-by-one in `SerialGroupSeqInst::Poll` — `if (mIt++ != end())`
+    post-increment tests the always-true pre-value then derefs the already-advanced iterator, so when the
+    `button_select` confirm SFX serial-group finishes mid-Poll, `*mIt` reads one ObjPtr past the
+    ObjVector → `Start()` through a junk vtable. Fixed to Bank-8 (`++mIt; if(!=end) deref`): a
+    MATCH-IMPROVING decomp fix, **99.38%→100%** (verified in regenerated report), NOT ifdef'd. Survives
+    8-10 confirms × 4 repeats, guitar+vocals.
+  - **dta-eval-crash** (rb3 `3d2356b8`, native/src only): the `/api/dta/eval` handler ran fail-hard DTA
+    funcs (find-miss, type mismatch, Color sub-property) with NO `MILO_TRY` scope → `Debug::Fail` rode
+    `Debug::Modal` → glibc heap abort/OSFatal, and the old sigsetjmp guard left the malloc lock held →
+    main thread WEDGED (the "latent SIGSEGV across waves"). Fix = wrap parse-eval-format in
+    `MILO_TRY/MILO_CATCH` (clean longjmp before Modal) + snapshot/restore the call-stack state + null-safe
+    formatting → graceful 400s, server stays up. Residual: a pathological ≥~12 back-to-back hard-fail
+    burst can still stall (~1/8 of stress runs) — a complete fix needs an engine-side WARN-not-FAIL
+    debug-eval mode (logged, future engine wave). Strictly better than baseline (which wedged on the
+    first hard miss). HX_NATIVE → Wii byte-identical.
+  - **scoring-verify** (rb3 `736d89d5`, NEGATIVE result = good): **native scoring WORKS.** The wave-5
+    "0 score under autohit" was a HARNESS ARTIFACT — autohit DOES score (live score climbs 0→26682,
+    notes_hit 0→164 via autohit→HitGem→GemPlayer::Hit→Performer::AddPoints), but the old harnesses end
+    the song with `{game jump}` → `Game::Jump` → `Performer::Restart` zeroes `mScore` BEFORE
+    `TriggerSongCompletion` snapshots it. New harness `scripts/native/scoring-test.py` plays to NATURAL
+    EOF (no jump) → score-detail renders **156,973 pts + 5 stars** (verified visually + 2 runs). Nothing
+    broken in the scorer; +13-line HX_NATIVE getenv-gated probe in MetaPerformer (100% match preserved).
+
+## Campaign standing (2026-06-14)
 
 ## Campaign standing (2026-06-14)
 
