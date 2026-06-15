@@ -276,6 +276,16 @@ Independent Opus reviewers, each with a true pre-fix A/B + full-nav interaction 
 - **`/api/dta/eval` Color/sub-property SIGSEGV** — debug-tool-only, caught-in-handler non-fatal; deferred.
 - Deferred features: crowd Fix B (2D imposters) + Fix C (venue bridge).
 
+## Wave 6 dispatched (2026-06-15) — blocking crash bugs
+
+4 Opus agents (repro + gdb backtrace + fix + self-verify in isolated worktrees): `track-load-crash`
+(TOP — `SongData::TrackInfo` vector OOB SIGABRT makes several songs unplayable; find them, backtrace,
+fix), `score-overpress-crash` (Confirm on the quickplay score screen null-derefs in
+`load_nextsong_screen`), `dta-eval-crash` (the `/api/dta/eval` Color/sub-property + null SIGSEGV that
+bit reviewers across waves — make the debug eval handler null/type-safe), and `scoring-verify` (settle
+whether native scoring works: autohit yields 0 — build a real-note-hit path / fix the scorer if broken).
+All expected rb3/native-side, match-neutral or match-improving. Review wave to follow.
+
 ## Campaign standing (2026-06-14)
 
 **All 8 user-reported issues fixed + independently verified** (highway, vocals/all-instruments,
