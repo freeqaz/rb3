@@ -499,7 +499,17 @@ void SerialGroupSeqInst::Poll() {
     while (mIt != mSeqs.end()) {
         if ((*mIt) && (*mIt)->IsRunning())
             return;
-        if (mIt++ != mSeqs.end()) {
+        // Advance to the next child, then re-check end() BEFORE dereferencing.
+        // The old `if (mIt++ != mSeqs.end())` tested the PRE-increment iterator
+        // (always != end() inside this loop) and then dereferenced the already-
+        // advanced mIt, so when the last child finished mIt walked off the end
+        // and `*mIt` read one element past the vector -> SeqInst::Start() on a
+        // garbage/null pointer (SIGSEGV: reproduced by over-pressing Confirm on
+        // the quickplay score screen, which restarts a sequence whose final
+        // element had just finished). The Bank-8 target increments mIt, stores
+        // it back, then re-tests `mIt != end()` before the deref.
+        ++mIt;
+        if (mIt != mSeqs.end()) {
             SeqInst *si = (*mIt);
             if (si)
                 si->Start();
