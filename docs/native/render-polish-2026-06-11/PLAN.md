@@ -350,6 +350,23 @@ Wave-6 review (re-run after the first attempt was killed by API rate-limiting; `
   WARN-not-FAIL debug-eval mode + a Debug::Fail re-entrancy/depth guard. NOT a REJECT (a single/normal
   hard-fail never crashes); debug-tool-only, not a gameplay path.
 
+## Wave 7 (close-out) dispatched (2026-06-16)
+
+Discovery (orchestrator, inline): **the charts are NOT missing — they're in the wrong extract.** The
+loader's data root `orig-assets/extracted` is a 3-song dev slice (20thcenturyboy/25or6to4/antibodies),
+but `orig-assets/extracted-xbox-full` holds the FULL on-disc set — **86 song dirs, 83 .mogg, 293
+.milo_xbox**, album art + videos, in the identical `songs/<shortname>/{*.mid,*.mogg,gen/*.milo_xbox}`
+layout (and `wii-extracted` has the wii flavor, 684 .mid). Native resolves `.milo_xbox`, so
+`extracted-xbox-full` is the right source. So the wave-6 "asset gap" is really a **wiring gap** — fixable.
+
+3 Opus agents (worktrees): `chart-wiring` (point/merge the loader at the full 83-song set so all songs
+LOAD AND PLAY — gems+audio+score, not just "don't crash"; native-scoped, note web-manifest impact),
+`eval-burst-harden` (the dta-eval burst stack-overflow SIGSEGV: free the leaked parsed DataArray on the
+MILO_CATCH path + an HX_NATIVE Debug::Fail re-entrancy guard), `overpress-harden` (the two debug-verb
+over-press crashes the wave-6 review found — `PlayerTrackConfigList::ChangeDifficulty` vector OOB +
+`OvershellPanel::EndOverrideFlow` double-end assert; reproduce on charted songs too). Land + review + final
+doc close-out to follow.
+
 ### Open after wave 6 (debug-tool + pre-existing robustness; none block gameplay)
 - **dta-eval burst SIGSEGV** — root-caused above; cheap part-fix (free parsed on catch) + engine WARN-mode.
 - **debug-verb over-press class** (found by track-load review): `PlayerTrackConfigList::ChangeDifficulty`
