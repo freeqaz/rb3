@@ -395,6 +395,24 @@ rb3 master `e83e2c79`/`77b6a3fe`/`5f6f2379` (all rb3-side; NO engine change, NO 
   + new `native/tests/test_overpress.cpp` (rb3-tests OverPress 3/3). Both crashes reproduced pre-fix
   (gtest + live game), inert post-fix; normal diff-change + override-flow still work.
 
+### Wave 7 review — 3/3 CONFIRM, 0 REJECT (2026-06-16) → CAMPAIGN COMPLETE
+- **chart-wiring CONFIRM** — 27 distinct previously-dead songs reached live gameplay (2 to full EOF with
+  valid endgame scores), SongParser fix independently verified match-neutral, 0 crashes. Notes: symlinks
+  are machine-local (re-run the one-liner per checkout); web song-load follow-up; `play_one.py --bin`
+  defaults to a stale path.
+- **eval-burst-harden CONFIRM** — pre-fix binary reproduced the iter-15 stack-overflow + coredump; fixed
+  master survives 120/150/100 consecutive hard-fails, single hard-fails still graceful, Debug::Fail
+  byte-identical.
+- **overpress-harden CONFIRM** — gtest 3/3 + full 17/17, live abuse survives, both crashes reproduced on a
+  from-scratch pre-fix binary, both fns byte-identical. (Crash-1 has no live headless repro — the gtest is
+  the authoritative regression lock.)
+
+**CAMPAIGN CLOSED 2026-06-16** — see [`CAMPAIGN_SUMMARY.md`](CAMPAIGN_SUMMARY.md). All 8 user-reported
+issues + every surfaced regression/crash fixed & independently reviewed; native port now plays all 83
+songs; Wii match byte-identical-or-improved throughout. All campaign worktrees torn down (the pose-fling
+solve landed the C8/IK probes into engine main `15ce606`, so those branches were redundant). Remaining
+items are non-blocking polish/taste + the deferred crowd features + web song-load confirmation.
+
 ### Open after wave 6 (debug-tool + pre-existing robustness; none block gameplay)
 - **dta-eval burst SIGSEGV** — root-caused above; cheap part-fix (free parsed on catch) + engine WARN-mode.
 - **debug-verb over-press class** (found by track-load review): `PlayerTrackConfigList::ChangeDifficulty`
