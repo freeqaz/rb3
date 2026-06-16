@@ -348,10 +348,23 @@ void RB3HttpServer::HandleDtaEval(Command& cmd) {
             // the data-call-stack pointer the longjmp skipped, then report a
             // graceful error. (mTry is reset by MILO_CATCH's SetTry(false);
             // mFailing was never set since we never reached the mFailing branch
-            // of Debug::Fail.) parsed leaks on this path: the longjmp skipped
-            // its release and re-touching the heap is avoided for safety — one
-            // small DataArray per bad eval is an acceptable debug-tool trade.
+            // of Debug::Fail.)
             gCallStackPtr = savedCallStackPtr;
+            // Release the parsed DataArray on the fail path. The earlier comment
+            // here claimed re-touching the heap was "avoided for safety" and let
+            // `parsed` LEAK on every bad eval — but the MILO_TRY longjmp is a
+            // CLEAN unwind (it fires at Debug.cpp:175 BEFORE Debug::Modal, so the
+            // allocator is fully intact and unlocked). The leak was the
+            // accelerant for the burst stack-overflow SIGSEGV (wave-6 residual):
+            // ~15 consecutive hard-fails leaked enough that the heap-stack
+            // bookkeeping (MemPushHeap) overflowed -> its MILO_ASSERT re-entered
+            // Debug::Fail -> recursive MemPushHeap->Debug::Fail->MakeString loop
+            // -> stack overflow. Freeing `parsed` here removes the accelerant.
+            // gCallStackPtr was already restored to its pre-eval value above, so
+            // ~DataArray's bookkeeping sees the same call-stack state as a normal
+            // release. Null after release: `cleanup`/the signal path never touch
+            // it, but keep it tidy in case future edits add a use.
+            if (parsed) { parsed->Release(); parsed = nullptr; }
             cmd.result.ok = false;
             cmd.result.httpStatus = 400;
             cmd.result.error = std::string("DTA eval failed: ") +
