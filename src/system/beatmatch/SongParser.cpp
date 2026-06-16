@@ -1092,6 +1092,36 @@ bool SongParser::ParseAndStripLyricText(const char *text, VocalNote &note) {
         note.mBends = ret;
         text++;
     }
+#ifdef HX_NATIVE
+    // The matched Wii loop below decrements `p` twice per iteration (`p--` in the
+    // body AND `--p` in the while-test) and loops on the pointer difference. When a
+    // lyric is ALL trailing-strip characters (e.g. "##", "//$"), `p` underflows
+    // below `text`, `(p - text) + 1` becomes a huge unsigned count, and the
+    // subsequent String::reserve() over-allocates / returns NULL → SIGSEGV in
+    // strncpy. The real charts (vocal lyrics) hit this constantly; the 3-song dev
+    // extract didn't. Match the Bank-8 target's semantics: a separate length
+    // counter, single `p--`, loop on the counter. (Match-neutral via the ifdef.)
+    unsigned int len = strlen(text);
+    p = text + len - 1;
+    if (p >= text) {
+        do {
+            char c = *p;
+            if (c == '$') {
+                note.mAllowCombine = false;
+            } else if (c == '#') {
+                note.mUnpitchedNote = true;
+            } else if (c == '^') {
+                note.mUnpitchedNote = true;
+                note.mUnpitchedEasy = true;
+            } else if (c == '%') {
+                note.mPitchRangeEnd = true;
+            } else if (c != '/' && c != '1' && c != '2') {
+                break;
+            }
+            p--;
+        } while (--len != 0);
+    }
+#else
     p = text + strlen(text);
     p--;
     if (p >= text) {
@@ -1112,6 +1142,7 @@ bool SongParser::ParseAndStripLyricText(const char *text, VocalNote &note) {
             p--;
         } while (--p - text);
     }
+#endif
     String str;
     str.reserve(((p - text) + 1));
     strncpy((char *)str.c_str(), text, ((p - text) + 1));
