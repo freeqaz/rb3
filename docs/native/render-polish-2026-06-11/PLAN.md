@@ -367,6 +367,34 @@ over-press crashes the wave-6 review found — `PlayerTrackConfigList::ChangeDif
 `OvershellPanel::EndOverrideFlow` double-end assert; reproduce on charted songs too). Land + review + final
 doc close-out to follow.
 
+### Wave 7 LANDED — 3/3 done+verified (2026-06-16)
+rb3 master `e83e2c79`/`77b6a3fe`/`5f6f2379` (all rb3-side; NO engine change, NO pin bump — pin stays
+`15ce606`). Native rebuilt; over-press gtest 3/3; Wii report byte-identical (overall 81.86505 unchanged,
+`Debug` 100%, others at pre-fix %). Smoke: bohemianrhapsody (previously dead) now reaches live gameplay.
+- **chart-wiring** (rb3 `e83e2c79`): **ALL 83 on-disc songs now LOAD AND PLAY.** TWO parts: (1) ASSET
+  WIRING (machine-local, gitignored — NOT a commit): symlink the 80 missing `.mid` charts from
+  `extracted-xbox-full` into the `extracted` loader root (one-liner in the impl doc; 3 dev songs were
+  already symlinks). Chose symlink-into-`extracted` over repointing RB3_DATA because `extracted/songs`
+  has native-specific `songs.dta`+`missing_song_data.dta` the full extract LACKS. (2) CODE FIX (committed):
+  `SongParser::ParseAndStripLyricText` double-decremented the scan pointer → on an all-strip lyric the
+  pointer underflows, the unsigned char-count balloons, `String::reserve` over-allocs/returns NULL →
+  SIGSEGV in strncpy. The 3-song dev slice never hit it; real charts hit it constantly. Fixed to Bank-8
+  semantics, `#ifdef HX_NATIVE` (Wii object byte-identical, the fn's objdiff before==after). 6/6
+  previously-dead songs verified reaching gameplay (gems+audio+score), 3/3 dev songs still play. WEB:
+  server.py follows the symlinks; mids lazy-fetched → no manifest regen; the SongParser fix compiles into
+  web identically. Follow-up: confirm web song-load once in-browser.
+- **eval-burst-harden** (rb3 `77b6a3fe`): closed the wave-6 dta-eval burst SIGSEGV. (a)
+  `rb3_http_handlers.cpp` frees the leaked parsed DataArray on the MILO_CATCH path (the heap-exhaustion
+  accelerant); (b) `src/system/os/Debug.cpp` (rb3 compiles its OWN — task's "engine" framing was wrong; no
+  milo-native-engine Debug.cpp, engine worktree stayed clean) takes the `mTry` longjmp BEFORE MemPushHeap
+  + a depth guard, `#ifdef HX_NATIVE` → `Debug::Fail` objdiff 100% (Wii byte-identical). Baseline died at
+  iter 14 + coredump; post-fix 2×80 + 100 consecutive hard-fails clean, valid eval still works after. The
+  previously-mused engine WARN-not-FAIL mode is no longer needed — recursion is structurally gone.
+- **overpress-harden** (rb3 `5f6f2379`): `PlayerTrackConfigList::ChangeDifficulty` bounds guard +
+  `OvershellPanel::EndOverrideFlow` redundant-end no-op, both `#ifdef HX_NATIVE` (both fns objdiff 100%),
+  + new `native/tests/test_overpress.cpp` (rb3-tests OverPress 3/3). Both crashes reproduced pre-fix
+  (gtest + live game), inert post-fix; normal diff-change + override-flow still work.
+
 ### Open after wave 6 (debug-tool + pre-existing robustness; none block gameplay)
 - **dta-eval burst SIGSEGV** — root-caused above; cheap part-fix (free parsed on catch) + engine WARN-mode.
 - **debug-verb over-press class** (found by track-load review): `PlayerTrackConfigList::ChangeDifficulty`
