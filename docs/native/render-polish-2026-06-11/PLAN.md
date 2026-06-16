@@ -325,11 +325,41 @@ All expected rb3/native-side, match-neutral or match-improving. Review wave to f
   is an ASSET issue (get the `.mid` charts into the extract), not code. UX follow-up: route a chartless
   selection back to song-select instead of holding on the loading vignette.
 
-### Wave 6 standing
+### Wave 6 standing — REVIEWED (3 CONFIRM + 1 CONFIRM_WITH_RESIDUALS, 0 REJECT)
 All 4 blocking bugs resolved: 3 crashes fixed (score over-press synth off-by-one, dta-eval MILO_TRY,
 track-load no-chart gate) + scoring confirmed working (negative result). Two were match-IMPROVING decomp
-fixes (SerialGroupSeqInst::Poll 99.38→100%). Review wave over all 4 to follow. Surfaced: the extract is
-missing most song charts (asset gap, not code) — worth flagging for whoever owns asset extraction.
+fixes (SerialGroupSeqInst::Poll 99.38→100%). Surfaced: the extract is missing most song charts (asset
+gap, not code) — flag for whoever owns asset extraction.
+
+Wave-6 review (re-run after the first attempt was killed by API rate-limiting; `verify-*.md`):
+- **track-load CONFIRM** — built a pre-fix binary, reproduced the exact SongData::TrackInfo OOB on
+  chartless bohemianrhapsody (frame-for-frame backtrace), post-fix all 9 chartless songs held alive
+  (0 SIGABRT), 3 charted songs play, scoring-test passes.
+- **score-overpress CONFIRM** — reproduced the confirm-#3 SIGSEGV on a pre-fix binary (guitar+vocals),
+  post-fix survives 4×15 confirms both tracks; Poll 100% verified two ways.
+- **scoring-verify CONFIRM** — scoring-test PASSES (156,973/5★), live score climbs during play, second
+  song 25or6to4→277,014/5★ (not song-specific). Negative result holds: scorer was never broken.
+- **dta-eval CONFIRM_WITH_RESIDUALS (crashReproducesPostFix=true for the BURST only)** — the
+  reviewer-facing single-fail bug IS fixed (7/7 graceful, server stays responsive, no wedge), BUT the
+  burst residual is a HARD SIGSEGV, not the "stall" the impl framed: ~15-16 consecutive hard-fails
+  stack-overflow via a recursive `MemPushHeap→Debug::Fail→MakeString` loop. **Now root-caused:**
+  `Debug::Fail` (Debug.cpp:162) calls `MemPushHeap` BEFORE the `mTry` longjmp check (:175), and each bad
+  eval LEAKS its parsed DataArray on the MILO_CATCH path → after ~15 leaks the main heap is exhausted →
+  MemPushHeap itself fails → re-enters Debug::Fail below the handler → unbounded recursion. Cheap
+  part-fix: release the parsed DataArray on the catch path (kills the accelerant); full fix = engine-side
+  WARN-not-FAIL debug-eval mode + a Debug::Fail re-entrancy/depth guard. NOT a REJECT (a single/normal
+  hard-fail never crashes); debug-tool-only, not a gameplay path.
+
+### Open after wave 6 (debug-tool + pre-existing robustness; none block gameplay)
+- **dta-eval burst SIGSEGV** — root-caused above; cheap part-fix (free parsed on catch) + engine WARN-mode.
+- **debug-verb over-press class** (found by track-load review): `PlayerTrackConfigList::ChangeDifficulty`
+  vector OOB via `difficulty:` verb spam, and `OvershellPanel::EndOverrideFlow` assert via double
+  `end_override_flow` — reproduce on CHARTED songs too (independent of no-chart); same family as the
+  score-overpress / dta-eval over-press hardening. Debug-HTTP-verb abnormal sequences, not normal play.
+- UX: chartless selection holds on the loading vignette (`back` doesn't pop to song-select).
+- Profile-less solo-stats path gated `if(profile)` (MetaPerformer.cpp:1127) — note for per-player stats.
+- Git-hygiene note for shared-repo agents: `git commit -- <explicit-path>` (a reviewer accidentally
+  folded a sibling's staged file; recovered).
 
 ## Campaign standing (2026-06-14)
 
