@@ -39,7 +39,12 @@ and `BandRetargetVignette::EnterDir` global-buffer-overflow READ
 - Ref: `3d00d1dd`, `docs/native/CUSTOMIZE_PREVIEW_FINDINGS_2026-06-09.md` UPDATE 9.
 
 ## P2 — MemMgr `_MemAlloc` ABA freed-addr range-erase (defensive hardening)
-**Status: spec'd, not implemented.** The 5b ABA fix (`c99e28af`,
+**Status: ✅ DONE (`884f257a`, 2026-06-19).** `HxNoteFreedRangeReused(p,n)` added in
+`Object.cpp` (HX_NATIVE, EOF block to keep `DECOMP_FORCEACTIVE` `__LINE__` symbols
+byte-identical) — a reentrancy-guarded `lower_bound` range-erase over the freed-set;
+called from `_MemAlloc` (`MemMgr.cpp:1060`) on every native allocation, erasing
+`[p, p+want)`. Verified: CharLoad5b 4/4, rb3-tests 21/21, song-end-test reaches
+game_screen (the head-shaper ABA scenario), Object.o + MemMgr.o byte-identical. The 5b ABA fix (`c99e28af`,
 `HxNoteReusedAddr(this)` in `Hmx::Object::Object()`) clears the `HxAddrWasFreed`
 mark for **offset-0** Hmx::Object subobjects. A freed `CharBonesObject` whose
 *interior* (non-offset-0) memory is later recycled isn't covered. Fable's plan
@@ -50,7 +55,16 @@ Belt-and-suspenders for the same ABA class; only strictly needed if a residual
 - Ref: `docs/native/char-load-5b/viseme-uaf-plan.md` ("Optional hardening").
 
 ## P2 — CharProvider `pLocalChar` assert on back→manage_band
-**Status: OPEN.** The `back→manage_band` native nav route hits
+**Status: ✅ DONE (`02bf3f10`, 2026-06-19).** On native the offline guest current
+char is a `PrefabChar` that the guest hack flips customizable (`gPrefabIsCustomizable`),
+so `dynamic_cast<TourCharLocal*>` returns null and the assert fired. Fix (HX_NATIVE):
+a `PrefabChar` isn't a saved custom char → leave `haschar=false` on null cast instead
+of asserting (`#else` byte-identical, objdiff 100%). Verified: back→manage_band reaches
+manage_band_screen and renders the band menu, no SIGABRT. (Side note: the route is only
+reachable today by forcing a profile — `Profile::SetSaveState` does NOT fire
+`ProfileChangedMsg`, contra UPDATE 9, so the guest stays non-primary and
+`customize_band.btn` normally routes to the sign-in dialog; the assert was latent but real.)
+The original-OPEN detail: The `back→manage_band` native nav route hit
 `MILO_ASSERT(pLocalChar, 0x8F)` at `src/band3/meta_band/CharProvider.cpp:79` —
 `dynamic_cast<TourCharLocal *>(pCurrentChar)` returns null (the current char on
 native isn't a `TourCharLocal`). Repro: reach manage_band, press back. Fix likely
@@ -58,10 +72,10 @@ an `HX_NATIVE` guard / correct the current-char wiring so it's a `TourCharLocal`
 (or tolerate null). Tracked separately from domino-② in UPDATE 9.
 
 ## P3 — milo-trace wrapper-ext cherry-pick (loose end)
-**Status: landing this session.** Commit `20ce6328` ("W5 wrapper-ext capture
-sites, HX_NATIVE env-gated") sits on branch `wt-mtrace-wrap-ext`; never landed on
-master because master was perpetually checked-out-with-edits. Master is free now
-→ cherry-pick.
+**Status: ✅ DONE (`c3d72f40`, 2026-06-19).** Commit `20ce6328` ("W5 wrapper-ext
+capture sites, HX_NATIVE env-gated", `BinStream.cpp`/`ChunkStream.cpp`/`mtrace_wrap.h`)
+cherry-picked to master once it was free. All sites `#ifdef HX_NATIVE` (verified) →
+Wii-neutral; `RB3_MTRACE_WRAP` env-gated off by default.
 
 ## P1-but-DEEP — C7/C8 char rotation-basis shard (gameplay head/hair/hands)
 **Status: actively iterated, root cause OPEN.** Gameplay head/hair/hands/garments
