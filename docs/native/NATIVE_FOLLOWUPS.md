@@ -31,12 +31,23 @@ the old Wii literals back on the host) reproduces the exact `unk2c = 0x<faceidx>
 corruption (e.g. `0x3ffff`, `0x6ffff`) and the gtest fails; with the fix it passes.
 Note: `ProjectPatches`/`SetMeshVerts` do **not** execute on the headless render
 path (Null Dawn adapter) — the gtest is the reproduction vehicle, not the live
-closet flow. Two *unrelated* pre-existing latent ASan findings remain (already
-filed in the viseme plan, NOT the ProfilePicture corruption): `CharCollide::Deform`
-stack-use-after-scope (`CharCollide.cpp:196-214`, hoist `upX`/`upY` above the if)
-and `BandRetargetVignette::EnterDir` global-buffer-overflow READ
-(`BandRetargetVignette.cpp:56`, 8 bytes past `sIkfs[96]`).
-- Ref: `3d00d1dd`, `docs/native/CUSTOMIZE_PREVIEW_FINDINGS_2026-06-09.md` UPDATE 9.
+closet flow. Two *unrelated* pre-existing latent ASan findings (NOT the
+ProfilePicture corruption) were filed here and are now **✅ FIXED (`090f7914`,
+2026-06-19):** `CharCollide::Deform` stack-use-after-scope (`CharCollide.cpp:195`,
+`upX`/`upY` hoisted above the if, HX_NATIVE) and `BandRetargetVignette::EnterDir`
+global-buffer-overflow READ (`BandRetargetVignette.cpp:9` — `sIkfs[]` was missing
+its null terminator; the target symbol is 13 pointers, restored → `sIkfs` objdiff
+100%, match-positive). ASan-verified: fresh closet + gameplay runs that exercise
+both paths show 0 stack-use-after-scope / 0 global-buffer-overflow.
+- Ref: `3d00d1dd`, `090f7914`, `docs/native/CUSTOMIZE_PREVIEW_FINDINGS_2026-06-09.md` UPDATE 9.
+
+### Known ASan noise (NOT a bug — do not "fix")
+Under ASan, the gameplay path emits a flood of `alloc-dealloc-mismatch (malloc vs
+operator delete)` — the engine's custom `MemMgr` allocates via `posix_memalign`
+(malloc-family) while objects free via `operator delete`. Benign on native (MemMgr
+owns its memory; ASan just doesn't model the new/delete override). Suppress with
+`ASAN_OPTIONS=alloc_dealloc_mismatch=0` (the `asan-closet-repro.py` harness already
+does). Don't chase it.
 
 ## P2 — MemMgr `_MemAlloc` ABA freed-addr range-erase (defensive hardening)
 **Status: ✅ DONE (`884f257a`, 2026-06-19).** `HxNoteFreedRangeReused(p,n)` added in
