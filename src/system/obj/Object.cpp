@@ -593,3 +593,41 @@ DataNode Hmx::Object::OnGet(const DataArray *da) {
 
 BEGIN_PROPSYNCS(Hmx::Object)
 END_PROPSYNCS
+
+#ifdef HX_NATIVE
+// Belt-and-suspenders range version of HxNoteReusedAddr for the allocator. When
+// _MemAlloc hands back a block [p, p+n), any freed-set entry inside that range is
+// proven stale (its memory was just recycled). HxNoteReusedAddr only clears the
+// exact offset-0 Hmx::Object base (Hmx::Object::Object's HxNoteReusedAddr(this));
+// an interior (non-offset-0) Hmx::Object subobject of a multiply-inherited
+// recycled type could otherwise keep its stale mark. Erasing the whole returned
+// range at allocation closes that ABA hole so the ObjPtr_p.h guards can never skip
+// Release on a live pointee. Called via extern from _MemAlloc (MemMgr.cpp). See
+// docs/native/char-load-5b/viseme-uaf-plan.md ("Optional hardening").
+//
+// Placed at end-of-file (its own #ifdef HX_NATIVE block) so it adds no lines to
+// the Wii translation unit's line numbering — keeps DECOMP_FORCEACTIVE symbol
+// names (which embed __LINE__) byte-identical on the MWCC build.
+void HxNoteFreedRangeReused(const void *p, size_t n) {
+    if (!p || n == 0)
+        return;
+    // Reentrancy guard: this runs from inside _MemAlloc (operator new -> _MemAlloc).
+    // HxFreedAddrs() is a std::set whose node allocation also routes through
+    // operator new -> _MemAlloc -> here. erase() never allocates, so the only way
+    // to reenter mid-mutation is if a guard-owned container is growing
+    // (HxNoteFreedAddr's set.insert). Skip when nested so we never mutate the same
+    // std::set while it is mid-insert.
+    static thread_local bool inHxFreedRange = false;
+    if (inHxFreedRange)
+        return;
+    inHxFreedRange = true;
+    std::set<const void *> &set = HxFreedAddrs();
+    const char *lo = (const char *)p;
+    const char *hi = lo + n;
+    std::set<const void *>::iterator it = set.lower_bound((const void *)lo);
+    while (it != set.end() && (const char *)*it < hi) {
+        set.erase(it++);
+    }
+    inHxFreedRange = false;
+}
+#endif
