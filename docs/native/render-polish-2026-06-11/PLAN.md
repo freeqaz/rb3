@@ -413,6 +413,17 @@ songs; Wii match byte-identical-or-improved throughout. All campaign worktrees t
 solve landed the C8/IK probes into engine main `15ce606`, so those branches were redundant). Remaining
 items are non-blocking polish/taste + the deferred crowd features + web song-load confirmation.
 
+### Wave 8 — wrap-up of remaining items (dispatched 2026-06-19)
+Per-item **Plan → Implement → Review** pipeline (parallel, isolated worktrees; landing serialized by
+orchestrator) + Fan-In synthesis. 4 work-streams: `web-songload` (confirm all 83 play in-browser, fix
+server.py symlink/manifest if needed), `lighting-polish` (menu contrast 6.8→~10:1 + venue song-start
+exposure + endgame tint), `pose-footwear-shard` (tighten the V24 guard so small-bind-extent garments survive
+a deep pose curl while torn meshes still drop), `crowd-venues` (Fix C venue bridge — implement; Fix B 2D
+imposters — implement-if-tractable-else-plan). Contention: lighting-polish + pose-footwear-shard (+ maybe
+crowd Fix B) all touch Rnd_Wgpu_RB3.cpp in DISJOINT regions → sequential cherry-pick + one pin bump at
+landing (established pattern). `play_one.py --bin` stale default folded into cleanup. Fan-in → orchestrator
+lands → final close-out.
+
 ### Open after wave 6 (debug-tool + pre-existing robustness; none block gameplay)
 - **dta-eval burst SIGSEGV** — root-caused above; cheap part-fix (free parsed on catch) + engine WARN-mode.
 - **debug-verb over-press class** (found by track-load review): `PlayerTrackConfigList::ChangeDifficulty`
