@@ -424,6 +424,26 @@ crowd Fix B) all touch Rnd_Wgpu_RB3.cpp in DISJOINT regions → sequential cherr
 landing (established pattern). `play_one.py --bin` stale default folded into cleanup. Fan-in → orchestrator
 lands → final close-out.
 
+### Wave 8 LANDED + REVIEWED (2026-06-19) — 4 items, 0 reject. CAMPAIGN FULLY CLOSED.
+Pipeline + fan-in (`WAVE8_FANIN.md`); orchestrator landed serially. engine main `d9f8243`(venue exposure)
++ `1010f5f`(band-aware V24 guard); rb3 master `7f17a077`(web verify harness) + `402c8561`(Fix C venue
+bridge) + pin bump `79bea7fa`→`1010f5f`. Composed build verified (no blowout/crush/pink-flood; lighting
+composes with wave-4/5 backstops; identity-when-off). Wii byte-identical (overall 81.86505; BandDirector
+EnterVenue 100%).
+- **web-songload CONFIRM** — full 83-song set plays in-browser too (Playwright harness
+  `scripts/web/_w8-songload-verify.mjs`); server.py follows the .mid symlinks. DEPLOY: rebuild web on host.
+- **lighting-polish CONFIRM_W_RESIDUALS** — env-tunable venue lit-path exposure (RB3_VENUE_POINT/DIR_EXPOSURE
+  in WriteSceneUniforms); tames song-start reveal + lifts menu contrast; identity at 1.0; no regression.
+  Residual: menu bright-side still < retail ~10:1 (taste).
+- **pose-footwear-shard CONFIRM** — band-aware V24 guard (4.0× ratio + 110u/40u caps, RB3_BAND_SHARD_*);
+  deep-curl footwear/gloves render, torn/cross-instance meshes still drop (negative control held).
+  CHARACTER WORK FULLY CLOSED.
+- **crowd-venues — Fix C LANDED** (EnterVenue honors MetaPerformer venue override; non-small_club venues
+  load, arena verified). Fix B (2D bowl-imposter crowd) = plan-only, future wave (render-to-texture feature).
+- play_one.py --bin nit = throwaway /tmp script, not committed; keeper gate scoring-test.py already defaults
+  to the main-repo binary. No repo fix. NEW tracked gap: festival_01 venue override SIGSEGVs on load
+  (festival-specific; arena_06 clean). Wave-8 worktrees + branches torn down post-land.
+
 ### Open after wave 6 (debug-tool + pre-existing robustness; none block gameplay)
 - **dta-eval burst SIGSEGV** — root-caused above; cheap part-fix (free parsed on catch) + engine WARN-mode.
 - **debug-verb over-press class** (found by track-load review): `PlayerTrackConfigList::ChangeDifficulty`

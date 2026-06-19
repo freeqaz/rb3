@@ -66,10 +66,38 @@ regressed the Wii build.
     t="extracted/songs/$s/$s.mid"; src="$PWD/extracted-xbox-full/songs/$s/$s.mid"; \
     [ ! -e "$t" ] && [ -e "$src" ] && ln -s "$src" "$t"; done
   ```
-- Web song-load via `server.py` symlink-following — confirm once in-browser (native verified).
-- Minor polish/taste: menu hub final contrast (6.8 → ~10:1), venue song-start exposure, pose-fling
-  footwear-on-deep-curl shard residual, endgame backdrop tint.
-- Deferred features: crowd 2D imposters (Fix B) + venue bridge (Fix C, native pins small_club_01).
-- Harness nit: `play_one.py` `--bin` defaults to a stale path — pass `--bin` explicitly.
+- Deferred FEATURE (now has a design): crowd 2D bowl-imposter pipeline (Fix B) — a render-to-texture
+  path, scoped plan-only in wave 8 (`task-crowd-venues-impl.md`); future wave.
+- KNOWN native gap (new, tracked): `festival_01` venue override SIGSEGVs during load (festival-specific;
+  `arena_06` loads clean). Surfaced once Fix C let non-small_club venues load.
+- Minor taste remaining: endgame backdrop green-peak (authored disco wheel; could soften further).
 
-## Status: COMPLETE — campaign closed 2026-06-16.
+## Wave 8 — wrap-up (2026-06-19): 4 items, all landed + reviewed (0 reject)
+
+Per-item Plan→Implement→Review pipeline + fan-in (`WAVE8_FANIN.md`); orchestrator landed serially.
+rb3 master `7f17a077`/`402c8561` + pin bump `79bea7fa` → engine `1010f5f` (`d9f8243` venue exposure +
+`1010f5f` band-aware V24 guard). Composed build verified (menu/song-select/gameplay venue all correct —
+no blowout/crush/pink-flood; lighting changes compose with the wave-4/5 backstops at identity-when-off).
+Wii byte-identical (overall 81.86505; BandDirector edits HX_NATIVE, EnterVenue 100%).
+
+- **web-songload — CONFIRM**: the full 83-song set loads + plays in the BROWSER too (3-4 previously-dead
+  songs verified in-browser via the new `scripts/web/_w8-songload-verify.mjs` Playwright harness);
+  `server.py` follows the `.mid` symlinks + lazy-fetch correctly, no manifest change needed. DEPLOY
+  ACTION: run `scripts/web/build.sh` on the deploy host — the live wasm is gitignored/stale and predates
+  the SongParser fix.
+- **lighting-polish — CONFIRM_W_RESIDUALS**: env-tunable venue lit-path exposure scale
+  (`RB3_VENUE_POINT_EXPOSURE`/`RB3_VENUE_DIR_EXPOSURE`, in `WriteSceneUniforms`) tames the song-start
+  over-bright reveal + lifts menu contrast; identity at exposure=1.0; gameplay/song-select/score
+  unregressed. Residual: menu bright-side still short of retail ~10:1 (further taste tuning).
+- **pose-footwear-shard — CONFIRM**: band-aware V24 shard guard (per-band 4.0× ratio cap + 110u world
+  cap + 40u world floor; opt-outs `RB3_BAND_SHARD_*`) — deep-curl footwear/gloves (lowtopsneaks,
+  kidgloves, eightholedocs) now render while genuinely-torn / cross-instance meshes STILL drop (negative
+  control held). The character work is fully closed.
+- **crowd-venues — Fix C landed**: `BandDirector::EnterVenue` now honors the `MetaPerformer` venue
+  override (was pinned to small_club_01), so non-small_club venues load (arena verified). Fix B (2D
+  bowl-imposter crowd) scoped plan-only — a render-to-texture feature for a future wave.
+
+## Status: COMPLETE — campaign closed 2026-06-16; wave-8 wrap-up landed 2026-06-19.
+All user-reported issues + every surfaced regression/crash fixed & reviewed; full 83-song library plays
+native AND web; Wii match byte-identical-or-improved throughout. Open = the 2D-imposter feature (designed),
+the festival_01 venue gap, and pure taste tuning — none block gameplay.
