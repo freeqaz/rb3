@@ -220,6 +220,14 @@ struct CallReq {
 
 // Invoke req->fn with the SysV register file we built. Implemented in asm so we
 // control rax (variadic-call al = #xmm used) and read back rax + xmm0 exactly.
+// (no_sanitize_address: the hand-rolled inline asm runs out of registers under
+//  -fsanitize=address instrumentation; no-op in normal/Wii builds via
+//  __has_attribute. Documented in docs/native/char-load-5b/viseme-uaf-plan.md.)
+#if defined(__has_attribute)
+#if __has_attribute(no_sanitize_address)
+__attribute__((no_sanitize_address))
+#endif
+#endif
 void InvokeSysV(CallReq* req) {
     // Load all 6 GP arg registers + all 8 xmm arg registers unconditionally
     // (loading an unused register with 0 is harmless), set al = n_float (the

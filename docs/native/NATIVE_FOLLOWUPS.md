@@ -8,24 +8,35 @@ proven Wii-codegen-neutral). Verify char/menu changes through a real boot
 (`song-end-test.py` / closet harness), not just a 5-frame boot.
 
 ## P1 — ProfilePicture in-place heap corruption (REAL memory-safety bug)
-**Status: root cause OPEN; symptom mitigated.** The char-customize composite
-overruns into adjacent heap: gdb during the domino-② work saw the guest's
-per-profile `ProfilePicture` block overwritten *in place* (not freed) — the
-clobbered bytes literally contained UI/locale strings ("You have changed the
-storage devices…", "Select Style"). UPDATE 9 (`65f7f0e6`) only made it
-*unreachable* via the song_select path (`BandProfile::GetPictureTex()` returns
-null on native so the DTA never derefs the clobbered block). The underlying
-out-of-bounds **write** still exists and can corrupt other allocations.
-- Likely source: the char-composite draw path — `OutfitConfig::DrawPreClear`
-  (`OutfitConfig.cpp:908`) → `BandPatchMesh::ProjectPatches`
-  (`BandPatchMesh.cpp:943`, patch projection / `sRawCollide` region). The `.text`
-  `sRawCollide` write was already fixed (`ed9a3e92`); this is a *different*,
-  heap-side overrun.
-- Approach: build `rb3-native` with **AddressSanitizer**, reproduce the female
-  tattooed-char composite (default-on guest + preview, drive to the closet /
-  song_select), let ASan report the `heap-buffer-overflow` write + the overrun
-  buffer, root-cause, fix `HX_NATIVE`-gated.
-- Ref: `docs/native/CUSTOMIZE_PREVIEW_FINDINGS_2026-06-09.md` UPDATE 9.
+**Status: RESOLVED — this item was STALE.** The OOB write *was* the BandPatchMesh
+MeshVert LP64 arena bug, and it was already root-caused + fixed by `3d00d1dd`
+(2026-06-09 11:35) — which landed ~2h **after** the UPDATE-9 doc snapshot
+(`65f7f0e6`, 09:26), so UPDATE 9 (and this follow-up, copied from it) still listed
+it open. `3d00d1dd`'s own message names it exactly: "the char-mesh heap corruption
+that (with char-preview on) clobbered the ProfilePicture behind the domino-②
+song_select UAF and intermittently aborted boots." `MeshVert` begins with a
+`const RndMesh::Vert*` (8 bytes on LP64 vs 4 on Wii), so the hardcoded Wii arena
+offsets (face-list `0x32`, slot stride `0x38`) scribbled a face index into the
+high halfword of `MeshVert::unk2c` (the twin cursor), producing the documented
+`0x<faceidx>FFFF` cursor; the later twin-list walk then subscripts
+`mMeshVerts[]` wildly OOB → adjacent-heap (ProfilePicture) clobber. The fix
+HX_NATIVE-derives the offsets via `offsetof` (Wii `#else` byte-identical) and adds
+a defensive out-of-range face-index skip, with `native/tests/test_bandpatchmesh.cpp`.
+
+**Verified 2026-06-19 (ASan):** built `rb3-native` + `rb3-tests` with
+`-fsanitize=address`, drove guest+preview default-on to the closet
+(`asan-closet-repro.py`) AND quickplay gameplay (band composite, `song-end-test.py`)
+— **zero `heap-buffer-overflow`** on the master fix. A negative control (forcing
+the old Wii literals back on the host) reproduces the exact `unk2c = 0x<faceidx>FFFF`
+corruption (e.g. `0x3ffff`, `0x6ffff`) and the gtest fails; with the fix it passes.
+Note: `ProjectPatches`/`SetMeshVerts` do **not** execute on the headless render
+path (Null Dawn adapter) — the gtest is the reproduction vehicle, not the live
+closet flow. Two *unrelated* pre-existing latent ASan findings remain (already
+filed in the viseme plan, NOT the ProfilePicture corruption): `CharCollide::Deform`
+stack-use-after-scope (`CharCollide.cpp:196-214`, hoist `upX`/`upY` above the if)
+and `BandRetargetVignette::EnterDir` global-buffer-overflow READ
+(`BandRetargetVignette.cpp:56`, 8 bytes past `sIkfs[96]`).
+- Ref: `3d00d1dd`, `docs/native/CUSTOMIZE_PREVIEW_FINDINGS_2026-06-09.md` UPDATE 9.
 
 ## P2 — MemMgr `_MemAlloc` ABA freed-addr range-erase (defensive hardening)
 **Status: spec'd, not implemented.** The 5b ABA fix (`c99e28af`,
