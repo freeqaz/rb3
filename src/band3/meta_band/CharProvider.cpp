@@ -76,8 +76,21 @@ void CharProvider::AddCharactersFromProfile(BandProfile *profile) {
     bool haschar = false;
     if (pCurrentChar && pCurrentChar->IsCustomizable()) {
         TourCharLocal *pLocalChar = dynamic_cast<TourCharLocal *>(pCurrentChar);
+#ifdef HX_NATIVE
+        // On native (no real sign-in) the offline "guest" current char is a
+        // PrefabChar that the guest hack flips customizable via the
+        // `prefab_toggle_customizable` cheat (gPrefabIsCustomizable). The Wii
+        // invariant — a customizable CharData is always a saved TourCharLocal —
+        // is therefore violated and the dynamic_cast returns null. A PrefabChar
+        // is not a saved custom char, so it does not belong in the profile's
+        // "your characters" list: leave haschar=false (skipping the HasChar
+        // branch and the current-char custom entry) instead of asserting.
+        if (pLocalChar)
+            haschar = profile->HasChar(pLocalChar);
+#else
         MILO_ASSERT(pLocalChar, 0x8F);
         haschar = profile->HasChar(pLocalChar);
+#endif
     }
     if (chars.empty() && !haschar)
         return;
