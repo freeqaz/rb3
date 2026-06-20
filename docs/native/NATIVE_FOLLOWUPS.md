@@ -7,6 +7,48 @@ code with live objdiff match% — every native fix is `#ifdef HX_NATIVE`-gated (
 proven Wii-codegen-neutral). Verify char/menu changes through a real boot
 (`song-end-test.py` / closet harness), not just a 5-frame boot.
 
+## 2026-06-20 — "Crowd + drum kit congregate at origin" = band instrument `*_strings` skin explosion (FIXED `2f393eaa`)
+**Status: ✅ FIXED + verified.** The user-reported "crowd + drum kit (and many items)
+congregating at origin" was investigated end-to-end with a new debug tool and turned
+out to be **NOT a placement bug at all** — a 2D misattribution. Ground truth (new
+`{rb3_pos_dump}` DTA tool, `fe6b5a73`/`5ebcf887`, walks the live object tree + the
+`BandDirector` venue dir's `mCrowds`):
+- **Band placement WORKS** — 4 member roots spread across the stage (player3 byte-stable
+  at (14.43,146.13,13.18); all z≈13.2 floor), each kit/`mInstDir` co-located with its
+  drummer. `band_at_origin=0/4`.
+- **Audience placement WORKS** — 300 `WorldCrowd` members spread across the venue floor
+  (x∈[-161,161], y∈[-297.6,-22.1], z∈[68.6,74.5]), `crowd_at_origin=0/300`.
+- All 5 PLAN hypotheses (H1 `SyncDir` reparent / H2 root-never-placed / H4 crowd decode /
+  H5 merge / H3 proxies) **REFUTED** by the live data.
+- **Actual cause:** the engine's V24 `[SHARD_GUARD]` (`Rnd_Wgpu_RB3.cpp:4924-5141`) was
+  *correctly* DROPPING the band lead-guitar `*_strings.mesh` of the "brain"-class special
+  guitars (chainsaw / guitar_brain), which **explode to a ~136u world AABB (ratio ~5.0)**.
+  Those guitars author their string-bend rig on the CHARACTER skeleton
+  (`skeleton_unshared.milo`) and have no own-resource neck; on native the per-member
+  skeleton basis diverges from the authored inverse-bind → the rigid-authored strings
+  smear. Same **char-skinning-deform family**, now on `mInstDir` (which the existing
+  `RebindOutfitBonesToOwnSkeleton` deliberately excludes). The visible "pile/smear" with
+  the guard OFF was a dark exploded mass sweeping in from the left — *not* origin
+  placement (bone0 |95-100u|, at the staged guitar).
+- **Fix (`2f393eaa`, HX_NATIVE, Wii byte-neutral — Poll 98.6% unchanged):** new
+  `BandCharacter::RebindInstStringsToRestBasis()` called from `Poll()` after
+  `mInstDir->Poll()`; rigid-anchors every `*_strings` bone to `bone_bridge` and rebakes
+  the offset so the mesh rides one rigid bone (world AABB == bind AABB, ratio→~1.0),
+  matching the FINE own-resource instruments. Narrowly gated (name ends `_strings.mesh`
+  AND a bone resolves to `skeleton_unshared.milo`) so the FINE instruments are never
+  touched. Sets `mNativeBonesRebound` so the engine guard/clamp skip it. Default-ON,
+  opt-out `RB3_NO_INST_REBIND=1` (`RB3_INST_STRINGS_MODE=rebake` for the bend-preserving
+  A/B). Engine unchanged (guard stays as backstop). Measured: ratio 5.0→1.0, `dir=instrument`
+  drops 1984→0, left-edge smear gone (screenshots), FINE instruments stay 1.0, audience
+  unaffected. Adversarially verified (LAND, high confidence).
+- **Residual (separate, out-of-scope, NOT visibly wrong):** `scrollbar_bg.mesh` +
+  `male_extras*` (venue vignette extras) + a song-dependent band-outfit shoe skin
+  (`lowtopsneaks_skin`) still trip the shard guard (masked → silently dropped, screen
+  looks clean). Same skin-deform family; address as a follow-up only if it becomes visible.
+- Tool: `{rb3_pos_dump}` + `scripts/native/crowd-origin-posdump.py`. Docs:
+  `docs/native/crowd-origin/` (PLAN, scouts, measure-results, verify-verdict,
+  deform-investigation, fix-impl, audience-measure + `shots/`).
+
 ## P1 — ProfilePicture in-place heap corruption (REAL memory-safety bug)
 **Status: RESOLVED — this item was STALE.** The OOB write *was* the BandPatchMesh
 MeshVert LP64 arena bug, and it was already root-caused + fixed by `3d00d1dd`
