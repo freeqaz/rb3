@@ -28,6 +28,19 @@ StreamReceiver::StreamReceiver(int numBuffers, bool slip)
         const int kMaxChunks = (int)(sizeof(mBuffer) / 0xC000);
         int chunks = numBuffers;
         if (chunks < 2) chunks = 2;
+        // Off-main web audio (RB3_WEB_OFFMAIN_MIX) decouples the stall budget from
+        // output latency by leaning on the decode-ahead depth: the deeper the ring,
+        // the longer a main-thread freeze the worklet survives without starving the
+        // music mix. The mBuffer already reserves the full 16-chunk (~9 s) span, so
+        // use it — a deeper ring is free here (no extra allocation) and strictly
+        // improves stall resilience. Gated to the env flag so the default web/native
+        // path (which never stalls the way the worklet-mix path defends against)
+        // keeps its prior 8-chunk footprint. Match-neutral: HX_NATIVE-only block.
+        {
+            const char *om = getenv("RB3_WEB_OFFMAIN_MIX");
+            if (om && om[0] && om[0] != '0' && chunks < kMaxChunks)
+                chunks = kMaxChunks;
+        }
         if (chunks > kMaxChunks) chunks = kMaxChunks;
         mNumBuffers = chunks;
         mRingSize = chunks * 0xC000;

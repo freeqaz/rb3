@@ -120,7 +120,16 @@ static inline void ComputePanGains(float volume, float pan, float &left, float &
     right = volume * (pan >= 0.0f ? 1.0f : 1.0f + pan);
 }
 
+// Off-main mix (RB3_WEB_OFFMAIN_MIX, web only): a music stem additionally
+// implements WebMusicStem so the AudioWorklet mixes its decoded ring on the
+// audio thread. Native (miniaudio) builds keep the AudioSource-only path.
+#ifdef __EMSCRIPTEN__
+class RB3StreamReceiverNative : public StreamReceiver,
+                                public AudioSource,
+                                public WebMusicStem {
+#else
 class RB3StreamReceiverNative : public StreamReceiver, public AudioSource {
+#endif
 public:
     RB3StreamReceiverNative(int numBuffers, int sampleRate, bool slip, int channel)
         // IMPORTANT: force the base mSlipEnabled to false. V1 does not implement
@@ -169,7 +178,12 @@ public:
 
     ~RB3StreamReceiverNative() override {
         if (mRegistered) {
-            AudioDevice::GetInstance().RemoveSource(this);
+#ifdef __EMSCRIPTEN__
+            if (AudioDevice::OffMainMixEnabled())
+                AudioDevice::GetInstance().UnregisterMusicStem(this);
+            else
+#endif
+                AudioDevice::GetInstance().RemoveSource(this);
             mRegistered = false;
         }
     }
@@ -209,7 +223,15 @@ public:
             }
         }
         if (!mRegistered) {
-            AudioDevice::GetInstance().AddSource(this);
+#ifdef __EMSCRIPTEN__
+            // Off-main: register as a WebMusicStem (publishes to a per-stem SAB;
+            // the worklet mixes it on the audio thread) instead of AddSource —
+            // the music bus does NOT run through the main-thread MixSources.
+            if (AudioDevice::OffMainMixEnabled())
+                AudioDevice::GetInstance().RegisterMusicStem(this);
+            else
+#endif
+                AudioDevice::GetInstance().AddSource(this);
             mRegistered = true;
         }
     }
@@ -423,6 +445,73 @@ public:
         if (mSendActive.load(std::memory_order_acquire)) return false;
         return mDoneBufferCounter > mNumBuffers + 2;
     }
+
+#ifdef __EMSCRIPTEN__
+    // ----------------------- WebMusicStem vtable (off-main) -----------------------
+    bool OffMainActive() const override {
+        // Live while armed and not fully drained. (A paused stem stays active so
+        // it can resume; the worklet honors the paused flag.)
+        if (!mPlayStarted) return false;
+        return !IsFinished();
+    }
+
+    bool OffMainArmed() const override { return mPlayStarted; }
+
+    void OffMainSnapshot(OffMainStemState *out) const override {
+        const int ringSize = mRingSize;               // bytes
+        const int ringFrames = ringSize >> 1;         // int16 mono frames
+        out->ringPcm = reinterpret_cast<const int16_t *>(mBuffer);
+        out->ringFrames = ringFrames;
+
+        // DATA frontier: the producer write position (where decode has filled to).
+        out->writeFrame = mRingWritePos >> 1;
+
+        // Consumer play cursor + availability — EXACTLY RenderAudio's math:
+        //   consumed = (mAudioReadPos - mRingReadPos) mod ringSize
+        //   available = mRingWrittenSpace - consumed   (bytes)
+        int readPos = mAudioReadPos.load(std::memory_order_acquire); // bytes
+        int baseReadPos = mRingReadPos;               // producer free frontier (bytes)
+        int written = mRingWrittenSpace;              // valid buffered bytes
+        int consumed = readPos - baseReadPos;
+        if (consumed < 0) consumed += ringSize;
+        int available = written - consumed;
+        if (available < 0) available = 0;
+        if (available > ringSize) available = ringSize;
+
+        out->readFrame = readPos >> 1;
+        int availFrames = available >> 1;
+        // The SAB uses (writePos - readPos) for availability, which cannot
+        // represent a FULL ring (writePos == readPos reads as EMPTY). Cap at
+        // ringFrames - 1 so the full-ring handoff (mRingWrittenSpace == ringSize)
+        // doesn't publish "0 available" to the worklet. Loses 1 frame; harmless.
+        if (availFrames > ringFrames - 1) availFrames = ringFrames - 1;
+        out->availFrames = availFrames;
+        // startFrame is only consumed once (the seed at first publish); the
+        // current play cursor IS the song start at that point (PlayImpl set
+        // mAudioReadPos = mRingReadPos).
+        out->startFrame = readPos >> 1;
+        out->gain = mVolume;
+        out->pan = mPan;
+        out->paused = mPaused;
+        out->finished = IsFinished();
+    }
+
+    void OffMainAdvanceConsumed(int frameDelta) override {
+        // The worklet consumed `frameDelta` more frames since the last pump.
+        // Advance the play cursor + monotonic counter by that many BYTES, exactly
+        // as RenderAudio would have. A monotonic frame delta has no wrap ambiguity
+        // (unlike diffing a wrapped readPos), so a stall that drains many frames
+        // advances the producer correctly when the pump resumes.
+        if (frameDelta <= 0) return;
+        int bytes = frameDelta << 1;
+        int oldReadPos = mAudioReadPos.load(std::memory_order_acquire);
+        int newReadPos = oldReadPos + bytes;
+        newReadPos %= mRingSize;
+        if (newReadPos < 0) newReadPos += mRingSize;
+        mAudioReadPos.store(newReadPos, std::memory_order_release);
+        mPlayedTotal.fetch_add((long long)bytes, std::memory_order_acq_rel);
+    }
+#endif
 
 #ifdef HX_WEB
     void DebugDescribe(char *buf, size_t bufSize) const override {

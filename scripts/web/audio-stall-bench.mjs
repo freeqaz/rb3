@@ -80,7 +80,14 @@ const OUT = arg('--out', '/tmp/rb3-audio-stall-bench');
 // only build/debug/, which the server serves at /?debug=true. Default to debug so
 // the bench loads the build you just built; pass --release if you built release/.
 const BUILD = arg('--build', 'debug'); // 'debug' | 'release'
-const URL_SUFFIX = BUILD === 'release' ? '/' : '/?debug=true';
+// Optional ?env= passthrough (semicolon-separated RB3_* flags), e.g.
+//   --env RB3_WEB_OFFMAIN_MIX=1
+// Bridged to wasm getenv via native/web/rb3_pre.js's ?env= seam.
+const ENV_PARAM = arg('--env', '');
+let URL_SUFFIX = BUILD === 'release' ? '/' : '/?debug=true';
+if (ENV_PARAM) {
+    URL_SUFFIX += (URL_SUFFIX.includes('?') ? '&' : '?') + 'env=' + encodeURIComponent(ENV_PARAM);
+}
 mkdirSync(OUT, { recursive: true });
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));

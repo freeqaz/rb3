@@ -112,13 +112,16 @@ fi
 # main repo but breaks in .claude/worktrees/<name>/. Probe both, fall back
 # to the canonical milohax checkout if neither resolves.
 ENGINE_PATH_CANDIDATES=(
+    "${MILO_ENGINE_PATH_OVERRIDE:-/nonexistent}"
     "$NATIVE_DIR/../../milo-native-engine"
     "$REPO_ROOT/../milo-native-engine"
     "/home/free/code/milohax/milo-native-engine"
 )
 MILO_ENGINE_PATH=""
 for candidate in "${ENGINE_PATH_CANDIDATES[@]}"; do
-    if [ -d "$candidate/.git" ]; then
+    # Accept a .git directory (normal checkout) OR a .git file (git worktree
+    # gitlink) so a paired-engine worktree resolves.
+    if [ -e "$candidate/.git" ]; then
         MILO_ENGINE_PATH="$(cd "$candidate" && pwd)"
         break
     fi
