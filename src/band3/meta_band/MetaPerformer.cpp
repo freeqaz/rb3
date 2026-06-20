@@ -1066,6 +1066,21 @@ void MetaPerformer::SetVenue(Symbol s) {
 
 void MetaPerformer::LoadFestival() {
     MILO_LOG("LOADING VENUE: %s\n", mVenue.mStr);
+#ifdef HX_NATIVE
+    // The festival reward-vignette screen's `exit` handler fires
+    // `{meta_performer load_festival}` (ui/accomplishments/campaign_rewardvignette.dta),
+    // which on the retail Wii flow runs while a gameplay BandDirector milo-object
+    // exists (so TheBandDirector is non-null). In the native port that cosmetic
+    // vignette-exit path runs in a menu context where no BandDirector object has
+    // been constructed yet, so TheBandDirector is null and this unconditional
+    // deref SIGSEGVs (reads mAsyncLoad at this+0x136 off a null `this`). The
+    // in-gameplay festival venue is loaded independently by
+    // BandDirector::EnterVenue's HX_NATIVE force-load (which honors the same
+    // venue override), so skipping this redundant vignette-exit load is safe and
+    // lets festival venues load instead of crashing.
+    if (!TheBandDirector)
+        return;
+#endif
     TheBandDirector->LoadVenue(mVenue, kLoadBack);
 }
 
@@ -1078,6 +1093,13 @@ void MetaPerformer::ClearVenues() {
     if (hasVenue && TheSessionMgr && HasSyncPermission()) {
         SetSyncDirty(-1, false);
     }
+#ifdef HX_NATIVE
+    // clear_venues is fired from menu/game-flow DTA (ui/game.dta, tour_quests,
+    // seldiff) that can run natively before any gameplay BandDirector milo-object
+    // exists. Guard the same null-`TheBandDirector` deref as LoadFestival().
+    if (!TheBandDirector)
+        return;
+#endif
     TheBandDirector->UnloadVenue(true);
 }
 
@@ -1318,11 +1340,26 @@ void MetaPerformer::SyncLoad(BinStream &bs, unsigned int ui) {
     bs >> mVenue;
     bs >> mFestivalReward;
     if (old != mVenue) {
+#ifdef HX_NATIVE
+        // Same null-`TheBandDirector` hazard as LoadFestival(): the net-sync
+        // venue receive can run in a native menu context with no gameplay
+        // BandDirector object. Guard the deref WITHOUT an early return so the
+        // rest of the BinStream is still consumed (the in-gameplay venue is
+        // force-loaded by BandDirector::EnterVenue). Match-neutral on Wii.
+        if (TheBandDirector) {
+            if (mVenue == gNullStr) {
+                TheBandDirector->UnloadVenue(true);
+            } else if (!mFestivalReward) {
+                TheBandDirector->LoadVenue(mVenue, kLoadStayBack);
+            }
+        }
+#else
         if (mVenue == gNullStr) {
             TheBandDirector->UnloadVenue(true);
         } else if (!mFestivalReward) {
             TheBandDirector->LoadVenue(mVenue, kLoadStayBack);
         }
+#endif
     }
     bs >> mSetlist;
     bs >> mSetlistTitle;
