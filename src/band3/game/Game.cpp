@@ -79,6 +79,12 @@ extern TrainerPanel *TheTrainerPanel;
 // BandRnd::WarmGpuForDir during the vignette dwell. Returns true while still
 // warming (hold the vignette). See the TU header + GamePanel.cpp. RB3_GAMEWARM_OFF.
 extern "C" bool RB3GameWarmPollDwell(class ObjectDir *selfDir, class ObjectDir *trackDir);
+// frame-stall-2026-06-20 — venue-milo prewarm. Called every loading-dwell frame
+// from Game::IsLoaded() (before the kReady gate) to pre-create the venue milo's
+// background DirLoader so the reveal frame's WorldInstance::SetProxyFile shares
+// it (DirLoader::Find) instead of paying a ~548ms synchronous PollUntilLoaded
+// texture-drain on the game_screen reveal. Idempotent. RB3_TEX_PREWARM_OFF=1.
+extern "C" void RB3VenuePrewarmPoll();
 #endif
 
 Game *TheGame;
@@ -272,6 +278,12 @@ void Game::LoadSong() {
 
 bool Game::IsLoaded() {
 #ifdef HX_NATIVE
+    // frame-stall-2026-06-20: pre-create the venue milo's background DirLoader
+    // during the loading-vignette dwell so the game_screen reveal frame shares it
+    // (no ~548ms synchronous PollUntilLoaded venue/normal-map texture-drain).
+    // Idempotent (one kick per song); runs from the first dwell frame the venue
+    // Symbol is valid. Opt-out RB3_TEX_PREWARM_OFF=1.
+    RB3VenuePrewarmPoll();
     // K6 diagnostic — fires on mLoadState transitions only (no per-frame spam).
     if (getenv("GAME_DBG")) {
         static int sLastState = -1;

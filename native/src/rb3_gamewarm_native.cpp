@@ -63,6 +63,8 @@
 #include "ui/UIPanel.h"              // UIPanel::LoadedDir
 #include "utl/Loader.h"              // TheLoadMgr, LoadMgr, kLoadFront
 #include "utl/FilePath.h"
+#include "utl/MakeString.h"          // MakeString (venue milo path)
+#include "meta_band/MetaPerformer.h" // MetaPerformer::Current / GetVenue (venue path)
 #include "os/Debug.h"               // MILO_LOG
 #include "os/Timer.h"               // Timer (wall clock for the max-hold safety)
 
@@ -85,6 +87,135 @@ static bool RB3GameWarmDbg() {
     static int s = -1;
     if (s < 0) s = (getenv("RB3_GAMEWARM_DBG") != nullptr) ? 1 : 0;
     return s != 0;
+}
+
+// ===========================================================================
+// VENUE-MILO PREWARM (frame-stall-2026-06-20 — eliminate the reveal-frame sync
+// texture-drain, item #2 in FRAME_STALL_FINDINGS.md). DEFAULT ON; opt-out
+// RB3_TEX_PREWARM_OFF=1.
+//
+// THE STALL. Empirically (web FRAME_TRACE, song 20thcenturyboy, tickprobe):
+//   f1917 dt=639ms lpu=548.68 obj=172(RndTex:wall_wainscoat_plaster_norm.tex) tex=92
+// The single worst engine frame is the game_screen "reveal": the venue milo
+// (e.g. world/venue/small_club/small_club_01/small_club_01.milo) is loaded
+// SYNCHRONOUSLY on that frame. The chain is:
+//   GamePanel goes live -> world_panel WorldDir syncs its venue WorldInstance ->
+//   WorldInstance::SetProxyFile(fp) -> ObjDirPtr::LoadFile(fp, share=true) ->
+//   (DirLoader::Find(fp) misses) new DirLoader -> ObjDirPtr::PostLoad ->
+//   LoadMgr::PollUntilLoaded(...)  <-- 548 ms of fetch+inflate+parse, all the
+//   venue's RndTex PostLoads (the wainscoat/wood normal maps) drained inline.
+// On web this is the biggest single song-start under-run trigger AND reproduces
+// the audio team's mid-play 114-127ms stalls (a venue/LOD re-sync mid-song).
+//
+// THE FIX (match-neutral, native-only). The venue milo is NOT even fetched until
+// the reveal frame (server log: tv3 loading vignette at t, world.milo +3s, the
+// venue milo +5s — right at reveal), yet the loading vignette sits on-screen
+// ~idle for those seconds. So during the dwell we pre-create the venue's
+// DirLoader through the BUDGETED background loader. `LoadFile(share=true)` shares
+// any ALREADY-LOADED DirLoader it finds for the same FilePath (DirLoader::Find),
+// so by the time the reveal's SetProxyFile runs, the venue dir is resident ->
+// PollUntilLoaded no-ops -> the 548 ms drain disappears (spread across idle dwell
+// frames at the 8/16 ms loader budget instead).
+//
+// The venue FilePath is deterministic from MetaPerformer::Current()->GetVenue()
+//   GetVenue()       -> e.g. "small_club_01"
+//   GetVenueClass()  -> e.g. "small_club"  (strips the trailing _NN)
+//   path = world/venue/<class>/<venue>/<venue>.milo
+// (matches the served gen/<...>_xbox path exactly). We kick it once per song; a
+// file-open probe (RB3_TEX_PREWARM_DBG) confirms the path the reveal actually
+// loads. State is reset by RB3GameWarmReset() on GamePanel::Unload.
+// ===========================================================================
+static bool RB3TexPrewarmEnabled() {
+    static int s = -1;
+    if (s < 0) s = (getenv("RB3_TEX_PREWARM_OFF") != nullptr) ? 0 : 1;
+    return s != 0;
+}
+static bool RB3TexPrewarmDbg() {
+    static int s = -1;
+    if (s < 0) s = (getenv("RB3_TEX_PREWARM_DBG") != nullptr) ? 1 : 0;
+    return s != 0;
+}
+
+namespace {
+// Per-song prewarm latch: the venue path we kicked (so we kick exactly once and
+// can confirm it drained). Cleared by RB3GameWarmReset().
+std::string gPrewarmVenuePath;
+bool        gPrewarmKicked = false;
+}
+
+// Build the venue milo FilePath from the live MetaPerformer venue Symbol.
+// Returns an empty string if no venue is selected yet (caller skips this frame).
+static std::string ComputeVenueMiloPath() {
+    MetaPerformer* mp = MetaPerformer::Current();
+    if (!mp) return std::string();
+    Symbol venue = mp->GetVenue();
+    const char* v = venue.Str();
+    if (!v || !v[0]) return std::string();
+    // GetVenueClass strips the trailing _NN (small_club_01 -> small_club).
+    Symbol cls = mp->GetVenueClass();
+    const char* c = cls.Str();
+    if (!c || !c[0]) c = v;
+    return std::string(MakeString("world/venue/%s/%s/%s.milo", c, v, v));
+}
+
+// Called every dwell/loading frame from Game::IsLoaded() (before the kReady
+// gate). Re-evaluates the committed venue each frame: the first time the venue
+// Symbol resolves to a path with no DirLoader yet, create a background DirLoader
+// so the budgeted LoadMgr.Poll() drains it during the remaining loading-vignette
+// dwell. When the reveal's WorldInstance::SetProxyFile -> LoadFile(share=true)
+// runs, DirLoader::Find(fp) finds it loaded and shares it (no sync drain).
+//
+// VENUE RE-ROLL ROBUSTNESS. The quickplay venue is RANDOM
+// (MetaPerformer::SelectRandomVenue -> SetVenue(RandomInt(...))) and can be
+// re-rolled AFTER an early poll, so we do NOT latch forever on the first venue
+// seen — if the committed venue path CHANGES (gPrewarmVenuePath != path) we kick
+// the new one too. We still kick each distinct path at most once (gPrewarmKicked
+// gates re-kicking the SAME path). Earliest correct kick wins the most dwell
+// overlap; a fixed venue (tour mode / dev set_venue_override) gets the full dwell.
+extern "C" void RB3VenuePrewarmPoll() {
+    if (!RB3TexPrewarmEnabled()) return;
+
+    std::string path = ComputeVenueMiloPath();
+    if (path.empty()) return;     // venue not selected yet — try again next frame
+
+    // Same venue we already kicked this song? Nothing to do.
+    if (gPrewarmKicked && path == gPrewarmVenuePath) return;
+
+    FilePath fp(path.c_str());
+    if (fp.empty()) return;
+
+    // Already in the load queue (its DirLoader exists — a prior kick, or the
+    // reveal already created it)? Mark it ours and stop; sharing will handle it.
+    if (DirLoader::Find(fp)) {
+        gPrewarmKicked = true;
+        gPrewarmVenuePath = path;
+        if (RB3TexPrewarmDbg())
+            MILO_LOG("RB3_TEX_PREWARM: venue %s already has a DirLoader (no kick)\n",
+                     fp.c_str());
+        return;
+    }
+
+    // Create the background DirLoader. This mirrors the ObjDirPtr::LoadFile
+    // non-shared branch (`new DirLoader(p, pos, 0, 0, 0, b3)`): a self-owned
+    // loader that the Loader base ctor registers in TheLoadMgr.mLoaders and the
+    // budgeted Poll() drains. kLoadFront so it gets priority over later boot
+    // chatter but still cooperatively time-sliced (no sync drain here).
+    new DirLoader(fp, kLoadFront, 0, 0, 0, false);
+    if (gPrewarmKicked && RB3TexPrewarmDbg() && path != gPrewarmVenuePath)
+        MILO_LOG("RB3_TEX_PREWARM: venue re-rolled %s -> %s (re-kick)\n",
+                 gPrewarmVenuePath.c_str(), path.c_str());
+    gPrewarmKicked = true;
+    gPrewarmVenuePath = path;
+    if (RB3TexPrewarmDbg())
+        MILO_LOG("RB3_TEX_PREWARM: kicked background DirLoader for venue %s\n",
+                 fp.c_str());
+}
+
+// Reset the prewarm latch (called from RB3GameWarmReset on GamePanel::Unload so
+// a second song re-prewarms its own venue).
+static void RB3TexPrewarmReset() {
+    gPrewarmKicked = false;
+    gPrewarmVenuePath.clear();
 }
 
 // Per-call warm budget (ms). The vignette runs on ~5 ms frames, so 8 ms of warm
@@ -542,4 +673,5 @@ extern "C" void RB3GameWarmReset() {
     gWarm = GameWarmState();
     gPrekickPaths.clear();
     gKickedPaths.clear();
+    RB3TexPrewarmReset();   // re-arm the venue-milo prewarm for the next song
 }
