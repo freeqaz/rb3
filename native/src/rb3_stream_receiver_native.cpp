@@ -84,6 +84,36 @@
 
 namespace {
 
+// ---- Native under-run probe (env-gated: RB3_AUDIO_UNDERRUN_LOG=1, off by default) ----
+// Aggregate consumer-side starvation counters across all channels. The audio
+// thread increments these (relaxed); a process-atexit hook prints a summary.
+// Retained because the native real-device path can't be exercised on every host
+// (a box with no PulseAudio/PipeWire has no consumer thread to starve) — this is
+// how you verify the native fade mirror below on a host that DOES have audio.
+// See docs/native/audio-underrun-2026-06-20/.
+static std::atomic<unsigned long long> sUnderrunEvents{0};   // callbacks with a zero-fill tail
+static std::atomic<unsigned long long> sUnderrunFrames{0};   // total zero-filled frames
+static std::atomic<unsigned long long> sActiveCallbacks{0};  // callbacks while playing
+static std::atomic<int>                sMinAvailFrames{0x7fffffff}; // low-water ring depth (frames)
+static std::atomic<int>                sMaxUnderrunRun{0};    // longest single-callback zero-fill (frames)
+static bool sUnderrunLogEnabled = false;
+static bool sUnderrunHookInstalled = false;
+
+static void DumpUnderrunSummary() {
+    if (!sUnderrunLogEnabled) return;
+    unsigned long long ev = sUnderrunEvents.load(std::memory_order_relaxed);
+    unsigned long long fr = sUnderrunFrames.load(std::memory_order_relaxed);
+    unsigned long long cb = sActiveCallbacks.load(std::memory_order_relaxed);
+    int mn = sMinAvailFrames.load(std::memory_order_relaxed);
+    int mx = sMaxUnderrunRun.load(std::memory_order_relaxed);
+    std::fprintf(stderr,
+        "[UNDERRUN-SUMMARY] activeCallbacks=%llu underrunEvents=%llu (%.3f%% of callbacks) "
+        "underrunFrames=%llu minAvailFrames=%d maxUnderrunRunFrames=%d\n",
+        cb, ev, cb ? (100.0 * (double)ev / (double)cb) : 0.0, fr,
+        (mn == 0x7fffffff ? -1 : mn), mx);
+    std::fflush(stderr);
+}
+
 static inline void ComputePanGains(float volume, float pan, float &left, float &right) {
     pan = std::max(-1.0f, std::min(1.0f, pan));
     left = volume * (pan <= 0.0f ? 1.0f : 1.0f - pan);
@@ -120,6 +150,16 @@ public:
           mSendActive(false) {
         const char *dbg = getenv("RB3_STREAM_AUDIO_DBG");
         mDebug = (dbg && dbg[0] == '1');
+        {
+            const char *ul = getenv("RB3_AUDIO_UNDERRUN_LOG");
+            if (ul && ul[0] == '1') {
+                sUnderrunLogEnabled = true;
+                if (!sUnderrunHookInstalled) {
+                    sUnderrunHookInstalled = true;
+                    std::atexit(DumpUnderrunSummary);
+                }
+            }
+        }
         if (mDebug) {
             std::fprintf(stderr, "RB3STREAM ch=%d ctor numBuffers=%d sr=%d slip=%d\n",
                          mChannel, numBuffers, sampleRate, (int)slip);
@@ -283,6 +323,25 @@ public:
         int bytesToRead = std::min(bytesNeeded, available);
         int framesToRender = bytesToRead / bytesPerFrame;
         if (framesToRender < 0) framesToRender = 0;
+
+        // DIAGNOSIS-ONLY under-run telemetry (RB3_AUDIO_UNDERRUN_LOG=1).
+        if (sUnderrunLogEnabled) {
+            sActiveCallbacks.fetch_add(1, std::memory_order_relaxed);
+            int availFrames = available / bytesPerFrame;
+            int prevMin = sMinAvailFrames.load(std::memory_order_relaxed);
+            while (availFrames < prevMin &&
+                   !sMinAvailFrames.compare_exchange_weak(prevMin, availFrames,
+                                                          std::memory_order_relaxed)) {}
+            if (framesToRender < frameCount) {
+                int shortBy = frameCount - framesToRender;
+                sUnderrunEvents.fetch_add(1, std::memory_order_relaxed);
+                sUnderrunFrames.fetch_add((unsigned long long)shortBy, std::memory_order_relaxed);
+                int prevMax = sMaxUnderrunRun.load(std::memory_order_relaxed);
+                while (shortBy > prevMax &&
+                       !sMaxUnderrunRun.compare_exchange_weak(prevMax, shortBy,
+                                                             std::memory_order_relaxed)) {}
+            }
+        }
 
         // Volume + pan (constant-amplitude-ish: just scale L/R independently).
         float volL = 0.0f;
