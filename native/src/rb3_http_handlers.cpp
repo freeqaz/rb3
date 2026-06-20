@@ -48,6 +48,9 @@
 // emit world positions for crowd members + band gear + static props. See
 // docs/native/crowd-origin/PLAN.md §2.
 #include "world/Crowd.h"             // WorldCrowd, CharData::Char3D::unk0 (per-member xfm)
+#include "world/Dir.h"               // WorldDir::mCrowds (live ObjPtrList<WorldCrowd>), TheWorld
+#include "bandobj/BandDirector.h"    // TheBandDirector->mVenue.Dir() = live per-song venue WorldDir
+#include "rndobj/MultiMesh.h"        // RndMultiMesh::Instance::mXfm (pre-Set3DCharAll crowd positions)
 #include "rndobj/Trans.h"            // RndTransformable::WorldXfm()/TransParent()
 #include "math/Vec.h"                // Length(Vector3)
 #include "obj/DirLoader.h"           // DirLoader::Find/GetDir (resident venue dir)
@@ -514,6 +517,62 @@ static DataNode RB3DtaCharProbe(DataArray *da) {
 // from docs/native/crowd-origin/PLAN.md §2. Read-only. Verbose per-object
 // [POSDUMP] stderr lines are gated behind env POS_DUMP_VERBOSE; the HTTP call
 // always returns a one-line summary for the harness verdict.
+// Dump every authored per-member world position for one WorldCrowd. Returns the
+// number of members emitted; accumulates into the at-origin counters. The
+// audience positions live in CharData::m3DChars[i].unk0 (the Transform the draw
+// loop SetWorldXfm's, Crowd.cpp:328-408) once WorldCrowd::Set3DCharAll() has run.
+// BEFORE that runs, the same positions still live in mMMesh->mInstances[i].mXfm
+// (Set3DCharAll copies instances -> m3DChars THEN clears mInstances,
+// Crowd.cpp:227-230) — so we fall back to the live multimesh instance list when
+// m3DChars is empty, to never report a spurious crowd=0 just because the copy
+// step hasn't happened yet. `src` records which source the positions came from.
+static int DumpOneWorldCrowd(WorldCrowd *crowd, const char *fromTag, bool verbose,
+                             int &atOrigin, int &crowdAtOrigin) {
+    int emitted = 0;
+    const char *cname = crowd->Name() ? crowd->Name() : "?";
+    int archIdx = 0;
+    FOREACH (charIt, crowd->mCharacters) {
+        const char *aname =
+            charIt->mDef.mChar.mPtr && charIt->mDef.mChar->Name()
+                ? charIt->mDef.mChar->Name()
+                : cname;
+        unsigned int n3d = (unsigned int)charIt->m3DChars.size();
+        if (n3d > 0) {
+            for (unsigned int i = 0; i < n3d; i++) {
+                const Vector3 &p = charIt->m3DChars[i].unk0.v;
+                float mag = Length(p);
+                emitted++;
+                if (mag < 1.0f) { crowdAtOrigin++; atOrigin++; }
+                if (verbose) {
+                    fprintf(stderr,
+                            "[POSDUMP] kind=crowd   name=%s i=%u  pos=%.2f,%.2f,%.2f "
+                            "src=m3DChars crowd=%s arch=%d from=%s\n",
+                            aname, i, p.x, p.y, p.z, cname, archIdx, fromTag);
+                }
+            }
+        } else if (charIt->mMMesh) {
+            // Pre-Set3DCharAll fallback: read the authored xfm straight off the
+            // multimesh instance list (the source Set3DCharAll copies from).
+            unsigned int i = 0;
+            FOREACH (inst, charIt->mMMesh->mInstances) {
+                const Vector3 &p = inst->mXfm.v;
+                float mag = Length(p);
+                emitted++;
+                if (mag < 1.0f) { crowdAtOrigin++; atOrigin++; }
+                if (verbose) {
+                    fprintf(stderr,
+                            "[POSDUMP] kind=crowd   name=%s i=%u  pos=%.2f,%.2f,%.2f "
+                            "src=mInstances crowd=%s arch=%d from=%s\n",
+                            aname, i, p.x, p.y, p.z, cname, archIdx, fromTag);
+                }
+                ++i;
+            }
+        }
+        ++archIdx;
+    }
+    return emitted;
+}
+
 static std::string sPosDump;
 static DataNode RB3DtaPosDump(DataArray *) {
     const bool verbose = ::getenv("POS_DUMP_VERBOSE") != nullptr;
@@ -524,28 +583,72 @@ static DataNode RB3DtaPosDump(DataArray *) {
     // LoadedDir(). Walk sMainDir AND those roots (mirrors the gameplay-warm root
     // gather in rb3_gamewarm_native.cpp:402-427). De-dup by object pointer since
     // some objects are reachable from more than one root.
+    //
+    // CROWD GAP (audience-measure.md): the audience WorldCrowd lives in the
+    // PER-SONG venue WorldDir (world/venue/<class>/<name>/<name>.milo), loaded
+    // into TheBandDirector->mVenue.Dir() (== mCurWorld). That dir is NOT in the
+    // mSubDirs chain of world/world.milo or world_panel — the resident roots
+    // above — so a recursive ObjDirItr from them never reaches it (the prior
+    // `crowd=0`). Add the live venue dir(s) as explicit roots, AND read each
+    // WorldDir's live `mCrowds` list directly (populated by SyncObjects via the
+    // SAME ObjDirItr<WorldCrowd> recursion; reading the cached list does not
+    // depend on the crowd being in OUR walk's reachable subtree).
     static const char *kResidentDirMilos[] = {
         "world/world.milo",            // venue base (+ per-song venue proxy subdir)
         "world/shared/director.milo",  // venue director / lighting / props
         "world/shared/chars.milo",     // band character meshes
     };
-    ObjectDir *roots[8] = {nullptr};
+    const int kMaxRoots = 12;
+    ObjectDir *roots[kMaxRoots] = {nullptr};
+    const char *rootTags[kMaxRoots] = {nullptr};
     int nroots = 0;
-    if (ObjectDir::sMainDir) roots[nroots++] = ObjectDir::sMainDir;
+    if (ObjectDir::sMainDir) {
+        roots[nroots] = ObjectDir::sMainDir; rootTags[nroots] = "sMainDir"; nroots++;
+    }
     if (ObjectDir::sMainDir) {
         if (UIPanel *worldPanel =
                 ObjectDir::sMainDir->Find<UIPanel>("world_panel", true)) {
-            if (ObjectDir *wd = worldPanel->LoadedDir())
-                roots[nroots++] = wd;
+            if (ObjectDir *wd = worldPanel->LoadedDir()) {
+                roots[nroots] = wd; rootTags[nroots] = "world_panel"; nroots++;
+            }
         }
     }
     for (size_t i = 0;
          i < sizeof(kResidentDirMilos) / sizeof(kResidentDirMilos[0]); ++i) {
         FilePath fp(kResidentDirMilos[i]);
         DirLoader *dl = DirLoader::Find(fp);
-        if (dl && dl->IsLoaded() && nroots < 8) {
-            if (ObjectDir *d = dl->GetDir()) roots[nroots++] = d;
+        if (dl && dl->IsLoaded() && nroots < kMaxRoots) {
+            if (ObjectDir *d = dl->GetDir()) {
+                roots[nroots] = d; rootTags[nroots] = kResidentDirMilos[i]; nroots++;
+            }
         }
+    }
+    // The live per-song venue WorldDir (where the audience WorldCrowd lives).
+    // mVenue.Dir() is the loaded venue; mCurWorld is the entered one (== mVenue
+    // after EnterVenue). Add both as roots (de-dup handles overlap). Also keep
+    // them as explicit WorldDir handles so we can read mCrowds directly below.
+    WorldDir *venueDirs[2] = {nullptr, nullptr};
+    int nVenue = 0;
+    if (TheBandDirector) {
+        WorldDir *vd = TheBandDirector->mVenue.Dir();
+        if (vd) {
+            venueDirs[nVenue++] = vd;
+            if (nroots < kMaxRoots) {
+                roots[nroots] = vd; rootTags[nroots] = "venue(mVenue.Dir)"; nroots++;
+            }
+        }
+        WorldDir *cw = TheBandDirector->mCurWorld;
+        if (cw && cw != vd) {
+            venueDirs[nVenue++] = cw;
+            if (nroots < kMaxRoots) {
+                roots[nroots] = cw; rootTags[nroots] = "venue(mCurWorld)"; nroots++;
+            }
+        }
+    }
+    // TheWorld is transiently set during DrawShowing and usually NULL at HTTP
+    // time, but include it opportunistically when live.
+    if (TheWorld && nroots < kMaxRoots) {
+        roots[nroots] = TheWorld; rootTags[nroots] = "TheWorld"; nroots++;
     }
 
     if (nroots == 0) {
@@ -554,11 +657,37 @@ static DataNode RB3DtaPosDump(DataArray *) {
     }
 
     int crowdMembers = 0, bandCount = 0, propCount = 0;
+    int crowdContainers = 0;  // distinct WorldCrowd objects reached
     int atOrigin = 0;        // objects whose |pos| < 1.0 (any kind)
     int bandAtOrigin = 0;    // band roots with |WorldXfm().v| < 1.0
     int crowdAtOrigin = 0;   // crowd members with |unk0.v| < 1.0
 
     std::set<const Hmx::Object *> seen;
+    std::set<const WorldCrowd *> seenCrowd;  // de-dup crowds across roots + mCrowds
+
+    // PRIMARY PATH: read each live venue WorldDir's cached mCrowds list directly.
+    // This does NOT rely on the crowd being inside OUR walk's reachable mSubDirs
+    // subtree — WorldDir::SyncObjects already enumerated the crowds at Enter and
+    // cached the pointers. This is the path that closes the `crowd=0` gap.
+    for (int vi = 0; vi < nVenue; ++vi) {
+        WorldDir *wd = venueDirs[vi];
+        if (!wd) continue;
+        const char *wn = wd->Name() ? wd->Name() : "?";
+        if (verbose) {
+            fprintf(stderr,
+                    "[POSDUMP] venue_dir name=%s nCrowds=%d\n",
+                    wn, wd->mCrowds.size());
+        }
+        FOREACH (cit, wd->mCrowds) {
+            WorldCrowd *crowd = *cit;
+            if (!crowd) continue;
+            if (!seenCrowd.insert(crowd).second) continue;
+            seen.insert(crowd);  // keep the ObjDirItr pass from re-emitting it
+            crowdContainers++;
+            crowdMembers += DumpOneWorldCrowd(crowd, "mCrowds", verbose,
+                                              atOrigin, crowdAtOrigin);
+        }
+    }
 
   for (int ri = 0; ri < nroots; ++ri) {
     // Cast in PLAN.md §2 order: WorldCrowd first (members are NOT separate
@@ -568,25 +697,13 @@ static DataNode RB3DtaPosDump(DataArray *) {
         if (!seen.insert(o).second) continue;  // already counted via another root
 
         if (WorldCrowd *crowd = dynamic_cast<WorldCrowd *>(o)) {
-            const char *cname = crowd->Name() ? crowd->Name() : "?";
-            // Per archetype, per authored per-member instance: m3DChars[i].unk0.v
-            // is the absolute world position the draw loop SetWorldXfm's
-            // (Crowd.cpp:344-349,408). This is the crowd-distribution ground truth.
-            FOREACH (charIt, crowd->mCharacters) {
-                const char *aname = charIt->mDef.mChar.mPtr && charIt->mDef.mChar->Name()
-                                        ? charIt->mDef.mChar->Name()
-                                        : cname;
-                for (unsigned int i = 0; i < charIt->m3DChars.size(); i++) {
-                    const Vector3 &p = charIt->m3DChars[i].unk0.v;
-                    float mag = Length(p);
-                    crowdMembers++;
-                    if (mag < 1.0f) { crowdAtOrigin++; atOrigin++; }
-                    if (verbose) {
-                        fprintf(stderr,
-                                "[POSDUMP] kind=crowd   name=%s i=%u  pos=%.2f,%.2f,%.2f\n",
-                                aname, i, p.x, p.y, p.z);
-                    }
-                }
+            // Secondary path: any WorldCrowd we reach by recursive walk that the
+            // mCrowds sweep above missed (e.g. a crowd in a dir whose WorldDir we
+            // didn't enumerate). De-dup against the mCrowds sweep.
+            if (seenCrowd.insert(crowd).second) {
+                crowdContainers++;
+                crowdMembers += DumpOneWorldCrowd(crowd, rootTags[ri] ? rootTags[ri] : "walk",
+                                                  verbose, atOrigin, crowdAtOrigin);
             }
             continue;
         }
@@ -642,11 +759,11 @@ static DataNode RB3DtaPosDump(DataArray *) {
 
     if (verbose) ::fflush(stderr);  // durably flush [POSDUMP] lines for the harness
 
-    char buf[288];
+    char buf[320];
     snprintf(buf, sizeof(buf),
-             "posdump roots=%d crowd=%d band=%d props=%d at_origin=%d "
-             "band_at_origin=%d/%d crowd_at_origin=%d/%d",
-             nroots, crowdMembers, bandCount, propCount, atOrigin,
+             "posdump roots=%d crowd_containers=%d crowd=%d band=%d props=%d "
+             "at_origin=%d band_at_origin=%d/%d crowd_at_origin=%d/%d",
+             nroots, crowdContainers, crowdMembers, bandCount, propCount, atOrigin,
              bandAtOrigin, bandCount, crowdAtOrigin, crowdMembers);
     sPosDump = buf;
     return DataNode(sPosDump.c_str());
