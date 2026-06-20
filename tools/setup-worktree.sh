@@ -273,6 +273,18 @@ if [ -d "$ORIG_ASSETS_REAL" ]; then
     done
 fi
 
+# ---- song charts : wire the full 83-song set into the native loader root -------
+# The loader reads orig-assets/extracted/songs; a dev extract may ship only a few
+# songs' .mid charts there while the full set lives in extracted-xbox-full/.
+# link-song-charts.sh symlinks the missing charts (idempotent). Worktrees share
+# the MAIN tree's extracted/ via the symlink above, so we populate the main tree's
+# extract — that benefits this worktree and every other. gitignored => per-machine.
+if [ -x "$SCRIPT_DIR/link-song-charts.sh" ] && [ -d "$ORIG_ASSETS_REAL/extracted-xbox-full" ]; then
+    echo "==> song charts  (symlink full 83-song set into the loader root)"
+    "$SCRIPT_DIR/link-song-charts.sh" "$ORIG_ASSETS_REAL" || \
+        echo "WARN: link-song-charts.sh failed — chartless songs will hold at the loading screen." >&2
+fi
+
 # ---- node_modules : per-script symlinks (avoid slow per-agent npm install) --
 # Find every node_modules dir in the main tree and symlink each one into the
 # worktree at the same relative path. Silent if none exist.
