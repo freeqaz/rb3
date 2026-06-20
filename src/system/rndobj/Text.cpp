@@ -952,8 +952,24 @@ void RndText::WrapText(const char *text, const Style &style, std::vector<Line> &
          it != mMeshMap.end();
          ++it) {
         RndFont *font = (RndFont *)it->first;
+#ifdef HX_NATIVE
+        // The vertical-centering metric here MUST use the same cell-diff the
+        // glyph quads use for their height (SetupCharVerts: style.size *
+        // definingFont->CellDiff()). On a non-square Xbox atlas CellDiff()
+        // applies the wide-atlas correction while the raw mCellSize.y/.x does
+        // not, so the middle/bottom-aligned text block (mAlign & 0x20 / 0x40)
+        // gets centered against a height that no longer matches the rendered
+        // glyph height — the whole block drifts ~half a line off its origin.
+        // (Symptom: overshell choose-instrument / choose-difficulty list rows
+        // render ~half a slot above their UIListHighlight box.) Use the
+        // corrected CellDiff() so the centering and the glyph height agree.
+        // Square-atlas / letter fonts have CellDiff()==raw, so this is a no-op
+        // for them; the Wii path below is byte-identical.
+        float diff = font->CellDiff();
+#else
         float cx = font->mCellSize.x;
         float diff = font->mCellSize.y / cx;
+#endif
         if (diff > ratio)
             ratio = diff;
     }
