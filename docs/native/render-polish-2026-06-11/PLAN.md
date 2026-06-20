@@ -536,4 +536,10 @@ worktrees still pending a campaign-close sweep.
   choose-difficulty highlights HARD (0px), hub stray box gone, song list unregressed.
   FOLLOW-UP (queued, separate mechanism): hub focused item should ENLARGE (retail "PLAY NOW"
   bigger) — BandButton focus-anim, not the text-centering bug.
-- IN FLIGHT: crowd Fix B (2D bowl-imposter crowd, arena venues).
+- **Crowd Fix B (2D bowl-imposter crowd) SHIPPED** (rb3 `6316c609` + engine `ce8ecda`, pin bumped):
+  the previously-dead render-to-texture imposter pipeline is live — arena/festival/big_club bowls now
+  populated (verified arena_06: crowd fills the stands, was empty). Fixed 3 engine RT-cam bugs along
+  the way (aspect, far-plane, stale-scene-cam projection). small_club Fix A 3D crowd unregressed; Wii
+  byte-identical (MultiMesh DrawShowing 100%). `native/src/rb3_crowd_imposter_native.cpp` +
+  `MultiMesh.cpp` HX_NATIVE billboard branch + `scripts/native/arena-crowd2d-capture.py`.
+- IN FLIGHT: hub focused-item-enlarge (BandButton focus-anim).
