@@ -542,4 +542,23 @@ worktrees still pending a campaign-close sweep.
   the way (aspect, far-plane, stale-scene-cam projection). small_club Fix A 3D crowd unregressed; Wii
   byte-identical (MultiMesh DrawShowing 100%). `native/src/rb3_crowd_imposter_native.cpp` +
   `MultiMesh.cpp` HX_NATIVE billboard branch + `scripts/native/arena-crowd2d-capture.py`.
-- IN FLIGHT: hub focused-item-enlarge (BandButton focus-anim).
+- **Hub highlight bar FIXED** (engine `925cc29` colour + `81c9dcc` placement → pin `4087e92`,
+  rb3 `c636f132`): the user's "stuck in the middle" hub highlight was TWO defects. Premise correction:
+  retail does NOT enlarge the focused item (equal cap heights) — the highlight is a yellow bar +
+  bold focused text. (1) bar rendered BLACK (its mUseEnviron mat took the lit branch under dark menu
+  light) → route named highlight_main/highlight_pattern meshes through register-colour. (2) bar
+  rendered at SCREEN CENTRE: it's a skinned UI mesh whose per-focus placement is set on the MESH
+  (`UILabel::SetWorldXfm`) but the skinned path forces obj.world=identity (right for char skeletons)
+  and the bone-parent stays at origin natively → inject the mesh translation into the skinned object
+  world for the named bars. Verified: yellow bar sits behind PLAY NOW and TRACKS DUP/DDOWN (matches
+  retail). Engine-only, Wii byte-identical (zero rb3 src). Opt-outs RB3_NO_HUB_HIGHLIGHT_FIX /
+  RB3_NO_HUB_BAR_PLACEMENT_FIX.
+
+## Clear-work loop EXHAUSTED (2026-06-20)
+All clear, objectively-defined work landed + verified (worktree chart-link, festival crash, menu
+highlight overshell + hub bar, crowd Fix B 2D imposters). Wii byte-identical-or-improved throughout;
+all worktrees torn down. REMAINING (needs user judgment/access, NOT auto-loopable):
+- TASTE (no objective done-state — needs the user's eye vs retail refs): menu hub final contrast
+  (~6.8 → retail ~10:1), endgame backdrop green-peak softening.
+- OPERATIONAL (no deploy-host access from here): rebuild the web bundle on the deploy host so the
+  live wasm picks up the landed fixes.
