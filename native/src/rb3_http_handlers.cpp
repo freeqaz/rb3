@@ -44,6 +44,17 @@
 #include "rndobj/Mesh.h"             // C13 probe: ObjDirItr<RndMesh>, NumBones/Verts
 #include "obj/Dir.h"                 // ObjDirItr
 
+// crowd-origin position-dump tool ({rb3_pos_dump}): walk the live object tree and
+// emit world positions for crowd members + band gear + static props. See
+// docs/native/crowd-origin/PLAN.md §2.
+#include "world/Crowd.h"             // WorldCrowd, CharData::Char3D::unk0 (per-member xfm)
+#include "rndobj/Trans.h"            // RndTransformable::WorldXfm()/TransParent()
+#include "math/Vec.h"                // Length(Vector3)
+#include "obj/DirLoader.h"           // DirLoader::Find/GetDir (resident venue dir)
+#include "ui/UIPanel.h"             // UIPanel::LoadedDir (world_panel)
+#include "utl/FilePath.h"           // FilePath for the resident world.milo lookups
+#include <set>                       // de-dup objects reachable from multiple roots
+
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -496,10 +507,156 @@ static DataNode RB3DtaCharProbe(DataArray *da) {
     return DataNode(sCharProbe.c_str());
 }
 
+// crowd-origin debug tool: {rb3_pos_dump} -> dump live world positions for the
+// crowd members, the band characters (+ their instrument dir = the drum kit), and
+// static venue props (the dartboard control). Adjudicates H1 (shared venue
+// reparent collapse) vs H2 (band root never placed) vs H4 (crowd decode-to-zero)
+// from docs/native/crowd-origin/PLAN.md §2. Read-only. Verbose per-object
+// [POSDUMP] stderr lines are gated behind env POS_DUMP_VERBOSE; the HTTP call
+// always returns a one-line summary for the harness verdict.
+static std::string sPosDump;
+static DataNode RB3DtaPosDump(DataArray *) {
+    const bool verbose = ::getenv("POS_DUMP_VERBOSE") != nullptr;
+
+    // The live venue / band / crowd are NOT merged into the walkable sMainDir
+    // tree on native — they live in resident DirLoader dirs (world/world.milo,
+    // world/shared/chars.milo, world/shared/director.milo) plus the world_panel's
+    // LoadedDir(). Walk sMainDir AND those roots (mirrors the gameplay-warm root
+    // gather in rb3_gamewarm_native.cpp:402-427). De-dup by object pointer since
+    // some objects are reachable from more than one root.
+    static const char *kResidentDirMilos[] = {
+        "world/world.milo",            // venue base (+ per-song venue proxy subdir)
+        "world/shared/director.milo",  // venue director / lighting / props
+        "world/shared/chars.milo",     // band character meshes
+    };
+    ObjectDir *roots[8] = {nullptr};
+    int nroots = 0;
+    if (ObjectDir::sMainDir) roots[nroots++] = ObjectDir::sMainDir;
+    if (ObjectDir::sMainDir) {
+        if (UIPanel *worldPanel =
+                ObjectDir::sMainDir->Find<UIPanel>("world_panel", true)) {
+            if (ObjectDir *wd = worldPanel->LoadedDir())
+                roots[nroots++] = wd;
+        }
+    }
+    for (size_t i = 0;
+         i < sizeof(kResidentDirMilos) / sizeof(kResidentDirMilos[0]); ++i) {
+        FilePath fp(kResidentDirMilos[i]);
+        DirLoader *dl = DirLoader::Find(fp);
+        if (dl && dl->IsLoaded() && nroots < 8) {
+            if (ObjectDir *d = dl->GetDir()) roots[nroots++] = d;
+        }
+    }
+
+    if (nroots == 0) {
+        sPosDump = "posdump no_roots";
+        return DataNode(sPosDump.c_str());
+    }
+
+    int crowdMembers = 0, bandCount = 0, propCount = 0;
+    int atOrigin = 0;        // objects whose |pos| < 1.0 (any kind)
+    int bandAtOrigin = 0;    // band roots with |WorldXfm().v| < 1.0
+    int crowdAtOrigin = 0;   // crowd members with |unk0.v| < 1.0
+
+    std::set<const Hmx::Object *> seen;
+
+  for (int ri = 0; ri < nroots; ++ri) {
+    // Cast in PLAN.md §2 order: WorldCrowd first (members are NOT separate
+    // objects), then BandCharacter, then any other RndTransformable (props).
+    for (ObjDirItr<Hmx::Object> it(roots[ri], true); it; ++it) {
+        Hmx::Object *o = it;
+        if (!seen.insert(o).second) continue;  // already counted via another root
+
+        if (WorldCrowd *crowd = dynamic_cast<WorldCrowd *>(o)) {
+            const char *cname = crowd->Name() ? crowd->Name() : "?";
+            // Per archetype, per authored per-member instance: m3DChars[i].unk0.v
+            // is the absolute world position the draw loop SetWorldXfm's
+            // (Crowd.cpp:344-349,408). This is the crowd-distribution ground truth.
+            FOREACH (charIt, crowd->mCharacters) {
+                const char *aname = charIt->mDef.mChar.mPtr && charIt->mDef.mChar->Name()
+                                        ? charIt->mDef.mChar->Name()
+                                        : cname;
+                for (unsigned int i = 0; i < charIt->m3DChars.size(); i++) {
+                    const Vector3 &p = charIt->m3DChars[i].unk0.v;
+                    float mag = Length(p);
+                    crowdMembers++;
+                    if (mag < 1.0f) { crowdAtOrigin++; atOrigin++; }
+                    if (verbose) {
+                        fprintf(stderr,
+                                "[POSDUMP] kind=crowd   name=%s i=%u  pos=%.2f,%.2f,%.2f\n",
+                                aname, i, p.x, p.y, p.z);
+                    }
+                }
+            }
+            continue;
+        }
+
+        if (BandCharacter *bc = dynamic_cast<BandCharacter *>(o)) {
+            const char *bname = bc->Name() ? bc->Name() : "?";
+            const Vector3 &root_v = bc->WorldXfm().v;
+            float rootMag = Length(root_v);
+            RndTransformable *parent = bc->TransParent();
+            const char *pname = (parent && parent->Name()) ? parent->Name() : "NULL";
+            bandCount++;
+            if (rootMag < 1.0f) { bandAtOrigin++; atOrigin++; }
+
+            // The drum kit / instrument geometry lives in mInstDir and rides the
+            // character bones; its world-sphere center is the kit position. If the
+            // kit is far from the root while the root is staged, that's H5 (merge).
+            float ix = 0.f, iy = 0.f, iz = 0.f;
+            bool haveInst = false;
+            Character *inst = bc->mInstDir.mPtr;
+            if (inst) {
+                Sphere sph;
+                if (inst->MakeWorldSphere(sph, false)) {
+                    ix = sph.center.x; iy = sph.center.y; iz = sph.center.z;
+                    haveInst = true;
+                }
+            }
+            if (verbose) {
+                fprintf(stderr,
+                        "[POSDUMP] kind=band    name=%s root=%.2f,%.2f,%.2f parent=%s "
+                        "inst=%.2f,%.2f,%.2f%s\n",
+                        bname, root_v.x, root_v.y, root_v.z, pname,
+                        ix, iy, iz, haveInst ? "" : " (no_inst_sphere)");
+            }
+            continue;
+        }
+
+        if (RndTransformable *t = dynamic_cast<RndTransformable *>(o)) {
+            const Vector3 &w = t->WorldXfm().v;
+            float mag = Length(w);
+            propCount++;
+            if (mag < 1.0f) atOrigin++;
+            if (verbose) {
+                const char *tn = t->Name() ? t->Name() : "?";
+                const char *cn = t->ClassName().Str() ? t->ClassName().Str() : "?";
+                fprintf(stderr,
+                        "[POSDUMP] kind=prop    name=%s class=%s world=%.2f,%.2f,%.2f\n",
+                        tn, cn, w.x, w.y, w.z);
+            }
+            continue;
+        }
+    }
+  }
+
+    if (verbose) ::fflush(stderr);  // durably flush [POSDUMP] lines for the harness
+
+    char buf[288];
+    snprintf(buf, sizeof(buf),
+             "posdump roots=%d crowd=%d band=%d props=%d at_origin=%d "
+             "band_at_origin=%d/%d crowd_at_origin=%d/%d",
+             nroots, crowdMembers, bandCount, propCount, atOrigin,
+             bandAtOrigin, bandCount, crowdAtOrigin, crowdMembers);
+    sPosDump = buf;
+    return DataNode(sPosDump.c_str());
+}
+
 void RB3HttpRegisterDtaFuncs() {
     DataRegisterFunc(Symbol("rb3_set"), RB3DtaSetSetting);
     DataRegisterFunc(Symbol("rb3_overshell"), RB3DtaOvershellState);
     DataRegisterFunc(Symbol("rb3_char_probe"), RB3DtaCharProbe);
+    DataRegisterFunc(Symbol("rb3_pos_dump"), RB3DtaPosDump);
 }
 
 // ---------------------------------------------------------------------------
