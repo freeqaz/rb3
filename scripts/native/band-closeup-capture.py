@@ -146,21 +146,52 @@ def parse_shard_log(log_path):
     txt = raw.decode("utf-8", "replace")
     band_cap = 4.0  # relaxed band ratio cap (Rnd_Wgpu_RB3.cpp); for margin reporting
     closest_margin = 1e9
-    for line in txt.splitlines():
+    lines = txt.splitlines()
+
+    # IMPORTANT: the [SHARD_GUARD] DROP line (Rnd_Wgpu_RB3.cpp:5134) does NOT carry
+    # a band/other class token — only the [SHARD_RATIO] line does (the trailing
+    # `band`/`other` word, format at :5116). So a drop's class cannot be read off
+    # the drop line itself. PASS 1: harvest the set of mesh names the engine ever
+    # classified `band` from the RATIO lines; PASS 2: classify each drop by name
+    # lookup in that set. Without this, drops_band is ALWAYS 0 even when a real
+    # band mesh (e.g. lowtopsneaks_skin.2.mesh) is dropped — a false PASS on the
+    # `drops_band==0` convergence gate.  (harness-verify fix)
+    band_meshes = set()
+    for line in lines:
+        if "[SHARD_RATIO]" not in line:
+            continue
+        is_band = re.search(r"class[=:]\s*band", line) or (
+            re.search(r"\bband\b", line) and not re.search(r"\bother\b", line))
+        if is_band:
+            nm = re.search(r"([\w.]+\.mesh)", line)
+            if nm:
+                band_meshes.add(nm.group(1))
+
+    for line in lines:
         if "[SHARD_GUARD]" in line:
             out["drops_total"] += 1
-            is_band = bool(re.search(r"\bband\b", line)) and not re.search(r"\bother\b", line)
-            # class field: prefer an explicit `class=band`/`class=other` token.
+            mm = re.search(r"([\w.]+\.mesh)", line)
+            mesh = mm.group(1) if mm else None
+            # class field: prefer an explicit `class=band`/`class=other` token if
+            # the drop line ever grows one; else a bare band/other word; else fall
+            # back to the RATIO-derived band-mesh set (the real case today).
             cm = re.search(r"class[=:]\s*(\w+)", line)
-            cls = cm.group(1) if cm else ("band" if is_band else "other")
+            if cm:
+                cls = cm.group(1)
+            elif re.search(r"\bband\b", line) and not re.search(r"\bother\b", line):
+                cls = "band"
+            elif re.search(r"\bother\b", line):
+                cls = "other"
+            elif mesh and mesh in band_meshes:
+                cls = "band"
+            else:
+                cls = "other"
             if cls == "band":
                 out["drops_band"] += 1
             else:
                 out["drops_other"] += 1
-            mm = re.search(r"([\w.]+\.mesh)", line)
-            if mm:
-                m = mm.group(1)
-                out["drop_meshes"][m] = out["drop_meshes"].get(m, 0) + 1
+            if mesh:
+                out["drop_meshes"][mesh] = out["drop_meshes"].get(mesh, 0) + 1
         elif "[SHARD_RATIO]" in line:
             out["ratio_lines"] += 1
             # band-classified ratio lines only, for the safety-margin metric.
