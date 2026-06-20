@@ -516,3 +516,24 @@ worktrees still pending a campaign-close sweep.
   isn't landing on the glow material on native (A1-hit-flame-class FX gap).
   Needs an engine-repo change (anim→material apply, or additive-glow shader
   safety net). Same neighborhood as the emissive-glow work.
+
+## Post-campaign loop (2026-06-19/20) — worktree-script fix + follow-up bugs
+
+- **setup-worktree.sh auto-links the full song set** (`8f663c52`): new idempotent
+  `tools/link-song-charts.sh` symlinks the 80 missing `.mid` (and `.mogg`) from
+  `extracted-xbox-full` into the loader root; setup-worktree.sh calls it (worktrees share
+  main's `extracted/` via symlink). Retires the manual one-liner. Verified end-to-end.
+- **festival_01 venue SIGSEGV FIXED** (`f89f2c9c`): null `TheBandDirector` deref in
+  `MetaPerformer::LoadFestival` (festival reward-vignette exit path), reachable only after
+  Fix C. HX_NATIVE guards in LoadFestival/ClearVenues/SyncLoad; Wii byte-identical
+  (MetaPerformer 100%). small_club/arena_06/festival_01 all load now.
+- **Menu highlight misposition FIXED** (`89e3beef`, user-reported): the overshell
+  choose-instrument / choose-difficulty highlight landed ~22px low (between rows). Root cause
+  = `RndText::WrapText` centered middle/bottom-aligned text on the RAW cell aspect while the
+  glyph height uses native-corrected `CellDiff()` → wide Xbox fonts drift ~half a line, so the
+  (correctly-placed) `UIListHighlight` box looked a slot off. One HX_NATIVE line; Wii
+  byte-identical (WrapText 92.695% unchanged). Verified: choose-instrument highlights GUITAR,
+  choose-difficulty highlights HARD (0px), hub stray box gone, song list unregressed.
+  FOLLOW-UP (queued, separate mechanism): hub focused item should ENLARGE (retail "PLAY NOW"
+  bigger) — BandButton focus-anim, not the text-centering bug.
+- IN FLIGHT: crowd Fix B (2D bowl-imposter crowd, arena venues).
