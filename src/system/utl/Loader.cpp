@@ -634,7 +634,18 @@ void LoadMgr::Poll() {
                           (int)mLoading.size());
                 break;
             }
-            unk1c = sBudgetMs;
+            // TRACK-B (frame-stall #3): per-frame background path arms each
+            // PollFrontLoader with the REMAINING frame budget so a single object
+            // loop can't drain a fresh full sBudgetMs on top of work already done
+            // (see the HX_NATIVE arm for the full rationale + measurements). The
+            // drainToEmpty (PollUntilEmpty) path keeps the full slice — it has a
+            // synchronous contract and yields via sYieldMs, not the budget break.
+            float spentMs = drainToEmpty ? 0.0f : Timer::CyclesToMs(budgetTimer.mCycles);
+            float remainMs = sBudgetMs - spentMs;
+            const float kSliceFloorMs = 1.5f; // min forward-progress slice per pass
+            if (remainMs < kSliceFloorMs)
+                remainMs = kSliceFloorMs;
+            unk1c = drainToEmpty ? sBudgetMs : remainMs;
             mTimer.Restart();
             PollFrontLoader();
             if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
@@ -722,7 +733,33 @@ void LoadMgr::Poll() {
                 );
                 break;
             }
-            unk1c = sBudgetMs;
+            // TRACK-B (frame-stall #3, PostLoad overspill): arm each PollFrontLoader
+            // with the budget REMAINING this frame, not a fresh full sBudgetMs.
+            //
+            // The old code set unk1c = sBudgetMs every iteration. CheckSplit() (used
+            // by LoadObjs/LoadStream/CreateObjects to yield between objects) compares
+            // the per-iteration mTimer against unk1c, so a SINGLE PollFrontLoader could
+            // drain a whole sBudgetMs of objects — and the cumulative budgetTimer break
+            // was only checked AFTER it returned. So if budgetTimer was already at
+            // ~6 ms and one pass ran ~8 ms, lp reached ~14 ms before breaking: the
+            // measured 12-19 ms `lp` (≈2× the 8 ms budget) — the per-object PostLoad
+            // overspill that pushed load-in frames over budget (50-194 ms web longtasks
+            // after the JSPI multiplier).
+            //
+            // Fix: unk1c = sBudgetMs - (time already spent this Poll), floored so a
+            // freshly-front loader still advances at least one step (kSliceFloorMs;
+            // CheckSplit already-tripped → the loader's `while(!CheckSplit...)` body
+            // never runs → the documented front-loader stall). This caps the whole
+            // Poll() to ~sBudgetMs, and as the frame fills, each later object-loop's
+            // slice shrinks toward the floor → the heaviest single object can overrun
+            // by at most ~one object instead of a fresh full budget. Trades a fatter
+            // peak for a few more sub-budget frames (load duration measured below).
+            float spentMs = drainToEmpty ? 0.0f : Timer::CyclesToMs(budgetTimer.mCycles);
+            float remainMs = sBudgetMs - spentMs;
+            const float kSliceFloorMs = 1.5f; // min forward-progress slice per pass
+            if (remainMs < kSliceFloorMs)
+                remainMs = kSliceFloorMs;
+            unk1c = drainToEmpty ? sBudgetMs : remainMs;
             mTimer.Restart();
             PollFrontLoader();
             if (!mLoading.empty() && mLoading.front()->IsLoaded()) {
