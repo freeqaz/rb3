@@ -71,7 +71,7 @@ set(DECOMP_FLAGS
 # ============================================================================
 set(MILO_ENGINE_PATH "${CMAKE_SOURCE_DIR}/../../milo-native-engine"
     CACHE PATH "Path to milo-native-engine checkout")
-set(MILO_ENGINE_PIN "1010f5f2704a59518a9d68a25d4ccfa2430eef9b"
+set(MILO_ENGINE_PIN "ce8ecda14c8cfa4ace297a675476be568707d529"
     CACHE STRING "Engine commit SHA verified against")
 if(EXISTS "${MILO_ENGINE_PATH}/.git")
     execute_process(COMMAND git rev-parse HEAD
@@ -520,6 +520,13 @@ add_executable(rb3-native
     # std::vector<Viewport>::resize -> SIGSEGV. See the TU header for the full
     # root-cause writeup.
     ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
+    # 2D bowl-imposter crowd (render-polish Fix B): strong WiiRnd::GetSharedTex
+    # returning one persistent square render-target RndTex. Wires the arena/
+    # festival/big_club bowl-crowd imposter path (WorldCrowd::DrawShowing 2D path)
+    # to the engine's lazy mid-frame RTT (BandRnd::BeginDrawTarget). Replaces the
+    # weak no-op stub in band3_link_stubs.s (strong def wins; the GetSharedTex stub
+    # is removed there). Opt-out RB3_CROWD_IMPOSTER_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_crowd_imposter_native.cpp
     # Disc base-class -> App* subclass label/inline-help factory remap so the
     # retail-disc BandLabel/InlineHelp milo objects handle the proto's set_*
     # dynamic-text messages (song/player/intro names, star rating, MOTD).
@@ -764,6 +771,9 @@ set(RB3_WEB_NATIVE_GLUE
     # multi-chunk milos (main_hub, tracksystem) that embed bandobj Dir subclasses
     # load without desyncing. See the TU header for the root-cause writeup.
     ${CMAKE_SOURCE_DIR}/src/rb3_game_object_factories.cpp
+    # 2D bowl-imposter crowd (render-polish Fix B): strong WiiRnd::GetSharedTex.
+    # Same as the native list entry — see that TU's header.
+    ${CMAKE_SOURCE_DIR}/src/rb3_crowd_imposter_native.cpp
     # Disc base-class -> App* subclass label/inline-help factory remap (set_*
     # dynamic text). Same as the native list entry — see that TU's header.
     ${CMAKE_SOURCE_DIR}/src/rb3_disc_label_classes.cpp

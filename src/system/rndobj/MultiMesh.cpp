@@ -20,6 +20,20 @@
 #include "utl/TextStream.h"
 #include <list>
 
+#ifdef HX_NATIVE
+#include "rndobj/Cam.h"   // RndCam::sCurrent for the kFastBillboardXYZ branch
+#include <cstdlib>
+// A/B opt-out for the native billboard branch in RndMultiMesh::DrawShowing.
+static bool RB3BillboardDisabled() {
+    static int s = -1;
+    if (s < 0) {
+        const char *e = getenv("RB3_BILLBOARD_OFF");
+        s = (e && e[0] && e[0] != '0') ? 1 : 0;
+    }
+    return s != 0;
+}
+#endif
+
 INIT_REVS(RndMultiMesh)
 std::list<std::pair<RndMultiMeshProxy *, int> > RndMultiMesh::sProxyPool;
 
@@ -161,6 +175,34 @@ void RndMultiMesh::CollideList(const Segment &seg, std::list<Collision> &colls) 
 
 void RndMultiMesh::DrawShowing() {
     if (mMesh) {
+#ifdef HX_NATIVE
+        // Native Gap 2 (render-polish Fix B): honor the mesh's kFastBillboardXYZ
+        // transform constraint here. The portable path below only does
+        // SetWorldXfm(it->mXfm), which bypasses constraint re-application
+        // (SetWorldXfm assigns the raw xfm and marks the cache clean, so the
+        // engine's ApplyDynamicConstraint never runs) → billboard instances would
+        // render in their authored orientation instead of facing the camera. The
+        // Wii path (rndwii/MultiMesh.cpp) bakes the cam basis into each instance's
+        // draw matrices; we reproduce the same kFastBillboardXYZ result
+        // (Trans.cpp ApplyDynamicConstraint: mWorldXfm.m = sCurrent->WorldXfm().m)
+        // per instance: cam rotation basis + the instance's own translation. Used
+        // by the 2D bowl-imposter crowd (WorldCrowd::DrawShowing). Wii-neutral
+        // (HX_NATIVE-only). Opt-out RB3_BILLBOARD_OFF for A/B.
+        if (mMesh->TransConstraint() == RndTransformable::kFastBillboardXYZ &&
+            RndCam::sCurrent && !RB3BillboardDisabled()) {
+            const Transform &camWorld = RndCam::sCurrent->WorldXfm();
+            for (std::list<RndMultiMesh::Instance>::const_iterator it = mInstances.begin();
+                 it != mInstances.end();
+                 ++it) {
+                Transform bx;
+                bx.m = camWorld.m;     // face the camera (cam rotation basis)
+                bx.v = it->mXfm.v;     // at the instance's authored position
+                mMesh->SetWorldXfm(bx);
+                mMesh->DrawShowing();
+            }
+            return;
+        }
+#endif
         for (std::list<RndMultiMesh::Instance>::const_iterator it = mInstances.begin();
              it != mInstances.end();
              ++it) {
