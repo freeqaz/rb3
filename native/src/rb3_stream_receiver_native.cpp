@@ -350,22 +350,45 @@ public:
 
         const int16_t *ringS16 = reinterpret_cast<const int16_t *>(mBuffer);
 
+        // Lazy-init the fade length (~3 ms) now that mSampleRate is known.
+        if (mFadeFrames <= 0) {
+            int ff = (int)((mSampleRate > 0 ? mSampleRate : 44100) * 0.003f);
+            mFadeFrames = ff < 64 ? 64 : ff;
+        }
+        const float fadeStep = 1.0f / (float)mFadeFrames;
+        float g = mFadeGain;
+        float lastL = mLastL;
+        float lastR = mLastR;
+
         for (int i = 0; i < framesToRender; i++) {
             // readPos is in BYTES into mBuffer; convert to sample index.
             int sampleIdx = readPos >> 1; // /2
             int16_t s = ringS16[sampleIdx];
             float fs = static_cast<float>(s) * (1.0f / 32768.0f);
-            output[i * 2 + 0] = fs * volL;
-            output[i * 2 + 1] = fs * volR;
+            float oL = fs * volL;
+            float oR = fs * volR;
+            // Ramp the fade-gain back up to 1.0 on recovery (de-zipper re-entry).
+            if (g < 1.0f) { g += fadeStep; if (g > 1.0f) g = 1.0f; }
+            output[i * 2 + 0] = oL * g;
+            output[i * 2 + 1] = oR * g;
+            lastL = oL;
+            lastR = oR;
             readPos += bytesPerFrame;
             if (readPos >= ringSize) readPos -= ringSize;
         }
 
-        // Zero-fill any remainder (ring starved: caught up to write frontier).
+        // Under-run concealment (ring starved: caught up to write frontier).
+        // Hold the last delivered sample and ramp the gain to 0 instead of a hard
+        // step — the same dip, but a smooth smear rather than an audible click.
         for (int i = framesToRender; i < frameCount; i++) {
-            output[i * 2 + 0] = 0.0f;
-            output[i * 2 + 1] = 0.0f;
+            if (g > 0.0f) { g -= fadeStep; if (g < 0.0f) g = 0.0f; }
+            output[i * 2 + 0] = lastL * g;
+            output[i * 2 + 1] = lastR * g;
         }
+
+        mFadeGain = g;
+        mLastL = lastL;
+        mLastR = lastR;
 
         // Publish the advanced play cursor. The producer reads this via
         // GetPlayCursor() (drives the send loop) and SendDoneImpl() (back-pressure).
@@ -443,6 +466,17 @@ private:
     long long mSendStartPlayed;
     int mSendSize;                     // size of current pending chunk (bytes)
     std::atomic<bool> mSendActive;     // is there a pending chunk?
+
+    // ---- Graceful under-run concealment (mirrors the web AudioWorklet) ----
+    // On ring starvation we used to hard-zero the remainder of the callback,
+    // and on recovery snap straight back to the live sample — that step is the
+    // audible click. Instead hold the last delivered (post-volume) sample and
+    // linearly ramp it to zero over ~mFadeFrames, then ramp back up from 0 on
+    // recovery. Audio-thread-only state; no locking needed.
+    float mLastL = 0.0f;
+    float mLastR = 0.0f;
+    float mFadeGain = 1.0f;            // 1.0 = live, 0.0 = fully faded out
+    int mFadeFrames = 0;              // ~3 ms; set lazily from mSampleRate
 };
 
 } // anonymous namespace
