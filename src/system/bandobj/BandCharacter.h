@@ -138,6 +138,19 @@ public:
     // animates. Complements RebindOutfitBonesToOwnSkeleton (which owns the torso).
     // Opt-out RB3_NO_HEAD_REBIND=1. No-op on Wii (HX_NATIVE only).
     void RebindHeadHandsAtRest();
+    // wave-inststrings (native-only): fix the band lead-guitar *_strings skin
+    // explosion. The "brain"-class special guitars (chainsaw/guitar_brain/...) author
+    // their string-bend rig on the CHARACTER skeleton (skeleton_unshared.milo) and
+    // have NO own-resource neck (mInstDir->Find returns nil); on native the per-member
+    // skeleton basis diverges from the authored bind so the rigid-authored strings
+    // mesh skins to a ~136u world AABB (ratio ~5.0) and the V24 shard guard drops it.
+    // Rigid-anchors every strings bone to the body-end bone (bone_bridge) and rebakes
+    // its offset so the mesh rides that one bone rigidly (world AABB == bind AABB,
+    // ratio ~1.0), matching the FINE instruments. Scoped to mInstDir *_strings.mesh
+    // whose bones resolve to skeleton_unshared.milo only (never touches the FINE
+    // own-resource instruments). Called from Poll AFTER mInstDir->Poll(). Opt-out
+    // RB3_NO_INST_REBIND=1. No-op on Wii (HX_NATIVE only).
+    void RebindInstStringsToRestBasis();
     // render-polish 2026-06-11 (char-render): shared skinned-mesh collector used by
     // both Poll-time rebinds and the SyncObjects rest-pose seeding — hashtable
     // objects + each dir's mDraws + every LOD Group/TransGroup, recursing
@@ -303,5 +316,13 @@ public:
     // own == bound (post-deform SyncObjects seeding, which may have resolved the
     // shared magnet) are overwritten ONCE by the first distinct resolve.
     std::set<std::string> mNativeRestDistinct;
+    // wave-inststrings: rebind bookkeeping for RebindInstStringsToRestBasis (the band
+    // lead-guitar *_strings rebind, called from Poll after mInstDir->Poll()).
+    // mNativeInstReboundOnce latches when no in-scope strings mesh remains to rebind
+    // for a quiet window; mNativeInstReboundQuiet counts consecutive no-rebind scans.
+    // Appended after the matched layout so the Wii image stays byte-identical.
+    // Default 0.
+    int mNativeInstReboundOnce;
+    int mNativeInstReboundQuiet;
 #endif
 };

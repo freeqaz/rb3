@@ -120,6 +120,8 @@ BandCharacter::BandCharacter()
     mNativeHeadReboundOnce = 0;
     mNativeHeadReboundQuiet = 0;
     mNativeRestCaptured = false;
+    mNativeInstReboundOnce = 0;
+    mNativeInstReboundQuiet = 0;
 #endif
 }
 
@@ -531,6 +533,15 @@ void BandCharacter::Poll() {
             if (mInstDir) {
                 mInstDir->Poll();
             }
+#ifdef HX_NATIVE
+            // wave-inststrings: rebind the band instrument's *_strings skin meshes so
+            // their world skin re-composes to ~bind (ratio ~1.0). Must run AFTER
+            // mInstDir->Poll() so the instrument/neck bones are posed THIS frame, and
+            // before the instrument draws. Scope = mInstDir *_strings.mesh whose bones
+            // resolve to skeleton_unshared.milo only; FINE instruments (own-resource
+            // neck) are never touched. See the method header.
+            RebindInstStringsToRestBasis();
+#endif
         } else {
             mTeleported = true;
         }
@@ -1340,6 +1351,196 @@ void BandCharacter::RebindHeadHandsAtRest() {
             mNativeHeadReboundQuiet, mNativeHeadReboundOnce);
     }
 }
+
+// wave-inststrings (native-only): fix the band lead-guitar *_strings skin explosion.
+//
+// GROUND TRUTH (INST_STRINGS_PROBE, built+measured): the "brain"-class special
+// guitars (chainsaw / guitar_brain / etc.) author their string-bend rig on the
+// CHARACTER skeleton (char/char/main/skeleton_unshared.milo): all 10
+// chainsaw_strings.mesh bones (bone_nut / bone_bridge / bone_bend_string01..06 /
+// bone_vibrate_hi / bone_vibrate_low) resolve to skeleton_unshared.milo, and
+// mInstDir->Find returns NIL for those names (the instrument's own
+// <inst>_resource.milo has NO neck bones — unlike the standard guitars/basses
+// whose *_strings bind to their own rigid resource neck at ratio 1.0). The neck
+// bones ANIMATE during play (the guitarist flexes the neck: bone_nut swings
+// 3-5u/window while bone_bridge stays ~0.6-1.2u) — so binding to skeleton_unshared
+// is BY DESIGN (a basis-divergence skin bug), NOT a name mis-resolution.
+//
+// On Wii the authored inverse-bind composes correctly against the same-name
+// character-skeleton bones; on native the per-member skeleton's basis/spacing
+// diverges from the authored bind, so the rigid-authored strings mesh (bind 27.6u)
+// skins to a ~136u world AABB (ratio ~5.0) -> the engine V24 [SHARD_GUARD] (which
+// detects skeleton_unshared-bound meshes as `band` and applies the relaxed 4.0x/110u
+// caps) STILL drops it (5.0 > 4.0 AND 136 > 110) -> the visible left-edge smear.
+//
+// FIX (rigid-anchor, default): repoint EVERY strings bone to ONE rigid anchor — the
+// body-end bone (bone_bridge, the least-moving neck bone, which rides the instrument
+// body rigidly) — and rebake each bone's offset = meshWorld * inv(anchorWorld) at the
+// CURRENT pose. The whole strings mesh then rides that single rigid bone: its world
+// AABB == its bind AABB through the entire bend animation (ratio ~1.0), exactly like
+// the FINE instruments whose strings ride their rigid resource neck. This drops the
+// in-mesh string-bend wobble, but the FINE instruments already render rigid strings,
+// so this IS the correct visual target state. (RB3_INST_STRINGS_MODE=rebake instead
+// rest-rebakes each bone in place, preserving the bend — kept for A/B; it does not
+// hold ratio ~1.0 through the bend because the native animated basis itself diverges.)
+//
+// SCOPE: mInstDir's *_strings.mesh ONLY, and ONLY when its bones resolve to
+// skeleton_unshared.milo. The FINE instruments (own-resource neck, ratio 1.0) never
+// match the skeleton_unshared gate, so they are never touched (touching them would
+// regress ratio 1.0). Each rebound mesh sets RndMesh::mNativeBonesRebound so the
+// engine rebake/clamp skip it. Idempotent (mNativeInstReboundOnce latch, re-armed by
+// SyncObjects/StartLoad like the other rebinds). DEFAULT-ON, opt-out
+// RB3_NO_INST_REBIND=1 (mirrors RB3_NO_SKEL_REBIND). No-op on Wii (HX_NATIVE only),
+// DC3-inert.
+void BandCharacter::RebindInstStringsToRestBasis() {
+    static int sDisabled = -1;
+    if (sDisabled < 0) sDisabled = getenv("RB3_NO_INST_REBIND") ? 1 : 0;
+    if (sDisabled) return;
+    if (!mInstDir) return;
+    if (mNativeInstReboundOnce) return;
+    // mode: "rigid" (default — anchor all bones to one rigid neck bone) or "rebake"
+    // (per-bone rest-rebake in place, preserves bend; A/B only).
+    static int sRigid = -1;
+    if (sRigid < 0) {
+        const char *m = getenv("RB3_INST_STRINGS_MODE");
+        sRigid = (m && std::strcmp(m, "rebake") == 0) ? 0 : 1;
+    }
+    bool probe = getenv("INST_REBIND_PROBE") != 0;
+
+    // Collect mInstDir's skinned strings meshes (its own draw tree only — never
+    // this/mOutfitDir; the rest of the instrument, _resource/_teeth, is ratio 1.0
+    // and must stay untouched). Same walk shape as NativeCollectSkinnedMeshes.
+    std::vector<RndMesh *> targets;
+    {
+        std::vector<RndDrawable *> work;
+        for (ObjDirItr<RndMesh> mit(mInstDir, true); mit != 0; ++mit) {
+            RndMesh *m = mit;
+            if (m && m->NumBones() != 0 &&
+                std::find(targets.begin(), targets.end(), m) == targets.end())
+                targets.push_back(m);
+        }
+        for (std::vector<RndDrawable *>::iterator it = mInstDir->mDraws.begin();
+             it != mInstDir->mDraws.end(); ++it)
+            work.push_back(*it);
+        for (int li = 0; li < mInstDir->mLods.size(); li++) {
+            if (mInstDir->mLods[li].Group()) work.push_back(mInstDir->mLods[li].Group());
+            if (mInstDir->mLods[li].TransGroup()) work.push_back(mInstDir->mLods[li].TransGroup());
+        }
+        std::vector<RndDrawable *> visited;
+        while (!work.empty()) {
+            RndDrawable *dr = work.back();
+            work.pop_back();
+            if (!dr) continue;
+            if (std::find(visited.begin(), visited.end(), dr) != visited.end()) continue;
+            visited.push_back(dr);
+            RndMesh *m = dynamic_cast<RndMesh *>(dr);
+            if (m && m->NumBones() != 0 &&
+                std::find(targets.begin(), targets.end(), m) == targets.end())
+                targets.push_back(m);
+            std::list<RndDrawable *> kids;
+            dr->ListDrawChildren(kids);
+            for (std::list<RndDrawable *>::iterator k = kids.begin(); k != kids.end(); ++k)
+                if (*k && std::find(visited.begin(), visited.end(), *k) == visited.end())
+                    work.push_back(*k);
+        }
+    }
+
+    int meshes = 0, reboundMeshes = 0, pending = 0;
+    for (std::vector<RndMesh *>::iterator mi = targets.begin();
+         mi != targets.end(); ++mi) {
+        RndMesh *mesh = *mi;
+        if (mesh->mNativeBonesRebound) continue; // already rebound
+        const char *mn = mesh->Name();
+        // GATE 1: name must end "_strings.mesh".
+        if (!mn) continue;
+        size_t len = std::strlen(mn);
+        const char *suffix = "_strings.mesh";
+        size_t slen = std::strlen(suffix);
+        if (len < slen || std::strcmp(mn + len - slen, suffix) != 0) continue;
+        // GATE 2: at least one bone must resolve to the character skeleton
+        // (skeleton_unshared.milo) — the explosion signature. FINE instruments
+        // (own-resource neck) never match, so they are never touched. Also pick the
+        // rigid anchor (bone_bridge if present, else the bone with the SMALLEST
+        // world-translation magnitude relative to the mesh centroid is not knowable
+        // here, so prefer bone_bridge by name, then bone[0]).
+        int nb = mesh->NumBones();
+        bool onCharSkel = false;
+        int anchorIdx = -1;
+        for (int b = 0; b < nb; b++) {
+            RndTransformable *bound = mesh->BoneTransAt(b);
+            if (!bound) continue;
+            ObjectDir *bd = bound->Dir();
+            if (bd && !bd->mStoredFile.empty() &&
+                std::strstr(bd->mStoredFile.c_str(), "skeleton_unshared.milo") != 0)
+                onCharSkel = true;
+            if (bound->Name() && std::strstr(bound->Name(), "bone_bridge") != 0)
+                anchorIdx = b;
+        }
+        if (!onCharSkel) continue; // not a band-bound exploding strings mesh
+        meshes++;
+        if (anchorIdx < 0) {
+            // no bone_bridge — fall back to bone[0] as the rigid anchor.
+            for (int b = 0; b < nb && anchorIdx < 0; b++)
+                if (mesh->BoneTransAt(b)) anchorIdx = b;
+        }
+        if (anchorIdx < 0) { pending++; continue; }
+        RndTransformable *anchor = mesh->BoneTransAt(anchorIdx);
+        // Sanity: the anchor (and, for rebake mode, every bone) must have a finite
+        // world pose so Invert can't produce NaN (the engine clamp is disabled for
+        // rebound meshes — no backstop).
+        Vector3 av = anchor->WorldXfm().v;
+        if (!(std::fabs(av.x) < 1e5f && std::fabs(av.y) < 1e5f && std::fabs(av.z) < 1e5f)) {
+            pending++; continue;
+        }
+        if (sRigid) {
+            // RIGID-ANCHOR: bind every bone to the single rigid anchor and rebake its
+            // offset = meshWorld * inv(anchorWorld). All verts then ride `anchor`
+            // rigidly -> world AABB == bind AABB (ratio ~1.0) through the bend.
+            Transform invAnchor;
+            Invert(anchor->WorldXfm(), invAnchor);
+            for (int b = 0; b < nb; b++) {
+                if (!mesh->BoneTransAt(b)) continue;
+                if (mesh->BoneTransAt(b) != anchor)
+                    mesh->SetBone(b, anchor, false);
+                Multiply(mesh->WorldXfm(), invAnchor, mesh->BoneOffsetAt(b));
+            }
+        } else {
+            // REBAKE-IN-PLACE: rest-rebake each bone against its own current pose
+            // (mOffset = meshWorld * inv(boneWorld)). Coherent at this pose; follows
+            // the bend (but the native animated basis divergence can re-grow it).
+            bool ok = true;
+            for (int b = 0; b < nb; b++) {
+                RndTransformable *bt = mesh->BoneTransAt(b);
+                if (!bt) continue;
+                Vector3 bv = bt->WorldXfm().v;
+                if (!(std::fabs(bv.x) < 1e5f && std::fabs(bv.y) < 1e5f &&
+                      std::fabs(bv.z) < 1e5f)) { ok = false; break; }
+            }
+            if (!ok) { pending++; continue; }
+            for (int b = 0; b < nb; b++) {
+                RndTransformable *bt = mesh->BoneTransAt(b);
+                if (!bt) continue;
+                mesh->SetBone(b, bt, true);
+            }
+        }
+        mesh->mNativeBonesRebound = true; // engine: skip rebake + fling-clamp
+        reboundMeshes++;
+        if (probe)
+            fprintf(stderr,
+                "[INST_REBIND] member='%s' mesh='%s' bones=%d mode=%s anchor[%d]='%s' "
+                "anchorWp=(%.1f,%.1f,%.1f)\n",
+                Name() ? Name() : "?", mn, nb, sRigid ? "rigid" : "rebake", anchorIdx,
+                (anchor->Name() ? anchor->Name() : "?"), av.x, av.y, av.z);
+    }
+
+    // Latch when no in-scope strings mesh remains to rebind for a short window. Like
+    // the other rebinds, keep a long give-up fallback to bound the rescan cost.
+    if (reboundMeshes == 0) mNativeInstReboundQuiet++;
+    else mNativeInstReboundQuiet = 0;
+    if ((pending == 0 && mNativeInstReboundQuiet >= 30) ||
+        mNativeInstReboundQuiet >= 600)
+        mNativeInstReboundOnce = 1;
+}
 #endif
 
 #pragma push
@@ -1380,6 +1581,10 @@ void BandCharacter::SyncObjects() {
     mNativeReboundQuiet = 0;
     mNativeHeadReboundOnce = 0;
     mNativeHeadReboundQuiet = 0;
+    // wave-inststrings: re-arm the instrument-strings rebind too (a merge/deform
+    // change may have re-stuffed/re-skinned mInstDir's strings mesh).
+    mNativeInstReboundOnce = 0;
+    mNativeInstReboundQuiet = 0;
 #endif
     RndMat *feetmat = Find<RndMat>("feet_socks_skin.mat", false);
     if (feetmat) {
@@ -1819,6 +2024,11 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     mNativeReboundQuiet = 0;
     mNativeHeadReboundOnce = 0;
     mNativeHeadReboundQuiet = 0;
+    // wave-inststrings: re-arm the instrument-strings rebind on StartLoad too (an
+    // instrument swap re-stuffs mInstDir's strings mesh; already-rebound meshes keep
+    // RndMesh::mNativeBonesRebound so the re-scan is idempotent).
+    mNativeInstReboundOnce = 0;
+    mNativeInstReboundQuiet = 0;
     // render-polish 2026-06-11 (char-render): do NOT blanket-clear the per-member
     // rest-pose snapshot here. StartLoad re-fires repeatedly through the gameplay
     // flow (venue clip/dircut loads, patch recompose, scripts — 5-6x per member,
