@@ -89,15 +89,24 @@ cherry-picked to master once it was free. All sites `#ifdef HX_NATIVE` (verified
 Wii-neutral; `RB3_MTRACE_WRAP` env-gated off by default.
 
 ## P1-but-DEEP — C7/C8 char rotation-basis shard (gameplay head/hair/hands)
-**Status: actively iterated, root cause OPEN.** Gameplay head/hair/hands/garments
-smear to 200–460u world extents because the native pose pipeline diverges in the
-**rotation basis** (translation now anchored, but far-from-bone verts smear by
-R·sin θ). Latest: `491288ec` "capture rest pose in CHARACTER space, not world
-space (C8 root cause)"; reload-re-entrancy fixes are default-ON (`3c02e08b`), the
-own==bound rest-rebake is opt-in `RB3_BOUND_REBAKE` (default OFF, `0f2f5df2`).
-Deep, multi-commit; the `CharBones`/pose-pipeline basis is the remaining
-root-cause. Defer unless explicitly prioritized — broad/high-risk and recently
-active. Ref: `[[project_char_skinning_deform]]`, the C8 commit chain.
+**Status: ✅ rotation-basis FIXED (`491288ec`); the named "left-limb IK mispose"
+residual NO LONGER REPRODUCES (2026-06-20 investigation).** The C8 rotation-basis
+root cause was a rest-bake *space* error (rest captured from `WorldXfm()` → verts on
+a `|placement|` lever → R·sinθ smear); `491288ec` captures rest relative to the member
+root (locality 27-60u → 5-12u). `491288ec` named a remaining "left-limb IK mispose"
+(band V24 guard drops 20.4/frame IK-on vs 4.9 IK-off); a 2026-06-20 deep investigation
+(`docs/native/c7c8-ik-mispose-findings-2026-06-20.md`) found that **band-garment
+guard-drops now read 0** (IK on AND off) — the C8 fix + the relaxed band-aware V24
+guard (engine pin `1010f5f`) already absorbed them. Bisection **refuted** the
+CharIKFingers suspect (never runs in guitar gameplay); the candidate DC3
+CharForeTwist/UpperTwist `mLocalXfm` back-compute is a **no-op on RB3** (zero cascade
+drift); the "176u smear" was a camera-framed guitar-string artifact (IK-independent).
+No fix landed (none safe — metric is 0). **Don't re-chase without first building a
+deterministic "force band closeup" harness** (the venue director's nondeterministic
+cuts make per-run guard metrics unreliable — the real blocker to any further C7/C8
+measurement). Adjacent-but-separate: guitar-string over-cap (fret-hand skinning,
+low-pri); crowd/extras + UI V24 drops (known). Ref: the findings doc,
+`491288ec`/`3c02e08b`/`0f2f5df2`, `[[project_char_skinning_deform]]`.
 
 ---
 ### Done this arc (for context, not follow-ups)
