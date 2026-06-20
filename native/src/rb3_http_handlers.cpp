@@ -769,11 +769,73 @@ static DataNode RB3DtaPosDump(DataArray *) {
     return DataNode(sPosDump.c_str());
 }
 
+// ---------------------------------------------------------------------------
+// Deterministic "force band closeup" harness hooks (converge-2026-06-20).
+//
+// The native build registers NO `band_director` DTA accessor and TheBandDirector
+// is a C++ global, not a name-resolvable DTA object — so the editor verbs
+// `{band_director force_shot ...}` / `{$band_director set disabled 1}` are SILENT
+// no-ops (probe-data §1). Without a way to PIN a venue camera shot, every A/B
+// capture lands on a different auto-director angle (the camera-desync
+// false-positive). These three native-only accessors give the Python harness a
+// real signal + a hard determinism gate.
+//
+// Pinning needs BOTH: ForceShot(shot) (sets mNextShot + mDisablePicking) AND
+// mDisabled=1 (stops OnSelectCamera's per-frame re-pick, BandDirector.cpp:1446).
+// Set mDisabled FIRST so no intervening frame can re-pick over the forced shot.
+// Everything touched (mDisabled, mVenue, mCurShot, ForceShot) lives on the RB3
+// BandDirector (src/, not the shared engine) and is already reachable via the
+// existing rb3_pos_dump plumbing — no engine change, no pin bump, Wii-neutral.
+// See docs/native/converge-2026-06-20/scout-harness.md §1.
+// ---------------------------------------------------------------------------
+
+// {rb3_force_shot "<name>"} -> pin a venue camera shot by name. Idempotent once
+// mDisabled is set: the forced shot applies on the next OnSelectCamera and then
+// stays (mNextShot is consumed, nothing re-picks). Returns a status STRING so the
+// harness gets a real signal instead of the silent 0 the probe saw.
+static std::string sForceShotResult;  // back the not_found:%s branch (MakeString is transient)
+static DataNode RB3DtaForceShot(DataArray* a) {
+    if (!TheBandDirector) return DataNode("force_shot no_director");
+    WorldDir* wdir = TheBandDirector->mVenue.Dir();   // same handle rb3_pos_dump uses
+    if (!wdir)            return DataNode("force_shot no_venue");
+    const char* name = a->Size() > 1 ? a->Str(1) : "";  // 1-based: index 0 is the func sym
+    BandCamShot* shot = wdir->Find<BandCamShot>(name, false);
+    if (!shot) {
+        sForceShotResult = std::string("force_shot not_found:") + (name ? name : "");
+        return DataNode(sForceShotResult.c_str());
+    }
+    TheBandDirector->mDisabled = true;   // STOP the per-frame auto re-pick FIRST
+    TheBandDirector->ForceShot(shot);    // then queue our shot (sets mNextShot + mDisablePicking)
+    return DataNode("force_shot ok");
+}
+
+// {rb3_director_disable <0|1>} -> explicit director freeze/unfreeze. Echoes the
+// current state so the harness can (a) freeze before forcing, (b) assert the
+// echo, (c) unfreeze so the auto-director resumes (for multi-member capture).
+static DataNode RB3DtaDirectorDisable(DataArray* a) {
+    if (!TheBandDirector) return DataNode(0);
+    if (a->Size() > 1) TheBandDirector->mDisabled = (a->Int(1) != 0);
+    return DataNode(TheBandDirector->mDisabled ? 1 : 0);  // echo current state
+}
+
+// {rb3_cur_shot} -> the live mCurShot name. The cheapest machine-checkable
+// determinism proof: after forcing, poll across N frames — it must equal the
+// forced name every frame. (mCurShot is an ObjPtr<BandCamShot>; it converts to a
+// raw BandCamShot* via operator T1*.)
+static DataNode RB3DtaCurShot(DataArray*) {
+    if (!TheBandDirector) return DataNode("");
+    BandCamShot* s = TheBandDirector->mCurShot;
+    return DataNode(s && s->Name() ? s->Name() : "");
+}
+
 void RB3HttpRegisterDtaFuncs() {
     DataRegisterFunc(Symbol("rb3_set"), RB3DtaSetSetting);
     DataRegisterFunc(Symbol("rb3_overshell"), RB3DtaOvershellState);
     DataRegisterFunc(Symbol("rb3_char_probe"), RB3DtaCharProbe);
     DataRegisterFunc(Symbol("rb3_pos_dump"), RB3DtaPosDump);
+    DataRegisterFunc(Symbol("rb3_force_shot"), RB3DtaForceShot);            // NEW
+    DataRegisterFunc(Symbol("rb3_director_disable"), RB3DtaDirectorDisable);  // NEW
+    DataRegisterFunc(Symbol("rb3_cur_shot"), RB3DtaCurShot);               // NEW
 }
 
 // ---------------------------------------------------------------------------
