@@ -59,13 +59,9 @@ regressed the Wii build.
 
 ## Remaining (none block gameplay)
 
-- **Reproduce the song-chart symlinks on a fresh checkout** (machine-local; `orig-assets/*` is gitignored).
-  One-liner (from repo root):
-  ```bash
-  cd orig-assets && for d in extracted/songs/*/; do s=$(basename "$d"); [ "$s" = gen ] && continue; \
-    t="extracted/songs/$s/$s.mid"; src="$PWD/extracted-xbox-full/songs/$s/$s.mid"; \
-    [ ! -e "$t" ] && [ -e "$src" ] && ln -s "$src" "$t"; done
-  ```
+- **Song-chart symlinks on a fresh checkout** (machine-local; `orig-assets/*` is gitignored) — now
+  AUTOMATED: `tools/setup-worktree.sh` calls `tools/link-song-charts.sh` (idempotent, self-healing), and
+  it's runnable standalone after a fresh main checkout / re-extract: `tools/link-song-charts.sh`.
 - Deferred FEATURE (now has a design): crowd 2D bowl-imposter pipeline (Fix B) — a render-to-texture
   path, scoped plan-only in wave 8 (`task-crowd-venues-impl.md`); future wave.
 - KNOWN native gap (new, tracked): `festival_01` venue override SIGSEGVs during load (festival-specific;
