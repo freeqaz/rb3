@@ -7,6 +7,22 @@ code with live objdiff match% — every native fix is `#ifdef HX_NATIVE`-gated (
 proven Wii-codegen-neutral). Verify char/menu changes through a real boot
 (`song-end-test.py` / closet harness), not just a 5-frame boot.
 
+## 2026-06-21 — Convergence batch: band-closeup harness + multi-venue audit + scrollbar + venue lighting
+**Hub: `docs/native/converge-2026-06-20/`.** Built tooling to measure render convergence vs retail, audited 5 venues, landed the first visible venue-lighting fix.
+- ✅ **Deterministic force-band-closeup harness** (`363f6549`/`f842efb4`): 3 native DTA accessors (`{rb3_force_shot}`/`{rb3_director_disable}`/`{rb3_cur_shot}`) + `scripts/native/band-closeup-capture.py` (`pinned=N/N` gate, `drops_band`/`max_band_ratio` verdict). Unblocks all char-pose/venue A/B (the long-standing C7/C8 blocker).
+- ✅ **Multi-venue audit → `audit/RANKED-GAPS.md`**: band closeup GEOMETRY is CLEAN across all 5 venues (small_club/big_club/video/arena/festival); convergence frontier moved off skin-deform onto venue/crowd LIGHTING.
+- ✅ **Scrollbar GAP 1** (`7a6525fc`): premise was a MEASUREMENT ARTIFACT — `scrollbar_bg`/`scrollbar.mesh` only draw in `song_select` under `[ui.cam]`, NEVER in steady-state gameplay (re-derived 2840 calls / 0 game-active, 3 venues × 3 songs × 5 boots). Shipped a Wii-neutral (objdiff 100%) defensive content-gate anyway (suppresses the contentless case; opt-out `RB3_SCROLLBAR_FIX_OFF`). Adversarially verified LAND.
+- ✅ **Venue lighting STEP 1 — arena band (GAP 2) LANDED** (engine `a360e3c`, rb3 pin `7baff7b3`): GX-faithful point falloff `1/(1+d/range)` (was the non-physical `saturate(1-d/range)²` hard cutoff) on the `world.cam` venue path → arena_02's range-55 silhouette spots reach the band (luma 46→63, moody not black). **DC3-safe**: gated via SceneUniforms `pointFalloffMode` (reuses a pad slot, struct size unchanged; default 0 = byte-identical legacy; DC3/game.cam/menu never set it). Opt-out `RB3_VENUE_POINT_FALLOFF_LEGACY=1`. Broader than the plan claimed: brightens point-lit characters venue-WIDE (more correct, no regression observed). Adversarially verified.
+
+### Open follow-ups from this batch (ranked)
+- **GAP 3 — VISIBLE big_club white crowd (REAL, unfixed):** the visible white audience renders via `world.cam` char-extras + a mesh-shard smear — NOT the impostor path. Crowd-region white% invariant ~10% regardless of the lighting knobs. Route to the **char-shard / crowd-origin** workstream (cf [[project_char_skinning_deform]]).
+- **Venue lighting STEP 2 — impostor-crowd env gate — HELD** (engine tag `converge-step2-crowd-wip` = `bae1aae`, atop `a360e3c`): structurally correct + DC3-safe (the impostor cam now reads its dim env instead of hardcoded white) BUT (a) doesn't fix the visible GAP 3 above, (b) its `(unnamed cam && TargetTex())` discriminator can collide with `OutfitConfig`'s char-customize RTT cam (benign — flat rects, + `RB3_CROWD_LIGHT_OFF` opt-out). Before landing: HARDEN the discriminator with a crowd-env predicate (`venv->Name()` contains "crowd") and re-verify. Docs: `lighting/step2-{impl,verify}.md`.
+- **Native-only teal highway/now-bar overlay** (NEW, found by scrollbar verify): present in steady-state deep gameplay (songMs 33-36k); retail club gameplay shows a plain blue highway. Provably NOT the scrollbar (persists with `RB3_HIGHWAY_BLOOM_OFF=1`, 0 scrollbar meshes after `game_screen`). Needs investigation.
+- **Footwear thin-skin `_skin.2` fling** (GAP 5): real band geometry, off-frame in every closeup, wardrobe-random per boot; fold into a general foot/C8 rest-rebake batch (mirror `RebindInstStringsToRestBasis`). Low ROI.
+- **festival `*_screenmask` → white** (GAP 4): get retail festival ground-truth FIRST (could be an intended flash); then a small overlay blend/alpha fix.
+- **crowd/extras servo shards** (GAP 6): masked, high blast-radius (292-instance crowd path), accept/defer.
+- **STEP 1 venue exposure tuning** (`sVenuePointExposure`/`sVenueGreyKey`): defer until a retail arena/big_club gameplay reference frame is captured (none exists in `images/retail-screenshots/`).
+
 ## 2026-06-20 — "Crowd + drum kit congregate at origin" = band instrument `*_strings` skin explosion (FIXED `2f393eaa`)
 **Status: ✅ FIXED + verified.** The user-reported "crowd + drum kit (and many items)
 congregating at origin" was investigated end-to-end with a new debug tool and turned
