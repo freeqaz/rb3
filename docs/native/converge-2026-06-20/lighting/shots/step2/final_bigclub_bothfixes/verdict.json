@@ -1,0 +1,18 @@
+{
+  "verdict": "PASS",
+  "member": "guitar",
+  "override": "big_club_01",
+  "shots": 2,
+  "frames": 1,
+  "pinned": "2/2",
+  "drops_total": 0,
+  "drops_band": 0,
+  "drops_other": 0,
+  "drop_meshes": {},
+  "max_band_ratio": 0.0,
+  "closest_band_to_cap": "",
+  "ratio_lines": 0,
+  "skipped": [],
+  "log": "/tmp/bch-ov-final_bigclub_bothfixes-41647.log",
+  "out": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/final_bigclub_bothfixes"
+}

@@ -1,0 +1,37 @@
+{
+  "tag": "smallclub_on",
+  "member": "guitar",
+  "override": "small_club_01",
+  "song_downs": 0,
+  "frames": 1,
+  "frame_dt": 500,
+  "anchor_ms": -1.0,
+  "forced_shots": [
+    "coop_dir_crowd.shot",
+    "coop_all_n00.shot"
+  ],
+  "skipped": [],
+  "frames_manifest": [
+    {
+      "shot": "coop_dir_crowd",
+      "shot_full": "coop_dir_crowd.shot",
+      "frame_idx": 0,
+      "songMs": 17221.7,
+      "cur_shot": "coop_dir_crowd.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/smallclub_on/smallclub_on_coop_dir_crowd_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_all_n00",
+      "shot_full": "coop_all_n00.shot",
+      "frame_idx": 0,
+      "songMs": 18107.3,
+      "cur_shot": "coop_all_n00.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/smallclub_on/smallclub_on_coop_all_n00_0.png",
+      "ok": true
+    }
+  ],
+  "env": {}
+}

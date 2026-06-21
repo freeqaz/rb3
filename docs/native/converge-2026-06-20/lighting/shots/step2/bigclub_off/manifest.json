@@ -1,0 +1,57 @@
+{
+  "tag": "bigclub_off",
+  "member": "guitar",
+  "override": "big_club_01",
+  "song_downs": 0,
+  "frames": 2,
+  "frame_dt": 400,
+  "anchor_ms": -1.0,
+  "forced_shots": [
+    "coop_dir_crowd.shot",
+    "coop_all_n00.shot"
+  ],
+  "skipped": [],
+  "frames_manifest": [
+    {
+      "shot": "coop_dir_crowd",
+      "shot_full": "coop_dir_crowd.shot",
+      "frame_idx": 0,
+      "songMs": 20850.3,
+      "cur_shot": "coop_dir_crowd.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/bigclub_off/bigclub_off_coop_dir_crowd_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_dir_crowd",
+      "shot_full": "coop_dir_crowd.shot",
+      "frame_idx": 1,
+      "songMs": 21302.2,
+      "cur_shot": "coop_dir_crowd.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/bigclub_off/bigclub_off_coop_dir_crowd_1.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_all_n00",
+      "shot_full": "coop_all_n00.shot",
+      "frame_idx": 0,
+      "songMs": 22115.4,
+      "cur_shot": "coop_all_n00.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/bigclub_off/bigclub_off_coop_all_n00_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_all_n00",
+      "shot_full": "coop_all_n00.shot",
+      "frame_idx": 1,
+      "songMs": 22570.4,
+      "cur_shot": "coop_all_n00.shot",
+      "pinned": true,
+      "file": "/home/free/code/milohax/rb3/.claude/worktrees/converge-lighting/docs/native/converge-2026-06-20/lighting/shots/step2/bigclub_off/bigclub_off_coop_all_n00_1.png",
+      "ok": true
+    }
+  ],
+  "env": {}
+}

@@ -1,0 +1,48 @@
+{
+  "tag": "arena02_legacy",
+  "member": "guitar",
+  "override": "arena_02",
+  "song_downs": 0,
+  "frames": 1,
+  "frame_dt": 500,
+  "anchor_ms": 8000.0,
+  "forced_shots": [
+    "coop_fs_b_c.shot",
+    "coop_fs_b_ch.shot",
+    "coop_fs_all_n00.shot"
+  ],
+  "skipped": [],
+  "frames_manifest": [
+    {
+      "shot": "coop_fs_b_c",
+      "shot_full": "coop_fs_b_c.shot",
+      "frame_idx": 0,
+      "songMs": 17791.7,
+      "cur_shot": "coop_fs_b_c.shot",
+      "pinned": true,
+      "file": "docs/native/converge-2026-06-20/lighting/shots/step1/arena02_legacy/arena02_legacy_coop_fs_b_c_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_fs_b_ch",
+      "shot_full": "coop_fs_b_ch.shot",
+      "frame_idx": 0,
+      "songMs": 18664.6,
+      "cur_shot": "coop_fs_b_ch.shot",
+      "pinned": true,
+      "file": "docs/native/converge-2026-06-20/lighting/shots/step1/arena02_legacy/arena02_legacy_coop_fs_b_ch_0.png",
+      "ok": true
+    },
+    {
+      "shot": "coop_fs_all_n00",
+      "shot_full": "coop_fs_all_n00.shot",
+      "frame_idx": 0,
+      "songMs": 19544.0,
+      "cur_shot": "coop_fs_all_n00.shot",
+      "pinned": true,
+      "file": "docs/native/converge-2026-06-20/lighting/shots/step1/arena02_legacy/arena02_legacy_coop_fs_all_n00_0.png",
+      "ok": true
+    }
+  ],
+  "env": {}
+}
