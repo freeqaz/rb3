@@ -41,10 +41,21 @@ out to be **NOT a placement bug at all** — a 2D misattribution. Ground truth (
   A/B). Engine unchanged (guard stays as backstop). Measured: ratio 5.0→1.0, `dir=instrument`
   drops 1984→0, left-edge smear gone (screenshots), FINE instruments stay 1.0, audience
   unaffected. Adversarially verified (LAND, high confidence).
-- **Residual (separate, out-of-scope, NOT visibly wrong):** `scrollbar_bg.mesh` +
-  `male_extras*` (venue vignette extras) + a song-dependent band-outfit shoe skin
-  (`lowtopsneaks_skin`) still trip the shard guard (masked → silently dropped, screen
-  looks clean). Same skin-deform family; address as a follow-up only if it becomes visible.
+- **Residual — RESOLVED/CLASSIFIED (2026-06-21, `docs/native/converge-2026-06-20/`).**
+  Built the deterministic band-closeup harness (below) and used it to settle the masked
+  shard-guard residual definitively. **Closeup-visible band rendering gets a CLEAN BILL** —
+  no band garment in an actual closeup framing (jackets/arms/heads/gloves) is dropped
+  (`gloves_resource.1.mesh` closest at ratio 3.97, saved by the 40u world-floor). The three
+  masked drops break down as: (1) `scrollbar_bg.mesh` = **71% of all drops, a UI scrollbar
+  leaked into the gameplay 3D scene** (not a skin-deform bug; the guard-drop is
+  *accidentally correct* since retail doesn't draw it either — real fix is UI-draw-tree
+  scoping, cf. the MusicLibrary stale-slot family); (2) `clap.mesh` + `male_extras*` =
+  distant **crowd/vignette filler** on a non-band servo skeleton no existing rebind reaches
+  (high blast-radius, ~nil payoff → accept-as-dropped); (3) `lowtopsneaks_skin` /
+  `saddleshoe` band **footwear thin-skin** = a *real* band gap (explodes, guard drops it,
+  no existing rebind covers it) but **off-frame in every club closeup the auto-director
+  uses → LOW ROI**; engine note warns a translation-only anchor could draw *worse*. Defer
+  (or bundle with a general foot / C8 pose-basis fix).
 - Tool: `{rb3_pos_dump}` + `scripts/native/crowd-origin-posdump.py`. Docs:
   `docs/native/crowd-origin/` (PLAN, scouts, measure-results, verify-verdict,
   deform-investigation, fix-impl, audience-measure + `shots/`).
@@ -143,12 +154,18 @@ guard (engine pin `1010f5f`) already absorbed them. Bisection **refuted** the
 CharIKFingers suspect (never runs in guitar gameplay); the candidate DC3
 CharForeTwist/UpperTwist `mLocalXfm` back-compute is a **no-op on RB3** (zero cascade
 drift); the "176u smear" was a camera-framed guitar-string artifact (IK-independent).
-No fix landed (none safe — metric is 0). **Don't re-chase without first building a
-deterministic "force band closeup" harness** (the venue director's nondeterministic
-cuts make per-run guard metrics unreliable — the real blocker to any further C7/C8
-measurement). Adjacent-but-separate: guitar-string over-cap (fret-hand skinning,
-low-pri); crowd/extras + UI V24 drops (known). Ref: the findings doc,
-`491288ec`/`3c02e08b`/`0f2f5df2`, `[[project_char_skinning_deform]]`.
+No fix landed (none safe — metric is 0). The named blocker — a **deterministic "force
+band closeup" harness** — is now ✅ BUILT (2026-06-21, `363f6549`+`f842efb4`,
+`docs/native/converge-2026-06-20/`): 3 native-only DTA accessors (`rb3_force_shot` /
+`rb3_director_disable` / `rb3_cur_shot`) pin a venue `BandCamShot` (`mDisabled=1` then
+`ForceShot`) + `scripts/native/band-closeup-capture.py` (matched-`(shot,songMs)` A/B,
+`pinned=N/N` determinism gate, `drops_band`/`max_band_ratio` verdict). Adversarially
+verified (LAND, pinned N/N across 4 runs + negative control). Using it, the C7/C8
+closeup band rendering gets a **clean bill** (no band garment dropped in a closeup;
+`gloves` closest at 3.97). Adjacent-but-separate: guitar-string over-cap = the
+`*_strings` fix `2f393eaa` (resolved); band footwear thin-skin = real but off-frame
+(see the crowd-origin residual note above); crowd/extras + UI V24 drops (known). Ref:
+the findings doc, `491288ec`/`3c02e08b`/`0f2f5df2`, `[[project_char_skinning_deform]]`.
 
 ---
 ### Done this arc (for context, not follow-ups)
