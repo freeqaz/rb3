@@ -1,6 +1,9 @@
 #include "bandobj/ScrollbarDisplay.h"
 #include "ui/UI.h"
 #include "utl/Symbols.h"
+#ifdef HX_NATIVE
+#include <cstdlib> // getenv (RB3_SCROLLBAR_FIX_OFF)
+#endif
 
 // Minimal forward-decl of UIListDir to keep ElementSpacing() out-of-line.
 // Including ui/UIListDir.h would expose the inline body, which CW would inline,
@@ -176,6 +179,48 @@ void ScrollbarDisplay::DrawShowing() {
     UpdateSavedListInfo();
     UpdateScrollbarHeightAndPosition();
     UpdateThumbScaleAndPosition();
+#ifdef HX_NATIVE
+    // === Scrollbar degenerate-over-draw gate (GAP 1, converge-2026-06-20) ====
+    //
+    // The Wii draw gate is `mAlwaysShow || m_fSavedScale < 1.0f`. m_fSavedScale
+    // is only ever raised above its ctor default 0 (l.24) by UpdateSavedListInfo
+    // (l.94-104) — and ONLY when a list with provider data is attached. So when
+    // a ScrollbarDisplay has NO scrollable content (no list / 0 provider data),
+    // m_fSavedScale stays 0, the Wii gate (0 < 1) is TRUE, and it unconditionally
+    // draws the SHARED preloaded ui/resource/scrollbar_display.milo scrollbar dir
+    // (scrollbar_bg.mesh + scrollbar.mesh) — the degenerate, contentless case.
+    //
+    // On Wii the off-frame widget is frustum-culled (rndobj/Draw.cpp #else arm);
+    // native disables culling (its HX_NATIVE arm), so a contentless scrollbar
+    // would draw the 200u-stretched ribbon every frame instead of being clipped.
+    // Retail shows NO scrollbar where there is nothing to scroll, so suppressing
+    // the contentless draw converges to retail and is the documented GAP 1 fix
+    // (docs/native/converge-2026-06-20/audit/scrollbar-rootcause.md, Option B).
+    //
+    // Discriminator: a LEGITIMATE, showing scrollbar has 0 < m_fSavedScale < 1
+    // (NumDisplay/NumProviderData of a list with real overflow) — verified live:
+    // song_select's `song.sbd` reports savedScale=0.11, listAttached=1, so it is
+    // kept. A contentless widget has m_fSavedScale == 0 and is dropped. mAlwaysShow
+    // (authored full-bar scrollbars) is always honoured. The Wii path is byte-
+    // identical (this whole block is HX_NATIVE-only). Default ON; opt out with
+    // RB3_SCROLLBAR_FIX_OFF=1 (restores the exact Wii gate).
+    {
+        static int sFixOff = -1;
+        if (sFixOff < 0)
+            sFixOff = getenv("RB3_SCROLLBAR_FIX_OFF") ? 1 : 0;
+        bool hasContent = m_fSavedScale > 0.0f && m_fSavedScale < 1.0f &&
+                          GetListAttached() && m_pList.Ptr() != nullptr;
+        bool drawWii = mAlwaysShow || m_fSavedScale < 1.0f; // exact Wii gate
+        bool drawNative = mAlwaysShow || hasContent;
+        if (sFixOff)
+            drawNative = drawWii; // opt-out: restore baseline (Wii) over-draw
+        if (drawNative) {
+            pDir->SetWorldXfm(WorldXfm());
+            pDir->Draw();
+        }
+        return;
+    }
+#endif
     if (mAlwaysShow || m_fSavedScale < 1.0f) {
         pDir->SetWorldXfm(WorldXfm());
         pDir->Draw();
