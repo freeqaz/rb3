@@ -6,6 +6,82 @@
 #include "utl/Messages.h"
 #include "synth/BinkClip.h"
 
+#ifdef HX_NATIVE
+#include "obj/Dir.h"
+#include "utl/MakeString.h"
+#include "utl/Str.h"
+#include <cstdlib>
+#include <cstring>
+
+// --- Native crowd/venue intro-audio bridge ------------------------------------
+// On the real RB3 the song-intro window (the negative-clock count-in / venue
+// cinematic before the song stems start at clock 0) is filled by CrowdAudio:
+// OnIntro() -> PlayLoop("crowd_intro.mogg") -> Find<BinkClip>(...) -> BinkClip::Play.
+// The native port loads the Xbox-360 venue milo, which (unlike the Wii milo) has
+// ZERO BinkClip objects, so Find<BinkClip> misses and the intro is SILENT.
+//
+// The only crowd stream payloads that exist in any extracted asset tree are the
+// three Wii crowd_<class>_intro.bik intros (small_club/big_club/arena); a
+// companion tool (scripts/native/transcode_crowd_audio.py) transcodes those to
+// unencrypted .mogg under world/venue/<class>/streams/crowd_<short>_intro.mogg.
+//
+// This bridge synthesizes the missing intro BinkClip on the fly (native-only,
+// match-neutral). It points the clip's mFile at "<...>/crowd_<short>_intro.bik";
+// BinkClip::Play strips the trailing 4 chars (".bik") and Synth::NewStreamFile
+// re-appends ".mogg", so the engine streams the transcoded .mogg we ship. The
+// excitement-level loops (norm/good/peak/...) have no extracted source assets,
+// so only the intro is bridged (the rest fall through unchanged).
+//
+// Disable with RB3_NO_CROWD_INTRO=1.
+static BinkClip *NativeSynthCrowdIntroClip(ObjectDir *bank, const char *clipname) {
+    if (!bank || !clipname)
+        return nullptr;
+    if (getenv("RB3_NO_CROWD_INTRO"))
+        return nullptr;
+    // Only the (venue) intro loop has a shippable transcoded stream.
+    if (std::strcmp(clipname, "crowd_intro.mogg") != 0
+        && std::strcmp(clipname, "venue_intro.mogg") != 0)
+        return nullptr;
+
+    // Derive the venue class from the bank's loaded path, e.g.
+    //   "world/venue/small_club/small_club_01/.../small_club_01.milo"
+    //                ^^^^^^^^^^ class dir -> stream basename crowd_<short>_intro
+    const char *path = bank->GetPathName();
+    const char *venueDir = nullptr;   // "small_club" / "big_club" / "arena"
+    const char *streamBase = nullptr; // "crowd_small_intro" / ... (under streams/)
+    if (path) {
+        const char *v = std::strstr(path, "world/venue/");
+        if (v) {
+            v += std::strlen("world/venue/");
+            if (std::strncmp(v, "small_club", 10) == 0) {
+                venueDir = "small_club"; streamBase = "crowd_small_intro";
+            } else if (std::strncmp(v, "big_club", 8) == 0) {
+                venueDir = "big_club"; streamBase = "crowd_big_intro";
+            } else if (std::strncmp(v, "arena", 5) == 0) {
+                venueDir = "arena"; streamBase = "crowd_arena_intro";
+            }
+        }
+    }
+    if (!venueDir)
+        return nullptr; // unknown venue: no shippable stream, fall through
+
+    // Build the clip and register it in the bank so subsequent Find() resolves
+    // it (and so it is owned/freed with the bank). mFile -> "<...>.bik";
+    // BinkClip::Play strips the trailing ".bik" and Synth re-appends ".mogg", so
+    // the file actually streamed is the transcoded crowd_<short>_intro.mogg. The
+    // path resolves relative to the extracted asset root (engine chdir's into
+    // RB3_DATA at boot). loop=true so the intro fills the whole count-in window.
+    BinkClip *clip = bank->New<BinkClip>(clipname);
+    if (!clip)
+        return nullptr;
+    clip->SetPreLoad(false); // stream from disk (the Synth NewStream/Vorbis path)
+    String file(MakeString("world/venue/%s/streams/%s.bik", venueDir, streamBase));
+    clip->SetFile(file.c_str());
+    clip->SetLoop(true);
+    return clip;
+}
+#endif // HX_NATIVE
+
 INIT_REVS(CrowdAudio);
 
 CrowdAudio *TheCrowdAudio;
@@ -169,6 +245,13 @@ bool CrowdAudio::PlayLoop(const DataArray *loopInfo, bool force) {
     if (mBank) {
         clip = mBank->Find<BinkClip>(clipname, false);
         if (!clip) {
+#ifdef HX_NATIVE
+            // The Xbox venue milo the native port loads has no crowd BinkClips;
+            // synthesize the intro clip from the transcoded venue streams so the
+            // song-intro window is not silent. Match-neutral (native-only).
+            clip = NativeSynthCrowdIntroClip(mBank, clipname);
+            if (!clip)
+#endif
             MILO_WARN("%s not found in %s_bank.milo", clipname, mBank->Name());
         }
     }
