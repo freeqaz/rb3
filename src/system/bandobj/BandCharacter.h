@@ -155,7 +155,15 @@ public:
     // both Poll-time rebinds and the SyncObjects rest-pose seeding — hashtable
     // objects + each dir's mDraws + every LOD Group/TransGroup, recursing
     // RndDrawable::ListDrawChildren. Scope = {this, mOutfitDir}; mInstDir excluded.
+    // frame-stall 2026-06-20 (TRACK A): now serves from mNativeSkinnedMeshCache
+    // (rebuilt only when invalidated), so the RTTI-heavy walk runs once per (re)load
+    // instead of every Poll. Appends the cached meshes to `out`.
     void NativeCollectSkinnedMeshes(std::vector<RndMesh *> &out);
+    // frame-stall 2026-06-20 (TRACK A): (re)walk the dir/draw tree into the cache.
+    void NativeRebuildSkinnedMeshCache();
+    // frame-stall 2026-06-20 (TRACK A): drop the cache (call at StartLoad/SyncObjects,
+    // where the dir tree may have been re-stuffed). Forces the next collect to rewalk.
+    void NativeInvalidateSkinnedMeshCache();
     // render-polish 2026-06-11 (char-render): deterministic rest-pose seeding,
     // called from SyncObjects() right after SetDeformation() (the deform clip's
     // PoseMeshes leaves the skeleton at the weighted gender-bind REST pose). Seeds
@@ -324,5 +332,16 @@ public:
     // Default 0.
     int mNativeInstReboundOnce;
     int mNativeInstReboundQuiet;
+    // frame-stall 2026-06-20 (TRACK A): per-member skinned-mesh collection cache.
+    // NativeCollectSkinnedMeshes used to re-walk the member's ObjectDir hashtable
+    // (ObjDirItr RTTI dynamic_cast per entry) + the whole draw tree
+    // (dynamic_cast<RndMesh*> per drawable) EVERY Poll for the ~10s rebind-latch
+    // window — the #1 __dynamic_cast caller chain at song-start (~650ms). The set
+    // of skinned meshes only changes when the dir tree is re-stuffed (StartLoad /
+    // SyncObjects), so the walk result is cached here and invalidated at exactly
+    // those points (NativeInvalidateSkinnedMeshCache). Appended after the matched
+    // layout so the Wii image stays byte-identical. Default empty/false.
+    std::vector<RndMesh *> mNativeSkinnedMeshCache;
+    bool mNativeSkinnedCacheValid;
 #endif
 };

@@ -3,8 +3,10 @@
 #ifdef HX_NATIVE
 #include <cstdio>
 #include <cmath>
+#include <ctime>
 #include <vector>
 #include <list>
+#include <set>
 #include <algorithm>
 #include "rndobj/Mesh.h"
 #include "rndobj/Dir.h"
@@ -122,6 +124,7 @@ BandCharacter::BandCharacter()
     mNativeRestCaptured = false;
     mNativeInstReboundOnce = 0;
     mNativeInstReboundQuiet = 0;
+    mNativeSkinnedCacheValid = false; // frame-stall 2026-06-20 (TRACK A)
 #endif
 }
 
@@ -730,7 +733,25 @@ void BandCharacter::RemoveDrawAndPoll(Character *c) {
 // Scope = {this, mOutfitDir}; mInstDir (guitar / mic / drums) is DELIBERATELY
 // excluded — instruments attach to specific hand/prop bones, not the gender
 // skeleton; rebinding their bones to animated character bones distorts the prop.
-void BandCharacter::NativeCollectSkinnedMeshes(std::vector<RndMesh *> &targets) {
+//
+// frame-stall 2026-06-20 (TRACK A): the full walk is EXPENSIVE — an ObjDirItr
+// RTTI dynamic_cast per hashtable entry + a recursive draw-tree walk that
+// dynamic_cast<RndMesh*>'s every drawable. Pre-2026-06-20 it ran every Poll for
+// every band member (the two Poll-time rebinds each called it) for the whole
+// ~10s rebind-latch window — measured at ~650ms of song-start (the #1
+// __dynamic_cast caller chain). The mesh SET only changes when the dir tree is
+// re-stuffed, i.e. exactly at StartLoad / SyncObjects, which already re-arm the
+// rebind latches. So we cache the collected list once per (re)load and hand back
+// a copy each Poll; the heavy RTTI walk runs once instead of ~4x/frame. The
+// internal O(N^2) std::find dedup is also replaced with O(1) std::set membership.
+// Invalidated by NativeInvalidateSkinnedMeshCache() at every StartLoad/SyncObjects
+// (same points that reset mNative*ReboundOnce), so a re-stuffed dir re-walks.
+void BandCharacter::NativeRebuildSkinnedMeshCache() {
+    std::vector<RndMesh *> &targets = mNativeSkinnedMeshCache;
+    targets.clear();
+    std::set<RndMesh *> seenMesh;     // O(1) target dedup (was O(N^2) std::find)
+    std::set<RndDrawable *> visited;  // O(1) draw-tree cycle guard
+
     Character *drawChars[2] = { this, (Character *)mOutfitDir };
     // worklist of drawables to expand (start with each dir's top draw list)
     std::vector<RndDrawable *> work;
@@ -741,8 +762,7 @@ void BandCharacter::NativeCollectSkinnedMeshes(std::vector<RndMesh *> &targets) 
         // (1) hashtable objects (face/hands/etc.)
         for (ObjDirItr<RndMesh> mit(dd, true); mit != 0; ++mit) {
             RndMesh *m = mit;
-            if (m && m->NumBones() != 0 &&
-                std::find(targets.begin(), targets.end(), m) == targets.end())
+            if (m && m->NumBones() != 0 && seenMesh.insert(m).second)
                 targets.push_back(m);
         }
         // (2) seed the draw-tree walk from the dir's own draw list
@@ -759,23 +779,71 @@ void BandCharacter::NativeCollectSkinnedMeshes(std::vector<RndMesh *> &targets) 
     }
     // (4) recurse the draw tree (groups -> nested clothing meshes). Bounded by a
     // visited set so a cyclic/shared group reference cannot loop forever.
-    std::vector<RndDrawable *> visited;
     while (!work.empty()) {
         RndDrawable *dr = work.back();
         work.pop_back();
         if (!dr) continue;
-        if (std::find(visited.begin(), visited.end(), dr) != visited.end()) continue;
-        visited.push_back(dr);
+        if (!visited.insert(dr).second) continue;
         RndMesh *m = dynamic_cast<RndMesh *>(dr);
-        if (m && m->NumBones() != 0 &&
-            std::find(targets.begin(), targets.end(), m) == targets.end())
+        if (m && m->NumBones() != 0 && seenMesh.insert(m).second)
             targets.push_back(m);
         std::list<RndDrawable *> kids;
         dr->ListDrawChildren(kids);
         for (std::list<RndDrawable *>::iterator k = kids.begin(); k != kids.end(); ++k)
-            if (*k && std::find(visited.begin(), visited.end(), *k) == visited.end())
+            if (*k && visited.find(*k) == visited.end())
                 work.push_back(*k);
     }
+    mNativeSkinnedCacheValid = true;
+}
+
+void BandCharacter::NativeCollectSkinnedMeshes(std::vector<RndMesh *> &targets) {
+    // frame-stall 2026-06-20 (TRACK A): serve from the per-member cache; only
+    // (re)walk the dir tree + draw tree (the RTTI-heavy part) when the cache was
+    // invalidated by a StartLoad/SyncObjects. Optional timing probe (RB3_SKIN_TIMING)
+    // sums rebuild vs cache-hit cost so the song-start saving is measurable.
+    static int sTiming = -1;
+    if (sTiming < 0) sTiming = getenv("RB3_SKIN_TIMING") ? 1 : 0;
+    // A/B escape hatch (measurement only): RB3_SKIN_NOCACHE=1 reproduces the
+    // pre-2026-06-20 behavior — re-walk the full RTTI tree EVERY call — so the
+    // cached vs uncached per-Poll cost can be compared in one binary.
+    static int sNoCache = -1;
+    if (sNoCache < 0) sNoCache = getenv("RB3_SKIN_NOCACHE") ? 1 : 0;
+    if (sNoCache) mNativeSkinnedCacheValid = false;
+    if (!mNativeSkinnedCacheValid) {
+        if (sTiming) {
+            static double sRebuildMs = 0.0;
+            static long sRebuilds = 0;
+            timespec t0, t1;
+            clock_gettime(CLOCK_MONOTONIC, &t0);
+            NativeRebuildSkinnedMeshCache();
+            clock_gettime(CLOCK_MONOTONIC, &t1);
+            double ms = (t1.tv_sec - t0.tv_sec) * 1e3 +
+                        (t1.tv_nsec - t0.tv_nsec) * 1e-6;
+            sRebuildMs += ms;
+            sRebuilds++;
+            if ((sRebuilds % 50) == 0 || ms > 2.0)
+                fprintf(stderr,
+                        "[SKIN_TIMING] REBUILD char='%s' meshes=%d this=%.3fms "
+                        "rebuilds=%ld totalRebuildMs=%.1f\n",
+                        Name() ? Name() : "?", (int)mNativeSkinnedMeshCache.size(),
+                        ms, sRebuilds, sRebuildMs);
+        } else {
+            NativeRebuildSkinnedMeshCache();
+        }
+    } else if (sTiming) {
+        static long sHits = 0;
+        if ((++sHits % 2000) == 0)
+            fprintf(stderr, "[SKIN_TIMING] cacheHits=%ld\n", sHits);
+    }
+    // hand back a copy: callers append to / dedup against `targets` and some
+    // (RebindHeadHandsAtRest) mutate per-mesh state; keep the cache itself read-only.
+    targets.insert(targets.end(), mNativeSkinnedMeshCache.begin(),
+                   mNativeSkinnedMeshCache.end());
+}
+
+void BandCharacter::NativeInvalidateSkinnedMeshCache() {
+    mNativeSkinnedCacheValid = false;
+    mNativeSkinnedMeshCache.clear();
 }
 
 // scout-c8 (render-polish 2026-06-11): CHARACTER-SPACE rest capture.
@@ -1576,6 +1644,11 @@ void BandCharacter::SyncObjects() {
     // re-stuffed / re-skinned), so the next Polls must re-scan for new or
     // re-merged meshes (idempotent for meshes already rebound, which keep
     // RndMesh::mNativeBonesRebound).
+    // frame-stall 2026-06-20 (TRACK A): a SyncObjects pass means the dir tree /
+    // mesh set was re-stuffed — invalidate the skinned-mesh cache BEFORE the
+    // rest-pose seeding (NativeCaptureRestPoseAfterDeform calls
+    // NativeCollectSkinnedMeshes, which then rewalks once into the fresh cache).
+    NativeInvalidateSkinnedMeshCache();
     NativeCaptureRestPoseAfterDeform();
     mNativeReboundOnce = 0;
     mNativeReboundQuiet = 0;
@@ -2024,6 +2097,11 @@ void BandCharacter::StartLoad(bool b1, bool b2, bool b3) {
     mNativeReboundQuiet = 0;
     mNativeHeadReboundOnce = 0;
     mNativeHeadReboundQuiet = 0;
+    // frame-stall 2026-06-20 (TRACK A): a (re)load re-stuffs the dir tree, so the
+    // cached skinned-mesh list may be stale — invalidate it so the next Poll's
+    // collect re-walks once (and the dynamic_cast/draw-tree cost is paid once, not
+    // every Poll). Same trigger as the rebind-latch re-arm above.
+    NativeInvalidateSkinnedMeshCache();
     // wave-inststrings: re-arm the instrument-strings rebind on StartLoad too (an
     // instrument swap re-stuffs mInstDir's strings mesh; already-rebound meshes keep
     // RndMesh::mNativeBonesRebound so the re-scan is idempotent).
