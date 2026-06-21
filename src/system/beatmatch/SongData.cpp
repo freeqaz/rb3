@@ -159,6 +159,15 @@ void SongData::Load(
         }
     }
     Load(midi, info, numDifficulties, pList, midircvrs, bb);
+#ifndef HX_NATIVE
+    // The .vfv ("vocal feature vector") sidecar holds precomputed talky/rap pitch
+    // data for the TalkyMatcher. It is ABSENT from the 360-ARK extract for every
+    // song the port ships, so this open fails for every playable song. The load is
+    // already optional (the !Fail() guard skips it and the matcher just gets the
+    // empty vectors), but on web each doomed open still costs a failed sync-XHR /
+    // 404 per song load. Skipping it natively leaves mVocalFeatureVector{Times,
+    // Peaks} at their empty default — behavior-identical to opening and failing —
+    // while avoiding the failed fetch. Wii keeps the open below (byte-identical).
     FileStream fs88(FakeSongMgr::GetPath(info, ".vfv"), FileStream::kRead, true);
     if (!fs88.Fail()) {
         int count = 0;
@@ -174,6 +183,7 @@ void SongData::Load(
             mVocalFeatureVectorPeaks.push_back(f98);
         }
     }
+#endif
 }
 
 void SongData::Load(
