@@ -815,6 +815,12 @@ void App::RunWithoutDebugging() {
         }
         RB3HttpServerPoll(frame);
         RB3HttpServerPollScreenshots();
+        // Frame-degradation fix: periodically trim the glibc heap so in-song RSS
+        // does not ratchet up from arena fragmentation (the per-frame SFX/object
+        // churn). Native-only TU (rb3_heap_maint_native.cpp); cadenced + opt-out
+        // via RB3_HEAP_TRIM_OFF. No-op on web (wasm heap can't return to host).
+        extern void RB3NativeHeapMaintenance(int frame);
+        RB3NativeHeapMaintenance(frame);
         MILO_LOG("RB3 Native: frame %d complete\n", frame);
     }
     MILO_LOG("RB3 Native: %d frames done — exiting frame loop\n", maxFrames);

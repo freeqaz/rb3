@@ -16,6 +16,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>        // process-lifetime PCM decode cache (key -> SidecarPCM)
+#include <mutex>      // guard the decode cache against concurrent SFX triggers
 #include <string>
 #include <sys/stat.h> // stat (native sidecar-dir auto-probe)
 #include <vector>     // ogg read-into-memory buffer
@@ -71,14 +73,21 @@ inline uint64_t PayloadKey(const void *data, int sizeBytes, int sampleRate) {
     return h;
 }
 
-// Decoded PCM owned by the caller (free() the data). Empty (data==nullptr) if
-// no sidecar exists for this payload.
+// Decoded PCM. Ownership depends on `owned`:
+//   owned == true  → freshly malloc'd; the caller must free(data) (or hand it to
+//                    an inst that frees it in its dtor). This is the legacy path.
+//   owned == false → BORROWED from the process-lifetime decode cache (see
+//                    TryLoadCached below); the caller must NOT free it. The cache
+//                    keeps the buffer alive for the rest of the run, so every
+//                    re-trigger of the same SFX shares one buffer.
+// Empty (data==nullptr) if no sidecar exists for this payload.
 struct SidecarPCM {
-    int16_t *data = nullptr; // interleaved 16-bit LE, malloc'd
+    int16_t *data = nullptr; // interleaved 16-bit LE
     int numSamples = 0;      // per-channel sample count
     int numChannels = 0;
     int sampleRate = 0;
     int byteSize = 0;        // total PCM byte size
+    bool owned = true;       // false → borrowed from the decode cache (don't free)
 };
 
 // W5-T2 flag: prefer the compact <hex>.ogg sidecar (default ON). Set
@@ -442,6 +451,97 @@ inline SidecarPCM TryLoad(const void *xmaData, int sizeBytes, int sampleRate) {
     out.sampleRate = sr;
     out.byteSize = bytes;
     return out;
+}
+
+// ---------------------------------------------------------------------------
+// Process-lifetime PCM decode cache (frame-degradation / leak fix, 2026-06-21).
+//
+// The bug: every SFX trigger (note hits etc., tens/sec in gameplay) calls
+// TryLoad → DecodeOggBuffer, which malloc's the FULL decoded PCM (~24 KB each)
+// and hands it to the RB3SampleInstNative. That inst only frees the PCM in its
+// destructor, and finished one-shot SfxInsts are (on native) not reliably reaped
+// — so the decoded PCM piles up. Re-decoding the SAME handful of SFX oggs every
+// trigger is also pure CPU churn, and the alloc+free churn fragments the glibc
+// arena (the bulk of the in-song [heap] RSS ratchet — see rb3_heap_maint_native).
+//
+// Fix: decode each distinct SFX (keyed by the bank-independent PayloadKey) at
+// most ONCE and keep that buffer for the rest of the run. Every trigger of the
+// same SFX borrows the one cached buffer (owned=false → the inst never frees it),
+// so total PCM memory is bounded by the number of DISTINCT SFX sounds (a small
+// fixed set), not by play time. This both flattens the leak and removes the
+// per-trigger re-decode cost. Native + web (HX_NATIVE); shared `src/` untouched.
+//
+// Opt-out: RB3_SFX_CACHE_OFF=1 falls back to the legacy per-trigger malloc path
+// (owned=true) — kept as an A/B lever for diagnosing the leak.
+inline bool DecodeCacheEnabled() {
+    static int sEnabled = -1;
+    if (sEnabled < 0) {
+        sEnabled = 1; // default ON
+        if (const char *e = getenv("RB3_SFX_CACHE_OFF"))
+            if (e[0] && e[0] != '0')
+                sEnabled = 0;
+    }
+    return sEnabled != 0;
+}
+
+// key -> decoded PCM (data is cache-owned, freed never / at process exit). A
+// data==nullptr entry is a NEGATIVE cache (no sidecar for this key) so repeated
+// triggers of an unconverted SFX don't re-stat/re-fetch every time.
+struct DecodeCache {
+    std::map<uint64_t, SidecarPCM> entries;
+    std::mutex mtx;
+};
+inline DecodeCache &TheDecodeCache() {
+    static DecodeCache c;
+    return c;
+}
+
+// Cached variant of TryLoad: returns a BORROWED SidecarPCM (owned=false) on a hit
+// (or after the first decode populates the cache), so the caller must NOT free
+// data. On a miss with the cache disabled, falls through to a fresh owned decode.
+inline SidecarPCM TryLoadCached(const void *xmaData, int sizeBytes, int sampleRate) {
+    if (!DecodeCacheEnabled())
+        return TryLoad(xmaData, sizeBytes, sampleRate); // owned=true (legacy)
+
+    if (!xmaData || sizeBytes <= 0) {
+        SidecarPCM empty;
+        return empty;
+    }
+    uint64_t key = PayloadKey(xmaData, sizeBytes, sampleRate);
+
+    DecodeCache &cache = TheDecodeCache();
+    {
+        std::lock_guard<std::mutex> lk(cache.mtx);
+        std::map<uint64_t, SidecarPCM>::iterator it = cache.entries.find(key);
+        if (it != cache.entries.end()) {
+            SidecarPCM borrowed = it->second; // copies the header + data ptr
+            borrowed.owned = false;           // cache keeps ownership
+            return borrowed;                  // (data may be null = negative hit)
+        }
+    }
+
+    // Miss: decode once (owned), then store as the canonical cache-owned buffer.
+    // Decode OUTSIDE the lock (the ogg decode + sync web fetch can be slow); a
+    // concurrent trigger of the same key may also decode — we resolve that race
+    // under the lock below, freeing the loser so exactly one buffer is retained.
+    SidecarPCM fresh = TryLoad(xmaData, sizeBytes, sampleRate);
+
+    std::lock_guard<std::mutex> lk(cache.mtx);
+    std::map<uint64_t, SidecarPCM>::iterator it = cache.entries.find(key);
+    if (it != cache.entries.end()) {
+        // Lost the race: another trigger already cached this key. Drop ours.
+        if (fresh.owned && fresh.data)
+            std::free(fresh.data);
+        SidecarPCM borrowed = it->second;
+        borrowed.owned = false;
+        return borrowed;
+    }
+    SidecarPCM stored = fresh;
+    stored.owned = true; // the cache owns it for the process lifetime
+    cache.entries[key] = stored;
+    SidecarPCM borrowed = stored;
+    borrowed.owned = false; // hand the caller a borrow
+    return borrowed;
 }
 
 } // namespace rb3_xma

@@ -337,7 +337,7 @@ static int RunXmaValidate(int argc, char **argv, const char *bankPath) {
                 resolved++;
                 printf("  [OK ] %-40s xma=%d -> pcm %d samples @ %d Hz\n",
                        b.file.c_str(), b.sizeBytes, s.numSamples, s.sampleRate);
-                free(s.data);
+                if (s.owned) free(s.data); // TryLoad always returns owned; guard the contract
             } else {
                 missing++;
                 printf("  [MISS] %-40s key=%016llx size=%d rate=%d\n", b.file.c_str(),

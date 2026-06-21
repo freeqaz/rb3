@@ -486,6 +486,10 @@ add_executable(rb3-native
     # not-connected. Replaces the zeroed weak stub so profile-driven ticker/score
     # paths short-circuit instead of deref-crashing. See the TU header.
     ${CMAKE_SOURCE_DIR}/src/rb3_server_native.cpp
+    # Frame-degradation fix (2026-06-21): periodic glibc heap trim to cap in-song
+    # RSS growth from arena fragmentation (RB3NativeHeapMaintenance, called once
+    # per frame from App::Run's native loop). Opt-out RB3_HEAP_TRIM_OFF.
+    ${CMAKE_SOURCE_DIR}/src/rb3_heap_maint_native.cpp
     # TASK A4 (audio-perf): per-frame JSONL stutter tracer (RB3_FRAME_TRACE=<path>).
     # Defines the asset-event counters (gFrameTrace*) incremented from the engine
     # choke points (LoadMgr::AddLoader, Synth::NewStream) + RB3FrameTraceRecord.
@@ -733,6 +737,10 @@ set(RB3_WEB_NATIVE_GLUE
     ${CMAKE_SOURCE_DIR}/src/rb3_guestprofile_native.cpp
     # Faithful native OFFLINE TheServer (see native list above) — web is HX_NATIVE.
     ${CMAKE_SOURCE_DIR}/src/rb3_server_native.cpp
+    # Frame-degradation fix (2026-06-21): RB3NativeHeapMaintenance. On web the
+    # malloc_trim is compiled out (wasm dlmalloc never returns to the host), so this
+    # is a no-op there, but the TU must link so App.cpp's extern call resolves.
+    ${CMAKE_SOURCE_DIR}/src/rb3_heap_maint_native.cpp
     # Wave-3/M1 measurement: per-frame JSONL frame-trace recorder
     # (RB3_FRAME_TRACE=<path>). Web defines HX_NATIVE so the recorder + the
     # gFrameTraceActive-gated attribution counters compile; the web run loop in
