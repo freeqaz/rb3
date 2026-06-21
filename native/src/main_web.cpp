@@ -599,6 +599,13 @@ static void DoEngineInit() {
     // Seed live-tunable settings (camera/gem) from env (none in browser).
     TheNativeSettings().InitFromEnv();
 
+    // Lock the note-highway clock to the audio clock (kills the Wii's fixed
+    // -20ms A/V calibration, which the latency-free WebGPU renderer must not
+    // apply — it reads as "audio leads the visuals"). Same call as native.
+    // See RB3ApplyNativeAVCalibration() in rb3_synth_native.cpp.
+    extern void RB3ApplyNativeAVCalibration();
+    RB3ApplyNativeAVCalibration();
+
     if (sHarnessMode) {
         // ── HARNESS mode (W2): the static mesh-walk path owns engine init.
         printf("RB3 Web: HARNESS mode (?milo=%s)\n", sMiloPath.c_str());

@@ -656,6 +656,15 @@ static int RunGame(int argc, char **argv) {
     // (future) HTTP /api/settings endpoint can mutate it at runtime.
     TheNativeSettings().InitFromEnv();
 
+    // Lock the note-highway clock to the audio clock. The Wii applies a fixed
+    // -20ms A/V calibration (mInGameExtraVideoLatency=70 vs mSongToTaskMgrMs=50)
+    // every frame in Game::Poll to compensate the GX display pipeline; the
+    // native WebGPU renderer has no such latency, so that -20ms reads as "audio
+    // leads the visuals". Zero the offset term here (opt out: RB3_NO_AV_CALIBRATION).
+    // See RB3ApplyNativeAVCalibration() in rb3_synth_native.cpp.
+    extern void RB3ApplyNativeAVCalibration();
+    RB3ApplyNativeAVCalibration();
+
     // Stand up the GpuDevice FIRST (before chdir + RB3 MemMgr boot) — same
     // ordering rationale as RB3_RENDER_MESH.
     bool headless = (getenv("MILO_HEADLESS") != nullptr) || (getenv("DISPLAY") == nullptr);
