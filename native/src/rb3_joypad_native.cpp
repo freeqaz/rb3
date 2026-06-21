@@ -254,10 +254,12 @@ void EnsurePad0Wired() {
 #ifdef __EMSCRIPTEN__
 // Install JS keydown/keyup listeners maintaining window._rb3Keys as a bitmask
 // whose bits ARE JoypadButton values. rb3_game_input.cpp's InitWebInput also
-// builds this map for the menu-only bits; we extend it with the gameplay fret/
-// strum/star keys so the SAME bitmask drives the real joypad path. Installing
-// twice is harmless (the second listener set just re-ORs/re-clears the same
-// bits), but we guard so we only add our extra keys once.
+// builds this map for the menu/d-pad bits; we extend it with the gameplay fret/
+// strum keys so the SAME bitmask drives the real joypad path. Both listener
+// sets stay installed simultaneously, so a key must not be mapped to a
+// DIFFERENT bit in each set (it would OR both bits on every press). Fret keys
+// therefore avoid a/s/d (claimed by InitWebInput's d-pad). We guard so we only
+// add our extra keys once.
 void InitWebGameplayKeys() {
     if (sWebInputInit)
         return;
@@ -266,9 +268,16 @@ void InitWebGameplayKeys() {
         if (!window._rb3Keys) window._rb3Keys = 0;
         var m = new Object();
         // Frets 1-5 (and A/S/D/F/G) -> the guitar `slots` JoypadButtons.
-        m['1'] = 1 << 1;  m['a'] = 1 << 1;  m['A'] = 1 << 1;   // kPad_R2  (green)
-        m['2'] = 1 << 5;  m['s'] = 1 << 5;  m['S'] = 1 << 5;   // kPad_Circle (red)
-        m['3'] = 1 << 4;  m['d'] = 1 << 4;  m['D'] = 1 << 4;   // kPad_Tri (yellow)
+        // NB: do NOT alias a/s/d/A/S/D to frets here — rb3_game_input.cpp's
+        // InitWebInput maps those same keys to the d-pad (DLeft/DDown/DRight,
+        // bits 15/14/13). Both listener sets stay installed, so aliasing them
+        // would OR a fret bit AND a d-pad/strum bit from one keypress: 's' =
+        // red fret + DDown(strum) -> phantom overstrums (combo breaks) in
+        // gameplay, a stuck red fret on song entry, and DDown auto-repeat
+        // scrolling menus to the bottom. Frets use the digit row + f/g only.
+        m['1'] = 1 << 1;   // kPad_R2  (green)
+        m['2'] = 1 << 5;   // kPad_Circle (red)
+        m['3'] = 1 << 4;   // kPad_Tri (yellow)
         m['4'] = 1 << 6;  m['f'] = 1 << 6;  m['F'] = 1 << 6;   // kPad_X   (blue)
         m['5'] = 1 << 7;  m['g'] = 1 << 7;  m['G'] = 1 << 7;   // kPad_Square (orange)
         // Strum: J/K mirror ArrowUp/ArrowDown (already mapped by InitWebInput).
