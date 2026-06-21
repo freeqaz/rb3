@@ -394,12 +394,29 @@ try {
         const us = snap.urSamples;
         const ctxRate = snap.ctxRate || 44100;
         let dFrames = 0, dEvents = 0, dTotal = 0;
-        let minDepth = snap.bufFrames || 0;
+        // minDepth = the TRUE STEM-RING fill low-water for the window (in ctx
+        // frames), taken straight from the worklet's per-window minRingDepthFrames
+        // samples (u.minDepth). The stem ring fills to ~7-8 s (~320k-360k frames),
+        // far deeper than the 32768-frame output ring.
+        //
+        // BUGFIX (deepring): we used to seed `minDepth = snap.bufFrames` (= the
+        // 32768-frame OUTPUT/SFX ring) and then take min over the raw stem samples.
+        // But every raw stem minDepth is ~320k-360k >> 32768, so the min was ALWAYS
+        // pinned at bufFrames -> 32768/44100 = 743 ms, a structural clamp that made
+        // the off-main stem ring look ~10x shallower than it really is. Seed instead
+        // from the actual samples (no bufFrames floor) so the column reports the real
+        // stem-ring depth. See docs/native/audio-thread-2026-06-20/08-DIAGNOSIS-*.md.
+        let minDepth = 0;
         if (us.length >= 2) {
             dFrames = us[us.length - 1].frames - us[0].frames;
             dEvents = us[us.length - 1].events - us[0].events;
             dTotal = us[us.length - 1].total - us[0].total;
-            for (const u of us) if (u.minDepth > 0 && u.minDepth < minDepth) minDepth = u.minDepth;
+            let seeded = false;
+            for (const u of us) {
+                if (u.minDepth > 0) {
+                    if (!seeded || u.minDepth < minDepth) { minDepth = u.minDepth; seeded = true; }
+                }
+            }
         }
         const urPct = dTotal > 0 ? (100 * dFrames / dTotal) : 0;
         const eventsPerSec = dEvents / STEP_SECS;
@@ -466,8 +483,14 @@ try {
     // Verdict: where does the current architecture start dropping audio?
     const firstBreak = rows.find(r => r.stallMs > 0 && r.underrunPct >= 0.5);
     const cleanStalls = rows.filter(r => r.stallMs > 0 && r.underrunPct < 0.5).map(r => r.stallMs);
+    // The real stall budget is the STEM-ring fill (minRing), NOT the 32768-frame
+    // output ring (bufFrames). With OFFMAIN the stem ring fills to ~7-8 s, so the
+    // single-freeze budget is multi-second; the output ring (~743 ms) only bounds
+    // the output-quantum latency, not the music stall budget.
+    const stemRingMs = rows.reduce((m, r) => Math.max(m, r.minRingMs || 0), 0);
     console.log('VERDICT (baseline to beat):');
-    console.log(`  ring depth ~${ringMs}ms is the theoretical stall budget before the ring empties.`);
+    console.log(`  STEM-ring fill ~${stemRingMs.toFixed(0)}ms is the single-freeze stall budget (off-main music). ` +
+                `(output ring ${ringMs}ms only bounds output-quantum latency, NOT the music budget.)`);
     if (firstBreak) {
         console.log(`  AUDIBLE under-runs begin at injected stall = ${firstBreak.stallMs}ms ` +
                     `(${firstBreak.underrunPct.toFixed(2)}% frames padded, ${firstBreak.eventsPerSec.toFixed(1)} events/s, worst gap ${firstBreak.worstGapMs}ms).`);
