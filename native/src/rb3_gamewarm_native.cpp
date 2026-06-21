@@ -64,7 +64,9 @@
 #include "utl/Loader.h"              // TheLoadMgr, LoadMgr, kLoadFront
 #include "utl/FilePath.h"
 #include "utl/MakeString.h"          // MakeString (venue milo path)
-#include "meta_band/MetaPerformer.h" // MetaPerformer::Current / GetVenue (venue path)
+#include "meta_band/MetaPerformer.h" // MetaPerformer::Current / GetVenueOverride
+#include "bandobj/BandDirector.h"    // TheBandDirector->GetWorld() (the venue prop EnterVenue reads; pulls world/Dir.h)
+#include "obj/Data.h"                // DataNode (venue prop)
 #include "os/Debug.h"               // MILO_LOG
 #include "os/Timer.h"               // Timer (wall clock for the max-hold safety)
 
@@ -143,19 +145,78 @@ std::string gPrewarmVenuePath;
 bool        gPrewarmKicked = false;
 }
 
-// Build the venue milo FilePath from the live MetaPerformer venue Symbol.
-// Returns an empty string if no venue is selected yet (caller skips this frame).
+// Strip a venue Symbol's trailing _NN to get its class (small_club_01 ->
+// small_club), mirroring MetaPerformer::GetVenueClass but operating on an
+// arbitrary venue name (not mVenue). Returns the whole name if there's no '_'.
+static std::string VenueClassOf(const char* venue) {
+    if (!venue || !venue[0]) return std::string();
+    const char* us = std::strrchr(venue, '_');
+    if (!us) return std::string(venue);
+    return std::string(venue, (size_t)(us - venue));
+}
+
+// Build the venue milo FilePath the reveal frame will ACTUALLY load.
+//
+// CRITICAL (frame-stall-2026-06-21): the venue that loads is NOT
+// MetaPerformer::GetVenue(). In the native quickplay flow BandDirector::EnterVenue
+// (BandDirector.cpp:631-665) resolves the venue as:
+//     (1) MetaPerformer get_venue_override   (if set, != no_venue_override)
+//     (2) else GetWorld()->Property("venue")  (the gameplay world.milo instance
+//                                               prop — small_club_01)
+//     (3) else "small_club_01"
+// and IGNORES mVenue entirely. Meanwhile seldiff.dta `load_panels` runs
+// `{meta_performer select_random_venue}`, which DOES populate mVenue with a random
+// small_club_NN. So GetVenue() returns e.g. small_club_06 while EnterVenue loads
+// small_club_01 — measured directly (scripts/native/_venue-commit-probe.py): two
+// runs gave GetVenue=small_club_06/small_club_03 but EnterVenue force-loaded
+// small_club_01 BOTH times. The old prewarm read GetVenue() and so prewarmed the
+// WRONG venue (the ~13 MB "wasted download" the prototype saw — NOT a re-roll).
+//
+// We therefore resolve the SAME venue EnterVenue will, so the background DirLoader
+// targets the milo the reveal's WorldInstance::SetProxyFile -> LoadFile(share=true)
+// actually loads. Returns "" until the resolution is available (GetWorld() not yet
+// merged) so the caller retries next frame.
 static std::string ComputeVenueMiloPath() {
-    MetaPerformer* mp = MetaPerformer::Current();
-    if (!mp) return std::string();
-    Symbol venue = mp->GetVenue();
-    const char* v = venue.Str();
+    Symbol venueSym;
+
+    // (1) MetaPerformer venue override (the value EnterVenue honors first). Use
+    //     GetVenueOverride() directly — same source EnterVenue consults via the
+    //     get_venue_override handler.
+    if (MetaPerformer* mp = MetaPerformer::Current()) {
+        Symbol ov = mp->GetVenueOverride();
+        const char* o = ov.Str();
+        if (o && o[0] && std::strcmp(o, "no_venue_override") != 0)
+            venueSym = ov;
+    }
+
+    // (2) else the gameplay world's authored `venue` prop (GetWorld() == the merged
+    //     world/world.milo WorldDir, which is loaded during the dwell, well before
+    //     the reveal). This is exactly what EnterVenue reads.
+    if (venueSym.Null() && TheBandDirector) {
+        if (WorldDir* w = TheBandDirector->GetWorld()) {
+            const DataNode* prop = w->Property(Symbol("venue"), false);
+            if (prop) {
+                Symbol s = prop->Sym(nullptr);
+                if (!s.Null()) venueSym = s;
+            }
+        } else {
+            // World not merged yet — EnterVenue hasn't a venue to read either.
+            // Retry next frame (don't fall through to the fallback prematurely;
+            // if we kicked small_club_01 and the world prop later differs we'd
+            // waste a download, the very bug we're fixing).
+            return std::string();
+        }
+    }
+
+    // (3) EnterVenue's final fallback when the world prop is absent.
+    if (venueSym.Null())
+        venueSym = Symbol("small_club_01");
+
+    const char* v = venueSym.Str();
     if (!v || !v[0]) return std::string();
-    // GetVenueClass strips the trailing _NN (small_club_01 -> small_club).
-    Symbol cls = mp->GetVenueClass();
-    const char* c = cls.Str();
-    if (!c || !c[0]) c = v;
-    return std::string(MakeString("world/venue/%s/%s/%s.milo", c, v, v));
+    std::string cls = VenueClassOf(v);
+    if (cls.empty()) cls = v;
+    return std::string(MakeString("world/venue/%s/%s/%s.milo", cls.c_str(), v, v));
 }
 
 // Called every dwell/loading frame from Game::IsLoaded() (before the kReady
@@ -165,13 +226,15 @@ static std::string ComputeVenueMiloPath() {
 // dwell. When the reveal's WorldInstance::SetProxyFile -> LoadFile(share=true)
 // runs, DirLoader::Find(fp) finds it loaded and shares it (no sync drain).
 //
-// VENUE RE-ROLL ROBUSTNESS. The quickplay venue is RANDOM
-// (MetaPerformer::SelectRandomVenue -> SetVenue(RandomInt(...))) and can be
-// re-rolled AFTER an early poll, so we do NOT latch forever on the first venue
-// seen — if the committed venue path CHANGES (gPrewarmVenuePath != path) we kick
-// the new one too. We still kick each distinct path at most once (gPrewarmKicked
-// gates re-kicking the SAME path). Earliest correct kick wins the most dwell
-// overlap; a fixed venue (tour mode / dev set_venue_override) gets the full dwell.
+// VENUE STABILITY. ComputeVenueMiloPath() now resolves the venue EnterVenue will
+// ACTUALLY load (override -> world `venue` prop -> small_club_01), which is stable
+// across the whole dwell (measured: the world prop never changes between
+// part_difficulty and the reveal). We still re-evaluate each frame and re-kick if
+// the resolved path CHANGES (e.g. a late-arriving override) so a stale guess can
+// never stick, and we kick each distinct path at most once (gPrewarmKicked gates
+// re-kicking the SAME path). Because the venue is final the moment GetWorld() is
+// merged (early in the dwell), the kick lands at the START of the ~14-16 s
+// commit->reveal dwell — the full overlap the prototype's GetVenue() read missed.
 extern "C" void RB3VenuePrewarmPoll() {
     if (!RB3TexPrewarmEnabled()) return;
 
