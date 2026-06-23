@@ -1200,9 +1200,16 @@ def _find_downscale_dir():
 
 
 def _downscale_enabled_from_env():
-    """RB3_WEB_DOWNSCALE truthiness (1/true/on/yes). Default OFF. The CLI
-    --downscale / --no-downscale override this in main()."""
+    """RB3_WEB_DOWNSCALE truthiness. Default ON for web (A4 SHIP-DEFAULT —
+    visual gate passed pass-with-exclusions, code review clean). Opt out with
+    RB3_WEB_DOWNSCALE=0 (or false/off/no). The CLI --downscale / --no-downscale
+    override this in main(). When the var is unset we default ON; the stripped
+    tree is gitignored build output, so if it's absent _find_downscale_dir()
+    returns None and the resolve is a graceful no-op (falls through to
+    extracted/, no regression)."""
     v = (os.environ.get("RB3_WEB_DOWNSCALE") or "").strip().lower()
+    if v == "":
+        return True  # default-ON for web (A4 ship default)
     return v in ("1", "true", "on", "yes")
 
 
@@ -1461,7 +1468,8 @@ def main():
                   "orig-assets/web-downscaled) — falling through to extracted/ "
                   "(run scripts/web/gen_web_downscaled.py)")
     else:
-        print("  Downscale: off (A4; set RB3_WEB_DOWNSCALE=1 or --downscale)")
+        print("  Downscale: off (A4 default-ON; opt-out via RB3_WEB_DOWNSCALE=0 "
+              "or --no-downscale)")
     if not ENCODE_ENABLED:
         print("  Encode:  DISABLED (assets served raw)")
     elif BROTLI_BIN:
