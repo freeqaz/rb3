@@ -1,0 +1,15 @@
+{
+  "pair": 2,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "TypeToString__F8DataType",
+  "category": "system",
+  "stratum": "HIGH",
+  "reasoning": "The Wii body is TypeToString(DataType): a bound-checked switch (cmplwi r3,0x14 / bgt -> UNEXPECTED) over a 21-entry jump table that returns a global Symbol per DataType enum value (Int, Float, Var, Func, Object, Sym, Unhandled, Array, Command, String, Property, Glob, default UNEXPECTED). The Xenon body matches this on three independent axes. (1) STRINGS: the Xenon body references 'Float','Object','Unhandled','Array','Command','String','Property','UNEXPECTED' -- exactly the DataType type-name set the Wii body loads as Symbol globals. The Xenon side constructs these Symbols inline (MSVC local-static lazy init) whereas MWCC pre-constructed them as file-scope statics; same names, different toolchain idiom. (2) CALLEE: the Xenon callee demangles to ??0Symbol@@QAA@PBD@Z = Symbol::Symbol(char const*), precisely the constructor needed to build the type-name Symbols. (3) SWITCH SHAPE: both switch on the type value with cases 0-6, a gap (7-0xF) routed to the default = UNEXPECTED, then cases 0x10-0x14 -- the Wii 0x15-entry jump table has indices 7-15 all pointing at the UNEXPECTED default, identical distinctive shape. The 'resolved Wii symbol' column (NumPotentialUsers, IsNoFailActive) is clearly mis-resolution noise from the stripped XEX's matches.json; the demangled MSVC name on the second callee (Symbol ctor) is the real, agreeing signal. No genuine discriminator (differing node-size literal, contradictory valid type tag, or string naming a different partner) is present.",
+  "key_evidence": [
+    "Xenon referenced strings (Float/Object/Unhandled/Array/Command/String/Property/UNEXPECTED) == the DataType type-name Symbol set loaded by the Wii body",
+    "Xenon callee ??0Symbol@@QAA@PBD@Z demangles to Symbol::Symbol(char const*) -- constructs the type-name Symbols (matches.json's NumPotentialUsers/IsNoFailActive resolutions are stripped-binary noise)",
+    "Identical distinctive switch shape: cases 0-6 + 0x10-0x14 + default->UNEXPECTED; Wii 21-entry jump table has indices 7-15 all -> UNEXPECTED default",
+    "Both are bound-checked (Wii cmplwi 0x14/bgt; Xenon switch default) type-to-Symbol mappers -- a tiny leaf function whose constant pool/string set is hard to fake"
+  ]
+}

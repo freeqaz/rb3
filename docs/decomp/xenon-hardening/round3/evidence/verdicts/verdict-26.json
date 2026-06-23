@@ -1,0 +1,15 @@
+{
+  "pair": 26,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "MakeString<i>__FPCci_PCc",
+  "category": "network",
+  "stratum": "BSIM 15-20",
+  "reasoning": "The Wii body is a trivial 3-call sequence with no branches: __ct__12FormatStringFPCc (construct FormatString from a const char* format), __ls__12FormatStringFi (operator<<(int) to stream the integer arg), then Str__12FormatStringFv (extract the C-string). This is exactly the MakeString<i>(const char* fmt, int) template: build a FormatString, feed the int, return its string. The Xenon body Function_8227CAA0 has the IDENTICAL control-flow shape: three sequential calls, no branches, returning void/pointer, over a large fixed stack buffer (Wii -2096 / Xenon [2080], consistent with FormatString's internal buffer). All THREE Xenon callees resolve via matches.json, in the SAME ORDER, to the SAME THREE Wii callees: 0x8279f3f0->__ct__12FormatStringFPCc, 0x8279f158->__ls__12FormatStringFi, 0x8279edb0->Str__12FormatStringFv. Three agreeing callees across the compiler boundary -- including the discriminating operator<<(int) which encodes the <i> template parameter directly -- is the strongest corroboration available. No referenced strings to contradict the claim, and no node-size/type-tag discriminator in conflict. The sibling-alias failure mode would require a near-identical sibling separated by a real discriminator (e.g. MakeString<f> calling __ls__12FormatStringFf instead of ...Fi); here the int operator<< callee matches exactly, ruling that out.",
+  "key_evidence": [
+    "All 3 Xenon callees resolve to the SAME 3 Wii callees in the SAME order: __ct__12FormatStringFPCc, __ls__12FormatStringFi, Str__12FormatStringFv",
+    "Discriminating callee __ls__12FormatStringFi (operator<<(int)) encodes the <i> template parameter and matches exactly -- rules out a MakeString<f>/<u> sibling alias",
+    "Identical control-flow shape: three sequential branchless calls over a large fixed FormatString buffer (Wii -2096 / Xenon 2080 bytes)",
+    "No referenced strings and no type-tag/node-size discriminator to contradict the identity"
+  ]
+}

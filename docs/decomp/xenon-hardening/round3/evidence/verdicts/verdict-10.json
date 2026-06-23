@@ -1,0 +1,16 @@
+{
+  "pair": 10,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "RemoveAt__11TrackWidgetFfi",
+  "category": "system",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Strong cross-compiler structural identity. (1) RESOLVED CALLEE: the single Xenon callee FUN_827b7cd0 resolves via matches.json to SecondsToY__8TrackDirCFf, which is exactly the only function the Wii body calls (bl SecondsToY__8TrackDirCFf). A single-callee perfect agreement across the MWCC/MSVC boundary is the strongest possible signal. (2) CONTROL FLOW: both bodies call the callee on a TrackDir-pointer member (Wii unk80 / Xenon +0xa8), add a float field to its result, index an array (base at member 0x1FC / 0x260) by the int arg, then branch on the sign of the index (Wii arg1>0 vs Xenon param_3<1 = exact complements) to compute either current-minus-previous or next-minus-current element difference, take its absolute value (same fcmpo/fneg vs <=0-negate Abs idiom), multiply by a float constant (@F_0000003f / DAT_8200108c), and finish with a 3-float-arg virtual call through a member's vtable. Every semantic block lines up. (3) DIFFERENCES ARE ALL EXPECTED ARTIFACTS: shifted struct offsets (0x80/0x78/0x74/0x84 Wii vs 0xa8/0x98/0x9c/0xac Xenon = MSVC vs MWCC packing), array stride 0x30 vs 0x40 and element field 0x24 vs 0x30/0x70/-0x10 (different element sizeof/layout), vtable slot 0x24 vs 0x1c (different vtable layout), and the branch-sense swap. No referenced strings (0) and none contradict the partner. No genuine sibling discriminator (no valid-vs-valid type tag, no differing node-size literal). This is a faithful same-function match.",
+  "key_evidence": [
+    "Xenon callee FUN_827b7cd0 -> SecondsToY__8TrackDirCFf == the only Wii callee (perfect single-callee agreement)",
+    "Branch predicate complement: Wii arg1>0 vs Xenon param_3<1, with matching prev/next element difference logic in each arm",
+    "Identical abs-then-multiply-by-float-constant idiom followed by a 3-float-arg member vtable virtual call",
+    "All offset/stride/vtable-slot differences are systematic MWCC-vs-MSVC packing/codegen artifacts, not logic differences",
+    "0 referenced strings; none refute the claimed TrackWidget::RemoveAt identity"
+  ]
+}

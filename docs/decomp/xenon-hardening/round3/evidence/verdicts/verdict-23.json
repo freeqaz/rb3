@@ -1,0 +1,16 @@
+{
+  "pair": 23,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "Trace__Q26Quazal16StationProbeListFUi",
+  "category": "network",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Control-flow shape is identical: both bodies iterate an intrusive linked list whose head/container is the loop sentinel (Wii: while var_r31 != this; Xenon: while puStack00000014 == local_20 break). Both load the iterator from the first member (Wii lwz r31,0x0(r3) / m2c this->unk0; Xenon local_20 = *param_1), advance via the next pointer at offset 0 (Wii lwz r31,0x0(r31); Xenon local_20 = *local_20), and on each node invoke a callee on the node + 8 bytes (Wii addi r3,r31,0x8; Xenon local_20 + 2 where local_20 is undefined4* = +8 bytes). The single resolved callee is decisive: Xenon 0x82ad9540 maps via matches.json to Trace__Q26Quazal12StationProbeFUi, which is EXACTLY the callee the Wii body calls (Quazal::StationProbe::Trace). This is the canonical list-Trace-calls-element-Trace relationship (StationProbeList::Trace iterating and calling StationProbe::Trace on each embedded node at +8), agreeing across the MWCC/MSVC boundary. No referenced strings to contradict, and no discriminating literals (no node-size or type-tag mismatch) that would indicate a sibling/template alias.",
+  "key_evidence": [
+    "Resolved callee agreement: Xenon 0x82ad9540 -> Trace__Q26Quazal12StationProbeFUi, identical to the sole Wii callee Trace__Q26Quazal12StationProbeFUi (Quazal::StationProbe::Trace)",
+    "Identical intrusive-list iteration: iterator from *this, sentinel-terminated against the container head, advance via *node (offset 0)",
+    "Same per-node element offset +8 bytes (Wii addi r3,r31,0x8; Xenon local_20+2 on undefined4*)",
+    "Argument forwarding matches: both forward the u32 arg (arg0 / uStack0000001c) unchanged to the element Trace",
+    "No referenced strings and no discriminating immediates to refute the claim"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "pair": 7,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "ReconcileFretState__22JoypadGuitarControllerFv",
+  "category": "system",
+  "stratum": "BSIM>=30",
+  "reasoning": "The Xenon pseudo-C and Wii m2c share an identical control-flow signature for JoypadGuitarController::ReconcileFretState. (1) Same prologue chain: get controller, call vtable method (Wii 0x64 / Xenon 0x5c) guarding an early-out; if nonzero call a second vtable method (Wii 0x68 / Xenon 0x64) to fetch a LocalUser. (2) RESOLVED-CALLEE AGREEMENT: Xenon Function_825116B0 -> UserHasController__FP9LocalUser, which is exactly the call the Wii body makes (bl UserHasController__FP9LocalUser) at the same position guarding the body. (3) Identical 5-iteration loop: both do { mask = 1<<i; read fret-state bitfield (Wii this->unk40 / Xenon piVar4[0x13]); virtual call (Wii 0x60 / Xenon 0x58) with (this, i); compute a bool predicate; OR into accumulator; on disagreement, two-way branch calling one of two virtuals (Wii 0x20/0x24 / Xenon 0x18/0x1c) with (i, -1) vs (i) } while (i < 5). The -1 literal matches exactly (Wii 'li r5, -0x1' / Xenon 0xffffffffffffffff). (4) Identical loop-exit: write back accumulator to the bitfield field, then one final virtual call (Wii 0x1c / Xenon 0x14) with a bool of (padData & (1<<otherField)) and that other field. All offset shifts (0x64 vs 0x5c, 0x68 vs 100, 0x60 vs 0x58, 0x20/0x24 vs 0x18/0x1c, 0x1c vs 0x14, this->unk40 vs piVar4[0x13]) are exactly the documented cross-compiler struct-packing / vtable-layout artifacts, not real discriminators. The bool-materialization difference ((-x|x)>>31 on MWCC vs (mask & v)!=0 on MSVC) is a codegen artifact for the same predicate. No referenced strings to contradict. No sibling-alias discriminator present: no differing node-size literal, no valid-vs-valid type tag.",
+  "key_evidence": [
+    "resolved-callee: Xenon Function_825116B0 -> UserHasController__FP9LocalUser, exactly matching the bl UserHasController__FP9LocalUser in the Wii body at the same guard position",
+    "identical 5-iteration fret loop (i<5) with 1<<i mask, accumulator OR, and two-way virtual dispatch",
+    "the -1 / 0xffffffffffffffff argument to the first branch's virtual call matches on both sides",
+    "loop-exit writes accumulator back to the fret-state bitfield then makes one final virtual call with a derived bool, on both sides",
+    "offset/vtable-slot shifts and bool-materialization are documented MWCC-vs-MSVC artifacts, not discriminators"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "pair": 13,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "__ct__12BandSongPrefFv",
+  "category": "system",
+  "stratum": "BSIM 15-20",
+  "reasoning": "Both bodies are the same constructor shape: (1) call the Hmx::Object base ctor, (2) install the vtable at offset 0, (3) construct exactly FOUR Symbol(const char*) members at a 4-byte stride, (4) return this. Callee agreement is strong: Xenon callee 0x82737fe8 resolves to __ct__Q23Hmx6ObjectFv, exactly the Wii first call. Xenon callee 0x8279b788 carries the MSVC name ??0Symbol@@QAA@PBD@Z which demangles to Symbol::Symbol(char const*) == __ct__6SymbolFPCc, exactly the Wii Symbol ctor (the matches.json resolution to IsNoFailActive__13MetaPerformerCFv is a mis-resolution artifact, but the embedded MSVC symbol name is unambiguous). Referenced strings 'guitar' and 'rocker' are the bookends of the Wii string base \"guitar\\0bass\\0drum\\0rocker\\0\" — exactly the four Symbol args, strongly corroborating. Field offsets differ only in base (Wii 0x1C..0x28 vs Xenon 0x28..0x34) due to a larger MSVC Hmx::Object base subobject — same count, same 4-byte stride. No sibling-alias discriminator present (no differing node-size literal, no differing valid-vs-valid type tag, no contradicting string).",
+  "key_evidence": [
+    "Identical structure: base-ctor + vtable install + 4x Symbol(const char*) + return this",
+    "Xenon callee -> __ct__Q23Hmx6ObjectFv matches Wii base ctor call exactly",
+    "Xenon callee MSVC name ??0Symbol@@QAA@PBD@Z == Symbol::Symbol(const char*) == Wii __ct__6SymbolFPCc",
+    "Strings 'guitar' + 'rocker' are bookends of Wii string base 'guitar\\0bass\\0drum\\0rocker'",
+    "Same Symbol member count (4) and 4-byte stride; offset base shift (0x1C vs 0x28) is expected MSVC vs MWCC base-subobject packing"
+  ]
+}

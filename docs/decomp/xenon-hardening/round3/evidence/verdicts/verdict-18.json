@@ -1,0 +1,16 @@
+{
+  "pair": 18,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "ProcessPositiveJoinResponse__Q26Quazal14JobJoinSessionFUcQ26Quazal8DOHandleQ26Quazal8DOHandle",
+  "category": "network",
+  "stratum": "BSIM>=30",
+  "reasoning": "All 5 resolved Xenon callees map to the exact same Wii callees in identical control-flow positions: 82A4E4C0=SetLocalStation (first, after copying *arg to stack), 82AC8950=SetConnectionID (on the EndPoint member), 82aa3fe8=GetTopology (whose result is compared ==1), 82ABE288=SetRouterAddress (inside the ==1 branch), 82a8aae0=SetInitialConnectionPoint (final call). The control-flow shape is byte-equivalent: setup -> SetLocalStation -> SetConnectionID -> GetInstance -> GetTopology -> if(==1){ GetInetAddress(member+8) -> GetInstance -> SetRouterAddress -> vcall } -> SetInitialConnectionPoint -> final byte store. The unmatched Function_ callees (GetInstance x2, GetInetAddress) are structurally consistent (instance-getters / the +8 StationURL accessor) and simply lack matches.json entries. The only divergences are the validated MWCC<->MSVC artifacts: the EndPoint-pointer member sits at +0x68 on Xenon vs +0x60 on Wii and the final byte field at +0x6d vs +0x65 (a perfectly CONSISTENT +8 struct-packing shift across BOTH accesses), the vtable slot rendered at byte offset 0x1c vs 0x24, and dropped trailing decompiler args. No discriminator present: no differing node-size literal, no conflicting type tag, and no referenced strings on either side (so no refutation). This is the same source function.",
+  "key_evidence": [
+    "5/5 resolved callees agree across the compiler boundary in identical positions (SetLocalStation, SetConnectionID, GetTopology, SetRouterAddress, SetInitialConnectionPoint)",
+    "Identical control flow including the GetTopology()==1 guard and the conditional GetInetAddress/SetRouterAddress/vcall block",
+    "Consistent +8 struct-packing shift across both member accesses (0x60->0x68 pointer field, 0x65->0x6d byte field) = validated MWCC<->MSVC layout artifact, not a discriminator",
+    "Same +8 sub-offset into the EndPoint to reach the StationURL before GetInetAddress (Wii &unk60->unk8 vs Xenon *(+0x68)+8)",
+    "No referenced strings on either side (no refutation), no differing node-size literal or type tag"
+  ]
+}

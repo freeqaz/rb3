@@ -1,0 +1,15 @@
+{
+  "pair": 19,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "OperationEnd__Q26Quazal12SessionStateFPCQ26Quazal11DOOperation",
+  "category": "network",
+  "stratum": "BSIM>=30",
+  "reasoning": "Control-flow shape is structurally identical across both bodies and the single resolved callee agrees across the compiler boundary. Both bodies execute the same distinctive guard: call arg's vtable method, check result == 8; if not, call the same vtable method again and check == 6; only on (8 || 6) proceed. The same two literal constants (8 then 6) appear in both. Both then load a single byte from the second/first parameter, call GetCurrentContext (Xenon FUN_82a414b8 resolves via matches.json to GetCurrentContext__Q26Quazal15PseudoSingletonFv -- the exact callee the Wii body calls via bl), and branch on its return: if ==0 store the byte into one global, else store it into a second global indexed by ctx*4. The two Xenon globals DAT_82ddecd4 (==0 branch) and DAT_82ddecd0 (indexed branch) correspond to adjacent fields of the Wii static s_ulPersistantSystemState (unkC at 0xC and the pointer at unk8), rendered as separate DAT_ symbols by the stripped-binary decompiler. The vtable slot offset difference (Wii 0x10 vs Xenon 0x8) is an expected MWCC-vs-MSVC vtable-layout artifact, not a discriminator.",
+  "key_evidence": [
+    "Resolved callee: Xenon FUN_82a414b8 -> Wii GetCurrentContext__Q26Quazal15PseudoSingletonFv (the only call, matches the only bl in the Wii body).",
+    "Distinctive double vtable-call guard with the same constants (==8 then ==6) in both bodies.",
+    "Byte load from second param + branch on context return: ==0 stores to one global, else stores at global+ctx*4 -- identical in both; the two DAT_ globals map to adjacent fields (unk8/unkC) of the single Wii static s_ulPersistantSystemState.",
+    "No referenced strings on either side -> no refutation; no genuine discriminator (no differing node-size literal, no valid-vs-valid type tag, no contradicting string)."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "pair": 21,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "SetLength__Q26Quazal10ByteStreamFUi",
+  "category": "network",
+  "stratum": "BSIM 20-30",
+  "reasoning": "Both bodies are the identical small function Quazal::ByteStream::SetLength(unsigned int). Control flow matches exactly: load the Buffer* at this+4, call GetSize() on it, compare the unsigned arg to the returned size; if arg <= size, call SetContentSize(buffer, arg) and return true/1, otherwise return false/0. The Wii asm cmplw r31,r3 + ble-success encodes arg0 <= size, which is exactly the Xenon 'bVar1 = uStack0000001c <= uVar2' success path. The two Xenon callees resolve via matches.json to the SAME two Wii callees the Wii body calls, in the SAME order, on the SAME field (offset 4), with the SAME arguments: FUN_82a79c58 -> GetSize__Q26Quazal6BufferCFv (first, on field+4) and FUN_82a79c40 -> SetContentSize__Q26Quazal6BufferFUi (second, on field+4 with arg). Agreeing callees across the compiler boundary plus identical CFG and field offset is decisive. No referenced strings on either side; no discriminating immediates or node-size literals to contradict. No sibling-alias discriminator present.",
+  "key_evidence": [
+    "Both resolved callees (FUN_82a79c58 -> GetSize__Q26Quazal6BufferCFv, FUN_82a79c40 -> SetContentSize__Q26Quazal6BufferFUi) match the exact Wii callees in the same call order.",
+    "Both call on the same struct field offset 4 (the Quazal::Buffer* member) with matching args.",
+    "Identical control flow: size-bound guard returning bool, success path calls SetContentSize and returns true.",
+    "Wii cmplw r31,r3 + ble (arg0 <= size success) equals Xenon 'param_2 <= uVar2' success condition.",
+    "No contradicting strings on either side; no sibling-alias discriminator (no differing node-size literal or type-tag)."
+  ]
+}

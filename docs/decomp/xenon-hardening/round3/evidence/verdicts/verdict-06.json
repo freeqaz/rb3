@@ -1,0 +1,18 @@
+{
+  "pair": 6,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "Deploy__9BandTrackFv",
+  "category": "system",
+  "stratum": "BSIM>=30",
+  "reasoning": "Structural and callee evidence is overwhelming. The Xenon pseudo-C and Wii m2c bodies have identical control flow: five blocks in the same order. Every struct field offset matches exactly across the compiler boundary: unkBC at 0xbc (vtable-dispatched call when non-null), GetCrowdMeter result then Deploy with this->unk10C at 0x10c, unk40 at 0x40 (Overdrive), unk98 at 0x98 (vtable-dispatched call with arg 0), and the final byte store of 1 to this->unk18 at 0x18 (stb on Wii, *(p+0x18)=1 byte store on Xenon). The vtable slot deltas (0x50 vs 0x24, 0x138 vs 0x130) are expected MWCC-vs-MSVC vtable-layout/index artifacts and do not count as differences. Two of three Xenon callees resolve via matches.json to the EXACT same Wii callees: Function_8233C848 -> GetCrowdMeter__9BandTrackFv and FUN_822c4868 -> Overdrive__11StreakMeterCFv. The third unmatched callee Function_822AAE38 is called positionally with the crowd-meter result and *(param_1+0x10c), exactly the Wii Deploy__14BandCrowdMeterFi(crowdMeter, this->unk10C) call site. No referenced strings exist to contradict. No genuine sibling discriminator (no differing node-size literal, no valid-vs-valid type tag).",
+  "key_evidence": [
+    "Resolved callee Function_8233C848 -> GetCrowdMeter__9BandTrackFv (exact Wii match)",
+    "Resolved callee FUN_822c4868 -> Overdrive__11StreakMeterCFv (exact Wii match)",
+    "Unmatched callee Function_822AAE38(crowdMeter, *(p+0x10c)) positionally == Wii Deploy__14BandCrowdMeterFi(temp_r3, this->unk10C)",
+    "Identical field offsets across both bodies: 0xbc, 0x10c, 0x40, 0x98, 0x18",
+    "Identical 5-block control-flow shape in same order; final stb 1 -> off 0x18",
+    "Vtable-slot deltas (0x50/0x24, 0x138/0x130) are expected cross-compiler vtable-layout artifacts, not discriminators",
+    "No Xenon strings; nothing to refute the claim"
+  ]
+}

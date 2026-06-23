@@ -1,0 +1,16 @@
+{
+  "pair": 17,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "ProcessJoinResponse__Q26Quazal14ObjDupProtocolFPQ26Quazal7MessageRUc",
+  "category": "network",
+  "stratum": "BSIM>=30",
+  "reasoning": "Control-flow shape is identical between the Xenon pseudo-C and the Wii body: (1) guard on session-pointer field non-null (Wii 0x2c / Xenon +0x30 -- a struct-packing offset shift, a validated cross-compiler artifact, not a discriminator), (2) GetInstance(StationConnectionManager)+IsDisconnectingFromSession early-return-if-disconnecting gate, (3) branch on *arg1 (the char& message-type byte) == 1 vs == 2, (4) case 1: zero two DOHandle locals, two byte-stream extract reads, GetInstance(StationManager)/ExtractBootstrapStationURLs, then 'if (field & 4) == 4' virtual call (Wii vtable slot +0x10 vs Xenon +8 -- vtable-offset artifact) and ProcessPositiveJoinResponse, (5) case 2: ExtractString -> construct StationURL -> SetNewContactPoint -> destruct, then fall-through Extract(ByteStream) + ProcessNegativeJoinResponse. Resolved callees are the decisive corroboration: Xenon 0x82a9c718 -> ProcessPositiveJoinResponse__Q26Quazal14JobJoinSession..., 0x82a9c988 -> ProcessNegativeJoinResponse__Q26Quazal14JobJoinSession..., 0x82a69f70 -> Extract__Q26Quazal10ByteStreamFPUcUiUi (with args (stream,&buf,4,1) matching Wii exactly), plus 0x82a6ac50 -> Extract__Q26Quazal21_DDL_BasicAccountInfo and 0x82a73c98 -> Router routing-address construct (StationURL cleanup). Three of five resolved callees are the SAME three JobJoinSession Process/Extract functions the Wii body calls, in the SAME branch positions -- cross-compiler callee agreement that is essentially impossible to fake. No referenced strings to contradict the claim, and no genuine sibling-alias discriminator (no differing node-size literal or valid-vs-valid type tag). The only divergences are validated MWCC-vs-MSVC artifacts (field-offset shift, vtable-slot offset, dropped trailing call-args).",
+  "key_evidence": [
+    "Resolved callee 0x82a9c718 -> ProcessPositiveJoinResponse__Q26Quazal14JobJoinSession... matches Wii case-1 callee",
+    "Resolved callee 0x82a9c988 -> ProcessNegativeJoinResponse__Q26Quazal14JobJoinSession... matches Wii fall-through callee",
+    "Resolved callee 0x82a69f70 -> Extract__Q26Quazal10ByteStreamFPUcUiUi with args (stream,&buf,4,1) identical on both sides",
+    "Identical branch structure: char& message-type == 1 (positive path) vs == 2 (negative/contact-point path), with (field & 4)==4 virtual-dispatch sub-branch in case 1",
+    "No referenced strings to refute; offset (0x2c vs 0x30) and vtable-slot (0x10 vs 8) differences are validated cross-compiler artifacts"
+  ]
+}

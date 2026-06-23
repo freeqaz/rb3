@@ -1,0 +1,17 @@
+{
+  "pair": 1,
+  "verdict": "same",
+  "confidence": "medium",
+  "claimed_wii_symbol": "CompressTextures__12OutfitConfigFv",
+  "category": "system",
+  "stratum": "HIGH",
+  "reasoning": "Both bodies implement the identical trivial setter pattern: load a single struct field, if it already equals 2 return immediately (early-return / beqlr), otherwise store 1 into that same field. The discriminating immediates match exactly across the compiler boundary -- compare-constant = 2 and store-constant = 1 on BOTH sides. The only divergence is the field offset (Wii 0x3c vs Xenon 0x44), which is precisely the struct-field-offset shift caused by different struct packing between MWCC/Gekko and MSVC/Xenon (different base-class size / alignment), an explicitly VALIDATED cross-compiler artifact that must NOT drive a DIFFERENT verdict. No genuine sibling-alias discriminator is present: no differing node-size literal (e.g. 16 vs 36), no valid-vs-valid type-tag divergence (e.g. 6 vs 1), and no referenced strings that name a different function/TU (neither side references any string). Both are leaf functions (0 callees), so no callee evidence either direction, but nothing contradicts the identity. Confidence is medium rather than high only because this is a very small (9-line / 24-byte) leaf whose shape could in principle be shared by another trivial single-field setter; however, the exact agreement of BOTH literal constants (2 and 1) plus the single-field toggle structure is a reasonably specific fingerprint, and the ExactInstructionsFunctionHasher HIGH-stratum match with zero contradicting evidence supports SAME.",
+  "key_evidence": [
+    "Identical control-flow shape: load field, cmp==2 -> early return (beqlr), else store 1 to same field.",
+    "Both discriminating immediates agree: compare-constant=2 and store-constant=1 on Wii and Xenon.",
+    "Only difference is field offset 0x3c (Wii) vs 0x44 (Xenon) -- a validated struct-packing offset-shift artifact, not a discriminator.",
+    "No sibling-alias discriminator present: no differing node-size literal, no valid type-tag divergence, no contradicting strings.",
+    "Both leaf functions (0 callees); no callee disagreement.",
+    "HIGH stratum, ExactInstructionsFunctionHasher match."
+  ]
+}

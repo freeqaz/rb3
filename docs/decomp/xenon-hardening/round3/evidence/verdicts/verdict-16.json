@@ -1,0 +1,16 @@
+{
+  "pair": 16,
+  "verdict": "same",
+  "confidence": "high",
+  "claimed_wii_symbol": "ValidOperation__Q26Quazal7StationFPQ26Quazal11DOOperation",
+  "category": "network",
+  "stratum": "BSIM>=30",
+  "reasoning": "Control-flow shapes are isomorphic across the compiler boundary. Wii Quazal::Station::ValidOperation: reads a u16 state field (offset 0xB4), checks ==4||==5, calls a virtual through the operation arg's vtable, switches on the result (case 6, case 0xE), re-dispatches the virtual on the 0xE path, checks a byte flag (0x28), signals error 0xE000000E in two paths returning 0, and otherwise tail-calls DuplicatedObject::ValidOperation(this, arg0). The Xenon body Function_82A4DFD8 reproduces this exactly: state field (0xB0, packing-shifted from 0xB4 — a validated cross-compiler artifact), ==4||==5 check, virtual dispatch (slot 8 vs Wii slot 0x10 — normal differing vtable layout), result==6 -> error(0,0,0xE000000E,0) return 0, result==0xE -> re-dispatch + 0xE check selecting arg or NULL, byte-flag check (local_1c+0xb), error 0xE000000E return 0, else tail-call Function_82A46638(param_1, param_2). The decisive evidence is the resolved-callee agreement: Function_82A46638 maps via matches.json to ValidOperation__Q26Quazal16DuplicatedObjectFPQ26Quazal11DOOperation, which is EXACTLY the tail-call target in the Wii body. The error-code constant 0xE000000E and the switch literals (6, 0xE) are byte-identical across both bodies. No referenced strings contradict the partner. No genuine sibling discriminator (no valid-vs-valid type tag, no differing node-size literal). Field-offset and vtable-slot shifts are the expected MWCC-vs-MSVC packing/layout artifacts. The first callee resolving to Station::ConvertIDToDOHandle rather than SignalError is a minor matches.json resolution wrinkle (same TU/class, used in the error-signal slot) and does not refute.",
+  "key_evidence": [
+    "Xenon callee Function_82A46638 resolves to ValidOperation__Q26Quazal16DuplicatedObjectFPQ26Quazal11DOOperation, the exact tail-call target in the Wii body (strongest cross-compiler signal).",
+    "Identical error-code constant 0xE000000E in both error paths and identical switch literals (state 4||5, result 6 and 0xE).",
+    "Isomorphic control flow: state check -> virtual dispatch -> switch(6,0xE) -> 0xE-path re-dispatch + NULL/arg select -> byte flag check -> error+return0, else tail-call sibling.",
+    "Field-offset (0xB4 vs 0xB0) and vtable-slot (0x10 vs 8) differences are validated MWCC/MSVC packing+layout artifacts, not discriminators.",
+    "No referenced strings (Xenon side has none) to refute the claimed Station partner."
+  ]
+}
