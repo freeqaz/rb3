@@ -27,14 +27,16 @@
  *   --4mbps             Shorthand for --mbps 4 --rtt 150 (wave-4 gate condition B)
  *   --verbose           Echo every console line from the browser
  *
- * Thresholds (TARGET — post-T1/T2 goals; gate exits non-zero today):
- *   Unthrottled / debug:
- *     reveal dt <= 120 ms, over100 == 0 (post-T1/T2 target)
- *   Unthrottled / release:
+ * Thresholds (TARGET — MET on current master, default warm ON):
+ *   Unthrottled / debug or release:
  *     reveal dt <= 120 ms, over100 == 0
+ *   As of the 2026-06-23 re-baseline this PASSES on default-ON master: the
+ *   framestall venue-aware prewarm (86312dcf) lands the reveal frame ~96 ms.
+ *   See research/10-wave6-rebaseline.md.
  *
- *   --baseline mode (current deployed build, should PASS today):
- *     reveal dt in [400, 1200] ms (the measured 659–1010 ms band)
+ *   --baseline mode = the warm-OFF self-test. Run with RB3_GAMEWARM_OFF=1 +
+ *   RB3_TEX_PREWARM_OFF=1 (the un-warmed build): reveal dt lands in
+ *   [400, 1200] ms (measured ~410 ms), confirming the probe sees the drain.
  *
  * Reveal frame identification: first JSONL line with scr=="game_screen".
  * lpu / lp attribution: reported from the trace once T3 Loader.cpp wiring lands;
@@ -81,16 +83,18 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // Thresholds
 // ---------------------------------------------------------------------------
 
-// TARGET thresholds (post-T1/T2). The gate should FAIL on today's deployed build
-// and PASS once T1+T2 land. Over100 gate is the rAF freeze count in the
+// TARGET thresholds. PASSES on current master (default warm ON) as of the
+// 2026-06-23 re-baseline — the framestall venue-aware prewarm (86312dcf) lands
+// the reveal frame ~96 ms. Over100 gate is the rAF freeze count in the
 // start-song window (separate from dt, see plan §1.1).
 const TARGET = {
     revealDtMaxMs: 120,   // reveal frame wall-clock dt (ms)
     over100Max:    0,     // rAF gaps > 100 ms in the start-song window
 };
 
-// BASELINE thresholds: current deployed build should land in [400, 1200] ms.
-// Gate exits 0 when dt is in this band (confirming the probe works).
+// BASELINE thresholds = the warm-OFF self-test band. Run --baseline with
+// RB3_GAMEWARM_OFF=1 + RB3_TEX_PREWARM_OFF=1: the un-warmed reveal frame lands
+// in [400, 1200] ms (measured ~410 ms), confirming the probe sees the drain.
 const BASELINE_BAND = { minMs: 400, maxMs: 1200 };
 
 // ---------------------------------------------------------------------------
