@@ -470,9 +470,18 @@ def sibling_alias_verdict(
             f"({wii_int_calls[0][0]} vs {xen_int_calls[0][0]})"
         )
 
-    # (b) store-constant to the SAME field offset with a different constant.
+    # (b) store-constant to the SAME field offset with a different NON-ZERO
+    # constant.  A 0 on either side is almost always the cross-compiler decompiler
+    # FAILING to render a value -- an un-captured DataNode type-tag, or a sentinel
+    # that shifted to an adjacent index under different struct packing -- not a
+    # genuine discriminator.  Full-corpus validation: 21/22 store-const flags were
+    # this "N != 0" artifact on the SAME function (e.g. Rnd::OnShowConsole renders
+    # its kDataInt return-tag as 6 under MWCC, 0 under MSVC; StringTable's -1 sentinel
+    # sits at [3] on Wii, [4] on Xenon).  Require BOTH non-zero, so a real type
+    # discriminator survives (pair-16: kDataInt=6 vs kDataFloat=1).
     for key in set(wii_stores) & set(xen_stores):
-        if wii_stores[key] != xen_stores[key]:
+        if (wii_stores[key] != xen_stores[key]
+                and wii_stores[key] and xen_stores[key]):
             return action, (
                 f"store-constant {wii_stores[key]} != {xen_stores[key]} "
                 f"at offset {key}"
