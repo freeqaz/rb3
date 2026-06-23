@@ -760,3 +760,30 @@ maxSingleMilo = `small_club_01` at **11.67 MB** wire (was 12.88 MB q5; matches P
 
 Artifacts: `/tmp/rb3perf-w5-integ/` (c1/c3/c4/c5 `result.json`+`net.ndjson`,
 firstframe-release `result.json`+`trace.jsonl`, gameplay screenshot, prewarm log).
+
+## Wave 6 re-baseline (2026-06-23)
+
+Re-measured on current master (web deploy 02:01, ≈`33434ce6`, engine pin
+`20dba552`) after a 12-day gap. Full results + provenance:
+`research/10-wave6-rebaseline.md`. Salvaged from an interrupted measurement run
+(`/tmp/rb3perf-w6/`); STEP 4 (L1 steady-state) did not complete.
+
+**Headline — game_screen first-frame is FIXED (the Wave-5 deferred L2).** Clean
+web A/B, same build: warm ON (default) **95.7 / 97.5 ms** vs OFF
+(`RB3_GAMEWARM_OFF=1` `RB3_TEX_PREWARM_OFF=1`) **419.5 / 406.5 ms** —
+**~410 → ~96 ms (−77%)**, the sync drain (`lpu`) collapsing 368 → 53 ms,
+`texN` 97 → 89. ON **meets the research/09 120 ms target.** Native ON ~98–125 ms
+vs OFF ~125–140 ms (sync I/O → smaller gap). Credit the framestall venue-aware
+prewarm (`86312dcf`), which mirrors `BandDirector::EnterVenue` resolution instead
+of the never-loaded `MetaPerformer::GetVenue()` — the exact reason Wave 5's warm
+was an Enter-state no-op.
+
+**Bytes / journey gates HOLD.** c4 4 Mbps/150 ms: **114.9 MB** wire (W5 115.5),
+game_screen @ 251 s (W5 248), milo 75.0 / mogg 14.8 / bundle 15.0 MB, cold hovers
+frozen 0 / over100 0. c1 20 Mbps backstop: game_screen @ 88.6 s, splash→hub
+63 ms / over100 0, freeze-free. The −36% bytes win is intact.
+
+**Carried forward:** L1 steady-state gameplay win (web p50 18.99 → <17 ms) still
+UNVERIFIED; `firstframe-gate.mjs` baseline band `[400,1200]` is stale and
+mislabels the fixed ON arm FAIL — update it to assert the 120 ms target;
+1.5 Mbps still throughput-bound (A4 downscale the only lever).
