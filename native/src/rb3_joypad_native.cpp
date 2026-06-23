@@ -267,17 +267,15 @@ void InitWebGameplayKeys() {
     EM_ASM({
         if (!window._rb3Keys) window._rb3Keys = 0;
         var m = new Object();
-        // Frets 1-5 (and A/S/D/F/G) -> the guitar `slots` JoypadButtons.
-        // NB: do NOT alias a/s/d/A/S/D to frets here — rb3_game_input.cpp's
-        // InitWebInput maps those same keys to the d-pad (DLeft/DDown/DRight,
-        // bits 15/14/13). Both listener sets stay installed, so aliasing them
-        // would OR a fret bit AND a d-pad/strum bit from one keypress: 's' =
-        // red fret + DDown(strum) -> phantom overstrums (combo breaks) in
-        // gameplay, a stuck red fret on song entry, and DDown auto-repeat
-        // scrolling menus to the bottom. Frets use the digit row + f/g only.
-        m['1'] = 1 << 1;   // kPad_R2  (green)
-        m['2'] = 1 << 5;   // kPad_Circle (red)
-        m['3'] = 1 << 4;   // kPad_Tri (yellow)
+        // Frets: the digit row 1-5 AND a/s/d/f/g -> the guitar `slots`
+        // JoypadButtons. Aliasing a/s/d is safe because InitWebInput
+        // (rb3_game_input.cpp) navigates menus with the ARROW keys, not WASD — so
+        // across BOTH installed listener sets no key maps to a fret bit in one and
+        // a d-pad/strum bit in the other (the collision that caused a stuck red
+        // fret + phantom strums). Each key -> exactly one bit.
+        m['1'] = 1 << 1;  m['a'] = 1 << 1;  m['A'] = 1 << 1;   // kPad_R2  (green)
+        m['2'] = 1 << 5;  m['s'] = 1 << 5;  m['S'] = 1 << 5;   // kPad_Circle (red)
+        m['3'] = 1 << 4;  m['d'] = 1 << 4;  m['D'] = 1 << 4;   // kPad_Tri (yellow)
         m['4'] = 1 << 6;  m['f'] = 1 << 6;  m['F'] = 1 << 6;   // kPad_X   (blue)
         m['5'] = 1 << 7;  m['g'] = 1 << 7;  m['G'] = 1 << 7;   // kPad_Square (orange)
         // Strum: J/K mirror ArrowUp/ArrowDown (already mapped by InitWebInput).
@@ -523,7 +521,7 @@ void JoypadPoll() {
     if (glfwGetKey(w, GLFW_KEY_LEFT)  == GLFW_PRESS) btns |= kBtnDLeft;
     if (glfwGetKey(w, GLFW_KEY_RIGHT) == GLFW_PRESS) btns |= kBtnDRight;
     // Menu Confirm / Cancel / Start / Star power / page (conflict-free):
-    if (glfwGetKey(w, GLFW_KEY_ENTER)     == GLFW_PRESS) btns |= kBtnConfirm; // kPad_X
+    if (glfwGetKey(w, GLFW_KEY_ENTER)     == GLFW_PRESS) btns |= kBtnFret0;   // green; R2->Confirm via button_meanings
     if (glfwGetKey(w, GLFW_KEY_BACKSPACE) == GLFW_PRESS) btns |= kBtnCancel;  // kPad_Circle
     if (glfwGetKey(w, GLFW_KEY_ESCAPE)    == GLFW_PRESS) btns |= kBtnStart;   // pause/Start
     if (glfwGetKey(w, GLFW_KEY_TAB)       == GLFW_PRESS) btns |= kBtnStar;    // mercury/OD

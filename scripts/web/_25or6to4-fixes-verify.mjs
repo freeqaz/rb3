@@ -140,26 +140,44 @@ try {
   phase = 'play';
   await sleep(6000);   // let stems arm/seed + latency law settle at floor
 
-  // ============ #2/#3 INPUT COLLISION ============
-  console.log('\n=== INPUT COLLISION CHECK (_rb3Keys) ===');
+  // ============ #2/#3 INPUT (collision-free keymap) ============
+  // Intended map: a/1->green s/2->red d/3->yellow f/4->blue g/5->orange,
+  // j/k->strum, arrows->d-pad nav, Enter->green. Each key must set EXACTLY its
+  // one bit (extra bits == the listener collision). Enter confirming menus is
+  // already proven by nav reaching gameplay (Enter->green->Confirm).
+  console.log('\n=== INPUT KEYMAP CHECK (_rb3Keys, exact single-bit) ===');
+  const EXPECT = {
+    a: B.green, s: B.red, d: B.yellow, f: B.blue, g: B.orange,
+    '1': B.green, '2': B.red, '3': B.yellow, '4': B.blue, '5': B.orange,
+    j: B.DUp, k: B.DDown,
+    ArrowDown: B.DDown, ArrowUp: B.DUp, ArrowLeft: B.DLeft, ArrowRight: B.DRight,
+    Enter: B.green,
+  };
   const keyProbe = {};
-  for (const k of ['a', 's', 'd', '1', '2', '3', 'f', 'g', 'j', 'k']) {
-    keyProbe[k] = await probeKey(page, k);
-    console.log(`  '${k}': held=0x${keyProbe[k].held.toString(16)} (fret=${!!(keyProbe[k].held & FRET_BITS)} dpad/strum=${!!(keyProbe[k].held & DPAD_BITS)})  after-release=0x${keyProbe[k].after.toString(16)}`);
+  let noCollision = true, clearsOnRelease = true;
+  for (const k of Object.keys(EXPECT)) {
+    const p = await probeKey(page, k);
+    keyProbe[k] = p;
+    const ok = p.held === EXPECT[k];
+    if (!ok) noCollision = false;
+    if (p.after !== 0) clearsOnRelease = false;
+    console.log(`  '${k}': held=0x${p.held.toString(16)} expect=0x${EXPECT[k].toString(16)} ${ok ? 'OK' : 'EXTRA-BITS!'}  after=0x${p.after.toString(16)}${p.after ? ' STUCK!' : ''}`);
   }
-  // a/s/d must set NO fret bit (THE fix). frets (1/2/3/f/g) must set NO d-pad/strum bit.
-  const asdNoFret = ['a', 's', 'd'].every(k => (keyProbe[k].held & FRET_BITS) === 0);
-  const asdHasDpad = ['a', 's', 'd'].every(k => (keyProbe[k].held & DPAD_BITS) !== 0);
-  const fretsClean = ['1', '2', '3', 'f', 'g'].every(k => (keyProbe[k].held & FRET_BITS) !== 0 && (keyProbe[k].held & DPAD_BITS) === 0);
-  const clearsOnRelease = ['a', 's', 'd', '1', '2', '3', 'f', 'g', 'j', 'k'].every(k => keyProbe[k].after === 0);
-  results.input = { asdNoFret, asdHasDpad, fretsClean, clearsOnRelease,
-    redOnS: !!(keyProbe['s'].held & B.red) };
-  console.log(`  a/s/d set NO fret bit:     ${asdNoFret}  (was the bug: 's' would set red)`);
-  console.log(`  a/s/d still d-pad nav:     ${asdHasDpad}`);
-  console.log(`  frets set NO d-pad/strum:  ${fretsClean}`);
-  console.log(`  all keys clear on release: ${clearsOnRelease}`);
-  const inputPass = asdNoFret && asdHasDpad && fretsClean && clearsOnRelease;
+  const asdFretsClean = ['a', 's', 'd'].every(k => keyProbe[k].held === EXPECT[k]);
+  const fretsClean = ['1', '2', '3', '4', '5', 'a', 's', 'd', 'f', 'g'].every(k => (keyProbe[k].held & DPAD_BITS) === 0 && (keyProbe[k].held & FRET_BITS) !== 0);
+  const enterIsGreen = keyProbe['Enter'].held === B.green;
+  results.input = { noCollision, clearsOnRelease, asdFretsClean, fretsClean, enterIsGreen,
+    sIsRedOnly: keyProbe['s'].held === B.red };
+  console.log(`  a/s/d are clean frets (no d-pad):  ${asdFretsClean}`);
+  console.log(`  all frets set no d-pad/strum bit:  ${fretsClean}`);
+  console.log(`  Enter = green fret (bit1):         ${enterIsGreen}`);
+  console.log(`  no key sets extra bits (collision):${noCollision}`);
+  console.log(`  all keys clear on release:         ${clearsOnRelease}`);
+  const inputPass = noCollision && clearsOnRelease && asdFretsClean && fretsClean && enterIsGreen;
   console.log(`  INPUT: ${inputPass ? 'PASS' : 'FAIL'}`);
+  // Enter at gameplay fires Confirm (no focused target) — make sure we're still playing.
+  const stillGame = (await state(page)).screen === 'game_screen';
+  if (!stillGame) console.log(`  NOTE: screen drifted to '${(await state(page)).screen}' after input probe`);
 
   // ============ #1 STEM-SEED ANCHOR ============
   console.log('\n=== STEM-SEED ANCHOR CHECK ===');

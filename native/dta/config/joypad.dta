@@ -86,12 +86,16 @@
 ; --- advance. Keys = JoypadButton ints, values = JoypadAction ints (raw; no
 ; --- kPad_/kAction_ macros exist in the loaded config). The wii_guitar map
 ; --- mirrors rb3_game_input.cpp kWebKeyMap (the proven menu baseline).
-; --- Row legend: keys  X=6 Circle=5 Tri=4 Square=7 L1=2 R1=3 Select=8
+; --- Row legend: keys  R2=1 X=6 Circle=5 Tri=4 Square=7 L1=2 R1=3 Select=8
 ; ---             Start=11 DUp=12 DRight=13 DDown=14 DLeft=15
 ; ---            vals  Confirm=1 Cancel=2 Option=3 Start=4 ViewModify=5
 ; ---             Up=6 Right=7 Down=8 Left=9 PageUp=10 PageDown=11
+; --- R2=green fret -> Confirm: keyboard Enter maps to the green fret
+; --- (rb3_game_input.cpp / rb3_joypad_native.cpp), so green doubles as menu
+; --- Confirm. X=6 (blue / gamepad A) stays Confirm for controller menus.
 (button_meanings
    (wii_guitar
+      (1 1)
       (6 1)
       (5 2)
       (4 3)
@@ -104,10 +108,10 @@
       (2 10)
       (3 11))
    (analog
-      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
+      (1 1)(6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
    (digital
-      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
+      (1 1)(6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
    (dualshock
-      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
+      (1 1)(6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11))
    (none
-      (6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11)))
+      (1 1)(6 1)(5 2)(4 3)(11 4)(8 3)(12 6)(13 7)(14 8)(15 9)(2 10)(3 11)))
