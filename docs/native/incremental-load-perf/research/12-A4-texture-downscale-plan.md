@@ -408,3 +408,34 @@ The `<=256` small-texture threshold is the conservative T2 recommendation
 (`<=128` is the floor); it roughly halves the byte win vs no-exclusion but removes
 the entire SSIM<0.5 tail. Tunable in `mip_strip.SMALL_MAX_DIM` if a future gate
 wants the larger win at `<=128`.
+
+### A4 INTEGRATION — SHIPPED default-ON (Opus integrator, 2026-06-23)
+
+Single-integrator pass over the landed census + T1 + fix work. Branch
+`xenon-round3-recon`; engine pin **unchanged** (`20dba552` — A4 is offline tool +
+python server only, NO engine/matched-TU edit, NO pin bump).
+
+**Flag flipped default-ON for web.** `native/web/server.py
+_downscale_enabled_from_env()` now defaults TRUE when `RB3_WEB_DOWNSCALE` is unset
+(opt-out `RB3_WEB_DOWNSCALE=0` / `--no-downscale`). The flag is server-side only
+(the wasm just fetches `/api/file/...`; the downscale is a server resolve), so
+"default-ON for web" = the server defaults the stripped-tree shadow on. The
+prewarm mirrors the same default (walks the downscaled tree first).
+
+**Gates (all PASS) — measured cold-IDB netmatrix, release, own server.**
+| gate | verdict | evidence |
+|---|---|---|
+| 6a 4 Mbps/150ms A/B | PASS | OFF 118.50 MB → ON 113.85 MB (−4.65 MB); both game_screen; over250=0 |
+| 6b **1.5 Mbps/300ms** | **PASS (A4's reason)** | OFF DNF (stuck part_difficulty); **ON reaches game_screen @ 574.5 s** |
+| 6c 20 + 8 Mbps backstop | PASS | both game_screen, freeze-free, no regression |
+| 6d Wave-6 wins | PASS | 0 ChunkStream/assert across 4 ON runs; reveal+L1 A4-orthogonal |
+| 6e flag A/B | PASS | OFF→full-res 19,434,928 B; ON→stripped 14,060,976 B |
+| Wii | PASS | 0 matched-TU edits (python/docs/.gitignore); byte-identical |
+| native | PASS | rb3-tests 21/21; song-end→game-over; canonical tree untouched |
+
+**Journey venue served wire (A4-ON, q11): 11.67 → 8.68 MB (−25.7%)** with the
+exclusion list. The 1.5 Mbps OFF-DNF / ON-reaches-game_screen split is the headline:
+A4 makes the lowest-bandwidth regime complete to gameplay for the first time.
+
+**Ship: default-ON.** Generated tree gitignored (NOT committed) — deploy step is
+`gen_web_downscaled.py` + `prewarm_encode_cache.py --downscale`.

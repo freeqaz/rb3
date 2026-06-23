@@ -787,3 +787,78 @@ frozen 0 / over100 0. c1 20 Mbps backstop: game_screen @ 88.6 s, splash→hub
 UNVERIFIED; `firstframe-gate.mjs` baseline band `[400,1200]` is stale and
 mislabels the fixed ON arm FAIL — update it to assert the 120 ms target;
 1.5 Mbps still throughput-bound (A4 downscale the only lever).
+
+## A4 results — web texture downscale (mip-strip), SHIPPED default-ON (2026-06-23)
+
+Full plan + census + per-texture visual gate: `research/12-A4-texture-downscale-plan.md`.
+Integration artifacts: `/tmp/rb3perf-A4-integ/` (netmatrix `result.json`s + logs,
+prewarm logs, generator stats). Branch `xenon-round3-recon`. Engine pin unchanged
+(`20dba552` — A4 is an offline tool + python server change, NO engine/matched-TU edit).
+
+**What shipped.** An offline mip-strip tool (`scripts/milo/mip_strip.py`) + a
+venues-only generator (`scripts/web/gen_web_downscaled.py`) produce a gitignored
+`orig-assets/web-downscaled/` copy of the 52 venue milos with each eligible BC
+texture's TOP mip dropped (half-res, near-lossless — the surviving mips are
+pre-authored). `native/web/server.py` resolves `/api/file/world/venue/...` from the
+stripped tree FIRST (flag `RB3_WEB_DOWNSCALE`, now **default-ON for web**, opt-out
+`RB3_WEB_DOWNSCALE=0` / `--no-downscale`). The canonical `extracted/` tree
+(native + Wii + decomp) is UNTOUCHED. The strip emits single-block ChunkStream
+containers (the gameplay-load-crash fix), keeps cube-map face runs intact, and
+applies the visual-gate exclusion list (BC5/DXN normal maps `0x20`, BC3-alpha
+`0x18`, and textures ≤256² stay full-res).
+
+**Measured wire deltas (brotli-q11, end-to-end through the actual server resolve).**
+- Journey venue `small_club_01` (the W5 `maxSingleMilo`): full-res 19,434,928 B →
+  stripped 14,060,976 B; q11 wire **11.67 → 8.68 MB (−25.7%, −2.99 MB)**. Verified
+  served: `Content-Encoding: br`, Content-Length 8,676,922, decompressing byte-exact
+  to the 14,060,976-B stripped milo. (Without the exclusion list it is −58%, but the
+  small/normal/BC3 exclusions protect the SSIM<0.5 perceptual tail per T2.)
+- Journey-class venues with exclusions: small_club_11 −28.1%, small_club_03 −18.4%,
+  arena_01 −14.5%, big_club_06 −6.6% (texture-light). Video-backdrop venues strip
+  ~0% (not BC-texture-bound) — never regressed.
+
+**Gate verdicts (cold-IDB Playwright netmatrix, release build, own server).**
+- **6a — 4 Mbps/150 ms:** matched A/B same build. OFF (baseline) **118.50 MB** wire /
+  75.34 MB milo; ON **113.85 MB** / 72.80 MB milo → **−4.65 MB total / −2.54 MB milo**
+  (the journey loads ONE gameplay venue = small_club_01; milo delta == the stripped
+  venue wire delta). Both reach `game_screen`; startSong over250=0, longest 87 ms —
+  freeze-free. PASS.
+- **6b — 1.5 Mbps/300 ms (A4's whole reason):** **OFF DNF** — stuck at
+  `part_difficulty_screen` (489 s), still `''/frame=0` at the 590 s timeout (matches
+  W5's DNF). **ON REACHES `game_screen` @ 574.5 s** (frame 19322), cold hovers all
+  freeze-free (over250=0). A4 is the enabler for the 1.5 Mbps regime — the first time
+  this throttle completes to gameplay. PASS.
+- **6c — 20 Mbps/40 ms + 8 Mbps/80 ms backstop:** both reach game_screen freeze-free
+  (over250=0; boot→hub 20 Mbps 32 s, 8 Mbps 76 s). No regression. PASS.
+- **6d — Wave-6 wins:** RB3_GAMEWARM first-frame reveal + L1 cache are A4-orthogonal
+  (A4 only changes served milo *bytes*, not the reveal/cache path); all ON runs
+  revealed game_screen cleanly with over250=0. Visual: ZERO ChunkStream/assert/desync
+  across all four ON runs (the pre-fix crash signature is absent — stripped venues
+  load + render). PASS.
+- **6e — flag A/B:** `--no-downscale` restores the full-res 19,434,928-B milo; ON
+  serves the stripped 14,060,976-B milo. PASS.
+
+**Other gates.** Wii: A4 touches ZERO matched TUs (only python/docs/.gitignore) →
+Wii build byte-identical for A4 (report 31953/41254 @ 62.893% reflects concurrent
+HX_NATIVE branch commits, +0 from A4). Native: rb3-tests 21/21 green, song-end smoke
+reaches game-over; native reads the canonical tree, unaffected by the downscale.
+
+**Honest misses / caveats.**
+- The exclusion list halves the raw byte win (−25.7% vs −58% no-exclusion on the
+  journey venue) to protect the perceptually-fragile tail (normal maps, BC3 detail,
+  small textures). Tunable via `mip_strip.SMALL_MAX_DIM` (256→128) if a future gate
+  wants the larger win.
+- Journey total deltas vary run-to-run (113–131 MB) because the netmatrix picks
+  different cold-hover songs each run (different preview/char milos). The reliable A4
+  signal is the deterministic per-asset venue delta + the matched 4 Mbps A/B and the
+  1.5 Mbps OFF-DNF / ON-reaches-game_screen split.
+- q11 artifacts are last-writer-wins at the cache path (a q5 on-demand serve can
+  overwrite a q11 entry); all gates were run after a full prewarm-to-completion of
+  the downscaled tree (52/52 venues br11, 8655 files + 4 bundles warm). Re-prewarm
+  `--downscale` before re-measuring.
+- The downscaled tree is generated build output (gitignored, NOT committed) — a
+  deploy step (`gen_web_downscaled.py` + `prewarm_encode_cache.py --downscale`).
+
+**Ship decision: default-ON for web.** Visual gate passed (pass-with-exclusions),
+code review clean, the crash fix + cube fix + exclusions landed, and 1.5 Mbps now
+reaches gameplay for the first time. Opt out with `RB3_WEB_DOWNSCALE=0`.
