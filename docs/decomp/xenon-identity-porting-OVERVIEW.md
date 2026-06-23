@@ -94,10 +94,19 @@ Track.o (6), SongRecord.o (5). Certainty split: **20 high** (ExactInstructions /
 SwitchSig / Implied — the most reliable feeders), **27** BSim simconf ≥ 30, **92** in
 20–30, **93** in 15–20.
 
-**The ~530 net-new system/network identities are UNVALIDATED at human grade.** Round-2
-human judging was band3-only; system (311) and network (205) ride on the holdout 0.933
-calibration alone and an extrapolation from band3's 0.905. Treat as lower-confidence
-until a system/network judged sample exists.
+**The ~530 net-new system/network identities are now MEASURED at human grade (round 3).**
+A 30-pair stratified sample (15 system + 15 network, across all four confidence strata)
+was human-judged 2026-06-23: **overall precision 0.967 (29/30)** — *higher* than band3's
+0.900. By category: **system 0.933 (14/15), network 1.000 (15/15)**. By stratum:
+**high 3/3, BSim ≥ 30 8/8, BSim 20–30 10/10, BSim 15–20 8/9 (0.889)** — every error is
+in the weakest BSim 15–20 band. The single miss (pair-15) is the same same-TU sibling-
+aliasing failure mode round-2 saw: BSim collapsed two 20-byte `mImp->virtual()` thunks
+(`TrackWidget::Init` slot 0x44 vs `TrackWidget::Empty` slot 0xc) that differ only in the
+vtable-slot immediate. The HIGH + BSim ≥ 30 slice was **11/11 = 1.000**. Bottom line:
+system/network ACCEPTs are now validated as **safe to hand off** (above the 0.85 bar);
+the BSim 15–20 tail carries the residual sibling-aliasing risk and should be confirmed
+per-fn when consumed. Full judging: `xenon-hardening/round3/` (evidence packs +
+per-pair judgments).
 
 **The DC3 same-ISA path is EXHAUSTED — do not pursue it.** DC3 and Xenon are both
 PowerPC/MSVC, so BinDiff matches them directly with high confidence. But `rb3-xenon`
@@ -148,7 +157,19 @@ top-K cap) are landed. Re-running is worth it mainly to (i) refresh from a newer
 Xenon program, or (ii) after building the sibling-aliasing vet check, to re-vet the
 existing CAUTION pool. Do not expect a step-change.
 
-**(d) The upstream ghidriff/Ghidra PRs are separate, standalone value.** The forks carry
+**(e) A system/network worklist is now warranted (round-3 measurement clears the bar).**
+With the 30-pair judging at 0.967 overall (1.000 on HIGH + BSim ≥ 30), the ~530 net-new
+system(311)/network(205) identities are safe to surface as a second additive worklist —
+same form as the band3 one (gitignored JSON feed + tracked TU-ranked markdown), NOT a
+`target_symbol_map.json` injection. Unlike band3 (DC3 cannot provide it), much of
+system/network is shared engine + Quazal netcode where DC3 also helps, so this worklist
+is **second-priority** behind band3. Recommended confidence cut: surface all four strata
+but flag BSim 15–20 as "confirm-on-consume" (that band is where the lone miss sat, 8/9).
+The HIGH + BSim ≥ 30 slice (system 22 high + 57 ≥30, network 32 ≥30) is the safe core to
+hand off first. The same generator (`gen_band3_port_worklist.py`) parameterizes to
+`category in {system,network}` trivially.
+
+**(f) The upstream ghidriff/Ghidra PRs are separate, standalone value.** The forks carry
 a string-hasher 1:1 gate, a per-match score side-channel, a VT STL-exclusion gate, a
 BSim top-K cap + parallel aggregation, a `--matches-only` early exit, and an O(n×m)
 dedup hash-join fix — all generally useful to anyone diffing large stripped binaries.
@@ -161,8 +182,9 @@ These are worth upstreaming regardless of the RB3 identity work.
   wrong name there *mis-pairs* objdiff and is actively harmful (it inflates or corrupts
   match%). The map is for *proven* MSVC symbols of *compiled* TUs. Surface the worklist
   additively; let the porter confirm each name when the TU is actually ported.
-- **Do not trust system/network ACCEPTs at the same grade as band3** until they are
-  judged (§2).
+- **System/network ACCEPTs are now judged (round 3, 0.967 overall / 1.000 on HIGH+BSim≥30).**
+  A system/network worklist on the same model as the band3 one is warranted (§3e). The one
+  residual risk is the BSim 15–20 tail (sibling aliasing) — confirm those per-fn on consume.
 - **Exclude the 158-entry holdout** before feeding `ghidriff_identities.json` into any
   future seed builder (85 of the 978 overlap the holdout; harmless for objdiff/resolver
   use, leaks recall if seeded).

@@ -393,3 +393,46 @@ modes are default-off and byte-identical-replay proven vs run3-archive (44/44 te
    near-identical same-TU bodies — would have caught all 3 wrong pairs); SwitchSig audit n≥10.
 4. Refresh ingest from run-4's 2,246 ACCEPTs once seeds are rebuilt. 5. Upstream ghidriff PRs:
    `--matches-only` + O(n×m) dedup hash-join. 6. NO further VT investment.
+
+## ROUND 3 RESULTS (2026-06-23)
+
+Full synthesis: `docs/decomp/xenon-hardening/round3/SYNTHESIS.md`. Round 3 did **not** run
+ghidriff — it CONSUMED the 978 ingested ACCEPTs. Two deliverables, both adversarially
+verified by a final synthesis pass (Opus; Fable unavailable).
+
+### 1. band3 porting-worklist (task #1) — VERIFIED, could not refute
+
+The 232 net-new band3 identities (RB3 game code DC3 cannot provide, across 93 TUs) shipped
+as an additive porting worklist + per-fn identity oracle in rb3-xenon: tracked generator
+`tools/gen_band3_port_worklist.py` + CW demangler + tracked `docs/plans/band3-port-worklist.md`
+(TU-ranked, 47-row HIGH+BSim≥30 first-targets subset) + gitignored `band3_port_worklist.json`
+feed. Commit **rb3-xenon `f064c2d`** (branch `main`; additive — 4 files, +1362 lines; **`target_symbol_map.json` / fn_resolver / report.json / build UNTOUCHED**, confirmed by `git show --name-only`). rb3-side handoff doc + re-runner: **rb3 `854489dc`** (branch `xenon-round3-recon`).
+
+Independent re-derivation (all reproduced EXACTLY): 978 total → 762 net-new → band3 232/93 TUs;
+certainty 20 high / 27 BSim≥30 / 92 BSim20-30 / 93 BSim15-20. Adversarial checks, **all passed**:
+(a) genuinely net-new — band3 ∩ NOT `target_symbol_map` = 232, **0 already in map**; (b) genuinely
+band3 — all 232 source category band3; (c) confidence labels — **0/232 mismatches** vs the
+re-derived certainty rule; (d) nothing injected into the map; (e) **232/232 `wii_symbol`s resolve
+in the CW map to the claimed Bank-8 VA** (independently re-resolved against the correct VA column);
+(f) all 93 `src_path`s exist + faithful to the CW obj-path column; (g) 20 HIGH demangles sane, the
+3 operator/template fallbacks carry the raw CW name. NOTE: production map grew 13,023→13,199 since
+recon (concurrent porters) — the 216-in-map / 762-net-new split is computed against the live map; band3=232 is stable.
+
+### 2. system/network judged sample (task #2) — MEASURED, clears the handoff bar
+
+Round-3 priority #2 CLOSED. A 30-pair stratified sample (15 system + 15 network, all four strata;
+`Random(42)`, one batched read-only fork-Ghidra pass ~3 min) was human-judged:
+**overall 0.967 (29/30)** — *above* band3's 0.900. **system 0.933 (14/15) · network 1.000 (15/15).**
+Per stratum: **high 3/3 · BSim≥30 8/8 · BSim20-30 10/10 · BSim15-20 8/9 (0.889).** The
+**HIGH+BSim≥30 slice = 11/11 (1.000).** The lone miss (pair-15, system, BSim 15.142) is round-2's
+exact failure mode — **same-TU sibling aliasing**: BSim collapsed two 20-byte `mImp->virtual()`
+thunks differing ONLY in the vtable-slot immediate (`TrackWidget::Init` slot 0x44 vs the true
+partner `TrackWidget::Empty` slot 0xc). Independently re-confirmed from
+`build/SZBE69_B8/asm/system/track/TrackWidget.s` (Init=`lwz r12,0x44(r12)`, Empty=`lwz r12,0xc(r12)`).
+This closes the band3-only extrapolation gating the 654 ingested non-band3 identities — they are
+validated SAFE to hand off (above 0.85), with the BSim 15–20 tail as the residual confirm-on-consume risk.
+
+**Handoff decision (0.967 ≥ 0.85):** recommend a system/network worklist on the band3 model
+(additive, gitignored feed + tracked TU-ranked markdown, NOT a map injection), all four strata
+surfaced with BSim 15–20 flagged confirm-on-consume; HIGH+BSim≥30 (system 22+57, network 0+32)
+is the safe core. Second-priority behind band3 (DC3 partially covers shared engine + Quazal).
