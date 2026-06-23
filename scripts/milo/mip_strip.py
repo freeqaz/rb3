@@ -90,25 +90,34 @@ def read_container(path):
 
 
 def write_container(path, payload, meta):
-    """Write a Version A milo container around `payload`, mirroring the original
-    block size + data offset so the loader sees a familiar shape."""
-    max_block = meta["max_block"]
-    offset = meta["offset"]
-    blocks = [payload[i : i + max_block] for i in range(0, len(payload), max_block)]
-    if not blocks:
-        blocks = [b""]
-    nb = len(blocks)
+    """Write a Version A milo container around `payload` as a SINGLE block.
+
+    CRITICAL — single-block only. A venue `.milo_xbox` is a ChunkStream container
+    (`src/system/utl/ChunkStream.cpp`); its reader (`ReadImpl`, line 168) asserts
+    `mCurBufOffset + bytes <= (*mCurChunk & kChunkSizeMask)` — every object read
+    must fit inside one block. The original is chunked into ~131 KB blocks whose
+    boundaries align to object reads; after the strip the payload is smaller, so
+    re-chunking into fresh `max_block`-sized blocks puts boundaries mid-object →
+    `ReadImpl` desync → abort at `ChunkStream.cpp:458` on the GAMEPLAY venue load.
+    Emitting ONE block (`num_blocks=1`, `max_block=len(payload)`) makes that assert
+    unreachable for ANY venue by construction (no read can cross a boundary). The
+    wire cost vs multi-block is ±1 KB on a multi-MB brotli wire (negligible).
+
+    `dc3 validate_milo_entries` and the `RB3_BOOT`/`DirLoader::LoadObjects` path
+    read the payload as a plain concat and never exercise ChunkStream, which is
+    why the multi-block tree validated yet crashed in-game.
+    """
+    nb = 1
     hdr_min = 0x10 + nb * 4
+    offset = meta["offset"]
     if offset < hdr_min:
         # round up to a 0x800 boundary, like the original
         offset = ((hdr_min + 0x7FF) // 0x800) * 0x800
     out = bytearray()
-    out += struct.pack("<IIII", MAGIC_A, offset, nb, max(len(b) for b in blocks))
-    for b in blocks:
-        out += struct.pack("<I", len(b))
+    out += struct.pack("<IIII", MAGIC_A, offset, nb, len(payload))
+    out += struct.pack("<I", len(payload))
     out += b"\x00" * (offset - len(out))
-    for b in blocks:
-        out += b
+    out += payload
     os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
     with open(path, "wb") as f:
         f.write(out)
@@ -188,7 +197,15 @@ def parse_bitmap(d, base):
 
 def find_bitmaps(payload):
     """Scan the inflated payload for valid bitmaps, accepting only chains that
-    land exactly on an 0xADDEADDE object separator."""
+    land exactly on an 0xADDEADDE object separator.
+
+    WARNING — this only sees the LAST bitmap of a multi-face run (an RndCubeTex
+    serializes 6 face bitmaps back-to-back from the SHARED milo stream, and only
+    the 6th lands on ADDE — see CubeTex.cpp:147-149 PostLoad). Stripping a bitmap
+    this returns will corrupt a cube (one face half-res, five full-res). Use
+    `find_bitmap_runs` for cube-aware stripping; this is kept for the census /
+    self-check counting.
+    """
     n = len(payload)
     out = []
     o = 0
@@ -200,6 +217,80 @@ def find_bitmaps(payload):
         else:
             o += 1
     return out
+
+
+def find_bitmap_runs(payload):
+    """Scan the inflated payload for bitmap RUNS, each terminated by an 0xADDEADDE
+    object separator.
+
+    A *run* is one or more bitmaps serialized back-to-back into the same milo
+    stream with no intervening separator, the run's last bitmap landing exactly on
+    ADDE. A standalone RndTex bitmap is a run of length 1; an RndCubeTex serializes
+    its 6 face bitmaps as one run of length 6 (CubeTex.cpp PostLoad loops
+    `mBitmap[i].Load(bs)` from the shared stream, only the 6th followed by ADDE).
+
+    Returns a list of runs, each a list of bitmap dicts. Stripping any member of a
+    run with len > 1 would give the cube faces mismatched dimensions (the engine's
+    RndCubeTex::ValidateBitmapProperties then fails → Reset() drops the cube; and a
+    WebGPU cube texture requires all 6 faces equal-dimension), so callers MUST skip
+    multi-member runs. The greedy chain is backtracked on any non-ADDE terminator,
+    so it never over-groups (validated to match find_bitmaps on the standalone
+    bitmaps of every venue).
+    """
+    n = len(payload)
+    o = 0
+    runs = []
+    cur = []
+    while o < n - 4:
+        bm = parse_bitmap(payload, o)
+        if bm:
+            cur.append(bm)
+            o = bm["end"]
+            if payload[o : o + 4] == ADDE:
+                runs.append(cur)
+                cur = []
+                o += 4
+        else:
+            if cur:
+                # the open chain did not terminate on ADDE → it was a false chain;
+                # restart the scan one byte past where it began.
+                o = cur[0]["base"] + 1
+                cur = []
+            else:
+                o += 1
+    return runs
+
+
+# ---------------------------------------------------------------------------
+# Default per-bitmap exclusion (visual-gate exclusion list, A4 T2)
+# ---------------------------------------------------------------------------
+# The visual gate (research/12 T2) keeps these texture classes FULL-RES because
+# the top-mip strip degrades them perceptibly for little byte win:
+#   - BC5/DXN NORMAL MAPS (mOrder & 0x38 == 0x20): stripping the top mip softens
+#     lighting/specular detail and risks shimmer.
+#   - SMALL textures (max(w,h) <= threshold): the byte win lives in the 512^2-
+#     1024^2 surfaces; small textures take the biggest SSIM hit for ~nothing.
+#   - BC3-ALPHA detail/noise (mOrder & 0x38 == 0x18): high-frequency alpha content
+#     (e.g. fine grain/noise) degrades most under SSIM.
+# Cube faces are handled structurally (multi-member runs are never stripped), not
+# by this predicate.
+SMALL_MAX_DIM = 256  # keep max(w,h) <= this full-res (T2 recommends <=256)
+ORDER_FMT_MASK = 0x38
+FMT_BC3 = 0x18  # BC3 / DXT5 (alpha)
+FMT_BC5 = 0x20  # BC5 / DXN (normal maps)
+
+
+def default_exclude(bm):
+    """Return True to KEEP this bitmap full-res (skip stripping), per the T2
+    visual-gate exclusion list. `bm` is a parse_bitmap dict."""
+    fmt = bm["order"] & ORDER_FMT_MASK
+    if fmt == FMT_BC5:  # normal map
+        return True
+    if fmt == FMT_BC3:  # BC3-alpha detail/noise
+        return True
+    if max(bm["w"], bm["h"]) <= SMALL_MAX_DIM:
+        return True
+    return False
 
 
 def strip_bitmap_bytes(payload, bm, levels):
@@ -235,12 +326,17 @@ def strip_bitmap_bytes(payload, bm, levels):
 # ---------------------------------------------------------------------------
 def census(path):
     payload, meta = read_container(path)
-    bitmaps = find_bitmaps(payload)
+    runs = find_bitmap_runs(payload)
+    bitmaps = [b for r in runs for b in r]
+    # The STRIPPABLE set excludes cube faces (multi-member runs) AND the default
+    # visual-gate exclusions (normal maps / BC3-alpha / small textures).
+    cube_runs = [r for r in runs if len(r) > 1]
+    standalone = [r[0] for r in runs if len(r) == 1]
+    strippable = [b for b in standalone
+                  if b["numMips"] >= 1 and not default_exclude(b)]
     total_tex = sum(32 + b["pb"] + sum(b["sizes"]) for b in bitmaps)
-    # strippable bytes for a single-level strip = the base (top) level of each
-    # bitmap that has at least one additional mip.
-    strip_one = sum(b["sizes"][0] for b in bitmaps if b["numMips"] >= 1)
-    n_strip = sum(1 for b in bitmaps if b["numMips"] >= 1)
+    strip_one = sum(b["sizes"][0] for b in strippable)
+    n_strip = len(strippable)
     dist = Counter(b["numMips"] for b in bitmaps)
     dxt = Counter()
     for b in bitmaps:
@@ -252,6 +348,8 @@ def census(path):
         "path": path,
         "payload_bytes": len(payload),
         "num_bitmaps": len(bitmaps),
+        "num_cube_runs": len(cube_runs),
+        "num_cube_faces": sum(len(r) for r in cube_runs),
         "num_strippable": n_strip,
         "total_texture_bytes": total_tex,
         "strippable_top_mip_bytes": strip_one,
@@ -266,16 +364,38 @@ def census(path):
 # ---------------------------------------------------------------------------
 # Strip whole file
 # ---------------------------------------------------------------------------
-def strip_file(in_path, out_path, levels=1, quiet=False, exclude=None):
+def strip_file(in_path, out_path, levels=1, quiet=False, exclude=None,
+               apply_default_exclude=True):
+    """Strip the top mip from eligible STANDALONE bitmaps and write a single-block
+    container copy.
+
+    Cube-safe + exclusion-aware:
+      * `find_bitmap_runs` groups the bitmaps; a run with len > 1 is an RndCubeTex
+        (6 face bitmaps) — its members are NEVER stripped (mismatched face dims
+        break ValidateBitmapProperties + the WebGPU cube upload).
+      * `default_exclude` (T2 visual-gate list: normal maps, BC3-alpha, small
+        textures) keeps perceptually-fragile textures full-res. Pass
+        `apply_default_exclude=False` to strip everything (census / A-B).
+      * an extra caller `exclude(bm)` predicate is ANDed on top.
+    """
     payload, meta = read_container(in_path)
-    bitmaps = find_bitmaps(payload)
-    # strip from the END of the payload backwards so earlier offsets stay valid.
+    runs = find_bitmap_runs(payload)
+    n_bitmaps = sum(len(r) for r in runs)
+    n_cube_runs = sum(1 for r in runs if len(r) > 1)
+    # Flatten the STRIPPABLE candidates: only single-member runs (standalone Tex),
+    # never cube faces. Strip from the END backwards so earlier offsets stay valid.
+    candidates = [r[0] for r in runs if len(r) == 1]
     total_removed = 0
     n_stripped = 0
-    for bm in sorted(bitmaps, key=lambda b: -b["base"]):
+    n_excluded = 0
+    for bm in sorted(candidates, key=lambda b: -b["base"]):
         if bm["numMips"] < 1:
             continue
+        if apply_default_exclude and default_exclude(bm):
+            n_excluded += 1
+            continue
         if exclude and exclude(bm):
+            n_excluded += 1
             continue
         payload, removed = strip_bitmap_bytes(payload, bm, levels)
         total_removed += removed
@@ -285,21 +405,32 @@ def strip_file(in_path, out_path, levels=1, quiet=False, exclude=None):
         before = os.path.getsize(in_path)
         after = os.path.getsize(out_path)
         print(
-            f"  {os.path.basename(in_path)}: stripped {n_stripped}/{len(bitmaps)} "
-            f"bitmaps, removed {total_removed:,} payload bytes; "
+            f"  {os.path.basename(in_path)}: stripped {n_stripped}/{n_bitmaps} "
+            f"bitmaps ({n_excluded} excluded, {n_cube_runs} cube runs kept), "
+            f"removed {total_removed:,} payload bytes; "
             f"file {before:,} -> {after:,} ({100*after/before:.1f}%)"
         )
-    # round-trip self-check: re-parse the output, every surviving bitmap must
-    # still land on ADDEADDE.
+    # round-trip self-check: re-parse the output. The run STRUCTURE must be
+    # preserved (same number of runs, same cube-run face counts + uniform dims),
+    # and the standalone bitmap count must match.
     out_payload, _ = read_container(out_path)
-    out_bms = find_bitmaps(out_payload)
-    if len(out_bms) != len(bitmaps):
+    out_runs = find_bitmap_runs(out_payload)
+    if len(out_runs) != len(runs):
         raise SystemExit(
-            f"ROUND-TRIP FAIL: re-parsed {len(out_bms)} bitmaps, expected {len(bitmaps)}"
+            f"ROUND-TRIP FAIL: re-parsed {len(out_runs)} runs, expected {len(runs)}"
         )
+    for r in out_runs:
+        if len(r) > 1:
+            dims = set((b["w"], b["h"]) for b in r)
+            if len(dims) != 1:
+                raise SystemExit(
+                    f"ROUND-TRIP FAIL: cube run has mixed face dims {sorted(dims)} "
+                    f"(a cube face was stripped) in {os.path.basename(out_path)}"
+                )
     return {
         "in": in_path, "out": out_path, "levels": levels,
-        "n_bitmaps": len(bitmaps), "n_stripped": n_stripped,
+        "n_bitmaps": n_bitmaps, "n_stripped": n_stripped,
+        "n_excluded": n_excluded, "n_cube_runs": n_cube_runs,
         "removed_bytes": total_removed,
         "size_before": os.path.getsize(in_path),
         "size_after": os.path.getsize(out_path),
@@ -341,6 +472,9 @@ def main():
     s.add_argument("output")
     s.add_argument("--levels", type=int, default=1)
     s.add_argument("--quiet", action="store_true")
+    s.add_argument("--no-exclude", action="store_true",
+                   help="strip EVERY standalone bitmap (ignore the T2 visual-gate "
+                        "exclusion list); cube faces are still never stripped.")
 
     b = sub.add_parser("brotli", help="brotli-q11 wire size of a milo")
     b.add_argument("file")
@@ -357,14 +491,17 @@ def main():
             print(f"{os.path.basename(args.file)}")
             print(f"  payload bytes        : {rep['payload_bytes']:,}")
             print(f"  bitmaps              : {rep['num_bitmaps']}")
-            print(f"  strippable (mips>=1) : {rep['num_strippable']}")
+            print(f"  cube runs / faces    : {rep['num_cube_runs']} / {rep['num_cube_faces']} "
+                  f"(kept full-res, never stripped)")
+            print(f"  strippable (post-exc): {rep['num_strippable']}")
             print(f"  texture bytes        : {rep['total_texture_bytes']:,}")
             print(f"  strippable top-mip   : {rep['strippable_top_mip_bytes']:,} "
                   f"({100*rep['strippable_fraction_of_texture']:.1f}% of texture bytes)")
             print(f"  numMips distribution : {rep['numMips_distribution']}")
             print(f"  format counts        : {rep['format_counts']}")
     elif args.cmd == "strip":
-        strip_file(args.input, args.output, levels=args.levels, quiet=args.quiet)
+        strip_file(args.input, args.output, levels=args.levels, quiet=args.quiet,
+                   apply_default_exclude=not args.no_exclude)
     elif args.cmd == "brotli":
         print(f"{os.path.basename(args.file)}: brotli-q11 = {brotli_size(args.file):,} bytes")
 

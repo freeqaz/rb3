@@ -19,9 +19,13 @@ the q11 prewarm walks this tree so the wire bytes are the stripped+q11 size.
 
 SCOPE (initial exclusion): VENUES ONLY (`world/venue/**/*.milo_xbox`). Venues are
 the texture-heavy target; char/UI/album-art/font milos are small + geometry-heavy
-and are NOT stripped (the visual gate refines this list later). The byte surgery
-itself (per-bitmap exclusion of UI/HUD textures inside a milo) is the strip tool's
-job; this generator selects WHICH milos to process.
+and are NOT stripped. This generator selects WHICH milos to process; the per-bitmap
+exclusion logic lives in the strip tool. `mip_strip.strip_file` now applies the A4
+T2 visual-gate exclusion list by default (`default_exclude`): BC5/DXN normal maps,
+BC3-alpha detail/noise, and small textures (`max(w,h)<=256`) stay full-res, and
+RndCubeTex face runs are never stripped (mixed face dims break the cube). The strip
+also emits a SINGLE-block ChunkStream container — required, multi-block crashes the
+gameplay venue loader (ChunkStream.cpp:458). See research/12 "A4 FIX WAVE".
 
 The DO-NOT-COMMIT rule: the generated tree is large build/deploy output (like the
 brotli cache). `orig-assets/` is already gitignored — never `git add` it.

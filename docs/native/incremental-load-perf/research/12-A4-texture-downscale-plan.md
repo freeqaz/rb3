@@ -284,3 +284,127 @@ This is a clean ultracode wave: T0 (Fable or Opus measurement) gates T1 (Opus
 impl) ‖ T2 (Opus visual gate), single integrator runs the byte re-measure + the
 4/1.5 Mbps gates. Hold for a Fable plan-review pass if one is available; the
 design above is Opus-drafted.
+
+### T2 — VISUAL GATE: pass-with-exclusions, BUT T1's tree has a HARD CRASH BUG (Opus, 2026-06-23)
+
+**Verdict: pass-with-exclusions on quality — gated behind a mandatory T1 fix.**
+Evidence + tooling in `/tmp/rb3perf-A4-gate/` (GATE_SUMMARY.json, tex_quality.py,
+texq_*.json, run1/*.png, texq2/*.png).
+
+**BLOCKER (must fix before RB3_WEB_DOWNSCALE can ship even default-OFF-then-ON):**
+The T1-generated tree CRASHES gameplay. Loading the stripped `small_club_01`
+through the in-game venue loader aborts at `ChunkStream.cpp:458`
+(`mCurBufOffset + bytes <= (*mCurChunk & kChunkSizeMask)`). Root cause: a venue
+`.milo_xbox` is a **ChunkStream** container (magic `0xCABEDEAF`, then
+`offset/num_blocks/max_block` + a per-block size table). The reader requires every
+object `Read()` to fit inside one block. `mip_strip.write_container` re-chunks the
+(now smaller) payload into fresh `max_block`-sized blocks — boundaries that no
+longer align to object reads → desync → abort. T1's "no engine fix, validated"
+MISSED this because dc3 `validate_milo_entries.py` and the `RB3_BOOT` /
+`DirLoader::LoadObjects` path both read the payload as a plain concat and never
+exercise ChunkStream; the GAMEPLAY venue load does.
+**Fix (verified, trivial, in the tool — NOT the engine):** emit the stripped milo
+as ONE block (`num_blocks=1`, `max_block=len(payload)`). With a single chunk no
+read can cross a boundary, so the assert is unreachable for ANY venue (universal
+by construction). Verified end-to-end: single-block stripped `small_club_01` loads
++ renders through the real gameplay ChunkStream path, 4 frames captured at
+songMs>0, no assert. Wire cost of single-block vs multi-block is ±1 KB on a
+4.6–5.7 MB brotli wire (negligible — the mip-strip savings are fully preserved:
+q11 small_club_01 4,877,312 → 4,876,537). `gen_web_downscaled` / `mip_strip` MUST
+adopt single-block output before the tree is served.
+
+**Quality method (the gameplay-screenshot A/B is IMPOSSIBLE here — documented):**
+Two identical full-res boots at the same songMs differ by **70.9%** of pixels
+(frame counts 3873 vs 3015 at songMs=10000) — the engine is NOT frame-deterministic
+across boots and the venue crowd/lights/characters animate off the free-running
+FRAME counter, not song position. So matched-songMs (and even director-frozen
+burst cross-match, best-pair SSIM ~0.45) gameplay diffs are ALL animation desync,
+not texture — exactly the camera-desync false-positive the plan warned about.
+Instead the gate is a **deterministic, animation-free per-texture measurement**:
+decode each venue BC texture's mip[0] (full-res) vs mip[1] bilinearly upscaled 2×
+(what the stripped base shows when the camera is close enough to sample the top
+mip) and SSIM/PSNR them. This is the WORST CASE — at gameplay distance the GPU
+already samples a lower mip, so on-screen impact ≤ this. (Decode = Milo DXT, k8in16
+byte-swap only per engine `TextureConvert::UntileMilo`/`Rnd_Wgpu_RB3::ByteSwapDXT16`;
+formats per `TextureConvert.h`: 0x08=BC1, 0x10=BC2, 0x18=BC3, **0x20=BC5/normal**.)
+
+**Measured (4 venues, 371 textures):** SSIM median 0.875 / mean 0.852 / min 0.196;
+median PSNR ~30 dB. Per-venue: small_club_01 med 0.81, small_club_11 0.87,
+arena_01 0.90, big_club_06 0.90. Only **7 textures (1.9%) below SSIM 0.50**, all
+small (≤256²) high-frequency fine-detail surfaces (amp/speaker cloth + "Fender"
+logo, perforated grilles, rust strips, noise/grain, normal maps). Visual review of
+every worst case: the half-res version is SLIGHTLY SOFTER on fine weave/grille but
+the surface + any baked signage/logo stays clearly recognizable/legible — SSIM
+over-penalizes high-frequency content; it is NOT perceptually broken. No
+UI/HUD/album-art/font textures live in venue milos (the generator is venues-only),
+so those are unaffected by scope.
+
+**Exclusion list (stay full-res):** (1) always — UI/HUD, album art, fonts, and any
+non-venue milo (already excluded by the venues-only generator scope; keep it).
+(2) within venues, the perceptually-worst classes to keep full-res or strip
+conservatively: BC5/DXN **normal maps** (`mOrder & 0x38 == 0x20` — stripping a
+normal map's top mip softens lighting/specular detail and risks shimmer);
+**small textures** (`max(w,h) <= 128`, and ideally `<= 256`) — the top-mip strip
+saves few bytes there (the byte win is in the 512²–1024² surfaces) while taking the
+largest SSIM hit; **BC3-alpha (`==0x18`) detail/noise textures**. Filtering these
+keeps the big-win large surface textures (the bulk of the −54…58% small_club wire
+saving) while removing the 1.9% worst tail. Generator already takes an `exclude(bm)`
+predicate — wire a size+format filter into it.
+
+**Bottom line:** quality is acceptable (pass-with-exclusions) for default-ON web,
+PROVIDED (a) the single-block ChunkStream fix lands — non-negotiable, it's a crash —
+and (b) the normal-map + small-texture exclusions are applied. Without (a) the tree
+is unservable; ship default-OFF until both land + a real gameplay smoke (a song that
+reaches a small_club/arena venue without abort) passes.
+
+### A4 FIX WAVE — 3 blocking issues fixed in `mip_strip.py`, tree regenerated (Opus, 2026-06-23)
+
+All fixes are in `scripts/milo/mip_strip.py` (the offline strip tool) — NO engine
+change, NO matched-TU edit, the canonical `extracted/` tree untouched. Default
+`RB3_WEB_DOWNSCALE` stays OFF.
+
+1. **CubeTex mixed-face corruption (BLOCKER) — FIXED.** Confirmed real on the
+   committed tree: 30/52 venues had a malformed cube map (one face half-res, five
+   full-res) — `[(256,256)×5,(128,128)]` etc. Root cause: an `RndCubeTex`
+   serializes its 6 face bitmaps back-to-back from the shared milo stream
+   (`CubeTex.cpp:147-149` PostLoad), only the 6th lands on the 0xADDEADDE
+   separator, so the old `find_bitmaps` (ADDE-anchored per bitmap) saw ONLY the 6th
+   face and stripped it. The engine reaction is `ValidateBitmapProperties` fail →
+   `Reset()` (cube vanishes) + an invalid WebGPU cube upload (faces must be equal
+   dim). FIX: new `find_bitmap_runs` greedily groups consecutive bitmaps into
+   ADDE-terminated runs; a run with len>1 is a cube → its members are NEVER
+   stripped. The strip self-check now also asserts every surviving cube run has
+   uniform face dims. Verified: regenerated tree has 0/52 mixed-face cubes
+   (down from 30/52).
+2. **Single-block ChunkStream (T2 crash prerequisite) — FIXED.** The committed
+   tool's `write_container` still re-chunked into `max_block`-sized blocks → the
+   ChunkStream reader (`ChunkStream.cpp:168` ReadImpl assert) desyncs mid-object on
+   the gameplay venue load. FIX: `write_container` now emits ONE block
+   (`num_blocks=1`, `max_block=len(payload)`) — the assert is unreachable by
+   construction. Verified: all 52 regenerated venues are single-block.
+3. **Visual-gate exclusion list — APPLIED.** New `default_exclude(bm)` (on by
+   default in `strip_file`, `--no-exclude` to bypass) keeps full-res: BC5/DXN
+   normal maps (`mOrder&0x38==0x20`), BC3-alpha detail/noise (`==0x18`), and small
+   textures (`max(w,h)<=256`). UI/HUD/album-art/fonts are already out of scope
+   (venues-only generator).
+
+**Re-validation:** all 52 venues regenerate (`--force`) + round-trip in 24 s,
+failed=0; dc3 `validate_milo_entries` OK on the cube venues (small_club_01,
+big_club_06, arena_04, video_07); `RB3_BOOT` on stripped small_club_01 is
+byte-identical to the original (`root 'small_club_01' [RndDir]`). big_club_06
+under `RB3_LIVE_LOAD` aborts identically with/without strip on a pre-existing
+native-harness gap (`Couldn't find 'synth' in array`) — not strip-related.
+
+**Post-exclusion wire (measured, brotli-q11):**
+- small_club_01 (journey heaviest): **11.67 → 8.68 MB (−25.7%, −2.99 MB)** — vs
+  −58.2% without exclusions; the small/normal/BC3 exclusions cost ~3.8 MB of the
+  raw win but protect the perceptually-fragile tail.
+- Journey-class 5-venue subset (sc01/sc03/sc11/arena_01/big_club_06): 46.79 →
+  37.52 MB (−19.8%).
+- Per-venue: small_club_11 −28.1%, small_club_03 −18.4%, arena_01 −14.5%,
+  big_club_06 −6.6% (texture-light).
+
+The `<=256` small-texture threshold is the conservative T2 recommendation
+(`<=128` is the floor); it roughly halves the byte win vs no-exclusion but removes
+the entire SSIM<0.5 tail. Tunable in `mip_strip.SMALL_MAX_DIM` if a future gate
+wants the larger win at `<=128`.
