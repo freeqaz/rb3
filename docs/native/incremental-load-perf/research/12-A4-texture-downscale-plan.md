@@ -92,13 +92,31 @@ Projected (IF the textures carry strippable mip chains — see caveat):
 - Journey milos 75 MB wire × ~44% texture, strip 75%: **save ~24 MB → journey
   ~115 → ~91 MB (−21%)**. Real yield lower after the exclusion list.
 
-**Caveats / still-open (this is why T0 needs the real parser, not just entropy):**
-(1) the entropy proxy does NOT confirm the Tex objects carry `mNumMips > 1` —
-mip-less textures can't be stripped; the RndBitmap-header parse is still required
-to confirm the strippable fraction. (2) char/outfit milos are SMALL (<1 MB) and
-even more geometry-heavy (~10–17% texture) → **venues are the target, chars are
-not.** (3) The ~24 MB journey figure assumes most venue texture is eligible +
-mip-chained; treat it as an upper bound until the parser confirms.
+**Mip-chain strippability — CONFIRMED at the format level.**
+`src/system/rndobj/Bitmap.cpp:LoadHeader` is explicit: *"Cached (Xbox/PS3
+`.milo_xbox`) bitmaps serialize a full mip chain after the base level."* The
+header layout is `rev, mBpp, mOrder, numMips(u8), mWidth, mHeight, mRowBytes,
+pad` followed by the base level then the mip chain; `SaveHeader` re-serializes
+`NumMips()` + the chain. So venue textures **do** carry strippable mip chains, the
+count is a single header byte, and the engine's own serializer can round-trip a
+stripped bitmap (no format drift) — which is why T1 should be a C++ tool linked
+against the engine `RndBitmap`, not a hand-rolled Python parser. The native loader
+already consumes cached mip bytes (`mNativeCachedMips`), and `CopyBottomMip`
+proves render-from-lower-mip works.
+
+**Remaining caveats (don't block GO, refine the yield):** (1) per-texture
+`numMips` distribution not yet enumerated — a quick pass over the Tex headers
+gives the exact strippable fraction (some textures may be `numMips==1`). (2)
+char/outfit milos are SMALL (<1 MB) and geometry-heavy (~10–17% texture) →
+**venues are the target, chars are not.** (3) the ~24 MB journey figure is an
+upper bound until the per-texture count + exclusion list land.
+
+**VERDICT: GO.** Texture is 44% of milo wire, mip chains are confirmed present and
+strippable via the engine serializer, the engine renders from lower mips, and the
+saved bytes are the brotli-incompressible ones (stacks on Wave 5). Net projected
+~21% journey wire reduction, ~33% on the heavy venue — the first real lever for
+the 1.5 Mbps regime. Ready for an implementation wave (T1 ‖ T2 behind the visual
+gate); a Fable plan-review pass is welcome but not required to start T0's parser.
 
 **T1 — strip tool + downscaled tree + server wiring.** The strip pass
 (`scripts/milo/strip_top_mip.py` or a C++ tool), the `web-downscaled/` generator
