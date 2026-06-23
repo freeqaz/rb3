@@ -68,6 +68,38 @@ projected post-strip size. **Proceed only if texture bytes are a large fraction
 AND most carry `mNumMips > 1`.** Owner files: a new `scripts/milo/mip_census.py`
 (+ optional `native/tools/`). Output: a census table appended to this doc.
 
+### T0 partial results (Opus, 2026-06-23 — entropy proxy, mip-chain check still open)
+
+Measured on `small_club_01.milo_xbox` (the journey venue) via `inflate_milo.py`
+(dc3) + a Shannon-entropy texture proxy + a direct brotli split. **Container is
+UNCOMPRESSED (Version A): 18.5 MB raw = 18.5 MB inflated.** Object census: 129
+Mesh, 78 Tex, 65 Mat, 41 Light.
+
+| | raw | brotli-q11 wire | ratio |
+|---|---|---|---|
+| Texture (high-entropy / BC) | 5.2 MB (28%) | **4.9 MB (44% of wire)** | 0.94 (≈incompressible) |
+| Geometry/other (low-entropy) | 13.4 MB (72%) | 6.3 MB | 0.47 (halves) |
+| Full venue | 18.5 MB | 11.1 MB (≈ W5's 11.7) | — |
+
+**Key correction to this plan's premise:** textures are a *raw-byte minority*
+(28%) but a **WIRE plurality (44%)** — BC blocks barely brotli-compress while the
+structured geometry halves. So the lever is real on the WIRE even though "75% of
+bytes are texture" (my first draft) was wrong. **A top-mip strip removes exactly
+the bytes brotli can't** — it stacks on Wave 5's q11, it doesn't overlap.
+
+Projected (IF the textures carry strippable mip chains — see caveat):
+- Venue `small_club_01`: wire **11.1 → ~7.5 MB (−33%)**.
+- Journey milos 75 MB wire × ~44% texture, strip 75%: **save ~24 MB → journey
+  ~115 → ~91 MB (−21%)**. Real yield lower after the exclusion list.
+
+**Caveats / still-open (this is why T0 needs the real parser, not just entropy):**
+(1) the entropy proxy does NOT confirm the Tex objects carry `mNumMips > 1` —
+mip-less textures can't be stripped; the RndBitmap-header parse is still required
+to confirm the strippable fraction. (2) char/outfit milos are SMALL (<1 MB) and
+even more geometry-heavy (~10–17% texture) → **venues are the target, chars are
+not.** (3) The ~24 MB journey figure assumes most venue texture is eligible +
+mip-chained; treat it as an upper bound until the parser confirms.
+
 **T1 — strip tool + downscaled tree + server wiring.** The strip pass
 (`scripts/milo/strip_top_mip.py` or a C++ tool), the `web-downscaled/` generator
 (parallel, idempotent, like `prewarm_encode_cache.py`), and `server.py` resolve
