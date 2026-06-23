@@ -118,6 +118,57 @@ saved bytes are the brotli-incompressible ones (stacks on Wave 5). Net projected
 the 1.5 Mbps regime. Ready for an implementation wave (T1 ‖ T2 behind the visual
 gate); a Fable plan-review pass is welcome but not required to start T0's parser.
 
+### T0 FINAL — real per-texture census + measured strip (Opus, 2026-06-23)
+
+Tool: `scripts/milo/mip_strip.py` (`census` / `strip` / `brotli` subcommands;
+python byte-surgery — the engine has NO ObjectDir save path, `DirLoader::SaveObjects`
+is a `MILO_ASSERT(0)` stub, so a C++ re-serialize tool isn't viable). The on-disk
+cached-RndBitmap layout was decoded from `src/system/rndobj/Bitmap.cpp`
+LoadHeader/SaveHeader + `FileLoader::LoadStream` (the cached bitmap is embedded
+INLINE in the milo stream after the RndTex tail fields, NO length prefix,
+big-endian / Xbox360) and **validated against the 0xADDEADDE object separator** —
+every accepted bitmap chain lands byte-exactly on the next object marker, so the
+scan has zero false positives.
+
+The earlier entropy proxy (28% raw / 44% wire texture) is SUPERSEDED by the real
+per-texture count below. The strip = promote mip[1] to base (drop the top level:
+width/2, height/2, rowBytes/2, numMips-1) — removes the top mip's pixel bytes,
+which is exactly 75% of each chain's bytes.
+
+| venue | bitmaps | strippable (numMips≥1) | texture bytes | strippable top-mip | frac | numMips dist (additional) | q11 ORIG → STRIPPED | wire saving |
+|---|---|---|---|---|---|---|---|---|
+| small_club_01 (journey) | 77 | 76 (98.7%) | 14.27 MB | 10.70 MB | **75.0%** | {0:1,1:2,2:12,3:11,4:29,5:12,6:10} | 11.67 → 4.88 MB | **−6.79 MB (−58.2%)** |
+| small_club_11 | 86 | 85 (98.8%) | 11.39 MB | 8.54 MB | **75.0%** | {0:1,1:4,2:12,3:12,4:42,5:8,6:7} | 10.09 → 4.64 MB | **−5.45 MB (−54.0%)** |
+| big_club_06 | 106 | 104 (98.1%) | 4.24 MB | 3.18 MB | **75.1%** | {0:2,1:6,2:21,3:51,4:21,5:4,6:1} | 7.14 → 5.62 MB | −1.52 MB (−21.3%) |
+| arena_01 | 108 | 106 (98.1%) | 7.83 MB | 5.87 MB | **75.1%** | {0:2,1:3,2:24,3:40,4:23,5:13,6:3} | 8.49 → 5.70 MB | −2.79 MB (−32.9%) |
+
+All bitmaps are DXT/BC. **Strippable fraction is uniformly ~75% of venue texture
+bytes** (only 1–2 numMips==0 bitmaps per venue). The measured q11 wire saving
+(−54…58% on the journey small_club venues) **far exceeds** the plan's −33% entropy
+estimate — dropping the top mip both removes the incompressible BC bytes AND lets
+the smaller surviving milo brotli-compress better; the gains stack on Wave 5's q11.
+Texture-light venues (big_club/arena) save less (−21…33%) but never regress.
+
+**Round-trip VALIDATED two ways:** (1) dc3 `validate_milo_entries.py` parses every
+stripped milo OK (rev=28 WorldDir, entry table byte-identical to the original);
+(2) a **headless native boot through the REAL engine** (`RB3_BOOT=1 RB3_LIVE_LOAD=1
+rb3-native <stripped>`, `DirLoader::LoadObjects` — the same loader + `RndBitmap::Load`
+mip-consume path the web build uses) loads the stripped venue with NO assert / NO
+stream desync, producing output BYTE-IDENTICAL to loading the original (same root
+`small_club_01 [RndDir]`, same notices). The tool's `strip` also re-parses its own
+output and fails loudly if any surviving bitmap no longer lands on 0xADDEADDE.
+
+**Journey projection (measured, not entropy):** the single heaviest milo
+(small_club_01) saves −6.79 MB alone — nearly 2× the −3.6 MB/venue the plan
+assumed — so the plan's journey 115 → ~91 MB (−21%) is a conservative FLOOR;
+stripping every venue-class milo served by the journey yields strictly more.
+
+**GO confirmed.** ≥75% of venue texture bytes strippable on every venue, the strip
+round-trips cleanly through the real engine, and the measured wire saving beats the
+estimate. Proceed to T1 (downscaled tree generator + `server.py` resolve order +
+`RB3_WEB_DOWNSCALE`) and T2 (visual gate + exclusion list). The generated
+`web-downscaled/` tree is a build/deploy artifact — gitignore it, do NOT commit.
+
 **T1 — strip tool + downscaled tree + server wiring.** The strip pass
 (`scripts/milo/strip_top_mip.py` or a C++ tool), the `web-downscaled/` generator
 (parallel, idempotent, like `prewarm_encode_cache.py`), and `server.py` resolve
