@@ -52,6 +52,11 @@ orig-assets/
 # Exception: checked-in native reference renders for pixelmatch regression guard.
 !orig-assets/native-refs/
 !orig-assets/native-refs/**
+# A4 web texture downscale: generated mip-stripped venue milos (build/deploy
+# output, like the brotli encode cache — NOT the canonical extracted tree).
+# Already covered by orig-assets/ above; listed explicitly so it's never committed
+# even if that rule gains more exceptions. Regenerate: scripts/web/gen_web_downscaled.py
+orig-assets/web-downscaled/
 
 # Used to persist certain empty folders
 # Search patterns covering folders that need to be persisted must end with an asterisk,

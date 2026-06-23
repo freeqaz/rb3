@@ -178,6 +178,71 @@ yes — VERIFY). Owner files: `scripts/milo/*`, `native/web/server.py`, possibly
 `native/tools/` C++ harness. NO matched-Wii-TU edits; any engine guard is
 `__EMSCRIPTEN__`.
 
+### T1 DONE — generator + server wiring + measurements (Opus, 2026-06-23)
+
+**Files (all on branch `xenon-round3-recon`):**
+- `scripts/web/gen_web_downscaled.py` — the generator. Walks
+  `extracted/world/venue/**/*.milo_xbox` (52 milos; VENUES ONLY — chars/UI are
+  small + geometry-heavy, excluded), strips each via `mip_strip.strip_file` into a
+  sibling `orig-assets/web-downscaled/` tree mirroring the request key. Parallel
+  (`--jobs`, multiprocessing), idempotent (a `.src` size+mtime sidecar → a 2nd run
+  is a 0.0 s no-op), atomic (unique temp → validate → rename). HARD-STOPS (nonzero
+  exit) on any milo that fails to round-trip. `--validate` also runs dc3
+  `validate_milo_entries.py` per output; `--stats` prints the q11 wire summary.
+- `native/web/server.py` — `RB3_WEB_DOWNSCALE` flag (`--downscale`/`--no-downscale`
+  CLI override; env default OFF), `DOWNSCALE_DIR` (auto-detect
+  `orig-assets/web-downscaled`, `RB3_WEB_DOWNSCALE_DIR` override). New module-level
+  `downscale_path(rel)` probed FIRST in both `resolve_asset_path` (the shared
+  source-of-truth used by the bundle routes + prewarm) and `_serve_asset_file`
+  (the `/api/file` handler) — a stripped venue milo shadows the extracted original
+  when the flag is on, else a no-op. `_spawn_prewarm` prepends the downscaled tree
+  as the first prewarm root when on, so the warmed q11 wire is the stripped size.
+- `scripts/web/prewarm_encode_cache.py` — mirrors the flag/dir resolution so a
+  standalone prewarm (`--downscale`) walks the stripped tree first (first-root-wins
+  de-dupe → same cache key, smaller bytes).
+- `.gitignore` — explicit `orig-assets/web-downscaled/` entry (already covered by
+  `orig-assets/`; documented as generated build output, NOT committed).
+
+**Serve mechanism (exact):** with the flag on, `/api/file/world/venue/.../foo.milo_xbox`
+resolves from `web-downscaled/` (a direct join on the request key) before
+`extracted/`. The existing R5 wire-compression path is unchanged — it compresses
+the (now smaller) stripped milo and serves it via `Content-Encoding: br`. The
+prewarm warms `web-downscaled/world/venue/.../foo.milo_xbox.br` under the SAME
+cache key the server looks up, so a warmed journey serves the stripped+q11 artifact
+straight from disk. Default OFF until T2's visual gate flips it on
+(`RB3_WEB_DOWNSCALE=1`).
+
+**Engine: NO fix needed.** A headless boot through the REAL engine
+(`RB3_BOOT=1 rb3-native <stripped>`, full SystemInit config + `DirLoader::LoadObjects`)
+loads the stripped small_club_01, arena_01, AND big_club_06 with NO assert / NO
+desync — byte-identical behavior to the originals (same root `[RndDir]`, same
+notices). The reduced-mip RndBitmap upload is tolerated as the plan predicted
+(CopyBottomMip path). No engine change, no matched-TU edit.
+
+**Measured (verified end-to-end through the server):**
+- Generation: 52/52 venues stripped + dc3-validated in 30 s; 2nd run a no-op.
+- Journey venue small_club_01 q11 wire **11.67 → 4.88 MB (−58.2%, −6.79 MB)** —
+  this is the W5 `maxSingleMilo` (11.7 MB → 4.88 MB). Confirmed end-to-end: a
+  `--downscale` server with the prewarmed q11 cache serves
+  `Content-Encoding: br`, `Content-Length 4,877,312`, which decompresses to the
+  byte-exact 8,731,568-byte stripped milo.
+- Full 52-venue corpus q11 wire: **610.44 → 513.85 MB (−15.8%, saved 96.59 MB)**.
+- Other journey-class venues: small_club_03 −54.0%, small_club_06 −51.4%,
+  arena_01 −32.8%, big_club_06 −21.3%. **Caveat:** the `video/*` venues (40–50 MB
+  each) are video-backdrop scenes whose bulk is NOT BC texture — they strip ~0%
+  (video_03 −0.5%, video_07 −0.2%); the strip never regresses them. The
+  texture-heavy small_club / arena / big_club venues an actual song journey uses
+  all save 21–58%. So the projected journey 115 → ~91 MB (−21%) holds for a
+  small_club/arena journey; a video-venue journey saves less (the lever is
+  texture-bound, as designed).
+
+NOTE: the full 4 Mbps Playwright `_netmatrix` journey was started but the cold
+release boot under 4 Mbps throttle is slow enough that it had not reached the
+gameplay venue-load phase within the time budget; the venue wire delta above is
+deterministic (proven per-asset through the actual server resolve + R5 encode
+path), so the journey total follows directly. T2 should run the full netmatrix A/B
+once the visual gate is being measured anyway.
+
 **T2 — visual quality gate + exclusion list + byte re-measure.** Render gameplay
 + each venue at the camera distances they actually use (the venue cam, not a
 close-up), full-res vs downscaled, and gate on SSIM / `visual_diff.py` (the

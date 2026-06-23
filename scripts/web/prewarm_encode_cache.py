@@ -77,6 +77,18 @@ def _configure_server_globals(args):
         if args.sidecar_dir and os.path.isdir(args.sidecar_dir)
         else server._find_sidecar_dir()
     )
+    # A4 web downscale: mirror the server's resolution so a standalone prewarm run
+    # (auto-detect roots) walks the stripped venue tree when the flag is on. The
+    # CLI --downscale/--no-downscale overrides the RB3_WEB_DOWNSCALE env.
+    server.DOWNSCALE_DIR = (
+        os.path.realpath(args.downscale_dir)
+        if args.downscale_dir and os.path.isdir(args.downscale_dir)
+        else server._find_downscale_dir()
+    )
+    if args.downscale is not None:
+        server.DOWNSCALE_ENABLED = args.downscale
+    else:
+        server.DOWNSCALE_ENABLED = server._downscale_enabled_from_env()
     server.ENCODE_CACHE_DIR = (
         os.path.abspath(args.encode_cache)
         if args.encode_cache
@@ -94,6 +106,11 @@ def _resolved_roots(args):
     if args.roots:
         return [os.path.realpath(r) for r in args.roots if os.path.isdir(r)]
     roots = []
+    # A4: the stripped venue tree goes FIRST so its milos win the first-root-wins
+    # de-dupe (same cache key as the extracted milo, smaller stripped bytes) when
+    # the downscale is enabled. Off ⇒ not prepended (the extracted milo warms).
+    if server.DOWNSCALE_ENABLED and server.DOWNSCALE_DIR:
+        roots.append(server.DOWNSCALE_DIR)
     if server.ASSETS_DIR:
         roots.append(server.ASSETS_DIR)
     roots.extend(server.FALLBACK_ASSETS_DIRS)
@@ -297,6 +314,14 @@ def main():
                         help="Override the XMA->PCM sidecar dir.")
     parser.add_argument("--overlay-dir", default=None,
                         help="Override the DTA overlay dir.")
+    parser.add_argument("--downscale-dir", default=None,
+                        help="Override the A4 web-downscaled venue tree.")
+    parser.add_argument("--downscale", dest="downscale", action="store_true",
+                        default=None,
+                        help="Walk the A4 downscaled venue tree first (stripped "
+                             "milos win; default OFF, also RB3_WEB_DOWNSCALE=1).")
+    parser.add_argument("--no-downscale", dest="downscale", action="store_false",
+                        help="Force the A4 downscale OFF (overrides the env).")
     parser.add_argument("--encode-cache", default=None,
                         help="Encode cache dir (default: RB3_ENCODE_CACHE env or "
                              "native/web/.cache/encoded — same as the server).")
