@@ -145,3 +145,11 @@ docs/sessions/**/screenshots/**/*.json
 
 # Permuter auto-sweep run logs (one dir per fleet run, large attempt dumps)
 logs/permuter/auto_*/
+
+# Xenon-hardening research/forensics artifacts (local-only generated dumps:
+# sysnet Wii asm/m2c, per-pair evidence/judgments, plans — not repo material)
+docs/decomp/xenon-hardening/round2/forensics/*sysnet*
+docs/decomp/xenon-hardening/round3/evidence-systemnetwork.md
+docs/decomp/xenon-hardening/round3/evidence/pair-*.md
+docs/decomp/xenon-hardening/round3/judgments/
+docs/decomp/xenon-hardening/round3/round3-plans.json

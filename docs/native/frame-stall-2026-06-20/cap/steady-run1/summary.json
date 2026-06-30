@@ -1,0 +1,477 @@
+{
+  "tag": "steady-run1",
+  "phase": "gameplay",
+  "debugBuild": true,
+  "budgetMs": 16.7,
+  "steadyWindow": {
+    "startPerfMs": 55431.7,
+    "endPerfMs": 95890.8,
+    "secs": 40.46
+  },
+  "jitter": {
+    "n": 870,
+    "windowSecs": 40.46,
+    "p50": 50,
+    "p90": 50,
+    "p95": 66.67,
+    "p99": 83.33,
+    "max": 233.32,
+    "overBudget": 869,
+    "over33": 869,
+    "over50": 82,
+    "over100": 5,
+    "pctOverBudget": 99.9,
+    "histLabels": [
+      "<=8",
+      "<=12",
+      "<=16.7",
+      "<=20",
+      "<=25",
+      "<=33",
+      "<=50",
+      "<=75",
+      "<=100",
+      "<=150",
+      "<=250",
+      "<=500",
+      ">500"
+    ],
+    "hist": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      787,
+      69,
+      8,
+      3,
+      2,
+      0,
+      0
+    ]
+  },
+  "traceAvailable": false,
+  "traceErr": "__ERR__unreachable",
+  "traceStats": {
+    "nFrames": 0,
+    "p50": 0,
+    "p99": 0,
+    "max": 0
+  },
+  "spikeCount": 0,
+  "big100Count": 0,
+  "spikeBucketAgg": {
+    "dtSum": 0,
+    "residueSum": 0,
+    "agg": {},
+    "n": 0
+  },
+  "allBucketAgg": {
+    "dtSum": 0,
+    "residueSum": 0,
+    "agg": {},
+    "n": 0
+  },
+  "worstFrames": [],
+  "cpu": {
+    "totalMs": 40440,
+    "busyMs": 40256,
+    "samples": 38388,
+    "cats": [
+      {
+        "cat": "program",
+        "ms": 28516,
+        "pct": 70.5
+      },
+      {
+        "cat": "wasm",
+        "ms": 11337,
+        "pct": 28
+      },
+      {
+        "cat": "idle",
+        "ms": 183,
+        "pct": 0.5
+      },
+      {
+        "cat": "js-glue",
+        "ms": 176,
+        "pct": 0.4
+      },
+      {
+        "cat": "other",
+        "ms": 171,
+        "pct": 0.4
+      },
+      {
+        "cat": "gc",
+        "ms": 56,
+        "pct": 0.1
+      }
+    ],
+    "top": [
+      {
+        "name": "(program)",
+        "ms": 28516,
+        "pct": 70.52,
+        "pctBusy": 70.84
+      },
+      {
+        "name": "BandRnd::DrawMesh(RndMesh*)",
+        "ms": 1371.4,
+        "pct": 3.39,
+        "pctBusy": 3.41
+      },
+      {
+        "name": "__dynamic_cast",
+        "ms": 683.9,
+        "pct": 1.69,
+        "pctBusy": 1.7
+      },
+      {
+        "name": "writeBuffer",
+        "ms": 464.9,
+        "pct": 1.15,
+        "pctBusy": 1.15
+      },
+      {
+        "name": "DirtyCache::SetDirty()",
+        "ms": 320.9,
+        "pct": 0.79,
+        "pctBusy": 0.8
+      },
+      {
+        "name": "__cxxabiv1::__base_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info*, voi",
+        "ms": 235.7,
+        "pct": 0.58,
+        "pctBusy": 0.59
+      },
+      {
+        "name": "setBindGroup",
+        "ms": 189.4,
+        "pct": 0.47,
+        "pctBusy": 0.47
+      },
+      {
+        "name": "(idle)",
+        "ms": 183.4,
+        "pct": 0.45,
+        "pctBusy": 0.46
+      },
+      {
+        "name": "log",
+        "ms": 166.8,
+        "pct": 0.41,
+        "pctBusy": 0.41
+      },
+      {
+        "name": "DirtyCache::SetDirty_Force()",
+        "ms": 152,
+        "pct": 0.38,
+        "pctBusy": 0.38
+      },
+      {
+        "name": "__cxxabiv1::__vmi_class_type_info::search_above_dst(__cxxabiv1::__dynamic_cast_info*, void",
+        "ms": 148.9,
+        "pct": 0.37,
+        "pctBusy": 0.37
+      },
+      {
+        "name": "KeylessHash<char const*, ObjectDir::Entry>::FirstFrom(ObjectDir::Entry*)",
+        "ms": 137.2,
+        "pct": 0.34,
+        "pctBusy": 0.34
+      },
+      {
+        "name": "unsigned long long std::__2::__cxx_atomic_fetch_add[abi:nn210108]<unsigned long long>(std:",
+        "ms": 127.7,
+        "pct": 0.32,
+        "pctBusy": 0.32
+      },
+      {
+        "name": "__cxxabiv1::__vmi_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info*, void",
+        "ms": 118.2,
+        "pct": 0.29,
+        "pctBusy": 0.29
+      },
+      {
+        "name": "RndTransformable::WorldXfm()",
+        "ms": 115.2,
+        "pct": 0.28,
+        "pctBusy": 0.29
+      },
+      {
+        "name": "__cxxabiv1::__si_class_type_info::search_below_dst(__cxxabiv1::__dynamic_cast_info*, void ",
+        "ms": 101.3,
+        "pct": 0.25,
+        "pctBusy": 0.25
+      },
+      {
+        "name": "twoway_strstr",
+        "ms": 99.1,
+        "pct": 0.25,
+        "pctBusy": 0.25
+      },
+      {
+        "name": "ObjDirItr<RndMesh>::Advance()",
+        "ms": 99.1,
+        "pct": 0.24,
+        "pctBusy": 0.25
+      },
+      {
+        "name": "RndDir::Poll()",
+        "ms": 92.9,
+        "pct": 0.23,
+        "pctBusy": 0.23
+      },
+      {
+        "name": "AudioDevice::MixSources(float*, int)",
+        "ms": 90.7,
+        "pct": 0.22,
+        "pctBusy": 0.23
+      },
+      {
+        "name": "RndTransformable::SetDirty()",
+        "ms": 84.6,
+        "pct": 0.21,
+        "pctBusy": 0.21
+      },
+      {
+        "name": "std::__2::__wrap_iter<DirtyCache**>::base[abi:ne210108]() const",
+        "ms": 76.9,
+        "pct": 0.19,
+        "pctBusy": 0.19
+      },
+      {
+        "name": "setVertexBuffer",
+        "ms": 74.9,
+        "pct": 0.19,
+        "pctBusy": 0.19
+      },
+      {
+        "name": "decode_packed_entry_number",
+        "ms": 74.9,
+        "pct": 0.19,
+        "pctBusy": 0.19
+      },
+      {
+        "name": "wasm-to-js",
+        "ms": 70.7,
+        "pct": 0.17,
+        "pctBusy": 0.18
+      },
+      {
+        "name": "createBindGroup",
+        "ms": 69.6,
+        "pct": 0.17,
+        "pctBusy": 0.17
+      },
+      {
+        "name": "__strchrnul",
+        "ms": 69.6,
+        "pct": 0.17,
+        "pctBusy": 0.17
+      },
+      {
+        "name": "std::__2::vector<DirtyCache*, std::__2::allocator<DirtyCache*>>::__make_iter[abi:ne210108]",
+        "ms": 68.6,
+        "pct": 0.17,
+        "pctBusy": 0.17
+      },
+      {
+        "name": "(anonymous namespace)::RB3StreamReceiverNative::RenderAudio(float*, int)",
+        "ms": 68.5,
+        "pct": 0.17,
+        "pctBusy": 0.17
+      },
+      {
+        "name": "bool std::__2::operator!=[abi:ne210108]<DirtyCache**>(std::__2::__wrap_iter<DirtyCache**> ",
+        "ms": 64.1,
+        "pct": 0.16,
+        "pctBusy": 0.16
+      },
+      {
+        "name": "DataArray::FindArray(Symbol, bool) const",
+        "ms": 61.3,
+        "pct": 0.15,
+        "pctBusy": 0.15
+      },
+      {
+        "name": "WebAssetsFetchDone(int)",
+        "ms": 60.1,
+        "pct": 0.15,
+        "pctBusy": 0.15
+      },
+      {
+        "name": "now",
+        "ms": 59,
+        "pct": 0.15,
+        "pctBusy": 0.15
+      },
+      {
+        "name": "UTF8ArrayToString @js",
+        "ms": 56.2,
+        "pct": 0.14,
+        "pctBusy": 0.14
+      },
+      {
+        "name": "(garbage collector)",
+        "ms": 55.9,
+        "pct": 0.14,
+        "pctBusy": 0.14
+      },
+      {
+        "name": "std::__2::vector<RndDrawable*, std::__2::allocator<RndDrawable*>>::__make_iter[abi:ne21010",
+        "ms": 53.7,
+        "pct": 0.13,
+        "pctBusy": 0.13
+      },
+      {
+        "name": "RndDrawable::DrawBudget(float)",
+        "ms": 49.7,
+        "pct": 0.12,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "std::__2::__hash_iterator<std::__2::__hash_node<std::__2::__hash_value_type<RndTex*, RB3Te",
+        "ms": 49.6,
+        "pct": 0.12,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "getenv",
+        "ms": 48.6,
+        "pct": 0.12,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "StandardStream::ConsumeData(void**, int, int)",
+        "ms": 46.4,
+        "pct": 0.11,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "RndTransformable::WorldXfm_Force()",
+        "ms": 46.4,
+        "pct": 0.11,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "std::__2::__math::fabs[abi:ne210108](float)",
+        "ms": 46.4,
+        "pct": 0.11,
+        "pctBusy": 0.12
+      },
+      {
+        "name": "setIndexBuffer",
+        "ms": 45.4,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "std::__2::vector<GpuVertexSkinned, std::__2::allocator<GpuVertexSkinned>>::operator[][abi:",
+        "ms": 45.3,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "HxNoteFreedRangeReused(void const*, unsigned long)",
+        "ms": 44.3,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "emscripten_builtin_free",
+        "ms": 43.3,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "std::__2::__tree_iterator<void const*, std::__2::__tree_node<void const*, void*>*, long> s",
+        "ms": 43.1,
+        "pct": 0.11,
+        "pctBusy": 0.11
+      },
+      {
+        "name": "std::__2::pair<std::__2::__hash_iterator<std::__2::__hash_node<std::__2::__hash_value_type",
+        "ms": 40.5,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "RndDrawable** std::__2::__find[abi:ne210108]<RndDrawable*, RndDrawable*, std::__2::__ident",
+        "ms": 40,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "std::__2::pair<std::__2::__hash_iterator<std::__2::__hash_node<RndTransformable*, void*>*>",
+        "ms": 39.1,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "std::__2::vector<DirtyCache*, std::__2::allocator<DirtyCache*>>::end[abi:ne210108]()",
+        "ms": 39.1,
+        "pct": 0.1,
+        "pctBusy": 0.1
+      },
+      {
+        "name": "Hmx::Matrix3::Set(float, float, float, float, float, float, float, float, float)",
+        "ms": 37,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "mdct_butterflies",
+        "ms": 36.9,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "std::__2::less<void const*>::operator()[abi:ne210108](void const* const&, void const* cons",
+        "ms": 35.9,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "BandCharacter::NativeCollectSkinnedMeshes(std::__2::vector<RndMesh*, std::__2::allocator<R",
+        "ms": 35.9,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "mdct_backward",
+        "ms": 35.8,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "RndDir::DrawShowing()",
+        "ms": 34.8,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "CharPollGroup::Poll()",
+        "ms": 34.8,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "beginRenderPass",
+        "ms": 34.7,
+        "pct": 0.09,
+        "pctBusy": 0.09
+      },
+      {
+        "name": "CharBonesMeshes::PoseMeshes()",
+        "ms": 33.8,
+        "pct": 0.08,
+        "pctBusy": 0.08
+      }
+    ]
+  }
+}

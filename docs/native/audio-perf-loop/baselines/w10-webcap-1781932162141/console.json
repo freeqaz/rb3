@@ -1,0 +1,1602 @@
+[
+  {
+    "t": "78.55",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.55",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.57",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.58",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.58",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.58",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.59",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.62",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.62",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.62",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.64",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.65",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.65",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.68",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.69",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.69",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.72",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.72",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.73",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.73",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.74",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.76",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.76",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.77",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.77",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.78",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.80",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.81",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.82",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.83",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.84",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.86",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.87",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.88",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.89",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.89",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.92",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.93",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.93",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.97",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.97",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.98",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.98",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "78.99",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.03",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.03",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.04",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.06",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.06",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.07",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.08",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.08",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.09",
+    "text": "AudioDevice: latency GROW -> 124 ms (sustained near-miss, minDepth 1153 frames, pressure 538/256)"
+  },
+  {
+    "t": "79.11",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.12",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.12",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.13",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.13",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.15",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.16",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.16",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.17",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.17",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.19",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.20",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.20",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.21",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.22",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.23",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.24",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.25",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.25",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.26",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.28",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.28",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.29",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.29",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.30",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.32",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.32",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.33",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.33",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.34",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.36",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.36",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.37",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.37",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.38",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.39",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.40",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.41",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.41",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.42",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.43",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.44",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.44",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.45",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.45",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.47",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.48",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.48",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.49",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.49",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.51",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.52",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.52",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.53",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.53",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.55",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.56",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.56",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.57",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.57",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.58",
+    "text": "AudioDevice: latency GROW -> 164 ms (sustained near-miss, minDepth 1537 frames, pressure 666/256)"
+  },
+  {
+    "t": "79.60",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.62",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.63",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.64",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.65",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.67",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.69",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.69",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.71",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.73",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.74",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.74",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.75",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.75",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.77",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.78",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.78",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.79",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.79",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.81",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.82",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.82",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.83",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.83",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.86",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.86",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.87",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.87",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.88",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.90",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.90",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.91",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.91",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.92",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.95",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.95",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.96",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.98",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.98",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "79.99",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.00",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.00",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.03",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.03",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.04",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.06",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.06",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.07",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.08",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.08",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.09",
+    "text": "AudioDevice: latency GROW -> 204 ms (sustained near-miss, minDepth 2917 frames, pressure 794/256)"
+  },
+  {
+    "t": "80.11",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.11",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.12",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.13",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.13",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.15",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.16",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.16",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.17",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.17",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.20",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.21",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.21",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.22",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.22",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.24",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.25",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.26",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.26",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.27",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.29",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.30",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.31",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.31",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.32",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.34",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.34",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.35",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.35",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.36",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.38",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.38",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.39",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.39",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.40",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.42",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.43",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.43",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.44",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.44",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.46",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.47",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.47",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.48",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.48",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.50",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.51",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.52",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.52",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.52",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.54",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.55",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.56",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.56",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.57",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.59",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.60",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.62",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.64",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.65",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.65",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.68",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.69",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.69",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.73",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.73",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.74",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.74",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.75",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.77",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.78",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.79",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.79",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.80",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.82",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.83",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.83",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.84",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.84",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.87",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.88",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.88",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.89",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.89",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.91",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.92",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.93",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.93",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.96",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.97",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.97",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.98",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "80.98",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.00",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.01",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.03",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.05",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.06",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.06",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.07",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.08",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.10",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.11",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.11",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.12",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.12",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.15",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.16",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.17",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.17",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.18",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.21",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.22",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.22",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.23",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.23",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.26",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.27",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.27",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.28",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.28",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.31",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.32",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.33",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.34",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.34",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.37",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.38",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.38",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.39",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.39",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.42",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.43",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.43",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.44",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.44",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.47",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.48",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.49",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.49",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.50",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.52",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.53",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.54",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.54",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.55",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.57",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.57",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.58",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.58",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.59",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.61",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.62",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.62",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.63",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.65",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.66",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.67",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.69",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.70",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.71",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.73",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.74",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.74",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.75",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.75",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.77",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.78",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.78",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.79",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.79",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.81",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.81",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.82",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.83",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.83",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.85",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.86",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.86",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.86",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.87",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.89",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.90",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.90",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.91",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.91",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.93",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.94",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.95",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.97",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.97",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.98",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.99",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "81.99",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "82.01",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "82.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "82.02",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "82.03",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/OvershellSlot.cpp(3661): Object (ui/overshell/overshell_player.milo) unhandled msg: clear_pics"
+  },
+  {
+    "t": "82.03",
+    "text": "NOTIFY: /home/free/code/milohax/rb3/src/band3/meta_band/PassiveMessagesPanel.cpp(154): passive_messages_panel (ui/global/passive_messages.milo) unhandled msg: clear_pics"
+  }
+]

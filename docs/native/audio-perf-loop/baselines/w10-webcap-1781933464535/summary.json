@@ -1,0 +1,104 @@
+{
+  "tag": "w10-webcap-1781933464535",
+  "phase": "gameplay",
+  "box_loadavg": null,
+  "playSecs": 35,
+  "ctxRate": 44100,
+  "bufFrames": 32768,
+  "finalUnderruns": {
+    "type": "underrun-stats",
+    "underrunEvents": 131,
+    "underrunFrames": 16650,
+    "totalQuanta": 26642,
+    "totalFrames": 3410176,
+    "minRingDepthFrames": 7170
+  },
+  "steadyWindow": {
+    "startPerfMs": 42164.5,
+    "endPerfMs": 77395.9,
+    "secs": 35.23
+  },
+  "clockAlign": {
+    "offsetUs": 1045201524289.0001,
+    "offsetUs2": 1045201524311,
+    "driftMsPerSec": 0.00047986424847881406,
+    "traceEvents": 109554,
+    "gcEventsTotal": 50,
+    "gcEventsSteady": 34,
+    "alignMark": {
+      "name": "__jit_align_8gmjup10g4",
+      "perf": 31562.709999918938,
+      "epoch": 1781933496194
+    },
+    "alignMark2": {
+      "name": "__jit_align2_p02zor63fp",
+      "perf": 77408.75499999523,
+      "epoch": 1781933542040
+    }
+  },
+  "jitter": {
+    "n": 2088,
+    "p50": 16.67,
+    "p95": 16.67,
+    "p99": 33.33,
+    "max": 50,
+    "gapsOver33": 25,
+    "gapsOver50": 0,
+    "gapsOver100": 0,
+    "windowSecs": 35.23
+  },
+  "underruns": {
+    "perSec": 0,
+    "framesPerSec": 0,
+    "eventsDelta": 0,
+    "framesDelta": 0,
+    "samples": 71
+  },
+  "minDepth": {
+    "samples": 71,
+    "min": 4274,
+    "p5": 6658,
+    "p50": 7170,
+    "max": 9816,
+    "dipsUnder240": 0,
+    "last": 7170
+  },
+  "heapSlope": {
+    "jsMBperMin": 0,
+    "wasmMBperMin": 0,
+    "idbMBperMin": 0,
+    "jsFirstMB": 9.5,
+    "jsLastMB": 9.5,
+    "wasmFirstMB": 234.9,
+    "wasmLastMB": 234.9,
+    "idbFirstMB": 0,
+    "idbLastMB": 0,
+    "idbN": 0,
+    "samples": 117
+  },
+  "crux": {
+    "coincWindowMs": 50,
+    "bigGaps_over33": 25,
+    "bigGapsNearGc": 18,
+    "bigGapFracNearGc": 0.72,
+    "urIncrements": 0,
+    "urIncrNearGc": 0,
+    "urIncrFracNearGc": null,
+    "gc": {
+      "totalSteady": 34,
+      "major": 6,
+      "minor": 28,
+      "majorDurMs": {
+        "p50": 2.91,
+        "max": 4.74,
+        "sum": 20.6
+      },
+      "minorDurMs": {
+        "p50": 7.36,
+        "max": 13.83,
+        "sum": 173.88
+      },
+      "gcDurMaxMs": 13.83
+    }
+  }
+}
