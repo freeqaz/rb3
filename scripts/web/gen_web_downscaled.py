@@ -136,34 +136,55 @@ def _strip_one(job, dst_root, validate, force, dry_run):
         return ("stripped", rel, None)
 
     tmp = dst_abs + f".{os.getpid()}.{random.randrange(1 << 32):08x}.tmp"
+    # The progressive-sharpen sidecar (the discarded high-res top-mip delta) is
+    # written from the SAME strip pass so it carries the exact bytes the strip
+    # removes (same payload, same exclusion selection). It lands next to the
+    # stripped venue as `<venue>.milo_xbox.sharpen`; the server serves it from
+    # the downscaled tree, and the in-session sharpen manager (research/13 T1)
+    # fetches it to restore each texture to full-res. Build output — gitignored,
+    # never committed.
+    sharpen_dst = dst_abs + ".sharpen"
+    sharpen_tmp = tmp + ".sharpen"
     os.makedirs(os.path.dirname(dst_abs) or ".", exist_ok=True)
     try:
         # strip_file does the byte surgery AND a re-parse self-check: every
         # surviving bitmap must still land on the 0xADDEADDE object separator,
-        # else it raises SystemExit. That is the primary round-trip guard.
-        mip_strip.strip_file(src_abs, tmp, levels=1, quiet=True)
+        # else it raises SystemExit. That is the primary round-trip guard. Passing
+        # sidecar_path emits the sharpen delta from the still-full-res payload
+        # before the strip, atomically tied to this same strip.
+        mip_strip.strip_file(src_abs, tmp, levels=1, quiet=True,
+                             sidecar_path=sharpen_tmp)
         # Optional second guard: the dc3 entry-table validator parses the whole
         # ObjectDir (rev/type/name/entries) and confirms it's a loadable milo.
         if validate:
             ok = _dc3_validate(tmp)
             if not ok:
                 _unlink_quiet(tmp)
+                _unlink_quiet(sharpen_tmp)
                 return ("failed", rel, "dc3 validate failed")
     except SystemExit as e:
         _unlink_quiet(tmp)
+        _unlink_quiet(sharpen_tmp)
         return ("failed", rel, f"round-trip: {e}")
     except Exception as e:  # noqa: BLE001 — any tool error is a hard stop
         _unlink_quiet(tmp)
+        _unlink_quiet(sharpen_tmp)
         return ("failed", rel, f"{type(e).__name__}: {e}")
 
     try:
         _atomic_rename(tmp, dst_abs)
+        # The sharpen sidecar may not exist if the venue had nothing strippable
+        # (strip_file still writes an empty-entry SHRP blob via build_sharpen_
+        # entries, so it normally does); rename it into place when present.
+        if os.path.isfile(sharpen_tmp):
+            _atomic_rename(sharpen_tmp, sharpen_dst)
         # Record source identity AFTER the rename so the sidecar describes the
         # bytes actually written.
         with open(dst_abs + ".src", "w") as fh:
             fh.write(_src_meta_text(src_abs))
     except OSError as e:
         _unlink_quiet(tmp)
+        _unlink_quiet(sharpen_tmp)
         return ("failed", rel, f"rename: {e}")
     return ("stripped", rel, None)
 

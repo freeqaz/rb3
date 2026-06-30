@@ -49,6 +49,9 @@ Usage
     mip_strip.py census  <file.milo_xbox> [--json]
     mip_strip.py strip   <in.milo_xbox> <out.milo_xbox> [--levels N] [--quiet]
     mip_strip.py brotli  <file.milo_xbox>        # q11 wire size of a milo
+    mip_strip.py sharpen <in.milo_xbox> <out.sharpen>  # progressive-sharpen sidecar
+                                                       # (the discarded high-res
+                                                       # top-mip delta; see below)
 
 Exit nonzero on round-trip self-check failure.
 """
@@ -322,6 +325,226 @@ def strip_bitmap_bytes(payload, bm, levels):
 
 
 # ---------------------------------------------------------------------------
+# Progressive-sharpen sidecar (A4 option C, research/13 T0)
+# ---------------------------------------------------------------------------
+# A4 ships venues with the TOP mip stripped (half-res base) so the venue reaches
+# gameplay on a slow link. The sharpen sidecar carries the discarded high-res
+# delta — the original top-mip BC bytes — so the engine can, in-session and in
+# the background, restore each texture to full resolution: swap the RndBitmap's
+# base level back to the full-res top-mip + recreate the GPU texture at the new
+# (larger) size (see Rnd_Wgpu_RB3.cpp UploadRndTexIfNeeded). One `.sharpen` file
+# per stripped venue (`<venue>.milo_xbox.sharpen`).
+#
+# On-disk format (all multi-byte fields LITTLE-endian to match the container
+# header tooling; the embedded top-mip PIXEL bytes are copied VERBATIM from the
+# milo, i.e. they keep the on-disk big-endian DXT word order the engine expects):
+#
+#   magic        4s   b"SHRP"
+#   version      u32  == SHARPEN_VERSION (1)
+#   levels       u32  top mip levels carried per entry (== the strip's --levels)
+#   entry_count  u32
+#   then entry_count records, each:
+#     index            u32   stream-order ordinal among this venue's strippable
+#                            standalone bitmaps (stable for a given milo)
+#     full_w           u16   ORIGINAL (full-res) base level width
+#     full_h           u16   ORIGINAL base height
+#     full_rowbytes    u16   ORIGINAL base rowBytes
+#     stripped_w       u16   the loaded (half-res) base width  == full_w>>levels
+#     stripped_h       u16
+#     stripped_rowbytes u16
+#     bpp              u8
+#     _pad             u8    (0)
+#     order            u32   RndBitmap mOrder (format bits)
+#     stripped_fp      u32   engine TexFingerprint() of the STRIPPED base bytes —
+#                            the robust runtime match key: the engine recomputes
+#                            it over each loaded RndTex's current pixels and looks
+#                            up this entry (no name/order assumptions needed)
+#     topmip_len       u32   bytes of the carried top-mip(s) (the high-res delta)
+#     name_len         u32   length of the (best-effort) RndTex object name
+#     name             name_len bytes (latin-1; "" when the dir-entry correlation
+#                            is ambiguous — fingerprint is then authoritative)
+#     topmip           topmip_len bytes — the ORIGINAL top-mip BC pixels, verbatim
+#
+# The sidecar is the ~75% of texture bytes A4 stripped; reported size vs the
+# stripped venue confirms it carries the high-res delta. DO NOT COMMIT it (it is
+# build output under the already-gitignored orig-assets/ tree).
+SHARPEN_MAGIC = b"SHRP"
+SHARPEN_VERSION = 1
+
+
+def tex_fingerprint(data, off, size):
+    """Replicate Rnd_Wgpu_RB3.cpp TexFingerprint() byte-for-byte so the engine
+    can match a sidecar entry to a loaded RndTex by recomputing this over the
+    live (stripped) bitmap pixels. Returns 0 for <16 bytes (engine does too)."""
+    if size < 16:
+        return 0
+    h = 0
+    step = size // 8
+    if step < 1:
+        step = 1
+    i = 0
+    while i < size:
+        h = (h * 31 + data[off + i]) & 0xFFFFFFFF
+        i += step
+    return h
+
+
+def _read_be_str(d, o):
+    n = be32(d, o)
+    if n > 512:
+        raise ValueError("string too long")
+    return d[o + 4 : o + 4 + n].decode("latin-1", "replace"), o + 4 + n
+
+
+def parse_dir_entries(payload):
+    """Best-effort parse of the milo ObjectDir entry table → ordered list of
+    (className, objName). Mirrors dc3 validate_milo_entries.parse_directory_meta.
+    Returns None on any structural surprise (caller then emits name="")."""
+    try:
+        o = 0
+        rev = be32(payload, o); o += 4
+        if rev > 50:
+            return None
+        if rev > 10:
+            _t, o = _read_be_str(payload, o)  # dir type
+            _n, o = _read_be_str(payload, o)  # dir name
+            o += 4  # hash_count
+            o += 4  # hash_size
+            if rev >= 32:
+                o += 1  # unknown bool
+        ec = be32(payload, o); o += 4
+        if ec > 100000:
+            return None
+        entries = []
+        for _ in range(ec):
+            ct, o = _read_be_str(payload, o)
+            cn, o = _read_be_str(payload, o)
+            entries.append((ct, cn))
+        return entries
+    except (ValueError, struct.error, IndexError, UnicodeError):
+        return None
+
+
+def _correlate_tex_names(payload, runs):
+    """Map each STANDALONE bitmap run (in stream order) to an RndTex object name
+    from the dir entry table, IF the correlation is unambiguous. Returns a dict
+    {standalone_ordinal -> name}, empty when the counts don't line up (in which
+    case the fingerprint is the only match key — safer than guessing a name)."""
+    entries = parse_dir_entries(payload)
+    if entries is None:
+        return {}
+    tex_names = [name for (cls, name) in entries if cls == "Tex"]
+    n_standalone = sum(1 for r in runs if len(r) == 1)
+    # Only trust the order-correlation when the count of standalone Tex bodies
+    # exactly equals the count of "Tex" dir entries (cube faces are CubeTex
+    # entries, handled structurally and never standalone).
+    if len(tex_names) != n_standalone:
+        return {}
+    out = {}
+    ordinal = 0
+    for r in runs:
+        if len(r) == 1:
+            out[ordinal] = tex_names[ordinal]
+            ordinal += 1
+    return out
+
+
+def build_sharpen_entries(payload, runs, levels=1, exclude=None,
+                          apply_default_exclude=True):
+    """Build the sidecar entry list for the SAME strippable set strip_file uses:
+    single-member runs, numMips>=levels-eligible, not excluded. Each entry carries
+    the full-res top-mip bytes + identity. `levels` mirrors strip_file's strip."""
+    names = _correlate_tex_names(payload, runs)
+    entries = []
+    sidecar_index = 0
+    standalone_ordinal = 0
+    for r in sorted(runs, key=lambda rr: rr[0]["base"]):
+        if len(r) != 1:
+            continue
+        ord_here = standalone_ordinal
+        standalone_ordinal += 1
+        bm = r[0]
+        if bm["numMips"] < 1:
+            continue
+        if apply_default_exclude and default_exclude(bm):
+            continue
+        if exclude and exclude(bm):
+            continue
+        lv = min(levels, bm["numMips"])
+        if lv <= 0:
+            continue
+        base = bm["base"]
+        pb = bm["pb"]
+        removed = sum(bm["sizes"][:lv])
+        topmip_start = base + 32 + pb
+        topmip = payload[topmip_start : topmip_start + removed]
+        # the surviving base after the strip == mip[lv] — fingerprint it the way
+        # the engine will fingerprint the loaded (stripped) bitmap's pixels.
+        stripped_base_start = topmip_start + removed
+        stripped_base_len = bm["sizes"][lv]
+        stripped_fp = tex_fingerprint(payload, stripped_base_start, stripped_base_len)
+        entries.append(dict(
+            index=sidecar_index,
+            full_w=bm["w"], full_h=bm["h"], full_rb=bm["rb"],
+            stripped_w=bm["w"] >> lv, stripped_h=bm["h"] >> lv,
+            stripped_rb=row_bytes(bm["w"] >> lv, bm["bpp"]),
+            bpp=bm["bpp"], order=bm["order"], levels=lv,
+            stripped_fp=stripped_fp, topmip=topmip,
+            name=names.get(ord_here, ""),
+        ))
+        sidecar_index += 1
+    return entries
+
+
+def pack_sharpen_sidecar(entries, levels=1):
+    """Serialize sidecar entries to the on-disk SHRP byte format (see header)."""
+    out = bytearray()
+    out += SHARPEN_MAGIC
+    out += struct.pack("<III", SHARPEN_VERSION, levels, len(entries))
+    for e in entries:
+        name = e["name"].encode("latin-1", "replace")
+        out += struct.pack(
+            "<I HHH HHH BB I I I I",
+            e["index"],
+            e["full_w"], e["full_h"], e["full_rb"],
+            e["stripped_w"], e["stripped_h"], e["stripped_rb"],
+            e["bpp"], 0,
+            e["order"], e["stripped_fp"],
+            len(e["topmip"]), len(name),
+        )
+        out += name
+        out += e["topmip"]
+    return bytes(out)
+
+
+def write_sharpen_sidecar(in_path, out_path, levels=1, quiet=False,
+                          exclude=None, apply_default_exclude=True):
+    """Read a full-res venue milo and write its `.sharpen` sidecar (the high-res
+    top-mip delta for every bitmap strip_file would strip). Returns a stats dict."""
+    payload, _meta = read_container(in_path)
+    runs = find_bitmap_runs(payload)
+    entries = build_sharpen_entries(payload, runs, levels=levels, exclude=exclude,
+                                    apply_default_exclude=apply_default_exclude)
+    blob = pack_sharpen_sidecar(entries, levels=levels)
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
+    with open(out_path, "wb") as f:
+        f.write(blob)
+    topmip_total = sum(len(e["topmip"]) for e in entries)
+    named = sum(1 for e in entries if e["name"])
+    if not quiet:
+        print(
+            f"  {os.path.basename(in_path)}: sharpen sidecar — {len(entries)} "
+            f"textures, {topmip_total:,} top-mip bytes, {named} named; "
+            f"sidecar {len(blob):,} bytes -> {os.path.basename(out_path)}"
+        )
+    return {
+        "in": in_path, "out": out_path, "levels": levels,
+        "n_entries": len(entries), "n_named": named,
+        "topmip_bytes": topmip_total, "sidecar_bytes": len(blob),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Census
 # ---------------------------------------------------------------------------
 def census(path):
@@ -365,7 +588,7 @@ def census(path):
 # Strip whole file
 # ---------------------------------------------------------------------------
 def strip_file(in_path, out_path, levels=1, quiet=False, exclude=None,
-               apply_default_exclude=True):
+               apply_default_exclude=True, sidecar_path=None):
     """Strip the top mip from eligible STANDALONE bitmaps and write a single-block
     container copy.
 
@@ -382,6 +605,16 @@ def strip_file(in_path, out_path, levels=1, quiet=False, exclude=None,
     runs = find_bitmap_runs(payload)
     n_bitmaps = sum(len(r) for r in runs)
     n_cube_runs = sum(1 for r in runs if len(r) > 1)
+    # Emit the progressive-sharpen sidecar (the discarded top-mip delta) BEFORE
+    # the strip, from the still-full-res payload, so it carries the exact bytes
+    # that get removed below. Same strippable selection as the strip itself.
+    if sidecar_path is not None:
+        entries = build_sharpen_entries(payload, runs, levels=levels, exclude=exclude,
+                                        apply_default_exclude=apply_default_exclude)
+        blob = pack_sharpen_sidecar(entries, levels=levels)
+        os.makedirs(os.path.dirname(os.path.abspath(sidecar_path)) or ".", exist_ok=True)
+        with open(sidecar_path, "wb") as fh:
+            fh.write(blob)
     # Flatten the STRIPPABLE candidates: only single-member runs (standalone Tex),
     # never cube faces. Strip from the END backwards so earlier offsets stay valid.
     candidates = [r[0] for r in runs if len(r) == 1]
@@ -479,6 +712,17 @@ def main():
     b = sub.add_parser("brotli", help="brotli-q11 wire size of a milo")
     b.add_argument("file")
 
+    sh = sub.add_parser("sharpen",
+                        help="emit the progressive-sharpen sidecar (high-res "
+                             "top-mip delta) for a full-res venue milo")
+    sh.add_argument("input", help="full-res .milo_xbox (the strip SOURCE)")
+    sh.add_argument("output", help="output .sharpen sidecar path")
+    sh.add_argument("--levels", type=int, default=1)
+    sh.add_argument("--quiet", action="store_true")
+    sh.add_argument("--no-exclude", action="store_true",
+                    help="carry a delta for EVERY standalone bitmap (ignore the "
+                         "T2 visual-gate exclusion list).")
+
     args = ap.parse_args()
 
     if args.cmd == "census":
@@ -504,6 +748,10 @@ def main():
                    apply_default_exclude=not args.no_exclude)
     elif args.cmd == "brotli":
         print(f"{os.path.basename(args.file)}: brotli-q11 = {brotli_size(args.file):,} bytes")
+    elif args.cmd == "sharpen":
+        write_sharpen_sidecar(args.input, args.output, levels=args.levels,
+                              quiet=args.quiet,
+                              apply_default_exclude=not args.no_exclude)
 
 
 if __name__ == "__main__":
