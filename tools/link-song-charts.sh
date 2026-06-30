@@ -38,8 +38,13 @@ if [ ! -d "$DST" ]; then
     exit 0
 fi
 
+# Album-art cover suffix. Native forces kPlatformXBox, so the cooked texture is
+# gen/<id>_keep.png_xbox; BandSongMgr::GetAlbumArtPath stats that exact path.
+ART_SUFFIX="_keep.png_xbox"
+
 linked_dirs=0
 linked_files=0
+linked_art=0
 for sd in "$SRC"/*/; do
     s="$(basename "$sd")"
     [ "$s" = gen ] && continue
@@ -64,7 +69,21 @@ for sd in "$SRC"/*/; do
             linked_files=$((linked_files + 1))
         fi
     done
+
+    # Per-song album-art cover. The cooked texture lives at
+    # gen/<id>_keep.png_xbox; the dev slice ships the .milo_xbox + audio but not
+    # this, so the song-select grid falls back to the blank "?" placeholder.
+    # ~81/86 songs have an xbox cover; the rest (e.g. ifeelgoodalt, radarlove)
+    # have none and correctly stay blank. Symlink it into the loader root.
+    art="$DST/$s/gen/$s$ART_SUFFIX"
+    art_src="$SRC/$s/gen/$s$ART_SUFFIX"
+    if [ ! -e "$art" ] && [ ! -L "$art" ] && [ -e "$art_src" ]; then
+        mkdir -p "$DST/$s/gen"
+        ln -s "$art_src" "$art"
+        linked_art=$((linked_art + 1))
+    fi
 done
 
 total_mid="$(find -L "$DST" -maxdepth 2 -name '*.mid' 2>/dev/null | wc -l | tr -d ' ')"
-echo "link-song-charts: ${DST#$ASSETS/} now has ${total_mid} charts (linked ${linked_dirs} dirs + ${linked_files} files this run)."
+total_art="$(find -L "$DST" -maxdepth 3 -name "*$ART_SUFFIX" 2>/dev/null | wc -l | tr -d ' ')"
+echo "link-song-charts: ${DST#$ASSETS/} now has ${total_mid} charts + ${total_art} covers (linked ${linked_dirs} dirs + ${linked_files} files + ${linked_art} covers this run)."

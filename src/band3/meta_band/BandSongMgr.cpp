@@ -346,21 +346,27 @@ const char *BandSongMgr::GetAlbumArtPath(Symbol s) const {
     if (HasSong(s, true)) {
         const char *path = SongFilePath(s, "_keep.png", true);
 #ifdef HX_NATIVE
-        // The extracted native asset set ships the song .mogg/.milo but NOT the
-        // per-song "<name>_keep.png" album-art textures, so this path resolves to
-        // a file that does not exist. The song-select UI then does
-        // `album_art.pic set tex_file <path>`, which fails the texture load and
-        // leaves a flat grey placeholder box obscuring the difficulty grid.
-        // Mirror the no-art branch (OwnedSongSortNode::GetAlbumArtPath) and fall
-        // back to the shipped blank-art texture when the file is absent, so the
-        // box shows the proper "no art" placeholder instead of grey. Cheap local
-        // stat() — the path is relative to the data dir the native boot chdir'd
-        // into. Real art (if ever shipped) still resolves to the song path.
+#ifndef __EMSCRIPTEN__
+        // `SongFilePath` returns the LOGICAL art path "songs/<name>/<name>_keep.png",
+        // but the cooked texture the loader actually binds lives at the gen/ subdir
+        // with the platform suffix: "songs/<name>/gen/<name>_keep.png_<plat>" (see
+        // AsyncFile.cpp PrintDiscFile). Stat the COOKED path (not the logical one,
+        // which never exists), and fall back to the shipped blank-art placeholder
+        // when the cover is absent so the box shows the proper "no art" box instead
+        // of a failed-load grey box. Cheap local stat() — the path is relative to
+        // the data dir the native boot chdir'd into. Web (__EMSCRIPTEN__) skips the
+        // stat entirely: the cover is fetched lazily from the server's asset
+        // fallback, so it isn't present in MEMFS at this point — let the loader pull it.
         if (path && *path) {
+            Symbol plat = PlatformSymbol(TheLoadMgr.GetPlatform());
+            String cooked(MakeString(
+                "%s/gen/%s.%s_%s", FileGetPath(path, nullptr), FileGetBase(path, nullptr),
+                FileGetExt(path), plat.Str()));
             struct stat st;
-            if (::stat(path, &st) != 0)
+            if (::stat(cooked.c_str(), &st) != 0)
                 return "ui/image/blank_album_art_keep.png";
         }
+#endif
 #endif
         return path;
     } else
