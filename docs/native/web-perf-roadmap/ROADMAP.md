@@ -1,5 +1,43 @@
 # Web Load/Transition Performance Roadmap
 
+> ## ✅ SUPERSEDED / SHIPPED (verified 2026-07-01)
+>
+> **This roadmap's goal is achieved. Every item R1–R6 shipped** — landed by the
+> parallel [`incremental-load-perf`](../incremental-load-perf/) effort (which is the
+> canonical, more-complete record; it also adds network-matrix gating at 8/80 +
+> 4/150 Mbps, A4 texture mip-strip that takes a 1.5 Mbps client from DNF → gameplay,
+> first-frame 410→96 ms, and an L1 vertex-unpack cache). **Do not re-open R1–R6** —
+> they are in `HEAD` and re-implementing any of them is pure duplication.
+>
+> | This roadmap | Shipped as | Commit |
+> |---|---|---|
+> | R1 async on-demand fetch | `WebPendingFile` async-open seam + `rb3_prefetch_native.cpp` | `79cb7a54` |
+> | R2 per-screen prefetch | A2 per-screen dependency bundles (`/api/bundle/screen/<name>`) | `bc651674` |
+> | R3 boot bundle | landed here, generalized by R2 | `150a33f8` |
+> | R4 streaming song audio | Range-backed moggs (HTTP 206) + N2 read-ahead LRU chunk cache | `79cb7a54` |
+> | R5 wire compression | landed here + W5 bytes (SFX PCM→ogg 10×, −36% wire) | `6e627201` / `81972d4c` |
+> | R6 post-async CPU floor | Q4 GPU BC texture path (`RB3_BC_TEX_OFF`) | engine `6c45e96` |
+>
+> **Independent re-baseline (`scripts/web/netperf-suite.mjs`, nav, 2026-07-01) — the
+> transition-freeze complaint is measured GONE.** `blockedMs` = tab frozen/unresponsive:
+>
+> | transition | 2026-06-08 blocked (50 Mbit) | **2026-07-01 blocked (50 Mbit)** |
+> |---|---|---|
+> | boot → main_hub | 15,500 ms | **35 ms** |
+> | main_hub → song_select | 5,900 ms (20 reqs / 12 MB) | **0 ms (1 req / 0 MB — prefetched)** |
+> | song_select → part_difficulty | 1,700 ms | **0 ms** |
+> | part_difficulty → game | 11,400 ms (6.7 s dead frame) | **0 ms (67 ms worst hitch)** |
+>
+> Worst single hitch anywhere is now 167 ms (boot), ≤67 ms after. The residual is
+> **non-blocking wall-clock transfer** at low bandwidth (throughput-bound: wall ≈
+> bytes ÷ bandwidth) — a *bytes* problem, whose lever (A4 texture downscale,
+> `RB3_WEB_DOWNSCALE` default-ON, `cc86c7c4`) is already shipped. The
+> `part_difficulty → game` wall (~9.6 s unbounded) is the `songMs>0`/intro-cinematic
+> reached-heuristic, **not** a transfer cost. The design docs below are kept as the
+> historical design record; the live status lives in `incremental-load-perf/`.
+>
+> ---
+
 > Master index for the web load/transition performance work. Six design docs
 > (`R1`–`R6`), each adversarially reviewed. Companion data:
 > [`web-netperf-findings-2026-06-08.md`](../web-netperf-findings-2026-06-08.md).
