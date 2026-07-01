@@ -92,6 +92,7 @@ Multiple agents share one build dir. Two complementary safeguards — **keep bot
 
 - **`tools/ninja-locked`** — flock wrapper that serializes builds (ninja requires one process per build dir). Wired into `objdiff.json`'s `custom_make` and a `~/.zshrc` `ninja()` function. **Build with this, not bare `ninja`** — concurrent runs otherwise silently corrupt `.o` files and race on `build.ninja`.
 - **No binary deps cache** — `deps="gcc"` was removed from all build rules, so ninja reads `.d` files directly. This kills the rebuild-everything failure mode and survives killed builds, but does *not* make concurrent builds safe (that's the wrapper's job).
+- **No cargo depfile** — the `cargo` rule (only emitted when `--dtk`/`--objdiff` point at a *source dir*; by default this repo uses prebuilt binaries, so no cargo edges exist) intentionally has no depfile: cargo's depfile uses an absolute target path that ninja rejects, making the tool perpetually dirty (re-fires every build). Trade-off: `.rs` edits in a fork aren't auto-detected — force with `touch <fork>/Cargo.toml && ninja`. Same fix as rb3-xenon (2026-06-30).
 
 The SHA1 `ok` check is opt-in (`ninja build/SZBE69_B8/ok`), not part of the default build — it can't pass until decomp is 100%.
 
