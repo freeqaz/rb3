@@ -35,7 +35,7 @@ public:
             MovieLoader(const FilePath &, Movie::Impl *);
             virtual ~MovieLoader();
             virtual bool IsLoaded() const;
-            virtual const char *StateName() const;
+            virtual const char *StateName() const { return "MovieLoader"; }
             virtual void PollLoading();
 
             void OpenFile();
@@ -75,7 +75,7 @@ public:
         void SetWidthHeight(int, int);
         void SetAspect(float);
         float (*SetTimeCallback(float (*)()))();
-        void Begin(const char *, float, bool, bool, bool, bool, int, BinStream *);
+        bool Begin(const char *, float, bool, bool, bool, bool, int, BinStream *);
         void Terminate();
         void MovieClose();
         int MovieOpen(const char *, unsigned int);

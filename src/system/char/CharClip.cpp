@@ -480,6 +480,35 @@ int CharClip::BeatToSample(float f, float *fp) const {
     return mFull.FracToSample(fp);
 }
 
+// Explicit specialization of stlport's generic binary-search core for the
+// <const float*, float, __less_2<float,float>, long> instantiation used
+// below by SampleToBeat. This exact instantiation is unique to this call
+// site (no other TU instantiates __lower_bound<PCf,f,...>), so specializing
+// it cannot regress any other symbol.
+namespace stlpmtx_std {
+template <>
+const float *__lower_bound<const float *, float, __less_2<float, float>, long>(
+    const float *__first, const float *__last, const float &__val,
+    __less_2<float, float>, long *
+) {
+    long __len = __last - __first;
+    long __half;
+    const float *__middle;
+    while (__len > 0) {
+        __half = __len >> 1;
+        __middle = __first;
+        __middle += __half;
+        if (*__middle < __val) {
+            __first = __middle;
+            ++__first;
+            __len = __len - __half - 1;
+        } else
+            __len = __half;
+    }
+    return __first;
+}
+} // namespace stlpmtx_std
+
 float CharClip::SampleToBeat(int sample) const {
     if (mFull.mFrames.empty()) {
         return FrameToBeat(sample);

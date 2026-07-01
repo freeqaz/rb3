@@ -40,6 +40,7 @@ public:
 
 class StoreSongTable {
 public:
+    StoreSongTable() : mNumSongs(0), mBuffer(0), mSongs(0) {}
     ~StoreSongTable();
     bool Load(const char *);
 

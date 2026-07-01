@@ -242,10 +242,10 @@ bool StoreStringTable::Load(const char *cc) {
 
 bool StoreStringTable::IsValid(int i) {
     if (i & 0x8000U) {
-        if (mLocalized.mNumStrings <= (i & 0x7FFFU))
-            return false;
-        else
-            return true;
+        bool valid = false;
+        if ((i & 0x7FFF) < mLocalized.mNumStrings)
+            valid = true;
+        return valid;
     } else
         return i >= 0 && i < mNonLocalized.mNumStrings;
 }
@@ -1132,7 +1132,7 @@ bool StoreMetadataManager::Poll() {
             PollLoading();
         return mFlags & 8;
     }
-    return false;
+    return true;
 }
 
 const StorePackedOfferBase *StoreMetadataManager::FindOfferFromSongId(int songId) const {
@@ -1683,8 +1683,7 @@ void StoreMetadataManager::PollLoading() {
             }
             if (ok != 0) {
                 mVersion = new StoreVersionHeader();
-                String path(mBasePath);
-                loaded = mVersion->LoadFile(MakeString("%sversion", path.c_str()));
+                loaded = mVersion->LoadFile(MakeString("%sversion", String(mBasePath)));
                 goto load_check;
             }
             return;

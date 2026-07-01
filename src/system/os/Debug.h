@@ -205,11 +205,10 @@ public:
     DebugNotifyOncer() {}
     ~DebugNotifyOncer() {}
 
-    DebugNotifyOncer &operator<<(const char *cc) {
+    void operator<<(const char *cc) {
         if (AddToNotifies(cc, mNotifies)) {
             TheDebugNotifier << cc;
         }
-        return *this;
     }
 };
 

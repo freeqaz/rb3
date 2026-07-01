@@ -407,10 +407,6 @@ bool Movie::Impl::MovieLoader::IsLoaded() const {
     return mOpenState == &MovieLoader::DoneLoading;
 }
 
-const char *Movie::Impl::MovieLoader::StateName() const {
-    return "MovieLoader";
-}
-
 void Movie::Impl::MovieLoader::PollLoading() {
     while (!TheLoadMgr.CheckSplit() && TheLoadMgr.GetFirstLoading() == this && !IsLoaded()) {
         (this->*mOpenState)();
@@ -588,7 +584,7 @@ void Movie::Impl::SetRect() {
     gdh = dy;
 }
 
-void Movie::Impl::Begin(
+bool Movie::Impl::Begin(
     const char *file,
     float aspect,
     bool soundEnabled,
@@ -599,13 +595,13 @@ void Movie::Impl::Begin(
     BinStream *stream
 ) {
     ASSERT_MOVIE_THREAD(0x200);
-    if (TheLoadMgr.mPlatform == 0) return;
+    if (TheLoadMgr.mPlatform == 0) return false;
     mFilename = FileMakePath(FileRoot(), file, NULL);
     if (!UsingCD()) {
         FileQualifiedFilename(mFilename, mFilename.c_str());
     }
     mPreloadFlag = preload;
-    if (!PlatformCacheFile(file)) return;
+    if (!PlatformCacheFile(file)) return false;
     mLoop = loop;
     mSoundEnabled = soundEnabled;
     mForceTrack = forceTrack;
@@ -638,6 +634,7 @@ void Movie::Impl::Begin(
         MILO_WARN("%s, multiple movies must be preloaded", localFn.c_str());
     }
     mLoading = true;
+    return true;
 }
 
 int Movie::Impl::MovieOpen(const char *file, unsigned int flags) {
@@ -776,7 +773,7 @@ bool Movie::Impl::Poll() {
         return true;
     }
     if (mBink == NULL) return false;
-    if (!mPaused) {
+    if (!mPreloadBuf) {
         float ms = mPollTimer.SplitMs();
         mPollTimer.Restart();
         if (ms > 49.0f) {

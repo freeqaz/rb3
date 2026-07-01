@@ -92,7 +92,7 @@ public:
     char unkF1; // f1
     char unkF2; // f2
     char unkF3; // f3
-    char unkF4; // f4
+    unsigned char unkF4; // f4
     char unkF5; // f5
     char unkF6[0x2110 - 0xf6]; // padding
     int unk2110; // 2110

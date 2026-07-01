@@ -670,6 +670,43 @@ __declspec(noinline) void stlpmtx_std::_Vector_impl<
     _M_set_finish_idx(__f - __s);
     _M_set_data_size(__e - __s);
 }
+
+// _M_insert_overflow_aux() itself is specialized (body copied from
+// stl/_vector_sized.c), AFTER the three helpers above (whose explicit
+// specializations it calls — an explicit specialization must precede any point
+// that would otherwise implicitly instantiate the primary template for the
+// same arguments). The target calls size()/_M_finish()/max() out-of-line only
+// from THIS function (never inlining them here), while still inlining them
+// where operator>><OldColorOption,Us> pulls in the same overflow logic via
+// resize()/insert() — the same per-caller split BEGIN_LOADS/Load() below
+// relies on (#pragma dont_inline scopes the effect to calls made from within
+// this one function, unlike a blanket noinline on the callees, which would
+// regress that unrelated caller).
+#pragma push
+#pragma dont_inline on
+template <>
+void stlpmtx_std::_Vector_impl<
+    OldColorOption, unsigned short, stlpmtx_std::StlNodeAlloc<OldColorOption> >::_M_insert_overflow_aux(
+    OldColorOption *__pos, const OldColorOption &__x, const stlpmtx_std::__false_type &,
+    unsigned long __fill_len, bool __atend) {
+    const size_type __old_size = size();
+    size_type __len = __old_size + (max)(__old_size, __fill_len);
+
+    pointer __new_start = this->_M_ptr.allocate(__len);
+    pointer __new_finish = __new_start;
+    __new_finish =
+        __uninitialized_move(this->_M_ptr._M_data, __pos, __new_start, _TrivialUCpy(), _Movable());
+    if (__fill_len == 1) {
+        _Copy_Construct(__new_finish, __x);
+        ++__new_finish;
+    } else
+        __new_finish = __uninitialized_fill_n(__new_finish, __fill_len, __x, __false_type());
+    if (!__atend)
+        __new_finish = __uninitialized_move(__pos, this->_M_finish(), __new_finish, _TrivialUCpy(), _Movable());
+    _M_clear_after_move();
+    _M_set(__new_start, __new_finish, __new_start + __len);
+}
+#pragma pop
 #endif // !HX_NATIVE
 
 SAVE_OBJ(OutfitConfig, 0x5C7)

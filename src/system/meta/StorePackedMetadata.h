@@ -23,6 +23,7 @@ END_MESSAGE
 
 class StoreMarqueeTable {
 public:
+    StoreMarqueeTable() : mBuffer(0), mMarquees(0), mNumMarquees(0) {}
     ~StoreMarqueeTable();
     bool Load(const char *);
 
@@ -71,6 +72,7 @@ public:
 
 class StoreOfferTable {
 public:
+    StoreOfferTable() : mNumOffers(0), mBuffer(0), mOffers(0), mBufferNewRelease(0) {}
     ~StoreOfferTable();
     bool Load(const char *);
     int OfferIndex(const StorePackedOfferBase *) const;
@@ -83,6 +85,7 @@ public:
 
 class StoreRbnOfferTable {
 public:
+    StoreRbnOfferTable() : mNumOffers(0), mBuffer(0), mOffers(0), mBufferNewRelease(0) {}
     ~StoreRbnOfferTable();
     bool Load(const char *);
     int OfferIndex(const StorePackedOfferBase *) const;
@@ -95,6 +98,7 @@ public:
 
 class StoreSingleStringTable {
 public:
+    StoreSingleStringTable() : mNumStrings(0), mBuffer(0), mStrings(0) {}
     ~StoreSingleStringTable() {
         if (mBuffer)
             _MemFree(mBuffer);

@@ -1,3 +1,12 @@
+#ifndef HX_NATIVE
+// This file supplies its own paired-single Matrix3 Multiply (below) whose asm
+// (implicit cr0 compare, no register locals) matches the target's codegen for
+// this TU; CHARHAIR_LOCAL_MULTIPLY suppresses the generic Mtx.h inline (which
+// uses cr1 + register locals) so callers here resolve to the local one. On
+// native (clang, no PPC intrinsics) leave the suppression off so the standard
+// out-of-line Multiply declared in Mtx.h (defined in Rot.cpp) is used instead.
+#define CHARHAIR_LOCAL_MULTIPLY
+#endif
 #include "char/CharHair.h"
 #include <cstdlib>
 #include "char/CharCollide.h"
@@ -91,127 +100,133 @@ void CharHair::SetCloth(bool b) {
 
 #ifdef CHARHAIR_LOCAL_MULTIPLY
 inline void Multiply(const Hmx::Matrix3 &a, const Hmx::Matrix3 &b, Hmx::Matrix3 &out) {
+    typedef __vec2x32float__ psq;
+    register const Hmx::Matrix3 *_a = &a;
+    register const Hmx::Matrix3 *_b = &b;
+    register Hmx::Matrix3 *_out = &out;
+    register float *_row2, *_row1, *_row0;
     float row2[3], row1[3], row0[3];
-    asm { cmplw r4, r5 }
+    register psq _f0, _f1, _f2, _f3, _f4, _f5, _f6, _f7, _f8, _f9, _f10, _f11, _f12;
+    asm { cmplw _b, _out }
     asm volatile {
         beq alias_path
 
-        psq_l f4, 0x4(r3), 0, 0
-        psq_l f3, 0x18(r4), 0, 0
-        psq_l f2, 0x20(r4), 1, 0
-        ps_muls1 f1, f3, f4
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f4
-        psq_l f2, 0x14(r4), 1, 0
-        psq_l f5, 0x0(r3), 0, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_madds0 f0, f2, f4, f0
-        psq_l f3, 0x0(r4), 0, 0
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f5, f1
-        psq_l f4, 0x10(r3), 0, 0
-        ps_madds0 f0, f2, f5, f0
-        psq_st f1, 0x0(r5), 0, 0
-        psq_l f5, 0xc(r3), 0, 0
-        psq_st f0, 0x8(r5), 1, 0
+        psq_l _f4, 0x4(_a), 0, 0
+        psq_l _f3, 0x18(_b), 0, 0
+        psq_l _f2, 0x20(_b), 1, 0
+        ps_muls1 _f1, _f3, _f4
+        psq_l _f3, 0xc(_b), 0, 0
+        ps_muls1 _f0, _f2, _f4
+        psq_l _f2, 0x14(_b), 1, 0
+        psq_l _f5, 0x0(_a), 0, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l _f3, 0x0(_b), 0, 0
+        psq_l _f2, 0x8(_b), 1, 0
+        ps_madds0 _f1, _f3, _f5, _f1
+        psq_l _f4, 0x10(_a), 0, 0
+        ps_madds0 _f0, _f2, _f5, _f0
+        psq_st _f1, 0x0(_out), 0, 0
+        psq_l _f5, 0xc(_a), 0, 0
+        psq_st _f0, 0x8(_out), 1, 0
 
-        psq_l f6, 0x1c(r3), 0, 0
-        psq_l f3, 0x18(r4), 0, 0
-        psq_l f2, 0x20(r4), 1, 0
-        ps_muls1 f1, f3, f4
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f4
-        psq_l f2, 0x14(r4), 1, 0
-        psq_l f7, 0x18(r3), 0, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_madds0 f0, f2, f4, f0
-        psq_l f3, 0x0(r4), 0, 0
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f5, f1
-        ps_madds0 f0, f2, f5, f0
-        psq_st f1, 0xc(r5), 0, 0
-        psq_st f0, 0x14(r5), 1, 0
+        psq_l _f6, 0x1c(_a), 0, 0
+        psq_l _f3, 0x18(_b), 0, 0
+        psq_l _f2, 0x20(_b), 1, 0
+        ps_muls1 _f1, _f3, _f4
+        psq_l _f3, 0xc(_b), 0, 0
+        ps_muls1 _f0, _f2, _f4
+        psq_l _f2, 0x14(_b), 1, 0
+        psq_l _f7, 0x18(_a), 0, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l _f3, 0x0(_b), 0, 0
+        psq_l _f2, 0x8(_b), 1, 0
+        ps_madds0 _f1, _f3, _f5, _f1
+        ps_madds0 _f0, _f2, _f5, _f0
+        psq_st _f1, 0xc(_out), 0, 0
+        psq_st _f0, 0x14(_out), 1, 0
 
-        psq_l f3, 0x18(r4), 0, 0
-        psq_l f2, 0x20(r4), 1, 0
-        ps_muls1 f1, f3, f6
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f6
-        psq_l f2, 0x14(r4), 1, 0
-        ps_madds0 f1, f3, f6, f1
-        psq_l f3, 0x0(r4), 0, 0
-        ps_madds0 f0, f2, f6, f0
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f7, f1
-        ps_madds0 f0, f2, f7, f0
-        psq_st f1, 0x18(r5), 0, 0
-        psq_st f0, 0x20(r5), 1, 0
+        psq_l _f3, 0x18(_b), 0, 0
+        psq_l _f2, 0x20(_b), 1, 0
+        ps_muls1 _f1, _f3, _f6
+        psq_l _f3, 0xc(_b), 0, 0
+        ps_muls1 _f0, _f2, _f6
+        psq_l _f2, 0x14(_b), 1, 0
+        ps_madds0 _f1, _f3, _f6, _f1
+        psq_l _f3, 0x0(_b), 0, 0
+        ps_madds0 _f0, _f2, _f6, _f0
+        psq_l _f2, 0x8(_b), 1, 0
+        ps_madds0 _f1, _f3, _f7, _f1
+        ps_madds0 _f0, _f2, _f7, _f0
+        psq_st _f1, 0x18(_out), 0, 0
+        psq_st _f0, 0x20(_out), 1, 0
         b mult_end
 
     alias_path:
-        psq_l f4, 0x4(r3), 0, 0
-        la r6, row2
-        psq_l f3, 0x18(r4), 0, 0
-        la r7, row1
-        psq_l f2, 0x20(r4), 1, 0
-        la r8, row0
-        ps_muls1 f1, f3, f4
-        psq_l f3, 0xc(r4), 0, 0
-        ps_muls1 f0, f2, f4
-        psq_l f2, 0x14(r4), 1, 0
-        psq_l f9, 0x10(r3), 0, 0
-        psq_l f8, 0x18(r4), 0, 0
-        psq_l f7, 0x20(r4), 1, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_muls1 f6, f8, f9
-        psq_l f12, 0x1c(r3), 0, 0
-        ps_mr f8, f3
-        psq_l f3, 0x18(r4), 0, 0
-        ps_muls1 f5, f7, f9
-        ps_muls1 f11, f3, f12
-        ps_mr f7, f2
-        psq_l f3, 0x0(r4), 0, 0
-        ps_madds0 f0, f2, f4, f0
-        psq_l f2, 0x20(r4), 1, 0
-        psq_l f4, 0x0(r3), 0, 0
-        ps_muls1 f10, f2, f12
-        psq_l f2, 0x8(r4), 1, 0
-        ps_madds0 f1, f3, f4, f1
-        ps_madds0 f6, f8, f9, f6
-        ps_madds0 f0, f2, f4, f0
-        psq_l f4, 0x18(r3), 0, 0
-        ps_madds0 f5, f7, f9, f5
-        psq_l f9, 0xc(r3), 0, 0
-        ps_madds0 f11, f8, f12, f11
-        ps_madds0 f10, f7, f12, f10
-        psq_st f1, 0x0(r6), 0, 0
-        ps_madds0 f6, f3, f9, f6
-        ps_madds0 f5, f2, f9, f5
-        ps_madds0 f11, f3, f4, f11
-        lfs f8, row2[0]
-        ps_madds0 f10, f2, f4, f10
-        psq_st f6, 0x0(r7), 0, 0
-        lfs f7, row2[1]
-        psq_st f11, 0x0(r8), 0, 0
-        lfs f4, row1[1]
-        psq_st f5, 0x8(r7), 1, 0
-        lfs f5, row1[0]
-        psq_st f0, 0x8(r6), 1, 0
-        lfs f3, row1[2]
-        psq_st f10, 0x8(r8), 1, 0
-        lfs f6, row2[2]
-        lfs f2, row0[0]
-        lfs f1, row0[1]
-        lfs f0, row0[2]
-        stfs f8, 0x0(r5)
-        stfs f7, 0x4(r5)
-        stfs f6, 0x8(r5)
-        stfs f5, 0xc(r5)
-        stfs f4, 0x10(r5)
-        stfs f3, 0x14(r5)
-        stfs f2, 0x18(r5)
-        stfs f1, 0x1c(r5)
-        stfs f0, 0x20(r5)
+        psq_l _f4, 0x4(_a), 0, 0
+        la _row2, row2
+        psq_l _f3, 0x18(_b), 0, 0
+        la _row1, row1
+        psq_l _f2, 0x20(_b), 1, 0
+        la _row0, row0
+        ps_muls1 _f1, _f3, _f4
+        psq_l _f3, 0xc(_b), 0, 0
+        ps_muls1 _f0, _f2, _f4
+        psq_l _f2, 0x14(_b), 1, 0
+        psq_l _f9, 0x10(_a), 0, 0
+        psq_l _f8, 0x18(_b), 0, 0
+        psq_l _f7, 0x20(_b), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_muls1 _f6, _f8, _f9
+        psq_l _f12, 0x1c(_a), 0, 0
+        ps_mr _f8, _f3
+        psq_l _f3, 0x18(_b), 0, 0
+        ps_muls1 _f5, _f7, _f9
+        ps_muls1 _f11, _f3, _f12
+        ps_mr _f7, _f2
+        psq_l _f3, 0x0(_b), 0, 0
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l _f2, 0x20(_b), 1, 0
+        psq_l _f4, 0x0(_a), 0, 0
+        ps_muls1 _f10, _f2, _f12
+        psq_l _f2, 0x8(_b), 1, 0
+        ps_madds0 _f1, _f3, _f4, _f1
+        ps_madds0 _f6, _f8, _f9, _f6
+        ps_madds0 _f0, _f2, _f4, _f0
+        psq_l _f4, 0x18(_a), 0, 0
+        ps_madds0 _f5, _f7, _f9, _f5
+        psq_l _f9, 0xc(_a), 0, 0
+        ps_madds0 _f11, _f8, _f12, _f11
+        ps_madds0 _f10, _f7, _f12, _f10
+        psq_st _f1, 0x0(_row2), 0, 0
+        ps_madds0 _f6, _f3, _f9, _f6
+        ps_madds0 _f5, _f2, _f9, _f5
+        ps_madds0 _f11, _f3, _f4, _f11
+        lfs _f8, row2[0]
+        ps_madds0 _f10, _f2, _f4, _f10
+        psq_st _f6, 0x0(_row1), 0, 0
+        lfs _f7, row2[1]
+        psq_st _f11, 0x0(_row0), 0, 0
+        lfs _f4, row1[1]
+        psq_st _f5, 0x8(_row1), 1, 0
+        lfs _f5, row1[0]
+        psq_st _f0, 0x8(_row2), 1, 0
+        lfs _f3, row1[2]
+        psq_st _f10, 0x8(_row0), 1, 0
+        lfs _f6, row2[2]
+        lfs _f2, row0[0]
+        lfs _f1, row0[1]
+        lfs _f0, row0[2]
+        stfs _f8, 0x0(_out)
+        stfs _f7, 0x4(_out)
+        stfs _f6, 0x8(_out)
+        stfs _f5, 0xc(_out)
+        stfs _f4, 0x10(_out)
+        stfs _f3, 0x14(_out)
+        stfs _f2, 0x18(_out)
+        stfs _f1, 0x1c(_out)
+        stfs _f0, 0x20(_out)
     mult_end:
     }
 }
