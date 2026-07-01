@@ -470,6 +470,11 @@ def build_sharpen_entries(payload, runs, levels=1, exclude=None,
             continue
         if exclude and exclude(bm):
             continue
+        # Sharpen swap is DXT-only (the engine installs a palette-free buffer);
+        # never emit a sidecar entry for a non-DXT (palette/RGBA) bitmap. Pairs
+        # with the RB3TexSharpen.cpp match-filter DXT guard.
+        if (bm["order"] & ORDER_FMT_MASK) == 0:
+            continue
         lv = min(levels, bm["numMips"])
         if lv <= 0:
             continue
