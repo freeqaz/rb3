@@ -877,6 +877,19 @@ static void mainLoop() {
         sFrameCount++;
         EM_ASM_({ window.rb3FrameCount = $0; }, sFrameCount);
 
+#ifdef __EMSCRIPTEN__
+        // SESSION-TELEMETRY web egress: drain the C++ recorder ring to the JS
+        // window.__rb3Trace array on a cadence. Unlike native (which streams to a
+        // FILE* on every push), the web sink only auto-drains at ring half-fill
+        // (~8192 events) — so a session shorter than that would egress ONLY the
+        // hdr line and never the per-frame fr/in/nav/clk rows. Flushing every ~30
+        // frames drains the ring ~2x/sec; the pre-js ~5s timer + sendBeacon then
+        // ship it. Guarded __EMSCRIPTEN__ so native (drains on push) never
+        // double-flushes. RB3TraceFlush no-ops when the recorder isn't armed.
+        if ((sFrameCount % 30) == 0)
+            RB3TraceFlush();
+#endif
+
         // B3: polled-flag exit save. The rb3_pre.js visibilitychange:hidden /
         // pagehide listeners set window.__rb3SaveRequested; we clear it and run
         // RB3SaveSaveGlobalOptions here on the main thread. Write() is sync into
@@ -979,6 +992,16 @@ void rb3_resize_canvas(int w, int h) {
     if (gBandRnd.Gpu().IsReady() && w > 0 && h > 0) {
         gBandRnd.Gpu().ResizeSurface(w, h);
     }
+}
+
+// SESSION-TELEMETRY tail flush: drain the C++ recorder ring to window.__rb3Trace
+// on demand. rb3_pre.js's pagehide/visibilitychange teardown calls this BEFORE
+// its sendBeacon so the final <30 frames still in the ring (between the periodic
+// BOOT_RUNNING flush and unload) egress instead of being lost. No-ops when the
+// recorder isn't armed.
+EMSCRIPTEN_KEEPALIVE
+void rb3_trace_flush() {
+    RB3TraceFlush();
 }
 
 }  // extern "C"

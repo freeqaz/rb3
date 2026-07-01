@@ -700,6 +700,14 @@
         function beaconTail() {
             if (!window.__rb3TraceOn) return;
             if (!window.__rb3Sid) return;
+            // Drain the C++ recorder ring into window.__rb3Trace FIRST so the last
+            // <30 frames (accumulated since the last periodic BOOT_RUNNING flush)
+            // are captured in this final beacon rather than lost on unload. Guarded
+            // — the wasm export may not exist yet very early in boot.
+            try {
+                if (typeof Module !== 'undefined' && Module._rb3_trace_flush)
+                    Module._rb3_trace_flush();
+            } catch (e) { /* pre-runtime / unload race — ignore */ }
             var t = window.__rb3Trace;
             if (!Array.isArray(t) || t.length === 0) return;
             if (!navigator.sendBeacon) { flush(); return; }  // no beacon -> fetch
