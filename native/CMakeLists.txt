@@ -775,13 +775,17 @@ set(RB3_WEB_NATIVE_GLUE
     # malloc_trim is compiled out (wasm dlmalloc never returns to the host), so this
     # is a no-op there, but the TU must link so App.cpp's extern call resolves.
     ${CMAKE_SOURCE_DIR}/src/rb3_heap_maint_native.cpp
-    # Wave-3/M1 measurement: per-frame JSONL frame-trace recorder
-    # (RB3_FRAME_TRACE=<path>). Web defines HX_NATIVE so the recorder + the
-    # gFrameTraceActive-gated attribution counters compile; the web run loop in
-    # main_web.cpp calls RB3FrameTraceRecord (App::RunWithoutDebugging's native
-    # frame loop is never entered on web). Without this the symbol resolves to a
-    # no-op JS link-stub and the trace file is never created.
-    ${CMAKE_SOURCE_DIR}/src/rb3_frame_trace.cpp
+    # Session telemetry recorder CORE (RB3_SESSION_TRACE=<path|1>, RB3_FRAME_TRACE
+    # alias) — subsumes the deleted rb3_frame_trace.cpp and owns RB3TraceInit +
+    # the RB3FrameTraceRecord back-compat shim. Web defines HX_NATIVE so the
+    # recorder + the gFrameTraceActive-gated attribution counters compile; the
+    # web run loop in main_web.cpp calls RB3TraceInit + RB3FrameTraceRecord
+    # (App::RunWithoutDebugging's native frame loop is never entered on web).
+    # Without this those symbols resolve to no-op JS link-stubs and no trace
+    # file is created. std-only + #include <emscripten.h> guarded, so emcc-clean
+    # (the engine-type-pulling nav/song taps live in the native-only
+    # rb3_trace_taps.cpp, deliberately kept out of the web glue).
+    ${CMAKE_SOURCE_DIR}/src/rb3_session_trace.cpp
     # TASK T2 (incremental-load-perf Wave 5): loading-dwell GPU warm driver +
     # reveal-frame drain pre-kick. Same TU as native — GamePanel.cpp's HX_NATIVE
     # arm (web defines HX_NATIVE) calls RB3GameWarmPollDwell during the vignette to
