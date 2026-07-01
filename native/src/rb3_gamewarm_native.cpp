@@ -219,6 +219,15 @@ static std::string ComputeVenueMiloPath() {
     return std::string(MakeString("world/venue/%s/%s/%s.milo", cls.c_str(), v, v));
 }
 
+// Shared-with-the-sharpen-driver accessor. The progressive-texture-sharpen driver
+// (rb3_texsharpen_native.cpp) needs the SAME venue milo path EnterVenue loaded, so
+// it can find the venue dir + derive the `.sharpen` sidecar path. Rather than
+// duplicate the override→world-prop→small_club_01 resolution, expose this thin
+// non-static wrapper over ComputeVenueMiloPath(). Returns "" until resolvable.
+std::string RB3ComputeVenueMiloPathForSharpen() {
+    return ComputeVenueMiloPath();
+}
+
 // Called every dwell/loading frame from Game::IsLoaded() (before the kReady
 // gate). Re-evaluates the committed venue each frame: the first time the venue
 // Symbol resolves to a path with no DirLoader yet, create a background DirLoader
@@ -732,9 +741,12 @@ extern "C" bool RB3GameWarmShouldHoldLoaded() {
 
 // Reset the dwell state when the GamePanel unloads / a new song arms. Called from
 // GamePanel::Unload() so a second song re-warms cleanly.
+extern "C" void RB3TexSharpenReset();  // rb3_texsharpen_native.cpp
+
 extern "C" void RB3GameWarmReset() {
     gWarm = GameWarmState();
     gPrekickPaths.clear();
     gKickedPaths.clear();
     RB3TexPrewarmReset();   // re-arm the venue-milo prewarm for the next song
+    RB3TexSharpenReset();   // drop the progressive-sharpen session for the next song
 }

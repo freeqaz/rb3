@@ -500,6 +500,14 @@ add_executable(rb3-native
     # through BandRnd::WarmGpuForDir (move 97 tex + 113 mesh uploads off the
     # reveal frame) + pre-kick the Enter ForceGetLoader drain. Flag RB3_GAMEWARM_OFF.
     ${CMAKE_SOURCE_DIR}/src/rb3_gamewarm_native.cpp
+    # research/13 T1 (progressive in-session texture sharpen): the I/O + gameplay-
+    # gating DRIVER around the engine sharpen manager (milo-native-engine
+    # RB3TexSharpen.cpp). Game::Poll (HX_NATIVE) calls RB3TexSharpenPoll once
+    # gameplay is running; this TU resolves the venue + `.sharpen` sidecar, fetches
+    # it low-priority async on web (local file on native), and hands the bytes to
+    # the engine manager which recreates each stripped venue texture at full-res.
+    # Flag RB3_PROGRESSIVE_SHARPEN (default ON). Native+web glue (HX_NATIVE).
+    ${CMAKE_SOURCE_DIR}/src/rb3_texsharpen_native.cpp
     # TASK T3 (incremental-load-perf): preview-hover mogg prefetch + residency
     # primitives. The matched SongPreview/MusicLibrary HX_NATIVE arms call these to
     # warm the preview mogg async during the ~1 s debounce window and to defer the
@@ -652,6 +660,7 @@ if(BUILD_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/test_charload5b.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_overpress.cpp
         ${CMAKE_SOURCE_DIR}/tests/test_texsharpen.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_texsharpen_manager.cpp
         ${_RB3_NATIVE_SRCS}
     )
     rb3_configure_target(rb3-tests)

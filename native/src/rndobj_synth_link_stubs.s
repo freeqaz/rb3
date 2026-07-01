@@ -12,6 +12,10 @@
 __hmx_rndsynth_noop_stub:
     xorl %eax, %eax
     ret
+    # (RB3TexSharpenPoll / RB3TexSharpenReset weak stubs removed: the progressive-
+    # tex-sharpen glue (rb3_texsharpen_native.cpp, research/13 T1) now provides the
+    # strong definitions AND wires the real callers, so the temporary stubs are
+    # obsolete.)
     .weak BinkClose
     .set BinkClose, __hmx_rndsynth_noop_stub
     .weak BinkCloseTrack

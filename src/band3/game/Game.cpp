@@ -85,6 +85,12 @@ extern "C" bool RB3GameWarmPollDwell(class ObjectDir *selfDir, class ObjectDir *
 // it (DirLoader::Find) instead of paying a ~548ms synchronous PollUntilLoaded
 // texture-drain on the game_screen reveal. Idempotent. RB3_TEX_PREWARM_OFF=1.
 extern "C" void RB3VenuePrewarmPoll();
+// A4-progressive (research/13 T1) — progressive in-session texture sharpen. Called
+// each gameplay-running Game::Poll frame (songMs > 0, off the critical path) to
+// background-fetch the downscaled venue's `.sharpen` sidecar and restore each
+// stripped texture to full resolution live, a few per frame. Default ON for web;
+// opt-out RB3_PROGRESSIVE_SHARPEN=0 keeps the A4 stripped venue stripped.
+extern "C" void RB3TexSharpenPoll(bool gameplayRunning);
 #endif
 
 Game *TheGame;
@@ -1744,6 +1750,16 @@ void Game::Poll() {
         }
         CheckRollbackEnd(songMs);
         mLastPollMs = songMs;
+#ifdef HX_NATIVE
+        // A4-progressive (research/13 T1): once the song is actually playing
+        // (songMs > 0 — gameplay reached, off the load critical path), drive the
+        // progressive texture-sharpen. It background-fetches the downscaled venue's
+        // full-res top-mips and restores each stripped texture to full resolution
+        // live, a few per frame (no hitch), so fast users get full quality without
+        // paying the load-time cost up front. Cheap once the venue's sharpen
+        // session is complete / the venue wasn't downscaled. Native-only.
+        RB3TexSharpenPoll(songMs > 0.0f && !isGameOver);
+#endif
         if (mResumeTime == 0 && !mIsPaused) {
             unk130 = mLastPollMs / mSongDB->GetSongDurationMs();
         }
