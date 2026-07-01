@@ -485,6 +485,12 @@ int CharClip::BeatToSample(float f, float *fp) const {
 // below by SampleToBeat. This exact instantiation is unique to this call
 // site (no other TU instantiates __lower_bound<PCf,f,...>), so specializing
 // it cannot regress any other symbol.
+//
+// Wii-match only: stlpmtx_std::__less_2/__lower_bound live in the stlport
+// headers; the native build's std::lower_bound is the real STL and never
+// dispatches through here, so gate the specialization out (mirrors the
+// #ifndef HX_NATIVE guard the same change applied to CharHair's Multiply).
+#ifndef HX_NATIVE
 namespace stlpmtx_std {
 template <>
 const float *__lower_bound<const float *, float, __less_2<float, float>, long>(
@@ -508,6 +514,7 @@ const float *__lower_bound<const float *, float, __less_2<float, float>, long>(
     return __first;
 }
 } // namespace stlpmtx_std
+#endif // !HX_NATIVE
 
 float CharClip::SampleToBeat(int sample) const {
     if (mFull.mFrames.empty()) {
