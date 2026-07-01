@@ -161,6 +161,22 @@ bool sWebInputInit = false; // web JS listeners installed
 // gates inside RB3RecordInput → one predicted branch when tracing is off.
 void RB3JoypadTraceInput(unsigned int btns, float whammy) {
     static unsigned int sPrevBtns = 0;
+    // Suppress the leading all-zero poll(s) before the first real press. The
+    // recorder's first-call has haveInput==false so it CANNOT dedup that opening
+    // {b:0} edge, which would make the first recorded `in` a content-free null
+    // row. On web the first poll is at frame 0 with nothing held, so the live
+    // recording emitted a leading {f:0,b:0} that the Tier-1 replay override
+    // deliberately does NOT (its sReplayStarted guard skips the leading zero) —
+    // so a record-vs-replay trace-diff differed by exactly that one row. Waiting
+    // for the first non-zero bitmask here makes record + replay start at the SAME
+    // first real edge (the replay override's documented "trace-diff exit 0" goal),
+    // and drops only an information-free null edge (no button state lost).
+    static bool sStarted = false;
+    if (!sStarted) {
+        if (btns == 0)
+            return;
+        sStarted = true;
+    }
     RB3RecordInput(0, btns, btns & ~sPrevBtns, ~btns & sPrevBtns, whammy, 0.0f);
     sPrevBtns = btns;
 }

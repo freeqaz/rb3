@@ -365,7 +365,13 @@ class TelemetryStore:
             ).fetchone()
             if srow is None:
                 return
-            yield json.dumps(_hdr_from_session_row(srow))
+            # COMPACT separators (no spaces) so the reconstruction is truly
+            # byte-faithful to the recorder's wire format. The C++ Tier-1 replay
+            # loader (rb3_replay.cpp IngestLine) line-classifies with an EXACT
+            # substring match ("k":"in"), so Python's default ", "/": " spacing
+            # made the web ?replay=<sid> path parse 0 input edges (never armed).
+            # json.loads consumers (trace-diff/report) are unaffected.
+            yield json.dumps(_hdr_from_session_row(srow), separators=(",", ":"))
             for crow in conn.execute(
                 "SELECT client_seq, t_ms, frame, song_ms, kind, payload "
                 "FROM events WHERE sid = ? ORDER BY client_seq", (sid,),
@@ -386,7 +392,7 @@ class TelemetryStore:
                 # Emit the terse wire key `cs` (matches the producer + the
                 # gen-synth-trace fixture); the column is client_seq internally.
                 obj["cs"] = crow["client_seq"]
-                yield json.dumps(obj)
+                yield json.dumps(obj, separators=(",", ":"))  # compact: byte-faithful
         finally:
             conn.close()
 

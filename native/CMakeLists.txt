@@ -782,10 +782,26 @@ set(RB3_WEB_NATIVE_GLUE
     # web run loop in main_web.cpp calls RB3TraceInit + RB3FrameTraceRecord
     # (App::RunWithoutDebugging's native frame loop is never entered on web).
     # Without this those symbols resolve to no-op JS link-stubs and no trace
-    # file is created. std-only + #include <emscripten.h> guarded, so emcc-clean
-    # (the engine-type-pulling nav/song taps live in the native-only
-    # rb3_trace_taps.cpp, deliberately kept out of the web glue).
+    # file is created. std-only + #include <emscripten.h> guarded, so emcc-clean.
     ${CMAKE_SOURCE_DIR}/src/rb3_session_trace.cpp
+    # Engine-side taps for the recorder (nav sink + in-song `chk` checkpoint +
+    # song-ms helper). Originally kept out of the web glue during the W1 clear-
+    # frame era (the full engine wasn't linked then); now that main_web.cpp boots
+    # the whole App (through gameplay), the engine types these use (Game / BandUI
+    # / UIScreen / Player / BeatMaster) ARE in the web link, so this compiles +
+    # links under emcc. main_web.cpp calls RB3TraceEnsureNavSink +
+    # RB3TraceCheckpointFrame from its run loop. Restores web `nav`/`chk` egress
+    # parity with native (previously `[rb3-stub] RB3TraceEnsureNavSink`).
+    ${CMAKE_SOURCE_DIR}/src/rb3_trace_taps.cpp
+    # TIER-1 REPLAY loader + carry-forward input lookup (RB3ReplayInit/Active/
+    # BitsForFrame/Seed). #ifdef HX_NATIVE, std-only + guarded emscripten/em_asm.h
+    # (no decomp/engine headers), so emcc-clean. Was NATIVE-ONLY (omitted from this
+    # web list), so the ?replay=<sid> path's whole C++ half resolved to no-op JS
+    # link-stubs — rb3_pre.js fetched window.__rb3ReplayData but nothing read/drove
+    # it (the "compiles but never ran in a browser" gap). main_web.cpp's run loop
+    # arms it (pad-independent, the source is async) + feeds the replayed bits into
+    # window._rb3Keys so the web input path drives it.
+    ${CMAKE_SOURCE_DIR}/src/rb3_replay.cpp
     # TASK T2 (incremental-load-perf Wave 5): loading-dwell GPU warm driver +
     # reveal-frame drain pre-kick. Same TU as native — GamePanel.cpp's HX_NATIVE
     # arm (web defines HX_NATIVE) calls RB3GameWarmPollDwell during the vignette to

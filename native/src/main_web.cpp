@@ -104,6 +104,16 @@ extern DataArray *gSystemConfig;
 // timeline. (HX_NATIVE-guarded internally.)
 #include "rb3_session_trace.h"
 
+// Session-telemetry engine-side taps (rb3_trace_taps.cpp). On native these are
+// wired from main_native.cpp / the App.cpp frame loop; on web the run loop lives
+// in main_web.cpp, so we register the nav sink + drive the in-song checkpoint
+// sampler from here. Without the taps TU in the web link these resolved to no-op
+// JS stubs (`[rb3-stub] RB3TraceEnsureNavSink`) and `nav`/`chk` never egressed —
+// the web parity gap this restores. Both are cheap no-ops when tracing is off /
+// already registered / not in a song.
+extern void RB3TraceEnsureNavSink();
+extern void RB3TraceCheckpointFrame(int frame);
+
 // Engine: register the legacy short milo class names (Tex/Text/Dir). The native
 // RunGame calls this before any UI milo loads; the App-boot path must too (the
 // App ctor's Rnd::PreInit registers the prefixed RndXxx names but not the
@@ -820,6 +830,12 @@ static void mainLoop() {
         }
         BootMark("appctor_done");
         RB3BootIoStatsDump("appctor_done"); // Step 0 attribution (gated)
+        // Session-telemetry: register the nav sink now that TheBandUI (the real
+        // TheUI) exists, so the earliest screen transitions record `nav` (+ a
+        // per-transition `chk`). Mirrors main_native.cpp right after the ctor;
+        // idempotent + no-op when tracing is off. The frame loop calls it again
+        // as a backstop in case TheBandUI settled a frame later.
+        RB3TraceEnsureNavSink();
         printf("RB3 Web: App constructed — entering RunOneFrame loop\n");
         EM_ASM({ window.rb3AppBooted = 1; });
         sBootState = BOOT_RUNNING;
@@ -827,6 +843,42 @@ static void mainLoop() {
     }
 
     case BOOT_RUNNING: {
+        // ── SESSION-TELEMETRY TIER-1 REPLAY drive (web) ──────────────────────
+        // When ?replay=<sid> is set, rb3_pre.js GETs the recorded NDJSON into
+        // window.__rb3ReplayData; RB3ReplayInit parses its `in` edges into a
+        // frame->bits table. TWO web-specific reasons this must be driven from
+        // HERE (not only from JoypadPoll, as native does):
+        //   1. ARMING: the source arrives ASYNCHRONOUSLY (fetch), so a single
+        //      early RB3ReplayInit loses the race; and JoypadPoll's call sits
+        //      behind its `!mConnected` pad gate, which is closed on the boot
+        //      splash — so it never re-attempts while stalled there. This loop is
+        //      pad-independent: retry each frame until it arms (idempotent) or a
+        //      bounded budget elapses (a no-replay session then stops).
+        //   2. DRIVE: JoypadPoll's replay override drives SendButtonMessages,
+        //      which does NOT advance splash_screen on web (the overshell add-user
+        //      gate only fires from the WebSplashAdvanceHook verb path, fed by
+        //      window._rb3Keys — see that hook's comment). So we feed the replayed
+        //      held bits into window._rb3Keys, letting the SAME web input path a
+        //      real keyboard uses (splash hook + JoypadPoll for menus) drive the
+        //      replay. Gated behind RB3ReplayActive(), so a normal (no ?replay=)
+        //      session is byte-for-byte unaffected (window._rb3Keys untouched).
+        {
+            extern void RB3ReplayInit();
+            extern bool RB3ReplayActive();
+            extern unsigned int RB3ReplayBitsForFrame(int frame);
+            static bool sReplayArmTried = false;
+            static int sReplayTries = 0;
+            if (!sReplayArmTried) {
+                RB3ReplayInit();
+                if (RB3ReplayActive() || ++sReplayTries > 7200)
+                    sReplayArmTried = true;   // armed, or gave up (no replay)
+            }
+            if (RB3ReplayActive()) {
+                unsigned int rbits = RB3ReplayBitsForFrame(sFrameCount);
+                EM_ASM_({ window._rb3Keys = $0; }, rbits);
+            }
+        }
+
         // Wave-3 / M1 measurement: the per-frame JSONL frame-trace
         // (RB3_FRAME_TRACE=<path>, native/src/rb3_frame_trace.cpp) is normally
         // driven from App::RunWithoutDebugging's frame loop — which the WEB build
@@ -845,7 +897,16 @@ static void mainLoop() {
         extern float gLoadPollMsThisFrame;
         extern float gLoadPollUntilMsThisFrame;
         try {
-            if (sFrameTrace) {
+            // Run the frame-trace-wrapped path when the explicit RB3_FRAME_TRACE
+            // is set OR whenever the always-on session recorder is armed
+            // (gRB3TraceActive). This is what advances gRB3TraceFrame + emits the
+            // decimated `fr` rows (with the load-perf `atr` attribution) on a
+            // normal web session — WITHOUT it, a default web trace recorded every
+            // `in`/`nav`/`chk` at frame 0 and the gFrameTraceActive-gated
+            // attribution counters grew unbounded (never read+zeroed). Native
+            // advances the frame index unconditionally via App.cpp's loop; this is
+            // the web parity equivalent.
+            if (sFrameTrace || gRB3TraceActive) {
                 gLoadPollMsThisFrame = 0.0f;
                 gLoadPollUntilMsThisFrame = 0.0f;
                 double t0 = emscripten_get_now();
@@ -874,6 +935,15 @@ static void mainLoop() {
         // dependency bundle into MEMFS during the dwell. No-op when disabled
         // (RB3_SCREEN_BUNDLES_OFF) or the screen has no next-bundle mapping.
         WebScreenBundleHook();
+
+        // Session-telemetry engine taps (mirror App.cpp's native frame loop):
+        //  - nav-sink backstop: registers once TheBandUI is live (idempotent).
+        //  - in-song checkpoint (chk): sampled every RB3_TRACE_CHK_EVERY frames
+        //    while a song clock is live; a no-op in menus (the nav sink emits the
+        //    menu milestone chk). Runs AFTER the frame tap above set gRB3TraceFrame
+        //    so the chk envelope carries this frame's index. Cheap no-ops off.
+        RB3TraceEnsureNavSink();
+        RB3TraceCheckpointFrame(sFrameCount);
         sFrameCount++;
         EM_ASM_({ window.rb3FrameCount = $0; }, sFrameCount);
 

@@ -677,11 +677,22 @@
             if (!body) return;
 
             posting = true;
+            // keepalive lets a flush that fires right at tab-close still complete,
+            // BUT the Fetch spec caps the TOTAL body of keepalive requests at 64KB
+            // and the browser hard-REJECTS a keepalive fetch whose body exceeds it
+            // (TypeError, caught below -> reprepend). A single boot/intro log burst
+            // blows past 64KB in one flush, so with unconditional keepalive every
+            // post-hdr flush failed, reprepended, and only GREW the backlog — the
+            // whole per-frame stream never egressed (only the 130-byte hdr landed).
+            // The periodic flusher runs while the page is alive, so it does not need
+            // keepalive; reserve it for sub-cap bodies (the common small flush, kept
+            // unload-safe) and use a normal unbounded fetch for large ones. The tail
+            // path (beaconTail) keeps its own <=BEACON_CAP sendBeacon chunking.
             fetch(endpoint(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-ndjson' },
                 body: body,
-                keepalive: true
+                keepalive: body.length < BEACON_CAP
             }).then(function(r) {
                 posting = false;
                 if (!r || !r.ok) reprepend(batch);   // 4xx/5xx -> retry next tick
