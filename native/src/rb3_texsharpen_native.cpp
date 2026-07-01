@@ -106,12 +106,19 @@ std::string SidecarRelFromVenueMilo(const std::string& miloPath) {
                                   dir.c_str(), base.c_str(), plat));
 }
 
-// Read a whole resident file's bytes via the engine File API (NewFile NOARK works
-// on native local files AND web MEMFS once resident). Returns false on any failure
-// (caller then retries next frame or gives up). Caps the read at a sane ceiling so
-// a corrupt size can't blow out memory.
+// Read a whole resident file's bytes via the engine File API (a READ + NO-ARK open
+// works on native local files AND web MEMFS once resident). Returns false on any
+// failure (caller then retries next frame or gives up). Caps the read at a sane
+// ceiling so a corrupt size can't blow out memory.
+//
+// CRITICAL: the Wii READ bit is 0x2 — WITHOUT it, NativeStdioFile opens the path
+// in WRITE mode ("wb"), which TRUNCATES the sidecar to zero (Size()==0 → this
+// returns false, and the sidecar is destroyed on disk). `FILE_OPEN_NOARK` alone is
+// not a read mode. So open READ | NO-ARK (0x2 | 0x10000). FileExists uses the same
+// read bit (NewFile(path, iMode | 0x40002)).
+static const int kFileOpenRead = 0x2;
 bool ReadWholeFile(const char* path, std::vector<uint8_t>& out) {
-    File* f = NewFile(path, FILE_OPEN_NOARK);
+    File* f = NewFile(path, kFileOpenRead | FILE_OPEN_NOARK);
     if (!f) return false;
     bool ok = false;
     if (!f->Fail()) {
